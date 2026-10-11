@@ -34,10 +34,12 @@ type Config struct {
 	// DisableTouchZoom keeps two-finger touch gestures from zooming the page.
 	// Wheel and keyboard zoom remain available unless LockView is also set.
 	DisableTouchZoom bool
-	Width            int
-	Height           int
-	MinWidth         int
-	MinHeight        int
-	MaxWidth         int
-	MaxHeight        int
+	// DeepLinkSchemes lists URL schemes accepted by DispatchDeepLink.
+	DeepLinkSchemes []string
+	Width           int
+	Height          int
+	MinWidth        int
+	MinHeight       int
+	MaxWidth        int
+	MaxHeight       int
 }

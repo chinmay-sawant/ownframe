@@ -19,7 +19,7 @@ func (s *shell) imeNewSession() *textinput.SessionOptions {
 	}
 	s.ime.start = caret - len(before)
 	s.ime.end = caret + len(after)
-	s.ime.caret = s.imeScreenRect(box)
+	s.ime.caret = s.imeCaretScreenRect(box)
 	return &textinput.SessionOptions{CaretBounds: s.ime.caret,
 		TextBeforeCaret: before, TextAfterCaret: after}
 }

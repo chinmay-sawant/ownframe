@@ -48,7 +48,9 @@ go test ./examples/accessibility/...
 ```
 
 The demo is an API inspector. It does not connect the tree to Windows UI
-Automation, Linux AT-SPI, or macOS NSAccessibility.
+Automation, Linux AT-SPI, or macOS NSAccessibility. See the
+[native accessibility status and validation guide](accessibility-native.md)
+for the platform work that remains.
 
 ## Node identity and updates
 
@@ -60,7 +62,9 @@ action. A stale token returns `ErrAccessibilityStale`.
 `Revision` is the page's successful redraw generation. Each call returns new
 node and child slices, so changing a snapshot does not change page state. A
 node's bounds are CSS pixels in the page content coordinate space. Ownframe
-sets `HasBounds` only when one layout box matches a unique HTML ID.
+matches unique HTML IDs directly. For elements without IDs, it matches the
+tag and normalized text against Blinkless's placed boxes. It sets `HasBounds`
+only when the source and layout contain the same number of matching elements.
 
 ## Supported semantics and actions
 
@@ -75,7 +79,9 @@ Names can come from `aria-labelledby`, `aria-label`, associated labels, image
 `aria-describedby`. Nodes expose parent and child IDs, HTML element IDs, bounds,
 disabled and focus state, focusability, checked state, password state, and the
 actions available on that node. Text nodes and elements without a unique
-matching layout box do not have bounds.
+matching layout box do not have bounds. Repeated anonymous elements with the
+same tag and text get bounds in document order only if every matching element
+has a placed box.
 
 Form values and checked state come from live page controls. Password values
 are always empty in the snapshot. Supported controls advertise Focus,
@@ -103,11 +109,14 @@ This API supplies semantic page data to a host. It does not expose the
 Ebitengine window to a native assistive-technology API, and a tree alone does
 not make an app accessible.
 
-The snapshot does not use computed CSS visibility. A node hidden only with
-`display:none` or `visibility:hidden` can remain in the tree. Anonymous nodes
-have no reliable layout bounds. Text ranges, live-region events, complete ARIA
-name computation, virtualized offscreen rows, and custom widget actions are
-not covered. This tree is not PDF/UA output and does not claim browser
+The snapshot filters the `hidden` attribute, `aria-hidden="true"`, and
+non-content tags. It does not read computed CSS visibility. A node hidden by a
+stylesheet with `display:none` or `visibility:hidden` can remain in the tree.
+The engine does not expose the computed style needed to filter those nodes.
+Anonymous nodes get bounds only when their tag and text match placed boxes
+without ambiguity. Text ranges, live-region events, complete ARIA name
+computation, virtualized offscreen rows, and custom widget actions are not
+covered. This tree is not PDF/UA output and does not claim browser
 accessibility parity.
 
 See the [v0.0.2 accessibility and desktop input checklist](../plans/v0.0.2/accessibility-desktop-ime.md)

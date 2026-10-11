@@ -15,3 +15,7 @@ func (s *shell) imeLayoutChanged(int, int) {}
 
 // imeHandled reports that the platform did not consume input.
 func (s *shell) imeHandled() bool { return false }
+
+func (s *shell) imeCancelSession() error { return nil }
+
+func (s *shell) imeShutdown() {}

@@ -14,6 +14,7 @@ type accessibilityBuilder struct {
 	parents map[*markup.Node]*markup.Node
 	boxes   map[string]Box
 	counts  map[string]int
+	nodeBox map[*markup.Node]Box
 	nodeAt  map[host.AccessibilityNodeID]int
 }
 
@@ -21,6 +22,7 @@ func newAccessibilityBuilder(p *Page, root *markup.Node) *accessibilityBuilder {
 	b := &accessibilityBuilder{page: p, ids: map[string][]*markup.Node{}, labels: map[string][]*markup.Node{}, parents: map[*markup.Node]*markup.Node{}, nodeAt: map[host.AccessibilityNodeID]int{"document": 0}}
 	b.index(root, nil)
 	b.boxes, b.counts = uniqueAccessibilityBoxes(p.boxes)
+	b.nodeBox = accessibilityNodeBoxes(root, p.boxes)
 	b.tree.Nodes = []host.AccessibilityNode{{ID: "document", Role: host.AccessibilityDocument, Name: p.title}}
 	return b
 }

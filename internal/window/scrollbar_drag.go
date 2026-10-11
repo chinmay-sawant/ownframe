@@ -1,10 +1,5 @@
 package window
 
-import (
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
-)
-
 const (
 	dragNone = iota
 	dragVertical
@@ -13,18 +8,17 @@ const (
 
 // pointerScrollbar handles presses and drags on a scrollbar thumb. It reports
 // whether the event was consumed, so content clicks are skipped.
-func (s *shell) pointerScrollbar(x, y int) bool {
+func (s *shell) pointerScrollbar(x, y int, down, pressed bool) bool {
 	if !s.scrollbarsEnabled() {
 		s.dragAxis = dragNone
 		return false
 	}
 
-	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	if !down || s.dragAxis == dragNone {
 		if axis, grab, ok := s.scrollbarGrab(x, y); ok {
 			s.applyThumbCursor(axis)
 
-			if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+			if pressed {
 				s.dragAxis = axis
 				s.dragGrab = grab
 

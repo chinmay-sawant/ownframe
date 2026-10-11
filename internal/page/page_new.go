@@ -15,6 +15,10 @@ func New(cfg Config) (*Page, error) {
 	if strings.TrimSpace(source) == "" {
 		return nil, ErrEmptyHTML
 	}
+	deepLinkSchemes, err := acceptedDeepLinkSchemes(cfg.DeepLinkSchemes)
+	if err != nil {
+		return nil, err
+	}
 
 	minWidth := cfg.MinWidth
 	if minWidth <= 0 {
@@ -62,24 +66,25 @@ func New(cfg Config) (*Page, error) {
 	}
 
 	page := &Page{
-		title:          title,
-		tpl:            tpl,
-		theme:          theme,
-		themeSrc:       themeSrc,
-		minWidth:       minWidth,
-		minHeight:      minHeight,
-		maxWidth:       maxWidth,
-		maxHeight:      maxHeight,
-		past:           []string{source},
-		pastAt:         0,
-		devtools:       cfg.DevTools,
-		perf:           cfg.Perf,
-		lockView:       cfg.LockView,
-		scrollbar:      cfg.Scrollbar,
-		allowTouchZoom: !cfg.DisableTouchZoom,
-		allowScroll:    true,
-		touchScroll:    TouchScrollOptions{Sensitivity: 1, Deceleration: 5},
-		watch:          watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
+		title:           title,
+		tpl:             tpl,
+		theme:           theme,
+		themeSrc:        themeSrc,
+		minWidth:        minWidth,
+		minHeight:       minHeight,
+		maxWidth:        maxWidth,
+		maxHeight:       maxHeight,
+		past:            []string{source},
+		pastAt:          0,
+		deepLinkSchemes: deepLinkSchemes,
+		devtools:        cfg.DevTools,
+		perf:            cfg.Perf,
+		lockView:        cfg.LockView,
+		scrollbar:       cfg.Scrollbar,
+		allowTouchZoom:  !cfg.DisableTouchZoom,
+		allowScroll:     true,
+		touchScroll:     TouchScrollOptions{Sensitivity: 1, Deceleration: 5},
+		watch:           watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
 	}
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
 

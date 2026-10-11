@@ -17,7 +17,7 @@ func (s *shell) imeResize() {
 	}
 
 	box, _, _, _, ok := target.IMEContext()
-	if !ok || imeNear(s.imeScreenRect(box), s.ime.caret) {
+	if !ok || imeNear(s.imeCaretScreenRect(box), s.ime.caret) {
 		return
 	}
 

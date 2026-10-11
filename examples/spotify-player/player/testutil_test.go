@@ -7,7 +7,7 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-func mustApp(t *testing.T) *App {
+func mustApp(t testing.TB) *App {
 	t.Helper()
 
 	app, _ := newFakeApp(t)

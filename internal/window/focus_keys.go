@@ -80,6 +80,9 @@ func (s *shell) escape() error {
 	if !ok || focuser.FocusID() == "" {
 		return nil
 	}
+	if err := s.imeCancelSession(); err != nil {
+		return err
+	}
 
 	return focuser.Focus(s.ctx, "")
 }

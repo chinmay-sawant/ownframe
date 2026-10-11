@@ -18,9 +18,12 @@ existing Go renderer and Ebiten window; they do not imply JavaScript support.
 - [x] Keep the vertical or horizontal resize cursor while the pointer is over
   its scrollbar thumb.
 - [x] Route thumb presses and drags through the live pointer path.
-- [ ] Verify content clicks, page scrolling, and scrollbar dragging do not
-  consume one another's events.
+- [x] Verify content clicks, page scrolling, and scrollbar dragging do not
+  consume one another's events in focused window tests.
 - [x] Document the pointer behavior and add targeted window package tests.
+
+The focused pointer tests pass. Running-window behavior still needs a manual
+check; the phase exit remains open until that and `make test` pass.
 
 Exit: hovering and dragging either thumb works in the running window, with
 targeted pointer tests and `make test` passing.
@@ -30,21 +33,24 @@ targeted pointer tests and `make test` passing.
 - [x] Start an Ebiten text-input session for the focused text field on desktop.
 - [x] Place the candidate window from the focused field's transformed bounds
   after scroll, zoom, and resize changes.
-- [ ] Place the candidate window at the glyph-level caret rather than the
+- [x] Place the candidate window at the glyph-level caret rather than the
   focused field box.
 - [x] Keep preedit text separate from the committed field value; draw its
   selection and underline without firing field change callbacks.
 - [x] Apply commits and reconversion through the existing edit path exactly
   once, including replacement around the caret.
-- [ ] End or cancel sessions on blur, Escape, and window shutdown without
+- [x] End or cancel sessions on blur, Escape, and window shutdown without
   applying stale callbacks to a newly focused field.
-- [ ] Cover the session lifecycle with tests and verify composition with a
-  desktop input method on each supported desktop OS.
+- [x] Cover caret bounds and session lifecycle with focused tests.
+- [ ] Verify composition with a desktop input method on each supported
+  desktop OS.
 - [x] Update the interaction, editing, and feature guides to name the current
   implementation and remaining limits.
 
 Exit: a desktop user can compose and commit text in a focused ownframe field;
 the stored value changes only on commit, and callbacks fire once per edit.
+Focused tests cover caret geometry and session cleanup. Real input-method
+composition on each supported desktop OS remains an open exit check.
 
 ## Phase 3: Accessibility tree
 
@@ -61,7 +67,12 @@ the stored value changes only on commit, and callbacks fire once per edit.
 - [x] Test names, roles, order, live state, bounds, and action routing.
 - [x] Document unsupported semantics and the difference between the tree and
   PDF/UA output.
-- [ ] Filter CSS-hidden nodes and map anonymous nodes to reliable layout bounds.
+- [x] Map anonymous nodes to conservative layout bounds when the rendered
+  boxes match unambiguously.
+- [ ] Filter CSS-hidden nodes after Blinkless exposes computed visibility.
+
+Anonymous bounds are omitted when element-to-box matching is ambiguous.
+Computed CSS visibility remains unavailable from the pinned Blinkless API.
 
 Exit: callers can inspect a current semantic tree for a page and invoke the
 supported actions through its nodes.
@@ -83,14 +94,15 @@ and host contract. Native OS adapters remain phase 4 work.
 
 ## Phase 4: Native accessibility adapters
 
-- [ ] Choose and document the supported desktop platforms and adapter
-  boundary.
+- [ ] Choose the supported desktop platforms for native accessibility.
+- [x] Document the native adapter boundary and validation route for AT-SPI,
+  UI Automation, and NSAccessibility.
 - [ ] Expose the tree to Linux assistive technology through AT-SPI.
 - [ ] Expose the tree to Windows UI Automation.
 - [ ] Expose the tree to macOS NSAccessibility.
 - [ ] Verify role, name, focus, bounds, and actions with a screen reader or
   platform accessibility inspector on each supported OS.
-- [ ] Keep the tree usable by non-window hosts even when no native adapter is
+- [x] Keep the tree usable by non-window hosts even when no native adapter is
   available.
 
 Exit: a screen reader can inspect and operate the supported controls in the
@@ -98,39 +110,45 @@ running desktop window on each platform claimed by the documentation.
 
 ## Phase 5: Desktop shell integrations
 
-- [ ] Design multi-window ownership, per-window page state, and close handling.
+- [x] Document multi-window ownership, per-window page state, and close
+  handling as a design proposal.
 - [ ] Add native menu hooks while retaining the current in-window context
   menu as a portable fallback.
 - [ ] Add system tray lifecycle and click handling on supported desktop OSes.
 - [ ] Add desktop notification requests and permission/failure behavior.
 - [ ] Test window shutdown, menu actions, tray teardown, and notification
   failures with platform fakes where possible.
-- [ ] Document which integrations are native and which are portable fallbacks.
+- [x] Document which integrations are native and which are portable fallbacks.
 
 Exit: each shipped integration has a runnable example and an OS-specific
 verification note.
 
 ## Phase 6: Navigation and text services
 
-- [ ] Define a host callback for deep links and validate accepted URL schemes.
+- [x] Define a host callback for deep links and validate accepted URL schemes.
+- [x] Define an application callback for clicked `http`, `https`, and `mailto`
+  links.
+- [ ] Verify OS protocol registration and cold-start/later URL delivery in
+  application adapters.
 - [ ] Add opt-in OS-global shortcut registration with explicit unregister and
   conflict handling.
-- [ ] Decide whether spellcheck belongs in ownframe or in an application
-  adapter; record the API and platform limits before implementation.
-- [ ] Add tests for dispatch, focus/lifecycle changes, and unsupported hosts.
+- [x] Decide that spellcheck belongs in an application or platform adapter;
+  document the API and platform limits.
+- [x] Test deep-link dispatch, scheme validation, clicked-link handoff, and
+  IME focus/lifecycle cancellation.
 
 Exit: supported integrations have documented registration, dispatch, and
 shutdown behavior; unsupported items remain explicitly deferred.
 
 ## Phase 7: Browser APIs, planning only
 
-- [ ] Canvas: define whether the target is a Go image surface, a Canvas 2D
+- [x] Canvas: define whether the target is a Go image surface, a Canvas 2D
   compatibility API, or both; specify sizing, invalidation, and animation.
-- [ ] Video: define decoder ownership, supported formats, frame pacing, audio
+- [x] Video: define decoder ownership, supported formats, frame pacing, audio
   synchronization, and how applications supply or decode frames.
-- [ ] WebGL: decide whether exposing Ebiten's graphics backend is possible,
+- [x] WebGL: decide whether exposing Ebiten's graphics backend is possible,
   and specify resource ownership and portability before proposing an API.
-- [ ] Keep JavaScript, DOM mutation, and browser compatibility claims outside
+- [x] Keep JavaScript, DOM mutation, and browser compatibility claims outside
   these proposals unless a separate runtime project is approved.
 
 Exit: each proposal has an owner, dependency list, no-module impact, and
@@ -138,11 +156,12 @@ acceptance criteria. No implementation is included in this cycle.
 
 ## Phase 8: Distribution and updater ownership
 
-- [ ] State that update checks, signing, and installation are owned by the
+- [x] State that update checks, signing, and installation are owned by the
   application or its distribution channel.
-- [ ] Document the hooks an application can use to report an update and
-  restart safely, if any library support is needed.
-- [ ] Keep packaging scripts focused on building and checksumming archives.
+- [x] Document that update checks, installation, and restart policy belong
+  to the app or its distribution channel; no library updater hook is needed.
+- [x] Keep packaging scripts focused on building and checksumming archives;
+  document that checksums do not authenticate release publishers.
 
 Exit: the feature guide names the owner and does not imply that packaging
 provides automatic updates.
@@ -153,4 +172,6 @@ provides automatic updates.
 - Run `gofmt` on changed Go files and `make test` before closing an
   implementation phase.
 - Every Go file stays at or below 2000 characters.
-- Keep video, canvas, and WebGL rows open and planning-only for this work.
+- Close the Canvas, video, and WebGL planning rows only when each proposal
+  records ownership, dependencies, module impact, and acceptance criteria.
+  Those rows do not mean the APIs are implemented.

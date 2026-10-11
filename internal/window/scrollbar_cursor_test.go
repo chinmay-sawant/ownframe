@@ -21,9 +21,9 @@ func TestThumbShowsResizeCursor(t *testing.T) {
 	var got []ebiten.CursorShapeType
 	s.setCursor = func(shape ebiten.CursorShapeType) { got = append(got, shape) }
 
-	s.pointerScrollbar(198, 10)
-	s.pointerScrollbar(10, 198)
-	s.pointerScrollbar(100, 100)
+	s.pointerScrollbar(198, 10, false, false)
+	s.pointerScrollbar(10, 198, false, false)
+	s.pointerScrollbar(100, 100, false, false)
 
 	want := []ebiten.CursorShapeType{ebiten.CursorShapeNSResize, ebiten.CursorShapeEWResize}
 	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {

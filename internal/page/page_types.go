@@ -40,6 +40,7 @@ type Page struct {
 	past            []string
 	pastAt          int
 	routes          map[string]string
+	deepLinkSchemes map[string]struct{}
 	form            *formState
 	picker          PickFunc
 	hover           string

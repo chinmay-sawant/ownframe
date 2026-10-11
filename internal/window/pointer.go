@@ -33,38 +33,12 @@ func (s *shell) pointer() error {
 	if err != nil {
 		return err
 	}
-	if !handled {
-		handled = s.pointerScrollbar(x, y)
+	clicked, err := s.pointerMouse(x, y, px, py,
+		ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft),
+		inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft), handled)
+	if err != nil {
+		return err
 	}
-
-	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-	if !handled && down && s.mouseDown && !s.gesture.active {
-		s.dragScroll(y)
-	}
-
-	clicked := false
-	if !handled {
-		if pressedNow(down, s.mouseDown) {
-			clicked = true
-			s.holdStart(px, py)
-			if err := s.pressAt(px, py); err != nil {
-				return err
-			}
-		} else if down {
-			s.hold.move(px, py)
-			if err := s.dragAt(px, py); err != nil {
-				return err
-			}
-		}
-	}
-	s.mouseDown = down
-
-	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
-		if err := s.releaseAt(); err != nil {
-			return err
-		}
-	}
-
 	return s.touch(clicked, frameW, frameH)
 }
 

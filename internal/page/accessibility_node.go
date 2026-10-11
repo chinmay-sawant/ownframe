@@ -18,6 +18,10 @@ func (b *accessibilityBuilder) makeAccessibilityNode(n *markup.Node, id, parent 
 	}
 
 	if node.ElementID == "" || len(b.ids[node.ElementID]) != 1 {
+		if box, ok := b.nodeBox[n]; ok {
+			node.Bounds = host.AccessibilityBounds{X: box.X, Y: box.Y, W: box.W, H: box.H}
+			node.HasBounds = true
+		}
 		return node
 	}
 	if b.counts[node.ElementID] == 1 {

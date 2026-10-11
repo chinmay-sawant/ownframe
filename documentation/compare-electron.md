@@ -144,7 +144,7 @@ The extra Electron lines buy a process model, a main process plus one renderer p
 - No video, canvas, or WebGL. Audio plays through Ebiten in the examples, not through an HTML element.
 - No auto-update, no installer, no code signing. DevTools, drag and drop, printing, hot reload, caret editing, window resizing, and the packaging script landed in v0.0.2 ([devtools.md](devtools.md), [drag-drop.md](drag-drop.md), [printing.md](printing.md), [hot-reload.md](hot-reload.md), [interaction.md](interaction.md), [packaging.md](packaging.md)).
 - IPC is in-process only. There is no cross-process bridge and no JavaScript.
-- Navigation is `Load`, `Back`, `Forward`, and `data-action` routes. There is no `loadURL`, no document `<a href>`, and no custom protocol.
+- Navigation is `Load`, `Back`, `Forward`, and `data-action` routes. Clicked `http`, `https`, and `mailto` links can call an app callback. The host can dispatch allowlisted deep links, but the app owns OS protocol registration and delivery. Ownframe does not load a URL as a document.
 - The display-list path uses the pinned Blinkless module. It does not open an OS web view or expose a browser DOM.
 
 ## Sources

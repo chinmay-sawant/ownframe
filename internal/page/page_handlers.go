@@ -1,36 +1,38 @@
 package page
 
-import "context"
+import (
+	"context"
+	"net/url"
+)
 
-// Handlers are the Go functions for input.
-// Nil functions ignore input. Key and drag callbacks do not draw.
+// Handlers are optional callbacks.
 type Handlers struct {
 	Hover HoverHandler
 	Click func(ctx context.Context, box Box) error
-	// Press can activate on pointer down and consume the following click.
+	// Press can claim pointer-down activation.
 	Press func(ctx context.Context, box Box, x, y float64) (bool, error)
 
-	// LongPress handles a hold outside a text field.
+	// LongPress handles a hold.
 	LongPress func(ctx context.Context, box Box) error
 
-	// KeyDown receives a lowercase key name. It does not draw.
+	// KeyDown receives lowercase names and does not draw.
 	KeyDown func(ctx context.Context, key string) error
 
-	// KeyUp receives a released key name. It does not draw.
+	// KeyUp receives released names and does not draw.
 	KeyUp func(ctx context.Context, key string) error
 
 	Swipe func(ctx context.Context, dx, dy float64) error
 
 	// DragStart claims a pointer gesture beginning inside a box.
 	DragStart func(ctx context.Context, box Box) (bool, error)
-	// DragMove receives CSS-pixel deltas while a claimed pointer moves.
+	// DragMove receives CSS-pixel deltas while claimed.
 	DragMove func(ctx context.Context, dx, dy float64) error
 	DragEnd  func(ctx context.Context) error
 
-	// BeforeEdit can reject a change before the control is edited.
+	// BeforeEdit may reject an edit.
 	BeforeEdit func(ctx context.Context, box Box) error
 
-	// Change runs after editing, before drawing. Errors skip the redraw.
+	// Change runs after edits; errors skip redraw.
 	Change     func(ctx context.Context, box Box) error
 	Type       func(ctx context.Context, text string) error
 	Backspace  func(ctx context.Context) error
@@ -43,7 +45,10 @@ type Handlers struct {
 	Undo       func(ctx context.Context) error
 	Redo       func(ctx context.Context) error
 
-	// Drop runs when files land on the window. Each file's Read func is
-	// valid only during the call.
+	// Drop readers work only during this callback.
 	Drop func(ctx context.Context, files []Drop) error
+	// OpenLink receives validated outbound links.
+	OpenLink func(ctx context.Context, target *url.URL) error
+	// DeepLink handles validated host-delivered URLs on the page loop.
+	DeepLink func(ctx context.Context, target *url.URL) error
 }

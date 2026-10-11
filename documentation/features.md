@@ -140,9 +140,11 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
 - Chromium, V8, preload, `contextBridge`, and Node.
 - Cross-process IPC, native menus, tray, and more than one window. The library ships no notification API; `examples/desktop-cat` draws its own message bubble, takes agent messages over a local HTTP endpoint, and reads Chrome's media session on Windows. File dialogs exist on desktop `Run` only; wasm, mobile, and `-web` keep the typed name.
 - Session, cookies, cache, and web storage.
-- Auto-update, installer, and an uploaded crash dump.
+- An ownframe auto-updater, installer, and uploaded crash dump. Applications
+  or their distribution channels own update checks and installation
+  ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- Native screen-reader bridges, spellcheck, deep links, and OS-global shortcuts. The page accessibility tree is available to host code, but it does not expose the Ebitengine window to assistive technology ([accessibility.md](accessibility.md)). Android and iOS use Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- Native screen-reader bridges, native spellcheck, and OS-global shortcuts. The page accessibility tree is available to host code, but it does not expose the Ebitengine window to assistive technology ([accessibility.md](accessibility.md)). `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android and iOS use Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).
