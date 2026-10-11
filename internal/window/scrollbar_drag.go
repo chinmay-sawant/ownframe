@@ -14,6 +14,11 @@ const (
 // pointerScrollbar handles presses and drags on a scrollbar thumb. It reports
 // whether the event was consumed, so content clicks are skipped.
 func (s *shell) pointerScrollbar(x, y int) bool {
+	if !s.scrollbarsEnabled() {
+		s.dragAxis = dragNone
+		return false
+	}
+
 	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	if !down || s.dragAxis == dragNone {
 		if axis, grab, ok := s.scrollbarGrab(x, y); ok {
@@ -46,7 +51,7 @@ func (s *shell) pointerScrollbar(x, y int) bool {
 // scrollbarGrab reports the drag axis and the cursor offset inside the thumb
 // when the point sits on a scrollbar thumb.
 func (s *shell) scrollbarGrab(x, y int) (int, float64, bool) {
-	if s.stretched() {
+	if !s.scrollbarsEnabled() {
 		return dragNone, 0, false
 	}
 

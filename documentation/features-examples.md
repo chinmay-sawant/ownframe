@@ -19,7 +19,7 @@ feature index with links to the detailed docs.
 - `data-bind` two-way binding to struct fields via reflection, `BeforeEdit`/`Change` handlers (`internal/page/bind.go`)
 - Copy/Cut/Paste/SelectAll/Undo/Redo ([editing.md](editing.md)); form values survive redraw (`internal/page/page_clip.go`, `internal/page/page_edit.go`, `internal/page/form_merge.go`)
 - Host CSS states: `:focus`, `:focus-visible`, `:hover`, `:active`, `:checked` (`internal/page`)
-- Mouse-wheel and touch scrolling with visible page scrollbar thumbs ([scrolling.md](scrolling.md)); click, hover, and tap input ([pointer.md](pointer.md)) (`internal/window/fit.go`, `internal/window/pointer.go`)
+- Mouse-wheel and touch scrolling with configurable page scrollbar thumbs ([scrolling.md](scrolling.md)); click, hover, and tap input ([pointer.md](pointer.md)) (`internal/window/fit.go`, `internal/window/pointer.go`)
 
 ## Navigation and platform
 

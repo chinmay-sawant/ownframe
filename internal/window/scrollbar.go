@@ -36,7 +36,7 @@ func scrollbarVisible(content, viewport int) bool {
 // drawScrollbars overlays the thumbs a page larger than the window needs.
 // Only the thumb is painted, so the page background stays visible.
 func (s *shell) drawScrollbars(dst *ebiten.Image) {
-	if s.stretched() || !s.allowPageScroll() {
+	if !s.scrollbarsEnabled() {
 		return
 	}
 

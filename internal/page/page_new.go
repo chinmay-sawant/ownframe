@@ -75,6 +75,7 @@ func New(cfg Config) (*Page, error) {
 		devtools:       cfg.DevTools,
 		perf:           cfg.Perf,
 		lockView:       cfg.LockView,
+		scrollbar:      cfg.Scrollbar,
 		allowTouchZoom: !cfg.DisableTouchZoom,
 		allowScroll:    true,
 		touchScroll:    TouchScrollOptions{Sensitivity: 1, Deceleration: 5},

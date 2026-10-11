@@ -52,6 +52,7 @@ type Page struct {
 	devtools        bool
 	perf            bool
 	lockView        bool
+	scrollbar       host.ScrollbarMode
 	mobileViewport  bool
 	allowTouchZoom  bool
 	allowScroll     bool
