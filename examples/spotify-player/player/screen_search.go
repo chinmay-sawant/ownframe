@@ -2,7 +2,6 @@ package player
 
 import (
 	"context"
-	"strconv"
 	"strings"
 )
 
@@ -27,8 +26,13 @@ func defaultSearch() SearchData {
 	titles := []string{"Music", "Podcasts", "Live Events", "Made For You", "New Releases", "Charts", "Pop", "Hip-Hop", "Rock", "Indie", "Jazz", "Mood"}
 
 	tiles := make([]SearchTile, 0, len(titles))
+	covers := []string{
+		"cover-hybrid", "cover-jazz", "cover-late-night", "cover-focus",
+		"cover-spring", "cover-funk", "cover-soul", "cover-chillhop",
+		"cover-funk", "cover-spring", "cover-jazz", "cover-ambient",
+	}
 	for i, title := range titles {
-		tiles = append(tiles, SearchTile{Index: i, Title: title, Tone: i, Img: "card-" + strconv.Itoa(i%6)})
+		tiles = append(tiles, SearchTile{Index: i, Title: title, Tone: i, Img: covers[i]})
 	}
 
 	recent := sampleTracks()[:5]

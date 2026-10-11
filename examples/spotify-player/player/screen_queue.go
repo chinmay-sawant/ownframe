@@ -14,16 +14,13 @@ type QueueData struct {
 
 // defaultQueue returns the offline queue screen.
 func defaultQueue() QueueData {
+	tracks := sampleTracks()[:6]
+	for i := range tracks {
+		tracks[i].Active = false
+	}
 	return QueueData{
-		Count: 6,
-		Next: []Track{
-			{Index: 0, Title: "Faded Signals", Artist: "Echo Valley", Length: "3:18", Cover: "track-0"},
-			{Index: 1, Title: "Glass Highway", Artist: "Nova Waves", Length: "4:02", Cover: "track-1"},
-			{Index: 2, Title: "Silver Rainfall", Artist: "Aster Field", Length: "2:47", Cover: "track-2"},
-			{Index: 3, Title: "Copper Skyline", Artist: "Mono Arcade", Length: "3:36", Cover: "track-3"},
-			{Index: 4, Title: "Quiet Machines", Artist: "Night Cartography", Length: "4:14", Cover: "track-4"},
-			{Index: 5, Title: "Last Transmission", Artist: "The Far Coast", Length: "3:05", Cover: "track-5"},
-		},
+		Count: len(tracks),
+		Next:  tracks,
 	}
 }
 

@@ -1,4 +1,4 @@
-.tracks { margin-top: 12px; }
+.tracks { margin-top: 8px; }
 
 .thead, .trow {
   display: grid;
@@ -16,7 +16,7 @@
   letter-spacing: 0.08em;
 }
 
-.trow { height: 40px; border-radius: 6px; font-size: 13px; }
+.trow { height: 44px; margin: 6px 0; border-radius: 6px; font-size: 13px; }
 
 .trow.on { background-color: #1f1f1f; }
 
@@ -48,7 +48,7 @@
 
 .row-name.on { color: #1db954; }
 
-.row-artist { font-size: 11px; color: #b3b3b3; margin-top: 2px; }
+.row-artist { font-size: 11px; color: #b3b3b3; margin-top: 2px; white-space: nowrap; overflow: hidden; }
 
 .c-album, .c-year { color: #b3b3b3; white-space: nowrap; overflow: hidden; }
 
@@ -62,3 +62,46 @@
   background-repeat: no-repeat;
   background-size: 14px 14px;
 }
+
+.track-pagination {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid #2a2a2a;
+  margin-top: 8px;
+  padding: 0 42px 0 10px;
+  color: #b3b3b3;
+  font-size: 12px;
+}
+
+.page-summary { min-width: 0; flex: 0 0 auto; }
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 20px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.page-button {
+  box-sizing: border-box;
+  min-width: 84px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  border-radius: 18px;
+  background-color: #282828;
+  color: #fff;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.page-button.disabled { color: #777; background-color: #202020; }

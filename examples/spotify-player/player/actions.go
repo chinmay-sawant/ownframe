@@ -16,6 +16,7 @@ func (a *App) selectRow(i int) {
 	}
 
 	a.view.Now = a.view.Tracks[i]
+	paginateTracks(&a.view, i/trackPageSize)
 	a.resetProgress()
 }
 
@@ -82,11 +83,11 @@ func (a *App) selectList(i int) {
 	}
 
 	if strings.EqualFold(a.view.Playlists[i].Name, "Liked Songs") {
-		a.view.Nav = "liked"
+		a.navigate("liked")
 		return
 	}
 
-	a.view.Nav = "library"
+	a.navigate("library")
 }
 
 // slot parses the trailing number of an action like "row-3".

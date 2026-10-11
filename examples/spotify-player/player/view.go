@@ -6,10 +6,11 @@ type Track struct {
 	Index         int
 	Num           string
 	Title, Artist string
+	Description   string
 	Album, Year   string
 	Genre         string
 	Length        string
-	Cover         string // "track-0" … "track-5"
+	Cover         string // registered static artwork for this track's category
 	Active        bool
 }
 
@@ -17,7 +18,7 @@ type Track struct {
 type Card struct {
 	Index      int
 	Title, Sub string
-	Cover      string // "pick-0" / "card-0"
+	Cover      string // registered local cover or a search result slot
 	Active     bool
 }
 
@@ -38,6 +39,8 @@ type Profile struct {
 // View is the data the player template prints.
 type View struct {
 	Nav        string // "home" | "search" | "library" | "profile"
+	CanBack    bool
+	CanForward bool
 	Playing    bool
 	Shuffle    bool
 	Repeat     bool
@@ -48,6 +51,12 @@ type View struct {
 	Remaining  string
 	Now        Track
 	Tracks     []Track
+	PageTracks []Track
+	TrackPage  int
+	TrackPages int
+	TrackRange string
+	HasPrev    bool
+	HasNext    bool
 	Picks      []Card
 	Shelf      []Card
 	Playlists  []Playlist

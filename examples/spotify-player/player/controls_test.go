@@ -9,14 +9,14 @@ func TestCardAndPlaylistClicks(t *testing.T) {
 	click(t, app, "pick-1")
 
 	v := app.View()
-	if !v.Picks[1].Active || v.Now.Title != v.Picks[1].Title || v.Now.Cover != "pick-1" {
+	if !v.Picks[1].Active || v.Now.Title != v.Picks[1].Title || v.Now.Cover != v.Picks[1].Cover {
 		t.Fatalf("pick = %+v", v.Now)
 	}
 
 	click(t, app, "card-3")
 
 	v = app.View()
-	if !v.Shelf[3].Active || v.Picks[1].Active || v.Now.Title != v.Shelf[3].Title || v.Now.Cover != "card-3" {
+	if !v.Shelf[3].Active || v.Picks[1].Active || v.Now.Title != v.Shelf[3].Title || v.Now.Cover != v.Shelf[3].Cover {
 		t.Fatalf("card = %+v picks = %+v", v.Now, v.Picks[1])
 	}
 
@@ -74,23 +74,6 @@ func TestMuteToggle(t *testing.T) {
 
 	if v := app.View(); v.Volume != defaultVolume {
 		t.Fatalf("restored volume = %d", v.Volume)
-	}
-
-	redraw(t, app)
-}
-
-func TestBackForwardAreNoOps(t *testing.T) {
-	app := mustApp(t)
-	redraw(t, app)
-
-	before := app.View()
-
-	click(t, app, "back")
-	click(t, app, "forward")
-
-	after := app.View()
-	if after.Now != before.Now || after.Playing != before.Playing || after.Progress != before.Progress {
-		t.Fatal("back or forward changed the view")
 	}
 
 	redraw(t, app)

@@ -86,9 +86,7 @@
 
 .nb-progress { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 
-.nb-time { font-size: 11px; color: #b3b3b3; width: 40px; }
-
-.nb-time.right { text-align: right; }
+.nb-time { font-size: 11px; color: #b3b3b3; width: 40px; text-align: right; }
 
 .bar { position: relative; flex: 1; height: 4px; border-radius: 2px; background: #5a5a5a; }
 

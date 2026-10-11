@@ -8,7 +8,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/spotify-player/player"
@@ -27,14 +26,6 @@ func main() {
 	defer app.Close()
 
 	ctx := context.Background()
-	loadCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-
-	if err := app.Load(loadCtx, player.DefaultTerm); err != nil {
-		log.Printf("spotify-player: live search unavailable: %v", err)
-	}
-
-	cancel()
-
 	if *webMode {
 		if err := ownframe.Serve(ctx, app.Page(), *addr); err != nil {
 			log.Fatal(err)

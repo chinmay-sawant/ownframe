@@ -7,7 +7,7 @@ func TestBoxesExist(t *testing.T) {
 	redraw(t, app)
 
 	ids := []string{
-		"play", "seek", "volume", "row-0", "row-5",
+		"play", "seek", "volume", "row-0", "row-4",
 		"card-0", "pick-0", "nav-home", "list-0", "seek-0", "volume-9", "avatar",
 	}
 
@@ -53,7 +53,10 @@ func TestRowSelectAndNext(t *testing.T) {
 		t.Fatalf("next = %+v", v.Now)
 	}
 
-	click(t, app, "row-5")
+	paginateTracks(&app.view, app.view.TrackPages-1)
+	app.page.SetData(app.view)
+	redraw(t, app)
+	click(t, app, "row-29")
 	click(t, app, "next")
 
 	if !app.View().Tracks[0].Active {
@@ -74,7 +77,7 @@ func TestSeekAndVolumeExtremes(t *testing.T) {
 
 	click(t, app, "seek-9")
 
-	if v = app.View(); v.Progress != 100 || v.Elapsed != "3:32" || v.Remaining != "0:00" {
+	if v = app.View(); v.Progress != 100 || v.Elapsed != "1:58" || v.Remaining != "0:00" {
 		t.Fatalf("seek-9 = %d %q %q", v.Progress, v.Elapsed, v.Remaining)
 	}
 

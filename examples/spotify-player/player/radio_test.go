@@ -33,7 +33,7 @@ func TestRadioScreenStationClick(t *testing.T) {
 	click(t, app, "radio-st-1")
 
 	v := app.View()
-	if v.Now.Title != want.Title || v.Now.Cover != "pick-1" {
+	if v.Now.Title != want.Title || v.Now.Cover != want.Cover {
 		t.Fatalf("Now = %+v want %+v", v.Now, want)
 	}
 

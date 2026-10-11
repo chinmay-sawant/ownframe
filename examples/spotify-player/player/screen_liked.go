@@ -15,10 +15,7 @@ type LikedData struct {
 // defaultLiked returns the offline Liked Songs screen with eight rows.
 func defaultLiked() LikedData {
 	tracks := sampleTracks()
-	tracks = append(tracks,
-		Track{Index: 6, Num: "7", Title: "Paper Trails", Artist: "Echo Valley", Album: "Slow Fiction", Genre: "Indie", Length: "3:58", Cover: "track-0"},
-		Track{Index: 7, Num: "8", Title: "Neon Lights", Artist: "Aster Field", Album: "Signal Fire", Genre: "Ambient", Length: "4:14", Cover: "track-1"},
-	)
+	tracks = tracks[:8]
 
 	return LikedData{Count: 214, Tracks: tracks}
 }

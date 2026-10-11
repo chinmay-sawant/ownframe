@@ -14,11 +14,11 @@
   line-height: 160px;
 }
 
-.prof-info { padding-bottom: 6px; }
+.prof-info { display: flex; flex-direction: column; align-items: flex-start; padding-bottom: 6px; }
 
-.prof-kind { font-size: 12px; font-weight: 700; color: #b3b3b3; letter-spacing: 0.08em; }
+.prof-kind { margin-bottom: 6px; font-size: 12px; font-weight: 700; color: #b3b3b3; letter-spacing: 0.08em; }
 
-.prof-name { font-size: 48px; font-weight: 700; letter-spacing: -0.03em; margin: 4px 0 12px; }
+.prof-name { font-size: 48px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 12px; }
 
 .prof-stats { display: flex; gap: 18px; font-size: 13px; color: #b3b3b3; }
 

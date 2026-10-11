@@ -1,9 +1,6 @@
 package player
 
-import (
-	"strconv"
-	"testing"
-)
+import "testing"
 
 func TestNewDrawsReplayable(t *testing.T) {
 	app := mustApp(t)
@@ -19,13 +16,13 @@ func TestSampleDataRenderPath(t *testing.T) {
 	}
 
 	for i, track := range v.Tracks {
-		want := "track-" + strconv.Itoa(i)
+		want := bundledTracks()[i].Cover
 		if track.Cover != want {
 			t.Fatalf("track %d cover = %q", i, track.Cover)
 		}
 	}
 
-	if v.Now.Cover != "track-0" || v.Now.Title != v.Tracks[0].Title {
+	if v.Now.Cover != bundledTracks()[0].Cover || v.Now.Title != v.Tracks[0].Title {
 		t.Fatalf("Now = %+v", v.Now)
 	}
 
@@ -41,7 +38,7 @@ func TestRedrawAtMinSize(t *testing.T) {
 func TestDefaultViewShape(t *testing.T) {
 	v := DefaultView()
 
-	if len(v.Tracks) != 6 || len(v.Picks) != 6 || len(v.Shelf) != 6 || len(v.Playlists) != 5 {
+	if len(v.Tracks) != 30 || len(v.PageTracks) != trackPageSize || v.TrackPages != 6 || len(v.Picks) != 6 || len(v.Shelf) != 6 || len(v.Playlists) != 5 {
 		t.Fatalf("shape = %d/%d/%d/%d", len(v.Tracks), len(v.Picks), len(v.Shelf), len(v.Playlists))
 	}
 

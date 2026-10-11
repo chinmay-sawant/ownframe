@@ -16,6 +16,7 @@ func (a *App) apply(term string, tracks []Track, picks, shelf []Card) {
 	}
 
 	a.view.Tracks = tracks
+	paginateTracks(&a.view, 0)
 	a.view.Now = tracks[0]
 	a.view.Status = "Live from iTunes · " + term
 	a.view.ShelfTitle = "Top results for " + term

@@ -1,17 +1,17 @@
 package player
 
 // sampleStatus is the status line while the sample data is showing.
-const sampleStatus = "Sample data (offline)"
+const sampleStatus = "Bundled collection (30 tracks)"
 
-// defaultCredit is the now-bar credit before a free clip loads.
-const defaultCredit = "Free music via Openverse"
+// defaultCredit is the now-bar credit before a bundled clip loads.
+const defaultCredit = "Local MP3 collection · CC0 1.0"
 
 // DefaultView returns the sample data the player draws offline.
 func DefaultView() View {
 	tracks := sampleTracks()
 	now := tracks[0]
 
-	return View{
+	view := View{
 		Nav:        "home",
 		Liked:      true,
 		Volume:     defaultVolume,
@@ -39,4 +39,6 @@ func DefaultView() View {
 		Radio:      defaultRadio(),
 		Queue:      defaultQueue(),
 	}
+	paginateTracks(&view, 0)
+	return view
 }

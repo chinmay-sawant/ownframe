@@ -1,9 +1,16 @@
 <section class="tracks">
   <div class="sect-head"><h2 class="sect-title">Popular</h2><span class="show-all">{{.Status}}</span></div>
   <div class="thead"><span class="c-idx">#</span><span class="c-title">TITLE</span><span class="c-album">ALBUM</span><span class="c-year">YEAR</span><span class="c-time"><span class="clock"></span></span></div>
-  {{range .Tracks}}<div id="row-{{.Index}}" data-action="row-{{.Index}}" class="trow{{if .Active}} on{{end}}">
+  {{range .PageTracks}}<div id="row-{{.Index}}" data-action="row-{{.Index}}" class="trow{{if .Active}} on{{end}}">
     <span class="c-idx" data-action="row-{{.Index}}">{{if .Active}}<span class="row-play"></span>{{else}}{{.Num}}{{end}}</span>
-    <span class="c-title" data-action="row-{{.Index}}"><span class="row-art" style="background-image:url({{.Cover}})"></span><span class="row-text" data-action="row-{{.Index}}"><span class="row-name{{if .Active}} on{{end}}" data-action="row-{{.Index}}">{{.Title}}</span><span class="row-artist" data-action="row-{{.Index}}">{{.Artist}}</span></span></span>
+    <span class="c-title" data-action="row-{{.Index}}"><span class="row-art" style="background-image:url({{.Cover}})"></span><span class="row-text" data-action="row-{{.Index}}"><span class="row-name{{if .Active}} on{{end}}" data-action="row-{{.Index}}">{{.Title}}</span><span class="row-artist" data-action="row-{{.Index}}">{{.Artist}}{{if .Description}} · {{.Description}}{{end}}</span></span></span>
     <span class="c-album" data-action="row-{{.Index}}">{{.Album}}</span><span class="c-year" data-action="row-{{.Index}}">{{.Year}}</span><span class="c-time" data-action="row-{{.Index}}">{{.Length}}</span>
   </div>{{end}}
+  <div class="track-pagination">
+    <span class="page-summary">{{.TrackRange}}</span>
+    <div class="page-actions">
+      {{if .HasPrev}}<span id="tracks-prev" class="page-button" data-action="tracks-prev">Previous</span>{{else}}<span class="page-button disabled" aria-disabled="true">Previous</span>{{end}}
+      {{if .HasNext}}<span id="tracks-next" class="page-button" data-action="tracks-next">Next</span>{{else}}<span class="page-button disabled" aria-disabled="true">Next</span>{{end}}
+    </div>
+  </div>
 </section>

@@ -1,18 +1,18 @@
-.greeting { margin-top: 14px; }
+.greeting { margin-top: 8px; }
 
 .greet-title { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 
-.picks { display: grid; grid-template-columns: repeat(3, 341px); gap: 12px; margin-top: 12px; }
+.picks { display: grid; grid-template-columns: repeat(3, 341px); gap: 8px; margin-top: 8px; }
 
 .pick {
-  height: 64px;
-  line-height: 64px;
-  padding-left: 78px;
+  height: 56px;
+  line-height: 56px;
+  padding-left: 70px;
   box-sizing: border-box;
   background-color: #2a2a2a;
   background-repeat: no-repeat;
   background-position: left center;
-  background-size: 64px 64px;
+  background-size: 56px 56px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;

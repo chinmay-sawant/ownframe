@@ -77,7 +77,7 @@ func TestLoadOfflineKeepsSample(t *testing.T) {
 		t.Fatalf("Status = %q", app.View().Status)
 	}
 
-	if len(app.View().Tracks) != 6 {
+	if len(app.View().Tracks) != 30 {
 		t.Fatalf("tracks = %d", len(app.View().Tracks))
 	}
 
