@@ -74,7 +74,8 @@ composition callbacks from an old focus cannot edit the new field. The old
 field retains its displayed preedit as draft text when focus changes.
 
 The shared `AndroidHost` handles system bars, cutouts, display configuration,
-legacy Back, and predictive Back. Login, Platform, Dino, and LG Remote reserve
+legacy Back, and predictive Back. Call `setSystemBarStyle` when the page theme
+changes to update bar colors and icon contrast. Login, Platform, Dino, and LG Remote reserve
 safe areas with host padding. Telegram applies vertical insets in its Go layout
 and reserves lateral cutouts in its enclosing FrameLayout. Keyboard Back queues
 blur on the game loop before hiding the keyboard. The IME bottom inset keeps the
@@ -125,3 +126,7 @@ The [validation record](../plans/v0.0.2/android-runtime-validation.md) lists
 actual checks and profiling results. The [Android build guide](android-build.md)
 has commands, and the [Telegram setup guide](../examples/telegram/android/README.md)
 has SDK and NDK installation steps.
+
+The [Android app creation guide](android-app-creation.md) shows how to bind a
+page, attach `AndroidHost` and `TouchCancellation`, handle Back on the game loop,
+choose safe-area padding, and build an APK.

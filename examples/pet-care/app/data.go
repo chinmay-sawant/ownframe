@@ -57,5 +57,6 @@ func (a *App) redraw(ctx context.Context) error {
 		a.view.Error = err.Error()
 	}
 	a.page.SetData(a.view)
+	a.canBack.Store(a.view.SignedIn && a.view.Screen != "dashboard")
 	return nil
 }

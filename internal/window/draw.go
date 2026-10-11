@@ -24,7 +24,6 @@ func (s *shell) Draw(screen *ebiten.Image) {
 	}
 
 	tail := time.Now()
-	s.drawScrollbars(screen)
 	s.drawMenu(screen)
 
 	if s.dev.on {

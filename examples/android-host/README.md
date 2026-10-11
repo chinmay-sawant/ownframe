@@ -54,4 +54,39 @@ Call `host.onBackPressed()` from `Activity.onBackPressed()` on API 23 through 32
 
 `baseTextSizeSp` is converted with Android's SP conversion and then to dp once. It follows nonlinear scaling where the OS supports it. Use the reported size as a text size; do not multiply it by `fontScale` again. Insets are native pixels converted to dp once. Host padding itself stays in native pixels.
 
-The helper configures edge-to-edge flags but does not choose status-bar colors, navigation-bar contrast, orientation, permissions, game viewport, or app-specific gestures. API 23 through 32 use the activity's legacy Back override; keyboard and inset behavior should still be checked on the minimum supported OS and on device-specific Android builds.
+The helper configures edge-to-edge flags but does not choose orientation,
+permissions, game viewport, or app-specific gestures. API 23 through 32 use the
+Activity's legacy Back override; check keyboard and inset behavior on the
+minimum supported OS and on device-specific Android builds.
+
+## Match system bars to the page theme
+
+Call `setSystemBarStyle` on the main thread when the page theme changes. Pass
+the background color and whether the bars need light icons:
+
+```java
+host.setSystemBarStyle(Color.parseColor(dark ? "#171c19" : "#f4f6f2"), dark);
+```
+
+The method updates both system bar colors, icon contrast, and Android's
+automatic contrast enforcement.
+
+## Cancel interrupted touches
+
+Attach `TouchCancellation` to the `EbitenView` and queue cancellation through a
+small mobile binding:
+
+```java
+touches = TouchCancellation.attach(game, Mobile::cancelTouches);
+```
+
+Call `touches.cancel()` before suspending the game. Call `touches.close()` when
+the Activity is destroyed. In Go, call `Page.CancelTouches()` from
+`Mobile.cancelTouches`.
+
+## Keep Back changes on the game loop
+
+Android calls `Callbacks.onBackPressed` on the UI thread. Return `false` when
+the current screen cannot handle Back. Queue accepted requests and apply page
+changes from the app's `Page.SetTick` callback. Do not redraw the Go page from
+the Android callback.

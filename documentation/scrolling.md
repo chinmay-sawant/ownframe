@@ -6,15 +6,9 @@ A page taller or wider than the window scrolls on the mouse wheel, a touch drag,
 
 `internal/window/fit.go` moves the offset 48 px per wheel notch. A positive wheel moves toward the start of the page, a negative wheel toward the end, and the horizontal wheel pans sideways. The offset is clamped to the content, so a wheel or a drag cannot pass an edge. Holding Ctrl (or Command) while turning the wheel zooms the page instead of scrolling it; [keys.md](keys.md) has the zoom keys and the range.
 
-`internal/window/scrollbar.go` measures the content for that clamp: the canvas size, grown to cover every box that overflows it. A fixed-width child wider than the window scrolls too. The replay buffer uses the same measure, so scrolled content stays painted.
+The window measures the canvas and grows it to cover every box that overflows it. A fixed-width child wider than the window scrolls too. The replay buffer uses the same measure, so scrolled content stays painted.
 
-While the picture is stretched to the window, `internal/window/view.go` ignores the wheel and `internal/window/scrollbar.go` and `internal/window/scrollbar_drag.go` hide the thumbs.
-
-## Thumbs
-
-A page that overflows gets a thumb overlay, 8 px thick and at least 24 px long, in `#BDBDBD`. The vertical thumb sits on the right edge and the horizontal one on the bottom edge. Only the thumb is painted, so the page background stays visible under it.
-
-Press a thumb to start a drag. The drag keeps the distance between the cursor and the thumb's start and continues when the cursor leaves the thumb. The window consumes the drag, so it does not also click the page. A press on the track does not page-jump; it misses the thumb and falls through to the content. Thumb drag is mouse-only.
+While the picture is stretched to the window, `internal/window/view.go` ignores the wheel. The window does not draw page scrollbar thumbs. Users scroll with touch drags, mouse wheels, or page requests.
 
 ## Coordinates
 
@@ -22,7 +16,7 @@ The window maps a cursor before the page sees it ([pointer.md](pointer.md)). A s
 
 ## Page requests
 
-`Page.ScrollTo(x, y)` and `Page.ScrollBy(dx, dy)` store one request. The window consumes it through `host.ScrollRequester`, clamps it to the content, and clears it. The offset stays owned by the shell, so a request, the wheel, a thumb drag, and a touch drag all move the same value. [interaction.md](interaction.md) has the calls.
+`Page.ScrollTo(x, y)` and `Page.ScrollBy(dx, dy)` store one request. The window consumes it through `host.ScrollRequester`, clamps it to the content, and clears it. The offset stays owned by the shell, so a request, the wheel, and a touch drag all move the same value. [interaction.md](interaction.md) has the calls.
 
 ## Touch
 

@@ -18,10 +18,6 @@ func (s *shell) pointer() error {
 		return err
 	}
 
-	if s.pointerScrollbar(x, y) {
-		return nil
-	}
-
 	frameW, frameH := s.frameSize()
 	px, py := s.contentAt(x, y, frameW, frameH)
 

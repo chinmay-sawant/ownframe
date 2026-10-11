@@ -8,10 +8,6 @@ func (s *shell) hoverCursor(x, y int, px, py float64) error {
 		return err
 	}
 
-	if _, _, ok := s.scrollbarGrab(x, y); ok {
-		return nil
-	}
-
 	s.applyCursor()
 
 	return nil

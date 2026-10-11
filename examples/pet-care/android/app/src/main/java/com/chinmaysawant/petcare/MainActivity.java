@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.graphics.Color;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import java.io.ByteArrayOutputStream;
@@ -16,21 +17,33 @@ import dev.ownframe.android.AndroidHost;
 import dev.ownframe.android.Callbacks;
 import dev.ownframe.android.InsetMode;
 import dev.ownframe.android.Options;
+import dev.ownframe.android.TouchCancellation;
 
 public final class MainActivity extends Activity {
     private static final int EXPORT = 1;
     private static final int RESTORE = 2;
     private EbitenView game;
     private AndroidHost host;
+    private TouchCancellation touches;
+    private Boolean darkBars;
     private final android.os.Handler handler = new android.os.Handler();
     private final Runnable poll = new Runnable() {
         @Override public void run() {
             String request = Mobile.pickerRequest();
             if ("export".equals(request)) exportBackup();
             if ("restore".equals(request)) chooseBackup();
+            updateSystemBars();
             handler.postDelayed(this, 250);
         }
     };
+
+    private void updateSystemBars() {
+        boolean dark = Mobile.darkTheme();
+        if (darkBars != null && darkBars == dark) return;
+        darkBars = dark;
+        int color = Color.parseColor(dark ? "#171c19" : "#f4f6f2");
+        if (host != null) host.setSystemBarStyle(color, dark);
+    }
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -38,6 +51,7 @@ public final class MainActivity extends Activity {
         if (!startupError.isEmpty()) throw new IllegalStateException(startupError);
         FrameLayout root = new FrameLayout(this);
         game = new EbitenView(this);
+        touches = TouchCancellation.attach(game, Mobile::cancelTouches);
         root.addView(game, new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
@@ -47,7 +61,11 @@ public final class MainActivity extends Activity {
                 @Override public boolean onBackPressed() { return Mobile.back(); }
                 @Override public void onImeBackPressed() { }
                 @Override public void onResume() { game.resumeGame(); handler.removeCallbacks(poll); handler.post(poll); }
-                @Override public void onPause() { handler.removeCallbacks(poll); game.suspendGame(); }
+                @Override public void onPause() {
+                    handler.removeCallbacks(poll);
+                    touches.cancel();
+                    game.suspendGame();
+                }
             });
     }
 
@@ -99,6 +117,7 @@ public final class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         handler.removeCallbacks(poll);
+        if (touches != null) touches.close();
         if (host != null) host.close();
         super.onDestroy();
     }

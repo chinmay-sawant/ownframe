@@ -9,6 +9,7 @@ import (
 
 func (a *App) toggleTheme() {
 	a.view.Dark = !a.view.Dark
+	a.dark.Store(a.view.Dark)
 	if a.view.Dark {
 		_ = a.page.SetTheme(darkCSS)
 	} else {

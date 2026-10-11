@@ -45,7 +45,7 @@ behavior and the limits are in
 | [bind-hooks](bind-hooks) | Two-way binding plus `BeforeEdit` veto and `Change` callback. | 8105 |
 | [editing](editing) | Select all, undo, redo, and edits that survive a redraw. | 8106 |
 | [states](states) | Host `:focus`, `:focus-visible`, `:hover`, `:active`, `:checked` styles. | 8107 |
-| [scrolling](scrolling) | Oversized pages scroll on the wheel with scrollbar thumbs. | 8108 |
+| [scrolling](scrolling) | Oversized pages scroll on the wheel and touch drags, with no visible page scrollbar. | 8108 |
 | [history](history) | `Load`, `Back`, `Forward`, `HTML`, and `data-action` routes. | 8109 |
 | [web](web) | Web mode routes: `/`, `/frame.png`, `/debug/state`, `/click`, `/type`, `/backspace`. | 8110 |
 | [ipc](ipc) | In-process `Send`, `Listen`, `Handle`, `Request`, with registered state and cancel. | 8111 |

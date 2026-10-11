@@ -13,6 +13,7 @@ Start with [features.md](features.md). The original Electron gap list is [../pla
 - [Open a window, and set its size](window.md)
 - [Open a transparent, borderless, or click-through window](window.md#transparent-desktop-overlays)
 - [Run the same page on desktop, WebAssembly, or a phone](platforms.md)
+- [Create an Android app from an ownframe example](android-app-creation.md)
 - [Serve the page in a browser, and drive it over HTTP](web.md)
 - [Follow the screen from template to image](screen.md)
 - [Read the placement as vector operations instead of a picture](screen.md#replay)

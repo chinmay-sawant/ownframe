@@ -12,15 +12,6 @@ import (
 //go:embed index.html style.css
 var files embed.FS
 
-type App struct {
-	page    *ownframe.Page
-	db      *store.Store
-	view    View
-	pickers chan string
-	exports chan []byte
-	imports chan []byte
-}
-
 func New(path string) (*App, error) {
 	db, err := store.Open(path)
 	storageWarning := ""

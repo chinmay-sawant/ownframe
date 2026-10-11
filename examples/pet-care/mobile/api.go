@@ -4,7 +4,15 @@ import "github.com/chinmay-sawant/ownframe/examples/pet-care/app"
 
 var application *app.App
 
-func Back() bool { return application != nil && application.Back() }
+func Back() bool { return application != nil && application.RequestBack() }
+
+func CancelTouches() {
+	if application != nil {
+		application.Page().CancelTouches()
+	}
+}
+
+func DarkTheme() bool { return application != nil && application.DarkTheme() }
 
 func PickerRequest() string {
 	if application == nil {

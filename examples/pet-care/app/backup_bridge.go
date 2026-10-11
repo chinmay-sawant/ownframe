@@ -48,6 +48,7 @@ func (a *App) QueueBackupImport(data []byte) {
 }
 
 func (a *App) Tick(ctx context.Context) error {
+	changed := false
 	select {
 	case raw := <-a.imports:
 		var b model.Backup
@@ -62,9 +63,23 @@ func (a *App) Tick(ctx context.Context) error {
 			a.view.Error = ""
 		}
 		a.view.Screen = "settings"
-		a.page.SetData(a.view)
-		return a.page.Redraw(ctx)
+		changed = true
 	default:
+	}
+	if a.back.Swap(false) && a.view.SignedIn {
+		if a.view.Screen == "profile" {
+			a.view.Screen = "pets"
+		} else {
+			a.view.Screen = "dashboard"
+		}
+		a.view.Status = ""
+		changed = true
+	}
+	if !changed {
 		return nil
 	}
+	if err := a.redraw(ctx); err != nil {
+		return err
+	}
+	return a.page.Redraw(ctx)
 }

@@ -1,17 +1,10 @@
 package app
 
-import "context"
-
-func (a *App) Back() bool {
-	if !a.view.SignedIn {
+func (a *App) RequestBack() bool {
+	if !a.canBack.Load() {
 		return false
 	}
-	if a.view.Screen == "profile" {
-		a.view.Screen = "pets"
-	} else {
-		a.view.Screen = "dashboard"
-	}
-	_ = a.redraw(context.Background())
+	a.back.Store(true)
 	return true
 }
 
