@@ -1,4 +1,4 @@
-//go:build android || ios
+//go:build !js
 
 package window
 
@@ -8,11 +8,8 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-// imeResize restarts the session when the caret box moved, because Ebiten
-// freezes the caret bounds a session reports at its start. A keyboard
-// opening lifts the composer, and the restart makes Ebiten recompute the
-// virtual keyboard shift against the new position instead of panning the
-// canvas from the old one.
+// imeResize restarts the session when the field box moves because Ebiten
+// keeps the caret bounds from the session start.
 func (s *shell) imeResize() {
 	target, ok := s.app.(host.IME)
 	if !ok || s.ime.field == "" {
@@ -20,7 +17,7 @@ func (s *shell) imeResize() {
 	}
 
 	box, _, _, _, ok := target.IMEContext()
-	if !ok || imeNear(s.imeScreenRect(box), s.ime.caret) {
+	if !ok || imeNear(s.imeCaretScreenRect(box), s.ime.caret) {
 		return
 	}
 

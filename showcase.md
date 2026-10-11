@@ -46,6 +46,19 @@ Teams is a native chat and collaboration app built with Go, HTML, and CSS.
 
   **Teams**
 
+## Spotify Player
+
+The Spotify Player is a Go desktop app. ownframe renders its HTML and CSS with
+Blinkless, and Ebitengine handles the native window and bundled audio. It uses
+no WebView. Phone apps use ownframe's Ebitengine Mobile binding; this example
+does not have a mobile wrapper. Its `-web` mode serves a picture of the page
+over HTTP.
+
+- ![Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens](frontend/public/demos/videos/spotify.webp)
+
+  **Spotify Player**
+  [View the example source](examples/spotify-player)
+
 ## Pet Care
 
 Pet Care is a cross-platform example. The Android captures are from a Pixel 7,

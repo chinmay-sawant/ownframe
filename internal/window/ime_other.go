@@ -1,17 +1,21 @@
-//go:build !android && !ios
+//go:build js
 
 package window
 
-// imeState is empty where the platform text input is not wired.
+// imeState is empty in the browser build, which uses browser text input.
 type imeState struct{}
 
-// imeInit wires nothing.
+// imeInit leaves platform text input to the browser.
 func (s *shell) imeInit() {}
 
-// imeUpdate does nothing.
+// imeUpdate leaves platform text input to the browser.
 func (s *shell) imeUpdate() error { return nil }
 
 func (s *shell) imeLayoutChanged(int, int) {}
 
 // imeHandled reports that the platform did not consume input.
 func (s *shell) imeHandled() bool { return false }
+
+func (s *shell) imeCancelSession() error { return nil }
+
+func (s *shell) imeShutdown() {}

@@ -5,27 +5,6 @@ import (
 	"strings"
 )
 
-// RadioData is the data behind the Radio screen.
-type RadioData struct {
-	Featured Card
-	Stations []Card
-}
-
-// defaultRadio returns the offline radio screen.
-func defaultRadio() RadioData {
-	return RadioData{
-		Featured: Card{Title: "Nova Waves Radio", Sub: "Nova Waves, Aster Field and more", Cover: "card-0"},
-		Stations: []Card{
-			{Index: 0, Title: "Nova Waves Radio", Sub: "Nova Waves, Aster Field and more", Cover: "pick-0"},
-			{Index: 1, Title: "Indie Coast Radio", Sub: "Indie Coast, The Far Coast and more", Cover: "pick-1"},
-			{Index: 2, Title: "Lo-Fi Nights Radio", Sub: "Lo-Fi Nights, Mono Arcade and more", Cover: "pick-2"},
-			{Index: 3, Title: "Synthwave FM", Sub: "Synthwave FM, Neon Horizon and more", Cover: "pick-3"},
-			{Index: 4, Title: "Acoustic Mornings Radio", Sub: "Acoustic Mornings, Paper Trails and more", Cover: "pick-4"},
-			{Index: 5, Title: "Deep Focus Radio", Sub: "Deep Focus, Blue Hour and more", Cover: "pick-5"},
-		},
-	}
-}
-
 // clickRadio applies one action on the radio screen.
 func (a *App) clickRadio(ctx context.Context, action string) error {
 	switch {

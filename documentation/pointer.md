@@ -28,6 +28,8 @@ A right click asks the page for its context menu rows and draws them at the curs
 
 The cursor shape follows the hovered element when the page implements `host.CursorShape`: an I-beam over a field, a hand over a link or button.
 
+Visible scrollbar thumbs belong to the window. They show a vertical or horizontal resize cursor on hover, and dragging one scrolls the page without pressing the underlying content. `Config.Scrollbar` controls whether thumbs appear; hidden thumbs are not hit-testable.
+
 While the devtools overlay is on ([devtools.md](devtools.md)), hover pauses and a click pins the box under the cursor instead of reaching `Click`. Clicks on the dock switch tabs, fold JSON nodes, toggle the outlines, or pick an operation, and never reach the page. The pointer drags the dock's left edge to resize it. Alt+click forwards the press and the click to the page. Closing the overlay sends one hover for the current cursor.
 
 The coordinates arrive in page space, with the scroll offset added or the stretch scale applied ([scrolling.md](scrolling.md)).

@@ -22,9 +22,7 @@ type Box = page.Box
 // They do not cap the picture, so the layout follows the window.
 type Config = page.Config
 
-// Handlers are the Go functions for input.
-// A nil function ignores that input. After a function returns, the page
-// is drawn again. Copy does not draw.
+// Handlers contains optional callbacks for input and host-delivered links.
 type Handlers = page.Handlers
 
 // Page is one HTML template and the last picture it produced.

@@ -7,29 +7,23 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-// onClick applies the action of the clicked box. Click redraws after this.
+// onClick applies one rendered box action.
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	action := box.Action
 
 	switch {
 	case action == "play":
-		a.view.Playing = !a.view.Playing
-
-		if a.view.Playing {
-			if a.audio.Duration() > 0 {
-				a.audio.Play()
-			} else {
-				a.playNow(ctx)
-			}
-		} else {
-			a.audio.Pause()
-		}
+		a.togglePlayback(ctx)
 	case action == "next":
 		a.step(1)
 		a.playNow(ctx)
 	case action == "prev":
 		a.step(-1)
 		a.playNow(ctx)
+	case action == "back":
+		a.moveNav(-1)
+	case action == "forward":
+		a.moveNav(1)
 	case strings.HasPrefix(action, "row-"):
 		a.selectRow(slot(action, "row-"))
 		a.playNow(ctx)
@@ -42,9 +36,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "list-"):
 		a.selectList(slot(action, "list-"))
 	case action == "queue":
-		a.view.Nav = "queue"
+		a.navigate("queue")
 	case strings.HasPrefix(action, "nav-"):
-		a.view.Nav = strings.TrimPrefix(action, "nav-")
+		a.navigate(strings.TrimPrefix(action, "nav-"))
 	case action == "heart":
 		a.view.Liked = !a.view.Liked
 	case action == "shuffle":
@@ -62,6 +56,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.audio.SetVolume(float64(a.view.Volume) / 100)
 	case action == "search":
 		return a.searchNow(ctx)
+	case action == "tracks-prev":
+		paginateTracks(&a.view, a.view.TrackPage-1)
+	case action == "tracks-next":
+		paginateTracks(&a.view, a.view.TrackPage+1)
 	default:
 		handled, err := a.screenClick(ctx, action)
 		if err != nil {

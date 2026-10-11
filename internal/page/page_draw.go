@@ -40,11 +40,12 @@ func (p *Page) Redraw(ctx context.Context) error {
 	if err := p.tpl.Execute(&body, p.data); err != nil {
 		return err
 	}
+	executed := body.String()
 	if track {
 		p.stats.lastTemplate = time.Since(ts)
 	}
 
-	p.source = p.syncForm(body.String())
+	p.source = p.syncForm(executed)
 	p.png = nil
 
 	state := p.renderState()
@@ -68,6 +69,7 @@ func (p *Page) Redraw(ctx context.Context) error {
 	if derr != nil {
 		return derr
 	}
+	p.paintCaret(display)
 
 	if render.Replayable(display) {
 		p.dirtyFromDisplay(p.display, display)
@@ -79,10 +81,15 @@ func (p *Page) Redraw(ctx context.Context) error {
 		p.fallbackDisplay = nil
 		p.setBoxes(display.Boxes)
 		p.generation++
+		p.commitAccessibility(executed)
 		p.applyPending()
 
 		return nil
 	}
 
-	return p.paintFallback(display, drawStart, track)
+	if err := p.paintFallback(display, drawStart, track); err != nil {
+		return err
+	}
+	p.commitAccessibility(executed)
+	return nil
 }

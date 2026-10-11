@@ -9,4 +9,5 @@ var (
 	_ host.ScrollRequester = (*Page)(nil)
 	_ host.LongPresser     = (*Page)(nil)
 	_ host.Swiper          = (*Page)(nil)
+	_ host.Accessible      = (*Page)(nil)
 )

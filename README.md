@@ -69,7 +69,9 @@ go run ./examples/desktop-cat
 sh scripts/android.sh install
 ```
 
-The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](examples/telegram/android/README.md) have the details. See [showcase.md](showcase.md) for the Telegram, Teams, Pet Care, and other demo showcases.
+The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](examples/telegram/android/README.md) have the details. See [showcase.md](showcase.md) for the Telegram, Teams, Spotify Player, Pet Care, and other examples.
+
+Nested module markers keep the website, generated site, screenshots, and development folders out of the library module archive. The examples remain in their own module.
 
 ## Documentation
 

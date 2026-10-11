@@ -34,7 +34,7 @@ func (a *App) requestKey() string {
 	return strings.TrimSpace(a.view.Now.Title) + "|" + strings.TrimSpace(a.view.Now.Artist)
 }
 
-// playNow asks the engine for a free track matching the current genre.
+// playNow asks the engine for the bundled clip at the current row index.
 func (a *App) playNow(ctx context.Context) {
 	query := strings.TrimSpace(a.view.Now.Genre)
 	if query == "" {
@@ -42,8 +42,7 @@ func (a *App) playNow(ctx context.Context) {
 	}
 
 	a.audioKey = a.requestKey()
-	a.audio.Want(ctx, query, a.audioPick)
-	a.audioPick++
+	a.audio.Want(ctx, query, a.view.Now.Index)
 	a.view.Playing = true
 }
 

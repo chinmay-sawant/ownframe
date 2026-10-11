@@ -1,14 +1,16 @@
 package page
 
-// caretState is the focus, caret, and range the control rewrite paints.
+// caretState carries the focus, caret, and range used to rewrite controls.
 // A negative caret means the end of the value.
 type caretState struct {
-	focus  string
-	caret  int
-	start  int
-	end    int
-	all    bool
-	hidden bool
+	focus        string
+	caret        int
+	start        int
+	end          int
+	all          bool
+	preedit      string
+	preeditStart int
+	preeditEnd   int
 }
 
 // setCaret moves the caret to pos, keeping the anchor when extend is true.
@@ -77,7 +79,11 @@ func (p *Page) caretOf() caretState {
 	st.caret = clampPos(p.form.caret, n)
 	st.start, st.end = p.form.bounds(n)
 	st.all = p.form.all
-	st.hidden = !p.form.blinkOn || isFileInput(c)
+	if p.form.preeditID == c.ID {
+		st.preedit = p.form.preedit
+		st.preeditStart = p.form.preeditStart
+		st.preeditEnd = p.form.preeditEnd
+	}
 
 	return st
 }

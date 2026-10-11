@@ -66,6 +66,7 @@ video, .demo-image { display: block; width: 100%; max-width: 100%; background: v
 video { height: auto; aspect-ratio: auto; }
 .demo-image { aspect-ratio: 1.85; }
 .demo-image { object-fit: contain; }
+.spotify-window-preview { aspect-ratio: 1.5; object-fit: cover; object-position: center; }
 pre { padding: 20px; background: var(--surface); color: var(--text); overflow: auto; border: 1px solid var(--border); border-radius: 9px; line-height: 1.6; }
 .hljs-keyword, .hljs-selector-tag, .hljs-tag, .hljs-literal { color: var(--code-keyword); }
 .hljs-string, .hljs-regexp, .hljs-addition { color: var(--code-string); }
@@ -106,8 +107,9 @@ aside .showcase-subnav a:hover, aside .showcase-subnav a[aria-current="page"] { 
 .showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .showcase-page .showcase-gallery p { max-width: none; margin: 0; }
 .showcase-page .showcase-gallery img { display: block; width: 100%; height: auto; border-radius: 7px; background: var(--background); }
+.showcase-page .showcase-gallery img.spotify-window-preview { aspect-ratio: 1.5; object-fit: cover; object-position: center; }
 .showcase-page .showcase-gallery p + p { padding-top: 10px; font-size: 14px; }
-.markdown table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 14px; background: var(--surface); }
+.markdown table { display: block; width: fit-content; max-width: min(100%, 76ch); overflow-x: auto; border-collapse: collapse; font-size: 14px; background: var(--surface); }
 .markdown th, .markdown td { border: 1px solid var(--border); text-align: left; padding: 10px; }
 .markdown blockquote { border-left: 3px solid var(--border); padding-left: 18px; margin-left: 0; }
 .doc-pagination { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid var(--border); margin-top: 40px; padding-top: 24px; }

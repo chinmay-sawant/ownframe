@@ -23,7 +23,7 @@ ownframe.Run(context.Background(), page)
 
 The UI is one HTML string and the CSS beside it. Go fills the template through `SetData` and one `Handlers` struct answers clicks and keys, with a `data-action` attribute routing a click to a Go function. Nothing crosses a bridge.
 
-The supported CSS set is published instead of implied. Of the 818 properties in the webref catalog, 407 are implemented and none is partial, and the full per-property status list is [mapping.json](https://github.com/chinmay-sawant/gowkhtmltopdf/blob/master/plans/0.2.6/catalog/mapping.json) in the engine repo. The same file carries the at-rule, selector, function, and unit lists with their statuses. An unsupported property is ignored, so an author checks the list instead of the window.
+The supported CSS set is published instead of implied. The current Blinkless matrix lists 389 implemented properties, 1 partial, and 387 unsupported in a catalog of 785. That count describes property handlers and behavior tests; it does not establish browser rendering parity. Check the [Blinkless compatibility matrix](https://github.com/chinmay-sawant/blinkless/blob/master/documentation/compatibility-matrix.md) for the property, value, selector, and unit status.
 
 ## go-gui
 
@@ -145,7 +145,7 @@ No markup at all. The view reads the receiver, and the click handling sits in th
 | Styling | CSS, then `Config.Theme` layered after | theme styles and `Cfg` structs | chained methods, `FontSize(24).Bold()` | CSS from the web toolchain | chained methods, `.FontSize(40).Bold()` |
 | State | `page.SetData`, read by handlers | `gui.State[App](w)`, one typed slot per window | `state.Signal` values bound to widgets | Go services behind the generated client | fields on the view receiver |
 | A click | `data-action` in the markup, one Go handler | a closure per button | a closure per widget, or a signal write | `await Greeter.greet("Ada")` | `Clicked()` read in the same if |
-| Layout | gowkhtmltopdf, in process | the framework's Fit, Fixed, and Fill pass | flex, grid, and stack engines | the OS webview | flexbox and grid, in Go |
+| Layout | Blinkless, in process | the framework's Fit, Fixed, and Fill pass | flex, grid, and stack engines | the OS webview | flexbox and grid, in Go |
 | Painting | Ebiten canvas, display list replay | Metal, OpenGL, WebGL | the gogpu GPU stack | the OS webview | the MyGo GPU stack |
 | A typo in the UI | runtime, a selector that matches nothing is silent | build error | build error | build error on the bridge, runtime in the page | build error |
 
@@ -163,5 +163,5 @@ The bridge count is the third. Only the MyGo web window crosses a language bound
 - gogpu/ui: <https://github.com/gogpu/ui>
 - MyGo: <https://github.com/egoist/mygo>
 - ownframe: [../README.md](../README.md), [screen.md](screen.md)
-- Engine CSS catalog: <https://github.com/chinmay-sawant/gowkhtmltopdf/blob/master/plans/0.2.6/catalog/mapping.json>
+- Engine CSS catalog: <https://github.com/chinmay-sawant/blinkless/blob/master/documentation/compatibility-matrix.md>
 - All snippets recorded on 2026-10-06.

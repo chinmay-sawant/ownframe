@@ -12,7 +12,7 @@ npm ci
 npm run dev
 ```
 
-Vite prints the local address under `/ownframe/`. `npm test` checks the GitHub cache. `npm run build` writes the static site to the repository's root `docs/` folder; `npm run preview` serves that build. Each build replaces the generated output in `docs/`.
+Vite prints the local address under `/ownframe/`. `npm test` checks the GitHub cache. `npm run build` writes the static site to the repository's root `docs/` folder; Vite restores `docs/go.mod` after each build so generated files stay outside the library module archive. Each build replaces the generated output in `docs/`. `npm run preview` serves that build.
 
 ## GitHub Pages
 
@@ -24,7 +24,7 @@ For a custom domain hosted at the root, build with `npm run build -- --base=/`.
 
 The site imports `../documentation/*.md`, the example index, desktop cat guide, Android guide, and `../showcase.md` at build time. Edit those files to update the website. Relative documentation links stay in the site; source-code and plan links open the repository on GitHub.
 
-The three videos in `public/demos/` are the original MP4s from their linked X posts. The Wispr Flow, desktop cat, and Teams demos use preview images under `assets/screenshots/demos/`. The Teams clip comes from [this post](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1). The site serves the videos locally and links to the original posts. Videos load metadata only and do not autoplay.
+The three MP4s in `public/demos/` are the original videos from their linked X posts. The Spotify Player preview is a 960 by 520, 12 fps animated WebP at `public/demos/videos/spotify.webp`; it is silent and loops in the browser. The Wispr Flow, desktop cat, and Teams demos use preview images under `assets/screenshots/demos/`. The Teams clip comes from [this post](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1). MP4 videos load metadata only and do not autoplay.
 
 The Dino Run card uses `assets/screenshots/demos/dino.webp` and links to `examples/dino` on GitHub. From the repository root, run it with `go run ./examples/dino`.
 

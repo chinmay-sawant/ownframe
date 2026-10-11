@@ -45,9 +45,8 @@ func (s *shell) imeUpdate() error {
 
 	s.ime.err = nil
 	if id != s.ime.field {
-		if s.ime.field != "" {
-			s.ime.composer.Cancel()
-			s.ime.last = ""
+		if err := s.imeCancelSession(); err != nil {
+			return err
 		}
 		s.ime.pendingEnd = false
 

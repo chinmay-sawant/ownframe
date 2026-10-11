@@ -20,7 +20,7 @@ func TestRewriteOverlap(t *testing.T) {
 	if strings.Contains(got, "BB") || strings.Contains(got, "ZZ") || strings.Contains(got, "YY") {
 		t.Fatalf("%s", got)
 	}
-	if !strings.Contains(got, `>AA<span data-ownframe-caret="1"></span></span>45`) ||
+	if !strings.Contains(got, `>AA</span>45`) ||
 		!strings.Contains(got, ">CC</span>") {
 		t.Fatalf("%s", got)
 	}

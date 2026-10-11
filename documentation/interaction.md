@@ -51,5 +51,6 @@ F11 toggles `ebiten.SetFullscreen` on desktop and the window consumes the key. w
 ## Limits
 
 - Up and Down in a textarea, and selection beyond the visible scroll of a field, are out of scope. The value model is a single line.
-- IME is wired on Android and iOS. Focusing a text field starts an Ebiten `exp/textinput` session, so a phone shows its soft keyboard. The window paints the preedit by typing and backspacing around it, applies a commit with `Type` or `IMEReplace`, and skips its own typing for the ticks the IME consumed. Desktop and wasm keep key input; a desktop IME is not wired.
+- IME uses Ebiten's experimental `exp/textinput` on Android, iOS, and desktop builds. A phone shows its soft keyboard. Desktop preedit is drawn as a temporary underlined run; it leaves the stored value alone until commit. Commits use `Type` or `IMEReplace`, and the window skips its own typing on ticks the IME consumed. The Android and iOS adapter still displays preedit through the field edit path. Native desktop composition needs verification with each supported OS input method. wasm uses browser key input.
+- The page exposes a semantic accessibility tree and actions for supported controls. The window has no native screen-reader bridge, and the tree does not filter content hidden only by CSS. See [accessibility.md](accessibility.md).
 - The context menu is not native. It is a shell rectangle drawn with the badge face.

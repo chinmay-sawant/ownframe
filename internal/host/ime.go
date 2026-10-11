@@ -20,3 +20,15 @@ type IME interface {
 	// draws again.
 	IMEReplace(ctx context.Context, start, end int, insert string, caret int) error
 }
+
+// IMECaretAnchor optionally provides the focused glyph's caret box. Hosts use
+// it for candidate-window placement when the screen can measure text runs.
+type IMECaretAnchor interface {
+	IMEAnchor() (layout.Box, bool)
+}
+
+// IMEPreeditor receives temporary composition text without changing the
+// committed control value.
+type IMEPreeditor interface {
+	SetIMEComposition(ctx context.Context, text string, start, end int) error
+}

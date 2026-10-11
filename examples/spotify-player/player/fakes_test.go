@@ -35,7 +35,7 @@ func (r *fakeResolver) Resolve(context.Context, string, int) (music.Clip, error)
 }
 
 // newFakeApp builds a page whose engine never opens an audio device.
-func newFakeApp(t *testing.T) (*App, *fakeVoice) {
+func newFakeApp(t testing.TB) (*App, *fakeVoice) {
 	t.Helper()
 
 	voice := &fakeVoice{dur: 200 * time.Second}

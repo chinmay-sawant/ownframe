@@ -38,6 +38,9 @@ export function contentUrl(href, document) {
   const path = decodeURIComponent(url.pathname.replace(sourcePath, ''));
   const target = documents.find((entry) => entry.path === path);
   if (target) return `#docs/${target.slug}${url.hash ? '/' + url.hash.slice(1) : ''}`;
+  if (path.startsWith('frontend/public/')) {
+    return `${import.meta.env.BASE_URL}${path.slice('frontend/public/'.length)}`;
+  }
   const image = images[`../../${path}`];
   return image || url.href;
 }

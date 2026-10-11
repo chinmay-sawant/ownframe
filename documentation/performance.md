@@ -12,7 +12,7 @@ That one call covers the common case. The pieces behind it are `Config.Perf` on 
 
 This page turns the release checklist into steps you can run. It assumes Perf is on and the DevTools Frame tab and `GET /debug/state` expose the counters named below. If a counter is missing, file it as a bug instead of guessing.
 
-Record per release numbers in [performance-baseline.md](performance-baseline.md). Repaint internals live in [repaint.md](repaint.md). The Frame tab layout lives in [devtools.md](devtools.md).
+Record per release numbers in [performance-baseline.md](performance-baseline.md). The [Spotify player report](../examples/spotify-player/PERFORMANCE.md) records redraw measurements for all eight screens. Repaint internals live in [repaint.md](repaint.md). The Frame tab layout lives in [devtools.md](devtools.md).
 
 ## 1 Idle baseline
 

@@ -1,4 +1,4 @@
-.topbar { display: flex; align-items: center; gap: 16px; height: 44px; }
+.topbar { display: flex; align-items: center; gap: 24px; height: 44px; }
 
 .tb-left { display: flex; align-items: center; gap: 8px; }
 
@@ -16,10 +16,12 @@
 
 .tb-forward { background-image: url("chevron-right"); }
 
+.circle.disabled { opacity: 0.4; }
+
 .search-pill {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   width: 400px;
   height: 40px;
   background: #2a2a2a;

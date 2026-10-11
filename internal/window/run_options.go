@@ -38,6 +38,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	}
 
 	game := NewGame(ctx, app).(*shell)
+	defer game.imeShutdown()
 	game.transparent = options.Transparent
 	game.interactive, game.passthrough = options.Interactive, passthrough
 	game.draggable = options.Draggable

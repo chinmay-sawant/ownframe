@@ -5,11 +5,12 @@ import (
 	"testing"
 )
 
-func TestSetDataInvalidatesCache(t *testing.T) {
+func TestSetDataChangingOutputRebuildsCache(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	p := newCachePage(t, `<p>static</p>`)
+	p := newCachePage(t, `<p>{{.N}}</p>`)
+	p.SetData(struct{ N int }{N: 1})
 
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)

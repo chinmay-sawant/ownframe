@@ -40,6 +40,7 @@ type Page struct {
 	past            []string
 	pastAt          int
 	routes          map[string]string
+	deepLinkSchemes map[string]struct{}
 	form            *formState
 	picker          PickFunc
 	hover           string
@@ -52,6 +53,7 @@ type Page struct {
 	devtools        bool
 	perf            bool
 	lockView        bool
+	scrollbar       host.ScrollbarMode
 	mobileViewport  bool
 	allowTouchZoom  bool
 	allowScroll     bool
@@ -71,4 +73,5 @@ type Page struct {
 	scroll          host.Scroll
 	hasScroll       bool
 	windowing       windowingState
+	accessibility   *accessibilityState
 }

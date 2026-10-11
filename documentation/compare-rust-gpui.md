@@ -88,12 +88,12 @@ The Rust side builds the whole UI in code and owns a render trait. This side han
 | UI language | a Rust builder chain, `div().flex().bg(rgb(...)).child(...)` | an HTML template plus CSS |
 | Data into the UI | struct fields read by `render`, updates through contexts | `page.SetData(any)`, then handlers run |
 | Input | closures plus key-dispatch contexts | one `Handlers` struct: `Click`, `Submit`, `Type`, `Undo`, `Redo`, and the rest |
-| Layout | its own layout engine, written for code-defined UI | gowkhtmltopdf: `html.Parse`, `css.Apply`, `layout.Lay` ([screen.md](screen.md)) |
+| Layout | its own layout engine, written for code-defined UI | Blinkless HTML and CSS layout, replayed through Ebiten ([screen.md](screen.md)) |
 | Painting | GPU, custom shaders, retained and immediate | Ebiten canvas, display-list replay with a bitmap fallback ([screen.md](screen.md#replay)) |
 | Targets | macOS, Linux, Windows | desktop, wasm in a browser, Android and iOS bind, plus a `-web` PNG page ([platforms.md](platforms.md), [web.md](web.md)) |
 | Windows | multi-window, full native integration | one window per page |
-| Already in it | animations, IME, deep text editing, multi-window | themes, IPC, HTML history, fetch, clipboard, crash reports, forms, a file open dialog; v0.0.2 adds DevTools, drag and drop, printing, hot reload, caret editing, and window options ([features.md](features.md)) |
-| Not in it | HTML rendering, web and mobile targets | an accessibility tree, IME, video and canvas, WebGL, multi-window |
+| Already in it | animations, IME, deep text editing, multi-window | a page-level semantic tree, themes, IPC, HTML history, fetch, clipboard, crash reports, forms, a file open dialog; v0.0.2 adds DevTools, drag and drop, printing, hot reload, caret editing, and window options ([features.md](features.md)) |
+| Not in it | HTML rendering, web and mobile targets | native screen-reader bridges, video and canvas, WebGL, multi-window |
 | Maturity | runs Zed every day, published on crates.io as `gpui` 0.2.2 under Apache-2.0 | v0.0.2, an example for each feature |
 | Build cost | a heavy Rust compile, the crate tracks Zed closely | a small Go build, two direct dependencies |
 

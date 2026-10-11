@@ -9,9 +9,6 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-// TestThumbHoverKeepsResizeCursor replays the pointer hover path over a
-// thumb: pointerScrollbar applies the resize shape, then hoverCursor must
-// not let the page shape overwrite it.
 func TestThumbHoverKeepsResizeCursor(t *testing.T) {
 	t.Parallel()
 
@@ -35,7 +32,7 @@ func TestThumbHoverKeepsResizeCursor(t *testing.T) {
 
 	for _, tc := range thumbs {
 		got = nil
-		s.pointerScrollbar(tc.x, tc.y)
+		s.pointerScrollbar(tc.x, tc.y, false, false)
 		px, py := s.contentAt(tc.x, tc.y, frameW, frameH)
 		if err := s.hoverCursor(tc.x, tc.y, px, py); err != nil {
 			t.Fatal(err)
@@ -58,5 +55,15 @@ func TestThumbHoverKeepsResizeCursor(t *testing.T) {
 	}
 	if len(got) != 1 || got[0] != ebiten.CursorShapeDefault {
 		t.Fatalf("off-thumb shapes = %v, want [default]", got)
+	}
+
+	s.dragAxis = dragHorizontal
+	got = nil
+	px, py = s.contentAt(198, 10, frameW, frameH)
+	if err := s.hoverCursor(198, 10, px, py); err != nil {
+		t.Fatal(err)
+	}
+	if s.cursor != ebiten.CursorShapeEWResize {
+		t.Fatalf("cursor during horizontal drag = %v, want %v", s.cursor, ebiten.CursorShapeEWResize)
 	}
 }

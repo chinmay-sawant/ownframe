@@ -5,7 +5,7 @@ const cardLength = "3:30"
 
 // setNow swaps the now-playing item for a card.
 func (a *App) setNow(card Card) {
-	a.view.Now = Track{Title: clip(card.Title, 30), Artist: clip(card.Sub, 30), Length: cardLength, Cover: card.Cover}
+	a.view.Now = Track{Index: card.Index, Title: clip(card.Title, 30), Artist: clip(card.Sub, 30), Length: cardLength, Cover: card.Cover}
 	a.resetProgress()
 }
 

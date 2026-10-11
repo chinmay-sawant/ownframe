@@ -49,6 +49,12 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 		}
 	}
 
+	if p.handlers.OpenLink != nil && (!ok || box.Action == "") {
+		if handled, err := p.openLinkAt(ctx, x, y); handled {
+			return err
+		}
+	}
+
 	if ok && p.handlers.Click != nil {
 		if err := p.handlers.Click(ctx, box); err != nil {
 			return err

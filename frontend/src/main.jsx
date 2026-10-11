@@ -17,6 +17,14 @@ import dinoPreview from '../../assets/screenshots/demos/dino.webp';
 
 const demos = [
   {
+    title: 'Spotify Player',
+    description: 'A Go desktop player rendered by ownframe from HTML and CSS. Ebitengine supplies its window and audio. It uses no WebView; phone examples use the Ebitengine Mobile binding provided by ownframe.',
+    animatedWebp: `${import.meta.env.BASE_URL}demos/videos/spotify.webp`,
+    imageClass: 'spotify-window-preview',
+    alt: 'Animated recording of the Spotify Player screens, including Home, Browse, Profile, and Library.',
+    example: `${repository}/tree/master/examples/spotify-player`,
+  },
+  {
     title: 'Wispr Flow', poster: wisprFlowPreview,
     description: 'HTML and CSS screens rendered by a layout engine written in ownframe.',
     video: `${import.meta.env.BASE_URL}demos/preview.mp4`,
@@ -43,6 +51,7 @@ const demos = [
 const showcaseSections = [
   { id: 'telegram', title: 'Telegram' },
   { id: 'teams', title: 'Teams' },
+  { id: 'spotify-player', title: 'Spotify Player' },
   { id: 'pet-care', title: 'Pet Care' },
   { id: 'desktop-overlays', title: 'Desktop overlays' },
   { id: 'wispr-flow', title: 'Wispr Flow' },
@@ -94,6 +103,7 @@ function App() {
   const markdownComponents = isShowcase ? {
     ul: ({ children }) => <ul className={`showcase-gallery${activeShowcase === 'pet-care' ? ' pet-care-gallery' : ''}`}>{children}</ul>,
     img: ({ src, alt = '', title }) => <img src={src} alt={alt} title={title}
+      className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
       loading="lazy" decoding="async" />,
   } : undefined;
   const showcaseText = isShowcase
@@ -158,7 +168,7 @@ function App() {
           <h1>HTML screens. Go logic.</h1>
           <p>ownframe was formerly known as go-gpui.</p>
           <p>Write your screen in HTML and CSS, handle its data and actions in Go, and run it on desktop, in the browser through WebAssembly, or on a phone.</p>
-          <p>ownframe uses <a href="https://github.com/chinmay-sawant/gowkhtmltopdf">gowkhtmltopdf</a> for layout and Ebiten for the window. It ships no Chromium, WebKit, or JavaScript runtime.</p>
+          <p>ownframe uses the Blinkless HTML and CSS engine for layout and Ebitengine for its native window. It ships no WebView, Chromium, WebKit, or JavaScript runtime.</p>
           <div className="links"><a href="#start">Get started</a><a href="#docs/readme">Read the documentation</a></div>
         </section>
         <section id="demos">
@@ -168,8 +178,10 @@ function App() {
             {demo.video ? <video controls playsInline preload="metadata" poster={demo.poster} aria-label={demo.title}>
               <source src={demo.video} type="video/mp4" />
               Your browser does not support this video. Use the original post below.
-            </video> : <img className="demo-image" src={demo.poster} loading="lazy" alt="Dino Run in a native desktop window" />}
-            <a href={demo.post || demo.example}>{demo.post ? 'Watch the original video on X' : 'View the Dino example on GitHub'}</a>
+            </video> : demo.animatedWebp ? <img className={demo.imageClass ? `demo-image ${demo.imageClass}` : 'demo-image'} src={demo.animatedWebp}
+              width="780" height="520" alt={demo.alt} loading="lazy" decoding="async" />
+              : <img className="demo-image" src={demo.poster} loading="lazy" alt="Dino Run in a native desktop window" />}
+            <a href={demo.post || demo.example}>{demo.post ? 'Watch the original video on X' : `View ${demo.title} on GitHub`}</a>
           </article>)}</div>
         </section>
         <section id="start">

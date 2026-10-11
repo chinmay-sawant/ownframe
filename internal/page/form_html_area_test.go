@@ -16,7 +16,7 @@ func TestRewriteTextareaFocus(t *testing.T) {
 		!strings.Contains(tag, `data-ownframe-focus="1"`) || !strings.Contains(tag, `name="n"`) {
 		t.Fatalf("%s", got)
 	}
-	if !strings.Contains(got, `>a&lt;b&amp;c&#34;<span data-ownframe-caret="1"></span></span>`) {
+	if !strings.Contains(got, `>a&lt;b&amp;c&#34;</span>`) {
 		t.Fatalf("%s", got)
 	}
 }

@@ -1,7 +1,7 @@
 <header class="topbar">
   <div class="tb-left">
-    <span id="back" data-action="back" class="circle tb-back"></span>
-    <span id="forward" data-action="forward" class="circle tb-forward"></span>
+    <span id="back" data-action="back" class="circle tb-back{{if not .CanBack}} disabled{{end}}"></span>
+    <span id="forward" data-action="forward" class="circle tb-forward{{if not .CanForward}} disabled{{end}}"></span>
   </div>
   <div class="search-pill">
     <span class="search-icon"></span>

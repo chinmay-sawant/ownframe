@@ -2,9 +2,10 @@ package page
 
 import (
 	"context"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 func TestCaretBlinkHidesAndShows(t *testing.T) {
@@ -22,8 +23,8 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(p.source, `data-ownframe-caret="1"`) {
-		t.Fatalf("caret missing after focus: %s", p.source)
+	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
+		t.Fatalf("visible caret kind = %v, want fill rect", got)
 	}
 
 	p.form.blinkAt = time.Now().Add(-caretBlinkInterval)
@@ -31,16 +32,16 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if strings.Contains(p.source, `data-ownframe-caret="1"`) {
-		t.Fatalf("caret still painted after a blink: %s", p.source)
+	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpNoop {
+		t.Fatalf("hidden caret kind = %v, want noop", got)
 	}
 
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if strings.Contains(p.source, `data-ownframe-caret="1"`) {
-		t.Fatalf("caret returned before the interval: %s", p.source)
+	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpNoop {
+		t.Fatalf("caret returned early with kind %v", got)
 	}
 
 	p.form.blinkAt = time.Now().Add(-caretBlinkInterval)
@@ -48,8 +49,8 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.Contains(p.source, `data-ownframe-caret="1"`) {
-		t.Fatalf("caret did not return: %s", p.source)
+	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
+		t.Fatalf("caret did not return, kind = %v", got)
 	}
 }
 

@@ -1,5 +1,7 @@
 package page
 
+import "github.com/chinmay-sawant/ownframe/internal/host"
+
 // Config is the template, the optional theme, and the frame size for a new
 // page. Theme is an extra stylesheet applied after the template's own styles;
 // empty means no theme.
@@ -26,13 +28,18 @@ type Config struct {
 	Perf bool
 	// LockView scales the page to the window and turns off scroll and zoom.
 	LockView bool
+	// Scrollbar selects thumb visibility. Auto shows thumbs except on
+	// Android and iOS. Visible and Hidden override that platform default.
+	Scrollbar host.ScrollbarMode
 	// DisableTouchZoom keeps two-finger touch gestures from zooming the page.
 	// Wheel and keyboard zoom remain available unless LockView is also set.
 	DisableTouchZoom bool
-	Width            int
-	Height           int
-	MinWidth         int
-	MinHeight        int
-	MaxWidth         int
-	MaxHeight        int
+	// DeepLinkSchemes lists URL schemes accepted by DispatchDeepLink.
+	DeepLinkSchemes []string
+	Width           int
+	Height          int
+	MinWidth        int
+	MinHeight       int
+	MaxWidth        int
+	MaxHeight       int
 }

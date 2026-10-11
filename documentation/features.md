@@ -82,6 +82,17 @@ An `input`, `textarea`, or `select` with an id is stored on the page. A click fo
 
 Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md](editing.md).
 
+## Accessibility tree
+
+`Page.AccessibilityTree` returns semantic roles, names, descriptions, live
+form state, document order, and bounds where an element has a unique HTML ID.
+`Page.AccessibilityPerform` routes supported focus, activation, and text-value
+actions through the page's existing input paths. The snapshot is a host
+contract, not a native screen-reader bridge. CSS-only hidden content and
+anonymous-node bounds remain unresolved.
+
+Detail is in [accessibility.md](accessibility.md).
+
 ## Interaction
 
 Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
@@ -129,9 +140,11 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
 - Chromium, V8, preload, `contextBridge`, and Node.
 - Cross-process IPC, native menus, tray, and more than one window. The library ships no notification API; `examples/desktop-cat` draws its own message bubble, takes agent messages over a local HTTP endpoint, and reads Chrome's media session on Windows. File dialogs exist on desktop `Run` only; wasm, mobile, and `-web` keep the typed name.
 - Session, cookies, cache, and web storage.
-- Auto-update, installer, and an uploaded crash dump.
+- An ownframe auto-updater, installer, and uploaded crash dump. Applications
+  or their distribution channels own update checks and installation
+  ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- An accessibility tree, spellcheck, deep links, and OS-global shortcuts. Android and iOS wire the soft keyboard through Ebiten's experimental `exp/textinput` ([interaction.md](interaction.md)); a desktop IME is not wired.
+- Native screen-reader bridges, native spellcheck, and OS-global shortcuts. The page accessibility tree is available to host code, but it does not expose the Ebitengine window to assistive technology ([accessibility.md](accessibility.md)). `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android and iOS use Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

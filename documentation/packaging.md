@@ -78,7 +78,19 @@ tools for `icns` and `.ico` files, which this script does not include.
 
 ## Auto-update
 
-Not included, and not planned for the library. A library cannot replace its
-own host binary portably. A product that wants auto-update builds its own
-`cmd/updater`: a signed manifest, a download, an atomic swap, and a restart.
-That fights the OS stores and package managers that own the install.
+The application or its distribution channel owns updates. OS stores and
+package managers update the apps they install. An application distributed
+outside those channels can ship its own updater process and update policy.
+
+The package script creates archives and SHA-256 checksums. A checksum detects
+changes to an archive; it does not authenticate the publisher. The script
+does not contact an update service, sign releases, install an update, or
+restart an application.
+
+A custom updater belongs to the application. It must verify a signed release
+manifest and downloaded artifact, replace the installed files safely, roll
+back on failure, and restart only after the application saves its state and
+closes its window.
+
+See the [browser API and updater proposal](../plans/v0.0.2/browser-apis-and-updater-proposal.md)
+for the library boundary and future acceptance criteria.

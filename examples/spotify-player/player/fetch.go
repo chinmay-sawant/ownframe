@@ -9,7 +9,7 @@ import (
 // itunesBase is the live iTunes Search API host.
 const itunesBase = "https://itunes.apple.com"
 
-// DefaultTerm is the search main.go loads at startup.
+// DefaultTerm is the initial term shown in the search field.
 const DefaultTerm = "daft punk"
 
 // searchResult is the fields the player reads from one iTunes result.

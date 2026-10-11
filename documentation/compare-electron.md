@@ -109,12 +109,12 @@ The extra Electron lines buy a process model, a main process plus one renderer p
 | App structure | main process plus one renderer process per window, IPC between them | one process, in-process callbacks |
 | Data into the UI | DOM APIs, or IPC over a preload bridge | `page.SetData(any)` |
 | Input | any DOM event with JS listeners | one `Handlers` struct: `Click`, `Submit`, `Type`, `Undo`, `Redo`, and the rest |
-| Layout | Blink, the Chromium engine | gowkhtmltopdf: `html.Parse`, `css.Apply`, `layout.Lay` ([screen.md](screen.md)) |
+| Layout | Blink, the Chromium engine | Blinkless HTML and CSS layout with a Go display-list replay path ([screen.md](screen.md)) |
 | Painting | Chromium GPU compositor, the whole web platform | Ebiten canvas, display-list replay with a bitmap fallback ([screen.md](screen.md#replay)) |
 | Targets | Windows, macOS, Linux | desktop, wasm in a browser, Android and iOS bind, plus a `-web` PNG page ([platforms.md](platforms.md), [web.md](web.md)) |
 | Windows | multi-window, frameless, tray, menus, notifications | one window per page |
-| Already in it | DevTools, IME, accessibility, video, canvas, WebGL, printing, drag and drop, auto-update, packaging | themes, IPC, HTML history, fetch, clipboard, crash reports, forms, a file open dialog; v0.0.2 adds DevTools, drag and drop, printing, hot reload, caret editing, and window options ([features.md](features.md)) |
-| Not in it | mobile targets, small downloads, a no-JS mode | Chromium fidelity, IME, an accessibility tree, video and canvas, WebGL, multi-window, auto-update, an installer |
+| Already in it | DevTools, IME, accessibility, video, canvas, WebGL, printing, drag and drop, auto-update, packaging | a page-level semantic tree, themes, IPC, HTML history, fetch, clipboard, crash reports, forms, a file open dialog; v0.0.2 adds DevTools, drag and drop, printing, hot reload, caret editing, and window options ([features.md](features.md)) |
+| Not in it | mobile targets, small downloads, a no-JS mode | Chromium fidelity, native screen-reader bridges, video and canvas, WebGL, multi-window, auto-update, an installer |
 | Footprint | Chromium and Node bundled, installers run tens to over a hundred MB | one Go binary, a fraction of that |
 | Maturity | 10+ years, runs VS Code, Slack, Discord, WhatsApp | v0.0.2, an example for each feature |
 | Building and shipping | npm, Forge or electron-builder, code signing, an update server | `go build`, or `scripts/package.sh` for a release archive |
@@ -139,13 +139,13 @@ The extra Electron lines buy a process model, a main process plus one renderer p
 
 ## What is still missing here
 
-- No accessibility tree, no IME, and no spellcheck. Tab traversal and the caret landed in v0.0.2 ([interaction.md](interaction.md)).
+- No native screen-reader bridge or spellcheck. The page exposes a semantic tree, but it does not connect the Ebiten window to assistive technology ([accessibility.md](accessibility.md)). Desktop IME composition has a window path, with native input-method checks still open. Tab traversal and the caret landed in v0.0.2 ([interaction.md](interaction.md)).
 - No multi-window, no tray, no native menus, no system notifications. Window options cover borderless, floating, fixed-size, and click-through windows ([window.md](window.md)).
 - No video, canvas, or WebGL. Audio plays through Ebiten in the examples, not through an HTML element.
 - No auto-update, no installer, no code signing. DevTools, drag and drop, printing, hot reload, caret editing, window resizing, and the packaging script landed in v0.0.2 ([devtools.md](devtools.md), [drag-drop.md](drag-drop.md), [printing.md](printing.md), [hot-reload.md](hot-reload.md), [interaction.md](interaction.md), [packaging.md](packaging.md)).
 - IPC is in-process only. There is no cross-process bridge and no JavaScript.
-- Navigation is `Load`, `Back`, `Forward`, and `data-action` routes. There is no `loadURL`, no document `<a href>`, and no custom protocol.
-- The display-list path needs a `gowkhtmltopdf` that exports `layout.DisplayList` and `Display.Boxes`; `go.mod` pins the engine branch commit that carries them.
+- Navigation is `Load`, `Back`, `Forward`, and `data-action` routes. Clicked `http`, `https`, and `mailto` links can call an app callback. The host can dispatch allowlisted deep links, but the app owns OS protocol registration and delivery. Ownframe does not load a URL as a document.
+- The display-list path uses the pinned Blinkless module. It does not open an OS web view or expose a browser DOM.
 
 ## Sources
 

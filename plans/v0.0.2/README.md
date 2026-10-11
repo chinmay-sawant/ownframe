@@ -11,6 +11,9 @@ definition of done are linked from `documentation/README.md`. The engine branch
 is pushed and `go.mod` pins it with no local `replace`; the release state is in
 `../../PHASES.md`.
 
+The follow-up checklist for desktop IME, accessibility, and the remaining
+platform gaps is [accessibility-desktop-ime.md](accessibility-desktop-ime.md).
+
 Six workstreams land in v0.0.2. Two come from one root cause: `Page.Redraw`
 keeps nothing it already computed, so every pointer move, every window drag, and
 every click reparses the HTML, recollects the stylesheets, relays the page out,
@@ -25,6 +28,7 @@ from `documentation/features.md`.
 | [devtools.md](devtools.md) | The boxes, the display operations, and the cost of a frame are invisible in the running window. An overlay shows them, and `Serve` gets a JSON route with the same data. |
 | [hot-reload.md](hot-reload.md) | Every example embeds its HTML, so an edit needs a rebuild and a restart. A file-backed page watches its file by default and redraws on change. |
 | [electron-gaps.md](electron-gaps.md) | The still-absent list, sorted for this cycle. Drag and drop, printing, and packaging land; IME, accessibility, video, canvas, WebGL, and auto-update are recorded with what each one waits on. |
+| [accessibility-desktop-ime.md](accessibility-desktop-ime.md) | Follow-up phases for accessibility, desktop IME, shell integrations, and planning-only browser APIs. |
 | [input-interaction.md](input-interaction.md) | Typing can only append, Tab moves nothing, there is no drag selection, context menu, cursor shape, touch scroll, pinch, fullscreen, or page scroll call. The plan adds the caret model first, then the interactions that need it. |
 
 Phase 1 of dynamic-resize and incremental-repaint is the same work, the

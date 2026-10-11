@@ -1,10 +1,5 @@
 package window
 
-import (
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
-)
-
 const (
 	dragNone = iota
 	dragVertical
@@ -13,19 +8,26 @@ const (
 
 // pointerScrollbar handles presses and drags on a scrollbar thumb. It reports
 // whether the event was consumed, so content clicks are skipped.
-func (s *shell) pointerScrollbar(x, y int) bool {
-	if axis, grab, ok := s.scrollbarGrab(x, y); ok {
-		s.applyThumbCursor(axis)
+func (s *shell) pointerScrollbar(x, y int, down, pressed bool) bool {
+	if !s.scrollbarsEnabled() {
+		s.dragAxis = dragNone
+		return false
+	}
 
-		if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-			s.dragAxis = axis
-			s.dragGrab = grab
+	if !down || s.dragAxis == dragNone {
+		if axis, grab, ok := s.scrollbarGrab(x, y); ok {
+			s.applyThumbCursor(axis)
 
-			return true
+			if pressed {
+				s.dragAxis = axis
+				s.dragGrab = grab
+
+				return true
+			}
 		}
 	}
 
-	if !ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+	if !down {
 		s.dragAxis = dragNone
 
 		return false
@@ -35,16 +37,7 @@ func (s *shell) pointerScrollbar(x, y int) bool {
 		return false
 	}
 
-	contentW, contentH := s.contentSize()
-
-	switch s.dragAxis {
-	case dragVertical:
-		pos := float64(y) - s.dragGrab
-		s.scrollY = clampAxis(scrollbarOffset(pos, s.screenH, contentH, s.screenH), contentH-s.screenH)
-	case dragHorizontal:
-		pos := float64(x) - s.dragGrab
-		s.scrollX = clampAxis(scrollbarOffset(pos, s.screenW, contentW, s.screenW), contentW-s.screenW)
-	}
+	s.dragScrollbar(x, y)
 
 	return true
 }
@@ -52,7 +45,7 @@ func (s *shell) pointerScrollbar(x, y int) bool {
 // scrollbarGrab reports the drag axis and the cursor offset inside the thumb
 // when the point sits on a scrollbar thumb.
 func (s *shell) scrollbarGrab(x, y int) (int, float64, bool) {
-	if s.stretched() {
+	if !s.scrollbarsEnabled() {
 		return dragNone, 0, false
 	}
 

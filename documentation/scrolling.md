@@ -8,7 +8,15 @@ A page taller or wider than the window scrolls on the mouse wheel, a touch drag,
 
 The window measures the canvas and grows it to cover every box that overflows it. A fixed-width child wider than the window scrolls too. The replay buffer uses the same measure, so scrolled content stays painted.
 
-While the picture is stretched to the window, `internal/window/view.go` ignores the wheel. The window does not draw page scrollbar thumbs. Users scroll with touch drags, mouse wheels, or page requests.
+`Config.Scrollbar` controls the scrollbar thumbs. `ownframe.ScrollbarAuto` is
+the default: it shows thumbs on desktop and web, and hides them on Android and
+iOS. Set `ownframe.ScrollbarVisible` or `ownframe.ScrollbarHidden` to override
+that choice for one page. Hovering a visible thumb shows the matching resize
+cursor; dragging it moves that scroll axis without sending a page click.
+
+Thumb visibility does not control scrolling. Touch drags, mouse wheels, and
+page requests continue to work when thumbs are hidden. `Page.SetAllowScroll`
+controls whether the page can scroll at all. Stretched pages do not show thumbs.
 
 ## Coordinates
 

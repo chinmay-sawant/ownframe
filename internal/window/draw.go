@@ -18,6 +18,7 @@ func (s *shell) Draw(screen *ebiten.Image) {
 
 	start := time.Now()
 	s.drawContent(screen)
+	s.drawScrollbars(screen)
 	s.dev.draw = time.Since(start)
 	if s.perf {
 		s.dev.stages.draw = s.dev.draw
