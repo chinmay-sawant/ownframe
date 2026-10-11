@@ -176,12 +176,12 @@ function App() {
           <h2>Get started</h2>
           <p>Install the module with <code>go get github.com/chinmay-sawant/ownframe</code>, then create a Go file:</p>
           <Markdown rehypePlugins={[rehypeHighlight]}>{quickStart}</Markdown>
-          <p>The login demo accepts <code>secret</code> for both fields. <a href="#docs/examples-readme">Browse the examples</a> or read about <a href="#docs/window">opening a window</a>.</p>
+          <p className="get-started-note">The login demo accepts <code>secret</code> for both fields. <a href="#docs/examples-readme">Browse the examples</a> or read about <a href="#docs/window">opening a window</a>.</p>
         </section>
         <section>
           <h2>Documentation</h2>
           <p>The guides cover <a href="#docs/binding">data binding</a>, <a href="#docs/theming">theming</a>, <a href="#docs/platforms">platforms</a>, and <a href="#docs/packaging">packaging</a>.</p>
-          <p>There is no live DOM or JavaScript engine, and the library does not support video, canvas, or WebGL. See the <a href="#docs/features">feature list and limits</a>.</p>
+          <p className="wide-note">There is no live DOM or JavaScript engine, and the library does not support video, canvas, or WebGL. See the <a href="#docs/features">feature list and limits</a>.</p>
         </section>
       </>}
     </main>

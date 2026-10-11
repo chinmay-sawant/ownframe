@@ -52,6 +52,7 @@ h1 { font-size: clamp(30px, 5vw, 44px); margin-top: 0; letter-spacing: -1.3px; }
 h2 { font-size: 25px; letter-spacing: -0.5px; }
 h3 { font-size: 19px; }
 p { max-width: 76ch; color: var(--muted); }
+.get-started-note, .wide-note { max-width: none; }
 section { padding: 30px 0; border-bottom: 1px solid var(--border); }
 .intro { position: relative; padding-top: 44px; padding-right: 210px; }
 .intro p { max-width: 70ch; }
