@@ -1,7 +1,7 @@
 # Pet care app checklist
 
 > **Parent:** Ownframe examples, v0.0.1.
-> **Status:** Planning. No application code or image assets have been created.
+> **Status:** First implementation delivered. Pixel 7 startup and sample-data flow verified; Windows acceptance and remaining Android interaction checks remain open.
 > **Branch:** `examples/pet-care-doc`.
 > **Recorded:** 2026-10-11.
 
@@ -34,11 +34,33 @@ medical advice, medication dosing, or background operating-system alerts.
 - This is the new canonical checklist. Do not change other plans, indexes, or
   ledgers as part of the planning phase.
 
-## Planning state
+## Implementation state
 
-The branch `examples/pet-care-doc` was created from `master`. The worktree
-contains this new checklist only. This pass did not create app code, generate
-images, or run builds or tests.
+The shared app lives under `examples/pet-care`. It has the sign-in gate, pet
+profiles, care records, schedule labels, settings, SQLite storage, and JSON
+copy/paste backup. The Android Activity uses `examples/android-host` for
+insets, Back dispatch, and lifecycle. Two transparent illustrations are
+embedded from `examples/pet-care/assets/`.
+
+The interaction smoke flow signed in, created a pet, and rendered its profile.
+The Android app now starts from the Activity with its private files directory,
+then creates the shared app and binds the Ebiten view. This avoids the Android
+startup panic caused by `os.UserConfigDir()` having neither `HOME` nor
+`XDG_CONFIG_HOME`. A first-run seed inserts three example pets and seven care
+records once for an empty database. The Pixel 7 installed and launched the APK,
+passed the sign-in gate, and rendered the sample pets and care states. Device
+screenshots and a pulled SQLite inspection are under ignored `temp/pet-care/`.
+
+`make build` and `make test` passed after the Go source changes. The final
+Android debug APK built and was installed at `temp/pet-care/pet-care-debug.apk`.
+The desktop shell uses the available window width, the login panel and Add Pet
+form are centered, and shared Material-style fields and action spacing were
+checked in desktop and Android renders. The shared stylesheet now uses rounded
+filled controls and removes square focus and hover outlines across routes.
+Settings cards also add consistent space around buttons and the backup input.
+The Pixel 7 light-theme login screenshot verifies the rounded fields and
+button; a dedicated dark Settings screenshot is still open. The native Windows
+window has not been launched by the agent. No commit was created.
 
 ## Current source baseline
 
@@ -90,7 +112,9 @@ The Android Activity must not duplicate screen navigation or data rules.
   clear cancel or delete-with-records choice.
 - Medication entries store user-provided facts only. Do not calculate doses,
   recommend treatment, or present due dates as medical advice.
-- Persist data in SQLite under `os.UserConfigDir()/ownframe/pet-care/`.
+- Persist desktop data in SQLite under
+  `os.UserConfigDir()/ownframe/pet-care/`. Android stores it under the app's
+  private files directory at `ownframe/pet-care/pet-care.db`.
   If storage cannot open, explain that changes are temporary before allowing
   the user to continue.
 - Keep a versioned JSON backup format. Reject an invalid backup without
@@ -204,151 +228,158 @@ crop, contrast, and legibility at phone and desktop sizes.
 
 ## Phase 0: confirm the baseline and settle the app contract
 
-- [ ] P0.01 Compare the current Android and app patterns with the source
-  baseline above before coding. Proof: note any source changes that affect
-  ownership or platform behavior.
-- [ ] P0.02 Read the current app, mobile, forms, theme, and Android runtime
-  patterns before coding. Proof: implementation notes identify the exact
-  shared packages and Android host integration points.
-- [ ] P0.03 Confirm the demo sign-in is a UI gate, not security. Proof: the
-  README and login copy state the demo credentials are bundled and no account
-  authentication or private-data protection is provided.
-- [ ] P0.04 Confirm the seven-screen scope and the record-only medical policy.
-  Proof: screen map and data model agree; no background alert or dosage
-  feature is claimed.
-- [ ] P0.05 Confirm local-only storage and the first-release backup contract.
-  Proof: Windows and Android use the same versioned data format, with no
-  hidden sync dependency.
+- [x] P0.01 Compared Telegram's mobile binding and Android Activity with the
+  current shared host. The app keeps screen rules in Go and delegates Android
+  insets, Back, and lifecycle to `examples/android-host`.
+- [x] P0.02 Read the app, mobile, forms, theme, and Android host patterns.
+  Implementation points are `examples/pet-care/app`, `examples/pet-care/mobile`,
+  and `examples/pet-care/android`.
+- [x] P0.03 `examples/pet-care/README.md` and the sign-in copy identify the
+  bundled demo credentials and state that the gate does not protect data.
+- [x] P0.04 The seven screens are sign in, dashboard, pets, pet profile,
+  schedule, history, and settings. The UI makes no dosage, medical advice, or
+  background alert claims.
+- [x] P0.05 Both platforms use the same SQLite schema and version 1 JSON
+  backup model. Data stays on each device; backup currently transfers through
+  copy and paste.
 
 Phase exit: the app boundaries, data lifecycle, and host ownership are explicit
 before implementation starts.
 
 ## Phase 1: build the responsive visual shell and assets
 
-- [ ] P1.01 Create the shared app shell, navigation, responsive page regions,
-  and reusable cards, form rows, status labels, and action buttons.
-- [ ] P1.02 Implement the light and dark token sheets shown above. Verify the
-  theme switch changes colors without changing geometry or losing form state.
-- [ ] P1.03 Create the dog mascot and empty-state images as separate assets
-  with transparent backgrounds where appropriate. Keep a stable illustration
-  style, no embedded text, and no watermark.
-- [ ] P1.04 If animation is selected, create consistent separate dog frames and
-  implement a low-frequency, bounded idle animation with a static fallback.
-  It must stop when the app is paused and must not relayout every frame.
-- [ ] P1.05 Check contrast, text wrapping, and image crop at 360x640, 390x844,
-  a narrow split-screen viewport, and a 1280x800 desktop window.
-- [ ] P1.06 Check that the mobile layout reflows into one column and that the
-  desktop layout uses wider space without stretching form controls.
+- [x] P1.01 Added a shared app shell, navigation, responsive single-column
+  phone layout, form rows, cards, status labels, and action buttons in
+  `examples/pet-care/app/`. Used the Blinkless compatibility matrix for the
+  CSS declarations and selectors; the width media query still needs visual
+  confirmation at the listed sizes.
+- [~] P1.02 Light and dark custom property sheets are wired through
+  `Page.SetTheme`. Visual geometry and form-state retention still need a
+  rendered comparison.
+- [x] P1.03 Added separate transparent dog profile and empty-care PNGs under
+  `examples/pet-care/assets/`, embedded by the app with no text in the art.
+  Both PNG alpha channels contain transparent and opaque pixels.
+- [x] P1.04 No animation was selected. The profile and empty-state images are
+  static, so no animation loop or fallback frame is needed.
+- [~] P1.05 Image crop, contrast, and wrapping have not been checked at the
+  listed viewport sizes. Record screenshots or measurements after visual QA.
+- [~] P1.06 CSS uses the available desktop width and centers the login and Add
+  Pet form. Desktop screenshots and a Pixel 7 login render were inspected.
+  Rounded input and button edges were verified on the Pixel 7 after removing
+  square outline strokes. Native Windows maximized-window acceptance remains
+  with the user; dark Settings visual confirmation is open.
 
 Phase exit: the same shell is readable and stable at phone and desktop sizes;
 all assets are in the repository and no essential text is baked into images.
 
 ## Phase 2: implement the data model, storage, and sign-in gate
 
-- [ ] P2.01 Define typed pet, care record, schedule, and backup models with
-  stable IDs and explicit local date/time handling.
-- [ ] P2.02 Implement SQLite schema creation and migration, default storage
-  path, explicit data-directory override, close behavior, and temporary-mode
-  error state.
-- [ ] P2.03 Implement repository operations for pet and care record create,
-  read, update, delete, filtering, and schedule completion.
-- [ ] P2.04 Implement versioned JSON export and restore. Validate the full
-  backup before changing stored data; handle empty, malformed, old-version,
-  duplicate-ID, missing-pet, and oversized files without partial replacement.
-- [ ] P2.05 Start every fresh app session at the sign-in screen with the demo
-  email and password prefilled. Require an explicit submit before navigation.
-- [ ] P2.06 Reject empty, altered, or invalid credentials with an inline error;
-  keep focus and typed values correct through redraw and Android IME updates.
-- [ ] P2.07 Sign out to the login screen and clear transient screen state while
-  preserving saved pet data.
-- [ ] P2.08 Cover storage and login boundaries with deterministic tests,
-  including a second app instance, database-open failure, restart persistence,
-  malformed data, and repeated migration.
+- [~] P2.01 Added typed pet, care record, and version 1 backup models with
+  random stable IDs and local `YYYY-MM-DD` dates. Care records do not yet store
+  time of day.
+- [~] P2.02 SQLite creation, `user_version=1`, desktop default config path,
+  Android private files path, `-db` override, close, temporary in-memory
+  warning, and an idempotent first-run sample seed are implemented. Upgrade
+  migrations and failure/restart cases still need deterministic coverage.
+- [~] P2.03 Pet and care record create/read/update/delete, filtering, and
+  schedule completion are implemented. Repository boundary tests are open.
+- [~] P2.04 JSON export and restore validate version, IDs, references, dates,
+  and size before transactional replacement. Android uses the system document
+  picker; Windows uses copy/paste. Malformed-input tests remain open.
+- [x] P2.05 Fresh sessions show prefilled demo values and require the sign-in
+  action. The headless interaction flow exercised successful submission.
+- [~] P2.06 Invalid credentials render an inline error in the Go handler.
+  Invalid-value, focus-retention, and Android IME behavior have not been run.
+- [~] P2.07 Sign out returns to the login screen while database records remain
+  in SQLite. Restart and second-instance persistence checks remain open.
+- [ ] P2.08 Deterministic storage and login boundary tests have not been added.
+  Required cases remain second instance, open failure, restart, malformed data,
+  and repeated migration.
 
 Phase exit: records persist correctly, backup failures cannot corrupt current
 data, and no application screen is reachable before successful sign-in.
 
 ## Phase 3: make every screen useful
 
-- [ ] P3.01 Build the dashboard from stored pets and schedule records. Empty
-  state, one pet, many pets, no upcoming items, and overdue items all have
-  useful copy and reachable actions.
-- [ ] P3.02 Implement pet list search and add/edit flows with validation for
-  blank names, long names, optional fields, and invalid or future birth dates.
-- [ ] P3.03 Implement pet details and image selection. Canceling image choice
-  keeps the previous image; missing or invalid image bytes show the fallback.
-- [ ] P3.04 Implement care record entry and history filters. Preserve the
-  selected pet, date, category, and text draft across redraws and validation
-  errors.
-- [ ] P3.05 Implement schedule states for upcoming, due today, overdue,
-  completed, and no scheduled care. Test midnight/date-boundary behavior using
-  a fixed clock and the device's local calendar day.
-- [ ] P3.06 Confirm deleting a pet explains which records will be deleted.
-  Cancel leaves all rows intact; confirm removes the pet and its dependent
-  records in one transaction.
-- [ ] P3.07 Add settings for theme, backup, restore, and sign out. Confirm
-  restore and destructive actions; cancel leaves the current data untouched.
-- [ ] P3.08 Verify every visible button, tab, card action, and empty-state
-  action has a working handler and clear feedback.
+- [~] P3.01 Dashboard reads saved pets and shows upcoming care, recent
+  activity, and an empty state. The Pixel 7 render showed three seeded pets and
+  care entries. Per-pet next-item summaries and no-upcoming scenarios remain
+  open.
+- [~] P3.02 Pet search, add, and edit are implemented with blank and future
+  birth-date validation. Long-name limits and flow tests remain open.
+- [~] P3.03 Pet details use the bundled default dog illustration. User image
+  selection, cancel behavior, and invalid-image fallback are not implemented.
+- [~] P3.04 Care entry and filtering by care type or pet are implemented.
+  Draft/focus retention across validation errors needs platform verification.
+- [~] P3.05 Scheduled records show upcoming, due today, overdue, and complete
+  labels from local calendar dates. Seeded examples cover each state, and the
+  Pixel 7 schedule render showed the upcoming, due-today, and complete rows.
+  Fixed-clock boundary tests and the no-care state remain open.
+- [~] P3.06 Pet deletion asks for confirmation and states that care records
+  will be deleted; SQLite cascades the dependent rows. Cancel and transaction
+  behavior need repository tests.
+- [~] P3.07 Theme, Android document-picker export/restore, Windows JSON
+  copy/paste, validated restore confirmation, and sign out are wired. Picker
+  cancellation and URI behavior still need device verification.
+- [~] P3.08 Visible navigation and action buttons have Go handlers, including
+  confirmations for pet and care deletion. Every route and feedback state has
+  not been exercised.
 
 Phase exit: every screen has real state and actions, and the primary workflows
 work without placeholder-only controls.
 
 ## Phase 4: connect the native Windows and Android apps
 
-- [ ] P4.01 Wire the shared app package to `ownframe.Run` for Windows and
-  verify startup, window close, minimize/restore, resize, and a second launch.
-- [ ] P4.02 Add the Android mobile package and Gradle project using the current
-  `examples/telegram` structure; include `examples/android-host` instead of
-  copying its lifecycle, Back, or inset behavior. Add an app-owned Android
-  document-picker adapter for backup import/export and handle cancellation,
-  URI access, and Activity recreation.
-- [ ] P4.03 Set the page pinch policy to disabled for the Android app. Test
-  pinch-out and pinch-in on the login, dashboard, pet list, profile, schedule,
-  history, and settings screens. Page scale, text scale, hit boxes, and
-  navigation must remain unchanged.
-- [ ] P4.04 Verify one-finger scrolling remains enabled and does not trigger a
-  row action; taps and long presses on buttons and list rows do not begin a
-  scroll accidentally.
-- [ ] P4.05 Verify Android Back order: dismiss the IME first, then close an
-  open form/detail or return to the pet list, then return to the dashboard;
-  it must not bypass the login gate.
-- [ ] P4.06 Verify safe areas, status/navigation bars, cutouts, keyboard
-  insets, font scaling, and smallest supported viewport. Do not apply Android
-  density conversion a second time in Go.
-- [ ] P4.07 Rotate portrait to both landscape orientations while signed in,
-  editing a field, showing the IME, viewing a pet, and scrolling history.
-  Preserve data, route, draft, selected pet, and valid focus; do not leave a
-  stuck pointer, stale keyboard, or stale scroll velocity.
-- [ ] P4.08 Confirm all essential touch targets remain at least 48 dp after
-  responsive layout and device scaling. Increase spacing or reflow instead of
-  shrinking the whole page to fit.
-- [ ] P4.09 Verify desktop mouse, keyboard focus order, Enter submission,
-  Escape behavior, and text editing without changing Android-specific rules.
+- [~] P4.01 The desktop entry point calls `ownframe.Run`. Native Windows
+  startup, resize, minimize/restore, close, and relaunch are for the user to
+  check on Windows.
+- [~] P4.02 Added the Android mobile package, Gradle project, shared-host
+  Activity, app-owned document picker bridge, and app-private storage startup.
+  The Pixel 7 installed and launched the debug APK and opened the sign-in and
+  seeded app screens. Picker cancellation, URI access, Activity recreation,
+  and backup round trips need device verification.
+- [~] P4.03 `DisableTouchZoom` is enabled in the shared page config. Pinch
+  gestures and scale invariance have not been checked on a device.
+- [~] P4.04 One-finger scroll, taps, and long-press behavior have not been
+  exercised on Android.
+- [~] P4.05 Shared host handles IME-first Back dispatch and Go handles app
+  Back. Form/detail ordering needs device checks; the login gate has not been
+  verified through Android Back.
+- [~] P4.06 Android host uses its shared inset padding policy. Cutout, bars,
+  IME, font scale, and smallest viewport remain unverified on a device.
+- [~] P4.07 Rotation, draft retention, focus, and scroll-state behavior were
+  not tested on Android.
+- [~] P4.08 CSS buttons and fields use a 48 px minimum height. Final dp targets
+  after device scaling have not been measured.
+- [ ] P4.09 Windows mouse, keyboard focus, Enter, Escape, and text editing are
+  awaiting the user's native Windows run.
 
 Phase exit: the same workflows operate on Windows and Android, with the
 platform-specific input and lifecycle policy tested on each host.
 
 ## Phase 5: complete acceptance and handoff
 
-- [ ] P5.01 Run app-level tests for login gating, all screen routes, CRUD,
-  schedule boundaries, backup restore, destructive confirmations, and state
-  retention after redraw/restart.
-- [ ] P5.02 Run `make test` from the repository root and `make build`; record
-  the results against the final source tree.
-- [ ] P5.03 Build the Android debug APK, install it on a named physical device,
-  and exercise all seven screens, pinch-in/out, rotation, IME, Back, pause and
-  resume, and process restart.
-- [ ] P5.04 Run the Windows app on a native Windows machine. Record OS version,
-  display scale, window sizes, and results for resize, minimize/restore,
-  keyboard, mouse, local storage, and relaunch.
-- [ ] P5.05 Verify the first-run demo credentials and required submit on both
-  platforms; verify invalid credentials cannot open app routes.
-- [ ] P5.06 Check all images at phone density and desktop size, including
-  absent image, transparent edges, corrupt data, and fallback rendering.
-- [ ] P5.07 Update the new example's README with setup, Windows run, Android
-  build/install, storage, demo-gate limits, backup format, supported screens,
-  and explicitly unverified device boundaries.
+- [ ] P5.01 App-level tests for login gating, routes, CRUD, schedule boundaries,
+  backup restore, confirmations, and restart retention have not been added.
+- [x] P5.02 `make build` and `make test` both passed on the final Go source tree
+  on 2026-10-11.
+- [x] P5.03 Android debug APK built at
+  `temp/pet-care/pet-care-debug.apk`, installed on Pixel 7 serial
+  `2C161FDH200GBQ`, and launched through the sign-in screen. The startup log
+  contains no Go panic or Android fatal exception. See
+  `temp/pet-care/pixel-rounded-final.png` for the latest light-theme render.
+- [~] P5.04 Native Windows run is awaiting the user. Record OS version,
+  display scale, viewport, input, local storage, and relaunch results here.
+  Verify that the full-width shell uses the right side of a maximized window.
+- [~] P5.05 The headless flow used the prefilled demo credentials and required
+  a click to enter the app. Pixel 7 also passed the prefilled sign-in and
+  displayed the seeded dashboard. Invalid credentials and Windows remain
+  unverified.
+- [~] P5.06 The generated PNGs are transparent and embedded. Phone/desktop
+  crop, absent/corrupt image handling, and fallback rendering remain open.
+- [x] P5.07 `examples/pet-care/README.md` and `android/README.md` document the
+  screens, run/build/install steps, storage path, demo-gate limits, versioned
+  backup format, and device checks that remain unverified.
 - [ ] P5.08 Add the example to `examples/readme.md` only after the app works
   and the user authorizes that index update.
 
