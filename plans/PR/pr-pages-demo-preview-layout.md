@@ -80,5 +80,5 @@ The rebuilt `docs/index.html` references `index-CR5s1zBB.css` and `index-C8IsGTN
 | `.css` | 2 | 1 | 1 |
 | `.html` | 1 | 2 | 2 |
 | `.js` | 1 | 9 | 9 |
-| `.md` | 1 | 78 | 0 |
-| **Total** | **5** | **90** | **12** |
+| `.md` | 1 | 84 | 0 |
+| **Total** | **5** | **96** | **12** |
