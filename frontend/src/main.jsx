@@ -20,7 +20,6 @@ const demos = [
     title: 'Spotify Player',
     description: 'A Go desktop player rendered by ownframe from HTML and CSS. Ebitengine supplies its window and audio. It uses no WebView; phone examples use the Ebitengine Mobile binding provided by ownframe.',
     animatedWebp: `${import.meta.env.BASE_URL}demos/videos/spotify.webp`,
-    imageClass: 'spotify-window-preview',
     alt: 'Animated recording of the Spotify Player screens, including Home, Browse, Profile, and Library.',
     example: `${repository}/tree/master/examples/spotify-player`,
   },
@@ -175,12 +174,14 @@ function App() {
           <h2>Demos</h2>
           <div className="demos">{demos.map((demo) => <article key={demo.title}>
             <h3>{demo.title}</h3><p>{demo.description}</p>
-            {demo.video ? <video controls playsInline preload="metadata" poster={demo.poster} aria-label={demo.title}>
-              <source src={demo.video} type="video/mp4" />
-              Your browser does not support this video. Use the original post below.
-            </video> : demo.animatedWebp ? <img className={demo.imageClass ? `demo-image ${demo.imageClass}` : 'demo-image'} src={demo.animatedWebp}
-              width="780" height="520" alt={demo.alt} loading="lazy" decoding="async" />
-              : <img className="demo-image" src={demo.poster} loading="lazy" alt="Dino Run in a native desktop window" />}
+            <div className="demo-media">
+              {demo.video ? <video controls playsInline preload="metadata" poster={demo.poster} aria-label={demo.title}>
+                <source src={demo.video} type="video/mp4" />
+                Your browser does not support this video. Use the original post below.
+              </video> : demo.animatedWebp ? <img className="demo-image" src={demo.animatedWebp}
+                width="780" height="520" alt={demo.alt} loading="lazy" decoding="async" />
+                : <img className="demo-image" src={demo.poster} loading="lazy" alt="Dino Run in a native desktop window" />}
+            </div>
             <a href={demo.post || demo.example}>{demo.post ? 'Watch the original video on X' : `View ${demo.title} on GitHub`}</a>
           </article>)}</div>
         </section>
