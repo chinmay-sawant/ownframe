@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -10,10 +10,10 @@ import { repository } from './project';
 import './style.css';
 import ThemeToggle from './ThemeToggle';
 import DocPagination from './DocPagination';
-import gopher from '../../assets/gopher.png';
-import wisprFlowPreview from '../../assets/wispr-flow.png';
-import teamsPreview from '../../assets/teams.jpg';
-import dinoPreview from '../../assets/dino.png';
+import gopher from '../../assets/brand/gopher.webp';
+import wisprFlowPreview from '../../assets/screenshots/demos/wispr-flow.webp';
+import teamsPreview from '../../assets/screenshots/demos/teams.webp';
+import dinoPreview from '../../assets/screenshots/demos/dino.webp';
 
 const demos = [
   {
@@ -40,14 +40,45 @@ const demos = [
     example: `${repository}/tree/master/examples/dino`,
   },
 ];
-const quickStart = `go get github.com/chinmay-sawant/ownframe
+const showcaseSections = [
+  { id: 'telegram', title: 'Telegram' },
+  { id: 'teams', title: 'Teams' },
+  { id: 'pet-care', title: 'Pet Care' },
+  { id: 'desktop-overlays', title: 'Desktop overlays' },
+  { id: 'wispr-flow', title: 'Wispr Flow' },
+  { id: 'dino-run', title: 'Dino Run' },
+];
+const quickStart = `\`\`\`go
+package main
 
-# Run an example from the checkout
-go run ./examples/login`;
+import (
+\t"context"
+\t"log"
+
+\t"github.com/chinmay-sawant/ownframe"
+)
+
+func main() {
+\tpage, err := ownframe.New(ownframe.Config{
+\t\tTitle:  "Hello",
+\t\tHTML:   "<h1>{{.Title}}</h1>",
+\t\tWidth:  480,
+\t\tHeight: 640,
+\t})
+\tif err != nil {
+\t\tlog.Fatal(err)
+\t}
+\tpage.SetData(struct{ Title string }{"Hello"})
+\tif err := ownframe.Run(context.Background(), page); err != nil {
+\t\tlog.Fatal(err)
+\t}
+}
+\`\`\``;
 
 function App() {
   const [hash, setHash] = useState(location.hash);
   const [stars, setStars] = useState(null);
+  const contentPane = useRef(null);
   useEffect(() => {
     let mounted = true;
     loadStars().then((value) => { if (mounted) setStars(value); });
@@ -58,14 +89,29 @@ function App() {
   const [, slug = 'readme', anchor] = hash.split('/');
   const isDocs = hash.startsWith('#docs');
   const document = documents.find((entry) => entry.slug === slug);
+  const isShowcase = document?.path === 'showcase.md';
+  const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : 'telegram';
+  const markdownComponents = isShowcase ? {
+    ul: ({ children }) => <ul className={`showcase-gallery${activeShowcase === 'pet-care' ? ' pet-care-gallery' : ''}`}>{children}</ul>,
+    img: ({ src, alt = '', title }) => <img src={src} alt={alt} title={title}
+      loading="lazy" decoding="async" />,
+  } : undefined;
+  const showcaseText = isShowcase
+    ? selectShowcase(document.text, activeShowcase)
+    : document?.text;
   useEffect(() => {
-    if (isDocs && anchor) {
-      documentElement(anchor)?.scrollIntoView();
-    } else if (isDocs || hash === '' || hash === '#home') window.scrollTo(0, 0);
+    if (isDocs) {
+      const pane = contentPane.current;
+      if (pane) {
+        const target = anchor && pane.querySelector(`#${CSS.escape(anchor)}`);
+        if (target) pane.scrollTop += target.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+        else pane.scrollTop = 0;
+      }
+    } else if (hash === '' || hash === '#home') window.scrollTo(0, 0);
     else documentElement(hash.slice(1))?.scrollIntoView();
   }, [hash, isDocs, anchor]);
 
-  return <>
+  return <div className={isDocs ? 'docs-shell' : undefined}>
     <a className="skip" href="#main">Skip to content</a>
     <header>
       <a className="brand" href="#home">ownframe</a>
@@ -79,17 +125,30 @@ function App() {
         GitHub <span aria-live="polite">{stars === null ? '' : stars.toLocaleString() + ' stars'}</span>
       </a>
     </header>
-    <main id="main" tabIndex="-1">
+    <main id="main" className={isDocs ? 'docs-main' : undefined} tabIndex="-1">
       {isDocs ? <div className="docs-layout">
         <aside>
           <h2>Documentation</h2>
-          <nav aria-label="Documentation topics">{documents.map((entry) =>
-            <a key={entry.slug} href={`#docs/${entry.slug}`} aria-current={slug === entry.slug ? 'page' : undefined}>{entry.title}</a>
+          <nav className="docs-nav" aria-label="Documentation topics">{documents.map((entry) =>
+            <div key={entry.slug} className="docs-nav-entry">
+              <a href={entry.slug === 'showcase' ? '#docs/showcase/telegram' : `#docs/${entry.slug}`}
+                aria-current={slug === entry.slug && entry.slug !== 'showcase' ? 'page' : undefined}
+                className={slug === 'showcase' && entry.slug === 'showcase' ? 'docs-nav-parent active' : 'docs-nav-parent'}>
+                {entry.title}
+              </a>
+              {entry.slug === 'showcase' && <div className="showcase-subnav" role="group" aria-label="Showcase sections">
+                {showcaseSections.map((section) => <a key={section.id}
+                  href={`#docs/showcase/${section.id}`}
+                  aria-current={slug === 'showcase' && activeShowcase === section.id ? 'page' : undefined}>
+                  {section.title}
+                </a>)}
+              </div>}
+            </div>
           )}</nav>
         </aside>
-        <article className="markdown">
+        <article ref={contentPane} className={`markdown docs-content${isShowcase ? ' showcase-page' : ''}`}>
           {document ? <><Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}
-            urlTransform={(url) => contentUrl(url, document)}>{document.text}</Markdown>
+            urlTransform={(url) => contentUrl(url, document)} components={markdownComponents}>{showcaseText}</Markdown>
             <DocPagination documents={documents} slug={slug} /></>
             : <><h1>Document not found</h1><a href="#docs/readme">Open the documentation index</a></>}
         </article>
@@ -114,7 +173,9 @@ function App() {
           </article>)}</div>
         </section>
         <section id="start">
-          <h2>Get started</h2><pre><code>{quickStart}</code></pre>
+          <h2>Get started</h2>
+          <p>Install the module with <code>go get github.com/chinmay-sawant/ownframe</code>, then create a Go file:</p>
+          <Markdown rehypePlugins={[rehypeHighlight]}>{quickStart}</Markdown>
           <p>The login demo accepts <code>secret</code> for both fields. <a href="#docs/examples-readme">Browse the examples</a> or read about <a href="#docs/window">opening a window</a>.</p>
         </section>
         <section>
@@ -125,8 +186,18 @@ function App() {
       </>}
     </main>
     <footer><a href={repository}>Source on GitHub</a><a href="#docs/readme">Documentation</a></footer>
-  </>;
+  </div>;
 }
 
 function documentElement(id) { return window.document.getElementById(id); }
+
+function selectShowcase(markdown, id) {
+  const [intro, ...sections] = markdown.split(/(?=^## )/m);
+  const selected = sections.find((section) => {
+    const title = section.match(/^## (.+)$/m)?.[1];
+    return title?.toLowerCase().replace(/\s+/g, '-') === id;
+  });
+  return [intro, selected].filter(Boolean).join('\n');
+}
+
 createRoot(document.getElementById('root')).render(<React.StrictMode><App /></React.StrictMode>);
