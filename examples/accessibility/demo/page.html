@@ -2,46 +2,110 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Accessibility and desktop input</title>
+<title>Accessibility API lab</title>
 <style>
-  html, body { margin: 0; background: #f2f4f7; color: #17212b; font-family: sans-serif; }
-  main { width: 760px; margin: 28px auto; }
-  h1 { font-size: 28px; margin: 0 0 8px; }
-  h2 { font-size: 19px; margin: 0 0 12px; }
-  p { line-height: 1.5; }
-  section { background: #ffffff; border: 1px solid #d5dce3; padding: 20px; margin: 16px 0; }
-  label { display: block; font-weight: bold; margin: 12px 0 4px; }
-  input, textarea { display: block; width: 420px; padding: 9px; border: 1px solid #8998a7; font: inherit; }
-  button { margin: 14px 8px 0 0; padding: 10px 14px; background: #174ea6; color: white; border: 0; }
-  #status { color: #174ea6; }
-  pre { white-space: pre-wrap; font-size: 12px; line-height: 1.5; }
-  li { padding: 7px 0; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; background: #f3f5f8; color: #172033; font: 15px sans-serif; }
+main { max-width: 1080px; margin: 0 auto; }
+h1, h2, p { margin-top: 0; }
+.intro, .panel { margin-bottom: 18px; padding: 20px; background: #fff; border: 1px solid #d7deea; border-radius: 12px; }
+.columns { display: grid; grid-template-columns: minmax(280px, 0.9fr) minmax(360px, 1.1fr); gap: 18px; align-items: start; }
+nav, .actions, .field, .choice { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+nav { margin: 0 0 18px; }
+.field { width: 100%; align-items: stretch; flex-direction: column; margin: 14px 0; }
+[data-ownframe-field] { display: block; width: 100%; padding: 9px; border: 1px solid #9aa8bd; border-radius: 6px; font: inherit; }
+input[type=checkbox], input[type=radio] { width: auto; }
+button, a { padding: 8px 11px; border: 1px solid #9aa8bd; border-radius: 6px; background: #f7f9fc; color: #172033; font: inherit; }
+button { cursor: pointer; }
+button:focus, a:focus, input:focus, textarea:focus, select:focus { outline: 3px solid #1769d2; outline-offset: 2px; }
+.actions { margin: 12px 0; }
+.muted { color: #506079; }
+.status { padding: 10px; background: #edf4ff; border-radius: 6px; }
+pre { max-height: 680px; overflow: auto; padding: 14px; background: #101a2b; color: #e7edf8; border-radius: 8px; font: 12px monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+ul { padding-left: 22px; }
+li { margin: 6px 0; }
+@media (max-width: 760px) { .columns { grid-template-columns: 1fr; } body { padding: 14px; } }
 </style>
 </head>
 <body>
-<main id="main" aria-labelledby="page-title">
-  <h1 id="page-title">Accessibility and desktop input</h1>
-  <p>Use the fields to try keyboard input and desktop IME composition. The tree preview shows page semantics and redacts passwords.</p>
-  <section aria-labelledby="form-title">
-    <h2 id="form-title">Profile form</h2>
-    <label for="display-name">Display name</label>
-    <input id="display-name" name="display-name" type="text" value="{{.Name}}">
-    <label for="message">Composing message</label>
-    <textarea id="message" name="message">Compose text here; preedit appears before it is committed.</textarea>
-    <label for="secret">Private password</label>
-    <input id="secret" name="secret" type="password" value="{{.Secret}}">
-    <button id="refresh-tree" data-action="refresh-tree">Refresh accessibility tree</button>
-    <button id="set-via-tree" data-action="set-via-tree">Set name through tree action</button>
-    <p id="status" role="status" aria-live="polite">{{.Status}}</p>
+<main id="content-main">
+  <section class="intro" aria-labelledby="page-title">
+    <h1 id="page-title">Accessibility API lab</h1>
+    <p>Inspect the semantic snapshot, then send actions through the public API.</p>
+    <nav aria-label="Demo navigation">
+      <a id="docs-link" href="#api-actions">Action controls</a>
+      <a id="reference-link" href="#semantics">Semantic fixtures</a>
+    </nav>
+    <div role="img" id="avatar" aria-label="Blue profile avatar"></div>
+    <span id="plain-text">This free text becomes a Text node.</span>
   </section>
-  <section aria-labelledby="tree-title">
-    <h2 id="tree-title">Semantic tree snapshot</h2>
-    <pre id="tree">{{.Tree}}</pre>
-  </section>
-  <section aria-labelledby="scroll-title">
-    <h2 id="scroll-title">Scrollable content</h2>
-    <p>Scroll this page and hover the scrollbar thumb to see its resize cursor.</p>
-    <ol>{{range .Rows}}<li>{{.}}</li>{{end}}</ol>
+
+  <div class="columns">
+    <section class="panel" id="semantics" aria-labelledby="semantics-title">
+      <h2 id="semantics-title">Semantic fixtures</h2>
+      <p id="fixture-description">These controls cover names, descriptions, values, bounds, focus, disabled state, and checked state.</p>
+      <label class="field" id="display-name-label" for="display-name">Display name
+        <input id="display-name" type="text" value="{{.Name}}" aria-describedby="name-help">
+      </label>
+      <p id="name-help">A textbox with a label and an associated description.</p>
+      <label class="field" for="notes">Notes
+        <textarea id="notes">A multiline value</textarea>
+      </label>
+      <label class="field" for="secret">Private value
+        <input id="secret" type="password" value="{{.Secret}}">
+      </label>
+      <label class="choice"><input id="updates" type="checkbox" checked> Receive updates</label>
+      <fieldset>
+        <legend>Contact preference</legend>
+        <label class="choice"><input id="contact-email" type="radio" name="contact" checked> Email</label>
+        <label class="choice"><input id="contact-phone" type="radio" name="contact"> Phone</label>
+      </fieldset>
+      <label class="field" for="plan">Plan
+        <select id="plan"><option>Basic</option><option>Pro</option></select>
+      </label>
+      <label class="field" for="disabled-field">Disabled textbox
+        <input id="disabled-field" type="text" value="Unavailable" disabled>
+      </label>
+      <ul id="sample-list">
+        <li id="sample-item-one">First list item</li>
+        <li id="sample-item-two">Second list item</li>
+      </ul>
+      <button id="activation-target" data-action="activation-target">Activation target (count: {{.ActivationCount}})</button>
+    </section>
+
+    <section class="panel" id="api-actions" aria-labelledby="actions-title">
+      <h2 id="actions-title">API action controls</h2>
+      <p class="muted">Each button calls AccessibilityPerform using the current document token.</p>
+      <label class="field" for="action-value">Value for SetValue
+        <input id="action-value" type="text" value="{{.ActionValue}}">
+      </label>
+      <div class="actions">
+        <button id="refresh-tree" data-action="refresh-tree">Refresh tree</button>
+        <button id="api-focus" data-action="api-focus">Focus display name</button>
+        <button id="api-set-value" data-action="api-set-value">Set display name</button>
+        <button id="api-activate-checkbox" data-action="api-activate-checkbox">Toggle checkbox</button>
+        <button id="api-activate-radio" data-action="api-activate-radio">Choose phone option</button>
+        <button id="api-activate-select" data-action="api-activate-select">Activate select</button>
+        <button id="api-activate-button" data-action="api-activate-button">Activate target button</button>
+      </div>
+      <h3>Error probes</h3>
+      <div class="actions">
+        <button id="probe-stale" data-action="probe-stale">Stale document</button>
+        <button id="probe-node" data-action="probe-node">Missing node</button>
+        <button id="probe-action" data-action="probe-action">Unsupported action</button>
+        <button id="probe-disabled" data-action="probe-disabled">Disabled control</button>
+        <button id="probe-range" data-action="probe-range">Invalid value range</button>
+      </div>
+      <p class="status" id="status">{{.Status}}</p>
+      <h3>Detached accessibility snapshot</h3>
+      <pre id="tree" aria-hidden="true">{{.Tree}}</pre>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="scroll-title">
+    <h2 id="scroll-title">Scrolling fixture</h2>
+    <p>Use the page scrollbar to check content bounds and scroll behavior.</p>
+    <ul>{{range .Rows}}<li>{{.}}</li>{{end}}</ul>
   </section>
 </main>
 </body>

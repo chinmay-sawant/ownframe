@@ -1,12 +1,13 @@
-# Read an accessibility tree
+# Accessibility tree
 
-`Page.AccessibilityTree` returns a detached snapshot of the last successful
-page redraw. The tree uses HTML structure for parent and child order. It maps
-supported roles, names, descriptions, form state, and bounds for elements with
-unique IDs.
+`Page.AccessibilityTree` returns a detached semantic snapshot from the last
+successful redraw. The tree follows HTML document order and includes supported
+roles, names, descriptions, form state, actions, and bounds when the layout can
+provide them.
 
 ```go
-tree, err := page.AccessibilityTree()
+var accessible ownframe.Accessible = page
+tree, err := accessible.AccessibilityTree()
 if err != nil {
 	return err
 }
@@ -15,24 +16,39 @@ for _, node := range tree.Nodes {
 	log.Printf("%s %s: %s", node.Role, node.ID, node.Name)
 }
 
-err = page.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
+return accessible.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
 	Document: tree.Document,
 	Node:     "id:save",
 	Kind:     ownframe.AccessibilityActivate,
 })
 ```
 
-The `Accessible` interface is optional for hosts. It exposes the same tree
-and action method without adding requirements to `host.Screen`. Call both
-methods on the page's owning loop. A native adapter must queue actions back
-to that loop.
+Call both methods on the page's owning loop. A native adapter must queue
+actions back to that loop. `Accessible` is optional for hosts and does not add
+requirements to `host.Screen`.
 
 ## Try the example
 
-Run `go run ./examples/accessibility` to try desktop text composition, inspect
-the semantic tree, invoke a set-value action through that tree, and scroll a
-page with a visible scrollbar thumb. The demo is a tree inspector; native
-screen-reader bridges remain platform work.
+Run `go run ./examples/accessibility` to open the desktop API lab. Its semantic
+fixtures cover every exported role. The snapshot prints tree identity and
+revision, parent and child links, names, descriptions, values, bounds, state
+flags, and available actions. Password values are displayed as `[redacted]`.
+The preview is hidden from the semantic tree so refreshing does not add its own
+previous output to the next snapshot.
+
+The API action buttons call Focus, SetValue, and Activate with the current
+document token. The error probes exercise stale document, missing node,
+unsupported action, disabled control, and invalid UTF-8 value errors. The demo
+also checks that a tree is unavailable before the first successful render.
+Automated example tests guard role, metadata, action, password, and error
+coverage:
+
+```sh
+go test ./examples/accessibility/...
+```
+
+The demo is an API inspector. It does not connect the tree to Windows UI
+Automation, Linux AT-SPI, or macOS NSAccessibility.
 
 ## Node identity and updates
 
@@ -42,37 +58,56 @@ navigation or template reload. Pass the token from the snapshot with each
 action. A stale token returns `ErrAccessibilityStale`.
 
 `Revision` is the page's successful redraw generation. Each call returns new
-node and child slices, so changing a snapshot does not change the page. A
+node and child slices, so changing a snapshot does not change page state. A
 node's bounds are CSS pixels in the page content coordinate space. Ownframe
 sets `HasBounds` only when one layout box matches a unique HTML ID.
 
 ## Supported semantics and actions
 
-The first mapping covers documents, main content, navigation, groups,
-headings, paragraphs, static text, images, links, buttons, text fields,
-checkboxes, radio buttons, selects, and lists. It reads names from
-`aria-labelledby`, `aria-label`, associated labels, image `alt`, text,
-placeholder, and title. Descriptions use `aria-describedby`.
+The exported roles are Document, Main, Navigation, Group, Heading, Paragraph,
+Text, Image, Link, Button, Textbox, Checkbox, Radio, Combobox, List, and
+ListItem. HTML elements map to these roles where supported; an explicit
+supported `role` attribute can also provide a role. The example contains at
+least one fixture for each role.
 
-Form values and checked state come from the live page controls. Password
-values are always empty in the snapshot. Supported controls advertise
-`AccessibilityFocus`, `AccessibilityActivate`, or `AccessibilitySetValue`.
-The page routes those actions through its existing focus, click, edit,
-binding, and change-handler paths. Disabled controls do not advertise
-actions. Duplicate IDs do not receive bounds or actions.
+Names can come from `aria-labelledby`, `aria-label`, associated labels, image
+`alt`, element text, textbox placeholder, or title. Descriptions come from
+`aria-describedby`. Nodes expose parent and child IDs, HTML element IDs, bounds,
+disabled and focus state, focusability, checked state, password state, and the
+actions available on that node. Text nodes and elements without a unique
+matching layout box do not have bounds.
+
+Form values and checked state come from live page controls. Password values
+are always empty in the snapshot. Supported controls advertise Focus,
+Activate, or SetValue in `Actions`:
+
+| Action | Supported targets |
+| --- | --- |
+| Focus | Focusable form controls, including buttons and disabled-by-ARIA controls |
+| Activate | Buttons, selects, checkboxes, and radio buttons |
+| SetValue | Editable text inputs and textareas that are not readonly |
+
+Actions go through the page's focus, click, edit, binding, and change-handler
+paths. The example tests all three actions on representative controls. Links
+are represented in the tree, but link activation is not currently supported.
+
+The exported errors describe unavailable trees, stale document tokens, missing
+nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
+`ErrAccessibilityUnavailable`, `ErrAccessibilityStale`,
+`ErrAccessibilityNode`, `ErrAccessibilityAction`,
+`ErrAccessibilityDisabled`, and `ErrAccessibilityRange`.
 
 ## Limits
 
 This API supplies semantic page data to a host. It does not expose the
-Ebitengine window to AT-SPI, UI Automation, or NSAccessibility. ownframe has
-no native screen-reader bridge yet, and the tree alone does not make an app
-accessible.
+Ebitengine window to a native assistive-technology API, and a tree alone does
+not make an app accessible.
 
 The snapshot does not use computed CSS visibility. A node hidden only with
 `display:none` or `visibility:hidden` can remain in the tree. Anonymous nodes
-have no reliable layout bounds. Text ranges, live-region events, complete
-ARIA name computation, virtualized offscreen rows, and custom widget actions
-are not covered. This tree is not PDF/UA output and does not claim browser
+have no reliable layout bounds. Text ranges, live-region events, complete ARIA
+name computation, virtualized offscreen rows, and custom widget actions are
+not covered. This tree is not PDF/UA output and does not claim browser
 accessibility parity.
 
 See the [v0.0.2 accessibility and desktop input checklist](../plans/v0.0.2/accessibility-desktop-ime.md)

@@ -1,50 +1,25 @@
 package demo
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
 
-func (a *App) setNameViaTree(ctx context.Context) error {
-	tree, err := a.page.AccessibilityTree()
-	if err != nil {
-		return err
-	}
-	for _, node := range tree.Nodes {
-		if node.ElementID == "display-name" {
-			return a.page.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
-				Document: tree.Document, Node: node.ID,
-				Kind: ownframe.AccessibilitySetValue, Value: "Updated through tree action",
-			})
-		}
-	}
-	return ownframe.ErrAccessibilityNode
-}
-
 func treeText(tree ownframe.AccessibilityTree) string {
 	var out strings.Builder
+	fmt.Fprintf(&out, "Document=%d Revision=%d Root=%q Focused=%q Nodes=%d\n", tree.Document, tree.Revision, tree.Root, tree.Focused, len(tree.Nodes))
 	for _, node := range tree.Nodes {
-		if node.Name == "" && node.Value == "" && !node.Password {
-			continue
-		}
-		value := strings.ReplaceAll(node.Value, "\n", " ")
+		value := node.Value
 		if node.Password {
 			value = "[redacted]"
 		}
-		fmt.Fprintf(&out, "%s  %s", node.Role, node.Name)
-		if node.Focused {
-			out.WriteString("  [focused]")
+		actions := make([]string, len(node.Actions))
+		for i, action := range node.Actions {
+			actions[i] = string(action)
 		}
-		if node.HasChecked {
-			fmt.Fprintf(&out, "  checked=%t", node.Checked)
-		}
-		if value != "" {
-			fmt.Fprintf(&out, "  value=%q", value)
-		}
-		out.WriteByte('\n')
+		fmt.Fprintf(&out, "ID=%q Parent=%q Children=%q ElementID=%q Role=%s Name=%q Description=%q Value=%q Bounds=%+v HasBounds=%t Disabled=%t Focusable=%t Focused=%t Password=%t Checked=%t HasChecked=%t Actions=%v\n", node.ID, node.Parent, node.Children, node.ElementID, node.Role, node.Name, node.Description, value, node.Bounds, node.HasBounds, node.Disabled, node.Focusable, node.Focused, node.Password, node.Checked, node.HasChecked, actions)
 	}
 	return out.String()
 }

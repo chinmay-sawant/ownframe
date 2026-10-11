@@ -3,6 +3,7 @@ package demo
 
 import (
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -14,8 +15,9 @@ var source string
 const DefaultWidth, DefaultHeight = 980, 720
 
 type View struct {
-	Name, Secret, Status, Tree string
-	Rows                       []string
+	Name, Secret, ActionValue, Status, Tree string
+	ActivationCount                         int
+	Rows                                    []string
 }
 
 type App struct {
@@ -32,8 +34,18 @@ func New() (*App, error) {
 	if err != nil {
 		return nil, err
 	}
-	a := &App{page: p, view: View{Name: "Ada", Secret: "private", Status: "Type in the fields, then refresh the tree."}}
-	for i := 1; i <= 12; i++ {
+	a := &App{page: p, view: View{
+		Name: "Ada", Secret: "private", ActionValue: "Updated through the tree action",
+		Tree: "Click Refresh tree after the first render to load the snapshot.",
+	}}
+	if _, err := a.accessible().AccessibilityTree(); errors.Is(err, ownframe.ErrAccessibilityUnavailable) {
+		a.view.Status = "Pre-render availability check passed; render the page to create its first tree."
+	} else if err != nil {
+		return nil, err
+	} else {
+		a.view.Status = "Pre-render availability check returned a tree."
+	}
+	for i := 1; i <= 8; i++ {
 		a.view.Rows = append(a.view.Rows, fmt.Sprintf("Scrollable example row %d", i))
 	}
 	p.Handle(ownframe.Handlers{Click: a.onClick, Change: a.onChange})
@@ -42,3 +54,5 @@ func New() (*App, error) {
 }
 
 func (a *App) Page() *ownframe.Page { return a.page }
+
+func (a *App) accessible() ownframe.Accessible { return a.page }
