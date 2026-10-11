@@ -71,4 +71,5 @@ type Page struct {
 	scroll          host.Scroll
 	hasScroll       bool
 	windowing       windowingState
+	accessibility   *accessibilityState
 }

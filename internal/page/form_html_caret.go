@@ -21,6 +21,9 @@ func fieldSpanState(raw string, ctrl Control, st caretState, focused bool) strin
 	if text == "" && kind != "file" {
 		ph = attrValue(raw, "placeholder")
 	}
+	if st.preedit != "" {
+		ph = ""
+	}
 
 	n := runeLen(ctrl.Value)
 	caret := st.caret
@@ -48,6 +51,9 @@ func fieldSpanState(raw string, ctrl Control, st caretState, focused bool) strin
 		if focused && !whole && !st.hidden {
 			inner = caretSpan() + inner
 		}
+	case st.preedit != "":
+		inner = markedPreedit(text, shownText(kind, st.preedit), st.start,
+			st.end, st.preeditStart, st.preeditEnd)
 	case whole:
 		inner = selectionSpan(text)
 	default:

@@ -20,3 +20,9 @@ type IME interface {
 	// draws again.
 	IMEReplace(ctx context.Context, start, end int, insert string, caret int) error
 }
+
+// IMEPreeditor receives temporary composition text without changing the
+// committed control value.
+type IMEPreeditor interface {
+	SetIMEComposition(ctx context.Context, text string, start, end int) error
+}

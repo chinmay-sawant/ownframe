@@ -5,9 +5,12 @@ Guides for the HTML window library. The sign-in program in `examples/login` is o
 Start with [features.md](features.md). The original Electron gap list is [../plans/v0.0.1/compare.md](../plans/v0.0.1/compare.md). That list sits next to its framework in [compare-electron.md](compare-electron.md), and the Rust framework gets the same treatment in [compare-rust-gpui.md](compare-rust-gpui.md).
 
 - [See what shipped, and what is still absent](features.md)
+- [Track accessibility, desktop IME, and platform follow-up work](../plans/v0.0.2/accessibility-desktop-ime.md)
+- [Read the page accessibility tree and its limits](accessibility.md)
 - [Migrate from go-gpui to ownframe](rebrand.md)
 - [Compare this repo with Electron, hello world included](compare-electron.md)
 - [Compare this repo with the Rust GPUI framework](compare-rust-gpui.md)
+- [Compare Go desktop app frameworks](compare-go-app-frameworks.md)
 - [Compare hello world syntax across Go UI libraries](compare-syntax.md)
 - [See a dated scan of implemented features and examples, with file citations](features-examples.md)
 - [Open a window, and set its size](window.md)

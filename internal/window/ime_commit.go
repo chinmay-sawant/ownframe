@@ -1,10 +1,8 @@
-//go:build android || ios
+//go:build !js
 
 package window
 
 import (
-	"time"
-
 	"github.com/hajimehoshi/ebiten/v2/exp/textinput"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -38,13 +36,4 @@ func (s *shell) imeCommit(c *textinput.Commit) {
 	if err := s.app.Type(s.ctx, c.Text()); err != nil {
 		s.ime.err = err
 	}
-}
-
-// imeEndByUser waits for a rotation resize before clearing field focus.
-func (s *shell) imeEndByUser() {
-	if s.ime.rotation.endByUser(time.Now()) {
-		return
-	}
-	s.ime.last = ""
-	s.ime.pendingEnd = true
 }

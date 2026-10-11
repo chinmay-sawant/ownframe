@@ -119,8 +119,11 @@ fallback also costs more CPU during scrolling than display-list replay.
 Fixed fallback projection applies at the committed viewport size. A pending
 resize or a locked fitted view scales the complete fallback picture. The
 application-specific `SetViewportPinZ` counter-scroll policy requires the replay
-path. Desktop IME, an accessibility tree, and durable browser storage remain
-outside this runtime.
+path. A native Android accessibility bridge and durable browser storage remain outside this
+runtime. The page-level semantic tree is available to Go hosts. Read
+[accessibility.md](accessibility.md) for its API and limits. Desktop IME is
+implemented in the window package and tracked in the
+[platform checklist](../plans/v0.0.2/accessibility-desktop-ime.md).
 
 The [validation record](../plans/v0.0.2/android-runtime-validation.md) lists
 actual checks and profiling results. The [Android build guide](android-build.md)

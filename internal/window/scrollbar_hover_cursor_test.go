@@ -59,4 +59,14 @@ func TestThumbHoverKeepsResizeCursor(t *testing.T) {
 	if len(got) != 1 || got[0] != ebiten.CursorShapeDefault {
 		t.Fatalf("off-thumb shapes = %v, want [default]", got)
 	}
+
+	s.dragAxis = dragHorizontal
+	got = nil
+	px, py = s.contentAt(198, 10, frameW, frameH)
+	if err := s.hoverCursor(198, 10, px, py); err != nil {
+		t.Fatal(err)
+	}
+	if s.cursor != ebiten.CursorShapeEWResize {
+		t.Fatalf("cursor during horizontal drag = %v, want %v", s.cursor, ebiten.CursorShapeEWResize)
+	}
 }

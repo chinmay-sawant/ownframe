@@ -8,6 +8,8 @@ A page taller or wider than the window scrolls on the mouse wheel, a touch drag,
 
 The window measures the canvas and grows it to cover every box that overflows it. A fixed-width child wider than the window scrolls too. The replay buffer uses the same measure, so scrolled content stays painted.
 
+When a page overflows, the window draws scrollbar thumbs at the right and bottom edges. Hovering a thumb shows the matching resize cursor; dragging it moves that scroll axis without sending a page click.
+
 While the picture is stretched to the window, `internal/window/view.go` ignores the wheel. The window does not draw page scrollbar thumbs. Users scroll with touch drags, mouse wheels, or page requests.
 
 ## Coordinates

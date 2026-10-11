@@ -33,6 +33,9 @@ func (s *shell) pointer() error {
 	if err != nil {
 		return err
 	}
+	if !handled {
+		handled = s.pointerScrollbar(x, y)
+	}
 
 	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	if !handled && down && s.mouseDown && !s.gesture.active {

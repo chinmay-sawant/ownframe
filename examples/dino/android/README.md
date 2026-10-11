@@ -3,7 +3,7 @@
 `scripts/android-dino.sh` is the debug build and install path.
 `scripts/android-release.sh dino` creates the signed release APK at
 `artifacts/dino-arm64-release.apk`. The toolchain setup and the WSL2 USB story are in
-[examples/telegram/android/README.md](../telegram/android/README.md).
+[examples/telegram/android/README.md](../../telegram/android/README.md).
 
 Release APKs for every Android mobile example are listed in
 [the APK index](../../android-host/APPS.md). Keep the local signing key in

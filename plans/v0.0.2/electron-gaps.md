@@ -2,6 +2,10 @@
 
 Recorded 2026-10-03 against `5a428f4`.
 
+The dated inventory below records the original v0.0.2 decision. Current
+implementation work and status live in
+[`accessibility-desktop-ime.md`](accessibility-desktop-ime.md).
+
 `documentation/features.md:69` keeps the still-absent list, and the v0.0.1
 scan is `../v0.0.1/compare.md`. This file answers that list for the v0.0.2
 cycle: DevTools, IME, accessibility, video, canvas, WebGL, printing, drag and
@@ -20,8 +24,8 @@ Chromium, no V8, and no second process.
 | Printing | in, as PDF export and a save path | The engine dependency writes PDF from HTML; the window never calls it. | `Page.PDF` / `WritePDF`, `SavePDF`, docs. |
 | Packaging | in, as scripts and docs | `scripts/browser.sh` and the documented `ebitenmobile bind` are the whole story. | A release script, per-OS archive layout, caveats. |
 | Canvas | no, v0.0.3 | The engine ignores `<canvas>`; there is no drawing surface for one. | Engine element support, a Go canvas call. |
-| IME | no, next cycle | Committed text arrives; composition never does. | Wire Ebiten's `exp/textinput` Composer in the window, then draw the composing run in the page. |
-| Accessibility | no, v0.0.3+ | The window is one canvas; boxes carry tag and text and nothing consumes them. | A tree, platform bridges, focus traversal. |
+| IME | follow-up in progress | Mobile IME is wired. Desktop builds connect Ebiten's `exp/textinput` Composer and paint preedit separately; native input-method verification remains. | Finish platform checks and record supported desktop backends. |
+| Accessibility | page tree foundation implemented | The page exposes a semantic tree and control actions. There is no native screen-reader bridge, CSS visibility filtering, or platform verification. | Native adapters and computed-visibility support. |
 | Video | no, dies on the no-modules rule | No `<video>`; `examples/music` decodes MP3 and WAV only. | A codec module and A/V sync. |
 | WebGL | no | Ebiten owns the graphics context; no public GL API. | An engine and toolkit project. |
 | Auto-update | no, not a library job | None. | A product-owned updater, or the OS store. |
@@ -176,33 +180,24 @@ Canvas 2D API does not follow from that, and the guide should say so.
 
 ### IME
 
-Committed text already reaches a field through `ebiten.AppendInputChars`
-(`internal/window/keys.go:28`), and the login and editing examples type with
-it. What never arrives is composition: no preedit run, no underline, no
-candidate window, no start and end. The v0.0.2 recording assumed Ebiten had
-no preedit API. That is wrong: Ebiten v2.10.4 ships the experimental
-`exp/textinput` package, where `Composer.OnComposition` carries the composing
-text, `SessionOptions.CaretBounds` carries the caret rectangle, and
-`OnCommit` and `OnEnd` carry the lifecycle, on Windows, macOS, Linux, iOS,
-Android, and browsers. The remaining work is ours, not upstream's. The window
-creates one Composer for the focused field and forwards the events; the page
-draws the composing run under the caret without touching the stored value,
-commits through the existing `Type` path so `BeforeEdit` and `Change` fire
-once, and drops the run on blur or escape. That is the first input item of
-the next cycle.
+The original plan assumed committed text was the only input available. The
+current desktop window creates an Ebiten `exp/textinput.Composer` for the
+focused field. The page paints preedit as an underlined temporary run and
+leaves the stored value and edit handlers alone until commit. Commits use the
+existing `Type` or `IMEReplace` path. The code has unit coverage; actual
+composition still needs checks with native input methods on supported desktop
+systems. See the live rows in
+[`accessibility-desktop-ime.md`](accessibility-desktop-ime.md).
 
 ### Accessibility
 
-The window is one Ebiten canvas. There is no accessibility tree and no screen
-reader surface. Tab traversal landed in v0.0.2 (`documentation/keys.md`), so
-focus order exists; the boxes give the next start: `layout.Box` carries `Tag`
-and `Text` (engine `layout/layout.go:19`), which maps to roles and names. The
-missing middle is a tree with focus and state, and the missing end is a
-platform bridge:
-AT-SPI over D-Bus on Linux, UI Automation on Windows, NSAccessibility on
-macOS. The engine can tag a PDF as PDF/UA (`document.go:116`), which helps
-printed output and not the live window. Target v0.0.3 at the earliest, with
-the tree first and the bridges after.
+The window is one Ebiten canvas. The page now exposes a semantic tree and
+actions for supported controls, but ownframe has no native screen-reader
+bridge. The first tree uses HTML parentage and joins bounds through unique
+element IDs. It does not filter CSS-hidden nodes. Separate adapters for
+AT-SPI, UI Automation, and NSAccessibility still need platform checks.
+PDF/UA output does not expose the live window. The phase order and acceptance
+checks are in [`accessibility-desktop-ime.md`](accessibility-desktop-ime.md).
 
 ### Video
 
@@ -230,10 +225,10 @@ feature.
 ## Risks and limits
 
 - The four in-v0.0.2 items are deliberate scope, not a promise that the
-  other six arrive soon. Canvas, accessibility, video, and WebGL all
-  need engine or toolkit work, and two of them die on the no-new-modules
-  rule before design starts. IME needs window and page work on top of
-  Ebiten's `exp/textinput`, and is the closest of the six.
+  other six arrive soon. Video and WebGL need codec or graphics work. The
+  first accessibility tree is in ownframe; native adapters and CSS visibility
+  still need work. IME needs window and page work on top of Ebiten's
+  `exp/textinput`, and is the closest of the six.
 - Printing re-renders from source, so the paper page and the window page
   differ in pagination and in anything the print path does not implement.
   The guide has to show both pictures.

@@ -26,7 +26,11 @@ The caret is a rune offset in the focused value, and the anchor is where the sel
 
 The caret blinks while a text field holds the focus: `Tick` turns it off after 530 ms of showing it, and on again 530 ms later. A caret move, an edit, a cut, or a select-all shows it and restarts the clock, so the line stays solid while someone types. A range selection paints no caret, so it does not blink. `Tick` runs in the window loop; `Serve` and `Page.PNG` do not tick, so a still picture keeps the caret. Blinking draws through `Redraw`, so the dirty region is the caret column only.
 
-IME composition reaches a field on Android and iOS through the window's `exp/textinput` session, which paints the preedit as field text until the IME commits it ([interaction.md](interaction.md)).
+IME composition reaches fields through the window's `exp/textinput` session. Desktop draws preedit separately from the stored value; Android and iOS use the mobile field edit path until commit ([interaction.md](interaction.md)).
+
+`AccessibilityPerform` replaces a supported text control through the same
+`BeforeEdit`, binding, and `Change` path. It does not expose password values
+through the accessibility snapshot ([accessibility.md](accessibility.md)).
 
 ## Submit
 

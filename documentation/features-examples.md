@@ -48,5 +48,12 @@ feature index with links to the detailed docs.
 Documented in [features.md](features.md) and [../PHASES.md](../PHASES.md), not
 implemented: JS engine/Chromium, cookies/sessions, native menus/tray,
 auto-update, video/WebGL, a library-level audio API (the examples play
-audio through `examples/music`), IME/accessibility, and some engine CSS limits
+audio through `examples/music`), an accessibility tree, and some engine CSS limits
 (transformed WOFF2, `:disabled`, `::placeholder`).
+Desktop IME composition is implemented in the window and page packages, with
+native input-method checks still open in the
+[phase checklist](../plans/v0.0.2/accessibility-desktop-ime.md).
+
+Update 2026-10-11: ownframe now exposes a page-level semantic tree and
+supported control actions. The native screen-reader bridge remains open;
+see [accessibility.md](accessibility.md).
