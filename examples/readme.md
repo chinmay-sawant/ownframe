@@ -9,6 +9,10 @@ example of its own.
 The feature list these examples follow is
 [../documentation/features-examples.md](../documentation/features-examples.md).
 
+When a change adds a distinct user-facing capability, add a small runnable
+example or extend a focused feature example so people can try the behavior
+without navigating a large app demo.
+
 ## Dev loop
 
 The reload example reads its HTML from disk, so the edit is the build step:
@@ -31,6 +35,7 @@ behavior and the limits are in
 | [forms](forms) | Every form control: text, password, textarea, checkbox, radio, select, file. |
 | [bind](bind) | `data-bind` two-way binding of controls to a struct. |
 | [input-lab](input-lab) | All nine form and input demos in one window: plain controls, two-way binding, a locked bound field, edit undo, OS clipboard, scroll list, sign-in, and CSS states. |
+| [accessibility](accessibility) | Labeled form, desktop IME composition, semantic tree snapshot and action, password redaction, and scrolling thumb cursor. |
 
 ## Feature examples
 

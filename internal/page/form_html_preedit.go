@@ -17,9 +17,7 @@ func markedPreedit(value, preedit string, start, end, selStart, selEnd int) stri
 	out.WriteString(html.EscapeString(string(base[:start])))
 	out.WriteString(`<span data-ownframe-composition="1">`)
 	out.WriteString(html.EscapeString(string(composing[:a])))
-	if a == b {
-		out.WriteString(caretSpan())
-	} else {
+	if a != b {
 		out.WriteString(selectionSpan(string(composing[a:b])))
 	}
 	out.WriteString(html.EscapeString(string(composing[b:])))

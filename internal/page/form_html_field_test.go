@@ -43,7 +43,7 @@ func TestRewriteCaretBeforePlaceholder(t *testing.T) {
 	src := `<input id="e" type="text" placeholder="Email">`
 	ctrl := Control{ID: "e", Tag: "input", Type: "text"}
 	got := rewriteControls(src, []controlSpan{whole(src, ctrl)}, nil, "e", false)
-	if !strings.Contains(got, `><span data-ownframe-caret="1"></span>Email</span>`) {
+	if !strings.Contains(got, `>Email</span>`) || strings.Contains(got, "data-ownframe-caret") {
 		t.Fatalf("%s", got)
 	}
 }

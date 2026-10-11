@@ -27,6 +27,13 @@ and action method without adding requirements to `host.Screen`. Call both
 methods on the page's owning loop. A native adapter must queue actions back
 to that loop.
 
+## Try the example
+
+Run `go run ./examples/accessibility` to try desktop text composition, inspect
+the semantic tree, invoke a set-value action through that tree, and scroll a
+page with a visible scrollbar thumb. The demo is a tree inspector; native
+screen-reader bridges remain platform work.
+
 ## Node identity and updates
 
 An element with a unique HTML `id` uses `id:<value>`. Other nodes use a

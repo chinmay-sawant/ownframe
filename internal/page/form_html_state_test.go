@@ -20,13 +20,13 @@ func TestRewriteSelectedNoCaret(t *testing.T) {
 	}
 }
 
-func TestRewriteCaretOnly(t *testing.T) {
+func TestRewriteFocusedValueAsOneTextRun(t *testing.T) {
 	t.Parallel()
 
 	src := `<input id="e" type="text" value="x">`
 	ctrl := Control{ID: "e", Tag: "input", Type: "text", Value: "x"}
 	got := rewriteControls(src, []controlSpan{whole(src, ctrl)}, nil, "e", false)
-	if !strings.Contains(got, `>x<span data-ownframe-caret="1"></span></span>`) {
+	if !strings.Contains(got, `>x</span>`) || strings.Contains(got, "data-ownframe-caret") {
 		t.Fatalf("%s", got)
 	}
 	got = rewriteControls(src, []controlSpan{whole(src, ctrl)}, nil, "", false)
@@ -42,7 +42,7 @@ func TestRewriteCaretMidValue(t *testing.T) {
 	ctrl := Control{ID: "e", Tag: "input", Type: "text", Value: "abcd"}
 	st := caretState{focus: "e", caret: 2, start: 2, end: 2}
 	got := rewriteControlsState(src, []controlSpan{whole(src, ctrl)}, nil, st)
-	if !strings.Contains(got, `>ab<span data-ownframe-caret="1"></span>cd</span>`) {
+	if !strings.Contains(got, `>abcd</span>`) {
 		t.Fatalf("%s", got)
 	}
 }

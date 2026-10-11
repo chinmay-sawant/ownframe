@@ -94,8 +94,8 @@ contrast enforcement.
 ## Use touch scrolling and pinch zoom
 
 OwnFrame scrolls an overflowing page when the user drags it. Desktop users can
-also use the mouse wheel. The window hides page scrollbar thumbs, so keep all
-content reachable without a visible bar. Use `Page.ScrollTo` or `Page.ScrollBy`
+also use the mouse wheel. Visible scrollbar thumbs show the current position
+and let users move through long pages. Use `Page.ScrollTo` or `Page.ScrollBy`
 when an app needs to move to a specific point.
 
 Pinch zoom is enabled by default. Two fingers change the page zoom from 0.25 to

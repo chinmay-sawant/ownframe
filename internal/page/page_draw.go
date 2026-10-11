@@ -69,6 +69,7 @@ func (p *Page) Redraw(ctx context.Context) error {
 	if derr != nil {
 		return derr
 	}
+	p.paintCaret(display)
 
 	if render.Replayable(display) {
 		p.dirtyFromDisplay(p.display, display)

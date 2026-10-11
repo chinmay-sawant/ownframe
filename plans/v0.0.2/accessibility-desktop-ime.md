@@ -56,6 +56,8 @@ the stored value changes only on commit, and callbacks fire once per edit.
   adapters without coupling the page to a platform API.
 - [x] Add action routing for focus, activate, and text value edits where the
   existing page API supports them.
+- [x] Add a runnable example for desktop composition, tree inspection, and a
+  tree-driven text edit.
 - [x] Test names, roles, order, live state, bounds, and action routing.
 - [x] Document unsupported semantics and the difference between the tree and
   PDF/UA output.
