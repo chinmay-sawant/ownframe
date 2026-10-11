@@ -104,8 +104,8 @@ No screenshots are attached. Pixel 7 screenshots and logs remain in ignored loca
 
 ## PR metadata checklist (author)
 
-- [ ] Self-assigned (`--assignee @me`)
-- [ ] Label applied (`enhancement`)
+- [x] Self-assigned (`--assignee @me`)
+- [x] Label applied (`enhancement`).
 - [x] Related issues recorded as none; no placeholder issue IDs.
 - [x] Filled body saved under `plans/PR/pr-android-runtime-blinkless.md`.
 
