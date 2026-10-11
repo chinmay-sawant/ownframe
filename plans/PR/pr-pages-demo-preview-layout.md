@@ -75,4 +75,10 @@ The rebuilt `docs/index.html` references `index-CR5s1zBB.css` and `index-C8IsGTN
 
 ## Diff stat by extension
 
-<!-- Generate this table with bash scripts/pr-diff-stat.sh master. -->
+| Extension | Files | Insertions | Deletions |
+| --- | ---: | ---: | ---: |
+| `.css` | 2 | 1 | 1 |
+| `.html` | 1 | 2 | 2 |
+| `.js` | 1 | 9 | 9 |
+| `.md` | 1 | 78 | 0 |
+| **Total** | **5** | **90** | **12** |
