@@ -22,9 +22,11 @@ export const documents = Object.entries({ ...sources, ...extras }).map(([path, t
   return a.title.localeCompare(b.title);
 });
 
-const images = import.meta.glob('../../assets/*.webp', { import: 'default', eager: true });
-export const preview = images['../../assets/preview.webp'];
-export const catPreview = images['../../assets/desktop-cat.webp'];
+const images = import.meta.glob([
+  '../../assets/**/*.webp', '../../assets/**/*.jpg', '../../assets/**/*.png',
+], { import: 'default', eager: true });
+export const preview = images['../../assets/screenshots/demos/ownframe-preview.webp'];
+export const catPreview = images['../../assets/screenshots/demos/desktop-cat.webp'];
 const sourceBase = `${repository}/blob/master/`;
 const sourcePath = new URL(sourceBase).pathname;
 

@@ -152,7 +152,7 @@ sh scripts/android-dino.sh install
 
 ## Screenshots / sample output
 
-- `showcase.md` renders the Pixel 7 captures: `assets/telegram-chats.webp`, `telegram-thread.webp`, `telegram-contacts.webp`, `telegram-settings.webp`, and the dark set.
+- `showcase.md` renders the Pixel 7 captures under `assets/screenshots/android/telegram/`, including the chat list, thread, contacts, settings, and dark-theme captures.
 - Device numbers from the commit messages: Telegram arm64 debug APK 29 MB (188 MB with all four ABIs and unstripped symbols), phone drag 55-85 fps.
 
 ---
@@ -193,7 +193,7 @@ gh pr create \
 - Z-pin applies in the direct replay path (ticking or oversized pages) and to operations with a z-index. The buffered path only special-cases engine `position: fixed`.
 - Pinned bars' hit boxes follow the 120 ms settle redraw, so a tap during an active drag can miss until it settles.
 - A claimed drag that moved skips `Release`; `dragActive` stays set until the next press. No test covers that lift.
-- Recapture `assets/telegram-settings.webp`; it predates the IME commit and shows the old hardware-keyboard note.
+- Recapture `assets/screenshots/android/telegram/telegram-settings.webp`; it predates the IME commit and shows the old hardware-keyboard note.
 - Dino: one swipe per lift, a fixed 600 ms duck with no hold-to-crouch, no upscaling above 1x, and an arm64-only default bind.
 - Telegram: state is in memory, a reaction is one emoji that overwrites, search excludes message text, and the photo queue drops shots beyond two.
 

@@ -1,0 +1,6 @@
+/.gradle/
+/build/
+/app/build/
+/pet-care.aar
+/pet-care-sources.jar
+/pet-care-aar/build/

@@ -1,6 +1,6 @@
 # ownframe website
 
-A React and Vite site with the README demos and the repository's Markdown documentation. It uses plain CSS and native video controls. The site defaults to dark mode; the header toggle switches to light mode and remembers the choice in this browser. The Gopher mascot lives in `assets/gopher.png` at the repository root.
+A React and Vite site with the README demos and the repository's Markdown documentation. It uses plain CSS and native video controls. The site defaults to dark mode; the header toggle switches to light mode and remembers the choice in this browser. The Gopher mascot lives in `assets/brand/gopher.webp`.
 
 ## Run locally
 
@@ -24,9 +24,9 @@ For a custom domain hosted at the root, build with `npm run build -- --base=/`.
 
 The site imports `../documentation/*.md`, the example index, desktop cat guide, Android guide, and `../showcase.md` at build time. Edit those files to update the website. Relative documentation links stay in the site; source-code and plan links open the repository on GitHub.
 
-The three videos in `public/demos/` are the original MP4s from their linked X posts. The Wispr Flow demo uses the supplied screenshot in `assets/wispr-flow.png`; the desktop cat and Teams demos use `assets/desktop-cat.webp` and `assets/teams.jpg`. The Teams clip comes from [this post](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1). The site serves the videos locally and links to the original posts. Videos load metadata only and do not autoplay.
+The three videos in `public/demos/` are the original MP4s from their linked X posts. The Wispr Flow, desktop cat, and Teams demos use preview images under `assets/screenshots/demos/`. The Teams clip comes from [this post](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1). The site serves the videos locally and links to the original posts. Videos load metadata only and do not autoplay.
 
-The Dino Run card uses `assets/dino.png` and links to `examples/dino` on GitHub. From the repository root, run it with `go run ./examples/dino`.
+The Dino Run card uses `assets/screenshots/demos/dino.webp` and links to `examples/dino` on GitHub. From the repository root, run it with `go run ./examples/dino`.
 
 ## GitHub stars
 

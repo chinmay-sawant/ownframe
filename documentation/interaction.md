@@ -22,11 +22,11 @@ A press held within 8 px for 450 ms calls `Page.LongPress`. A text field under t
 
 A right click asks the page for rows with `ContextMenu() []host.MenuItem` and draws them at the cursor. Row ids are `cut`, `copy`, `paste`, `select-all`, `undo`, and `redo`, and an action calls the screen method of the same name. Paste reads the clipboard the way the Ctrl+V chord does. A disabled row draws grey and does nothing.
 
-A left click on a row runs the action and closes the menu. A left click elsewhere or Escape closes it, and a new right click reopens it at the new point. The menu is chrome. `internal/window/menu_draw.go` paints it after the scrollbar thumbs, it never enters `Page.PNG`, the display list, or a `Redraw`, and the page is only asked for its rows when it opens.
+A left click on a row runs the action and closes the menu. A left click elsewhere or Escape closes it, and a new right click reopens it at the new point. The menu is chrome. `internal/window/menu_draw.go` paints it after the page, so it never enters `Page.PNG`, the display list, or a `Redraw`. The page is only asked for its rows when the menu opens.
 
 ## Cursor shape
 
-When the screen implements `host.CursorShape`, the window reads `CursorShape()` after each hover and sets the Ebiten cursor only when the shape changed. Text fields and textareas map to the I-beam, links and controls to the hand, and everything else to the default arrow. A scrollbar thumb shows the matching resize cursor while it is pressed or dragged. wasm and mobile keep their own cursor and ignore the call. The last shape stays on the shell for tests.
+When the screen implements `host.CursorShape`, the window reads `CursorShape()` after each hover and sets the Ebiten cursor only when the shape changed. Text fields and textareas map to the I-beam, links and controls to the hand, and everything else to the default arrow. wasm and mobile keep their own cursor and ignore the call. The last shape stays on the shell for tests.
 
 ## Touch
 
@@ -42,7 +42,7 @@ A captured drag suppresses page scrolling and long press. A stationary press sti
 
 ## Programmatic scroll
 
-`Page.ScrollTo(x, y)` and `Page.ScrollBy(dx, dy)` store one request. The window consumes it through `host.ScrollRequester`, clamps it to the content size, draws the thumbs from the new offset on the next frame, and clears it. The offset stays owned by the shell, so the wheel, a thumb drag, a touch drag, and a page request all move the same value ([scrolling.md](scrolling.md)).
+`Page.ScrollTo(x, y)` and `Page.ScrollBy(dx, dy)` store one request. The window consumes it through `host.ScrollRequester`, clamps it to the content size, and clears it. The offset stays owned by the shell, so the wheel, a touch drag, and a page request all move the same value ([scrolling.md](scrolling.md)).
 
 ## Fullscreen
 

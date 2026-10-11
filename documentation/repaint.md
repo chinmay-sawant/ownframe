@@ -49,9 +49,8 @@ a page with a fixed root stays painted when it scrolls.
 A dirty rect is filled with the page background and replayed into that
 buffer, and the visible page is blitted from the buffer to the screen each
 frame. The screen is cleared between frames, so the blit covers the viewport
-and only the buffer repaint is partial. Scrollbar thumbs and the `bitmap
-fallback` badge draw on the screen after the blit, so a repaint never wipes
-them.
+and only the buffer repaint is partial. The `bitmap fallback` badge draws on
+the screen after the blit, so a repaint never wipes it.
 
 The buffer is rebuilt in full when the generation changes without a usable
 rect, when the content changes size, and when the rect is the whole content. A

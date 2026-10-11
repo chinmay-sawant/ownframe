@@ -78,6 +78,29 @@ public final class AndroidHost implements Application.ActivityLifecycleCallbacks
         return callbacks.onBackPressed();
     }
 
+    /** Updates both system bars to match the active page theme. Call on the main thread. */
+    public void setSystemBarStyle(int color, boolean lightIcons) {
+        if (closed) return;
+        if (Looper.myLooper() != Looper.getMainLooper())
+            throw new IllegalStateException("system bar style must be set on the main thread");
+        Window window = activity.getWindow();
+        window.setStatusBarColor(color);
+        window.setNavigationBarColor(color);
+        if (Build.VERSION.SDK_INT >= 29) {
+            window.setStatusBarContrastEnforced(false);
+            window.setNavigationBarContrastEnforced(false);
+        }
+        View decor = window.getDecorView();
+        int flags = decor.getSystemUiVisibility();
+        if (lightIcons) flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        else flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        if (Build.VERSION.SDK_INT >= 26) {
+            if (lightIcons) flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            else flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        }
+        decor.setSystemUiVisibility(flags);
+    }
+
     public void close() {
         if (closed) return;
         closed = true;

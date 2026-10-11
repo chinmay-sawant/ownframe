@@ -1,0 +1,6 @@
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+rootProject.name = 'pet-care'
+include ':app', ':pet-care', ':android-host'
+project(':pet-care').projectDir = file('pet-care-aar')
+project(':android-host').projectDir = file('../../android-host')

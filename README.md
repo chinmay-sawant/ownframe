@@ -3,7 +3,7 @@
 Formerly known as **go-gpui**.
 
 <p align="left">
-  <img src="assets/gopher.png" alt="ownframe Gopher mascot" width="140" />
+  <img src="assets/brand/gopher.webp" alt="ownframe Gopher mascot" width="140" />
 </p>
 
 Write screens in HTML and CSS, and application logic in Go. ownframe renders with [blinkless](https://github.com/chinmay-sawant/blinkless) and opens a window with Ebiten. It ships no Chromium, WebKit, or JavaScript runtime.
@@ -14,13 +14,13 @@ The same page can run on desktop, in a browser through WebAssembly, or on a phon
 
 ownframe preview. HTML and CSS layout with a layout engine written in Go, no Chromium or WebKit.
 
-[![ownframe preview](assets/preview.webp)](https://x.com/chinmay_sawant_/status/2106788230154871126)
+[![ownframe preview](assets/screenshots/demos/ownframe-preview.webp)](https://x.com/chinmay_sawant_/status/2106788230154871126)
 
 [Watch the full preview on X](https://x.com/chinmay_sawant_/status/2106788230154871126)
 
 Desktop cat overlay. Transparent, click-through cat that reports what is happening inside opencode.
 
-[![Desktop cat overlay](assets/desktop-cat.webp)](https://x.com/chinmay_sawant_/status/2106829998409789929)
+[![Desktop cat overlay](assets/screenshots/demos/desktop-cat.webp)](https://x.com/chinmay_sawant_/status/2106829998409789929)
 
 ## Get started
 
@@ -69,7 +69,7 @@ go run ./examples/desktop-cat
 sh scripts/android.sh install
 ```
 
-The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](examples/telegram/android/README.md) have the details. See [showcase.md](showcase.md) for Telegram screenshots.
+The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](examples/telegram/android/README.md) have the details. See [showcase.md](showcase.md) for the Telegram, Teams, Pet Care, and other demo showcases.
 
 ## Documentation
 

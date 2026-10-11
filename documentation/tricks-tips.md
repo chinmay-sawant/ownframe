@@ -11,7 +11,7 @@ Fix: use three layers, each smaller than the last.
 1. Remote database is the truth and keeps everything.
 2. Local SQLite is a short cache. Create it at login, keep about one day, prune by time. A scroll past the cache fetches from remote and writes to SQLite first. Never render from the network directly.
 3. Memory holds a working set, for example 100 posts around the viewport.
-4. The screen renders a smaller window, for example 50 posts, with top and bottom spacers so the scrollbar keeps its size.
+4. The screen renders a smaller window, for example 50 posts, with top and bottom spacers so the document keeps its full scroll height.
 
 Scrolling up past the window slides the window. Scrolling past the cache triggers one paged fetch keyed by time or id, then the window slides. Cache expiry only drops the local copy. It never deletes server history.
 
