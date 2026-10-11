@@ -84,21 +84,21 @@ None found.
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
-| `.bat` | 1 | 0 | 0 |
-| `.css` | 1 | 0 | 0 |
-| `.go` | 1 | 0 | 0 |
-| `.gradle` | 1 | 0 | 0 |
-| `.html` | 1 | 0 | 0 |
+| `.bat` | 1 | 92 | 0 |
+| `.css` | 4 | 44 | 7 |
+| `.go` | 38 | 1133 | 9 |
+| `.gradle` | 4 | 21 | 0 |
+| `.html` | 2 | 32 | 2 |
 | `.jar` | 1 | Binary | Binary |
-| `.java` | 1 | 0 | 0 |
-| `.jpg` | 1 | Binary | Binary |
-| `.js` | 1 | 0 | 0 |
-| `.jsx` | 1 | 0 | 0 |
-| `.md` | 1 | 0 | 0 |
-| `.png` | 1 | Binary | Binary |
-| `.properties` | 1 | 0 | 0 |
-| `.sh` | 1 | 0 | 0 |
-| `.webp` | 1 | Binary | Binary |
-| `.xml` | 1 | 0 | 0 |
-| No extension | 1 | 0 | 0 |
-| **Total** | **1** | **0** | **0** |
+| `.java` | 2 | 147 | 0 |
+| `.jpg` | 2 | Binary | Binary |
+| `.js` | 2 | 512 | 110 |
+| `.jsx` | 1 | 92 | 21 |
+| `.md` | 19 | 824 | 49 |
+| `.png` | 8 | Binary | Binary |
+| `.properties` | 2 | 7 | 0 |
+| `.sh` | 1 | 31 | 0 |
+| `.webp` | 26 | Binary | Binary |
+| `.xml` | 2 | 8 | 0 |
+| No extension | 2 | 254 | 0 |
+| **Total** | **117** | **3197** | **198** |
