@@ -5,9 +5,7 @@ import (
 	"fmt"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type parityGame struct {
@@ -28,6 +26,12 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 	if g.step >= 5 {
 		return
 	}
+	if g.step == 0 {
+		if err := checkGPUOpacity(); err != nil {
+			g.err = err
+			return
+		}
+	}
 	if g.before == nil {
 		g.before = ebiten.NewImage(1908, 999)
 		g.after = ebiten.NewImage(1908, 999)
@@ -37,13 +41,7 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 	dy := -[]float64{0, 500.25, 1000, 20000, 36000}[g.step]
 	for _, i := range g.display.Order {
 		op := &g.display.Ops[i]
-		radii, ok := render.FillRadii(op)
-		if op.Kind == layout.DisplayOpFillRect && ok && radii == ([4]float64{}) {
-			l, t, r, b := snapped(op, 0, dy)
-			vector.FillRect(g.before, l, t, r-l, b-t, rgba(op), true)
-		} else {
-			drawOp(g.before, op, 0, dy)
-		}
+		drawOp(g.before, op, 0, dy)
 	}
 	DrawVisible(g.after, g.display, 0, dy)
 	a, b := make([]byte, 1908*999*4), make([]byte, 1908*999*4)

@@ -28,14 +28,8 @@ func (s *shell) applyTouches(now []touchPos, clicked bool, frameW, frameH int) e
 		return err
 	}
 
-	if len(now) >= 2 {
-		s.hold.cancel()
-	} else if u.start != nil {
-		tpx, tpy := s.contentAt(u.start.x, u.start.y, frameW, frameH)
-		s.holdStart(tpx, tpy)
-		if err := s.app.Press(s.ctx, tpx, tpy); err != nil {
-			return err
-		}
+	if err := s.touchPress(u, now, clicked, frameW, frameH); err != nil {
+		return err
 	}
 
 	if err := s.touchMove(u, now, frameW, frameH); err != nil {
@@ -55,6 +49,7 @@ func (s *shell) applyTouches(now []touchPos, clicked bool, frameW, frameH int) e
 
 	if u.tap == nil {
 		if lifted {
+			s.hold.release()
 			return s.app.Release(s.ctx)
 		}
 		return nil
@@ -66,5 +61,8 @@ func (s *shell) applyTouches(now []touchPos, clicked bool, frameW, frameH int) e
 
 	tpx, tpy := s.contentAt(u.tap.x, u.tap.y, frameW, frameH)
 
+	if s.hold.armed {
+		return s.finishTap(tpx, tpy)
+	}
 	return s.tapAt(tpx, tpy)
 }

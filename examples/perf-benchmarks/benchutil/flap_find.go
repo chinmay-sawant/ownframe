@@ -8,7 +8,7 @@ func place(d *ownframe.Display, op *ownframe.DisplayOp, x, y, w, h float64) {
 		return
 	}
 
-	p := d.PixelPerPoint
+	p := d.PointsPerPixel
 	op.X, op.Y, op.W, op.H = x*p, y*p, w*p, h*p
 	op.Alpha = 1
 }
@@ -32,7 +32,7 @@ func fillIn(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.Disp
 			continue
 		}
 
-		p := d.PixelPerPoint
+		p := d.PointsPerPixel
 		x, y, w, h := b.X*p, b.Y*p, b.W*p, b.H*p
 
 		for i := range d.Ops {
@@ -60,7 +60,7 @@ func textIn(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.Disp
 			continue
 		}
 
-		p := d.PixelPerPoint
+		p := d.PointsPerPixel
 		x, y, w, h := b.X*p, b.Y*p, b.W*p, b.H*p
 
 		for i := range d.Ops {

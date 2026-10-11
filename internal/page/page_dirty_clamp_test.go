@@ -8,7 +8,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
-func TestDirtyRectClampsToFrame(t *testing.T) {
+func TestDirtyRectClampsToContent(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -33,12 +33,13 @@ func TestDirtyRectClampsToFrame(t *testing.T) {
 	}
 
 	rect, ok := screen.TakeDirty()
-	frame := image.Rect(0, 0, 320, 100)
+	// Text can extend the content below the viewport. Keep that ink dirty.
+	frame := image.Rect(0, 0, screen.Display().Width, screen.Display().Height)
 	if !ok || rect.Empty() || !rect.In(frame) {
 		t.Fatalf("rect %v ok %v", rect, ok)
 	}
 
-	if rect.Max.Y != frame.Max.Y {
-		t.Fatalf("rect %v is not clamped at the frame bottom", rect)
+	if rect.Max.Y <= 100 {
+		t.Fatalf("rect %v lost ink below the viewport", rect)
 	}
 }

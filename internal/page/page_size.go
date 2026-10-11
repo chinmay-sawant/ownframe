@@ -21,7 +21,8 @@ func (p *Page) Size() (int, int) {
 	return p.width, p.height
 }
 
-// MinSize returns the smallest frame this page will draw.
+// MinSize returns the configured desktop minimum. Responsive mobile pages
+// follow the native viewport instead.
 func (p *Page) MinSize() (int, int) {
 	return p.minWidth, p.minHeight
 }
@@ -32,14 +33,17 @@ func (p *Page) MaxSize() (int, int) {
 	return p.maxWidth, p.maxHeight
 }
 
-// Clamp pulls a size up to the minimum only, so the layout always tracks
-// the window. The maximum is a window bound, not a layout bound.
+// Clamp applies the desktop minimum or the native mobile viewport. LockView
+// retains its canvas minimum on mobile. The maximum only bounds the window.
 func (p *Page) Clamp(width, height int) (int, int) {
+	if p.mobileViewport && !p.lockView {
+		return clampMin(width, 1), clampMin(height, 1)
+	}
 	return clampMin(width, p.minWidth), clampMin(height, p.minHeight)
 }
 
 // SetSize stores the frame size used by the next Redraw.
-// Values below the minimum are pulled up to it.
+// Clamp selects the minimum for the current host and canvas policy.
 func (p *Page) SetSize(width, height int) {
 	p.width, p.height = p.Clamp(width, height)
 }

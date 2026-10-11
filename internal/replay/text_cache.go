@@ -44,7 +44,7 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 			return nil
 		}
 
-		if fonts.sources == nil {
+		if fonts.sources == nil || len(fonts.sources) >= 64 {
 			fonts.sources = make(map[any]*text.GoTextFaceSource)
 			fonts.faces = make(map[faceKey]*text.GoTextFace)
 		}
@@ -61,6 +61,9 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}
+	if len(fonts.faces) >= 256 {
+		clear(fonts.faces)
+	}
 	fonts.faces[key] = face
 
 	return face

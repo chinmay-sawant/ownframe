@@ -76,6 +76,7 @@ func (p *Page) Redraw(ctx context.Context) error {
 		p.stats.lastDraw = time.Since(drawStart)
 		p.img = nil
 		p.display = display
+		p.fallbackDisplay = nil
 		p.setBoxes(display.Boxes)
 		p.generation++
 		p.applyPending()

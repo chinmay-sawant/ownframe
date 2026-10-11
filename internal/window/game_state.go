@@ -2,10 +2,11 @@ package window
 
 import (
 	"context"
+	"time"
+
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
-	"time"
 )
 
 type shell struct {
@@ -22,6 +23,8 @@ type shell struct {
 	fitBuf       *ebiten.Image
 	display      *layout.Display
 	fallback     bool
+	bitmapView   bitmapView
+	orderCache   orderCache
 	seq          uint64
 	contentW     int
 	contentH     int
@@ -46,6 +49,7 @@ type shell struct {
 
 	gesture          pointerDrag
 	mouseDown        bool
+	touchCanceled    bool
 	fingers          touchGesture
 	pageZoom         float64
 	tabEaten         bool

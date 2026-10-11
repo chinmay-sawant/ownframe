@@ -28,7 +28,7 @@ func DrawRectUnfixedZ(dst *ebiten.Image, d *layout.Display, rect image.Rectangle
 		return
 	}
 	visitZ(d, func(op *layout.DisplayOp) {
-		if scrollContentOp(op, z) && opTouches(op, d.PixelPerPoint, rect) {
+		if scrollContentOp(op, z) && opTouches(op, d.PointsPerPixel, rect) {
 			drawOp(clip, op, 0, 0)
 		}
 	})
@@ -59,7 +59,7 @@ func visitVisibleZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int, 
 	}
 	r := visibleRect(dst.Bounds(), dx, dy)
 	visitZ(d, func(op *layout.DisplayOp) {
-		if op.Fixed || atPinZ(op, z) != pinned || !opTouches(op, d.PixelPerPoint, r) {
+		if op.Fixed || atPinZ(op, z) != pinned || !opTouches(op, d.PointsPerPixel, r) {
 			return
 		}
 		drawOp(dst, op, dx, dy)

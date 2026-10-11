@@ -6,11 +6,11 @@ import "github.com/chinmay-sawant/ownframe"
 // the place along the sky or the ground; the layout holds the rest.
 func (a *App) paintScene(d *ownframe.Display) {
 	for i := range cloudMax {
-		setX(a.parts.clouds[i], a.clouds[i]*d.PixelPerPoint)
+		setX(a.parts.clouds[i], a.clouds[i]*d.PointsPerPixel)
 	}
 
 	for i := range stripeMax {
-		setX(a.parts.stripes[i], a.stripes[i]*d.PixelPerPoint)
+		setX(a.parts.stripes[i], a.stripes[i]*d.PointsPerPixel)
 	}
 }
 

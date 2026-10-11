@@ -21,12 +21,14 @@ import dev.ownframe.android.AndroidHost;
 import dev.ownframe.android.Callbacks;
 import dev.ownframe.android.InsetMode;
 import dev.ownframe.android.Options;
+import dev.ownframe.android.TouchCancellation;
 
 // MainActivity fills the screen with the remote and polls Bluetooth commands.
 public class MainActivity extends Activity {
     private static final int MATCH = ViewGroup.LayoutParams.MATCH_PARENT;
 
     private EbitenView view;
+    private TouchCancellation touches;
     private AndroidHost host;
     private Hid hid;
     private RemoteAccessibility accessibility;
@@ -64,6 +66,7 @@ public class MainActivity extends Activity {
         FrameLayout layout = new FrameLayout(this);
         layout.setLayoutParams(new ViewGroup.LayoutParams(MATCH, MATCH));
         view = new EbitenView(this);
+        touches = TouchCancellation.attach(view, Mobile::cancelTouches);
         layout.addView(view, new FrameLayout.LayoutParams(MATCH, MATCH));
         view.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS);
         accessibility = new RemoteAccessibility(this);
@@ -91,6 +94,7 @@ public class MainActivity extends Activity {
                     Mobile.setCommandListener(null);
                     if (hid != null) hid.pause();
                     poller.removeCallbacks(poll);
+                    touches.cancel();
                     view.suspendGame();
                 }
             });

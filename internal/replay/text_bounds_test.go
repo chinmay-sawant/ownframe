@@ -24,7 +24,7 @@ func TestOpBoundsTextUsesAscent(t *testing.T) {
 		t.Fatal("no text op")
 	}
 
-	ppt := display.PixelPerPoint
+	ppt := display.PointsPerPixel
 
 	box, ok := opBounds(op, ppt)
 	if !ok {

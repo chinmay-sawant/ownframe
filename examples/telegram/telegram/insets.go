@@ -15,7 +15,7 @@ func (a *App) applyInsets() {
 		return
 	}
 
-	if bottom > a.view.InsetBottom {
+	if bottom > a.view.InsetBottom && a.view.Active != "" {
 		a.page.ScrollTo(0, 1<<20)
 	} else if bottom < a.view.InsetBottom {
 		// The keyboard closed. The pinned bars were laid out against the

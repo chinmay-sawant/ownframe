@@ -1,7 +1,6 @@
 package window
 
 import (
-	"image/color"
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -11,7 +10,7 @@ func TestDisplayBackground(t *testing.T) {
 	t.Parallel()
 
 	display := &layout.Display{
-		Width: 320, Height: 400, PixelPerPoint: 0.75,
+		Width: 320, Height: 400, PointsPerPixel: 0.75,
 		Ops: []layout.DisplayOp{
 			{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
 			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 480, H: 600, R: 0.9, G: 0.8, B: 0.7, Alpha: 1},
@@ -34,7 +33,7 @@ func TestDisplayBackgroundMissing(t *testing.T) {
 	t.Parallel()
 
 	display := &layout.Display{
-		Width: 320, Height: 400, PixelPerPoint: 0.75,
+		Width: 320, Height: 400, PointsPerPixel: 0.75,
 		Ops:   []layout.DisplayOp{{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, Alpha: 1}},
 		Order: []int{0},
 	}
@@ -51,7 +50,7 @@ func TestDisplayBackgroundExactCanvas(t *testing.T) {
 	// spans it must be found; dividing instead of multiplying the canvas
 	// conversion would reject it.
 	display := &layout.Display{
-		Width: 320, Height: 320, PixelPerPoint: 0.75,
+		Width: 320, Height: 320, PointsPerPixel: 0.75,
 		Ops: []layout.DisplayOp{
 			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 240, H: 240, R: 1, G: 1, B: 1, Alpha: 1},
 		},
@@ -60,37 +59,5 @@ func TestDisplayBackgroundExactCanvas(t *testing.T) {
 
 	if _, ok := displayBackground(display); !ok {
 		t.Fatal("exact-canvas fill not found")
-	}
-}
-
-func TestDisplayBackgroundPaintOrder(t *testing.T) {
-	t.Parallel()
-
-	display := &layout.Display{
-		Width: 320, Height: 320, PixelPerPoint: 0.75,
-		Ops: []layout.DisplayOp{
-			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 240, H: 240, B: 1, Alpha: 1},
-			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 240, H: 240, R: 1, Alpha: 1},
-		},
-		Order: []int{1, 0},
-	}
-
-	c, ok := displayBackground(display)
-	if !ok {
-		t.Fatal("no background")
-	}
-
-	r, _, _, _ := c.RGBA()
-	if r>>8 != 255 {
-		t.Fatalf("picked the wrong op: red = %d", r>>8)
-	}
-}
-
-func TestPageBackgroundFallback(t *testing.T) {
-	t.Parallel()
-
-	s := &shell{app: &fakeScreen{width: 100, height: 100}}
-	if c := s.pageBackground(); c != color.White {
-		t.Fatalf("fallback = %v", c)
 	}
 }

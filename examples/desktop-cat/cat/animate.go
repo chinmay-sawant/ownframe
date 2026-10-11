@@ -68,7 +68,7 @@ func (a *animation) paint(ctx context.Context, seconds float64) error {
 		}
 	}
 
-	a.image.Y = a.y + math.Sin(seconds*2.4)*2*d.PixelPerPoint
+	a.image.Y = a.y + math.Sin(seconds*2.4)*2*d.PointsPerPixel
 
 	return nil
 }

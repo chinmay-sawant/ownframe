@@ -39,7 +39,7 @@ func TestTickPaintsTheObstacle(t *testing.T) {
 		t.Fatal("the small cactus is hidden")
 	}
 
-	pp := app.page.Display().PixelPerPoint
+	pp := app.page.Display().PointsPerPixel
 	if got := op.X / pp; math.Abs(got-500) > 8 {
 		t.Fatalf("cactus x = %v, want about 500", got)
 	}
@@ -64,7 +64,7 @@ func TestTickMovesTheDinoPose(t *testing.T) {
 	press(t, app, "space")
 	tick(t, app, clock, time.Second/60)
 
-	pp := app.page.Display().PixelPerPoint
+	pp := app.page.Display().PointsPerPixel
 	top := func() float64 { return app.parts.dino[1].Y / pp }
 
 	ground := top()

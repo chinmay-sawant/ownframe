@@ -5,6 +5,11 @@ release APK, run `scripts/android-release.sh telegram`; it writes
 `artifacts/telegram-arm64-release.apk`. This README is the fresh-machine
 walkthrough for Linux.
 
+The [runtime guide](../../../documentation/android-runtime.md) describes coordinates,
+input cancellation, IME focus, and lifecycle limits. The
+[validation record](../../../plans/v0.0.2/android-runtime-validation.md) distinguishes
+build verification from device testing.
+
 All Android mobile example APKs are listed in
 [the APK index](../../android-host/APPS.md). Keep the local signing key in
 `temp/android-release-signing/` backed up. Updates need the same key.

@@ -43,7 +43,7 @@ func faceFor(op *layout.DisplayOp, pxPerPt float64) *text.GoTextFace {
 			return nil
 		}
 
-		if textFaces.sources == nil {
+		if textFaces.sources == nil || len(textFaces.sources) >= 64 {
 			textFaces.sources = make(map[any]*text.GoTextFaceSource)
 			textFaces.faces = make(map[faceKey]*text.GoTextFace)
 		}
@@ -59,6 +59,9 @@ func faceFor(op *layout.DisplayOp, pxPerPt float64) *text.GoTextFace {
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}
+	if len(textFaces.faces) >= 256 {
+		clear(textFaces.faces)
+	}
 	textFaces.faces[key] = face
 
 	return face

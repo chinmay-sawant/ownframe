@@ -26,6 +26,8 @@ body {
 
 .app { display: flex; flex-direction: column; min-height: 100vh; box-sizing: border-box; }
 
+.app-phone { display: block; }
+
 .topbar {
   display: flex;
   align-items: center;

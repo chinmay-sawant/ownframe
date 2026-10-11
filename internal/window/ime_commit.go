@@ -3,6 +3,8 @@
 package window
 
 import (
+	"time"
+
 	"github.com/hajimehoshi/ebiten/v2/exp/textinput"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -10,6 +12,9 @@ import (
 
 // imeCommit applies a committed edit.
 func (s *shell) imeCommit(c *textinput.Commit) {
+	if !s.imeTargetCurrent(s.ime.field) {
+		return
+	}
 	s.imeDrop()
 
 	if before, after := c.IsSurroundingTextReplaced(); before || after {
@@ -35,13 +40,11 @@ func (s *shell) imeCommit(c *textinput.Commit) {
 	}
 }
 
-// imeEndByUser hides the keyboard by dropping the focus.
+// imeEndByUser waits for a rotation resize before clearing field focus.
 func (s *shell) imeEndByUser() {
-	s.ime.last = ""
-
-	if f, ok := s.app.(host.Focuser); ok {
-		if err := f.Focus(s.ctx, ""); err != nil {
-			s.ime.err = err
-		}
+	if s.ime.rotation.endByUser(time.Now()) {
+		return
 	}
+	s.ime.last = ""
+	s.ime.pendingEnd = true
 }

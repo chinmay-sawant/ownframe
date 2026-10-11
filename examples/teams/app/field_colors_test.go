@@ -15,8 +15,8 @@ func fieldOps(app *App) []layout.DisplayOp {
 		return nil
 	}
 
-	left := box.X * d.PixelPerPoint
-	right := (box.X + box.W) * d.PixelPerPoint
+	left := box.X * d.PointsPerPixel
+	right := (box.X + box.W) * d.PointsPerPixel
 	out := []layout.DisplayOp{}
 
 	for i := range d.Ops {

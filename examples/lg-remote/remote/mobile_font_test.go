@@ -25,7 +25,7 @@ func TestPhoneFontScalingReachesRenderedControls(t *testing.T) {
 		var width float64
 		for _, b := range p.Boxes() {
 			if b.ID == "ok" {
-				width = b.W * d.PixelPerPoint
+				width = b.W * d.PointsPerPixel
 			}
 		}
 		found := false

@@ -12,7 +12,7 @@ import (
 // BoxUnits converts a hit-test box to display-list units: x, y, w, h.
 // Display operations carry points; boxes carry CSS pixels.
 func BoxUnits(d *ownframe.Display, b ownframe.Box) (x, y, w, h float64) {
-	p := d.PixelPerPoint
+	p := d.PointsPerPixel
 
 	return b.X * p, b.Y * p, b.W * p, b.H * p
 }

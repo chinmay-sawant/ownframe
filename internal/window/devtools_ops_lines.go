@@ -48,7 +48,7 @@ func (s *shell) devOpsRows() []devRow {
 			continue
 		}
 		n++
-		x := devOpRect(op, s.display.PixelPerPoint)
+		x := devOpRect(op, s.display.PointsPerPixel)
 		sp := []devSpan{
 			{fmt.Sprintf("#%d ", n), devDim, 0},
 			{devOpsListName[op.Kind], ink, 0},

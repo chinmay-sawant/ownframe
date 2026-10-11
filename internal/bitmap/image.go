@@ -4,67 +4,37 @@ import (
 	"bytes"
 	"image"
 	"image/color"
+	"image/draw"
 	_ "image/jpeg"
-	"image/png"
-	"math"
+	_ "image/png"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	xdraw "golang.org/x/image/draw"
+	"golang.org/x/image/math/f64"
 )
 
 func clearWhite(img *image.NRGBA) {
-	white := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	for i := 0; i < len(img.Pix); i += 4 {
-		img.Pix[i] = white.R
-		img.Pix[i+1] = white.G
-		img.Pix[i+2] = white.B
-		img.Pix[i+3] = white.A
-	}
+	draw.Draw(img, img.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
 }
 
-func paintImage(dst *image.NRGBA, op *layout.DisplayOp) {
+func paintImage(dst *image.NRGBA, op *layout.DisplayOp) error {
 	data, _, _ := op.ImageBytes()
-	if len(data) == 0 {
-		return
-	}
-
-	src, err := png.Decode(bytes.NewReader(data))
+	src, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		src, _, err = image.Decode(bytes.NewReader(data))
-		if err != nil {
-			return
-		}
+		return err
 	}
-
-	x, y := origin(op)
-	left := int(math.Round(x * pxPerPt))
-	top := int(math.Round(y * pxPerPt))
-	right := int(math.Round((x + op.W) * pxPerPt))
-	bottom := int(math.Round((y + op.H) * pxPerPt))
-	dw, dh := right-left, bottom-top
-	if dw < 1 || dh < 1 {
-		return
+	b := src.Bounds()
+	if b.Empty() || op.W <= 0 || op.H <= 0 {
+		return nil
 	}
-
-	sb := src.Bounds()
-	sw, sh := sb.Dx(), sb.Dy()
-	if sw < 1 || sh < 1 {
-		return
+	m := op.Transform()
+	if !op.XformSet {
+		m.A, m.B, m.C, m.D, m.E, m.F = 1, 0, 0, 1, 0, 0
 	}
-
-	clip := dst.Bounds()
-	for y := top; y < bottom; y++ {
-		if y < clip.Min.Y || y >= clip.Max.Y {
-			continue
-		}
-
-		sy := sb.Min.Y + (y-top)*sh/dh
-		for x := left; x < right; x++ {
-			if x < clip.Min.X || x >= clip.Max.X {
-				continue
-			}
-
-			sx := sb.Min.X + (x-left)*sw/dw
-			dst.Set(x, y, src.At(sx, sy))
-		}
-	}
+	sx, sy := op.W*pxPerPt/float64(b.Dx()), op.H*pxPerPt/float64(b.Dy())
+	x, y := transform(op, op.X, op.Y)
+	matrix := f64.Aff3{m.A * sx, m.C * sy, x * pxPerPt, m.B * sx, m.D * sy, y * pxPerPt}
+	mask := image.NewUniform(color.Alpha{A: channel(op.Opacity())})
+	xdraw.BiLinear.Transform(dst, matrix, src, b, draw.Over, &xdraw.Options{SrcMask: mask})
+	return nil
 }

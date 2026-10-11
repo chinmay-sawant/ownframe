@@ -16,16 +16,14 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	}
 
 	switch {
-	case box.Action == "tab-chats":
-		a.view.Tab = "chats"
-	case box.Action == "tab-contacts":
-		a.view.Tab = "contacts"
-	case box.Action == "tab-settings":
-		a.view.Tab = "settings"
+	case box.Action == "tab-chats", box.Action == "tab-contacts", box.Action == "tab-settings":
+		a.view.Tab = strings.TrimPrefix(box.Action, "tab-")
+		a.page.ScrollTo(0, 0)
 	case box.Action == "chat-back":
 		a.view.Active = ""
 		a.view.Status = ""
 		a.view.AttachOpen = false
+		a.page.ScrollTo(0, 0)
 	case strings.HasPrefix(box.Action, "open-"):
 		a.open(strings.TrimPrefix(box.Action, "open-"))
 	case strings.HasPrefix(box.Action, "contact-"):

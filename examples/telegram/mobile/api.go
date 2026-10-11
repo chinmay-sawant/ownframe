@@ -40,11 +40,9 @@ func SetInsets(top, bottom int) {
 	}
 }
 
-// DarkTheme reports whether the page shows the dark theme.
-func DarkTheme() bool {
-	if app == nil {
-		return false
+// Blur queues keyboard focus dismissal on the game loop.
+func Blur() {
+	if app != nil {
+		app.RequestBlur()
 	}
-
-	return app.DarkTheme()
 }

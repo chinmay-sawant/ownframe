@@ -38,10 +38,10 @@ func (a *App) setFill(d *ownframe.Display, op *ownframe.DisplayOp, r rect, visib
 		return
 	}
 
-	op.X = r.x * a.view.scale * d.PixelPerPoint
-	op.Y = (r.y*a.view.scale + a.view.oy) * d.PixelPerPoint
-	op.W = r.w * a.view.scale * d.PixelPerPoint
-	op.H = r.h * a.view.scale * d.PixelPerPoint
+	op.X = r.x * a.view.scale * d.PointsPerPixel
+	op.Y = (r.y*a.view.scale + a.view.oy) * d.PointsPerPixel
+	op.W = r.w * a.view.scale * d.PointsPerPixel
+	op.H = r.h * a.view.scale * d.PointsPerPixel
 
 	if visible {
 		op.Alpha = 1

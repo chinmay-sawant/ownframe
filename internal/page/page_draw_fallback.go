@@ -13,7 +13,10 @@ import (
 // bitmap of its own.
 func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track bool) error {
 	ps := time.Now()
-	img := bitmap.Picture(display)
+	img, err := bitmap.Paint(display)
+	if err != nil {
+		return err
+	}
 	if track {
 		p.stats.paintTime = time.Since(ps)
 	}
@@ -24,6 +27,7 @@ func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track
 	p.stats.lastDraw = time.Since(drawStart)
 	p.img = img
 	p.display = nil
+	p.fallbackDisplay = display
 	p.setBoxes(boxes)
 	p.generation++
 	p.markFull()

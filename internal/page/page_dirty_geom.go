@@ -9,7 +9,7 @@ import (
 // opBounds is one operation's box in CSS pixels. A text or bullet op carries
 // its baseline in Y, so the top comes from the face ascent.
 func opBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
-	scale := d.PointsPerPixel
+	scale := d.PixelPerPoint
 	if scale <= 0 {
 		scale = 1
 	}

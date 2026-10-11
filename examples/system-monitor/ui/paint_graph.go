@@ -18,7 +18,7 @@ func (a *App) paintGraph(d *ownframe.Display, p *panel) {
 
 	bx, by, bw, bh := frame.BoxUnits(d, box)
 	bottom := by + bh
-	pp := d.PixelPerPoint
+	pp := d.PointsPerPixel
 
 	cols := min(graphColumns(bw, pp), len(bars))
 	vals, oks := p.graph.Columns(cols)

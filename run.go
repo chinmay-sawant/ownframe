@@ -22,11 +22,12 @@ func Run(ctx context.Context, page *Page) (err error) {
 // BindMobile registers the page with Ebitengine's mobile view.
 // Call it from the package that ebitenmobile bind compiles.
 // Do not call Run from that package. BindMobile draws the page first
-// when it has not been drawn yet.
+// when it has not been drawn yet. Responsive pages follow the native
+// viewport instead of the desktop minimum; LockView retains its canvas.
 func BindMobile(ctx context.Context, page *Page) (err error) {
 	defer savePanic(page, &err)
 
-	if err := prepare(ctx, page); err != nil {
+	if err := pagepkg.PrepareMobile(ctx, page); err != nil {
 		return err
 	}
 

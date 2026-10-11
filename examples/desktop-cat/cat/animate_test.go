@@ -41,7 +41,7 @@ func TestImageAnimationKeepsLayoutBetweenExpressions(t *testing.T) {
 	if after := a.page.Stats(); after.Parses != before.Parses || after.Layouts != before.Layouts {
 		t.Fatal("frame animation parsed or laid out the page")
 	}
-	if a.image.W != 200*a.display.PixelPerPoint || a.image.H != 200*a.display.PixelPerPoint {
+	if a.image.W != 200*a.display.PointsPerPixel || a.image.H != 200*a.display.PointsPerPixel {
 		t.Fatal("cat was not scaled to 200 CSS pixels")
 	}
 	if err := a.page.Redraw(ctx); err != nil {

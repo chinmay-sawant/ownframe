@@ -14,7 +14,7 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 	bftDraw(t, p, nil)
 
 	box := p.boxByID("t")
-	pt := p.display.PixelPerPoint
+	pt := p.display.PointsPerPixel
 
 	var first, last *DisplayOp
 	for i := range p.display.Ops {

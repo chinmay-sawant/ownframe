@@ -7,6 +7,9 @@ import "context"
 // window calls it once per frame on the phone.
 func (a *App) Tick(ctx context.Context) error {
 	a.page.UseFrameDirty()
+	if err := a.applyBlur(ctx); err != nil {
+		return err
+	}
 	a.applyBack()
 	a.applyInsets()
 	a.applyPhoto()

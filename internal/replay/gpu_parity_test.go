@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/page"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -29,7 +30,10 @@ func TestGPUVisibleParity(t *testing.T) {
 	if err = p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	g := &parityGame{display: p.Display()}
+	d := p.Display()
+	d.Order = append(d.Order, len(d.Ops))
+	d.Ops = append(d.Ops, layout.DisplayOp{Kind: layout.DisplayOpFillRect, Fixed: true, X: 10, Y: 10, W: 20, H: 20, R: 1})
+	g := &parityGame{display: d}
 	ebiten.SetWindowSize(1908, 999)
 	if err = ebiten.RunGame(g); err != nil {
 		t.Fatal(err)

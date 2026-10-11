@@ -29,3 +29,18 @@ and passwords are not part of the repository.
 
 Gradle outputs, local SDK paths, and generated AARs remain ignored. The APKs
 listed above are the deliverables.
+
+## Verify the committed APKs
+
+From the repository root, check the committed arm64 APK snapshot with:
+
+```sh
+sha256sum -c examples/android-host/APK-SHA256SUMS
+```
+
+All five APKs use the release variant and the same existing signing certificate.
+They contain only `arm64-v8a` native libraries and are not debuggable. The
+certificate SHA-256 is
+`5779480c16bb8403f6bb58d454f3487623c4f7da5e498403859f85bd09b1816f`.
+Rebuilding an APK can change its bytes; update the checksum snapshot when
+committing rebuilt artifacts.

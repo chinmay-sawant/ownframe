@@ -35,7 +35,7 @@ func (c *Companion) Draggable(x, y int) bool {
 	}
 	top := 142.0
 	if a.image != nil && a.display == c.Page.Display() {
-		top = a.image.Y / a.display.PixelPerPoint
+		top = a.image.Y / a.display.PointsPerPixel
 	}
 	px, py := x-100, int(float64(y)-top)
 	return float64(y) >= top && px >= 0 && px < 200 && py >= 0 && py < 200 && a.shape.pixels[py*200+px]

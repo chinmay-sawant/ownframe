@@ -19,6 +19,8 @@ func start() error {
 	app = a
 	setAndroidPageProfile(a.Page())
 
+	inputPage = a.Page()
+
 	if err := ownframe.BindMobile(context.Background(), a.Page()); err != nil {
 		return fmt.Errorf("mobile: bind: %w", err)
 	}

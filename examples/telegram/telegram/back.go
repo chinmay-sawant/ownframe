@@ -27,5 +27,6 @@ func (a *App) applyBack() {
 
 	a.view.Active = ""
 	a.view.Status = ""
+	a.page.ScrollTo(0, 0)
 	a.mark()
 }

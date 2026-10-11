@@ -38,7 +38,7 @@ func DrawRect(dst *ebiten.Image, display *layout.Display, rect image.Rectangle, 
 		}
 
 		op := &display.Ops[index]
-		if op.Fixed || !opTouches(op, display.PixelPerPoint, rect) {
+		if op.Fixed || !opTouches(op, display.PointsPerPixel, rect) {
 			continue
 		}
 

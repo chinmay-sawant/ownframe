@@ -10,7 +10,7 @@ import (
 
 func TestVisiblePreservesOrderAndUnboundedInk(t *testing.T) {
 	d := &layout.Display{
-		PixelPerPoint: 0.75,
+		PointsPerPixel: 0.75,
 		Ops: []layout.DisplayOp{
 			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 20, H: 20},
 			{Kind: layout.DisplayOpFillRect, X: 0, Y: 1500, W: 20, H: 20},

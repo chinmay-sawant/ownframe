@@ -5,18 +5,8 @@ package window
 import (
 	"image"
 
-	"github.com/chinmay-sawant/blinkless/layout"
-
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
-
-// imeCaretRect is the screen rectangle of a text control the platform keeps
-// visible while the keyboard is up.
-func imeCaretRect(box layout.Box) image.Rectangle {
-	x, y := int(box.X), int(box.Y)
-
-	return image.Rect(x, y, x+int(box.W), y+int(box.H))
-}
 
 // imeResize restarts the session when the caret box moved, because Ebiten
 // freezes the caret bounds a session reports at its start. A keyboard
@@ -30,7 +20,7 @@ func (s *shell) imeResize() {
 	}
 
 	box, _, _, _, ok := target.IMEContext()
-	if !ok || imeNear(imeCaretRect(box), s.ime.caret) {
+	if !ok || imeNear(s.imeScreenRect(box), s.ime.caret) {
 		return
 	}
 

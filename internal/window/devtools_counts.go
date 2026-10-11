@@ -53,7 +53,7 @@ func devOpsInBox(display *layout.Display, box layout.Box) int {
 			continue
 		}
 
-		r := devOpRect(op, display.PixelPerPoint)
+		r := devOpRect(op, display.PointsPerPixel)
 		if r.X >= box.X && r.Y >= box.Y && r.X+r.W <= box.X+box.W && r.Y+r.H <= box.Y+box.H {
 			count++
 		}

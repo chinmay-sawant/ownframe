@@ -133,7 +133,7 @@ outline.
 The bounds are the op's painted box in CSS pixels, from
 `replay.PaintBounds`: the same box the replay's partial repaint filter uses,
 without its one-pixel slack. Op coordinates are points: divide by
-`Display.PixelPerPoint` to reach CSS pixels. A text operation carries its
+`Display.PointsPerPixel` to reach CSS pixels. A text operation carries its
 baseline in `Y`, so its box runs from the face ascent above the baseline to
 the ink descent below it, a stroke grows by half its width, a line uses its
 inward geometry and stroke width, and a grid run is the union of its

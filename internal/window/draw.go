@@ -40,6 +40,11 @@ func (s *shell) drawContent(screen *ebiten.Image) {
 		s.drawFitted(screen)
 		return
 	}
+	if s.bitmapView.img != nil {
+		dst := screen
+		dst.DrawImage(s.bitmapView.img, nil)
+		return
+	}
 	zoom := s.zoom()
 
 	if s.display != nil {

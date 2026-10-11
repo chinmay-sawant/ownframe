@@ -19,9 +19,9 @@ func rgba(op *layout.DisplayOp) color.RGBA {
 // withAlpha keeps the op color and replaces the alpha, clamped to 0..1.
 func withAlpha(op *layout.DisplayOp, alpha float64) color.RGBA {
 	return color.RGBA{
-		R: channel(op.R),
-		G: channel(op.G),
-		B: channel(op.B),
+		R: channel(op.R * clamp(alpha)),
+		G: channel(op.G * clamp(alpha)),
+		B: channel(op.B * clamp(alpha)),
 		A: uint8(math.Round(clamp(alpha) * 255)),
 	}
 }

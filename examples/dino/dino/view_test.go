@@ -23,7 +23,7 @@ func TestTouchViewFitsThePhone(t *testing.T) {
 	}
 
 	want := fitView(881, 396)
-	pp := app.page.Display().PixelPerPoint
+	pp := app.page.Display().PointsPerPixel
 
 	if got := app.parts.ground.Y / pp; math.Abs(got-((groundY-2)*want.scale+want.oy)) > 1 {
 		t.Fatalf("ground y = %v", got)
@@ -43,7 +43,7 @@ func TestDesktopViewIsIdentity(t *testing.T) {
 		t.Fatal("the ground was not bound")
 	}
 
-	pp := app.page.Display().PixelPerPoint
+	pp := app.page.Display().PointsPerPixel
 
 	if got := app.parts.ground.Y / pp; math.Abs(got-(groundY-2)) > 1 {
 		t.Fatalf("ground y = %v, want %v", got, float64(groundY-2))

@@ -22,6 +22,7 @@ type App struct {
 	attachKind string
 	attachID   string
 	back       bool
+	blur       bool
 	photos     chan []byte
 	photoN     int
 	onList     atomic.Bool
@@ -33,6 +34,7 @@ type App struct {
 	// lastScrollY, lastMove, and scrollDirty gather a phone scroll into one
 	// settling redraw after the movement stops.
 	lastScrollY int
+	viewportH   int
 	lastMove    time.Time
 	scrollDirty bool
 }

@@ -8,7 +8,7 @@ import (
 
 // collect gathers the text runs inside box, grouped by baseline.
 func collect(d *layout.Display, box layout.Box) []line {
-	pt := d.PixelPerPoint
+	pt := d.PointsPerPixel
 	left, right := box.X*pt, (box.X+box.W)*pt
 	top, bottom := box.Y*pt, (box.Y+box.H)*pt
 

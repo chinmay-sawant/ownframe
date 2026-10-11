@@ -27,6 +27,7 @@ import dev.ownframe.android.AndroidHost;
 import dev.ownframe.android.Callbacks;
 import dev.ownframe.android.InsetMode;
 import dev.ownframe.android.Options;
+import dev.ownframe.android.TouchCancellation;
 
 // MainActivity fills the screen with the bound ownframe page and forwards
 // Back, camera capture, and gallery selection to the page.
@@ -36,6 +37,8 @@ public class MainActivity extends Activity {
     private static final int MATCH = ViewGroup.LayoutParams.MATCH_PARENT;
 
     private EbitenView view;
+    private TouchCancellation touches;
+    private FrameLayout layout;
     private AndroidHost host;
     private boolean waitingPermission;
 
@@ -64,16 +67,22 @@ public class MainActivity extends Activity {
             Options.builder().edgeToEdge(true).insetMode(InsetMode.APP_CALLBACK).build(),
             new Callbacks() {
                 @Override public void onInsetsChanged(dev.ownframe.android.Insets insets) {
+                    float density = getResources().getDisplayMetrics().density;
+                    layout.setPadding(Math.round(insets.leftDp * density), 0,
+                        Math.round(insets.rightDp * density), 0);
                     Mobile.setInsets(Math.round(insets.topDp),
                         Math.round(Math.max(insets.bottomDp, insets.imeBottomDp)));
                 }
+                @Override public void onImeBackPressed() { Mobile.blur(); }
                 @Override public boolean onBackPressed() { return Mobile.back(); }
                 @Override public void onResume() {
                     view.resumeGame();
+                    poller.removeCallbacks(poll);
                     poller.post(poll);
                 }
                 @Override public void onPause() {
                     poller.removeCallbacks(poll);
+                    touches.cancel();
                     view.suspendGame();
                 }
             });
@@ -81,10 +90,11 @@ public class MainActivity extends Activity {
 
     // buildLayout holds the Ebiten view below the shared host container.
     private FrameLayout buildLayout() {
-        FrameLayout layout = new FrameLayout(this);
+        layout = new FrameLayout(this);
         layout.setLayoutParams(new ViewGroup.LayoutParams(MATCH, MATCH));
 
         view = new EbitenView(this);
+        touches = TouchCancellation.attach(view, Mobile::cancelTouches);
         layout.addView(view, new FrameLayout.LayoutParams(MATCH, MATCH));
 
         return layout;
@@ -179,7 +189,9 @@ public class MainActivity extends Activity {
         Uri uri = data.getData();
         if (uri != null) {
             try {
-                return BitmapFactory.decodeStream(getContentResolver().openInputStream(uri));
+                try (java.io.InputStream stream = getContentResolver().openInputStream(uri)) {
+                    return BitmapFactory.decodeStream(stream);
+                }
             } catch (Exception e) {
                 return null;
             }
@@ -193,6 +205,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        poller.removeCallbacks(poll);
+        if (touches != null) touches.close();
         if (host != null) host.close();
         super.onDestroy();
     }

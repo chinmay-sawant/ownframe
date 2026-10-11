@@ -10,9 +10,9 @@ func devTestDisplay() *layout.Display {
 			{Kind: layout.DisplayOpText, X: 10, Y: 30, W: 80, H: 16, Text: "hi"},
 			{Kind: layout.DisplayOpNoop, X: 0, Y: 0, W: 1, H: 1},
 		},
-		Order:         []int{0, 1, 2},
-		Width:         800,
-		Height:        600,
-		PixelPerPoint: 0.75,
+		Order:          []int{0, 1, 2},
+		Width:          800,
+		Height:         600,
+		PointsPerPixel: 0.75,
 	}
 }

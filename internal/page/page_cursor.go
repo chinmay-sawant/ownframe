@@ -36,11 +36,11 @@ func (p *Page) CursorShape() host.Shape {
 // linkAt reports whether the point is over a link's text run.
 func (p *Page) linkAt(x, y float64) bool {
 	d := p.display
-	if d == nil || d.PixelPerPoint <= 0 {
+	if d == nil || d.PointsPerPixel <= 0 {
 		return false
 	}
 
-	pt := d.PixelPerPoint
+	pt := d.PointsPerPixel
 	xPt, yPt := x*pt, y*pt
 	for i := range d.Ops {
 		op := &d.Ops[i]

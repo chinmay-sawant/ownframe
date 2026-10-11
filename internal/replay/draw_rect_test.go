@@ -10,7 +10,7 @@ import (
 func TestClipRectClampsNotDrops(t *testing.T) {
 	t.Parallel()
 
-	display := &layout.Display{Width: 100, Height: 80, PixelPerPoint: 1}
+	display := &layout.Display{Width: 100, Height: 80, PointsPerPixel: 1}
 
 	got := clipRect(display, image.Rect(-20, -20, 30, 30))
 	if got != image.Rect(0, 0, 30, 30) {

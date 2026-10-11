@@ -20,7 +20,7 @@ func TestDevOpRectTextLineBox(t *testing.T) {
 }
 
 // TestDevOpRectUsesCanvasPixels pins the conversion direction: op coordinates
-// are points, and PixelPerPoint divides them to CSS pixels. The old inspector
+// are points, and PointsPerPixel divides them to CSS pixels. The old inspector
 // multiplied, so the outline sat at 56% of the paint.
 func TestDevOpRectUsesCanvasPixels(t *testing.T) {
 	t.Parallel()

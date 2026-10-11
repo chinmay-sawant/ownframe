@@ -13,7 +13,7 @@ import (
 
 // TestPaintBoundsMatchesElementBox places one background box and checks that
 // the painted bounds agree with the element box the layout reports. The old
-// inspector multiplied op points by PixelPerPoint, so the outline sat at 56%
+// inspector multiplied op points by PointsPerPixel, so the outline sat at 56%
 // of the paint.
 func TestPaintBoundsMatchesElementBox(t *testing.T) {
 	t.Parallel()
@@ -50,7 +50,7 @@ func TestPaintBoundsMatchesElementBox(t *testing.T) {
 		t.Fatal("no blue fill")
 	}
 
-	got, ok := PaintBounds(fill, display.PixelPerPoint)
+	got, ok := PaintBounds(fill, display.PointsPerPixel)
 	if !ok {
 		t.Fatal("fill unbounded")
 	}

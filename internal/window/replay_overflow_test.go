@@ -15,7 +15,7 @@ func TestOverflowEditRepaintsOneRect(t *testing.T) {
 	const ppt = 72.0 / 96.0
 	boxes := []layout.Box{{X: 0, Y: 0, W: 100, H: 400}}
 	display := &layout.Display{
-		Width: 100, Height: 100, PixelPerPoint: ppt,
+		Width: 100, Height: 100, PointsPerPixel: ppt,
 		Boxes: boxes,
 		Ops: []layout.DisplayOp{
 			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 75, H: 75, R: 1, G: 1, B: 1, Alpha: 1},

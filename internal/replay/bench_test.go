@@ -29,7 +29,7 @@ func BenchmarkDrawRectScan(b *testing.B) {
 		b.Fatal("no #count box")
 	}
 
-	ppt := display.PixelPerPoint
+	ppt := display.PointsPerPixel
 	dirty := image.Rect(int(box.X)-8, int(box.Y)-8, int(box.X+box.W)+8, int(box.Y+box.H)+8)
 	full := image.Rect(0, 0, display.Width, display.Height)
 

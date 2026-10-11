@@ -63,7 +63,7 @@ func TestPaintFlapRaisesTheBird(t *testing.T) {
 		t.Fatal("the bird body was not bound")
 	}
 
-	pp := app.page.Display().PixelPerPoint
+	pp := app.page.Display().PointsPerPixel
 	top := func() float64 { return op.Y / pp }
 
 	before := top()

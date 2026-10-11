@@ -26,10 +26,10 @@ func setFill(d *ownframe.Display, op *ownframe.DisplayOp, r rect, visible bool) 
 		return
 	}
 
-	op.X = r.x * d.PixelPerPoint
-	op.Y = r.y * d.PixelPerPoint
-	op.W = r.w * d.PixelPerPoint
-	op.H = r.h * d.PixelPerPoint
+	op.X = r.x * d.PointsPerPixel
+	op.Y = r.y * d.PointsPerPixel
+	op.W = r.w * d.PointsPerPixel
+	op.H = r.h * d.PointsPerPixel
 
 	if visible {
 		op.Alpha = 1

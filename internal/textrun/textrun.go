@@ -22,7 +22,7 @@ type run struct {
 // skipped at a line break. ok is false when the box holds no measurable run
 // or the runs do not line up with target.
 func At(d *layout.Display, box layout.Box, x, y float64, target string) (int, bool) {
-	if d == nil || d.PixelPerPoint <= 0 {
+	if d == nil || d.PointsPerPixel <= 0 {
 		return 0, false
 	}
 
@@ -36,7 +36,7 @@ func At(d *layout.Display, box layout.Box, x, y float64, target string) (int, bo
 		return 0, false
 	}
 
-	pt := d.PixelPerPoint
+	pt := d.PointsPerPixel
 	at := nearest(lines, y*pt)
 	off, ok := offsetInLine(lines[at], x, 1/pt)
 	if !ok {

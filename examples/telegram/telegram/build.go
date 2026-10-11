@@ -9,7 +9,7 @@ const shellHead = `<!DOCTYPE html>
 // shellBody opens the app after the styles. The inline padding keeps the
 // page clear of the phone's system bars; InsetTop and InsetBottom arrive
 // from the activity.
-const shellBody = `</style></head><body><div class="app{{if .Active}} app-thread{{end}}" style="padding-top:{{.InsetTop}}px;padding-bottom:{{.InsetBottom}}px">`
+const shellBody = `</style></head><body><div class="app{{if .Active}} app-thread{{else if .Phone}} app-phone{{end}}" style="padding-top:{{.InsetTop}}px;padding-bottom:{{if and .Phone (not .Active)}}calc({{.InsetBottom}}px + 60px){{else}}{{.InsetBottom}}px{{end}}">`
 
 // shellFoot closes the app and the document.
 const shellFoot = `</div></body></html>`

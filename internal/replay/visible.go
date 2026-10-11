@@ -36,7 +36,10 @@ func DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float6
 			odx, ody, r = pinDx, pinDy, pinRect
 		}
 
-		if opTouches(op, display.PixelPerPoint, r) {
+		if op.Fixed {
+			r = dst.Bounds()
+		}
+		if opTouches(op, display.PointsPerPixel, r) {
 			drawOp(dst, op, odx, ody)
 		}
 	}
@@ -56,7 +59,7 @@ func visitVisible(display *layout.Display, rect image.Rectangle, draw func(int))
 		if index < 0 || index >= len(display.Ops) {
 			continue
 		}
-		if opTouches(&display.Ops[index], display.PixelPerPoint, rect) {
+		if opTouches(&display.Ops[index], display.PointsPerPixel, rect) {
 			draw(index)
 		}
 	}

@@ -8,7 +8,7 @@ import (
 
 func TestTransparentWindowDoesNotAddBackground(t *testing.T) {
 	s := &shell{transparent: true, display: &layout.Display{
-		Width: 240, PixelPerPoint: 0.75,
+		Width: 240, PointsPerPixel: 0.75,
 		Ops: []layout.DisplayOp{{Kind: layout.DisplayOpFillRect, W: 180, H: 165, Alpha: 1}},
 	}}
 	if _, _, _, alpha := s.pageBackground().RGBA(); alpha != 0 {

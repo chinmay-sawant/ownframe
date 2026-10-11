@@ -42,7 +42,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) {
 
 	taker, canTake := s.app.(dirtyTaker)
 	contentW, contentH := s.contentSize()
-	if !canTake || s.fullReplay() {
+	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
 		s.disposeViewport()
 		s.directReplay(dst, display)
 

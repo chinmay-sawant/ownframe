@@ -33,11 +33,11 @@ func (s *shell) pageBackground() color.Color {
 // displayBackground finds the first fill in paint order that starts at the
 // canvas top-left and spans its width: the html or body background.
 func displayBackground(display *layout.Display) (color.Color, bool) {
-	if display.PixelPerPoint <= 0 || display.Width <= 0 {
+	if display.PointsPerPixel <= 0 || display.Width <= 0 {
 		return nil, false
 	}
 
-	widthPts := float64(display.Width) * display.PixelPerPoint
+	widthPts := float64(display.Width) * display.PointsPerPixel
 	order := display.Order
 	n := len(order)
 	if n == 0 {

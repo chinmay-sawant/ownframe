@@ -1,0 +1,16 @@
+<style>
+body { margin:0; font:16px sans-serif; }
+.dashboard { display:flex; gap:8px; }
+.tile { width:60px; height:40px; background:#ccc; }
+.grid { display:grid; grid-template-columns:60px 60px; gap:8px; }
+.settings { height:1000px; width:100%; background:#eee; }
+.modal { position:absolute; z-index:9; left:20px; top:30px; width:80px; height:50px; background:blue; }
+@media (max-width:400px) { .dashboard { flex-direction:column; } }
+</style>
+<body>
+<div class="dashboard"><div id="flex-a" class="tile"></div><div id="flex-b" class="tile"></div></div>
+<div class="grid"><div id="grid-a" class="tile"></div><div id="grid-b" class="tile"></div></div>
+<input id="email" type="text" data-bind="Email"><input id="password" type="password">
+<div class="settings" id="settings"></div>
+<div class="modal" id="modal" data-action="modal"></div>
+</body>

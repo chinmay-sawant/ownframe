@@ -69,7 +69,7 @@ func (s *shell) Update() error {
 		return err
 	}
 
-	return nil
+	return s.prepareBitmapViewport()
 }
 
 // tickFrame runs the screen's per-frame callback when it has one.

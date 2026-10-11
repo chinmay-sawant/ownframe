@@ -10,10 +10,10 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
-// TestCanvasUnitsUsePixelPerPoint locks the conversion the op filter relies
-// on: a canvas of display.Width CSS pixels is display.Width * PixelPerPoint
+// TestCanvasUnitsUsePointsPerPixel locks the conversion the op filter relies
+// on: a canvas of display.Width CSS pixels is display.Width * PointsPerPixel
 // wide in op points.
-func TestCanvasUnitsUsePixelPerPoint(t *testing.T) {
+func TestCanvasUnitsUsePointsPerPixel(t *testing.T) {
 	t.Parallel()
 
 	display, err := render.DisplayListState(context.Background(),
@@ -23,7 +23,7 @@ func TestCanvasUnitsUsePixelPerPoint(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wantPts := float64(display.Width) * display.PixelPerPoint
+	wantPts := float64(display.Width) * display.PointsPerPixel
 
 	var found *layout.DisplayOp
 	for i := range display.Ops {
@@ -42,7 +42,7 @@ func TestCanvasUnitsUsePixelPerPoint(t *testing.T) {
 	}
 
 	// In canvas pixels the fill must span the whole canvas.
-	box, ok := opBounds(found, display.PixelPerPoint)
+	box, ok := opBounds(found, display.PointsPerPixel)
 	if !ok {
 		t.Fatal("fill unbounded")
 	}

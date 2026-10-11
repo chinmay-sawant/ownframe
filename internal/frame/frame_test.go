@@ -12,7 +12,7 @@ import (
 // 7.5..22.5.
 func testDisplay() *ownframe.Display {
 	return &ownframe.Display{
-		Width: 400, Height: 200, PixelPerPoint: 0.75,
+		Width: 400, Height: 200, PointsPerPixel: 0.75,
 		Ops: []layout.DisplayOp{
 			{Kind: layout.DisplayOpFillRect, X: 1, Y: 8, W: 4, H: 4, R: 0.2, G: 0.2, B: 0.2, Alpha: 1},
 			{Kind: layout.DisplayOpFillRect, X: 12, Y: 10, W: 8, H: 4, R: 0.42, G: 0.15, B: 0.85, Alpha: 1},

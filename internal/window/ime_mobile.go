@@ -4,6 +4,7 @@ package window
 
 import (
 	"image"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2/exp/textinput"
 
@@ -12,14 +13,16 @@ import (
 
 // imeState is the platform text input session for the focused control.
 type imeState struct {
-	composer textinput.Composer
-	field    string
-	last     string
-	caret    image.Rectangle
-	start    int
-	end      int
-	handled  bool
-	err      error
+	composer   textinput.Composer
+	field      string
+	last       string
+	caret      image.Rectangle
+	rotation   imeRotationState
+	pendingEnd bool
+	start      int
+	end        int
+	handled    bool
+	err        error
 }
 
 // imeInit wires the composer callbacks.
@@ -40,16 +43,32 @@ func (s *shell) imeUpdate() error {
 		id = f.FocusID()
 	}
 
+	s.ime.err = nil
 	if id != s.ime.field {
 		if s.ime.field != "" {
 			s.ime.composer.Cancel()
 			s.ime.last = ""
 		}
+		s.ime.pendingEnd = false
 
 		s.ime.field = id
 	}
+	if s.ime.pendingEnd {
+		wait, preserve := s.ime.rotation.resolve(time.Now())
+		if wait {
+			s.ime.handled = false
+			return nil
+		}
+		s.ime.pendingEnd = false
+		if !preserve {
+			if f, ok := s.app.(host.Focuser); ok {
+				if err := f.Focus(s.ctx, ""); err != nil {
+					return err
+				}
+			}
+		}
+	}
 
-	s.ime.err = nil
 	s.imeResize()
 	handled, err := s.ime.composer.Update()
 	s.ime.handled = handled
@@ -59,28 +78,4 @@ func (s *shell) imeUpdate() error {
 	}
 
 	return s.ime.err
-}
-
-// imeNewSession reports the caret to the platform when a text control is
-// focused.
-func (s *shell) imeNewSession() *textinput.SessionOptions {
-	target, ok := s.app.(host.IME)
-	if !ok {
-		return nil
-	}
-
-	box, caret, before, after, ok := target.IMEContext()
-	if !ok {
-		return nil
-	}
-
-	s.ime.start = caret - len(before)
-	s.ime.end = caret + len(after)
-	s.ime.caret = imeCaretRect(box)
-
-	return &textinput.SessionOptions{
-		CaretBounds:     s.ime.caret,
-		TextBeforeCaret: before,
-		TextAfterCaret:  after,
-	}
 }

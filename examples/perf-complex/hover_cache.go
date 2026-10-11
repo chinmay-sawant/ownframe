@@ -27,7 +27,7 @@ func (c *rowPaintCache) bind(p *page.Page) {
 	positions := map[[2]int64]string{}
 	for _, b := range p.Boxes() {
 		if strings.HasPrefix(b.ID, "row-") {
-			positions[paintPosition(b.X*d.PixelPerPoint, b.Y*d.PixelPerPoint)] = b.ID
+			positions[paintPosition(b.X*d.PointsPerPixel, b.Y*d.PointsPerPixel)] = b.ID
 		}
 	}
 	for i := range d.Ops {

@@ -56,6 +56,7 @@ func (s *shell) Layout(outsideWidth, outsideHeight int) (int, int) {
 	}
 
 	if outsideWidth != s.pendingW || outsideHeight != s.pendingH {
+		s.imeLayoutChanged(outsideWidth, outsideHeight)
 		s.moving = true
 	}
 

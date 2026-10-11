@@ -19,6 +19,6 @@ func (s *shell) drawDevOpPick(screen *ebiten.Image) {
 		return
 	}
 
-	r := s.devScreen(devOpRect(op, s.display.PixelPerPoint))
+	r := s.devScreen(devOpRect(op, s.display.PointsPerPixel))
 	vector.StrokeRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), 3, ink, false)
 }

@@ -12,6 +12,11 @@ func (s *shell) tapAt(px, py float64) error {
 		return err
 	}
 
+	return s.finishTap(px, py)
+}
+
+func (s *shell) finishTap(px, py float64) error {
+	s.hold.release()
 	if sel, ok := s.app.(selector); ok {
 		if err := sel.SelectAt(s.ctx, px, py); err != nil {
 			return err

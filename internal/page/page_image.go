@@ -35,6 +35,9 @@ func (p *Page) PNG() []byte {
 	img := p.img
 	if img == nil && p.display != nil {
 		img = bitmap.Picture(p.display)
+		if img == nil {
+			return nil
+		}
 	}
 
 	if img == nil {
@@ -48,6 +51,10 @@ func (p *Page) PNG() []byte {
 		}
 
 		img = bitmap.Picture(display)
+	}
+
+	if img == nil {
+		return nil
 	}
 
 	var buf bytes.Buffer

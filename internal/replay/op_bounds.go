@@ -41,7 +41,7 @@ func opBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
 }
 
 // boxBounds converts a point-space box to a whole-pixel box, grown by pad
-// points on every side. display.PixelPerPoint converts CSS pixels to points,
+// points on every side. display.PointsPerPixel converts CSS pixels to points,
 // so the division below is the points-to-pixels direction.
 func boxBounds(x, y, w, h, grow, ppt float64) image.Rectangle {
 	pad := boundsPad + grow/ppt

@@ -13,7 +13,7 @@ func overflowDisplay() *layout.Display {
 	const ppt = 72.0 / 96.0
 
 	return &layout.Display{
-		Width: 100, Height: 100, PixelPerPoint: ppt,
+		Width: 100, Height: 100, PointsPerPixel: ppt,
 		Boxes: []layout.Box{{X: 0, Y: 150, W: 100, H: 20}},
 		Ops: []layout.DisplayOp{
 			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: 75, H: 75, R: 1, G: 1, B: 1, Alpha: 1},
@@ -35,12 +35,12 @@ func TestDrawRectKeepsOverflowRect(t *testing.T) {
 	}
 
 	deep := &display.Ops[1]
-	if !opTouches(deep, display.PixelPerPoint, rect) {
+	if !opTouches(deep, display.PointsPerPixel, rect) {
 		t.Fatal("the fill below the canvas was skipped")
 	}
 
 	shallow := &display.Ops[0]
-	if opTouches(shallow, display.PixelPerPoint, rect) {
+	if opTouches(shallow, display.PointsPerPixel, rect) {
 		t.Fatal("the canvas fill leaks into the overflow rect")
 	}
 }

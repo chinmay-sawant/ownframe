@@ -24,7 +24,7 @@ func TestBoundsCoverRectOps(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ppt := display.PixelPerPoint
+	ppt := display.PointsPerPixel
 
 	for i := range display.Ops {
 		op := &display.Ops[i]
