@@ -1,0 +1,132 @@
+<style>
+  .pv {
+    flex: 1;
+    box-sizing: border-box;
+    min-height: 100vh;
+    padding: 26px 30px;
+    background: var(--bg, #f4f1ea);
+    color: var(--fg, #1f2328);
+    font-family: sans-serif;
+    font-size: 14px;
+  }
+  .pv-title { margin: 0 0 6px; font-size: 22px; color: var(--fg, #1f2328); }
+  .pv-text { margin: 0 0 12px; color: var(--muted, #6b7280); }
+  .pv-note { color: var(--muted, #6b7280); }
+  .pv-link { color: var(--accent, #1a56db); text-decoration: underline; }
+  .pv-row { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; }
+  .pv-primary {
+    border: 1px solid var(--accent, #1a56db);
+    background: var(--accent, #1a56db);
+    color: var(--accent-fg, #ffffff);
+    border-radius: var(--radius, 8px);
+    padding: 9px 16px;
+    font-family: sans-serif;
+    font-size: 14px;
+  }
+  .pv-ghost {
+    border: 1px solid var(--border, #d5d0c6);
+    background: var(--bg, #f4f1ea);
+    color: var(--accent, #1a56db);
+    border-radius: var(--radius, 8px);
+    padding: 9px 16px;
+    font-family: sans-serif;
+    font-size: 14px;
+  }
+  .pv-input {
+    display: block;
+    box-sizing: border-box;
+    width: 320px;
+    margin-bottom: 12px;
+    padding: 9px 11px;
+    background: var(--surface, #ffffff);
+    color: var(--fg, #1f2328);
+    border: 1px solid var(--border, #d5d0c6);
+    border-radius: var(--radius, 8px);
+    font-family: sans-serif;
+    font-size: 14px;
+  }
+  .pv-input[data-ownframe-placeholder="1"] { color: var(--muted, #6b7280); }
+  .pv-input[data-ownframe-focus="1"] { border: 1px solid var(--accent, #1a56db); padding: 9px 11px; }
+  .pv-check, .pv-radio {
+    width: 16px;
+    height: 16px;
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border, #d5d0c6);
+  }
+  .pv-check { border-radius: 3px; }
+  .pv-radio { border-radius: 8px; }
+  .pv-check:checked, .pv-radio:checked { outline: 2px solid var(--accent, #1a56db); }
+  .pv-select {
+    display: block;
+    box-sizing: border-box;
+    width: 220px;
+    margin-bottom: 12px;
+    padding: 8px 10px;
+    background: var(--surface, #ffffff);
+    color: var(--fg, #1f2328);
+    border: 1px solid var(--border, #d5d0c6);
+    border-radius: var(--radius, 8px);
+    font-family: sans-serif;
+    font-size: 14px;
+  }
+  .pv-badge {
+    display: inline-block;
+    padding: 4px 11px;
+    background: var(--accent, #1a56db);
+    color: var(--accent-fg, #ffffff);
+    border-radius: var(--radius, 8px);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .pv-track {
+    width: 320px;
+    height: 10px;
+    box-sizing: border-box;
+    margin-bottom: 14px;
+    background: var(--surface, #ffffff);
+    border: 1px solid var(--border, #d5d0c6);
+    border-radius: var(--radius, 8px);
+    overflow: hidden;
+  }
+  .pv-fill {
+    width: 62%;
+    height: 8px;
+    background: var(--accent, #1a56db);
+    border-radius: var(--radius, 8px);
+  }
+  .pv-chip { width: 84px; height: 28px; border-radius: var(--radius, 8px); }
+  .pv-chip-accent { background: var(--accent, #1a56db); }
+  .pv-chip-surface { background: var(--surface, #ffffff); border: 1px solid var(--border, #d5d0c6); }
+  .pv-chip-fg { background: var(--fg, #1f2328); }
+</style>
+<section id="preview" class="pv">
+  <h1 class="pv-title">Preview</h1>
+  <p class="pv-text">These widgets paint only from the custom properties in the editor.</p>
+  <p class="pv-text"><a id="pv-link" class="pv-link" href="#">A themed link</a></p>
+  <div class="pv-row">
+    <button id="pv-primary" class="pv-primary">Primary</button>
+    <button id="pv-ghost" class="pv-ghost">Ghost</button>
+  </div>
+  <input id="pv-input" class="pv-input" type="text" placeholder="Type here">
+  <div class="pv-row">
+    <input id="pv-check" class="pv-check" type="checkbox" checked>
+    <span class="pv-note">Checkbox</span>
+    <input id="pv-radio" class="pv-radio" type="radio" name="pv-group" checked>
+    <span class="pv-note">Radio</span>
+  </div>
+  <select id="pv-select" class="pv-select">
+    <option value="alpha" selected>Alpha</option>
+    <option value="beta">Beta</option>
+  </select>
+  <div class="pv-row">
+    <span id="pv-badge" class="pv-badge">Badge</span>
+  </div>
+  <div class="pv-row">
+    <div id="pv-track" class="pv-track"><div id="pv-fill" class="pv-fill"></div></div>
+  </div>
+  <div id="pv-chips" class="pv-row">
+    <div id="accent-chip" class="pv-chip pv-chip-accent"></div>
+    <div id="surface-chip" class="pv-chip pv-chip-surface"></div>
+    <div id="fg-chip" class="pv-chip pv-chip-fg"></div>
+  </div>
+</section>
