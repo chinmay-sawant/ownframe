@@ -13,7 +13,7 @@ The feature list these examples follow is
 
 | Folder | Shows |
 |---|---|
-| [login](login) | Sign-in screen with real inputs, history, clipboard, undo. |
+| [login](login) | Sign-in screen with real inputs, clipboard, and an app-level undo stack. |
 | [forms](forms) | Every form control: text, password, textarea, checkbox, radio, select, file. |
 | [bind](bind) | `data-bind` two-way binding of controls to a struct. |
 
@@ -34,7 +34,7 @@ The feature list these examples follow is
 | [web](web) | Web mode routes: `/`, `/frame.png`, `/click`, `/type`, `/backspace`. | 8110 |
 | [ipc](ipc) | In-process `Send`, `Listen`, `Handle`, `Request`, with registered state and cancel. | 8111 |
 | [fetch](fetch) | `Fetch` GET and `XHR` with method, headers, and body; a fetched PNG or JPEG becomes the page background. | 8112 |
-| [clipboard](clipboard) | Copy, cut, and paste through the page clipboard API. | 8113 |
+| [clipboard](clipboard) | Copy, cut, paste, select all, undo, and redo through the page APIs. | 8113 |
 | [crash](crash) | `Report` files and panic recovery by `Run`. | 8114 |
 | [platform](platform) | One page on desktop, WebAssembly, and mobile. | 8115 |
 | [theme](theme) | `Config.Theme` and `SetTheme` restyle a running page; the toggle swaps custom properties. | 8116 |

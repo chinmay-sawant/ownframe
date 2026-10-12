@@ -44,6 +44,10 @@ Every Go file is at most 2000 characters. Count with `wc -m`. That number includ
 
 This limit applies to Go files only. HTML, CSS, Markdown, and scripts have no character cap.
 
+## Writing
+
+Load the `unslop` skill before writing prose: replies, docs, commit messages, and PR or issue text. Apply its fixes before sending.
+
 ## Before you finish
 
 Run `gofmt` on every Go file you edit. From this directory, run `make test`. It calls `go test -p 1 ./...` so the packages do not all build and run at once. Raise the limit when a faster run is worth the load: `make test TEST_P=4`.

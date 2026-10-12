@@ -3,7 +3,7 @@ module github.com/chinmay-sawant/go-gpui
 go 1.26
 
 require (
-	github.com/chinmay-sawant/gowkhtmltopdf v0.2.7-0.20261002110918-9b445cec9e09
+	github.com/chinmay-sawant/gowkhtmltopdf v0.2.7-0.20261003121325-2111b364213b
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
 	golang.org/x/text v0.41.0
@@ -42,5 +42,3 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
-
-replace github.com/chinmay-sawant/gowkhtmltopdf => ../gowkhtmltopdf

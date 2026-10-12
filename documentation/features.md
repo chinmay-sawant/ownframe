@@ -1,6 +1,6 @@
 # Features
 
-v0.0.1 keeps one Go process and one HTML template. There is no JavaScript engine and no second process. `go.mod` requires `gowkhtmltopdf` and Ebiten directly, plus `golang.org/x/text`, which is already in Ebiten's tree for language tags. These features did not add modules.
+v0.0.1 keeps one Go process and one HTML template. There is no JavaScript engine and no second process. `go.mod` requires `gowkhtmltopdf` and Ebiten directly, plus `golang.org/x/image` and `golang.org/x/text`, both already in Ebiten's tree. These features did not add modules. The example index is [../examples/readme.md](../examples/readme.md).
 
 ## Screen paint
 
@@ -12,7 +12,7 @@ Detail is in [screen.md](screen.md).
 
 ## Theming
 
-`Config.Theme` and `Page.SetTheme` store one extra stylesheet that the render state hands to the engine as an extra sheet. The engine applies it after the template's own styles, so a theme rule wins a tie with a template rule. Any property the engine implements can appear in the theme, including custom properties the template reads with `var()`. `SetTheme` does not draw; the next `Redraw` applies the sheet. An empty theme is removed.
+`Config.Theme` and `Page.SetTheme` store one extra stylesheet that the render state hands to the engine as an extra sheet. The engine walks its rules last, but each sheet numbers rule order from zero, so an equal-specificity tie can still go to a late template rule; theming.md spells out the order rule. Any property the engine implements can appear in the theme, including custom properties the template reads with `var()`. `SetTheme` does not draw; the next `Redraw` applies the sheet. An empty theme is removed.
 
 Detail is in [theming.md](theming.md).
 
@@ -30,7 +30,7 @@ Detail is in [keys.md](keys.md).
 
 ## IPC
 
-`Send`, `Listen`, `Handle`, and `Request` pass strings between callers in this process. An empty channel does nothing. `Request` returns `ErrNoHandler` when nobody is handling that channel. There is no socket and no page-process bridge.
+`Send`, `Listen`, `Handle`, and `Request` pass strings between callers in this process. `Send`, `Listen`, and `Handle` do nothing for an empty channel. `Request` returns `ErrNoHandler` for an empty channel or when nobody is handling that channel. There is no socket and no page-process bridge.
 
 Detail is in [ipc.md](ipc.md).
 
@@ -60,9 +60,9 @@ Detail is in [clipboard.md](clipboard.md).
 
 ## Forms
 
-An `input`, `textarea`, or `select` with an id is stored on the page. A click focuses a text field or a textarea, toggles a checkbox, checks a radio, or cycles a select. Typing edits the focused text field even when the type handler is nil. A file input opens the desktop file dialog under `Run` and stores the chosen path; wasm, mobile, and `-web` keep the typed name. `SetFormValue` and `SetFormChecked` do not redraw. A control with `data-bind` is tied to a field on the pointer passed to `SetData`; an edit writes through before the redraw, and `Handlers.Change` receives the changed control's box. `:focus`, `:hover`, `:active`, and `:checked` match with host state; `data-gpui-*` remains the attribute alternative. The engine's default stylesheet gives a `<button>` a face when the author does not style it, and a submit-like `input` is rewritten to a `button`. The login example uses a button.
+An `input`, `textarea`, or `select` with an id is stored on the page. A click focuses a text field or a textarea, toggles a checkbox, checks a radio, or cycles a select. Typing edits the focused text field even when the type handler is nil. A file input opens the desktop file dialog under `Run` and stores the chosen path; wasm, mobile, and `-web` keep the typed name. `SetFormValue` and `SetFormChecked` do not redraw. A control with `data-bind` is tied to a field on the pointer passed to `SetData`; an edit writes through before the redraw, and `Handlers.Change` receives the changed control's box. `:focus`, `:hover`, and `:active` match with host state, and `:checked` follows the control's `checked` attribute; `data-gpui-*` remains the attribute alternative. The engine's default stylesheet gives a `<button>` a face when the author does not style it, and a submit-like `input` is rewritten to a `button`. The login example uses a button.
 
-Detail is in [forms.md](forms.md).
+Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md](editing.md).
 
 ## Still absent
 
@@ -70,8 +70,9 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
 
 - Chromium, V8, preload, `contextBridge`, and Node.
 - Cross-process IPC, native menus, tray, notifications, and more than one window. File dialogs exist on desktop `Run` only; wasm, mobile, and `-web` keep the typed name.
+- Fullscreen, cursor shape, touch scrolling and pinch, and programmatic scrolling.
 - Session, cookies, cache, and web storage.
 - DevTools, auto-update, installer, and an uploaded crash dump.
-- Video, audio, document canvas, WebGL, file drag-and-drop, and a context menu.
+- Video, document canvas, WebGL, file drag-and-drop, and a context menu. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
 - IME, an accessibility tree, spellcheck, printing, deep links, and OS-global shortcuts.
 - Sandbox, CSP, and context isolation.
