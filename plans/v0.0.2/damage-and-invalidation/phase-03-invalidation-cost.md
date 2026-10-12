@@ -23,20 +23,20 @@ Recorded in [audit-2026-10-12.md](audit-2026-10-12.md), with file references:
 
 ## Checklist
 
-- [ ] Board: `dirty.go` marks the box rect of each changed cell with
+- [x] Board: `dirty.go` marks the box rect of each changed cell with
       `MarkRect`, using the box the flipper already holds, instead of
       `Invalidate` per id.
-- [ ] Page: make the id path cheap for callers that must use ids, either a box
+- [x] Page: make the id path cheap for callers that must use ids, either a box
       id map or a batched `MarkIDs`. Keep the previous-rect union that makes a
       moved element repaint its old space.
-- [ ] Page: stop allocating the pending map per frame when nothing is pending.
-- [ ] Window: `pointer.go` and `hover_cursor.go` skip `Page.Hover` while the
+- [x] Page: stop allocating the pending map per frame when nothing is pending.
+- [x] Window: `pointer.go` and `hover_cursor.go` skip `Page.Hover` while the
       pointer point is unchanged; a press or a move still routes.
-- [ ] Devtools: cache the Ops row list per `Page.Generation()` and cull outline
+- [x] Devtools: cache the Ops row list per `Page.Generation()` and cull outline
       strokes to the visible list rect.
-- [ ] Benchmarks: `BenchmarkInvalidateMany` in `internal/page`; extend the
+- [x] Benchmarks: `BenchmarkInvalidateMany` in `internal/page`; extend the
       devtools draw test with an allocation budget per frame.
-- [ ] Docs: one line in `documentation/devtools.md` saying readings taken with
+- [x] Docs: one line in `documentation/devtools.md` saying readings taken with
       the Ops tab open include the dock's own work, and which tab to read for
       FPS.
 

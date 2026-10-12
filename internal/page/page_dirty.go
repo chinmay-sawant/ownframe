@@ -1,34 +1,5 @@
 package page
 
-import "image"
-
-// TakeDirty returns the region in CSS pixels changed since the previous
-// call and clears it. A whole-content change returns the content rect. ok
-// is false when nothing changed since the previous call.
-func (p *Page) TakeDirty() (image.Rectangle, bool) {
-	full := p.dirtyFull
-	r := p.dirty
-	p.dirtyFull = false
-	p.dirty = image.Rectangle{}
-	p.pending = nil
-
-	content := p.contentRect()
-	if full {
-		return content, true
-	}
-
-	if r.Empty() {
-		return image.Rectangle{}, false
-	}
-
-	r = r.Inset(-dirtyPad).Intersect(content)
-	if r.Empty() {
-		r = content
-	}
-
-	return r, true
-}
-
 // dirtyFromDisplay adds the difference between prev and display to the
 // dirty region. The first draw and a size change dirty the frame. With Perf
 // on it also stores the changed, dirty, and region counters Stats reports;
@@ -63,12 +34,13 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	}
 }
 
-// applyPending unions the new box of every pending id, so an element that
-// grew or shrank repaints the space it now uses too.
+// applyPending marks the new box of every pending id, so an element that
+// grew or shrank repaints the space it now uses too, then clears the map
+// for reuse instead of dropping it.
 func (p *Page) applyPending() {
 	for id := range p.pending {
 		p.markElement(id)
 	}
 
-	p.pending = nil
+	clear(p.pending)
 }

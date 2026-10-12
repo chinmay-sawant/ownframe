@@ -9,15 +9,19 @@ import (
 func (s *shell) Draw(screen *ebiten.Image) {
 	s.devFrameTime()
 	s.perfFrameSample()
-
-	screen.Fill(s.pageBackground())
+	s.frameBegin()
+	defer s.frameCommit()
 
 	if s.fallback {
 		defer s.drawBadge(screen)
 	}
 
 	start := time.Now()
-	s.drawContent(screen)
+	if !s.drawContent(screen) {
+		// The replay kept this frame in the buffer: blit the plan rects and
+		// the previous chrome before the chrome drawers paint again.
+		s.blitBuffer(screen, s.partial.plans, s.partial.chrome, s.partial.whole)
+	}
 	s.drawScrollbars(screen)
 	s.dev.draw = time.Since(start)
 	if s.perf {
@@ -35,58 +39,44 @@ func (s *shell) Draw(screen *ebiten.Image) {
 	}
 }
 
-func (s *shell) drawContent(screen *ebiten.Image) {
+// drawContent paints the page and reports whether the whole screen is
+// painted. A false return means the partial blits still owe the frame. Each
+// full branch lays the page background down first, because the screen keeps
+// the previous frame.
+func (s *shell) drawContent(screen *ebiten.Image) bool {
 	if s.viewLocked() {
+		s.partial.live = false
+		screen.Fill(s.pageBackground())
 		s.drawFitted(screen)
-		return
+
+		return true
 	}
+
 	if s.bitmapView.img != nil {
-		dst := screen
-		dst.DrawImage(s.bitmapView.img, nil)
-		return
+		s.partial.live = false
+		screen.Fill(s.pageBackground())
+		screen.DrawImage(s.bitmapView.img, nil)
+
+		return true
 	}
+
 	zoom := s.zoom()
 
 	if s.display != nil {
 		if s.stretched() || zoom != 1 {
+			s.partial.live = false
+			screen.Fill(s.pageBackground())
 			s.drawReplayScaled(screen)
 
-			return
+			return true
 		}
 
-		s.drawReplayPartial(screen)
-
-		return
+		return s.drawReplayPartial(screen)
 	}
 
-	if s.img == nil {
-		return
-	}
+	s.partial.live = false
+	screen.Fill(s.pageBackground())
+	s.drawBitmapPage(screen, zoom)
 
-	bounds := s.img.Bounds()
-	if bounds.Dx() == 0 || bounds.Dy() == 0 || s.screenW == 0 || s.screenH == 0 {
-		return
-	}
-
-	var op ebiten.DrawImageOptions
-	// A page larger than the window keeps its own pixels and scrolls.
-	// A size that has not been laid out yet is scaled until the new picture arrives.
-	if !s.stretched() {
-		if zoom != 1 {
-			op.Filter = ebiten.FilterLinear
-			op.GeoM.Scale(zoom, zoom)
-		}
-
-		op.GeoM.Translate(-float64(s.scrollX), -float64(s.scrollY))
-		screen.DrawImage(s.img, &op)
-
-		return
-	}
-
-	op.Filter = ebiten.FilterLinear
-	op.GeoM.Scale(
-		float64(s.screenW)/float64(bounds.Dx())*zoom,
-		float64(s.screenH)/float64(bounds.Dy())*zoom,
-	)
-	screen.DrawImage(s.img, &op)
+	return true
 }

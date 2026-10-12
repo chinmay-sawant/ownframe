@@ -111,7 +111,9 @@ for its gate. The evidence behind phase 3 is kept in
 ## Definition of done
 
 - Two separated changes in one frame produce two rects, and the board's worst
-  cascade frame replays under 60 approximate operations, measured by the dump.
+  cascade frame replays well under the 630 to 631 operation baseline, measured
+  by the dump. Measured 2026-10-12: 115 operations on the 844 operation fixed
+  grid.
 - A board rotation leaves `Page.Generation()` unchanged, flips the changed
   cells, and causes no full-content rebuild frame.
 - The idle board holds 60 FPS with the devtools dock open on the Ops tab, and
@@ -121,3 +123,24 @@ for its gate. The evidence behind phase 3 is kept in
 - `documentation/repaint.md`, `documentation/performance.md`, and
   `examples/departure-board/PERFORMANCE.md` describe the shipped behavior, and
   `PHASES.md` records it with commit hashes.
+
+## Status, 2026-10-12
+
+Phases 1 to 3 landed on `perf/damage-list`. `go vet -p 1 ./... ./examples/...`
+passes and `make test` passes, with the board package re-run fresh at
+`-count=1`. The paced dump in
+[PERFORMANCE.md](../../../examples/departure-board/PERFORMANCE.md) measures the
+cascade worst steady frame at 115 of 844 approximate operations, down from 630
+of 631 through the single union rect, and 13 of 150 frames report two or more
+rects. The `rotate` row leaves `Page.Generation()` alone, adds no `RedrawNS`
+for the rotation, and reports no `full-buffer` frame after the initial draw.
+The devtools Ops rows cache per generation (844 rows on this board) and
+allocate nothing per frame on a still generation.
+
+Phase 1's exit target of under 60 operations on the worst cascade frame is not
+met at 115; the remaining question is whether a narrower spin window is worth
+the animation cost. `Page.Invalidate` also still walks every box per call, so
+a caller with many ids should mark rects.
+
+Phases 4 and 5 need the blinkless checkout and stay out of scope here. Nothing
+was committed; the working tree is the deliverable.

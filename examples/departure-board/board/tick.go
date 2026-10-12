@@ -14,12 +14,13 @@ func isNight(t time.Time) bool {
 	return h >= 20 || h < 6
 }
 
-// Tick runs once per frame: it opts into the frame-dirty path, rotates the
-// feed, applies the night sheet, binds the retained operations after a
-// Redraw, moves the clock and the refresh bar, and steps the flaps. It never
-// lays the page out. UseFrameDirty leads every tick because the window's
-// FrameDirty call clears the opt-in, and the invalidations name what this
-// frame changed so the window repaints one rect instead of the whole list.
+// Tick runs once per frame: it opts into the frame-dirty path, retargets the
+// feed when the rotation is due, applies the night sheet, binds the retained
+// operations after a Redraw, moves the clock and the refresh bar, and steps
+// the flaps. It never lays the page out. UseFrameDirty leads every tick
+// because the window's FrameDirty call clears the opt-in, and the marks name
+// what this frame changed so the window repaints the damage list instead of
+// the whole frame.
 func (a *App) Tick(ctx context.Context) error {
 	a.page.UseFrameDirty()
 
@@ -28,7 +29,7 @@ func (a *App) Tick(ctx context.Context) error {
 	}
 
 	if !a.paused && time.Since(a.lastRotate) >= rotateEvery {
-		if err := a.Advance(ctx); err != nil {
+		if err := a.Rotate(ctx); err != nil {
 			return err
 		}
 	}

@@ -21,4 +21,6 @@ func (s *shell) drawDevOpPick(screen *ebiten.Image) {
 
 	r := s.devScreen(devOpRect(op, s.display.PointsPerPixel))
 	vector.StrokeRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), 3, ink, false)
+	// The 3 px stroke reaches 1.5 px past each edge.
+	s.frameNote(frameRect(r.X-1.5, r.Y-1.5, r.W+3, r.H+3))
 }

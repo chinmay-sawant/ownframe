@@ -29,7 +29,7 @@ func TestBufferCoversContentPastTheCanvas(t *testing.T) {
 		t.Fatalf("buffer height = %d, want the 400 px content", got)
 	}
 
-	if s.partial.last.Dy() != 400 {
-		t.Fatalf("full plan height = %d, want 400", s.partial.last.Dy())
+	if len(s.partial.last) != 1 || s.partial.last[0].Dy() != 400 {
+		t.Fatalf("full plan rects = %v, want one 400 px rect", s.partial.last)
 	}
 }

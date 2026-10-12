@@ -42,4 +42,6 @@ func (s *shell) drawMenu(screen *ebiten.Image) {
 		op.ColorScale.ScaleWithColor(ink)
 		text.Draw(screen, item.Label, badgeFace, &op)
 	}
+
+	s.frameNote(frameRect(x, y, w, h))
 }

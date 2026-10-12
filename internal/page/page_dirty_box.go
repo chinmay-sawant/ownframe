@@ -6,6 +6,9 @@ import "image"
 // antialiasing.
 const dirtyPad = 4
 
+// dirtyGap is how near two dirty rects must sit to merge into one.
+const dirtyGap = 8
+
 // labelGap is how near a label must sit to a toggle to repaint with it.
 const labelGap = 12
 
@@ -36,13 +39,20 @@ func touches(a, b image.Rectangle, gap int) bool {
 	return !a.Inset(-gap).Intersect(b).Empty()
 }
 
-// markRect grows the dirty region.
+// markRect inserts one dirty rect, merging it with every existing rect it
+// meets within dirtyGap. Past maxDirtyRects the list collapses to its
+// bounding box, which trades a bigger repaint for a shorter list.
 func (p *Page) markRect(r image.Rectangle) {
 	if r.Empty() {
 		return
 	}
 
-	p.dirty = p.dirty.Union(r)
+	p.dirtyRects = append(p.dirtyRects, r)
+	p.dirtyRects = coalesceRects(p.dirtyRects, dirtyGap)
+	if len(p.dirtyRects) > maxDirtyRects {
+		p.dirtyRects[0] = boundingBox(p.dirtyRects)
+		p.dirtyRects = p.dirtyRects[:1]
+	}
 }
 
 // markFull dirties the whole content; a later TakeDirty returns the

@@ -6,11 +6,11 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-// devOpsListName maps kind index to label; 0 and 6 are empty.
+// devOpsListName is the per-kind label.
 var devOpsListName = [...]string{"", "fill", "stroke", "line", "text", "image", "", "text", "grid"}
 
-// devOpsRows returns the Ops tab rows.
-func (s *shell) devOpsRows() []devRow {
+// devOpsBuildRows builds the cached Ops rows.
+func (s *shell) devOpsBuildRows() []devRow {
 	mark := "[ ]"
 	if s.dev.ops {
 		mark = "[x]"

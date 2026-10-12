@@ -45,6 +45,8 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	game.perf = options.Perf || game.perf
 	game.wirePerf()
 
+	setupScreenClear()
+
 	return ebiten.RunGameWithOptions(game, &ebiten.RunGameOptions{
 		ScreenTransparent: options.Transparent,
 		InitUnfocused:     passthrough,

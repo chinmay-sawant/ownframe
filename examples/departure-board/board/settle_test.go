@@ -1,9 +1,23 @@
 package board_test
 
 import (
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/departure-board/board"
 	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
+
+// tileOp finds a tile's text op the way the board does. The 14px gap tiles
+// center the wider braille filler left of their box, outside frame.Text's
+// half-point tolerance, so a miss retries with the box shifted left.
+func tileOp(d *ownframe.Display, b ownframe.Box) *ownframe.DisplayOp {
+	if op := frame.Text(d, b); op != nil {
+		return op
+	}
+
+	b.X -= 3
+
+	return frame.Text(d, b)
+}
 
 // settled reports whether every glyph cell's text op matches its view target.
 func settled(app *board.App, want map[string]string) bool {
@@ -22,7 +36,7 @@ func settled(app *board.App, want map[string]string) bool {
 
 			found = true
 
-			if op := frame.Text(d, b); op == nil || op.Text != ch {
+			if op := tileOp(d, b); op == nil || op.Text != ch {
 				return false
 			}
 		}

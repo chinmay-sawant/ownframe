@@ -27,17 +27,17 @@ paint invalidation is local.
 
 ## Checklist
 
-- [ ] `data`: expose the target rows for one feed without a whole view rebuild.
-- [ ] `flip_rebind`: a retarget path that takes rows and marks changed cells,
+- [x] `data`: expose the target rows for one feed without a whole view rebuild.
+- [x] `flip_rebind`: a retarget path that takes rows and marks changed cells,
       sharing the band calculation with `rebind`.
-- [ ] `tick`: rotation calls retarget and never `Advance`; `Advance` stays for
+- [x] `tick`: rotation calls retarget and never `Advance`; `Advance` stays for
       tests and the dump scenario shape, or moves behind a helper.
-- [ ] Tests: rotation leaves `Page.Generation()` unchanged, flips the changed
+- [x] Tests: rotation leaves `Page.Generation()` unchanged, flips the changed
       cells, and reports one band per row; `TestCascadeDirtyRectsStaySmall`
       covers the shape.
-- [ ] Dump: the `cascade` scenario reports no `full-buffer` frame after the
+- [x] Dump: the `cascade` scenario reports no `full-buffer` frame after the
       rotation.
-- [ ] Docs: `documentation/frames.md` documents the pattern with the board as
+- [x] Docs: `documentation/frames.md` documents the pattern with the board as
       the example, next to the `UseFrameDirty` rule.
 
 ## Exit

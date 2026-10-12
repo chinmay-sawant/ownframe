@@ -7,40 +7,25 @@ import "image"
 // rect. Boxes change only here, so the index never goes stale.
 func (p *Page) setBoxes(boxes []Box) {
 	p.boxes = boxes
-	p.index = map[string]Box{}
-	for _, b := range boxes {
-		if b.ID != "" {
-			p.index[b.ID] = b
-		}
-	}
+	p.index = newBoxIndex(boxes)
 	p.contentOK = false
 }
 
-// boxByID returns the last box in p.boxes with that id, or Box{ID: id}.
+// boxByID returns the last box laid out with that id, or Box{ID: id}. The
+// lookup is one map read, never a walk over p.boxes.
 func (p *Page) boxByID(id string) Box {
 	if b, ok := p.index[id]; ok {
 		return b
 	}
-	box := Box{ID: id}
-	for _, b := range p.boxes {
-		if b.ID == id {
-			box = b
-		}
-	}
-	return box
+
+	return Box{ID: id}
 }
 
-// hasBox reports whether the last layout has a box for id.
+// hasBox reports whether the last layout has a box for id, in one map read.
 func (p *Page) hasBox(id string) bool {
-	if _, ok := p.index[id]; ok {
-		return true
-	}
-	for _, b := range p.boxes {
-		if b.ID == id {
-			return true
-		}
-	}
-	return false
+	_, ok := p.index[id]
+
+	return ok
 }
 
 // contentRect is the painted page in CSS pixels: the canvas plus any box

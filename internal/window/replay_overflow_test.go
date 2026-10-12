@@ -41,7 +41,8 @@ func TestOverflowEditRepaintsOneRect(t *testing.T) {
 	screen.click(overflow)
 	s.drawReplayPartial(dst)
 
-	if s.partial.mode != repaintRect || s.partial.last != overflow {
-		t.Fatalf("mode = %v, rect = %v, want a repaint of %v", s.partial.mode, s.partial.last, overflow)
+	if s.partial.mode != repaintRect || len(s.partial.last) != 1 ||
+		s.partial.last[0] != overflow {
+		t.Fatalf("mode = %v, rects = %v, want a repaint of %v", s.partial.mode, s.partial.last, overflow)
 	}
 }

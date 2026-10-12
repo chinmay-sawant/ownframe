@@ -12,7 +12,7 @@ import (
 
 // Scenarios lists the scenario names Measure accepts, in report order.
 func Scenarios() []string {
-	return []string{"warmup", "flap", "idle", "loop", "cascade"}
+	return []string{"warmup", "flap", "idle", "loop", "cascade", "rotate"}
 }
 
 // Measure runs one scenario against app and returns its report. The caller
@@ -47,11 +47,9 @@ func Measure(ctx context.Context, app *board.App, scenario string) (Report, erro
 		pace()
 
 		if plan.midAt > 0 && i == plan.midAt {
-			start := time.Now()
-			if err := app.Advance(ctx); err != nil {
+			if err := midAction(ctx, app, plan.mid, &rep); err != nil {
 				return Report{}, err
 			}
-			rep.RedrawNS += int64(time.Since(start))
 		}
 
 		f, err := tickFrame(ctx, app)

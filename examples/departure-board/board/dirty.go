@@ -53,9 +53,13 @@ func (a *App) moveBar() {
 	a.page.Invalidate("refresh-fill")
 }
 
-// invalidateCells names every tile the flap step changed this frame.
+// invalidateCells marks every tile the flap step changed this frame. Each
+// flap holds its box from rebind, so the mark skips the id lookup and its box
+// scan.
 func (a *App) invalidateCells(ids []string) {
 	for _, id := range ids {
-		a.page.Invalidate(id)
+		if fl := a.flip.cells[id]; fl != nil {
+			a.page.MarkRect(fl.box)
+		}
 	}
 }

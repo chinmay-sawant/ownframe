@@ -38,11 +38,11 @@ A healthy normal page keeps p99 under budget with margin. When p95 passes budget
 
 ## 3 Incremental repaint goal
 
-A small change should do small work. One click edits one box, and the window repaints one rect.
+A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The DIRTY section of the Frame tab proves it. It reports dirty rects taken, full frame fallbacks, operations repainted, and operations skipped. The page reports the changed region with `TakeDirty` and the window replays only that region with `replay.DrawRect`. [repaint.md](repaint.md) has the full path and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
+The DIRTY section of the Frame tab proves it. It reports dirty rects taken, full frame fallbacks, operations repainted, and operations skipped. The page reports the changed regions with `TakeDirtyRects` and the window replays each one with `replay.DrawRect`; a frame with no dirty rect blits the buffer it already has. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
 
-For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. A whole frame rect on every edit means the diff fell back, usually because more than eight operations changed or the change covered more than a third of the frame.
+For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart changes report two rects instead of the bounding box around both. A whole frame rect on every edit means the diff fell back, usually because more than eight operations changed or the change covered more than a third of the frame; a list longer than eight rects, or a rect the size of the whole content, makes the window rebuild its buffer once.
 
 ## 4 Soak matrix
 

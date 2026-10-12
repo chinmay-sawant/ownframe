@@ -59,7 +59,7 @@ type Page struct {
 	allowScroll     bool
 	touchScroll     TouchScrollOptions
 	watch           *watchState
-	dirty           image.Rectangle
+	dirtyRects      []image.Rectangle
 	dirtyFull       bool
 	frameDirty      bool
 	pinZ            int

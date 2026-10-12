@@ -16,6 +16,7 @@ func (s *shell) drawDevPanel(screen *ebiten.Image) {
 
 	vector.FillRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), devPanelBg, false)
 	vector.FillRect(screen, float32(r.X), float32(r.Y), 1, float32(r.H), devBorder, false)
+	s.frameNote(frameRect(r.X, r.Y, r.W, r.H))
 
 	s.drawDevHeader(screen)
 	s.drawDevTabs(screen)

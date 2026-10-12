@@ -8,6 +8,14 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
+// blitWhole fills the screen with the page background and shows the whole
+// buffer. The buffer is current for the frame, so this replaces a second full
+// replay of the display list on frames that only need the screen repainted.
+func (s *shell) blitWhole(dst *ebiten.Image) {
+	dst.Fill(s.pageBackground())
+	s.blitBuffer(dst, nil, nil, true)
+}
+
 // applyRepaint brings the persistent buffer up to date for this frame.
 func (s *shell) applyRepaint(display *layout.Display, plan repaintPlan) {
 	switch plan.mode {
@@ -32,6 +40,14 @@ func (s *shell) applyRepaint(display *layout.Display, plan repaintPlan) {
 	}
 
 	s.partial.gen = s.app.Generation()
+}
+
+// paintFullReplay paints the whole screen: the page background, then the
+// display list. It is the full branch of the replay path, where the buffer
+// alone cannot supply the frame.
+func (s *shell) paintFullReplay(dst *ebiten.Image, display *layout.Display) {
+	dst.Fill(s.pageBackground())
+	s.directReplay(dst, display)
 }
 
 // ensureBuffer keeps one content-sized image for the replay path. The content

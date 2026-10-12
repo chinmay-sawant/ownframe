@@ -13,12 +13,15 @@ func pace() {
 	}
 }
 
-// plan describes one scenario's draws and tick count. midAt advances the
-// feed again after that many ticks, so the flap cascade runs against flaps
-// that were already bound, the shape a real 12 second rotation produces.
+// plan describes one scenario's draws, its mid action, and its tick count.
+// midAt runs the mid action after that many ticks, so the flap cascade runs
+// against flaps that were already bound, the shape a real 12 second rotation
+// produces. mid is "advance" for the SetData and Redraw resync or "rotate"
+// for the tick's retarget path.
 type plan struct {
 	draw    bool
 	advance bool
+	mid     string
 	midAt   int
 	ticks   int
 }
@@ -35,8 +38,13 @@ func scenarioPlan(name string) (plan, bool) {
 	case "loop":
 		return plan{draw: true, advance: true, ticks: 240}, true
 	case "cascade":
-		// Bind the flaps, then rotate, so the row bands appear.
-		return plan{draw: true, ticks: 150, midAt: 3}, true
+		// Bind the flaps, then resync with Advance, so the row bands run
+		// after the Redraw shape.
+		return plan{draw: true, ticks: 150, midAt: 3, mid: "advance"}, true
+	case "rotate":
+		// Bind the flaps, then take the tick's retarget path, which must
+		// leave the page generation alone.
+		return plan{draw: true, ticks: 150, midAt: 3, mid: "rotate"}, true
 	default:
 		return plan{}, false
 	}

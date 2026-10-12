@@ -58,7 +58,8 @@ func rowsAt(feed int) []Row {
 	return rows
 }
 
-// Advance moves to the next feed, then SetData and Redraw.
+// Advance moves to the next feed, then SetData and Redraw. It is the resync
+// path tests and the dump use; a live tick retargets instead.
 func (a *App) Advance(ctx context.Context) error {
 	now := time.Now()
 	a.feed++
@@ -68,4 +69,13 @@ func (a *App) Advance(ctx context.Context) error {
 	a.page.SetData(&a.view)
 
 	return a.page.Redraw(ctx)
+}
+
+// retarget moves the board to rows without a Redraw: the view takes the new
+// rows, SetData stores them for the next real Redraw, and the flipper starts
+// the cascade on the tiles whose glyph changed.
+func (a *App) retarget(rows []Row) {
+	a.view.Rows = rows
+	a.page.SetData(&a.view)
+	a.flip.retarget(rows)
 }

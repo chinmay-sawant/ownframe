@@ -65,6 +65,7 @@ type shell struct {
 	moving           bool
 	lastRelayout     time.Time
 	cursorX, cursorY int
+	hover            hoverState
 
 	replayBuf *ebiten.Image
 
@@ -72,8 +73,14 @@ type shell struct {
 	lastNote string
 	viewport viewportState
 	partial  partialState
-	dev      devState
-	ime      imeState
-	commits  uint64
-	skipped  uint64
+	frame    frameState
+	// frameOptIn is the frame-dirty opt-in captured from the page at the last
+	// Update. Ebiten can call Draw without an Update in between, and
+	// Page.FrameDirty clears the flag when it is read, so the decision belongs
+	// to the tick, not the draw.
+	frameOptIn bool
+	dev        devState
+	ime        imeState
+	commits    uint64
+	skipped    uint64
 }

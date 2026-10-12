@@ -22,6 +22,7 @@ type devState struct {
 	scroll        float64
 	collapsed     map[string]bool
 	rows          []devRow
+	opsCache      devOpsCache
 	content       devRect
 	hovered       layout.Box
 	haveHov       bool

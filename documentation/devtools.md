@@ -143,6 +143,12 @@ its row falls back to its nominal box. `DisplayOpNoop`,
 A fallback page has no display list, so the tab prints `bitmap fallback` and
 offers no list.
 
+The Ops tab is the costliest of the three: it costs milliseconds per frame to
+draw, so an fps or frame time read while the tab is open includes the dock's
+own work. The row list is cached per `Page.Generation()`, so a still page
+rebuilds nothing and pays only to draw the rows and the outlines in view. Read
+fps and frame time on the Frame tab.
+
 ## A custom screen
 
 The window type-asserts `host.Inspector` on the screen it already holds:

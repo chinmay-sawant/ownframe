@@ -27,7 +27,10 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 		return
 	}
 	key := viewportKey{generation: s.seq, bounds: bounds}
-	dirty, changed := taker.TakeDirty()
+	// One cached image, one clipped replay: a single dirty rect is used as
+	// is, several use their bounding box. viewportDirtyBounds has the why.
+	rects, changed := taker.TakeDirtyRects()
+	dirty := viewportDirtyBounds(rects)
 	wanted := bounds.Add(image.Pt(s.scrollX, s.scrollY))
 	full := !s.viewport.valid || s.viewport.key.bounds != bounds || !wanted.In(s.viewport.area)
 	full = full || (s.viewport.key.generation != key.generation && !changed)
