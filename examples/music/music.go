@@ -1,6 +1,7 @@
-// Package music fetches free music from the Openverse API and plays it
-// through the OS audio device. It is example-side support: the audio player
-// and Spotify player examples import it, and package ownframe itself does not.
+// Package music decodes MP3 and WAV bytes and plays them through the OS audio
+// device. It is example-side support: the Spotify player example supplies the
+// clips from its bundled CC0 soundtrack, and package ownframe itself does not
+// import it.
 package music
 
 import (
@@ -8,35 +9,19 @@ import (
 	"errors"
 )
 
-// Clip is one piece of playable free music.
+// Clip is one piece of playable audio.
 type Clip struct {
 	Title   string
 	Creator string
-	License string // "CC BY-SA 3.0", or "generated" for the demo tune
+	License string // "CC0 1.0 Universal", or "generated" for the demo tune
 	URL     string
 	Data    []byte // encoded MP3 or WAV bytes
 }
 
-// Resolver turns a search query and a pick number into playable audio.
+// Resolver turns a pick number into playable audio. The Spotify player reads
+// its bundled catalog; DemoTune stands in for tests.
 type Resolver interface {
 	Resolve(ctx context.Context, query string, pick int) (Clip, error)
-}
-
-// Library tries a primary source and falls back to a generated demo tune, so
-// a page always has something to play.
-type Library struct {
-	Primary Resolver
-}
-
-// Resolve returns the primary result, or a demo tone when it fails.
-func (l *Library) Resolve(ctx context.Context, query string, pick int) (Clip, error) {
-	if l.Primary != nil {
-		if clip, err := l.Primary.Resolve(ctx, query, pick); err == nil {
-			return clip, nil
-		}
-	}
-
-	return DemoTune(query), nil
 }
 
 // ErrNoAudio means no Ebiten audio context is running.

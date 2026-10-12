@@ -92,3 +92,11 @@ The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or W
 `make build` compiles both Go modules without linking executables. `make test` runs their tests one package at a time.
 
 The React documentation and demo website lives in [frontend/](frontend/README.md). Run `npm ci` and `npm run dev` there to preview it locally.
+
+## AI assistance
+
+I build this repository with the help of AI coding tools. I review and test the output before it lands. Generated content can be wrong, so I treat it as a draft, not a source of truth.
+
+## Trademarks
+
+The examples include demos that resemble third-party products. They are unofficial and built for illustration only. This project is not affiliated with, sponsored by, or endorsed by Microsoft, Spotify, Telegram, the Tetris Company, Google, Wispr, LG Electronics, Netflix, Amazon, or Disney. Product names, marks, and artwork belong to their owners.

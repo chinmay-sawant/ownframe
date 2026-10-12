@@ -117,14 +117,15 @@ Android SDK, NDK, and `ebitenmobile` setup is in
 
 ## Audio
 
-The Spotify player plays real music in the desktop window. On play it resolves
-a royalty-free MP3 from the Openverse API (`https://api.openverse.org`, no
-key), downloads it once into the user cache directory, and plays it through
-Ebiten audio while the frame tick moves the seek bar and equalizer.
+The Spotify player plays real music in the desktop window. It ships 30 CC0
+tracks from the Open Lo-Fi collection and reads them from the binary, so
+playback is offline and needs no API key and no network call. It plays them
+through Ebiten audio while the frame tick moves the seek bar and equalizer.
 `ownframe.Run` and `ownframe.BindMobile` create the Ebiten audio context the player
-needs; `-web` has none. When Openverse is unreachable the player falls back to
-a generated demo tune, so the controls and the animation still work. Tests
-inject a fake engine and never touch the audio device or the network.
+needs; `-web` has none. Every track's title, creator, license, and checksum are
+in `spotify-player/player/assets/audio/catalog.json`, with the full attribution
+table and the CC0 text in the README beside it. Tests inject a fake engine and
+never touch the audio device or the network.
 
 ## Tests
 
