@@ -31,6 +31,14 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			g.err = err
 			return
 		}
+		if err := checkRasterCache(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkRasterClip(); err != nil {
+			g.err = err
+			return
+		}
 	}
 	if g.before == nil {
 		g.before = ebiten.NewImage(1908, 999)

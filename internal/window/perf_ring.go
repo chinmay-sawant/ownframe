@@ -1,7 +1,7 @@
 package window
 
 import (
-	"sort"
+	"slices"
 	"time"
 )
 
@@ -9,11 +9,13 @@ const perfRingCap = 120
 
 const perfLongThreshold = 25 * time.Millisecond
 
-// perfRing keeps the last perfRingCap frame durations.
+// perfRing keeps the last perfRingCap frame durations. order is scratch for
+// summaries; it lives inside the ring so a summary allocates nothing.
 type perfRing struct {
-	buf  [perfRingCap]time.Duration
-	n    int
-	next int
+	buf   [perfRingCap]time.Duration
+	order [perfRingCap]time.Duration
+	n     int
+	next  int
 }
 
 func (r *perfRing) record(d time.Duration) {
@@ -29,51 +31,70 @@ func (r *perfRing) record(d time.Duration) {
 
 func (r *perfRing) count() int { return r.n }
 
-func (r *perfRing) copy() []time.Duration {
-	out := make([]time.Duration, r.n)
+// sorted copies the ring in age order and sorts it ascending. It reuses
+// r.order, so repeated summaries allocate nothing.
+func (r *perfRing) sorted() []time.Duration {
+	s := r.order[:r.n]
 	old := (r.next - r.n + perfRingCap) % perfRingCap
-	for i := range out {
-		out[i] = r.buf[(old+i)%perfRingCap]
+	for i := range s {
+		s[i] = r.buf[(old+i)%perfRingCap]
 	}
-	return out
+	slices.Sort(s)
+
+	return s
 }
 
-func (r *perfRing) avg() time.Duration {
+// summary refreshes every cached reading in one walk of the ring.
+func (r *perfRing) summary() (avg, p95, p99 time.Duration, long int) {
 	if r.n == 0 {
-		return 0
+		return 0, 0, 0, 0
 	}
+
+	s := r.sorted()
 	var sum time.Duration
-	for _, d := range r.copy() {
+
+	for _, d := range s {
 		sum += d
-	}
-	return sum / time.Duration(r.n)
-}
-
-func (r *perfRing) quantile(q float64) time.Duration {
-	if r.n == 0 {
-		return 0
-	}
-	s := r.copy()
-	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
-	at := q * float64(r.n-1)
-	lo := int(at)
-	if lo >= r.n-1 {
-		return s[r.n-1]
-	}
-	fr := at - float64(lo)
-	return s[lo] + time.Duration(fr*float64(s[lo+1]-s[lo]))
-}
-
-func (r *perfRing) p95() time.Duration { return r.quantile(0.95) }
-
-func (r *perfRing) p99() time.Duration { return r.quantile(0.99) }
-
-func (r *perfRing) longFrames(th time.Duration) int {
-	c := 0
-	for _, d := range r.copy() {
-		if d > th {
-			c++
+		if d > perfLongThreshold {
+			long++
 		}
 	}
-	return c
+
+	return sum / time.Duration(r.n), quantile(s, 0.95), quantile(s, 0.99), long
+}
+
+// avg, p95, p99, and longFrames are the single-reading views of summary.
+func (r *perfRing) avg() time.Duration {
+	avg, _, _, _ := r.summary()
+
+	return avg
+}
+
+func (r *perfRing) p95() time.Duration {
+	_, p95, _, _ := r.summary()
+
+	return p95
+}
+
+func (r *perfRing) p99() time.Duration {
+	_, _, p99, _ := r.summary()
+
+	return p99
+}
+
+func (r *perfRing) longFrames(th time.Duration) int {
+	if th != perfLongThreshold {
+		c := 0
+		for _, d := range r.sorted() {
+			if d > th {
+				c++
+			}
+		}
+
+		return c
+	}
+
+	_, _, _, long := r.summary()
+
+	return long
 }

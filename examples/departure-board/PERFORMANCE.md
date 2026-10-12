@@ -149,6 +149,39 @@ the shape of the difference, not an exact draw count. The dump also measures
 the tick, not the GPU draw, so it implies the draw drop from the operation
 counts rather than timing the draw itself.
 
+## The window, measured
+
+The dump measures the page, not the window. These numbers come from
+`go run ./examples/departure-board -perf` in a 1908x999 window on a Linux
+machine whose OpenGL stack is Mesa's software rasterizer (WSL2), with the
+devtools dock closed and the board idle, before and after the replay raster
+cache (`internal/replay/raster_cache.go`):
+
+| Row | Before | After |
+| --- | ---: | ---: |
+| Go heap in use (heap profile) | 109.6 MB | 21.0 MB |
+| RSS (`/proc/self/statm`, 20 s in) | 430 MB | 192 MB |
+| Allocation rate (TotalAlloc probe) | 620 KB/s | 380 KB/s |
+| CPU (`ps`, idle) | about 28% | about 20% |
+| Queue vertex high-water | 86.6 MB | 9.4 MB |
+
+With the dock open on the Frame tab the panel reads Go heap 20.1 MB, RSS
+190.7 MB, and Alloc/frame 2.3 MB, against the 345.1 MB, 678.3 MB, and 6.1 MB
+reported for the same command before the cache. The frame rows moved to the
+vsync cadence: 59.7 FPS with a 16.8 ms average, a 19.2 ms p99, and no frame
+over 25 ms, where the before run outran the refresh at 68.5 FPS with one long
+frame. The rest of RSS belongs to the software GL stack, not the app: libLLVM
+loaded by Mesa, the swrast driver, and the WSL D3D12 driver libraries sum to
+roughly 90 MB of file-backed mappings.
+
+The dock's own per-frame cost also dropped. The Frame tab memoizes its label
+widths and draws the value as a right-aligned span instead of building a
+padding string per row, and one row build now allocates 87 times and 15.5 KB
+(`BenchmarkDevFrameRows`). With the dock closed the board allocates about
+380 KB/s at 60 FPS, down from 620 KB/s, and the perf ring summarizes its
+120-frame window in one pass with no allocation
+(`TestPerfRingSummaryNoAlloc`).
+
 ## Verifying by hand
 
 Run `go run ./examples/departure-board` and press F12 (or Ctrl+Shift+I) for

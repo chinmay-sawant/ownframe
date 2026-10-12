@@ -73,6 +73,31 @@ rect, when the content changes size, and when a rect is the whole content. A
 scroll offset change only moves the blit, so scrolling does not replay the
 list.
 
+## Repeated shapes come from the raster cache
+
+Ebiten tessellates an antialiased vector path into several stencil passes, so
+a page that paints many copies of one shape pays for every copy on every full
+replay. The departure board paints 273 rounded fills and 270 rounded borders,
+and one full replay grew the graphics command queue's vertex buffer to about
+87 MB, which the process then held for its lifetime.
+
+`internal/replay` bakes a vector shape once into an image and blits the baked
+pixels for every repeat. A `rasterKey` names the shape exactly: the variant
+(fill or stroke), the size, the corner radii, the stroke width and mask, the
+color, and the sub-pixel offset of the op's origin. The integer part of the
+position is not in the key: the raster bakes with that part moved to the
+image's origin and blits back at it, so one image serves every copy of a
+shape in every integer position. Source-over compositing is associative, so
+compositing the baked raster is pixel-identical to drawing the path there. A
+gated GPU test compares the two for fills, borders, transparent colors, and
+two positions, and a second compares a `DrawRect` sub-image clip against the
+direct draw.
+
+The cache holds at most 64 rasters and 4 megapixels; past either bound the
+oldest entry is disposed. A shape larger than 512 px a side, or an unknown
+stroke mask bit, falls through to the direct path. The cache is
+process-wide and keyed per shape, like the decoded-image cache.
+
 ## Oversized pages
 
 When content exceeds the cache limits, a static page with `TakeDirty` keeps one viewport image with at most 256 pixels of vertical overscan on each side. Scrolling inside that area reuses the image. Crossing its edge moves the area and repaints visible operations. Dirty changes follow the list: a single rect repaints that rect, several repaint their bounding box, and the work covers only the intersection with the cached area. A generation change without a dirty region rebuilds it. Resizing disposes the old image. The viewport path disposes the content buffers, so they are not retained together.

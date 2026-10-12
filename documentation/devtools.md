@@ -105,6 +105,8 @@ value:
 | MEMORY | Go heap in use, total allocation, RSS, goroutine count, GC runs |
 
 A zero duration reads as `0.0ms`, and an empty reload error reads as `-`.
+Label widths are memoized and each value is a right-aligned span, so a frame
+does not rebuild a padding string per row.
 The PERFORMANCE, PIPELINE DETAIL, and MEMORY rows read `-` until the app
 opts into Perf with `Config.Perf`, `ownframe.WithPerf(true)`, or
 `WindowOptions.Perf`. The legacy WINDOW, RENDERING, PIPELINE, and RELOAD

@@ -2,6 +2,7 @@ package replay
 
 import (
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -15,35 +16,46 @@ func strokeGeometry(op *layout.DisplayOp, dx, dy float64) (vector.Path, float32,
 		width = 1
 	}
 
-	if op.StrokeMask != 0 {
-		return maskPath(op, dx, dy), width, op.StrokeMask&^0x0F == 0
-	}
-
-	return roundedPath(op, dx, dy), width, true
-}
-
-// maskPath traces the selected sides as straight segments.
-func maskPath(op *layout.DisplayOp, dx, dy float64) vector.Path {
 	x := float32(op.X*pxPerPt + dx)
 	y := float32(op.Y*pxPerPt + dy)
 	w := float32(op.W * pxPerPt)
 	h := float32(op.H * pxPerPt)
 
+	if op.StrokeMask != 0 {
+		return maskPathAt(x, y, w, h, op.StrokeMask), width, op.StrokeMask&^0x0F == 0
+	}
+
+	rx, ry := render.RadiiXY(op)
+
+	return roundedPathAt(x, y, w, h, radius4(rx), radius4(ry)), width, true
+}
+
+// strokePathAt traces the centerline a raster key names.
+func strokePathAt(key rasterKey) vector.Path {
+	if key.mask != 0 {
+		return maskPathAt(key.fx, key.fy, key.w, key.h, key.mask)
+	}
+
+	return roundedPathAt(key.fx, key.fy, key.w, key.h, key.r, key.ry)
+}
+
+// maskPathAt traces the selected sides as straight segments.
+func maskPathAt(x, y, w, h float32, mask uint8) vector.Path {
 	var path vector.Path
 
-	if op.StrokeMask&1 != 0 {
+	if mask&1 != 0 {
 		path.MoveTo(x, y)
 		path.LineTo(x+w, y)
 	}
-	if op.StrokeMask&2 != 0 {
+	if mask&2 != 0 {
 		path.MoveTo(x+w, y)
 		path.LineTo(x+w, y+h)
 	}
-	if op.StrokeMask&4 != 0 {
+	if mask&4 != 0 {
 		path.MoveTo(x, y+h)
 		path.LineTo(x+w, y+h)
 	}
-	if op.StrokeMask&8 != 0 {
+	if mask&8 != 0 {
 		path.MoveTo(x, y)
 		path.LineTo(x, y+h)
 	}

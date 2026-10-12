@@ -1,9 +1,5 @@
 package window
 
-import (
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-)
-
 const (
 	devPanelPad = 8.0
 	devHeaderH  = 26.0
@@ -37,7 +33,7 @@ func (s *shell) devHits() {
 	x := s.dev.panel.X + devPanelPad
 
 	for i, name := range devTabNames {
-		w, _ := text.Measure(name, badgeFace, 0)
+		w := devTextWidth(name)
 		s.dev.hits = append(s.dev.hits, devHit{
 			rect: devRect{X: x, Y: s.dev.panel.Y + devHeaderH, W: w + 20, H: devTabsH},
 			act:  devActTab,
