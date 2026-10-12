@@ -1,0 +1,49 @@
+package studio
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+)
+
+// themePath is os.UserConfigDir()/ownframe/theme-studio/theme.css, so on
+// Linux ~/.config/ownframe/theme-studio/theme.css. It makes the directory
+// so a first save needs no other setup.
+func themePath() (string, error) {
+	base, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(base, "ownframe", "theme-studio")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "theme.css"), nil
+}
+
+// loadTheme reads the theme file. A missing file is an empty sheet, not an
+// error, so a first run starts from the default and seeds the file.
+func loadTheme(path string) (string, error) {
+	css, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return "", nil
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return string(css), nil
+}
+
+// saveTheme writes the sheet, making the parent directory first because the
+// page keeps watching the path after the file is gone.
+func saveTheme(path, css string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, []byte(css), 0o644)
+}
