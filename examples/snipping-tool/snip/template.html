@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Snipping tool</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { background: #f4f1ea; font-family: sans-serif; color: #1c1915; }
+  .card { width: 640px; background: #ffffff; padding: 24px; margin: 24px; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  #status { color: #176b45; font-size: 13px; min-height: 18px; margin: 0; }
+  .row { margin-top: 12px; }
+  .btn {
+    display: inline-block;
+    background: #1a56db;
+    color: #ffffff;
+    font-size: 13px;
+    padding: 8px 10px;
+    margin-right: 6px;
+  }
+  label { display: inline-block; font-size: 13px; margin-right: 4px; }
+  #x, #y, #w, #h {
+    width: 56px;
+    border: 1px solid #c8c2b4;
+    padding: 6px;
+    margin-right: 8px;
+  }
+  #shot {
+    display: block;
+    max-width: 592px;
+    margin-top: 12px;
+    border: 1px solid #d8d2c6;
+  }
+  #meta { font-size: 12px; color: #6b655a; }
+</style>
+</head>
+<body>
+  <div id="card" class="card">
+    <h1>Snipping tool</h1>
+    <p id="status">{{.Status}}</p>
+    <div class="row">
+      <div id="capture" class="btn" data-action="capture">Capture</div>
+      <div id="save" class="btn" data-action="save">Save</div>
+      <div id="copy" class="btn" data-action="copy">Copy</div>
+    </div>
+    <div class="row">
+      <label>X</label><input id="x" type="text">
+      <label>Y</label><input id="y" type="text">
+      <label>W</label><input id="w" type="text">
+      <label>H</label><input id="h" type="text">
+    </div>
+    {{if .HasImage}}<img id="shot" src="shot" alt="capture">{{end}}
+    <p id="meta">{{.Size}} sel {{.SelX}},{{.SelY}} {{.SelW}}x{{.SelH}} notes {{.Notes}}</p>
+  </div>
+</body>
+</html>
