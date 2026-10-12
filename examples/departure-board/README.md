@@ -36,6 +36,20 @@ again. The flipper finds cell text with `frame.Text`, which matches a box and
 is blind to colour. The refresh bar is a fill, and `frame.Fill` matches the
 fill colour, so that lookup needs the accent of the current livery.
 
+## Performance
+
+The board opts into the frame-dirty path, so a tick repaints one rect instead
+of the whole 631 to 640 operation list. `PERFORMANCE.md` has the before and
+after dump numbers, how to read them, and the open follow-ups. To measure it
+yourself:
+
+```
+go run ./examples/departure-board -dump -pace 16ms -out /tmp/board-dump
+```
+
+The `-pace 16ms` flag reproduces the window's 60 ticks per second. Without it
+the dump runs flat out, and the wall-clock driven refresh bar barely moves.
+
 ## Web
 
 `Serve` never ticks, and `Page.PNG` paints from the template source, so the

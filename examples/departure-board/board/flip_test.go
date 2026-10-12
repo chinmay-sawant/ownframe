@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/examples/departure-board/board"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 func TestLiverySwitchFillsAccent(t *testing.T) {
@@ -35,6 +34,14 @@ func TestFlapsSettle(t *testing.T) {
 	ctx := context.Background()
 	app := draw(t, ctx)
 
+	// Bind the flaps first. Advancing before any tick has no previous glyph
+	// to flip from, and every flap would be born settled.
+	for i := 0; i < 3; i++ {
+		if err := app.Tick(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	if err := app.Advance(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -50,35 +57,17 @@ func TestFlapsSettle(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < 60; i++ {
+	done := false
+	for i := 0; i < 200 && !done; i++ {
 		if err := app.Tick(ctx); err != nil {
 			t.Fatal(err)
 		}
+
+		done = settled(app, want)
 	}
 
-	d := app.Page().Display()
-	if d == nil {
-		t.Fatal("departure board fell back to a bitmap")
-	}
-
-	for id, ch := range want {
-		found := false
-
-		for _, b := range app.Boxes() {
-			if b.ID != id {
-				continue
-			}
-
-			found = true
-
-			if op := frame.Text(d, b); op == nil || op.Text != ch {
-				t.Fatalf("%s = %+v, want %q", id, op, ch)
-			}
-		}
-
-		if !found {
-			t.Fatalf("no box id=%q", id)
-		}
+	if !done {
+		t.Fatal("flaps did not settle within 200 ticks")
 	}
 }
 

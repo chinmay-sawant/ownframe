@@ -4,11 +4,12 @@ import (
 	"math/rand"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 const glyphs = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 "
 
+// flap is one tile's animation: the op it paints, the glyph it is heading
+// for, how many frames it waits, and how many it spins.
 type flap struct {
 	op          *ownframe.DisplayOp
 	want, cur   string
@@ -16,88 +17,61 @@ type flap struct {
 	done        bool
 }
 
+// flipper holds every tile of the board and the two header ops the tick
+// moves. changed is scratch the step reuses so a frame allocates nothing, and
+// barTick paces the refresh fill.
 type flipper struct {
 	gen        uint64
 	cells      map[string]*flap
 	order      []string
+	changed    []string
 	rnd        *rand.Rand
 	clock, bar *ownframe.DisplayOp
 	clockText  string
 	barFullW   float64
+	barTick    int
 }
 
-// rebind reacquires the tick's ops after a Redraw.
-func (f *flipper) rebind(d *ownframe.Display, boxes []ownframe.Box, cells []Cell) {
-	if d == nil {
-		return
-	}
-	byID := make(map[string]ownframe.Box)
-	for _, b := range boxes {
-		byID[b.ID] = b
-	}
-	var order []string
-	next := make(map[string]*flap)
-	for i, c := range cells {
-		b, ok := byID[c.ID]
-		if !ok {
-			continue
-		}
-		op := frame.Text(d, b)
-		if op == nil {
-			continue
-		}
-		fl := f.cells[c.ID]
-		if fl != nil && fl.want == c.Ch {
-			fl.op = op
-		} else {
-			cur := op.Text
-			if fl != nil {
-				cur = fl.op.Text
-			}
-			fl = &flap{op: op, want: c.Ch, cur: cur, delay: i % 8, spin: 8 + i%6, done: cur == c.Ch}
-		}
-		next[c.ID] = fl
-		order = append(order, c.ID)
-	}
-	f.cells, f.order = next, order
-	f.clock = nil
-	if b, ok := byID["clock"]; ok {
-		f.clock = frame.Text(d, b)
-	}
-}
-
-func (f *flipper) bindBar(d *ownframe.Display, boxes []ownframe.Box, accent [3]float64) {
-	f.bar, f.barFullW = nil, 0
-	if d == nil {
-		return
-	}
-	b, ok := boxByID(boxes, "refresh-fill")
-	if !ok {
-		return
-	}
-	f.bar = frame.Fill(d, b, accent)
-	_, _, f.barFullW, _ = frame.BoxUnits(d, b)
-}
-
-func (f *flipper) step() {
+// step advances every flap one frame and returns the ids whose glyph changed
+// this frame, reusing the changed slice. The caller must read the result
+// before the next step.
+func (f *flipper) step() []string {
 	if f.rnd == nil {
 		f.rnd = rand.New(rand.NewSource(1))
 	}
+
+	f.changed = f.changed[:0]
+
 	for _, id := range f.order {
 		fl := f.cells[id]
 		if fl == nil || fl.done {
 			continue
 		}
+
 		if fl.delay > 0 {
 			fl.delay--
+
 			continue
 		}
+
 		if fl.spin > 0 {
 			fl.spin--
-			fl.op.Text = string(glyphs[f.rnd.Intn(len(glyphs))])
+
+			if ch := string(glyphs[f.rnd.Intn(len(glyphs))]); ch != fl.op.Text {
+				fl.op.Text = ch
+				f.changed = append(f.changed, id)
+			}
+
 			continue
 		}
-		fl.op.Text = fl.want
+
+		if fl.op.Text != fl.want {
+			fl.op.Text = fl.want
+			f.changed = append(f.changed, id)
+		}
+
 		fl.done = true
 	}
+
+	return f.changed
 }

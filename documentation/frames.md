@@ -85,7 +85,10 @@ The [Spotify player](../examples/spotify-player) example uses the tick for a
 moving seek bar, a running clock, and a sine-driven equalizer. It plays
 locally through [examples/music](../examples/music). The
 [dino](../examples/dino) and [flappy-bird](../examples/flappy-bird) examples
-step their games and paint the scene from the tick.
+step their games and paint the scene from the tick. The
+[departure board](../examples/departure-board) example opts into
+`UseFrameDirty` with one row band per cascade frame and meters its refresh bar
+at 10 Hz.
 
 ## Hover without layout
 
