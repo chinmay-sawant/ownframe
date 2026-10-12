@@ -16,6 +16,7 @@ import (
 func main() {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8117", "listen address for -web")
+	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab")
 	flag.Parse()
 
 	app, err := app.New()
@@ -23,10 +24,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if *perf {
+		app.Page().SetPerf(true)
+	}
+
 	ctx := context.Background()
 
 	if *webMode {
-		if err := ownframe.Serve(ctx, app.Page(), *addr); err != nil {
+		if err := ownframe.ServeWithOptions(ctx, app.Page(), *addr, ownframe.ServeOptions{Perf: *perf}); err != nil {
 			log.Fatal(err)
 		}
 

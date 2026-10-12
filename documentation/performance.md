@@ -89,6 +89,8 @@ WINDOW, RENDERING, PIPELINE, and RELOAD rows stay as documented in [devtools.md]
 
 Use normal for the idle baseline and the soak default. Use large to find layout and paint cliffs. Use flappy to find per frame allocation and tick cost. The baseline table records all three side by side so a change that helps one and hurts another shows up.
 
+The bigger demos take `-perf` too. `examples/departure-board`, `examples/spotify-player`, and `examples/wispr-flow-dashboard` each turn on the same sampling with `go run ./examples/<name> -perf`, so the Frame tab reports averages, percentiles, pipeline stages, and memory on a real app. With `-web` the same flag serves `/debug/pprof/*` from the page.
+
 ## 7 Baseline table per release
 
 Fill [performance-baseline.md](performance-baseline.md) once per release, on the same machine when possible. Automated rows come from this script.
