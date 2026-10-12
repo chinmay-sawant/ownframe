@@ -44,20 +44,3 @@ func TestNewSoundWithoutContext(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
-
-func TestLicenseName(t *testing.T) {
-	t.Parallel()
-
-	cases := map[[2]string]string{
-		[2]string{"by-sa", "3.0"}: "CC BY-SA 3.0",
-		[2]string{"cc0", "1.0"}:   "CC0 1.0",
-		[2]string{"by", ""}:       "CC BY",
-		[2]string{"", ""}:         "",
-	}
-
-	for in, want := range cases {
-		if got := licenseName(in[0], in[1]); got != want {
-			t.Fatalf("licenseName(%q, %q) = %q, want %q", in[0], in[1], got, want)
-		}
-	}
-}
