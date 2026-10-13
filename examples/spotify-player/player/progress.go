@@ -38,6 +38,10 @@ func (a *App) setProgress(progress int) {
 	elapsed := a.seconds * progress / 100
 	a.view.Elapsed = formatSeconds(elapsed)
 	a.view.Remaining = formatSeconds(a.seconds - elapsed)
+
+	a.page.Invalidate("seek")
+	a.page.Invalidate("elapsed")
+	a.page.Invalidate("remaining")
 }
 
 // resetProgress returns the seek bar to the start of the current track.
@@ -46,4 +50,8 @@ func (a *App) resetProgress() {
 	a.view.Progress = 0
 	a.view.Elapsed = "0:00"
 	a.view.Remaining = formatSeconds(a.seconds)
+
+	a.page.Invalidate("seek")
+	a.page.Invalidate("elapsed")
+	a.page.Invalidate("remaining")
 }

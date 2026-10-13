@@ -47,4 +47,6 @@ func (a *App) animateEq(d *ownframe.Display, boxes []ownframe.Box) {
 		op.H = barH
 		op.Y = y + h - barH
 	}
+
+	a.page.Invalidate("eq")
 }
