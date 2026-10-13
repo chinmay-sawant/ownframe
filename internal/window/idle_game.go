@@ -27,9 +27,10 @@ type paceGame struct {
 	// rects, so an unchanged overlay reads as no work.
 	chrome     []image.Rectangle
 	chromeNext []image.Rectangle
-	mu         sync.Mutex
-	stop       chan struct{}
-	once       sync.Once
+	pacePage
+	mu   sync.Mutex
+	stop chan struct{}
+	once sync.Once
 }
 
 // paceWindow wraps the shell when pacing is on. The returned stop releases
@@ -45,6 +46,8 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 		base:   ebiten.TPS(),
 		stop:   make(chan struct{}),
 	}
+	pace.kick = make(chan struct{}, 1)
+	pace.debug, pace.debugAt = paceDebugWriter(), time.Now()
 	go pace.timer(ctx)
 
 	return pace, pace.close
@@ -59,9 +62,13 @@ func (g *paceGame) Update() error {
 		return err
 	}
 
+	g.captureFrameWant()
+
 	if g.watch.changed() {
 		g.input = true
 	}
+
+	g.publish(time.Now())
 
 	return nil
 }

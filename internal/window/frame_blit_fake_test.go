@@ -10,8 +10,9 @@ import (
 
 // TestPartialFrameLeavesTheScreen is the pixel guard for the swap: a partial
 // frame blits only its planned rects, so a sentinel painted outside them
-// survives, a full frame fills the whole screen and wipes it, and a scroll
-// frame copies the whole buffer at the new offset.
+// survives, a full frame fills the whole screen and wipes it, a scroll frame
+// copies the whole buffer at the new offset, and a dock frame hides the page
+// under the panel without repainting it until the dock closes.
 func TestPartialFrameLeavesTheScreen(t *testing.T) {
 	if os.Getenv("OWNFRAME_FRAME_GPU_TEST") != "1" {
 		t.Skip("requires a graphics session; set OWNFRAME_FRAME_GPU_TEST=1")

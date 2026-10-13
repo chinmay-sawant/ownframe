@@ -13,8 +13,11 @@ with `Invalidate`; for handlers that forget, the page diffs the previous
 display list against the new one and unions the bounds of every changed
 operation. An operation removed from the list dirties its old bounds, so a
 vanishing element leaves no ghost. A change the page cannot place, such as a
-theme switch or a `Load`, returns the whole frame, and so does a diff that
-changes more than eight operations or covers more than a third of the frame.
+theme switch or a `Load`, returns the whole frame, and so does a diff whose
+running bounding box covers more than a third of the frame. A generation with
+many small changes inside one region stays partial: the changed boxes merge
+within the eight-pixel gap, and when the list would pass eight rects the
+closest pair unions instead of the whole list collapsing.
 
 The list holds one rect per separated change. A new rect merges into an
 existing one when the two come within eight pixels of each other, so a shadow
@@ -73,6 +76,11 @@ rect, when the content changes size, and when a rect is the whole content. A
 scroll offset change only moves the blit, so scrolling does not replay the
 list.
 
+While the devtools dock is open, the window clips the tile repaint and the
+tile blit to the strip the panel leaves visible, so hidden tiles are neither
+painted nor copied. When the dock closes, the strip that was hidden is
+repainted once, because tiles under the panel may be stale.
+
 ## Repeated shapes come from the raster cache
 
 Ebiten tessellates an antialiased vector path into several stencil passes, so
@@ -102,6 +110,19 @@ Text runs take the same route: a run bakes once and blits while its face,
 content, color, fake-bold flag, letter spacing, and sub-pixel origin match, so
 a damaged rect over static text stops reshaping it. The run cache is bounded
 at 128 entries and 4 megapixels, and an oversized run draws directly.
+
+## Element paint chunks
+
+A dirty rect used to replay every operation it met, changed or not. The
+painter now groups consecutive operations that sit inside the same element
+box from `Display.Boxes` into a chunk, rasterizes the chunk once into a
+bounded image, and blits it on later damage. A content signature covers every
+field that affects pixels, so a tick that patches an operation re-bakes only
+its chunk. Chunks paint in order, which keeps overlaps correct, and stay
+direct for fixed or z-indexed operations, translucent runs, ink that cannot
+be bounded, boxes over half the content, and everything inside a non-normal
+or masked group. The cache holds a bounded number of chunks and pixels, and
+an evicted chunk re-bakes on the next draw.
 
 ## Transforms and blend groups
 

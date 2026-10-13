@@ -1,15 +1,9 @@
 package page
 
-import (
-	"image"
-
-	"github.com/chinmay-sawant/blinkless/layout"
-)
-
 // diffByPosition pairs operations by kind and geometry when the two lists
 // differ in length. An operation with no partner dirties its bounds, and
 // changed counts every unpaired or repainted operation.
-func diffByPosition(prev, next *layout.Display) (image.Rectangle, bool, int) {
+func diffByPosition(prev, next *Display) (dirtySet, bool, int) {
 	queue := make(map[opKey][]int, len(next.Ops))
 	for i := range next.Ops {
 		k := keyOf(&next.Ops[i])
@@ -17,20 +11,18 @@ func diffByPosition(prev, next *layout.Display) (image.Rectangle, bool, int) {
 	}
 
 	seen := make([]bool, len(next.Ops))
-	dirty := image.Rectangle{}
+	d := newDirtySet(next.Width, next.Height)
 	changed := 0
-	frame := image.Rect(0, 0, next.Width, next.Height)
 
 	for i := range prev.Ops {
 		k := keyOf(&prev.Ops[i])
 		list := queue[k]
 
 		if len(list) == 0 {
-			dirty = dirty.Union(opBounds(&prev.Ops[i], prev))
 			changed++
-
-			if changed > maxDirtyOps {
-				return frame, true, len(next.Ops)
+			d.add(opBounds(&prev.Ops[i], prev))
+			if d.full {
+				return d, true, changed
 			}
 
 			continue
@@ -44,28 +36,24 @@ func diffByPosition(prev, next *layout.Display) (image.Rectangle, bool, int) {
 			continue
 		}
 
-		dirty = dirty.
-			Union(opBounds(&prev.Ops[i], prev)).
-			Union(opBounds(&next.Ops[j], next))
 		changed++
-
-		if changed > maxDirtyOps {
-			return frame, true, len(next.Ops)
+		d.add(opBounds(&prev.Ops[i], prev).Union(opBounds(&next.Ops[j], next)))
+		if d.full {
+			return d, true, changed
 		}
 	}
 
 	for j := range next.Ops {
-		if !seen[j] {
-			dirty = dirty.Union(opBounds(&next.Ops[j], next))
-			changed++
+		if seen[j] {
+			continue
+		}
 
-			if changed > maxDirtyOps {
-				return frame, true, len(next.Ops)
-			}
+		changed++
+		d.add(opBounds(&next.Ops[j], next))
+		if d.full {
+			return d, true, changed
 		}
 	}
 
-	r, full := capDirty(next, dirty, changed)
-
-	return r, full, changed
+	return d, false, changed
 }

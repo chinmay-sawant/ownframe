@@ -9,7 +9,7 @@ import (
 func TestPlanRepaintsPicksTheWork(t *testing.T) {
 	t.Parallel()
 
-	state := partialState{tiles: newTileGrid(100, 100), gen: 1}
+	state := partialState{tiles: newTileGrid(100, 100), gen: 1, clipX: 100}
 	badSize := state
 	badSize.tiles = newTileGrid(80, 100)
 	full := image.Rect(0, 0, 100, 100)
@@ -47,7 +47,7 @@ func TestPlanRepaintsPicksTheWork(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got := planRepaints(100, 100, c.st, c.gen, c.rects, c.ok)
+		got := planRepaints(100, 100, c.st, c.gen, c.rects, c.ok, 100)
 		if !slices.Equal(got, c.want) {
 			t.Fatalf("%s: plans = %v, want %v", c.name, got, c.want)
 		}

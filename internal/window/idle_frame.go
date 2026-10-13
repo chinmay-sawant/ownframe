@@ -1,8 +1,6 @@
 package window
 
 import (
-	"image"
-	"slices"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -21,7 +19,7 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	g.input = false
 
 	g.mu.Lock()
-	act := g.policy.step(now, dirty, input)
+	act := g.policy.step(now, dirty, input, g.want)
 	g.mu.Unlock()
 
 	switch act {
@@ -32,32 +30,13 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	case paceBurst:
 		ebiten.ScheduleFrame()
 	}
-}
 
-// chromeChanged reports chrome that differs from the previous set and
-// records the new set. An unchanged overlay repaints the same pixels, so it
-// does not need the vsync loop. The buffers swap, allocating nothing.
-func (g *paceGame) chromeChanged(restore []image.Rectangle) bool {
-	g.chromeNext = append(g.chromeNext[:0], restore...)
-	changed := !slices.Equal(g.chromeNext, g.chrome)
-	g.chrome, g.chromeNext = g.chromeNext, g.chrome
-
-	return changed
-}
-
-// viewMoved reports a focus or screen size change, either of which makes
-// the replay paint in full.
-func (g *paceGame) viewMoved(screen *ebiten.Image) bool {
-	focus := ebiten.IsFocused()
-	size := screen.Bounds().Size()
-	moved := !g.seen || focus != g.focus || size != g.size
-	g.seen, g.focus, g.size = true, focus, size
-
-	return moved
+	g.kickTimer()
+	g.publish(now)
 }
 
 // applyIdle leaves the vsync loop: the backend blocks in WaitEvents, and a
-// keep-alive post or an input event wakes it. TPS syncs with the frame rate
+// scheduled post or an input event wakes it. TPS syncs with the frame rate
 // there, so one wake-up runs one Update.
 func (g *paceGame) applyIdle() {
 	if g.idle {

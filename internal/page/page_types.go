@@ -61,17 +61,17 @@ type Page struct {
 	watch           *watchState
 	dirtyRects      []image.Rectangle
 	dirtyFull       bool
-	frameDirty      bool
-	pinZ            int
-	pending         map[string]bool
-	last            map[string]image.Rectangle
-	index           map[string]Box
-	content         image.Rectangle
-	contentW        int
-	contentH        int
-	contentOK       bool
-	scroll          host.Scroll
-	hasScroll       bool
-	windowing       windowingState
-	accessibility   *accessibilityState
+	frameState
+	pinZ          int
+	pending       map[string]bool
+	last          map[string]image.Rectangle
+	index         map[string]Box
+	content       image.Rectangle
+	contentW      int
+	contentH      int
+	contentOK     bool
+	scroll        host.Scroll
+	hasScroll     bool
+	windowing     windowingState
+	accessibility *accessibilityState
 }

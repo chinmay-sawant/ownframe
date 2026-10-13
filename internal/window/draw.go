@@ -17,11 +17,7 @@ func (s *shell) Draw(screen *ebiten.Image) {
 	}
 
 	start := time.Now()
-	if !s.drawContent(screen) {
-		// The replay kept this frame in the buffer: blit the plan rects and
-		// the previous chrome before the chrome drawers paint again.
-		s.blitBuffer(screen, s.partial.plans, s.partial.chrome, s.partial.whole)
-	}
+	s.drawContent(screen)
 	s.drawScrollbars(screen)
 	s.dev.draw = time.Since(start)
 	if s.perf {
@@ -40,9 +36,9 @@ func (s *shell) Draw(screen *ebiten.Image) {
 }
 
 // drawContent paints the page and reports whether the whole screen is
-// painted. A false return means the partial blits still owe the frame. Each
-// full branch lays the page background down first, because the screen keeps
-// the previous frame.
+// painted, which every branch does: the tiled replay blits its own tiles, so
+// the caller owes no buffer copy. Each full branch lays the page background
+// down first, because the screen keeps the previous frame.
 func (s *shell) drawContent(screen *ebiten.Image) bool {
 	if s.viewLocked() {
 		s.partial.live = false

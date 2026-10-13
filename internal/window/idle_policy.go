@@ -37,7 +37,10 @@ const (
 // pacePolicy decides when a window may leave the vsync loop. It is pure
 // state: callers pass the time, so tests need no window. In fast mode it
 // idles after paceCleanRun clean frames and paceGrace without input; idle
-// mode returns to vsync at once on input, and after idleBurst dirty frames.
+// mode returns to vsync at once on input, on an immediate page request, and
+// after idleBurst dirty frames that came without a declared deadline. A page
+// deadline still ahead schedules the next idle wake; with no deadline the
+// keep-alive fallback does.
 type pacePolicy struct {
 	grace     time.Duration
 	keepAlive time.Duration
@@ -46,6 +49,7 @@ type pacePolicy struct {
 	pending   time.Time
 	cleanRun  int
 	dirtyRun  int
+	paceWantState
 }
 
 func newPacePolicy(now time.Time, grace, keepAlive time.Duration) pacePolicy {

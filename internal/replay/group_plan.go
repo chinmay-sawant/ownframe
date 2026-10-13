@@ -28,10 +28,12 @@ type groupNode struct {
 }
 
 // planEntry keeps one display's plan. A frame that repaints several rects
-// builds the group tree once.
+// builds the group tree once. plan is the chunk-aware paint order built on
+// demand from the same tree.
 type planEntry struct {
 	d    *layout.Display
 	root *groupNode
+	plan *chunkPlan
 }
 
 var plans struct {

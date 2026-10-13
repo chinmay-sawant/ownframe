@@ -2,8 +2,6 @@ package window
 
 import (
 	"image"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // mergeBlitRects unions overlapping rects until no pair overlaps. A frame
@@ -58,19 +56,4 @@ func chromeRects(screen []image.Rectangle, scroll image.Point) []image.Rectangle
 	}
 
 	return out
-}
-
-// withinBuffer reports that every chrome rect has a source region inside the
-// buffer. A dock that reaches past a narrow page cannot be restored, so such
-// a frame repaints in full.
-func withinBuffer(buf *ebiten.Image, rects []image.Rectangle) bool {
-	bounds := buf.Bounds()
-
-	for _, rect := range rects {
-		if !rect.In(bounds) {
-			return false
-		}
-	}
-
-	return true
 }

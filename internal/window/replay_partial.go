@@ -9,14 +9,16 @@ import (
 // drawReplayPartial draws a display-list page through the tile grid when the
 // page can report dirty rects, and replays the whole list when it cannot. A
 // dirty rect repaints only the tiles it covers and the frame blits only the
-// damaged tiles. It reports whether it painted the whole screen, which the
-// tiled path does: the retained screen already holds every untouched tile.
+// damaged tiles, both trimmed to the page the devtools dock leaves visible.
+// The retained screen already holds every untouched tile.
 func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	display := s.display
 	if display == nil {
 		return true
 	}
 	s.dropRetainedTiles()
+	s.partial.paints, s.partial.paintPx = 0, 0
+	s.partial.blits, s.partial.blitPx = 0, 0
 
 	scroll := image.Pt(s.scrollX, s.scrollY)
 	whole := scroll != s.partial.scroll
@@ -42,11 +44,12 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	}
 	s.disposeViewport()
 
+	clipX := s.dockClipX(contentW)
 	rects, ok := taker.TakeDirtyRects()
-	plans := planRepaints(contentW, contentH, s.partial, s.app.Generation(), rects, ok)
+	plans := planRepaints(contentW, contentH, s.partial, s.app.Generation(), rects, ok, clipX)
 	s.partial.mode = plans[0].mode
+	s.partial.clipX = clipX
 	s.partial.last = s.partial.last[:0]
-	s.partial.paints = 0
 
 	for _, plan := range plans {
 		s.applyRepaint(display, plan)

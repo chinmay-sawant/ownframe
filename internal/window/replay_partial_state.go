@@ -15,9 +15,7 @@ type ticking interface {
 // partialState is the frame's retained pixels and the work that keeps them
 // current. tiles is the content as a grid of replay tiles: a dirty rect
 // repaints only the tiles it covers and the frame blits only damaged tiles.
-// buf is the retained-content handle the grid exposes, a zero-area image, so
-// a reader asking whether retained pixels exist sees a buffer and a blit
-// from it copies nothing. Dropping the handle drops the tiles with it.
+// buf is the grid's retained-content handle (replay_tile_range.go).
 //
 // last is what the previous frame repainted, the grid's full rect on a
 // rebuild or a blit and one rect per plan otherwise. plans, chrome, and whole
@@ -28,21 +26,27 @@ type ticking interface {
 // repaints in full. live reports that the screen shows the page through the
 // retained tiles at one to one, so a scaled, fitted, or bitmap frame forces
 // the next replay frame to repaint everything. paints counts the tiles the
-// frame repainted.
+// frame repainted and paintPx their area; blits and blitPx count the tile
+// blits and their area. clipX is the first page x this frame's dock hides;
+// a wider clip repaints the strip the dock hid.
 type partialState struct {
-	buf    *ebiten.Image
-	tiles  *tileGrid
-	gen    uint64
-	last   []image.Rectangle
-	plans  []repaintPlan
-	chrome []image.Rectangle
-	mode   repaintMode
-	paints int
-	focus  bool
-	live   bool
-	whole  bool
-	scroll image.Point
-	screen image.Point
+	buf     *ebiten.Image
+	tiles   *tileGrid
+	gen     uint64
+	last    []image.Rectangle
+	plans   []repaintPlan
+	chrome  []image.Rectangle
+	mode    repaintMode
+	paints  int
+	paintPx int
+	blits   int
+	blitPx  int
+	focus   bool
+	live    bool
+	whole   bool
+	scroll  image.Point
+	screen  image.Point
+	clipX   int
 }
 
 // gridCurrent reports that the tile grid covers exactly this content size.

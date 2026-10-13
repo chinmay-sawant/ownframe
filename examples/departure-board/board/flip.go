@@ -3,6 +3,7 @@ package board
 import (
 	"image"
 	"math/rand"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -27,7 +28,7 @@ func flapRect(b ownframe.Box) image.Rectangle {
 
 // flipper holds every tile of the board and the two header ops the tick
 // moves. changed is scratch the step reuses so a frame allocates nothing, and
-// barTick paces the refresh fill.
+// barAt paces the refresh fill on wall-clock time.
 type flipper struct {
 	gen        uint64
 	cells      map[string]*flap
@@ -37,7 +38,7 @@ type flipper struct {
 	clock, bar *ownframe.DisplayOp
 	clockText  string
 	barFullW   float64
-	barTick    int
+	barAt      time.Time
 }
 
 // step advances every flap one frame and returns the ids whose glyph changed

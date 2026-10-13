@@ -51,6 +51,7 @@ type shell struct {
 	pageZoom   float64
 	dragActive bool
 	gestureState
+	pace             paceState
 	menu             menuState
 	cursor           ebiten.CursorShapeType
 	setCursor        func(ebiten.CursorShapeType)

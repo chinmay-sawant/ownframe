@@ -27,7 +27,7 @@ func DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float6
 	pinRect := visibleRect(dst.Bounds(), pinDx, pinDy)
 	ppt := display.PointsPerPixel
 
-	paintDisplay(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+	paintChunked(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
 		odx, ody, r := dx, dy, rect
 		if pinZ > 0 && op.ZIndexSet && op.ZIndex >= pinZ {
 			odx, ody, r = pinDx, pinDy, pinRect

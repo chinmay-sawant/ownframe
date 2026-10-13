@@ -98,6 +98,7 @@ value:
 |---|---|
 | WINDOW | window and page size, scroll offset, stretched, fallback, sequence |
 | RENDERING | fps, tps, frame time, draw time |
+| PACING | idle, next deadline in ms, presents skipped while parked |
 | PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
 | RELOAD | reloads and the last reload error |
 | PERFORMANCE | frame average, p95, p99, long frame count, per stage times for template, layout, display list, and paint |

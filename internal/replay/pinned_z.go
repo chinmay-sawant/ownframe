@@ -8,7 +8,7 @@ import (
 )
 
 func DrawUnfixedZ(dst *ebiten.Image, d *layout.Display, z int) {
-	paintDisplay(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+	paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
 		return 0, 0, scrollContentOp(op, z)
 	})
 }
@@ -29,7 +29,7 @@ func DrawRectUnfixedZ(dst *ebiten.Image, d *layout.Display, rect image.Rectangle
 	}
 
 	ppt := d.PointsPerPixel
-	paintDisplay(clip, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+	paintChunked(clip, d, func(op *layout.DisplayOp) (float64, float64, bool) {
 		return 0, 0, scrollContentOp(op, z) && opTouches(op, ppt, rect)
 	})
 }
@@ -50,7 +50,7 @@ func visitVisibleZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int, 
 	r := visibleRect(dst.Bounds(), dx, dy)
 	ppt := d.PointsPerPixel
 
-	paintDisplay(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+	paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
 		if op.Fixed || atPinZ(op, z) != pinned || !opTouches(op, ppt, r) {
 			return 0, 0, false
 		}

@@ -1,7 +1,6 @@
 package window
 
 import (
-	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -11,8 +10,9 @@ import (
 // the frame left. Frame 0 is the first frame, which is full. Frames 1 and 2
 // report damage, so they are partial. Frame 3 drops the buffer, which forces
 // another full frame. Frame 4 scrolls without damage, so the frame copies the
-// whole buffer. Each Draw prepares the next frame, because Ebiten may skip an
-// Update between two draws.
+// whole buffer. Frames 5 to 7 open a 40 px dock, damage the box under it, and
+// close the dock. Each Draw prepares the next frame, because Ebiten may skip
+// an Update between draws.
 type partialFrameGame struct {
 	shell *shell
 	app   *dirtyScreen
@@ -27,7 +27,7 @@ func (g *partialFrameGame) Update() error {
 	// Keep the recorded focus current so the damage frames stay partial.
 	g.shell.partial.focus = ebiten.IsFocused()
 
-	if g.frame >= 5 {
+	if g.frame >= 8 {
 		return ebiten.Termination
 	}
 
@@ -44,20 +44,4 @@ func (g *partialFrameGame) Draw(dst *ebiten.Image) {
 	g.check(bounds, pixels)
 	g.prepare()
 	g.frame++
-}
-
-func (g *partialFrameGame) prepare() {
-	switch g.frame {
-	case 0, 1:
-		g.app.click(image.Rect(10, 10, 30, 30))
-	case 2:
-		if g.shell.partial.buf != nil {
-			g.shell.partial.buf.Dispose()
-			g.shell.partial.buf = nil
-		}
-	case 3:
-		g.app.ok = false
-		g.app.rects = nil
-		g.shell.scrollY = 20
-	}
 }

@@ -6,6 +6,10 @@ import (
 )
 
 func (g *partialFrameGame) check(bounds image.Rectangle, pixels []byte) {
+	if g.err != nil {
+		return
+	}
+
 	green := [4]byte{0, 255, 0, 255}
 	red := [4]byte{255, 0, 0, 255}
 	white := [4]byte{255, 255, 255, 255}
@@ -37,6 +41,8 @@ func (g *partialFrameGame) check(bounds image.Rectangle, pixels []byte) {
 		if got := g.at(bounds, pixels, 15*scale, 35*scale); got != white {
 			g.err = fmt.Errorf("scroll copy left the old ink: pixel = %v", got)
 		}
+	default:
+		g.checkDock(bounds, pixels, scale)
 	}
 }
 

@@ -37,7 +37,7 @@ func TestPaceInputWakesTheFastPath(t *testing.T) {
 	p := newPacePolicy(base, time.Millisecond, 125*time.Millisecond)
 	at := idleAt(t, &p, base).Add(paceStep)
 
-	if act := p.step(at, false, true); act != paceToFast {
+	if act := p.step(at, false, true, time.Time{}); act != paceToFast {
 		t.Fatalf("input frame = %v, want fast", act)
 	}
 
@@ -51,7 +51,7 @@ func TestPaceDirtyBurstsThenWakes(t *testing.T) {
 	p := newPacePolicy(base, time.Millisecond, 125*time.Millisecond)
 	at := idleAt(t, &p, base).Add(paceStep)
 
-	if act := p.step(at, true, false); act != paceBurst {
+	if act := p.step(at, true, false, time.Time{}); act != paceBurst {
 		t.Fatalf("first dirty idle frame = %v, want burst", act)
 	}
 
@@ -60,7 +60,7 @@ func TestPaceDirtyBurstsThenWakes(t *testing.T) {
 	}
 
 	at = at.Add(paceStep)
-	if act := p.step(at, true, false); act != paceToFast {
+	if act := p.step(at, true, false, time.Time{}); act != paceToFast {
 		t.Fatalf("second dirty idle frame = %v, want fast", act)
 	}
 

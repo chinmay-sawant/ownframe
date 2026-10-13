@@ -34,7 +34,7 @@ func DrawRect(dst *ebiten.Image, display *layout.Display, rect image.Rectangle, 
 	}
 
 	ppt := display.PointsPerPixel
-	paintDisplay(clip, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+	paintChunked(clip, display, func(op *layout.DisplayOp) (float64, float64, bool) {
 		if op.Fixed || !opTouches(op, ppt, rect) {
 			return 0, 0, false
 		}

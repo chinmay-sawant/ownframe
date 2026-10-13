@@ -6,11 +6,16 @@ meter, or call `Redraw`, so a page can animate without parsing the HTML again. T
 build, and the WebAssembly canvas call it at Ebiten's default tick rate, about
 sixty times a second. A desktop window that has drawn five clean frames in a
 row and has seen no input for 250 ms stops presenting every frame: it waits in
-the event loop and wakes on input, or on a keep-alive frame every 125 ms that
-lets the tick run. A tick that animates must report damage (`UseFrameDirty`
-plus marks), which returns the window to the full rate; a page that damages
-every frame is never paced. `WindowOptions.NoIdlePace` turns the pacing off,
-and the phone and WebAssembly builds keep the plain sixty tick loop. Each frame runs
+the event loop and wakes on input, or at the next deadline the page declared.
+`Page.WantFrameAt(t)` and `Page.WantFrameIn(d)` set that deadline, and
+`Page.NextFrameAt` returns and clears it; a page with no request falls back to
+a keep-alive frame every 125 ms, so a tick that never asks still runs. A tick
+that animates must report damage (`UseFrameDirty` plus marks), which returns
+the window to the full rate; a page that damages every frame is never paced.
+`WindowOptions.NoIdlePace` turns the pacing off, and the phone and WebAssembly
+builds keep the plain sixty tick loop. The Frame tab's PACING section shows
+whether the window is idle, the next deadline in milliseconds, and how many
+presents were skipped. Each frame runs
 devtools sync, keys, resize, the passthrough update, pointer, drop, tick, a
 reload poll, sync, the page scroll request, a devtools refresh, and wheel, in
 that order. An error from the

@@ -8,17 +8,19 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// paintTiles repaints the tiles that rect covers. Each tile's part of the
-// rect is cleared to the page background, then the operations that meet it
-// are replayed with the tile origin subtracted, so page coordinates land on
-// the tile. Fixed and viewport-pinned operations stay off the tiles, as they
-// stayed off the single buffer.
+// paintTiles repaints the tiles that rect covers, trimmed to the page the
+// devtools dock leaves visible. Each tile's part of the rect is cleared to
+// the page background, then the operations that meet it are replayed with
+// the tile origin subtracted, so page coordinates land on the tile. Fixed
+// and viewport-pinned operations stay off the tiles, as they stayed off the
+// single buffer.
 func (s *shell) paintTiles(d *layout.Display, rect image.Rectangle) {
 	g := s.partial.tiles
 	if g == nil {
 		return
 	}
 
+	rect = clipDockX(rect, s.dockClipX(g.width))
 	col0, row0, col1, row1 := g.tileRange(rect)
 
 	for row := row0; row < row1; row++ {
@@ -42,6 +44,7 @@ func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect ima
 	}
 
 	s.partial.paints++
+	s.partial.paintPx += part.Dx() * part.Dy()
 	sub.Fill(s.pageBackground())
 	replay.DrawVisibleUnfixedZ(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
 }

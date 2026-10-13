@@ -7,13 +7,15 @@ import (
 )
 
 // blitTiles copies the tiles covering rect to dst, each placed where the
-// scroll puts it. A rect that misses the content copies nothing.
+// scroll puts it, trimmed to the page the devtools dock leaves visible. A
+// rect that misses the content copies nothing.
 func (s *shell) blitTiles(dst *ebiten.Image, rect image.Rectangle) {
 	g := s.partial.tiles
 	if g == nil || dst == nil {
 		return
 	}
 
+	rect = clipDockX(rect, s.dockClipX(g.width))
 	col0, row0, col1, row1 := g.tileRange(rect)
 
 	for row := row0; row < row1; row++ {
@@ -43,6 +45,9 @@ func (s *shell) blitTile(dst *ebiten.Image, g *tileGrid, col, row int, rect imag
 	if !ok {
 		return
 	}
+
+	s.partial.blits++
+	s.partial.blitPx += at.Dx() * at.Dy()
 
 	var op ebiten.DrawImageOptions
 	op.Blend = ebiten.BlendCopy

@@ -208,6 +208,16 @@ falls from about 1.0 ms, 873 KB, and 4,512 allocations to 35 us, 27 KB, and
 `plans/v0.0.2/multi-process-isolation.md` record the three items this pass
 did not implement and why.
 
+A second pass (2026-10-13, local) lets the page declare its next frame with
+`Page.WantFrameAt`, which drops idle presents from 8 per second to 1 or 2 and
+the median idle CPU from 5.0% to 2.0% (20.4% with `NoIdlePace`). It also
+groups element boxes into replay chunks (a damaged card falls from 8.6 us,
+5 operations, and 18 allocations to 4.4 us, one blit, and 3 allocations),
+adds `internal/frame` animations (176 ns per animated frame against 171 us
+for a Redraw), keeps many small changes partial instead of rebuilding the
+frame, and clips repaints and blits to the strip the devtools panel leaves
+visible.
+
 ## Verifying by hand
 
 Run `go run ./examples/departure-board` and press F12 (or Ctrl+Shift+I) for

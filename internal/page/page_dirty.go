@@ -18,7 +18,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		return
 	}
 
-	r, full, changed := diffDisplay(prev, display)
+	d, full, changed := diffDisplay(prev, display)
 	if full {
 		p.markFull()
 		if p.perf {
@@ -28,9 +28,12 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		return
 	}
 
-	p.markRect(r)
+	for i := 0; i < d.n; i++ {
+		p.markRect(d.rects[i])
+	}
+
 	if p.perf {
-		p.recordPartial(changed, r, display)
+		p.recordPartial(changed, d.bounds(), display)
 	}
 }
 

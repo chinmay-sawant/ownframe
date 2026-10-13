@@ -12,7 +12,7 @@ func TestPaceAlwaysDirtyNeverIdles(t *testing.T) {
 
 	for i := 0; i < 600; i++ {
 		at = at.Add(paceStep)
-		if act := p.step(at, true, false); act == paceToIdle {
+		if act := p.step(at, true, false, time.Time{}); act == paceToIdle {
 			t.Fatalf("dirty frame %d idled the window", i)
 		}
 
@@ -32,7 +32,7 @@ func TestPaceBarCadenceStillIdles(t *testing.T) {
 		at = at.Add(paceStep)
 
 		dirty := i%6 == 0
-		if act := p.step(at, dirty, false); act == paceToIdle {
+		if act := p.step(at, dirty, false, time.Time{}); act == paceToIdle {
 			if dirty || i < paceCleanRun {
 				t.Fatalf("idle on frame %d, dirty = %v", i, dirty)
 			}
