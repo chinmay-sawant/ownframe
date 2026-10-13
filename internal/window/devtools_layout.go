@@ -32,6 +32,8 @@ func (s *shell) devHits() {
 
 	x := s.dev.panel.X + devPanelPad
 
+	s.devPickerHit()
+
 	for i, name := range devTabNames {
 		w := devTextWidth(name)
 		s.dev.hits = append(s.dev.hits, devHit{

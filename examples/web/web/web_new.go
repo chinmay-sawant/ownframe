@@ -8,7 +8,7 @@ import (
 
 // New parses the embedded template and registers its click and change handlers.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Web mode",
 		HTML:   webHTML,
 		Width:  DefaultWidth,

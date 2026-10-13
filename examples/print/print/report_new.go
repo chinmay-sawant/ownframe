@@ -10,7 +10,7 @@ import (
 // New parses the embedded report and registers the click handler. webMode
 // adds the /pdf hint to the page.
 func New(webMode bool) (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Quarterly report",
 		HTML:   reportHTML,
 		Width:  DefaultWidth,

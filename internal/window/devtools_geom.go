@@ -53,6 +53,7 @@ func devScreenRect(r devRect, scrollX, scrollY int, zoom float64, stretched bool
 // devScreen converts a page-space rectangle for this frame.
 func (s *shell) devScreen(r devRect) devRect {
 	frameW, frameH := s.frameSize()
+	viewW, viewH := s.viewSize()
 
-	return devScreenRect(r, s.scrollX, s.scrollY, s.zoom(), s.stretched(), frameW, frameH, s.screenW, s.screenH)
+	return devScreenRect(r, s.scrollX, s.scrollY, s.zoom(), s.stretched(), frameW, frameH, viewW, viewH)
 }

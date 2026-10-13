@@ -27,8 +27,9 @@ func (s *shell) touchMove(u touchUpdate, now []touchPos, frameW, frameH int) err
 
 	dx, dy := s.scrollMotion.move(u.dx, u.dy, time.Now())
 	contentW, contentH := s.contentSize()
+	viewW, viewH := s.viewSize()
 	s.scrollX, s.scrollY = clampScroll(
-		s.scrollX+dx, s.scrollY+dy, contentW, contentH, s.screenW, s.screenH,
+		s.scrollX+dx, s.scrollY+dy, contentW, contentH, viewW, viewH,
 	)
 
 	return nil

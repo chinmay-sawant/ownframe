@@ -25,7 +25,7 @@ type App struct {
 // New parses the embedded template, starts on the amber livery, and installs
 // the click handler and the frame tick.
 func New() (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Departure board",
 		HTML:      boardHTML,
 		Width:     1000,

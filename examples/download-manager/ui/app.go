@@ -53,7 +53,7 @@ func New(ctx context.Context, backend Backend) (*App, error) {
 	}
 	app.view = View{Dark: dark, Dummy: info.Dummy, DataDir: info.DataDir}
 
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Download Manager",
 		HTML:      buildHTML(),
 		Theme:     themeSource(dark),

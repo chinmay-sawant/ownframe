@@ -24,7 +24,7 @@ func newFromHTML(model Model, st Store, opts Options, html string) (*Scene, erro
 		step = &game.Clock{}
 	}
 
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Ownframe Tetris",
 		HTML:      html,
 		Theme:     themeCSS(opts.Dark),

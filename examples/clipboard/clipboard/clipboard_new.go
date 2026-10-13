@@ -9,7 +9,7 @@ import (
 // New parses the embedded clipboard template and registers its handlers.
 // The handlers cover both the buttons and the Ctrl+C/X/V/A/Z/Y chords.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Clipboard",
 		HTML:   clipboardHTML,
 		Width:  DefaultWidth,

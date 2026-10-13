@@ -52,6 +52,6 @@ func newDevShell(d *devScreen) *shell {
 		ctx:     context.Background(),
 		screenW: 1920,
 		screenH: 1080,
-		dev:     devState{on: d.on, watch: newKeyWatch()},
+		dev:     devState{on: d.on, available: d.on, watch: newKeyWatch()},
 	}
 }

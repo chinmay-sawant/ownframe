@@ -30,6 +30,7 @@ const (
 	devActOpsToggle        // flip the operation outlines
 	devActJSON             // collapse or expand the JSON node named by key
 	devActOp               // outline the operation at index arg
+	devActPicker           // toggle element picker mode
 )
 
 // devRow is one content line plus the click action it carries. w is the line

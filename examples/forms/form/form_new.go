@@ -4,7 +4,7 @@ import "github.com/chinmay-sawant/ownframe"
 
 // New parses the embedded form template and registers its click handler.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Forms",
 		HTML:   formHTML,
 		Width:  DefaultWidth,

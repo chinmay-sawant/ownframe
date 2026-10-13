@@ -13,7 +13,8 @@ func (s *shell) drawBitmapPage(screen *ebiten.Image, zoom float64) {
 	}
 
 	bounds := img.Bounds()
-	if bounds.Dx() == 0 || bounds.Dy() == 0 || s.screenW == 0 || s.screenH == 0 {
+	viewW, viewH := s.viewSize()
+	if bounds.Dx() == 0 || bounds.Dy() == 0 || viewW == 0 || viewH == 0 {
 		return
 	}
 
@@ -32,8 +33,8 @@ func (s *shell) drawBitmapPage(screen *ebiten.Image, zoom float64) {
 
 	op.Filter = ebiten.FilterLinear
 	op.GeoM.Scale(
-		float64(s.screenW)/float64(bounds.Dx())*zoom,
-		float64(s.screenH)/float64(bounds.Dy())*zoom,
+		float64(viewW)/float64(bounds.Dx())*zoom,
+		float64(viewH)/float64(bounds.Dy())*zoom,
 	)
 	screen.DrawImage(img, &op)
 }

@@ -25,7 +25,7 @@ type App struct {
 
 // New parses the app template, registers its images and handlers.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Flow",
 		HTML:      buildHTML(),
 		Width:     DefaultWidth,

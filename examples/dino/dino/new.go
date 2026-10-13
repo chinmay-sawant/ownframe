@@ -11,7 +11,7 @@ import (
 // New parses the game page and registers its key handlers and frame tick.
 // The game starts on a ready screen until a jump key is pressed.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Dino Run",
 		HTML:      buildHTML(),
 		Width:     DefaultWidth,

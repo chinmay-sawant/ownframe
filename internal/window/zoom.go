@@ -53,9 +53,12 @@ func (s *shell) contentAt(x, y, frameW, frameH int) (float64, float64) {
 		scale, ox, oy := s.fit()
 		return (float64(x) - ox) / scale, (float64(y) - oy) / scale
 	}
+
+	viewW, viewH := s.viewSize()
+
 	return contentPointZoom(
 		x, y, s.scrollX, s.scrollY, s.zoom(), s.stretched(),
-		frameW, frameH, s.screenW, s.screenH,
+		frameW, frameH, viewW, viewH,
 	)
 }
 

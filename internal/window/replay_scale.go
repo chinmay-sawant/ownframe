@@ -11,7 +11,8 @@ import (
 // the window size differ (a resized or clamped window).
 func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 	w, h := s.display.Width, s.display.Height
-	if w <= 0 || h <= 0 || s.screenW <= 0 || s.screenH <= 0 {
+	viewW, viewH := s.viewSize()
+	if w <= 0 || h <= 0 || viewW <= 0 || viewH <= 0 {
 		return
 	}
 
@@ -38,8 +39,8 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 
 	if s.stretched() {
 		op.GeoM.Scale(
-			float64(s.screenW)/float64(w)*s.zoom(),
-			float64(s.screenH)/float64(h)*s.zoom(),
+			float64(viewW)/float64(w)*s.zoom(),
+			float64(viewH)/float64(h)*s.zoom(),
 		)
 	} else {
 		op.GeoM.Scale(s.zoom(), s.zoom())

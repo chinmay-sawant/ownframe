@@ -39,7 +39,7 @@ func New(opts Options) (*App, error) {
 		height = 760
 	}
 
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     title,
 		HTML:      pageHTML,
 		Width:     width,

@@ -5,7 +5,7 @@ import "github.com/chinmay-sawant/ownframe"
 // New parses the embedded template and registers its binding hooks.
 // The name starts locked, so the first edit to it is vetoed.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Bind hooks",
 		HTML:   bindhooksHTML,
 		Width:  DefaultWidth,

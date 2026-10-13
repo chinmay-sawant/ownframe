@@ -41,7 +41,7 @@ type App struct {
 
 // New parses the embedded template and registers its images and handlers.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Telegram",
 		HTML:      buildHTML(),
 		Width:     DefaultWidth,

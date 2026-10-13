@@ -33,7 +33,7 @@ func NewAt(base string) (*App, error) {
 // NewWith is NewAt with an injected audio engine, so tests never open the
 // OS audio device.
 func NewWith(base string, engine *music.Engine) (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Spotify — Player",
 		HTML:      buildHTML(),
 		Width:     DefaultWidth,

@@ -46,7 +46,8 @@ func (s *shell) devClose() error {
 
 	x, y := ebiten.CursorPosition()
 	frameW, frameH := s.frameSize()
-	px, py := contentPoint(x, y, s.scrollX, s.scrollY, s.stretched(), frameW, frameH, s.screenW, s.screenH)
+	viewW, viewH := s.viewSize()
+	px, py := contentPoint(x, y, s.scrollX, s.scrollY, s.stretched(), frameW, frameH, viewW, viewH)
 
 	return s.app.Hover(s.ctx, px, py)
 }

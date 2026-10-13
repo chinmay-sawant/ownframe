@@ -11,18 +11,6 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-// drawDevPick outlines the hovered and pinned boxes, one colour each, with a
-// label over each.
-func (s *shell) drawDevPick(screen *ebiten.Image) {
-	if s.dev.haveHov {
-		s.devOutline(screen, s.dev.hovered, devHoverInk)
-	}
-
-	if s.dev.havePin {
-		s.devOutline(screen, s.dev.pinned, devPinInk)
-	}
-}
-
 // devOutline strokes one box and labels it. The stroke hook lets a test read
 // the computed rect without reading pixels.
 func (s *shell) devOutline(screen *ebiten.Image, box layout.Box, ink color.RGBA) {

@@ -16,9 +16,10 @@ func (s *shell) imeScreenRect(box layout.Box) image.Rectangle {
 		sy = sx
 	} else if s.stretched() {
 		w, h := s.frameSize()
+		viewW, viewH := s.viewSize()
 		if w > 0 && h > 0 {
-			sx *= float64(s.screenW) / float64(w)
-			sy *= float64(s.screenH) / float64(h)
+			sx *= float64(viewW) / float64(w)
+			sy *= float64(viewH) / float64(h)
 		}
 	} else {
 		// Page.IMEContext has already subtracted the CSS scroll offset.

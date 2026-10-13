@@ -13,6 +13,8 @@ func TestDevToolsPickSkipsClick(t *testing.T) {
 	d := newDevScreen()
 	s := newDevShell(d)
 
+	s.devSetPicker(true)
+
 	if err := s.devPick(20, 20, false); err != nil {
 		t.Fatal(err)
 	}

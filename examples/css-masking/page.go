@@ -15,7 +15,7 @@ func newPage() (*ownframe.Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	p, err := ownframe.New(ownframe.Config{Title: "CSS masking", HTML: string(html), Width: 460, Height: 390})
+	p, err := ownframe.New(ownframe.Config{DevTools: true, Title: "CSS masking", HTML: string(html), Width: 460, Height: 390})
 	if err != nil {
 		return nil, err
 	}

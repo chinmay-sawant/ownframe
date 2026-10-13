@@ -4,7 +4,7 @@ import "github.com/chinmay-sawant/ownframe"
 
 // New parses the embedded template and registers its handlers.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Editing",
 		HTML:   editingHTML,
 		Width:  DefaultWidth,

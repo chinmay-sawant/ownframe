@@ -17,6 +17,7 @@ func TestDevDrawOverlaySmoke(t *testing.T) {
 	s := newDevShell(d)
 	s.display = devTestDisplay()
 	s.dev.ops = true
+	s.devSetPicker(true)
 	s.dev.haveHov = true
 	s.dev.hovered = d.boxes[0]
 	s.dev.havePin = true

@@ -53,7 +53,7 @@ func New(opts ...Option) (*App, error) {
 	if app.phone {
 		minWidth, minHeight = 240, 160
 	}
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "LG remote",
 		HTML:      html,
 		Theme:     darkTheme,

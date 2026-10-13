@@ -50,16 +50,17 @@ func (s *shell) scrollbarGrab(x, y int) (int, float64, bool) {
 	}
 
 	contentW, contentH := s.contentSize()
+	viewW, viewH := s.viewSize()
 
-	if scrollbarVisible(contentH, s.screenH) && x >= s.screenW-scrollbarThickness {
-		pos, length := scrollbarThumb(s.screenH, contentH, s.screenH, s.scrollY)
+	if scrollbarVisible(contentH, viewH) && x >= viewW-scrollbarThickness {
+		pos, length := scrollbarThumb(viewH, contentH, viewH, s.scrollY)
 		if float64(y) >= float64(pos) && float64(y) <= float64(pos+length) {
 			return dragVertical, float64(y) - float64(pos), true
 		}
 	}
 
-	if scrollbarVisible(contentW, s.screenW) && y >= s.screenH-scrollbarThickness {
-		pos, length := scrollbarThumb(s.screenW, contentW, s.screenW, s.scrollX)
+	if scrollbarVisible(contentW, viewW) && y >= viewH-scrollbarThickness {
+		pos, length := scrollbarThumb(viewW, contentW, viewW, s.scrollX)
 		if float64(x) >= float64(pos) && float64(x) <= float64(pos+length) {
 			return dragHorizontal, float64(x) - float64(pos), true
 		}

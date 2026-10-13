@@ -20,7 +20,8 @@ func (s *shell) stepTouchScroll(now time.Time) {
 		return
 	}
 	contentW, contentH := s.contentSize()
-	x, y := clampScroll(s.scrollX+dx, s.scrollY+dy, contentW, contentH, s.screenW, s.screenH)
+	viewW, viewH := s.viewSize()
+	x, y := clampScroll(s.scrollX+dx, s.scrollY+dy, contentW, contentH, viewW, viewH)
 	if x != s.scrollX+dx || y != s.scrollY+dy {
 		s.scrollMotion.cancel()
 	}

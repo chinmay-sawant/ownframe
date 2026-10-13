@@ -4,7 +4,7 @@ import "github.com/chinmay-sawant/ownframe"
 
 // New parses the embedded template and registers the drop handler.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Drag and drop",
 		HTML:   dropHTML,
 		Width:  DefaultWidth,

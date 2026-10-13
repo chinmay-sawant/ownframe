@@ -60,5 +60,6 @@ func (s *shell) reloadNote(err error) (string, bool) {
 // clampView pulls the scroll offset back inside a page that got shorter.
 func (s *shell) clampView() {
 	contentW, contentH := s.contentSize()
-	s.scrollX, s.scrollY = clampScroll(s.scrollX, s.scrollY, contentW, contentH, s.screenW, s.screenH)
+	viewW, viewH := s.viewSize()
+	s.scrollX, s.scrollY = clampScroll(s.scrollX, s.scrollY, contentW, contentH, viewW, viewH)
 }

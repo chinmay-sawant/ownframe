@@ -5,7 +5,7 @@ import "github.com/chinmay-sawant/ownframe"
 // New parses the embedded template and registers every handler.
 // Bound fields need a pointer so data-bind writes into View.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Input lab",
 		HTML:      inputlabHTML,
 		Width:     DefaultWidth,

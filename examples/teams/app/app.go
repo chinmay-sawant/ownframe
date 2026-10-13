@@ -30,7 +30,7 @@ func New(opts ...Option) (*App, error) {
 	app := &App{store: st}
 	app.view = app.loadView(st)
 
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Microsoft Teams",
 		HTML:      buildHTML(),
 		Theme:     themeSource(app.view.Dark),

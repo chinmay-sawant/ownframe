@@ -41,18 +41,19 @@ func (s *shell) drawScrollbars(dst *ebiten.Image) {
 	}
 
 	contentW, contentH := s.contentSize()
+	viewW, viewH := s.viewSize()
 	thick := float32(scrollbarThickness)
 
-	if scrollbarVisible(contentH, s.screenH) {
-		pos, length := scrollbarThumb(s.screenH, contentH, s.screenH, s.scrollY)
-		x := float32(s.screenW) - thick
+	if scrollbarVisible(contentH, viewH) {
+		pos, length := scrollbarThumb(viewH, contentH, viewH, s.scrollY)
+		x := float32(viewW) - thick
 		vector.FillRect(dst, x, pos, thick, length, scrollThumb, false)
 		s.frameNote(frameRect(float64(x), float64(pos), float64(thick), float64(length)))
 	}
 
-	if scrollbarVisible(contentW, s.screenW) {
-		pos, length := scrollbarThumb(s.screenW, contentW, s.screenW, s.scrollX)
-		y := float32(s.screenH) - thick
+	if scrollbarVisible(contentW, viewW) {
+		pos, length := scrollbarThumb(viewW, contentW, viewW, s.scrollX)
+		y := float32(viewH) - thick
 		vector.FillRect(dst, pos, y, length, thick, scrollThumb, false)
 		s.frameNote(frameRect(float64(pos), float64(y), float64(length), float64(thick)))
 	}
