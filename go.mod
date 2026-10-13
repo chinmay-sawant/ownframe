@@ -3,7 +3,7 @@ module github.com/chinmay-sawant/ownframe
 go 1.26.4
 
 require (
-	github.com/chinmay-sawant/blinkless v0.0.0-20261010174808-34d93862f9ed
+	github.com/chinmay-sawant/blinkless v0.0.0-20261013163225-c085b3423260
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
 	golang.org/x/text v0.41.0
@@ -41,5 +41,3 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
-
-replace github.com/chinmay-sawant/blinkless => /home/chinmay/ChinmayPersonalProjects/blinkless
