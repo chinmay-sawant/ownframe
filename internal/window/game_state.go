@@ -47,16 +47,10 @@ type shell struct {
 	dragGrab float64
 	hold     longPressWatch
 
-	gesture          pointerDrag
-	mouseDown        bool
-	touchCanceled    bool
-	fingers          touchGesture
-	pageZoom         float64
-	tabEaten         bool
-	f11Eaten         bool
-	clicks           clickWatch
-	dragActive       bool
-	dragX, dragY     float64
+	mouseDown  bool
+	pageZoom   float64
+	dragActive bool
+	gestureState
 	menu             menuState
 	cursor           ebiten.CursorShapeType
 	setCursor        func(ebiten.CursorShapeType)

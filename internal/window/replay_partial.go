@@ -6,15 +6,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// drawReplayPartial draws a display-list page through the persistent buffer
-// when the page can report dirty rects, and replays the whole list when it
-// cannot. It reports whether it painted the whole screen; otherwise the
-// frame's screen blits wait in partialState for the caller.
+// drawReplayPartial draws a display-list page through the tile grid when the
+// page can report dirty rects, and replays the whole list when it cannot. A
+// dirty rect repaints only the tiles it covers and the frame blits only the
+// damaged tiles. It reports whether it painted the whole screen, which the
+// tiled path does: the retained screen already holds every untouched tile.
 func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	display := s.display
 	if display == nil {
 		return true
 	}
+	s.dropRetainedTiles()
 
 	scroll := image.Pt(s.scrollX, s.scrollY)
 	whole := scroll != s.partial.scroll
@@ -31,7 +33,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	}
 
 	if oversized(contentW, contentH) {
-		// drawViewport drops the partial buffer; keep the frame clock.
+		// drawViewport drops the tile grid; keep the frame clock.
 		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
 		s.drawViewport(dst, display, taker)
 		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held
@@ -44,6 +46,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	plans := planRepaints(contentW, contentH, s.partial, s.app.Generation(), rects, ok)
 	s.partial.mode = plans[0].mode
 	s.partial.last = s.partial.last[:0]
+	s.partial.paints = 0
 
 	for _, plan := range plans {
 		s.applyRepaint(display, plan)
@@ -51,30 +54,8 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	}
 
 	chrome := chromeRects(s.frameRestore(), scroll)
-	if stale || s.partial.buf == nil || !withinBuffer(s.partial.buf, chrome) {
-		// applyRepaint above brought the buffer up to date for this frame, so
-		// show it whole instead of replaying the list a second time. A nil
-		// buffer still needs the direct replay.
-		if s.partial.buf != nil {
-			s.blitWhole(dst)
-		} else {
-			s.paintFullReplay(dst, display)
-		}
-
-		return true
-	}
-
-	if full, _ := blitPlan(plans, chrome); full {
-		if s.partial.buf != nil {
-			s.blitWhole(dst)
-		} else {
-			s.paintFullReplay(dst, display)
-		}
-
-		return true
-	}
-
 	s.partial.plans, s.partial.chrome, s.partial.whole = plans, chrome, whole
+	s.blitFrame(dst, display, plans, chrome, whole, stale)
 
-	return false
+	return true
 }

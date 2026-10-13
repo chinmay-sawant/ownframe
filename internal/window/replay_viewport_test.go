@@ -24,13 +24,13 @@ func TestViewportBufferStaysWindowSized(t *testing.T) {
 	s := newDirtyShell(app)
 	taker := &viewportTaker{}
 	dst := partialBuf(80, 60)
-	s.partial.buf = partialBuf(80, 100)
+	s.partial.tiles = newTileGrid(80, 100)
 	s.drawViewport(dst, app.display, taker)
 	if got := s.viewport.buf.Bounds(); got != image.Rect(0, 0, 80, 180) {
 		t.Fatalf("buffer = %v", got)
 	}
-	if s.partial.buf != nil {
-		t.Fatal("content buffer retained")
+	if s.partial.tiles != nil {
+		t.Fatal("content grid retained")
 	}
 	saved := s.viewport.buf
 	s.drawViewport(dst, app.display, taker)

@@ -11,55 +11,26 @@ import (
 
 // Draw replays display in paint order. dx and dy move the page's top-left in
 // pixels, so the window passes its scroll offset. A viewport-fixed op ignores
-// the offset: the engine placed it against the viewport.
+// the offset: the engine placed it against the viewport. Blend and isolation
+// groups composite once through the paint plan.
 func Draw(dst *ebiten.Image, display *layout.Display, dx, dy float64) {
-	if display == nil {
-		return
-	}
-
-	for _, index := range display.Order {
-		if index < 0 || index >= len(display.Ops) {
-			continue
-		}
-
-		drawOp(dst, &display.Ops[index], dx, dy)
-	}
+	paintDisplay(dst, display, func(*layout.DisplayOp) (float64, float64, bool) {
+		return dx, dy, true
+	})
 }
 
 // DrawUnfixed replays only the operations that scroll with the page. A
 // caller that paints a scrolled buffer draws the fixed ops separately, after
 // the buffer, so they stay at the viewport.
 func DrawUnfixed(dst *ebiten.Image, display *layout.Display, dx, dy float64) {
-	if display == nil {
-		return
-	}
-
-	for _, index := range display.Order {
-		if index < 0 || index >= len(display.Ops) {
-			continue
-		}
-
-		op := &display.Ops[index]
-		if !op.Fixed {
-			drawOp(dst, op, dx, dy)
-		}
-	}
+	paintDisplay(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+		return dx, dy, !op.Fixed
+	})
 }
 
 // DrawFixed replays only the viewport-fixed operations, untranslated.
 func DrawFixed(dst *ebiten.Image, display *layout.Display) {
-	if display == nil {
-		return
-	}
-
-	for _, index := range display.Order {
-		if index < 0 || index >= len(display.Ops) {
-			continue
-		}
-
-		op := &display.Ops[index]
-		if op.Fixed {
-			drawOp(dst, op, 0, 0)
-		}
-	}
+	paintDisplay(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+		return 0, 0, op.Fixed
+	})
 }

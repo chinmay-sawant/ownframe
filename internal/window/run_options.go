@@ -47,7 +47,10 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 
 	setupScreenClear()
 
-	return ebiten.RunGameWithOptions(game, &ebiten.RunGameOptions{
+	pace, stop := paceWindow(ctx, game, options)
+	defer stop()
+
+	return ebiten.RunGameWithOptions(pace, &ebiten.RunGameOptions{
 		ScreenTransparent: options.Transparent,
 		InitUnfocused:     passthrough,
 	})

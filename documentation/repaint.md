@@ -51,15 +51,15 @@ line box from the font ascent above the baseline to `InkDescent` below it,
 not `Y` alone. Strokes and lines grow by half a stroke, and an op whose ink
 cannot be bounded, such as a rotated run, is always drawn.
 
-For content within the replay cache limits, the window keeps one
-content-sized image for the replay path. The content is the canvas grown to
-cover every box that overflows it, the same measure the scroll clamp uses, so
-a page with a fixed root stays painted when it scrolls.
-Each dirty rect is filled with the page background and replayed into that
-buffer, and the visible page is blitted from the buffer to the screen each
-frame. The screen is cleared between frames, so the blit covers the viewport
-and only the buffer repaint is partial. The `bitmap fallback` badge draws on
-the screen after the blit, so a repaint never wipes it.
+For content within the replay cache limits, the window keeps the replay path
+in a grid of 256 by 256 tiles that together cover the content. The content is
+the canvas grown to cover every box that overflows it, the same measure the
+scroll clamp uses, so a page with a fixed root stays painted when it scrolls.
+Each dirty rect is filled with the page background and replayed into every
+tile it touches, and only the damaged tiles are copied to the screen each
+frame. The screen is cleared between frames, so a clean frame copies nothing.
+The `bitmap fallback` badge draws on the screen after the tiles, so a repaint
+never wipes it.
 
 Each rect in the list gets one partial repaint against that buffer. A list
 longer than the eight-rect cap, or a rect equal to the whole content, falls
@@ -97,6 +97,25 @@ The cache holds at most 64 rasters and 4 megapixels; past either bound the
 oldest entry is disposed. A shape larger than 512 px a side, or an unknown
 stroke mask bit, falls through to the direct path. The cache is
 process-wide and keyed per shape, like the decoded-image cache.
+
+Text runs take the same route: a run bakes once and blits while its face,
+content, color, fake-bold flag, letter spacing, and sub-pixel origin match, so
+a damaged rect over static text stops reshaping it. The run cache is bounded
+at 128 entries and 4 megapixels, and an oversized run draws directly.
+
+## Transforms and blend groups
+
+An op with a finite 2D transform replays through its matrix: fills and strokes
+blit a cached local raster through the op matrix, lines rasterize locally, and
+text draws with the matrix on the text options. A blend or isolation group
+buffers its members into a layer and composites the layer once with the CSS
+blend formula in a Kage shader, so a partially transparent backdrop stays
+exact. Nested groups buffer inside the parent, up to four deep.
+
+The gate still sends several cases to the bitmap: non-separable blend modes
+(hue, saturation, color, luminosity), transformed grids, rotated or oblique
+glyphs, groups whose members would split across the window's fixed or pinned
+layers, and matrices that cannot be bounded.
 
 ## Oversized pages
 

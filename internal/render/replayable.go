@@ -2,20 +2,21 @@ package render
 
 import "github.com/chinmay-sawant/blinkless/layout"
 
-// Replayable reports whether a replay painter can draw every operation in
-// display the way the engine's bitmap painter would: same order, colors, and
-// glyph placement. A false result means the caller should keep the bitmap
-// path for this page.
+// Replayable reports whether the replay painter can draw every operation in
+// display like the bitmap painter: same order, colors, glyphs, and
+// compositing. A false result keeps the page on the bitmap path.
 //
 // A CSS outline is an ordinary line or stroke op that Display.Order moves to
-// the outline paint layer. Draw iterates that order, so outlines replay too.
+// the outline paint layer, so outlines replay. A finite 2D transform replays
+// on every kind the painter draws from geometry, and a blend or isolation
+// group replays when its mode is separable and it stays inside one paint band.
 func Replayable(display *layout.Display) bool {
 	if display == nil {
 		return false
 	}
 
 	for i := range display.Ops {
-		if !replayableOp(&display.Ops[i]) {
+		if !replayableOp(&display.Ops[i], display.PixelPerPoint) {
 			return false
 		}
 	}
@@ -23,17 +24,23 @@ func Replayable(display *layout.Display) bool {
 	return true
 }
 
-func replayableOp(op *layout.DisplayOp) bool {
-	if op.BlendModeName() != "" && op.BlendModeName() != "normal" {
+func replayableOp(op *layout.DisplayOp, ppp float64) bool {
+	if op.GroupBoundary() != 0 {
+		return replayableGroup(op)
+	}
+
+	if !replayableGroup(op) {
 		return false
 	}
 
-	if op.Group() != nil || op.GroupBoundary() != 0 {
-		return false
-	}
+	if op.XformSet {
+		if !finiteXform(op) || op.Kind == layout.DisplayOpGridRun {
+			return false
+		}
 
-	if op.XformSet && !op.Transform().IsIdentity() && op.Kind != layout.DisplayOpImage {
-		return false
+		if op.Kind != layout.DisplayOpImage && xformTooBig(op, ppp) {
+			return false
+		}
 	}
 
 	switch op.Kind {

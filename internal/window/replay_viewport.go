@@ -56,10 +56,11 @@ func (s *shell) disposeViewport() {
 }
 
 func (s *shell) dropContentBuffers() {
-	if s.partial.buf != nil {
-		s.partial.buf.Dispose()
+	if s.partial.tiles != nil {
+		s.partial.tiles.dispose()
 		s.partial = partialState{}
 	}
+
 	if s.replayBuf != nil {
 		s.replayBuf.Dispose()
 		s.replayBuf = nil

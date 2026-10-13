@@ -182,6 +182,32 @@ padding string per row, and one row build now allocates 87 times and 15.5 KB
 120-frame window in one pass with no allocation
 (`TestPerfRingSummaryNoAlloc`).
 
+## Idle pacing and the replay caches (2026-10-13)
+
+The window now stops presenting clean frames. After five clean frames and
+250 ms without input it parks in the event wait and wakes on input or on a
+125 ms keep-alive tick, so a still board costs a fraction of the old loop;
+`WindowOptions.NoIdlePace` turns that off. The replay buffer is a 256 px tile
+grid, repeated shapes and text runs bake once and blit, and finite transforms
+and separable blend groups replay instead of dropping the page to a bitmap.
+
+Measured on the same machine, interleaved before and after for CPU and a quiet
+20 s harness pass for memory (`scripts/perf-apps.sh`):
+
+| App | Idle CPU before | Idle CPU after | RSS after |
+| --- | ---: | ---: | ---: |
+| departure-board | 27.4% | 7.0% | 183 MB |
+| wispr-flow-dashboard | 7.8% | 3.3% | 201 MB |
+| spotify-player | about 42% | about 42%, its tick damages every frame | 211 MB |
+
+The headless dump is unchanged by all of this, the board's Go heap holds at
+about 15 MB with no collection in 25 idle seconds, and a text-heavy repaint
+falls from about 1.0 ms, 873 KB, and 4,512 allocations to 35 us, 27 KB, and
+144 allocations. `plans/v0.0.2/filter-replay.md`,
+`plans/v0.0.2/subpixel-text.md`, and
+`plans/v0.0.2/multi-process-isolation.md` record the three items this pass
+did not implement and why.
+
 ## Verifying by hand
 
 Run `go run ./examples/departure-board` and press F12 (or Ctrl+Shift+I) for

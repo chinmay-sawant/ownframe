@@ -48,8 +48,8 @@ func TestSingleRectTakerStillRepaints(t *testing.T) {
 
 	s.drawReplayPartial(dst)
 
-	if s.partial.buf == nil {
-		t.Fatal("no buffer for a single-rect page")
+	if s.partial.tiles == nil {
+		t.Fatal("no tile grid for a single-rect page")
 	}
 
 	rect := image.Rect(10, 10, 30, 30)

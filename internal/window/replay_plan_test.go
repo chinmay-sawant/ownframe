@@ -9,9 +9,9 @@ import (
 func TestPlanRepaintsPicksTheWork(t *testing.T) {
 	t.Parallel()
 
-	state := partialState{buf: partialBuf(100, 100), gen: 1, width: 100, height: 100}
+	state := partialState{tiles: newTileGrid(100, 100), gen: 1}
 	badSize := state
-	badSize.width = 80
+	badSize.tiles = newTileGrid(80, 100)
 	full := image.Rect(0, 0, 100, 100)
 	rebuild := []repaintPlan{{mode: repaintBuffer, rect: full}}
 	blit := []repaintPlan{{mode: repaintBlit, rect: full}}

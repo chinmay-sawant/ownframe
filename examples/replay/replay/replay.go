@@ -1,7 +1,8 @@
 // Package replay is the display-list replay example.
 // The replay page is drawn from its display list. The fallback page has the
-// same content inside a blend/isolation group, so ownframe keeps a bitmap and the
-// window shows the fallback badge. data-action buttons switch routes.
+// same content inside a non-separable mix-blend-mode group, so ownframe keeps
+// a bitmap and the window shows the fallback badge. data-action buttons
+// switch routes.
 // ownframe opens the window. This package does not.
 package replay
 

@@ -26,17 +26,17 @@ type repaintPlan struct {
 // of the operation list, so a longer list rebuilds the whole buffer.
 const maxRepaintRects = 8
 
-// planRepaints decides the frame's buffer work for content contentW x contentH.
+// planRepaints decides the frame's tile work for content contentW x contentH.
 // The content can outgrow the canvas when a fixed root's children overflow, so
-// the buffer and the full rect use the content. A frame with no damage blits
-// when the buffer holds this generation and rebuilds it otherwise. A
+// the grid and the full rect use the content. A frame with no damage blits
+// when the grid holds this generation and rebuilds it otherwise. A
 // full-content rect, a list longer than maxRepaintRects, or a rect that clamps
-// away rebuilds the buffer. Otherwise every rect gets its own repaint; all
+// away rebuilds the grid. Otherwise every rect gets its own repaint; all
 // plans share one mode.
 func planRepaints(contentW, contentH int, st partialState, gen uint64, rects []image.Rectangle, ok bool) []repaintPlan {
 	full := image.Rect(0, 0, contentW, contentH)
 	rebuild := []repaintPlan{{mode: repaintBuffer, rect: full}}
-	if full.Empty() || st.buf == nil || st.width != contentW || st.height != contentH {
+	if full.Empty() || !st.gridCurrent(contentW, contentH) {
 		return rebuild
 	}
 

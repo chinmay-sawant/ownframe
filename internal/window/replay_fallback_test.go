@@ -13,8 +13,8 @@ func TestPartialPathNeedsATaker(t *testing.T) {
 
 	s.drawReplayPartial(partialBuf(100, 100))
 
-	if s.partial.buf != nil {
-		t.Fatal("buffer built without a dirty taker")
+	if s.partial.tiles != nil {
+		t.Fatal("grid built without a dirty taker")
 	}
 }
 
@@ -32,8 +32,8 @@ func TestTickingPageKeepsFullReplay(t *testing.T) {
 		t.Fatalf("damage calls = %d, want 0", screen.takes)
 	}
 
-	if s.partial.buf != nil {
-		t.Fatal("buffer built for a ticking page")
+	if s.partial.tiles != nil {
+		t.Fatal("grid built for a ticking page")
 	}
 }
 

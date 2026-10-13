@@ -18,6 +18,12 @@ Record per release numbers in [performance-baseline.md](performance-baseline.md)
 
 Leave the window alone for 30 to 60 seconds and confirm it does almost nothing.
 
+A desktop window that has drawn clean frames and seen no input parks in the
+event wait, so an idle page stops presenting. The tick still runs on a
+keep-alive frame about eight times a second, and input wakes the full rate.
+The Frame tab's FPS and TPS rows show the paced rate while a page sits still;
+that is expected, not a stall.
+
 Run the idle script against a benchmark app, wait for the window to settle, then read CPU and RSS with the system monitor while the window stays untouched. No input, no tick animation, no reload.
 
 ```sh

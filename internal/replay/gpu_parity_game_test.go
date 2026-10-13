@@ -39,6 +39,26 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			g.err = err
 			return
 		}
+		if err := checkTextRaster(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkTextClip(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkXformParity(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkGroupComposite(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkGroupClip(); err != nil {
+			g.err = err
+			return
+		}
 	}
 	if g.before == nil {
 		g.before = ebiten.NewImage(1908, 999)

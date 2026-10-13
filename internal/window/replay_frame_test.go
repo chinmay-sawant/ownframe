@@ -22,8 +22,8 @@ func TestFrameDirtyKeepsTheBuffer(t *testing.T) {
 
 	s.Draw(dst)
 
-	if s.partial.buf == nil {
-		t.Fatal("opted-in tick did not build a buffer")
+	if s.partial.tiles == nil {
+		t.Fatal("opted-in tick did not build the tile grid")
 	}
 
 	s.Draw(dst)

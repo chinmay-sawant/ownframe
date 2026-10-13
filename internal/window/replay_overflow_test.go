@@ -33,8 +33,8 @@ func TestOverflowEditRepaintsOneRect(t *testing.T) {
 
 	s.drawReplayPartial(dst)
 
-	if s.partial.buf == nil || s.partial.buf.Bounds() != image.Rect(0, 0, 100, 400) {
-		t.Fatalf("buffer covers %v, want the 100x400 content", s.partial.buf.Bounds())
+	if s.partial.tiles == nil || s.partial.tiles.content() != image.Rect(0, 0, 100, 400) {
+		t.Fatalf("grid covers %v, want the 100x400 content", s.partial.tiles)
 	}
 
 	overflow := image.Rect(0, 140, 100, 180)
