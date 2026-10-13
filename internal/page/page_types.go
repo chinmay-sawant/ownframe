@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
@@ -60,6 +61,8 @@ type Page struct {
 	touchScroll     TouchScrollOptions
 	watch           *watchState
 	dirtyRects      []image.Rectangle
+	lastPatch       DisplayPatch
+	elements        *element.Registry
 	dirtyFull       bool
 	frameState
 	pinZ          int

@@ -20,6 +20,7 @@ func diffByPosition(prev, next *Display) (dirtySet, bool, int) {
 
 		if len(list) == 0 {
 			changed++
+			d.removed++
 			d.add(opBounds(&prev.Ops[i], prev))
 			if d.full {
 				return d, true, changed
@@ -49,6 +50,7 @@ func diffByPosition(prev, next *Display) (dirtySet, bool, int) {
 		}
 
 		changed++
+		d.added++
 		d.add(opBounds(&next.Ops[j], next))
 		if d.full {
 			return d, true, changed

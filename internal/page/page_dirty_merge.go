@@ -7,11 +7,13 @@ import "image"
 // the cap it unions the closest pair. The bounding box must stay under a
 // third of the frame, so a distant outlier still forces a full frame.
 type dirtySet struct {
-	rects [maxDirtyRects]image.Rectangle
-	n     int
-	union image.Rectangle
-	full  bool
-	frame image.Rectangle
+	rects   [maxDirtyRects]image.Rectangle
+	n       int
+	union   image.Rectangle
+	full    bool
+	frame   image.Rectangle
+	added   int
+	removed int
 }
 
 // newDirtySet prepares an empty set for a w x h frame.

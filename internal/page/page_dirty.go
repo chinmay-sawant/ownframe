@@ -14,6 +14,12 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		if p.perf {
 			p.recordFull(len(display.Ops))
 		}
+		p.lastPatch = DisplayPatch{
+			Changed: len(display.Ops),
+			Added:   len(display.Ops),
+			Regions: 1,
+			Full:    true,
+		}
 
 		return
 	}
@@ -23,6 +29,13 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		p.markFull()
 		if p.perf {
 			p.recordFull(len(display.Ops))
+		}
+		p.lastPatch = DisplayPatch{
+			Changed: changed,
+			Added:   d.added,
+			Removed: d.removed,
+			Regions: 1,
+			Full:    true,
 		}
 
 		return
@@ -34,6 +47,18 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 
 	if p.perf {
 		p.recordPartial(changed, d.bounds(), display)
+	}
+
+	regionCount := d.n
+	if regionCount == 0 {
+		regionCount = 0
+	}
+	p.lastPatch = DisplayPatch{
+		Changed: changed,
+		Added:   d.added,
+		Removed: d.removed,
+		Regions: regionCount,
+		Full:    false,
 	}
 }
 
