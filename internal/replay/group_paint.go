@@ -37,7 +37,7 @@ func paintDisplay(dst *ebiten.Image, d *layout.Display, pick opPicker) {
 // paintNode paints one node: a non-normal group buffers its members into a
 // layer and composites once; every other node paints item by item.
 func paintNode(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) {
-	if n.group != nil && !normalMode(n.group.Mode) {
+	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil) {
 		paintGroup(dst, d, n, pick)
 
 		return

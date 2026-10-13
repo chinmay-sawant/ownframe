@@ -1,9 +1,6 @@
 package replay
 
 import (
-	"image"
-	"math"
-
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -11,7 +8,7 @@ import (
 // paintGroup draws one buffered group: the visible members into a layer the
 // size of the group's window, then one composite with the group's mode.
 func paintGroup(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) {
-	rect, _, ok := groupWindow(dst, d, n, pick)
+	rect, base, ok := groupWindow(dst, d, n, pick)
 	if !ok {
 		return
 	}
@@ -26,34 +23,15 @@ func paintGroup(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicke
 	}
 
 	paintItems(layer, d, n, inner)
+	if n.group.Mask != nil {
+		mask := groupMaskTexture(n)
+		if mask == nil {
+			return
+		}
+		opts := &ebiten.DrawImageOptions{Blend: ebiten.BlendDestinationIn}
+		opts.GeoM.Translate(float64(n.maskBox.Min.X)+base[0]-float64(rect.Min.X),
+			float64(n.maskBox.Min.Y)+base[1]-float64(rect.Min.Y))
+		layer.DrawImage(mask, opts)
+	}
 	compositeLayer(dst, layer, rect.Min, n.group.Mode)
-}
-
-// groupWindow is the device rect a group's layer covers: its page box moved
-// by the first visible member's translation and clipped to dst. base is that
-// translation; ok is false when nothing in the group paints.
-func groupWindow(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) (image.Rectangle, [2]float64, bool) {
-	base, ok := firstPick(n, pick)
-	if !ok {
-		return image.Rectangle{}, [2]float64{}, false
-	}
-
-	box, bounded := nodeBox(n, d.PointsPerPixel)
-	if !bounded {
-		box = dst.Bounds()
-	} else {
-		box = image.Rect(
-			int(math.Floor(float64(box.Min.X)+base[0])),
-			int(math.Floor(float64(box.Min.Y)+base[1])),
-			int(math.Ceil(float64(box.Max.X)+base[0])),
-			int(math.Ceil(float64(box.Max.Y)+base[1])),
-		)
-	}
-
-	box = box.Intersect(dst.Bounds())
-	if box.Empty() {
-		return image.Rectangle{}, [2]float64{}, false
-	}
-
-	return box, base, true
 }

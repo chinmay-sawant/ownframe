@@ -20,7 +20,13 @@ func checkGroupComposite() error {
 		}
 	}
 
-	return checkGroupNested()
+	if err := checkGroupNested(); err != nil {
+		return err
+	}
+	if err := checkGroupMask(); err != nil {
+		return err
+	}
+	return checkPhotoMaskGPU()
 }
 
 func checkGroupMode(mode string) error {

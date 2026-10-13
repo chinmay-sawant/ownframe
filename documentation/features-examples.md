@@ -42,8 +42,16 @@ feature index with links to the detailed docs.
 - `examples/music` is shared example support: MP3/WAV decode, playback through Ebiten audio, and a generated demo tune for tests. The Spotify player supplies clips from its bundled CC0 soundtrack. Package `ownframe` does not import it.
 - `examples/accessibility` demonstrates desktop IME composition, the semantic tree and its actions, password redaction, and scrollbar thumb feedback.
 - `examples/departure-board` is a split-flap board: per-character tiles over a seeded timetable, four liveries with a night variant, and tick-driven flaps that write only `op.Text` and rebind per `Page.Generation()`; the refresh bar is a `frame.Fill` lookup that needs the livery accent. `examples/theme-studio` is an editor beside a live preview: Apply calls `Page.SetTheme` and writes the watched `Config.ThemeFile`, a token strip renders `--name: value` pairs with colour swatches, and four presets ship with it.
-- 381 test files across `internal/` and `examples/`, including `internal/page`, `replay`, `render`, `window`, `ipc`, `fetch`, `crash`, and `clipboard`; `make test` passes
-- Other examples: `layout`, `replay`, `shapes`, `png`, `controls`, `bind-hooks`, `editing`, `states`, `scrolling`, `history`, `web`, `ipc`, `fetch`, `clipboard`, `crash`, `platform`; index in [examples/readme.md](../examples/readme.md)
+- Go tests cover packages across `internal/` and `examples/`, including `internal/page`, `replay`, `render`, `window`, `ipc`, `fetch`, `crash`, and `clipboard`; `make test` runs both modules
+- Other examples: `layout`, `replay`, `shapes`, `css-masking`, `png`, `controls`, `bind-hooks`, `editing`, `states`, `scrolling`, `history`, `web`, `ipc`, `fetch`, `clipboard`, `crash`, `platform`; index in [examples/readme.md](../examples/readme.md)
+
+Update 2026-10-13: `examples/css-masking` demonstrates raster alpha and
+luminance masks, SVG `mask-type`, and two-layer `mask-composite` through
+retained display replay. Its test checks PNG pixels and retained display
+selection (`examples/css-masking/page_test.go:11-24`). The replay package
+compares GPU mask compositing with the software painter
+(`internal/replay/gpu_group_mask_test.go:23-48`,
+`internal/replay/gpu_group_pixels_test.go:13-35`).
 
 ## Known gaps
 

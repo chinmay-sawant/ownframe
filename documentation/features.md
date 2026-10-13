@@ -10,6 +10,33 @@ The library keeps one Go process and one HTML template. There is no JavaScript e
 
 Detail is in [screen.md](screen.md).
 
+## CSS masks
+
+Blinkless resolves mask image bytes and stores the CSS values on a display
+group (`blinkless/internal/layout/mask_paint.go:25-56,86-124`;
+`blinkless/internal/layout/blend_group.go:13-15,38-55`). OwnFrame keeps masked
+pages on the display-list path. Replay paints the element and its
+children into a GPU layer, applies a mask texture with destination-in
+compositing, then draws that layer back into the page
+([internal/replay/group_paint.go:37-45](../internal/replay/group_paint.go),
+[internal/replay/group_layer.go:16-36](../internal/replay/group_layer.go),
+[internal/replay/group_mask.go:10-25](../internal/replay/group_mask.go)).
+`Page.PNG` uses the software painter when PNG pixels are requested
+([internal/page/page_image.go:35-40](../internal/page/page_image.go)). The
+mask painter reads raster alpha or luminance and supports `add`, `subtract`,
+`intersect`, and `exclude` layer composition. The first pass uses the element
+border box and accepts simple percentage or pixel sizes and positions, plus
+`no-repeat`, `repeat`, `repeat-x`, and `repeat-y`. Blinkless preprocesses SVG
+`<mask>` content using its `mask-type`; OwnFrame reads that result from the
+alpha channel.
+
+Values outside this first pass, including `content-box`, `padding-box`,
+`cover`, `contain`, `space`, and `round`, return a paint error. The
+[CSS masking example](../examples/css-masking) shows the ten standard
+properties and checks the output pixels.
+
+Detail is in [../examples/css-masking/README.md](../examples/css-masking/README.md).
+
 ## Theming
 
 `Config.Theme` and `Page.SetTheme` store one extra stylesheet that the render state hands to the engine as an extra sheet. The engine walks its rules last, but each sheet numbers rule order from zero, so an equal-specificity tie can still go to a late template rule; theming.md spells out the order rule. Any property the engine implements can appear in the theme, including custom properties the template reads with `var()`. `SetTheme` does not draw; the next `Redraw` applies the sheet. An empty theme is removed.

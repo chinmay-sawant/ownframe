@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // paintItem is one step of a display's paint plan: one op, or a nested group.
@@ -18,7 +19,11 @@ type groupNode struct {
 	group     *layout.DisplayGroup
 	items     []paintItem
 	box       image.Rectangle
+	maskBox   image.Rectangle
+	maskTex   *ebiten.Image
+	maskMu    sync.Mutex
 	known     bool
+	hasMask   bool
 	unbounded bool
 }
 
@@ -55,6 +60,7 @@ func planFor(d *layout.Display) *groupNode {
 	root := buildPlan(d)
 	plans.mu.Lock()
 
+	disposePlan(plans.entries[plans.next].root)
 	plans.entries[plans.next] = planEntry{d: d, root: root}
 	plans.next = (plans.next + 1) % len(plans.entries)
 	plans.mu.Unlock()

@@ -20,6 +20,9 @@ func replayableGroup(op *layout.DisplayOp) bool {
 		if depth >= maxGroupDepth || !separableMode(g.Mode) {
 			return false
 		}
+		if g.Mask != nil && (op.Fixed || op.ZIndex != 0) {
+			return false
+		}
 
 		if g.Mode != "" && g.Mode != "normal" && (op.Fixed || op.ZIndex != 0) {
 			return false

@@ -1,6 +1,9 @@
 package render
 
-import "github.com/chinmay-sawant/blinkless/layout"
+import (
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
+)
 
 // Replayable reports whether the replay painter can draw every operation in
 // display like the bitmap painter: same order, colors, glyphs, and
@@ -12,6 +15,9 @@ import "github.com/chinmay-sawant/blinkless/layout"
 // group replays when its mode is separable and it stays inside one paint band.
 func Replayable(display *layout.Display) bool {
 	if display == nil {
+		return false
+	}
+	if masking.ValidateDisplay(display) != nil {
 		return false
 	}
 
@@ -66,12 +72,4 @@ func replayableOp(op *layout.DisplayOp, ppp float64) bool {
 	default:
 		return false
 	}
-}
-
-func replayableText(op *layout.DisplayOp) bool {
-	if op.Font == nil || op.RotateDeg != 0 || op.FakeOblique {
-		return false
-	}
-
-	return op.FontFeatures() == "" && op.TextAutospaceGap() == 0
 }

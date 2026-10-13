@@ -1,6 +1,9 @@
 package replay
 
-import "github.com/chinmay-sawant/blinkless/layout"
+import (
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
+)
 
 // buildPlan buckets the paint order by owning group. A group's item sits in
 // its parent where the group first paints, so nesting follows the engine's
@@ -16,6 +19,11 @@ func buildPlan(d *layout.Display) *groupNode {
 
 		op := &d.Ops[i]
 		if op.GroupBoundary() != 0 {
+			if op.IsGroupBegin() && op.Group() != nil && op.Group().Mask != nil {
+				node := attachNode(root, nodes, op.Group())
+				node.maskBox = masking.GroupBounds(op, d)
+				node.hasMask = true
+			}
 			continue
 		}
 
