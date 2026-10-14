@@ -45,9 +45,11 @@ all four ABIs puts one APK at 188 MB.
 Teams is a native chat and collaboration app built with Go, HTML, and CSS.
 [Watch the Teams demo](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1).
 
-- ![Preview of the Teams chat and collaboration app](assets/screenshots/demos/teams.webp)
+- ![Animated preview of the Teams chat and collaboration app](assets/screenshots/demos/teams.webp)
 
   **Teams**
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/teams)
 
 ## Spotify Player
 
@@ -105,7 +107,9 @@ Usage data comes from Android's Usage Access permission and stays on the phone.
 - ![Choose an app list sorted by usage time](assets/screenshots/digital-wellbeing/choose-app.webp)
 
   **Choose an app**
-[Source code](https://github.com/chinmay-sawant/ownframe/tree/perf/damage-list-experimental/examples/digital-wellbeing)
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/digital-wellbeing)
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/digital-wellbeing/android/artifacts/digital-wellbeing-arm64-release.apk)
 
 ## Desktop overlays
 

@@ -104,8 +104,6 @@ aside .showcase-subnav a:hover, aside .showcase-subnav a[aria-current="page"] { 
 .markdown img { max-width: 100%; height: auto; }
 .showcase-page .showcase-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; list-style: none; margin: 20px 0 32px; padding: 0; align-items: start; }
 .showcase-page .pet-care-gallery li:last-child { grid-column: 1 / -1; }
-.showcase-page .digital-wellbeing-gallery { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; }
-.showcase-page .digital-wellbeing-gallery li { flex: 0 1 calc((100% - 32px) / 3); }
 .showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .showcase-page .showcase-gallery li + li { margin-top: 0; }
 .showcase-page .showcase-gallery p { max-width: none; margin: 0; }
@@ -139,10 +137,8 @@ aside .showcase-subnav a:hover, aside .showcase-subnav a[aria-current="page"] { 
   .docs-layout { grid-template-rows: minmax(0, auto) minmax(0, 1fr); gap: 16px; padding-top: 16px; }
   .docs-layout > aside { max-height: 34vh; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
   .docs-content { padding-right: 0; }
-  .showcase-page .digital-wellbeing-gallery li { flex-basis: calc((100% - 16px) / 2); }
 }
 @media (max-width: 420px) {
   .theme-toggle { padding: 8px 10px; }
   .theme-toggle span { display: none; }
-  .showcase-page .digital-wellbeing-gallery li { flex-basis: 100%; max-width: 320px; }
 }

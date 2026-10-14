@@ -36,9 +36,9 @@ const demos = [
     post: 'https://x.com/chinmay_sawant_/status/2106829998409789929',
   },
   {
-    title: 'Teams demo', poster: teamsPreview,
+    title: 'Teams demo', animatedWebp: teamsPreview,
+    alt: 'Animated recording of the Teams chat and collaboration app.',
     description: 'A native chat and collaboration app built with Go, HTML, and CSS using ownframe.',
-    video: `${import.meta.env.BASE_URL}demos/teams.mp4`,
     post: 'https://x.com/chinmay_sawant_/status/2107548496194895993/video/1',
   },
   {
@@ -100,8 +100,7 @@ function App() {
   const document = documents.find((entry) => entry.slug === slug);
   const isShowcase = document?.path === 'showcase.md';
   const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : 'telegram';
-  const galleryVariant = activeShowcase === 'pet-care' ? ' pet-care-gallery'
-    : activeShowcase === 'digital-wellbeing' ? ' digital-wellbeing-gallery' : '';
+  const galleryVariant = activeShowcase === 'pet-care' ? ' pet-care-gallery' : '';
   const markdownComponents = {
     table: ({ children }) => <div className="markdown-table-scroll"><table>{children}</table></div>,
     ...(isShowcase ? {
