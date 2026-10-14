@@ -1,77 +1,883 @@
 <!doctype html>
 <html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-html,body{margin:0;min-height:100%;background:#fff9f2;color:#352d29;font:16px sans-serif}
-*{box-sizing:border-box}
-body{padding:18px 16px 28px}
-.shell{max-width:520px;margin:0 auto}
-.brand{font-size:13px;font-weight:700;letter-spacing:.5px;color:#8e7464;margin:3px 2px 18px}
-h1{font-size:26px;line-height:1.15;margin:0 0 7px;color:#3e312b}
-.intro{line-height:1.45;color:#74665f;margin:0 0 18px}
-.card{background:#fff;border:1px solid #f0e4da;border-radius:22px;padding:18px;margin:13px 0}
-.hero{display:flex;align-items:center;min-height:150px;background:#ffede3;border-color:#ffdfcf;padding:12px 14px}
-.hero-copy{flex:1;min-width:0}
-.hero img{width:126px;height:126px;object-fit:contain;flex:none}
-.eyebrow{color:#a26548;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-.headline{font-size:22px;line-height:1.2;font-weight:700;margin:6px 0;color:#49372f}
-.copy{font-size:14px;line-height:1.45;color:#75645b;margin:5px 0}
-.button{display:block;width:100%;min-height:52px;border:0;border-radius:16px;background:#b96e4b;color:white;text-align:center;font-size:16px;font-weight:700;padding:15px 16px;margin:15px 0 8px}
-.button.secondary{background:#f5e6dc;color:#805139}
-.privacy{font-size:13px;line-height:1.45;color:#7b7068;text-align:center;margin:13px 8px}
-.title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 1px 6px}
-.title-row h1{font-size:23px;margin:0}
-.link{color:#a45d3a;font-size:14px;font-weight:700;padding:12px 4px;cursor:pointer}
-.app-list{margin:10px 0}
-.app-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:9px 0;border-bottom:1px solid #f2e9e2}
-.letter,.app-icon{width:42px;height:42px;border-radius:13px;background:#f9e6d9;flex:none}
-.letter{color:#986348;display:flex;align-items:center;justify-content:center;font-weight:700}
-.app-icon{object-fit:contain;background:#f7f3ef}
-.app-name{font-size:16px;font-weight:600;color:#40352f;flex:1}
-.arrow{font-size:20px;color:#b59c8b}
-.small{font-size:13px;color:#84766e;line-height:1.4}
-.big-time{font-size:37px;line-height:1.15;font-weight:700;color:#49372f;margin:9px 0 2px}
-.chart{height:116px;display:flex;align-items:flex-end;gap:7px;margin:16px 0 0;padding:0 2px}
-.day-col{height:100%;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
-.bar-area{height:82px;width:100%;display:flex;align-items:flex-end;justify-content:center}
-.bar{width:70%;max-width:27px;min-height:5px;border-radius:9px 9px 5px 5px;background:#e8c5af}
-.level-0{height:5px}.level-1{height:14px}.level-2{height:25px}.level-3{height:38px}.level-4{height:52px}.level-5{height:67px}.level-6{height:82px;background:#bf7957}
-.day-label{font-size:11px;color:#87786f}
-.stat-grid{display:flex;gap:10px;margin:13px 0}
-.stat{flex:1;background:#fff;border:1px solid #f0e4da;border-radius:18px;padding:14px 12px}
-.stat-value{font-size:21px;font-weight:700;color:#49372f;margin-top:6px}
-.goal{background:#f3eee4}
-.goal-title{font-size:14px;color:#7d654f;font-weight:700}
-.goal-message{font-size:17px;font-weight:700;line-height:1.35;margin-top:7px;color:#514337}
-.foot{font-size:12px;text-align:center;color:#8b7d72;margin:18px 0 4px}
-.empty{padding:16px 0;color:#766b63;line-height:1.5}
-</style>
-</head>
-<body>
-<div class="shell">
-<div class="brand">MOCHI'S LITTLE NOOK</div>
-{{if eq .Screen "welcome"}}
-<h1>A softer look at your screen time</h1>
-<p class="intro">See your screen time across all your apps, then check in with one app whenever you like.</p>
-<section class="card hero"><div class="hero-copy"><div class="eyebrow">Your tiny companion</div><div class="headline">Hi, I'm Mochi!</div><p class="copy">Let's make a little room for the things you love.</p></div><img src="mochi" alt="Mochi the cat"></section>
-<section class="card"><div class="headline">Connect Android Usage Access</div><p class="copy">Android uses this permission to build your all-apps overview and daily chart.</p><button class="button" data-action="usage-access">Open Usage Access</button><p class="small">Your stats stay on this phone. Mochi doesn't send them anywhere.</p></section>
-<p class="privacy">You can turn access off any time in Android Settings.</p>
-{{else if eq .Screen "picker"}}
-<div class="title-row"><h1>Choose an app</h1><div class="link" data-action="close-picker">Done</div></div>
-<p class="intro">Pick an app to focus your chart on. You can return to the all-apps overview any time.</p>
-<section class="card"><div class="eyebrow">Apps with recent activity</div><div class="app-list">
-{{range .Apps}}<div class="app-row" data-action="app-{{.Package}}">{{if .IconSource}}<img class="app-icon" src="{{.IconSource}}" alt="" data-action="app-{{.Package}}">{{else}}<div class="letter" data-action="app-{{.Package}}">{{.Letter}}</div>{{end}}<div class="app-name" data-action="app-{{.Package}}">{{.Label}}</div><div class="arrow" data-action="app-{{.Package}}">›</div></div>{{else}}<div class="empty">No launchable apps with recent screen time showed up yet. Try again a little later.</div>{{end}}
-</div></section>
-<p class="privacy">App names are used only to let you choose. Usage totals stay on this phone.</p>
-{{else}}
-<div class="title-row"><h1>Your gentle check-in</h1><div class="link" data-action="choose-app">{{if .Selected}}Change app{{else}}Choose an app{{end}}</div></div>
-<section class="card hero"><div class="hero-copy"><div class="eyebrow">{{if .Selected}}Today with {{.SelectedName}}{{else}}Today across all apps{{end}}</div><div class="big-time">{{.Today}}</div><p class="copy">Time in the foreground today</p></div><img src="mochi" alt="Mochi the cat"></section>
-<section class="card"><div class="eyebrow">Last 7 days</div><div class="chart">{{range .Days}}<div class="day-col"><div class="bar-area"><div class="bar level-{{.Level}}"></div></div><div class="day-label">{{.Label}}</div></div>{{end}}</div></section>
-<div class="stat-grid"><section class="stat"><div class="small">This week</div><div class="stat-value">{{.Week}}</div></section><section class="stat"><div class="small">Daily average</div><div class="stat-value">{{.Average}}</div></section></div>
-<section class="card goal"><div class="goal-title">A gentle daily goal · 2 hours</div><div class="goal-message">{{.GoalMessage}}</div><p class="copy">A little pause is always yours to choose.</p></section>
-<p class="foot">{{if .Selected}}Only {{.SelectedName}} is shown{{else}}All apps are included{{end}} · your stats stay on this phone</p>
-{{end}}
-</div>
-</body>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #fff9f2;
+        color: #352d29;
+        font: 16px sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        padding: 18px 16px 28px;
+      }
+      .shell {
+        max-width: 520px;
+        margin: 0 auto;
+      }
+      .brand {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #8e7464;
+        margin: 3px 2px 18px;
+      }
+      h1 {
+        font-size: 26px;
+        line-height: 1.15;
+        margin: 0 0 7px;
+        color: #3e312b;
+      }
+      .intro {
+        line-height: 1.45;
+        color: #74665f;
+        margin: 0 0 18px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #f0e4da;
+        border-radius: 22px;
+        padding: 18px;
+        margin: 13px 0;
+      }
+      .hero {
+        display: flex;
+        align-items: center;
+        min-height: 150px;
+        background: #ffede3;
+        border-color: #ffdfcf;
+        padding: 12px 14px;
+      }
+      .hero-copy {
+        flex: 1;
+        min-width: 0;
+      }
+      .hero img {
+        width: 126px;
+        height: 126px;
+        object-fit: contain;
+        flex: none;
+      }
+      .eyebrow {
+        color: #a26548;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .headline {
+        font-size: 22px;
+        line-height: 1.2;
+        font-weight: 700;
+        margin: 6px 0;
+        color: #49372f;
+      }
+      .copy {
+        font-size: 14px;
+        line-height: 1.45;
+        color: #75645b;
+        margin: 5px 0;
+      }
+      .button {
+        display: block;
+        width: 100%;
+        min-height: 52px;
+        border: 0;
+        border-radius: 16px;
+        background: #b96e4b;
+        color: white;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 700;
+        padding: 15px 16px;
+        margin: 15px 0 8px;
+      }
+      .button.secondary {
+        background: #f5e6dc;
+        color: #805139;
+      }
+      .privacy {
+        font-size: 13px;
+        line-height: 1.45;
+        color: #7b7068;
+        text-align: center;
+        margin: 13px 8px;
+      }
+      .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin: 16px 1px 6px;
+      }
+      .title-row h1 {
+        font-size: 23px;
+        margin: 0;
+      }
+      .back-title-row {
+        justify-content: flex-start;
+        gap: 8px;
+      }
+      .back-title-row .back-link {
+        flex: none;
+      }
+      .back-title-row h1 {
+        font-size: 20px;
+        line-height: 1.2;
+        margin: 0;
+        transform: translateY(-17px);
+      }
+      .centered-title-row {
+        gap: 0;
+      }
+      .centered-title-row h1 {
+        flex: 1;
+        text-align: center;
+      }
+      .title-spacer {
+        width: 96px;
+        flex: none;
+      }
+      .day-title-row h1 {
+        font-size: 18px;
+      }
+      .link {
+        color: #a45d3a;
+        font-size: 14px;
+        font-weight: 700;
+        padding: 12px 4px;
+        cursor: pointer;
+      }
+      .app-list {
+        margin: 10px 0;
+      }
+      .app-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 64px;
+        padding: 9px 0;
+        border-bottom: 1px solid #f2e9e2;
+      }
+      .letter,
+      .app-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        background: #f9e6d9;
+        flex: none;
+      }
+      .letter {
+        color: #986348;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+      }
+      .app-icon {
+        object-fit: contain;
+        background: #f7f3ef;
+      }
+      .app-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #40352f;
+        flex: 1;
+      }
+      .arrow {
+        font-size: 20px;
+        color: #b59c8b;
+      }
+      .small {
+        font-size: 13px;
+        color: #84766e;
+        line-height: 1.4;
+      }
+      .big-time {
+        font-size: 37px;
+        line-height: 1.15;
+        font-weight: 700;
+        color: #49372f;
+        margin: 9px 0 2px;
+      }
+      .chart {
+        height: 116px;
+        display: flex;
+        align-items: flex-end;
+        gap: 1px;
+        margin: 16px 0 0;
+        padding: 0 2px;
+      }
+      .chart-card {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+      .day-col {
+        height: 100%;
+        flex: 1;
+        min-width: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        padding: 0;
+        color: inherit;
+        cursor: pointer;
+      }
+      .bar-area {
+        height: 82px;
+        width: 100%;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .bar {
+        width: 70%;
+        max-width: 27px;
+        min-height: 5px;
+        border-radius: 9px 9px 5px 5px;
+        background: #e8c5af;
+      }
+      .level-0 {
+        height: 5px;
+      }
+      .level-1 {
+        height: 14px;
+      }
+      .level-2 {
+        height: 25px;
+      }
+      .level-3 {
+        height: 38px;
+      }
+      .level-4 {
+        height: 52px;
+      }
+      .level-5 {
+        height: 67px;
+      }
+      .level-6 {
+        height: 82px;
+        background: #d7b49d;
+      }
+      .day-label {
+        font-size: 11px;
+        color: #87786f;
+      }
+      .day-col:active,
+      .week-nav:active,
+      .interactive:active,
+      .back-link:active {
+        opacity: 0.72;
+      }
+      .day-col:focus-visible,
+      .week-nav:focus-visible,
+      .interactive:focus-visible,
+      .back-link:focus-visible {
+        outline: 3px solid #bf7957;
+        outline-offset: 2px;
+      }
+      .day-selected .bar {
+        background: #d7b49d;
+      }
+      .day-selected .day-label {
+        color: #a26548;
+        font-weight: 700;
+      }
+      .range-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 14px 0 4px;
+      }
+      .week-nav {
+        width: 48px;
+        height: 48px;
+        border: 1px solid #ead9cb;
+        border-radius: 15px;
+        background: #fff;
+        color: #805139;
+        font-size: 24px;
+        cursor: pointer;
+      }
+      .week-nav:disabled {
+        opacity: 0.38;
+        cursor: default;
+      }
+      .range-copy {
+        text-align: center;
+        flex: 1;
+        min-width: 0;
+      }
+      .range-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #49372f;
+      }
+      .range-dates {
+        font-size: 12px;
+        color: #84766e;
+        margin-top: 3px;
+      }
+      .stat-grid {
+        display: flex;
+        gap: 10px;
+        margin: 13px 0;
+      }
+      .stat,
+      .interactive {
+        flex: 1;
+        background: #fff;
+        border: 1px solid #f0e4da;
+        border-radius: 18px;
+        padding: 14px 12px;
+        text-align: left;
+        color: inherit;
+      }
+      .interactive {
+        cursor: pointer;
+        font: inherit;
+      }
+      .stat-value {
+        display: block;
+        font-size: 21px;
+        font-weight: 700;
+        color: #49372f;
+        margin-top: 6px;
+      }
+      .all-apps-button {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        width: 100%;
+        border: 1px solid #f0e4da;
+        border-radius: 18px;
+        background: #fff;
+        padding: 15px 16px;
+        margin: 10px 0;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+      .all-apps-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #49372f;
+      }
+      .goal {
+        background: #f3eee4;
+      }
+      .goal-title {
+        font-size: 14px;
+        color: #7d654f;
+        font-weight: 700;
+      }
+      .goal-message {
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.35;
+        margin-top: 7px;
+        color: #514337;
+      }
+      .foot {
+        font-size: 12px;
+        text-align: center;
+        color: #8b7d72;
+        margin: 18px 0 4px;
+      }
+      .empty {
+        padding: 16px 0;
+        color: #766b63;
+        line-height: 1.5;
+      }
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        min-width: 96px;
+        min-height: 48px;
+        border: 0;
+        background: transparent;
+        padding: 0 10px 0 0;
+        color: #a45d3a;
+        font: 700 14px sans-serif;
+        cursor: pointer;
+      }
+      .rank-list {
+        margin: 8px 0 0;
+      }
+      .rank-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 0;
+        border-bottom: 1px solid #f2e9e2;
+      }
+      .rank-icon,
+      .rank-fallback {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        flex: none;
+        object-fit: contain;
+        background: #f7f3ef;
+      }
+      .rank-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f9e6d9;
+        color: #986348;
+        font-weight: 700;
+      }
+      .rank-content {
+        flex: 1;
+        min-width: 0;
+      }
+      .rank-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .rank-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #40352f;
+        overflow-wrap: anywhere;
+      }
+      .rank-time {
+        font-size: 14px;
+        font-weight: 700;
+        color: #805139;
+        white-space: nowrap;
+      }
+      .rank-track {
+        height: 9px;
+        border-radius: 8px;
+        background: #f3e8df;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+      .rank-fill {
+        height: 100%;
+        border-radius: 8px;
+        background: #bf7957;
+      }
+      .insight-hero {
+        background: #ffede3;
+        border-color: #ffdfcf;
+      }
+      @media (max-width: 375px) {
+        body {
+          padding-left: 12px;
+          padding-right: 12px;
+        }
+        .card {
+          padding: 15px;
+        }
+        .chart-card {
+          padding-left: 9px;
+          padding-right: 9px;
+        }
+        .chart {
+          gap: 2px;
+        }
+        .day-col {
+          min-width: 44px;
+        }
+        .hero img {
+          width: 108px;
+          height: 108px;
+        }
+        .stat-grid {
+          gap: 7px;
+        }
+        .stat {
+          padding: 12px 9px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <div class="brand">MOCHI'S LITTLE NOOK</div>
+      {{if eq .Screen "welcome"}}
+      <h1>A softer look at your screen time</h1>
+      <p class="intro">
+        See your screen time across all your apps, then check in with one app
+        whenever you like.
+      </p>
+      <section class="card hero">
+        <div class="hero-copy">
+          <div class="eyebrow">Your tiny companion</div>
+          <div class="headline">Hi, I'm Mochi!</div>
+          <p class="copy">Let's make a little room for the things you love.</p>
+        </div>
+        <img src="mochi" alt="Mochi the cat" />
+      </section>
+      <section class="card">
+        <div class="headline">Connect Android Usage Access</div>
+        <p class="copy">
+          Android uses this permission to build your all-apps overview and daily
+          chart.
+        </p>
+        <button class="button" data-action="usage-access">
+          Open Usage Access
+        </button>
+        <p class="small">
+          Your stats stay on this phone. Mochi doesn't send them anywhere.
+        </p>
+      </section>
+      <p class="privacy">
+        You can turn access off any time in Android Settings.
+      </p>
+      {{else if eq .Screen "picker"}}
+      <div class="title-row">
+        <h1>Choose an app</h1>
+        <div class="link" data-action="close-picker">Done</div>
+      </div>
+      <p class="intro">
+        Pick an app to focus your chart on. You can return to the all-apps
+        overview any time.
+      </p>
+      <section class="card">
+        <div class="eyebrow">Apps with recent activity</div>
+        <div class="app-list">
+          {{range .Apps}}
+          <div class="app-row" data-action="app-{{.Package}}">
+            {{if .IconSource}}<img
+              class="app-icon"
+              src="{{.IconSource}}"
+              alt=""
+              data-action="app-{{.Package}}"
+            />{{else}}
+            <div class="letter" data-action="app-{{.Package}}">{{.Letter}}</div>
+            {{end}}
+            <div class="app-name" data-action="app-{{.Package}}">
+              {{.Label}}
+            </div>
+            <div class="arrow" data-action="app-{{.Package}}">›</div>
+          </div>
+          {{else}}
+          <div class="empty">
+            No launchable apps with recent screen time showed up yet. Try again
+            a little later.
+          </div>
+          {{end}}
+        </div>
+      </section>
+      <p class="privacy">
+        App names are used only to let you choose. Usage totals stay on this
+        phone.
+      </p>
+      {{else}} {{if eq .Screen "dashboard"}}
+      <div class="title-row">
+        <h1>Your gentle check-in</h1>
+        <div class="link" data-action="choose-app">
+          {{if .Selected}}Change app{{else}}Choose an app{{end}}
+        </div>
+      </div>
+      <div class="range-row">
+        <button
+          id="week-previous"
+          class="week-nav"
+          type="button"
+          aria-label="Previous week"
+          data-action="week-previous"
+          {{if
+          not
+          .CanPrevious}}disabled{{end}}
+        >
+          ‹
+        </button>
+        <div class="range-copy">
+          <div class="range-title">{{.WeekHeading}}</div>
+          <div class="range-dates">{{.WeekRange}}</div>
+        </div>
+        <button
+          id="week-next"
+          class="week-nav"
+          type="button"
+          aria-label="Next week"
+          data-action="week-next"
+          {{if
+          not
+          .CanNext}}disabled{{end}}
+        >
+          ›
+        </button>
+      </div>
+      <section class="card hero">
+        <div class="hero-copy">
+          <div class="eyebrow">{{.HeroEyebrow}}</div>
+          <div class="big-time">{{.Today}}</div>
+          <p class="copy">{{.HeroCaption}}</p>
+        </div>
+        <img src="mochi" alt="Mochi the cat" />
+      </section>
+      <section class="card chart-card">
+        <div class="eyebrow">{{.WeekHeading}} · tap a day</div>
+        <div class="chart">
+          {{range .Days}}<button
+            id="day-{{.Index}}"
+            class="day-col {{if .Selected}}day-selected{{end}}"
+            type="button"
+            data-action="day-{{.Index}}"
+            aria-label="{{.Date}}: {{.Time}}. View apps used"
+          >
+            <span class="bar-area" data-action="day-{{.Index}}"
+              ><span
+                class="bar level-{{.Level}}"
+                data-action="day-{{.Index}}"
+              ></span></span
+            ><span class="day-label" data-action="day-{{.Index}}"
+              >{{.Label}}</span
+            ></button
+          >{{end}}
+        </div>
+      </section>
+      <div class="stat-grid">
+        <button
+          id="week-insights"
+          class="interactive"
+          type="button"
+          data-action="week-insights"
+          aria-label="Open weekly insights"
+        >
+          <span class="small" data-action="week-insights"
+            >{{.WeekHeading}} · {{if .Selected}}{{.SelectedName}}{{else}}all
+            apps{{end}}</span
+          ><span class="stat-value" data-action="week-insights">{{.Week}}</span>
+        </button>
+        <section class="stat">
+          <div class="small">
+            {{if .HasSelectedDay}}Daily average through
+            {{.SelectedDay.Label}}{{else}}Daily average{{end}}
+          </div>
+          <div class="stat-value">
+            {{if
+            .HasSelectedDay}}{{.SelectedDay.Average}}{{else}}{{.Average}}{{end}}
+          </div>
+        </section>
+      </div>
+      <button
+        id="all-apps"
+        class="all-apps-button"
+        type="button"
+        data-action="all-apps"
+      >
+        <span class="all-apps-title" data-action="all-apps">All apps</span
+        ><span class="small" data-action="all-apps"
+          >App icons, weekday and weekend totals · See details ›</span
+        >
+      </button>
+      {{if eq .WeekOffset 0}}
+      <section class="card goal">
+        <div class="goal-title">A gentle daily goal · 2 hours</div>
+        <div class="goal-message">{{.GoalMessage}}</div>
+        <p class="copy">A little pause is always yours to choose.</p>
+      </section>
+      {{end}}
+      <p class="foot">
+        {{if .Selected}}Only {{.SelectedName}} is shown{{else}}All apps are
+        included{{end}} · your stats stay on this phone
+      </p>
+      {{else if eq .Screen "insights"}}
+      <div class="title-row back-title-row centered-title-row">
+        <button
+          id="back-dashboard"
+          class="back-link"
+          type="button"
+          data-action="back-dashboard"
+          aria-label="Back to chart"
+        >
+          <span data-action="back-dashboard">‹ Back</span>
+        </button>
+        <h1>Weekly insights</h1>
+        <span class="title-spacer" aria-hidden="true"></span>
+      </div>
+      <div class="range-row">
+        <div class="range-copy">
+          <div class="range-title">{{.WeekHeading}}</div>
+          <div class="range-dates">{{.WeekRange}}</div>
+        </div>
+      </div>
+      <section class="card insight-hero">
+        <div class="eyebrow">Most used app · all apps</div>
+        <div class="headline">{{.TopApp}}</div>
+        <div class="big-time">{{.TopAppTime}}</div>
+      </section>
+      <div class="stat-grid">
+        <section class="stat">
+          <div class="small">Total · all apps</div>
+          <div class="stat-value">{{.InsightWeek}}</div>
+        </section>
+        <section class="stat">
+          <div class="small">Daily average · all apps</div>
+          <div class="stat-value">{{.InsightAverage}}</div>
+        </section>
+      </div>
+      <section class="card">
+        <div class="eyebrow">Most used apps this week</div>
+        <div class="rank-list">
+          {{range .TopApps}}
+          <div class="rank-row">
+            {{if .IconSource}}<img
+              class="rank-icon"
+              src="{{.IconSource}}"
+              alt=""
+            />{{else}}
+            <div class="rank-fallback">{{.Letter}}</div>
+            {{end}}
+            <div class="rank-content">
+              <div class="rank-head">
+                <div class="rank-name">{{.Label}}</div>
+                <div class="rank-time">{{.Time}}</div>
+              </div>
+              <div class="rank-track">
+                <div class="rank-fill" style="width:{{.Percent}}%"></div>
+              </div>
+            </div>
+          </div>
+          {{else}}
+          <div class="empty">No app usage was recorded in this period.</div>
+          {{end}}
+        </div>
+      </section>
+      <p class="foot">
+        Usage is read from Android on this phone and stays here.
+      </p>
+      {{else if eq .Screen "apps"}}
+      <div class="title-row back-title-row centered-title-row">
+        <button
+          id="back-dashboard"
+          class="back-link"
+          type="button"
+          data-action="back-dashboard"
+          aria-label="Back to chart"
+        >
+          <span data-action="back-dashboard">‹ Back</span>
+        </button>
+        <h1>All apps</h1>
+        <span class="title-spacer" aria-hidden="true"></span>
+      </div>
+      <div class="range-row">
+        <div class="range-copy">
+          <div class="range-title">{{.WeekHeading}}</div>
+          <div class="range-dates">{{.WeekRange}}</div>
+        </div>
+      </div>
+      <section class="card insight-hero">
+        <div class="eyebrow">Total across apps</div>
+        <div class="big-time">{{.InsightWeek}}</div>
+        <p class="copy">Daily average · {{.InsightAverage}}</p>
+      </section>
+      <div class="stat-grid">
+        <section class="stat">
+          <div class="small">Weekdays · Mon–Fri</div>
+          <div class="stat-value">{{.WeekdayTotal}}</div>
+        </section>
+        <section class="stat">
+          <div class="small">Weekend · Sat–Sun</div>
+          <div class="stat-value">{{.WeekendTotal}}</div>
+        </section>
+      </div>
+      <section class="card">
+        <div class="eyebrow">Apps by screen time</div>
+        <div class="rank-list">
+          {{range .AllApps}}
+          <div class="rank-row">
+            {{if .IconSource}}<img
+              class="rank-icon"
+              src="{{.IconSource}}"
+              alt=""
+            />{{else}}
+            <div class="rank-fallback">{{.Letter}}</div>
+            {{end}}
+            <div class="rank-content">
+              <div class="rank-head">
+                <div class="rank-name">{{.Label}}</div>
+                <div class="rank-time">{{.Time}}</div>
+              </div>
+              <div class="rank-track">
+                <div class="rank-fill" style="width:{{.Percent}}%"></div>
+              </div>
+            </div>
+          </div>
+          {{else}}
+          <div class="empty">No app usage was recorded in this period.</div>
+          {{end}}
+        </div>
+      </section>
+      <p class="foot">
+        Uses Android Usage Access on this phone. Data stays here.
+      </p>
+      {{else if eq .Screen "day"}}
+      <div class="title-row back-title-row centered-title-row day-title-row">
+        <button
+          id="back-dashboard"
+          class="back-link"
+          type="button"
+          data-action="back-dashboard"
+          aria-label="Back to chart"
+        >
+          <span data-action="back-dashboard">‹ Back</span>
+        </button>
+        <h1>{{.SelectedDay.Date}}</h1>
+        <span class="title-spacer" aria-hidden="true"></span>
+      </div>
+      <p class="intro">{{.SelectedDay.Label}} · {{.WeekRange}}</p>
+      <section class="card hero">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            {{if .Selected}}Time with {{.SelectedName}}{{else}}Time across all
+            apps{{end}}
+          </div>
+          <div class="big-time">{{.SelectedDay.Time}}</div>
+          <p class="copy">Foreground time on this day</p>
+        </div>
+        <img src="mochi" alt="Mochi the cat" />
+      </section>
+      <section class="card">
+        <div class="small">Daily average through {{.SelectedDay.Label}}</div>
+        <div class="stat-value">{{.SelectedDay.Average}}</div>
+      </section>
+      <section class="card">
+        <div class="eyebrow">Apps used on {{.SelectedDay.Date}}</div>
+        <div class="rank-list">
+          {{range .SelectedDay.Apps}}
+          <div class="rank-row">
+            <div class="rank-head">
+              <div class="rank-name">{{.Label}}</div>
+              <div class="rank-time">{{.Time}}</div>
+            </div>
+            <div class="rank-track">
+              <div class="rank-fill" style="width:{{.Percent}}%"></div>
+            </div>
+          </div>
+          {{else}}
+          <div class="empty">No app usage was recorded on this day.</div>
+          {{end}}
+        </div>
+      </section>
+      <p class="foot">
+        The bars show {{if .Selected}}your selected app; this list shows all
+        apps{{else}}all apps{{end}}.
+      </p>
+      {{end}} {{end}}
+    </div>
+  </body>
 </html>

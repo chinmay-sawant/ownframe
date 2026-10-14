@@ -56,6 +56,7 @@ public class MainActivity extends Activity {
     private String lastSelected = "";
     private long lastAppsAt;
     private long lastUsageAt;
+    private int lastWeekOffset = -1;
     private final Handler poller = new Handler(Looper.getMainLooper());
     private final Runnable poll = new Runnable() {
         @Override public void run() {
@@ -134,15 +135,20 @@ public class MainActivity extends Activity {
 
     private void refreshSelectionIfDue() {
         String selected = Mobile.selectedPackage();
+        int weekOffset = (int) Mobile.weekOffset();
         if (!selected.equals(lastSelected)) {
             lastSelected = selected;
             getSharedPreferences(PREFS, MODE_PRIVATE).edit()
                 .putString(SELECTED, selected).apply();
             lastUsageAt = 0;
         }
+        if (weekOffset != lastWeekOffset) {
+            lastWeekOffset = weekOffset;
+            lastUsageAt = 0;
+        }
         long now = System.currentTimeMillis();
         if (now - lastUsageAt >= 30_000) {
-            Mobile.setUsageJSON(usageSnapshot(selected));
+            Mobile.setUsageJSON(usageSnapshot(selected, weekOffset));
             lastUsageAt = now;
         }
     }
@@ -151,13 +157,13 @@ public class MainActivity extends Activity {
         return (UsageStatsManager) getSystemService(USAGE_STATS_SERVICE);
     }
 
-    private Calendar weekStart() {
+    private Calendar weekStart(int offset) {
         Calendar day = Calendar.getInstance();
         day.set(Calendar.HOUR_OF_DAY, 0);
         day.set(Calendar.MINUTE, 0);
         day.set(Calendar.SECOND, 0);
         day.set(Calendar.MILLISECOND, 0);
-        day.add(Calendar.DAY_OF_YEAR, -6);
+        day.add(Calendar.DAY_OF_YEAR, -6 - 7 * offset);
         return day;
     }
 
@@ -176,7 +182,7 @@ public class MainActivity extends Activity {
 
     private String appCatalog() {
         try {
-            Calendar start = weekStart();
+            Calendar start = weekStart(0);
             Map<String, Long> recent = recentTotals(start.getTimeInMillis(),
                 System.currentTimeMillis());
             Intent launcher = new Intent(Intent.ACTION_MAIN);
@@ -222,36 +228,99 @@ public class MainActivity extends Activity {
         return Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP);
     }
 
-    private String usageSnapshot(String pkg) {
+    private String usageSnapshot(String pkg, int offset) {
         try {
-            String label = pkg.isEmpty() ? "All apps" : getPackageManager().getApplicationLabel(
-                getPackageManager().getApplicationInfo(pkg, 0)).toString();
+            String label = pkg.isEmpty() ? "All apps" : appLabel(pkg);
             JSONArray days = new JSONArray();
-            Calendar day = weekStart();
+            Calendar day = weekStart(offset);
             SimpleDateFormat name = new SimpleDateFormat("EEE", Locale.getDefault());
-            UsageStatsManager manager = usageManager();
+            SimpleDateFormat dateName = new SimpleDateFormat("MMM d", Locale.getDefault());
+            SimpleDateFormat rangeName = new SimpleDateFormat("MMM d", Locale.getDefault());
+            Map<String, Long> weekly = new HashMap<>();
+            Map<String, String> labels = launcherLabels();
+            long allMillis = 0;
+            long weekdayMillis = 0;
+            long weekendMillis = 0;
             for (int i = 0; i < 7; i++) {
                 long from = day.getTimeInMillis();
                 Calendar next = (Calendar) day.clone();
                 next.add(Calendar.DAY_OF_YEAR, 1);
                 long to = Math.min(next.getTimeInMillis(), System.currentTimeMillis());
-                long millis = 0;
-                List<UsageStats> rows = manager == null ? null : manager.queryUsageStats(
-                    UsageStatsManager.INTERVAL_DAILY, from, to);
-                if (rows != null) for (UsageStats row : rows) {
-                    String rowPackage = row.getPackageName();
-                    if (pkg.isEmpty() ? !getPackageName().equals(rowPackage)
-                        : pkg.equals(rowPackage)) millis += row.getTotalTimeInForeground();
+                Map<String, Long> daily = recentTotals(from, to);
+                long selectedMillis = 0;
+                for (Map.Entry<String, Long> row : daily.entrySet()) {
+                    String rowPackage = row.getKey();
+                    if (!labels.containsKey(rowPackage)) continue;
+                    long millis = row.getValue();
+                    allMillis += millis;
+                    if (day.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
+                        || day.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                        weekendMillis += millis;
+                    } else {
+                        weekdayMillis += millis;
+                    }
+                    weekly.merge(rowPackage, millis, Long::sum);
+                    if (pkg.isEmpty() || pkg.equals(rowPackage)) selectedMillis += millis;
+                }
+                Map<String, Long> visibleDaily = new HashMap<>();
+                for (Map.Entry<String, Long> row : daily.entrySet()) {
+                    if (labels.containsKey(row.getKey())) visibleDaily.put(row.getKey(), row.getValue());
                 }
                 days.put(new JSONObject().put("label", name.format(new Date(from)))
-                    .put("minutes", (int) (millis / 60_000)));
+                    .put("date", dateName.format(new Date(from)))
+                    .put("minutes", (int) (selectedMillis / 60_000))
+                    .put("apps", usageRows(visibleDaily, labels)));
                 day.add(Calendar.DAY_OF_YEAR, 1);
             }
+            Calendar end = (Calendar) day.clone();
+            end.add(Calendar.DAY_OF_YEAR, -1);
+            String weekRange = rangeName.format(weekStart(offset).getTime()) + " – "
+                + rangeName.format(end.getTime());
             return new JSONObject().put("package", pkg).put("label", label)
-                .put("days", days).toString();
+                .put("weekOffset", offset).put("weekRange", weekRange)
+                .put("allMinutes", (int) (allMillis / 60_000)).put("days", days)
+                .put("weekdayMinutes", (int) (weekdayMillis / 60_000))
+                .put("weekendMinutes", (int) (weekendMillis / 60_000))
+                .put("topApps", usageRows(weekly, labels)).toString();
         } catch (Exception ignored) {
             return "{}";
         }
+    }
+
+    private String appLabel(String pkg) {
+        try {
+            return getPackageManager().getApplicationLabel(
+                getPackageManager().getApplicationInfo(pkg, 0)).toString();
+        } catch (Exception ignored) {
+            return pkg;
+        }
+    }
+
+    private Map<String, String> launcherLabels() {
+        Intent launcher = new Intent(Intent.ACTION_MAIN);
+        launcher.addCategory(Intent.CATEGORY_LAUNCHER);
+        List<ResolveInfo> resolved = getPackageManager().queryIntentActivities(launcher, 0);
+        Map<String, String> labels = new HashMap<>();
+        for (ResolveInfo info : resolved) {
+            labels.put(info.activityInfo.packageName,
+                info.loadLabel(getPackageManager()).toString());
+        }
+        labels.remove(getPackageName());
+        return labels;
+    }
+
+    private JSONArray usageRows(Map<String, Long> totals, Map<String, String> labels)
+        throws Exception {
+        List<Map.Entry<String, Long>> sorted = new ArrayList<>(totals.entrySet());
+        sorted.sort((left, right) -> Long.compare(right.getValue(), left.getValue()));
+        JSONArray rows = new JSONArray();
+        for (int i = 0; i < sorted.size(); i++) {
+            Map.Entry<String, Long> item = sorted.get(i);
+            rows.put(new JSONObject().put("package", item.getKey())
+                .put("label", labels.getOrDefault(item.getKey(), item.getKey()))
+                .put("minutes", (int) (item.getValue() / 60_000)));
+        }
+        return rows;
     }
 
     @Override public void onBackPressed() {

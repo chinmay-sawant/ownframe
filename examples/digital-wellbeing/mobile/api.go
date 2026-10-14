@@ -41,7 +41,15 @@ func SelectedPackage() string {
 	return app.SelectedPackage()
 }
 
-// Back returns to the app picker before Android closes the activity.
+// WeekOffset returns the selected historical seven-day range.
+func WeekOffset() int {
+	if app == nil {
+		return 0
+	}
+	return app.WeekOffset()
+}
+
+// Back returns to an in-app screen before Android closes the activity.
 func Back() bool { return app != nil && app.RequestBack() }
 
 // CancelTouches clears a pointer gesture when Android pauses the activity.

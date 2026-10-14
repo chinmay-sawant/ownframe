@@ -84,6 +84,31 @@ view size and the current display configuration. Read
 [Android runtime](android-runtime.md) for coordinate conversion, rotation, and
 IME behavior.
 
+## Lay out mobile screen headers
+
+For an HTML/CSS screen with Back navigation, keep Back in a fixed leading slot
+and center a short title across the content width. Reserve a matching trailing
+slot so the Back control does not push the title off center. Use one shared
+header class for screens with the same layout. If a long or contextual title
+belongs beside Back, make that a deliberate variant instead of relying on
+`justify-content: space-between` with only two items.
+
+```html
+<div class="title-row back-title-row centered-title-row">
+  <button class="back-link" data-action="back">
+    <span data-action="back">Back</span>
+  </button>
+  <h1>All apps</h1>
+  <span class="title-spacer" aria-hidden="true"></span>
+</div>
+```
+
+Give the Back control a touch target of at least 48 dp. Keep the title and
+control vertically aligned, preserve the Back action on nested text elements,
+and check the rendered header on a device after changing its CSS. Long titles
+need room at narrow phone widths, so test the centered and contextual variants
+at the smallest supported width.
+
 ## Keep the system bars in the active theme
 
 Call `host.setSystemBarStyle(color, lightIcons)` on Android's UI thread when the

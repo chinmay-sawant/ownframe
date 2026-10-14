@@ -78,9 +78,9 @@ footer a { color: var(--muted); }
 .skip { position: absolute; left: 16px; top: -100px; padding: 8px; background: var(--surface); z-index: 1; }
 .skip:focus { top: 8px; }
 .docs-shell { height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-.docs-shell > header { width: 100%; max-width: 1120px; margin: 0 auto; padding-left: 24px; padding-right: 24px; flex: 0 0 auto; }
+.docs-shell > header { width: 100%; max-width: 1440px; margin: 0 auto; padding-left: 24px; padding-right: 24px; flex: 0 0 auto; }
 .docs-shell > footer { display: none; }
-.docs-main { width: 100%; max-width: 1120px; flex: 1 1 auto; min-height: 0; margin: 0 auto; padding-top: 0; padding-bottom: 16px; overflow: hidden; }
+.docs-main { width: 100%; max-width: 1440px; flex: 1 1 auto; min-height: 0; margin: 0 auto; padding-top: 0; padding-bottom: 16px; overflow: hidden; }
 .docs-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 28px; height: 100%; min-height: 0; padding-top: 24px; }
 .docs-layout > aside { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .docs-content { min-height: 0; overflow: auto; overscroll-behavior: contain; scroll-padding-top: 16px; padding: 0 12px 24px 0; }
@@ -96,6 +96,7 @@ aside .showcase-subnav a:hover, aside .showcase-subnav a[aria-current="page"] { 
 .docs-nav-parent.active { color: var(--text); font-weight: 700; }
 [aria-current="page"] { font-weight: 700; color: var(--accent); }
 .markdown { min-width: 0; overflow-wrap: anywhere; }
+.markdown p { max-width: none; }
 .markdown h1 { font-size: 32px; }
 .markdown h2 { margin-top: 36px; }
 .markdown ul, .markdown ol { padding-left: 1.4em; }
@@ -103,12 +104,16 @@ aside .showcase-subnav a:hover, aside .showcase-subnav a[aria-current="page"] { 
 .markdown img { max-width: 100%; height: auto; }
 .showcase-page .showcase-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; list-style: none; margin: 20px 0 32px; padding: 0; align-items: start; }
 .showcase-page .pet-care-gallery li:last-child { grid-column: 1 / -1; }
+.showcase-page .digital-wellbeing-gallery { display: flex; flex-wrap: wrap; justify-content: center; align-items: stretch; }
+.showcase-page .digital-wellbeing-gallery li { flex: 0 1 calc((100% - 32px) / 3); }
 .showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.showcase-page .showcase-gallery li + li { margin-top: 0; }
 .showcase-page .showcase-gallery p { max-width: none; margin: 0; }
 .showcase-page .showcase-gallery img { display: block; width: 100%; height: auto; border-radius: 7px; background: var(--background); }
 .showcase-page .showcase-gallery img.spotify-window-preview { aspect-ratio: 1.5; object-fit: cover; object-position: center; }
 .showcase-page .showcase-gallery p + p { padding-top: 10px; font-size: 14px; }
-.markdown table { display: block; width: fit-content; max-width: min(100%, 76ch); overflow-x: auto; border-collapse: collapse; font-size: 14px; background: var(--surface); }
+.markdown-table-scroll { max-width: 100%; overflow-x: auto; }
+.markdown table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); }
 .markdown th, .markdown td { border: 1px solid var(--border); text-align: left; padding: 10px; }
 .markdown blockquote { border-left: 3px solid var(--border); padding-left: 18px; margin-left: 0; }
 .doc-pagination { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; border-top: 1px solid var(--border); margin-top: 40px; padding-top: 24px; }
@@ -134,8 +139,10 @@ aside .showcase-subnav a:hover, aside .showcase-subnav a[aria-current="page"] { 
   .docs-layout { grid-template-rows: minmax(0, auto) minmax(0, 1fr); gap: 16px; padding-top: 16px; }
   .docs-layout > aside { max-height: 34vh; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
   .docs-content { padding-right: 0; }
+  .showcase-page .digital-wellbeing-gallery li { flex-basis: calc((100% - 16px) / 2); }
 }
 @media (max-width: 420px) {
   .theme-toggle { padding: 8px 10px; }
   .theme-toggle span { display: none; }
+  .showcase-page .digital-wellbeing-gallery li { flex-basis: 100%; max-width: 320px; }
 }

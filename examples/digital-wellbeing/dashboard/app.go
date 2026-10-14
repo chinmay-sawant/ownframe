@@ -20,9 +20,12 @@ type App struct {
 	page *ownframe.Page
 	view View
 	bridge
-	selectionMu sync.RWMutex
-	selected    string
-	selecting   bool
+	selectionMu   sync.RWMutex
+	selected      string
+	selecting     bool
+	weekOffset    int
+	currentScreen string
+	returnScreen  string
 }
 
 // New builds the app and registers the original cat illustration.

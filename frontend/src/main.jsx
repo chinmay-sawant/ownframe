@@ -52,6 +52,7 @@ const showcaseSections = [
   { id: 'teams', title: 'Teams' },
   { id: 'spotify-player', title: 'Spotify Player' },
   { id: 'pet-care', title: 'Pet Care' },
+  { id: 'digital-wellbeing', title: 'Digital Wellbeing' },
   { id: 'desktop-overlays', title: 'Desktop overlays' },
   { id: 'wispr-flow', title: 'Wispr Flow' },
   { id: 'dino-run', title: 'Dino Run' },
@@ -99,12 +100,17 @@ function App() {
   const document = documents.find((entry) => entry.slug === slug);
   const isShowcase = document?.path === 'showcase.md';
   const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : 'telegram';
-  const markdownComponents = isShowcase ? {
-    ul: ({ children }) => <ul className={`showcase-gallery${activeShowcase === 'pet-care' ? ' pet-care-gallery' : ''}`}>{children}</ul>,
-    img: ({ src, alt = '', title }) => <img src={src} alt={alt} title={title}
-      className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
-      loading="lazy" decoding="async" />,
-  } : undefined;
+  const galleryVariant = activeShowcase === 'pet-care' ? ' pet-care-gallery'
+    : activeShowcase === 'digital-wellbeing' ? ' digital-wellbeing-gallery' : '';
+  const markdownComponents = {
+    table: ({ children }) => <div className="markdown-table-scroll"><table>{children}</table></div>,
+    ...(isShowcase ? {
+      ul: ({ children }) => <ul className={`showcase-gallery${galleryVariant}`}>{children}</ul>,
+      img: ({ src, alt = '', title }) => <img src={src} alt={alt} title={title}
+        className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
+        loading="lazy" decoding="async" />,
+    } : {}),
+  };
   const showcaseText = isShowcase
     ? selectShowcase(document.text, activeShowcase)
     : document?.text;

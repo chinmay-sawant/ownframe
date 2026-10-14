@@ -33,12 +33,10 @@ func (a *App) apply(ctx context.Context) error {
 		a.clearUsage()
 		a.setSelected(restore)
 	}
-	if back && a.view.Selecting {
-		a.view.Selecting = false
-		a.setSelecting(false)
+	if back && a.applyBack() {
 		changed = true
 	}
-	if usageSet && usage.Package == a.view.Selected {
+	if usageSet && usage.Package == a.view.Selected && usage.WeekOffset == a.WeekOffset() {
 		a.applyUsage(usage)
 		changed = true
 	}
@@ -48,15 +46,4 @@ func (a *App) apply(ctx context.Context) error {
 	a.refreshView()
 	a.page.SetData(&a.view)
 	return a.page.Redraw(ctx)
-}
-
-func (a *App) refreshView() {
-	switch {
-	case !a.view.Access:
-		a.view.Screen = "welcome"
-	case a.view.Selecting:
-		a.view.Screen = "picker"
-	default:
-		a.view.Screen = "dashboard"
-	}
 }

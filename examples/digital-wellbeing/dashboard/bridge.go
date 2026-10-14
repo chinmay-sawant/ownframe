@@ -20,12 +20,23 @@ type bridge struct {
 
 // Usage contains daily totals for all apps or one selected package.
 type Usage struct {
-	Package string `json:"package"`
-	Label   string `json:"label"`
-	Days    []struct {
-		Label   string `json:"label"`
-		Minutes int    `json:"minutes"`
-	} `json:"days"`
+	Package        string     `json:"package"`
+	Label          string     `json:"label"`
+	WeekOffset     int        `json:"weekOffset"`
+	WeekRange      string     `json:"weekRange"`
+	AllMinutes     int        `json:"allMinutes"`
+	WeekdayMinutes int        `json:"weekdayMinutes"`
+	WeekendMinutes int        `json:"weekendMinutes"`
+	Days           []UsageDay `json:"days"`
+	TopApps        []AppUsage `json:"topApps"`
+}
+
+// UsageDay carries one day's chart value and app breakdown.
+type UsageDay struct {
+	Label   string     `json:"label"`
+	Date    string     `json:"date"`
+	Minutes int        `json:"minutes"`
+	Apps    []AppUsage `json:"apps"`
 }
 
 // QueueAccess queues the current Android Usage Access state.
