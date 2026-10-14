@@ -15,20 +15,21 @@ type Layout struct {
 
 // Node is a retained element instance.
 type Node struct {
-	ID       string
-	Key      string
-	Kind     Kind
-	Attrs    map[string]string
-	Metadata map[string]any
-	Children []*Node
-	Parent   *Node
-	Handlers map[string]Handler
-	Mounted  bool
-	Updated  bool
-	Removed  bool
-	Disposed bool
-	Layout   Layout
-	Painted  bool
+	ID        string
+	Key       string
+	Kind      Kind
+	Attrs     map[string]string
+	Metadata  map[string]any
+	Children  []*Node
+	Parent    *Node
+	Handlers  map[string]Handler
+	Mounted   bool
+	Updated   bool
+	Removed   bool
+	Lifecycle Lifecycle
+	Disposed  bool
+	Layout    Layout
+	Painted   bool
 }
 
 // NewNode creates an empty retained node.

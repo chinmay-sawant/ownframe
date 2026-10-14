@@ -1,0 +1,46 @@
+package state
+
+import "reflect"
+
+func setStructSeg(cur any, segs []string, value any) (any, bool) {
+	rv := reflect.ValueOf(cur)
+	if rv.Kind() != reflect.Struct {
+		return cur, false
+	}
+	cp := reflect.New(rv.Type()).Elem()
+	cp.Set(rv)
+	seg := segs[0]
+	rest := segs[1:]
+	f := cp.FieldByName(seg)
+	if !f.IsValid() {
+		return cur, false
+	}
+	if len(rest) == 0 {
+		v := reflect.ValueOf(value)
+		if v.Type().AssignableTo(f.Type()) {
+			f.Set(v)
+			return cp.Interface(), true
+		}
+		if v.Type().ConvertibleTo(f.Type()) {
+			f.Set(v.Convert(f.Type()))
+			return cp.Interface(), true
+		}
+		return cur, false
+	}
+	if f.IsNil() && f.Kind() == reflect.Map {
+		f.Set(reflect.MakeMap(f.Type()))
+	}
+	nc, ok := setSeg(f.Interface(), rest, value)
+	if !ok {
+		return cur, false
+	}
+	fv := reflect.ValueOf(nc)
+	if fv.Type().AssignableTo(f.Type()) {
+		f.Set(fv)
+	} else if fv.Type().ConvertibleTo(f.Type()) {
+		f.Set(fv.Convert(f.Type()))
+	} else {
+		return cur, false
+	}
+	return cp.Interface(), true
+}

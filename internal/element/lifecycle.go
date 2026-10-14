@@ -11,6 +11,7 @@ func Mount(n *Node) {
 		return
 	}
 	n.Mounted = true
+	n.Lifecycle.Mounted = true
 	if h, ok := n.Handlers["mount"]; ok {
 		h(Event{Type: "mount", Target: n})
 	}
@@ -22,6 +23,7 @@ func Update(n *Node, props []string) {
 		return
 	}
 	n.Updated = true
+	n.Lifecycle.Updated = true
 	if h, ok := n.Handlers["update"]; ok {
 		h(Event{Type: "update", Target: n, Phase: join(props)})
 	}
@@ -36,6 +38,7 @@ func Unmount(n *Node) {
 		h(Event{Type: "unmount", Target: n})
 	}
 	n.Mounted = false
+	n.Lifecycle.Unmounted = true
 	n.Parent = nil
 	n.Children = nil
 }

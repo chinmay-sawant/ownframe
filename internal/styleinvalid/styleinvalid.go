@@ -9,6 +9,7 @@ package styleinvalid
 type Change struct {
 	BoxID    string
 	Property string
+	Path     string
 	Subtree  bool
 }
 

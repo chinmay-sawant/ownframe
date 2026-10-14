@@ -9,16 +9,17 @@ import (
 
 // App is the player screen.
 type App struct {
-	page       *ownframe.Page
-	view       View
-	navHistory []string
-	navAt      int
-	base       string
-	seconds    int
-	lastVolume int
-	audio      *music.Engine
-	audioKey   string
-	logger     *os.File
+	page           *ownframe.Page
+	view           View
+	navHistory     []string
+	navAt          int
+	base           string
+	seconds        int
+	lastVolume     int
+	audio          *music.Engine
+	audioKey       string
+	logger         *os.File
+	navFocusStates map[string]navFocusState
 }
 
 // New parses the player template, registers its images, and starts on the
