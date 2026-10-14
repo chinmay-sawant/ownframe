@@ -53,6 +53,7 @@ func (s *shell) fit() (float64, float64, float64) {
 	}
 
 	w, h := s.contentSize()
+	viewW, viewH := s.viewSize()
 
-	return fitBox(w, h, s.screenW, s.screenH)
+	return fitBox(w, h, viewW, viewH)
 }

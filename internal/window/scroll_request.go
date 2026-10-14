@@ -23,13 +23,14 @@ func (s *shell) applyScrollRequest() {
 	}
 
 	contentW, contentH := s.contentSize()
+	viewW, viewH := s.viewSize()
 	if req.Absolute {
-		s.scrollX, s.scrollY = clampScroll(req.X, req.Y, contentW, contentH, s.screenW, s.screenH)
+		s.scrollX, s.scrollY = clampScroll(req.X, req.Y, contentW, contentH, viewW, viewH)
 
 		return
 	}
 
 	s.scrollX, s.scrollY = clampScroll(
-		s.scrollX+req.X, s.scrollY+req.Y, contentW, contentH, s.screenW, s.screenH,
+		s.scrollX+req.X, s.scrollY+req.Y, contentW, contentH, viewW, viewH,
 	)
 }

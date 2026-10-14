@@ -1,0 +1,86 @@
+//kage:unit pixels
+// The group compositor: one blend or isolation group's layer (image 0) over
+// the backdrop it covers (image 1), in the CSS compositing formula the
+// bitmap painter uses. Mode selects the separable blend function.
+package main
+
+var Mode float
+
+// hard is the hard-light channel formula; overlay swaps its arguments.
+func hard(b, s float) float {
+	if s <= 0.5 {
+		return 2 * b * s
+	}
+	return 1 - 2*(1-b)*(1-s)
+}
+
+func soft(b, s float) float {
+	if s <= 0.5 {
+		return b - (1-2*s)*b*(1-b)
+	}
+	d := sqrt(b)
+	if b <= 0.25 {
+		d = ((16*b-12)*b + 4) * b
+	}
+	return b + (2*s-1)*(d-b)
+}
+
+func blend(b, s float) float {
+	if Mode == 1.0 {
+		return b * s
+	}
+	if Mode == 2.0 {
+		return b + s - b*s
+	}
+	if Mode == 3.0 {
+		return hard(s, b)
+	}
+	if Mode == 4.0 {
+		return min(b, s)
+	}
+	if Mode == 5.0 {
+		return max(b, s)
+	}
+	if Mode == 6.0 {
+		if s >= 1.0 {
+			return 1
+		}
+		return min(1, b/(1-s))
+	}
+	if Mode == 7.0 {
+		if s <= 0.0 {
+			return 0
+		}
+		return 1 - min(1, (1-b)/s)
+	}
+	if Mode == 8.0 {
+		return hard(b, s)
+	}
+	if Mode == 9.0 {
+		return soft(b, s)
+	}
+	if Mode == 10.0 {
+		return abs(b - s)
+	}
+	if Mode == 11.0 {
+		return b + s - 2*b*s
+	}
+	return s
+}
+
+func Fragment(dstPos vec4, src0Pos vec2, color vec4) vec4 {
+	s := imageSrc0At(src0Pos)
+	if s.a == 0.0 {
+		return imageSrc1AtFromSrc0Pos(src0Pos)
+	}
+	b := imageSrc1AtFromSrc0Pos(src0Pos)
+	sa, ba := s.a, b.a
+	cs := s.rgb / sa
+	cb := vec3(0)
+	if ba > 0.0 {
+		cb = b.rgb / ba
+	}
+	bl := vec3(blend(cb.x, cs.x), blend(cb.y, cs.y), blend(cb.z, cs.z))
+	out := (1-ba)*s.rgb + sa*ba*bl + (1-sa)*b.rgb
+	return vec4(out, sa+ba*(1-sa))
+}

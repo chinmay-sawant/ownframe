@@ -21,11 +21,13 @@ func (s *shell) dragScroll(y int) {
 		return
 	}
 
-	step := edgeScroll(y, s.screenH, scrollStep)
+	_, viewH := s.viewSize()
+
+	step := edgeScroll(y, viewH, scrollStep)
 	if step == 0 {
 		return
 	}
 
 	_, contentH := s.contentSize()
-	s.scrollY = clampAxis(s.scrollY+step, contentH-s.screenH)
+	s.scrollY = clampAxis(s.scrollY+step, contentH-viewH)
 }

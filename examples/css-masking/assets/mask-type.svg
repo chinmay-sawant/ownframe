@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="100" viewBox="0 0 160 100">
+  <defs>
+    <mask id="luma" style="mask-type:luminance">
+      <rect width="80" height="100" fill="black"/>
+      <rect x="80" width="80" height="100" fill="white"/>
+    </mask>
+  </defs>
+  <rect width="160" height="100" fill="white" mask="url(#luma)"/>
+</svg>

@@ -16,12 +16,20 @@ import (
 // The page owns the on/off flag, so Config.DevTools and SetDevTools work.
 type devState struct {
 	on            bool
+	available     bool
+	picker        bool
+	pickerMode    bool
+	inspect       bool
+	inspectMode   bool
+	pick          bool
+	pickMode      bool
 	ops           bool
 	tab           devTab
 	dockW         float64
 	scroll        float64
 	collapsed     map[string]bool
 	rows          []devRow
+	opsCache      devOpsCache
 	content       devRect
 	hovered       layout.Box
 	haveHov       bool
@@ -29,6 +37,7 @@ type devState struct {
 	havePin       bool
 	opPick        int
 	haveOp        bool
+	opPin         bool
 	resizing      bool
 	gen           uint64
 	stats         host.Stats

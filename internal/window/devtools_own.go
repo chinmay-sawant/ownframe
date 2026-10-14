@@ -4,9 +4,18 @@ import "github.com/hajimehoshi/ebiten/v2"
 
 // devOwns reports whether the overlay owns one key under these modifiers.
 func (s *shell) devOwns(key ebiten.Key, mods modifiers) bool {
-	if s.devInspector() == nil {
+	insp := s.devInspector()
+	if insp == nil {
 		return false
 	}
+
+	// Keep the overlay available only for screens that opted in through
+	// Config.DevTools or SetDevTools. A plain screen never sees F12.
+	available := s.dev.available || s.dev.on || insp.DevTools()
+	if !available {
+		return false
+	}
+	s.dev.available = true
 
 	switch key {
 	case ebiten.KeyF12:
@@ -39,6 +48,7 @@ func (s *shell) devToggle() error {
 
 	on := !s.dev.on
 	insp.SetDevTools(on)
+	s.dev.available = true
 	s.dev.on = on
 
 	if !on {

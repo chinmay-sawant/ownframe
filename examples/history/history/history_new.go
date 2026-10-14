@@ -10,7 +10,7 @@ import (
 // New parses the embedded history template, registers its routes, and
 // installs the click handler.
 func New() (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "History",
 		HTML:   historyHTML,
 		Width:  DefaultWidth,

@@ -8,7 +8,7 @@ import (
 
 // New parses the embedded platform template and registers its click handler.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Platform",
 		HTML:   platformHTML,
 		Width:  DefaultWidth,

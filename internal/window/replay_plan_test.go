@@ -2,59 +2,54 @@ package window
 
 import (
 	"image"
+	"slices"
 	"testing"
-
-	"github.com/hajimehoshi/ebiten/v2"
-
-	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-func TestPlanRepaintPicksTheWork(t *testing.T) {
+func TestPlanRepaintsPicksTheWork(t *testing.T) {
 	t.Parallel()
 
-	state := partialState{buf: partialBuf(100, 100), gen: 1, width: 100, height: 100}
+	state := partialState{tiles: newTileGrid(100, 100), gen: 1, clipX: 100}
 	badSize := state
-	badSize.width = 80
+	badSize.tiles = newTileGrid(80, 100)
 	full := image.Rect(0, 0, 100, 100)
+	rebuild := []repaintPlan{{mode: repaintBuffer, rect: full}}
+	blit := []repaintPlan{{mode: repaintBlit, rect: full}}
+	one := []image.Rectangle{image.Rect(10, 10, 20, 20)}
+	two := []image.Rectangle{one[0], image.Rect(60, 60, 80, 80)}
+	overflow := make([]image.Rectangle, maxRepaintRects+1)
+	for i := range overflow {
+		overflow[i] = image.Rect(i*10, 0, i*10+5, 5)
+	}
 
 	cases := []struct {
-		name     string
-		st       partialState
-		gen      uint64
-		rect     image.Rectangle
-		ok       bool
-		want     repaintMode
-		wantRect image.Rectangle
+		name  string
+		st    partialState
+		gen   uint64
+		rects []image.Rectangle
+		ok    bool
+		want  []repaintPlan
 	}{
-		{"first frame", partialState{}, 1, image.Rect(10, 10, 20, 20), true, repaintBuffer, full},
-		{"dirty rect", state, 2, image.Rect(10, 10, 20, 20), true, repaintRect, image.Rect(10, 10, 20, 20)},
-		{"full rect", state, 2, full, true, repaintBuffer, full},
-		{"false rect", state, 2, image.Rectangle{}, false, repaintBuffer, full},
-		{"same gen", state, 1, image.Rectangle{}, false, repaintBlit, full},
-		{"size change", badSize, 2, image.Rect(0, 0, 10, 10), true, repaintBuffer, full},
-		{"outside clamped", state, 2, image.Rect(-20, -20, 30, 30), true, repaintRect, image.Rect(0, 0, 30, 30)},
-		{"outside away", state, 2, image.Rect(-30, -30, -20, -20), true, repaintBuffer, full},
+		{"first frame", partialState{}, 1, one, true, rebuild},
+		{"one rect", state, 2, one, true,
+			[]repaintPlan{{mode: repaintRect, rect: one[0]}}},
+		{"two rects", state, 2, two, true,
+			[]repaintPlan{{mode: repaintRect, rect: two[0]}, {mode: repaintRect, rect: two[1]}}},
+		{"full rect", state, 2, []image.Rectangle{full}, true, rebuild},
+		{"overflow", state, 2, overflow, true, rebuild},
+		{"empty", state, 1, nil, true, blit},
+		{"idle", state, 1, nil, false, blit},
+		{"stale idle", state, 2, nil, false, rebuild},
+		{"size change", badSize, 2, one, true, rebuild},
+		{"clamped", state, 2, []image.Rectangle{image.Rect(-20, -20, 30, 30)}, true,
+			[]repaintPlan{{mode: repaintRect, rect: image.Rect(0, 0, 30, 30)}}},
+		{"away", state, 2, []image.Rectangle{image.Rect(-30, -30, -20, -20)}, true, rebuild},
 	}
+
 	for _, c := range cases {
-		got := planRepaint(100, 100, c.st, c.gen, c.rect, c.ok)
-		if got.mode != c.want || got.rect != c.wantRect {
-			t.Fatalf("%s: plan = %v %v, want %v %v", c.name, got.mode, got.rect, c.want, c.wantRect)
+		got := planRepaints(100, 100, c.st, c.gen, c.rects, c.ok, 100)
+		if !slices.Equal(got, c.want) {
+			t.Fatalf("%s: plans = %v, want %v", c.name, got, c.want)
 		}
 	}
-}
-
-// partialDisplay is a small replayable page with one box.
-func partialDisplay(w, h int) *layout.Display {
-	return &layout.Display{
-		Width: w, Height: h, PointsPerPixel: 1,
-		Ops: []layout.DisplayOp{
-			{Kind: layout.DisplayOpFillRect, X: 0, Y: 0, W: float64(w), H: float64(h), R: 1, G: 1, B: 1, Alpha: 1},
-			{Kind: layout.DisplayOpFillRect, X: 10, Y: 10, W: 20, H: 20, R: 1, Alpha: 1},
-		},
-		Order: []int{0, 1},
-	}
-}
-
-func partialBuf(w, h int) *ebiten.Image {
-	return ebiten.NewImage(w, h)
 }

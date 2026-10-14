@@ -40,22 +40,20 @@ func (f *flipper) rebind(d *ownframe.Display, boxes []ownframe.Box, rows []Row) 
 				continue
 			}
 
-			op := frame.Text(d, b)
-			if op == nil {
-				continue
-			}
+			op := cellOp(d, b)
 
 			fl := f.cells[c.ID]
 			if fl != nil && fl.want == c.Ch {
 				fl.op = op
+				fl.box = flapRect(b)
 			} else {
 				cur := op.Text
 				if fl != nil {
 					cur = fl.op.Text
 				}
 
-				fl = &flap{op: op, want: c.Ch, cur: cur, delay: r * rowDelay,
-					spin: flapSpin(r, k), done: cur == c.Ch}
+				fl = &flap{op: op, box: flapRect(b), want: c.Ch, cur: cur,
+					delay: r * rowDelay, spin: flapSpin(r, k), done: cur == c.Ch}
 			}
 
 			next[c.ID] = fl

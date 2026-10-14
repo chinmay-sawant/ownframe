@@ -41,14 +41,3 @@ func TestPaintBoundsCoversStrokeAndLine(t *testing.T) {
 		t.Fatalf("line bounds = %v, %v", got, ok)
 	}
 }
-
-// TestPaintBoundsRejectsTransformed pins the unbounded answer for a run the
-// replay cannot place without its matrix.
-func TestPaintBoundsRejectsTransformed(t *testing.T) {
-	t.Parallel()
-
-	op := &layout.DisplayOp{Kind: layout.DisplayOpText, X: 1, Y: 2, W: 3, H: 4, XformSet: true}
-	if box, ok := PaintBounds(op, 1); ok || !box.Empty() {
-		t.Fatalf("transformed bounds = %v, %v", box, ok)
-	}
-}

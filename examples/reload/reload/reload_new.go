@@ -15,7 +15,7 @@ func New(reload bool) (*App, error) {
 // NewFile reads path as the page source, so a test can point a temp copy at
 // the same template.
 func NewFile(path string, reload bool) (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:            "Hot reload",
 		File:             path,
 		DisableHotReload: !reload,
@@ -31,7 +31,7 @@ func NewFile(path string, reload bool) (*App, error) {
 
 // NewHTML builds the same page from a string, for tests.
 func NewHTML(html string, reload bool) (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:            "Hot reload",
 		HTML:             html,
 		DisableHotReload: !reload,

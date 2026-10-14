@@ -13,7 +13,7 @@ func TestBigDiffFallsBackToFrame(t *testing.T) {
 
 	ctx := context.Background()
 	screen, err := page.New(page.Config{
-		HTML:   `<body style="margin:0">{{range .}}<div style="display:inline-block;width:20px;height:20px;background:{{.C}}">x</div>{{end}}</body>`,
+		HTML:   `<body style="margin:0">{{range .}}<div style="width:320px;height:40px;background:{{.C}}">x</div>{{end}}</body>`,
 		Width:  320,
 		Height: 400,
 	})

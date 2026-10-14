@@ -1,6 +1,7 @@
 package window
 
 import (
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -9,21 +10,19 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-var (
-	devFillInk   = color.RGBA{R: 0x1a, G: 0x56, B: 0xdb, A: 0xff}
-	devStrokeInk = color.RGBA{R: 0xe5, G: 0x48, B: 0x4d, A: 0xff}
-	devLineInk   = color.RGBA{R: 0xd9, G: 0x77, B: 0x06, A: 0xff}
-	devTextInk   = color.RGBA{R: 0x17, G: 0x6b, B: 0x45, A: 0xff}
-	devImageInk  = color.RGBA{R: 0x7c, G: 0x3a, B: 0xed, A: 0xff}
-	devGridInk   = color.RGBA{R: 0x08, G: 0x91, B: 0xb2, A: 0xff}
-)
-
 // drawDevOps outlines every painted operation in paint order, colour by
-// kind. Noop and unknown operations carry no paint and get no outline.
+// kind, culled to the page area the dock leaves visible. Noop and unknown
+// operations carry no paint and get no outline. Only the strokes are culled;
+// the row list still holds every operation, so picking is not affected.
+// The outlines are one chrome region: the union of the strokes that were
+// actually painted is noted once.
 func (s *shell) drawDevOps(screen *ebiten.Image) {
 	if s.display == nil {
 		return
 	}
+
+	view := s.devOpsView()
+	var union image.Rectangle
 
 	for _, index := range s.display.Order {
 		if index < 0 || index >= len(s.display.Ops) {
@@ -37,7 +36,22 @@ func (s *shell) drawDevOps(screen *ebiten.Image) {
 		}
 
 		r := s.devScreen(devOpRect(op, s.display.PointsPerPixel))
-		vector.StrokeRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), 1, ink, false)
+		if !devRectsMeet(r, view) {
+			continue
+		}
+
+		if s.dev.stroke != nil {
+			s.dev.stroke(screen, r, ink)
+		} else {
+			vector.StrokeRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), 1, ink, false)
+		}
+
+		// The 1 px stroke reaches half a pixel past each edge.
+		union = union.Union(frameRect(r.X-0.5, r.Y-0.5, r.W+1, r.H+1))
+	}
+
+	if !union.Empty() {
+		s.frameNote(union)
 	}
 }
 

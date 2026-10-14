@@ -8,7 +8,7 @@ import (
 
 // New parses the embedded states template and registers its handlers.
 func New() (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "CSS states",
 		HTML:   statesHTML,
 		Width:  DefaultWidth,

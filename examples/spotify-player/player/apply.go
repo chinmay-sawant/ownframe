@@ -23,7 +23,14 @@ func (a *App) apply(term string, tracks []Track, picks, shelf []Card) {
 	a.view.Playing = true
 	a.ensureCredit()
 	a.resetProgress()
-	a.page.SetData(a.view)
+	a.page.SetData(&a.view)
+	a.page.SetChangedProperties([]string{"Tracks", "PageTracks", "Now", "Status", "ShelfTitle", "Playing", "TrackPage", "TrackPages", "TrackRange", "HasPrev", "HasNext"})
+	if len(picks) > 0 {
+		a.page.AddChangedProperty("Picks")
+	}
+	if len(shelf) > 0 {
+		a.page.AddChangedProperties([]string{"Shelf", "Playlists"})
+	}
 }
 
 // songsFrom keeps up to six song results.

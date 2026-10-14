@@ -16,7 +16,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 
 	settings := loadSettings(ctx, cfg.Store)
 
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "System Monitor",
 		HTML:      buildHTML(),
 		Theme:     themeSource(settings.Dark),

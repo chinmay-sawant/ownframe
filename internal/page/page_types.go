@@ -7,9 +7,11 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
 // Page is one HTML template and the last picture it produced.
@@ -59,19 +61,23 @@ type Page struct {
 	allowScroll     bool
 	touchScroll     TouchScrollOptions
 	watch           *watchState
-	dirty           image.Rectangle
+	dirtyRects      []image.Rectangle
+	lastPatch       DisplayPatch
+	changedProps    []string
+	stateStore      *state.Store
+	elements        *element.Registry
 	dirtyFull       bool
-	frameDirty      bool
-	pinZ            int
-	pending         map[string]bool
-	last            map[string]image.Rectangle
-	index           map[string]Box
-	content         image.Rectangle
-	contentW        int
-	contentH        int
-	contentOK       bool
-	scroll          host.Scroll
-	hasScroll       bool
-	windowing       windowingState
-	accessibility   *accessibilityState
+	frameState
+	pinZ          int
+	pending       map[string]bool
+	last          map[string]image.Rectangle
+	index         map[string]Box
+	content       image.Rectangle
+	contentW      int
+	contentH      int
+	contentOK     bool
+	scroll        host.Scroll
+	hasScroll     bool
+	windowing     windowingState
+	accessibility *accessibilityState
 }

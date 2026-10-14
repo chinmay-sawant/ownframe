@@ -11,9 +11,14 @@ func (a *App) selectRow(i int) {
 		return
 	}
 
+	// Mutate the owned track slice in place: drop the previous active mark
+	// instead of rebuilding every row's Active flag.
 	for j := range a.view.Tracks {
-		a.view.Tracks[j].Active = j == i
+		if j != i && a.view.Tracks[j].Active {
+			a.view.Tracks[j].Active = false
+		}
 	}
+	a.view.Tracks[i].Active = true
 
 	a.view.Now = a.view.Tracks[i]
 	paginateTracks(&a.view, i/trackPageSize)

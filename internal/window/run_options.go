@@ -45,7 +45,12 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	game.perf = options.Perf || game.perf
 	game.wirePerf()
 
-	return ebiten.RunGameWithOptions(game, &ebiten.RunGameOptions{
+	setupScreenClear()
+
+	pace, stop := paceWindow(ctx, game, options)
+	defer stop()
+
+	return ebiten.RunGameWithOptions(pace, &ebiten.RunGameOptions{
 		ScreenTransparent: options.Transparent,
 		InitUnfocused:     passthrough,
 	})

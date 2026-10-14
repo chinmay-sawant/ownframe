@@ -4,69 +4,61 @@ import (
 	"image"
 
 	"github.com/hajimehoshi/ebiten/v2"
-
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
-// dirtyTaker is the page side of the partial replay. TakeDirty returns the
-// region that changed since the previous call, in CSS pixels, and clears it.
-type dirtyTaker interface {
-	TakeDirty() (image.Rectangle, bool)
-}
-
-// ticking reports a page with a frame callback. A tick changes operations in
-// place without a dirty rect, so such a page keeps the full replay.
-type ticking interface {
-	Ticking() bool
-}
-
-// partialState is the persistent replay buffer and the frame it holds.
-type partialState struct {
-	buf    *ebiten.Image
-	gen    uint64
-	width  int
-	height int
-	last   image.Rectangle
-	mode   repaintMode
-}
-
-// drawReplayPartial draws a display-list page through the persistent buffer
-// when the page can report a dirty rect, and replays the whole list when it
-// cannot. The screen is cleared each frame, so the visible page is blitted
-// from the buffer every frame; only the buffer repaint is partial.
-func (s *shell) drawReplayPartial(dst *ebiten.Image) {
+// drawReplayPartial draws a display-list page through the tile grid when the
+// page can report dirty rects, and replays the whole list when it cannot. A
+// dirty rect repaints only the tiles it covers and the frame blits only the
+// damaged tiles, both trimmed to the page the devtools dock leaves visible.
+// The retained screen already holds every untouched tile.
+func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	display := s.display
 	if display == nil {
-		return
+		return true
 	}
+	s.dropRetainedTiles()
+	s.partial.paints, s.partial.paintPx = 0, 0
+	s.partial.blits, s.partial.blitPx = 0, 0
 
-	taker, canTake := s.app.(dirtyTaker)
+	scroll := image.Pt(s.scrollX, s.scrollY)
+	whole := scroll != s.partial.scroll
+	s.partial.scroll = scroll
+	stale := s.frameStale(dst) || !s.partial.live
+	s.partial.live = true
+	taker, canTake := s.damageTaker()
 	contentW, contentH := s.contentSize()
-	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
+	if !canTake || s.fullReplay() || !s.bufferOrderSafe() || s.hasViewportOps() {
 		s.disposeViewport()
-		s.directReplay(dst, display)
+		s.paintFullReplay(dst, display)
 
-		return
+		return true
 	}
 
 	if oversized(contentW, contentH) {
+		// drawViewport drops the tile grid; keep the frame clock.
+		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
 		s.drawViewport(dst, display, taker)
-		return
+		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held
+
+		return true
 	}
 	s.disposeViewport()
 
-	rect, ok := taker.TakeDirty()
-	plan := planRepaint(contentW, contentH, s.partial, s.app.Generation(), rect, ok)
-	s.applyRepaint(display, plan)
-	s.partial.last, s.partial.mode = plan.rect, plan.mode
+	clipX := s.dockClipX(contentW)
+	rects, ok := taker.TakeDirtyRects()
+	plans := planRepaints(contentW, contentH, s.partial, s.app.Generation(), rects, ok, clipX)
+	s.partial.mode = plans[0].mode
+	s.partial.clipX = clipX
+	s.partial.last = s.partial.last[:0]
 
-	if s.partial.buf == nil {
-		return
+	for _, plan := range plans {
+		s.applyRepaint(display, plan)
+		s.partial.last = append(s.partial.last, plan.rect)
 	}
 
-	var op ebiten.DrawImageOptions
-	op.GeoM.Translate(-float64(s.scrollX), -float64(s.scrollY))
-	dst.DrawImage(s.partial.buf, &op)
-	replay.DrawFixed(dst, display)
-	replay.DrawPinnedZ(dst, display, s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
+	chrome := chromeRects(s.frameRestore(), scroll)
+	s.partial.plans, s.partial.chrome, s.partial.whole = plans, chrome, whole
+	s.blitFrame(dst, display, plans, chrome, whole, stale)
+
+	return true
 }

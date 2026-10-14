@@ -5,8 +5,6 @@ import (
 	"image"
 	"time"
 
-	"github.com/chinmay-sawant/blinkless/layout"
-
 	"github.com/chinmay-sawant/ownframe/examples/departure-board/board"
 )
 
@@ -19,7 +17,8 @@ const (
 )
 
 // tickFrame ticks app once and emulates the window's replay choice in the
-// window's own order: read FrameDirty, take the dirty rect, then classify.
+// window's own order: read FrameDirty, take the damage list, then classify.
+// Rect stays the bounding box of the list so the JSON keeps its old shape.
 func tickFrame(ctx context.Context, app *board.App) (Frame, error) {
 	p := app.Page()
 	start := time.Now()
@@ -30,13 +29,17 @@ func tickFrame(ctx context.Context, app *board.App) (Frame, error) {
 	}
 
 	full := p.Ticking() && !p.FrameDirty()
-	rect, ok := p.TakeDirty()
-	f.Rect = Rect{X0: rect.Min.X, Y0: rect.Min.Y, X1: rect.Max.X, Y1: rect.Max.Y}
+	rects, ok := p.TakeDirtyRects()
+	f.Rect = bounds(rects)
+	f.Rects = len(rects)
+	f.Area = areaOf(rects)
 
+	content := image.Rectangle{}
 	d := p.Display()
 	if d != nil {
+		content = contentRect(d, app)
 		f.Ops = len(d.Ops)
-		f.FullArea = d.Width * d.Height
+		f.FullArea = content.Dx() * content.Dy()
 	}
 
 	switch {
@@ -47,30 +50,13 @@ func tickFrame(ctx context.Context, app *board.App) (Frame, error) {
 		f.Kind = kindBlit
 	case d == nil:
 		f.Kind = kindRect
-	case rect == image.Rect(0, 0, d.Width, d.Height):
+	case coversFull(rects, content):
 		f.Kind = kindFullBuffer
 		f.ReplayedOps = f.Ops
 	default:
 		f.Kind = kindRect
-		f.ReplayedOps = meets(d, rect)
+		f.ReplayedOps = meetsAny(d, rects)
 	}
 
 	return f, nil
-}
-
-// meets counts the ops whose raw X, Y, W, H box meets rect. It approximates
-// the real replay filter (internal/replay opTouches), which converts
-// point-space bounds to CSS pixels and pads them for strokes and
-// antialiasing; this test compares the raw fields, so ReplayedOps is an
-// estimate, wanted only for the dump.
-func meets(d *layout.Display, rect image.Rectangle) int {
-	n := 0
-	for i := range d.Ops {
-		op := &d.Ops[i]
-		box := image.Rect(int(op.X), int(op.Y), int(op.X+op.W), int(op.Y+op.H))
-		if !box.Intersect(rect).Empty() {
-			n++
-		}
-	}
-	return n
 }

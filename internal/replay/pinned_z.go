@@ -8,10 +8,8 @@ import (
 )
 
 func DrawUnfixedZ(dst *ebiten.Image, d *layout.Display, z int) {
-	visitZ(d, func(op *layout.DisplayOp) {
-		if scrollContentOp(op, z) {
-			drawOp(dst, op, 0, 0)
-		}
+	paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+		return 0, 0, scrollContentOp(op, z)
 	})
 }
 
@@ -19,18 +17,20 @@ func DrawRectUnfixedZ(dst *ebiten.Image, d *layout.Display, rect image.Rectangle
 	if dst == nil || d == nil {
 		return
 	}
+
 	rect = clipRect(d, rect).Intersect(dst.Bounds())
 	if rect.Empty() {
 		return
 	}
+
 	clip, ok := dst.SubImage(rect).(*ebiten.Image)
 	if !ok {
 		return
 	}
-	visitZ(d, func(op *layout.DisplayOp) {
-		if scrollContentOp(op, z) && opTouches(op, d.PointsPerPixel, rect) {
-			drawOp(clip, op, 0, 0)
-		}
+
+	ppt := d.PointsPerPixel
+	paintChunked(clip, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+		return 0, 0, scrollContentOp(op, z) && opTouches(op, ppt, rect)
 	})
 }
 
@@ -42,27 +42,20 @@ func DrawPinnedZ(dst *ebiten.Image, d *layout.Display, z int, dx, dy float64) {
 	visitVisibleZ(dst, d, dx, dy, z, true)
 }
 
-func visitZ(d *layout.Display, visit func(*layout.DisplayOp)) {
-	if d == nil {
-		return
-	}
-	for _, i := range d.Order {
-		if i >= 0 && i < len(d.Ops) {
-			visit(&d.Ops[i])
-		}
-	}
-}
-
 func visitVisibleZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int, pinned bool) {
 	if dst == nil || d == nil {
 		return
 	}
+
 	r := visibleRect(dst.Bounds(), dx, dy)
-	visitZ(d, func(op *layout.DisplayOp) {
-		if op.Fixed || atPinZ(op, z) != pinned || !opTouches(op, d.PointsPerPixel, r) {
-			return
+	ppt := d.PointsPerPixel
+
+	paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+		if op.Fixed || atPinZ(op, z) != pinned || !opTouches(op, ppt, r) {
+			return 0, 0, false
 		}
-		drawOp(dst, op, dx, dy)
+
+		return dx, dy, true
 	})
 }
 

@@ -3,39 +3,23 @@ package replay
 import (
 	"math"
 
-	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// roundedPath traces the border centerline with per-corner elliptical arcs.
-func roundedPath(op *layout.DisplayOp, dx, dy float64) vector.Path {
-	rx, ry := render.RadiiXY(op)
-
-	x := float32(op.X*pxPerPt + dx)
-	y := float32(op.Y*pxPerPt + dy)
-	w := float32(op.W * pxPerPt)
-	h := float32(op.H * pxPerPt)
-	rx4 := [4]float32{
-		float32(rx[0] * pxPerPt), float32(rx[1] * pxPerPt),
-		float32(rx[2] * pxPerPt), float32(rx[3] * pxPerPt),
-	}
-	ry4 := [4]float32{
-		float32(ry[0] * pxPerPt), float32(ry[1] * pxPerPt),
-		float32(ry[2] * pxPerPt), float32(ry[3] * pxPerPt),
-	}
-
+// roundedPathAt traces a border centerline with per-corner elliptical arcs
+// from its origin.
+func roundedPathAt(x, y, w, h float32, rx, ry [4]float32) vector.Path {
 	var path vector.Path
 
-	path.MoveTo(x+rx4[0], y)
-	path.LineTo(x+w-rx4[1], y)
-	ellipseTo(&path, x+w-rx4[1], y+ry4[1], rx4[1], ry4[1], -math.Pi/2, 0)
-	path.LineTo(x+w, y+h-ry4[2])
-	ellipseTo(&path, x+w-rx4[2], y+h-ry4[2], rx4[2], ry4[2], 0, math.Pi/2)
-	path.LineTo(x+rx4[3], y+h)
-	ellipseTo(&path, x+rx4[3], y+h-ry4[3], rx4[3], ry4[3], math.Pi/2, math.Pi)
-	path.LineTo(x, y+ry4[0])
-	ellipseTo(&path, x+rx4[0], y+ry4[0], rx4[0], ry4[0], math.Pi, 3*math.Pi/2)
+	path.MoveTo(x+rx[0], y)
+	path.LineTo(x+w-rx[1], y)
+	ellipseTo(&path, x+w-rx[1], y+ry[1], rx[1], ry[1], -math.Pi/2, 0)
+	path.LineTo(x+w, y+h-ry[2])
+	ellipseTo(&path, x+w-rx[2], y+h-ry[2], rx[2], ry[2], 0, math.Pi/2)
+	path.LineTo(x+rx[3], y+h)
+	ellipseTo(&path, x+rx[3], y+h-ry[3], rx[3], ry[3], math.Pi/2, math.Pi)
+	path.LineTo(x, y+ry[0])
+	ellipseTo(&path, x+rx[0], y+ry[0], rx[0], ry[0], math.Pi, 3*math.Pi/2)
 	path.Close()
 
 	return path

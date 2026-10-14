@@ -26,7 +26,7 @@ type App struct {
 }
 
 func New() (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Accessibility", HTML: source,
 		Width: DefaultWidth, Height: DefaultHeight,
 		Scrollbar: ownframe.ScrollbarVisible,

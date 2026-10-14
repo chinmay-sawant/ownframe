@@ -37,14 +37,19 @@ phone. The system Back gesture returns from a chat. The top bar and composer
 stay pinned above the scrolling messages. The arm64 debug APK is 29 MB; binding
 all four ABIs puts one APK at 188 MB.
 
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/telegram) ·
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/telegram/android/artifacts/telegram-arm64-release.apk)
+
 ## Teams
 
 Teams is a native chat and collaboration app built with Go, HTML, and CSS.
 [Watch the Teams demo](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1).
 
-- ![Preview of the Teams chat and collaboration app](assets/screenshots/demos/teams.webp)
+- ![Animated preview of the Teams chat and collaboration app](assets/screenshots/demos/teams.webp)
 
   **Teams**
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/teams)
 
 ## Spotify Player
 
@@ -57,7 +62,8 @@ over HTTP.
 - ![Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens](frontend/public/demos/videos/spotify.webp)
 
   **Spotify Player**
-  [View the example source](examples/spotify-player)
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/spotify-player)
 
 ## Pet Care
 
@@ -77,6 +83,34 @@ and the desktop capture shows the same app in its native Windows window.
 
   **Pet Care Windows**
 
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/pet-care)
+
+## Digital Wellbeing
+
+Mochi is a Pixel 7 Android example that turns Android Digital Wellbeing usage
+stats into a gentle dashboard. Browse a week, tap a day for its breakdown, see
+weekly insights and weekday/weekend totals, or choose an app to focus the chart.
+Usage data comes from Android's Usage Access permission and stays on the phone.
+
+- ![Mochi dashboard with a seven-day usage chart and daily summary](assets/screenshots/digital-wellbeing/dashboard.webp)
+
+  **Dashboard**
+- ![Mochi dashboard focused on a selected day](assets/screenshots/digital-wellbeing/day-detail.webp)
+
+  **Selected day**
+- ![Weekly Insights with most-used apps and daily average](assets/screenshots/digital-wellbeing/weekly-insights.webp)
+
+  **Weekly Insights**
+- ![All Apps list with application icons and usage totals](assets/screenshots/digital-wellbeing/all-apps.webp)
+
+  **All apps**
+- ![Choose an app list sorted by usage time](assets/screenshots/digital-wellbeing/choose-app.webp)
+
+  **Choose an app**
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/digital-wellbeing)
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/digital-wellbeing/android/artifacts/digital-wellbeing-arm64-release.apk)
+
 ## Desktop overlays
 
 The desktop cat stays above other windows and lets clicks pass through its
@@ -87,6 +121,8 @@ transparent pixels.
   **Desktop cat overlay**
   [Watch the demo](https://x.com/chinmay_sawant_/status/2106829998409789929)
 
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/desktop-cat)
+
 ## Wispr Flow
 
 The Wispr Flow example is an HTML and CSS interface rendered by ownframe.
@@ -96,6 +132,8 @@ The Wispr Flow example is an HTML and CSS interface rendered by ownframe.
   **Wispr Flow**
   [Watch the demo](https://x.com/chinmay_sawant_/status/2106788230154871126)
 
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/wispr-flow-dashboard)
+
 ## Dino Run
 
 An endless runner built with HTML, CSS, and Go.
@@ -103,4 +141,6 @@ An endless runner built with HTML, CSS, and Go.
 - ![Dino Run example preview](assets/screenshots/demos/dino.webp)
 
   **Dino Run**
-  [View the example source](examples/dino)
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/dino) ·
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/dino/android/artifacts/dino-arm64-release.apk)

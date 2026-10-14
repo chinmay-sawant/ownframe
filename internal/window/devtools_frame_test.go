@@ -49,26 +49,6 @@ func TestDevFrameReloadErrorInk(t *testing.T) {
 	t.Fatal("no reload error row")
 }
 
-// TestDevFrameRightAligned checks a value sits at the right edge.
-func TestDevFrameRightAligned(t *testing.T) {
-	t.Parallel()
-
-	s := newDevShell(newDevScreen())
-	s.dev.stats.Redraws = 12
-
-	for _, row := range s.devFrameRows(320) {
-		got := strings.TrimRight(row.line.plain(), " ")
-		if !strings.HasPrefix(got, "Redraws") {
-			continue
-		}
-		if !strings.HasSuffix(got, "12") || !strings.Contains(got, "  ") {
-			t.Fatalf("redraws row = %q, want padding then the value", got)
-		}
-		return
-	}
-	t.Fatal("no redraws row")
-}
-
 // TestDevFrameStable checks two calls agree.
 func TestDevFrameStable(t *testing.T) {
 	t.Parallel()

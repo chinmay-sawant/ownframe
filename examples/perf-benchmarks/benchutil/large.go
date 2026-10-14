@@ -28,7 +28,7 @@ type Large struct {
 
 // NewLarge builds a page with n generated rows.
 func NewLarge(n int) (*Large, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Large", HTML: largeHTML,
 		Width: 800, Height: 600, MinWidth: 320, MinHeight: 240,
 		Perf: true,

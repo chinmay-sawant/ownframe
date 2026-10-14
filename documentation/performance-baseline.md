@@ -56,6 +56,52 @@ Measured 2026-10-05 on commit 82ca687 plus the `perf-longrun.sh` key and paren f
 
 Stage benches from `scripts/perf-baseline.sh`: TemplateExecute 578 ns, HTMLParse 1493 ns, CSSApply 4432 ns, DisplayList 169 us, Lay 7.7 ms, RedrawWarm 143 us, RedrawCold 163 us, RedrawHeavyWarm 333 us, DrawRectScan 150-166 ns at 0 allocs, ClickCount 607 us.
 
+## v0.0.2 demo apps after the perf pass
+
+Measured 2026-10-13 on commit `de786e6`, machine Chinmay (WSL2, Mesa software rasterizer, 24 cores). These rows cover the three demos that take `-perf` (departure-board, spotify-player, wispr-flow-dashboard), not the three benchmark apps in the sections above. Panel rows (Go heap, RSS, alloc, frame, FPS) were read from the devtools Frame tab in a 1908x999 window with the dock open; idle CPU and the RSS means come from `scripts/perf-apps.sh` with the dock closed, 20 one-second samples per app. The before column is the same tree before this pass: the original Frame tab capture for the panel rows, the pre-pacing loop for idle CPU.
+
+| Metric | departure-board | spotify-player | wispr-flow-dashboard |
+|---|---|---|---|
+| Go heap, MB | 345.1 -> ~15 live | not sampled | not sampled |
+| RSS, MB | 678.3 -> 183.0 | ~200 -> 211.4 | 192-226 -> 201.0 |
+| Idle CPU, one core | ~28% -> 5.2% mean, 7.0% controlled | ~42% -> 38.4% | 7.8% -> 3.3% controlled, 4.5% harness |
+| Frame p99, ms | 22.9 -> 19.2 | | |
+| Long frames over 25 ms | 1 -> 0 | | |
+| Alloc per 500 ms sample | 6.1 -> 2.3 MB | | |
+| Vertex high-water, MB | 86.6 -> 9.4 | | |
+| Static text repaint | 1.0 ms, 873 KB, 4,512 allocs -> 35 us, 27 KB, 144 allocs | | |
+| Transform pages | bitmap -> replay, rotated card 6 ops | | |
+| Blend groups | bitmap -> replay, 4 ops through 2 layers | | |
+| Headless dump, worst cascade frame | 115 of 844 -> 115 of 844 | | |
+
+Notes. The frame average moved from 14.2 to 16.8 ms because the loop now holds the 60 Hz cadence instead of running free at 68.5 FPS; the tail improved and the long frame is gone. RSS is dominated by the software GL stack (libLLVM, swrast, and the D3D12 libraries, about 150 MB of shared library pages), not by the app heap. Spotify's tick damages every frame, so idle pacing never throttles it and its CPU stays near its playing rate. Raw agent reports and per-run samples live under `temp/perf-parallel/`.
+
+## v0.0.2 second perf pass (2026-10-13, perf/damage-list)
+
+Committed as an experimental change on this branch. Same machine and method
+as the section above. This pass added page-driven frame deadlines, dock
+occlusion clipping, element paint chunks, compositor animations, and the diff
+cost rule.
+
+| Metric | Before (de786e6) | After | Delta |
+|---|---:|---:|---|
+| Board idle presents | 8/s | 1 to 2/s | about 5x fewer |
+| Board idle CPU, median / mean | 5.0% / 5.1% | 2.0% / 3.6% (NoIdlePace control 20.4%) | 2.5x lower median |
+| Board RSS mean, harness | 183.0 MB | 189.4 MB | +6.4 MB, driver-stack noise |
+| Board Go heap live | ~15 MB | ~17 MB | +2 MB, chunk cache |
+| Damaged card repaint | 8,589 ns, 5 ops, 18 allocs | 4,432 ns, 1 blit, 3 allocs | 1.9x faster, 6x fewer allocs |
+| Animated card frame | 170,854 ns, 203 allocs (Redraw) | 176 ns, 0 allocs | about 970x |
+| 20 small changes in one region | full-frame rebuild | partial 10x240, page diff +0.8 us | rebuild avoided |
+| Dock-open damage, 1908x1080, 340 px dock | 152,400 px, 6 blits | 50,400 px, 4 blits | 3x fewer pixels, 1.5x fewer blits |
+| Board dump, worst cascade frame | 115 of 844 | 115 of 844 | flat, tick side unchanged |
+| Wispr idle CPU, harness mean | 4.5% | 4.3% | flat |
+| Spotify idle CPU, harness mean | 38.4% | 43.4% | playback variation, not throttled |
+
+Notes. The board's mean idle CPU is dominated by the one to two second flap
+burst every 12 seconds; the median shows the parked rate. Spotify's tick
+damages every frame, so pacing never throttles it and its CPU follows its
+playback variation. Raw agent reports live under `temp/perf-parallel2/`.
+
 ## v0.0.2 prior numbers
 
 These rows predate the baseline scripts. They come from `plans/v0.0.2/release-notes.md` and `repaint.md` at 480x640 and 640x480 on the author's machine. They are machine specific and use older harnesses, so treat them as history, not as targets.

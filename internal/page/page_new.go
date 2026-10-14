@@ -3,6 +3,8 @@ package page
 import (
 	"html/template"
 	"strings"
+
+	"github.com/chinmay-sawant/ownframe/internal/element"
 )
 
 // New parses html as an html/template page.
@@ -85,6 +87,7 @@ func New(cfg Config) (*Page, error) {
 		allowScroll:     true,
 		touchScroll:     TouchScrollOptions{Sensitivity: 1, Deceleration: 5},
 		watch:           watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
+		elements:        element.NewRegistry(),
 	}
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
 

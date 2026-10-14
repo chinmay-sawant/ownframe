@@ -8,7 +8,7 @@ import (
 
 // TestBufferCoversContentPastTheCanvas pins the scrolling example: the
 // laid-out canvas is the window size, but the page's boxes reach past it.
-// The replay buffer and the full plan must cover the content, or scrolling
+// The tile grid and the full plan must cover the content, or scrolling
 // paints blank.
 func TestBufferCoversContentPastTheCanvas(t *testing.T) {
 	t.Parallel()
@@ -21,15 +21,15 @@ func TestBufferCoversContentPastTheCanvas(t *testing.T) {
 
 	s.drawReplayPartial(partialBuf(100, 100))
 
-	if s.partial.buf == nil {
-		t.Fatal("no buffer for the taller content")
+	if s.partial.tiles == nil {
+		t.Fatal("no tile grid for the taller content")
 	}
 
-	if got := s.partial.buf.Bounds().Dy(); got != 400 {
-		t.Fatalf("buffer height = %d, want the 400 px content", got)
+	if got := s.partial.tiles.height; got != 400 {
+		t.Fatalf("grid height = %d, want the 400 px content", got)
 	}
 
-	if s.partial.last.Dy() != 400 {
-		t.Fatalf("full plan height = %d, want 400", s.partial.last.Dy())
+	if len(s.partial.last) != 1 || s.partial.last[0].Dy() != 400 {
+		t.Fatalf("full plan rects = %v, want one 400 px rect", s.partial.last)
 	}
 }

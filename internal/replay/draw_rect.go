@@ -16,7 +16,8 @@ import (
 //
 // The ops draw into a sub-image of dst, so an op larger than the rect (the
 // page background fill, for one) is clipped to the rect instead of painting
-// over the rest of the buffer.
+// over the rest of the buffer. A blend or isolation group composites inside
+// that sub-image too, so a partial repaint matches a full one.
 func DrawRect(dst *ebiten.Image, display *layout.Display, rect image.Rectangle, dx, dy float64) {
 	if display == nil || dst == nil {
 		return
@@ -32,18 +33,14 @@ func DrawRect(dst *ebiten.Image, display *layout.Display, rect image.Rectangle, 
 		return
 	}
 
-	for _, index := range display.Order {
-		if index < 0 || index >= len(display.Ops) {
-			continue
+	ppt := display.PointsPerPixel
+	paintChunked(clip, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+		if op.Fixed || !opTouches(op, ppt, rect) {
+			return 0, 0, false
 		}
 
-		op := &display.Ops[index]
-		if op.Fixed || !opTouches(op, display.PointsPerPixel, rect) {
-			continue
-		}
-
-		drawOp(clip, op, dx, dy)
-	}
+		return dx, dy, true
+	})
 }
 
 // canvasRect is the page canvas in CSS pixels.

@@ -22,8 +22,11 @@ func (s *shell) devRowBack(screen *ebiten.Image, row devRow, y, lineH float64) {
 	vector.FillRect(screen, float32(s.dev.panel.X), float32(y), float32(s.dev.panel.W), float32(lineH), ink, false)
 }
 
-// devDrawLine draws one row's spans in order, swatches included.
-func (s *shell) devDrawLine(screen *ebiten.Image, line devLine, x, y float64) {
+// devDrawLine draws one row's spans in order, swatches included. width is the
+// line's content width, so a right-aligned span starts at the right edge.
+func (s *shell) devDrawLine(screen *ebiten.Image, line devLine, x, y, width float64) {
+	start := x
+
 	for _, span := range line.spans {
 		if span.swatch > 0 {
 			top := y + (devLineHeight()-span.swatch)/2
@@ -33,7 +36,18 @@ func (s *shell) devDrawLine(screen *ebiten.Image, line devLine, x, y float64) {
 			continue
 		}
 
+		if span.right {
+			x = start + width - span.w
+		}
+
 		devTextAt(screen, span.text, x, y, span.ink)
+
+		if span.w > 0 {
+			x += span.w
+
+			continue
+		}
+
 		w, _ := text.Measure(span.text, badgeFace, 0)
 		x += w
 	}

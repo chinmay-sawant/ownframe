@@ -17,6 +17,7 @@ func TestDevDrawOverlaySmoke(t *testing.T) {
 	s := newDevShell(d)
 	s.display = devTestDisplay()
 	s.dev.ops = true
+	s.devSetPicker(true)
 	s.dev.haveHov = true
 	s.dev.hovered = d.boxes[0]
 	s.dev.havePin = true
@@ -32,16 +33,18 @@ func TestDevDrawOverlaySmoke(t *testing.T) {
 
 	box := d.boxes[0]
 	want := s.devScreen(devRect{X: box.X, Y: box.Y, W: box.W, H: box.H})
-	if len(strokes) != 2 || strokes[0] != want || strokes[1] != want {
-		t.Fatalf("stretched outlines = %v, want %v twice", strokes, want)
+	// The ops view strokes the display's two painted ops first, then the
+	// hover and pin boxes.
+	if len(strokes) != 4 || strokes[2] != want || strokes[3] != want {
+		t.Fatalf("stretched outlines = %v, want the boxes %v last", strokes, want)
 	}
 
 	s.screenW, s.screenH = 800, 600
 	s.drawDevTools(img)
 
 	want = s.devScreen(devRect{X: box.X, Y: box.Y, W: box.W, H: box.H})
-	if len(strokes) != 4 || strokes[2] != want || strokes[3] != want {
-		t.Fatalf("normal outlines = %v, want %v twice", strokes[2:], want)
+	if len(strokes) != 8 || strokes[6] != want || strokes[7] != want {
+		t.Fatalf("normal outlines = %v, want the boxes %v last", strokes[4:], want)
 	}
 
 	// A page with no boxes still draws its dock on the right edge.

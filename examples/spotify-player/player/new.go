@@ -1,21 +1,26 @@
 package player
 
 import (
+	"os"
+
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/music"
 )
 
 // App is the player screen.
 type App struct {
-	page       *ownframe.Page
-	view       View
-	navHistory []string
-	navAt      int
-	base       string
-	seconds    int
-	lastVolume int
-	audio      *music.Engine
-	audioKey   string
+	page           *ownframe.Page
+	view           View
+	navHistory     []string
+	navAt          int
+	base           string
+	seconds        int
+	lastVolume     int
+	audio          *music.Engine
+	audioKey       string
+	logger         *os.File
+	navFocusStates map[string]navFocusState
+	runtime        *RuntimeBehaviorHelper
 }
 
 // New parses the player template, registers its images, and starts on the
@@ -33,7 +38,7 @@ func NewAt(base string) (*App, error) {
 // NewWith is NewAt with an injected audio engine, so tests never open the
 // OS audio device.
 func NewWith(base string, engine *music.Engine) (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Spotify — Player",
 		HTML:      buildHTML(),
 		Width:     DefaultWidth,
@@ -51,6 +56,8 @@ func NewWith(base string, engine *music.Engine) (*App, error) {
 		navHistory: []string{"home"},
 		base:       base,
 		audio:      engine,
+		logger:     openSpotifyLog(),
+		runtime:    NewRuntimeBehaviorHelper(),
 	}
 	app.updateNavButtons()
 	app.seconds = lengthSeconds(app.view.Now.Length)

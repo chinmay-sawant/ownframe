@@ -4,7 +4,7 @@ import "github.com/chinmay-sawant/ownframe"
 
 // New parses the embedded pages and registers both routes.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Replay",
 		HTML:   replayHTML,
 		Width:  DefaultWidth,

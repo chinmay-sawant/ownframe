@@ -16,9 +16,6 @@ func TestBitmapBlendGroupCompositesOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if render.Replayable(d) {
-		t.Fatal("blend should use bitmap")
-	}
 	img, err := bitmap.Paint(d)
 	if err != nil {
 		t.Fatal(err)

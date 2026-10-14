@@ -16,13 +16,6 @@ func devLineHeight() float64 {
 	return devFaceHeight() + devLineGap
 }
 
-// devFaceHeight is the badge face line height without leading.
-func devFaceHeight() float64 {
-	_, h := text.Measure("Ag", badgeFace, 0)
-
-	return h
-}
-
 // devTextAt draws one run at an exact panel point.
 func devTextAt(screen *ebiten.Image, label string, x, y float64, ink color.RGBA) {
 	var op text.DrawOptions
@@ -46,7 +39,7 @@ func (s *shell) drawDevContent(screen *ebiten.Image) {
 	for _, row := range s.dev.rows {
 		if y+lineH > c.Y && y < c.Y+c.H {
 			s.devRowBack(screen, row, y, lineH)
-			s.devDrawLine(clip, row.line, c.X, y)
+			s.devDrawLine(clip, row.line, c.X, y, row.w)
 		}
 
 		y += lineH

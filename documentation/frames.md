@@ -4,7 +4,18 @@
 frame; `SetTick(nil)` removes it. The callback can move a bar, wave a level
 meter, or call `Redraw`, so a page can animate without parsing the HTML again. The desktop window, the phone
 build, and the WebAssembly canvas call it at Ebiten's default tick rate, about
-sixty times a second, and this library has no setting for it. Each frame runs
+sixty times a second. A desktop window that has drawn five clean frames in a
+row and has seen no input for 250 ms stops presenting every frame: it waits in
+the event loop and wakes on input, or at the next deadline the page declared.
+`Page.WantFrameAt(t)` and `Page.WantFrameIn(d)` set that deadline, and
+`Page.NextFrameAt` returns and clears it; a page with no request falls back to
+a keep-alive frame every 125 ms, so a tick that never asks still runs. A tick
+that animates must report damage (`UseFrameDirty` plus marks), which returns
+the window to the full rate; a page that damages every frame is never paced.
+`WindowOptions.NoIdlePace` turns the pacing off, and the phone and WebAssembly
+builds keep the plain sixty tick loop. The Frame tab's PACING section shows
+whether the window is idle, the next deadline in milliseconds, and how many
+presents were skipped. Each frame runs
 devtools sync, keys, resize, the passthrough update, pointer, drop, tick, a
 reload poll, sync, the page scroll request, a devtools refresh, and wheel, in
 that order. An error from the
@@ -50,16 +61,28 @@ fill's centre test.
 There are two ways to change the frame without a full `Redraw`. A tick
 callback changes an operation in place, which suits an animation that runs
 every frame. A click, key, or hover handler changes page content, and the
-page reports the changed box with `TakeDirty` so the window repaints only
-that box; [repaint.md](repaint.md) has the call shapes. Reach for the tick
-when the change repeats every frame, and for the content path when it is one
-edit. A page with a tick registered keeps the full replay, because the window
-cannot tell which operation the callback changed. A tick that calls
-`Page.UseFrameDirty` is the exception: the window repaints the `TakeDirty`
-rect, and blits the cached buffer when that rect is empty. `Invalidate`
-marks the elements that tick changed. `MarkRect` marks a CSS-pixel line
-that has no element id. A tick that never calls
+page reports the changed boxes with `TakeDirtyRects` so the window repaints
+only those boxes; [repaint.md](repaint.md) has the call shapes. Reach for the
+tick when the change repeats every frame, and for the content path when it is
+one edit. A page with a tick registered keeps the full replay, because the
+window cannot tell which operation the callback changed. A tick that calls
+`Page.UseFrameDirty` is the exception: the window repaints the
+`TakeDirtyRects` list, and blits the cached buffer when the list is empty.
+`Invalidate` marks the elements that tick changed. `MarkRect` marks a
+CSS-pixel line that has no element id. A tick that never calls
 `UseFrameDirty` still replays the whole list.
+
+A rotation can retarget operations in the tick instead of calling `Redraw`.
+The [departure board](../examples/departure-board) does: when the feed is due,
+the tick takes the next rows, updates each cell's target glyph by id, and
+starts the row bands with the same math the rebind uses after a redraw.
+Nothing is laid out. The same call stores the new rows with `SetData`, so the
+next real `Redraw`, for a resize, theme, or night sheet, rebuilds the same
+picture from the same data. Each flap keeps the box it paints in, computed
+from its `ownframe.Box` at rebind, and the tick calls `MarkRect` on the boxes
+whose glyph changed, so the window repaints one row band instead of the whole
+board. `Advance`, the `SetData` plus `Redraw` pair, stays for tests and for
+the dump.
 
 ## Cost
 
@@ -86,9 +109,9 @@ moving seek bar, a running clock, and a sine-driven equalizer. It plays
 locally through [examples/music](../examples/music). The
 [dino](../examples/dino) and [flappy-bird](../examples/flappy-bird) examples
 step their games and paint the scene from the tick. The
-[departure board](../examples/departure-board) example opts into
-`UseFrameDirty` with one row band per cascade frame and meters its refresh bar
-at 10 Hz.
+[departure board](../examples/departure-board) example rotates its feed by
+retargeting operations in the tick, opts into `UseFrameDirty` with one row band
+per cascade frame and meters its refresh bar at 10 Hz.
 
 ## Hover without layout
 

@@ -29,13 +29,14 @@ func (s *shell) menuRect() (x, y, w, h float64) {
 	h = float64(len(s.menu.items)) * menuRowH
 	x = float64(s.menu.x)
 	y = float64(s.menu.y)
+	viewW, viewH := s.viewSize()
 
-	if s.screenW > 0 && x+w > float64(s.screenW) {
-		x = float64(s.screenW) - w
+	if viewW > 0 && x+w > float64(viewW) {
+		x = float64(viewW) - w
 	}
 
-	if s.screenH > 0 && y+h > float64(s.screenH) {
-		y = float64(s.screenH) - h
+	if viewH > 0 && y+h > float64(viewH) {
+		y = float64(viewH) - h
 	}
 
 	if x < 0 {

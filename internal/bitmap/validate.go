@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 const maxPixels = 16 * 1024 * 1024
@@ -11,6 +12,9 @@ const maxPixels = 16 * 1024 * 1024
 func validate(d *layout.Display) error {
 	if d.Width > maxPixels/d.Height {
 		return fmt.Errorf("bitmap: canvas exceeds %d pixels", maxPixels)
+	}
+	if err := masking.ValidateDisplay(d); err != nil {
+		return err
 	}
 	maxDepth := 0
 	for _, op := range d.Ops {

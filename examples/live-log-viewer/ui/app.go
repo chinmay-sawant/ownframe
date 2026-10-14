@@ -10,7 +10,7 @@ import (
 // New parses the template and starts the worker. The window is opened by
 // the caller with Run.
 func New(opts Options) (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Live log viewer",
 		HTML:      buildHTML(),
 		Width:     1100,

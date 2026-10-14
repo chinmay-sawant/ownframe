@@ -24,6 +24,23 @@ func (s *shell) setViewportArea(bounds image.Rectangle) {
 	s.viewport.area = image.Rect(s.scrollX, top, s.scrollX+width, top+height)
 }
 
+// viewportDirtyBounds is the one region a viewport repaint covers: the sole
+// dirty rect when the page reports one, otherwise the bounding box of the
+// list. The page coalesces nearby rects and caps the list, and paintViewport
+// clips the region to the cached area, so the box stays a bounded overdraw.
+// The alternative, one clipped replay per rect, would walk the display list
+// once per rect instead of once per frame.
+func viewportDirtyBounds(rects []image.Rectangle) image.Rectangle {
+	if len(rects) == 0 {
+		return image.Rectangle{}
+	}
+	box := rects[0]
+	for _, r := range rects[1:] {
+		box = box.Union(r)
+	}
+	return box
+}
+
 func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int) {
 	rect = rect.Intersect(s.viewport.area).Sub(s.viewport.area.Min)
 	if rect.Empty() {

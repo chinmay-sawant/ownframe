@@ -9,7 +9,7 @@ import (
 // New parses the embedded template, applies the light theme, and installs
 // the toggle click handler.
 func New() (*App, error) {
-	p, err := ownframe.New(ownframe.Config{
+	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Live theme",
 		HTML:   themeHTML,
 		Theme:  lightTheme,

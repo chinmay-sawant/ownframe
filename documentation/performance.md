@@ -18,6 +18,12 @@ Record per release numbers in [performance-baseline.md](performance-baseline.md)
 
 Leave the window alone for 30 to 60 seconds and confirm it does almost nothing.
 
+A desktop window that has drawn clean frames and seen no input parks in the
+event wait, so an idle page stops presenting. The tick still runs on a
+keep-alive frame about eight times a second, and input wakes the full rate.
+The Frame tab's FPS and TPS rows show the paced rate while a page sits still;
+that is expected, not a stall.
+
 Run the idle script against a benchmark app, wait for the window to settle, then read CPU and RSS with the system monitor while the window stays untouched. No input, no tick animation, no reload.
 
 ```sh
@@ -38,11 +44,11 @@ A healthy normal page keeps p99 under budget with margin. When p95 passes budget
 
 ## 3 Incremental repaint goal
 
-A small change should do small work. One click edits one box, and the window repaints one rect.
+A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The DIRTY section of the Frame tab proves it. It reports dirty rects taken, full frame fallbacks, operations repainted, and operations skipped. The page reports the changed region with `TakeDirty` and the window replays only that region with `replay.DrawRect`. [repaint.md](repaint.md) has the full path and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
+The DIRTY section of the Frame tab proves it. It reports dirty rects taken, full frame fallbacks, operations repainted, and operations skipped. The page reports the changed regions with `TakeDirtyRects` and the window replays each one with `replay.DrawRect`; a frame with no dirty rect blits the buffer it already has. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
 
-For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. A whole frame rect on every edit means the diff fell back, usually because more than eight operations changed or the change covered more than a third of the frame.
+For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart changes report two rects instead of the bounding box around both. Many small changes inside one region stay partial, so a whole frame rect on an edit now means the change really covered more than a third of the frame or the page could not place it; a list longer than eight rects, or a rect the size of the whole content, makes the window rebuild its buffer once. A rebuild still only tessellates each repeated rounded shape once, because the replay bakes repeated fills and borders into a raster cache ([repaint.md](repaint.md)).
 
 ## 4 Soak matrix
 
@@ -88,6 +94,8 @@ WINDOW, RENDERING, PIPELINE, and RELOAD rows stay as documented in [devtools.md]
 | flappy | A ticking page that edits operations per frame | `go run ./examples/perf-benchmarks/flappy` |
 
 Use normal for the idle baseline and the soak default. Use large to find layout and paint cliffs. Use flappy to find per frame allocation and tick cost. The baseline table records all three side by side so a change that helps one and hurts another shows up.
+
+The bigger demos take `-perf` too. `examples/departure-board`, `examples/spotify-player`, and `examples/wispr-flow-dashboard` each turn on the same sampling with `go run ./examples/<name> -perf`, so the Frame tab reports averages, percentiles, pipeline stages, and memory on a real app. With `-web` the same flag serves `/debug/pprof/*` from the page.
 
 ## 7 Baseline table per release
 

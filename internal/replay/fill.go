@@ -27,6 +27,12 @@ func fillRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		return
 	}
 
+	// A repeated rounded shape comes from the raster cache; a shape too large
+	// to cache falls through to the direct path.
+	if cachedRoundedFill(dst, op, radii, dx, dy) {
+		return
+	}
+
 	fillRounded(dst, op, radii, dx, dy)
 }
 

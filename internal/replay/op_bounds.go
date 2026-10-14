@@ -20,8 +20,12 @@ func opBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
 		return image.Rectangle{}, false
 	}
 
-	if op.XformSet || op.RotateDeg != 0 {
+	if op.RotateDeg != 0 {
 		return image.Rectangle{}, false
+	}
+
+	if op.XformSet && !op.Transform().IsIdentity() {
+		return xformBounds(op, ppt)
 	}
 
 	switch op.Kind {

@@ -38,7 +38,9 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		return nil
 	}
 
-	s.devHover(px, py)
+	if s.devPickerOn() {
+		s.devHover(px, py)
+	}
 
 	if pressed {
 		return s.devPick(px, py, ebiten.IsKeyPressed(ebiten.KeyAlt))
@@ -54,10 +56,10 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 }
 
 // devPick handles a press inside the content while the overlay is on. Alt
-// forwards press, caret, and click to the page; any other press pins the
-// box under the cursor, and the same box again clears the pin.
+// forwards press, caret, and click to the page; picking is only active in
+// picker mode, otherwise the press acts on the page control under the cursor.
 func (s *shell) devPick(px, py float64, alt bool) error {
-	if alt {
+	if alt || !s.devPickerOn() {
 		s.dev.forward = true
 
 		if err := s.app.Press(s.ctx, px, py); err != nil {
@@ -75,19 +77,20 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 
 	box, ok := devBoxAt(s.app.Boxes(), px, py)
 	if !ok {
-		s.dev.havePin = false
+		s.devDropPin()
 
 		return nil
 	}
 
 	if s.dev.havePin && devSameBox(s.dev.pinned, box) {
-		s.dev.havePin = false
+		s.devDropPin()
 
 		return nil
 	}
 
 	s.dev.pinned = box
 	s.dev.havePin = true
+	s.devShowBoxOps(box, px, py)
 
 	return nil
 }

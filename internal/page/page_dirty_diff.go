@@ -1,28 +1,22 @@
 package page
 
-import (
-	"image"
+import "github.com/chinmay-sawant/blinkless/layout"
 
-	"github.com/chinmay-sawant/blinkless/layout"
-)
-
-// maxDirtyOps caps the changed operations before the whole frame repaints.
-// Merging many small rects costs more than a full replay.
-const maxDirtyOps = 8
-
-// diffDisplay returns the region covering the operations that differ between
-// prev and next. full reports a difference too scattered to merge, and
-// changed counts the operations that differ.
-func diffDisplay(prev, next *layout.Display) (image.Rectangle, bool, int) {
+// diffDisplay returns the regions covering the operations that differ
+// between prev and next. full reports a difference too scattered or too
+// large to merge, and changed counts the operations that differ. A change
+// stays partial while its bounding box is under a third of the frame and
+// its merged rect list fits maxDirtyRects.
+func diffDisplay(prev, next *Display) (dirtySet, bool, int) {
 	if prev.Width != next.Width || prev.Height != next.Height {
-		return image.Rectangle{}, true, len(next.Ops)
+		return dirtySet{}, true, len(next.Ops)
 	}
 
 	if len(prev.Ops) != len(next.Ops) {
 		return diffByPosition(prev, next)
 	}
 
-	dirty := image.Rectangle{}
+	d := newDirtySet(next.Width, next.Height)
 	changed := 0
 
 	for i := range prev.Ops {
@@ -31,20 +25,13 @@ func diffDisplay(prev, next *layout.Display) (image.Rectangle, bool, int) {
 		}
 
 		changed++
-		if changed > maxDirtyOps {
-			frame := image.Rect(0, 0, next.Width, next.Height)
-
-			return frame, true, len(next.Ops)
+		d.add(opBounds(&prev.Ops[i], prev).Union(opBounds(&next.Ops[i], next)))
+		if d.full {
+			return d, true, changed
 		}
-
-		dirty = dirty.
-			Union(opBounds(&prev.Ops[i], prev)).
-			Union(opBounds(&next.Ops[i], next))
 	}
 
-	r, full := capDirty(next, dirty, changed)
-
-	return r, full, changed
+	return d, false, changed
 }
 
 // opKey identifies an operation by its paint kind and geometry.
@@ -53,21 +40,6 @@ type opKey struct {
 	x, y, w, h float64
 }
 
-func keyOf(op *layout.DisplayOp) opKey {
+func keyOf(op *DisplayOp) opKey {
 	return opKey{op.Kind, op.X, op.Y, op.W, op.H}
-}
-
-// capDirty falls back to the frame when the change is too big or too spread
-// out to merge.
-func capDirty(next *layout.Display, dirty image.Rectangle, changed int) (image.Rectangle, bool) {
-	if changed == 0 {
-		return image.Rectangle{}, false
-	}
-
-	frame := image.Rect(0, 0, next.Width, next.Height)
-	if changed > maxDirtyOps || dirty.Dx()*dirty.Dy() > frame.Dx()*frame.Dy()/3 {
-		return frame, true
-	}
-
-	return dirty, false
 }

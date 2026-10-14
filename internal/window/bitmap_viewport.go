@@ -25,7 +25,8 @@ func (s *shell) prepareBitmapViewport() error {
 		s.bitmapView = bitmapView{}
 		return nil
 	}
-	area := image.Rect(s.scrollX, s.scrollY, s.scrollX+s.screenW, s.scrollY+s.screenH)
+	viewW, viewH := s.viewSize()
+	area := image.Rect(s.scrollX, s.scrollY, s.scrollX+viewW, s.scrollY+viewH)
 	gen, zoom := s.app.Generation(), s.zoom()
 	v := &s.bitmapView
 	if v.img != nil && v.gen == gen && v.area == area && v.zoom == zoom {

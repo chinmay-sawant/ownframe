@@ -11,25 +11,8 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-var (
-	devHoverInk = color.RGBA{R: 0xe5, G: 0x48, B: 0x4d, A: 0xff}
-	devPinInk   = color.RGBA{R: 0x1a, G: 0x56, B: 0xdb, A: 0xff}
-)
-
-// drawDevPick outlines the hovered and pinned boxes, one colour each, with a
-// label over each.
-func (s *shell) drawDevPick(screen *ebiten.Image) {
-	if s.dev.haveHov {
-		s.devOutline(screen, s.dev.hovered, devHoverInk)
-	}
-
-	if s.dev.havePin {
-		s.devOutline(screen, s.dev.pinned, devPinInk)
-	}
-}
-
 // devOutline strokes one box and labels it. The stroke hook lets a test read
-// the computed screen rect without reading pixels back from an image.
+// the computed rect without reading pixels.
 func (s *shell) devOutline(screen *ebiten.Image, box layout.Box, ink color.RGBA) {
 	r := s.devScreen(devRect{X: box.X, Y: box.Y, W: box.W, H: box.H})
 
@@ -39,7 +22,9 @@ func (s *shell) devOutline(screen *ebiten.Image, box layout.Box, ink color.RGBA)
 		vector.StrokeRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), 2, ink, false)
 	}
 
-	s.devLabel(screen, r, devBoxLabel(box))
+	// The 2 px stroke reaches 1 px past each edge.
+	lr := s.devLabel(screen, r, devBoxLabel(box))
+	s.frameNote(frameRect(r.X-1, r.Y-1, r.W+2, r.H+2).Union(frameRect(lr.X, lr.Y, lr.W, lr.H)))
 }
 
 // devBoxLabel is the tag, id, and size line drawn over a box.
@@ -53,8 +38,8 @@ func devBoxLabel(box layout.Box) string {
 }
 
 // devLabel draws a box label above the outline, or below it when the top
-// edge would clip.
-func (s *shell) devLabel(screen *ebiten.Image, r devRect, label string) {
+// edge would clip, and returns the rect it painted.
+func (s *shell) devLabel(screen *ebiten.Image, r devRect, label string) devRect {
 	w, h := text.Measure(label, badgeFace, 0)
 	x, y := r.X, r.Y-h-4
 
@@ -68,4 +53,6 @@ func (s *shell) devLabel(screen *ebiten.Image, r devRect, label string) {
 	op.GeoM.Translate(x+4, y+2)
 	op.ColorScale.ScaleWithColor(color.White)
 	text.Draw(screen, label, badgeFace, &op)
+
+	return devRect{X: x, Y: y, W: w + 8, H: h + 4}
 }

@@ -16,6 +16,7 @@ func (s *shell) drawDevPanel(screen *ebiten.Image) {
 
 	vector.FillRect(screen, float32(r.X), float32(r.Y), float32(r.W), float32(r.H), devPanelBg, false)
 	vector.FillRect(screen, float32(r.X), float32(r.Y), 1, float32(r.H), devBorder, false)
+	s.frameNote(frameRect(r.X, r.Y, r.W, r.H))
 
 	s.drawDevHeader(screen)
 	s.drawDevTabs(screen)
@@ -24,13 +25,23 @@ func (s *shell) drawDevPanel(screen *ebiten.Image) {
 	s.drawDevFooter(screen)
 }
 
-// drawDevHeader paints the title bar and the close key hint.
+// drawDevHeader paints the title bar, the picker toggle, and the close key hint.
 func (s *shell) drawDevHeader(screen *ebiten.Image) {
 	r := s.dev.panel
 	vector.FillRect(screen, float32(r.X), float32(r.Y), float32(r.W), devHeaderH, devHeaderBg, false)
 
 	top := r.Y + (devHeaderH-devFaceHeight())/2
 	devTextAt(screen, "Developer Tools", r.X+devPanelPad, top, devFg)
+
+	label := "Picker"
+	ink := devDim
+	if s.devPickerOn() {
+		ink = devAccent
+	}
+	pw, _ := text.Measure(label, badgeFace, 0)
+	fw, _ := text.Measure("F12", badgeFace, 0)
+	px := r.X + r.W - devPanelPad - fw - 8 - pw
+	devTextAt(screen, label, px, top, ink)
 
 	w, _ := text.Measure("F12", badgeFace, 0)
 	devTextAt(screen, "F12", r.X+r.W-devPanelPad-w, top, devDim)

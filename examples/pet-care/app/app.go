@@ -35,7 +35,7 @@ func New(path string) (*App, error) {
 		return nil, err
 	}
 	source := strings.Replace(string(html), "<!-- styles -->", "<style>"+string(css)+"</style>", 1)
-	p, err := ownframe.New(ownframe.Config{Title: "Pet care", HTML: source, Width: 1120, Height: 820, MinWidth: 360, MinHeight: 600, DisableTouchZoom: true})
+	p, err := ownframe.New(ownframe.Config{DevTools: true, Title: "Pet care", HTML: source, Width: 1120, Height: 820, MinWidth: 360, MinHeight: 600, DisableTouchZoom: true})
 	if err != nil {
 		db.Close()
 		return nil, err

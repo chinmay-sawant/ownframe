@@ -23,7 +23,7 @@ type App struct {
 
 // newApp parses the dashboard template and wires input and the tick.
 func newApp(rows int) (*App, error) {
-	page, err := ownframe.NewWithOptions(ownframe.Config{
+	page, err := ownframe.NewWithOptions(ownframe.Config{DevTools: true,
 		Title: "Stress", HTML: buildHTML(),
 		Width: 1280, Height: 900, MinWidth: 640, MinHeight: 480,
 	}, ownframe.WithPerf(true))

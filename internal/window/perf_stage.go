@@ -34,10 +34,8 @@ func (s *shell) perfFrameSample() {
 	}
 	if d := s.dev.frame; d > 0 {
 		s.dev.ring.record(d)
-		s.dev.perfAvg = s.dev.ring.avg()
-		s.dev.perfP95 = s.dev.ring.p95()
-		s.dev.perfP99 = s.dev.ring.p99()
-		s.dev.perfLong = s.dev.ring.longFrames(perfLongThreshold)
+		avg, p95, p99, long := s.dev.ring.summary()
+		s.dev.perfAvg, s.dev.perfP95, s.dev.perfP99, s.dev.perfLong = avg, p95, p99, long
 	}
 	s.perfSampleRuntime()
 }

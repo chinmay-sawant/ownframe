@@ -31,6 +31,12 @@ func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track
 	p.setBoxes(boxes)
 	p.generation++
 	p.markFull()
+	p.lastPatch = DisplayPatch{
+		Changed: len(display.Ops),
+		Added:   len(display.Ops),
+		Regions: 1,
+		Full:    true,
+	}
 	if track {
 		p.recordFull(len(boxes))
 	}

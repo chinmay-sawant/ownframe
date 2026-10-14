@@ -20,7 +20,7 @@ type Normal struct {
 
 // NewNormal parses the form page and wires its two buttons.
 func NewNormal() (*Normal, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Normal", HTML: normalHTML,
 		Width: 480, Height: 640, MinWidth: 320, MinHeight: 480,
 		Perf: true,

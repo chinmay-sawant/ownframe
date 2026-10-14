@@ -35,7 +35,7 @@ type Flap struct {
 
 // NewFlap parses the scene page and registers flap input and the tick.
 func NewFlap() (*Flap, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Flappy", HTML: flapHTML,
 		Width: 480, Height: 720, MinWidth: 320, MinHeight: 480,
 		Perf: true,

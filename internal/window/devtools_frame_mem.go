@@ -3,18 +3,25 @@ package window
 import (
 	"fmt"
 	"image/color"
-	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-// devFrameRow builds one right-aligned row.
+// devFrameRow builds one right-aligned row. The label and separator widths
+// come from the panel memo; only the value, which moves as counters change,
+// is measured per call. The value span right-aligns at draw time, so no
+// padding run is built or drawn.
 func devFrameRow(w float64, l, v string, ink color.RGBA) devRow {
-	lw, _ := text.Measure(l, badgeFace, 0)
 	vw, _ := text.Measure(v, badgeFace, 0)
-	sw, _ := text.Measure(" ", badgeFace, 0)
-	n := max(1, int((w-lw-vw)/sw))
-	return devRow{line: devLine{spans: []devSpan{{l, devDim, 0}, {strings.Repeat(" ", n), devPunctInk, 0}, {v, ink, 0}}}}
+
+	return devRow{
+		line: devLine{spans: []devSpan{
+			{text: l, ink: devDim, w: devTextWidth(l)},
+			{text: " ", ink: devPunctInk, w: devTextWidth(" ")},
+			{text: v, ink: ink, w: vw, right: true},
+		}},
+		w: w,
+	}
 }
 
 // addMemoryRows prints the MEMORY section. A shell without Perf reports

@@ -8,8 +8,9 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// DrawVisible skips offscreen operations before text shaping or GPU submission.
-// Unbounded ink is retained. Translation maps the target back into page space.
+// DrawVisible skips offscreen operations before text shaping or GPU
+// submission. Unbounded ink is retained. Translation maps the target back
+// into page space. Blend and isolation groups composite as a unit.
 func DrawVisible(dst *ebiten.Image, display *layout.Display, dx, dy float64) {
 	DrawVisiblePinned(dst, display, dx, dy, 0, 0, 0)
 }
@@ -24,13 +25,9 @@ func DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float6
 
 	rect := visibleRect(dst.Bounds(), dx, dy)
 	pinRect := visibleRect(dst.Bounds(), pinDx, pinDy)
+	ppt := display.PointsPerPixel
 
-	for _, index := range display.Order {
-		if index < 0 || index >= len(display.Ops) {
-			continue
-		}
-
-		op := &display.Ops[index]
+	paintChunked(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
 		odx, ody, r := dx, dy, rect
 		if pinZ > 0 && op.ZIndexSet && op.ZIndex >= pinZ {
 			odx, ody, r = pinDx, pinDy, pinRect
@@ -39,10 +36,13 @@ func DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float6
 		if op.Fixed {
 			r = dst.Bounds()
 		}
-		if opTouches(op, display.PointsPerPixel, r) {
-			drawOp(dst, op, odx, ody)
+
+		if !opTouches(op, ppt, r) {
+			return 0, 0, false
 		}
-	}
+
+		return odx, ody, true
+	})
 }
 
 func visibleRect(bounds image.Rectangle, dx, dy float64) image.Rectangle {

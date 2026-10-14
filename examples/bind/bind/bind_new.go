@@ -8,7 +8,7 @@ import (
 
 // New parses the embedded bind template and registers its change handler.
 func New() (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Bind",
 		HTML:   bindHTML,
 		Width:  DefaultWidth,

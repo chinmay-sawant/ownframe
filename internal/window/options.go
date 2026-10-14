@@ -1,11 +1,5 @@
 package window
 
-import (
-	"context"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
-)
-
 // Options controls the desktop window. Desktop placement and mouse
 // passthrough do not apply to browser canvases or mobile views.
 type Options struct {
@@ -35,17 +29,9 @@ type Options struct {
 	// Margin is the inset in CSS pixels, clamped to zero. Placement uses
 	// monitor bounds, which include taskbars and docks.
 	Margin int
-}
-
-// RunWithOptions opens a window with optional desktop settings.
-func RunWithOptions(ctx context.Context, app host.Screen, options Options) error {
-	if ctx == nil {
-		return errNilContext
-	}
-
-	if app == nil {
-		return errNilApp
-	}
-
-	return runWindow(ctx, app, options)
+	// NoIdlePace keeps the window presenting at the vsync frame rate even
+	// while the page is idle. Pacing is on by default on the desktop: an
+	// idle page stops presenting and runs page ticks at a low keep-alive
+	// rate, and input or damage returns the window to vsync.
+	NoIdlePace bool
 }

@@ -13,13 +13,17 @@ import (
 func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, dy float64) {
 	x := float32(op.X*pxPerPt + dx)
 	y := float32(op.Y*pxPerPt + dy)
-	w := float32(op.W * pxPerPt)
-	h := float32(op.H * pxPerPt)
-	r := [4]float32{
-		float32(radii[0] * pxPerPt), float32(radii[1] * pxPerPt),
-		float32(radii[2] * pxPerPt), float32(radii[3] * pxPerPt),
-	}
+	path := roundedFillPath(x, y, float32(op.W*pxPerPt), float32(op.H*pxPerPt), radius4(radii))
 
+	options := &vector.DrawPathOptions{}
+	options.AntiAlias = true
+	options.ColorScale.ScaleWithColor(rgba(op))
+
+	vector.FillPath(dst, &path, nil, options)
+}
+
+// roundedFillPath traces a fill's corners as circular arcs from its origin.
+func roundedFillPath(x, y, w, h float32, r [4]float32) vector.Path {
 	var path vector.Path
 
 	path.MoveTo(x+r[0], y)
@@ -33,11 +37,15 @@ func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, 
 	arcTo(&path, x, y, x+r[0], y, r[0])
 	path.Close()
 
-	options := &vector.DrawPathOptions{}
-	options.AntiAlias = true
-	options.ColorScale.ScaleWithColor(rgba(op))
+	return path
+}
 
-	vector.FillPath(dst, &path, nil, options)
+// radius4 scales a corner radius set from layout points to canvas pixels.
+func radius4(radii [4]float64) [4]float32 {
+	return [4]float32{
+		float32(radii[0] * pxPerPt), float32(radii[1] * pxPerPt),
+		float32(radii[2] * pxPerPt), float32(radii[3] * pxPerPt),
+	}
 }
 
 func arcTo(path *vector.Path, x1, y1, x2, y2, radius float32) {

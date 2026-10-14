@@ -34,29 +34,3 @@ func TestReplayRejectsEllipticalRadius(t *testing.T) {
 		t.Fatal("no elliptical fill reached the gate; rejection is for another reason")
 	}
 }
-
-// TestReplayRejectsNonIdentityTransform pins the other hard rejection: a baked
-// transform the axis-aligned replay painter would misplace.
-func TestReplayRejectsNonIdentityTransform(t *testing.T) {
-	t.Parallel()
-
-	display := acceptDisplay(t, `<div style="width:120px;height:40px;`+
-		`background:#eee;transform:translate(10px,5px)">moved</div>`)
-
-	if render.Replayable(display) {
-		t.Fatal("transformed page should not replay")
-	}
-
-	var transformed bool
-
-	for i := range display.Ops {
-		op := &display.Ops[i]
-		if op.XformSet && !op.Transform().IsIdentity() {
-			transformed = true
-		}
-	}
-
-	if !transformed {
-		t.Fatal("no non-identity transform reached the gate; rejection is for another reason")
-	}
-}

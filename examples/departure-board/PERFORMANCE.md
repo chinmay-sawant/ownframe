@@ -37,26 +37,46 @@ The tick then names only what changed:
 
 The cascade is a row band (`rowDelay = 8`, `board/flip_rebind.go`). Every cell
 in one screen row starts together, so one frame's changed cells stay inside
-one or two rows. The window takes exactly one dirty rect per frame: the page
-stores one rectangle and `TakeDirty` returns it
-(`internal/page/page_dirty.go`), and `markRect` unions marks into a bounding
-box (`internal/page/page_dirty_box.go`). A ripple that touched all eight rows
-would union into the whole board, so the row band keeps the rect narrow. On
-this board a rotation only changes status tiles (`statusAt`,
+one or two rows. A ripple that touched all eight rows would cover the whole
+board. On this board a rotation only changes status tiles (`statusAt`,
 `board/data_seed.go`), one or two rows per feed, and the paced dump shows
 bands of 188 by 50 CSS pixels with 10 operations meeting them.
 
-The bar is metered for the same single-rect reason. If its fill moved every
-frame, every frame would report a rect and the window would never blit; at
-10 Hz the frames in between report nothing.
+The bar is metered so most frames report no damage and the window blits the
+buffer it already has. At 10 Hz the frames in between report nothing.
+
+## The damage list and the retarget
+
+Three changes followed the frame-dirty fix.
+
+The page reports a list (`TakeDirtyRects`). Rectangles within 8 px merge, the
+list caps at 8 and collapses to its bounding box past that, and a take whose
+rects cover more than a third of the content returns one bounding box. The
+window repaints one region per rect and blits when the list is empty. The
+board marks each changed flap with the box it cached at rebind
+(`board/dirty.go`), so a bar update and a cascade band repaint as two regions
+instead of one union.
+
+A rotation no longer redraws. The tick calls `Rotate`, which updates the view,
+stores it with `SetData` for the next real redraw, and retargets the flaps by
+id; the page generation stays put. The tile grid is now fixed width: each
+field pads to the widest value the seed can produce, with U+2800 BRAILLE
+PATTERN BLANK as the filler, so every tile including the gaps has a text op
+to retarget. The fixed grid moved the board from 631 and 640 operations to
+844.
+
+The devtools Ops tab caches its row list per `Page.Generation()` and culls
+outline strokes to the page area the dock leaves visible
+(`internal/window/devtools_sync.go`, `devtools_ops.go`), so a still board
+rebuilds no rows.
 
 ## Measurements
 
 The dump is headless (`examples/departure-board/dump`) and opens no window.
 
 ```
-go run ./examples/departure-board -dump -out /tmp/opencode/board-dump-verify
-go run ./examples/departure-board -dump -pace 16ms -out /tmp/opencode/board-dump-verify-paced
+go run ./examples/departure-board -dump -out /tmp/opencode/board-dump-list
+go run ./examples/departure-board -dump -pace 16ms -out /tmp/opencode/board-dump-list-paced
 ```
 
 Without `-pace` the dump ticks as fast as it can, so a whole scenario finishes
@@ -67,44 +87,61 @@ cadence. The second command sleeps 16 ms between ticks, matches the window's
 
 The `flap` scenario turns the feed before any tick has bound the flipper, so
 its row measures the post-redraw steady state. The `cascade` row is the one
-that flaps: it ticks three times first, then rotates.
+that flaps: it ticks three times first, then resyncs with `Advance`. The
+`rotate` row does the same but calls `Rotate`, the tick's retarget path, and
+the dump fails the run if the rotation moves the generation.
+
+`rcts` is the mean damage-list length per frame and `aMean` the mean summed
+list area on a frame that reported one. The first frame after a draw is
+`full-buffer`: the initial `Redraw` marks the whole content, and the new
+classification compares against that content rect, where the older dump
+compared against the canvas and called the same frame `rect`. These runs were
+taken at 20:26 local time, inside the board's night window, so the first tick
+also pays the one-time night sheet redraw (7 to 11 ms) in `max`; every other
+column is steady.
 
 ### Real cadence, `-pace 16ms`
 
-| scenario | frames | ops | p50 ms | p95 ms | max ms | kinds | rMean px^2 | rMax px^2 | oMean |
-| -------- | ------:| ---:| ------:| ------:| ------:| ----- | ----------:| ---------:| -----:|
-| warmup | 30 | 640 | 0.01 | 0.13 | 0.28 | blit 24, rect 6 | 126360 | 682000 | 34.8 |
-| flap | 120 | 631 | 0.01 | 0.07 | 0.40 | blit 97, rect 23 | 43440 | 682000 | 18.8 |
-| idle | 240 | 640 | 0.02 | 0.09 | 0.28 | blit 196, rect 44 | 32434 | 682000 | 16.3 |
-| loop | 240 | 631 | 0.02 | 0.09 | 1.02 | blit 195, rect 45 | 29249 | 682000 | 16.2 |
-| cascade | 150 | 631 | 0.02 | 0.11 | 0.39 | blit 112, rect 38 | 64425 | 682000 | 29.7 |
+| scenario | frames | ops | p50 ms | p95 ms | max ms | kinds | rMean px^2 | rMax px^2 | oMean | rcts | aMean px^2 |
+| -------- | ------:| ---:| ------:| ------:| ------:| ----- | ----------:| ---------:| -----:| ----:| ----------:|
+| warmup | 30 | 844 | 0.01 | 0.11 | 8.09 | blit 24, full-buffer 1, rect 5 | 126360 | 682000 | 45.3 | 1.0 | 126360 |
+| flap | 120 | 844 | 0.01 | 0.05 | 8.10 | blit 97, full-buffer 1, rect 22 | 43440 | 682000 | 24.2 | 1.0 | 43440 |
+| idle | 240 | 844 | 0.01 | 0.05 | 10.92 | blit 196, full-buffer 1, rect 43 | 32434 | 682000 | 20.7 | 1.0 | 29914 |
+| loop | 240 | 844 | 0.02 | 0.05 | 8.18 | blit 196, full-buffer 1, rect 43 | 32434 | 682000 | 20.7 | 1.0 | 29914 |
+| cascade | 150 | 844 | 0.02 | 0.04 | 7.89 | blit 111, full-buffer 2, rect 37 | 67362 | 682000 | 29.5 | 1.4 | 48991 |
+| rotate | 150 | 844 | 0.02 | 0.05 | 8.15 | blit 112, full-buffer 1, rect 37 | 51187 | 682000 | 23.9 | 1.4 | 32333 |
+
+`oMean` divides by every frame, so it carries the 844-operation `full-buffer`
+frame 0 and, in `cascade`, the `Advance` frame at index 3. Between the frames
+that reported damage, the worst steady `rect` frame replays 115 operations
+(`cascade` and `rotate`), and the rest sit near 103.
 
 ### Flat out, no pace (not the cadence)
 
-| scenario | frames | ops | p50 ms | p95 ms | max ms | kinds | rMean px^2 | rMax px^2 | oMean |
-| -------- | ------:| ---:| ------:| ------:| ------:| ----- | ----------:| ---------:| -----:|
-| warmup | 30 | 640 | 0.00 | 0.00 | 0.26 | blit 28, rect 2 | 348616 | 682000 | 24.0 |
-| flap | 120 | 631 | 0.00 | 0.00 | 0.23 | blit 118, rect 2 | 348616 | 682000 | 5.9 |
-| idle | 240 | 640 | 0.00 | 0.00 | 0.21 | blit 238, rect 2 | 348616 | 682000 | 3.0 |
-| loop | 240 | 631 | 0.00 | 0.00 | 0.23 | blit 238, rect 2 | 348616 | 682000 | 3.0 |
-| cascade | 150 | 631 | 0.00 | 0.01 | 0.28 | blit 135, rect 15 | 99122 | 682000 | 9.7 |
+| scenario | frames | ops | p50 ms | p95 ms | max ms | kinds | rMean px^2 | rMax px^2 | oMean | rcts | aMean px^2 |
+| -------- | ------:| ---:| ------:| ------:| ------:| ----- | ----------:| ---------:| -----:| ----:| ----------:|
+| warmup | 30 | 844 | 0.00 | 0.00 | 7.78 | blit 28, full-buffer 1, rect 1 | 348616 | 682000 | 31.6 | 1.0 | 348616 |
+| flap | 120 | 844 | 0.00 | 0.00 | 8.46 | blit 118, full-buffer 1, rect 1 | 348616 | 682000 | 7.9 | 1.0 | 348616 |
+| idle | 240 | 844 | 0.00 | 0.00 | 7.16 | blit 238, full-buffer 1, rect 1 | 348616 | 682000 | 3.9 | 1.0 | 348616 |
+| loop | 240 | 844 | 0.00 | 0.00 | 7.58 | blit 237, full-buffer 1, rect 2 | 237488 | 682000 | 4.4 | 1.0 | 237488 |
+| cascade | 150 | 844 | 0.00 | 0.00 | 8.84 | blit 134, full-buffer 2, rect 14 | 96602 | 682000 | 13.0 | 1.8 | 95789 |
+| rotate | 150 | 844 | 0.00 | 0.00 | 8.51 | blit 135, full-buffer 1, rect 14 | 57575 | 682000 | 7.4 | 1.9 | 56708 |
 
-### Before and after
+### Phase by phase
 
-The before column is the same dump run against the unfixed tree. That run
-predates the `cascade` scenario, and every scenario it measured was 100
-percent `full-replay` with the full operation count as the mean replayed ops.
+The before column is `board-dump-verify-paced`, the frame-dirty fix with the
+single union rect; the after column is `board-dump-list-paced`. The before
+baseline ran on the old tile grid at 631 and 640 operations, and the fixed
+grid moved the after board to 844. Compare the fractions, not the raw counts.
 
-| scenario | before: kinds | before oMean | after (paced): kinds | after (paced) oMean |
-| -------- | ------------- | -----------: | -------------------- | ------------------: |
-| warmup | full-replay 30 | 640.0 | blit 24, rect 6 | 34.8 |
-| flap | full-replay 120 | 631.0 | blit 97, rect 23 | 18.8 |
-| idle | full-replay 240 | 640.0 | blit 196, rect 44 | 16.3 |
-| loop | full-replay 240 | 631.0 | blit 195, rect 45 | 16.2 |
-| cascade | not measured | | blit 112, rect 38 | 29.7 |
+| Phase | Before | After |
+| ----- | ------ | ----- |
+| Damage list | the paced `cascade` worst steady frame replayed 630 of 631 operations through the one union rect | the paced `cascade` worst steady `rect` frame replays 115 of 844, three rects summing 27,532 px squared; 13 of 150 frames report two or more rects |
+| Rotation retarget | a rotation called `Advance` (`SetData` plus `Redraw`): on the same grid the paced `cascade` row spends 15.46 ms of `RedrawNS` for the initial draw plus the rotation, and its rotation frame rebuilds the whole buffer | the paced `rotate` row leaves the generation alone and adds no `RedrawNS` (its 6.95 ms is the initial draw); no frame after the first is `full-buffer`, and the worst band is 115 operations |
+| Devtools dock | the Ops tab rebuilt one row per painted operation every frame and stroked every outline with no cull; the frame audit estimated 0.5 to 1.5 ms and 200 to 400 KB per frame, plus several ms with the outlines on | the Ops rows are cached per generation (844 rows on this board) and allocate nothing per frame on a still generation (`TestDevOpsRowsStillGenerationNoAlloc`); the outline strokes cull to the visible page rect (`TestDevOpsOutlineCull`) |
 
 `oMean` is the mean replayed operations per frame. It is an approximation:
-the dump counts operations whose raw `X`, `Y`, `W`, `H` box meets the rect
+the dump counts operations whose raw `X`, `Y`, `W`, `H` box meets a rect
 (`dump/measure_frame.go`), while the real replay filter converts point-space
 bounds to CSS pixels and pads them for strokes and antialiasing
 (`internal/replay/op_bounds.go`, `internal/replay/draw_rect.go`). Treat it as
@@ -112,45 +149,100 @@ the shape of the difference, not an exact draw count. The dump also measures
 the tick, not the GPU draw, so it implies the draw drop from the operation
 counts rather than timing the draw itself.
 
+## The window, measured
+
+The dump measures the page, not the window. These numbers come from
+`go run ./examples/departure-board -perf` in a 1908x999 window on a Linux
+machine whose OpenGL stack is Mesa's software rasterizer (WSL2), with the
+devtools dock closed and the board idle, before and after the replay raster
+cache (`internal/replay/raster_cache.go`):
+
+| Row | Before | After |
+| --- | ---: | ---: |
+| Go heap in use (heap profile) | 109.6 MB | 21.0 MB |
+| RSS (`/proc/self/statm`, 20 s in) | 430 MB | 192 MB |
+| Allocation rate (TotalAlloc probe) | 620 KB/s | 380 KB/s |
+| CPU (`ps`, idle) | about 28% | about 20% |
+| Queue vertex high-water | 86.6 MB | 9.4 MB |
+
+With the dock open on the Frame tab the panel reads Go heap 20.1 MB, RSS
+190.7 MB, and Alloc/frame 2.3 MB, against the 345.1 MB, 678.3 MB, and 6.1 MB
+reported for the same command before the cache. The frame rows moved to the
+vsync cadence: 59.7 FPS with a 16.8 ms average, a 19.2 ms p99, and no frame
+over 25 ms, where the before run outran the refresh at 68.5 FPS with one long
+frame. The rest of RSS belongs to the software GL stack, not the app: libLLVM
+loaded by Mesa, the swrast driver, and the WSL D3D12 driver libraries sum to
+roughly 90 MB of file-backed mappings.
+
+The dock's own per-frame cost also dropped. The Frame tab memoizes its label
+widths and draws the value as a right-aligned span instead of building a
+padding string per row, and one row build now allocates 87 times and 15.5 KB
+(`BenchmarkDevFrameRows`). With the dock closed the board allocates about
+380 KB/s at 60 FPS, down from 620 KB/s, and the perf ring summarizes its
+120-frame window in one pass with no allocation
+(`TestPerfRingSummaryNoAlloc`).
+
+## Idle pacing and the replay caches (2026-10-13)
+
+The window now stops presenting clean frames. After five clean frames and
+250 ms without input it parks in the event wait and wakes on input or on a
+125 ms keep-alive tick, so a still board costs a fraction of the old loop;
+`WindowOptions.NoIdlePace` turns that off. The replay buffer is a 256 px tile
+grid, repeated shapes and text runs bake once and blit, and finite transforms
+and separable blend groups replay instead of dropping the page to a bitmap.
+
+Measured on the same machine, interleaved before and after for CPU and a quiet
+20 s harness pass for memory (`scripts/perf-apps.sh`):
+
+| App | Idle CPU before | Idle CPU after | RSS after |
+| --- | ---: | ---: | ---: |
+| departure-board | 27.4% | 7.0% | 183 MB |
+| wispr-flow-dashboard | 7.8% | 3.3% | 201 MB |
+| spotify-player | about 42% | about 42%, its tick damages every frame | 211 MB |
+
+The headless dump is unchanged by all of this, the board's Go heap holds at
+about 15 MB with no collection in 25 idle seconds, and a text-heavy repaint
+falls from about 1.0 ms, 873 KB, and 4,512 allocations to 35 us, 27 KB, and
+144 allocations. `plans/v0.0.2/filter-replay.md`,
+`plans/v0.0.2/subpixel-text.md`, and
+`plans/v0.0.2/multi-process-isolation.md` record the three items this pass
+did not implement and why.
+
+A second pass (2026-10-13, local) lets the page declare its next frame with
+`Page.WantFrameAt`, which drops idle presents from 8 per second to 1 or 2 and
+the median idle CPU from 5.0% to 2.0% (20.4% with `NoIdlePace`). It also
+groups element boxes into replay chunks (a damaged card falls from 8.6 us,
+5 operations, and 18 allocations to 4.4 us, one blit, and 3 allocations),
+adds `internal/frame` animations (176 ns per animated frame against 171 us
+for a Redraw), keeps many small changes partial instead of rebuilding the
+frame, and clips repaints and blits to the strip the devtools panel leaves
+visible.
+
 ## Verifying by hand
 
 Run `go run ./examples/departure-board` and press F12 (or Ctrl+Shift+I) for
 the devtools dock. Read the Frame tab or keep the dock closed. The Ops tab
-rebuilds one row per painted operation, about 640 for this board, every frame,
-and its Show paint outlines toggle strokes every operation without culling
-(`internal/window/devtools_ops_lines.go`, `internal/window/devtools_ops.go`).
-The frame audit estimated that work at 0.5 to 3 ms per frame with the tab open
-and several ms more with outlines on, so it lands in the numbers you are
-trying to read. The board does not open with `WindowOptions.Perf`, so the
-dock's average and p95 rows read `-`; the Frame and Draw values are still
-live.
+caches its rows per generation and culls outline strokes to the page area the
+dock leaves visible (`internal/window/devtools_sync.go`,
+`internal/window/devtools_ops.go`), so a still board pays only for the rows on
+screen. Read fps and frame time on the Frame tab. The board does not open with
+`WindowOptions.Perf`, so the dock's average and p95 rows read `-`; the Frame
+and Draw values are still live.
 
 Expect the FPS to hold at 60, a mostly flat Frame row while the board idles,
 and a short rise during a cascade. Fullscreen costs pixels in the blit; the
 operation list does not grow with the window.
 
-## Follow-ups
+## Open items
 
-- One dirty rect per frame is the limit this fix lives within. A multi-rect
-  `TakeDirty` would let the bar and a cascade band repaint separately instead
-  of unioning into one bounding box. The paced cascade shows the union: when
-  a bar update lands on a band frame the rect grows to 952 by 274 with 604
-  operations meeting it by the dump's measure. Files:
-  `internal/page/page_dirty.go`, `internal/page/page_dirty_box.go`,
-  `internal/window/replay_partial.go`, `internal/window/replay_plan.go`.
-- `Page.Invalidate` scans every box for each call (`markElement` calls
-  `growBox`, `internal/page/page_invalidate.go`,
-  `internal/page/page_dirty_box.go`) and allocates the pending map on the
-  first invalidate of a frame. `Page.MarkRect` is one union with none of that
-  (`internal/page/page_frame.go`, `internal/page/page_dirty_box.go`). The
-  flipper already holds each cell's operation and box, so marking rects
-  directly in `board/dirty.go`, or batching ids in the library, removes the
-  scans and the per-frame map. The bar would also shrink from a full-track
-  mark to the changed sliver.
-- `app.Hover` hit-tests every box every frame even when the mouse is still.
-  `internal/window/pointer.go` calls `hoverCursor`, which calls `Page.Hover`,
-  and `internal/page/pointer_state.go` runs `boxIDAt`, a linear scan of every
-  box, before `setHover` sees that the id did not change. Skipping the call
-  when the point is unchanged removes the scan. Files:
-  `internal/window/pointer.go`, `internal/window/hover_cursor.go`,
-  `internal/page/pointer_state.go`.
+- The plan's phase 1 exit asked for a worst cascade frame under 60 approximate
+  operations. The paced cascade measures 115 (three rects, 27,532 px squared)
+  on the 844-operation board, down from 630 through the one union rect. The
+  remaining cost is several row bands active at once.
+- `Page.Invalidate` still walks every box per call through `growBox`
+  (`internal/page/page_dirty_box.go`), and `BenchmarkInvalidateMany` marks
+  3000 ids on a 3000-box page in about 31 ms. A caller with many ids should
+  mark rects, as the board does.
+- The dump reads `max` on the tick, so it includes the one-time night sheet
+  redraw when the run lands between 20:00 and 06:00 local time, and frame 0
+  always carries the initial draw's damage.

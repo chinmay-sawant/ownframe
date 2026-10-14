@@ -13,8 +13,8 @@ func TestPartialPathNeedsATaker(t *testing.T) {
 
 	s.drawReplayPartial(partialBuf(100, 100))
 
-	if s.partial.buf != nil {
-		t.Fatal("buffer built without a dirty taker")
+	if s.partial.tiles != nil {
+		t.Fatal("grid built without a dirty taker")
 	}
 }
 
@@ -29,15 +29,18 @@ func TestTickingPageKeepsFullReplay(t *testing.T) {
 	s.drawReplayPartial(partialBuf(100, 100))
 
 	if screen.takes != 0 {
-		t.Fatalf("TakeDirty calls = %d, want 0", screen.takes)
+		t.Fatalf("damage calls = %d, want 0", screen.takes)
 	}
 
-	if s.partial.buf != nil {
-		t.Fatal("buffer built for a ticking page")
+	if s.partial.tiles != nil {
+		t.Fatal("grid built for a ticking page")
 	}
 }
 
-func TestScrollBlitsTheBuffer(t *testing.T) {
+// TestScrollOnlyFrameBlitsWholeBuffer checks that a committed frame leaves a
+// scroll-only frame one whole-buffer copy at the new offset: the repaintBlit
+// plan contributes no rects, so the whole flag supplies the copy.
+func TestScrollOnlyFrameBlitsWholeBuffer(t *testing.T) {
 	t.Parallel()
 
 	screen := &dirtyScreen{fakeScreen: &fakeScreen{width: 100, height: 100}}
@@ -46,12 +49,20 @@ func TestScrollBlitsTheBuffer(t *testing.T) {
 	s := newDirtyShell(screen)
 	dst := partialBuf(100, 100)
 
-	s.drawReplayPartial(dst)
+	s.Draw(dst)
 	s.scrollY = 20
 	screen.ok = false
-	s.drawReplayPartial(dst)
+	s.Draw(dst)
 
 	if s.partial.mode != repaintBlit {
 		t.Fatalf("scroll mode = %v, want blit", s.partial.mode)
+	}
+
+	if !s.partial.whole {
+		t.Fatal("scroll frame did not set whole")
+	}
+
+	if full, rects := blitPlan(s.partial.plans, s.partial.chrome); full || len(rects) != 0 {
+		t.Fatalf("blit plan = %v (full = %v), want no rects; whole supplies the copy", rects, full)
 	}
 }

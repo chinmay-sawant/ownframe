@@ -2,16 +2,18 @@ package window
 
 import (
 	"image/color"
-
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 // devSpan is one run on a panel line: text in one ink, or a filled swatch
-// when swatch is positive.
+// when swatch is positive. w is the measured text width when the builder
+// knows it; a zero w measures while drawing. A right span starts at the
+// line's right edge, which needs its w.
 type devSpan struct {
 	text   string
 	ink    color.RGBA
 	swatch float64
+	w      float64
+	right  bool
 }
 
 // devLine is one panel line, drawn left to right.
@@ -28,14 +30,17 @@ const (
 	devActOpsToggle        // flip the operation outlines
 	devActJSON             // collapse or expand the JSON node named by key
 	devActOp               // outline the operation at index arg
+	devActPicker           // toggle element picker mode
 )
 
-// devRow is one content line plus the click action it carries.
+// devRow is one content line plus the click action it carries. w is the line
+// width the builder measured against, for right-aligned spans.
 type devRow struct {
 	line devLine
 	act  devAct
 	arg  int
 	key  string
+	w    float64
 }
 
 // devSwatchSize is the side of a colour chip in a panel line.
@@ -67,22 +72,4 @@ func (l devLine) plain() string {
 	}
 
 	return out
-}
-
-// width is the measured width of the line, swatches included.
-func (l devLine) width() float64 {
-	w := 0.0
-
-	for _, span := range l.spans {
-		if span.swatch > 0 {
-			w += span.swatch + devSwatchGap
-
-			continue
-		}
-
-		sw, _ := text.Measure(span.text, badgeFace, 0)
-		w += sw
-	}
-
-	return w
 }

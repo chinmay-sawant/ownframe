@@ -14,6 +14,12 @@ is pushed and `go.mod` pins it with no local `replace`; the release state is in
 The follow-up checklist for desktop IME, accessibility, and the remaining
 platform gaps is [accessibility-desktop-ime.md](accessibility-desktop-ime.md).
 
+A second follow-up folder,
+[damage-and-invalidation/](damage-and-invalidation/README.md), recorded
+2026-10-12, plans the repaint work after the departure-board frame-dirty fix.
+Phases 1 to 3 need no engine change. The evidence audit and the phased
+checklists live in that folder.
+
 Six workstreams land in v0.0.2. Two come from one root cause: `Page.Redraw`
 keeps nothing it already computed, so every pointer move, every window drag, and
 every click reparses the HTML, recollects the stylesheets, relays the page out,
@@ -29,6 +35,7 @@ from `documentation/features.md`.
 | [hot-reload.md](hot-reload.md) | Every example embeds its HTML, so an edit needs a rebuild and a restart. A file-backed page watches its file by default and redraws on change. |
 | [electron-gaps.md](electron-gaps.md) | The still-absent list, sorted for this cycle. Drag and drop, printing, and packaging land; IME, accessibility, video, canvas, WebGL, and auto-update are recorded with what each one waits on. |
 | [accessibility-desktop-ime.md](accessibility-desktop-ime.md) | Follow-up phases for accessibility, desktop IME, shell integrations, and planning-only browser APIs. |
+| [damage-and-invalidation/](damage-and-invalidation/README.md) | The frame-dirty fix left one union rect per frame, so two separated animations union into a full-board rect and a rotation still redraws the page. The folder ports Chrome's damage list, retargets content in the tick, and records the blinkless boundary. |
 | [input-interaction.md](input-interaction.md) | Typing can only append, Tab moves nothing, there is no drag selection, context menu, cursor shape, touch scroll, pinch, fullscreen, or page scroll call. The plan adds the caret model first, then the interactions that need it. |
 
 Phase 1 of dynamic-resize and incremental-repaint is the same work, the

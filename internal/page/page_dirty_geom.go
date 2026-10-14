@@ -7,8 +7,13 @@ import (
 )
 
 // opBounds is one operation's box in CSS pixels. A text or bullet op carries
-// its baseline in Y, so the top comes from the face ascent.
+// its baseline in Y, so the top comes from the face ascent. A transformed op
+// bounds where its ink lands, not its layout box.
 func opBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
+	if op.XformSet && !op.Transform().IsIdentity() {
+		return opBoundsXform(op, d)
+	}
+
 	scale := d.PixelPerPoint
 	if scale <= 0 {
 		scale = 1

@@ -43,6 +43,7 @@ type formState struct {
 	byID         map[string]Control
 	order        []string
 	focusID      string
+	lastFocusID  string
 	caret        int
 	anchor       int
 	all          bool

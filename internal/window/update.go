@@ -50,6 +50,7 @@ func (s *shell) Update() error {
 	if err := s.timedErr(&s.dev.stages.tick, s.tickFrame); err != nil {
 		return err
 	}
+	s.captureFrameOptIn()
 
 	if err := s.pollReload(); err != nil {
 		return err

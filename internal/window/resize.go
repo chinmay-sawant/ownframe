@@ -9,14 +9,16 @@ import (
 // inside that window keeps the previous frame scaled to the window instead.
 const relayoutEvery = 100 * time.Millisecond
 
-// resize commits a pending window size to the page. While the size keeps
-// changing it relayouts at most every relayoutEvery; a size that held still
-// for one update commits at once, so a drag ends on its final size.
+// resize commits the page viewport to the page: the pending window size
+// minus the devtools dock when it is open. While the size keeps changing it
+// relayouts at most every relayoutEvery; a size that held still for one
+// update commits at once, so a drag ends on its final size.
 func (s *shell) resize() error {
 	moving := s.moving
 	s.moving = false
 
-	wantW, wantH := s.app.Clamp(s.pendingW, s.pendingH)
+	wantW, wantH := s.viewOf(s.pendingW, s.pendingH)
+	wantW, wantH = s.app.Clamp(wantW, wantH)
 	haveW, haveH := s.app.Size()
 	if wantW == haveW && wantH == haveH {
 		return nil

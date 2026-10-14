@@ -59,4 +59,5 @@ func (s *shell) drawBadge(screen *ebiten.Image) {
 	op.GeoM.Translate(x+4, y+4)
 	op.ColorScale.ScaleWithColor(color.White)
 	text.Draw(screen, badgeLabel, badgeFace, &op)
+	s.frameNote(frameRect(x, y, width, height))
 }

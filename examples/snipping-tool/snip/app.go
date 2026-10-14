@@ -26,7 +26,7 @@ type App struct {
 // the OS tools when none is given. A failed capture falls back to
 // DemoImage so headless runs keep working.
 func New(capturer ...Capturer) (*App, error) {
-	page, err := ownframe.New(ownframe.Config{
+	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:  "Snipping tool",
 		HTML:   templateHTML,
 		Width:  DefaultWidth,

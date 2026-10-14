@@ -46,14 +46,13 @@ func TestFlapsSettle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// A blank tile paints no text op, so only glyph tiles need to settle.
+	// Every tile carries a glyph or the braille filler, so every cell has a
+	// text op to settle.
 	want := make(map[string]string)
 
 	for _, row := range app.View().Rows {
 		for _, c := range row.Cells {
-			if c.Ch != " " {
-				want[c.ID] = c.Ch
-			}
+			want[c.ID] = c.Ch
 		}
 	}
 

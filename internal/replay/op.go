@@ -8,10 +8,19 @@ import (
 
 // drawOp replays one operation. Kinds that carry no paint are ignored.
 // A viewport-fixed op ignores the scroll translation: the engine placed it
-// against the viewport, so it stays on screen while the page moves.
+// against the viewport, so it stays on screen while the page moves. An op
+// with a non-identity transform draws through its baked matrix; an image
+// already places itself through its own transform.
 func drawOp(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	if op.Fixed {
 		dx, dy = 0, 0
+	}
+
+	if op.XformSet && op.Kind != layout.DisplayOpImage &&
+		!op.Transform().IsIdentity() {
+		drawXform(dst, op, dx, dy)
+
+		return
 	}
 
 	switch op.Kind {
