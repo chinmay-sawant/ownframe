@@ -18,6 +18,8 @@ type Tracker struct {
 	changes []Change
 	// bound caps how many changes are accumulated before a full style pass.
 	bound int
+	// framePasses counts style dirty passes in the current frame.
+	framePasses int
 }
 
 // New returns a tracker with the given coalescing bound.

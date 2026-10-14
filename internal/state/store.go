@@ -8,6 +8,9 @@ type Store struct {
 
 	data any
 
+	focus  FocusState
+	scroll ScrollState
+
 	changes []Change
 
 	listeners []func(Change)

@@ -23,7 +23,11 @@ func (a *App) saveNavState() {
 	}
 	a.ensureNavFocusStates()
 
-	state := navFocusState{Focus: a.page.FocusID()}
+	focus := a.page.FocusID()
+	if focus == "" {
+		focus = a.page.LastFocusID()
+	}
+	state := navFocusState{Focus: focus}
 	x, y := a.page.ScrollOffset()
 	state.ScrollX, state.ScrollY = x, y
 	a.navFocusStates[a.view.Nav] = state

@@ -26,6 +26,7 @@ type Node struct {
 	Mounted   bool
 	Updated   bool
 	Removed   bool
+	UndoRef   UndoRef
 	Lifecycle Lifecycle
 	Disposed  bool
 	Layout    Layout
