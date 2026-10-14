@@ -34,10 +34,16 @@ func (a *App) setProgress(progress int) {
 		progress = 100
 	}
 
-	a.view.Progress = progress
-	elapsed := a.seconds * progress / 100
-	a.view.Elapsed = formatSeconds(elapsed)
-	a.view.Remaining = formatSeconds(a.seconds - elapsed)
+	// Reuse the incoming progress value and only reformat the time strings
+	// when the displayed progress actually changes.
+	if progress != a.view.Progress {
+		a.view.Progress = progress
+		elapsed := a.seconds * progress / 100
+		a.view.Elapsed = formatSeconds(elapsed)
+		a.view.Remaining = formatSeconds(a.seconds - elapsed)
+	} else {
+		a.view.Progress = progress
+	}
 
 	a.page.Invalidate("seek")
 	a.page.Invalidate("elapsed")
@@ -47,10 +53,15 @@ func (a *App) setProgress(progress int) {
 
 // resetProgress returns the seek bar to the start of the current track.
 func (a *App) resetProgress() {
+	oldSeconds := a.seconds
 	a.seconds = lengthSeconds(a.view.Now.Length)
 	a.view.Progress = 0
 	a.view.Elapsed = "0:00"
-	a.view.Remaining = formatSeconds(a.seconds)
+
+	// Keep the formatted remaining time when the track length is unchanged.
+	if oldSeconds != a.seconds || a.view.Remaining == "" {
+		a.view.Remaining = formatSeconds(a.seconds)
+	}
 
 	a.page.Invalidate("seek")
 	a.page.Invalidate("elapsed")

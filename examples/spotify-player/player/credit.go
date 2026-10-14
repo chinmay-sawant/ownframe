@@ -17,18 +17,21 @@ func (a *App) ensureCredit() {
 // animateCredit shows the loading note, or the clip behind the voice.
 func (a *App) animateCredit(d *ownframe.Display, boxes []ownframe.Box) {
 	text := ""
+	credit := a.audio.Credit()
 
 	switch {
 	case a.audio.Loading():
 		text = "Loading free audio..."
-	case a.audio.Credit().Title != "":
-		clip := a.audio.Credit()
-		text = clip.Title + " - " + clip.Creator + " (" + clip.License + ")"
+	case credit.Title != "":
+		text = credit.Title + " - " + credit.Creator + " (" + credit.License + ")"
 	case a.audio.Err() != nil:
 		text = "Audio unavailable"
 	}
 
-	if text == "" {
+	if text == "" || text == a.view.Credit {
+		if text != "" {
+			a.view.Credit = text
+		}
 		return
 	}
 
@@ -57,12 +60,18 @@ func (a *App) updateView(pos, dur time.Duration) {
 	}
 
 	a.view.Progress = int(fraction * 100)
-	a.view.Elapsed = formatSeconds(int(pos.Seconds()))
+	elapsed := formatSeconds(int(pos.Seconds()))
+	if elapsed != a.view.Elapsed {
+		a.view.Elapsed = elapsed
+	}
 
 	rem := int((dur - pos).Seconds())
 	if rem < 0 {
 		rem = 0
 	}
 
-	a.view.Remaining = formatSeconds(rem)
+	remaining := formatSeconds(rem)
+	if remaining != a.view.Remaining {
+		a.view.Remaining = remaining
+	}
 }

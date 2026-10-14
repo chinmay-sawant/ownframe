@@ -13,7 +13,6 @@ func (a *App) navigate(screen string) {
 	a.view.Nav = screen
 	a.updateNavButtons()
 
-	a.page.SetData(a.view)
 	a.restoreNavState(screen)
 	a.touchNavRetained(screen)
 }
@@ -31,7 +30,6 @@ func (a *App) moveNav(delta int) {
 	a.view.Nav = a.navHistory[at]
 	a.updateNavButtons()
 
-	a.page.SetData(a.view)
 	a.restoreNavState(a.view.Nav)
 	a.touchNavRetained(a.view.Nav)
 }

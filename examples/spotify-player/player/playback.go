@@ -4,6 +4,7 @@ import (
 	"context"
 	"math/rand"
 	"strings"
+	"time"
 )
 
 // Close releases the audio device. main defers it after a successful New.
@@ -20,6 +21,22 @@ func (a *App) Tick(ctx context.Context) error {
 	a.audio.Update()
 	a.autoStart(ctx)
 
+	if a.runtime != nil {
+		wasSlow := false
+		if a.runtime.Loading != nil {
+			wasSlow = a.runtime.Loading.Slow
+		}
+		if a.audio.Loading() {
+			a.runtime.StartLoading("audio")
+			if a.runtime.SlowLoading(time.Now(), 2*time.Second) && !wasSlow {
+				a.logEvent("runtime", "audio-slow-loading")
+			}
+		} else if a.runtime.Loading != nil && a.runtime.Loading.Visible {
+			a.runtime.ResolveLoading()
+			a.logEvent("runtime", "audio-loaded")
+		}
+	}
+
 	if !a.audio.Loading() {
 		if err := a.advance(ctx); err != nil {
 			return err
@@ -27,6 +44,10 @@ func (a *App) Tick(ctx context.Context) error {
 	}
 
 	a.animate()
+
+	if a.runtime != nil && a.runtime.SampleWatchdog(time.Now(), time.Second, 120) {
+		a.logEvent("runtime", "watchdog-feedback-loop")
+	}
 
 	return nil
 }

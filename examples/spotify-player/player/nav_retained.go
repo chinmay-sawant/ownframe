@@ -2,7 +2,7 @@ package player
 
 // touchNavRetained keeps a retained node handle for the navigation row.
 func (a *App) touchNavRetained(screen string) {
-	if a.page == nil {
+	if a.page == nil || screen == "" {
 		return
 	}
 
@@ -28,7 +28,7 @@ func (a *App) touchNavRetained(screen string) {
 
 // storeNavStateRetained mirrors the saved state onto retained nodes.
 func (a *App) storeNavStateRetained(screen string, state navFocusState) {
-	if a.page == nil {
+	if a.page == nil || screen == "" {
 		return
 	}
 

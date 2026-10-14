@@ -20,6 +20,7 @@ type App struct {
 	audioKey       string
 	logger         *os.File
 	navFocusStates map[string]navFocusState
+	runtime        *RuntimeBehaviorHelper
 }
 
 // New parses the player template, registers its images, and starts on the
@@ -56,6 +57,7 @@ func NewWith(base string, engine *music.Engine) (*App, error) {
 		base:       base,
 		audio:      engine,
 		logger:     openSpotifyLog(),
+		runtime:    NewRuntimeBehaviorHelper(),
 	}
 	app.updateNavButtons()
 	app.seconds = lengthSeconds(app.view.Now.Length)

@@ -64,7 +64,8 @@ func (a *App) Load(ctx context.Context, term string) error {
 func (a *App) offline(err error) error {
 	a.view.Status = sampleStatus
 	a.ensureCredit()
-	a.page.SetData(a.view)
+	a.page.SetData(&a.view)
+	a.page.SetChangedProperties([]string{"Status", "Credit"})
 
 	return err
 }

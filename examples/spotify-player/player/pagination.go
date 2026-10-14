@@ -1,6 +1,8 @@
 package player
 
-import "fmt"
+import (
+	"strconv"
+)
 
 const trackPageSize = 5
 
@@ -21,12 +23,31 @@ func paginateTracks(view *View, page int) {
 	if end > count {
 		end = count
 	}
+
+	if cap(view.PageTracks) < trackPageSize {
+		view.PageTracks = make([]Track, 0, trackPageSize)
+	}
+	view.PageTracks = view.PageTracks[:0]
+	view.PageTracks = append(view.PageTracks, view.Tracks[start:end]...)
+
 	view.TrackPage, view.TrackPages = page, pages
-	view.PageTracks = view.Tracks[start:end]
 	view.HasPrev, view.HasNext = page > 0, page+1 < pages
-	view.TrackRange = fmt.Sprintf("Showing %d–%d of %d · Page %d of %d",
-		start+1, end, count, page+1, pages)
+
 	if count == 0 {
 		view.TrackRange = "Showing 0 tracks"
+		return
 	}
+
+	buf := make([]byte, 0, 64)
+	buf = append(buf, "Showing "...)
+	buf = strconv.AppendInt(buf, int64(start+1), 10)
+	buf = append(buf, "–"...)
+	buf = strconv.AppendInt(buf, int64(end), 10)
+	buf = append(buf, " of "...)
+	buf = strconv.AppendInt(buf, int64(count), 10)
+	buf = append(buf, " · Page "...)
+	buf = strconv.AppendInt(buf, int64(page+1), 10)
+	buf = append(buf, " of "...)
+	buf = strconv.AppendInt(buf, int64(pages), 10)
+	view.TrackRange = string(buf)
 }
