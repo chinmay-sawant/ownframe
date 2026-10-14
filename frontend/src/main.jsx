@@ -4,12 +4,11 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
-import { documents, contentUrl, catPreview } from './content';
+import { documents, documentGroups, contentUrl, catPreview } from './content';
 import { loadStars } from './stars';
 import { repository } from './project';
 import './style.css';
 import ThemeToggle from './ThemeToggle';
-import DocPagination from './DocPagination';
 import gopher from '../../assets/brand/gopher.webp';
 import wisprFlowPreview from '../../assets/screenshots/demos/wispr-flow.webp';
 import teamsPreview from '../../assets/screenshots/demos/teams.webp';
@@ -87,11 +86,12 @@ func main() {
 function App() {
   const [hash, setHash] = useState(location.hash);
   const [stars, setStars] = useState(null);
+  const [docsMenuOpen, setDocsMenuOpen] = useState(false);
   const contentPane = useRef(null);
   useEffect(() => {
     let mounted = true;
     loadStars().then((value) => { if (mounted) setStars(value); });
-    const update = () => setHash(location.hash);
+    const update = () => { setHash(location.hash); setDocsMenuOpen(false); };
     window.addEventListener('hashchange', update);
     return () => { mounted = false; window.removeEventListener('hashchange', update); };
   }, []);
@@ -118,8 +118,13 @@ function App() {
       const pane = contentPane.current;
       if (pane) {
         const target = anchor && pane.querySelector(`#${CSS.escape(anchor)}`);
-        if (target) pane.scrollTop += target.getBoundingClientRect().top - pane.getBoundingClientRect().top;
-        else pane.scrollTop = 0;
+        if (window.matchMedia('(max-width: 760px), (max-width: 960px) and (max-height: 500px)').matches) {
+          if (target) target.scrollIntoView();
+          else window.scrollTo(0, 0);
+        } else {
+          if (target) pane.scrollTop += target.getBoundingClientRect().top - pane.getBoundingClientRect().top;
+          else pane.scrollTop = 0;
+        }
       }
     } else if (hash === '' || hash === '#home') window.scrollTo(0, 0);
     else documentElement(hash.slice(1))?.scrollIntoView();
@@ -141,29 +146,42 @@ function App() {
     </header>
     <main id="main" className={isDocs ? 'docs-main' : undefined} tabIndex="-1">
       {isDocs ? <div className="docs-layout">
-        <aside>
-          <h2>Documentation</h2>
-          <nav className="docs-nav" aria-label="Documentation topics">{documents.map((entry) =>
-            <div key={entry.slug} className="docs-nav-entry">
-              <a href={entry.slug === 'showcase' ? '#docs/showcase/telegram' : `#docs/${entry.slug}`}
-                aria-current={slug === entry.slug && entry.slug !== 'showcase' ? 'page' : undefined}
-                className={slug === 'showcase' && entry.slug === 'showcase' ? 'docs-nav-parent active' : 'docs-nav-parent'}>
-                {entry.title}
-              </a>
-              {entry.slug === 'showcase' && <div className="showcase-subnav" role="group" aria-label="Showcase sections">
-                {showcaseSections.map((section) => <a key={section.id}
-                  href={`#docs/showcase/${section.id}`}
-                  aria-current={slug === 'showcase' && activeShowcase === section.id ? 'page' : undefined}>
-                  {section.title}
-                </a>)}
-              </div>}
-            </div>
-          )}</nav>
+        <aside data-open={docsMenuOpen}>
+          <button className="docs-menu-toggle" type="button" aria-expanded={docsMenuOpen}
+            aria-controls="documentation-topics" onClick={() => setDocsMenuOpen(!docsMenuOpen)}>
+            Browse documentation
+          </button>
+          <nav id="documentation-topics" className="docs-nav" aria-label="Documentation topics"
+            onClick={(event) => { if (event.target.closest('a')) setDocsMenuOpen(false); }}>
+            {documentGroups.map((group) => group.standalone
+              ? <a key={group.title} href={`#docs/${group.documents[0].slug}`}
+                aria-current={slug === group.documents[0].slug ? 'page' : undefined}
+                className="docs-nav-parent">{group.documents[0].title}</a>
+              : <details key={group.title} className="docs-nav-group"
+                open={group.documents.some((entry) => entry.slug === slug)}>
+                <summary>{group.title}</summary>
+                <div className="docs-nav-links">
+                  {group.documents.map((entry) => <div key={entry.slug} className="docs-nav-entry">
+                    <a href={entry.slug === 'showcase' ? '#docs/showcase/telegram' : `#docs/${entry.slug}`}
+                      aria-current={slug === entry.slug && entry.slug !== 'showcase' ? 'page' : undefined}
+                      className={slug === 'showcase' && entry.slug === 'showcase' ? 'docs-nav-parent active' : 'docs-nav-parent'}>
+                      {entry.title}
+                    </a>
+                    {entry.slug === 'showcase' && <div className="showcase-subnav" role="group" aria-label="Showcase sections">
+                      {showcaseSections.map((section) => <a key={section.id}
+                        href={`#docs/showcase/${section.id}`}
+                        aria-current={slug === 'showcase' && activeShowcase === section.id ? 'page' : undefined}>
+                        {section.title}
+                      </a>)}
+                    </div>}
+                  </div>)}
+                </div>
+              </details>)}
+          </nav>
         </aside>
         <article ref={contentPane} className={`markdown docs-content${isShowcase ? ' showcase-page' : ''}`}>
-          {document ? <><Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}
+          {document ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}
             urlTransform={(url) => contentUrl(url, document)} components={markdownComponents}>{showcaseText}</Markdown>
-            <DocPagination documents={documents} slug={slug} /></>
             : <><h1>Document not found</h1><a href="#docs/readme">Open the documentation index</a></>}
         </article>
       </div> : <>

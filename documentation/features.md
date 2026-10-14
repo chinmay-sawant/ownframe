@@ -1,14 +1,12 @@
 # Features
 
-The library keeps one Go process and one HTML template. There is no JavaScript engine and no second process. `go.mod` requires `blinkless` `v0.0.0-20261010174808-34d93862f9ed` and Ebiten directly, plus `golang.org/x/image` and `golang.org/x/text`, both already in Ebiten's tree. These features did not add modules. The Android runtime and its limits are described in [android-runtime.md](android-runtime.md). The example index is [../examples/readme.md](../examples/readme.md).
+OwnFrame renders HTML and CSS screens while your app logic runs in Go. Blinkless lays out the page, and Ebitengine opens the native window. OwnFrame does not embed a browser or JavaScript runtime.
+
+This page summarizes supported features and current limits. Use the linked guides for setup and examples. See [Android runtime limits](android-runtime.md) and [all examples](../examples/readme.md).
 
 ## Screen paint
 
-`Page.Redraw` fills the `html/template`, then `internal/render` parses the HTML and applies the CSS. The parsed tree and the styled document are cached by executed source, so a later redraw of the same source skips the parse and the sheet collection. `render.DisplayListDocument` returns the placement as vector operations; when `render.Replayable` accepts every operation, the page keeps that `layout.Display` and no bitmap. Any other page falls back to `bitmap.Paint` of that same list and stores the `image.Image`. The bitmap painter reports unsupported paint instead of silently omitting it. The window replays the display list with `internal/replay`, or blits the bitmap on a fallback page. `Page.PNG` rasterizes on demand for `GET /frame.png` and for tests, and caches the bytes until the next `Redraw`. `Page.SetImage` registers encoded image bytes for a template image source; the resolver rides on the render state into both paths, so a fetched image can paint as an `OpImage` or into the bitmap. A click that changes one box no longer redraws the whole page: the page reports the changed region with `TakeDirty` and the window repaints only it into a content buffer or a bounded viewport buffer for oversized pages, while a fallback page and a page with a frame callback keep the full repaint ([repaint.md](repaint.md)).
-
-`internal/render.DisplayList` stops before the engine's paint step, so it never rasterizes. `Display.Boxes` carries the same hit-test boxes `Lay` returns, so a replayed page needs no bitmap for clicks.
-
-Detail is in [screen.md](screen.md).
+OwnFrame updates the page from its template and draws it in the window. A page can repaint only the area changed by an action. Read [how a screen is rendered](screen.md) and [how repaint works](repaint.md).
 
 ## CSS masks
 

@@ -22,6 +22,40 @@ export const documents = Object.entries({ ...sources, ...extras }).map(([path, t
   return a.title.localeCompare(b.title);
 });
 
+const navigation = [
+  { title: 'Start here', slugs: ['readme'], standalone: true },
+  {
+    title: 'Build a screen',
+    slugs: ['window', 'screen', 'forms', 'binding', 'theming', 'interaction', 'editing', 'pointer', 'keys', 'scrolling', 'navigation'],
+  },
+  {
+    title: 'Run your app',
+    slugs: ['platforms', 'web', 'android-app-creation', 'android-build', 'android-runtime', 'packaging', 'hot-reload'],
+  },
+  {
+    title: 'Reference',
+    slugs: ['features', 'accessibility', 'accessibility-native', 'clipboard', 'drag-drop', 'crash', 'fetch', 'ipc', 'printing', 'emoji', 'desktop-shell-integrations'],
+  },
+  {
+    title: 'Advanced topics',
+    slugs: ['frames', 'repaint', 'devtools', 'performance', 'performance-baseline', 'runtime-behavior', 'styleinvalid'],
+  },
+  {
+    title: 'Examples and comparisons',
+    slugs: ['showcase', 'examples-readme', 'examples-desktop-cat-readme', 'examples-telegram-android-readme', 'features-examples', 'compare-electron', 'compare-go-app-frameworks', 'compare-rust-gpui', 'compare-syntax', 'migrate-experimental', 'rebrand', 'tricks-tips'],
+  },
+];
+
+export const documentGroups = navigation.map(({ title, slugs, standalone }) => ({
+  title,
+  standalone,
+  documents: slugs.map((slug) => documents.find((entry) => entry.slug === slug)).filter(Boolean),
+})).filter((group) => group.documents.length);
+
+const groupedSlugs = new Set(documentGroups.flatMap((group) => group.documents.map((entry) => entry.slug)));
+const otherDocuments = documents.filter((entry) => !groupedSlugs.has(entry.slug));
+if (otherDocuments.length) documentGroups.push({ title: 'More topics', documents: otherDocuments });
+
 const images = import.meta.glob([
   '../../assets/**/*.webp', '../../assets/**/*.jpg', '../../assets/**/*.png',
 ], { import: 'default', eager: true });
