@@ -172,11 +172,11 @@ Dock closed: idle alloc 620 KB/s down to 380 KB/s; graphics queue vertex high-wa
 
 ## Test plan
 
-- [ ] `make build` (runs `go vet -p 1 ./... ./examples/...`)
-- [ ] `make test` (runs `go test -p 1 ./... ./examples/...`)
-- [ ] `GOOS=js GOARCH=wasm` compile check (when replay or window surface changed)
-- [ ] Departure-board dump and idle probes from the commit bodies
-- [ ] Headless screenshot check for the devtools dock and rebuilt docs site
+- [x] `make build` (runs `go vet -p 1 ./... ./examples/...`) - passed 2026-10-15
+- [x] `make test` (runs `go test -p 1 ./... ./examples/...`) - passed 2026-10-15, 98 packages ok
+- [x] `GOOS=js GOARCH=wasm` compile check - passed 2026-10-15 (`go build -o /tmp/... ./examples/login`, same shape as `scripts/browser.sh`)
+- [x] Departure-board dump and idle probes from the commit bodies - verified by author
+- [x] Headless screenshot check for the devtools dock and rebuilt docs site - verified by author
 
 ### Commands
 
@@ -191,8 +191,13 @@ Branch commits report green `make build` and `make test` on their final sources 
 ### Local run
 
 ```
-(TBD - fill after running make build and make test on the merge HEAD.)
+Run on 2026-10-15, branch HEAD `d5e54ca` (tree clean; the follow-up commit only edits this PR file, so the code is identical).
+make build: passed (go vet -p 1 ./... ./examples/...)
+make test:  passed (go test -p 1 ./... ./examples/..., 98 packages ok, exit 0)
+wasm:       passed (GOOS=js GOARCH=wasm go build ./examples/login, exit 0)
 ```
+
+Note: `GOOS=js GOARCH=wasm go vet ./...` flags a pre-existing test-tag gap unrelated to this branch (`ime_bounds_test.go` calls the desktop/mobile-only `imeCaretScreenRect`, which the `js` build omits by design in `ime_other.go`); those files are untouched by this branch. The wasm compile check itself passes.
 
 ---
 
