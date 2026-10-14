@@ -1,6 +1,8 @@
 package player
 
 import (
+	"os"
+
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/music"
 )
@@ -16,6 +18,7 @@ type App struct {
 	lastVolume int
 	audio      *music.Engine
 	audioKey   string
+	logger     *os.File
 }
 
 // New parses the player template, registers its images, and starts on the
@@ -51,6 +54,7 @@ func NewWith(base string, engine *music.Engine) (*App, error) {
 		navHistory: []string{"home"},
 		base:       base,
 		audio:      engine,
+		logger:     openSpotifyLog(),
 	}
 	app.updateNavButtons()
 	app.seconds = lengthSeconds(app.view.Now.Length)

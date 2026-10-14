@@ -11,6 +11,7 @@ func (a *App) Close() {
 	if a.audio != nil {
 		a.audio.Close()
 	}
+	a.closeLog()
 }
 
 // Tick advances audio and animation once per frame.

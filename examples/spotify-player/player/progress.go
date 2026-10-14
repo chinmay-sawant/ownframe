@@ -42,6 +42,7 @@ func (a *App) setProgress(progress int) {
 	a.page.Invalidate("seek")
 	a.page.Invalidate("elapsed")
 	a.page.Invalidate("remaining")
+	a.logEvent("progress", "setProgress")
 }
 
 // resetProgress returns the seek bar to the start of the current track.
@@ -54,4 +55,5 @@ func (a *App) resetProgress() {
 	a.page.Invalidate("seek")
 	a.page.Invalidate("elapsed")
 	a.page.Invalidate("remaining")
+	a.logEvent("progress", "resetProgress")
 }

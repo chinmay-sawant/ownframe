@@ -72,6 +72,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	}
 
 	a.page.SetData(a.view)
+	a.logEvent("click", action)
 
 	return nil
 }
