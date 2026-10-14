@@ -14,6 +14,10 @@
 *.out
 .DS_Store
 temp
+# Android and Gradle build state
+**/.gradle/
+**/build/
+**/local.properties
 # Teams example SQLite state
 *.db
 *.db-wal

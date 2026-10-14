@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html,body{margin:0;min-height:100%;background:#fff9f2;color:#352d29;font:16px sans-serif}
+*{box-sizing:border-box}
+body{padding:18px 16px 28px}
+.shell{max-width:520px;margin:0 auto}
+.brand{font-size:13px;font-weight:700;letter-spacing:.5px;color:#8e7464;margin:3px 2px 18px}
+h1{font-size:26px;line-height:1.15;margin:0 0 7px;color:#3e312b}
+.intro{line-height:1.45;color:#74665f;margin:0 0 18px}
+.card{background:#fff;border:1px solid #f0e4da;border-radius:22px;padding:18px;margin:13px 0}
+.hero{display:flex;align-items:center;min-height:150px;background:#ffede3;border-color:#ffdfcf;padding:12px 14px}
+.hero-copy{flex:1;min-width:0}
+.hero img{width:126px;height:126px;object-fit:contain;flex:none}
+.eyebrow{color:#a26548;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.headline{font-size:22px;line-height:1.2;font-weight:700;margin:6px 0;color:#49372f}
+.copy{font-size:14px;line-height:1.45;color:#75645b;margin:5px 0}
+.button{display:block;width:100%;min-height:52px;border:0;border-radius:16px;background:#b96e4b;color:white;text-align:center;font-size:16px;font-weight:700;padding:15px 16px;margin:15px 0 8px}
+.button.secondary{background:#f5e6dc;color:#805139}
+.privacy{font-size:13px;line-height:1.45;color:#7b7068;text-align:center;margin:13px 8px}
+.title-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 1px 6px}
+.title-row h1{font-size:23px;margin:0}
+.link{color:#a45d3a;font-size:14px;font-weight:700;padding:12px 4px;cursor:pointer}
+.app-list{margin:10px 0}
+.app-row{display:flex;align-items:center;gap:12px;min-height:64px;padding:9px 0;border-bottom:1px solid #f2e9e2}
+.letter,.app-icon{width:42px;height:42px;border-radius:13px;background:#f9e6d9;flex:none}
+.letter{color:#986348;display:flex;align-items:center;justify-content:center;font-weight:700}
+.app-icon{object-fit:contain;background:#f7f3ef}
+.app-name{font-size:16px;font-weight:600;color:#40352f;flex:1}
+.arrow{font-size:20px;color:#b59c8b}
+.small{font-size:13px;color:#84766e;line-height:1.4}
+.big-time{font-size:37px;line-height:1.15;font-weight:700;color:#49372f;margin:9px 0 2px}
+.chart{height:116px;display:flex;align-items:flex-end;gap:7px;margin:16px 0 0;padding:0 2px}
+.day-col{height:100%;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
+.bar-area{height:82px;width:100%;display:flex;align-items:flex-end;justify-content:center}
+.bar{width:70%;max-width:27px;min-height:5px;border-radius:9px 9px 5px 5px;background:#e8c5af}
+.level-0{height:5px}.level-1{height:14px}.level-2{height:25px}.level-3{height:38px}.level-4{height:52px}.level-5{height:67px}.level-6{height:82px;background:#bf7957}
+.day-label{font-size:11px;color:#87786f}
+.stat-grid{display:flex;gap:10px;margin:13px 0}
+.stat{flex:1;background:#fff;border:1px solid #f0e4da;border-radius:18px;padding:14px 12px}
+.stat-value{font-size:21px;font-weight:700;color:#49372f;margin-top:6px}
+.goal{background:#f3eee4}
+.goal-title{font-size:14px;color:#7d654f;font-weight:700}
+.goal-message{font-size:17px;font-weight:700;line-height:1.35;margin-top:7px;color:#514337}
+.foot{font-size:12px;text-align:center;color:#8b7d72;margin:18px 0 4px}
+.empty{padding:16px 0;color:#766b63;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="brand">MOCHI'S LITTLE NOOK</div>
+{{if eq .Screen "welcome"}}
+<h1>A softer look at your screen time</h1>
+<p class="intro">See your screen time across all your apps, then check in with one app whenever you like.</p>
+<section class="card hero"><div class="hero-copy"><div class="eyebrow">Your tiny companion</div><div class="headline">Hi, I'm Mochi!</div><p class="copy">Let's make a little room for the things you love.</p></div><img src="mochi" alt="Mochi the cat"></section>
+<section class="card"><div class="headline">Connect Android Usage Access</div><p class="copy">Android uses this permission to build your all-apps overview and daily chart.</p><button class="button" data-action="usage-access">Open Usage Access</button><p class="small">Your stats stay on this phone. Mochi doesn't send them anywhere.</p></section>
+<p class="privacy">You can turn access off any time in Android Settings.</p>
+{{else if eq .Screen "picker"}}
+<div class="title-row"><h1>Choose an app</h1><div class="link" data-action="close-picker">Done</div></div>
+<p class="intro">Pick an app to focus your chart on. You can return to the all-apps overview any time.</p>
+<section class="card"><div class="eyebrow">Apps with recent activity</div><div class="app-list">
+{{range .Apps}}<div class="app-row" data-action="app-{{.Package}}">{{if .IconSource}}<img class="app-icon" src="{{.IconSource}}" alt="" data-action="app-{{.Package}}">{{else}}<div class="letter" data-action="app-{{.Package}}">{{.Letter}}</div>{{end}}<div class="app-name" data-action="app-{{.Package}}">{{.Label}}</div><div class="arrow" data-action="app-{{.Package}}">›</div></div>{{else}}<div class="empty">No launchable apps with recent screen time showed up yet. Try again a little later.</div>{{end}}
+</div></section>
+<p class="privacy">App names are used only to let you choose. Usage totals stay on this phone.</p>
+{{else}}
+<div class="title-row"><h1>Your gentle check-in</h1><div class="link" data-action="choose-app">{{if .Selected}}Change app{{else}}Choose an app{{end}}</div></div>
+<section class="card hero"><div class="hero-copy"><div class="eyebrow">{{if .Selected}}Today with {{.SelectedName}}{{else}}Today across all apps{{end}}</div><div class="big-time">{{.Today}}</div><p class="copy">Time in the foreground today</p></div><img src="mochi" alt="Mochi the cat"></section>
+<section class="card"><div class="eyebrow">Last 7 days</div><div class="chart">{{range .Days}}<div class="day-col"><div class="bar-area"><div class="bar level-{{.Level}}"></div></div><div class="day-label">{{.Label}}</div></div>{{end}}</div></section>
+<div class="stat-grid"><section class="stat"><div class="small">This week</div><div class="stat-value">{{.Week}}</div></section><section class="stat"><div class="small">Daily average</div><div class="stat-value">{{.Average}}</div></section></div>
+<section class="card goal"><div class="goal-title">A gentle daily goal · 2 hours</div><div class="goal-message">{{.GoalMessage}}</div><p class="copy">A little pause is always yours to choose.</p></section>
+<p class="foot">{{if .Selected}}Only {{.SelectedName}} is shown{{else}}All apps are included{{end}} · your stats stay on this phone</p>
+{{end}}
+</div>
+</body>
+</html>
