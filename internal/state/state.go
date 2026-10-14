@@ -7,12 +7,15 @@ import "time"
 
 // Change describes one property transition.
 type Change struct {
-	Path      string
-	Old       any
-	New       any
-	Origin    Origin
-	At        time.Time
-	Identity  string
-	ElementID string
-	StableID  string
+	Path       string
+	Old        any
+	New        any
+	Origin     Origin
+	At         time.Time
+	Identity   string
+	ElementID  string
+	StableID   string
+	Properties []string
+	Changed    []string
+	Props      []string
 }

@@ -9,11 +9,14 @@ func (s *Store) PatchChange(path string, value any) Change {
 
 	old := valueAtPath(s.data, path)
 	c := Change{
-		Path:   path,
-		Old:    old,
-		New:    value,
-		Origin: s.origin,
-		At:     time.Now(),
+		Path:       path,
+		Old:        old,
+		New:        value,
+		Origin:     s.origin,
+		At:         time.Now(),
+		Properties: []string{path},
+		Changed:    []string{path},
+		Props:      []string{path},
 	}
 
 	if nd, ok := setPath(s.data, path, value); ok {

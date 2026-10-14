@@ -11,6 +11,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
 // Page is one HTML template and the last picture it produced.
@@ -62,6 +63,8 @@ type Page struct {
 	watch           *watchState
 	dirtyRects      []image.Rectangle
 	lastPatch       DisplayPatch
+	changedProps    []string
+	stateStore      *state.Store
 	elements        *element.Registry
 	dirtyFull       bool
 	frameState

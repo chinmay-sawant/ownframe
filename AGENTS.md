@@ -48,6 +48,21 @@ Read `documentation/features.md` before changing paint, theming, frames, IPC, na
 
 A page taller or wider than the window scrolls on the mouse wheel. A picture that matches the window stays at one CSS pixel per window pixel. The sign-in example accepts the email `secret` and the password `secret`.
 
+## Working directory and paths
+
+- Always work from an explicit absolute path. For the main repository use
+  `/home/chinmay/ChinmayPersonalProjects/ownframe`. For a named worktree use its
+  absolute path, for example `/home/chinmay/ChinmayPersonalProjects/ownframe-wt-p1`.
+- Never run `find`, `grep`, or any filesystem scan from `/` or from a home
+  directory. Restrict searches to the repository or worktree root you are working
+  in, by giving the exact absolute path as the first argument, for example
+  `find /home/chinmay/ChinmayPersonalProjects/ownframe -name '*.go'`.
+- A subagent must `cd` into the absolute repository or worktree path before
+  running any command. Do not rely on inherited current directories, and do
+  not traverse outside the assigned project tree.
+- Do not scan or inspect files outside the ownframe repository unless the user
+  explicitly asks for them.
+
 ## Go file size
 
 Every Go file is at most 2000 characters. Count with `wc -m`. That number includes newlines. When a file would exceed 2000 characters, split it inside the same package and keep the behavior. One file in the package carries the package comment. The other files start with the package clause.

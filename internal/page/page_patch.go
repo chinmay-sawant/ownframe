@@ -9,6 +9,11 @@ type DisplayPatch struct {
 	Removed int
 	Regions int
 	Full    bool
+
+	Properties        []string
+	Props             []string
+	ChangedProperties []string
+	ChangedProps      []string
 }
 
 var displayOpPool = sync.Pool{

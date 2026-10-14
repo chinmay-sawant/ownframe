@@ -37,6 +37,7 @@ func (p *Page) PatchDisplay(fn func(d *Display)) DisplayPatch {
 		patch.Regions = 1
 	}
 
+	patch = p.withChangedProps(patch)
 	p.lastPatch = patch
 	p.freeOps(buf)
 	return patch
@@ -52,6 +53,6 @@ func (p *Page) PatchOp(i int, fn func(o *DisplayOp)) bool {
 	fn(&p.display.Ops[i])
 	nw := opBounds(&p.display.Ops[i], p.display)
 	p.markRect(old.Union(nw))
-	p.lastPatch = DisplayPatch{Changed: 1, Regions: 1, Full: false}
+	p.lastPatch = p.withChangedProps(DisplayPatch{Changed: 1, Regions: 1, Full: false})
 	return true
 }
