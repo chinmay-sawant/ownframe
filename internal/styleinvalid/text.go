@@ -14,10 +14,18 @@ type RunCache map[TextRunKey]int
 func NewRunCache() RunCache { return RunCache{} }
 
 // Count returns how many distinct runs are cached.
-func (c RunCache) Count() int { return len(c) }
+func (c RunCache) Count() int {
+	if c == nil {
+		return 0
+	}
+	return len(c)
+}
 
 // Touch marks a run as seen, returning true if it was new.
 func (c RunCache) Touch(k TextRunKey) bool {
+	if c == nil {
+		return false
+	}
 	if v, ok := c[k]; ok {
 		c[k] = v + 1
 		return false
@@ -28,6 +36,9 @@ func (c RunCache) Touch(k TextRunKey) bool {
 
 // Seen reports whether a run has been touched.
 func (c RunCache) Seen(k TextRunKey) bool {
+	if c == nil {
+		return false
+	}
 	_, ok := c[k]
 	return ok
 }
@@ -38,10 +49,18 @@ func (c RunCache) Stable(k TextRunKey) bool {
 }
 
 // StableRuns reports distinct touched runs.
-func (c RunCache) StableRuns() int { return len(c) }
+func (c RunCache) StableRuns() int {
+	if c == nil {
+		return 0
+	}
+	return len(c)
+}
 
 // Touches reports the total touch count.
 func (c RunCache) Touches() int {
+	if c == nil {
+		return 0
+	}
 	n := 0
 	for _, v := range c {
 		n += v

@@ -63,7 +63,7 @@ func (w *Watchdog) Sample(now time.Time, window time.Duration, limit int) bool {
 		return false
 	}
 	w.LastAt = now
-	w.Last = w.Frames
+	w.Last = 0
 	w.Frames = 1
 	w.Window = window
 	w.Limit = limit

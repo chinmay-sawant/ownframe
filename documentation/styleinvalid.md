@@ -16,5 +16,5 @@ a state change so unmodified subtrees can be skipped during style and layout.
 ## Unsupported under scoped invalidation
 
 - Global percentage reflow that can affect the whole document.
-- More than one style dirty pass per frame before paint.
+- More than two style dirty passes per frame before paint.
 - Full-relayout style features that cannot be localized to a changed subtree.

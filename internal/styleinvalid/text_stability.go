@@ -1,6 +1,9 @@
 package styleinvalid
 
-import "hash/fnv"
+import (
+	"fmt"
+	"hash/fnv"
+)
 
 // TextRunStable reports whether a key is usable for cached reuse.
 func TextRunStable(k TextRunKey) bool { return k.Face != "" && k.Content != "" }
@@ -19,6 +22,10 @@ func (k TextRunKey) Signature() uint64 {
 	_, _ = h.Write([]byte(k.Face))
 	_, _ = h.Write([]byte{0})
 	_, _ = h.Write([]byte(k.Content))
+	_, _ = h.Write([]byte{0})
+	fmt.Fprintf(h, "%d", k.Color)
+	_, _ = h.Write([]byte{0})
+	fmt.Fprintf(h, "%d", k.SubpixelX)
 	return h.Sum64()
 }
 
