@@ -115,6 +115,52 @@ This branch cuts per-frame repaint work to the boxes that actually changed, park
 
 ---
 
+## Performance results
+
+All numbers below are quoted from the branch commit bodies, measured on the authors' machines. Ticking pages (Spotify player, Flappy) never throttle under idle pacing.
+
+### Damage list and partial swap (`1316914`, software-renderer probe, same machine)
+
+| Metric | Before | After |
+|---|---|---|
+| Frames per 10 s | 120 | 760 |
+| Alloc per frame | 23–54 MB | 4 KB |
+| Live heap | 850 MB | flat 230 MB |
+| RSS | 1.06 GB | 401–427 MB |
+| Full replays after startup | - | zero |
+
+### Raster cache and perf ring (`063a59b`, departure board 1908x999, Frame tab open)
+
+| Metric | Before | After |
+|---|---|---|
+| Go heap | 345.1 MB | 20.1 MB |
+| RSS | 678.3 MB | 190.7 MB |
+| Alloc per sample | 6.1 MB | 2.3 MB |
+| Frame p99 | 22.9 ms | 19.2 ms |
+| Long frames | 1 | none |
+
+Dock closed: idle alloc 620 KB/s down to 380 KB/s; graphics queue vertex high-water 86.6 MB down to 9.4 MB.
+
+### Idle pacing and text rasters (`de786e6`)
+
+| Metric | Before | After |
+|---|---|---|
+| Board idle CPU | 27.4% | 7.0% |
+| Wispr dashboard idle CPU | 7.8% | 3.3% |
+| 48-row static repaint | 1.0 ms, 873 KB, 4512 allocs | 35 us, 27 KB, 144 allocs |
+
+### Frame deadlines, dock clip, chunks, animations (`29079c6`)
+
+| Metric | Before | After |
+|---|---|---|
+| Idle presents | 8/s | 1–2/s |
+| Idle CPU median / mean | 5.0% / 5.1% | 2.0% / 3.6% (20.4% `NoIdlePace` control) |
+| Dock-occluded damage, 1908x1080 with 340 px dock | 152,400 px, 6 blits | 50,400 px, 4 blits |
+| Damaged card repaint | 8,589 ns, 5 ops, 18 allocs | 4,432 ns, 1 blit, 3 allocs |
+| Animated card frame | 170,854 ns, 203 allocs (`Redraw`) | 176 ns, 0 alloc (patch) |
+
+---
+
 ## Breaking changes / migration
 
 | Item | Migration |
@@ -184,7 +230,7 @@ gh pr create \
   --label enhancement
 ```
 
-Do not run this until the author asks. The branch is already pushed but no PR exists yet.
+PR #27 is open for this branch; the body below is kept in sync with `gh pr edit --body-file`.
 
 ---
 
