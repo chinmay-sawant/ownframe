@@ -7,9 +7,11 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node --test src/*.test.js"
+    "test": "node --test src/*.test.js",
+    "check:site": "node scripts/check-site.mjs"
   },
   "dependencies": {
+    "highlight.js": "11.11.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
