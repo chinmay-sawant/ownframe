@@ -9,6 +9,36 @@ const extras = import.meta.glob([
   '../../examples/telegram/android/README.md', '../../showcase.md',
 ], { query: '?raw', import: 'default', eager: true });
 
+const labels = {
+  readme: 'Overview',
+  showcase: 'Example apps',
+  window: 'Open a window',
+  screen: 'Rendering',
+  binding: 'Data and actions',
+  theming: 'Styling and themes',
+  platforms: 'Desktop and mobile',
+  features: 'Features and limits',
+  'android-app-creation': 'Create an Android app',
+  'android-build': 'Build for Android',
+  'android-runtime': 'Android runtime',
+  'examples-telegram-android-readme': 'Telegram on Android',
+  'examples-readme': 'Run an example',
+  'examples-desktop-cat-readme': 'Desktop cat',
+  'features-examples': 'Feature examples',
+  'compare-rust-gpui': 'Rust GPUI',
+  'compare-electron': 'Electron',
+  'compare-go-app-frameworks': 'Go frameworks',
+  'compare-syntax': 'Hello world syntax',
+  'accessibility-native': 'Native accessibility',
+  'desktop-shell-integrations': 'Desktop integration',
+  'performance-baseline': 'Performance measurements',
+  'runtime-behavior': 'Runtime behavior',
+  styleinvalid: 'Style invalidation',
+  'migrate-experimental': 'Migrate an older app',
+  rebrand: 'Project rename',
+  'tricks-tips': 'Tips',
+};
+
 export const documents = Object.entries({ ...sources, ...extras }).map(([path, text]) => ({
   path: path.replace('../../', ''),
   slug: path.startsWith('../../documentation/')
@@ -16,7 +46,7 @@ export const documents = Object.entries({ ...sources, ...extras }).map(([path, t
     : path.replace('../../', '').replace(/\.md$/, '').replaceAll('/', '-').toLowerCase(),
   title: text.match(/^# (.+)/m)?.[1] ?? path,
   text,
-})).sort((a, b) => {
+})).map((entry) => ({ ...entry, title: labels[entry.slug] ?? entry.title })).sort((a, b) => {
   if (a.slug === 'readme') return -1;
   if (b.slug === 'readme') return 1;
   return a.title.localeCompare(b.title);
@@ -24,25 +54,18 @@ export const documents = Object.entries({ ...sources, ...extras }).map(([path, t
 
 const navigation = [
   { title: 'Start here', slugs: ['readme'], standalone: true },
+  { title: 'Window', slugs: ['window'], standalone: true },
+  { title: 'Data', slugs: ['binding'], standalone: true },
+  { title: 'Styling', slugs: ['theming'], standalone: true },
+  { title: 'Platforms', slugs: ['platforms'], standalone: true },
+  { title: 'Features', slugs: ['features'], standalone: true },
   {
-    title: 'Build a screen',
-    slugs: ['window', 'screen', 'forms', 'binding', 'theming', 'interaction', 'editing', 'pointer', 'keys', 'scrolling', 'navigation'],
+    title: 'Examples',
+    slugs: ['showcase', 'examples-readme', 'examples-telegram-android-readme', 'examples-desktop-cat-readme', 'features-examples'],
   },
   {
-    title: 'Run your app',
-    slugs: ['platforms', 'web', 'android-app-creation', 'android-build', 'android-runtime', 'packaging', 'hot-reload'],
-  },
-  {
-    title: 'Reference',
-    slugs: ['features', 'accessibility', 'accessibility-native', 'clipboard', 'drag-drop', 'crash', 'fetch', 'ipc', 'printing', 'emoji', 'desktop-shell-integrations'],
-  },
-  {
-    title: 'Advanced topics',
-    slugs: ['frames', 'repaint', 'devtools', 'performance', 'performance-baseline', 'runtime-behavior', 'styleinvalid'],
-  },
-  {
-    title: 'Examples and comparisons',
-    slugs: ['showcase', 'examples-readme', 'examples-desktop-cat-readme', 'examples-telegram-android-readme', 'features-examples', 'compare-electron', 'compare-go-app-frameworks', 'compare-rust-gpui', 'compare-syntax', 'migrate-experimental', 'rebrand', 'tricks-tips'],
+    title: 'Comparisons',
+    slugs: ['compare-rust-gpui', 'compare-electron', 'compare-go-app-frameworks', 'compare-syntax'],
   },
 ];
 
@@ -54,13 +77,11 @@ export const documentGroups = navigation.map(({ title, slugs, standalone }) => (
 
 const groupedSlugs = new Set(documentGroups.flatMap((group) => group.documents.map((entry) => entry.slug)));
 const otherDocuments = documents.filter((entry) => !groupedSlugs.has(entry.slug));
-if (otherDocuments.length) documentGroups.push({ title: 'More topics', documents: otherDocuments });
+if (otherDocuments.length) documentGroups.push({ title: 'All guides', documents: otherDocuments, keepClosed: true });
 
 const images = import.meta.glob([
-  '../../assets/**/*.webp', '../../assets/**/*.jpg', '../../assets/**/*.png',
+  '../../assets/screenshots/**/*.webp', '../../assets/screenshots/**/*.jpg', '../../assets/screenshots/**/*.png',
 ], { import: 'default', eager: true });
-export const preview = images['../../assets/screenshots/demos/ownframe-preview.webp'];
-export const catPreview = images['../../assets/screenshots/demos/desktop-cat.webp'];
 const sourceBase = `${repository}/blob/master/`;
 const sourcePath = new URL(sourceBase).pathname;
 

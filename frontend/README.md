@@ -1,39 +1,50 @@
-# ownframe website
+# OwnFrame website
 
-A React and Vite site with the README demos and the repository's Markdown documentation. It uses plain CSS and native video controls. The site defaults to dark mode; the header toggle switches to light mode and remembers the choice in this browser. The Gopher mascot lives in `assets/brand/gopher.webp`.
+The homepage shows desktop and mobile examples first, then explains the shared engine, a small Go app, and the GPUI comparison. The Gopher mascot and yellow GitHub star remain part of the design.
 
 ## Run locally
 
 Use Node.js 22.12 or newer.
 
 ```sh
-cd frontend
+cd /home/chinmay/ChinmayPersonalProjects/ownframe/frontend
 npm ci
 npm run dev
 ```
 
-Vite prints the local address under `/ownframe/`. `npm test` checks the GitHub cache. `npm run build` writes the static site to the repository's root `docs/` folder; Vite restores `docs/go.mod` after each build so generated files stay outside the library module archive. Each build replaces the generated output in `docs/`. `npm run preview` serves that build.
+Open the `/ownframe/` address Vite prints. The site supports dark and light themes and remembers your choice. All pages use an 80% default scale and the same page width. The header stays visible while you scroll.
 
-## GitHub Pages
+## Edit the site
 
-Run `npm run build` from `frontend/`. The build includes the videos, images, and `.nojekyll` file, and uses `/ownframe/` for asset paths. Keep the generated `docs/` folder in the repository when publishing. In the repository's Settings > Pages, choose **Deploy from a branch**, select the publishing branch, and select **/docs**.
+- `src/Home.jsx` contains the homepage copy, code sample, and demo cards.
+- `src/Documentation.jsx` renders the guides and handles documentation navigation.
+- `src/docs-overview.js` contains the short starting guide.
+- `src/content.js` groups Markdown documents and resolves their links and images.
+- `src/main.jsx` contains the shared header, footer, and route selection.
+- `src/style.css` styles the homepage and documentation for desktop and mobile.
 
-For a custom domain hosted at the root, build with `npm run build -- --base=/`.
+The documentation overview links six main guides. Examples and comparisons have separate menus; the remaining reference sits under All guides. Guides use one page scroll. Scrollbar rails are hidden, while wheel, touch, and keyboard scrolling remain available.
 
-## Content
+Documentation comes from `../documentation/*.md`, `../examples/readme.md`, the desktop cat and Android guides, and `../showcase.md`. Edit those Markdown files to change a guide. Relative guide links stay on the site; source links open GitHub. Existing `#docs/<slug>/<heading>` links still work.
 
-The site imports `../documentation/*.md`, the example index, desktop cat guide, Android guide, and `../showcase.md` at build time. Edit those files to update the website. Relative documentation links stay in the site; source-code and plan links open the repository on GitHub.
+Keep the engine roles clear in the copy. Blinkless parses HTML, applies CSS, and calculates layout. OwnFrame renders its display list and connects the page to Ebitengine's window and input loop. This is an app UI engine with a supported HTML and CSS subset. It does not run website JavaScript.
 
-The three MP4s in `public/demos/` are the original videos from their linked X posts. The Spotify Player preview is a 960 by 520, 12 fps animated WebP at `public/demos/videos/spotify.webp`; it is silent and loops in the browser. The Wispr Flow, desktop cat, and Teams demos use preview images under `assets/screenshots/demos/`. The Teams clip comes from [this post](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1). MP4 videos load metadata only and do not autoplay.
+## Check and build
 
-The Dino Run card uses `assets/screenshots/demos/dino.webp` and links to `examples/dino` on GitHub. From the repository root, run it with `go run ./examples/dino`.
+```sh
+npm test
+npm run build
+npm run check:site
+```
 
-## GitHub stars
+`npm test` checks the GitHub star cache. `check:site` opens the production build in headless Chrome and checks desktop and mobile layouts, both themes, documentation navigation, and image loading. It requires `google-chrome` on PATH, or `CHROME_PATH` pointing to a Chromium executable. Screenshots go to the repository's ignored `temp/frontend-check/` folder.
 
-The top-right link reads `stargazers_count` from GitHub's public repository API using the repository's stable numeric ID. The count keeps working across the rename. Successful counts are cached in localStorage for six hours. Failed requests back off for at least one hour and retain the last count. The loader honors longer `Retry-After` and rate-limit reset times, limits requests to ten seconds, and shares an in-flight request within the page. Web Locks coordinate tabs where supported. If browser storage is blocked, the page still uses its memory cache. Existing theme and count preferences are read from the previous storage keys during migration.
+The build writes to the root `docs/` folder, including the public demo assets. It preserves `docs/go.mod` so the generated site stays outside the library module archive. `npm run preview` serves the generated site.
 
-This cache is per browser, not shared across visitors. There is no polling or client-side token. A shared cache at the hosting layer can be added when deployment is chosen.
+## Publish to GitHub Pages
 
-API reference: [GitHub repository endpoint](https://docs.github.com/en/rest/repos/repos#get-a-repository). Build setup: [Vite documentation](https://vite.dev/guide/).
+Build before publishing and include both `frontend/` changes and generated `docs/` files. Pages serves `docs/`, not the React source. Configure Pages to deploy from the publishing branch's `/docs` folder.
 
-During the rename, GitHub links can point to the current repository with `VITE_GITHUB_REPOSITORY=chinmay-sawant/go-gpui npm run dev`. Production builds default to `chinmay-sawant/ownframe`. This override changes repository links; the star endpoint continues to use the same numeric ID.
+The default asset base is `/ownframe/`. For a domain hosted at its root, use `npm run build -- --base=/`.
+
+Repository links default to `chinmay-sawant/ownframe`. `VITE_GITHUB_REPOSITORY` overrides that path. The optional GitHub star count uses the stable repository ID, caches successful responses for six hours, and backs off after failures. It retains the previous count when GitHub is unavailable.
