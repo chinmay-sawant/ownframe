@@ -46,9 +46,6 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 		mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
 		mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
 	}
-	if _, ok := app.(pdfScreen); ok {
-		mux.HandleFunc("GET /pdf", srv.pdf)
-	}
 	mux.HandleFunc("POST /click", srv.click)
 	mux.HandleFunc("POST /type", srv.typeText)
 	mux.HandleFunc("POST /backspace", srv.backspace)

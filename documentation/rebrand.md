@@ -36,7 +36,7 @@ Library-managed HTML attributes now use `data-ownframe-*`, including
 Update custom CSS selectors that target the previous `data-gpui-*` attributes.
 The included templates and styles have been updated together.
 
-Debug settings use `OWNFRAME_PRINT_DEBUG`, `OWNFRAME_FILEPICK_DEBUG`, and
+Debug settings use `OWNFRAME_FILEPICK_DEBUG` and
 `OWNFRAME_BROWSER_PORT`.
 The previous `GPUI_*` spellings for those settings remain accepted. The GPU
 parity test accepts `OWNFRAME_REPLAY_GPU_TEST=1` and the previous spelling. New crash

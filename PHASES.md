@@ -12,7 +12,6 @@ Recorded 2026-10-04.
 | Hot reload | `Config.File`/`ThemeFile`, the 250 ms poll, pending retry on a broken file, state survival, `Serve` reload plus shell refresh, `examples/reload`. |
 | DevTools | `Page.Stats`, `host.Inspector`, the F12 or Ctrl+Shift+I right dock with box picking, the Elements JSON tab, the Frame counters tab, and the Ops list with operation outlines, `GET /debug/state`, `examples/devtools`. The dock never enters `Page.PNG`, the display list, or the box list. |
 | Drag and drop | `host.Dropper`, the window drop pass, `Handlers.Drop`, `examples/drop`. `-web` has no window loop and receives no drops; the wasm canvas does. |
-| Printing | `Page.PDF`/`WritePDF`/`SavePDF`/`Print`, `internal/print` per OS, `GET /pdf`, `examples/print`. The live window still cannot print its own display list; the PDF is a re-render from source. |
 | Packaging | `scripts/package.sh` with the `-n` dry run, archive layouts and `SHA256SUMS`, `documentation/packaging.md`. |
 | Input and interaction | Caret and selection range, click-to-offset through `internal/textrun`, Tab focus traversal, drag/double/triple selection, the context menu, cursor shapes, `ScrollTo`/`ScrollBy`, touch drag and pinch, F11. |
 | Window options | `RunWithOptions` and `WindowOptions` (`Transparent`, `Borderless`, `Floating`, `FixedSize`, `MousePassthrough`, `Interactive`, `Draggable`, `BottomRight`, `Margin`), and `examples/desktop-cat`. |

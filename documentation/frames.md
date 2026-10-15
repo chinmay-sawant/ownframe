@@ -122,7 +122,7 @@ per cascade frame and meters its refresh bar at 10 Hz.
 
 ## Hover without layout
 
-`Handlers.Hover` receives the previous and next hit boxes. A callback that only changes retained paint operations can return `(true, nil)` to skip CSS relayout. The page invalidates both boxes. Return `(false, nil)` to use the ordinary CSS path; an error leaves the hover state unchanged. The callback must preserve geometry and handle both restoring the previous box and painting the next one. Rebind cached operation pointers after `Generation` changes. This affects desktop replay; PNG and PDF render from source.
+`Handlers.Hover` receives the previous and next hit boxes. A callback that only changes retained paint operations can return `(true, nil)` to skip CSS relayout. The page invalidates both boxes. Return `(false, nil)` to use the ordinary CSS path; an error leaves the hover state unchanged. The callback must preserve geometry and handle both restoring the previous box and painting the next one. Rebind cached operation pointers after `Generation` changes. This affects desktop replay; PNG renders from source.
 
 ## Scroll windows
 

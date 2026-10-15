@@ -95,19 +95,6 @@ The window reads Ebiten's dropped files once per frame and hands them to a scree
 
 Detail is in [drag-drop.md](drag-drop.md).
 
-## Printing
-
-`Page.PDF`, `Page.WritePDF`, `Page.SavePDF`, and `Page.Print` refuse with
-`ErrNoPDF`: the engine returns a drawing list and has no document writer.
-`Print` fails at its `WritePDF` step before any OS helper runs (`lp` or
-`xdg-open` on Linux, `osascript` or `open` on macOS, and PowerShell
-`Start-Process -Verb Print` on Windows; wasm, Android, and iOS return
-`ErrNoPrinter`). `PDFOptions` fields are unused. In web mode `GET /pdf`
-answers `500` with the `ErrNoPDF` message for a `*Page` screen. The working
-fallback is `Page.PNG`: print the window picture with an app-side tool.
-
-Detail is in [printing.md](printing.md).
-
 ## Forms
 
 An `input`, `textarea`, or `select` with an id is stored on the page. A click focuses a text field or a textarea, toggles a checkbox, checks a radio, or cycles a select. Typing edits the focused text field even when the type handler is nil. A file input opens the desktop file dialog under `Run` and stores the chosen path; wasm, mobile, and `-web` keep the typed name. `SetFormValue` and `SetFormChecked` do not redraw. A control with `data-bind` is tied to a field on the pointer passed to `SetData`; an edit writes through before the redraw, and `Handlers.Change` receives the changed control's box. `:focus`, `:hover`, and `:active` match with host state, and `:checked` follows the control's `checked` attribute; `data-ownframe-*` remains the attribute alternative. The engine's default stylesheet gives a `<button>` a face when the author does not style it, and a submit-like `input` is rewritten to a `button`. The login example uses a button.

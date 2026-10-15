@@ -18,7 +18,7 @@ type Ticker interface {
 // Screen is one HTML page the hosts can show.
 // The page owns the template, the data, and what a click or a key does.
 // It composes Boxer with the Pointer, Keyboard, and Clipboard roles plus
-// the window and picture surface; selection, PDF, reload, and devtools
+// the window and picture surface; selection, reload, and devtools
 // stay optional host interfaces. Screen stays for compat: entry points
 // take it while sinks narrow to one role at the call site.
 type Screen interface {
