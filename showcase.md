@@ -144,3 +144,33 @@ An endless runner built with HTML, CSS, and Go.
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/dino) ·
 [Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/dino/android/artifacts/dino-arm64-release.apk)
+
+## Eyes
+
+`examples/eyes` is a cute robot-eyes demo: two big boxy rounded eyes on
+black that blink, look around, breathe, and cycle moods. The same page runs
+on desktop with `go run ./examples/eyes` and on Android through
+`ebitenmobile`. `sh scripts/android-eyes.sh install` binds it, builds a debug
+APK with Gradle, and installs it over `adb`.
+
+- ![Idle robot eyes on a black phone screen](assets/screenshots/android/eyes/eyes-idle.webp)
+
+  **Idle**
+- ![Curious robot eyes with one eye stretched tall](assets/screenshots/android/eyes/eyes-curious.webp)
+
+  **Curious**
+- ![Sleepy robot eyes half closed into cups](assets/screenshots/android/eyes/eyes-sleepy.webp)
+
+  **Sleepy**
+- ![Surprised robot eyes wide open](assets/screenshots/android/eyes/eyes-surprised.webp)
+
+  **Surprised**
+- ![Animated eyes demo blinking and cycling moods](assets/screenshots/android/eyes/eyes-60fps.webp)
+
+  **Animated demo**
+
+Taps change the mood, swipes look around, keys 1-5 pick a mood, and the
+phone build auto-cycles a mood every 8 seconds with random glances and
+blinks.
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)

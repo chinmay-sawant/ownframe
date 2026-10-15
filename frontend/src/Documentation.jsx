@@ -15,6 +15,7 @@ const showcaseSections = [
   { id: 'desktop-overlays', title: 'Desktop overlays' },
   { id: 'wispr-flow', title: 'Wispr Flow' },
   { id: 'dino-run', title: 'Dino Run' },
+  { id: 'eyes', title: 'Eyes' },
 ];
 
 function selectShowcase(markdown, id) {
