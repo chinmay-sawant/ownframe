@@ -2,8 +2,8 @@ package eyes
 
 import "time"
 
-// moods cycle automatically; tap advances to the next one.
-var moods = []string{"idle", "happy", "sleepy", "surprised", "curious"}
+// Ordinary moods cycle automatically; spiral is entered by tap, key, or shake.
+var moods = []string{"open", "squint", "angry", "spiral"}
 
 func moodName(i int) string {
 	return moods[i%len(moods)]
@@ -33,6 +33,13 @@ type state struct {
 	birth time.Time
 	drag  bool
 	dev   bool
+	// tiltX/tiltY hold the latest screen-aligned phone tilt.
+	tiltX       float64
+	tiltY       float64
+	tiltUntil   time.Time
+	spiral      float64
+	spiralMix   float64
+	spiralUntil time.Time
 }
 
 func newState(now func() time.Time) state {
@@ -44,14 +51,12 @@ func newState(now func() time.Time) state {
 // targetOpen returns the per-eye open ratio for a mood.
 func targetOpen(mood int) (float64, float64) {
 	switch moodName(mood) {
-	case "happy":
-		return 0.32, 0.32
-	case "sleepy":
-		return 0.42, 0.42
-	case "surprised":
-		return 1.18, 1.18
-	case "curious":
-		return 1.0, 0.62
+	case "squint":
+		return 0.34, 0.34
+	case "angry":
+		return 0.64, 0.64
+	case "spiral":
+		return 1.0, 1.0
 	default:
 		return 1.0, 1.0
 	}

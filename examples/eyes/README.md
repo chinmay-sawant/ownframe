@@ -1,21 +1,20 @@
 # Eyes demo
 
-Cute robot eyes like the Grok bot and the OpenAI dot: two big boxy
-rounded eyes on black that blink, look around, breathe, and cycle
-moods (idle, happy, sleepy, surprised, curious).
+Cute robot eyes on black that blink, look around, breathe, and cycle
+expressions (open, squint, angry, spiral/dizzy). Spiral eyes react to
+device motion on Android.
 
 ```sh
 go run ./examples/eyes          # desktop window, landscape 960x540
 go run ./examples/eyes -web     # browser on 127.0.0.1:8140
 ```
 
-Click to change mood, drag to look, keys 1-5 pick a mood, space
-blinks, arrows look. The phone build auto-cycles a mood every 8s
-with random saccades every 1.4-3s and blinks every 2.2-4.8s.
-Mood squints ease at ~4.5/s while blinks stay snappy, so both look
-smooth at 60 Hz and 90 Hz. Squints narrow onto the bottom lid instead of
-widening, and happy shapes a dome while sleepy shapes a cup, so the eyes
-never pinch into a fish. Corners always clamp inside the box.
+Click to change mood, drag to look, keys 1-4 pick a mood, and S starts
+the spiral. Shaking the phone also starts it; it stays until you choose
+another mood. The phone auto-cycles open, squint, and angry every 8s with
+random saccades every 1.4-3s and blinks every 2.2-4.8s. Mood changes ease
+at ~4.5/s while blinks stay snappy. Squint and angry expressions use lids
+while keeping the eye width fixed.
 
 The DEV pill at the top right toggles the devtools dock (Elements,
 Frame, Ops) without needing F12. The dock answers touch: tabs,

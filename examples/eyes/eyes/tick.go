@@ -8,6 +8,7 @@ func (a *App) Tick(ctx context.Context) error {
 		return err
 	}
 	now := a.now()
+	a.applyMotion(now)
 	dt := 1.0 / 60
 	if !a.last.IsZero() {
 		dt = now.Sub(a.last).Seconds()

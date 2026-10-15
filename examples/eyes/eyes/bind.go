@@ -4,19 +4,21 @@ import "github.com/chinmay-sawant/ownframe"
 
 // parts caches the display ops the paint step moves.
 type parts struct {
-	left  *ownframe.DisplayOp
-	right *ownframe.DisplayOp
-	mood  *ownframe.DisplayOp
-	hint  *ownframe.DisplayOp
-	dev   *ownframe.DisplayOp
-	baseL rect
-	baseR rect
-	rcL   float64
-	rcR   float64
-	lidLT *ownframe.DisplayOp
-	lidLB *ownframe.DisplayOp
-	lidRT *ownframe.DisplayOp
-	lidRB *ownframe.DisplayOp
+	left    *ownframe.DisplayOp
+	right   *ownframe.DisplayOp
+	mood    *ownframe.DisplayOp
+	hint    *ownframe.DisplayOp
+	dev     *ownframe.DisplayOp
+	baseL   rect
+	baseR   rect
+	rcL     float64
+	rcR     float64
+	lidLT   *ownframe.DisplayOp
+	lidLB   *ownframe.DisplayOp
+	lidRT   *ownframe.DisplayOp
+	lidRB   *ownframe.DisplayOp
+	spiralL *ownframe.DisplayOp
+	spiralR *ownframe.DisplayOp
 }
 
 // rect is a CSS-pixel box.
@@ -38,41 +40,7 @@ func (a *App) bind(d *ownframe.Display) {
 	a.pm.lidLB = fillAt(d, bx, "lid-lb")
 	a.pm.lidRT = fillAt(d, bx, "lid-rt")
 	a.pm.lidRB = fillAt(d, bx, "lid-rb")
+	a.pm.spiralL = imageAt(d, bx, "spiral-l")
+	a.pm.spiralR = imageAt(d, bx, "spiral-r")
 	a.bnd = a.page.Generation()
-}
-
-func baseRad(op *ownframe.DisplayOp) (float64, float64) {
-	if op == nil {
-		return 0, 0
-	}
-	return op.Radius, op.RadiusY
-}
-
-// baseRCss reads the uniform corner radius in CSS pixels: the largest of
-// the uniform and per-corner values, so a shorthand and a longhand agree.
-func baseRCss(d *ownframe.Display, op *ownframe.DisplayOp) float64 {
-	if op == nil || d == nil {
-		return 0
-	}
-	p := d.PointsPerPixel
-	if p == 0 {
-		p = 1
-	}
-	r := op.Radius
-	for _, c := range []float64{op.RadiusTopLeft, op.RadiusTopRight,
-		op.RadiusBottomRight, op.RadiusBottomLeft} {
-		r = max(r, c)
-	}
-	return r / p
-}
-
-func baseOf(d *ownframe.Display, op *ownframe.DisplayOp) rect {
-	if op == nil || d == nil {
-		return rect{}
-	}
-	p := d.PointsPerPixel
-	if p == 0 {
-		p = 1
-	}
-	return rect{x: op.X / p, y: op.Y / p, w: op.W / p, h: op.H / p}
 }

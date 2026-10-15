@@ -4,9 +4,10 @@ import "context"
 
 func (a *App) onKeyDown(_ context.Context, k string) error {
 	switch k {
-	case "1", "2", "3", "4", "5":
-		a.st.mood = int(k[0]-'1') % len(moods)
-		a.st.moodT = a.now()
+	case "1", "2", "3", "4":
+		a.selectMood(int(k[0]-'1')%len(moods), a.now())
+	case "s":
+		a.Shake()
 	case "space", "enter":
 		a.st.blinkOn = true
 		a.st.blinkP = 0

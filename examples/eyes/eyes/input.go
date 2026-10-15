@@ -14,8 +14,7 @@ func (a *App) onTap(_ context.Context, b ownframe.Box) error {
 		a.page.SetDevTools(a.st.dev)
 		return nil
 	}
-	a.st.mood++
-	a.st.moodT = a.now()
+	a.selectMood((a.st.mood+1)%len(moods), a.now())
 	a.st.blinkOn = true
 	a.st.blinkP = 0
 	return nil

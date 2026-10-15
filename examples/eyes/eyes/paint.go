@@ -1,6 +1,10 @@
 package eyes
 
-import "github.com/chinmay-sawant/ownframe"
+import (
+	"math"
+
+	"github.com/chinmay-sawant/ownframe"
+)
 
 // paint moves the cached eye ops to match the simulation.
 func (a *App) paint() {
@@ -14,8 +18,24 @@ func (a *App) paint() {
 	// Rebase when layout moved (resize) but generation stayed.
 	a.rebase(d)
 	m := moodName(a.st.mood)
-	a.paintEye(d, a.pm.left, a.pm.lidLT, a.pm.lidLB, a.pm.baseL, a.pm.rcL, a.st.moodL, m)
-	a.paintEye(d, a.pm.right, a.pm.lidRT, a.pm.lidRB, a.pm.baseR, a.pm.rcR, a.st.moodR, m)
+	eyeAlpha := max(0.0001, 1-a.st.spiralMix)
+	lean := 0.0
+	if m == "angry" {
+		lean = 11 + 2*math.Sin(a.now().Sub(a.st.birth).Seconds()*2.4)
+	}
+	a.paintEye(d, a.pm.left, a.pm.lidLT, a.pm.lidLB,
+		a.pm.baseL, a.pm.rcL, a.st.moodL, m, lean)
+	a.paintEye(d, a.pm.right, a.pm.lidRT, a.pm.lidRB,
+		a.pm.baseR, a.pm.rcR, a.st.moodR, m, -lean)
+	for _, op := range []*ownframe.DisplayOp{
+		a.pm.left, a.pm.right, a.pm.lidLT, a.pm.lidLB, a.pm.lidRT, a.pm.lidRB,
+	} {
+		if op != nil {
+			op.Alpha = eyeAlpha
+		}
+	}
+	a.paintSpiral(d, a.pm.baseL, a.pm.spiralL, a.st.spiralMix, a.st.spiral)
+	a.paintSpiral(d, a.pm.baseR, a.pm.spiralR, a.st.spiralMix, -a.st.spiral)
 	a.paintText()
 }
 
@@ -28,42 +48,4 @@ func (a *App) rebase(d *ownframe.Display) {
 		a.pm.baseR = baseOf(d, a.pm.right)
 		a.pm.rcR = baseRCss(d, a.pm.right)
 	}
-}
-
-// paintEye draws the full capsule plus two background lids. The eye keeps
-// its size and one uniform radius; the lids crop it into a dome, a cup, or
-// a slit, so squints read as lids and never pinch into a fish.
-func (a *App) paintEye(d *ownframe.Display, eye, top, bot *ownframe.DisplayOp, b rect, rc, moodO float64, mood string) {
-	if eye == nil || b.h <= 0 {
-		return
-	}
-	p := d.PointsPerPixel
-	if p == 0 {
-		p = 1
-	}
-	h := b.h
-	if moodO > 1 {
-		h = b.h * min(moodO, 1.25)
-	}
-	x := b.x + a.st.lookX
-	y := b.y + a.st.lookY + (b.h-h)/2
-	setOp(d, eye, x, y, b.w, h, 1)
-	nr := min(rc*h/b.h, min(b.w, h)/2*0.98)
-	eye.Radius = nr * p
-	mTop, mBot := 0.0, 0.0
-	switch mood {
-	case "happy":
-		mBot = 1
-	case "sleepy", "curious":
-		mTop, mBot = 0.85, 0.15
-	}
-	lid := (1 - min(moodO, 1)) * h
-	topH := (1-a.st.bm)*h + lid*mTop
-	botH := lid * mBot
-	if topH+botH > h-6 && h > 6 {
-		f := (h - 6) / (topH + botH)
-		topH, botH = topH*f, botH*f
-	}
-	setLid(d, top, x-2, y-2, b.w+4, topH+2)
-	setLid(d, bot, x-2, y+h-botH, b.w+4, botH+2)
 }

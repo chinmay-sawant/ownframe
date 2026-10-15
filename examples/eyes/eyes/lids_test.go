@@ -7,7 +7,7 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-func TestHappyBottomLid(t *testing.T) {
+func TestSquintLids(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)
 	a.st.mood = 1
@@ -15,18 +15,14 @@ func TestHappyBottomLid(t *testing.T) {
 		tk(t, a, c, time.Second/60)
 	}
 	if a.pm.lidLB == nil || a.pm.lidLB.H <= 0 {
-		t.Fatal("happy has no bottom lid")
+		t.Fatal("squint has no bottom lid")
 	}
-	if a.pm.lidLT != nil && a.pm.lidLT.H > 0 {
-		t.Fatal("happy should not drop the top lid")
-	}
-	pp := a.page.Display().PointsPerPixel
-	if a.pm.left.W/pp < a.pm.baseL.w-1 {
-		t.Fatal("happy narrowed the eye; lids shape it")
+	if a.pm.lidLT == nil || a.pm.lidLT.H <= 0 {
+		t.Fatal("squint has no top lid")
 	}
 }
 
-func TestSleepyTopLid(t *testing.T) {
+func TestAngryTopLid(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)
 	a.st.mood = 2
@@ -34,7 +30,7 @@ func TestSleepyTopLid(t *testing.T) {
 		tk(t, a, c, time.Second/60)
 	}
 	if a.pm.lidLT == nil || a.pm.lidLT.H <= 0 {
-		t.Fatal("sleepy has no top lid")
+		t.Fatal("angry has no top lid")
 	}
 }
 

@@ -7,24 +7,30 @@ import (
 
 // step advances look targets, blinks, mood cycling, and smoothing. Rates
 // use 1-exp(-dt*r) so 60 Hz and 90 Hz phones feel the same: mood glides at
-// ~4.5/s, saccades settle at ~9/s, and the blink sine stays immediate.
+// ~4.5/s, eye tracking settles at ~18/s, and the blink sine stays immediate.
 func (a *App) step(dt float64, now time.Time) {
 	s := &a.st
 	if dt <= 0 {
 		dt = 1.0 / 60
 	}
-	if !s.drag && now.Sub(s.moodT) > 8*time.Second {
-		s.mood++
+	a.expireSpiral(now)
+	a.stepSpiral(dt, now)
+	if !s.drag && s.mood != 3 && now.Sub(s.moodT) > 8*time.Second {
+		s.mood = (s.mood + 1) % 3
 		s.moodT = now
 	}
-	if !s.drag && (now.After(s.sacT)) {
+	if !s.drag && now.Before(s.tiltUntil) {
+		s.tLookX = clamp(s.tiltX*96, -48, 48)
+		s.tLookY = clamp(-s.tiltY*96, -30, 30)
+		s.sacT = now.Add(1500 * time.Millisecond)
+	} else if !s.drag && s.mood != 3 && now.After(s.sacT) {
 		s.tLookX = (a.rng.Float64()*2 - 1) * 44
 		s.tLookY = (a.rng.Float64()*2 - 1) * 26
 		switch moodName(s.mood) {
-		case "happy":
-			s.tLookY = -14 - a.rng.Float64()*10
-		case "sleepy":
-			s.tLookY = 10 + a.rng.Float64()*12
+		case "squint":
+			s.tLookY = 6 + a.rng.Float64()*6
+		case "angry":
+			s.tLookY = -6 - a.rng.Float64()*6
 		}
 		s.sacT = now.Add(time.Duration(1400+
 			a.rng.IntN(1600)) * time.Millisecond)
@@ -54,7 +60,7 @@ func (a *App) step(dt float64, now time.Time) {
 	br := 1 + 0.014*math.Sin(2*math.Pi*0.35*now.Sub(s.birth).Seconds())
 	s.dispL = s.moodL * bm * br
 	s.dispR = s.moodR * bm * br
-	kL := 1 - math.Exp(-dt*9)
+	kL := 1 - math.Exp(-dt*18)
 	s.lookX += (s.tLookX - s.lookX) * kL
 	s.lookY += (s.tLookY - s.lookY) * kL
 }

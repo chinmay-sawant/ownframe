@@ -5,6 +5,7 @@ package eyes
 
 import (
 	"math/rand/v2"
+	"sync"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -21,12 +22,14 @@ const (
 
 // App is the eyes screen.
 type App struct {
-	page *ownframe.Page
-	rng  *rand.Rand
-	now  func() time.Time
-	last time.Time
-	st   state
-	pm   parts
-	bnd  uint64
-	tch  bool
+	page     *ownframe.Page
+	rng      *rand.Rand
+	now      func() time.Time
+	last     time.Time
+	st       state
+	pm       parts
+	bnd      uint64
+	tch      bool
+	motionMu sync.Mutex
+	motion   motionInput
 }
