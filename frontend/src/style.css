@@ -52,10 +52,10 @@ header nav a { display: inline-flex; align-items: center; min-height: calc(44px 
 header nav a:hover { color: var(--accent); }
 .theme-toggle { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 8px 12px; min-height: calc(44px / var(--site-scale)); border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; cursor: pointer; }
 .theme-toggle:hover { border-color: var(--accent); }
-.github { display: flex; align-items: center; gap: 8px; min-height: calc(44px / var(--site-scale)); padding: 8px 0; color: var(--star); font-size: 14px; white-space: nowrap; }
+.github { display: flex; align-items: center; gap: 8px; min-height: calc(44px / var(--site-scale)); padding: 8px 0; color: var(--star); font-size: 16px; white-space: nowrap; }
 .github:hover { text-decoration: underline; }
 .github-star { flex: 0 0 auto; }
-.github-count { font-size: 13px; }
+.github-count { font-size: 15px; font-variant-numeric: tabular-nums; }
 .github-count:empty { display: none; }
 h1, h2, h3 { line-height: 1.2; color: var(--text); text-wrap: balance; }
 h1 { font-size: clamp(36px, 4.5vw, 56px); margin: 0; }
@@ -132,6 +132,7 @@ footer a { display: inline-flex; align-items: center; min-height: calc(44px / va
 .docs-layout > aside:has(details[open]) { position: static; }
 .docs-content { min-width: 0; font-size: 17px; padding-bottom: 24px; }
 .showcase-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+.showcase-page .showcase-picker { position: sticky; top: var(--header-height, 92px); z-index: 5; background: var(--background); padding: 12px 0; }
 .showcase-picker a { display: inline-flex; align-items: center; min-height: calc(44px / var(--site-scale)); padding: 8px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--muted); text-decoration: none; font-size: 15px; }
 .showcase-picker a:hover, .showcase-picker a[aria-current="page"] { color: var(--accent); border-color: var(--accent); }
 aside .docs-nav { display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
@@ -160,11 +161,20 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
 .markdown img { max-width: 100%; height: auto; }
 .showcase-page .showcase-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; list-style: none; margin: 20px 0 32px; padding: 0; align-items: start; }
 .showcase-page .pet-care-gallery li:last-child { grid-column: 1 / -1; }
+.showcase-page .eyes-gallery li:last-child { grid-column: 1 / -1; }
 .showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .showcase-page .showcase-gallery li + li { margin-top: 0; }
 .showcase-page .showcase-gallery p { max-width: none; margin: 0; }
 .showcase-page .showcase-gallery img { display: block; width: 100%; height: auto; border-radius: 7px; background: var(--background); }
 .showcase-page .showcase-gallery img.spotify-window-preview { aspect-ratio: 1.5; object-fit: cover; object-position: center; }
+.gallery-open { display: block; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
+.lightbox-backdrop { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, 0.85); }
+.lightbox-card { position: relative; width: 100%; max-width: 1100px; display: flex; flex-direction: column; align-items: center; margin: auto; }
+.lightbox-card > img { display: block; max-width: 100%; max-height: 70vh; width: auto; margin: 0 auto; border-radius: 9px; background: #000; }
+.lightbox-bar { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 100%; margin-top: 12px; justify-content: center; }
+.lightbox-caption { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 15px; color: #e9eff2; overflow-wrap: anywhere; }
+.lightbox-close, .lightbox-prev, .lightbox-next { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--text); font-size: 24px; line-height: 1; cursor: pointer; }
+.lightbox-close:hover, .lightbox-prev:hover, .lightbox-next:hover { border-color: var(--accent); color: var(--accent); }
 .showcase-page .showcase-gallery p + p { padding-top: 10px; font-size: 14px; }
 .markdown-table-scroll { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .markdown-table-scroll::-webkit-scrollbar { display: block; height: 6px; }
@@ -187,8 +197,8 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
   .brand { font-size: 21px; }
   .theme-toggle { margin-left: 0; min-width: calc(44px / var(--site-scale)); min-height: calc(44px / var(--site-scale)); padding: 10px; justify-content: center; }
   .theme-toggle span { display: none; }
-  .github { font-size: 14px; padding: 8px; gap: 6px; }
-  .github-count { font-size: 12px; }
+  .github { font-size: 15px; padding: 8px; gap: 6px; }
+  .github-count { font-size: 13px; }
   main { min-width: 0; padding-top: 16px; overflow-wrap: anywhere; }
   section { padding: 36px 0; }
   .home { font-size: 17px; }

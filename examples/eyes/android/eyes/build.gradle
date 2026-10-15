@@ -1,0 +1,4 @@
+// The :eyes module publishes the AAR that ebitenmobile bind writes to
+// eyes/eyes.aar. The app module depends on this project.
+configurations.maybeCreate("default")
+artifacts.add("default", file('eyes.aar'))

@@ -27,6 +27,10 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 		return
 	}
 	if g.step == 0 {
+		if err := checkSleepyEyeRenders(); err != nil {
+			g.err = err
+			return
+		}
 		if err := checkGPUOpacity(); err != nil {
 			g.err = err
 			return

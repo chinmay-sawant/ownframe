@@ -2,7 +2,6 @@ package window
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -38,13 +37,12 @@ func (s *shell) drawDevHeader(screen *ebiten.Image) {
 	if s.devPickerOn() {
 		ink = devAccent
 	}
-	pw, _ := text.Measure(label, badgeFace, 0)
-	fw, _ := text.Measure("F12", badgeFace, 0)
-	px := r.X + r.W - devPanelPad - fw - 8 - pw
+	cls, px := devHeaderRight(r)
 	devTextAt(screen, label, px, top, ink)
 
-	w, _ := text.Measure("F12", badgeFace, 0)
-	devTextAt(screen, "F12", r.X+r.W-devPanelPad-w, top, devDim)
+	fx := cls.X - 8 - devTextWidth("F12")
+	devTextAt(screen, "F12", fx, top, devDim)
+	devTextAt(screen, "X", cls.X+12, top, devDim)
 }
 
 // drawDevFooter paints the hint line at the bottom of the dock.

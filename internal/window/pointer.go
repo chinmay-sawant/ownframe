@@ -22,7 +22,10 @@ func (s *shell) pointer() error {
 	px, py := s.contentAt(x, y, frameW, frameH)
 
 	if s.dev.on {
-		return s.devPointer(x, y, px, py)
+		if err := s.devPointer(x, y, px, py); err != nil {
+			return err
+		}
+		return s.devTouch(frameW, frameH)
 	}
 
 	if err := s.hoverCursor(x, y, px, py); err != nil {

@@ -60,6 +60,8 @@ type devState struct {
 	panel         devRect
 	hits          []devHit
 	forward       bool
+	// panelTrack holds dock fingers: lifts tap, drags scroll.
+	panelTrack panelTrack
 	// stroke is the outline hook. Nil strokes with vector.StrokeRect; tests
 	// replace it to read the computed screen rects without pixels.
 	stroke func(screen *ebiten.Image, r devRect, ink color.RGBA)

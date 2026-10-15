@@ -1,0 +1,4 @@
+rootProject.name = 'eyes'
+include ':app', ':eyes'
+include ':android-host'
+project(':android-host').projectDir = file('../../android-host')
