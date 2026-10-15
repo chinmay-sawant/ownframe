@@ -132,6 +132,7 @@ footer a { display: inline-flex; align-items: center; min-height: calc(44px / va
 .docs-layout > aside:has(details[open]) { position: static; }
 .docs-content { min-width: 0; font-size: 17px; padding-bottom: 24px; }
 .showcase-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+.showcase-page .showcase-picker { position: sticky; top: calc(var(--header-height, 92px) + 12px); z-index: 5; background: var(--background); padding: 12px 0; }
 .showcase-picker a { display: inline-flex; align-items: center; min-height: calc(44px / var(--site-scale)); padding: 8px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); color: var(--muted); text-decoration: none; font-size: 15px; }
 .showcase-picker a:hover, .showcase-picker a[aria-current="page"] { color: var(--accent); border-color: var(--accent); }
 aside .docs-nav { display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
@@ -160,6 +161,7 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
 .markdown img { max-width: 100%; height: auto; }
 .showcase-page .showcase-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; list-style: none; margin: 20px 0 32px; padding: 0; align-items: start; }
 .showcase-page .pet-care-gallery li:last-child { grid-column: 1 / -1; }
+.showcase-page .eyes-gallery li:last-child { grid-column: 1 / -1; }
 .showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
 .showcase-page .showcase-gallery li + li { margin-top: 0; }
 .showcase-page .showcase-gallery p { max-width: none; margin: 0; }

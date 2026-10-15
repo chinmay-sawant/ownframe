@@ -52,7 +52,10 @@ export default function Documentation({ hash }) {
       className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
       loading="lazy" decoding="async" />,
     ...(isShowcase ? {
-      ul: ({ children }) => <ul className={`showcase-gallery${activeShowcase === 'pet-care' ? ' pet-care-gallery' : ''}`}>{children}</ul>,
+      ul: ({ children }) => {
+        const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' ? ` ${activeShowcase}-gallery` : '';
+        return <ul className={`showcase-gallery${extra}`}>{children}</ul>;
+      },
     } : {}),
   };
 
