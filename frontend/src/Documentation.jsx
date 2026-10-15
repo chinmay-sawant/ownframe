@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSlug from 'rehype-slug';
@@ -141,7 +142,7 @@ export default function Documentation({ hash }) {
         urlTransform={(url) => contentUrl(url, doc)} components={components}>{text}</Markdown>
         : <><h1>Document not found</h1><p><a href="#docs/readme">Open the documentation overview</a></p></>}
     </article>
-    {lightbox && <div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
+    {lightbox && createPortal(<div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
       <div className="lightbox-card" role="dialog" aria-modal="true"
         aria-label={`Expanded screenshot: ${lightbox.items[lightbox.index].alt}`}>
         <img src={lightbox.items[lightbox.index].src} alt={lightbox.items[lightbox.index].alt}
@@ -161,6 +162,6 @@ export default function Documentation({ hash }) {
             autoFocus onClick={() => setLightbox(null)}>×</button>
         </div>
       </div>
-    </div>}
+    </div>, document.body)}
   </div>;
 }
