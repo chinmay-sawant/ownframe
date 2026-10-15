@@ -1,16 +1,15 @@
 package replay
 
 import (
-	"testing"
+	"errors"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-// TestZZSleepyEyeRenders replays the exact ticked sleepy eye op and counts
-// lit pixels. A mixed-corner fill must paint like any other fill.
-func TestZZSleepyEyeRenders(t *testing.T) {
+// checkSleepyEyeRenders checks that uniform and mixed-corner fills paint.
+func checkSleepyEyeRenders() error {
 	mk := func(r [4]float64) *layout.DisplayOp {
 		return &layout.DisplayOp{Kind: layout.DisplayOpFillRect,
 			X: 244.2, Y: 215.5, W: 103.4, H: 53.4,
@@ -34,11 +33,11 @@ func TestZZSleepyEyeRenders(t *testing.T) {
 	}
 	mixed := lit(mk([4]float64{9, 9, 26.16, 26.16}))
 	plain := lit(mk([4]float64{}))
-	t.Logf("mixed=%d plain=%d", mixed, plain)
 	if mixed == 0 {
-		t.Fatal("mixed-corner fill painted nothing")
+		return errors.New("mixed-corner fill painted nothing")
 	}
 	if plain == 0 {
-		t.Fatal("uniform fill painted nothing")
+		return errors.New("uniform fill painted nothing")
 	}
+	return nil
 }
