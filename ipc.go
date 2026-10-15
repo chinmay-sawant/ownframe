@@ -9,6 +9,9 @@ import (
 // ErrNoHandler means Request found no Handle for that channel.
 var ErrNoHandler = ipc.ErrNoHandler
 
+// ErrHandlerPanicked means a handler panicked during Request; it is recovered.
+var ErrHandlerPanicked = ipc.ErrHandlerPanicked
+
 // Send calls each Listen callback for channel in this process.
 // A callback that panics does not stop the others.
 // An empty channel does nothing.

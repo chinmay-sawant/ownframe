@@ -4,10 +4,33 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 // client is shared. Jar stays nil, so no cookie is stored or sent.
-var client = &http.Client{CheckRedirect: redirect}
+// Timeout is the default client timeout; a request context with a shorter
+// deadline still wins.
+var client = &http.Client{
+	Timeout:       30 * time.Second,
+	CheckRedirect: redirect,
+}
+
+// ErrBodyTooLarge means a response body exceeded the 10 MiB cap.
+var ErrBodyTooLarge = errors.New("ownframe: fetch response body exceeds 10 MiB")
+
+// Aliases for the same limit error.
+var (
+	ErrTooLarge          = ErrBodyTooLarge
+	ErrResponseTooLarge  = ErrBodyTooLarge
+	ErrBodyLimitExceeded = ErrBodyTooLarge
+)
+
+// MaxBodyBytes is the response body cap (10 MiB).
+const (
+	MaxBodyBytes         = 10 * 1024 * 1024
+	MaxResponseBodyBytes = MaxBodyBytes
+	MaxFetchBodyBytes    = MaxBodyBytes
+)
 
 func checkURL(raw string) error {
 	if raw == "" {

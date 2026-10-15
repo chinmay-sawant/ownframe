@@ -24,3 +24,25 @@ A nil context returns an error whose text contains `nil context`. Cancellation u
 The shared client has no cookie jar and no cache, and it sets no timeout. It does not store a session. Pass a deadline on `ctx` to bound a request.
 
 The fetch example sends the body of a fetched PNG or JPEG to `Page.SetImage` with the source name `fetched`. The template body points `background-image` at that name, so a fetched image becomes the page background. See [screen.md](screen.md) for the paint path.
+
+## Trust boundary
+
+`Fetch` and `XHR` load whatever `http` or `https` URL the app gives them. The
+library has no host allowlist, no DNS pinning, no SSRF protection, no default
+timeout, and no response body cap. A small compressed response can expand
+without bound in memory, and redirected or attacker supplied URLs can reach
+loopback, private, link local, or metadata addresses.
+
+Recommended protections:
+
+- Pass URLs that the app owns or has validated. Do not forward user controlled
+  URLs to `Fetch` or `XHR`.
+- Pass a context with a deadline. A nil context returns an error and
+  `context.Background()` can hang forever.
+- When any input is untrusted, add host allowlisting, IP resolution checks,
+  redirect inspection, and body size caps in the app.
+- Account for the shared client: it honors environment proxy variables, can
+  redirect HTTPS to HTTP, and accepts any method.
+
+See the security audit in
+[plans/v0.0.2/security](../plans/v0.0.2/security/00-overview-threat-model-and-priority.md).

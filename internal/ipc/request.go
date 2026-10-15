@@ -1,6 +1,24 @@
 package ipc
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+// ErrHandlerPanicked is returned by Request when the registered handler
+// panics. Its panic is recovered so it cannot propagate to the caller.
+var ErrHandlerPanicked = errors.New("ownframe: handler panicked")
+
+// Aliases for ErrHandlerPanicked.
+var (
+	ErrHandlerPanic    = ErrHandlerPanicked
+	ErrPanicked        = ErrHandlerPanicked
+	ErrPanic           = ErrHandlerPanicked
+	ErrHandlePanicked  = ErrHandlerPanicked
+	ErrHandlePanic     = ErrHandlerPanicked
+	ErrRequestPanicked = ErrHandlerPanicked
+	ErrRequestPanic    = ErrHandlerPanicked
+)
 
 // Handle registers fn as the reply for channel.
 // A later Handle on that channel replaces fn.
@@ -59,5 +77,14 @@ func Request(ctx context.Context, channel, payload string) (string, error) {
 		return "", ErrNoHandler
 	}
 
-	return item.fn(ctx, payload)
+	wrap := func() (reply string, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				reply = ""
+				err = ErrHandlerPanicked
+			}
+		}()
+		return item.fn(ctx, payload)
+	}
+	return wrap()
 }

@@ -88,3 +88,27 @@ text. Values survive a redraw like any other page.
 `Serve` has no window, so it lays the page out once at `Page.Size()` and never
 relayouts it. Resizing the browser tab changes how the shell shows the picture,
 not the layout inside it.
+
+## Trust boundary
+
+`Serve` is a developer preview. It assumes the browser peer is the same user on
+the same machine. It returns the rendered page plus its boxes and dimensions,
+mutates page state from clicks and typed input, and runs any app handler reached
+by `/click`. It has no authentication, TLS, CSRF protection, or request
+timeouts. The bind address is caller controlled.
+
+Recommended protections:
+
+- Bind to 127.0.0.1 unless the caller adds its own authentication and
+  transport.
+- Do not expose plain `Serve` on a shared network. Treat `/click`, `/type`,
+  `/backspace`, and `/debug/state` as privileged.
+- `GET /debug/state` is always available and returns box text, coordinates,
+  and operation counts. Keep `ServeOptions{Perf: true}` off in shipped binaries
+  unless profiling is needed; it alone adds `GET /debug/pprof/*`.
+- The built in server sets no `ReadHeaderTimeout`, `ReadTimeout`,
+  `WriteTimeout`, or `IdleTimeout`, and `/type` is not byte limited. Put a
+  scoped proxy or custom `http.Server` in front of it when exposure is needed.
+
+See the security audit in
+[plans/v0.0.2/security](../plans/v0.0.2/security/00-overview-threat-model-and-priority.md).

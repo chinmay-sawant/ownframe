@@ -15,7 +15,12 @@ type pdfScreen interface {
 }
 
 func (s *server) pdf(w http.ResponseWriter, r *http.Request) {
-	exporter := s.app.(pdfScreen)
+	exporter, ok := s.app.(pdfScreen)
+	if !ok {
+		http.Error(w, "not found", http.StatusNotFound)
+
+		return
+	}
 
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -46,9 +46,12 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	}
 	defer resp.Body.Close()
 
-	out, err := io.ReadAll(resp.Body)
+	out, err := io.ReadAll(io.LimitReader(resp.Body, MaxBodyBytes+1))
 	if err != nil {
 		return Response{}, err
+	}
+	if len(out) > MaxBodyBytes {
+		return Response{}, ErrBodyTooLarge
 	}
 
 	return Response{Status: resp.StatusCode, Header: flat(resp.Header), Body: out}, nil
