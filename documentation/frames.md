@@ -58,6 +58,13 @@ text run, and `frame.BoxUnits` converts a hit-test box to display-list units. A
 text operation carries its baseline in `Y`, so its box test differs from a
 fill's centre test.
 
+Anims built by `frame.TranslateTo`, `frame.FadeTo`, `frame.ScaleTo`, or
+`frame.RotateTo` hold pointers into one display list. Call `Bind(page)` on the
+anim so `Step` goes inactive once a `Redraw` replaces the list. An unbound anim
+keeps the legacy behavior and must not outlive a redraw. No production code in
+this tree constructs anims today, only tests, so every new call site starts
+bound.
+
 There are two ways to change the frame without a full `Redraw`. A tick
 callback changes an operation in place, which suits an animation that runs
 every frame. A click, key, or hover handler changes page content, and the

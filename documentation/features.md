@@ -85,7 +85,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` and `Read` keep an in-memory copy and also talk to the OS clipboard. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, iOS, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, iOS, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
 
 Detail is in [clipboard.md](clipboard.md).
 
