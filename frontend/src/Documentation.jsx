@@ -29,17 +29,19 @@ function selectShowcase(markdown, id) {
 
 export default function Documentation({ hash }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [lightbox, setLightbox] = useState(null);
   const contentPane = useRef(null);
   const menuButton = useRef(null);
   const [, slug = 'readme', anchor] = hash.split('/');
-  const document = documents.find((entry) => entry.slug === slug);
-  const isShowcase = document?.slug === 'showcase';
+  const doc = documents.find((entry) => entry.slug === slug);
+  const isShowcase = doc?.slug === 'showcase';
   const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : 'telegram';
-  const text = isShowcase ? selectShowcase(document.text, activeShowcase)
-    : slug === 'readme' && !anchor ? docsOverview : document?.text;
+  const text = isShowcase ? selectShowcase(doc.text, activeShowcase)
+    : slug === 'readme' && !anchor ? docsOverview : doc?.text;
 
   useEffect(() => {
     setMenuOpen(false);
+    setLightbox(null);
     if (isShowcase) {
       window.scrollTo(0, 0);
       return;
@@ -50,11 +52,43 @@ export default function Documentation({ hash }) {
     else window.scrollTo(0, 0);
   }, [hash, anchor]);
 
+  useEffect(() => {
+    if (!lightbox) return;
+    const step = (direction) => setLightbox((box) => box && {
+      ...box, index: (box.index + direction + box.items.length) % box.items.length,
+    });
+    const onKey = (event) => {
+      if (event.key === 'Escape') setLightbox(null);
+      if (event.key === 'ArrowRight') step(1);
+      if (event.key === 'ArrowLeft') step(-1);
+    };
+    window.addEventListener('keydown', onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [lightbox]);
+
+  const openLightbox = (event) => {
+    const gallery = event.currentTarget.closest('ul');
+    const images = gallery ? Array.from(gallery.querySelectorAll('img')) : [];
+    const items = images.map((image) => ({ src: image.currentSrc || image.src, alt: image.alt }));
+    const index = Math.max(0, images.indexOf(event.currentTarget.querySelector('img')));
+    if (items.length) setLightbox({ items, index });
+  };
+
   const components = {
     table: ({ children }) => <div className="markdown-table-scroll"><table>{children}</table></div>,
-    img: ({ src, alt = '', title }) => <img src={src} alt={alt} title={title}
-      className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
-      loading="lazy" decoding="async" />,
+    img: ({ src, alt = '', title }) => {
+      const image = <img src={src} alt={alt} title={title}
+        className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
+        loading="lazy" decoding="async" />;
+      if (!isShowcase) return image;
+      return <button type="button" className="gallery-open" aria-label={`Expand screenshot: ${alt}`}
+        onClick={openLightbox}>{image}</button>;
+    },
     ...(isShowcase ? {
       ul: ({ children }) => {
         const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' ? ` ${activeShowcase}-gallery` : '';
@@ -103,9 +137,30 @@ export default function Documentation({ hash }) {
           {section.title}
         </a>)}
       </nav>}
-      {document ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}
-        urlTransform={(url) => contentUrl(url, document)} components={components}>{text}</Markdown>
+      {doc ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}
+        urlTransform={(url) => contentUrl(url, doc)} components={components}>{text}</Markdown>
         : <><h1>Document not found</h1><p><a href="#docs/readme">Open the documentation overview</a></p></>}
     </article>
+    {lightbox && <div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
+      <div className="lightbox-card" role="dialog" aria-modal="true"
+        aria-label={`Expanded screenshot: ${lightbox.items[lightbox.index].alt}`}>
+        <img src={lightbox.items[lightbox.index].src} alt={lightbox.items[lightbox.index].alt}
+          onClick={(event) => event.stopPropagation()} />
+        <div className="lightbox-bar" onClick={(event) => event.stopPropagation()}>
+          {lightbox.items.length > 1 && <button type="button" className="lightbox-prev" aria-label="Show previous screenshot"
+            onClick={() => setLightbox((box) => box && {
+              ...box, index: (box.index - 1 + box.items.length) % box.items.length,
+            })}>‹</button>}
+          <p className="lightbox-caption">{lightbox.items[lightbox.index].alt}
+            {lightbox.items.length > 1 && ` · ${lightbox.index + 1} / ${lightbox.items.length}`}</p>
+          {lightbox.items.length > 1 && <button type="button" className="lightbox-next" aria-label="Show next screenshot"
+            onClick={() => setLightbox((box) => box && {
+              ...box, index: (box.index + 1) % box.items.length,
+            })}>›</button>}
+          <button type="button" className="lightbox-close" aria-label="Close expanded screenshot"
+            autoFocus onClick={() => setLightbox(null)}>×</button>
+        </div>
+      </div>
+    </div>}
   </div>;
 }
