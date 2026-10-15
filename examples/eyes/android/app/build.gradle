@@ -1,0 +1,24 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.chinmaysawant.eyes'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.chinmaysawant.eyes"
+        minSdkVersion 23
+        targetSdkVersion 34
+        versionCode 1
+        versionName '0.0.1'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation project(':eyes')
+    implementation project(':android-host')
+}

@@ -57,6 +57,8 @@ func (s *shell) devRun(hit devHit) {
 		}
 	case devActPicker:
 		s.devSetPicker(!s.devPickerOn())
+	case devActClose:
+		_ = s.devToggle()
 	}
 }
 

@@ -27,6 +27,23 @@ func TestDevPanelPressHits(t *testing.T) {
 	}
 }
 
+// TestDevCloseHitClosesDock checks the header close key shuts the overlay
+// through the page flag.
+func TestDevCloseHitClosesDock(t *testing.T) {
+	t.Parallel()
+
+	d := newDevScreen()
+	s := newDevShell(d)
+	s.dev.panel = devRect{X: 100, W: 400, H: 600}
+	cls, _ := devHeaderRight(s.dev.panel)
+	s.dev.hits = []devHit{{rect: cls, act: devActClose}}
+
+	s.devPanelPress(int(cls.X+cls.W-4), 10)
+	if s.dev.on || d.on {
+		t.Fatal("the close key did not shut the dock")
+	}
+}
+
 // TestDevResizeFollowsThePointer checks the drag width and its clamps.
 func TestDevResizeFollowsThePointer(t *testing.T) {
 	t.Parallel()

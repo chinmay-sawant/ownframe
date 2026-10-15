@@ -38,11 +38,13 @@ func (s *shell) devRefresh() {
 	}
 }
 
-// devClose clears the picks and sends one hover for the current cursor, so a
-// stale :hover does not stick after the overlay closes.
+// devClose clears the picks and the dock fingers, and sends one hover for
+// the current cursor, so a stale :hover does not stick after the overlay
+// closes.
 func (s *shell) devClose() error {
 	s.dev.haveHov = false
 	s.dev.havePin = false
+	s.dev.panelTrack = panelTrack{}
 
 	x, y := ebiten.CursorPosition()
 	frameW, frameH := s.frameSize()
