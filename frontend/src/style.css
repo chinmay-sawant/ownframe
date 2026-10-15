@@ -169,8 +169,8 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
 .showcase-page .showcase-gallery img.spotify-window-preview { aspect-ratio: 1.5; object-fit: cover; object-position: center; }
 .gallery-open { display: block; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
 .lightbox-backdrop { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, 0.85); }
-.lightbox-card { position: relative; width: min(1100px, 100%); display: flex; flex-direction: column; align-items: center; }
-.lightbox-card > img { display: block; width: auto; max-width: 100%; max-height: 70vh; margin: 0; border-radius: 9px; background: #000; }
+.lightbox-card { position: relative; width: min(1100px, 100%); display: flex; flex-direction: column; align-items: center; margin: auto; }
+.lightbox-card > img { display: block; width: auto; max-width: 100%; max-height: 70vh; margin: 0 auto; border-radius: 9px; background: #000; }
 .lightbox-bar { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 100%; margin-top: 12px; }
 .lightbox-caption { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 15px; color: #e9eff2; overflow-wrap: anywhere; }
 .lightbox-close, .lightbox-prev, .lightbox-next { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--text); font-size: 24px; line-height: 1; cursor: pointer; }
