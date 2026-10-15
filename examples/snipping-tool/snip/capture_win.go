@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // windowsFullscreen copies the primary screen via PowerShell System.Drawing.
@@ -14,13 +15,14 @@ func windowsFullscreen(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 	defer cleanup()
+	quoted := strings.ReplaceAll(path, "'", "''")
 	script := "Add-Type -AssemblyName System.Drawing;" +
 		"Add-Type -AssemblyName System.Windows.Forms;" +
 		"$b=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds;" +
 		"$m=New-Object System.Drawing.Bitmap($b.Width,$b.Height);" +
 		"$g=[System.Drawing.Graphics]::FromImage($m);" +
 		"$g.CopyFromScreen($b.Location,[System.Drawing.Point]::Empty,$b.Size);" +
-		"$g.Dispose();$m.Save('" + path + "');$m.Dispose()"
+		"$g.Dispose();$m.Save('" + quoted + "');$m.Dispose()"
 	cmd := exec.CommandContext(ctx, "powershell", "-NoProfile",
 		"-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
 	if out, err := cmd.CombinedOutput(); err != nil {

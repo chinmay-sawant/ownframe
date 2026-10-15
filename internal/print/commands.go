@@ -24,12 +24,11 @@ func fileArg(path string) []string {
 	return []string{path}
 }
 
-// appleScriptPrint asks Preview to print the file.
+// appleScriptPrint asks Preview to print the file. The path travels as an
+// osascript argument instead of being interpolated into the script, so a
+// crafted (or newline-bearing) file name cannot break out of the string.
 func appleScriptPrint(path string) []string {
-	escaped := strings.ReplaceAll(path, `\`, `\\`)
-	escaped = strings.ReplaceAll(escaped, `"`, `\"`)
-
-	return []string{"-e", `tell application "Preview" to print (POSIX file "` + escaped + `")`}
+	return []string{"-e", `on run argv`, "-e", `tell application "Preview" to print (POSIX file (item 1 of argv))`, "-e", `end run`, path}
 }
 
 // powershellPrint asks the shell to run the file's print verb.

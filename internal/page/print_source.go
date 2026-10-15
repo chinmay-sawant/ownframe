@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"html"
 	"strings"
 )
 
@@ -33,7 +34,7 @@ func injectTheme(source, theme string) string {
 		return source
 	}
 
-	style := "<style>" + theme + "</style>"
+	style := "<style>" + html.EscapeString(theme) + "</style>"
 	lower := strings.ToLower(source)
 
 	if at := strings.Index(lower, "</head>"); at >= 0 {
