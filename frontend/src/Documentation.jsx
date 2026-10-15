@@ -40,6 +40,10 @@ export default function Documentation({ hash }) {
 
   useEffect(() => {
     setMenuOpen(false);
+    if (isShowcase) {
+      window.scrollTo(0, 0);
+      return;
+    }
     const pane = contentPane.current;
     const target = anchor && pane.querySelector(`#${CSS.escape(anchor)}`);
     if (target) target.scrollIntoView();
