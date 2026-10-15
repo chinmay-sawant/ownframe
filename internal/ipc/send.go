@@ -1,8 +1,13 @@
+// Package ipc passes strings between callers in this process.
 package ipc
 
 // Send calls each Listen callback for channel.
 // A callback that panics does not stop the others.
 // An empty channel does nothing.
+//
+// Listener lists grow until their cancel runs. There is no registration cap:
+// callers own the lifetime of their subscriptions and must call cancel when a
+// listener is no longer needed, even across long-lived programs.
 func Send(channel, payload string) {
 	if channel == "" {
 		return
@@ -26,6 +31,10 @@ func call(fn func(string), payload string) {
 // Listen registers fn for channel.
 // Cancel removes that registration only.
 // An empty channel does nothing.
+//
+// Registrations are not capped or expired automatically: each Listen keeps its
+// listener reachable until cancel runs. Handle (request.go) replaces a handler;
+// Listen always appends another subscriber.
 func Listen(channel string, fn func(string)) (cancel func()) {
 	if channel == "" || fn == nil {
 		return noop

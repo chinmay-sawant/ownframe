@@ -43,6 +43,10 @@ var (
 
 // run starts the first command on PATH and returns ErrNoPrinter when none is.
 func run(ctx context.Context, path string, commands []command) error {
+	if err := validPath(path); err != nil {
+		return err
+	}
+
 	for _, cmd := range commands {
 		exe, err := lookPath(cmd.name)
 		if err != nil {

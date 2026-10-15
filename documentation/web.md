@@ -29,9 +29,9 @@ field, and a reset button on one page.
 |-------|--------------|
 | `GET /` | Returns the shell HTML: the frame image with a usemap, a text form, and a backspace form. `Cache-Control: no-store`. |
 | `GET /frame.png` | Returns the PNG with `Cache-Control: no-store`, or 404 `no frame` when the page has no picture. |
-| `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). |
+| `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{Debug: true}` or `ServeOptions{Perf: true}`; plain `Serve` returns 404. |
 | `GET /pdf` | Returns the page's PDF bytes with `Content-Type: application/pdf` and `Cache-Control: no-store`, or 500 when the render fails. The route exists only for a screen that implements `PDF` ([printing.md](printing.md)); other screens get 404. |
-| `GET /click` | Reads the query floats `x` and `y` in CSS pixels and places the caret at the point before the click handler runs. 400 `bad coordinates` when either fails to parse, 303 to `/` on success, 500 when the page returns an error. |
+| `POST /click` | Reads the query or form floats `x` and `y` in CSS pixels and places the caret at the point before the click handler runs. 400 `bad coordinates` when either fails to parse, 303 to `/` on success, 500 when the page returns an error. |
 | `POST /type` | Reads the urlencoded form field `text`. 400 `bad form` when the body does not parse, 303 to `/`, or 500. |
 | `POST /backspace` | Deletes one character in the focused text control. 303 to `/`, or 500. |
 
@@ -47,7 +47,7 @@ picks it; the engine's boxes are in document order with the inner element
 last.
 
 Plain controls and plain buttons have no `data-action`, so they get no area.
-`GET /click` takes any coordinates and hit-tests them against the boxes, so a
+`POST /click` takes any coordinates and hit-tests them against the boxes, so a
 click anywhere can still focus a control or reach a click handler.
 
 ## The frame
@@ -88,3 +88,31 @@ text. Values survive a redraw like any other page.
 `Serve` has no window, so it lays the page out once at `Page.Size()` and never
 relayouts it. Resizing the browser tab changes how the shell shows the picture,
 not the layout inside it.
+
+## Trust boundary
+
+`Serve` is a developer preview. It assumes the browser peer is the same user on
+the same machine. It returns the rendered page plus its boxes and dimensions,
+mutates page state from clicks and typed input, and runs any app handler reached
+by `/click`. It has no authentication, TLS, CSRF protection, or request
+timeouts. The bind address is caller controlled.
+
+Recommended protections:
+
+- Bind to 127.0.0.1 unless the caller adds its own authentication and
+  transport.
+- Do not expose plain `Serve` on a shared network. Treat `/click`, `/type`,
+  `/backspace`, and `/debug/state` as privileged.
+- `GET /debug/state` is registered only with `ServeOptions{Debug: true}` or
+  `ServeOptions{Perf: true}`. It returns box text, coordinates, and operation
+  counts. Reduce or gate it before exposing a preview. Keep both off in
+  shipped binaries unless debugging or profiling is needed;
+  `ServeOptions{Perf: true}` alone also adds `GET /debug/pprof/*`.
+- The built in server now sets `ReadHeaderTimeout` (5s), `ReadTimeout`
+  (15s), `WriteTimeout` (15s), and `IdleTimeout` (60s), limits `/type` to
+  256 KiB, rejects non finite `/click` coordinates, and sets `nosniff` and
+  `X-Frame-Options: DENY`. `/backspace` reads at most 256 KiB. Put a scoped proxy
+  or custom `http.Server` in front of it when exposure is needed.
+
+See the security audit in
+[plans/v0.0.2/security](../plans/v0.0.2/security/00-overview-threat-model-and-priority.md).

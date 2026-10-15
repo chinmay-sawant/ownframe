@@ -32,8 +32,23 @@ func (c *textRasterCache) raster(key textRasterKey, bake func() (textRasterEntry
 	}
 
 	for len(c.order) > textRunMaxEntries || c.pixels > textRunMaxPixels {
-		c.evict(c.order[0])
-		c.order = c.order[1:]
+		idx := -1
+		var victim textRasterKey
+		for i, candidate := range c.order {
+			if candidate == key {
+				continue
+			}
+			victim = candidate
+			idx = i
+			break
+		}
+		if idx < 0 {
+			// Only the entry being returned remains; keep it.
+			break
+		}
+
+		c.evict(victim)
+		c.order = append(c.order[:idx], c.order[idx+1:]...)
 	}
 
 	return entry

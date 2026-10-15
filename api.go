@@ -41,7 +41,13 @@ var (
 
 	// ErrNilPage means Run, Serve, or BindMobile was called without a page.
 	ErrNilPage = page.ErrNilPage
+
+	// ErrSourceTooLarge means a template, theme, or source string exceeded
+	// MaxSourceSize.
+	ErrSourceTooLarge = page.ErrSourceTooLarge
 )
+
+const MaxSourceSize = page.MaxSourceSize
 
 // New parses html as an html/template page.
 func New(cfg Config) (*Page, error) {

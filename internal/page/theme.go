@@ -9,7 +9,8 @@ import (
 // SetTheme stores an extra stylesheet the next Redraw applies after the
 // page's own style elements. Any property the engine supports restyles the
 // page, and a theme rule wins a tie with a template rule. An empty source
-// removes the theme. SetTheme does not draw.
+// removes the theme. SetTheme does not draw. source is trusted application
+// CSS; an oversized source is rejected.
 func (p *Page) SetTheme(source string) error {
 	sheet, err := parseTheme(source)
 	if err != nil {
@@ -26,6 +27,10 @@ func (p *Page) SetTheme(source string) error {
 
 // parseTheme parses theme CSS. Empty or blank source means no theme.
 func parseTheme(source string) (*css.Sheet, error) {
+	if len(source) > MaxSourceSize {
+		return nil, ErrSourceTooLarge
+	}
+
 	if strings.TrimSpace(source) == "" {
 		return nil, nil
 	}

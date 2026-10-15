@@ -37,6 +37,8 @@ func (p *Page) Redraw(ctx context.Context) error {
 	ts := time.Now()
 	p.applyScrollWindow()
 	var body strings.Builder
+	// p.tpl is trusted author content: its template actions may read fields
+	// and methods of p.data. ownframe does not sandbox template execution.
 	if err := p.tpl.Execute(&body, p.data); err != nil {
 		return err
 	}

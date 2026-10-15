@@ -18,7 +18,7 @@ func TestRunPicksFirstInstalled(t *testing.T) {
 		t.Fatalf("calls = %+v", got)
 	}
 
-	if len(got[0].args) != 1 || got[0].args[0] != "/tmp/r.pdf" {
+	if len(got[0].args) != 2 || got[0].args[0] != "--" || got[0].args[1] != "/tmp/r.pdf" {
 		t.Fatalf("args = %v", got[0].args)
 	}
 }

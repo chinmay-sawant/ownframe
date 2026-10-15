@@ -71,8 +71,18 @@ func (p *Page) pollSource(kind watchKind) (bool, error) {
 		return false, nil
 	}
 
+	if info.Size() > maxSourceSize {
+		err := sourceSizeErr(wp.path, info.Size())
+		return false, p.statNote(wp, err)
+	}
+
 	data, err := os.ReadFile(wp.path)
 	if err != nil {
+		return false, p.statNote(wp, err)
+	}
+
+	if int64(len(data)) > maxSourceSize {
+		err := sourceSizeErr(wp.path, int64(len(data)))
 		return false, p.statNote(wp, err)
 	}
 

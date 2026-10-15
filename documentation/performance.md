@@ -2,7 +2,7 @@
 
 ## Opt in first
 
-Perf sampling is off by default, so a shipped app pays nothing for it. The DevTools PERFORMANCE, PIPELINE DETAIL, and MEMORY rows show "-" and `GET /debug/state` omits runtime until a developer opts in.
+Perf sampling is off by default, so a shipped app pays nothing for it. The DevTools PERFORMANCE, PIPELINE DETAIL, and MEMORY rows show "-" and `/debug/state` (only when `ServeOptions{Debug: true}` or `{Perf: true}`) omits runtime until a developer opts in.
 
 ```go
 page, err := ownframe.NewWithOptions(ownframe.Config{HTML: html, Width: 720, Height: 560}, ownframe.WithPerf(true))

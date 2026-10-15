@@ -135,7 +135,10 @@ count, then the total. The colour names the kind:
 The paint order list shows each operation as `#N`, its kind, its bounds, and
 the first characters of a text run. Clicking a row outlines that operation
 in its kind colour, three pixels wide. Clicking the same row clears the
-outline.
+outline. Clicking a row also writes its text to the OS clipboard, both when
+it selects the operation and when it clears the pick. There is no setting to
+turn the write off, so keep the dock closed when the rendered text or
+coordinates are sensitive.
 
 The bounds are the op's painted box in CSS pixels, from
 `replay.PaintBounds`: the same box the replay's partial repaint filter uses,
@@ -176,7 +179,9 @@ overlay is on, and `Stats().LastDraw` reports it. That hook is separate from
 
 ## Web mode
 
-`GET /debug/state` returns the same data as JSON: `width` and `height`,
+`GET /debug/state` returns the same data as JSON when the server is started
+with `ServeOptions{Debug: true}` or `ServeOptions{Perf: true}`: `width` and
+`height`,
 `generation`, `fallback`, `boxes`, `stats`, and `ops`. `stats` is omitted
 when the screen has no inspector, and `ops` when there is no display list.
 The `ops` map counts each kind and a `total`. The route is in

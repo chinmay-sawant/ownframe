@@ -12,8 +12,10 @@ import (
 
 func TestWriteStoresTitleAndReason(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "reports")
-	crash.SetDir(dir)
-	t.Cleanup(func() { crash.SetDir("") })
+	if err := crash.SetDir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = crash.SetDir(t.TempDir()) })
 
 	path, err := crash.Write("Sign in", "nil pointer")
 	if err != nil {
@@ -23,6 +25,21 @@ func TestWriteStoresTitleAndReason(t *testing.T) {
 	body := readReport(t, path)
 	if !strings.Contains(body, "Sign in") || !strings.Contains(body, "nil pointer") {
 		t.Fatalf("body = %s", body)
+	}
+
+	dirInfo, err := os.Stat(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dirInfo.Mode().Perm() != 0700 {
+		t.Fatalf("dir mode = %v, want 0700", dirInfo.Mode().Perm())
+	}
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fileInfo.Mode().Perm() != 0600 {
+		t.Fatalf("file mode = %v, want 0600", fileInfo.Mode().Perm())
 	}
 
 	if !strings.Contains(body, runtime.Version()) || !strings.Contains(body, "goroutine ") {

@@ -15,6 +15,12 @@ import (
 )
 
 // Page is one HTML template and the last picture it produced.
+//
+// Display fields (img, display, fallbackDisplay, png, boxes, width, height,
+// generation, dirtyRects, and last) are mutated by Redraw on whatever
+// goroutine calls it and read elsewhere. A Page is not safe for concurrent
+// Redraw; callers must serialize page mutations, and cross-goroutine readers
+// should use the accessor snapshots rather than assuming stable state.
 type Page struct {
 	title           string
 	tpl             *template.Template

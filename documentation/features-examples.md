@@ -26,7 +26,7 @@ feature index with links to the detailed docs.
 - Browser-style history `Load`/`Back`/`Forward`/`HTML` with `ErrNoHistory`; `data-action` route map (`internal/page/page_nav.go`)
 - Desktop window via Ebiten, wasm browser build, and mobile binding; sizing is in [window.md](window.md) and the run modes are in [platforms.md](platforms.md) (`internal/window/run.go`, `scripts/browser.sh`, `BindMobile`)
 - DevTools overlay: a right dock with Elements (element JSON), Frame (window and pipeline counters), and Ops (operation list with outlines) tabs; F12 or Ctrl+Shift+I toggles it, `Config.DevTools` starts it on, and `Page.SetDevTools` changes it at runtime ([devtools.md](devtools.md), `internal/window/devtools*.go`, `internal/host/inspect.go`)
-- Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state`, `GET /pdf` (a screen that implements `PDF`), `GET /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
+- Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state` (with `ServeOptions{Debug: true}` or `{Perf: true}`), `GET /pdf` (a screen that implements `PDF`), `POST /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
 
 ## Services
 

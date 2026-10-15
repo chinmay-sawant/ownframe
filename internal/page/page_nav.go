@@ -15,10 +15,16 @@ func (p *Page) HTML() string {
 	return p.past[p.pastAt]
 }
 
-// Load parses html, drops later history, and draws that page.
+// Load parses html, drops later history, and draws that page. html is
+// trusted author content: Go template actions in it may read fields and
+// methods of the page data. ownframe does not sandbox template execution.
 func (p *Page) Load(ctx context.Context, html string) error {
 	if err := useContext(ctx); err != nil {
 		return err
+	}
+
+	if len(html) > MaxSourceSize {
+		return ErrSourceTooLarge
 	}
 
 	if strings.TrimSpace(html) == "" {
@@ -58,11 +64,17 @@ func (p *Page) Forward(ctx context.Context) error {
 	return p.drawAt(ctx, p.pastAt+1)
 }
 
-// Route maps a data-action value to HTML for Click to load.
-// An empty action is ignored. The same action replaces its HTML.
-func (p *Page) Route(action, html string) {
+// Route maps a data-action value to HTML for Click to load. html is
+// trusted author content parsed as a Go template at load time; ownframe
+// does not sandbox template execution. An empty action is ignored. The
+// same action replaces its HTML.
+func (p *Page) Route(action, html string) error {
 	if action == "" {
-		return
+		return nil
+	}
+
+	if len(html) > MaxSourceSize {
+		return ErrSourceTooLarge
 	}
 
 	if p.routes == nil {
@@ -70,6 +82,8 @@ func (p *Page) Route(action, html string) {
 	}
 
 	p.routes[action] = html
+
+	return nil
 }
 
 func (p *Page) drawAt(ctx context.Context, at int) error {

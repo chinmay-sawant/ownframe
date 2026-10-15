@@ -34,6 +34,8 @@ func areas(app host.Screen) []shellArea {
 			Coords: rectCoords(b.X, b.Y, b.W, b.H),
 			Href:   "/click?" + q.Encode(),
 			Alt:    alt,
+			X:      b.X + b.W/2,
+			Y:      b.Y + b.H/2,
 		})
 	}
 

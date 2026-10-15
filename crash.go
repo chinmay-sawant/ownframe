@@ -8,6 +8,8 @@ func Report(title, reason string) (string, error) {
 }
 
 // SetCrashDir sets the directory Report and a recovered panic use.
-func SetCrashDir(dir string) {
-	crash.SetDir(dir)
+// It rejects an empty or unsafe path. An empty value used to
+// restore the default; callers should keep a previous value instead.
+func SetCrashDir(dir string) error {
+	return crash.SetDir(dir)
 }

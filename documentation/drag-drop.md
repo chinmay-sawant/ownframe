@@ -83,3 +83,15 @@ control prints the path the desktop picker returns when a drag cannot reach
 the window, and the picker asks the Windows dialog under WSL. Its tests drop
 names, paths, and a directory, and drive a fake picker through the file
 control.
+
+## Trust boundary
+
+`Drop.Path` is a local absolute path on desktop and empty in a browser. Treat
+it as sensitive desktop data: do not log it, display it to end users, store it
+in crash reports, or expose it through `Serve`, `/debug/state`, IPC, or any
+network route. Prefer copying the bytes from `Drop.Read` inside the handler,
+because `Read` is only valid for the duration of the `Drop` call; a path saved
+for later may no longer point at a reachable file after the frame ends. Dropped
+directories arrive as one entry and `Read` returns the file system error.
+
+See [security.md](security.md) for the broader trust boundaries.
