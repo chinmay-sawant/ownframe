@@ -2,22 +2,19 @@ package print
 
 import (
 	"errors"
+	"path/filepath"
 	"strings"
 	"unicode"
 )
 
-// ErrBadPath means the print path contains a newline, control character,
-// Unicode line separator, or unsafe dot segment and was rejected before
-// any command was invoked.
+// ErrBadPath means the print path was empty, held a control
+// character, or escaped after cleaning and was rejected.
 var ErrBadPath = errors.New("ownframe: print path contains a control character")
 
-// badPath reports whether path contains a newline, another control character,
-// a Unicode line separator, or a "." or ".." path segment.
 func badPath(path string) bool {
 	if path == "" {
 		return true
 	}
-
 	for _, r := range path {
 		if r == '\n' || r == '\r' || r == '\v' || r == '\f' ||
 			r == '\u0085' || r == '\u2028' || r == '\u2029' ||
@@ -26,28 +23,46 @@ func badPath(path string) bool {
 			return true
 		}
 	}
-
-	for _, part := range strings.FieldsFunc(path, func(r rune) bool {
-		return r == '/' || r == '\\'
-	}) {
-		if part == "." || part == ".." {
+	clean := filepath.Clean(path)
+	if clean == "." {
+		return true
+	}
+	for _, part := range strings.FieldsFunc(clean, isSep) {
+		if part == ".." {
 			return true
 		}
 	}
-
 	return false
+}
+
+func canonicalPath(path string) (string, error) {
+	if badPath(path) {
+		return "", ErrBadPath
+	}
+	clean := filepath.Clean(path)
+	if !filepath.IsAbs(clean) {
+		abs, err := filepath.Abs(clean)
+		if err != nil {
+			return "", ErrBadPath
+		}
+		clean = abs
+	}
+	return filepath.Clean(clean), nil
 }
 
 func ValidPath(path string) error {
 	if badPath(path) {
 		return ErrBadPath
 	}
-
 	return nil
 }
 
 func validPath(path string) error {
 	return ValidPath(path)
+}
+
+func isSep(r rune) bool {
+	return r == '/' || r == '\\'
 }
 
 func lpFileArg(path string) []string {
@@ -64,7 +79,6 @@ func appleScriptPrint(path string) []string {
 
 func powershellPrint(path string) []string {
 	quoted := strings.ReplaceAll(path, "'", "''")
-
 	return []string{
 		"-NoProfile",
 		"-Command",

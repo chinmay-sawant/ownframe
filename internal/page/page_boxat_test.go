@@ -48,16 +48,16 @@ func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 	if err := p.Press(ctx, 13, 13); err != nil {
 		t.Fatal(err)
 	}
-	if p.active != "inner" {
-		t.Fatalf("press = %q, want inner", p.active)
+	if p.activeID() != "inner" {
+		t.Fatalf("press = %q, want inner", p.activeID())
 	}
 
 	p.setBoxes(overlapFixture())
 	if err := p.Hover(ctx, 13, 13); err != nil {
 		t.Fatal(err)
 	}
-	if p.hover != "inner" {
-		t.Fatalf("hover = %q, want inner", p.hover)
+	if p.hoverID() != "inner" {
+		t.Fatalf("hover = %q, want inner", p.hoverID())
 	}
 
 	p.setBoxes(overlapFixture())

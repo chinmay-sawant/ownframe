@@ -51,7 +51,7 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 	if released && s.dev.forward {
 		s.dev.forward = false
 
-		return s.app.Release(s.ctx)
+		return s.ptr().Release(s.ctx)
 	}
 
 	return nil
@@ -64,7 +64,7 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 	if alt || !s.devPickerOn() {
 		s.dev.forward = true
 
-		if err := s.app.Press(s.ctx, px, py); err != nil {
+		if err := s.ptr().Press(s.ctx, px, py); err != nil {
 			return err
 		}
 
@@ -74,7 +74,7 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 			}
 		}
 
-		return s.app.Click(s.ctx, px, py)
+		return s.ptr().Click(s.ctx, px, py)
 	}
 
 	box, ok := devBoxAt(s.app.Boxes(), px, py)

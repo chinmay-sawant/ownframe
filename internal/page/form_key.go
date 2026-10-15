@@ -30,9 +30,9 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 	}
 
 	if changed {
-		p.markPending(p.form.focusID)
+		p.markPending(p.formState().focusID)
 
-		if err := p.change(ctx, p.form.focusID); err != nil {
+		if err := p.change(ctx, p.formState().focusID); err != nil {
 			return err
 		}
 	}
@@ -46,18 +46,18 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
 		return false, nil
 	}
 
-	next, caret, anchor, changed := edit(c, p.form.caret, p.form.anchor)
+	next, caret, anchor, changed := edit(c, p.formState().caret, p.formState().anchor)
 	if !changed {
 		return false, nil
 	}
 
-	if err := p.beforeEdit(ctx, p.form.focusID); err != nil {
+	if err := p.beforeEdit(ctx, p.formState().focusID); err != nil {
 		return false, err
 	}
 
-	p.form.byID[p.form.focusID] = next
-	p.form.caret, p.form.anchor = caret, anchor
-	p.form.all = false
+	p.formState().byID[p.formState().focusID] = next
+	p.formState().caret, p.formState().anchor = caret, anchor
+	p.formState().all = false
 	p.resetCaretBlink()
 	bindWrite(p, next)
 
@@ -74,11 +74,11 @@ func (p *Page) typingTarget() (Control, bool) {
 }
 
 func (p *Page) focusedEditable() (Control, bool) {
-	if p.form == nil {
+	if p.formState() == nil {
 		return Control{}, false
 	}
 
-	c, ok := p.control(p.form.focusID)
+	c, ok := p.control(p.formState().focusID)
 	if !ok || !canEdit(c) {
 		return Control{}, false
 	}

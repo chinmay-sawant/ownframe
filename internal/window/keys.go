@@ -19,7 +19,7 @@ func (s *shell) keys() error {
 	}
 
 	if typingSuppressed(mods) && backspaceDue() {
-		return s.app.DeleteWord(s.ctx)
+		return s.kbd().DeleteWord(s.ctx)
 	}
 
 	if chord := s.chords.pressed(mods); chord != chordNone {
@@ -36,13 +36,13 @@ func (s *shell) keys() error {
 	text = strings.ReplaceAll(text, "\n", "")
 
 	if text != "" {
-		if err := s.app.Type(s.ctx, text); err != nil {
+		if err := s.kbd().Type(s.ctx, text); err != nil {
 			return err
 		}
 	}
 
 	if backspaceDue() {
-		if err := s.app.Backspace(s.ctx); err != nil {
+		if err := s.kbd().Backspace(s.ctx); err != nil {
 			return err
 		}
 	}

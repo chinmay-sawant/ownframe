@@ -10,10 +10,10 @@ type accessibilityState struct {
 }
 
 func (p *Page) commitAccessibility(source string) {
-	if p.accessibility == nil {
-		p.accessibility = &accessibilityState{}
+	if p.a11yState() == nil {
+		p.setA11yState(&accessibilityState{})
 	}
-	s := p.accessibility
+	s := p.a11yState()
 	if s.document == 0 || s.retire {
 		s.document++
 		s.retire = false
@@ -25,7 +25,7 @@ func (p *Page) commitAccessibility(source string) {
 }
 
 func (p *Page) invalidateAccessibilityDocument() {
-	if p.accessibility != nil {
-		p.accessibility.retire = true
+	if p.a11yState() != nil {
+		p.a11yState().retire = true
 	}
 }

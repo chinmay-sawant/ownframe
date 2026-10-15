@@ -24,7 +24,7 @@ func (s *shell) keyEvents(mods modifiers) error {
 			}
 
 			if !taken {
-				if err := s.app.KeyDown(s.ctx, name); err != nil {
+				if err := s.kbd().KeyDown(s.ctx, name); err != nil {
 					return err
 				}
 			}
@@ -37,7 +37,7 @@ func (s *shell) keyEvents(mods modifiers) error {
 			}
 
 			if !taken {
-				if err := s.app.KeyUp(s.ctx, name); err != nil {
+				if err := s.kbd().KeyUp(s.ctx, name); err != nil {
 					return err
 				}
 			}

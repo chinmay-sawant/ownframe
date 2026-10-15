@@ -2,6 +2,7 @@ package replay
 
 import (
 	"fmt"
+	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -14,19 +15,15 @@ const (
 	benchCols  = 4
 )
 
-// cardBenchDisplay builds a grid of opaque cards, five ops each: a
-// background, a rounded header, a border, a divider, and a chip. Every op
-// sits in the card's element box, so one card folds into one run. Boxes are
-// CSS pixels and op coordinates are points, as layout emits them.
+// cardBenchDisplay builds a 20-card grid; one card folds into one run.
 func cardBenchDisplay() *layout.Display {
-	const ppt = 72.0 / 96.0
-	pt := func(css float64) float64 { return css * ppt }
+	pt := func(css float64) float64 { return css * 72.0 / 96.0 }
 
 	rows := benchCards / benchCols
 	d := &layout.Display{
 		Width:          benchCols*benchCardW + (benchCols+1)*benchGap,
 		Height:         rows*benchCardH + (rows+1)*benchGap,
-		PointsPerPixel: ppt,
+		PointsPerPixel: 72.0 / 96.0,
 	}
 
 	for i := range benchCards {
@@ -56,4 +53,15 @@ func cardBenchDisplay() *layout.Display {
 	}
 
 	return d
+}
+
+// BenchmarkBuildChunks times the plan fold (GO-ALLOC-02 gate).
+func BenchmarkBuildChunks(b *testing.B) {
+	d := cardBenchDisplay()
+	root := buildPlan(d)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = buildChunks(d, root)
+	}
 }

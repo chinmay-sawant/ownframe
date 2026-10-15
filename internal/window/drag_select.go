@@ -19,20 +19,20 @@ func (s *shell) pressAt(px, py float64) error {
 	if claimed, err := s.beginPointerDrag(px, py, true); claimed || err != nil {
 		return err
 	}
-	if err := s.app.Press(s.ctx, px, py); err != nil {
+	if err := s.ptr().Press(s.ctx, px, py); err != nil {
 		return err
 	}
 
 	sel, ok := s.app.(selector)
 	if !ok {
-		return s.app.Click(s.ctx, px, py)
+		return s.ptr().Click(s.ctx, px, py)
 	}
 
 	if err := sel.SelectAt(s.ctx, px, py); err != nil {
 		return err
 	}
 
-	if err := s.app.Click(s.ctx, px, py); err != nil {
+	if err := s.ptr().Click(s.ctx, px, py); err != nil {
 		return err
 	}
 
@@ -78,5 +78,5 @@ func (s *shell) releaseAt() error {
 	s.dragActive = false
 	s.hold.release()
 
-	return s.app.Release(s.ctx)
+	return s.ptr().Release(s.ctx)
 }

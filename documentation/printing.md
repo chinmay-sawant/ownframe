@@ -15,6 +15,7 @@ path error instead.
 | `Page.SavePDF(ctx, path, opts) error` | Validates `path`, then returns `ErrNoPDF`. |
 | `ownframe.SavePDF(ctx, page, path, opts) error` | The same, for a caller that holds the page separately. |
 | `Page.Print(ctx, opts) error` | Fails before any OS helper runs, see below. |
+| `Page.SupportsPDF() bool` | Always `false`. Branch on it before calling any of the above. |
 
 `PDFOptions` carries three fields. `PageSize` is an engine name such as
 `"A4"` or `"Letter"`. `Margin` is one width in millimetres applied to all
@@ -23,6 +24,11 @@ four sides. `Profile` is a PDF conformance profile such as `"PDF/A-4"` or
 before reading them.
 
 ```go
+if !page.SupportsPDF() {
+    // No PDF writer in this build. Use page.PNG and print those bytes.
+    png, err := page.PNG(ctx)
+    ...
+}
 _, err := page.PDF(ctx, ownframe.PDFOptions{PageSize: "Letter", Margin: 20})
 if errors.Is(err, ownframe.ErrNoPDF) {
     // Render the page another way, e.g. page.PNG, and print those bytes.

@@ -20,7 +20,7 @@ func (h *hoverState) due(px, py float64, seq uint64) bool {
 // shape never overwrites it.
 func (s *shell) hoverCursor(x, y int, px, py float64) error {
 	if s.hover.due(px, py, s.seq) {
-		if err := s.app.Hover(s.ctx, px, py); err != nil {
+		if err := s.ptr().Hover(s.ctx, px, py); err != nil {
 			return err
 		}
 

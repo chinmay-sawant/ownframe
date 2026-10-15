@@ -15,14 +15,43 @@ func TestMemoryRoundTrip(t *testing.T) {
 
 	Write("alpha")
 
-	if got := Read(); got != "alpha" {
-		t.Fatalf("Read() = %q", got)
+	if got, err := Read(); err != nil || got != "alpha" {
+		t.Fatalf("Read() = %q, %v", got, err)
 	}
 
 	Write("beta\nline")
 
-	if got := Read(); got != "beta\nline" {
-		t.Fatalf("Read() = %q", got)
+	if got, err := Read(); err != nil || got != "beta\nline" {
+		t.Fatalf("Read() = %q, %v", got, err)
+	}
+}
+
+func TestReadOSFailureHasNoText(t *testing.T) {
+	UseMemory(true)
+	Write("stale")
+
+	UseMemory(false)
+	t.Setenv("WAYLAND_DISPLAY", "test-unavailable")
+	defer UseMemory(true)
+
+	if got, err := Read(); err == nil || got != "" {
+		t.Fatalf("Read() = %q, %v", got, err)
+	}
+}
+
+func TestWriteOutsideMemoryLeavesMemory(t *testing.T) {
+	UseMemory(true)
+	Write("kept")
+
+	UseMemory(false)
+	t.Setenv("WAYLAND_DISPLAY", "test-unavailable")
+	defer UseMemory(true)
+	Write("dropped")
+
+	UseMemory(true)
+
+	if got, err := Read(); err != nil || got != "kept" {
+		t.Fatalf("Read() = %q, %v", got, err)
 	}
 }
 

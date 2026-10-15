@@ -60,7 +60,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := s.app.Click(r.Context(), x, y); err != nil {
+	if err := s.ptr().Click(r.Context(), x, y); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return

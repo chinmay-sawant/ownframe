@@ -17,10 +17,15 @@ type Ticker interface {
 
 // Screen is one HTML page the hosts can show.
 // The page owns the template, the data, and what a click or a key does.
-// It composes Boxer with the rest of the mandatory surface; selection,
-// PDF, reload, and devtools stay optional host interfaces.
+// It composes Boxer with the Pointer, Keyboard, and Clipboard roles plus
+// the window and picture surface; selection, PDF, reload, and devtools
+// stay optional host interfaces. Screen stays for compat: entry points
+// take it while sinks narrow to one role at the call site.
 type Screen interface {
 	Boxer
+	Pointer
+	Keyboard
+	Clipboard
 	Title() string
 	Size() (int, int)
 	MinSize() (int, int)
@@ -31,20 +36,4 @@ type Screen interface {
 	Display() *layout.Display
 	PNG() []byte
 	Generation() uint64
-	Click(ctx context.Context, x, y float64) error
-	Hover(ctx context.Context, x, y float64) error
-	Press(ctx context.Context, x, y float64) error
-	Release(ctx context.Context) error
-	Type(ctx context.Context, text string) error
-	KeyDown(ctx context.Context, key string) error
-	KeyUp(ctx context.Context, key string) error
-	Backspace(ctx context.Context) error
-	DeleteWord(ctx context.Context) error
-	Submit(ctx context.Context) error
-	Copy(ctx context.Context) (string, bool, error)
-	Cut(ctx context.Context) (string, bool, error)
-	Paste(ctx context.Context, text string) error
-	SelectAll(ctx context.Context) error
-	Undo(ctx context.Context) error
-	Redo(ctx context.Context) error
 }

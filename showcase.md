@@ -38,7 +38,7 @@ stay pinned above the scrolling messages. The arm64 debug APK is 29 MB; binding
 all four ABIs puts one APK at 188 MB.
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/telegram) ·
-[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/telegram/android/artifacts/telegram-arm64-release.apk)
+Build the arm64 release APK with `scripts/android-release.sh telegram`.
 
 ## Teams
 
@@ -49,7 +49,8 @@ Teams is a native chat and collaboration app built with Go, HTML, and CSS.
 
   **Teams**
 
-[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/teams)
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/teams) ·
+[Watch the local demo recording](docs/demos/teams.mp4)
 
 ## Spotify Player
 
@@ -108,8 +109,8 @@ Usage data comes from Android's Usage Access permission and stays on the phone.
 
   **Choose an app**
 
-[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/digital-wellbeing)
-[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/digital-wellbeing/android/artifacts/digital-wellbeing-arm64-release.apk)
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/digital-wellbeing) ·
+Build the APK with `examples/digital-wellbeing/android/build.sh`.
 
 ## Desktop overlays
 
@@ -143,7 +144,7 @@ An endless runner built with HTML, CSS, and Go.
   **Dino Run**
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/dino) ·
-[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/dino/android/artifacts/dino-arm64-release.apk)
+Build the arm64 release APK with `scripts/android-release.sh dino`.
 
 ## Eyes
 

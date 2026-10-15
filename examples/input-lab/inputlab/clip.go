@@ -76,7 +76,8 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 		a.setClip("nothing to paste into")
 		return nil
 	}
-	text := strings.ReplaceAll(osclip.Read(), "\r", "")
+	raw, _ := osclip.Read()
+	text := strings.ReplaceAll(raw, "\r", "")
 	text = strings.ReplaceAll(text, "\n", "")
 	if text == "" {
 		a.setClip("clipboard is empty")

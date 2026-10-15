@@ -1,9 +1,16 @@
 // Package clipboard reads and writes the desktop clipboard.
-// The last text is also kept in memory when the OS clipboard is
-// missing, or when tests turn memory-only mode on.
+// Memory-only mode is for tests. Outside that mode the OS is the
+// only source, so a failed OS read is an error and never older text.
 package clipboard
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
+
+// ErrUnavailable reports a failed OS clipboard read outside
+// memory-only mode. It carries no fallback text.
+var ErrUnavailable = errors.New("ownframe: clipboard unavailable")
 
 var (
 	mu     sync.Mutex
@@ -19,11 +26,15 @@ func UseMemory(on bool) {
 	mu.Unlock()
 }
 
-// Write stores text and tries the OS clipboard.
+// Write stores text in memory-only mode, and tries the OS clipboard
+// otherwise. OS-mode text never lands in memory, so a later failed
+// Read cannot resurface it as stale text.
 func Write(text string) {
 	mu.Lock()
-	mem = text
 	only := memory
+	if only {
+		mem = text
+	}
 	mu.Unlock()
 
 	if !only {
@@ -31,20 +42,24 @@ func Write(text string) {
 	}
 }
 
-// Read returns the OS clipboard, or the last Write when that fails.
-func Read() string {
+// Read returns the memory text in memory-only mode, and the OS
+// clipboard otherwise. An OS failure returns ErrUnavailable and no
+// text; it never falls back to an older Write.
+func Read() (string, error) {
 	mu.Lock()
 	only := memory
 	mu.Unlock()
 
-	if !only {
-		if text, ok := readOS(); ok {
-			return text
-		}
+	if only {
+		mu.Lock()
+		defer mu.Unlock()
+
+		return mem, nil
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
+	if text, ok := readOS(); ok {
+		return text, nil
+	}
 
-	return mem
+	return "", ErrUnavailable
 }

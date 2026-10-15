@@ -3,6 +3,8 @@ package page
 // windowingState is the scroll offset the window last reported and the
 // row-window callback. The window owns scrolling; the callback slices app
 // rows before each draw so only visible rows become boxes and operations.
+// Writer: the window via SetWindowing, SetScrollOffset, SetScrollWindow.
+// Lock: the page loop serializes all writes; readers run on the same loop.
 type windowingState struct {
 	x  int
 	y  int

@@ -18,6 +18,8 @@ temp
 **/.gradle/
 **/build/
 **/local.properties
+# Android release APKs are built locally, never committed.
+examples/*/android/artifacts/*.apk
 # Teams example SQLite state
 *.db
 *.db-wal

@@ -6,12 +6,15 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
-// Step applies the animation's value at now and reports the boxes it
-// changed. The first step fixes the start time. The second result reports
-// whether the animation is still running: the step that reaches the end
-// applies the final value, returns its damage, and reports false. A later
-// step changes nothing.
+// Step applies the value at now and reports the boxes it changed. The
+// first step fixes the start time; the step that reaches the end applies
+// the final value and reports false. A later step, or one after a Redraw
+// replaced a bound list, changes nothing.
 func (a *Anim) Step(now time.Time) (Damage, bool) {
+	if a.stale() {
+		a.live = false
+		return Damage{}, false
+	}
 	if !a.live {
 		return Damage{}, false
 	}

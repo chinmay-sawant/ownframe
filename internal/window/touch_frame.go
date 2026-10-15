@@ -50,7 +50,7 @@ func (s *shell) applyTouches(now []touchPos, clicked bool, frameW, frameH int) e
 	if u.tap == nil {
 		if lifted {
 			s.hold.release()
-			return s.app.Release(s.ctx)
+			return s.ptr().Release(s.ctx)
 		}
 		return nil
 	}

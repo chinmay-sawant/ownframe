@@ -25,8 +25,7 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 			box = p.boxByID(id)
 		}
 	}
-	if ok && p.pressUsed && box.ID == p.active {
-		p.pressUsed = false
+	if ok && p.consumePress(box.ID) {
 		return p.Redraw(ctx)
 	}
 

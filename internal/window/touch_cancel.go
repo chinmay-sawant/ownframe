@@ -18,7 +18,7 @@ func (s *shell) consumeTouchCancel(now []ebiten.TouchID) (bool, error) {
 				return true, err
 			}
 		}
-		if err := s.app.Release(s.ctx); err != nil {
+		if err := s.ptr().Release(s.ctx); err != nil {
 			return true, err
 		}
 	}

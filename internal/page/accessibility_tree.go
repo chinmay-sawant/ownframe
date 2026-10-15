@@ -8,7 +8,7 @@ import (
 // AccessibilityTree returns current semantics in document order. Call it on
 // the page's owning loop; native adapters must queue actions back to that loop.
 func (p *Page) AccessibilityTree() (host.AccessibilityTree, error) {
-	s := p.accessibility
+	s := p.a11yState()
 	if s == nil || s.document == 0 {
 		return host.AccessibilityTree{}, host.ErrAccessibilityUnavailable
 	}
@@ -25,7 +25,7 @@ func (p *Page) AccessibilityTree() (host.AccessibilityTree, error) {
 func (p *Page) buildAccessibilityTree(root *markup.Node) (host.AccessibilityTree, error) {
 	b := newAccessibilityBuilder(p, root)
 	b.walk(root, "document", "")
-	b.tree.Document = p.accessibility.document
+	b.tree.Document = p.a11yState().document
 	b.tree.Revision = p.generation
 	b.tree.Root = "document"
 	b.tree.Focused = b.focused

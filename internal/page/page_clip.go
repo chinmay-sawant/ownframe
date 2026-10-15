@@ -26,7 +26,7 @@ func (p *Page) Copy(ctx context.Context) (string, bool, error) {
 // range is empty.
 func (p *Page) selectedText(c Control) string {
 	runes := []rune(c.Value)
-	start, end := p.form.bounds(len(runes))
+	start, end := p.formState().bounds(len(runes))
 	if start == end {
 		return c.Value
 	}

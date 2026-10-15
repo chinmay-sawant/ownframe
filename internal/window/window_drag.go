@@ -46,7 +46,7 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 	}
 	if click {
 		px, py := s.contentPointAt(s.windowDrag.x, s.windowDrag.y)
-		return true, s.app.Click(s.ctx, px, py)
+		return true, s.ptr().Click(s.ctx, px, py)
 	}
 	return handled, nil
 }

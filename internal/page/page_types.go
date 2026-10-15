@@ -31,18 +31,14 @@ type Page struct {
 	boxes           []layout.Box
 	source          string
 	png             []byte
-	pageGeom
+	pageGeom        // size: New inits, SetSize writes; lock: page loop
 	generation      uint64
 	touchCancel     uint32
 	tick            func(ctx context.Context) error
 	nav             navHistory
 	deepLinkSchemes map[string]struct{}
-	form            *formState
+	ff              formFocusState // owner: page_form_focus*.go; lock: page loop
 	picker          PickFunc
-	hover           string
-	hoverX, hoverY  float64
-	active          string
-	pressUsed       bool
 	cache           *render.Cache
 	stats           pageStats
 	devtools        bool
@@ -59,12 +55,11 @@ type Page struct {
 	changedProps    []string
 	stateStore      *state.Store
 	elements        *element.Registry
-	frameState
-	pinZ  int
-	index map[string]Box
-	pageContent
-	scroll        host.Scroll
-	hasScroll     bool
-	windowing     windowingState
-	accessibility *accessibilityState
+	frameState      // deadline: loop sets, window takes; lock: atomic
+	pinZ            int
+	index           map[string]Box
+	pageContent     // paint rect: box cache writes; lock: page loop
+	scroll          host.Scroll
+	hasScroll       bool
+	windowing       windowingState // scroll: window writes via Set*; lock: loop
 }

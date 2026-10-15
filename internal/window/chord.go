@@ -11,16 +11,21 @@ func (s *shell) applyChord(chord chord) error {
 	case chordCut:
 		return s.copy(true)
 	case chordPaste:
-		text := strings.ReplaceAll(clipboard.Read(), "\r", "")
+		text, err := clipboard.Read()
+		if err != nil {
+			return nil
+		}
+
+		text = strings.ReplaceAll(text, "\r", "")
 		text = strings.ReplaceAll(text, "\n", "")
 
-		return s.app.Paste(s.ctx, text)
+		return s.clip().Paste(s.ctx, text)
 	case chordSelectAll:
-		return s.app.SelectAll(s.ctx)
+		return s.clip().SelectAll(s.ctx)
 	case chordUndo:
-		return s.app.Undo(s.ctx)
+		return s.clip().Undo(s.ctx)
 	case chordRedo:
-		return s.app.Redo(s.ctx)
+		return s.clip().Redo(s.ctx)
 	default:
 		return nil
 	}
@@ -32,9 +37,9 @@ func (s *shell) copy(cut bool) error {
 	var err error
 
 	if cut {
-		text, ok, err = s.app.Cut(s.ctx)
+		text, ok, err = s.clip().Cut(s.ctx)
 	} else {
-		text, ok, err = s.app.Copy(s.ctx)
+		text, ok, err = s.clip().Copy(s.ctx)
 	}
 
 	if err != nil || !ok || text == "" {

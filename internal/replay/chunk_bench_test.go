@@ -4,6 +4,7 @@ import (
 	"image"
 	"testing"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -55,4 +56,20 @@ func BenchmarkChunkCardDamage(b *testing.B) {
 		b.ReportMetric(float64(replayCounts.blits.Load()-bakeBlits)/float64(b.N), "blits/draw")
 		b.Logf("bake ops=%d", bakeOps)
 	})
+}
+
+// drawDirectRect is the pre-chunk damage path: filter the order and draw
+// every op that touches the rect.
+func drawDirectRect(dst *ebiten.Image, d *layout.Display, rect image.Rectangle) {
+	ppt := d.PointsPerPixel
+
+	for _, i := range d.Order {
+		op := &d.Ops[i]
+		if op.Fixed || !opTouches(op, ppt, rect) {
+			continue
+		}
+
+		countOp()
+		drawOp(dst, op, 0, 0)
+	}
 }

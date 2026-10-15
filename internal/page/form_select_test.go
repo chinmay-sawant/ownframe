@@ -22,8 +22,8 @@ func TestSelectAtLandsOnGlyph(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if p.FocusID() != "t" || p.form.caret != want[i] || p.form.anchor != want[i] {
-			t.Fatalf("frac %.1f focus %q caret %d anchor %d", frac, p.FocusID(), p.form.caret, p.form.anchor)
+		if p.FocusID() != "t" || p.formState().caret != want[i] || p.formState().anchor != want[i] {
+			t.Fatalf("frac %.1f focus %q caret %d anchor %d", frac, p.FocusID(), p.formState().caret, p.formState().anchor)
 		}
 	}
 }
@@ -47,9 +47,9 @@ func TestDragExtendsRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	start, end := p.form.bounds(10)
-	if start != 2 || end != 8 || p.form.caret != 8 || p.form.anchor != 2 {
-		t.Fatalf("range [%d,%d) caret %d anchor %d", start, end, p.form.caret, p.form.anchor)
+	start, end := p.formState().bounds(10)
+	if start != 2 || end != 8 || p.formState().caret != 8 || p.formState().anchor != 2 {
+		t.Fatalf("range [%d,%d) caret %d anchor %d", start, end, p.formState().caret, p.formState().anchor)
 	}
 
 	if p.FormSelected("t") {
@@ -60,7 +60,7 @@ func TestDragExtendsRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if start, end := p.form.bounds(10); start != 2 || end != 4 {
+	if start, end := p.formState().bounds(10); start != 2 || end != 4 {
 		t.Fatalf("second drag [%d,%d)", start, end)
 	}
 }

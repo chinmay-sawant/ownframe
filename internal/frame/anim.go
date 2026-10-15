@@ -31,16 +31,14 @@ type Easing func(t float64) float64
 
 // Anim is one compositor animation over retained ops. Construct it with
 // TranslateTo, FadeTo, ScaleTo, or RotateTo, drive it from the page tick,
-// and drop it once Step reports inactive. Constructing a new animation over
-// the same ops re-targets from the state on screen, so an interrupted
-// animation does not jump.
-//
-// Animations over one op compose while they patch different fields:
-// translate patches X and Y, fade patches Alpha, and scale and rotate patch
-// the transform.
+// and drop it once Step reports inactive. A new animation over the same
+// ops re-targets from the state on screen. Animations over one op compose
+// while they patch different fields: translate X and Y, fade Alpha, and
+// scale and rotate the transform.
 //
 // An Anim holds pointers into one display. A Redraw builds a new display
-// list, so an animation must not outlive one.
+// list, so Bind the animation to the page: Step then goes inactive once a
+// Redraw replaces the list instead of patching freed operations.
 type Anim struct {
 	d     *page.Display
 	ops   []*page.DisplayOp
@@ -52,6 +50,9 @@ type Anim struct {
 	dur   time.Duration
 	ease  Easing
 	live  bool
+	// src is the bound page, gen its Generation at Bind time.
+	src *page.Page
+	gen uint64
 }
 
 // Active reports whether Step still has work to do.

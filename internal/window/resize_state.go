@@ -7,7 +7,7 @@ package window
 func (s *shell) refreshState() error {
 	px, py := s.contentPointAt(s.cursorX, s.cursorY)
 
-	if err := s.app.Hover(s.ctx, px, py); err != nil {
+	if err := s.ptr().Hover(s.ctx, px, py); err != nil {
 		return err
 	}
 
@@ -15,5 +15,5 @@ func (s *shell) refreshState() error {
 		return nil
 	}
 
-	return s.app.Press(s.ctx, px, py)
+	return s.ptr().Press(s.ctx, px, py)
 }

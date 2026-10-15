@@ -24,8 +24,8 @@ func (p *Page) SetFormValue(id, value string) {
 		}
 	}
 
-	p.form.byID[id] = c
-	if p.form.focusID == id {
+	p.formState().byID[id] = c
+	if p.formState().focusID == id {
 		p.caretEnd(c)
 	}
 }
@@ -51,10 +51,10 @@ func (p *Page) SetFormChecked(id string, checked bool) {
 	switch c.Type {
 	case "checkbox":
 		c.Checked = checked
-		p.form.byID[id] = c
+		p.formState().byID[id] = c
 	case "radio":
 		c.Checked = checked
-		p.form.byID[id] = c
+		p.formState().byID[id] = c
 		if checked {
 			p.uncheckRadios(c.Name, id)
 		}
@@ -64,22 +64,22 @@ func (p *Page) SetFormChecked(id string, checked bool) {
 // FocusedField returns the focused field id, excluding buttons.
 // FocusID also reports button focus.
 func (p *Page) FocusedField() string {
-	if p.form == nil {
+	if p.formState() == nil {
 		return ""
 	}
-	if c, ok := p.control(p.form.focusID); ok && c.Tag == "button" {
+	if c, ok := p.control(p.formState().focusID); ok && c.Tag == "button" {
 		return ""
 	}
 
-	return p.form.focusID
+	return p.formState().focusID
 }
 
 func (p *Page) control(id string) (Control, bool) {
-	if p.form == nil {
+	if p.formState() == nil {
 		return Control{}, false
 	}
 
-	c, ok := p.form.byID[id]
+	c, ok := p.formState().byID[id]
 
 	return c, ok
 }

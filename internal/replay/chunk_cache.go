@@ -8,10 +8,11 @@ import (
 
 // get returns the entry for key, baking it when the slot is missing or its
 // signature or box moved. A changed signature with an unchanged box reuses
-// the image and paints over it. The bake stays under the lock: bake draws
-// into a slot image a concurrent bake could share, and Ebiten calls belong
-// on the draw path, so moving it out would race. Fewer misses, not a split
-// lock, is the way to cut stall time.
+// the image and paints over it. The bake stays under the lock, as measured
+// by BenchmarkChunkCardDamage/chunked: bake draws into a slot image a
+// concurrent bake could share, and Ebiten calls belong on the draw path,
+// so moving it out races. The replay suite stays green under -race with
+// the bake inline. Fewer misses, not a split lock, cuts stall time.
 func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 	bake func(*ebiten.Image)) *chunkEntry {
 	c.mu.Lock()

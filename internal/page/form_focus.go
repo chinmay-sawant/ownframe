@@ -23,7 +23,7 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 	}
 
 	if id == "" {
-		if p.form == nil || p.form.focusID == "" {
+		if p.formState() == nil || p.formState().focusID == "" {
 			return nil
 		}
 
@@ -37,11 +37,11 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 		return nil
 	}
 
-	if p.form.focusID == id {
+	if p.formState().focusID == id {
 		return nil
 	}
 
-	p.form.focusID = id
+	p.formState().focusID = id
 	if c.Tag == "button" {
 		p.revealFocus(id)
 	}
@@ -56,11 +56,11 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 
 // FocusID returns the focused control id, or "" when none is focused.
 func (p *Page) FocusID() string {
-	if p.form == nil {
+	if p.formState() == nil {
 		return ""
 	}
 
-	return p.form.focusID
+	return p.formState().focusID
 }
 
 func (p *Page) focusStep(ctx context.Context, step int) error {

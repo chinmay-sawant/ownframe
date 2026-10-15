@@ -53,7 +53,12 @@ func TestCopySetsStatus(t *testing.T) {
 		t.Fatalf("status = %q", got)
 	}
 
-	if !strings.HasPrefix(osclip.Read(), string(pngMagic)) {
+	got, err := osclip.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasPrefix(got, string(pngMagic)) {
 		t.Fatal("clipboard does not hold the PNG")
 	}
 }

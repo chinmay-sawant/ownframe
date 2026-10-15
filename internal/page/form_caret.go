@@ -15,17 +15,17 @@ type caretState struct {
 
 // setCaret moves the caret to pos, keeping the anchor when extend is true.
 func (p *Page) setCaret(pos int, extend bool) {
-	if p.form == nil {
+	if p.formState() == nil {
 		return
 	}
 
 	pos = clampPos(pos, p.focusedLen())
 	if !extend {
-		p.form.anchor = pos
+		p.formState().anchor = pos
 	}
 
-	p.form.caret = pos
-	p.form.all = false
+	p.formState().caret = pos
+	p.formState().all = false
 	p.resetCaretBlink()
 }
 
@@ -41,8 +41,8 @@ func (p *Page) focusedLen() int {
 // caretEnd puts the caret and the anchor at the end of c.
 func (p *Page) caretEnd(c Control) {
 	n := runeLen(c.Value)
-	p.form.caret, p.form.anchor = n, n
-	p.form.all = false
+	p.formState().caret, p.formState().anchor = n, n
+	p.formState().all = false
 	p.resetCaretBlink()
 }
 
@@ -53,7 +53,7 @@ func (p *Page) hasSelection() bool {
 		return false
 	}
 
-	start, end := p.form.bounds(runeLen(c.Value))
+	start, end := p.formState().bounds(runeLen(c.Value))
 
 	return start != end
 }
@@ -61,11 +61,11 @@ func (p *Page) hasSelection() bool {
 // caretOf returns the state the control rewrite paints.
 func (p *Page) caretOf() caretState {
 	st := caretState{caret: -1}
-	if p.form == nil || p.form.focusID == "" {
+	if p.formState() == nil || p.formState().focusID == "" {
 		return st
 	}
 
-	c, ok := p.form.byID[p.form.focusID]
+	c, ok := p.formState().byID[p.formState().focusID]
 	if !ok {
 		return st
 	}
@@ -76,13 +76,13 @@ func (p *Page) caretOf() caretState {
 	}
 
 	n := runeLen(c.Value)
-	st.caret = clampPos(p.form.caret, n)
-	st.start, st.end = p.form.bounds(n)
-	st.all = p.form.all
-	if p.form.preeditID == c.ID {
-		st.preedit = p.form.preedit
-		st.preeditStart = p.form.preeditStart
-		st.preeditEnd = p.form.preeditEnd
+	st.caret = clampPos(p.formState().caret, n)
+	st.start, st.end = p.formState().bounds(n)
+	st.all = p.formState().all
+	if p.formState().preeditID == c.ID {
+		st.preedit = p.formState().preedit
+		st.preeditStart = p.formState().preeditStart
+		st.preeditEnd = p.formState().preeditEnd
 	}
 
 	return st

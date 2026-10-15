@@ -27,7 +27,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatalf("visible caret kind = %v, want fill rect", got)
 	}
 
-	p.form.blinkAt = time.Now().Add(-caretBlinkInterval)
+	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatalf("caret returned early with kind %v", got)
 	}
 
-	p.form.blinkAt = time.Now().Add(-caretBlinkInterval)
+	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -69,12 +69,12 @@ func TestEditResetsBlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p.form.blinkAt = time.Now().Add(-caretBlinkInterval)
+	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.form.blinkOn {
+	if p.formState().blinkOn {
 		t.Fatal("blink did not turn off")
 	}
 
@@ -82,7 +82,7 @@ func TestEditResetsBlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !p.form.blinkOn {
+	if !p.formState().blinkOn {
 		t.Fatal("typing did not reset the blink")
 	}
 }

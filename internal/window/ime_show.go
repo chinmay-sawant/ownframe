@@ -22,7 +22,7 @@ func (s *shell) imeShow(text string) {
 	s.imeDrop()
 
 	if text != "" {
-		if err := s.app.Type(s.ctx, text); err != nil {
+		if err := s.kbd().Type(s.ctx, text); err != nil {
 			s.ime.err = err
 		}
 	}
@@ -38,7 +38,7 @@ func (s *shell) imeDrop() {
 	}
 	n := utf8.RuneCountInString(s.ime.last)
 	for i := 0; i < n; i++ {
-		if err := s.app.Backspace(s.ctx); err != nil {
+		if err := s.kbd().Backspace(s.ctx); err != nil {
 			s.ime.err = err
 		}
 	}

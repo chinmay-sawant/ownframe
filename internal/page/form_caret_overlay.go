@@ -8,14 +8,14 @@ import (
 )
 
 func (p *Page) paintCaret(d *layout.Display) {
-	if p.form == nil || p.form.focusID == "" || p.form.all {
+	if p.formState() == nil || p.formState().focusID == "" || p.formState().all {
 		return
 	}
 	c, ok := p.focusedEditable()
 	if !ok || isFileInput(c) {
 		return
 	}
-	start, end := p.form.bounds(runeLen(c.Value))
+	start, end := p.formState().bounds(runeLen(c.Value))
 	if start != end {
 		return
 	}
@@ -35,7 +35,7 @@ func (p *Page) paintCaret(d *layout.Display) {
 		sample.Size = 12
 	}
 	sample.Kind = layout.DisplayOpNoop
-	if p.form.blinkOn {
+	if p.formState().blinkOn {
 		sample.Kind = layout.DisplayOpFillRect
 	}
 	sample.X, sample.Y = x, sample.Y-sample.Size
@@ -61,14 +61,14 @@ func emptyCaret(d *layout.Display, box layout.Box) (layout.DisplayOp, float64) {
 
 func (p *Page) caretText(c Control) (string, int, bool) {
 	kind := strings.ToLower(strings.TrimSpace(c.Type))
-	if p.form.preeditID != c.ID {
-		return shownText(kind, c.Value), clampPos(p.form.caret, runeLen(c.Value)), true
+	if p.formState().preeditID != c.ID {
+		return shownText(kind, c.Value), clampPos(p.formState().caret, runeLen(c.Value)), true
 	}
-	if p.form.preeditStart != p.form.preeditEnd {
+	if p.formState().preeditStart != p.formState().preeditEnd {
 		return "", 0, false
 	}
 	base := []rune(c.Value)
-	start, end := p.form.bounds(len(base))
-	value := string(base[:start]) + p.form.preedit + string(base[end:])
-	return shownText(kind, value), start + runeAtByte(p.form.preedit, p.form.preeditStart), true
+	start, end := p.formState().bounds(len(base))
+	value := string(base[:start]) + p.formState().preedit + string(base[end:])
+	return shownText(kind, value), start + runeAtByte(p.formState().preedit, p.formState().preeditStart), true
 }

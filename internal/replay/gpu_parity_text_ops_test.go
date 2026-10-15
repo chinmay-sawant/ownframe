@@ -6,16 +6,13 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
-// textParityOps are the runs the parity check draws both ways: a plain run, a
-// letter-spaced run, a fake-bold run, a half-alpha color, the plain run again
-// twelve whole pixels lower and 120 right, which must share its raster, and
-// one run too wide to cache, which must draw directly and not enter the cache.
-// The shifted run moves by whole pixels on both axes, so its key must match
-// the plain run's; the rows sit far enough apart that no two runs overlap.
+// textParityOps are the runs drawn both ways: plain, spaced, bold, dim, a
+// whole-pixel shifted share, and one too wide to cache.
 func textParityOps() ([]layout.DisplayOp, error) {
 	d, err := render.DisplayList(context.Background(),
 		`<html><body style="margin:0;font-size:14px"><p>parity</p></body></html>`, 320, 240)
@@ -53,4 +50,22 @@ func textParityOps() ([]layout.DisplayOp, error) {
 	ops := []layout.DisplayOp{plain, spaced, fakeBold, dim, shifted, wide}
 
 	return ops, setRunBounds(ops, &plain)
+}
+
+// setRunBounds fills the advance and ink metrics the dirty-rect filter reads,
+// so the clipped parity check draws the runs the way a real page would.
+func setRunBounds(ops []layout.DisplayOp, base *layout.DisplayOp) error {
+	face := textFace(base)
+	if face == nil {
+		return fmt.Errorf("the parity runs have no face")
+	}
+
+	m := face.Metrics()
+	for i := range ops {
+		width, height := text.Measure(ops[i].Text, face, 0)
+		ops[i].W, ops[i].H = width/pxPerPt, height/pxPerPt
+		ops[i].InkDescent = m.HDescent / pxPerPt
+	}
+
+	return nil
 }

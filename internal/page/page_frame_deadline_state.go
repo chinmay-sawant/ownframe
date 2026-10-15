@@ -6,6 +6,8 @@ import "sync/atomic"
 // window reads, and the next-frame deadline a page sets to pace an idle
 // window. Both clear when the window reads them. It is embedded in Page so
 // the fields promote and page_types.go stays inside the file size limit.
+// Writer: the page loop sets, the window take-clears (page_frame.go).
+// Lock: none, sync/atomic carries the handoff; no mutex needed.
 //
 // frameAt is stored as Unix nanoseconds and accessed with sync/atomic so a
 // frame deadline can be handed off between the tick, handlers, and the game
