@@ -30,6 +30,9 @@ func zenityArgs(title string) []string {
 // Pick runs the Windows dialog under WSL, then the first dialog program on PATH.
 // ok is false when the person canceled or no program is installed.
 func Pick(ctx context.Context, title string) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
 	if inWSL() {
 		debugf("WSL detected")
 
@@ -45,6 +48,9 @@ func Pick(ctx context.Context, title string) (string, bool) {
 
 // pickLinux runs the first dialog program on PATH.
 func pickLinux(ctx context.Context, title string) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
 	for _, t := range tools {
 		path, err := exec.LookPath(t.name)
 		if err != nil {
@@ -58,6 +64,9 @@ func pickLinux(ctx context.Context, title string) (string, bool) {
 }
 
 func run(ctx context.Context, path string, args []string) (string, bool) {
+	if ctx == nil {
+		return "", false
+	}
 	out, err := exec.CommandContext(ctx, path, args...).Output()
 	if err != nil {
 		debugf("%s %v failed: %v", path, args, err)

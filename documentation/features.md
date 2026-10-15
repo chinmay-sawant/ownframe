@@ -97,7 +97,14 @@ Detail is in [drag-drop.md](drag-drop.md).
 
 ## Printing
 
-`Page.PDF` and `Page.WritePDF` render the last template output to PDF bytes through the engine's document writer, with the current theme injected as a style element in the head. `SavePDF` writes the bytes to a file, and `Print` writes a temporary PDF and hands it to the OS print path: `lp` or `xdg-open` on Linux, `osascript` or `open` on macOS, and PowerShell `Start-Process -Verb Print` on Windows. wasm, Android, and iOS return `ErrNoPrinter`. The zero `PDFOptions` value is A4 with 10 mm margins and no profile; a wrong profile is an error. In web mode `GET /pdf` returns the same bytes. The PDF is a re-render from source, so its pagination can differ from the window, and the display list itself is not printed.
+`Page.PDF`, `Page.WritePDF`, `Page.SavePDF`, and `Page.Print` refuse with
+`ErrNoPDF`: the engine returns a drawing list and has no document writer.
+`Print` fails at its `WritePDF` step before any OS helper runs (`lp` or
+`xdg-open` on Linux, `osascript` or `open` on macOS, and PowerShell
+`Start-Process -Verb Print` on Windows; wasm, Android, and iOS return
+`ErrNoPrinter`). `PDFOptions` fields are unused. In web mode `GET /pdf`
+answers `500` with the `ErrNoPDF` message for a `*Page` screen. The working
+fallback is `Page.PNG`: print the window picture with an app-side tool.
 
 Detail is in [printing.md](printing.md).
 

@@ -8,14 +8,14 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // fillRect draws one filled rectangle. Corners are circular; the caller has
 // already rejected elliptical corners. Plain fills snap to whole pixels, the
 // same geometry the engine's raster painter uses.
 func fillRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
-	radii, ok := render.FillRadii(op)
+	radii, ok := masking.FillRadii(op)
 	if !ok {
 		return
 	}

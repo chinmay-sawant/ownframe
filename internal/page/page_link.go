@@ -2,9 +2,9 @@ package page
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 func (p *Page) openLinkAt(ctx context.Context, x, y float64) (bool, error) {
@@ -23,30 +23,19 @@ func (p *Page) openLinkAt(ctx context.Context, x, y float64) (bool, error) {
 }
 
 func parseOutboundLink(target string) (*url.URL, error) {
-	if strings.TrimSpace(target) != target || strings.ContainsAny(target, "\r\n\t ") {
-		return nil, fmt.Errorf("%w: %q", ErrInvalidLink, target)
-	}
-	link, err := url.Parse(target)
+	link, err := classifyLink(target)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %q", ErrInvalidLink, target)
+		if errors.Is(err, errRelativeLink) {
+			return nil, nil
+		}
+		return nil, err
 	}
-	if !link.IsAbs() || link.Scheme == "" {
-		return nil, nil
-	}
-	link.Scheme = strings.ToLower(link.Scheme)
 	switch link.Scheme {
-	case "http", "https":
-		if link.Hostname() == "" {
-			return nil, fmt.Errorf("%w: %q", ErrInvalidLink, target)
-		}
-	case "mailto":
-		if link.Opaque == "" && link.Path == "" {
-			return nil, fmt.Errorf("%w: %q", ErrInvalidLink, target)
-		}
+	case "http", "https", "mailto":
+		return link, nil
 	default:
 		return nil, fmt.Errorf("%w: %s", ErrUnsupportedLinkScheme, link.Scheme)
 	}
-	return link, nil
 }
 
 func (p *Page) linkTargetAt(x, y float64) (string, bool) {

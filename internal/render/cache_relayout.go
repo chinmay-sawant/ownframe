@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 )
 
 // Styled returns the styled document for the cached tree.
@@ -21,6 +22,9 @@ func (c *Cache) Relayout(
 	width, height int,
 	state State,
 ) (*css.Document, error) {
+	if ctx == nil {
+		return nil, fetch.ErrNilContext
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 

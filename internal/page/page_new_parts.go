@@ -2,7 +2,6 @@ package page
 
 import (
 	"html/template"
-	"image"
 	"os"
 
 	"github.com/chinmay-sawant/blinkless/css"
@@ -37,7 +36,5 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		touchScroll:     TouchScrollOptions{Sensitivity: 1, Deceleration: 5},
 		watch:           watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
 		elements:        element.NewRegistry(),
-		pending:         map[string]bool{},
-		last:            map[string]image.Rectangle{},
 	}
 }

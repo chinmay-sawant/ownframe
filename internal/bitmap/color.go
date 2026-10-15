@@ -5,14 +5,15 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 func channel(v float64) uint8 {
-	return uint8(math.Round(max(0, min(1, v)) * 255))
+	return masking.Channel(v)
 }
 
 func opColor(op *layout.DisplayOp) color.NRGBA {
-	return color.NRGBA{R: channel(op.R), G: channel(op.G), B: channel(op.B), A: channel(op.Opacity())}
+	return masking.PaintNRGBA(op)
 }
 
 func over(dst, src color.NRGBA) color.NRGBA {

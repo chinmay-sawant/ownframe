@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"log"
 	"net/http"
+
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func (s *server) page(w http.ResponseWriter, r *http.Request) {
@@ -12,17 +14,12 @@ func (s *server) page(w http.ResponseWriter, r *http.Request) {
 
 	s.reload(r.Context())
 
+	front := page.SelectFront(s.app)
 	data := shellData{
 		Areas:  areas(s.app),
 		Reload: s.watching(),
-	}
-
-	if display := s.app.Display(); display != nil {
-		data.Width, data.Height = display.Width, display.Height
-	} else if img := s.app.Image(); img != nil {
-		b := img.Bounds()
-		data.Width = b.Dx()
-		data.Height = b.Dy()
+		Width:  front.Width,
+		Height: front.Height,
 	}
 
 	var buf bytes.Buffer

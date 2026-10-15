@@ -1,15 +1,12 @@
 package replay
 
 import (
-	"bytes"
-	"image"
-	_ "image/jpeg" // registers the JPEG decoder for image.Decode
-	_ "image/png"  // registers the PNG decoder for image.Decode
 	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // imageCacheLimit bounds the decoded images kept. A page carries far fewer
@@ -28,29 +25,22 @@ type imageCache struct {
 var images imageCache
 
 // decodedImage decodes op's encoded payload once and caches the Ebiten image.
-// It returns nil for a nil op, an empty payload, or a decode error, so the
-// caller skips the draw instead of failing the frame.
+// Bytes to pixels, the empty-or-bad classify, and the alpha rule live in
+// masking; this fork only uploads. It returns nil for a skip (nil op, empty
+// payload, or empty decode) or a decode error, so the caller skips the draw.
 func decodedImage(op *layout.DisplayOp) *ebiten.Image {
 	if op == nil {
 		return nil
 	}
-
-	data, _, _ := op.ImageBytes()
-	if len(data) == 0 {
-		return nil
-	}
-
 	key := imageBytesKey(op)
-
 	images.mu.RLock()
 	if img := images.entries[key]; img != nil {
 		images.mu.RUnlock()
 		return img
 	}
 	images.mu.RUnlock()
-
-	src, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
+	src, _, skip, err := masking.DecodeImage(op)
+	if skip || err != nil {
 		return nil
 	}
 

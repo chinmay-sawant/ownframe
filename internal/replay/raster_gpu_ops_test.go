@@ -2,7 +2,7 @@ package replay
 
 import (
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -21,7 +21,7 @@ func rasterParityOps() []layout.DisplayOp {
 func drawDirect(op *layout.DisplayOp, dst *ebiten.Image) {
 	switch op.Kind {
 	case layout.DisplayOpFillRect:
-		radii, ok := render.FillRadii(op)
+		radii, ok := masking.FillRadii(op)
 		if !ok {
 			return
 		}

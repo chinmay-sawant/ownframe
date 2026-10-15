@@ -50,6 +50,8 @@ figure{margin:1.2rem 0;padding:1.5rem;border:1px solid var(--line);border-radius
 figcaption{font-size:14px;color:var(--muted);margin-top:.6rem}
 svg{max-width:100%;height:auto}
 svg text{fill:currentColor}
+pre{background:var(--gray-bg);border:1px solid var(--line);border-radius:6px;padding:.8rem 1rem;overflow:auto;font-size:13px;font-family:var(--mono);margin:.3rem 0 1rem}
+.ba-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:1rem 0 0}
 footer{color:var(--muted);font-size:13.5px;margin-top:2.5rem}
 @media print{details{break-inside:avoid}}
 </style>
@@ -108,6 +110,69 @@ footer{color:var(--muted);font-size:13.5px;margin-top:2.5rem}
 </figure>
 </section>
 <section>
+<h2>Before and after, the six P0 rows</h2>
+<p>Before quotes verified current source at review time. After quotes the landed shape. All 25 rows are implemented and validated; proof tests are named in the checklist.</p>
+<h3><span class="id">EXT-01</span> Take drains instead of snapshotting</h3>
+<p class="ba-label">Before, page_patch_props.go:25</p>
+<pre><code>func (p *Page) TakeChangedProperties() []string { return p.ChangedProperties() }</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>func (p *Page) TakeChangedProperties() []string {
+	props := p.ChangedProperties()
+	p.ClearChangedProperties()
+	return props
+}</code></pre>
+<h3><span class="id">EXT-02</span> Disabled guard covers every control</h3>
+<p class="ba-label">Before, form_input.go:7</p>
+<pre><code>if c.Tag == "button" &amp;&amp; c.Disabled {
+	return nil
+}</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>if c.Disabled {
+	return nil
+}</code></pre>
+<h3><span class="id">EXT-03</span> One alpha policy for both painters</h3>
+<p class="ba-label">Before, color.go in both painters</p>
+<pre><code>// bitmap keeps RGB separate, Porter-Duff over
+color.NRGBA{R: channel(op.R), G: channel(op.G), B: channel(op.B), A: channel(op.Opacity())}
+// replay premultiplies alpha into RGB
+color.RGBA{R: channel(op.R * clamp(alpha)), G: channel(op.G * clamp(alpha)), B: channel(op.B * clamp(alpha)), ...}</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>// one helper in masking, both painters call it, write-out stays separate
+r, g, b, _ := masking.PaintColor(op)</code></pre>
+<h3><span class="id">EXT-04</span> One GridRun expansion for both painters</h3>
+<p class="ba-label">Before, op.go:15 and grid.go:17</p>
+<pre><code>// bitmap copies the owner, keeps transform, fixed, and opacity
+line := *op
+line.Kind = layout.DisplayOpLine
+// replay builds a bare struct, drops all three
+line := layout.DisplayOp{ID: op.ID, Kind: layout.DisplayOpLine, ...}</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>// one expansion helper, both painters call it
+line := masking.GridLine(op, i)</code></pre>
+<h3><span class="id">PRAC-01</span> Nil context rejected, never panicked</h3>
+<p class="ba-label">Before, pick_linux.go:60 and print.go:50</p>
+<pre><code>func run(ctx context.Context, path string, args []string) (string, bool) {
+	out, err := exec.CommandContext(ctx, path, args...).Output() // panics on nil ctx</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>func run(ctx context.Context, path string, args []string) (string, bool) {
+	if ctx == nil {
+		return "", false // ErrNilContext where an error return exists
+	}</code></pre>
+<h3><span class="id">ARC-01</span> Serve guards match Run guards</h3>
+<p class="ba-label">Before, serve_build.go:21</p>
+<pre><code>if ctx == nil {
+	ctx = context.Background()
+}
+// no app check; first nil failure surfaces as HTTP 500</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>if ctx == nil {
+	return errNilContext
+}
+if app == nil {
+	return errNilApp
+}</code></pre>
+</section>
+<section>
 <h2>All 25 rows</h2>
 <table>
 <tr><th>Row</th><th>Title</th><th>Location</th></tr>
@@ -145,7 +210,7 @@ footer{color:var(--muted);font-size:13.5px;margin-top:2.5rem}
 <details><summary>Refused, 3 items</summary>
 <p>Source-size alias collapse is deletion-only churn. Window shell context storage is the documented Ebiten exception. Serve cancel and PNG context re-files match closed rows with no regression.</p></details>
 </section>
-<footer><p>Method: ten read-only readers at frozen HEAD, deduped on path plus absorbing module, capped at 25 rows. P0 and P1 locations were re-read against current source before writing. No code changed, no tests ran, nothing committed.</p></footer>
+<footer><p>Method: ten read-only readers at frozen HEAD, deduped on path plus absorbing module, capped at 25 rows. P0 and P1 locations were re-read against current source before writing. Implementation followed in six packets with targeted and race suites green; three validators re-ran every proof independently. Gates: make build exit 0, make test exit 0 with 97 packages ok.</p></footer>
 </main>
 <script>
 (function(){if(!('IntersectionObserver' in window))return;

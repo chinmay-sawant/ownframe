@@ -3,11 +3,11 @@ package page
 import "context"
 
 func (p *Page) clickControl(ctx context.Context, box Box) error {
-	c, _ := p.control(box.ID)
-	if c.Tag == "button" && c.Disabled {
+	c, ok := p.control(box.ID)
+	if ok && c.Disabled {
 		return nil
 	}
-	if c.Type == "file" && !c.Disabled {
+	if c.Type == "file" {
 		return p.clickFile(ctx, box, c)
 	}
 

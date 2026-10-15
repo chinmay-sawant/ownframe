@@ -5,9 +5,8 @@ package ipc
 // A callback that panics does not stop the others.
 // An empty channel does nothing.
 //
-// Listener lists grow until their cancel runs. There is no registration cap:
-// callers own the lifetime of their subscriptions and must call cancel when a
-// listener is no longer needed, even across long-lived programs.
+// Channels share one process-global namespace: prefix names per
+// owner and call cancel. Listen caps at maxListeners per channel.
 func Send(channel, payload string) {
 	if channel == "" {
 		return
@@ -32,9 +31,9 @@ func call(fn func(string), payload string) {
 // Cancel removes that registration only.
 // An empty channel does nothing.
 //
-// Registrations are not capped or expired automatically: each Listen keeps its
-// listener reachable until cancel runs. Handle (request.go) replaces a handler;
-// Listen always appends another subscriber.
+// One channel has one owner: prefix names and call cancel. At most
+// maxListeners listeners live per channel; beyond it Listen keeps
+// nothing and returns noop. Handle replaces the handler instead.
 func Listen(channel string, fn func(string)) (cancel func()) {
 	if channel == "" || fn == nil {
 		return noop
@@ -43,6 +42,9 @@ func Listen(channel string, fn func(string)) (cancel func()) {
 	mu.Lock()
 	defer mu.Unlock()
 
+	if len(ears[channel]) >= maxListeners {
+		return noop
+	}
 	seq++
 	id := seq
 	ears[channel] = append(ears[channel], ear{id: id, fn: fn})

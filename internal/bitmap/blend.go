@@ -3,16 +3,12 @@ package bitmap
 import (
 	"image"
 	"image/color"
+
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 func blendSupported(mode string) bool {
-	switch mode {
-	case "", "normal", "multiply", "screen", "overlay", "darken", "lighten",
-		"color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion",
-		"hue", "saturation", "color", "luminosity":
-		return true
-	}
-	return false
+	return masking.BlendSupported(mode)
 }
 
 func composite(dst, src *image.NRGBA, mode string) {
@@ -28,7 +24,7 @@ func composite(dst, src *image.NRGBA, mode string) {
 }
 
 func blendPixel(b, s color.NRGBA, mode string) color.NRGBA {
-	if mode == "" || mode == "normal" {
+	if masking.BlendNormal(mode) {
 		return over(b, s)
 	}
 	cb, cs := rgbColor(b), rgbColor(s)

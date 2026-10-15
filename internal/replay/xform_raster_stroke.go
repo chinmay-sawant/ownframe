@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // strokeRaster caches a transformed border. The key carries the stroke width,
@@ -27,7 +27,7 @@ func strokeRaster(op *layout.DisplayOp, x, y, w, h float32) (*ebiten.Image, imag
 		return nil, image.Point{}, false
 	}
 
-	rx, ry := render.RadiiXY(op)
+	rx, ry := masking.RadiiXY(op)
 	key := rasterKey{
 		variant: rasterStroke,
 		mask:    op.StrokeMask,

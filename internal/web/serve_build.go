@@ -17,10 +17,13 @@ func ServeWithOptions(app host.Screen, addr string, opts Options) error {
 	return ServeWithOptionsContext(context.Background(), app, addr, opts)
 }
 
-// ServeWithOptionsContext stops the listener when ctx ends.
+// ServeWithOptionsContext stops on ctx end.
 func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, opts Options) error {
 	if ctx == nil {
-		ctx = context.Background()
+		return ErrNilContext
+	}
+	if app == nil {
+		return ErrNilApp
 	}
 	if err := validateBindAddr(addr); err != nil {
 		return err

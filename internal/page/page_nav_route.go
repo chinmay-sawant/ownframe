@@ -14,7 +14,7 @@ func (p *Page) Route(action, html string) error {
 		return nil
 	}
 	if len(html) > MaxSourceSize {
-		return ErrSourceTooLarge
+		return sourceTooLarge("route:"+action, int64(len(html)))
 	}
 	p.nav.route(action, html)
 	return nil

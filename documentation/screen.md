@@ -4,13 +4,13 @@
 
 1. It executes the page template with the data set by `SetData`.
 2. It asks `internal/render.DisplayListDocument` for the placement as vector operations, on the styled document from `internal/render/cache.go`.
-3. If `render.Replayable` accepts every operation, it stores the `layout.Display` and its `Boxes`, and no bitmap. Otherwise it stores `bitmap.Picture` of that list and the `Boxes`.
+3. If `render.Replayable` accepts every operation, it stores the `layout.Display` and its `Boxes`, and no bitmap. Otherwise it stores the `bitmap.Paint` result of that list and the `Boxes`.
 
 `internal/render/cache.go` parses and cascades once with the frame size, media `screen`, and any page theme as an extra sheet. A later draw of the same executed source calls `css.Relayout` at the current viewport and pointer state, so a size or state change never parses or recollects.
 
 `internal/render/display.go` holds the one-shot `DisplayListState` entry: it runs the same parse and cascade and calls `layout.DisplayListOptions`. blinkless stops at the drawing list, so no picture exists until ownframe replays it.
 
-`internal/render/paint.go` holds the one-shot `PaintState` entry: it runs that same display list and returns a canvas-sized image. `bitmap.Picture` fills pixels for `Page.PNG` and for a fallback page. Neither path builds a PDF. `Page.PDF` and `Page.WritePDF` return `ErrNoPDF`.
+`internal/render/paint.go` holds the one-shot `PaintState` entry: it runs that same display list and returns a canvas-sized image. `bitmap.Paint` fills pixels for `Page.PNG` and for a fallback page, returning an error the caller handles. Neither path builds a PDF. `Page.PDF` and `Page.WritePDF` return `ErrNoPDF`.
 
 ## Images
 

@@ -4,6 +4,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // drawImage draws one decoded image op into its layout rectangle. The payload
@@ -14,7 +15,7 @@ import (
 // the op's own transform.
 func drawImage(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	src := decodedImage(op)
-	if src == nil {
+	if src == nil || masking.SkipImageSize(op) {
 		return
 	}
 
@@ -25,7 +26,7 @@ func drawImage(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		Filter: ebiten.FilterLinear,
 	}
 
-	if alpha := op.Opacity(); alpha < 1 {
+	if alpha := masking.ImageAlpha(op); alpha < 1 {
 		options.ColorScale.ScaleAlpha(float32(alpha))
 	}
 

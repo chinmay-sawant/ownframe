@@ -54,17 +54,14 @@ type Page struct {
 	allowScroll     bool
 	touchScroll     TouchScrollOptions
 	watch           *watchState
-	dirtyRects      []image.Rectangle
+	dirty           dirtyTracker
 	lastPatch       DisplayPatch
 	changedProps    []string
 	stateStore      *state.Store
 	elements        *element.Registry
-	dirtyFull       bool
 	frameState
-	pinZ    int
-	pending map[string]bool
-	last    map[string]image.Rectangle
-	index   map[string]Box
+	pinZ  int
+	index map[string]Box
 	pageContent
 	scroll        host.Scroll
 	hasScroll     bool

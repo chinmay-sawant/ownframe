@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 )
 
 // Box is one element a click can land on.
@@ -25,7 +26,7 @@ var (
 	// ErrNilPage means Run, Serve, or BindMobile was called without a page.
 	ErrNilPage = errors.New("ownframe: nil page")
 
-	errNilContext = errors.New("ownframe: nil context")
+	errNilContext = fetch.ErrNilContext
 
 	// errNoImage is the resolver answer for a src SetImage does not hold.
 	errNoImage = errors.New("ownframe: no image for src")

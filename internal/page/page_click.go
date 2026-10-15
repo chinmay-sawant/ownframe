@@ -65,21 +65,12 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 }
 
 // hit returns the last box that contains x, y.
-// Boxes are in document order, so that box is the inner element.
+// Boxes are in document order, so that box is the inner element. It
+// delegates to the shared boxAt scan so clicks agree with Press and Hover.
 func hit(boxes []Box, x, y float64) (Box, bool) {
-	var found Box
-	ok := false
+	spot := scanBoxes(boxes, x, y)
 
-	for _, b := range boxes {
-		if x < b.X || y < b.Y || x > b.X+b.W || y > b.Y+b.H {
-			continue
-		}
-
-		found = b
-		ok = true
-	}
-
-	return found, ok
+	return spot.box, spot.ok
 }
 
 var _ host.Screen = (*Page)(nil)

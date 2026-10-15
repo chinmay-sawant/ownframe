@@ -37,3 +37,15 @@ func RadiiXY(op *layout.DisplayOp) (rx, ry [4]float64) {
 
 	return rx, ry
 }
+
+// FillRadii resolves a fill's circular corner radii. ok is false when a
+// corner is elliptical, because the fill replay draws circular arcs only.
+func FillRadii(op *layout.DisplayOp) (radii [4]float64, ok bool) {
+	rx, ry := RadiiXY(op)
+	for i := range rx {
+		if rx[i] != ry[i] {
+			return [4]float64{}, false
+		}
+	}
+	return rx, true
+}

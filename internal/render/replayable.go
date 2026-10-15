@@ -53,7 +53,7 @@ func replayableOp(op *layout.DisplayOp, ppp float64) bool {
 	case layout.DisplayOpNoop, layout.DisplayOpLinkURI:
 		return true
 	case layout.DisplayOpFillRect:
-		_, ok := FillRadii(op)
+		_, ok := masking.FillRadii(op)
 
 		return ok
 	case layout.DisplayOpStrokeRect:

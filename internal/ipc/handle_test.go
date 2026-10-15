@@ -2,6 +2,7 @@ package ipc_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/ipc"
@@ -37,7 +38,7 @@ func TestEmptyChannel(t *testing.T) {
 	})
 
 	_, err := ipc.Request(nil, "", "x")
-	if err != ipc.ErrNoHandler || heard {
+	if !errors.Is(err, ipc.ErrNoHandler) || heard {
 		t.Fatalf("err=%v heard=%v", err, heard)
 	}
 }

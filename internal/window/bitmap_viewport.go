@@ -3,12 +3,11 @@ package window
 import (
 	"image"
 
-	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/bitmap"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-type fallbackDisplay interface{ FallbackDisplay() *layout.Display }
 type bitmapView struct {
 	img  *ebiten.Image
 	gen  uint64
@@ -17,7 +16,9 @@ type bitmapView struct {
 }
 
 func (s *shell) prepareBitmapViewport() error {
-	raw, ok := s.app.(fallbackDisplay)
+	// The provider is window-only; the browser sink serves PNG bytes and
+	// never reads retained operations. See host.FallbackDisplayProvider.
+	raw, ok := s.app.(host.FallbackDisplayProvider)
 	if !s.fallback || !ok || raw.FallbackDisplay() == nil || s.stretched() || s.viewLocked() {
 		if s.bitmapView.img != nil {
 			s.bitmapView.img.Dispose()

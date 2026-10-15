@@ -3,6 +3,7 @@ package page_test
 import (
 	"bytes"
 	"context"
+	"image/png"
 	"os"
 	"path/filepath"
 	"testing"
@@ -59,7 +60,17 @@ func TestNewReadsFile(t *testing.T) {
 
 	boxCenter(t, fromFile, "a")
 
-	if !bytes.Equal(fromFile.PNG(), fromString.PNG()) {
+	fileImg, err := png.Decode(bytes.NewReader(fromFile.PNG()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	stringImg, err := png.Decode(bytes.NewReader(fromString.PNG()))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !samePicture(fileImg, stringImg) {
 		t.Fatal("file page and string page painted differently")
 	}
 }

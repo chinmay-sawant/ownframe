@@ -18,7 +18,11 @@ func New(cfg Config) (*Page, error) {
 		return nil, err
 	}
 	if len(source) > MaxSourceSize {
-		return nil, ErrSourceTooLarge
+		path := cfg.File
+		if path == "" {
+			path = "html"
+		}
+		return nil, sourceTooLarge(path, int64(len(source)))
 	}
 	if strings.TrimSpace(source) == "" {
 		return nil, ErrEmptyHTML

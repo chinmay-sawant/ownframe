@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/html"
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 )
 
 // Cache holds one parsed HTML tree and the styled document built from it.
@@ -37,6 +38,9 @@ func NewCache(
 	width, height int,
 	state State,
 ) (*Cache, error) {
+	if ctx == nil {
+		return nil, fetch.ErrNilContext
+	}
 	engineMu.Lock()
 	defer engineMu.Unlock()
 	doc, err := html.Parse([]byte(source))

@@ -3,7 +3,6 @@ package page
 import (
 	"context"
 	"crypto/sha256"
-	"os"
 )
 
 // PollReload stats and rereads the watched files. It reports whether the
@@ -61,7 +60,7 @@ func (p *Page) pollSource(kind watchKind) (bool, error) {
 		return false, nil
 	}
 
-	info, err := os.Stat(wp.path)
+	info, err := srcFiles.Stat(wp.path)
 	if err != nil {
 		return false, p.statNote(wp, err)
 	}
@@ -72,17 +71,17 @@ func (p *Page) pollSource(kind watchKind) (bool, error) {
 	}
 
 	if info.Size() > maxSourceSize {
-		err := sourceSizeErr(wp.path, info.Size())
+		err := sourceTooLarge(wp.path, info.Size())
 		return false, p.statNote(wp, err)
 	}
 
-	data, err := os.ReadFile(wp.path)
+	data, err := srcFiles.ReadFile(wp.path)
 	if err != nil {
 		return false, p.statNote(wp, err)
 	}
 
 	if int64(len(data)) > maxSourceSize {
-		err := sourceSizeErr(wp.path, int64(len(data)))
+		err := sourceTooLarge(wp.path, int64(len(data)))
 		return false, p.statNote(wp, err)
 	}
 

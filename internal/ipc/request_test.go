@@ -3,9 +3,9 @@ package ipc_test
 import (
 	"context"
 	"errors"
-	"strings"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 	"github.com/chinmay-sawant/ownframe/internal/ipc"
 )
 
@@ -36,7 +36,7 @@ func TestRequestWithoutHandler(t *testing.T) {
 	t.Parallel()
 
 	_, err := ipc.Request(context.Background(), "request-none", "x")
-	if err != ipc.ErrNoHandler {
+	if !errors.Is(err, ipc.ErrNoHandler) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -51,14 +51,14 @@ func TestRequestRejectsBadContext(t *testing.T) {
 	})
 
 	_, err := ipc.Request(nil, "request-ctx", "x")
-	if err == nil || !strings.Contains(err.Error(), "nil context") {
+	if !errors.Is(err, fetch.ErrNilContext) {
 		t.Fatalf("nil ctx err = %v", err)
 	}
 
 	dead, cancel := context.WithCancel(context.Background())
 	cancel()
 	_, err = ipc.Request(dead, "request-ctx", "x")
-	if err != context.Canceled || called {
+	if !errors.Is(err, context.Canceled) || called {
 		t.Fatalf("err=%v called=%v", err, called)
 	}
 }

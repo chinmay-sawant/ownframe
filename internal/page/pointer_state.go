@@ -77,19 +77,9 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	return p.Redraw(ctx)
 }
 
-// boxIDAt returns the innermost box with an id that contains the point, or "".
+// boxIDAt returns the innermost box with an id that contains the point, or
+// "". It delegates to the shared boxAt scan so Hover and Press agree with
+// Click on overlapping boxes.
 func (p *Page) boxIDAt(x, y float64) string {
-	id := ""
-
-	for _, b := range p.Boxes() {
-		if x < b.X || y < b.Y || x > b.X+b.W || y > b.Y+b.H {
-			continue
-		}
-
-		if b.ID != "" {
-			id = b.ID
-		}
-	}
-
-	return id
+	return p.boxAt(x, y).id
 }

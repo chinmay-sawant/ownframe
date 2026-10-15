@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 )
 
 // ErrNoPrinter means the system has no print helper to run.
@@ -43,6 +45,9 @@ var (
 // run starts the first command on PATH and joins helper failures
 // with ErrNoPrinter so callers keep the cause.
 func run(ctx context.Context, path string, commands []command) error {
+	if ctx == nil {
+		return fetch.ErrNilContext
+	}
 	if err := validPath(path); err != nil {
 		return err
 	}

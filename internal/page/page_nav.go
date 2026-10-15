@@ -21,7 +21,7 @@ func (p *Page) Load(ctx context.Context, html string) error {
 		return err
 	}
 	if len(html) > MaxSourceSize {
-		return ErrSourceTooLarge
+		return sourceTooLarge("html", int64(len(html)))
 	}
 	if strings.TrimSpace(html) == "" {
 		return ErrEmptyHTML
@@ -40,6 +40,9 @@ func (p *Page) Load(ctx context.Context, html string) error {
 
 // Back draws the previous template source.
 func (p *Page) Back(ctx context.Context) error {
+	if err := useContext(ctx); err != nil {
+		return err
+	}
 	if !p.nav.canBack() {
 		return ErrNoHistory
 	}
@@ -48,6 +51,9 @@ func (p *Page) Back(ctx context.Context) error {
 
 // Forward draws the next template source.
 func (p *Page) Forward(ctx context.Context) error {
+	if err := useContext(ctx); err != nil {
+		return err
+	}
 	if !p.nav.canForward() {
 		return ErrNoHistory
 	}

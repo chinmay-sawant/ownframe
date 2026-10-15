@@ -1,7 +1,9 @@
 // Package render reads a placement from layout.DisplayList. blinkless returns
 // that list and no page bitmap. Paint returns the hit boxes and a canvas-sized
-// image. The window and Page.PNG fill pixels with replay.Picture. DisplayList
-// keeps the operations. It does not build a PDF.
+// image. Fallback pages and Page.PNG fill pixels with bitmap.Paint, and the
+// window fills them with internal/replay. DisplayList keeps the operations.
+// This package never imports replay; replay imports render. It does not
+// build a PDF.
 package render
 
 import (
@@ -26,8 +28,9 @@ func PaintState(ctx context.Context, source string, width, height int, state Sta
 	return canvasImage(display), display.Boxes, nil
 }
 
-// canvasImage is a blank image the size of the display. Pixels are filled
-// by replay.Picture, which this package cannot import.
+// canvasImage is a blank image the size of the display. bitmap.Paint fills
+// the pixels for Page.PNG and fallback pages, and internal/replay fills
+// them for the window; neither direction imports back into render.
 func canvasImage(display *Display) image.Image {
 	if display == nil || display.Width < 1 || display.Height < 1 {
 		return nil

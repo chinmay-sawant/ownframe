@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/fetch"
@@ -33,7 +32,7 @@ func TestNilContext(t *testing.T) {
 	t.Parallel()
 
 	_, err := fetch.Do(nil, http.MethodGet, "https://example.com", nil, nil)
-	if err == nil || !strings.Contains(err.Error(), "nil context") {
+	if !errors.Is(err, fetch.ErrNilContext) {
 		t.Fatalf("err = %v", err)
 	}
 }

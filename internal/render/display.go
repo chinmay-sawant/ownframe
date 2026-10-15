@@ -7,32 +7,27 @@ import (
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/html"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 )
 
-// DisplayOp is one vector operation from the placement. It is the layout
-// package's operation type under a local name, so callers of this package do
-// not import the engine to name it. Read the rare payload through its
-// accessor methods (LinkURI, ImageBytes, Transform, Opacity, and the rest);
-// the zero value carries no payload and a promoted field read on it panics.
+// DisplayOp is one vector op from layout under a local name.
+// Read payloads via accessors; zero value has none.
 type DisplayOp = layout.DisplayOp
 
-// Display is a retained display list plus the canvas it was laid out for.
+// Display is a retained display list plus its canvas size.
 type Display = layout.Display
 
-// DisplayList parses source and returns the placement as vector operations
-// instead of as a picture. width and height are the frame size in CSS pixels,
-// the same arguments Paint takes.
-//
-// The operations carry geometry, color, and font handles, so a caller can draw
-// them onto its own canvas and keep text as glyphs rather than as pixels. Paint
-// stays the entry for anything that wants the picture, including the web host's
-// GET /frame.png.
+// DisplayList parses source and returns vector ops for width, height.
+// Paint stays the entry for pictures, including GET /frame.png.
 func DisplayList(ctx context.Context, source string, width, height int) (*Display, error) {
 	return DisplayListState(ctx, source, width, height, State{})
 }
 
-// DisplayListState is DisplayList with the runtime pointer and focus state.
+// DisplayListState is DisplayList with pointer and focus state.
 func DisplayListState(ctx context.Context, source string, width, height int, state State) (*Display, error) {
+	if ctx == nil {
+		return nil, fetch.ErrNilContext
+	}
 	engineMu.Lock()
 	defer engineMu.Unlock()
 	doc, err := html.Parse([]byte(source))

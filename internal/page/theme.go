@@ -28,7 +28,7 @@ func (p *Page) SetTheme(source string) error {
 // parseTheme parses theme CSS. Empty or blank source means no theme.
 func parseTheme(source string) (*css.Sheet, error) {
 	if len(source) > MaxSourceSize {
-		return nil, ErrSourceTooLarge
+		return nil, sourceTooLarge("theme", int64(len(source)))
 	}
 
 	if strings.TrimSpace(source) == "" {

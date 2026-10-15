@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // xformRaster returns a cached raster of the op's local shape and the local
@@ -30,7 +30,7 @@ func xformRaster(op *layout.DisplayOp) (img *ebiten.Image, at image.Point, ok bo
 }
 
 func fillRaster(op *layout.DisplayOp, x, y, w, h float32) (*ebiten.Image, image.Point, bool) {
-	radii, ok := render.FillRadii(op)
+	radii, ok := masking.FillRadii(op)
 	if !ok {
 		return nil, image.Point{}, false
 	}

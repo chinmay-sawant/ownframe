@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 )
 
 // DisplayListDocument turns an already styled document into vector
@@ -17,6 +18,9 @@ func DisplayListDocument(
 	styled *css.Document,
 	images func(src string) ([]byte, error),
 ) (*Display, error) {
+	if ctx == nil {
+		return nil, fetch.ErrNilContext
+	}
 	engineMu.Lock()
 	defer engineMu.Unlock()
 	display, err := layout.DisplayListOptions(ctx, styled, layout.Options{Images: images})
@@ -29,12 +33,16 @@ func DisplayListDocument(
 
 // PaintDocument lays out an already styled document. It is the layout half
 // of PaintState, without the parse and the cascade. The image is canvas-sized
-// and blank. replay.Picture fills the pixels.
+// and blank. bitmap.Paint fills the pixels for Page.PNG and fallback pages,
+// and internal/replay fills them for the window.
 func PaintDocument(
 	ctx context.Context,
 	styled *css.Document,
 	images func(src string) ([]byte, error),
 ) (image.Image, []layout.Box, error) {
+	if ctx == nil {
+		return nil, nil, fetch.ErrNilContext
+	}
 	display, err := DisplayListDocument(ctx, styled, images)
 	if err != nil {
 		return nil, nil, err
