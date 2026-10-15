@@ -12,7 +12,7 @@ import (
 func dialX() (*xClient, error) {
 	host, num, screen, ok := displaySpec(os.Getenv("DISPLAY"))
 	if !ok {
-		return nil, errX
+		return nil, ErrX11
 	}
 
 	conn, err := net.DialTimeout("unix", "/tmp/.X11-unix/X"+num, xWait)
@@ -40,7 +40,7 @@ func dialX() (*xClient, error) {
 	base, mask, max, good := setupIDs(body)
 	root, rootOK := rootAt(body, screen)
 	if !good || !rootOK || mask == 0 {
-		return nil, errX
+		return nil, ErrX11
 	}
 
 	if max < 24 {
@@ -84,12 +84,12 @@ func readSetup(r io.Reader) ([]byte, error) {
 	}
 
 	if hdr[0] != 1 {
-		return nil, errX
+		return nil, ErrX11
 	}
 
 	n := int(get16(hdr[6:]))
 	if n < 8 || n > 1<<18 {
-		return nil, errX
+		return nil, ErrX11
 	}
 
 	buf := make([]byte, 8+n*4)

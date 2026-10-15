@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net"
@@ -11,26 +12,24 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-// ServeWithOptions listens on addr and blocks. The page at / shows the latest
-// PNG. With Options.Perf it also serves the pprof endpoints, and with
-// Options.Perf or Options.Debug it serves /debug/state.
+// ServeWithOptions listens on addr and blocks.
 func ServeWithOptions(app host.Screen, addr string, opts Options) error {
+	return ServeWithOptionsContext(context.Background(), app, addr, opts)
+}
+
+// ServeWithOptionsContext stops the listener when ctx ends.
+func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, opts Options) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if err := validateBindAddr(addr); err != nil {
 		return err
 	}
-
-	shell, err := template.New("shell").Parse(shellHTML)
+	t, err := template.New("shell").Parse(shellHTML)
 	if err != nil {
 		return err
 	}
-
-	srv := &server{
-		app:          app,
-		shell:        shell,
-		perf:         opts.Perf,
-		debugEnabled: opts.Perf || opts.Debug,
-	}
-
+	srv := &server{app: app, shell: t, perf: opts.Perf, debugEnabled: opts.Perf || opts.Debug}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", srv.page)
 	mux.HandleFunc("GET /frame.png", srv.frame)
@@ -50,21 +49,17 @@ func ServeWithOptions(app host.Screen, addr string, opts Options) error {
 	mux.HandleFunc("POST /click", srv.click)
 	mux.HandleFunc("POST /type", srv.typeText)
 	mux.HandleFunc("POST /backspace", srv.backspace)
-
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
-
 	fmt.Println("http://" + addr + "/")
-
-	httpSrv := &http.Server{
-		Handler:           panicRecovery(securityHeaders(mux)),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       15 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
+	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	stop := context.AfterFunc(ctx, func() { hs.Shutdown(context.Background()) })
+	defer stop()
+	err = hs.Serve(ln)
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
-
-	return httpSrv.Serve(ln)
+	return err
 }

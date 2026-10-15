@@ -17,8 +17,10 @@ import (
 const imageCacheLimit = 64
 
 // imageCache keeps decoded images by payload key, oldest insertion first.
+// Hits resolve under a read lock; decode runs lock-free and only the GPU
+// upload plus insert hold the write lock, with a second hit check.
 type imageCache struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	entries map[uint64]*ebiten.Image
 	order   []uint64
 }
@@ -40,16 +42,23 @@ func decodedImage(op *layout.DisplayOp) *ebiten.Image {
 
 	key := imageBytesKey(op)
 
+	images.mu.RLock()
+	if img := images.entries[key]; img != nil {
+		images.mu.RUnlock()
+		return img
+	}
+	images.mu.RUnlock()
+
+	src, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil
+	}
+
 	images.mu.Lock()
 	defer images.mu.Unlock()
 
 	if img := images.entries[key]; img != nil {
 		return img
-	}
-
-	src, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil
 	}
 
 	img := ebiten.NewImageFromImage(src)

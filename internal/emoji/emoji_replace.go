@@ -63,7 +63,11 @@ func Replace(html string) (string, bool) {
 				continue
 			}
 
-			b.WriteString(imgOpen + file + imgMid + seq + imgClose)
+			b.WriteString(imgOpen)
+			b.WriteString(file)
+			b.WriteString(imgMid)
+			b.WriteString(seq)
+			b.WriteString(imgClose)
 			i += len(seq)
 			changed = true
 		}

@@ -18,6 +18,9 @@ var client = &http.Client{
 // ErrBodyTooLarge means a response body exceeded the 10 MiB cap.
 var ErrBodyTooLarge = errors.New("ownframe: fetch response body exceeds 10 MiB")
 
+// ErrTooManyRedirects means the client stopped after 10 redirects.
+var ErrTooManyRedirects = errors.New("ownframe: fetch stopped after 10 redirects")
+
 // ErrHeadersTooLarge means response headers exceeded the 1 MiB cap.
 var ErrHeadersTooLarge = errors.New("ownframe: fetch response headers exceed 1 MiB")
 
@@ -60,7 +63,7 @@ func checkURL(raw string) error {
 
 func redirect(req *http.Request, via []*http.Request) error {
 	if len(via) >= 10 {
-		return errors.New("stopped after 10 redirects")
+		return ErrTooManyRedirects
 	}
 	if req.URL.User != nil {
 		return ErrCredentialsInURL

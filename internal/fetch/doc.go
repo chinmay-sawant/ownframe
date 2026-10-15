@@ -8,6 +8,9 @@ import "errors"
 // A redirect to any other scheme is the same error.
 var ErrScheme = errors.New("ownframe: fetch scheme")
 
+// ErrNilContext means Do got a nil context.
+var ErrNilContext = errors.New("ownframe: nil context")
+
 // Response is one completed request.
 // Header is a flat map. Values for one key are joined with ", ".
 type Response struct {

@@ -11,7 +11,7 @@ import (
 // areas lists actionable boxes, inner ones first.
 // An HTML image map uses the first matching area, which is the opposite
 // of the engine's document order.
-func areas(app host.Screen) []shellArea {
+func areas(app host.Boxer) []shellArea {
 	boxes := app.Boxes()
 	out := make([]shellArea, 0)
 

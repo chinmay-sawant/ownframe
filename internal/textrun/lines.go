@@ -2,6 +2,7 @@ package textrun
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -28,6 +29,14 @@ func collect(d *layout.Display, box layout.Box) []line {
 		lines = addRun(lines, op)
 	}
 
+	// One stable pass per line: sorting only the final set matches
+	// sorting after every insert, without the repeated work.
+	for i := range lines {
+		runs := lines[i].runs
+		sort.SliceStable(runs, func(a, b int) bool {
+			return runs[a].op.X < runs[b].op.X
+		})
+	}
 	sort.SliceStable(lines, func(i, j int) bool {
 		return lines[i].baseline < lines[j].baseline
 	})
@@ -42,9 +51,6 @@ func addRun(lines []line, op *layout.DisplayOp) []line {
 		}
 
 		lines[i].runs = append(lines[i].runs, run{op: op})
-		sort.SliceStable(lines[i].runs, func(a, b int) bool {
-			return lines[i].runs[a].op.X < lines[i].runs[b].op.X
-		})
 
 		return lines
 	}
@@ -67,12 +73,12 @@ func nearest(lines []line, yPt float64) int {
 
 // lineText joins the drawn text of a line's runs in reading order.
 func lineText(ln line) string {
-	out := ""
+	var b strings.Builder
 	for _, r := range ln.runs {
-		out += drawn(r.op)
+		b.WriteString(drawn(r.op))
 	}
 
-	return out
+	return b.String()
 }
 
 func drawn(op *layout.DisplayOp) string {

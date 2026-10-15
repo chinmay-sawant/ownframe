@@ -44,7 +44,7 @@ func TestMarkRectCapCollapses(t *testing.T) {
 func TestTakeDirtyRectsPadClampDrop(t *testing.T) {
 	t.Parallel()
 
-	p := &Page{width: 100, height: 100}
+	p := &Page{pageGeom: pageGeom{width: 100, height: 100}}
 	p.markRect(image.Rect(-10, -10, 20, 20))
 	p.markRect(image.Rect(200, 200, 210, 210))
 
@@ -61,7 +61,7 @@ func TestTakeDirtyRectsPadClampDrop(t *testing.T) {
 func TestTakeDirtyRectsThirdAreaCollapses(t *testing.T) {
 	t.Parallel()
 
-	p := &Page{width: 100, height: 100}
+	p := &Page{pageGeom: pageGeom{width: 100, height: 100}}
 	p.markRect(image.Rect(0, 0, 40, 40))
 	p.markRect(image.Rect(60, 0, 100, 40))
 

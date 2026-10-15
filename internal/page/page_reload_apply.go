@@ -38,7 +38,7 @@ func (p *Page) setTemplate(data []byte) error {
 	}
 
 	p.tpl = tpl
-	p.past[p.pastAt] = string(data)
+	p.nav.retarget(string(data))
 	p.invalidateAccessibilityDocument()
 
 	return nil

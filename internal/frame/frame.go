@@ -6,12 +6,12 @@ package frame
 import (
 	"slices"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // BoxUnits converts a hit-test box to display-list units: x, y, w, h.
 // Display operations carry points; boxes carry CSS pixels.
-func BoxUnits(d *ownframe.Display, b ownframe.Box) (x, y, w, h float64) {
+func BoxUnits(d *page.Display, b page.Box) (x, y, w, h float64) {
 	p := d.PointsPerPixel
 
 	return b.X * p, b.Y * p, b.W * p, b.H * p
@@ -19,7 +19,7 @@ func BoxUnits(d *ownframe.Display, b ownframe.Box) (x, y, w, h float64) {
 
 // Fill returns the first fill rectangle of the given 0..1 color inside box,
 // or nil. Fills returns them all, left to right.
-func Fill(d *ownframe.Display, box ownframe.Box, color [3]float64) *ownframe.DisplayOp {
+func Fill(d *page.Display, box page.Box, color [3]float64) *page.DisplayOp {
 	fills := Fills(d, box, color)
 	if len(fills) == 0 {
 		return nil
@@ -30,17 +30,17 @@ func Fill(d *ownframe.Display, box ownframe.Box, color [3]float64) *ownframe.Dis
 
 // Fills returns the fill rectangles of the given color inside box, ordered
 // left to right, or nil.
-func Fills(d *ownframe.Display, box ownframe.Box, color [3]float64) []*ownframe.DisplayOp {
+func Fills(d *page.Display, box page.Box, color [3]float64) []*page.DisplayOp {
 	if d == nil {
 		return nil
 	}
 
 	x, y, w, h := BoxUnits(d, box)
-	out := make([]*ownframe.DisplayOp, 0, 4)
+	out := make([]*page.DisplayOp, 0, 4)
 
 	for i := range d.Ops {
 		op := &d.Ops[i]
-		if op.Kind != ownframe.DisplayOpFillRect || !inside(op, x, y, w, h) {
+		if op.Kind != page.DisplayOpFillRect || !inside(op, x, y, w, h) {
 			continue
 		}
 
@@ -51,7 +51,7 @@ func Fills(d *ownframe.Display, box ownframe.Box, color [3]float64) []*ownframe.
 		out = append(out, op)
 	}
 
-	slices.SortFunc(out, func(a, b *ownframe.DisplayOp) int {
+	slices.SortFunc(out, func(a, b *page.DisplayOp) int {
 		switch {
 		case a.X < b.X:
 			return -1

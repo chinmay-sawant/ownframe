@@ -34,12 +34,13 @@ func run(mode, out string) error {
 		cpu.Close()
 		return err
 	}
-	doc, err := measure(mode, p, v)
+	doc, np, err := measure(mode, p, v)
 	pprof.StopCPUProfile()
 	cpu.Close()
 	if err != nil {
 		return err
 	}
+	p = np
 	runtime.GC()
 	heap, err := os.Create(filepath.Join(out, mode+"-heap.pprof"))
 	if err != nil {

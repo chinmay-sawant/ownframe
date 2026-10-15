@@ -19,6 +19,8 @@ func fromWindowsPath(ctx context.Context, picked string) (string, bool) {
 
 	out, err := exec.CommandContext(ctx, wslpathBin(), "-u", picked).Output()
 	if err != nil {
+		debugf("wslpath -u %q failed: %v", picked, err)
+
 		return "", false
 	}
 

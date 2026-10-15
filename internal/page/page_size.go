@@ -1,6 +1,7 @@
 package page
 
-// Handle registers the input functions. A later call replaces them.
+// Handle registers the input functions. A later call replaces the whole
+// set; use AddHandlers to merge one callback while keeping the rest.
 func (p *Page) Handle(h Handlers) {
 	p.handlers = h
 }

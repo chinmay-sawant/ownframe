@@ -1,18 +1,15 @@
 package window
 
 import (
-	"context"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // selector is the page range surface the window drives while the pointer is
-// down. A page without it keeps the old click behavior.
-type selector interface {
-	SelectAt(ctx context.Context, x, y float64) error
-	Drag(ctx context.Context, x, y float64) error
-	SelectWordAt(ctx context.Context, x, y float64) error
-	SelectLineAt(ctx context.Context, x, y float64) error
-}
+// down. Deprecated: use host.RangeSelector. A page without it keeps the old
+// click behavior.
+type selector = host.RangeSelector
 
 // pressAt sends a press, places the caret, then sends the click. The caret
 // lands before the click handler runs, so focus and a selection that the

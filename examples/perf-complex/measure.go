@@ -19,7 +19,7 @@ type dump struct {
 	ProfileIterations             int
 }
 
-func measure(mode string, p *page.Page, v view) (dump, error) {
+func measure(mode string, p *page.Page, v view) (dump, *page.Page, error) {
 	d := dump{Mode: mode, GoVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH}
 	for i := 0; i < 7; i++ {
 		if mode == "initial" {
@@ -27,10 +27,10 @@ func measure(mode string, p *page.Page, v view) (dump, error) {
 			var fresh *page.Page
 			fresh, v, err = fixture(false)
 			if err == nil {
-				*p = *fresh
+				p = fresh
 			}
 			if err != nil {
-				return d, err
+				return d, p, err
 			}
 		}
 		prepare(mode, p, &v, i)
@@ -38,7 +38,7 @@ func measure(mode string, p *page.Page, v view) (dump, error) {
 		runtime.ReadMemStats(&before)
 		start := time.Now()
 		if err := redraw(p); err != nil {
-			return d, err
+			return d, p, err
 		}
 		elapsed := time.Since(start).Nanoseconds()
 		runtime.ReadMemStats(&after)
@@ -52,18 +52,18 @@ func measure(mode string, p *page.Page, v view) (dump, error) {
 			var fresh *page.Page
 			fresh, v, err = fixture(false)
 			if err == nil {
-				*p = *fresh
+				p = fresh
 			}
 			if err != nil {
-				return d, err
+				return d, p, err
 			}
 		}
 		if err := redraw(p); err != nil {
-			return d, err
+			return d, p, err
 		}
 		d.ProfileIterations++
 	}
-	return d, nil
+	return d, p, nil
 }
 
 func prepare(mode string, p *page.Page, v *view, i int) {

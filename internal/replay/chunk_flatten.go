@@ -21,9 +21,12 @@ func flattenNode(d *layout.Display, n *groupNode, p *chunkPlan, next *int) {
 
 	flush := func() {
 		if len(run) > 1 {
-			ops := append([]*layout.DisplayOp(nil), run...)
+			// The chunk keeps this backing array; a fresh run starts
+			// below, so no copy is needed to protect the emitted ops.
+			ops := run
 			p.items = append(p.items, chunkPaint{run: &chunkRun{id: *next, ops: ops}})
 			*next++
+			run = make([]*layout.DisplayOp, 0, chunkMaxOps)
 		} else if len(run) == 1 {
 			p.items = append(p.items, chunkPaint{op: run[0]})
 		}

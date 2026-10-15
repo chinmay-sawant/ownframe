@@ -9,12 +9,7 @@ func (p *Page) MarkRect(r image.Rectangle) { p.markRect(r) }
 // UseFrameDirty opts this tick into the partial replay. The window then
 // repaints the rect from TakeDirty, or blits its buffer when that rect is
 // empty. A tick that never calls it keeps the full replay.
-func (p *Page) UseFrameDirty() { p.frameDirty = true }
+func (p *Page) UseFrameDirty() { p.frameDirty.Store(true) }
 
 // FrameDirty reports the opt-in from UseFrameDirty and clears it.
-func (p *Page) FrameDirty() bool {
-	on := p.frameDirty
-	p.frameDirty = false
-
-	return on
-}
+func (p *Page) FrameDirty() bool { return p.frameDirty.Swap(false) }

@@ -8,12 +8,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-// watcher is a screen that can say whether it watches a source file.
-type watcher interface {
-	host.Reloader
-	Watching() bool
-}
-
 // reload rereads the screen's files before a request is answered.
 func (s *server) reload(ctx context.Context) {
 	reloader, ok := s.app.(host.Reloader)
@@ -34,7 +28,7 @@ func (s *server) reload(ctx context.Context) {
 
 // watching reports whether the shell page should refresh its frame.
 func (s *server) watching() bool {
-	w, ok := s.app.(watcher)
+	w, ok := s.app.(host.Watcher)
 
 	return ok && w.Watching()
 }

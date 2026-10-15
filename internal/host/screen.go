@@ -17,7 +17,10 @@ type Ticker interface {
 
 // Screen is one HTML page the hosts can show.
 // The page owns the template, the data, and what a click or a key does.
+// It composes Boxer with the rest of the mandatory surface; selection,
+// PDF, reload, and devtools stay optional host interfaces.
 type Screen interface {
+	Boxer
 	Title() string
 	Size() (int, int)
 	MinSize() (int, int)
@@ -28,7 +31,6 @@ type Screen interface {
 	Display() *layout.Display
 	PNG() []byte
 	Generation() uint64
-	Boxes() []layout.Box
 	Click(ctx context.Context, x, y float64) error
 	Hover(ctx context.Context, x, y float64) error
 	Press(ctx context.Context, x, y float64) error

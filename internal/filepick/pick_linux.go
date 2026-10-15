@@ -60,6 +60,8 @@ func pickLinux(ctx context.Context, title string) (string, bool) {
 func run(ctx context.Context, path string, args []string) (string, bool) {
 	out, err := exec.CommandContext(ctx, path, args...).Output()
 	if err != nil {
+		debugf("%s %v failed: %v", path, args, err)
+
 		return "", false
 	}
 

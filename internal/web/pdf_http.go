@@ -1,21 +1,19 @@
 package web
 
 import (
-	"context"
 	"log"
 	"net/http"
 
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
-// pdfScreen is a screen that can render its page as PDF bytes. A screen
-// without PDF gets no /pdf route.
-type pdfScreen interface {
-	PDF(ctx context.Context, opts page.PDFOptions) ([]byte, error)
-}
+// pdfScreen names the PDF route's screen. Deprecated: use
+// host.PDFExporter[page.PDFOptions]; kept so ServeWithOptions reads unchanged.
+type pdfScreen = host.PDFExporter[page.PDFOptions]
 
 func (s *server) pdf(w http.ResponseWriter, r *http.Request) {
-	exporter, ok := s.app.(pdfScreen)
+	exporter, ok := s.app.(host.PDFExporter[page.PDFOptions])
 	if !ok {
 		http.Error(w, "not found", http.StatusNotFound)
 

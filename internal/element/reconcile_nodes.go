@@ -26,7 +26,7 @@ func deletePatches(n *Node) PatchList {
 }
 
 func cloneAttrs(in map[string]string) map[string]string {
-	out := map[string]string{}
+	out := make(map[string]string, len(in))
 	for k, v := range in {
 		out[k] = v
 	}
@@ -34,7 +34,7 @@ func cloneAttrs(in map[string]string) map[string]string {
 }
 
 func cloneMeta(in map[string]any) map[string]any {
-	out := map[string]any{}
+	out := make(map[string]any, len(in))
 	for k, v := range in {
 		out[k] = v
 	}

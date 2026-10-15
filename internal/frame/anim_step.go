@@ -3,7 +3,7 @@ package frame
 import (
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // Step applies the animation's value at now and reports the boxes it
@@ -52,7 +52,7 @@ func (a *Anim) Tick(m Marker, now time.Time) bool {
 }
 
 // patch applies the value at progress p to one op.
-func (a *Anim) patch(i int, op *ownframe.DisplayOp, p float64) {
+func (a *Anim) patch(i int, op *page.DisplayOp, p float64) {
 	switch a.kind {
 	case animTranslate:
 		j := i * 2

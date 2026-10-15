@@ -1,10 +1,10 @@
 package page
 
 func (p *Page) syncForm(body string) string {
-	if p.form == nil || p.form.doc != p.pastAt {
+	if p.form == nil || p.form.doc != p.nav.doc() {
 		p.form = &formState{
 			byID:    map[string]Control{},
-			doc:     p.pastAt,
+			doc:     p.nav.doc(),
 			blinkOn: true,
 		}
 	}

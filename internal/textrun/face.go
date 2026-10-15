@@ -18,10 +18,11 @@ type faceKey struct {
 	language string
 }
 
-// textFaces keeps one parsed face source per engine font. Parsing the SFNT
-// data is expensive, so the faces are reused.
+// textFaces keeps one parsed face source per engine font. Hits resolve
+// under a read lock; the parse runs lock-free with a second check that
+// keeps one winner under the write lock.
 var textFaces = struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	sources map[any]*text.GoTextFaceSource
 	faces   map[faceKey]*text.GoTextFace
 }{}
@@ -33,29 +34,39 @@ func faceFor(op *layout.DisplayOp, pxPerPt float64) *text.GoTextFace {
 		return nil
 	}
 
-	textFaces.mu.Lock()
-	defer textFaces.mu.Unlock()
+	size := op.Size * pxPerPt
+	key := faceKey{source: op.Font, size: size, language: op.TextLanguage()}
 
+	textFaces.mu.RLock()
 	source := textFaces.sources[op.Font]
+	if face := textFaces.faces[key]; face != nil {
+		textFaces.mu.RUnlock()
+		return face
+	}
+	textFaces.mu.RUnlock()
+
 	if source == nil {
 		parsed, err := text.NewGoTextFaceSource(bytes.NewReader(op.Font.Bytes()))
 		if err != nil {
 			return nil
 		}
+		source = parsed
+	}
 
+	textFaces.mu.Lock()
+	defer textFaces.mu.Unlock()
+
+	if face := textFaces.faces[key]; face != nil {
+		return face
+	}
+	if have := textFaces.sources[op.Font]; have != nil {
+		source = have
+	} else {
 		if textFaces.sources == nil || len(textFaces.sources) >= 64 {
 			textFaces.sources = make(map[any]*text.GoTextFaceSource)
 			textFaces.faces = make(map[faceKey]*text.GoTextFace)
 		}
-
-		textFaces.sources[op.Font] = parsed
-		source = parsed
-	}
-
-	size := op.Size * pxPerPt
-	key := faceKey{source: op.Font, size: size, language: op.TextLanguage()}
-	if face := textFaces.faces[key]; face != nil {
-		return face
+		textFaces.sources[op.Font] = source
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}

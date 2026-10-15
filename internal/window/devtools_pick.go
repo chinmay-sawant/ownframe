@@ -3,6 +3,8 @@ package window
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // devPointer routes the pointer while the overlay is on. The dock owns its
@@ -55,9 +57,9 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 	return nil
 }
 
-// devPick handles a press inside the content while the overlay is on. Alt
-// forwards press, caret, and click to the page; picking is only active in
-// picker mode, otherwise the press acts on the page control under the cursor.
+// devPick handles a press in the content while the overlay is on. Alt
+// forwards press, caret, and click to the page; otherwise the press acts on
+// the control under the cursor, pinning its box in picker mode.
 func (s *shell) devPick(px, py float64, alt bool) error {
 	if alt || !s.devPickerOn() {
 		s.dev.forward = true
@@ -66,7 +68,7 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 			return err
 		}
 
-		if sel, ok := s.app.(selector); ok {
+		if sel, ok := s.app.(host.Selector); ok {
 			if err := sel.SelectAt(s.ctx, px, py); err != nil {
 				return err
 			}

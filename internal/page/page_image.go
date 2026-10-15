@@ -28,6 +28,14 @@ func (p *Page) Display() *layout.Display {
 // demand, once, and the bytes are cached until the next Redraw. It returns
 // nil when the page cannot be painted.
 func (p *Page) PNG() []byte {
+	return p.PNGWithContext(context.Background())
+}
+
+// PNGWithContext threads ctx to the on-demand render.
+func (p *Page) PNGWithContext(ctx context.Context) []byte {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if p.png != nil {
 		return p.png
 	}
@@ -44,8 +52,10 @@ func (p *Page) PNG() []byte {
 		if p.source == "" {
 			return nil
 		}
-
-		display, err := render.DisplayListState(context.Background(), p.source, p.width, p.height, p.renderState())
+		if err := ctx.Err(); err != nil {
+			return nil
+		}
+		display, err := render.DisplayListState(ctx, p.source, p.width, p.height, p.renderState())
 		if err != nil {
 			return nil
 		}

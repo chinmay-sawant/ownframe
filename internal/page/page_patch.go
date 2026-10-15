@@ -3,6 +3,8 @@ package page
 import "sync"
 
 // DisplayPatch reports how one display update changed retained ops.
+// ChangedProperties is the canonical property set; use it in new code.
+// Properties, Props, and ChangedProps mirror it for compat; do not mutate.
 type DisplayPatch struct {
 	Changed int
 	Added   int
@@ -10,10 +12,13 @@ type DisplayPatch struct {
 	Regions int
 	Full    bool
 
-	Properties        []string
+	// Deprecated: use ChangedProperties.
+	Properties []string
+	// Deprecated: use ChangedProperties.
 	Props             []string
 	ChangedProperties []string
-	ChangedProps      []string
+	// Deprecated: use ChangedProperties.
+	ChangedProps []string
 }
 
 var displayOpPool = sync.Pool{
@@ -35,14 +40,17 @@ func (p *Page) freeOps(buf []DisplayOp) {
 	displayOpPool.Put(buf[:0])
 }
 
-func (p *Page) PatchReport() DisplayPatch {
-	return p.lastPatch
-}
-
+// LastPatch returns the last patch report; use it.
 func (p *Page) LastPatch() DisplayPatch {
 	return p.lastPatch
 }
 
+// Deprecated: use LastPatch.
+func (p *Page) PatchReport() DisplayPatch {
+	return p.LastPatch()
+}
+
+// Deprecated: use LastPatch.
 func (p *Page) DisplayPatch() DisplayPatch {
-	return p.lastPatch
+	return p.LastPatch()
 }

@@ -14,7 +14,7 @@ func (p *Page) accessibilityActivate(ctx context.Context, id string) error {
 	}
 	box := p.boxByID(id)
 	if c.Tag == "button" && box.Action != "" {
-		if html, routed := p.routes[box.Action]; routed {
+		if html, ok := p.nav.lookup(box.Action); ok {
 			return p.Load(ctx, html)
 		}
 	}

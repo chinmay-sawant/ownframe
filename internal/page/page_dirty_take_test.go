@@ -9,7 +9,7 @@ import (
 func TestTakeDirtyIsBoundingBox(t *testing.T) {
 	t.Parallel()
 
-	p := &Page{width: 100, height: 100}
+	p := &Page{pageGeom: pageGeom{width: 100, height: 100}}
 	p.markRect(image.Rect(0, 0, 10, 10))
 	p.markRect(image.Rect(60, 60, 70, 70))
 
@@ -30,7 +30,7 @@ func TestTakeDirtyIsBoundingBox(t *testing.T) {
 func TestTakeDirtyRectsEmptyAndFull(t *testing.T) {
 	t.Parallel()
 
-	p := &Page{width: 100, height: 100}
+	p := &Page{pageGeom: pageGeom{width: 100, height: 100}}
 	if rects, ok := p.TakeDirtyRects(); ok || len(rects) != 0 {
 		t.Fatalf("empty %v ok %v", rects, ok)
 	}
@@ -57,7 +57,7 @@ func TestTakeDirtyRectsEmptyAndFull(t *testing.T) {
 func TestPendingMapReused(t *testing.T) {
 	t.Parallel()
 
-	p := &Page{width: 100, height: 100}
+	p := &Page{pageGeom: pageGeom{width: 100, height: 100}}
 	for i := 0; i < 64; i++ {
 		p.markPending(fmt.Sprintf("id%d", i))
 	}

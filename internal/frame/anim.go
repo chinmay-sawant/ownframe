@@ -4,10 +4,10 @@ import (
 	"image"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
-// Marker receives a CSS-pixel damage box. *ownframe.Page satisfies it.
+// Marker receives a CSS-pixel damage box. *page.Page satisfies it.
 type Marker interface {
 	MarkRect(r image.Rectangle)
 }
@@ -42,8 +42,8 @@ type Easing func(t float64) float64
 // An Anim holds pointers into one display. A Redraw builds a new display
 // list, so an animation must not outlive one.
 type Anim struct {
-	d     *ownframe.Display
-	ops   []*ownframe.DisplayOp
+	d     *page.Display
+	ops   []*page.DisplayOp
 	kind  animKind
 	from  []float64
 	to    []float64

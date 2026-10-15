@@ -27,17 +27,18 @@ func create(folder, body string) (string, error) {
 		}
 
 		if err := f.Chmod(0o600); err != nil {
-			f.Close()
-			return "", err
+			cerr := f.Close()
+
+			return "", errors.Join(err, cerr)
 		}
 
 		_, werr := f.WriteString(body)
 		cerr := f.Close()
-		if werr != nil {
-			return "", werr
+		if werr != nil || cerr != nil {
+			return "", errors.Join(werr, cerr)
 		}
 
-		return path, cerr
+		return path, nil
 	}
 
 	return "", fmt.Errorf("crash: no free name")

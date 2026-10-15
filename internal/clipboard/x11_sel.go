@@ -43,7 +43,7 @@ func (x *xClient) claim(text string) error {
 
 	rep, err := x.round(ownerReq(x.clip))
 	if err != nil || len(rep) < 12 || rep[0] != 1 {
-		return errX
+		return ErrX11
 	}
 
 	x.mu.Lock()

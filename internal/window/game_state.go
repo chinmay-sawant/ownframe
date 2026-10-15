@@ -10,15 +10,19 @@ import (
 )
 
 type shell struct {
-	transparent  bool
-	interactive  func(int, int) bool
-	draggable    func(int, int) bool
-	perf         bool
-	perfHooks    perfHooks
-	windowDrag   windowDrag
-	passthrough  bool
-	app          host.Screen
-	ctx          context.Context
+	transparent bool
+	interactive func(int, int) bool
+	draggable   func(int, int) bool
+	perf        bool
+	perfHooks   perfHooks
+	windowDrag  windowDrag
+	passthrough bool
+	app         host.Screen
+	// ctx is run-scoped, set once in NewGame and never per request.
+	// Ebiten Update/Draw take no ctx, so storage is forced.
+	ctx context.Context
+	// cancel releases ctx; set once with ctx, never replaced.
+	cancel       context.CancelFunc
 	img          *ebiten.Image
 	fitBuf       *ebiten.Image
 	display      *layout.Display
@@ -39,8 +43,7 @@ type shell struct {
 	scrollX      int
 	scrollY      int
 	scrollMotion touchScrollMotion
-	// redrawX and redrawY are the scroll offsets the current display was
-	// built with; viewport-pinned layers draw against them.
+	// redrawX/Y are offsets the display was built with.
 	redrawX  int
 	redrawY  int
 	dragAxis int
@@ -69,10 +72,7 @@ type shell struct {
 	viewport viewportState
 	partial  partialState
 	frame    frameState
-	// frameOptIn is the frame-dirty opt-in captured from the page at the last
-	// Update. Ebiten can call Draw without an Update in between, and
-	// Page.FrameDirty clears the flag when it is read, so the decision belongs
-	// to the tick, not the draw.
+	// frameOptIn is set in Update; Draw may run without Update.
 	frameOptIn bool
 	dev        devState
 	ime        imeState

@@ -1,5 +1,7 @@
 package element
 
+import "strings"
+
 // Lifecycle tracks mount/update/unmount for a retained instance.
 type Lifecycle struct {
 	Mounted, Updated, Unmounted bool
@@ -44,12 +46,5 @@ func Unmount(n *Node) {
 }
 
 func join(props []string) string {
-	out := ""
-	for i, p := range props {
-		if i > 0 {
-			out += ","
-		}
-		out += p
-	}
-	return out
+	return strings.Join(props, ",")
 }

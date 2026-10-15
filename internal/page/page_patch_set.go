@@ -8,7 +8,7 @@ func (p *Page) SetChangedProperties(props []string) {
 	p.changedProps = append([]string(nil), props...)
 }
 
-// SetChangedProps is an alias.
+// Deprecated: use SetChangedProperties.
 func (p *Page) SetChangedProps(props []string) { p.SetChangedProperties(props) }
 
 // AddChangedProperty appends one property path.
@@ -31,10 +31,10 @@ func (p *Page) AddChangedProperties(props []string) {
 	}
 }
 
-// RecordChangedProperty appends one property path.
+// Deprecated: use AddChangedProperty.
 func (p *Page) RecordChangedProperty(prop string) { p.AddChangedProperty(prop) }
 
-// RecordChangedProperties appends multiple property paths.
+// Deprecated: use AddChangedProperties.
 func (p *Page) RecordChangedProperties(props []string) { p.AddChangedProperties(props) }
 
 // ClearChangedProperties clears surfaced metadata.
@@ -45,11 +45,14 @@ func (p *Page) ClearChangedProperties() {
 	p.changedProps = p.changedProps[:0]
 }
 
+// withChangedProps fills the canonical field once; deprecated
+// fields share the same backing array. Treat them as read-only.
 func (p *Page) withChangedProps(patch DisplayPatch) DisplayPatch {
 	props := p.ChangedProperties()
-	patch.Properties = append([]string(nil), props...)
-	patch.Props = append([]string(nil), props...)
-	patch.ChangedProperties = append([]string(nil), props...)
-	patch.ChangedProps = append([]string(nil), props...)
+	clone := append([]string(nil), props...)
+	patch.ChangedProperties = clone
+	patch.Properties = clone
+	patch.Props = clone
+	patch.ChangedProps = clone
 	return patch
 }

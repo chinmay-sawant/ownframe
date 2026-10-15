@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"runtime"
 )
@@ -41,11 +40,14 @@ var (
 	}
 )
 
-// run starts the first command on PATH and returns ErrNoPrinter when none is.
+// run starts the first command on PATH and joins helper failures
+// with ErrNoPrinter so callers keep the cause.
 func run(ctx context.Context, path string, commands []command) error {
 	if err := validPath(path); err != nil {
 		return err
 	}
+
+	var fails []error
 
 	for _, cmd := range commands {
 		exe, err := lookPath(cmd.name)
@@ -60,6 +62,7 @@ func run(ctx context.Context, path string, commands []command) error {
 
 		if err := runCommand(ctx, exe, args...); err != nil {
 			debugf("%s failed: %v", cmd.name, err)
+			fails = append(fails, fmt.Errorf("%s: %w", cmd.name, err))
 
 			continue
 		}
@@ -67,14 +70,9 @@ func run(ctx context.Context, path string, commands []command) error {
 		return nil
 	}
 
-	return ErrNoPrinter
-}
-
-// debugf writes to stderr when OWNFRAME_PRINT_DEBUG is not empty.
-func debugf(format string, args ...any) {
-	if os.Getenv("OWNFRAME_PRINT_DEBUG") == "" && os.Getenv("GPUI_PRINT_DEBUG") == "" {
-		return
+	if len(fails) > 0 {
+		return errors.Join(append([]error{ErrNoPrinter}, fails...)...)
 	}
 
-	fmt.Fprintf(os.Stderr, "ownframe print: "+format+"\n", args...)
+	return ErrNoPrinter
 }

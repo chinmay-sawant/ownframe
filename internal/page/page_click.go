@@ -33,7 +33,7 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 	if ok && p.formControl(box.ID) {
 		c, _ := p.control(box.ID)
 		if c.Tag == "button" && !c.Disabled && box.Action != "" {
-			if html, routed := p.routes[box.Action]; routed {
+			if html, ok := p.nav.lookup(box.Action); ok {
 				return p.Load(ctx, html)
 			}
 		}
@@ -43,7 +43,7 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 	if ok {
 		p.blurForm()
 		if box.Action != "" {
-			if html, routed := p.routes[box.Action]; routed {
+			if html, ok := p.nav.lookup(box.Action); ok {
 				return p.Load(ctx, html)
 			}
 		}

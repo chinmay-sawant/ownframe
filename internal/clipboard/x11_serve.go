@@ -3,6 +3,8 @@
 package clipboard
 
 func (x *xClient) onRequest(ev []byte) {
+	defer recoverX(x, "x11 request")
+
 	when := get32(ev[4:])
 	who := get32(ev[12:])
 	sel := get32(ev[16:])

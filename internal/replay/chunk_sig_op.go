@@ -11,7 +11,7 @@ import (
 func sigOp(h uint64, op *layout.DisplayOp) uint64 {
 	h = mix64(h, uint64(op.Kind))
 
-	for _, v := range []float64{
+	for _, v := range [15]float64{
 		op.X, op.Y, op.W, op.H, op.R, op.G, op.B, op.Alpha,
 		op.Width, op.Size, op.LetterSpacing, op.InkDescent,
 		op.Radius, op.RadiusY, op.Opacity(),
