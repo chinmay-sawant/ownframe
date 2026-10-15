@@ -9,7 +9,11 @@ path, err := ownframe.Report("Hello", "disk full")
 
 `Report` is the same writer, for a caller that already has a reason and does not want to panic. `SetCrashDir` points both `Report` and a recovered panic at `dir`. It returns an error when `dir` is empty or unsafe, and stores a cleaned path.
 
-The default folder is `ownframe/crashes` under `os.UserConfigDir`. If that directory cannot be resolved, the folder is `ownframe-crashes` under `os.TempDir`.
+The default folder is `ownframe/crashes` under `os.UserConfigDir`.
+If that directory cannot be resolved, the folder is `ownframe-crashes` under
+`os.TempDir`. `Write` creates or reuses that folder with mode `0700` and
+writes each report with mode `0600`. `SetCrashDir` rejects empty or unsafe
+paths before replacing a previously configured directory.
 
 The file name starts with a UTC timestamp `20060102-150405`. A second write in that same second gets a numeric suffix. The body contains the title, the reason, `runtime.Version()`, and `debug.Stack()`.
 
@@ -22,8 +26,8 @@ The [crash example](../examples/crash) sets the folder to `crashes/`, writes a m
 ## Trust boundary
 
 Crash reports are local diagnostics. They can contain stack traces, panic text,
-page titles, and source paths. The default directory uses mode 0755 and files
-use mode 0644, so other local users may read them. `Serve` does not recover
+page titles, and source paths. The default directory uses mode 0700 and files
+use mode 0600, so other local users cannot read them. `Serve` does not recover
 panics at all. `SetCrashDir` is a trusted path API and accepts any directory
 the process can write.
 

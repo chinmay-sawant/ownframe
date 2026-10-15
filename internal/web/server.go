@@ -14,6 +14,8 @@ type shellArea struct {
 	Coords string
 	Href   string
 	Alt    string
+	X      float64
+	Y      float64
 }
 
 type shellData struct {
@@ -24,10 +26,12 @@ type shellData struct {
 }
 
 type server struct {
-	mu       sync.Mutex
-	app      host.Screen
-	shell    *template.Template
-	lastNote string
+	mu           sync.Mutex
+	app          host.Screen
+	shell        *template.Template
+	lastNote     string
+	perf         bool
+	debugEnabled bool
 }
 
 // Serve listens on addr and blocks. The page at / shows the latest PNG.

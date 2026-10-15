@@ -13,9 +13,23 @@ import (
 // photoMax is the widest a photo bubble shows, in CSS pixels.
 const photoMax = 240
 
+// maxPhotoSourceDimension caps a captured image before decoding, so an
+// oversized or hostile payload cannot drive a huge allocation.
+const maxPhotoSourceDimension = 4096
+
 // addPhoto registers data as an image and appends a photo message to the
 // chat that asked for it.
 func (a *App) addPhoto(data []byte) {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return
+	}
+	if cfg.Width <= 0 || cfg.Height <= 0 ||
+		cfg.Width > maxPhotoSourceDimension ||
+		cfg.Height > maxPhotoSourceDimension {
+		return
+	}
+
 	src, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
 		return
@@ -31,6 +45,7 @@ func (a *App) addPhoto(data []byte) {
 
 	id := "photo-" + strconv.Itoa(a.photoN)
 	a.photoN++
+	// The image stays in Page memory until the app calls SetImage(id, nil).
 	a.page.SetImage(id, buf.Bytes())
 
 	a.mu.Lock()
@@ -66,6 +81,9 @@ func fitPhoto(src image.Image) image.Image {
 	}
 
 	h = h * photoMax / w
+	if h < 1 {
+		h = 1
+	}
 	w = photoMax
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.CatmullRom.Scale(dst, dst.Bounds(), src, b, draw.Over, nil)

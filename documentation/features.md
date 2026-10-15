@@ -152,13 +152,14 @@ the Ops tab on the operation inside the box. A click on an Ops row outlines
 that operation and copies its line to the clipboard. It is window chrome, so
 `Page.PNG`, the display list, and the box list never change. A custom screen
 implements `host.Inspector` to opt in; a screen without it gets no overlay.
-`GET /debug/state` serves the same data in web mode.
+`GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{Debug: true}` or `{Perf: true}`).
 
 Detail is in [devtools.md](devtools.md).
 
 ## Performance
 
-The perf checklist lives in [performance.md](performance.md), with per release numbers in [performance-baseline.md](performance-baseline.md). The Frame tab carries PERFORMANCE, DIRTY, and MEMORY counters for frame stages, repaint work, and memory, and `GET /debug/state` serves the same data in web mode. Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{Perf: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
+The perf checklist lives in [performance.md](performance.md), with per release numbers in [performance-baseline.md](performance-baseline.md). The Frame tab carries PERFORMANCE, DIRTY, and MEMORY counters for frame stages, repaint work, and memory, and `GET /debug/state` serves the same data in web mode when that endpoint is
+enabled (`ServeOptions{Debug: true}` or `{Perf: true}`). Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{Perf: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
 
 ## Still absent
 

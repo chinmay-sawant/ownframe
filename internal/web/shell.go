@@ -10,8 +10,17 @@ const shellHTML = `<!DOCTYPE html>
 <p>This page only displays the picture. The screen is the image, not this HTML.</p>
 <img id="frame" src="/frame.png" usemap="#screen" alt="screen"{{if .Width}} width="{{.Width}}" height="{{.Height}}"{{end}}>
 <map name="screen">
-{{range .Areas}}<area shape="rect" coords="{{.Coords}}" href="{{.Href}}" alt="{{.Alt}}">
+{{range .Areas}}<area shape="rect" coords="{{.Coords}}" href="{{.Href}}" alt="{{.Alt}}" data-x="{{.X}}" data-y="{{.Y}}" onclick="return postClick(this)">
 {{end}}</map>
+<script>
+function postClick(el) {
+  var x = el.getAttribute("data-x");
+  var y = el.getAttribute("data-y");
+  fetch("/click?x=" + encodeURIComponent(x) + "&y=" + encodeURIComponent(y), {method: "POST"})
+    .then(function () { window.location.reload(); });
+  return false;
+}
+</script>
 <form method="post" action="/type">
 <label>Text <input type="text" name="text"></label>
 <button type="submit">Type</button>

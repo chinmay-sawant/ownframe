@@ -48,7 +48,8 @@ Recommended protections:
 - Handlers must return promptly. A slow `Handle` blocks `Request` callers and
   there is no timeout beyond the caller's context.
 - Guard against panics. `Send` recovers listener panics, and `Request`
-  recovers a handler panic into `ErrHandlerPanicked`.- Avoid user controlled channel names. Registration has no caps, so unbounded
+  recovers a handler panic into `ErrHandlerPanicked`.
+- Avoid user controlled channel names. Registration has no caps, so unbounded
   registration or oversized names can grow memory.
 - Validate payloads at handler entry, since they are untyped strings.
 

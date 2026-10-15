@@ -18,6 +18,12 @@ var client = &http.Client{
 // ErrBodyTooLarge means a response body exceeded the 10 MiB cap.
 var ErrBodyTooLarge = errors.New("ownframe: fetch response body exceeds 10 MiB")
 
+// ErrHeadersTooLarge means response headers exceeded the 1 MiB cap.
+var ErrHeadersTooLarge = errors.New("ownframe: fetch response headers exceed 1 MiB")
+
+// ErrCredentialsInURL means a URL contained userinfo, which is not allowed.
+var ErrCredentialsInURL = errors.New("ownframe: fetch URL contains userinfo")
+
 // Aliases for the same limit error.
 var (
 	ErrTooLarge          = ErrBodyTooLarge
@@ -30,6 +36,7 @@ const (
 	MaxBodyBytes         = 10 * 1024 * 1024
 	MaxResponseBodyBytes = MaxBodyBytes
 	MaxFetchBodyBytes    = MaxBodyBytes
+	MaxHeaderBytes       = 1 * 1024 * 1024
 )
 
 func checkURL(raw string) error {
@@ -41,7 +48,24 @@ func checkURL(raw string) error {
 	if err != nil {
 		return err
 	}
+	if u.User != nil {
+		return ErrCredentialsInURL
+	}
 	if !web(u) {
+		return ErrScheme
+	}
+
+	return nil
+}
+
+func redirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 10 redirects")
+	}
+	if req.URL.User != nil {
+		return ErrCredentialsInURL
+	}
+	if !web(req.URL) {
 		return ErrScheme
 	}
 
@@ -50,15 +74,4 @@ func checkURL(raw string) error {
 
 func web(u *url.URL) bool {
 	return u != nil && (u.Scheme == "http" || u.Scheme == "https")
-}
-
-func redirect(req *http.Request, via []*http.Request) error {
-	if len(via) >= 10 {
-		return errors.New("stopped after 10 redirects")
-	}
-	if !web(req.URL) {
-		return ErrScheme
-	}
-
-	return nil
 }

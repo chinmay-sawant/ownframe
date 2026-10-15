@@ -8,6 +8,12 @@ import "image"
 // the content area the list collapses to one bounding box. A whole-content
 // change returns one content rect. ok is false when nothing changed.
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
+	if p.pending == nil {
+		p.pending = map[string]bool{}
+	}
+	if p.last == nil {
+		p.last = map[string]image.Rectangle{}
+	}
 	full := p.dirtyFull
 	rects := p.dirtyRects
 	p.dirtyFull = false

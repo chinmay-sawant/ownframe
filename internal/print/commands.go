@@ -19,5 +19,5 @@ var windowsCommands = []command{
 }
 
 func fileArg(path string) []string {
-	return []string{path}
+	return []string{"--", path}
 }

@@ -9,6 +9,10 @@ import (
 )
 
 func fromWindowsPath(ctx context.Context, picked string) (string, bool) {
+	if !safeWindowsPath(picked) {
+		return "", false
+	}
+
 	if linux, ok := uncToWSL(picked); ok {
 		return linux, true
 	}
@@ -38,18 +42,27 @@ func wslpathBin() string {
 // uncToWSL turns \\wsl.localhost\Distro\path and \\wsl$\Distro\path
 // into the Linux path under the root.
 func uncToWSL(picked string) (string, bool) {
+	if !safeWindowsPath(picked) {
+		return "", false
+	}
+
 	for _, prefix := range []string{`\\wsl.localhost\`, `\\wsl$\`} {
 		if !strings.HasPrefix(picked, prefix) {
 			continue
 		}
 
 		rest := picked[len(prefix):]
-		cut := strings.IndexByte(rest, '\\')
+		cut := indexOfSep(rest, '\\')
 		if cut < 0 {
 			return "/", true
 		}
 
-		return "/" + strings.ReplaceAll(rest[cut+1:], `\`, "/"), true
+		out := "/" + strings.ReplaceAll(rest[cut+1:], `\`, "/")
+		if hasDotSegment(out) {
+			return "", false
+		}
+
+		return out, true
 	}
 
 	return "", false

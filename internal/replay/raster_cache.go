@@ -47,10 +47,24 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 	c.pixels += size.X * size.Y
 
 	for len(c.order) > rasterMaxEntries || c.pixels > rasterMaxTotalPixels {
-		old := c.order[0]
-		c.order = c.order[1:]
-		evicted := c.entries[old]
-		delete(c.entries, old)
+		victim := rasterKey{}
+		idx := -1
+		for i, candidate := range c.order {
+			if candidate == key {
+				continue
+			}
+			victim = candidate
+			idx = i
+			break
+		}
+		if idx < 0 {
+			// Only the entry being returned remains; keep it.
+			break
+		}
+
+		c.order = append(c.order[:idx], c.order[idx+1:]...)
+		evicted := c.entries[victim]
+		delete(c.entries, victim)
 		c.pixels -= evicted.Bounds().Dx() * evicted.Bounds().Dy()
 		evicted.Dispose()
 	}

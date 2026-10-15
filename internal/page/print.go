@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 
 	"github.com/chinmay-sawant/ownframe/internal/print"
 )
@@ -47,25 +46,15 @@ func (p *Page) WritePDF(ctx context.Context, _ io.Writer, _ PDFOptions) error {
 	return ErrNoPDF
 }
 
-// SavePDF writes the last template output to path.
+// SavePDF validates path, then writes the last template output to it.
 func (p *Page) SavePDF(ctx context.Context, path string, opts PDFOptions) error {
 	if err := pdfReady(ctx, p); err != nil {
 		return err
 	}
 
-	file, err := os.Create(path)
-	if err != nil {
+	if err := print.ValidPath(path); err != nil {
 		return err
 	}
 
-	err = p.WritePDF(ctx, file, opts)
-	closeErr := file.Close()
-
-	if err != nil {
-		os.Remove(path)
-
-		return err
-	}
-
-	return closeErr
+	return ErrNoPDF
 }

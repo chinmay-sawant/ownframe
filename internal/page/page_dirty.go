@@ -66,6 +66,9 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 // grew or shrank repaints the space it now uses too, then clears the map
 // for reuse instead of dropping it.
 func (p *Page) applyPending() {
+	if p.pending == nil {
+		p.pending = map[string]bool{}
+	}
 	for id := range p.pending {
 		p.markElement(id)
 	}

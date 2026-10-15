@@ -2,16 +2,24 @@ package page
 
 import (
 	"html/template"
+	"image"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/internal/element"
 )
 
-// New parses html as an html/template page.
+// New parses html as an html/template page. The source is trusted author
+// content: Go template actions in it may read fields and methods of the
+// data passed to SetData. ownframe does not sandbox template execution, so
+// never pass user-controlled or remote HTML.
 func New(cfg Config) (*Page, error) {
 	source, htmlInfo, err := sourceHTML(cfg)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(source) > MaxSourceSize {
+		return nil, ErrSourceTooLarge
 	}
 
 	if strings.TrimSpace(source) == "" {
@@ -88,6 +96,8 @@ func New(cfg Config) (*Page, error) {
 		touchScroll:     TouchScrollOptions{Sensitivity: 1, Deceleration: 5},
 		watch:           watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
 		elements:        element.NewRegistry(),
+		pending:         map[string]bool{},
+		last:            map[string]image.Rectangle{},
 	}
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
 
