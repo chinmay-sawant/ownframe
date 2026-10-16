@@ -19,7 +19,7 @@ func poseGaze(m poseMotion, age float64) (float64, float64) {
 	case motionWink:
 		return 2.5 * math.Sin(age*1.3), 1.5 * math.Sin(age*.8)
 	case motionBored:
-		return 3 * math.Sin(age*.35), 1.5 + 1.5*math.Sin(age*.3)
+		return boredGaze(age)
 	case motionHappy:
 		return 3 * math.Sin(age*.8), math.Sin(age * .9)
 	case motionWorried:
