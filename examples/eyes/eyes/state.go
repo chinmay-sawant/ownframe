@@ -33,8 +33,7 @@ type state struct {
 	styleR     eyeStyle
 	dispL      float64
 	dispR      float64
-	// bm is the blink multiplier: lids close fully on blinks and partly
-	// on moods, so squints read as lids instead of a shrinking fish.
+	// bm scales eye height during a blink.
 	bm    float64
 	birth time.Time
 	drag  bool

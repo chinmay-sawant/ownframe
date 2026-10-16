@@ -10,17 +10,14 @@ func animatePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		l.open += .07 * wave
 		r.open += .07 * wave
 	case motionHappy:
-		l.bottom -= .06 * math.Sin(age*math.Pi)
-		r.bottom = l.bottom
+		l.open += .04 * math.Sin(age*math.Pi)
+		r.open = l.open
 	case motionWorried:
-		wobble := 1.4 * math.Sin(age*2.1)
-		l.slant += wobble
-		r.slant -= wobble
+		wobble := 2 * math.Sin(age*2.1)
+		l.gazeY += wobble
+		r.gazeY += wobble
 	case motionFocused:
 		l.gazeX += 3 * math.Sin(age*.7)
-		r.gazeX = l.gazeX
-	case motionConfused:
-		l.gazeX += 8 * math.Sin(age*1.1)
 		r.gazeX = l.gazeX
 	case motionExcited:
 		bounce := .5 + .5*math.Sin(age*4.8)

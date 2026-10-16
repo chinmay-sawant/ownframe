@@ -1,22 +1,16 @@
 package eyes
 
 import (
-	"math"
 	"testing"
 	"time"
 )
 
-func TestStaticAngryBrowsKeepMoving(t *testing.T) {
-	a, c := newT(t)
-	a.toggleMode(c.at)
-	a.selectMood(2, c.at)
-	a.st.blinkT = c.at.Add(time.Hour)
-	tk(t, a, c, time.Second/60)
-	first := a.pm.lidLT.Transform().B
-	c.adv(500 * time.Millisecond)
-	tk(t, a, c, time.Second/60)
-	if math.Abs(a.pm.lidLT.Transform().B-first) < 0.01 {
-		t.Fatal("angry brow stopped moving in static mode")
+func TestScaredEyesScanLeftAndRight(t *testing.T) {
+	pose := poseFor(poseIndex("scared"))
+	left, _ := animatePose(pose, .4)
+	right, _ := animatePose(pose, 1.2)
+	if left.gazeX < 15 || right.gazeX > -15 {
+		t.Fatalf("scared gaze did not dart both ways: %.1f then %.1f", left.gazeX, right.gazeX)
 	}
 }
 
@@ -32,14 +26,14 @@ func TestWinksAnimateOnViewedSides(t *testing.T) {
 		for range 20 {
 			tk(t, a, c, 20*time.Millisecond)
 		}
-		closedLeft := a.pm.lidLT.H > a.pm.lidRT.H
+		closedLeft := a.pm.left.H < a.pm.right.H
 		if (tc.closedEye == "left") != closedLeft {
 			t.Fatalf("%s closed the wrong eye", tc.name)
 		}
 		for range 30 {
 			tk(t, a, c, 20*time.Millisecond)
 		}
-		if a.pm.lidLT.H > 10 || a.pm.lidRT.H > 10 {
+		if a.pm.left.H < 100 || a.pm.right.H < 100 {
 			t.Fatalf("%s did not reopen both eyes", tc.name)
 		}
 	}

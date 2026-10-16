@@ -11,8 +11,8 @@ func TestControlsStayRightAlignedAndBelowTopEdge(t *testing.T) {
 	if topbar < 0 || eyes < 0 || topbar >= eyes ||
 		!strings.Contains(html, `id="dev-toggle"`) ||
 		!strings.Contains(html, `id="mode-toggle"`) ||
-		!strings.Contains(html, `id="brow-left"`) ||
-		!strings.Contains(html, `id="brow-right"`) ||
+		strings.Contains(html, `id="brow-left"`) ||
+		strings.Contains(html, `id="brow-right"`) ||
 		strings.Contains(html, "info-") || strings.Contains(stylesCSS, ".info-panel") ||
 		!strings.Contains(stylesCSS, "align-items: flex-end") ||
 		!strings.Contains(stylesCSS, "padding: 28px 14px 0 0") {

@@ -4,11 +4,7 @@ import "time"
 
 type eyeStyle struct {
 	open, height float64
-	top, bottom  float64
-	slant        float64
 	gazeX, gazeY float64
-	browUp       float64
-	browSlant    float64
 }
 
 type poseMotion uint8
@@ -19,20 +15,12 @@ const (
 	motionHappy
 	motionWorried
 	motionFocused
-	motionConfused
 	motionExcited
 	motionShy
 	motionNervous
 	motionSad
-	motionEmbarrassed
 	motionScared
 	motionFrustrated
-	motionSuspicious
-	motionSmug
-	motionMischievous
-	motionDisgusted
-	motionProud
-	motionPleading
 	motionRelieved
 )
 

@@ -1,24 +1,23 @@
 # Eyes demo
 
-Robot eyes on black with 30 selectable expressions: open, squint, angry,
-spiral, relaxed, sleepy, surprised, curious, skeptical, left wink, right wink,
-bored, happy, worried, focused, confused, excited, shy, nervous, relieved,
-sad, embarrassed, scared, frustrated, suspicious, smug, mischievous, disgusted,
-proud, and pleading. The spiral also reacts to device motion on Android.
+Robot eyes on black with 21 selectable expressions: open, squint, angry,
+spiral, relaxed, sleepy, surprised, curious, left wink, right wink, bored,
+happy, worried, focused, excited, shy, nervous, relieved, sad, scared, and
+frustrated. The spiral also reacts to device motion on Android.
 
 ```sh
 go run ./examples/eyes          # desktop window, landscape 960x540
 go run ./examples/eyes -web     # browser on 127.0.0.1:8140
 ```
 
-The AUTO button cycles through all 30 expressions. Each holds for 8 seconds;
+The AUTO button cycles through all 21 expressions. Each holds for 8 seconds;
 spiral holds for 4 seconds before it fades into the next expression. Tap the
 left half to go back and the right half to go forward. A double tap on either
 half selects the same direction once. Drag to look, keys 1-4 pick the original
 four, and S starts the spiral. Shaking the phone starts a short spiral too.
 Both modes keep the eyes animated: they blink, breathe, move their gaze, and
-finish each expression animation. Angry brows sway, and wink expressions close
-and reopen the viewer's named eye. STATIC stops automatic expression cycling;
+finish each expression animation. The eyes blink by changing their height, and
+wink expressions close and reopen the viewer's named eye. STATIC stops automatic expression cycling;
 tap either half to select another expression. The spiral keeps rotating until
 you select another expression. Mood changes ease at about 4.5/s in both modes.
 

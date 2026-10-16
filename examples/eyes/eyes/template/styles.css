@@ -15,10 +15,6 @@ body {
   background: #050508;
   position: relative;
 }
-.lid {
-  position: absolute;
-  background: #050508;
-}
 .spiral-layer {
   position: relative;
   width: 0;
@@ -72,12 +68,6 @@ body {
   height: 220px;
   background: #f2f5ff;
   border-radius: 72px;
-}
-.brow {
-  position: absolute;
-  height: 8px;
-  background: #f2f5ff;
-  border-radius: 4px;
 }
 .mood {
   width: 100%;

@@ -9,7 +9,7 @@ import (
 )
 
 func TestPoseCatalog(t *testing.T) {
-	if len(poses) != 30 {
+	if len(poses) != 21 {
 		t.Fatalf("poses=%d", len(poses))
 	}
 	seen := make(map[string]bool, len(poses))
@@ -27,9 +27,15 @@ func TestPoseCatalog(t *testing.T) {
 			t.Fatalf("%s has invalid eye height %v / %v", poses[i].name, l, r)
 		}
 	}
-	for i := 12; i < len(poses); i++ {
+	for i := 11; i < len(poses); i++ {
 		if poses[i].motion == motionNone {
 			t.Fatalf("%s has no distinct animation", poses[i].name)
+		}
+	}
+	for _, removed := range []string{"skeptical", "confused", "embarrassed", "suspicious",
+		"smug", "mischievous", "disgusted", "proud", "pleading"} {
+		if poseIndex(removed) >= 0 {
+			t.Errorf("removed expression %q is still selectable", removed)
 		}
 	}
 }

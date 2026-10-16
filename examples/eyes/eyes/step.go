@@ -49,7 +49,7 @@ func (a *App) step(dt float64, now time.Time) {
 	a.stepPose(dt)
 	bm := 1.0
 	if s.blinkOn {
-		bm = 1 - 0.93*math.Sin(math.Pi*min(max(s.blinkP, 0), 1))
+		bm = 1 - 0.98*math.Sin(math.Pi*min(max(s.blinkP, 0), 1))
 	}
 	s.bm = bm
 	br := 1 + 0.014*math.Sin(2*math.Pi*0.35*now.Sub(s.birth).Seconds())

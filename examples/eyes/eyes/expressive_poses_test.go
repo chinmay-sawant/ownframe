@@ -6,8 +6,8 @@ import (
 )
 
 func TestAddedExpressionsAnimate(t *testing.T) {
-	names := []string{"sad", "embarrassed", "scared", "frustrated", "suspicious",
-		"smug", "mischievous", "disgusted", "proud", "pleading", "relieved", "excited"}
+	names := []string{"relaxed", "happy", "worried", "focused", "excited", "shy",
+		"nervous", "relieved", "sad", "scared", "frustrated"}
 	for _, name := range names {
 		pose := poseFor(poseIndex(name))
 		if pose.motion == motionNone {
@@ -26,24 +26,14 @@ func TestExpressionsReadThroughTheirEyeCues(t *testing.T) {
 	if poseFor(poseIndex("scared")).left.height < 1.1 {
 		t.Fatal("scared eyes are not wide enough")
 	}
-	if poseFor(poseIndex("disgusted")).left.gazeY >= -5 {
-		t.Fatal("disgusted gaze should look upward and away")
-	}
-	if poseFor(poseIndex("proud")).left.gazeY >= -10 {
-		t.Fatal("proud gaze should look clearly upward")
-	}
-	pleading := poseFor(poseIndex("pleading"))
-	if pleading.left.gazeY > -12 || pleading.left.height < 1.1 || pleading.left.open < .96 ||
-		pleading.left.browUp < 20 || pleading.left.browSlant > -15 ||
-		pleading.right.browSlant < 15 {
-		t.Fatal("pleading needs wide upturned eyes and raised inner brows")
+	frustrated := poseFor(poseIndex("frustrated"))
+	angry := poseFor(poseIndex("angry"))
+	if frustrated.left.open >= angry.left.open || frustrated.left.gazeY <= angry.left.gazeY {
+		t.Fatal("frustrated should be narrower and look lower than angry")
 	}
 }
 
 func styleDistance(a, b eyeStyle) float64 {
 	return math.Abs(a.open-b.open) + math.Abs(a.height-b.height) +
-		math.Abs(a.top-b.top) + math.Abs(a.bottom-b.bottom) +
-		math.Abs(a.slant-b.slant) + math.Abs(a.gazeX-b.gazeX) +
-		math.Abs(a.gazeY-b.gazeY) + math.Abs(a.browUp-b.browUp) +
-		math.Abs(a.browSlant-b.browSlant)
+		math.Abs(a.gazeX-b.gazeX) + math.Abs(a.gazeY-b.gazeY)
 }

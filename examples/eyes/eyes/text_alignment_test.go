@@ -18,7 +18,7 @@ func TestMoodNameStaysCenteredWhenItsWidthChanges(t *testing.T) {
 	a.selectMood(poseIndex("worried"), c.at)
 	tk(t, a, c, time.Second/60)
 	assertTextCentered(t, a, "t-mood", a.pm.mood)
-	a.selectMood(poseIndex("mischievous"), c.at)
+	a.selectMood(poseIndex("frustrated"), c.at)
 	tk(t, a, c, time.Second/60)
 	assertTextCentered(t, a, "t-mood", a.pm.mood)
 }

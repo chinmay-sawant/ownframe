@@ -11,8 +11,8 @@ func TestRelaxedPoseLooksSoftAndBreathes(t *testing.T) {
 		t.Fatal("relaxed pose is missing")
 	}
 	pose := poseFor(mood)
-	if pose.left.open > .75 || pose.left.top < .7 || pose.left.bottom < .15 || pose.left.gazeY < 3 {
-		t.Fatal("relaxed pose needs softer lids and a lower gaze")
+	if pose.left.open > .75 || pose.left.gazeY < 3 {
+		t.Fatal("relaxed pose needs softer eyes and a lower gaze")
 	}
 	a, c := newT(t)
 	a.toggleMode(c.at)
@@ -20,14 +20,14 @@ func TestRelaxedPoseLooksSoftAndBreathes(t *testing.T) {
 	a.st.styleL, a.st.styleR = pose.left, pose.right
 	a.st.blinkT = c.at.Add(time.Hour)
 	tk(t, a, c, 20*time.Millisecond)
-	start := a.pm.lidLT.H
+	start := a.pm.left.H
 	c.adv(700 * time.Millisecond)
 	tk(t, a, c, 20*time.Millisecond)
-	inhale := a.pm.lidLT.H
+	inhale := a.pm.left.H
 	c.adv(1100 * time.Millisecond)
 	tk(t, a, c, 20*time.Millisecond)
-	exhale := a.pm.lidLT.H
-	if inhale >= start || exhale <= start {
-		t.Fatal("relaxed eyelids did not rise and fall with a slow breath")
+	exhale := a.pm.left.H
+	if inhale <= start || exhale >= start {
+		t.Fatal("relaxed eyes did not open and soften with a slow breath")
 	}
 }
