@@ -6,10 +6,10 @@ import (
 	"time"
 )
 
-func TestShakeSpiralHoldsAndFadesOut(t *testing.T) {
+func TestShakeSpiralAdvancesToNextExpression(t *testing.T) {
 	a, c := newT(t)
 	a.Shake()
-	if a.st.mood == 3 {
+	if a.st.mood == spiralMood {
 		t.Fatal("shake changed state outside the frame tick")
 	}
 	for pulse := range 20 {
@@ -19,7 +19,7 @@ func TestShakeSpiralHoldsAndFadesOut(t *testing.T) {
 		for range 18 {
 			tk(t, a, c, time.Second/60)
 		}
-		if a.st.mood != 3 || a.st.spiralMix < 0.95 {
+		if a.st.mood != spiralMood || a.st.spiralMix < 0.95 {
 			t.Fatalf("spiral did not hold through shake pulse %d", pulse)
 		}
 	}
@@ -33,8 +33,8 @@ func TestShakeSpiralHoldsAndFadesOut(t *testing.T) {
 	}
 	c.adv(9 * time.Second)
 	tk(t, a, c, time.Second/60)
-	if a.st.mood != 0 || a.st.spiralMix <= 0 || a.st.spiralMix >= 1 {
-		t.Fatal("spiral did not start a smooth return to open eyes")
+	if a.st.mood != spiralMood+1 || a.st.spiralMix <= 0 || a.st.spiralMix >= 1 {
+		t.Fatal("spiral did not advance and start fading to the next expression")
 	}
 	for range 45 {
 		tk(t, a, c, time.Second/60)

@@ -1,20 +1,23 @@
 # Eyes demo
 
-Cute robot eyes on black that blink, look around, breathe, and cycle
-expressions (open, squint, angry, spiral/dizzy). Spiral eyes react to
-device motion on Android.
+Robot eyes on black with 12 selectable expressions: open, squint, angry,
+spiral, relaxed, sleepy, surprised, curious, skeptical, left wink, right
+wink, and bored. The spiral also reacts to device motion on Android.
 
 ```sh
 go run ./examples/eyes          # desktop window, landscape 960x540
 go run ./examples/eyes -web     # browser on 127.0.0.1:8140
 ```
 
-Click to change mood, drag to look, keys 1-4 pick a mood, and S starts
-the spiral. Shaking the phone also starts it; it stays until you choose
-another mood. The phone auto-cycles open, squint, and angry every 8s with
-random saccades every 1.4-3s and blinks every 2.2-4.8s. Mood changes ease
-at ~4.5/s while blinks stay snappy. Squint and angry expressions use lids
-while keeping the eye width fixed.
+The AUTO button cycles through all 12 expressions. Each holds for 8 seconds;
+spiral holds for 4 seconds before it fades into the next expression. Tap an
+eye to skip to the next expression, drag to look, keys 1-4 pick the original
+four, and S starts the spiral. Shaking the phone starts a short spiral too.
+Both modes keep the eyes animated: they blink, breathe, move their gaze, and
+finish each expression animation. Angry brows sway, and wink expressions close
+and reopen the viewer's named eye. STATIC stops automatic expression cycling;
+tap an eye to select another expression. The spiral keeps rotating until you
+select another expression. Mood changes ease at about 4.5/s in both modes.
 
 The DEV pill at the top right toggles the devtools dock (Elements,
 Frame, Ops) without needing F12. The dock answers touch: tabs,

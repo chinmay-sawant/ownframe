@@ -2,6 +2,7 @@ package eyes
 
 import (
 	"context"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -14,10 +15,27 @@ func (a *App) onTap(_ context.Context, b ownframe.Box) error {
 		a.page.SetDevTools(a.st.dev)
 		return nil
 	}
-	a.selectMood((a.st.mood+1)%len(moods), a.now())
-	a.st.blinkOn = true
-	a.st.blinkP = 0
+	if b.ID == "mode-toggle" {
+		a.toggleMode(a.now())
+		return nil
+	}
+	a.selectMood((a.st.mood+1)%len(poses), a.now())
+	if a.st.automatic {
+		a.st.blinkOn = true
+		a.st.blinkP = 0
+	}
 	return nil
+}
+
+func (a *App) toggleMode(now time.Time) {
+	s := &a.st
+	s.automatic = !s.automatic
+	if s.automatic {
+		s.moodUntil = now.Add(moodDuration(s.mood))
+		s.sacT = now.Add(time.Second)
+		return
+	}
+	s.moodUntil = time.Time{}
 }
 
 // onSwipe flicks the look target in the swipe direction.

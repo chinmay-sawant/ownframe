@@ -19,10 +19,17 @@ func (a *App) paintText() {
 		mood = "spiral"
 	}
 	setText(a.pm.mood, strings.ToUpper(mood))
-	if a.tch {
+	if a.st.automatic {
+		setText(a.pm.mode, "AUTO")
+	} else {
+		setText(a.pm.mode, "STATIC")
+	}
+	if !a.st.automatic {
+		setText(a.pm.hint, "STATIC - TAP EYES TO CHANGE")
+	} else if a.tch {
 		setText(a.pm.hint, "TAP TO CHANGE MOOD - SWIPE TO LOOK")
 	} else {
-		setText(a.pm.hint, "CLICK MOOD - DRAG LOOK - 1-4 SELECT - S SPIRAL")
+		setText(a.pm.hint, "TAP EYES - DRAG LOOK - 1-4 SELECT - S SPIRAL")
 	}
 	if a.st.dev {
 		setText(a.pm.dev, "DEV ON")

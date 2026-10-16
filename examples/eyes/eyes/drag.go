@@ -32,7 +32,10 @@ func (a *App) onDragMove(_ context.Context, dx, dy float64) error {
 // onDragEnd releases the look back to auto saccades.
 func (a *App) onDragEnd(_ context.Context) error {
 	a.st.drag = false
-	a.st.moodT = a.now()
-	a.st.sacT = a.now()
+	now := a.now()
+	if a.st.automatic {
+		a.st.moodUntil = now.Add(moodDuration(a.st.mood))
+	}
+	a.st.sacT = now
 	return nil
 }
