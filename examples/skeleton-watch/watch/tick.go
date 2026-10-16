@@ -8,7 +8,6 @@ import (
 
 // Tick advances the watch train, runs escapement balance, and repaints.
 func (a *App) Tick(ctx context.Context) error {
-	a.page.UseFrameDirty()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
