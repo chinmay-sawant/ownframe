@@ -16,8 +16,8 @@ func (p *Page) caretKey(ctx context.Context, key string) error {
 
 	key, extend, word := caretMods(key)
 	n := runeLen(c.Value)
-	caret := clampPos(p.form.caret, n)
-	start, end := p.form.bounds(n)
+	caret := clampPos(p.formState().caret, n)
+	start, end := p.formState().bounds(n)
 	pos := caret
 
 	switch key {
@@ -48,9 +48,9 @@ func (p *Page) caretKey(ctx context.Context, key string) error {
 	}
 
 	pos = clampPos(pos, n)
-	changed := pos != p.form.caret
+	changed := pos != p.formState().caret
 	if !extend {
-		changed = changed || p.form.anchor != pos || p.form.all
+		changed = changed || p.formState().anchor != pos || p.formState().all
 	}
 
 	if !changed {

@@ -8,8 +8,11 @@ import (
 
 // get returns the entry for key, baking it when the slot is missing or its
 // signature or box moved. A changed signature with an unchanged box reuses
-// the image and paints over it. The bake runs under the lock, as the raster
-// caches do, so one slot never bakes twice.
+// the image and paints over it. The bake stays under the lock, as measured
+// by BenchmarkChunkCardDamage/chunked: bake draws into a slot image a
+// concurrent bake could share, and Ebiten calls belong on the draw path,
+// so moving it out races. The replay suite stays green under -race with
+// the bake inline. Fewer misses, not a split lock, cuts stall time.
 func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 	bake func(*ebiten.Image)) *chunkEntry {
 	c.mu.Lock()
@@ -49,35 +52,4 @@ func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 	c.evict(key)
 
 	return e
-}
-
-// evict drops the oldest slots while the store is over either bound. protected
-// is the entry just inserted or rebuilt and is never evicted here, so an entry
-// that is itself larger than the pixel budget cannot be disposed and then
-// returned to its caller.
-func (c *chunkStore) evict(protected chunkKey) {
-	for len(c.entries) > chunkMaxEntries || c.pixels > chunkMaxPixels {
-		victim := chunkKey{}
-		idx := -1
-		for i, candidate := range c.order {
-			if candidate == protected {
-				continue
-			}
-			victim = candidate
-			idx = i
-			break
-		}
-		if idx < 0 {
-			// Only the protected entry remains; let it stay.
-			break
-		}
-
-		c.order = append(c.order[:idx], c.order[idx+1:]...)
-
-		if e := c.entries[victim]; e != nil {
-			delete(c.entries, victim)
-			c.pixels -= e.img.Bounds().Dx() * e.img.Bounds().Dy()
-			e.img.Dispose()
-		}
-	}
 }

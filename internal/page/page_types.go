@@ -14,13 +14,8 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
-// Page is one HTML template and the last picture it produced.
-//
-// Display fields (img, display, fallbackDisplay, png, boxes, width, height,
-// generation, dirtyRects, and last) are mutated by Redraw on whatever
-// goroutine calls it and read elsewhere. A Page is not safe for concurrent
-// Redraw; callers must serialize page mutations, and cross-goroutine readers
-// should use the accessor snapshots rather than assuming stable state.
+// Page is one HTML template and the last picture it produced. Redraw
+// mutates display fields; serialize page mutations.
 type Page struct {
 	title           string
 	tpl             *template.Template
@@ -36,26 +31,14 @@ type Page struct {
 	boxes           []layout.Box
 	source          string
 	png             []byte
-	width           int
-	height          int
-	minWidth        int
-	minHeight       int
-	maxWidth        int
-	maxHeight       int
+	pageGeom        // size: New inits, SetSize writes; lock: page loop
 	generation      uint64
 	touchCancel     uint32
 	tick            func(ctx context.Context) error
-	past            []string
-	pastAt          int
-	routes          map[string]string
+	nav             navHistory
 	deepLinkSchemes map[string]struct{}
-	form            *formState
+	ff              formFocusState // owner: page_form_focus*.go; lock: page loop
 	picker          PickFunc
-	hover           string
-	hoverX          float64
-	hoverY          float64
-	active          string
-	pressUsed       bool
 	cache           *render.Cache
 	stats           pageStats
 	devtools        bool
@@ -67,23 +50,16 @@ type Page struct {
 	allowScroll     bool
 	touchScroll     TouchScrollOptions
 	watch           *watchState
-	dirtyRects      []image.Rectangle
+	dirty           dirtyTracker
 	lastPatch       DisplayPatch
 	changedProps    []string
 	stateStore      *state.Store
 	elements        *element.Registry
-	dirtyFull       bool
-	frameState
-	pinZ          int
-	pending       map[string]bool
-	last          map[string]image.Rectangle
-	index         map[string]Box
-	content       image.Rectangle
-	contentW      int
-	contentH      int
-	contentOK     bool
-	scroll        host.Scroll
-	hasScroll     bool
-	windowing     windowingState
-	accessibility *accessibilityState
+	frameState      // deadline: loop sets, window takes; lock: atomic
+	pinZ            int
+	index           map[string]Box
+	pageContent     // paint rect: box cache writes; lock: page loop
+	scroll          host.Scroll
+	hasScroll       bool
+	windowing       windowingState // scroll: window writes via Set*; lock: loop
 }

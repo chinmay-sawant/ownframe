@@ -1,6 +1,7 @@
 package page
 
 // ChangedProperties returns changed-property metadata surfaced to the page.
+// When no local props are set it falls back to the bound store snapshot.
 func (p *Page) ChangedProperties() []string {
 	if p == nil {
 		return nil
@@ -22,8 +23,16 @@ func (p *Page) LastChangedProperties() []string { return p.ChangedProperties() }
 // LastChangedProps is an alias.
 func (p *Page) LastChangedProps() []string { return p.LastChangedProperties() }
 
-// TakeChangedProperties returns a snapshot of surfaced metadata.
-func (p *Page) TakeChangedProperties() []string { return p.ChangedProperties() }
+// TakeChangedProperties returns a snapshot and drains local metadata.
+// A store fallback is snapshot-only; clear it via State().ClearChangedProperties.
+func (p *Page) TakeChangedProperties() []string {
+	if p == nil {
+		return nil
+	}
+	out := p.ChangedProperties()
+	p.changedProps = p.changedProps[:0]
+	return out
+}
 
 // TakeChangedProps is an alias.
 func (p *Page) TakeChangedProps() []string { return p.TakeChangedProperties() }

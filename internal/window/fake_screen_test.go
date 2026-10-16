@@ -4,6 +4,15 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
+)
+
+var (
+	_ host.Pointer   = (*fakeScreen)(nil)
+	_ host.Keyboard  = (*fakeScreen)(nil)
+	_ host.Clipboard = (*fakeScreen)(nil)
+	_ host.Screen    = (*fakeScreen)(nil)
 )
 
 type fakeScreen struct {

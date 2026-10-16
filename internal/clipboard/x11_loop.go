@@ -10,7 +10,7 @@ func (x *xClient) fail() {
 		close(x.dead)
 
 		for _, ch := range x.wait {
-			ch <- xReply{err: errX}
+			ch <- xReply{err: ErrX11}
 		}
 
 		x.wait = nil
@@ -60,9 +60,9 @@ func (x *xClient) round(req []byte) ([]byte, error) {
 		delete(x.wait, seq)
 		x.mu.Unlock()
 
-		return nil, errX
+		return nil, ErrX11
 	case <-x.dead:
-		return nil, errX
+		return nil, ErrX11
 	}
 }
 

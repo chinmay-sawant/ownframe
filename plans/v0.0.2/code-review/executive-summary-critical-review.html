@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ownframe Go review, 6.4 out of 10</title>
+<style>
+:root{--bg:#f6f3ec;--card:#fff;--ink:#1c1915;--muted:#6f675a;--line:#ddd5c6;--accent:#1a56db;--good:#137333;--bad:#b3261e;--pill:#1c1915}
+@media (prefers-color-scheme: dark){:root{--bg:#15130f;--card:#1e1b16;--ink:#ece7dd;--muted:#a49b8b;--line:#3a352c;--accent:#7aa2ff;--good:#7ddb8a;--bad:#ff8a80;--pill:#ece7dd}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 system-ui,sans-serif}
+main{max-width:70ch;margin:0 auto;padding:2.5rem 1.25rem 5rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1rem 1.25rem;margin:1rem 0}
+.score{display:inline-block;border:2px solid var(--pill);border-radius:999px;padding:.2rem .9rem;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:.45rem .5rem;vertical-align:top}
+.tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin:1rem 0}
+.tabs button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:.4rem .9rem;cursor:pointer;font-size:15px}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.75rem;overflow:auto;font-size:13.5px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace}
+.good{color:var(--good)}.bad{color:var(--bad)}
+svg{max-width:100%;height:auto}
+svg text{fill:currentColor;stroke:none}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media print{.control{display:none}}
+</style>
+</head>
+<body>
+<main>
+<h1>Ownframe Go review</h1>
+<p><span class="score">6.4 / 10</span></p>
+<p class="card">Short version. Scope is root Go files plus internal packages. Examples are out. Ten agents scanned in parallel. Locks and one paint guard need work first. The surface needs narrowing next. Most speed items need a profile before any change. Full detail is in the Markdown ledger in the same folder.</p>
+<nav class="tabs control" aria-label="Sections">
+<button aria-selected="true" data-tab="score">Score</button>
+<button aria-selected="false" data-tab="goodbad">Good and bad</button>
+<button aria-selected="false" data-tab="agents">Agents</button>
+<button aria-selected="false" data-tab="critic">Critic</button>
+<button aria-selected="false" data-tab="road">Roadmap</button>
+</nav>
+<section id="tab-score">
+<h2>Executive scorecard</h2>
+<div class="card">
+<figure>
+<svg viewBox="0 0 560 150" role="img" aria-label="Pipeline from template to frame">
+<rect x="8" y="20" width="100" height="52" rx="10" fill="none" stroke="currentColor"/><text x="20" y="42" font-size="12">Template</text><text x="20" y="60" font-size="11">page</text>
+<rect x="128" y="20" width="100" height="52" rx="10" fill="none" stroke="currentColor"/><text x="140" y="42" font-size="12">Styled</text><text x="140" y="60" font-size="11">render</text>
+<rect x="248" y="20" width="100" height="52" rx="10" fill="none" stroke="currentColor"/><text x="260" y="42" font-size="12">Display</text><text x="260" y="60" font-size="11">layout</text>
+<rect x="368" y="20" width="100" height="52" rx="10" fill="none" stroke="currentColor"/><text x="380" y="42" font-size="12">Replay</text><text x="380" y="60" font-size="11">window</text>
+<rect x="248" y="95" width="220" height="40" rx="10" fill="none" stroke="currentColor" stroke-dasharray="5 4"/><text x="260" y="119" font-size="12">Global lock spans parse and bake</text>
+</svg>
+<figcaption>One caption. The page builds in stages but one lock spans the slow steps.</figcaption>
+</figure>
+</div>
+<table>
+<tr><th>Category</th><th>Weight</th><th>Score</th></tr>
+<tr><td>SRP</td><td>10%</td><td>5</td></tr>
+<tr><td>OCP</td><td>10%</td><td>6</td></tr>
+<tr><td>LSP</td><td>10%</td><td>8</td></tr>
+<tr><td>ISP</td><td>10%</td><td>6</td></tr>
+<tr><td>DIP</td><td>10%</td><td>6</td></tr>
+<tr><td>Cohesion</td><td>15%</td><td>6</td></tr>
+<tr><td>API seams</td><td>10%</td><td>6</td></tr>
+<tr><td>Errors and bounds</td><td>10%</td><td>6</td></tr>
+<tr><td>Tests</td><td>10%</td><td>7</td></tr>
+<tr><td>Deps</td><td>5%</td><td>9</td></tr>
+</table>
+<p>Total is 6.35, shown as 6.4. Confidence is medium high. Method was reads plus grep. No full test run. Docs only change.</p>
+<details><summary>What the score means</summary><p>5 to 6 means mixed design with useful seams and clear debt. The code ships and reads well in parts. The central types carry too much state. Fix order is correctness first, then surface, then speed with numbers.</p></details>
+</section>
+<section id="tab-goodbad">
+<h2>Good and bad</h2>
+<div class="card"><h3>Good, keep it</h3><p>No import cycles. Four direct deps, each used. Modern ServeMux with timeouts. Narrow host optionals. Error chains use percent w. Traversal checks exist. No nolint. No exit in library code.</p></div>
+<div class="card"><h3>Bad, fix in order</h3><p>Mask layer index has no empty check at <code>internal/masking/mask_apply.go:19</code>. Decode and bake run under global locks. <code>Page</code> holds about 50 fields. <code>Screen</code> has 27 methods. Aliases repeat one thing under many names. Sentinels use three styles. Window stores a context. <code>Serve</code> drops cancel.</p></div>
+<h3>Example change</h3>
+<p>Bad, lock spans decode:</p>
+<pre><code>images.mu.Lock()
+defer images.mu.Unlock()
+src, _, _ := image.Decode(bytes.NewReader(data))
+img := ebiten.NewImageFromImage(src)</code></pre>
+<p>Good, lookup, work outside, then publish:</p>
+<pre><code>// fast lookup under read lock
+// decode outside the lock
+// lock again, check, insert
+</code></pre>
+</section>
+<section id="tab-agents">
+<h2>Subagent audit</h2>
+<table>
+<tr><th>Agent</th><th>Result</th></tr>
+<tr><td>Discovery API</td><td>Fat Config, Handlers, Page. Alias sprawl. Three nil context names.</td></tr>
+<tr><td>Discovery engine</td><td>Global engine lock. Bake under lock. No nolint.</td></tr>
+<tr><td>Empirical</td><td>One high paint guard. Rest refuted with line proof.</td></tr>
+<tr><td>Idioms</td><td>Clean graph. Frame to root import. Three orphans.</td></tr>
+<tr><td>SOLID packets</td><td>Area 6 each. Render 8. Page 5. Root 9.</td></tr>
+<tr><td>Concurrency</td><td>Stored context confirmed. Serve drop confirmed.</td></tr>
+<tr><td>Errors</td><td>Clean on panic and traversal. Swallowed subprocess detail flagged.</td></tr>
+<tr><td>Memory</td><td>All alloc items need bench proof.</td></tr>
+<tr><td>Ponytail</td><td>Minus 1150 lines claimed. Needs usage survey.</td></tr>
+</table>
+</section>
+<section id="tab-critic">
+<h2>Critic view</h2>
+<div class="card"><p>I rate this a 6.4 because the base is sound and the debt is known. The lock items and the mask guard are real production work. The alias and Screen items are real but slow. The pool and micro alloc items are theory until a profile says otherwise.</p><p>I push back on deleting <code>internal/ipc</code> for lack of internal callers. It is public API. I push back on deleting three packages on import graph alone. Check outside callers and write a release note first.</p></div>
+</section>
+<section id="tab-road">
+<h2>Roadmap</h2>
+<ol>
+<li>Guard paint and crash close. Gate is two unit tests.</li>
+<li>Fix context. Gate is a serve cancel test.</li>
+<li>Narrow one web seam. Gate is smaller test fakes.</li>
+<li>Collapse one alias set. Gate is one canonical name.</li>
+<li>Split one lock with numbers. Gate is a benchmark.</li>
+<li>Decide orphans with a note. Gate is a written choice per package.</li>
+<li>Split api.go to meet the 2000 char cap. Gate is wc clean.</li>
+</ol>
+<p>Sources are file and line cites in the Markdown ledger. Open that file for the full phase checklist.</p>
+</section>
+<script>
+(function(){
+var b=document.querySelectorAll('[data-tab]');
+function show(id){document.querySelectorAll('main > section').forEach(function(s){s.hidden=s.id!=='tab-'+id});b.forEach(function(x){x.setAttribute('aria-selected',x.dataset.tab===id?'true':'false')})}
+b.forEach(function(x){x.setAttribute('type','button');x.addEventListener('click',function(){show(x.dataset.tab)})});
+show('score');
+})();
+</script>
+</main>
+</body>
+</html>

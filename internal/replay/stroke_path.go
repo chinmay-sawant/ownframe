@@ -2,7 +2,7 @@ package replay
 
 import (
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
@@ -25,7 +25,7 @@ func strokeGeometry(op *layout.DisplayOp, dx, dy float64) (vector.Path, float32,
 		return maskPathAt(x, y, w, h, op.StrokeMask), width, op.StrokeMask&^0x0F == 0
 	}
 
-	rx, ry := render.RadiiXY(op)
+	rx, ry := masking.RadiiXY(op)
 
 	return roundedPathAt(x, y, w, h, radius4(rx), radius4(ry)), width, true
 }

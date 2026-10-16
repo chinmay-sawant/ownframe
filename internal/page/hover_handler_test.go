@@ -21,14 +21,14 @@ func TestHoverHandlerFallbackAndError(t *testing.T) {
 	if err = p.Hover(ctx, 10, 10); !errors.Is(err, boom) {
 		t.Fatalf("error = %v", err)
 	}
-	if p.hover != "" || p.Generation() != before {
+	if p.hoverID() != "" || p.Generation() != before {
 		t.Fatal("failed hover changed state")
 	}
 	p.Handle(Handlers{Hover: func(context.Context, Box, Box) (bool, error) { return false, nil }})
 	if err = p.Hover(ctx, 10, 10); err != nil {
 		t.Fatal(err)
 	}
-	if p.hover != "x" || p.Generation() == before {
+	if p.hoverID() != "x" || p.Generation() == before {
 		t.Fatal("CSS fallback did not redraw")
 	}
 }

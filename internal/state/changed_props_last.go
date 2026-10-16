@@ -13,7 +13,7 @@ func (s *Store) LastChange() (Change, bool) {
 	return s.changes[len(s.changes)-1], true
 }
 
-// LastChanged is an alias for LastChange.
+// Deprecated: use LastChange.
 func (s *Store) LastChanged() (Change, bool) { return s.LastChange() }
 
 // ClearChangedProperties clears the recorded change log.
@@ -26,7 +26,7 @@ func (s *Store) ClearChangedProperties() {
 	s.changes = s.changes[:0]
 }
 
-// ClearChangedProps is an alias for ClearChangedProperties.
+// Deprecated: use ClearChangedProperties.
 func (s *Store) ClearChangedProps() { s.ClearChangedProperties() }
 
 // Origin returns the current patch origin.

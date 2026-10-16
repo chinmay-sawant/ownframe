@@ -18,6 +18,9 @@ temp
 **/.gradle/
 **/build/
 **/local.properties
+# New unsigned and debug APKs stay local; signed reference builder APKs are committed.
+examples/*/android/artifacts/*-unsigned.apk
+examples/*/android/artifacts/*-debug.apk
 # Teams example SQLite state
 *.db
 *.db-wal

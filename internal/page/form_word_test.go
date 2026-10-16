@@ -20,7 +20,7 @@ func TestSelectWordAt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if start, end := p.form.bounds(11); start != 0 || end != 5 {
+	if start, end := p.formState().bounds(11); start != 0 || end != 5 {
 		t.Fatalf("first word [%d,%d)", start, end)
 	}
 
@@ -28,7 +28,7 @@ func TestSelectWordAt(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if start, end := p.form.bounds(11); start != 6 || end != 11 {
+	if start, end := p.formState().bounds(11); start != 6 || end != 11 {
 		t.Fatalf("second word [%d,%d)", start, end)
 	}
 }
@@ -53,7 +53,7 @@ two</textarea>`)
 		t.Fatal(err)
 	}
 
-	if start, end := p.form.bounds(7); start != 4 || end != 7 {
+	if start, end := p.formState().bounds(7); start != 4 || end != 7 {
 		t.Fatalf("line [%d,%d)", start, end)
 	}
 }
@@ -65,21 +65,21 @@ func TestRangeClampsAfterRedraw(t *testing.T) {
 	p := bftPage(t, `<input id="t" type="text" value="abcdef"`+bedWide+`>`)
 	bftDraw(t, p, nil)
 	bftClick(t, p, "t")
-	p.form.anchor, p.form.caret = 2, 5
+	p.formState().anchor, p.formState().caret = 2, 5
 
-	c := p.form.byID["t"]
+	c := p.formState().byID["t"]
 	c.Value = "ab"
-	p.form.byID["t"] = c
+	p.formState().byID["t"] = c
 
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.form.caret != 2 || p.form.anchor != 2 {
-		t.Fatalf("caret %d anchor %d after clamp", p.form.caret, p.form.anchor)
+	if p.formState().caret != 2 || p.formState().anchor != 2 {
+		t.Fatalf("caret %d anchor %d after clamp", p.formState().caret, p.formState().anchor)
 	}
 
-	if start, end := p.form.bounds(2); start != 2 || end != 2 {
+	if start, end := p.formState().bounds(2); start != 2 || end != 2 {
 		t.Fatalf("range [%d,%d) after clamp", start, end)
 	}
 }

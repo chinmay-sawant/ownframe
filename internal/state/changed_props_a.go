@@ -19,10 +19,10 @@ func (s *Store) ChangedProperties() []string {
 	return out
 }
 
-// ChangedProps is an alias for ChangedProperties.
+// Deprecated: use ChangedProperties.
 func (s *Store) ChangedProps() []string { return s.ChangedProperties() }
 
-// PropertiesChanged is an alias for ChangedProperties.
+// Deprecated: use ChangedProperties.
 func (s *Store) PropertiesChanged() []string { return s.ChangedProperties() }
 
 // LastChangedProperties returns the paths from the most recent change.
@@ -42,11 +42,11 @@ func (s *Store) LastChangedProperties() []string {
 	return []string{c.Path}
 }
 
-// LastChangedProps is an alias for LastChangedProperties.
+// Deprecated: use LastChangedProperties.
 func (s *Store) LastChangedProps() []string { return s.LastChangedProperties() }
 
 // TakeChangedProperties returns a snapshot of the recorded paths.
 func (s *Store) TakeChangedProperties() []string { return s.ChangedProperties() }
 
-// TakeChangedProps is an alias for TakeChangedProperties.
+// Deprecated: use TakeChangedProperties.
 func (s *Store) TakeChangedProps() []string { return s.TakeChangedProperties() }

@@ -9,7 +9,7 @@ func (p *Page) Hover(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	p.hoverX, p.hoverY = x, y
+	p.setHoverPoint(x, y)
 
 	return p.setHover(ctx, p.boxIDAt(x, y))
 }
@@ -21,13 +21,13 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 	}
 
 	id := p.boxIDAt(x, y)
-	if p.active == id {
+	if p.activeID() == id {
 		return nil
 	}
 
-	p.markPair(p.active, id)
-	p.active = id
-	p.pressUsed = false
+	p.markPair(p.activeID(), id)
+	p.setActiveID(id)
+	p.setPressUsed(false)
 	if p.handlers.Press != nil {
 		box := p.boxByID(id)
 		if c, ok := p.control(id); !ok || !c.Disabled {
@@ -35,7 +35,7 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 			if err != nil {
 				return err
 			}
-			p.pressUsed = used
+			p.setPressUsed(used)
 		}
 	}
 
@@ -48,19 +48,18 @@ func (p *Page) Release(ctx context.Context) error {
 		return err
 	}
 
-	if p.active == "" {
+	old := p.takePress()
+	if old == "" {
 		return nil
 	}
 
-	p.markPair(p.active, "")
-	p.active = ""
-	p.pressUsed = false
+	p.markPair(old, "")
 
 	return p.Redraw(ctx)
 }
 
 func (p *Page) setHover(ctx context.Context, id string) error {
-	if p.hover == id {
+	if p.hoverID() == id {
 		return nil
 	}
 
@@ -68,8 +67,8 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	p.markPair(p.hover, id)
-	p.hover = id
+	p.markPair(p.hoverID(), id)
+	p.setHoverID(id)
 	if handled {
 		return nil
 	}
@@ -77,19 +76,9 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	return p.Redraw(ctx)
 }
 
-// boxIDAt returns the innermost box with an id that contains the point, or "".
+// boxIDAt returns the innermost box with an id that contains the point, or
+// "". It delegates to the shared boxAt scan so Hover and Press agree with
+// Click on overlapping boxes.
 func (p *Page) boxIDAt(x, y float64) string {
-	id := ""
-
-	for _, b := range p.Boxes() {
-		if x < b.X || y < b.Y || x > b.X+b.W || y > b.Y+b.H {
-			continue
-		}
-
-		if b.ID != "" {
-			id = b.ID
-		}
-	}
-
-	return id
+	return p.boxAt(x, y).id
 }

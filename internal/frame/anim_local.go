@@ -4,11 +4,11 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // localBox is op's painted box in points before its transform.
-func localBox(op *ownframe.DisplayOp) (x0, y0, x1, y1 float64) {
+func localBox(op *page.DisplayOp) (x0, y0, x1, y1 float64) {
 	x0, y0 = op.X, op.Y
 	x1, y1 = op.X+op.W, op.Y+op.H
 
@@ -24,7 +24,7 @@ func localBox(op *ownframe.DisplayOp) (x0, y0, x1, y1 float64) {
 }
 
 // ascent is the face ascent in points for one text op.
-func ascent(op *ownframe.DisplayOp) float64 {
+func ascent(op *page.DisplayOp) float64 {
 	if op.Font == nil || op.Font.UnitsPerEm() <= 0 {
 		return op.Size
 	}
@@ -34,7 +34,7 @@ func ascent(op *ownframe.DisplayOp) float64 {
 
 // paintCenter is op's painted center in points, the origin scale and rotate
 // turn about.
-func paintCenter(op *ownframe.DisplayOp) (float64, float64) {
+func paintCenter(op *page.DisplayOp) (float64, float64) {
 	x0, y0, x1, y1 := localBox(op)
 
 	return (x0 + x1) / 2, (y0 + y1) / 2

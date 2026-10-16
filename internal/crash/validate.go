@@ -14,8 +14,7 @@ var ErrEmptyDir = errors.New("crash: empty directory")
 var ErrBadDir = errors.New("crash: invalid directory")
 
 // SetDir sets the folder Write uses. It rejects an empty or unsafe path
-// and stores a cleaned path. An earlier configured value stays in
-// place when the new value is rejected.
+// and stores the absolute form. An earlier value stays when rejected.
 func SetDir(dir string) error {
 	clean, err := validateDir(dir)
 	if err != nil {
@@ -52,23 +51,27 @@ func validateDir(dir string) (string, error) {
 		return "", ErrBadDir
 	}
 
-	separator := string(filepath.Separator)
-	for _, part := range strings.Split(trimmed, separator) {
-		if part == "." || part == ".." {
-			return "", ErrBadDir
-		}
-	}
-	for _, part := range strings.Split(trimmed, "\\") {
-		if part == "." || part == ".." {
+	for _, part := range strings.FieldsFunc(clean, isSep) {
+		if part == ".." {
 			return "", ErrBadDir
 		}
 	}
 
 	if !filepath.IsAbs(clean) {
-		if clean == ".." || strings.HasPrefix(clean, ".."+separator) {
+		abs, err := filepath.Abs(clean)
+		if err != nil {
 			return "", ErrBadDir
 		}
+		clean = abs
+	}
+
+	if !filepath.IsAbs(clean) {
+		return "", ErrBadDir
 	}
 
 	return clean, nil
+}
+
+func isSep(r rune) bool {
+	return r == '/' || r == '\\'
 }

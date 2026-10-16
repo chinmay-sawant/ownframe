@@ -3,7 +3,7 @@ package frame
 import (
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // animKind selects what an Anim patches.
@@ -21,7 +21,7 @@ const (
 const minAlpha = 1e-4
 
 // newAnim allocates the per-op value tracks an animation steps through.
-func newAnim(d *ownframe.Display, ops []*ownframe.DisplayOp, k animKind,
+func newAnim(d *page.Display, ops []*page.DisplayOp, k animKind,
 	dur time.Duration, ease Easing) *Anim {
 	n := len(ops)
 	if k == animTranslate {
@@ -44,7 +44,7 @@ func newAnim(d *ownframe.Display, ops []*ownframe.DisplayOp, k animKind,
 }
 
 // xformAnim builds a scale or rotate animation from factor 1.
-func xformAnim(d *ownframe.Display, ops []*ownframe.DisplayOp, k animKind,
+func xformAnim(d *page.Display, ops []*page.DisplayOp, k animKind,
 	to float64, dur time.Duration, ease Easing) *Anim {
 	a := newAnim(d, ops, k, dur, ease)
 	for i := range ops {
@@ -55,7 +55,7 @@ func xformAnim(d *ownframe.Display, ops []*ownframe.DisplayOp, k animKind,
 }
 
 // effectiveAlpha is op's alpha, reading the engine's zero as opaque.
-func effectiveAlpha(op *ownframe.DisplayOp) float64 {
+func effectiveAlpha(op *page.DisplayOp) float64 {
 	if op.Alpha > 0 && op.Alpha < 1 {
 		return op.Alpha
 	}

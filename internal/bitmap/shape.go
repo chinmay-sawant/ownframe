@@ -13,8 +13,8 @@ func paintShape(img *image.NRGBA, op *layout.DisplayOp) {
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			count := 0
-			for _, oy := range []float64{.25, .75} {
-				for _, ox := range []float64{.25, .75} {
+			for _, oy := range [2]float64{.25, .75} {
+				for _, ox := range [2]float64{.25, .75} {
 					px, py, ok := untransform(op, (float64(x)+ox)/pxPerPt, (float64(y)+oy)/pxPerPt)
 					if ok && shapeContains(op, px, py) {
 						count++

@@ -1,18 +1,52 @@
 package state
 
+import (
+	"sort"
+	"time"
+)
+
 // PatchFields applies one projected value per path and returns the changes.
 func (s *Store) PatchFields(values map[string]any) []Change {
 	return s.PatchProjected(values)
 }
 
-// PatchProjected applies a projected state slice (path -> value).
+// PatchProjected applies values in sorted key order under one lock.
 func (s *Store) PatchProjected(values map[string]any) []Change {
-	if s == nil {
+	if s == nil || len(values) == 0 {
 		return nil
 	}
-	out := make([]Change, 0, len(values))
-	for path, value := range values {
-		out = append(out, s.PatchChange(path, value))
+	keys := make([]string, 0, len(values))
+	for k := range values {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	s.mu.Lock()
+	out := make([]Change, 0, len(keys))
+	for _, path := range keys {
+		v := values[path]
+		c := Change{Path: path, Old: valueAtPath(s.data, path),
+			New: v, Origin: s.origin, At: time.Now(),
+			Properties: []string{path}, Changed: []string{path},
+			Props: []string{path}}
+		nd, ok := setPath(s.data, path, v)
+		if !ok {
+			continue
+		}
+		s.data = nd
+		s.changes = append(s.changes, c)
+		s.undo = append(s.undo, c)
+		out = append(out, c)
+	}
+	if len(out) > 0 {
+		s.redo = nil
+	}
+	ls := make([]func(Change), len(s.listeners))
+	copy(ls, s.listeners)
+	s.mu.Unlock()
+	for _, c := range out {
+		for _, l := range ls {
+			l(c)
+		}
 	}
 	return out
 }
@@ -22,31 +56,9 @@ func (s *Store) PatchSlice(path string, value any) Change {
 	return s.PatchChange(path, value)
 }
 
-// Patch applies a Patch's changed paths.
+// Patch applies a Patch's changed paths in sorted order.
 func (s *Store) Patch(p Patch) []Change {
-	if s == nil {
-		return nil
-	}
-	if p.IsWhole() {
-		if p.Values != nil {
-			if v, ok := p.Values[""]; ok {
-				s.SetData(v)
-			}
-		}
-		return nil
-	}
-	s.mu.Lock()
-	s.origin = p.Origin
-	s.mu.Unlock()
-	out := make([]Change, 0, len(p.Changed))
-	for _, path := range p.Changed {
-		value, ok := p.Values[path]
-		if !ok {
-			continue
-		}
-		out = append(out, s.PatchChange(path, value))
-	}
-	s.origin = p.Origin
+	out, _ := s.PatchWithSkipped(p)
 	return out
 }
 

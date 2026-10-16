@@ -4,13 +4,13 @@ import (
 	"image"
 	"math"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // OpBox returns op's painted box in CSS pixels: the box to mark when the op
 // moves, fades, or changes shape. It honors a baked transform and the text
 // baseline, matching the page's own dirty boxes.
-func OpBox(d *ownframe.Display, op *ownframe.DisplayOp) image.Rectangle {
+func OpBox(d *page.Display, op *page.DisplayOp) image.Rectangle {
 	x0, y0, x1, y1 := localBox(op)
 
 	m := op.Transform()
@@ -22,7 +22,7 @@ func OpBox(d *ownframe.Display, op *ownframe.DisplayOp) image.Rectangle {
 }
 
 // pxBox converts a point box to CSS pixels with a pixel of slack.
-func pxBox(d *ownframe.Display, x0, y0, x1, y1 float64) image.Rectangle {
+func pxBox(d *page.Display, x0, y0, x1, y1 float64) image.Rectangle {
 	s := 1.0
 	if d != nil && d.PixelPerPoint > 0 {
 		s = d.PixelPerPoint

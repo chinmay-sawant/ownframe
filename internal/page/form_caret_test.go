@@ -18,24 +18,24 @@ func TestCaretEditsAtOffset(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if p.FormValue("t") != "abXcd" || p.form.caret != 3 {
-		t.Fatalf("insert value %q caret %d", p.FormValue("t"), p.form.caret)
+	if p.FormValue("t") != "abXcd" || p.formState().caret != 3 {
+		t.Fatalf("insert value %q caret %d", p.FormValue("t"), p.formState().caret)
 	}
 
 	if err := p.Backspace(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.FormValue("t") != "abcd" || p.form.caret != 2 {
-		t.Fatalf("backspace value %q caret %d", p.FormValue("t"), p.form.caret)
+	if p.FormValue("t") != "abcd" || p.formState().caret != 2 {
+		t.Fatalf("backspace value %q caret %d", p.FormValue("t"), p.formState().caret)
 	}
 
 	if err := p.DeleteWord(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.FormValue("t") != "cd" || p.form.caret != 0 {
-		t.Fatalf("delete word value %q caret %d", p.FormValue("t"), p.form.caret)
+	if p.FormValue("t") != "cd" || p.formState().caret != 0 {
+		t.Fatalf("delete word value %q caret %d", p.FormValue("t"), p.formState().caret)
 	}
 }
 

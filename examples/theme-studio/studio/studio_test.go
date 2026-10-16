@@ -99,7 +99,8 @@ func TestCopyCSS(t *testing.T) {
 	app.Page().SetFormValue("css", css)
 	clickBox(t, app, "btn-copy")
 
-	if got := clipboard.Read(); got != app.Page().FormValue("css") || got != css {
-		t.Fatalf("%q", got)
+	got, err := clipboard.Read()
+	if err != nil || got != css {
+		t.Fatal(got, err)
 	}
 }

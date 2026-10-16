@@ -30,7 +30,7 @@ func (s *Store) RouteInterceptors() []RouteInterceptor {
 	return out
 }
 
-// Interceptors is an alias.
+// Deprecated: use RouteInterceptors.
 func (s *Store) Interceptors() []RouteInterceptor { return s.RouteInterceptors() }
 
 // InterceptRoute runs interceptors; true means handled without full load.
@@ -50,13 +50,13 @@ func (s *Store) InterceptRoute(path string) bool {
 	return false
 }
 
-// Intercept is an alias.
+// Deprecated: use InterceptRoute.
 func (s *Store) Intercept(path string) bool { return s.InterceptRoute(path) }
 
-// HandleRoute is an alias.
+// Deprecated: use InterceptRoute.
 func (s *Store) HandleRoute(path string) bool { return s.InterceptRoute(path) }
 
-// TryRoute is an alias.
+// Deprecated: use InterceptRoute.
 func (s *Store) TryRoute(path string) bool { return s.InterceptRoute(path) }
 
 func funcPtr(f RouteInterceptor) uintptr {

@@ -11,12 +11,12 @@ const caretBlinkInterval = 530 * time.Millisecond
 // resetCaretBlink shows the caret and restarts the blink clock. Every caret
 // move and edit calls it, so the caret is solid while the person types.
 func (p *Page) resetCaretBlink() {
-	if p.form == nil {
+	if p.formState() == nil {
 		return
 	}
 
-	p.form.blinkOn = true
-	p.form.blinkAt = time.Time{}
+	p.formState().blinkOn = true
+	p.formState().blinkAt = time.Time{}
 }
 
 // caretBlink toggles the focused field's caret on the blink clock and draws
@@ -29,25 +29,25 @@ func (p *Page) caretBlink(ctx context.Context) error {
 	}
 
 	n := runeLen(c.Value)
-	start, end := p.form.bounds(n)
+	start, end := p.formState().bounds(n)
 	if start != end {
 		return nil
 	}
 
 	now := time.Now()
-	if p.form.blinkAt.IsZero() {
-		p.form.blinkAt = now
-		p.form.blinkOn = true
+	if p.formState().blinkAt.IsZero() {
+		p.formState().blinkAt = now
+		p.formState().blinkOn = true
 
 		return nil
 	}
 
-	if now.Sub(p.form.blinkAt) < caretBlinkInterval {
+	if now.Sub(p.formState().blinkAt) < caretBlinkInterval {
 		return nil
 	}
 
-	p.form.blinkOn = !p.form.blinkOn
-	p.form.blinkAt = now
+	p.formState().blinkOn = !p.formState().blinkOn
+	p.formState().blinkAt = now
 
 	return p.Redraw(ctx)
 }

@@ -22,7 +22,7 @@ then read the focused notes:
 
 - Templates, themes, and files named in `Config` and passed to `Page` are
   trusted application content.
-- Path inputs such as `Config.File`, `ThemeFile`, `SetCrashDir`, and `SavePDF`
+- Path inputs such as `Config.File`, `ThemeFile`, and `SetCrashDir`
   are trusted configuration.
 - `Serve`, devtools, and debug flags only make sense on a machine the caller
   controls.
@@ -57,7 +57,7 @@ channel and applied on the game loop.
   still choose a private directory on shared machines.
 - `SetCrashDir` and other path APIs are trusted; the crash directory is not
   sandboxed.
-- Environment debug flags (`OWNFRAME_PRINT_DEBUG`, `OWNFRAME_FILEPICK_DEBUG`)
+- Environment debug flags (`OWNFRAME_FILEPICK_DEBUG`)
   write to stderr and should remain off in shipped binaries.
 
 ## Boundary by API
@@ -79,7 +79,7 @@ body cap, crash files at mode `0600`, and a source size limit of
 
 ## Helper executables
 
-Native helper tools such as `lp`, `xdg-open`, `zenity`, `powershell.exe`, and `pwsh.exe` are discovered through `PATH` and their normal OS locations, including WSL `/mnt` paths. Treat the executable search path and installed helpers as trusted local environment components.
+Native helper tools such as `zenity`, `powershell.exe`, and `pwsh.exe` are discovered through `PATH` and their normal OS locations, including WSL `/mnt` paths. Treat the executable search path and installed helpers as trusted local environment components.
 
 ## Devtools clipboard
 

@@ -18,24 +18,24 @@ want() { # $1 output, $2 literal line, $3 label
 	esac
 }
 
-linux=$(GOOS=linux sh scripts/package.sh -n print)
-want "$linux" "archive: dist/ownframe-print-linux-" "Linux archive"
-want "$linux" "  ownframe-print/print" "Linux binary"
-want "$linux" "  ownframe-print/print.desktop" "Linux desktop entry"
-want "$linux" "  ownframe-print/README.md" "Linux README"
+linux=$(GOOS=linux sh scripts/package.sh -n login)
+want "$linux" "archive: dist/ownframe-login-linux-" "Linux archive"
+want "$linux" "  ownframe-login/login" "Linux binary"
+want "$linux" "  ownframe-login/login.desktop" "Linux desktop entry"
+want "$linux" "  ownframe-login/README.md" "Linux README"
 want "$linux" "  ownframe.wasm" "wasm binary"
 want "$linux" "  wasm_exec.js" "wasm loader"
 want "$linux" "  index.html (browser/index.html)" "wasm page"
 want "$linux" "checksums: dist/SHA256SUMS" "checksums"
 
-darwin=$(GOOS=darwin sh scripts/package.sh -n print)
-want "$darwin" "archive: dist/ownframe-print-macos-" "macOS archive"
-want "$darwin" "  ownframe-print.app/Contents/Info.plist" "macOS plist"
-want "$darwin" "  ownframe-print.app/Contents/MacOS/print" "macOS binary"
+darwin=$(GOOS=darwin sh scripts/package.sh -n login)
+want "$darwin" "archive: dist/ownframe-login-macos-" "macOS archive"
+want "$darwin" "  ownframe-login.app/Contents/Info.plist" "macOS plist"
+want "$darwin" "  ownframe-login.app/Contents/MacOS/login" "macOS binary"
 
-windows=$(GOOS=windows sh scripts/package.sh -n print)
-want "$windows" "archive: dist/ownframe-print-windows-" "Windows archive"
-want "$windows" "  ownframe-print.exe" "Windows executable"
+windows=$(GOOS=windows sh scripts/package.sh -n login)
+want "$windows" "archive: dist/ownframe-login-windows-" "Windows archive"
+want "$windows" "  ownframe-login.exe" "Windows executable"
 
 if [ "$fail" -ne 0 ]; then
 	exit 1

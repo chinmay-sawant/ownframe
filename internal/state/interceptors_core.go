@@ -10,8 +10,8 @@ func (s *Store) AddRouteInterceptor(i RouteInterceptor) {
 	s.interceptors = append(s.interceptors, i)
 }
 
-// RegisterRouteInterceptor is an alias.
+// Deprecated: use AddRouteInterceptor.
 func (s *Store) RegisterRouteInterceptor(i RouteInterceptor) { s.AddRouteInterceptor(i) }
 
-// AddInterceptor is an alias.
+// Deprecated: use AddRouteInterceptor.
 func (s *Store) AddInterceptor(i RouteInterceptor) { s.AddRouteInterceptor(i) }

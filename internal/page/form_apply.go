@@ -1,17 +1,17 @@
 package page
 
 func (p *Page) syncForm(body string) string {
-	if p.form == nil || p.form.doc != p.pastAt {
-		p.form = &formState{
+	if p.formState() == nil || p.formState().doc != p.nav.doc() {
+		p.setFormState(&formState{
 			byID:    map[string]Control{},
-			doc:     p.pastAt,
+			doc:     p.nav.doc(),
 			blinkOn: true,
-		}
+		})
 	}
 
 	body = rewriteButtons(body)
 	spans := scanControls(body)
-	byID, order := mergeControls(p.form.byID, spans)
+	byID, order := mergeControls(p.formState().byID, spans)
 	for id, ctrl := range byID {
 		if ctrl.Bind == "" {
 			continue
@@ -22,10 +22,10 @@ func (p *Page) syncForm(body string) string {
 		}
 	}
 
-	p.form.byID = byID
-	p.form.order = order
-	if _, ok := byID[p.form.focusID]; !ok {
-		p.form.focusID = ""
+	p.formState().byID = byID
+	p.formState().order = order
+	if _, ok := byID[p.formState().focusID]; !ok {
+		p.formState().focusID = ""
 		p.clearRange()
 	}
 	p.clampRange()

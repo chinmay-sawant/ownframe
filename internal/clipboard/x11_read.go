@@ -5,6 +5,8 @@ package clipboard
 import "io"
 
 func (x *xClient) loop() {
+	defer recoverX(x, "x11 loop")
+
 	for {
 		var hdr [32]byte
 		if _, err := io.ReadFull(x.c, hdr[:]); err != nil {
@@ -14,7 +16,7 @@ func (x *xClient) loop() {
 		}
 
 		if hdr[0] == 0 {
-			x.deliver(get16(hdr[2:]), xReply{err: errX})
+			x.deliver(get16(hdr[2:]), xReply{err: ErrX11})
 
 			continue
 		}

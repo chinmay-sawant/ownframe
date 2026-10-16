@@ -2,10 +2,10 @@ package page
 
 // lastFocusID reports the last control cleared by a blur.
 func (p *Page) lastFocusIDValue() string {
-	if p.form == nil {
+	if p.formState() == nil {
 		return ""
 	}
-	return p.form.lastFocusID
+	return p.formState().lastFocusID
 }
 
 // LastFocusID returns the control id cleared by the most recent blur.

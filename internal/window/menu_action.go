@@ -73,16 +73,21 @@ func (s *shell) menuAction(id string) error {
 	case "copy":
 		return s.copy(false)
 	case "paste":
-		text := strings.ReplaceAll(clipboard.Read(), "\r", "")
+		text, err := clipboard.Read()
+		if err != nil {
+			return nil
+		}
+
+		text = strings.ReplaceAll(text, "\r", "")
 		text = strings.ReplaceAll(text, "\n", "")
 
-		return s.app.Paste(s.ctx, text)
+		return s.clip().Paste(s.ctx, text)
 	case "select-all":
-		return s.app.SelectAll(s.ctx)
+		return s.clip().SelectAll(s.ctx)
 	case "undo":
-		return s.app.Undo(s.ctx)
+		return s.clip().Undo(s.ctx)
 	case "redo":
-		return s.app.Redo(s.ctx)
+		return s.clip().Redo(s.ctx)
 	}
 
 	return nil

@@ -19,7 +19,9 @@ package window
 import (
 	"context"
 	"errors"
+	"fmt"
 
+	"github.com/chinmay-sawant/ownframe/internal/fetch"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
@@ -29,8 +31,10 @@ const (
 )
 
 var (
-	errNilApp     = errors.New("window: nil screen")
-	errNilContext = errors.New("window: nil context")
+	errNilApp = errors.New("window: nil screen")
+	// Window keeps its prefix only as wrapped context; identity is the
+	// canonical fetch.ErrNilContext so one errors.Is branch covers Run.
+	errNilContext = fmt.Errorf("window: %w", fetch.ErrNilContext)
 	errNoImage    = errors.New("window: no image")
 )
 

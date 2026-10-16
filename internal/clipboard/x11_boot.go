@@ -34,12 +34,12 @@ func (x *xClient) bootstrap() error {
 func (x *xClient) atom(name string) (uint32, error) {
 	rep, err := x.round(internReq(name))
 	if err != nil || len(rep) < 12 || rep[0] != 1 {
-		return 0, errX
+		return 0, ErrX11
 	}
 
 	id := get32(rep[8:])
 	if id == 0 {
-		return 0, errX
+		return 0, ErrX11
 	}
 
 	return id, nil

@@ -1,10 +1,10 @@
 package frame
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/ownframe/internal/page"
 
 // Text returns the first text operation inside box, or nil. A caller can
 // change its Text field to show a new value on the next frame.
-func Text(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
+func Text(d *page.Display, box page.Box) *page.DisplayOp {
 	if d == nil {
 		return nil
 	}
@@ -13,7 +13,7 @@ func Text(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
 
 	for i := range d.Ops {
 		op := &d.Ops[i]
-		if op.Kind != ownframe.DisplayOpText {
+		if op.Kind != page.DisplayOpText {
 			continue
 		}
 

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Improve codebase architecture, ownframe</title>
+<style>
+:root{--bg:#f7f6f3;--card:#ffffff;--ink:#201d1a;--muted:#787774;--line:#e8e6e1;
+--serif:Georgia,'Times New Roman',serif;
+--sans:'SF Pro Display','Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;
+--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+--red-bg:#fdebec;--red-ink:#9f2f2d;--yellow-bg:#fbf3db;--yellow-ink:#956400;
+--blue-bg:#e1f3fe;--blue-ink:#1f6c9f;--gray-bg:#f1f0ed;--gray-ink:#5c5a57}
+@media (prefers-color-scheme: dark){:root{--bg:#171412;--card:#201c19;--ink:#ece7e1;--muted:#a39e99;--line:#332e2a;
+--red-bg:#3d2221;--red-ink:#f2b8b5;--yellow-bg:#3a2f14;--yellow-ink:#ecd193;
+--blue-bg:#17394e;--blue-ink:#a9d6f5;--gray-bg:#2a2624;--gray-ink:#b8b2ac}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans)}
+header{padding:4rem 1.25rem 2rem}
+header p.kicker,header h1,header p.sub{text-align:center}
+header .wrap{max-width:68ch;margin:0 auto}
+header p.kicker{margin:0 0 .8rem;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+header h1{margin:0 0 .8rem;font-family:var(--serif);font-weight:400;font-size:2.1rem;line-height:1.15;letter-spacing:-0.02em;text-wrap:balance}
+header p.sub{margin:0 auto;color:var(--muted);font-size:14px;max-width:56ch}
+main{max-width:68ch;margin:0 auto;padding:0 1.25rem 5rem}
+main>section{padding:2.5rem 0;border-top:1px solid var(--line)}
+main>section:first-child{border-top:0;padding-top:1.5rem}
+h2{font-size:1.3rem;margin:0 0 .4rem;font-weight:650;letter-spacing:-0.01em}
+h3{font-size:1.02rem;margin:0 0 .4rem;font-weight:650}
+.tldr{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.4rem 1.5rem;font-size:1.02rem}
+.finding{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.4rem 1.5rem;margin:1rem 0}
+.id{display:inline-block;font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:.32rem .65rem;margin-bottom:.6rem;background:var(--blue-bg);color:var(--blue-ink)}
+.finding.sev0 .id{background:var(--red-bg);color:var(--red-ink)}
+.finding.sev1 .id{background:var(--yellow-bg);color:var(--yellow-ink)}
+.finding.sev3 .id{background:var(--gray-bg);color:var(--gray-ink)}
+dl{display:grid;grid-template-columns:110px 1fr;gap:.2rem .8rem;margin:.6rem 0 0;font-size:14.5px}
+dt{color:var(--muted)}
+dd{margin:0}
+code{font-family:var(--mono);font-size:.86em;background:var(--gray-bg);border-radius:4px;padding:.08rem .35rem}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+footer{color:var(--muted);font-size:13.5px;margin-top:2.5rem}
+</style>
+</head>
+<body>
+<header>
+<div class="wrap">
+<p class="kicker">Ownframe, improve codebase architecture</p>
+<h1>Path from 7.3 to 10, with proofs</h1>
+<p class="sub">Frozen at <code>e2886cb</code> on <code>chore/review</code>, 2026-10-16. Plan only, no code changed. Companion: <code>improve-codebase-architecture.md</code> beside this file.</p>
+</div>
+</header>
+<main>
+<section aria-label="Summary">
+<h2>Short version</h2>
+<p class="tldr">Overall 7.3 out of 10, from architecture 8, correctness 8.5, maintainability 6, tests 6, docs 8. Root plus internal has zero files over the 2000 char cap, paint policy is shared, and Take, disabled guards, boxAt, link classification, and the front selector all hold. The gap is scale and enforcement. Page holds about 45 fields, Screen holds about 25 methods, window has 189 files and page has 170, anims rely on a doc comment, clipboard and crash accept stale or relative input, four example files break the cap, six APKs add about 170 MB, and the AGENTS pin disagrees with go.mod.</p>
+</section>
+<section>
+<h2>Score</h2>
+<table>
+<tr><th>Area</th><th>Score</th><th>Note</th></tr>
+<tr><td>Architecture and API</td><td>8 of 10</td><td>Seams exist, god types remain</td></tr>
+<tr><td>Correctness and robustness</td><td>8.5 of 10</td><td>Fixes verified, hardening left</td></tr>
+<tr><td>Maintainability</td><td>6 of 10</td><td>Core split clean, examples and binaries drag</td></tr>
+<tr><td>Tests</td><td>6 of 10</td><td>Wide coverage, replay suite fragmented</td></tr>
+<tr><td>Docs</td><td>8 of 10</td><td>Limits honest, one pin stale</td></tr>
+<tr><td>Overall</td><td>7.3 of 10</td><td>Straight average, same commit as 2026-10-15</td></tr>
+</table>
+</section>
+<section>
+<h2>Shrink the two large types</h2>
+<article class="finding"><h3><span class="id">ARCH-01</span> Form and focus state leaves Page</h3>
+<dl><dt>Location</dt><dd><code>internal/page/page_types.go:19</code></dd><dt>Change</dt><dd>One owned struct for form and focus with narrow methods, Page delegates.</dd><dt>Proof</dt><dd>Zero direct writes outside the owner, page suite green.</dd></dl></article>
+<article class="finding"><h3><span class="id">ARCH-02</span> Geometry, content, and frame ownership is written down</h3>
+<dl><dt>Location</dt><dd><code>internal/page/page_types.go</code> embeds</dd><dt>Change</dt><dd>Name the single writer per embed, split only if two writers appear.</dd><dt>Proof</dt><dd>Each embed has a named owner in code.</dd></dl></article>
+<article class="finding"><h3><span class="id">ARCH-03</span> Screen becomes roles plus compat shim</h3>
+<dl><dt>Location</dt><dd><code>internal/host/screen.go:22</code></dd><dt>Change</dt><dd>Keep Screen, add Pointer, Keyboard, and Clipboard roles, move sinks to roles.</dd><dt>Proof</dt><dd>Window and web build on roles, old callers still compile.</dd></dl></article>
+<article class="finding"><h3><span class="id">ARCH-04</span> Window subsystems get a map</h3>
+<dl><dt>Location</dt><dd><code>internal/window</code>, 189 files</dd><dt>Change</dt><dd>Index doc mapping devtools, idle, touch, pointer, and tile groups to owners.</dd><dt>Proof</dt><dd>Idle and tile owners found from the index alone.</dd></dl></article>
+<article class="finding"><h3><span class="id">ARCH-05</span> Replay to render rule gets a gate</h3>
+<dl><dt>Location</dt><dd><code>internal/replay</code>, <code>internal/render/paint.go</code></dd><dt>Change</dt><dd>Test fails on new production imports of render from replay.</dd><dt>Proof</dt><dd>Gate green, trial import fails it.</dd></dl></article>
+</section>
+<section>
+<h2>Enforce instead of document</h2>
+<article class="finding sev1"><h3><span class="id">CORR-01</span> Anims carry a generation</h3>
+<dl><dt>Location</dt><dd><code>internal/frame/anim.go:42</code></dd><dt>Change</dt><dd>Record display generation at creation, go inactive after Redraw.</dd><dt>Proof</dt><dd>Anim plus Redraw plus Step asserts no patch on freed ops.</dd></dl></article>
+<article class="finding sev1"><h3><span class="id">CORR-02</span> Print gets a probe</h3>
+<dl><dt>Location</dt><dd><code>internal/page/print.go:27</code></dd><dt>Change</dt><dd>Add SupportsPDF or Available so callers branch before calling.</dd><dt>Proof</dt><dd>Probe false on every sink, docs show the branch.</dd></dl></article>
+<article class="finding sev1"><h3><span class="id">CORR-03</span> Chunk bake policy is measured in the comment</h3>
+<dl><dt>Location</dt><dd><code>internal/replay/chunk_cache.go:11</code></dd><dt>Change</dt><dd>Keep bake under lock, cite bench and race reason in code.</dd><dt>Proof</dt><dd>Suite green under race, comment cites numbers.</dd></dl></article>
+</section>
+<section>
+<h2>Stop stale reads</h2>
+<article class="finding sev1"><h3><span class="id">CORR-04</span> Clipboard read stops returning stale text</h3>
+<dl><dt>Location</dt><dd><code>internal/clipboard/clipboard.go:34</code></dd><dt>Change</dt><dd>Return error or ok false on OS failure, memory copy for tests only.</dd><dt>Proof</dt><dd>Failed OS read returns error and no text.</dd></dl></article>
+<article class="finding sev1"><h3><span class="id">CORR-05</span> Crash dir is absolute at set time</h3>
+<dl><dt>Location</dt><dd><code>internal/crash/validate.go:67</code></dd><dt>Change</dt><dd>Reject relative paths or store the resolved absolute form.</dd><dt>Proof</dt><dd>Stored path is always absolute.</dd></dl></article>
+<article class="finding sev1"><h3><span class="id">CORR-06</span> Print path is canonicalized</h3>
+<dl><dt>Location</dt><dd><code>internal/print/command_args.go:30</code></dd><dt>Change</dt><dd>Clean and absolutize, reject traversal after cleaning.</dd><dt>Proof</dt><dd>Table over benign, traversal, and absolute paths passes.</dd></dl></article>
+</section>
+<section>
+<h2>Repo weight and example discipline</h2>
+<article class="finding sev0"><h3><span class="id">REPO-01</span> Four example files meet the cap or get an exemption</h3>
+<dl><dt>Location</dt><dd><code>examples/spotify-player/player/playback.go:2357</code>, <code>logger.go:2238</code>, <code>actions.go:2097</code>, <code>display_patch_helper_test.go:2028</code></dd><dt>Change</dt><dd>Split to 2000 or less, or record the exemption in AGENTS.md.</dd><dt>Proof</dt><dd>wc audit empty or exemption names these paths.</dd></dl></article>
+<article class="finding sev0"><h3><span class="id">REPO-02</span> Binaries leave git</h3>
+<dl><dt>Location</dt><dd><code>examples/*/android/artifacts/*-release.apk</code>, two <code>teams.mp4</code> copies</dd><dt>Change</dt><dd>Move six APKs near 170 MB to release artifacts, keep one mp4.</dd><dt>Proof</dt><dd>git ls-files shows zero APKs and one mp4.</dd></dl></article>
+<article class="finding sev3"><h3><span class="id">REPO-03</span> Pin and stale notes are synced</h3>
+<dl><dt>Location</dt><dd><code>AGENTS.md:43</code>, <code>go.mod:6</code>, <code>examples/go.mod:6</code></dd><dt>Change</dt><dd>AGENTS.md moves to <code>c085b3423260</code>, README paths fixed.</dd><dt>Proof</dt><dd>One pin across all three files.</dd></dl></article>
+<article class="finding sev3"><h3><span class="id">TEST-01</span> Replay tests merge by family</h3>
+<dl><dt>Location</dt><dd><code>internal/replay</code>, 63 test files</dd><dt>Change</dt><dd>Merge chunk parity, chunk bench, and gpu parity families into one file each.</dd><dt>Proof</dt><dd>Count drops, suite green, case names kept.</dd></dl></article>
+</section>
+<section>
+<h2>Gates that keep 10</h2>
+<p>Run after every phase: <code>make build</code> exit 0, <code>make test</code> exit 0 with 97 packages ok and zero FAIL, plus race on state, ipc, replay, and page. Then <code>gofmt -l</code> empty, wc audit empty or exempted, no APKs in git ls-files, one blinkless pin, zero replay to render production imports. Estimated effort near 2 weeks for one engineer, less with two validators as prior waves did.</p>
+<footer>Companion Markdown holds the full row proofs and effort split. Frozen at e2886cb, plan only.</footer>
+</section>
+</main>
+</body>
+</html>

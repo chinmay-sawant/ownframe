@@ -1,18 +1,15 @@
 package window
 
 import (
-	"context"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // selector is the page range surface the window drives while the pointer is
-// down. A page without it keeps the old click behavior.
-type selector interface {
-	SelectAt(ctx context.Context, x, y float64) error
-	Drag(ctx context.Context, x, y float64) error
-	SelectWordAt(ctx context.Context, x, y float64) error
-	SelectLineAt(ctx context.Context, x, y float64) error
-}
+// down. Deprecated: use host.RangeSelector. A page without it keeps the old
+// click behavior.
+type selector = host.RangeSelector
 
 // pressAt sends a press, places the caret, then sends the click. The caret
 // lands before the click handler runs, so focus and a selection that the
@@ -22,20 +19,20 @@ func (s *shell) pressAt(px, py float64) error {
 	if claimed, err := s.beginPointerDrag(px, py, true); claimed || err != nil {
 		return err
 	}
-	if err := s.app.Press(s.ctx, px, py); err != nil {
+	if err := s.ptr().Press(s.ctx, px, py); err != nil {
 		return err
 	}
 
 	sel, ok := s.app.(selector)
 	if !ok {
-		return s.app.Click(s.ctx, px, py)
+		return s.ptr().Click(s.ctx, px, py)
 	}
 
 	if err := sel.SelectAt(s.ctx, px, py); err != nil {
 		return err
 	}
 
-	if err := s.app.Click(s.ctx, px, py); err != nil {
+	if err := s.ptr().Click(s.ctx, px, py); err != nil {
 		return err
 	}
 
@@ -81,5 +78,5 @@ func (s *shell) releaseAt() error {
 	s.dragActive = false
 	s.hold.release()
 
-	return s.app.Release(s.ctx)
+	return s.ptr().Release(s.ctx)
 }

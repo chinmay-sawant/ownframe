@@ -28,25 +28,6 @@ type Handlers = page.Handlers
 // Page is one HTML template and the last picture it produced.
 type Page = page.Page
 
-var (
-	// ErrEmptyHTML means New was given a blank template.
-	ErrEmptyHTML = page.ErrEmptyHTML
-
-	// ErrBadSource means a source file could not be read at New, or a
-	// Config set both HTML and File, or both Theme and ThemeFile.
-	ErrBadSource = page.ErrBadSource
-
-	// ErrBadSize means a width or a height is unusable.
-	ErrBadSize = page.ErrBadSize
-
-	// ErrNilPage means Run, Serve, or BindMobile was called without a page.
-	ErrNilPage = page.ErrNilPage
-
-	// ErrSourceTooLarge means a template, theme, or source string exceeded
-	// MaxSourceSize.
-	ErrSourceTooLarge = page.ErrSourceTooLarge
-)
-
 const MaxSourceSize = page.MaxSourceSize
 
 // New parses html as an html/template page.

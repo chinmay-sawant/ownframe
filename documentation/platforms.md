@@ -112,7 +112,6 @@ page refreshes the image while a watch is active
 | File dialog | desktop dialog | typed name | typed name | typed name |
 | Drop | yes | yes | no | no |
 | Audio context | 48 kHz | 48 kHz | 48 kHz | none |
-| Printing | OS print path | `ErrNoPrinter` | `ErrNoPrinter` | `/pdf` |
 | Crash report | yes | recovered, no file | yes | no |
 | PNG over HTTP | no | no | no | `/frame.png` |
 
@@ -121,9 +120,7 @@ memory copy on Wayland, macOS without cgo, wasm, and mobile
 ([clipboard.md](clipboard.md)). `Run` and `BindMobile` create the 48 kHz
 Ebiten audio context; `Serve` does not ([window.md](window.md),
 [features.md](features.md)). Only the desktop window and the browser canvas
-take dropped files ([drag-drop.md](drag-drop.md)); `Print` follows the
-desktop OS helper, returns `ErrNoPrinter` on wasm and mobile, and serves
-`GET /pdf` under `-web` ([printing.md](printing.md)). A browser canvas
+take dropped files ([drag-drop.md](drag-drop.md)). A browser canvas
 recovers a panic but writes no report file, because Go's wasm file operations
 are not implemented in a browser. The window modes replay the display
 list or blit the fallback bitmap; the picture page serves a PNG painted from

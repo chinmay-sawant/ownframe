@@ -22,7 +22,7 @@ func (s *server) typeText(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if err := s.app.Type(r.Context(), r.PostFormValue("text")); err != nil {
+	if err := s.kbd().Type(r.Context(), r.PostFormValue("text")); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
@@ -49,7 +49,7 @@ func (s *server) backspace(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if err := s.app.Backspace(r.Context()); err != nil {
+	if err := s.kbd().Backspace(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return

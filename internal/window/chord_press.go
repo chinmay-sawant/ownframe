@@ -9,7 +9,7 @@ func (s *shell) submitIfEnter() error {
 	enter := inpututil.IsKeyJustPressed(ebiten.KeyEnter)
 	numpad := inpututil.IsKeyJustPressed(ebiten.KeyNumpadEnter)
 	if enter || numpad {
-		return s.app.Submit(s.ctx)
+		return s.kbd().Submit(s.ctx)
 	}
 
 	return nil

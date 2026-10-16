@@ -9,6 +9,12 @@ import (
 )
 
 func Image(bounds image.Rectangle, desc *layout.MaskDescriptor) (*image.NRGBA, error) {
+	if desc == nil {
+		return nil, fmt.Errorf("mask: nil descriptor")
+	}
+	if len(desc.Layers) == 0 {
+		return nil, fmt.Errorf("mask: no layers")
+	}
 	if bounds.Dx() < 0 || bounds.Dy() < 0 || bounds.Dx() > maxMaskPixels/max(1, bounds.Dy()) {
 		return nil, fmt.Errorf("mask: invalid or oversized box")
 	}

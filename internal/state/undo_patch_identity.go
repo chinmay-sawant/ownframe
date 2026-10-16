@@ -3,39 +3,66 @@ package state
 import "time"
 
 // PatchChangeFor records a change bound to a stable element identity.
+// Deprecated: use TryPatchChangeFor, which reports setPath failure.
 func (s *Store) PatchChangeFor(identity, path string, value any) Change {
-	return s.patchChangeWithIdentity(identity, path, value)
+	c, _ := s.patchChangeWithIdentity(identity, path, value)
+	return c
 }
 
 // PatchChangeWithIdentity is an alias.
+// Deprecated: use TryPatchChangeWithIdentity.
 func (s *Store) PatchChangeWithIdentity(identity, path string, value any) Change {
-	return s.patchChangeWithIdentity(identity, path, value)
+	c, _ := s.patchChangeWithIdentity(identity, path, value)
+	return c
 }
 
 // PatchChangeWithStableID is an alias.
+// Deprecated: use TryPatchChangeWithStableID.
 func (s *Store) PatchChangeWithStableID(identity, path string, value any) Change {
-	return s.patchChangeWithIdentity(identity, path, value)
+	c, _ := s.patchChangeWithIdentity(identity, path, value)
+	return c
 }
 
 // PatchChangeElement is an alias.
+// Deprecated: use TryPatchChangeElement.
 func (s *Store) PatchChangeElement(identity, path string, value any) Change {
-	return s.patchChangeWithIdentity(identity, path, value)
+	c, _ := s.patchChangeWithIdentity(identity, path, value)
+	return c
 }
 
-func (s *Store) patchChangeWithIdentity(identity, path string, value any) Change {
-	c := s.PatchChange(path, value)
-	c.Identity = identity
-	c.ElementID = identity
-	c.StableID = identity
-	// Update stored change copy.
+func (s *Store) patchChangeWithIdentity(identity, path string, value any) (Change, bool) {
+	if s == nil {
+		return Change{}, false
+	}
 	s.mu.Lock()
-	if len(s.changes) > 0 {
-		s.changes[len(s.changes)-1] = c
+	old := valueAtPath(s.data, path)
+	c := Change{
+		Path:       path,
+		Old:        old,
+		New:        value,
+		Origin:     s.origin,
+		At:         time.Now(),
+		Identity:   identity,
+		ElementID:  identity,
+		StableID:   identity,
+		Properties: []string{path},
+		Changed:    []string{path},
+		Props:      []string{path},
 	}
-	if len(s.undo) > 0 {
-		s.undo[len(s.undo)-1] = c
+	nd, ok := setPath(s.data, path, value)
+	if !ok {
+		s.mu.Unlock()
+		return c, false
 	}
+	s.data = nd
+	s.changes = append(s.changes, c)
+	s.undo = append(s.undo, c)
+	s.redo = nil
+	ls := make([]func(Change), len(s.listeners))
+	copy(ls, s.listeners)
 	s.mu.Unlock()
-	_ = time.Now
-	return c
+	for _, l := range ls {
+		l(c)
+	}
+	return c, true
 }

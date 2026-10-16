@@ -13,23 +13,23 @@ func (p *Page) Cut(ctx context.Context) (string, bool, error) {
 	}
 
 	if c, ok := p.focusedEditable(); ok {
-		id := p.form.focusID
+		id := p.formState().focusID
 		if err := p.beforeEdit(ctx, id); err != nil {
 			return "", false, err
 		}
 
 		text := p.selectedText(c)
 		runes := []rune(c.Value)
-		start, end := p.form.bounds(len(runes))
+		start, end := p.formState().bounds(len(runes))
 		if start == end {
 			start, end = 0, len(runes)
 		}
 
 		c.Value = string(append(runes[:start], runes[end:]...))
-		p.form.caret, p.form.anchor = start, start
-		p.form.all = false
+		p.formState().caret, p.formState().anchor = start, start
+		p.formState().all = false
 		p.resetCaretBlink()
-		p.form.byID[id] = c
+		p.formState().byID[id] = c
 		p.markPending(id)
 		bindWrite(p, c)
 		if err := p.change(ctx, id); err != nil {

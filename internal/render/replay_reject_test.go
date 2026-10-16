@@ -3,6 +3,7 @@ package render_test
 import (
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
@@ -25,7 +26,7 @@ func TestReplayRejectsEllipticalRadius(t *testing.T) {
 			continue
 		}
 
-		if _, ok := render.FillRadii(&display.Ops[i]); !ok {
+		if _, ok := masking.FillRadii(&display.Ops[i]); !ok {
 			elliptical = true
 		}
 	}

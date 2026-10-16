@@ -22,11 +22,11 @@ func (p *Page) offsetAt(box Box, c Control, x, y float64) int {
 
 // focusCaret focuses c and puts the caret and the anchor at off.
 func (p *Page) focusCaret(ctx context.Context, c Control, off int) error {
-	changed := p.form.focusID != c.ID || p.form.caret != off ||
-		p.form.anchor != off || p.form.all
-	p.form.focusID = c.ID
-	p.form.caret, p.form.anchor = off, off
-	p.form.all = false
+	changed := p.formState().focusID != c.ID || p.formState().caret != off ||
+		p.formState().anchor != off || p.formState().all
+	p.formState().focusID = c.ID
+	p.formState().caret, p.formState().anchor = off, off
+	p.formState().all = false
 	p.resetCaretBlink()
 	if !changed {
 		return nil

@@ -27,11 +27,11 @@ func (p *Page) resolveStates() {
 		}
 	}
 
-	if p.hover != "" && !ids[p.hover] {
-		p.hover = ""
+	if p.hoverID() != "" && !ids[p.hoverID()] {
+		p.clearHoverID()
 	}
 
-	if p.active != "" && !ids[p.active] {
-		p.active = ""
+	if p.activeID() != "" && !ids[p.activeID()] {
+		p.setActiveID("")
 	}
 }

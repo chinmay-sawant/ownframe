@@ -1,10 +1,14 @@
 package ownframe
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/chinmay-sawant/ownframe/internal/crash"
 )
+
+// ErrPanicked means a panic was recovered.
+var ErrPanicked = errors.New("ownframe: panic")
 
 // reportError stores err in a crash report file and returns an error
 // naming that file. Run calls it for every startup and window failure,

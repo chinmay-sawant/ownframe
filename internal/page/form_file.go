@@ -29,7 +29,7 @@ func (p *Page) clickFile(ctx context.Context, box Box, c Control) error {
 			}
 
 			c.Value = path
-			p.form.byID[box.ID] = c
+			p.formState().byID[box.ID] = c
 			bindWrite(p, c)
 			p.markPending(box.ID)
 

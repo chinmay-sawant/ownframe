@@ -70,7 +70,6 @@ behavior and the limits are in
 | [devtools](devtools) | Inspector dock: JSON element properties, frame counters, and operation outlines; F12 or Ctrl+Shift+I. | 8122 |
 | [reload](reload) | File-backed page that redraws when `index.html` changes; the counter survives the reload. | 8123 |
 | [drop](drop) | Dropped files print their absolute path on desktop and the entry name in a browser; a file control takes a path from the picker. | 8124 |
-| [print](print) | Save the report as a PDF, print it through the OS print path, and serve `GET /pdf` in web mode. | 8125 |
 | [input](input) | Focus traversal, caret keys, drag selection, context menu, cursor shapes, touch scroll and pinch, page scrolling, and F11. | 8126 |
 | [input-lab](input-lab) | The nine form and input demos (forms, controls, bind, bind-hooks, editing, clipboard, input, login, states) in one window. | 8130 |
 | [desktop-cat](desktop-cat) | Transparent orange backpack cat with 30 expression PNGs, native click-through, a notification server on 127.0.0.1:6969, and a WASM canvas preview; web mode is a still picture. | 8128 |

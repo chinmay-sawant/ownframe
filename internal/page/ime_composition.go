@@ -8,25 +8,25 @@ func (p *Page) SetIMEComposition(ctx context.Context, text string, start, end in
 	if err := useContext(ctx); err != nil {
 		return err
 	}
-	if p.form == nil {
+	if p.formState() == nil {
 		return nil
 	}
 	if text == "" {
-		if p.form.preedit == "" {
+		if p.formState().preedit == "" {
 			return nil
 		}
-		p.form.preeditID, p.form.preedit = "", ""
-		p.form.preeditStart, p.form.preeditEnd = 0, 0
+		p.formState().preeditID, p.formState().preedit = "", ""
+		p.formState().preeditStart, p.formState().preeditEnd = 0, 0
 		return p.Redraw(ctx)
 	}
 	if _, ok := p.typingTarget(); !ok {
 		return nil
 	}
-	if p.form.preeditID == p.form.focusID && p.form.preedit == text &&
-		p.form.preeditStart == start && p.form.preeditEnd == end {
+	if p.formState().preeditID == p.formState().focusID && p.formState().preedit == text &&
+		p.formState().preeditStart == start && p.formState().preeditEnd == end {
 		return nil
 	}
-	p.form.preeditID, p.form.preedit = p.form.focusID, text
-	p.form.preeditStart, p.form.preeditEnd = start, end
+	p.formState().preeditID, p.formState().preedit = p.formState().focusID, text
+	p.formState().preeditStart, p.formState().preeditEnd = start, end
 	return p.Redraw(ctx)
 }

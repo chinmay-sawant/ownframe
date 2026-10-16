@@ -10,13 +10,9 @@ import (
 
 const pxPerPt = 96.0 / 72.0
 
-// Picture returns the software painting, or nil if painting is unsupported.
-func Picture(d *layout.Display) image.Image {
-	img, _ := Paint(d)
-	return img
-}
-
-// Paint reports unsupported content instead of silently omitting it.
+// Paint returns the software painting. A nil or empty display paints
+// nothing and reports no error; unsupported content is an error the caller
+// handles, so no silent picture ever leaves here.
 func Paint(d *layout.Display) (image.Image, error) {
 	if d == nil || d.Width < 1 || d.Height < 1 {
 		return nil, nil

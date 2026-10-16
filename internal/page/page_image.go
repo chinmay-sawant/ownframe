@@ -26,16 +26,26 @@ func (p *Page) Display() *layout.Display {
 
 // PNG encodes the page to PNG bytes. A display-list page rasterizes on
 // demand, once, and the bytes are cached until the next Redraw. It returns
-// nil when the page cannot be painted.
+// a copy, so caller edits never corrupt the cache, and nil when the page
+// cannot be painted.
 func (p *Page) PNG() []byte {
+	return p.PNGWithContext(context.Background())
+}
+
+// PNGWithContext threads ctx to the on-demand render.
+func (p *Page) PNGWithContext(ctx context.Context) []byte {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	if p.png != nil {
-		return p.png
+		return append([]byte(nil), p.png...)
 	}
 
 	img := p.img
 	if img == nil && p.display != nil {
-		img = bitmap.Picture(p.display)
-		if img == nil {
+		var err error
+		img, err = bitmap.Paint(p.display)
+		if err != nil || img == nil {
 			return nil
 		}
 	}
@@ -44,17 +54,18 @@ func (p *Page) PNG() []byte {
 		if p.source == "" {
 			return nil
 		}
-
-		display, err := render.DisplayListState(context.Background(), p.source, p.width, p.height, p.renderState())
+		if err := ctx.Err(); err != nil {
+			return nil
+		}
+		display, err := render.DisplayListState(ctx, p.source, p.width, p.height, p.renderState())
 		if err != nil {
 			return nil
 		}
 
-		img = bitmap.Picture(display)
-	}
-
-	if img == nil {
-		return nil
+		img, err = bitmap.Paint(display)
+		if err != nil || img == nil {
+			return nil
+		}
 	}
 
 	var buf bytes.Buffer
@@ -64,10 +75,11 @@ func (p *Page) PNG() []byte {
 
 	p.png = buf.Bytes()
 
-	return p.png
+	return append([]byte(nil), p.png...)
 }
 
-// Boxes returns the last hit-test boxes, or nil when nothing has been drawn.
+// Boxes returns a copy of the last hit-test boxes, or nil when nothing has
+// been drawn. Caller edits never corrupt the page index.
 func (p *Page) Boxes() []Box {
-	return p.boxes
+	return append([]Box(nil), p.boxes...)
 }

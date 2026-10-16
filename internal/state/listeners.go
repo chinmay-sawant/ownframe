@@ -2,7 +2,7 @@ package state
 
 import "reflect"
 
-// OnChange registers a listener invoked for every field-level change.
+// Deprecated: use AddListener.
 func (s *Store) OnChange(fn func(Change)) {
 	s.AddListener(fn)
 }
@@ -17,7 +17,7 @@ func (s *Store) AddListener(fn func(Change)) {
 	s.listeners = append(s.listeners, fn)
 }
 
-// Subscribe is an alias for AddListener.
+// Deprecated: use AddListener.
 func (s *Store) Subscribe(fn func(Change)) { s.AddListener(fn) }
 
 // RemoveListener removes a previously registered listener.
@@ -50,14 +50,14 @@ func (s *Store) Listeners() []func(Change) {
 
 // OnFieldChange registers a listener that only fires for path and its children.
 func (s *Store) OnFieldChange(path string, fn func(Change)) {
-	s.OnChange(func(c Change) {
+	s.AddListener(func(c Change) {
 		if c.Path == path || hasPrefixPath(c.Path, path) {
 			fn(c)
 		}
 	})
 }
 
-// BindField is an alias for OnFieldChange.
+// Deprecated: use OnFieldChange.
 func (s *Store) BindField(path string, fn func(Change)) { s.OnFieldChange(path, fn) }
 
 func fnPtrEqual(a, b func(Change)) bool {

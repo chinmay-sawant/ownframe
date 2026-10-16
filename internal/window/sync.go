@@ -6,6 +6,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // syncImage follows the page after each Redraw. A display-list page keeps
@@ -16,25 +17,25 @@ func (s *shell) syncImage() error {
 		return nil
 	}
 
-	if display := s.app.Display(); display != nil {
-		s.setDisplay(display)
+	front := page.SelectFront(s.app)
+	if front.Display != nil {
+		s.setDisplay(front.Display)
 		s.pullScroll()
 
 		return nil
 	}
 
-	painted := s.app.Image()
-	if painted == nil {
+	if front.Image == nil {
 		return errNoImage
 	}
 
-	next := ebiten.NewImageFromImage(painted)
+	next := ebiten.NewImageFromImage(front.Image)
 	s.disposeImage()
 
 	s.img = next
 	s.display = nil
 	s.fallback = true
-	s.seq = s.app.Generation()
+	s.seq = front.Generation
 	s.pullScroll()
 
 	return nil

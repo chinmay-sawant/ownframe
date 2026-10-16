@@ -24,34 +24,34 @@ func (p *Page) activate(id string) bool {
 		changed = old != c.Value || before != selectedIndex(c.Options)
 	}
 
-	p.form.byID[id] = c
+	p.formState().byID[id] = c
 
-	if p.form.focusID != id {
-		p.form.focusID = id
+	if p.formState().focusID != id {
+		p.formState().focusID = id
 		if canEdit(c) {
 			p.caretEnd(c)
 		} else {
 			p.clearRange()
 		}
 	} else {
-		p.form.all = false
+		p.formState().all = false
 	}
 
 	return changed
 }
 
 func (p *Page) uncheckRadios(name, keep string) {
-	if name == "" || p.form == nil {
+	if name == "" || p.formState() == nil {
 		return
 	}
 
-	for id, other := range p.form.byID {
+	for id, other := range p.formState().byID {
 		if id == keep || other.Type != "radio" || other.Name != name {
 			continue
 		}
 
 		other.Checked = false
-		p.form.byID[id] = other
+		p.formState().byID[id] = other
 	}
 }
 

@@ -46,31 +46,27 @@ func sourceTheme(cfg Config) (string, os.FileInfo, error) {
 // readSource reads one watched file. A missing or unreadable file is
 // ErrBadSource with the path and the reason.
 func readSource(path string) ([]byte, os.FileInfo, error) {
-	info, err := os.Stat(path)
+	info, err := srcFiles.Stat(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %s: %w", ErrBadSource, path, err)
 	}
 
 	if info.Size() > maxSourceSize {
-		return nil, info, sourceSizeErr(path, info.Size())
+		return nil, info, sourceTooLarge(path, info.Size())
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := srcFiles.ReadFile(path)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %s: %w", ErrBadSource, path, err)
 	}
 
 	if int64(len(data)) > maxSourceSize {
-		return nil, info, sourceSizeErr(path, int64(len(data)))
+		return nil, info, sourceTooLarge(path, int64(len(data)))
 	}
 
-	if fresh, err := os.Stat(path); err == nil {
+	if fresh, err := srcFiles.Stat(path); err == nil {
 		info = fresh
 	}
 
 	return data, info, nil
-}
-
-func sourceSizeErr(path string, size int64) error {
-	return fmt.Errorf("%w: %w: %s: source too large (%d bytes, limit %d)", ErrBadSource, ErrSourceTooLarge, path, size, maxSourceSize)
 }

@@ -4,7 +4,7 @@ package page
 // value is selected. It is false when no control is focused, when the
 // page has no form yet, or when another control is focused.
 func (p *Page) FormSelected(id string) bool {
-	if p.form == nil || p.form.focusID != id {
+	if p.formState() == nil || p.formState().focusID != id {
 		return false
 	}
 
@@ -13,12 +13,12 @@ func (p *Page) FormSelected(id string) bool {
 		return false
 	}
 
-	if p.form.all {
+	if p.formState().all {
 		return true
 	}
 
 	n := runeLen(c.Value)
-	start, end := p.form.bounds(n)
+	start, end := p.formState().bounds(n)
 
 	return start != end && start == 0 && end == n
 }

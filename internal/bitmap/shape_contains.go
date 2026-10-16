@@ -4,7 +4,7 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 func shapeContains(op *layout.DisplayOp, x, y float64) bool {
@@ -12,13 +12,13 @@ func shapeContains(op *layout.DisplayOp, x, y float64) bool {
 		lx, ly, w, h, width := op.PaintLineGeometry()
 		return onLine(x, y, lx, ly, w, h, max(width, 1/pxPerPt))
 	}
-	rx, ry := render.RadiiXY(op)
+	rx, ry := masking.RadiiXY(op)
 	if op.Kind == layout.DisplayOpFillRect {
 		return inRound(x-op.X, y-op.Y, op.W, op.H, rx, ry)
 	}
 	width := max(op.Width, 1/pxPerPt)
 	if op.StrokeMask != 0 {
-		for i, l := range [][4]float64{{op.X, op.Y, op.W, 0}, {op.X + op.W, op.Y, 0, op.H},
+		for i, l := range [4][4]float64{{op.X, op.Y, op.W, 0}, {op.X + op.W, op.Y, 0, op.H},
 			{op.X, op.Y + op.H, op.W, 0}, {op.X, op.Y, 0, op.H}} {
 			if op.StrokeMask&(1<<i) != 0 && onLine(x, y, l[0], l[1], l[2], l[3], width) {
 				return true

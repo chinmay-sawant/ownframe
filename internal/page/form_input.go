@@ -3,11 +3,11 @@ package page
 import "context"
 
 func (p *Page) clickControl(ctx context.Context, box Box) error {
-	c, _ := p.control(box.ID)
-	if c.Tag == "button" && c.Disabled {
+	c, ok := p.control(box.ID)
+	if ok && c.Disabled {
 		return nil
 	}
-	if c.Type == "file" && !c.Disabled {
+	if c.Type == "file" {
 		return p.clickFile(ctx, box, c)
 	}
 
@@ -52,26 +52,26 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 }
 
 func (p *Page) blurForm() {
-	if p.form == nil {
+	if p.formState() == nil {
 		return
 	}
 
-	old := p.form.focusID
+	old := p.formState().focusID
 	if old != "" {
-		p.form.lastFocusID = old
+		p.formState().lastFocusID = old
 	}
-	p.form.focusID = ""
+	p.formState().focusID = ""
 	p.clearRange()
 	p.markPair(old, "")
 }
 
 // currentFocus is the focused control id, or "" when none is focused.
 func (p *Page) currentFocus() string {
-	if p.form == nil {
+	if p.formState() == nil {
 		return ""
 	}
 
-	return p.form.focusID
+	return p.formState().focusID
 }
 
 func (p *Page) formControl(id string) bool {

@@ -2,12 +2,12 @@ package ownframe
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	ebitenmobile "github.com/hajimehoshi/ebiten/v2/mobile"
 
-	"github.com/chinmay-sawant/ownframe/internal/crash"
 	pagepkg "github.com/chinmay-sawant/ownframe/internal/page"
 	"github.com/chinmay-sawant/ownframe/internal/window"
 )
@@ -48,18 +48,11 @@ func savePanic(page *Page, errp *error) {
 	if rec == nil {
 		return
 	}
-
-	title := ""
-	if page != nil {
-		title = page.Title()
+	var recErr error
+	if err, ok := rec.(error); ok {
+		recErr = err
+	} else {
+		recErr = fmt.Errorf("%v", rec)
 	}
-
-	path, werr := crash.Write(title, fmt.Sprint(rec))
-	if werr != nil {
-		*errp = fmt.Errorf("ownframe: panic: %v: %s: %w", rec, path, werr)
-
-		return
-	}
-
-	*errp = fmt.Errorf("ownframe: panic: %v: %s", rec, path)
+	*errp = reportError(page, errors.Join(ErrPanicked, recErr))
 }

@@ -4,19 +4,19 @@
 
 1. It executes the page template with the data set by `SetData`.
 2. It asks `internal/render.DisplayListDocument` for the placement as vector operations, on the styled document from `internal/render/cache.go`.
-3. If `render.Replayable` accepts every operation, it stores the `layout.Display` and its `Boxes`, and no bitmap. Otherwise it stores `bitmap.Picture` of that list and the `Boxes`.
+3. If `render.Replayable` accepts every operation, it stores the `layout.Display` and its `Boxes`, and no bitmap. Otherwise it stores the `bitmap.Paint` result of that list and the `Boxes`.
 
 `internal/render/cache.go` parses and cascades once with the frame size, media `screen`, and any page theme as an extra sheet. A later draw of the same executed source calls `css.Relayout` at the current viewport and pointer state, so a size or state change never parses or recollects.
 
 `internal/render/display.go` holds the one-shot `DisplayListState` entry: it runs the same parse and cascade and calls `layout.DisplayListOptions`. blinkless stops at the drawing list, so no picture exists until ownframe replays it.
 
-`internal/render/paint.go` holds the one-shot `PaintState` entry: it runs that same display list and returns a canvas-sized image. `bitmap.Picture` fills pixels for `Page.PNG` and for a fallback page. Neither path builds a PDF. `Page.PDF` and `Page.WritePDF` return `ErrNoPDF`.
+`internal/render/paint.go` holds the one-shot `PaintState` entry: it runs that same display list and returns a canvas-sized image. `bitmap.Paint` fills pixels for `Page.PNG` and for a fallback page, returning an error the caller handles.
 
 ## Images
 
 `Page.SetImage` stores encoded bytes (PNG, JPEG, or SVG) under a source name. `Redraw` passes a resolver through `render.State.Images`; the render entries hand it to the engine as `layout.Options.Images`. A template source that spells the name, such as `background-image: url("logo")` or `<img src="logo">`, then paints as an `OpImage` on the display-list path or into the bitmap on the fallback path. A source with no entry resolves to nothing, so a page that never calls `SetImage` paints as before. `SetImage(src, nil)` removes the entry. The fetch example registers a fetched PNG or JPEG under the name `fetched` and points the body background at it.
 
-The library that does the layout is blinkless. A text operation carries a font face. That face is not a PDF file, and this window does not write one.
+The library that does the layout is blinkless. A text operation carries a font face.
 
 ## Replay
 

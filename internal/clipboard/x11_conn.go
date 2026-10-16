@@ -11,7 +11,7 @@ import (
 
 const xWait = time.Second
 
-var errX = errors.New("x11")
+var ErrX11 = errors.New("ownframe: clipboard x11")
 
 type xReply struct {
 	buf []byte

@@ -19,7 +19,7 @@ func (p *Page) IMEContext() (layout.Box, int, string, string, bool) {
 	}
 
 	runes := []rune(c.Value)
-	caret := clampPos(p.form.caret, len(runes))
+	caret := clampPos(p.formState().caret, len(runes))
 	before := string(runes[:caret])
 
 	// The window reports the caret to the platform in screen coordinates,

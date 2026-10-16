@@ -14,7 +14,7 @@ func (p *Page) SelectAt(ctx context.Context, x, y float64) error {
 	id := p.boxIDAt(x, y)
 	c, ok := p.control(id)
 	if !ok {
-		if p.form == nil || p.form.focusID == "" {
+		if p.formState() == nil || p.formState().focusID == "" {
 			return nil
 		}
 
@@ -47,12 +47,13 @@ func (p *Page) Drag(ctx context.Context, x, y float64) error {
 	}
 
 	off := p.offsetAt(p.boxByID(c.ID), c, x, y)
-	if off == p.form.caret {
+	fs := p.formState()
+	if off == fs.caret {
 		return nil
 	}
 
-	p.form.caret = off
-	p.form.all = false
+	fs.caret = off
+	fs.all = false
 
 	return p.Redraw(ctx)
 }
@@ -80,9 +81,10 @@ func (p *Page) selectSpan(ctx context.Context, x, y float64, bounds func(string,
 
 	off := p.offsetAt(p.boxByID(id), c, x, y)
 	start, end := bounds(c.Value, off)
-	p.form.focusID = c.ID
-	p.form.anchor, p.form.caret = start, end
-	p.form.all = false
+	fs := p.formState()
+	fs.focusID = c.ID
+	fs.anchor, fs.caret = start, end
+	fs.all = false
 
 	return p.Redraw(ctx)
 }

@@ -4,6 +4,7 @@
 package web
 
 import (
+	"context"
 	"html/template"
 	"sync"
 
@@ -39,4 +40,9 @@ type server struct {
 // on /debug/pprof/*.
 func Serve(app host.Screen, addr string) error {
 	return ServeWithOptions(app, addr, Options{})
+}
+
+// ServeWithContext stops the listener when ctx ends.
+func ServeWithContext(ctx context.Context, app host.Screen, addr string) error {
+	return ServeWithOptionsContext(ctx, app, addr, Options{})
 }

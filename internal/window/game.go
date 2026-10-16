@@ -7,10 +7,12 @@ import (
 )
 
 // NewGame returns the screen loop Run and BindMobile use.
+// The ctx is run-scoped: stored once with its cancel, never per request.
 func NewGame(ctx context.Context, app host.Screen) ebiten.Game {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	runCtx, cancel := context.WithCancel(ctx)
 
 	width, height := 0, 0
 	if app != nil {
@@ -19,7 +21,8 @@ func NewGame(ctx context.Context, app host.Screen) ebiten.Game {
 
 	game := &shell{
 		app:      app,
-		ctx:      ctx,
+		ctx:      runCtx,
+		cancel:   cancel,
 		chords:   newChordWatch(),
 		watched:  newKeyWatch(),
 		pageZoom: 1,

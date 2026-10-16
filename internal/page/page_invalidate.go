@@ -1,7 +1,5 @@
 package page
 
-import "image"
-
 // Invalidate marks the region the element id changed since the previous
 // call. An empty id, or an id with no box, dirties the whole frame. A
 // known id takes its box, the boxes inside it, and its previous rect. A
@@ -9,7 +7,7 @@ import "image"
 // that never calls it stays correct: Redraw diffs the display lists.
 func (p *Page) Invalidate(id string) {
 	if id == "" || !p.hasBox(id) {
-		p.markFull()
+		p.dirty.markFull()
 
 		return
 	}
@@ -27,11 +25,7 @@ func (p *Page) markPending(id string) {
 
 	p.markID(id)
 
-	if p.pending == nil {
-		p.pending = map[string]bool{}
-	}
-
-	p.pending[id] = true
+	p.dirty.pend(id)
 }
 
 // markPair marks the boxes of two element ids, one before and one after a
@@ -48,7 +42,7 @@ func (p *Page) markID(id string) {
 	}
 
 	if !p.hasBox(id) {
-		p.markFull()
+		p.dirty.markFull()
 
 		return
 	}
@@ -59,14 +53,10 @@ func (p *Page) markID(id string) {
 // markElement marks the id's box, the boxes inside it, and the previous
 // rect for the same id, so an element that moved repaints the space it left.
 func (p *Page) markElement(id string) {
-	if p.last == nil {
-		p.last = map[string]image.Rectangle{}
-	}
-
 	r := p.growBox(boxRect(p.boxByID(id)))
-	p.markRect(r)
-	p.markRect(p.last[id])
-	p.last[id] = r
+	p.dirty.markRect(r)
+	p.dirty.markRect(p.dirty.prev(id))
+	p.dirty.note(id, r)
 }
 
 // markToggle marks a checkbox or radio, its label box when the layout has
@@ -75,11 +65,11 @@ func (p *Page) markToggle(id string) {
 	p.markID(id)
 
 	ctl := boxRect(p.boxByID(id))
-	p.markRect(ctl.Inset(-labelGap))
+	p.dirty.markRect(ctl.Inset(-labelGap))
 
 	for _, b := range p.boxes {
 		if b.Tag == "label" && touches(ctl, boxRect(b), labelGap) {
-			p.markRect(boxRect(b))
+			p.dirty.markRect(boxRect(b))
 		}
 	}
 }

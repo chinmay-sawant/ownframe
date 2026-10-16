@@ -1,16 +1,17 @@
 package state
 
-import (
-	"reflect"
-	"strings"
-)
+import "reflect"
 
 func valueAtPath(data any, path string) any {
 	if path == "" {
 		return data
 	}
+	segs, ok := splitPath(path)
+	if !ok {
+		return nil
+	}
 	cur := data
-	for _, seg := range strings.Split(path, ".") {
+	for _, seg := range segs {
 		switch v := cur.(type) {
 		case map[string]any:
 			next, ok := v[seg]

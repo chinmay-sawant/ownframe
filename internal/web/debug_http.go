@@ -8,6 +8,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // debugState is the JSON body of GET /debug/state.
@@ -32,20 +33,17 @@ func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	front := page.SelectFront(s.app)
 	state := debugState{
-		Generation: s.app.Generation(),
-		Fallback:   s.app.Display() == nil && s.app.Image() != nil,
+		Width:      front.Width,
+		Height:     front.Height,
+		Generation: front.Generation,
+		Fallback:   front.Fallback,
 		Boxes:      s.app.Boxes(),
 	}
 
-	if display := s.app.Display(); display != nil {
-		state.Width, state.Height = display.Width, display.Height
-		state.Ops = debugOpCounts(display)
-	} else if img := s.app.Image(); img != nil {
-		bounds := img.Bounds()
-		state.Width, state.Height = bounds.Dx(), bounds.Dy()
-	} else {
-		state.Width, state.Height = s.app.Size()
+	if front.Display != nil {
+		state.Ops = debugOpCounts(front.Display)
 	}
 
 	if insp, ok := s.app.(host.Inspector); ok {

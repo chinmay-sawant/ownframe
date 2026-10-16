@@ -2,7 +2,7 @@ package replay
 
 import (
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -29,7 +29,7 @@ func cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) bool 
 		return false
 	}
 
-	rx, ry := render.RadiiXY(op)
+	rx, ry := masking.RadiiXY(op)
 	key := rasterKey{
 		variant: rasterStroke,
 		mask:    op.StrokeMask,

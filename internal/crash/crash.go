@@ -40,6 +40,11 @@ func Write(title, reason string) (string, error) {
 	return create(folder, body)
 }
 
+// Dir returns the folder Write uses. It is always absolute.
+func Dir() string {
+	return location()
+}
+
 func location() string {
 	mu.Lock()
 	dir := custom
@@ -48,7 +53,6 @@ func location() string {
 	if dir != "" {
 		return dir
 	}
-
 	config, err := os.UserConfigDir()
 	if err != nil {
 		return filepath.Join(os.TempDir(), "ownframe-crashes")

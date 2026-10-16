@@ -17,7 +17,7 @@ func (s *shell) touchMove(u touchUpdate, now []touchPos, frameW, frameH int) err
 	}
 
 	s.hold.cancel()
-	if err := s.app.Release(s.ctx); err != nil {
+	if err := s.ptr().Release(s.ctx); err != nil {
 		return err
 	}
 

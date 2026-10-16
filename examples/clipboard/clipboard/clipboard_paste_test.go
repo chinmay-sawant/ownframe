@@ -18,12 +18,22 @@ func TestCopyAndCutWriteClipboard(t *testing.T) {
 	}
 
 	click(t, ctx, app, "copy")
-	if got := osclip.Read(); got != "hello" {
+	got, err := osclip.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got != "hello" {
 		t.Fatalf("clipboard after copy = %q, want hello", got)
 	}
 
 	click(t, ctx, app, "cut")
-	if got := osclip.Read(); got != "hello" {
+	got, err = osclip.Read()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got != "hello" {
 		t.Fatalf("clipboard after cut = %q, want hello", got)
 	}
 }

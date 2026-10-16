@@ -40,30 +40,30 @@ func runeLen(s string) int {
 
 // clearRange drops the caret and the anchor.
 func (p *Page) clearRange() {
-	if p.form == nil {
+	if p.formState() == nil {
 		return
 	}
 
-	p.form.caret, p.form.anchor, p.form.all = 0, 0, false
+	p.formState().caret, p.formState().anchor, p.formState().all = 0, 0, false
 }
 
 // clampRange clamps the caret and the anchor to the focused value after a
 // merge. A vanished focus clears them.
 func (p *Page) clampRange() {
-	if p.form == nil || p.form.focusID == "" {
+	if p.formState() == nil || p.formState().focusID == "" {
 		p.clearRange()
 
 		return
 	}
 
-	c, ok := p.form.byID[p.form.focusID]
+	c, ok := p.formState().byID[p.formState().focusID]
 	if !ok || !canEdit(c) {
-		p.form.caret, p.form.anchor = 0, 0
+		p.formState().caret, p.formState().anchor = 0, 0
 
 		return
 	}
 
 	n := runeLen(c.Value)
-	p.form.caret = clampPos(p.form.caret, n)
-	p.form.anchor = clampPos(p.form.anchor, n)
+	p.formState().caret = clampPos(p.formState().caret, n)
+	p.formState().anchor = clampPos(p.formState().anchor, n)
 }

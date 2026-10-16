@@ -70,11 +70,11 @@ func TestReloadClearsStaleHoverActive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if p.hover != "" {
-		t.Fatalf("hover = %q, want none", p.hover)
+	if p.hoverID() != "" {
+		t.Fatalf("hover = %q, want none", p.hoverID())
 	}
 
-	if p.active != "b" {
-		t.Fatalf("active = %q, want b", p.active)
+	if p.activeID() != "b" {
+		t.Fatalf("active = %q, want b", p.activeID())
 	}
 }

@@ -33,7 +33,7 @@ func (s *shell) imeCommit(c *textinput.Commit) {
 		return
 	}
 
-	if err := s.app.Type(s.ctx, c.Text()); err != nil {
+	if err := s.kbd().Type(s.ctx, c.Text()); err != nil {
 		s.ime.err = err
 	}
 }

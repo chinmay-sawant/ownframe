@@ -3,6 +3,7 @@ package replay
 import (
 	"image"
 
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -47,36 +48,11 @@ func compositeLayer(dst *ebiten.Image, layer *ebiten.Image, at image.Point, mode
 
 // normalMode reports a group that needs no blend step.
 func normalMode(mode string) bool {
-	return mode == "" || mode == "normal"
+	return masking.BlendNormal(mode)
 }
 
 // groupModeID maps a CSS mix-blend-mode to the shader's mode number. Only
 // the separable modes reach a compositor that asks.
 func groupModeID(mode string) int {
-	switch mode {
-	case "multiply":
-		return 1
-	case "screen":
-		return 2
-	case "overlay":
-		return 3
-	case "darken":
-		return 4
-	case "lighten":
-		return 5
-	case "color-dodge":
-		return 6
-	case "color-burn":
-		return 7
-	case "hard-light":
-		return 8
-	case "soft-light":
-		return 9
-	case "difference":
-		return 10
-	case "exclusion":
-		return 11
-	}
-
-	return 0
+	return masking.BlendModeID(mode)
 }

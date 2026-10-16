@@ -58,6 +58,13 @@ text run, and `frame.BoxUnits` converts a hit-test box to display-list units. A
 text operation carries its baseline in `Y`, so its box test differs from a
 fill's centre test.
 
+Anims built by `frame.TranslateTo`, `frame.FadeTo`, `frame.ScaleTo`, or
+`frame.RotateTo` hold pointers into one display list. Call `Bind(page)` on the
+anim so `Step` goes inactive once a `Redraw` replaces the list. An unbound anim
+keeps the legacy behavior and must not outlive a redraw. No production code in
+this tree constructs anims today, only tests, so every new call site starts
+bound.
+
 There are two ways to change the frame without a full `Redraw`. A tick
 callback changes an operation in place, which suits an animation that runs
 every frame. A click, key, or hover handler changes page content, and the
@@ -115,7 +122,7 @@ per cascade frame and meters its refresh bar at 10 Hz.
 
 ## Hover without layout
 
-`Handlers.Hover` receives the previous and next hit boxes. A callback that only changes retained paint operations can return `(true, nil)` to skip CSS relayout. The page invalidates both boxes. Return `(false, nil)` to use the ordinary CSS path; an error leaves the hover state unchanged. The callback must preserve geometry and handle both restoring the previous box and painting the next one. Rebind cached operation pointers after `Generation` changes. This affects desktop replay; PNG and PDF render from source.
+`Handlers.Hover` receives the previous and next hit boxes. A callback that only changes retained paint operations can return `(true, nil)` to skip CSS relayout. The page invalidates both boxes. Return `(false, nil)` to use the ordinary CSS path; an error leaves the hover state unchanged. The callback must preserve geometry and handle both restoring the previous box and painting the next one. Rebind cached operation pointers after `Generation` changes. This affects desktop replay; PNG renders from source.
 
 ## Scroll windows
 

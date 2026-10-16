@@ -12,5 +12,5 @@ func (p *Page) paintHover(ctx context.Context, id string) (bool, error) {
 	if p.handlers.Hover == nil || p.display == nil {
 		return false, nil
 	}
-	return p.handlers.Hover(ctx, p.boxByID(p.hover), p.boxByID(id))
+	return p.handlers.Hover(ctx, p.boxByID(p.hoverID()), p.boxByID(id))
 }

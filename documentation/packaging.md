@@ -5,13 +5,13 @@ a release archive to `dist/`. The build uses `-trimpath` and
 `-ldflags "-s -w"`. The script makes no network calls and adds no modules.
 
 ```
-sh scripts/package.sh print          # archive the print example
-sh scripts/package.sh -n print       # print the layout, build nothing
+sh scripts/package.sh login          # archive the login example
+sh scripts/package.sh -n login       # show the layout, build nothing
 ```
 
 The dry run prints the archive names and every entry, so you can check the
 layout without a toolchain for the target. It still asks Go for `GOOS` and
-`GOARCH`, so `GOOS=darwin sh scripts/package.sh -n print` prints the macOS
+`GOARCH`, so `GOOS=darwin sh scripts/package.sh -n login` prints the macOS
 layout on any system.
 
 ## Archive layouts
@@ -19,31 +19,31 @@ layout on any system.
 Linux, a `tar.gz`:
 
 ```
-ownframe-print-linux-amd64.tar.gz
-  ownframe-print/print
-  ownframe-print/print.desktop
-  ownframe-print/README.md
+ownframe-login-linux-amd64.tar.gz
+  ownframe-login/login
+  ownframe-login/login.desktop
+  ownframe-login/README.md
 ```
 
 macOS, a zip with an app bundle:
 
 ```
-ownframe-print-macos-arm64.zip
-  ownframe-print.app/Contents/Info.plist
-  ownframe-print.app/Contents/MacOS/print
+ownframe-login-macos-arm64.zip
+  ownframe-login.app/Contents/Info.plist
+  ownframe-login.app/Contents/MacOS/login
 ```
 
 Windows, a zip with the executable:
 
 ```
-ownframe-print-windows-amd64.zip
-  ownframe-print.exe
+ownframe-login-windows-amd64.zip
+  ownframe-login.exe
 ```
 
 wasm, on every system:
 
 ```
-ownframe-print-wasm.zip
+ownframe-login-wasm.zip
   ownframe.wasm
   wasm_exec.js
   index.html

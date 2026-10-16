@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Improve codebase review, ownframe</title>
+<style>
+:root{--bg:#f7f6f3;--card:#ffffff;--ink:#201d1a;--muted:#787774;--line:#e8e6e1;
+--serif:Georgia,'Times New Roman',serif;
+--sans:'SF Pro Display','Helvetica Neue',Helvetica,Arial,system-ui,sans-serif;
+--mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+--red-bg:#fdebec;--red-ink:#9f2f2d;--yellow-bg:#fbf3db;--yellow-ink:#956400;
+--blue-bg:#e1f3fe;--blue-ink:#1f6c9f;--gray-bg:#f1f0ed;--gray-ink:#5c5a57}
+@media (prefers-color-scheme: dark){:root{--bg:#171412;--card:#201c19;--ink:#ece7e1;--muted:#a39e99;--line:#332e2a;
+--red-bg:#3d2221;--red-ink:#f2b8b5;--yellow-bg:#3a2f14;--yellow-ink:#ecd193;
+--blue-bg:#17394e;--blue-ink:#a9d6f5;--gray-bg:#2a2624;--gray-ink:#b8b2ac}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans)}
+header{padding:4rem 1.25rem 2rem}
+header p.kicker,header h1,header p.sub{text-align:center}
+header .wrap{max-width:68ch;margin:0 auto}
+header p.kicker{margin:0 0 .8rem;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+header h1{margin:0 0 .8rem;font-family:var(--serif);font-weight:400;font-size:2.1rem;line-height:1.15;letter-spacing:-0.02em;text-wrap:balance}
+header p.sub{margin:0 auto;color:var(--muted);font-size:14px;max-width:56ch}
+main{max-width:68ch;margin:0 auto;padding:0 1.25rem 5rem}
+main>section{padding:2.5rem 0;border-top:1px solid var(--line)}
+main>section:first-child{border-top:0;padding-top:1.5rem}
+h2{font-size:1.3rem;margin:0 0 .4rem;font-weight:650;letter-spacing:-0.01em}
+h3{font-size:1.02rem;margin:0 0 .4rem;font-weight:650}
+.tldr{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.4rem 1.5rem;font-size:1.02rem}
+.finding{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:1.4rem 1.5rem;margin:1rem 0}
+.id{display:inline-block;font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:.32rem .65rem;margin-bottom:.6rem;background:var(--blue-bg);color:var(--blue-ink)}
+.finding.sev0 .id{background:var(--red-bg);color:var(--red-ink)}
+.finding.sev1 .id{background:var(--yellow-bg);color:var(--yellow-ink)}
+.finding.sev3 .id{background:var(--gray-bg);color:var(--gray-ink)}
+dl{display:grid;grid-template-columns:110px 1fr;gap:.2rem .8rem;margin:.6rem 0 0;font-size:14.5px}
+dt{color:var(--muted)}
+dd{margin:0}
+code{font-family:var(--mono);font-size:.86em;background:var(--gray-bg);border-radius:4px;padding:.08rem .35rem}
+pre code{background:none;padding:0}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:.55rem .6rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.tag{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.05em;border-radius:999px;padding:.22rem .55rem;white-space:nowrap;background:var(--gray-bg);color:var(--gray-ink)}
+details{border-bottom:1px solid var(--line);padding:.9rem 0;margin:0}
+details:first-of-type{border-top:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600;font-size:15px}
+summary::marker{color:var(--muted)}
+figure{margin:1.2rem 0;padding:1.5rem;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+figcaption{font-size:14px;color:var(--muted);margin-top:.6rem}
+svg{max-width:100%;height:auto}
+svg text{fill:currentColor}
+pre{background:var(--gray-bg);border:1px solid var(--line);border-radius:6px;padding:.8rem 1rem;overflow:auto;font-size:13px;font-family:var(--mono);margin:.3rem 0 1rem}
+.ba-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:1rem 0 0}
+footer{color:var(--muted);font-size:13.5px;margin-top:2.5rem}
+@media print{details{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header>
+<div class="wrap">
+<p class="kicker">Ownframe, improve codebase wave</p>
+<h1>Where the next feature forks, and what to share first</h1>
+<p class="sub">Frozen at <code>66ed433</code> on <code>chore/review</code>, 2026-10-15. Library only. Review only, nothing implemented.</p>
+</div>
+</header>
+<main>
+<section aria-label="Summary">
+<h2>Short version</h2>
+<p class="tldr">Ten readers returned 71 findings, kept as 25 rows. Four of the six P0 rows are one fork: the bitmap and replay painters disagree on alpha, grid runs, images, text, and viewport math. The other two are contract breaks: Take methods never drain, and exec seams panic on nil context. P1 is one theme as well: the nil context sentinel lives in four places, and the state store accepts paths it cannot resolve. Full rows live in the checklist Markdown beside this file.</p>
+</section>
+<section>
+<h2>Integrity defects</h2>
+<article class="finding sev0"><h3><span class="id">EXT-01</span> Take aliases return a snapshot without draining</h3>
+<dl><dt>Location</dt><dd><code>internal/page/page_patch_props.go:25</code></dd>
+<dt>Why real</dt><dd>Take calls ChangedProperties and returns, while TakeDirtyRects clears its state. Pollers re-read the same props forever.</dd>
+<dt>Proof</dt><dd>Set one prop, take twice, assert the second take is empty.</dd></dl></article>
+<article class="finding sev0"><h3><span class="id">EXT-02</span> Click routing fires for disabled non-button controls</h3>
+<dl><dt>Location</dt><dd><code>internal/page/form_input.go:5</code></dd>
+<dt>Why real</dt><dd>The disabled guard checks button only. A disabled checkbox falls through to the app Click handler plus Redraw.</dd>
+<dt>Proof</dt><dd>Disabled checkbox, text, and file clicks assert zero handler calls and unchanged generation.</dd></dl></article>
+<article class="finding sev0"><h3><span class="id">EXT-03</span> Translucent alpha paints through two color policies</h3>
+<dl><dt>Location</dt><dd><code>internal/bitmap/color.go:14</code> and <code>internal/replay/color.go:15</code></dd>
+<dt>Why real</dt><dd>Bitmap keeps RGB separate with Porter-Duff over. Replay premultiplies alpha into RGB. Same op, two unit systems.</dd>
+<dt>Proof</dt><dd>One translucent FillRect through each sink, compare pixels.</dd></dl></article>
+<article class="finding sev0"><h3><span class="id">EXT-04</span> GridRun copies already diverged on transform and alpha</h3>
+<dl><dt>Location</dt><dd><code>internal/bitmap/op.go:13</code> and <code>internal/replay/grid.go:12</code></dd>
+<dt>Why real</dt><dd>Bitmap copies the owner op and keeps transform, fixed, and opacity. Replay builds a bare struct and drops all three.</dd>
+<dt>Proof</dt><dd>One GridRun with transform or alpha, assert both sinks agree.</dd></dl></article>
+<article class="finding sev0"><h3><span class="id">PRAC-01</span> Exec seams panic on nil context instead of rejecting it</h3>
+<dl><dt>Location</dt><dd><code>internal/print/print.go:50</code> and <code>internal/filepick/pick_linux.go:32</code></dd>
+<dt>Why real</dt><dd>Both forward context to exec with no nil check. Verified: no nil guard exists in either file.</dd>
+<dt>Proof</dt><dd>Nil-context tests asserting errors.Is and no panic.</dd></dl></article>
+<article class="finding sev0"><h3><span class="id">ARC-01</span> Serve entrypoint lacks the window nil guards</h3>
+<dl><dt>Location</dt><dd><code>internal/web/serve_build.go:21</code></dd>
+<dt>Why real</dt><dd>Nil context becomes Background, nil app is stored unchecked, and the first failure surfaces as HTTP 500. Run returns sentinels for the same inputs.</dd>
+<dt>Proof</dt><dd>Nil inputs return matchable sentinels on both sinks.</dd></dl></article>
+</section>
+<section>
+<h2>The fork, drawn</h2>
+<figure>
+<svg viewBox="0 0 560 210" role="img" aria-label="One front half splitting into two painters that drift">
+<rect x="180" y="8" width="200" height="44" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="196" y="27" font-size="12">Front half, shared</text><text x="196" y="43" font-size="11">page, render, display list</text>
+<line x1="240" y1="52" x2="140" y2="84" stroke="currentColor"/><line x1="320" y1="52" x2="420" y2="84" stroke="currentColor"/>
+<rect x="20" y="84" width="220" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="34" y="106" font-size="12">Bitmap painter</text><text x="34" y="122" font-size="11">PNG fallback</text><text x="34" y="136" font-size="11">separate alpha, keeps owner fields</text>
+<rect x="320" y="84" width="220" height="60" rx="6" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="334" y="106" font-size="12">Replay painter</text><text x="334" y="122" font-size="11">live frame</text><text x="334" y="136" font-size="11">premultiplied alpha, drops fields</text>
+<rect x="180" y="160" width="200" height="36" rx="6" fill="none" stroke="currentColor" stroke-dasharray="5 4"/><text x="196" y="183" font-size="12">Fix: share policy, keep write-out</text>
+</svg>
+<figcaption>One caption. Both painters read the same display list, then drift on alpha, grid runs, images, text, and viewport math.</figcaption>
+</figure>
+</section>
+<section>
+<h2>Before and after, the six P0 rows</h2>
+<p>Before quotes verified current source at review time. After quotes the landed shape. All 25 rows are implemented and validated; proof tests are named in the checklist.</p>
+<h3><span class="id">EXT-01</span> Take drains instead of snapshotting</h3>
+<p class="ba-label">Before, page_patch_props.go:25</p>
+<pre><code>func (p *Page) TakeChangedProperties() []string { return p.ChangedProperties() }</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>func (p *Page) TakeChangedProperties() []string {
+	props := p.ChangedProperties()
+	p.ClearChangedProperties()
+	return props
+}</code></pre>
+<h3><span class="id">EXT-02</span> Disabled guard covers every control</h3>
+<p class="ba-label">Before, form_input.go:7</p>
+<pre><code>if c.Tag == "button" &amp;&amp; c.Disabled {
+	return nil
+}</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>if c.Disabled {
+	return nil
+}</code></pre>
+<h3><span class="id">EXT-03</span> One alpha policy for both painters</h3>
+<p class="ba-label">Before, color.go in both painters</p>
+<pre><code>// bitmap keeps RGB separate, Porter-Duff over
+color.NRGBA{R: channel(op.R), G: channel(op.G), B: channel(op.B), A: channel(op.Opacity())}
+// replay premultiplies alpha into RGB
+color.RGBA{R: channel(op.R * clamp(alpha)), G: channel(op.G * clamp(alpha)), B: channel(op.B * clamp(alpha)), ...}</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>// one helper in masking, both painters call it, write-out stays separate
+r, g, b, _ := masking.PaintColor(op)</code></pre>
+<h3><span class="id">EXT-04</span> One GridRun expansion for both painters</h3>
+<p class="ba-label">Before, op.go:15 and grid.go:17</p>
+<pre><code>// bitmap copies the owner, keeps transform, fixed, and opacity
+line := *op
+line.Kind = layout.DisplayOpLine
+// replay builds a bare struct, drops all three
+line := layout.DisplayOp{ID: op.ID, Kind: layout.DisplayOpLine, ...}</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>// one expansion helper, both painters call it
+line := masking.GridLine(op, i)</code></pre>
+<h3><span class="id">PRAC-01</span> Nil context rejected, never panicked</h3>
+<p class="ba-label">Before, pick_linux.go:60 and print.go:50</p>
+<pre><code>func run(ctx context.Context, path string, args []string) (string, bool) {
+	out, err := exec.CommandContext(ctx, path, args...).Output() // panics on nil ctx</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>func run(ctx context.Context, path string, args []string) (string, bool) {
+	if ctx == nil {
+		return "", false // ErrNilContext where an error return exists
+	}</code></pre>
+<h3><span class="id">ARC-01</span> Serve guards match Run guards</h3>
+<p class="ba-label">Before, serve_build.go:21</p>
+<pre><code>if ctx == nil {
+	ctx = context.Background()
+}
+// no app check; first nil failure surfaces as HTTP 500</code></pre>
+<p class="ba-label">After, landed</p>
+<pre><code>if ctx == nil {
+	return errNilContext
+}
+if app == nil {
+	return errNilApp
+}</code></pre>
+</section>
+<section>
+<h2>All 25 rows</h2>
+<table>
+<tr><th>Row</th><th>Title</th><th>Location</th></tr>
+<tr><td><span class="tag">EXT-01</span></td><td>Take aliases return a snapshot without draining</td><td><code>page/page_patch_props.go:25</code></td></tr>
+<tr><td><span class="tag">EXT-02</span></td><td>Click routing fires for disabled non-button controls</td><td><code>page/form_input.go:5</code></td></tr>
+<tr><td><span class="tag">EXT-03</span></td><td>Translucent alpha paints through two color policies</td><td><code>bitmap/color.go:14</code></td></tr>
+<tr><td><span class="tag">EXT-04</span></td><td>GridRun copies diverged on transform and alpha</td><td><code>bitmap/op.go:13</code></td></tr>
+<tr><td><span class="tag">PRAC-01</span></td><td>Exec seams panic on nil context</td><td><code>print/print.go:50</code></td></tr>
+<tr><td><span class="tag">ARC-01</span></td><td>Serve entrypoint lacks the window nil guards</td><td><code>web/serve_build.go:21</code></td></tr>
+<tr><td><span class="tag">ARC-02</span></td><td>Nil context sentinel lives in four identities</td><td><code>fetch/doc.go:12</code></td></tr>
+<tr><td><span class="tag">ARC-03</span></td><td>Crash report paths diverge, panic drops the chain</td><td><code>run.go:46</code></td></tr>
+<tr><td><span class="tag">EXT-05</span></td><td>PatchChange emits phantom changes on bad paths</td><td><code>state/store_patch.go:6</code></td></tr>
+<tr><td><span class="tag">EXT-06</span></td><td>Dotted path read and write parsers diverge</td><td><code>state/path_read.go:8</code></td></tr>
+<tr><td><span class="tag">EXT-07</span></td><td>Patch drops paths and writes origin off lock</td><td><code>state/patch_projected.go:26</code></td></tr>
+<tr><td><span class="tag">ARC-04</span></td><td>Image bytes alias across the page boundary</td><td><code>page/page_set_image.go:24</code></td></tr>
+<tr><td><span class="tag">ARC-05</span></td><td>Oversize source reports two sentinel sets</td><td><code>page/page_nav_route.go:16</code></td></tr>
+<tr><td><span class="tag">ARC-06</span></td><td>Replay resolves radii through render instead of masking</td><td><code>replay/fill.go:18</code></td></tr>
+<tr><td><span class="tag">EXT-08</span></td><td>Private window seams bypass host</td><td><code>window/bounds.go:5</code></td></tr>
+<tr><td><span class="tag">EXT-09</span></td><td>Front-half preference copied in window and web</td><td><code>window/sync.go:19</code></td></tr>
+<tr><td><span class="tag">EXT-10</span></td><td>File reads have no seam, tests need real temp files</td><td><code>page/page_source.go:48</code></td></tr>
+<tr><td><span class="tag">EXT-11</span></td><td>Image prepare forks on decode, cache, and alpha</td><td><code>bitmap/image.go:20</code></td></tr>
+<tr><td><span class="tag">EXT-12</span></td><td>Link parsers keep divergent allowlists</td><td><code>page/page_deeplink.go:26</code></td></tr>
+<tr><td><span class="tag">EXT-13</span></td><td>Hit testing runs twice with different winners</td><td><code>page/page_click.go:67</code></td></tr>
+<tr><td><span class="tag">ARC-07</span></td><td>Blend policy lives in three switches</td><td><code>bitmap/blend.go:8</code></td></tr>
+<tr><td><span class="tag">ARC-08</span></td><td>Write-out forked, docs name a missing symbol</td><td><code>bitmap/bitmap.go:14</code></td></tr>
+<tr><td><span class="tag">ARC-09</span></td><td>IPC registry is global with no cap, deferred risk</td><td><code>ipc/ipc.go:26</code></td></tr>
+<tr><td><span class="tag">ARC-10</span></td><td>Dirty bookkeeping scattered across four sites</td><td><code>page/page_dirty_take.go:10</code></td></tr>
+<tr><td><span class="tag">PRAC-02</span></td><td>Byte asserts and stale PDF docs</td><td><code>page/page_source_test.go:62</code></td></tr>
+</table>
+</section>
+<section>
+<h2>Parked and refused</h2>
+<details><summary>Parked P3 list, 24 items</summary>
+<p>Scroll offset ownership, sink capability matrix, dual threading contract, web string-only errors, reload-note helper, viewport math in three unit systems, text shaping per sink, fixed repaint ownership, pixel budget table, box geometry contract, cache ownership note, shared path policy, gate and pin doubles, field bind cancel, nil Option guard, print and filepick deny tables, fetch and focus alias markers, print forwarder, nil-form accessor, bind file matrix, cursor disabled shape, caret no-op lock, patch counter coverage, control tag order, ClipRect receivers. Full locations live in the checklist.</p></details>
+<details><summary>Refused, 3 items</summary>
+<p>Source-size alias collapse is deletion-only churn. Window shell context storage is the documented Ebiten exception. Serve cancel and PNG context re-files match closed rows with no regression.</p></details>
+</section>
+<footer><p>Method: ten read-only readers at frozen HEAD, deduped on path plus absorbing module, capped at 25 rows. P0 and P1 locations were re-read against current source before writing. Implementation followed in six packets with targeted and race suites green; three validators re-ran every proof independently. Gates: make build exit 0, make test exit 0 with 97 packages ok.</p></footer>
+</main>
+<script>
+(function(){if(!('IntersectionObserver' in window))return;
+var els=document.querySelectorAll('article.finding,figure');
+els.forEach(function(e){e.style.opacity='0';e.style.transform='translateY(10px)';
+e.style.transition='opacity .55s ease,transform .55s cubic-bezier(.16,1,.3,1)'});
+var o=new IntersectionObserver(function(es){es.forEach(function(x){if(!x.isIntersecting)return;
+var e=x.target;var i=Array.prototype.indexOf.call(els,e)%8;
+e.style.transitionDelay=(i*70)+'ms';e.style.opacity='1';e.style.transform='none';o.unobserve(e)})},
+{threshold:.06});
+els.forEach(function(e){o.observe(e)});})();
+</script>
+</body>
+</html>

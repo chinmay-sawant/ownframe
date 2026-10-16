@@ -34,12 +34,12 @@ func (p *Page) IMEAnchor() (layout.Box, bool) {
 
 func (p *Page) imeCaretText(c Control) (string, int) {
 	kind := strings.ToLower(strings.TrimSpace(c.Type))
-	if p.form.preeditID != c.ID {
-		return shownText(kind, c.Value), clampPos(p.form.caret, runeLen(c.Value))
+	if p.formState().preeditID != c.ID {
+		return shownText(kind, c.Value), clampPos(p.formState().caret, runeLen(c.Value))
 	}
 	base := []rune(c.Value)
-	start, end := p.form.bounds(len(base))
-	value := string(base[:start]) + p.form.preedit + string(base[end:])
-	offset := start + runeAtByte(p.form.preedit, p.form.preeditStart)
+	start, end := p.formState().bounds(len(base))
+	value := string(base[:start]) + p.formState().preedit + string(base[end:])
+	offset := start + runeAtByte(p.formState().preedit, p.formState().preeditStart)
 	return shownText(kind, value), offset
 }

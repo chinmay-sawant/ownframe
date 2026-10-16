@@ -18,11 +18,11 @@ type faceKey struct {
 	language string
 }
 
-// textCache keeps one parsed face source per engine font. Parsing the SFNT
-// data is expensive; Ebiten caches glyph images per source and size, so the
-// faces are reused too.
+// textCache keeps one parsed face source per engine font. Hits resolve
+// under a read lock; the parse runs lock-free with a second check that
+// keeps one winner under the write lock.
 type textCache struct {
-	mu      sync.Mutex
+	mu      sync.RWMutex
 	sources map[any]*text.GoTextFaceSource
 	faces   map[faceKey]*text.GoTextFace
 }
@@ -34,30 +34,39 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 		return nil
 	}
 
-	fonts.mu.Lock()
-	defer fonts.mu.Unlock()
+	size := op.Size * pxPerPt
+	key := faceKey{source: op.Font, size: size, language: op.TextLanguage()}
 
+	fonts.mu.RLock()
 	source := fonts.sources[op.Font]
+	if face := fonts.faces[key]; face != nil {
+		fonts.mu.RUnlock()
+		return face
+	}
+	fonts.mu.RUnlock()
+
 	if source == nil {
 		parsed, err := text.NewGoTextFaceSource(bytes.NewReader(op.Font.Bytes()))
 		if err != nil {
 			return nil
 		}
+		source = parsed
+	}
 
+	fonts.mu.Lock()
+	defer fonts.mu.Unlock()
+
+	if face := fonts.faces[key]; face != nil {
+		return face
+	}
+	if have := fonts.sources[op.Font]; have != nil {
+		source = have
+	} else {
 		if fonts.sources == nil || len(fonts.sources) >= 64 {
 			fonts.sources = make(map[any]*text.GoTextFaceSource)
 			fonts.faces = make(map[faceKey]*text.GoTextFace)
 		}
-
-		fonts.sources[op.Font] = parsed
-		source = parsed
-	}
-
-	size := op.Size * pxPerPt
-	key := faceKey{source: op.Font, size: size, language: op.TextLanguage()}
-
-	if face := fonts.faces[key]; face != nil {
-		return face
+		fonts.sources[op.Font] = source
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}

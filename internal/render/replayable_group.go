@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // maxGroupDepth bounds the layer stack one group may nest.
@@ -24,7 +25,7 @@ func replayableGroup(op *layout.DisplayOp) bool {
 			return false
 		}
 
-		if g.Mode != "" && g.Mode != "normal" && (op.Fixed || op.ZIndex != 0) {
+		if !masking.BlendNormal(g.Mode) && (op.Fixed || op.ZIndex != 0) {
 			return false
 		}
 	}
@@ -35,14 +36,7 @@ func replayableGroup(op *layout.DisplayOp) bool {
 // separableMode reports the mix-blend-modes the group compositor reproduces
 // per pixel. hue, saturation, color, and luminosity need channel mixing.
 func separableMode(mode string) bool {
-	switch mode {
-	case "", "normal", "multiply", "screen", "overlay", "darken", "lighten",
-		"color-dodge", "color-burn", "hard-light", "soft-light",
-		"difference", "exclusion":
-		return true
-	}
-
-	return false
+	return masking.BlendSeparable(mode)
 }
 
 // finiteXform rejects matrices with a NaN or infinite entry.

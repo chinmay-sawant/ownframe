@@ -51,7 +51,7 @@ func (s *shell) devClose() error {
 	viewW, viewH := s.viewSize()
 	px, py := contentPoint(x, y, s.scrollX, s.scrollY, s.stretched(), frameW, frameH, viewW, viewH)
 
-	return s.app.Hover(s.ctx, px, py)
+	return s.ptr().Hover(s.ctx, px, py)
 }
 
 // devHasBox reports whether boxes still holds the same element. An id is

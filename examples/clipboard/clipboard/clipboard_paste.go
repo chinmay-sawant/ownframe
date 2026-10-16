@@ -32,7 +32,14 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 		return nil
 	}
 
-	text := strings.ReplaceAll(osclip.Read(), "\r", "")
+	raw, err := osclip.Read()
+	if err != nil {
+		a.setStatus("clipboard is empty")
+
+		return nil
+	}
+
+	text := strings.ReplaceAll(raw, "\r", "")
 	text = strings.ReplaceAll(text, "\n", "")
 	if text == "" {
 		a.setStatus("clipboard is empty")

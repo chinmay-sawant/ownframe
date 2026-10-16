@@ -1,5 +1,7 @@
 package window
 
+import "github.com/chinmay-sawant/ownframe/internal/host"
+
 // tapAt forwards a tap as press, caret, click, release. The caret lands
 // before the click handler runs, matching pressAt, and a page without the
 // selector keeps the old press, click, release behavior. The tap ends the
@@ -8,7 +10,7 @@ package window
 func (s *shell) tapAt(px, py float64) error {
 	s.hold.release()
 
-	if err := s.app.Press(s.ctx, px, py); err != nil {
+	if err := s.ptr().Press(s.ctx, px, py); err != nil {
 		return err
 	}
 
@@ -17,15 +19,15 @@ func (s *shell) tapAt(px, py float64) error {
 
 func (s *shell) finishTap(px, py float64) error {
 	s.hold.release()
-	if sel, ok := s.app.(selector); ok {
+	if sel, ok := s.app.(host.Selector); ok {
 		if err := sel.SelectAt(s.ctx, px, py); err != nil {
 			return err
 		}
 	}
 
-	if err := s.app.Click(s.ctx, px, py); err != nil {
+	if err := s.ptr().Click(s.ctx, px, py); err != nil {
 		return err
 	}
 
-	return s.app.Release(s.ctx)
+	return s.ptr().Release(s.ctx)
 }

@@ -28,7 +28,7 @@ Desktop cat overlay. Transparent, click-through cat that reports what is happeni
 go get github.com/chinmay-sawant/ownframe
 ```
 
-The root package is `ownframe`. During the rename, use this checkout until the repository and a release with the new module path are published. See the [rename and migration notes](documentation/rebrand.md).
+The root package is `ownframe`. The repository and module path already use the new name; until a release tag with that path is published, use this checkout directly. See the [rename and migration notes](documentation/rebrand.md).
 
 ```go
 package main
@@ -91,7 +91,7 @@ The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or W
 
 `make build` compiles both Go modules without linking executables. `make test` runs their tests one package at a time.
 
-The React documentation and demo website lives in [frontend/](frontend/README.md). Run `npm ci` and `npm run dev` there to preview it locally.
+The React documentation and demo website lives in [frontend/](frontend/README.md). Run `npm ci` and `npm run dev` there with Node.js 22.12 or newer, then open the `/ownframe/` address Vite prints.
 
 ## AI assistance
 

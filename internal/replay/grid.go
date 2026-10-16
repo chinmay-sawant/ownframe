@@ -4,26 +4,19 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/masking"
 )
 
 // drawGrid replays one collapsed table grid as its line segments, in
-// emission order. A segment carries its own color and width; the engine's
-// grid painter draws every segment opaque, ignoring the owner's alpha.
+// emission order. Each segment inherits the owner's opacity, transform, and
+// fixed placement through masking.GridLine, matching the bitmap painter.
 func drawGrid(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	if op.Grid == nil {
 		return
 	}
 
 	for i := range op.Grid.Segs {
-		seg := &op.Grid.Segs[i]
-
-		line := layout.DisplayOp{
-			ID:   op.ID,
-			Kind: layout.DisplayOpLine,
-			X:    seg.X, Y: seg.Y, W: seg.W, H: seg.H,
-			Width: seg.Width, R: seg.R, G: seg.G, B: seg.B,
-			LineInset: seg.LineInset,
-		}
+		line := masking.GridLine(op, i)
 
 		drawLine(dst, &line, dx, dy)
 	}

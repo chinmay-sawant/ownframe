@@ -30,7 +30,7 @@ func TestFileShowsNoCaret(t *testing.T) {
 		t.Fatalf("file paints a caret: %s", p.source)
 	}
 
-	p.form.blinkAt = time.Now().Add(-caretBlinkInterval)
+	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}

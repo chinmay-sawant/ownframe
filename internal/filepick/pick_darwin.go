@@ -4,6 +4,8 @@ package filepick
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -17,6 +19,8 @@ end run`
 func Pick(ctx context.Context, title string) (string, bool) {
 	out, err := exec.CommandContext(ctx, "osascript", "-e", script, title).Output()
 	if err != nil {
+		debugf("osascript failed: %v", err)
+
 		return "", false
 	}
 
@@ -26,4 +30,13 @@ func Pick(ctx context.Context, title string) (string, bool) {
 	}
 
 	return picked, true
+}
+
+// debugf writes to stderr when OWNFRAME_FILEPICK_DEBUG is not empty.
+func debugf(format string, args ...any) {
+	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" && os.Getenv("GPUI_FILEPICK_DEBUG") == "" {
+		return
+	}
+
+	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", args...)
 }

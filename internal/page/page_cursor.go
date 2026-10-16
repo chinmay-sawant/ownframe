@@ -6,8 +6,8 @@ import "github.com/chinmay-sawant/ownframe/internal/host"
 // control, a hand over a link, a button, or another control, and the default
 // arrow everywhere else.
 func (p *Page) CursorShape() host.Shape {
-	if p.hover != "" {
-		if c, ok := p.control(p.hover); ok {
+	if p.hoverID() != "" {
+		if c, ok := p.control(p.hoverID()); ok {
 			if canEdit(c) {
 				return host.ShapeText
 			}
@@ -15,7 +15,7 @@ func (p *Page) CursorShape() host.Shape {
 			return host.ShapePointer
 		}
 
-		b := p.boxByID(p.hover)
+		b := p.boxByID(p.hoverID())
 		switch b.Tag {
 		case "a", "button":
 			return host.ShapePointer
@@ -26,7 +26,8 @@ func (p *Page) CursorShape() host.Shape {
 		}
 	}
 
-	if p.linkAt(p.hoverX, p.hoverY) {
+	hx, hy := p.hoverPoint()
+	if p.linkAt(hx, hy) {
 		return host.ShapePointer
 	}
 

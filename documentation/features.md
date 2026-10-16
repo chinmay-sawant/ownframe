@@ -85,7 +85,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` and `Read` keep an in-memory copy and also talk to the OS clipboard. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, iOS, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, iOS, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
 
 Detail is in [clipboard.md](clipboard.md).
 
@@ -94,12 +94,6 @@ Detail is in [clipboard.md](clipboard.md).
 The window reads Ebiten's dropped files once per frame and hands them to a screen that implements `host.Dropper`. `Handlers.Drop` receives each file's name, size, directory flag, absolute path on desktop, and a `Read` function that serves the bytes during the call. A dropped directory arrives as one entry. `-web` has no window loop, so it receives no drops; the wasm canvas build does.
 
 Detail is in [drag-drop.md](drag-drop.md).
-
-## Printing
-
-`Page.PDF` and `Page.WritePDF` render the last template output to PDF bytes through the engine's document writer, with the current theme injected as a style element in the head. `SavePDF` writes the bytes to a file, and `Print` writes a temporary PDF and hands it to the OS print path: `lp` or `xdg-open` on Linux, `osascript` or `open` on macOS, and PowerShell `Start-Process -Verb Print` on Windows. wasm, Android, and iOS return `ErrNoPrinter`. The zero `PDFOptions` value is A4 with 10 mm margins and no profile; a wrong profile is an error. In web mode `GET /pdf` returns the same bytes. The PDF is a re-render from source, so its pagination can differ from the window, and the display list itself is not printed.
-
-Detail is in [printing.md](printing.md).
 
 ## Forms
 

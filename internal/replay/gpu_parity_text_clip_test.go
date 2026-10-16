@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-// checkTextClip draws the text parity runs through DrawRect, which clips into
-// a sub-image, and compares against the same runs drawn directly into that
-// sub-image. A baked run is not clipped at bake time, so this pins that a
-// partial repaint clips it exactly as the direct glyphs would be, including
-// the run past the size cap that stays on the direct path.
+// checkTextClip pins partial-repaint clipping of baked and direct runs.
 func checkTextClip() error {
 	ops, err := textParityOps()
 	if err != nil {
@@ -48,4 +46,24 @@ func checkTextClip() error {
 	}
 
 	return nil
+}
+
+// drawTextDirect draws one text op through the uncached path only.
+func drawTextDirect(op *layout.DisplayOp, dst *ebiten.Image) {
+	face := textFace(op)
+	if face == nil || op.Text == "" {
+		return
+	}
+
+	content := layout.DisplayTransformText(op.Text, op.TextTransformValue())
+	drawTextRun(dst, face, content, op.X*pxPerPt, op.Y*pxPerPt-face.Metrics().HAscent, op)
+}
+
+// phase is the run's keyed sub-pixel offset, built the way cachedTextRun
+// builds it from the op and the face.
+func phase(op *layout.DisplayOp, face *text.GoTextFace) [2]float64 {
+	x := op.X * pxPerPt
+	y := op.Y*pxPerPt - face.Metrics().HAscent
+
+	return [2]float64{textPhase(x - math.Floor(x)), textPhase(y - math.Floor(y))}
 }

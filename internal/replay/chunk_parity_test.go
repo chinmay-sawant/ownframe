@@ -7,10 +7,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// checkChunkParity draws the card page direct and chunked and requires
-// byte-identical pixels, then repeats with a partial rect over one card. The
-// opaque cards fold into runs; the translucent card stays direct, because a
-// run with a translucent op cannot promise byte parity.
+// checkChunkParity requires byte-identical direct and chunked draws.
+// Translucent ops stay direct.
 func checkChunkParity() error {
 	d, err := cardParityPage()
 	if err != nil {
@@ -59,4 +57,37 @@ func checkChunkParity() error {
 	}
 
 	return chunkPartialParity(d, a)
+}
+
+// runHolds reports whether a run holds an op with opacity under one.
+func runHolds(p *chunkPlan, want bool) bool {
+	for i := range p.items {
+		if p.items[i].run == nil {
+			continue
+		}
+
+		for _, op := range p.items[i].run.ops {
+			if (op.Opacity() < 1) == want {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// diffPixels describes the first differing pixels for the failure message.
+func diffPixels(a, b []byte, width int) string {
+	out := ""
+
+	for i := 0; i+4 <= len(a) && len(out) < 400; i += 4 {
+		if bytes.Equal(a[i:i+4], b[i:i+4]) {
+			continue
+		}
+
+		p := i / 4
+		out += fmt.Sprintf("(%d,%d) %v vs %v ", p%width, p/width, a[i:i+4], b[i:i+4])
+	}
+
+	return out
 }

@@ -6,7 +6,7 @@ func (s *shell) touchPress(u touchUpdate, now []touchPos, clicked bool, w, h int
 		s.hold.cancel()
 		s.scrollMotion.cancel()
 		if armed {
-			return s.app.Release(s.ctx)
+			return s.ptr().Release(s.ctx)
 		}
 		return nil
 	}
@@ -15,5 +15,5 @@ func (s *shell) touchPress(u touchUpdate, now []touchPos, clicked bool, w, h int
 	}
 	x, y := s.contentAt(u.start.x, u.start.y, w, h)
 	s.holdStart(x, y)
-	return s.app.Press(s.ctx, x, y)
+	return s.ptr().Press(s.ctx, x, y)
 }

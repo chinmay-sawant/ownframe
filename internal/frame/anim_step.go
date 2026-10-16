@@ -3,15 +3,18 @@ package frame
 import (
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
-// Step applies the animation's value at now and reports the boxes it
-// changed. The first step fixes the start time. The second result reports
-// whether the animation is still running: the step that reaches the end
-// applies the final value, returns its damage, and reports false. A later
-// step changes nothing.
+// Step applies the value at now and reports the boxes it changed. The
+// first step fixes the start time; the step that reaches the end applies
+// the final value and reports false. A later step, or one after a Redraw
+// replaced a bound list, changes nothing.
 func (a *Anim) Step(now time.Time) (Damage, bool) {
+	if a.stale() {
+		a.live = false
+		return Damage{}, false
+	}
 	if !a.live {
 		return Damage{}, false
 	}
@@ -52,7 +55,7 @@ func (a *Anim) Tick(m Marker, now time.Time) bool {
 }
 
 // patch applies the value at progress p to one op.
-func (a *Anim) patch(i int, op *ownframe.DisplayOp, p float64) {
+func (a *Anim) patch(i int, op *page.DisplayOp, p float64) {
 	switch a.kind {
 	case animTranslate:
 		j := i * 2

@@ -4,4 +4,4 @@ This project wraps `examples/login/mobile` as an Android app and uses the shared
 
 From the repository root, run `scripts/android-release.sh login` to bind the Go package and build the signed arm64 release APK. The generated AAR and Gradle build outputs are ignored. Release signing uses the local Android keystore under the ignored `temp/android-release-signing/` directory. Keep a backup of that key because future updates need the same signing identity.
 
-The checked-in release artifact is `artifacts/login-arm64-release.apk`. All Android example APKs are listed in [APPS.md](../../android-host/APPS.md).
+The release build writes `artifacts/login-arm64-release.apk`, which is ignored and not committed. All Android example APKs are listed in [APPS.md](../../android-host/APPS.md).
