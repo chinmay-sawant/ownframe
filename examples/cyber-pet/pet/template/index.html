@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cyber Pet // NeoBot</title>
+<!-- stylesheet -->
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="viewport" id="viewport">
+    <div class="robot-chassis" id="device">
+      <!-- Top Cyber Antenna with Status Sensor -->
+      <div class="antenna">
+        <div class="antenna-bulb"></div>
+        <div class="antenna-stem"></div>
+      </div>
+
+      <!-- Side Ear Rotators / Hinges -->
+      <div class="chassis-ear ear-left" id="ear-l">
+        <div class="ear-ring"></div>
+        <div class="ear-core"></div>
+      </div>
+      <div class="chassis-ear ear-right" id="ear-r">
+        <div class="ear-ring"></div>
+        <div class="ear-core"></div>
+      </div>
+
+      <!-- Main Metallic Body -->
+      <div class="chassis-body">
+        <!-- Corner Cyber Hex Bolts -->
+        <div class="chassis-bolt bolt-tl"></div>
+        <div class="chassis-bolt bolt-tr"></div>
+        <div class="chassis-bolt bolt-bl"></div>
+        <div class="chassis-bolt bolt-br"></div>
+
+        <!-- Chamfered Screen Bezel -->
+        <div class="bezel-frame">
+          <div class="bezel-header">
+            <span class="bezel-brand">CYBER-PET // SERIES-09</span>
+            <div class="bezel-status">
+              <span class="status-led"></span>
+              <span class="bezel-model">ONLINE</span>
+            </div>
+          </div>
+
+          <!-- Curved Visor Screen -->
+          <div class="visor-screen" id="pet-screen">
+            <!-- Glass Screen Sheen Highlight -->
+            <div class="screen-sheen"></div>
+
+            <!-- Micro Scanline Overlay -->
+            <div class="screen-scanlines"></div>
+
+            <!-- Top HUD / Status Bar -->
+            <div class="hud-bar">
+              <div class="hud-meters">
+                <!-- Battery / Energy Meter -->
+                <div class="hud-stat" title="Energy Level">
+                  <div class="stat-info">
+                    <span class="stat-icon icon-energy">⚡</span>
+                    <span class="stat-name">ENERGY</span>
+                    <span class="stat-val" id="val-energy">{{.Energy}}%</span>
+                  </div>
+                  <div class="meter-track">
+                    <div id="meter-energy" class="meter-fill fill-energy" style="width: {{.EnergyWidth}};"></div>
+                  </div>
+                </div>
+
+                <!-- Hunger Meter -->
+                <div class="hud-stat" title="Hunger Level">
+                  <div class="stat-info">
+                    <span class="stat-icon icon-hunger">🍙</span>
+                    <span class="stat-name">HUNGER</span>
+                    <span class="stat-val" id="val-hunger">{{.Hunger}}%</span>
+                  </div>
+                  <div class="meter-track">
+                    <div id="meter-hunger" class="meter-fill fill-hunger" style="width: {{.HungerWidth}};"></div>
+                  </div>
+                </div>
+
+                <!-- Happiness Meter -->
+                <div class="hud-stat" title="Happiness Level">
+                  <div class="stat-info">
+                    <span class="stat-icon icon-happy">💖</span>
+                    <span class="stat-name">HAPPY</span>
+                    <span class="stat-val" id="val-happiness">{{.Happiness}}%</span>
+                  </div>
+                  <div class="meter-track">
+                    <div id="meter-happy" class="meter-fill fill-happy" style="width: {{.HappinessWidth}};"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mood Badge -->
+              <div class="hud-mood-wrap">
+                <div id="mood-label" class="mood-badge mood-{{.Mood}}">{{.MoodUpper}}</div>
+              </div>
+            </div>
+
+            <!-- Speech / Status Bubble -->
+            <div class="speech-box" id="speech-bubble">
+              <div class="speech-content" id="speech-text">{{.Speech}}</div>
+            </div>
+
+            <!-- Digital Face Matrix -->
+            <div class="face-matrix" id="pet-face">
+              <!-- Floating Accessory / Reaction Area -->
+              <div id="reaction" class="reaction">
+                <div class="reaction-bubble">
+                  <span id="floating-heart" class="reaction-glyph">{{if .MoodEmoji}}{{.MoodEmoji}}{{else}}♥{{end}}</span>
+                </div>
+              </div>
+
+              <!-- Face Row: Cheeks & Eyes -->
+              <div class="face-row" id="face-body">
+                <!-- Left Blush Cheek -->
+                <div id="blush-left" class="blush blush-left">
+                  <div class="blush-led"></div>
+                </div>
+
+                <!-- Left Eye -->
+                <div id="eye-left" class="eye eye-left mood-{{.Mood}}">
+                  <!-- HAPPY curved arc -->
+                  <div class="eye-shape shape-arc"></div>
+                  <!-- NORMAL squircle pupil with catchlight -->
+                  <div class="eye-shape shape-pupil">
+                    <div class="pupil-highlight"></div>
+                  </div>
+                  <!-- BLINK narrow horizontal slit -->
+                  <div class="eye-shape shape-slit"></div>
+                  <!-- SLEEPY drooping half-arc -->
+                  <div class="eye-shape shape-sleepy"></div>
+                  <!-- EXCITED sparkle star -->
+                  <div class="eye-shape shape-star">✦</div>
+                  <!-- DIZZY spiral ring -->
+                  <div class="eye-shape shape-spiral">◎</div>
+                </div>
+
+                <!-- Right Eye -->
+                <div id="eye-right" class="eye eye-right mood-{{.Mood}}">
+                  <!-- HAPPY curved arc -->
+                  <div class="eye-shape shape-arc"></div>
+                  <!-- NORMAL squircle pupil with catchlight -->
+                  <div class="eye-shape shape-pupil">
+                    <div class="pupil-highlight"></div>
+                  </div>
+                  <!-- BLINK narrow horizontal slit -->
+                  <div class="eye-shape shape-slit"></div>
+                  <!-- SLEEPY drooping half-arc -->
+                  <div class="eye-shape shape-sleepy"></div>
+                  <!-- EXCITED sparkle star -->
+                  <div class="eye-shape shape-star">✦</div>
+                  <!-- DIZZY spiral ring -->
+                  <div class="eye-shape shape-spiral">◎</div>
+                </div>
+
+                <!-- Right Blush Cheek -->
+                <div id="blush-right" class="blush blush-right">
+                  <div class="blush-led"></div>
+                </div>
+              </div>
+
+              <!-- Digital Mouth -->
+              <div id="mouth" class="mouth mouth-{{.Mood}}">
+                <!-- Smile Arc (bound to pet-mouth fill for dynamic animation) -->
+                <div class="mouth-shape mouth-smile-arc" id="pet-mouth"></div>
+                <!-- Dynamic Speech Waveform Bars -->
+                <div class="mouth-shape mouth-waveform">
+                  <div class="wave-bar w-1"></div>
+                  <div class="wave-bar w-2"></div>
+                  <div class="wave-bar w-3"></div>
+                  <div class="wave-bar w-4"></div>
+                  <div class="wave-bar w-5"></div>
+                  <div class="wave-bar w-6"></div>
+                  <div class="wave-bar w-7"></div>
+                </div>
+                <!-- Eating Chew Chomper -->
+                <div class="mouth-shape mouth-chew-chomper">
+                  <div class="chew-bite bite-upper"></div>
+                  <div class="chew-bite bite-lower"></div>
+                </div>
+                <!-- Cute Open Talk Mouth -->
+                <div class="mouth-shape mouth-open-o"></div>
+              </div>
+            </div>
+
+            <!-- Bottom Visor Telemetry / Status Line -->
+            <div class="visor-telemetry">
+              <span class="tele-dot"></span>
+              <span class="tele-text">{{if .StatusHint}}{{.StatusHint}}{{else}}SYNC // BIO-METRICS STABLE{{end}}</span>
+              <span class="tele-code">CP-09</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Speaker Grille Vents -->
+        <div class="speaker-grille">
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+          <div class="vent-slot"></div>
+        </div>
+
+        <!-- Action Control Dock -->
+        <div class="action-dock" id="controls">
+          <!-- FEED Button -->
+          <button id="btn-feed" data-action="feed" class="action-btn btn-feed" type="button" title="Feed Snack">
+            <span class="btn-cap">
+              <span class="btn-icon">🍙</span>
+              <span class="btn-label">FEED</span>
+              <span class="badge">1</span>
+            </span>
+            <span class="btn-indicator"></span>
+          </button>
+
+          <!-- PLAY Button -->
+          <button id="btn-play" data-action="play" class="action-btn btn-play" type="button" title="Play Game">
+            <span class="btn-cap">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-label">PLAY</span>
+              <span class="badge">2</span>
+            </span>
+            <span class="btn-indicator"></span>
+          </button>
+
+          <!-- PET Button -->
+          <button id="btn-pet" data-action="pet" class="action-btn btn-pet" type="button" title="Pet & Cuddle">
+            <span class="btn-cap">
+              <span class="btn-icon">💖</span>
+              <span class="btn-label">PET</span>
+              <span class="badge">3</span>
+            </span>
+            <span class="btn-indicator"></span>
+          </button>
+
+          <!-- SLEEP Button -->
+          <button id="btn-sleep" data-action="sleep" class="action-btn btn-sleep" type="button" title="Sleep & Recharge">
+            <span class="btn-cap">
+              <span class="btn-icon">🌙</span>
+              <span class="btn-label">SLEEP</span>
+              <span class="badge">4</span>
+            </span>
+            <span class="btn-indicator"></span>
+          </button>
+
+          <!-- TALK Button -->
+          <button id="btn-talk" data-action="talk" class="action-btn btn-talk" type="button" title="Talk / Bleep">
+            <span class="btn-cap">
+              <span class="btn-icon">💬</span>
+              <span class="btn-label">TALK</span>
+              <span class="badge">5</span>
+            </span>
+            <span class="btn-indicator"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

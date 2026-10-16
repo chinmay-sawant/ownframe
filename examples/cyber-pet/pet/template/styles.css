@@ -1,0 +1,818 @@
+:root {
+  --bg-canvas: #07090e;
+  --chassis-bg-top: #191f2d;
+  --chassis-bg-bot: #0e121a;
+  --chassis-border: #2c3850;
+  --bezel-bg: #0c1017;
+  --bezel-border: #1a2233;
+  --screen-bg: #030509;
+  --neon-cyan: #00f5d4;
+  --neon-cyan-glow: rgba(0, 245, 212, 0.45);
+  --neon-pink: #ff2a85;
+  --neon-pink-glow: rgba(255, 42, 133, 0.45);
+  --neon-amber: #ff9f1c;
+  --neon-gold: #ffd166;
+  --neon-blue: #4cc9f0;
+  --neon-purple: #9d4edd;
+  --text-muted: #5b6b88;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-canvas);
+  color: #d0d7e6;
+  font-family: sans-serif;
+}
+
+.viewport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 16px 12px;
+  box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Robot Chassis (Outer Metallic Shell & Antennas)
+   ========================================================================== */
+
+.robot-chassis {
+  position: relative;
+  width: 480px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Top Cyber Antenna with Sensor Light */
+.antenna {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: -2px;
+  z-index: 2;
+}
+
+.antenna-bulb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 14px var(--neon-cyan), 0 0 24px var(--neon-cyan-glow);
+}
+
+.antenna-stem {
+  width: 6px;
+  height: 12px;
+  background: #263248;
+  border-radius: 3px 3px 0 0;
+}
+
+/* Side Mechanical Ear Rotators / Hinges */
+.chassis-ear {
+  position: absolute;
+  top: 140px;
+  width: 16px;
+  height: 52px;
+  background: #141824;
+  border: 2px solid #283449;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.ear-left {
+  left: -10px;
+}
+
+.ear-right {
+  right: -10px;
+}
+
+.ear-ring {
+  width: 8px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid var(--neon-cyan);
+  box-shadow: 0 0 6px var(--neon-cyan-glow);
+}
+
+/* Main Metallic Chassis Body */
+.chassis-body {
+  position: relative;
+  width: 100%;
+  background: #131722;
+  background: linear-gradient(180deg, var(--chassis-bg-top) 0%, var(--chassis-bg-bot) 100%);
+  border: 2px solid var(--chassis-border);
+  border-radius: 36px;
+  padding: 16px 16px 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -3px 0 rgba(0, 0, 0, 0.5);
+  z-index: 3;
+}
+
+/* Corner Cyber Hex Bolts */
+.chassis-bolt {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #1e2638;
+  border: 1px solid #364460;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.bolt-tl { top: 12px; left: 14px; }
+.bolt-tr { top: 12px; right: 14px; }
+.bolt-bl { bottom: 12px; left: 14px; }
+.bolt-br { bottom: 12px; right: 14px; }
+
+/* ==========================================================================
+   Chamfered Bezel & Visor Screen
+   ========================================================================== */
+
+.bezel-frame {
+  background: var(--bezel-bg);
+  border: 1px solid var(--bezel-border);
+  border-radius: 28px;
+  padding: 10px 10px 12px;
+  margin-bottom: 10px;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.9), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.bezel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px 8px;
+  font-family: monospace, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #495874;
+  letter-spacing: 1px;
+}
+
+.bezel-status {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00ff88;
+  box-shadow: 0 0 6px #00ff88;
+}
+
+.bezel-model {
+  font-size: 9px;
+  color: #00ff88;
+}
+
+.visor-screen {
+  position: relative;
+  height: 290px;
+  background: var(--screen-bg);
+  border: 1px solid #131926;
+  border-radius: 22px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: inset 0 0 36px rgba(0, 0, 0, 0.98), 0 0 2px rgba(0, 245, 212, 0.25);
+}
+
+/* Visor Screen Sheen & Scanlines */
+.screen-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 110px;
+  pointer-events: none;
+  border-radius: 22px 22px 50px 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.015) 45%, transparent 60%);
+  z-index: 5;
+}
+
+.screen-scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background: repeating-linear-gradient(0deg, #000, #000 2px, #fff 2px, #fff 4px);
+  z-index: 4;
+}
+
+/* ==========================================================================
+   HUD / Status Bar (Energy, Hunger, Happiness & Mood)
+   ========================================================================== */
+
+.hud-bar {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px 4px;
+}
+
+.hud-meters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.hud-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #627290;
+}
+
+.stat-name {
+  font-size: 7px;
+}
+
+.stat-val {
+  font-family: monospace, sans-serif;
+  font-size: 8px;
+  color: #9bb0d3;
+}
+
+.meter-track {
+  height: 5px;
+  background: #0c1018;
+  border: 1px solid #172133;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+.fill-energy {
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.fill-hunger {
+  background: var(--neon-amber);
+  box-shadow: 0 0 8px var(--neon-amber);
+}
+
+.fill-happy {
+  background: var(--neon-pink);
+  box-shadow: 0 0 8px var(--neon-pink);
+}
+
+/* Mood Badge */
+.hud-mood-wrap {
+  flex: none;
+}
+
+.mood-badge {
+  font-family: sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #0a0f18;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan-glow);
+  text-align: center;
+}
+
+.mood-badge.mood-happy {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan-glow);
+}
+
+.mood-badge.mood-playful {
+  border-color: var(--neon-gold);
+  color: var(--neon-gold);
+  box-shadow: 0 0 10px rgba(255, 209, 102, 0.4);
+}
+
+.mood-badge.mood-hungry {
+  border-color: var(--neon-amber);
+  color: var(--neon-amber);
+  box-shadow: 0 0 10px rgba(255, 159, 28, 0.4);
+}
+
+.mood-badge.mood-sleepy {
+  border-color: var(--neon-blue);
+  color: var(--neon-blue);
+  box-shadow: 0 0 10px rgba(76, 201, 240, 0.4);
+}
+
+.mood-badge.mood-purring {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: 0 0 10px var(--neon-pink-glow);
+}
+
+.mood-badge.mood-excited {
+  border-color: var(--neon-gold);
+  color: var(--neon-gold);
+  box-shadow: 0 0 12px rgba(255, 209, 102, 0.5);
+}
+
+.mood-badge.mood-dizzy {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+  box-shadow: 0 0 12px var(--neon-pink-glow);
+}
+
+/* Speech / Status Bubble */
+.speech-box {
+  position: relative;
+  z-index: 6;
+  margin: 2px 14px;
+  background: rgba(14, 20, 32, 0.9);
+  border: 1px solid #1f2d45;
+  border-radius: 10px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.speech-content {
+  font-size: 11px;
+  color: #c4d4ee;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* ==========================================================================
+   Digital Face Matrix (Eyes, Mouth, Cheeks & Floating Reaction)
+   ========================================================================== */
+
+.face-matrix {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 0 12px;
+}
+
+/* Floating Accessory / Reaction Area */
+.reaction {
+  height: 24px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reaction-bubble {
+  background: rgba(18, 24, 38, 0.85);
+  border: 1px solid rgba(0, 245, 212, 0.35);
+  border-radius: 10px;
+  padding: 2px 8px;
+  box-shadow: 0 0 8px rgba(0, 245, 212, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reaction-glyph {
+  font-size: 16px;
+  line-height: 1;
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px var(--neon-pink);
+}
+
+/* Face Row: Cheeks & Eyes */
+.face-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Glowing LED Blush Cheeks */
+.blush {
+  width: 32px;
+  height: 13px;
+  border-radius: 7px;
+  background: var(--neon-pink);
+  box-shadow: 0 0 14px var(--neon-pink), 0 0 28px var(--neon-pink-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.blush-led {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+/* Digital Eyes */
+.eye {
+  width: 68px;
+  height: 68px;
+  background: var(--neon-cyan);
+  border-radius: 26px;
+  box-shadow: 0 0 16px var(--neon-cyan), 0 0 32px var(--neon-cyan-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  position: relative;
+}
+
+.eye-shape {
+  display: none;
+}
+
+/* NORMAL Squircle Pupil with Catchlight */
+.pupil-highlight {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+}
+
+/* EXCITED Sparkle Star */
+.shape-star {
+  font-size: 42px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 12px #ffffff;
+  text-align: center;
+}
+
+/* DIZZY Spiral */
+.shape-spiral {
+  font-size: 38px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 12px #ffffff;
+  text-align: center;
+}
+
+/* Mood Classes on Eyes */
+.eye.mood-happy,
+.mood-happy .eye {
+  border-radius: 34px 34px 10px 10px;
+  height: 42px;
+}
+
+.eye.mood-blink,
+.mood-blink .eye {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.eye.mood-sleepy,
+.mood-sleepy .eye {
+  height: 24px;
+  border-radius: 6px 6px 24px 24px;
+}
+
+.eye.mood-excited,
+.mood-excited .eye {
+  background: var(--neon-gold);
+  box-shadow: 0 0 20px var(--neon-gold), 0 0 36px rgba(255, 209, 102, 0.5);
+  border-radius: 20px;
+}
+.eye.mood-excited .shape-star,
+.mood-excited .eye .shape-star {
+  display: block;
+}
+
+.eye.mood-dizzy,
+.mood-dizzy .eye {
+  background: var(--neon-pink);
+  box-shadow: 0 0 20px var(--neon-pink), 0 0 36px var(--neon-pink-glow);
+  border-radius: 50%;
+}
+.eye.mood-dizzy .shape-spiral,
+.mood-dizzy .eye .shape-spiral {
+  display: block;
+}
+
+.eye.mood-normal .shape-pupil,
+.mood-normal .eye .shape-pupil {
+  display: block;
+}
+
+/* Digital Mouth */
+.mouth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+}
+
+/* Base Mouth Arc / Fill (Bound to pet-mouth) */
+.mouth-smile-arc {
+  width: 38px;
+  height: 12px;
+  background: var(--neon-cyan);
+  border-radius: 6px;
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.mouth-shape {
+  display: none;
+}
+
+/* Dynamic Speech Waveform Bars */
+.mouth-waveform {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+}
+
+.wave-bar {
+  width: 4px;
+  border-radius: 2px;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.w-1 { height: 6px; }
+.w-2 { height: 12px; }
+.w-3 { height: 18px; }
+.w-4 { height: 10px; }
+.w-5 { height: 20px; }
+.w-6 { height: 10px; }
+.w-7 { height: 5px; }
+
+/* Eating Chew Chomper */
+.mouth-chew-chomper {
+  width: 26px;
+  height: 18px;
+  border-radius: 9px;
+  background: #ff3366;
+  border: 2px solid var(--neon-gold);
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px;
+}
+
+.chew-bite {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: #ffffff;
+}
+
+/* Open O */
+.mouth-open-o {
+  width: 18px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0c121d;
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+/* Default mouth state: show smile arc */
+.mouth-smile-arc {
+  display: block;
+}
+
+/* Mouth Mood Styles */
+.mouth.mouth-talk .mouth-smile-arc,
+.mouth.mouth-wave .mouth-smile-arc {
+  display: none;
+}
+.mouth.mouth-talk .mouth-waveform,
+.mouth.mouth-wave .mouth-waveform {
+  display: flex;
+}
+
+.mouth.mouth-eating .mouth-smile-arc,
+.mouth.mouth-chew .mouth-smile-arc {
+  display: none;
+}
+.mouth.mouth-eating .mouth-chew-chomper,
+.mouth.mouth-chew .mouth-chew-chomper {
+  display: flex;
+}
+
+/* Bottom Visor Telemetry */
+.visor-telemetry {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px 6px;
+  font-family: monospace, sans-serif;
+  font-size: 8px;
+  color: #495874;
+  letter-spacing: 1px;
+  border-top: 1px solid #0f1624;
+}
+
+.tele-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 6px var(--neon-cyan);
+}
+
+.tele-text {
+  color: #627290;
+}
+
+.tele-code {
+  color: var(--neon-cyan);
+}
+
+/* ==========================================================================
+   Speaker Grille Vents
+   ========================================================================== */
+
+.speaker-grille {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.vent-slot {
+  width: 24px;
+  height: 4px;
+  background: #0c0f17;
+  border: 1px solid #1a2334;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* ==========================================================================
+   Action Control Dock (Tactile Cyber Buttons)
+   ========================================================================== */
+
+.action-dock {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 0;
+  background: #181d2a;
+  border: 1px solid #28344c;
+  border-radius: 12px;
+  padding: 8px 3px 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  box-shadow: 0 4px 0 #0b0e16, 0 6px 14px rgba(0, 0, 0, 0.5);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  outline: none;
+}
+
+.btn-cap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+
+.btn-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.btn-label {
+  font-family: sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #b4c2dc;
+}
+
+.badge {
+  font-size: 7px;
+  font-family: monospace, sans-serif;
+  font-weight: 700;
+  color: #627290;
+  background: #0d111a;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.btn-indicator {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--btn-accent, #627290);
+  box-shadow: 0 0 6px var(--btn-accent, transparent);
+}
+
+/* Button Theme Accents */
+.btn-feed {
+  --btn-accent: var(--neon-amber);
+  --btn-glow: rgba(255, 159, 28, 0.45);
+}
+
+.btn-play {
+  --btn-accent: var(--neon-gold);
+  --btn-glow: rgba(255, 209, 102, 0.45);
+}
+
+.btn-pet {
+  --btn-accent: var(--neon-pink);
+  --btn-glow: var(--neon-pink-glow);
+}
+
+.btn-sleep {
+  --btn-accent: var(--neon-blue);
+  --btn-glow: rgba(76, 201, 240, 0.45);
+}
+
+.btn-talk {
+  --btn-accent: var(--neon-cyan);
+  --btn-glow: var(--neon-cyan-glow);
+}
+
+/* Tactile Button Feedback: Hover & Active States */
+.action-btn:hover {
+  background: #202738;
+  border-color: var(--btn-accent);
+  box-shadow: 0 4px 0 #0b0e16, 0 0 14px var(--btn-glow);
+  transform: translateY(-1px);
+}
+
+.action-btn:hover .btn-label {
+  color: #ffffff;
+  text-shadow: 0 0 8px var(--btn-accent);
+}
+
+.action-btn:hover .badge {
+  color: var(--btn-accent);
+}
+
+.action-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #0b0e16, 0 0 18px var(--btn-glow);
+  background: #131722;
+}

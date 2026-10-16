@@ -77,6 +77,10 @@ behavior and the limits are in
 | [snipping-tool](snipping-tool) | Desktop screen capture: toolbar capture, form-field crop, save and copy, OS tools with demo fallback. | 8136 |
 | [departure-board](departure-board) | Split-flap departure board: eight rows of per-character tiles over a seeded timetable, four liveries with a night variant, tick-driven flaps that rebind per `Page.Generation()`, and a refresh bar found by the livery accent. | 8137 |
 | [theme-studio](theme-studio) | Theme editor with a live preview: Apply sets the page theme and writes the watched theme file, a token strip shows colour swatches, four presets. | 8138 |
+| [eyes](eyes) | Robot eyes with 21 selectable moods: gaze tracking, lid positioning, breathing animation, spiral on device shake, and devtools HUD toggle. | 8140 |
+| [pocket-synth](pocket-synth) | Pocket Synthesizer: Teenage Engineering OP-1 style chassis, 48 kHz PCM audio with ADSR, rotary knobs, 32-bar oscilloscope, step sequencer, and keyboard. | 8141 |
+| [cyber-pet](cyber-pet) | Cyber Companion: interactive robotic desktop pet with OLED facial matrix, vitals state machine (Energy, Hunger, Happiness), drag petting, and reaction animations. | 8142 |
+| [skeleton-watch](skeleton-watch) | Haute-horlogerie skeleton watch and tourbillon: 28,800 vph escapement, flyback chronograph, 72-hour power reserve, and Super-LumiNova dark dial mode. | 8143 |
 | [download-manager](download-manager) | Download queue with bounded workers: progress and speed, pause/resume with validated HTTP range resume, retry, cancel, and durable SQLite history. | — |
 | [live-log-viewer](live-log-viewer) | Multi-file log viewer: source sidebar, fixed-height rows, filters, follow/pause with unread count, entry detail, bounded export, and SQLite history. | — |
 | [spreadsheet](spreadsheet) | Sparse editable grid with a formula bar, SUM/AVERAGE formulas, range selection, undo/redo, CSV import/export, and SQLite workbooks. | — |

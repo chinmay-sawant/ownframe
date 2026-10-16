@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mechanical Skeleton Watch &amp; Tourbillon Chronometer</title>
+<link rel="stylesheet" href="styles.css">
+<!-- styles -->
+<!-- stylesheet -->
+</head>
+<body>
+<div id="stage" class="stage">
+
+  <!-- Top Instrument Header & Mode Bar -->
+  <div class="hud-topbar">
+    <div class="brand-line">
+      <div class="brand-name">MANUFACTURE ROYALE &bull; GEN&Egrave;VE</div>
+      <div class="complication-badge">CHRONOM&Egrave;TRE &bull; TOURBILLON VOLANT SQUELETTE</div>
+    </div>
+    <div class="hud-controls">
+      <div id="btn-lume" class="btn-lume" title="Toggle Super-LumiNova Night Dial">
+        <span class="lume-pip"></span>
+        <span class="lume-text">SUPER-LUMINOVA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Central Watch Assembly -->
+  <div class="watch-assembly" id="watch-assembly">
+
+    <!-- Top Alligator Leather Strap Segment & Integrated End-Link -->
+    <div class="strap-top">
+      <div class="strap-stitch-left"></div>
+      <div class="strap-alligator-pattern"></div>
+      <div class="strap-stitch-right"></div>
+      <div class="end-link-top"></div>
+    </div>
+
+    <!-- Bottom Alligator Leather Strap Segment -->
+    <div class="strap-bottom">
+      <div class="end-link-bottom"></div>
+      <div class="strap-stitch-left"></div>
+      <div class="strap-alligator-pattern"></div>
+      <div class="strap-stitch-right"></div>
+    </div>
+
+    <!-- Sculpted Brushed Titanium Lugs with Polished Bevels -->
+    <div class="lug lug-top-left"><div class="lug-screw"></div></div>
+    <div class="lug lug-top-right"><div class="lug-screw"></div></div>
+    <div class="lug lug-bottom-left"><div class="lug-screw"></div></div>
+    <div class="lug lug-bottom-right"><div class="lug-screw"></div></div>
+
+    <!-- Hardware Pushers & Fluted Crown on Case Flank -->
+    <div id="pusher-top" class="pusher pusher-top" title="START / STOP Chronograph">
+      <div class="pusher-collar"></div>
+      <div class="pusher-ring pusher-ring-red"></div>
+      <div class="pusher-body"></div>
+      <div class="pusher-cap"></div>
+      <div class="pusher-legend">START &bull; STOP</div>
+    </div>
+
+    <div id="crown" class="crown" title="WIND Mainspring Mechanism">
+      <div class="crown-guard"></div>
+      <div class="crown-flutes"></div>
+      <div class="crown-body"></div>
+      <div class="crown-cap"><span class="crown-symbol">&#9881;</span></div>
+      <div class="crown-legend">WIND</div>
+    </div>
+
+    <div id="pusher-bottom" class="pusher pusher-bottom" title="RESET / FLYBACK Chronograph">
+      <div class="pusher-collar"></div>
+      <div class="pusher-ring pusher-ring-black"></div>
+      <div class="pusher-body"></div>
+      <div class="pusher-cap"></div>
+      <div class="pusher-legend">RESET &bull; FLYBACK</div>
+    </div>
+
+    <!-- Multi-Layered Circular Casing -->
+    <div id="watch-case" class="watch-case">
+
+      <!-- Outer Brushed Steel & 18K Rose Gold Stepped Bezel -->
+      <div class="case-outer-rim"></div>
+      <div class="bezel-stepped"></div>
+
+      <!-- 8 Hexagonal Polished Titanium Bezel Screws -->
+      <div class="bezel-screw screw-pos-1"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-2"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-3"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-4"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-5"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-6"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-7"><div class="screw-slot"></div></div>
+      <div class="bezel-screw screw-pos-8"><div class="screw-slot"></div></div>
+
+      <!-- Engraved Tachymeter Scale Ring -->
+      <div class="tachymeter-ring">
+        <div class="tachy-label">TACHYM&Egrave;TRE</div>
+        <div class="tachy-num t-400">400</div>
+        <div class="tachy-num t-300">300</div>
+        <div class="tachy-num t-240">240</div>
+        <div class="tachy-num t-200">200</div>
+        <div class="tachy-num t-170">170</div>
+        <div class="tachy-num t-150">150</div>
+        <div class="tachy-num t-130">130</div>
+        <div class="tachy-num t-120">120</div>
+        <div class="tachy-num t-110">110</div>
+        <div class="tachy-num t-100">100</div>
+        <div class="tachy-num t-90">90</div>
+        <div class="tachy-num t-80">80</div>
+        <div class="tachy-num t-75">75</div>
+        <div class="tachy-num t-70">70</div>
+        <div class="tachy-num t-65">65</div>
+        <div class="tachy-num t-60">60</div>
+        <!-- Tachymeter Tick Marks -->
+        <div class="tachy-tick tt-1"></div>
+        <div class="tachy-tick tt-2"></div>
+        <div class="tachy-tick tt-3"></div>
+        <div class="tachy-tick tt-4"></div>
+        <div class="tachy-tick tt-5"></div>
+        <div class="tachy-tick tt-6"></div>
+        <div class="tachy-tick tt-7"></div>
+        <div class="tachy-tick tt-8"></div>
+      </div>
+
+      <!-- Sapphire Crystal Inner Bezel & Polished Chapter Ring -->
+      <div class="chapter-ring">
+        <div class="minute-track-rim"></div>
+
+        <!-- 1/5th Second High-Beat Chronometer Hash Marks -->
+        <div class="chrono-rail-track"></div>
+
+        <!-- Applied Faceted Rose-Gold Hour Indices with Super-LumiNova -->
+        <div class="hour-marker hour-12"><div class="idx-dual idx-left"></div><div class="idx-dual idx-right"></div></div>
+        <div class="hour-marker hour-1"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-2"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-3"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-4"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-5"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-7"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-8"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-10"><div class="idx-bar"></div></div>
+        <div class="hour-marker hour-11"><div class="idx-bar"></div></div>
+      </div>
+
+      <!-- Domed Sapphire Crystal Sheen Overlay -->
+      <div class="sapphire-reflection"></div>
+
+      <!-- Skeletonized Dial Base & Movement Architecture -->
+      <div class="skeleton-base">
+        <!-- Deep Ruthenium Mainplate with Perlage/Geneva Cutouts -->
+        <div class="mainplate-layer">
+          <div class="skeleton-aperture ap-barrel"></div>
+          <div class="skeleton-aperture ap-train"></div>
+          <div class="skeleton-aperture ap-chrono"></div>
+          <div class="skeleton-aperture ap-center"></div>
+        </div>
+
+        <!-- Visible Gear Train Silhouettes -->
+        <!-- Mainspring Barrel (10 o'clock) with Winding Coils & Openwork Spokes -->
+        <div class="gear-wheel gear-barrel">
+          <div class="barrel-teeth"></div>
+          <div class="barrel-spoke sp-1"></div>
+          <div class="barrel-spoke sp-2"></div>
+          <div class="barrel-spoke sp-3"></div>
+          <div class="barrel-spring-coil"></div>
+          <div class="barrel-core"></div>
+        </div>
+
+        <!-- Chronograph Column Wheel (1:30) with Polished Pillars -->
+        <div class="gear-column-wheel">
+          <div class="column-pillar p-1"></div>
+          <div class="column-pillar p-2"></div>
+          <div class="column-pillar p-3"></div>
+          <div class="column-pillar p-4"></div>
+          <div class="column-pillar p-5"></div>
+          <div class="column-pillar p-6"></div>
+          <div class="column-pillar p-7"></div>
+          <div class="column-pillar p-8"></div>
+          <div class="column-hub"></div>
+        </div>
+
+        <!-- Intermediate Driving Gears -->
+        <div class="gear-wheel gear-intermediate">
+          <div class="gear-teeth-fine"></div>
+          <div class="gear-open-spoke gsp-1"></div>
+          <div class="gear-open-spoke gsp-2"></div>
+          <div class="gear-open-spoke gsp-3"></div>
+          <div class="gear-open-spoke gsp-4"></div>
+          <div class="gear-center-pin"></div>
+        </div>
+
+        <div class="gear-wheel gear-fourth">
+          <div class="gear-teeth-gold"></div>
+          <div class="gear-star-spoke"></div>
+        </div>
+
+        <!-- Satin-Finished Rose-Gold & Rhodium Balance Bridges -->
+        <div class="bridge bridge-barrel"><div class="bridge-bevel"></div><div class="bridge-chamfer"></div></div>
+        <div class="bridge bridge-chrono"><div class="bridge-bevel"></div></div>
+        <div class="bridge bridge-center"><div class="bridge-bevel"></div></div>
+
+        <!-- Synthetic Ruby Pivot Jewels in Mirror-Polished Gold Chatons -->
+        <div class="ruby-jewel jewel-barrel"><div class="chaton-ring"></div><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+        <div class="ruby-jewel jewel-column"><div class="chaton-ring"></div><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+        <div class="ruby-jewel jewel-intermediate"><div class="chaton-ring"></div><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+        <div class="ruby-jewel jewel-fourth"><div class="chaton-ring"></div><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+        <div class="ruby-jewel jewel-power"><div class="chaton-ring"></div><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+
+        <!-- Blued Steel Screws Fastening Bridges -->
+        <div class="blued-screw screw-b1"><div class="bscrew-slot"></div></div>
+        <div class="blued-screw screw-b2"><div class="bscrew-slot"></div></div>
+        <div class="blued-screw screw-b3"><div class="bscrew-slot"></div></div>
+        <div class="blued-screw screw-b4"><div class="bscrew-slot"></div></div>
+        <div class="blued-screw screw-b5"><div class="bscrew-slot"></div></div>
+
+        <!-- Movement Inscriptions & Swiss Made Hallmark -->
+        <div class="movement-engraving eng-calibre">CALIBRE CH-902 &bull; 33 JEWELS</div>
+        <div class="movement-engraving eng-beat">28,800 VPH &bull; 4 HZ</div>
+        <div class="movement-engraving eng-swiss">SWISS MADE</div>
+
+        <!-- Complication 1: 12 o'clock - 30-Minute Chronograph Counter Sub-Dial -->
+        <div class="subdial subdial-chrono">
+          <div class="subdial-bezel"></div>
+          <div class="subdial-face"></div>
+          <div class="subdial-snailed-ring"></div>
+          <div class="subdial-ticks"></div>
+          <div class="subdial-num sn-0">30</div>
+          <div class="subdial-num sn-10">10</div>
+          <div class="subdial-num sn-20">20</div>
+          <div class="subdial-label">CHRONO &bull; 30M</div>
+          <!-- Sub-dial Hand: 30-min chronograph counter -->
+          <div id="hand-chrono-min" class="hand-subdial hand-chrono-min">
+            <div class="subhand-blade"></div>
+            <div class="subhand-counterpoise"></div>
+            <div class="subhand-pivot"></div>
+          </div>
+        </div>
+
+        <!-- Complication 2: 9 o'clock - 48-Hour Power Reserve Arc Meter -->
+        <div class="subdial subdial-power">
+          <div class="power-sector-track">
+            <div class="power-arc-danger"></div>
+            <div class="power-arc-medium"></div>
+            <div class="power-arc-full"></div>
+          </div>
+          <div class="power-ticks"></div>
+          <div class="power-label pl-0">0</div>
+          <div class="power-label pl-12">12</div>
+          <div class="power-label pl-24">24</div>
+          <div class="power-label pl-36">36</div>
+          <div class="power-label pl-48">48H</div>
+          <div class="power-title">R&Eacute;SERVE DE MARCHE</div>
+          <!-- Sub-dial Hand: 48-hour power reserve needle -->
+          <div id="hand-power" class="hand-subdial hand-power">
+            <div class="power-needle-body"></div>
+            <div class="power-needle-tip"></div>
+            <div class="subhand-pivot"></div>
+          </div>
+        </div>
+
+        <!-- 3 o'clock - Haute Horlogerie Guilloché Brand Cartouche Plaque -->
+        <div class="brand-cartouche">
+          <div class="cartouche-border"></div>
+          <div class="cartouche-body">
+            <div class="cartouche-brand">CHRONOM&Egrave;TRE</div>
+            <div class="cartouche-model">TOURBILLON</div>
+            <div class="cartouche-origin">GEN&Egrave;VE</div>
+          </div>
+        </div>
+
+        <!-- Complication 3: 6 o'clock - Tourbillon Escapement Well & Cage -->
+        <div class="tourbillon-assembly">
+          <div class="tourbillon-bezel-ring"></div>
+          <div class="tourbillon-well-depth"></div>
+
+          <!-- Running Seconds Track Around Tourbillon (60s rotation) -->
+          <div class="tourbillon-seconds-track">
+            <div class="t-sec-num ts-60">60</div>
+            <div class="t-sec-num ts-15">15</div>
+            <div class="t-sec-num ts-30">30</div>
+            <div class="t-sec-num ts-45">45</div>
+            <div class="t-sec-dot td-1"></div>
+            <div class="t-sec-dot td-2"></div>
+            <div class="t-sec-dot td-3"></div>
+            <div class="t-sec-dot td-4"></div>
+          </div>
+
+          <!-- Lower Tourbillon Bridge Structure -->
+          <div class="tourbillon-lower-bridge"></div>
+
+          <!-- The Rotating Tourbillon Escapement Cage -->
+          <div id="tourbillon-cage" class="tourbillon-cage">
+            <!-- Glucydur Balance Wheel with Gold Eccentric Inertia Timing Screws -->
+            <div class="balance-wheel-rim">
+              <div class="b-weight bw-1"></div>
+              <div class="b-weight bw-2"></div>
+              <div class="b-weight bw-3"></div>
+              <div class="b-weight bw-4"></div>
+              <div class="b-weight bw-5"></div>
+              <div class="b-weight bw-6"></div>
+              <div class="b-weight bw-7"></div>
+              <div class="b-weight bw-8"></div>
+              <div class="b-weight bw-9"></div>
+              <div class="b-weight bw-10"></div>
+              <div class="b-weight bw-11"></div>
+              <div class="b-weight bw-12"></div>
+            </div>
+
+            <!-- Blued Steel Hairspring Balance Coil -->
+            <div class="hairspring-coil"></div>
+
+            <!-- Aerodynamic Titanium Cage Spoke Carriage -->
+            <div class="cage-spoke cage-spoke-1"></div>
+            <div class="cage-spoke cage-spoke-2"></div>
+            <div class="cage-spoke cage-spoke-3"></div>
+
+            <!-- Escape Wheel & Pallet Fork Silhouette -->
+            <div class="tourbillon-escape-silhouette"></div>
+
+            <!-- Central Jewel Cabochon on Carriage Center -->
+            <div class="ruby-jewel jewel-cage"><div class="chaton-ring"></div><div class="ruby-stone"></div></div>
+
+            <!-- Pointer Arrow on Cage (functions as running seconds) -->
+            <div class="tourbillon-seconds-pointer"></div>
+          </div>
+
+          <!-- Upper Polished Titanium Tourbillon Bridge Spanning the Aperture -->
+          <div class="tourbillon-upper-bridge">
+            <div class="bridge-arm-left"></div>
+            <div class="bridge-center-boss">
+              <div class="chaton-ring"></div>
+              <div class="ruby-jewel jewel-tourbillon-upper"><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+            </div>
+            <div class="bridge-arm-right"></div>
+            <div class="bridge-mount-screw bms-left"><div class="bscrew-slot"></div></div>
+            <div class="bridge-mount-screw bms-right"><div class="bscrew-slot"></div></div>
+          </div>
+
+          <div class="tourbillon-title-label">TOURBILLON</div>
+        </div>
+
+        <!-- Center Hand Stack -->
+        <!-- Co-axial Hour Hand (Skeleton Dauphine Styling) -->
+        <div id="hand-hour" class="hand hand-hour">
+          <div class="dauphine-side-light"></div>
+          <div class="dauphine-side-dark"></div>
+          <div class="dauphine-cutout"></div>
+          <div class="dauphine-lume-tip"></div>
+        </div>
+
+        <!-- Co-axial Minute Hand (Skeleton Dauphine Styling) -->
+        <div id="hand-minute" class="hand hand-minute">
+          <div class="dauphine-side-light"></div>
+          <div class="dauphine-side-dark"></div>
+          <div class="dauphine-cutout"></div>
+          <div class="dauphine-lume-tip"></div>
+        </div>
+
+        <!-- Central High-Beat Chronograph Seconds Hand with Counterweight -->
+        <div id="hand-second" class="hand hand-second">
+          <div class="second-needle"></div>
+          <div class="second-lume-pip"></div>
+          <div class="second-center-collar"></div>
+          <div class="second-tail">
+            <div class="second-counterweight-ring"></div>
+            <div class="second-counterweight-crest"></div>
+          </div>
+        </div>
+
+        <!-- Center Cannon Pinion Cap & Synthetic Ruby Pivot -->
+        <div class="center-pinion-cap">
+          <div class="pinion-ring-gold"></div>
+          <div class="pinion-ring-steel"></div>
+          <div class="ruby-jewel jewel-center"><div class="ruby-stone"></div><div class="ruby-glint"></div></div>
+        </div>
+
+      </div> <!-- /.skeleton-base -->
+
+    </div> <!-- /#watch-case -->
+
+  </div> <!-- /.watch-assembly -->
+
+  <!-- Bottom Instrument Spec Bar -->
+  <div class="hud-bottombar">
+    <div class="spec-item"><span class="spec-label">ESCAPEMENT</span><span class="spec-val">1-MIN TOURBILLON</span></div>
+    <div class="spec-sep">&bull;</div>
+    <div class="spec-item"><span class="spec-label">FREQUENCY</span><span class="spec-val">28,800 VPH (4 HZ)</span></div>
+    <div class="spec-sep">&bull;</div>
+    <div class="spec-item"><span class="spec-label">POWER RESERVE</span><span class="spec-val">48 HEURES</span></div>
+    <div class="spec-sep">&bull;</div>
+    <div class="spec-item"><span class="spec-label">CHRONOGRAPH</span><span class="spec-val">FLYBACK COLUMN WHEEL</span></div>
+  </div>
+
+</div> <!-- /#stage -->
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OP-OWNFRAME // Synthesizer</title>
+  <!-- stylesheet -->
+</head>
+<body>
+  <div class="workbench">
+    <!-- Main Synthesizer Chassis -->
+    <div class="chassis" id="chassis">
+      
+      <!-- Screw Accents (4 corners) -->
+      <div class="screw screw-tl"><div class="screw-slot"></div></div>
+      <div class="screw screw-tr"><div class="screw-slot"></div></div>
+      <div class="screw screw-bl"><div class="screw-slot"></div></div>
+      <div class="screw screw-br"><div class="screw-slot"></div></div>
+
+      <!-- Top Header / Industrial Branding Bar -->
+      <div class="topbar">
+        <div class="brand-group">
+          <div class="brand-logo">OP</div>
+          <div class="brand-text">
+            <div class="brand-model">OP-OWNFRAME // SYNTHESIZER</div>
+            <div class="brand-sub">TACTILE HYBRID ENGINE • 32-BAND DSP</div>
+          </div>
+        </div>
+        <div class="speaker-grille">
+          <span class="grille-hole"></span><span class="grille-hole"></span><span class="grille-hole"></span><span class="grille-hole"></span>
+          <span class="grille-hole"></span><span class="grille-hole"></span><span class="grille-hole"></span><span class="grille-hole"></span>
+          <span class="grille-hole"></span><span class="grille-hole"></span><span class="grille-hole"></span><span class="grille-hole"></span>
+        </div>
+        <div class="status-group">
+          <div class="jack-badge">[ AUDIO OUT ]</div>
+          <div class="power-led">
+            <span id="status-led" class="led-dot{{if .BeatLED}} on{{end}}"></span>
+            <span class="led-label">{{if .Status}}{{.Status}}{{else}}DSP ON{{end}}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Dashboard Row: OLED Screen (Left) + Rotary Knobs (Right) -->
+      <div class="dashboard">
+        
+        <!-- OLED / CRT Display Section -->
+        <div class="display-bezel" id="display-bezel">
+          <div class="oled-screen" id="oled-screen">
+            
+            <!-- OLED Top Status Indicators -->
+            <div class="screen-header">
+              <div class="stat-badge">
+                <span class="stat-label">PRESET</span>
+                <span id="disp-preset" class="stat-value text-cyan">{{if .PresetName}}{{.PresetName}}{{else}}LEAD{{end}}</span>
+              </div>
+              <div class="stat-badge">
+                <span class="stat-label">WAVE</span>
+                <span id="disp-wave" class="stat-value text-orange">{{if .Preset}}{{.Preset}}{{else}}SAW{{end}}</span>
+              </div>
+              <div class="stat-badge">
+                <span class="stat-label">NOTE</span>
+                <span id="disp-note" class="stat-value text-blue">{{if .ActiveNote}}{{.ActiveNote}}{{else}}--{{end}}</span>
+              </div>
+              <div class="stat-badge">
+                <span class="stat-label">OCT</span>
+                <span id="disp-oct" class="stat-value text-green">{{if .Octave}}{{.Octave}}{{else}}+1{{end}}</span>
+              </div>
+              <div class="stat-badge">
+                <span class="stat-label">BPM</span>
+                <span id="disp-bpm" class="stat-value text-amber">{{if .BPM}}{{.BPM}}{{else}}120{{end}}</span>
+              </div>
+            </div>
+
+            <!-- Oscilloscope Waveform & VU Meter Area -->
+            <div class="screen-body">
+              <div class="oscilloscope-panel" id="oscilloscope">
+                <div class="osc-grid">
+                  <div class="osc-line-h"></div>
+                  <div class="osc-centerline"></div>
+                  <div class="osc-line-h2"></div>
+                </div>
+                <!-- 32 Animated Waveform / Equalizer Bars -->
+                <div class="wave-bars-container" id="wave-container">
+                  <div id="wave-bar-0" class="wave-bar" style="height:22px"></div>
+                  <div id="wave-bar-1" class="wave-bar" style="height:28px"></div>
+                  <div id="wave-bar-2" class="wave-bar" style="height:36px"></div>
+                  <div id="wave-bar-3" class="wave-bar" style="height:48px"></div>
+                  <div id="wave-bar-4" class="wave-bar" style="height:62px"></div>
+                  <div id="wave-bar-5" class="wave-bar" style="height:74px"></div>
+                  <div id="wave-bar-6" class="wave-bar" style="height:82px"></div>
+                  <div id="wave-bar-7" class="wave-bar" style="height:86px"></div>
+                  <div id="wave-bar-8" class="wave-bar" style="height:80px"></div>
+                  <div id="wave-bar-9" class="wave-bar" style="height:68px"></div>
+                  <div id="wave-bar-10" class="wave-bar" style="height:52px"></div>
+                  <div id="wave-bar-11" class="wave-bar" style="height:38px"></div>
+                  <div id="wave-bar-12" class="wave-bar" style="height:26px"></div>
+                  <div id="wave-bar-13" class="wave-bar" style="height:20px"></div>
+                  <div id="wave-bar-14" class="wave-bar" style="height:24px"></div>
+                  <div id="wave-bar-15" class="wave-bar" style="height:34px"></div>
+                  <div id="wave-bar-16" class="wave-bar" style="height:48px"></div>
+                  <div id="wave-bar-17" class="wave-bar" style="height:64px"></div>
+                  <div id="wave-bar-18" class="wave-bar" style="height:76px"></div>
+                  <div id="wave-bar-19" class="wave-bar" style="height:80px"></div>
+                  <div id="wave-bar-20" class="wave-bar" style="height:72px"></div>
+                  <div id="wave-bar-21" class="wave-bar" style="height:60px"></div>
+                  <div id="wave-bar-22" class="wave-bar" style="height:46px"></div>
+                  <div id="wave-bar-23" class="wave-bar" style="height:34px"></div>
+                  <div id="wave-bar-24" class="wave-bar" style="height:26px"></div>
+                  <div id="wave-bar-25" class="wave-bar" style="height:22px"></div>
+                  <div id="wave-bar-26" class="wave-bar" style="height:26px"></div>
+                  <div id="wave-bar-27" class="wave-bar" style="height:38px"></div>
+                  <div id="wave-bar-28" class="wave-bar" style="height:54px"></div>
+                  <div id="wave-bar-29" class="wave-bar" style="height:66px"></div>
+                  <div id="wave-bar-30" class="wave-bar" style="height:48px"></div>
+                  <div id="wave-bar-31" class="wave-bar" style="height:26px"></div>
+                </div>
+              </div>
+
+              <!-- Stereo VU Level Meters -->
+              <div class="vu-panel" id="vu-panel">
+                <div class="vu-title">VU dB</div>
+                <div class="vu-channels">
+                  <div class="vu-column" id="vu-bar-l">
+                    <span class="vu-led led-red"></span>
+                    <span class="vu-led led-red"></span>
+                    <span class="vu-led led-amber"></span>
+                    <span class="vu-led led-amber"></span>
+                    <span class="vu-led led-amber"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                  </div>
+                  <div class="vu-column" id="vu-bar-r">
+                    <span class="vu-led led-red"></span>
+                    <span class="vu-led led-red"></span>
+                    <span class="vu-led led-amber"></span>
+                    <span class="vu-led led-amber"></span>
+                    <span class="vu-led led-amber on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                    <span class="vu-led led-green on"></span>
+                  </div>
+                </div>
+                <div class="vu-sub">L / R</div>
+              </div>
+            </div>
+
+            <!-- OLED Screen Footer -->
+            <div class="screen-footer">
+              <div class="footer-tags">
+                <span id="preset-lead" data-action="preset" class="tag-item active">LEAD</span>
+                <span id="preset-bass" data-action="preset" class="tag-item">BASS</span>
+                <span id="preset-pad" data-action="preset" class="tag-item">PAD</span>
+                <span id="preset-acid" data-action="preset" class="tag-item">ACID</span>
+                <span id="preset-retro" data-action="preset" class="tag-item">RETRO</span>
+              </div>
+              <div class="footer-wave-type">
+                <span id="wave-sine" data-action="preset" class="wave-tag">SINE</span>
+                <span id="wave-square" data-action="preset" class="wave-tag">SQUARE</span>
+                <span id="wave-saw" data-action="preset" class="wave-tag active">SAW</span>
+                <span id="wave-tri" data-action="preset" class="wave-tag">TRI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tactile Rotary Knobs Section (4 Knobs) -->
+        <div class="knobs-section" id="knobs-section">
+          <!-- Knob 1: PITCH (Blue) -->
+          <div class="knob-module" id="mod-pitch">
+            <div class="knob-header text-blue">PITCH</div>
+            <div class="knob-outer">
+              <div id="knob-pitch" class="knob-dial dial-blue">
+                <div id="notch-pitch" class="knob-notch notch-pitch"></div>
+              </div>
+            </div>
+            <div id="val-pitch" class="knob-value">440 Hz</div>
+          </div>
+
+          <!-- Knob 2: CUTOFF (Green) -->
+          <div class="knob-module" id="mod-cutoff">
+            <div class="knob-header text-green">CUTOFF</div>
+            <div class="knob-outer">
+              <div id="knob-cutoff" class="knob-dial dial-green">
+                <div id="notch-cutoff" class="knob-notch notch-cutoff"></div>
+              </div>
+            </div>
+            <div id="val-cutoff" class="knob-value">2.4 kHz</div>
+          </div>
+
+          <!-- Knob 3: RESO (Orange) -->
+          <div class="knob-module" id="mod-reso">
+            <div class="knob-header text-orange">RESO</div>
+            <div class="knob-outer">
+              <div id="knob-reso" class="knob-dial dial-orange">
+                <div id="notch-reso" class="knob-notch notch-reso"></div>
+              </div>
+            </div>
+            <div id="val-reso" class="knob-value">45 %</div>
+          </div>
+
+          <!-- Knob 4: TEMPO (Red) -->
+          <div class="knob-module" id="mod-tempo">
+            <div class="knob-header text-red">TEMPO</div>
+            <div class="knob-outer">
+              <div id="knob-tempo" class="knob-dial dial-red">
+                <div id="notch-tempo" class="knob-notch notch-tempo"></div>
+              </div>
+            </div>
+            <div id="val-tempo" class="knob-value">{{if .BPM}}{{.BPM}} BPM{{else}}120 BPM{{end}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transport Controls Bar -->
+      <div class="transport-bar" id="transport-bar">
+        <div class="transport-left">
+          <div id="btn-play" data-action="play" class="btn btn-transport btn-play{{if .Playing}} is-playing{{end}}">
+            <span class="btn-icon">{{if .Playing}}❚❚{{else}}▶{{end}}</span>
+            <span class="btn-text">{{if .Playing}}PAUSE{{else}}PLAY{{end}}</span>
+          </div>
+          <div id="btn-rec" data-action="stop" class="btn btn-transport btn-rec">
+            <span class="btn-icon">●</span>
+            <span class="btn-text">STOP</span>
+          </div>
+        </div>
+        <div class="transport-mid">
+          <div id="btn-oct-down" data-action="oct-down" class="btn btn-func">
+            <span class="btn-icon">◀</span>
+            <span class="btn-text">OCT -</span>
+          </div>
+          <div id="btn-oct-up" data-action="oct-up" class="btn btn-func">
+            <span class="btn-text">OCT +</span>
+            <span class="btn-icon">▶</span>
+          </div>
+        </div>
+        <div class="transport-right">
+          <div id="btn-preset" data-action="preset" class="btn btn-func">
+            <span class="btn-icon">⟳</span>
+            <span class="btn-text">PRESET</span>
+          </div>
+          <div id="btn-wave" data-action="preset" class="btn btn-func">
+            <span class="btn-icon">∿</span>
+            <span class="btn-text">WAVE</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1-Octave Musical Keyboard Section -->
+      <div class="keyboard-bed" id="keyboard-bed">
+        <div class="keyboard-keys" id="keyboard-keys">
+          <!-- White Keys -->
+          <div id="key-c" data-action="key-c" class="key key-white key-c"><span class="key-label">C</span></div>
+          <div id="key-d" data-action="key-d" class="key key-white key-d"><span class="key-label">D</span></div>
+          <div id="key-e" data-action="key-e" class="key key-white key-e"><span class="key-label">E</span></div>
+          <div id="key-f" data-action="key-f" class="key key-white key-f"><span class="key-label">F</span></div>
+          <div id="key-g" data-action="key-g" class="key key-white key-g"><span class="key-label">G</span></div>
+          <div id="key-a" data-action="key-a" class="key key-white key-a"><span class="key-label">A</span></div>
+          <div id="key-b" data-action="key-b" class="key key-white key-b"><span class="key-label">B</span></div>
+          <div id="key-c2" data-action="key-c" class="key key-white key-c2"><span class="key-label">C</span></div>
+
+          <!-- Black Keys (Overlaid on top, positioned at boundaries) -->
+          <div id="key-cs" data-action="key-cs" class="key key-black key-cs"><span class="key-label-black">C#</span></div>
+          <div id="key-ds" data-action="key-ds" class="key key-black key-ds"><span class="key-label-black">D#</span></div>
+          <div id="key-fs" data-action="key-fs" class="key key-black key-fs"><span class="key-label-black">F#</span></div>
+          <div id="key-gs" data-action="key-gs" class="key key-black key-gs"><span class="key-label-black">G#</span></div>
+          <div id="key-as" data-action="key-as" class="key key-black key-as"><span class="key-label-black">A#</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,1563 @@
+/* Mechanical Skeleton Watch & Tourbillon Chronometer Stylesheet */
+
+:root {
+  --gold-highlight: #fef08a;
+  --gold-light:     #f5e3a9;
+  --gold-mid:       #d4af37;
+  --gold-dark:      #936838;
+  --gold-shadow:    #5c430e;
+
+  --steel-highlight:#f8fafc;
+  --steel-light:    #e2e8f0;
+  --steel-mid:      #94a3b8;
+  --steel-dark:     #334155;
+  --steel-shadow:   #1e293b;
+
+  --plate-bg:       #13161c;
+  --plate-mid:      #1a1e27;
+  --plate-highlight:#2e3646;
+
+  --ruby-core:      #d90429;
+  --ruby-dark:      #6a0017;
+  --ruby-glow:      rgba(217, 4, 41, 0.45);
+
+  --blued-steel:    #2563eb;
+  --blued-slot:     #93c5fd;
+
+  --chrono-red:     #ef233c;
+  --chrono-dark:    #9b0f20;
+
+  --lume-off:       #c5eed8;
+  --lume-on:        #00ffaa;
+  --lume-glow:      rgba(0, 255, 170, 0.7);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #07080b;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #cbd5e1;
+  overflow: hidden;
+}
+
+/* Stage Container */
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-width: 860px;
+  min-height: 840px;
+  background: radial-gradient(circle at 50% 50%, #11141c 0%, #07080b 80%, #030406 100%);
+  position: relative;
+  box-sizing: border-box;
+  padding: 10px 20px;
+  user-select: none;
+}
+
+/* Top HUD Bar */
+.hud-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 760px;
+  margin-bottom: 6px;
+  z-index: 30;
+}
+
+.brand-line {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  color: #e2e8f0;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.complication-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--gold-mid);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+/* Lume Toggle Button */
+.btn-lume, #btn-lume {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, #1e2430 0%, #12151c 100%);
+  border: 1px solid #334155;
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1);
+}
+
+.btn-lume:hover, #btn-lume:hover {
+  border-color: var(--lume-on);
+  background: linear-gradient(180deg, #252e3e 0%, #161b24 100%);
+  box-shadow: 0 0 12px rgba(0,255,170,0.3);
+}
+
+.btn-lume:active, #btn-lume:active {
+  transform: scale(0.96);
+}
+
+.lume-pip {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lume-off);
+  box-shadow: 0 0 4px var(--lume-off);
+}
+
+.lume-text {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #94a3b8;
+}
+
+/* Watch Assembly Housing */
+.watch-assembly {
+  position: relative;
+  width: 740px;
+  height: 660px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Straps: Luxury Alligator Grain */
+.strap-top {
+  position: absolute;
+  top: 0;
+  left: 280px;
+  width: 180px;
+  height: 72px;
+  background: linear-gradient(to right, #111317 0%, #1e222a 20%, #292f3b 50%, #1e222a 80%, #111317 100%);
+  border-radius: 8px 8px 0 0;
+  z-index: 1;
+  box-shadow: inset 0 10px 20px rgba(0,0,0,0.7);
+  overflow: hidden;
+}
+
+.strap-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 280px;
+  width: 180px;
+  height: 72px;
+  background: linear-gradient(to right, #111317 0%, #1e222a 20%, #292f3b 50%, #1e222a 80%, #111317 100%);
+  border-radius: 0 0 8px 8px;
+  z-index: 1;
+  box-shadow: inset 0 -10px 20px rgba(0,0,0,0.7);
+  overflow: hidden;
+}
+
+.strap-stitch-left {
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-left: 1px dashed #786f5c;
+}
+
+.strap-stitch-right {
+  position: absolute;
+  right: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  border-right: 1px dashed #786f5c;
+}
+
+.end-link-top {
+  position: absolute;
+  bottom: 0;
+  left: 15px;
+  right: 15px;
+  height: 12px;
+  background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.end-link-bottom {
+  position: absolute;
+  top: 0;
+  left: 15px;
+  right: 15px;
+  height: 12px;
+  background: linear-gradient(180deg, #1e293b 0%, #334155 100%);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.8);
+}
+
+/* Lugs */
+.lug {
+  position: absolute;
+  width: 38px;
+  height: 84px;
+  background: linear-gradient(135deg, var(--steel-light) 0%, var(--steel-mid) 40%, var(--steel-dark) 100%);
+  border-radius: 6px;
+  z-index: 2;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+.lug-screw {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #cbd5e1 0%, #475569 100%);
+  border: 1px solid #1e293b;
+  box-shadow: inset 0 1px 1px #fff;
+}
+
+.lug-top-left     { left: 215px; top: 38px; transform: rotate(-24deg); }
+.lug-top-left .lug-screw { top: 12px; left: 14px; }
+
+.lug-top-right    { right: 215px; top: 38px; transform: rotate(24deg); }
+.lug-top-right .lug-screw { top: 12px; right: 14px; }
+
+.lug-bottom-left  { left: 215px; bottom: 38px; transform: rotate(24deg); }
+.lug-bottom-left .lug-screw { bottom: 12px; left: 14px; }
+
+.lug-bottom-right { right: 215px; bottom: 38px; transform: rotate(-24deg); }
+.lug-bottom-right .lug-screw { bottom: 12px; right: 14px; }
+
+/* Pushers & Crown */
+.pusher {
+  position: absolute;
+  width: 68px;
+  height: 30px;
+  z-index: 25;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.1s ease;
+}
+
+.pusher-top, #pusher-top {
+  right: 28px;
+  top: 154px;
+}
+
+.pusher-bottom, #pusher-bottom {
+  right: 28px;
+  bottom: 154px;
+}
+
+.pusher:hover {
+  filter: brightness(1.15);
+}
+
+.pusher:active {
+  transform: translateX(-4px);
+}
+
+.pusher-collar {
+  width: 14px;
+  height: 24px;
+  background: linear-gradient(180deg, #64748b 0%, #334155 100%);
+  border-radius: 3px 0 0 3px;
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.4);
+}
+
+.pusher-ring {
+  width: 6px;
+  height: 20px;
+}
+
+.pusher-ring-red {
+  background: linear-gradient(180deg, #ff4d6d 0%, var(--chrono-red) 50%, var(--chrono-dark) 100%);
+  box-shadow: 0 0 6px rgba(239,35,60,0.6);
+}
+
+.pusher-ring-black {
+  background: linear-gradient(180deg, #475569 0%, #0f172a 100%);
+}
+
+.pusher-body {
+  width: 26px;
+  height: 22px;
+  background: linear-gradient(180deg, #cbd5e1 0%, #64748b 50%, #1e293b 100%);
+  border-radius: 0 3px 3px 0;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.6);
+}
+
+.pusher-cap {
+  width: 8px;
+  height: 20px;
+  background: radial-gradient(ellipse at center, #f8fafc 0%, #94a3b8 100%);
+  border-radius: 0 6px 6px 0;
+  margin-left: -2px;
+}
+
+.pusher-legend {
+  position: absolute;
+  left: 74px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* Crown */
+.crown, #crown {
+  position: absolute;
+  right: 10px;
+  top: 300px;
+  width: 80px;
+  height: 60px;
+  z-index: 25;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.1s ease;
+}
+
+.crown:hover, #crown:hover {
+  filter: brightness(1.15);
+}
+
+.crown:active, #crown:active {
+  transform: translateX(-3px);
+}
+
+.crown-guard {
+  width: 14px;
+  height: 52px;
+  background: linear-gradient(180deg, #475569 0%, #1e293b 100%);
+  border-radius: 4px 0 0 4px;
+}
+
+.crown-flutes {
+  width: 12px;
+  height: 44px;
+  background: repeating-linear-gradient(180deg, #cbd5e1 0px, #cbd5e1 2px, #1e293b 2px, #1e293b 4px);
+}
+
+.crown-body {
+  width: 24px;
+  height: 48px;
+  background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold-mid) 50%, var(--gold-shadow) 100%);
+  border-radius: 2px 4px 4px 2px;
+  box-shadow: inset 0 2px 3px rgba(255,255,255,0.6), inset 0 -2px 3px rgba(0,0,0,0.8);
+}
+
+.crown-cap {
+  width: 14px;
+  height: 38px;
+  background: radial-gradient(circle, #0f172a 0%, #020617 100%);
+  border: 1px solid var(--gold-mid);
+  border-radius: 0 10px 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -3px;
+}
+
+.crown-symbol {
+  font-size: 14px;
+  color: var(--gold-mid);
+}
+
+.crown-legend {
+  position: absolute;
+  left: 86px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--gold-mid);
+  white-space: nowrap;
+}
+
+/* Watch Case Main Housing (560px x 560px) */
+.watch-case {
+  position: relative;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  z-index: 5;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.9), 0 0 30px rgba(0,0,0,0.7);
+}
+
+/* Outer Brushed Steel & Rose Gold Bezel */
+.case-outer-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #475569 0%, #cbd5e1 20%, #334155 45%, #94a3b8 70%, #1e293b 100%);
+  box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -4px 8px rgba(0,0,0,0.8);
+}
+
+.bezel-stepped {
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-mid) 30%, var(--gold-shadow) 55%, var(--gold-highlight) 75%, var(--gold-dark) 100%);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.6);
+}
+
+/* 8 Bezel Screws */
+.bezel-screw {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f8fafc 0%, #94a3b8 70%, #475569 100%);
+  border: 1px solid #1e293b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.8), inset 0 1px 1px #fff;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screw-slot {
+  width: 10px;
+  height: 2px;
+  background: #0f172a;
+}
+
+.screw-pos-1 { top: 38px;  left: 375px; transform: rotate(22deg); }
+.screw-pos-2 { top: 135px; left: 495px; transform: rotate(67deg); }
+.screw-pos-3 { top: 395px; left: 495px; transform: rotate(112deg); }
+.screw-pos-4 { top: 495px; left: 375px; transform: rotate(157deg); }
+.screw-pos-5 { top: 495px; left: 165px; transform: rotate(202deg); }
+.screw-pos-6 { top: 395px; left: 48px;  transform: rotate(247deg); }
+.screw-pos-7 { top: 135px; left: 48px;  transform: rotate(292deg); }
+.screw-pos-8 { top: 38px;  left: 165px; transform: rotate(337deg); }
+
+/* Tachymeter Scale Ring */
+.tachymeter-ring {
+  position: absolute;
+  inset: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #0a0d12 65%, #181d26 100%);
+  border: 2px solid #232a36;
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.9);
+  z-index: 7;
+}
+
+.tachy-label {
+  position: absolute;
+  top: 14px;
+  left: 288px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--gold-mid);
+}
+
+.tachy-num {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #e2e8f0;
+  transform-origin: center center;
+}
+
+.t-400 { top: 30px;  left: 360px; }
+.t-300 { top: 58px;  left: 418px; }
+.t-240 { top: 104px; left: 456px; }
+.t-200 { top: 156px; left: 474px; }
+.t-170 { top: 212px; left: 480px; }
+.t-150 { top: 270px; left: 472px; }
+.t-130 { top: 326px; left: 450px; }
+.t-120 { top: 376px; left: 416px; }
+.t-110 { top: 418px; left: 368px; }
+.t-100 { top: 446px; left: 312px; }
+.t-90  { top: 456px; left: 248px; }
+.t-80  { top: 442px; left: 182px; }
+.t-75  { top: 410px; left: 124px; }
+.t-70  { top: 360px; left: 78px; }
+.t-65  { top: 300px; left: 50px; }
+.t-60  { top: 236px; left: 44px; }
+
+.tachy-tick {
+  position: absolute;
+  width: 4px;
+  height: 1px;
+  background: var(--gold-mid);
+}
+
+.tt-1 { top: 42px;  left: 395px; transform: rotate(40deg); }
+.tt-2 { top: 82px;  left: 442px; transform: rotate(65deg); }
+.tt-3 { top: 132px; left: 470px; transform: rotate(90deg); }
+.tt-4 { top: 242px; left: 480px; transform: rotate(115deg); }
+.tt-5 { top: 352px; left: 436px; transform: rotate(145deg); }
+.tt-6 { top: 436px; left: 342px; transform: rotate(190deg); }
+.tt-7 { top: 432px; left: 152px; transform: rotate(235deg); }
+.tt-8 { top: 332px; left: 62px;  transform: rotate(285deg); }
+
+/* Sapphire Crystal Inner Bezel & Polished Chapter Ring */
+.chapter-ring {
+  position: absolute;
+  inset: 58px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 12px rgba(0,0,0,0.9);
+  z-index: 10;
+}
+
+.minute-track-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.chrono-rail-track {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  border: 1px dashed rgba(226, 232, 240, 0.35);
+}
+
+/* Applied Faceted Hour Markers */
+.hour-marker {
+  position: absolute;
+  z-index: 12;
+}
+
+.idx-bar {
+  width: 6px;
+  height: 24px;
+  background: linear-gradient(90deg, var(--gold-light) 0%, var(--gold-mid) 50%, var(--gold-shadow) 100%);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8), inset 0 1px 1px #fff;
+  position: relative;
+}
+
+.idx-bar::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 4px;
+  bottom: 4px;
+  background: var(--lume-off);
+  border-radius: 1px;
+}
+
+.hour-12 { top: 6px; left: 217px; display: flex; gap: 4px; }
+.idx-dual {
+  width: 5px;
+  height: 26px;
+  background: linear-gradient(90deg, var(--gold-light) 0%, var(--gold-mid) 50%, var(--gold-shadow) 100%);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  position: relative;
+}
+.idx-dual::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 4px;
+  bottom: 4px;
+  background: var(--lume-off);
+  border-radius: 1px;
+}
+
+.hour-1  { top: 32px;  left: 322px; transform: rotate(30deg); }
+.hour-2  { top: 98px;  left: 390px; transform: rotate(60deg); }
+.hour-3  { top: 210px; left: 414px; transform: rotate(90deg); }
+.hour-4  { top: 320px; left: 390px; transform: rotate(120deg); }
+.hour-5  { top: 388px; left: 322px; transform: rotate(150deg); }
+.hour-7  { top: 388px; left: 114px; transform: rotate(210deg); }
+.hour-8  { top: 320px; left: 46px;  transform: rotate(240deg); }
+.hour-10 { top: 98px;  left: 46px;  transform: rotate(300deg); }
+.hour-11 { top: 32px;  left: 114px; transform: rotate(330deg); }
+
+/* Sapphire Crystal Reflection */
+.sapphire-reflection {
+  position: absolute;
+  inset: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.03) 35%, transparent 60%);
+  pointer-events: none;
+  z-index: 22;
+}
+
+/* Skeleton Dial Base & Movement Architecture */
+.skeleton-base {
+  position: absolute;
+  inset: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #151820 0%, #0d0f14 75%, #080a0e 100%);
+  overflow: hidden;
+  z-index: 11;
+}
+
+/* Ruthenium Mainplate with Skeleton Apertures */
+.mainplate-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(30,35,46,0.3) 0%, rgba(15,18,24,0.7) 100%);
+}
+
+.skeleton-aperture {
+  position: absolute;
+  background: #08090d;
+  border: 1px solid rgba(51, 65, 85, 0.4);
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.95);
+}
+
+.ap-barrel { top: 58px;  left: 42px;  width: 130px; height: 130px; border-radius: 50%; }
+.ap-train  { top: 170px; left: 52px;  width: 100px; height: 110px; border-radius: 40px; }
+.ap-chrono { top: 48px;  left: 270px; width: 120px; height: 100px; border-radius: 30px; }
+.ap-center { top: 180px; left: 180px; width: 80px;  height: 80px;  border-radius: 50%; }
+
+/* Visible Gear Train Silhouettes */
+.gear-barrel {
+  position: absolute;
+  top: 65px;
+  left: 50px;
+  width: 114px;
+  height: 114px;
+  border-radius: 50%;
+  border: 3px dashed var(--gold-dark);
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+}
+
+.barrel-spring-coil {
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  border: 2px solid #334155;
+  box-shadow: inset 0 0 6px #000;
+}
+
+.barrel-core {
+  position: absolute;
+  inset: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-dark) 100%);
+  border: 1px solid var(--gold-mid);
+}
+
+.barrel-spoke {
+  position: absolute;
+  top: 55px;
+  left: 10px;
+  width: 94px;
+  height: 4px;
+  background: var(--gold-mid);
+  border-radius: 2px;
+}
+.sp-1 { transform: rotate(0deg); }
+.sp-2 { transform: rotate(60deg); }
+.sp-3 { transform: rotate(120deg); }
+
+/* Column Wheel (1:30) */
+.gear-column-wheel {
+  position: absolute;
+  top: 72px;
+  left: 295px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #334155 0%, #0f172a 100%);
+  border: 2px solid #64748b;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+}
+
+.column-hub {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #cbd5e1 0%, #475569 100%);
+}
+
+.column-pillar {
+  position: absolute;
+  width: 4px;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 1px;
+}
+.p-1 { top: 2px;  left: 22px; }
+.p-2 { top: 8px;  left: 36px; transform: rotate(45deg); }
+.p-3 { top: 20px; left: 42px; transform: rotate(90deg); }
+.p-4 { top: 32px; left: 36px; transform: rotate(135deg); }
+.p-5 { top: 38px; left: 22px; transform: rotate(180deg); }
+.p-6 { top: 32px; left: 8px;  transform: rotate(225deg); }
+.p-7 { top: 20px; left: 2px;  transform: rotate(270deg); }
+.p-8 { top: 8px;  left: 8px;  transform: rotate(315deg); }
+
+/* Intermediate Gears */
+.gear-intermediate {
+  position: absolute;
+  top: 175px;
+  left: 60px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px dashed var(--gold-mid);
+}
+
+.gear-fourth {
+  position: absolute;
+  top: 170px;
+  left: 300px;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 2px dashed var(--gold-light);
+}
+
+/* Bridges: Rose Gold & Rhodium */
+.bridge {
+  position: absolute;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-mid) 40%, var(--gold-dark) 100%);
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.6);
+  z-index: 13;
+}
+
+.bridge-barrel {
+  top: 90px;
+  left: 48px;
+  width: 120px;
+  height: 18px;
+  transform: rotate(-25deg);
+}
+
+.bridge-chrono {
+  top: 100px;
+  left: 275px;
+  width: 86px;
+  height: 16px;
+  transform: rotate(35deg);
+}
+
+.bridge-center {
+  top: 215px;
+  left: 175px;
+  width: 90px;
+  height: 14px;
+}
+
+/* Synthetic Ruby Pivot Jewels in Gold Chatons */
+.ruby-jewel {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chaton-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold-mid);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+.ruby-stone {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff4d6d 0%, var(--ruby-core) 60%, var(--ruby-dark) 100%);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.6), 0 0 4px var(--ruby-glow);
+}
+
+.ruby-glint {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.jewel-barrel       { top: 115px; left: 100px; }
+.jewel-column       { top: 89px;  left: 312px; }
+.jewel-intermediate { top: 206px; left: 91px;  }
+.jewel-fourth       { top: 192px; left: 322px; }
+.jewel-power        { top: 213px; left: 105px; }
+
+/* Blued Steel Screws */
+.blued-screw {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #3b82f6 0%, var(--blued-steel) 60%, #1e3a8a 100%);
+  border: 1px solid #172554;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+}
+
+.bscrew-slot {
+  width: 6px;
+  height: 1px;
+  background: var(--blued-slot);
+}
+
+.screw-b1 { top: 75px;  left: 65px;  transform: rotate(40deg); }
+.screw-b2 { top: 130px; left: 152px; transform: rotate(15deg); }
+.screw-b3 { top: 78px;  left: 280px; transform: rotate(70deg); }
+.screw-b4 { top: 135px; left: 345px; transform: rotate(110deg); }
+.screw-b5 { top: 216px; left: 245px; transform: rotate(25deg); }
+
+/* Movement Engravings */
+.movement-engraving {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  text-transform: uppercase;
+  z-index: 12;
+}
+
+.eng-calibre { top: 158px; left: 165px; }
+.eng-beat    { top: 270px; left: 172px; }
+.eng-swiss   { bottom: 12px; left: 194px; letter-spacing: 3px; color: var(--gold-mid); font-size: 9px; }
+
+/* Complication 1: 12 o'clock - Chronograph 30-Minute Counter */
+.subdial-chrono {
+  position: absolute;
+  top: 40px;
+  left: 170px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  z-index: 16;
+}
+
+.subdial-bezel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold-mid);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+}
+
+.subdial-face {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1e2430 0%, #0d1017 100%);
+}
+
+.subdial-snailed-ring {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+}
+
+.subdial-num {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+.sn-0  { top: 6px;  left: 45px; }
+.sn-10 { top: 62px; left: 74px; }
+.sn-20 { top: 62px; left: 16px; }
+
+.subdial-label {
+  position: absolute;
+  bottom: 12px;
+  left: 18px;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--gold-mid);
+}
+
+/* Hand: Chronograph 30-Min */
+.hand-chrono-min, #hand-chrono-min {
+  position: absolute;
+  top: 14px;
+  left: 48px;
+  width: 4px;
+  height: 38px;
+  transform-origin: 2px 36px;
+  transform: rotate(0deg);
+  z-index: 18;
+}
+
+.subhand-blade {
+  width: 2px;
+  height: 32px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, var(--chrono-red) 0%, var(--gold-mid) 100%);
+  border-radius: 1px;
+}
+
+.subhand-counterpoise {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold-mid);
+  margin: -2px auto 0;
+}
+
+.subhand-pivot {
+  position: absolute;
+  bottom: 0;
+  left: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: 1px solid #0f172a;
+}
+
+/* Complication 2: 9 o'clock - Power Reserve Meter */
+.subdial-power {
+  position: absolute;
+  top: 170px;
+  left: 40px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  z-index: 16;
+}
+
+.power-sector-track {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border-left: 3px solid var(--chrono-red);
+  border-top: 3px solid var(--gold-mid);
+  border-right: 3px solid #10b981;
+  border-bottom: transparent;
+  transform: rotate(-45deg);
+}
+
+.power-label {
+  position: absolute;
+  font-size: 8px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+.pl-0  { top: 62px; left: 16px; color: var(--chrono-red); }
+.pl-12 { top: 34px; left: 16px; }
+.pl-24 { top: 14px; left: 44px; }
+.pl-36 { top: 34px; left: 74px; }
+.pl-48 { top: 62px; left: 72px; color: #10b981; }
+
+.power-title {
+  position: absolute;
+  bottom: 8px;
+  left: 4px;
+  right: 4px;
+  text-align: center;
+  font-size: 6.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: var(--gold-mid);
+}
+
+/* Hand: Power Reserve */
+.hand-power, #hand-power {
+  position: absolute;
+  top: 20px;
+  left: 48px;
+  width: 4px;
+  height: 34px;
+  transform-origin: 2px 30px;
+  transform: rotate(45deg);
+  z-index: 18;
+}
+
+.power-needle-body {
+  width: 2px;
+  height: 28px;
+  margin: 0 auto;
+  background: linear-gradient(180deg, var(--gold-light) 0%, var(--gold-mid) 100%);
+}
+
+.power-needle-tip {
+  width: 4px;
+  height: 6px;
+  background: var(--chrono-red);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  margin: 0 auto;
+}
+
+/* Brand Cartouche Plaque (3 o'clock) */
+.brand-cartouche {
+  position: absolute;
+  top: 202px;
+  right: 40px;
+  width: 90px;
+  height: 42px;
+  z-index: 16;
+}
+
+.cartouche-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  border: 1px solid var(--gold-mid);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+}
+
+.cartouche-body {
+  position: absolute;
+  inset: 2px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #1e2430 0%, #0f131a 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+
+.cartouche-brand {
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--gold-light);
+}
+
+.cartouche-model {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #e2e8f0;
+}
+
+.cartouche-origin {
+  font-size: 6.5px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--gold-mid);
+}
+
+/* Complication 3: 6 o'clock - Tourbillon Escapement */
+.tourbillon-assembly {
+  position: absolute;
+  bottom: 24px;
+  left: 150px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  z-index: 16;
+}
+
+.tourbillon-bezel-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--gold-mid);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+}
+
+.tourbillon-well-depth {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #07080a 50%, #11141a 100%);
+  box-shadow: inset 0 4px 12px rgba(0,0,0,0.95);
+}
+
+.tourbillon-seconds-track {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+}
+
+.t-sec-num {
+  position: absolute;
+  font-size: 7.5px;
+  font-weight: 700;
+  color: var(--gold-light);
+}
+.ts-60 { top: 2px;  left: 58px; }
+.ts-15 { top: 58px; right: 2px; }
+.ts-30 { bottom: 2px; left: 58px; }
+.ts-45 { top: 58px; left: 2px; }
+
+.t-sec-dot {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gold-mid);
+}
+.td-1 { top: 20px; left: 98px; }
+.td-2 { top: 98px; left: 98px; }
+.td-3 { top: 98px; left: 22px; }
+.td-4 { top: 20px; left: 22px; }
+
+.tourbillon-lower-bridge {
+  position: absolute;
+  top: 66px;
+  left: 12px;
+  width: 116px;
+  height: 8px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 4px;
+}
+
+/* The Rotating Tourbillon Cage */
+.tourbillon-cage, #tourbillon-cage {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  transform-origin: 50px 50px;
+  transform: rotate(0deg);
+  z-index: 18;
+}
+
+/* Glucydur Balance Wheel with Gold Inertia Screws */
+.balance-wheel-rim {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--gold-mid);
+  box-shadow: inset 0 0 6px rgba(0,0,0,0.7);
+}
+
+.b-weight {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--gold-highlight);
+  box-shadow: 0 0 2px #fff;
+}
+.bw-1  { top: -2px; left: 40px; }
+.bw-2  { top: 8px;  left: 68px; }
+.bw-3  { top: 28px; left: 82px; }
+.bw-4  { top: 52px; left: 80px; }
+.bw-5  { top: 72px; left: 62px; }
+.bw-6  { top: 82px; left: 38px; }
+.bw-7  { top: 72px; left: 16px; }
+.bw-8  { top: 52px; left: -2px; }
+.bw-9  { top: 28px; left: -2px; }
+.bw-10 { top: 8px;  left: 12px; }
+.bw-11 { top: 20px; left: 76px; }
+.bw-12 { top: 64px; left: 4px;  }
+
+.hairspring-coil {
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  border: 1px dashed var(--blued-steel);
+  box-shadow: 0 0 4px rgba(37,99,235,0.4);
+}
+
+/* Three Aerodynamic Titanium Cage Spokes */
+.cage-spoke {
+  position: absolute;
+  top: 48px;
+  left: 5px;
+  width: 90px;
+  height: 4px;
+  background: linear-gradient(90deg, #cbd5e1 0%, #64748b 50%, #cbd5e1 100%);
+  border-radius: 2px;
+}
+.cage-spoke-1 { transform: rotate(0deg); }
+.cage-spoke-2 { transform: rotate(120deg); }
+.cage-spoke-3 { transform: rotate(240deg); }
+
+.jewel-cage {
+  top: 43px;
+  left: 43px;
+}
+
+.tourbillon-seconds-pointer {
+  position: absolute;
+  top: 2px;
+  left: 48px;
+  width: 4px;
+  height: 8px;
+  background: var(--chrono-red);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* Upper Polished Titanium Tourbillon Bridge */
+.tourbillon-upper-bridge {
+  position: absolute;
+  top: 60px;
+  left: 10px;
+  width: 120px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.bridge-arm-left {
+  width: 46px;
+  height: 6px;
+  background: linear-gradient(180deg, #f8fafc 0%, #94a3b8 100%);
+  border-radius: 3px 0 0 3px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.bridge-center-boss {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-dark) 100%);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.jewel-tourbillon-upper {
+  position: relative;
+}
+
+.bridge-arm-right {
+  width: 46px;
+  height: 6px;
+  background: linear-gradient(180deg, #f8fafc 0%, #94a3b8 100%);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.bridge-mount-screw {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--blued-steel) 0%, #172554 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bms-left  { left: 0; }
+.bms-right { right: 0; }
+
+.tourbillon-title-label {
+  position: absolute;
+  bottom: 6px;
+  left: 20px;
+  right: 20px;
+  text-align: center;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: var(--gold-mid);
+}
+
+/* Center Co-axial Hands Stack (Center at 220px, 220px of skeleton-base) */
+.hand {
+  position: absolute;
+  z-index: 24;
+}
+
+/* Hour Hand (Skeleton Dauphine) */
+.hand-hour, #hand-hour {
+  top: 110px;
+  left: 211px;
+  width: 18px;
+  height: 110px;
+  transform-origin: 9px 110px;
+  transform: rotate(305deg);
+}
+
+.dauphine-side-light {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 9px;
+  height: 110px;
+  background: linear-gradient(90deg, var(--gold-highlight) 0%, var(--gold-mid) 100%);
+  clip-path: polygon(100% 0%, 100% 100%, 0% 80%);
+}
+
+.dauphine-side-dark {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 9px;
+  height: 110px;
+  background: linear-gradient(90deg, var(--gold-mid) 0%, var(--gold-shadow) 100%);
+  clip-path: polygon(0% 0%, 100% 80%, 0% 100%);
+}
+
+.dauphine-cutout {
+  position: absolute;
+  top: 30px;
+  left: 5px;
+  width: 8px;
+  height: 55px;
+  background: #08090d;
+  border-radius: 3px;
+  box-shadow: inset 0 1px 3px #000;
+}
+
+.dauphine-lume-tip {
+  position: absolute;
+  top: 8px;
+  left: 6px;
+  width: 6px;
+  height: 14px;
+  background: var(--lume-off);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* Minute Hand (Skeleton Dauphine) */
+.hand-minute, #hand-minute {
+  top: 50px;
+  left: 213px;
+  width: 14px;
+  height: 170px;
+  transform-origin: 7px 170px;
+  transform: rotate(68deg);
+}
+
+.hand-minute .dauphine-side-light, #hand-minute .dauphine-side-light {
+  width: 7px;
+  height: 170px;
+}
+
+.hand-minute .dauphine-side-dark, #hand-minute .dauphine-side-dark {
+  width: 7px;
+  height: 170px;
+}
+
+.hand-minute .dauphine-cutout, #hand-minute .dauphine-cutout {
+  top: 35px;
+  left: 4px;
+  width: 6px;
+  height: 95px;
+}
+
+.hand-minute .dauphine-lume-tip, #hand-minute .dauphine-lume-tip {
+  top: 8px;
+  left: 4px;
+  width: 6px;
+  height: 18px;
+}
+
+/* Chronograph Central Seconds Hand with Counterweight */
+.hand-second, #hand-second {
+  top: 15px;
+  left: 217px;
+  width: 6px;
+  height: 250px;
+  transform-origin: 3px 205px;
+  transform: rotate(142deg);
+  z-index: 26;
+}
+
+.second-needle {
+  width: 2px;
+  height: 195px;
+  margin: 0 auto;
+  background: var(--chrono-red);
+  box-shadow: 0 0 4px rgba(239,35,60,0.6);
+}
+
+.second-lume-pip {
+  position: absolute;
+  top: 25px;
+  left: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lume-off);
+}
+
+.second-center-collar {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chrono-red);
+  margin: -4px auto 0;
+  border: 1px solid #fff;
+}
+
+.second-tail {
+  position: absolute;
+  bottom: 0;
+  left: -4px;
+  width: 14px;
+  height: 45px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.second-counterweight-ring {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--chrono-red);
+  margin-top: 12px;
+}
+
+.second-counterweight-crest {
+  width: 2px;
+  height: 14px;
+  background: var(--chrono-red);
+}
+
+/* Center Cannon Pinion Cap */
+.center-pinion-cap {
+  position: absolute;
+  top: 209px;
+  left: 209px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  z-index: 28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pinion-ring-gold {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold-dark) 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.pinion-ring-steel {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f8fafc 0%, #475569 100%);
+}
+
+.jewel-center {
+  position: relative;
+}
+
+/* Bottom Spec HUD Bar */
+.hud-bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #64748b;
+  z-index: 30;
+}
+
+.spec-item {
+  display: flex;
+  gap: 6px;
+}
+
+.spec-label {
+  color: #475569;
+  font-weight: 600;
+}
+
+.spec-val {
+  color: #cbd5e1;
+  font-weight: 700;
+}
+
+.spec-sep {
+  color: var(--gold-mid);
+}
+
+/* =========================================================================
+   Super-LumiNova Dark Lume Mode (.lume-active)
+   ========================================================================= */
+
+.lume-active,
+.lume-active .stage,
+#stage.lume-active {
+  background: #020305 !important;
+}
+
+.lume-active .btn-lume,
+.lume-active #btn-lume,
+#stage.lume-active #btn-lume {
+  background: #00ffaa;
+  border-color: #00ffaa;
+  box-shadow: 0 0 16px rgba(0,255,170,0.8);
+}
+
+.lume-active .lume-pip,
+#stage.lume-active .lume-pip {
+  background: #020617;
+  box-shadow: none;
+}
+
+.lume-active .lume-text,
+#stage.lume-active .lume-text {
+  color: #020617;
+  font-weight: 800;
+}
+
+.lume-active .case-outer-rim,
+.lume-active .bezel-stepped,
+.lume-active .bridge,
+.lume-active .gear-wheel,
+.lume-active .gear-column-wheel {
+  filter: brightness(0.25) contrast(1.2);
+}
+
+.lume-active .skeleton-base {
+  background: #010203;
+}
+
+.lume-active .idx-bar::after,
+.lume-active .idx-dual::after {
+  background: var(--lume-on);
+  box-shadow: 0 0 8px var(--lume-on), 0 0 16px var(--lume-glow);
+}
+
+.lume-active .dauphine-lume-tip {
+  background: var(--lume-on);
+  box-shadow: 0 0 10px var(--lume-on), 0 0 20px var(--lume-glow);
+}
+
+.lume-active .second-lume-pip {
+  background: var(--lume-on);
+  box-shadow: 0 0 8px var(--lume-on);
+}
+
+.lume-active .t-sec-dot,
+.lume-active .sn-0,
+.lume-active .pl-48 {
+  color: var(--lume-on);
+  text-shadow: 0 0 8px var(--lume-on);
+}
