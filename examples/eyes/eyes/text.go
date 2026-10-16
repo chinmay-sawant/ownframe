@@ -18,22 +18,22 @@ func (a *App) paintText() {
 	if a.st.spiralMix > 0 {
 		mood = "spiral"
 	}
-	setText(a.pm.mood, strings.ToUpper(mood))
+	setCenteredText(a.pm.mood, strings.ToUpper(mood), a.pm.moodX)
 	if a.st.automatic {
-		setText(a.pm.mode, "AUTO")
+		setCenteredText(a.pm.mode, "AUTO", a.pm.modeX)
 	} else {
-		setText(a.pm.mode, "STATIC")
+		setCenteredText(a.pm.mode, "STATIC", a.pm.modeX)
 	}
 	if !a.st.automatic {
-		setText(a.pm.hint, "STATIC - TAP EYES TO CHANGE")
+		setCenteredText(a.pm.hint, "STATIC - TAP EYES TO CHANGE", a.pm.hintX)
 	} else if a.tch {
-		setText(a.pm.hint, "TAP TO CHANGE MOOD - SWIPE TO LOOK")
+		setCenteredText(a.pm.hint, "TAP TO CHANGE MOOD - SWIPE TO LOOK", a.pm.hintX)
 	} else {
-		setText(a.pm.hint, "TAP EYES - DRAG LOOK - 1-4 SELECT - S SPIRAL")
+		setCenteredText(a.pm.hint, "TAP EYES - DRAG LOOK - 1-4 SELECT - S SPIRAL", a.pm.hintX)
 	}
 	if a.st.dev {
-		setText(a.pm.dev, "DEV ON")
+		setCenteredText(a.pm.dev, "DEV ON", a.pm.devX)
 	} else {
-		setText(a.pm.dev, "DEV")
+		setCenteredText(a.pm.dev, "DEV", a.pm.devX)
 	}
 }

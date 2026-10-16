@@ -12,6 +12,10 @@ type parts struct {
 	mode    *ownframe.DisplayOp
 	devBG   *ownframe.DisplayOp
 	modeBG  *ownframe.DisplayOp
+	moodX   float64
+	hintX   float64
+	devX    float64
+	modeX   float64
 	baseL   rect
 	baseR   rect
 	rcL     float64
@@ -38,6 +42,10 @@ func (a *App) bind(d *ownframe.Display) {
 	a.pm.mode = textAt(d, bx, "mode-toggle")
 	a.pm.devBG = fillAt(d, bx, "dev-toggle")
 	a.pm.modeBG = fillAt(d, bx, "mode-toggle")
+	a.pm.moodX = textCenterX(d, bx, "t-mood")
+	a.pm.hintX = textCenterX(d, bx, "t-hint")
+	a.pm.devX = textCenterX(d, bx, "dev-toggle")
+	a.pm.modeX = textCenterX(d, bx, "mode-toggle")
 	a.pm.baseL = baseOf(d, a.pm.left)
 	a.pm.baseR = baseOf(d, a.pm.right)
 	a.pm.rcL = baseRCss(d, a.pm.left)
