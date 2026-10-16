@@ -9,6 +9,7 @@ Each example with an Android mobile entrypoint builds a signed arm64 release APK
 | Dino | `com.chinmaysawant.dino` | `scripts/android-release.sh dino` |
 | LG Remote | `com.chinmaysawant.lgremote` | `scripts/android-release.sh lg-remote` |
 | Telegram | `com.chinmaysawant.telegram` | `scripts/android-release.sh telegram` |
+| Eyes | `com.chinmaysawant.eyes` | `scripts/android-release.sh eyes` |
 
 Build one with `scripts/android-release.sh <example>`, for example:
 

@@ -172,3 +172,5 @@ phone build auto-cycles a mood every 8 seconds with random glances and
 blinks.
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)
+
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/eyes/android/artifacts/eyes-arm64-release.apk)

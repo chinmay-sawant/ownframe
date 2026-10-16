@@ -39,4 +39,7 @@ sh scripts/android-eyes.sh
 ADB=/mnt/c/Users/<you>/platform-tools/adb.exe sh scripts/android-eyes.sh install
 ```
 
+Build the signed arm64 APK with `scripts/android-release.sh eyes`. The checked-in
+artifact is `examples/eyes/android/artifacts/eyes-arm64-release.apk`.
+
 The app is `com.chinmaysawant.eyes`.

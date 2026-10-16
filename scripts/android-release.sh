@@ -4,7 +4,7 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)
 if [ "$#" -ne 1 ]; then
-	echo "usage: scripts/android-release.sh <login|platform|dino|lg-remote|telegram>" >&2
+	echo "usage: scripts/android-release.sh <login|platform|dino|lg-remote|telegram|eyes>" >&2
 	exit 2
 fi
 
@@ -14,6 +14,11 @@ login|platform|dino|telegram)
 	dir=$app
 	aar=$app
 	pkg="com.chinmaysawant.$app"
+	;;
+eyes)
+	dir=$app
+	aar=$app
+	pkg=com.chinmaysawant.eyes
 	;;
 lg-remote)
 	dir=$app
