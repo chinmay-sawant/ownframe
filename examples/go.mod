@@ -53,4 +53,7 @@ require (
 	star-tex.org/x/tex v0.7.1 // indirect
 )
 
-replace github.com/chinmay-sawant/ownframe => ../
+replace (
+	github.com/chinmay-sawant/blinkless => ../../blinkless
+	github.com/chinmay-sawant/ownframe => ../
+)

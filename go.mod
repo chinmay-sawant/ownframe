@@ -41,3 +41,5 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
+
+replace github.com/chinmay-sawant/blinkless => ../blinkless

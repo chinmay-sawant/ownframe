@@ -4,3 +4,5 @@ use (
 	.
 	./examples
 )
+
+replace github.com/chinmay-sawant/blinkless => ../blinkless
