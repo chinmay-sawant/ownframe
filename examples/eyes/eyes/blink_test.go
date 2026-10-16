@@ -51,7 +51,7 @@ func TestMoodGlides(t *testing.T) {
 }
 
 func TestMoodOpen(t *testing.T) {
-	for i := range moods {
+	for i := range poses {
 		l, r := targetOpen(i)
 		if l <= 0 || r <= 0 || l > 1.3 || r > 1.3 {
 			t.Fatalf("mood %d open %v %v", i, l, r)

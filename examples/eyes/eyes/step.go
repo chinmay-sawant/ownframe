@@ -13,17 +13,15 @@ func (a *App) step(dt float64, now time.Time) {
 	if dt <= 0 {
 		dt = 1.0 / 60
 	}
-	a.expireSpiral(now)
-	a.stepSpiral(dt, now)
-	if !s.drag && s.mood != 3 && now.Sub(s.moodT) > 8*time.Second {
-		s.mood = (s.mood + 1) % 3
-		s.moodT = now
+	if s.automatic && !s.drag && !now.Before(s.moodUntil) {
+		a.selectMood((s.mood+1)%len(poses), now)
 	}
+	a.stepSpiral(dt, now)
 	if !s.drag && now.Before(s.tiltUntil) {
 		s.tLookX = clamp(s.tiltX*96, -48, 48)
 		s.tLookY = clamp(-s.tiltY*96, -30, 30)
 		s.sacT = now.Add(1500 * time.Millisecond)
-	} else if !s.drag && s.mood != 3 && now.After(s.sacT) {
+	} else if !s.drag && s.mood != spiralMood && now.After(s.sacT) {
 		s.tLookX = (a.rng.Float64()*2 - 1) * 44
 		s.tLookY = (a.rng.Float64()*2 - 1) * 26
 		switch moodName(s.mood) {
@@ -48,18 +46,15 @@ func (a *App) step(dt float64, now time.Time) {
 				a.rng.IntN(2600)) * time.Millisecond)
 		}
 	}
-	tL, tR := targetOpen(s.mood)
-	kM := 1 - math.Exp(-dt*4.5)
-	s.moodL += (tL - s.moodL) * kM
-	s.moodR += (tR - s.moodR) * kM
+	a.stepPose(dt)
 	bm := 1.0
 	if s.blinkOn {
-		bm = 1 - 0.93*math.Sin(math.Pi*min(max(s.blinkP, 0), 1))
+		bm = 1 - 0.98*math.Sin(math.Pi*min(max(s.blinkP, 0), 1))
 	}
 	s.bm = bm
 	br := 1 + 0.014*math.Sin(2*math.Pi*0.35*now.Sub(s.birth).Seconds())
-	s.dispL = s.moodL * bm * br
-	s.dispR = s.moodR * bm * br
+	s.dispL = s.styleL.open * bm * br
+	s.dispR = s.styleR.open * bm * br
 	kL := 1 - math.Exp(-dt*18)
 	s.lookX += (s.tLookX - s.lookX) * kL
 	s.lookY += (s.tLookY - s.lookY) * kL

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import { documents, documentGroups, contentUrl } from './content';
@@ -82,9 +83,14 @@ export default function Documentation({ hash }) {
 
   const components = {
     table: ({ children }) => <div className="markdown-table-scroll"><table>{children}</table></div>,
-    img: ({ src, alt = '', title }) => {
+    img: ({ src, alt = '', title, width, height }) => {
+      const w = Number(width);
+      const h = Number(height);
+      const fixed = Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0;
       const image = <img src={src} alt={alt} title={title}
         className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
+        width={fixed ? w : undefined} height={fixed ? h : undefined}
+        style={fixed ? { maxWidth: `min(${w}px, 100%)`, maxHeight: `${h}px`, margin: '0 auto' } : undefined}
         loading="lazy" decoding="async" />;
       if (!isShowcase) return image;
       return <button type="button" className="gallery-open" aria-label={`Expand screenshot: ${alt}`}
@@ -138,7 +144,7 @@ export default function Documentation({ hash }) {
           {section.title}
         </a>)}
       </nav>}
-      {doc ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSlug, rehypeHighlight]}
+      {doc ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
         urlTransform={(url) => contentUrl(url, doc)} components={components}>{text}</Markdown>
         : <><h1>Document not found</h1><p><a href="#docs/readme">Open the documentation overview</a></p></>}
     </article>

@@ -9,11 +9,13 @@ import (
 func (a *App) stepSpiral(dt float64, now time.Time) {
 	s := &a.st
 	target := 0.0
-	if s.mood == 3 {
+	if s.mood == spiralMood {
 		target = 1
-		s.sacT = now.Add(500 * time.Millisecond)
-		if !now.Before(s.tiltUntil) {
-			s.tLookX, s.tLookY = 0, 0
+		if s.automatic {
+			s.sacT = now.Add(500 * time.Millisecond)
+			if !now.Before(s.tiltUntil) {
+				s.tLookX, s.tLookY = 0, 0
+			}
 		}
 	}
 	s.spiralMix += (target - s.spiralMix) * (1 - math.Exp(-dt*12))
@@ -27,16 +29,16 @@ func (a *App) stepSpiral(dt float64, now time.Time) {
 
 func (a *App) selectMood(mood int, now time.Time) {
 	s := &a.st
-	s.mood, s.moodT, s.spiralUntil = mood, now, time.Time{}
-	if mood == 3 {
-		s.spiralUntil = now.Add(2 * time.Second)
+	if mood < 0 || mood >= len(poses) {
+		mood = 0
 	}
-}
-
-func (a *App) expireSpiral(now time.Time) {
-	s := &a.st
-	if s.mood != 3 || s.spiralUntil.IsZero() || now.Before(s.spiralUntil) {
-		return
+	s.mood = mood
+	s.poseAt = now
+	s.moodUntil = time.Time{}
+	if s.automatic {
+		s.moodUntil = now.Add(moodDuration(mood))
 	}
-	a.selectMood(0, now)
+	if mood == spiralMood {
+		s.spiral = 0
+	}
 }

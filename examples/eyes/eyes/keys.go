@@ -3,11 +3,16 @@ package eyes
 import "context"
 
 func (a *App) onKeyDown(_ context.Context, k string) error {
+	a.wakeHUD(a.now())
 	switch k {
 	case "1", "2", "3", "4":
-		a.selectMood(int(k[0]-'1')%len(moods), a.now())
+		a.selectMood(int(k[0]-'1')%len(poses), a.now())
 	case "s":
-		a.Shake()
+		if a.st.automatic {
+			a.Shake()
+		} else {
+			a.selectMood(spiralMood, a.now())
+		}
 	case "space", "enter":
 		a.st.blinkOn = true
 		a.st.blinkP = 0

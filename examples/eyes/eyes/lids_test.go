@@ -1,47 +1,52 @@
 package eyes
 
 import (
+	"strings"
 	"testing"
 	"time"
-
-	"github.com/chinmay-sawant/ownframe"
 )
 
-func TestSquintLids(t *testing.T) {
+func TestNoEyebrowMarkup(t *testing.T) {
+	html := buildHTML()
+	if strings.Contains(stylesCSS, ".brow") {
+		t.Fatal("eyebrow styles remain")
+	}
+	for _, unwanted := range []string{"brow-left", "brow-right", "class=\"brow"} {
+		if strings.Contains(html, unwanted) || strings.Contains(stylesCSS, unwanted) {
+			t.Fatalf("found unwanted eyebrow markup %q", unwanted)
+		}
+	}
+}
+
+func TestSquintPreservesOuterEyeShape(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)
+	openHeight := a.pm.left.H
 	a.st.mood = 1
 	for range 90 {
 		tk(t, a, c, time.Second/60)
 	}
-	if a.pm.lidLB == nil || a.pm.lidLB.H <= 0 {
-		t.Fatal("squint has no bottom lid")
+	if a.pm.left.H < openHeight*.95 {
+		t.Fatalf("squint shrank the outer eye from %.1f to %.1f", openHeight, a.pm.left.H)
 	}
 	if a.pm.lidLT == nil || a.pm.lidLT.H <= 0 {
-		t.Fatal("squint has no top lid")
+		t.Fatal("squint did not shape the eye opening with an eyelid")
 	}
 }
 
-func TestAngryTopLid(t *testing.T) {
+func TestBlinkMovesEyelidsAndPreservesEyeShape(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)
-	a.st.mood = 2
-	for range 90 {
+	openHeight := a.pm.left.H
+	a.st.blinkT = c.at
+	tk(t, a, c, time.Second/60)
+	if a.pm.left.H != openHeight || a.pm.lidLT.H <= 0 {
+		t.Fatal("blink changed the eye shell instead of closing the eyelids")
+	}
+	for range 20 {
 		tk(t, a, c, time.Second/60)
 	}
-	if a.pm.lidLT == nil || a.pm.lidLT.H <= 0 {
-		t.Fatal("angry has no top lid")
-	}
-}
-
-func TestIdleParksLids(t *testing.T) {
-	a, c := newT(t)
-	for range 10 {
-		tk(t, a, c, time.Second/60)
-	}
-	for _, lid := range []*ownframe.DisplayOp{a.pm.lidLT, a.pm.lidLB, a.pm.lidRT, a.pm.lidRB} {
-		if lid != nil && lid.H > 0 {
-			t.Fatal("idle left a lid on the eye")
-		}
+	if a.pm.left.H != openHeight || a.pm.lidLT.H > 10 || a.pm.lidLB.H > 10 {
+		t.Fatalf("eye shell or eyelids did not return to the open shape")
 	}
 }

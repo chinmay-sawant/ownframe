@@ -43,17 +43,22 @@ body {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 2px;
+  width: 60px;
+  text-align: center;
   color: #8b93b0;
   background: #151824;
   border-radius: 14px;
   padding: 8px 14px;
-  margin: 12px 14px 0 0;
+  margin: 0;
 }
 .topbar {
   display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
   width: 100%;
+  padding: 28px 14px 0 0;
+  box-sizing: border-box;
 }
 .eyes {
   display: flex;
@@ -69,17 +74,13 @@ body {
   border-radius: 72px;
 }
 .mood {
-  margin-top: 38px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 20px;
   font-family: sans-serif;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 6px;
   color: #8b93b0;
-}
-.hint {
-  margin-top: 10px;
-  font-family: sans-serif;
-  font-size: 11px;
-  letter-spacing: 2px;
-  color: #3d435e;
+  text-align: center;
 }

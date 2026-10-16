@@ -1,21 +1,29 @@
 # Eyes demo
 
-Cute robot eyes on black that blink, look around, breathe, and cycle
-expressions (open, squint, angry, spiral/dizzy). Spiral eyes react to
-device motion on Android.
+Robot eyes on black with 21 selectable expressions: open, squint, angry,
+spiral, relaxed, sleepy, surprised, curious, left wink, right wink, bored,
+happy, worried, focused, excited, shy, nervous, relieved, sad, scared, and
+frustrated. The spiral also reacts to device motion on Android.
 
 ```sh
 go run ./examples/eyes          # desktop window, landscape 960x540
 go run ./examples/eyes -web     # browser on 127.0.0.1:8140
 ```
 
-Click to change mood, drag to look, keys 1-4 pick a mood, and S starts
-the spiral. Shaking the phone also starts it; it stays until you choose
-another mood. The phone auto-cycles open, squint, and angry every 8s with
-random saccades every 1.4-3s and blinks every 2.2-4.8s. Mood changes ease
-at ~4.5/s while blinks stay snappy. Squint and angry expressions use lids
-while keeping the eye width fixed.
+The AUTO button cycles through all 21 expressions. Each holds for 8 seconds;
+spiral holds for 4 seconds before it fades into the next expression. Tap the
+left half to go back and the right half to go forward. A double tap on either
+half selects the same direction once. Drag to look, keys 1-4 pick the original
+four, and S starts the spiral. Shaking the phone starts a short spiral too.
+Both modes keep the eyes animated: they blink, breathe, move their gaze, and
+finish each expression animation. The eyes keep their rounded shape as the lids
+close and reopen. Wink expressions close the viewer's named eye. STATIC stops
+automatic expression cycling;
+tap either half to select another expression. The spiral keeps rotating until
+you select another expression. Mood changes ease at about 4.5/s in both modes.
 
+The mood label is centered. The DEV and AUTO/STATIC controls fade after
+5 seconds without input, then return when you interact.
 The DEV pill at the top right toggles the devtools dock (Elements,
 Frame, Ops) without needing F12. The dock answers touch: tabs,
 rows, and the picker work from a finger, lists scroll with a drag,
@@ -30,5 +38,8 @@ flex layout re-centers and the tick re-bases on generation change.
 sh scripts/android-eyes.sh
 ADB=/mnt/c/Users/<you>/platform-tools/adb.exe sh scripts/android-eyes.sh install
 ```
+
+Build the signed arm64 APK with `scripts/android-release.sh eyes`. The checked-in
+artifact is `examples/eyes/android/artifacts/eyes-arm64-release.apk`.
 
 The app is `com.chinmaysawant.eyes`.

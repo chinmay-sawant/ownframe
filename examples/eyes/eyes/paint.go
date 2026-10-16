@@ -19,14 +19,24 @@ func (a *App) paint() {
 	a.rebase(d)
 	m := moodName(a.st.mood)
 	eyeAlpha := max(0.0001, 1-a.st.spiralMix)
-	lean := 0.0
+	left, right := a.st.styleL, a.st.styleR
+	now := a.now()
 	if m == "angry" {
-		lean = 11 + 2*math.Sin(a.now().Sub(a.st.birth).Seconds()*2.4)
+		lean := 2 * math.Sin(now.Sub(a.st.birth).Seconds()*2.4)
+		left.slant += lean
+		right.slant -= lean
 	}
-	a.paintEye(d, a.pm.left, a.pm.lidLT, a.pm.lidLB,
-		a.pm.baseL, a.pm.rcL, a.st.moodL, m, lean)
-	a.paintEye(d, a.pm.right, a.pm.lidRT, a.pm.lidRB,
-		a.pm.baseR, a.pm.rcR, a.st.moodR, m, -lean)
+	pose := poseFor(a.st.mood)
+	if pose.wink != winkNone {
+		open := 1 - .98*winkPulse(now.Sub(a.st.poseAt))
+		if pose.wink == winkScreenLeft {
+			left.open = open
+		} else {
+			right.open = open
+		}
+	}
+	a.paintEye(d, a.pm.left, a.pm.lidLT, a.pm.lidLB, a.pm.baseL, a.pm.rcL, left)
+	a.paintEye(d, a.pm.right, a.pm.lidRT, a.pm.lidRB, a.pm.baseR, a.pm.rcR, right)
 	for _, op := range []*ownframe.DisplayOp{
 		a.pm.left, a.pm.right, a.pm.lidLT, a.pm.lidLB, a.pm.lidRT, a.pm.lidRB,
 	} {
@@ -37,6 +47,7 @@ func (a *App) paint() {
 	a.paintSpiral(d, a.pm.baseL, a.pm.spiralL, a.st.spiralMix, a.st.spiral)
 	a.paintSpiral(d, a.pm.baseR, a.pm.spiralR, a.st.spiralMix, -a.st.spiral)
 	a.paintText()
+	a.paintHUD(now)
 }
 
 func (a *App) rebase(d *ownframe.Display) {

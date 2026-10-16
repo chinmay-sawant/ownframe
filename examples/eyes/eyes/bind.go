@@ -7,8 +7,13 @@ type parts struct {
 	left    *ownframe.DisplayOp
 	right   *ownframe.DisplayOp
 	mood    *ownframe.DisplayOp
-	hint    *ownframe.DisplayOp
 	dev     *ownframe.DisplayOp
+	mode    *ownframe.DisplayOp
+	devBG   *ownframe.DisplayOp
+	modeBG  *ownframe.DisplayOp
+	moodX   float64
+	devX    float64
+	modeX   float64
 	baseL   rect
 	baseR   rect
 	rcL     float64
@@ -29,9 +34,7 @@ func (a *App) bind(d *ownframe.Display) {
 	bx := a.page.Boxes()
 	a.pm.left = fillAt(d, bx, "eye-left")
 	a.pm.right = fillAt(d, bx, "eye-right")
-	a.pm.mood = textAt(d, bx, "t-mood")
-	a.pm.hint = textAt(d, bx, "t-hint")
-	a.pm.dev = textAt(d, bx, "dev-toggle")
+	a.bindText(d, bx)
 	a.pm.baseL = baseOf(d, a.pm.left)
 	a.pm.baseR = baseOf(d, a.pm.right)
 	a.pm.rcL = baseRCss(d, a.pm.left)

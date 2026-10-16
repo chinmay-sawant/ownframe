@@ -10,27 +10,20 @@ Android with `ebitenmobile`. `sh scripts/android.sh install` binds it, builds a
 debug APK with Gradle, and installs it over `adb`. See the
 [Android setup guide](examples/telegram/android/README.md).
 
-- ![Chat list with search, unread badges, pinned and muted chats](assets/screenshots/android/telegram/telegram-chats.webp)
-
-  **Chats**
-- ![Conversation with bubbles, timestamps, read ticks, and a composer](assets/screenshots/android/telegram/telegram-thread.webp)
-
-  **Conversation**
-- ![Contacts tab with last-seen times](assets/screenshots/android/telegram/telegram-contacts.webp)
-
-  **Contacts**
-- ![Settings tab with a dark mode toggle](assets/screenshots/android/telegram/telegram-settings.webp)
-
-  **Settings**
-- ![Settings in the dark theme](assets/screenshots/android/telegram/telegram-settings-dark.webp)
-
-  **Settings, dark**
-- ![Chat list in the dark theme](assets/screenshots/android/telegram/telegram-chats-dark.webp)
-
-  **Chats, dark**
-- ![Conversation in the dark theme](assets/screenshots/android/telegram/telegram-thread-dark.webp)
-
-  **Conversation, dark**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-chats.webp" alt="Chat list with search, unread badges, pinned and muted chats" width="250" height="600" /><br /><b>Chats</b></td>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-thread.webp" alt="Conversation with bubbles, timestamps, read ticks, and a composer" width="250" height="600" /><br /><b>Conversation</b></td>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-contacts.webp" alt="Contacts tab with last-seen times" width="250" height="600" /><br /><b>Contacts</b></td>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-settings.webp" alt="Settings tab with a dark mode toggle" width="250" height="600" /><br /><b>Settings</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-settings-dark.webp" alt="Settings in the dark theme" width="250" height="600" /><br /><b>Settings, dark</b></td>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-chats-dark.webp" alt="Chat list in the dark theme" width="250" height="600" /><br /><b>Chats, dark</b></td>
+    <td align="center"><img src="assets/screenshots/android/telegram/telegram-thread-dark.webp" alt="Conversation in the dark theme" width="250" height="600" /><br /><b>Conversation, dark</b></td>
+    <td></td>
+  </tr>
+</table>
 
 Taps, tabs, opening a chat, drag-to-scroll, and the soft keyboard work on the
 phone. The system Back gesture returns from a chat. The top bar and composer
@@ -45,12 +38,14 @@ Build the arm64 release APK with `scripts/android-release.sh telegram`.
 Teams is a native chat and collaboration app built with Go, HTML, and CSS.
 [Watch the Teams demo](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1).
 
-- ![Animated preview of the Teams chat and collaboration app](assets/screenshots/demos/teams.webp)
-
-  **Teams**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/demos/teams.webp" alt="Animated preview of the Teams chat and collaboration app" width="600" height="250" /><br /><b>Teams</b></td>
+  </tr>
+</table>
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/teams) ·
-[Watch the local demo recording](docs/demos/teams.mp4)
+[Watch the local demo recording](assets/screenshots/demos/teams.webp)
 
 ## Spotify Player
 
@@ -60,9 +55,11 @@ no WebView. Phone apps use ownframe's Ebitengine Mobile binding; this example
 does not have a mobile wrapper. Its `-web` mode serves a picture of the page
 over HTTP.
 
-- ![Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens](frontend/public/demos/videos/spotify.webp)
-
-  **Spotify Player**
+<table>
+  <tr>
+    <td align="center"><img src="frontend/public/demos/videos/spotify.webp" alt="Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens" width="600" height="250" /><br /><b>Spotify Player</b></td>
+  </tr>
+</table>
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/spotify-player)
 
@@ -71,18 +68,16 @@ over HTTP.
 Pet Care is a cross-platform example. The Android captures are from a Pixel 7,
 and the desktop capture shows the same app in its native Windows window.
 
-- ![Pet Care login screen in the light theme](assets/screenshots/android/pet-care/pet-care-login.webp)
-
-  **Login, light**
-- ![Pet Care home screen after sign-in](assets/screenshots/android/pet-care/pet-care-home.webp)
-
-  **Today**
-- ![Pet Care settings screen in the dark theme](assets/screenshots/android/pet-care/pet-care-settings-dark.webp)
-
-  **Settings, dark**
-- ![Pet Care desktop application showing the Today screen](assets/screenshots/windows/pet-care/pet-care.webp)
-
-  **Pet Care Windows**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/android/pet-care/pet-care-login.webp" alt="Pet Care login screen in the light theme" width="250" height="600" /><br /><b>Login, light</b></td>
+    <td align="center"><img src="assets/screenshots/android/pet-care/pet-care-home.webp" alt="Pet Care home screen after sign-in" width="250" height="600" /><br /><b>Today</b></td>
+    <td align="center"><img src="assets/screenshots/android/pet-care/pet-care-settings-dark.webp" alt="Pet Care settings screen in the dark theme" width="250" height="600" /><br /><b>Settings, dark</b></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="3"><img src="assets/screenshots/windows/pet-care/pet-care.webp" alt="Pet Care desktop application showing the Today screen" width="600" height="250" /><br /><b>Pet Care Windows</b></td>
+  </tr>
+</table>
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/pet-care)
 
@@ -93,21 +88,18 @@ stats into a gentle dashboard. Browse a week, tap a day for its breakdown, see
 weekly insights and weekday/weekend totals, or choose an app to focus the chart.
 Usage data comes from Android's Usage Access permission and stays on the phone.
 
-- ![Mochi dashboard with a seven-day usage chart and daily summary](assets/screenshots/digital-wellbeing/dashboard.webp)
-
-  **Dashboard**
-- ![Mochi dashboard focused on a selected day](assets/screenshots/digital-wellbeing/day-detail.webp)
-
-  **Selected day**
-- ![Weekly Insights with most-used apps and daily average](assets/screenshots/digital-wellbeing/weekly-insights.webp)
-
-  **Weekly Insights**
-- ![All Apps list with application icons and usage totals](assets/screenshots/digital-wellbeing/all-apps.webp)
-
-  **All apps**
-- ![Choose an app list sorted by usage time](assets/screenshots/digital-wellbeing/choose-app.webp)
-
-  **Choose an app**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/digital-wellbeing/dashboard.webp" alt="Mochi dashboard with a seven-day usage chart and daily summary" width="250" height="600" /><br /><b>Dashboard</b></td>
+    <td align="center"><img src="assets/screenshots/digital-wellbeing/day-detail.webp" alt="Mochi dashboard focused on a selected day" width="250" height="600" /><br /><b>Selected day</b></td>
+    <td align="center"><img src="assets/screenshots/digital-wellbeing/weekly-insights.webp" alt="Weekly Insights with most-used apps and daily average" width="250" height="600" /><br /><b>Weekly Insights</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/screenshots/digital-wellbeing/all-apps.webp" alt="All Apps list with application icons and usage totals" width="250" height="600" /><br /><b>All apps</b></td>
+    <td align="center"><img src="assets/screenshots/digital-wellbeing/choose-app.webp" alt="Choose an app list sorted by usage time" width="250" height="600" /><br /><b>Choose an app</b></td>
+    <td></td>
+  </tr>
+</table>
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/digital-wellbeing) ·
 Build the APK with `examples/digital-wellbeing/android/build.sh`.
@@ -117,9 +109,11 @@ Build the APK with `examples/digital-wellbeing/android/build.sh`.
 The desktop cat stays above other windows and lets clicks pass through its
 transparent pixels.
 
-- ![Desktop cat overlay preview](assets/screenshots/demos/desktop-cat.webp)
-
-  **Desktop cat overlay**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/demos/desktop-cat.webp" alt="Desktop cat overlay preview" width="600" height="250" /><br /><b>Desktop cat overlay</b></td>
+  </tr>
+</table>
   [Watch the demo](https://x.com/chinmay_sawant_/status/2106829998409789929)
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/desktop-cat)
@@ -128,9 +122,11 @@ transparent pixels.
 
 The Wispr Flow example is an HTML and CSS interface rendered by ownframe.
 
-- ![Wispr Flow example preview](assets/screenshots/demos/wispr-flow.webp)
-
-  **Wispr Flow**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/demos/wispr-flow.webp" alt="Wispr Flow example preview" width="600" height="250" /><br /><b>Wispr Flow</b></td>
+  </tr>
+</table>
   [Watch the demo](https://x.com/chinmay_sawant_/status/2106788230154871126)
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/wispr-flow-dashboard)
@@ -139,9 +135,11 @@ The Wispr Flow example is an HTML and CSS interface rendered by ownframe.
 
 An endless runner built with HTML, CSS, and Go.
 
-- ![Dino Run example preview](assets/screenshots/demos/dino.webp)
-
-  **Dino Run**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/demos/dino.webp" alt="Dino Run example preview" width="600" height="250" /><br /><b>Dino Run</b></td>
+  </tr>
+</table>
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/dino) ·
 Build the arm64 release APK with `scripts/android-release.sh dino`.
@@ -154,24 +152,25 @@ on desktop with `go run ./examples/eyes` and on Android through
 `ebitenmobile`. `sh scripts/android-eyes.sh install` binds it, builds a debug
 APK with Gradle, and installs it over `adb`.
 
-- ![Idle robot eyes on a black phone screen](assets/screenshots/android/eyes/eyes-idle.webp)
-
-  **Idle**
-- ![Curious robot eyes with one eye stretched tall](assets/screenshots/android/eyes/eyes-curious.webp)
-
-  **Curious**
-- ![Sleepy robot eyes half closed into cups](assets/screenshots/android/eyes/eyes-sleepy.webp)
-
-  **Sleepy**
-- ![Surprised robot eyes wide open](assets/screenshots/android/eyes/eyes-surprised.webp)
-
-  **Surprised**
-- ![Animated eyes demo blinking and cycling moods](assets/screenshots/android/eyes/eyes-60fps.webp)
-
-  **Animated demo**
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-idle.webp" alt="Idle robot eyes on a black phone screen" width="600" height="250" /><br /><b>Idle</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-curious.webp" alt="Curious robot eyes with one eye stretched tall" width="600" height="250" /><br /><b>Curious</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-sleepy.webp" alt="Sleepy robot eyes half closed into cups" width="600" height="250" /><br /><b>Sleepy</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-surprised.webp" alt="Surprised robot eyes wide open" width="600" height="250" /><br /><b>Surprised</b></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="4"><img src="assets/screenshots/android/eyes/eyes2-60fps.webp" alt="Second animated eyes demo blinking and cycling moods" width="600" height="250" /><br /><b>Animated demo 2</b></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="4"><img src="assets/screenshots/android/eyes/eyes-60fps.webp" alt="First animated eyes demo blinking and cycling moods" width="600" height="250" /><br /><b>Animated demo 1</b></td>
+  </tr>
+</table>
 
 Taps change the mood, swipes look around, keys 1-5 pick a mood, and the
 phone build auto-cycles a mood every 8 seconds with random glances and
 blinks.
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)
+
+[Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/eyes/android/artifacts/eyes-arm64-release.apk)

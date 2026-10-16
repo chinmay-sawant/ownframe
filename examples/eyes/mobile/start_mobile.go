@@ -18,7 +18,6 @@ func start() error {
 		return fmt.Errorf("mobile: eyes: %w", err)
 	}
 	app = a
-	a.BindTouch()
 	setAndroidPageProfile(a.Page())
 	inputPage = a.Page()
 	if err := ownframe.BindMobile(context.Background(), a.Page()); err != nil {

@@ -37,10 +37,31 @@ func fillAt(d *ownframe.Display, bx []ownframe.Box, id string) *ownframe.Display
 
 // textAt returns the first text run inside the box.
 func textAt(d *ownframe.Display, bx []ownframe.Box, id string) *ownframe.DisplayOp {
+	ops := textOpsAt(d, bx, id)
+	if len(ops) > 0 {
+		return ops[0]
+	}
+	return nil
+}
+
+func textOpsAt(d *ownframe.Display, bx []ownframe.Box, id string) []*ownframe.DisplayOp {
+	if d == nil {
+		return nil
+	}
 	for _, v := range bx {
-		if v.ID == id {
-			return frame.Text(d, v)
+		if v.ID != id {
+			continue
 		}
+		x, y, w, h := frame.BoxUnits(d, v)
+		var ops []*ownframe.DisplayOp
+		for i := range d.Ops {
+			op := &d.Ops[i]
+			if op.Kind == ownframe.DisplayOpText && op.X >= x-0.5 &&
+				op.X <= x+w+0.5 && op.Y >= y-0.5 && op.Y <= y+h+0.5 {
+				ops = append(ops, op)
+			}
+		}
+		return ops
 	}
 	return nil
 }

@@ -28,17 +28,15 @@ func (a *App) applyMotion(now time.Time) {
 	m := a.motion
 	a.motion.tilt, a.motion.shake = false, false
 	a.motionMu.Unlock()
-	if m.tilt {
+	if m.tilt && a.st.automatic {
 		a.st.tiltX, a.st.tiltY = m.x, m.y
 		a.st.tiltUntil = now.Add(1500 * time.Millisecond)
 	}
-	if m.shake {
+	if m.shake && a.st.automatic {
 		s := &a.st
-		if s.mood != 3 {
-			s.mood, s.moodT, s.spiral = 3, now, 0
-			s.blinkOn, s.blinkP = false, 0
-			s.tLookX, s.tLookY = 0, 0
-		}
-		s.spiralUntil = now.Add(650 * time.Millisecond)
+		a.selectMood(spiralMood, now)
+		s.moodUntil = now.Add(650 * time.Millisecond)
+		s.blinkOn, s.blinkP = false, 0
+		s.tLookX, s.tLookY = 0, 0
 	}
 }

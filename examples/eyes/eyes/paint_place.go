@@ -15,8 +15,6 @@ func setOp(d *ownframe.Display, op *ownframe.DisplayOp, x, y, w, h, alpha float6
 	op.Alpha = alpha
 }
 
-// setLid places one background lid, or parks it offscreen when shut. The
-// callers pad the height past the eye edges, so the shut line sits at 3.
 func setLid(d *ownframe.Display, op *ownframe.DisplayOp, x, y, w, h float64) {
 	if op == nil {
 		return

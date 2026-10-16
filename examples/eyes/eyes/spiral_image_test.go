@@ -9,8 +9,7 @@ import (
 
 func TestSpiralImagesAreBound(t *testing.T) {
 	a, c := newT(t)
-	a.st.mood = 3
-	a.st.moodT = c.at
+	a.selectMood(spiralMood, c.at)
 	for range 20 {
 		tk(t, a, c, time.Second/60)
 	}
