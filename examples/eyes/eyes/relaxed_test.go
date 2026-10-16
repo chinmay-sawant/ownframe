@@ -20,14 +20,14 @@ func TestRelaxedPoseLooksSoftAndBreathes(t *testing.T) {
 	a.st.styleL, a.st.styleR = pose.left, pose.right
 	a.st.blinkT = c.at.Add(time.Hour)
 	tk(t, a, c, 20*time.Millisecond)
-	start := a.pm.left.H
+	start := a.pm.lidLT.H
 	c.adv(700 * time.Millisecond)
 	tk(t, a, c, 20*time.Millisecond)
-	inhale := a.pm.left.H
+	inhale := a.pm.lidLT.H
 	c.adv(1100 * time.Millisecond)
 	tk(t, a, c, 20*time.Millisecond)
-	exhale := a.pm.left.H
-	if inhale <= start || exhale >= start {
-		t.Fatal("relaxed eyes did not open and soften with a slow breath")
+	exhale := a.pm.lidLT.H
+	if inhale >= start || exhale <= start {
+		t.Fatal("relaxed eyelids did not rise and fall with a slow breath")
 	}
 }

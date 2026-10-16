@@ -1,6 +1,10 @@
 package eyes
 
-import "github.com/chinmay-sawant/ownframe"
+import (
+	"math"
+
+	"github.com/chinmay-sawant/ownframe"
+)
 
 // paint moves the cached eye ops to match the simulation.
 func (a *App) paint() {
@@ -13,9 +17,15 @@ func (a *App) paint() {
 	}
 	// Rebase when layout moved (resize) but generation stayed.
 	a.rebase(d)
+	m := moodName(a.st.mood)
 	eyeAlpha := max(0.0001, 1-a.st.spiralMix)
 	left, right := a.st.styleL, a.st.styleR
 	now := a.now()
+	if m == "angry" {
+		lean := 2 * math.Sin(now.Sub(a.st.birth).Seconds()*2.4)
+		left.slant += lean
+		right.slant -= lean
+	}
 	pose := poseFor(a.st.mood)
 	if pose.wink != winkNone {
 		open := 1 - .98*winkPulse(now.Sub(a.st.poseAt))
@@ -25,9 +35,11 @@ func (a *App) paint() {
 			right.open = open
 		}
 	}
-	a.paintEye(d, a.pm.left, a.pm.baseL, left)
-	a.paintEye(d, a.pm.right, a.pm.baseR, right)
-	for _, op := range []*ownframe.DisplayOp{a.pm.left, a.pm.right} {
+	a.paintEye(d, a.pm.left, a.pm.lidLT, a.pm.lidLB, a.pm.baseL, a.pm.rcL, left)
+	a.paintEye(d, a.pm.right, a.pm.lidRT, a.pm.lidRB, a.pm.baseR, a.pm.rcR, right)
+	for _, op := range []*ownframe.DisplayOp{
+		a.pm.left, a.pm.right, a.pm.lidLT, a.pm.lidLB, a.pm.lidRT, a.pm.lidRB,
+	} {
 		if op != nil {
 			op.Alpha = eyeAlpha
 		}
@@ -41,8 +53,10 @@ func (a *App) paint() {
 func (a *App) rebase(d *ownframe.Display) {
 	if a.pm.left != nil && a.pm.baseL.w == 0 {
 		a.pm.baseL = baseOf(d, a.pm.left)
+		a.pm.rcL = baseRCss(d, a.pm.left)
 	}
 	if a.pm.right != nil && a.pm.baseR.w == 0 {
 		a.pm.baseR = baseOf(d, a.pm.right)
+		a.pm.rcR = baseRCss(d, a.pm.right)
 	}
 }

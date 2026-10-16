@@ -6,6 +6,9 @@ func mixStyle(from, to eyeStyle, k float64) eyeStyle {
 	return eyeStyle{
 		open:   from.open + (to.open-from.open)*k,
 		height: from.height + (to.height-from.height)*k,
+		top:    from.top + (to.top-from.top)*k,
+		bottom: from.bottom + (to.bottom-from.bottom)*k,
+		slant:  from.slant + (to.slant-from.slant)*k,
 		gazeX:  from.gazeX + (to.gazeX-from.gazeX)*k,
 		gazeY:  from.gazeY + (to.gazeY-from.gazeY)*k,
 	}

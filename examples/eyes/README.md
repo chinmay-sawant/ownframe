@@ -16,8 +16,9 @@ left half to go back and the right half to go forward. A double tap on either
 half selects the same direction once. Drag to look, keys 1-4 pick the original
 four, and S starts the spiral. Shaking the phone starts a short spiral too.
 Both modes keep the eyes animated: they blink, breathe, move their gaze, and
-finish each expression animation. The eyes blink by changing their height, and
-wink expressions close and reopen the viewer's named eye. STATIC stops automatic expression cycling;
+finish each expression animation. The eyes keep their rounded shape as the lids
+close and reopen. Wink expressions close the viewer's named eye. STATIC stops
+automatic expression cycling;
 tap either half to select another expression. The spiral keeps rotating until
 you select another expression. Mood changes ease at about 4.5/s in both modes.
 

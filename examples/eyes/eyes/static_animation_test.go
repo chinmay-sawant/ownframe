@@ -26,14 +26,14 @@ func TestWinksAnimateOnViewedSides(t *testing.T) {
 		for range 20 {
 			tk(t, a, c, 20*time.Millisecond)
 		}
-		closedLeft := a.pm.left.H < a.pm.right.H
+		closedLeft := a.pm.lidLT.H > a.pm.lidRT.H
 		if (tc.closedEye == "left") != closedLeft {
 			t.Fatalf("%s closed the wrong eye", tc.name)
 		}
 		for range 30 {
 			tk(t, a, c, 20*time.Millisecond)
 		}
-		if a.pm.left.H < 100 || a.pm.right.H < 100 {
+		if a.pm.lidLT.H > 10 || a.pm.lidRT.H > 10 {
 			t.Fatalf("%s did not reopen both eyes", tc.name)
 		}
 	}

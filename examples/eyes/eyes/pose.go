@@ -4,6 +4,8 @@ import "time"
 
 type eyeStyle struct {
 	open, height float64
+	top, bottom  float64
+	slant        float64
 	gazeX, gazeY float64
 }
 

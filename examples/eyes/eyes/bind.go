@@ -19,6 +19,12 @@ type parts struct {
 	modeX    float64
 	baseL    rect
 	baseR    rect
+	rcL      float64
+	rcR      float64
+	lidLT    *ownframe.DisplayOp
+	lidLB    *ownframe.DisplayOp
+	lidRT    *ownframe.DisplayOp
+	lidRB    *ownframe.DisplayOp
 	spiralL  *ownframe.DisplayOp
 	spiralR  *ownframe.DisplayOp
 }
@@ -34,6 +40,12 @@ func (a *App) bind(d *ownframe.Display) {
 	a.bindText(d, bx)
 	a.pm.baseL = baseOf(d, a.pm.left)
 	a.pm.baseR = baseOf(d, a.pm.right)
+	a.pm.rcL = baseRCss(d, a.pm.left)
+	a.pm.rcR = baseRCss(d, a.pm.right)
+	a.pm.lidLT = fillAt(d, bx, "lid-lt")
+	a.pm.lidLB = fillAt(d, bx, "lid-lb")
+	a.pm.lidRT = fillAt(d, bx, "lid-rt")
+	a.pm.lidRB = fillAt(d, bx, "lid-rb")
 	a.pm.spiralL = imageAt(d, bx, "spiral-l")
 	a.pm.spiralR = imageAt(d, bx, "spiral-r")
 	a.bnd = a.page.Generation()

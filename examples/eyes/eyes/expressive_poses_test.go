@@ -35,5 +35,7 @@ func TestExpressionsReadThroughTheirEyeCues(t *testing.T) {
 
 func styleDistance(a, b eyeStyle) float64 {
 	return math.Abs(a.open-b.open) + math.Abs(a.height-b.height) +
+		math.Abs(a.top-b.top) + math.Abs(a.bottom-b.bottom) +
+		math.Abs(a.slant-b.slant) +
 		math.Abs(a.gazeX-b.gazeX) + math.Abs(a.gazeY-b.gazeY)
 }

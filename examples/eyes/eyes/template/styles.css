@@ -15,6 +15,10 @@ body {
   background: #050508;
   position: relative;
 }
+.lid {
+  position: absolute;
+  background: #050508;
+}
 .spiral-layer {
   position: relative;
   width: 0;
