@@ -36,6 +36,8 @@ func animatePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		r.gazeX += dart
 	case motionAnticipation:
 		l.open, r.open = anticipationOpen(age), anticipationOpen(age)
+	default:
+		l, r = animateExpressivePose(p, age)
 	}
 	return l, r
 }

@@ -22,6 +22,16 @@ const (
 	motionShy
 	motionNervous
 	motionAnticipation
+	motionSad
+	motionEmbarrassed
+	motionScared
+	motionFrustrated
+	motionSuspicious
+	motionSmug
+	motionMischievous
+	motionDisgusted
+	motionProud
+	motionPleading
 )
 
 type eyePose struct {
@@ -31,7 +41,13 @@ type eyePose struct {
 	motion      poseMotion
 }
 
-var poses = append(basePoses(), extraPoses()...)
+var poses = allPoses()
+
+func allPoses() []eyePose {
+	poses := basePoses()
+	poses = append(poses, extraPoses()...)
+	return append(poses, expressivePoses()...)
+}
 
 func both(name string, style eyeStyle) eyePose {
 	return eyePose{name: name, left: style, right: style}
