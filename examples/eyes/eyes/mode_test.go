@@ -1,6 +1,7 @@
 package eyes
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -8,13 +9,23 @@ import (
 )
 
 func TestPoseCatalog(t *testing.T) {
-	if len(poses) < 10 {
+	if len(poses) != 20 {
 		t.Fatalf("poses=%d", len(poses))
 	}
+	seen := make(map[string]bool, len(poses))
 	for i := range poses {
+		if poses[i].name == "" || seen[poses[i].name] || strings.TrimSpace(poses[i].name) != poses[i].name {
+			t.Fatalf("invalid or duplicate pose name %q", poses[i].name)
+		}
+		seen[poses[i].name] = true
 		l, r := targetOpen(i)
 		if l <= 0 || r <= 0 || l > 1.3 || r > 1.3 {
 			t.Fatalf("%s has invalid eye opening %v / %v", poses[i].name, l, r)
+		}
+	}
+	for i := 12; i < len(poses); i++ {
+		if poses[i].motion == motionNone {
+			t.Fatalf("%s has no distinct animation", poses[i].name)
 		}
 	}
 }

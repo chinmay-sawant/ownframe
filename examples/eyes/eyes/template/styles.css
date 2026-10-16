@@ -74,17 +74,23 @@ body {
   border-radius: 72px;
 }
 .mood {
-  margin-top: 38px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 20px;
   font-family: sans-serif;
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 6px;
   color: #8b93b0;
+  text-align: center;
 }
 .hint {
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 10px;
   font-family: sans-serif;
   font-size: 11px;
   letter-spacing: 2px;
   color: #3d435e;
+  text-align: center;
 }

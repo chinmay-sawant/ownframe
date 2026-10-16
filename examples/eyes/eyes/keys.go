@@ -3,6 +3,7 @@ package eyes
 import "context"
 
 func (a *App) onKeyDown(_ context.Context, k string) error {
+	a.wakeHUD(a.now())
 	switch k {
 	case "1", "2", "3", "4":
 		a.selectMood(int(k[0]-'1')%len(poses), a.now())

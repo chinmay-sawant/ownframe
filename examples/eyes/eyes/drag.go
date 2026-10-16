@@ -8,6 +8,7 @@ import (
 
 // onPress looks toward the pressed point relative to center.
 func (a *App) onPress(_ context.Context, b ownframe.Box, x, y float64) (bool, error) {
+	a.wakeHUD(a.now())
 	w, h := a.page.Size()
 	if w > 0 && h > 0 {
 		a.st.tLookX = clamp((x-float64(w)/2)*0.12, -48, 48)
@@ -18,12 +19,14 @@ func (a *App) onPress(_ context.Context, b ownframe.Box, x, y float64) (bool, er
 
 // onDragStart claims the drag so moves steer the look.
 func (a *App) onDragStart(_ context.Context, _ ownframe.Box) (bool, error) {
+	a.wakeHUD(a.now())
 	a.st.drag = true
 	return true, nil
 }
 
 // onDragMove steers the look target while dragging.
 func (a *App) onDragMove(_ context.Context, dx, dy float64) error {
+	a.wakeHUD(a.now())
 	a.st.tLookX = clamp(a.st.tLookX+dx*0.4, -48, 48)
 	a.st.tLookY = clamp(a.st.tLookY+dy*0.4, -30, 30)
 	return nil
@@ -33,6 +36,7 @@ func (a *App) onDragMove(_ context.Context, dx, dy float64) error {
 func (a *App) onDragEnd(_ context.Context) error {
 	a.st.drag = false
 	now := a.now()
+	a.wakeHUD(now)
 	if a.st.automatic {
 		a.st.moodUntil = now.Add(moodDuration(a.st.mood))
 	}

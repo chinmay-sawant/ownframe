@@ -14,6 +14,7 @@ type state struct {
 	mood      int
 	moodUntil time.Time
 	poseAt    time.Time
+	hudUntil  time.Time
 	automatic bool
 	lookX     float64
 	lookY     float64
@@ -45,7 +46,8 @@ type state struct {
 
 func newState(now func() time.Time) state {
 	t := now()
-	return state{moodUntil: t.Add(moodDuration(0)), poseAt: t, automatic: true,
+	return state{moodUntil: t.Add(moodDuration(0)), poseAt: t,
+		hudUntil: t.Add(hudIdle), automatic: true,
 		sacT: t, blinkT: t.Add(2 * time.Second),
 		moodL: 1, moodR: 1, styleL: eyeStyle{open: 1, height: 1},
 		styleR: eyeStyle{open: 1, height: 1}, dispL: 1, dispR: 1, birth: t}

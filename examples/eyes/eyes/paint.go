@@ -49,6 +49,7 @@ func (a *App) paint() {
 	a.paintSpiral(d, a.pm.baseL, a.pm.spiralL, a.st.spiralMix, a.st.spiral)
 	a.paintSpiral(d, a.pm.baseR, a.pm.spiralR, a.st.spiralMix, -a.st.spiral)
 	a.paintText()
+	a.paintHUD(now)
 }
 
 func (a *App) rebase(d *ownframe.Display) {
