@@ -39,8 +39,11 @@ func (a *App) paint() {
 		a.pm.baseL, a.pm.rcL, left)
 	a.paintEye(d, a.pm.right, a.pm.lidRT, a.pm.lidRB,
 		a.pm.baseR, a.pm.rcR, right)
+	paintBrow(d, a.pm.browL, a.pm.baseL, left, a.st.lookX, a.st.lookY)
+	paintBrow(d, a.pm.browR, a.pm.baseR, right, a.st.lookX, a.st.lookY)
 	for _, op := range []*ownframe.DisplayOp{
-		a.pm.left, a.pm.right, a.pm.lidLT, a.pm.lidLB, a.pm.lidRT, a.pm.lidRB,
+		a.pm.left, a.pm.right, a.pm.browL, a.pm.browR,
+		a.pm.lidLT, a.pm.lidLB, a.pm.lidRT, a.pm.lidRB,
 	} {
 		if op != nil {
 			op.Alpha = eyeAlpha

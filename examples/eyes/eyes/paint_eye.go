@@ -18,8 +18,9 @@ func (a *App) paintEye(d *ownframe.Display, eye, top, bot *ownframe.DisplayOp,
 	setOp(d, eye, x, y, b.w, h, 1)
 	eye.Radius = min(rc*h/b.h, min(b.w, h)/2*0.98) * p
 	lid := (1 - min(style.open, 1)) * h
-	topH := (1-a.st.bm)*h + lid*style.top
-	botH := lid * style.bottom
+	blink := (1 - a.st.bm) * h
+	topH := blink*.6 + lid*style.top
+	botH := blink*.4 + lid*style.bottom
 	if topH+botH > h-6 && h > 6 {
 		f := (h - 6) / (topH + botH)
 		topH, botH = topH*f, botH*f

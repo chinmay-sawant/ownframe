@@ -12,6 +12,12 @@ func setText(op *ownframe.DisplayOp, s string) {
 	}
 }
 
+func clearTextOps(ops []*ownframe.DisplayOp) {
+	for _, op := range ops {
+		setText(op, "")
+	}
+}
+
 // paintText shows the mood, the hint, and the devtools switch label.
 func (a *App) paintText() {
 	mood := moodName(a.st.mood)
@@ -24,12 +30,13 @@ func (a *App) paintText() {
 	} else {
 		setCenteredText(a.pm.mode, "STATIC", a.pm.modeX)
 	}
-	if !a.st.automatic {
-		setCenteredText(a.pm.hint, "STATIC - TAP EYES TO CHANGE", a.pm.hintX)
-	} else if a.tch {
-		setCenteredText(a.pm.hint, "TAP TO CHANGE MOOD - SWIPE TO LOOK", a.pm.hintX)
-	} else {
-		setCenteredText(a.pm.hint, "TAP EYES - DRAG LOOK - 1-4 SELECT - S SPIRAL", a.pm.hintX)
+	hint := "TAP ◀ PREVIOUS · TAP ▶ NEXT · DOUBLE TAP SAME SIDE"
+	if !a.tch && a.st.automatic {
+		hint = "CLICK ◀ PREV · CLICK ▶ NEXT · DRAG LOOK · 1-4 MOODS · S SPIRAL"
+	}
+	setCenteredText(a.pm.hint, hint, a.pm.hintX)
+	if len(a.pm.hintRuns) > 1 {
+		clearTextOps(a.pm.hintRuns[1:])
 	}
 	if a.st.dev {
 		setCenteredText(a.pm.dev, "DEV ON", a.pm.devX)

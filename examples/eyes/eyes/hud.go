@@ -24,12 +24,23 @@ func (a *App) hudAlpha(now time.Time) float64 {
 
 func (a *App) paintHUD(now time.Time) {
 	alpha := a.hudAlpha(now)
-	if alpha == 0 {
+	visible := alpha > 0
+	if !visible {
 		alpha = hudMin
+		for _, op := range []*ownframe.DisplayOp{a.pm.dev, a.pm.mode} {
+			setText(op, "")
+		}
 	}
-	for _, op := range []*ownframe.DisplayOp{a.pm.dev, a.pm.mode, a.pm.hint, a.pm.devBG, a.pm.modeBG} {
+	if !visible {
+		clearTextOps(a.pm.hintRuns)
+	}
+	for _, op := range []*ownframe.DisplayOp{a.pm.dev, a.pm.mode,
+		a.pm.devBG, a.pm.modeBG} {
 		if op != nil {
 			op.SetPaintOpacity(alpha)
 		}
+	}
+	for _, op := range a.pm.hintRuns {
+		op.SetPaintOpacity(alpha)
 	}
 }

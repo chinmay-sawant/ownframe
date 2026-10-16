@@ -4,28 +4,31 @@ import "github.com/chinmay-sawant/ownframe"
 
 // parts caches the display ops the paint step moves.
 type parts struct {
-	left    *ownframe.DisplayOp
-	right   *ownframe.DisplayOp
-	mood    *ownframe.DisplayOp
-	hint    *ownframe.DisplayOp
-	dev     *ownframe.DisplayOp
-	mode    *ownframe.DisplayOp
-	devBG   *ownframe.DisplayOp
-	modeBG  *ownframe.DisplayOp
-	moodX   float64
-	hintX   float64
-	devX    float64
-	modeX   float64
-	baseL   rect
-	baseR   rect
-	rcL     float64
-	rcR     float64
-	lidLT   *ownframe.DisplayOp
-	lidLB   *ownframe.DisplayOp
-	lidRT   *ownframe.DisplayOp
-	lidRB   *ownframe.DisplayOp
-	spiralL *ownframe.DisplayOp
-	spiralR *ownframe.DisplayOp
+	left     *ownframe.DisplayOp
+	right    *ownframe.DisplayOp
+	browL    *ownframe.DisplayOp
+	browR    *ownframe.DisplayOp
+	mood     *ownframe.DisplayOp
+	hint     *ownframe.DisplayOp
+	hintRuns []*ownframe.DisplayOp
+	dev      *ownframe.DisplayOp
+	mode     *ownframe.DisplayOp
+	devBG    *ownframe.DisplayOp
+	modeBG   *ownframe.DisplayOp
+	moodX    float64
+	hintX    float64
+	devX     float64
+	modeX    float64
+	baseL    rect
+	baseR    rect
+	rcL      float64
+	rcR      float64
+	lidLT    *ownframe.DisplayOp
+	lidLB    *ownframe.DisplayOp
+	lidRT    *ownframe.DisplayOp
+	lidRB    *ownframe.DisplayOp
+	spiralL  *ownframe.DisplayOp
+	spiralR  *ownframe.DisplayOp
 }
 
 // rect is a CSS-pixel box.
@@ -36,16 +39,9 @@ func (a *App) bind(d *ownframe.Display) {
 	bx := a.page.Boxes()
 	a.pm.left = fillAt(d, bx, "eye-left")
 	a.pm.right = fillAt(d, bx, "eye-right")
-	a.pm.mood = textAt(d, bx, "t-mood")
-	a.pm.hint = textAt(d, bx, "t-hint")
-	a.pm.dev = textAt(d, bx, "dev-toggle")
-	a.pm.mode = textAt(d, bx, "mode-toggle")
-	a.pm.devBG = fillAt(d, bx, "dev-toggle")
-	a.pm.modeBG = fillAt(d, bx, "mode-toggle")
-	a.pm.moodX = textCenterX(d, bx, "t-mood")
-	a.pm.hintX = textCenterX(d, bx, "t-hint")
-	a.pm.devX = textCenterX(d, bx, "dev-toggle")
-	a.pm.modeX = textCenterX(d, bx, "mode-toggle")
+	a.pm.browL = fillAt(d, bx, "brow-left")
+	a.pm.browR = fillAt(d, bx, "brow-right")
+	a.bindText(d, bx)
 	a.pm.baseL = baseOf(d, a.pm.left)
 	a.pm.baseR = baseOf(d, a.pm.right)
 	a.pm.rcL = baseRCss(d, a.pm.left)

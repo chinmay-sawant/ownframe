@@ -23,3 +23,23 @@ func setOpRotation(op *ownframe.DisplayOp, deg float64) {
 	m.E, m.F = cx-c*cx+s*cy, cy-s*cx-c*cy
 	op.SetXform(m)
 }
+
+func paintBrow(d *ownframe.Display, op *ownframe.DisplayOp, b rect,
+	style eyeStyle, lookX, lookY float64) {
+	if op == nil || style.browUp <= 0 {
+		if op != nil {
+			op.Alpha = 0
+		}
+		return
+	}
+	w, h := b.w*.68, 8.0
+	x := b.x + lookX + style.gazeX + (b.w-w)/2
+	y := b.y + lookY + style.gazeY - style.browUp - h - 8
+	setOp(d, op, x, y, w, h, 1)
+	p := d.PointsPerPixel
+	if p == 0 {
+		p = 1
+	}
+	op.Radius = h / 2 * p
+	setOpRotation(op, style.browSlant)
+}

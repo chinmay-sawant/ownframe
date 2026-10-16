@@ -8,11 +8,19 @@ import (
 
 // onPress looks toward the pressed point relative to center.
 func (a *App) onPress(_ context.Context, b ownframe.Box, x, y float64) (bool, error) {
-	a.wakeHUD(a.now())
+	now := a.now()
+	a.wakeHUD(now)
 	w, h := a.page.Size()
+	a.st.pressDir = 0
 	if w > 0 && h > 0 {
 		a.st.tLookX = clamp((x-float64(w)/2)*0.12, -48, 48)
 		a.st.tLookY = clamp((y-float64(h)/2)*0.12, -30, 30)
+		if b.ID != "dev-toggle" && b.ID != "mode-toggle" {
+			a.st.pressDir = 1
+			if x < float64(w)/2 {
+				a.st.pressDir = -1
+			}
+		}
 	}
 	return false, nil
 }

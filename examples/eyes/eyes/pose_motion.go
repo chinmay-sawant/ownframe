@@ -23,9 +23,13 @@ func animatePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		l.gazeX += 8 * math.Sin(age*1.1)
 		r.gazeX = l.gazeX
 	case motionExcited:
-		pulse := .025 * math.Sin(age*4)
-		l.height += pulse
-		r.height += pulse
+		bounce := .5 + .5*math.Sin(age*4.8)
+		l.open += .04 * bounce
+		r.open += .04 * bounce
+		l.height += .05 * bounce
+		r.height += .05 * bounce
+		l.gazeY -= 1.5 * bounce
+		r.gazeY -= 1.5 * bounce
 	case motionShy:
 		peek := 12 * math.Max(0, math.Sin(age*1.3))
 		l.gazeX += peek
@@ -34,24 +38,24 @@ func animatePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		dart := 13*math.Sin(age*7) + 7*math.Sin(age*3.1)
 		l.gazeX += dart
 		r.gazeX += dart
-	case motionAnticipation:
-		l.open, r.open = anticipationOpen(age), anticipationOpen(age)
+	case motionRelieved:
+		l.open, r.open = relievedOpen(age), relievedOpen(age)
 	default:
 		l, r = animateExpressivePose(p, age)
 	}
 	return l, r
 }
 
-func anticipationOpen(age float64) float64 {
-	phase := math.Mod(age, 4)
-	if phase < .65 || phase >= 3.3 {
-		return .05
+func relievedOpen(age float64) float64 {
+	phase := math.Mod(age, 5)
+	switch {
+	case phase < .35:
+		return .2
+	case phase < 1.2:
+		return .2 + .5*(phase-.35)/.85
+	case phase < 3.8:
+		return .7
+	default:
+		return .7 - .5*(phase-3.8)/1.2
 	}
-	if phase < 1.25 {
-		return .05 + .9*(phase-.65)/.6
-	}
-	if phase < 2.8 {
-		return .95
-	}
-	return .95 - .9*(phase-2.8)/.5
 }

@@ -11,25 +11,28 @@ func moodName(i int) string {
 // state is the eye simulation the tick advances. Eye styles ease toward each
 // pose while both modes keep blinking and breathing.
 type state struct {
-	mood      int
-	moodUntil time.Time
-	poseAt    time.Time
-	hudUntil  time.Time
-	automatic bool
-	lookX     float64
-	lookY     float64
-	tLookX    float64
-	tLookY    float64
-	sacT      time.Time
-	blinkT    time.Time
-	blinkOn   bool
-	blinkP    float64
-	moodL     float64
-	moodR     float64
-	styleL    eyeStyle
-	styleR    eyeStyle
-	dispL     float64
-	dispR     float64
+	mood       int
+	moodUntil  time.Time
+	poseAt     time.Time
+	hudUntil   time.Time
+	automatic  bool
+	lastTapDir int
+	pressDir   int
+	lastTapAt  time.Time
+	lookX      float64
+	lookY      float64
+	tLookX     float64
+	tLookY     float64
+	sacT       time.Time
+	blinkT     time.Time
+	blinkOn    bool
+	blinkP     float64
+	moodL      float64
+	moodR      float64
+	styleL     eyeStyle
+	styleR     eyeStyle
+	dispL      float64
+	dispR      float64
 	// bm is the blink multiplier: lids close fully on blinks and partly
 	// on moods, so squints read as lids instead of a shrinking fish.
 	bm    float64

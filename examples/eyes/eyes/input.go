@@ -11,6 +11,8 @@ import (
 // triggers a blink anywhere else.
 func (a *App) onTap(_ context.Context, b ownframe.Box) error {
 	now := a.now()
+	direction := a.st.pressDir
+	a.st.pressDir = 0
 	a.wakeHUD(now)
 	if b.ID == "dev-toggle" {
 		a.st.dev = !a.st.dev
@@ -19,6 +21,10 @@ func (a *App) onTap(_ context.Context, b ownframe.Box) error {
 	}
 	if b.ID == "mode-toggle" {
 		a.toggleMode(a.now())
+		return nil
+	}
+	if direction != 0 {
+		a.onSideTap(direction, now)
 		return nil
 	}
 	a.selectMood((a.st.mood+1)%len(poses), now)

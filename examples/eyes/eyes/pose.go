@@ -7,6 +7,8 @@ type eyeStyle struct {
 	top, bottom  float64
 	slant        float64
 	gazeX, gazeY float64
+	browUp       float64
+	browSlant    float64
 }
 
 type poseMotion uint8
@@ -21,7 +23,6 @@ const (
 	motionExcited
 	motionShy
 	motionNervous
-	motionAnticipation
 	motionSad
 	motionEmbarrassed
 	motionScared
@@ -32,6 +33,7 @@ const (
 	motionDisgusted
 	motionProud
 	motionPleading
+	motionRelieved
 )
 
 type eyePose struct {

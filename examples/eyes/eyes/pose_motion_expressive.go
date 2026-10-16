@@ -10,16 +10,21 @@ func animateExpressivePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		l.gazeY += drift
 		r.gazeY += drift
 	case motionEmbarrassed:
-		glance := 9 * math.Sin(age*2.4)
+		glance := 12 * math.Sin(age*1.15)
+		flutter := math.Max(0, math.Sin(age*4))
 		l.gazeX += glance
 		r.gazeX += glance
+		l.gazeY += 1.5 * flutter
+		r.gazeY += 1.5 * flutter
+		l.open -= .16 * flutter
+		r.open -= .16 * flutter
 	case motionScared:
-		dart := 14*math.Sin(age*8) + 4*math.Sin(age*15)
-		l.gazeX += dart
-		r.gazeX += dart
-		pulse := .025 * math.Sin(age*6)
-		l.open += pulse
-		r.open += pulse
+		shiver := math.Sin(age * 25)
+		l.gazeX += 2.4 * shiver
+		r.gazeX += 2.4 * shiver
+		quiver := 1.8 * math.Sin(age*22+.8)
+		l.gazeY += quiver
+		r.gazeY += quiver
 	case motionFrustrated:
 		squeeze := .04 * math.Max(0, math.Sin(age*3.8))
 		l.open -= squeeze
@@ -28,25 +33,22 @@ func animateExpressivePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		glance := 5 * math.Sin(age*1.3)
 		l.gazeX += glance
 		r.gazeX += glance
-	case motionSmug:
-		l.open += .025 * math.Sin(age*1.2)
-		r.gazeX += 2 * math.Sin(age*.9)
-	case motionMischievous:
-		l.open -= .12 * math.Max(0, math.Sin(age*1.7))
 	case motionDisgusted:
 		recoil := math.Max(0, math.Sin(age*2.6))
-		l.gazeX -= 5 * recoil
-		r.gazeX -= 5 * recoil
+		l.gazeX += 3 * recoil
+		r.gazeX += 3 * recoil
+		l.gazeY -= 1.5 * recoil
+		r.gazeY -= 1.5 * recoil
+		l.open -= .05 * recoil
+		r.open -= .05 * recoil
 	case motionProud:
-		lift := .025 * math.Sin(age*1.1)
-		l.height += lift
-		r.height += lift
-	case motionPleading:
-		appeal := .5 + .5*math.Sin(age*2.1)
-		l.open += .04 * appeal
-		r.open += .04 * appeal
-		l.gazeY -= appeal
-		r.gazeY -= appeal
+		lift := 2.5 * math.Max(0, math.Sin(age*1.1))
+		l.gazeY -= lift
+		r.gazeY -= lift
+		l.open += .02 * math.Max(0, math.Sin(age*.8))
+		r.open += .02 * math.Max(0, math.Sin(age*.8))
+	case motionSmug, motionMischievous, motionPleading:
+		return animateReferenceExpression(p, age)
 	}
 	return l, r
 }

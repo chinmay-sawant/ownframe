@@ -16,7 +16,7 @@ func extraPoses() []eyePose {
 			right: eyeStyle{open: .56, height: 1, top: .68, gazeX: 7, gazeY: 7}, motion: motionShy},
 		{name: "nervous", left: eyeStyle{open: .86, height: 1.04, top: .18},
 			right: eyeStyle{open: .86, height: 1.04, top: .18}, motion: motionNervous},
-		{name: "anticipation", left: eyeStyle{open: .05, height: 1, top: 1},
-			right: eyeStyle{open: .05, height: 1, top: 1}, motion: motionAnticipation},
+		{name: "relieved", left: eyeStyle{open: .7, height: 1, top: .82, bottom: .12, gazeY: 2},
+			right: eyeStyle{open: .7, height: 1, top: .82, bottom: .12, gazeY: 2}, motion: motionRelieved},
 	}
 }
