@@ -31,16 +31,10 @@ func (a *App) paintHUD(now time.Time) {
 			setText(op, "")
 		}
 	}
-	if !visible {
-		clearTextOps(a.pm.hintRuns)
-	}
 	for _, op := range []*ownframe.DisplayOp{a.pm.dev, a.pm.mode,
 		a.pm.devBG, a.pm.modeBG} {
 		if op != nil {
 			op.SetPaintOpacity(alpha)
 		}
-	}
-	for _, op := range a.pm.hintRuns {
-		op.SetPaintOpacity(alpha)
 	}
 }

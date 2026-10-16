@@ -23,15 +23,6 @@ func TestMoodNameStaysCenteredWhenItsWidthChanges(t *testing.T) {
 	assertTextCentered(t, a, "t-mood", a.pm.mood)
 }
 
-func TestStaticHintStaysCenteredWhenItsWidthChanges(t *testing.T) {
-	a, c := newT(t)
-	tk(t, a, c, time.Second/60)
-	a.toggleMode(c.at)
-	tk(t, a, c, time.Second/60)
-	assertTextCentered(t, a, "mode-toggle", a.pm.mode)
-	assertTextCentered(t, a, "t-hint", a.pm.hint)
-}
-
 func TestDevButtonTextStaysCenteredWhenItsWidthChanges(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)

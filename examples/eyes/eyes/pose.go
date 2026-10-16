@@ -13,7 +13,15 @@ type poseMotion uint8
 
 const (
 	motionNone poseMotion = iota
+	motionOpen
+	motionSquint
+	motionAngry
 	motionRelaxed
+	motionSleepy
+	motionSurprised
+	motionCurious
+	motionWink
+	motionBored
 	motionHappy
 	motionWorried
 	motionFocused
@@ -43,6 +51,10 @@ func allPoses() []eyePose {
 
 func both(name string, style eyeStyle) eyePose {
 	return eyePose{name: name, left: style, right: style}
+}
+
+func bothMotion(name string, style eyeStyle, motion poseMotion) eyePose {
+	return eyePose{name: name, left: style, right: style, motion: motion}
 }
 
 func poseFor(mood int) eyePose {

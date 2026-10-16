@@ -22,8 +22,8 @@ automatic expression cycling;
 tap either half to select another expression. The spiral keeps rotating until
 you select another expression. Mood changes ease at about 4.5/s in both modes.
 
-The lower mood and hint text is centered. The DEV, AUTO/STATIC controls and
-hint fade after 5 seconds without input, then return when you interact.
+The mood label is centered. The DEV and AUTO/STATIC controls fade after
+5 seconds without input, then return when you interact.
 The DEV pill at the top right toggles the devtools dock (Elements,
 Frame, Ops) without needing F12. The dock answers touch: tabs,
 rows, and the picker work from a finger, lists scroll with a drag,

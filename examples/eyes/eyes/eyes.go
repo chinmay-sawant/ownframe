@@ -29,7 +29,6 @@ type App struct {
 	st       state
 	pm       parts
 	bnd      uint64
-	tch      bool
 	motionMu sync.Mutex
 	motion   motionInput
 }

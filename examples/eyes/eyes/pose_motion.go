@@ -27,10 +27,6 @@ func animatePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 		r.height += .05 * bounce
 		l.gazeY -= 1.5 * bounce
 		r.gazeY -= 1.5 * bounce
-	case motionShy:
-		peek := 12 * math.Max(0, math.Sin(age*1.3))
-		l.gazeX += peek
-		r.gazeX += peek
 	case motionNervous:
 		dart := 13*math.Sin(age*7) + 7*math.Sin(age*3.1)
 		l.gazeX += dart
@@ -40,6 +36,11 @@ func animatePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 	default:
 		l, r = animateExpressivePose(p, age)
 	}
+	dx, dy := poseGaze(p.motion, age)
+	l.gazeX += dx
+	r.gazeX += dx
+	l.gazeY += dy
+	r.gazeY += dy
 	return l, r
 }
 

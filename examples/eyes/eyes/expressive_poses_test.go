@@ -6,18 +6,18 @@ import (
 )
 
 func TestAddedExpressionsAnimate(t *testing.T) {
-	names := []string{"relaxed", "happy", "worried", "focused", "excited", "shy",
-		"nervous", "relieved", "sad", "scared", "frustrated"}
-	for _, name := range names {
-		pose := poseFor(poseIndex(name))
+	for _, pose := range poses {
+		if pose.name == "spiral" {
+			continue
+		}
 		if pose.motion == motionNone {
-			t.Errorf("%s has no animation", name)
+			t.Errorf("%s has no animation", pose.name)
 			continue
 		}
 		leftA, rightA := animatePose(pose, .2)
-		leftB, rightB := animatePose(pose, 1.1)
+		leftB, rightB := animatePose(pose, 3)
 		if styleDistance(leftA, leftB)+styleDistance(rightA, rightB) < .01 {
-			t.Errorf("%s does not change over time", name)
+			t.Errorf("%s does not change over time", pose.name)
 		}
 	}
 }

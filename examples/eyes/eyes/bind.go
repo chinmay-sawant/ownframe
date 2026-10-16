@@ -4,29 +4,26 @@ import "github.com/chinmay-sawant/ownframe"
 
 // parts caches the display ops the paint step moves.
 type parts struct {
-	left     *ownframe.DisplayOp
-	right    *ownframe.DisplayOp
-	mood     *ownframe.DisplayOp
-	hint     *ownframe.DisplayOp
-	hintRuns []*ownframe.DisplayOp
-	dev      *ownframe.DisplayOp
-	mode     *ownframe.DisplayOp
-	devBG    *ownframe.DisplayOp
-	modeBG   *ownframe.DisplayOp
-	moodX    float64
-	hintX    float64
-	devX     float64
-	modeX    float64
-	baseL    rect
-	baseR    rect
-	rcL      float64
-	rcR      float64
-	lidLT    *ownframe.DisplayOp
-	lidLB    *ownframe.DisplayOp
-	lidRT    *ownframe.DisplayOp
-	lidRB    *ownframe.DisplayOp
-	spiralL  *ownframe.DisplayOp
-	spiralR  *ownframe.DisplayOp
+	left    *ownframe.DisplayOp
+	right   *ownframe.DisplayOp
+	mood    *ownframe.DisplayOp
+	dev     *ownframe.DisplayOp
+	mode    *ownframe.DisplayOp
+	devBG   *ownframe.DisplayOp
+	modeBG  *ownframe.DisplayOp
+	moodX   float64
+	devX    float64
+	modeX   float64
+	baseL   rect
+	baseR   rect
+	rcL     float64
+	rcR     float64
+	lidLT   *ownframe.DisplayOp
+	lidLB   *ownframe.DisplayOp
+	lidRT   *ownframe.DisplayOp
+	lidRB   *ownframe.DisplayOp
+	spiralL *ownframe.DisplayOp
+	spiralR *ownframe.DisplayOp
 }
 
 // rect is a CSS-pixel box.
