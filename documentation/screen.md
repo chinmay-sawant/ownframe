@@ -46,10 +46,10 @@ The kinds are `ownframe.DisplayOpFillRect`, `OpStrokeRect`, `OpLine`, `ownframe.
 Three engine limits affect pages that pin content, and each one needs a workaround.
 
 - `position: absolute` is ignored for a child of a flex container. The element stays in flow, so its `top` and `left` do nothing. The workaround is a block container around the screen: the Telegram chat puts an `app-thread` class on the app div, which overrides `display: flex` with `display: block`.
-- `position: fixed` and `position: sticky` do not pin during window scrolling. The window translates every display operation by the scroll offset, and the engine resolves those two positions for the print path only. The workaround is a page that redraws on scroll: `Page.SetWindowing(true)` plus a `Page.SetScrollWindow` callback, which counter-moves each pinned element by the offset in its computed `top`. The window's own translation then lands them back at the viewport edges.
+- `position: fixed` and `position: sticky` do not pin during window scrolling; the window translates every display operation by the scroll offset. Two page-side workarounds exist and the Telegram example uses both. `Page.SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with, so a pinned layer stays at the viewport with no redraw. `Page.SetWindowing(true)` plus a `Page.SetScrollWindow` callback counter-moves each pinned element by the offset in its computed `top`, so the window's own translation lands it back at the viewport edge; this is the desktop path.
 - An absolutely positioned element resolves against its containing block's content origin, so a padding on the container shifts it. The workaround is to subtract that padding in the computed `top` value.
 
-`examples/telegram` is the worked example: `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
+`examples/telegram` is the worked example: `new.go` sets `SetWindowing(true)` and `SetViewportPinZ(2)`, `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
 
 ## PNG and the web page
 

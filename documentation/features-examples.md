@@ -1,12 +1,12 @@
 # Implemented features
 
-Verified scan of code, docs, and tests on 2026-10-05. `make test` passes on `feature/v0.0.2`.
+Verified scan of code, docs, and tests on 2026-10-05; `make test` passes on `master` for the v0.0.2 release.
 This is a point-in-time report; [features.md](features.md) remains the canonical
 feature index with links to the detailed docs.
 
 ## Core rendering
 
-- HTML template -> CSS -> layout pipeline via `gowkhtmltopdf`, with hit-test boxes (`internal/render/paint.go`)
+- HTML template -> CSS -> layout pipeline via `blinkless`, with hit-test boxes (`internal/render/paint.go`)
 - Optional theme stylesheet layered after the template's own styles, swappable at runtime (`Config.Theme`, `Page.SetTheme`; `internal/page/theme.go`, `internal/render/state.go`)
 - Display-list replay (fills, strokes, lines, grids, images, shaped text); non-replayable pages fall back to a bitmap with a "bitmap fallback" badge (`internal/render/display.go`, `internal/window/draw.go`)
 - Rounded/elliptical/masked strokes, rounded fills, pixel-snapped borders, letter-spaced text, cached fonts/images (`internal/replay/`)
