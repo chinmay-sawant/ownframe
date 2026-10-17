@@ -205,4 +205,4 @@ command lines are in `examples/departure-board/PERFORMANCE.md`.
 
 ## Proving it with counters
 
-The DIRTY section of the Frame tab reports dirty rects taken, full frame fallbacks, operations repainted, and operations skipped, and `GET /debug/state` serves the same data in web mode. The full checklist, budgets, and soak and baseline scripts live in [performance.md](performance.md).
+The PIPELINE DETAIL group of the Frame tab reports dirty ops, dirty regions, and changed ops with Perf on, and `GET /debug/state` serves the same data in web mode. The full checklist, budgets, and soak and baseline scripts live in [performance.md](performance.md).

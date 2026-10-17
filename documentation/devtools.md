@@ -102,20 +102,19 @@ value:
 |---|---|
 | WINDOW | window and page size, scroll offset, stretched, fallback, sequence |
 | RENDERING | fps, tps, frame time, draw time |
-| PACING | idle, next deadline in ms, presents skipped while parked |
+| PERFORMANCE | frame average, p95, p99, and the long-frame count |
 | PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
+| PIPELINE DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
+| PACING | idle, next deadline in ms, presents skipped while parked |
+| MEMORY | alloc per frame, Go heap, RSS, goroutine count |
 | RELOAD | reloads and the last reload error |
-| PERFORMANCE | frame average, p95, p99, long frame count, per stage times for template, layout, display list, and paint |
-| DIRTY | dirty rects taken, full frame fallbacks, operations repainted, operations skipped |
-| MEMORY | Go heap in use, total allocation, RSS, goroutine count, GC runs |
 
 A zero duration reads as `0.0ms`, and an empty reload error reads as `-`.
 Label widths are memoized and each value is a right-aligned span, so a frame
 does not rebuild a padding string per row.
 The PERFORMANCE, PIPELINE DETAIL, and MEMORY rows read `-` until the app
 opts into Perf with `Config.Perf`, `ownframe.WithPerf(true)`, or
-`WindowOptions.Perf`. The legacy WINDOW, RENDERING, PIPELINE, and RELOAD
-rows always report.
+`WindowOptions.Perf`. The other rows always report.
 
 ## Operations
 

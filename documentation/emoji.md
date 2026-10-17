@@ -1,7 +1,7 @@
 # Emoji
 
-Thirty-one emoji paint in full color on every surface: the window, the
-browser picture, and PDF. The bundled text faces draw a few smileys in
+Thirty-one emoji paint in full color in the window and in every picture it
+produces. The bundled text faces draw a few smileys in
 monochrome and tofu for the rest, so the page replaces supported
 sequences in text with inline images backed by the bundled Twemoji 72px
 PNGs (CC-BY 4.0, Twitter Inc; attribution lives in

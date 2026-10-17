@@ -46,7 +46,7 @@ A healthy normal page keeps p99 under budget with margin. When p95 passes budget
 
 A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The DIRTY section of the Frame tab proves it. It reports dirty rects taken, full frame fallbacks, operations repainted, and operations skipped. The page reports the changed regions with `TakeDirtyRects` and the window replays each one with `replay.DrawRect`; a frame with no dirty rect blits the buffer it already has. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
+The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `TakeDirtyRects` and the window replays each one with `replay.DrawRect`; a frame with no dirty rect blits the buffer it already has. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
 
 For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart changes report two rects instead of the bounding box around both. Many small changes inside one region stay partial, so a whole frame rect on an edit now means the change really covered more than a third of the frame or the page could not place it; a list longer than eight rects, or a rect the size of the whole content, makes the window rebuild its buffer once. A rebuild still only tessellates each repeated rounded shape once, because the replay bakes repeated fills and borders into a raster cache ([repaint.md](repaint.md)).
 
@@ -69,7 +69,7 @@ Cover each row at least once per release. Combine them in one session when time 
 | Animate | Run the flappy benchmark with its tick on |
 | Create and remove | Add and remove repeated rows or cards |
 
-The MEMORY section of the Frame tab shows Go heap, total allocation, RSS, and goroutine count. The run passes when RSS and heap stay flat after warmup, GC cadence looks steady, and goroutines do not climb. A slow RSS climb across the whole run is a leak until proven otherwise. Capture a heap profile before and after when the numbers move.
+The MEMORY section of the Frame tab shows allocation per frame, Go heap, RSS, and goroutine count. The run passes when RSS and heap stay flat after warmup, GC cadence looks steady, and goroutines do not climb. A slow RSS climb across the whole run is a leak until proven otherwise. Capture a heap profile before and after when the numbers move.
 
 ## 5 DevTools perf panel fields
 
@@ -77,9 +77,9 @@ The Frame tab groups perf counters under three sections. Values come from `Page.
 
 | Section | Rows |
 |---|---|
-| PERFORMANCE | Frame average, p95, p99, long frame count, per stage times for template, layout, display list, and paint |
-| DIRTY | Dirty rects taken, full frame fallbacks, operations repainted, operations skipped |
-| MEMORY | Go heap in use, total allocation, RSS, goroutine count, GC runs |
+| PERFORMANCE | Frame average, p95, p99, long frame count |
+| PIPELINE DETAIL | Per stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
+| MEMORY | Alloc per frame, Go heap, RSS, goroutine count |
 
 WINDOW, RENDERING, PIPELINE, and RELOAD rows stay as documented in [devtools.md](devtools.md). Perf sections add timing and memory on top of those counters, they do not replace them.
 
@@ -111,7 +111,7 @@ The script runs each benchmark app and writes idle, frame, allocation, layout, a
 
 No optimization lands without a number that asks for it.
 
-The flow is short. Reproduce the slow case in a benchmark app. Read the PERFORMANCE and DIRTY sections to name the stage. Take a profile, change one thing, then remeasure with the same script and app.
+The flow is short. Reproduce the slow case in a benchmark app. Read the PERFORMANCE and PIPELINE DETAIL groups to name the stage. Take a profile, change one thing, then remeasure with the same script and app.
 
 CPU and heap profiles come from the profiler endpoint in web mode, served only when the app opted into Perf with `ServeOptions{Perf: true}`.
 
