@@ -78,7 +78,7 @@ Notes. The frame average moved from 14.2 to 16.8 ms because the loop now holds t
 
 ## v0.0.2 second perf pass (2026-10-13, perf/damage-list)
 
-Committed as an experimental change on this branch. Same machine and method
+Merged in PR #27 for the v0.0.2 release. Same machine and method
 as the section above. This pass added page-driven frame deadlines, dock
 occlusion clipping, element paint chunks, compositor animations, and the diff
 cost rule.

@@ -23,11 +23,10 @@ gradients, and other CSS features arrive as geometry or encoded images.
 
 ## Coordinates and repainting
 
-The engine pin is `v0.0.0-20261010174808-34d93862f9ed`, the pseudo-version for
-commit `34d93862f9ed2eec613b0cdea11d3d6da089b574`. Both Go modules require it.
-The commit corrects two previously swapped display factors. `PointsPerPixel`
-is 0.75 points per CSS pixel. `PixelPerPoint` is 4/3 CSS pixels per point.
-Hit boxes use CSS pixels, and operation coordinates use points.
+The engine pin is `blinkless v0.0.2` (tag `23cc975`, 2026-10-15), required by
+both Go modules. The display factors are `PointsPerPixel` at 0.75 points per
+CSS pixel and `PixelPerPoint` at 4/3 CSS pixels per point. Hit boxes use CSS
+pixels, and operation coordinates use points.
 
 `EbitenView` converts Android pixels to dp before reporting view size and input
 to Go. OwnFrame uses those logical dimensions as CSS pixels. The native view
