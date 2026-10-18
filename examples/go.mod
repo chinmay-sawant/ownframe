@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/chinmay-sawant/blinkless v0.0.2
-	github.com/chinmay-sawant/ownframe v0.0.0
+	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
 	golang.org/x/sys v0.47.0
@@ -52,5 +52,3 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
-
-replace github.com/chinmay-sawant/ownframe => ../

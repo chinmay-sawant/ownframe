@@ -21,12 +21,12 @@ update their imports and selectors when adopting the renamed release. Go
 imports under the two module paths are separate package identities; keep one
 version of the library in an application.
 
-The committed `go.work` joins both local modules. `examples/go.mod` replaces
-`github.com/chinmay-sawant/ownframe` with the parent checkout until a release
-tag exists. Local `make test`, `make build`, and example commands work before
-the GitHub rename. Existing release tags retain their original
-module declarations; a repository redirect does not rewrite those files.
-External installs need a new release that declares the new module path.
+The committed `go.work` joins both local modules, and `examples/go.mod`
+requires `github.com/chinmay-sawant/ownframe` at the published tag, `v0.0.2`,
+with no replace, so local `make test`, `make build`, and example commands run
+in the workspace. Existing release tags retain their original module
+declarations; a repository redirect does not rewrite those files. External
+installs use the v0.0.2 release, which declares the new module path.
 
 ## Templates and settings
 

@@ -28,7 +28,7 @@ Desktop cat overlay. Transparent, click-through cat that reports what is happeni
 go get github.com/chinmay-sawant/ownframe
 ```
 
-The root package is `ownframe`. The repository and module path already use the new name; until a release tag with that path is published, use this checkout directly. See the [rename and migration notes](documentation/rebrand.md).
+The root package is `ownframe`. The repository and module path already use the new name; the first tagged release at that path is `v0.0.2`. See the [rename and migration notes](documentation/rebrand.md).
 
 ```go
 package main
