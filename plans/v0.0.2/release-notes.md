@@ -30,7 +30,7 @@ Second release of **ownframe**: one Go process that shows an HTML template in a 
 | Accessibility | `Page.AccessibilityTree` returns a detached semantic snapshot; `AccessibilityPerform` runs focus, activate, and set-value. |
 | Android | Eight Gradle projects, a shared Java host, an AAR through `ebitenmobile`, seven committed signed arm64 APKs. |
 | Security | Same-origin POST endpoints, bind validation, fetch caps, crash-dir and source-size validation, plus the engine's own security work. |
-| Examples | 28 new demos, including Telegram, Teams, Spotify at eight screens, Desktop Cat, Eyes, and five SQLite apps. |
+| Examples | 28 new demos, including Telegram, Teams, Spotify at eight screens, Desktop Cat, Eyes, and seven SQLite apps. |
 | Docs and site | 25 new guides, a rebuilt GitHub Pages site, and `showcase.md`. |
 
 ### Migrating from v0.0.1
@@ -94,7 +94,7 @@ F12 or Ctrl+Shift+I toggles a right dock, 340 px wide by default, 220 px minimum
 
 Eight Gradle projects: digital-wellbeing, dino, eyes, lg-remote, login, pet-care, platform, and telegram. They share `examples/android-host`, a Java library (`dev.ownframe.android`) with `AndroidHost.attach`, `onBackPressed`, `setSystemBarStyle`, and `close`, callbacks for insets, configuration, viewport, IME, and Back, and `TouchCancellation` to work around Ebiten 2.10.4 ignoring `ACTION_CANCEL`. The projects target minSdk 23, compileSdk 34, AGP 8.5.1 or newer, and Java 17, and set `enableOnBackInvokedCallback`.
 
-Each app wires its own MainActivity duties: Telegram opens the camera or the photo picker and reports insets; Eyes reads the accelerometer and shake; LG Remote uses Bluetooth HID; Pet Care exports and restores JSON through SAF; Digital Wellbeing reads `UsageStatsManager`. The AAR is built with `ebitenmobile bind` and 16 KB page alignment, and `scripts/android-release.sh` signs arm64 APKs; seven signed APKs are committed under `examples/*/android/artifacts/` with checksums and `APPS.md`. `documentation/android-build.md`, `android-app-creation.md`, and `android-runtime.md` cover the setup.
+Each app wires its own MainActivity duties: Telegram opens the camera or the photo picker and reports insets; Eyes reads the accelerometer and shake; LG Remote uses Bluetooth HID; Pet Care exports and restores JSON through SAF; Digital Wellbeing reads `UsageStatsManager`. The AAR is built with `ebitenmobile bind` and 16 KB page alignment, and `scripts/android-release.sh` signs arm64 APKs; seven signed APKs are committed under `examples/*/android/artifacts/`; `APK-SHA256SUMS` and `APPS.md` cover six of them. `documentation/android-build.md`, `android-app-creation.md`, and `android-runtime.md` cover the setup.
 
 ### Desktop integrations
 
@@ -112,7 +112,7 @@ The security audit landed as PR #30; the architecture review in PR #31 then remo
 
 ### Examples
 
-52 example directories, up from 25, with 28 new ones: accessibility, android-host, css-masking, departure-board, desktop-cat, devtools, digital-wellbeing, download-manager, drop, eyes, flappy-bird, input, input-lab, lg-remote, live-log-viewer, perf-benchmarks, perf-complex, perf-stress, pet-care, reload, resize, snipping-tool, spreadsheet, system-monitor, teams, telegram, tetris, and theme-studio. Ports run from 8118 (teams) to 8140 (eyes); `examples/readme.md` lists every folder and its `-web` port.
+52 example directories, up from 25, with 28 new ones: accessibility, android-host, css-masking, departure-board, desktop-cat, devtools, digital-wellbeing, download-manager, drop, eyes, flappy-bird, input, input-lab, lg-remote, live-log-viewer, perf-benchmarks, perf-complex, perf-stress, pet-care, reload, resize, snipping-tool, spreadsheet, system-monitor, teams, telegram, tetris, and theme-studio. The new demos' ports run from 8118 (teams) to 8140 (eyes); `examples/readme.md` maps most demos to their `-web` port.
 
 Updated: spotify-player reached eight screens with a bundled CC0 soundtrack, a seek bar and equalizer driven by `Page.SetTick`, and a performance report with per-screen redraw cuts of 86% to 93%. wispr-flow-dashboard became a 13-page shell with one package per screen. dino moved its scene into template files and gained swipe controls and an Android project. clipboard, login, platform, fetch, replay, states, and music picked up smaller features; `examples/music` dropped its Openverse downloader and now uses bundled local tracks. `examples/audio-player` was removed after Spotify absorbed it.
 
@@ -178,10 +178,10 @@ return ownframe.Run(context.Background(), page)
 
 ### What's changed
 
-- 361 commits between the v0.0.1 tag and this release (319 non-merge), 2026-10-03 to 2026-10-17, with 42 branch and PR merges (PR #3 to #32).
-- The diff is 4,116 files, +188,088 and -6,811 lines.
+- 362 commits between the v0.0.1 tag and this release (320 non-merge), 2026-10-03 to 2026-10-17, with 42 branch and PR merges (PR #3 to #32).
+- The diff is 4,116 files, +188,695 and -6,675 lines.
 - Documentation went from 20 files to 45 guides; examples from 25 directories to 52; committed test files from 195 to 1,162.
-- The nine v0.0.2 workstreams (foundation, resize, repaint page and shell, hot reload, input window and page, devtools, print) landed on the feature branch and merged to master as PR #6. Later waves added performance observability, the Telegram and dino phone demos, five SQLite examples, the Android host and runtime, accessibility, the damage list, security, the architecture review, and Eyes.
+- The nine v0.0.2 workstreams (foundation, resize, repaint page and shell, hot reload, input window and page, devtools, print) landed on the feature branch and merged to master as PR #6. Later waves added performance observability, the Telegram and dino phone demos, seven SQLite examples, the Android host and runtime, accessibility, the damage list, security, the architecture review, and Eyes.
 - Print and PDF were developed during the cycle and removed before release, along with `examples/audio-player` and the Openverse downloader.
 - Engine history: the pin moved from `gowkhtmltopdf v0.2.7-0.20261003121325-2111b364213b` at v0.0.1 through the `blinkless` rename to the tagged `blinkless v0.0.2`.
 - Full history: https://github.com/chinmay-sawant/ownframe/compare/v0.0.1...master
