@@ -9,7 +9,6 @@ import (
 
 type demo struct {
 	p          *ownframe.Page
-	kind       string
 	v          *view
 	gen        uint64
 	samples    map[string]*sample
@@ -17,14 +16,15 @@ type demo struct {
 }
 
 type sample struct {
-	base   []paint
-	plan   motion
-	origin time.Time
-	active bool
+	base    []paint
+	indices []int
+	plan    motion
+	origin  time.Time
+	active  bool
 }
 
-func newDemo(p *ownframe.Page, kind string, v *view) *demo {
-	return &demo{p: p, kind: kind, v: v, gen: p.Generation(), samples: map[string]*sample{}}
+func newDemo(p *ownframe.Page, v *view) *demo {
+	return &demo{p: p, v: v, gen: p.Generation(), samples: map[string]*sample{}}
 }
 
 func (d *demo) tick(ctx context.Context) error {
@@ -32,12 +32,18 @@ func (d *demo) tick(ctx context.Context) error {
 		return nil
 	}
 	if d.pendingKey != "" {
-		d.begin()
-		d.rebind()
+		if err := d.begin(); err != nil {
+			return err
+		}
+		if err := d.rebind(); err != nil {
+			return err
+		}
 		d.gen = d.p.Generation()
 		d.pendingKey = ""
 	} else if d.gen != d.p.Generation() {
-		d.rebind()
+		if err := d.rebind(); err != nil {
+			return err
+		}
 		d.gen = d.p.Generation()
 	}
 	active := false
@@ -53,12 +59,12 @@ func (d *demo) tick(ctx context.Context) error {
 	return nil
 }
 
-func (d *demo) rebind() {
+func (d *demo) rebind() error {
 	for key, s := range d.samples {
 		if !s.active {
 			continue
 		}
-		t, ok := targetByKey(d.kind, key)
+		t, ok := targetByKey(key)
 		if !ok {
 			continue
 		}
@@ -66,6 +72,11 @@ func (d *demo) rebind() {
 		if !ok {
 			continue
 		}
-		s.plan = bind(d.p.Display(), box, t, s.base, s.origin)
+		plan, err := bind(d.p.Display(), box, t, s.indices, s.base, s.origin)
+		if err != nil {
+			return err
+		}
+		s.plan = plan
 	}
+	return nil
 }

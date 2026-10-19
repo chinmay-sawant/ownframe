@@ -2,51 +2,32 @@ package csspreview
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
-func fixturePage(t *testing.T, kind string) (*ownframe.Page, *demo, *view) {
+func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	t.Helper()
-	fixture := kind
-	if kind == "all" {
-		fixture = "css-preview"
-	}
-	dir := filepath.Join("..", "..", "testdata", fixture)
-	html, err := os.ReadFile(filepath.Join(dir, "index.html"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	css, err := os.ReadFile(filepath.Join(dir, "styles.css"))
-	if err != nil && !os.IsNotExist(err) {
-		t.Fatal(err)
-	}
-	p, err := ownframe.New(ownframe.Config{HTML: string(html), Theme: string(css), Width: 960, Height: 1000})
-	if err != nil {
-		t.Fatal(err)
-	}
+	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
-	p.SetData(v)
-	if err = p.Redraw(context.Background()); err != nil {
+	p, err := previewwindow.New(ctx, previewwindow.Config{FixtureDir: filepath.Join("..", "..", "testdata", "css-preview"),
+		Data: v, Width: 960, Height: 1000})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if kind == "all" {
-		v.Catalog = catalogRows(nil)
-		p.SetData(v)
-		if err = p.Redraw(context.Background()); err != nil {
-			t.Fatal(err)
-		}
-		v.Catalog = catalogRows(p)
-	}
-	v.Readout = describe(p, kind)
-	p.SetData(v)
-	if err = p.Redraw(context.Background()); err != nil {
+	v.Catalog = catalogRows(nil)
+	if err = previewwindow.Redraw(ctx, p, v); err != nil {
 		t.Fatal(err)
 	}
-	d := newDemo(p, kind, v)
+	v.Catalog = catalogRows(p)
+	v.Readout = describe(p)
+	if err = previewwindow.Redraw(ctx, p, v); err != nil {
+		t.Fatal(err)
+	}
+	d := newDemo(p, v)
 	p.Handle(ownframe.Handlers{Click: d.click})
 	return p, d, v
 }

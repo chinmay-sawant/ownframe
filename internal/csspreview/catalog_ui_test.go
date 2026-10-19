@@ -6,7 +6,7 @@ import (
 )
 
 func TestCatalogHasOneStartButtonForEveryProperty(t *testing.T) {
-	p, _, v := fixturePage(t, "all")
+	p, _, v := fixturePage(t)
 	if len(v.Catalog) != 43 {
 		t.Fatalf("catalog rows = %d, want 43", len(v.Catalog))
 	}

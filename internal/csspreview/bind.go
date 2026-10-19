@@ -1,43 +1,39 @@
 package csspreview
 
 import (
+	"errors"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
-func bind(d *ownframe.Display, b ownframe.Box, t target, base []paint, origin time.Time) motion {
+func bind(d *ownframe.Display, b ownframe.Box, t target, indices []int, base []paint, origin time.Time) (motion, error) {
 	if d == nil {
-		return motion{}
+		return motion{}, nil
 	}
-	s := timing(d, b, t)
-	m := motion{
-		kind: t.kind, duration: time.Duration(s.duration * float64(time.Millisecond)),
-		delay:      time.Duration(s.delay * float64(time.Millisecond)),
-		endDelay:   time.Duration(s.endDelay * float64(time.Millisecond)),
-		iterations: s.iterations, infinite: s.infinite,
-		direction: s.direction, fill: s.fill, play: s.play, easing: s.easing,
+	duration, delay, endDelay := motionTiming(b, t)
+	m := motion{duration: duration, delay: delay, endDelay: endDelay, start: origin}
+	ops := cssmotion.Resolve(d, indices)
+	if len(ops) != len(indices) || len(ops) != len(base) {
+		return motion{}, errors.New("csspreview: captured target operations changed during redraw")
 	}
-	if m.duration <= 0 {
-		return m
+	for i, op := range ops {
+		m.pairs = append(m.pairs, pair{op, base[i], read(op)})
 	}
-	m.start = origin
-	m.pointsPerPixel = d.PointsPerPixel
+	if m.duration <= 0 || len(m.pairs) == 0 {
+		return m, nil
+	}
+	var err error
 	if t.kind == "animation" {
-		m.frames = namedKeyframes(d.Keyframes, s.name)
+		m.animation, err = cssanimation.Bind(d, b, indices, base, origin)
+	} else {
+		m.transition, err = csstransition.Bind(d, b, t.property, indices, base, origin)
 	}
-	index := 0
-	for i := range d.Ops {
-		if !inside(d, b, d.Ops[i]) {
-			continue
-		}
-		if index >= len(base) {
-			break
-		}
-		before := base[index]
-		index++
-		after := read(&d.Ops[i])
-		m.pairs = append(m.pairs, pair{&d.Ops[i], before, after})
+	if err != nil {
+		return motion{}, err
 	}
-	return m
+	return m, nil
 }

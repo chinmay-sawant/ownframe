@@ -1,30 +1,28 @@
 package csspreview
 
-import "github.com/chinmay-sawant/ownframe"
+import (
+	"time"
 
-type schedule struct {
-	duration, delay, endDelay, iterations float64
-	infinite                              bool
-	direction, fill, play, easing, name   string
+	"github.com/chinmay-sawant/ownframe"
+)
+
+func motionTiming(box ownframe.Box, target target) (time.Duration, time.Duration, time.Duration) {
+	if target.kind == "animation" {
+		if len(box.Animations) == 0 {
+			return 0, 0, 0
+		}
+		item := box.Animations[0]
+		duration := milliseconds(item.DurationMS)
+		return duration, milliseconds(item.DelayStartMS), milliseconds(item.DelayEndMS)
+	}
+	for _, item := range box.Transitions {
+		if item.Property == target.property || item.Property == "all" {
+			return milliseconds(item.DurationMS), milliseconds(item.DelayMS), 0
+		}
+	}
+	return 0, 0, 0
 }
 
-func timing(d *ownframe.Display, b ownframe.Box, t target) schedule {
-	if d == nil {
-		return schedule{}
-	}
-	if t.kind == "transition" {
-		for _, r := range b.Transitions {
-			if r.Property == t.property || r.Property == "all" {
-				return schedule{duration: r.DurationMS, delay: r.DelayMS, iterations: 1, fill: "forwards", play: "running", easing: r.TimingFunction}
-			}
-		}
-		return schedule{}
-	}
-	if len(b.Animations) == 0 {
-		return schedule{}
-	}
-	a := b.Animations[0]
-	return schedule{duration: a.DurationMS, delay: a.DelayStartMS, endDelay: a.DelayEndMS,
-		iterations: a.IterationCount, infinite: a.IterationInfinite, direction: a.Direction,
-		fill: a.FillMode, play: a.PlayState, easing: a.TimingFunction, name: a.Name}
+func milliseconds(value float64) time.Duration {
+	return time.Duration(value * float64(time.Millisecond))
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func catalogValue(p *ownframe.Page, name string) string {
-	target, sampled := targetByKey("all", catalogSampleKey(name))
+	target, sampled := targetByKey(catalogSampleKey(name))
 	if !sampled {
 		return "not present"
 	}

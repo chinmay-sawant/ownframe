@@ -12,7 +12,7 @@ func TestCatalogStartRunsEachPreviewKind(t *testing.T) {
 	for _, name := range []string{"-webkit-animation", "transition-property", "animation-composition"} {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
-			p, d, v := fixturePage(t, "all")
+			p, d, v := fixturePage(t)
 			var selected catalogRow
 			for _, row := range v.Catalog {
 				if row.Name == name {

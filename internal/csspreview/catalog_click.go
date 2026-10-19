@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func (d *demo) click(_ context.Context, b ownframe.Box) error {
@@ -18,13 +19,13 @@ func (d *demo) click(_ context.Context, b ownframe.Box) error {
 			d.p.SetData(d.v)
 			return nil
 		}
-		selected, ok := targetByKey(d.kind, row.SampleKey)
+		selected, ok := targetByKey(row.SampleKey)
 		if !ok {
 			return nil
 		}
 		return d.start(selected, row.Button)
 	}
-	selected, ok := targetByButton(d.kind, b.ID)
+	selected, ok := targetByButton(b.ID)
 	if !ok {
 		return nil
 	}
@@ -37,7 +38,9 @@ func (d *demo) start(selected target, button string) error {
 		return nil
 	}
 	if d.samples[selected.key] == nil {
-		d.samples[selected.key] = &sample{base: capture(d.p.Display(), box)}
+		d.samples[selected.key] = &sample{
+			base: capture(d.p.Display(), box), indices: cssmotion.OperationIndices(d.p.Display(), box),
+		}
 	}
 	d.v.Started[selected.key] = true
 	d.v.Started[button] = true

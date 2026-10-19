@@ -2,18 +2,23 @@ package csspreview
 
 import "time"
 
-func (d *demo) begin() {
-	t, ok := targetByKey(d.kind, d.pendingKey)
+func (d *demo) begin() error {
+	t, ok := targetByKey(d.pendingKey)
 	if !ok {
-		return
+		return nil
 	}
 	s := d.samples[t.key]
 	box, ok := findBox(d.p.Boxes(), t.id)
 	if !ok {
-		return
+		return nil
 	}
 	display := d.p.Display()
 	s.origin = time.Now()
-	s.plan = bind(display, box, t, s.base, s.origin)
+	plan, err := bind(display, box, t, s.indices, s.base, s.origin)
+	if err != nil {
+		return err
+	}
+	s.plan = plan
 	s.active = s.plan.duration > 0 && len(s.plan.pairs) > 0
+	return nil
 }

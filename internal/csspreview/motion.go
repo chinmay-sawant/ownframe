@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/animation"
+	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
 
 type pair struct {
@@ -12,33 +14,21 @@ type pair struct {
 }
 
 type motion struct {
-	pairs                               []pair
-	frames                              []keyframe
-	start                               time.Time
-	duration, delay, endDelay           time.Duration
-	iterations                          float64
-	infinite                            bool
-	kind, direction, fill, play, easing string
-	pointsPerPixel                      float64
+	animation  *animation.Player
+	transition *transition.Renderer
+	pairs      []pair
+	start      time.Time
+	duration   time.Duration
+	delay      time.Duration
+	endDelay   time.Duration
 }
 
 func (m *motion) step(now time.Time) bool {
-	if m.duration <= 0 || m.play == "paused" {
-		return false
+	if m.animation != nil {
+		return m.animation.Step(now)
 	}
-	progress, active, apply := m.position(now)
-	for _, q := range m.pairs {
-		v := q.from
-		if apply {
-			if m.kind == "animation" && len(m.frames) > 0 {
-				v = sampleFrames(m.frames, progress, q.from, q.op.Kind == ownframe.DisplayOpFillRect, m.easing)
-				v.x += keyframeX(m.frames, progress, m.easing) * m.pointsPerPixel
-				v.y += keyframeY(m.frames, progress, m.easing) * m.pointsPerPixel
-			} else {
-				v = blend(q.from, q.to, easing(m.easing, progress))
-			}
-		}
-		write(q.op, v)
+	if m.transition != nil {
+		return m.transition.Step(now)
 	}
-	return active
+	return false
 }

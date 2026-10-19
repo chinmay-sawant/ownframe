@@ -8,9 +8,9 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-func describe(p *ownframe.Page, kind string) string {
+func describe(p *ownframe.Page) string {
 	var b strings.Builder
-	for _, target := range targets(kind) {
+	for _, target := range targets() {
 		box, ok := findBox(p.Boxes(), target.id)
 		if !ok {
 			fmt.Fprintf(&b, "%s: metadata missing\n", target.id)

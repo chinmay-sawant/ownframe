@@ -8,17 +8,16 @@ import (
 )
 
 func TestSecondAnimationRebindsFirstAcrossRedraw(t *testing.T) {
-	ctx := context.Background()
-	p, d, _ := fixturePage(t, "animation")
-	startAnimation(t, p, d, "standard")
-	first := d.samples["standard"]
+	p, d, _ := fixturePage(t)
+	startCatalog(t, p, d, "animation")
+	first := d.samples[catalogSampleKey("animation")]
 	origin := first.origin
 	gen := p.Generation()
-	startAnimation(t, p, d, "webkit")
+	startCatalog(t, p, d, "-webkit-animation")
 	if p.Generation() <= gen {
 		t.Fatal("second click did not redraw")
 	}
-	if err := d.tick(ctx); err != nil {
+	if err := d.tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	if !first.origin.Equal(origin) {
@@ -27,28 +26,13 @@ func TestSecondAnimationRebindsFirstAcrossRedraw(t *testing.T) {
 	if d.gen != p.Generation() || !planInDisplay(p.Display(), first.plan) {
 		t.Fatal("first sample was not rebound to the current display")
 	}
-	first.plan.step(first.plan.start.Add(first.plan.duration / 2))
+	first.plan.step(first.plan.start.Add(first.plan.delay + first.plan.duration/2))
 	changed := false
 	for _, pair := range first.plan.pairs {
 		changed = changed || read(pair.op) != pair.from
 	}
 	if !changed {
 		t.Fatal("first sample could not render its deterministic mid-frame")
-	}
-}
-
-func startAnimation(t *testing.T, p *ownframe.Page, d *demo, key string) {
-	t.Helper()
-	target, _ := targetByKey("animation", key)
-	button, ok := findBox(p.Boxes(), target.button)
-	if !ok {
-		t.Fatalf("missing button %q", target.button)
-	}
-	if err := p.Click(context.Background(), button.X+button.W/2, button.Y+button.H/2); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.tick(context.Background()); err != nil {
-		t.Fatal(err)
 	}
 }
 

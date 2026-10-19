@@ -3,7 +3,7 @@ package csspreview
 import "testing"
 
 func TestEveryCatalogCardOwnsItsPreviewAndStart(t *testing.T) {
-	p, _, v := fixturePage(t, "all")
+	p, _, v := fixturePage(t)
 	sampled := 0
 	targets := map[string]bool{}
 	for _, row := range v.Catalog {
@@ -18,7 +18,7 @@ func TestEveryCatalogCardOwnsItsPreviewAndStart(t *testing.T) {
 			continue
 		}
 		sampled++
-		target, ok := targetByKey("all", row.SampleKey)
+		target, ok := targetByKey(row.SampleKey)
 		if !ok || target.id != row.TargetID || target.button != row.Button {
 			t.Errorf("%s does not own its registered sample", row.Name)
 		}

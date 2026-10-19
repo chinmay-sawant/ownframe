@@ -1,4 +1,4 @@
-package csspreview
+package cssmotion
 
 import (
 	"strconv"
@@ -13,26 +13,23 @@ func linearStops(body string, t float64) float64 {
 		if len(fields) < 1 || len(fields) > 2 {
 			return t
 		}
-		v, err := strconv.ParseFloat(fields[0], 64)
+		value, err := strconv.ParseFloat(fields[0], 64)
 		if err != nil {
 			return t
 		}
-		values[i] = v
+		values[i] = value
 		if len(fields) == 2 {
-			p, err := strconv.ParseFloat(strings.TrimSuffix(fields[1], "%"), 64)
+			position, err := strconv.ParseFloat(strings.TrimSuffix(fields[1], "%"), 64)
 			if err != nil {
 				return t
 			}
-			positions[i] = p / 100
-			set[i] = true
+			positions[i], set[i] = position/100, true
 		}
 	}
 	if len(parts) < 2 {
 		return t
 	}
-	if !set[0] {
-		set[0] = true
-	}
+	set[0] = true
 	if !set[len(parts)-1] {
 		positions[len(parts)-1], set[len(parts)-1] = 1, true
 	}
@@ -57,8 +54,8 @@ func linearStops(body string, t float64) float64 {
 			if span <= 0 {
 				return values[i]
 			}
-			p := (t - positions[i-1]) / span
-			return values[i-1] + (values[i]-values[i-1])*p
+			part := (t - positions[i-1]) / span
+			return values[i-1] + (values[i]-values[i-1])*part
 		}
 	}
 	return values[len(values)-1]

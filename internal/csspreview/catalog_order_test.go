@@ -7,7 +7,7 @@ import (
 )
 
 func TestCombinedPageUsesPerPropertyPreviews(t *testing.T) {
-	p, _, v := fixturePage(t, "all")
+	p, _, v := fixturePage(t)
 	catalog, hasCatalog := findBox(p.Boxes(), "catalog")
 	metadata, hasMetadata := findBox(p.Boxes(), "metadata")
 	if !hasCatalog || !hasMetadata || catalog.Y >= metadata.Y {

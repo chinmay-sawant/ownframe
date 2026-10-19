@@ -7,7 +7,7 @@ import (
 
 func TestEveryCatalogStartRunsOnlyItsOwnPreview(t *testing.T) {
 	ctx := context.Background()
-	p, d, v := fixturePage(t, "all")
+	p, d, v := fixturePage(t)
 	started := 0
 	for _, row := range v.Catalog {
 		button, ok := findBox(p.Boxes(), row.Button)

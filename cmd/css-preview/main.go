@@ -8,11 +8,11 @@ import (
 )
 
 func main() {
-	kind := "all"
 	if len(os.Args) > 1 {
-		kind = os.Args[1]
+		fmt.Fprintln(os.Stderr, "usage: go run ./cmd/css-preview/main.go")
+		os.Exit(2)
 	}
-	if err := csspreview.Run(kind); err != nil {
+	if err := csspreview.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

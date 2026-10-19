@@ -1,4 +1,4 @@
-package csspreview
+package cssmotion
 
 func cubic(t, x1, y1, x2, y2 float64) float64 {
 	lo, hi, u := 0.0, 1.0, t
