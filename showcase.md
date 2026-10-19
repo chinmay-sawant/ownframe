@@ -174,3 +174,22 @@ blinks.
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/eyes)
 
 [Download arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/eyes/android/artifacts/eyes-arm64-release.apk)
+
+## Depth Alert
+
+Depth Alert is an experimental Android app that reads ARCore depth from the
+center of the camera view and maps it to haptic signals. WALK requires twelve
+consecutive clear observations. A nearby surface reports STOP, and a surface
+within 1.2 m reports STOP NOW. It is a prototype, not a mobility aid.
+
+<ul>
+  <li>
+    <img src="assets/screenshots/android/depth-alert/depth-alert-pixel7.webp" alt="Depth Alert running on a Pixel 7 with its live camera preview, current signal, distance, and depth coverage" width="250" height="600" />
+    <p><b>Depth Alert on Pixel 7</b></p>
+  </li>
+</ul>
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/depth-alert)
+
+[Download signed arm64 APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk) ·
+[Build and safety notes](examples/depth-alert/README.md)

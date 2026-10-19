@@ -18,6 +18,7 @@ const showcaseSections = [
   { id: 'wispr-flow', title: 'Wispr Flow' },
   { id: 'dino-run', title: 'Dino Run' },
   { id: 'eyes', title: 'Eyes' },
+  { id: 'depth-alert', title: 'Depth Alert' },
 ];
 
 function selectShowcase(markdown, id) {
@@ -98,7 +99,8 @@ export default function Documentation({ hash }) {
     },
     ...(isShowcase ? {
       ul: ({ children }) => {
-        const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' ? ` ${activeShowcase}-gallery` : '';
+        const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' || activeShowcase === 'depth-alert'
+          ? ` ${activeShowcase}-gallery` : '';
         return <ul className={`showcase-gallery${extra}`}>{children}</ul>;
       },
     } : {}),

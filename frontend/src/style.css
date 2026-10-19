@@ -160,6 +160,7 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
 .markdown li + li { margin-top: 0.55em; }
 .markdown img { max-width: 100%; height: auto; }
 .showcase-page .showcase-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; list-style: none; margin: 20px 0 32px; padding: 0; align-items: start; }
+.showcase-page .depth-alert-gallery { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 250px)); }
 .showcase-page .pet-care-gallery li:last-child { grid-column: 1 / -1; }
 .showcase-page .eyes-gallery li:last-child { grid-column: 1 / -1; }
 .showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }

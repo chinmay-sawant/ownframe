@@ -1,10 +1,10 @@
 # Examples
 
-Every example opens one HTML template in a window. `go run ./examples/<name>`
+Most examples open one HTML template in a window. `go run ./examples/<name>`
 opens a desktop window. `go run ./examples/<name> -web` serves the same picture
-in a browser on the printed address. Each example package also has a test that
-runs headless. `examples/music` is shared code the player imports, not an
-example of its own.
+in a browser on the printed address. Android-only examples document their
+platform build in the example README. `examples/music` is shared code the
+player imports, not an example of its own.
 
 The feature list these examples follow is
 [../documentation/features-examples.md](../documentation/features-examples.md).
