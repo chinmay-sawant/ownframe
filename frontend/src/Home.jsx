@@ -6,6 +6,7 @@ import gopher from '../../assets/brand/gopher.webp';
 import teamsPreview from '../../assets/screenshots/demos/teams.webp';
 import telegramPreview from '../../assets/screenshots/android/telegram/telegram-thread.webp';
 import eyesPreview from '../../assets/screenshots/android/eyes/eyes-idle.webp';
+import depthAlertPreview from '../../assets/screenshots/android/depth-alert/depth-alert-pixel7.webp';
 
 highlight.registerLanguage('go', go);
 
@@ -72,6 +73,15 @@ const demos = [
     phone: true,
     href: '#docs/examples-telegram-android-readme',
     link: 'Build the Android demo',
+  },
+  {
+    title: 'Depth Alert on Android',
+    description: 'An experimental ARCore depth and haptics prototype. It reports unknown when the camera cannot confirm its view; it is not a mobility aid.',
+    image: depthAlertPreview,
+    alt: 'Depth Alert on a Pixel 7 showing its live camera preview, status, and depth summary.',
+    phone: true,
+    href: '#docs/examples-depth-alert-readme',
+    link: 'Read about the prototype',
   },
   {
     title: 'Eyes on Android',

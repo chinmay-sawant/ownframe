@@ -33,6 +33,24 @@ all four ABIs puts one APK at 188 MB.
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/telegram) ·
 Build the arm64 release APK with `scripts/android-release.sh telegram`.
 
+## Depth Alert
+
+Depth Alert is an experimental Android app that reads ARCore depth from the
+center of the camera view and maps the result to haptic signals. The screenshot
+is from a Pixel 7. Its “clear” state only describes that camera region; it does
+not establish that a walking path is safe. Use this as a prototype demo, not as
+a mobility aid.
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/screenshots/android/depth-alert/depth-alert-pixel7.webp" alt="Depth Alert running on a Pixel 7 with its live camera preview, current status, and depth summary" width="280" /><br /><b>Depth Alert on Pixel 7</b></td>
+  </tr>
+</table>
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/depth-alert)
+
+[Build and safety notes](examples/depth-alert/README.md)
+
 ## Teams
 
 Teams is a native chat and collaboration app built with Go, HTML, and CSS.

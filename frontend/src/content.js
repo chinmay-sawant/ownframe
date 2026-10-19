@@ -6,7 +6,8 @@ const sources = import.meta.glob('../../documentation/*.md', {
 });
 const extras = import.meta.glob([
   '../../examples/readme.md', '../../examples/desktop-cat/readme.md',
-  '../../examples/telegram/android/README.md', '../../showcase.md',
+  '../../examples/telegram/android/README.md', '../../examples/depth-alert/README.md',
+  '../../showcase.md',
 ], { query: '?raw', import: 'default', eager: true });
 
 const labels = {
@@ -22,6 +23,7 @@ const labels = {
   'android-build': 'Build for Android',
   'android-runtime': 'Android runtime',
   'examples-telegram-android-readme': 'Telegram on Android',
+  'examples-depth-alert-readme': 'Depth Alert on Android',
   'examples-readme': 'Run an example',
   'examples-desktop-cat-readme': 'Desktop cat',
   'features-examples': 'Feature examples',
@@ -61,7 +63,7 @@ const navigation = [
   { title: 'Features', slugs: ['features'], standalone: true },
   {
     title: 'Examples',
-    slugs: ['showcase', 'examples-readme', 'examples-telegram-android-readme', 'examples-desktop-cat-readme', 'features-examples'],
+    slugs: ['showcase', 'examples-readme', 'examples-telegram-android-readme', 'examples-depth-alert-readme', 'examples-desktop-cat-readme', 'features-examples'],
   },
   {
     title: 'Comparisons',

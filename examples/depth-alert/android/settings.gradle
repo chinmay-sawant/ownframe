@@ -1,0 +1,3 @@
+rootProject.name = 'depth-alert'
+include ':app', ':depth-alert', ':android-host'
+project(':android-host').projectDir = file('../../android-host')
