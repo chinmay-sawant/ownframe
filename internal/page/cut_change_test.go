@@ -3,6 +3,7 @@ package page
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ func TestCutChangeGetsBox(t *testing.T) {
 	if err != nil || !ok || text != "ab" {
 		t.Fatalf("cut %q %v %v", text, ok, err)
 	}
-	if len(got) != 1 || got[0] != want {
+	if len(got) != 1 || !reflect.DeepEqual(got[0], want) {
 		t.Fatalf("change %v want %v", got, want)
 	}
 	if p.FormValue("a") != "" {

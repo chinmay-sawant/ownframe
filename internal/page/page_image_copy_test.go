@@ -3,6 +3,7 @@ package page_test
 import (
 	"bytes"
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -60,7 +61,7 @@ func TestBoxesReturnsCopy(t *testing.T) {
 	boxes[0].X = want.X + 10000
 	boxes[0].W = want.W + 10000
 
-	if got := screen.Boxes(); got[0] != want {
+	if got := screen.Boxes(); !reflect.DeepEqual(got[0], want) {
 		t.Fatalf("boxes changed after caller edit: %+v, want %+v", got[0], want)
 	}
 }
