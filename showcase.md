@@ -182,11 +182,12 @@ center of the camera view and maps it to haptic signals. WALK requires twelve
 consecutive clear observations. A nearby surface reports STOP, and a surface
 within 1.2 m reports STOP NOW. It is a prototype, not a mobility aid.
 
-<table>
-  <tr>
-    <td align="center"><img src="assets/screenshots/android/depth-alert/depth-alert-pixel7.webp" alt="Depth Alert running on a Pixel 7 with its live camera preview, current signal, distance, and depth coverage" width="250" height="600" /><br /><b>Depth Alert on Pixel 7</b></td>
-  </tr>
-</table>
+<ul>
+  <li>
+    <img src="assets/screenshots/android/depth-alert/depth-alert-pixel7.webp" alt="Depth Alert running on a Pixel 7 with its live camera preview, current signal, distance, and depth coverage" width="250" height="600" />
+    <p><b>Depth Alert on Pixel 7</b></p>
+  </li>
+</ul>
 
 [Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/depth-alert)
 

@@ -99,7 +99,8 @@ export default function Documentation({ hash }) {
     },
     ...(isShowcase ? {
       ul: ({ children }) => {
-        const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' ? ` ${activeShowcase}-gallery` : '';
+        const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' || activeShowcase === 'depth-alert'
+          ? ` ${activeShowcase}-gallery` : '';
         return <ul className={`showcase-gallery${extra}`}>{children}</ul>;
       },
     } : {}),
