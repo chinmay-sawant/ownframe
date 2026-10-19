@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transition testbed</title>
+</head>
+<body>
+  <main class="page">
+    <p class="eyebrow">OwnFrame + Blinkless test data</p>
+    <h1>CSS transition metadata</h1>
+    <p class="intro">Start each property on its own. Every button changes one target property.</p>
+
+    <div class="demo-groups">
+      <section class="card demo-group">
+        <h2>Standard properties</h2>
+        <p class="description">Each target carries one standard transition record.</p>
+
+        <article class="property-demo standard-left-demo{{if index .Started "standard-left"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>left</h3>
+            <button type="button" id="start-standard-left-transition">{{if index .Started "standard-left"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="standard-left-target" class="target"></div></div>
+        </article>
+
+        <article class="property-demo standard-width-demo{{if index .Started "standard-width"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>width</h3>
+            <button type="button" id="start-standard-width-transition">{{if index .Started "standard-width"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="standard-width-target" class="target"></div></div>
+        </article>
+
+        <article class="property-demo standard-opacity-demo{{if index .Started "standard-opacity"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>opacity</h3>
+            <button type="button" id="start-standard-opacity-transition">{{if index .Started "standard-opacity"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="standard-opacity-target" class="target"></div></div>
+        </article>
+
+        <article class="property-demo standard-background-demo{{if index .Started "standard-background"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>background-color</h3>
+            <button type="button" id="start-standard-background-transition">{{if index .Started "standard-background"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="standard-background-target" class="target"></div></div>
+        </article>
+      </section>
+
+      <section class="card demo-group">
+        <h2>WebKit aliases</h2>
+        <p class="description">Each target carries one prefixed transition record.</p>
+
+        <article class="property-demo webkit-left-demo{{if index .Started "webkit-left"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>left</h3>
+            <button type="button" id="start-webkit-left-transition">{{if index .Started "webkit-left"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="webkit-left-target" class="target"></div></div>
+        </article>
+
+        <article class="property-demo webkit-width-demo{{if index .Started "webkit-width"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>width</h3>
+            <button type="button" id="start-webkit-width-transition">{{if index .Started "webkit-width"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="webkit-width-target" class="target"></div></div>
+        </article>
+
+        <article class="property-demo webkit-opacity-demo{{if index .Started "webkit-opacity"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>opacity</h3>
+            <button type="button" id="start-webkit-opacity-transition">{{if index .Started "webkit-opacity"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="webkit-opacity-target" class="target"></div></div>
+        </article>
+
+        <article class="property-demo webkit-background-demo{{if index .Started "webkit-background"}} is-started{{end}}">
+          <div class="demo-heading">
+            <h3>background-color</h3>
+            <button type="button" id="start-webkit-background-transition">{{if index .Started "webkit-background"}}Started{{else}}Start{{end}}</button>
+          </div>
+          <div class="stage"><div id="webkit-background-target" class="target"></div></div>
+        </article>
+      </section>
+    </div>
+
+    <p class="note">Blinkless exports the transition metadata. The test window supplies time sampling and visible frame updates. Reload the window to reset the demos.</p>
+
+    <section class="card metadata-card">
+      <h2>Exported transition records</h2>
+      <pre id="transition-metadata">{{.Readout}}</pre>
+    </section>
+  </main>
+</body>
+</html>

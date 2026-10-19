@@ -1,0 +1,251 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CSS animation test data</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f3f6fb;
+      color: #182235;
+      font-family: sans-serif;
+    }
+
+    #animation-stage {
+      width: 760px;
+      margin: 0 auto;
+      padding: 22px;
+      border: 1px solid #d8e0ec;
+      border-radius: 16px;
+      background-color: #ffffff;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 25px;
+    }
+
+    .intro {
+      margin: 0 0 18px;
+      color: #53627a;
+      font-size: 14px;
+    }
+
+    .sample {
+      display: inline-block;
+      width: 350px;
+      margin: 0 12px 18px 0;
+      vertical-align: top;
+    }
+
+    .sample-title {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .controls {
+      margin-bottom: 10px;
+    }
+
+    .start-button {
+      padding: 8px 14px;
+      border: 0;
+      border-radius: 7px;
+      background-color: #2459d3;
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .start-button:focus-visible {
+      outline: 3px solid #182235;
+      outline-offset: 3px;
+    }
+
+    .webkit-sample .start-button {
+      background-color: #7a3fc1;
+    }
+
+    .status {
+      margin-left: 8px;
+      color: #53627a;
+      font-size: 12px;
+    }
+
+    .track {
+      width: 318px;
+      height: 90px;
+      padding: 12px 14px;
+      border: 1px solid #c8d4e5;
+      border-radius: 10px;
+      background-color: #f8faff;
+    }
+
+    .track-label {
+      margin: 0 0 12px;
+      color: #66758c;
+      font-size: 10px;
+    }
+
+    .animation-target {
+      width: 62px;
+      height: 42px;
+      border-radius: 10px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: bold;
+      line-height: 42px;
+      text-align: center;
+    }
+
+    #animation-standard-target {
+      background-color: #2459d3;
+      animation: standard-glide 1.6s cubic-bezier(0.22, 0.75, 0.25, 1) 0s infinite alternate both paused;
+      animation-composition: replace;
+      animation-delay: 0s;
+      animation-delay-start: 0s;
+      animation-delay-end: 0s;
+      animation-direction: alternate;
+      animation-duration: 1.6s;
+      animation-fill-mode: both;
+      animation-iteration-count: infinite;
+      animation-name: standard-glide;
+      animation-play-state: paused;
+      animation-range: entry 10% exit 90%;
+      animation-range-center: normal;
+      animation-range-end: exit 90%;
+      animation-range-start: entry 10%;
+      animation-timeline: auto;
+      animation-timing-function: cubic-bezier(0.22, 0.75, 0.25, 1);
+      animation-trigger: --standard-start play;
+      trigger-scope: --standard-start;
+      view-transition-class: animation-demo;
+      view-transition-group: normal;
+      view-transition-name: standard-chip;
+      view-transition-scope: all;
+    }
+
+    .standard-sample.is-running #animation-standard-target {
+      animation-play-state: running;
+    }
+
+    #animation-webkit-target {
+      background-color: #7a3fc1;
+      -webkit-animation: webkit-hop 1.2s ease-in-out 0s infinite alternate both paused;
+      -webkit-animation-delay: 0s;
+      -webkit-animation-direction: alternate;
+      -webkit-animation-duration: 1.2s;
+      -webkit-animation-fill-mode: both;
+      -webkit-animation-iteration-count: infinite;
+      -webkit-animation-name: webkit-hop;
+      -webkit-animation-play-state: paused;
+      -webkit-animation-timing-function: ease-in-out;
+    }
+
+    .webkit-sample.is-running #animation-webkit-target {
+      -webkit-animation-play-state: running;
+    }
+
+    .readout-title {
+      margin: 2px 0 8px;
+      font-size: 15px;
+    }
+
+    #animation-metadata {
+      width: 700px;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid #d8e0ec;
+      border-radius: 9px;
+      background-color: #f8faff;
+      color: #26364e;
+      font-family: monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+
+    .metadata-note {
+      margin: 14px 0 0;
+      padding: 10px 12px;
+      border-left: 4px solid #e4a11b;
+      background-color: #fff8e8;
+      color: #5b4a25;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @keyframes standard-glide {
+      0% {
+        transform: translateX(0px);
+        opacity: 1;
+      }
+      50% {
+        transform: translateX(90px);
+        opacity: 0.72;
+        background-color: #e27a27;
+      }
+      100% {
+        transform: translateX(180px);
+        opacity: 1;
+        background-color: #2459d3;
+      }
+    }
+
+    @-webkit-keyframes webkit-hop {
+      0% {
+        transform: translateY(0px);
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-18px);
+        opacity: 0.75;
+        background-color: #ba61d8;
+      }
+      100% {
+        transform: translateY(0px);
+        opacity: 1;
+        background-color: #7a3fc1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main id="animation-stage">
+    <h1>CSS animation</h1>
+    <p class="intro">Each button starts one sample. The two samples use separate targets and keyframes.</p>
+
+    <section class="sample standard-sample {{if index .Started "standard"}}is-running{{end}}">
+      <h2 class="sample-title">Standard properties</h2>
+      <div class="controls">
+        <button id="start-standard-animation" class="start-button" type="button">Start</button>
+        <span id="standard-animation-status" class="status">{{if index .Started "standard"}}Started.{{else}}Ready.{{end}}</span>
+      </div>
+      <div class="track">
+        <p class="track-label">STANDARD TARGET</p>
+        <div id="animation-standard-target" class="animation-target">GLIDE</div>
+      </div>
+    </section>
+
+    <section class="sample webkit-sample {{if index .Started "webkit"}}is-running{{end}}">
+      <h2 class="sample-title">WebKit aliases</h2>
+      <div class="controls">
+        <button id="start-webkit-animation" class="start-button" type="button">Start</button>
+        <span id="webkit-animation-status" class="status">{{if index .Started "webkit"}}Started.{{else}}Ready.{{end}}</span>
+      </div>
+      <div class="track">
+        <p class="track-label">WEBKIT TARGET</p>
+        <div id="animation-webkit-target" class="animation-target">HOP</div>
+      </div>
+    </section>
+
+    <h2 class="readout-title">Animation metadata and keyframes</h2>
+    <pre id="animation-metadata">{{.Readout}}</pre>
+
+    <p class="metadata-note">
+      Blinkless stores animation values and keyframes in its drawing list. The OwnFrame host samples them to change the picture over time.
+    </p>
+  </main>
+</body>
+</html>
