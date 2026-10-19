@@ -37,7 +37,7 @@ func (a *Analyzer) State() State { return a.state }
 func (s State) String() string {
 	switch s {
 	case Clear:
-		return "CLEAR AHEAD"
+		return "WALK"
 	case Stop:
 		return "STOP"
 	case StopNow:

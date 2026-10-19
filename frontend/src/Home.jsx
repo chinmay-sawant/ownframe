@@ -80,8 +80,8 @@ const demos = [
     image: depthAlertPreview,
     alt: 'Depth Alert on a Pixel 7 showing its live camera preview, status, and depth summary.',
     phone: true,
-    href: '#docs/examples-depth-alert-readme',
-    link: 'Read about the prototype',
+    href: `${repository}/raw/refs/heads/master/examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk`,
+    link: 'Download arm64 APK',
   },
   {
     title: 'Eyes on Android',

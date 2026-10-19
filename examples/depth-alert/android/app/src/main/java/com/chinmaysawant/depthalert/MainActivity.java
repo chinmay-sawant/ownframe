@@ -228,7 +228,7 @@ public final class MainActivity extends Activity implements DepthRenderer.Listen
         String message;
         switch (next) {
             case HapticController.CLEAR:
-                message = "No close surface detected in the center view. One pulse each second.";
+                message = "Walk. No close surface detected in the center view. One pulse each second.";
                 break;
             case HapticController.STOP:
                 message = "Stop. A surface was detected within 3 meters. Two pulses each second.";

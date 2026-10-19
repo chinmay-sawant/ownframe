@@ -118,10 +118,17 @@ it with `ebitenmobile` and builds a debug APK with Gradle;
 Android SDK, NDK, and `ebitenmobile` setup is in
 [telegram/android/README.md](telegram/android/README.md).
 
-`examples/depth-alert` is an experimental ARCore Depth API app. Run
-`sh scripts/android-depth-alert.sh` to build its debug APK. Its README explains
-the haptic states, thresholds, limits, and WSL2 install command. It is not a
-mobility aid and has not been validated for independent travel.
+## Depth Alert on Android
+
+![Depth Alert on a Pixel 7 showing its live camera view, haptic status, and stable center-view summary](../assets/screenshots/android/depth-alert/depth-alert-pixel7.webp)
+
+This experimental ARCore example reports **WALK** only after twelve confirmed
+clear observations. A nearby surface reports **STOP**; a surface within 1.2 m
+reports **STOP NOW**. Depth uncertainty uses three short pulses. The app is a
+prototype, not a mobility aid.
+
+[Download the signed arm64 release APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk) ·
+[Build and safety notes](depth-alert/README.md)
 
 ## Audio
 

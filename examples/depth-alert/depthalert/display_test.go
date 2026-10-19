@@ -23,7 +23,7 @@ func TestDisplayFilterHoldsBriefMissingFrames(t *testing.T) {
 	}
 	d.observe(0, 0, true, alert.Unknown)
 	d.observe(0, 0, true, alert.Unknown)
-	if got := d.view(true); got.State != "CLEAR AHEAD" || got.Distance == "—" {
+	if got := d.view(true); got.State != "WALK" || got.Distance == "—" {
 		t.Fatalf("brief gap changed view: %+v", got)
 	}
 	d.observe(0, 0, true, alert.Unknown)
@@ -54,7 +54,7 @@ func TestDisplayFilterDebouncesStateDowngrade(t *testing.T) {
 		t.Fatalf("state after two clear samples = %q", got)
 	}
 	d.observe(4000, 50, true, alert.Clear)
-	if got := d.view(true).State; got != "CLEAR AHEAD" {
+	if got := d.view(true).State; got != "WALK" {
 		t.Fatalf("state after third clear sample = %q", got)
 	}
 }
