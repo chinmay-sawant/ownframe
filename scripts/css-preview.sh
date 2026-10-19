@@ -14,18 +14,18 @@ cd "$root"
 mode=${1:-all}
 case "$mode" in
 	focused)
-		GOWORK="$tmp/go.work" go vet -p 1 ./internal/csspreview ./cmd/css-preview
-		GOWORK="$tmp/go.work" go test -p 1 ./internal/csspreview ./cmd/css-preview
+		GOWORK="$tmp/go.work" go vet -p 1 ./examples/css-preview
+		GOWORK="$tmp/go.work" go test -p 1 ./examples/css-preview
 		;;
 	test)
-		GOWORK="$tmp/go.work" go vet -p 1 ./internal/csspreview ./cmd/css-preview
+		GOWORK="$tmp/go.work" go vet -p 1 ./examples/css-preview
 		GOWORK="$tmp/go.work" make test
 		;;
-	all|animation|transition)
-		GOWORK="$tmp/go.work" go run ./cmd/css-preview "$mode"
+	all|run)
+		GOWORK="$tmp/go.work" go run ./examples/css-preview
 		;;
 	*)
-		printf 'usage: %s [all|animation|transition|focused|test]\n' "$0" >&2
+		printf 'usage: %s [all|run|focused|test]\n' "$0" >&2
 		exit 2
 		;;
 esac

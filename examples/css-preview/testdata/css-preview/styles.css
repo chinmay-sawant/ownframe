@@ -1,0 +1,327 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 18px;
+  color: #19252b;
+  background: #f1f5f3;
+  font-family: sans-serif;
+}
+
+.page {
+  width: 100%;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  margin: 0 0 5px;
+  color: #397665;
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0 0 5px;
+  font-size: 26px;
+}
+
+.intro,
+.description,
+.note {
+  color: #52636a;
+}
+
+.intro {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+nav {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+nav a {
+  padding: 8px 11px;
+  border: 1px solid #b9cbc4;
+  border-radius: 7px;
+  color: #176b58;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid #efb83f;
+  outline-offset: 3px;
+}
+
+.card {
+  margin: 12px 0;
+  padding: 14px;
+  border: 1px solid #d4e0db;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.card > h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+}
+
+.description {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+button {
+  min-width: 76px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  background: #176b58;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.catalog-row {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #e1e9e5;
+  border-radius: 7px;
+  background: #f9fbfa;
+}
+
+.catalog-row.is-selected {
+  border-color: #397665;
+  background: #edf6f2;
+}
+
+.catalog-details {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.catalog-details h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.property-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+  height: 23px;
+  border-radius: 5px;
+  color: #ffffff;
+  background: #397665;
+  font-size: 11px;
+}
+
+.catalog-details code {
+  overflow-wrap: anywhere;
+  color: #20352f;
+  font-size: 11px;
+}
+
+.catalog-action,
+.catalog-state {
+  color: #52636a;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.catalog-action strong { color: #20352f; }
+
+.catalog-playback {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px;
+  align-items: center;
+  gap: 8px;
+}
+
+.catalog-playback button {
+  width: 68px;
+  min-width: 68px;
+  padding: 8px 4px;
+}
+
+.catalog-stage {
+  position: relative;
+  height: 68px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px dashed #b9cbc4;
+  border-radius: 7px;
+  background: #f7faf8;
+}
+
+.catalog-preview-label {
+  position: absolute;
+  top: 5px;
+  left: 9px;
+  color: #52636a;
+  font-size: 10px;
+}
+
+.catalog-preview-target {
+  position: absolute;
+  top: 29px;
+  left: 12px;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 27px;
+  border-radius: 7px;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: bold;
+}
+
+.catalog-row.is-started .catalog-preview-target {
+  animation-play-state: running;
+  -webkit-animation-play-state: running;
+}
+
+.catalog-preview-webkit-animation { background-color: #7a3fc1; border-radius: 14px 4px; -webkit-animation: wk-shorthand 1400ms ease-in-out 0s infinite normal both paused; }
+.catalog-preview-webkit-animation-delay { background-color: #168c9a; border-radius: 13px 5px; -webkit-animation: wk-delay 1200ms ease-in-out 350ms 1 normal both paused; -webkit-animation-delay: 350ms; }
+.catalog-preview-webkit-animation-direction { background-color: #d44e42; border-radius: 4px 14px; -webkit-animation: wk-direction 1400ms ease-in-out 0s infinite reverse both paused; -webkit-animation-direction: reverse; }
+.catalog-preview-webkit-animation-duration { background-color: #d69a20; border-radius: 13px; -webkit-animation: wk-duration 1200ms cubic-bezier(0.2, 0.8, 0.4, 1) 0s infinite normal both paused; -webkit-animation-duration: 1200ms; }
+.catalog-preview-webkit-animation-fill-mode { background-color: #e56b4a; border-radius: 5px; -webkit-animation: wk-fill 900ms ease-out 0s 1 normal forwards paused; -webkit-animation-fill-mode: forwards; }
+.catalog-preview-webkit-animation-iteration-count { background-color: #6a9d35; border-radius: 13px 5px; -webkit-animation: wk-iterations 650ms steps(4, end) 0s 3 normal both paused; -webkit-animation-iteration-count: 3; }
+.catalog-preview-webkit-animation-name { background-color: #31856a; border-radius: 4px 15px 4px 15px; -webkit-animation: wk-name 1300ms ease-in-out 0s infinite alternate both paused; -webkit-animation-name: wk-name; }
+.catalog-preview-webkit-animation-play-state { background-color: #8853bd; border-radius: 13px; -webkit-animation: wk-play 1100ms ease-in-out 0s 1 normal both paused; -webkit-animation-play-state: paused; }
+.catalog-preview-webkit-animation-timing-function { background-color: #286db6; border-radius: 5px 15px; -webkit-animation: wk-timing 1000ms steps(4, end) 0s infinite normal both paused; -webkit-animation-timing-function: steps(4, end); }
+
+.catalog-preview-animation { background-color: #2459d3; border-radius: 14px; animation: standard-glide 1.6s cubic-bezier(0.22, 0.75, 0.25, 1) 0s 2.5 alternate both paused; animation-composition: replace; animation-delay: 0s; animation-delay-start: 100ms; animation-delay-end: 150ms; animation-direction: alternate; animation-duration: 1.6s; animation-fill-mode: both; animation-iteration-count: 2.5; animation-name: standard-glide; animation-play-state: paused; animation-range: entry 10% exit 90%; animation-range-center: normal; animation-range-end: exit 90%; animation-range-start: entry 10%; animation-timeline: auto; animation-timing-function: cubic-bezier(0.22, 0.75, 0.25, 1); animation-trigger: --standard-start play; trigger-scope: --standard-start; view-transition-class: animation-demo; view-transition-group: normal; view-transition-name: standard-chip; view-transition-scope: all; }
+.catalog-preview-animation-composition { background-color: #ba3c93; border-radius: 13px; animation: sample-composition 1250ms ease-in-out 0s infinite alternate both paused; animation-composition: add; }
+.catalog-preview-animation-delay { background-color: #287f9b; border-radius: 13px 5px; animation: sample-delay 1250ms ease-in-out 250ms 1 normal both paused; animation-delay: 250ms; }
+.catalog-preview-animation-delay-end { background-color: #7046bd; border-radius: 5px 13px; animation: sample-delay-end 950ms ease-in-out 0s 1 normal both paused; animation-delay-end: 450ms; }
+.catalog-preview-animation-delay-start { background-color: #d76d27; border-radius: 4px 14px; animation: sample-delay-start 850ms ease-out 500ms 1 normal both paused; animation-delay-start: 500ms; }
+.catalog-preview-animation-direction { background-color: #304b9b; border-radius: 14px 4px; animation: sample-direction 1300ms ease-in-out 0s infinite reverse both paused; animation-direction: reverse; }
+.catalog-preview-animation-duration { background-color: #285ab0; border-radius: 13px; animation: sample-duration 1600ms cubic-bezier(0.22, 0.75, 0.25, 1) 0s infinite normal both paused; animation-duration: 1600ms; }
+.catalog-preview-animation-fill-mode { background-color: #319b91; border-radius: 5px 15px; animation: sample-fill 900ms ease-out 0s 1 normal forwards paused; animation-fill-mode: forwards; }
+.catalog-preview-animation-iteration-count { background-color: #8853bd; border-radius: 4px 13px 4px 13px; animation: sample-iterations 700ms steps(5, end) 0s 2.5 normal both paused; animation-iteration-count: 2.5; }
+.catalog-preview-animation-name { background-color: #713ca8; border-radius: 15px 4px; animation: sample-name 1200ms ease-in-out 0s infinite normal both paused; animation-name: sample-name; }
+.catalog-preview-animation-play-state { background-color: #d45b4a; border-radius: 13px; animation: sample-play-state 1000ms ease-in-out 0s 1 normal both paused; animation-play-state: paused; }
+.catalog-preview-animation-range { background-color: #bd7225; border-radius: 5px; animation: sample-range 1400ms ease-in-out 0s infinite normal both paused; animation-range: entry 10% exit 90%; }
+.catalog-preview-animation-range-center { background-color: #448a53; border-radius: 13px 4px; animation: sample-range-center 1100ms ease-in-out 0s infinite alternate both paused; animation-range-center: normal; }
+.catalog-preview-animation-range-end { background-color: #6847a6; border-radius: 14px 4px; animation: sample-range-end 1000ms ease-in-out 0s infinite reverse both paused; animation-range-end: exit 90%; }
+.catalog-preview-animation-range-start { background-color: #cf741e; border-radius: 4px 14px 4px 14px; animation: sample-range-start 1000ms steps(4, end) 0s infinite normal both paused; animation-range-start: entry 10%; }
+.catalog-preview-animation-timeline { background-color: #256db1; border-radius: 13px; animation: sample-timeline 1300ms ease-in-out 0s infinite alternate both paused; animation-timeline: auto; }
+.catalog-preview-animation-timing-function { background-color: #2870ba; border-radius: 4px 14px; animation: sample-timing 1100ms steps(4, end) 0s infinite normal both paused; animation-timing-function: steps(4, end); }
+.catalog-preview-animation-trigger { width: 23px; height: 23px; border-radius: 7px; background-color: #d8ad27; animation: sample-trigger 1200ms linear 0s infinite normal both paused; animation-trigger: --trigger-start play; }
+.catalog-preview-trigger-scope { background-color: #338a79; border-radius: 13px 5px; animation: sample-trigger-scope 1050ms ease-in-out 0s infinite alternate both paused; trigger-scope: --scope-start; animation-trigger: --scope-start play; }
+.catalog-preview-view-transition-class { background-color: #a74271; border-radius: 5px 14px; animation: sample-view-class 1150ms ease-in-out 0s infinite normal both paused; view-transition-class: animation-demo; }
+.catalog-preview-view-transition-group { background-color: #ca8e22; border-radius: 4px 14px 4px 14px; animation: sample-view-group 1250ms ease-in-out 0s infinite alternate both paused; view-transition-group: normal; }
+.catalog-preview-view-transition-name { background-color: #bc4844; border-radius: 13px 4px; animation: sample-view-name 1350ms ease-in-out 0s infinite normal both paused; view-transition-name: catalog-chip; }
+.catalog-preview-view-transition-scope { background-color: #8261a8; border-radius: 14px 5px; animation: sample-view-scope 1000ms ease-in-out 0s infinite reverse both paused; view-transition-scope: all; }
+
+.catalog-preview-transition { left: 12px; }
+.catalog-preview-transition { background-color: #dc694b; transition: left 900ms cubic-bezier(0.2, 0.7, 0.2, 1); transition-property: left; transition-duration: 900ms; transition-delay: 0ms; transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1); transition-behavior: normal; }
+.catalog-row.is-started .catalog-preview-transition { left: 250px; }
+.catalog-preview-transition-property { width: 50px; background-color: #76a82e; transition: width 700ms steps(5, end); transition-property: width; transition-duration: 700ms; transition-delay: 100ms; transition-timing-function: steps(5, end); transition-behavior: normal; }
+.catalog-row.is-started .catalog-preview-transition-property { width: 126px; }
+.catalog-preview-transition-duration { opacity: 0.35; background-color: #286fc3; transition: opacity 1100ms ease-in-out; transition-property: opacity; transition-duration: 1100ms; transition-delay: 0ms; transition-timing-function: ease-in-out; transition-behavior: normal; }
+.catalog-row.is-started .catalog-preview-transition-duration { opacity: 1; }
+.catalog-preview-transition-delay { background-color: #dc8129; transition: background-color 800ms linear 400ms; transition-property: background-color; transition-duration: 800ms; transition-delay: 400ms; transition-timing-function: linear; transition-behavior: normal; }
+.catalog-row.is-started .catalog-preview-transition-delay { background-color: #238d85; }
+.catalog-preview-transition-timing-function { background-color: #a64b73; transition: left 900ms steps(4, end); transition-property: left; transition-duration: 900ms; transition-delay: 0ms; transition-timing-function: steps(4, end); transition-behavior: normal; }
+.catalog-row.is-started .catalog-preview-transition-timing-function { left: 190px; }
+.catalog-preview-transition-behavior { background-color: #dc694b; transition: background-color 1.1s linear(0, 0.35 30%, 0.8 65%, 1); transition-property: background-color; transition-duration: 1.1s; transition-delay: 150ms; transition-timing-function: linear(0, 0.35 30%, 0.8 65%, 1); transition-behavior: allow-discrete; }
+.catalog-row.is-started .catalog-preview-transition-behavior { background-color: #2477c7; }
+
+.catalog-preview-webkit-transition { background-color: #8d4dc3; -webkit-transition: left 850ms ease-out; -webkit-transition-property: left; -webkit-transition-duration: 850ms; -webkit-transition-delay: 0ms; -webkit-transition-timing-function: ease-out; }
+.catalog-row.is-started .catalog-preview-webkit-transition { left: 225px; }
+.catalog-preview-webkit-transition-property { width: 46px; background-color: #d0a23b; -webkit-transition: width 650ms steps(5, end); -webkit-transition-property: width; -webkit-transition-duration: 650ms; -webkit-transition-delay: 100ms; -webkit-transition-timing-function: steps(5, end); }
+.catalog-row.is-started .catalog-preview-webkit-transition-property { width: 116px; }
+.catalog-preview-webkit-transition-duration { opacity: 0.2; background-color: #854b87; -webkit-transition: opacity 1200ms steps(4, end); -webkit-transition-property: opacity; -webkit-transition-duration: 1200ms; -webkit-transition-delay: 200ms; -webkit-transition-timing-function: steps(4, end); }
+.catalog-row.is-started .catalog-preview-webkit-transition-duration { opacity: 1; }
+.catalog-preview-webkit-transition-delay { background-color: #d1a128; -webkit-transition: background-color 900ms ease-in-out 350ms; -webkit-transition-property: background-color; -webkit-transition-duration: 900ms; -webkit-transition-delay: 350ms; -webkit-transition-timing-function: ease-in-out; }
+.catalog-row.is-started .catalog-preview-webkit-transition-delay { background-color: #814bb2; }
+.catalog-preview-webkit-transition-timing-function { background-color: #277e8b; -webkit-transition: left 900ms cubic-bezier(0.25, 0.1, 0.25, 1); -webkit-transition-property: left; -webkit-transition-duration: 900ms; -webkit-transition-delay: -75ms; -webkit-transition-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1); }
+.catalog-row.is-started .catalog-preview-webkit-transition-timing-function { left: 205px; }
+
+#preview-metadata {
+  max-height: 430px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  border-radius: 7px;
+  color: #d9efe6;
+  background: #20352f;
+  font-family: monospace;
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.note {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid #e4a11b;
+  background: #fff8e8;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+@keyframes standard-glide {
+  0% { transform: translateX(0px); opacity: 1; }
+  50% { transform: translateX(90px); opacity: 0.72; background-color: #e27a27; }
+  100% { transform: translateX(180px); opacity: 1; background-color: #2459d3; }
+}
+
+@-webkit-keyframes wk-shorthand { 0% { transform: translate(0px, 0px); } 50% { transform: translate(85px, -12px); background-color: #d760a8; } 100% { transform: translate(180px, 8px); background-color: #7a3fc1; } }
+@-webkit-keyframes wk-delay { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -12px); background-color: #46b6a3; } 50% { transform: translate(90px, 10px); } 75% { transform: translate(135px, -9px); background-color: #dfc34b; } 100% { transform: translate(180px, 0px); } }
+@-webkit-keyframes wk-direction { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -18px); background-color: #f19b47; } 100% { transform: translate(180px, 0px); background-color: #d44e42; } }
+@-webkit-keyframes wk-duration { 0% { transform: translate(0px, 0px); } 35% { transform: translate(60px, -17px); background-color: #f0c948; } 70% { transform: translate(125px, 10px); background-color: #ec7042; } 100% { transform: translate(180px, -3px); } }
+@-webkit-keyframes wk-fill { 0% { transform: translate(0px, 0px); } 55% { transform: translate(95px, 18px); background-color: #efaa48; } 100% { transform: translate(180px, -8px); background-color: #e56b4a; } }
+@-webkit-keyframes wk-iterations { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -15px); background-color: #e6c43b; } 50% { transform: translate(90px, 12px); background-color: #e87836; } 75% { transform: translate(135px, -10px); background-color: #a6c843; } 100% { transform: translate(180px, 0px); } }
+@-webkit-keyframes wk-name { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -19px); background-color: #b3d262; } 100% { transform: translate(180px, 0px); background-color: #31856a; } }
+@-webkit-keyframes wk-play { 0% { transform: translate(0px, 0px); opacity: 1; } 50% { transform: translate(90px, 14px); opacity: 0.45; background-color: #d1a1e8; } 100% { transform: translate(180px, -12px); opacity: 1; } }
+@-webkit-keyframes wk-timing { 0% { transform: translateX(0px); } 25% { transform: translateX(45px); background-color: #68a9dd; } 50% { transform: translateX(90px); background-color: #bdc9ea; } 75% { transform: translateX(135px); background-color: #73c5c1; } 100% { transform: translateX(180px); } }
+
+@keyframes sample-composition { 0% { transform: translate(0px, 5px); } 50% { transform: translate(85px, -16px); background-color: #f180bd; } 100% { transform: translate(170px, 7px); } }
+@keyframes sample-delay { 0% { transform: translate(0px, 0px); } 30% { transform: translate(55px, -15px); background-color: #47c4bd; } 65% { transform: translate(115px, 12px); } 100% { transform: translate(180px, -4px); } }
+@keyframes sample-delay-end { 0% { transform: translate(0px, 0px); } 60% { transform: translate(100px, 15px); background-color: #d6a9f0; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-delay-start { 0% { transform: translate(0px, 0px); } 50% { transform: translate(85px, -20px); background-color: #f3a34b; } 100% { transform: translate(150px, -9px); } }
+@keyframes sample-direction { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -15px); background-color: #718fd8; } 100% { transform: translate(180px, 12px); } }
+@keyframes sample-duration { 0% { transform: translate(0px, 0px); } 35% { transform: translate(55px, -16px); background-color: #4baee0; } 70% { transform: translate(125px, 15px); background-color: #e39a3a; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-fill { 0% { transform: translate(0px, 0px); } 45% { transform: translate(85px, -10px); background-color: #8ad5bf; } 100% { transform: translate(175px, 12px); background-color: #319b91; } }
+@keyframes sample-iterations { 0% { transform: translate(0px, 0px); } 20% { transform: translate(35px, -12px); background-color: #e0a9ec; } 50% { transform: translate(90px, 13px); background-color: #e7c64c; } 80% { transform: translate(145px, -10px); background-color: #b9db67; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-name { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -20px); background-color: #b989df; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-play-state { 0% { transform: translate(0px, 0px); opacity: 1; } 50% { transform: translate(90px, 18px); opacity: 0.3; background-color: #f39b85; } 100% { transform: translate(180px, -7px); opacity: 0.75; } }
+@keyframes sample-range { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -12px); } 50% { transform: translate(90px, -18px); background-color: #edb65b; } 75% { transform: translate(135px, 7px); } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-range-center { 0% { opacity: 0.2; } 50% { opacity: 0.9; background-color: #9bcf82; } 100% { opacity: 0.35; } }
+@keyframes sample-range-end { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, 18px); background-color: #a18ad2; } 100% { transform: translate(180px, -8px); } }
+@keyframes sample-range-start { 0% { transform: translate(0px, 0px); } 25% { transform: translateX(45px); background-color: #ecaa43; } 50% { transform: translateX(90px); } 75% { transform: translateX(135px); background-color: #f0cd6a; } 100% { transform: translateX(180px); } }
+@keyframes sample-timeline { 0% { transform: translate(0px, 18px); } 50% { transform: translate(90px, -18px); background-color: #64a8d8; } 100% { transform: translate(180px, 18px); } }
+@keyframes sample-timing { 0% { transform: translateX(0px); } 25% { transform: translateX(45px); background-color: #80b9ec; } 50% { transform: translateX(90px); background-color: #b6d6f3; } 75% { transform: translateX(135px); background-color: #5698d1; } 100% { transform: translateX(180px); } }
+@keyframes sample-trigger { 0% { transform: translate(0px, 14px); opacity: 1; } 50% { transform: translate(90px, -10px); opacity: 0.4; background-color: #f4d951; } 100% { transform: translate(180px, 12px); opacity: 1; } }
+@keyframes sample-trigger-scope { 0% { transform: translate(0px, 0px); } 30% { transform: translate(50px, -16px); background-color: #72c8a8; } 70% { transform: translate(130px, 12px); } 100% { transform: translate(180px, -5px); } }
+@keyframes sample-view-class { 0% { transform: translate(0px, 12px); } 50% { transform: translate(90px, -12px); background-color: #d880a1; } 100% { transform: translate(180px, 12px); } }
+@keyframes sample-view-group { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -19px); background-color: #efc75a; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-view-name { 0% { transform: translate(0px, 0px); } 50% { transform: translate(70px, -18px); background-color: #e87c70; } 100% { transform: translate(180px, 15px); } }
+@keyframes sample-view-scope { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, 16px); background-color: #b99bdb; } 100% { transform: translate(180px, -12px); } }

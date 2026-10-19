@@ -1,5 +1,0 @@
-package csspreview
-
-import "strings"
-
-var catalogProperties = strings.Fields("-webkit-animation -webkit-animation-delay -webkit-animation-direction -webkit-animation-duration -webkit-animation-fill-mode -webkit-animation-iteration-count -webkit-animation-name -webkit-animation-play-state -webkit-animation-timing-function -webkit-transition -webkit-transition-delay -webkit-transition-duration -webkit-transition-property -webkit-transition-timing-function animation animation-composition animation-delay animation-delay-end animation-delay-start animation-direction animation-duration animation-fill-mode animation-iteration-count animation-name animation-play-state animation-range animation-range-center animation-range-end animation-range-start animation-timeline animation-timing-function animation-trigger transition transition-behavior transition-delay transition-duration transition-property transition-timing-function trigger-scope view-transition-class view-transition-group view-transition-name view-transition-scope")
