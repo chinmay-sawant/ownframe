@@ -5,7 +5,6 @@ import { repository } from './project';
 import gopher from '../../assets/brand/gopher.webp';
 import teamsPreview from '../../assets/screenshots/demos/teams.webp';
 import telegramPreview from '../../assets/screenshots/android/telegram/telegram-thread.webp';
-import eyesPreview from '../../assets/screenshots/android/eyes/eyes-idle.webp';
 
 highlight.registerLanguage('go', go);
 
@@ -72,14 +71,6 @@ const demos = [
     phone: true,
     href: '#docs/examples-telegram-android-readme',
     link: 'Build the Android demo',
-  },
-  {
-    title: 'Eyes on Android',
-    description: 'Animated robot eyes with 21 expressions, touch controls, and motion response.',
-    image: eyesPreview,
-    alt: 'Robot eyes open on a black Android screen.',
-    href: `${repository}/raw/refs/heads/master/examples/eyes/android/artifacts/eyes-arm64-release.apk`,
-    link: 'Download arm64 APK',
   },
 ];
 
