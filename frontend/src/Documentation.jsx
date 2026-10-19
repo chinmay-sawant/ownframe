@@ -18,6 +18,7 @@ const showcaseSections = [
   { id: 'wispr-flow', title: 'Wispr Flow' },
   { id: 'dino-run', title: 'Dino Run' },
   { id: 'eyes', title: 'Eyes' },
+  { id: 'depth-alert', title: 'Depth Alert' },
 ];
 
 function selectShowcase(markdown, id) {

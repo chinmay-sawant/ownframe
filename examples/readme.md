@@ -64,7 +64,6 @@ behavior and the limits are in
 | [teams](teams) | Microsoft Teams-like app clone: dark theme by default with a light theme toggle, six rail menus (Activity, Chat, Teams and channels, Calendar, Calls, Files), a More apps flyout, a profile flyout with status, chat compose, live chat and search filtering, expandable channel threads with emoji reactions, a meeting card with date and time picks, a dial pad, and file details. The state persists in SQLite, the initial data comes from `examples/teams/store/seed/*.sql`, and `-db` selects the database file (`:memory:` keeps it in memory). Marvel-cast sample data. | 8118 |
 | [spotify-player](spotify-player) | Dark Spotify-like player: eight screens (home, search, library, liked, browse, radio, queue, profile), live iTunes data, local free-music playback, and an animated now-bar equalizer. | 8119 |
 | [telegram](telegram) | Telegram-like chat demo sized for a phone: chat list with search, contacts, settings with a dark theme, and one open conversation with a composer. The Android project under `telegram/android` builds an installable APK. | 8129 |
-| [depth-alert](depth-alert) | Experimental ARCore depth prototype for Android: center-view distance, conservative unknown state near alert boundaries, native Start/Stop controls, and haptic signals. Not a mobility aid. | — |
 | [dino](dino) | Chrome-style dinosaur game: keyboard jump and duck, cacti and birds, running score, and a live frames-per-second readout. | 8120 |
 | [lg-remote](lg-remote) | LG webOS remote for a UP7750-class TV. Dark by default, with a light theme toggle. Desktop uses Wi-Fi. Android adds Bluetooth HID. | 8131 |
 | [flappy-bird](flappy-bird) | Flappy Bird: HTML/CSS scene, gravity and flap physics, scrolling pipe pairs, score and best, keyboard or click. | 8121 |
@@ -117,18 +116,6 @@ it with `ebitenmobile` and builds a debug APK with Gradle;
 `sh scripts/android.sh install` also runs `adb install -r`. The one-time
 Android SDK, NDK, and `ebitenmobile` setup is in
 [telegram/android/README.md](telegram/android/README.md).
-
-## Depth Alert on Android
-
-![Depth Alert on a Pixel 7 showing its live camera view, haptic status, and stable center-view summary](../assets/screenshots/android/depth-alert/depth-alert-pixel7.webp)
-
-This experimental ARCore example reports **WALK** only after twelve confirmed
-clear observations. A nearby surface reports **STOP**; a surface within 1.2 m
-reports **STOP NOW**. Depth uncertainty uses three short pulses. The app is a
-prototype, not a mobility aid.
-
-[Download the signed arm64 release APK](https://github.com/chinmay-sawant/ownframe/raw/refs/heads/master/examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk) ·
-[Build and safety notes](depth-alert/README.md)
 
 ## Audio
 
