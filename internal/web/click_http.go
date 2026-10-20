@@ -52,15 +52,16 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if sel, ok := s.app.(host.Selector); ok {
-		if err := sel.SelectAt(r.Context(), x, y); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-
-			return
+	err := host.Batch(r.Context(), s.app, func() error {
+		if sel, ok := s.app.(host.Selector); ok {
+			if err := sel.SelectAt(r.Context(), x, y); err != nil {
+				return err
+			}
 		}
-	}
 
-	if err := s.ptr().Click(r.Context(), x, y); err != nil {
+		return s.ptr().Click(r.Context(), x, y)
+	})
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return

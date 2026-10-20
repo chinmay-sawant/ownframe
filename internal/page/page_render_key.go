@@ -26,6 +26,11 @@ type renderTrack struct {
 	// statePseudos records the interactive pseudo-classes the sheets use. All
 	// true means unknown, which keeps the old redraw behavior.
 	statePseudos render.StatePseudos
+	// redrawBatch defers draws across a pointer sequence. Any Redraw in the
+	// batch sets pending; a Redraw (not RedrawIfChanged) also sets force.
+	redrawBatch   int
+	redrawPending bool
+	redrawForce   bool
 }
 
 func (p *Page) keyFor(state render.State) renderKey {

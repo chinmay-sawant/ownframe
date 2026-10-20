@@ -21,6 +21,13 @@ func (p *Page) redraw(ctx context.Context, skipSame bool) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
+	if p.redrawBatch > 0 {
+		p.redrawPending = true
+		if !skipSame {
+			p.redrawForce = true
+		}
+		return nil
+	}
 	track, m0, start := p.beginRedraw()
 	defer p.finishRedraw(track, m0, start)
 	executed, err := p.execTemplate(track)

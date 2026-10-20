@@ -10,11 +10,13 @@ import "github.com/chinmay-sawant/ownframe/internal/host"
 func (s *shell) tapAt(px, py float64) error {
 	s.hold.release()
 
-	if err := s.ptr().Press(s.ctx, px, py); err != nil {
-		return err
-	}
+	return host.Batch(s.ctx, s.app, func() error {
+		if err := s.ptr().Press(s.ctx, px, py); err != nil {
+			return err
+		}
 
-	return s.finishTap(px, py)
+		return s.finishTap(px, py)
+	})
 }
 
 func (s *shell) finishTap(px, py float64) error {

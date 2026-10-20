@@ -11,17 +11,19 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 	if alt || !s.devPickerOn() {
 		s.dev.forward = true
 
-		if err := s.ptr().Press(s.ctx, px, py); err != nil {
-			return err
-		}
-
-		if sel, ok := s.app.(host.Selector); ok {
-			if err := sel.SelectAt(s.ctx, px, py); err != nil {
+		return host.Batch(s.ctx, s.app, func() error {
+			if err := s.ptr().Press(s.ctx, px, py); err != nil {
 				return err
 			}
-		}
 
-		return s.ptr().Click(s.ctx, px, py)
+			if sel, ok := s.app.(host.Selector); ok {
+				if err := sel.SelectAt(s.ctx, px, py); err != nil {
+					return err
+				}
+			}
+
+			return s.ptr().Click(s.ctx, px, py)
+		})
 	}
 
 	box, ok := devBoxAt(s.app.Boxes(), px, py)

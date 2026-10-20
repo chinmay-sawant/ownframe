@@ -11,24 +11,51 @@ clickable; perf sampling stays on. It serves these local endpoints:
     /goto?i=N   scroll Start button N under a fixed row
     /aim        index, client x, client y, property name
     /cursor     client cursor position, used to calibrate the window origin
-    /state      next index, started count, selected name, last redraw (us)
+    /state      next, started, selected, last redraw (us), pipeline counters,
+                press timestamp (ns), started sequence
 
 This script moves the X pointer and sends real button press/release events
-with XTest, so every click goes through the window pointer path. It measures
-the time from the release to the page reporting the item as started, and
-retries a missed click.
+with XTest, so every click goes through the window pointer path. The timed
+interval starts at the press. It reports the app's press-to-started time from
+the handler timestamp, the press-to-painted time from the next layout, and the
+page's own redraw time. The 80 ms hover settle and 50 ms hold are kept for a
+real pointer sequence but are outside the timed interval.
+
+The walk hook stops the previous sample before each /goto, so each measurement
+is one click instead of a soak of all 43 animations. Use /reset to clear the
+started rows and run the whole catalog again in the same window.
 
 Run:  python3 scripts/css-preview-click-test.py
 """
 
 import ctypes
 import ctypes.util
+import http.client
+import statistics
 import sys
 import time
-import urllib.request
 
-BASE = "http://127.0.0.1:6971/"
+HOST, PORT = "127.0.0.1", 6971
 CALIBRATE_AT = (700, 700)
+TOTAL = 43
+SETTLE = 0.08
+HOLD_NS = 50_000_000
+STATE_TIMEOUT_NS = 1_200_000_000
+
+conn = None
+
+
+def get(path):
+    global conn
+    if conn is None:
+        conn = http.client.HTTPConnection(HOST, PORT, timeout=3)
+    try:
+        conn.request("GET", "/" + path.lstrip("/"))
+        return conn.getresponse().read().decode().strip()
+    except (ConnectionError, OSError):
+        conn.close()
+        conn = None
+        raise
 
 
 def open_display():
@@ -41,24 +68,23 @@ def open_display():
     return x11, xtst, display
 
 
-def get(path):
-    with urllib.request.urlopen(BASE + path, timeout=3) as response:
-        return response.read().decode().strip()
-
-
 def move(xtst, x11, display, x, y):
     xtst.XTestFakeMotionEvent(display, -1, x, y, 0)
     x11.XFlush(display)
 
 
-def click(x11, xtst, display, x, y):
-    move(xtst, x11, display, x, y)
-    time.sleep(0.08)
-    xtst.XTestFakeButtonEvent(display, 1, 1, 0)
+def button(xtst, x11, display, down):
+    xtst.XTestFakeButtonEvent(display, 1, 1 if down else 0, 0)
     x11.XFlush(display)
-    time.sleep(0.05)
-    xtst.XTestFakeButtonEvent(display, 1, 0, 0)
-    x11.XFlush(display)
+
+
+def state():
+    return get("state").split()
+
+
+def started(fields, before_seq, before_started, name):
+    return (len(fields) >= 20 and int(fields[19]) > before_seq
+            and int(fields[1]) > before_started and fields[2] == name)
 
 
 def aim_for(index):
@@ -70,22 +96,94 @@ def aim_for(index):
     return None
 
 
+def one_click(xtst, x11, display, ox, oy, aim):
+    ax, ay, name = aim
+    move(xtst, x11, display, ox + ax, oy + ay)
+    time.sleep(SETTLE)
+
+    before = state()
+    before_started, before_seq = int(before[1]), int(before[19])
+    before_layouts = int(before[7])
+
+    press_ns = time.time_ns()
+    button(xtst, x11, display, True)
+
+    observed, app_started_ns = None, 0
+    while time.time_ns() - press_ns < HOLD_NS + 300_000_000:
+        fields = state()
+        if started(fields, before_seq, before_started, name):
+            observed = fields
+            app_started_ns = int(fields[18])
+            break
+        time.sleep(0.001)
+
+    left = HOLD_NS - (time.time_ns() - press_ns)
+    if left > 0:
+        time.sleep(left / 1e9)
+    button(xtst, x11, display, False)
+
+    if observed is None:
+        deadline = time.time_ns() + STATE_TIMEOUT_NS
+        while time.time_ns() < deadline:
+            fields = state()
+            if started(fields, before_seq, before_started, name):
+                observed = fields
+                app_started_ns = int(fields[18])
+                break
+            time.sleep(0.001)
+    if observed is None:
+        return None
+
+    painted_ns = 0
+    deadline = time.time_ns() + STATE_TIMEOUT_NS
+    while time.time_ns() < deadline:
+        fields = state()
+        if len(fields) >= 8 and int(fields[7]) > before_layouts:
+            painted_ns = time.time_ns()
+            observed = fields
+            break
+        time.sleep(0.001)
+
+    started_ms = (app_started_ns - press_ns) / 1e6 if app_started_ns else None
+    painted_ms = (painted_ns - press_ns) / 1e6 if painted_ns else None
+    redraw_ms = int(observed[3]) / 1e3
+    return name, started_ms, painted_ms, redraw_ms, observed
+
+
+def summary(label, values):
+    if not values:
+        print("%s: no samples" % label)
+        return
+    values = sorted(values)
+    print("%s p50 %.1fms p95 %.1fms max %.1fms avg %.1fms total %.2fs" % (
+        label,
+        values[len(values) // 2],
+        values[len(values) * 95 // 100],
+        values[-1],
+        statistics.mean(values),
+        sum(values) / 1000.0))
+
+
 def main():
     x11, xtst, display = open_display()
 
-    # Calibrate the window origin: the app reports the client position of
-    # the real pointer, so subtract it from a known screen point.
     move(xtst, x11, display, *CALIBRATE_AT)
     time.sleep(0.4)
     cx, cy = map(int, get("cursor").split())
     ox, oy = CALIBRATE_AT[0] - cx, CALIBRATE_AT[1] - cy
     print("window origin", ox, oy)
 
-    latencies = []
-    failures = []
-    total = 43
+    get("reset")
+    for _ in range(400):
+        fields = state()
+        if len(fields) >= 2 and int(fields[1]) == 0:
+            break
+        time.sleep(0.01)
 
-    for i in range(total):
+    started_ms, painted_ms, redraw_ms = [], [], []
+    failures = []
+
+    for i in range(TOTAL):
         get("goto?i=%d" % i)
         aim = aim_for(i)
         if aim is None:
@@ -93,37 +191,35 @@ def main():
             print("%02d NO AIM" % i)
             continue
 
-        before = int(get("state").split()[1])
-        ok = False
+        result = None
         for _ in range(3):
-            started = time.time()
-            click(x11, xtst, display, ox + aim[0], oy + aim[1])
-            while time.time() - started < 1.2:
-                state = get("state").split()
-                if len(state) >= 4 and int(state[1]) > before and state[2] == aim[2]:
-                    latencies.append(time.time() - started)
-                    ok = True
-                    break
-                time.sleep(0.01)
-            if ok:
+            result = one_click(xtst, x11, display, ox, oy, aim)
+            if result is not None:
                 break
             aim = aim_for(i) or aim
             time.sleep(0.2)
 
-        if not ok:
+        if result is None:
             failures.append((i, aim[2]))
-        print("%02d %-40s %s %4.0fms" % (
-            i, aim[2], "ok" if ok else "FAIL",
-            (latencies[-1] * 1000) if ok and latencies else 0.0))
+            print("%02d %-40s FAIL" % (i, aim[2]))
+            continue
 
-    latencies.sort()
-    print("clicked %d/%d failures %s" % (len(latencies), total, failures))
-    if latencies:
-        print("p50 %.0fms p95 %.0fms max %.0fms avg %.0fms" % (
-            latencies[len(latencies) // 2] * 1000,
-            latencies[len(latencies) * 95 // 100] * 1000,
-            latencies[-1] * 1000,
-            sum(latencies) / len(latencies) * 1000))
+        name, press_to_started, press_to_painted, redraw, _ = result
+        if press_to_started is not None:
+            started_ms.append(press_to_started)
+        if press_to_painted is not None:
+            painted_ms.append(press_to_painted)
+        redraw_ms.append(redraw)
+        print("%02d %-40s ok started %6.1fms painted %6.1fms redraw %6.1fms" % (
+            i, name,
+            press_to_started if press_to_started is not None else -1,
+            press_to_painted if press_to_painted is not None else -1,
+            redraw))
+
+    print("clicked %d/%d failures %s" % (len(redraw_ms), TOTAL, failures))
+    summary("press->started", started_ms)
+    summary("press->painted", painted_ms)
+    summary("redraw", redraw_ms)
     print("final state", get("state"))
 
 

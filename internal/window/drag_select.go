@@ -19,36 +19,39 @@ func (s *shell) pressAt(px, py float64) error {
 	if claimed, err := s.beginPointerDrag(px, py, true); claimed || err != nil {
 		return err
 	}
-	if err := s.ptr().Press(s.ctx, px, py); err != nil {
-		return err
-	}
 
-	sel, ok := s.app.(selector)
-	if !ok {
-		return s.ptr().Click(s.ctx, px, py)
-	}
+	return host.Batch(s.ctx, s.app, func() error {
+		if err := s.ptr().Press(s.ctx, px, py); err != nil {
+			return err
+		}
 
-	if err := sel.SelectAt(s.ctx, px, py); err != nil {
-		return err
-	}
+		sel, ok := s.app.(selector)
+		if !ok {
+			return s.ptr().Click(s.ctx, px, py)
+		}
 
-	if err := s.ptr().Click(s.ctx, px, py); err != nil {
-		return err
-	}
+		if err := sel.SelectAt(s.ctx, px, py); err != nil {
+			return err
+		}
 
-	s.dragActive = true
-	s.dragX, s.dragY = px, py
+		if err := s.ptr().Click(s.ctx, px, py); err != nil {
+			return err
+		}
 
-	count := s.clicks.step(time.Now(), px, py)
-	if count == 2 {
-		return sel.SelectWordAt(s.ctx, px, py)
-	}
+		s.dragActive = true
+		s.dragX, s.dragY = px, py
 
-	if count >= 3 {
-		return sel.SelectLineAt(s.ctx, px, py)
-	}
+		count := s.clicks.step(time.Now(), px, py)
+		if count == 2 {
+			return sel.SelectWordAt(s.ctx, px, py)
+		}
 
-	return nil
+		if count >= 3 {
+			return sel.SelectLineAt(s.ctx, px, py)
+		}
+
+		return nil
+	})
 }
 
 // dragAt extends the range while the button stays down and the point moves.

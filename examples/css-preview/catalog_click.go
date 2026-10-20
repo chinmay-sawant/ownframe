@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
@@ -16,6 +17,8 @@ func (d *demo) click(_ context.Context, b ownframe.Box) error {
 		d.v.Selected = row.Name
 		d.v.Readout = row.Name + " = " + row.Value + "\n" + row.Action
 		if row.SampleKey == "" {
+			d.startedAt = time.Now()
+			d.startedSeq++
 			d.p.SetData(d.v)
 			return nil
 		}
@@ -45,6 +48,8 @@ func (d *demo) start(selected target, button string) error {
 	d.samples[selected.key].source = button
 	d.v.Started[selected.key] = true
 	d.v.Started[button] = true
+	d.startedAt = time.Now()
+	d.startedSeq++
 	d.pendingKey = selected.key
 	d.p.SetData(d.v)
 	if !walkActive() {

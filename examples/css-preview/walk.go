@@ -21,6 +21,10 @@ type walker struct {
 	next      int
 	scrollFor int
 	aim       [3]int // index, client x, client y; index -1 when unset
+	trace     walkTrace
+	resetReq  bool
+	resetDone chan struct{}
+	stopReq   bool
 }
 
 func startWalk(p *ownframe.Page, d *demo, v *view) {
@@ -47,6 +51,20 @@ func (w *walker) step() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	if w.resetReq {
+		w.resetReq = false
+		w.reset()
+		if w.resetDone != nil {
+			close(w.resetDone)
+			w.resetDone = nil
+		}
+	}
+	if w.stopReq {
+		w.stopReq = false
+		w.d.samples = map[string]*sample{}
+		w.d.pendingKey = ""
+	}
+	w.snapshot()
 	if w.next < 0 || w.next >= len(w.v.Catalog) {
 		return
 	}

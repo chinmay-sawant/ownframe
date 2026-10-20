@@ -18,6 +18,8 @@ type demo struct {
 	gen        uint64
 	samples    map[string]*sample
 	pendingKey string
+	startedAt  time.Time
+	startedSeq uint64
 }
 
 type sample struct {

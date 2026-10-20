@@ -15,6 +15,7 @@ func (w *walker) serve() {
 		fmt.Sscanf(r.URL.Query().Get("i"), "%d", &i)
 		w.mu.Lock()
 		w.next, w.scrollFor, w.aim = i, i, [3]int{-1, 0, 0}
+		w.stopReq = true
 		w.mu.Unlock()
 	})
 	http.HandleFunc("/aim", func(rw http.ResponseWriter, _ *http.Request) {
@@ -30,17 +31,23 @@ func (w *walker) serve() {
 		cx, cy := ebiten.CursorPosition()
 		fmt.Fprintf(rw, "%d %d\n", cx, cy)
 	})
+	http.HandleFunc("/reset", func(rw http.ResponseWriter, _ *http.Request) {
+		done := make(chan struct{})
+		w.mu.Lock()
+		w.resetReq, w.resetDone = true, done
+		w.mu.Unlock()
+		<-done
+		fmt.Fprintln(rw, "ok")
+	})
 	http.HandleFunc("/state", func(rw http.ResponseWriter, _ *http.Request) {
 		w.mu.Lock()
-		started := 0
-		for _, row := range w.v.Catalog {
-			if w.v.Started[row.Button] {
-				started++
-			}
-		}
-		fmt.Fprintf(rw, "%d %d %s %d\n", w.next, started, w.v.Selected,
-			w.p.Stats().LastRedraw.Microseconds())
+		next, tr := w.next, w.trace
 		w.mu.Unlock()
+		fmt.Fprintf(rw, "%d %d %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+			next, tr.started, tr.selected, tr.last, tr.redraws, tr.parses,
+			tr.cascades, tr.layouts, tr.repaints, tr.ops, tr.boxes, tr.tmpl,
+			tr.style, tr.display, tr.paint, tr.changed, tr.dirty, tr.alloc,
+			tr.startedNS, tr.seq)
 	})
 	_ = http.ListenAndServe("127.0.0.1:6971", nil)
 }
