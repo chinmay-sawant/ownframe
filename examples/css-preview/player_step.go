@@ -8,6 +8,32 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
+// stepSamples advances every sample that is on screen. It reports whether a
+// sample is still running and whether one is waiting for its row to come
+// back into the window.
+func (d *demo) stepSamples(now time.Time, partial bool) (live, waiting bool) {
+	for _, s := range d.samples {
+		if !s.active {
+			continue
+		}
+		if s.detached {
+			waiting = true
+			continue
+		}
+		var running bool
+		if partial {
+			running = d.stepSample(s, now)
+		} else {
+			running = s.plan.step(now)
+		}
+		if !running {
+			s.active = false
+		}
+		live = s.active || live
+	}
+	return live, waiting
+}
+
 // stepSample advances one sample and marks where its operations were and
 // where they landed, so the window repaints only those tiles.
 func (d *demo) stepSample(s *sample, now time.Time) bool {
@@ -24,37 +50,4 @@ func sampleBox(display *ownframe.Display, pairs []pair) image.Rectangle {
 		box = box.Union(frame.OpBox(display, pairs[i].op))
 	}
 	return box
-}
-
-func (d *demo) rebind() error {
-	now := time.Now()
-	for key, s := range d.samples {
-		t, ok := targetByKey(key)
-		if !ok {
-			continue
-		}
-		boxes := d.p.Boxes()
-		boxIndex, ok := findBoxIndex(boxes, t.id)
-		if !ok {
-			continue
-		}
-		box := boxes[boxIndex]
-		plan, err := bind(d.p.Display(), box, t, s.base, s.origin)
-		if err != nil {
-			if s.active {
-				return err
-			}
-			continue
-		}
-		s.plan = plan
-		if plan.animation != nil {
-			if err := dispatchAnimationTriggers(boxes, boxIndex, s.source, plan.animation, s.origin); err != nil {
-				return err
-			}
-		}
-		if !s.active {
-			s.plan.step(now)
-		}
-	}
-	return nil
 }

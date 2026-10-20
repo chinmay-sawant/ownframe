@@ -28,8 +28,6 @@ func installCatalogWindow(
 		v.Rows = v.Catalog[cardStart:cardEnd]
 		v.TopPad = m.topPad(start)
 		v.BotPad = m.botPad(end)
-		d.samples = map[string]*sample{}
-		d.pendingKey = ""
 		p.SetData(v)
 
 		return true

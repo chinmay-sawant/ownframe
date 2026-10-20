@@ -28,6 +28,9 @@ type sample struct {
 	plan   motion
 	origin time.Time
 	active bool
+	// detached marks a sample whose row left the window. It keeps its
+	// origin so the animation resumes where it was when the row returns.
+	detached bool
 }
 
 func newDemo(p *ownframe.Page, v *view) *demo {
@@ -40,14 +43,17 @@ func (d *demo) tick(ctx context.Context) error {
 		return nil
 	}
 	if d.pendingKey != "" {
-		if err := d.begin(); err != nil {
+		started, err := d.begin()
+		if err != nil {
 			return err
 		}
 		if err := d.rebind(); err != nil {
 			return err
 		}
 		d.gen = d.p.Generation()
-		d.pendingKey = ""
+		if started {
+			d.pendingKey = ""
+		}
 	} else if d.gen != d.p.Generation() {
 		if err := d.rebind(); err != nil {
 			return err
@@ -65,25 +71,13 @@ func (d *demo) tick(ctx context.Context) error {
 		d.p.UseFrameDirty()
 	}
 	now := time.Now()
-	live := false
-	for _, s := range d.samples {
-		if !s.active {
-			continue
-		}
-		var running bool
-		if partial {
-			running = d.stepSample(s, now)
-		} else {
-			running = s.plan.step(now)
-		}
-		if !running {
-			s.active = false
-		}
-		live = s.active || live
-	}
-	if live {
+	live, waiting := d.stepSamples(now, partial)
+	switch {
+	case live:
 		d.p.WantFrameIn(0)
-	} else {
+	case waiting:
+		d.p.WantFrameIn(50 * time.Millisecond)
+	default:
 		d.p.SetTick(nil)
 	}
 	return nil
