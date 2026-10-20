@@ -36,6 +36,7 @@ func clickCallsBox(t *testing.T, app *App, id string) {
 
 // TestCallsKeypadNumber checks keys build the dialed number and Clear empties it.
 func TestCallsKeypadNumber(t *testing.T) {
+	t.Parallel()
 	app := openCallsMenu(t)
 
 	if got := app.View().Calls.Tab; got != "history" {
@@ -58,6 +59,7 @@ func TestCallsKeypadNumber(t *testing.T) {
 
 // TestCallsBackspace checks Backspace drops the last dialed character.
 func TestCallsBackspace(t *testing.T) {
+	t.Parallel()
 	app := openCallsMenu(t)
 
 	clickCallsBox(t, app, "calls-key-5")

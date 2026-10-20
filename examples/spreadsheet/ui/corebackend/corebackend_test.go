@@ -1,29 +1,10 @@
 package corebackend
 
 import (
-	"context"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/examples/spreadsheet/ui"
 )
-
-func newBackend(t *testing.T, dir string) *Backend {
-	t.Helper()
-
-	b, err := Open(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := b.Seed(context.Background(), ""); err != nil {
-		_ = b.Close()
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() { _ = b.Close() })
-
-	return b
-}
 
 func sheetID(t *testing.T, b *Backend, name string) string {
 	t.Helper()

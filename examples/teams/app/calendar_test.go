@@ -30,6 +30,7 @@ func calClick(t *testing.T, app *App, id string) {
 
 // TestCalendarWeeks checks next, prev, and Today move between weeks.
 func TestCalendarWeeks(t *testing.T) {
+	t.Parallel()
 	app := calendarApp(t)
 	first := app.View().Calendar
 
@@ -56,6 +57,7 @@ func TestCalendarWeeks(t *testing.T) {
 
 // TestCalendarDetail checks opening an event shows the detail card.
 func TestCalendarDetail(t *testing.T) {
+	t.Parallel()
 	app := calendarApp(t)
 
 	calClick(t, app, "calendar-event-e1")

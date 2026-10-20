@@ -7,6 +7,7 @@ import (
 // TestChatPeterThread checks the Spider-Man chat opens and reads as a
 // two-person discussion with Iron Man about the web shooter field test.
 func TestChatPeterThread(t *testing.T) {
+	t.Parallel()
 	app := newChatApp(t)
 	clickChat(t, app, "chat-item-peter")
 

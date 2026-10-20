@@ -4,6 +4,7 @@ import "testing"
 
 // TestFilesOpens checks the Files section starts on the recent filter.
 func TestFilesOpens(t *testing.T) {
+	t.Parallel()
 	app := newApp(t)
 
 	if app.View().Section != "chat" {
@@ -25,6 +26,7 @@ func TestFilesOpens(t *testing.T) {
 
 // TestFilesStarred checks the starred filter and its unstar drop.
 func TestFilesStarred(t *testing.T) {
+	t.Parallel()
 	app := newApp(t)
 
 	openSection(t, app, "files")
@@ -45,6 +47,7 @@ func TestFilesStarred(t *testing.T) {
 
 // TestFilesToggle checks a row star flips f2 and a row click shows detail.
 func TestFilesToggle(t *testing.T) {
+	t.Parallel()
 	app := newApp(t)
 
 	openSection(t, app, "files")

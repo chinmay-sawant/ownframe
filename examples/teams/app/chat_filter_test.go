@@ -8,6 +8,7 @@ import (
 
 // TestChatFilterNarrowsData checks the filter chips change the real list.
 func TestChatFilterNarrowsData(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 	all := len(app.View().Chat.Chats)
 
@@ -41,6 +42,7 @@ func TestChatFilterNarrowsData(t *testing.T) {
 
 // TestChatSearchNarrowsData checks typing in the search box filters the list.
 func TestChatSearchNarrowsData(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 	all := len(app.View().Chat.Chats)
 

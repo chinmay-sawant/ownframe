@@ -6,6 +6,7 @@ import (
 
 // TestCalendarCreate checks the modal creates the chosen meeting.
 func TestCalendarCreate(t *testing.T) {
+	t.Parallel()
 	app := calendarApp(t)
 
 	calClick(t, app, "calendar-new")
@@ -50,6 +51,7 @@ func TestCalendarCreate(t *testing.T) {
 
 // TestCalendarCancel closes the modal without creating anything.
 func TestCalendarCancel(t *testing.T) {
+	t.Parallel()
 	app := calendarApp(t)
 
 	calClick(t, app, "calendar-new")

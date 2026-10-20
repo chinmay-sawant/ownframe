@@ -9,6 +9,7 @@ import (
 // TestPersistAcrossReopen checks a sent message survives closing the app
 // and opening it again on the same database file.
 func TestPersistAcrossReopen(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "teams.db")
 
 	first, err := New(WithDB(path))

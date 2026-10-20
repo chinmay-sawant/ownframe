@@ -6,6 +6,18 @@ import "context"
 // a bitmap otherwise. Parsed trees and sheets are reused. Stage timing and
 // allocs track only with Perf on.
 func (p *Page) Redraw(ctx context.Context) error {
+	return p.redraw(ctx, false)
+}
+
+// RedrawIfChanged renders unless the executed source, viewport, focus,
+// hover, theme, and images all match the last committed frame. It is for
+// callers that redraw after every event and would otherwise lay out the
+// same frame again. A skipped call counts no layout or repaint.
+func (p *Page) RedrawIfChanged(ctx context.Context) error {
+	return p.redraw(ctx, true)
+}
+
+func (p *Page) redraw(ctx context.Context, skipSame bool) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
@@ -16,8 +28,11 @@ func (p *Page) Redraw(ctx context.Context) error {
 		return err
 	}
 	p.source = p.syncForm(executed)
-	p.png = nil
 	state := p.renderState()
+	if skipSame && p.unchanged(state) {
+		return nil
+	}
+	p.png = nil
 	styled, err := p.styleStaged(ctx, track, p.source, state)
 	if err != nil {
 		return err

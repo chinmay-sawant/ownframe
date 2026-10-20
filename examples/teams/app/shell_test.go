@@ -6,6 +6,7 @@ import (
 
 // TestDefaultSection checks the app opens on Chat with the rail drawn.
 func TestDefaultSection(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	if app.View().Section != "chat" {

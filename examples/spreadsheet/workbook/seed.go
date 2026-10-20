@@ -11,10 +11,9 @@ const (
 	StressRows = 100000
 )
 
-// SeedDummy builds the shipped fixtures: a three-sheet demo workbook of
-// DummyRows by DummyCols cells and a sparse StressRows-row stress workbook.
-// The content is deterministic, so seeding twice writes the same cells.
-func SeedDummy() []*Workbook {
+// SeedDemo builds the three-sheet demo workbook of DummyRows by DummyCols
+// cells. Its content is deterministic.
+func SeedDemo() *Workbook {
 	demo := New(1, "Demo workbook")
 
 	fillNumbers(demo, demo.AddSheet("Numbers"))
@@ -22,7 +21,14 @@ func SeedDummy() []*Workbook {
 	fillMixed(demo, demo.AddSheet("Mixed"))
 	demo.RecalcAll()
 
-	return []*Workbook{demo, SeedStress(StressRows)}
+	return demo
+}
+
+// SeedDummy builds the shipped fixtures: the demo workbook and a sparse
+// StressRows-row stress workbook. The content is deterministic, so seeding
+// twice writes the same cells.
+func SeedDummy() []*Workbook {
+	return []*Workbook{SeedDemo(), SeedStress(StressRows)}
 }
 
 // put stores a cell during seeding.

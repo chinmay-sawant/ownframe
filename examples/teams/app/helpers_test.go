@@ -27,13 +27,26 @@ func clickBox(t *testing.T, app *App, box ownframe.Box) {
 	}
 }
 
-// clickID redraws first, then clicks the box with the id.
-func clickID(t *testing.T, app *App, id string) {
+// draw draws a first frame only when the app has no boxes yet. Every
+// click already redraws the page, so a second redraw here would lay out the
+// whole app again for the same state.
+func draw(t *testing.T, app *App) {
 	t.Helper()
+
+	if len(app.Boxes()) != 0 {
+		return
+	}
 
 	if err := app.Redraw(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
+}
+
+// clickID draws if needed, then clicks the box with the id.
+func clickID(t *testing.T, app *App, id string) {
+	t.Helper()
+
+	draw(t, app)
 
 	box, ok := findBox(app.Boxes(), id)
 	if !ok {
@@ -43,13 +56,11 @@ func clickID(t *testing.T, app *App, id string) {
 	clickBox(t, app, box)
 }
 
-// openSection redraws and clicks one app rail link.
+// openSection draws if needed and clicks one app rail link.
 func openSection(t *testing.T, app *App, name string) {
 	t.Helper()
 
-	if err := app.Redraw(context.Background()); err != nil {
-		t.Fatalf("Redraw: %v", err)
-	}
+	draw(t, app)
 
 	box, ok := findBox(app.Boxes(), "rail-"+name)
 	if !ok {

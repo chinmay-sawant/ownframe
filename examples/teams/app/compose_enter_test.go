@@ -7,6 +7,7 @@ import (
 
 // TestChatEnterSends checks Enter in the composer sends the message.
 func TestChatEnterSends(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 	before := len(app.View().Chat.Messages)
 

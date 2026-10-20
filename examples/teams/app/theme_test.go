@@ -6,6 +6,7 @@ import (
 
 // TestThemeDefaultsToDark checks the app opens in the dark theme.
 func TestThemeDefaultsToDark(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	if !app.View().Dark {
@@ -19,6 +20,7 @@ func TestThemeDefaultsToDark(t *testing.T) {
 
 // TestThemeToggle checks the profile flyout switches the theme.
 func TestThemeToggle(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	clickID(t, app, "me")

@@ -7,6 +7,7 @@ import (
 // TestMoreFlyout checks More opens the demo app tiles and a tile click
 // leaves a note.
 func TestMoreFlyout(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	clickID(t, app, "rail-more")
@@ -34,6 +35,7 @@ func TestMoreFlyout(t *testing.T) {
 
 // TestScrimClosesFlyout checks a click outside closes the flyout.
 func TestScrimClosesFlyout(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	clickID(t, app, "rail-more")
@@ -46,6 +48,7 @@ func TestScrimClosesFlyout(t *testing.T) {
 
 // TestProfileFlyout checks the profile flyout changes presence and signs out.
 func TestProfileFlyout(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	clickID(t, app, "me")

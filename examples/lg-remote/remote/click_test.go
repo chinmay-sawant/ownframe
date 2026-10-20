@@ -38,6 +38,7 @@ func newTest(t *testing.T, opts ...Option) *App {
 		t.Fatal(err)
 	}
 
+	useTestIcons(app)
 	app.SetAsync(false)
 	app.wantSearch = false
 	app.view.PowerOn = true

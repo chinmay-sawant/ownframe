@@ -33,7 +33,7 @@ func New(opts ...Option) (*App, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Microsoft Teams",
 		HTML:      buildHTML(),
-		Theme:     themeSource(app.view.Dark),
+		Theme:     sectionCSS(app.view.Section) + themeSource(app.view.Dark),
 		Width:     DefaultWidth,
 		Height:    DefaultHeight,
 		MinWidth:  MinWidth,

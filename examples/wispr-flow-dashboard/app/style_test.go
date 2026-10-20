@@ -15,7 +15,7 @@ func TestStylePage(t *testing.T) {
 
 	app.show("style")
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 
@@ -61,7 +61,7 @@ func TestStyleSaveLeavesNote(t *testing.T) {
 
 	app.show("style")
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 

@@ -9,6 +9,7 @@ import (
 // text color and that a select-all paints the theme highlight, not the
 // library's light default, on both themes.
 func TestComposeSelectionFollowsTheTheme(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 
 	// Dark: caret #f0f0f0, selection #363a5e. Light: #242424 and #e8ebfa.

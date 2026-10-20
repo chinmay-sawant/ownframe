@@ -15,7 +15,7 @@ func TestDictationPageDraws(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 
@@ -61,7 +61,7 @@ func TestVoiceProfileClick(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 

@@ -14,8 +14,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
-// Page is one HTML template and the last picture it produced. Redraw
-// mutates display fields; serialize page mutations.
+// Page is one HTML template and its last picture; serialize mutations.
 type Page struct {
 	title           string
 	tpl             *template.Template
@@ -32,7 +31,7 @@ type Page struct {
 	source          string
 	png             []byte
 	pageGeom        // size: New inits, SetSize writes; lock: page loop
-	generation      uint64
+	renderTrack     // generation and last frame key; lock: page loop
 	touchCancel     uint32
 	tick            func(ctx context.Context) error
 	nav             navHistory

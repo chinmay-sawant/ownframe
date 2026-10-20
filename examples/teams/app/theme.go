@@ -10,13 +10,18 @@ func (a *App) setTheme(dark bool) error {
 
 	a.view.Dark = dark
 
-	if err := a.page.SetTheme(themeSource(dark)); err != nil {
+	if err := a.applyStyles(); err != nil {
 		return err
 	}
 
 	registerImages(a.page, dark)
 
 	return nil
+}
+
+// applyStyles sets the active menu's stylesheet over the shared ones.
+func (a *App) applyStyles() error {
+	return a.page.SetTheme(sectionCSS(a.view.Section) + themeSource(a.view.Dark))
 }
 
 // themeSource returns the extra stylesheet for the mode.

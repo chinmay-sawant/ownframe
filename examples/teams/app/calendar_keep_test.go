@@ -7,6 +7,7 @@ import (
 // TestCalendarCreatedSurvivesWeekSwitch checks a created meeting comes back
 // when its week is shown again.
 func TestCalendarCreatedSurvivesWeekSwitch(t *testing.T) {
+	t.Parallel()
 	app := calendarApp(t)
 
 	calClick(t, app, "calendar-new")

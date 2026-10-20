@@ -22,7 +22,7 @@ func TestResizeReflowsCards(t *testing.T) {
 
 		app.Page().SetSize(w, h)
 
-		if err := app.Redraw(ctx); err != nil {
+		if err := app.Page().RedrawIfChanged(ctx); err != nil {
 			t.Fatalf("Redraw %dx%d: %v", w, h, err)
 		}
 

@@ -50,7 +50,7 @@ func (p *Page) drawStaged(ctx context.Context, track bool, styled *css.Document,
 	}
 	p.paintCaret(display)
 	if render.Replayable(display) {
-		p.commitDisplay(display, executed, drawStart)
+		p.commitDisplay(display, executed, drawStart, state)
 		return nil
 	}
 	if err := p.paintFallback(display, drawStart, track); err != nil {
@@ -58,19 +58,4 @@ func (p *Page) drawStaged(ctx context.Context, track bool, styled *css.Document,
 	}
 	p.commitAccessibility(executed)
 	return nil
-}
-
-// commitDisplay installs a replayable list and its dirty region.
-func (p *Page) commitDisplay(display *Display, executed string, drawStart time.Time) {
-	p.dirtyFromDisplay(p.display, display)
-	p.stats.layouts++
-	p.stats.repaints++
-	p.stats.lastDraw = time.Since(drawStart)
-	p.img = nil
-	p.display = display
-	p.fallbackDisplay = nil
-	p.setBoxes(display.Boxes)
-	p.generation++
-	p.commitAccessibility(executed)
-	p.applyPending()
 }

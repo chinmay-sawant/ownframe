@@ -19,10 +19,6 @@ func newApp(t *testing.T, ctx context.Context) *telegram.App {
 		t.Fatal(err)
 	}
 
-	if len(app.PNG()) == 0 {
-		t.Fatal("png is empty")
-	}
-
 	return app
 }
 

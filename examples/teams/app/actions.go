@@ -11,6 +11,7 @@ import (
 // the active menu's own actions.
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	a.view.Note = ""
+	section := a.view.Section
 
 	switch {
 	case railSections[box.Action] != "":
@@ -39,6 +40,12 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.view.Note = appLabel(box.Action) + " is a demo tile"
 	default:
 		a.dispatch(ctx, box.Action)
+	}
+
+	if section != a.view.Section {
+		if err := a.applyStyles(); err != nil {
+			return err
+		}
 	}
 
 	a.page.SetData(a.view)
