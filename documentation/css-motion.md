@@ -45,10 +45,10 @@ Page window.
 
 ## Preview and validation
 
-The example uses Blinkless fields added after the version currently pinned in
-OwnFrame's `go.mod`. Create a temporary workspace with both local checkouts,
-then run the preview. Replace the paths below with the absolute checkout
-paths:
+The preview runs against the Blinkless commit pinned in OwnFrame's `go.mod`.
+To test unreleased engine changes, create a temporary workspace with both local
+checkouts, then run the preview. Replace the paths below with the absolute
+checkout paths:
 
 ```sh
 workspace_dir="$(mktemp -d)"
@@ -68,5 +68,4 @@ These runtime packages live under `internal`, so code outside the OwnFrame
 module cannot import them directly. Cross-repository validation uses the same
 local Blinkless source: run `make catalog-ownframe-check` from the Blinkless
 root. That target creates a temporary workspace for both checkouts and checks
-all 43 property cases. Update the OwnFrame `go.mod` pin before building or
-releasing these changes without the local Blinkless checkout (`go.mod:6`).
+all 43 property cases.
