@@ -14,7 +14,7 @@ func TestNotetakerPage(t *testing.T) {
 
 	app.show("notetaker")
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 

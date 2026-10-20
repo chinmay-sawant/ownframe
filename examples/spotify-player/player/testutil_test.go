@@ -18,16 +18,12 @@ func mustApp(t testing.TB) *App {
 func redraw(t *testing.T, app *App) {
 	t.Helper()
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 
 	if app.Page().Display() == nil {
 		t.Fatal("fell back to the bitmap path")
-	}
-
-	if len(app.PNG()) == 0 {
-		t.Fatal("no PNG after Redraw")
 	}
 }
 

@@ -5,7 +5,6 @@
 package corebackend
 
 import (
-	"context"
 	"path/filepath"
 
 	"github.com/chinmay-sawant/ownframe/examples/spreadsheet/storage"
@@ -45,27 +44,4 @@ func (b *Backend) Dir() string {
 	}
 
 	return filepath.Dir(path)
-}
-
-// Seed writes the shipped fixtures once and loads one workbook: the one
-// named, or the first seeded workbook when name is empty.
-func (b *Backend) Seed(ctx context.Context, name string) error {
-	if _, err := b.st.SeedDummy(ctx); err != nil {
-		return err
-	}
-
-	info, err := b.pick(ctx, name)
-	if err != nil {
-		return err
-	}
-
-	wb, err := b.st.LoadWorkbook(ctx, info.ID)
-	if err != nil {
-		return err
-	}
-
-	wb.SetHistoryLimit(1)
-	b.wb = wb
-
-	return nil
 }

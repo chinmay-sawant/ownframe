@@ -29,6 +29,7 @@ func activityClick(t *testing.T, app *App, id string) {
 }
 
 func TestActivityOpen(t *testing.T) {
+	t.Parallel()
 	app := activityApp(t)
 	activityClick(t, app, "activity-item-a1")
 
@@ -38,6 +39,7 @@ func TestActivityOpen(t *testing.T) {
 }
 
 func TestActivityFilter(t *testing.T) {
+	t.Parallel()
 	app := activityApp(t)
 
 	for _, tc := range []struct{ filter, show, hide string }{
@@ -61,6 +63,7 @@ func TestActivityFilter(t *testing.T) {
 }
 
 func TestActivityReply(t *testing.T) {
+	t.Parallel()
 	app := activityApp(t)
 	activityClick(t, app, "activity-item-a1")
 	activityClick(t, app, "activity-reply")
@@ -75,6 +78,7 @@ func TestActivityReply(t *testing.T) {
 }
 
 func TestActivityMarkRead(t *testing.T) {
+	t.Parallel()
 	app := activityApp(t)
 	activityClick(t, app, "activity-mark")
 

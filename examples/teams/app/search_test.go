@@ -8,6 +8,7 @@ import (
 
 // TestFilesSearchNarrowsData checks the Files search box filters the table.
 func TestFilesSearchNarrowsData(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 	openSection(t, app, "files")
 	all := len(app.View().Files.Files)
@@ -32,6 +33,7 @@ func TestFilesSearchNarrowsData(t *testing.T) {
 
 // TestCallsSearchNarrowsData checks the Calls search box filters history.
 func TestCallsSearchNarrowsData(t *testing.T) {
+	t.Parallel()
 	app := newTestApp(t)
 	openSection(t, app, "calls")
 	all := len(app.View().Calls.History)

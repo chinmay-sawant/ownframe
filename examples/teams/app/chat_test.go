@@ -32,6 +32,7 @@ func clickChat(t *testing.T, app *App, id string) {
 }
 
 func TestChatDefault(t *testing.T) {
+	t.Parallel()
 	app := newChatApp(t)
 
 	c := app.View().Chat
@@ -45,6 +46,7 @@ func TestChatDefault(t *testing.T) {
 }
 
 func TestChatOpenSwitchesThread(t *testing.T) {
+	t.Parallel()
 	app := newChatApp(t)
 	clickChat(t, app, "chat-item-rhodey")
 
@@ -55,6 +57,7 @@ func TestChatOpenSwitchesThread(t *testing.T) {
 }
 
 func TestChatSendAppendsMessage(t *testing.T) {
+	t.Parallel()
 	app := newChatApp(t)
 
 	before := len(app.View().Chat.Messages)
@@ -73,6 +76,7 @@ func TestChatSendAppendsMessage(t *testing.T) {
 }
 
 func TestChatPinToggles(t *testing.T) {
+	t.Parallel()
 	app := newChatApp(t)
 
 	if !app.View().Chat.Pinned() {

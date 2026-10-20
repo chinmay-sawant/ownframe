@@ -10,6 +10,7 @@ import (
 // the saved theme and the whole chat list: the profile toggle works and a
 // search box left over from a previous visit cannot hide every chat.
 func TestStartupMatchesTheSavedState(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "teams.db")
 	ctx := context.Background()
 

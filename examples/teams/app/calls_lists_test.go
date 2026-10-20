@@ -6,6 +6,7 @@ import (
 
 // TestCallsCallAndHangup checks Call starts a call and Hangup ends it.
 func TestCallsCallAndHangup(t *testing.T) {
+	t.Parallel()
 	app := openCallsMenu(t)
 
 	clickCallsBox(t, app, "calls-key-7")
@@ -29,6 +30,7 @@ func TestCallsCallAndHangup(t *testing.T) {
 
 // TestCallsOpenHistory checks a history row becomes Active and names the caller.
 func TestCallsOpenHistory(t *testing.T) {
+	t.Parallel()
 	app := openCallsMenu(t)
 
 	clickCallsBox(t, app, "calls-item-c2")
@@ -51,6 +53,7 @@ func TestCallsOpenHistory(t *testing.T) {
 
 // TestCallsVoicemailTab checks the tab switch, the voicemail rows, and the transcript.
 func TestCallsVoicemailTab(t *testing.T) {
+	t.Parallel()
 	app := openCallsMenu(t)
 
 	clickCallsBox(t, app, "calls-tab-voicemail")

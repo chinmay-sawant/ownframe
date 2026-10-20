@@ -19,10 +19,22 @@ var assetNames = []string{
 	"hero-art", "voice-art", "orb", "qr-code",
 }
 
+// assetData returns one embedded asset. Tests replace it with a tiny icon so
+// a full run does not rasterize every SVG on every frame.
+var assetData = func(name string) []byte {
+	if data := file(name); data != "" {
+		return []byte(data)
+	}
+
+	return nil
+}
+
 // registerImages hands the assets to the page as named image sources.
 func registerImages(page *ownframe.Page) {
 	for _, name := range assetNames {
-		page.SetImage(name, []byte(file("assets/"+name+".svg")))
+		if data := assetData("assets/" + name + ".svg"); data != nil {
+			page.SetImage(name, data)
+		}
 	}
 
 	page.SetImage("share-badge", insights.ShareBadgePNG())

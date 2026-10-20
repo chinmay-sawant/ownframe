@@ -14,7 +14,8 @@ import (
 // appStyles are the shared stylesheets, in order.
 var appStyles = []string{"base.css", "ui.css", "rail.css", "flyout.css"}
 
-// styleSheets concatenates the shared styles and every menu stylesheet.
+// styleSheets concatenates the shared styles. A menu's stylesheet rides on
+// the page theme, so only the menu on screen is matched.
 func styleSheets() string {
 	var b strings.Builder
 
@@ -22,16 +23,25 @@ func styleSheets() string {
 		b.WriteString(file("components/" + name))
 	}
 
-	for _, sheet := range []string{
-		activity.CSS(),
-		chat.CSS(),
-		channels.CSS(),
-		calendar.CSS(),
-		calls.CSS(),
-		files.CSS(),
-	} {
-		b.WriteString(sheet)
+	return b.String()
+}
+
+// sectionCSS returns the stylesheet of one menu.
+func sectionCSS(name string) string {
+	switch name {
+	case "activity":
+		return activity.CSS()
+	case "chat":
+		return chat.CSS()
+	case "channels":
+		return channels.CSS()
+	case "calendar":
+		return calendar.CSS()
+	case "calls":
+		return calls.CSS()
+	case "files":
+		return files.CSS()
 	}
 
-	return b.String()
+	return ""
 }

@@ -10,7 +10,7 @@ import (
 func openInsights(t *testing.T, app *App) {
 	t.Helper()
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 
@@ -30,7 +30,7 @@ func TestSidebarNavigation(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 
-	if err := app.Redraw(context.Background()); err != nil {
+	if err := app.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 

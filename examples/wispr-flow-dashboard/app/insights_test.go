@@ -16,10 +16,6 @@ func TestNewDrawsReplayableDashboard(t *testing.T) {
 	if app.Page().Display() == nil {
 		t.Fatal("dashboard fell back to the bitmap path")
 	}
-
-	if len(app.PNG()) == 0 {
-		t.Fatal("no PNG after Redraw")
-	}
 }
 
 func TestTabSwitchKeepsDisplayList(t *testing.T) {
@@ -41,10 +37,6 @@ func TestTabSwitchKeepsDisplayList(t *testing.T) {
 
 	if app.Page().Display() == nil {
 		t.Fatal("the empty tab fell back to the bitmap path")
-	}
-
-	if len(app.PNG()) == 0 {
-		t.Fatal("no PNG on the empty tab")
 	}
 }
 

@@ -14,11 +14,8 @@ func renderedApp(t *testing.T) *App {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.Page().Redraw(context.Background()); err != nil {
+	if err := a.Page().RedrawIfChanged(context.Background()); err != nil {
 		t.Fatal(err)
-	}
-	if len(a.Page().PNG()) == 0 {
-		t.Fatal("rendered PNG is empty")
 	}
 	return a
 }

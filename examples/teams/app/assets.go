@@ -23,6 +23,16 @@ var assetNames = []string{
 	"icon-call-white", "icon-close-white",
 }
 
+// assetData returns one embedded asset. Tests replace it with a tiny icon so
+// a full run does not rasterize every SVG on every frame.
+var assetData = func(name string) []byte {
+	if data := file(name); data != "" {
+		return []byte(data)
+	}
+
+	return nil
+}
+
 // registerImages hands the assets to the page as named image sources. The
 // dark set strokes the icons light, so they stay visible on dark surfaces.
 func registerImages(page *ownframe.Page, dark bool) {
@@ -33,8 +43,8 @@ func registerImages(page *ownframe.Page, dark bool) {
 	}
 
 	for _, name := range assetNames {
-		if data := file(dir + name + ".svg"); data != "" {
-			page.SetImage(name, []byte(data))
+		if data := assetData(dir + name + ".svg"); data != nil {
+			page.SetImage(name, data)
 		}
 	}
 }

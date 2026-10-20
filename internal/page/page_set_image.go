@@ -18,11 +18,13 @@ func (p *Page) SetImage(src string, data []byte) {
 
 	if data == nil {
 		delete(p.images, src)
+		p.imagesRev++
 
 		return
 	}
 
 	p.images[src] = append([]byte(nil), data...)
+	p.imagesRev++
 }
 
 // imageBytes resolves one image source for the layout engine. A src the
