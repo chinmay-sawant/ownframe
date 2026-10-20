@@ -10,7 +10,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
-func bind(d *ownframe.Display, b ownframe.Box, t target, base []paint, origin time.Time) (motion, error) {
+func bind(d *ownframe.Display, b ownframe.Box, t target, base, to []paint, origin time.Time) (motion, error) {
 	if d == nil {
 		return motion{}, nil
 	}
@@ -22,7 +22,11 @@ func bind(d *ownframe.Display, b ownframe.Box, t target, base []paint, origin ti
 		return motion{}, errors.New("csspreview: captured target operations changed during redraw")
 	}
 	for i, op := range ops {
-		m.pairs = append(m.pairs, pair{op, base[i], read(op)})
+		dest := read(op)
+		if to != nil && i < len(to) {
+			dest = to[i]
+		}
+		m.pairs = append(m.pairs, pair{op, base[i], dest})
 	}
 	if m.duration <= 0 || len(m.pairs) == 0 {
 		return m, nil
@@ -31,7 +35,7 @@ func bind(d *ownframe.Display, b ownframe.Box, t target, base []paint, origin ti
 	if t.kind == "animation" {
 		m.animation, err = cssanimation.Bind(d, b, indices, base, origin)
 	} else {
-		m.transition, err = csstransition.Bind(d, b, t.property, indices, base, origin)
+		m.transition, err = csstransition.BindTo(d, b, t.property, indices, base, to, origin)
 	}
 	if err != nil {
 		return motion{}, err

@@ -24,6 +24,7 @@ type demo struct {
 
 type sample struct {
 	base   []paint
+	to     []paint
 	source string
 	plan   motion
 	origin time.Time

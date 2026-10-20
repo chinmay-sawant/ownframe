@@ -30,8 +30,7 @@ func (s *shell) blitFrame(dst *ebiten.Image, display *layout.Display, plans []re
 	}
 
 	if whole {
-		s.blitTiles(dst, grid.content())
-
+		s.blitTiles(dst, s.visibleRect())
 		return
 	}
 

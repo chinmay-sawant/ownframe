@@ -15,12 +15,16 @@ func (d *demo) rebind() error {
 		}
 		boxIndex, ok := findBoxIndex(boxes, t.id)
 		if !ok {
+			// The row left the window. The sample keeps its origin and its
+			// destination, and drops the old operations so the display they
+			// point at can be released.
 			s.detached = true
+			s.plan = motion{}
 			continue
 		}
 		s.detached = false
 		box := boxes[boxIndex]
-		plan, err := bind(d.p.Display(), box, t, s.base, s.origin)
+		plan, err := bind(d.p.Display(), box, t, s.base, s.to, s.origin)
 		if err != nil {
 			if s.active {
 				return err

@@ -57,3 +57,13 @@ One 43-click pass at 1908x999 with the devtools dock open:
 
 The dock takes the right 340 px of the window, so the page viewport reads
 1568x999 in the Frame tab while the window reads 1908x999.
+
+## Scrolling
+
+A long vertical scroll presents about 37 frames per second in a 1908x999
+window on this WSL2 host. The Frame tab shows the reason: `Draw` is 0.1 ms and
+the page redraws about eight times in six seconds, one per row the window
+crosses. The rest of the frame is the WSLg software compositor uploading the
+1908x999 surface, which is the same cost at any page size. A smaller window or
+a GPU compositor is what holds 60 frames per second here; the page work is no
+longer part of the frame.

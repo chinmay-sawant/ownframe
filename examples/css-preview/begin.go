@@ -21,12 +21,28 @@ func (d *demo) begin() (bool, error) {
 	}
 	display := d.p.Display()
 	s.origin = time.Now()
-	plan, err := bind(display, box, t, s.base, s.origin)
+	plan, err := bind(display, box, t, s.base, nil, s.origin)
 	if err != nil {
 		return false, err
 	}
 	s.plan = plan
 	s.detached = false
 	s.active = s.plan.duration > 0 && len(s.plan.pairs) > 0
+	s.to = destination(s.plan.pairs)
 	return true, nil
+}
+
+// destination copies the paints a sample moves toward. The first bind reads
+// them from the display, where the started class already applied. Later
+// binds reuse them, so a redraw in the middle of a transition does not make
+// the destination the value the transition had reached.
+func destination(pairs []pair) []paint {
+	if len(pairs) == 0 {
+		return nil
+	}
+	out := make([]paint, len(pairs))
+	for i, p := range pairs {
+		out[i] = p.to
+	}
+	return out
 }

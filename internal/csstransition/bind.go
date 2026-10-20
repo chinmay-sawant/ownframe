@@ -1,7 +1,6 @@
 package csstransition
 
 import (
-	"errors"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -9,47 +8,10 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
 
-// Bind builds a transition renderer for one CSS property on a box.
+// Bind builds a transition renderer for one CSS property on a box. The
+// destination comes from the display, so a caller that rebinds later wants
+// BindTo with the paints it captured on the first bind.
 func Bind(d *ownframe.Display, box ownframe.Box, property string,
 	indices []int, initial []cssmotion.Paint, start time.Time) (*transition.Renderer, error) {
-	if d == nil {
-		return nil, errors.New("csstransition: display is nil")
-	}
-	index := -1
-	for i := range box.Transitions {
-		item := box.Transitions[i]
-		if item.Property == property || item.Property == "all" {
-			index = i
-			break
-		}
-	}
-	if index < 0 {
-		return nil, errors.New("csstransition: box has no matching transition metadata")
-	}
-	record := box.Transitions[index]
-	ops := cssmotion.Resolve(d, indices)
-	if len(ops) != len(indices) {
-		return nil, errors.New("csstransition: captured operations are missing from display")
-	}
-	if len(ops) == 0 || len(initial) != len(ops) {
-		return nil, errors.New("csstransition: target operation paints do not match")
-	}
-	tracks := make([]transition.Track, len(ops))
-	discrete := discretePaintProperty(property)
-	for i := range tracks {
-		tracks[i] = transition.Track{Op: ops[i], From: initial[i], To: cssmotion.Read(ops[i]),
-			Duration: millis(record.DurationMS), Delay: millis(record.DelayMS), Easing: record.TimingFunction,
-			Discrete: discrete && record.Behavior == "allow-discrete"}
-		if discrete && record.Behavior != "allow-discrete" {
-			tracks[i].Duration, tracks[i].Delay = 0, 0
-		}
-	}
-	renderer, err := transition.New(tracks)
-	if err != nil {
-		return nil, err
-	}
-	renderer.Start(start)
-	return renderer, nil
+	return BindTo(d, box, property, indices, initial, nil, start)
 }
-
-func millis(value float64) time.Duration { return time.Duration(value * float64(time.Millisecond)) }

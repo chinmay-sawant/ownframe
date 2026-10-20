@@ -6,6 +6,15 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// visibleRect is the page area the screen shows at the current scroll. A
+// scroll copies only this part of the tile grid, so the copy does not walk
+// every tile of a long page.
+func (s *shell) visibleRect() image.Rectangle {
+	viewW, viewH := s.viewSize()
+
+	return image.Rect(s.scrollX, s.scrollY, s.scrollX+viewW, s.scrollY+viewH)
+}
+
 // blitTiles copies the tiles covering rect to dst, each placed where the
 // scroll puts it, trimmed to the page the devtools dock leaves visible. A
 // rect that misses the content copies nothing.
