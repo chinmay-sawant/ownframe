@@ -27,6 +27,7 @@ func (p *Page) styledDocument(
 	}
 
 	p.cache = cache
+	p.statePseudos = cache.StatePseudos()
 	p.stats.parses++
 	p.stats.cascades++
 
@@ -36,4 +37,7 @@ func (p *Page) styledDocument(
 // invalidateCache drops the parsed tree so the next Redraw rebuilds it.
 func (p *Page) invalidateCache() {
 	p.cache = nil
+	// Unknown sheets keep every state redraw until the next Redraw reports
+	// what the new sheets can match.
+	p.statePseudos = render.StatePseudos{Hover: true, Active: true, Focus: true}
 }

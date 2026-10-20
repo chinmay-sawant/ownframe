@@ -33,6 +33,7 @@ func run(perf bool) error {
 	}
 	d := newDemo(p, v)
 	p.Handle(ownframe.Handlers{Click: d.click})
+	startWalk(p, d, v)
 	return ownframe.Run(ctx, p)
 }
 

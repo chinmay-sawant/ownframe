@@ -47,6 +47,8 @@ func (d *demo) start(selected target, button string) error {
 	d.v.Started[button] = true
 	d.pendingKey = selected.key
 	d.p.SetData(d.v)
-	d.p.SetTick(d.tick)
+	if !walkActive() {
+		d.p.SetTick(d.tick)
+	}
 	return nil
 }

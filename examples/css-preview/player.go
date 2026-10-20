@@ -7,6 +7,11 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// partialLimit is the most samples whose damage still fits the window's
+// eight-rect partial replay. Past it the union covers the page, and a full
+// replay is cheaper than a tile rebuild.
+const partialLimit = 8
+
 type demo struct {
 	p          *ownframe.Page
 	v          *view
@@ -47,44 +52,37 @@ func (d *demo) tick(ctx context.Context) error {
 		}
 		d.gen = d.p.Generation()
 	}
-	active := false
+	active := 0
 	for _, s := range d.samples {
-		if s.active && !s.plan.step(time.Now()) {
-			s.active = false
+		if s.active {
+			active++
 		}
-		active = s.active || active
 	}
-	if !active {
-		d.p.SetTick(nil)
+	partial := active > 0 && active <= partialLimit
+	if partial {
+		d.p.UseFrameDirty()
 	}
-	return nil
-}
-
-func (d *demo) rebind() error {
-	for key, s := range d.samples {
+	now := time.Now()
+	live := false
+	for _, s := range d.samples {
 		if !s.active {
 			continue
 		}
-		t, ok := targetByKey(key)
-		if !ok {
-			continue
+		var running bool
+		if partial {
+			running = d.stepSample(s, now)
+		} else {
+			running = s.plan.step(now)
 		}
-		boxes := d.p.Boxes()
-		boxIndex, ok := findBoxIndex(boxes, t.id)
-		if !ok {
-			continue
+		if !running {
+			s.active = false
 		}
-		box := boxes[boxIndex]
-		plan, err := bind(d.p.Display(), box, t, s.indices, s.base, s.origin)
-		if err != nil {
-			return err
-		}
-		s.plan = plan
-		if key == d.pendingKey && plan.animation != nil {
-			if err := dispatchAnimationTriggers(boxes, boxIndex, s.source, plan.animation, s.origin); err != nil {
-				return err
-			}
-		}
+		live = s.active || live
+	}
+	if live {
+		d.p.WantFrameIn(0)
+	} else {
+		d.p.SetTick(nil)
 	}
 	return nil
 }

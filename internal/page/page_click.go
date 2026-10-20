@@ -60,16 +60,10 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 		}
 	}
 
-	return p.Redraw(ctx)
-}
-
-// hit returns the last box that contains x, y.
-// Boxes are in document order, so that box is the inner element. It
-// delegates to the shared boxAt scan so clicks agree with Press and Hover.
-func hit(boxes []Box, x, y float64) (Box, bool) {
-	spot := scanBoxes(boxes, x, y)
-
-	return spot.box, spot.ok
+	// The handler may have changed the template data, which makes the source
+	// differ and redraws. A click that changed nothing visible (a dead area,
+	// a repeated press on the same state) skips the layout entirely.
+	return p.RedrawIfChanged(ctx)
 }
 
 var _ host.Screen = (*Page)(nil)

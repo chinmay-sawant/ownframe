@@ -28,6 +28,9 @@ type Cache struct {
 	source string
 	doc    *html.Document
 	styled *css.Document
+	// pseudos records which interactive state pseudo-classes the sheets can
+	// match. The sheets do not change on Relayout, so it is fixed per cache.
+	pseudos StatePseudos
 }
 
 // NewCache parses source and applies the document sheets once, at the given
@@ -53,12 +56,6 @@ func NewCache(
 		return nil, fmt.Errorf("render: css: %w", err)
 	}
 
-	return &Cache{source: source, doc: doc, styled: styled}, nil
-}
-
-// Source returns the executed source the cached tree was parsed from.
-func (c *Cache) Source() string {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.source
+	return &Cache{source: source, doc: doc, styled: styled,
+		pseudos: statePseudosOf(styled)}, nil
 }

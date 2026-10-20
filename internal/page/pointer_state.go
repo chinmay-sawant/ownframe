@@ -39,6 +39,11 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 		}
 	}
 
+	// No :active paint to show, so wait for the click handler's redraw.
+	if !p.statePseudos.Active {
+		return nil
+	}
+
 	return p.Redraw(ctx)
 }
 
@@ -55,6 +60,10 @@ func (p *Page) Release(ctx context.Context) error {
 
 	p.markPair(old, "")
 
+	if !p.statePseudos.Active {
+		return nil
+	}
+
 	return p.Redraw(ctx)
 }
 
@@ -69,7 +78,7 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	}
 	p.markPair(p.hoverID(), id)
 	p.setHoverID(id)
-	if handled {
+	if handled || !p.statePseudos.Hover {
 		return nil
 	}
 
