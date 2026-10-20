@@ -58,6 +58,32 @@ One 43-click pass at 1908x999 with the devtools dock open:
 The dock takes the right 340 px of the window, so the page viewport reads
 1568x999 in the Frame tab while the window reads 1908x999.
 
+## Play all 43 previews
+
+The header carries a `Play all 43 previews` button. One press renders the
+whole catalog, so every preview has a box and a starting paint, then starts
+each one through the same path its own Start button uses. The animations, the
+transitions, and the triggered samples all run together, and a Start button
+still replays its own preview afterwards.
+
+With all 43 running at 1908x999, dock open:
+
+| Metric | Value |
+|---|---:|
+| FPS | 60.5 |
+| Frame | 17.3 ms |
+| Draw | 0.4 ms |
+| Alloc/frame | 121 KB |
+| Go heap | 59.6 MB |
+| RSS | 227 to 246 MB |
+| Page redraw for the press | 7.6 ms |
+| Click in that mode | 21 ms p50 |
+
+The click is the slow part: with the whole catalog rendered, a click re-lays
+out every card. The catalog window keeps that at 7 to 10 ms, and the plan to
+keep the window and still play every preview is in the next steps section of
+`documentation/optimizations.md`.
+
 ## Scrolling
 
 A long vertical scroll presents about 37 frames per second in a 1908x999

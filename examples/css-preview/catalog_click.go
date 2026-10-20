@@ -46,6 +46,7 @@ func (d *demo) start(selected target, button string) error {
 		d.samples[selected.key] = &sample{base: capture(d.p.Display(), box)}
 	}
 	d.samples[selected.key].source = button
+	d.samples[selected.key].origin = time.Now()
 	d.v.Started[selected.key] = true
 	d.v.Started[button] = true
 	d.startedAt = time.Now()

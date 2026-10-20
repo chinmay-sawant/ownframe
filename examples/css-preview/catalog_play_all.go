@@ -2,32 +2,45 @@ package main
 
 import (
 	"context"
+	"time"
 )
 
 const playAllID = "play-all"
 
 // playAll starts every preview the same way its own Start button does. The
-// whole catalog renders first, so every preview has a box and a starting
-// paint, then each one goes through the same start path a click uses.
+// catalog stays windowed: the rows on screen start now, and the rows off
+// screen wait for their first render, which gives the transition its
+// starting paint.
 func (d *demo) playAll(ctx context.Context) error {
-	d.v.Rows = d.v.Catalog
-	d.v.TopPad, d.v.BotPad = 0, 0
 	d.allPlaying = true
-	d.p.SetData(d.v)
-	if err := d.p.Redraw(ctx); err != nil {
-		return err
-	}
-
+	d.playAllAt = time.Now()
 	for _, row := range d.v.Catalog {
 		target, ok := targetByKey(row.SampleKey)
 		if !ok {
 			continue
 		}
-		if err := d.start(target, row.Button); err != nil {
-			return err
+		s := d.samples[target.key]
+		if s == nil {
+			s = &sample{}
+			d.samples[target.key] = s
 		}
+		s.source = row.Button
+		s.origin = d.playAllAt
+		if s.base == nil {
+			if box, ok := findBox(d.p.Boxes(), target.id); ok {
+				s.base = capture(d.p.Display(), box)
+			}
+		}
+		if s.base != nil {
+			d.v.Started[target.key] = true
+			d.v.Started[row.Button] = true
+		}
+		d.pending = append(d.pending, target.key)
 	}
 	d.v.Readout = "All previews are playing."
-
+	d.p.SetData(d.v)
+	if !walkActive() {
+		d.p.SetTick(d.tick)
+	}
 	return nil
 }

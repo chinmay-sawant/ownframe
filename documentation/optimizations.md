@@ -165,6 +165,71 @@ is the display-list build for the rows on screen. Skipping that would mean
 patching the retained display on Start instead of rebuilding the page, which
 is a separate design with a different set of tradeoffs.
 
+## Next: the two gaps against a browser
+
+This is the list to work from next. Nothing here is committed yet.
+
+### What a browser does
+
+Chrome keeps all 43 cards in the layout tree. Four things keep that cheap.
+
+- Scrolling is a compositor operation. The offset moves on the compositor
+  thread, so the main thread does no work while the page scrolls.
+- Paint holding keeps the old tiles when a scroll outruns the main thread, so
+  a scroll never waits for layout.
+- Incremental layout re-lays out the changed card and its ancestors, not the
+  page. A class change on one card is a fraction of a millisecond.
+- Compositor animations move a layer for a transform or an opacity, so a
+  running animation does not repaint the page.
+
+`content-visibility: auto` with `contain-intrinsic-size` is the browser
+answer to skipping off-screen layout. It needs a size placeholder to keep the
+scrollbar stable, which is what the catalog spacer rows do.
+
+### Gap one, a click re-lays out every visible card
+
+A click in the CSS preview costs 7 to 10 ms with the catalog windowed and
+about 21 ms when the whole 43 row catalog is rendered, which is what the Play
+All button does today. The work is the display-list build, which is 93
+percent of a click redraw.
+
+- OwnFrame can copy the changed card's operations into the retained display
+  and mark its region dirty, with `Page.PatchDisplay` and `Page.PatchOp`. That
+  removes the rebuild for the selection, the state text, and the started
+  class, and it helps every click, not only the catalog.
+- Blinkless could re-lay out one subtree and keep the rest. The style
+  resolution memo and the box cache are pass-local today, so nothing carries
+  over between frames.
+
+### Gap two, a running animation repaints the page
+
+With 43 animations running, every frame replays the display list. A browser
+moves a layer instead.
+
+- The replay path already carries an op transform matrix, a group composite,
+  and viewport-pinned ops. What is missing is a layer the window can blit
+  without repainting the page under it.
+
+### The Play All click cost
+
+The Play All button keeps the catalog windowed, so a click stays at the
+windowed cost while all 43 previews still play.
+
+- The rows on screen start right away. The rows off screen wait. They keep
+  their start time, so an animation is already at the right phase when its row
+  scrolls in.
+- A transition needs its starting paint captured while the row is still
+  unstarted. A row that scrolls in for the first time renders once without the
+  started class, captures that paint, then renders with the class and binds.
+  Two renders for that card only, and only for the cards the user visits.
+- The edge cases are a row that first appears after its animation would have
+  finished, a row that is scrolled past, and a reset.
+
+Measured at 1908x999, the press costs 6.7 ms with the catalog windowed, and
+the display holds 1660 operations and 119 boxes. Before, the press rendered
+all 43 rows, 8800 operations and 537 boxes, and cost 46 to 50 ms in total.
+
+
 ## Visible latency
 
 The redraw time above is the page work. From the real click script, with

@@ -7,7 +7,6 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
 // syncImage follows the page after each Redraw. A display-list page keeps
@@ -57,8 +56,6 @@ func (s *shell) built() bool {
 
 func (s *shell) setDisplay(display *layout.Display) {
 	s.disposeImage()
-	replay.DropStaleChunks(display)
-
 	s.display = display
 	s.img = nil
 	s.fallback = false

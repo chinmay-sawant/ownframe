@@ -15,9 +15,6 @@ func installCatalogWindow(
 	prevStart, prevEnd := -1, -1
 
 	apply := func(offsetY, viewH int) bool {
-		if d.allPlaying {
-			return false
-		}
 		start, end := m.rangeFor(offsetY, viewH)
 		if start == prevStart && end == prevEnd {
 			return false

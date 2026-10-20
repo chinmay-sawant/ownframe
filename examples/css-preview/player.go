@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"time"
-
-	"github.com/chinmay-sawant/ownframe"
 )
 
 // partialLimit is the most samples whose damage still fits the window's
@@ -12,43 +10,21 @@ import (
 // replay is cheaper than a tile rebuild.
 const partialLimit = 8
 
-type demo struct {
-	p          *ownframe.Page
-	v          *view
-	gen        uint64
-	samples    map[string]*sample
-	pending    []string
-	allPlaying bool
-	startedAt  time.Time
-	startedSeq uint64
-}
-
-type sample struct {
-	base   []paint
-	to     []paint
-	source string
-	plan   motion
-	origin time.Time
-	active bool
-	// detached marks a sample whose row left the window. It keeps its
-	// origin so the animation resumes where it was when the row returns.
-	detached bool
-}
-
-func newDemo(p *ownframe.Page, v *view) *demo {
-	return &demo{p: p, v: v, gen: p.Generation(), samples: map[string]*sample{}}
-}
-
 func (d *demo) tick(ctx context.Context) error {
 	if len(d.samples) == 0 && len(d.pending) == 0 {
 		d.p.UseFrameDirty()
 		return nil
 	}
-	if len(d.pending) > 0 {
+	if err := d.capturePending(ctx); err != nil {
+		return err
+	}
+	if len(d.pending) > 0 && time.Since(d.pendingAt) > 40*time.Millisecond {
+		d.pendingAt = time.Now()
 		pending := d.pending
 		d.pending = nil
+		boxes := d.p.Boxes()
 		for _, key := range pending {
-			started, err := d.begin(key)
+			started, err := d.begin(key, boxes)
 			if err != nil {
 				return err
 			}
@@ -82,6 +58,10 @@ func (d *demo) tick(ctx context.Context) error {
 	case live:
 		d.p.WantFrameIn(0)
 	case waiting:
+		d.p.WantFrameIn(50 * time.Millisecond)
+	case len(d.pending) > 0:
+		// A queued row waits for its first render. Keep the tick so the
+		// row that scrolls in captures its starting paint.
 		d.p.WantFrameIn(50 * time.Millisecond)
 	default:
 		d.p.SetTick(nil)

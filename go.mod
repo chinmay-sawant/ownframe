@@ -41,3 +41,6 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
+
+// The local Blinkless checkout carries the element patch work.
+replace github.com/chinmay-sawant/blinkless => ../blinkless

@@ -1,11 +1,15 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/chinmay-sawant/ownframe"
+)
 
 // begin binds one pending sample to the current display. It reports whether
 // the sample started. A target that scrolled out of the window keeps its
 // pending key so the animation starts when the row comes back.
-func (d *demo) begin(key string) (bool, error) {
+func (d *demo) begin(key string, boxes []ownframe.Box) (bool, error) {
 	t, ok := targetByKey(key)
 	if !ok {
 		return true, nil
@@ -14,13 +18,20 @@ func (d *demo) begin(key string) (bool, error) {
 	if s == nil {
 		return true, nil
 	}
-	box, ok := findBox(d.p.Boxes(), t.id)
+	if s.base == nil {
+		// The row has not rendered yet, so the starting paint is unknown.
+		// The key stays pending until the row comes into view.
+		return false, nil
+	}
+	box, ok := findBox(boxes, t.id)
 	if !ok {
 		s.detached = true
 		return false, nil
 	}
 	display := d.p.Display()
-	s.origin = time.Now()
+	if s.origin.IsZero() {
+		s.origin = time.Now()
+	}
 	plan, err := bind(display, box, t, s.base, nil, s.origin)
 	if err != nil {
 		return false, err

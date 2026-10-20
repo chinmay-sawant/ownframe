@@ -35,7 +35,7 @@ func chunkRaster(d *layout.Display, p *chunkPlan, c *chunkRun) *chunkEntry {
 		return nil
 	}
 
-	key := chunkKey{d: d, id: c.id}
+	key := chunkKey{id: c.id}
 
 	return chunks.get(key, sig, box, func(img *ebiten.Image) {
 		for _, op := range c.ops {
