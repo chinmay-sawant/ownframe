@@ -11,6 +11,9 @@ func (m *catalogMetrics) rangeFor(offsetY, viewH int) (int, int) {
 	if start < 0 {
 		start = 0
 	}
+	if start >= len(m.rowTop) {
+		start = len(m.rowTop) - 1
+	}
 
 	end := start
 	limit := rel + viewH

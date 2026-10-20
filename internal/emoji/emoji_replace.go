@@ -16,6 +16,10 @@ const (
 // script and style content pass through untouched, so attribute values
 // such as value="😂" are never rewritten.
 func Replace(html string) (string, bool) {
+	if !hasNonASCII(html) {
+		return html, false
+	}
+
 	var b strings.Builder
 
 	b.Grow(len(html))

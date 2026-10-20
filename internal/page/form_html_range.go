@@ -5,7 +5,7 @@ import "strings"
 // rewriteControlsState copies source, swapping each kept control for
 // paintable HTML and adding the default form styles.
 func rewriteControlsState(source string, spans []controlSpan, live map[string]Control, st caretState) string {
-	if len(spans) == 0 {
+	if !hasFieldSpans(spans) {
 		return source
 	}
 

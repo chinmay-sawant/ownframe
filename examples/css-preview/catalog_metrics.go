@@ -17,7 +17,7 @@ type catalogMetrics struct {
 	contentH   int
 }
 
-const catalogWindowOverscan = 2
+const catalogWindowOverscan = 0
 
 // measureCatalog reads the full-page boxes after the two setup redraws.
 func measureCatalog(p *ownframe.Page) (*catalogMetrics, bool) {

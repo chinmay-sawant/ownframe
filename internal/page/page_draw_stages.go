@@ -17,6 +17,9 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	}
 	p.applyScrollWindow()
 	var body strings.Builder
+	if len(p.source) > 0 {
+		body.Grow(len(p.source))
+	}
 	if err := p.tpl.Execute(&body, p.data); err != nil {
 		return "", err
 	}

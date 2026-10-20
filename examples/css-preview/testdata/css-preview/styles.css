@@ -104,8 +104,7 @@ button {
 }
 
 .catalog-row {
-  display: grid;
-  gap: 9px;
+  display: block;
   min-width: 0;
   padding: 10px;
   border: 1px solid #e1e9e5;
@@ -119,29 +118,37 @@ button {
 }
 
 .catalog-details {
-  display: grid;
-  gap: 4px;
+  display: block;
   min-width: 0;
 }
 
+.catalog-details > * {
+  display: block;
+  margin: 0;
+}
+
+.catalog-details > * + * {
+  margin-top: 4px;
+}
+
 .catalog-details h3 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
   margin: 0;
   font-size: 13px;
+  line-height: 23px;
 }
 
 .property-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   min-width: 25px;
   height: 23px;
+  margin-right: 6px;
   border-radius: 5px;
   color: #ffffff;
   background: #397665;
   font-size: 11px;
+  line-height: 23px;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .catalog-details code {
@@ -164,6 +171,7 @@ button {
   grid-template-columns: minmax(0, 1fr) 68px;
   align-items: center;
   gap: 8px;
+  margin-top: 9px;
 }
 
 .catalog-playback button {

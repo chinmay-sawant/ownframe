@@ -2,35 +2,36 @@
 
 The CSS preview example has 43 Start buttons. Each click starts a CSS animation
 or transition and updates the selected row and readout. This page records what
-one click cost before any optimization, after the first pass, and now.
+one click cost before any optimization, after each pass, and now.
 
 All numbers are page rebuild time for one click, in milliseconds unless marked
 as seconds. `p50`, `p95`, and `max` are per item over the 43 item walk.
 
 ## Results
 
-| Metric | Original | First pass | Second pass | Current | Current vs original | Current vs first pass | Current vs second pass |
+| Metric | Original | First pass | Second pass | Third pass | Current | Current vs original | Current vs third pass |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 53.4x | 8.56x | 2.67x |
-| p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 50.2x | 7.36x | 2.49x |
-| p95 | 845 ms | 144 ms | 41.9 ms | 15.5 ms | 54.5x | 9.29x | 2.70x |
-| max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 45.0x | 8.49x | 2.50x |
-| total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 53.1x | 8.52x | 2.67x |
+| average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 6.16 ms | 108x | 2.03x |
+| p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 6.20 ms | 105x | 2.08x |
+| p95 | 845 ms | 144 ms | 41.9 ms | 15.5 ms | 7.70 ms | 110x | 2.01x |
+| max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 102x | 2.26x |
+| total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 108x | 2.04x |
 
 As reductions:
 
-| Metric | Lower than original | Lower than first pass | Lower than second pass |
-|---|---:|---:|---:|
-| average | 98.1% | 88.3% | 62.6% |
-| p50 | 98.0% | 86.4% | 59.8% |
-| p95 | 98.2% | 89.2% | 63.0% |
-| max | 97.8% | 88.2% | 60.0% |
-| total | 98.1% | 88.3% | 62.5% |
+| Metric | Lower than original | Lower than first pass | Lower than second pass | Lower than third pass |
+|---|---:|---:|---:|---:|
+| average | 99.1% | 94.2% | 81.6% | 50.7% |
+| p50 | 99.0% | 93.5% | 80.7% | 51.9% |
+| p95 | 99.1% | 94.7% | 81.6% | 50.3% |
+| max | 99.0% | 94.8% | 82.3% | 55.7% |
+| total | 99.1% | 94.2% | 81.6% | 50.9% |
 
 The original total was 28.7 seconds, not 40 milliseconds. The second-pass
-average was 33.4 ms. The current average is 12.5 ms. The current column is a
-steady-state real-window run; the first run after launch can be slower while
-the font and style caches warm.
+average was 33.4 ms, and the third-pass average was 12.5 ms. The current
+average is 6.16 ms. The current column is the mean of five
+`BenchmarkWindowedPointerCycle` runs; the first run after launch can be slower
+while the font and style caches warm.
 
 ## First pass, 667 ms to 107 ms
 
@@ -122,6 +123,48 @@ The visible `press to painted` time stays around 50 ms because the window
 draw and the presentation frame are a fixed cost. The page rebuild is the part
 this pass cut.
 
+## Fourth pass, 12.5 ms to 6.16 ms
+
+The fourth pass stopped paying for layout that a click does not need.
+
+- The catalog window now renders only the rows that intersect the viewport.
+  The previous window added two rows of overscan above and below. That cut the
+  average window from 8.72 rows to 5.37 rows per click. Scroll range changes
+  became about 15% more frequent, but the total scroll work stayed about the
+  same because each rebuild is smaller.
+- The card header lost its flex formatting context. `.catalog-details h3` is a
+  block, the property number is an inline-block badge, and the row and details
+  containers are blocks. The playback row keeps its grid. The header flex was
+  the largest single card cost at about 20% of the rebuild.
+- Pages with only button controls skip the control-state source copy and the
+  form style block. The catalog has 43 Start buttons and no input, textarea,
+  or select.
+- ASCII pages skip the emoji replacement scan copy. The catalog has no emoji.
+- The box index map is cleared and refilled instead of allocated again. The
+  immutable target list and its key and button maps are built once.
+- The template builder grows from the previous source length instead of
+  growing through repeated copies.
+
+Controlled comparison, 43-click desktop pointer cycle:
+
+| Comparison | Before | After |
+|---|---:|---:|
+| Average page rebuild | 11.7 to 13.0 ms | 6.0 to 6.4 ms |
+| p50 page rebuild | 12.2 to 13.1 ms | 5.97 to 6.47 ms |
+| p95 page rebuild | 14.3 to 17.7 ms | 7.3 to 8.0 ms |
+| 43-click total | 0.50 to 0.56 s | 0.258 to 0.275 s |
+
+The new `BenchmarkWindowedPointerCycle` drives the full windowed path:
+960x860, perf on, the catalog window installed, scroll the next Start button
+under a fixed line, then a batched press, focus, click, and release. It reports
+`LastRedraw` for each of the 43 clicks. The numbers above are five runs of
+`-benchtime=1x`.
+
+The page rebuild is now close to the one-row layout floor. The remaining work
+is the display-list build for the rows on screen. Skipping that would mean
+patching the retained display on Start instead of rebuilding the page, which
+is a separate design with a different set of tradeoffs.
+
 ## Visible latency
 
 The redraw time above is the page work. From the real click script, with
@@ -132,23 +175,27 @@ The redraw time above is the page work. From the real click script, with
 | press to started | 9.9 ms | 18.2 ms | 30.4 ms | 10.4 ms |
 | press to painted | 50.6 ms | 51.0 ms | 51.9 ms | 50.7 ms |
 
-`press to started` uses the handler timestamp in the app, so polling latency
-does not count. `press to painted` waits for the next layout counter and
-includes the redraw plus the window draw.
+These are third-pass numbers. The fourth pass cuts the page rebuild further,
+but the fixed window draw and presentation frame still dominate `press to
+painted`. `press to started` uses the handler timestamp in the app, so polling
+latency does not count. `press to painted` waits for the next layout counter
+and includes the redraw plus the window draw.
 
 ## How the numbers were measured
 
-The current column comes from 43 real X11 clicks in the desktop window with
-the catalog window active. The script starts at the press, not at the start of
-its 80 ms hover settle or 50 ms hold. It reads `LastRedraw` from `/state` for
-the rebuild time and uses the app's started timestamp for the handler time.
-The reported run is the steady state after two warm passes. The first run after
-launch can be slower while the shared font and face caches warm.
+The current column comes from `BenchmarkWindowedPointerCycle`, which follows
+the same 43-click desktop path as the X11 script but reads `LastRedraw` in
+process. That removes the software X server and presentation frame from the
+measurement. The benchmark runs one warm pass, then reports the average, p50,
+p95, and max over one or more measured passes. The numbers above are the mean
+of five `-benchtime=1x` runs. The third-pass and earlier columns came from the
+real X11 walk and the earlier pointer cycle measurement.
 
 The original and first-pass columns come from the earlier pointer cycle
 measurement in this optimization work. That measurement called the page
-pointer methods directly. The current column is the same page rebuild metric
-from a real window, after the test harness was corrected.
+pointer methods directly. The third-pass column is the same page rebuild
+metric from a real window. The fourth-pass column uses the in-process
+windowed benchmark.
 
 Two same-benchmark comparisons give the cleanest picture:
 
@@ -157,7 +204,10 @@ Two same-benchmark comparisons give the cleanest picture:
   uses the full fixture, so it does not include the catalog window.
 - `BenchmarkPointerCycleAll43` with two page builds: 56.5 ms per click. With
   the redraw batch: 30.0 ms per click. This is also the full fixture.
-- The real window with the catalog window: 12.2 to 12.9 ms p50 rebuild.
+- The third pass's real window with the catalog window: 12.2 to 12.9 ms p50
+  rebuild.
+- The fourth pass's in-process windowed benchmark: 6.0 to 6.4 ms average
+  rebuild over five runs.
 
 The machine was shared during some earlier runs, so treat the absolute
 original numbers as recorded history. The multipliers are the comparison this
@@ -179,17 +229,29 @@ pipeline counters. `/reset` clears the rows, and `/goto` scrolls the next Start
 button under a fixed row. It closes the app with `/quit` after the last pass;
 use `--no-close` to keep the window open.
 
-Run the benchmarks:
+Run the windowed benchmark that matches the current column:
+
+```sh
+go test ./examples/css-preview -run '^$' \
+  -bench '^BenchmarkWindowedPointerCycle$' \
+  -benchtime=1x -count=5
+```
+
+Use `-benchtime=1x` for one 43-click pass per run, or a higher value for a
+longer run. The full-fixture benchmarks need at least `-benchtime=3x` before
+their numbers settle:
 
 ```sh
 go test ./examples/css-preview -run '^$' \
   -bench 'BenchmarkClickRedraw|BenchmarkPointerCycleAll43' \
-  -benchtime=1x -count=1
+  -benchtime=3x -count=3
 ```
 
-`BenchmarkPointerCycleAll43` runs the batched window sequence.
-`BenchmarkPointerCycleAll43NoBatch` runs the same sequence without the batch.
-`BenchmarkClickRedraw` measures one `SetData` plus `Redraw`.
+`BenchmarkWindowedPointerCycle` runs the windowed, batched click sequence and
+reports `LastRedraw` per click. `BenchmarkPointerCycleAll43` runs the same
+pointer sequence on the full fixture. `BenchmarkPointerCycleAll43NoBatch` runs
+it without the batch. `BenchmarkClickRedraw` measures one `SetData` plus
+`Redraw` on the full fixture.
 
 ## Files
 
@@ -212,6 +274,19 @@ Ownframe:
   updates the spacer rows.
 - `examples/css-preview/catalog_window_test.go` checks that the window keeps
   the full grid and metadata geometry.
+- `examples/css-preview/window_bench_test.go`,
+  `window_bench_setup_test.go`, `window_bench_click_test.go`, and
+  `window_bench_pass_test.go` run the windowed 43-click benchmark.
+- `examples/css-preview/catalog_target_cache.go` and `model.go` cache the
+  immutable target list and its lookup maps.
+- `examples/css-preview/testdata/css-preview/styles.css` holds the flat card
+  header and row styles.
+- `internal/emoji/emoji_ascii.go` skips the replacement copy on ASCII pages.
+- `internal/page/form_spans.go` skips the control rewrite when only buttons
+  are present.
+- `internal/page/page_boxindex.go` reuses the box index map.
+- `internal/page/page_draw_stages.go` sizes the template builder from the
+  previous source.
 - `examples/css-preview/batch_click_test.go` covers the batched press through
   a real animation start.
 
@@ -226,8 +301,6 @@ Blinkless:
   hyphen.
 - `internal/layout/layout.go` holds the one-entry face cache.
 
-Ownframe currently pins Blinkless
-`v0.0.3-0.20261020122842-3fa0a49a895b`. That pin includes the one-pass
-single-column grid, not the multi-column `grid_auto_row.go`. The 12.5 ms
-number also uses the local multi-column grid, so shipping it needs a Blinkless
-commit and a pin bump.
+Ownframe pins Blinkless
+`v0.0.3-0.20261020132936-e0c3c9ca4f30`, which includes both one-pass grid
+paths. The 12.5 ms and 6.16 ms columns use that pin.
