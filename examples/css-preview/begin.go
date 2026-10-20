@@ -14,7 +14,7 @@ func (d *demo) begin() error {
 	}
 	display := d.p.Display()
 	s.origin = time.Now()
-	plan, err := bind(display, box, t, s.indices, s.base, s.origin)
+	plan, err := bind(display, box, t, s.base, s.origin)
 	if err != nil {
 		return err
 	}

@@ -10,12 +10,13 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
-func bind(d *ownframe.Display, b ownframe.Box, t target, indices []int, base []paint, origin time.Time) (motion, error) {
+func bind(d *ownframe.Display, b ownframe.Box, t target, base []paint, origin time.Time) (motion, error) {
 	if d == nil {
 		return motion{}, nil
 	}
 	duration, delay, endDelay := motionTiming(b, t)
 	m := motion{duration: duration, delay: delay, endDelay: endDelay, start: origin}
+	indices := cssmotion.OperationIndices(d, b)
 	ops := cssmotion.Resolve(d, indices)
 	if len(ops) != len(indices) || len(ops) != len(base) {
 		return motion{}, errors.New("csspreview: captured target operations changed during redraw")

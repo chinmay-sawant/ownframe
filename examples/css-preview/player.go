@@ -23,12 +23,11 @@ type demo struct {
 }
 
 type sample struct {
-	base    []paint
-	indices []int
-	source  string
-	plan    motion
-	origin  time.Time
-	active  bool
+	base   []paint
+	source string
+	plan   motion
+	origin time.Time
+	active bool
 }
 
 func newDemo(p *ownframe.Page, v *view) *demo {

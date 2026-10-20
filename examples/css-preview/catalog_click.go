@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func (d *demo) click(_ context.Context, b ownframe.Box) error {
@@ -41,9 +40,7 @@ func (d *demo) start(selected target, button string) error {
 		return nil
 	}
 	if d.samples[selected.key] == nil {
-		d.samples[selected.key] = &sample{
-			base: capture(d.p.Display(), box), indices: cssmotion.OperationIndices(d.p.Display(), box),
-		}
+		d.samples[selected.key] = &sample{base: capture(d.p.Display(), box)}
 	}
 	d.samples[selected.key].source = button
 	d.v.Started[selected.key] = true

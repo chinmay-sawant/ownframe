@@ -27,10 +27,8 @@ func sampleBox(display *ownframe.Display, pairs []pair) image.Rectangle {
 }
 
 func (d *demo) rebind() error {
+	now := time.Now()
 	for key, s := range d.samples {
-		if !s.active {
-			continue
-		}
 		t, ok := targetByKey(key)
 		if !ok {
 			continue
@@ -41,15 +39,21 @@ func (d *demo) rebind() error {
 			continue
 		}
 		box := boxes[boxIndex]
-		plan, err := bind(d.p.Display(), box, t, s.indices, s.base, s.origin)
+		plan, err := bind(d.p.Display(), box, t, s.base, s.origin)
 		if err != nil {
-			return err
+			if s.active {
+				return err
+			}
+			continue
 		}
 		s.plan = plan
-		if key == d.pendingKey && plan.animation != nil {
+		if plan.animation != nil {
 			if err := dispatchAnimationTriggers(boxes, boxIndex, s.source, plan.animation, s.origin); err != nil {
 				return err
 			}
+		}
+		if !s.active {
+			s.plan.step(now)
 		}
 	}
 	return nil
