@@ -100,7 +100,7 @@ button {
 }
 
 .catalog-pad {
-  grid-column: 1 / -1;
+  min-width: 0;
 }
 
 .catalog-row {

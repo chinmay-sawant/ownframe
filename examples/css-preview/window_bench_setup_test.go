@@ -13,12 +13,16 @@ import (
 // before the setup draws, then the catalog window installed and the
 // devtools dock closed the way the walk hook closes it.
 func windowBenchPage(tb testing.TB) (context.Context, *ownframe.Page, *view, *demo, *catalogMetrics) {
+	return windowBenchPageSize(tb, 960, 860)
+}
+
+func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ownframe.Page, *view, *demo, *catalogMetrics) {
 	tb.Helper()
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
 	p, err := previewwindow.New(ctx, previewwindow.Config{
 		FixtureDir: filepath.Join("testdata", "css-preview"),
-		Data:       v, Width: 960, Height: 860})
+		Data:       v, Width: width, Height: height})
 	if err != nil {
 		tb.Fatal(err)
 	}

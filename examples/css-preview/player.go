@@ -36,6 +36,7 @@ func newDemo(p *ownframe.Page, v *view) *demo {
 
 func (d *demo) tick(ctx context.Context) error {
 	if len(d.samples) == 0 && d.pendingKey == "" {
+		d.p.UseFrameDirty()
 		return nil
 	}
 	if d.pendingKey != "" {
@@ -60,7 +61,7 @@ func (d *demo) tick(ctx context.Context) error {
 		}
 	}
 	partial := active > 0 && active <= partialLimit
-	if partial {
+	if partial || active == 0 {
 		d.p.UseFrameDirty()
 	}
 	now := time.Now()

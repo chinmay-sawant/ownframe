@@ -13,6 +13,11 @@ func (s *shell) devSync() error {
 	}
 
 	on := insp.DevTools()
+	if on {
+		// A page that opened the overlay once keeps F12 available after it
+		// closes, including a close before the first frame.
+		s.dev.available = true
+	}
 	if on == s.dev.on {
 		return nil
 	}

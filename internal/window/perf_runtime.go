@@ -16,6 +16,7 @@ type perfSampler struct {
 	last       time.Time
 	first      bool
 	total      uint64
+	frames     uint64
 	heap       uint64
 	alloc      uint64
 	rss        uint64
@@ -24,6 +25,7 @@ type perfSampler struct {
 
 // maybe refreshes the sample when the gap has passed.
 func (p *perfSampler) maybe(now time.Time) bool {
+	p.frames++
 	if !p.last.IsZero() && now.Sub(p.last) < perfSampleGap {
 		return false
 	}
@@ -34,8 +36,13 @@ func (p *perfSampler) maybe(now time.Time) bool {
 		p.first = true
 		p.alloc = 0
 	} else {
-		p.alloc = m.TotalAlloc - p.total
+		frames := p.frames
+		if frames == 0 {
+			frames = 1
+		}
+		p.alloc = (m.TotalAlloc - p.total) / frames
 	}
+	p.frames = 0
 	p.total = m.TotalAlloc
 	p.heap = m.HeapAlloc
 	p.goroutines = runtime.NumGoroutine()

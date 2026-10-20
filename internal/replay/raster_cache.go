@@ -11,7 +11,7 @@ import (
 // page with more shapes than this keeps the newest; the oldest rasters are
 // disposed.
 const (
-	rasterMaxEntries     = 64
+	rasterMaxEntries     = 256
 	rasterMaxTotalPixels = 4 << 20
 )
 

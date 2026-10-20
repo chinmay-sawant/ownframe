@@ -12,7 +12,7 @@ import (
 // keeps. Oldest insertion evicts first, and its image is disposed. The pixel
 // cap matches the shape raster cache: 4M pixels is 16 MB of RGBA.
 const (
-	chunkMaxEntries = 64
+	chunkMaxEntries = 256
 	chunkMaxPixels  = 4 << 20
 )
 

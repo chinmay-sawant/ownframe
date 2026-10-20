@@ -10,11 +10,11 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
-func run(perf bool) error {
+func run(perf bool, width, height int) error {
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
 	p, err := previewwindow.New(ctx, previewwindow.Config{Title: "OwnFrame CSS property catalog",
-		FixtureDir: catalogFixtureDir(), Data: v, Width: 960, Height: 860})
+		FixtureDir: catalogFixtureDir(), Data: v, Width: width, Height: height})
 	if err != nil {
 		return err
 	}

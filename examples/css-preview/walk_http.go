@@ -19,6 +19,7 @@ func (w *walker) serve() {
 		w.next, w.scrollFor, w.aim = i, i, [3]int{-1, 0, 0}
 		w.stopReq = true
 		w.mu.Unlock()
+		ebiten.ScheduleFrame()
 	})
 	http.HandleFunc("/aim", func(rw http.ResponseWriter, _ *http.Request) {
 		w.mu.Lock()

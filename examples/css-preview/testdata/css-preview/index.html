@@ -21,7 +21,7 @@
       <h2>CSS property catalog</h2>
       <p class="description">Start a property to play its visual sample beside the CSS value.</p>
       <div id="catalog-grid" class="catalog-grid">
-        {{if .TopPad}}<div class="catalog-pad" style="height:{{.TopPad}}px"></div>{{end}}
+        {{if .TopPad}}<div class="catalog-pad" style="height:{{.TopPad}}px"></div><div class="catalog-pad" style="height:{{.TopPad}}px"></div>{{end}}
         {{range .Rows}}
         <article id="catalog-row-{{.Number}}" class="catalog-row{{if eq .Name "trigger-scope"}} has-trigger-scope{{end}}{{if eq $.Selected .Name}} is-selected{{end}}{{if index $.Started .Button}} is-started{{end}}">
           <div class="catalog-details">
@@ -39,7 +39,7 @@
           </div>
         </article>
         {{end}}
-        {{if .BotPad}}<div class="catalog-pad" style="height:{{.BotPad}}px"></div>{{end}}
+        {{if .BotPad}}<div class="catalog-pad" style="height:{{.BotPad}}px"></div><div class="catalog-pad" style="height:{{.BotPad}}px"></div>{{end}}
       </div>
     </section>
 
