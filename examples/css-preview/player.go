@@ -17,7 +17,8 @@ type demo struct {
 	v          *view
 	gen        uint64
 	samples    map[string]*sample
-	pendingKey string
+	pending    []string
+	allPlaying bool
 	startedAt  time.Time
 	startedSeq uint64
 }
@@ -39,22 +40,26 @@ func newDemo(p *ownframe.Page, v *view) *demo {
 }
 
 func (d *demo) tick(ctx context.Context) error {
-	if len(d.samples) == 0 && d.pendingKey == "" {
+	if len(d.samples) == 0 && len(d.pending) == 0 {
 		d.p.UseFrameDirty()
 		return nil
 	}
-	if d.pendingKey != "" {
-		started, err := d.begin()
-		if err != nil {
-			return err
+	if len(d.pending) > 0 {
+		pending := d.pending
+		d.pending = nil
+		for _, key := range pending {
+			started, err := d.begin(key)
+			if err != nil {
+				return err
+			}
+			if !started {
+				d.pending = append(d.pending, key)
+			}
 		}
 		if err := d.rebind(); err != nil {
 			return err
 		}
 		d.gen = d.p.Generation()
-		if started {
-			d.pendingKey = ""
-		}
 	} else if d.gen != d.p.Generation() {
 		if err := d.rebind(); err != nil {
 			return err

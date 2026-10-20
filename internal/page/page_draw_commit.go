@@ -16,6 +16,7 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.display = display
 	p.fallbackDisplay = nil
 	p.setBoxes(display.Boxes)
+	p.hits = hitList(display.Boxes, fixedBoxes(display))
 	p.generation++
 	p.remember(state)
 	p.commitAccessibility(executed)

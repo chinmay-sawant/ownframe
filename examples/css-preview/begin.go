@@ -2,11 +2,11 @@ package main
 
 import "time"
 
-// begin binds the pending sample to the current display. It reports whether
+// begin binds one pending sample to the current display. It reports whether
 // the sample started. A target that scrolled out of the window keeps its
 // pending key so the animation starts when the row comes back.
-func (d *demo) begin() (bool, error) {
-	t, ok := targetByKey(d.pendingKey)
+func (d *demo) begin(key string) (bool, error) {
+	t, ok := targetByKey(key)
 	if !ok {
 		return true, nil
 	}

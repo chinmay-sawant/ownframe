@@ -10,10 +10,11 @@ import (
 
 // chunkMaxEntries and chunkMaxPixels bound the chunk images one process
 // keeps. Oldest insertion evicts first, and its image is disposed. The pixel
-// cap matches the shape raster cache: 4M pixels is 16 MB of RGBA.
+// cap has to hold the working set of a long page, or every frame rebakes
+// every chunk and the process runs out of memory.
 const (
 	chunkMaxEntries = 256
-	chunkMaxPixels  = 4 << 20
+	chunkMaxPixels  = 24 << 20
 )
 
 // chunkKey names one chunk's cache slot: the display it belongs to and its

@@ -49,6 +49,16 @@ func (w *walker) serve() {
 		<-done
 		fmt.Fprintln(rw, "ok")
 	})
+	http.HandleFunc("/box", func(rw http.ResponseWriter, r *http.Request) {
+		id := r.URL.Query().Get("id")
+		for _, b := range w.p.Boxes() {
+			if b.ID == id {
+				fmt.Fprintf(rw, "%s %.1f %.1f %.1f %.1f\n", b.ID, b.X, b.Y, b.W, b.H)
+				return
+			}
+		}
+		fmt.Fprintln(rw, "missing")
+	})
 	http.HandleFunc("/state", func(rw http.ResponseWriter, _ *http.Request) {
 		w.mu.Lock()
 		next, tr := w.next, w.trace

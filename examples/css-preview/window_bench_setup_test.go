@@ -59,7 +59,7 @@ func windowBenchReset(ctx context.Context, p *ownframe.Page, v *view, d *demo, t
 	v.Selected = ""
 	v.Readout = ""
 	d.samples = map[string]*sample{}
-	d.pendingKey = ""
+	d.pending = nil
 	p.SetScrollOffset(0, 0)
 	if p.StepScrollWindow() {
 		if err := p.Redraw(ctx); err != nil {

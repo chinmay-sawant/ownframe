@@ -57,6 +57,7 @@ type Page struct {
 	frameState      // deadline: loop sets, window takes; lock: atomic
 	pinZ            int
 	index           map[string]Box
+	hits            []hitItem
 	pageContent     // paint rect: box cache writes; lock: page loop
 	scroll          host.Scroll
 	hasScroll       bool

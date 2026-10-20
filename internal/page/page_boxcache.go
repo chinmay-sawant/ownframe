@@ -7,6 +7,7 @@ import "image"
 // rect. Boxes change only here, so the index never goes stale.
 func (p *Page) setBoxes(boxes []Box) {
 	p.boxes = boxes
+	p.hits = nil
 	p.index = fillBoxIndex(p.index, boxes)
 	p.contentOK = false
 }

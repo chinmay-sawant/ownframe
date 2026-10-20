@@ -8,13 +8,16 @@
 <body>
   <main class="page">
     <header>
+      <div class="header-inner">
       <p class="eyebrow">OwnFrame + Blinkless test data</p>
       <h1>CSS property catalog preview</h1>
       <p class="intro">Each numbered property has its own preview and Start button.</p>
       <nav aria-label="Preview sections">
-        <a href="#catalog">All CSS properties</a>
-        <a href="#metadata">Display-list snapshot</a>
+        <span class="nav-item">All CSS properties</span>
+        <span class="nav-item">Display-list snapshot</span>
+        <button id="play-all" type="button" class="play-all">Play all 43 previews</button>
       </nav>
+      </div>
     </header>
 
     <section id="catalog" class="card">

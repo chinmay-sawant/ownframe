@@ -15,7 +15,7 @@ func (w *walker) step() {
 	if w.stopReq {
 		w.stopReq = false
 		w.d.samples = map[string]*sample{}
-		w.d.pendingKey = ""
+		w.d.pending = nil
 	}
 	w.snapshot()
 	if w.next < 0 || w.next >= len(w.v.Catalog) {

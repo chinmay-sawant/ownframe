@@ -8,6 +8,9 @@ import (
 )
 
 func (d *demo) click(_ context.Context, b ownframe.Box) error {
+	if b.ID == playAllID {
+		return d.playAll(context.Background())
+	}
 	for _, row := range d.v.Catalog {
 		if row.Button != b.ID {
 			continue
@@ -47,7 +50,7 @@ func (d *demo) start(selected target, button string) error {
 	d.v.Started[button] = true
 	d.startedAt = time.Now()
 	d.startedSeq++
-	d.pendingKey = selected.key
+	d.pending = append(d.pending, selected.key)
 	d.p.SetData(d.v)
 	if !walkActive() {
 		d.p.SetTick(d.tick)
