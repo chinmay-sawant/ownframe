@@ -16,6 +16,8 @@ type Track struct {
 	From, To        cssmotion.Paint
 	Duration, Delay time.Duration
 	Easing          string
+	// Discrete switches endpoints at 50% of eased progress.
+	Discrete bool
 }
 
 // Renderer samples tracks from their start time. Track operations must remain

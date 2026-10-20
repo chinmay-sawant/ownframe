@@ -11,7 +11,20 @@ func timing(a layout.Animation) animation.Timing {
 	return animation.Timing{Duration: ms(a.DurationMS), Delay: ms(a.DelayStartMS),
 		EndDelay: ms(a.DelayEndMS), Iterations: a.IterationCount, Infinite: a.IterationInfinite,
 		Direction: direction(a.Direction), Fill: fill(a.FillMode), Play: play(a.PlayState),
-		TimingFunction: a.TimingFunction}
+		TimingFunction: a.TimingFunction, DurationAuto: a.DurationAuto,
+		Composition: composition(a.Composition), Timeline: a.Timeline,
+		RangeStart: a.RangeStart, RangeEnd: a.RangeEnd, RangeCenter: a.RangeCenter}
+}
+
+func composition(value string) animation.Composition {
+	switch value {
+	case "add":
+		return animation.Add
+	case "accumulate":
+		return animation.Accumulate
+	default:
+		return animation.Replace
+	}
 }
 
 func ms(value float64) time.Duration { return time.Duration(value * float64(time.Millisecond)) }

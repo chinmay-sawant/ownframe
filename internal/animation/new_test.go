@@ -10,7 +10,7 @@ import (
 func TestNewSortsKeyframesAndRejectsInvalidTargets(t *testing.T) {
 	op := &ownframe.DisplayOp{}
 	p, err := New([]Target{{Op: op}}, []Keyframe{{Offset: 1}, {Offset: 0}}, Timing{})
-	if err != nil || p.frames[0].Offset != 0 {
+	if err != nil || p.effects[0].Frames[0].Offset != 0 {
 		t.Fatalf("New() = %v, %v; want sorted frames", p, err)
 	}
 	if _, err := New([]Target{{}}, nil, Timing{}); err == nil {

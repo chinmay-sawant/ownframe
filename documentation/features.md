@@ -41,6 +41,17 @@ Detail is in [../examples/css-masking/README.md](../examples/css-masking/README.
 
 Detail is in [theming.md](theming.md).
 
+## CSS motion
+
+OwnFrame can sample CSS animation and transition records from Blinkless and
+write each frame into retained drawing operations. The caller supplies time,
+timeline progress, trigger events, and before and after displays where needed.
+The Page window does not start this runtime automatically.
+
+The [CSS motion guide](css-motion.md) explains the inputs and limits. The
+[CSS property catalog example](../examples/css-preview) has a separate Start
+button for each of its 43 motion properties.
+
 ## Hot reload
 
 `Config.File` reads the template from disk at `New` and watches it; `Config.ThemeFile` does the same for the theme. The window polls the files every 250 ms and swaps the template without touching history, so form values, focus, hover, and active survive while their elements do, and `SetImage` and `SetTick` stay. A parse error keeps the last good picture and prints one line to stderr; the bytes are retried on the next poll. `Serve` polls before `GET /` and `GET /frame.png`, and the shell page refreshes the image while a watch is active. wasm and mobile read the file once. Setting `HTML` and `File` together is `ErrBadSource`.

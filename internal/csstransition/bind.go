@@ -35,9 +35,14 @@ func Bind(d *ownframe.Display, box ownframe.Box, property string,
 		return nil, errors.New("csstransition: target operation paints do not match")
 	}
 	tracks := make([]transition.Track, len(ops))
+	discrete := discretePaintProperty(property)
 	for i := range tracks {
 		tracks[i] = transition.Track{Op: ops[i], From: initial[i], To: cssmotion.Read(ops[i]),
-			Duration: millis(record.DurationMS), Delay: millis(record.DelayMS), Easing: record.TimingFunction}
+			Duration: millis(record.DurationMS), Delay: millis(record.DelayMS), Easing: record.TimingFunction,
+			Discrete: discrete && record.Behavior == "allow-discrete"}
+		if discrete && record.Behavior != "allow-discrete" {
+			tracks[i].Duration, tracks[i].Delay = 0, 0
+		}
 	}
 	renderer, err := transition.New(tracks)
 	if err != nil {

@@ -27,6 +27,15 @@ func (r *Renderer) Step(now time.Time) bool {
 			cssmotion.Write(track.Op, track.To)
 			continue
 		}
+		if track.Discrete {
+			if easing(track.Easing, progress) < .5 {
+				cssmotion.Write(track.Op, track.From)
+			} else {
+				cssmotion.Write(track.Op, track.To)
+			}
+			active = true
+			continue
+		}
 		value := cssmotion.Blend(track.From, track.To, easing(track.Easing, progress))
 		cssmotion.Write(track.Op, value)
 		active = true

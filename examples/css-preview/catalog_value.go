@@ -12,7 +12,11 @@ func catalogValue(p *ownframe.Page, name string) string {
 		return "not present"
 	}
 	box, _ := findBox(p.Boxes(), target.id)
-	if strings.HasPrefix(name, "view-transition") || name == "trigger-scope" {
+	if name == "trigger-scope" {
+		card, _ := findBox(p.Boxes(), catalogCardID(name))
+		return otherValue(card, name)
+	}
+	if strings.HasPrefix(name, "view-transition") {
 		return otherValue(box, name)
 	}
 	if strings.Contains(name, "animation") {

@@ -1,9 +1,9 @@
 package animationpreview
 
-type target struct{ key, id, button string }
+type target struct{ key, id, button, trigger string }
 
 var targets = []target{
-	{key: "standard", id: "animation-standard-target", button: "start-standard-animation"},
+	{key: "standard", id: "animation-standard-target", button: "start-standard-animation", trigger: "--standard-start"},
 	{key: "webkit", id: "animation-webkit-target", button: "start-webkit-animation"},
 }
 

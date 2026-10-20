@@ -3,44 +3,68 @@ package animation
 import (
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
-// Start sets the animation's clock origin. Step starts it on its first call
-// when Start was not called explicitly.
+// Start starts every untriggered effect at the same clock time.
 func (p *Player) Start(now time.Time) {
 	p.start, p.started = now, true
-	p.active = p.timing.Duration > 0 && p.timing.Play != Paused
+	for i := range p.states {
+		if p.effects[i].Trigger == "" || p.effects[i].Trigger == "none" {
+			p.states[i].start, p.states[i].offset = now, 0
+			p.states[i].rate, p.states[i].finished = 1, false
+			p.states[i].started = true
+			p.states[i].enabled = p.states[i].timing.Play != Paused
+		}
+	}
 }
 
-// Step samples and writes the frame at now, then reports whether it is active.
-func (p *Player) Step(now time.Time) bool {
-	if p.timing.Duration <= 0 || p.timing.Play == Paused {
-		p.active = false
-		return false
-	}
+// Step samples the time-based animation frame at now.
+func (p *Player) Step(now time.Time) bool { return p.StepWithInput(FrameInput{Now: now}) }
+
+// StepWithInput samples every effect using the supplied host clock and timelines.
+func (p *Player) StepWithInput(input FrameInput) bool {
 	if !p.started {
-		p.Start(now)
+		p.Start(input.Now)
 	}
-	progress, active, apply := p.position(now)
+	if input.Now.IsZero() {
+		input.Now = p.start
+	}
+	active, hasAvailable := false, false
 	for _, target := range p.targets {
 		value := target.From
-		if apply {
-			value.X += p.sample(progress, 0, moveX)
-			value.Y += p.sample(progress, 0, moveY)
-			value.Opacity = p.sample(progress, value.Opacity, opacity)
-			if target.Op.Kind == ownframe.DisplayOpFillRect {
-				value.R = p.sample(progress, value.R, red)
-				value.G = p.sample(progress, value.G, green)
-				value.B = p.sample(progress, value.B, blue)
+		for i, effect := range p.effects {
+			if len(effect.Frames) == 0 {
+				continue
+			}
+			state := &p.states[i]
+			if !state.enabled {
+				continue
+			}
+			now := input.Now
+			if state.paused {
+				now = state.pausedAt
+			}
+			progress, _, live, apply, sampleAvailable := statePosition(state, withNow(input, now))
+			if sampleAvailable {
+				state.finished = !live
+			}
+			active = active || live && !state.paused
+			hasAvailable = hasAvailable || sampleAvailable
+			if sampleAvailable && apply {
+				value = compose(target.From, value, effect, progress)
 			}
 		}
-		cssmotion.Write(target.Op, value)
+		if hasAvailable || p.touched {
+			cssmotion.Write(target.Op, value)
+		}
 	}
+	p.touched = p.touched || hasAvailable
 	p.active = active
 	return active
 }
 
-// Active reports whether the latest Step left work to do.
+func withNow(in FrameInput, now time.Time) FrameInput { in.Now = now; return in }
+
+// Active reports whether the latest sample leaves work to do.
 func (p *Player) Active() bool { return p != nil && p.active }

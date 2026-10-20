@@ -64,10 +64,11 @@ that.
 
 ## How much CSS
 
-The engine's 2026-09-21 catalog audit maps all 818 webref properties and marks
-407 implemented, 0 partial, and 411 unsupported. Every implemented property can
-be set from a theme. Unsupported properties are ignored; the permanent
-non-goals (animation, transition, 3D transforms, scroll snap, and the
-print-noop UI names such as `cursor` and `user-select`) never apply. Selector,
-at-rule, function, and unit coverage is smaller than property coverage. The
-engine's own `documentation/compatibility-matrix.md` is the detailed list.
+The paired Blinkless catalog measured on 2026-10-20 has 785 rows: 555
+implemented, 3 partial, 219 unsupported, and 8 intentionally ignored. A theme
+can set any property implemented by the Blinkless revision used by this
+checkout. The catalog is not a browser-coverage claim. Some CSS animation and
+transition values also need runtime input from the caller; see
+[CSS motion](css-motion.md). Selector, at-rule, function, and unit coverage is
+smaller than property coverage. For each property and its evidence, see the
+[Blinkless compatibility matrix](https://github.com/chinmay-sawant/blinkless/blob/master/documentation/compatibility-matrix.md).

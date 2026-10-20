@@ -16,21 +16,6 @@ func Operations(d *ownframe.Display, box ownframe.Box) []*ownframe.DisplayOp {
 	return Resolve(d, OperationIndices(d, box))
 }
 
-// OperationIndices records the display operations covered by a layout box.
-// Keep these indices across a redraw when the box moves due to a transition.
-func OperationIndices(d *ownframe.Display, box ownframe.Box) []int {
-	var out []int
-	if d == nil {
-		return out
-	}
-	for i := range d.Ops {
-		if Contains(d, box, d.Ops[i]) {
-			out = append(out, i)
-		}
-	}
-	return out
-}
-
 // Resolve finds the current display operations at previously captured indices.
 func Resolve(d *ownframe.Display, indices []int) []*ownframe.DisplayOp {
 	var out []*ownframe.DisplayOp

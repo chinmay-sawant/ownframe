@@ -12,9 +12,9 @@ func red(k Keyframe) (float64, bool)     { return k.R, k.ColorSet }
 func green(k Keyframe) (float64, bool)   { return k.G, k.ColorSet }
 func blue(k Keyframe) (float64, bool)    { return k.B, k.ColorSet }
 
-func (p *Player) sample(at, fallback float64, value valueOf) float64 {
-	stops := make([]stop, 0, len(p.frames)+2)
-	for _, frame := range p.frames {
+func (e Effect) sample(at, fallback float64, value valueOf) float64 {
+	stops := make([]stop, 0, len(e.Frames)+2)
+	for _, frame := range e.Frames {
 		if v, ok := value(frame); ok {
 			stops = append(stops, stop{frame.Offset, v})
 		}
@@ -41,10 +41,10 @@ func (p *Player) sample(at, fallback float64, value valueOf) float64 {
 			return next.value
 		}
 		part := (at - prev.at) / span
-		if p.timing.Easing != nil {
-			part = p.timing.Easing(part)
+		if e.Timing.Easing != nil {
+			part = e.Timing.Easing(part)
 		} else {
-			part = cssmotion.Ease(p.timing.TimingFunction, part)
+			part = cssmotion.Ease(e.Timing.TimingFunction, part)
 		}
 		return prev.value + (next.value-prev.value)*part
 	}

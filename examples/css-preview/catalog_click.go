@@ -42,6 +42,7 @@ func (d *demo) start(selected target, button string) error {
 			base: capture(d.p.Display(), box), indices: cssmotion.OperationIndices(d.p.Display(), box),
 		}
 	}
+	d.samples[selected.key].source = button
 	d.v.Started[selected.key] = true
 	d.v.Started[button] = true
 	d.pendingKey = selected.key

@@ -22,7 +22,7 @@
       <p class="description">Start a property to play its visual sample beside the CSS value.</p>
       <div class="catalog-grid">
         {{range .Catalog}}
-        <article id="catalog-row-{{.Number}}" class="catalog-row{{if eq $.Selected .Name}} is-selected{{end}}{{if index $.Started .Button}} is-started{{end}}">
+        <article id="catalog-row-{{.Number}}" class="catalog-row{{if eq .Name "trigger-scope"}} has-trigger-scope{{end}}{{if eq $.Selected .Name}} is-selected{{end}}{{if index $.Started .Button}} is-started{{end}}">
           <div class="catalog-details">
             <h3><span class="property-number">{{.Number}}</span>{{.Name}}</h3>
             <code>{{.Value}}</code>

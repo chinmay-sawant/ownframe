@@ -15,7 +15,6 @@ func Bind(d *ownframe.Display, box ownframe.Box, indices []int, initial []cssmot
 	if d == nil || len(box.Animations) == 0 {
 		return nil, errors.New("cssanimation: box has no animation metadata")
 	}
-	a := box.Animations[0]
 	ops := cssmotion.Resolve(d, indices)
 	if len(ops) != len(indices) {
 		return nil, errors.New("cssanimation: captured operations are missing from display")
@@ -27,7 +26,16 @@ func Bind(d *ownframe.Display, box ownframe.Box, indices []int, initial []cssmot
 	for i := range targets {
 		targets[i] = animation.Target{Op: ops[i], From: initial[i]}
 	}
-	player, err := animation.New(targets, keyframes(d.Keyframes, a.Name, d.PointsPerPixel), timing(a))
+	effects := make([]animation.Effect, 0, len(box.Animations))
+	for _, item := range box.Animations {
+		var frames []animation.Keyframe
+		if item.Name != "none" && item.Name != "" {
+			frames = keyframes(d.Keyframes, item.Name, d.PointsPerPixel)
+		}
+		effects = append(effects, animation.Effect{Frames: frames,
+			Timing: timing(item), Trigger: item.Trigger})
+	}
+	player, err := animation.NewComposite(targets, effects)
 	if err != nil {
 		return nil, err
 	}

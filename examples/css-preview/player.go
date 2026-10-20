@@ -18,6 +18,7 @@ type demo struct {
 type sample struct {
 	base    []paint
 	indices []int
+	source  string
 	plan    motion
 	origin  time.Time
 	active  bool
@@ -68,15 +69,22 @@ func (d *demo) rebind() error {
 		if !ok {
 			continue
 		}
-		box, ok := findBox(d.p.Boxes(), t.id)
+		boxes := d.p.Boxes()
+		boxIndex, ok := findBoxIndex(boxes, t.id)
 		if !ok {
 			continue
 		}
+		box := boxes[boxIndex]
 		plan, err := bind(d.p.Display(), box, t, s.indices, s.base, s.origin)
 		if err != nil {
 			return err
 		}
 		s.plan = plan
+		if key == d.pendingKey && plan.animation != nil {
+			if err := dispatchAnimationTriggers(boxes, boxIndex, s.source, plan.animation, s.origin); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

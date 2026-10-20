@@ -30,4 +30,13 @@ func catalogButton(name string) string {
 	return "start-property-" + catalogSlug(name)
 }
 
+func catalogCardID(name string) string {
+	for i, property := range catalogProperties {
+		if property == name {
+			return fmt.Sprintf("catalog-row-%02d", i+1)
+		}
+	}
+	return ""
+}
+
 func catalogTargetID(name string) string { return "catalog-target-" + catalogSlug(name) }
