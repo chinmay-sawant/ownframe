@@ -17,7 +17,7 @@ func (p *Page) LongPress(ctx context.Context, x, y float64) (bool, error) {
 		return true, p.SelectWordAt(ctx, x, y)
 	}
 
-	box, ok := hit(p.Boxes(), x, y)
+	box, ok := hit(p.boxes, x, y)
 	if !ok || p.handlers.LongPress == nil {
 		return false, nil
 	}

@@ -5,7 +5,7 @@ package page
 func (p *Page) focusOrder() []string {
 	seen := map[string]bool{}
 	out := []string{}
-	for _, b := range p.Boxes() {
+	for _, b := range p.boxes {
 		id := b.ID
 		if id == "" || seen[id] {
 			continue

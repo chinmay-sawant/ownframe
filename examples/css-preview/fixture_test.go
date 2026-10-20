@@ -22,6 +22,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 		t.Fatal("CSS preview fixture fell back from the display-list path")
 	}
 	v.Catalog = catalogRows(nil)
+	v.Rows = v.Catalog
 	if err = previewwindow.Redraw(ctx, p, v); err != nil {
 		t.Fatal(err)
 	}
@@ -29,6 +30,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 		t.Fatal("CSS preview catalog fell back from the display-list path")
 	}
 	v.Catalog = catalogRows(p)
+	v.Rows = v.Catalog
 	v.Readout = describe(p)
 	if err = previewwindow.Redraw(ctx, p, v); err != nil {
 		t.Fatal(err)

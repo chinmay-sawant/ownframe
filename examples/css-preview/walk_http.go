@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -30,6 +32,13 @@ func (w *walker) serve() {
 	http.HandleFunc("/cursor", func(rw http.ResponseWriter, _ *http.Request) {
 		cx, cy := ebiten.CursorPosition()
 		fmt.Fprintf(rw, "%d %d\n", cx, cy)
+	})
+	http.HandleFunc("/quit", func(rw http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintln(rw, "ok")
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			os.Exit(0)
+		}()
 	})
 	http.HandleFunc("/reset", func(rw http.ResponseWriter, _ *http.Request) {
 		done := make(chan struct{})

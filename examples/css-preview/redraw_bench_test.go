@@ -18,10 +18,12 @@ func BenchmarkClickRedraw(b *testing.B) {
 		b.Fatal(err)
 	}
 	v.Catalog = catalogRows(nil)
+	v.Rows = v.Catalog
 	if err := previewwindow.Redraw(ctx, p, v); err != nil {
 		b.Fatal(err)
 	}
 	v.Catalog = catalogRows(p)
+	v.Rows = v.Catalog
 	v.Readout = describe(p)
 	if err := previewwindow.Redraw(ctx, p, v); err != nil {
 		b.Fatal(err)

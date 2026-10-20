@@ -99,6 +99,10 @@ button {
   gap: 8px;
 }
 
+.catalog-pad {
+  grid-column: 1 / -1;
+}
+
 .catalog-row {
   display: grid;
   gap: 9px;

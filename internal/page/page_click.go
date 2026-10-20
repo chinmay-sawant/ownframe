@@ -19,7 +19,7 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	box, ok := hit(p.Boxes(), x, y)
+	box, ok := hit(p.boxes, x, y)
 	if ok && box.ID == "" {
 		if id := p.boxIDAt(x, y); id != "" {
 			box = p.boxByID(id)

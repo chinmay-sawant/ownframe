@@ -23,17 +23,27 @@ func run(perf bool) error {
 		p.SetDevTools(true)
 	}
 	v.Catalog = catalogRows(nil)
+	v.Rows = v.Catalog
 	if err := previewwindow.Redraw(ctx, p, v); err != nil {
 		return err
 	}
 	v.Catalog = catalogRows(p)
+	v.Rows = v.Catalog
 	v.Readout = describe(p)
 	if err := previewwindow.Redraw(ctx, p, v); err != nil {
 		return err
 	}
+	metrics, ok := measureCatalog(p)
+	v.Readout = "Select a Start button.\nIts value and action appear here."
 	d := newDemo(p, v)
 	p.Handle(ownframe.Handlers{Click: d.click})
-	startWalk(p, d, v)
+	if ok {
+		if err := installCatalogWindow(ctx, p, v, d, metrics); err != nil {
+			return err
+		}
+	}
+	d.gen = p.Generation()
+	startWalk(p, d, v, metrics)
 	return ownframe.Run(ctx, p)
 }
 

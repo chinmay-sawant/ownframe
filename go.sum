@@ -34,6 +34,8 @@ github.com/chinmay-sawant/blinkless v0.0.3-0.20261020111007-81910e03205a h1:5606
 github.com/chinmay-sawant/blinkless v0.0.3-0.20261020111007-81910e03205a/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/chinmay-sawant/blinkless v0.0.3-0.20261020122842-3fa0a49a895b h1:Y2e9NjV4FIdmsj1SGn9ki1re4ggBDqZXnaFivvVEv8E=
 github.com/chinmay-sawant/blinkless v0.0.3-0.20261020122842-3fa0a49a895b/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
+github.com/chinmay-sawant/blinkless v0.0.3-0.20261020132936-e0c3c9ca4f30 h1:JPvrxLg8pH6B2fd8hTp4UFdJI2PSdPoVj08Fnm/V8uQ=
+github.com/chinmay-sawant/blinkless v0.0.3-0.20261020132936-e0c3c9ca4f30/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 h1:Tnc3YtzxhgsvNdNrER9wWkGJbyjOwyUuzjUY5rZK72k=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6/go.mod h1:gwnFEwdzWZpNehgwkeK4756Ez58f58bXz6bgEAq+xqk=
 github.com/ebitengine/hideconsole v1.0.0 h1:5J4U0kXF+pv/DhiXt5/lTz0eO5ogJ1iXb8Yj1yReDqE=

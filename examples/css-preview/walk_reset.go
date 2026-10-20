@@ -12,6 +12,7 @@ func (w *walker) reset() {
 	w.d.pendingKey = ""
 	w.next, w.scrollFor = -1, -1
 	w.aim = [3]int{-1, 0, 0}
+	w.p.ScrollTo(0, 0)
 	w.d.gen = w.p.Generation()
 	w.p.SetData(w.v)
 	_ = w.p.Redraw(context.Background())

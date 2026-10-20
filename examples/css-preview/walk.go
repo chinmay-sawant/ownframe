@@ -25,13 +25,14 @@ type walker struct {
 	resetReq  bool
 	resetDone chan struct{}
 	stopReq   bool
+	m         *catalogMetrics
 }
 
-func startWalk(p *ownframe.Page, d *demo, v *view) {
+func startWalk(p *ownframe.Page, d *demo, v *view, m *catalogMetrics) {
 	if !walkActive() {
 		return
 	}
-	w := &walker{p: p, d: d, v: v, scrollFor: -1, aim: [3]int{-1, 0, 0}}
+	w := &walker{p: p, d: d, v: v, m: m, scrollFor: -1, aim: [3]int{-1, 0, 0}}
 	p.SetDevTools(false)
 	go w.serve()
 
@@ -45,39 +46,4 @@ func startWalk(p *ownframe.Page, d *demo, v *view) {
 		return nil
 	}
 	p.SetTick(tick)
-}
-
-func (w *walker) step() {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	if w.resetReq {
-		w.resetReq = false
-		w.reset()
-		if w.resetDone != nil {
-			close(w.resetDone)
-			w.resetDone = nil
-		}
-	}
-	if w.stopReq {
-		w.stopReq = false
-		w.d.samples = map[string]*sample{}
-		w.d.pendingKey = ""
-	}
-	w.snapshot()
-	if w.next < 0 || w.next >= len(w.v.Catalog) {
-		return
-	}
-	row := w.v.Catalog[w.next]
-	b, ok := findBox(w.p.Boxes(), row.Button)
-	if !ok {
-		return
-	}
-	if w.scrollFor == w.next {
-		w.p.ScrollTo(0, int(b.Y)-200)
-		w.scrollFor = -1
-		return
-	}
-	_, scrollY := w.p.ScrollOffset()
-	w.aim = [3]int{w.next, int(b.X + b.W/2), int(b.Y+b.H/2) - scrollY}
 }

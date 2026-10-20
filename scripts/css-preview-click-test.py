@@ -25,9 +25,13 @@ The walk hook stops the previous sample before each /goto, so each measurement
 is one click instead of a soak of all 43 animations. Use /reset to clear the
 started rows and run the whole catalog again in the same window.
 
-Run:  python3 scripts/css-preview-click-test.py
+Run:  python3 scripts/css-preview-click-test.py [--runs 3]
+
+The script closes the application with /quit after the last pass. Use
+--no-close to keep it open.
 """
 
+import argparse
 import ctypes
 import ctypes.util
 import http.client
@@ -164,15 +168,7 @@ def summary(label, values):
         sum(values) / 1000.0))
 
 
-def main():
-    x11, xtst, display = open_display()
-
-    move(xtst, x11, display, *CALIBRATE_AT)
-    time.sleep(0.4)
-    cx, cy = map(int, get("cursor").split())
-    ox, oy = CALIBRATE_AT[0] - cx, CALIBRATE_AT[1] - cy
-    print("window origin", ox, oy)
-
+def run_pass(x11, xtst, display, ox, oy):
     get("reset")
     for _ in range(400):
         fields = state()
@@ -217,10 +213,47 @@ def main():
             redraw))
 
     print("clicked %d/%d failures %s" % (len(redraw_ms), TOTAL, failures))
-    summary("press->started", started_ms)
-    summary("press->painted", painted_ms)
-    summary("redraw", redraw_ms)
-    print("final state", get("state"))
+    return started_ms, painted_ms, redraw_ms, failures
+
+
+def close_app():
+    try:
+        get("quit")
+    except (ConnectionError, OSError):
+        pass
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--runs", type=int, default=1, help="full catalog passes")
+    parser.add_argument("--no-close", action="store_true", help="leave the app running")
+    args = parser.parse_args()
+
+    x11, xtst, display = open_display()
+
+    move(xtst, x11, display, *CALIBRATE_AT)
+    time.sleep(0.4)
+    cx, cy = map(int, get("cursor").split())
+    ox, oy = CALIBRATE_AT[0] - cx, CALIBRATE_AT[1] - cy
+    print("window origin", ox, oy)
+
+    started_all, painted_all, redraw_all, failures_all = [], [], [], []
+    try:
+        for run in range(args.runs):
+            print("pass %d/%d" % (run + 1, args.runs))
+            started, painted, redraw, failures = run_pass(x11, xtst, display, ox, oy)
+            started_all += started
+            painted_all += painted
+            redraw_all += redraw
+            failures_all += failures
+    finally:
+        if not args.no_close:
+            close_app()
+
+    summary("press->started", started_all)
+    summary("press->painted", painted_all)
+    summary("redraw", redraw_all)
+    print("passes %d, failures %s" % (args.runs, failures_all))
 
 
 if __name__ == "__main__":
