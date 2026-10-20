@@ -2,6 +2,7 @@ package theme_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -44,7 +45,7 @@ func TestThemeSwitchKeepsGeometry(t *testing.T) {
 	}
 
 	after := boxByID(t, app, "toggle")
-	if before != after {
+	if !reflect.DeepEqual(before, after) {
 		t.Fatalf("toggle box moved: %+v -> %+v", before, after)
 	}
 }

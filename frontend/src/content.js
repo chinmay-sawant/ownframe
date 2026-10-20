@@ -12,6 +12,7 @@ const extras = import.meta.glob([
 const labels = {
   readme: 'Overview',
   showcase: 'Example apps',
+  'css-motion': 'Animations and transitions',
   window: 'Open a window',
   screen: 'Rendering',
   binding: 'Data and actions',
@@ -56,7 +57,7 @@ const navigation = [
   { title: 'Start here', slugs: ['readme'], standalone: true },
   { title: 'Window', slugs: ['window'], standalone: true },
   { title: 'Data', slugs: ['binding'], standalone: true },
-  { title: 'Styling', slugs: ['theming'], standalone: true },
+  { title: 'Styling', slugs: ['theming', 'css-motion'] },
   { title: 'Platforms', slugs: ['platforms'], standalone: true },
   { title: 'Features', slugs: ['features'], standalone: true },
   {

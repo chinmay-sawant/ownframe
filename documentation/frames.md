@@ -108,8 +108,11 @@ row when a track ends.
   shows the last `Redraw` and not the frame changes.
 - A page that fell back to the bitmap path has no display list; `Display`
   returns nil and there is nothing to change.
-- CSS `@keyframes` and `transition` are permanent non-goals of the engine
-  (see [theming.md](theming.md)), which is why frames move from Go.
+- CSS `@keyframes` and `transition` use separate CSS-specific runtime packages.
+  A caller binds Blinkless records to paint operations and supplies the clock,
+  timeline values, trigger events, or before and after displays. The Page
+  window does not start them automatically. See [CSS motion](css-motion.md).
+  The `Page.SetTick` helpers above still suit Go-controlled motion.
 
 The [Spotify player](../examples/spotify-player) example uses the tick for a
 moving seek bar, a running clock, and a sine-driven equalizer. It plays

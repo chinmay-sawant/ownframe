@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CSS property catalog preview</title>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="eyebrow">OwnFrame + Blinkless test data</p>
+      <h1>CSS property catalog preview</h1>
+      <p class="intro">Each numbered property has its own preview and Start button.</p>
+      <nav aria-label="Preview sections">
+        <a href="#catalog">All CSS properties</a>
+        <a href="#metadata">Display-list snapshot</a>
+      </nav>
+    </header>
+
+    <section id="catalog" class="card">
+      <h2>CSS property catalog</h2>
+      <p class="description">Start a property to play its visual sample beside the CSS value.</p>
+      <div class="catalog-grid">
+        {{range .Catalog}}
+        <article id="catalog-row-{{.Number}}" class="catalog-row{{if eq .Name "trigger-scope"}} has-trigger-scope{{end}}{{if eq $.Selected .Name}} is-selected{{end}}{{if index $.Started .Button}} is-started{{end}}">
+          <div class="catalog-details">
+            <h3><span class="property-number">{{.Number}}</span>{{.Name}}</h3>
+            <code>{{.Value}}</code>
+            <span class="catalog-action"><strong>What to expect:</strong> {{.Action}}</span>
+            <span class="catalog-state">{{if index $.Started .Button}}Started / selected{{else}}Ready{{end}}</span>
+          </div>
+          <div class="catalog-playback">
+            <div class="catalog-stage">
+              <span class="catalog-preview-label">{{.PreviewLabel}}</span>
+              <div id="{{.TargetID}}" class="catalog-preview-target {{.PreviewClass}}">CSS</div>
+            </div>
+            <button id="{{.Button}}" type="button">Start</button>
+          </div>
+        </article>
+        {{end}}
+      </div>
+    </section>
+
+    <section id="metadata" class="card">
+      <h2>Display-list snapshot</h2>
+      <pre id="preview-metadata">{{.Readout}}</pre>
+      <p class="note">Each property card above has its own visual sample and Start button.</p>
+    </section>
+  </main>
+</body>
+</html>
