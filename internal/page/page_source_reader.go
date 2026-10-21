@@ -32,9 +32,12 @@ type memInfo struct {
 	m time.Time
 }
 
+// memFileMode is the fake permission bits the in-memory source reports.
+const memFileMode os.FileMode = 0o600
+
 func (m memInfo) Name() string       { return m.n }
 func (m memInfo) Size() int64        { return m.s }
-func (m memInfo) Mode() os.FileMode  { return 0o600 }
+func (m memInfo) Mode() os.FileMode  { return memFileMode }
 func (m memInfo) ModTime() time.Time { return m.m }
 func (m memInfo) IsDir() bool        { return false }
 func (m memInfo) Sys() any           { return nil }

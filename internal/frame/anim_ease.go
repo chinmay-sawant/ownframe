@@ -1,5 +1,14 @@
 package frame
 
+const (
+	// easeMidpoint is the progress where EaseInOutCubic switches halves.
+	easeMidpoint = 0.5
+	// halfDivisor splits a range into two halves.
+	halfDivisor = 2
+	// degreesToRadians is the degrees in a half circle.
+	degreesToRadians = 180
+)
+
 // Linear eases nothing.
 func Linear(t float64) float64 { return t }
 
@@ -12,11 +21,11 @@ func EaseOutCubic(t float64) float64 {
 
 // EaseInOutCubic accelerates, then settles.
 func EaseInOutCubic(t float64) float64 {
-	if t < 0.5 {
+	if t < easeMidpoint {
 		return 4 * t * t * t
 	}
 
-	u := -2*t + 2
+	u := -halfDivisor*t + halfDivisor
 
 	return 1 - u*u*u/2
 }

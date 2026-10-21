@@ -33,7 +33,7 @@ func sigOp(h uint64, op *layout.DisplayOp) uint64 {
 
 	h = mix64(h, uint64(op.StrokeMask))
 	h = mix64(h, uint64(op.LineInset))
-	h = mix64(h, uint64(op.ZIndex))
+	h = mix64(h, uint64(op.ZIndex)) //nolint:gosec // reason: int bit pattern kept for hash.
 	h = mix64(h, bit(op.Bold)|bit(op.FakeOblique)<<1|bit(op.Fixed)<<2|
 		bit(op.ZIndexSet)<<3|bit(op.NoFakeBoldValue())<<4)
 	h = mix64(h, uint64(math.Float32bits(op.RotateDeg)))

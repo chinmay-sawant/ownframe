@@ -43,8 +43,8 @@ func dialX() (*xClient, error) {
 		return nil, ErrX11
 	}
 
-	if max < 24 {
-		max = 24
+	if max < xHdr24 {
+		max = xHdr24
 	}
 
 	xc := &xClient{
@@ -92,7 +92,7 @@ func readSetup(r io.Reader) ([]byte, error) {
 		return nil, ErrX11
 	}
 
-	buf := make([]byte, 8+n*4)
+	buf := make([]byte, xHdr8+n*xWord)
 	copy(buf, hdr[:])
 
 	if _, err := io.ReadFull(r, buf[8:]); err != nil {

@@ -19,7 +19,7 @@ func scaleAbout(s, cx, cy float64) mat6 {
 
 // rotateAbout is a rotation by deg degrees around (cx, cy).
 func rotateAbout(deg, cx, cy float64) mat6 {
-	r := deg * math.Pi / 180
+	r := deg * math.Pi / degreesToRadians
 	c, s := math.Cos(r), math.Sin(r)
 
 	return mat6{c, s, -s, c, cx - c*cx + s*cy, cy - s*cx - c*cy}

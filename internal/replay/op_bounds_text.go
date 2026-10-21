@@ -19,6 +19,9 @@ func textBounds(op *layout.DisplayOp, ppt float64) image.Rectangle {
 	return boxBounds(op.X, top, op.W, bottom-top, 0, ppt)
 }
 
+// fallbackAscentRatio estimates ascent from size without a face.
+const fallbackAscentRatio = 0.8
+
 // textAscent is the font ascent above the baseline. The op's line box height
 // is the fallback when the face is absent.
 func textAscent(op *layout.DisplayOp) float64 {
@@ -30,5 +33,5 @@ func textAscent(op *layout.DisplayOp) float64 {
 		return op.H - op.InkDescent
 	}
 
-	return op.Size * 0.8
+	return op.Size * fallbackAscentRatio
 }

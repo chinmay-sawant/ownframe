@@ -9,6 +9,12 @@ const perfRingCap = 120
 
 const perfLongThreshold = 25 * time.Millisecond
 
+const perfP95Quantile = 0.95
+
+const perfP99Quantile = 0.99
+
+const perfMinSamples = 2
+
 // perfRing keeps the last perfRingCap frame durations. order is scratch for
 // summaries; it lives inside the ring so a summary allocates nothing.
 type perfRing struct {
@@ -60,7 +66,7 @@ func (r *perfRing) summary() (avg, p95, p99 time.Duration, long int) {
 		}
 	}
 
-	return sum / time.Duration(r.n), quantile(s, 0.95), quantile(s, 0.99), long
+	return sum / time.Duration(r.n), quantile(s, perfP95Quantile), quantile(s, perfP99Quantile), long
 }
 
 // avg, p95, p99, and longFrames are the single-reading views of summary.

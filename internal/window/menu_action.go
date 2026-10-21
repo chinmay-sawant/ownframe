@@ -11,14 +11,16 @@ const (
 	menuPadX = 10
 	menuPadY = 4
 	menuMinW = 96
+	// menuSides pads both the left and the right of a row label.
+	menuSides = 2
 )
 
 // menuRect returns the menu box for its rows, pulled inside the screen.
 func (s *shell) menuRect() (x, y, w, h float64) {
 	for _, item := range s.menu.items {
 		tw, _ := menuTextWidth(item.Label)
-		if tw+2*menuPadX > w {
-			w = tw + 2*menuPadX
+		if tw+menuSides*menuPadX > w {
+			w = tw + menuSides*menuPadX
 		}
 	}
 

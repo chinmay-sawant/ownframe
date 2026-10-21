@@ -2,10 +2,11 @@
 # Pinned runner: golangci-lint v1.64.8 via `make lint`
 # (GOLANGCI_LINT_VERSION in the Makefile).
 #
-# This file codifies the runner's default linter set explicitly, so the
-# gate stays pinned even if a future golangci release changes its
-# defaults. No extra linters are enabled here; AGENTS.md's enable-all
-# aspiration is a separate, deliberate change, not this file's job.
+# Base set is the runner's old defaults (errcheck, govet, ineffassign,
+# staticcheck, unused), plus the correctness batch added after the gate
+# went green: gosec (overflow and injection), mnd (magic numbers),
+# gocritic (bug and style diagnostics), misspell and unconvert (free),
+# and nolintlint (every //nolint needs a reason).
 linters:
   enable:
     - errcheck
@@ -13,6 +14,26 @@ linters:
     - ineffassign
     - staticcheck
     - unused
+    - gosec
+    - gocritic
+    - misspell
+    - unconvert
+    - mnd
+    - nolintlint
+
+linters-settings:
+  mnd:
+    checks:
+      - argument
+      - case
+      - condition
+      - operation
+      - return
+      - assign
+  nolintlint:
+    require-explanation: true
+    require-specific: true
+    allow-unused: false
 
 # Only genuine noise is excluded, narrowly. Anything that could hide a
 # real bug stays enabled and is fixed in the Go code instead.

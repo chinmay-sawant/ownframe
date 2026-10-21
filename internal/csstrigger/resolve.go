@@ -17,6 +17,10 @@ type Action struct {
 	Name, Value              string
 }
 
+// minActions is the trigger action count kept: active uses the first,
+// inactive uses the second.
+const minActions = 2
+
 // Resolve matches a named event to CSS animation-trigger records.
 func Resolve(boxes []ownframe.Box, event Event) []Action {
 	if event.Source < 0 || event.Source >= len(boxes) || event.Name == "" {
@@ -29,12 +33,12 @@ func Resolve(boxes []ownframe.Box, event Event) []Action {
 		}
 		for animationIndex, animation := range box.Animations {
 			actions := triggerActions(animation.Trigger, event.Name)
-			if len(actions) == 0 || len(actions) > 2 {
+			if len(actions) == 0 || len(actions) > minActions {
 				continue
 			}
 			choice := 0
 			if !event.Active {
-				if len(actions) < 2 {
+				if len(actions) < minActions {
 					continue
 				}
 				choice = 1

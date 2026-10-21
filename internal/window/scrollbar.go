@@ -1,8 +1,6 @@
 package window
 
 import (
-	"image/color"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -12,7 +10,9 @@ const (
 	scrollbarMinThumb  = 24
 )
 
-var scrollThumb = color.RGBA{R: 0xBD, G: 0xBD, B: 0xBD, A: 0xFF}
+const scrollThumbHex = 0xbdbdbdff
+
+var scrollThumb = devRGBA(scrollThumbHex)
 
 func (s *shell) canvasSize() (int, int) {
 	if s.display != nil {

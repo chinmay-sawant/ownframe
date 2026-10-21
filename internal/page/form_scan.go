@@ -12,11 +12,11 @@ func scanControls(source string) []controlSpan {
 		}
 		i += next
 		if strings.HasPrefix(source[i:], "<!--") {
-			end := strings.Index(source[i+4:], "-->")
+			end := strings.Index(source[i+commentOpenLen:], "-->")
 			if end < 0 {
 				break
 			}
-			i += end + 7
+			i += end + commentTotalLen
 			continue
 		}
 
@@ -72,17 +72,17 @@ func closeSpan(s string, i int, tag string) (int, int) {
 			return len(s), len(s)
 		}
 		i += j
-		k := i + 2
+		k := i + closeTagLen
 		for k < len(s) && isSpaceByte(s[k]) {
 			k++
 		}
 		if k+n > len(s) || !strings.EqualFold(s[k:k+n], tag) {
-			i += 2
+			i += closeTagLen
 			continue
 		}
 		k += n
 		if k < len(s) && !isSpaceByte(s[k]) && s[k] != '>' {
-			i += 2
+			i += closeTagLen
 			continue
 		}
 		for k < len(s) && s[k] != '>' {

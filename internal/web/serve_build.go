@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
@@ -54,7 +53,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 		return err
 	}
 	fmt.Println("http://" + addr + "/")
-	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
+	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout}
 	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
 	defer stop()
 	err = hs.Serve(ln)

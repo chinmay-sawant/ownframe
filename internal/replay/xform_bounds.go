@@ -49,12 +49,12 @@ func xformPointsBox(op *layout.DisplayOp) (l, t, r, b float64, ok bool) {
 		return op.X, top, op.X + op.W, bottom, true
 	case layout.DisplayOpLine:
 		x, y, w, h, width := op.PaintLineGeometry()
-		grow := math.Max(width, 1) / 2
+		grow := math.Max(width, 1) / halfDiv
 
 		return min(x, x+w) - grow, min(y, y+h) - grow,
 			max(x, x+w) + grow, max(y, y+h) + grow, true
 	case layout.DisplayOpStrokeRect:
-		grow := math.Max(op.Width, 1) / 2
+		grow := math.Max(op.Width, 1) / halfDiv
 
 		return op.X - grow, op.Y - grow,
 			op.X + op.W + grow, op.Y + op.H + grow, true

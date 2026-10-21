@@ -46,7 +46,7 @@ func maskPosition(value string) (string, string, error) {
 func cssLength(value string) (float64, bool, error) {
 	if strings.HasSuffix(value, "%") {
 		n, err := strconv.ParseFloat(strings.TrimSuffix(value, "%"), 64)
-		return n / 100, true, err
+		return n / percentDivisor, true, err
 	}
 	return cssNumber(value)
 }
@@ -56,7 +56,7 @@ func cssPosition(value string) (float64, bool, error) {
 	case "left", "top":
 		return 0, true, nil
 	case "center":
-		return .5, true, nil
+		return centerPosition, true, nil
 	case "right", "bottom":
 		return 1, true, nil
 	}

@@ -5,6 +5,8 @@ import "github.com/chinmay-sawant/ownframe/internal/cssmotion"
 type valueOf func(Keyframe) (float64, bool)
 type stop struct{ at, value float64 }
 
+const extraStops = 2
+
 func moveX(k Keyframe) (float64, bool)   { return k.X, k.Move }
 func moveY(k Keyframe) (float64, bool)   { return k.Y, k.Move }
 func opacity(k Keyframe) (float64, bool) { return k.Opacity, k.OpacitySet }
@@ -13,7 +15,7 @@ func green(k Keyframe) (float64, bool)   { return k.G, k.ColorSet }
 func blue(k Keyframe) (float64, bool)    { return k.B, k.ColorSet }
 
 func (e Effect) sample(at, fallback float64, value valueOf) float64 {
-	stops := make([]stop, 0, len(e.Frames)+2)
+	stops := make([]stop, 0, len(e.Frames)+extraStops)
 	for _, frame := range e.Frames {
 		if v, ok := value(frame); ok {
 			stops = append(stops, stop{frame.Offset, v})

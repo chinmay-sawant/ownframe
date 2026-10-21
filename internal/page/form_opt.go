@@ -34,11 +34,11 @@ func readOptions(body string) []Option {
 		}
 		i += next
 		if strings.HasPrefix(body[i:], "<!--") {
-			end := strings.Index(body[i+4:], "-->")
+			end := strings.Index(body[i+commentOpenLen:], "-->")
 			if end < 0 {
 				break
 			}
-			i += end + 7
+			i += end + commentTotalLen
 			continue
 		}
 

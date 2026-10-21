@@ -9,6 +9,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
+// opCap is the initial fill-match capacity for one box query.
+const opCap = 4
+
 // BoxUnits converts a hit-test box to display-list units: x, y, w, h.
 // Display operations carry points; boxes carry CSS pixels.
 func BoxUnits(d *page.Display, b page.Box) (x, y, w, h float64) {
@@ -36,7 +39,7 @@ func Fills(d *page.Display, box page.Box, color [3]float64) []*page.DisplayOp {
 	}
 
 	x, y, w, h := BoxUnits(d, box)
-	out := make([]*page.DisplayOp, 0, 4)
+	out := make([]*page.DisplayOp, 0, opCap)
 
 	for i := range d.Ops {
 		op := &d.Ops[i]

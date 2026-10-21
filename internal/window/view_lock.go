@@ -41,8 +41,8 @@ func fitBox(contentW, contentH, screenW, screenH int) (float64, float64, float64
 		float64(screenW)/float64(contentW),
 		float64(screenH)/float64(contentH),
 	)
-	ox := (float64(screenW) - float64(contentW)*scale) / 2
-	oy := (float64(screenH) - float64(contentH)*scale) / 2
+	ox := (float64(screenW) - float64(contentW)*scale) / devCenterDiv
+	oy := (float64(screenH) - float64(contentH)*scale) / devCenterDiv
 
 	return scale, ox, oy
 }

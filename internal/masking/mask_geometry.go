@@ -11,7 +11,7 @@ import (
 func GroupBounds(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
 	ppp := d.PixelPerPoint
 	if ppp <= 0 {
-		ppp = 96.0 / 72.0
+		ppp = cssDPI / pointsPerInch
 	}
 	minX, minY := math.Floor(op.X*ppp), math.Floor(op.Y*ppp)
 	maxX, maxY := math.Ceil((op.X+op.W)*ppp), math.Ceil((op.Y+op.H)*ppp)
@@ -31,15 +31,16 @@ func maskDimensions(value string, iw, ih, bw, bh int) (int, int, error) {
 	if err != nil && hv != "auto" {
 		return 0, 0, err
 	}
-	if wv == "auto" && hv == "auto" {
+	switch {
+	case wv == "auto" && hv == "auto":
 		w, h = float64(iw), float64(ih)
-	} else if wv == "auto" {
+	case wv == "auto":
 		h = scaledLength(h, hp, bh)
 		w = h * float64(iw) / float64(ih)
-	} else if hv == "auto" {
+	case hv == "auto":
 		w = scaledLength(w, wp, bw)
 		h = w * float64(ih) / float64(iw)
-	} else {
+	default:
 		w, h = scaledLength(w, wp, bw), scaledLength(h, hp, bh)
 	}
 	if math.IsNaN(w) || math.IsInf(w, 0) || math.IsNaN(h) || math.IsInf(h, 0) ||

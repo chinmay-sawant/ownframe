@@ -24,7 +24,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 256*1024)
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
 
 	q := r.URL.Query()
 	if len(q) == 0 {

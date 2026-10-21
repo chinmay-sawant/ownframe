@@ -2,6 +2,15 @@ package page
 
 import "math"
 
+const (
+	touchSensitivityDefault  = 1
+	touchSensitivityMin      = 0.25
+	touchSensitivityMax      = 3
+	touchDecelerationDefault = 5
+	touchDecelerationMin     = 1
+	touchDecelerationMax     = 12
+)
+
 // TouchScrollOptions tunes touch scrolling. Sensitivity defaults to 1 and is
 // limited to 0.25-3. Deceleration defaults to 5; larger values stop sooner.
 type TouchScrollOptions struct {
@@ -15,21 +24,21 @@ func (p *Page) SetTouchScrollOptions(options TouchScrollOptions) {
 		return
 	}
 	if options.Sensitivity <= 0 || mathInvalid(options.Sensitivity) {
-		options.Sensitivity = 1
+		options.Sensitivity = touchSensitivityDefault
 	}
 	if options.Deceleration <= 0 || mathInvalid(options.Deceleration) {
-		options.Deceleration = 5
+		options.Deceleration = touchDecelerationDefault
 	}
 	p.touchScroll = TouchScrollOptions{
-		Sensitivity:  clampPage(options.Sensitivity, .25, 3),
-		Deceleration: clampPage(options.Deceleration, 1, 12),
+		Sensitivity:  clampPage(options.Sensitivity, touchSensitivityMin, touchSensitivityMax),
+		Deceleration: clampPage(options.Deceleration, touchDecelerationMin, touchDecelerationMax),
 	}
 }
 
 // TouchScrollSensitivity is the configured finger movement multiplier.
 func (p *Page) TouchScrollSensitivity() float64 {
 	if p == nil || p.touchScroll.Sensitivity == 0 {
-		return 1
+		return touchSensitivityDefault
 	}
 	return p.touchScroll.Sensitivity
 }
@@ -37,7 +46,7 @@ func (p *Page) TouchScrollSensitivity() float64 {
 // TouchScrollDeceleration is the configured fling decay per second.
 func (p *Page) TouchScrollDeceleration() float64 {
 	if p == nil || p.touchScroll.Deceleration == 0 {
-		return 5
+		return touchDecelerationDefault
 	}
 	return p.touchScroll.Deceleration
 }

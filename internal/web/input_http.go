@@ -11,7 +11,7 @@ func (s *server) typeText(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 256*1024)
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", http.StatusBadRequest)
@@ -38,7 +38,7 @@ func (s *server) backspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Body = http.MaxBytesReader(w, r.Body, 256*1024)
+	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", http.StatusBadRequest)

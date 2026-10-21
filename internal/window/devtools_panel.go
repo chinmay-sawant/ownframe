@@ -29,7 +29,7 @@ func (s *shell) drawDevHeader(screen *ebiten.Image) {
 	r := s.dev.panel
 	vector.FillRect(screen, float32(r.X), float32(r.Y), float32(r.W), devHeaderH, devHeaderBg, false)
 
-	top := r.Y + (devHeaderH-devFaceHeight())/2
+	top := r.Y + (devHeaderH-devFaceHeight())/devCenterDiv
 	devTextAt(screen, "Developer Tools", r.X+devPanelPad, top, devFg)
 
 	label := "Picker"
@@ -40,9 +40,9 @@ func (s *shell) drawDevHeader(screen *ebiten.Image) {
 	cls, px := devHeaderRight(r)
 	devTextAt(screen, label, px, top, ink)
 
-	fx := cls.X - 8 - devTextWidth("F12")
+	fx := cls.X - devHeaderGap - devTextWidth("F12")
 	devTextAt(screen, "F12", fx, top, devDim)
-	devTextAt(screen, "X", cls.X+12, top, devDim)
+	devTextAt(screen, "X", cls.X+devClosePad, top, devDim)
 }
 
 // drawDevFooter paints the hint line at the bottom of the dock.
@@ -50,5 +50,5 @@ func (s *shell) drawDevFooter(screen *ebiten.Image) {
 	r := s.dev.panel
 	y := r.Y + r.H - devFooterH
 	vector.FillRect(screen, float32(r.X), float32(y), float32(r.W), 1, devBorder, false)
-	devTextAt(screen, devTabHint(s.dev.tab), r.X+devPanelPad, y+(devFooterH-devFaceHeight())/2, devDim)
+	devTextAt(screen, devTabHint(s.dev.tab), r.X+devPanelPad, y+(devFooterH-devFaceHeight())/devCenterDiv, devDim)
 }

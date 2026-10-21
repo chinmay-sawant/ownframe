@@ -13,7 +13,10 @@ func writeTool(t *testing.T, dir, name, body string) {
 	t.Helper()
 
 	path := filepath.Join(dir, name)
-	if err := os.WriteFile(path, []byte(body), 0o755); err != nil {
+	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o755); err != nil {
 		t.Fatal(err)
 	}
 }

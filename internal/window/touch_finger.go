@@ -2,6 +2,9 @@ package window
 
 import "github.com/hajimehoshi/ebiten/v2"
 
+// pinchFingerCount is the fingers a pinch needs.
+const pinchFingerCount = 2
+
 // find returns the live finger with an id.
 func (g *touchGesture) find(id ebiten.TouchID) (touchFinger, bool) {
 	for _, f := range g.fingers {
@@ -15,7 +18,7 @@ func (g *touchGesture) find(id ebiten.TouchID) (touchFinger, bool) {
 
 // stepPinch sets the zoom from the span of the first two fingers.
 func (g *touchGesture) stepPinch() {
-	if len(g.fingers) < 2 {
+	if len(g.fingers) < pinchFingerCount {
 		g.span0 = 0
 
 		return

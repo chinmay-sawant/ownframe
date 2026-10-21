@@ -1,5 +1,7 @@
 package web
 
+import "time"
+
 // Options tunes ServeWithOptions. Perf registers /debug/pprof/* for CPU,
 // heap, goroutine, and trace profiles. Debug gates /debug/state (and implies
 // Perf-style inspector access). Both are off by default, so a shipped
@@ -8,3 +10,13 @@ type Options struct {
 	Perf  bool
 	Debug bool
 }
+
+// maxFormBytes caps the POST form bodies the preview handlers read.
+const maxFormBytes = 256 * 1024
+
+const (
+	readHeaderTimeout = 5 * time.Second
+	readTimeout       = 15 * time.Second
+	writeTimeout      = 15 * time.Second
+	idleTimeout       = 60 * time.Second
+)

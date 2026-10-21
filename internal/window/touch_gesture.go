@@ -26,7 +26,7 @@ type touchGesture struct {
 // frame advances the gesture one frame and returns what the shell should do.
 func (g *touchGesture) frame(now []touchPos, swallowed bool) touchUpdate {
 	var u touchUpdate
-	g.multi = g.multi || len(now) >= 2
+	g.multi = g.multi || len(now) >= pinchFingerCount
 
 	next := make([]touchFinger, 0, len(now))
 	for _, p := range now {

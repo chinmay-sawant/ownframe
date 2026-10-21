@@ -23,7 +23,7 @@ func devOpInBox(display *layout.Display, box layout.Box) int {
 		}
 
 		r := devOpRect(op, display.PointsPerPixel)
-		cx, cy := r.X+r.W/2, r.Y+r.H/2
+		cx, cy := r.X+r.W/devCenterDiv, r.Y+r.H/devCenterDiv
 		if cx >= box.X-0.5 && cx <= box.X+box.W+0.5 &&
 			cy >= box.Y-0.5 && cy <= box.Y+box.H+0.5 {
 			found = i

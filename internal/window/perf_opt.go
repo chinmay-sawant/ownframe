@@ -38,7 +38,11 @@ func (s *shell) wirePerf() {
 			return 0, 0, 0, 0, false
 		}
 		a, p95v, p99v, l := s.perfSummary()
+		if l < 0 {
+			l = 0
+		}
 
+		//nolint:gosec // reason: l counts long frames and is never negative after the clamp, so the int to uint64 conversion cannot overflow.
 		return a, p95v, p99v, uint64(l), true
 	}
 	s.perfHooks.devPipelinePerf = func(st host.Stats) (tpl, lay, dsp, pnt time.Duration, dOps, dReg, chOps int, ok bool) {

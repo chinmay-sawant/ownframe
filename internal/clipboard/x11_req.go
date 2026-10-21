@@ -2,21 +2,27 @@
 
 package clipboard
 
+import "math"
+
 func internReq(name string) []byte {
-	size := pad4(8 + len(name))
+	if len(name) > math.MaxUint16 {
+		name = name[:math.MaxUint16]
+	}
+
+	size := pad4(xHdr8 + len(name))
 	buf := make([]byte, size)
-	buf[0] = 16
-	put16(buf[2:], uint16(size/4))
-	put16(buf[4:], uint16(len(name)))
+	buf[0] = xOpIntern
+	put16(buf[2:], uint16(size/xWord)) //nolint:gosec // reason: name clamped so size/4 fits uint16.
+	put16(buf[4:], uint16(len(name)))  //nolint:gosec // reason: name clamped to MaxUint16 above.
 	copy(buf[8:], name)
 
 	return buf
 }
 
 func winReq(id, parent uint32) []byte {
-	buf := make([]byte, 32)
-	buf[0] = 1
-	put16(buf[2:], 8)
+	buf := make([]byte, xEvSize)
+	buf[0] = xOpCreate
+	put16(buf[2:], xWordsCreate)
 	put32(buf[4:], id)
 	put32(buf[8:], parent)
 	put16(buf[16:], 1)
@@ -27,9 +33,9 @@ func winReq(id, parent uint32) []byte {
 }
 
 func ownReq(owner, sel uint32) []byte {
-	buf := make([]byte, 16)
-	buf[0] = 22
-	put16(buf[2:], 4)
+	buf := make([]byte, xSizeSetOwner)
+	buf[0] = xOpSetOwner
+	put16(buf[2:], xWordsSetOwner)
 	put32(buf[4:], owner)
 	put32(buf[8:], sel)
 
@@ -37,9 +43,9 @@ func ownReq(owner, sel uint32) []byte {
 }
 
 func convReq(win, sel, target, prop uint32) []byte {
-	buf := make([]byte, 24)
-	buf[0] = 24
-	put16(buf[2:], 6)
+	buf := make([]byte, xSizeConvert)
+	buf[0] = xOpConvert
+	put16(buf[2:], xWordsConvert)
 	put32(buf[4:], win)
 	put32(buf[8:], sel)
 	put32(buf[12:], target)
@@ -49,37 +55,22 @@ func convReq(win, sel, target, prop uint32) []byte {
 }
 
 func ownerReq(sel uint32) []byte {
-	buf := make([]byte, 8)
-	buf[0] = 23
-	put16(buf[2:], 2)
+	buf := make([]byte, xSizeGetOwner)
+	buf[0] = xOpGetOwner
+	put16(buf[2:], xWordsGetOwner)
 	put32(buf[4:], sel)
 
 	return buf
 }
 
 func getReq(win, prop uint32) []byte {
-	buf := make([]byte, 24)
-	buf[0] = 20
+	buf := make([]byte, xSizeConvert)
+	buf[0] = xOpGetProp
 	buf[1] = 1
-	put16(buf[2:], 6)
+	put16(buf[2:], xWordsConvert)
 	put32(buf[4:], win)
 	put32(buf[8:], prop)
-	put32(buf[20:], 1<<20)
-
-	return buf
-}
-
-func prop8(win, prop, typ uint32, data []byte) []byte {
-	size := pad4(24 + len(data))
-	buf := make([]byte, size)
-	buf[0] = 18
-	put16(buf[2:], uint16(size/4))
-	put32(buf[4:], win)
-	put32(buf[8:], prop)
-	put32(buf[12:], typ)
-	buf[16] = 8
-	put32(buf[20:], uint32(len(data)))
-	copy(buf[24:], data)
+	put32(buf[20:], xMaxWords)
 
 	return buf
 }

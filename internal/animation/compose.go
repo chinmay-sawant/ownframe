@@ -12,7 +12,7 @@ func compose(base, current cssmotion.Paint, e Effect, at float64) cssmotion.Pain
 		get  valueOf
 		kind int
 	}{
-		{moveX, 0}, {moveY, 1}, {opacity, 2}, {red, 3}, {green, 4}, {blue, 5},
+		{moveX, fieldX}, {moveY, fieldY}, {opacity, fieldOpacity}, {red, fieldR}, {green, fieldG}, {blue, fieldB},
 	}
 	fallbacks := missingFallbacks(base, mode)
 	for i, item := range fields {
@@ -40,29 +40,29 @@ func missingFallbacks(base cssmotion.Paint, mode Composition) [6]float64 {
 func apply(p *cssmotion.Paint, base cssmotion.Paint, field int, v float64, mode Composition) {
 	add := mode != Replace
 	switch field {
-	case 0:
+	case fieldX:
 		if add {
 			p.X += v
 		} else {
 			p.X = base.X + v
 		}
-	case 1:
+	case fieldY:
 		if add {
 			p.Y += v
 		} else {
 			p.Y = base.Y + v
 		}
-	case 2:
+	case fieldOpacity:
 		if add {
 			p.Opacity += v
 		} else {
 			p.Opacity = v
 		}
-	case 3:
+	case fieldR:
 		p.R = color(p.R, v, add)
-	case 4:
+	case fieldG:
 		p.G = color(p.G, v, add)
-	case 5:
+	case fieldB:
 		p.B = color(p.B, v, add)
 	}
 }

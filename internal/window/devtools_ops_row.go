@@ -7,6 +7,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// devOpTextCap caps the quoted text runes in an Ops row.
+const devOpTextCap = 40
+
 // devOpRow builds one Ops-tab row for the operation at index i, the nth
 // painted operation.
 func devOpRow(op *layout.DisplayOp, i, n int, ink color.RGBA, ppt float64) devRow {
@@ -18,8 +21,8 @@ func devOpRow(op *layout.DisplayOp, i, n int, ink color.RGBA, ppt float64) devRo
 	}
 	if op.Kind == layout.DisplayOpText || op.Kind == layout.DisplayOpBullet {
 		t := op.Text
-		if len([]rune(t)) > 40 {
-			t = string([]rune(t)[:40]) + "..."
+		if len([]rune(t)) > devOpTextCap {
+			t = string([]rune(t)[:devOpTextCap]) + "..."
 		}
 		sp = append(sp, devSpan{text: fmt.Sprintf(" %q", t), ink: devStrInk})
 	}

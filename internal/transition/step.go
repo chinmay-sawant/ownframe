@@ -6,6 +6,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
+// easeMidpoint is the eased progress where a discrete track flips.
+const easeMidpoint = 0.5
+
 // Step writes the current sample and reports whether any track remains active.
 func (r *Renderer) Step(now time.Time) bool {
 	if r == nil || !r.started {
@@ -28,7 +31,7 @@ func (r *Renderer) Step(now time.Time) bool {
 			continue
 		}
 		if track.Discrete {
-			if easing(track.Easing, progress) < .5 {
+			if easing(track.Easing, progress) < easeMidpoint {
 				cssmotion.Write(track.Op, track.From)
 			} else {
 				cssmotion.Write(track.Op, track.To)

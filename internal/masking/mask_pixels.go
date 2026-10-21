@@ -61,16 +61,16 @@ func positiveMod(value, period float64) float64 {
 
 func maskLuminance(p color.NRGBA) uint8 {
 	linear := func(c uint8) float64 {
-		v := float64(c) / 255
-		if v <= .04045 {
-			return v / 12.92
+		v := float64(c) / channelMax
+		if v <= srgbThreshold {
+			return v / srgbLinearScale
 		}
-		return math.Pow((v+.055)/1.055, 2.4)
+		return math.Pow((v+srgbOffset)/srgbScale, srgbGamma)
 	}
-	y := .2126*linear(p.R) + .7152*linear(p.G) + .0722*linear(p.B)
-	return channel(y * float64(p.A) / 255)
+	y := lumWeightR*linear(p.R) + lumWeightG*linear(p.G) + lumWeightB*linear(p.B)
+	return channel(y * float64(p.A) / channelMax)
 }
 
 func channel(value float64) uint8 {
-	return uint8(math.Round(max(0, min(1, value)) * 255))
+	return uint8(math.Round(max(0, min(1, value)) * channelMax))
 }

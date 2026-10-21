@@ -9,6 +9,9 @@ const (
 
 	// devDockGrab is the half-width of the resize edge beside the panel.
 	devDockGrab = 4.0
+
+	// devDockGrabWidth spans the resize edge on both sides.
+	devDockGrabWidth = 2 * devDockGrab
 )
 
 // devDockRect places the devtools panel on the right edge, full height. A
@@ -57,7 +60,7 @@ func devOnEdge(panel devRect, x, y int) bool {
 		return false
 	}
 
-	edge := devRect{X: panel.X - devDockGrab, W: 2 * devDockGrab, H: panel.H}
+	edge := devRect{X: panel.X - devDockGrab, W: devDockGrabWidth, H: panel.H}
 
 	return devInRect(edge, float64(x), float64(y))
 }

@@ -16,16 +16,19 @@ var (
 	custom string
 )
 
+// crashDirPerm keeps crash reports private to the owner.
+const crashDirPerm = 0o700
+
 // Write creates the folder and writes one UTF-8 report.
 // The name starts with a UTC timestamp, and a later call in that
 // same second gets a different name.
 func Write(title, reason string) (string, error) {
 	folder := location()
 
-	if err := os.MkdirAll(folder, 0o700); err != nil {
+	if err := os.MkdirAll(folder, crashDirPerm); err != nil {
 		return "", err
 	}
-	if err := os.Chmod(folder, 0o700); err != nil {
+	if err := os.Chmod(folder, crashDirPerm); err != nil {
 		return "", err
 	}
 

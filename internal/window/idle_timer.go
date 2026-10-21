@@ -16,7 +16,7 @@ import (
 // kicks the timer after every step, so a policy change never waits out a
 // stale sleep.
 func (g *paceGame) timer(ctx context.Context) {
-	t := time.NewTimer(g.policy.keepAlive / 2)
+	t := time.NewTimer(g.policy.keepAlive / keepAliveHalfDiv)
 	defer t.Stop()
 
 	for {

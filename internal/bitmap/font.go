@@ -29,7 +29,7 @@ func (c faceCache) face(data []byte, size float64) font.Face {
 
 	face, err := opentype.NewFace(parsed, &opentype.FaceOptions{
 		Size: size,
-		DPI:  96,
+		DPI:  cssDPI,
 	})
 	if err != nil {
 		c[key] = nil

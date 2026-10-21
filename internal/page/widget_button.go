@@ -17,11 +17,11 @@ func rewriteButtons(source string) string {
 		}
 		i += next
 		if strings.HasPrefix(source[i:], "<!--") {
-			end := strings.Index(source[i+4:], "-->")
+			end := strings.Index(source[i+commentOpenLen:], "-->")
 			if end < 0 {
 				break
 			}
-			i += end + 7
+			i += end + commentTotalLen
 			continue
 		}
 		name, raw, end, ok := readOpen(source, i)

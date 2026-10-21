@@ -1,5 +1,8 @@
 package cssmotion
 
+// halfDivisor splits a bisection range into two halves.
+const halfDivisor = 2
+
 func cubic(t, x1, y1, x2, y2 float64) float64 {
 	lo, hi, u := 0.0, 1.0, t
 	for i := 0; i < 24; i++ {
@@ -9,7 +12,7 @@ func cubic(t, x1, y1, x2, y2 float64) float64 {
 		} else {
 			hi = u
 		}
-		u = (lo + hi) / 2
+		u = (lo + hi) / halfDivisor
 	}
 	return bezier(u, y1, y2)
 }

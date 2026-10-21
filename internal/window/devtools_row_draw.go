@@ -29,7 +29,7 @@ func (s *shell) devDrawLine(screen *ebiten.Image, line devLine, x, y, width floa
 
 	for _, span := range line.spans {
 		if span.swatch > 0 {
-			top := y + (devLineHeight()-span.swatch)/2
+			top := y + (devLineHeight()-span.swatch)/devCenterDiv
 			vector.FillRect(screen, float32(x), float32(top), float32(span.swatch), float32(span.swatch), span.ink, false)
 			x += span.swatch + devSwatchGap
 
@@ -64,11 +64,11 @@ func (s *shell) drawDevScrollbar(screen *ebiten.Image) {
 	const thick = 4.0
 
 	length := c.H * c.H / total
-	if length < 24 {
-		length = 24
+	if length < devScrollMin {
+		length = devScrollMin
 	}
 
 	pos := c.Y + (c.H-length)*s.dev.scroll/(total-c.H)
-	x := s.dev.panel.X + s.dev.panel.W - thick - 2
+	x := s.dev.panel.X + s.dev.panel.W - thick - devScrollMargin
 	vector.FillRect(screen, float32(x), float32(pos), thick, float32(length), devBorder, false)
 }

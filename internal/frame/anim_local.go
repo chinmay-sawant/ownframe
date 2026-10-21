@@ -16,7 +16,7 @@ func localBox(op *page.DisplayOp) (x0, y0, x1, y1 float64) {
 	case layout.DisplayOpText, layout.DisplayOpBullet:
 		y0, y1 = op.Y-ascent(op), op.Y+op.InkDescent
 	case layout.DisplayOpStrokeRect, layout.DisplayOpLine:
-		g := math.Max(op.Width, 1) / 2
+		g := math.Max(op.Width, 1) / halfDivisor
 		x0, y0, x1, y1 = x0-g, y0-g, x1+g, y1+g
 	}
 
@@ -37,5 +37,5 @@ func ascent(op *page.DisplayOp) float64 {
 func paintCenter(op *page.DisplayOp) (float64, float64) {
 	x0, y0, x1, y1 := localBox(op)
 
-	return (x0 + x1) / 2, (y0 + y1) / 2
+	return (x0 + x1) / halfDivisor, (y0 + y1) / halfDivisor
 }

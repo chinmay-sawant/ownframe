@@ -35,11 +35,12 @@ func setStructSeg(cur any, segs []string, value any) (any, bool) {
 		return cur, false
 	}
 	fv := reflect.ValueOf(nc)
-	if fv.Type().AssignableTo(f.Type()) {
+	switch {
+	case fv.Type().AssignableTo(f.Type()):
 		f.Set(fv)
-	} else if fv.Type().ConvertibleTo(f.Type()) {
+	case fv.Type().ConvertibleTo(f.Type()):
 		f.Set(fv.Convert(f.Type()))
-	} else {
+	default:
 		return cur, false
 	}
 	return cp.Interface(), true

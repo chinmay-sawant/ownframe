@@ -6,12 +6,15 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
+// pairStride packs one op's x and y in the from/to slices.
+const pairStride = 2
+
 // TranslateTo animates ops by (dx, dy) points from where they are now.
 func TranslateTo(d *page.Display, ops []*page.DisplayOp, dx, dy float64,
 	dur time.Duration, ease Easing) *Anim {
 	a := newAnim(d, ops, animTranslate, dur, ease)
 	for i, op := range ops {
-		j := i * 2
+		j := i * pairStride
 		a.from[j], a.from[j+1] = op.X, op.Y
 		a.to[j], a.to[j+1] = op.X+dx, op.Y+dy
 	}

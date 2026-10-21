@@ -40,11 +40,11 @@ func pickAuth(b []byte, host, num string) (string, []byte) {
 }
 
 func nextAuth(b []byte) (uint16, string, string, string, []byte, []byte, bool) {
-	if len(b) < 4 {
+	if len(b) < xAuthHdr {
 		return 0, "", "", "", nil, nil, false
 	}
 
-	fam := uint16(b[0])<<8 | uint16(b[1])
+	fam := uint16(b[0])<<xShift8 | uint16(b[1])
 	addr, b, ok := cutStr(b[2:])
 	if !ok {
 		return 0, "", "", "", nil, nil, false
@@ -69,11 +69,11 @@ func nextAuth(b []byte) (uint16, string, string, string, []byte, []byte, bool) {
 }
 
 func cutStr(b []byte) (string, []byte, bool) {
-	if len(b) < 2 {
+	if len(b) < xAuthLen {
 		return "", nil, false
 	}
 
-	n := int(b[0])<<8 | int(b[1])
+	n := int(b[0])<<xShift8 | int(b[1])
 	b = b[2:]
 
 	if n < 0 || len(b) < n {

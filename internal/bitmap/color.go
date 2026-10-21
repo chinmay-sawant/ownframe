@@ -17,7 +17,7 @@ func opColor(op *layout.DisplayOp) color.NRGBA {
 }
 
 func over(dst, src color.NRGBA) color.NRGBA {
-	a, b := float64(src.A)/255, float64(dst.A)/255
+	a, b := float64(src.A)/channelMax, float64(dst.A)/channelMax
 	out := a + b*(1-a)
 	if out == 0 {
 		return color.NRGBA{}

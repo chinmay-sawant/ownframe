@@ -26,7 +26,7 @@ func Image(bounds image.Rectangle, desc *layout.MaskDescriptor) (*image.NRGBA, e
 	if err != nil {
 		return nil, err
 	}
-	for i := len(desc.Layers) - 2; i >= 0; i-- {
+	for i := len(desc.Layers) - topLayerOffset; i >= 0; i-- {
 		layer, err := maskLayerPixels(bounds, desc.Layers[i])
 		if err != nil {
 			return nil, err
@@ -37,7 +37,7 @@ func Image(bounds image.Rectangle, desc *layout.MaskDescriptor) (*image.NRGBA, e
 		}
 	}
 	for i, value := range alpha {
-		img.Pix[i*4], img.Pix[i*4+1], img.Pix[i*4+2], img.Pix[i*4+3] = 255, 255, 255, value
+		img.Pix[i*4], img.Pix[i*4+1], img.Pix[i*4+2], img.Pix[i*4+3] = channelMax, channelMax, channelMax, value
 	}
 	return img, nil
 }
@@ -55,7 +55,7 @@ func Apply(group *image.NRGBA, bounds image.Rectangle, desc *layout.MaskDescript
 				pixel.A = 0
 			} else {
 				maskAlpha := mask.NRGBAAt(gx-bounds.Min.X, gy-bounds.Min.Y).A
-				pixel.A = uint8((int(pixel.A)*int(maskAlpha) + 127) / 255)
+				pixel.A = channel(float64(pixel.A) / channelMax * float64(maskAlpha) / channelMax)
 			}
 			group.SetNRGBA(gx, gy, pixel)
 		}

@@ -33,7 +33,7 @@ func (f Frame) Display() *ownframe.Display {
 
 func appendOps(d *ownframe.Display, id *uint64, ops []ownframe.DisplayOp, owners []int) {
 	for i, op := range ops {
-		*id = *id + 1
+		(*id)++
 		op.ID = *id
 		index := len(d.Ops)
 		d.Ops = append(d.Ops, op.Clone())

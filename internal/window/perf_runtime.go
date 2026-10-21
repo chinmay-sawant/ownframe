@@ -80,12 +80,12 @@ func perfRSS() uint64 {
 		return 0
 	}
 	f := strings.Fields(string(b))
-	if len(f) < 2 {
+	if len(f) < perfMinSamples {
 		return 0
 	}
 	pages, err := strconv.ParseUint(f[1], 10, 64)
 	if err != nil {
 		return 0
 	}
-	return pages * uint64(os.Getpagesize())
+	return pages * uint64(max(os.Getpagesize(), 0)) //nolint:gosec // reason: size clamped.
 }

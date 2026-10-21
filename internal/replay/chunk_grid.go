@@ -12,16 +12,16 @@ const chunkCell = 128
 // the core's first cell.
 type chunkGrid struct {
 	cols  int
-	spans [][]int32
+	spans [][]int
 }
 
 // newChunkGrid indexes boxes in the content's coordinate space.
 func newChunkGrid(content image.Rectangle, boxes []chunkBox) *chunkGrid {
 	g := &chunkGrid{cols: chunkSpan(content.Dx())}
-	g.spans = make([][]int32, g.cols*chunkSpan(content.Dy()))
+	g.spans = make([][]int, g.cols*chunkSpan(content.Dy()))
 
 	for i := range boxes {
-		g.add(content, boxes[i].box, int32(i))
+		g.add(content, boxes[i].box, i)
 	}
 
 	return g
@@ -37,7 +37,7 @@ func chunkSpan(v int) int {
 }
 
 // add registers one box in every cell it meets.
-func (g *chunkGrid) add(content, box image.Rectangle, at int32) {
+func (g *chunkGrid) add(content, box image.Rectangle, at int) {
 	box = box.Intersect(content)
 	if box.Empty() {
 		return
@@ -70,7 +70,7 @@ func (g *chunkGrid) find(content image.Rectangle, boxes []chunkBox, core image.R
 
 	for _, bi := range g.spans[y*g.cols+x] {
 		if chunkBoxContains(boxes[bi].box, core) {
-			return int(bi)
+			return bi
 		}
 	}
 

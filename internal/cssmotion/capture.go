@@ -32,7 +32,7 @@ func Resolve(d *ownframe.Display, indices []int) []*ownframe.DisplayOp {
 
 // Contains reports whether an operation's center lies inside a layout box.
 func Contains(d *ownframe.Display, box ownframe.Box, op ownframe.DisplayOp) bool {
-	x, y := op.X+op.W/2, op.Y+op.H/2
+	x, y := op.X+op.W/halfDivisor, op.Y+op.H/halfDivisor
 	if op.Kind == ownframe.DisplayOpText {
 		y = op.Y
 	}

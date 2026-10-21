@@ -48,17 +48,17 @@ func blendChannel(b, s float64, mode string) float64 {
 		}
 		return 1 - min(1, (1-b)/s)
 	case "hard-light":
-		if s <= .5 {
+		if s <= blendMidpoint {
 			return 2 * b * s
 		}
 		return 1 - 2*(1-b)*(1-s)
 	case "soft-light":
-		if s <= .5 {
+		if s <= blendMidpoint {
 			return b - (1-2*s)*b*(1-b)
 		}
 		d := math.Sqrt(b)
-		if b <= .25 {
-			d = ((16*b-12)*b + 4) * b
+		if b <= softLightKnee {
+			d = ((softLightA*b-softLightB)*b + softLightC) * b
 		}
 		return b + (2*s-1)*(d-b)
 	case "difference":

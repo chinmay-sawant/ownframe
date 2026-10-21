@@ -8,7 +8,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-const pxPerPt = 96.0 / 72.0
+const cssDPI = 96.0
+const pointsPerInch = 72.0
+const pxPerPt = cssDPI / pointsPerInch
 
 // Paint returns the software painting. A nil or empty display paints
 // nothing and reports no error; unsupported content is an error the caller

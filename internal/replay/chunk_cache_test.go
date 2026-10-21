@@ -55,7 +55,7 @@ func TestChunkCacheStaysBounded(t *testing.T) {
 
 	box := image.Rect(0, 0, 16, 16)
 	for i := range chunkMaxEntries + 8 {
-		chunks.get(chunkKey{id: i}, uint64(i), box, func(*ebiten.Image) {})
+		chunks.get(chunkKey{id: i}, uint64(i), box, func(*ebiten.Image) {}) //nolint:gosec // reason: test index below 300 fits uint64.
 	}
 
 	if got := len(chunks.entries); got > chunkMaxEntries {

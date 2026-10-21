@@ -32,7 +32,7 @@ func clickStart(t *testing.T, ctx context.Context, page *ownframe.Page, id strin
 func testPage(t *testing.T, data *view) *ownframe.Page {
 	t.Helper()
 	page, err := previewwindow.New(context.Background(), previewwindow.Config{
-		FixtureDir: filepath.Join("..", "..", "testdata", "transition"), Data: data, Width: 960, Height: 860})
+		FixtureDir: filepath.Join("..", "..", "testdata", "transition"), Data: data, Width: previewWidth, Height: previewHeight})
 	if err != nil {
 		t.Fatal(err)
 	}

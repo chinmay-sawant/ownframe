@@ -2,6 +2,13 @@ package page
 
 import "strings"
 
+const (
+	commentOpenLen  = 4 // len("<!--").
+	commentCloseLen = 3 // len("-->").
+	commentTotalLen = commentOpenLen + commentCloseLen
+	closeTagLen     = 2 // len("</").
+)
+
 func findHead(source string) int {
 	const end = "</head>"
 	for i := 0; i+len(end) <= len(source); {
@@ -37,13 +44,14 @@ func headOpen(source string) int {
 		quote := byte(0)
 		for j < len(source) {
 			c := source[j]
-			if quote != 0 {
+			switch {
+			case quote != 0:
 				if c == quote {
 					quote = 0
 				}
-			} else if c == '"' || c == '\'' {
+			case c == '"' || c == '\'':
 				quote = c
-			} else if c == '>' {
+			case c == '>':
 				return j + 1
 			}
 			j++
@@ -55,12 +63,12 @@ func headOpen(source string) int {
 }
 
 func skipComment(source string, start int) int {
-	end := strings.Index(source[start+4:], "-->")
+	end := strings.Index(source[start+commentOpenLen:], "-->")
 	if end < 0 {
 		return len(source)
 	}
 
-	return start + 4 + end + 3
+	return start + commentOpenLen + end + commentCloseLen
 }
 
 func spanCovers(spans []controlSpan, index int) bool {

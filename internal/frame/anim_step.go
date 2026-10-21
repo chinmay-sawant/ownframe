@@ -58,7 +58,7 @@ func (a *Anim) Tick(m Marker, now time.Time) bool {
 func (a *Anim) patch(i int, op *page.DisplayOp, p float64) {
 	switch a.kind {
 	case animTranslate:
-		j := i * 2
+		j := i * pairStride
 		op.X = lerp(a.from[j], a.to[j], p)
 		op.Y = lerp(a.from[j+1], a.to[j+1], p)
 	case animFade:

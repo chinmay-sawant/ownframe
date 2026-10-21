@@ -18,6 +18,13 @@ type faceKey struct {
 	language string
 }
 
+// faceSourceCap bounds parsed font sources before a reset.
+// faceCap bounds shaped faces before a reset.
+const (
+	faceSourceCap = 64
+	faceCap       = 256
+)
+
 // textCache keeps one parsed face source per engine font. Hits resolve
 // under a read lock; the parse runs lock-free with a second check that
 // keeps one winner under the write lock.
@@ -62,7 +69,7 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 	if have := fonts.sources[op.Font]; have != nil {
 		source = have
 	} else {
-		if fonts.sources == nil || len(fonts.sources) >= 64 {
+		if fonts.sources == nil || len(fonts.sources) >= faceSourceCap {
 			fonts.sources = make(map[any]*text.GoTextFaceSource)
 			fonts.faces = make(map[faceKey]*text.GoTextFace)
 		}
@@ -70,7 +77,7 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}
-	if len(fonts.faces) >= 256 {
+	if len(fonts.faces) >= faceCap {
 		clear(fonts.faces)
 	}
 	fonts.faces[key] = face

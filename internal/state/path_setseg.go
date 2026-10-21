@@ -39,11 +39,12 @@ func setSeg(cur any, segs []string, value any) (any, bool) {
 		}
 		if len(rest) == 0 {
 			v := reflect.ValueOf(value)
-			if v.Type().AssignableTo(f.Type()) {
+			switch {
+			case v.Type().AssignableTo(f.Type()):
 				f.Set(v)
-			} else if v.Type().ConvertibleTo(f.Type()) {
+			case v.Type().ConvertibleTo(f.Type()):
 				f.Set(v.Convert(f.Type()))
-			} else {
+			default:
 				return cur, false
 			}
 			return cur, true
@@ -53,11 +54,12 @@ func setSeg(cur any, segs []string, value any) (any, bool) {
 			return cur, false
 		}
 		fv := reflect.ValueOf(nc)
-		if fv.Type().AssignableTo(f.Type()) {
+		switch {
+		case fv.Type().AssignableTo(f.Type()):
 			f.Set(fv)
-		} else if fv.Type().ConvertibleTo(f.Type()) {
+		case fv.Type().ConvertibleTo(f.Type()):
 			f.Set(fv.Convert(f.Type()))
-		} else {
+		default:
 			return cur, false
 		}
 		return cur, true

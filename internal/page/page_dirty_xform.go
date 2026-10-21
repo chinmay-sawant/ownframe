@@ -7,6 +7,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// halfDivisor splits a stroke width into its two-sided growth.
+const halfDivisor = 2
+
 // opBoundsXform maps an op's local painted box through its baked 2D
 // transform, so a partial repaint covers where the ink actually lands.
 func opBoundsXform(op *layout.DisplayOp, d *layout.Display) image.Rectangle {
@@ -45,7 +48,7 @@ func localPaintBox(op *layout.DisplayOp) (x0, y0, x1, y1 float64) {
 	}
 
 	if op.Kind == layout.DisplayOpStrokeRect || op.Kind == layout.DisplayOpLine {
-		grow := math.Max(op.Width, 1) / 2
+		grow := math.Max(op.Width, 1) / halfDivisor
 		x0, y0, x1, y1 = x0-grow, y0-grow, x1+grow, y1+grow
 	}
 

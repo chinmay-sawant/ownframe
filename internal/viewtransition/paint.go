@@ -6,6 +6,14 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// Fallback pixels per point from CSS and typographic resolution.
+const (
+	cssDPI        = 96.0
+	pointsPerInch = 72.0
+	// halfDivisor halves a sum: the x/y scale average and box centers.
+	halfDivisor = 2
+)
+
 func paintOps(d *ownframe.Display, indices []int, source, target Rect, alpha float64, classes []string, styles map[string]ClassStyle) []ownframe.DisplayOp {
 	var scale float64 = 1
 	for _, name := range classes {
@@ -33,7 +41,7 @@ func paintOps(d *ownframe.Display, indices []int, source, target Rect, alpha flo
 
 func fit(op *ownframe.DisplayOp, ppp float64, from, to Rect) {
 	if ppp <= 0 {
-		ppp = 96.0 / 72.0
+		ppp = cssDPI / pointsPerInch
 	}
 	sx, sy := ratio(to.W, from.W), ratio(to.H, from.H)
 	op.X = to.X/ppp + (op.X-from.X/ppp)*sx
@@ -44,7 +52,7 @@ func fit(op *ownframe.DisplayOp, ppp float64, from, to Rect) {
 		op.Size *= sy
 	}
 	if op.Width != 0 {
-		op.Width *= (sx + sy) / 2
+		op.Width *= (sx + sy) / halfDivisor
 	}
 }
 
@@ -53,19 +61,6 @@ func ratio(a, b float64) float64 {
 		return 1
 	}
 	return a / b
-}
-
-func scaleOp(op *ownframe.DisplayOp, ppp float64, box Rect, scale float64) {
-	if ppp <= 0 {
-		ppp = 96.0 / 72.0
-	}
-	cx, cy := (box.X+box.W/2)/ppp, (box.Y+box.H/2)/ppp
-	op.X = cx + (op.X-cx)*scale
-	op.Y = cy + (op.Y-cy)*scale
-	op.W *= scale
-	op.H *= scale
-	op.Size *= scale
-	op.Width *= scale
 }
 
 func clamp(v float64) float64 {

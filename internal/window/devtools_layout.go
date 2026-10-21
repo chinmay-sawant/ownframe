@@ -40,11 +40,11 @@ func (s *shell) devHits() {
 	for i, name := range devTabNames {
 		w := devTextWidth(name)
 		s.dev.hits = append(s.dev.hits, devHit{
-			rect: devRect{X: x, Y: s.dev.panel.Y + devHeaderH, W: w + 20, H: devTabsH},
+			rect: devRect{X: x, Y: s.dev.panel.Y + devHeaderH, W: w + devTabPad, H: devTabsH},
 			act:  devActTab,
 			arg:  i,
 		})
-		x += w + 20
+		x += w + devTabPad
 	}
 
 	y := s.dev.content.Y - s.dev.scroll

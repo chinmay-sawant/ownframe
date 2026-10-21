@@ -6,10 +6,13 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
+// centerDivisor halves a size to reach its center.
+const centerDivisor = 2
+
 // inside reports whether op's center lies in the box, with a half-point of
 // slack for rounded edges.
 func inside(op *page.DisplayOp, x, y, w, h float64) bool {
-	cx, cy := op.X+op.W/2, op.Y+op.H/2
+	cx, cy := op.X+op.W/centerDivisor, op.Y+op.H/centerDivisor
 
 	return cx >= x-0.5 && cx <= x+w+0.5 && cy >= y-0.5 && cy <= y+h+0.5
 }

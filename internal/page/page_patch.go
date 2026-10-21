@@ -2,6 +2,9 @@ package page
 
 import "sync"
 
+// displayOpCap is the pooled buffer capacity for one display update.
+const displayOpCap = 64
+
 // DisplayPatch reports how one display update changed retained ops.
 // ChangedProperties is the canonical property set; use it in new code.
 // Properties, Props, and ChangedProps mirror it for compat; do not mutate.
@@ -23,7 +26,7 @@ type DisplayPatch struct {
 
 var displayOpPool = sync.Pool{
 	New: func() any {
-		b := make([]DisplayOp, 0, 64)
+		b := make([]DisplayOp, 0, displayOpCap)
 		return &b
 	},
 }

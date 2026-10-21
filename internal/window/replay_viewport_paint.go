@@ -10,9 +10,12 @@ import (
 
 const viewportOverscan = 256
 
+// viewportSides counts the top and bottom overscan bands.
+const viewportSides = 2
+
 func (s *shell) setViewportArea(bounds image.Rectangle) {
 	gap := min(viewportOverscan, bounds.Dy())
-	width, height := bounds.Dx(), bounds.Dy()+2*gap
+	width, height := bounds.Dx(), bounds.Dy()+viewportSides*gap
 	if limit := ebiten.MaxImageSize(); limit > 0 {
 		height = min(height, limit)
 	}

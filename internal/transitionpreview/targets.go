@@ -5,7 +5,7 @@ type target struct{ key, id, button, property string }
 var targets = makeTargets()
 
 func makeTargets() []target {
-	out := make([]target, 0, 8)
+	out := make([]target, 0, targetCap)
 	for _, engine := range []string{"standard", "webkit"} {
 		for _, property := range []string{"left", "width", "opacity", "background"} {
 			key := engine + "-" + property
