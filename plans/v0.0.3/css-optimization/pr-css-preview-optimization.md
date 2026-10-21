@@ -53,6 +53,7 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 
 - Add the showcase page to the frontend and rebuild the generated GitHub Pages output.
 - Add `documentation/optimizations.md` with the recorded numbers for every optimization pass, and link it from the feature index.
+- Rebuild the site bundle after the documentation changed, so the published guides match the repository.
 
 ## Impact
 
@@ -77,6 +78,7 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 - [x] `make build`
 - [x] `bash scripts/pr-diff-stat.sh master`
 - [x] `go test -p 1 ./examples/css-preview`
+- [x] `npm test` and `npm run check:site` in `frontend/`
 
 ### Commands
 
@@ -85,6 +87,7 @@ make test
 make build
 go test -p 1 ./examples/css-preview
 bash scripts/pr-diff-stat.sh master
+cd frontend && npm test && npm run check:site
 ```
 
 ## Screenshots / sample output
@@ -184,7 +187,11 @@ A review of this branch found the items below. None of them are fixed in this PR
 - `documentation/optimizations.md` mixes two builds in one sentence: the current full catalog holds 9178 operations and 537 boxes, not 8800 and 537. `documentation/optimizations.md:438`
 - `documentation/optimizations.md` says there is no replace, so the build and the module zip carry the same engine. That holds for the main module. The examples module still pins Blinkless `v0.0.2` and builds only through the workspace file. `documentation/optimizations.md:639`
 - Neither `PATCH_COST.md` nor `PROFILING.md` is linked from `documentation/features.md` or `documentation/features-examples.md`, so a reader of the index cannot find them. `documentation/optimizations.md:326`
-- The showcase images carry width and height attributes that do not match the files, so they render distorted: teams.webp is 720x402, spotify.webp 780x520, pet-care.webp 1882x982, desktop-cat.webp 880x476, and wispr-flow.webp 1906x1030, against a 1000x650 box. `showcase.md:43`
+- The showcase images carry width and height attributes that do not match the files, so they render distorted: teams.webp is 720x402, spotify.webp 780x520, pet-care.webp 1882x982, desktop-cat.webp 880x476, and wispr-flow.webp 1906x1030, against a 1000x650 box. The frontend keeps the real sizes, so the repository document and the site disagree. `showcase.md:43`
+- The Wispr Flow preview autoplays a muted looping video with no pause control, and it is `aria-hidden`. The reduced-motion rule in the stylesheet only cancels CSS animations, so the clip keeps running for a reader who asked for reduced motion. `frontend/src/Documentation.jsx:152`
+- The home page "Browse all examples" link still targets `#docs/showcase/telegram`, while the header nav and the sidebar default to `#docs/showcase/wispr-flow`. `frontend/src/Home.jsx:108`
+- The showcase picker uses `aria-current="page"` for same-page section links, where `aria-current="true"` is the correct value for an in-page target. `frontend/src/Documentation.jsx:138`
+- The showcase page heading is a hardcoded `<h1>Showcase</h1>`, while the nav, the sidebar, and the overview link all say "Example apps". `frontend/src/Documentation.jsx:143`
 
 ### Test coverage
 
