@@ -41,7 +41,29 @@ func sigOp(h uint64, op *layout.DisplayOp) uint64 {
 	h = mixStr(h, op.TextTransformValue())
 	h = mixStr(h, op.TextLanguage())
 	h = mix64(h, ptrBits(op.Font))
-	h = mix64(h, ptrBits(op.Group()))
+	h = sigGroup(h, op)
 
 	return sigXform(sigImage(sigGrid(h, op), op), op)
+}
+
+// sigGroup folds the identity of the operation's blend or isolation group.
+// The group is a fresh allocation on every layout run, so folding its
+// pointer missed on every redraw. The creation-order ID and the group's
+// settings describe the same group after a redraw of the same content.
+func sigGroup(h uint64, op *layout.DisplayOp) uint64 {
+	group := op.Group()
+	if group == nil {
+		return mix64(h, 0)
+	}
+
+	h = mixF(h, float64(group.ID))
+	h = mixStr(h, group.Mode)
+	h = mix64(h, bit(group.Isolate))
+
+	if parent := group.Parent; parent != nil {
+		h = mixF(h, float64(parent.ID))
+		h = mixStr(h, parent.Mode)
+	}
+
+	return h
 }
