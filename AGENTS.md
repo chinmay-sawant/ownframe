@@ -67,6 +67,18 @@ Every Go file is at most 2000 characters. Count with `wc -m`. That number includ
 
 This limit applies to Go files only. HTML, CSS, Markdown, and scripts have no character cap.
 
+`make size-check` enforces it. It counts characters with `wc -m` over every non-pruned `.go` file, test files included, and compares the tree with `scripts/file-size-allowlist.txt`, the single source of truth for over-limit files. The gate fails when an over-limit file is unlisted, when a listed file is missing, no longer over the limit, or when its recorded count is stale. `make lint` runs it, so CI enforces it; a recorded count moves only as a deliberate, reviewed change.
+
+## Lint
+
+`make lint` is the lint gate. It runs the pinned `golangci-lint` (v1.64.8, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then `make size-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
+
+The website gate is ESLint 10 through `npm run lint` in `frontend/`. Its flat config lives in `frontend/eslint.config.js` and needs no separate make target; `make lint` runs it in the same pass. `eslint-plugin-react` still declares a peer range that stops at ESLint 9, so `frontend/package.json` pins the range with an `overrides` entry and the config sets `settings.react.version` to skip the plugin's version detection, which calls an API ESLint 10 removed.
+
+The policy lives in `.golangci.yml`. It starts from `enable-all` and disables the linters that only restate house style (wsl, varnamelen, exhaustruct, lll, testpackage, and the rest of that list, each with a written reason). The linters that stay catch real defects: dead code (`unused`), magic numbers (`mnd`), unchecked errors (`errcheck`), deprecated API use (`staticcheck`), overflow and injection risks (`gosec`), and the rest of the correctness family. `//nolint` is a last resort and needs a written reason.
+
+GitHub CI (`.github/workflows/ci.yml`) runs only `make test` and `make lint`. The release workflow (`.github/workflows/release.yml`) runs the same two gates before it creates the GitHub Release. Both set up Node.js 22 and install the website dependencies, so the website lint runs in CI.
+
 ## Writing
 
 Load the `unslop` skill before writing prose: replies, docs, commit messages, and PR or issue text. Apply its fixes before sending.

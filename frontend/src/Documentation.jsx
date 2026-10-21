@@ -38,7 +38,7 @@ export default function Documentation({ hash }) {
     const target = anchor && pane.querySelector(`#${CSS.escape(anchor)}`);
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-  }, [hash, anchor]);
+  }, [hash, anchor, isShowcase]);
 
   useEffect(() => {
     if (!lightbox) return;
