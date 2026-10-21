@@ -21,6 +21,14 @@ func (p *Page) redraw(ctx context.Context, skipSame bool) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
+	if p.afterRedraw.busy {
+		// The after-redraw callback asked for a draw. The commit that runs
+		// the callback must not start another one inside it, so the request
+		// waits for the commit to finish.
+		p.afterRedraw.ask = true
+
+		return nil
+	}
 	if p.redrawBatch > 0 {
 		p.redrawPending = true
 		if !skipSame {
@@ -44,5 +52,9 @@ func (p *Page) redraw(ctx context.Context, skipSame bool) error {
 	if err != nil {
 		return err
 	}
-	return p.drawStaged(ctx, track, styled, state, executed)
+	if err := p.drawStaged(ctx, track, styled, state, executed); err != nil {
+		return err
+	}
+
+	return p.afterRedrawDraw(ctx)
 }

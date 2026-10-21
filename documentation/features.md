@@ -8,6 +8,18 @@ This page summarizes supported features and current limits. Use the linked guide
 
 OwnFrame updates the page from its template and draws it in the window. A page can repaint only the area changed by an action. Read [how a screen is rendered](screen.md) and [how repaint works](repaint.md).
 
+## Element patches
+
+`Config.RetainState` keeps the layout state a single element patch needs: the resolved styles of the document and the box tree the placement produced. It is off by default, so a page that never patches an element pays nothing for it.
+
+With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and copies the element's operations and box into the retained display. The changed region is marked dirty, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float or an absolute box, an element that changed size, or a document that uses a container query. The call reports false then, and the caller redraws the page instead.
+
+`Handlers.ClickPaint` runs after a click handler and after a control's own change. When it reports that it painted the frame, the page skips the redraw, so a click that patched an element does not also pay for a layout.
+
+`Page.SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
+
+Detail is in [optimizations.md](optimizations.md).
+
 ## CSS masks
 
 Blinkless resolves mask image bytes and stores the CSS values on a display

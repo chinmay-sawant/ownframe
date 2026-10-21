@@ -9,29 +9,34 @@ as seconds. `p50`, `p95`, and `max` are per item over the 43 item walk.
 
 ## Results
 
-| Metric | Original | First pass | Second pass | Third pass | Current | Current vs original | Current vs third pass |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 6.16 ms | 108x | 2.03x |
-| p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 6.20 ms | 105x | 2.08x |
-| p95 | 845 ms | 144 ms | 41.9 ms | 15.5 ms | 7.70 ms | 110x | 2.01x |
-| max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 102x | 2.26x |
-| total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 108x | 2.04x |
+| Metric | Original | First pass | Second pass | Third pass | Fourth pass | Now | Now vs original | Now vs fourth pass |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 6.16 ms | 0 ms | no rebuild | no rebuild |
+| p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 6.20 ms | 0 ms | no rebuild | no rebuild |
+| p95 | 845 ms | 144 ms | 41.9 ms | 15.5 ms | 7.70 ms | 0 ms | no rebuild | no rebuild |
+| max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 0 ms | no rebuild | no rebuild |
+| total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 0 s | no rebuild | no rebuild |
 
 As reductions:
 
-| Metric | Lower than original | Lower than first pass | Lower than second pass | Lower than third pass |
-|---|---:|---:|---:|---:|
-| average | 99.1% | 94.2% | 81.6% | 50.7% |
-| p50 | 99.0% | 93.5% | 80.7% | 51.9% |
-| p95 | 99.1% | 94.7% | 81.6% | 50.3% |
-| max | 99.0% | 94.8% | 82.3% | 55.7% |
-| total | 99.1% | 94.2% | 81.6% | 50.9% |
+| Metric | Lower than original | Lower than first pass | Lower than second pass | Lower than third pass | Lower than fourth pass |
+|---|---:|---:|---:|---:|---:|
+| average | 99.1% | 94.2% | 81.6% | 50.7% | 100% |
+| p50 | 99.0% | 93.5% | 80.7% | 51.9% | 100% |
+| p95 | 99.1% | 94.7% | 81.6% | 50.3% | 100% |
+| max | 99.0% | 94.8% | 82.3% | 55.7% | 100% |
+| total | 99.1% | 94.2% | 81.6% | 50.9% | 100% |
 
 The original total was 28.7 seconds, not 40 milliseconds. The second-pass
-average was 33.4 ms, and the third-pass average was 12.5 ms. The current
-average is 6.16 ms. The current column is the mean of five
-`BenchmarkWindowedPointerCycle` runs; the first run after launch can be slower
-while the font and style caches warm.
+average was 33.4 ms, and the third-pass average was 12.5 ms. The fourth-pass
+average was 6.16 ms. The current column is the real click script, where the
+click no longer rebuilds the page at all: the page rebuild per click is zero,
+because the click patches the elements it changed and paints them. The
+fourth-pass column is the mean of five `BenchmarkWindowedPointerCycle` runs;
+the first run after launch can be slower while the font and style caches
+warm. That benchmark drives the page without the example's own handlers, so it
+still measures a full rebuild, and it is the number to compare against when
+the page is used without the element patch.
 
 ## First pass, 667 ms to 107 ms
 
@@ -165,9 +170,193 @@ is the display-list build for the rows on screen. Skipping that would mean
 patching the retained display on Start instead of rebuilding the page, which
 is a separate design with a different set of tradeoffs.
 
+## Fifth pass, the click patches the page
+
+The fifth pass removed the rebuild from the click itself. The click state
+lives in the parsed tree, the click patches the elements it changed, and the
+page paints the patched region. Nothing is rebuilt.
+
+- The click state lives in the parsed tree. The card's class and the state
+  span's text are patched, not re-rendered from the template data, so the
+  executed source does not change and the page keeps its display.
+- `Page.PatchElement` re-lays out one element of the retained page and copies
+  the patched page back into the display. The engine lays out the element's
+  subtree alone and hands the whole patched page over, because a patch that
+  changes the operation count moves every later operation index.
+- `Handlers.ClickPaint` reports that the handler painted the frame, so the
+  click skips the redraw and the redraw batch waits for no draw that will not
+  come.
+- `Page.SetAfterRedraw` puts the tree state back after the template replaced
+  the tree, so a scroll or a reload does not lose the started cards.
+
+Measured with the real click script, 43 clicks, 1908x999:
+
+| Measure | Fourth pass | Now |
+|---|---:|---:|
+| Click redraw, p50 | 25.2 ms | 0.0 ms |
+| Click redraw, average | 23.5 ms | 0.0 ms |
+| press to started, p50 | 17.4 ms | 15.8 ms |
+| press to painted, p50 | 50.9 ms | 51.0 ms |
+
+The click does not rebuild the page, so there is no page rebuild to measure.
+The last row is unchanged because it is dominated by the presentation frame of
+the software compositor, not by page work.
+
+The cost of the patch itself, measured by the harness on the whole 43 row
+catalog:
+
+| Path | Time | Allocated | Applied |
+|---|---:|---:|---:|
+| Full redraw, card class | 25.0 ms | 14.45 MB | |
+| Full redraw, state class | 25.0 ms | 17.11 MB | |
+| Element patch, card class | 1.55 ms | 6 KB | 0 of 30 |
+| Element patch, state class | 1.65 ms | 2.66 MB | 30 of 30 |
+
+The card class probe is refused because the probe replaces the card's class
+with one that carries no rules, which changes the card's size. The class the
+example uses is spliced, 203 operations, and the running example applied 85 of
+85 card patches and 43 of 43 readout patches.
+
+## The card patch and its guards
+
+`Page.PatchElement` re-lays out one element of the retained page and copies its
+operations into the retained display. It edits the cached tree first, so the
+cascade sees the new class or the new text, then it asks Blinkless for that
+element's operations, boxes, and old and new bounds. Blinkless refuses every
+case it cannot represent, and the host falls back to a full rebuild.
+
+The engine's guards:
+
+| Guard | Why it exists | The CSS preview card |
+|---|---|---|
+| No context, or a cancelled one | The layout pass has to stop on demand | No |
+| No styled document, no previous display, no element id | The patch needs a tree, a display, and an id | No |
+| The id is not in the tree | The element is found by id | Yes. The state text has no id, and a row outside the catalog window is not in the tree |
+| The element owns no box | The splice patches the element's box | No |
+| The element is the document root | The root carries the canvas fill | No |
+| The element is not a block box | A table box is placed by the table layout | No. A card is a grid item, and Blinkless builds grid items as block boxes |
+| An ancestor carries a transform or an opacity | The subtree's operations carry that transform, and a subtree laid out on its own does not | No |
+| The subtree holds a float, an out-of-flow box, a sticky box, an anchored element, or a named flow | Each is placed from state the kept result does not carry | Only for an out-of-flow box whose containing block is outside the subtree. The preview label and the preview target are absolute inside the relative stage, and the stage is inside the card, so the card is spliced |
+| An anchored box sits outside the subtree | That box would go stale when the anchor moves | No |
+| The document uses `@container` rules | A container query needs the used size of a container, and the kept state does not carry it | No today, but one such rule refuses every patch in the document |
+| The element moved or changed size | Every box after it would be stale | Yes. A card is a grid item, so its width is the track width, while the splice laid the element out in the grid container's content width |
+| The element owns no operations | There is no range of operations to replace | No. A card owns 362 operations in the fixture display |
+
+The first refusal on the real fixture was the out-of-flow box, with the reason
+the engine reported:
+
+```
+layout: relayout element: layout: element subtree cannot be spliced: the subtree holds an out-of-flow box
+```
+
+The guard now allows an out-of-flow box whose containing block is inside the
+subtree, because the subtree lays that block out again and places the box
+against it. The card row is spliced with that change.
+
+The host adds five checks of its own. The element has to exist and own
+operations, the re-cascade has to succeed, and the patch has to carry the same
+number of operations, the same size, and the same operation kinds as the
+element it replaces. The last three run after the engine has spliced the
+display, so they drop the remembered render key and the next redraw rebuilds
+the page.
+
+The retained layout state is opt-in on both sides. `layout.Options.RetainState`
+keeps the resolved styles and the box tree a patch needs, and
+`Config.RetainState` asks the page for it. A page that never patches an
+element pays nothing for it, and `Page.PatchElement` refuses before it edits
+the tree when the page kept no state.
+
+The retained state is not free. One laid out page keeps 167 KB alive with the
+retention on and 34 KB with it off for 31 elements, 277 KB and 302 KB for 283
+elements, and 454 KB and 744 KB for 703. The cost is per layout, so a page that
+redraws often leaves that much behind each time. The measurement is
+`BenchmarkDisplayRetainedBytes` in Blinkless. The style store keeps the
+distinct styles of a page in backing arrays of eight records that grow to
+sixty four, so a page with a few distinct styles keeps a small array instead
+of a full one.
+
+### The fallback
+
+A refused patch leaves the cached tree edited and the retained display
+untouched, because every engine refusal happens before the splice. The app
+falls back to the path the click already used.
+
+- Keep the state the click set: the started map, the selected name, the
+  readout, and the start time. The click means the same thing either way.
+- Redraw the whole page. The template prints the started class and the state
+  text, so the executed source changes, the page drops the cache, and the tree
+  is parsed again, which drops the stale tree edit with the old tree. The
+  redraw has to be one that lays the page out, not one that can be skipped as
+  unchanged.
+- Keep the sample's captured starting paint and its origin. The refused patch
+  did not touch the display, so the capture is still the paint the transition
+  starts from. A second capture would take the started paint as the starting
+  value and the transition would not move.
+- Let the tick re-bind. A full rebuild replaces the operations, so every
+  sample's plan is stale. The rebuild bumps the page generation, and the tick
+  re-binds the samples against the new display on its next frame.
+- Fall back for the whole page when the click changes a second card. The
+  selected class moves from the old row to the new one, and a one card patch
+  cannot move a class between two elements. The readout in the metadata
+  section is a second element, and its height moves with its text.
+
+The user sees no difference. The card ends up started and selected, the readout
+is the same, and the animation plays from the same phase. The difference is
+the cost. The fallback pays the page rebuild of the fourth pass, 6.16 ms on
+average with the catalog windowed, so the press to painted time stays at the
+fourth pass number for the clicks that fall back.
+
+The timings for the patch path itself are in the next section.
+
+### The patch, measured
+
+The harness is in `examples/css-preview`, and the numbers are in
+`examples/css-preview/PATCH_COST.md`. It uses the whole 43 row catalog at
+1908x999, the desktop window size, with the retained state on.
+
+| Path | Time | Allocated | Allocations | Patches applied |
+|---|---:|---:|---:|---:|
+| Full redraw, card class | 27.7 ms | 14.45 MB | 23483 | |
+| Element patch, card class | 1.55 ms | 6 KB | 34 | 0 of 30 |
+| Full redraw, state class | 25.0 ms | 17.11 MB | 23972 | |
+| Element patch, state class | 1.65 ms | 2.66 MB | 526 | 30 of 30 |
+
+The redraw splits into three stages, measured by the page itself: the template
+takes 0.6 ms, the cascade 0.06 ms, and the display list 23 ms. Laying out 43
+cards, 9178 operations and every text run is the whole cost of a redraw. A
+patch of one state span lays out that span and leaves the other 42 cards
+alone, so it is about fifteen times faster than the full path.
+
+The cascade is not saved, because the patch re-cascades the whole document, but
+that stage costs 0.06 ms, so there is nothing to win there.
+
+A patch still allocates 2.66 MB on the full catalog, because the engine keeps
+its own operation list when it splices, and the page holds 9178 operations.
+The layout is skipped, the copy of the operation list is not. The windowed
+catalog holds about a fifth of the operations, so the copy is about a fifth as
+big there.
+
+The harness prints what the engine says for each element it probes. The probe
+puts a class that carries no rules on the element, so a card loses its padding
+and its border and changes size, which the engine refuses:
+
+| Element | Engine outcome |
+|---|---|
+| `catalog-state-01` | spliced, 1 operation |
+| `start-property-webkit_animation` | spliced, 2 operations |
+| `preview-metadata` | spliced, 3 operations |
+| `catalog-row-01` | refused: the element changed size, 128.84 to 112.34 high |
+| `catalog-grid` | refused: the element changed size |
+| `catalog-target-webkit_animation` | refused: the element changed size |
+| `play-all` | refused: the element changed size, 24.75 to 30 high |
+| `metadata` | refused: the element changed size, 95.55 to 104.43 high |
+
+With the class the example uses, the card row is spliced, 203 operations, and
+the state span inside it rides along with that one patch.
+
 ## Next: the two gaps against a browser
 
-This is the list to work from next. Nothing here is committed yet.
+The first gap is closed. The second one is the list to work from next.
 
 ### What a browser does
 
@@ -188,18 +377,20 @@ scrollbar stable, which is what the catalog spacer rows do.
 
 ### Gap one, a click re-lays out every visible card
 
-A click in the CSS preview costs 7 to 10 ms with the catalog windowed and
-about 21 ms when the whole 43 row catalog is rendered, which is what the Play
-All button does today. The work is the display-list build, which is 93
-percent of a click redraw.
+This gap is closed. A click in the CSS preview no longer re-lays out the
+cards. The click state lives in the parsed tree, the click patches the
+elements it changed, and the page paints the patched region.
 
-- OwnFrame can copy the changed card's operations into the retained display
-  and mark its region dirty, with `Page.PatchDisplay` and `Page.PatchOp`. That
-  removes the rebuild for the selection, the state text, and the started
-  class, and it helps every click, not only the catalog.
-- Blinkless could re-lay out one subtree and keep the rest. The style
-  resolution memo and the box cache are pass-local today, so nothing carries
-  over between frames.
+- OwnFrame copies the changed card's operations into the retained display
+  and marks its region dirty. `Page.PatchElement` does that for one element
+  of the retained page, and it removes the rebuild for the selection, the
+  state text, and the started class, and it helps every click, not only the
+  catalog.
+- Blinkless re-lays out one subtree and keeps the rest. `layout.RelayoutElement`
+  re-resolves the styles of the subtree, places it, and splices its operations
+  over the range the element owned, so the rest of the page keeps the
+  operations and the boxes the host already had. The guards and the fallback
+  are in the section above.
 
 ### Gap two, a running animation repaints the page
 
@@ -237,24 +428,32 @@ The redraw time above is the page work. From the real click script, with
 
 | Segment | p50 | p95 | max | average |
 |---|---:|---:|---:|---:|
-| press to started | 9.9 ms | 18.2 ms | 30.4 ms | 10.4 ms |
-| press to painted | 50.6 ms | 51.0 ms | 51.9 ms | 50.7 ms |
+| press to started | 15.8 ms | 30.9 ms | 32.2 ms | 16.5 ms |
+| press to painted | 51.0 ms | 51.6 ms | 52.3 ms | 51.0 ms |
 
-These are third-pass numbers. The fourth pass cuts the page rebuild further,
-but the fixed window draw and presentation frame still dominate `press to
-painted`. `press to started` uses the handler timestamp in the app, so polling
-latency does not count. `press to painted` waits for the next layout counter
-and includes the redraw plus the window draw.
+These are the numbers of the fifth pass, from the real click script with
+`-perf` on and the walk hook active. The third-pass numbers were 9.9 ms and
+50.6 ms on p50. `press to started` uses the handler timestamp in the app, so
+polling latency does not count. `press to painted` waits for the next layout
+counter, which the patch raises, and includes the window draw. It is
+dominated by the presentation frame of the software compositor, so it did not
+move when the page stopped rebuilding itself.
 
 ## How the numbers were measured
 
-The current column comes from `BenchmarkWindowedPointerCycle`, which follows
+The fourth-pass column comes from `BenchmarkWindowedPointerCycle`, which follows
 the same 43-click desktop path as the X11 script but reads `LastRedraw` in
 process. That removes the software X server and presentation frame from the
 measurement. The benchmark runs one warm pass, then reports the average, p50,
 p95, and max over one or more measured passes. The numbers above are the mean
 of five `-benchtime=1x` runs. The third-pass and earlier columns came from the
 real X11 walk and the earlier pointer cycle measurement.
+
+The fifth-pass column comes from the real X11 walk, because the benchmark
+drives the page without the example's own handlers and therefore still
+measures a full rebuild. The walk script reports the last redraw the page
+made, and it reports zero when the click painted the frame without a redraw,
+so the number is the page rebuild the click caused.
 
 The original and first-pass columns come from the earlier pointer cycle
 measurement in this optimization work. That measurement called the page
@@ -294,13 +493,23 @@ pipeline counters. `/reset` clears the rows, and `/goto` scrolls the next Start
 button under a fixed row. It closes the app with `/quit` after the last pass;
 use `--no-close` to keep the window open.
 
-Run the windowed benchmark that matches the current column:
+Run the windowed benchmark that matches the fourth-pass column:
 
 ```sh
 go test ./examples/css-preview -run '^$' \
   -bench '^BenchmarkWindowedPointerCycle$' \
   -benchtime=1x -count=5
 ```
+
+Run the element patch harness and its parity gate:
+
+```sh
+cd examples
+go test -p 2 -run 'TestPatch' -v ./css-preview/
+go test -p 2 -run XXX -bench BenchmarkPatchCost -benchtime 30x -count 3 ./css-preview/
+```
+
+The report of that harness is `examples/css-preview/PATCH_COST.md`.
 
 Use `-benchtime=1x` for one 43-click pass per run, or a higher value for a
 longer run. The full-fixture benchmarks need at least `-benchtime=3x` before
@@ -354,6 +563,20 @@ Ownframe:
   previous source.
 - `examples/css-preview/batch_click_test.go` covers the batched press through
   a real animation start.
+- `internal/page/page_patch_element.go` patches one element of the retained
+  display.
+- `internal/render/cache_edit.go` edits the cached tree and re-cascades it
+  without replacing the cached styled document.
+- `internal/page/page_after_redraw.go` runs a callback after a committed
+  redraw, so an app that keeps its state in the tree can reapply it.
+- `internal/page/page_click_paint.go` runs the paint-only click handler and
+  clears the redraw batch when the handler painted the frame.
+- `examples/css-preview/catalog_state.go`, `catalog_click_paint.go`, and
+  `catalog_sync.go` keep the click state in the parsed tree and put it back
+  after a rebuild.
+- `examples/css-preview/patch_cost_*.go` and `examples/css-preview/PATCH_COST.md`
+  measure an element patch against a full redraw and gate the patch against a
+  full redraw operation by operation.
 
 Blinkless:
 

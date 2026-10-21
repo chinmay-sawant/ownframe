@@ -7,6 +7,9 @@ import (
 
 const playAllID = "play-all"
 
+// readoutID is the display-list snapshot the click patches.
+const readoutID = "preview-metadata"
+
 // playAll starts every preview the same way its own Start button does. The
 // catalog stays windowed: the rows on screen start now, and the rows off
 // screen wait for their first render, which gives the transition its
@@ -34,6 +37,9 @@ func (d *demo) playAll(ctx context.Context) error {
 		if s.base != nil {
 			d.v.Started[target.key] = true
 			d.v.Started[row.Button] = true
+			// The card's class carries the started state into the tree, so
+			// the sample's target moves on the next layout.
+			d.patchCard(ctx, row)
 		}
 		d.pending = append(d.pending, target.key)
 	}

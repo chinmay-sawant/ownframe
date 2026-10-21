@@ -21,6 +21,10 @@ type Config struct {
 	// DisableHotReload turns the file watch off. It is ignored without File
 	// or ThemeFile.
 	DisableHotReload bool
+	// RetainState keeps the layout state a single element patch needs. It is
+	// off by default, so a page that never patches pays nothing. With it on,
+	// Page.PatchElement can re-lay out one element.
+	RetainState bool
 	// DevTools starts the window overlay on.
 	DevTools bool
 	// Perf records pipeline timing, dirty counts, and allocs in Stats. It

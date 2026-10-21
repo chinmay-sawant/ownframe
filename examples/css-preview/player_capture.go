@@ -21,6 +21,7 @@ func (d *demo) capturePending(ctx context.Context) error {
 		}
 		box, ok := findBox(boxes, t.id)
 		if !ok {
+			println("ZZDEBUG capture box missing", key, len(boxes))
 			continue
 		}
 		s.base = capture(display, box)
@@ -34,5 +35,10 @@ func (d *demo) capturePending(ctx context.Context) error {
 	}
 	d.p.SetData(d.v)
 
-	return d.p.Redraw(ctx)
+	if err := d.p.Redraw(ctx); err != nil {
+		return err
+	}
+	d.treeDirty = false
+
+	return nil
 }

@@ -31,6 +31,9 @@ type renderTrack struct {
 	redrawBatch   int
 	redrawPending bool
 	redrawForce   bool
+	// afterRedraw is the hook SetAfterRedraw registers, with the guards
+	// that keep it from re-entering a redraw.
+	afterRedraw afterRedrawState
 }
 
 func (p *Page) keyFor(state render.State) renderKey {

@@ -15,6 +15,11 @@ type State struct {
 	// Images returns encoded image bytes for one src, such as an <img src>
 	// value or a CSS background-image url(...) target. Nil resolves none.
 	Images func(src string) ([]byte, error)
+	// RetainState keeps the layout state an element patch needs: the
+	// resolved styles of the document and the box tree the placement
+	// produced. It is off by default, so a host that never patches an
+	// element does not pay for the retained state.
+	RetainState bool
 }
 
 // options builds the screen cascade options for a viewport.

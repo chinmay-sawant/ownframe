@@ -29,6 +29,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		deepLinkSchemes: schemes,
 		devtools:        cfg.DevTools,
 		perf:            cfg.Perf,
+		retainState:     cfg.RetainState,
 		lockView:        cfg.LockView,
 		scrollbar:       cfg.Scrollbar,
 		allowTouchZoom:  !cfg.DisableTouchZoom,

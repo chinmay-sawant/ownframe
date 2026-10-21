@@ -41,6 +41,7 @@ func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track
 		p.recordFull(len(boxes))
 	}
 	p.applyPending()
+	p.runAfterRedraw()
 
 	return nil
 }

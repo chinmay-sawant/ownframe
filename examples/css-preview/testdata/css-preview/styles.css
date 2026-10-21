@@ -193,6 +193,13 @@ button {
   line-height: 1.4;
 }
 
+/* The state span carries the click state in the parsed tree. A rule that
+   matches the span itself is the shape a one element patch can drive. */
+.catalog-state.is-selected {
+  color: #2f6f5f;
+  font-weight: bold;
+}
+
 .catalog-action strong { color: #20352f; }
 
 .catalog-playback {
@@ -308,7 +315,7 @@ button {
 .catalog-row.is-started .catalog-preview-webkit-transition-timing-function { left: 205px; }
 
 #preview-metadata {
-  max-height: 430px;
+  height: 430px;
   margin: 0;
   padding: 12px;
   overflow: auto;

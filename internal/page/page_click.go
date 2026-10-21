@@ -60,9 +60,18 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 		}
 	}
 
-	// The handler may have changed the template data, which makes the source
-	// differ and redraws. A click that changed nothing visible (a dead area,
-	// a repeated press on the same state) skips the layout entirely.
+	if ok {
+		painted, err := p.clickPainted(ctx, box)
+		if err != nil {
+			return err
+		}
+		if painted {
+			return nil
+		}
+	}
+
+	// The handler may have changed the data, which makes the source differ
+	// and redraws. A click that changed nothing visible skips the layout.
 	return p.RedrawIfChanged(ctx)
 }
 

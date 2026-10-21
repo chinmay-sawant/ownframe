@@ -42,6 +42,7 @@ type Page struct {
 	stats           pageStats
 	devtools        bool
 	perf            bool
+	retainState     bool
 	lockView        bool
 	scrollbar       host.ScrollbarMode
 	mobileViewport  bool
@@ -59,7 +60,5 @@ type Page struct {
 	index           map[string]Box
 	hits            []hitItem
 	pageContent     // paint rect: box cache writes; lock: page loop
-	scroll          host.Scroll
-	hasScroll       bool
-	windowing       windowingState // scroll: window writes via Set*; lock: loop
+	pageScrollState // scroll: window writes via Set*; lock: loop
 }

@@ -14,7 +14,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
 	p, err := previewwindow.New(ctx, previewwindow.Config{FixtureDir: filepath.Join("testdata", "css-preview"),
-		Data: v, Width: 960, Height: 1000})
+		Data: v, Width: 960, Height: 1000, RetainState: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,8 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 		t.Fatal(err)
 	}
 	d := newDemo(p, v)
-	p.Handle(ownframe.Handlers{Click: d.click})
+	p.Handle(ownframe.Handlers{Click: d.click, ClickPaint: d.clickPaint})
+	p.SetAfterRedraw(func() { d.afterRedraw(context.Background()) })
 	return p, d, v
 }
 

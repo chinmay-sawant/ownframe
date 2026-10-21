@@ -14,7 +14,8 @@ func run(perf bool, width, height int) error {
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
 	p, err := previewwindow.New(ctx, previewwindow.Config{Title: "OwnFrame CSS property catalog",
-		FixtureDir: catalogFixtureDir(), Data: v, Width: width, Height: height})
+		FixtureDir: catalogFixtureDir(), Data: v, Width: width, Height: height,
+		RetainState: true})
 	if err != nil {
 		return err
 	}
@@ -36,7 +37,8 @@ func run(perf bool, width, height int) error {
 	metrics, ok := measureCatalog(p)
 	v.Readout = "Select a Start button.\nIts value and action appear here."
 	d := newDemo(p, v)
-	p.Handle(ownframe.Handlers{Click: d.click})
+	p.Handle(ownframe.Handlers{Click: d.click, ClickPaint: d.clickPaint})
+	p.SetAfterRedraw(func() { d.afterRedraw(context.Background()) })
 	if ok {
 		if err := installCatalogWindow(ctx, p, v, d, metrics); err != nil {
 			return err

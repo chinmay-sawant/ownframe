@@ -108,6 +108,7 @@ def one_click(xtst, x11, display, ox, oy, aim):
     before = state()
     before_started, before_seq = int(before[1]), int(before[19])
     before_layouts = int(before[7])
+    before_redraws = int(before[4])
 
     press_ns = time.time_ns()
     button(xtst, x11, display, True)
@@ -148,9 +149,23 @@ def one_click(xtst, x11, display, ox, oy, aim):
             break
         time.sleep(0.001)
 
+    # A redraw that follows the click shows up in the redraw counter. Give it
+    # a moment, so the report tells a painted frame from a rebuilt one.
+    settle = time.time_ns() + 120_000_000
+    while time.time_ns() < settle:
+        fields = state()
+        if int(fields[4]) > before_redraws:
+            observed = fields
+            break
+        time.sleep(0.002)
+
     started_ms = (app_started_ns - press_ns) / 1e6 if app_started_ns else None
     painted_ms = (painted_ns - press_ns) / 1e6 if painted_ns else None
     redraw_ms = int(observed[3]) / 1e3
+    if int(observed[4]) <= before_redraws:
+        # The click painted the frame without a redraw, so the last redraw
+        # time belongs to an earlier frame.
+        redraw_ms = 0.0
     return name, started_ms, painted_ms, redraw_ms, observed
 
 

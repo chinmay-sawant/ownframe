@@ -26,12 +26,12 @@
       <div id="catalog-grid" class="catalog-grid">
         {{if .TopPad}}<div class="catalog-pad" style="height:{{.TopPad}}px"></div><div class="catalog-pad" style="height:{{.TopPad}}px"></div>{{end}}
         {{range .Rows}}
-        <article id="catalog-row-{{.Number}}" class="catalog-row{{if eq .Name "trigger-scope"}} has-trigger-scope{{end}}{{if eq $.Selected .Name}} is-selected{{end}}{{if index $.Started .Button}} is-started{{end}}">
+        <article id="{{.CardID}}" class="{{.BaseClass}}">
           <div class="catalog-details">
             <h3><span class="property-number">{{.Number}}</span>{{.Name}}</h3>
             <code>{{.Value}}</code>
             <span class="catalog-action"><strong>What to expect:</strong> {{.Action}}</span>
-            <span class="catalog-state">{{if index $.Started .Button}}Started / selected{{else}}Ready{{end}}</span>
+            <span id="{{.StateID}}" class="catalog-state">Ready</span>
           </div>
           <div class="catalog-playback">
             <div class="catalog-stage">

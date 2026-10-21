@@ -22,6 +22,22 @@ type demo struct {
 	playAllAt  time.Time
 	startedAt  time.Time
 	startedSeq uint64
+	// prevSelected is the card that loses the selection when a new card is
+	// selected.
+	prevSelected string
+	// readout is the text the readout shows. It lives here and not in the
+	// template data, because the readout is patched into the parsed tree
+	// and a template that carried it would rebuild the page on every
+	// click.
+	readout string
+	// treeDirty marks that the parsed tree carries state the display has
+	// not shown yet.
+	treeDirty bool
+	// dataChanged marks that the click changed the template data, so the
+	// page has to draw again.
+	dataChanged bool
+	// treeParses is the parse count when the app last read the tree.
+	treeParses uint64
 }
 
 type sample struct {
@@ -37,5 +53,6 @@ type sample struct {
 }
 
 func newDemo(p *ownframe.Page, v *view) *demo {
-	return &demo{p: p, v: v, gen: p.Generation(), samples: map[string]*sample{}}
+	return &demo{p: p, v: v, gen: p.Generation(), samples: map[string]*sample{},
+		treeParses: p.Stats().Parses}
 }

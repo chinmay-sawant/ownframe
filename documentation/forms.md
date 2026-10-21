@@ -15,7 +15,7 @@ page.Handle(ownframe.Handlers{
 })
 ```
 
-`Click` calls that handler, then draws the page again. A click on a control updates it before the handler runs. A nil handler ignores the event, and an error from the handler returns before the redraw. A later `Handle` call replaces every handler from the earlier call. `FormValue` returns the stored string. `FormChecked` reports a checkbox or a radio. `FormSelected` reports whether a control is focused and its whole value is selected. `FocusedField` is the id of the focused control, or empty when none is focused.
+`Click` calls that handler, then draws the page again. A click on a control updates it before the handler runs. A nil handler ignores the event, and an error from the handler returns before the redraw. `Handlers.ClickPaint` runs after the handler and after the control's own change; when it reports that it painted the frame, the page skips the redraw and keeps the damage the handler marked. A later `Handle` call replaces every handler from the earlier call. `FormValue` returns the stored string. `FormChecked` reports a checkbox or a radio. `FormSelected` reports whether a control is focused and its whole value is selected. `FocusedField` is the id of the focused control, or empty when none is focused.
 
 Supported `input` types:
 

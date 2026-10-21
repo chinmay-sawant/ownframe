@@ -11,12 +11,20 @@ import (
 const partialLimit = 8
 
 func (d *demo) tick(ctx context.Context) error {
-	if len(d.samples) == 0 && len(d.pending) == 0 {
+	if len(d.samples) == 0 && len(d.pending) == 0 && !d.treeDirty {
 		d.p.UseFrameDirty()
 		return nil
 	}
 	if err := d.capturePending(ctx); err != nil {
 		return err
+	}
+	if d.treeDirty {
+		// The tree carries state the engine refused to splice. A layout
+		// shows it, and the sample binds against the laid out page.
+		d.treeDirty = false
+		if err := d.p.Redraw(ctx); err != nil {
+			return err
+		}
 	}
 	if len(d.pending) > 0 && time.Since(d.pendingAt) > 40*time.Millisecond {
 		d.pendingAt = time.Now()
