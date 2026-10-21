@@ -159,29 +159,24 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
 .markdown ul, .markdown ol { padding-left: 1.4em; }
 .markdown li + li { margin-top: 0.55em; }
 .markdown img { max-width: 100%; height: auto; }
-.showcase-page .showcase-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: 16px; list-style: none; margin: 20px 0 32px; padding: 0; align-items: start; }
-.showcase-page .depth-alert-gallery { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 250px)); }
-.showcase-page .pet-care-gallery li:last-child { grid-column: 1 / -1; }
-.showcase-page .eyes-gallery li:last-child { grid-column: 1 / -1; }
-.showcase-page .showcase-gallery li { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
-.showcase-page .showcase-gallery li + li { margin-top: 0; }
-.showcase-page .showcase-gallery p { max-width: none; margin: 0; }
-.showcase-page .showcase-gallery img { display: block; width: 100%; height: auto; border-radius: 7px; background: var(--background); }
-.showcase-page .showcase-media-table-scroll { width: max-content; max-width: 100%; margin: 20px auto 32px; overflow: visible; }
-.showcase-page .showcase-media-table { width: auto; min-width: 0; max-width: 100%; table-layout: fixed; }
-.showcase-page .showcase-media-table td { padding: 12px; }
-.showcase-page .showcase-media-table img { display: block; width: 100%; max-width: 100%; height: auto; object-fit: contain; }
-.showcase-page img.spotify-window-preview { object-fit: cover; object-position: center; }
-.showcase-page .showcase-gallery img.spotify-window-preview { aspect-ratio: 1.5; }
-.gallery-open { display: block; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
+.showcase-media-grid { display: grid; gap: 24px 16px; align-items: start; margin: 24px 0 32px; }
+.showcase-media-grid--grid-4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+.showcase-media-grid--grid-3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.showcase-media-grid--single { grid-template-columns: minmax(0, 1fr); }
+.showcase-media-grid--portrait { grid-template-columns: minmax(0, min(100%, 320px)); justify-content: center; }
+.showcase-media { min-width: 0; margin: 0; text-align: center; }
+.showcase-media--wide { grid-column: 1 / -1; }
+.gallery-open { display: flex; justify-content: center; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
+.gallery-open img { display: block; max-width: 100%; height: auto; border-radius: 7px; }
+.showcase-media figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; }
 .lightbox-backdrop { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, 0.85); }
-.lightbox-card { position: relative; width: 100%; max-width: 1100px; display: flex; flex-direction: column; align-items: center; margin: auto; }
-.lightbox-card > img, .lightbox-card > video { display: block; max-width: 100%; max-height: 70vh; width: auto; margin: 0 auto; border-radius: 9px; background: transparent; }
+.lightbox-card { position: relative; width: min(100%, calc(100vw - 48px)); display: flex; flex-direction: column; align-items: center; margin: auto; }
+.lightbox-card > img, .lightbox-card > video { display: block; max-width: 100%; max-height: calc(100dvh - 120px); width: auto; height: auto; margin: 0 auto; border-radius: 9px; background: transparent; }
 .lightbox-bar { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 100%; margin-top: 12px; justify-content: center; }
 .lightbox-caption { flex: 1; min-width: 0; margin: 0; text-align: center; font-size: 15px; color: #e9eff2; overflow-wrap: anywhere; }
+.lightbox-resolution { color: #c2cbd1; font-size: 13px; white-space: nowrap; }
 .lightbox-close, .lightbox-prev, .lightbox-next { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--text); font-size: 24px; line-height: 1; cursor: pointer; }
 .lightbox-close:hover, .lightbox-prev:hover, .lightbox-next:hover { border-color: var(--accent); color: var(--accent); }
-.showcase-page .showcase-gallery p + p { padding-top: 10px; font-size: 14px; }
 .markdown-table-scroll { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .markdown-table-scroll::-webkit-scrollbar { display: block; height: 6px; }
 .markdown-table-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
