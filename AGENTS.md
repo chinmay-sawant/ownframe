@@ -82,3 +82,9 @@ Run `gofmt` on every Go file you edit. From this directory, run `make test`. It 
 Leave `~/.Xauthority` untouched. The window toolkit logs a missing authority file and still opens the window.
 
 Keep clipboard tests off the desktop clipboard. Call `clipboard.UseMemory` in those tests.
+
+## Blocked work
+
+If the user hands over a task and you cannot do it right as it stands, update the user and stop. Name the part that is blocked, the input or decision you need, and what you can do once you have it.
+
+Fill no gap with a guess, a stub, or a silent default, and never report the task as done while the blocked part is still missing. Work that does not depend on the missing input can go ahead, as long as you mark what is on hold. The task stays open until the user answers.
