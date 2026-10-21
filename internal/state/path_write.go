@@ -11,8 +11,3 @@ func setPath(data any, path string, value any) (any, bool) {
 	}
 	return setSeg(data, segs, value)
 }
-
-// setValueAtPath keeps backward compatibility for in-place updates.
-func setValueAtPath(data any, path string, value any) {
-	setPath(data, path, value)
-}

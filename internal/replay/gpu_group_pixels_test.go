@@ -19,7 +19,7 @@ func compareGroupPixels(d *render.Display, name string, points [][2]int) error {
 	}
 
 	img := ebiten.NewImage(200, 140)
-	defer img.Dispose()
+	defer img.Deallocate()
 
 	DrawVisible(img, d, 0, 0)
 

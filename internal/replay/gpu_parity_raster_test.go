@@ -13,8 +13,8 @@ import (
 func checkRasterCache() error {
 	direct := ebiten.NewImage(256, 200)
 	cached := ebiten.NewImage(256, 200)
-	defer direct.Dispose()
-	defer cached.Dispose()
+	defer direct.Deallocate()
+	defer cached.Deallocate()
 
 	before := rasterEntries()
 	ops := rasterParityOps()
@@ -61,15 +61,15 @@ func countDiff(a, b []byte) int {
 func checkRasterClip() error {
 	ops := rasterParityOps()
 	display := &layout.Display{
-		Width: 256, Height: 200, PointsPerPixel: 72.0 / 96.0,
+		Width: 256, Height: 200, PointsPerPixel: 0.75,
 		Ops: ops, Order: []int{0, 1, 2, 3, 4},
 	}
 	rect := image.Rect(12, 16, 160, 120)
 
 	direct := ebiten.NewImage(256, 200)
 	cached := ebiten.NewImage(256, 200)
-	defer direct.Dispose()
-	defer cached.Dispose()
+	defer direct.Deallocate()
+	defer cached.Deallocate()
 
 	clip, ok := direct.SubImage(rect).(*ebiten.Image)
 	if !ok {

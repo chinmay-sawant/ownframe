@@ -1,8 +1,5 @@
 package page
 
-// isPressUsed reports whether a handler consumed the current press.
-func (p *Page) isPressUsed() bool { return p.ff.pressUsed }
-
 // setPressUsed records whether a handler consumed the current press.
 func (p *Page) setPressUsed(used bool) { p.ff.pressUsed = used }
 

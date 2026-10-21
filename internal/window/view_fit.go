@@ -44,7 +44,7 @@ func (s *shell) blitFitted(dst *ebiten.Image, w, h int, scale, ox, oy float64, p
 
 	if s.fitBuf == nil || s.fitBuf.Bounds().Dx() != w || s.fitBuf.Bounds().Dy() != h {
 		if s.fitBuf != nil {
-			s.fitBuf.Dispose()
+			s.fitBuf.Deallocate()
 		}
 
 		s.fitBuf = ebiten.NewImage(w, h)

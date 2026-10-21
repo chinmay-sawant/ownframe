@@ -35,7 +35,7 @@ func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 		img = ebiten.NewImage(box.Dx(), box.Dy())
 		if old != nil {
 			c.pixels -= old.img.Bounds().Dx() * old.img.Bounds().Dy()
-			old.img.Dispose()
+			old.img.Deallocate()
 		}
 
 		c.pixels += box.Dx() * box.Dy()

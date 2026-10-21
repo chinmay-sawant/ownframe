@@ -27,7 +27,7 @@ func checkXformText() error {
 	}
 
 	img := ebiten.NewImage(240, 140)
-	defer img.Dispose()
+	defer img.Deallocate()
 
 	DrawVisible(img, d, 0, 0)
 

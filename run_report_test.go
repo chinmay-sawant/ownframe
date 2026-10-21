@@ -14,8 +14,10 @@ import (
 // while keeping ErrNilPage for errors.Is.
 func TestRunNilPageWritesReport(t *testing.T) {
 	dir := t.TempDir()
-	SetCrashDir(dir)
-	defer SetCrashDir("")
+	if err := SetCrashDir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = SetCrashDir(t.TempDir()) })
 
 	err := RunWithOptions(context.Background(), nil, WindowOptions{})
 	if err == nil {

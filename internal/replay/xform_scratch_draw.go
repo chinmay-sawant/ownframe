@@ -16,7 +16,7 @@ func drawXformScratch(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	}
 
 	scratch := ebiten.NewImage(size.X, size.Y)
-	defer scratch.Dispose()
+	defer scratch.Deallocate()
 
 	ox, oy := float64(-left), float64(-top)
 

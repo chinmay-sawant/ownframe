@@ -61,7 +61,7 @@ func decodedImage(op *layout.DisplayOp) *ebiten.Image {
 	images.order = append(images.order, key)
 
 	if len(images.order) > imageCacheLimit {
-		images.entries[images.order[0]].Dispose()
+		images.entries[images.order[0]].Deallocate()
 		delete(images.entries, images.order[0])
 		images.order = images.order[1:]
 	}

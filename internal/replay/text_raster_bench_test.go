@@ -39,7 +39,7 @@ func textBenchDisplay(b *testing.B) *layout.Display {
 func BenchmarkTextDamageRedraw(b *testing.B) {
 	d := textBenchDisplay(b)
 	dst := ebiten.NewImage(d.Width, d.Height)
-	defer dst.Dispose()
+	defer dst.Deallocate()
 	rect := image.Rect(0, 0, d.Width, d.Height)
 
 	b.ReportAllocs()

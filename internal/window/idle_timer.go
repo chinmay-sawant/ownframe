@@ -33,6 +33,7 @@ func (g *paceGame) timer(ctx context.Context) {
 			g.mu.Unlock()
 
 			if due {
+				//nolint:staticcheck // reason: timer wake needs ScheduleFrame to post the empty event; SetScreenClearedEveryFrame(false) cannot wake event-wait.
 				ebiten.ScheduleFrame()
 			}
 

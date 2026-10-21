@@ -50,7 +50,7 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 
 func (s *shell) disposeViewport() {
 	if s.viewport.buf != nil {
-		s.viewport.buf.Dispose()
+		s.viewport.buf.Deallocate()
 	}
 	s.viewport = viewportState{}
 }
@@ -62,7 +62,7 @@ func (s *shell) dropContentBuffers() {
 	}
 
 	if s.replayBuf != nil {
-		s.replayBuf.Dispose()
+		s.replayBuf.Deallocate()
 		s.replayBuf = nil
 	}
 }

@@ -12,17 +12,17 @@ import (
 
 func TestNilContextCanonical(t *testing.T) {
 	t.Parallel()
-	if _, err := fetch.Do(nil, "GET", "https://example.com", nil, nil); !errors.Is(err, fetch.ErrNilContext) {
+	if _, err := fetch.Do(nil, "GET", "https://example.com", nil, nil); !errors.Is(err, fetch.ErrNilContext) { //nolint:staticcheck // intentionally passes nil to verify ErrNilContext
 		t.Fatalf("fetch err = %v", err)
 	}
-	if _, err := ipc.Request(nil, "nil-canon", "x"); !errors.Is(err, fetch.ErrNilContext) {
+	if _, err := ipc.Request(nil, "nil-canon", "x"); !errors.Is(err, fetch.ErrNilContext) { //nolint:staticcheck // intentionally passes nil to verify ErrNilContext
 		t.Fatalf("ipc err = %v", err)
 	}
 	p, err := page.New(page.Config{HTML: "<p>x</p>", Width: 100, Height: 100})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := page.Prepare(nil, p); !errors.Is(err, fetch.ErrNilContext) {
+	if err := page.Prepare(nil, p); !errors.Is(err, fetch.ErrNilContext) { //nolint:staticcheck // intentionally passes nil to verify ErrNilContext
 		t.Fatalf("prepare err = %v", err)
 	}
 	if err := p.Back(nil); !errors.Is(err, fetch.ErrNilContext) {

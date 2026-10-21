@@ -1,0 +1,36 @@
+# Lint policy for ownframe (see AGENTS.md "Lint").
+# Pinned runner: golangci-lint v1.64.8 via `make lint`
+# (GOLANGCI_LINT_VERSION in the Makefile).
+#
+# This file codifies the runner's default linter set explicitly, so the
+# gate stays pinned even if a future golangci release changes its
+# defaults. No extra linters are enabled here; AGENTS.md's enable-all
+# aspiration is a separate, deliberate change, not this file's job.
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+
+# Only genuine noise is excluded, narrowly. Anything that could hide a
+# real bug stays enabled and is fixed in the Go code instead.
+issues:
+  exclude-rules:
+    # errcheck flags `recover()` because it returns a value, but a bare
+    # `recover()` in a deferred guard (internal/ipc/send.go) intentionally
+    # discards it: the value never affects control flow. The code spells
+    # it `_ = recover()`; this rule is a safety net so a future bare
+    # call does not fail the gate. Scoped to the call shape via the
+    # source line, so no other unchecked error is hidden.
+    - linters: [errcheck]
+      source: "recover\\(\\)"
+
+    # SA1012 flags nil Context, but internal/fetch/canonical_test.go
+    # passes nil on purpose: the test verifies each public entry point
+    # returns ErrNilContext. Scoped to that one test file so production
+    # nil-Context calls are still flagged everywhere else.
+    - linters: [staticcheck]
+      path: "internal/fetch/canonical_test\\.go"
+      text: "SA1012"

@@ -17,8 +17,8 @@ func TestWatchdogSampling(t *testing.T) {
 	if !w.Sample(now.Add(20*time.Millisecond), time.Second, 2) {
 		t.Fatal("third sample should exceed limit")
 	}
-	if w.Sample(now.Add(30*time.Millisecond), time.Second, 2) {
-		// after reset in window? not reset until window; still could be over; ignore
+	if !w.Sample(now.Add(30*time.Millisecond), time.Second, 2) {
+		t.Fatal("fourth sample should still exceed limit")
 	}
 	w.Reset()
 	if w.Count() != 0 {

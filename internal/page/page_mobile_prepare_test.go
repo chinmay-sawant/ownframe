@@ -15,6 +15,7 @@ func TestDesktopMinimumSurvivesMobilePrepareError(t *testing.T) {
 	if err := page.Prepare(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:staticcheck // reason: intentionally passes nil to verify nil-context rejection.
 	if err := page.PrepareMobile(nil, p); err == nil {
 		t.Fatal("nil context accepted")
 	}

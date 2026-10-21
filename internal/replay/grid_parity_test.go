@@ -55,7 +55,7 @@ func TestTranslucentGridAgreesGPU(t *testing.T) {
 		t.Fatal(err)
 	}
 	img := ebiten.NewImage(200, 140)
-	defer img.Dispose()
+	defer img.Deallocate()
 	DrawVisible(img, d, 0, 0)
 	px := make([]byte, 200*140*4)
 	img.ReadPixels(px)

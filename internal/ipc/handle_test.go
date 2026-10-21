@@ -37,7 +37,7 @@ func TestEmptyChannel(t *testing.T) {
 		return "no", nil
 	})
 
-	_, err := ipc.Request(nil, "", "x")
+	_, err := ipc.Request(context.Background(), "", "x")
 	if !errors.Is(err, ipc.ErrNoHandler) || heard {
 		t.Fatalf("err=%v heard=%v", err, heard)
 	}

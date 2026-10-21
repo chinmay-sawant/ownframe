@@ -41,5 +41,5 @@ func TestBitmapViewportReusesGPUBufferUntilResize(t *testing.T) {
 	if s.bitmapView.img == first {
 		t.Fatal("resize retained wrong buffer size")
 	}
-	s.bitmapView.img.Dispose()
+	s.bitmapView.img.Deallocate()
 }

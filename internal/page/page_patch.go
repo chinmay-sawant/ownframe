@@ -23,12 +23,14 @@ type DisplayPatch struct {
 
 var displayOpPool = sync.Pool{
 	New: func() any {
-		return make([]DisplayOp, 0, 64)
+		b := make([]DisplayOp, 0, 64)
+		return &b
 	},
 }
 
 func (p *Page) rentOps(n int) []DisplayOp {
-	buf := displayOpPool.Get().([]DisplayOp)
+	bp := displayOpPool.Get().(*[]DisplayOp)
+	buf := *bp
 	if cap(buf) < n {
 		buf = make([]DisplayOp, 0, n)
 	}
@@ -37,7 +39,8 @@ func (p *Page) rentOps(n int) []DisplayOp {
 }
 
 func (p *Page) freeOps(buf []DisplayOp) {
-	displayOpPool.Put(buf[:0])
+	b := buf[:0]
+	displayOpPool.Put(&b)
 }
 
 // LastPatch returns the last patch report; use it.

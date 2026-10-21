@@ -26,8 +26,8 @@ func checkTextClip() error {
 
 	direct := ebiten.NewImage(320, 240)
 	cached := ebiten.NewImage(320, 240)
-	defer direct.Dispose()
-	defer cached.Dispose()
+	defer direct.Deallocate()
+	defer cached.Deallocate()
 
 	clip, ok := direct.SubImage(rect).(*ebiten.Image)
 	if !ok {

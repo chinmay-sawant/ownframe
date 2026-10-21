@@ -26,7 +26,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 
 	if s.replayBuf == nil || s.replayBuf.Bounds().Dx() != w || s.replayBuf.Bounds().Dy() != h {
 		if s.replayBuf != nil {
-			s.replayBuf.Dispose()
+			s.replayBuf.Deallocate()
 		}
 
 		s.replayBuf = ebiten.NewImage(w, h)

@@ -66,7 +66,7 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 		evicted := c.entries[victim]
 		delete(c.entries, victim)
 		c.pixels -= evicted.Bounds().Dx() * evicted.Bounds().Dy()
-		evicted.Dispose()
+		evicted.Deallocate()
 	}
 
 	return img

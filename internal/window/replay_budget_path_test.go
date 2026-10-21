@@ -32,7 +32,7 @@ func TestScaledPathKeepsLargePage(t *testing.T) {
 	if got := s.replayBuf.Bounds().Size(); got != image.Pt(1920, 2200) {
 		t.Fatalf("buffer = %v", got)
 	}
-	s.replayBuf.Dispose()
+	s.replayBuf.Deallocate()
 }
 
 // TestFittedPathKeepsLargePage checks that a large page draws through the
@@ -58,5 +58,5 @@ func TestFittedPathKeepsLargePage(t *testing.T) {
 	if got := s.fitBuf.Bounds().Size(); got != image.Pt(1920, 2200) {
 		t.Fatalf("buffer = %v", got)
 	}
-	s.fitBuf.Dispose()
+	s.fitBuf.Deallocate()
 }

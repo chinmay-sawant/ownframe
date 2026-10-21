@@ -42,7 +42,7 @@ func (g *tileGrid) handle() *ebiten.Image {
 func (g *tileGrid) dispose() {
 	for _, img := range g.images {
 		if img != nil {
-			img.Dispose()
+			img.Deallocate()
 		}
 	}
 }

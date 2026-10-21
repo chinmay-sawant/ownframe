@@ -14,7 +14,9 @@ func TestPageStateMetadataSurface(t *testing.T) {
 	}
 	st := state.NewStore(map[string]any{"count": 1})
 	p.SetState(st)
-	st.PatchChange("count", 2)
+	if _, ok := st.TryPatchChange("count", 2); !ok {
+		t.Fatal("setPath failed for count")
+	}
 
 	if got := p.ChangedProperties(); len(got) == 0 || got[0] != "count" {
 		t.Fatalf("page changed = %v", got)

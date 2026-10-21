@@ -29,8 +29,8 @@ func checkChunkParity() error {
 	}
 
 	direct, chunked := ebiten.NewImage(640, 200), ebiten.NewImage(640, 200)
-	defer direct.Dispose()
-	defer chunked.Dispose()
+	defer direct.Deallocate()
+	defer chunked.Deallocate()
 
 	for _, i := range d.Order {
 		drawOp(direct, &d.Ops[i], 0, 0)

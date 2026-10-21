@@ -9,7 +9,7 @@ import (
 // saw itself. IsMouseButtonJustPressed can repeat for one press when a
 // blocking call, such as the file dialog, stalls the event queue.
 func (s *shell) pointer() error {
-	if handled, err := s.consumeTouchCancel(ebiten.TouchIDs()); handled || err != nil {
+	if handled, err := s.consumeTouchCancel(ebiten.AppendTouchIDs(nil)); handled || err != nil {
 		return err
 	}
 	x, y := ebiten.CursorPosition()

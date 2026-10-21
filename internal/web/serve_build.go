@@ -55,7 +55,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	}
 	fmt.Println("http://" + addr + "/")
 	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
-	stop := context.AfterFunc(ctx, func() { hs.Shutdown(context.Background()) })
+	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
 	defer stop()
 	err = hs.Serve(ln)
 	if ctx.Err() != nil {

@@ -33,8 +33,8 @@ func checkXformParity() error {
 	}
 
 	before, after := ebiten.NewImage(240, 140), ebiten.NewImage(240, 140)
-	defer before.Dispose()
-	defer after.Dispose()
+	defer before.Deallocate()
+	defer after.Deallocate()
 
 	for i := range d.Order {
 		drawOp(before, &d.Ops[i], 0, 0)

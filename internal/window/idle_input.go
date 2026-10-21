@@ -31,7 +31,7 @@ func (w *inputWatch) changed() bool {
 	chars := ebiten.AppendInputChars(w.runes[:0])
 	tap := len(inpututil.AppendJustPressedKeys(w.tap[:0])) > 0 ||
 		len(inpututil.AppendJustReleasedKeys(w.tap[:0])) > 0
-	touch := len(ebiten.TouchIDs())
+	touch := len(ebiten.AppendTouchIDs(nil))
 	changed := !w.ready || x != w.cursor.X || y != w.cursor.Y ||
 		!slices.Equal(keys, w.keys) || !slices.Equal(chars, w.chars) ||
 		tap || touch != w.touch || justPressedMouse() || wheelMoved()

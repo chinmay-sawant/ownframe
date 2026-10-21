@@ -59,7 +59,7 @@ func TestTranslucentImageAgrees(t *testing.T) {
 		t.Fatal(err)
 	}
 	img := ebiten.NewImage(100, 100)
-	defer img.Dispose()
+	defer img.Deallocate()
 	DrawVisible(img, d, 0, 0)
 	px := make([]byte, 100*100*4)
 	img.ReadPixels(px)

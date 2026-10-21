@@ -38,7 +38,7 @@ func TestFrameNoteRecordsOnlyPaintedRects(t *testing.T) {
 	s.frameBegin()
 	s.frameNote(image.Rect(10, 10, 30, 30))
 	s.frameNote(image.Rect(5, 5, 5, 40))
-	s.frameNote(image.ZR)
+	s.frameNote(image.Rectangle{})
 	s.frameNote(image.Rectangle{Min: image.Pt(40, 40), Max: image.Pt(30, 30)})
 	s.frameNote(image.Rect(50, 50, 70, 70))
 	s.frameCommit()

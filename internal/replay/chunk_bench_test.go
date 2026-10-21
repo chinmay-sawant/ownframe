@@ -15,7 +15,7 @@ func BenchmarkChunkCardDamage(b *testing.B) {
 	rect := image.Rect(benchGap-2, benchGap-2,
 		benchGap+benchCardW+2, benchGap+benchCardH+2)
 	dst := ebiten.NewImage(d.Width, d.Height)
-	defer dst.Dispose()
+	defer dst.Deallocate()
 
 	replayCounts.on.Store(true)
 	defer replayCounts.on.Store(false)

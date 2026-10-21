@@ -50,8 +50,12 @@ func TestRouteClickLoadsHTML(t *testing.T) {
 	ctx := context.Background()
 	next := `<div id="b">B</div>`
 	screen := navPage(t, `<div id="a" data-action="go">A</div>`)
-	screen.Route("go", `<div id="c">C</div>`)
-	screen.Route("go", next)
+	if err := screen.Route("go", `<div id="c">C</div>`); err != nil {
+		t.Fatal(err)
+	}
+	if err := screen.Route("go", next); err != nil {
+		t.Fatal(err)
+	}
 
 	x, y := boxCenter(t, screen, "a")
 	if err := screen.Click(ctx, x, y); err != nil {

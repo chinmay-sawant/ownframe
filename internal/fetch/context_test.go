@@ -31,6 +31,7 @@ func TestCanceledContext(t *testing.T) {
 func TestNilContext(t *testing.T) {
 	t.Parallel()
 
+	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
 	_, err := fetch.Do(nil, http.MethodGet, "https://example.com", nil, nil)
 	if !errors.Is(err, fetch.ErrNilContext) {
 		t.Fatalf("err = %v", err)

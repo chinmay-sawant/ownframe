@@ -21,7 +21,7 @@ func (s *shell) prepareBitmapViewport() error {
 	raw, ok := s.app.(host.FallbackDisplayProvider)
 	if !s.fallback || !ok || raw.FallbackDisplay() == nil || s.stretched() || s.viewLocked() {
 		if s.bitmapView.img != nil {
-			s.bitmapView.img.Dispose()
+			s.bitmapView.img.Deallocate()
 		}
 		s.bitmapView = bitmapView{}
 		return nil
@@ -42,7 +42,7 @@ func (s *shell) prepareBitmapViewport() error {
 	}
 	if v.img == nil || v.img.Bounds().Size() != area.Size() {
 		if v.img != nil {
-			v.img.Dispose()
+			v.img.Deallocate()
 		}
 		v.img = ebiten.NewImage(area.Dx(), area.Dy())
 	}

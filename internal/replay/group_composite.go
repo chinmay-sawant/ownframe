@@ -28,7 +28,7 @@ func compositeLayer(dst *ebiten.Image, layer *ebiten.Image, at image.Point, mode
 	}
 
 	backdrop := ebiten.NewImage(layer.Bounds().Dx(), layer.Bounds().Dy())
-	defer backdrop.Dispose()
+	defer backdrop.Deallocate()
 
 	back := &ebiten.DrawImageOptions{}
 	back.GeoM.Translate(
