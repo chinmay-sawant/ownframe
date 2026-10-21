@@ -1,5 +1,19 @@
 package main
 
+// publishBoxes copies the page boxes on the game goroutine and keeps them
+// for the HTTP /box route. The route reads this snapshot under the walker
+// mutex, so it never reads the page while the loop swaps the boxes. The
+// page bumps its generation on every redraw and on every element patch,
+// which are the two paths that replace the boxes.
+func (w *walker) publishBoxes() {
+	gen := w.p.Generation()
+	if gen == w.boxGen {
+		return
+	}
+	w.boxGen = gen
+	w.boxes = w.p.Boxes()
+}
+
 func (w *walker) step() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -18,6 +32,7 @@ func (w *walker) step() {
 		w.d.pending = nil
 	}
 	w.snapshot()
+	w.publishBoxes()
 	if w.next < 0 || w.next >= len(w.v.Catalog) {
 		return
 	}

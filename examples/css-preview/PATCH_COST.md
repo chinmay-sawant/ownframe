@@ -117,9 +117,8 @@ operation id is left out, because a full redraw assigns new ids.
 `TestPatchCardRowMatchesAFullRedraw` is the same gate for the card row. The
 card row patch applies today, so the test takes the patched operations,
 redraws the page, and compares the card operations of the patch with the card
-operations of the full redraw. If the engine refuses the patch, the test
-compares the operations of the page before the refusal with the operations
-after it, and checks that the page kept the operations it had.
+operations of the full redraw. A refused patch fails the test: a gate that
+passes without a patch measures nothing.
 
 ## The commands
 

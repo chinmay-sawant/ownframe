@@ -1,16 +1,12 @@
 package main
 
-// rangeFor returns the visible row range. The overscan constant is zero, so
-// the range holds the rows that intersect the viewport.
+// rangeFor returns the visible row range. The window holds the rows that
+// intersect the viewport, with no overscan on either side.
 func (m *catalogMetrics) rangeFor(offsetY, viewH int) (int, int) {
 	rel := offsetY - m.gridTop
 	start := 0
 	for start < len(m.rowTop) && m.rowTop[start]+m.rowH[start]-m.gridTop < rel {
 		start++
-	}
-	start -= catalogWindowOverscan
-	if start < 0 {
-		start = 0
 	}
 	if start >= len(m.rowTop) {
 		start = len(m.rowTop) - 1
@@ -21,7 +17,6 @@ func (m *catalogMetrics) rangeFor(offsetY, viewH int) (int, int) {
 	for end < len(m.rowTop) && m.rowTop[end]-m.gridTop <= limit {
 		end++
 	}
-	end += catalogWindowOverscan
 	if end > len(m.rowTop) {
 		end = len(m.rowTop)
 	}

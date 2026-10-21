@@ -7,15 +7,15 @@ import (
 )
 
 // TestPatchCardRowMatchesAFullRedraw is the same gate for the class change
-// on a card row. The engine refuses a card row today, so the test takes the
-// refusal and checks that the page keeps the operations it had.
+// on a card row. The engine splices the card row, so the test takes the
+// patched operations, redraws the page, and compares the card operations of
+// the patch with the card operations of the full redraw. A refused patch
+// fails the test: a gate that passes without a patch measures nothing.
 func TestPatchCardRowMatchesAFullRedraw(t *testing.T) {
 	ctx, p, v := patchCostPage(t)
 	card := patchCostCardOf(v)
-	before := patchCostOps(p.Display(), card.id)
 	if !p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: card.cardOn}) {
-		comparePatchOps(t, "card", patchCostOps(p.Display(), card.id), before)
-		return
+		t.Fatal("the engine refused the card patch")
 	}
 	patched := patchCostOps(p.Display(), card.id)
 	if err := p.Redraw(ctx); err != nil {

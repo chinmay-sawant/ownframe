@@ -11,6 +11,10 @@ func (w *walker) reset() {
 	w.v.Started = map[string]bool{}
 	w.v.Selected = ""
 	w.v.Readout = ""
+	// The readout lives in the parsed tree, so the copy in the demo has to
+	// go too. The after-redraw hook patches it back into every rebuilt
+	// tree, and a stale copy would keep the last row's readout on screen.
+	w.d.readout = ""
 	w.d.samples = map[string]*sample{}
 	w.d.pending = nil
 	w.d.allPlaying = false

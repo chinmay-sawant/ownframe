@@ -45,28 +45,37 @@ One 43-click pass at 1908x999 with the devtools dock open:
 
 | Metric | Before the fifth pass | Now |
 |---|---:|---:|
-| redraw p50 | 19.3 ms | 7.1 ms |
-| redraw p95 | 39.6 ms | 10.0 ms |
-| redraw max | 49.5 ms | 14.4 ms |
-| redraw total | 0.85 s | 0.32 s |
-| press to started p50 | 44.3 ms | 10.3 ms |
+| redraw p50 | 19.3 ms | 0.0 ms |
+| redraw p95 | 39.6 ms | 0.0 ms |
+| redraw max | 49.5 ms | 0.0 ms |
+| redraw total | 0.85 s | 0 s |
+| press to started p50 | 44.3 ms | 15.8 ms |
 | clicks | 42/43 | 43/43 |
 | Alloc/frame | 1.7 MB (per 500 ms, mislabelled) | 123.7 KB |
 | Go heap | 350 MB | 56 MB |
 | RSS | about 1000 MB | 261 MB |
+
+The click patches the card it changed instead of rebuilding the page, so the
+page reports no redraw for any of the 43 clicks and the redraw rows read zero.
+The walk still waits for each painted frame, and that wait is the visible
+latency. The canonical numbers for the click path and the latency breakdown
+are in `documentation/optimizations.md`. The memory rows are from the earlier
+run, before the element patch.
 
 The dock takes the right 340 px of the window, so the page viewport reads
 1568x999 in the Frame tab while the window reads 1908x999.
 
 ## Play all 43 previews
 
-The header carries a `Play all 43 previews` button. One press renders the
-whole catalog, so every preview has a box and a starting paint, then starts
-each one through the same path its own Start button uses. The animations, the
-transitions, and the triggered samples all run together, and a Start button
-still replays its own preview afterwards.
+The header carries a `Play all 43 previews` button. One press starts every
+preview through the same path its own Start button uses. The catalog stays
+windowed: the rows on screen start now, and the rows off screen wait for
+their first render, which gives the transition its starting paint. The
+animations, the transitions, and the triggered samples all run together, and a
+Start button still replays its own preview afterwards.
 
-With all 43 running at 1908x999, dock open:
+With all 43 running at 1908x999, dock open, measured when the press still
+rendered the whole catalog:
 
 | Metric | Value |
 |---|---:|
@@ -79,10 +88,12 @@ With all 43 running at 1908x999, dock open:
 | Page redraw for the press | 7.6 ms |
 | Click in that mode | 21 ms p50 |
 
-The click is the slow part: with the whole catalog rendered, a click re-lays
-out every card. The catalog window keeps that at 7 to 10 ms, and the plan to
-keep the window and still play every preview is in the next steps section of
-`documentation/optimizations.md`.
+The catalog is windowed now, so the press paints only the rows on screen and a
+click keeps the windowed cost. The press stamps the shared start time after it
+patched the cards, so a press that patches every card cannot leave a sample
+finished before the first tick reaches it. The measured press cost and the
+edge cases are in `documentation/optimizations.md`, in the section on the Play
+All click cost.
 
 ## Scrolling
 

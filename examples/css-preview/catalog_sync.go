@@ -2,39 +2,26 @@ package main
 
 import (
 	"context"
-
-	"github.com/chinmay-sawant/ownframe"
 )
 
 // syncTree puts the app's state back into the parsed tree after the
-// template replaced it. It reports whether the tree changed. The tree is
-// fresh when this runs, so the started cards and the selected card are the
-// only ones that need their state back.
+// template replaced it. It reports whether the page has to draw again. The
+// tree is fresh when this runs, so the started cards and the selected card
+// are the only ones that need their state back.
 func (d *demo) syncTree(ctx context.Context) bool {
-	changed := false
+	redraw := false
 	if d.readout != "" {
 		// The readout is in the tree, so the rebuilt tree carries the
 		// initial snapshot again until the readout is patched back.
-		changed = d.patchReadout(ctx, d.readout) || changed
-	}
-	for _, row := range d.v.Catalog {
-		if !d.v.Started[row.Button] && d.v.Selected != row.Name {
-			continue
+		if !d.patchReadout(ctx, d.readout) {
+			redraw = true
 		}
-		text := d.spanText(row)
-		span := d.spanClass(row)
-		if d.p.PatchElement(ctx, row.StateID,
-			ownframe.ElementEdit{Attribute: "class", Value: span},
-			ownframe.ElementEdit{Text: &text}) {
-			changed = true
-		}
-		// The card's class moves the transition target. The engine refuses
-		// a card, so the edit lands in the tree and the next layout shows
-		// it.
-		d.p.PatchElement(ctx, row.CardID,
-			ownframe.ElementEdit{Attribute: "class", Value: d.cardClass(row)})
 	}
-	return changed
+	if !d.patchGrid(ctx) {
+		redraw = true
+	}
+
+	return redraw
 }
 
 // afterRedraw puts the app's state back into the parsed tree when the
@@ -47,9 +34,12 @@ func (d *demo) afterRedraw(ctx context.Context) {
 		return
 	}
 	d.treeParses = parses
+	d.treeDirty = false
+	// The rows that just rendered hold their starting paint until the
+	// state patch moves them.
+	d.captureBases()
 	if !d.syncTree(ctx) {
 		return
 	}
-	d.treeDirty = false
 	d.p.Redraw(ctx)
 }
