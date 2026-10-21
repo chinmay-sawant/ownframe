@@ -108,7 +108,7 @@ Detail is in [crash.md](crash.md).
 
 ## Fetch and XHR
 
-`Fetch` sends GET. `XHR` sends a method, headers, and a body. Only `http` and `https` are accepted. A redirect to any other scheme returns `ErrScheme`. The client stores no cookies and no cache.
+`Fetch` sends GET. `XHR` sends a method, headers, and a body. Only `http` and `https` are accepted. A redirect to any other scheme returns `ErrScheme`, and a redirect that steps from `https` down to `http` returns `ErrDowngrade`. Hosts that resolve to loopback, private, link-local, multicast, or unspecified addresses are rejected with `ErrPrivateAddress`. The client stores no cookies and no cache.
 
 Detail is in [fetch.md](fetch.md).
 

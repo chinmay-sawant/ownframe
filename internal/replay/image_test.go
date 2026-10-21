@@ -57,5 +57,5 @@ func set(t *testing.T, field, value reflect.Value) {
 		t.Fatal("payload field missing")
 	}
 
-	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Set(value)
+	reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem().Set(value) //nolint:gosec // reason: test-only write to an unexported field.
 }

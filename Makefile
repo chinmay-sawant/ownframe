@@ -7,9 +7,9 @@ TEST_P ?= 1
 
 # Pin golangci-lint for local + CI reproducibility. Override:
 # make lint GOLANGCI_LINT_VERSION=vX.Y.Z
-# The binary must be built with a Go at least as new as the module version
-# (go 1.26), so the install always uses GOTOOLCHAIN=local.
-GOLANGCI_LINT_VERSION ?= v1.64.8
+# The v2 module path needs a Go at least as new as the module version
+# (go 1.26), so the install uses the default toolchain resolution.
+GOLANGCI_LINT_VERSION ?= v2.15.0
 
 .PHONY: test
 test:
@@ -29,7 +29,7 @@ build:
 # .golangci.yml. The library at the root and the examples module under
 # examples/ are separate Go modules, so each needs its own pass.
 # Installs the pinned binary into $(go env GOPATH)/bin when it is missing.
-# Always builds with GOTOOLCHAIN=local so the binary matches go.mod.
+# Builds with the default toolchain so the binary matches the module Go.
 # The run ends with the file-size gate (scripts/check-file-size.sh), so CI
 # enforces the 2,000-character rule in AGENTS.md alongside the linters.
 # The website in frontend/ is linted by ESLint in the same run, so one
@@ -40,8 +40,8 @@ build:
 .PHONY: lint
 lint:
 	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "golangci-lint not found; installing $(GOLANGCI_LINT_VERSION) with local Go toolchain..."; \
-		GOTOOLCHAIN=local go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
+		echo "golangci-lint not found; installing $(GOLANGCI_LINT_VERSION) with default Go toolchain..."; \
+		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
 	}
 	golangci-lint version
 	@status=0; \

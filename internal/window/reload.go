@@ -46,8 +46,9 @@ func (s *shell) pollReload() error {
 }
 
 // reloadNote returns the stderr line for err, once per distinct message.
+// The text is sanitized so a path cannot forge extra log lines.
 func (s *shell) reloadNote(err error) (string, bool) {
-	line := "hot reload: " + err.Error()
+	line := "hot reload: " + cleanLog(err.Error())
 	if line == s.lastNote {
 		return "", false
 	}

@@ -30,7 +30,7 @@ func TestRedirectFile(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if err != fetch.ErrScheme {
 		t.Fatalf("err = %v", err)
 	}
@@ -48,7 +48,7 @@ func TestRedirectHTTP(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	got, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

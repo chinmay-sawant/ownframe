@@ -15,7 +15,7 @@ func dialX() (*xClient, error) {
 		return nil, ErrX11
 	}
 
-	conn, err := net.DialTimeout("unix", "/tmp/.X11-unix/X"+num, xWait)
+	conn, err := net.DialTimeout("unix", "/tmp/.X11-unix/X"+num, xWait) //nolint:gosec // reason: fixed /tmp/.X11-unix/ prefix plus display number parsed from DISPLAY.
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func dialX() (*xClient, error) {
 	done := false
 	defer func() {
 		if !done {
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 

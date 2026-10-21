@@ -45,13 +45,17 @@ Recommended protections:
 
 - Use IPC only between trusted components in one process. Do not build process
   or network isolation on top of it.
-- Handlers must return promptly. A slow `Handle` blocks `Request` callers and
-  there is no timeout beyond the caller's context.
+- Give each channel one owner and prefix its name (for example
+  `owner.topic`). Never take channel names from untrusted input.
+- Handlers must return promptly and honor the caller's context. A slow `Handle`
+  blocks `Request` callers and there is no timeout beyond the caller's context,
+  so pass a context with a deadline when untrusted code can register.
 - Guard against panics. `Send` recovers listener panics, and `Request`
   recovers a handler panic into `ErrHandlerPanicked`.
 - Avoid user controlled channel names. Registration has no caps, so unbounded
   registration or oversized names can grow memory.
-- Validate payloads at handler entry, since they are untyped strings.
+- Validate payloads at handler entry, since they are untyped strings. Keep
+  secrets and capabilities out of payloads.
 
 See the security audit in
 [plans/v0.0.2/security](../plans/v0.0.2/security/00-overview-threat-model-and-priority.md).

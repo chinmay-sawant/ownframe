@@ -20,7 +20,7 @@ func create(folder, body string) (string, error) {
 		}
 
 		path := filepath.Join(folder, name)
-		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, crashFilePerm)
+		f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, crashFilePerm) //nolint:gosec // reason: folder passed validateDir (rejects .. before Clean) and filename is a timestamp.
 		if errors.Is(err, os.ErrExist) {
 			continue
 		}

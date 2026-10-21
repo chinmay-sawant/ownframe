@@ -30,7 +30,7 @@ func fromWindowsPath(ctx context.Context, picked string) (string, bool) {
 	}
 
 	linux := strings.TrimRight(string(out), "\r\n")
-	if linux == "" {
+	if linux == "" || !strings.HasPrefix(linux, "/") || hasDotSegment(linux) {
 		return "", false
 	}
 

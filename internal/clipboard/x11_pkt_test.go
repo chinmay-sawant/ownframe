@@ -71,7 +71,7 @@ func TestDisplayAndAuth(t *testing.T) {
 
 func authEntry(fam int, addr, disp, name, data string) []byte {
 	var b []byte
-	b = append(b, byte(fam>>8), byte(fam))
+	b = append(b, byte(fam>>8), byte(fam)) //nolint:gosec // reason: big-endian family byte split.
 	b = appendStr(b, addr)
 	b = appendStr(b, disp)
 	b = appendStr(b, name)
@@ -81,7 +81,7 @@ func authEntry(fam int, addr, disp, name, data string) []byte {
 }
 
 func appendStr(b []byte, s string) []byte {
-	b = append(b, byte(len(s)>>8), byte(len(s)))
+	b = append(b, byte(len(s)>>8), byte(len(s))) //nolint:gosec // reason: big-endian length byte split.
 
 	return append(b, s...)
 }

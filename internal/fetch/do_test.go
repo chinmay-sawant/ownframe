@@ -24,7 +24,7 @@ func TestGETReturnsBodyAndStatus(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := fetch.Do(context.Background(), "", srv.URL, nil, nil)
+	got, err := fetch.Do(fetch.AllowPrivate(context.Background()), "", srv.URL, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +51,7 @@ func TestXHRPostSendsBody(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	res, err := fetch.Do(context.Background(), http.MethodPost, srv.URL, nil, []byte("ada"))
+	res, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodPost, srv.URL, nil, []byte("ada"))
 	if err != nil {
 		t.Fatal(err)
 	}

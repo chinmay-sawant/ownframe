@@ -3,6 +3,7 @@ package state
 import "time"
 
 // PatchChangeFor records a change bound to a stable element identity.
+//
 // Deprecated: use TryPatchChangeFor, which reports setPath failure.
 func (s *Store) PatchChangeFor(identity, path string, value any) Change {
 	c, _ := s.patchChangeWithIdentity(identity, path, value)
@@ -10,6 +11,7 @@ func (s *Store) PatchChangeFor(identity, path string, value any) Change {
 }
 
 // PatchChangeWithIdentity is an alias.
+//
 // Deprecated: use TryPatchChangeWithIdentity.
 func (s *Store) PatchChangeWithIdentity(identity, path string, value any) Change {
 	c, _ := s.patchChangeWithIdentity(identity, path, value)
@@ -17,6 +19,7 @@ func (s *Store) PatchChangeWithIdentity(identity, path string, value any) Change
 }
 
 // PatchChangeWithStableID is an alias.
+//
 // Deprecated: use TryPatchChangeWithStableID.
 func (s *Store) PatchChangeWithStableID(identity, path string, value any) Change {
 	c, _ := s.patchChangeWithIdentity(identity, path, value)
@@ -24,6 +27,7 @@ func (s *Store) PatchChangeWithStableID(identity, path string, value any) Change
 }
 
 // PatchChangeElement is an alias.
+//
 // Deprecated: use TryPatchChangeElement.
 func (s *Store) PatchChangeElement(identity, path string, value any) Change {
 	c, _ := s.patchChangeWithIdentity(identity, path, value)

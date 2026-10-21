@@ -58,7 +58,7 @@ func ptrBits(v any) uint64 {
 	}
 
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr {
+	if rv.Kind() != reflect.Pointer {
 		return 0
 	}
 

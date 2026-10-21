@@ -10,8 +10,8 @@ import (
 )
 
 // TestRunNilPageWritesReport checks the global fallback: a startup
-// failure is stored in a report file, and the error names that file
-// while keeping ErrNilPage for errors.Is.
+// failure is stored in a report file, and the error keeps ErrNilPage
+// without naming the file. LastReportPath exposes the file.
 func TestRunNilPageWritesReport(t *testing.T) {
 	dir := t.TempDir()
 	if err := SetCrashDir(dir); err != nil {
@@ -39,7 +39,10 @@ func TestRunNilPageWritesReport(t *testing.T) {
 	if !strings.Contains(string(body), "ownframe: nil page") {
 		t.Fatalf("report body = %q", body)
 	}
-	if !strings.Contains(err.Error(), files[0]) {
-		t.Fatalf("error %q names no report", err)
+	if strings.Contains(err.Error(), files[0]) {
+		t.Fatalf("error %q must not name the report file", err)
+	}
+	if got := LastReportPath(); got != files[0] {
+		t.Fatalf("LastReportPath = %q, want %q", got, files[0])
 	}
 }

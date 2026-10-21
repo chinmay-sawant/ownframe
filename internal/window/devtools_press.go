@@ -25,7 +25,10 @@ func (s *shell) devOpHitText(arg int) string {
 	return ""
 }
 
-// devRun applies one panel hit.
+// devRun applies one panel hit. An Ops row pick writes its text to the
+// OS clipboard; the write always follows that explicit click, and there
+// is no setting to turn it off, so keep the dock closed for sensitive
+// output. See documentation/devtools.md and security.md.
 func (s *shell) devRun(hit devHit) {
 	switch hit.act {
 	case devActTab:

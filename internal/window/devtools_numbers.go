@@ -31,7 +31,7 @@ const (
 // devRGBA builds an opaque-ish ink from packed 0xRRGGBBAA.
 func devRGBA(hex uint32) color.RGBA {
 	return color.RGBA{
-		R: uint8(hex >> devShiftR), //nolint:gosec // reason: shift keeps channel in byte range.
+		R: uint8(hex >> devShiftR),
 		G: uint8(hex >> devShiftG), //nolint:gosec // reason: shift keeps channel in byte range.
 		B: uint8(hex >> devShiftB), //nolint:gosec // reason: shift keeps channel in byte range.
 		A: uint8(hex),              //nolint:gosec // reason: low byte holds alpha.

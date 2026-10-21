@@ -14,6 +14,9 @@ type Options struct {
 // maxFormBytes caps the POST form bodies the preview handlers read.
 const maxFormBytes = 256 * 1024
 
+// maxHeaderBytes caps request headers at 64 KiB (WEB-4).
+const maxHeaderBytes = 1 << 16
+
 const (
 	readHeaderTimeout = 5 * time.Second
 	readTimeout       = 15 * time.Second

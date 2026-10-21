@@ -1,21 +1,28 @@
 package bitmap
 
 import (
-	"unsafe"
+	"hash/fnv"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/opentype"
 )
 
 type faceKey struct {
-	ptr  uintptr
+	hash uint64
 	size float64
+	n    int
 }
 
 type faceCache map[faceKey]font.Face
 
 func (c faceCache) face(data []byte, size float64) font.Face {
-	key := faceKey{ptr: uintptr(unsafe.Pointer(&data[0])), size: size}
+	if len(data) == 0 {
+		return nil
+	}
+	h := fnv.New64a()
+	// hash.Hash.Write never returns an error; it always returns len(data), nil.
+	_, _ = h.Write(data)
+	key := faceKey{hash: h.Sum64(), size: size, n: len(data)}
 	if face, ok := c[key]; ok {
 		return face
 	}

@@ -8,6 +8,7 @@ import (
 
 // paceDebugEnv turns on one pacing line per second on stderr, so a headless
 // CPU run can report the present rate without opening the devtools dock.
+// It is dev-only and off unless explicitly set; keep it off in shipped builds.
 const paceDebugEnv = "OWNFRAME_PACE_DEBUG"
 
 // paceDebugWriter returns stderr when the debug environment variable is set
@@ -31,5 +32,5 @@ func (g *paceGame) debugLine(now time.Time, presents, skipped uint64, idle bool)
 	dp := presents - g.debugPresents
 	g.debugAt, g.debugPresents = now, presents
 
-	fmt.Fprintf(g.debug, "pace: presents=%d/s skipped=%d idle=%v\n", dp, skipped, idle)
+	_, _ = fmt.Fprintf(g.debug, "pace: presents=%d/s skipped=%d idle=%v\n", dp, skipped, idle)
 }

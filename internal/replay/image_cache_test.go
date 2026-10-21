@@ -51,7 +51,7 @@ func TestDecodedImageEvictsOldest(t *testing.T) {
 	}
 
 	for i := range imageCacheLimit {
-		filler := imageOp(t, tinyPNG(t, uint8(100+i)), 2, 2, false) //nolint:gosec // reason: 100 plus index below 164 fits uint8.
+		filler := imageOp(t, tinyPNG(t, uint8(100+i)), 2, 2, false)
 		if decodedImage(&filler) == nil {
 			t.Fatalf("filler %d did not decode", i)
 		}

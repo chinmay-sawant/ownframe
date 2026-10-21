@@ -72,6 +72,5 @@ func (p *pacePolicy) skip(now time.Time) {
 		return
 	}
 
-	//nolint:gosec // reason: steps is at least 1 because gap exceeded paceStep, so the quotient is non-negative and fits uint64.
 	p.skipped += uint64(steps) - 1
 }

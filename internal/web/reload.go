@@ -34,8 +34,9 @@ func (s *server) watching() bool {
 }
 
 // reloadNote returns the stderr line for err, once per distinct message.
+// The text is sanitized so a path cannot forge extra log lines.
 func (s *server) reloadNote(err error) (string, bool) {
-	line := "hot reload: " + err.Error()
+	line := "hot reload: " + sanitizeLine(err.Error())
 	if line == s.lastNote {
 		return "", false
 	}

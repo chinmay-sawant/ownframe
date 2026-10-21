@@ -33,10 +33,11 @@ func Pick(ctx context.Context, title string) (string, bool) {
 }
 
 // debugf writes to stderr when OWNFRAME_FILEPICK_DEBUG is not empty.
+// Values are sanitized to one line. Keep this flag off in shipped builds.
 func debugf(format string, args ...any) {
 	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" && os.Getenv("GPUI_FILEPICK_DEBUG") == "" {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", cleanArgs(args)...)
 }

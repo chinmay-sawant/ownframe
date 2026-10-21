@@ -15,7 +15,7 @@ import (
 func (c faceCache) close() {
 	for _, face := range c {
 		if face != nil {
-			face.Close()
+			_ = face.Close()
 		}
 	}
 }

@@ -12,11 +12,15 @@ func setStructSeg(cur any, segs []string, value any) (any, bool) {
 	seg := segs[0]
 	rest := segs[1:]
 	f := cp.FieldByName(seg)
-	if !f.IsValid() {
+	if !f.IsValid() || !f.CanSet() || !f.CanInterface() {
 		return cur, false
 	}
 	if len(rest) == 0 {
 		v := reflect.ValueOf(value)
+		if !v.IsValid() {
+			f.Set(reflect.Zero(f.Type()))
+			return cp.Interface(), true
+		}
 		if v.Type().AssignableTo(f.Type()) {
 			f.Set(v)
 			return cp.Interface(), true
@@ -27,7 +31,7 @@ func setStructSeg(cur any, segs []string, value any) (any, bool) {
 		}
 		return cur, false
 	}
-	if f.IsNil() && f.Kind() == reflect.Map {
+	if f.Kind() == reflect.Map && f.IsNil() {
 		f.Set(reflect.MakeMap(f.Type()))
 	}
 	nc, ok := setSeg(f.Interface(), rest, value)
@@ -35,6 +39,10 @@ func setStructSeg(cur any, segs []string, value any) (any, bool) {
 		return cur, false
 	}
 	fv := reflect.ValueOf(nc)
+	if !fv.IsValid() {
+		f.Set(reflect.Zero(f.Type()))
+		return cp.Interface(), true
+	}
 	switch {
 	case fv.Type().AssignableTo(f.Type()):
 		f.Set(fv)

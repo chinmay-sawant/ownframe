@@ -51,14 +51,16 @@ channel and applied on the game loop.
   exposing a preview. `ServeOptions{Perf: true}` is the only opt in that adds
   `GET /debug/pprof/*`.
 - DevTools summarizes rendered data on screen. Keep it off in shipped binaries
-  unless debugging is intended.
+  unless debugging is intended. The examples enable `Config.DevTools` for
+  debugging; a shipped binary leaves it false.
 - Crash reports can contain stack traces, panic text, page titles, and source
   paths. Directory mode is `0700` and file mode `0600`, but callers should
   still choose a private directory on shared machines.
 - `SetCrashDir` and other path APIs are trusted; the crash directory is not
   sandboxed.
-- Environment debug flags (`OWNFRAME_FILEPICK_DEBUG`)
-  write to stderr and should remain off in shipped binaries.
+- Environment debug flags (`OWNFRAME_FILEPICK_DEBUG`, `OWNFRAME_PACE_DEBUG`)
+  are dev-only and off unless explicitly set. They write to stderr and may
+  include paths or command failure details, so keep them off in shipped binaries.
 
 ## Boundary by API
 
@@ -67,6 +69,16 @@ channel and applied on the game loop.
 - Crash reports: [crash.md](crash.md)
 - IPC: [ipc.md](ipc.md)
 - Drag and drop: [drag-drop.md](drag-drop.md)
+
+## Local notification endpoints
+
+`examples/desktop-cat` serves `POST /notify` on `127.0.0.1:6969` by default.
+The handler checks a present `Origin` against the request scheme and host,
+sets `nosniff` and `X-Frame-Options: DENY`, caps the body at 4 KiB, and
+returns generic `invalid notification` errors. Empty and wildcard binds are
+rejected; other non-loopback binds log a warning. Remote use needs an
+authenticated reverse proxy or a shared secret checked before `Submit`, plus
+firewall rules for the chosen address.
 
 Residual risks that ownframe cannot remove on its own include unsandboxed Go
 templates, missing host allowlists in `Fetch`, trusted path APIs, and an

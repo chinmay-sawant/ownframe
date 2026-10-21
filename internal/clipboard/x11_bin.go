@@ -7,14 +7,14 @@ import "math"
 func pad4(n int) int { return (n + xMask) &^ xMask }
 
 func put16(b []byte, v uint16) {
-	b[0] = byte(v)
+	b[0] = byte(v) //nolint:gosec // reason: LE low byte.
 	b[1] = byte(v >> xShift8)
 }
 
 func put32(b []byte, v uint32) {
-	b[0] = byte(v)
-	b[1] = byte(v >> xShift8)
-	b[2] = byte(v >> xShift16)
+	b[0] = byte(v)             //nolint:gosec // reason: LE low byte.
+	b[1] = byte(v >> xShift8)  //nolint:gosec // reason: LE 2nd byte.
+	b[2] = byte(v >> xShift16) //nolint:gosec // reason: LE 3rd byte.
 	b[3] = byte(v >> xShift24)
 }
 

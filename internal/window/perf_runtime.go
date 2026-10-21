@@ -87,5 +87,5 @@ func perfRSS() uint64 {
 	if err != nil {
 		return 0
 	}
-	return pages * uint64(max(os.Getpagesize(), 0)) //nolint:gosec // reason: size clamped.
+	return pages * uint64(max(os.Getpagesize(), 0))
 }

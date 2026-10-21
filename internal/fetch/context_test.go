@@ -22,7 +22,7 @@ func TestCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := fetch.Do(ctx, http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(ctx), http.MethodGet, srv.URL, nil, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v", err)
 	}

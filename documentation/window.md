@@ -60,7 +60,7 @@ The library has no DPI code. No code reads a device scale factor or applies one 
 
 ## Pacing and update order
 
-Ebiten updates the window at its default rate, about 60 TPS. The library never calls `SetTPS`, so the rate is not tunable here. Every `Update` runs a context check, devtools sync, IME, keys, resize, the passthrough update, pointer, touch scroll, hold, drop, tick, the frame opt-in capture, a reload poll, sync, the page scroll request, a devtools refresh, wheel, the scroll-window sync, and the bitmap viewport in that order (`internal/window/update.go`). Resize runs before pointer, so a hit test uses the boxes of the frame being drawn. The tick is `Page.SetTick`; its call shape and cost are in [frames.md](frames.md). The reload poll asks a file-backed page for changes at most every 250 ms ([hot-reload.md](hot-reload.md)).
+Ebiten updates the window at its default rate, about 60 TPS. The library never calls `SetTPS`, so the rate is not tunable here. `OWNFRAME_PACE_DEBUG=1` prints one pacing line per second to stderr; it is dev-only and off by default, so keep it off in shipped binaries. Every `Update` runs a context check, devtools sync, IME, keys, resize, the passthrough update, pointer, touch scroll, hold, drop, tick, the frame opt-in capture, a reload poll, sync, the page scroll request, a devtools refresh, wheel, the scroll-window sync, and the bitmap viewport in that order (`internal/window/update.go`). Resize runs before pointer, so a hit test uses the boxes of the frame being drawn. The tick is `Page.SetTick`; its call shape and cost are in [frames.md](frames.md). The reload poll asks a file-backed page for changes at most every 250 ms ([hot-reload.md](hot-reload.md)).
 
 ## Errors
 

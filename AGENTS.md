@@ -71,7 +71,7 @@ This limit applies to Go files only. HTML, CSS, Markdown, and scripts have no ch
 
 ## Lint
 
-`make lint` is the lint gate. It runs the pinned `golangci-lint` (v1.64.8, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then `make size-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
+`make lint` is the lint gate. It runs the pinned `golangci-lint` (v2.15.0, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then `make size-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
 
 The website gate is ESLint 10 through `npm run lint` in `frontend/`. Its flat config lives in `frontend/eslint.config.js` and needs no separate make target; `make lint` runs it in the same pass. `eslint-plugin-react` still declares a peer range that stops at ESLint 9, so `frontend/package.json` pins the range with an `overrides` entry and the config sets `settings.react.version` to skip the plugin's version detection, which calls an API ESLint 10 removed.
 

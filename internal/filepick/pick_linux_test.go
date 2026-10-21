@@ -16,7 +16,7 @@ func writeTool(t *testing.T, dir, name, body string) {
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chmod(path, 0o755); err != nil {
+	if err := os.Chmod(path, 0o755); err != nil { //nolint:gosec // reason: the fake dialog tool must be executable to run.
 		t.Fatal(err)
 	}
 }

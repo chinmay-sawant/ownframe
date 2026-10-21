@@ -2,7 +2,10 @@
 // There is no socket, no second process, and no JavaScript.
 // Registry is process-global by channel: two pages share one
 // namespace, so each channel has one owner that prefixes the
-// name and calls cancel. Listen caps per channel.
+// name and calls cancel. Listen caps per channel. Channels carry
+// no identity: prefix names per owner, keep secrets out of
+// payloads, keep handlers non-blocking, and call Request with
+// a context deadline the handler honors.
 package ipc
 
 import (

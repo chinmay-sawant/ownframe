@@ -19,7 +19,7 @@ func freeAddr(t *testing.T) string {
 		t.Fatal(err)
 	}
 	a := ln.Addr().String()
-	ln.Close()
+	_ = ln.Close()
 	return a
 }
 
@@ -28,7 +28,7 @@ func waitUp(t *testing.T, addr string) {
 	for i := 0; i < 50; i++ {
 		c, err := net.DialTimeout("tcp", addr, 50*time.Millisecond)
 		if err == nil {
-			c.Close()
+			_ = c.Close()
 			return
 		}
 		time.Sleep(20 * time.Millisecond)

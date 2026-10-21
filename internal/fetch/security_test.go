@@ -28,7 +28,7 @@ func TestRedirectUserinfoRejected(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if err != fetch.ErrCredentialsInURL {
 		t.Fatalf("err = %v", err)
 	}
@@ -43,7 +43,7 @@ func TestHeaderCapRejected(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if err != fetch.ErrHeadersTooLarge {
 		t.Fatalf("err = %v", err)
 	}

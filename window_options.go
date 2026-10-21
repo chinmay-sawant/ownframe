@@ -13,8 +13,9 @@ import (
 type WindowOptions = window.Options
 
 // RunWithOptions opens a page with optional desktop window settings.
-// Every failure is stored in a crash report file first, and the returned
-// error names that file. A panic still goes through the recover in savePanic.
+// Every failure is stored in a crash report file first; the returned
+// error keeps the original without the file path. A panic still goes
+// through the recover in savePanic. Use LastReportPath for the file.
 func RunWithOptions(ctx context.Context, page *Page, options WindowOptions) (err error) {
 	defer savePanic(page, &err)
 

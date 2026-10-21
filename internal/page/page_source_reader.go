@@ -14,7 +14,7 @@ type sourceReader interface {
 type osSource struct{}
 
 func (osSource) Stat(n string) (os.FileInfo, error) { return os.Stat(n) }
-func (osSource) ReadFile(n string) ([]byte, error)  { return os.ReadFile(n) }
+func (osSource) ReadFile(n string) ([]byte, error)  { return os.ReadFile(n) } //nolint:gosec // reason: template files are trusted build input (documented trust boundary).
 
 var srcFiles sourceReader = osSource{}
 

@@ -90,3 +90,13 @@ Spellcheck belongs in an application or platform adapter. Ownframe edits
 canvas-rendered controls rather than native text widgets, so it has no system
 dictionary or native suggestion UI to call. An app can choose a checker and
 language policy, then present suggestions in its own controls.
+
+## Trust boundary
+
+`Load`, `Route`, and the file watch treat template source as trusted author
+content. A template action can call methods on the page data, and ownframe
+does not sandbox template execution. Only load templates the app authors or
+owns; never parse untrusted input as a template. Keep template files on
+owner-only permissions, and turn the watch off in production
+(`Config.DisableHotReload`, `-reload=false` in the reload example) so a
+changed file cannot swap the running page.

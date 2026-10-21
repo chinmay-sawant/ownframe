@@ -28,3 +28,20 @@ func TestSetDirStoresAbsolute(t *testing.T) {
 		t.Fatalf("Dir = %q, want %q", got, abs)
 	}
 }
+
+func TestSetDirRejectsTraversal(t *testing.T) {
+	base := t.TempDir()
+	t.Cleanup(func() { _ = crash.SetDir(base) })
+
+	for _, dir := range []string{
+		"/allowed/../secret",
+		base + "/../escape",
+		"..",
+		"bad\x00dir",
+		"bad\ndir",
+	} {
+		if err := crash.SetDir(dir); err == nil {
+			t.Fatalf("SetDir(%q) accepted", dir)
+		}
+	}
+}

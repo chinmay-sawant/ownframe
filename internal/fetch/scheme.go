@@ -41,39 +41,6 @@ const (
 	MaxHeaderBytes       = 1 * 1024 * 1024
 )
 
-func checkURL(raw string) error {
-	if raw == "" {
-		return ErrScheme
-	}
-
-	u, err := url.Parse(raw)
-	if err != nil {
-		return err
-	}
-	if u.User != nil {
-		return ErrCredentialsInURL
-	}
-	if !web(u) {
-		return ErrScheme
-	}
-
-	return nil
-}
-
-func redirect(req *http.Request, via []*http.Request) error {
-	if len(via) >= maxRedirects {
-		return ErrTooManyRedirects
-	}
-	if req.URL.User != nil {
-		return ErrCredentialsInURL
-	}
-	if !web(req.URL) {
-		return ErrScheme
-	}
-
-	return nil
-}
-
 func web(u *url.URL) bool {
 	return u != nil && (u.Scheme == "http" || u.Scheme == "https")
 }

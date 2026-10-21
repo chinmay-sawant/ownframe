@@ -88,6 +88,11 @@ generation. A custom screen without the method is never polled.
 - The watch covers the template and the theme. It does not watch Go source,
   so a changed handler still needs a restart. A tool such as `air` around
   `go run` handles that outside this library.
+- Templates are trusted author content: a template action can call methods
+  on the page data and ownframe does not sandbox execution. Ship production
+  with the watch off (`Config.DisableHotReload: true`, `-reload=false` in
+  the reload example) and keep template files on owner-only permissions, so
+  a changed file cannot swap the running page.
 - wasm and mobile read `Config.File` once at `New` and never watch. Keep
   `Config.HTML` there.
 - A network share that updates content without changing the modification time

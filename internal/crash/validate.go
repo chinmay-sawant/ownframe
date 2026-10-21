@@ -42,6 +42,14 @@ func validateDir(dir string) (string, error) {
 		}
 	}
 
+	// Reject .. before Clean: Clean resolves /allowed/../secret to
+	// /secret, which would bypass a check on the cleaned path.
+	for _, part := range strings.FieldsFunc(trimmed, isSep) {
+		if part == ".." {
+			return "", ErrBadDir
+		}
+	}
+
 	clean := filepath.Clean(trimmed)
 	if clean == "." || clean == string(filepath.Separator) {
 		return "", ErrBadDir

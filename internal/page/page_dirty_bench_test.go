@@ -15,7 +15,7 @@ func BenchmarkDirtyTakeSmallChanges(b *testing.B) {
 	content := p.contentRect()
 	partial := 0.0
 
-	if len(rects) > 0 && !(len(rects) == 1 && rects[0] == content) {
+	if len(rects) > 0 && (len(rects) != 1 || rects[0] != content) {
 		partial = 1
 	}
 

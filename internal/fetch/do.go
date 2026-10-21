@@ -16,7 +16,7 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	if ctx == nil {
 		return Response{}, ErrNilContext
 	}
-	if err := checkURL(rawURL); err != nil {
+	if err := checkURL(ctx, rawURL); err != nil {
 		return Response{}, err
 	}
 	if method == "" {
@@ -50,7 +50,7 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 
 		return Response{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	out, err := io.ReadAll(io.LimitReader(resp.Body, MaxBodyBytes+1))
 	if err != nil {

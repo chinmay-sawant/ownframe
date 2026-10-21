@@ -38,9 +38,10 @@ func (p *Player) TriggerEffect(index int, action string, now time.Time) error {
 		}
 	case "play", "play-forwards", "play-backwards":
 		rate := s.rate
-		if action == "play-forwards" {
+		switch action {
+		case "play-forwards":
 			rate = 1
-		} else if action == "play-backwards" {
+		case "play-backwards":
 			rate = -1
 		}
 		if phase == playing && action == "play" {

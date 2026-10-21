@@ -2,11 +2,14 @@
 
 package clipboard
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 func recoverX(x *xClient, where string) {
 	if r := recover(); r != nil {
-		log.Printf("ownframe clipboard: %s panic: %v", where, r)
+		log.Printf("ownframe clipboard: %s panic: %s", cleanLog(where), cleanLog(fmt.Sprint(r)))
 		x.fail()
 	}
 }

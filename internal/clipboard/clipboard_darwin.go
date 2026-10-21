@@ -8,7 +8,7 @@ package clipboard
 #import <AppKit/AppKit.h>
 #import <stdlib.h>
 
-static void ownframePut(const void *p, int n) {
+static void ownframePut(const void *p, size_t n) {
 	@autoreleasepool {
 		NSPasteboard *pb = [NSPasteboard generalPasteboard];
 		[pb clearContents];
@@ -46,7 +46,7 @@ func writeOS(text string) {
 	}
 
 	p := unsafe.Pointer(unsafe.StringData(text))
-	C.ownframePut(p, C.int(len(text)))
+	C.ownframePut(p, C.size_t(len(text)))
 }
 
 func readOS() (string, bool) {

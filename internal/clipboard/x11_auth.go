@@ -64,7 +64,7 @@ func loadAuth(host, num string) (string, []byte) {
 		path = home + "/.Xauthority"
 	}
 
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) //nolint:gosec // reason: path is the user's own XAUTHORITY file or ~/.Xauthority, local trust.
 	if err != nil {
 		return "", nil
 	}

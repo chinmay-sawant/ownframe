@@ -53,7 +53,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 		return err
 	}
 	fmt.Println("http://" + addr + "/")
-	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout}
+	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
 	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
 	defer stop()
 	err = hs.Serve(ln)

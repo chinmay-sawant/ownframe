@@ -15,7 +15,7 @@ func (x *xClient) fail() {
 
 		x.wait = nil
 		x.mu.Unlock()
-		x.c.Close()
+		_ = x.c.Close()
 	})
 }
 
