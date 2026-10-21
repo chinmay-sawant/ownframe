@@ -24,31 +24,31 @@ unless a plan is about to use them.
 
 Library (8):
 
-- `internal/element/reconcile_nodes.go:44` — `cloneNode`
-- `internal/page/page_form_focus_hit.go:4` — `(*Page).isPressUsed`
-- `internal/replay/color.go:20,31,35` — `withAlpha`, `channel`, `clamp`
-- `internal/state/path_write.go:16` — `setValueAtPath`
-- `internal/window/devtools_line_width.go:9` — `devLine.width`
-- `internal/window/replay_plan.go:10` — `repaintFull`
+- `internal/element/reconcile_nodes.go:44`: `cloneNode`
+- `internal/page/page_form_focus_hit.go:4`: `(*Page).isPressUsed`
+- `internal/replay/color.go:20,31,35`: `withAlpha`, `channel`, `clamp`
+- `internal/state/path_write.go:16`: `setValueAtPath`
+- `internal/window/devtools_line_width.go:9`: `devLine.width`
+- `internal/window/replay_plan.go:10`: `repaintFull`
 
 Examples (22):
 
-- `examples/css-preview/cost_play_test.go:27` — `costStartAll`
-- `examples/css-preview/cost_report_test.go:49` — `costSpan`
-- `examples/css-preview/paint.go:14,20` — `inside`, `write`
-- `examples/{dino,eyes,lg-remote,telegram}/mobile/page_profile_other.go:7` — `setAndroidPageProfile` (4 copies)
-- `examples/flappy-bird/flappy/flappy.go:29` — `point`
-- `examples/flappy-bird/flappy/helpers_test.go:64` — `release`
-- `examples/live-log-viewer/ui/fake_test.go:48` — `(*fakeFeed).count`
-- `examples/live-log-viewer/ui/format.go:64` — `elapsedText`
-- `examples/pet-care/mobile/start_other.go:5` — `start`
-- `examples/spotify-player/player/seek_animate.go:11` — `(*App).animateSeek`
-- `examples/spreadsheet/ui/worker.go:47` — field `text`
-- `examples/system-monitor/collector/live.go:15,17,19` — `unsupported` and its methods
-- `examples/system-monitor/storage/errors.go:39` — `errNotImplemented`
-- `examples/teams/files/filter.go:6` — `clone`
-- `examples/telegram/telegram/box_test.go:51` — `boxText`
-- `examples/tetris/game/helpers_test.go:21` — `boardFrom`
+- `examples/css-preview/cost_play_test.go:27`: `costStartAll`
+- `examples/css-preview/cost_report_test.go:49`: `costSpan`
+- `examples/css-preview/paint.go:14,20`: `inside`, `write`
+- `examples/{dino,eyes,lg-remote,telegram}/mobile/page_profile_other.go:7`: `setAndroidPageProfile` (4 copies)
+- `examples/flappy-bird/flappy/flappy.go:29`: `point`
+- `examples/flappy-bird/flappy/helpers_test.go:64`: `release`
+- `examples/live-log-viewer/ui/fake_test.go:48`: `(*fakeFeed).count`
+- `examples/live-log-viewer/ui/format.go:64`: `elapsedText`
+- `examples/pet-care/mobile/start_other.go:5`: `start`
+- `examples/spotify-player/player/seek_animate.go:11`: `(*App).animateSeek`
+- `examples/spreadsheet/ui/worker.go:47`: field `text`
+- `examples/system-monitor/collector/live.go:15,17,19`: `unsupported` and its methods
+- `examples/system-monitor/storage/errors.go:39`: `errNotImplemented`
+- `examples/teams/files/filter.go:6`: `clone`
+- `examples/telegram/telegram/box_test.go:51`: `boxText`
+- `examples/tetris/game/helpers_test.go:21`: `boardFrom`
 
 ## Magic numbers (`mnd`)
 
