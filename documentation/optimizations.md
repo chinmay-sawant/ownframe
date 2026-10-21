@@ -311,11 +311,16 @@ falls back to the path the click already used.
 
 - Keep the state the click set: the started map, the selected name, the
   readout, and the start time. The click means the same thing either way.
-- Redraw the whole page. The template prints the started class and the state
-  text, so the executed source changes, the page drops the cache, and the tree
-  is parsed again, which drops the stale tree edit with the old tree. The
-  redraw has to be one that lays the page out, not one that can be skipped as
-  unchanged.
+- Redraw the whole page. The template prints the base class and the literal
+  `Ready`, so the started class and the state text are not template data and
+  the executed source does not change for them. The redraw lays the cached
+  tree out again, and the tree still carries the edit the refused patch left
+  in it, so the display shows the class the engine refused to splice. The
+  readout is template data, so when it changes the executed source changes,
+  the page drops the cache, and the tree is parsed again, which drops the
+  stale tree edit with the old tree. The after-redraw hook puts the state back
+  into the new tree. The redraw has to be one that lays the page out, not one
+  that can be skipped as unchanged.
 - Keep the sample's captured starting paint and its origin. The refused patch
   did not touch the display, so the capture is still the paint the transition
   starts from. A second capture would take the started paint as the starting
@@ -339,8 +344,9 @@ The timings for the patch path itself are in the next section.
 ### The patch, measured
 
 The harness is in `examples/css-preview`, and the numbers are in
-`examples/css-preview/PATCH_COST.md`. It uses the whole 43 row catalog at
-1908x999, the desktop window size, with the retained state on.
+[PATCH_COST.md](../examples/css-preview/PATCH_COST.md). It uses the whole
+43 row catalog at 1908x999, the desktop window size, with the retained state
+on.
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
@@ -440,10 +446,12 @@ windowed cost while all 43 previews still play.
 - The rows on screen start right away. The rows off screen wait. They keep
   their start time, so an animation is already at the right phase when its row
   scrolls in.
-- The shared start time is stamped after the click has patched the cards. A
-  click that patches every card can take longer than the shortest animation,
-  so a clock that started before that work would leave every sample finished
-  before the first tick reached it.
+- Each row keeps its own start time, and the run does not stamp a shared one.
+  The origins come from the drain clock, so a sample starts when the run
+  starts rather than when the click that queued it was handled. A click that
+  patches every card can take longer than the shortest animation, so a shared
+  clock stamped before that work would leave every sample finished before the
+  first tick reached it.
 - A transition needs its starting paint captured while the row is still
   unstarted. A row that scrolls in for the first time renders once without the
   started class, captures that paint, then renders with the class and binds.
@@ -453,7 +461,7 @@ windowed cost while all 43 previews still play.
 
 Measured at 1908x999, the press costs 6.7 ms with the catalog windowed, and
 the display holds 1660 operations and 119 boxes. Before, the press rendered
-all 43 rows, 8800 operations and 537 boxes, and cost 46 to 50 ms in total.
+all 43 rows, 9178 operations and 537 boxes, and cost 46 to 50 ms in total.
 
 
 ## Visible latency
@@ -579,7 +587,10 @@ go test -p 2 -run 'TestPatch' -v ./css-preview/
 go test -p 2 -run XXX -bench BenchmarkPatchCost -benchtime 30x -count 5 ./css-preview/
 ```
 
-The report of that harness is `examples/css-preview/PATCH_COST.md`.
+The report of that harness is
+[PATCH_COST.md](../examples/css-preview/PATCH_COST.md). The run and profile
+notes for the example are in
+[PROFILING.md](../examples/css-preview/PROFILING.md).
 
 Use `-benchtime=1x` for one 43-click pass per run, or a higher value for a
 longer run. The full-fixture benchmarks need at least `-benchtime=3x` before
@@ -644,9 +655,10 @@ Ownframe:
 - `examples/css-preview/catalog_state.go`, `catalog_click_paint.go`, and
   `catalog_sync.go` keep the click state in the parsed tree and put it back
   after a rebuild.
-- `examples/css-preview/patch_cost_*.go` and `examples/css-preview/PATCH_COST.md`
-  measure an element patch against a full redraw and gate the patch against a
-  full redraw operation by operation.
+- `examples/css-preview/patch_cost_*.go` and
+  [PATCH_COST.md](../examples/css-preview/PATCH_COST.md) measure an element
+  patch against a full redraw and gate the patch against a full redraw
+  operation by operation.
 
 Blinkless:
 
@@ -662,5 +674,9 @@ Blinkless:
 Ownframe pins Blinkless
 `v0.0.3-0.20261021155643-c1054ff46202`, which carries both one-pass grid
 paths and the element patch work. The 12.5 ms and 6.16 ms columns use the
-earlier pin, `e0c3c9c`, and the patch cost numbers use `c1054ff`. There is no
-replace, so the build and the module zip carry the same engine.
+earlier pin, `e0c3c9c`, and the patch cost numbers use `c1054ff`. The main
+module has no replace, so the build and the module zip carry the same engine.
+The examples module still pins Blinkless `v0.0.2`, and the patch cost harness
+calls `layout.RelayoutElement`, which only the newer pin carries, so the
+examples module builds through the committed `go.work` until the release
+process bumps its pin.

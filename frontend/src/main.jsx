@@ -47,7 +47,7 @@ function App() {
     <header>
       <a className="brand" href="#home">ownframe</a>
       <nav aria-label="Main navigation">
-        <a href="#docs/showcase/wispr-flow">Examples</a>
+        <a href="#docs/showcase/wispr-flow">Example apps</a>
         <a href="#compare">Comparison</a>
         <a href="#start">Get started</a>
         <a href="#docs/readme" aria-current={isDocs ? 'page' : undefined}>Docs</a>

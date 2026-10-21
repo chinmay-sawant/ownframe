@@ -9,6 +9,59 @@ import { documents, documentGroups, contentUrl } from './content';
 import { docsOverview } from './docs-overview';
 import { showcaseIntro, showcaseSections } from './showcase';
 
+// useReducedMotion reports the reduced motion preference and follows it when
+// the reader changes it while the page is open.
+function useReducedMotion() {
+  const [reduced, setReduced] = useState(() => Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches));
+  useEffect(() => {
+    const query = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!query) return undefined;
+    const onChange = (event) => setReduced(event.matches);
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
+  return reduced;
+}
+
+// ShowcasePreview shows a preview clip that plays on its own. The clip gets a
+// pause control, it stays still for a reader who asked for reduced motion,
+// and it stays in the accessibility tree because it carries the preview.
+function ShowcasePreview({ media, doc, onOpen }) {
+  const videoRef = useRef(null);
+  const reduced = useReducedMotion();
+  const [playing, setPlaying] = useState(!reduced);
+
+  useEffect(() => {
+    if (reduced) setPlaying(false);
+  }, [reduced]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!playing) {
+      video.pause();
+      return;
+    }
+    video.play().catch(() => setPlaying(false));
+  }, [playing]);
+
+  return <>
+    <button type="button" className="gallery-open" aria-label={`Open media: ${media.alt}`}
+      aria-haspopup="dialog" onClick={onOpen}>
+      <video ref={videoRef} src={`${import.meta.env.BASE_URL}${media.video}`}
+        poster={contentUrl(media.src, doc)} autoPlay={!reduced} muted loop playsInline
+        preload={reduced ? 'none' : 'auto'} aria-label={media.alt}
+        width={media.width} height={media.height}
+        style={{ width: media.nativeDisplay
+          ? `min(100%, calc(${media.width}px / var(--site-scale)))`
+          : `min(100%, ${media.width}px)` }} />
+    </button>
+    <button type="button" className="showcase-media-control" onClick={() => setPlaying(!playing)}>
+      {playing ? 'Pause preview' : 'Play preview'}
+    </button>
+  </>;
+}
+
 export default function Documentation({ hash }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [lightbox, setLightbox] = useState(null);
@@ -135,31 +188,26 @@ export default function Documentation({ hash }) {
       {isShowcase && <nav className="showcase-picker" aria-label="Example apps">
         {showcaseSections.map((section) => <a key={section.id}
           href={`#docs/showcase/${section.id}`}
-          aria-current={activeShowcase === section.id ? 'page' : undefined}>
+          aria-current={activeShowcase === section.id ? 'true' : undefined}>
           {section.title}
         </a>)}
       </nav>}
       {doc ? isShowcase ? <>
-        <h1>Showcase</h1>
+        <h1>{doc.title}</h1>
         <p>{showcaseIntro}</p>
         <h2>{showcase.title}</h2>
         <Markdown {...markdownProps}>{showcase.before}</Markdown>
         <div className={`showcase-media-grid showcase-media-grid--${showcase.layout}`}>
           {showcase.media.map((media, index) => <figure key={media.src}
             className={`showcase-media${media.wide ? ' showcase-media--wide' : ''}`}>
-            <button type="button" className="gallery-open" aria-label={`Open media: ${media.alt}`}
-              aria-haspopup="dialog" onClick={() => openLightbox(index)}>
-              {media.autoplayPreview ? <video src={`${import.meta.env.BASE_URL}${media.video}`}
-                poster={contentUrl(media.src, doc)} autoPlay muted loop playsInline preload="auto"
-                aria-hidden="true" width={media.width} height={media.height}
-                style={{ width: media.nativeDisplay
+            {media.autoplayPreview ? <ShowcasePreview media={media} doc={doc}
+              onOpen={() => openLightbox(index)} /> : <button type="button" className="gallery-open"
+              aria-label={`Open media: ${media.alt}`} aria-haspopup="dialog" onClick={() => openLightbox(index)}>
+              <img src={contentUrl(media.src, doc)} alt={media.alt} width={media.width} height={media.height}
+                loading="lazy" decoding="async" style={{ width: media.nativeDisplay
                   ? `min(100%, calc(${media.width}px / var(--site-scale)))`
                   : `min(100%, ${media.width}px)` }} />
-                : <img src={contentUrl(media.src, doc)} alt={media.alt} width={media.width} height={media.height}
-                  loading="lazy" decoding="async" style={{ width: media.nativeDisplay
-                    ? `min(100%, calc(${media.width}px / var(--site-scale)))`
-                    : `min(100%, ${media.width}px)` }} />}
-            </button>
+            </button>}
             <figcaption>{media.caption}</figcaption>
           </figure>)}
         </div>

@@ -12,13 +12,17 @@ OwnFrame updates the page from its template and draws it in the window. A page c
 
 `Config.RetainState` keeps the layout state a single element patch needs: the resolved styles of the document and the box tree the placement produced. It is off by default, so a page that never patches an element pays nothing for it.
 
-With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index and marks the changed region dirty, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. The call reports false then, and a refused patch leaves the cached tree edited and the retained display untouched, so the caller still has to redraw the page to bring the display back in step with the tree.
+With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. The call reports false then, and the patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `Page.SetAfterRedraw` is for.
+
+Text set through a patch does not go through the emoji pass. The pass runs on the source before it is parsed, and a text edit lands on the parsed tree, so an emoji in patched text paints as text rather than as the color image the same emoji gets from the template. The engine's tree API only writes a text node, so the image cannot be built inside the tree.
 
 `Handlers.ClickPaint` runs after a click handler and after a control's own change. When it reports that it painted the frame, the page skips the redraw, so a click that patched an element does not also pay for a layout.
 
 `Page.SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
 
-Detail is in [optimizations.md](optimizations.md).
+Detail is in [optimizations.md](optimizations.md). The measured cost of an
+element patch against a full redraw is in
+[PATCH_COST.md](../examples/css-preview/PATCH_COST.md).
 
 ## CSS masks
 
@@ -62,7 +66,9 @@ The Page window does not start this runtime automatically.
 
 The [CSS motion guide](css-motion.md) explains the inputs and limits. The
 [CSS property catalog example](../examples/css-preview) has a separate Start
-button for each of its 43 motion properties.
+button for each of its 43 motion properties. Its
+[profiling notes](../examples/css-preview/PROFILING.md) cover running the
+example and measuring a click.
 
 ## Hot reload
 

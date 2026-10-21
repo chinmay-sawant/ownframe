@@ -43,6 +43,7 @@ feature index with links to the detailed docs.
 - `examples/accessibility` demonstrates desktop IME composition, the semantic tree and its actions, password redaction, and scrollbar thumb feedback.
 - `examples/departure-board` is a split-flap board: per-character tiles over a seeded timetable, four liveries with a night variant, and tick-driven flaps that write only `op.Text` and rebind per `Page.Generation()`; the refresh bar is a `frame.Fill` lookup that needs the livery accent. `examples/theme-studio` is an editor beside a live preview: Apply calls `Page.SetTheme` and writes the watched `Config.ThemeFile`, a token strip renders `--name: value` pairs with colour swatches, and four presets ship with it.
 - Go tests cover packages across `internal/` and `examples/`, including `internal/page`, `replay`, `render`, `window`, `ipc`, `fetch`, `crash`, and `clipboard`; `make test` runs both modules
+- The CSS property catalog example documents how to run and profile it in [PROFILING.md](../examples/css-preview/PROFILING.md), and the cost of an element patch against a full redraw is in [PATCH_COST.md](../examples/css-preview/PATCH_COST.md)
 - Other examples: `layout`, `replay`, `shapes`, `css-masking`, `png`, `controls`, `bind-hooks`, `editing`, `states`, `scrolling`, `history`, `web`, `ipc`, `fetch`, `clipboard`, `crash`, `platform`; index in [examples/readme.md](../examples/readme.md)
 
 Update 2026-10-13: `examples/css-masking` demonstrates raster alpha and

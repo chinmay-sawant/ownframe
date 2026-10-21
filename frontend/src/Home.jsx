@@ -105,7 +105,7 @@ export default function Home() {
           <a href={demo.href}>{demo.link}</a>
         </div>
       </article>)}</div>
-      <p><a href="#docs/showcase/telegram">Browse all examples</a>. Product-inspired demos are unofficial.</p>
+      <p><a href="#docs/showcase/wispr-flow">Browse all examples</a>. Product-inspired demos are unofficial.</p>
     </section>
 
     <section id="engine" className="engine-section" aria-labelledby="engine-title">
