@@ -9,29 +9,42 @@ as seconds. `p50`, `p95`, and `max` are per item over the 43 item walk.
 
 ## Results
 
-| Metric | Original | First pass | Second pass | Third pass | Fourth pass | Now | Now vs original | Now vs fourth pass |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 6.16 ms | 0 ms | no rebuild | no rebuild |
-| p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 6.20 ms | 0 ms | no rebuild | no rebuild |
-| p95 | 845 ms | 144 ms | 41.9 ms | 15.5 ms | 7.70 ms | 0 ms | no rebuild | no rebuild |
-| max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 0 ms | no rebuild | no rebuild |
-| total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 0 s | no rebuild | no rebuild |
+The metric is the page rebuild one click caused.
 
-As reductions:
+| page rebuild | Original | First pass | Second pass | Third pass | Fourth pass | Now |
+|---|---:|---:|---:|---:|---:|---:|
+| average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 6.16 ms | 0 ms |
+| p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 6.20 ms | 0 ms |
+| p95 | 845 ms | 144 ms | 41.9 ms | 15.5 ms | 7.70 ms | 0 ms |
+| max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 0 ms |
+| total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 0 s |
 
-| Metric | Lower than original | Lower than first pass | Lower than second pass | Lower than third pass | Lower than fourth pass |
-|---|---:|---:|---:|---:|---:|
-| average | 99.1% | 94.2% | 81.6% | 50.7% | 100% |
-| p50 | 99.0% | 93.5% | 80.7% | 51.9% | 100% |
-| p95 | 99.1% | 94.7% | 81.6% | 50.3% | 100% |
-| max | 99.0% | 94.8% | 82.3% | 55.7% | 100% |
-| total | 99.1% | 94.2% | 81.6% | 50.9% | 100% |
+The zero in the current column is a measurement, not a missing number. A click
+now patches the elements it changed and paints them, so the page's own redraw
+counter does not move and there is no rebuild left to time. The click script
+reports 0.0 ms for the rebuild of every one of the 43 clicks. The walk does
+not become free: it still waits for each painted frame, and that wait is the
+number in **Visible latency** further down. The total row is the sum of the
+rebuild over the whole walk, so it is 0 s of page rebuild, not 0 s of walk.
 
-The original total was 28.7 seconds, not 40 milliseconds. The second-pass
-average was 33.4 ms, and the third-pass average was 12.5 ms. The fourth-pass
-average was 6.16 ms. The current column is the real click script, where the
-click no longer rebuilds the page at all: the page rebuild per click is zero,
-because the click patches the elements it changed and paints them. The
+The reductions below are about the rebuild only. Every cell is the drop from
+the original, so the row reads against the same baseline as the table above.
+
+| page rebuild | Original | First pass | Second pass | Third pass | Fourth pass | Now |
+|---|---:|---:|---:|---:|---:|---:|
+| average | baseline | 84.0% | 95.0% | 98.1% | 99.1% | 100% |
+| p50 | baseline | 85.3% | 95.0% | 98.0% | 99.0% | 100% |
+| p95 | baseline | 83.0% | 95.0% | 98.2% | 99.1% | 100% |
+| max | baseline | 81.1% | 94.4% | 97.8% | 99.0% | 100% |
+| total | baseline | 84.0% | 95.0% | 98.1% | 99.1% | 100% |
+
+The last column is 100% because the click no longer rebuilds the page. It is a
+drop in the rebuild, not in the time the walk takes.
+
+The original total was 28.7 seconds of page rebuild, not 40 milliseconds. The
+second-pass average was 33.4 ms, and the third-pass average was 12.5 ms. The
+fourth-pass average was 6.16 ms. The current column is the real click script,
+where the click no longer rebuilds the page at all. The
 fourth-pass column is the mean of five `BenchmarkWindowedPointerCycle` runs,
 and that benchmark runs at 960x860, while the current column comes from the
 real script at 1908x999. The two columns are not the same measurement, and the
@@ -173,6 +186,9 @@ under a fixed line, then a batched press, focus, click, and release. It reports
 `LastRedraw` for each of the 43 clicks. The numbers above are five runs of
 `-benchtime=1x`.
 
+Against the first pass, the fourth pass is 94.2% lower on average and 94.2%
+lower on the 43-click total.
+
 The page rebuild is now close to the one-row layout floor. The remaining work
 is the display-list build for the rows on screen. Skipping that would mean
 patching the retained display on Start instead of rebuilding the page, which
@@ -215,10 +231,10 @@ catalog:
 
 | Path | Time | Allocated | Applied |
 |---|---:|---:|---:|
-| Full redraw, card class | 34.9 ms | 20.05 MB | |
-| Full redraw, state class | 40.0 ms | 19.72 MB | |
-| Element patch, card class | 5.9 ms | 6.27 MB | 30 of 30 |
-| Element patch, state class | 10.4 ms | 5.95 MB | 30 of 30 |
+| Full redraw, card class | 34.5 ms | 20.18 MB | |
+| Full redraw, state class | 39.2 ms | 19.86 MB | |
+| Element patch, card class | 6.08 ms | 6.31 MB | 30 of 30 |
+| Element patch, state class | 4.72 ms | 5.99 MB | 30 of 30 |
 
 The card row patch applies in every run, 30 of 30. The element the test
 probes with a class that carries no rules is a different case, and the engine
@@ -328,22 +344,23 @@ The harness is in `examples/css-preview`, and the numbers are in
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
-| Full redraw, card class | 34.9 ms | 20.05 MB | 29541 | |
-| Element patch, card class | 5.9 ms | 6.27 MB | 6049 | 30 of 30 |
-| Full redraw, state class | 40.0 ms | 19.72 MB | 29051 | |
-| Element patch, state class | 10.4 ms | 5.95 MB | 5563 | 30 of 30 |
+| Full redraw, card class | 34.5 ms | 20.18 MB | 32188 | |
+| Element patch, card class | 6.08 ms | 6.31 MB | 6875 | 30 of 30 |
+| Full redraw, state class | 39.2 ms | 19.86 MB | 31656 | |
+| Element patch, state class | 4.72 ms | 5.99 MB | 6347 | 30 of 30 |
+| Full redraw, same source | 27.2 ms | 13.87 MB | 25304 | |
 
 The redraw splits into three stages, measured by the page itself: the template
-takes 0.57 ms, the cascade 0.06 ms, and the layout 27.6 ms. Laying out 43
+takes 0.58 ms, the cascade 0.09 ms, and the layout 27.7 ms. Laying out 43
 cards, 9178 operations and every text run is the whole cost of a redraw. A
 patch of one state span lays out that span and leaves the other 42 cards
-alone, so it is about four times faster than the full path.
+alone, so it is about eight times faster than the full path.
 
 The cascade is not saved, because the patch re-cascades the whole document, but
-that stage costs 0.06 ms, so there is nothing to win there.
+that stage costs 0.09 ms, so there is nothing to win there.
 
-A patch still allocates 5.95 MB on the full catalog for the state span, and
-6.27 MB for the card row. The host adopts the whole patched display the engine
+A patch still allocates 5.99 MB on the full catalog for the state span, and
+6.31 MB for the card row. The host adopts the whole patched display the engine
 hands back, so the engine rebuilds the operation list and the owners for the
 whole page, and the page holds 9178 operations. The layout is skipped, the
 copy is not. The windowed catalog holds about a fifth of the operations, so
@@ -444,10 +461,15 @@ all 43 rows, 8800 operations and 537 boxes, and cost 46 to 50 ms in total.
 The redraw time above is the page work. From the real click script, with
 `-perf` on and the walk hook active:
 
-| Segment | p50 | p95 | max | average |
-|---|---:|---:|---:|---:|
-| press to started | 15.8 ms | 30.9 ms | 32.2 ms | 16.5 ms |
-| press to painted | 51.0 ms | 51.6 ms | 52.3 ms | 51.0 ms |
+| Segment | p50 | p95 | max | average | 43-click pass |
+|---|---:|---:|---:|---:|---:|
+| press to started | 15.8 ms | 30.9 ms | 32.2 ms | 16.5 ms | 0.68 s |
+| press to painted | 51.0 ms | 51.6 ms | 52.3 ms | 51.0 ms | 2.19 s |
+
+The 43-click pass column is the p50 times 43 clicks. It is the number that
+replaces the old total rebuild row: a walk of the whole catalog now spends
+about 2.2 s waiting for frames, against 28.7 s of page rebuild before any of
+this work.
 
 These are the numbers of the fifth pass, from the real click script with
 `-perf` on and the walk hook active. The third-pass numbers were 9.9 ms and
@@ -456,6 +478,11 @@ polling latency does not count. `press to painted` waits for the next layout
 counter, which the patch raises, and includes the window draw. It is
 dominated by the presentation frame of the software compositor, so it did not
 move when the page stopped rebuilding itself.
+
+A separate run under a virtual X server, three passes of 43 clicks, gave
+17.2 ms and 51.2 ms on p50, and 2.37 s per 43-click pass. The same run
+reported a redraw of 0.0 ms on every click, which is the no-rebuild column
+above measured directly.
 
 ## How the numbers were measured
 

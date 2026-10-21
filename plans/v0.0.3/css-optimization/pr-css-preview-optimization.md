@@ -58,8 +58,8 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 
 | Area | Impact |
 |------|--------|
-| **Performance** | A CSS preview click no longer rebuilds the page: the rebuild per click drops from 667 ms to 0 ms, and the press to painted latency stays at 51.0 ms p50 because the presentation frame dominates. A full 43-click walk drops from 28.7 s to 0 s of page rebuild. An element patch costs 3.80 ms against 25.58 ms for a full redraw of the same card. |
-| **Memory** | A patch allocates 6.31 MB against 20.16 MB for a full redraw of the same card. The chunk and raster caches keep their pixel ceilings; only their entry caps moved. |
+| **Performance** | A CSS preview click no longer rebuilds the page. The rebuild per click drops from 667 ms to 0 ms, a 100% drop in page work, and the 43-click walk drops from 28.7 s of rebuild to none. The walk still costs about 2.2 s of waiting for the painted frames, and the press to painted latency stays at 51.0 ms p50 because the presentation frame dominates it. An element patch costs 6.08 ms against 34.5 ms for a full redraw of the same card. |
+| **Memory** | A patch allocates 6.31 MB against 20.18 MB for a full redraw of the same card. The chunk and raster caches keep their pixel ceilings; only their entry caps moved. |
 | **Behavior / correctness** | The library gains `Page.PatchElement`, `Page.SetAfterRedraw`, `ElementEdit`, `host.RedrawBatcher`, and `host.Batch`. A page without retained state refuses every patch and reports false. The devtools dock now opens on Frame. |
 | **API / CLI** | New exported `Page.PatchElement`, `Page.SetAfterRedraw`, `Page.BeginRedrawBatch`, `Page.EndRedrawBatch`, `ElementEdit`, `Config.RetainState`, `Handlers.ClickPaint`, `host.RedrawBatcher`, and `host.Batch`. `examples/css-preview` gains the walk harness behind `CSS_PREVIEW_WALK`. No existing exported function or method changed its signature. |
 | **Dependencies** | The Blinkless pin moves to `v0.0.3-0.20261021155643-c1054ff46202`, the commit that carries the per-element relayout and the text and attribute setters. It stays the only engine pin, and there is no `replace` directive. No new external module. |
@@ -93,7 +93,7 @@ cd frontend && npm test && npm run check:site
 
 The click cost, from `documentation/optimizations.md`. Every column is the page rebuild one click caused, in milliseconds.
 
-| Metric | Original | First pass | Second pass | Third pass | Fourth pass | Now |
+| page rebuild | Original | First pass | Second pass | Third pass | Fourth pass | Now |
 |---|---:|---:|---:|---:|---:|---:|
 | average | 667 ms | 107 ms | 33.4 ms | 12.5 ms | 6.16 ms | 0 ms |
 | p50 | 648 ms | 95 ms | 32.1 ms | 12.9 ms | 6.20 ms | 0 ms |
@@ -101,22 +101,30 @@ The click cost, from `documentation/optimizations.md`. Every column is the page 
 | max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 0 ms |
 | total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 0 s |
 
-The patch against a full redraw, measured on this branch with `go test -bench BenchmarkPatchCost -benchtime 30x ./examples/css-preview/` at 1908x999 on an Intel i7-13700HX. The recorded table in `examples/css-preview/PATCH_COST.md` is from an older run and its allocation columns no longer match the code, see the follow-ups.
+The zero in the last column is a measurement, not a missing number. A click now patches the elements it changed and paints them, so the page's own redraw counter does not move and there is no rebuild left to time. The click script reports 0.0 ms for the rebuild of every one of the 43 clicks. The walk does not become free: it still waits for each painted frame.
+
+Against the original, the drop in the rebuild is 84.0% after the first pass, 95.0% after the second, 98.1% after the third, 99.1% after the fourth, and 100% now.
+
+What the walk costs now is the wait for the painted frame:
+
+| Segment | p50 | p95 | max | average | 43-click pass |
+|---|---:|---:|---:|---:|---:|
+| press to started | 15.8 ms | 30.9 ms | 32.2 ms | 16.5 ms | 0.68 s |
+| press to painted | 51.0 ms | 51.6 ms | 52.3 ms | 51.0 ms | 2.19 s |
+
+The 43-click pass column is the p50 times 43 clicks. So the whole catalog now costs about 2.2 s of frame waiting, against 28.7 s of page rebuild before any of this work. The press to painted time did not move, because the presentation frame of the software compositor dominates it.
+
+The patch against a full redraw, measured with `go test -bench BenchmarkPatchCost -benchtime 30x -count 5 ./examples/css-preview/`, median of five runs, at 1908x999 on an Intel i7-13700HX with Go 1.26.4.
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
-| Full redraw, card class | 25.58 ms | 20.16 MB | 32188 | |
-| Element patch, card class | 3.80 ms | 6.31 MB | 6875 | 30 of 30 |
-| Full redraw, state class | 32.09 ms | 19.86 MB | 31656 | |
-| Element patch, state class | 4.12 ms | 5.99 MB | 6347 | 30 of 30 |
-| Full redraw, same source | 20.94 ms | 13.87 MB | 25305 | |
+| Full redraw, card class | 34.5 ms | 20.18 MB | 32188 | |
+| Element patch, card class | 6.08 ms | 6.31 MB | 6875 | 30 of 30 |
+| Full redraw, state class | 39.2 ms | 19.86 MB | 31656 | |
+| Element patch, state class | 4.72 ms | 5.99 MB | 6347 | 30 of 30 |
+| Full redraw, same source | 27.2 ms | 13.87 MB | 25304 | |
 
-The visible latency, from the real click script with `-perf` on:
-
-| Segment | p50 | p95 | max |
-|---|---:|---:|---:|
-| press to started | 15.8 ms | 30.9 ms | 32.2 ms |
-| press to painted | 51.0 ms | 51.6 ms | 52.3 ms |
+A separate run of the click walk under a virtual X server, three passes of 43 clicks, gave 17.2 ms and 51.2 ms on p50 for press to started and press to painted, and 2.37 s per 43-click pass, with a redraw of 0.0 ms on every click.
 
 ## Related issues
 
@@ -132,6 +140,8 @@ None. No issue is linked to this work.
 ## Follow-ups (out of scope)
 
 A review of this branch found the items below. None of them are fixed in this PR, and none of them were checked in by this PR.
+
+Two findings from the same review were fixed here, because they were about the files this PR already touches: the generated site bundle was stale, and the recorded patch cost numbers no longer matched the code.
 
 ### Element patching
 
@@ -181,7 +191,6 @@ A review of this branch found the items below. None of them are fixed in this PR
 - `PROFILING.md` describes the pre-window design. It says one press renders the whole catalog and that keeping the window while every preview plays is still a plan, but `catalog_play_all.go` already keeps the catalog windowed and `documentation/optimizations.md` already describes the shipped behavior. `examples/css-preview/PROFILING.md:63`
 - `PROFILING.md` also reports a "Now" column of 7.1 ms redraw p50 and 10.3 ms press to started, while `documentation/optimizations.md` reports 0.0 ms and 15.8 ms for the same path. `examples/css-preview/PROFILING.md:48`
 - `documentation/optimizations.md` says the template prints the started class and the state text, so the executed source changes and the tree is parsed again. The template prints the base class and a literal `Ready`; the state is restored by the after-redraw hook. `documentation/optimizations.md:299`
-- The allocation columns in `PATCH_COST.md` are stale. `BenchmarkPatchCost` now reports 32187, 6875, 31655, 6347, and 25304 allocations, not the documented 29541, 6049, 29051, 5563, and 23484. The document calls the allocation counts the stable part. `examples/css-preview/PATCH_COST.md:29`
 - `PATCH_COST.md` says both patch benchmarks apply 30 of 30, while the benchmark's own comment still says the engine refuses a card row today. One of the two is stale. `examples/css-preview/PATCH_COST.md:35`
 - `documentation/optimizations.md` mixes two builds in one sentence: the current full catalog holds 9178 operations and 537 boxes, not 8800 and 537. `documentation/optimizations.md:438`
 - `documentation/optimizations.md` says there is no replace, so the build and the module zip carry the same engine. That holds for the main module. The examples module still pins Blinkless `v0.0.2` and builds only through the workspace file. `documentation/optimizations.md:639`

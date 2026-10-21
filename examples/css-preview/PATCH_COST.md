@@ -22,19 +22,19 @@ runs is the redraw.
 
 ## The numbers
 
-Intel i7-13700HX, Go 1.26.4, `GOMAXPROCS=2`, the Blinkless commit `c1054ff`.
+Intel i7-13700HX, Go 1.26.4, the Blinkless commit `c1054ff`.
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
-| FullRedrawCardClass | 34.9 ms | 20.05 MB | 29541 | |
-| ElementPatchCardClass | 5.9 ms | 6.27 MB | 6049 | 30 of 30 |
-| FullRedrawStateClass | 40.0 ms | 19.72 MB | 29051 | |
-| ElementPatchStateClass | 10.4 ms | 5.95 MB | 5563 | 30 of 30 |
-| FullRedrawSameSource | 29.0 ms | 13.77 MB | 23484 | |
+| FullRedrawCardClass | 34.5 ms | 20.18 MB | 32188 | |
+| ElementPatchCardClass | 6.08 ms | 6.31 MB | 6875 | 30 of 30 |
+| FullRedrawStateClass | 39.2 ms | 19.86 MB | 31656 | |
+| ElementPatchStateClass | 4.72 ms | 5.99 MB | 6347 | 30 of 30 |
+| FullRedrawSameSource | 27.2 ms | 13.87 MB | 25304 | |
 
 Both patch benchmarks apply 30 of 30 now, because the engine splices a card
 row. The times are the median of five runs of 30 iterations. The full redraw
-spread was 31.9 to 49.7 ms and the card patch spread was 5.7 to 10.6 ms, so
+spread was 33.7 to 52.9 ms and the card patch spread was 5.1 to 7.5 ms, so
 the wall clock moves with the load of the machine, and the allocation counts
 do not.
 
@@ -46,26 +46,26 @@ The redraw splits into three stages, measured by the page itself.
 
 | Stage | Time |
 |---|---:|
-| Template | 0.57 ms |
-| Cascade | 0.06 ms |
-| Layout | 27.6 ms |
+| Template | 0.58 ms |
+| Cascade | 0.09 ms |
+| Layout | 27.7 ms |
 
 ## What the patch saves
 
 The layout stage is the whole cost of a redraw here. Laying out 43 cards,
-9178 operations and every text run takes 27.6 ms. The patch lays out one span
+9178 operations and every text run takes 27.7 ms. The patch lays out one span
 and leaves the other 42 cards alone.
 
-For the state span the patch costs 10.4 ms against the 40.0 ms of the full
-path, so the patch is about four times faster. It allocates 5.95 MB against
-19.72 MB, so about three times less. The cascade is not saved. The patch
-re-cascades the whole document, but that stage costs 0.06 ms, so there is
+For the state span the patch costs 4.72 ms against the 39.2 ms of the full
+path, so the patch is about eight times faster. It allocates 5.99 MB against
+19.86 MB, so about three times less. The cascade is not saved. The patch
+re-cascades the whole document, but that stage costs 0.09 ms, so there is
 nothing to win there.
 
 ## What the patch still costs
 
-A patch of one span still allocates 5.95 MB, and a patch of the card row
-allocates 6.27 MB. The host adopts the whole patched display the engine hands
+A patch of one span still allocates 5.99 MB, and a patch of the card row
+allocates 6.31 MB. The host adopts the whole patched display the engine hands
 back, because a patch that changes the operation count moves every later
 operation index, so the engine rebuilds the operation list and the owners for
 the whole page, and the page holds 9178 operations. The layout is skipped, the
