@@ -40,7 +40,7 @@ Teams is a native chat and collaboration app built with Go, HTML, and CSS.
 
 <table>
   <tr>
-    <td align="center"><img src="assets/screenshots/demos/teams.webp" alt="Animated preview of the Teams chat and collaboration app" width="600" height="250" /><br /><b>Teams</b></td>
+    <td align="center"><img src="assets/screenshots/demos/teams.webp" alt="Animated preview of the Teams chat and collaboration app" width="1000" height="650" /><br /><b>Teams</b></td>
   </tr>
 </table>
 
@@ -57,7 +57,7 @@ over HTTP.
 
 <table>
   <tr>
-    <td align="center"><img src="frontend/public/demos/videos/spotify.webp" alt="Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens" width="600" height="250" /><br /><b>Spotify Player</b></td>
+    <td align="center"><img src="frontend/public/demos/videos/spotify.webp" alt="Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens" width="1000" height="650" /><br /><b>Spotify Player</b></td>
   </tr>
 </table>
 
@@ -75,7 +75,7 @@ and the desktop capture shows the same app in its native Windows window.
     <td align="center"><img src="assets/screenshots/android/pet-care/pet-care-settings-dark.webp" alt="Pet Care settings screen in the dark theme" width="250" height="600" /><br /><b>Settings, dark</b></td>
   </tr>
   <tr>
-    <td align="center" colspan="3"><img src="assets/screenshots/windows/pet-care/pet-care.webp" alt="Pet Care desktop application showing the Today screen" width="600" height="250" /><br /><b>Pet Care Windows</b></td>
+    <td align="center" colspan="3"><img src="assets/screenshots/windows/pet-care/pet-care.webp" alt="Pet Care desktop application showing the Today screen" width="1000" height="650" /><br /><b>Pet Care Windows</b></td>
   </tr>
 </table>
 
@@ -111,7 +111,7 @@ transparent pixels.
 
 <table>
   <tr>
-    <td align="center"><img src="assets/screenshots/demos/desktop-cat.webp" alt="Desktop cat overlay preview" width="600" height="250" /><br /><b>Desktop cat overlay</b></td>
+    <td align="center"><img src="assets/screenshots/demos/desktop-cat.webp" alt="Desktop cat overlay preview" width="1000" height="650" /><br /><b>Desktop cat overlay</b></td>
   </tr>
 </table>
   [Watch the demo](https://x.com/chinmay_sawant_/status/2106829998409789929)
@@ -124,7 +124,7 @@ The Wispr Flow example is an HTML and CSS interface rendered by ownframe.
 
 <table>
   <tr>
-    <td align="center"><img src="assets/screenshots/demos/wispr-flow.webp" alt="Wispr Flow example preview" width="600" height="250" /><br /><b>Wispr Flow</b></td>
+    <td align="center"><img src="assets/screenshots/demos/wispr-flow.webp" alt="Wispr Flow example preview" width="1000" height="650" /><br /><b>Wispr Flow</b></td>
   </tr>
 </table>
   [Watch the demo](https://x.com/chinmay_sawant_/status/2106788230154871126)
@@ -137,7 +137,7 @@ An endless runner built with HTML, CSS, and Go.
 
 <table>
   <tr>
-    <td align="center"><img src="assets/screenshots/demos/dino.webp" alt="Dino Run example preview" width="600" height="250" /><br /><b>Dino Run</b></td>
+    <td align="center"><img src="assets/screenshots/demos/dino.webp" alt="Dino Run example preview" width="1000" height="650" /><br /><b>Dino Run</b></td>
   </tr>
 </table>
 
@@ -154,10 +154,10 @@ APK with Gradle, and installs it over `adb`.
 
 <table>
   <tr>
-    <td align="center"><img src="assets/screenshots/android/eyes/eyes-idle.webp" alt="Idle robot eyes on a black phone screen" width="600" height="250" /><br /><b>Idle</b></td>
-    <td align="center"><img src="assets/screenshots/android/eyes/eyes-curious.webp" alt="Curious robot eyes with one eye stretched tall" width="600" height="250" /><br /><b>Curious</b></td>
-    <td align="center"><img src="assets/screenshots/android/eyes/eyes-sleepy.webp" alt="Sleepy robot eyes half closed into cups" width="600" height="250" /><br /><b>Sleepy</b></td>
-    <td align="center"><img src="assets/screenshots/android/eyes/eyes-surprised.webp" alt="Surprised robot eyes wide open" width="600" height="250" /><br /><b>Surprised</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-idle.webp" alt="Idle robot eyes on a black phone screen" width="1000" height="200" /><br /><b>Idle</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-curious.webp" alt="Curious robot eyes with one eye stretched tall" width="1000" height="200" /><br /><b>Curious</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-sleepy.webp" alt="Sleepy robot eyes half closed into cups" width="1000" height="200" /><br /><b>Sleepy</b></td>
+    <td align="center"><img src="assets/screenshots/android/eyes/eyes-surprised.webp" alt="Surprised robot eyes wide open" width="1000" height="200"/><br /><b>Surprised</b></td>
   </tr>
   <tr>
     <td align="center" colspan="4"><img src="assets/screenshots/android/eyes/eyes2-60fps.webp" alt="Second animated eyes demo blinking and cycling moods" width="600" height="250" /><br /><b>Animated demo 2</b></td>
