@@ -51,9 +51,8 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 
 ### Showcase and docs site
 
-- Add the showcase page to the frontend and rebuild the generated GitHub Pages output.
+- Add the showcase page to the frontend and rebuild the generated GitHub Pages output, then rebuild it again after the guides changed, so the published site matches the repository.
 - Add `documentation/optimizations.md` with the recorded numbers for every optimization pass, and link it from the feature index.
-- Rebuild the site bundle after the documentation changed, so the published guides match the repository.
 
 ## Impact
 
@@ -61,7 +60,7 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 |------|--------|
 | **Performance** | A CSS preview click no longer rebuilds the page: the rebuild per click drops from 667 ms to 0 ms, and the press to painted latency stays at 51.0 ms p50 because the presentation frame dominates. A full 43-click walk drops from 28.7 s to 0 s of page rebuild. An element patch costs 3.80 ms against 25.58 ms for a full redraw of the same card. |
 | **Memory** | A patch allocates 6.31 MB against 20.16 MB for a full redraw of the same card. The chunk and raster caches keep their pixel ceilings; only their entry caps moved. |
-| **Behavior / correctness** | The library gains `Page.PatchElement`, `ElementEdit`, `host.RedrawBatcher`, and `host.Batch`. A page without retained state refuses every patch and reports false. The devtools dock now opens on Frame. |
+| **Behavior / correctness** | The library gains `Page.PatchElement`, `Page.SetAfterRedraw`, `ElementEdit`, `host.RedrawBatcher`, and `host.Batch`. A page without retained state refuses every patch and reports false. The devtools dock now opens on Frame. |
 | **API / CLI** | New exported `Page.PatchElement`, `Page.SetAfterRedraw`, `Page.BeginRedrawBatch`, `Page.EndRedrawBatch`, `ElementEdit`, `Config.RetainState`, `Handlers.ClickPaint`, `host.RedrawBatcher`, and `host.Batch`. `examples/css-preview` gains the walk harness behind `CSS_PREVIEW_WALK`. No existing exported function or method changed its signature. |
 | **Dependencies** | The Blinkless pin moves to `v0.0.3-0.20261021155643-c1054ff46202`, the commit that carries the per-element relayout and the text and attribute setters. It stays the only engine pin, and there is no `replace` directive. No new external module. |
 | **Binary size / build time** | One example package grows and the library gains the patch path. No new module and no new dependency. |
@@ -236,10 +235,10 @@ Three of the branch's own tests are weaker than they look:
 | `.css` | 3 | 74 | 26 |
 | `.go` | 149 | 4997 | 316 |
 | `.html` | 2 | 13 | 8 |
-| `.js` | 4 | 806 | 262 |
+| `.js` | 4 | 879 | 289 |
 | `.jsx` | 2 | 83 | 55 |
-| `.md` | 11 | 961 | 51 |
+| `.md` | 12 | 1206 | 51 |
 | `.mod` | 1 | 1 | 1 |
 | `.py` | 1 | 275 | 0 |
 | `.sum` | 1 | 8 | 0 |
-| **Total** | **174** | **7218** | **719** |
+| **Total** | **175** | **7536** | **746** |
