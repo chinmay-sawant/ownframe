@@ -60,8 +60,9 @@ lint:
 	fi; \
 	exit $$status
 
-# File-size gate (AGENTS.md "Go file size"). Scans every non-pruned .go
-# file, test files included, and checks it against the recorded counts in
+# File-size gate (AGENTS.md "Go file size": every Go file is at most 2,000
+# characters, counted with `wc -m`; newlines included). Scans every
+# non-pruned .go file, test files included, and compares the tree with
 # scripts/file-size-allowlist.txt.
 .PHONY: size-check
 size-check:

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# File-size soft-limit gate (AGENTS.md "Code structure": ~2,000 lines).
+# File-size gate (AGENTS.md "Go file size": every Go file is at most 2,000
+# characters, counted with `wc -m`; newlines included).
 #
 # Scans repo .go files, test files included, and skips tool/artifact dirs.
 # Every scanned file over the limit must be recorded in
-# scripts/file-size-allowlist.txt with its exact line count. The gate fails
-# when an over-limit file is unlisted, when a listed file is missing, no
-# longer over the limit, or when its recorded count is stale.
+# scripts/file-size-allowlist.txt with its exact character count. The gate
+# fails when an over-limit file is unlisted, when a listed file is missing,
+# no longer over the limit, or when its recorded count is stale.
 #
 # Usage:
 #   bash scripts/check-file-size.sh
@@ -44,17 +45,14 @@ fi
 # repo root. Add to this list only for dirs that never hold hand-written Go.
 prune_dirs=(
 	./.git
-	./verapdf
-	./compliance
-	./.pdf-validators
-	./pen
-	./temps
-	./bin
+	./temp
+	./examples/temp
 	./dist
 	./docs
 	./frontend
-	./scripts/puppeteer
-	./bindings/python
+	./node_modules
+	./testdata
+	./examples/testdata
 )
 
 find_expr=(-path "${prune_dirs[0]}")
@@ -66,25 +64,25 @@ done
 mapfile -t scanned_files < <(find . \( "${find_expr[@]}" \) -prune -o -type f -name '*.go' -print | LC_ALL=C sort)
 
 declare -A scanned=()
-declare -A actual_lines=()
+declare -A actual_chars=()
 actual_paths=()
 for file in "${scanned_files[@]}"; do
 	file=${file#./}
 	scanned["$file"]=1
-	lines=$(wc -l < "$file")
-	if [ "$lines" -gt "$limit" ]; then
+	chars=$(wc -m < "$file")
+	if [ "$chars" -gt "$limit" ]; then
 		actual_paths+=("$file")
-		actual_lines["$file"]=$lines
-		echo "over limit: $file ($lines lines, limit $limit)"
+		actual_chars["$file"]=$chars
+		echo "over limit: $file ($chars chars, limit $limit)"
 	fi
 done
 
 problems=()
 
-# Parse the allowlist: one "path<TAB>lines" entry per line, # comments and
+# Parse the allowlist: one "path<TAB>chars" entry per line, # comments and
 # blank lines skipped. Entries stay in file order for stable messages.
 allowed_paths=()
-declare -A allowed_lines=()
+declare -A allowed_chars=()
 lineno=0
 while IFS= read -r line || [ -n "$line" ]; do
 	lineno=$((lineno + 1))
@@ -95,7 +93,7 @@ while IFS= read -r line || [ -n "$line" ]; do
 	path=${line%%$'\t'*}
 	recorded=${line#*$'\t'}
 	if [ "$recorded" = "$line" ]; then
-		problems+=("$allowlist:$lineno: expected 'path<TAB>lines', got: $line")
+		problems+=("$allowlist:$lineno: expected 'path<TAB>chars', got: $line")
 		continue
 	fi
 	path=${path#./}
@@ -105,43 +103,43 @@ while IFS= read -r line || [ -n "$line" ]; do
 	fi
 	case $recorded in
 		'' | *[!0-9]*)
-			problems+=("$allowlist:$lineno: line count must be an integer, got '$recorded'")
+			problems+=("$allowlist:$lineno: char count must be an integer, got '$recorded'")
 			continue
 			;;
 	esac
-	if [ -n "${allowed_lines[$path]+set}" ]; then
+	if [ -n "${allowed_chars[$path]+set}" ]; then
 		problems+=("$allowlist:$lineno: duplicate entry for $path")
 		continue
 	fi
 	allowed_paths+=("$path")
-	allowed_lines["$path"]=$recorded
+	allowed_chars["$path"]=$recorded
 done < "$allowlist"
 
 # 1. Every scanned over-limit file must be allowlisted with its exact count.
 for path in "${actual_paths[@]}"; do
-	lines=${actual_lines[$path]}
-	if [ -z "${allowed_lines[$path]+set}" ]; then
-		problems+=("$path is $lines lines (limit $limit) and is not in $allowlist; split the file or add an allowlist entry")
-	elif [ "${allowed_lines[$path]}" -ne "$lines" ]; then
-		problems+=("$path is $lines lines, recorded as ${allowed_lines[$path]}; update the recorded count if the change was deliberate")
+	chars=${actual_chars[$path]}
+	if [ -z "${allowed_chars[$path]+set}" ]; then
+		problems+=("$path is $chars chars (limit $limit) and is not in $allowlist; split the file or add an allowlist entry")
+	elif [ "${allowed_chars[$path]}" -ne "$chars" ]; then
+		problems+=("$path is $chars chars, recorded as ${allowed_chars[$path]}; update the recorded count if the change was deliberate")
 	fi
 done
 
 # 2. Every allowlisted path must exist, be scanned, still exceed the limit,
 # and agree with its recorded count.
 for path in "${allowed_paths[@]}"; do
-	recorded=${allowed_lines[$path]}
+	recorded=${allowed_chars[$path]}
 	if [ ! -e "$path" ]; then
-		problems+=("$path is allowlisted ($recorded lines) but does not exist; remove the stale entry")
+		problems+=("$path is allowlisted ($recorded chars) but does not exist; remove the stale entry")
 		continue
 	fi
 	if [ -z "${scanned[$path]+set}" ]; then
 		problems+=("$path is allowlisted but was not scanned (not a .go file or under a pruned directory); remove the entry")
 		continue
 	fi
-	if [ -z "${actual_lines[$path]+set}" ]; then
-		actual=$(wc -l < "$path")
-		problems+=("$path is $actual lines, no longer over the $limit limit (recorded $recorded); remove its allowlist entry")
+	if [ -z "${actual_chars[$path]+set}" ]; then
+		actual=$(wc -m < "$path")
+		problems+=("$path is $actual chars, no longer over the $limit limit (recorded $recorded); remove its allowlist entry")
 	fi
 done
 
