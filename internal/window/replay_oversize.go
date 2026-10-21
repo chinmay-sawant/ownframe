@@ -3,29 +3,40 @@ package window
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/host"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
-// maxTilePixels bounds the content-sized tile grid. Past it the viewport
-// buffer is smaller than the full tile grid, so the window uses that path.
-const maxTilePixels = 4 << 20
+// maxGridViewports bounds the content-sized tile grid against the window.
+// The grid holds every content pixel, so it may cost this many viewport
+// buffers before the window takes the viewport path, which keeps only a
+// window-sized buffer.
+const maxGridViewports = 4
 
-// oversized reports a content size no Ebiten image can hold, or one whose
-// tile grid would retain more pixels than the viewport budget. A zero device
-// limit means the game is not running, so only the pixel budget applies.
+// oversized reports a content size no Ebiten image can hold. A zero device
+// limit means the game is not running, so nothing is oversized. A large but
+// holdable size keeps its scale: only the tile grid has a budget.
 func oversized(w, h int) bool {
-	if w > 0 && h > 0 && w*h > maxTilePixels {
-		return true
-	}
-
 	m := ebiten.MaxImageSize()
 	if m <= 0 {
 		return false
 	}
 
 	return w > m || h > m
+}
+
+// gridTooBig reports that the content-sized tile grid would cost far more
+// memory than the window keeps. The measure is a ratio of the content area
+// to the window area, not a pixel count: a full-screen page on a 4K display
+// is large in pixels, but its grid is no bigger than the viewport buffer the
+// window keeps either way. Only a page several times the window takes the
+// viewport path, which bounds its memory to the window.
+func (s *shell) gridTooBig(contentW, contentH int) bool {
+	winW, winH := s.screenW, s.screenH
+	if contentW <= 0 || contentH <= 0 || winW <= 0 || winH <= 0 {
+		return false
+	}
+
+	return int64(contentW)*int64(contentH) > int64(maxGridViewports)*int64(winW)*int64(winH)
 }
 
 // isTicking reports a screen that changes operations from a frame callback.
@@ -37,16 +48,7 @@ func (s *shell) isTicking() bool {
 	return ok && t.Ticking()
 }
 
-// directReplay draws the list straight to the screen. Ticking pages use it
-// because they have no dirty rect; oversized content uses it because no
-// buffer can hold it. Viewport-pinned layers draw at the offset the display
-// was built with, so they stay at the viewport while the page scrolls.
-func (s *shell) directReplay(dst *ebiten.Image, display *layout.Display) {
-	replay.DrawVisiblePinned(dst, display,
-		-float64(s.scrollX), -float64(s.scrollY),
-		s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
-}
-
+// viewportPinZ is the z layer of the page's viewport-pinned operations.
 func (s *shell) viewportPinZ() int {
 	if pinner, ok := s.app.(host.ViewportPinner); ok {
 		return pinner.ViewportPinZ()

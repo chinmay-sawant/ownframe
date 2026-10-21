@@ -3,12 +3,13 @@ package window
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
 // drawReplayScaled draws the display list through an offscreen buffer and
-// scales it to the window, matching the bitmap path when the page size and
-// the window size differ (a resized or clamped window).
+// scales it to the window, matching the bitmap path on a resized or clamped
+// window.
 func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 	w, h := s.display.Width, s.display.Height
 	viewW, viewH := s.viewSize()
@@ -17,6 +18,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 	}
 
 	if oversized(w, h) {
+		// No image can hold the page, so the draw drops the scale.
 		s.directReplay(dst, s.display)
 
 		return
@@ -48,4 +50,14 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 	}
 
 	dst.DrawImage(s.replayBuf, &op)
+}
+
+// directReplay draws the list straight to the screen. Ticking pages use it
+// because they have no dirty rect; oversized content uses it because no
+// buffer can hold it. Viewport-pinned layers draw at the offset the display
+// was built with, so they stay at the viewport while the page scrolls.
+func (s *shell) directReplay(dst *ebiten.Image, display *layout.Display) {
+	replay.DrawVisiblePinned(dst, display,
+		-float64(s.scrollX), -float64(s.scrollY),
+		s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
 }

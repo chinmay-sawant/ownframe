@@ -53,7 +53,7 @@ func TestSyncScrollWindow(t *testing.T) {
 	}
 }
 
-func TestOversizedFallsBackHeadless(t *testing.T) {
+func TestOversizedWithoutADeviceLimit(t *testing.T) {
 	t.Parallel()
 
 	if oversized(480, 640) {
