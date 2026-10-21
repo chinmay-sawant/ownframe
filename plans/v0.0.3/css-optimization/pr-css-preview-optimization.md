@@ -18,7 +18,8 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 - Add `Page.PatchElement(ctx, id, edits...)` and the `ElementEdit` type at the root package. An edit sets an attribute or replaces the text of an element, or of a descendant of the patched element.
 - Add `internal/render/cache_edit.go`. The cached document exposes `SetText` and `SetAttribute` on the tree the cascade and layout already read, so a patch edits the live tree rather than a copy.
 - The patch path re-lays out the element's subtree through the engine, adopts the patched display, and marks the old and new boxes dirty. It reports whether the patch applied, so a refused patch leaves the caller to redraw.
-- The patch needs retained state. A page built without `Config.RetainState` keeps no layout state, so the engine refuses the patch and the method returns false.
+- The patch needs retained state. `Config.RetainState` keeps the layout state a patch needs, and it is off by default so a page that never patches pays nothing. A page without it keeps no layout state, so the engine refuses the patch and the method returns false.
+- `Handlers.ClickPaint` runs after `Click` and a control's own change. It reports that the handler painted the frame, so the page skips the layout.
 
 ### Redraw batching and the after-redraw hook
 
@@ -57,10 +58,10 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 
 | Area | Impact |
 |------|--------|
-| **Performance** | A CSS preview click no longer rebuilds the page: the rebuild per click drops from 667 ms to 0 ms, and the press to painted latency stays at 51.0 ms p50 because the presentation frame dominates. A full 43-click walk drops from 28.7 s to 0 s of page rebuild. An element patch costs 5.9 ms against 34.9 ms for a full redraw of the same card. |
-| **Memory** | A patch allocates 6.27 MB against 20.05 MB for a full redraw of the same card. The chunk and raster caches keep their pixel ceilings; only their entry caps moved. |
+| **Performance** | A CSS preview click no longer rebuilds the page: the rebuild per click drops from 667 ms to 0 ms, and the press to painted latency stays at 51.0 ms p50 because the presentation frame dominates. A full 43-click walk drops from 28.7 s to 0 s of page rebuild. An element patch costs 3.80 ms against 25.58 ms for a full redraw of the same card. |
+| **Memory** | A patch allocates 6.31 MB against 20.16 MB for a full redraw of the same card. The chunk and raster caches keep their pixel ceilings; only their entry caps moved. |
 | **Behavior / correctness** | The library gains `Page.PatchElement`, `ElementEdit`, `host.RedrawBatcher`, and `host.Batch`. A page without retained state refuses every patch and reports false. The devtools dock now opens on Frame. |
-| **API / CLI** | New exported `Page.PatchElement` and `ElementEdit` at the root package, plus the optional `host.RedrawBatcher` interface. `examples/css-preview` gains the walk harness behind `CSS_PREVIEW_WALK`. No existing exported symbol changed its signature. |
+| **API / CLI** | New exported `Page.PatchElement`, `Page.SetAfterRedraw`, `Page.BeginRedrawBatch`, `Page.EndRedrawBatch`, `ElementEdit`, `Config.RetainState`, `Handlers.ClickPaint`, `host.RedrawBatcher`, and `host.Batch`. `examples/css-preview` gains the walk harness behind `CSS_PREVIEW_WALK`. No existing exported function or method changed its signature. |
 | **Dependencies** | The Blinkless pin moves to `v0.0.3-0.20261021155643-c1054ff46202`, the commit that carries the per-element relayout and the text and attribute setters. It stays the only engine pin, and there is no `replace` directive. No new external module. |
 | **Binary size / build time** | One example package grows and the library gains the patch path. No new module and no new dependency. |
 
@@ -68,7 +69,7 @@ The engine already carried the pieces this needs: a cached parsed tree, a retain
 
 | Item | Migration |
 |------|-----------|
-| None | No migration needed. `Page.PatchElement` is additive and reports false when the page cannot patch. |
+| `ownframe.Config` gains a `RetainState` field, and `ownframe.Handlers` gains a `ClickPaint` field | Keyed struct literals are unaffected. An unkeyed literal such as `ownframe.Config{...}` stops compiling, which is the same break every added field causes. |
 
 ## Test plan
 
@@ -98,14 +99,15 @@ The click cost, from `documentation/optimizations.md`. Every column is the page 
 | max | 864 ms | 163 ms | 48.0 ms | 19.2 ms | 8.50 ms | 0 ms |
 | total | 28.7 s | 4.6 s | 1.44 s | 0.54 s | 0.265 s | 0 s |
 
-The patch against a full redraw, from `examples/css-preview/PATCH_COST.md`, at 1908x999 on an Intel i7-13700HX with `GOMAXPROCS=2`.
+The patch against a full redraw, measured on this branch with `go test -bench BenchmarkPatchCost -benchtime 30x ./examples/css-preview/` at 1908x999 on an Intel i7-13700HX. The recorded table in `examples/css-preview/PATCH_COST.md` is from an older run and its allocation columns no longer match the code, see the follow-ups.
 
-| Path | Time | Allocated | Allocations |
-|---|---:|---:|---:|
-| Full redraw, card class | 34.9 ms | 20.05 MB | 29541 |
-| Element patch, card class | 5.9 ms | 6.27 MB | 6049 |
-| Full redraw, state class | 40.0 ms | 19.72 MB | 29051 |
-| Element patch, state class | 10.4 ms | 5.95 MB | 5563 |
+| Path | Time | Allocated | Allocations | Patches applied |
+|---|---:|---:|---:|---:|
+| Full redraw, card class | 25.58 ms | 20.16 MB | 32188 | |
+| Element patch, card class | 3.80 ms | 6.31 MB | 6875 | 30 of 30 |
+| Full redraw, state class | 32.09 ms | 19.86 MB | 31656 | |
+| Element patch, state class | 4.12 ms | 5.99 MB | 6347 | 30 of 30 |
+| Full redraw, same source | 20.94 ms | 13.87 MB | 25305 | |
 
 The visible latency, from the real click script with `-perf` on:
 
@@ -159,11 +161,30 @@ A review of this branch found the items below. None of them are fixed in this PR
 ### CSS preview
 
 - The Play All clock is stamped at the end of the click handler, but a redraw follows the click, so every animation starts with most of its duration already spent. `examples/css-preview/catalog_play_all.go:50`
+- `TestPlayAllMovesEverySample` fails under load and passes on its own, so the timing gap above reaches the test suite.
 - `syncTree` restores each started row with its own `PatchElement`, and each patch re-lays out the whole document, so a scroll after Play All pays for every started row. `examples/css-preview/catalog_sync.go:26`
 - The Play All queue grows on every press, and the keys of rows that never scroll into view are never dropped. `examples/css-preview/catalog_play_all.go:44`
 - The catalog geometry is measured once, so a window resize leaves the scroll range and the pads on stale geometry. `examples/css-preview/run.go:37`
 - The walk `/box` route reads the page boxes from the HTTP goroutine without the walker mutex. `examples/css-preview/walk_http.go:52`
-- `PROFILING.md` still documents the pre-window design. `examples/css-preview/PROFILING.md:63`
+
+### Public API
+
+- The public `ElementEdit` alias drops the `ID` field rules the aliased type documents. Godoc shows the alias comment, and `internal/page` is not importable, so a user of `ownframe.ElementEdit` cannot tell what `ID` does. `element_edit.go:3`
+- Text patched into an element skips the emoji pass, which only runs over the source string. An emoji in patched text paints as a raw text run, while the same emoji in the template paints a color image. `internal/render/cache_edit.go:34`
+- A failed final draw drops the queued redraw, because the page clears `redrawPending` before it draws. In the web path the context is the request context, so a client disconnect during the draw leaves the committed display stale and nothing retries it. `internal/host/batch.go:24`
+- The deferred `EndRedrawBatch` runs during panic unwinding, so a panic inside the final draw replaces the original panic the crash report would have written. `internal/host/batch.go:23`
+
+### Documentation
+
+- `PROFILING.md` describes the pre-window design. It says one press renders the whole catalog and that keeping the window while every preview plays is still a plan, but `catalog_play_all.go` already keeps the catalog windowed and `documentation/optimizations.md` already describes the shipped behavior. `examples/css-preview/PROFILING.md:63`
+- `PROFILING.md` also reports a "Now" column of 7.1 ms redraw p50 and 10.3 ms press to started, while `documentation/optimizations.md` reports 0.0 ms and 15.8 ms for the same path. `examples/css-preview/PROFILING.md:48`
+- `documentation/optimizations.md` says the template prints the started class and the state text, so the executed source changes and the tree is parsed again. The template prints the base class and a literal `Ready`; the state is restored by the after-redraw hook. `documentation/optimizations.md:299`
+- The allocation columns in `PATCH_COST.md` are stale. `BenchmarkPatchCost` now reports 32187, 6875, 31655, 6347, and 25304 allocations, not the documented 29541, 6049, 29051, 5563, and 23484. The document calls the allocation counts the stable part. `examples/css-preview/PATCH_COST.md:29`
+- `PATCH_COST.md` says both patch benchmarks apply 30 of 30, while the benchmark's own comment still says the engine refuses a card row today. One of the two is stale. `examples/css-preview/PATCH_COST.md:35`
+- `documentation/optimizations.md` mixes two builds in one sentence: the current full catalog holds 9178 operations and 537 boxes, not 8800 and 537. `documentation/optimizations.md:438`
+- `documentation/optimizations.md` says there is no replace, so the build and the module zip carry the same engine. That holds for the main module. The examples module still pins Blinkless `v0.0.2` and builds only through the workspace file. `documentation/optimizations.md:639`
+- Neither `PATCH_COST.md` nor `PROFILING.md` is linked from `documentation/features.md` or `documentation/features-examples.md`, so a reader of the index cannot find them. `documentation/optimizations.md:326`
+- The showcase images carry width and height attributes that do not match the files, so they render distorted: teams.webp is 720x402, spotify.webp 780x520, pet-care.webp 1882x982, desktop-cat.webp 880x476, and wispr-flow.webp 1906x1030, against a 1000x650 box. `showcase.md:43`
 
 ### Test coverage
 
