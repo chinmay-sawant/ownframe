@@ -32,11 +32,14 @@ average was 33.4 ms, and the third-pass average was 12.5 ms. The fourth-pass
 average was 6.16 ms. The current column is the real click script, where the
 click no longer rebuilds the page at all: the page rebuild per click is zero,
 because the click patches the elements it changed and paints them. The
-fourth-pass column is the mean of five `BenchmarkWindowedPointerCycle` runs;
-the first run after launch can be slower while the font and style caches
-warm. That benchmark drives the page without the example's own handlers, so it
-still measures a full rebuild, and it is the number to compare against when
-the page is used without the element patch.
+fourth-pass column is the mean of five `BenchmarkWindowedPointerCycle` runs,
+and that benchmark runs at 960x860, while the current column comes from the
+real script at 1908x999. The two columns are not the same measurement, and the
+current column is the better number for the click path. The first run after
+launch can be slower while the font and style caches warm. That benchmark
+drives the page without the example's own handlers, so it still measures a full
+rebuild, and it is the number to compare against when the page is used without
+the element patch.
 
 ## First pass, 667 ms to 107 ms
 
@@ -94,9 +97,12 @@ The third pass stopped laying out cards that are not on screen and removed the
 last duplicate grid build.
 
 - The catalog now uses `Page.SetScrollWindow` with a window of the visible card
-  rows plus two rows of overscan. Top and bottom spacer rows keep the grid at
-  its full height, so the scroll range and the metadata section do not move.
-  The window callback slices `view.Rows` from the full `view.Catalog`.
+  rows plus two rows of overscan. The template emits one spacer row per side,
+  and that spacer spans both columns of the grid, so the grid keeps its full
+  height, the scroll range does not move, and the metadata section does not
+  move. Commit 8ec0125 gave each column its own spacer instead, so the outer
+  grid keeps the one-pass layout. The window callback slices `view.Rows` from
+  the full `view.Catalog`.
 - The geometry is measured once after the full setup draw:
   `catalog_metrics.go` records each row top and height, the grid gap, the grid
   bottom, and the full content height. A window change uses those numbers
@@ -133,10 +139,12 @@ this pass cut.
 The fourth pass stopped paying for layout that a click does not need.
 
 - The catalog window now renders only the rows that intersect the viewport.
-  The previous window added two rows of overscan above and below. That cut the
-  average window from 8.72 rows to 5.37 rows per click. Scroll range changes
-  became about 15% more frequent, but the total scroll work stayed about the
-  same because each rebuild is smaller.
+  The previous window added two rows of overscan above and below. The code
+  change was the overscan constant dropping from 2 to 0, with a clamp at the
+  end of the row list. The recorded averages of that pass went from 8.72 rows
+  to 5.37 rows per click; nothing in this repo instruments those two numbers.
+  Scroll range changes became about 15% more frequent, but the total scroll
+  work stayed about the same because each rebuild is smaller.
 - The card header lost its flex formatting context. `.catalog-details h3` is a
   block, the property number is an inline-block badge, and the row and details
   containers are blocks. The playback row keeps its grid. The header flex was
@@ -207,15 +215,16 @@ catalog:
 
 | Path | Time | Allocated | Applied |
 |---|---:|---:|---:|
-| Full redraw, card class | 25.0 ms | 14.45 MB | |
-| Full redraw, state class | 25.0 ms | 17.11 MB | |
-| Element patch, card class | 1.55 ms | 6 KB | 0 of 30 |
-| Element patch, state class | 1.65 ms | 2.66 MB | 30 of 30 |
+| Full redraw, card class | 34.9 ms | 20.05 MB | |
+| Full redraw, state class | 40.0 ms | 19.72 MB | |
+| Element patch, card class | 5.9 ms | 6.27 MB | 30 of 30 |
+| Element patch, state class | 10.4 ms | 5.95 MB | 30 of 30 |
 
-The card class probe is refused because the probe replaces the card's class
-with one that carries no rules, which changes the card's size. The class the
-example uses is spliced, 203 operations, and the running example applied 85 of
-85 card patches and 43 of 43 readout patches.
+The card row patch applies in every run, 30 of 30. The element the test
+probes with a class that carries no rules is a different case, and the engine
+still refuses it because the element changes size. The class the example uses
+is spliced, 203 operations, and the running example applied 85 of 85 card
+patches and 43 of 43 readout patches.
 
 ## The card patch and its guards
 
@@ -240,7 +249,7 @@ The engine's guards:
 | An anchored box sits outside the subtree | That box would go stale when the anchor moves | No |
 | The document uses `@container` rules | A container query needs the used size of a container, and the kept state does not carry it | No today, but one such rule refuses every patch in the document |
 | The element moved or changed size | Every box after it would be stale | Yes. A card is a grid item, so its width is the track width, while the splice laid the element out in the grid container's content width |
-| The element owns no operations | There is no range of operations to replace | No. A card owns 362 operations in the fixture display |
+| The element owns no operations | There is no range of operations to replace | No. A card owns 204 operations in the fixture display |
 
 The first refusal on the real fixture was the out-of-flow box, with the reason
 the engine reported:
@@ -253,12 +262,14 @@ The guard now allows an out-of-flow box whose containing block is inside the
 subtree, because the subtree lays that block out again and places the box
 against it. The card row is spliced with that change.
 
-The host adds five checks of its own. The element has to exist and own
-operations, the re-cascade has to succeed, and the patch has to carry the same
-number of operations, the same size, and the same operation kinds as the
-element it replaces. The last three run after the engine has spliced the
-display, so they drop the remembered render key and the next redraw rebuilds
-the page.
+The host checks the page before it does anything: the page, the cache, and the
+display have to exist, the id has to be non-empty, and the retention has to be
+on. Then an edit has to change something, the re-cascade has to succeed, the
+engine has to return a patch, and the patch has to carry a display. The host
+takes the engine's whole patched display instead of copying the patch
+operations, because a patch that changes the operation count moves every later
+operation index, so the three checks Blinkless documents for a host that copies
+the operations do not apply here.
 
 The retained layout state is opt-in on both sides. `layout.Options.RetainState`
 keeps the resolved styles and the box tree a patch needs, and
@@ -266,14 +277,15 @@ keeps the resolved styles and the box tree a patch needs, and
 element pays nothing for it, and `Page.PatchElement` refuses before it edits
 the tree when the page kept no state.
 
-The retained state is not free. One laid out page keeps 167 KB alive with the
-retention on and 34 KB with it off for 31 elements, 277 KB and 302 KB for 283
-elements, and 454 KB and 744 KB for 703. The cost is per layout, so a page that
-redraws often leaves that much behind each time. The measurement is
-`BenchmarkDisplayRetainedBytes` in Blinkless. The style store keeps the
-distinct styles of a page in backing arrays of eight records that grow to
-sixty four, so a page with a few distinct styles keeps a small array instead
-of a full one.
+The retained state is not free. One laid out page keeps 201 KB alive with the
+retention on and 34 KB with it off for 31 elements, 579 KB and 302 KB for 283
+elements, and 1198 KB and 744 KB for 703. That is 167 KB, 277 KB, and 454 KB of
+retained state. The cost is per layout, so a page that redraws often leaves
+that much behind each time. The table is in `documentation/library-api.md` in
+Blinkless, and the measurement is `BenchmarkDisplayRetainedBytes`. The style
+store keeps the distinct styles of a page in backing arrays of eight records
+that grow to sixty four, so a page with a few distinct styles keeps a small
+array instead of a full one.
 
 ### The fallback
 
@@ -316,25 +328,26 @@ The harness is in `examples/css-preview`, and the numbers are in
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
-| Full redraw, card class | 27.7 ms | 14.45 MB | 23483 | |
-| Element patch, card class | 1.55 ms | 6 KB | 34 | 0 of 30 |
-| Full redraw, state class | 25.0 ms | 17.11 MB | 23972 | |
-| Element patch, state class | 1.65 ms | 2.66 MB | 526 | 30 of 30 |
+| Full redraw, card class | 34.9 ms | 20.05 MB | 29541 | |
+| Element patch, card class | 5.9 ms | 6.27 MB | 6049 | 30 of 30 |
+| Full redraw, state class | 40.0 ms | 19.72 MB | 29051 | |
+| Element patch, state class | 10.4 ms | 5.95 MB | 5563 | 30 of 30 |
 
 The redraw splits into three stages, measured by the page itself: the template
-takes 0.6 ms, the cascade 0.06 ms, and the display list 23 ms. Laying out 43
+takes 0.57 ms, the cascade 0.06 ms, and the layout 27.6 ms. Laying out 43
 cards, 9178 operations and every text run is the whole cost of a redraw. A
 patch of one state span lays out that span and leaves the other 42 cards
-alone, so it is about fifteen times faster than the full path.
+alone, so it is about four times faster than the full path.
 
 The cascade is not saved, because the patch re-cascades the whole document, but
 that stage costs 0.06 ms, so there is nothing to win there.
 
-A patch still allocates 2.66 MB on the full catalog, because the engine keeps
-its own operation list when it splices, and the page holds 9178 operations.
-The layout is skipped, the copy of the operation list is not. The windowed
-catalog holds about a fifth of the operations, so the copy is about a fifth as
-big there.
+A patch still allocates 5.95 MB on the full catalog for the state span, and
+6.27 MB for the card row. The host adopts the whole patched display the engine
+hands back, so the engine rebuilds the operation list and the owners for the
+whole page, and the page holds 9178 operations. The layout is skipped, the
+copy is not. The windowed catalog holds about a fifth of the operations, so
+the copy is about a fifth as big there.
 
 The harness prints what the engine says for each element it probes. The probe
 puts a class that carries no rules on the element, so a card loses its padding
@@ -344,12 +357,13 @@ and its border and changes size, which the engine refuses:
 |---|---|
 | `catalog-state-01` | spliced, 1 operation |
 | `start-property-webkit_animation` | spliced, 2 operations |
-| `preview-metadata` | spliced, 3 operations |
+| `preview-metadata` | spliced, 1 operation |
 | `catalog-row-01` | refused: the element changed size, 128.84 to 112.34 high |
+| `catalog` | refused: the element changed size |
 | `catalog-grid` | refused: the element changed size |
 | `catalog-target-webkit_animation` | refused: the element changed size |
 | `play-all` | refused: the element changed size, 24.75 to 30 high |
-| `metadata` | refused: the element changed size, 95.55 to 104.43 high |
+| `metadata` | refused: the element changed size, 400.05 to 408.93 high |
 
 With the class the example uses, the card row is spliced, 203 operations, and
 the state span inside it rides along with that one patch.
@@ -409,6 +423,10 @@ windowed cost while all 43 previews still play.
 - The rows on screen start right away. The rows off screen wait. They keep
   their start time, so an animation is already at the right phase when its row
   scrolls in.
+- The shared start time is stamped after the click has patched the cards. A
+  click that patches every card can take longer than the shortest animation,
+  so a clock that started before that work would leave every sample finished
+  before the first tick reached it.
 - A transition needs its starting paint captured while the row is still
   unstarted. A row that scrolls in for the first time renders once without the
   started class, captures that paint, then renders with the class and binds.
@@ -441,6 +459,17 @@ move when the page stopped rebuilding itself.
 
 ## How the numbers were measured
 
+Each column of the results table came from a different harness:
+
+| Column | Harness | Size |
+|---|---|---|
+| Original | in-process pointer cycle, no OS window | 960x1000 page |
+| First pass | in-process pointer cycle, no OS window | 960x1000 page |
+| Second pass | real X11 click walk | 960x860 window |
+| Third pass | real X11 click walk | 960x860 window |
+| Fourth pass | `BenchmarkWindowedPointerCycle`, in process | 960x860 page |
+| Now | real X11 click script | 1908x999 window |
+
 The fourth-pass column comes from `BenchmarkWindowedPointerCycle`, which follows
 the same 43-click desktop path as the X11 script but reads `LastRedraw` in
 process. That removes the software X server and presentation frame from the
@@ -448,6 +477,13 @@ measurement. The benchmark runs one warm pass, then reports the average, p50,
 p95, and max over one or more measured passes. The numbers above are the mean
 of five `-benchtime=1x` runs. The third-pass and earlier columns came from the
 real X11 walk and the earlier pointer cycle measurement.
+
+The in-process benchmark barely moves with the window size: it reads 5.17 ms
+p50 at 960x860 and about 6.1 ms p50 at 1908x999. The 25.2 ms p50 that the
+real X11 walk reports for the same fourth pass code at 1908x999 is a different
+measurement, because the walk drives the real window and reads the page's own
+redraw. The walk hook closes the devtools dock, so the viewport is the full
+window width.
 
 The fifth-pass column comes from the real X11 walk, because the benchmark
 drives the page without the example's own handlers and therefore still
@@ -477,14 +513,21 @@ The machine was shared during some earlier runs, so treat the absolute
 original numbers as recorded history. The multipliers are the comparison this
 work reports.
 
+The patch cost numbers come from the local Blinkless checkout, which carries
+uncommitted engine work, so the wall clock is not comparable with the earlier
+recorded run and the allocation counts are the stable part.
+
 ## Reproduce
 
 Run the real click walk from the repository root:
 
 ```sh
-CSS_PREVIEW_WALK=1 go run ./examples/css-preview -perf
+CSS_PREVIEW_WALK=1 go run ./examples/css-preview -perf -width 1908 -height 999
 python3 scripts/css-preview-click-test.py --runs 3
 ```
+
+The example defaults to 960x860, so a run without the flags measures the
+smaller window.
 
 The script resets the started rows at the start and stops the previous sample
 before each click, so it measures one click at a time instead of a soak of 43
@@ -506,7 +549,7 @@ Run the element patch harness and its parity gate:
 ```sh
 cd examples
 go test -p 2 -run 'TestPatch' -v ./css-preview/
-go test -p 2 -run XXX -bench BenchmarkPatchCost -benchtime 30x -count 3 ./css-preview/
+go test -p 2 -run XXX -bench BenchmarkPatchCost -benchtime 30x -count 5 ./css-preview/
 ```
 
 The report of that harness is `examples/css-preview/PATCH_COST.md`.
@@ -591,4 +634,7 @@ Blinkless:
 
 Ownframe pins Blinkless
 `v0.0.3-0.20261020132936-e0c3c9ca4f30`, which includes both one-pass grid
-paths. The 12.5 ms and 6.16 ms columns use that pin.
+paths. The 12.5 ms and 6.16 ms columns use that pin. `go.mod` also replaces
+the module with the local `../blinkless` checkout, because the element patch
+work is not in the published tag, and that checkout sits one commit past the
+pin, so the pin and the replace do not build the same tree.

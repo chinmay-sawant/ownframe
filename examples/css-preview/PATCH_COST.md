@@ -23,42 +23,55 @@ runs is the redraw.
 ## The numbers
 
 Intel i7-13700HX, Go 1.26.4, `GOMAXPROCS=2`, the local Blinkless checkout at
-`../blinkless`. Three runs of 30 iterations each, on a quiet machine.
+`../blinkless`.
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
-| FullRedrawCardClass | 26.3 / 27.7 / 28.7 ms | 14.45 MB | 23483 | |
-| ElementPatchCardClass | 1.73 / 1.55 / 1.34 ms | 6 KB | 34 | 0 of 30 |
-| FullRedrawStateClass | 24.7 / 25.0 / 27.1 ms | 17.11 MB | 23972 | |
-| ElementPatchStateClass | 1.65 / 1.56 / 1.81 ms | 2.66 MB | 526 | 30 of 30 |
-| FullRedrawSameSource | 25.0 / 24.6 / 29.3 ms | 14.44 MB | 23441 | |
+| FullRedrawCardClass | 34.9 ms | 20.05 MB | 29541 | |
+| ElementPatchCardClass | 5.9 ms | 6.27 MB | 6049 | 30 of 30 |
+| FullRedrawStateClass | 40.0 ms | 19.72 MB | 29051 | |
+| ElementPatchStateClass | 10.4 ms | 5.95 MB | 5563 | 30 of 30 |
+| FullRedrawSameSource | 29.0 ms | 13.77 MB | 23484 | |
+
+Both patch benchmarks apply 30 of 30 now, because the engine splices a card
+row. The times are the median of five runs of 30 iterations. The full redraw
+spread was 31.9 to 49.7 ms and the card patch spread was 5.7 to 10.6 ms, so
+the wall clock moves with the load of the machine, and the allocation counts
+do not.
+
+The local Blinkless checkout carries uncommitted engine work, so these
+numbers are not comparable with an earlier run against the committed tree.
+The allocation counts are comparable.
 
 The redraw splits into three stages, measured by the page itself.
 
 | Stage | Time |
 |---|---:|
-| Template | 0.6 ms |
+| Template | 0.57 ms |
 | Cascade | 0.06 ms |
-| Display list | 23 ms |
+| Layout | 27.6 ms |
 
 ## What the patch saves
 
-The display list stage is the whole cost of a redraw here. Laying out 43
-cards, 9178 operations and every text run takes 23 ms. The patch lays out one
-span and leaves the other 42 cards alone.
+The layout stage is the whole cost of a redraw here. Laying out 43 cards,
+9178 operations and every text run takes 27.6 ms. The patch lays out one span
+and leaves the other 42 cards alone.
 
-For the state span the patch costs 1.7 ms against the 25.5 ms of the full
-path, so the patch is about fifteen times faster and allocates six times
-less. The cascade is not saved. The patch re-cascades the whole document, but
-that stage costs 0.06 ms, so there is nothing to win there.
+For the state span the patch costs 10.4 ms against the 40.0 ms of the full
+path, so the patch is about four times faster. It allocates 5.95 MB against
+19.72 MB, so about three times less. The cascade is not saved. The patch
+re-cascades the whole document, but that stage costs 0.06 ms, so there is
+nothing to win there.
 
 ## What the patch still costs
 
-A patch of one span still allocates 2.66 MB. The engine builds a new
-operation slice for the whole page and copies every operation into it when
-it splices the patched operations in, and the page holds 9178 operations. The
-layout is skipped, the copy is not. A page that patches often should expect
-that allocation on every patch.
+A patch of one span still allocates 5.95 MB, and a patch of the card row
+allocates 6.27 MB. The host adopts the whole patched display the engine hands
+back, because a patch that changes the operation count moves every later
+operation index, so the engine rebuilds the operation list and the owners for
+the whole page, and the page holds 9178 operations. The layout is skipped, the
+copy is not. A page that patches often should expect that allocation on every
+patch.
 
 The page also keeps the engine's layout state for the whole page, the box
 tree and the resolved styles, because a patch needs them. That memory is
@@ -74,18 +87,19 @@ fixture with a class change and reports what the engine says.
 | `catalog-state-01` | spliced, 1 operation |
 | `start-property-webkit_animation` | spliced, 2 operations |
 | `preview-metadata` | spliced, 1 operation |
-| `catalog-row-01` | refused: the subtree holds an out-of-flow box |
-| `catalog-grid` | refused: the subtree holds an out-of-flow box |
-| `catalog` | refused: the subtree holds an out-of-flow box |
-| `catalog-target-webkit_animation` | refused: the subtree holds an out-of-flow box |
+| `catalog-row-01` | refused: the element changed size, 128.84 to 112.34 high |
+| `catalog` | refused: the element changed size |
+| `catalog-grid` | refused: the element changed size |
+| `catalog-target-webkit_animation` | refused: the element changed size |
 | `play-all` | refused: the element changed size, 24.75 to 30 high |
-| `metadata` | refused: the element changed size, 95.55 to 104.43 high |
+| `metadata` | refused: the element changed size, 400.05 to 408.93 high |
 
-The catalog rows are refused because the preview target and its label inside
-the row are absolutely positioned. The engine cannot place an out-of-flow
-box from the kept state, so it refuses the whole subtree. The card class
-change therefore waits for the next layout, and only the state span inside
-the card is patched today.
+The probe puts a class that carries no rules on the element, so a card loses
+its padding and its border and changes size, and the engine refuses on the
+size change. An out-of-flow box inside the subtree is laid out again now, so
+the preview target no longer refuses the row. The class the example uses
+carries rules, so the card row is spliced with 203 operations, and the state
+span inside the card rides along with that one patch.
 
 The metadata card is refused for a different reason. Its readout box scrolls,
 so the card's height depends on the height of the readout, and a subtree
@@ -102,8 +116,11 @@ the box of the span, and every operation the card does not own. The
 operation id is left out, because a full redraw assigns new ids.
 
 `TestPatchCardRowMatchesAFullRedraw` is the same gate for the card row. The
-engine refuses that patch today, so the test takes the refusal and checks
-that the page keeps the operations it had.
+card row patch applies today, so the test takes the patched operations,
+redraws the page, and compares the card operations of the patch with the card
+operations of the full redraw. If the engine refuses the patch, the test
+compares the operations of the page before the refusal with the operations
+after it, and checks that the page kept the operations it had.
 
 ## The commands
 
@@ -114,7 +131,7 @@ cd /home/chinmay/ChinmayPersonalProjects/ownframe/examples
 go test -p 2 -run 'TestPatch' -v ./css-preview/
 
 # the cost of a full redraw and of an element patch
-go test -p 2 -run XXX -bench BenchmarkPatchCost -benchtime 30x -count 3 ./css-preview/
+go test -p 2 -run XXX -bench BenchmarkPatchCost -benchtime 30x -count 5 ./css-preview/
 ```
 
 On a shared machine, wrap both in `flock /tmp/opencode/ownframe-heavy.lock`
