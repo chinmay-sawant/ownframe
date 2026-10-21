@@ -21,6 +21,12 @@ const showcaseSections = [
   { id: 'depth-alert', title: 'Depth Alert' },
 ];
 
+const showcaseVideoPaths = {
+  'Animated preview of the Teams chat and collaboration app': 'teams.mp4',
+  'Desktop cat overlay preview': 'desktop-cat.mp4',
+  'Wispr Flow example preview': 'preview.mp4',
+};
+
 function selectShowcase(markdown, id) {
   const [intro, ...sections] = markdown.split(/(?=^## )/m);
   const selected = sections.find((section) => {
@@ -75,26 +81,36 @@ export default function Documentation({ hash }) {
   }, [lightbox]);
 
   const openLightbox = (event) => {
-    const gallery = event.currentTarget.closest('ul');
-    const images = gallery ? Array.from(gallery.querySelectorAll('img')) : [];
-    const items = images.map((image) => ({ src: image.currentSrc || image.src, alt: image.alt }));
-    const index = Math.max(0, images.indexOf(event.currentTarget.querySelector('img')));
+    const showcase = event.currentTarget.closest('.showcase-page');
+    const buttons = showcase ? Array.from(showcase.querySelectorAll('button.gallery-open')) : [];
+    const items = buttons.map((button) => {
+      const image = button.querySelector('img');
+      const poster = image?.currentSrc || image?.src;
+      const video = button.dataset.videoSrc;
+      return { src: video || poster, poster, type: video ? 'video' : 'image', alt: image?.alt || '' };
+    });
+    const index = Math.max(0, buttons.indexOf(event.currentTarget));
     if (items.length) setLightbox({ items, index });
   };
 
   const components = {
-    table: ({ children }) => <div className="markdown-table-scroll"><table>{children}</table></div>,
-    img: ({ src, alt = '', title, width, height }) => {
+    table: ({ children, className }) => <div className={`markdown-table-scroll${className ? ` ${className}-scroll` : ''}`}>
+      <table className={className}>{children}</table>
+    </div>,
+    img: ({ src, alt = '', title, width, height, 'data-video': video }) => {
       const w = Number(width);
       const h = Number(height);
       const fixed = Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0;
+      const videoSrc = video ? contentUrl(video, doc) : showcaseVideoPaths[alt]
+        ? `${import.meta.env.BASE_URL}demos/${showcaseVideoPaths[alt]}` : undefined;
       const image = <img src={src} alt={alt} title={title}
         className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
         width={fixed ? w : undefined} height={fixed ? h : undefined}
         style={fixed ? { maxWidth: `min(${w}px, 100%)`, maxHeight: `${h}px`, margin: '0 auto' } : undefined}
         loading="lazy" decoding="async" />;
       if (!isShowcase) return image;
-      return <button type="button" className="gallery-open" aria-label={`Expand screenshot: ${alt}`}
+      return <button type="button" className="gallery-open" aria-label={`Open media: ${alt}`}
+        data-video-src={videoSrc}
         onClick={openLightbox}>{image}</button>;
     },
     ...(isShowcase ? {
@@ -152,21 +168,27 @@ export default function Documentation({ hash }) {
     </article>
     {lightbox && createPortal(<div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
       <div className="lightbox-card" role="dialog" aria-modal="true"
-        aria-label={`Expanded screenshot: ${lightbox.items[lightbox.index].alt}`}>
-        <img src={lightbox.items[lightbox.index].src} alt={lightbox.items[lightbox.index].alt}
-          onClick={(event) => event.stopPropagation()} />
+        aria-label={`Expanded media: ${lightbox.items[lightbox.index].alt}`}>
+        {lightbox.items[lightbox.index].type === 'video'
+          ? <video key={lightbox.items[lightbox.index].src} src={lightbox.items[lightbox.index].src}
+            poster={lightbox.items[lightbox.index].poster} autoPlay controls muted loop playsInline preload="auto"
+            aria-label={lightbox.items[lightbox.index].alt}
+            onClick={(event) => event.stopPropagation()} />
+          : <img key={lightbox.items[lightbox.index].src}
+            src={lightbox.items[lightbox.index].src} alt={lightbox.items[lightbox.index].alt}
+            onClick={(event) => event.stopPropagation()} />}
         <div className="lightbox-bar" onClick={(event) => event.stopPropagation()}>
-          {lightbox.items.length > 1 && <button type="button" className="lightbox-prev" aria-label="Show previous screenshot"
+          {lightbox.items.length > 1 && <button type="button" className="lightbox-prev" aria-label="Show previous media"
             onClick={() => setLightbox((box) => box && {
               ...box, index: (box.index - 1 + box.items.length) % box.items.length,
             })}>‹</button>}
           <p className="lightbox-caption">{lightbox.items[lightbox.index].alt}
             {lightbox.items.length > 1 && ` · ${lightbox.index + 1} / ${lightbox.items.length}`}</p>
-          {lightbox.items.length > 1 && <button type="button" className="lightbox-next" aria-label="Show next screenshot"
+          {lightbox.items.length > 1 && <button type="button" className="lightbox-next" aria-label="Show next media"
             onClick={() => setLightbox((box) => box && {
               ...box, index: (box.index + 1) % box.items.length,
             })}>›</button>}
-          <button type="button" className="lightbox-close" aria-label="Close expanded screenshot"
+          <button type="button" className="lightbox-close" aria-label="Close expanded media"
             autoFocus onClick={() => setLightbox(null)}>×</button>
         </div>
       </div>
