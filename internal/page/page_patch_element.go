@@ -62,7 +62,6 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 	if !p.spliceElement(patch) {
 		return false
 	}
-	println("ZZDEBUG patch", id, len(p.display.Boxes), len(p.display.Ops))
 	p.cache.SetStyled(styled)
 
 	return true

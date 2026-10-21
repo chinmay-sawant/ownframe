@@ -14,7 +14,6 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.stats.lastDraw = time.Since(drawStart)
 	p.img = nil
 	p.display = display
-	println("ZZDEBUG commit boxes", len(display.Boxes), len(display.Ops))
 	p.fallbackDisplay = nil
 	p.setBoxes(display.Boxes)
 	p.hits = hitList(display.Boxes, fixedBoxes(display))

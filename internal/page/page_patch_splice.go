@@ -13,7 +13,6 @@ func (p *Page) spliceElement(patch *layout.ElementPatch) bool {
 		return false
 	}
 	p.display = patch.Display
-	println("ZZDEBUG splice boxes", len(p.display.Boxes), len(p.display.Ops))
 	p.setBoxes(p.display.Boxes)
 	p.hits = hitList(p.display.Boxes, fixedBoxes(p.display))
 	p.markRect(patch.Old.Union(patch.New))

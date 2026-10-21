@@ -21,12 +21,10 @@ func (d *demo) begin(key string, boxes []ownframe.Box) (bool, error) {
 	if s.base == nil {
 		// The row has not rendered yet, so the starting paint is unknown.
 		// The key stays pending until the row comes into view.
-		println("ZZDEBUG begin base nil", key)
 		return false, nil
 	}
 	box, ok := findBox(boxes, t.id)
 	if !ok {
-		println("ZZDEBUG begin box missing", key)
 		s.detached = true
 		return false, nil
 	}

@@ -1,6 +1,7 @@
 package main
 
-// rangeFor returns the visible row range with two rows of overscan.
+// rangeFor returns the visible row range. The overscan constant is zero, so
+// the range holds the rows that intersect the viewport.
 func (m *catalogMetrics) rangeFor(offsetY, viewH int) (int, int) {
 	rel := offsetY - m.gridTop
 	start := 0

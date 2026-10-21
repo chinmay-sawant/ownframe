@@ -2,8 +2,9 @@ package main
 
 // patchCostCard names the catalog card the harness measures: the card row,
 // the state span inside it, and the class strings both carry. The card row
-// holds an absolutely positioned preview, so the engine refuses to splice it.
-// The state span holds none, so the engine splices it.
+// holds an absolutely positioned preview, and the engine lays that box out
+// again inside the subtree now, so it splices the row. The state span holds
+// none.
 type patchCostCard struct {
 	id       string
 	state    string
