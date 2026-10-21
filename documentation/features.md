@@ -8,6 +8,18 @@ This page summarizes supported features and current limits. Use the linked guide
 
 OwnFrame updates the page from its template and draws it in the window. A page can repaint only the area changed by an action. Read [how a screen is rendered](screen.md) and [how repaint works](repaint.md).
 
+## Element patches
+
+`Config.RetainState` keeps the layout state a single element patch needs: the resolved styles of the document and the box tree the placement produced. It is off by default, so a page that never patches an element pays nothing for it.
+
+With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index and marks the changed region dirty, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. The call reports false then, and a refused patch leaves the cached tree edited and the retained display untouched, so the caller still has to redraw the page to bring the display back in step with the tree.
+
+`Handlers.ClickPaint` runs after a click handler and after a control's own change. When it reports that it painted the frame, the page skips the redraw, so a click that patched an element does not also pay for a layout.
+
+`Page.SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
+
+Detail is in [optimizations.md](optimizations.md).
+
 ## CSS masks
 
 Blinkless resolves mask image bytes and stores the CSS values on a display
@@ -148,15 +160,16 @@ is in [window.md](window.md).
 
 The window can draw an inspector over the page. F12 or Ctrl+Shift+I toggles
 it, `Config.DevTools` starts it on, and `Page.SetDevTools` changes it at
-runtime. The inspector is a right-side dock with three tabs. Elements shows
-the pinned or hovered element as pretty JSON, Frame shows the frame and
-pipeline counters, and Ops lists the display operations colour by kind. The
-dock shrinks the page viewport while it is open, so the page relayouts to
-the strip left of it. It outlines the box under the cursor, and a pick opens
-the Ops tab on the operation inside the box. A click on an Ops row outlines
-that operation and copies its line to the clipboard. It is window chrome, so
-`Page.PNG`, the display list, and the box list never change. A custom screen
-implements `host.Inspector` to opt in; a screen without it gets no overlay.
+runtime. The inspector is a right-side dock with three tabs. It opens on
+Frame, which shows the frame and pipeline counters; Elements shows the pinned
+or hovered element as pretty JSON, and Ops lists the display operations
+colour by kind. The dock shrinks the page viewport while it is open, so the
+page relayouts to the strip left of it. It outlines the box under the cursor,
+and a pick opens the Ops tab on the operation inside the box. A click on an
+Ops row outlines that operation and copies its line to the clipboard. It is
+window chrome, so `Page.PNG`, the display list, and the box list never
+change. A custom screen implements `host.Inspector` to opt in; a screen
+without it gets no overlay.
 `GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{Debug: true}` or `{Perf: true}`).
 
 Detail is in [devtools.md](devtools.md).

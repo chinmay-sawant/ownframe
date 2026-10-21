@@ -4,22 +4,23 @@ import (
 	"image"
 	"sync"
 
-	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // chunkMaxEntries and chunkMaxPixels bound the chunk images one process
-// keeps. Oldest insertion evicts first, and its image is disposed. The pixel
-// cap matches the shape raster cache: 4M pixels is 16 MB of RGBA.
+// keeps. Oldest insertion evicts first, and its image is disposed. A paint
+// only needs the chunks of the region it draws, so the cap covers the
+// visible rows rather than the whole page.
 const (
-	chunkMaxEntries = 64
+	chunkMaxEntries = 256
 	chunkMaxPixels  = 4 << 20
 )
 
-// chunkKey names one chunk's cache slot: the display it belongs to and its
-// sequence in that display's plan.
+// chunkKey names one chunk's cache slot: its sequence in a display's chunk
+// plan. The content signature decides whether the slot still holds the same
+// pixels, so a redraw with the same content reuses the baked image instead of
+// baking it again, and the cache no longer pins the displays it came from.
 type chunkKey struct {
-	d  *layout.Display
 	id int
 }
 

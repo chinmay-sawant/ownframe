@@ -4,7 +4,6 @@ import (
 	"image"
 	"testing"
 
-	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -29,8 +28,7 @@ func TestChunkCacheReusesAndRebuilds(t *testing.T) {
 	flushChunks()
 	defer flushChunks()
 
-	d := &layout.Display{}
-	key := chunkKey{d: d, id: 7}
+	key := chunkKey{id: 7}
 	box := image.Rect(0, 0, 32, 32)
 
 	first := chunks.get(key, 1, box, func(*ebiten.Image) {})

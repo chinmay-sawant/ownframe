@@ -41,13 +41,14 @@ badge shifts left when the dock is on, so it stays visible.
 
 | Tab | Content |
 |---|---|
-| Elements | The picked element as pretty JSON. Click a node opener to fold it to `{...}`. |
 | Frame | Section headers and right-aligned counters for the window, the frame, the pipeline, and reload. |
+| Elements | The picked element as pretty JSON. Click a node opener to fold it to `{...}`. |
 | Ops | The outline toggle, the count per kind with a colour chip, and every operation in paint order. Click a row to outline that operation and copy its line to the clipboard. |
 
-The title bar holds the `Picker` toggle and the `F12` close hint, and the
-footer holds a hint for the active tab. `o` toggles the operation outlines
-and selects the Ops tab, and it does not type while the overlay is on.
+The dock opens on the Frame tab. The title bar holds the `Picker` toggle and
+the `F12` close hint, and the footer holds a hint for the active tab. `o`
+toggles the operation outlines and selects the Ops tab, and it does not type
+while the overlay is on.
 
 ## Picking
 
@@ -68,6 +69,29 @@ from `Boxes()`, and clears the operation pick.
 The dock hit-tests its own rows, never `Page.Boxes()`. A dock click switches
 tabs, folds JSON, toggles the outlines, or picks an operation; it never
 reaches the page.
+
+## Frame
+
+The Frame tab groups counters under section headers and right-aligns each
+value:
+
+| Section | Rows |
+|---|---|
+| WINDOW | window and page size, scroll offset, stretched, fallback, sequence |
+| RENDERING | fps, tps, frame time, draw time |
+| PERFORMANCE | frame average, p95, p99, and the long-frame count |
+| PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
+| PIPELINE DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
+| PACING | idle, next deadline in ms, presents skipped while parked |
+| MEMORY | alloc per frame, Go heap, RSS, goroutine count |
+| RELOAD | reloads and the last reload error |
+
+A zero duration reads as `0.0ms`, and an empty reload error reads as `-`.
+Label widths are memoized and each value is a right-aligned span, so a frame
+does not rebuild a padding string per row.
+The PERFORMANCE, PIPELINE DETAIL, and MEMORY rows read `-` until the app
+opts into Perf with `Config.Perf`, `ownframe.WithPerf(true)`, or
+`WindowOptions.Perf`. The other rows always report.
 
 ## Elements
 
@@ -92,29 +116,6 @@ The Elements tab prints the picked element as JSON:
 Keys, strings, numbers, and booleans take the usual syntax colours. Click a
 node opener to fold it to `{...}` and click again to unfold. Text longer than
 120 runes is clipped with dots.
-
-## Frame
-
-The Frame tab groups counters under section headers and right-aligns each
-value:
-
-| Section | Rows |
-|---|---|
-| WINDOW | window and page size, scroll offset, stretched, fallback, sequence |
-| RENDERING | fps, tps, frame time, draw time |
-| PERFORMANCE | frame average, p95, p99, and the long-frame count |
-| PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
-| PIPELINE DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
-| PACING | idle, next deadline in ms, presents skipped while parked |
-| MEMORY | alloc per frame, Go heap, RSS, goroutine count |
-| RELOAD | reloads and the last reload error |
-
-A zero duration reads as `0.0ms`, and an empty reload error reads as `-`.
-Label widths are memoized and each value is a right-aligned span, so a frame
-does not rebuild a padding string per row.
-The PERFORMANCE, PIPELINE DETAIL, and MEMORY rows read `-` until the app
-opts into Perf with `Config.Perf`, `ownframe.WithPerf(true)`, or
-`WindowOptions.Perf`. The other rows always report.
 
 ## Operations
 

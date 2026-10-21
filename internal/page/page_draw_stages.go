@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
@@ -17,6 +18,9 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	}
 	p.applyScrollWindow()
 	var body strings.Builder
+	if len(p.source) > 0 {
+		body.Grow(len(p.source))
+	}
 	if err := p.tpl.Execute(&body, p.data); err != nil {
 		return "", err
 	}
@@ -43,7 +47,8 @@ func (p *Page) drawStaged(ctx context.Context, track bool, styled *css.Document,
 	if track {
 		ds = time.Now()
 	}
-	display, err := render.DisplayListDocument(ctx, styled, state.Images)
+	display, err := render.DisplayListDocumentOptions(ctx, styled,
+		layout.Options{Images: state.Images, RetainState: state.RetainState})
 	p.noteTime(track, &p.stats.displayListTime, ds)
 	if err != nil {
 		return err

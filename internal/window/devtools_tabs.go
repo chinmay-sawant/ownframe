@@ -4,18 +4,19 @@ package window
 type devTab int
 
 const (
-	devTabElements devTab = iota
-	devTabFrame
+	devTabFrame devTab = iota
+	devTabElements
 	devTabOps
 )
 
-// devTabNames are the labels in the tab strip, in order.
-var devTabNames = [...]string{"Elements", "Frame", "Ops"}
+// devTabNames are the labels in the tab strip, in order. The Frame tab is
+// first, so it is the one the dock opens on.
+var devTabNames = [...]string{"Frame", "Elements", "Ops"}
 
 // devTabAt clamps an index to a known tab.
 func devTabAt(i int) devTab {
 	if i < 0 {
-		return devTabElements
+		return devTabFrame
 	}
 
 	if i >= len(devTabNames) {

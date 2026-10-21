@@ -14,12 +14,9 @@ func compose(base, current cssmotion.Paint, e Effect, at float64) cssmotion.Pain
 	}{
 		{moveX, 0}, {moveY, 1}, {opacity, 2}, {red, 3}, {green, 4}, {blue, 5},
 	}
-	for _, item := range fields {
-		fallback := 0.0
-		if item.kind == 2 {
-			fallback = base.Opacity
-		}
-		v := e.sample(at, fallback, item.get)
+	fallbacks := [...]float64{0, 0, base.Opacity, base.R, base.G, base.B}
+	for i, item := range fields {
+		v := e.sample(at, fallbacks[i], item.get)
 		if !hasValue(e.Frames, item.get) {
 			continue
 		}

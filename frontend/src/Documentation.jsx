@@ -7,28 +7,7 @@ import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import { documents, documentGroups, contentUrl } from './content';
 import { docsOverview } from './docs-overview';
-
-const showcaseSections = [
-  { id: 'telegram', title: 'Telegram' },
-  { id: 'teams', title: 'Teams' },
-  { id: 'spotify-player', title: 'Spotify Player' },
-  { id: 'pet-care', title: 'Pet Care' },
-  { id: 'digital-wellbeing', title: 'Digital Wellbeing' },
-  { id: 'desktop-overlays', title: 'Desktop overlays' },
-  { id: 'wispr-flow', title: 'Wispr Flow' },
-  { id: 'dino-run', title: 'Dino Run' },
-  { id: 'eyes', title: 'Eyes' },
-  { id: 'depth-alert', title: 'Depth Alert' },
-];
-
-function selectShowcase(markdown, id) {
-  const [intro, ...sections] = markdown.split(/(?=^## )/m);
-  const selected = sections.find((section) => {
-    const title = section.match(/^## (.+)$/m)?.[1];
-    return title?.toLowerCase().replace(/\s+/g, '-') === id;
-  });
-  return [intro, selected].filter(Boolean).join('\n');
-}
+import { showcaseIntro, showcaseSections } from './showcase';
 
 export default function Documentation({ hash }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -38,9 +17,15 @@ export default function Documentation({ hash }) {
   const [, slug = 'readme', anchor] = hash.split('/');
   const doc = documents.find((entry) => entry.slug === slug);
   const isShowcase = doc?.slug === 'showcase';
-  const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : 'telegram';
-  const text = isShowcase ? selectShowcase(doc.text, activeShowcase)
-    : slug === 'readme' && !anchor ? docsOverview : doc?.text;
+  const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : showcaseSections[0].id;
+  const showcase = isShowcase ? showcaseSections.find((entry) => entry.id === activeShowcase) : null;
+  const text = slug === 'readme' && !anchor ? docsOverview : doc?.text;
+  const mediaResolution = (src, width, height) => setLightbox((box) => {
+    if (!width || !height || !box || box.items[box.index]?.src !== src) return box;
+    const items = box.items.slice();
+    items[box.index] = { ...items[box.index], width, height, resolution: `${width} × ${height}` };
+    return { ...box, items };
+  });
 
   useEffect(() => {
     setMenuOpen(false);
@@ -74,37 +59,45 @@ export default function Documentation({ hash }) {
     };
   }, [lightbox]);
 
-  const openLightbox = (event) => {
-    const gallery = event.currentTarget.closest('ul');
-    const images = gallery ? Array.from(gallery.querySelectorAll('img')) : [];
-    const items = images.map((image) => ({ src: image.currentSrc || image.src, alt: image.alt }));
-    const index = Math.max(0, images.indexOf(event.currentTarget.querySelector('img')));
+  const openLightbox = (index) => {
+    const items = showcase.media.map((media) => {
+      const poster = contentUrl(media.src, doc);
+      const src = media.video ? `${import.meta.env.BASE_URL}${media.video}` : poster;
+      return {
+        ...media,
+        src,
+        poster,
+        type: media.video ? 'video' : 'image',
+        width: media.video ? undefined : media.width,
+        height: media.video ? undefined : media.height,
+        resolution: media.video ? '' : `${media.width} × ${media.height}`,
+      };
+    });
     if (items.length) setLightbox({ items, index });
   };
 
   const components = {
-    table: ({ children }) => <div className="markdown-table-scroll"><table>{children}</table></div>,
+    table: ({ children, className }) => <div className={`markdown-table-scroll${className ? ` ${className}-scroll` : ''}`}>
+      <table className={className}>{children}</table>
+    </div>,
     img: ({ src, alt = '', title, width, height }) => {
       const w = Number(width);
       const h = Number(height);
       const fixed = Number.isFinite(w) && w > 0 && Number.isFinite(h) && h > 0;
-      const image = <img src={src} alt={alt} title={title}
-        className={src?.includes('/spotify.webp') ? 'spotify-window-preview' : undefined}
+      return <img src={src} alt={alt} title={title}
         width={fixed ? w : undefined} height={fixed ? h : undefined}
         style={fixed ? { maxWidth: `min(${w}px, 100%)`, maxHeight: `${h}px`, margin: '0 auto' } : undefined}
         loading="lazy" decoding="async" />;
-      if (!isShowcase) return image;
-      return <button type="button" className="gallery-open" aria-label={`Expand screenshot: ${alt}`}
-        onClick={openLightbox}>{image}</button>;
     },
-    ...(isShowcase ? {
-      ul: ({ children }) => {
-        const extra = activeShowcase === 'pet-care' || activeShowcase === 'eyes' || activeShowcase === 'depth-alert'
-          ? ` ${activeShowcase}-gallery` : '';
-        return <ul className={`showcase-gallery${extra}`}>{children}</ul>;
-      },
-    } : {}),
   };
+
+  const markdownProps = {
+    remarkPlugins: [remarkGfm],
+    rehypePlugins: [rehypeRaw, rehypeSlug, rehypeHighlight],
+    urlTransform: (url) => contentUrl(url, doc),
+    components,
+  };
+  const lightboxItem = lightbox?.items[lightbox.index];
 
   return <div className="docs-layout">
     <aside data-open={menuOpen} onKeyDown={(event) => {
@@ -128,7 +121,7 @@ export default function Documentation({ hash }) {
             <summary>{group.title}</summary>
             <div className="docs-nav-links">
               {group.documents.map((entry) => <div key={entry.slug} className="docs-nav-entry">
-                <a href={entry.slug === 'showcase' ? '#docs/showcase/telegram' : `#docs/${entry.slug}`}
+                <a href={entry.slug === 'showcase' ? `#docs/showcase/${showcaseSections[0].id}` : `#docs/${entry.slug}`}
                   aria-current={slug === entry.slug && entry.slug !== 'showcase' ? 'page' : undefined}
                   className={slug === 'showcase' && entry.slug === 'showcase' ? 'docs-nav-parent active' : 'docs-nav-parent'}>
                   {entry.title}
@@ -146,27 +139,62 @@ export default function Documentation({ hash }) {
           {section.title}
         </a>)}
       </nav>}
-      {doc ? <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSlug, rehypeHighlight]}
-        urlTransform={(url) => contentUrl(url, doc)} components={components}>{text}</Markdown>
+      {doc ? isShowcase ? <>
+        <h1>Showcase</h1>
+        <p>{showcaseIntro}</p>
+        <h2>{showcase.title}</h2>
+        <Markdown {...markdownProps}>{showcase.before}</Markdown>
+        <div className={`showcase-media-grid showcase-media-grid--${showcase.layout}`}>
+          {showcase.media.map((media, index) => <figure key={media.src}
+            className={`showcase-media${media.wide ? ' showcase-media--wide' : ''}`}>
+            <button type="button" className="gallery-open" aria-label={`Open media: ${media.alt}`}
+              aria-haspopup="dialog" onClick={() => openLightbox(index)}>
+              {media.autoplayPreview ? <video src={`${import.meta.env.BASE_URL}${media.video}`}
+                poster={contentUrl(media.src, doc)} autoPlay muted loop playsInline preload="auto"
+                aria-hidden="true" width={media.width} height={media.height}
+                style={{ width: media.nativeDisplay
+                  ? `min(100%, calc(${media.width}px / var(--site-scale)))`
+                  : `min(100%, ${media.width}px)` }} />
+                : <img src={contentUrl(media.src, doc)} alt={media.alt} width={media.width} height={media.height}
+                  loading="lazy" decoding="async" style={{ width: media.nativeDisplay
+                    ? `min(100%, calc(${media.width}px / var(--site-scale)))`
+                    : `min(100%, ${media.width}px)` }} />}
+            </button>
+            <figcaption>{media.caption}</figcaption>
+          </figure>)}
+        </div>
+        <Markdown {...markdownProps}>{showcase.after}</Markdown>
+      </> : <Markdown {...markdownProps}>{text}</Markdown>
         : <><h1>Document not found</h1><p><a href="#docs/readme">Open the documentation overview</a></p></>}
     </article>
-    {lightbox && createPortal(<div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
+    {lightboxItem && createPortal(<div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
       <div className="lightbox-card" role="dialog" aria-modal="true"
-        aria-label={`Expanded screenshot: ${lightbox.items[lightbox.index].alt}`}>
-        <img src={lightbox.items[lightbox.index].src} alt={lightbox.items[lightbox.index].alt}
-          onClick={(event) => event.stopPropagation()} />
+        aria-label={`Expanded media: ${lightboxItem.alt}`}>
+        {lightboxItem.type === 'video'
+          ? <video key={lightboxItem.src} src={lightboxItem.src}
+            poster={lightboxItem.poster} autoPlay controls muted loop playsInline preload="auto"
+            width={lightboxItem.width} height={lightboxItem.height}
+            aria-label={lightboxItem.alt}
+            onLoadedMetadata={(event) => mediaResolution(lightboxItem.src,
+              event.currentTarget.videoWidth, event.currentTarget.videoHeight)}
+            onClick={(event) => event.stopPropagation()} />
+          : <img key={lightboxItem.src}
+            src={lightboxItem.src} alt={lightboxItem.alt}
+            width={lightboxItem.width} height={lightboxItem.height}
+            onClick={(event) => event.stopPropagation()} />}
         <div className="lightbox-bar" onClick={(event) => event.stopPropagation()}>
-          {lightbox.items.length > 1 && <button type="button" className="lightbox-prev" aria-label="Show previous screenshot"
+          {lightbox.items.length > 1 && <button type="button" className="lightbox-prev" aria-label="Show previous media"
             onClick={() => setLightbox((box) => box && {
               ...box, index: (box.index - 1 + box.items.length) % box.items.length,
             })}>‹</button>}
-          <p className="lightbox-caption">{lightbox.items[lightbox.index].alt}
+          <p className="lightbox-caption">{lightboxItem.alt}
             {lightbox.items.length > 1 && ` · ${lightbox.index + 1} / ${lightbox.items.length}`}</p>
-          {lightbox.items.length > 1 && <button type="button" className="lightbox-next" aria-label="Show next screenshot"
+          {lightboxItem.resolution && <span className="lightbox-resolution">{lightboxItem.resolution}</span>}
+          {lightbox.items.length > 1 && <button type="button" className="lightbox-next" aria-label="Show next media"
             onClick={() => setLightbox((box) => box && {
               ...box, index: (box.index + 1) % box.items.length,
             })}>›</button>}
-          <button type="button" className="lightbox-close" aria-label="Close expanded screenshot"
+          <button type="button" className="lightbox-close" aria-label="Close expanded media"
             autoFocus onClick={() => setLightbox(null)}>×</button>
         </div>
       </div>

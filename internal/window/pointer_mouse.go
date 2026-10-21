@@ -1,7 +1,9 @@
 package window
 
-func (s *shell) pointerMouse(x, y int, px, py float64, down, released, blocked bool) (bool, error) {
-	pressed := pressedNow(down, s.mouseDown)
+func (s *shell) pointerMouse(
+	x, y int, px, py float64, down, released, blocked bool,
+) (bool, error) {
+	pressed := pressEdge(down, released, s.mouseDown)
 	handled := blocked || s.pointerScrollbar(x, y, down, pressed)
 	if !handled && down && s.mouseDown && !s.gesture.active {
 		s.dragScroll(y)

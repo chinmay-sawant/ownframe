@@ -19,7 +19,7 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 		return err
 	}
 
-	box, ok := hit(p.Boxes(), x, y)
+	box, ok := p.hitBox(x, y)
 	if ok && box.ID == "" {
 		if id := p.boxIDAt(x, y); id != "" {
 			box = p.boxByID(id)
@@ -60,16 +60,19 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 		}
 	}
 
-	return p.Redraw(ctx)
-}
+	if ok {
+		painted, err := p.clickPainted(ctx, box)
+		if err != nil {
+			return err
+		}
+		if painted {
+			return nil
+		}
+	}
 
-// hit returns the last box that contains x, y.
-// Boxes are in document order, so that box is the inner element. It
-// delegates to the shared boxAt scan so clicks agree with Press and Hover.
-func hit(boxes []Box, x, y float64) (Box, bool) {
-	spot := scanBoxes(boxes, x, y)
-
-	return spot.box, spot.ok
+	// The handler may have changed the data, which makes the source differ
+	// and redraws. A click that changed nothing visible skips the layout.
+	return p.RedrawIfChanged(ctx)
 }
 
 var _ host.Screen = (*Page)(nil)

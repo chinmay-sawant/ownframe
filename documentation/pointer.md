@@ -15,6 +15,7 @@ The window sends hover, press, release, and click events to a page. `internal/wi
 - After a non-control hit, a non-empty `data-action` with a registered route loads that HTML and skips the handler ([navigation.md](navigation.md)).
 - A nil `Click` handler ignores the event.
 - An error from the handler or the load returns before the redraw. Otherwise the page redraws after the handler.
+- `Handlers.ClickPaint` runs after the handler, and after a control's own change. When it reports that it painted the frame, the page skips the redraw and keeps the damage the handler marked for the window. A handler that patched the retained display with `Page.PatchElement` uses it to keep the click off the layout path.
 
 `Page.LongPress(ctx, x, y)` handles a held press. A text control under the point selects the word there, the same selection `SelectWordAt` makes. Otherwise a `Handlers.LongPress` handler runs on the innermost box under the point, found the way `Click` finds it. It reports true when it claimed the press, from a text control or a handler, and the page redraws after the handler. A nil handler with no text control under the point reports false.
 

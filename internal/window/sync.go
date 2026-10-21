@@ -56,7 +56,6 @@ func (s *shell) built() bool {
 
 func (s *shell) setDisplay(display *layout.Display) {
 	s.disposeImage()
-
 	s.display = display
 	s.img = nil
 	s.fallback = false

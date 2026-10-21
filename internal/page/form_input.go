@@ -48,6 +48,14 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 		}
 	}
 
+	painted, err := p.clickPainted(ctx, box)
+	if err != nil {
+		return err
+	}
+	if painted {
+		return nil
+	}
+
 	return p.Redraw(ctx)
 }
 

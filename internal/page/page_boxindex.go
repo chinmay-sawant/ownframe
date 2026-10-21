@@ -1,12 +1,14 @@
 package page
 
-// newBoxIndex maps each box id to the last box laid out with that id, so a
-// lookup is one map read instead of a walk over every box. setBoxes rebuilds
-// it whenever p.boxes is replaced, and that is the only place boxes change.
-// An empty id is indexed like any other so an anonymous box still answers a
-// lookup for "".
-func newBoxIndex(boxes []Box) map[string]Box {
-	ix := make(map[string]Box, len(boxes))
+// fillBoxIndex maps each box id to the last box laid out with that id, reusing
+// an existing map when one is available. An empty id is indexed like any
+// other so an anonymous box still answers a lookup for "".
+func fillBoxIndex(ix map[string]Box, boxes []Box) map[string]Box {
+	if ix == nil {
+		ix = make(map[string]Box, len(boxes))
+	} else {
+		clear(ix)
+	}
 
 	for _, b := range boxes {
 		ix[b.ID] = b

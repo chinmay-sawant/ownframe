@@ -15,6 +15,16 @@ func TestReplaceBasic(t *testing.T) {
 	}
 }
 
+func TestReplaceASCIIReturnsInput(t *testing.T) {
+	t.Parallel()
+
+	src := `<p>plain ascii</p>`
+	got, changed := Replace(src)
+	if changed || got != src {
+		t.Fatalf("got %q changed=%v", got, changed)
+	}
+}
+
 func TestReplaceSkipsMarkup(t *testing.T) {
 	t.Parallel()
 

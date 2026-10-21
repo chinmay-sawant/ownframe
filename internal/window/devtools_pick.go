@@ -3,8 +3,6 @@ package window
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // devPointer routes the pointer while the overlay is on. The dock owns its
@@ -12,9 +10,9 @@ import (
 // Alt+click forwards press, caret, and click to the page.
 func (s *shell) devPointer(x, y int, px, py float64) error {
 	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
-	pressed := pressedNow(down, s.mouseDown)
-	s.mouseDown = down
 	released := inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft)
+	pressed := pressEdge(down, released, s.mouseDown)
+	s.mouseDown = down
 
 	if s.dev.resizing {
 		if down {
@@ -45,7 +43,17 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 	}
 
 	if pressed {
-		return s.devPick(px, py, ebiten.IsKeyPressed(ebiten.KeyAlt))
+		if err := s.devPick(px, py, ebiten.IsKeyPressed(ebiten.KeyAlt)); err != nil {
+			return err
+		}
+
+		if released && s.dev.forward {
+			s.dev.forward = false
+
+			return s.ptr().Release(s.ctx)
+		}
+
+		return nil
 	}
 
 	if released && s.dev.forward {
@@ -53,46 +61,6 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 
 		return s.ptr().Release(s.ctx)
 	}
-
-	return nil
-}
-
-// devPick handles a press in the content while the overlay is on. Alt
-// forwards press, caret, and click to the page; otherwise the press acts on
-// the control under the cursor, pinning its box in picker mode.
-func (s *shell) devPick(px, py float64, alt bool) error {
-	if alt || !s.devPickerOn() {
-		s.dev.forward = true
-
-		if err := s.ptr().Press(s.ctx, px, py); err != nil {
-			return err
-		}
-
-		if sel, ok := s.app.(host.Selector); ok {
-			if err := sel.SelectAt(s.ctx, px, py); err != nil {
-				return err
-			}
-		}
-
-		return s.ptr().Click(s.ctx, px, py)
-	}
-
-	box, ok := devBoxAt(s.app.Boxes(), px, py)
-	if !ok {
-		s.devDropPin()
-
-		return nil
-	}
-
-	if s.dev.havePin && devSameBox(s.dev.pinned, box) {
-		s.devDropPin()
-
-		return nil
-	}
-
-	s.dev.pinned = box
-	s.dev.havePin = true
-	s.devShowBoxOps(box, px, py)
 
 	return nil
 }

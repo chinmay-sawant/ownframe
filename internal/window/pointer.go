@@ -51,8 +51,3 @@ func (s *shell) contentPointAt(x, y int) (float64, float64) {
 
 	return s.contentAt(x, y, frameW, frameH)
 }
-
-// pressedNow reports the up-to-down edge of a pointer level.
-func pressedNow(down, wasDown bool) bool {
-	return down && !wasDown
-}

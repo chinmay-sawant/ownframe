@@ -8,10 +8,18 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
-// oversized reports a content size no Ebiten image can hold. A zero device
-// limit means the game is not running, so nothing is oversized there: no
-// GPU image exists to overflow.
+// maxTilePixels bounds the content-sized tile grid. Past it the viewport
+// buffer is smaller than the full tile grid, so the window uses that path.
+const maxTilePixels = 4 << 20
+
+// oversized reports a content size no Ebiten image can hold, or one whose
+// tile grid would retain more pixels than the viewport budget. A zero device
+// limit means the game is not running, so only the pixel budget applies.
 func oversized(w, h int) bool {
+	if w > 0 && h > 0 && w*h > maxTilePixels {
+		return true
+	}
+
 	m := ebiten.MaxImageSize()
 	if m <= 0 {
 		return false

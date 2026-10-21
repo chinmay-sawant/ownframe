@@ -18,12 +18,23 @@ func DisplayListDocument(
 	styled *css.Document,
 	images func(src string) ([]byte, error),
 ) (*Display, error) {
+	return DisplayListDocumentOptions(ctx, styled, layout.Options{Images: images})
+}
+
+// DisplayListDocumentOptions turns an already styled document into vector
+// operations with the given engine options. The RetainState option keeps the
+// layout state a single element patch needs.
+func DisplayListDocumentOptions(
+	ctx context.Context,
+	styled *css.Document,
+	options layout.Options,
+) (*Display, error) {
 	if ctx == nil {
 		return nil, fetch.ErrNilContext
 	}
 	engineMu.Lock()
 	defer engineMu.Unlock()
-	display, err := layout.DisplayListOptions(ctx, styled, layout.Options{Images: images})
+	display, err := layout.DisplayListOptions(ctx, styled, options)
 	if err != nil {
 		return nil, fmt.Errorf("render: display: %w", err)
 	}

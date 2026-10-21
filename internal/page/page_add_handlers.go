@@ -9,6 +9,9 @@ func (p *Page) AddHandlers(h Handlers) {
 	if h.Click != nil {
 		p.handlers.Click = h.Click
 	}
+	if h.ClickPaint != nil {
+		p.handlers.ClickPaint = h.ClickPaint
+	}
 	if h.Press != nil {
 		p.handlers.Press = h.Press
 	}

@@ -9,7 +9,7 @@ import (
 // textRunMaxEntries and textRunMaxPixels bound what one page caches. A page
 // with more runs than this keeps the newest; the oldest rasters are disposed.
 const (
-	textRunMaxEntries = 128
+	textRunMaxEntries = 512
 	textRunMaxPixels  = 4 << 20
 )
 

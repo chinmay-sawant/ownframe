@@ -6,7 +6,7 @@ const sources = import.meta.glob('../../documentation/*.md', {
 });
 const extras = import.meta.glob([
   '../../examples/readme.md', '../../examples/desktop-cat/readme.md',
-  '../../examples/telegram/android/README.md', '../../showcase.md',
+  '../../examples/telegram/android/README.md',
 ], { query: '?raw', import: 'default', eager: true });
 
 const labels = {
@@ -40,14 +40,21 @@ const labels = {
   'tricks-tips': 'Tips',
 };
 
-export const documents = Object.entries({ ...sources, ...extras }).map(([path, text]) => ({
+const markdownDocuments = Object.entries({ ...sources, ...extras }).map(([path, text]) => ({
   path: path.replace('../../', ''),
   slug: path.startsWith('../../documentation/')
     ? path.split('/').pop().replace('.md', '').toLowerCase()
     : path.replace('../../', '').replace(/\.md$/, '').replaceAll('/', '-').toLowerCase(),
   title: text.match(/^# (.+)/m)?.[1] ?? path,
   text,
-})).map((entry) => ({ ...entry, title: labels[entry.slug] ?? entry.title })).sort((a, b) => {
+})).map((entry) => ({ ...entry, title: labels[entry.slug] ?? entry.title }));
+
+export const documents = [...markdownDocuments, {
+  path: 'showcase.md',
+  slug: 'showcase',
+  title: labels.showcase,
+  text: '',
+}].sort((a, b) => {
   if (a.slug === 'readme') return -1;
   if (b.slug === 'readme') return 1;
   return a.title.localeCompare(b.title);

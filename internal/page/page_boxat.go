@@ -27,5 +27,8 @@ func scanBoxes(boxes []Box, x, y float64) boxSpot {
 // boxAt answers the point query against the page's box index. hit and
 // boxIDAt delegate here.
 func (p *Page) boxAt(x, y float64) boxSpot {
-	return scanBoxes(p.Boxes(), x, y)
+	if len(p.hits) > 0 {
+		return p.scanHit(x, y)
+	}
+	return scanBoxes(p.boxes, x, y)
 }
