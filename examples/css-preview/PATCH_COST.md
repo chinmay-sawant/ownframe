@@ -22,8 +22,7 @@ runs is the redraw.
 
 ## The numbers
 
-Intel i7-13700HX, Go 1.26.4, `GOMAXPROCS=2`, the local Blinkless checkout at
-`../blinkless`.
+Intel i7-13700HX, Go 1.26.4, `GOMAXPROCS=2`, the Blinkless commit `c1054ff`.
 
 | Path | Time | Allocated | Allocations | Patches applied |
 |---|---:|---:|---:|---:|
@@ -39,9 +38,9 @@ spread was 31.9 to 49.7 ms and the card patch spread was 5.7 to 10.6 ms, so
 the wall clock moves with the load of the machine, and the allocation counts
 do not.
 
-The local Blinkless checkout carries uncommitted engine work, so these
-numbers are not comparable with an earlier run against the committed tree.
-The allocation counts are comparable.
+The engine is the commit `c1054ff`, which is what the local checkout holds as
+well, so these numbers are not comparable with a run against the previous
+engine commit. The allocation counts are comparable.
 
 The redraw splits into three stages, measured by the page itself.
 

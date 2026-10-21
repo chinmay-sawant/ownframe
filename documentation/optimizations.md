@@ -513,9 +513,9 @@ The machine was shared during some earlier runs, so treat the absolute
 original numbers as recorded history. The multipliers are the comparison this
 work reports.
 
-The patch cost numbers come from the local Blinkless checkout, which carries
-uncommitted engine work, so the wall clock is not comparable with the earlier
-recorded run and the allocation counts are the stable part.
+The patch cost numbers come from the Blinkless commit `c1054ff`, which is the
+pinned engine, so the wall clock is not comparable with the earlier recorded
+run and the allocation counts are the stable part.
 
 ## Reproduce
 
@@ -633,8 +633,7 @@ Blinkless:
 - `internal/layout/layout.go` holds the one-entry face cache.
 
 Ownframe pins Blinkless
-`v0.0.3-0.20261020132936-e0c3c9ca4f30`, which includes both one-pass grid
-paths. The 12.5 ms and 6.16 ms columns use that pin. `go.mod` also replaces
-the module with the local `../blinkless` checkout, because the element patch
-work is not in the published tag, and that checkout sits one commit past the
-pin, so the pin and the replace do not build the same tree.
+`v0.0.3-0.20261021155643-c1054ff46202`, which carries both one-pass grid
+paths and the element patch work. The 12.5 ms and 6.16 ms columns use the
+earlier pin, `e0c3c9c`, and the patch cost numbers use `c1054ff`. There is no
+replace, so the build and the module zip carry the same engine.

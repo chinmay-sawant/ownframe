@@ -3,7 +3,7 @@ module github.com/chinmay-sawant/ownframe
 go 1.26.4
 
 require (
-	github.com/chinmay-sawant/blinkless v0.0.3-0.20261020132936-e0c3c9ca4f30
+	github.com/chinmay-sawant/blinkless v0.0.3-0.20261021155643-c1054ff46202
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
 	golang.org/x/text v0.41.0
@@ -41,6 +41,3 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
-
-// The local Blinkless checkout carries the element patch work.
-replace github.com/chinmay-sawant/blinkless => ../blinkless
