@@ -8,7 +8,8 @@ func (c *Cache) Source() string {
 }
 
 // StatePseudos reports which interactive pseudo-classes the cached sheets
-// can match. The value is fixed for the cache's lifetime.
+// can match. The value follows the styled document, so a patch that rewrites
+// a style element reports the states the new sheets can match.
 func (c *Cache) StatePseudos() StatePseudos {
 	if c == nil {
 		return allStatePseudos
@@ -17,5 +18,9 @@ func (c *Cache) StatePseudos() StatePseudos {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	return c.pseudos
+	if c.styled == nil {
+		return allStatePseudos
+	}
+
+	return statePseudosOf(c.styled)
 }

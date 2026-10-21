@@ -71,7 +71,9 @@ func (p *Page) Click(ctx context.Context, x, y float64) error {
 	}
 
 	// The handler may have changed the data, which makes the source differ
-	// and redraws. A click that changed nothing visible skips the layout.
+	// and redraws. A click that changed nothing visible skips the layout. A
+	// refused patch forgot the render key, so this redraw lays the page out
+	// again and the tree matches the display.
 	return p.RedrawIfChanged(ctx)
 }
 
