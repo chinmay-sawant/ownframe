@@ -1,5 +1,7 @@
 export const showcaseIntro = 'Choose an example in the left navigation to view its screenshots or demo.';
 
+const leadingShowcaseIds = ['wispr-flow', 'spotify-player', 'teams', 'telegram', 'eyes'];
+
 export const showcaseSections = [
   {
     id: 'telegram',
@@ -81,7 +83,7 @@ export const showcaseSections = [
     before: 'The Wispr Flow example is an HTML and CSS interface rendered by ownframe.',
     after: '[Watch the demo](https://x.com/chinmay_sawant_/status/2106788230154871126)\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/wispr-flow-dashboard)',
     media: [
-      { src: 'assets/screenshots/demos/wispr-flow.webp', video: 'demos/preview.mp4', alt: 'Wispr Flow example preview', caption: 'Wispr Flow', width: 1906, height: 1030 },
+      { src: 'assets/screenshots/demos/wispr-flow.webp', video: 'demos/preview.mp4', autoplayPreview: true, alt: 'Wispr Flow example preview', caption: 'Wispr Flow', width: 1906, height: 1030 },
     ],
   },
   {
@@ -119,4 +121,10 @@ export const showcaseSections = [
       { src: 'assets/screenshots/android/depth-alert/depth-alert-pixel7.webp', alt: 'Depth Alert running on a Pixel 7 with its live camera preview, current signal, distance, and depth coverage', caption: 'Depth Alert on Pixel 7', width: 1080, height: 2400 },
     ],
   },
-];
+].sort((left, right) => {
+  const leftOrder = leadingShowcaseIds.indexOf(left.id);
+  const rightOrder = leadingShowcaseIds.indexOf(right.id);
+  if (leftOrder === -1) return rightOrder === -1 ? 0 : 1;
+  if (rightOrder === -1) return -1;
+  return leftOrder - rightOrder;
+});

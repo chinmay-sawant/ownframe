@@ -17,7 +17,7 @@ export default function Documentation({ hash }) {
   const [, slug = 'readme', anchor] = hash.split('/');
   const doc = documents.find((entry) => entry.slug === slug);
   const isShowcase = doc?.slug === 'showcase';
-  const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : 'telegram';
+  const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : showcaseSections[0].id;
   const showcase = isShowcase ? showcaseSections.find((entry) => entry.id === activeShowcase) : null;
   const text = slug === 'readme' && !anchor ? docsOverview : doc?.text;
   const mediaResolution = (src, width, height) => setLightbox((box) => {
@@ -121,7 +121,7 @@ export default function Documentation({ hash }) {
             <summary>{group.title}</summary>
             <div className="docs-nav-links">
               {group.documents.map((entry) => <div key={entry.slug} className="docs-nav-entry">
-                <a href={entry.slug === 'showcase' ? '#docs/showcase/telegram' : `#docs/${entry.slug}`}
+                <a href={entry.slug === 'showcase' ? `#docs/showcase/${showcaseSections[0].id}` : `#docs/${entry.slug}`}
                   aria-current={slug === entry.slug && entry.slug !== 'showcase' ? 'page' : undefined}
                   className={slug === 'showcase' && entry.slug === 'showcase' ? 'docs-nav-parent active' : 'docs-nav-parent'}>
                   {entry.title}
@@ -149,10 +149,16 @@ export default function Documentation({ hash }) {
             className={`showcase-media${media.wide ? ' showcase-media--wide' : ''}`}>
             <button type="button" className="gallery-open" aria-label={`Open media: ${media.alt}`}
               aria-haspopup="dialog" onClick={() => openLightbox(index)}>
-              <img src={contentUrl(media.src, doc)} alt={media.alt} width={media.width} height={media.height}
-                loading="lazy" decoding="async" style={{ width: media.nativeDisplay
+              {media.autoplayPreview ? <video src={`${import.meta.env.BASE_URL}${media.video}`}
+                poster={contentUrl(media.src, doc)} autoPlay muted loop playsInline preload="auto"
+                aria-hidden="true" width={media.width} height={media.height}
+                style={{ width: media.nativeDisplay
                   ? `min(100%, calc(${media.width}px / var(--site-scale)))`
                   : `min(100%, ${media.width}px)` }} />
+                : <img src={contentUrl(media.src, doc)} alt={media.alt} width={media.width} height={media.height}
+                  loading="lazy" decoding="async" style={{ width: media.nativeDisplay
+                    ? `min(100%, calc(${media.width}px / var(--site-scale)))`
+                    : `min(100%, ${media.width}px)` }} />}
             </button>
             <figcaption>{media.caption}</figcaption>
           </figure>)}

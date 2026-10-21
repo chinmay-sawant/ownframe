@@ -167,7 +167,7 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
 .showcase-media { min-width: 0; margin: 0; text-align: center; }
 .showcase-media--wide { grid-column: 1 / -1; }
 .gallery-open { display: flex; justify-content: center; width: 100%; padding: 0; border: 0; background: none; font: inherit; color: inherit; cursor: zoom-in; }
-.gallery-open img { display: block; max-width: 100%; height: auto; border-radius: 7px; }
+.gallery-open img, .gallery-open video { display: block; max-width: 100%; height: auto; border-radius: 7px; }
 .showcase-media figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; }
 .lightbox-backdrop { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, 0.85); }
 .lightbox-card { position: relative; width: min(100%, calc(100vw - 48px)); display: flex; flex-direction: column; align-items: center; margin: auto; }
