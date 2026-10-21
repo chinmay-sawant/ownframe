@@ -18,7 +18,8 @@ type demo struct {
 	pendingAt time.Time
 	// playAllAt is the shared start time of a Play all run. Every sample
 	// the run queues starts from it, so a row that scrolls in later shows
-	// its animation at the phase the run reached.
+	// its animation at the phase the run reached. It is stamped after the
+	// click has patched the cards, so the run starts when the click ends.
 	playAllAt  time.Time
 	startedAt  time.Time
 	startedSeq uint64

@@ -16,7 +16,7 @@ const readoutID = "preview-metadata"
 // starting paint.
 func (d *demo) playAll(ctx context.Context) error {
 	d.allPlaying = true
-	d.playAllAt = time.Now()
+	started := make([]string, 0, len(d.v.Catalog))
 	for _, row := range d.v.Catalog {
 		target, ok := targetByKey(row.SampleKey)
 		if !ok {
@@ -28,7 +28,6 @@ func (d *demo) playAll(ctx context.Context) error {
 			d.samples[target.key] = s
 		}
 		s.source = row.Button
-		s.origin = d.playAllAt
 		if s.base == nil {
 			if box, ok := findBox(d.p.Boxes(), target.id); ok {
 				s.base = capture(d.p.Display(), box)
@@ -41,7 +40,18 @@ func (d *demo) playAll(ctx context.Context) error {
 			// the sample's target moves on the next layout.
 			d.patchCard(ctx, row)
 		}
+		started = append(started, target.key)
 		d.pending = append(d.pending, target.key)
+	}
+	// The shared start time is stamped after the patching above. A click that
+	// patches every card can take longer than the shortest animation, and a
+	// clock that starts before that work leaves every sample finished before
+	// the first tick reaches it.
+	d.playAllAt = time.Now()
+	for _, key := range started {
+		if s := d.samples[key]; s != nil {
+			s.origin = d.playAllAt
+		}
 	}
 	d.v.Readout = "All previews are playing."
 	d.p.SetData(d.v)
