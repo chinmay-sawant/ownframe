@@ -25,7 +25,7 @@ func TestStartupMatchesTheSavedState(t *testing.T) {
 
 	clickID(t, first, "chat-search")
 
-	if err := first.Page().Type(ctx, "nothing matches this"); err != nil {
+	if err := first.Page().Edit().Type(ctx, "nothing matches this"); err != nil {
 		t.Fatalf("Type: %v", err)
 	}
 

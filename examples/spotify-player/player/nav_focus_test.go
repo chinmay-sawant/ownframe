@@ -11,8 +11,8 @@ func TestNavigationFocusRetention(t *testing.T) {
 
 	ctx := context.Background()
 
-	app.Page().SetScrollOffset(0, 42)
-	if err := app.Page().Focus(ctx, "q"); err != nil {
+	app.Page().Scroll().SetScrollOffset(0, 42)
+	if err := app.Page().Form().Focus(ctx, "q"); err != nil {
 		t.Fatalf("Focus: %v", err)
 	}
 	redraw(t, app)
@@ -20,8 +20,8 @@ func TestNavigationFocusRetention(t *testing.T) {
 	click(t, app, "nav-search")
 	redraw(t, app)
 
-	app.Page().SetScrollOffset(0, 7)
-	if err := app.Page().Focus(ctx, "q"); err != nil {
+	app.Page().Scroll().SetScrollOffset(0, 7)
+	if err := app.Page().Form().Focus(ctx, "q"); err != nil {
 		t.Fatalf("Focus: %v", err)
 	}
 	redraw(t, app)
@@ -29,20 +29,20 @@ func TestNavigationFocusRetention(t *testing.T) {
 	click(t, app, "nav-home")
 	redraw(t, app)
 
-	if x, y := app.Page().ScrollOffset(); x != 0 || y != 42 {
+	if x, y := app.Page().Scroll().ScrollOffset(); x != 0 || y != 42 {
 		t.Fatalf("home scroll = %d,%d, want 0,42", x, y)
 	}
-	if got := app.Page().FocusID(); got != "q" {
+	if got := app.Page().Form().FocusID(); got != "q" {
 		t.Fatalf("home focus = %q, want q", got)
 	}
 
 	click(t, app, "nav-search")
 	redraw(t, app)
 
-	if x, y := app.Page().ScrollOffset(); x != 0 || y != 7 {
+	if x, y := app.Page().Scroll().ScrollOffset(); x != 0 || y != 7 {
 		t.Fatalf("search scroll = %d,%d, want 0,7", x, y)
 	}
-	if got := app.Page().FocusID(); got != "q" {
+	if got := app.Page().Form().FocusID(); got != "q" {
 		t.Fatalf("search focus = %q, want q", got)
 	}
 
@@ -55,31 +55,31 @@ func TestBackAndForwardRetainFocusScroll(t *testing.T) {
 
 	ctx := context.Background()
 
-	app.Page().SetScrollOffset(0, 42)
-	_ = app.Page().Focus(ctx, "q")
+	app.Page().Scroll().SetScrollOffset(0, 42)
+	_ = app.Page().Form().Focus(ctx, "q")
 	redraw(t, app)
 
 	click(t, app, "nav-search")
 	redraw(t, app)
 
-	app.Page().SetScrollOffset(0, 7)
-	_ = app.Page().Focus(ctx, "q")
+	app.Page().Scroll().SetScrollOffset(0, 7)
+	_ = app.Page().Form().Focus(ctx, "q")
 	redraw(t, app)
 
 	click(t, app, "back")
 	redraw(t, app)
 
-	if x, y := app.Page().ScrollOffset(); x != 0 || y != 42 {
+	if x, y := app.Page().Scroll().ScrollOffset(); x != 0 || y != 42 {
 		t.Fatalf("back scroll = %d,%d, want 0,42", x, y)
 	}
-	if got := app.Page().FocusID(); got != "q" {
+	if got := app.Page().Form().FocusID(); got != "q" {
 		t.Fatalf("back focus = %q, want q", got)
 	}
 
 	click(t, app, "forward")
 	redraw(t, app)
 
-	if x, y := app.Page().ScrollOffset(); x != 0 || y != 7 {
+	if x, y := app.Page().Scroll().ScrollOffset(); x != 0 || y != 7 {
 		t.Fatalf("forward scroll = %d,%d, want 0,7", x, y)
 	}
 

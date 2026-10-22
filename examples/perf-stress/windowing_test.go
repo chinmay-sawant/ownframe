@@ -44,7 +44,7 @@ func TestWindowing(t *testing.T) {
 		t.Fatalf("grid height = %v, want >= %d (spacers)", gridH, 280*36)
 	}
 
-	app.page.SetScrollOffset(0, 2000)
+	app.page.Scroll().SetScrollOffset(0, 2000)
 	if err := app.page.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}

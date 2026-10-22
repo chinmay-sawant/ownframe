@@ -15,7 +15,7 @@ func TestWindowReplacesAndKeepsSelection(t *testing.T) {
 		t.Fatalf("selection outside window %+v", app.win)
 	}
 
-	app.page.SetScrollOffset(0, 5000)
+	app.page.Scroll().SetScrollOffset(0, 5000)
 	app.page.Testing().StepScrollWindow()
 	flush(t, app)
 	if err := app.Redraw(context.Background()); err != nil {
@@ -35,7 +35,7 @@ func TestWindowReplacesAndKeepsSelection(t *testing.T) {
 	}
 
 	// Scrolling back shows the selected cells again with stable boxes.
-	app.page.SetScrollOffset(0, 0)
+	app.page.Scroll().SetScrollOffset(0, 0)
 	app.page.Testing().StepScrollWindow()
 	flush(t, app)
 	if err := app.Redraw(context.Background()); err != nil {

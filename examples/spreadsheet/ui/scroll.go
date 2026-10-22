@@ -8,7 +8,7 @@ package ui
 // The rendered window is exactly the visible cells; the fetched window
 // adds FetchOver rows and columns, so a small scroll reuses the tiles.
 func (a *App) scrollWindow(offsetY, viewH int) bool {
-	offsetX, _ := a.page.ScrollOffset()
+	offsetX, _ := a.page.Scroll().ScrollOffset()
 	a.scrollX, a.scrollY = offsetX, offsetY
 
 	sh := a.sheet()

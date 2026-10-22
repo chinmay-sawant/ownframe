@@ -26,7 +26,7 @@ func TestPhoneLayoutsKeepTouchTargets(t *testing.T) {
 						if err := p.Redraw(context.Background()); err != nil {
 							t.Fatal(err)
 						}
-						if !p.Probe().ViewLocked() || p.AllowScroll() {
+						if !p.Probe().ViewLocked() || p.Scroll().AllowScroll() {
 							t.Fatal("phone allows scrolling or is not fitted")
 						}
 						for _, b := range p.Boxes() {

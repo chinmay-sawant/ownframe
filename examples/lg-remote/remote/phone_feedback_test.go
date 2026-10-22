@@ -11,7 +11,7 @@ func TestPhoneUsesFittedScreenWithoutScrolling(t *testing.T) {
 	a := newTest(t, WithPhone(true))
 	for _, tab := range []string{"tab-pad", "tab-nums", "tab-remote"} {
 		clickID(t, a, tab)
-		if !a.page.Probe().ViewLocked() || a.page.AllowScroll() {
+		if !a.page.Probe().ViewLocked() || a.page.Scroll().AllowScroll() {
 			t.Fatalf("%s enabled scrolling or disabled fitting", tab)
 		}
 	}
@@ -20,7 +20,7 @@ func TestPhoneUsesFittedScreenWithoutScrolling(t *testing.T) {
 func TestPhoneFocusHighlightsButtonWithoutBlueOutline(t *testing.T) {
 	a := newTest(t, WithPhone(true))
 	ctx := context.Background()
-	if err := a.page.Focus(ctx, "tab-pad"); err != nil {
+	if err := a.page.Form().Focus(ctx, "tab-pad"); err != nil {
 		t.Fatal(err)
 	}
 	for _, op := range a.page.Probe().Display().Ops {

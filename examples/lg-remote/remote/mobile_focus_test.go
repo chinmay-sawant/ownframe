@@ -11,20 +11,20 @@ func TestPhoneKeyboardFocusActivatesButton(t *testing.T) {
 	a.SetLink(f)
 	ctx := context.Background()
 	p := a.Page()
-	if err := p.Focus(ctx, "volup"); err != nil {
+	if err := p.Form().Focus(ctx, "volup"); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.KeyDown(ctx, "enter"); err != nil {
+	if err := p.Edit().KeyDown(ctx, "enter"); err != nil {
 		t.Fatal(err)
 	}
 	if f.spec != "vol:Up" {
 		t.Fatalf("activation %q", f.spec)
 	}
-	p.SetFormValue("host", "10.0.0.8")
-	if err := p.Focus(ctx, "host"); err != nil {
+	p.Form().SetFormValue("host", "10.0.0.8")
+	if err := p.Form().Focus(ctx, "host"); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.KeyDown(ctx, "enter"); err != nil {
+	if err := p.Edit().KeyDown(ctx, "enter"); err != nil {
 		t.Fatal(err)
 	}
 	if f.spec != "pair:" || f.host != "10.0.0.8" {

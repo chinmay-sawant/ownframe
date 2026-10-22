@@ -33,10 +33,10 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Type appends text to the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // Submit runs the login or note form submit.
 func (a *App) Submit(ctx context.Context) error {
-	return a.page.Submit(ctx)
+	return a.page.Edit().Submit(ctx)
 }

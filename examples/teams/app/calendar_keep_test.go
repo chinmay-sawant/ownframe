@@ -11,7 +11,7 @@ func TestCalendarCreatedSurvivesWeekSwitch(t *testing.T) {
 	app := calendarApp(t)
 
 	calClick(t, app, "calendar-new")
-	app.Page().SetFormValue("cal-title", "Portfolio sync")
+	app.Page().Form().SetFormValue("cal-title", "Portfolio sync")
 	calClick(t, app, "calendar-create")
 
 	calClick(t, app, "calendar-next")

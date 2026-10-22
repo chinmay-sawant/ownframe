@@ -30,7 +30,7 @@ func (a *App) clipClick(ctx context.Context, id string) error {
 
 func (a *App) copyButton(ctx context.Context) error {
 	a.focusLast(ctx)
-	text, ok, err := a.page.Copy(ctx)
+	text, ok, err := a.page.Edit().Copy(ctx)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (a *App) copyButton(ctx context.Context) error {
 
 func (a *App) cutButton(ctx context.Context) error {
 	a.focusLast(ctx)
-	text, ok, err := a.page.Cut(ctx)
+	text, ok, err := a.page.Edit().Cut(ctx)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func (a *App) pasteGo(ctx context.Context) error {
 	if !a.focusLast(ctx) {
 		return nil
 	}
-	if err := a.page.Paste(ctx, pasteFromGo); err != nil {
+	if err := a.page.Edit().Paste(ctx, pasteFromGo); err != nil {
 		return err
 	}
 	a.setClip("pasted: " + pasteFromGo)
@@ -83,7 +83,7 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 		a.setClip("clipboard is empty")
 		return nil
 	}
-	if err := a.page.Paste(ctx, text); err != nil {
+	if err := a.page.Edit().Paste(ctx, text); err != nil {
 		return err
 	}
 	a.setClip("pasted: " + text)

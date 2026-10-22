@@ -16,7 +16,7 @@ func start() error {
 	if err != nil {
 		return fmt.Errorf("mobile: dashboard: %w", err)
 	}
-	app.Page().SetTouchZoomAllowed(false)
+	app.Page().Window().SetTouchZoomAllowed(false)
 	inputPage = app.Page()
 	return ownframe.BindMobile(context.Background(), app.Page())
 }

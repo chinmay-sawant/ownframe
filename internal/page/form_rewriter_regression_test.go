@@ -3,6 +3,8 @@ package page
 import (
 	"strings"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/form"
 )
 
 func TestRewriteButtonsEscapedQuotesRegression(t *testing.T) {
@@ -41,7 +43,7 @@ func TestScanControlsNestedInputAttrsRegression(t *testing.T) {
 	t.Parallel()
 
 	src := `<input type="text" id="name" value="one" data-x="<input type='text' id='evil'>">`
-	spans := scanControls(src)
+	spans := form.Scan(src)
 
 	if len(spans) != 1 || spans[0].Control.ID != "name" {
 		t.Fatalf("spans = %#v", spans)
@@ -52,7 +54,7 @@ func TestScanControlsDoubleEscapedQuotesRegression(t *testing.T) {
 	t.Parallel()
 
 	src := `<input type="text" id="q" value="&amp;quot;quoted&amp;quot;">`
-	spans := scanControls(src)
+	spans := form.Scan(src)
 
 	if len(spans) != 1 {
 		t.Fatalf("spans = %#v", spans)
@@ -69,7 +71,7 @@ func TestAttrValueDoubleEscapedQuotesRegression(t *testing.T) {
 	t.Parallel()
 
 	raw := `<input value="&amp;quot;x&amp;quot;">`
-	got := attrValue(raw, "value")
+	got := form.AttrValue(raw, "value")
 
 	if got == `"x"` {
 		t.Fatalf("attrValue collapsed double escaping: %q", got)

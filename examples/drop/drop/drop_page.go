@@ -13,7 +13,7 @@ func (a *App) Page() *ownframe.Page {
 
 // Drop offers files to the page, the way the window does.
 func (a *App) Drop(ctx context.Context, files []ownframe.Drop) error {
-	return a.page.Drop(ctx, files)
+	return a.page.Edit().Drop(ctx, files)
 }
 
 // Click sends one click at the point, the way the window does.

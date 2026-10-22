@@ -55,7 +55,7 @@ func startWalk(p *ownframe.Page, d *demo, v *view, m *catalogMetrics) {
 		return
 	}
 	w := &walker{p: p, d: d, v: v, m: m, scrollFor: -1, aim: [3]int{-1, 0, 0}}
-	p.SetDevTools(true)
+	p.Window().SetDevTools(true)
 	go w.serve()
 
 	keep := os.Getenv("CSS_PREVIEW_DEVTOOLS") != ""
@@ -64,7 +64,7 @@ func startWalk(p *ownframe.Page, d *demo, v *view, m *catalogMetrics) {
 	tick = func(ctx context.Context) error {
 		if !closed && !keep {
 			closed = true
-			p.SetDevTools(false)
+			p.Window().SetDevTools(false)
 		}
 		if err := d.tick(ctx); err != nil {
 			return err

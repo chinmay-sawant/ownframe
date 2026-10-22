@@ -107,7 +107,7 @@ func TestFieldHitBoxStaysInsideTheCard(t *testing.T) {
 	}
 
 	click(t, ctx, app, "email", "")
-	if got := app.Page().FocusedField(); got != "email" {
+	if got := app.Page().Edit().FocusedField(); got != "email" {
 		t.Fatalf("focus = %q", got)
 	}
 }

@@ -36,7 +36,7 @@ func windowBenchPass(ctx context.Context, p *ownframe.Page, v *view,
 		if y < 0 {
 			y = 0
 		}
-		p.SetScrollOffset(0, y)
+		p.Scroll().SetScrollOffset(0, y)
 		windowBenchScroll(ctx, p, tb)
 		d.samples = map[string]*sample{}
 		d.pending = nil

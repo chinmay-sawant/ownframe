@@ -28,7 +28,7 @@ func (a *App) exportBackup(ctx context.Context) error {
 }
 
 func (a *App) checkBackup(ctx context.Context) error {
-	raw := strings.TrimSpace(a.page.FormValue("backup-json"))
+	raw := strings.TrimSpace(a.page.Form().FormValue("backup-json"))
 	if len(raw) == 0 || len(raw) > 1<<20 {
 		a.view.Error = "Paste a backup smaller than 1 MB."
 		return a.redraw(ctx)

@@ -1,5 +1,7 @@
 package page
 
+import "github.com/chinmay-sawant/ownframe/internal/page/form"
+
 func (p *Page) syncForm(body string) string {
 	if p.formState() == nil || p.formState().doc != p.nav.Doc() {
 		p.setFormState(&formState{
@@ -10,8 +12,8 @@ func (p *Page) syncForm(body string) string {
 	}
 
 	body = rewriteButtons(body)
-	spans := scanControls(body)
-	byID, order := mergeControls(p.formState().byID, spans)
+	spans := form.Scan(body)
+	byID, order := form.Merge(p.formState().byID, spans)
 	for id, ctrl := range byID {
 		if ctrl.Bind == "" {
 			continue
@@ -30,5 +32,5 @@ func (p *Page) syncForm(body string) string {
 	}
 	p.clampRange()
 
-	return emojiPass(rewriteControlsState(body, spans, byID, p.caretOf()))
+	return emojiPass(form.RewriteState(body, spans, byID, p.caretOf()))
 }

@@ -48,7 +48,7 @@ func (a *App) pickSev(name string) {
 
 // clearFilters drops the text and severity filters.
 func (a *App) clearFilters() {
-	a.page.SetFormValue("search", "")
+	a.page.Form().SetFormValue("search", "")
 	a.minSev = ""
 	a.filters.Apply("")
 	a.saveSettings()
@@ -57,7 +57,7 @@ func (a *App) clearFilters() {
 
 // applyFilterChange applies the pending filter state to a fresh page load.
 func (a *App) applyFilterChange() {
-	a.filters.Apply(a.page.FormValue("search"))
+	a.filters.Apply(a.page.Form().FormValue("search"))
 	a.saveSettings()
 	a.loadPage(intentFilter)
 }

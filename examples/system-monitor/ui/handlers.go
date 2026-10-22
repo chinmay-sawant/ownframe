@@ -29,7 +29,7 @@ func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 // onKeyDown adds fast navigation keys. While the search field has focus the
 // palette keeps every key, so typing never triggers a command.
 func (a *App) onKeyDown(ctx context.Context, key string) error {
-	if a.page.FocusID() == "proc-search" {
+	if a.page.Form().FocusID() == "proc-search" {
 		return nil
 	}
 
@@ -50,7 +50,7 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.state.nav = "processes"
 		a.sync()
 
-		if err := a.page.Focus(ctx, "proc-search"); err != nil {
+		if err := a.page.Form().Focus(ctx, "proc-search"); err != nil {
 			return err
 		}
 

@@ -28,7 +28,7 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Hover sets the hovered element from a point.
 func (a *App) Hover(ctx context.Context, x, y float64) error {
-	return a.page.Hover(ctx, x, y)
+	return a.page.Edit().Hover(ctx, x, y)
 }
 
 // Generation increases by one on every successful Redraw.

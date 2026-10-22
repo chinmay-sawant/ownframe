@@ -8,7 +8,7 @@ This page summarizes supported features and current limits. Use the linked guide
 
 ## CSS and HTML support
 
-This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `Page.SetScrollWindow` and `Page.SetViewportPinZ`. Those are not tickets on ownframe. A long list is a slice window plus spacers, not `content-visibility`. See `examples/list`, `examples/ops-console`, and [tricks-tips.md](tricks-tips.md).
+This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `Page.SetScrollWindow` and `Page.Scroll().SetViewportPinZ`. Those are not tickets on ownframe. A long list is a slice window plus spacers, not `content-visibility`. See `examples/list`, `examples/ops-console`, and [tricks-tips.md](tricks-tips.md).
 
 | Feature | 1.0 |
 |---|---|
@@ -37,7 +37,7 @@ This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `
 | `position: absolute` on a flex child | blinkless hole: the child stays in flow, so `top` and `left` do nothing. Use a block container (Telegram `app-thread`). `internal/page` tests record this. ([screen.md](screen.md)) |
 | `position: sticky` under window scroll | blinkless hole: the header stays in flow and has no `Fixed` ops, so the window translates it with the page. Not CSS sticky. `internal/page` tests record this. ([screen.md](screen.md)) |
 | `position: fixed` under window scroll | engine `Fixed` ops stay untranslated; sticky does not get that mark. |
-| Pinned chrome | `Page.SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
+| Pinned chrome | `Page.Scroll().SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
 | `@media print` | never matches ([theming.md](theming.md)) |
 | `@media (height)` | never matches. `TestMediaHeightFollowsTheFrame` asserts the hole. |
 | `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
@@ -187,9 +187,9 @@ Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md
 
 ## Accessibility tree
 
-`Page.AccessibilityTree` returns semantic roles, names, descriptions, live
+`Page.Access().AccessibilityTree` returns semantic roles, names, descriptions, live
 form state, document order, and bounds where an element has a unique HTML ID.
-`Page.AccessibilityPerform` routes supported focus, activation, and text-value
+`Page.Access().AccessibilityPerform` routes supported focus, activation, and text-value
 actions through the page's existing input paths. Example programs call them on `Page`. The window still calls the inner screen. The snapshot
 is a host contract for the operator who runs the process. 1.0 does not ship a
 screen-reader product. Linux maps the tree to AT-SPI objects in process;
@@ -200,7 +200,7 @@ Detail is in [accessibility.md](accessibility.md) and [atspi.md](atspi.md).
 
 ## Interaction
 
-Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
+Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.Window().SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
 
 Detail is in [interaction.md](interaction.md).
 
@@ -222,7 +222,7 @@ is in [window.md](window.md).
 ## DevTools
 
 The window can draw an inspector over the page. F12 or Ctrl+Shift+I toggles
-it, `Config.DevTools` starts it on, and `Page.SetDevTools` changes it at
+it, `Config.DevTools` starts it on, and `Page.Window().SetDevTools` changes it at
 runtime. The inspector is a right-side dock with three tabs. It opens on
 Frame, which shows the frame and pipeline counters; Elements shows the pinned
 or hovered element as pretty JSON, and Ops lists the display operations

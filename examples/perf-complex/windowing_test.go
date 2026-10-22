@@ -32,7 +32,7 @@ func TestWindowMatchesFullRows(t *testing.T) {
 		return ownframe.Box{}
 	}
 	for i, offset := range []int{0, 20000, 37000} {
-		window.SetScrollOffset(0, offset)
+		window.Scroll().SetScrollOffset(0, offset)
 		if err := redraw(window); err != nil {
 			t.Fatal(err)
 		}

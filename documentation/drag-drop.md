@@ -31,7 +31,7 @@ error.
 ## The page handler
 
 `page.Handlers.Drop` takes the same slice, and `ownframe.Drop` is the root name
-for the type. `Page.Drop` calls the handler and draws the page again. An
+for the type. `Page.Edit().Drop` calls the handler and draws the page again. An
 error returns before the redraw.
 
 ```go

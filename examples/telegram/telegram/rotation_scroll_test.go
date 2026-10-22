@@ -10,7 +10,7 @@ func TestPhoneTabsFollowScrollAndAcceptClicks(t *testing.T) {
 	app := phoneApp(t)
 	app.Page().SetSize(885, 420)
 	for _, offset := range []int{0, 180, 320} {
-		app.Page().SetScrollOffset(0, offset)
+		app.Page().Scroll().SetScrollOffset(0, offset)
 		if err := app.Redraw(ctx); err != nil {
 			t.Fatal(err)
 		}
@@ -42,7 +42,7 @@ func TestPhoneComposerFollowsRotationAndKeyboard(t *testing.T) {
 		if err := app.Redraw(ctx); err != nil {
 			t.Fatal(err)
 		}
-		_, offset := app.Page().ScrollOffset()
+		_, offset := app.Page().Scroll().ScrollOffset()
 		box := boxByID(t, app, "composebar")
 		if !closeEnough(box.Y+box.H-float64(offset), state[1]-state[2]) {
 			t.Fatalf("composer bottom %.1f outside keyboard viewport %v", box.Y+box.H-float64(offset), state)

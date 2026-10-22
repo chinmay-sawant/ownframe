@@ -1,17 +1,6 @@
 package page
 
-// caretState carries the focus, caret, and range used to rewrite controls.
-// A negative caret means the end of the value.
-type caretState struct {
-	focus        string
-	caret        int
-	start        int
-	end          int
-	all          bool
-	preedit      string
-	preeditStart int
-	preeditEnd   int
-}
+import "github.com/chinmay-sawant/ownframe/internal/page/form"
 
 // setCaret moves the caret to pos, keeping the anchor when extend is true.
 func (p *Page) setCaret(pos int, extend bool) {
@@ -59,31 +48,24 @@ func (p *Page) hasSelection() bool {
 }
 
 // caretOf returns the state the control rewrite paints.
-func (p *Page) caretOf() caretState {
-	st := caretState{caret: -1}
-	if p.formState() == nil || p.formState().focusID == "" {
-		return st
+func (p *Page) caretOf() form.Caret {
+	fs := p.formState()
+	if fs == nil || fs.focusID == "" {
+		return form.CaretOf(form.FocusView{})
 	}
 
-	c, ok := p.formState().byID[p.formState().focusID]
-	if !ok {
-		return st
-	}
+	c, ok := fs.byID[fs.focusID]
 
-	st.focus = c.ID
-	if !canEdit(c) {
-		return st
-	}
-
-	n := runeLen(c.Value)
-	st.caret = clampPos(p.formState().caret, n)
-	st.start, st.end = p.formState().bounds(n)
-	st.all = p.formState().all
-	if p.formState().preeditID == c.ID {
-		st.preedit = p.formState().preedit
-		st.preeditStart = p.formState().preeditStart
-		st.preeditEnd = p.formState().preeditEnd
-	}
-
-	return st
+	return form.CaretOf(form.FocusView{
+		FocusID:      fs.focusID,
+		Caret:        fs.caret,
+		Anchor:       fs.anchor,
+		All:          fs.all,
+		Control:      c,
+		Present:      ok,
+		PreeditID:    fs.preeditID,
+		Preedit:      fs.preedit,
+		PreeditStart: fs.preeditStart,
+		PreeditEnd:   fs.preeditEnd,
+	})
 }

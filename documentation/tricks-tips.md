@@ -24,7 +24,7 @@ See `examples/teams/channelbench` for the synthetic post benchmark, `examples/te
 Start with `examples/list`. `list.Window` clamps start, count, and spacer
 heights for a fixed-height list. ownframe has no virtual DOM: pass that
 window of rows in the template plus spacers, then call
-`Page.SetWindowing(true)` and `Page.SetScrollWindow`. Sticky and fixed
+`Page.Scroll().SetWindowing(true)` and `Page.SetScrollWindow`. Sticky and fixed
 chrome use `SetScrollWindow` / `SetViewportPinZ` because blinkless does
 not pin CSS sticky.
 
@@ -39,7 +39,7 @@ The app owns a slice window plus spacers.
    content height.
 4. On scroll, slide the window: drop rows that left the overscan, append rows
    that entered it, and resize the spacers.
-5. Call `Page.SetWindowing(true)` and `Page.SetScrollWindow` so the host
+5. Call `Page.Scroll().SetWindowing(true)` and `Page.SetScrollWindow` so the host
    redraws only when the window moved ([frames.md](frames.md)).
 
 The full fixture is `examples/perf-complex/windowing.go`: 48 of 480 rows,

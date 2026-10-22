@@ -47,7 +47,7 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 		return nil
 	}
 
-	a.filters.Edit(a.page.FormValue("search"), time.Now(), SearchDelay)
+	a.filters.Edit(a.page.Form().FormValue("search"), time.Now(), SearchDelay)
 
 	return nil
 }

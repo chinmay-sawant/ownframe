@@ -21,13 +21,13 @@ func TestPersistAcrossReopen(t *testing.T) {
 		t.Fatalf("Redraw: %v", err)
 	}
 
-	if err := first.Page().Focus(context.Background(), "chat-compose"); err != nil {
+	if err := first.Page().Form().Focus(context.Background(), "chat-compose"); err != nil {
 		t.Fatalf("Focus: %v", err)
 	}
 
-	first.Page().SetFormValue("chat-compose", "Persisted across restart")
+	first.Page().Form().SetFormValue("chat-compose", "Persisted across restart")
 
-	if err := first.Page().Submit(context.Background()); err != nil {
+	if err := first.Page().Edit().Submit(context.Background()); err != nil {
 		t.Fatalf("Submit: %v", err)
 	}
 

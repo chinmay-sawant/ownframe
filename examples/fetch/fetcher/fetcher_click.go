@@ -11,9 +11,9 @@ import (
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	switch box.ID {
 	case "get":
-		_ = a.Get(ctx, a.page.FormValue("url"))
+		_ = a.Get(ctx, a.page.Form().FormValue("url"))
 	case "post":
-		_ = a.Post(ctx, a.page.FormValue("url"))
+		_ = a.Post(ctx, a.page.Form().FormValue("url"))
 	case "bad":
 		_ = a.Get(ctx, "ftp://x")
 	}

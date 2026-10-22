@@ -5,7 +5,7 @@ import "context"
 // onCopy returns the last field when no field is focused and writes the
 // status line. A focused field is handled by the library.
 func (a *App) onCopy(context.Context) (string, bool, error) {
-	text := a.page.FormValue(a.last)
+	text := a.page.Form().FormValue(a.last)
 	if text == "" {
 		a.setStatus("nothing selected")
 
@@ -19,7 +19,7 @@ func (a *App) onCopy(context.Context) (string, bool, error) {
 
 // onCut returns the last field, clears it, and writes the status line.
 func (a *App) onCut(context.Context) (string, bool, error) {
-	text := a.page.FormValue(a.last)
+	text := a.page.Form().FormValue(a.last)
 	if text == "" {
 		a.setStatus("nothing selected")
 
@@ -27,7 +27,7 @@ func (a *App) onCut(context.Context) (string, bool, error) {
 	}
 
 	a.push()
-	a.page.SetFormValue(a.last, "")
+	a.page.Form().SetFormValue(a.last, "")
 	a.setStatus("cut: " + text)
 
 	return text, true, nil
@@ -36,7 +36,7 @@ func (a *App) onCut(context.Context) (string, bool, error) {
 // onPaste focuses the last field when none is focused so the insert lands
 // there, and writes the status line.
 func (a *App) onPaste(ctx context.Context, text string) error {
-	if a.page.FocusedField() == "" {
+	if a.page.Edit().FocusedField() == "" {
 		a.focusLast(ctx)
 	}
 
@@ -53,7 +53,7 @@ func (a *App) onSelectAll(ctx context.Context) error {
 		return nil
 	}
 
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }
 
 // setStatus stores the status line for the next draw.

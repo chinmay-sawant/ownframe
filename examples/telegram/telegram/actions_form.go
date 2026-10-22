@@ -25,7 +25,7 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 
 // onSubmit sends the composer on Enter or NumpadEnter.
 func (a *App) onSubmit(ctx context.Context) error {
-	if a.page.FocusID() != "compose" {
+	if a.page.Form().FocusID() != "compose" {
 		return nil
 	}
 
@@ -48,5 +48,5 @@ func (a *App) refocusComposer(ctx context.Context) error {
 		return nil
 	}
 
-	return a.page.Focus(ctx, "compose")
+	return a.page.Form().Focus(ctx, "compose")
 }

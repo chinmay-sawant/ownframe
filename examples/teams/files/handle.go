@@ -11,7 +11,7 @@ import (
 func Handle(_ context.Context, page *ownframe.Page, d *Data, action string) bool {
 	switch {
 	case action == "files-query":
-		d.Query = page.FormValue("files-search")
+		d.Query = page.Form().FormValue("files-search")
 		d.Active = ""
 		d.rebuild()
 	case strings.HasPrefix(action, "files-filter-"):

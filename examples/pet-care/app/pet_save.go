@@ -12,7 +12,7 @@ func (a *App) addPet(ctx context.Context) error {
 	if petID == "" {
 		petID = id()
 	}
-	p := model.Pet{ID: petID, Name: strings.TrimSpace(a.page.FormValue("pet-name")), Species: strings.TrimSpace(a.page.FormValue("pet-species")), Breed: a.page.FormValue("pet-breed"), BirthDate: a.page.FormValue("pet-birth"), Notes: a.page.FormValue("pet-notes")}
+	p := model.Pet{ID: petID, Name: strings.TrimSpace(a.page.Form().FormValue("pet-name")), Species: strings.TrimSpace(a.page.Form().FormValue("pet-species")), Breed: a.page.Form().FormValue("pet-breed"), BirthDate: a.page.Form().FormValue("pet-birth"), Notes: a.page.Form().FormValue("pet-notes")}
 	if p.Name == "" || p.Species == "" {
 		a.view.Error = "Add a name and species before saving."
 		return a.redraw(ctx)

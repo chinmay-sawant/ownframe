@@ -33,5 +33,5 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Type edits the focused control. The library owns the field text.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }

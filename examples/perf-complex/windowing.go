@@ -17,7 +17,7 @@ const (
 func installWindow(p *ownframe.Page, v view) {
 	all := v.Rows
 	previousStart, previousEnd := -1, -1
-	p.SetWindowing(true)
+	p.Scroll().SetWindowing(true)
 	p.SetScrollWindow(func(offsetY, viewH int) bool {
 		gridY := 0
 		for _, b := range p.Boxes() {

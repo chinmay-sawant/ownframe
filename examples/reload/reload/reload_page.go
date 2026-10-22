@@ -17,7 +17,7 @@ func (a *App) HTML() string { return a.page.HTML() }
 
 // PollReload rereads the source file and reports whether the page changed.
 func (a *App) PollReload(ctx context.Context) (bool, error) {
-	return a.page.PollReload(ctx)
+	return a.page.Window().PollReload(ctx)
 }
 
 // Redraw fills the template and renders the current size.

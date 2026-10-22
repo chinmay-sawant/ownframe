@@ -13,9 +13,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case "selectall":
 		return a.selectAllButton(ctx)
 	case "undo":
-		return a.page.Undo(ctx)
+		return a.page.Edit().Undo(ctx)
 	case "redo":
-		return a.page.Redo(ctx)
+		return a.page.Edit().Redo(ctx)
 	case "redraw":
 		a.view.Stamp++
 	}
@@ -45,7 +45,7 @@ func (a *App) onSelectAll(ctx context.Context) error {
 		return nil
 	}
 
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }
 
 // onUndo restores the previous note.
@@ -54,8 +54,8 @@ func (a *App) onUndo(context.Context) error {
 		return a.refresh()
 	}
 
-	a.redo = append(a.redo, a.page.FormValue("note"))
-	a.page.SetFormValue("note", a.undo[len(a.undo)-1])
+	a.redo = append(a.redo, a.page.Form().FormValue("note"))
+	a.page.Form().SetFormValue("note", a.undo[len(a.undo)-1])
 	a.undo = a.undo[:len(a.undo)-1]
 
 	return a.refresh()
@@ -67,8 +67,8 @@ func (a *App) onRedo(context.Context) error {
 		return a.refresh()
 	}
 
-	a.undo = append(a.undo, a.page.FormValue("note"))
-	a.page.SetFormValue("note", a.redo[len(a.redo)-1])
+	a.undo = append(a.undo, a.page.Form().FormValue("note"))
+	a.page.Form().SetFormValue("note", a.redo[len(a.redo)-1])
 	a.redo = a.redo[:len(a.redo)-1]
 
 	return a.refresh()

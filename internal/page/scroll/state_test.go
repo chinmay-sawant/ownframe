@@ -2,7 +2,7 @@ package scroll
 
 import "testing"
 
-func TestStateToByTake(t *testing.T) {
+func TestScrollStateToByTake(t *testing.T) {
 	t.Parallel()
 
 	var s State
@@ -30,7 +30,7 @@ func TestStateToByTake(t *testing.T) {
 	}
 }
 
-func TestWindowingApplyAndStep(t *testing.T) {
+func TestScrollWindowingApplyAndStep(t *testing.T) {
 	t.Parallel()
 
 	var s State

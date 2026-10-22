@@ -68,7 +68,7 @@ The content is the canvas grown to cover every box that overflows it, the
 same measure the scroll clamp uses, so a page with a fixed root stays painted
 when it scrolls.
 
-Pinned chrome stays on the tile path. `Page.SetViewportPinZ` and
+Pinned chrome stays on the tile path. `Page.Scroll().SetViewportPinZ` and
 `Page.SetScrollWindow` keep bars at the viewport ([screen.md](screen.md)).
 Tiles hold only unfixed operations (`replay.DrawVisibleUnfixedZ`). After the
 dirty-tile blit, `drawReplayPartial` paints fixed and pin-z operations in

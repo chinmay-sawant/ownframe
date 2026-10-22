@@ -1,5 +1,7 @@
 package page
 
+import "github.com/chinmay-sawant/ownframe/internal/page/form"
+
 // FormValue returns the current value of id, or "" when id is absent.
 func (p *Page) FormValue(id string) string {
 	c, _ := p.control(id)
@@ -18,14 +20,7 @@ func (p *Page) SetFormValue(id, value string) {
 	}
 
 	// GEN-28: programmatic writes clamp like typed edits.
-	value = clampField(value, fieldCap(c))
-	c.Value = value
-	if c.Tag == "select" {
-		for i := range c.Options {
-			c.Options[i].Selected = c.Options[i].Value == value
-		}
-	}
-
+	c = form.SetValue(c, value)
 	p.formState().byID[id] = c
 	if p.formState().focusID == id {
 		p.caretEnd(c)

@@ -39,7 +39,7 @@ func TestChannelsRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page.SetFormValue("channels-reply-av1", "Round-trip reply")
+	page.Form().SetFormValue("channels-reply-av1", "Round-trip reply")
 	channels.Handle(ctx, page, &d.Channels, "channels-reply-send-av1")
 	channels.Handle(ctx, page, &d.Channels, "channels-react-av1-0")
 

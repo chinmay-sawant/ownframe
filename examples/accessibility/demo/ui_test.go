@@ -28,7 +28,7 @@ func TestPageActionButtonsReachTheAccessibilityAPI(t *testing.T) {
 		}
 	}
 	click("api-set-value")
-	if got := a.Page().FormValue("display-name"); got != "Updated through the tree action" {
+	if got := a.Page().Form().FormValue("display-name"); got != "Updated through the tree action" {
 		t.Fatalf("button SetValue result = %q", got)
 	}
 	click("probe-stale")

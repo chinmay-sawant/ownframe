@@ -11,8 +11,8 @@ type snap struct {
 // snapshot reads both fields. The library owns their values, not View.
 func (a *App) snapshot() snap {
 	return snap{
-		Left:  a.page.FormValue("left"),
-		Right: a.page.FormValue("right"),
+		Left:  a.page.Form().FormValue("left"),
+		Right: a.page.Form().FormValue("right"),
 	}
 }
 
@@ -32,8 +32,8 @@ func (a *App) push() {
 
 // restore writes a snapshot back into the page fields.
 func (a *App) restore(s snap) {
-	a.page.SetFormValue("left", s.Left)
-	a.page.SetFormValue("right", s.Right)
+	a.page.Form().SetFormValue("left", s.Left)
+	a.page.Form().SetFormValue("right", s.Right)
 }
 
 func (a *App) onUndo(context.Context) error {

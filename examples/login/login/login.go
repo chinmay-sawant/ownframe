@@ -127,17 +127,17 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Type appends text to the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // Backspace drops the last rune of the focused field.
 func (a *App) Backspace(ctx context.Context) error {
-	return a.page.Backspace(ctx)
+	return a.page.Edit().Backspace(ctx)
 }
 
 // Submit checks the email and password.
 func (a *App) Submit(ctx context.Context) error {
-	return a.page.Submit(ctx)
+	return a.page.Edit().Submit(ctx)
 }
 
 func (a *App) onClick(_ context.Context, box ownframe.Box) error {
@@ -250,8 +250,8 @@ func (a *App) push() {
 func (a *App) restore(s snap) {
 	a.view.Email = s.Email
 	a.view.Password = s.Password
-	a.page.SetFormValue("email", s.Email)
-	a.page.SetFormValue("password", s.Password.Reveal())
+	a.page.Form().SetFormValue("email", s.Email)
+	a.page.Form().SetFormValue("password", s.Password.Reveal())
 }
 
 // ready reports whether both fields carry text, so the sign-in button can
@@ -275,8 +275,8 @@ func (a *App) refresh() {
 // Logout clears the fields, the undo and redo stacks, and the clipboard.
 // Demo only; secret/secret stays the test login. DO NOT COPY.
 func (a *App) Logout() {
-	a.page.SetFormValue("email", "")
-	a.page.SetFormValue("password", "")
+	a.page.Form().SetFormValue("email", "")
+	a.page.Form().SetFormValue("password", "")
 	a.undo = nil
 	a.redo = nil
 	a.view = View{}

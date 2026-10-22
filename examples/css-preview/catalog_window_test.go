@@ -34,7 +34,7 @@ func TestCatalogWindowKeepsFullGeometry(t *testing.T) {
 	}
 	checkCatalogGeometry(t, p, fullGrid, fullMeta, "top")
 
-	p.SetScrollOffset(0, m.rowTop[10]-200)
+	p.Scroll().SetScrollOffset(0, m.rowTop[10]-200)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -43,7 +43,7 @@ func TestCatalogWindowKeepsFullGeometry(t *testing.T) {
 		t.Fatal("row 21 is missing from the middle window")
 	}
 
-	p.SetScrollOffset(0, m.contentH)
+	p.Scroll().SetScrollOffset(0, m.contentH)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}

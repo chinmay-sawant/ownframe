@@ -18,7 +18,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case "api-focus":
 		err = a.performElement(ctx, "display-name", ownframe.AccessibilityFocus, "")
 	case "api-set-value":
-		err = a.performElement(ctx, "display-name", ownframe.AccessibilitySetValue, a.page.FormValue("action-value"))
+		err = a.performElement(ctx, "display-name", ownframe.AccessibilitySetValue, a.page.Form().FormValue("action-value"))
 	case "api-activate-checkbox":
 		err = a.performElement(ctx, "updates", ownframe.AccessibilityActivate, "")
 	case "api-activate-radio":
@@ -49,8 +49,8 @@ func (a *App) refreshTree(status string) error {
 	if err != nil {
 		return err
 	}
-	a.view.Name = a.page.FormValue("display-name")
-	a.view.ActionValue = a.page.FormValue("action-value")
+	a.view.Name = a.page.Form().FormValue("display-name")
+	a.view.ActionValue = a.page.Form().FormValue("action-value")
 	a.view.Tree = treeText(tree)
 	a.view.Status = status
 	a.page.SetData(a.view)

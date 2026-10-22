@@ -14,11 +14,7 @@ type Option = form.Option
 
 // controlSpan is one control and where it sits in the executed HTML.
 // Start is the index of '<'. End is the index after the element.
-type controlSpan struct {
-	Control Control
-	Start   int
-	End     int
-}
+type controlSpan = form.Span
 
 // formState is the value of each control on the current document.
 // caret and anchor are rune offsets into the focused control's value; the

@@ -10,7 +10,7 @@ import (
 // create appends the meeting chosen in the modal, keeps the list sorted, and
 // closes the modal.
 func (d *Data) create(page *ownframe.Page) {
-	title := strings.TrimSpace(page.FormValue("cal-title"))
+	title := strings.TrimSpace(page.Form().FormValue("cal-title"))
 	if title == "" {
 		title = "Untitled meeting"
 	}
@@ -30,7 +30,7 @@ func (d *Data) create(page *ownframe.Page) {
 	d.Events = append(d.Events, e)
 	d.sortEvents()
 	d.Compose = false
-	page.SetFormValue("cal-title", "")
+	page.Form().SetFormValue("cal-title", "")
 }
 
 // selectEvent marks only id as selected.

@@ -38,12 +38,12 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 		tb.Fatalf("missing %s", id)
 	}
 	x, y := box.X+box.W/2, box.Y+box.H/2
-	if err := p.Hover(ctx, x, y); err != nil {
+	if err := p.Edit().Hover(ctx, x, y); err != nil {
 		tb.Fatal(err)
 	}
 	before := p.Probe().Stats()
 	err := redrawBatch(ctx, p, func() error {
-		if err := p.Press(ctx, x, y); err != nil {
+		if err := p.Edit().Press(ctx, x, y); err != nil {
 			return err
 		}
 		if err := p.Testing().SelectAt(ctx, x, y); err != nil {
@@ -60,7 +60,7 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 		tb.Fatalf("%s: redraws %d->%d layouts %d->%d, want one draw",
 			id, before.Redraws, after.Redraws, before.Layouts, after.Layouts)
 	}
-	if err := p.Release(ctx); err != nil {
+	if err := p.Edit().Release(ctx); err != nil {
 		tb.Fatal(err)
 	}
 

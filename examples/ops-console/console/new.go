@@ -33,7 +33,7 @@ func New() (*App, error) {
 		Change: app.onChange,
 		Submit: app.onSubmit,
 	})
-	page.SetWindowing(true)
+	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(app.scrollWindow)
 	page.SetData(&app.view)
 

@@ -3,7 +3,7 @@ package remote
 import "github.com/chinmay-sawant/ownframe"
 
 func (a *App) installPage() {
-	a.page.SetAllowScroll(!a.phone)
+	a.page.Scroll().SetAllowScroll(!a.phone)
 	a.installIcons()
 	a.installMedia()
 	a.page.Handle(ownframe.Handlers{

@@ -17,7 +17,7 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 		return nil
 	case len(box.ID) > 2 && box.ID[:2] == "l-":
 		if box.ID == "l-name" && !a.isLocked() {
-			a.page.SetFormValue("l-name", "locked")
+			a.page.Form().SetFormValue("l-name", "locked")
 			a.view.LName = "locked"
 			a.view.LStatus = lockedMsg
 			a.page.SetData(&a.view)
@@ -38,7 +38,7 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 // valueOf reads the control that just changed.
 func (a *App) valueOf(id string) string {
 	if id == "l-agree" || id == "l-free" || id == "l-pro" {
-		return fmt.Sprintf("%t", a.page.FormChecked(id))
+		return fmt.Sprintf("%t", a.page.Form().FormChecked(id))
 	}
-	return a.page.FormValue(id)
+	return a.page.Form().FormValue(id)
 }

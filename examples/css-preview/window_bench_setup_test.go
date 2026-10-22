@@ -22,8 +22,8 @@ func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ow
 	if err != nil {
 		tb.Fatal(err)
 	}
-	p.SetPerf(true)
-	p.SetDevTools(true)
+	p.Window().SetPerf(true)
+	p.Window().SetDevTools(true)
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
 	if err := redrawCatalog(ctx, p, v); err != nil {
@@ -44,7 +44,7 @@ func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ow
 	if err := installCatalogWindow(ctx, p, v, d, m); err != nil {
 		tb.Fatal(err)
 	}
-	p.SetDevTools(false)
+	p.Window().SetDevTools(false)
 	return ctx, p, v, d, m
 }
 
@@ -56,7 +56,7 @@ func windowBenchReset(ctx context.Context, p *ownframe.Page, v *view, d *demo, t
 	v.Readout = ""
 	d.samples = map[string]*sample{}
 	d.pending = nil
-	p.SetScrollOffset(0, 0)
+	p.Scroll().SetScrollOffset(0, 0)
 	if p.Testing().StepScrollWindow() {
 		if err := p.Redraw(ctx); err != nil {
 			tb.Fatal(err)

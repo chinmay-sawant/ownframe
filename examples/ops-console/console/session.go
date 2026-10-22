@@ -18,8 +18,8 @@ func (a *App) signIn() {
 	a.view.Name = ""
 	a.view.PIN = ""
 	a.view.Ready = false
-	a.page.SetFormValue("name", "")
-	a.page.SetFormValue("pin", "")
+	a.page.Form().SetFormValue("name", "")
+	a.page.Form().SetFormValue("pin", "")
 	a.show(screenList)
 }
 
@@ -32,9 +32,9 @@ func (a *App) signOut() {
 	a.view.Ready = false
 	a.view.Current = Ticket{}
 	a.view.Note = ""
-	a.page.SetFormValue("name", "")
-	a.page.SetFormValue("pin", "")
-	a.page.SetFormValue("note", "")
+	a.page.Form().SetFormValue("name", "")
+	a.page.Form().SetFormValue("pin", "")
+	a.page.Form().SetFormValue("note", "")
 	a.show(screenLogin)
 }
 

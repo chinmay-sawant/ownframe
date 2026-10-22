@@ -15,7 +15,7 @@ func (a *App) applyBlur(ctx context.Context) error {
 	a.blur = false
 	a.mu.Unlock()
 	if blur {
-		return a.page.Focus(ctx, "")
+		return a.page.Form().Focus(ctx, "")
 	}
 	return nil
 }

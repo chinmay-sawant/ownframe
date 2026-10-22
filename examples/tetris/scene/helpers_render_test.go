@@ -50,7 +50,7 @@ func hasText(s *Scene, want string) bool {
 func press(t *testing.T, s *Scene, key string) {
 	t.Helper()
 
-	if err := s.page.KeyDown(context.Background(), key); err != nil {
+	if err := s.page.Edit().KeyDown(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
 }

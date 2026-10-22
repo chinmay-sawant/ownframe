@@ -6,7 +6,7 @@ not upload anything. Telegram and eyes are the exhibits, not store products.
 
 ## Remaining gaps
 
-**TalkBack.** There is no TalkBack node. `Page.AccessibilityTree` is a Go
+**TalkBack.** There is no TalkBack node. `Page.Access().AccessibilityTree` is a Go
 snapshot for host code. The window still calls the inner screen. That is not
 an Android accessibility service.
 

@@ -25,7 +25,7 @@ func TestSubmitAddsJob(t *testing.T) {
 		t.Fatalf("focus click: %v", err)
 	}
 
-	app.page.SetFormValue("url", "https://example.com/enter.bin")
+	app.page.Form().SetFormValue("url", "https://example.com/enter.bin")
 
 	if err := app.onSubmit(ctx); err != nil {
 		t.Fatalf("onSubmit: %v", err)
@@ -45,17 +45,17 @@ func TestChangeSetsDestination(t *testing.T) {
 		t.Fatalf("Redraw: %v", err)
 	}
 
-	app.page.SetFormValue("dest-file", picked)
+	app.page.Form().SetFormValue("dest-file", picked)
 
 	if err := app.onChange(ctx, ownframe.Box{ID: "dest-file"}); err != nil {
 		t.Fatalf("onChange: %v", err)
 	}
 
-	if got := app.page.FormValue("dest"); got != filepath.Dir(picked) {
+	if got := app.page.Form().FormValue("dest"); got != filepath.Dir(picked) {
 		t.Fatalf("dest = %q, want %q", got, filepath.Dir(picked))
 	}
 
-	if got := app.page.FormValue("dest-file"); got != "" {
+	if got := app.page.Form().FormValue("dest-file"); got != "" {
 		t.Fatalf("dest-file = %q, want empty", got)
 	}
 }

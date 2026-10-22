@@ -16,22 +16,33 @@ def snippets():
     methods = set()
     testing_methods = set()
     probe_methods = set()
+    door_names = ('Form', 'Edit', 'Scroll', 'Window', 'Access')
+    door_methods = {name: set() for name in door_names}
     for path in ROOT.glob('*.go'):
         if not path.name.endswith('_test.go'):
             text = path.read_text()
             methods.update(re.findall(r'func \([A-Za-z0-9]+ \*Page\) (\w+)\(', text))
             testing_methods.update(re.findall(r'func \([A-Za-z0-9]+ Testing\) (\w+)\(', text))
             probe_methods.update(re.findall(r'func \([A-Za-z0-9]+ Probe\) (\w+)\(', text))
+            for name in door_names:
+                door_methods[name].update(re.findall(
+                    r'func \([A-Za-z0-9]+ ' + name + r'\) (\w+)\(', text))
     for path in [ROOT / 'README.md', *sorted((ROOT / 'documentation').glob('*.md'))]:
         text = path.read_text()
         unknown = set(re.findall(r'\bPage\.([A-Z]\w*)', text)) - methods
         unknown_testing = set(re.findall(r'\bPage\.Testing\(\)\.([A-Z]\w*)', text)) - testing_methods
         unknown_probe = set(re.findall(r'\bPage\.Probe\(\)\.([A-Z]\w*)', text)) - probe_methods
-        if unknown or unknown_testing or unknown_probe:
+        unknown_door = []
+        for name in door_names:
+            got = set(re.findall(r'\bPage\.' + name + r'\(\)\.([A-Z]\w*)', text)) - door_methods[name]
+            if got:
+                unknown_door.append(f'unknown {name} methods {sorted(got)}')
+        if unknown or unknown_testing or unknown_probe or unknown_door:
             raise ValueError(
                 f'{path}: unknown Page methods {sorted(unknown)}; '
                 f'unknown Testing methods {sorted(unknown_testing)}; '
-                f'unknown Probe methods {sorted(unknown_probe)}'
+                f'unknown Probe methods {sorted(unknown_probe)}; '
+                + '; '.join(unknown_door)
             )
         for index, match in enumerate(re.finditer(r'^```go[^\n]*\n(.*?)^```', path.read_text(), re.M | re.S), 1):
             key = f'{path.relative_to(ROOT)}#{index}'

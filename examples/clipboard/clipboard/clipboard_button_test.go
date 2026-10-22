@@ -42,7 +42,7 @@ func TestButtonsWriteStatusAndText(t *testing.T) {
 	}
 
 	click(t, ctx, app, "selectall")
-	if !app.Page().FormSelected("left") {
+	if !app.Page().Form().FormSelected("left") {
 		t.Fatal("selectall did not select the left field")
 	}
 }
@@ -64,7 +64,7 @@ func TestSelectAllSurvivesCaretPlacement(t *testing.T) {
 	}
 
 	click(t, ctx, app, "selectall")
-	if !app.Page().FormSelected("left") {
+	if !app.Page().Form().FormSelected("left") {
 		t.Fatal("selectall lost the selection after the caret placement")
 	}
 }

@@ -65,8 +65,8 @@ func New() (*App, error) {
 		Submit:    app.onSubmit,
 		LongPress: app.onLongPress,
 	})
-	page.SetWindowing(true)
-	page.SetViewportPinZ(viewportPinZ)
+	page.Scroll().SetWindowing(true)
+	page.Scroll().SetViewportPinZ(viewportPinZ)
 	page.SetScrollWindow(app.Pin)
 	page.SetTick(app.Tick)
 	page.SetData(&app.view)

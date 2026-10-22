@@ -15,7 +15,7 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 		return nil
 	}
 
-	a.add(a.page.FormValue(pickID), "")
+	a.add(a.page.Form().FormValue(pickID), "")
 
 	return nil
 }

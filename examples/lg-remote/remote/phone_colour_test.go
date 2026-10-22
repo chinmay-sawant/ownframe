@@ -29,7 +29,7 @@ func TestPhoneHighlightsOnlySelectedButton(t *testing.T) {
 		}
 		selected := buttonColour(t, a, "volup")
 		other := buttonColour(t, a, "voldn")
-		if err := a.page.Focus(context.Background(), "volup"); err != nil {
+		if err := a.page.Form().Focus(context.Background(), "volup"); err != nil {
 			t.Fatal(err)
 		}
 		if buttonColour(t, a, "volup") == selected {

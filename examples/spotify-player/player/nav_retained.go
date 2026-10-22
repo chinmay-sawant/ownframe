@@ -11,8 +11,8 @@ func (a *App) touchNavRetained(screen string) {
 		row.Metadata = map[string]any{}
 	}
 	row.Metadata["screen"] = screen
-	row.Metadata["focus"] = a.page.FocusID()
-	x, y := a.page.ScrollOffset()
+	row.Metadata["focus"] = a.page.Form().FocusID()
+	x, y := a.page.Scroll().ScrollOffset()
 	row.Metadata["scrollx"] = x
 	row.Metadata["scrolly"] = y
 

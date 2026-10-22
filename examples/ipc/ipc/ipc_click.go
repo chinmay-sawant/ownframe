@@ -25,7 +25,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 // onSend fires one payload at demo.log and expects no reply.
 func (a *App) onSend() {
-	payload := a.page.FormValue("payload")
+	payload := a.page.Form().FormValue("payload")
 	ownframe.Send("demo.log", payload)
 
 	if a.view.Live {
@@ -38,7 +38,7 @@ func (a *App) onSend() {
 
 // onRequest asks demo.double for twice the number in the input.
 func (a *App) onRequest(ctx context.Context) {
-	payload := a.page.FormValue("num")
+	payload := a.page.Form().FormValue("num")
 	reply, err := ownframe.Request(ctx, "demo.double", payload)
 	if err != nil {
 		a.say(true, "Request demo.double "+q(payload)+" -> error: "+err.Error())

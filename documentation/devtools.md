@@ -14,7 +14,7 @@ the matching release is swallowed too. Pressing the key again closes the
 overlay and sends one hover for the current cursor, so a stale `:hover` does
 not stick.
 
-`Config.DevTools` starts the overlay on, and `Page.SetDevTools` and
+`Config.DevTools` starts the overlay on, and `Page.Window().SetDevTools` and
 `Page.Testing().DevTools` read and change the flag at runtime. Use those in a browser
 and on a phone: a browser may keep F12 for itself, and a phone has no
 keyboard.
@@ -32,7 +32,7 @@ page, err := ownframe.New(ownframe.Config{
 
 Android and iOS hosts use a bottom metrics panel instead of the desktop side dock. It starts as a 48 dp header and keeps the page at full width. Tap the header to expand to at most 40% of the window height; drag inside the expanded panel to scroll metrics. Tap X to close it and restore the full viewport. X has its own 48 dp touch target and does not send a click to the page.
 
-Closing the panel leaves explicitly enabled perf collection running. Reopen through `Page.SetDevTools(true)`. Mobile shows frame, memory, and pipeline metrics; Elements and Ops remain desktop tools. The Telegram Android demo enables perf collection in its mobile profile. Desktop profiles retain their existing behavior.
+Closing the panel leaves explicitly enabled perf collection running. Reopen through `Page.Window().SetDevTools(true)`. Mobile shows frame, memory, and pipeline metrics; Elements and Ops remain desktop tools. The Telegram Android demo enables perf collection in its mobile profile. Desktop profiles retain their existing behavior.
 
 ## The desktop dock
 
@@ -202,4 +202,4 @@ attributes, not `font-size` or `margin`. Suppressing pointer input freezes
 the page's hover and press state at their last value. A page that cannot
 shrink to the dock-free strip, because of its own minimum size, scrolls
 instead of scaling. F12 is a browser key in a wasm build, and
-`Config.DevTools` or `Page.SetDevTools` is the cross-platform way in.
+`Config.DevTools` or `Page.Window().SetDevTools` is the cross-platform way in.

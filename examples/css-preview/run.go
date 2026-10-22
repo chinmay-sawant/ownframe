@@ -18,8 +18,8 @@ func run(perf bool, width, height int) error {
 		return err
 	}
 	if perf {
-		p.SetPerf(true)
-		p.SetDevTools(true)
+		p.Window().SetPerf(true)
+		p.Window().SetDevTools(true)
 	}
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog

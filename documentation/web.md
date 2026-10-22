@@ -61,7 +61,7 @@ not the HTML around it.
 
 A file-backed page is polled before `GET /` and `GET /frame.png`, under the
 same mutex, so an edit to the template or the theme shows on the next request.
-While `Page.Watching()` is true the shell page carries a small script that
+While `Page.Window().Watching()` is true the shell page carries a small script that
 reloads the frame image every 250 ms, the same interval the window uses. A
 string page has no watch, so the shell emits no script.
 [hot-reload.md](hot-reload.md) has the config fields, the parse-error

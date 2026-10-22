@@ -6,21 +6,21 @@ import "fmt"
 func (a *App) send() error {
 	a.view.Status = fmt.Sprintf(
 		"email=%s remember=%t plan=%s color=%s file=%s",
-		a.page.FormValue("f-email"),
-		a.page.FormChecked("f-remember"),
+		a.page.Form().FormValue("f-email"),
+		a.page.Form().FormChecked("f-remember"),
 		a.fplan(),
-		a.page.FormValue("f-color"),
-		a.page.FormValue("f-doc"),
+		a.page.Form().FormValue("f-color"),
+		a.page.Form().FormValue("f-doc"),
 	)
 	a.page.SetData(&a.view)
 	return nil
 }
 
 func (a *App) fplan() string {
-	if a.page.FormChecked("f-pro") {
+	if a.page.Form().FormChecked("f-pro") {
 		return "pro"
 	}
-	if a.page.FormChecked("f-free") {
+	if a.page.Form().FormChecked("f-free") {
 		return "free"
 	}
 	return ""
@@ -30,24 +30,24 @@ func (a *App) fplan() string {
 func (a *App) refresh() {
 	a.view.Status = fmt.Sprintf(
 		"focus=%s form=%s|%s plan=%s color=%s doc=%s note=%q clip=%s|%s login=%s",
-		a.page.FocusedField(),
-		a.page.FormValue("f-email"),
-		a.page.FormValue("f-note"),
+		a.page.Edit().FocusedField(),
+		a.page.Form().FormValue("f-email"),
+		a.page.Form().FormValue("f-note"),
 		a.fplan(),
-		a.page.FormValue("f-color"),
-		a.page.FormValue("f-doc"),
-		a.page.FormValue("e-note"),
-		a.page.FormValue("c-left"),
-		a.page.FormValue("c-right"),
-		a.page.FormValue("si-email"),
+		a.page.Form().FormValue("f-color"),
+		a.page.Form().FormValue("f-doc"),
+		a.page.Form().FormValue("e-note"),
+		a.page.Form().FormValue("c-left"),
+		a.page.Form().FormValue("c-right"),
+		a.page.Form().FormValue("si-email"),
 	)
 	a.page.SetData(&a.view)
 }
 
 // ready reports whether both sign-in fields carry text.
 func (a *App) ready() bool {
-	return a.page.FormValue("si-email") != "" &&
-		a.page.FormValue("si-password") != ""
+	return a.page.Form().FormValue("si-email") != "" &&
+		a.page.Form().FormValue("si-password") != ""
 }
 
 // syncReady syncs View.Ready with the sign-in fields.
@@ -58,8 +58,8 @@ func (a *App) syncReady() {
 // signIn checks the demo secret/secret pair. Demo only: no auth
 // boundary. DO NOT COPY into production; verify server side.
 func (a *App) signIn() {
-	if a.page.FormValue("si-email") == "secret" &&
-		a.page.FormValue("si-password") == "secret" {
+	if a.page.Form().FormValue("si-email") == "secret" &&
+		a.page.Form().FormValue("si-password") == "secret" {
 		a.view.LoginOk = "Signed in."
 		a.view.LoginEr = ""
 		return

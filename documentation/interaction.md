@@ -8,7 +8,7 @@ Tab and Shift+Tab move focus in document order when the screen implements `host.
 
 The page sets the same `:focus-visible` host state a click sets, so the focus ring draws at each stop. Escape closes the context menu first. With the menu closed it calls `Focus(ctx, "")` and clears the ring. Escape itself still reaches the handler. `internal/window/focus_keys.go` holds the window side.
 
-Buttons with an id join the focus order. Disabled buttons are skipped and ignore clicks. Focusing an offscreen button requests a scroll to reveal it. `FocusID` reports button focus. `page.FocusedField` reports fields only. The application's `KeyDown` handler can activate a focused button on Enter or Space by passing its box center to `Page.Click`. Enabled buttons keep their `data-action` routes.
+Buttons with an id join the focus order. Disabled buttons are skipped and ignore clicks. Focusing an offscreen button requests a scroll to reveal it. `FocusID` reports button focus. `page.Edit().FocusedField` reports fields only. The application's `KeyDown` handler can activate a focused button on Enter or Space by passing its box center to `Page.Click`. Enabled buttons keep their `data-action` routes.
 
 ## Caret and selection
 
@@ -30,7 +30,7 @@ When the screen implements `host.CursorShape`, the window reads `CursorShape()` 
 
 ## Touch
 
-`page.Probe().PressedID()` returns the control held by the current pointer gesture, or an empty string after `page.Release`. A frame callback can use it to stop application-specific hold repeats when the pointer releases.
+`page.Probe().PressedID()` returns the control held by the current pointer gesture, or an empty string after `page.Edit().Release`. A frame callback can use it to stop application-specific hold repeats when the pointer releases.
 
 A finger that lifts without moving sends press, click, and release as a tap. A finger held within 8 px for 450 ms is a long press: a text field under the point selects its word and any other box reaches `Handlers.LongPress`, after which the finger drags the selection instead of the page and the lift is not a tap. A second finger cancels the hold. A finger that moves past 8 px drags the page instead: the content follows the finger, clamped to the content ends. Two fingers pinch a zoom that starts at the span of the first two fingers and stays between 0.25 and 4. `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, and Ctrl+wheel change the same zoom; the keyboard steps are in [keys.md](keys.md). The replay and bitmap paths draw through the zoom, and `contentPoint` divides it out, so a click under a pinch lands on the same box. A tap that the system also reports as a mouse click does not tap twice.
 
@@ -51,6 +51,6 @@ F11 toggles `ebiten.SetFullscreen` on desktop and the window consumes the key. w
 ## Limits
 
 - Up and Down in a textarea, and selection beyond the visible scroll of a field, are out of scope. The value model is a single line.
-- IME uses Ebiten's experimental `exp/textinput` on Android, iOS, and desktop builds. A phone shows its soft keyboard. Desktop preedit is drawn as a temporary underlined run; it leaves the stored value alone until commit. Commits use `page.Type` or `page.Testing().IMEReplace`, and the window skips its own typing on ticks the IME consumed. The window calls the inner screen. The Android and iOS adapter still displays preedit through the field edit path. Native desktop composition needs verification with each supported OS input method. wasm uses browser key input.
+- IME uses Ebiten's experimental `exp/textinput` on Android, iOS, and desktop builds. A phone shows its soft keyboard. Desktop preedit is drawn as a temporary underlined run; it leaves the stored value alone until commit. Commits use `page.Edit().Type` or `page.Testing().IMEReplace`, and the window skips its own typing on ticks the IME consumed. The window calls the inner screen. The Android and iOS adapter still displays preedit through the field edit path. Native desktop composition needs verification with each supported OS input method. wasm uses browser key input.
 - The page exposes a semantic accessibility tree and actions for supported controls. The window has no native screen-reader bridge, and the tree does not filter content hidden only by CSS. See [accessibility.md](accessibility.md).
 - The context menu is not native. It is a shell rectangle drawn with the badge face.

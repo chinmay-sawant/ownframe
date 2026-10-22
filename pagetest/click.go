@@ -29,5 +29,5 @@ func Type(ctx context.Context, p *ownframe.Page, text string) error {
 	if p == nil {
 		return ErrNoBox
 	}
-	return p.Type(ctx, text)
+	return p.Edit().Type(ctx, text)
 }

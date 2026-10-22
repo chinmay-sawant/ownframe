@@ -1,9 +1,8 @@
 package page
 
 import (
-	"strings"
-
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/page/form"
 	"github.com/chinmay-sawant/ownframe/internal/textrun"
 )
 
@@ -46,15 +45,15 @@ func (p *Page) paintCaret(d *layout.Display) {
 }
 
 func (p *Page) caretText(c Control) (string, int, bool) {
-	kind := strings.ToLower(strings.TrimSpace(c.Type))
-	if p.formState().preeditID != c.ID {
-		return shownText(kind, c.Value), clampPos(p.formState().caret, runeLen(c.Value)), true
-	}
-	if p.formState().preeditStart != p.formState().preeditEnd {
-		return "", 0, false
-	}
-	base := []rune(c.Value)
-	start, end := p.formState().bounds(len(base))
-	value := string(base[:start]) + p.formState().preedit + string(base[end:])
-	return shownText(kind, value), start + runeAtByte(p.formState().preedit, p.formState().preeditStart), true
+	fs := p.formState()
+
+	return form.CaretText(form.FocusView{
+		Caret:        fs.caret,
+		Anchor:       fs.anchor,
+		Control:      c,
+		PreeditID:    fs.preeditID,
+		Preedit:      fs.preedit,
+		PreeditStart: fs.preeditStart,
+		PreeditEnd:   fs.preeditEnd,
+	})
 }

@@ -15,7 +15,7 @@ that choice for one page. Hovering a visible thumb shows the matching resize
 cursor; dragging it moves that scroll axis without sending a page click.
 
 Thumb visibility does not control scrolling. Touch drags, mouse wheels, and
-page requests continue to work when thumbs are hidden. `Page.SetAllowScroll`
+page requests continue to work when thumbs are hidden. `Page.Scroll().SetAllowScroll`
 controls whether the page can scroll at all. Stretched pages do not show thumbs.
 
 ## Coordinates
@@ -28,7 +28,7 @@ The window maps a cursor before the page sees it ([pointer.md](pointer.md)). A s
 
 ## Touch
 
-A finger that moves past 8 px drags the page, clamped to the content ends. After lift, the page continues with a decaying fling. Mobile updates follow the display refresh. `Page.SetTouchScrollOptions` tunes finger sensitivity and how quickly the fling slows; both settings have bounded defaults. Two fingers pinch a zoom that stays between 0.25 and 4. [interaction.md](interaction.md) has the gesture details.
+A finger that moves past 8 px drags the page, clamped to the content ends. After lift, the page continues with a decaying fling. Mobile updates follow the display refresh. `Page.Window().SetTouchScrollOptions` tunes finger sensitivity and how quickly the fling slows; both settings have bounded defaults. Two fingers pinch a zoom that stays between 0.25 and 4. [interaction.md](interaction.md) has the gesture details.
 
 ## Limits
 

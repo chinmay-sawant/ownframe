@@ -22,7 +22,7 @@ func shot(t *testing.T, app *telegram.App, ctx context.Context, off, pinOff int)
 		t.Fatal(err)
 	}
 
-	app.Page().SetScrollOffset(0, pinOff)
+	app.Page().Scroll().SetScrollOffset(0, pinOff)
 
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)

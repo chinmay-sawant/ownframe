@@ -61,7 +61,7 @@ before pinch zoom. Long press can claim text selection instead of scrolling.
 
 `TouchCancellation` observes the native view. Ebitengine v2.10.4 ignores Android
 `ACTION_CANCEL`, so the adapter releases every native pointer and calls the
-bound `Mobile.cancelTouches`. `Page.CancelTouches` queues that request from the
+bound `Mobile.cancelTouches`. `Page.Edit().CancelTouches` queues that request from the
 UI thread. The window drops the hold, drag capture, and scroll velocity, then
 suppresses touch input until native IDs clear. Each Android example also cancels
 on pause before `suspendGame`; resume calls `resumeGame`.

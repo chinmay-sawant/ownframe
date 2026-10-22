@@ -27,7 +27,7 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 	c.bind(p)
 	for _, id := range []string{"row-1", "row-2"} {
 		b := rows[id]
-		if err = p.Hover(context.Background(), b.X+20, b.Y+20); err != nil {
+		if err = p.Edit().Hover(context.Background(), b.X+20, b.Y+20); err != nil {
 			t.Fatal(err)
 		}
 		op := c.rows[id]
@@ -47,7 +47,7 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 	if err = p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if err = p.Hover(context.Background(), rows["row-3"].X+20, rows["row-3"].Y+20); err != nil {
+	if err = p.Edit().Hover(context.Background(), rows["row-3"].X+20, rows["row-3"].Y+20); err != nil {
 		t.Fatal(err)
 	}
 	c.bind(p)

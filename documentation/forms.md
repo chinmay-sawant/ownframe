@@ -8,14 +8,14 @@ page.Handle(ownframe.Handlers{
         if box.Action != "send" {
             return nil
         }
-        email := page.FormValue("email")
+        email := page.Form().FormValue("email")
         page.SetData(struct{ Status string }{Status: email})
         return nil
     },
 })
 ```
 
-`page.Click` calls that handler, then draws the page again. A click on a control updates it before the handler runs. A nil handler ignores the event, and an error from the handler returns before the redraw. `Handlers.ClickPaint` runs after the handler and after the control's own change; when it reports that it painted the frame, the page skips the redraw and keeps the damage the handler marked. A later `Handle` call replaces every handler from the earlier call. `FormValue` returns the stored string. `FormChecked` reports a checkbox or a radio. `FormSelected` reports whether a control is focused and its whole value is selected. `page.FocusedField` is the id of the focused control, or empty when none is focused.
+`page.Click` calls that handler, then draws the page again. A click on a control updates it before the handler runs. A nil handler ignores the event, and an error from the handler returns before the redraw. `Handlers.ClickPaint` runs after the handler and after the control's own change; when it reports that it painted the frame, the page skips the redraw and keeps the damage the handler marked. A later `Handle` call replaces every handler from the earlier call. `FormValue` returns the stored string. `FormChecked` reports a checkbox or a radio. `FormSelected` reports whether a control is focused and its whole value is selected. `page.Edit().FocusedField` is the id of the focused control, or empty when none is focused.
 
 Supported `input` types:
 
@@ -26,7 +26,7 @@ Supported `input` types:
 
 Any other `input` type is left alone.
 
-Those text-like types, including `file`, take typed text. Click one to focus it and put the caret at the clicked glyph. Click a textarea to focus it too, and typing edits that text at the caret. A drag extends the range, a double-click selects the word, and a triple-click selects the line. A click that lands on a non-control element blurs the focused control. Tab moves focus between the controls when the window sees the page's focus methods; [keys.md](keys.md) covers the window side. `page.Type`, `Backspace`, `DeleteWord`, `Paste`, `SelectAll`, `Copy`, and `Cut` edit the focused text-like control, or the focused textarea, even when those handlers are nil. The method contracts are in [editing.md](editing.md). `page.SelectAll` selects the whole value, so `FormSelected` is true until the next edit, click, or blur. A password stores plaintext. The picture shows one bullet for each rune. `page.Copy` returns the plaintext.
+Those text-like types, including `file`, take typed text. Click one to focus it and put the caret at the clicked glyph. Click a textarea to focus it too, and typing edits that text at the caret. A drag extends the range, a double-click selects the word, and a triple-click selects the line. A click that lands on a non-control element blurs the focused control. Tab moves focus between the controls when the window sees the page's focus methods; [keys.md](keys.md) covers the window side. `page.Edit().Type`, `Backspace`, `DeleteWord`, `Paste`, `SelectAll`, `Copy`, and `Cut` edit the focused text-like control, or the focused textarea, even when those handlers are nil. The method contracts are in [editing.md](editing.md). `page.Edit().SelectAll` selects the whole value, so `FormSelected` is true until the next edit, click, or blur. A password stores plaintext. The picture shows one bullet for each rune. `page.Edit().Copy` returns the plaintext.
 
 Click a checkbox to toggle it. Click a radio to check it and uncheck the other radios with the same name. Click a select to cycle to the next option; a `multiple` select cycles one option at a time and paints one label. Those clicks focus the control. A disabled control does not toggle, focus, or take typing. The click handler still runs. A checkbox or radio toggle repaints the control and its label, not the rest of the frame. Enter in the window calls `Handlers.Submit` and does not type a newline, and a click on a submit button is an ordinary click.
 

@@ -45,13 +45,13 @@ func (t Testing) TakeChangedProperties() []string {
 }
 
 // TakeScroll returns the pending scroll request and clears it.
-func (t Testing) TakeScroll() (Scroll, bool) {
+func (t Testing) TakeScroll() (ScrollRequest, bool) {
 	p := innerPage(t.page)
 	if p == nil {
-		return Scroll{}, false
+		return ScrollRequest{}, false
 	}
 	req, ok := p.TakeScroll()
-	return Scroll{X: req.X, Y: req.Y, Absolute: req.Absolute}, ok
+	return ScrollRequest{X: req.X, Y: req.Y, Absolute: req.Absolute}, ok
 }
 
 // StepScrollWindow prepares visible rows and reports whether they changed.
@@ -94,65 +94,6 @@ func (page *Page) Boxes() []Box {
 	return p.Boxes()
 }
 
-// AccessibilityTree returns current semantics in document order.
-func (page *Page) AccessibilityTree() (AccessibilityTree, error) {
-	p := innerPage(page)
-	if p == nil {
-		return AccessibilityTree{}, nil
-	}
-
-	return p.AccessibilityTree()
-}
-
-// AccessibilityPerform applies a tree action.
-// The accessibility example drives this from app code.
-func (page *Page) AccessibilityPerform(ctx context.Context, request AccessibilityRequest) error {
-	p := innerPage(page)
-	if p == nil {
-		return nil
-	}
-
-	return p.AccessibilityPerform(ctx, request)
-}
-
-// ScrollOffset returns the last offset the window reported.
-func (page *Page) ScrollOffset() (int, int) {
-	p := innerPage(page)
-	if p == nil {
-		return 0, 0
-	}
-
-	return p.ScrollOffset()
-}
-
-// SetScrollOffset records the window offset. Tests drive the row window with it.
-func (page *Page) SetScrollOffset(x, y int) {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.SetScrollOffset(x, y)
-}
-
-// SetWindowing opts into redraws on scroll changes.
-func (page *Page) SetWindowing(on bool) {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.SetWindowing(on)
-}
-
-// Windowing reports whether scroll changes redraw this page.
-func (page *Page) Windowing() bool {
-	p := innerPage(page)
-	if p == nil {
-		return false
-	}
-
-	return p.Windowing()
-}
-
 // ScrollTo queues an absolute scroll move for the window.
 func (page *Page) ScrollTo(x, y int) {
 	p := innerPage(page)
@@ -169,23 +110,4 @@ func (page *Page) ScrollBy(dx, dy int) {
 		return
 	}
 	p.ScrollBy(dx, dy)
-}
-
-// SetAllowScroll turns window panning on or off.
-func (page *Page) SetAllowScroll(on bool) {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.SetAllowScroll(on)
-}
-
-// AllowScroll reports that the window may pan this page.
-func (page *Page) AllowScroll() bool {
-	p := innerPage(page)
-	if p == nil {
-		return false
-	}
-
-	return p.AllowScroll()
 }

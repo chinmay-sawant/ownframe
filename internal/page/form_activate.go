@@ -1,5 +1,7 @@
 package page
 
+import "github.com/chinmay-sawant/ownframe/internal/page/form"
+
 // activate toggles the control id and reports whether its value, checked
 // state, or selection changed. A disabled control does not change.
 func (p *Page) activate(id string) bool {
@@ -8,20 +10,9 @@ func (p *Page) activate(id string) bool {
 		return false
 	}
 
-	changed := false
-	switch {
-	case c.Type == "checkbox":
-		c.Checked = !c.Checked
-		changed = true
-	case c.Type == "radio":
-		changed = !c.Checked
-		c.Checked = true
+	c, changed, clear := form.ToggleClick(c)
+	if clear {
 		p.uncheckRadios(c.Name, id)
-	case c.Tag == "select":
-		before := selectedIndex(c.Options)
-		old := c.Value
-		c = nextOption(c)
-		changed = old != c.Value || before != selectedIndex(c.Options)
 	}
 
 	p.formState().byID[id] = c
@@ -41,16 +32,9 @@ func (p *Page) activate(id string) bool {
 }
 
 func (p *Page) uncheckRadios(name, keep string) {
-	if name == "" || p.formState() == nil {
+	if p.formState() == nil {
 		return
 	}
 
-	for id, other := range p.formState().byID {
-		if id == keep || other.Type != "radio" || other.Name != name {
-			continue
-		}
-
-		other.Checked = false
-		p.formState().byID[id] = other
-	}
+	form.UncheckRadios(p.formState().byID, name, keep)
 }

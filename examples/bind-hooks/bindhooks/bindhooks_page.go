@@ -38,12 +38,12 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Type edits the focused control. The binding layer writes the struct.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // FormValue returns the stored value of a control id.
 func (a *App) FormValue(id string) string {
-	return a.page.FormValue(id)
+	return a.page.Form().FormValue(id)
 }
 
 // View returns the struct the bound controls write.

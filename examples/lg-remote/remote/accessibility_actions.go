@@ -26,7 +26,7 @@ func (a *App) accessibilityActions(ctx context.Context) error {
 				}
 			}
 		case "blur":
-			if err := a.page.Focus(ctx, ""); err != nil {
+			if err := a.page.Form().Focus(ctx, ""); err != nil {
 				return err
 			}
 		case "panel":
@@ -38,12 +38,12 @@ func (a *App) accessibilityActions(ctx context.Context) error {
 				}
 			}
 		case "text":
-			a.page.SetFormValue("host", value)
+			a.page.Form().SetFormValue("host", value)
 			if err := a.page.Redraw(ctx); err != nil {
 				return err
 			}
 		case "scroll":
-			if a.page.Probe().ViewLocked() || !a.page.AllowScroll() {
+			if a.page.Probe().ViewLocked() || !a.page.Scroll().AllowScroll() {
 				continue
 			}
 			_, h := a.page.Size()

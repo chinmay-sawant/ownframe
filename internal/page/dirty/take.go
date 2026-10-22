@@ -30,7 +30,7 @@ func (d *Tracker) Take(content image.Rectangle) ([]image.Rectangle, bool) {
 		return nil, false
 	}
 
-	if rectsArea(rects) > content.Dx()*content.Dy()/3 {
+	if rectsArea(rects) > content.Dx()*content.Dy()/frameThird {
 		return append(rects[:0], BoundingBox(rects)), true
 	}
 

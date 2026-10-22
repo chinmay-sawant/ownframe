@@ -11,7 +11,7 @@ import (
 // catalogScrollTo moves the window to the row that starts at the given top.
 func catalogScrollTo(ctx context.Context, t *testing.T, p *ownframe.Page, top int) {
 	t.Helper()
-	p.SetScrollOffset(0, top)
+	p.Scroll().SetScrollOffset(0, top)
 	if !p.Testing().StepScrollWindow() {
 		t.Fatal("the row window did not move")
 	}

@@ -4,7 +4,7 @@ import "context"
 
 // SelectAll selects the whole focused note.
 func (a *App) SelectAll(ctx context.Context) error {
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }
 
 // selectAllButton refocuses the note before selecting it. The click that
@@ -17,7 +17,7 @@ func (a *App) selectAllButton(ctx context.Context) error {
 		return nil
 	}
 
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }
 
 // focusNote clicks the note field so it takes focus.
@@ -31,7 +31,7 @@ func (a *App) focusNote(ctx context.Context) bool {
 			return false
 		}
 
-		return a.page.FocusedField() == "note"
+		return a.page.Edit().FocusedField() == "note"
 	}
 
 	return false
@@ -39,22 +39,22 @@ func (a *App) focusNote(ctx context.Context) bool {
 
 // Undo restores the previous note.
 func (a *App) Undo(ctx context.Context) error {
-	return a.page.Undo(ctx)
+	return a.page.Edit().Undo(ctx)
 }
 
 // Redo restores the note undone last.
 func (a *App) Redo(ctx context.Context) error {
-	return a.page.Redo(ctx)
+	return a.page.Edit().Redo(ctx)
 }
 
 // FormValue returns the stored value of a control id.
 func (a *App) FormValue(id string) string {
-	return a.page.FormValue(id)
+	return a.page.Form().FormValue(id)
 }
 
 // FormSelected reports whether id is focused with its whole value selected.
 func (a *App) FormSelected(id string) bool {
-	return a.page.FormSelected(id)
+	return a.page.Form().FormSelected(id)
 }
 
 // View returns the stamp and status data the template prints.

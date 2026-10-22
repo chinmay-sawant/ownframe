@@ -24,8 +24,8 @@ func TestAPINewSetDataHandleRedraw(t *testing.T) {
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	p.SetFormValue("e", "hi")
-	if got := p.FormValue("e"); got != "hi" {
+	p.Form().SetFormValue("e", "hi")
+	if got := p.Form().FormValue("e"); got != "hi" {
 		t.Fatalf("FormValue = %q", got)
 	}
 	if p.Probe().Generation() == 0 {

@@ -77,7 +77,7 @@ func TestTypedCSS(t *testing.T) {
 	app := start(t)
 	css := ":root { --accent: #ff0000; }"
 
-	app.Page().SetFormValue("css", css)
+	app.Page().Form().SetFormValue("css", css)
 	clickBox(t, app, "btn-apply")
 
 	if !hasFill(t, app, [3]float64{1}) {
@@ -96,7 +96,7 @@ func TestCopyCSS(t *testing.T) {
 	app := start(t)
 	css := ":root { --accent: #0000ff; }"
 
-	app.Page().SetFormValue("css", css)
+	app.Page().Form().SetFormValue("css", css)
 	clickBox(t, app, "btn-copy")
 
 	got, err := ownframe.Read()

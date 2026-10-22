@@ -5,48 +5,48 @@ import "context"
 // CopyText mirrors the copy chord: the focused field when one is focused,
 // and the left field otherwise.
 func (a *App) CopyText(ctx context.Context) (string, bool, error) {
-	return a.page.Copy(ctx)
+	return a.page.Edit().Copy(ctx)
 }
 
 // CutText mirrors the cut chord. The handler clears the last field.
 func (a *App) CutText(ctx context.Context) (string, bool, error) {
-	return a.page.Cut(ctx)
+	return a.page.Edit().Cut(ctx)
 }
 
 // PasteText mirrors the paste chord and inserts text in the focused field.
 func (a *App) PasteText(ctx context.Context, text string) error {
-	return a.page.Paste(ctx, text)
+	return a.page.Edit().Paste(ctx, text)
 }
 
 // SelectAll mirrors the select-all chord.
 func (a *App) SelectAll(ctx context.Context) error {
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }
 
 // Undo restores both fields from the last snapshot.
 func (a *App) Undo(ctx context.Context) error {
-	return a.page.Undo(ctx)
+	return a.page.Edit().Undo(ctx)
 }
 
 // Redo reapplies the last undone snapshot.
 func (a *App) Redo(ctx context.Context) error {
-	return a.page.Redo(ctx)
+	return a.page.Edit().Redo(ctx)
 }
 
 // Type appends text to the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // FormValue returns the current value of id, or "" when id is absent.
 func (a *App) FormValue(id string) string {
-	return a.page.FormValue(id)
+	return a.page.Form().FormValue(id)
 }
 
 // focusLast returns true when a field is focused. When none is, it clicks
 // the last field so a button acts where the user was typing.
 func (a *App) focusLast(ctx context.Context) bool {
-	if a.page.FocusedField() != "" {
+	if a.page.Edit().FocusedField() != "" {
 		return true
 	}
 
@@ -59,7 +59,7 @@ func (a *App) focusLast(ctx context.Context) bool {
 			return false
 		}
 
-		return a.page.FocusedField() == a.last
+		return a.page.Edit().FocusedField() == a.last
 	}
 
 	return false

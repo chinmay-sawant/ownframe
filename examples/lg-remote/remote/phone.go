@@ -27,6 +27,6 @@ func (a *App) show(panel, hint string) {
 		return
 	}
 
-	a.page.SetAllowScroll(!a.phone)
+	a.page.Scroll().SetAllowScroll(!a.phone)
 	a.page.ScrollTo(0, 0)
 }

@@ -23,12 +23,12 @@ func (a *App) saveNavState() {
 	}
 	a.ensureNavFocusStates()
 
-	focus := a.page.FocusID()
+	focus := a.page.Form().FocusID()
 	if focus == "" {
-		focus = a.page.LastFocusID()
+		focus = a.page.Edit().LastFocusID()
 	}
 	state := navFocusState{Focus: focus}
-	x, y := a.page.ScrollOffset()
+	x, y := a.page.Scroll().ScrollOffset()
 	state.ScrollX, state.ScrollY = x, y
 	a.navFocusStates[a.view.Nav] = state
 
@@ -45,9 +45,9 @@ func (a *App) restoreNavState(ctx context.Context, screen string) {
 	state, ok := a.navFocusStates[screen]
 	a.page.SetData(a.view)
 	if ok {
-		a.page.SetScrollOffset(state.ScrollX, state.ScrollY)
+		a.page.Scroll().SetScrollOffset(state.ScrollX, state.ScrollY)
 		if state.Focus != "" {
-			_ = a.page.Focus(ctx, state.Focus)
+			_ = a.page.Form().Focus(ctx, state.Focus)
 		}
 	}
 	a.storeNavStateRetained(screen, state)

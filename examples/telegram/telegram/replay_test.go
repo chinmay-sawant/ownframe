@@ -46,7 +46,7 @@ func TestThreadsStayReplayable(t *testing.T) {
 	t.Run("design-scrolled", func(t *testing.T) {
 		app := newApp(t, ctx)
 		click(t, ctx, app, "", "open-design")
-		app.Page().SetScrollOffset(0, 600)
+		app.Page().Scroll().SetScrollOffset(0, 600)
 		replay(t, ctx, app)
 	})
 

@@ -37,7 +37,7 @@ func loginCase() repaintCase {
 						}
 
 						msg := "Denied"
-						if p.FormValue("email") == "secret" && p.FormValue("password") == "secret" {
+						if p.Form().FormValue("email") == "secret" && p.Form().FormValue("password") == "secret" {
 							msg = "Welcome"
 						}
 
@@ -60,7 +60,7 @@ func loginCase() repaintCase {
 func typeText(t *testing.T, p *Page, ctx context.Context, text string) {
 	t.Helper()
 
-	if err := p.Type(ctx, text); err != nil {
+	if err := p.Edit().Type(ctx, text); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -163,7 +163,7 @@ func statesCase() repaintCase {
 		},
 		interact: func(t *testing.T, p *Page, ctx context.Context) {
 			x, y := boxCenter(t, p, "hover")
-			if err := p.Hover(ctx, x, y); err != nil {
+			if err := p.Edit().Hover(ctx, x, y); err != nil {
 				t.Fatal(err)
 			}
 		},

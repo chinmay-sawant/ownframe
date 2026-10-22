@@ -22,7 +22,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app.Page().SetScrollOffset(0, 120)
+	app.Page().Scroll().SetScrollOffset(0, 120)
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -31,11 +31,11 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := app.Page().Backspace(ctx); err != nil {
+	if err := app.Page().Edit().Backspace(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().FormValue("compose"); got != "hello worl" {
+	if got := app.Page().Form().FormValue("compose"); got != "hello worl" {
 		t.Fatalf("value = %q", got)
 	}
 
@@ -51,7 +51,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().FormValue("compose"); got != "hell worl" {
+	if got := app.Page().Form().FormValue("compose"); got != "hell worl" {
 		t.Fatalf("ime value = %q", got)
 	}
 

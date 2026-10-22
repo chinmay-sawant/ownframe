@@ -6,7 +6,6 @@ import (
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/element"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/page/nav"
@@ -42,18 +41,14 @@ type Page struct {
 	perf            bool
 	retainState     bool
 	lockView        bool
-	scrollbar       host.ScrollbarMode
 	mobileViewport  bool
 	allowTouchZoom  bool
-	allowScroll     bool
-	touchScroll     TouchScrollOptions
 	watch           *watchState
 	dirty           dirty.Tracker
 	lastPatch       DisplayPatch
 	stateBinding    state.Binding
 	elements        *element.Registry
 	frameState      // deadline: loop sets, window takes; lock: atomic
-	pinZ            int
 	index           map[string]Box
 	hits            []hitItem
 	pageContent     // paint rect: box cache writes; lock: page loop

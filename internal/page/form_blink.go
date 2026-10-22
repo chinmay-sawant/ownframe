@@ -3,10 +3,12 @@ package page
 import (
 	"context"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/form"
 )
 
 // caretBlinkInterval is how long the caret stays shown or hidden.
-const caretBlinkInterval = 530 * time.Millisecond
+const caretBlinkInterval = form.BlinkInterval
 
 // resetCaretBlink shows the caret and restarts the blink clock. Every caret
 // move and edit calls it, so the caret is solid while the person types.
@@ -15,8 +17,7 @@ func (p *Page) resetCaretBlink() {
 		return
 	}
 
-	p.formState().blinkOn = true
-	p.formState().blinkAt = time.Time{}
+	p.formState().blinkOn, p.formState().blinkAt = form.ResetBlink()
 }
 
 // caretBlink toggles the focused field's caret on the blink clock and draws
@@ -34,20 +35,11 @@ func (p *Page) caretBlink(ctx context.Context) error {
 		return nil
 	}
 
-	now := time.Now()
-	if p.formState().blinkAt.IsZero() {
-		p.formState().blinkAt = now
-		p.formState().blinkOn = true
-
+	on, at, draw := form.AdvanceBlink(p.formState().blinkOn, p.formState().blinkAt, time.Now())
+	p.formState().blinkOn, p.formState().blinkAt = on, at
+	if !draw {
 		return nil
 	}
-
-	if now.Sub(p.formState().blinkAt) < caretBlinkInterval {
-		return nil
-	}
-
-	p.formState().blinkOn = !p.formState().blinkOn
-	p.formState().blinkAt = now
 
 	return p.Redraw(ctx)
 }

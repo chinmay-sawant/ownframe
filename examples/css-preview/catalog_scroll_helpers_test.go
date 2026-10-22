@@ -9,7 +9,7 @@ import (
 
 func scrollTo(t *testing.T, ctx context.Context, p *ownframe.Page, m *catalogMetrics, y int) {
 	t.Helper()
-	p.SetScrollOffset(0, y)
+	p.Scroll().SetScrollOffset(0, y)
 	if p.Testing().StepScrollWindow() {
 		if err := p.Redraw(ctx); err != nil {
 			t.Fatal(err)

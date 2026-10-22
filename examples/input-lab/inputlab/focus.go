@@ -11,14 +11,14 @@ func (a *App) focusField(ctx context.Context, id string) bool {
 		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 			return false
 		}
-		return a.page.FocusedField() == id
+		return a.page.Edit().FocusedField() == id
 	}
 	return false
 }
 
 // focusLast focuses the last clipboard field for button chords.
 func (a *App) focusLast(ctx context.Context) bool {
-	if a.page.FocusedField() != "" {
+	if a.page.Edit().FocusedField() != "" {
 		return true
 	}
 	return a.focusField(ctx, a.lastClip)

@@ -16,7 +16,7 @@ func (a *App) onTap(_ context.Context, b ownframe.Box) error {
 	a.wakeHUD(now)
 	if b.ID == "dev-toggle" {
 		a.st.dev = !a.st.dev
-		a.page.SetDevTools(a.st.dev)
+		a.page.Window().SetDevTools(a.st.dev)
 		return nil
 	}
 	if b.ID == "mode-toggle" {

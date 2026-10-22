@@ -26,23 +26,23 @@ func (a *App) onChange(_ context.Context, _ ownframe.Box) error {
 func (a *App) refresh() {
 	a.view.Status = fmt.Sprintf(
 		"focus=%s name=%s agree=%t plan=%s color=%s doc=%s",
-		a.page.FocusedField(),
-		a.page.FormValue("name"),
-		a.page.FormChecked("agree"),
+		a.page.Edit().FocusedField(),
+		a.page.Form().FormValue("name"),
+		a.page.Form().FormChecked("agree"),
 		a.plan(),
-		a.page.FormValue("color"),
-		a.page.FormValue("doc"),
+		a.page.Form().FormValue("color"),
+		a.page.Form().FormValue("doc"),
 	)
 	a.page.SetData(a.view)
 }
 
 // plan names the checked radio with name=plan, or "" when none is checked.
 func (a *App) plan() string {
-	if a.page.FormChecked("pro") {
+	if a.page.Form().FormChecked("pro") {
 		return "pro"
 	}
 
-	if a.page.FormChecked("free") {
+	if a.page.Form().FormChecked("free") {
 		return "free"
 	}
 

@@ -27,7 +27,7 @@ func TestRestartKeepsData(t *testing.T) {
 	}
 
 	url := first.fixture.URL + fixture.PathOK
-	app.Page().SetFormValue("url", url)
+	app.Page().Form().SetFormValue("url", url)
 	clickVisible(t, app, "add")
 	waitHistory(t, app, url, ui.StateCompleted, 15*time.Second)
 

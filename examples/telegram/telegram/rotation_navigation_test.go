@@ -9,7 +9,7 @@ func TestPhoneTabChangeResetsPreviousScroll(t *testing.T) {
 	ctx := context.Background()
 	app := phoneApp(t)
 	app.Page().Testing().TakeScroll()
-	app.Page().SetScrollOffset(0, 320)
+	app.Page().Scroll().SetScrollOffset(0, 320)
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestPhoneListResizeResetsScroll(t *testing.T) {
 			t.Fatal(err)
 		}
 		app.Page().Testing().TakeScroll()
-		app.Page().SetScrollOffset(0, offset)
+		app.Page().Scroll().SetScrollOffset(0, offset)
 		if err := app.Redraw(ctx); err != nil {
 			t.Fatal(err)
 		}

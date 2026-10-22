@@ -39,7 +39,7 @@ type View struct {
 func (a *App) View() View { return a.view }
 
 // SetForm stores a control value for tests. It needs a Redraw first.
-func (a *App) SetForm(id, value string) { a.page.SetFormValue(id, value) }
+func (a *App) SetForm(id, value string) { a.page.Form().SetFormValue(id, value) }
 
 // SetSaveDir overrides the save directory, for tests and -data.
 func (a *App) SetSaveDir(dir string) { a.saveDir = dir }

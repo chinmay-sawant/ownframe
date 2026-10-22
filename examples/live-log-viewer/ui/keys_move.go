@@ -37,7 +37,7 @@ func (a *App) moveSelection(ctx context.Context, delta int, extend bool) error {
 // revealRow scrolls the minimum amount that shows row idx.
 func (a *App) revealRow(idx int) {
 	rowY := HeaderH + idx*RowH
-	_, off := a.page.ScrollOffset()
+	_, off := a.page.Scroll().ScrollOffset()
 	viewH := a.viewHeight()
 
 	if rowY < off {

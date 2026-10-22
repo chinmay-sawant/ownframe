@@ -21,7 +21,7 @@ func (a *App) settleScroll(ctx context.Context) error {
 		return nil
 	}
 
-	_, sy := a.page.ScrollOffset()
+	_, sy := a.page.Scroll().ScrollOffset()
 	now := time.Now()
 
 	if a.lastScrollY == -1 {

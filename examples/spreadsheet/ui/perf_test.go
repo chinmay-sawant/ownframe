@@ -18,7 +18,7 @@ func TestPerfBreakdown(t *testing.T) {
 	defer func() { _ = app.Close() }()
 	settle(t, app)
 	ctx := context.Background()
-	app.page.SetScrollOffset(0, 480)
+	app.page.Scroll().SetScrollOffset(0, 480)
 	app.page.Testing().StepScrollWindow()
 	if err := app.page.Redraw(ctx); err != nil {
 		t.Fatal(err)

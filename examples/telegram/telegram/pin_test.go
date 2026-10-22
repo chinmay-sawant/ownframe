@@ -23,7 +23,7 @@ func TestPinnedBarsFollowTheScroll(t *testing.T) {
 	view := app.View()
 
 	for _, off := range []int{0, 250, 800} {
-		app.Page().SetScrollOffset(0, off)
+		app.Page().Scroll().SetScrollOffset(0, off)
 
 		if err := app.Redraw(ctx); err != nil {
 			t.Fatal(err)
@@ -59,7 +59,7 @@ func TestSheetLiftsTheComposer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	off, _ := app.Page().ScrollOffset()
+	off, _ := app.Page().Scroll().ScrollOffset()
 	_, viewH := app.Page().Size()
 	view := app.View()
 

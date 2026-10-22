@@ -9,13 +9,13 @@ Linux has an experimental AT-SPI mapping and a fake-bus test seam
 ([atspi.md](atspi.md)). There is no live D-Bus AT-SPI client. UI Automation
 is not shipped.
 
-`Page.AccessibilityTree` returns a detached semantic snapshot from the last
+`Page.Access().AccessibilityTree` returns a detached semantic snapshot from the last
 successful redraw. The tree follows HTML document order and includes supported
 roles, names, descriptions, form state, actions, and bounds when the layout can
 provide them.
 
 ```go
-tree, err := page.AccessibilityTree()
+tree, err := page.Access().AccessibilityTree()
 if err != nil {
 	return err
 }
@@ -24,7 +24,7 @@ for _, node := range tree.Nodes {
 	log.Printf("%s %s: %s", node.Role, node.ID, node.Name)
 }
 
-return page.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
+return page.Access().AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
 	Document: tree.Document,
 	Node:     "id:save",
 	Kind:     ownframe.AccessibilityActivate,

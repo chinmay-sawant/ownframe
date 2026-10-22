@@ -46,10 +46,10 @@ The kinds are `ownframe.DisplayOpFillRect`, `OpStrokeRect`, `OpLine`, `ownframe.
 These are blinkless holes, not ownframe bugs. 1.0 does not implement CSS sticky or flex-absolute. Pin chrome with `SetScrollWindow` and `SetViewportPinZ`. See the CSS matrix in [features.md](features.md).
 
 - `position: absolute` on a flex child stays in flow, so `top` and `left` do nothing. Put a block container around the screen. Telegram's `app-thread` class sets `display: block` on the app div.
-- `position: sticky` stays in flow and has no `Fixed` ops. The window translates it with the page. `position: fixed` ops stay untranslated. `Page.SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with. `Page.SetWindowing(true)` plus `Page.SetScrollWindow` counter-moves each pinned element's `top` by the scroll offset, so the window's translation lands it back at the viewport edge. Telegram uses both.
+- `position: sticky` stays in flow and has no `Fixed` ops. The window translates it with the page. `position: fixed` ops stay untranslated. `Page.Scroll().SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with. `Page.Scroll().SetWindowing(true)` plus `Page.SetScrollWindow` counter-moves each pinned element's `top` by the scroll offset, so the window's translation lands it back at the viewport edge. Telegram uses both.
 - An absolutely positioned element resolves against its containing block's content origin. Padding on the container shifts it. Subtract that padding in the computed `top`.
 
-`examples/telegram` is the worked example. Windowing is `Page.SetWindowing(true)`, and the pin is `Page.SetViewportPinZ(2)`. `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
+`examples/telegram` is the worked example. Windowing is `Page.Scroll().SetWindowing(true)`, and the pin is `Page.Scroll().SetViewportPinZ(2)`. `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
 
 ## PNG and the web page
 

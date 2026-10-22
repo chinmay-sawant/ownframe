@@ -67,6 +67,6 @@ func (a *App) openTicket(id string) {
 
 	a.view.Current = t
 	a.view.Note = t.Note
-	a.page.SetFormValue("note", t.Note)
+	a.page.Form().SetFormValue("note", t.Note)
 	a.show(screenDetail)
 }

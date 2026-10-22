@@ -1,6 +1,10 @@
 package page
 
-import "context"
+import (
+	"context"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/form"
+)
 
 // FocusNext focuses the next control in document order and wraps. Disabled
 // controls and tabindex="-1" are skipped. It draws when the focus moved.
@@ -68,28 +72,10 @@ func (p *Page) focusStep(ctx context.Context, step int) error {
 		return err
 	}
 
-	order := p.focusOrder()
-	if len(order) == 0 {
+	id, ok := form.NextID(p.focusOrder(), p.FocusID(), step)
+	if !ok {
 		return nil
 	}
 
-	at := -1
-	for i, id := range order {
-		if id == p.FocusID() {
-			at = i
-
-			break
-		}
-	}
-
-	next := 0
-	if at < 0 {
-		if step < 0 {
-			next = len(order) - 1
-		}
-	} else {
-		next = (at + step + len(order)) % len(order)
-	}
-
-	return p.Focus(ctx, order[next])
+	return p.Focus(ctx, id)
 }

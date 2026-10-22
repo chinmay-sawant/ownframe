@@ -17,7 +17,7 @@ var keyText = map[string]string{
 func Handle(_ context.Context, page *ownframe.Page, d *Data, action string) bool {
 	switch {
 	case action == "calls-query":
-		d.Query = page.FormValue("calls-search")
+		d.Query = page.Form().FormValue("calls-search")
 		d.rebuild()
 	case action == "calls-tab-history":
 		d.Tab = "history"

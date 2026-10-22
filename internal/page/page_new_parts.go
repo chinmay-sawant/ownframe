@@ -7,6 +7,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/page/nav"
+	"github.com/chinmay-sawant/ownframe/internal/page/scroll"
 )
 
 // assemblePage builds the Page shell; New clamps the size after it.
@@ -32,10 +33,8 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		perf:            cfg.Perf,
 		retainState:     cfg.RetainState,
 		lockView:        cfg.LockView,
-		scrollbar:       cfg.Scrollbar,
 		allowTouchZoom:  !cfg.DisableTouchZoom,
-		allowScroll:     true,
-		touchScroll:     TouchScrollOptions{Sensitivity: touchSensitivityDefault, Deceleration: touchDecelerationDefault},
+		scroll:          scroll.New(cfg.Scrollbar),
 		watch:           watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
 		elements:        element.NewRegistry(),
 	}

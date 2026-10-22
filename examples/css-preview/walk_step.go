@@ -68,7 +68,7 @@ func (w *walker) step(ctx context.Context) {
 
 		return
 	}
-	_, scrollY := w.p.ScrollOffset()
+	_, scrollY := w.p.Scroll().ScrollOffset()
 	clientY := int(b.Y+b.H/2) - scrollY
 	_, viewH := w.p.Size()
 	if clientY < 0 || clientY > viewH {

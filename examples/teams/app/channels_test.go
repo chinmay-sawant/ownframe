@@ -53,9 +53,9 @@ func TestChannelsThread(t *testing.T) {
 	ck(t, a, "channels-post-av2")
 	c := a.View().Channels
 	ch(t, !c.Posts[0].Expanded && c.Posts[1].Expanded)
-	a.Page().SetFormValue("channels-reply-av2", " On it ")
+	a.Page().Form().SetFormValue("channels-reply-av2", " On it ")
 	ck(t, a, "channels-reply-send-av2")
 	p := a.View().Channels.Posts[1]
 	r := p.Replies[len(p.Replies)-1]
-	ch(t, r.Own && r.Text == "On it" && a.Page().FormValue("channels-reply-av2") == "")
+	ch(t, r.Own && r.Text == "On it" && a.Page().Form().FormValue("channels-reply-av2") == "")
 }

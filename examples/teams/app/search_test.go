@@ -15,7 +15,7 @@ func TestFilesSearchNarrowsData(t *testing.T) {
 
 	clickID(t, app, "files-search")
 
-	if err := app.Page().Type(context.Background(), "vibranium"); err != nil {
+	if err := app.Page().Edit().Type(context.Background(), "vibranium"); err != nil {
 		t.Fatalf("Type: %v", err)
 	}
 
@@ -40,7 +40,7 @@ func TestCallsSearchNarrowsData(t *testing.T) {
 
 	clickID(t, app, "calls-search")
 
-	if err := app.Page().Type(context.Background(), "shuri"); err != nil {
+	if err := app.Page().Edit().Type(context.Background(), "shuri"); err != nil {
 		t.Fatalf("Type: %v", err)
 	}
 

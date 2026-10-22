@@ -43,5 +43,5 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // FocusedField returns the focused control id, or "" when none is focused.
 func (a *App) FocusedField() string {
-	return a.page.FocusedField()
+	return a.page.Edit().FocusedField()
 }

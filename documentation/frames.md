@@ -49,7 +49,7 @@ hide a fill, collapse `W` and `H`.
 A `Redraw` replaces the display list, so a callback that keeps an operation
 pointer must find the operation again after any redraw. A window resize
 relayouts the page and replaces the display list the same way. `page.Click` redraws
-after its handler. `page.KeyUp` never draws, and `page.Copy` does not draw. `page.KeyDown`
+after its handler. `page.Edit().KeyUp` never draws, and `page.Edit().Copy` does not draw. `page.Edit().KeyDown`
 draws only when Escape clears a focus or a caret key moves. The window calls those on the inner screen. The other input
 handlers redraw after they run. The examples use `internal/frame`
 to find operations: `frame.Fill` returns the first fill of a colour inside a
@@ -131,4 +131,4 @@ per cascade frame and meters its refresh bar at 10 Hz.
 
 ## Scroll windows
 
-`Page.SetWindowing(true)` enables `SetScrollWindow(func(offsetY, viewH int) bool)`. Return true after updating row data, or false when the existing overscan still covers the viewport. The host redraws only when true. `Redraw` also calls the callback before executing the template. The callback now returns a bool; callers using the earlier callback shape must add that return value. Preserve the full content height with spacers and keep stable row IDs. The fixed-height example is not a general variable-height or keyboard-focus virtualization implementation.
+`Page.Scroll().SetWindowing(true)` enables `SetScrollWindow(func(offsetY, viewH int) bool)`. Return true after updating row data, or false when the existing overscan still covers the viewport. The host redraws only when true. `Redraw` also calls the callback before executing the template. The callback now returns a bool; callers using the earlier callback shape must add that return value. Preserve the full content height with spacers and keep stable row IDs. The fixed-height example is not a general variable-height or keyboard-focus virtualization implementation.

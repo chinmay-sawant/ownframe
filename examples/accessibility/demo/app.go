@@ -55,4 +55,4 @@ func New() (*App, error) {
 
 func (a *App) Page() *ownframe.Page { return a.page }
 
-func (a *App) accessible() ownframe.Accessible { return a.page }
+func (a *App) accessible() ownframe.Accessible { return a.page.Access() }

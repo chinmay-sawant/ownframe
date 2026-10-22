@@ -75,7 +75,7 @@ func TestWrongLoginThenTypeClearsError(t *testing.T) {
 		t.Fatalf("error after type = %q", got)
 	}
 
-	if err := app.Page().SelectAll(ctx); err != nil {
+	if err := app.Page().Edit().SelectAll(ctx); err != nil {
 		t.Fatal(err)
 	}
 
@@ -84,7 +84,7 @@ func TestWrongLoginThenTypeClearsError(t *testing.T) {
 	}
 
 	click(t, ctx, app, "password", "")
-	if err := app.Page().SelectAll(ctx); err != nil {
+	if err := app.Page().Edit().SelectAll(ctx); err != nil {
 		t.Fatal(err)
 	}
 
@@ -126,7 +126,7 @@ func TestPasswordCopyAndDeleteWord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	text, ok, err := app.Page().Copy(ctx)
+	text, ok, err := app.Page().Edit().Copy(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,11 +135,11 @@ func TestPasswordCopyAndDeleteWord(t *testing.T) {
 		t.Fatalf("password copy = %q ok=%v", text, ok)
 	}
 
-	if err := app.Page().DeleteWord(ctx); err != nil {
+	if err := app.Page().Edit().DeleteWord(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().FormValue("password"); got != "" {
+	if got := app.Page().Form().FormValue("password"); got != "" {
 		t.Fatalf("password after delete word = %q", got)
 	}
 }

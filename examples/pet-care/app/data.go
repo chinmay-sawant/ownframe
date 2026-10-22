@@ -25,7 +25,7 @@ func (a *App) reload(ctx context.Context) error {
 	a.view.AllPets = pets
 	a.view.Pets = pets
 	if a.view.Screen == "pets" || a.view.Screen == "history" {
-		a.view.Search = a.page.FormValue("search")
+		a.view.Search = a.page.Form().FormValue("search")
 		if a.view.Search != "" {
 			filtered := make([]model.Pet, 0, len(pets))
 			for _, p := range pets {

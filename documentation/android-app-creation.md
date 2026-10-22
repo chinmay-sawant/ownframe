@@ -152,7 +152,7 @@ disable touch scrolling. Use `Page.ScrollTo` or `Page.ScrollBy` when an app
 needs to move to a specific point.
 
 Pinch zoom is enabled by default. Two fingers change the page zoom from 0.25 to
-4. Set `Config.DisableTouchZoom` or call `Page.SetTouchZoomAllowed(false)` when
+4. Set `Config.DisableTouchZoom` or call `Page.Window().SetTouchZoomAllowed(false)` when
 the app needs two-finger gestures for another action. Disabling pinch zoom does
 not disable touch scrolling. Read [scrolling](scrolling.md) and
 [interaction](interaction.md) for gesture thresholds and scroll behavior.

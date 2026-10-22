@@ -87,7 +87,7 @@ func TestVolumeUsesWifiSpec(t *testing.T) {
 	app := newTest(t)
 	fake := &fakeLink{}
 	app.SetLink(fake)
-	app.Page().SetFormValue("host", "10.0.0.8")
+	app.Page().Form().SetFormValue("host", "10.0.0.8")
 	clickID(t, app, "volup")
 	if err := app.onTick(context.Background()); err != nil {
 		t.Fatal(err)

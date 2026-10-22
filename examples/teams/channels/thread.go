@@ -26,7 +26,7 @@ func toggleExpand(d *Data, id string) {
 
 // sendReply appends the typed text as an own reply and clears the input.
 func sendReply(page *ownframe.Page, d *Data, id string) {
-	text := strings.TrimSpace(page.FormValue("channels-reply-" + id))
+	text := strings.TrimSpace(page.Form().FormValue("channels-reply-" + id))
 	if text == "" {
 		return
 	}
@@ -47,7 +47,7 @@ func sendReply(page *ownframe.Page, d *Data, id string) {
 		}
 		d.Posts[i].Replies = append(d.Posts[i].Replies, reply)
 		keepReply(d, id, reply)
-		page.SetFormValue("channels-reply-"+id, "")
+		page.Form().SetFormValue("channels-reply-"+id, "")
 
 		return
 	}

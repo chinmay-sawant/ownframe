@@ -29,23 +29,23 @@ func checkField(t *testing.T, app *App, caret, sel [3]float64) {
 	for range 2 {
 		clickID(t, app, "chat-compose")
 
-		if app.Page().FocusedField() == "chat-compose" {
+		if app.Page().Edit().FocusedField() == "chat-compose" {
 			break
 		}
 	}
 
-	if app.Page().FocusedField() != "chat-compose" {
+	if app.Page().Edit().FocusedField() != "chat-compose" {
 		t.Fatal("the compose field never took the focus")
 	}
 
-	if err := app.Page().Type(context.Background(), "ab"); err != nil {
+	if err := app.Page().Edit().Type(context.Background(), "ab"); err != nil {
 		t.Fatalf("Type: %v", err)
 	}
 
 	gotCaret, _ := fieldColors(app)
 	assertColor(t, "caret", gotCaret, caret)
 
-	if err := app.Page().SelectAll(context.Background()); err != nil {
+	if err := app.Page().Edit().SelectAll(context.Background()); err != nil {
 		t.Fatalf("SelectAll: %v", err)
 	}
 

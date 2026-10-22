@@ -12,7 +12,7 @@ func BenchmarkScreenSetDataRedraw(b *testing.B) {
 		b.Run(screen, func(b *testing.B) {
 			app, _ := newFakeApp(b)
 			app.view.Nav = screen
-			app.page.SetPerf(true)
+			app.page.Window().SetPerf(true)
 			app.page.SetData(app.view)
 			if err := app.Redraw(context.Background()); err != nil {
 				b.Fatal(err)
