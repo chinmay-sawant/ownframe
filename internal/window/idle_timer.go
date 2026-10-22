@@ -16,7 +16,7 @@ import (
 // kicks the timer after every step, so a policy change never waits out a
 // stale sleep.
 func (g *paceGame) timer(ctx context.Context) {
-	t := time.NewTimer(g.policy.keepAlive / keepAliveHalfDiv)
+	t := time.NewTimer(g.sleep())
 	defer t.Stop()
 
 	for {
@@ -29,7 +29,7 @@ func (g *paceGame) timer(ctx context.Context) {
 			resetTimer(t, g.sleep())
 		case now := <-t.C:
 			g.mu.Lock()
-			due := g.policy.due(now)
+			due := g.policy.Due(now)
 			g.mu.Unlock()
 
 			if due {
@@ -47,7 +47,7 @@ func (g *paceGame) sleep() time.Duration {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
-	return g.policy.wait(time.Now())
+	return g.policy.Wait(time.Now())
 }
 
 // resetTimer re-arms t, draining a value that fired before the stop. Only the

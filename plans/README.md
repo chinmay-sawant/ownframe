@@ -20,7 +20,7 @@ A documented non-goal is deferred, not implemented. Passing a compiler or a unit
 - [x] `EXAMPLES` maintain a focused teaching set and inventory experiments separately. Evidence: `make examples-check` exit 0 on 2026-10-22, six maintained teaching roots and 49 experimental or support roots; every example remains in `make test`.
 - [x] `GATES` run the final repository checks. Evidence: `make test`, `make lint`, `make graphics-check`, frontend `npm run build`, and frontend `npm run check:site` exited 0 on 2026-10-22. The browser check covered 120 layouts including the testing guide. `zizmor` reported no new findings on the edited workflows in offline mode.
 - [s] `OLD-CLOSURE` replace the blanket production-readiness closure. Replacement: this ledger; `v0.0.3/prod-ready-task/README.md` explains the archived rows.
-- [-] `PACKAGE-SPLIT` further extract page/window responsibilities. Reconsider when a concrete change crosses ownership boundaries; mechanical merging of all files is not this maintenance pass.
+- [-] `PACKAGE-SPLIT` further extract page responsibilities and remaining window responsibilities after the pacing extraction below. Reconsider when a concrete change crosses ownership boundaries; extract behavior with explicit inputs and outputs.
 - [-] `NATIVE-A11Y` live screen-reader adapters remain unshipped. Reconsider with an adapter owner and real assistive-technology validation; see `../documentation/accessibility-native.md`.
 - [-] `EXPERIMENTS` Reconsider promoting additional demos only when they teach a missing public capability and have a maintenance owner. Existing experimental examples remain in the compatibility suite.
 
@@ -43,3 +43,12 @@ The follow-up maintenance was committed as `c59f1a51` and pushed to `origin/feat
 - [x] `STATE-GATES` run final full tests, race detection, lint, and generated-site checks. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Logs are in `temp/state-lifecycle-*.log`. Validation covered this pass after the pushed `c59f1a51` snapshot.
 
 A local display-free window unit test passed, so no additional Xvfb wrappers were added to non-graphics CI jobs on assumption alone. The graphics gate continues to require a real Xvfb game session. Native host and device claims remain subject to the platform limits in the guides.
+
+## Window pacing and desktop rendering evidence
+
+- [x] `PACING-OWNER` move scheduling into `internal/window/pacing`, leaving Ebiten mode changes, goroutine lifetime, and synchronization in the window adapter. Evidence: 16 tests exercise the policy through its caller interface, including deadline replacement, cancellation, wake consumption, timer sleep, and diagnostic snapshots. Display-free package tests and full library race detection exited 0 on 2026-10-22. The root public API is unchanged.
+- [x] `DESKTOP-PIXELS` support a repeatable current-desktop graphics session alongside isolated Xvfb. Evidence: both `make graphics-check` and `GRAPHICS_SESSION=desktop make graphics-check` exited 0 on 2026-10-22 with all three required pixel tests. The desktop session was WSLg X11 with `LIBGL_ALWAYS_SOFTWARE` unset. This proves neither native Windows execution nor hardware acceleration. Tooling regressions cover session selection, driver selection preservation, missing display, invalid modes, skipped tests, and a failing Go command.
+- [x] `PACING-GATES` validate the final library, examples, tooling, and generated website. Evidence: `make test`, `make test-race`, `make lint`, `PYTHONOPTIMIZE=1 make tools-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Logs are in ignored `temp/pacing-*.log` files.
+- [ ] `NATIVE-SESSIONS` collect native Windows/macOS input-method and Android lifecycle evidence. WSLg is the available desktop session; `adb devices -l` listed no connected device on 2026-10-22. These checks need the corresponding hosts and an authorized connected Android device. Cross-compilation and Xvfb cannot close this row.
+
+This pass was validated locally before publication. No release or version bump was made.

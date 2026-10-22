@@ -38,6 +38,14 @@ All pixel readback occurs in the running game. Replay comparison targets use sta
 
 CI and release gates run the graphics target. Xvfb validates an X11 software graphics session; it does not establish native Wayland behavior, hardware GPU driver behavior, desktop IME correctness, or Android device behavior. Those require their own platform sessions.
 
+To run the same pixel checks against your current Linux desktop session, use `GRAPHICS_SESSION=desktop make graphics-check`. This mode requires `DISPLAY`, opens test windows, and preserves your graphics driver selection. Under WSLg it checks the WSLg X11 path, not a native Windows host. A passing desktop run proves these rendering scenarios in that session; it does not prove hardware acceleration, input-method behavior, or other operating systems. The default remains isolated software rendering under Xvfb.
+
+## Frame pacing ownership
+
+`internal/window/pacing` owns idle transitions, declared frame deadlines, keep-alive scheduling, and diagnostic counters. Its tests use supplied times and the same interface as the window adapter. They run without a display or Ebiten dependency. Deadline replacement, cancellation, exactly-once wake consumption, timer sleep, and snapshot reads have explicit checks.
+
+`idle_game.go`, `idle_frame.go`, and `idle_timer.go` retain the Ebiten mode changes, timer goroutine, and locking. The policy tests prove scheduling decisions. Pixel checks prove rendering; neither check simulates native keyboard input or establishes actual event-wait timing.
+
 ## State subscription lifecycle
 
 The internal retained-state tests cover rebinding a page to a store, repeated binding to the same store, detaching one of two pages, and rejecting a former store's already-dispatched callback. Listener cancellation uses registration identity rather than a closure's code address. Callbacks execute outside the store lock and may reenter the store. An already-dispatched callback may finish after cancellation, so the page also checks the binding generation before recording metadata.

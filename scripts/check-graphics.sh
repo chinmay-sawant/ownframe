@@ -1,18 +1,30 @@
 #!/usr/bin/env bash
-# Each RunGame test gets its own process and isolated X server.
+# Each RunGame test gets its own process. Xvfb is the default session.
 set -euo pipefail
 cd -- "$(dirname -- "$0")/.."
-for tool in xvfb-run Xvfb xauth; do
-    command -v "$tool" >/dev/null || { echo "graphics-check: install $tool (Ubuntu: xvfb xauth libgl1-mesa-dri)" >&2; exit 1; }
-done
-export LIBGL_ALWAYS_SOFTWARE=1
+session=${GRAPHICS_SESSION:-xvfb}
+runner=()
+case "$session" in
+    xvfb)
+        for tool in xvfb-run Xvfb xauth; do
+            command -v "$tool" >/dev/null || { echo "graphics-check: install $tool (Ubuntu: xvfb xauth libgl1-mesa-dri)" >&2; exit 1; }
+        done
+        export LIBGL_ALWAYS_SOFTWARE=1
+        runner=(xvfb-run -a -s '-screen 0 1920x1080x24')
+        ;;
+    desktop)
+        [[ -n ${DISPLAY:-} ]] || { echo 'graphics-check: desktop mode requires DISPLAY' >&2; exit 1; }
+        ;;
+    *) echo "graphics-check: unknown GRAPHICS_SESSION: $session (use xvfb or desktop)" >&2; exit 1 ;;
+esac
+echo "graphics-check: session=$session; DISPLAY=${DISPLAY:-unset}; LIBGL_ALWAYS_SOFTWARE=${LIBGL_ALWAYS_SOFTWARE:-unset}"
 export EBITENGINE_GRAPHICS_LIBRARY=opengl
 export OWNFRAME_FRAME_GPU_TEST=1
 export OWNFRAME_REPLAY_GPU_TEST=1
 
 run_test() {
     # Do not set HOME or touch the user's Xauthority. xvfb-run owns a temporary cookie.
-    xvfb-run -a -s '-screen 0 1920x1080x24' \
+    "${runner[@]}" \
         go test -p 1 -count=1 -json -timeout=90s -run "^$2$" "$1" |
         python3 -c '
 import json, sys

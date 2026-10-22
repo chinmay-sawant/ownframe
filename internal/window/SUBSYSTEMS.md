@@ -7,7 +7,7 @@ Updated 2026-10-22. `replay_frame.go` `fullReplay`: ticking Pages stay on the bu
 | Group | Entry file | State owner |
 |---|---|---|
 | devtools | `devtools_dock.go` (overlay open/close, dock layout) | `devState` in `devtools.go`, held as `shell.dev` (`game_state.go`) |
-| idle | `idle_policy.go` (`pacePolicy.step`, per-frame decision) | `pacePolicy` in `idle_policy.go`; published `paceState` in `idle_state.go`, held as `shell.pace` |
+| idle | `pacing/policy.go` (`Policy.Step`, per-frame decision) | `pacing.Policy` owns deadlines, transitions, and counters; `idle_game.go` owns the Ebiten adapter and mutex; published `paceState` in `idle_state.go`, held as `shell.pace` |
 | touch | `touch_gesture.go` (`touchGesture.frame`) | `touchGesture` in `touch_gesture.go`, held as `gestureState.fingers` (`game_gesture_state.go`) |
 | pointer | `pointer.go` (`shell.pointer`, fans out to `pointer_mouse.go`, `pointer_touch.go`, `pointer_drag.go`) | `shell` pointer fields (`mouseDown`, `cursorX/Y`, `hover` in `game_state.go`); drag shape `pointerDrag` |
 | replay tile | `replay_partial.go` (`drawReplayPartial`) | `partialState` in `replay_partial_state.go` (`tiles *tileGrid` from `replay_tile.go`), held as `shell.partial`; lifecycle in `replay_tile.go` |

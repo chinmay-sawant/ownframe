@@ -3,6 +3,7 @@ package window
 import (
 	"time"
 
+	"github.com/chinmay-sawant/ownframe/internal/window/pacing"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -19,15 +20,15 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	g.input = false
 
 	g.mu.Lock()
-	act := g.policy.step(now, dirty, input, g.want)
+	act := g.policy.Step(now, dirty, input, g.want)
 	g.mu.Unlock()
 
 	switch act {
-	case paceToIdle:
+	case pacing.ToIdle:
 		g.applyIdle()
-	case paceToFast:
+	case pacing.ToFast:
 		g.applyFast()
-	case paceBurst:
+	case pacing.Burst:
 		//nolint:staticcheck // reason: ScheduleFrame is the only wake-up for FPSModeVsyncOffMinimum event-wait; SetScreenClearedEveryFrame(false) only skips clearing and keeps the full-rate loop.
 		ebiten.ScheduleFrame()
 	}

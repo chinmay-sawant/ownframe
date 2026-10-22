@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/safego"
+	"github.com/chinmay-sawant/ownframe/internal/window/pacing"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -16,7 +17,7 @@ import (
 // own goroutine and only calls the concurrent-safe ScheduleFrame.
 type paceGame struct {
 	shell  *shell
-	policy pacePolicy
+	policy pacing.Policy
 	watch  inputWatch
 	input  bool
 	base   int
@@ -43,7 +44,7 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 
 	pace := &paceGame{
 		shell:  game,
-		policy: newPacePolicy(time.Now(), paceGrace, paceKeepAlive),
+		policy: pacing.New(time.Now()),
 		base:   ebiten.TPS(),
 		stop:   make(chan struct{}),
 	}
