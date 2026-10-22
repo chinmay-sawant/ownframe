@@ -20,12 +20,12 @@ func paintPosition(x, y float64) [2]int64 {
 const coordScale = 1000
 
 func (c *rowPaintCache) bind(p *ownframe.Page) {
-	if c.generation == p.Generation() {
+	if c.generation == p.Probe().Generation() {
 		return
 	}
-	c.generation = p.Generation()
+	c.generation = p.Probe().Generation()
 	c.rows = map[string]*ownframe.DisplayOp{}
-	d := p.Display()
+	d := p.Probe().Display()
 	positions := map[[2]int64]string{}
 	for _, b := range p.Boxes() {
 		if strings.HasPrefix(b.ID, "row-") {

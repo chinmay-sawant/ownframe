@@ -29,10 +29,10 @@ type handles struct {
 // rebind reacquires operation pointers from the current display list.
 func (a *App) rebind() {
 	s := a.state
-	gen := a.page.Generation()
+	gen := a.page.Probe().Generation()
 	s.lastGen = gen
 
-	d := a.page.Display()
+	d := a.page.Probe().Display()
 	if d == nil {
 		// The page fell back to the bitmap path; there is nothing to
 		// repaint in place.
@@ -67,5 +67,5 @@ func (a *App) rebind() {
 
 // valid reports whether the retained handles still match the page.
 func (a *App) valid() bool {
-	return a.state.h.gen == a.page.Generation()
+	return a.state.h.gen == a.page.Probe().Generation()
 }

@@ -41,7 +41,7 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 	if err := p.Hover(ctx, x, y); err != nil {
 		tb.Fatal(err)
 	}
-	before := p.Stats()
+	before := p.Probe().Stats()
 	err := redrawBatch(ctx, p, func() error {
 		if err := p.Press(ctx, x, y); err != nil {
 			return err
@@ -55,7 +55,7 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 	if err != nil {
 		tb.Fatal(err)
 	}
-	after := p.Stats()
+	after := p.Probe().Stats()
 	if after.Redraws != before.Redraws+1 || after.Layouts != before.Layouts+1 {
 		tb.Fatalf("%s: redraws %d->%d layouts %d->%d, want one draw",
 			id, before.Redraws, after.Redraws, before.Layouts, after.Layouts)

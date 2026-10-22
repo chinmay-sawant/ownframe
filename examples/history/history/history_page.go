@@ -16,7 +16,7 @@ func (a *App) View() *View { return &a.view }
 func (a *App) Redraw(ctx context.Context) error { return a.page.Redraw(ctx) }
 
 // PNG returns the last PNG, or nil when nothing has been drawn.
-func (a *App) PNG() []byte { return a.page.PNG() }
+func (a *App) PNG() []byte { return a.page.Probe().PNG() }
 
 // Boxes returns the last hit-test boxes.
 func (a *App) Boxes() []ownframe.Box { return a.page.Boxes() }

@@ -26,7 +26,7 @@ page, err := ownframe.New(ownframe.Config{
 
 `Size` returns the frame size in CSS pixels. `MinSize` returns the smallest frame and `MaxSize` the window bound from `Config`. `SetSize(width, height)` stores the size the next `Redraw` uses, pulled up to the minimum; it does not draw. `Clamp(width, height)` returns a size pulled up to the minimum without storing it. Neither one caps a frame at the maximum.
 
-`Page.Generation` increases by one on every successful `Redraw`, on both the replay and bitmap paths. `SetSize`, `SetData`, and `SetTheme` do not move it on their own. `internal/window/sync.go` caches the drawn artifact with the generation it came from and rebuilds it when that generation differs. The window reads the inner screen.
+`page.Probe().Generation` increases by one on every successful `Redraw`, on both the replay and bitmap paths. `SetSize`, `SetData`, and `SetTheme` do not move it on their own. `internal/window/sync.go` caches the drawn artifact with the generation it came from and rebuilds it when that generation differs. The window reads the inner screen.
 
 ## The window
 

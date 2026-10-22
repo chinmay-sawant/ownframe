@@ -102,7 +102,7 @@ func (a *App) SetSize(width, height int) {
 
 // Generation increases by one on every successful Redraw.
 func (a *App) Generation() uint64 {
-	return a.page.Generation()
+	return a.page.Probe().Generation()
 }
 
 // Redraw fills the template and renders the current size.
@@ -112,7 +112,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last PNG, or nil when nothing has been drawn.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.

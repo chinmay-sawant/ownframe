@@ -6,9 +6,22 @@ through GEN-17; this page is the operator checklist.
 
 ## Protected branches and tags
 
+The default branch is covered by an active repository ruleset named
+`protek`, id 24325297. `bypass_actors` is empty. Its rules are
+`deletion`, `non_fast_forward`, and `pull_request`. `deletion` blocks
+deleting the branch. `non_fast_forward` blocks force-pushing it.
+`pull_request` requires a pull request, sets
+`required_approving_review_count` to 0, and requires no status checks.
+The ruleset does not require signed commits. It does not cover tag
+patterns, so it does not stop a tag move or a tag delete.
+
+Classic branch protection on `master` returns 404. The rules on the
+default branch are `protek`, not that classic endpoint.
+
 A single compromised session must not be able to push to `master` or
-move a tag. In repository Settings > Rules, protect `master` and the
-`v*` and `examples/v*` tag patterns with:
+move a tag. `protek` leaves the settings below unset or incomplete. In
+repository Settings > Rules, protect `master` and the `v*` and
+`examples/v*` tag patterns with:
 
 - Required status checks: the `gates` job (`make test`, `make lint`),
   the `reproducible` job, CodeQL, Semgrep, and the secret scan.
@@ -26,14 +39,13 @@ move a tag. In repository Settings > Rules, protect `master` and the
 - No force pushes and no deletions, on branches and on tags.
 - Required linear history is optional; signed merge commits are fine.
 
-Tags are immutable once published. The Go module proxy caches them
-forever, so a bad or vulnerable release is fixed with a `retract`
-directive in `go.mod` plus a new tag, never by re-tagging. Verify the
-live settings with:
+The Go module proxy caches a tag forever, so a bad or vulnerable
+release is fixed with a `retract` directive in `go.mod` plus a new
+tag, never by re-tagging. `protek` does not make tags immutable. Read
+the live ruleset with:
 
 ```
-gh api repos/{owner}/{repo}/branches/master/protection
-gh api repos/{owner}/{repo}/tags/v0.0.2/protection
+gh api repos/{owner}/{repo}/rulesets/24325297
 ```
 
 ## Signed release artifacts and provenance
@@ -46,7 +58,7 @@ gh api repos/{owner}/{repo}/tags/v0.0.2/protection
 
 Verify provenance with `gh attestation verify <file> --repo <owner>/<repo>`. Verify cosign blobs against the expected repository workflow identity and OIDC issuer, as well as their certificate and signature. A matching checksum alone is insufficient.
 
-This workflow prepares a candidate; it does not create a GitHub Release or upload published assets. An operator must review the successful tag run and approve publication. Local `make release-check` verifies archive structure and bytes but does not exercise GitHub OIDC signing. APKs use their separate Android signing and device-validation path.
+The `publish` job runs only for `v*` tags, after `supply-chain`, and attaches the candidate files to a GitHub Release. It does not publish `examples/v*` tags. Those tags still run `gates` and `supply-chain`. Local `make release-check` verifies archive structure and bytes, does not talk to GitHub, and does not exercise GitHub OIDC signing. APKs use their separate Android signing and device-validation path.
 
 For a local archive the same signature step is opt-in:
 
@@ -62,7 +74,7 @@ an unsigned file and calling it signed.
 ## SBOM per release
 
 Downstream users need to know what is inside the desktop, wasm, and
-APK artifacts. The workflow scans the checkout, including both Go modules, into SPDX JSON. It uploads the SBOM, signatures, certificates, and desktop/wasm archives as `release-candidate`. A repository SBOM is not a claim that a separately built APK was inspected. Attach only reviewed artifacts to a GitHub Release after the candidate run passes. To reproduce the SBOM
+APK artifacts. The workflow scans the checkout, including both Go modules, into SPDX JSON. It uploads the SBOM, signatures, certificates, and desktop/wasm archives as `release-candidate`. A repository SBOM is not a claim that a separately built APK was inspected. The `publish` job attaches those candidate files to the GitHub Release for a `v*` tag and does not publish an `examples/v*` tag. To reproduce the SBOM
 locally without the workflow:
 
 ```

@@ -7,7 +7,7 @@ import (
 var accent = [3]float64{29.0 / 255, 185.0 / 255, 84.0 / 255}
 
 func (a *App) animate() {
-	d := a.page.Display()
+	d := a.page.Probe().Display()
 	if d == nil {
 		return
 	}
@@ -42,7 +42,7 @@ func (a *App) animate() {
 				oldW := fill.W
 				fill.W = w * fraction
 				if fill.W != oldW {
-					a.page.Invalidate("seek")
+					a.page.Probe().Invalidate("seek")
 				}
 			}
 		}

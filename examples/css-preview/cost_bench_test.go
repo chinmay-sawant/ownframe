@@ -36,7 +36,7 @@ func benchCostClick(b *testing.B, full bool) {
 		dur, alloc := costClick(ctx, p, b, row.Button)
 		redraws = append(redraws, float64(dur)/1e6)
 		allocs = append(allocs, float64(alloc)/1024)
-		ops = p.Stats().Ops
+		ops = p.Probe().Stats().Ops
 	}
 	b.StopTimer()
 	costReport(b, "redraw/click", redraws, "ms")

@@ -11,11 +11,11 @@ import (
 )
 
 func (d *demo) tick(context.Context) error {
-	if d.pending != "" || d.gen != d.page.Generation() {
+	if d.pending != "" || d.gen != d.page.Probe().Generation() {
 		if err := d.rebind(); err != nil {
 			return err
 		}
-		d.gen = d.page.Generation()
+		d.gen = d.page.Probe().Generation()
 		d.pending = ""
 	}
 	active := false
@@ -46,7 +46,7 @@ func (d *demo) rebind() error {
 			continue
 		}
 		box := boxes[boxIndex]
-		player, err := cssanimation.Bind(d.page.Display(), box, item.indices, item.base, item.start)
+		player, err := cssanimation.Bind(d.page.Probe().Display(), box, item.indices, item.base, item.start)
 		if err != nil {
 			return err
 		}

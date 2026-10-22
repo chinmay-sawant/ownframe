@@ -38,7 +38,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the cached PNG bytes for the last draw.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.

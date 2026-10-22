@@ -18,7 +18,7 @@ func TestWindowing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := app.page.Stats()
+	st := app.page.Probe().Stats()
 	if st.Ops >= 800 {
 		t.Fatalf("windowed ops = %d, want < 800", st.Ops)
 	}
@@ -51,7 +51,7 @@ func TestWindowing(t *testing.T) {
 	if app.winStart <= 0 {
 		t.Fatalf("winStart = %d after scroll, want > 0", app.winStart)
 	}
-	if st2 := app.page.Stats(); st2.Ops >= 800 {
+	if st2 := app.page.Probe().Stats(); st2.Ops >= 800 {
 		t.Fatalf("scrolled ops = %d, want < 800", st2.Ops)
 	}
 

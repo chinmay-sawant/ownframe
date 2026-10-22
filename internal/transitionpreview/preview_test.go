@@ -21,7 +21,7 @@ func TestEachStartButtonPlaysItsOwnTransition(t *testing.T) {
 			if !ok {
 				t.Fatalf("missing transition target %q", item.id)
 			}
-			indices := cssmotion.OperationIndices(page.Display(), box)
+			indices := cssmotion.OperationIndices(page.Probe().Display(), box)
 			if len(indices) == 0 {
 				t.Fatal("target has no display operations before the transition")
 			}
@@ -33,7 +33,7 @@ func TestEachStartButtonPlaysItsOwnTransition(t *testing.T) {
 			if sample == nil || sample.player == nil || !data.Started[item.key] {
 				t.Fatal("Start did not bind a transition renderer")
 			}
-			ops := cssmotion.Resolve(page.Display(), indices)
+			ops := cssmotion.Resolve(page.Probe().Display(), indices)
 			if len(ops) != len(indices) {
 				t.Fatalf("resolved %d of %d captured operations", len(ops), len(indices))
 			}

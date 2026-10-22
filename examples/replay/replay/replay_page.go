@@ -14,7 +14,7 @@ func (a *App) Page() *ownframe.Page {
 // Replayable reports whether the last draw kept a display list. A false
 // result means the page fell back to a bitmap.
 func (a *App) Replayable() bool {
-	return a.page.Display() != nil
+	return a.page.Probe().Display() != nil
 }
 
 // SetSize stores the frame size used by the next Redraw.
@@ -29,7 +29,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last picture as PNG bytes.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.

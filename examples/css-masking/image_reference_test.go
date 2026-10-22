@@ -32,7 +32,7 @@ func imageReference(t *testing.T) image.Image {
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	img, err := png.Decode(bytes.NewReader(p.PNG()))
+	img, err := png.Decode(bytes.NewReader(p.Probe().PNG()))
 	if err != nil {
 		t.Fatal(err)
 	}

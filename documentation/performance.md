@@ -46,7 +46,7 @@ A healthy normal page keeps p99 under budget with margin. When p95 passes budget
 
 A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `Page.TakeDirtyRects` and the window paints them through `drawReplayPartial` tiles (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, pinned chrome painted after the tile blit, and the cases that still repaint in full, such as bitmap fallback pages. Tick callbacks automatically report operation damage; a clean ticking page can remain idle.
+The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `page.Probe().TakeDirtyRects` and the window paints them through `drawReplayPartial` tiles (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, pinned chrome painted after the tile blit, and the cases that still repaint in full, such as bitmap fallback pages. Tick callbacks automatically report operation damage; a clean ticking page can remain idle.
 
 For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart changes report two rects instead of the bounding box around both. Many small changes inside one region stay partial, so a whole frame rect on an edit now means the change really covered more than a third of the frame or the page could not place it; a list longer than eight rects, or a rect the size of the whole content, makes the window rebuild its buffer once. A rebuild still only tessellates each repeated rounded shape once, because the replay bakes repeated fills and borders into a raster cache ([repaint.md](repaint.md)).
 
@@ -79,7 +79,7 @@ The MEMORY section of the Frame tab shows allocation per frame, Go heap, RSS, an
 
 ## 5 DevTools perf panel fields
 
-The Frame tab groups perf counters under three sections. Values come from `Page.Stats` through `host.Inspector`, so `GET /debug/state` returns the same data as JSON.
+The Frame tab groups perf counters under three sections. Values come from `page.Probe().Stats` through `host.Inspector`, so `GET /debug/state` returns the same data as JSON.
 
 | Section | Rows |
 |---|---|

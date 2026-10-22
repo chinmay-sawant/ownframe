@@ -19,7 +19,7 @@ func describe(p *ownframe.Page) string {
 		rules := []any{}
 		if target.kind == "animation" {
 			for _, a := range box.Animations {
-				for _, k := range p.Display().Keyframes {
+				for _, k := range p.Probe().Display().Keyframes {
 					if k.Name == a.Name {
 						rules = append(rules, k)
 					}

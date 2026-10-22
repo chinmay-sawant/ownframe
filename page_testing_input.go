@@ -191,16 +191,6 @@ func (t Testing) IMEContext() (Box, int, string, string, bool) {
 	return p.IMEContext()
 }
 
-// PressedID is the control held by the current pointer gesture.
-func (page *Page) PressedID() string {
-	p := innerPage(page)
-	if p == nil {
-		return ""
-	}
-
-	return p.PressedID()
-}
-
 // Copy returns the text the page wants on the clipboard.
 func (page *Page) Copy(ctx context.Context) (string, bool, error) {
 	p := innerPage(page)

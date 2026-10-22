@@ -13,7 +13,7 @@ func Dump(name string, page *ownframe.Page) ([]byte, error) {
 	doc := map[string]any{
 		"name":  name,
 		"time":  time.Now().UTC().Format(time.RFC3339Nano),
-		"stats": page.Stats(),
+		"stats": page.Probe().Stats(),
 	}
 
 	return json.MarshalIndent(doc, "", "  ")

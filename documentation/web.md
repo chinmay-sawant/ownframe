@@ -52,7 +52,7 @@ click anywhere can still focus a control or reach a click handler.
 
 `Serve` draws the page first when it has not been drawn yet. `GET /` reads the
 current boxes and size, and `GET /frame.png` returns the latest PNG. A page
-kept as a display list has no bitmap, so `Page.PNG` paints once from the
+kept as a display list has no bitmap, so `page.Probe().PNG` paints once from the
 stored template source and caches the bytes until the next `Redraw`
 ([screen.md](screen.md)). The shell page states that the screen is the image,
 not the HTML around it.

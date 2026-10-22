@@ -23,23 +23,23 @@ func TestBitmapFallbackRepaints(t *testing.T) {
 	m := &fakeModel{}
 	s, clock := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, pageHTML(fallbackSrc))
 
-	if s.page.Display() == nil {
+	if s.page.Probe().Display() == nil {
 		t.Fatal("rotated score fell back to the bitmap")
 	}
 
-	if s.page.Image() != nil {
+	if s.page.Probe().Image() != nil {
 		t.Fatal("rotated score required the bitmap fallback")
 	}
 
-	gen := s.page.Generation()
+	gen := s.page.Probe().Generation()
 	m.f.Score = 5
 	tickAt(t, s, clock, time.Second/60)
 
-	if s.page.Generation() != gen {
+	if s.page.Probe().Generation() != gen {
 		t.Fatal("a replayable score change redrew the page")
 	}
 
-	score := textAt(s.page.Display(), s.page.Boxes(), "t-score")
+	score := textAt(s.page.Probe().Display(), s.page.Boxes(), "t-score")
 	if score == nil || score.Text != padScore(5) {
 		t.Fatalf("score text = %v, want %s", score, padScore(5))
 	}
@@ -49,20 +49,20 @@ func TestBitmapFallbackSkipsUnchangedFrames(t *testing.T) {
 	m := &fakeModel{}
 	s, clock := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, pageHTML(fallbackSrc))
 
-	if s.page.Display() == nil {
+	if s.page.Probe().Display() == nil {
 		t.Fatal("rotated score fell back to the bitmap")
 	}
 
 	tickAt(t, s, clock, time.Second/60)
-	gen := s.page.Generation()
+	gen := s.page.Probe().Generation()
 
 	tickAt(t, s, clock, 100*time.Millisecond)
 
-	if s.page.Generation() != gen {
+	if s.page.Probe().Generation() != gen {
 		t.Fatal("an unchanged replayable frame was redrawn")
 	}
 
-	if s.page.Display() == nil {
+	if s.page.Probe().Display() == nil {
 		t.Fatal("the tick dropped the display list")
 	}
 }
@@ -71,15 +71,15 @@ func TestBitmapFallbackElliptical(t *testing.T) {
 	m := &fakeModel{}
 	s, _ := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, ellipticalSrc)
 
-	if s.page.Display() != nil {
+	if s.page.Probe().Display() != nil {
 		t.Fatal("elliptical border was replayed")
 	}
 
-	if s.page.Image() == nil {
+	if s.page.Probe().Image() == nil {
 		t.Fatal("no fallback bitmap")
 	}
 
-	if len(s.page.PNG()) == 0 {
+	if len(s.page.Probe().PNG()) == 0 {
 		t.Fatal("fallback page has no PNG")
 	}
 }

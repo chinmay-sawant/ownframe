@@ -3,7 +3,7 @@
 The window can draw an inspector over the page. It outlines the element under
 the cursor, pins one to read its properties as JSON, outlines the display
 operations, and prints the frame numbers. The overlay is window chrome, like
-the scrollbar thumbs and the fallback badge. It never enters `Page.PNG`, the
+the scrollbar thumbs and the fallback badge. It never enters `page.Probe().PNG`, the
 display list, or the box list.
 
 ## Turning it on
@@ -161,7 +161,7 @@ offers no list.
 
 The Ops tab is the costliest of the three: it costs milliseconds per frame to
 draw, so an fps or frame time read while the tab is open includes the dock's
-own work. The row list is cached per `Page.Generation()`, so a still page
+own work. The row list is cached per `page.Probe().Generation()`, so a still page
 rebuilds nothing and pays only to draw the rows and the outlines in view. Read
 fps and frame time on the Frame tab.
 
@@ -179,7 +179,7 @@ type Inspector interface {
 
 A screen without it gets no overlay and no compile change. `Stats` on that
 interface is the snapshot the Frame tab prints. A page reads the same snapshot
-with `Page.Stats`. The window calls the inner screen. A screen that also implements
+with `page.Probe().Stats`. The window calls the inner screen. A screen that also implements
 `SetDrawTime(time.Duration)` receives the window's draw time while the
 overlay is on, and `Stats().LastDraw` reports it. That hook is separate from
 `host.Inspector`, so the interface keeps its three methods.

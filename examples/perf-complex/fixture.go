@@ -54,9 +54,9 @@ func redraw(p *ownframe.Page) error {
 	if err := p.Redraw(context.Background()); err != nil {
 		return err
 	}
-	if p.Display() == nil {
+	if p.Probe().Display() == nil {
 		return fmt.Errorf("fixture triggered raster fallback")
 	}
-	p.TakeDirty()
+	p.Probe().TakeDirty()
 	return nil
 }

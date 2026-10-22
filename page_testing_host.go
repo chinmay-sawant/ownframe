@@ -15,16 +15,6 @@ func (page *Page) PollReload(ctx context.Context) (bool, error) {
 	return p.PollReload(ctx)
 }
 
-// PatchOp mutates one retained operation.
-func (page *Page) PatchOp(i int, fn func(o *DisplayOp)) bool {
-	p := innerPage(page)
-	if p == nil {
-		return false
-	}
-
-	return p.PatchOp(i, fn)
-}
-
 // Tick runs the frame callback registered with SetTick and the caret blink.
 func (t Testing) Tick(ctx context.Context) error {
 	p := innerPage(t.page)
@@ -33,34 +23,6 @@ func (t Testing) Tick(ctx context.Context) error {
 	}
 
 	return p.Tick(ctx)
-}
-
-// SetAfterRedraw registers fn to run after a redraw commits.
-func (page *Page) SetAfterRedraw(fn func()) {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.SetAfterRedraw(fn)
-}
-
-// BeginRedrawBatch defers draws until EndRedrawBatch.
-func (page *Page) BeginRedrawBatch() {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.BeginRedrawBatch()
-}
-
-// EndRedrawBatch closes a batch and draws the final state once.
-func (page *Page) EndRedrawBatch(ctx context.Context) error {
-	p := innerPage(page)
-	if p == nil {
-		return nil
-	}
-
-	return p.EndRedrawBatch(ctx)
 }
 
 // DispatchDeepLink validates a host-delivered URL and calls the app handler.
@@ -119,26 +81,6 @@ func (t Testing) DevTools() bool {
 	}
 
 	return p.DevTools()
-}
-
-// PatchDisplay mutates the retained display and records changed regions.
-func (page *Page) PatchDisplay(fn func(d *Display)) DisplayPatch {
-	p := innerPage(page)
-	if p == nil {
-		return DisplayPatch{}
-	}
-
-	return p.PatchDisplay(fn)
-}
-
-// LastPatch returns the last display patch report.
-func (page *Page) LastPatch() DisplayPatch {
-	p := innerPage(page)
-	if p == nil {
-		return DisplayPatch{}
-	}
-
-	return p.LastPatch()
 }
 
 // SetPicker installs the dialog a file control opens.

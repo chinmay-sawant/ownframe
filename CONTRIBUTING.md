@@ -36,7 +36,7 @@ The wrap has landed: `ownframe.Page` is a struct with an unexported inner page. 
 
 - No new `type X =` alias at the module root except documented re-exports.
 - No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.
-- Example programs call `Page` methods. `Page.Testing()` is for `*_test.go` files: simulated drags, IME, and host probes an app does not call.
+- Example programs call `Page` methods. Measurement reads go through `page.Probe()`. `Page.Testing()` is for `*_test.go` files only. Example programs do not call it.
 - No new example import of `github.com/chinmay-sawant/ownframe/internal/`. `make internal-import-check` records the current set.
 - No synonym names (`PreviousX` for `X`).
 - New exported methods return named types in package `ownframe` or a public subpackage, never `host.Stats` or `*state.Store` unless those types are re-exported in the same PR.

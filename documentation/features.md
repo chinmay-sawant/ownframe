@@ -67,13 +67,13 @@ OwnFrame updates the page from its template and draws it in the window. A page c
 
 `Config.RetainState` keeps the layout state a single element patch needs: the resolved styles of the document and the box tree the placement produced. It is off by default, so a page that never patches an element pays nothing for it.
 
-With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. `PatchElement` then returns an error wrapping `ErrPatchRefused`; check with `errors.Is`. The patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `Page.SetAfterRedraw` is for.
+With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. `PatchElement` then returns an error wrapping `ErrPatchRefused`; check with `errors.Is`. The patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `page.Probe().SetAfterRedraw` is for.
 
 Text set through a patch does not go through the emoji pass. The pass runs on the source before it is parsed, and a text edit lands on the parsed tree, so an emoji in patched text paints as text rather than as the color image the same emoji gets from the template. The engine's tree API only writes a text node, so the image cannot be built inside the tree.
 
 `Handlers.ClickPaint` runs after a click handler and after a control's own change. When it reports that it painted the frame, the page skips the redraw, so a click that patched an element does not also pay for a layout.
 
-`Page.SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
+`page.Probe().SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
 
 Detail is in [optimizations.md](optimizations.md). The measured cost of an
 element patch against a full redraw is in
@@ -90,7 +90,7 @@ compositing, then draws that layer back into the page
 ([internal/replay/group_paint.go:37-45](../internal/replay/group_paint.go),
 [internal/replay/group_layer.go:16-36](../internal/replay/group_layer.go),
 [internal/replay/group_mask.go:10-25](../internal/replay/group_mask.go)).
-`Page.PNG` uses the software painter when PNG pixels are requested
+`page.Probe().PNG` uses the software painter when PNG pixels are requested
 ([internal/page/page_image.go:35-40](../internal/page/page_image.go)). The
 mask painter reads raster alpha or luminance and supports `add`, `subtract`,
 `intersect`, and `exclude` layer composition. The first pass uses the element
@@ -230,7 +230,7 @@ colour by kind. The dock shrinks the page viewport while it is open, so the
 page relayouts to the strip left of it. It outlines the box under the cursor,
 and a pick opens the Ops tab on the operation inside the box. A click on an
 Ops row outlines that operation and copies its line to the clipboard. It is
-window chrome, so `Page.PNG`, the display list, and the box list never
+window chrome, so `page.Probe().PNG`, the display list, and the box list never
 change. A custom screen implements `host.Inspector` to opt in; a screen
 without it gets no overlay.
 `GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{Debug: true}` or `{Perf: true}`).

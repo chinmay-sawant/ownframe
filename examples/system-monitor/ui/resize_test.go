@@ -25,7 +25,7 @@ func TestTickRebindsAfterResize(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if app.state.h.gen != app.page.Generation() {
+	if app.state.h.gen != app.page.Probe().Generation() {
 		t.Fatal("handles not reacquired after a resize relayout")
 	}
 

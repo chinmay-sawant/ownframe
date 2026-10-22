@@ -20,7 +20,7 @@ func windowBenchClick(ctx context.Context, p *ownframe.Page, tb testing.TB, id s
 	if err := p.Hover(ctx, x, y); err != nil {
 		tb.Fatal(err)
 	}
-	before := p.Stats()
+	before := p.Probe().Stats()
 	err := redrawBatch(ctx, p, func() error {
 		if err := p.Press(ctx, x, y); err != nil {
 			return err
@@ -30,7 +30,7 @@ func windowBenchClick(ctx context.Context, p *ownframe.Page, tb testing.TB, id s
 		}
 		return p.Click(ctx, x, y)
 	})
-	after := p.Stats()
+	after := p.Probe().Stats()
 	if err == nil {
 		err = p.Release(ctx)
 	}

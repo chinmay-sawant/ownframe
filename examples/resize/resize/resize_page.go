@@ -33,5 +33,5 @@ func (a *App) Hover(ctx context.Context, x, y float64) error {
 
 // Generation increases by one on every successful Redraw.
 func (a *App) Generation() uint64 {
-	return a.page.Generation()
+	return a.page.Probe().Generation()
 }

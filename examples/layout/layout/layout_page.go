@@ -23,7 +23,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last picture as PNG bytes.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.

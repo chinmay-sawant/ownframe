@@ -23,7 +23,7 @@ func runtimePlayer(t *testing.T, declarations string) (*ownframe.Display, ownfra
 	if err := page.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	d := page.Display()
+	d := page.Probe().Display()
 	var box ownframe.Box
 	for _, candidate := range page.Boxes() {
 		if candidate.ID == "target" {

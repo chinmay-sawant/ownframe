@@ -12,7 +12,7 @@ type summaryOps struct {
 }
 
 func (s *summaryOps) bind(p *ownframe.Page) error {
-	d := p.Display()
+	d := p.Probe().Display()
 	if d == nil {
 		return errors.New("depth alert: summary has no display list")
 	}
@@ -32,7 +32,7 @@ func (s *summaryOps) bind(p *ownframe.Page) error {
 	if s.signal == nil || s.scan == nil || s.near == nil || s.coverage == nil {
 		return errors.New("depth alert: summary text operations are missing")
 	}
-	s.generation = p.Generation()
+	s.generation = p.Probe().Generation()
 	return nil
 }
 
@@ -50,6 +50,6 @@ func (s *summaryOps) update(p *ownframe.Page, v view) {
 func (s *summaryOps) set(p *ownframe.Page, id string, op *ownframe.DisplayOp, value string) {
 	if op.Text != value {
 		op.Text = value
-		p.Invalidate(id)
+		p.Probe().Invalidate(id)
 	}
 }

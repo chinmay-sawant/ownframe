@@ -71,10 +71,10 @@ func (p *preview) Undo(ctx context.Context) error { return p.Page.Undo(ctx) }
 
 func (p *preview) Redo(ctx context.Context) error { return p.Page.Redo(ctx) }
 
-func (p *preview) Image() image.Image { return p.Page.Image() }
+func (p *preview) Image() image.Image { return p.Page.Probe().Image() }
 
-func (p *preview) Display() *ownframe.Display { return p.Page.Display() }
+func (p *preview) Display() *ownframe.Display { return p.Page.Probe().Display() }
 
-func (p *preview) PNG() []byte { return p.Page.PNG() }
+func (p *preview) PNG() []byte { return p.Page.Probe().PNG() }
 
-func (p *preview) Generation() uint64 { return p.Page.Generation() }
+func (p *preview) Generation() uint64 { return p.Page.Probe().Generation() }

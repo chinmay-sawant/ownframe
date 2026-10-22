@@ -22,7 +22,7 @@ A press held within 8 px for 450 ms calls `Page.Testing().LongPress`. A text fie
 
 A right click asks the page for rows with `ContextMenu() []host.MenuItem` and draws them at the cursor. Row ids are `cut`, `copy`, `paste`, `select-all`, `undo`, and `redo`. An action calls the matching method on the inner screen. Tests use `page` for `Copy`, `Cut`, `Paste`, `SelectAll`, `Undo`, and `Redo`. Paste reads the clipboard the way the Ctrl+V chord does. A disabled row draws grey and does nothing.
 
-A left click on a row runs the action and closes the menu. A left click elsewhere or Escape closes it, and a new right click reopens it at the new point. The menu is chrome. `internal/window/menu_draw.go` paints it after the page, so it never enters `Page.PNG`, the display list, or a `Redraw`. The page is only asked for its rows when the menu opens.
+A left click on a row runs the action and closes the menu. A left click elsewhere or Escape closes it, and a new right click reopens it at the new point. The menu is chrome. `internal/window/menu_draw.go` paints it after the page, so it never enters `page.Probe().PNG`, the display list, or a `Redraw`. The page is only asked for its rows when the menu opens.
 
 ## Cursor shape
 
@@ -30,7 +30,7 @@ When the screen implements `host.CursorShape`, the window reads `CursorShape()` 
 
 ## Touch
 
-`Page.PressedID()` returns the control held by the current pointer gesture, or an empty string after `page.Release`. A frame callback can use it to stop application-specific hold repeats when the pointer releases.
+`page.Probe().PressedID()` returns the control held by the current pointer gesture, or an empty string after `page.Release`. A frame callback can use it to stop application-specific hold repeats when the pointer releases.
 
 A finger that lifts without moving sends press, click, and release as a tap. A finger held within 8 px for 450 ms is a long press: a text field under the point selects its word and any other box reaches `Handlers.LongPress`, after which the finger drags the selection instead of the page and the lift is not a tap. A second finger cancels the hold. A finger that moves past 8 px drags the page instead: the content follows the finger, clamped to the content ends. Two fingers pinch a zoom that starts at the span of the first two fingers and stays between 0.25 and 4. `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, and Ctrl+wheel change the same zoom; the keyboard steps are in [keys.md](keys.md). The replay and bitmap paths draw through the zoom, and `contentPoint` divides it out, so a click under a pinch lands on the same box. A tap that the system also reports as a mouse click does not tap twice.
 

@@ -9,7 +9,7 @@ import (
 // BenchmarkTickBitmap measures one tick against the bitmap fallback page.
 func BenchmarkTickBitmap(b *testing.B) {
 	s, clock, step := benchScene(b, true)
-	if s.page.Display() != nil {
+	if s.page.Probe().Display() != nil {
 		b.Skip("the fallback page kept a display list")
 	}
 

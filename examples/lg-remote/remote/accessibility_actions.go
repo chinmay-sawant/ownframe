@@ -43,7 +43,7 @@ func (a *App) accessibilityActions(ctx context.Context) error {
 				return err
 			}
 		case "scroll":
-			if a.page.ViewLocked() || !a.page.AllowScroll() {
+			if a.page.Probe().ViewLocked() || !a.page.AllowScroll() {
 				continue
 			}
 			_, h := a.page.Size()

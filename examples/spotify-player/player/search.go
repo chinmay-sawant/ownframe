@@ -47,7 +47,7 @@ func (a *App) searchNow(ctx context.Context) error {
 
 	if err := a.Load(ctx, q); err != nil {
 		a.page.SetData(&a.view)
-		a.page.SetChangedProperties([]string{"Query", "Status"})
+		a.page.Probe().SetChangedProperties([]string{"Query", "Status"})
 	}
 
 	return nil

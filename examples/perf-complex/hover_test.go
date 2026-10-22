@@ -18,7 +18,7 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 	if err = redraw(p); err != nil {
 		t.Fatal(err)
 	}
-	generation := p.Generation()
+	generation := p.Probe().Generation()
 	rows := map[string]ownframe.Box{}
 	for _, b := range p.Boxes() {
 		rows[b.ID] = b
@@ -34,10 +34,10 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 		if op == nil || op.R != 52.0/255 {
 			t.Fatalf("row %s not highlighted", id)
 		}
-		if p.Generation() != generation {
+		if p.Probe().Generation() != generation {
 			t.Fatal("hover performed a layout")
 		}
-		if _, ok := p.TakeDirty(); !ok {
+		if _, ok := p.Probe().TakeDirty(); !ok {
 			t.Fatal("hover did not invalidate its pixels")
 		}
 	}

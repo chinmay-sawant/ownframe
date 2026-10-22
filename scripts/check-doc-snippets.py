@@ -15,16 +15,24 @@ def snippets():
     found = {}
     methods = set()
     testing_methods = set()
+    probe_methods = set()
     for path in ROOT.glob('*.go'):
         if not path.name.endswith('_test.go'):
-            methods.update(re.findall(r'func \(p \*Page\) (\w+)\(', path.read_text()))
-            testing_methods.update(re.findall(r'func \(t Testing\) (\w+)\(', path.read_text()))
+            text = path.read_text()
+            methods.update(re.findall(r'func \([A-Za-z0-9]+ \*Page\) (\w+)\(', text))
+            testing_methods.update(re.findall(r'func \([A-Za-z0-9]+ Testing\) (\w+)\(', text))
+            probe_methods.update(re.findall(r'func \([A-Za-z0-9]+ Probe\) (\w+)\(', text))
     for path in [ROOT / 'README.md', *sorted((ROOT / 'documentation').glob('*.md'))]:
         text = path.read_text()
         unknown = set(re.findall(r'\bPage\.([A-Z]\w*)', text)) - methods
         unknown_testing = set(re.findall(r'\bPage\.Testing\(\)\.([A-Z]\w*)', text)) - testing_methods
-        if unknown or unknown_testing:
-            raise ValueError(f'{path}: unknown Page methods {sorted(unknown)}; unknown Testing methods {sorted(unknown_testing)}')
+        unknown_probe = set(re.findall(r'\bPage\.Probe\(\)\.([A-Z]\w*)', text)) - probe_methods
+        if unknown or unknown_testing or unknown_probe:
+            raise ValueError(
+                f'{path}: unknown Page methods {sorted(unknown)}; '
+                f'unknown Testing methods {sorted(unknown_testing)}; '
+                f'unknown Probe methods {sorted(unknown_probe)}'
+            )
         for index, match in enumerate(re.finditer(r'^```go[^\n]*\n(.*?)^```', path.read_text(), re.M | re.S), 1):
             key = f'{path.relative_to(ROOT)}#{index}'
             found[key] = (match.group(1), path, path.read_text()[:match.start(1)].count('\n') + 1)

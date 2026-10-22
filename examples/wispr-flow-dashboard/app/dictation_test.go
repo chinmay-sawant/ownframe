@@ -34,7 +34,7 @@ func TestDictationPageDraws(t *testing.T) {
 		t.Fatalf("voice-profile action = %q", voice.Action)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("dictation fell back to the bitmap path")
 	}
 }

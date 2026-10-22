@@ -21,7 +21,7 @@ func TestClickPatchesTheCardInTheTree(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing state span %q", row.StateID)
 	}
-	before := capture(p.Display(), span)
+	before := capture(p.Probe().Display(), span)
 	button, ok := findBox(p.Boxes(), row.Button)
 	if !ok {
 		t.Fatalf("missing button %q", row.Button)
@@ -36,7 +36,7 @@ func TestClickPatchesTheCardInTheTree(t *testing.T) {
 	if !strings.Contains(span.Text, "Started / selected") {
 		t.Fatalf("the state span reads %q", span.Text)
 	}
-	after := capture(p.Display(), span)
+	after := capture(p.Probe().Display(), span)
 	if len(before) == 0 || len(after) == 0 {
 		t.Fatal("the state span paints nothing")
 	}

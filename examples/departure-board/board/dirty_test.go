@@ -10,17 +10,17 @@ func TestTickOptsIntoFrameDirty(t *testing.T) {
 
 	ctx := context.Background()
 	app := draw(t, ctx)
-	app.Page().TakeDirty()
+	app.Page().Probe().TakeDirty()
 
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if !app.Page().FrameDirty() {
+	if !app.Page().Probe().FrameDirty() {
 		t.Fatal("tick did not opt into the frame dirty path")
 	}
 
-	if app.Page().FrameDirty() {
+	if app.Page().Probe().FrameDirty() {
 		t.Fatal("FrameDirty did not clear")
 	}
 }
@@ -30,7 +30,7 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 
 	ctx := context.Background()
 	app := draw(t, ctx)
-	app.Page().TakeDirty()
+	app.Page().Probe().TakeDirty()
 
 	// Bind the flaps first: an Advance before any tick has no previous
 	// glyphs to flip from, so the cascade would never run.
@@ -39,17 +39,17 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		app.Page().FrameDirty()
-		app.Page().TakeDirty()
+		app.Page().Probe().FrameDirty()
+		app.Page().Probe().TakeDirty()
 	}
 
 	if err := app.Advance(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	app.Page().TakeDirty()
+	app.Page().Probe().TakeDirty()
 
-	d := app.Page().Display()
+	d := app.Page().Probe().Display()
 	if d == nil {
 		t.Fatal("departure board fell back to a bitmap")
 	}
@@ -62,11 +62,11 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !app.Page().FrameDirty() {
+		if !app.Page().Probe().FrameDirty() {
 			t.Fatalf("frame %d did not opt into the frame dirty path", i)
 		}
 
-		rect, ok := app.Page().TakeDirty()
+		rect, ok := app.Page().Probe().TakeDirty()
 		if !ok {
 			empty++
 			continue

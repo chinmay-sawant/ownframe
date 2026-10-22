@@ -8,9 +8,9 @@ import (
 
 // redrawBatch defers page draws across fn, then draws once.
 func redrawBatch(ctx context.Context, p *ownframe.Page, fn func() error) (err error) {
-	p.BeginRedrawBatch()
+	p.Probe().BeginRedrawBatch()
 	defer func() {
-		if endErr := p.EndRedrawBatch(ctx); err == nil {
+		if endErr := p.Probe().EndRedrawBatch(ctx); err == nil {
 			err = endErr
 		}
 	}()

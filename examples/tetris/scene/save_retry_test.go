@@ -49,7 +49,7 @@ func TestCloseSavesSnapshotAndJoins(t *testing.T) {
 		t.Fatal("the store was not closed")
 	}
 
-	if s.page.Ticking() {
+	if s.page.Probe().Ticking() {
 		t.Fatal("the tick was not removed")
 	}
 }

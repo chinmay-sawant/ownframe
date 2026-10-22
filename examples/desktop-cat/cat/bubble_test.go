@@ -43,7 +43,7 @@ func TestNotificationAndClickableBubble(t *testing.T) {
 	if err := inbox.Submit(Notification{Expression: "angry", Message: strings.Repeat("x", 161)}); err == nil {
 		t.Fatal("long text accepted")
 	}
-	if c.Page.Display() == nil {
+	if c.Page.Probe().Display() == nil {
 		t.Fatal("bubble forced bitmap fallback")
 	}
 }

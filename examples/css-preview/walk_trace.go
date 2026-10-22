@@ -37,7 +37,7 @@ func (w *walker) snapshot() {
 	if selected == "" {
 		selected = "-"
 	}
-	st := w.p.Stats()
+	st := w.p.Probe().Stats()
 	w.trace = walkTrace{
 		started: started, selected: selected,
 		last: st.LastRedraw.Microseconds(), redraws: st.Redraws,

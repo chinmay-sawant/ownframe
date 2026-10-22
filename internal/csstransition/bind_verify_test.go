@@ -39,7 +39,7 @@ transition-property:background-color;transition-duration:1000ms}</style>
 		t.Fatal("the display has no target or other box")
 	}
 
-	return p.Display(), target, other
+	return p.Probe().Display(), target, other
 }
 
 // TestBindToRefusesOperationsOutsideTheBox checks that a rebind whose

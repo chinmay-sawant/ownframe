@@ -33,7 +33,7 @@ func clickBox(t *testing.T, app *App, b ownframe.Box) {
 
 func TestOverviewLayout(t *testing.T) {
 	app := newTestApp(t, &fakeSource{}, nil)
-	d := app.page.Display()
+	d := app.page.Probe().Display()
 
 	for _, id := range panelOrder {
 		box, ok := boxByID(app.page.Boxes(), id+"-graph")
