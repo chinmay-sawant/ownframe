@@ -25,7 +25,7 @@ transition-behavior:%s}
 	}
 	for _, box := range p.Boxes() {
 		if box.ID == "target" {
-			return p.Testing().Display(), box
+			return p.Display(), box
 		}
 	}
 	t.Fatal("Blinkless display has no target box")
@@ -46,7 +46,7 @@ transition-timing-function:linear;transition-behavior:normal}</style><div id="ta
 	}
 	for _, box := range p.Boxes() {
 		if box.ID == "target" {
-			return p.Testing().Display(), box
+			return p.Display(), box
 		}
 	}
 	t.Fatal("Blinkless display has no target box")

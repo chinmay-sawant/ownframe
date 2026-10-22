@@ -38,7 +38,7 @@ func checkField(t *testing.T, app *App, caret, sel [3]float64) {
 		t.Fatal("the compose field never took the focus")
 	}
 
-	if err := app.Page().Testing().Type(context.Background(), "ab"); err != nil {
+	if err := app.Page().Type(context.Background(), "ab"); err != nil {
 		t.Fatalf("Type: %v", err)
 	}
 

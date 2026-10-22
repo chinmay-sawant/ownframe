@@ -4,12 +4,12 @@ import "context"
 
 // Type edits the focused note.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Testing().Type(ctx, text)
+	return a.page.Type(ctx, text)
 }
 
 // Backspace drops the last rune of the focused note.
 func (a *App) Backspace(ctx context.Context) error {
-	return a.page.Testing().Backspace(ctx)
+	return a.page.Backspace(ctx)
 }
 
 // Paste inserts text into the focused note.

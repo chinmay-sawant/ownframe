@@ -16,7 +16,7 @@ func TestPlayAllMovesEverySample(t *testing.T) {
 	if !ok {
 		t.Fatal("the play all button is missing")
 	}
-	if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
 	if err := d.tick(ctx); err != nil {
@@ -30,7 +30,7 @@ func TestPlayAllMovesEverySample(t *testing.T) {
 			bb, found := findBox(p.Boxes(), tt.id)
 			t.Errorf("%s has no running sample: nil=%v active=%v pairs=%d dur=%v base=%d detached=%v found=%v anims=%d trans=%d stats=%+v",
 				row.Name, s == nil, s != nil && s.active, len(s.plan.pairs), s.plan.duration,
-				len(s.base), s != nil && s.detached, found, len(bb.Animations), len(bb.Transitions), p.Testing().Stats())
+				len(s.base), s != nil && s.detached, found, len(bb.Animations), len(bb.Transitions), p.Stats())
 			continue
 		}
 		target, _ := targetByKey(row.SampleKey)

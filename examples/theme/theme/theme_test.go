@@ -30,7 +30,7 @@ func clickBox(t *testing.T, ctx context.Context, app *theme.App, id string) {
 func hasFill(t *testing.T, app *theme.App, r, g, b float64) bool {
 	t.Helper()
 
-	d := app.Page().Testing().Display()
+	d := app.Page().Display()
 	if d == nil {
 		t.Fatal("theme example fell back to a bitmap")
 	}

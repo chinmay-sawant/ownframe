@@ -28,15 +28,15 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Click hit-tests the page and applies the data-action.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }
 
 // Type appends text to the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Testing().Type(ctx, text)
+	return a.page.Type(ctx, text)
 }
 
 // Submit runs the login or note form submit.
 func (a *App) Submit(ctx context.Context) error {
-	return a.page.Testing().Submit(ctx)
+	return a.page.Submit(ctx)
 }

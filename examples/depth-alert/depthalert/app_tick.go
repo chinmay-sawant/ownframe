@@ -6,12 +6,12 @@ func (a *App) Tick(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	a.page.Testing().UseFrameDirty()
+	a.page.UseFrameDirty()
 	a.mu.Lock()
 	current := a.view
 	changed := current != a.rendered
 	a.mu.Unlock()
-	if a.ops.generation != a.page.Testing().Generation() {
+	if a.ops.generation != a.page.Generation() {
 		if err := a.ops.bind(a.page); err != nil {
 			return err
 		}

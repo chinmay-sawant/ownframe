@@ -24,7 +24,7 @@ func (d *demo) rebind() error {
 		}
 		s.detached = false
 		box := boxes[boxIndex]
-		plan, err := bind(d.p.Testing().Display(), box, t, s.base, s.to, s.origin)
+		plan, err := bind(d.p.Display(), box, t, s.base, s.to, s.origin)
 		if err != nil {
 			if s.active {
 				return err

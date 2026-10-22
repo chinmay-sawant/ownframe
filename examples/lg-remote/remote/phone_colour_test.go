@@ -11,7 +11,7 @@ import (
 func buttonColour(t *testing.T, a *App, id string) color.Color {
 	t.Helper()
 	b := remoteBox(t, a, id)
-	img, err := png.Decode(bytes.NewReader(a.page.Testing().PNG()))
+	img, err := png.Decode(bytes.NewReader(a.page.PNG()))
 	if err != nil {
 		t.Fatal(err)
 	}

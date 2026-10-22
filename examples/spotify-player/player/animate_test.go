@@ -10,7 +10,7 @@ import (
 
 // eqHeights returns the equalizer bar heights in display units.
 func eqHeights(app *App) []float64 {
-	d := app.Page().Testing().Display()
+	d := app.Page().Display()
 	box, ok := findBox(app.Boxes(), "eq")
 	if !ok {
 		return nil
@@ -41,7 +41,7 @@ func TestTickAnimatesDisplay(t *testing.T) {
 		t.Fatalf("Tick: %v", err)
 	}
 
-	d := app.Page().Testing().Display()
+	d := app.Page().Display()
 	seek, ok := findBox(app.Boxes(), "seek")
 	if !ok {
 		t.Fatal("no seek box")

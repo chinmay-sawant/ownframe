@@ -35,11 +35,11 @@ func TestTickPaintsBarsAndRebinds(t *testing.T) {
 	app := newTestApp(t, &fakeSource{}, nil)
 	ctx := context.Background()
 
-	if app.page.Testing().Display() == nil {
+	if app.page.Display() == nil {
 		t.Fatal("page fell back to the bitmap path; tick cannot paint")
 	}
 
-	t.Logf("display ops=%d boxes=%d", len(app.page.Testing().Display().Ops), len(app.page.Boxes()))
+	t.Logf("display ops=%d boxes=%d", len(app.page.Display().Ops), len(app.page.Boxes()))
 
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
@@ -70,7 +70,7 @@ func TestTickPaintsBarsAndRebinds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if app.state.h.gen != app.page.Testing().Generation() {
+	if app.state.h.gen != app.page.Generation() {
 		t.Fatal("handles not reacquired after redraw")
 	}
 

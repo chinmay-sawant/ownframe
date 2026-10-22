@@ -23,12 +23,12 @@ func (a *App) Boxes() []ownframe.Box { return a.page.Boxes() }
 
 // Click hit-tests the page and applies the click.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }
 
 // Type types into the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Testing().Type(ctx, text)
+	return a.page.Type(ctx, text)
 }
 
 // FocusedField returns the id of the focused control, or "".

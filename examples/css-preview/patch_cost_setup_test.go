@@ -37,7 +37,7 @@ func patchCostPage(tb testing.TB) (context.Context, *ownframe.Page, *view) {
 	if err != nil {
 		tb.Fatal(err)
 	}
-	p.Testing().SetPerf(true)
+	p.SetPerf(true)
 	p.SetData(v)
 	if err := p.Redraw(ctx); err != nil {
 		tb.Fatal(err)

@@ -11,8 +11,8 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.Page().Testing().TakeDirtyRects()
-	before := a.Page().Testing().Generation()
+	a.Page().TakeDirtyRects()
+	before := a.Page().Generation()
 	for _, box := range a.Page().Boxes() {
 		if box.ID == "dashboard" && box.H > 280 {
 			t.Fatalf("dashboard height = %.1f, exceeds the non-scroll panel height", box.H)
@@ -24,7 +24,7 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 	if err := a.Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if got := a.Page().Testing().Generation(); got != before {
+	if got := a.Page().Generation(); got != before {
 		t.Fatalf("generation = %d, want retained paint update at %d", got, before)
 	}
 	if got := a.ops.near.Text; got != "2.2 m" {
@@ -33,7 +33,7 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 	if got := a.ops.coverage.Text; got != "60%" {
 		t.Fatalf("coverage operation = %q, want updated summary value", got)
 	}
-	rects, ok := a.Page().Testing().TakeDirtyRects()
+	rects, ok := a.Page().TakeDirtyRects()
 	if !ok {
 		t.Fatal("summary value changes did not report damage")
 	}

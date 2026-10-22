@@ -56,7 +56,7 @@ func costWindowRun(tb testing.TB, mode string, target int) {
 	}
 	costReportFrames(tb, mode, c.costPick(target))
 	tb.Logf("%s: rows=%d ops=%d boxes=%d draws=%d", mode, len(v.Rows),
-		p.Testing().Stats().Ops, p.Testing().Stats().Boxes, g.draws)
+		p.Stats().Ops, p.Stats().Boxes, g.draws)
 	tb.Logf("%s actives: %v", mode, costActives(c.frames))
 	tb.Logf("%s draws: %v", mode, costDraws(c.frames))
 }

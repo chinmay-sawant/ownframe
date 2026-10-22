@@ -41,7 +41,7 @@ func (d *demo) begin(key string, boxes []ownframe.Box, origin time.Time) (bool, 
 	if s.origin.IsZero() {
 		s.origin = origin
 	}
-	plan, err := bind(d.p.Testing().Display(), box, t, s.base, nil, s.origin)
+	plan, err := bind(d.p.Display(), box, t, s.base, nil, s.origin)
 	if err != nil {
 		return false, err
 	}

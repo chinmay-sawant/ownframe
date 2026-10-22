@@ -12,14 +12,14 @@ func (a *App) publishAccessibility() {
 		return
 	}
 	x, y := a.page.ScrollOffset()
-	now := accessState{gen: a.page.Testing().Generation(), x: x, y: y}
+	now := accessState{gen: a.page.Generation(), x: x, y: y}
 	if now == a.access {
 		return
 	}
 	a.access = now
 	w, h := a.page.Size()
 	scale, ox, oy := 1.0, 0.0, 0.0
-	if a.page.Testing().ViewLocked() {
+	if a.page.ViewLocked() {
 		scale, ox, oy = a.phoneFit()
 		x, y = 0, 0
 	}
@@ -67,7 +67,7 @@ func (a *App) publishAccessibility() {
 		Panel         string
 		Scrollable    bool
 		Nodes         []accessibleNode
-	}{w, h, a.view.Panel, a.page.AllowScroll() && !a.page.Testing().ViewLocked(), nodes})
+	}{w, h, a.view.Panel, a.page.AllowScroll() && !a.page.ViewLocked(), nodes})
 	if err == nil {
 		bridge.SetAccessibility(string(data))
 	}

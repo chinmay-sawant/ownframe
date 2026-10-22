@@ -27,7 +27,7 @@ func TestClickNavigationAndTheme(t *testing.T) {
 		t.Fatal("theme click did not flip to dark")
 	}
 
-	if app.page.Testing().Display() == nil {
+	if app.page.Display() == nil {
 		t.Fatal("dark theme made the page fall back to the bitmap path")
 	}
 }

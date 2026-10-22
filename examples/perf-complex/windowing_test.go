@@ -44,7 +44,7 @@ func TestWindowMatchesFullRows(t *testing.T) {
 		if find(window, "grid").H != find(full, "grid").H {
 			t.Fatal("grid height changed")
 		}
-		if len(window.Testing().Display().Ops) >= 1500 {
+		if len(window.Display().Ops) >= 1500 {
 			t.Fatal("window retained too many operations")
 		}
 	}

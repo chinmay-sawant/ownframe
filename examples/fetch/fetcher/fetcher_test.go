@@ -29,7 +29,7 @@ func TestFetchExample(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(app.Page().Testing().PNG()) == 0 {
+	if len(app.Page().PNG()) == 0 {
 		t.Fatal("PNG is empty after Redraw")
 	}
 

@@ -23,7 +23,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // Display returns the last display list, or nil on a fallback page.
 func (a *App) Display() *ownframe.Display {
-	return a.page.Testing().Display()
+	return a.page.Display()
 }
 
 // Boxes returns the last hit-test boxes.
@@ -33,5 +33,5 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Click hit-tests the page and applies the box under the point.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }

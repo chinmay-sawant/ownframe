@@ -28,10 +28,10 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Hover sets the hovered element from a point.
 func (a *App) Hover(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Hover(ctx, x, y)
+	return a.page.Hover(ctx, x, y)
 }
 
 // Generation increases by one on every successful Redraw.
 func (a *App) Generation() uint64 {
-	return a.page.Testing().Generation()
+	return a.page.Generation()
 }

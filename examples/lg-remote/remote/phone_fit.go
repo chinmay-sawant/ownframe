@@ -5,9 +5,9 @@ import "math"
 func (a *App) phoneFit() (scale, x, y float64) {
 	w, h := a.page.Size()
 	cw, ch := w, h
-	if d := a.page.Testing().Display(); d != nil {
+	if d := a.page.Display(); d != nil {
 		cw, ch = d.Width, d.Height
-	} else if img := a.page.Testing().Image(); img != nil {
+	} else if img := a.page.Image(); img != nil {
 		cw, ch = img.Bounds().Dx(), img.Bounds().Dy()
 	}
 	for _, b := range a.page.Boxes() {

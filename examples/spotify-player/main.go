@@ -33,7 +33,7 @@ func run() error {
 	defer app.Close()
 
 	if *perf {
-		app.Page().Testing().SetPerf(true)
+		app.Page().SetPerf(true)
 	}
 
 	ctx := context.Background()

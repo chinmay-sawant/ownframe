@@ -11,7 +11,7 @@ func (a *App) paintRows() bool {
 		}
 
 		if a.paintRow(i, row) {
-			a.page.Testing().MarkRect(a.bindings.row[i])
+			a.page.MarkRect(a.bindings.row[i])
 			changed = true
 		}
 	}

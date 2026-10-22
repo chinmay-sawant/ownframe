@@ -57,7 +57,7 @@ func (d *demo) start(selected target, button string) error {
 		return nil
 	}
 	if d.samples[selected.key] == nil {
-		d.samples[selected.key] = &sample{base: capture(d.p.Testing().Display(), box)}
+		d.samples[selected.key] = &sample{base: capture(d.p.Display(), box)}
 	}
 	d.samples[selected.key].source = button
 	d.samples[selected.key].origin = time.Now()

@@ -8,7 +8,7 @@ func (a *App) focusField(ctx context.Context, id string) bool {
 		if box.ID != id || box.W <= 0 || box.H <= 0 {
 			continue
 		}
-		if err := a.page.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 			return false
 		}
 		return a.page.FocusedField() == id
@@ -34,8 +34,5 @@ const scrollEnd = 1 << 30
 
 // scrollTo moves the page; the window consumes ScrollTo.
 func (a *App) scrollTo(x, y int) {
-	type scroller interface{ ScrollTo(x, y int) }
-	if sc, ok := any(a.page).(scroller); ok {
-		sc.ScrollTo(x, y)
-	}
+	a.page.ScrollTo(x, y)
 }

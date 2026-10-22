@@ -26,14 +26,14 @@ func boxByAction(t *testing.T, app *App, action string) ownframe.Box {
 func clickBox(t *testing.T, app *App, b ownframe.Box) {
 	t.Helper()
 
-	if err := app.page.Testing().Click(context.Background(), b.X+b.W/2, b.Y+b.H/2); err != nil {
+	if err := app.page.Click(context.Background(), b.X+b.W/2, b.Y+b.H/2); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestOverviewLayout(t *testing.T) {
 	app := newTestApp(t, &fakeSource{}, nil)
-	d := app.page.Testing().Display()
+	d := app.page.Display()
 
 	for _, id := range panelOrder {
 		box, ok := boxByID(app.page.Boxes(), id+"-graph")

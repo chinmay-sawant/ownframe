@@ -17,7 +17,7 @@ func TestChatEnterSends(t *testing.T) {
 
 	app.Page().SetFormValue("chat-compose", "Avengers assemble")
 
-	if err := app.Page().Testing().Submit(context.Background()); err != nil {
+	if err := app.Page().Submit(context.Background()); err != nil {
 		t.Fatalf("Submit: %v", err)
 	}
 

@@ -22,8 +22,8 @@ func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ow
 	if err != nil {
 		tb.Fatal(err)
 	}
-	p.Testing().SetPerf(true)
-	p.Testing().SetDevTools(true)
+	p.SetPerf(true)
+	p.SetDevTools(true)
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
 	if err := redrawCatalog(ctx, p, v); err != nil {
@@ -44,7 +44,7 @@ func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ow
 	if err := installCatalogWindow(ctx, p, v, d, m); err != nil {
 		tb.Fatal(err)
 	}
-	p.Testing().SetDevTools(false)
+	p.SetDevTools(false)
 	return ctx, p, v, d, m
 }
 

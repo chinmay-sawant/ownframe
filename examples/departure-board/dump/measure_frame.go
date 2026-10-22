@@ -28,14 +28,14 @@ func tickFrame(ctx context.Context, app *board.App) (Frame, error) {
 		return f, err
 	}
 
-	full := p.Ticking() && !p.Testing().FrameDirty()
-	rects, ok := p.Testing().TakeDirtyRects()
+	full := p.Ticking() && !p.FrameDirty()
+	rects, ok := p.TakeDirtyRects()
 	f.Rect = bounds(rects)
 	f.Rects = len(rects)
 	f.Area = areaOf(rects)
 
 	content := image.Rectangle{}
-	d := p.Testing().Display()
+	d := p.Display()
 	if d != nil {
 		content = contentRect(d, app)
 		f.Ops = len(d.Ops)

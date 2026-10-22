@@ -10,8 +10,8 @@ the event loop and wakes on input, or at the next deadline the page declared.
 `Page.WantFrameAt(t)` and `Page.WantFrameIn(d)` set that deadline, and
 `Page.Testing().NextFrameAt` returns and clears it; a page with no request falls back to
 a keep-alive frame every 125 ms, so a tick that never asks still runs. A tick
-that animates must leave damage. `Tick` diffs patched ops and sets the
-frame-dirty flag itself; `MarkRect` and `Invalidate` still name extra regions.
+that animates must leave damage. `Page.Testing().Tick` diffs patched ops and sets the
+frame-dirty flag itself. The window calls that tick on the inner screen. `Page.MarkRect` and `Page.Invalidate` still name extra regions.
 A page that damages every frame is never paced.
 `WindowOptions.NoIdlePace` turns the pacing off, and the phone and WebAssembly
 builds keep the plain sixty tick loop. The Frame tab's PACING section shows
@@ -27,17 +27,17 @@ page.SetTick(func(ctx context.Context) error {
     if dur <= 0 {
         return nil
     }
-    page.Testing().PatchOp(opIndex, func(op *ownframe.DisplayOp) {
+    page.PatchOp(opIndex, func(op *ownframe.DisplayOp) {
         op.W = barWidth * float64(pos) / float64(dur)
     })
     return nil
 })
 ```
 
-Here `opIndex` identifies the bar operation in the current display. Find it again after a redraw or resize. These retained-operation helpers are on `Testing()` and are intended for engine examples. Application animations can update data and call `Redraw` instead.
+Here `opIndex` identifies the bar operation in the current display. Find it again after a redraw or resize. `PatchOp` is on `page`. `Display` and `Boxes` are on `page`. These helpers are for engine examples. Application animations can update data and call `Redraw` instead.
 
 A page the replay accepts keeps its placement as `*ownframe.Display`.
-`Page.Testing().Display` returns that list and `Page.Boxes` returns the hit-test boxes
+`Page.Display` returns that list and `Page.Boxes` returns the hit-test boxes
 from the same placement. Operations carry points; boxes carry CSS pixels, so
 multiply a box by `Display.PointsPerPixel` before comparing the two. The paint
 fields of `ownframe.DisplayOp` (`X`, `Y`, `W`, `H`, `R`, `G`, `B`, `Alpha`, and
@@ -48,9 +48,9 @@ hide a fill, collapse `W` and `H`.
 
 A `Redraw` replaces the display list, so a callback that keeps an operation
 pointer must find the operation again after any redraw. A window resize
-relayouts the page and replaces the display list the same way. `Click` redraws
-after its handler. `KeyUp` never draws, and `Copy` does not draw; `KeyDown`
-draws only when Escape clears a focus or a caret key moves. The other input
+relayouts the page and replaces the display list the same way. `page.Click` redraws
+after its handler. `page.KeyUp` never draws, and `page.Copy` does not draw. `page.KeyDown`
+draws only when Escape clears a focus or a caret key moves. The window calls those on the inner screen. The other input
 handlers redraw after they run. The examples use `internal/frame`
 to find operations: `frame.Fill` returns the first fill of a colour inside a
 box, `frame.Fills` returns them left to right, `frame.Text` returns the first
@@ -68,16 +68,16 @@ bound.
 There are two ways to change the frame without a full `Redraw`. A tick
 callback changes an operation in place, which suits an animation that runs
 every frame. A click, key, or hover handler changes page content, and the
-page reports the changed boxes with `TakeDirtyRects` so the window repaints
+page reports the changed boxes with `Page.TakeDirtyRects` so the window repaints
 only those boxes; [repaint.md](repaint.md) has the call shapes. Reach for the
 tick when the change repeats every frame, and for the content path when it is
-one edit. A tick that patches operations is marked dirty by the library. `Tick` diffs
+one edit. A tick that patches operations is marked dirty by the library. `Page.Testing().Tick` diffs
 the display list, queues the changed boxes, and sets the frame-dirty flag, so
-callers need not remember `UseFrameDirty`. The window then repaints
-`TakeDirtyRects` and blits the buffer when that list is empty. A no-op tick
-leaves the page clean, so idle park can sleep. `UseFrameDirty` remains a
-working alias. `Invalidate` marks the elements that tick changed. `MarkRect`
-marks a CSS-pixel line that has no element id.
+callers need not remember `Page.UseFrameDirty`. The window then repaints
+`Page.TakeDirtyRects` and blits the buffer when that list is empty. A no-op tick
+leaves the page clean, so idle park can sleep. `Page.UseFrameDirty` remains a
+working alias. `Page.Invalidate` marks the elements that tick changed. `Page.MarkRect`
+marks a CSS-pixel line that has no element id. The window calls the inner screen.
 
 A rotation can retarget operations in the tick instead of calling `Redraw`.
 The [departure board](../examples/departure-board) does: when the feed is due,
@@ -86,7 +86,7 @@ starts the row bands with the same math the rebind uses after a redraw.
 Nothing is laid out. The same call stores the new rows with `SetData`, so the
 next real `Redraw`, for a resize, theme, or night sheet, rebuilds the same
 picture from the same data. Each flap keeps the box it paints in, computed
-from its `ownframe.Box` at rebind, and the tick calls `MarkRect` on the boxes
+from its `ownframe.Box` at rebind, and the tick calls `Page.MarkRect` on the boxes
 whose glyph changed, so the window repaints one row band instead of the whole
 board. `Advance`, the `SetData` plus `Redraw` pair, stays for tests and for
 the dump.
@@ -104,11 +104,11 @@ row when a track ends.
 
 - The window replays the display list, so operation changes show in the
   desktop window, the phone build, and the WebAssembly canvas. `Serve` never
-  ticks. `Page.Testing().PNG()` paints the retained display when requested;
+  ticks. `Page.PNG()` paints the retained display when requested;
   operation patches and mutating ticks invalidate an already encoded picture.
   A no-op tick keeps the PNG cache. This software path
   does not capture the window framebuffer.
-- A page that fell back to the bitmap path has no display list; `Display`
+- A page that fell back to the bitmap path has no display list. `Page.Display`
   returns nil and there is nothing to change.
 - CSS `@keyframes` and `transition` use separate CSS-specific runtime packages.
   A caller binds Blinkless records to paint operations and supplies the clock,
@@ -122,13 +122,13 @@ locally through [examples/music](../examples/music). The
 [dino](../examples/dino) and [flappy-bird](../examples/flappy-bird) examples
 step their games and paint the scene from the tick. The
 [departure board](../examples/departure-board) example rotates its feed by
-retargeting operations in the tick, opts into `UseFrameDirty` with one row band
+retargeting operations in the tick, opts into `Page.UseFrameDirty` with one row band
 per cascade frame and meters its refresh bar at 10 Hz.
 
 ## Hover without layout
 
-`Handlers.Hover` receives the previous and next hit boxes. A callback that only changes retained paint operations can return `(true, nil)` to skip CSS relayout. The page invalidates both boxes. Return `(false, nil)` to use the ordinary CSS path; an error leaves the hover state unchanged. The callback must preserve geometry and handle both restoring the previous box and painting the next one. Rebind cached operation pointers after `Generation` changes. PNG paints the retained display through the software painter; see [screen.md](screen.md#png-and-the-web-page).
+`Handlers.Hover` receives the previous and next hit boxes. A callback that only changes retained paint operations can return `(true, nil)` to skip CSS relayout. The page invalidates both boxes. Return `(false, nil)` to use the ordinary CSS path; an error leaves the hover state unchanged. The callback must preserve geometry and handle both restoring the previous box and painting the next one. Rebind cached operation pointers after `Page.Generation` changes. PNG paints the retained display through the software painter; see [screen.md](screen.md#png-and-the-web-page).
 
 ## Scroll windows
 
-`SetWindowing(true)` enables `SetScrollWindow(func(offsetY, viewH int) bool)`. Return true after updating row data, or false when the existing overscan still covers the viewport. The host redraws only when true. `Redraw` also calls the callback before executing the template. The callback now returns a bool; callers using the earlier callback shape must add that return value. Preserve the full content height with spacers and keep stable row IDs. The fixed-height example is not a general variable-height or keyboard-focus virtualization implementation.
+`Page.SetWindowing(true)` enables `SetScrollWindow(func(offsetY, viewH int) bool)`. Return true after updating row data, or false when the existing overscan still covers the viewport. The host redraws only when true. `Redraw` also calls the callback before executing the template. The callback now returns a bool; callers using the earlier callback shape must add that return value. Preserve the full content height with spacers and keep stable row IDs. The fixed-height example is not a general variable-height or keyboard-focus virtualization implementation.

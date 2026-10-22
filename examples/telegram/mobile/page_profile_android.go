@@ -5,6 +5,6 @@ package mobile
 import "github.com/chinmay-sawant/ownframe"
 
 func setAndroidPageProfile(page *ownframe.Page) {
-	page.Testing().SetTouchZoomAllowed(false)
-	page.Testing().SetPerf(true)
+	page.SetTouchZoomAllowed(false)
+	page.SetPerf(true)
 }

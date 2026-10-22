@@ -8,7 +8,7 @@ import "context"
 // renders with the class and binds.
 func (d *demo) capturePending(ctx context.Context) error {
 	boxes := d.p.Boxes()
-	display := d.p.Testing().Display()
+	display := d.p.Display()
 	changed := false
 	for _, key := range d.pending {
 		s := d.samples[key]

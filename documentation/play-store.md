@@ -7,7 +7,8 @@ not upload anything. Telegram and eyes are the exhibits, not store products.
 ## Remaining gaps
 
 **TalkBack.** There is no TalkBack node. `Page.AccessibilityTree` is a Go
-snapshot for host code. That is not an Android accessibility service.
+snapshot for host code. The window still calls the inner screen. That is not
+an Android accessibility service.
 
 **Process death.** Pause and resume keep in-process page state. If Android
 kills the process, the page is gone. Apps that need restore must persist

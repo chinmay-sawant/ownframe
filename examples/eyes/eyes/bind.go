@@ -45,5 +45,5 @@ func (a *App) bind(d *ownframe.Display) {
 	a.pm.lidRB = fillAt(d, bx, "lid-rb")
 	a.pm.spiralL = imageAt(d, bx, "spiral-l")
 	a.pm.spiralR = imageAt(d, bx, "spiral-r")
-	a.bnd = a.page.Testing().Generation()
+	a.bnd = a.page.Generation()
 }

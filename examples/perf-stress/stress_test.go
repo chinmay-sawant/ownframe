@@ -20,14 +20,14 @@ func TestStressOps(t *testing.T) {
 	if err := page.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	d := page.Testing().Display()
+	d := page.Display()
 	if d == nil {
 		t.Fatal("no display after Redraw")
 	}
 	if got := len(d.Ops); got < 2000 {
 		t.Fatalf("ops = %d, want > 2000", got)
 	}
-	st := page.Testing().Stats()
+	st := page.Stats()
 	if st.Ops < 2000 {
 		t.Fatalf("stats ops = %d, want > 2000", st.Ops)
 	}

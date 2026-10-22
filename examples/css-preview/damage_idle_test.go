@@ -11,12 +11,12 @@ import (
 func TestIdleTickOptsIntoFrameDirty(t *testing.T) {
 	ctx := context.Background()
 	p, d, _ := fixturePage(t)
-	p.Testing().TakeDirtyRects()
+	p.TakeDirtyRects()
 
 	if err := d.tick(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if !p.Testing().FrameDirty() {
+	if !p.FrameDirty() {
 		t.Fatal("empty idle tick did not opt into the dirty path")
 	}
 
@@ -24,7 +24,7 @@ func TestIdleTickOptsIntoFrameDirty(t *testing.T) {
 	if err := d.tick(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if !p.Testing().FrameDirty() {
+	if !p.FrameDirty() {
 		t.Fatal("finished-only tick did not opt into the dirty path")
 	}
 }

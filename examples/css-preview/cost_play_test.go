@@ -16,7 +16,7 @@ func costPlayAll(ctx context.Context, p *ownframe.Page, tb testing.TB) {
 	if !ok {
 		tb.Fatalf("missing %s", playAllID)
 	}
-	if err := p.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+	if err := p.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 		tb.Fatal(err)
 	}
 }

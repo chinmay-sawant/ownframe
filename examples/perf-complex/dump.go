@@ -24,12 +24,12 @@ func writeDump(out, mode string, d dump, p *ownframe.Page) error {
 		return err
 	}
 	// Initial samples own fresh pages; materialize the original for geometry.
-	if p.Testing().Display() == nil {
+	if p.Display() == nil {
 		if err := redraw(p); err != nil {
 			return err
 		}
 	}
-	display := p.Testing().Display()
+	display := p.Display()
 	type op struct {
 		Kind       int
 		X, Y, W, H float64

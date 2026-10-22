@@ -71,7 +71,7 @@ func click(t *testing.T, s *Scene, id string) {
 		t.Fatalf("no box %q", id)
 	}
 
-	if err := s.page.Testing().Click(context.Background(), box.X+box.W/2, box.Y+box.H/2); err != nil {
+	if err := s.page.Click(context.Background(), box.X+box.W/2, box.Y+box.H/2); err != nil {
 		t.Fatal(err)
 	}
 }

@@ -52,7 +52,7 @@ func clickControl(t *testing.T, app *ui.App, id string) {
 func clickBox(t *testing.T, app *ui.App, x, y float64) {
 	t.Helper()
 
-	if err := app.Page().Testing().Click(context.Background(), x, y); err != nil {
+	if err := app.Page().Click(context.Background(), x, y); err != nil {
 		t.Fatal(err)
 	}
 }

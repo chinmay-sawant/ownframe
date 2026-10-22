@@ -14,7 +14,7 @@ func TestPhoneKeyboardFocusActivatesButton(t *testing.T) {
 	if err := p.Focus(ctx, "volup"); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Testing().KeyDown(ctx, "enter"); err != nil {
+	if err := p.KeyDown(ctx, "enter"); err != nil {
 		t.Fatal(err)
 	}
 	if f.spec != "vol:Up" {
@@ -24,7 +24,7 @@ func TestPhoneKeyboardFocusActivatesButton(t *testing.T) {
 	if err := p.Focus(ctx, "host"); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Testing().KeyDown(ctx, "enter"); err != nil {
+	if err := p.KeyDown(ctx, "enter"); err != nil {
 		t.Fatal(err)
 	}
 	if f.spec != "pair:" || f.host != "10.0.0.8" {

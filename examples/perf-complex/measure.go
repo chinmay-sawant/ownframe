@@ -41,7 +41,7 @@ func measure(mode string, p *ownframe.Page, v view) (dump, *ownframe.Page, error
 		}
 		elapsed := time.Since(start).Nanoseconds()
 		runtime.ReadMemStats(&after)
-		d.Samples = append(d.Samples, sample{elapsed, after.TotalAlloc - before.TotalAlloc, after.Mallocs - before.Mallocs, p.Testing().Stats()})
+		d.Samples = append(d.Samples, sample{elapsed, after.TotalAlloc - before.TotalAlloc, after.Mallocs - before.Mallocs, p.Stats()})
 	}
 	start := time.Now()
 	for time.Since(start) < 2*time.Second {

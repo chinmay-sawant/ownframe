@@ -47,7 +47,7 @@ func TestStylePage(t *testing.T) {
 		t.Fatalf("per-app rows = %d", len(app.View().Style.Apps))
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Display() == nil {
 		t.Fatal("style fell back to the bitmap path")
 	}
 }

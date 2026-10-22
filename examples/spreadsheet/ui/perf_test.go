@@ -24,8 +24,8 @@ func TestPerfBreakdown(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s := app.page.Testing().Stats()
-	d := app.page.Testing().Display()
+	s := app.page.Stats()
+	d := app.page.Display()
 	kinds := map[string]int{}
 	for i := range d.Ops {
 		kinds[fmt.Sprint(d.Ops[i].Kind)]++

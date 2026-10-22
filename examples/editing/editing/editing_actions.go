@@ -27,7 +27,7 @@ func (a *App) focusNote(ctx context.Context) bool {
 			continue
 		}
 
-		if err := a.page.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 			return false
 		}
 

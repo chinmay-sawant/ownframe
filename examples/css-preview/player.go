@@ -7,7 +7,7 @@ import (
 
 func (d *demo) tick(ctx context.Context) error {
 	if len(d.samples) == 0 && len(d.pending) == 0 && !d.treeDirty && !d.remeasure {
-		d.p.Testing().UseFrameDirty()
+		d.p.UseFrameDirty()
 		return nil
 	}
 	if err := d.capturePending(ctx); err != nil {
@@ -32,17 +32,17 @@ func (d *demo) tick(ctx context.Context) error {
 		if err := d.drain(); err != nil {
 			return err
 		}
-		d.gen = d.p.Testing().Generation()
-	} else if d.gen != d.p.Testing().Generation() {
+		d.gen = d.p.Generation()
+	} else if d.gen != d.p.Generation() {
 		if err := d.rebind(); err != nil {
 			return err
 		}
-		d.gen = d.p.Testing().Generation()
+		d.gen = d.p.Generation()
 	}
 	active := d.activeCount()
 	partial := active > 0 && active <= partialLimit
 	if partial || active == 0 {
-		d.p.Testing().UseFrameDirty()
+		d.p.UseFrameDirty()
 	}
 	now := time.Now()
 	live, waiting := d.stepSamples(now, partial)

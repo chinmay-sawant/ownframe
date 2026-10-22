@@ -15,7 +15,7 @@ func (a *App) Close() {
 
 // Tick advances audio and animation once per frame.
 func (a *App) Tick(ctx context.Context) error {
-	a.page.Testing().UseFrameDirty()
+	a.page.UseFrameDirty()
 	a.audio.Update()
 	a.autoStart(ctx)
 

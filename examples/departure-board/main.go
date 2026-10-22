@@ -45,7 +45,7 @@ func main() {
 	ctx := context.Background()
 
 	if *perf {
-		app.Page().Testing().SetPerf(true)
+		app.Page().SetPerf(true)
 	}
 
 	if *livery != board.DefaultLivery {

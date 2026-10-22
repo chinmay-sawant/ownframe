@@ -55,6 +55,6 @@ func Back() bool { return app != nil && app.RequestBack() }
 // CancelTouches clears a pointer gesture when Android pauses the activity.
 func CancelTouches() {
 	if inputPage != nil {
-		inputPage.Testing().CancelTouches()
+		inputPage.CancelTouches()
 	}
 }

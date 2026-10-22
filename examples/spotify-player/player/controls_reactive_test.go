@@ -40,9 +40,9 @@ func TestReactiveTogglePartialDirty(t *testing.T) {
 	redraw(t, app)
 
 	for _, id := range []string{"play", "heart", "shuffle", "repeat"} {
-		app.Page().Testing().TakeDirty()
+		app.Page().TakeDirty()
 		click(t, app, id)
-		rect, ok := app.Page().Testing().TakeDirty()
+		rect, ok := app.Page().TakeDirty()
 		if !ok || rect.Empty() {
 			t.Fatalf("%s left no dirty region", id)
 		}
@@ -68,7 +68,7 @@ func TestReactiveToggleStableIDs(t *testing.T) {
 		if _, ok := findBox(app.Boxes(), id); !ok {
 			t.Fatalf("missing stable id %s", id)
 		}
-		if app.Page().Testing().Element(id).ID != id {
+		if app.Page().Element(id).ID != id {
 			t.Fatalf("retained element %s has wrong id", id)
 		}
 	}

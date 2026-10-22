@@ -16,7 +16,7 @@ func catalogViewDisplay(t *testing.T, source string) *ownframe.Display {
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	return p.Testing().Display()
+	return p.Display()
 }
 
 func catalogViewIndex(d *ownframe.Display, id string) int {

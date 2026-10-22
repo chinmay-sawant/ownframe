@@ -35,7 +35,7 @@ func TestInfoTooltipsNeedHover(t *testing.T) {
 			t.Fatalf("%s bubble visible before hover", id)
 		}
 
-		if err := app.Page().Testing().Hover(ctx, tip.X+tip.W/2, tip.Y+tip.H/2); err != nil {
+		if err := app.Page().Hover(ctx, tip.X+tip.W/2, tip.Y+tip.H/2); err != nil {
 			t.Fatal(err)
 		}
 

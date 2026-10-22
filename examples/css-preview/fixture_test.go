@@ -17,7 +17,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Testing().Display() == nil {
+	if p.Display() == nil {
 		t.Fatal("CSS preview fixture fell back from the display-list path")
 	}
 	v.Catalog = catalogRows(nil)
@@ -25,7 +25,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	if err = redrawCatalog(ctx, p, v); err != nil {
 		t.Fatal(err)
 	}
-	if p.Testing().Display() == nil {
+	if p.Display() == nil {
 		t.Fatal("CSS preview catalog fell back from the display-list path")
 	}
 	v.Catalog = catalogRows(p)
@@ -36,7 +36,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	}
 	d := newDemo(p, v)
 	p.Handle(ownframe.Handlers{Click: d.click, ClickPaint: d.clickPaint})
-	p.Testing().SetAfterRedraw(func() { d.afterRedraw(context.Background()) })
+	p.SetAfterRedraw(func() { d.afterRedraw(context.Background()) })
 	return p, d, v
 }
 

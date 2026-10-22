@@ -70,7 +70,7 @@ func TestRunPagePanicWritesReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	page.Testing().SetAfterRedraw(func() { panic("host page panic") })
+	page.SetAfterRedraw(func() { panic("host page panic") })
 
 	err = Run(t.Context(), page)
 	if err == nil {

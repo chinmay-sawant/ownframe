@@ -17,11 +17,11 @@ func TestClickPatchesWithoutRebuildingThePage(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing button %q", row.Button)
 	}
-	parses := p.Testing().Stats().Parses
-	if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+	parses := p.Stats().Parses
+	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
-	if got := p.Testing().Stats().Parses; got != parses {
+	if got := p.Stats().Parses; got != parses {
 		t.Fatalf("the click rebuilt the page: parses %d then %d", parses, got)
 	}
 	if d.treeDirty {

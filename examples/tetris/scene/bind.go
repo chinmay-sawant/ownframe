@@ -41,5 +41,5 @@ func (s *Scene) bind(d *ownframe.Display) {
 	s.ops.status = textAt(d, boxes, "t-status")
 	s.ops.theme = textAt(d, boxes, "t-theme")
 
-	s.bound = s.page.Testing().Generation()
+	s.bound = s.page.Generation()
 }

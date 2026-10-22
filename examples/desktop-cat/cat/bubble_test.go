@@ -28,13 +28,13 @@ func TestNotificationAndClickableBubble(t *testing.T) {
 	if !c.Interactive(200, 200) || !c.Interactive(50, 50) || c.Interactive(5, 5) || c.Interactive(30, 200) {
 		t.Fatal("incorrect input regions")
 	}
-	if err := c.Page.Testing().Click(ctx, 100, 60); err != nil {
+	if err := c.Page.Click(ctx, 100, 60); err != nil {
 		t.Fatal(err)
 	}
 	if c.shown || c.Interactive(50, 50) {
 		t.Fatal("bubble did not dismiss")
 	}
-	if err := c.Page.Testing().Click(ctx, 200, 220); err != nil {
+	if err := c.Page.Click(ctx, 200, 220); err != nil {
 		t.Fatal(err)
 	}
 	if !c.shown || c.view.Message != "Have you had enough water?" {
@@ -43,7 +43,7 @@ func TestNotificationAndClickableBubble(t *testing.T) {
 	if err := inbox.Submit(Notification{Expression: "angry", Message: strings.Repeat("x", 161)}); err == nil {
 		t.Fatal("long text accepted")
 	}
-	if c.Page.Testing().Display() == nil {
+	if c.Page.Display() == nil {
 		t.Fatal("bubble forced bitmap fallback")
 	}
 }

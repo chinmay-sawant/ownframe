@@ -91,5 +91,5 @@ func (a *App) animateEq(d *ownframe.Display, boxes []ownframe.Box) {
 		op.Y = y + h - barH
 	}
 
-	a.page.Testing().Invalidate("eq")
+	a.page.Invalidate("eq")
 }

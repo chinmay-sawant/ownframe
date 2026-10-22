@@ -52,7 +52,7 @@ func (a *App) Boxes() []ownframe.Box { return a.page.Boxes() }
 
 // Click hit-tests the page and activates the control under the point.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }
 
 // describe renders "WxH format" for shot bytes, or "" without any.

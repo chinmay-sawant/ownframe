@@ -32,7 +32,7 @@ func TestInsightsVoiceTab(t *testing.T) {
 		t.Fatal("no vt-setup box")
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Display() == nil {
 		t.Fatal("the voice tab fell back to the bitmap path")
 	}
 

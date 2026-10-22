@@ -10,15 +10,15 @@ import (
 // tick into a dirty-rect replay and marks only the rows that changed, so a
 // 1080p frame does not reshape the whole list.
 func (a *App) paint() {
-	if a.page.Testing().Display() == nil {
+	if a.page.Display() == nil {
 		return
 	}
 
-	if a.page.Testing().Generation() != a.bound {
+	if a.page.Generation() != a.bound {
 		a.bind()
 	}
 
-	a.page.Testing().UseFrameDirty()
+	a.page.UseFrameDirty()
 	rows := a.paintRows()
 	a.paintChrome(!rows)
 }

@@ -78,7 +78,7 @@ The second pass removed a second full page build and made the grid build each
 item once.
 
 - A desktop press ran two page builds before any frame was drawn:
-  `SelectAt` focused the button and redrew, then `Click` ran the handler and
+  `page.Testing().SelectAt` focused the button and redrew, then `page.Click` ran the handler and
   redrew. The focus build was never presented.
 - Add a redraw batch around press, focus, click, and release. The page records
   that a draw is pending and draws the final focus, active, source, and
@@ -210,7 +210,7 @@ page paints the patched region. Nothing is rebuilt.
 - `Handlers.ClickPaint` reports that the handler painted the frame, so the
   click skips the redraw and the redraw batch waits for no draw that will not
   come.
-- `Page.Testing().SetAfterRedraw` puts the tree state back after the template replaced
+- `Page.SetAfterRedraw` puts the tree state back after the template replaced
   the tree, so a scroll or a reload does not lose the started cards.
 
 Measured with the real click script, 43 clicks, 1908x999:

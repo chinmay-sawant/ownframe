@@ -33,7 +33,7 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 
 	a.view.Count++
 	a.page.SetData(a.view)
-	a.page.Testing().Invalidate("count")
+	a.page.Invalidate("count")
 
 	return nil
 }

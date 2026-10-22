@@ -21,11 +21,11 @@ func TestUITypeCommitUndoOverStore(t *testing.T) {
 
 	// Replace A1 and commit with Enter. The status clears when the worker
 	// acknowledges the save.
-	if err := page.Testing().Type(ctx, "edited"); err != nil {
+	if err := page.Type(ctx, "edited"); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := page.Testing().Submit(ctx); err != nil {
+	if err := page.Submit(ctx); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,7 +67,7 @@ func TestUICtrlEndJumpsToUsedRange(t *testing.T) {
 	ctx := context.Background()
 	waitFor(t, app, func() bool { return hasCell(app, "row 1") })
 
-	if err := app.Page().Testing().KeyDown(ctx, "ctrl+end"); err != nil {
+	if err := app.Page().KeyDown(ctx, "ctrl+end"); err != nil {
 		t.Fatal(err)
 	}
 

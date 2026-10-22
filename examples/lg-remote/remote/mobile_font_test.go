@@ -18,7 +18,7 @@ func TestPhoneFontScalingReachesRenderedControls(t *testing.T) {
 		if err := p.Redraw(context.Background()); err != nil {
 			t.Fatal(err)
 		}
-		d := p.Testing().Display()
+		d := p.Display()
 		if d == nil {
 			t.Fatal("missing display")
 		}

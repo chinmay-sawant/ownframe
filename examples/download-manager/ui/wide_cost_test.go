@@ -26,7 +26,7 @@ func TestProgressDirtyStaysOnTheRow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app.page.Testing().TakeDirty()
+	app.page.TakeDirty()
 	row := active[0]
 	row.Done = row.Total / 2
 	back.send(Update{Kind: UpdateProgress, Row: &row})
@@ -35,7 +35,7 @@ func TestProgressDirtyStaysOnTheRow(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rect, ok := app.page.Testing().TakeDirty()
+	rect, ok := app.page.TakeDirty()
 	if !ok {
 		t.Fatal("progress tick left no dirty rect")
 	}
