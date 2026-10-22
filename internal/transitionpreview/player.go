@@ -9,11 +9,11 @@ import (
 )
 
 func (d *demo) tick(context.Context) error {
-	if d.pending != "" || d.gen != d.page.Testing().Generation() {
+	if d.pending != "" || d.gen != d.page.Probe().Generation() {
 		if err := d.rebind(); err != nil {
 			return err
 		}
-		d.gen = d.page.Testing().Generation()
+		d.gen = d.page.Probe().Generation()
 		d.pending = ""
 	}
 	active := false
@@ -42,7 +42,7 @@ func (d *demo) rebind() error {
 		if !ok {
 			continue
 		}
-		player, err := csstransition.Bind(d.page.Testing().Display(), box, target.property,
+		player, err := csstransition.Bind(d.page.Probe().Display(), box, target.property,
 			item.indices, item.base, item.start)
 		if err != nil {
 			return err

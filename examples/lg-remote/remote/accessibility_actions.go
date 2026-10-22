@@ -43,7 +43,7 @@ func (a *App) accessibilityActions(ctx context.Context) error {
 				return err
 			}
 		case "scroll":
-			if a.page.Testing().ViewLocked() || !a.page.AllowScroll() {
+			if a.page.Probe().ViewLocked() || !a.page.AllowScroll() {
 				continue
 			}
 			_, h := a.page.Size()
@@ -54,7 +54,7 @@ func (a *App) accessibilityActions(ctx context.Context) error {
 		case "click":
 			for _, box := range a.page.Boxes() {
 				if box.ID == value {
-					if err := a.page.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+					if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 						return err
 					}
 					break

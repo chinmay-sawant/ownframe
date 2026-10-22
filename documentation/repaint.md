@@ -7,9 +7,9 @@ operation, is in [frames.md](frames.md).
 
 ## The page reports the regions
 
-`Page.Testing().TakeDirtyRects` returns the regions that changed since the previous
+`page.Probe().TakeDirtyRects` returns the regions that changed since the previous
 call, in CSS pixels, and clears them. A handler can declare the id it changed
-with `Invalidate`; for handlers that forget, the page diffs the previous
+with `page.Probe().Invalidate`; for handlers that forget, the page diffs the previous
 display list against the new one and unions the bounds of every changed
 operation. An operation removed from the list dirties its old bounds, so a
 vanishing element leaves no ghost. A change the page cannot place, such as a
@@ -25,11 +25,11 @@ that touches its neighbour repaints once. Past eight rects the page collapses
 the whole list to one bounding box. When the page hands the list over, each
 rect is padded, clamped to the content, and coalesced again. If the surviving
 rects cover more than a third of the content, the call returns one bounding
-box instead. `TakeDirty` keeps its old signature and returns that bounding
+box instead. `page.Probe().TakeDirty` keeps its old signature and returns that bounding
 box, so a caller that wants one rect still gets one.
 
 ```go
-rects, ok := page.Testing().TakeDirtyRects()
+rects, ok := page.Probe().TakeDirtyRects()
 ```
 
 `ok` false means nothing changed since the previous call. Each rect is
@@ -165,13 +165,14 @@ When content exceeds the cache limits, a static page with `TakeDirty` keeps one 
   decision is recorded in
   [the plan](../plans/v0.0.2/incremental-repaint.md). The badge stays
   visible.
-- A ticker that does not implement `FrameDirty` (not a `Page`). A `Page`
-  tick that patches ops is marked dirty by `Tick` itself and stays on the
-  tile path. A no-op tick blits the buffer. `UseFrameDirty` is an alias.
+- A ticker that does not implement `FrameDirty` (not a `Page`). A page
+  tick that patches ops is marked dirty by `Page.Testing().Tick` and stays on the
+  tile path. A no-op tick blits the buffer. `page.Probe().UseFrameDirty` is an alias.
+  The window calls the inner screen.
 - A stretched or zoomed page. `internal/window/replay_scale.go` replays the
   whole list into a canvas-sized buffer each frame and scales it to the
   window.
-- `Page.Testing().PNG()` paints the retained display on the first request after a redraw and caches the encoded picture. It does not use window tiles. Paint damage, including tick-only edits, invalidates the encoded picture; see [screen.md](screen.md#png-and-the-web-page).
+- `page.Probe().PNG()` paints the retained display on the first request after a redraw and caches the encoded picture. It does not use window tiles. Paint damage, including tick-only edits, invalidates the encoded picture; see [screen.md](screen.md#png-and-the-web-page).
 
 ## Measured numbers
 
@@ -211,7 +212,7 @@ The worst steady frame skips the first frame after a draw, which repaints the
 whole content once. On the same board the single union rect replayed 630 of
 631 operations on the worst cascade frame, so the list removes about 82
 percent of the worst-frame operation count. The `rotate` row takes the tick's
-retarget path: `Page.Testing().Generation()` does not move, `RedrawNS` stays the initial
+retarget path: `page.Probe().Generation()` does not move, `RedrawNS` stays the initial
 draw, and no frame after the first is full-content. The full tables and the
 command lines are in `examples/departure-board/PERFORMANCE.md`.
 

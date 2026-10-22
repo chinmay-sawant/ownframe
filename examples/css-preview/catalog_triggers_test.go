@@ -44,7 +44,7 @@ func startCatalog(t *testing.T, p *ownframe.Page, d *demo, name string) {
 	if !ok {
 		t.Fatalf("missing catalog button %q", row.Button)
 	}
-	if err := p.Testing().Click(context.Background(), button.X+button.W/2, button.Y+button.H/2); err != nil {
+	if err := p.Click(context.Background(), button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
 	if err := d.tick(context.Background()); err != nil {

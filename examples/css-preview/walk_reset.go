@@ -22,7 +22,7 @@ func (w *walker) reset(ctx context.Context) {
 	w.next, w.scrollFor = -1, -1
 	w.aim = [3]int{-1, 0, 0}
 	w.p.ScrollTo(0, 0)
-	w.d.gen = w.p.Testing().Generation()
+	w.d.gen = w.p.Probe().Generation()
 	w.p.SetData(w.v)
 	_ = w.p.Redraw(ctx)
 }

@@ -16,9 +16,3 @@ func (p *Page) SetFormChecked(id string, checked bool) {
 
 // FormSelected reports whether id has a whole-value selection.
 func (p *Page) FormSelected(id string) bool { return innerPage(p).FormSelected(id) }
-
-// LastFocusID is the last focused control id.
-func (p *Page) LastFocusID() string { return innerPage(p).LastFocusID() }
-
-// FocusedField returns the focused field id, excluding buttons.
-func (p *Page) FocusedField() string { return innerPage(p).FocusedField() }

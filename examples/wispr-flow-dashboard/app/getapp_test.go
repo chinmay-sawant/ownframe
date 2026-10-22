@@ -45,7 +45,7 @@ func TestGetAppWorkflow(t *testing.T) {
 		t.Fatalf("overlay covers x=%v w=%v h=%v, want the whole frame", modal.X, modal.W, modal.H)
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("the panel fell back to the bitmap path")
 	}
 

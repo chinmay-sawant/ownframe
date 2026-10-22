@@ -23,7 +23,7 @@ On X11, `Write` may read `$XAUTHORITY`, or `~/.Xauthority` when that variable is
 
 Tests call `UseMemory(true)` before any `Write`, including `TestMain` in `internal/clipboard` and `examples/clipboard`. They do not touch the desktop clipboard.
 
-The [clipboard example](../examples/clipboard) covers copy, cut, paste, select-all, undo, and redo from buttons; the Ctrl+C/X/V/A/Z/Y chords run the same page methods. The Copy and Cut buttons write the OS clipboard, and the Paste button reads it.
+The [clipboard example](../examples/clipboard) covers copy, cut, paste, select-all, undo, and redo from buttons. Those buttons call `page`. The Ctrl/Cmd chords run the same work on the inner screen. The Copy and Cut buttons write the OS clipboard, and the Paste button reads it.
 
 ## Trust boundary
 

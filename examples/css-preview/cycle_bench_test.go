@@ -55,20 +55,20 @@ func benchCycle(b *testing.B, useBatch bool) {
 				b.Fatalf("missing %s", row.Button)
 			}
 			x, y := box.X+box.W/2, box.Y+box.H/2
-			if err := p.Testing().Hover(ctx, x, y); err != nil {
+			if err := p.Hover(ctx, x, y); err != nil {
 				b.Fatal(err)
 			}
 			run := func() error {
-				if err := p.Testing().Press(ctx, x, y); err != nil {
+				if err := p.Press(ctx, x, y); err != nil {
 					return err
 				}
-				if err := p.SelectAt(ctx, x, y); err != nil {
+				if err := p.Testing().SelectAt(ctx, x, y); err != nil {
 					return err
 				}
-				if err := p.Testing().Click(ctx, x, y); err != nil {
+				if err := p.Click(ctx, x, y); err != nil {
 					return err
 				}
-				return p.Testing().Release(ctx)
+				return p.Release(ctx)
 			}
 			if useBatch {
 				err = redrawBatch(ctx, p, run)

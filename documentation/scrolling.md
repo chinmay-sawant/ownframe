@@ -28,7 +28,7 @@ The window maps a cursor before the page sees it ([pointer.md](pointer.md)). A s
 
 ## Touch
 
-A finger that moves past 8 px drags the page, clamped to the content ends. After lift, the page continues with a decaying fling. Mobile updates follow the display refresh. `Page.Testing().SetTouchScrollOptions` tunes finger sensitivity and how quickly the fling slows; both settings have bounded defaults. Two fingers pinch a zoom that stays between 0.25 and 4. [interaction.md](interaction.md) has the gesture details.
+A finger that moves past 8 px drags the page, clamped to the content ends. After lift, the page continues with a decaying fling. Mobile updates follow the display refresh. `Page.SetTouchScrollOptions` tunes finger sensitivity and how quickly the fling slows; both settings have bounded defaults. Two fingers pinch a zoom that stays between 0.25 and 4. [interaction.md](interaction.md) has the gesture details.
 
 ## Limits
 

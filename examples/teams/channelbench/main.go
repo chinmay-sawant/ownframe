@@ -30,7 +30,7 @@ func main() {
 	el := time.Since(st)
 	var a runtime.MemStats
 	runtime.ReadMemStats(&a)
-	st2 := s.Page().Testing().Stats()
+	st2 := s.Page().Probe().Stats()
 	fmt.Printf("posts=%d redraw=%s alloc=%dKB boxes=%d ops=%d layout=%s list=%s\n",
 		*n, el, (a.TotalAlloc-b.TotalAlloc)/benchKB, len(s.Boxes()), st2.Ops, st2.LayoutTime, st2.DisplayListTime)
 }

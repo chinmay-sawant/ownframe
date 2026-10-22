@@ -26,7 +26,7 @@ func BenchmarkClickCount(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		x, y := incCenter(b, app)
 
-		if err := app.Page().Testing().Click(ctx, x, y); err != nil {
+		if err := app.Page().Click(ctx, x, y); err != nil {
 			b.Fatal(err)
 		}
 	}

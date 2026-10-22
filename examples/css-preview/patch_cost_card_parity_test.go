@@ -17,9 +17,9 @@ func TestPatchCardRowMatchesAFullRedraw(t *testing.T) {
 	if err := p.PatchElement(ctx, card.id, ownframe.ElementEdit{Attribute: "class", Value: card.cardOn}); err != nil {
 		t.Fatal(err)
 	}
-	patched := patchCostOps(p.Testing().Display(), card.id)
+	patched := patchCostOps(p.Probe().Display(), card.id)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	comparePatchOps(t, "card", patched, patchCostOps(p.Testing().Display(), card.id))
+	comparePatchOps(t, "card", patched, patchCostOps(p.Probe().Display(), card.id))
 }

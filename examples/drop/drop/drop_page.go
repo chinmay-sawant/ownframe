@@ -13,12 +13,12 @@ func (a *App) Page() *ownframe.Page {
 
 // Drop offers files to the page, the way the window does.
 func (a *App) Drop(ctx context.Context, files []ownframe.Drop) error {
-	return a.page.Testing().Drop(ctx, files)
+	return a.page.Drop(ctx, files)
 }
 
 // Click sends one click at the point, the way the window does.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }
 
 // View returns the struct the template prints.
@@ -38,7 +38,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the cached PNG bytes for the last draw.
 func (a *App) PNG() []byte {
-	return a.page.Testing().PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.

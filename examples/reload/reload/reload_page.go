@@ -17,7 +17,7 @@ func (a *App) HTML() string { return a.page.HTML() }
 
 // PollReload rereads the source file and reports whether the page changed.
 func (a *App) PollReload(ctx context.Context) (bool, error) {
-	return a.page.Testing().PollReload(ctx)
+	return a.page.PollReload(ctx)
 }
 
 // Redraw fills the template and renders the current size.
@@ -28,5 +28,5 @@ func (a *App) Boxes() []ownframe.Box { return a.page.Boxes() }
 
 // Click hit-tests the page and applies the click.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }

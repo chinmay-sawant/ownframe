@@ -31,7 +31,7 @@ func TestScratchpadPage(t *testing.T) {
 		t.Fatalf("recent rows = %d", got)
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("scratchpad fell back to the bitmap path")
 	}
 

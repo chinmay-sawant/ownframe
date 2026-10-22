@@ -10,7 +10,7 @@ func TestTickOptsIntoCachedFrames(t *testing.T) {
 	if err := app.Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if !app.Page().Testing().FrameDirty() {
+	if !app.Page().Probe().FrameDirty() {
 		t.Fatal("tick did not opt into cached frame drawing")
 	}
 }

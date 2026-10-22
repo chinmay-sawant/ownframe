@@ -23,7 +23,7 @@ func TestFreeMonthPage(t *testing.T) {
 		t.Fatal("no free-month page")
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("free-month fell back to the bitmap path")
 	}
 

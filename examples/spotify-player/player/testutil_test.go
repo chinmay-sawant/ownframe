@@ -22,7 +22,7 @@ func redraw(t *testing.T, app *App) {
 		t.Fatalf("Redraw: %v", err)
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("fell back to the bitmap path")
 	}
 }

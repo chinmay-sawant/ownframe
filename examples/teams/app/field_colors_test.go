@@ -10,7 +10,7 @@ import (
 // fieldOps returns the operations inside the compose field box.
 func fieldOps(app *App) []layout.DisplayOp {
 	box, ok := findBox(app.Boxes(), "chat-compose")
-	d := app.Page().Testing().Display()
+	d := app.Page().Probe().Display()
 	if !ok || d == nil {
 		return nil
 	}

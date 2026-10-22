@@ -23,7 +23,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last PNG, or nil when nothing has been drawn.
 func (a *App) PNG() []byte {
-	return a.page.Testing().PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.
@@ -33,12 +33,12 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Click hit-tests the page and changes the control under the point.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }
 
 // Type edits the focused control. The binding layer writes the struct.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Testing().Type(ctx, text)
+	return a.page.Type(ctx, text)
 }
 
 // FormValue returns the stored value of a control id.

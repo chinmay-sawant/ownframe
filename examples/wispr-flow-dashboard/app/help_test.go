@@ -30,7 +30,7 @@ func TestHelpPage(t *testing.T) {
 		t.Fatal("no help-popular box")
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("the help page fell back to the bitmap path")
 	}
 

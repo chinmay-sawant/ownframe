@@ -15,8 +15,7 @@ roles, names, descriptions, form state, actions, and bounds when the layout can
 provide them.
 
 ```go
-var accessible ownframe.Accessible = page
-tree, err := accessible.AccessibilityTree()
+tree, err := page.AccessibilityTree()
 if err != nil {
 	return err
 }
@@ -25,16 +24,17 @@ for _, node := range tree.Nodes {
 	log.Printf("%s %s: %s", node.Role, node.ID, node.Name)
 }
 
-return accessible.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
+return page.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
 	Document: tree.Document,
 	Node:     "id:save",
 	Kind:     ownframe.AccessibilityActivate,
 })
 ```
 
-Call both methods on the page's owning loop. A native adapter must queue
-actions back to that loop. `Accessible` is optional for hosts and does not add
-requirements to `host.Screen`.
+Call both methods on the page's owning loop. The window still calls the inner
+screen. A native adapter must queue actions back to that loop. `Accessible` is
+optional for hosts and does not add requirements to `host.Screen`. 1.0 does
+not ship a screen reader.
 
 ## Try the example
 

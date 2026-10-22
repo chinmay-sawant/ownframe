@@ -16,8 +16,8 @@ the behavior it had before.
 Setting `HTML` and `File` together returns `ErrBadSource`; there is no
 precedence rule. The same error covers `Theme` with `ThemeFile` and a file
 that cannot be read at `New`. A blank string or a blank file returns
-`ErrEmptyHTML`. `Page.Testing().SetHotReload(false)` turns a running watch off and
-`Page.Testing().SetHotReload(true)` turns it back on. `Page.Testing().Watching()` reports the
+`ErrEmptyHTML`. `Page.SetHotReload(false)` turns a running watch off and
+`Page.SetHotReload(true)` turns it back on. `Page.Watching()` reports the
 current answer. `HTML()` returns the file bytes, not the path, so it matches
 what the window shows.
 

@@ -37,7 +37,7 @@ func assertTextCentered(t *testing.T, a *App, id string, op *ownframe.DisplayOp)
 	var center float64
 	for _, box := range a.page.Boxes() {
 		if box.ID == id {
-			x, _, w, _ := ownframe.BoxUnits(a.page.Testing().Display(), box)
+			x, _, w, _ := ownframe.BoxUnits(a.page.Probe().Display(), box)
 			center = x + w/2
 			break
 		}

@@ -11,7 +11,7 @@ func TestPhoneKeyboardRotationRestoresThreadBackground(t *testing.T) {
 	ctx := context.Background()
 	app := phoneApp(t)
 	click(t, ctx, app, "", "open-anna")
-	app.Page().Testing().SetDevTools(false)
+	app.Page().SetDevTools(false)
 	game := ownframe.NewGame(ctx, app.Page())
 	for _, state := range [][3]int{{420, 934, 16}, {420, 934, 400}, {885, 420, 200}, {885, 420, 16}, {420, 934, 16}} {
 		app.SetInsets(28, state[2])

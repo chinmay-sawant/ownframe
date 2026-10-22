@@ -23,7 +23,7 @@ func isNight(t time.Time) bool {
 // what this frame changed so the window repaints the damage list instead of
 // the whole frame.
 func (a *App) Tick(ctx context.Context) error {
-	a.page.Testing().UseFrameDirty()
+	a.page.Probe().UseFrameDirty()
 
 	if err := ctx.Err(); err != nil {
 		return err
@@ -46,8 +46,8 @@ func (a *App) Tick(ctx context.Context) error {
 	}
 
 	// A Redraw marked its own dirty region, so rebind names nothing.
-	if gen := a.page.Testing().Generation(); a.flip.gen != gen || a.flip.clock == nil {
-		d := a.page.Testing().Display()
+	if gen := a.page.Probe().Generation(); a.flip.gen != gen || a.flip.clock == nil {
+		d := a.page.Probe().Display()
 		boxes := a.page.Boxes()
 		a.flip.rebind(d, boxes, a.view.Rows)
 		a.flip.gen = gen

@@ -23,11 +23,11 @@ func TestTickSurvivesBitmapFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if replayable.Testing().Display() == nil {
+	if replayable.Probe().Display() == nil {
 		t.Fatal("separable blend fell back to the bitmap")
 	}
 
-	if replayable.Testing().Image() != nil {
+	if replayable.Probe().Image() != nil {
 		t.Fatal("separable blend required the bitmap fallback")
 	}
 
@@ -53,15 +53,15 @@ func TestTickSurvivesBitmapFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if fallback.Testing().Display() != nil {
+	if fallback.Probe().Display() != nil {
 		t.Fatal("elliptical border was replayed")
 	}
 
-	if fallback.Testing().Image() == nil {
+	if fallback.Probe().Image() == nil {
 		t.Fatal("no fallback bitmap")
 	}
 
-	if len(fallback.Testing().PNG()) == 0 {
+	if len(fallback.Probe().PNG()) == 0 {
 		t.Fatal("fallback page has no PNG")
 	}
 

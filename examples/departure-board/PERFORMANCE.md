@@ -65,7 +65,7 @@ PATTERN BLANK as the filler, so every tile including the gaps has a text op
 to retarget. The fixed grid moved the board from 631 and 640 operations to
 844.
 
-The devtools Ops tab caches its row list per `Page.Testing().Generation()` and culls
+The devtools Ops tab caches its row list per `Page.Generation()` and culls
 outline strokes to the page area the dock leaves visible
 (`internal/window/devtools_sync.go`, `devtools_ops.go`), so a still board
 rebuilds no rows.

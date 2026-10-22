@@ -37,7 +37,7 @@ func TestTransformsPage(t *testing.T) {
 		t.Fatalf("tf-run-1 action = %q", run.Action)
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("transforms fell back to the bitmap path")
 	}
 
@@ -55,7 +55,7 @@ func TestTransformsPage(t *testing.T) {
 // tfPaintsText reports whether any display operation paints text that
 // contains want.
 func tfPaintsText(app *App, want string) bool {
-	for _, op := range app.Page().Testing().Display().Ops {
+	for _, op := range app.Page().Probe().Display().Ops {
 		if strings.Contains(op.Text, want) {
 			return true
 		}

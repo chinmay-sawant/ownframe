@@ -74,7 +74,7 @@ Redraw pushes. `SetData` stores the data. The next `Redraw` reads every bound fi
 
 - A nil `BeforeEdit` ignores the event.
 - An error from `BeforeEdit` aborts the edit: the value stays, no field is written, no `Change` fires, and the page does not redraw.
-- `Cut` fires it before clearing, so an app can snapshot the old value for undo. It fires even when the field is already empty.
+- `page.Cut` fires it before clearing, so an app can snapshot the old value for undo. It fires even when the field is already empty.
 
 ## Change
 
@@ -82,7 +82,7 @@ Redraw pushes. `SetData` stores the data. The next `Redraw` reads every bound fi
 
 - A nil `Change` ignores the event. The redraw still happens, and a bound field still receives the write.
 - An error from `Change` stops the redraw and is returned to the caller. The struct field keeps the new value.
-- An edit that changes nothing does not fire `Change`; backspace in an empty field is one example. `Cut` is the exception: it fires even when the field is already empty.
+- An edit that changes nothing does not fire `Change`; backspace in an empty field is one example. `page.Cut` is the exception: it fires even when the field is already empty.
 
 ## Limits
 

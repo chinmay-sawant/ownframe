@@ -54,7 +54,7 @@ func (n *Normal) onClick(_ context.Context, box ownframe.Box) error {
 	}
 
 	n.page.SetData(&n.view)
-	n.page.Testing().Invalidate("count")
+	n.page.Probe().Invalidate("count")
 
 	return nil
 }

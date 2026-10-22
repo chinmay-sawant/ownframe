@@ -52,7 +52,7 @@ click anywhere can still focus a control or reach a click handler.
 
 `Serve` draws the page first when it has not been drawn yet. `GET /` reads the
 current boxes and size, and `GET /frame.png` returns the latest PNG. A page
-kept as a display list has no bitmap, so `Page.Testing().PNG` paints once from the
+kept as a display list has no bitmap, so `page.Probe().PNG` paints once from the
 stored template source and caches the bytes until the next `Redraw`
 ([screen.md](screen.md)). The shell page states that the screen is the image,
 not the HTML around it.
@@ -61,7 +61,7 @@ not the HTML around it.
 
 A file-backed page is polled before `GET /` and `GET /frame.png`, under the
 same mutex, so an edit to the template or the theme shows on the next request.
-While `Page.Testing().Watching()` is true the shell page carries a small script that
+While `Page.Watching()` is true the shell page carries a small script that
 reloads the frame image every 250 ms, the same interval the window uses. A
 string page has no watch, so the shell emits no script.
 [hot-reload.md](hot-reload.md) has the config fields, the parse-error

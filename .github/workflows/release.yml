@@ -114,3 +114,66 @@ jobs:
             sbom.spdx.json.sig
             sbom.spdx.json.pem
             dist/
+
+  # Publish library tags only. examples/v* still runs gates and
+  # supply-chain, and this job does not publish those tags.
+  publish:
+    needs: supply-chain
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Pinned by full SHA (GEN-9); comments name the source tag.
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: release-candidate
+          path: release-candidate
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          root="release-candidate"
+          if [ ! -d "$root" ]; then
+            echo "release-candidate artifact is missing" >&2
+            exit 1
+          fi
+          missing=0
+          for required in \
+            "$root/sbom.spdx.json" \
+            "$root/sbom.spdx.json.sig" \
+            "$root/sbom.spdx.json.pem" \
+            "$root/dist/SHA256SUMS"
+          do
+            if [ ! -f "$required" ]; then
+              echo "release-candidate artifact is missing: $required" >&2
+              missing=1
+            fi
+          done
+          shopt -s nullglob
+          archives=("$root"/dist/*.tar.gz "$root"/dist/*.zip)
+          if [ "${#archives[@]}" -eq 0 ]; then
+            echo "release-candidate artifact is missing dist archives" >&2
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          # One gh release create call. It fails when the tag already has a
+          # release. Do not pass --clobber, and do not split the file list.
+          files=()
+          while IFS= read -r -d '' f; do
+            files+=("$f")
+          done < <(find "$root" -type f -print0 | sort -z)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "release-candidate artifact is missing" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --notes "Archives, SHA256SUMS, and SBOM from the supply-chain job." \
+            "${files[@]}"

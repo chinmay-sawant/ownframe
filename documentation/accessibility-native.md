@@ -14,11 +14,12 @@ NSAccessibility / VoiceOver bridge, and no TalkBack bridge.
 
 ## Current integration boundary
 
-`AccessibilityTree` returns a detached snapshot. Each node has a stable ID for
+`page.AccessibilityTree` returns a detached snapshot. Each node has a stable ID for
 the current document, a role, a name, state, bounds when available, and its
-supported actions. `AccessibilityPerform` accepts an action with the document
-token. Call both methods on the page's owning loop. A host must queue actions
-back to that loop.
+supported actions. `page.AccessibilityPerform` accepts an action with the document
+token. Call both on the page's owning loop. The window still calls the inner
+screen through `host.Accessible`. A host must queue actions back to that loop.
+This is not a screen reader.
 
 `internal/atspi` maps that snapshot to AT-SPI roles, states, and actions and
 offers a bus seam. Tests use `FakeBus`. `NewLiveBus` reports `Live: false`.
@@ -41,7 +42,8 @@ An adapter must convert page-content CSS-pixel bounds to the coordinate system
 used by the platform API. That conversion must account for page scrolling,
 window position, content origin, and display scaling. It must dispatch native
 actions on the page's owning loop and report errors from
-`AccessibilityPerform` to the platform layer.
+`page.AccessibilityPerform` to the platform layer. The window still
+calls the inner screen.
 
 The platform APIs need different host code:
 

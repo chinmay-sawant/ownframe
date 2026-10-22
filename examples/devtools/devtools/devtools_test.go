@@ -47,7 +47,7 @@ func TestDevToolsExampleHasEveryKind(t *testing.T) {
 		}
 	}
 
-	if len(app.Page().Testing().PNG()) == 0 {
+	if len(app.Page().Probe().PNG()) == 0 {
 		t.Fatal("PNG is empty")
 	}
 }

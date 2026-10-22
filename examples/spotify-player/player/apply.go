@@ -24,12 +24,12 @@ func (a *App) apply(term string, tracks []Track, picks, shelf []Card) {
 	a.ensureCredit()
 	a.resetProgress()
 	a.page.SetData(&a.view)
-	a.page.Testing().SetChangedProperties([]string{"Tracks", "PageTracks", "Now", "Status", "ShelfTitle", "Playing", "TrackPage", "TrackPages", "TrackRange", "HasPrev", "HasNext"})
+	a.page.Probe().SetChangedProperties([]string{"Tracks", "PageTracks", "Now", "Status", "ShelfTitle", "Playing", "TrackPage", "TrackPages", "TrackRange", "HasPrev", "HasNext"})
 	if len(picks) > 0 {
-		a.page.Testing().AddChangedProperty("Picks")
+		a.page.Probe().AddChangedProperty("Picks")
 	}
 	if len(shelf) > 0 {
-		a.page.Testing().AddChangedProperties([]string{"Shelf", "Playlists"})
+		a.page.Probe().AddChangedProperties([]string{"Shelf", "Playlists"})
 	}
 }
 

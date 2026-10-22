@@ -22,7 +22,7 @@ func (a *App) paintChrome(quiet bool) {
 	}
 
 	if foot || a.footWait {
-		a.page.Testing().Invalidate("foot")
+		a.page.Probe().Invalidate("foot")
 		a.footWait = false
 		a.noteWait(sums, detail)
 
@@ -48,11 +48,11 @@ func (a *App) noteWait(sums, detail bool) {
 // markUpper marks the header chips and the detail card.
 func (a *App) markUpper(sums, detail bool) {
 	if sums {
-		a.page.Testing().Invalidate("sums")
+		a.page.Probe().Invalidate("sums")
 	}
 
 	if detail {
-		a.page.Testing().Invalidate("detail-body")
+		a.page.Probe().Invalidate("detail-body")
 	}
 }
 

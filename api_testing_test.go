@@ -20,7 +20,7 @@ func TestTestingTickTakeDirty(t *testing.T) {
 	if err := p.Testing().Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	p.Testing().TakeDirty()
+	p.Probe().TakeDirty()
 }
 
 func TestTestingClickAfterRedraw(t *testing.T) {
@@ -48,7 +48,7 @@ func TestTestingClickAfterRedraw(t *testing.T) {
 			x, y = b.X+b.W/2, b.Y+b.H/2
 		}
 	}
-	if err := p.Testing().Click(context.Background(), x, y); err != nil {
+	if err := p.Click(context.Background(), x, y); err != nil {
 		t.Fatal(err)
 	}
 	if hit != "go" {

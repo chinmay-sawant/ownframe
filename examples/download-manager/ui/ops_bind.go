@@ -9,8 +9,8 @@ import (
 // bind reacquires every operation the paint uses. Call it after any Redraw
 // or resize, both of which replace the display list.
 func (a *App) bind() {
-	d := a.page.Testing().Display()
-	a.bound = a.page.Testing().Generation()
+	d := a.page.Probe().Display()
+	a.bound = a.page.Probe().Generation()
 	a.bindings = bindings{}
 
 	if d == nil {

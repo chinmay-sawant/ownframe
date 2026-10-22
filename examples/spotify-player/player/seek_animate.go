@@ -12,7 +12,7 @@ func (a *App) animateTimes(d *ownframe.Display, boxes []ownframe.Box, pos, dur t
 		if op := ownframe.Text(d, box); op != nil {
 			if text := formatSeconds(int(pos.Seconds())); op.Text != text {
 				op.Text = text
-				a.page.Testing().Invalidate("elapsed")
+				a.page.Probe().Invalidate("elapsed")
 			}
 		}
 	}
@@ -26,7 +26,7 @@ func (a *App) animateTimes(d *ownframe.Display, boxes []ownframe.Box, pos, dur t
 
 			if text := "-" + formatSeconds(rem); op.Text != text {
 				op.Text = text
-				a.page.Testing().Invalidate("remaining")
+				a.page.Probe().Invalidate("remaining")
 			}
 		}
 	}

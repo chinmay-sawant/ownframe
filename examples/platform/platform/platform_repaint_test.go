@@ -11,7 +11,7 @@ func TestClicksRepaintCountOnly(t *testing.T) {
 
 	ctx := context.Background()
 	app := newApp(t, ctx)
-	app.Page().Testing().TakeDirty()
+	app.Page().Probe().TakeDirty()
 
 	count := boxByID(t, app, "count")
 	want := image.Rect(
@@ -22,7 +22,7 @@ func TestClicksRepaintCountOnly(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		click(t, ctx, app, "inc")
 
-		rect, ok := app.Page().Testing().TakeDirty()
+		rect, ok := app.Page().Probe().TakeDirty()
 		if !ok {
 			t.Fatalf("click %d: no dirty rect", i)
 		}

@@ -48,9 +48,9 @@ func (a *App) retainedNavState(s string) navFocusState {
 	if a == nil || a.page == nil || s == "" {
 		return st
 	}
-	n := a.page.Testing().Element("nav-" + s)
+	n := a.page.Probe().Element("nav-" + s)
 	if n == nil || n.Metadata == nil {
-		n = a.page.Testing().Element("nav-row")
+		n = a.page.Probe().Element("nav-row")
 	}
 	if n == nil || n.Metadata == nil {
 		return st

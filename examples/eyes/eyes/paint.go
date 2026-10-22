@@ -8,11 +8,11 @@ import (
 
 // paint moves the cached eye ops to match the simulation.
 func (a *App) paint() {
-	d := a.page.Testing().Display()
+	d := a.page.Probe().Display()
 	if d == nil {
 		return
 	}
-	if a.page.Testing().Generation() != a.bnd {
+	if a.page.Probe().Generation() != a.bnd {
 		a.bind(d)
 	}
 	// Rebase when layout moved (resize) but generation stayed.

@@ -23,13 +23,13 @@ func (a *App) pulse(now time.Time) {
 		return
 	}
 
-	d := a.page.Testing().Display()
+	d := a.page.Probe().Display()
 	if d == nil {
 		return
 	}
 
-	if a.pulseGen != a.page.Testing().Generation() {
-		a.pulseGen = a.page.Testing().Generation()
+	if a.pulseGen != a.page.Probe().Generation() {
+		a.pulseGen = a.page.Probe().Generation()
 		a.pulseDot = nil
 
 		if box, ok := a.boxByID("pulse"); ok {

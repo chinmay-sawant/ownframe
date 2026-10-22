@@ -17,7 +17,7 @@ func TestExpressionsCycleAndWrap(t *testing.T) {
 		t.Fatal(err)
 	}
 	first, _, _ := a.image.ImageBytes()
-	before := a.page.Testing().Stats()
+	before := a.page.Probe().Stats()
 	if err := a.paint(ctx, 8); err != nil {
 		t.Fatal(err)
 	}
@@ -25,7 +25,7 @@ func TestExpressionsCycleAndWrap(t *testing.T) {
 	if bytes.Equal(first, second) || a.current != 1 {
 		t.Fatal("expression did not change after eight seconds")
 	}
-	if a.page.Testing().Stats().Parses != before.Parses {
+	if a.page.Probe().Stats().Parses != before.Parses {
 		t.Fatal("expression switch reparsed HTML")
 	}
 	if err := a.paint(ctx, float64(len(a.files))*8); err != nil {

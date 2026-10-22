@@ -12,7 +12,7 @@ import (
 func addPatchStages(p *ownframe.Page, template, cascade, layout time.Duration) (
 	time.Duration, time.Duration, time.Duration,
 ) {
-	s := p.Testing().Stats()
+	s := p.Probe().Stats()
 	return template + s.LastTemplate, cascade + s.LayoutTime, layout + s.DisplayListTime
 }
 

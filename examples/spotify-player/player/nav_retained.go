@@ -6,7 +6,7 @@ func (a *App) touchNavRetained(screen string) {
 		return
 	}
 
-	row := a.page.Testing().Element("nav-row")
+	row := a.page.Probe().Element("nav-row")
 	if row.Metadata == nil {
 		row.Metadata = map[string]any{}
 	}
@@ -16,7 +16,7 @@ func (a *App) touchNavRetained(screen string) {
 	row.Metadata["scrollx"] = x
 	row.Metadata["scrolly"] = y
 
-	screenRow := a.page.Testing().Element("nav-" + screen)
+	screenRow := a.page.Probe().Element("nav-" + screen)
 	if screenRow.Metadata == nil {
 		screenRow.Metadata = map[string]any{}
 	}
@@ -33,7 +33,7 @@ func (a *App) storeNavStateRetained(screen string, state navFocusState) {
 	}
 
 	for _, id := range []string{"nav-row", "nav-" + screen, "nav", "sidebar"} {
-		node := a.page.Testing().Element(id)
+		node := a.page.Probe().Element(id)
 		if node.Metadata == nil {
 			node.Metadata = map[string]any{}
 		}

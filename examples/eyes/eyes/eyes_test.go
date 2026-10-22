@@ -20,7 +20,7 @@ func TestTpl(t *testing.T) {
 func TestTickBinds(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)
-	if a.page.Testing().Display() == nil {
+	if a.page.Probe().Display() == nil {
 		t.Fatal("bitmap fallback")
 	}
 	if a.pm.left == nil || a.pm.right == nil {

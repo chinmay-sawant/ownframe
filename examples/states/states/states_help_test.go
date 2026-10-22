@@ -27,7 +27,7 @@ func newApp(t *testing.T, ctx context.Context) *states.App {
 func assertReplayed(t *testing.T, app *states.App) {
 	t.Helper()
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("page fell back to the bitmap")
 	}
 }

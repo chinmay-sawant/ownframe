@@ -12,7 +12,7 @@ func Click(ctx context.Context, p *ownframe.Page, id string) error {
 	if !ok {
 		return ErrNoBox
 	}
-	return p.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2)
+	return p.Click(ctx, box.X+box.W/2, box.Y+box.H/2)
 }
 
 // ClickAction hits the centre of the box with data-action.
@@ -21,7 +21,7 @@ func ClickAction(ctx context.Context, p *ownframe.Page, action string) error {
 	if !ok {
 		return ErrNoBox
 	}
-	return p.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2)
+	return p.Click(ctx, box.X+box.W/2, box.Y+box.H/2)
 }
 
 // Type appends text to the focused field.
@@ -29,5 +29,5 @@ func Type(ctx context.Context, p *ownframe.Page, text string) error {
 	if p == nil {
 		return ErrNoBox
 	}
-	return p.Testing().Type(ctx, text)
+	return p.Type(ctx, text)
 }

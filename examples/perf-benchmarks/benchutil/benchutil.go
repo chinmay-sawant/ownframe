@@ -24,7 +24,7 @@ func Flags(defaultAddr string) (web *bool, addr *string) {
 // its sampling in a window and gains /debug/pprof/* when served.
 func ServeOrRun(ctx context.Context, page *ownframe.Page, web bool, addr string) error {
 	if web {
-		return ownframe.ServeWithOptions(ctx, page, addr, ownframe.ServeOptions{InsecureAllowPprof: page.Testing().Perf(), InsecureAllowDebugState: page.Testing().Perf()})
+		return ownframe.ServeWithOptions(ctx, page, addr, ownframe.ServeOptions{InsecureAllowPprof: page.Perf(), InsecureAllowDebugState: page.Perf()})
 	}
 
 	return ownframe.Run(ctx, page)

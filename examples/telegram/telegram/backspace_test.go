@@ -31,7 +31,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := app.Page().Testing().Backspace(ctx); err != nil {
+	if err := app.Page().Backspace(ctx); err != nil {
 		t.Fatal(err)
 	}
 

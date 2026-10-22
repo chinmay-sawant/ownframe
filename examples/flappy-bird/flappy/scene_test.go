@@ -72,7 +72,7 @@ func TestSceneReplaysWithoutABitmap(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if app.page.Testing().Display() == nil {
+	if app.page.Probe().Display() == nil {
 		t.Fatal("the scene fell back to the bitmap path")
 	}
 }

@@ -31,14 +31,14 @@ func TestPagePictureMatchesRedraw(t *testing.T) {
 			inc := c.newPage(t)
 			full := c.newPage(t)
 
-			before := inc.Testing().PNG()
+			before := inc.Probe().PNG()
 			c.interact(t, inc, ctx)
 			c.interact(t, full, ctx)
 			if err := full.Redraw(ctx); err != nil {
 				t.Fatal(err)
 			}
 
-			after := inc.Testing().PNG()
+			after := inc.Probe().PNG()
 			if before == nil || after == nil {
 				t.Fatal("no PNG to compare")
 			}
@@ -57,7 +57,7 @@ func TestPagePictureMatchesRedraw(t *testing.T) {
 				t.Fatal("the interaction did not change the picture")
 			}
 
-			fullImg, err := png.Decode(bytes.NewReader(full.Testing().PNG()))
+			fullImg, err := png.Decode(bytes.NewReader(full.Probe().PNG()))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -94,7 +94,7 @@ func clickID(t *testing.T, p *Page, ctx context.Context, id string) {
 	t.Helper()
 
 	x, y := boxCenter(t, p, id)
-	if err := p.Testing().Click(ctx, x, y); err != nil {
+	if err := p.Click(ctx, x, y); err != nil {
 		t.Fatal(err)
 	}
 }

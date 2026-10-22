@@ -21,7 +21,7 @@ func TestEachStartButtonPlaysItsOwnKeyframes(t *testing.T) {
 			if !ok {
 				t.Fatalf("missing animation target %q", item.id)
 			}
-			indices := cssmotion.OperationIndices(page.Testing().Display(), box)
+			indices := cssmotion.OperationIndices(page.Probe().Display(), box)
 			clickStart(t, ctx, page, item.button)
 			if err := demo.tick(ctx); err != nil {
 				t.Fatal(err)
@@ -30,7 +30,7 @@ func TestEachStartButtonPlaysItsOwnKeyframes(t *testing.T) {
 			if sample == nil || sample.player == nil || !data.Started[item.key] {
 				t.Fatal("Start did not bind an animation player")
 			}
-			ops := cssmotion.Resolve(page.Testing().Display(), indices)
+			ops := cssmotion.Resolve(page.Probe().Display(), indices)
 			if len(indices) == 0 || len(ops) != len(indices) {
 				t.Fatalf("resolved %d of %d target operations", len(ops), len(indices))
 			}

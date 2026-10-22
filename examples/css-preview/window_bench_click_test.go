@@ -17,22 +17,22 @@ func windowBenchClick(ctx context.Context, p *ownframe.Page, tb testing.TB, id s
 		tb.Fatalf("missing %s", id)
 	}
 	x, y := box.X+box.W/2, box.Y+box.H/2
-	if err := p.Testing().Hover(ctx, x, y); err != nil {
+	if err := p.Hover(ctx, x, y); err != nil {
 		tb.Fatal(err)
 	}
-	before := p.Testing().Stats()
+	before := p.Probe().Stats()
 	err := redrawBatch(ctx, p, func() error {
-		if err := p.Testing().Press(ctx, x, y); err != nil {
+		if err := p.Press(ctx, x, y); err != nil {
 			return err
 		}
-		if err := p.SelectAt(ctx, x, y); err != nil {
+		if err := p.Testing().SelectAt(ctx, x, y); err != nil {
 			return err
 		}
-		return p.Testing().Click(ctx, x, y)
+		return p.Click(ctx, x, y)
 	})
-	after := p.Testing().Stats()
+	after := p.Probe().Stats()
 	if err == nil {
-		err = p.Testing().Release(ctx)
+		err = p.Release(ctx)
 	}
 	if err != nil {
 		tb.Fatal(err)

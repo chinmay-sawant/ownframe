@@ -28,7 +28,7 @@ func clickBox(t *testing.T, ctx context.Context, app *board.App, id string) {
 
 // hasFill reports whether the display list fills a rectangle with the colour.
 func hasFill(app *board.App, c [3]float64) bool {
-	d := app.Page().Testing().Display()
+	d := app.Page().Probe().Display()
 	if d == nil {
 		return false
 	}
@@ -65,7 +65,7 @@ func TestNewDrawsCells(t *testing.T) {
 	ctx := context.Background()
 	app := draw(t, ctx)
 
-	d := app.Page().Testing().Display()
+	d := app.Page().Probe().Display()
 	if d == nil {
 		t.Fatal("departure board fell back to a bitmap")
 	}

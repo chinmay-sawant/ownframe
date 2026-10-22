@@ -23,7 +23,7 @@ func TestInvitePage(t *testing.T) {
 		t.Fatal("no invite page")
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("invite fell back to the bitmap path")
 	}
 

@@ -43,7 +43,7 @@ func (a *App) animateCredit(d *ownframe.Display, boxes []ownframe.Box) {
 
 	if op := ownframe.Text(d, box); op != nil && op.Text != text {
 		op.Text = text
-		a.page.Testing().Invalidate("credit")
+		a.page.Probe().Invalidate("credit")
 	}
 }
 

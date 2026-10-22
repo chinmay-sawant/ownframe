@@ -59,7 +59,7 @@ func TestSelectAllSurvivesCaretPlacement(t *testing.T) {
 	}
 
 	box := boxByID(t, app, "selectall")
-	if err := app.Page().SelectAt(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+	if err := app.Page().Testing().SelectAt(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 		t.Fatal(err)
 	}
 

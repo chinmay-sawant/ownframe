@@ -135,7 +135,7 @@ func TestPasswordCopyAndDeleteWord(t *testing.T) {
 		t.Fatalf("password copy = %q ok=%v", text, ok)
 	}
 
-	if err := app.Page().Testing().DeleteWord(ctx); err != nil {
+	if err := app.Page().DeleteWord(ctx); err != nil {
 		t.Fatal(err)
 	}
 

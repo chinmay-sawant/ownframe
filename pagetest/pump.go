@@ -14,5 +14,5 @@ func Pump(ctx context.Context, p *ownframe.Page) error {
 
 // TakeDirty drains the host dirty bounding box.
 func TakeDirty(p *ownframe.Page) (image.Rectangle, bool) {
-	return p.Testing().TakeDirty()
+	return p.Probe().TakeDirty()
 }

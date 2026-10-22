@@ -14,12 +14,12 @@ func (a *App) Page() *ownframe.Page {
 // Replayable reports whether the last draw kept a display list. A false
 // result means the page fell back to a bitmap.
 func (a *App) Replayable() bool {
-	return a.page.Testing().Display() != nil
+	return a.page.Probe().Display() != nil
 }
 
 // Generation increases by one on every successful Redraw.
 func (a *App) Generation() uint64 {
-	return a.page.Testing().Generation()
+	return a.page.Probe().Generation()
 }
 
 // SetSize stores the frame size used by the next Redraw.
@@ -34,7 +34,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last picture as PNG bytes.
 func (a *App) PNG() []byte {
-	return a.page.Testing().PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.
@@ -44,7 +44,7 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Click hit-tests the page and reports the box under the point.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Testing().Click(ctx, x, y)
+	return a.page.Click(ctx, x, y)
 }
 
 // View returns the struct the template prints.

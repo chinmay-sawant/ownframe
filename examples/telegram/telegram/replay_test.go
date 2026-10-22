@@ -16,7 +16,7 @@ func replay(t *testing.T, ctx context.Context, app *telegram.App) {
 		t.Fatal(err)
 	}
 
-	if app.Page().Testing().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("page fell back to the bitmap")
 	}
 }

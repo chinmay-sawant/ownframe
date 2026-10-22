@@ -11,7 +11,7 @@ import (
 func pixel(t *testing.T, app *App, x, y int) [3]uint8 {
 	t.Helper()
 
-	data := app.page.Testing().PNG()
+	data := app.page.Probe().PNG()
 	if len(data) == 0 {
 		t.Fatal("no PNG")
 	}

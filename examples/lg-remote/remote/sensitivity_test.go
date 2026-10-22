@@ -38,7 +38,7 @@ func TestSensitivityDragKeyboardAndAccessibility(t *testing.T) {
 	if err := a.page.Focus(ctx, "sensitivity"); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.page.Testing().KeyDown(ctx, "arrowleft"); err != nil {
+	if err := a.page.KeyDown(ctx, "arrowleft"); err != nil {
 		t.Fatal(err)
 	}
 	if a.view.Sensitivity != 295 {

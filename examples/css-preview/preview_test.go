@@ -19,7 +19,7 @@ func TestStartChangesOnlyItsTarget(t *testing.T) {
 				if !found {
 					t.Fatalf("missing target box %q", item.id)
 				}
-				base[item.key] = capture(p.Testing().Display(), box)
+				base[item.key] = capture(p.Probe().Display(), box)
 			}
 			startCatalog(t, p, d, name)
 			sample := d.samples[selected.key]
@@ -39,7 +39,7 @@ func TestStartChangesOnlyItsTarget(t *testing.T) {
 					continue
 				}
 				box, _ := findBox(p.Boxes(), item.id)
-				if !samePaint(base[item.key], capture(p.Testing().Display(), box)) {
+				if !samePaint(base[item.key], capture(p.Probe().Display(), box)) {
 					t.Errorf("starting %q changed sibling %q", selected.key, item.key)
 				}
 			}

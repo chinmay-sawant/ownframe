@@ -30,7 +30,7 @@ the 12 second timetable rotation.
 ## How the flip works
 
 `App.Tick` runs once per frame through `Page.SetTick`. The flipper binds the
-text operation of every cell once per `Page.Testing().Generation()`, and after that a
+text operation of every cell once per `Page.Generation()`, and after that a
 flap frame writes only `op.Text`, so a flap never parses or lays the page out
 again. The flipper finds cell text with `frame.Text`, which matches a box and
 is blind to colour. The refresh bar is a fill, and `frame.Fill` matches the

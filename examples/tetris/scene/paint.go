@@ -18,7 +18,7 @@ func (s *Scene) paint(ctx context.Context) error {
 		return nil
 	}
 
-	d := s.page.Testing().Display()
+	d := s.page.Probe().Display()
 	if d == nil {
 		return s.paintBitmap(ctx)
 	}
@@ -30,13 +30,13 @@ func (s *Scene) paint(ctx context.Context) error {
 			return err
 		}
 
-		d = s.page.Testing().Display()
+		d = s.page.Probe().Display()
 		if d == nil {
 			return nil
 		}
 	}
 
-	if s.page.Testing().Generation() != s.bound {
+	if s.page.Probe().Generation() != s.bound {
 		s.bind(d)
 	}
 

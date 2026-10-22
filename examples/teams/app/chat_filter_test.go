@@ -48,7 +48,7 @@ func TestChatSearchNarrowsData(t *testing.T) {
 
 	clickID(t, app, "chat-search")
 
-	if err := app.Page().Testing().Type(context.Background(), "peter"); err != nil {
+	if err := app.Page().Type(context.Background(), "peter"); err != nil {
 		t.Fatalf("Type: %v", err)
 	}
 

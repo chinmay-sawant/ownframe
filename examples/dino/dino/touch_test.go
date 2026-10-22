@@ -61,7 +61,7 @@ func TestTouchHints(t *testing.T) {
 func tapScene(t *testing.T, app *App) {
 	t.Helper()
 
-	if err := app.page.Testing().Click(context.Background(), 450, 150); err != nil {
+	if err := app.page.Click(context.Background(), 450, 150); err != nil {
 		t.Fatal(err)
 	}
 }
