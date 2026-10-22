@@ -210,7 +210,7 @@ page paints the patched region. Nothing is rebuilt.
 - `Handlers.ClickPaint` reports that the handler painted the frame, so the
   click skips the redraw and the redraw batch waits for no draw that will not
   come.
-- `Page.SetAfterRedraw` puts the tree state back after the template replaced
+- `Page.Testing().SetAfterRedraw` puts the tree state back after the template replaced
   the tree, so a scroll or a reload does not lose the started cards.
 
 Measured with the real click script, 43 clicks, 1908x999:

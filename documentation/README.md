@@ -28,3 +28,7 @@ Build your screen with HTML and CSS. Handle data and actions in Go. 1.0 hosts ar
 - [See the app showcase](../showcase.md)
 
 Use the topic groups in the sidebar to browse other guides.
+
+## Contribute
+
+- [Validate a change](testing.md)

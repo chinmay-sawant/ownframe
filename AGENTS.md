@@ -74,17 +74,15 @@ v0 may break. Rules for names, errors, context, and examples are in `plans/v0.0.
 - Do not scan or inspect files outside the ownframe repository unless the user
   explicitly asks for them.
 
-## Go file size
+## Package and file cohesion
 
-Library module Go files (the root package and `internal/`) are at most 2000 characters. Count with `wc -m`. That number includes newlines. When a file would exceed 2000 characters, split it inside the same package and keep the behavior. One file in the package carries the package comment. The other files start with the package clause.
+Group code by responsibility. Keep a type and its related methods together when that makes the behavior easier to follow. Split packages at ownership boundaries, with explicit inputs and outputs. File length is a review signal, not a character limit.
 
-This limit applies to library Go files only. HTML, CSS, Markdown, and scripts have no character cap. Downstream apps and examples are not under the 2000 cap; `scripts/check-file-size.sh` prunes `./examples`. The library still is.
-
-`make size-check` enforces it. It counts characters with `wc -m` over every non-pruned `.go` file, test files included, and compares the tree with `scripts/file-size-allowlist.txt`, the single source of truth for over-limit files. The gate fails when an over-limit file is unlisted, when a listed file is missing, no longer over the limit, or when its recorded count is stale. `make lint` runs it, so CI enforces it; a recorded count moves only as a deliberate, reviewed change.
+Keep related test scenarios and their fixtures together. Do not split files to satisfy a size count, create synonym helpers, or move literals into unrelated constant files just for lint. Review changes for the number of files a reader must open to understand one operation. Use the cohesion questions in CONTRIBUTING.md during review.
 
 ## Lint
 
-`make lint` is the lint gate. It runs the pinned `golangci-lint` (v2.15.0, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then `make size-check`, then `make internal-import-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
+`make lint` is the lint gate. It runs the pinned `golangci-lint` (v2.15.0, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then the documentation and plan checks, then `make internal-import-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
 
 The website gate is ESLint 10 through `npm run lint` in `frontend/`. Its flat config lives in `frontend/eslint.config.js` and needs no separate make target; `make lint` runs it in the same pass. `eslint-plugin-react` still declares a peer range that stops at ESLint 9, so `frontend/package.json` pins the range with an `overrides` entry and the config sets `settings.react.version` to skip the plugin's version detection, which calls an API ESLint 10 removed.
 
@@ -101,6 +99,8 @@ Load the `unslop` skill before writing prose: replies, docs, commit messages, an
 Do not run `go build ./...`. Every run links an executable for each example, takes about a minute, and leaves the binaries in this directory; the default `-p 24` loads the machine. For the same compile check, run `make build`. It calls `go vet -p 1 ./... ./examples/...`, which compiles every package including the examples, links nothing, and writes nothing. Raise the limit with `make build BUILD_P=4`. To check one example, name it: `go vet -p 1 ./examples/login`.
 
 ## Before you finish
+
+For documentation or maintenance tooling, run `make docs-check plans-check examples-check`. For paint or window changes, also run `make graphics-check`; see `documentation/testing.md` for prerequisites and limits.
 
 Run `gofmt` on every Go file you edit. From this directory, run `make test`. It calls `go test -p 1 ./... ./examples/...` so the packages do not all build and run at once. Raise the limit when a faster run is worth the load: `make test TEST_P=4`.
 

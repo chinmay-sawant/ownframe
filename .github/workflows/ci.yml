@@ -45,8 +45,11 @@ jobs:
         working-directory: frontend
       - run: npm audit signatures
         working-directory: frontend
-      - run: make test
+      - name: Install graphics test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+      - run: xvfb-run -a make test
       - run: make lint
+      - run: make graphics-check
 
   # Library-only race detector (TEST-01/02). Examples stay off this job.
   test-race:

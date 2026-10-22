@@ -32,8 +32,9 @@ func seedTickets() []Ticket {
 			Action: "open-t3",
 		},
 	}
+	firstExtra := len(out) + 1
 	for i := range seedExtra {
-		n := i + 4
+		n := i + firstExtra
 		id := "t" + strconv.Itoa(n)
 		out = append(out, Ticket{
 			ID:     id,

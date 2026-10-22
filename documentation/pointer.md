@@ -4,11 +4,11 @@ The window sends hover, press, release, and click events to a page. `internal/wi
 
 ## Page methods
 
-`Page.Hover(ctx, x, y)` sets the hovered id to the innermost box with an id at the point. A point that hits no box with an id clears it. It redraws only when the id changed. A hover change repaints the union of the box it left and the box it entered, not the rest of the frame.
+`Page.Testing().Hover(ctx, x, y)` sets the hovered id to the innermost box with an id at the point. A point that hits no box with an id clears it. It redraws only when the id changed. A hover change repaints the union of the box it left and the box it entered, not the rest of the frame.
 
-`Page.Press(ctx, x, y)` sets the pressed id the same way and redraws only when it changed. `Page.Release(ctx)` clears the pressed id and redraws only when it was set.
+`Page.Testing().Press(ctx, x, y)` sets the pressed id the same way and redraws only when it changed. `Page.Testing().Release(ctx)` clears the pressed id and redraws only when it was set.
 
-`Page.Click(ctx, x, y)` hit-tests the last box that contains the point, which is the innermost box in document order. A `position: fixed` box is painted over the content, so it wins the hit test against any content box it overlaps, and a control inside it still wins against the fixed box around it. A box without an id falls back to the innermost id-bearing element under the point, so a click on a child icon reaches its control. Then:
+`Page.Testing().Click(ctx, x, y)` hit-tests the last box that contains the point, which is the innermost box in document order. A `position: fixed` box is painted over the content, so it wins the hit test against any content box it overlaps, and a control inside it still wins against the fixed box around it. A box without an id falls back to the innermost id-bearing element under the point, so a click on a child icon reaches its control. Then:
 
 - A form control activates before the handler runs and never follows a route ([forms.md](forms.md)).
 - Any other hit blurs the focused control.
@@ -17,13 +17,13 @@ The window sends hover, press, release, and click events to a page. `internal/wi
 - An error from the handler or the load returns before the redraw. Otherwise the page redraws after the handler.
 - `Handlers.ClickPaint` runs after the handler, and after a control's own change. When it reports that it painted the frame, the page skips the redraw and keeps the damage the handler marked for the window. A handler that patched the retained display with `Page.PatchElement` uses it to keep the click off the layout path.
 
-`Page.LongPress(ctx, x, y)` handles a held press. A text control under the point selects the word there, the same selection `SelectWordAt` makes. Otherwise a `Handlers.LongPress` handler runs on the innermost box under the point, found the way `Click` finds it. It reports true when it claimed the press, from a text control or a handler, and the page redraws after the handler. A nil handler with no text control under the point reports false.
+`Page.Testing().LongPress(ctx, x, y)` handles a held press. A text control under the point selects the word there, the same selection `SelectWordAt` makes. Otherwise a `Handlers.LongPress` handler runs on the innermost box under the point, found the way `Click` finds it. It reports true when it claimed the press, from a text control or a handler, and the page redraws after the handler. A nil handler with no text control under the point reports false.
 
 ## Window mapping
 
 The window sends hover every frame. Press and click both fire on the mouse-down edge; release fires on the mouse-up edge.
 
-A mouse press in a field calls `SelectAt` before it runs the click handler, so a handler that focuses or selects a field is not blurred by the caret placement; each move with the button down calls `Drag`, so one press, move, release selects a span. Two rapid presses call `SelectWordAt` and a third calls `SelectLineAt`. A press held within 8 px for 450 ms fires one `LongPress`, on a mouse or a touch. `Page.LongPress` selects the word under a text field or runs `Handlers.LongPress`, and a true answer claims the press: on a claimed press the moves until release call `Drag` instead of scrolling, and the lift is not a tap. A press that moves past the slop before the delay never fires. `internal/window/long_press.go` holds the watch and `internal/window/hold.go` the frame check. Dragging past the top or bottom edge scrolls while the button stays down. The web `/click` route calls `SelectAt` before `Click` too ([web.md](web.md)). [interaction.md](interaction.md) has the details.
+A mouse press in a field calls `SelectAt` before it runs the click handler, so a handler that focuses or selects a field is not blurred by the caret placement; each move with the button down calls `Drag`, so one press, move, release selects a span. Two rapid presses call `SelectWordAt` and a third calls `SelectLineAt`. A press held within 8 px for 450 ms fires one `LongPress`, on a mouse or a touch. `Page.Testing().LongPress` selects the word under a text field or runs `Handlers.LongPress`, and a true answer claims the press: on a claimed press the moves until release call `Drag` instead of scrolling, and the lift is not a tap. A press that moves past the slop before the delay never fires. `internal/window/long_press.go` holds the watch and `internal/window/hold.go` the frame check. Dragging past the top or bottom edge scrolls while the button stays down. The web `/click` route calls `SelectAt` before `Click` too ([web.md](web.md)). [interaction.md](interaction.md) has the details.
 
 A right click asks the page for its context menu rows and draws them at the cursor. A left click on a row runs its action; a left click elsewhere or Escape closes the menu.
 

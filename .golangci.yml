@@ -113,6 +113,13 @@ linters:
   exclusions:
     generated: lax
     rules:
+      # The public clipboard and PNG compatibility wrappers do not accept a
+      # context. Wayland subprocess helpers own a bounded timeout, while PNG
+      # delegates to PNGWithContext with Background. Callers cannot forward
+      # ctx through these APIs. Keep checks on every other call chain.
+      - linters: [contextcheck]
+        path: "examples/"
+        text: 'Function `[^`]*(PNG->PNG->PNG|Read->Read->readOS->wlRead->outWL|Write->Write->writeOS->wlWrite->runWL)` should pass the context parameter'
       # errcheck flags `recover()` because it returns a value, but a bare
       # `recover()` in a deferred guard (internal/ipc/send.go) intentionally
       # discards it: the value never affects control flow. The code spells

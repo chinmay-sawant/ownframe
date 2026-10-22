@@ -27,3 +27,6 @@ examples/*/android/artifacts/*-debug.apk
 *.db-shm
 *.sqlite
 *.sqlite3
+
+# Temporary packages used to compile documentation fragments
+/.doc-snippets-*/

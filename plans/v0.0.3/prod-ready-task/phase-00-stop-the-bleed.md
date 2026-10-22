@@ -1,16 +1,11 @@
 # v0.0.3 - Phase 0: Stop the bleed
 
+> Superseded planning record. `[s]` marks an old proposal or assertion, not proof of implementation. `[-]` marks work explicitly deferred in the original plan. Current decisions and evidence live in [plans/README.md](../../README.md).
+
 > **Parent:** [README.md](README.md)
-> **Status:** closed 2026-10-22. Planning only until a row has a PR and proof.
 > **Estimated effort:** 1-3 days of review rules plus a small CONTRIBUTING/AGENTS edit. No `Page` wrap in this phase.
 
 ---
-
-**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
-
-Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
-
-
 
 ## Overview
 
@@ -40,28 +35,28 @@ IDs `BLEED-NN`. Proof is grep, a gate test, or a doc sentence. `make lint` and `
 
 ### 0.1 Written freeze
 
-- [x] `BLEED-01` `AGENTS.md` - add a "Public API freeze until Page wrap" paragraph: no new `type X =` at module root except re-exports named in [phase-01-public-api.md](phase-01-public-api.md); no new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows; no new example `ownframe/internal/` imports. Proof: paragraph exists and names this folder.
-- [x] `BLEED-02` `CONTRIBUTING.md` - same freeze, plus "v0 may break; wrap happens before v1." Fix the Go version sentence from 1.26.4 to match `go.mod` (1.26.10 at record time). Proof: grep `1.26.4` in CONTRIBUTING is empty.
-- [x] `BLEED-03` `documentation/features.md` or this folder README - one sentence that 1.0 is desktop `Run`. Proof: sentence exists.
+- [s] `BLEED-01` `AGENTS.md` - add a "Public API freeze until Page wrap" paragraph: no new `type X =` at module root except re-exports named in [phase-01-public-api.md](phase-01-public-api.md); no new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows; no new example `ownframe/internal/` imports. Proof: paragraph exists and names this folder.
+- [s] `BLEED-02` `CONTRIBUTING.md` - same freeze, plus "v0 may break; wrap happens before v1." Fix the Go version sentence from 1.26.4 to match `go.mod` (1.26.10 at record time). Proof: grep `1.26.4` in CONTRIBUTING is empty.
+- [s] `BLEED-03` `documentation/features.md` or this folder README - one sentence that 1.0 is desktop `Run`. Proof: sentence exists.
 
 ### 0.2 Mechanical gates
 
-- [x] `BLEED-04` add `internal/page/export_synonym_gate_test.go` (or a `go test` in a small `internal/apiwatch` package) that lists the **current** synonym method names as an allowlist and fails when a new exported `Page` method is added whose body is a single call to another `Page` method. Expected: existing aliases pass; a new `func (p *Page) Foo() { p.Bar() }` fails. Proof: test red on a trial alias, green on HEAD.
-- [x] `BLEED-05` add a root test or `go test` in package `ownframe` that allowlists current `type X =` aliases in root `*.go` and fails a new alias file. Expected: `api.go` `Page` alias is listed; a new `type Foo = page.Foo` fails. Proof: same red/green pair.
-- [x] `BLEED-06` add `examples/internal_import_gate_test.go` **or** a `make` script under `scripts/` that records today's `ownframe/internal/` import set and fails on a **new** import path or a new file that imports `internal/`. Do not fail the existing set in this phase. Proof: adding `import ".../internal/foo"` to login fails the gate; current login still passes.
+- [s] `BLEED-04` add `internal/page/export_synonym_gate_test.go` (or a `go test` in a small `internal/apiwatch` package) that lists the **current** synonym method names as an allowlist and fails when a new exported `Page` method is added whose body is a single call to another `Page` method. Expected: existing aliases pass; a new `func (p *Page) Foo() { p.Bar() }` fails. Proof: test red on a trial alias, green on HEAD.
+- [s] `BLEED-05` add a root test or `go test` in package `ownframe` that allowlists current `type X =` aliases in root `*.go` and fails a new alias file. Expected: `api.go` `Page` alias is listed; a new `type Foo = page.Foo` fails. Proof: same red/green pair.
+- [s] `BLEED-06` add `examples/internal_import_gate_test.go` **or** a `make` script under `scripts/` that records today's `ownframe/internal/` import set and fails on a **new** import path or a new file that imports `internal/`. Do not fail the existing set in this phase. Proof: adding `import ".../internal/foo"` to login fails the gate; current login still passes.
 
 ### 0.3 Review rules (no code behavior change)
 
-- [x] `BLEED-07` PR template or CONTRIBUTING: reject PRs that add synonym names (`PreviousX` for `X`). Proof: sentence in `skills/PR/PR_TEMPLATE.md` or CONTRIBUTING.
-- [x] `BLEED-08` PR template: new exported methods must return named types from package `ownframe` or a public subpackage, never `host.Stats` or `*state.Store` unless those types are re-exported in the same PR. Proof: sentence exists.
-- [x] `BLEED-09` PR template: library code panics only for invariants. New user-facing failure paths return `error`. Proof: sentence exists.
-- [x] `BLEED-10` PR template: `context.Context` is the first parameter when the function already does I/O, cancel, or deadline. Do not add hidden `time.After` timeouts that ignore the caller's ctx. Proof: sentence exists.
+- [s] `BLEED-07` PR template or CONTRIBUTING: reject PRs that add synonym names (`PreviousX` for `X`). Proof: sentence in `skills/PR/PR_TEMPLATE.md` or CONTRIBUTING.
+- [s] `BLEED-08` PR template: new exported methods must return named types from package `ownframe` or a public subpackage, never `host.Stats` or `*state.Store` unless those types are re-exported in the same PR. Proof: sentence exists.
+- [s] `BLEED-09` PR template: library code panics only for invariants. New user-facing failure paths return `error`. Proof: sentence exists.
+- [s] `BLEED-10` PR template: `context.Context` is the first parameter when the function already does I/O, cancel, or deadline. Do not add hidden `time.After` timeouts that ignore the caller's ctx. Proof: sentence exists.
 
 ### 0.4 Explicit non-goals this phase
 
-- [x] `BLEED-11` wrapping `Page` - next gate [phase-01-public-api.md](phase-01-public-api.md) `API-01`.
-- [x] `BLEED-12` deleting existing synonyms - next gate `API-10` family.
-- [x] `BLEED-13` moving Fetch/IPC - next gate `API-20`. Freeze growth only.
+- [s] `BLEED-11` wrapping `Page` - next gate [phase-01-public-api.md](phase-01-public-api.md) `API-01`.
+- [s] `BLEED-12` deleting existing synonyms - next gate `API-10` family.
+- [s] `BLEED-13` moving Fetch/IPC - next gate `API-20`. Freeze growth only.
 
 ## Dependencies
 
@@ -75,7 +70,7 @@ IDs `BLEED-NN`. Proof is grep, a gate test, or a doc sentence. `make lint` and `
 
 ## Closure gates
 
-- [x] `make lint` exit 0
-- [x] `make test` exit 0
-- [x] Trial: a throwaway synonym method fails `BLEED-04` (revert after)
-- [x] Trial: a throwaway `internal/` import in login fails `BLEED-06` (revert after)
+- [s] `make lint` exit 0
+- [s] `make test` exit 0
+- [s] Trial: a throwaway synonym method fails `BLEED-04` (revert after)
+- [s] Trial: a throwaway `internal/` import in login fails `BLEED-06` (revert after)

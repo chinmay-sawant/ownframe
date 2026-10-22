@@ -40,13 +40,8 @@ signing) are listed in [play-store.md](play-store.md).
 Create a `mobile` package that constructs the app and binds its page:
 
 ```go
-func start(configDir string) error {
-	instance, err := app.New(configDir)
-	if err != nil {
-		return err
-	}
-	application = instance
-	return ownframe.BindMobile(context.Background(), instance.Page())
+func start(page *ownframe.Page) error {
+    return ownframe.BindMobile(context.Background(), page)
 }
 ```
 
@@ -157,7 +152,7 @@ disable touch scrolling. Use `Page.ScrollTo` or `Page.ScrollBy` when an app
 needs to move to a specific point.
 
 Pinch zoom is enabled by default. Two fingers change the page zoom from 0.25 to
-4. Set `Config.DisableTouchZoom` or call `Page.SetTouchZoomAllowed(false)` when
+4. Set `Config.DisableTouchZoom` or call `Page.Testing().SetTouchZoomAllowed(false)` when
 the app needs two-finger gestures for another action. Disabling pinch zoom does
 not disable touch scrolling. Read [scrolling](scrolling.md) and
 [interaction](interaction.md) for gesture thresholds and scroll behavior.

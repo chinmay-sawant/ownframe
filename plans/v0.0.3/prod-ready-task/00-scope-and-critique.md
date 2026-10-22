@@ -1,16 +1,11 @@
 # v0.0.3 - Scope, critique, and 1.0 cutoff
 
+> Superseded planning record. `[s]` marks an old proposal or assertion, not proof of implementation. `[-]` marks work explicitly deferred in the original plan. Current decisions and evidence live in [plans/README.md](../../README.md).
+
 > **Parent:** [README.md](README.md)
-> **Status:** closed 2026-10-22. Scope lock still applies.
 > **Estimated effort:** none. Read before Phase 0.
 
 ---
-
-**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
-
-Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
-
-
 
 ## Overview
 

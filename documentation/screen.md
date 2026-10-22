@@ -10,7 +10,7 @@
 
 `internal/render/display.go` holds the one-shot `DisplayListState` entry: it runs the same parse and cascade and calls `layout.DisplayListOptions`. blinkless stops at the drawing list, so no picture exists until ownframe replays it.
 
-`internal/render/paint.go` holds the one-shot `PaintState` entry: it runs that same display list and returns a canvas-sized image. `bitmap.Paint` fills pixels for `Page.PNG` and for a fallback page, returning an error the caller handles.
+`internal/render/paint.go` holds the one-shot `PaintState` entry: it runs that same display list and returns a canvas-sized image. `bitmap.Paint` fills pixels for `Page.Testing().PNG` and for a fallback page, returning an error the caller handles.
 
 ## Images
 
@@ -53,7 +53,7 @@ These are blinkless holes, not ownframe bugs. 1.0 does not implement CSS sticky 
 
 ## PNG and the web page
 
-`Page.PNG` encodes the last picture. On a replayed page there is no picture, so it calls `render.PaintState` once with the stored source and the current state and caches the bytes until the next `Redraw`. `Page.Image` returns nil on a replayed page. `Page.PNG` returns nil when there is nothing to encode: no cached bytes, no picture, and no stored source, or a paint or encode error. `GET /frame.png` and the tests still get a PNG, and a registered image reaches it through the same resolver.
+`Page.Testing().PNG()` encodes a software picture. On a replayed page it paints the retained display list, including operation patches, and caches the bytes until a redraw or element patch replaces the frame. `PatchOp`, `PatchDisplay`, and tick-only mutations do not clear an already encoded PNG, so that cached picture can be stale until a redraw. `Page.Testing().Image()` returns nil on a replayed page. PNG returns nil when the retained operations cannot be painted, when nothing has been drawn, or when encoding fails. It does not silently replace an unsupported retained display with a source repaint. `GET /frame.png` uses this software path; it does not capture the window's GPU tiles.
 
 `Prepare` draws the page when both `Image()` and `Display()` are nil. It no longer encodes a PNG just to test for that.
 

@@ -1,16 +1,11 @@
 # v0.0.3 - Phase 1 field: Public API
 
+> Superseded planning record. `[s]` marks an old proposal or assertion, not proof of implementation. `[-]` marks work explicitly deferred in the original plan. Current decisions and evidence live in [plans/README.md](../../README.md).
+
 > **Parent:** [README.md](README.md)
-> **Status:** closed 2026-10-22. Depends on Phase 0 freeze so new aliases do not land during the wrap.
 > **Estimated effort:** 1-2 weeks. This is the breaking v0 change. Do it before v1.
 
 ---
-
-**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
-
-Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
-
-
 
 ## Overview
 
@@ -67,44 +62,44 @@ If an example needs a host method, that is a Phase 1 export decision recorded in
 
 ### 1.1 Wrapper
 
-- [x] `API-01` `api.go` - `type Page = page.Page` remains so every example still compiles. BLEED-05 allowlists this alias and fails a new one. A struct wrapper is a follow-up (too large for this land). Proof: `alias_gate_test.go` green; `make test TEST_P=4` exit 0.
-- [x] `API-02` `internal/page` - keep `*page.Page` as `host.Screen`. Window and web import `internal/page` or `internal/host`, never the public wrapper. Proof: `internal/window` and `internal/web` have zero imports of the root package as a cycle. `var _ host.Screen = (*page.Page)(nil)` stays.
-- [x] `API-03` `run.go` `Run` / `RunWithOptions` / `BindMobile` - take `*ownframe.Page`, pass `inner` to `window.NewGame`. Proof: `go vet` on `./` and `./examples/login`.
-- [x] `API-04` `serve.go` - same unwrap. Proof: `go vet ./internal/web` plus login `-web` still builds (`go vet ./examples/login`).
-- [x] `API-05` unwrap helpers stay unexported (`func (p *Page) screen() host.Screen`). Proof: no exported `Inner()` unless a test package in `ownframe` needs it; prefer `pagetest`.
-- [x] `API-06` `Config`, `Handlers`, `Box` - either keep aliases with a comment "stable public shape" or copy the struct into `ownframe`. Do not leave callers unable to name `Handlers`. Proof: login `ownframe.Handlers{...}` still compiles.
-- [x] `API-07` `WindowOptions`, `ServeOptions`, `Option`, `WithPerf` - stay public. Proof: `go doc github.com/chinmay-sawant/ownframe` lists them.
-- [x] `API-08` compile-fire test `api_export_test.go` in package `ownframe_test` (external test) that only imports `ownframe` and constructs a page, SetData, Handle, Redraw. Proof: test passes and the file has zero `ownframe/internal` imports.
-- [x] `API-09` inventory of example call sites that fail after the wrap. Record the list in this row when the wrap PR is cut. Each extra method that must stay public gets a one-line reason. Proof: the PR description lists every extra export.
+- [s] `API-01` `api.go` - `type Page = page.Page` remains so every example still compiles. BLEED-05 allowlists this alias and fails a new one. A struct wrapper is a follow-up (too large for this land). Proof: `alias_gate_test.go` green; `make test TEST_P=4` exit 0.
+- [s] `API-02` `internal/page` - keep `*page.Page` as `host.Screen`. Window and web import `internal/page` or `internal/host`, never the public wrapper. Proof: `internal/window` and `internal/web` have zero imports of the root package as a cycle. `var _ host.Screen = (*page.Page)(nil)` stays.
+- [s] `API-03` `run.go` `Run` / `RunWithOptions` / `BindMobile` - take `*ownframe.Page`, pass `inner` to `window.NewGame`. Proof: `go vet` on `./` and `./examples/login`.
+- [s] `API-04` `serve.go` - same unwrap. Proof: `go vet ./internal/web` plus login `-web` still builds (`go vet ./examples/login`).
+- [s] `API-05` unwrap helpers stay unexported (`func (p *Page) screen() host.Screen`). Proof: no exported `Inner()` unless a test package in `ownframe` needs it; prefer `pagetest`.
+- [s] `API-06` `Config`, `Handlers`, `Box` - either keep aliases with a comment "stable public shape" or copy the struct into `ownframe`. Do not leave callers unable to name `Handlers`. Proof: login `ownframe.Handlers{...}` still compiles.
+- [s] `API-07` `WindowOptions`, `ServeOptions`, `Option`, `WithPerf` - stay public. Proof: `go doc github.com/chinmay-sawant/ownframe` lists them.
+- [s] `API-08` compile-fire test `api_export_test.go` in package `ownframe_test` (external test) that only imports `ownframe` and constructs a page, SetData, Handle, Redraw. Proof: test passes and the file has zero `ownframe/internal` imports.
+- [s] `API-09` inventory of example call sites that fail after the wrap. Record the list in this row when the wrap PR is cut. Each extra method that must stay public gets a one-line reason. Proof: the PR description lists every extra export.
 
 ### 1.2 One name per idea (delete in the wrap tag)
 
 Keep the first name. Delete the rest. Update tests in the same PR.
 
-- [x] `API-10` `internal/page/form_focus_last.go` - keep `LastFocusID`. Remove `PreviousFocusID`, `BlurredFocusID`, `LastFocused`. Proof: `git grep PreviousFocusID` empty in `.go` files.
-- [x] `API-11` `internal/page/page_patch_state.go` - keep `State`, `SetState`, `BindState`, `SyncState`. Remove `StateStore`, `Store`, `SetStateStore`, `SetStore`, `AttachState`, `BindStore`, `AttachStore`, `SyncChangedProperties`, `ChangedPropertiesFromStore`. Proof: grep empty for those names as methods.
-- [x] `API-12` `internal/page/page_patch_props.go` - keep `ChangedProperties`, `TakeChangedProperties`. Remove `ChangedProps`, `LastChangedProperties`, `LastChangedProps`, `TakeChangedProps`, `PropertiesChanged`, `Changed`. Proof: grep empty.
-- [x] `API-13` `internal/page/page_element.go` - keep `Element`. Remove `ElementHandle`, `RetainedElement` as a public alias (implementation may stay unexported), `RetainedNode`, `HandleElement`. Proof: public `go doc` shows one element getter.
-- [x] `API-14` sweep `Deprecated: use` comments in `internal/page`. After deletion, those comments go with the funcs. Proof: no deprecated synonym left.
+- [s] `API-10` `internal/page/form_focus_last.go` - keep `LastFocusID`. Remove `PreviousFocusID`, `BlurredFocusID`, `LastFocused`. Proof: `git grep PreviousFocusID` empty in `.go` files.
+- [s] `API-11` `internal/page/page_patch_state.go` - keep `State`, `SetState`, `BindState`, `SyncState`. Remove `StateStore`, `Store`, `SetStateStore`, `SetStore`, `AttachState`, `BindStore`, `AttachStore`, `SyncChangedProperties`, `ChangedPropertiesFromStore`. Proof: grep empty for those names as methods.
+- [s] `API-12` `internal/page/page_patch_props.go` - keep `ChangedProperties`, `TakeChangedProperties`. Remove `ChangedProps`, `LastChangedProperties`, `LastChangedProps`, `TakeChangedProps`, `PropertiesChanged`, `Changed`. Proof: grep empty.
+- [s] `API-13` `internal/page/page_element.go` - keep `Element`. Remove `ElementHandle`, `RetainedElement` as a public alias (implementation may stay unexported), `RetainedNode`, `HandleElement`. Proof: public `go doc` shows one element getter.
+- [s] `API-14` sweep `Deprecated: use` comments in `internal/page`. After deletion, those comments go with the funcs. Proof: no deprecated synonym left.
 
 ### 1.3 Named packages instead of Page junk
 
-- [x] `API-15` public clipboard. Preferred: `package ownframe` wrappers `Read` / `Write` / `UseMemory` **or** `package clipboard` at `github.com/chinmay-sawant/ownframe/clipboard` if that path can be public (it cannot if it lives under `internal/`). Move or wrap `internal/clipboard` so `examples/login` imports `ownframe` or a non-internal path. Proof: `examples/login/login/login_logout.go` has zero `internal/clipboard`.
-- [x] `API-16` `UseMemory` stays a test seam, documented, not `init()`. Proof: clipboard tests still call `UseMemory`; no OS clipboard in `go test`.
-- [x] `API-17` crash stays `Report`, `SetCrashDir`, `LastReportPath` on the root or `ownframe/crash`. Keep path validation in `internal/crash`. Proof: `go doc` shows them; tests reject empty, control, dot-segment, traversal.
-- [x] `API-18` `ownframe/pagetest` (new public package) with find-box, Click, Type helpers copied from example test patterns. Library tests may keep using `internal/page` directly. Example tests migrate when they touch the wrapped type. Proof: login tests compile against `pagetest` or public `Page` methods only.
-- [x] `API-19` secret helper used by `login_state.go` (`internal/secret`) gets a public name or login stops importing it (inline). Proof: `git grep internal/secret examples/login` empty.
+- [s] `API-15` public clipboard. Preferred: `package ownframe` wrappers `Read` / `Write` / `UseMemory` **or** `package clipboard` at `github.com/chinmay-sawant/ownframe/clipboard` if that path can be public (it cannot if it lives under `internal/`). Move or wrap `internal/clipboard` so `examples/login` imports `ownframe` or a non-internal path. Proof: `examples/login/login/login_logout.go` has zero `internal/clipboard`.
+- [s] `API-16` `UseMemory` stays a test seam, documented, not `init()`. Proof: clipboard tests still call `UseMemory`; no OS clipboard in `go test`.
+- [s] `API-17` crash stays `Report`, `SetCrashDir`, `LastReportPath` on the root or `ownframe/crash`. Keep path validation in `internal/crash`. Proof: `go doc` shows them; tests reject empty, control, dot-segment, traversal.
+- [s] `API-18` `ownframe/pagetest` (new public package) with find-box, Click, Type helpers copied from example test patterns. Library tests may keep using `internal/page` directly. Example tests migrate when they touch the wrapped type. Proof: login tests compile against `pagetest` or public `Page` methods only.
+- [s] `API-19` secret helper used by `login_state.go` (`internal/secret`) gets a public name or login stops importing it (inline). Proof: `git grep internal/secret examples/login` empty.
 
 ### 1.4 Kitchen sink
 
-- [x] `API-20` `fetch.go` - freeze the current funcs. New fetch API goes in `ownframe/fetch` or stays in `internal/fetch` with the existing root wrappers only. Do not add cookies, cache, or extra methods on root. Proof: `git log` after freeze has no new exported names in `fetch.go` unless this row is updated.
-- [x] `API-21` `ipc.go` - same freeze. In-process bus is not a 1.0 feature. Proof: no new exported IPC names.
-- [x] `API-22` display-list mutation (`PatchOp`, `Display`, `DisplayOp`) - leave on `internal/page` or a clearly experimental comment. Do not add more root aliases. Proof: `display.go` / `display_patch.go` either stay documented as experimental or move off root in this PR.
+- [s] `API-20` `fetch.go` - freeze the current funcs. New fetch API goes in `ownframe/fetch` or stays in `internal/fetch` with the existing root wrappers only. Do not add cookies, cache, or extra methods on root. Proof: `git log` after freeze has no new exported names in `fetch.go` unless this row is updated.
+- [s] `API-21` `ipc.go` - same freeze. In-process bus is not a 1.0 feature. Proof: no new exported IPC names.
+- [s] `API-22` display-list mutation (`PatchOp`, `Display`, `DisplayOp`) - leave on `internal/page` or a clearly experimental comment. Do not add more root aliases. Proof: `display.go` / `display_patch.go` either stay documented as experimental or move off root in this PR.
 
 ### 1.5 Types callers can name
 
-- [x] `API-23` `Stats()` - re-export `type Stats` in `ownframe` **or** unexport the method on the public type. Do not return `host.Stats` from an exported method. Proof: `go doc` of public `Page.Stats` shows `ownframe.Stats` or the method is gone.
-- [x] `API-24` `State()` - re-export a store type **or** hide it. Callers of `*state.Store` in examples must compile. Proof: `go vet ./examples/...` after the wrap.
+- [s] `API-23` `Stats()` - re-export `type Stats` in `ownframe` **or** unexport the method on the public type. Do not return `host.Stats` from an exported method. Proof: `go doc` of public `Page.Stats` shows `ownframe.Stats` or the method is gone.
+- [s] `API-24` `State()` - re-export a store type **or** hide it. Callers of `*state.Store` in examples must compile. Proof: `go vet ./examples/...` after the wrap.
 
 ## Dependencies
 
@@ -120,9 +115,9 @@ Keep the first name. Delete the rest. Update tests in the same PR.
 
 ## Closure gates
 
-- [x] `make lint` exit 0
-- [x] `make test` exit 0
-- [x] `go vet -p 1 ./... ./examples/...` exit 0
-- [x] External test `API-08` green
-- [x] `git grep 'type Page ='` empty
-- [x] `git grep 'ownframe/internal' examples/login` empty
+- [s] `make lint` exit 0
+- [s] `make test` exit 0
+- [s] `go vet -p 1 ./... ./examples/...` exit 0
+- [s] External test `API-08` green
+- [s] `git grep 'type Page ='` empty
+- [s] `git grep 'ownframe/internal' examples/login` empty

@@ -1,16 +1,11 @@
 # v0.0.3 - Phase 1 field: Tests and CI
 
+> Superseded planning record. `[s]` marks an old proposal or assertion, not proof of implementation. `[-]` marks work explicitly deferred in the original plan. Current decisions and evidence live in [plans/README.md](../../README.md).
+
 > **Parent:** [README.md](README.md)
-> **Status:** closed 2026-10-22.
 > **Estimated effort:** 3-7 days. Race on the full library may surface real bugs; budget fix time.
 
 ---
-
-**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
-
-Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
-
-
 
 ## Overview
 
@@ -41,34 +36,34 @@ Go practice: tests live with the package, external `_test` packages for public A
 
 ### 1.1 Race
 
-- [x] `TEST-01` add `make test-race` that runs `$(GO) test -race -p 1 ./...` on the **library** module (not every example at first). Proof: `make test-race` documented in Makefile and CONTRIBUTING.
-- [x] `TEST-02` CI job in `.github/workflows/ci.yml` (new job or extra step) runs that race target on ubuntu-latest. Proof: a PR without the job cannot merge once this row is `[x]`; quote the YAML in this row.
-- [x] `TEST-03` fix races the first CI run finds. Each fix is its own commit if possible. Do not skip with `sync` spray. Proof: job green; list packages that failed first in this row.
-- [x] `TEST-04` `[~]` examples race. Next gate: after library race is green, optionally `go test -race` on `./examples/login/...` only. Full examples race is out of 1.0 if it is too slow.
+- [s] `TEST-01` add `make test-race` that runs `$(GO) test -race -p 1 ./...` on the **library** module (not every example at first). Proof: `make test-race` documented in Makefile and CONTRIBUTING.
+- [s] `TEST-02` CI job in `.github/workflows/ci.yml` (new job or extra step) runs that race target on ubuntu-latest. Proof: a PR without the job cannot merge once this row is `[x]`; quote the YAML in this row.
+- [s] `TEST-03` fix races the first CI run finds. Each fix is its own commit if possible. Do not skip with `sync` spray. Proof: job green; list packages that failed first in this row.
+- [-] `TEST-04`  examples race. Next gate: after library race is green, optionally `go test -race` on `./examples/login/...` only. Full examples race is out of 1.0 if it is too slow.
 
 ### 1.2 Public API tests
 
-- [x] `TEST-05` `api_test.go` in package `ownframe_test` (see also `API-08`): `New`, `SetData`, `Handle`, `Redraw`, form value if public. Imports: `ownframe` only. Proof: `go list -f '{{.Imports}}' ./api_test.go` equivalent grep shows no `internal`.
-- [x] `TEST-06` gate test: any test file under `./` package `ownframe_test` that imports `ownframe/internal/...` fails. Proof: trial import fails.
-- [x] `TEST-07` `pagetest` package tests (after `API-18`) click a box on a tiny HTML fixture without importing `internal/page`. Proof: `go test ./pagetest` green.
+- [s] `TEST-05` `api_test.go` in package `ownframe_test` (see also `API-08`): `New`, `SetData`, `Handle`, `Redraw`, form value if public. Imports: `ownframe` only. Proof: `go list -f '{{.Imports}}' ./api_test.go` equivalent grep shows no `internal`.
+- [s] `TEST-06` gate test: any test file under `./` package `ownframe_test` that imports `ownframe/internal/...` fails. Proof: trial import fails.
+- [s] `TEST-07` `pagetest` package tests (after `API-18`) click a box on a tiny HTML fixture without importing `internal/page`. Proof: `go test ./pagetest` green.
 
 ### 1.3 Fuzz
 
 Existing CI fuzz stays. Add:
 
-- [x] `TEST-08` `FuzzSetCrashDir` in `internal/crash` (or public crash package): empty, control chars, `..`, absolute vs relative, long strings. Expected: rejected paths never become the dir; accepted paths match current validation. Proof: `go test -run=NONE -fuzz=FuzzSetCrashDir -fuzztime=15s ./internal/crash` and a CI line.
-- [x] `TEST-09` keep `FuzzBlockedIP`, `FuzzMethodHeader`, `FuzzDOMLimits`, `FuzzImageSrc`, `FuzzSanitizeLine`, `FuzzReplace`. Proof: `ci.yml` sec job still lists them.
-- [x] `TEST-10` optional `FuzzTemplateHTML` on `New`/`Redraw` with hostile templates under `MaxSourceSize`. Skip if `FuzzDOMLimits` already covers it. Record the decision here.
+- [s] `TEST-08` `FuzzSetCrashDir` in `internal/crash` (or public crash package): empty, control chars, `..`, absolute vs relative, long strings. Expected: rejected paths never become the dir; accepted paths match current validation. Proof: `go test -run=NONE -fuzz=FuzzSetCrashDir -fuzztime=15s ./internal/crash` and a CI line.
+- [s] `TEST-09` keep `FuzzBlockedIP`, `FuzzMethodHeader`, `FuzzDOMLimits`, `FuzzImageSrc`, `FuzzSanitizeLine`, `FuzzReplace`. Proof: `ci.yml` sec job still lists them.
+- [s] `TEST-10` optional `FuzzTemplateHTML` on `New`/`Redraw` with hostile templates under `MaxSourceSize`. Skip if `FuzzDOMLimits` already covers it. Record the decision here.
 
 ### 1.4 Paint tests (keep)
 
-- [x] `TEST-11` do not delete `repaint_visual_test.go`, `repaint_login_test.go`, `repaint_forms_test.go`, `repaint_scroll_test.go`, `repaint_theme_test.go`, `page_dirty_*_test.go`. Proof: files still exist at 1.0.
-- [x] `TEST-12` `[~]` merge `*_more_test.go` files. Reason: 2000-char cap. Next gate: [phase-01-package-shape.md](phase-01-package-shape.md) `SHAPE-06`. Until then, new test cases may add a sibling file rather than break the gate.
+- [s] `TEST-11` do not delete `repaint_visual_test.go`, `repaint_login_test.go`, `repaint_forms_test.go`, `repaint_scroll_test.go`, `repaint_theme_test.go`, `page_dirty_*_test.go`. Proof: files still exist at 1.0.
+- [-] `TEST-12`  merge `*_more_test.go` files. Reason: 2000-char cap. Next gate: [phase-01-package-shape.md](phase-01-package-shape.md) `SHAPE-06`. Until then, new test cases may add a sibling file rather than break the gate.
 
 ### 1.5 Clipboard and filepick tests
 
-- [x] `TEST-13` clipboard tests call `UseMemory` only. Proof: grep `UseMemory` in clipboard tests; no test writes the OS clipboard.
-- [x] `TEST-14` filepick tests use `page.InstallPicker` (or the public equivalent after wrap). Proof: tests do not invoke zenity.
+- [s] `TEST-13` clipboard tests call `UseMemory` only. Proof: grep `UseMemory` in clipboard tests; no test writes the OS clipboard.
+- [s] `TEST-14` filepick tests use `page.InstallPicker` (or the public equivalent after wrap). Proof: tests do not invoke zenity.
 
 ### 1.6 Commands recorded
 
@@ -81,7 +76,7 @@ make test-race   # or the CI log URL
 go test -run=NONE -fuzz=FuzzSetCrashDir -fuzztime=15s ./internal/crash
 ```
 
-- [x] `TEST-15` those commands recorded with date and exit code in this file.
+- [s] `TEST-15` those commands recorded with date and exit code in this file.
 
 ## Dependencies
 
@@ -96,8 +91,8 @@ go test -run=NONE -fuzz=FuzzSetCrashDir -fuzztime=15s ./internal/crash
 
 ## Closure gates
 
-- [x] `make lint` exit 0
-- [x] `make test` exit 0
-- [x] race job green
-- [x] new crash fuzz in CI
-- [x] public `ownframe_test` has zero internal imports
+- [s] `make lint` exit 0
+- [s] `make test` exit 0
+- [s] race job green
+- [s] new crash fuzz in CI
+- [s] public `ownframe_test` has zero internal imports

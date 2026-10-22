@@ -38,8 +38,11 @@ jobs:
         working-directory: frontend
       - run: npm audit signatures
         working-directory: frontend
-      - run: make test
+      - name: Install graphics test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+      - run: xvfb-run -a make test
       - run: make lint
+      - run: make graphics-check
 
   # GEN-12/GEN-13: every tag ships an SBOM with a SLSA attestation and a
   # keyless cosign signature, so downstream users can verify what is in

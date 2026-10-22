@@ -84,7 +84,7 @@ try {
   for (const [width, height] of [[320, 740], [390, 844], [768, 1024], [844, 390], [1440, 1000]]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 1000 });
     for (const theme of ['dark', 'light']) {
-      for (const hash of ['#home', '#docs/readme', '#docs/binding', '#docs/platforms', '#docs/css-motion', '#docs/showcase/telegram', '#docs/compare-rust-gpui', '#docs/examples-readme', '#docs/compare-electron', '#docs/compare-go-app-frameworks', '#docs/compare-syntax']) {
+      for (const hash of ['#home', '#docs/readme', '#docs/binding', '#docs/testing', '#docs/platforms', '#docs/css-motion', '#docs/showcase/telegram', '#docs/compare-rust-gpui', '#docs/examples-readme', '#docs/compare-electron', '#docs/compare-go-app-frameworks', '#docs/compare-syntax']) {
         await navigate(hash);
         if (hash === '#docs/css-motion') {
           assert.equal(await evaluate(`Array.from(document.querySelectorAll('.docs-nav a')).find(link => link.getAttribute('href') === '#docs/css-motion')?.textContent`), 'Animations and transitions');

@@ -1,6 +1,0 @@
-# Go files over the 2,000-character limit (AGENTS.md "Go file size").
-# One "path<TAB>chars" entry per line, chars counted with `wc -m`.
-# `make size-check` fails when the tree and this file disagree.
-# A recorded count moves only as a deliberate, reviewed change.
-#
-# The list is empty: every Go file in the tree is within the limit.

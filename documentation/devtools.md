@@ -3,7 +3,7 @@
 The window can draw an inspector over the page. It outlines the element under
 the cursor, pins one to read its properties as JSON, outlines the display
 operations, and prints the frame numbers. The overlay is window chrome, like
-the scrollbar thumbs and the fallback badge. It never enters `Page.PNG`, the
+the scrollbar thumbs and the fallback badge. It never enters `Page.Testing().PNG`, the
 display list, or the box list.
 
 ## Turning it on
@@ -14,8 +14,8 @@ the matching release is swallowed too. Pressing the key again closes the
 overlay and sends one hover for the current cursor, so a stale `:hover` does
 not stick.
 
-`Config.DevTools` starts the overlay on, and `Page.SetDevTools` and
-`Page.DevTools` read and change the flag at runtime. Use those in a browser
+`Config.DevTools` starts the overlay on, and `Page.Testing().SetDevTools` and
+`Page.Testing().DevTools` read and change the flag at runtime. Use those in a browser
 and on a phone: a browser may keep F12 for itself, and a phone has no
 keyboard.
 
@@ -155,7 +155,7 @@ offers no list.
 
 The Ops tab is the costliest of the three: it costs milliseconds per frame to
 draw, so an fps or frame time read while the tab is open includes the dock's
-own work. The row list is cached per `Page.Generation()`, so a still page
+own work. The row list is cached per `Page.Testing().Generation()`, so a still page
 rebuilds nothing and pays only to draw the rows and the outlines in view. Read
 fps and frame time on the Frame tab.
 

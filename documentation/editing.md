@@ -24,7 +24,7 @@ page.Handle(ownframe.Handlers{
 
 The caret is a rune offset in the focused value, and the anchor is where the selection started. A click in the field sets the caret from the clicked glyph, `KeyDown` moves it on `arrowleft`, `arrowright`, `home`, and `end`, and a `ctrl+` or `alt+` prefix on an arrow jumps by word. A `shift+` prefix keeps the anchor, so the range between the anchor and the caret is the selection. A caret move alone fires neither `BeforeEdit` nor `Change`, and a redraw keeps the caret unless the value shrank.
 
-The caret blinks while a text field holds the focus: `Tick` turns it off after 530 ms of showing it, and on again 530 ms later. A caret move, an edit, a cut, or a select-all shows it and restarts the clock, so the line stays solid while someone types. A range selection paints no caret, so it does not blink. `Tick` runs in the window loop; `Serve` and `Page.PNG` do not tick, so a still picture keeps the caret. Blinking draws through `Redraw`, so the dirty region is the caret column only.
+The caret blinks while a text field holds the focus: `Tick` turns it off after 530 ms of showing it, and on again 530 ms later. A caret move, an edit, a cut, or a select-all shows it and restarts the clock, so the line stays solid while someone types. A range selection paints no caret, so it does not blink. `Tick` runs in the window loop; `Serve` and `Page.Testing().PNG` do not tick, so a still picture keeps the caret. Blinking draws through `Redraw`, so the dirty region is the caret column only.
 
 IME composition reaches fields through the window's `exp/textinput` session. Desktop draws preedit separately from the stored value; Android and iOS use the mobile field edit path until commit ([interaction.md](interaction.md)).
 

@@ -10,7 +10,7 @@ feature index with links to the detailed docs.
 - Optional theme stylesheet layered after the template's own styles, swappable at runtime (`Config.Theme`, `Page.SetTheme`; `internal/page/theme.go`, `internal/render/state.go`)
 - Display-list replay (fills, strokes, lines, grids, images, shaped text); non-replayable pages fall back to a bitmap with a "bitmap fallback" badge (`internal/render/display.go`, `internal/window/draw.go`)
 - Rounded/elliptical/masked strokes, rounded fills, pixel-snapped borders, letter-spaced text, cached fonts/images (`internal/replay/`)
-- `Page.PNG` on-demand rasterization with caching (`internal/page/page_image.go`)
+- `Page.Testing().PNG` on-demand rasterization with caching (`internal/page/page_image.go`)
 - Frame animation: `Page.SetTick` runs a callback each window frame, and the retained `Display` operations can change paint fields without a Redraw (`internal/page/page_tick.go`, `internal/frame/`)
 
 ## Forms and interaction
@@ -25,7 +25,7 @@ feature index with links to the detailed docs.
 
 - Browser-style history `Load`/`Back`/`Forward`/`HTML` with `ErrNoHistory`; `data-action` route map (`internal/page/page_nav.go`)
 - Desktop window via Ebiten, wasm browser build, and mobile binding; sizing is in [window.md](window.md) and the run modes are in [platforms.md](platforms.md) (`internal/window/run.go`, `scripts/browser.sh`, `BindMobile`)
-- DevTools overlay: a right dock with Frame (window and pipeline counters), Elements (element JSON), and Ops (operation list with outlines) tabs; it opens on Frame, F12 or Ctrl+Shift+I toggles it, `Config.DevTools` starts it on, and `Page.SetDevTools` changes it at runtime ([devtools.md](devtools.md), `internal/window/devtools*.go`, `internal/host/inspect.go`)
+- DevTools overlay: a right dock with Frame (window and pipeline counters), Elements (element JSON), and Ops (operation list with outlines) tabs; it opens on Frame, F12 or Ctrl+Shift+I toggles it, `Config.DevTools` starts it on, and `Page.Testing().SetDevTools` changes it at runtime ([devtools.md](devtools.md), `internal/window/devtools*.go`, `internal/host/inspect.go`)
 - Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state` (with `ServeOptions{Debug: true}` or `{Perf: true}`), `POST /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
 
 ## Services
@@ -41,7 +41,7 @@ feature index with links to the detailed docs.
 - `examples/devtools` (right-dock inspector with Elements JSON, Frame counters, and Ops outlines; F12 or Ctrl+Shift+I), `examples/reload` (a file-backed page that redraws when `index.html` changes; the counter keeps its value), `examples/drop` (a dropped file prints its path; a file control takes a path from the picker), `examples/input` (focus traversal, caret keys, drag selection, context menu, cursor shapes, touch scroll and pinch, page scrolling, and F11), `examples/desktop-cat` (transparent desktop companion with 30 expression PNGs, native click-through and dragging, a notification server on 127.0.0.1:6969, and a wasm canvas preview), `examples/resize` (media-query columns, a `100vw` bar, rewrapping text, and a hover control)
 - `examples/music` is shared example support: MP3/WAV decode, playback through Ebiten audio, and a generated demo tune for tests. The Spotify player supplies clips from its bundled CC0 soundtrack. Package `ownframe` does not import it.
 - `examples/accessibility` demonstrates desktop IME composition, the semantic tree and its actions, password redaction, and scrollbar thumb feedback.
-- `examples/departure-board` is a split-flap board: per-character tiles over a seeded timetable, four liveries with a night variant, and tick-driven flaps that write only `op.Text` and rebind per `Page.Generation()`; the refresh bar is a `frame.Fill` lookup that needs the livery accent. `examples/theme-studio` is an editor beside a live preview: Apply calls `Page.SetTheme` and writes the watched `Config.ThemeFile`, a token strip renders `--name: value` pairs with colour swatches, and four presets ship with it.
+- `examples/departure-board` is a split-flap board: per-character tiles over a seeded timetable, four liveries with a night variant, and tick-driven flaps that write only `op.Text` and rebind per `Page.Testing().Generation()`; the refresh bar is a `frame.Fill` lookup that needs the livery accent. `examples/theme-studio` is an editor beside a live preview: Apply calls `Page.SetTheme` and writes the watched `Config.ThemeFile`, a token strip renders `--name: value` pairs with colour swatches, and four presets ship with it.
 - Go tests cover packages across `internal/` and `examples/`, including `internal/page`, `replay`, `render`, `window`, `ipc`, `fetch`, `crash`, and `clipboard`; `make test` runs both modules
 - The CSS property catalog example documents how to run and profile it in [PROFILING.md](../examples/css-preview/PROFILING.md), and the cost of an element patch against a full redraw is in [PATCH_COST.md](../examples/css-preview/PATCH_COST.md)
 - Other examples: `layout`, `replay`, `shapes`, `css-masking`, `png`, `controls`, `bind-hooks`, `editing`, `states`, `scrolling`, `history`, `web`, `ipc`, `fetch`, `clipboard`, `crash`, `platform`; index in [examples/readme.md](../examples/readme.md)

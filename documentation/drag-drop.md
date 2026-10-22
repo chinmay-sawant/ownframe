@@ -31,18 +31,23 @@ error.
 ## The page handler
 
 `page.Handlers.Drop` takes the same slice, and `ownframe.Drop` is the root name
-for the type. `Page.Drop` calls the handler and draws the page again. An
+for the type. `Page.Testing().Drop` calls the handler and draws the page again. An
 error returns before the redraw.
 
 ```go
 page.Handle(ownframe.Handlers{
 	Drop: func(ctx context.Context, files []ownframe.Drop) error {
-		data, err := files[0].Read()
-		if err != nil {
-			return err
+		for _, file := range files {
+			if file.IsDir {
+				continue
+			}
+			data, err := file.Read()
+			if err != nil {
+				return err
+			}
+			page.SetImage(file.Name, data)
 		}
-
-		...
+		return nil
 	},
 })
 ```

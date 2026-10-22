@@ -5,7 +5,7 @@ added, against commit `master` with the working tree as it stood at that
 moment. The counts below are not current.
 
 The live gate is golangci-lint v2.15.0 (`GOLANGCI_LINT_VERSION` in the
-Makefile) with a curated list in `.golangci.yml`, then `make size-check`. Do
+Makefile) with a curated list in `.golangci.yml`, then the documentation, plan, and example checks. Do
 not treat this file as an `enable-all` or v1 policy.
 
 The snapshot used golangci-lint v1.64.8. At that time the policy started from
@@ -91,9 +91,6 @@ The examples ones cluster in the demo renderers: `examples/eyes/eyes` (158),
 
 - `mnd` is disabled for `_test.go` files: fixtures spell out the expected
   pixels and byte layouts on purpose.
-- The file-size gate (`make size-check`) is green. Two files are over the
-  2,000-character limit and both are recorded in
-  `scripts/file-size-allowlist.txt`: `internal/csstransition/bind_to.go`
-  (2283) and `internal/page/page_fixed_hit_test.go` (3181).
+- The character cap and its allowlist were retired. Review now checks cohesion and package responsibility; see [testing.md](testing.md).
 - `golangci-lint` skips the `examples/` tree by default. The policy sets
   `exclude-dirs-use-default: false` so the examples module is linted too.

@@ -67,13 +67,13 @@ OwnFrame updates the page from its template and draws it in the window. A page c
 
 `Config.RetainState` keeps the layout state a single element patch needs: the resolved styles of the document and the box tree the placement produced. It is off by default, so a page that never patches an element pays nothing for it.
 
-With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. `PatchElement` then returns an error wrapping `ErrPatchRefused`; check with `errors.Is`. The patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `Page.SetAfterRedraw` is for.
+With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. `PatchElement` then returns an error wrapping `ErrPatchRefused`; check with `errors.Is`. The patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `Page.Testing().SetAfterRedraw` is for.
 
 Text set through a patch does not go through the emoji pass. The pass runs on the source before it is parsed, and a text edit lands on the parsed tree, so an emoji in patched text paints as text rather than as the color image the same emoji gets from the template. The engine's tree API only writes a text node, so the image cannot be built inside the tree.
 
 `Handlers.ClickPaint` runs after a click handler and after a control's own change. When it reports that it painted the frame, the page skips the redraw, so a click that patched an element does not also pay for a layout.
 
-`Page.SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
+`Page.Testing().SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
 
 Detail is in [optimizations.md](optimizations.md). The measured cost of an
 element patch against a full redraw is in
@@ -90,7 +90,7 @@ compositing, then draws that layer back into the page
 ([internal/replay/group_paint.go:37-45](../internal/replay/group_paint.go),
 [internal/replay/group_layer.go:16-36](../internal/replay/group_layer.go),
 [internal/replay/group_mask.go:10-25](../internal/replay/group_mask.go)).
-`Page.PNG` uses the software painter when PNG pixels are requested
+`Page.Testing().PNG` uses the software painter when PNG pixels are requested
 ([internal/page/page_image.go:35-40](../internal/page/page_image.go)). The
 mask painter reads raster alpha or luminance and supports `add`, `subtract`,
 `intersect`, and `exclude` layer composition. The first pass uses the element
@@ -157,7 +157,7 @@ Detail is in [navigation.md](navigation.md).
 
 ## Crash reports
 
-`Run` stores every failure in a text file and returns an error that includes the file path: panics go through the recover, and startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
+`Run` stores every failure in a text file and returns the original error. `LastReportPath` returns the file path: panics go through the recover, and startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
 
 Detail is in [crash.md](crash.md).
 
@@ -200,7 +200,7 @@ Detail is in [accessibility.md](accessibility.md) and [atspi.md](atspi.md).
 
 ## Interaction
 
-Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
+Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.Testing().SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
 
 Detail is in [interaction.md](interaction.md).
 
@@ -222,7 +222,7 @@ is in [window.md](window.md).
 ## DevTools
 
 The window can draw an inspector over the page. F12 or Ctrl+Shift+I toggles
-it, `Config.DevTools` starts it on, and `Page.SetDevTools` changes it at
+it, `Config.DevTools` starts it on, and `Page.Testing().SetDevTools` changes it at
 runtime. The inspector is a right-side dock with three tabs. It opens on
 Frame, which shows the frame and pipeline counters; Elements shows the pinned
 or hovered element as pretty JSON, and Ops lists the display operations
@@ -230,7 +230,7 @@ colour by kind. The dock shrinks the page viewport while it is open, so the
 page relayouts to the strip left of it. It outlines the box under the cursor,
 and a pick opens the Ops tab on the operation inside the box. A click on an
 Ops row outlines that operation and copies its line to the clipboard. It is
-window chrome, so `Page.PNG`, the display list, and the box list never
+window chrome, so `Page.Testing().PNG`, the display list, and the box list never
 change. A custom screen implements `host.Inspector` to opt in; a screen
 without it gets no overlay.
 `GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{Debug: true}` or `{Perf: true}`).
@@ -253,7 +253,7 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. `Page.Testing().DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

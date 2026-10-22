@@ -1,16 +1,11 @@
 # v0.0.3 - Phase 2 field: Desktop OS glue
 
+> Superseded planning record. `[s]` marks an old proposal or assertion, not proof of implementation. `[-]` marks work explicitly deferred in the original plan. Current decisions and evidence live in [plans/README.md](../../README.md).
+
 > **Parent:** [README.md](README.md)
-> **Status:** closed 2026-10-22. 1.0 needs honest clipboard docs or working Wayland paste, public filepick errors, and an a11y banner. Native AT bridges are `[~]`.
 > **Estimated effort:** Wayland clipboard is a real feature (days to a week). Banner and filepick errors are a day. AT-SPI is a separate project.
 
 ---
-
-**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
-
-Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
-
-
 
 ## Overview
 
@@ -42,39 +37,39 @@ Go practice: OS seams behind interfaces (already: clipboard `UseMemory`, `page.I
 
 ### 2.1 Clipboard
 
-- [x] `OS-01` inventory: document in `documentation/clipboard.md` the exact build tags and what `Read`/`Write` do on X11, Wayland, Windows, macOS cgo, macOS !cgo, wasm, Android. Proof: table with file cites (`clipboard_*.go`).
-- [x] `OS-02` Wayland: implement OS clipboard **or** mark `[~]` with reason (no data-device protocol in-tree) and next gate "wl-clipboard helper vs native protocol." 1.0 may close with `[~]` **only if** OS-01 table is `[x]` and README does not imply paste works on GNOME Wayland.
-- [x] `OS-03` `[~]` wasm `navigator.clipboard`. Next gate: [out-of-1.0.md](out-of-1.0.md). Do not advertise copy/paste on wasm.
-- [x] `OS-04` public `Read`/`Write` after `API-15`. Tests stay on `UseMemory`. Proof: TEST-13.
-- [x] `OS-05` never log clipboard contents. Proof: grep `clipboard` log/print in `internal/clipboard` empty of payload.
+- [s] `OS-01` inventory: document in `documentation/clipboard.md` the exact build tags and what `Read`/`Write` do on X11, Wayland, Windows, macOS cgo, macOS !cgo, wasm, Android. Proof: table with file cites (`clipboard_*.go`).
+- [s] `OS-02` Wayland: implement OS clipboard **or** mark `[~]` with reason (no data-device protocol in-tree) and next gate "wl-clipboard helper vs native protocol." 1.0 may close with `[~]` **only if** OS-01 table is `[x]` and README does not imply paste works on GNOME Wayland.
+- [-] `OS-03`  wasm `navigator.clipboard`. Next gate: [out-of-1.0.md](out-of-1.0.md). Do not advertise copy/paste on wasm.
+- [s] `OS-04` public `Read`/`Write` after `API-15`. Tests stay on `UseMemory`. Proof: TEST-13.
+- [s] `OS-05` never log clipboard contents. Proof: grep `clipboard` log/print in `internal/clipboard` empty of payload.
 
 ### 2.2 File picker
 
-- [x] `OS-06` public error type or wrapped error when no backend is found (zenity missing, etc.). Today `OWNFRAME_FILEPICK_DEBUG=1` prints reasons to stderr. Move that into the returned `error`. Proof: test with picker stub / missing binary; stderr not required for the test to know why.
-- [x] `OS-07` keep WSL powershell path conversion via `wslpath`. Proof: existing tests or a documented manual step; do not regress.
-- [x] `OS-08` Command args stay separate (`exec.Command(name, args...)`). No `bash -c` with user paths concatenated. Proof: grep `bash -c` / `sh -c` in `internal/filepick` empty or reviewed.
-- [x] `OS-09` wasm/mobile/Serve: typed name remains. Docs say so (DOC-05). Proof: `pick_other.go` still the stub.
+- [s] `OS-06` public error type or wrapped error when no backend is found (zenity missing, etc.). Today `OWNFRAME_FILEPICK_DEBUG=1` prints reasons to stderr. Move that into the returned `error`. Proof: test with picker stub / missing binary; stderr not required for the test to know why.
+- [s] `OS-07` keep WSL powershell path conversion via `wslpath`. Proof: existing tests or a documented manual step; do not regress.
+- [s] `OS-08` Command args stay separate (`exec.Command(name, args...)`). No `bash -c` with user paths concatenated. Proof: grep `bash -c` / `sh -c` in `internal/filepick` empty or reviewed.
+- [s] `OS-09` wasm/mobile/Serve: typed name remains. Docs say so (DOC-05). Proof: `pick_other.go` still the stub.
 
 ### 2.3 Accessibility (1.0 banner)
 
-- [x] `OS-10` README + `documentation/accessibility.md` + `documentation/accessibility-native.md` first paragraph: 1.0 ships the Go snapshot only. Native bridges are a later tagged project. Proof: three files agree.
-- [x] `OS-11` `[~]` AT-SPI adapter. Next gate: new folder `plans/v0.0.3/a11y/` or out-of-1.0. Do not open a 1.0 `[ ]` row that blocks cutoff.
-- [x] `OS-12` `[~]` UI Automation (Windows). Same.
-- [x] `OS-13` `[~]` NSAccessibility (macOS). Same.
-- [x] `OS-14` keep the Go tree accurate for the Elements/devtools path. Proof: existing a11y tests still pass after the Page wrap (`AccessibilityTree` may stay on inner page, exposed if public).
+- [s] `OS-10` README + `documentation/accessibility.md` + `documentation/accessibility-native.md` first paragraph: 1.0 ships the Go snapshot only. Native bridges are a later tagged project. Proof: three files agree.
+- [-] `OS-11`  AT-SPI adapter. Next gate: new folder `plans/v0.0.3/a11y/` or out-of-1.0. Do not open a 1.0 `[ ]` row that blocks cutoff.
+- [-] `OS-12`  UI Automation (Windows). Same.
+- [-] `OS-13`  NSAccessibility (macOS). Same.
+- [s] `OS-14` keep the Go tree accurate for the Elements/devtools path. Proof: existing a11y tests still pass after the Page wrap (`AccessibilityTree` may stay on inner page, exposed if public).
 
 ### 2.4 IME, idle, crash, package
 
-- [x] `OS-15` `[~]` native IM verification (ibus/fcitx, Windows IME, macOS). Record one manual session or keep "unverified" in platforms.md. 1.0 does not require a new IME stack.
-- [x] `OS-16` idle park stays desktop-only. Docs already. Proof: `idle_supported.go` / `idle_policy.go`; platforms.md idle row.
-- [x] `OS-17` `Run` crash file 0600. Proof: crash tests. Wasm: recover, no file (document). Serve: `[~]` recover in 1.0 or document handler panic → 500. Next gate: Serve recover if Serve stays a debugger (low priority).
-- [x] `OS-18` `scripts/package.sh` unsigned is accepted for 1.0. Add a **runbook** sentence: signing and notarization are release-operator steps, not library code. Proof: `documentation/packaging.md` or `documentation/release-checklist.md`.
-- [x] `OS-19` `[~]` icons in package.sh. Next gate: packaging follow-up. Do not block 1.0.
+- [-] `OS-15`  native IM verification (ibus/fcitx, Windows IME, macOS). Record one manual session or keep "unverified" in platforms.md. 1.0 does not require a new IME stack.
+- [s] `OS-16` idle park stays desktop-only. Docs already. Proof: `idle_supported.go` / `idle_policy.go`; platforms.md idle row.
+- [s] `OS-17` `Run` crash file 0600. Proof: crash tests. Wasm: recover, no file (document). Serve: `[~]` recover in 1.0 or document handler panic → 500. Next gate: Serve recover if Serve stays a debugger (low priority).
+- [s] `OS-18` `scripts/package.sh` unsigned is accepted for 1.0. Add a **runbook** sentence: signing and notarization are release-operator steps, not library code. Proof: `documentation/packaging.md` or `documentation/release-checklist.md`.
+- [-] `OS-19`  icons in package.sh. Next gate: packaging follow-up. Do not block 1.0.
 
 ### 2.5 Drop.Path
 
-- [x] `OS-20` public docs (DOC-12) plus a code comment on `host.Drop` / `Drop.Path`: copy bytes in the callback. Proof: comment on the struct field.
-- [x] `OS-21` keep 16 MiB read cap if present. Proof: cite the constant and a test.
+- [s] `OS-20` public docs (DOC-12) plus a code comment on `host.Drop` / `Drop.Path`: copy bytes in the callback. Proof: comment on the struct field.
+- [s] `OS-21` keep 16 MiB read cap if present. Proof: cite the constant and a test.
 
 ## Dependencies
 
@@ -91,6 +86,6 @@ Go practice: OS seams behind interfaces (already: clipboard `UseMemory`, `page.I
 
 1.0 closes this phase when OS-01, OS-04, OS-06, OS-08, OS-10, OS-16, OS-18, OS-20 are `[x]`, and OS-02 is either `[x]` or `[~]` with docs that match.
 
-- [x] `make lint` and `make test` if Go changed
-- [x] clipboard tests still `UseMemory`
-- [x] platforms.md clipboard row matches OS-01
+- [s] `make lint` and `make test` if Go changed
+- [s] clipboard tests still `UseMemory`
+- [s] platforms.md clipboard row matches OS-01

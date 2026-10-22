@@ -7,7 +7,7 @@ operation, is in [frames.md](frames.md).
 
 ## The page reports the regions
 
-`Page.TakeDirtyRects` returns the regions that changed since the previous
+`Page.Testing().TakeDirtyRects` returns the regions that changed since the previous
 call, in CSS pixels, and clears them. A handler can declare the id it changed
 with `Invalidate`; for handlers that forget, the page diffs the previous
 display list against the new one and unions the bounds of every changed
@@ -29,7 +29,7 @@ box instead. `TakeDirty` keeps its old signature and returns that bounding
 box, so a caller that wants one rect still gets one.
 
 ```go
-rects, ok := page.TakeDirtyRects()
+rects, ok := page.Testing().TakeDirtyRects()
 ```
 
 `ok` false means nothing changed since the previous call. Each rect is
@@ -42,8 +42,9 @@ replayable page that can report dirty rects, it paints a 256 by 256 tile grid
 sized to the content (`internal/window/replay_tile_paint.go` calls
 `replay.DrawVisibleUnfixedZ`). Each dirty rect is filled with the page
 background and replayed into every tile it touches, and only the damaged
-tiles are copied to the screen each frame. The screen is cleared between
-frames, so a clean frame copies nothing. The `bitmap fallback` badge draws on
+regions are copied on a partial frame. The window retains the previous screen
+between frames, so a clean frame needs no page copy. A stale screen or scroll
+change copies the visible tiles again. The `bitmap fallback` badge draws on
 the screen after the tiles, so a repaint never wipes it.
 
 `internal/replay.DrawRect` is the same clip idea for tests and helpers. The
@@ -170,8 +171,7 @@ When content exceeds the cache limits, a static page with `TakeDirty` keeps one 
 - A stretched or zoomed page. `internal/window/replay_scale.go` replays the
   whole list into a canvas-sized buffer each frame and scales it to the
   window.
-- `Page.PNG` paints from the template source on demand, so `GET /frame.png`
-  always costs a full paint.
+- `Page.Testing().PNG()` paints the retained display on the first request after a redraw and caches the encoded picture. It does not use window tiles. Tick-only edits do not invalidate an existing encoded picture; see [screen.md](screen.md#png-and-the-web-page).
 
 ## Measured numbers
 
@@ -211,10 +211,14 @@ The worst steady frame skips the first frame after a draw, which repaints the
 whole content once. On the same board the single union rect replayed 630 of
 631 operations on the worst cascade frame, so the list removes about 82
 percent of the worst-frame operation count. The `rotate` row takes the tick's
-retarget path: `Page.Generation()` does not move, `RedrawNS` stays the initial
+retarget path: `Page.Testing().Generation()` does not move, `RedrawNS` stays the initial
 draw, and no frame after the first is full-content. The full tables and the
 command lines are in `examples/departure-board/PERFORMANCE.md`.
 
 ## Proving it with counters
 
 The PIPELINE DETAIL group of the Frame tab reports dirty ops, dirty regions, and changed ops with Perf on, and `GET /debug/state` serves the same data in web mode. The full checklist, budgets, and soak and baseline scripts live in [performance.md](performance.md).
+
+## Validate repaint behavior
+
+The software-picture comparison tests do not capture window tiles. Run `make graphics-check` for retained-window pixel checks, damage blits, scrolling, dock restoration, and replay parity. See [testing.md](testing.md) for prerequisites and platform limits.

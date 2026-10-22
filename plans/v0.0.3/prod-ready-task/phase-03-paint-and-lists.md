@@ -1,16 +1,11 @@
 # v0.0.3 - Phase 3 field: Paint, lists, and blinkless
 
+> Superseded planning record. `[s]` marks an old proposal or assertion, not proof of implementation. `[-]` marks work explicitly deferred in the original plan. Current decisions and evidence live in [plans/README.md](../../README.md).
+
 > **Parent:** [README.md](README.md)
-> **Status:** closed 2026-10-22. Does not block the API wrap. 1.0 needs a list **recipe** and either tile+pins or documented `SetScrollWindow`. Sticky in the engine is `[~]`.
 > **Estimated effort:** dirty-from-tick is days. Tile+pins is a week-scale window change. Engine sticky is a blinkless project.
 
 ---
-
-**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
-
-Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
-
-
 
 ## Overview
 
@@ -44,47 +39,47 @@ Go practice: measure with a named command and dataset; do not treat `make test` 
 
 ### 3.1 Tick dirty by default
 
-- [x] `PAINT-01` when `SetTick` patches ops (or `UseFrameDirty` would have been required), the library sets the frame-dirty flag itself. Callers should not remember `UseFrameDirty`. Proof: a test ticks a fill color without calling `UseFrameDirty` and `TakeDirty` / tile path is used. `documentation/frames.md` updated.
-- [x] `PAINT-02` keep `UseFrameDirty` as a no-op or documented alias for one tag if examples already call it. Proof: Spotify/telegram/departure-board still compile.
-- [x] `PAINT-03` ticks that call `Redraw` stay full layout. Proof: existing redraw tests.
+- [s] `PAINT-01` when `SetTick` patches ops (or `UseFrameDirty` would have been required), the library sets the frame-dirty flag itself. Callers should not remember `UseFrameDirty`. Proof: a test ticks a fill color without calling `UseFrameDirty` and `TakeDirty` / tile path is used. `documentation/frames.md` updated.
+- [s] `PAINT-02` keep `UseFrameDirty` as a no-op or documented alias for one tag if examples already call it. Proof: Spotify/telegram/departure-board still compile.
+- [s] `PAINT-03` ticks that call `Redraw` stay full layout. Proof: existing redraw tests.
 
 ### 3.2 Pinned chrome vs tiles
 
 Pick one and record it in this row:
 
-- [x] `PAINT-04a` implement paint of fixed/pin-z layers after the unfixed tile blit so `hasViewportOps` does not disable partial replay. Proof: telegram-like fixture: scroll dirties message tiles; composer/header still on screen; `hasViewportOps` no longer forces `fullReplay` in `replay_partial.go`. Visual/dirty tests updated.
-- [x] `PAINT-04b` **or** document 1.0: pinned chrome uses `SetScrollWindow` / `SetViewportPinZ` and **leaves the tile path**. `documentation/repaint.md` and `screen.md` say incremental repaint is a forms feature. Proof: those sentences exist; Telegram comments point at the docs.
+- [s] `PAINT-04a` implement paint of fixed/pin-z layers after the unfixed tile blit so `hasViewportOps` does not disable partial replay. Proof: telegram-like fixture: scroll dirties message tiles; composer/header still on screen; `hasViewportOps` no longer forces `fullReplay` in `replay_partial.go`. Visual/dirty tests updated.
+- [s] `PAINT-04b` **or** document 1.0: pinned chrome uses `SetScrollWindow` / `SetViewportPinZ` and **leaves the tile path**. `documentation/repaint.md` and `screen.md` say incremental repaint is a forms feature. Proof: those sentences exist; Telegram comments point at the docs.
 
 1.0 may ship 04b. 04a is the product-quality follow-up. Do not leave both `[ ]`. Close one `[x]` and the other `[~]` with pointer.
 
-- [x] `PAINT-05` `documentation/repaint.md` names `drawReplayPartial` as the window path (see `SHAPE-16`). Proof: file agrees with `internal/window/replay_partial.go`.
+- [s] `PAINT-05` `documentation/repaint.md` names `drawReplayPartial` as the window path (see `SHAPE-16`). Proof: file agrees with `internal/window/replay_partial.go`.
 
 ### 3.3 Lists
 
-- [x] `PAINT-06` example recipe: a windowed list (slice window + spacers or `SetScrollWindow`) under `examples/` (new small example **or** a section in `documentation/tricks-tips.md` plus a test in an existing example). Not a virtual DOM. The app owns the slice. Proof: 200 rows of simple rows, layout/redraw time recorded with command, dataset, cold/warm, metric. Target: under 16 ms layout on the same class of machine as Teams notes, or a recorded number with hardware.
-- [x] `PAINT-07` `documentation/tricks-tips.md` Teams 50/200/500 numbers stay as the warning. Link the recipe. Proof: link exists.
-- [x] `PAINT-08` `[~]` engine `content-visibility`. Next gate: blinkless. Do not fake it in 1.0 beyond spacers.
+- [s] `PAINT-06` example recipe: a windowed list (slice window + spacers or `SetScrollWindow`) under `examples/` (new small example **or** a section in `documentation/tricks-tips.md` plus a test in an existing example). Not a virtual DOM. The app owns the slice. Proof: 200 rows of simple rows, layout/redraw time recorded with command, dataset, cold/warm, metric. Target: under 16 ms layout on the same class of machine as Teams notes, or a recorded number with hardware.
+- [s] `PAINT-07` `documentation/tricks-tips.md` Teams 50/200/500 numbers stay as the warning. Link the recipe. Proof: link exists.
+- [-] `PAINT-08`  engine `content-visibility`. Next gate: blinkless. Do not fake it in 1.0 beyond spacers.
 
 ### 3.4 Element patch (behavior already in ERR-*)
 
-- [x] `PAINT-09` features.md already describes refuse + cache drop. After `ERR-05`, confirm emoji-in-patched-text still documented (no emoji pass on patch). Proof: features.md element patch section.
-- [x] `PAINT-10` `RetainState` remains off by default. Proof: `Config` zero value; a test that patch without retain fails with `error`.
+- [s] `PAINT-09` features.md already describes refuse + cache drop. After `ERR-05`, confirm emoji-in-patched-text still documented (no emoji pass on patch). Proof: features.md element patch section.
+- [s] `PAINT-10` `RetainState` remains off by default. Proof: `Config` zero value; a test that patch without retain fails with `error`.
 
 ### 3.5 Fallback honesty
 
-- [x] `PAINT-11` bitmap fallback badge stays. Docs list elliptical radius, missing image, rotated glyph, non-separable blend, transformed grid as fallback triggers (`replay_reject_test.go`). Proof: features.md or screen.md bullet list cites the test file.
-- [x] `PAINT-12` `[~]` half-replay of mixed pages. Reason: all-or-nothing Replayable is the correct gate. Next gate: none for 1.0.
+- [s] `PAINT-11` bitmap fallback badge stays. Docs list elliptical radius, missing image, rotated glyph, non-separable blend, transformed grid as fallback triggers (`replay_reject_test.go`). Proof: features.md or screen.md bullet list cites the test file.
+- [-] `PAINT-12`  half-replay of mixed pages. Reason: all-or-nothing Replayable is the correct gate. Next gate: none for 1.0.
 
 ### 3.6 blinkless
 
-- [x] `PAINT-13` one pin both modules (`MOD-05`). Proof: same version string.
-- [x] `PAINT-14` `[~]` tagged blinkless `v0.0.3` (or later) instead of a pseudo-version. Next gate: blinkless repo release. 1.0 may ship with a pseudo-version if MOD-05 holds, but release notes must name the commit.
-- [x] `PAINT-15` CSS matrix (`DOC-08`) is the support contract. Engine holes are blinkless issues, not silent ownframe workarounds, except the documented `SetScrollWindow` contract.
-- [x] `PAINT-16` `[~]` `position: sticky` / flex+absolute in blinkless. Next gate: engine PR then pin bump. ownframe 1.0 documents the hole.
+- [s] `PAINT-13` one pin both modules (`MOD-05`). Proof: same version string.
+- [-] `PAINT-14`  tagged blinkless `v0.0.3` (or later) instead of a pseudo-version. Next gate: blinkless repo release. 1.0 may ship with a pseudo-version if MOD-05 holds, but release notes must name the commit.
+- [s] `PAINT-15` CSS matrix (`DOC-08`) is the support contract. Engine holes are blinkless issues, not silent ownframe workarounds, except the documented `SetScrollWindow` contract.
+- [-] `PAINT-16`  `position: sticky` / flex+absolute in blinkless. Next gate: engine PR then pin bump. ownframe 1.0 documents the hole.
 
 ### 3.7 Process lock
 
-- [x] `PAINT-17` document `internal/render/engine.go` process-wide mutex: two pages in one process queue. Proof: `documentation/performance.md` or features.md sentence. 1.0 does not remove the lock (blinkless readers).
+- [s] `PAINT-17` document `internal/render/engine.go` process-wide mutex: two pages in one process queue. Proof: `documentation/performance.md` or features.md sentence. 1.0 does not remove the lock (blinkless readers).
 
 ## Dependencies
 
@@ -101,8 +96,8 @@ Pick one and record it in this row:
 
 Record the exact release command for PAINT-06. Successful execution of `make test` is not proof.
 
-- [x] `make lint` exit 0
-- [x] `make test` exit 0
-- [x] PAINT-04a or PAINT-04b closed
-- [x] PAINT-01 test without `UseFrameDirty`
-- [x] list recipe numbers pasted here
+- [s] `make lint` exit 0
+- [s] `make test` exit 0
+- [s] PAINT-04a or PAINT-04b closed
+- [s] PAINT-01 test without `UseFrameDirty`
+- [s] list recipe numbers pasted here

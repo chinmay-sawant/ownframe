@@ -1,0 +1,271 @@
+{
+  "README.md#1": {
+    "mode": "file"
+  },
+  "documentation/accessibility.md#1": {
+    "mode": "body",
+    "after": "",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "log",
+      "context"
+    ],
+    "params": "page *ownframe.Page, ctx context.Context"
+  },
+  "documentation/android-app-creation.md#1": {
+    "mode": "declaration",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ]
+  },
+  "documentation/binding.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context",
+      "log"
+    ],
+    "params": "profileHTML string"
+  },
+  "documentation/compare-electron.md#1": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-go-app-frameworks.md#1": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-go-app-frameworks.md#2": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-go-app-frameworks.md#3": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-go-app-frameworks.md#4": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-go-app-frameworks.md#5": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-rust-gpui.md#1": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-syntax.md#1": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-syntax.md#2": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-syntax.md#3": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-syntax.md#4": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/crash.md#1": {
+    "mode": "body",
+    "after": "_ = path\nreturn err",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "dir string"
+  },
+  "documentation/devtools.md#1": {
+    "mode": "body",
+    "after": "_ = page\nreturn err",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "html string"
+  },
+  "documentation/devtools.md#2": {
+    "mode": "declaration",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "before": "type Stats = ownframe.Stats"
+  },
+  "documentation/drag-drop.md#1": {
+    "mode": "declaration",
+    "imports": [
+      "context"
+    ]
+  },
+  "documentation/drag-drop.md#2": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ],
+    "params": "page *ownframe.Page"
+  },
+  "documentation/editing.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ],
+    "params": "page *ownframe.Page"
+  },
+  "documentation/fetch.md#1": {
+    "mode": "body",
+    "after": "_ = res\nreturn err",
+    "imports": [
+      "context",
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "ctx context.Context"
+  },
+  "documentation/forms.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ],
+    "params": "page *ownframe.Page"
+  },
+  "documentation/frames.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ],
+    "params": "page *ownframe.Page, opIndex int, barWidth float64, pos, dur int64"
+  },
+  "documentation/hot-reload.md#1": {
+    "mode": "declaration",
+    "imports": [
+      "context"
+    ]
+  },
+  "documentation/ipc.md#1": {
+    "mode": "body",
+    "after": "_ = reply\nreturn err",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ],
+    "params": "ctx context.Context"
+  },
+  "documentation/keys.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "context"
+    ],
+    "params": "page *ownframe.Page, jump, stopHolding func()"
+  },
+  "documentation/navigation.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "context",
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "page *ownframe.Page, ctx context.Context"
+  },
+  "documentation/navigation.md#2": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "page *ownframe.Page"
+  },
+  "documentation/navigation.md#3": {
+    "mode": "file",
+    "after": ""
+  },
+  "documentation/performance.md#1": {
+    "mode": "body",
+    "after": "_ = page\nreturn err",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "html string"
+  },
+  "documentation/rebrand.md#1": {
+    "mode": "file",
+    "after": "var _ = ownframe.New"
+  },
+  "documentation/repaint.md#1": {
+    "mode": "body",
+    "after": "_ = rects\n_ = ok\nreturn nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "page *ownframe.Page"
+  },
+  "documentation/repaint.md#2": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "image",
+      "github.com/hajimehoshi/ebiten/v2",
+      "github.com/chinmay-sawant/blinkless/layout",
+      "github.com/chinmay-sawant/ownframe/internal/replay"
+    ],
+    "audience": "internal",
+    "params": "dst *ebiten.Image, display *layout.Display, rect image.Rectangle, dx, dy float64"
+  },
+  "documentation/secrets.md#1": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/theming.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "context",
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "params": "ctx context.Context, templateHTML, darkTheme string"
+  },
+  "documentation/window.md#1": {
+    "mode": "body",
+    "after": "_ = page\nreturn err",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "frontend/src/Home.jsx#quickStart": {
+    "mode": "file"
+  },
+  "frontend/src/Home.jsx#coreExample": {
+    "mode": "body",
+    "imports": [
+      "context",
+      "log",
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "after": "return nil"
+  }
+}

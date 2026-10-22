@@ -9,9 +9,24 @@ The repo holds two Go modules joined by `go.work`: the library at the root and `
 - `make test` runs the test suite for both modules.
 - `make test-race` runs `go test -race -p 1 ./...` on the library module only.
 - `make build` is the compile check. It runs `go vet` over every package. Do not run `go build ./...`; it links an executable for each example, takes about a minute, and leaves the binaries in this directory.
-- `make lint` runs golangci-lint, the file-size gate, the example internal-import gate, and the website lint.
+- `make lint` runs golangci-lint, the documentation and plan checks, the example internal-import gate, and the website lint.
 - Run `gofmt` on every Go file you edit.
-- Library module Go files (the root package and `internal/`) stay at most 2000 characters, counted with `wc -m`. Split an overlong file inside the same package and keep the behavior. Downstream apps and examples are not under that cap.
+- Group related methods, test cases, and fixtures by responsibility. There is no character cap.
+
+## Review cohesion
+
+A review answers these questions with the changed code:
+
+- Can a reader follow an operation without opening unrelated files?
+- Does each package own a clear responsibility, and are its dependencies explicit?
+- Do tests keep related scenarios and fixtures together?
+- Does a helper hide meaningful behavior or merely add another jump?
+
+Split code when responsibilities diverge. Consolidate files that were split only for a size count. Do not add synonym helpers, comment-only Go files, or detached constant files solely to satisfy lint.
+
+`make docs-check` compiles the Go snippets extracted from the guides against the public API. `make plans-check` checks the current status ledger. `make graphics-check` runs window pixel checks and replay parity in isolated Xvfb sessions. See [testing.md](documentation/testing.md) for scope and prerequisites.
+
+The maintained teaching examples are listed in `examples/maintenance.json`. Other examples are experiments and remain in the compatibility suite; new library features need a focused example rather than another app clone.
 
 ## Public API after the Page wrap
 

@@ -1,5 +1,12 @@
 # Examples
 
+## Maintained teaching examples
+
+Start with `login`, then use `bind`, `forms`, and `list` for individual library capabilities. `desktop-cat` teaches desktop window behavior; `telegram` is the Android integration reference. These six examples are the maintained teaching set in [maintenance.json](maintenance.json).
+
+The rest of this catalog contains experiments and shared example support. They remain in `make test` for compatibility, but their app scope is not a promise of library support. Add a focused teaching example only when the maintained set cannot demonstrate a new public capability.
+
+
 Copy [login](login) or [ops-console](ops-console), not the brand clones.
 
 Most examples open one HTML template in a window. `go run ./examples/<name>`

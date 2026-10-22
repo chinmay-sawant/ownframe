@@ -8,7 +8,7 @@ Perf sampling is off by default, so a shipped app pays nothing for it. The DevTo
 page, err := ownframe.NewWithOptions(ownframe.Config{HTML: html, Width: 720, Height: 560}, ownframe.WithPerf(true))
 ```
 
-That one call covers the common case. The pieces behind it are `Config.Perf` on the page, `WindowOptions.Perf` on the window, and `ServeOptions{Perf: true}` for `ServeWithOptions` and its `/debug/pprof/*` endpoints. `Page.SetPerf` and `Page.Perf` flip and read the page flag at runtime. The window picks up a page with Perf on by itself, and `WindowOptions.Perf` turns on frame and runtime sampling even for a custom screen. The benchmark apps under `examples/perf-benchmarks` opt in already.
+That one call covers the common case. The pieces behind it are `Config.Perf` on the page, `WindowOptions.Perf` on the window, and `ServeOptions{Perf: true}` for `ServeWithOptions` and its `/debug/pprof/*` endpoints. `Page.Testing().SetPerf` and `Page.Testing().Perf` flip and read the page flag at runtime. The window picks up a page with Perf on by itself, and `WindowOptions.Perf` turns on frame and runtime sampling even for a custom screen. The benchmark apps under `examples/perf-benchmarks` opt in already.
 
 This page turns the release checklist into steps you can run. It assumes Perf is on and the DevTools Frame tab and `GET /debug/state` expose the counters named below. If a counter is missing, file it as a bug instead of guessing.
 
@@ -73,7 +73,7 @@ The MEMORY section of the Frame tab shows allocation per frame, Go heap, RSS, an
 
 ## 5 DevTools perf panel fields
 
-The Frame tab groups perf counters under three sections. Values come from `Page.Stats` through `host.Inspector`, so `GET /debug/state` returns the same data as JSON.
+The Frame tab groups perf counters under three sections. Values come from `Page.Testing().Stats` through `host.Inspector`, so `GET /debug/state` returns the same data as JSON.
 
 | Section | Rows |
 |---|---|

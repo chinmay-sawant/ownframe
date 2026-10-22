@@ -1,0 +1,27 @@
+# Current maintenance ledger
+
+This is the current status record. Release folders, PR records, `PHASES.md`, and `RENDERING-FINDINGS.md` preserve historical evidence and rationale. They do not define present support. User-facing behavior belongs in [documentation/features.md](../documentation/features.md) and [documentation/platforms.md](../documentation/platforms.md).
+
+Use one status per row:
+
+- `[x]` implemented, with a code or validation reference.
+- `[ ]` open, awaiting work or validation.
+- `[-]` deferred, with a reason and a condition for reconsideration.
+- `[s]` superseded, with a replacement reference.
+
+A documented non-goal is deferred, not implemented. Passing a compiler or a unit test does not prove device behavior. Do not copy a phase closure paragraph into other plans. Add evidence beside the row it proves.
+
+## Repository maintenance
+
+- [x] `COHESION` replace the character cap with responsibility and cohesion review; consolidate repaint, window-frame, Wayland-fixture, and GPU comparison tests. Evidence: `AGENTS.md`, `CONTRIBUTING.md`, and the consolidated test families; `make test` exit 0 on 2026-10-22.
+- [x] `DOCS` correct API references and compile guide snippets. Evidence: `make docs-check` compiled 31 snippets on 2026-10-22; eight third-party illustrations are explicitly excluded; public Page method references are checked.
+- [x] `GRAPHICS` run retained window pixels and replay parity in isolated sessions. Evidence: `make graphics-check` exit 0 on 2026-10-22, all three required tests passed under Xvfb software OpenGL; missing or skipped tests fail the gate.
+- [x] `LINT` execute the exact declared golangci-lint version. Evidence: `make lint-version` exit 0 on 2026-10-22; the fixture proves a wrong PATH runner is replaced and the exact cached version is reused.
+- [x] `EXAMPLES` maintain a focused teaching set and inventory experiments separately. Evidence: `make examples-check` exit 0 on 2026-10-22, six maintained teaching roots and 49 experimental or support roots; every example remains in `make test`.
+- [x] `GATES` run the final repository checks. Evidence: `make test`, `make lint`, `make graphics-check`, frontend `npm run build`, and frontend `npm run check:site` exited 0 on 2026-10-22. The browser check covered 120 layouts including the testing guide. `zizmor` reported no new findings on the edited workflows in offline mode.
+- [s] `OLD-CLOSURE` replace the blanket production-readiness closure. Replacement: this ledger; `v0.0.3/prod-ready-task/README.md` explains the archived rows.
+- [-] `PACKAGE-SPLIT` further extract page/window responsibilities. Reconsider when a concrete change crosses ownership boundaries; mechanical merging of all files is not this maintenance pass.
+- [-] `NATIVE-A11Y` live screen-reader adapters remain unshipped. Reconsider with an adapter owner and real assistive-technology validation; see `../documentation/accessibility-native.md`.
+- [-] `EXPERIMENTS` Reconsider promoting additional demos only when they teach a missing public capability and have a maintenance owner. Existing experimental examples remain in the compatibility suite.
+
+Validation used the local checkout with Go 1.26.10. CI workflow changes have been inspected locally, not executed on GitHub. No commit, push, release, or version bump was made. Logs are in the ignored `temp/maintenance-*.log` files.

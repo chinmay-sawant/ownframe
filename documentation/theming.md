@@ -36,7 +36,7 @@ theme. `Click` redraws after its handler, so a click can switch a theme
 without an extra `Redraw`. A theme with unbalanced braces returns a parse
 error from `New` or `SetTheme` and leaves the current theme in place; other
 malformed input is skipped by the engine's CSS parser. The theme reaches both
-the display-list path and the bitmap fallback, and `Page.PNG` paints with the
+the display-list path and the bitmap fallback, and `Page.Testing().PNG` paints with the
 current theme. It applies to whichever template is current; `Load` does not
 change it. Media queries in the theme are evaluated against the screen: width
 and orientation match; `@media print` and `prefers-color-scheme` never do. A

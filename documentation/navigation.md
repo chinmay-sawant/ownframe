@@ -30,7 +30,7 @@ The [history example](../examples/history) drives `Load`, `Back`, `Forward`, `HT
 
 Register each scheme your app accepts in `Config.DeepLinkSchemes`. Add a
 `Handlers.DeepLink` callback, then pass OS-delivered URLs to
-`Page.DispatchDeepLink` on the page's owning event loop.
+`Page.Testing().DispatchDeepLink` on the page's owning event loop.
 
 ```go
 import (
