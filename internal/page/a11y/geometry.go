@@ -1,22 +1,25 @@
-package page
+package a11y
 
 import (
 	"strings"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/blinkless/markup"
 )
 
-type accessibilityBoxKey struct{ tag, text string }
+type boxKey struct{ tag, text string }
 
-func accessibilityNodeBoxes(root *markup.Node, boxes []Box) map[*markup.Node]Box {
-	nodes := map[accessibilityBoxKey][]*markup.Node{}
+// NodeBoxes maps anonymous nodes to boxes when the tag and text match
+// unambiguously.
+func NodeBoxes(root *markup.Node, boxes []layout.Box) map[*markup.Node]layout.Box {
+	nodes := map[boxKey][]*markup.Node{}
 	var walk func(*markup.Node)
 	walk = func(n *markup.Node) {
 		if n == nil {
 			return
 		}
 		if n.Type == markup.TypeElement && n.Attrs["id"] == "" {
-			key := accessibilityBoxKey{tag: n.Name, text: nodeText(n)}
+			key := boxKey{tag: n.Name, text: NodeText(n)}
 			nodes[key] = append(nodes[key], n)
 		}
 		for _, child := range n.Children {
@@ -25,16 +28,16 @@ func accessibilityNodeBoxes(root *markup.Node, boxes []Box) map[*markup.Node]Box
 	}
 	walk(root)
 
-	placed := map[accessibilityBoxKey][]Box{}
+	placed := map[boxKey][]layout.Box{}
 	for _, box := range boxes {
 		if box.ID == "" {
 			text := strings.Join(strings.Fields(box.Text), " ")
-			key := accessibilityBoxKey{tag: box.Tag, text: text}
+			key := boxKey{tag: box.Tag, text: text}
 			placed[key] = append(placed[key], box)
 		}
 	}
 
-	out := map[*markup.Node]Box{}
+	out := map[*markup.Node]layout.Box{}
 	for key, group := range nodes {
 		matches := placed[key]
 		if len(group) != len(matches) {

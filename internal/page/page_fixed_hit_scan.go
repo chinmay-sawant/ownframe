@@ -5,7 +5,7 @@ package page
 // on the box the user sees on top. Inside one layer the innermost box in
 // document order wins.
 func (p *Page) scanHit(x, y float64) boxSpot {
-	vx, vy := x-float64(p.windowing.x), y-float64(p.windowing.y)
+	vx, vy := x-float64(p.scroll.Windowing.X), y-float64(p.scroll.Windowing.Y)
 	content := boxSpot{}
 	pinned := boxSpot{}
 	for _, item := range p.hits {

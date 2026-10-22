@@ -37,8 +37,8 @@ type pageStats struct {
 // the display-list or paint stage of the last Redraw before that.
 func (p *Page) Stats() host.Stats {
 	ops := 0
-	if p.display != nil {
-		ops = len(p.display.Ops)
+	if p.draw.Display != nil {
+		ops = len(p.draw.Display.Ops)
 	}
 
 	lastDraw := p.stats.lastDraw

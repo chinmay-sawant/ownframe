@@ -13,10 +13,10 @@ func TestPatchElementDirtiesTheChangedInk(t *testing.T) {
 		`<div id="d" style="width:20px;height:20px;white-space:nowrap">hello world</div>`)
 
 	p.TakeDirty()
-	prev := p.display
+	prev := p.draw.Display
 	mustPatch(t, p.PatchElement(ctx, "d", ElementEdit{Attribute: "class", Value: "on"}))
 
-	d, full, changed := diffDisplay(prev, p.display)
+	d, full, changed := diffDisplay(prev, p.draw.Display)
 	if full || d.n == 0 || changed == 0 {
 		t.Fatalf("the patch changed nothing: full %v n %d changed %d", full, d.n, changed)
 	}

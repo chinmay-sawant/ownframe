@@ -6,7 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 
-	"github.com/chinmay-sawant/ownframe/internal/window"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // costWindowFrames is how many frames one window run measures.
@@ -46,7 +46,7 @@ func costWindowRun(tb testing.TB, mode string, target int) {
 		costFullCatalog(ctx, p, v, d, tb)
 		costPlayAll(ctx, p, tb)
 	}
-	g := &costGame{inner: window.NewGame(ctx, p.Testing().Host())}
+	g := &costGame{inner: ownframe.NewGame(ctx, p)}
 	c := &costCollector{p: p, d: d, v: v, g: g, warm: 3}
 	p.SetTick(c.tick)
 	ebiten.SetWindowSize(1908, 999)

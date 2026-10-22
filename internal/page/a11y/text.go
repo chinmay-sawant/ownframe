@@ -1,11 +1,13 @@
-package page
+package a11y
 
 import (
-	"github.com/chinmay-sawant/blinkless/markup"
 	"strings"
+
+	"github.com/chinmay-sawant/blinkless/markup"
 )
 
-func nodeText(n *markup.Node) string {
+// NodeText is the flattened descendant text of n.
+func NodeText(n *markup.Node) string {
 	var out strings.Builder
 	var walk func(*markup.Node)
 	walk = func(node *markup.Node) {

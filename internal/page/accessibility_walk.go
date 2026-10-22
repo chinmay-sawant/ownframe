@@ -1,11 +1,11 @@
 package page
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/chinmay-sawant/blinkless/markup"
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/a11y"
 )
 
 func (b *accessibilityBuilder) walk(n *markup.Node, parent host.AccessibilityNodeID, path string) {
@@ -16,12 +16,12 @@ func (b *accessibilityBuilder) walk(n *markup.Node, parent host.AccessibilityNod
 		b.appendAccessibilityText(n, parent, path)
 		return
 	}
-	if n.Type != markup.TypeElement || hiddenAccessibilityNode(n) {
+	if n.Type != markup.TypeElement || a11y.Hidden(n) {
 		return
 	}
-	role, ok := accessibilityRole(n)
+	role, ok := a11y.Role(n)
 	if ok {
-		id := accessibilityID(n, path, b.ids)
+		id := a11y.ID(n, path, b.names.IDs)
 		node := b.makeAccessibilityNode(n, id, parent, role)
 		b.tree.Nodes = append(b.tree.Nodes, node)
 		b.nodeAt[id] = len(b.tree.Nodes) - 1
@@ -33,13 +33,13 @@ func (b *accessibilityBuilder) walk(n *markup.Node, parent host.AccessibilityNod
 		parent = id
 	}
 	for i, child := range n.Children {
-		b.walk(child, parent, childPath(path, i))
+		b.walk(child, parent, a11y.ChildPath(path, i))
 	}
 }
 
 func (b *accessibilityBuilder) appendAccessibilityText(n *markup.Node, parent host.AccessibilityNodeID, path string) {
 	name := strings.Join(strings.Fields(n.Text), " ")
-	if name == "" || textNamedByParent(b.tree.Nodes[b.nodeAt[parent]].Role) {
+	if name == "" || a11y.TextNamedByParent(b.tree.Nodes[b.nodeAt[parent]].Role) {
 		return
 	}
 	id := host.AccessibilityNodeID("path:" + path)
@@ -48,12 +48,4 @@ func (b *accessibilityBuilder) appendAccessibilityText(n *markup.Node, parent ho
 	b.tree.Nodes = append(b.tree.Nodes, node)
 	i := b.nodeAt[parent]
 	b.tree.Nodes[i].Children = append(b.tree.Nodes[i].Children, id)
-}
-
-func childPath(parent string, at int) string {
-	part := strconv.Itoa(at)
-	if parent == "" {
-		return part
-	}
-	return parent + "." + part
 }

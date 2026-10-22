@@ -22,7 +22,7 @@ func TestFallbackRebuildsFixedHits(t *testing.T) {
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p.display != nil {
+	if p.draw.Display != nil {
 		t.Fatal("the elliptical radius replayed, want the bitmap path")
 	}
 	if len(p.hits) == 0 {

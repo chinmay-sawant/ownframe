@@ -9,7 +9,7 @@ import "context"
 type HoverHandler func(ctx context.Context, previous, next Box) (handled bool, err error)
 
 func (p *Page) paintHover(ctx context.Context, id string) (bool, error) {
-	if p.handlers.Hover == nil || p.display == nil {
+	if p.handlers.Hover == nil || p.draw.Display == nil {
 		return false, nil
 	}
 	return p.handlers.Hover(ctx, p.boxByID(p.hoverID()), p.boxByID(id))

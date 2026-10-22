@@ -47,7 +47,7 @@ func TestPatchElementClearsTheCachedPicture(t *testing.T) {
 
 	mustPatch(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "style",
 		Value: "width:40px;height:20px;background:#445566"}))
-	if p.png != nil {
+	if p.draw.PNG != nil {
 		t.Fatal("the patch kept the cached picture")
 	}
 }

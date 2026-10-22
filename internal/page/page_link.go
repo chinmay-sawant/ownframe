@@ -39,7 +39,7 @@ func parseOutboundLink(target string) (*url.URL, error) {
 }
 
 func (p *Page) linkTargetAt(x, y float64) (string, bool) {
-	d := p.display
+	d := p.draw.Display
 	if d == nil || d.PointsPerPixel <= 0 {
 		return "", false
 	}

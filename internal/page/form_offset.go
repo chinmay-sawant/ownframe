@@ -12,7 +12,7 @@ import (
 // value, lands at the end of the value.
 func (p *Page) offsetAt(box Box, c Control, x, y float64) int {
 	n := runeLen(c.Value)
-	off, ok := textrun.At(p.display, box, x, y, shownText(strings.ToLower(c.Type), c.Value))
+	off, ok := textrun.At(p.draw.Display, box, x, y, shownText(strings.ToLower(c.Type), c.Value))
 	if !ok {
 		return n
 	}

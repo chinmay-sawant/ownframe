@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/a11y"
 )
 
 // AccessibilityPerform runs an advertised action on the page-owning loop.
@@ -18,14 +19,14 @@ func (p *Page) AccessibilityPerform(ctx context.Context, request host.Accessibil
 	if request.Document != tree.Document {
 		return host.ErrAccessibilityStale
 	}
-	node, ok := accessibilityNode(tree, request.Node)
+	node, ok := a11y.Lookup(tree, request.Node)
 	if !ok {
 		return host.ErrAccessibilityNode
 	}
 	if node.Disabled && (request.Kind != host.AccessibilityFocus || !node.Focusable) {
 		return host.ErrAccessibilityDisabled
 	}
-	if !hasAccessibilityAction(node, request.Kind) {
+	if !a11y.HasAction(node, request.Kind) {
 		return host.ErrAccessibilityAction
 	}
 

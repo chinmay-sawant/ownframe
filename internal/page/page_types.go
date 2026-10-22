@@ -2,37 +2,35 @@ package page
 
 import (
 	"html/template"
-	"image"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/page/nav"
+	"github.com/chinmay-sawant/ownframe/internal/page/scroll"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
 // Page is one template and its picture.
 type Page struct {
-	title           string
-	tpl             *template.Template
-	data            any
-	theme           *css.Sheet
-	themeSrc        string
-	handlers        Handlers
-	gesture         pageDrag
-	images          map[string][]byte
-	img             image.Image
-	display         *layout.Display
-	fallbackDisplay *layout.Display
-	boxes           []layout.Box
-	source          string
-	png             []byte
-	pageGeom        // size: New inits, SetSize writes; lock: page loop
-	renderTrack     // generation and last frame key; lock: page loop
-	touchCancel     uint32
+	title       string
+	tpl         *template.Template
+	data        any
+	theme       *css.Sheet
+	themeSrc    string
+	handlers    Handlers
+	gesture     pageDrag
+	images      map[string][]byte
+	draw        draw.Frame
+	boxes       []layout.Box
+	source      string
+	pageGeom    // size: New inits, SetSize writes; lock: page loop
+	renderTrack // generation and last frame key; lock: page loop
+	touchCancel uint32
 	tickSlot
 	nav             nav.History
 	deepLinkSchemes map[string]struct{}
@@ -60,5 +58,5 @@ type Page struct {
 	index           map[string]Box
 	hits            []hitItem
 	pageContent     // paint rect: box cache writes; lock: page loop
-	pageScrollState // scroll: window writes via Set*; lock: loop
+	scroll          scroll.State
 }

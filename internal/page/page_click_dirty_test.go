@@ -40,7 +40,7 @@ func TestClickRepaintsOneBox(t *testing.T) {
 	}
 
 	p.TakeDirty()
-	before := p.display
+	before := p.draw.Display
 
 	x, y := clickCenterOf(t, p, "inc")
 	if err := p.Click(ctx, x, y); err != nil {
@@ -52,7 +52,7 @@ func TestClickRepaintsOneBox(t *testing.T) {
 		t.Fatal("no dirty rect after the click")
 	}
 
-	after := p.display
+	after := p.draw.Display
 	if before == nil || after == nil || len(before.Ops) != len(after.Ops) {
 		t.Fatalf("op counts = %d then %d", opCount(before), opCount(after))
 	}

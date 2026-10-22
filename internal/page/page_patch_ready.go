@@ -9,7 +9,7 @@ func (p *Page) patchReady(id string) error {
 	if id == "" {
 		return fmt.Errorf("empty id: %w", ErrPatchRefused)
 	}
-	if p.cache == nil || p.display == nil {
+	if p.cache == nil || p.draw.Display == nil {
 		return fmt.Errorf("no cache: %w", ErrPatchRefused)
 	}
 	if !p.retainState {

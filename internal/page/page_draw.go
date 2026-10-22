@@ -49,7 +49,7 @@ func (p *Page) redraw(ctx context.Context, skipSame bool) error {
 	if skipSame && p.unchanged(state) {
 		return nil
 	}
-	p.png = nil
+	p.draw.DropPNG()
 	styled, err := p.styleStaged(ctx, track, p.source, state)
 	if err != nil {
 		return err

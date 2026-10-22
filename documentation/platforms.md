@@ -120,7 +120,7 @@ and App Store review. None of that is in this repo.
 | | Desktop `Run` | Android `BindMobile` | Wasm preview | `Serve` PNG debugger |
 |---|---|---|---|---|
 | Input | pointer, keys, wheel ([pointer.md](pointer.md), [keys.md](keys.md)) | tap, Back, long press; see [android-app-creation.md](android-app-creation.md) | canvas pointer and keys | `POST /click`, `/type`, `/backspace` ([web.md](web.md)) |
-| Clipboard | X11, Windows, macOS+cgo; Wayland uses `wl-copy`/`wl-paste` when on PATH; missing helpers are a no-op/`ErrUnavailable` ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
+| Clipboard | X11, Windows, macOS+cgo; Wayland prefers `wl-copy`/`wl-paste`; if missing, X11 CLIPBOARD when DISPLAY is set; otherwise no-op/`ErrUnavailable` ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
 | Files | desktop dialog (`internal/filepick`) | typed name; no file dialog. Telegram camera/gallery is app Java | typed name | typed name |
 | IME | Composer path with preedit; native IM unverified ([interaction.md](interaction.md)) | `exp/textinput` | canvas text | `/type` only |
 | A11y | Go snapshot only. Experimental Linux AT-SPI mapping, `Live` is false; no UIA, no NSAccessibility. Orca and NVDA cannot inspect ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |

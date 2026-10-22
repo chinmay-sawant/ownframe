@@ -35,7 +35,6 @@ examples/css-preview/catalog_view_transition_class_test.go	github.com/chinmay-sa
 examples/css-preview/catalog_view_transition_group_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
 examples/css-preview/catalog_view_transition_name_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
 examples/css-preview/catalog_view_transition_scope_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
-examples/css-preview/cost_window_test.go	github.com/chinmay-sawant/ownframe/internal/window
 examples/css-preview/easing.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
 examples/css-preview/motion.go	github.com/chinmay-sawant/ownframe/internal/animation
 examples/css-preview/motion.go	github.com/chinmay-sawant/ownframe/internal/transition

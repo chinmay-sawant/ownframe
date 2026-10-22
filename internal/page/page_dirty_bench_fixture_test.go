@@ -39,7 +39,7 @@ func benchDiffPage(b *testing.B) (*Page, *Display, *Display) {
 
 	p.TakeDirtyRects()
 
-	base := p.display
+	base := p.draw.Display
 	next := *base
 	next.Ops = append([]DisplayOp(nil), base.Ops...)
 

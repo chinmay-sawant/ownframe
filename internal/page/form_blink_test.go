@@ -23,7 +23,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
 		t.Fatalf("visible caret kind = %v, want fill rect", got)
 	}
 
@@ -32,7 +32,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpNoop {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpNoop {
 		t.Fatalf("hidden caret kind = %v, want noop", got)
 	}
 
@@ -40,7 +40,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpNoop {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpNoop {
 		t.Fatalf("caret returned early with kind %v", got)
 	}
 
@@ -49,7 +49,7 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
 		t.Fatalf("caret did not return, kind = %v", got)
 	}
 }

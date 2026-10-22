@@ -1,27 +1,24 @@
 package page
 
 import (
-	"bytes"
 	"context"
 	"image"
-	"image/png"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 
-	"github.com/chinmay-sawant/ownframe/internal/bitmap"
-	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 )
 
 // Image returns the last rasterized picture, or nil when nothing has been
 // drawn or the page is drawn from its display list.
 func (p *Page) Image() image.Image {
-	return p.img
+	return p.draw.Img
 }
 
 // Display returns the last display list, or nil when the page is drawn as a
 // rasterized picture.
 func (p *Page) Display() *layout.Display {
-	return p.display
+	return p.draw.Display
 }
 
 // PNG encodes the page to PNG bytes. A display-list page rasterizes on
@@ -37,49 +34,38 @@ func (p *Page) PNGWithContext(ctx context.Context) []byte {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if p.png != nil {
-		return append([]byte(nil), p.png...)
+	if b := p.draw.CopyPNG(); b != nil {
+		return b
 	}
-
-	img := p.img
-	if img == nil && p.display != nil {
-		var err error
-		img, err = bitmap.Paint(p.display)
-		if err != nil || img == nil {
-			return nil
-		}
-	}
-
+	img := p.pngImage(ctx)
 	if img == nil {
-		if p.source == "" {
-			return nil
-		}
-		if err := ctx.Err(); err != nil {
-			return nil
-		}
-		display, err := render.DisplayListState(ctx, p.source, p.width, p.height, p.renderState())
-		if err != nil {
-			return nil
-		}
-
-		img, err = bitmap.Paint(display)
-		if err != nil || img == nil {
-			return nil
-		}
+		return nil
 	}
+	p.draw.StorePNG(draw.EncodePNG(img))
 
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
+	return p.draw.CopyPNG()
+}
+
+func (p *Page) pngImage(ctx context.Context) image.Image {
+	img := p.draw.Img
+	if img == nil && p.draw.Display != nil {
+		painted, err := draw.Picture(p.draw.Display)
+		if err != nil || painted == nil {
+			return nil
+		}
+
+		return painted
+	}
+	if img != nil {
+		return img
+	}
+	if p.source == "" || ctx.Err() != nil {
+		return nil
+	}
+	painted, err := draw.PaintSource(ctx, p.source, p.width, p.height, p.renderState())
+	if err != nil || painted == nil {
 		return nil
 	}
 
-	p.png = buf.Bytes()
-
-	return append([]byte(nil), p.png...)
-}
-
-// Boxes returns a copy of the last hit-test boxes, or nil when nothing has
-// been drawn. Caller edits never corrupt the page index.
-func (p *Page) Boxes() []Box {
-	return append([]Box(nil), p.boxes...)
+	return painted
 }

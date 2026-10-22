@@ -19,7 +19,7 @@ func TestPatchElementRefusedLeavesTheTreeAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, op := range p.display.Ops {
+	for _, op := range p.draw.Display.Ops {
 		if op.Kind == DisplayOpText && op.W > 60 {
 			t.Fatalf("the refused patch changed the text: %+v", op)
 		}

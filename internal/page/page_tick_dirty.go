@@ -28,18 +28,18 @@ func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) erro
 }
 
 func (p *Page) captureTickOps() []DisplayOp {
-	if p.display == nil {
+	if p.draw.Display == nil {
 		return nil
 	}
 
-	return append(p.rentOps(len(p.display.Ops)), p.display.Ops...)
+	return append(p.rentOps(len(p.draw.Display.Ops)), p.draw.Display.Ops...)
 }
 
 func (p *Page) noteTickDamage(gen uint64, snap []DisplayOp) {
-	if p.Generation() == gen && p.display != nil && snap != nil {
-		before := *p.display
+	if p.Generation() == gen && p.draw.Display != nil && snap != nil {
+		before := *p.draw.Display
 		before.Ops = snap
-		d, full, _ := diffDisplay(&before, p.display)
+		d, full, _ := diffDisplay(&before, p.draw.Display)
 		if full {
 			p.markFull()
 		} else {

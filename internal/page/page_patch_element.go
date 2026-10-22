@@ -26,7 +26,7 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 	if err != nil {
 		return p.refusePatch(err)
 	}
-	patch, err := layout.RelayoutElement(ctx, styled, p.display, id,
+	patch, err := layout.RelayoutElement(ctx, styled, p.draw.Display, id,
 		layout.Options{Images: state.Images})
 	if err != nil {
 		return p.refusePatch(err)

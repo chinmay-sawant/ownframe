@@ -26,8 +26,8 @@ func (p *Page) IMEContext() (layout.Box, int, string, string, bool) {
 	// so take the scroll offset out of the box. Ebiten pans the canvas when
 	// the keyboard would cover this rectangle.
 	box := p.boxByID(c.ID)
-	box.X -= float64(p.windowing.x)
-	box.Y -= float64(p.windowing.y)
+	box.X -= float64(p.scroll.Windowing.X)
+	box.Y -= float64(p.scroll.Windowing.Y)
 
 	return box, len(before), before, string(runes[caret:]), true
 }

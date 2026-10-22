@@ -3,6 +3,8 @@ package page
 import (
 	"runtime"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 )
 
 // beginRedraw samples allocs when Perf is on and clears stale numbers
@@ -11,7 +13,7 @@ func (p *Page) beginRedraw() (bool, runtime.MemStats, time.Time) {
 	track := p.perf
 	var m0 runtime.MemStats
 	if track {
-		m0 = allocStart()
+		m0 = draw.AllocStart()
 	} else {
 		p.clearPerf()
 	}
@@ -23,14 +25,6 @@ func (p *Page) beginRedraw() (bool, runtime.MemStats, time.Time) {
 func (p *Page) finishRedraw(track bool, m0 runtime.MemStats, start time.Time) {
 	p.stats.lastRedraw = time.Since(start)
 	if track {
-		p.stats.allocFrame = allocUsed(m0)
-	}
-}
-
-// noteTime records one stage duration only when Perf is on, so the
-// stages read clean and an untracked Redraw pays no clock beyond start.
-func (p *Page) noteTime(track bool, dst *time.Duration, start time.Time) {
-	if track {
-		*dst = time.Since(start)
+		p.stats.allocFrame = draw.AllocUsed(m0)
 	}
 }

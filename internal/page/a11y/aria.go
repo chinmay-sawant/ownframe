@@ -1,11 +1,13 @@
-package page
+package a11y
 
 import (
-	"github.com/chinmay-sawant/ownframe/internal/host"
 	"strings"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-func supportedAccessibilityRole(raw string) (host.AccessibilityRole, bool) {
+// SupportedRole maps a raw ARIA role token to a host role.
+func SupportedRole(raw string) (host.AccessibilityRole, bool) {
 	fields := strings.Fields(raw)
 	if len(fields) == 0 {
 		return "", false

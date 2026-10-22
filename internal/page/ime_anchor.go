@@ -14,22 +14,22 @@ var _ host.IMECaretAnchor = (*Page)(nil)
 // scrolling. False means the current display cannot measure the caret.
 func (p *Page) IMEAnchor() (layout.Box, bool) {
 	c, ok := p.typingTarget()
-	if !ok || p.display == nil {
+	if !ok || p.draw.Display == nil {
 		return layout.Box{}, false
 	}
-	box, ok := caretBox(p.display, c.ID)
+	box, ok := caretBox(p.draw.Display, c.ID)
 	if !ok {
 		return layout.Box{}, false
 	}
 	text, offset := p.imeCaretText(c)
-	sample, x, ok := textrun.Caret(p.display, box, text, offset)
+	sample, x, ok := textrun.Caret(p.draw.Display, box, text, offset)
 	if !ok {
-		sample, x = emptyCaret(p.display, box)
+		sample, x = emptyCaret(p.draw.Display, box)
 	}
-	pt := p.display.PixelPerPoint
-	return layout.Box{X: x*pt - float64(p.windowing.x),
-		Y: (sample.Y-sample.Size)*pt - float64(p.windowing.y),
-		W: p.display.PointsPerPixel * pt, H: sample.Size * pt}, true
+	pt := p.draw.Display.PixelPerPoint
+	return layout.Box{X: x*pt - float64(p.scroll.Windowing.X),
+		Y: (sample.Y-sample.Size)*pt - float64(p.scroll.Windowing.Y),
+		W: p.draw.Display.PointsPerPixel * pt, H: sample.Size * pt}, true
 }
 
 func (p *Page) imeCaretText(c Control) (string, int) {

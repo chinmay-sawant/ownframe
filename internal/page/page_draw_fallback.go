@@ -5,7 +5,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 
-	"github.com/chinmay-sawant/ownframe/internal/bitmap"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 )
 
 // paintFallback stores a bitmap for a page the vector path declined. The
@@ -13,22 +13,16 @@ import (
 // bitmap of its own. The hit map is built here too, so a fixed box still
 // wins over the content it covers on the bitmap path.
 func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track bool) error {
-	ps := time.Now()
-	img, err := bitmap.Paint(display)
+	ps := draw.Clock(track)
+	img, err := draw.Picture(display)
 	if err != nil {
 		return err
 	}
-	if track {
-		p.stats.paintTime = time.Since(ps)
-	}
+	draw.Note(track, &p.stats.paintTime, ps)
 
 	boxes := display.Boxes
-	p.stats.layouts++
-	p.stats.repaints++
-	p.stats.lastDraw = time.Since(drawStart)
-	p.img = img
-	p.display = nil
-	p.fallbackDisplay = display
+	p.noteCommit(drawStart)
+	p.draw.CommitBitmap(display, img)
 	p.setBoxes(boxes)
 	p.hits = hitList(boxes, fixedBoxes(display))
 	p.generation++

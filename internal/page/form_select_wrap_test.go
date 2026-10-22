@@ -14,11 +14,11 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 	bftDraw(t, p, nil)
 
 	box := p.boxByID("t")
-	pt := p.display.PointsPerPixel
+	pt := p.draw.Display.PointsPerPixel
 
 	var first, last *DisplayOp
-	for i := range p.display.Ops {
-		op := &p.display.Ops[i]
+	for i := range p.draw.Display.Ops {
+		op := &p.draw.Display.Ops[i]
 		if op.Kind != DisplayOpText || op.Text == "" || op.Font == nil {
 			continue
 		}

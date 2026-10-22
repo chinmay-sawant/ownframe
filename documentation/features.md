@@ -169,7 +169,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH; if either is missing, a write is a no-op and a read returns `ErrUnavailable`. Linux with `DISPLAY` and no Wayland uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`; without cgo it stays on the memory copy. wasm and Android stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. `Serve` has no clipboard route.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH. If they are missing, Linux uses the X11 `CLIPBOARD` selection when `DISPLAY` is set. Without the helpers and without `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`; without cgo it stays on the memory copy. wasm and Android stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. `Serve` has no clipboard route.
 
 Detail is in [clipboard.md](clipboard.md).
 

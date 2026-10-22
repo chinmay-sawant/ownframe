@@ -12,6 +12,12 @@ func (p *Page) setBoxes(boxes []Box) {
 	p.contentOK = false
 }
 
+// Boxes returns a copy of the last hit-test boxes, or nil when nothing has
+// been drawn. Caller edits never corrupt the page index.
+func (p *Page) Boxes() []Box {
+	return append([]Box(nil), p.boxes...)
+}
+
 // boxByID returns the last box laid out with that id, or Box{ID: id}. The
 // lookup is one map read, never a walk over p.boxes.
 func (p *Page) boxByID(id string) Box {
@@ -35,8 +41,8 @@ func (p *Page) hasBox(id string) bool {
 // TakeDirty costs O(1) on large pages.
 func (p *Page) contentRect() image.Rectangle {
 	w, h := p.width, p.height
-	if p.display != nil {
-		w, h = p.display.Width, p.display.Height
+	if p.draw.Display != nil {
+		w, h = p.draw.Display.Width, p.draw.Display.Height
 	}
 	if p.contentOK && p.contentW == w && p.contentH == h {
 		return p.content

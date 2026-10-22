@@ -4,42 +4,62 @@ package clipboard
 
 import "os"
 
+type clipHost string
+
+const (
+	hostNone    clipHost = "none"
+	hostWayland clipHost = "wayland"
+	hostX11     clipHost = "x11"
+)
+
 func writeOS(text string) {
-	if os.Getenv("WAYLAND_DISPLAY") != "" {
+	switch linuxHost() {
+	case hostWayland:
 		wlWrite(text)
-
-		return
+	case hostX11:
+		xWrite(text)
 	}
-
-	if os.Getenv("DISPLAY") == "" {
-		return
-	}
-
-	xWrite(text)
 }
 
 func readOS() (string, bool) {
-	if os.Getenv("WAYLAND_DISPLAY") != "" {
+	switch linuxHost() {
+	case hostWayland:
 		return wlRead()
-	}
-
-	if os.Getenv("DISPLAY") == "" {
+	case hostX11:
+		return xRead()
+	default:
 		return "", false
 	}
-
-	return xRead()
 }
 
 func clearOS() {
-	if os.Getenv("WAYLAND_DISPLAY") != "" {
+	switch linuxHost() {
+	case hostWayland:
 		wlClear()
+	case hostX11:
+		xWrite("")
+	}
+}
 
-		return
+func linuxHost() clipHost {
+	return routeLinux(os.Getenv("WAYLAND_DISPLAY"), os.Getenv("DISPLAY"), lookWL)
+}
+
+func routeLinux(wayland, display string, look func(string) (string, bool)) clipHost {
+	if wayland != "" && haveWL(look) {
+		return hostWayland
 	}
 
-	if os.Getenv("DISPLAY") == "" {
-		return
+	if display != "" {
+		return hostX11
 	}
 
-	xWrite("")
+	return hostNone
+}
+
+func haveWL(look func(string) (string, bool)) bool {
+	_, copyOK := look("wl-copy")
+	_, pasteOK := look("wl-paste")
+
+	return copyOK && pasteOK
 }

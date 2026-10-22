@@ -1,14 +1,13 @@
-package page
+package a11y
 
 import (
-	"strings"
-
 	"github.com/chinmay-sawant/blinkless/markup"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-func accessibilityRole(n *markup.Node) (host.AccessibilityRole, bool) {
-	if role, ok := supportedAccessibilityRole(n.Attrs["role"]); ok {
+// Role is the implicit or ARIA role of n.
+func Role(n *markup.Node) (host.AccessibilityRole, bool) {
+	if role, ok := SupportedRole(n.Attrs["role"]); ok {
 		return role, true
 	}
 	switch n.Name {
@@ -45,24 +44,7 @@ func accessibilityRole(n *markup.Node) (host.AccessibilityRole, bool) {
 	case "select":
 		return host.AccessibilityCombobox, true
 	case "input":
-		return inputAccessibilityRole(n.Attrs["type"])
+		return InputRole(n.Attrs["type"])
 	}
 	return "", false
-}
-
-func inputAccessibilityRole(kind string) (host.AccessibilityRole, bool) {
-	switch strings.ToLower(kind) {
-	case "hidden":
-		return "", false
-	case "checkbox":
-		return host.AccessibilityCheckbox, true
-	case "radio":
-		return host.AccessibilityRadio, true
-	case "button", "submit", "reset", "file", "image":
-		return host.AccessibilityButton, true
-	case "range", "color":
-		return "", false
-	default:
-		return host.AccessibilityTextbox, true
-	}
 }
