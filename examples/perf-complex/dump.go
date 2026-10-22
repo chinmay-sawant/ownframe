@@ -8,12 +8,15 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
+// dumpFilePerm keeps measurement dumps owner-only.
+const dumpFilePerm = 0o600
+
 func writeJSON(path string, v any) error {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0644)
+	return os.WriteFile(path, append(b, '\n'), dumpFilePerm)
 }
 
 func writeDump(out, mode string, d dump, p *page.Page) error {

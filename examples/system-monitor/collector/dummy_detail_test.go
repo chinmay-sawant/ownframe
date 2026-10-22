@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/domain"
@@ -11,7 +12,7 @@ import (
 func TestDummyDetailGone(t *testing.T) {
 	d := NewDummy(DummyOptions{Seed: 1, Stamp: fixedStamps()})
 
-	if _, err := d.Detail(t.Context(), domain.ProcessIdentity{PID: 4242, Start: 1}); err != domain.ErrGone {
+	if _, err := d.Detail(t.Context(), domain.ProcessIdentity{PID: 4242, Start: 1}); !errors.Is(err, domain.ErrGone) {
 		t.Fatalf("err = %v, want ErrGone", err)
 	}
 }

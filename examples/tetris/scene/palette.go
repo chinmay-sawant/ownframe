@@ -6,7 +6,7 @@ import "github.com/chinmay-sawant/ownframe/examples/tetris/game"
 type rgb struct{ r, g, b uint8 }
 
 func (c rgb) floats() (float64, float64, float64) {
-	return float64(c.r) / 255, float64(c.g) / 255, float64(c.b) / 255
+	return float64(c.r) / channelMax, float64(c.g) / channelMax, float64(c.b) / channelMax
 }
 
 func (c rgb) hex() string {

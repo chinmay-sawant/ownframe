@@ -69,9 +69,9 @@ func (g *Game) TogglePause() []Event {
 // gravity returns the time per row at the current level, bounded at both
 // ends.
 func (g *Game) gravity() time.Duration {
-	ms := 1000 - 75*(g.Level-1)
-	if ms < 60 {
-		ms = 60
+	ms := gravityBase - gravityStep*(g.Level-1)
+	if ms < gravityMin {
+		ms = gravityMin
 	}
 
 	return time.Duration(ms) * time.Millisecond

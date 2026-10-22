@@ -26,7 +26,7 @@ func TestMigrationFreshAndReopen(t *testing.T) {
 	}
 
 	var version int
-	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+	if err := db.QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 
@@ -34,7 +34,7 @@ func TestMigrationFreshAndReopen(t *testing.T) {
 		t.Fatalf("user_version = %d, want %d", version, SchemaVersion)
 	}
 
-	db.Close()
+	_ = db.Close()
 
 	st, err = Open(dir)
 	if err != nil {
@@ -45,7 +45,7 @@ func TestMigrationFreshAndReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st.Close()
+	_ = st.Close()
 }
 
 func TestSchemaNewerRejected(t *testing.T) {
@@ -56,18 +56,18 @@ func TestSchemaNewerRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	db, err := sql.Open("sqlite", filepath.Join(dir, File))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`PRAGMA user_version = 99`); err != nil {
+	if _, err := db.ExecContext(t.Context(), `PRAGMA user_version = 99`); err != nil {
 		t.Fatal(err)
 	}
 
-	db.Close()
+	_ = db.Close()
 
 	if _, err := Open(dir); !errors.Is(err, ErrSchemaNewer) {
 		t.Fatalf("Open newer schema = %v, want ErrSchemaNewer", err)
@@ -78,10 +78,10 @@ func TestSchemaNewerRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	var version int
-	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+	if err := db.QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 

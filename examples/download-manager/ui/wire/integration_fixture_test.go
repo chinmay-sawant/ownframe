@@ -17,7 +17,7 @@ func TestEndToEndFixture(t *testing.T) {
 
 	app, err := ui.New(ctx, backend)
 	if err != nil {
-		backend.Close()
+		_ = backend.Close()
 		t.Fatalf("ui.New: %v", err)
 	}
 

@@ -5,19 +5,19 @@ import "time"
 func (a *App) clearUsage() {
 	offset := a.WeekOffset()
 	a.view.WeekOffset = offset
-	start := time.Now().AddDate(0, 0, -6-7*offset)
-	a.view.Days = make([]Day, 7)
+	start := time.Now().AddDate(0, 0, -weekSpanDays-daysPerWeek*offset)
+	a.view.Days = make([]Day, daysPerWeek)
 	for i := range a.view.Days {
 		day := start.AddDate(0, 0, i)
 		a.view.Days[i] = Day{Index: i, Label: day.Format("Mon"), Date: day.Format("Jan 2"), Time: "0m"}
 	}
-	end := start.AddDate(0, 0, 6)
+	end := start.AddDate(0, 0, weekSpanDays)
 	a.view.WeekRange = start.Format("Jan 2") + " – " + end.Format("Jan 2")
 	a.view.WeekHeading = "This week"
 	if offset > 0 {
 		a.view.WeekHeading = "Week of " + start.Format("Jan 2")
 	}
-	a.view.CanPrevious, a.view.CanNext = offset < 52, offset > 0
+	a.view.CanPrevious, a.view.CanNext = offset < weeksPerYear, offset > 0
 	a.view.Today, a.view.Week, a.view.Average = "—", "—", "—"
 	a.view.InsightWeek, a.view.InsightAverage = "—", "—"
 	a.view.WeekdayTotal, a.view.WeekendTotal = "—", "—"

@@ -14,7 +14,7 @@ func TestCorruptFile(t *testing.T) {
 
 	garbage := []byte("this is not a sqlite database, it is plain text\n")
 
-	if err := os.WriteFile(path, garbage, 0o644); err != nil {
+	if err := os.WriteFile(path, garbage, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -22,7 +22,7 @@ func TestCorruptFile(t *testing.T) {
 		t.Fatal("corrupt file opened")
 	}
 
-	got, err := os.ReadFile(path)
+	got, err := os.ReadFile(path) //nolint:gosec // reason: the test reads back the corrupt file it just wrote under TempDir.
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestCorruptFile(t *testing.T) {
 func TestEmptyFile(t *testing.T) {
 	dir := t.TempDir()
 
-	if err := os.WriteFile(filepath.Join(dir, dbName), nil, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, dbName), nil, 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -44,7 +44,7 @@ func TestEmptyFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if version, err := st.SchemaVersionOf(t.Context()); err != nil || version != SchemaVersion {
 		t.Fatalf("version = %d err = %v", version, err)

@@ -1,15 +1,19 @@
 package login
 
-// snap is one saved pair of field values.
+import "github.com/chinmay-sawant/ownframe/internal/secret"
+
+// snap is one saved pair of field values. The password stays a
+// secret.Secret so a %v or slog dump of undo history cannot leak it.
 type snap struct {
 	Email    string
-	Password string
+	Password secret.Secret
 }
 
 func (a *App) signIn() {
 	status := ""
 	errMsg := "Unknown email or password."
-
+	// Demo credentials only. DO NOT COPY into production: no auth
+	// boundary here; a real app must verify server side, not locally.
 	if a.page.FormValue("email") == "secret" && a.page.FormValue("password") == "secret" {
 		status = "Signed in."
 		errMsg = ""
@@ -27,7 +31,7 @@ func (a *App) signIn() {
 func (a *App) snapshot() snap {
 	return snap{
 		Email:    a.page.FormValue("email"),
-		Password: a.page.FormValue("password"),
+		Password: secret.Secret(a.page.FormValue("password")),
 	}
 }
 
@@ -48,5 +52,5 @@ func (a *App) push() {
 // restore writes a snapshot back into the page fields.
 func (a *App) restore(s snap) {
 	a.page.SetFormValue("email", s.Email)
-	a.page.SetFormValue("password", s.Password)
+	a.page.SetFormValue("password", s.Password.Reveal())
 }

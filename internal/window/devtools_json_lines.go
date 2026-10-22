@@ -2,9 +2,12 @@ package window
 
 import "image/color"
 
+// devJSONExtra is the indent + text spans devJSONLine always adds.
+const devJSONExtra = 2
+
 // devJSONLine builds indent + lead + text + tail.
 func devJSONLine(indent string, lead devLine, text string, ink color.RGBA, tail string) devLine {
-	spans := make([]devSpan, 0, len(lead.spans)+2)
+	spans := make([]devSpan, 0, len(lead.spans)+devJSONExtra)
 	spans = append(spans, devSpan{text: indent, ink: devPunctInk})
 	spans = append(spans, lead.spans...)
 	spans = append(spans, devSpan{text: text, ink: ink})

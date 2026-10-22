@@ -40,7 +40,7 @@ func (f *StoreFeed) Export(ctx context.Context, q Query, path string) (int, erro
 // midway leaves no partial export behind.
 func writeFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
+	if err := os.MkdirAll(dir, uiExportPerm); err != nil {
 		return err
 	}
 

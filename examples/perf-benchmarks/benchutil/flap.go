@@ -37,7 +37,7 @@ type Flap struct {
 func NewFlap() (*Flap, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Flappy", HTML: flapHTML,
-		Width: 480, Height: 720, MinWidth: 320, MinHeight: 480,
+		Width: flapWidth, Height: flapHeight, MinWidth: flapMinWidth, MinHeight: flapMinHeight,
 		Perf: true,
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func NewFlap() (*Flap, error) {
 // clipped box lays out as a noop op the tick cannot draw.
 func (f *Flap) reset() {
 	f.y, f.vy, f.score = 348, 0, 0
-	f.pipes = []flapPipe{{x: 210, gapY: 300}, {x: 390, gapY: 220}}
+	f.pipes = []flapPipe{{x: resetPipeX1, gapY: resetPipeGap1}, {x: resetPipeX2, gapY: resetPipeGap2}}
 	f.next, f.spawns = 100, 0
 }
 

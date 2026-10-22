@@ -52,7 +52,9 @@ func main() {
 		Perf:      *perf,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
+
+		return
 	}
 
 	defer func() {
@@ -62,6 +64,6 @@ func main() {
 	}()
 
 	if err := ownframe.Run(context.Background(), app.Page()); err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 }

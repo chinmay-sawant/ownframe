@@ -12,16 +12,14 @@ func TestNestedQueriesOnOneConnectionTimeOut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	err = s.do(context.Background(), func(ctx context.Context, db *sql.DB) error {
 		rows, err := db.QueryContext(ctx, `SELECT id FROM scores`)
 		if err != nil {
 			return err
 		}
 
-		defer rows.Close()
-
+		defer func() { _ = rows.Close() }()
 		inner, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
 		defer cancel()
 
@@ -39,8 +37,7 @@ func TestSequentialOperationsOnOneConnection(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 

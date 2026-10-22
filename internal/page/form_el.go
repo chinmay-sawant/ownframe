@@ -4,12 +4,13 @@ import "html"
 
 func controlFrom(tag string, a fieldAttr) Control {
 	return Control{
-		ID:       a.id,
-		Tag:      tag,
-		Name:     a.name,
-		Bind:     a.bind,
-		Disabled: a.disabled,
-		TabIndex: a.tabindex,
+		ID:        a.id,
+		Tag:       tag,
+		Name:      a.name,
+		Bind:      a.bind,
+		Disabled:  a.disabled,
+		TabIndex:  a.tabindex,
+		MaxLength: a.maxlen,
 	}
 }
 

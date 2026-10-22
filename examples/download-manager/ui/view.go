@@ -35,5 +35,5 @@ type Stats struct {
 
 // TickText is the last tick duration in milliseconds.
 func (s Stats) TickText() string {
-	return fmt.Sprintf("%.2f ms", float64(s.LastTickUS)/1000)
+	return fmt.Sprintf("%.2f ms", float64(s.LastTickUS)/microsPerMilli)
 }

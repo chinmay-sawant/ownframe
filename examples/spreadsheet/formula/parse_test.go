@@ -1,6 +1,9 @@
 package formula
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestParseRefWord(t *testing.T) {
 	cases := []struct {
@@ -60,8 +63,8 @@ func TestParseErrors(t *testing.T) {
 			continue
 		}
 
-		pe, ok := err.(*ParseError)
-		if !ok || pe.Code != c.code {
+		var pe *ParseError
+		if !errors.As(err, &pe) || pe.Code != c.code {
 			t.Errorf("Parse(%q) = %v, want code %s", c.src, err, c.code)
 		}
 	}

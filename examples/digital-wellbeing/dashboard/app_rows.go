@@ -12,7 +12,7 @@ func appRows(apps []AppUsage) []AppUsage {
 	for i := range apps {
 		apps[i].Time = duration(apps[i].Minutes)
 		if max > 0 {
-			apps[i].Percent = apps[i].Minutes * 100 / max
+			apps[i].Percent = apps[i].Minutes * percentFull / max
 		}
 	}
 	return apps

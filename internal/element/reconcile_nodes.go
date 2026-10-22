@@ -41,21 +41,6 @@ func cloneMeta(in map[string]any) map[string]any {
 	return out
 }
 
-func cloneNode(n *Node) *Node {
-	if n == nil {
-		return nil
-	}
-	out := NewNode(n.ID, n.Kind)
-	out.Key = n.Key
-	out.Attrs = cloneAttrs(n.Attrs)
-	out.Metadata = cloneMeta(n.Metadata)
-	for _, c := range n.Children {
-		child := cloneNode(c)
-		out.Append(child)
-	}
-	return out
-}
-
 func collectRetained(n *Node, out *[]*Node) {
 	if n == nil {
 		return

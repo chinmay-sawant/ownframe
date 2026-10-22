@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"testing"
 )
 
@@ -22,7 +23,7 @@ func TestCanceledAndClosed(t *testing.T) {
 	if err := st.Close(); err != nil {
 		t.Fatal(err)
 	}
-	if err := st.SetSetting(t.Context(), "k", "v"); err != ErrClosed {
+	if err := st.SetSetting(t.Context(), "k", "v"); !errors.Is(err, ErrClosed) {
 		t.Fatalf("err = %v, want ErrClosed", err)
 	}
 }

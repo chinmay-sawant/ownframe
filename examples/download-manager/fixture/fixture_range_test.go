@@ -11,16 +11,16 @@ func TestRangeRoute(t *testing.T) {
 	srv := NewServer()
 	defer srv.Close()
 
-	req, _ := http.NewRequest("GET", srv.URL+PathRange, nil)
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", srv.URL+PathRange, nil)
 	req.Header.Set("Range", "bytes=10-19")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := testClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 206 || string(body) != string(fillFor(t, srv)[10:20]) {
 		t.Fatalf("206: status %d len %d", resp.StatusCode, len(body))
@@ -30,28 +30,28 @@ func TestRangeRoute(t *testing.T) {
 		t.Errorf("Content-Range %q", got)
 	}
 
-	req, _ = http.NewRequest("GET", srv.URL+PathRange, nil)
+	req, _ = http.NewRequestWithContext(t.Context(), "GET", srv.URL+PathRange, nil)
 	req.Header.Set("Range", "bytes=10-19")
 	req.Header.Set("If-Range", `"stale"`)
 
-	resp, err = http.DefaultClient.Do(req)
+	resp, err = testClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		t.Errorf("stale If-Range status %d", resp.StatusCode)
 	}
 
-	req, _ = http.NewRequest("GET", srv.URL+PathRange, nil)
+	req, _ = http.NewRequestWithContext(t.Context(), "GET", srv.URL+PathRange, nil)
 	req.Header.Set("Range", "bytes=999999-")
 
-	resp, err = http.DefaultClient.Do(req)
+	resp, err = testClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 416 {
 		t.Errorf("416 status %d", resp.StatusCode)

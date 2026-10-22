@@ -74,7 +74,7 @@ func countProcs() (int, bool) {
 
 // readFile returns a file's trimmed contents, or nil when it is unreadable.
 func readFile(path string) []byte {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // reason: every caller passes a fixed /proc or /sys path, some with a numeric PID segment.
 	if err != nil {
 		return nil
 	}

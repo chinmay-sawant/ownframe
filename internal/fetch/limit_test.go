@@ -20,7 +20,7 @@ func TestDoRejectsOversizedBody(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if !errors.Is(err, fetch.ErrBodyTooLarge) {
 		t.Fatalf("err = %v", err)
 	}
@@ -34,7 +34,7 @@ func TestDoAcceptsBodyAtLimit(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	got, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestDoRespectsContextDeadline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 
-	_, err := fetch.Do(ctx, http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(ctx), http.MethodGet, srv.URL, nil, nil)
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}

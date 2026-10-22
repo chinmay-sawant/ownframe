@@ -25,7 +25,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	}
 	switch {
 	case box.ID == "i-more":
-		a.scrollTo(0, 1<<30)
+		a.scrollTo(0, scrollEnd)
 		return nil
 	case strings.HasPrefix(box.ID, "e-"):
 		return a.editClick(ctx, box.ID)

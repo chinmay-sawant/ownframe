@@ -26,6 +26,9 @@ const (
 	MaxHeight = 600
 )
 
+// pcgStream xors the time seed into the PCG stream selector.
+const pcgStream = 0x9e3779b97f4a7c15
+
 // point is a scene position in CSS pixels.
 type point struct {
 	x, y float64

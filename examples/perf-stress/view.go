@@ -55,10 +55,10 @@ func makeView(n int) View {
 		v.Rows[i] = Row{
 			Seq:    i,
 			Num:    "#" + strconv.Itoa(i+1),
-			Title:  "Order " + strconv.Itoa(1000+i),
+			Title:  "Order " + strconv.Itoa(orderBase+i),
 			Body:   "Lorem ipsum dolor sit amet, consectetur adipiscing elit 🎉",
 			Status: statuses[i%len(statuses)],
-			Delta:  "+" + strconv.Itoa((i*7)%99),
+			Delta:  "+" + strconv.Itoa((i*deltaFactor)%deltaMod),
 		}
 	}
 	return v

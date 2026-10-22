@@ -3,6 +3,7 @@ package cat
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
 )
 
@@ -47,7 +48,7 @@ func TestFixedExpressionAndCancellation(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	cancel()
-	if err := a.paint(ctx, 32); err != context.Canceled {
+	if err := a.paint(ctx, 32); !errors.Is(err, context.Canceled) {
 		t.Fatalf("canceled tick returned %v", err)
 	}
 	if _, err := NewVariant(-1); err == nil {

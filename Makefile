@@ -5,6 +5,12 @@ GO ?= go
 # make test TEST_P=4
 TEST_P ?= 1
 
+# Pin golangci-lint for local + CI reproducibility. Override:
+# make lint GOLANGCI_LINT_VERSION=vX.Y.Z
+# The v2 module path needs a Go at least as new as the module version
+# (go 1.26), so the install uses the default toolchain resolution.
+GOLANGCI_LINT_VERSION ?= v2.15.0
+
 .PHONY: test
 test:
 	$(GO) test -p $(TEST_P) ./... ./examples/...
@@ -18,6 +24,56 @@ BUILD_P ?= 1
 .PHONY: build
 build:
 	$(GO) vet -p $(BUILD_P) ./... ./examples/...
+
+# Lint both modules with the pinned golangci-lint and the policy in
+# .golangci.yml. The library at the root and the examples module under
+# examples/ are separate Go modules, so each needs its own pass.
+# Installs the pinned binary into $(go env GOPATH)/bin when it is missing.
+# Builds with the default toolchain so the binary matches the module Go.
+# The run ends with the file-size gate (scripts/check-file-size.sh), so CI
+# enforces the 2,000-character rule in AGENTS.md alongside the linters.
+# The website in frontend/ is linted by ESLint in the same run, so one
+# command covers the Go code and the React code.
+# Every gate runs before the target fails, so one run reports the library
+# findings, the examples findings, the size ledger, and the website findings
+# together.
+.PHONY: lint
+lint:
+	@command -v golangci-lint >/dev/null 2>&1 || { \
+		echo "golangci-lint not found; installing $(GOLANGCI_LINT_VERSION) with default Go toolchain..."; \
+		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
+	}
+	golangci-lint version
+	@status=0; \
+	golangci-lint run ./... || status=1; \
+	golangci-lint run ./examples/... || status=1; \
+	$(MAKE) --no-print-directory size-check || status=1; \
+	if ! command -v npm >/dev/null 2>&1; then \
+		echo "npm not found; the website lint needs Node.js 22.12 or newer" >&2; \
+		status=1; \
+	else \
+		if [ ! -d frontend/node_modules ]; then \
+			echo "frontend dependencies missing; running npm ci..."; \
+			(cd frontend && npm ci) || status=1; \
+		fi; \
+		(cd frontend && npm run lint) || status=1; \
+	fi; \
+	exit $$status
+
+# File-size gate (AGENTS.md "Go file size": every Go file is at most 2,000
+# characters, counted with `wc -m`; newlines included). Scans every
+# non-pruned .go file, test files included, and compares the tree with
+# scripts/file-size-allowlist.txt.
+.PHONY: size-check
+size-check:
+	bash scripts/check-file-size.sh
+
+# Vulnerability scan via the pinned tool directive in go.mod
+# (golang.org/x/vuln/cmd/govulncheck). Runs against both modules through
+# the workspace. Usage: make vuln
+.PHONY: vuln
+vuln:
+	go tool govulncheck ./...
 
 # Every folder under examples/ that `make open` can walk.
 EXAMPLES := $(patsubst examples/%/,%,$(wildcard examples/*/))

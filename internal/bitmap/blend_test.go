@@ -20,7 +20,10 @@ func TestBitmapBlendGroupCompositesOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := color.NRGBAModel.Convert(img.At(10, 10)).(color.NRGBA)
+	c, ok := color.NRGBAModel.Convert(img.At(10, 10)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if c.R != 0 || c.G != 0 || c.B != 0 {
 		t.Fatal(c)
 	}

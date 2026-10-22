@@ -50,7 +50,7 @@ func (d *Dummy) detailOf(p *dmProc) domain.ProcessDetail {
 		Cwd:        "/home/" + p.user,
 		Parent:     domain.ProcessIdentity{PID: 1, Start: 1},
 		ParentName: "init",
-		Virtual:    domain.Bytes(float64(p.mem * 4)),
+		Virtual:    domain.Bytes(float64(p.mem * virtMult)),
 		ReadBytes:  domain.Bytes(float64(p.read)),
 		WriteBytes: domain.Bytes(float64(p.write)),
 	}

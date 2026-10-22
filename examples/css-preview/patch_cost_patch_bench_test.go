@@ -9,8 +9,8 @@ import (
 )
 
 // benchmarkElementPatchCardClass measures the element patch of the class
-// change on a card row. The engine refuses a card row today, so the run
-// reports how many patches applied.
+// change on a card row. The engine splices a card row today, so the run
+// applies all 30 patches.
 func benchmarkElementPatchCardClass(b *testing.B) {
 	ctx, p, v := patchCostPage(b)
 	card := patchCostCardOf(v)

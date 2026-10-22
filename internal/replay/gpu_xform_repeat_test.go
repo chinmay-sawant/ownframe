@@ -12,8 +12,8 @@ import (
 // the cached raster blits stay deterministic across draws.
 func checkXformRepeat(d *layout.Display) error {
 	one, two := ebiten.NewImage(240, 140), ebiten.NewImage(240, 140)
-	defer one.Dispose()
-	defer two.Dispose()
+	defer one.Deallocate()
+	defer two.Deallocate()
 
 	for _, img := range []*ebiten.Image{one, two} {
 		for i := range d.Order {

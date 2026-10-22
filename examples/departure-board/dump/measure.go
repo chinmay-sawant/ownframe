@@ -72,7 +72,7 @@ func percentile(ns []int64, p int) int64 {
 		return 0
 	}
 	sort.Slice(ns, func(i, j int) bool { return ns[i] < ns[j] })
-	rank := (p*len(ns) + 99) / 100
+	rank := (p*len(ns) + percentRankAdjust) / percentDenom
 	if rank < 1 {
 		rank = 1
 	}

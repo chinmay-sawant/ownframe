@@ -44,7 +44,7 @@ func TestLockedDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	raw.Close()
+	_ = raw.Close()
 
 	if _, err := st.Stats(bg()); err != nil {
 		t.Fatalf("store unusable after unlock: %v", err)

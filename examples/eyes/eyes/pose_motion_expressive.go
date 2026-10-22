@@ -6,21 +6,21 @@ func animateExpressivePose(p eyePose, age float64) (eyeStyle, eyeStyle) {
 	l, r := p.left, p.right
 	switch p.motion {
 	case motionSad:
-		drift := 1.2 * math.Sin(age*1.4)
+		drift := sadDriftAmp * math.Sin(age*sadDriftFreq)
 		l.gazeY += drift
 		r.gazeY += drift
 	case motionScared:
-		dart := 25*math.Sin(age*4.2) + 8*math.Sin(age*11.5)
+		dart := scaredDartAmp*math.Sin(age*scaredDartFreq) + scaredDartAmp2*math.Sin(age*scaredDartFreq2)
 		l.gazeX += dart
 		r.gazeX += dart
-		wide := .035 * math.Max(0, math.Sin(age*5.5))
+		wide := scaredWideAmp * math.Max(0, math.Sin(age*scaredWideFreq))
 		l.open += wide
 		r.open += wide
 	case motionFrustrated:
-		drift := 15 * math.Sin(age*2.3)
+		drift := frustratedDriftAmp * math.Sin(age*frustratedDriftFreq)
 		l.gazeX += drift
 		r.gazeX += drift
-		squeeze := .07 * math.Max(0, math.Sin(age*3.8))
+		squeeze := frustratedSqueeze * math.Max(0, math.Sin(age*frustratedSqueezeAt))
 		l.open -= squeeze
 		r.open -= squeeze
 	}

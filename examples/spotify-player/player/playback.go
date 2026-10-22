@@ -26,7 +26,7 @@ func (a *App) Tick(ctx context.Context) error {
 		}
 		if a.audio.Loading() {
 			a.runtime.StartLoading("audio")
-			if a.runtime.SlowLoading(time.Now(), 2*time.Second) && !wasSlow {
+			if a.runtime.SlowLoading(time.Now(), slowThreshold) && !wasSlow {
 				a.logEvent("runtime", "audio-slow-loading")
 			}
 		} else if a.runtime.Loading != nil && a.runtime.Loading.Visible {
@@ -43,7 +43,7 @@ func (a *App) Tick(ctx context.Context) error {
 
 	a.animate()
 
-	if a.runtime != nil && a.runtime.SampleWatchdog(time.Now(), time.Second, 120) {
+	if a.runtime != nil && a.runtime.SampleWatchdog(time.Now(), time.Second, watchdogLimit) {
 		a.logEvent("runtime", "watchdog-feedback-loop")
 	}
 

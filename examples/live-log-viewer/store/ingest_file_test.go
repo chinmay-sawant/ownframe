@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -19,7 +20,7 @@ func fileSource(t *testing.T, st *Store, dir, content string) entry.Source {
 	}
 
 	logPath := filepath.Join(dir, "app.log")
-	if err := os.WriteFile(logPath, []byte(content), 0o644); err != nil {
+	if err := os.WriteFile(logPath, []byte(content), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -57,7 +58,7 @@ func TestIngestFileShutdownPartial(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	src := fileSource(t, st, dir, "INFO first\nINFO partial")
 
@@ -65,14 +66,16 @@ func TestIngestFileShutdownPartial(t *testing.T) {
 
 	if got := waitForEntries(t, st, 1, 3*time.Second); got < 1 {
 		cancel()
-		<-done
-
+		if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatal(err)
+		}
 		t.Fatalf("entries = %d", got)
 	}
 
 	cancel()
-	<-done
-
+	if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 	if err := in.Close(); err != nil {
 		t.Fatal(err)
 	}

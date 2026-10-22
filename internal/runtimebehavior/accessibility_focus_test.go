@@ -19,8 +19,8 @@ func TestAccessibilityAndFocusCoverage(t *testing.T) {
 	if !f.HasSaved() || !f.Restore("input") {
 		t.Fatal("focus restore broken")
 	}
-	if err := WrapPromiseError("page", nil); err.Error() != "page" {
-		// PromiseError string allows empty err; accept either
+	if got := WrapPromiseError("page", nil).Error(); got != "page: " {
+		t.Fatalf("WrapPromiseError = %q, want %q", got, "page: ")
 	}
 	_ = NewObserver(nil)
 }

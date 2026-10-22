@@ -29,7 +29,7 @@ func (s *Store) Lock() (func(), error) {
 	path := filepath.Join(s.dir, lockName)
 
 	for attempt := 0; attempt < 2; attempt++ {
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, storeFilePerm) //nolint:gosec // reason: lock file is a fixed name in the own data dir.
 		if err == nil {
 			_, _ = fmt.Fprintf(file, "%d\n%d\n", os.Getpid(), nowMS())
 			_ = file.Close()

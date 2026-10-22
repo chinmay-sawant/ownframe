@@ -39,7 +39,7 @@ func cardParityPage() (*layout.Display, error) {
 // it to match the full draw inside that rect, byte for byte.
 func chunkPartialParity(d *layout.Display, full []byte) error {
 	part := ebiten.NewImage(640, 200)
-	defer part.Dispose()
+	defer part.Deallocate()
 
 	rect := image.Rect(30, 30, 130, 90)
 	DrawRect(part, d, rect, 0, 0)

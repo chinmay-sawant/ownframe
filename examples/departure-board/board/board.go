@@ -28,10 +28,10 @@ func New() (*App, error) {
 	p, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Departure board",
 		HTML:      boardHTML,
-		Width:     1000,
-		Height:    640,
-		MinWidth:  720,
-		MinHeight: 480,
+		Width:     boardWidth,
+		Height:    boardHeight,
+		MinWidth:  boardMinWidth,
+		MinHeight: boardMinHeight,
 	})
 	if err != nil {
 		return nil, err

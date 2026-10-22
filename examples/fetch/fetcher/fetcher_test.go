@@ -19,7 +19,7 @@ func TestFetchExample(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(echo))
 	t.Cleanup(srv.Close)
 
-	ctx := context.Background()
+	ctx := ownframe.AllowPrivate(context.Background())
 	app, err := fetcher.New()
 	if err != nil {
 		t.Fatal(err)
@@ -63,10 +63,10 @@ func TestFetchExample(t *testing.T) {
 func echo(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		body, _ := io.ReadAll(r.Body)
-		w.Write([]byte("echo:" + string(body)))
+		_, _ = w.Write([]byte("echo:" + string(body)))
 
 		return
 	}
 
-	w.Write([]byte("hello"))
+	_, _ = w.Write([]byte("hello"))
 }

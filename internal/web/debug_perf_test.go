@@ -9,13 +9,13 @@ import (
 )
 
 func TestDebugRuntimeAbsentByDefault(t *testing.T) {
-	old := RuntimeSnapshot
-	RuntimeSnapshot = nil
-	defer func() { RuntimeSnapshot = old }()
+	old := GetRuntimeSnapshot()
+	SetRuntimeSnapshot(nil)
+	defer func() { SetRuntimeSnapshot(old) }()
 
 	srv := &server{app: &fakeDebug{display: &layout.Display{Width: 10, Height: 10}}}
 	rec := httptest.NewRecorder()
-	srv.debug(rec, httptest.NewRequest("GET", "/debug/state", nil))
+	srv.debug(rec, httptest.NewRequestWithContext(t.Context(), "GET", "/debug/state", nil))
 
 	var body map[string]any
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
@@ -27,11 +27,11 @@ func TestDebugRuntimeAbsentByDefault(t *testing.T) {
 }
 
 func TestDebugRuntimePresentWhenHookSet(t *testing.T) {
-	old := RuntimeSnapshot
-	RuntimeSnapshot = func() map[string]any {
+	old := GetRuntimeSnapshot()
+	SetRuntimeSnapshot(func() map[string]any {
 		return map[string]any{"goroutines": 7}
-	}
-	defer func() { RuntimeSnapshot = old }()
+	})
+	defer func() { SetRuntimeSnapshot(old) }()
 
 	srv := &server{app: &fakeDebug{display: &layout.Display{
 		Ops: []layout.DisplayOp{
@@ -39,7 +39,7 @@ func TestDebugRuntimePresentWhenHookSet(t *testing.T) {
 		},
 	}}}
 	rec := httptest.NewRecorder()
-	srv.debug(rec, httptest.NewRequest("GET", "/debug/state", nil))
+	srv.debug(rec, httptest.NewRequestWithContext(t.Context(), "GET", "/debug/state", nil))
 
 	var state debugState
 	if err := json.Unmarshal(rec.Body.Bytes(), &state); err != nil {

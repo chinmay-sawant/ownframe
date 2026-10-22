@@ -11,13 +11,13 @@ func TestMemoryMode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer one.Close()
+	defer func() { _ = one.Close() }()
 
 	two, err := OpenMemory()
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer two.Close()
+	defer func() { _ = two.Close() }()
 
 	if one.JournalMode() != "memory" || one.Memory() != true {
 		t.Errorf("memory mode %q", one.JournalMode())

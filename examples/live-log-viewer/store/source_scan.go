@@ -30,7 +30,7 @@ func scanSource(row sourceScanner) (entry.Source, error) {
 		return entry.Source{}, err
 	}
 
-	src.HeadHash = uint64(head)
+	src.HeadHash = uint64(head) //nolint:gosec // reason: head hash round-trips through the signed column and back to uint64
 	src.State = entry.State(state)
 	src.Updated = time.Unix(0, updated)
 

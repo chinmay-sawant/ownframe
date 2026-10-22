@@ -13,6 +13,13 @@ const maxGroupDepth = 4
 // maxXformPixels bounds one transformed op's scratch raster.
 const maxXformPixels = 4 << 20
 
+// xformGrowFactor widens a transformed op's scratch raster for stroke bleed.
+// xformGrowPad adds fixed padding for the same raster.
+const (
+	xformGrowFactor = 2
+	xformGrowPad    = 4
+)
+
 // replayableGroup accepts a group when every ancestor's mode is separable
 // and no member crosses the window's fixed or pinned paint bands, where a
 // buffered layer would split across repaints.
@@ -54,7 +61,7 @@ func finiteXform(op *layout.DisplayOp) bool {
 // xformTooBig rejects a transformed op whose local scratch raster would
 // exceed maxXformPixels CSS pixels.
 func xformTooBig(op *layout.DisplayOp, ppp float64) bool {
-	grow := 2*math.Max(op.Width, 1) + 4
+	grow := xformGrowFactor*math.Max(op.Width, 1) + xformGrowPad
 	w, h := math.Abs(op.W)+grow, math.Abs(op.H)+grow
 
 	return w*h*ppp*ppp > maxXformPixels

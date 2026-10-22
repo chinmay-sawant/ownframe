@@ -18,7 +18,7 @@ func TestRestartKeepsData(t *testing.T) {
 	first := newBackend(t, Config{DataDir: dir, Fixture: true})
 	app, err := ui.New(ctx, first)
 	if err != nil {
-		first.Close()
+		_ = first.Close()
 		t.Fatalf("ui.New: %v", err)
 	}
 
@@ -40,7 +40,7 @@ func TestRestartKeepsData(t *testing.T) {
 	second := newBackend(t, Config{DataDir: dir})
 	app2, err := ui.New(ctx, second)
 	if err != nil {
-		second.Close()
+		_ = second.Close()
 		t.Fatalf("second ui.New: %v", err)
 	}
 

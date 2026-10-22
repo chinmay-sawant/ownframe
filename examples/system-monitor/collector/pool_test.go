@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -58,7 +59,7 @@ func TestPoolDeadline(t *testing.T) {
 
 	select {
 	case err := <-done:
-		if err != context.DeadlineExceeded {
+		if !errors.Is(err, context.DeadlineExceeded) {
 			t.Fatalf("err = %v", err)
 		}
 	case <-time.After(time.Second):
@@ -76,7 +77,7 @@ func TestPoolDoAfterClose(t *testing.T) {
 	p := NewPool(1, 1, time.Second)
 	p.Close()
 
-	if err := p.Do(context.Background(), func(context.Context) error { return nil }); err != ErrPoolFull {
+	if err := p.Do(context.Background(), func(context.Context) error { return nil }); !errors.Is(err, ErrPoolFull) {
 		t.Fatalf("err = %v", err)
 	}
 }

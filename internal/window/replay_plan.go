@@ -6,10 +6,8 @@ import "image"
 type repaintMode int
 
 const (
-	// repaintFull replays the list straight to the screen.
-	repaintFull repaintMode = iota
 	// repaintBuffer repaints the whole buffer.
-	repaintBuffer
+	repaintBuffer repaintMode = iota
 	// repaintRect repaints one dirty rect in the buffer.
 	repaintRect
 	// repaintBlit leaves the buffer alone. Its pixels are current.

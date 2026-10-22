@@ -5,7 +5,9 @@ func (p *Page) SetChangedProperties(props []string) {
 	if p == nil {
 		return
 	}
+	changedPropsMu.Lock()
 	p.changedProps = append([]string(nil), props...)
+	changedPropsMu.Unlock()
 }
 
 // Deprecated: use SetChangedProperties.
@@ -16,7 +18,9 @@ func (p *Page) AddChangedProperty(prop string) {
 	if p == nil || prop == "" {
 		return
 	}
+	changedPropsMu.Lock()
 	p.changedProps = append(p.changedProps, prop)
+	changedPropsMu.Unlock()
 }
 
 // AddChangedProperties appends multiple property paths.
@@ -24,11 +28,13 @@ func (p *Page) AddChangedProperties(props []string) {
 	if p == nil {
 		return
 	}
+	changedPropsMu.Lock()
 	for _, prop := range props {
 		if prop != "" {
 			p.changedProps = append(p.changedProps, prop)
 		}
 	}
+	changedPropsMu.Unlock()
 }
 
 // Deprecated: use AddChangedProperty.
@@ -42,7 +48,9 @@ func (p *Page) ClearChangedProperties() {
 	if p == nil {
 		return
 	}
+	changedPropsMu.Lock()
 	p.changedProps = p.changedProps[:0]
+	changedPropsMu.Unlock()
 }
 
 // withChangedProps fills the canonical field once; deprecated

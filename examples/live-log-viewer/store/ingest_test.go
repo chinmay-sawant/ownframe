@@ -23,7 +23,7 @@ func TestIngestDummyEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	setup, err := st.EnsureDummy(bg(), DummyOptions{Count: 300, Rate: 500})
 	if err != nil {
@@ -81,7 +81,7 @@ func TestIngestDummyEndToEnd(t *testing.T) {
 
 	var dupes int
 
-	if err := st.db.QueryRow(
+	if err := st.db.QueryRowContext(bg(),
 		`SELECT count(*) FROM (SELECT source_id, generation, position
 		 FROM entries GROUP BY source_id, generation, position
 		 HAVING count(*) > 1)`).Scan(&dupes); err != nil {

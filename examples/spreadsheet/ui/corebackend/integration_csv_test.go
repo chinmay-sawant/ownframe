@@ -17,13 +17,13 @@ func TestUICSVImportThroughPicker(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer app.Close()
+	defer func() { _ = app.Close() }()
 
 	page := app.Page()
 	waitFor(t, app, func() bool { return hasCell(app, "row 1") })
 
 	path := filepath.Join(t.TempDir(), "in.csv")
-	if err := os.WriteFile(path, []byte("alpha,beta\n1,2\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("alpha,beta\n1,2\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

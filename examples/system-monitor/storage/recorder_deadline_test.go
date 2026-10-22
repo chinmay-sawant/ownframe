@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -24,7 +25,7 @@ func TestRecorderCloseDeadline(t *testing.T) {
 	short, cancel := context.WithTimeout(context.Background(), 30*time.Millisecond)
 	defer cancel()
 
-	if err := rec.Close(short); err != context.DeadlineExceeded {
+	if err := rec.Close(short); !errors.Is(err, context.DeadlineExceeded) {
 		t.Fatalf("close = %v, want deadline", err)
 	}
 

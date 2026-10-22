@@ -50,7 +50,7 @@ func (a *App) viewHeight() int {
 		return h
 	}
 
-	return 720
+	return uiDefHeight
 }
 
 // atBottom reports whether a viewport at offsetY with height viewH shows

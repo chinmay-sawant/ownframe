@@ -30,7 +30,7 @@ type Large struct {
 func NewLarge(n int) (*Large, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Large", HTML: largeHTML,
-		Width: 800, Height: 600, MinWidth: 320, MinHeight: 240,
+		Width: largeWidth, Height: largeHeight, MinWidth: largeMinWidth, MinHeight: largeMinHeight,
 		Perf: true,
 	})
 	if err != nil {

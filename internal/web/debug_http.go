@@ -23,16 +23,11 @@ type debugState struct {
 	Runtime    map[string]any `json:"runtime,omitempty"`
 }
 
-// debug answers GET /debug/state: the page's size, generation, boxes, and
-// stats, plus per-kind operation counts when a display list exists. It takes
-// the server mutex, so it never reads the page mid-redraw.
-//
-// Panic recovery is installed at the server mux; keep this handler simple.
-// Runtime sampling is guarded.
+// debug answers GET /debug/state under the server mutex. Reload errors
+// are sanitized so file paths cannot leak verbatim to the client.
 func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	front := page.SelectFront(s.app)
 	state := debugState{
 		Width:      front.Width,
@@ -41,22 +36,18 @@ func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
 		Fallback:   front.Fallback,
 		Boxes:      s.app.Boxes(),
 	}
-
 	if front.Display != nil {
 		state.Ops = debugOpCounts(front.Display)
 	}
-
 	if insp, ok := s.app.(host.Inspector); ok {
 		stats := insp.Stats()
+		stats.LastReloadError = sanitizeReload(stats.LastReloadError)
 		state.Stats = &stats
 	}
-
 	state.Runtime = runtimeSnapshot()
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-
 	if err := json.NewEncoder(w).Encode(state); err != nil {
-		log.Printf("write debug state: %v", err)
+		log.Printf("write debug state: %s", sanitizeLine(err.Error()))
 	}
 }

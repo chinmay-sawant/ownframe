@@ -14,9 +14,14 @@ const readoutID = "preview-metadata"
 // catalog stays windowed: the rows on screen start now, and the rows off
 // screen wait for their first render, which gives the transition its
 // starting paint.
+//
+// The run keeps no clock of its own. Every sample takes its start time from
+// the place a single Start takes it, when the sample binds to the display.
+// A clock stamped here would be spent by the redraw that follows the click,
+// and the shortest sample would be over before it began.
 func (d *demo) playAll(ctx context.Context) error {
 	d.allPlaying = true
-	started := make([]string, 0, len(d.v.Catalog))
+	d.playAllAt = time.Time{}
 	for _, row := range d.v.Catalog {
 		target, ok := targetByKey(row.SampleKey)
 		if !ok {
@@ -33,27 +38,27 @@ func (d *demo) playAll(ctx context.Context) error {
 				s.base = capture(d.p.Display(), box)
 			}
 		}
-		if s.base != nil {
-			d.v.Started[target.key] = true
-			d.v.Started[row.Button] = true
-			// The card's class carries the started state into the tree, so
-			// the sample's target moves on the next layout.
-			d.patchCard(ctx, row)
+		d.v.Started[target.key] = true
+		d.v.Started[row.Button] = true
+		// The sample takes its start time when it binds, so a run that
+		// starts now plays from the beginning.
+		s.origin = time.Time{}
+		s.active = false
+		if s.base == nil {
+			// The row is off screen. The scroll window queues it when
+			// the row comes into view.
+			continue
 		}
-		started = append(started, target.key)
-		d.pending = append(d.pending, target.key)
+		d.queue(target.key)
 	}
-	// The shared start time is stamped after the patching above. A click that
-	// patches every card can take longer than the shortest animation, and a
-	// clock that starts before that work leaves every sample finished before
-	// the first tick reaches it.
-	d.playAllAt = time.Now()
-	for _, key := range started {
-		if s := d.samples[key]; s != nil {
-			s.origin = d.playAllAt
-		}
+	// The card's class carries the started state into the tree, so the
+	// sample's target moves on the next layout.
+	if !d.patchGrid(ctx) {
+		// The engine refused the grid, so the classes land in the tree
+		// and the next layout shows them.
+		d.treeDirty = true
 	}
-	d.v.Readout = "All previews are playing."
+	d.setReadout(ctx, "All previews are playing.")
 	d.p.SetData(d.v)
 	if !walkActive() {
 		d.p.SetTick(d.tick)

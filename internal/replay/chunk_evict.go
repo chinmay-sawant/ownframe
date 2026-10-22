@@ -26,7 +26,7 @@ func (c *chunkStore) evict(protected chunkKey) {
 		if e := c.entries[victim]; e != nil {
 			delete(c.entries, victim)
 			c.pixels -= e.img.Bounds().Dx() * e.img.Bounds().Dy()
-			e.img.Dispose()
+			e.img.Deallocate()
 		}
 	}
 }

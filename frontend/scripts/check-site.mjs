@@ -23,7 +23,9 @@ async function ready(url) {
     try {
       const response = await fetch(url);
       if (response.ok) return response;
-    } catch {}
+    } catch {
+      // The server is not up yet, so the loop keeps trying.
+    }
     await pause(100);
   }
   throw new Error(`Could not connect to ${url}`);

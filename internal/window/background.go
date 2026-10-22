@@ -6,6 +6,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// channelMax mirrors internal/masking: the max 8-bit color channel value.
+const channelMax = 255
+
 // pageBackground returns the color to paint under the page: the page's own
 // background fill for a display list, or the corner pixel of the bitmap.
 // White when neither is known.
@@ -77,10 +80,10 @@ func opColor(op *layout.DisplayOp) color.Color {
 	}
 
 	return color.RGBA{
-		R: uint8(clamp01(op.R*a+1-a) * 255),
-		G: uint8(clamp01(op.G*a+1-a) * 255),
-		B: uint8(clamp01(op.B*a+1-a) * 255),
-		A: 255,
+		R: uint8(clamp01(op.R*a+1-a) * channelMax),
+		G: uint8(clamp01(op.G*a+1-a) * channelMax),
+		B: uint8(clamp01(op.B*a+1-a) * channelMax),
+		A: channelMax,
 	}
 }
 

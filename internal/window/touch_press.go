@@ -1,7 +1,7 @@
 package window
 
 func (s *shell) touchPress(u touchUpdate, now []touchPos, clicked bool, w, h int) error {
-	if len(now) >= 2 {
+	if len(now) >= pinchFingerCount {
 		armed := s.hold.armed || s.hold.claimed
 		s.hold.cancel()
 		s.scrollMotion.cancel()

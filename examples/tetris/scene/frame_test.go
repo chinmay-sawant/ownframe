@@ -36,8 +36,9 @@ func TestLetter(t *testing.T) {
 
 	for k := game.Piece(0); k <= game.PieceL+1; k++ {
 		got := letter(k)
-		if int(k) < len(want) && got != want[k] {
-			t.Fatalf("letter(%d) = %q, want %q", k, got, want[k])
+		idx := int(k)
+		if idx < len(want) && got != want[idx] {
+			t.Fatalf("letter(%d) = %q, want %q", k, got, want[idx])
 		}
 
 		if int(k) >= len(want) && got != 0 {

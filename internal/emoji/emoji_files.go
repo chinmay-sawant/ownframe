@@ -15,9 +15,12 @@ func PNG(name string) ([]byte, bool) {
 	return data, true
 }
 
+// filesCap is the initial capacity for the distinct bundled file stems.
+const filesCap = 32
+
 // Files lists every bundled file stem.
 func Files() []string {
-	out := make([]string, 0, 32)
+	out := make([]string, 0, filesCap)
 	seen := map[string]bool{}
 
 	for _, e := range all() {

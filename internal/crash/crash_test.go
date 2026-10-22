@@ -75,7 +75,7 @@ func readReport(t *testing.T, path string) string {
 		t.Fatalf("name = %s", base)
 	}
 
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // reason: test reads back the crash file it just wrote.
 	if err != nil {
 		t.Fatal(err)
 	}

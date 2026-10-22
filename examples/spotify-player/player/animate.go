@@ -80,7 +80,7 @@ func accentFill(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
 			continue
 		}
 
-		cx, cy := op.X+op.W/2, op.Y+op.H/2
+		cx, cy := op.X+op.W/centerDiv, op.Y+op.H/centerDiv
 		if !(cx >= x-0.5 && cx <= x+w+0.5 && cy >= y-0.5 && cy <= y+h+0.5) {
 			continue
 		}

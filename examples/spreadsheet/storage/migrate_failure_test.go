@@ -17,14 +17,14 @@ func TestInterruptedMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	db, err := sql.Open("sqlite", filepath.Join(dir, File))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	migs := []migration{
 		{version: 1, name: "one", sql: `CREATE TABLE t1 (x INTEGER)`},
@@ -36,7 +36,7 @@ func TestInterruptedMigration(t *testing.T) {
 	}
 
 	var version int
-	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+	if err := db.QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 
@@ -45,7 +45,7 @@ func TestInterruptedMigration(t *testing.T) {
 	}
 
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name = 't2'`).Scan(&n); err != nil {
+	if err := db.QueryRowContext(t.Context(), `SELECT COUNT(*) FROM sqlite_master WHERE name = 't2'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 
@@ -62,7 +62,7 @@ func TestCorruptDatabaseUntouched(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	before, err := os.ReadFile(path)
+	before, err := os.ReadFile(path) //nolint:gosec // reason: test reads TempDir database copy to verify it is untouched
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestCorruptDatabaseUntouched(t *testing.T) {
 		t.Fatal("Open on a corrupt file succeeded")
 	}
 
-	after, err := os.ReadFile(path)
+	after, err := os.ReadFile(path) //nolint:gosec // reason: test reads TempDir database copy to verify it is untouched
 	if err != nil {
 		t.Fatal(err)
 	}

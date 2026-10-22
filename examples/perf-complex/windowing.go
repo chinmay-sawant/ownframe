@@ -2,6 +2,14 @@ package main
 
 import "github.com/chinmay-sawant/ownframe/internal/page"
 
+// Windowing keeps overscan rows around the viewport and pads the row count
+// to a full stripe pair, so nth-child stripes match the full document.
+const (
+	windowOverscan = 10
+	windowSlack    = 5
+	stripePair     = 2
+)
+
 func installWindow(p *page.Page, v view) {
 	all := v.Rows
 	previousStart, previousEnd := -1, -1
@@ -14,20 +22,20 @@ func installWindow(p *page.Page, v view) {
 				break
 			}
 		}
-		first := max(0, (offsetY-gridY)/76)
-		last := min(len(all), max(0, (offsetY+viewH-gridY+75)/76))
-		topSafe := previousStart == 0 || first >= previousStart+5
-		bottomSafe := previousEnd == len(all) || last <= previousEnd-5
+		first := max(0, (offsetY-gridY)/fixtureRowH)
+		last := min(len(all), max(0, (offsetY+viewH-gridY+fixtureRowH-1)/fixtureRowH))
+		topSafe := previousStart == 0 || first >= previousStart+windowSlack
+		bottomSafe := previousEnd == len(all) || last <= previousEnd-windowSlack
 		if previousStart >= 0 && topSafe && bottomSafe {
 			return false
 		}
-		start := (offsetY-gridY)/76 - 10
+		start := (offsetY-gridY)/fixtureRowH - windowOverscan
 		if start < 0 {
 			start = 0
 		}
-		count := viewH/76 + 21
-		if count < 48 {
-			count = 48
+		count := viewH/fixtureRowH + windowOverscan*2 + 1
+		if count < fixtureWindowRows {
+			count = fixtureWindowRows
 		}
 		if start > len(all)-count {
 			start = len(all) - count
@@ -36,15 +44,15 @@ func installWindow(p *page.Page, v view) {
 			start = 0
 		}
 		// Keep nth-child stripes aligned with the full document.
-		start -= start % 2
+		start -= start % stripePair
 		end := min(start+count, len(all))
 		if start == previousStart && end == previousEnd {
 			return false
 		}
 		previousStart, previousEnd = start, end
 		v.Rows = all[start:end]
-		v.Top = start * 76
-		v.Bottom = (len(all) - end) * 76
+		v.Top = start * fixtureRowH
+		v.Bottom = (len(all) - end) * fixtureRowH
 		p.SetData(v)
 		return true
 	})

@@ -6,6 +6,14 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// maxSources bounds the parsed font source cache and maxFaces the shaped
+// face cache. Both reset when full so one page cannot grow them without
+// bound.
+const (
+	maxSources = 64
+	maxFaces   = 256
+)
+
 // line is one baseline and the runs painted on it.
 type line struct {
 	baseline float64

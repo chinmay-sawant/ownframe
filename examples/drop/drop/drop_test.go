@@ -26,9 +26,14 @@ func TestDroppedPathsPrint(t *testing.T) {
 	}
 
 	text := boxText(t, app, "paths")
-	for _, want := range []string{"/home/me/photo.png", "/home/me/data.bin", "/home/me/docs"} {
+	for _, want := range []string{"photo.png", "data.bin", "docs"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("paths = %q, missing %q", text, want)
+		}
+	}
+	for _, leak := range []string{"/home/me/photo.png", "/home/me/data.bin", "/home/me/docs"} {
+		if strings.Contains(text, leak) {
+			t.Fatalf("paths = %q, leaks absolute %q", text, leak)
 		}
 	}
 }

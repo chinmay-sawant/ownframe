@@ -37,12 +37,12 @@ func (a *App) Load(ctx context.Context, term string) error {
 		return a.offline(fmt.Errorf("player: empty search term"))
 	}
 
-	rawSongs, err := a.search(ctx, term, "song", 6)
+	rawSongs, err := a.search(ctx, term, "song", maxSongs)
 	if err != nil {
 		return a.offline(err)
 	}
 
-	rawAlbums, err := a.search(ctx, term, "album", 12)
+	rawAlbums, err := a.search(ctx, term, "album", maxAlbums)
 	if err != nil {
 		return a.offline(err)
 	}

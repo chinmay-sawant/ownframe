@@ -34,7 +34,7 @@ func (a *App) SavePNG(dir string) (string, error) {
 	}
 
 	path := filepath.Join(dir, "a.png")
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := os.WriteFile(path, data, savedPNGPerm); err != nil {
 		return "", err
 	}
 

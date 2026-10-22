@@ -13,8 +13,7 @@ func TestSettingsDefaultWhenEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	set, err := s.Settings(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -31,8 +30,7 @@ func TestSettingsRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	want := Settings{Keymap: input.DefaultKeymap(), Theme: "dark"}

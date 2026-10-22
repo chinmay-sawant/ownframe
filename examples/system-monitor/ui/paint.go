@@ -45,7 +45,7 @@ func (a *App) paintText() {
 	a.setText("ov-at", "updated "+clock(s.at))
 	a.setText("proc-new", newText(s.table.hasNew()))
 	a.setText("proc-at", clock(s.table.shown.At))
-	a.setText("sel-name", truncate(nonEmpty(s.sel.proc.Name), 60))
+	a.setText("sel-name", truncate(nonEmpty(s.sel.proc.Name), detailNameLen))
 	a.setText("sel-status", detailStatus(s.sel))
 
 	for _, f := range detailFields(s.sel) {

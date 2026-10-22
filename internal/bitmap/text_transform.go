@@ -15,7 +15,7 @@ import (
 func (c faceCache) close() {
 	for _, face := range c {
 		if face != nil {
-			face.Close()
+			_ = face.Close()
 		}
 	}
 }
@@ -36,7 +36,7 @@ func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces faceCache) error 
 		return paintText(dst, op, faces)
 	}
 	// Bound the untransformed glyph canvas, including ascent and italic overhang.
-	pad := op.Size * pxPerPt * 2
+	pad := op.Size * pxPerPt * textPadScale
 	b := image.Rect(int(op.X*pxPerPt-pad), int(op.Y*pxPerPt-pad),
 		int((op.X+op.W)*pxPerPt+pad), int(op.Y*pxPerPt+pad))
 	depth := 1
@@ -55,11 +55,11 @@ func paintTextOp(dst *image.NRGBA, op *layout.DisplayOp, faces faceCache) error 
 	if !op.XformSet {
 		m.A, m.B, m.C, m.D, m.E, m.F = 1, 0, 0, 1, 0, 0
 	}
-	angle := float64(op.RotateDeg) * math.Pi / 180
+	angle := float64(op.RotateDeg) * math.Pi / degreesInHalfCircle
 	c, s := math.Cos(angle), math.Sin(angle)
 	shear := 0.0
 	if op.FakeOblique {
-		shear = -.2
+		shear = fakeObliqueShear
 	}
 	a, bv, cv, d := c, s, c*shear-s, s*shear+c
 	x, y := op.X*pxPerPt, op.Y*pxPerPt

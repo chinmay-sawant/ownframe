@@ -23,7 +23,15 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	ebiten.SetWindowResizingMode(mode)
 	ebiten.SetWindowDecorated(!options.Borderless)
 	ebiten.SetWindowFloating(options.Floating)
-	passthrough := options.MousePassthrough || options.Interactive != nil
+	// Full click-through never accepts input: Interactive is honored
+	// only when MousePassthrough is off, so a click-through overlay
+	// cannot be tricked into clicking. Only app code sets these;
+	// page content cannot toggle transparency or passthrough.
+	interactive := options.Interactive
+	if options.MousePassthrough {
+		interactive = nil
+	}
+	passthrough := options.MousePassthrough || interactive != nil
 	ebiten.SetWindowMousePassthrough(passthrough)
 	if passthrough {
 		ebiten.SetRunnableOnUnfocused(true)
@@ -37,10 +45,10 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 		}
 	}
 
-	game := NewGame(ctx, app).(*shell)
+	game := newShell(ctx, app)
 	defer game.imeShutdown()
 	game.transparent = options.Transparent
-	game.interactive, game.passthrough = options.Interactive, passthrough
+	game.interactive, game.passthrough = interactive, passthrough
 	game.draggable = options.Draggable
 	game.perf = options.Perf || game.perf
 	game.wirePerf()

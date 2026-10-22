@@ -22,7 +22,7 @@ func TestCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	_, err := fetch.Do(ctx, http.MethodGet, srv.URL, nil, nil)
+	_, err := fetch.Do(fetch.AllowPrivate(ctx), http.MethodGet, srv.URL, nil, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v", err)
 	}
@@ -31,6 +31,7 @@ func TestCanceledContext(t *testing.T) {
 func TestNilContext(t *testing.T) {
 	t.Parallel()
 
+	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
 	_, err := fetch.Do(nil, http.MethodGet, "https://example.com", nil, nil)
 	if !errors.Is(err, fetch.ErrNilContext) {
 		t.Fatalf("err = %v", err)

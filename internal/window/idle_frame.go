@@ -28,6 +28,7 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	case paceToFast:
 		g.applyFast()
 	case paceBurst:
+		//nolint:staticcheck // reason: ScheduleFrame is the only wake-up for FPSModeVsyncOffMinimum event-wait; SetScreenClearedEveryFrame(false) only skips clearing and keeps the full-rate loop.
 		ebiten.ScheduleFrame()
 	}
 
@@ -44,6 +45,7 @@ func (g *paceGame) applyIdle() {
 	}
 
 	g.idle = true
+	//nolint:staticcheck // reason: needs FPSModeVsyncOffMinimum event-wait; SetVsyncEnabled(false) selects Maximum busy loop and would pin CPU.
 	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMinimum)
 	ebiten.SetTPS(ebiten.SyncWithFPS)
 }
@@ -55,6 +57,6 @@ func (g *paceGame) applyFast() {
 	}
 
 	g.idle = false
-	ebiten.SetFPSMode(ebiten.FPSModeVsyncOn)
+	ebiten.SetVsyncEnabled(true)
 	ebiten.SetTPS(g.base)
 }

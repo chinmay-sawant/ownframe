@@ -27,7 +27,7 @@ func newWorker(b Backend) *worker {
 		wake: make(chan struct{}, 1),
 		stop: make(chan struct{}),
 		done: make(chan struct{}),
-		out:  make(chan result, 256),
+		out:  make(chan result, uiQueueCap),
 	}
 	go w.run()
 
@@ -53,7 +53,8 @@ func (w *worker) post(j job) bool {
 			}
 		}
 
-		w.queue = append(kept, j)
+		kept = append(kept, j)
+		w.queue = kept
 	} else {
 		w.queue = append(w.queue, j)
 	}

@@ -1,6 +1,9 @@
 package workbook
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestSheetEachAndUsedRange(t *testing.T) {
 	w := New(1, "test")
@@ -77,7 +80,7 @@ func TestSheetAccessors(t *testing.T) {
 		t.Fatal("remove did not drop the sheet")
 	}
 
-	if err := w.RemoveSheet(b.ID()); err != ErrNoSheet {
+	if err := w.RemoveSheet(b.ID()); !errors.Is(err, ErrNoSheet) {
 		t.Fatalf("removing the last sheet = %v", err)
 	}
 }

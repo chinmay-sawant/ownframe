@@ -2,6 +2,7 @@ package fetch_test
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,7 +16,7 @@ func TestFileScheme(t *testing.T) {
 
 	for _, raw := range []string{"", "file:///etc/passwd", "data:text/plain,hi", "javascript:alert(1)"} {
 		_, err := fetch.Do(context.Background(), http.MethodGet, raw, nil, nil)
-		if err != fetch.ErrScheme {
+		if !errors.Is(err, fetch.ErrScheme) {
 			t.Fatalf("%s: %v", raw, err)
 		}
 	}
@@ -30,8 +31,8 @@ func TestRedirectFile(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	_, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
-	if err != fetch.ErrScheme {
+	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
+	if !errors.Is(err, fetch.ErrScheme) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -48,7 +49,7 @@ func TestRedirectHTTP(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	got, err := fetch.Do(context.Background(), http.MethodGet, srv.URL, nil, nil)
+	got, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

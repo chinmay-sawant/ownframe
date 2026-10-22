@@ -1,6 +1,7 @@
 package tv
 
 import (
+	"context"
 	"errors"
 	"net"
 )
@@ -12,7 +13,7 @@ func Magic(mac string) ([]byte, error) {
 		return nil, errors.New("the saved TV address is unusable")
 	}
 
-	pkt := make([]byte, 102)
+	pkt := make([]byte, wakePktSize)
 	for i := 0; i < 6; i++ {
 		pkt[i] = 0xff
 	}
@@ -35,13 +36,12 @@ func sendWake(mac, host string) error {
 		return err
 	}
 
-	conn, err := net.ListenPacket("udp4", ":0")
+	conn, err := (&net.ListenConfig{}).ListenPacket(context.Background(), "udp4", ":0")
 	if err != nil {
 		return errors.New("the wake packet could not be sent")
 	}
 
-	defer conn.Close()
-
+	defer func() { _ = conn.Close() }()
 	sent := false
 	for n := 0; n < 3; n++ {
 		for _, raw := range wakeTargets(host) {

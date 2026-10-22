@@ -23,11 +23,11 @@ func patchCostPage(tb testing.TB) (context.Context, *ownframe.Page, *view) {
 	tb.Helper()
 	ctx := context.Background()
 	dir := filepath.Join("testdata", "css-preview")
-	source, err := os.ReadFile(filepath.Join(dir, "index.html"))
+	source, err := os.ReadFile(filepath.Join(dir, "index.html")) //nolint:gosec // reason: fixed repo-relative testdata path joined to a constant dir.
 	if err != nil {
 		tb.Fatal(err)
 	}
-	theme, err := os.ReadFile(filepath.Join(dir, "styles.css"))
+	theme, err := os.ReadFile(filepath.Join(dir, "styles.css")) //nolint:gosec // reason: fixed repo-relative testdata path joined to a constant dir.
 	if err != nil {
 		tb.Fatal(err)
 	}

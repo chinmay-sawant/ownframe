@@ -2,12 +2,16 @@ package window
 
 import (
 	"image"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+)
 
-	"github.com/chinmay-sawant/blinkless/layout"
+// devOpsHalf is the half-pixel reach of the 1 px outline; devOpsFull
+// grows the union box by the full pixel.
+const (
+	devOpsHalf = 0.5
+	devOpsFull = 1.0
 )
 
 // drawDevOps outlines every painted operation in paint order, colour by
@@ -47,30 +51,10 @@ func (s *shell) drawDevOps(screen *ebiten.Image) {
 		}
 
 		// The 1 px stroke reaches half a pixel past each edge.
-		union = union.Union(frameRect(r.X-0.5, r.Y-0.5, r.W+1, r.H+1))
+		union = union.Union(frameRect(r.X-devOpsHalf, r.Y-devOpsHalf, r.W+devOpsFull, r.H+devOpsFull))
 	}
 
 	if !union.Empty() {
 		s.frameNote(union)
 	}
-}
-
-// devOpInk returns the outline colour for one operation kind.
-func devOpInk(kind layout.DisplayKind) (color.RGBA, bool) {
-	switch kind {
-	case layout.DisplayOpFillRect:
-		return devFillInk, true
-	case layout.DisplayOpStrokeRect:
-		return devStrokeInk, true
-	case layout.DisplayOpLine:
-		return devLineInk, true
-	case layout.DisplayOpText, layout.DisplayOpBullet:
-		return devTextInk, true
-	case layout.DisplayOpImage:
-		return devImageInk, true
-	case layout.DisplayOpGridRun:
-		return devGridInk, true
-	}
-
-	return color.RGBA{}, false
 }

@@ -41,26 +41,6 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	return p, d, v
 }
 
-func hasRecords(p *ownframe.Page, b ownframe.Box, target target, kind string) bool {
-	if target.kind == "transition" {
-		for _, r := range b.Transitions {
-			if r.Property == target.property {
-				return true
-			}
-		}
-		return false
-	}
-	if len(b.Animations) == 0 {
-		return false
-	}
-	for _, rule := range p.Display().Keyframes {
-		if rule.Name == b.Animations[0].Name {
-			return true
-		}
-	}
-	return false
-}
-
 func samePaint(a, b []paint) bool {
 	if len(a) != len(b) {
 		return false

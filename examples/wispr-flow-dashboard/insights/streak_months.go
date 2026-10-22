@@ -17,13 +17,13 @@ func monthsFor(start int) []Month {
 		col = hi + 1
 
 		visLo, visHi := max(lo, start), min(hi, start+streakWindow-1)
-		if visHi-visLo < 2 {
+		if visHi-visLo < minSpan {
 			continue
 		}
 
 		out = append(out, Month{
 			Label:  band.Label,
-			Column: template.CSS(fmt.Sprintf("%d / span %d", visLo-start+1, visHi-visLo+1)),
+			Column: template.CSS(fmt.Sprintf("%d / span %d", visLo-start+1, visHi-visLo+1)), //nolint:gosec // reason: column is two internally formatted integers, no user input reaches the CSS.
 		})
 	}
 

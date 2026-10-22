@@ -13,6 +13,9 @@ func (p *Page) Paste(ctx context.Context, text string) error {
 		}
 	}
 
+	// GEN-28: cap the paste before it merges into the field.
+	text = clampField(text, MaxPasteRunes)
+
 	return p.editField(ctx, fn, func(c Control, caret, anchor int) (Control, int, int, bool) {
 		return p.insertValue(c, caret, anchor, text)
 	})

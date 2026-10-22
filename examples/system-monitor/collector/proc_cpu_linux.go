@@ -31,7 +31,7 @@ func parseCPUStat(data []byte) (domain.CPUTimes, []domain.CPUTimes, error) {
 		}
 
 		fields := strings.Fields(line)
-		if len(fields) < 5 {
+		if len(fields) < minCPUFields {
 			continue
 		}
 

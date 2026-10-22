@@ -43,6 +43,9 @@ func (d *DevtoolsCounter) Total() int {
 	return d.Patched + d.Repainted
 }
 
+// percent scales a ratio to a percentage.
+const percent = 100
+
 // PatchedPercent returns the patched share as a percentage.
 func (d *DevtoolsCounter) PatchedPercent() float64 {
 	if d == nil {
@@ -52,5 +55,5 @@ func (d *DevtoolsCounter) PatchedPercent() float64 {
 	if total == 0 {
 		return 0
 	}
-	return float64(d.Patched) / float64(total) * 100
+	return float64(d.Patched) / float64(total) * percent
 }

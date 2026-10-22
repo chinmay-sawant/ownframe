@@ -5,11 +5,25 @@ import (
 	"time"
 )
 
+const scrollDtMax = .05 // seconds, max frame dt
+
+const scrollVelCap = 5000 // px/s, velocity cap
+
+const scrollStopSpeed = 24 // px/s, stop threshold
+
+const scrollBlendOld = .65 // weight for old velocity
+
+const scrollBlendNew = .35 // weight for new sample
+
+const doubleClickCount = 2
+
+const tripleClickCount = 3
+
 func (m *touchScrollMotion) step(now time.Time) (int, int) {
 	if m.dragging || m.sensitivity <= 0 {
 		return 0, 0
 	}
-	dt := min(now.Sub(m.lastStep).Seconds(), .05)
+	dt := min(now.Sub(m.lastStep).Seconds(), scrollDtMax)
 	m.lastStep = now
 	if dt <= 0 {
 		return 0, 0
@@ -19,7 +33,7 @@ func (m *touchScrollMotion) step(now time.Time) (int, int) {
 	y, ry := scrollPixels(m.vy*(1-keep)/m.decay + m.ry)
 	m.rx, m.ry = rx, ry
 	m.vx, m.vy = m.vx*keep, m.vy*keep
-	if math.Abs(m.vx)+math.Abs(m.vy) < 24 {
+	if math.Abs(m.vx)+math.Abs(m.vy) < scrollStopSpeed {
 		m.vx, m.vy = 0, 0
 	}
 	return x, y
@@ -27,9 +41,9 @@ func (m *touchScrollMotion) step(now time.Time) (int, int) {
 
 func scrollVelocity(old, sample float64) float64 {
 	if old == 0 {
-		return clampFloat(sample, -5000, 5000)
+		return clampFloat(sample, -scrollVelCap, scrollVelCap)
 	}
-	return clampFloat(old*.65+sample*.35, -5000, 5000)
+	return clampFloat(old*scrollBlendOld+sample*scrollBlendNew, -scrollVelCap, scrollVelCap)
 }
 
 func scrollPixels(v float64) (int, float64) {

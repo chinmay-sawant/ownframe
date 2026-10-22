@@ -34,7 +34,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		scrollbar:       cfg.Scrollbar,
 		allowTouchZoom:  !cfg.DisableTouchZoom,
 		allowScroll:     true,
-		touchScroll:     TouchScrollOptions{Sensitivity: 1, Deceleration: 5},
+		touchScroll:     TouchScrollOptions{Sensitivity: touchSensitivityDefault, Deceleration: touchDecelerationDefault},
 		watch:           watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
 		elements:        element.NewRegistry(),
 	}

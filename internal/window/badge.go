@@ -11,9 +11,15 @@ import (
 
 const badgeLabel = "bitmap fallback"
 
+// badgePad is the badge box pad and screen margin.
+const badgePad = 8.0
+
+// badgeInkHex packs badgeInk as 0xRRGGBBAA.
+const badgeInkHex = 0x1c1915e6
+
 var (
 	badgeFace = text.NewGoXFace(basicfont.Face7x13)
-	badgeInk  = color.RGBA{R: 0x1c, G: 0x19, B: 0x15, A: 0xe6}
+	badgeInk  = devRGBA(badgeInkHex)
 )
 
 // badgeRect returns the top-right box that holds label on a screenW-wide
@@ -27,14 +33,14 @@ func badgeRect(screenW float64, label string) (x, y, width, height float64) {
 func badgeRectInset(screenW float64, label string, inset float64) (x, y, width, height float64) {
 	labelW, labelH := text.Measure(label, badgeFace, 0)
 
-	width = labelW + 8
-	height = labelH + 8
-	x = screenW - width - 8 - inset
-	if x < 8 {
-		x = 8
+	width = labelW + badgePad
+	height = labelH + badgePad
+	x = screenW - width - badgePad - inset
+	if x < badgePad {
+		x = badgePad
 	}
 
-	y = 8
+	y = badgePad
 
 	return x, y, width, height
 }
@@ -56,7 +62,7 @@ func (s *shell) drawBadge(screen *ebiten.Image) {
 	)
 
 	var op text.DrawOptions
-	op.GeoM.Translate(x+4, y+4)
+	op.GeoM.Translate(x+devLabelInset, y+devLabelInset)
 	op.ColorScale.ScaleWithColor(color.White)
 	text.Draw(screen, badgeLabel, badgeFace, &op)
 	s.frameNote(frameRect(x, y, width, height))

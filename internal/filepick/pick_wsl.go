@@ -44,7 +44,7 @@ func pickWindowsAt(ctx context.Context, title string, shells []string) (string, 
 	script := windowScript(title)
 
 	for _, shell := range shells {
-		out, err := exec.CommandContext(ctx, shell, "-NoProfile", "-STA", "-Command", script).Output()
+		out, err := exec.CommandContext(ctx, shell, "-NoProfile", "-STA", "-Command", script).Output() //nolint:gosec // reason: fixed shell binary plus static flags, script built from title only, picked path flows out and is validated (safeWindowsPath/hasDotSegment).
 		if err != nil {
 			debugf("%s failed: %v", shell, err)
 

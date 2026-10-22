@@ -42,15 +42,14 @@ func ssdp() []Hit {
 		return []Hit{}
 	}
 
-	defer conn.Close()
-
-	dst := &net.UDPAddr{IP: net.ParseIP("239.255.255.250"), Port: 1900}
+	defer func() { _ = conn.Close() }()
+	dst := &net.UDPAddr{IP: net.ParseIP("239.255.255.250"), Port: ssdpPort}
 	_, _ = conn.WriteTo([]byte(ssdpLG), dst)
 	_, _ = conn.WriteTo([]byte(ssdpAll), dst)
-	_ = conn.SetReadDeadline(time.Now().Add(1500 * time.Millisecond))
+	_ = conn.SetReadDeadline(time.Now().Add(ssdpTimeout))
 
 	found := map[string]Hit{}
-	buf := make([]byte, 2048)
+	buf := make([]byte, ssdpBufSize)
 
 	for {
 		n, addr, err := conn.ReadFromUDP(buf)

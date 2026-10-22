@@ -11,7 +11,7 @@ import (
 // fakeSource is a controllable source for manager tests.
 type fakeSource struct {
 	mu      sync.Mutex
-	samples int
+	samples uint64
 	slow    time.Duration
 	fail    bool
 	gone    bool
@@ -48,9 +48,9 @@ func (f *fakeSource) Sample(ctx context.Context) (domain.Sample, error) {
 	}
 
 	return domain.Sample{
-		CPUTotal: domain.CPUTimes{Busy: uint64(f.samples) * 10, Total: uint64(f.samples) * 100},
+		CPUTotal: domain.CPUTimes{Busy: f.samples * 10, Total: f.samples * 100},
 		Mem:      domain.Memory{Total: domain.Bytes(100), Available: domain.Bytes(40)},
-		Disks:    []domain.Disk{{Device: "sda", ReadBytes: uint64(f.samples) * 100, WriteBytes: uint64(f.samples) * 50}},
+		Disks:    []domain.Disk{{Device: "sda", ReadBytes: f.samples * 100, WriteBytes: f.samples * 50}},
 	}, nil
 }
 

@@ -16,7 +16,7 @@ func TestReconcileRenamesReusedDestination(t *testing.T) {
 
 	_, dest := reconcileJob(t, s, "reused", domain.StatePaused, 10)
 
-	if err := os.WriteFile(dest, []byte("abc"), 0o644); err != nil {
+	if err := os.WriteFile(dest, []byte("abc"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

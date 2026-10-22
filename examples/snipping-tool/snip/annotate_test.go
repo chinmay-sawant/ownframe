@@ -5,8 +5,13 @@ import (
 	"testing"
 )
 
-func rgbaAt(img interface{ At(int, int) color.Color }, x, y int) color.RGBA {
-	return color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
+func rgbaAt(t *testing.T, img interface{ At(int, int) color.Color }, x, y int) color.RGBA {
+	t.Helper()
+	c, ok := color.RGBAModel.Convert(img.At(x, y)).(color.RGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
+	return c
 }
 
 func TestAddClearAnnotations(t *testing.T) {
@@ -31,17 +36,17 @@ func TestDrawAnnotations(t *testing.T) {
 		{Kind: "text", X: 5, Y: 0, W: 3, H: 3, Label: "hi", Color: "blue"},
 	}
 	out := DrawAnnotations(testImage(), anns)
-	if c := rgbaAt(out, 1, 3); c != (color.RGBA{255, 0, 0, 255}) {
+	if c := rgbaAt(t, out, 1, 3); c != (color.RGBA{255, 0, 0, 255}) {
 		t.Fatalf("rect edge = %v, want red", c)
 	}
-	if c := rgbaAt(out, 7, 5); c != (color.RGBA{0, 255, 0, 255}) {
+	if c := rgbaAt(t, out, 7, 5); c != (color.RGBA{0, 255, 0, 255}) {
 		t.Fatalf("arrow tip = %v, want green", c)
 	}
-	if c := rgbaAt(out, 5, 0); c != (color.RGBA{0, 0, 255, 255}) {
+	if c := rgbaAt(t, out, 5, 0); c != (color.RGBA{0, 0, 255, 255}) {
 		t.Fatalf("text corner = %v, want blue", c)
 	}
 	plain := DrawAnnotations(testImage(), nil)
-	if c := rgbaAt(plain, 1, 3); c != rgbaAt(testImage(), 1, 3) {
+	if c := rgbaAt(t, plain, 1, 3); c != rgbaAt(t, testImage(), 1, 3) {
 		t.Fatal("no annotations must leave pixels untouched")
 	}
 }

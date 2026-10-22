@@ -30,8 +30,8 @@ func dummyJob(i, jobCount int, now time.Time) domain.Job {
 
 	id := fmt.Sprintf("dummy-%04d", i)
 	name := dummyNames[i%len(dummyNames)]
-	size := int64(200<<10) + int64(i*7919)%(8<<20)
-	created := now.Add(-time.Duration(jobCount-i) * 91 * time.Minute)
+	size := int64(seedBaseSize) + int64(i*seedSizeStep)%(seedSizeSpan)
+	created := now.Add(-time.Duration(jobCount-i) * seedAgeStepMin * time.Minute)
 
 	job := domain.Job{
 		ID:          id,
@@ -40,9 +40,9 @@ func dummyJob(i, jobCount int, now time.Time) domain.Job {
 		Name:        name,
 		State:       state,
 		Expected:    size,
-		ETag:        fmt.Sprintf(`"dummy-%d"`, i%97),
+		ETag:        fmt.Sprintf(`"dummy-%d"`, i%seedETagMod),
 		CreatedAt:   created,
-		UpdatedAt:   created.Add(37 * time.Minute),
+		UpdatedAt:   created.Add(seedTouchMinutes * time.Minute),
 	}
 
 	switch state {
@@ -50,34 +50,20 @@ func dummyJob(i, jobCount int, now time.Time) domain.Job {
 		job.Done = size
 		job.Attempts = 1
 	case domain.StateFailed:
-		job.Done = size / 3
+		job.Done = size / seedFailFrac
 		job.Attempts = 2
 		job.Error = dummyErrors[i%len(dummyErrors)]
 	case domain.StateCancelled:
-		job.Done = size / 5
+		job.Done = size / seedCancelFrac
 		job.Attempts = 1
 	case domain.StateQueued:
-		if i%3 == 0 {
+		if i%seedUnknownMod == 0 {
 			job.Expected = transfer.Unknown
 		}
 	case domain.StatePaused:
-		job.Done = size / 2
+		job.Done = size / seedHalfFrac
 		job.Attempts = 1
 	}
 
 	return job
-}
-
-func dummyCounts(n int) (completed, failed, cancelled, queued int) {
-	failed = n / 10
-	cancelled = n / 20
-	queued = n / 12
-	paused := n / 14
-
-	completed = n - failed - cancelled - queued - paused
-	if completed < 0 {
-		completed = 0
-	}
-
-	return completed, failed, cancelled, queued
 }

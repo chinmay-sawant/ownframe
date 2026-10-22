@@ -33,6 +33,10 @@ var (
 //
 // A panicking handler is recovered and reported as ErrHandlerPanicked. Serve
 // has no equivalent recovery; only this handler call is guarded.
+//
+// The handler runs synchronously in the caller's goroutine with no
+// per-call timeout: keep it non-blocking, honor ctx deadlines, and
+// pass a ctx with a deadline when untrusted code can register.
 func Request(ctx context.Context, channel, payload string) (string, error) {
 	if channel == "" {
 		return "", ErrNoHandler

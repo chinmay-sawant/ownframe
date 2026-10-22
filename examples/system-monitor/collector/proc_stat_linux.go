@@ -39,16 +39,16 @@ func parseProcStat(data []byte) (procStat, error) {
 	st := procStat{comm: s[open+1 : closing]}
 
 	fields := strings.Fields(s[closing+1:])
-	if len(fields) < 22 {
+	if len(fields) < minStatFields {
 		return procStat{}, errBadStat
 	}
 
 	st.state = fields[0]
-	st.ppid = int32(parseUint(fields[1]))
+	st.ppid = parseInt32(fields[1])
 	st.utime = parseUint(fields[11])
 	st.stime = parseUint(fields[12])
-	st.nice = int64(parseUint(fields[16]))
-	st.threads = int(parseUint(fields[17]))
+	st.nice = parseSigned(fields[16])
+	st.threads = parseCount(fields[17])
 	st.startTicks = parseUint(fields[19])
 	st.vsize = parseUint(fields[20])
 	st.rss = parseUint(fields[21])

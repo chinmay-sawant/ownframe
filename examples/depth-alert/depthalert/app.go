@@ -22,7 +22,7 @@ type App struct {
 
 func New() (*App, error) {
 	p, err := ownframe.New(ownframe.Config{Title: "Depth alert", HTML: pageHTML,
-		Width: 360, Height: 280, MinWidth: 320, MinHeight: 260, LockView: true})
+		Width: windowWidth, Height: windowHeight, MinWidth: windowMinW, MinHeight: windowMinH, LockView: true})
 	if err != nil {
 		return nil, err
 	}

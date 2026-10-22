@@ -1,9 +1,9 @@
 package tv
 
 import (
+	"context"
 	"net"
 	"sync"
-	"time"
 )
 
 func probeAll() []Hit {
@@ -51,7 +51,7 @@ func probe(local net.IP) []Hit {
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	out := []Hit{}
-	sem := make(chan struct{}, 40)
+	sem := make(chan struct{}, probeWorkers)
 
 	for host := 1; host < 255; host++ {
 		if byte(host) == local[3] {
@@ -87,12 +87,11 @@ func probe(local net.IP) []Hit {
 }
 
 func portOpen(ip, port string) bool {
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, port), 200*time.Millisecond)
+	conn, err := (&net.Dialer{Timeout: probeTimeout}).DialContext(context.Background(), "tcp", net.JoinHostPort(ip, port))
 	if err != nil {
 		return false
 	}
 
-	conn.Close()
-
+	_ = conn.Close()
 	return true
 }

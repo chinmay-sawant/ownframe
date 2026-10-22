@@ -1,10 +1,10 @@
 package tv
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 func nameFrom(text string) string {
@@ -17,15 +17,18 @@ func nameFrom(text string) string {
 }
 
 func nameAt(rawURL string) string {
-	client := http.Client{Timeout: 700 * time.Millisecond}
-	resp, err := client.Get(rawURL)
+	client := http.Client{Timeout: nameTimeout}
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, rawURL, nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return ""
 	}
 
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 8192))
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, nameReadLimit))
 	if err != nil {
 		return ""
 	}

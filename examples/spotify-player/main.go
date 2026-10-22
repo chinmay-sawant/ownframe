@@ -14,6 +14,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8119", "listen address for -web")
 	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab")
@@ -21,7 +27,7 @@ func main() {
 
 	app, err := player.New()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	defer app.Close()
@@ -32,14 +38,12 @@ func main() {
 
 	ctx := context.Background()
 	if *webMode {
-		if err := ownframe.ServeWithOptions(ctx, app.Page(), *addr, ownframe.ServeOptions{Perf: *perf}); err != nil {
-			log.Fatal(err)
+		if err := ownframe.ServeWithOptions(ctx, app.Page(), *addr, ownframe.ServeOptions{InsecureAllowPprof: *perf}); err != nil {
+			return err
 		}
 
-		return
+		return nil
 	}
 
-	if err := ownframe.Run(ctx, app.Page()); err != nil {
-		log.Fatal(err)
-	}
+	return ownframe.Run(ctx, app.Page())
 }

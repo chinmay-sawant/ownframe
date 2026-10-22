@@ -36,7 +36,7 @@ func TestManagerSink(t *testing.T) {
 	if err := m.Start(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	defer m.Close(t.Context())
+	defer func() { _ = m.Close(t.Context()) }()
 
 	select {
 	case <-sink.ch:

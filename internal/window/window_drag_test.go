@@ -4,7 +4,7 @@ import "testing"
 
 func TestWindowDragNeedsUserPress(t *testing.T) {
 	var d windowDrag
-	handled, move, click, _, _ := d.step(200, 100, false, true)
+	handled, move, _, _, _ := d.step(200, 100, false, true)
 	if handled || move {
 		t.Fatal("hover moved window")
 	}
@@ -22,7 +22,7 @@ func TestWindowDragNeedsUserPress(t *testing.T) {
 	if move {
 		t.Fatal("settled grab point moved again")
 	}
-	_, _, click, _, _ = d.step(200, 100, false, true)
+	_, _, click, _, _ := d.step(200, 100, false, true)
 	if click || d.active {
 		t.Fatal("drag released as click")
 	}

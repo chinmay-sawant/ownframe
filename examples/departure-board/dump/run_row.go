@@ -23,8 +23,8 @@ func printRow(rep Report) {
 		ops += f.ReplayedOps
 	}
 	fmt.Printf("%-8s %6d %6d %7.2f %7.2f %7.2f  %-34s %9d %9d %9.1f %5.1f %9d\n",
-		rep.Scenario, len(rep.Frames), rep.Ops, float64(rep.TickP50NS)/1e6,
-		float64(rep.TickP95NS)/1e6, float64(rep.TickMaxNS)/1e6, kinds,
+		rep.Scenario, len(rep.Frames), rep.Ops, float64(rep.TickP50NS)/nanosPerMilli,
+		float64(rep.TickP95NS)/nanosPerMilli, float64(rep.TickMaxNS)/nanosPerMilli, kinds,
 		rep.RectMeanArea, rep.RectMaxArea, float64(ops)/float64(n),
 		rep.RectsMean, rep.AreaMean)
 }

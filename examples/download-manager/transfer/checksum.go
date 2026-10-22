@@ -11,11 +11,11 @@ import (
 
 // HashFile returns the hex sha256 of path.
 func HashFile(path string) (string, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(path) //nolint:gosec // reason: checksum reads the download dest it just wrote, local file.
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	sum := sha256.New()
 	if _, err := io.Copy(sum, f); err != nil {

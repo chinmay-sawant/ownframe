@@ -29,7 +29,7 @@ func insertSQL(rows []entry.Entry, seq *int64) (string, []any) {
 		 ts_raw, ts_ok, severity, message, bytes, multiline, truncated,
 		 malformed, partial, received_ns) VALUES `)
 
-	args := make([]any, 0, len(rows)*16)
+	args := make([]any, 0, len(rows)*insertColsPerRow)
 
 	for i, e := range rows {
 		if i > 0 {

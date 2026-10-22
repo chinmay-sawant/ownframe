@@ -1,10 +1,25 @@
 package telegram
 
 // SetInsets records the system bar insets in CSS pixels. The activity calls
-// it from the UI thread; the next tick pads the page.
+// it from the UI thread; the next tick pads the page. Values clamp to
+// 0..2048 so a rogue host cannot corrupt the pinned layout.
 func (a *App) SetInsets(top, bottom int) {
-	a.insetTop.Store(int64(top))
-	a.insetBot.Store(int64(bottom))
+	a.insetTop.Store(int64(clampInset(top)))
+	a.insetBot.Store(int64(clampInset(bottom)))
+}
+
+// maxInset caps one system bar inset in CSS px, so a rogue host cannot
+// corrupt the pinned layout.
+const maxInset = 2048
+
+func clampInset(v int) int {
+	if v < 0 {
+		return 0
+	}
+	if v > maxInset {
+		return maxInset
+	}
+	return v
 }
 
 // applyInsets pads the page for the system bars and keeps the newest
@@ -16,7 +31,7 @@ func (a *App) applyInsets() {
 	}
 
 	if bottom > a.view.InsetBottom && a.view.Active != "" {
-		a.page.ScrollTo(0, 1<<20)
+		a.page.ScrollTo(0, scrollBottom)
 	} else if bottom < a.view.InsetBottom {
 		// The keyboard closed. The pinned bars were laid out against the
 		// old, taller document, so the window's clamp cannot pull the

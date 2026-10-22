@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+// loopCount is the summary, process, and detail loops Start launches.
+const loopCount = 3
+
 // Start launches the summary, process, and detail loops and returns.
 func (m *Manager) Start(ctx context.Context) error {
 	m.mu.Lock()
@@ -29,7 +32,7 @@ func (m *Manager) Start(ctx context.Context) error {
 	}
 	m.mu.Unlock()
 
-	m.wg.Add(3)
+	m.wg.Add(loopCount)
 	go m.loop(run, m.opts.SummaryInterval, m.collectSummary)
 	go m.loop(run, m.opts.ProcessInterval, m.collectProcesses)
 	go m.loop(run, m.opts.DetailInterval, m.collectDetail)

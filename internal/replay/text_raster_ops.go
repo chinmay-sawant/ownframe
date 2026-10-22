@@ -63,7 +63,7 @@ func (c *textRasterCache) evict(key textRasterKey) {
 
 	c.pixels -= entry.pixels()
 	if entry.img != nil {
-		entry.img.Dispose()
+		entry.img.Deallocate()
 	}
 	delete(c.entries, key)
 }
@@ -76,7 +76,7 @@ func (c *textRasterCache) flush() {
 
 	for _, entry := range c.entries {
 		if entry.img != nil {
-			entry.img.Dispose()
+			entry.img.Deallocate()
 		}
 	}
 

@@ -1,15 +1,15 @@
 package masking
 
 func combineMask(source, destination uint8, mode string) uint8 {
-	s, d := int(source), int(destination)
+	s, d := float64(source)/channelMax, float64(destination)/channelMax
 	switch mode {
 	case "subtract":
-		return uint8((s*(255-d) + 127) / 255)
+		return channel(s * (1 - d))
 	case "intersect":
-		return uint8((s*d + 127) / 255)
+		return channel(s * d)
 	case "exclude":
-		return uint8((s*(255-d) + d*(255-s) + 127) / 255)
+		return channel(s*(1-d) + d*(1-s))
 	default:
-		return uint8((s*255 + d*(255-s) + 127) / 255)
+		return channel(s + d*(1-s))
 	}
 }

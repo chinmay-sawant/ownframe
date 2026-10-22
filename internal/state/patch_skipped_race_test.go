@@ -20,7 +20,7 @@ func TestPatchSkipsMissingValue(t *testing.T) {
 	if len(order) != 2 || order[0] != "a" || order[1] != "b" {
 		t.Fatalf("order=%v want [a b]", order)
 	}
-	if got := s.Data().(map[string]any)["a"]; got != 1 {
+	if got := dataMap(t, s)["a"]; got != 1 {
 		t.Fatalf("a=%v", got)
 	}
 	if s.Origin() != OriginBackground {

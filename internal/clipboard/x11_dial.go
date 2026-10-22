@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 func dialX() (*xClient, error) {
@@ -15,7 +17,7 @@ func dialX() (*xClient, error) {
 		return nil, ErrX11
 	}
 
-	conn, err := net.DialTimeout("unix", "/tmp/.X11-unix/X"+num, xWait)
+	conn, err := net.DialTimeout("unix", "/tmp/.X11-unix/X"+num, xWait) //nolint:gosec // reason: fixed /tmp/.X11-unix/ prefix plus display number parsed from DISPLAY.
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +25,7 @@ func dialX() (*xClient, error) {
 	done := false
 	defer func() {
 		if !done {
-			conn.Close()
+			_ = conn.Close()
 		}
 	}()
 
@@ -43,8 +45,8 @@ func dialX() (*xClient, error) {
 		return nil, ErrX11
 	}
 
-	if max < 24 {
-		max = 24
+	if max < xHdr24 {
+		max = xHdr24
 	}
 
 	xc := &xClient{
@@ -57,7 +59,7 @@ func dialX() (*xClient, error) {
 		max:  max,
 	}
 
-	go xc.loop()
+	safego.Go("x11 loop", xc.loop)
 	done = true
 
 	if err = xc.bootstrap(); err != nil {
@@ -92,7 +94,7 @@ func readSetup(r io.Reader) ([]byte, error) {
 		return nil, ErrX11
 	}
 
-	buf := make([]byte, 8+n*4)
+	buf := make([]byte, xHdr8+n*xWord)
 	copy(buf, hdr[:])
 
 	if _, err := io.ReadFull(r, buf[8:]); err != nil {

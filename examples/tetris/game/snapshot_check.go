@@ -22,7 +22,7 @@ func (s Snapshot) Validate() error {
 
 	board, err := ParseBoard(s.Board)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalidSnapshot, err)
+		return fmt.Errorf("%w: %w", ErrInvalidSnapshot, err)
 	}
 
 	if s.X < -4 || s.X > Cols || s.Y < -4 || s.Y > Rows {

@@ -16,7 +16,7 @@ func (a *App) later(fn func()) bool {
 	}
 	a.jobs.mu.Lock()
 	defer a.jobs.mu.Unlock()
-	if len(a.jobs.pending) >= 64 {
+	if len(a.jobs.pending) >= maxJobs {
 		a.view.Status = "Commands are still sending. Please wait."
 		return false
 	}

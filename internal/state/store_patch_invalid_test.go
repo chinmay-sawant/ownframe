@@ -19,7 +19,7 @@ func TestTryPatchChangeInvalidSkips(t *testing.T) {
 	if s.CanUndo() {
 		t.Fatal("undo recorded on failure")
 	}
-	if got := s.Data().(map[string]any)["count"]; got != 0 {
+	if got := dataMap(t, s)["count"]; got != 0 {
 		t.Fatalf("count=%v want 0", got)
 	}
 	s2 := NewStore(map[string]any{"count": 0})

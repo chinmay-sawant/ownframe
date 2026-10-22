@@ -22,8 +22,8 @@ type FreeStep struct {
 // Default returns the free-month page data.
 func Default() Data {
 	return Data{
-		Joined:   2,
-		Goal:     3,
+		Joined:   defaultJoined,
+		Goal:     defaultGoal,
 		BarWidth: "66%",
 		Hint:     "1 more to go",
 		Reward:   "1 month of Flow Pro",

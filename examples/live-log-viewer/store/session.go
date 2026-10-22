@@ -17,7 +17,7 @@ func (s *Store) Sessions(ctx context.Context) ([]entry.Session, error) {
 			return nil, err
 		}
 
-		defer rows.Close()
+		defer func() { _ = rows.Close() }()
 
 		var out []entry.Session
 

@@ -58,7 +58,7 @@ func TestFormatETA(t *testing.T) {
 }
 
 func TestRedactURL(t *testing.T) {
-	secret := "https://bob:hunter2@example.com/file.bin"
+	secret := "https://bob:hunter2@example.com/file.bin" //nolint:gosec // reason: test-only fake URL for redact check, not a credential.
 	if got := redactURL(secret); got != "https://example.com/file.bin" {
 		t.Errorf("redacted = %q", got)
 	}

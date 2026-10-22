@@ -44,8 +44,8 @@ func New(opts Options) (*App, error) {
 		HTML:      pageHTML,
 		Width:     width,
 		Height:    height,
-		MinWidth:  480,
-		MinHeight: 320,
+		MinWidth:  uiMinW,
+		MinHeight: uiMinH,
 		Perf:      opts.Perf,
 	})
 	if err != nil {

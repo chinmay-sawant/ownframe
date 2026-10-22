@@ -30,7 +30,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer restored.Close()
+	defer func() { _ = restored.Close() }()
 
 	if _, err := restored.Job(ctx, "backed-up"); err != nil {
 		t.Errorf("restored row missing: %v", err)
@@ -42,7 +42,7 @@ func TestBackupRefusesExistingDestination(t *testing.T) {
 	s := newStore(t)
 
 	dest := filepath.Join(t.TempDir(), "backup.sqlite")
-	if err := os.WriteFile(dest, []byte("keep"), 0o644); err != nil {
+	if err := os.WriteFile(dest, []byte("keep"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -50,7 +50,7 @@ func TestBackupRefusesExistingDestination(t *testing.T) {
 		t.Fatal("backup overwrote an existing file")
 	}
 
-	data, _ := os.ReadFile(dest)
+	data, _ := os.ReadFile(dest) //nolint:gosec // reason: test reads back the file it wrote.
 	if string(data) != "keep" {
 		t.Errorf("existing file changed: %q", data)
 	}

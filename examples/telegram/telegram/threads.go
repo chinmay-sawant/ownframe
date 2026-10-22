@@ -20,7 +20,7 @@ func (a *App) open(id string) {
 		a.view.Status = "5 members"
 	}
 
-	a.page.ScrollTo(0, 1<<20)
+	a.page.ScrollTo(0, scrollBottom)
 }
 
 // send appends the draft as an own message and updates the list row.
@@ -42,7 +42,7 @@ func (a *App) send() {
 		a.chats[i].Time = "now"
 	}
 
-	a.page.ScrollTo(0, 1<<20)
+	a.page.ScrollTo(0, scrollBottom)
 }
 
 // openContact opens the contact's chat. A contact with no thread gets a new,

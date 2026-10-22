@@ -17,6 +17,8 @@ func (p *Page) SetFormValue(id, value string) {
 		return
 	}
 
+	// GEN-28: programmatic writes clamp like typed edits.
+	value = clampField(value, fieldCap(c))
 	c.Value = value
 	if c.Tag == "select" {
 		for i := range c.Options {

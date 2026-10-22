@@ -7,7 +7,7 @@ import "github.com/hajimehoshi/ebiten/v2"
 // finger joins the touch pipeline for the content beside the dock.
 func (s *shell) devTouch(frameW, frameH int) error {
 	var all []touchPos
-	for _, id := range ebiten.TouchIDs() {
+	for _, id := range ebiten.AppendTouchIDs(nil) {
 		x, y := ebiten.TouchPosition(id)
 		all = append(all, touchPos{id: id, x: x, y: y})
 	}

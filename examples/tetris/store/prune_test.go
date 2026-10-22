@@ -10,8 +10,7 @@ func TestPruneDummyKeepsTheBest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	n, err := s.PruneDummy(ctx, 5)
@@ -42,8 +41,7 @@ func TestPruneDummyNeverTouchesLiveScores(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	if err := s.SaveGame(ctx, testResult("live", 1), nil); err != nil {

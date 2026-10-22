@@ -6,6 +6,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// strokeHalfDiv halves a stroke to its center-line extent.
+const strokeHalfDiv = 2
+
 // lineBounds bounds one stroked segment. The engine centers the stroke on
 // the line and extends it half a stroke past each endpoint. A diagonal
 // strokes a square-capped segment, so its box unions both endpoints, each
@@ -19,7 +22,7 @@ func lineBounds(op *layout.DisplayOp, ppt float64) image.Rectangle {
 		stroke = ppt
 	}
 
-	half := stroke / 2
+	half := stroke / strokeHalfDiv
 	if w != 0 && h != 0 {
 		start := boxBounds(x-half, y-half, stroke, stroke, 0, ppt)
 		end := boxBounds(x+w-half, y+h-half, stroke, stroke, 0, ppt)

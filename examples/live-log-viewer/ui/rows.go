@@ -22,7 +22,7 @@ func sourceRows(srcs []SourceInfo, activeKey string) []SourceRow {
 
 	for _, s := range srcs {
 		out = append(out, SourceRow{
-			ID: s.Key, Name: truncate(s.Name, 16), Status: string(s.State),
+			ID: s.Key, Name: truncate(s.Name, uiNameLen), Status: s.State,
 			StatusClass: sourceClass(s.State), Count: s.Count, Active: s.Key == activeKey,
 		})
 	}
@@ -52,7 +52,7 @@ func buildRows(entries []Entry, width int, selected int64) []Row {
 		rows[i] = Row{
 			ID:        e.ID,
 			Time:      formatTime(e),
-			Source:    truncate(e.Source, 13),
+			Source:    truncate(e.Source, uiSrcLen),
 			Severity:  sevLabel(e.Severity),
 			SevClass:  sevClass(e.Severity),
 			Text:      truncate(text, budget),

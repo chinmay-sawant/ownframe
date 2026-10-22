@@ -14,8 +14,11 @@ type rowPaintCache struct {
 }
 
 func paintPosition(x, y float64) [2]int64 {
-	return [2]int64{int64(math.Round(x * 1000)), int64(math.Round(y * 1000))}
+	return [2]int64{int64(math.Round(x * coordScale)), int64(math.Round(y * coordScale))}
 }
+
+// coordScale fixes op coordinates to integers for the paint-position keys.
+const coordScale = 1000
 
 func (c *rowPaintCache) bind(p *page.Page) {
 	if c.generation == p.Generation() {

@@ -6,6 +6,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+// quarterTurn is a quarter circle in radians, one rounded-corner arc span.
+const quarterTurn = math.Pi / 2
+
+// threeQuarterTurn is three quarters of a circle, the last corner arc end.
+const threeQuarterTurn = 3 * quarterTurn
+
 // roundedPathAt traces a border centerline with per-corner elliptical arcs
 // from its origin.
 func roundedPathAt(x, y, w, h float32, rx, ry [4]float32) vector.Path {
@@ -13,13 +19,13 @@ func roundedPathAt(x, y, w, h float32, rx, ry [4]float32) vector.Path {
 
 	path.MoveTo(x+rx[0], y)
 	path.LineTo(x+w-rx[1], y)
-	ellipseTo(&path, x+w-rx[1], y+ry[1], rx[1], ry[1], -math.Pi/2, 0)
+	ellipseTo(&path, x+w-rx[1], y+ry[1], rx[1], ry[1], -quarterTurn, 0)
 	path.LineTo(x+w, y+h-ry[2])
-	ellipseTo(&path, x+w-rx[2], y+h-ry[2], rx[2], ry[2], 0, math.Pi/2)
+	ellipseTo(&path, x+w-rx[2], y+h-ry[2], rx[2], ry[2], 0, quarterTurn)
 	path.LineTo(x+rx[3], y+h)
-	ellipseTo(&path, x+rx[3], y+h-ry[3], rx[3], ry[3], math.Pi/2, math.Pi)
+	ellipseTo(&path, x+rx[3], y+h-ry[3], rx[3], ry[3], quarterTurn, math.Pi)
 	path.LineTo(x, y+ry[0])
-	ellipseTo(&path, x+rx[0], y+ry[0], rx[0], ry[0], math.Pi, 3*math.Pi/2)
+	ellipseTo(&path, x+rx[0], y+ry[0], rx[0], ry[0], math.Pi, threeQuarterTurn)
 	path.Close()
 
 	return path

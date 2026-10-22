@@ -32,13 +32,20 @@ func (s *shell) movePointerDrag(x, y float64) error {
 		s.gesture.moved = true
 	}
 	s.gesture.x, s.gesture.y = x, y
-	return s.app.(host.PointerDragger).MoveDrag(s.ctx, x, y)
+	if dragger, ok := s.app.(host.PointerDragger); ok {
+		return dragger.MoveDrag(s.ctx, x, y)
+	}
+	return nil
 }
 
 func (s *shell) endPointerDrag(tap bool) error {
 	g := s.gesture
 	s.gesture = pointerDrag{}
-	if err := s.app.(host.PointerDragger).EndDrag(s.ctx); err != nil {
+	dragger, ok := s.app.(host.PointerDragger)
+	if !ok {
+		return nil
+	}
+	if err := dragger.EndDrag(s.ctx); err != nil {
 		return err
 	}
 	if tap {

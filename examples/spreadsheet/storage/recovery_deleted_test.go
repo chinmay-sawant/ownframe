@@ -21,7 +21,7 @@ func TestDeletedStorageReopensFresh(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	if err := os.RemoveAll(dir); err != nil {
 		t.Fatal(err)
@@ -32,7 +32,7 @@ func TestDeletedStorageReopensFresh(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if v, err := st.SeedVersion(ctx); err != nil || v != 0 {
 		t.Fatalf("SeedVersion = %d, %v, want a fresh database", v, err)

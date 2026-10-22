@@ -66,14 +66,14 @@ func TestSeedDummyFull(t *testing.T) {
 		t.Fatalf("second SeedDummy wrote=%v err=%v", wrote, err)
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	st, err = Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	page, err = st.ListWorkbooks(ctx, 0, 0)
 	if err != nil || len(page.Items) != 2 {

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/fetch/fetcher"
 )
 
@@ -33,7 +34,7 @@ func TestFetchedImageBecomesBackground(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(redImage))
 	t.Cleanup(srv.Close)
 
-	ctx := context.Background()
+	ctx := ownframe.AllowPrivate(context.Background())
 
 	app, err := fetcher.New()
 	if err != nil {
@@ -57,7 +58,10 @@ func TestFetchedImageBecomesBackground(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := color.NRGBAModel.Convert(img.At(5, 5)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(img.At(5, 5)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got.R < 200 || got.G > 60 || got.B > 60 {
 		t.Fatalf("corner pixel %+v, want the fetched red", got)
 	}

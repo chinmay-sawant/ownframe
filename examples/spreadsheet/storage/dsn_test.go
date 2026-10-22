@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,7 +29,7 @@ func TestOpenOddPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if err := st.SetPref(ctx, "theme", "dark"); err != nil {
 		t.Fatal(err)
@@ -79,7 +80,7 @@ func TestClosedStoreRejectsCalls(t *testing.T) {
 		t.Fatal("second close:", err)
 	}
 
-	if _, err := st.CreateWorkbook(context.Background(), "x"); err != ErrClosed {
+	if _, err := st.CreateWorkbook(context.Background(), "x"); !errors.Is(err, ErrClosed) {
 		t.Fatalf("call after close = %v, want ErrClosed", err)
 	}
 }

@@ -10,7 +10,7 @@ import (
 
 func checkGPUOpacity() error {
 	img := ebiten.NewImage(32, 32)
-	defer img.Dispose()
+	defer img.Deallocate()
 	img.Fill(color.White)
 	op := layout.DisplayOp{Kind: layout.DisplayOpFillRect, W: 24, H: 24, R: .2, G: .4, B: .6, Alpha: .5}
 	drawOp(img, &op, 0, 0)

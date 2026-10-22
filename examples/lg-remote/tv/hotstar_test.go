@@ -13,7 +13,11 @@ func TestHotstarDiscoversAndCachesInstalledID(t *testing.T) {
 			lists.Add(1)
 			return map[string]any{"apps": []any{map[string]any{"id": "regional-hotstar-id", "title": "JioHotstar"}}}
 		case "ssap://com.webos.applicationManager/launch":
-			p := req["payload"].(map[string]any)
+			p, ok := req["payload"].(map[string]any)
+			if !ok {
+				t.Error("payload is not a map")
+				return map[string]any{}
+			}
 			if p["id"] != "regional-hotstar-id" {
 				t.Error("guessed app ID")
 			}

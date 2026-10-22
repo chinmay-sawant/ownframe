@@ -66,7 +66,7 @@ func parseChannel(s string) (float64, bool) {
 func parseHex(h string) ([3]float64, bool) {
 	var out [3]float64
 
-	if len(h) == 3 {
+	if len(h) == hexShortLen {
 		h = h[:1] + h[:1] + h[1:2] + h[1:2] + h[2:3] + h[2:3]
 	}
 
@@ -79,8 +79,8 @@ func parseHex(h string) ([3]float64, bool) {
 		if err != nil {
 			return out, false
 		}
-		if i < 3 {
-			out[i] = float64(n) / 255
+		if i < hexShortLen {
+			out[i] = float64(n) / channelMax
 		}
 	}
 

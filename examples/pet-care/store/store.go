@@ -1,7 +1,9 @@
 package store
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
 
@@ -9,6 +11,9 @@ import (
 )
 
 type Store struct{ db *sql.DB }
+
+// storeDirPerm keeps the database directory owner-only.
+const storeDirPerm = 0o700
 
 func DefaultPath() (string, error) {
 	dir, err := os.UserConfigDir()
@@ -20,7 +25,7 @@ func DefaultPath() (string, error) {
 
 func Open(path string) (*Store, error) {
 	if path != ":memory:" {
-		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), storeDirPerm); err != nil {
 			return nil, err
 		}
 	}
@@ -29,9 +34,8 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	if _, err = db.Exec(schema); err != nil {
-		db.Close()
-		return nil, err
+	if _, err = db.ExecContext(context.Background(), schema); err != nil {
+		return nil, errors.Join(err, db.Close())
 	}
 	return &Store{db: db}, nil
 }

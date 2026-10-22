@@ -5,56 +5,37 @@ import "math"
 func poseGaze(m poseMotion, age float64) (float64, float64) {
 	switch m {
 	case motionOpen:
-		return 6 * math.Sin(age*1.05), 1.8 * math.Sin(age*.62)
+		return gazeOpenX * math.Sin(age*gazeOpenFreqX), gazeOpenY * math.Sin(age*gazeOpenFreqY)
 	case motionSquint:
-		return 7 * math.Sin(age*.9), 1.5 + 1.5*math.Sin(age*.65)
+		return gazeSquintX * math.Sin(age*gazeSquintFreqX), gazeSquintBaseY + gazeSquintAmpY*math.Sin(age*gazeSquintFreqY)
 	case motionAngry:
-		return 5 * math.Sin(age*1.8), 1 + 1.5*math.Abs(math.Sin(age*1.4))
+		return gazeAngryX * math.Sin(age*gazeAngryFreqX), gazeAngryBaseY + gazeAngryAmpY*math.Abs(math.Sin(age*gazeAngryFreqY))
 	case motionSleepy:
-		return 3 * math.Sin(age*.45), 2 + 1.5*math.Sin(age*.35)
+		return gazeSleepyX * math.Sin(age*gazeSleepyFreqX), gazeSleepyBaseY + gazeSleepyAmpY*math.Sin(age*gazeSleepyFreqY)
 	case motionSurprised:
-		return 10 * math.Sin(age*1.7), 2 * math.Sin(age*2.1)
+		return gazeSurprisedX * math.Sin(age*gazeSurprisedFreqX), gazeSurprisedAmpY * math.Sin(age*gazeSurprisedFreqY)
 	case motionCurious:
-		return 7 * math.Sin(age*.9), -2 + 2*math.Sin(age*.6)
+		return gazeCuriousX * math.Sin(age*gazeCuriousFreqX), gazeCuriousBaseY + gazeCuriousAmpY*math.Sin(age*gazeCuriousFreqY)
 	case motionWink:
-		return 2.5 * math.Sin(age*1.3), 1.5 * math.Sin(age*.8)
+		return gazeWinkX * math.Sin(age*gazeWinkFreqX), gazeWinkBaseY * math.Sin(age*gazeWinkFreqY)
 	case motionBored:
 		return boredGaze(age)
 	case motionHappy:
-		return 3 * math.Sin(age*.8), math.Sin(age * .9)
+		return gazeHappyX * math.Sin(age*gazeHappyFreqX), math.Sin(age * gazeHappyFreqY)
 	case motionWorried:
-		return 2.5 * math.Sin(age*.6), -2 - 1.5*math.Max(0, math.Sin(age*.4))
+		return gazeWorriedX * math.Sin(age*gazeWorriedFreqX), gazeWorriedBaseY - gazeWorriedAmpY*math.Max(0, math.Sin(age*gazeWorriedFreqY))
 	case motionExcited:
-		return 5 * math.Sin(age*1.4), 0
+		return gazeExcitedX * math.Sin(age*gazeExcitedFreqX), 0
 	case motionShy:
 		return shyGaze(age)
 	case motionRelieved:
-		return 2 * math.Sin(age*.4), math.Sin(age * .5)
+		return gazeRelievedX * math.Sin(age*gazeRelievedFreqX), math.Sin(age * gazeRelievedFreqY)
 	default:
 		return 0, 0
 	}
 }
 
-func shyGaze(age float64) (float64, float64) {
-	phase := math.Mod(age, 4.8)
-	switch {
-	case phase < 1.2:
-		return -7, -7
-	case phase < 2:
-		k := smooth((phase - 1.2) / .8)
-		return -7 + 12*k, -7
-	case phase < 2.8:
-		k := smooth((phase - 2) / .8)
-		return 5 - 12*k, -7 + 13*k
-	case phase < 3.8:
-		return -7, 6
-	default:
-		k := smooth((phase - 3.8) / 1)
-		return -7, 6 - 13*k
-	}
-}
-
 func smooth(v float64) float64 {
 	v = clamp(v, 0, 1)
-	return v * v * (3 - 2*v)
+	return v * v * (smoothHigh - smoothLow*v)
 }

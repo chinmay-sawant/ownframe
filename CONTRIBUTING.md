@@ -38,3 +38,22 @@ Open a PR with the template in [skills/PR/PR_TEMPLATE.md](skills/PR/PR_TEMPLATE.
 ## Bugs
 
 Report a bug with the issue template in [skills/PR/ISSUE_TEMPLATE.md](skills/PR/ISSUE_TEMPLATE.md) and the `bug` label. Include what you did, what you expected, what happened, your Go version, and the platform (desktop, `-web`, wasm, or mobile). A small HTML template that shows the problem is the most useful attachment.
+
+## AI-assisted code guardrails
+
+Parts of this repo are AI-assisted, so two failure modes need manual
+review on every PR: hallucinated or typosquatted module names, and
+plausible-but-wrong security code.
+
+- Every new module (Go or npm) needs manual provenance review before it
+  merges: real owner, `pkg.go.dev` or registry page, stars and history,
+  and no lookalike name. The dependency-review workflow and
+  `go-licenses check` catch CVEs and licenses; they do not catch a
+  convincing fake, so this step stays human.
+- Every security-relevant change (auth, fetch, paths, crypto, IPC,
+  clipboard, permissions, build flags) carries a regression test that
+  fails without the fix. Name it after the finding when one exists.
+- Do not paste secrets, signing keys, or customer data into prompts or
+  fixtures. The gitleaks pre-commit hook and CI job scan for them; the
+  `secret`/`secret` demo credentials in `examples/login` are the only
+  sanctioned placeholder.

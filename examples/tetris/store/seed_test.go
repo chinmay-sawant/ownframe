@@ -21,8 +21,7 @@ func TestSeedIsIdempotentOnReopen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s2.Close()
-
+	defer func() { _ = s2.Close() }()
 	scores, err := s2.DummyScores(context.Background(), 50)
 	if err != nil {
 		t.Fatal(err)
@@ -51,8 +50,7 @@ func TestReopenDoesNotOverwriteUserChanges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s2.Close()
-
+	defer func() { _ = s2.Close() }()
 	scores, err := s2.DummyScores(context.Background(), 50)
 	if err != nil {
 		t.Fatal(err)
@@ -82,8 +80,7 @@ func TestDummyScoresAreOrderedByScore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	scores, err := s.DummyScores(context.Background(), 50)
 	if err != nil {
 		t.Fatal(err)

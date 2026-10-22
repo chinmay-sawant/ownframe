@@ -32,7 +32,7 @@ func paintOrdered(dst *image.NRGBA, d *layout.Display, faces faceCache) error {
 		depth := 0
 		for g := group; g != nil; g = g.Parent {
 			depth++
-			if depth > 7 {
+			if depth > maxBlendDepth {
 				return fmt.Errorf("bitmap: blend nesting exceeds 7")
 			}
 			if !seen[g] {

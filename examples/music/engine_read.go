@@ -2,34 +2,57 @@ package music
 
 import "time"
 
-// Position is the current voice position, or zero.
+// Position is the current voice position, or zero. The voice pointer is
+// copied under lock; Position itself is thread-safe.
 func (e *Engine) Position() time.Duration {
-	if e.voice == nil {
+	e.mu.Lock()
+	voice := e.voice
+	e.mu.Unlock()
+
+	if voice == nil {
 		return 0
 	}
 
-	return e.voice.Position()
+	return voice.Position()
 }
 
 // Duration is the current voice length, or zero.
 func (e *Engine) Duration() time.Duration {
-	if e.voice == nil {
+	e.mu.Lock()
+	voice := e.voice
+	e.mu.Unlock()
+
+	if voice == nil {
 		return 0
 	}
 
-	return e.voice.Duration()
+	return voice.Duration()
 }
 
 // Credit is the free clip behind the current voice.
-func (e *Engine) Credit() Clip { return e.clip }
+func (e *Engine) Credit() Clip {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return e.clip
+}
 
 // Err is the last resolve or decode failure.
-func (e *Engine) Err() error { return e.err }
+func (e *Engine) Err() error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return e.err
+}
 
 // Close releases the current voice.
 func (e *Engine) Close() {
-	if e.voice != nil {
-		_ = e.voice.Close()
-		e.voice = nil
+	e.mu.Lock()
+	voice := e.voice
+	e.voice = nil
+	e.mu.Unlock()
+
+	if voice != nil {
+		_ = voice.Close()
 	}
 }

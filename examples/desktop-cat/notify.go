@@ -5,33 +5,34 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
-	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
+// startNotifications serves the loopback agent API. The default "auto"
+// listens on a 0600 Unix socket; a tcp address is explicit opt-in and
+// non-loopback binds log a warning: add auth before exposing them.
 func startNotifications(ctx context.Context, addr string, inbox *cat.Inbox) (func(), error) {
 	if addr == "off" {
 		return func() {}, nil
 	}
-	listener, err := net.Listen("tcp", addr)
+	listener, err := listenNotify(ctx, addr)
 	if err != nil {
-		return nil, fmt.Errorf("notification server: %w", err)
+		return nil, err
 	}
-	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second}
-	go func() {
+	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: notifyReadHeaderTimeout, ReadTimeout: notifyReadTimeout, WriteTimeout: notifyWriteTimeout, IdleTimeout: notifyIdleTimeout, MaxHeaderBytes: maxNotifyHeaderBytes}
+	safego.Go("notify serve", func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Print(err)
 		}
-	}()
-	log.Printf("desktop cat notifications: http://%s", listener.Addr())
+	})
+	log.Printf("desktop cat notifications: %s://%s", listener.Addr().Network(), listener.Addr())
 	stop := func() { _ = server.Close() }
-	go func() { <-ctx.Done(); stop() }()
+	safego.Go("notify stop", func() { <-ctx.Done(); stop() })
 	return stop, nil
 }
 

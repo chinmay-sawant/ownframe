@@ -23,8 +23,8 @@ func setLid(d *ownframe.Display, op *ownframe.DisplayOp, x, y, w, h float64) {
 	if p == 0 {
 		p = 1
 	}
-	if h < 3 {
-		op.X, op.Y, op.W, op.H, op.Alpha = -1000, -1000, 0, 0, 0
+	if h < minLidH {
+		op.X, op.Y, op.W, op.H, op.Alpha = hiddenCoord, hiddenCoord, 0, 0, 0
 		return
 	}
 	op.X, op.Y, op.W, op.H = x*p, y*p, w*p, h*p

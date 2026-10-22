@@ -54,5 +54,5 @@ func (a *App) activeSourceName() string {
 
 // ms converts a duration to fractional milliseconds.
 func ms(d time.Duration) float64 {
-	return float64(d.Microseconds()) / 1000
+	return float64(d.Microseconds()) / uiMsDiv
 }

@@ -7,7 +7,9 @@ import (
 )
 
 func writeLayout(path string, v any) error {
-	f, err := os.Create(path)
+	// The caller builds path from the output dir, the allow-listed mode,
+	// and a fixed suffix.
+	f, err := os.Create(path) //nolint:gosec // reason: path is out dir plus allow-listed mode plus a fixed suffix, assembled by writeDump.
 	if err != nil {
 		return err
 	}

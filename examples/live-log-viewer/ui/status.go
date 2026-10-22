@@ -24,7 +24,7 @@ func (a *App) statusText(now time.Time) string {
 	}
 
 	if a.filters.Text != "" {
-		parts = append(parts, "text \u201c"+truncate(a.filters.Text, 20)+"\u201d")
+		parts = append(parts, "text \u201c"+truncate(a.filters.Text, uiTextLen)+"\u201d")
 	}
 
 	if a.minSev != "" {

@@ -2,30 +2,32 @@ package web
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"net/url"
-	"strings"
 )
 
-// securityHeaders sets nosniff and a simple anti-framing header on every
-// response from the web preview.
+// securityHeaders sets nosniff, DENY framing, no-referrer, and a
+// restrictive permissions policy on web responses. A full CSP still
+// needs nonces or hashes: the shell page uses inline onclick and script
+// handlers, so keep that markup static until a nonced CSP can ship.
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		next.ServeHTTP(w, r)
 	})
 }
 
-// panicRecovery converts a panic in any handler into a 500 response instead
-// of crashing the Serve process.
+// panicRecovery converts a panic into a 500 without ending Serve.
 func panicRecovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				log.Printf("web handler panic: %v", rec)
+				log.Printf("web handler panic: %s", sanitizeLine(fmt.Sprint(rec)))
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 			}
 		}()
@@ -55,20 +57,4 @@ func validateBindAddr(addr string) error {
 	}
 
 	return nil
-}
-
-// sameOrigin reports whether request r's Origin header, when present, refers to
-// the same host as r. A missing Origin header is permitted.
-func sameOrigin(r *http.Request) bool {
-	origin := r.Header.Get("Origin")
-	if origin == "" {
-		return true
-	}
-
-	u, err := url.Parse(origin)
-	if err != nil || u.Host == "" {
-		return false
-	}
-
-	return strings.EqualFold(u.Host, r.Host)
 }

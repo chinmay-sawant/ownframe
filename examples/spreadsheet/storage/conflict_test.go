@@ -17,14 +17,14 @@ func TestRevisionConflict(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st1.Close()
+	defer func() { _ = st1.Close() }()
 
 	st2, err := Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	w1, s1 := newBook(t, st1)
 

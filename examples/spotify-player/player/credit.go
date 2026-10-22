@@ -59,7 +59,7 @@ func (a *App) updateView(pos, dur time.Duration) {
 		fraction = 1
 	}
 
-	a.view.Progress = int(fraction * 100)
+	a.view.Progress = int(fraction * percentScale)
 	elapsed := formatSeconds(int(pos.Seconds()))
 	if elapsed != a.view.Elapsed {
 		a.view.Elapsed = elapsed

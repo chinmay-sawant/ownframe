@@ -42,7 +42,7 @@ func commitTx(ctx context.Context, db *sql.DB, src entry.SourceID, m CommitMeta,
 			lost       = lost + ?,
 			updated_ns = ?
 		 WHERE id = ?`,
-		m.Identity, int64(m.HeadHash), m.HeadLen, maxGen(m), m.Position, m.Size,
+		m.Identity, int64(m.HeadHash), m.HeadLen, maxGen(m), m.Position, m.Size, //nolint:gosec // reason: head hash round-trips through the signed column and back to uint64
 		string(m.State), m.Lost, time.Now().UnixNano(), int64(src))
 	if err != nil {
 		return 0, err

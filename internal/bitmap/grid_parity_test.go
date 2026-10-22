@@ -37,7 +37,10 @@ func TestTranslucentGridPixel(t *testing.T) {
 	}
 	seg := op.Grid.Segs[0]
 	x, y := int((seg.X+seg.W/2)*d.PixelPerPoint), int((seg.Y+seg.H/2)*d.PixelPerPoint)
-	got := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got.A != 255 || got.R < 200 {
 		t.Fatalf("pixel %+v at %d,%d", got, x, y)
 	}

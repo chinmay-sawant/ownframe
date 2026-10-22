@@ -14,7 +14,7 @@ type sourceReader interface {
 type osSource struct{}
 
 func (osSource) Stat(n string) (os.FileInfo, error) { return os.Stat(n) }
-func (osSource) ReadFile(n string) ([]byte, error)  { return os.ReadFile(n) }
+func (osSource) ReadFile(n string) ([]byte, error)  { return os.ReadFile(n) } //nolint:gosec // reason: template files are trusted build input (documented trust boundary).
 
 var srcFiles sourceReader = osSource{}
 
@@ -32,9 +32,12 @@ type memInfo struct {
 	m time.Time
 }
 
+// memFileMode is the fake permission bits the in-memory source reports.
+const memFileMode os.FileMode = 0o600
+
 func (m memInfo) Name() string       { return m.n }
 func (m memInfo) Size() int64        { return m.s }
-func (m memInfo) Mode() os.FileMode  { return 0o600 }
+func (m memInfo) Mode() os.FileMode  { return memFileMode }
 func (m memInfo) ModTime() time.Time { return m.m }
 func (m memInfo) IsDir() bool        { return false }
 func (m memInfo) Sys() any           { return nil }

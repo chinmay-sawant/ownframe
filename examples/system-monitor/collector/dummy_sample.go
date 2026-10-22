@@ -28,8 +28,8 @@ func (d *Dummy) machineSample(stamp domain.Stamp) domain.Sample {
 		Total:     domain.Bytes(float64(d.memTotal)),
 		Used:      domain.Bytes(float64(d.memUsed)),
 		Available: domain.Bytes(float64(d.memTotal - d.memUsed)),
-		Cached:    domain.Bytes(float64(d.memTotal / 4)),
-		SwapTotal: domain.Bytes(8 << 30),
+		Cached:    domain.Bytes(float64(d.memTotal / memQuarterDiv)),
+		SwapTotal: domain.Bytes(swapTotal),
 		SwapUsed:  domain.Bytes(float64(d.swapUsed)),
 	}
 
@@ -62,11 +62,7 @@ func (d *Dummy) machineSample(stamp domain.Stamp) domain.Sample {
 	s.Threads = domain.Count(float64(threads))
 
 	// Two of the three sensors are deliberately unreadable.
-	s.Temps = []domain.Temp{
-		{Name: "coretemp/package", Celsius: domain.Celsius(38 + d.rng.Float64()*25)},
-		{Name: "gpu/nvidia", Celsius: domain.Value{}},
-		{Name: "acpi/fan1", Celsius: domain.Value{}},
-	}
+	s.Temps = sampleTemps(d.rng)
 
 	return s
 }

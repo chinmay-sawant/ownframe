@@ -8,7 +8,7 @@ import (
 
 // Download streams the deterministic body to req.Partial and finalizes it.
 func (f *Fake) Download(ctx context.Context, req Request, report Reporter) (Outcome, error) {
-	if err := os.MkdirAll(filepath.Dir(req.Dest), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(req.Dest), transferDirPerm); err != nil {
 		return Outcome{}, err
 	}
 

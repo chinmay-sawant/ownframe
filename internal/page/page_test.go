@@ -1,6 +1,7 @@
 package page_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -10,7 +11,7 @@ func TestNewRejectsEmptyHTML(t *testing.T) {
 	t.Parallel()
 
 	_, err := page.New(page.Config{Width: 320, Height: 400})
-	if err != page.ErrEmptyHTML {
+	if !errors.Is(err, page.ErrEmptyHTML) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -62,7 +63,7 @@ func TestNewRejectsMinAboveMax(t *testing.T) {
 		MinHeight: 400,
 		MaxHeight: 900,
 	})
-	if err != page.ErrBadSize {
+	if !errors.Is(err, page.ErrBadSize) {
 		t.Fatalf("err = %v, want ErrBadSize", err)
 	}
 }

@@ -1,6 +1,9 @@
 package formula
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestLimits(t *testing.T) {
 	env := testEnv{
@@ -51,12 +54,11 @@ func TestLimits(t *testing.T) {
 
 	for _, c := range cases {
 		e, err := Parse(c.src, c.lim)
+		var pe *ParseError
+		if errors.As(err, &pe) && pe.Code == c.code {
+			continue
+		}
 		if err != nil {
-			pe, ok := err.(*ParseError)
-			if ok && pe.Code == c.code {
-				continue
-			}
-
 			t.Errorf("%s: Parse = %v want %s", c.name, err, c.code)
 
 			continue

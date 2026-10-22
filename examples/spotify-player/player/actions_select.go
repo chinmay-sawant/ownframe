@@ -1,6 +1,7 @@
 package player
 
 import (
+	"context"
 	"strings"
 )
 
@@ -40,7 +41,7 @@ func (a *App) selectShelf(i int) {
 
 // selectList highlights the sidebar playlist and opens the library nav, or
 // the Liked Songs screen for the pinned first entry.
-func (a *App) selectList(i int) {
+func (a *App) selectList(ctx context.Context, i int) {
 	if i < 0 || i >= len(a.view.Playlists) {
 		return
 	}
@@ -50,9 +51,9 @@ func (a *App) selectList(i int) {
 	}
 
 	if strings.EqualFold(a.view.Playlists[i].Name, "Liked Songs") {
-		a.navigate("liked")
+		a.navigate(ctx, "liked")
 		return
 	}
 
-	a.navigate("library")
+	a.navigate(ctx, "library")
 }

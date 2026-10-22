@@ -80,7 +80,9 @@ func (a *App) applySettings(o out) bool {
 	a.minSev = o.settings.Severity
 	a.activeSource = o.settings.Source
 	a.follow.SetFollow(o.settings.Follow)
-	a.applyTheme()
+	if err := a.applyTheme(); err != nil {
+		a.setNote("theme sheet rejected: "+err.Error(), time.Now())
+	}
 	a.loadPage(intentFilter)
 
 	return true
@@ -89,5 +91,5 @@ func (a *App) applySettings(o out) bool {
 // setNote shows a transient status message.
 func (a *App) setNote(text string, now time.Time) {
 	a.note = text
-	a.noteUntil = now.Add(5 * time.Second)
+	a.noteUntil = now.Add(uiNoteDur)
 }

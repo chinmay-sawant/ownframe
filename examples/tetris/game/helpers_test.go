@@ -17,16 +17,6 @@ func running(p Piece, r Rotation, x, y int) *Game {
 	return g
 }
 
-// boardFrom builds a full board from twenty text rows.
-func boardFrom(rows ...string) Board {
-	b, err := ParseBoard(rows)
-	if err != nil {
-		panic(err)
-	}
-
-	return b
-}
-
 // solidBoard fills rows from start to the bottom.
 func solidBoard(start int, p Piece) Board {
 	var b Board

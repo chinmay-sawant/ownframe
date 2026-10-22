@@ -32,7 +32,7 @@ func (p *Page) paintCaret(d *layout.Display) {
 		sample, x = emptyCaret(d, box)
 	}
 	if sample.Size <= 0 {
-		sample.Size = 12
+		sample.Size = caretFontSize
 	}
 	sample.Kind = layout.DisplayOpNoop
 	if p.formState().blinkOn {
@@ -43,20 +43,6 @@ func (p *Page) paintCaret(d *layout.Display) {
 	sample.Text, sample.Font = "", nil
 	d.Ops = append(d.Ops, sample)
 	d.Order = append(d.Order, len(d.Ops)-1)
-}
-
-func caretBox(d *layout.Display, id string) (layout.Box, bool) {
-	for _, box := range d.Boxes {
-		if box.ID == id {
-			return box, true
-		}
-	}
-	return layout.Box{}, false
-}
-
-func emptyCaret(d *layout.Display, box layout.Box) (layout.DisplayOp, float64) {
-	pt := d.PointsPerPixel
-	return layout.DisplayOp{Y: (box.Y + box.H*.65) * pt, Size: 12, Alpha: 1}, (box.X + 7) * pt
 }
 
 func (p *Page) caretText(c Control) (string, int, bool) {

@@ -32,11 +32,15 @@ func (s *shell) dropPass(fsys fs.FS) error {
 }
 
 // dropFiles describes every root entry of fsys as one host.Drop. A directory
-// stays one entry; its tree is not walked.
+// stays one entry; its tree is not walked. Only the first maxDropFiles
+// entries are kept.
 func dropFiles(fsys fs.FS) ([]host.Drop, error) {
 	entries, err := fs.ReadDir(fsys, ".")
 	if err != nil {
 		return nil, err
+	}
+	if len(entries) > maxDropFiles {
+		entries = entries[:maxDropFiles]
 	}
 
 	files := make([]host.Drop, 0, len(entries))
@@ -50,30 +54,4 @@ func dropFiles(fsys fs.FS) ([]host.Drop, error) {
 	}
 
 	return files, nil
-}
-
-// dropValue describes one entry. Read reads through fsys, so it works only
-// while the frame that owns fsys is alive.
-func dropValue(fsys fs.FS, entry fs.DirEntry) (host.Drop, error) {
-	info, err := entry.Info()
-	if err != nil {
-		return host.Drop{}, err
-	}
-
-	name := entry.Name()
-
-	d := host.Drop{
-		Name:  name,
-		Size:  info.Size(),
-		IsDir: info.IsDir(),
-		Read: func() ([]byte, error) {
-			return fs.ReadFile(fsys, name)
-		},
-	}
-
-	if p, ok := entry.(interface{ AbsPath() string }); ok {
-		d.Path = p.AbsPath()
-	}
-
-	return d, nil
 }

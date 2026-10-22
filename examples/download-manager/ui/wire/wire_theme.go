@@ -27,7 +27,7 @@ func readDark(path string) bool {
 		return false
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // reason: theme file is fixed ui.json in the own data dir.
 	if err != nil {
 		return false
 	}
@@ -46,7 +46,7 @@ func writeDark(path string, dark bool) error {
 		return nil
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), wireDirPerm); err != nil {
 		return err
 	}
 
@@ -55,5 +55,5 @@ func writeDark(path string, dark bool) error {
 		return err
 	}
 
-	return os.WriteFile(path, data, 0o644)
+	return os.WriteFile(path, data, wireFilePerm)
 }

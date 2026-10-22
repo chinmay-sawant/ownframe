@@ -32,7 +32,7 @@ func TestMigrateVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if version, err = st.SchemaVersionOf(t.Context()); err != nil || version != SchemaVersion {
 		t.Fatalf("version = %d err = %v", version, err)
@@ -49,10 +49,10 @@ func TestRejectNewerSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := raw.Exec(`CREATE TABLE future (x INTEGER); PRAGMA user_version = 99`); err != nil {
+	if _, err := raw.ExecContext(t.Context(), `CREATE TABLE future (x INTEGER); PRAGMA user_version = 99`); err != nil {
 		t.Fatal(err)
 	}
-	raw.Close()
+	_ = raw.Close()
 
 	if _, err := Open(dir); !errors.Is(err, ErrSchemaNewer) {
 		t.Fatalf("err = %v, want ErrSchemaNewer", err)
@@ -62,10 +62,10 @@ func TestRejectNewerSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer raw.Close()
+	defer func() { _ = raw.Close() }()
 
 	var version int
-	if err := raw.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+	if err := raw.QueryRowContext(t.Context(), "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 	if version != 99 {
@@ -73,7 +73,7 @@ func TestRejectNewerSchema(t *testing.T) {
 	}
 
 	var n int
-	if err := raw.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name = 'meta'`).Scan(&n); err != nil {
+	if err := raw.QueryRowContext(t.Context(), `SELECT COUNT(*) FROM sqlite_master WHERE name = 'meta'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 0 {

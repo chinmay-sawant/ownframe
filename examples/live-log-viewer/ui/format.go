@@ -1,9 +1,6 @@
 package ui
 
-import (
-	"strings"
-	"time"
-)
+import "strings"
 
 // timeWidth is the character width of the time column; a raw malformed
 // timestamp is cut to it so rows stay aligned.
@@ -58,9 +55,4 @@ func firstLine(s string) string {
 	}
 
 	return s
-}
-
-// elapsedText formats a duration for the footer, rounded to seconds.
-func elapsedText(d time.Duration) string {
-	return d.Round(time.Second).String()
 }

@@ -33,11 +33,11 @@ func Replace(html string) (string, bool) {
 		case c == '<' && strings.HasPrefix(html[i:], "<!--"):
 			end := strings.Index(html[i:], "-->")
 			if end < 0 {
-				end = len(html) - i - 4
+				end = len(html) - i - len("<!--")
 			}
 
-			b.WriteString(html[i : i+end+3])
-			i += end + 3
+			b.WriteString(html[i : i+end+len("-->")])
+			i += end + len("-->")
 		case c == '<' && tagStart(html, i):
 			open := i+1 >= len(html) || html[i+1] != '/'
 			name, end := tagName(html, i)
@@ -54,7 +54,7 @@ func Replace(html string) (string, bool) {
 					i = len(html)
 				}
 			}
-		case c < 0x80:
+		case c < asciiLimit:
 			b.WriteByte(c)
 			i++
 		default:

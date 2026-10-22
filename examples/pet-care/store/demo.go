@@ -6,12 +6,22 @@ import (
 	"errors"
 )
 
-func (s *Store) SeedDemo(ctx context.Context) error {
+func (s *Store) SeedDemo(ctx context.Context) (err error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		rbErr := tx.Rollback()
+		if rbErr == nil || errors.Is(rbErr, sql.ErrTxDone) {
+			return
+		}
+		if err == nil {
+			err = rbErr
+		} else {
+			err = errors.Join(err, rbErr)
+		}
+	}()
 	var seeded int
 	err = tx.QueryRowContext(ctx, `SELECT 1 FROM app_meta WHERE key='demo-seed-v1'`).Scan(&seeded)
 	if err == nil {

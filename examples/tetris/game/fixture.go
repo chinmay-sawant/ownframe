@@ -20,23 +20,23 @@ func Fixtures() []Fixture {
 		{Name: "empty", Note: "valid empty board, default play"},
 		{
 			Name: "near-top-out", Board: nearTopOutBoard(), Piece: PieceT,
-			X: 3, Y: 0, Note: "stack two rows from the top",
+			X: fixtureTopX, Y: 0, Note: "stack two rows from the top",
 		},
 		{
 			Name: "clear-1", Board: wellBoard(1), Piece: PieceI, Rot: RotR,
-			X: -2, Y: 16, Note: "vertical I clears one row",
+			X: -2, Y: fixtureWellY, Note: "vertical I clears one row",
 		},
 		{
-			Name: "clear-2", Board: wellBoard(2), Piece: PieceI, Rot: RotR,
-			X: -2, Y: 16, Note: "vertical I clears two rows",
+			Name: "clear-2", Board: wellBoard(wellDepth2), Piece: PieceI, Rot: RotR,
+			X: -2, Y: fixtureWellY, Note: "vertical I clears two rows",
 		},
 		{
-			Name: "clear-3", Board: wellBoard(3), Piece: PieceI, Rot: RotR,
-			X: -2, Y: 16, Note: "vertical I clears three rows",
+			Name: "clear-3", Board: wellBoard(wellDepth3), Piece: PieceI, Rot: RotR,
+			X: -2, Y: fixtureWellY, Note: "vertical I clears three rows",
 		},
 		{
-			Name: "clear-4", Board: wellBoard(4), Piece: PieceI, Rot: RotR,
-			X: -2, Y: 16, Note: "vertical I clears four rows",
+			Name: "clear-4", Board: wellBoard(wellDepth4), Piece: PieceI, Rot: RotR,
+			X: -2, Y: fixtureWellY, Note: "vertical I clears four rows",
 		},
 	}
 }
@@ -65,7 +65,7 @@ func NewFromFixture(name string, seed uint64) (*Game, error) {
 
 		if f.Piece.Valid() {
 			g.Piece = f.Piece
-			g.Rot = f.Rot % 4
+			g.Rot = f.Rot % rotationCount
 			g.X, g.Y = f.X, f.Y
 			g.fillPreview()
 		} else {

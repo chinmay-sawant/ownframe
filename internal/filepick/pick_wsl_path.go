@@ -17,6 +17,11 @@ func fromWindowsPath(ctx context.Context, picked string) (string, bool) {
 		return linux, true
 	}
 
+	if picked == "" || strings.ContainsRune(picked, '\x00') {
+		return "", false
+	}
+
+	//nolint:gosec // reason: picked is the local file-dialog choice, already rejected when empty or with NUL/control via safeWindowsPath.
 	out, err := exec.CommandContext(ctx, wslpathBin(), "-u", picked).Output()
 	if err != nil {
 		debugf("wslpath -u %q failed: %v", picked, err)
@@ -25,7 +30,7 @@ func fromWindowsPath(ctx context.Context, picked string) (string, bool) {
 	}
 
 	linux := strings.TrimRight(string(out), "\r\n")
-	if linux == "" {
+	if linux == "" || !strings.HasPrefix(linux, "/") || hasDotSegment(linux) {
 		return "", false
 	}
 

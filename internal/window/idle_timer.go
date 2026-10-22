@@ -16,7 +16,7 @@ import (
 // kicks the timer after every step, so a policy change never waits out a
 // stale sleep.
 func (g *paceGame) timer(ctx context.Context) {
-	t := time.NewTimer(g.policy.keepAlive / 2)
+	t := time.NewTimer(g.policy.keepAlive / keepAliveHalfDiv)
 	defer t.Stop()
 
 	for {
@@ -33,6 +33,7 @@ func (g *paceGame) timer(ctx context.Context) {
 			g.mu.Unlock()
 
 			if due {
+				//nolint:staticcheck // reason: timer wake needs ScheduleFrame to post the empty event; SetScreenClearedEveryFrame(false) cannot wake event-wait.
 				ebiten.ScheduleFrame()
 			}
 

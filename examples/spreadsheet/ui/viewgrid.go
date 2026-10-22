@@ -8,7 +8,7 @@ func (a *App) buildGrid() []Box {
 		return nil
 	}
 
-	out := make([]Box, 0, (w.C1-w.C0+2)+(w.R1-w.R0+2))
+	out := make([]Box, 0, (w.C1-w.C0+uiGridPad)+(w.R1-w.R0+uiGridPad))
 	h := (w.R1 - w.R0 + 1) * RowH
 	for c := w.C0; c <= w.C1+1; c++ {
 		out = append(out, Box{Class: "gline", X: cellX(c), Y: cellY(w.R0), W: 1, H: h})

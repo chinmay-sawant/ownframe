@@ -9,6 +9,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/domain"
 )
 
+// percentScale turns a 0..1 ratio into a percentage.
+const percentScale = 100
+
 // readRuntimeLocked samples this process's metrics. Callers hold m.mu.
 func (m *Manager) readRuntimeLocked(stamp domain.Stamp) domain.Runtime {
 	r := domain.Runtime{Stamp: stamp}
@@ -21,7 +24,7 @@ func (m *Manager) readRuntimeLocked(stamp domain.Stamp) domain.Runtime {
 	r.SysBytes = ms.Sys
 	r.AllocBytes = ms.TotalAlloc
 	r.GCCount = ms.NumGC
-	r.GCPause = time.Duration(ms.PauseTotalNs)
+	r.GCPause = time.Duration(ms.PauseTotalNs) //nolint:gosec // reason: a cumulative GC pause total fits int64 for any realistic process lifetime.
 	if !m.start.IsZero() {
 		r.Uptime = time.Since(m.start)
 	}
@@ -30,7 +33,7 @@ func (m *Manager) readRuntimeLocked(stamp domain.Stamp) domain.Runtime {
 		if m.rt.ok {
 			prev := domain.Stamp{At: stamp.At, Mono: m.rt.mono}
 			if elapsed, ok := domain.Elapsed(prev, stamp); ok && cpu >= m.rt.cpu {
-				r.CPUPercent = domain.Percent((cpu - m.rt.cpu) / elapsed.Seconds() * 100)
+				r.CPUPercent = domain.Percent((cpu - m.rt.cpu) / elapsed.Seconds() * percentScale)
 			}
 		}
 

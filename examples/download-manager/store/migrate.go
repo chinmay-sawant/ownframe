@@ -43,7 +43,7 @@ func (s *Store) startup(ctx context.Context) error {
 	}
 
 	if version > len(migrations) {
-		return fmt.Errorf("%w: %v", ErrNewerSchema, &NewerSchemaError{
+		return fmt.Errorf("%w: %w", ErrNewerSchema, &NewerSchemaError{
 			Found: version, Supported: len(migrations),
 		})
 	}

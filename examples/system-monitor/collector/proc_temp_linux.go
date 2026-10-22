@@ -11,6 +11,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/domain"
 )
 
+// milliScale converts millidegree sensor readings to degrees.
+const milliScale = 1000
+
 // readTemps reads hwmon temperature inputs in millidegrees. A sensor that
 // disappears between the glob and the read is skipped, and an unreadable
 // hwmon leaves every temperature unavailable.
@@ -39,7 +42,7 @@ func readTemps(ctx context.Context) []domain.Temp {
 
 		out = append(out, domain.Temp{
 			Name:    tempName(file),
-			Celsius: domain.Celsius(float64(milli) / 1000),
+			Celsius: domain.Celsius(float64(milli) / milliScale),
 		})
 	}
 

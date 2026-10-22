@@ -15,7 +15,7 @@ type padMotion struct {
 func (a *App) queueMotion(host string, dx, dy float64) {
 	m := &a.motion
 	m.mu.Lock()
-	scale := float64(a.view.Sensitivity) / 100
+	scale := float64(a.view.Sensitivity) / sensitivityScale
 	m.dx += dx * scale
 	m.dy += dy * scale
 	queue := !m.pending

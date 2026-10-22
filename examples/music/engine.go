@@ -12,9 +12,9 @@ type Result struct {
 	Err  error
 }
 
-// Engine resolves one track at a time off the frame thread and drives one
-// decoded Voice on it. An example calls Want from a click and Update from
-// the page tick, then reads Position and Credit for the moving UI.
+// Engine resolves one track off the frame thread and drives one Voice.
+// Want, Update, and readers may race; mu guards state. Voice.Position is
+// thread-safe; the pointer swap is not.
 type Engine struct {
 	// Open turns encoded bytes into a Voice. Tests replace it with a fake.
 	Open func(data []byte) (Voice, error)
@@ -27,6 +27,7 @@ type Engine struct {
 	latestMu sync.Mutex
 	latest   Result
 
+	mu       sync.Mutex
 	gen      uint64
 	applied  uint64
 	loading  bool
@@ -50,32 +51,49 @@ func NewEngine(res Resolver) *Engine {
 // defaultTimeout is the resolve cap when Timeout is zero.
 const defaultTimeout = 20 * time.Second
 
-// Update applies a resolved track and starts it when wanted. Call it from the
-// page tick; it never blocks.
+// Update applies a resolved track. Call it from the page tick; it never
+// blocks. Decode runs unlocked; a newer Want discards this result.
 func (e *Engine) Update() {
 	e.latestMu.Lock()
 	res := e.latest
 	e.latestMu.Unlock()
 
+	e.mu.Lock()
 	if !e.loading || res.Gen <= e.applied {
+		e.mu.Unlock()
+
 		return
 	}
 
 	e.applied = res.Gen
 	e.loading = false
-
 	if res.Err != nil {
 		e.err = res.Err
+		e.mu.Unlock()
 
 		return
 	}
+	e.mu.Unlock()
 
 	voice, err := e.Open(res.Clip.Data)
 	if err != nil {
-		e.err = err
+		e.mu.Lock()
+		if e.gen == res.Gen {
+			e.err = err
+		}
+		e.mu.Unlock()
 
 		return
 	}
+
+	e.mu.Lock()
+	if e.gen != res.Gen {
+		e.mu.Unlock()
+		_ = voice.Close()
+
+		return
+	}
+	e.mu.Unlock()
 
 	e.replace(voice, res.Clip)
 }

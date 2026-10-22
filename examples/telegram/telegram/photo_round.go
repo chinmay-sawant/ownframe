@@ -20,11 +20,11 @@ func roundPhoto(src image.Image) *image.RGBA {
 
 	r := roundRadius
 	if r*2 > w {
-		r = w / 2
+		r = w / halfDivisor
 	}
 
 	if r*2 > h {
-		r = h / 2
+		r = h / halfDivisor
 	}
 
 	for y := 0; y < r; y++ {

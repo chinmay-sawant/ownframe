@@ -14,6 +14,9 @@ var accent = [3]float64{0x2f / 255.0, 0x6f / 255.0, 0xd0 / 255.0}
 // columns, so paint work never follows the history size.
 const graphColsMax = 96
 
+// textMapCap pre-sizes the text handle map for the panels.
+const textMapCap = 24
+
 // handles are the retained operation pointers the tick paints. Redraw and
 // resize replace the display list, so the tick reacquires whenever the
 // page generation changes.
@@ -43,7 +46,7 @@ func (a *App) rebind() {
 		gen:   gen,
 		graph: make(map[string]ownframe.Box, len(panelOrder)),
 		bars:  make(map[string][]*ownframe.DisplayOp, len(panelOrder)),
-		text:  make(map[string]*ownframe.DisplayOp, 24),
+		text:  make(map[string]*ownframe.DisplayOp, textMapCap),
 	}
 	boxes := a.page.Boxes()
 

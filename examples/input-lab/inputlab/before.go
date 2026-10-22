@@ -17,12 +17,12 @@ func (a *App) isLocked() bool {
 // The locked field is never vetoed with an error: an error from here
 // would close the whole window, so the edit runs and onChange reverts it.
 func (a *App) onBeforeEdit(_ context.Context, box ownframe.Box) error {
-	switch {
-	case box.ID == "e-note" || box.ID == "":
+	switch box.ID {
+	case "e-note", "":
 		a.pushNote()
-	case box.ID == "c-left" || box.ID == "c-right":
+	case "c-left", "c-right":
 		a.pushClip()
-	case box.ID == "si-email" || box.ID == "si-password":
+	case "si-email", "si-password":
 		a.pushLogin()
 		a.view.LoginOk = ""
 		a.view.LoginEr = ""

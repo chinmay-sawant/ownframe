@@ -34,11 +34,18 @@ Keep the engine roles clear in the copy. Blinkless parses HTML, applies CSS, and
 
 ```sh
 npm test
+npm run lint
 npm run build
 npm run check:site
 ```
 
-`npm test` checks the GitHub star cache. `check:site` opens the production build in headless Chrome and checks desktop and mobile layouts, both themes, documentation navigation, and image loading. It requires `google-chrome` on PATH, or `CHROME_PATH` pointing to a Chromium executable. Screenshots go to the repository's ignored `temp/frontend-check/` folder.
+`npm test` checks the GitHub star cache. `npm run lint` runs ESLint 10 over the source with the flat config in `eslint.config.js`. `check:site` opens the production build in headless Chrome and checks desktop and mobile layouts, both themes, documentation navigation, and image loading. It requires `google-chrome` on PATH, or `CHROME_PATH` pointing to a Chromium executable. Screenshots go to the repository's ignored `temp/frontend-check/` folder.
+
+The repository's `make lint` runs this same `npm run lint` after the Go linters, so one command covers the Go code and the website. There is no separate make target for the frontend.
+
+`eslint-plugin-react` still declares a peer range that stops at ESLint 9, and its version detection calls an API ESLint 10 removed. The `overrides` entry in `package.json` resolves the peer range to the installed ESLint, and `settings.react.version` in the config skips that detection. Two rules are off on purpose: `react/prop-types`, because the site has no PropTypes layer, and `react-hooks/set-state-in-effect`, because the site does not run the React Compiler and two effects reset state on purpose.
+
+Reverify after any `npm install` or ESLint bump: `npm ls eslint` must resolve to one ESLint 10, `npm run lint` must pass, and no major version may move. The override stays invisible in `package-lock.json` (lockfileVersion 3 records no top-level overrides key), so re-check `package.json` itself. Remove the workaround only when `eslint-plugin-react` declares ESLint 10 support.
 
 The build writes to the root `docs/` folder, including the public demo assets. It preserves `docs/go.mod` so the generated site stays outside the library module archive. `npm run preview` serves the generated site.
 

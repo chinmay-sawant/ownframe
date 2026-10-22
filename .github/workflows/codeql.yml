@@ -1,0 +1,37 @@
+name: codeql
+
+# GEN-18: taint tracking beyond gosec. CodeQL security-extended catches
+# source-to-sink flows (fetch URLs, exec argv, template values) that
+# pattern linters miss. Runs on push, on PRs, and weekly on master.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"
+
+# GEN-9: least privilege; uploading results needs security-events.
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      # Pinned by full SHA (GEN-9); comments name the source tag.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          languages: go
+          # The extended suite adds the taint-tracking queries.
+          queries: security-extended
+      # Builds both modules so the Go extractor sees every package.
+      - uses: github/codeql-action/autobuild@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4
+        with:
+          category: "/language:go"

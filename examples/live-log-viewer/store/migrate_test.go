@@ -34,7 +34,7 @@ func TestMigrateReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	got2, err := st2.Stats(bg())
 	if err != nil {
@@ -47,7 +47,7 @@ func TestMigrateReopen(t *testing.T) {
 
 	var rows int
 
-	if err := st2.db.QueryRow(
+	if err := st2.db.QueryRowContext(t.Context(),
 		`SELECT count(*) FROM meta WHERE key = 'schema_version'`).Scan(&rows); err != nil {
 		t.Fatal(err)
 	}

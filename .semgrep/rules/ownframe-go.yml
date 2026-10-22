@@ -1,0 +1,55 @@
+rules:
+  - id: ownframe-no-template-html
+    languages: [go]
+    severity: ERROR
+    message: >-
+      GEN-35: template helpers must return plain strings. A typed
+      template.HTML/JS/URL value from data defeats html/template
+      escaping; use a reviewed constructor instead.
+    # examples/spreadsheet/ui/view.go:53 has the one remaining helper;
+    # it is owned by GEN-35 (template FuncMap discipline), not by this
+    # taint gate, so it stays excluded until that item lands.
+    paths:
+      exclude:
+        - examples/spreadsheet/ui/view.go
+    pattern-either:
+      - pattern: template.HTML(...)
+      - pattern: template.JS(...)
+      - pattern: template.URL(...)
+      - pattern: template.HTMLAttr(...)
+
+  - id: ownframe-no-insecureskipverify
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Never disable TLS verification. InsecureSkipVerify admits any
+      certificate, including a local impersonator.
+    pattern: "InsecureSkipVerify: true"
+
+  - id: ownframe-no-default-mux
+    languages: [go]
+    severity: ERROR
+    message: >-
+      GEN-38: never use the default mux. Importing net/http/pprof
+      anywhere silently registers on DefaultServeMux, and a shared mux
+      leaks routes across packages. Use http.NewServeMux.
+    pattern-either:
+      - pattern: http.DefaultServeMux
+      - pattern: http.HandleFunc(...)
+      - pattern: http.Handle(...)
+
+  - id: ownframe-no-shell-exec
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Never run a shell. exec a fixed binary with an argv list instead;
+      a shell string is one unquoted variable away from injection.
+    pattern-either:
+      - pattern: exec.Command("sh", ...)
+      - pattern: exec.Command("bash", ...)
+      - pattern: exec.Command("cmd", ...)
+      - pattern: exec.Command("/bin/sh", ...)
+      - pattern: exec.CommandContext(..., "sh", ...)
+      - pattern: exec.CommandContext(..., "bash", ...)
+      - pattern: exec.CommandContext(..., "cmd", ...)
+      - pattern: exec.CommandContext(..., "/bin/sh", ...)

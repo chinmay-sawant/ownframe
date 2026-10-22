@@ -46,8 +46,11 @@ type Box struct {
 	H      int
 }
 
-// act builds a data-action token from a computed string.
-func act(s string) template.URL { return template.URL(s) }
+// act builds a data-action token from a computed string. It is the one
+// reviewed typed-safe constructor for this template (GEN-35): inputs are
+// internal constants like cell: and sheet:, never user markup, so the
+// URL typing cannot smuggle HTML through data-action.
+func act(s string) template.URL { return template.URL(s) } //nolint:gosec // reason: action strings are internal constants like cell: and sheet:, never user HTML
 
 // Editor is the active cell editor: the text before and after the caret.
 type Editor struct {

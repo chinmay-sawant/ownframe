@@ -27,7 +27,7 @@ func (s *Store) Settings(ctx context.Context) ([]Setting, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []Setting
 

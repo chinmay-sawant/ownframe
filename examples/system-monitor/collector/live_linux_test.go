@@ -3,6 +3,7 @@
 package collector
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -34,11 +35,11 @@ func TestProcSourceSmoke(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	self := int32(os.Getpid())
+	self := os.Getpid()
 	var id domain.ProcessIdentity
 
 	for _, row := range rows {
-		if row.ID.PID == self {
+		if int(row.ID.PID) == self {
 			id = row.ID
 		}
 	}
@@ -71,16 +72,16 @@ func TestProcSourceGone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	self := int32(os.Getpid())
+	self := os.Getpid()
 	for _, row := range rows {
-		if row.ID.PID != self {
+		if int(row.ID.PID) != self {
 			continue
 		}
 
 		stale := row.ID
 		stale.Start++
 
-		if _, err := s.Detail(t.Context(), stale); err != domain.ErrGone {
+		if _, err := s.Detail(t.Context(), stale); !errors.Is(err, domain.ErrGone) {
 			t.Fatalf("err = %v, want ErrGone", err)
 		}
 

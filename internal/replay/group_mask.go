@@ -31,7 +31,7 @@ func disposePlan(n *groupNode) {
 	}
 	n.maskMu.Lock()
 	if n.maskTex != nil {
-		n.maskTex.Dispose()
+		n.maskTex.Deallocate()
 		n.maskTex = nil
 	}
 	n.maskMu.Unlock()

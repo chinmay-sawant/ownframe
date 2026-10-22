@@ -36,7 +36,7 @@ func line(dst *image.RGBA, x0, y0, x1, y1 int, c color.Color) {
 		if x0 == x1 && y0 == y1 {
 			return
 		}
-		e := 2 * err
+		e := bresenhamFactor * err
 		if e >= dy {
 			err += dy
 			x0 += sx
@@ -53,8 +53,8 @@ func head(dst *image.RGBA, x0, y0, x1, y1 int, c color.Color) {
 	dx, dy := float64(x1-x0), float64(y1-y0)
 	if n := math.Hypot(dx, dy); n > 0 {
 		ux, uy := dx/n, dy/n
-		ax, ay := float64(x1)-ux*9, float64(y1)-uy*9
-		px, py := -uy*4, ux*4
+		ax, ay := float64(x1)-ux*arrowLen, float64(y1)-uy*arrowLen
+		px, py := -uy*arrowWidth, ux*arrowWidth
 		line(dst, x1, y1, int(ax+px), int(ay+py), c)
 		line(dst, x1, y1, int(ax-px), int(ay-py), c)
 	}
@@ -77,8 +77,8 @@ func rectOutline(dst *image.RGBA, x, y, w, h int, c color.Color) {
 // textStrip fills a 3px strip inside the top edge as the label
 // placeholder; no glyphs are drawn without a font engine.
 func textStrip(dst *image.RGBA, x, y, w int, c color.Color) {
-	for j := y + 2; j < y+5; j++ {
-		for i := x + 2; i < x+w-2; i++ {
+	for j := y + stripInset; j < y+5; j++ {
+		for i := x + stripInset; i < x+w-stripInset; i++ {
 			dot(dst, i, j, c)
 		}
 	}

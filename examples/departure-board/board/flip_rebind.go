@@ -15,7 +15,7 @@ const rowDelay = 8
 // 12, rising with the tile's place across its row and down the board, so a row
 // settles left to right and the last row settles at most
 // rowDelay*(rowCount-1)+13 ticks after the redraw.
-func flapSpin(row, col int) int { return 8 + (row+col/6)%5 }
+func flapSpin(row, col int) int { return rowDelay + (row+col/6)%5 }
 
 // rebind reacquires the tick's ops after a Redraw and starts the cascade on
 // every tile whose glyph changed. The Redraw marked its own dirty region, so

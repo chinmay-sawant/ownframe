@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
 )
@@ -60,19 +59,6 @@ func (c *Client) round(ctx context.Context, id string, v any) (Message, error) {
 	}
 }
 
-func (c *Client) arm(id string, ch chan Message) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.dead != nil {
-		return errors.New("the TV closed the connection")
-	}
-
-	c.wait[id] = ch
-
-	return nil
-}
-
 func (c *Client) drop(id string) {
 	c.mu.Lock()
 	delete(c.wait, id)
@@ -90,10 +76,14 @@ func (c *Client) Request(uri string, payload map[string]any) (map[string]any, er
 		"uri":     "ssap://" + uri,
 		"payload": payload,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), roundTimeout)
 	defer cancel()
 
-	m, err := c.round(ctx, msg["id"].(string), msg)
+	id, ok := msg["id"].(string)
+	if !ok {
+		return nil, errors.New("the request id is not a string")
+	}
+	m, err := c.round(ctx, id, msg)
 	if err != nil {
 		return nil, err
 	}

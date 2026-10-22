@@ -3,19 +3,19 @@ package eyes
 import "math"
 
 func boredGaze(age float64) (float64, float64) {
-	phase := math.Mod(age, 6)
+	phase := math.Mod(age, boredPeriod)
 	switch {
-	case phase < 1.5:
-		return -8, 0
-	case phase < 2.5:
-		k := smooth((phase - 1.5) / 1)
-		return -8 + 16*k, 0
-	case phase < 3.7:
-		return 8, -1
-	case phase < 4.7:
-		k := smooth((phase - 3.7) / 1)
-		return 8 - 16*k, -1
+	case phase < boredPhaseA:
+		return -boredRightX, 0
+	case phase < boredPhaseB:
+		k := smooth(phase - boredPhaseA)
+		return -boredRightX + boredSweepX*k, 0
+	case phase < boredPhaseC:
+		return boredRightX, boredLevelY
+	case phase < boredPhaseD:
+		k := smooth(phase - boredPhaseC)
+		return boredRightX - boredSweepX*k, boredLevelY
 	default:
-		return -8, 0
+		return -boredRightX, 0
 	}
 }

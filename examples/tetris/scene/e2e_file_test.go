@@ -40,8 +40,7 @@ func TestEndToEndFileStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st2.Close()
-
+	defer func() { _ = st2.Close() }()
 	scores, err := st2.TopScores(context.Background(), 10)
 	if err != nil {
 		t.Fatal(err)

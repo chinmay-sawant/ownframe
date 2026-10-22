@@ -23,7 +23,7 @@ type flap struct {
 // flapRect is a hit-test box in whole CSS pixels, the same rounding the page
 // uses, so MarkRect covers the tile.
 func flapRect(b ownframe.Box) image.Rectangle {
-	return image.Rect(int(b.X), int(b.Y), int(b.X+b.W+0.5), int(b.Y+b.H+0.5))
+	return image.Rect(int(b.X), int(b.Y), int(b.X+b.W+pixelRound), int(b.Y+b.H+pixelRound))
 }
 
 // flipper holds every tile of the board and the two header ops the tick
@@ -46,7 +46,7 @@ type flipper struct {
 // before the next step.
 func (f *flipper) step() []string {
 	if f.rnd == nil {
-		f.rnd = rand.New(rand.NewSource(1))
+		f.rnd = rand.New(rand.NewSource(1)) //nolint:gosec // reason: deterministic flap animation, not security.
 	}
 
 	f.changed = f.changed[:0]

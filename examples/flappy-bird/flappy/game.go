@@ -63,7 +63,7 @@ type game struct {
 func newGame() game {
 	return game{
 		phase:    ready,
-		birdY:    sceneH / 2,
+		birdY:    sceneH / halfDiv,
 		speed:    speedStart,
 		nextPipe: spacingStart,
 	}

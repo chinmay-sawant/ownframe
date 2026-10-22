@@ -39,5 +39,5 @@ func rowStrip(byID map[string]ownframe.Box, i int, width, _ int) image.Rectangle
 		width = int(bot)
 	}
 
-	return image.Rect(0, int(top)-8, width, int(bot)+8)
+	return image.Rect(0, int(top)-stripPad, width, int(bot)+stripPad)
 }

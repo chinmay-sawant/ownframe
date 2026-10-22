@@ -16,7 +16,7 @@ func (d *displayFilter) setState(next alert.State) bool {
 	} else {
 		d.pendingN++
 	}
-	if d.pendingN < 3 {
+	if d.pendingN < settleFrames {
 		return false
 	}
 	d.state, d.pendingN = next, 0
@@ -26,11 +26,11 @@ func (d *displayFilter) setState(next alert.State) bool {
 func severity(state alert.State) int {
 	switch state {
 	case alert.StopNow:
-		return 3
+		return severityStopNow
 	case alert.Stop:
-		return 2
+		return severityStop
 	case alert.Unknown:
-		return 1
+		return severityUnknown
 	default:
 		return 0
 	}

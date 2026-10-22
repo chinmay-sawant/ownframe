@@ -17,6 +17,9 @@ const (
 	chunkTol     = 2
 )
 
+// chunkAreaHalf halves the content area to reject page-sized layers.
+const chunkAreaHalf = 2
+
 // chunkBox is one element box a chunk may own.
 type chunkBox struct {
 	index int
@@ -28,7 +31,7 @@ type chunkBox struct {
 // never owns a chunk.
 func chunkBoxes(d *layout.Display) []chunkBox {
 	content := contentRect(d)
-	half := content.Dx() * content.Dy() / 2
+	half := content.Dx() * content.Dy() / chunkAreaHalf
 	out := make([]chunkBox, 0, len(d.Boxes))
 
 	for i := range d.Boxes {

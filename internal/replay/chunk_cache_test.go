@@ -13,7 +13,7 @@ func flushChunks() {
 	defer chunks.mu.Unlock()
 
 	for _, e := range chunks.entries {
-		e.img.Dispose()
+		e.img.Deallocate()
 	}
 
 	chunks.entries = nil

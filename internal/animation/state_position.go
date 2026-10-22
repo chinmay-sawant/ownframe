@@ -14,15 +14,16 @@ func statePosition(s *effectState, input FrameInput) (float64, int, bool, bool, 
 	if !ok {
 		return 0, 0, false, false, false
 	}
-	if s.hasHold {
+	switch {
+	case s.hasHold:
 		raw = s.holdRaw
-	} else if t.Timeline == "" || t.Timeline == "auto" {
+	case t.Timeline == "" || t.Timeline == "auto":
 		elapsed := float64(s.offset)
 		if !s.paused {
 			elapsed += float64(input.Now.Sub(s.start)) * rate
 		}
 		raw = (elapsed - float64(t.Delay)) / float64(t.Duration)
-	} else if rate < 0 {
+	case rate < 0:
 		raw = t.Iterations - raw
 	}
 	s.lastRaw, s.hasRaw = raw, true

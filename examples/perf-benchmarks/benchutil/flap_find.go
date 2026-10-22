@@ -13,6 +13,13 @@ func place(d *ownframe.Display, op *ownframe.DisplayOp, x, y, w, h float64) {
 	op.Alpha = 1
 }
 
+// hideOffscreen parks a hidden fill outside the canvas, and halfDivisor
+// takes the center of an op span.
+const (
+	hideOffscreen = -1000
+	halfDivisor   = 2
+)
+
 // hide collapses one fill off the canvas. A hidden op keeps its kind, so a
 // later place draws it again.
 func hide(op *ownframe.DisplayOp) {
@@ -20,7 +27,7 @@ func hide(op *ownframe.DisplayOp) {
 		return
 	}
 
-	op.X, op.Y = -1000, -1000
+	op.X, op.Y = hideOffscreen, hideOffscreen
 	op.W, op.H = 0, 0
 	op.Alpha = 0
 }
@@ -41,7 +48,7 @@ func fillIn(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.Disp
 				continue
 			}
 
-			cx, cy := op.X+op.W/2, op.Y+op.H/2
+			cx, cy := op.X+op.W/halfDivisor, op.Y+op.H/halfDivisor
 
 			if cx >= x-0.5 && cx <= x+w+0.5 && cy >= y-0.5 && cy <= y+h+0.5 {
 				return op

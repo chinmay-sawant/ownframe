@@ -4,14 +4,14 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
-	"time"
 )
 
 // client is shared. Jar stays nil, so no cookie is stored or sent.
 // Timeout is the default client timeout; a request context with a shorter
-// deadline still wins.
+// deadline still wins. Transport pins DNS at dial time (FETCH-1).
 var client = &http.Client{
-	Timeout:       30 * time.Second,
+	Transport:     pinnedTransport(),
+	Timeout:       fetchTimeout,
 	CheckRedirect: redirect,
 }
 
@@ -41,39 +41,6 @@ const (
 	MaxFetchBodyBytes    = MaxBodyBytes
 	MaxHeaderBytes       = 1 * 1024 * 1024
 )
-
-func checkURL(raw string) error {
-	if raw == "" {
-		return ErrScheme
-	}
-
-	u, err := url.Parse(raw)
-	if err != nil {
-		return err
-	}
-	if u.User != nil {
-		return ErrCredentialsInURL
-	}
-	if !web(u) {
-		return ErrScheme
-	}
-
-	return nil
-}
-
-func redirect(req *http.Request, via []*http.Request) error {
-	if len(via) >= 10 {
-		return ErrTooManyRedirects
-	}
-	if req.URL.User != nil {
-		return ErrCredentialsInURL
-	}
-	if !web(req.URL) {
-		return ErrScheme
-	}
-
-	return nil
-}
 
 func web(u *url.URL) bool {
 	return u != nil && (u.Scheme == "http" || u.Scheme == "https")

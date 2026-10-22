@@ -7,7 +7,7 @@ import (
 // touch tracks live fingers, scrolling, capture, and pinch.
 // A system-generated mouse click suppresses the duplicate touch tap.
 func (s *shell) touch(clicked bool, frameW, frameH int) error {
-	ids := ebiten.TouchIDs()
+	ids := ebiten.AppendTouchIDs(nil)
 	now := make([]touchPos, 0, len(ids))
 
 	for _, id := range ids {

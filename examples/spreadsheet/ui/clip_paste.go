@@ -25,7 +25,7 @@ func (a *App) onPaste(_ context.Context, text string) error {
 
 	sh := a.sheet()
 	s := a.selection()
-	edits := make([]Edit, 0, 16)
+	edits := make([]Edit, 0, uiEditCap)
 	for i, row := range rows {
 		r := s.ActiveR + i
 		if r >= sh.Rows {

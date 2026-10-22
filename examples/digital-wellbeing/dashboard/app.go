@@ -33,8 +33,8 @@ func New() (*App, error) {
 	page, err := ownframe.New(ownframe.Config{
 		Title:  "Digital Wellbeing with Mochi",
 		HTML:   screen,
-		Width:  393,
-		Height: 852,
+		Width:  windowWidth,
+		Height: windowHeight,
 	})
 	if err != nil {
 		return nil, err

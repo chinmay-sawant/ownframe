@@ -3,11 +3,13 @@ package clipboard
 import (
 	"os"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe/internal/leakcheck"
 )
 
 func TestMain(m *testing.M) {
 	UseMemory(true)
-	os.Exit(m.Run())
+	os.Exit(leakcheck.Verify(m))
 }
 
 func TestMemoryRoundTrip(t *testing.T) {

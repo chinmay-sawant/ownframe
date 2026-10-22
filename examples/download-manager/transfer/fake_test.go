@@ -27,7 +27,7 @@ func fakePaths(t *testing.T) (string, string) {
 func readAll(t *testing.T, path string) []byte {
 	t.Helper()
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // reason: test reads back the fixture file it wrote.
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func TestFakeResumesFromPartial(t *testing.T) {
 	dest, partial := fakePaths(t)
 	id := "resume-1"
 
-	if err := os.WriteFile(partial, bodyBytes(0, 1000), 0o644); err != nil {
+	if err := os.WriteFile(partial, bodyBytes(0, 1000), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

@@ -40,8 +40,14 @@ func TestMaskExamplePixelsAndRetainedDisplay(t *testing.T) {
 	reference := imageReference(t)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := color.NRGBAModel.Convert(img.At(tc.x, tc.y)).(color.NRGBA)
-			want := color.NRGBAModel.Convert(reference.At(tc.referenceX, tc.referenceY)).(color.NRGBA)
+			got, ok := color.NRGBAModel.Convert(img.At(tc.x, tc.y)).(color.NRGBA)
+			if !ok {
+				t.Fatalf("pixel model changed at (%d,%d)", tc.x, tc.y)
+			}
+			want, ok := color.NRGBAModel.Convert(reference.At(tc.referenceX, tc.referenceY)).(color.NRGBA)
+			if !ok {
+				t.Fatalf("pixel model changed at (%d,%d)", tc.referenceX, tc.referenceY)
+			}
 			if got != want {
 				t.Fatalf("pixel (%d,%d) = %+v, want image pixel %+v", tc.x, tc.y, got, want)
 			}

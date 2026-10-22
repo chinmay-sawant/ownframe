@@ -3,7 +3,7 @@ package ws
 import (
 	"bufio"
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // reason: SHA1 is required by RFC 6455 for the WebSocket test handshake, not a security hash.
 	"encoding/base64"
 	"io"
 	"net"
@@ -12,13 +12,12 @@ import (
 )
 
 func TestDialSkipsOrigin(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer ln.Close()
-
+	defer func() { _ = ln.Close() }()
 	go serveOne(t, ln)
 
 	conn, err := Dial(context.Background(), "ws://"+ln.Addr().String()+"/ws")
@@ -26,8 +25,7 @@ func TestDialSkipsOrigin(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer conn.Close()
-
+	defer func() { _ = conn.Close() }()
 	got, err := conn.ReadText()
 	if err != nil {
 		t.Fatal(err)
@@ -46,8 +44,7 @@ func serveOne(t *testing.T, ln net.Listener) {
 		return
 	}
 
-	defer conn.Close()
-
+	defer func() { _ = conn.Close() }()
 	br := bufio.NewReader(conn)
 	req := ""
 	var key string
@@ -72,7 +69,7 @@ func serveOne(t *testing.T, ln net.Listener) {
 		t.Errorf("origin header sent")
 	}
 
-	sum := sha1.Sum([]byte(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+	sum := sha1.Sum([]byte(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")) //nolint:gosec // reason: SHA1 is required by RFC 6455 for the WebSocket test handshake, not a security hash.
 	accept := base64.StdEncoding.EncodeToString(sum[:])
 	_, _ = io.WriteString(conn, "HTTP/1.1 101 Switching Protocols\r\n"+
 		"Upgrade: websocket\r\nConnection: Upgrade\r\n"+

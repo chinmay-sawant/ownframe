@@ -12,7 +12,7 @@ func (g *partialFrameGame) prepare() {
 		g.app.click(image.Rect(10, 10, 30, 30))
 	case 2:
 		if g.shell.partial.buf != nil {
-			g.shell.partial.buf.Dispose()
+			g.shell.partial.buf.Deallocate()
 			g.shell.partial.buf = nil
 		}
 	case 3:

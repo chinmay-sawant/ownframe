@@ -25,7 +25,7 @@ type App struct {
 func newApp(rows int) (*App, error) {
 	page, err := ownframe.NewWithOptions(ownframe.Config{DevTools: true,
 		Title: "Stress", HTML: buildHTML(),
-		Width: 1280, Height: 900, MinWidth: 640, MinHeight: 480,
+		Width: stressWidth, Height: stressHeight, MinWidth: stressMinW, MinHeight: stressMinH,
 	}, ownframe.WithPerf(true))
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func newApp(rows int) (*App, error) {
 	a.winStart, a.winEnd = -1, -1
 	page.SetWindowing(true)
 	page.SetScrollWindow(a.applyWindow)
-	a.applyWindow(0, 900)
+	a.applyWindow(0, stressHeight)
 	page.Handle(ownframe.Handlers{Click: a.onClick, Change: a.onChange})
 	page.SetTick(a.Tick)
 	page.SetData(a.view)
@@ -48,14 +48,14 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 		a.view.Active = strings.TrimPrefix(box.ID, "nav-")
 	}
 	if box.ID == "go" {
-		a.view.Progress = (a.view.Progress + 10) % 101
+		a.view.Progress = (a.view.Progress + progressStep) % progressCycle
 	}
 	if box.ID == "reset" {
 		a.view = makeView(a.rows)
 		a.all = a.view.Rows
 		a.winStart, a.winEnd = -1, -1
 		_, y := a.page.ScrollOffset()
-		a.applyWindow(y, 900)
+		a.applyWindow(y, stressHeight)
 	}
 	a.page.SetData(a.view)
 	return nil

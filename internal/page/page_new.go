@@ -27,6 +27,9 @@ func New(cfg Config) (*Page, error) {
 	if strings.TrimSpace(source) == "" {
 		return nil, ErrEmptyHTML
 	}
+	if err := checkDOMLimits(source); err != nil {
+		return nil, err
+	}
 	schemes, err := acceptedDeepLinkSchemes(cfg.DeepLinkSchemes)
 	if err != nil {
 		return nil, err

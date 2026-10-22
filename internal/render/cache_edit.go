@@ -8,8 +8,9 @@ import (
 )
 
 // SetAttribute edits an attribute of an element in the cached tree and reports
-// whether the element exists. The edit lands on the same tree the cascade
-// read, so the next relayout sees it.
+// whether the element exists. An empty name changes nothing and reports
+// false. The edit lands on the same tree the cascade read, so the next
+// relayout sees it.
 func (c *Cache) SetAttribute(elementID, name, value string) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -21,8 +22,13 @@ func (c *Cache) SetAttribute(elementID, name, value string) bool {
 	return c.doc.SetAttribute(elementID, name, value)
 }
 
-// SetText replaces the text of an element in the cached tree and reports
-// whether the element exists.
+// SetText replaces the text content of an element in the cached tree and
+// reports whether the element exists.
+//
+// The text becomes the element's only child and every child it had is
+// dropped, the way the DOM textContent setter works. An empty text leaves
+// the element without children. The edit lands on the same tree the cascade
+// read, so the next relayout sees it.
 func (c *Cache) SetText(elementID, text string) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()

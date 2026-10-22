@@ -15,38 +15,38 @@ type dmNet struct {
 	errs   uint64
 }
 
-// advanceDisks grows IO counters and walks free space. Every 23rd tick writes
-// a burst, so parsing and graphs see a spike.
+// advanceDisks grows IO counters and walks free space. Every diskBurstEvery
+// tick writes a burst, so parsing and graphs see a spike.
 func (d *Dummy) advanceDisks() {
 	for i := range d.disks {
-		write := d.rng.Int63n(1 << 22)
-		if d.tick%23 == 0 {
-			write += 384 << 20
+		write := d.rng.Int63n(diskWriteSpan)
+		if d.tick%diskBurstEvery == 0 {
+			write += diskBurst
 		}
-		d.disks[i].read += uint64(d.rng.Int63n(1 << 24))
-		d.disks[i].write += uint64(write)
+		d.disks[i].read += uint64(d.rng.Int63n(diskReadSpan)) //nolint:gosec // reason: Int63n never returns a negative value.
+		d.disks[i].write += uint64(write)                     //nolint:gosec // reason: the counter only grows from zero, so it stays non-negative.
 
-		step := int64(d.rng.Intn(128<<20)) - (64 << 20)
-		d.disks[i].free = clampU64(int64(d.disks[i].free)+step, 10<<30, int64(d.disks[i].total))
+		step := int64(d.rng.Intn(diskWobble)) - diskWobbleBase
+		d.disks[i].free = clampU64(int64(d.disks[i].free)+step, diskFreeFloor, int64(d.disks[i].total)) //nolint:gosec // reason: disk space stays within tens of gigabytes, far below MaxInt64.
 	}
 }
 
 // advanceNets grows interface counters, adds a USB interface once, and raises
 // an occasional error.
 func (d *Dummy) advanceNets() {
-	if d.tick == 30 {
+	if d.tick == usbAtTick {
 		d.nets = append(d.nets, dmNet{name: "usb0", up: true})
 	}
 
 	for i := range d.nets {
-		rx := d.rng.Int63n(1 << 20)
-		if d.tick%19 == 0 {
-			rx += 96 << 20
+		rx := d.rng.Int63n(netSpan)
+		if d.tick%netBurstEvery == 0 {
+			rx += netBurst
 		}
-		d.nets[i].rx += uint64(rx)
-		d.nets[i].tx += uint64(d.rng.Int63n(1 << 18))
+		d.nets[i].rx += uint64(rx)                      //nolint:gosec // reason: the counter only grows from zero, so it stays non-negative.
+		d.nets[i].tx += uint64(d.rng.Int63n(netTxSpan)) //nolint:gosec // reason: Int63n never returns a negative value.
 
-		if d.rng.Float64() < 0.004 {
+		if d.rng.Float64() < netErrRate {
 			d.nets[i].errs++
 		}
 	}

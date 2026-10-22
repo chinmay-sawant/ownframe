@@ -47,13 +47,13 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.csv = csvState{open: true, export: true, path: a.exportPath()}
 		a.status = "export " + a.sheet().Name
 	case "csv-commit":
-		a.commitCSV(ctx)
+		return a.commitCSV(ctx)
 	case "csv-write":
-		a.writeCSV(ctx)
+		return a.writeCSV(ctx)
 	case "csv-replace":
 		a.csv.replace = !a.csv.replace
 	case "csv-cancel":
-		a.closeCSV(ctx)
+		return a.closeCSV(ctx)
 	}
 
 	return nil

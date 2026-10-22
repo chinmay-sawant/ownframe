@@ -22,12 +22,12 @@ func parseColor(s string) color.Color {
 		return color.RGBA{255, 255, 0, 255}
 	}
 	t := strings.TrimPrefix(strings.TrimSpace(s), "#")
-	if len(t) == 3 {
+	if len(t) == shortHexLen {
 		t = string([]byte{t[0], t[0], t[1], t[1], t[2], t[2]})
 	}
-	if len(t) == 6 {
+	if len(t) == longHexLen {
 		if n, err := strconv.ParseUint(t, 16, 32); err == nil {
-			return color.RGBA{uint8(n >> 16), uint8(n >> 8), uint8(n), 255}
+			return color.RGBA{uint8(n >> redShift), uint8(n >> greenShift), uint8(n), 255} //nolint:gosec // reason: n is 24-bit RGB, shifts stay in byte range.
 		}
 	}
 	return color.RGBA{255, 0, 0, 255}

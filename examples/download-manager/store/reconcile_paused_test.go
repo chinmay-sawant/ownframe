@@ -16,7 +16,7 @@ func TestReconcileInterruptedBecomesPaused(t *testing.T) {
 
 	_, dest := reconcileJob(t, s, "interrupted", domain.StateRunning, 10)
 
-	if err := os.WriteFile(transfer.PartialPath(dest), []byte("half"), 0o644); err != nil {
+	if err := os.WriteFile(transfer.PartialPath(dest), []byte("half"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

@@ -12,6 +12,19 @@ type FetchResponse = fetch.Response
 // ErrScheme means a fetch URL is empty or not http or https.
 var ErrScheme = fetch.ErrScheme
 
+// ErrPrivateAddress means a fetch URL resolved to a blocked address:
+// loopback, private, link-local, multicast, or unspecified.
+var ErrPrivateAddress = fetch.ErrPrivateAddress
+
+// ErrDowngrade means a redirect stepped from https down to http.
+var ErrDowngrade = fetch.ErrDowngrade
+
+// AllowPrivate returns a context that skips the private-address block, for
+// tests and trusted local tooling. Scheme and userinfo checks still apply.
+func AllowPrivate(ctx context.Context) context.Context {
+	return fetch.AllowPrivate(ctx)
+}
+
 // Fetch GETs rawURL. It sends no body.
 func Fetch(ctx context.Context, rawURL string) (FetchResponse, error) {
 	return fetch.Do(ctx, "GET", rawURL, nil, nil)

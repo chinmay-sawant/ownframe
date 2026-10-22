@@ -5,14 +5,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 // WSLg does not carry this window's alpha and input regions to Windows.
@@ -31,28 +29,22 @@ func launchNative(ctx context.Context, inbox *cat.Inbox, addr string) (bool, err
 	if err != nil {
 		return true, err
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
-	_, source, _, _ := runtime.Caller(0)
-	exe := filepath.Join(dir, "desktop-cat.exe")
-	build := exec.CommandContext(ctx, "go", "build", "-p", "1", "-o", exe, "./examples/desktop-cat")
-	build.Dir = filepath.Dir(filepath.Dir(filepath.Dir(source)))
-	build.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64", "CGO_ENABLED=0")
-	build.Stdout, build.Stderr = os.Stdout, os.Stderr
-	log.Print("desktop cat: WSL detected; building and opening a native Windows overlay")
-	if err := build.Run(); err != nil {
-		return true, fmt.Errorf("desktop cat: Windows build: %w", err)
+	exe, err := buildWindowsExe(ctx, dir)
+	if err != nil {
+		return true, err
 	}
 
 	args := append(append([]string{}, os.Args[1:]...), "-notify-addr=off", "-stdin-notifications", "-media-endpoint="+nativeEndpoint(addr))
-	child := exec.CommandContext(ctx, exe, args...)
+	child := exec.CommandContext(ctx, exe, args...) //nolint:gosec // reason: runs the exe just built with fixed args, no shell.
 	child.Stdout, child.Stderr = os.Stdout, os.Stderr
 	pipe, err := child.StdinPipe()
 	if err != nil {
 		return true, err
 	}
-	defer pipe.Close()
-	go forwardNotifications(ctx, inbox, pipe)
+	defer func() { _ = pipe.Close() }()
+	safego.Go("notify forward", func() { forwardNotifications(ctx, inbox, pipe) })
 	err = child.Run()
 	if ctx.Err() != nil {
 		return true, ctx.Err()

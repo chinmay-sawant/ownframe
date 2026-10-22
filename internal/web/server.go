@@ -33,6 +33,10 @@ type server struct {
 	lastNote     string
 	perf         bool
 	debugEnabled bool
+	// limitMu guards the mutating-route throttle table and semaphore.
+	limitMu      sync.Mutex
+	throttleHits map[string]*throttleSeen
+	inflight     chan struct{}
 }
 
 // Serve listens on addr and blocks. The page at / shows the latest PNG.

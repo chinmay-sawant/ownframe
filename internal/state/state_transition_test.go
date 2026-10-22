@@ -7,7 +7,7 @@ func TestStateTransitionsWithoutRender(t *testing.T) {
 
 	// SetData resets history.
 	s.SetData(map[string]any{"count": 5, "user": map[string]any{"name": "a"}})
-	if got := s.Data().(map[string]any)["count"]; got != 5 {
+	if got := dataMap(t, s)["count"]; got != 5 {
 		t.Fatalf("setdata = %v", got)
 	}
 	if s.CanUndo() {
@@ -33,17 +33,17 @@ func TestStateTransitionsWithoutRender(t *testing.T) {
 		t.Fatalf("nested = %+v", nc)
 	}
 	s.Undo()
-	if got := s.Data().(map[string]any)["user"].(map[string]any)["name"]; got != "a" {
+	if got := dataUser(t, s)["name"]; got != "a" {
 		t.Fatalf("undo = %v", got)
 	}
 	s.Redo()
-	if got := s.Data().(map[string]any)["user"].(map[string]any)["name"]; got != "b" {
+	if got := dataUser(t, s)["name"]; got != "b" {
 		t.Fatalf("redo = %v", got)
 	}
 
 	// PatchProjected.
 	s.PatchProjected(map[string]any{"count": 9})
-	if got := s.Data().(map[string]any)["count"]; got != 9 {
+	if got := dataMap(t, s)["count"]; got != 9 {
 		t.Fatalf("projected = %v", got)
 	}
 
@@ -52,13 +52,13 @@ func TestStateTransitionsWithoutRender(t *testing.T) {
 	if s.Origin() != OriginBackground {
 		t.Fatalf("origin = %s", s.Origin())
 	}
-	if got := s.Data().(map[string]any)["count"]; got != 11 {
+	if got := dataMap(t, s)["count"]; got != 11 {
 		t.Fatalf("patch = %v", got)
 	}
 
 	// Whole patch.
 	s.Patch(Patch{Values: map[string]any{"": map[string]any{"count": 42}}})
-	if got := s.Data().(map[string]any)["count"]; got != 42 {
+	if got := dataMap(t, s)["count"]; got != 42 {
 		t.Fatalf("whole = %v", got)
 	}
 

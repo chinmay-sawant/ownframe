@@ -71,7 +71,7 @@ func targetOpen(mood int) (float64, float64) {
 
 func moodDuration(mood int) time.Duration {
 	if mood == spiralMood {
-		return 4 * time.Second
+		return spiralMoodDur
 	}
-	return 8 * time.Second
+	return autoMoodDur
 }

@@ -13,8 +13,7 @@ func TestFileStoreActivatesWAL(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	if s.JournalMode() != "wal" {
 		t.Fatalf("journal mode %q, want wal", s.JournalMode())
 	}
@@ -31,8 +30,7 @@ func TestOpenCreatesTheDataDirectory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	if _, err := os.Stat(filepath.Join(dir, DBName)); err != nil {
 		t.Fatalf("database file: %v", err)
 	}

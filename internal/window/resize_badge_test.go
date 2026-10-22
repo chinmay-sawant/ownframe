@@ -21,8 +21,7 @@ func TestMotionKeepsTheDrawnArtifact(t *testing.T) {
 	t.Parallel()
 
 	app := &replayScreen{fakeScreen: fakeScreen{width: 480, height: 640, minW: 1, minH: 1}}
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 
 	if err := shell.syncImage(); err != nil {
 		t.Fatal(err)

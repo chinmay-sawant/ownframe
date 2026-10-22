@@ -7,6 +7,9 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// pcgStream xors the time seed into the PCG stream selector.
+const pcgStream = 0x9e3779b97f4a7c15
+
 // New parses the eyes page and registers input and the frame tick.
 func New() (*App, error) {
 	p, err := ownframe.New(ownframe.Config{
@@ -20,7 +23,7 @@ func New() (*App, error) {
 	p.SetImage("spiral", spiralPNG)
 	sd := uint64(time.Now().UnixNano())
 	a := &App{page: p,
-		rng: rand.New(rand.NewPCG(sd, sd^0x9e3779b97f4a7c15)),
+		rng: rand.New(rand.NewPCG(sd, sd^pcgStream)), //nolint:gosec // reason: eye saccades are visual demo randomness, not security-sensitive.
 		now: time.Now}
 	a.st = newState(a.now)
 	p.Handle(ownframe.Handlers{KeyDown: a.onKeyDown,

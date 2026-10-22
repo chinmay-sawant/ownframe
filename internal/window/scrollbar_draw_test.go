@@ -14,7 +14,7 @@ func TestDrawPaintsVerticalThumb(t *testing.T) {
 	if os.Getenv("OWNFRAME_SCROLLBAR_GPU_TEST") != "1" {
 		t.Skip("requires a graphics session; set OWNFRAME_SCROLLBAR_GPU_TEST=1")
 	}
-	s := NewGame(context.Background(), &fakeScreen{width: 100, height: 100}).(*shell)
+	s := newShell(context.Background(), &fakeScreen{width: 100, height: 100})
 	s.display = &layout.Display{Width: 100, Height: 200, PointsPerPixel: 1}
 	ebiten.SetWindowSize(100, 100)
 	g := &scrollbarDrawGame{shell: s}
@@ -49,7 +49,7 @@ func (g *scrollbarDrawGame) Draw(screen *ebiten.Image) {
 	at := (10*100 + 95) * 4
 	want := []byte{scrollThumb.R, scrollThumb.G, scrollThumb.B, scrollThumb.A}
 	for i := range want {
-		if pixels[at+i] != want[i] {
+		if pixels[at+i] != want[i] { //nolint:gosec // reason: at+i bounded by the fixed 100x100x4 buffer.
 			g.err = fmt.Errorf("thumb pixel = %v, want %v", pixels[at:at+4], want)
 			break
 		}

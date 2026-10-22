@@ -17,7 +17,7 @@ func (s *Store) Sources(ctx context.Context, session entry.SessionID) ([]entry.S
 			return nil, err
 		}
 
-		defer rows.Close()
+		defer func() { _ = rows.Close() }()
 
 		var out []entry.Source
 

@@ -18,7 +18,10 @@ func TestSettledTrackChangesAndPause(t *testing.T) {
 		t.Fatal("duplicate title")
 	}
 	state.next(Track{})
-	if state.next(a) != "" || state.next(a) != "" {
+	if state.next(a) != "" {
+		t.Fatal("pause and resume repeated title")
+	}
+	if state.next(a) != "" {
 		t.Fatal("pause and resume repeated title")
 	}
 	if state.next(b) != "" {

@@ -63,7 +63,7 @@ func (b *Backend) track(ev scheduler.Event) {
 			if prev.bytes <= 0 {
 				prev.bytes = inst
 			} else {
-				prev.bytes = 0.7*prev.bytes + 0.3*inst
+				prev.bytes = speedAlpha*prev.bytes + speedBeta*inst
 			}
 		}
 	}

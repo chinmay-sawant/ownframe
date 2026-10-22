@@ -10,10 +10,10 @@ func (a *App) stepScene(dt float64) {
 	drift := a.game.speed * dt
 
 	for i := range a.clouds {
-		a.clouds[i] -= drift * 0.18
+		a.clouds[i] -= drift * cloudDrift
 
 		if a.clouds[i] < -90 {
-			a.clouds[i] = sceneW + 60 + float64(i)*40
+			a.clouds[i] = sceneW + cloudResetX + float64(i)*cloudResetGap
 		}
 	}
 
@@ -21,7 +21,7 @@ func (a *App) stepScene(dt float64) {
 		a.stripes[i] -= drift
 
 		if a.stripes[i] < -50 {
-			a.stripes[i] = sceneW + 30 + float64(i)*12
+			a.stripes[i] = sceneW + stripeResetX + float64(i)*stripeResetGap
 		}
 	}
 }

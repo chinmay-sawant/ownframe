@@ -7,7 +7,13 @@ import (
 
 // SchemaVersion is the schema this build writes. A database with a higher
 // version belongs to a newer build and Open refuses it without modifying it.
-const SchemaVersion = 1
+const (
+	SchemaVersion = 1
+	// Retention bounds keep the default caps legible in one place; the Max
+	// variables stay assignable so tests can lower them.
+	defaultMaxRawRows       = 1_000_000
+	defaultMaxAggregateRows = 500_000
+)
 
 // Retention and bounding policy for metric history. Raw rows live 24 hours,
 // then Retain folds them into five-minute aggregates; aggregates live 30
@@ -22,9 +28,9 @@ const (
 
 var (
 	// MaxRawRows caps metric_history.
-	MaxRawRows = int64(1_000_000)
+	MaxRawRows = int64(defaultMaxRawRows)
 	// MaxAggregateRows caps metric_aggregate.
-	MaxAggregateRows = int64(500_000)
+	MaxAggregateRows = int64(defaultMaxAggregateRows)
 )
 
 // ErrSchemaNewer reports a database written by a newer build. Open leaves the
@@ -33,7 +39,3 @@ var ErrSchemaNewer = errors.New("system-monitor: database schema is newer than t
 
 // ErrClosed reports work on a closed store.
 var ErrClosed = errors.New("system-monitor: store is closed")
-
-// errNotImplemented marks the seam stubs. It disappears as the package fills
-// in.
-var errNotImplemented = errors.New("system-monitor: not implemented")

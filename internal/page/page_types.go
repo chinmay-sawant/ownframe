@@ -1,7 +1,6 @@
 package page
 
 import (
-	"context"
 	"html/template"
 	"image"
 
@@ -14,7 +13,8 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
-// Page is one HTML template and its last picture; serialize mutations.
+// Page is one template and its picture; single owner. Do not share between
+// Run and Serve; Tick/Draw stay on the page loop.
 type Page struct {
 	title           string
 	tpl             *template.Template
@@ -33,7 +33,7 @@ type Page struct {
 	pageGeom        // size: New inits, SetSize writes; lock: page loop
 	renderTrack     // generation and last frame key; lock: page loop
 	touchCancel     uint32
-	tick            func(ctx context.Context) error
+	tickSlot
 	nav             navHistory
 	deepLinkSchemes map[string]struct{}
 	ff              formFocusState // owner: page_form_focus*.go; lock: page loop

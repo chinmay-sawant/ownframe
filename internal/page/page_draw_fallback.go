@@ -10,7 +10,8 @@ import (
 
 // paintFallback stores a bitmap for a page the vector path declined. The
 // picture is a replay of that same list. blinkless does not paint a page
-// bitmap of its own.
+// bitmap of its own. The hit map is built here too, so a fixed box still
+// wins over the content it covers on the bitmap path.
 func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track bool) error {
 	ps := time.Now()
 	img, err := bitmap.Paint(display)
@@ -29,6 +30,7 @@ func (p *Page) paintFallback(display *layout.Display, drawStart time.Time, track
 	p.display = nil
 	p.fallbackDisplay = display
 	p.setBoxes(boxes)
+	p.hits = hitList(boxes, fixedBoxes(display))
 	p.generation++
 	p.markFull()
 	p.lastPatch = DisplayPatch{

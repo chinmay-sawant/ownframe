@@ -32,8 +32,8 @@ func checkGroupMask() error {
 		return err
 	}
 	full, part := ebiten.NewImage(200, 140), ebiten.NewImage(200, 140)
-	defer full.Dispose()
-	defer part.Dispose()
+	defer full.Deallocate()
+	defer part.Deallocate()
 	DrawVisible(full, d, 0, 0)
 	rect := image.Rect(35, 30, 125, 90)
 	DrawRect(part, d, rect, 0, 0)

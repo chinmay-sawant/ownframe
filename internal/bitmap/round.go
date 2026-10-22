@@ -8,11 +8,11 @@ func inRound(x, y, w, h float64, rx, ry [4]float64) bool {
 		{w - rx[2], h - ry[2]}, {rx[3], h - ry[3]}}
 	for i, c := range centers {
 		cornerX := x < c[0]
-		if i == 1 || i == 2 {
+		if i == rightSideFirst || i == bottomRowFirst {
 			cornerX = x > c[0]
 		}
 		cornerY := y < c[1]
-		if i >= 2 {
+		if i >= bottomRowFirst {
 			cornerY = y > c[1]
 		}
 		if cornerX && cornerY && rx[i] > 0 && ry[i] > 0 {

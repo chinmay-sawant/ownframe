@@ -16,7 +16,7 @@ type Store struct {
 
 // Load reads a saved TV. A missing file is an empty store.
 func Load(path string) Store {
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) //nolint:gosec // reason: path is the caller-selected store file under the app config dir, not remote input.
 	if err != nil {
 		return Store{MACs: []string{}}
 	}
@@ -39,7 +39,7 @@ func Save(path string, s Store) error {
 		s.MACs = []string{}
 	}
 
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), storeDirPerm); err != nil {
 		return err
 	}
 
@@ -48,5 +48,5 @@ func Save(path string, s Store) error {
 		return err
 	}
 
-	return os.WriteFile(path, b, 0o600)
+	return os.WriteFile(path, b, storeFilePerm)
 }

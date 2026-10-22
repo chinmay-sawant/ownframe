@@ -14,7 +14,7 @@ func diskRates(prev, next []Disk, elapsed time.Duration) {
 		d := &next[i]
 		if total, ok := d.Total.Get(); ok && total > 0 {
 			if free, ok := d.Free.Get(); ok {
-				d.UsedPercent = Percent((total - free) / total * 100)
+				d.UsedPercent = Percent((total - free) / total * percentScale)
 			}
 		}
 

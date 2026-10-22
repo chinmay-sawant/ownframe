@@ -19,7 +19,7 @@ func TestHTTPPartialUnwritable(t *testing.T) {
 	dir := t.TempDir()
 	blocker := filepath.Join(dir, "blocked")
 
-	if err := os.WriteFile(blocker, []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(blocker, []byte("x"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

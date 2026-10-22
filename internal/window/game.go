@@ -9,6 +9,12 @@ import (
 // NewGame returns the screen loop Run and BindMobile use.
 // The ctx is run-scoped: stored once with its cancel, never per request.
 func NewGame(ctx context.Context, app host.Screen) ebiten.Game {
+	return newShell(ctx, app)
+}
+
+// newShell builds the shell NewGame and NewGameWithOptions share, so
+// neither needs a type assertion on the game value.
+func newShell(ctx context.Context, app host.Screen) *shell {
 	if ctx == nil {
 		ctx = context.Background()
 	}

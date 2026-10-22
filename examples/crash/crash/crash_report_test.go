@@ -13,8 +13,10 @@ func TestReportWritesAFile(t *testing.T) {
 	app := newApp(t, context.Background())
 
 	dir := t.TempDir()
-	ownframe.SetCrashDir(dir)
-	t.Cleanup(func() { ownframe.SetCrashDir("") })
+	if err := ownframe.SetCrashDir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = ownframe.SetCrashDir("") })
 
 	path, err := app.Report("test reason")
 	if err != nil {
@@ -34,7 +36,7 @@ func TestReportWritesAFile(t *testing.T) {
 		t.Fatalf("report file = %v, want a non-empty file", info)
 	}
 
-	raw, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path) //nolint:gosec // reason: test reads the report the example just wrote under t.TempDir.
 	if err != nil {
 		t.Fatal(err)
 	}

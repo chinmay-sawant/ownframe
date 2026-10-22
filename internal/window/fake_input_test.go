@@ -7,10 +7,15 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-func (f *fakeScreen) Image() image.Image                            { return nil }
-func (f *fakeScreen) Display() *layout.Display                      { return nil }
-func (f *fakeScreen) PNG() []byte                                   { return nil }
-func (f *fakeScreen) Generation() uint64                            { return uint64(f.redraws) }
+func (f *fakeScreen) Image() image.Image       { return nil }
+func (f *fakeScreen) Display() *layout.Display { return nil }
+func (f *fakeScreen) PNG() []byte              { return nil }
+func (f *fakeScreen) Generation() uint64 {
+	if f.redraws < 0 {
+		return 0
+	}
+	return uint64(f.redraws)
+}
 func (f *fakeScreen) Boxes() []layout.Box                           { return f.boxes }
 func (f *fakeScreen) Click(context.Context, float64, float64) error { return nil }
 func (f *fakeScreen) Hover(context.Context, float64, float64) error { return nil }

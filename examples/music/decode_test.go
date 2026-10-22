@@ -1,6 +1,7 @@
 package music
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -40,7 +41,7 @@ func TestNewSoundWithoutContext(t *testing.T) {
 		t.Skip("an audio context is already running")
 	}
 
-	if _, err := NewSound(DemoTune("quiet").Data); err != ErrNoAudio {
+	if _, err := NewSound(DemoTune("quiet").Data); !errors.Is(err, ErrNoAudio) {
 		t.Fatalf("err = %v", err)
 	}
 }

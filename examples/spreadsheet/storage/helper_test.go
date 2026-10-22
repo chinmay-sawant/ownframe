@@ -17,7 +17,7 @@ func openMemory(t *testing.T) *Store {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() { st.Close() })
+	t.Cleanup(func() { _ = st.Close() })
 
 	return st
 }
@@ -32,7 +32,7 @@ func openDir(t *testing.T) (*Store, string) {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() { st.Close() })
+	t.Cleanup(func() { _ = st.Close() })
 
 	return st, dir
 }
@@ -46,7 +46,7 @@ func raw(t *testing.T, dir string) *sql.DB {
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() { _ = db.Close() })
 
 	return db
 }

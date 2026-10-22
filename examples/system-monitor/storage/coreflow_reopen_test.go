@@ -18,7 +18,7 @@ func TestCoreFlowReopen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	sessions, err := st.Sessions(ctx, 10)
 	if err != nil || len(sessions) != 2 {
@@ -50,7 +50,7 @@ func TestCoreFlowSeedTwice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	wrote, err := st.Seed(ctx, collector.DummyFixture(1, time.Now(), 120, 15*time.Second))
 	if err != nil || wrote {

@@ -3,6 +3,7 @@
 package collector
 
 import (
+	"math"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/domain"
@@ -32,9 +33,15 @@ func stateName(state string) string {
 	}
 }
 
-// startedAt converts a start tick count to wall clock time.
+// startedAt converts a start tick count to wall clock time. Ticks are
+// clamped so ticks*tickNS always fits int64 before the Duration conversion.
 func startedAt(boot time.Time, startTicks uint64) time.Time {
-	return boot.Add(time.Duration(startTicks) * time.Second / userHZ)
+	maxTicks := uint64(math.MaxInt64) / tickNS
+	if startTicks > maxTicks {
+		startTicks = maxTicks
+	}
+
+	return boot.Add(time.Duration(startTicks * tickNS))
 }
 
 // rowOfStat builds the table row for one stat read. The user name is left

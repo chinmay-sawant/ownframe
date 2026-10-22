@@ -28,7 +28,7 @@ func parseMemInfo(data []byte) domain.Memory {
 		if err != nil {
 			continue
 		}
-		vals[key] = v * 1024
+		vals[key] = v * kibibyte
 	}
 
 	m := domain.Memory{}

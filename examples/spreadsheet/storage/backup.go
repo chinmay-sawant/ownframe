@@ -20,7 +20,7 @@ func (s *Store) Backup(ctx context.Context, dest string) error {
 	defer cancel()
 
 	return s.do(ctx, func(ctx context.Context, db *sql.DB) error {
-		_, err := db.ExecContext(ctx, `VACUUM INTO '`+strings.ReplaceAll(dest, "'", "''")+`'`)
+		_, err := db.ExecContext(ctx, `VACUUM INTO '`+strings.ReplaceAll(dest, "'", "''")+`'`) //nolint:gosec // reason: VACUUM INTO quotes the destination by doubling single quotes, no placeholders exist
 
 		return err
 	})

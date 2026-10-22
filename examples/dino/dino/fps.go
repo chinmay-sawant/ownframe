@@ -24,7 +24,7 @@ func (m *meter) add(now time.Time) {
 		return
 	}
 
-	m.fps = int(float64(m.frames)/span.Seconds() + 0.5)
+	m.fps = int(float64(m.frames)/span.Seconds() + fpsRound)
 	m.frames = 0
 	m.since = now
 }

@@ -6,8 +6,8 @@ package window
 func devHeaderRight(r devRect) (cls devRect, px float64) {
 	wX := devTextWidth("X")
 	xX := r.X + r.W - devPanelPad - wX
-	cls = devRect{X: xX - 12, Y: r.Y, W: wX + 12 + devPanelPad, H: devHeaderH}
-	fx := xX - 8 - devTextWidth("F12")
+	cls = devRect{X: xX - devClosePad, Y: r.Y, W: wX + devClosePad + devPanelPad, H: devHeaderH}
+	fx := xX - devHeaderGap - devTextWidth("F12")
 
-	return cls, fx - 8 - devTextWidth("Picker")
+	return cls, fx - devHeaderGap - devTextWidth("Picker")
 }

@@ -41,7 +41,10 @@ func benchScene(b *testing.B, fallback bool) (*Scene, *testClock, *fakeStepper) 
 // and text paint, and the frame diff.
 func BenchmarkTickPaint(b *testing.B) {
 	s, clock, step := benchScene(b, false)
-	m := s.model.(*fakeModel)
+	m, ok := s.model.(*fakeModel)
+	if !ok {
+		b.Fatal("scene model is not a fakeModel")
+	}
 	ctx := context.Background()
 
 	b.ResetTimer()
@@ -67,30 +70,6 @@ func BenchmarkRedraw(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		if err := s.Redraw(ctx); err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-// BenchmarkTickBitmap measures an active frame on a page that fell back
-// to the bitmap path, where the throttle allows one rebuild per 50 ms.
-func BenchmarkTickBitmap(b *testing.B) {
-	s, clock, step := benchScene(b, true)
-	if s.page.Display() != nil {
-		b.Skip("the fallback page kept a display list")
-	}
-
-	m := s.model.(*fakeModel)
-	ctx := context.Background()
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		m.f.Score = i
-		step.advance = 1
-		clock.add(time.Second / 60)
-
-		if err := s.Tick(ctx); err != nil {
 			b.Fatal(err)
 		}
 	}

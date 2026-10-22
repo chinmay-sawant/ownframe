@@ -24,15 +24,15 @@ func Run(scenarios []string, out, cpuPath string) error {
 	if len(scenarios) == 0 {
 		scenarios = Scenarios()
 	}
-	if err := os.MkdirAll(out, 0755); err != nil {
+	if err := os.MkdirAll(out, dumpDirPerm); err != nil {
 		return err
 	}
 	if cpuPath != "" {
-		f, err := os.Create(cpuPath)
+		f, err := os.Create(cpuPath) //nolint:gosec // reason: cpuPath is the CLI profile output path, local tooling.
 		if err != nil {
 			return err
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		if err := pprof.StartCPUProfile(f); err != nil {
 			return err
 		}
@@ -53,7 +53,7 @@ func Run(scenarios []string, out, cpuPath string) error {
 			return err
 		}
 		path := filepath.Join(out, name+".json")
-		if err := os.WriteFile(path, append(body, '\n'), 0644); err != nil {
+		if err := os.WriteFile(path, append(body, '\n'), dumpFilePerm); err != nil {
 			return err
 		}
 		printRow(rep)

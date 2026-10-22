@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -43,8 +44,9 @@ func TestIngestOverloadLoss(t *testing.T) {
 	}
 
 	cancel()
-	<-done
-
+	if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 	if err := in.Close(); err != nil {
 		t.Fatal(err)
 	}

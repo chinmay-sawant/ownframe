@@ -48,8 +48,8 @@ func NewWorker(st *store.Store) Store {
 	base, cancel := context.WithCancel(context.Background())
 	w := &worker{
 		st:     st,
-		reqs:   make(chan request, 8),
-		res:    make(chan Result, 32),
+		reqs:   make(chan request, workerQueue),
+		res:    make(chan Result, workerResults),
 		quit:   make(chan struct{}),
 		done:   make(chan struct{}),
 		base:   base,

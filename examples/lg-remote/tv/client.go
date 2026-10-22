@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
+	"github.com/chinmay-sawant/ownframe/internal/secret"
 )
 
 // Client is one paired SSAP connection and its pointer socket.
+// Key stays a secret.Secret so logs and %v dumps cannot leak it.
 type Client struct {
 	main        *ws.Conn
 	in          *ws.Conn
@@ -17,7 +19,7 @@ type Client struct {
 	wait        map[string]chan Message
 	dead        error
 	n           int
-	Key         string
+	Key         secret.Secret
 	Model       string
 	hotstarID   string
 	MACs        []string

@@ -2,6 +2,9 @@ package window
 
 import "github.com/hajimehoshi/ebiten/v2"
 
+// devScrollLines is the lines one wheel notch moves.
+const devScrollLines = 3.0
+
 // devWheel routes the wheel to the dock while the pointer is over it. It
 // reports whether the dock ate the wheel, so the page below stays put.
 func (s *shell) devWheel() bool {
@@ -10,7 +13,7 @@ func (s *shell) devWheel() bool {
 	}
 
 	_, wheelY := ebiten.Wheel()
-	s.dev.scroll -= wheelY * devLineHeight() * 3
+	s.dev.scroll -= wheelY * devLineHeight() * devScrollLines
 	s.devClampScroll()
 
 	return true

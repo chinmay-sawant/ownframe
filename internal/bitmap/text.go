@@ -36,14 +36,14 @@ func paintText(dst *image.NRGBA, op *layout.DisplayOp, cache faceCache) error {
 		}),
 		Face: face,
 		Dot: fixed.Point26_6{
-			X: fixed.Int26_6(math.Round(x * pxPerPt * 64)),
-			Y: fixed.Int26_6(math.Round(y * pxPerPt * 64)),
+			X: fixed.Int26_6(math.Round(x * pxPerPt * fixedPointScale)),
+			Y: fixed.Int26_6(math.Round(y * pxPerPt * fixedPointScale)),
 		},
 	}
 	drawString(&draw, content, op.LetterSpacing*pxPerPt)
 
 	if layout.DisplayFakeBold(op) {
-		draw.Dot = fixed.Point26_6{X: fixed.Int26_6(math.Round(x*pxPerPt*64)) + fixed.I(1), Y: fixed.Int26_6(math.Round(y * pxPerPt * 64))}
+		draw.Dot = fixed.Point26_6{X: fixed.Int26_6(math.Round(x*pxPerPt*fixedPointScale)) + fixed.I(1), Y: fixed.Int26_6(math.Round(y * pxPerPt * fixedPointScale))}
 		drawString(&draw, content, op.LetterSpacing*pxPerPt)
 	}
 	return nil

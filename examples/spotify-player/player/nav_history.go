@@ -1,7 +1,9 @@
 package player
 
+import "context"
+
 // navigate records a screen change and drops any forward branch.
-func (a *App) navigate(screen string) {
+func (a *App) navigate(ctx context.Context, screen string) {
 	if screen == a.view.Nav {
 		return
 	}
@@ -13,12 +15,12 @@ func (a *App) navigate(screen string) {
 	a.view.Nav = screen
 	a.updateNavButtons()
 
-	a.restoreNavState(screen)
+	a.restoreNavState(ctx, screen)
 	a.touchNavRetained(screen)
 }
 
 // moveNav restores the previous or next screen when one exists.
-func (a *App) moveNav(delta int) {
+func (a *App) moveNav(ctx context.Context, delta int) {
 	at := a.navAt + delta
 	if at < 0 || at >= len(a.navHistory) {
 		return
@@ -30,7 +32,7 @@ func (a *App) moveNav(delta int) {
 	a.view.Nav = a.navHistory[at]
 	a.updateNavButtons()
 
-	a.restoreNavState(a.view.Nav)
+	a.restoreNavState(ctx, a.view.Nav)
 	a.touchNavRetained(a.view.Nav)
 }
 

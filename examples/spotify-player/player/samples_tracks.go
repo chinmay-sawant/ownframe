@@ -27,9 +27,9 @@ func samplePicks() []Card {
 	return []Card{
 		{Index: 0, Title: "Daily Mix 1", Sub: "Nova Waves & more", Cover: "cover-hybrid"},
 		{Index: 1, Title: "Discover Weekly", Sub: "The Far Coast & more", Cover: "cover-spring"},
-		{Index: 2, Title: "Release Radar", Sub: "Aster Field & more", Cover: "cover-funk"},
-		{Index: 3, Title: "Deep Focus", Sub: "Mono Arcade & more", Cover: "cover-focus"},
-		{Index: 4, Title: "Lo-Fi Beats", Sub: "Night Cartography & more", Cover: "cover-chillhop"},
-		{Index: 5, Title: "On Repeat", Sub: "Echo Valley & more", Cover: "cover-soul"},
+		{Index: sampleIdx2, Title: "Release Radar", Sub: "Aster Field & more", Cover: "cover-funk"},
+		{Index: sampleIdx3, Title: "Deep Focus", Sub: "Mono Arcade & more", Cover: "cover-focus"},
+		{Index: sampleIdx4, Title: "Lo-Fi Beats", Sub: "Night Cartography & more", Cover: "cover-chillhop"},
+		{Index: sampleIdx5, Title: "On Repeat", Sub: "Echo Valley & more", Cover: "cover-soul"},
 	}
 }

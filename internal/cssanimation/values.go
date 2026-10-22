@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+const (
+	hexLenShort   = 3
+	hexLenFull    = 6
+	rgbShiftRed   = 16
+	rgbShiftGreen = 8
+	channelMax    = 255
+)
+
 func number(value string) (float64, bool) {
 	v, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
 	return v, err == nil
@@ -12,17 +20,17 @@ func number(value string) (float64, bool) {
 
 func color(value string) (float64, float64, float64, bool) {
 	value = strings.TrimPrefix(strings.TrimSpace(value), "#")
-	if len(value) == 3 {
+	if len(value) == hexLenShort {
 		value = string([]byte{value[0], value[0], value[1], value[1], value[2], value[2]})
 	}
-	if len(value) != 6 {
+	if len(value) != hexLenFull {
 		return 0, 0, 0, false
 	}
 	n, err := strconv.ParseUint(value, 16, 24)
 	if err != nil {
 		return 0, 0, 0, false
 	}
-	return float64(n>>16) / 255, float64(n>>8&255) / 255, float64(n&255) / 255, true
+	return float64(n>>rgbShiftRed) / channelMax, float64(n>>rgbShiftGreen&channelMax) / channelMax, float64(n&channelMax) / channelMax, true
 }
 
 func transformShift(value string) (float64, float64, bool) {

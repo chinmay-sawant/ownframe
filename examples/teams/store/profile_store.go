@@ -1,10 +1,13 @@
 package store
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+)
 
 // saveProfile replaces the profile row with the given state.
 func saveProfile(tx *sql.Tx, presence string, dark bool) error {
-	_, err := tx.Exec(`INSERT OR REPLACE INTO profile (id, presence, dark) VALUES (1, ?, ?)`,
+	_, err := tx.ExecContext(context.Background(), `INSERT OR REPLACE INTO profile (id, presence, dark) VALUES (1, ?, ?)`,
 		presence, dark)
 
 	return err
@@ -14,7 +17,7 @@ func saveProfile(tx *sql.Tx, presence string, dark bool) error {
 func loadProfile(db *sql.DB) (presence string, dark bool, err error) {
 	presence, dark = "online", true
 
-	err = db.QueryRow(`SELECT presence, dark FROM profile WHERE id = 1`).Scan(&presence, &dark)
+	err = db.QueryRowContext(context.Background(), `SELECT presence, dark FROM profile WHERE id = 1`).Scan(&presence, &dark)
 	if err != nil && err != sql.ErrNoRows {
 		return "", false, err
 	}
@@ -24,11 +27,11 @@ func loadProfile(db *sql.DB) (presence string, dark bool, err error) {
 
 // readInto runs query and appends one scanned value per row.
 func readInto[T any](db *sql.DB, query string, out *[]T, scan func(*sql.Rows, *T) error) error {
-	rows, err := db.Query(query)
+	rows, err := db.QueryContext(context.Background(), query)
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var v T

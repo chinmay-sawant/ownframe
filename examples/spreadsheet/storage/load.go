@@ -75,7 +75,7 @@ func loadSheets(ctx context.Context, db *sql.DB, id workbook.ID) ([]sheetRow, er
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []sheetRow
 

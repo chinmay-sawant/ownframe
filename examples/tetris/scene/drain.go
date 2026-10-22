@@ -49,7 +49,9 @@ func (s *Scene) apply(ctx context.Context, res Result) error {
 		s.setStatus("THEME SAVED")
 
 	case ResultScores, ResultDummy:
-		s.applyScores(ctx, res)
+		if err := s.applyScores(ctx, res); err != nil {
+			return err
+		}
 
 	case ResultSaved:
 		s.applySaved(res)

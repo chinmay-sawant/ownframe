@@ -12,7 +12,7 @@ func Run() error {
 	ctx := context.Background()
 	data := &view{Started: map[string]bool{}}
 	page, err := previewwindow.New(ctx, previewwindow.Config{Title: "OwnFrame CSS animations",
-		FixtureDir: "testdata/animation", Data: data, Width: 960, Height: 860})
+		FixtureDir: "testdata/animation", Data: data, Width: previewWidth, Height: previewHeight})
 	if err != nil {
 		return err
 	}

@@ -21,14 +21,16 @@ func (s *Server) serveSlow(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("ETag", `"fixture-slow"`)
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 
-	for off := 0; off < len(body); off += 1024 {
-		end := off + 1024
+	for off := 0; off < len(body); off += slowChunk {
+		end := off + slowChunk
 		if end > len(body) {
 			end = len(body)
 		}
 
 		_, _ = w.Write(body[off:end])
-		w.(http.Flusher).Flush()
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
 
 		if s.SlowPause > 0 {
 			select {
@@ -45,13 +47,15 @@ func (s *Server) serveChunked(w http.ResponseWriter, r *http.Request) {
 	body := s.fill(requestSeed(r))
 	w.Header().Set("ETag", `"fixture-chunked"`)
 
-	for off := 0; off < len(body); off += 4096 {
-		end := off + 4096
+	for off := 0; off < len(body); off += chunkedChunk {
+		end := off + chunkedChunk
 		if end > len(body) {
 			end = len(body)
 		}
 
 		_, _ = w.Write(body[off:end])
-		w.(http.Flusher).Flush()
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
 	}
 }

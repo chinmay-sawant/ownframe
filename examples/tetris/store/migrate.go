@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 )
 
 // migrations holds one SQL script per version. Tests replace it to
@@ -64,8 +63,7 @@ func applyMigration(ctx context.Context, db *sql.DB, version int, script string)
 		return err
 	}
 
-	defer tx.Rollback()
-
+	defer func() { _ = tx.Rollback() }()
 	if _, err := tx.ExecContext(ctx, script); err != nil {
 		return err
 	}
@@ -79,9 +77,4 @@ func applyMigration(ctx context.Context, db *sql.DB, version int, script string)
 	}
 
 	return tx.Commit()
-}
-
-// isMissingTable reports SQLite's missing-table error.
-func isMissingTable(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "no such table")
 }

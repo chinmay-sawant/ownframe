@@ -18,8 +18,12 @@ func (s *Sound) Seek(at time.Duration) error {
 // SetVolume sets the stream volume from 0 to 1.
 func (s *Sound) SetVolume(volume float64) { s.player.SetVolume(clampVolume(volume)) }
 
-// Close releases the stream.
-func (s *Sound) Close() error { return s.player.Close() }
+// Close releases the stream. The player stops reading the source, so the
+// decoded bytes can be dropped without a gap on the next Play.
+func (s *Sound) Close() error {
+	s.player.PauseAndStopReading()
+	return nil
+}
 
 // clampVolume keeps a volume inside the range Ebiten accepts.
 func clampVolume(volume float64) float64 {

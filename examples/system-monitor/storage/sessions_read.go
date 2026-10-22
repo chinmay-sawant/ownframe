@@ -36,7 +36,7 @@ func (s *Store) Sessions(ctx context.Context, limit int) ([]Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []Session
 

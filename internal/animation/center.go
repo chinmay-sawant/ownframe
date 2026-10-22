@@ -2,6 +2,9 @@ package animation
 
 import "strings"
 
+// centerHalf splits progress around a view-timeline center.
+const centerHalf = 0.5
+
 func centerProgress(p float64, value string, in FrameInput, lo, hi float64) float64 {
 	value = strings.TrimSpace(value)
 	if value == "" || value == "normal" {
@@ -35,13 +38,13 @@ func centerProgress(p float64, value string, in FrameInput, lo, hi float64) floa
 	}
 	ratio := (center - lo) / (hi - lo)
 	if ratio <= 0 {
-		return .5 + .5*p
+		return centerHalf + centerHalf*p
 	}
 	if ratio >= 1 {
-		return .5 * p
+		return centerHalf * p
 	}
 	if p <= ratio {
-		return .5 * p / ratio
+		return centerHalf * p / ratio
 	}
-	return .5 + .5*(p-ratio)/(1-ratio)
+	return centerHalf + centerHalf*(p-ratio)/(1-ratio)
 }

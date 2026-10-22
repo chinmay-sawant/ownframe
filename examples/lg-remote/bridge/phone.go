@@ -4,11 +4,11 @@ var fontSize = 16
 
 // SetFontSize records Android's system-scaled text size.
 func SetFontSize(size int) {
-	if size < 16 {
-		size = 16
+	if size < minFontSize {
+		size = minFontSize
 	}
-	if size > 48 {
-		size = 48
+	if size > maxFontSize {
+		size = maxFontSize
 	}
 	mu.Lock()
 	fontSize = size

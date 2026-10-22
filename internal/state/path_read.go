@@ -28,7 +28,7 @@ func valueAtPath(data any, path string) any {
 				return nil
 			}
 			f := rv.FieldByName(seg)
-			if !f.IsValid() {
+			if !f.IsValid() || !f.CanInterface() {
 				return nil
 			}
 			cur = f.Interface()

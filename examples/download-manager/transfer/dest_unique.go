@@ -29,7 +29,7 @@ func clipName(name string) string {
 	}
 
 	ext := filepath.Ext(name)
-	if len(ext) > 16 {
+	if len(ext) > maxExtLen {
 		ext = ""
 	}
 
@@ -44,7 +44,7 @@ func UniqueDestination(dir, raw string) (string, error) {
 	name := SafeName(raw)
 	dir = filepath.Clean(dir)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, transferDirPerm); err != nil {
 		return "", err
 	}
 

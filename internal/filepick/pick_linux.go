@@ -67,7 +67,7 @@ func run(ctx context.Context, path string, args []string) (string, bool) {
 	if ctx == nil {
 		return "", false
 	}
-	out, err := exec.CommandContext(ctx, path, args...).Output()
+	out, err := exec.CommandContext(ctx, path, args...).Output() //nolint:gosec // reason: binary is a known dialog tool resolved from PATH, fixed arg builders, no shell.
 	if err != nil {
 		debugf("%s %v failed: %v", path, args, err)
 

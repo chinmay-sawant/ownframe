@@ -16,12 +16,22 @@ type Conn struct {
 	wmu chan struct{}
 }
 
-// Dial upgrades raw to a WebSocket. wss skips certificate checks because
-// the TV certificate is self-signed.
+// Dial upgrades raw to a WebSocket. wss verifies the TV certificate
+// with the system roots and TLS 1.2 or newer. Only ws and wss schemes
+// are accepted. The handshake carries read and write deadlines so a
+// silent peer cannot park the dial.
 func Dial(ctx context.Context, raw string) (*Conn, error) {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return nil, err
+	}
+
+	if u.Scheme != "ws" && u.Scheme != "wss" {
+		return nil, ErrHandshake
+	}
+
+	if u.Host == "" {
+		return nil, ErrHandshake
 	}
 
 	host := u.Host
@@ -44,6 +54,8 @@ func Dial(ctx context.Context, raw string) (*Conn, error) {
 		path = "/"
 	}
 
+	_ = nc.SetDeadline(time.Now().Add(shakeTimeout))
+
 	req := "GET " + path + " HTTP/1.1\r\n" +
 		"Host: " + u.Host + "\r\n" +
 		"Upgrade: websocket\r\n" +
@@ -51,13 +63,13 @@ func Dial(ctx context.Context, raw string) (*Conn, error) {
 		"Sec-WebSocket-Key: " + key + "\r\n" +
 		"Sec-WebSocket-Version: 13\r\n\r\n"
 	if _, err = nc.Write([]byte(req)); err != nil {
-		nc.Close()
+		_ = nc.Close()
 		return nil, err
 	}
 
 	br := bufio.NewReader(nc)
 	if err = accept(br, key); err != nil {
-		nc.Close()
+		_ = nc.Close()
 		return nil, err
 	}
 

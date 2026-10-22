@@ -17,7 +17,7 @@ func TestHTTPResumesRange(t *testing.T) {
 	body, out := fetchFull(t, tr, srv.URL+fixture.PathRange)
 
 	dest, partial := httpPaths(t)
-	if err := os.WriteFile(partial, body[:10000], 0o644); err != nil {
+	if err := os.WriteFile(partial, body[:10000], 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -48,7 +48,7 @@ func TestHTTPRestartsWhenValidatorChanged(t *testing.T) {
 	body, _ := fetchFull(t, tr, srv.URL+fixture.PathRange)
 
 	dest, partial := httpPaths(t)
-	if err := os.WriteFile(partial, body[:10000], 0o644); err != nil {
+	if err := os.WriteFile(partial, body[:10000], 0o600); err != nil {
 		t.Fatal(err)
 	}
 

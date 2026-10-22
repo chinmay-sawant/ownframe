@@ -29,7 +29,7 @@ func testFile(t *testing.T, path string, pos int64) *File {
 func writeLog(t *testing.T, path, s string) {
 	t.Helper()
 
-	if err := os.WriteFile(path, []byte(s), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(s), 0o600); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -37,7 +37,7 @@ func writeLog(t *testing.T, path, s string) {
 func appendLog(t *testing.T, path string, b []byte) {
 	t.Helper()
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o600) //nolint:gosec // reason: test fixture under TempDir, not user input
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +46,7 @@ func appendLog(t *testing.T, path string, b []byte) {
 		t.Fatal(err)
 	}
 
-	f.Close()
+	_ = f.Close()
 }
 
 func drain(t *testing.T, r Reader, n int) []entry.RawRecord {

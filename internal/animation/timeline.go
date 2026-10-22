@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// percentDivisor scales a percent value to a fraction.
+const percentDivisor = 100
+
 func timelineProgress(t Timing, in FrameInput) (float64, bool) {
 	name := strings.TrimSpace(t.Timeline)
 	switch {
@@ -69,7 +72,7 @@ func percent(s string) (float64, bool) {
 		return 0, false
 	}
 	v, err := strconv.ParseFloat(strings.TrimSuffix(s, "%"), 64)
-	return v / 100, err == nil
+	return v / percentDivisor, err == nil
 }
 
 func unit(v float64) float64 {

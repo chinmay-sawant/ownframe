@@ -6,6 +6,8 @@ import "time"
 // counter uses.
 const paceStep = 16 * time.Millisecond
 
+const keepAliveHalfDiv = 2
+
 // paceWantState is the page-driven half of the pacing policy: the deadline
 // the page asked for, the previous step time, and the counters the devtools
 // Frame tab shows. It is embedded so idle_policy.go stays inside the file
@@ -37,7 +39,7 @@ func (p *pacePolicy) next() time.Time {
 // the timer goroutine under the same lock as step and due.
 func (p *pacePolicy) wait(now time.Time) time.Duration {
 	if p.fast {
-		return p.keepAlive / 2
+		return p.keepAlive / keepAliveHalfDiv
 	}
 
 	if d := p.next().Sub(now); d > time.Millisecond {
@@ -65,5 +67,10 @@ func (p *pacePolicy) skip(now time.Time) {
 		return
 	}
 
-	p.skipped += uint64(gap/paceStep) - 1
+	steps := gap / paceStep
+	if steps < 1 {
+		return
+	}
+
+	p.skipped += uint64(steps) - 1
 }

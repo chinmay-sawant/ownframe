@@ -47,25 +47,3 @@ func boxByID(t *testing.T, app *telegram.App, id string) ownframe.Box {
 
 	return ownframe.Box{}
 }
-
-func boxText(t *testing.T, app *telegram.App, id string) string {
-	t.Helper()
-
-	var text string
-	found := false
-
-	for _, b := range app.Boxes() {
-		if b.ID != id {
-			continue
-		}
-
-		text = b.Text
-		found = true
-	}
-
-	if !found {
-		t.Fatalf("no box id=%q:%s", id, dumpBoxes(app))
-	}
-
-	return text
-}

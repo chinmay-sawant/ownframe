@@ -22,7 +22,7 @@ func Send(channel, payload string) {
 }
 
 func call(fn func(string), payload string) {
-	defer func() { recover() }()
+	defer func() { _ = recover() }()
 
 	fn(payload)
 }

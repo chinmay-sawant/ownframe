@@ -30,7 +30,7 @@ func (w *worker) exec(j job) result {
 		var text string
 		if text, r.err = w.b.ExportCSV(j.sheet); r.err == nil {
 			r.data = []byte(text)
-			r.err = os.WriteFile(j.path, r.data, 0o644)
+			r.err = os.WriteFile(j.path, r.data, uiExportPerm) //nolint:gosec // reason: export path is the user-chosen dialog destination, writing there is intended
 		}
 	case jobPref:
 		r.err = w.b.SetPref(j.key, j.value)

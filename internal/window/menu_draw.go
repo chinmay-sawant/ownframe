@@ -1,18 +1,23 @@
 package window
 
 import (
-	"image/color"
-
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+const (
+	menuFillHex     = 0xfffffff2
+	menuEdgeHex     = 0xbdbdbdff
+	menuInkHex      = 0x1c1915ff
+	menuDisabledHex = 0x9c9c9cff
+)
+
 var (
-	menuFill     = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xf2}
-	menuEdge     = color.RGBA{R: 0xbd, G: 0xbd, B: 0xbd, A: 0xff}
-	menuInk      = color.RGBA{R: 0x1c, G: 0x19, B: 0x15, A: 0xff}
-	menuDisabled = color.RGBA{R: 0x9c, G: 0x9c, B: 0x9c, A: 0xff}
+	menuFill     = devRGBA(menuFillHex)
+	menuEdge     = devRGBA(menuEdgeHex)
+	menuInk      = devRGBA(menuInkHex)
+	menuDisabled = devRGBA(menuDisabledHex)
 )
 
 // menuTextWidth measures one row label with the badge face.

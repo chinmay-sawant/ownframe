@@ -77,23 +77,42 @@ native example. Set `OWNFRAME_BROWSER_PORT` when port 8092 is already in use.
 
 ## Agent notifications
 
-The native command also starts a simple HTTP server at
-`http://127.0.0.1:6969`. Under WSL the server stays in Linux and forwards
+The native command also starts the agent API on a Unix socket at
+`$XDG_RUNTIME_DIR/ownframe-desktop-cat-<uid>.sock` (mode `0600`), so only
+your user can reach it. Socket traffic stays plaintext HTTP with an
+`Origin` check; the socket permissions are the auth. `-notify-addr` with
+a `host:port` opts back into TCP (keep loopback: a LAN bind would expose
+notification content); `-notify-addr off` disables the listener. Under
+WSL the server stays in Linux and forwards
 notifications to the Windows cat through its stdin pipe. An agent running
-in WSL can use the same loopback URL. `-notify-addr` changes the address;
-`-notify-addr off` disables the listener.
+in WSL can use the same socket path. `-notify-addr` changes the address.
+
+```sh
+curl --fail-with-body --max-time 2 --unix-socket "$XDG_RUNTIME_DIR/ownframe-desktop-cat-$(id -u).sock" http://localhost/notify \
+  -H 'Content-Type: application/json' \
+  -H 'Origin: http://localhost' \
+  --data-binary '{"expression":"happy","message":"The work is done. Response is ready.","source":"Open Code"}'
+```
+
+TCP opt-in example (explicit `-notify-addr=127.0.0.1:6969`):
 
 ```sh
 curl --fail-with-body --max-time 2 http://127.0.0.1:6969/notify \
   -H 'Content-Type: application/json' \
+  -H 'Origin: http://127.0.0.1:6969' \
   --data-binary '{"expression":"happy","message":"The work is done. Response is ready.","source":"Open Code"}'
 ```
 
+`POST /notify` and `GET /state` require a matching `Origin` (scheme
+and host); a missing `Origin` returns 403. Curl callers send the
+`Origin` header explicitly. Responses set `nosniff`, `DENY` framing,
+`Referrer-Policy: no-referrer`, and a restrictive `Permissions-Policy`.
+
 | Route | Result |
 |---|---|
-| `POST /notify` | Accepts `expression`, `message`, and optional `source`; returns HTTP 202. |
+| `POST /notify` | Accepts `expression`, `message`, and optional `source`; returns HTTP 202. Requires matching `Origin`; missing `Origin` is 403. |
 | `GET /expressions` | Maps 15 emotion names and 30 individual pose names to image numbers. |
-| `GET /state` | Returns the last accepted notification and its sequence number. |
+| `GET /state` | Returns the last accepted notification and its sequence number. Requires matching `Origin`; missing `Origin` is 403. |
 
 Use `happy`, `sad`, `angry`, `sleepy`, `worried`, or another name returned by
 `/expressions`. Individual poses include `happy-soft-smile`, `sad-tear`,
@@ -112,8 +131,8 @@ messages; the example does not schedule reminders itself.
 Notifications leave the cursor and active application alone. The example
 reads the cursor to choose click-through regions; it does not move it.
 
-A WASM build cannot listen as a local HTTP server. Run the native command
-for port 6969.
+A WASM build cannot listen as a local server. Run the native command
+for the socket API.
 
 ## Response-ready skill
 

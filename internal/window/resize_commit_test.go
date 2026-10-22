@@ -14,8 +14,7 @@ func TestResizeCommitsOncePerSettledSize(t *testing.T) {
 		minW: 1, minH: 1,
 		maxW: 2560, maxH: 2560,
 	}
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 
 	// Thirty window events between two updates settle on the last size.
 	for i := 0; i < 30; i++ {

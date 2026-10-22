@@ -38,7 +38,7 @@ func NewHTTP(opts HTTPOptions) *HTTP {
 
 	stall := opts.StallTimeout
 	if stall <= 0 {
-		stall = 30 * time.Second
+		stall = stallTimeout
 	}
 
 	return &HTTP{client: opts.Client, ua: opts.UserAgent, stall: stall}
@@ -60,7 +60,7 @@ func (h *HTTP) Download(ctx context.Context, req Request, report Reporter) (Outc
 	if err != nil {
 		return Outcome{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	p, err := negotiate(resp, req, prep)
 	if err != nil {

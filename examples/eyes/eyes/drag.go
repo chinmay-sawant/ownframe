@@ -13,8 +13,8 @@ func (a *App) onPress(_ context.Context, b ownframe.Box, x, y float64) (bool, er
 	w, h := a.page.Size()
 	a.st.pressDir = 0
 	if w > 0 && h > 0 {
-		a.st.tLookX = clamp((x-float64(w)/2)*0.12, -48, 48)
-		a.st.tLookY = clamp((y-float64(h)/2)*0.12, -30, 30)
+		a.st.tLookX = clamp((x-float64(w)/halfDivisor)*pressGain, -lookXRange, lookXRange)
+		a.st.tLookY = clamp((y-float64(h)/halfDivisor)*pressGain, -lookYRange, lookYRange)
 		if b.ID != "dev-toggle" && b.ID != "mode-toggle" {
 			a.st.pressDir = 1
 			if x < float64(w)/2 {
@@ -35,8 +35,8 @@ func (a *App) onDragStart(_ context.Context, _ ownframe.Box) (bool, error) {
 // onDragMove steers the look target while dragging.
 func (a *App) onDragMove(_ context.Context, dx, dy float64) error {
 	a.wakeHUD(a.now())
-	a.st.tLookX = clamp(a.st.tLookX+dx*0.4, -48, 48)
-	a.st.tLookY = clamp(a.st.tLookY+dy*0.4, -30, 30)
+	a.st.tLookX = clamp(a.st.tLookX+dx*dragGain, -lookXRange, lookXRange)
+	a.st.tLookY = clamp(a.st.tLookY+dy*dragGain, -lookYRange, lookYRange)
 	return nil
 }
 

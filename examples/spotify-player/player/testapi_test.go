@@ -25,16 +25,16 @@ func (s *testAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == "/search":
 		switch r.URL.Query().Get("entity") {
 		case "song":
-			io.WriteString(w, songsBody(base))
+			_, _ = io.WriteString(w, songsBody(base))
 		case "album":
-			io.WriteString(w, albumsBody(base))
+			_, _ = io.WriteString(w, albumsBody(base))
 		default:
 			http.NotFound(w, r)
 		}
 	case strings.Contains(r.URL.Path, "song-"):
-		w.Write(tinyPNG())
+		_, _ = w.Write(tinyPNG())
 	case strings.Contains(r.URL.Path, "album-"):
-		w.Write(tinyJPEG())
+		_, _ = w.Write(tinyJPEG())
 	default:
 		http.NotFound(w, r)
 	}

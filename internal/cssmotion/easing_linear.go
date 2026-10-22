@@ -5,12 +5,21 @@ import (
 	"strings"
 )
 
+const (
+	// maxLinearFields is "value" plus an optional stop position.
+	maxLinearFields = 2
+	// minLinearStops is the smallest usable linear() stop list.
+	minLinearStops = 2
+	// percentDivisor converts a percent stop position to a fraction.
+	percentDivisor = 100
+)
+
 func linearStops(body string, t float64) float64 {
 	parts := strings.Split(body, ",")
 	values, positions, set := make([]float64, len(parts)), make([]float64, len(parts)), make([]bool, len(parts))
 	for i, part := range parts {
 		fields := strings.Fields(part)
-		if len(fields) < 1 || len(fields) > 2 {
+		if len(fields) < 1 || len(fields) > maxLinearFields {
 			return t
 		}
 		value, err := strconv.ParseFloat(fields[0], 64)
@@ -18,15 +27,15 @@ func linearStops(body string, t float64) float64 {
 			return t
 		}
 		values[i] = value
-		if len(fields) == 2 {
+		if len(fields) == maxLinearFields {
 			position, err := strconv.ParseFloat(strings.TrimSuffix(fields[1], "%"), 64)
 			if err != nil {
 				return t
 			}
-			positions[i], set[i] = position/100, true
+			positions[i], set[i] = position/percentDivisor, true
 		}
 	}
-	if len(parts) < 2 {
+	if len(parts) < minLinearStops {
 		return t
 	}
 	set[0] = true

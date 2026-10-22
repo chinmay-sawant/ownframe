@@ -21,7 +21,7 @@ func (s *Store) Backup(ctx context.Context, destPath string) error {
 		return err
 	}
 
-	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(destPath), storeDirPerm); err != nil {
 		return err
 	}
 

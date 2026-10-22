@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/benchutil"
 )
 
@@ -40,31 +39,14 @@ func TestDump(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	apps := []struct {
-		name   string
-		page   *ownframe.Page
-		redraw func(context.Context) error
-	}{
+	apps := []dumpApp{
 		{"stress-240", stress.page, stress.page.Redraw},
 		{"normal", normal.Page(), normal.Redraw},
 		{"large-1000", large.Page(), large.Redraw},
 		{"flappy", flap.Page(), flap.Redraw},
 	}
 
-	var docs []json.RawMessage
-
-	for _, a := range apps {
-		if err := a.redraw(ctx); err != nil {
-			t.Fatal(err)
-		}
-
-		b, err := benchutil.Dump(a.name, a.page)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		docs = append(docs, b)
-	}
+	docs := collectDumps(t, ctx, apps)
 
 	out, err := json.MarshalIndent(docs, "", "  ")
 	if err != nil {
@@ -76,12 +58,12 @@ func TestDump(t *testing.T) {
 		dir = filepath.FromSlash("../../temp/perf-dumps")
 	}
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o750); err != nil { //nolint:gosec // reason: test-only dump dir from PERF_DUMP_DIR or the fixed repo-relative default, no request input.
 		t.Fatal(err)
 	}
 
 	p := filepath.Join(dir, "dump-"+time.Now().UTC().Format("20060102T150405Z")+".json")
-	if err := os.WriteFile(p, append(out, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(p, append(out, '\n'), 0o600); err != nil { //nolint:gosec // reason: test-only dump file under the test dump dir with a fixed timestamp name.
 		t.Fatal(err)
 	}
 

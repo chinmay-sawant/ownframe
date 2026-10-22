@@ -11,17 +11,18 @@ import (
 // Density conversion belongs to EbitenView, so it is not applied here.
 func (s *shell) imeScreenRect(box layout.Box) image.Rectangle {
 	sx, sy, ox, oy := s.zoom(), s.zoom(), 0.0, 0.0
-	if s.viewLocked() {
+	switch {
+	case s.viewLocked():
 		sx, ox, oy = s.fit()
 		sy = sx
-	} else if s.stretched() {
+	case s.stretched():
 		w, h := s.frameSize()
 		viewW, viewH := s.viewSize()
 		if w > 0 && h > 0 {
 			sx *= float64(viewW) / float64(w)
 			sy *= float64(viewH) / float64(h)
 		}
-	} else {
+	default:
 		// Page.IMEContext has already subtracted the CSS scroll offset.
 		ox = float64(s.scrollX) * (sx - 1)
 		oy = float64(s.scrollY) * (sy - 1)

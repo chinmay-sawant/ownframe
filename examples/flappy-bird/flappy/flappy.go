@@ -25,11 +25,6 @@ const (
 	MaxHeight = 1440
 )
 
-// point is a scene position in CSS pixels.
-type point struct {
-	x, y float64
-}
-
 // rect is one fill in CSS pixels.
 type rect struct {
 	x, y, w, h float64

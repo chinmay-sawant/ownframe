@@ -21,14 +21,14 @@ func storedFile(t *testing.T, path string, gen int64) *File {
 		t.Fatal(err)
 	}
 
-	f, err := os.Open(path)
+	f, err := os.Open(path) //nolint:gosec // reason: test reads a TempDir log file, not user input
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	head, headLen := fileHeadHash(f, fi.Size(), 0)
 
-	f.Close()
+	_ = f.Close()
 
 	pol := entry.DefaultPolicy()
 	pol.Poll = 2 * time.Millisecond

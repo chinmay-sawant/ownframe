@@ -4,6 +4,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// devElementClip caps the element text runes in the panel.
+const devElementClip = 120
+
 // devElementRows returns the Elements tab: the picked target above its
 // properties as pretty JSON. The pinned box wins over the hovered one; with
 // neither, the tab explains how to pick.
@@ -54,7 +57,7 @@ func (s *shell) devElementPayload(box layout.Box) devElementJSON {
 		Tag:    box.Tag,
 		ID:     box.ID,
 		Action: box.Action,
-		Text:   devClip(box.Text, 120),
+		Text:   devClip(box.Text, devElementClip),
 		Rect: devElementRect{
 			X: box.X, Y: box.Y, Width: box.W, Height: box.H,
 		},

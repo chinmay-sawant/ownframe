@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -48,7 +49,7 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 	}
 	pace.kick = make(chan struct{}, 1)
 	pace.debug, pace.debugAt = paceDebugWriter(), time.Now()
-	go pace.timer(ctx)
+	safego.Go("pace timer", func() { pace.timer(ctx) })
 
 	return pace, pace.close
 }

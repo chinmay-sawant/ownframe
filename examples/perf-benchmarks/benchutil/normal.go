@@ -22,7 +22,7 @@ type Normal struct {
 func NewNormal() (*Normal, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title: "Normal", HTML: normalHTML,
-		Width: 480, Height: 640, MinWidth: 320, MinHeight: 480,
+		Width: normalWidth, Height: normalHeight, MinWidth: normalMinWidth, MinHeight: normalMinHeight,
 		Perf: true,
 	})
 	if err != nil {

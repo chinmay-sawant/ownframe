@@ -12,12 +12,12 @@ import (
 // eqHeight is bar i's height as a fraction of the container, 0.2 to 1.
 func eqHeight(i int, playing bool, t time.Time) float64 {
 	if !playing {
-		return 0.3
+		return eqIdleHeight
 	}
 
-	f := 0.5 + 0.5*math.Sin(float64(t.UnixMilli())/float64(120+35*i)+float64(i)*1.9)
-	if f < 0.2 {
-		return 0.2
+	f := eqHalf + eqHalf*math.Sin(float64(t.UnixMilli())/float64(eqBasePeriod+35*i)+float64(i)*1.9)
+	if f < eqMinHeight {
+		return eqMinHeight
 	}
 
 	if f > 1 {
@@ -52,7 +52,7 @@ func (a *App) animateEq(d *ownframe.Display, boxes []ownframe.Box) {
 			continue
 		}
 
-		cx, cy := op.X+op.W/2, op.Y+op.H/2
+		cx, cy := op.X+op.W/centerDiv, op.Y+op.H/centerDiv
 		if !(cx >= x-0.5 && cx <= x+w+0.5 && cy >= y-0.5 && cy <= y+h+0.5) {
 			continue
 		}

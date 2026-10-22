@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/pet-care/app"
@@ -26,8 +27,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer a.Close()
 	if err := ownframe.Run(context.Background(), a.Page()); err != nil {
+		log.Fatal(errors.Join(err, a.Close()))
+	}
+	if err := a.Close(); err != nil {
 		log.Fatal(err)
 	}
 }

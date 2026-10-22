@@ -10,6 +10,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// lineHalf scales a stroke to its half-extent and back.
+const lineHalf = 2
+
 // drawLine draws one border segment. The engine centers the stroke on the
 // line and extends it half a stroke past each endpoint, so one filled
 // rectangle reproduces an axis-aligned segment exactly. A diagonal segment,
@@ -29,13 +32,13 @@ func drawLine(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		return
 	}
 
-	half := float64(stroke) / 2 / pxPerPt
+	half := float64(stroke) / lineHalf / pxPerPt
 
 	var box image.Rectangle
 	if op.H <= 0 {
-		box = snap(x-half, y-half, w+2*half, 2*half)
+		box = snap(x-half, y-half, w+lineHalf*half, lineHalf*half)
 	} else {
-		box = snap(x-half, y-half, 2*half, h+2*half)
+		box = snap(x-half, y-half, lineHalf*half, h+lineHalf*half)
 	}
 
 	vector.FillRect(

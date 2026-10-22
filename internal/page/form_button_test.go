@@ -34,7 +34,9 @@ func TestButtonsFocusAndDisable(t *testing.T) {
 func TestButtonRouteAndDisabledRoute(t *testing.T) {
 	p := bftPage(t, `<button id="off" disabled data-action="next">Off</button><button id="next" data-action="next"><span>Next</span></button>`)
 	bftDraw(t, p, nil)
-	p.Route("next", `<p id="destination">Destination</p>`)
+	if err := p.Route("next", `<p id="destination">Destination</p>`); err != nil {
+		t.Fatal(err)
+	}
 	calls := 0
 	p.Handle(Handlers{Click: func(context.Context, Box) error { calls++; return nil }})
 	bftClick(t, p, "off")

@@ -14,11 +14,11 @@ func openStore(path string) *store.Store {
 		return st
 	}
 
-	log.Printf("teams: database unavailable, using a memory database: %v", err)
+	log.Printf("teams: database unavailable, using memory: %s", cleanLog(err.Error()))
 
 	st, err = store.Open(store.Memory)
 	if err != nil {
-		log.Printf("teams: memory database: %v", err)
+		log.Printf("teams: memory database: %s", cleanLog(err.Error()))
 
 		return nil
 	}

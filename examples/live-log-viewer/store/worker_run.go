@@ -36,7 +36,7 @@ func runJobFor[T any](s *Store, ctx context.Context, d time.Duration, fn func(co
 	}
 
 	if d <= 0 {
-		d = 5 * time.Second
+		d = storeDefTimeout
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, d)

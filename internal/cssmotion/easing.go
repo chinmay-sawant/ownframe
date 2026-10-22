@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+// Bezier handles for ease, ease-in, ease-out and ease-in-out.
+const (
+	easeX1, easeY1, easeX2 = 0.25, 0.1, 0.25
+	easeInX1               = 0.42
+	easeOutX2              = 0.58
+	bezierHandleCount      = 4
+)
+
 // Ease samples a CSS timing-function string at progress t.
 func Ease(value string, t float64) float64 {
 	t = clamp(t)
@@ -12,13 +20,13 @@ func Ease(value string, t float64) float64 {
 	case "", "linear":
 		return t
 	case "ease":
-		return cubic(t, .25, .1, .25, 1)
+		return cubic(t, easeX1, easeY1, easeX2, 1)
 	case "ease-in":
-		return cubic(t, .42, 0, 1, 1)
+		return cubic(t, easeInX1, 0, 1, 1)
 	case "ease-out":
-		return cubic(t, 0, 0, .58, 1)
+		return cubic(t, 0, 0, easeOutX2, 1)
 	case "ease-in-out":
-		return cubic(t, .42, 0, .58, 1)
+		return cubic(t, easeInX1, 0, easeOutX2, 1)
 	case "step-start":
 		return 1
 	case "step-end":
@@ -31,7 +39,7 @@ func Ease(value string, t float64) float64 {
 	switch name {
 	case "cubic-bezier":
 		v := commaNumbers(body)
-		if len(v) == 4 {
+		if len(v) == bezierHandleCount {
 			return cubic(t, v[0], v[1], v[2], v[3])
 		}
 	case "steps":

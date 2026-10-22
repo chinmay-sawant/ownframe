@@ -14,8 +14,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	if err := s.SaveGame(ctx, testResult("backed-up", 777), nil); err != nil {
@@ -33,8 +32,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer restored.Close()
-
+	defer func() { _ = restored.Close() }()
 	top, err := restored.TopScores(ctx, 10)
 	if err != nil {
 		t.Fatal(err)
@@ -52,10 +50,9 @@ func TestBackupRefusesAnExistingDestination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	dest := filepath.Join(t.TempDir(), DBName)
-	if err := os.WriteFile(dest, []byte("occupied"), 0o644); err != nil {
+	if err := os.WriteFile(dest, []byte("occupied"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -69,8 +66,7 @@ func TestBackupRejectsAnEmptyDestination(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	if err := s.Backup(context.Background(), ""); err == nil {
 		t.Fatal("an empty destination was accepted")
 	}
@@ -81,8 +77,7 @@ func TestCheckpointOnMemoryIsANoOp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	if err := s.Checkpoint(context.Background()); err != nil {
 		t.Fatal(err)
 	}

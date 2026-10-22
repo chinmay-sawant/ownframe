@@ -15,14 +15,14 @@ func TestSecondInstance(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer a.Close()
+	defer func() { _ = a.Close() }()
 
 	b, err := Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	sa, err := a.EnsureDummy(bg(), DummyOptions{Count: 30})
 	if err != nil {

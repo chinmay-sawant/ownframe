@@ -32,7 +32,7 @@ func (a *App) paintGraph(d *ownframe.Display, p *panel) {
 
 	pitch := bw / float64(cols)
 	barW := max(pitch-pp, pp)
-	minH := 1.5 * pp
+	minH := barMinHeight * pp
 	avail := max(bh-minH, 0)
 
 	for i, bar := range bars {
@@ -55,10 +55,18 @@ func (a *App) paintGraph(d *ownframe.Display, p *panel) {
 	}
 }
 
-// graphColumns picks a column count from the graph's visible width, one bar
-// per four CSS pixels, bounded by the bar nodes the template rendered.
-func graphColumns(width, pixelPerPoint float64) int {
-	cols := int(width / (4 * pixelPerPoint))
+// Graph geometry: the minimum bar height in points, the CSS pixels per
+// bar, and the column clamp.
+const (
+	barMinHeight = 1.5
+	pxPerBar     = 4
+	graphColsMin = 24
+)
 
-	return min(max(cols, 24), graphColsMax)
+// graphColumns picks a column count from the graph's visible width, one bar
+// per few CSS pixels, bounded by the bar nodes the template rendered.
+func graphColumns(width, pixelPerPoint float64) int {
+	cols := int(width / (pxPerBar * pixelPerPoint))
+
+	return min(max(cols, graphColsMin), graphColsMax)
 }

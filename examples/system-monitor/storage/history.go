@@ -44,7 +44,7 @@ VALUES(?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return 0, err
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	kept := 0
 
@@ -65,22 +65,4 @@ VALUES(?, ?, ?, ?, ?, ?, ?)`)
 	}
 
 	return kept, nil
-}
-
-// CountRows returns how many raw rows a session holds.
-func (s *Store) CountRows(ctx context.Context, sessionID int64) (int64, error) {
-	if err := s.ready(); err != nil {
-		return 0, err
-	}
-
-	ctx, cancel := s.opCtx(ctx)
-	defer cancel()
-
-	var n int64
-	if err := s.db.QueryRowContext(ctx,
-		`SELECT COUNT(*) FROM metric_history WHERE session_id = ?`, sessionID).Scan(&n); err != nil {
-		return 0, err
-	}
-
-	return n, nil
 }

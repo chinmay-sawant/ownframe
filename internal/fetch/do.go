@@ -16,7 +16,10 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	if ctx == nil {
 		return Response{}, ErrNilContext
 	}
-	if err := checkURL(rawURL); err != nil {
+	if err := checkURL(ctx, rawURL); err != nil {
+		return Response{}, err
+	}
+	if err := checkMethodHeader(method, header); err != nil {
 		return Response{}, err
 	}
 	if method == "" {
@@ -47,10 +50,13 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 		if errors.Is(err, ErrTooManyRedirects) {
 			return Response{}, ErrTooManyRedirects
 		}
+		if strings.Contains(err.Error(), "response headers exceeded") {
+			return Response{}, ErrHeadersTooLarge
+		}
 
 		return Response{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	out, err := io.ReadAll(io.LimitReader(resp.Body, MaxBodyBytes+1))
 	if err != nil {
@@ -72,13 +78,4 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	}
 
 	return Response{Status: resp.StatusCode, Header: flat(resp.Header), Body: out}, nil
-}
-
-func flat(h http.Header) map[string]string {
-	out := make(map[string]string, len(h))
-	for key, values := range h {
-		out[key] = strings.Join(values, ", ")
-	}
-
-	return out
 }

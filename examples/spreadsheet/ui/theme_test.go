@@ -33,7 +33,7 @@ func TestThemeTogglePersists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer again.Close()
+	defer func() { _ = again.Close() }()
 	if !again.dark || again.View().Dark != true {
 		t.Fatal("theme was not restored")
 	}

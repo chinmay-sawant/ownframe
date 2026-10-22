@@ -24,12 +24,12 @@ func (a *App) save() {
 			return
 		}
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, snipDirPerm); err != nil {
 		a.view.Status = "save failed: " + err.Error()
 		return
 	}
 	path := filepath.Join(dir, "snip-"+time.Now().Format("20060102-150405")+".png")
-	if err := os.WriteFile(path, a.crop, 0o644); err != nil {
+	if err := os.WriteFile(path, a.crop, snipFilePerm); err != nil {
 		a.view.Status = "save failed: " + err.Error()
 		return
 	}

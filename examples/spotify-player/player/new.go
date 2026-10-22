@@ -61,7 +61,7 @@ func NewWith(base string, engine *music.Engine) (*App, error) {
 	}
 	app.updateNavButtons()
 	app.seconds = lengthSeconds(app.view.Now.Length)
-	engine.SetVolume(float64(defaultVolume) / 100)
+	engine.SetVolume(float64(defaultVolume) / percentScale)
 	registerImages(page)
 	page.Handle(ownframe.Handlers{Click: app.onClick})
 	page.SetTick(app.Tick)

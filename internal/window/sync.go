@@ -73,7 +73,7 @@ func (s *shell) markRedrawOffset() {
 
 func (s *shell) disposeImage() {
 	if s.img != nil {
-		s.img.Dispose()
+		s.img.Deallocate()
 		s.img = nil
 	}
 }

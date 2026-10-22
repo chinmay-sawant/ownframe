@@ -14,8 +14,8 @@ import (
 )
 
 func main() {
-	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
-	addr := flag.String("addr", "127.0.0.1:8091", "listen address for -web")
+	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr (loopback only, plaintext HTTP; demo creds travel in clear)")
+	addr := flag.String("addr", "127.0.0.1:8091", "listen address for -web (keep loopback; HTTP is plaintext)")
 	flag.Parse()
 
 	app, err := login.New()

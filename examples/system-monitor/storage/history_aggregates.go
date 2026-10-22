@@ -50,7 +50,7 @@ FROM metric_aggregate WHERE session_id = ?`
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var out []Aggregate
 

@@ -43,8 +43,7 @@ func TestCanceledContextFailsFast(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -63,7 +62,7 @@ func TestCloseWhileWritesAreInFlight(t *testing.T) {
 
 	for i := 0; i < 4; i++ {
 		go func(i int) {
-			done <- s.SaveGame(context.Background(), testResult(string(rune('a'+i)), 100), nil)
+			done <- s.SaveGame(context.Background(), testResult(string(rune('a'+i)), 100), nil) //nolint:gosec // reason: test builds a short id from a small index, the rune stays in range.
 		}(i)
 	}
 

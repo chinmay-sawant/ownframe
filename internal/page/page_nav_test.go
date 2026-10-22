@@ -2,6 +2,7 @@ package page_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -31,7 +32,7 @@ func TestLoadBackForward(t *testing.T) {
 	}
 
 	navAt(t, screen, second, "b")
-	if err := screen.Forward(ctx); err != page.ErrNoHistory {
+	if err := screen.Forward(ctx); !errors.Is(err, page.ErrNoHistory) {
 		t.Fatalf("forward = %v", err)
 	}
 
@@ -39,7 +40,7 @@ func TestLoadBackForward(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := screen.Back(ctx); err != page.ErrNoHistory {
+	if err := screen.Back(ctx); !errors.Is(err, page.ErrNoHistory) {
 		t.Fatalf("back = %v", err)
 	}
 }
@@ -50,8 +51,12 @@ func TestRouteClickLoadsHTML(t *testing.T) {
 	ctx := context.Background()
 	next := `<div id="b">B</div>`
 	screen := navPage(t, `<div id="a" data-action="go">A</div>`)
-	screen.Route("go", `<div id="c">C</div>`)
-	screen.Route("go", next)
+	if err := screen.Route("go", `<div id="c">C</div>`); err != nil {
+		t.Fatal(err)
+	}
+	if err := screen.Route("go", next); err != nil {
+		t.Fatal(err)
+	}
 
 	x, y := boxCenter(t, screen, "a")
 	if err := screen.Click(ctx, x, y); err != nil {
@@ -66,36 +71,7 @@ func TestLoadRejectsBlankHTML(t *testing.T) {
 
 	screen := navPage(t, `<div id="a">A</div>`)
 	err := screen.Load(context.Background(), " ")
-	if err != page.ErrEmptyHTML {
+	if !errors.Is(err, page.ErrEmptyHTML) {
 		t.Fatalf("err = %v", err)
 	}
-}
-
-func navPage(t *testing.T, html string) *page.Page {
-	t.Helper()
-
-	screen, err := page.New(page.Config{
-		HTML:   html,
-		Width:  320,
-		Height: 200,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err = screen.Redraw(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-
-	return screen
-}
-
-func navAt(t *testing.T, screen *page.Page, html, id string) {
-	t.Helper()
-
-	if screen.HTML() != html {
-		t.Fatalf("html = %q", screen.HTML())
-	}
-
-	boxCenter(t, screen, id)
 }

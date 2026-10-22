@@ -2,6 +2,7 @@ package page_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -15,6 +16,7 @@ func TestDesktopMinimumSurvivesMobilePrepareError(t *testing.T) {
 	if err := page.Prepare(context.Background(), p); err != nil {
 		t.Fatal(err)
 	}
+	//nolint:staticcheck // reason: intentionally passes nil to verify nil-context rejection.
 	if err := page.PrepareMobile(nil, p); err == nil {
 		t.Fatal("nil context accepted")
 	}
@@ -25,7 +27,7 @@ func TestDesktopMinimumSurvivesMobilePrepareError(t *testing.T) {
 }
 
 func TestMobilePrepareRejectsNilPage(t *testing.T) {
-	if err := page.PrepareMobile(context.Background(), nil); err != page.ErrNilPage {
+	if err := page.PrepareMobile(context.Background(), nil); !errors.Is(err, page.ErrNilPage) {
 		t.Fatalf("nil page error = %v", err)
 	}
 }

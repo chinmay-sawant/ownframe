@@ -13,8 +13,7 @@ func TestInvalidResultsAreRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	bad := []game.Result{
@@ -37,8 +36,7 @@ func TestSaveGameWithReplayRoundTrips(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 	rep := &game.Replay{
 		Seed:           5,

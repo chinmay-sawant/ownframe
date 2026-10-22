@@ -16,10 +16,10 @@ func (f *Flap) Tick(ctx context.Context) error {
 	}
 
 	now := time.Now()
-	dt := 1.0 / 60
+	dt := 1.0 / flapFrameRate
 
 	if !f.last.IsZero() {
-		dt = min(max(now.Sub(f.last).Seconds(), 0), 0.1)
+		dt = min(max(now.Sub(f.last).Seconds(), 0), flapMaxDt)
 	}
 
 	f.last = now
@@ -44,8 +44,8 @@ func (f *Flap) paint() {
 
 	for i := range f.tops {
 		if i < len(f.pipes) {
-			top := f.pipes[i].gapY - flapGap/2
-			bot := f.pipes[i].gapY + flapGap/2
+			top := f.pipes[i].gapY - flapHalfGap
+			bot := f.pipes[i].gapY + flapHalfGap
 			place(d, f.tops[i], f.pipes[i].x, 0, flapPipeW, top)
 			place(d, f.bots[i], f.pipes[i].x, bot, flapPipeW, flapSceneH-bot)
 

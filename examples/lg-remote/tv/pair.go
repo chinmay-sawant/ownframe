@@ -6,7 +6,7 @@ import (
 )
 
 func (c *Client) pair(old string) (string, error) {
-	ch := make(chan Message, 4)
+	ch := make(chan Message, pairChanSize)
 	if err := c.arm("register_0", ch); err != nil {
 		return "", err
 	}
@@ -17,7 +17,7 @@ func (c *Client) pair(old string) (string, error) {
 		return "", err
 	}
 
-	timer := time.NewTimer(45 * time.Second)
+	timer := time.NewTimer(pairTimeout)
 	defer timer.Stop()
 
 	prompted := false

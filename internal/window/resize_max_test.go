@@ -39,8 +39,7 @@ func TestResizeLaysOutPastTheMax(t *testing.T) {
 		minW: 320, minH: 400,
 		maxW: 800, maxH: 900,
 	}}
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 
 	shell.Layout(2000, 1500)
 	if err := shell.resize(); err != nil {

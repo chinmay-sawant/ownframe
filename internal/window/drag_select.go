@@ -42,11 +42,11 @@ func (s *shell) pressAt(px, py float64) error {
 		s.dragX, s.dragY = px, py
 
 		count := s.clicks.step(time.Now(), px, py)
-		if count == 2 {
+		if count == doubleClickCount {
 			return sel.SelectWordAt(s.ctx, px, py)
 		}
 
-		if count >= 3 {
+		if count >= tripleClickCount {
 			return sel.SelectLineAt(s.ctx, px, py)
 		}
 

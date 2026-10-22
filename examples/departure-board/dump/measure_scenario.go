@@ -30,21 +30,21 @@ type plan struct {
 func scenarioPlan(name string) (plan, bool) {
 	switch name {
 	case "warmup":
-		return plan{draw: true, ticks: 30}, true
+		return plan{draw: true, ticks: scenarioWarmupTicks}, true
 	case "flap":
-		return plan{draw: true, advance: true, ticks: 120}, true
+		return plan{draw: true, advance: true, ticks: scenarioFlapTicks}, true
 	case "idle":
-		return plan{draw: true, ticks: 240}, true
+		return plan{draw: true, ticks: scenarioIdleTicks}, true
 	case "loop":
-		return plan{draw: true, advance: true, ticks: 240}, true
+		return plan{draw: true, advance: true, ticks: scenarioIdleTicks}, true
 	case "cascade":
 		// Bind the flaps, then resync with Advance, so the row bands run
 		// after the Redraw shape.
-		return plan{draw: true, ticks: 150, midAt: 3, mid: "advance"}, true
+		return plan{draw: true, ticks: scenarioResyncTicks, midAt: resyncMidAt, mid: "advance"}, true
 	case "rotate":
 		// Bind the flaps, then take the tick's retarget path, which must
 		// leave the page generation alone.
-		return plan{draw: true, ticks: 150, midAt: 3, mid: "rotate"}, true
+		return plan{draw: true, ticks: scenarioResyncTicks, midAt: resyncMidAt, mid: "rotate"}, true
 	default:
 		return plan{}, false
 	}

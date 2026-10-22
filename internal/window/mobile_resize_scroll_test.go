@@ -19,7 +19,7 @@ func TestNativeLandscapeStillScrollsVertically(t *testing.T) {
 	if err := page.PrepareMobile(ctx, p); err != nil {
 		t.Fatal(err)
 	}
-	s := NewGame(ctx, p).(*shell)
+	s := newShell(ctx, p)
 	s.Layout(885, 420)
 	if err := s.resize(); err != nil {
 		t.Fatal(err)

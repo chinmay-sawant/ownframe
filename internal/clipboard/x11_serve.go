@@ -32,9 +32,9 @@ func (x *xClient) onRequest(ev []byte) {
 	case sel != clip:
 		out = 0
 	case target == targets:
-		vals := []uint32{targets, utf8, 31}
-		err = x.send(prop32(who, prop, 4, vals))
-	case target == utf8 || target == 31:
+		vals := []uint32{targets, utf8, xStrId}
+		err = x.send(prop32(who, prop, xAtomId, vals))
+	case target == utf8 || target == xStrId:
 		if 24+len(text) > limit {
 			out = 0
 		} else {

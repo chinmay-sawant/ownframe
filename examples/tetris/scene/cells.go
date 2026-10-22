@@ -41,7 +41,7 @@ func classAt(f Frame, r, c int) string {
 // previewCells lays out the 4x4 next-piece box.
 func previewCells(k game.Piece) []cellV {
 	set := nextSet(k)
-	out := make([]cellV, 0, 16)
+	out := make([]cellV, 0, previewCap)
 
 	for r := 0; r < 4; r++ {
 		for c := 0; c < 4; c++ {

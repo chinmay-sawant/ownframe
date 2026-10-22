@@ -17,8 +17,8 @@ func colName(c int) string {
 	i := len(b)
 	for c >= 0 {
 		i--
-		b[i] = byte('A' + c%26)
-		c = c/26 - 1
+		b[i] = byte('A' + c%uiAlphaBase)
+		c = c/uiAlphaBase - 1
 	}
 
 	return string(b[i:])
@@ -33,7 +33,7 @@ func parseRef(s string) (r, c int, ok bool) {
 	s = strings.ToUpper(strings.TrimSpace(s))
 	i := 0
 	for i < len(s) && s[i] >= 'A' && s[i] <= 'Z' {
-		c = c*26 + int(s[i]-'A'+1)
+		c = c*uiAlphaBase + int(s[i]-'A'+1)
 		i++
 	}
 

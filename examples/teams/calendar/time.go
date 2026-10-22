@@ -16,15 +16,15 @@ func minutes(t string) int {
 	m, ap, _ := strings.Cut(rest, " ")
 	hi, _ := strconv.Atoi(strings.TrimSpace(h))
 	mi, _ := strconv.Atoi(strings.TrimSpace(m))
-	if hi == 12 {
+	if hi == noonHour {
 		hi = 0
 	}
 
 	if ap == "PM" {
-		hi += 12
+		hi += pmOffset
 	}
 
-	return hi*60 + mi
+	return hi*minPerHour + mi
 }
 
 // nextID returns an event id nothing in the list uses yet.

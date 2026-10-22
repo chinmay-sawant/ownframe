@@ -32,7 +32,7 @@ func TestOpenAndReopen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	got, ok, err := st.Setting(t.Context(), "theme")
 	if err != nil || !ok || got != "dark" {
@@ -46,7 +46,7 @@ func TestForceRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if st.JournalMode() != "delete" {
 		t.Fatalf("journal = %q", st.JournalMode())
@@ -59,7 +59,7 @@ func TestTempStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if !st.Temp() || st.Path() != memoryPath || st.JournalMode() != "memory" {
 		t.Fatalf("temp=%v path=%q journal=%q", st.Temp(), st.Path(), st.JournalMode())

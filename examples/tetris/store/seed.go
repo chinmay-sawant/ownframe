@@ -34,8 +34,7 @@ func applySeed(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
-	defer tx.Rollback()
-
+	defer func() { _ = tx.Rollback() }()
 	for i, d := range dummyScores {
 		id := fmt.Sprintf("dummy-%04d", i+1)
 		day := time.Date(2026, time.October, d.day, 12, 0, 0, 0, time.UTC)
@@ -47,7 +46,7 @@ func applySeed(ctx context.Context, db *sql.DB) error {
 			) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT (id) DO NOTHING`,
 			id, d.score, d.lines, d.level, d.pieces,
-			1000*d.lines, int64(d.seed), rulesetName, fixtureVersion,
+			scorePerLine*d.lines, int64(d.seed), rulesetName, fixtureVersion, //nolint:gosec // reason: seed bits are stored in SQLite INTEGER and round-trip via uint64 on load, fixture values are small.
 			day.Format(time.RFC3339))
 		if err != nil {
 			return err

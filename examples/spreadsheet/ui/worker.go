@@ -44,7 +44,6 @@ type result struct {
 	prev  Preview
 	imp   ImportResult
 	data  []byte
-	text  string
 	path  string
 	err   error
 }

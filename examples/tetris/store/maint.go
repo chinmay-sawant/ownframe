@@ -36,7 +36,7 @@ func (s *Store) Replay(ctx context.Context, id string) (game.Replay, error) {
 
 	rep.Fixture = fixture
 	if err := json.Unmarshal([]byte(events), &rep.Events); err != nil {
-		return game.Replay{}, fmt.Errorf("%w: replay events: %v", ErrInvalid, err)
+		return game.Replay{}, fmt.Errorf("%w: replay events: %w", ErrInvalid, err)
 	}
 
 	return rep, rep.Validate()
@@ -64,7 +64,7 @@ func (s *Store) Backup(ctx context.Context, dest string) error {
 		return fmt.Errorf("%w: backup destination", ErrInvalid)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dest), dirPerm); err != nil {
 		return err
 	}
 

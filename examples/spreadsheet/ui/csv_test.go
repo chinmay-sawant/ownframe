@@ -18,7 +18,7 @@ func TestCSVImportPreviewAndCommit(t *testing.T) {
 	}
 
 	path := filepath.Join(t.TempDir(), "in.csv")
-	if err := os.WriteFile(path, []byte("a,b\nc,d\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("a,b\nc,d\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -29,7 +29,9 @@ func TestCSVImportPreviewAndCommit(t *testing.T) {
 	}
 
 	before := app.rev
-	app.commitCSV(context.Background())
+	if err := app.commitCSV(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	flush(t, app)
 	if app.csv.open {
 		t.Fatal("dialog stayed open after commit")
@@ -52,7 +54,9 @@ func TestCSVExportWritesFile(t *testing.T) {
 
 	path := filepath.Join(t.TempDir(), "out.csv")
 	app.csv.path = path
-	app.writeCSV(context.Background())
+	if err := app.writeCSV(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	flush(t, app)
 
 	if _, err := os.Stat(path); err != nil {
@@ -70,7 +74,9 @@ func TestCSVCommitWithoutFileKeepsWorkbook(t *testing.T) {
 
 	clickAction(t, app, "import")
 	before := app.rev
-	app.commitCSV(context.Background())
+	if err := app.commitCSV(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	flush(t, app)
 
 	if app.rev != before {

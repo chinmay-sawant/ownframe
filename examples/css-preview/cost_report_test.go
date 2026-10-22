@@ -44,21 +44,3 @@ func costActive(d *demo) int {
 
 	return n
 }
-
-// costSpan reports the smallest and the largest active count of a run.
-func costSpan(values []int) [2]int {
-	if len(values) == 0 {
-		return [2]int{}
-	}
-	lo, hi := values[0], values[0]
-	for _, v := range values {
-		if v < lo {
-			lo = v
-		}
-		if v > hi {
-			hi = v
-		}
-	}
-
-	return [2]int{lo, hi}
-}

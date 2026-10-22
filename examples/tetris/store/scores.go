@@ -32,8 +32,7 @@ func (s *Store) listScores(ctx context.Context, dummy int, limit int) ([]game.Re
 			return err
 		}
 
-		defer rows.Close()
-
+		defer func() { _ = rows.Close() }()
 		for rows.Next() {
 			r, err := scanScore(rows)
 			if err != nil {

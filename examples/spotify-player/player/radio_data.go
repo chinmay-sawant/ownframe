@@ -13,10 +13,10 @@ func defaultRadio() RadioData {
 		Stations: []Card{
 			{Index: 0, Title: "Nova Waves Radio", Sub: "Nova Waves, Aster Field and more", Cover: "cover-late-night"},
 			{Index: 1, Title: "Indie Coast Radio", Sub: "Indie Coast, The Far Coast and more", Cover: "cover-spring"},
-			{Index: 2, Title: "Lo-Fi Nights Radio", Sub: "Lo-Fi Nights, Mono Arcade and more", Cover: "cover-chillhop"},
-			{Index: 3, Title: "Synthwave FM", Sub: "Synthwave FM, Neon Horizon and more", Cover: "cover-funk"},
-			{Index: 4, Title: "Acoustic Mornings Radio", Sub: "Acoustic Mornings, Paper Trails and more", Cover: "cover-hybrid"},
-			{Index: 5, Title: "Deep Focus Radio", Sub: "Deep Focus, Blue Hour and more", Cover: "cover-focus"},
+			{Index: sampleIdx2, Title: "Lo-Fi Nights Radio", Sub: "Lo-Fi Nights, Mono Arcade and more", Cover: "cover-chillhop"},
+			{Index: sampleIdx3, Title: "Synthwave FM", Sub: "Synthwave FM, Neon Horizon and more", Cover: "cover-funk"},
+			{Index: sampleIdx4, Title: "Acoustic Mornings Radio", Sub: "Acoustic Mornings, Paper Trails and more", Cover: "cover-hybrid"},
+			{Index: sampleIdx5, Title: "Deep Focus Radio", Sub: "Deep Focus, Blue Hour and more", Cover: "cover-focus"},
 		},
 	}
 }

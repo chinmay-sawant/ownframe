@@ -7,11 +7,17 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// fnvOffsetBasis is the FNV-1a 64-bit offset basis starting a signature.
+const fnvOffsetBasis uint64 = 14695981039346656037
+
+// fnvPrime is the FNV-1a 64-bit prime folding each word.
+const fnvPrime uint64 = 1099511628211
+
 // chunkSig returns the content signature and the page box of one run. An
 // unbounded member or a box past the caps gives an empty box, so the caller
 // keeps the run direct.
 func chunkSig(d *layout.Display, c *chunkRun, content image.Rectangle) (uint64, image.Rectangle) {
-	h := uint64(14695981039346656037)
+	h := fnvOffsetBasis
 	box := image.Rectangle{}
 
 	for _, op := range c.ops {
@@ -34,7 +40,7 @@ func chunkSig(d *layout.Display, c *chunkRun, content image.Rectangle) (uint64, 
 
 // mix64 folds one word into an FNV-1a style signature.
 func mix64(h, v uint64) uint64 {
-	return (h ^ v) * 1099511628211
+	return (h ^ v) * fnvPrime
 }
 
 // mixF folds one float.

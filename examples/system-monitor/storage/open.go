@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	_ "modernc.org/sqlite"
 )
@@ -50,16 +49,16 @@ func OpenWithOptions(opts Options) (*Store, error) {
 	s := &Store{db: db, path: path, opTimeout: opts.OpTimeout, temp: opts.Temp}
 
 	if err := s.applyPragmas(context.Background(), opts); err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), migrateTimeout)
 	defer cancel()
 
 	if err := s.migrate(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, err
 	}

@@ -47,9 +47,9 @@ func truncate(s string, n int) string {
 func bytesText(n int64) string {
 	switch {
 	case n >= 1<<20:
-		return strconv.FormatFloat(float64(n)/(1<<20), 'f', 1, 64) + "M"
+		return strconv.FormatFloat(float64(n)/(1<<uiMiBShift), 'f', 1, 64) + "M"
 	case n >= 1<<10:
-		return strconv.FormatFloat(float64(n)/(1<<10), 'f', 1, 64) + "K"
+		return strconv.FormatFloat(float64(n)/(1<<uiKiBShift), 'f', 1, 64) + "K"
 	}
 
 	return strconv.FormatInt(n, 10) + "B"
@@ -61,13 +61,13 @@ func bytesText(n int64) string {
 func textBudget(width int) int {
 	const fixed = 500 // sidebar, padding, time, source, severity, tags
 
-	if width < fixed+160 {
-		width = fixed + 160
+	if width < fixed+uiMinWidth {
+		width = fixed + uiMinWidth
 	}
 
-	budget := (width - fixed) / 8
-	if budget > 400 {
-		budget = 400
+	budget := (width - fixed) / uiColChar
+	if budget > uiMaxBudget {
+		budget = uiMaxBudget
 	}
 
 	return budget

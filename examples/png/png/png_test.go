@@ -38,7 +38,7 @@ func TestPNGCacheAndRedraw(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // reason: test reads back the file SavePNG just wrote under t.TempDir.
 	if err != nil {
 		t.Fatal(err)
 	}

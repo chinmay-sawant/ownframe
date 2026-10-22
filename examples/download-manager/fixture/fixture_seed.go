@@ -9,10 +9,10 @@ import (
 func seedFrom(path string) int {
 	sum := 0
 	for _, r := range path {
-		sum = sum*31 + int(r)
+		sum = sum*hashBase + int(r)
 	}
 
-	return sum & 0xffff
+	return sum & hashMask
 }
 
 // requestSeed reads ?seed= for tests that want two different bodies.
@@ -28,7 +28,7 @@ func requestSeed(r *http.Request) int {
 			return seedFrom(r.URL.Path)
 		}
 
-		seed = seed*10 + int(digit-'0')
+		seed = seed*decimalBase + int(digit-'0')
 	}
 
 	return seed

@@ -11,7 +11,7 @@ func TestReloadResolvesHoverFromTheCursor(t *testing.T) {
 	app := newReloadScreen()
 	app.left = 1
 
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 	s.cursorX, s.cursorY = 10, 20
 
 	if err := s.pollReload(); err != nil {

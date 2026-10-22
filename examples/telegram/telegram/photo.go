@@ -68,7 +68,7 @@ func (a *App) addPhoto(data []byte) {
 		a.chats[i].Time = "now"
 	}
 
-	a.page.ScrollTo(0, 1<<20)
+	a.page.ScrollTo(0, scrollBottom)
 	a.mark()
 }
 

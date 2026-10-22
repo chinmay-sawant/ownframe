@@ -14,7 +14,7 @@ func paintGroup(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicke
 	}
 
 	layer := ebiten.NewImage(rect.Dx(), rect.Dy())
-	defer layer.Dispose()
+	defer layer.Deallocate()
 
 	inner := func(op *layout.DisplayOp) (float64, float64, bool) {
 		dx, dy, ok := pick(op)

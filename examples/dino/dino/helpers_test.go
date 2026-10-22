@@ -31,7 +31,7 @@ func newTestApp(t *testing.T) (*App, *testClock) {
 
 	clock := &testClock{at: time.Unix(0, 0)}
 	app.now = clock.now
-	app.rng = rand.New(rand.NewPCG(1, 2))
+	app.rng = rand.New(rand.NewPCG(1, 2)) //nolint:gosec // reason: seeded generator makes gameplay tests deterministic, not security-sensitive.
 
 	if err := app.page.Redraw(context.Background()); err != nil {
 		t.Fatal(err)

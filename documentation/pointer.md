@@ -8,7 +8,7 @@ The window sends hover, press, release, and click events to a page. `internal/wi
 
 `Page.Press(ctx, x, y)` sets the pressed id the same way and redraws only when it changed. `Page.Release(ctx)` clears the pressed id and redraws only when it was set.
 
-`Page.Click(ctx, x, y)` hit-tests the last box that contains the point, which is the innermost box in document order. A box without an id falls back to the innermost id-bearing element under the point, so a click on a child icon reaches its control. Then:
+`Page.Click(ctx, x, y)` hit-tests the last box that contains the point, which is the innermost box in document order. A `position: fixed` box is painted over the content, so it wins the hit test against any content box it overlaps, and a control inside it still wins against the fixed box around it. A box without an id falls back to the innermost id-bearing element under the point, so a click on a child icon reaches its control. Then:
 
 - A form control activates before the handler runs and never follows a route ([forms.md](forms.md)).
 - Any other hit blurs the focused control.

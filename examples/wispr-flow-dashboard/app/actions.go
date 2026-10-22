@@ -11,6 +11,7 @@ import (
 const shareText = "https://wisprflow.ai/insights"
 
 // navActions maps a sidebar or voice-profile click to the page it opens.
+// Allowlist only; demo boundary with no authz.
 var navActions = map[string]string{
 	"nav-dictation":  "dictation",
 	"nav-notetaker":  "notetaker",

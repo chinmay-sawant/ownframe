@@ -29,7 +29,7 @@ func blendPixel(b, s color.NRGBA, mode string) color.NRGBA {
 	}
 	cb, cs := rgbColor(b), rgbColor(s)
 	blended := blendRGB(cb, cs, mode)
-	ab, as := float64(b.A)/255, float64(s.A)/255
+	ab, as := float64(b.A)/channelMax, float64(s.A)/channelMax
 	alpha := as + ab*(1-as)
 	out := [3]uint8{}
 	for i := range out {

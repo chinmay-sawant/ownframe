@@ -10,12 +10,18 @@ import (
 //go:embed index.html assets/*
 var files embed.FS
 
+// Window size for the masking demo.
+const (
+	maskWidth  = 460
+	maskHeight = 390
+)
+
 func newPage() (*ownframe.Page, error) {
 	html, err := files.ReadFile("index.html")
 	if err != nil {
 		return nil, err
 	}
-	p, err := ownframe.New(ownframe.Config{DevTools: true, Title: "CSS masking", HTML: string(html), Width: 460, Height: 390})
+	p, err := ownframe.New(ownframe.Config{DevTools: true, Title: "CSS masking", HTML: string(html), Width: maskWidth, Height: maskHeight})
 	if err != nil {
 		return nil, err
 	}

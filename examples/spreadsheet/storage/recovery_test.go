@@ -28,7 +28,7 @@ func TestCrashBetweenEditAndAck(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	st, err = Open(dir)
 	if err != nil {
@@ -60,14 +60,14 @@ func TestCrashBetweenEditAndAck(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	st, err = Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	got, err = st.LoadWorkbook(ctx, w.ID())
 	if err != nil {

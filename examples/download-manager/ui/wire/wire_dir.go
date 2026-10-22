@@ -27,20 +27,20 @@ func (b *Backend) pickDir(override string) string {
 func (b *Backend) openDir(dir string) error {
 	st, err := store.Open(dir)
 	if err != nil {
-		log.Printf("download-manager: open %s: %v", dir, err)
+		log.Printf("download-manager: open failed: %s", cleanLog(err.Error()))
 
 		return nil
 	}
 
 	release, err := st.Lock()
 	if err != nil {
-		st.Close()
+		_ = st.Close()
 
 		if errors.Is(err, store.ErrLocked) {
-			return fmt.Errorf("download-manager: another instance is using %s", dir)
+			return fmt.Errorf("download-manager: another instance is using %s", cleanLog(dir))
 		}
 
-		log.Printf("download-manager: lock %s: %v", dir, err)
+		log.Printf("download-manager: lock failed: %s", cleanLog(err.Error()))
 
 		return nil
 	}

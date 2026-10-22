@@ -45,8 +45,8 @@ func checkTextRaster() error {
 
 	direct := ebiten.NewImage(320, 240)
 	cached := ebiten.NewImage(320, 240)
-	defer direct.Dispose()
-	defer cached.Dispose()
+	defer direct.Deallocate()
+	defer cached.Deallocate()
 
 	before := textRasterImages()
 	for pass := 0; pass < 2; pass++ {

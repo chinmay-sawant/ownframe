@@ -13,24 +13,22 @@ import (
 // Cache holds one parsed HTML tree and the styled document built from it.
 // The first draw parses and cascades once; every later draw relayouts the
 // cached document at the current viewport and pointer state, so a size or a
-// state change never parses the HTML or recollects the stylesheets. A caller
-// drops the cache when the executed source or the theme changes.
+// state change never parses the HTML. The sheets are collected again on every
+// relayout, because a caller can edit the tree. A caller drops the cache when
+// the executed source or the theme changes.
 //
 // Concurrency contract: a Cache is safe for concurrent method calls, which
 // serialize through its mutex. Relayout replaces the styled document returned
-// by Styled; a caller that still holds a *css.Document from a previous call
-// must not read or mutate it after starting a new Relayout. Cache methods do
-// not lock the returned *css.Document, so the same Cache must not be shared
-// across overlapping Relayout or Styled consumers. Multiple Pages keep their
-// own Cache and do not share one.
+// by Styled; a holder must not read or mutate an older doc after a Relayout.
+// Call Styled and Relayout from the page loop only; never retain the doc
+// across a Relayout or share the Cache across concurrent loops. Multiple
+// Pages keep their own Cache and do not share one. Tick and Draw stay on the
+// same goroutine, so no live race occurs under that single-owner use.
 type Cache struct {
 	mu     sync.Mutex
 	source string
 	doc    *html.Document
 	styled *css.Document
-	// pseudos records which interactive state pseudo-classes the sheets can
-	// match. The sheets do not change on Relayout, so it is fixed per cache.
-	pseudos StatePseudos
 }
 
 // NewCache parses source and applies the document sheets once, at the given
@@ -56,6 +54,5 @@ func NewCache(
 		return nil, fmt.Errorf("render: css: %w", err)
 	}
 
-	return &Cache{source: source, doc: doc, styled: styled,
-		pseudos: statePseudosOf(styled)}, nil
+	return &Cache{source: source, doc: doc, styled: styled}, nil
 }

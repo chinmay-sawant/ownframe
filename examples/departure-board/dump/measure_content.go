@@ -13,7 +13,7 @@ import (
 func contentRect(d *layout.Display, app *board.App) image.Rectangle {
 	r := image.Rect(0, 0, d.Width, d.Height)
 	for _, b := range app.Boxes() {
-		r = r.Union(image.Rect(int(b.X), int(b.Y), int(b.X+b.W+0.5), int(b.Y+b.H+0.5)))
+		r = r.Union(image.Rect(int(b.X), int(b.Y), int(b.X+b.W+pixelRound), int(b.Y+b.H+pixelRound)))
 	}
 	return r
 }

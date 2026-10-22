@@ -105,7 +105,7 @@ export default function Home() {
           <a href={demo.href}>{demo.link}</a>
         </div>
       </article>)}</div>
-      <p><a href="#docs/showcase/telegram">Browse all examples</a>. Product-inspired demos are unofficial.</p>
+      <p><a href="#docs/showcase/wispr-flow">Browse all examples</a>. Product-inspired demos are unofficial.</p>
     </section>
 
     <section id="engine" className="engine-section" aria-labelledby="engine-title">
@@ -161,7 +161,7 @@ export default function Home() {
             <tr><th scope="row">The screen</th><td>HTML templates</td><td>Rust elements and builder calls</td></tr>
             <tr><th scope="row">The styles</th><td>CSS</td><td>Rust methods such as <code>.flex()</code></td></tr>
             <tr><th scope="row">The app logic</th><td>Go data and handlers</td><td>Rust state and event handlers</td></tr>
-            <tr><th scope="row">The renderer</th><td>Our own Go web view, with HTML/CSS layout powered by Blinkless</td><td>GPUI's renderer for Rust-defined interfaces</td></tr>
+            <tr><th scope="row">The renderer</th><td>Our own Go web view, with HTML/CSS layout powered by Blinkless</td><td>GPUI&apos;s renderer for Rust-defined interfaces</td></tr>
           </tbody>
         </table>
       </div>
@@ -173,7 +173,7 @@ export default function Home() {
 
     <section id="mobile" className="mobile-section" aria-labelledby="mobile-title">
       <h2 id="mobile-title">Bring your screen to mobile</h2>
-      <p><code>BindMobile</code> connects your page to Ebitengine's Android and iOS view.
+      <p><code>BindMobile</code> connects your page to Ebitengine&apos;s Android and iOS view.
         Reuse your HTML, CSS, and Go handlers. Android has a complete Telegram demo project;
         iOS builds use the mobile binding and require Xcode.</p>
       <p>Phone apps support touch scrolling and soft keyboard input. The clipboard uses an

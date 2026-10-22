@@ -19,7 +19,7 @@ type prepared struct {
 func prepare(ctx context.Context, req Request, ua string) (prepared, error) {
 	offset, err := statSize(req.Partial)
 	if err != nil {
-		return prepared{}, fmt.Errorf("%w: %v", ErrPartialUnwritable, err)
+		return prepared{}, fmt.Errorf("%w: %w", ErrPartialUnwritable, err)
 	}
 
 	resumed := offset > 0

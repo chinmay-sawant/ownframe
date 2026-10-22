@@ -2,13 +2,23 @@
 
 package clipboard
 
-import "io"
+import (
+	"io"
+
+	"github.com/chinmay-sawant/ownframe/internal/safego"
+)
+
+// reqGateSize bounds concurrent SelectionRequest handlers. The X loop stays
+// responsive: excess requests run inline instead of spawning goroutines.
+const reqGateSize = 16
+
+var reqGate = make(chan struct{}, reqGateSize)
 
 func (x *xClient) loop() {
 	defer recoverX(x, "x11 loop")
 
 	for {
-		var hdr [32]byte
+		var hdr [xEvSize]byte
 		if _, err := io.ReadFull(x.c, hdr[:]); err != nil {
 			x.fail()
 
@@ -28,13 +38,21 @@ func (x *xClient) loop() {
 		}
 
 		switch hdr[0] & 0x7f {
-		case 30:
-			ev := make([]byte, 32)
+		case xSelReq:
+			ev := make([]byte, xEvSize)
 			copy(ev, hdr[:])
-			go x.onRequest(ev)
-		case 31:
+			select {
+			case reqGate <- struct{}{}:
+				safego.Go("x11 request", func() {
+					defer func() { <-reqGate }()
+					x.onRequest(ev)
+				})
+			default:
+				x.onRequest(ev)
+			}
+		case xSelNotify:
 			x.gotSel(get32(hdr[20:]))
-		case 29:
+		case xSelClear:
 			x.mu.Lock()
 			x.owned = false
 			x.mu.Unlock()
@@ -42,15 +60,15 @@ func (x *xClient) loop() {
 	}
 }
 
-func (x *xClient) reply(hdr [32]byte) {
+func (x *xClient) reply(hdr [xEvSize]byte) {
 	n := get32(hdr[4:])
-	if n > 1<<20 {
+	if n > xMaxWords {
 		x.fail()
 
 		return
 	}
 
-	buf := make([]byte, 32+int(n)*4)
+	buf := make([]byte, xEvSize+int(n)*4)
 	copy(buf, hdr[:])
 
 	if n > 0 {

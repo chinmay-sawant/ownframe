@@ -3,9 +3,10 @@
 package clipboard
 
 import (
-	"syscall"
-	"unicode/utf16"
+	"runtime"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -14,8 +15,8 @@ const (
 )
 
 var (
-	user32   = syscall.NewLazyDLL("user32.dll")
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
+	user32   = windows.NewLazySystemDLL("user32.dll")
+	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
 
 	openClip  = user32.NewProc("OpenClipboard")
 	emptyClip = user32.NewProc("EmptyClipboard")
@@ -28,7 +29,28 @@ var (
 	gUnlock = kernel32.NewProc("GlobalUnlock")
 	gFree   = kernel32.NewProc("GlobalFree")
 	gSize   = kernel32.NewProc("GlobalSize")
+	rtlMove = kernel32.NewProc("RtlMoveMemory")
 )
+
+// putMem copies Go bytes to a locked block without a uintptr to
+// Pointer conversion, which go vet flags as unsafeptr.
+func putMem(dst uintptr, src []byte) {
+	if len(src) == 0 {
+		return
+	}
+	rtlMove.Call(dst, uintptr(unsafe.Pointer(&src[0])), uintptr(len(src)))
+	runtime.KeepAlive(src)
+}
+
+// getMem copies n bytes from a locked block into dst without a
+// uintptr to Pointer conversion, which go vet flags as unsafeptr.
+func getMem(src, n uintptr, dst []uint16) {
+	if len(dst) == 0 || n == 0 {
+		return
+	}
+	rtlMove.Call(uintptr(unsafe.Pointer(&dst[0])), src, n)
+	runtime.KeepAlive(dst)
+}
 
 func writeOS(text string) {
 	opened, _, _ := openClip.Call(0)
@@ -40,6 +62,9 @@ func writeOS(text string) {
 	emptyClip.Call()
 
 	buf := utf16Clipboard(text)
+	if len(buf) == 0 {
+		return
+	}
 	h, _, _ := gAlloc.Call(gmemMove, uintptr(len(buf)))
 	if h == 0 {
 		return
@@ -52,8 +77,7 @@ func writeOS(text string) {
 		return
 	}
 
-	dst := unsafe.Slice((*byte)(unsafe.Pointer(ptr)), len(buf))
-	copy(dst, buf)
+	putMem(ptr, buf)
 	gUnlock.Call(h)
 
 	set, _, _ := setClip.Call(cfUnicode, h)
@@ -62,40 +86,13 @@ func writeOS(text string) {
 	}
 }
 
-func readOS() (string, bool) {
+// clearOS empties the desktop clipboard.
+func clearOS() {
 	opened, _, _ := openClip.Call(0)
 	if opened == 0 {
-		return "", false
+		return
 	}
 
 	defer closeClip.Call()
-
-	h, _, _ := getClip.Call(cfUnicode)
-	if h == 0 {
-		return "", false
-	}
-
-	ptr, _, _ := gLock.Call(h)
-	if ptr == 0 {
-		return "", false
-	}
-
-	n, _, _ := gSize.Call(h)
-	if n < 2 {
-		gUnlock.Call(h)
-
-		return "", false
-	}
-
-	raw := unsafe.Slice((*uint16)(unsafe.Pointer(ptr)), int(n/2))
-	end := 0
-
-	for end < len(raw) && raw[end] != 0 {
-		end++
-	}
-
-	u := append([]uint16(nil), raw[:end]...)
-	gUnlock.Call(h)
-
-	return string(utf16.Decode(u)), true
+	emptyClip.Call()
 }

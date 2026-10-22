@@ -16,22 +16,22 @@ func fakeHash(jobID string) uint64 {
 // FakeSize is the deterministic body size for a dummy job: 128 KiB plus up
 // to two mebibytes from the job ID hash.
 func FakeSize(jobID string) int64 {
-	return 128<<10 + int64(fakeHash(jobID)%(2<<20))
+	return fakeBaseSize + int64(fakeHash(jobID)%(fakeSizeSpan))
 }
 
 // fakeUnknown reports whether this job's server hides Content-Length.
-func fakeUnknown(jobID string) bool { return fakeHash(jobID)%5 == 0 }
+func fakeUnknown(jobID string) bool { return fakeHash(jobID)%fakeUnknownMod == 0 }
 
 // fakeFails reports whether this job drops the connection once, on the
 // first attempt, at about 60 percent.
-func fakeFails(jobID string) bool { return fakeHash(jobID)%7 == 0 }
+func fakeFails(jobID string) bool { return fakeHash(jobID)%fakeFailMod == 0 }
 
 // bodyBytes builds the deterministic body slice for offset..offset+n. The
 // pattern is non-repeating enough to catch a bad resume offset.
 func bodyBytes(offset, n int64) []byte {
 	out := make([]byte, n)
 	for i := range out {
-		out[i] = byte((offset+int64(i))*31 + 7)
+		out[i] = byte((offset+int64(i))*bodyHashBase + bodyStep) //nolint:gosec // reason: offset and index bounded, test body fits a byte.
 	}
 
 	return out

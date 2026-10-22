@@ -7,6 +7,12 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
+// bytesPerKB and bytesPerMB size the MEMORY rows.
+const (
+	bytesPerKB = 1024
+	bytesPerMB = 1024 * bytesPerKB
+)
+
 // devFrameRow builds one right-aligned row. The label and separator widths
 // come from the panel memo; only the value, which moves as counters change,
 // is measured per call. The value span right-aligns at draw time, so no
@@ -49,11 +55,11 @@ func (s *shell) addMemoryRows(rs *[]devRow, w float64, h func(string), n func(st
 
 // devBytes prints a byte count for the panel.
 func devBytes(b uint64) string {
-	if b < 1024 {
+	if b < bytesPerKB {
 		return fmt.Sprintf("%dB", b)
 	}
-	if b < 1024*1024 {
-		return fmt.Sprintf("%.1fKB", float64(b)/1024)
+	if b < bytesPerMB {
+		return fmt.Sprintf("%.1fKB", float64(b)/bytesPerKB)
 	}
-	return fmt.Sprintf("%.1fMB", float64(b)/(1024*1024))
+	return fmt.Sprintf("%.1fMB", float64(b)/bytesPerMB)
 }

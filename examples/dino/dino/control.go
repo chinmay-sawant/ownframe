@@ -48,7 +48,7 @@ func (g *game) setDuck(on bool) {
 
 	g.ducking = true
 
-	if !g.onGround && g.vy > -520 {
-		g.vy = -520
+	if !g.onGround && g.vy > diveVelocity {
+		g.vy = diveVelocity
 	}
 }

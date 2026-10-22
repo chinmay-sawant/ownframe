@@ -3,14 +3,13 @@ package storage
 import (
 	"context"
 	"fmt"
-	"time"
 )
 
 // applyPragmas sets the pragmas every physical connection needs and records
 // the journal mode the file actually uses. The pool holds one connection; if
 // it ever grows, these move into the driver DSN.
 func (s *Store) applyPragmas(ctx context.Context, opts Options) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, pragmaTimeout)
 	defer cancel()
 
 	if _, err := s.db.ExecContext(ctx, fmt.Sprintf("PRAGMA busy_timeout = %d", opts.BusyTimeout.Milliseconds())); err != nil {

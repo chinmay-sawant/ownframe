@@ -55,7 +55,7 @@ func (s *Store) Ingest(ctx context.Context, src entry.SourceID, pol entry.Policy
 // line before it is stored on its own.
 func holdFor(pol entry.Policy) time.Duration {
 	if pol.MultilineHold <= 0 {
-		return 500 * time.Millisecond
+		return ingestHoldDef
 	}
 
 	return pol.MultilineHold

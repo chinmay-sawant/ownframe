@@ -14,7 +14,7 @@ func (p *Page) statNote(wp *watchPath, err error) error {
 }
 
 func (p *Page) sourceErr(path string, err error) error {
-	return fmt.Errorf("%s: %w", path, err)
+	return fmt.Errorf("%s: %w", cleanReload(path), err)
 }
 
 // resolveStates clears hover and active ids the new layout does not have.

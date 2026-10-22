@@ -14,8 +14,7 @@ func TestStoredSnapshotThatNoLongerValidatesIsRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	g := game.New(5)
@@ -37,8 +36,7 @@ func TestSnapshotUpsertReplacesTheSingleSlot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	for _, seed := range []uint64{1, 2} {

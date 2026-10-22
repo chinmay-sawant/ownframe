@@ -44,22 +44,39 @@ func Write(text string) {
 
 // Read returns the memory text in memory-only mode, and the OS
 // clipboard otherwise. An OS failure returns ErrUnavailable and no
-// text; it never falls back to an older Write.
+// text; it never falls back to an older Write. The mode and the memory
+// value are read under one lock, so a concurrent UseMemory cannot mix
+// them. An OS read that races a mode flip returns the memory text.
 func Read() (string, error) {
 	mu.Lock()
-	only := memory
-	mu.Unlock()
+	if memory {
+		text := mem
+		mu.Unlock()
 
-	if only {
-		mu.Lock()
-		defer mu.Unlock()
-
-		return mem, nil
-	}
-
-	if text, ok := readOS(); ok {
 		return text, nil
 	}
+	mu.Unlock()
 
-	return "", ErrUnavailable
+	text, ok := readOS()
+	if !ok {
+		return "", ErrUnavailable
+	}
+
+	mu.Lock()
+	if memory {
+		text = mem
+	}
+	mu.Unlock()
+
+	return text, nil
+}
+
+// Clear empties the clipboard: the memory copy and the OS selection.
+// Tests call UseMemory(true) first so Clear never touches the desktop.
+func Clear() {
+	mu.Lock()
+	mem = ""
+	mu.Unlock()
+
+	clearOS()
 }

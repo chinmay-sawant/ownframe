@@ -70,7 +70,7 @@ func TestDeleteCascades(t *testing.T) {
 
 	var cells int
 
-	if err := raw(t, dir).QueryRow(`SELECT COUNT(*) FROM cells`).Scan(&cells); err != nil {
+	if err := raw(t, dir).QueryRowContext(t.Context(), `SELECT COUNT(*) FROM cells`).Scan(&cells); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,7 +80,7 @@ func TestDeleteCascades(t *testing.T) {
 
 	var sheets int
 
-	if err := raw(t, dir).QueryRow(`SELECT COUNT(*) FROM sheets`).Scan(&sheets); err != nil {
+	if err := raw(t, dir).QueryRowContext(t.Context(), `SELECT COUNT(*) FROM sheets`).Scan(&sheets); err != nil {
 		t.Fatal(err)
 	}
 

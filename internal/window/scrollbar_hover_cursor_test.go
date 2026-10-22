@@ -16,7 +16,7 @@ func TestThumbHoverKeepsResizeCursor(t *testing.T) {
 		width: 200, height: 200, minW: 1, minH: 1,
 		boxes: []layout.Box{{W: 500, H: 500}},
 	}}
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 
 	var got []ebiten.CursorShapeType
 	s.setCursor = func(shape ebiten.CursorShapeType) { got = append(got, shape) }

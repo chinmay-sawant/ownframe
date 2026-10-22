@@ -12,7 +12,7 @@ func TestFakeRestartsLargerPartial(t *testing.T) {
 	dest, partial := fakePaths(t)
 	id := "larger-1"
 
-	if err := os.WriteFile(partial, bodyBytes(0, FakeSize(id)+10), 0o644); err != nil {
+	if err := os.WriteFile(partial, bodyBytes(0, FakeSize(id)+10), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

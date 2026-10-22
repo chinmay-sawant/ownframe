@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 )
 
 // shellPaths lists Windows PowerShell programs to try, best first.
@@ -34,10 +36,15 @@ func shellPaths() []string {
 }
 
 // debugf writes to stderr when OWNFRAME_FILEPICK_DEBUG is not empty.
+// Values are sanitized to one line. Keep this flag off in shipped builds.
+// The output is compiled out without -tags ownframe_debug.
 func debugf(format string, args ...any) {
+	if !debugtag.Enabled {
+		return
+	}
 	if os.Getenv("OWNFRAME_FILEPICK_DEBUG") == "" && os.Getenv("GPUI_FILEPICK_DEBUG") == "" {
 		return
 	}
 
-	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", args...)
+	fmt.Fprintf(os.Stderr, "filepick: "+format+"\n", cleanArgs(args)...)
 }

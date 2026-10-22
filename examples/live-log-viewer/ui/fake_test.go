@@ -44,14 +44,6 @@ func (f *fakeFeed) add(es ...Entry) {
 	f.entries = append(f.entries, es...)
 }
 
-// count returns how many entries the feed holds.
-func (f *fakeFeed) count() int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	return len(f.entries)
-}
-
 func (f *fakeFeed) wait(ctx context.Context) error {
 	if f.delay <= 0 {
 		return ctx.Err()

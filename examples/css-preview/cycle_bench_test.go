@@ -19,6 +19,8 @@ func BenchmarkPointerCycleAll43NoBatch(b *testing.B) {
 }
 
 func benchCycle(b *testing.B, batch bool) {
+	b.Helper()
+
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
 	p, err := previewwindow.New(ctx, previewwindow.Config{
@@ -40,6 +42,9 @@ func benchCycle(b *testing.B, batch bool) {
 	}
 	d := newDemo(p, v)
 	p.Handle(ownframe.Handlers{Click: d.click})
+
+	// The setup is not a click, so the timer starts after it.
+	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()

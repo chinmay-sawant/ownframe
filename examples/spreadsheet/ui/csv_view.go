@@ -11,7 +11,7 @@ func (a *App) buildDialog() *Dialog {
 		return nil
 	}
 
-	d := &Dialog{W: 440, H: 310}
+	d := &Dialog{W: uiDialogW, H: uiDialogH}
 	if a.csv.export {
 		d.Title = "Export CSV"
 		d.Prompt = "Write the active sheet to this path."
@@ -19,8 +19,8 @@ func (a *App) buildDialog() *Dialog {
 		d.FieldType = "text"
 		d.FieldVal = a.csv.path
 		d.Buttons = []Box{
-			{Action: "csv-write", Text: "Write", W: 88},
-			{Action: "csv-cancel", Text: "Cancel", W: 88},
+			{Action: "csv-write", Text: "Write", W: uiBtnW},
+			{Action: "csv-cancel", Text: "Cancel", W: uiBtnW},
 		}
 	} else {
 		mode := "Replace: off"
@@ -34,15 +34,15 @@ func (a *App) buildDialog() *Dialog {
 		d.FieldType = "file"
 		d.FieldVal = a.csv.path
 		d.Buttons = []Box{
-			{Action: "csv-replace", Text: mode, W: 92},
-			{Action: "csv-commit", Text: "Commit", W: 88},
-			{Action: "csv-cancel", Text: "Cancel", W: 88},
+			{Action: "csv-replace", Text: mode, W: uiBtnWReplace},
+			{Action: "csv-commit", Text: "Commit", W: uiBtnW},
+			{Action: "csv-cancel", Text: "Cancel", W: uiBtnW},
 		}
 	}
 
 	if a.csv.ready {
 		for i, row := range a.csv.prev.Rows {
-			if i == 8 {
+			if i == uiPreviewMax {
 				d.Rows = append(d.Rows, "...")
 				break
 			}
@@ -56,12 +56,12 @@ func (a *App) buildDialog() *Dialog {
 		d.Note = a.csv.note
 	}
 
-	d.X = a.scrollX + max(16, (a.viewW-d.W)/2)
-	d.Y = a.scrollY + max(16, (a.viewH-d.H)/2)
+	d.X = a.scrollX + max(uiDlgMargin, (a.viewW-d.W)/uiCenterDiv)
+	d.Y = a.scrollY + max(uiDlgMargin, (a.viewH-d.H)/uiCenterDiv)
 	for i := range d.Buttons {
 		d.Buttons[i].H = 26
-		d.Buttons[i].X = d.W - (len(d.Buttons)-i)*96
-		d.Buttons[i].Y = d.H - 38
+		d.Buttons[i].X = d.W - (len(d.Buttons)-i)*uiBtnStep
+		d.Buttons[i].Y = d.H - uiBtnBottom
 		d.Buttons[i].Class = "btn"
 	}
 

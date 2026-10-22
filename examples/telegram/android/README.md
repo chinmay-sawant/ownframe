@@ -170,3 +170,35 @@ them.
   installed; run `adb uninstall com.chinmaysawant.telegram` first.
 - The app closes when you press the system back button: Android handles that
   key, so use the on-screen back arrow to leave a chat.
+
+## Toolchain pins (audit DEP-11)
+
+`app/build.gradle` pins `compileSdk 34` and `targetSdkVersion 34`,
+`build.gradle` pins AGP `8.5.1`, and `gradle-wrapper.properties` pins
+Gradle `8.7`. They stay because the validation toolchain only has the
+`android-34` platform, build-tools `34.0.0`/`35.0.0`, and NDK `27.2.12479018`
+installed: compiling against SDK 35/36 needs
+`sdkmanager "platforms;android-3X"` first, AGP 8.7+ needs Gradle 8.9+ and a
+fresh distribution download, and Gradle 9 needs AGP 8.8+. Bump all three
+together and rebuild `sh scripts/android.sh` before committing.
+
+Wrapper validation: `gradle-wrapper.properties` carries no checksum stanza,
+so trust is TLS plus the wrapper jar. After any bump, verify with
+`sha256sum gradle/wrapper/gradle-wrapper.jar` and confirm
+`./gradlew --version` downloads the expected distribution.
+
+## Dependency verification (audit GEN-6)
+
+Maven artifacts are trusted on TLS alone. Generate the verification
+metadata once from a provisioned machine and commit it:
+
+```
+sh scripts/gen-gradle-verification.sh
+git add gradle/verification-metadata.xml
+```
+
+The script runs `./gradlew --write-verification-metadata sha256
+assembleDebug` inside this folder. Review the hash diff before
+committing, and re-run after any AGP or dependency bump: builds then
+fail on unsigned or mismatched artifacts instead of downloading them
+silently.

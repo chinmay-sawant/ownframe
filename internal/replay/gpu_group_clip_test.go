@@ -28,8 +28,8 @@ func checkGroupClip() error {
 	}
 
 	full, part := ebiten.NewImage(200, 140), ebiten.NewImage(200, 140)
-	defer full.Dispose()
-	defer part.Dispose()
+	defer full.Deallocate()
+	defer part.Deallocate()
 
 	DrawVisible(full, d, 0, 0)
 	rect := image.Rect(30, 30, 120, 90)

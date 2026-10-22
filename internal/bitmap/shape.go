@@ -25,7 +25,7 @@ func paintShape(img *image.NRGBA, op *layout.DisplayOp) {
 				continue
 			}
 			src := c
-			src.A = uint8(float64(src.A) * float64(count) / 4)
+			src.A = uint8(float64(src.A) * float64(count) / shapeSamples)
 			img.SetNRGBA(x, y, over(img.NRGBAAt(x, y), src))
 		}
 	}

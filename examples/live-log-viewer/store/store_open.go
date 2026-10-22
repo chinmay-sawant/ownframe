@@ -32,7 +32,7 @@ func OpenWithOptions(o Options) (*Store, error) {
 	}
 
 	if dir != Memory {
-		if err := os.MkdirAll(dir, 0o700); err != nil {
+		if err := os.MkdirAll(dir, storeDirPerm); err != nil {
 			return nil, err
 		}
 	}
@@ -54,20 +54,20 @@ func OpenWithOptions(o Options) (*Store, error) {
 	db.SetMaxIdleConns(1)
 
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, wrapOpen(err)
 	}
 
 	if err := migrate(ctx, db); err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, err
 	}
 
 	journal, err := applyJournal(ctx, db)
 	if err != nil {
-		db.Close()
+		_ = db.Close()
 
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func OpenWithOptions(o Options) (*Store, error) {
 	s := &Store{
 		db: db, dir: dir, path: path, temp: o.Temp, journal: journal,
 		timeout: timeout, retention: retention,
-		checkpointEvery: o.CheckpointEvery, jobs: make(chan *job, 64),
+		checkpointEvery: o.CheckpointEvery, jobs: make(chan *job, storeJobQueue),
 		stop: make(chan struct{}),
 	}
 

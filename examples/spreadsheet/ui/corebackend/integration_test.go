@@ -47,7 +47,7 @@ func TestUIShowsSeededWorkbook(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer app.Close()
+	defer func() { _ = app.Close() }()
 
 	waitFor(t, app, func() bool { return hasCell(app, "row 1") })
 

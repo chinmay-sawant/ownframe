@@ -29,16 +29,16 @@ func New() (*App, error) {
 	app := &App{
 		page:  page,
 		game:  newGame(),
-		rng:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
+		rng:   rand.New(rand.NewPCG(seed, seed^pcgStream)), //nolint:gosec // reason: obstacle shuffle is visual gameplay randomness, not security-sensitive.
 		now:   time.Now,
 		bound: ^uint64(0),
 		view:  view{scale: 1},
 	}
 
-	app.clouds = [2]point{{x: 620, y: 54}, {x: 300, y: 86}}
+	app.clouds = [2]point{{x: cloudAX, y: cloudAY}, {x: cloudBX, y: cloudBY}}
 
 	for i := range app.pebbles {
-		app.pebbles[i] = 40 + float64(i)*140
+		app.pebbles[i] = pebbleStart + float64(i)*pebbleStep
 	}
 
 	page.Handle(ownframe.Handlers{KeyDown: app.onKeyDown, KeyUp: app.onKeyUp})

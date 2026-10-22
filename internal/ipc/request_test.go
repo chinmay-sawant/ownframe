@@ -50,6 +50,7 @@ func TestRequestRejectsBadContext(t *testing.T) {
 		return "ran", nil
 	})
 
+	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
 	_, err := ipc.Request(nil, "request-ctx", "x")
 	if !errors.Is(err, fetch.ErrNilContext) {
 		t.Fatalf("nil ctx err = %v", err)

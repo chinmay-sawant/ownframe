@@ -25,7 +25,7 @@ func TestExportSelectionWritesCSV(t *testing.T) {
 		t.Fatalf("export dir = %v %v", files, err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(dir, files[0].Name()))
+	data, err := os.ReadFile(filepath.Join(dir, files[0].Name())) //nolint:gosec // reason: test reads files it just exported into TempDir
 	if err != nil {
 		t.Fatal(err)
 	}

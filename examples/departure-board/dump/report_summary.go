@@ -39,9 +39,9 @@ func (rep *Report) summarize(app *board.App, before, after runtime.MemStats) {
 		rep.AreaMean = listSum / listN
 		rep.RectsMean = float64(rectSum) / float64(listN)
 	}
-	rep.TickP50NS = percentile(ticks, 50)
-	rep.TickP95NS = percentile(ticks, 95)
-	rep.TickMaxNS = percentile(ticks, 100)
+	rep.TickP50NS = percentile(ticks, percentP50)
+	rep.TickP95NS = percentile(ticks, percentP95)
+	rep.TickMaxNS = percentile(ticks, percentMax)
 	if n := len(rep.Frames); n > 0 {
 		rep.AllocsFrame = float64(after.TotalAlloc-before.TotalAlloc) / float64(n)
 	}

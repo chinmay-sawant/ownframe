@@ -19,7 +19,7 @@ func checkSleepyEyeRenders() error {
 	}
 	lit := func(op *layout.DisplayOp) int {
 		img := ebiten.NewImage(300, 160)
-		defer img.Dispose()
+		defer img.Deallocate()
 		drawOp(img, op, -200, -180)
 		px := make([]byte, 300*160*4)
 		img.ReadPixels(px)

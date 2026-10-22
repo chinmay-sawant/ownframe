@@ -44,7 +44,11 @@ func sourceTheme(cfg Config) (string, os.FileInfo, error) {
 }
 
 // readSource reads one watched file. A missing or unreadable file is
-// ErrBadSource with the path and the reason.
+// ErrBadSource with the path and the reason. Trusted-author paths only:
+// symlinks are followed, so keep File and ThemeFile author-controlled.
+// If untrusted paths are ever accepted, confine reads with os.Root,
+// available since go 1.26.10 (this module's toolchain); nothing in
+// internal/ uses it today.
 func readSource(path string) ([]byte, os.FileInfo, error) {
 	info, err := srcFiles.Stat(path)
 	if err != nil {

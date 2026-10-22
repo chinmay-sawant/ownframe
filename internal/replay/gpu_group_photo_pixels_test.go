@@ -9,7 +9,7 @@ import (
 
 func gpuDisplayPixels(d *render.Display) []byte {
 	img := ebiten.NewImage(200, 140)
-	defer img.Dispose()
+	defer img.Deallocate()
 	DrawVisible(img, d, 0, 0)
 	pixels := make([]byte, 200*140*4)
 	img.ReadPixels(pixels)

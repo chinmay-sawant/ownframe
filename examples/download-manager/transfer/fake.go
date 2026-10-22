@@ -34,11 +34,11 @@ type Fake struct {
 // NewFake builds the dummy transport.
 func NewFake(opts FakeOptions) *Fake {
 	if opts.Pace <= 0 {
-		opts.Pace = 25 * time.Millisecond
+		opts.Pace = fakePace
 	}
 
 	if opts.Chunk <= 0 {
-		opts.Chunk = 32 << 10
+		opts.Chunk = fakeChunk
 	}
 
 	return &Fake{pace: opts.Pace, chunk: opts.Chunk}

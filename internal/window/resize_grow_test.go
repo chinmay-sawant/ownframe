@@ -37,7 +37,7 @@ func TestResizeGrowMapsThroughTheCommittedFrame(t *testing.T) {
 		fakeScreen: &fakeScreen{width: 300, height: 500, minW: 1, minH: 1},
 		display:    &layout.Display{Width: 300, Height: 500},
 	}
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 	s.cursorX, s.cursorY = 550, 40
 
 	s.Layout(600, 500)

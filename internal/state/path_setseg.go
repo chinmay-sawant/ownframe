@@ -34,30 +34,43 @@ func setSeg(cur any, segs []string, value any) (any, bool) {
 			return cur, false
 		}
 		f := elem.FieldByName(seg)
-		if !f.IsValid() {
+		if !f.IsValid() || !f.CanSet() {
 			return cur, false
 		}
 		if len(rest) == 0 {
 			v := reflect.ValueOf(value)
-			if v.Type().AssignableTo(f.Type()) {
+			if !v.IsValid() {
+				f.Set(reflect.Zero(f.Type()))
+				return cur, true
+			}
+			switch {
+			case v.Type().AssignableTo(f.Type()):
 				f.Set(v)
-			} else if v.Type().ConvertibleTo(f.Type()) {
+			case v.Type().ConvertibleTo(f.Type()):
 				f.Set(v.Convert(f.Type()))
-			} else {
+			default:
 				return cur, false
 			}
 			return cur, true
+		}
+		if !f.CanInterface() {
+			return cur, false
 		}
 		nc, ok := setSeg(f.Interface(), rest, value)
 		if !ok {
 			return cur, false
 		}
 		fv := reflect.ValueOf(nc)
-		if fv.Type().AssignableTo(f.Type()) {
+		if !fv.IsValid() {
+			f.Set(reflect.Zero(f.Type()))
+			return cur, true
+		}
+		switch {
+		case fv.Type().AssignableTo(f.Type()):
 			f.Set(fv)
-		} else if fv.Type().ConvertibleTo(f.Type()) {
+		case fv.Type().ConvertibleTo(f.Type()):
 			f.Set(fv.Convert(f.Type()))
-		} else {
+		default:
 			return cur, false
 		}
 		return cur, true

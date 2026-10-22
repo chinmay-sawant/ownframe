@@ -34,8 +34,8 @@ func TestPanScrollClampsToThePage(t *testing.T) {
 	}
 
 	x, y = panScroll(0, 400, 0, -1, 200, 800, 200, 400)
-	if y != 400 {
-		t.Fatalf("past the end = %d", y)
+	if x != 0 || y != 400 {
+		t.Fatalf("past the end = %d, %d", x, y)
 	}
 }
 

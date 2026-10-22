@@ -31,7 +31,7 @@ func main() {
 	ctx := context.Background()
 
 	if *webMode {
-		if err := ownframe.ServeWithOptions(ctx, app.Page(), *addr, ownframe.ServeOptions{Perf: *perf}); err != nil {
+		if err := ownframe.ServeWithOptions(ctx, app.Page(), *addr, ownframe.ServeOptions{InsecureAllowPprof: *perf}); err != nil {
 			log.Fatal(err)
 		}
 

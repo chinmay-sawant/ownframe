@@ -20,7 +20,7 @@ func statfsCall(path string, out *statfsT) error {
 		return err
 	}
 
-	out.bsize = int64(st.Bsize)
+	out.bsize = st.Bsize
 	out.blocks = st.Blocks
 	out.bavail = st.Bavail
 
@@ -35,7 +35,7 @@ func statfs(path string) (uint64, uint64, error) {
 		return 0, 0, err
 	}
 
-	block := uint64(st.bsize)
+	block := uint64(st.bsize) //nolint:gosec // reason: filesystem block sizes are small positive values.
 
 	return st.blocks * block, st.bavail * block, nil
 }

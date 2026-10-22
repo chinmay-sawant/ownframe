@@ -19,7 +19,7 @@ func TestManagerClearsErrorOnRecovery(t *testing.T) {
 	if err := m.Start(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	defer m.Close(t.Context())
+	defer func() { _ = m.Close(t.Context()) }()
 
 	if !waitFor(t, 2*time.Second, func() bool { return len(m.Errors()) > 0 }) {
 		t.Fatal("failure never reported")
@@ -44,7 +44,7 @@ func TestManagerNoDiskIORates(t *testing.T) {
 	if err := m.Start(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	defer m.Close(t.Context())
+	defer func() { _ = m.Close(t.Context()) }()
 
 	if !waitFor(t, 2*time.Second, func() bool { return m.HaveReading() }) {
 		t.Fatal("no reading")

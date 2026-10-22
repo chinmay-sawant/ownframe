@@ -20,7 +20,10 @@ func TestTranslucentFillPixel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := color.NRGBAModel.Convert(img.At(20, 20)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(img.At(20, 20)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got != (color.NRGBA{R: 255, G: 127, B: 127, A: 255}) {
 		t.Fatalf("pixel %+v", got)
 	}

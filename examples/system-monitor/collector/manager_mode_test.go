@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func TestManagerSetModeResets(t *testing.T) {
 	if err := m.Start(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	defer m.Close(t.Context())
+	defer func() { _ = m.Close(t.Context()) }()
 
 	if !waitFor(t, 2*time.Second, func() bool { return m.HaveReading() }) {
 		t.Fatal("no reading")
@@ -56,7 +57,7 @@ func TestManagerSetModeRejectsClosed(t *testing.T) {
 	if err := m.Close(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.SetMode(ModeLive); err != ErrClosed {
+	if err := m.SetMode(ModeLive); !errors.Is(err, ErrClosed) {
 		t.Fatalf("err = %v, want ErrClosed", err)
 	}
 }

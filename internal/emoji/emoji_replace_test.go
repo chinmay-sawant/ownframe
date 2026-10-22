@@ -25,6 +25,19 @@ func TestReplaceASCIIReturnsInput(t *testing.T) {
 	}
 }
 
+// TestReplaceTextValue checks that a bare text value turns into the image
+// markup. A value the page patches reaches the tree as one text node, so
+// the emoji has to be markup before the tree takes it.
+func TestReplaceTextValue(t *testing.T) {
+	t.Parallel()
+
+	got, changed := Replace(`hi 😂!`)
+	want := `hi <img data-ownframe-emoji="1" src="emoji/1f602" alt="😂">!`
+	if !changed || got != want {
+		t.Fatalf("got %q changed=%v", got, changed)
+	}
+}
+
 func TestReplaceSkipsMarkup(t *testing.T) {
 	t.Parallel()
 

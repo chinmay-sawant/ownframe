@@ -16,7 +16,7 @@ func TestCalendarRoundTrip(t *testing.T) {
 		t.Fatalf("Open: %v", err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if err := st.Seed(); err != nil {
 		t.Fatalf("Seed: %v", err)

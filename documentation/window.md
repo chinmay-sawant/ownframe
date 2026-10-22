@@ -60,7 +60,7 @@ The library has no DPI code. No code reads a device scale factor or applies one 
 
 ## Pacing and update order
 
-Ebiten updates the window at its default rate, about 60 TPS. The library never calls `SetTPS`, so the rate is not tunable here. Every `Update` runs a context check, devtools sync, IME, keys, resize, the passthrough update, pointer, touch scroll, hold, drop, tick, the frame opt-in capture, a reload poll, sync, the page scroll request, a devtools refresh, wheel, the scroll-window sync, and the bitmap viewport in that order (`internal/window/update.go`). Resize runs before pointer, so a hit test uses the boxes of the frame being drawn. The tick is `Page.SetTick`; its call shape and cost are in [frames.md](frames.md). The reload poll asks a file-backed page for changes at most every 250 ms ([hot-reload.md](hot-reload.md)).
+Ebiten updates the window at its default rate, about 60 TPS. The library never calls `SetTPS`, so the rate is not tunable here. `OWNFRAME_PACE_DEBUG=1` prints one pacing line per second to stderr; it is dev-only and off by default, so keep it off in shipped binaries. Every `Update` runs a context check, devtools sync, IME, keys, resize, the passthrough update, pointer, touch scroll, hold, drop, tick, the frame opt-in capture, a reload poll, sync, the page scroll request, a devtools refresh, wheel, the scroll-window sync, and the bitmap viewport in that order (`internal/window/update.go`). Resize runs before pointer, so a hit test uses the boxes of the frame being drawn. The tick is `Page.SetTick`; its call shape and cost are in [frames.md](frames.md). The reload poll asks a file-backed page for changes at most every 250 ms ([hot-reload.md](hot-reload.md)).
 
 ## Errors
 
@@ -114,8 +114,10 @@ with animated transparent PNG artwork and an HTML/CSS speech bubble.
 Set `WindowOptions.Interactive` to a function receiving window-local CSS
 coordinates. The window reads the pointer each frame and passes input through
 where the function returns false. It starts unfocused and continues ticking
-in the background. The callback runs on the window update thread. It takes
-precedence over `MousePassthrough` when both are set. Browser input routing needs a separate DOM solution.
+in the background. The callback runs on the window update thread.
+Full click-through wins when both are set: `MousePassthrough` ignores
+`Interactive` and the window never accepts input. Page content cannot
+toggle either setting; only app code sets `WindowOptions`. Browser input routing needs a separate DOM solution.
 
 This setting samples pointer position each frame, so a boundary transition
 may take one frame. The callback reserves input regions; it does not move
@@ -127,3 +129,21 @@ starts dragging; a release without dragging sends the page a normal click.
 Dragging retains input until release and moves the window while preserving
 the grab point. Only a user's press can begin movement. This option does not
 move the cursor. Browser canvases need their own DOM drag behavior.
+
+### Overlay trust
+
+A transparent, always-on-top, click-through window (see
+[desktop cat](../examples/desktop-cat)) sits above other apps' prompts,
+so it earns extra rules:
+
+- Never accept input while fully click-through. `MousePassthrough`
+  drops every pointer event, including painted pixels.
+- Reserve only visibly rendered app pixels in `Interactive`: the cat
+  claims opaque sprite pixels and its open speech bubble, and empty
+  margins pass through. The visible artwork is the focus and ownership
+  indicator; a region the user cannot see must not capture clicks.
+- Only app code sets transparency and passthrough. Page content,
+  notifications, and untrusted data cannot toggle them: there is no page
+  API for it, and `Interactive`/`Draggable` callbacks are fixed at
+  startup. Treat a request from untrusted content to change them as a
+  finding, not a feature.

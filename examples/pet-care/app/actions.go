@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-func (a *App) click(_ context.Context, b ownframe.Box) error {
-	ctx := context.Background()
+func (a *App) click(ctx context.Context, b ownframe.Box) error {
 	action := b.Action
 	switch {
 	case action == "login":

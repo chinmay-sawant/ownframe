@@ -1,6 +1,9 @@
 package collector
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
 // worker runs queued calls with a deadline. A call that overruns the deadline
 // is abandoned; the worker returns when the call finally ends.
@@ -15,7 +18,7 @@ func (p *Pool) worker() {
 		p.busy.Add(-1)
 		p.completed.Add(1)
 
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			p.timedOut.Add(1)
 		}
 		if j.onDone != nil {

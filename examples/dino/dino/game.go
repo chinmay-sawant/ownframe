@@ -56,8 +56,8 @@ type game struct {
 func newGame() game {
 	return game{
 		phase:     ready,
-		speed:     330,
-		nextSpawn: 640,
+		speed:     startSpeed,
+		nextSpawn: startGap,
 		onGround:  true,
 	}
 }
@@ -72,8 +72,8 @@ func (g *game) step(dt float64, rng *rand.Rand) {
 
 	g.run += dt
 	g.distance += g.speed * dt
-	g.score = int(g.distance / 18)
-	g.speed = min(880, 330+g.distance*0.008)
+	g.score = int(g.distance / pixelsPerPoint)
+	g.speed = min(maxSpeed, startSpeed+g.distance*speedGain)
 
 	g.nextSpawn -= g.speed * dt
 	if g.nextSpawn <= 0 {

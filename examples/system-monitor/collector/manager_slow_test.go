@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -47,7 +48,7 @@ func TestManagerCloseTwice(t *testing.T) {
 	if err := m.Close(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.Start(t.Context()); err != ErrClosed {
+	if err := m.Start(t.Context()); !errors.Is(err, ErrClosed) {
 		t.Fatalf("start after close = %v", err)
 	}
 }

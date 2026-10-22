@@ -6,10 +6,10 @@ import "embed"
 var files embed.FS
 
 // HTML returns the menu fragment.
-func HTML() string { return string(file("chat.html")) }
+func HTML() string { return file("chat.html") }
 
 // CSS returns the menu stylesheet.
-func CSS() string { return string(file("chat.css")) }
+func CSS() string { return file("chat.css") }
 
 // file returns one embedded fragment as text.
 func file(name string) string {

@@ -6,7 +6,7 @@ import "github.com/chinmay-sawant/ownframe"
 func (a *App) paintClouds(d *ownframe.Display) {
 	for i := range a.clouds {
 		c := a.clouds[i]
-		base := i * 3
+		base := i * opsPerCloud
 
 		a.setFill(d, a.parts.clouds[base], rect{c.x, c.y + 8, 26, 10}, true)
 		a.setFill(d, a.parts.clouds[base+1], rect{c.x + 8, c.y, 34, 14}, true)

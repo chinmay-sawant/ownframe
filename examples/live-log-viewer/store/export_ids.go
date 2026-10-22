@@ -25,7 +25,7 @@ func exportIDs(ctx context.Context, db *sql.DB, ids []entry.EntryID, add func(en
 		for rows.Next() {
 			e, err := scanEntry(rows)
 			if err != nil {
-				rows.Close()
+				_ = rows.Close()
 
 				return err
 			}
@@ -38,7 +38,7 @@ func exportIDs(ctx context.Context, db *sql.DB, ids []entry.EntryID, add func(en
 		}
 
 		err = rows.Err()
-		rows.Close()
+		_ = rows.Close()
 
 		if err != nil {
 			return err
@@ -50,7 +50,7 @@ func exportIDs(ctx context.Context, db *sql.DB, ids []entry.EntryID, add func(en
 
 func exportQuery(ctx context.Context, db *sql.DB, q Query, add func(entry.Entry) bool) error {
 	for {
-		p, err := pageTx(ctx, db, q, PageOptions{Limit: 500, Ascending: true})
+		p, err := pageTx(ctx, db, q, PageOptions{Limit: exportPageLimit, Ascending: true})
 		if err != nil {
 			return err
 		}

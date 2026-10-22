@@ -8,9 +8,8 @@ import (
 
 // drawReplayPartial draws a display-list page through the tile grid when the
 // page can report dirty rects, and replays the whole list when it cannot. A
-// dirty rect repaints only the tiles it covers and the frame blits only the
-// damaged tiles, both trimmed to the page the devtools dock leaves visible.
-// The retained screen already holds every untouched tile.
+// dirty rect repaints only its tiles and the frame blits only the damaged
+// ones, trimmed to the page the devtools dock leaves visible.
 func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	display := s.display
 	if display == nil {
@@ -34,8 +33,9 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		return true
 	}
 
-	if oversized(contentW, contentH) {
-		// drawViewport drops the tile grid; keep the frame clock.
+	if oversized(contentW, contentH) || s.gridTooBig(contentW, contentH) {
+		// A grid that dwarfs the window takes the viewport path, which
+		// drops the tile grid; keep the frame clock.
 		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
 		s.drawViewport(dst, display, taker)
 		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held

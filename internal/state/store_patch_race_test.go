@@ -55,7 +55,7 @@ func TestPatchListenerReentrant(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("deadlock on reentry")
 	}
-	if got := s.Data().(map[string]any)["other"]; got != 2 {
+	if got := dataMap(t, s)["other"]; got != 2 {
 		t.Fatalf("other = %v", got)
 	}
 }

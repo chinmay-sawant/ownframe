@@ -16,7 +16,7 @@ func checkPhotoMaskGPU() error {
 	}
 	images := make(map[string][]byte, len(files))
 	for src, path := range files {
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(path) //nolint:gosec // reason: test fixture bundled in the repo.
 		if err != nil {
 			return err
 		}

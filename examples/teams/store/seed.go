@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"io/fs"
@@ -22,7 +23,7 @@ func (s *Store) Seed() error {
 
 	sort.Strings(names)
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -38,22 +39,29 @@ func (s *Store) Seed() error {
 		}
 	}
 
-	if _, err := tx.Exec(`INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded', '1')`); err != nil {
+	if _, err := tx.ExecContext(context.Background(), `INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded', '1')`); err != nil {
 		return fail(tx, err)
 	}
 
 	return tx.Commit()
 }
 
-// execScript runs a SQL script that holds one statement per line.
+// execScript runs a SQL script that holds one statement per line. The seed
+// files are compiled into the binary with go:embed, so they are trusted
+// build input, never user input. A line holding more than one statement is
+// rejected, so one Exec call can never run stacked statements.
 func execScript(tx *sql.Tx, script string) error {
 	for _, line := range strings.Split(script, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "--") {
 			continue
 		}
+		stmt, ok := singleStatement(line)
+		if !ok {
+			return errMultiStatement
+		}
 
-		if _, err := tx.Exec(line); err != nil {
+		if _, err := tx.ExecContext(context.Background(), stmt); err != nil {
 			return err
 		}
 	}

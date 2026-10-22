@@ -12,14 +12,15 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/nowplaying"
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 func startMedia(ctx context.Context, inbox *cat.Inbox, endpoint string) {
-	go func() {
+	safego.Go("media watch", func() {
 		publish := func(track nowplaying.Track) error {
 			text := []rune("Now playing: " + track.Title)
-			if len(text) > 160 {
-				text = text[:160]
+			if len(text) > mediaTextLimit {
+				text = text[:mediaTextLimit]
 			}
 			n := cat.Notification{Expression: "happy", Message: string(text), Source: "Chrome"}
 			if endpoint != "" {
@@ -40,10 +41,10 @@ func startMedia(ctx context.Context, inbox *cat.Inbox, endpoint string) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(5 * time.Second):
+			case <-time.After(mediaRetryInterval):
 			}
 		}
-	}()
+	})
 }
 
 func printMedia(ctx context.Context) {

@@ -1,33 +1,52 @@
 package window
 
-import "image/color"
-
 // The devtools dock follows the Chrome DevTools dark theme: a dark grey dock,
 // a lighter header and tab strip, a blue accent, and syntax colours for the
-// JSON view.
+// JSON view. Each hex packs 0xRRGGBBAA.
+const (
+	devPanelBgHex  = 0x202124ff
+	devHeaderBgHex = 0x292a2dff
+	devBorderHex   = 0x3c4043ff
+	devFgHex       = 0xe8eaedff
+	devDimHex      = 0x9aa0a6ff
+	devAccentHex   = 0x8ab4f8ff
+	devErrInkHex   = 0xf28b82ff
+	devKeyInkHex   = 0x9cdcfeff
+	devStrInkHex   = 0xce9178ff
+	devNumInkHex   = 0xb5cea8ff
+	devBoolInkHex  = 0x569cd6ff
+	devPunctInkHex = 0xd4d4d4ff
+	devRowHoverHex = 0x35363aff
+	devRowPickHex  = 0x3d4d6dff
+	devFillInkHex  = 0x1a56dbff
+	devStrokeHex   = 0xe5484dff
+	devLineInkHex  = 0xd97706ff
+	devTextInkHex  = 0x176b45ff
+	devImageInkHex = 0x7c3aedff
+	devGridInkHex  = 0x0891b2ff
+)
+
 var (
-	devPanelBg  = color.RGBA{R: 0x20, G: 0x21, B: 0x24, A: 0xff}
-	devHeaderBg = color.RGBA{R: 0x29, G: 0x2a, B: 0x2d, A: 0xff}
-	devBorder   = color.RGBA{R: 0x3c, G: 0x40, B: 0x43, A: 0xff}
-	devFg       = color.RGBA{R: 0xe8, G: 0xea, B: 0xed, A: 0xff}
-	devDim      = color.RGBA{R: 0x9a, G: 0xa0, B: 0xa6, A: 0xff}
-	devAccent   = color.RGBA{R: 0x8a, G: 0xb4, B: 0xf8, A: 0xff}
-	devErrInk   = color.RGBA{R: 0xf2, G: 0x8b, B: 0x82, A: 0xff}
-	devKeyInk   = color.RGBA{R: 0x9c, G: 0xdc, B: 0xfe, A: 0xff}
-	devStrInk   = color.RGBA{R: 0xce, G: 0x91, B: 0x78, A: 0xff}
-	devNumInk   = color.RGBA{R: 0xb5, G: 0xce, B: 0xa8, A: 0xff}
-	devBoolInk  = color.RGBA{R: 0x56, G: 0x9c, B: 0xd6, A: 0xff}
-	devPunctInk = color.RGBA{R: 0xd4, G: 0xd4, B: 0xd4, A: 0xff}
-	devRowHover = color.RGBA{R: 0x35, G: 0x36, B: 0x3a, A: 0xff}
-	devRowPick  = color.RGBA{R: 0x3d, G: 0x4d, B: 0x6d, A: 0xff}
-	// The page overlays reuse the same palette: one colour per operation
-	// kind, and the hover and pin box inks.
-	devFillInk   = color.RGBA{R: 0x1a, G: 0x56, B: 0xdb, A: 0xff}
-	devStrokeInk = color.RGBA{R: 0xe5, G: 0x48, B: 0x4d, A: 0xff}
-	devLineInk   = color.RGBA{R: 0xd9, G: 0x77, B: 0x06, A: 0xff}
-	devTextInk   = color.RGBA{R: 0x17, G: 0x6b, B: 0x45, A: 0xff}
-	devImageInk  = color.RGBA{R: 0x7c, G: 0x3a, B: 0xed, A: 0xff}
-	devGridInk   = color.RGBA{R: 0x08, G: 0x91, B: 0xb2, A: 0xff}
-	devHoverInk  = color.RGBA{R: 0xe5, G: 0x48, B: 0x4d, A: 0xff}
-	devPinInk    = color.RGBA{R: 0x1a, G: 0x56, B: 0xdb, A: 0xff}
+	devPanelBg   = devRGBA(devPanelBgHex)
+	devHeaderBg  = devRGBA(devHeaderBgHex)
+	devBorder    = devRGBA(devBorderHex)
+	devFg        = devRGBA(devFgHex)
+	devDim       = devRGBA(devDimHex)
+	devAccent    = devRGBA(devAccentHex)
+	devErrInk    = devRGBA(devErrInkHex)
+	devKeyInk    = devRGBA(devKeyInkHex)
+	devStrInk    = devRGBA(devStrInkHex)
+	devNumInk    = devRGBA(devNumInkHex)
+	devBoolInk   = devRGBA(devBoolInkHex)
+	devPunctInk  = devRGBA(devPunctInkHex)
+	devRowHover  = devRGBA(devRowHoverHex)
+	devRowPick   = devRGBA(devRowPickHex)
+	devFillInk   = devRGBA(devFillInkHex)
+	devStrokeInk = devRGBA(devStrokeHex)
+	devLineInk   = devRGBA(devLineInkHex)
+	devTextInk   = devRGBA(devTextInkHex)
+	devImageInk  = devRGBA(devImageInkHex)
+	devGridInk   = devRGBA(devGridInkHex)
+	devHoverInk  = devRGBA(devStrokeHex)
+	devPinInk    = devRGBA(devFillInkHex)
 )

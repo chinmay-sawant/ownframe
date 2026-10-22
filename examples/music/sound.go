@@ -44,7 +44,7 @@ func NewSound(data []byte) (*Sound, error) {
 		return nil, err
 	}
 
-	seconds := float64(length) / 4 / float64(ctx.SampleRate())
+	seconds := float64(length) / wavFrameBytes / float64(ctx.SampleRate())
 
 	return &Sound{player: player, dur: time.Duration(seconds * float64(time.Second))}, nil
 }

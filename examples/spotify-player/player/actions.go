@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+// Demo boundary: this player is a single-user local demo with no
+// authentication or authorization; every rendered action runs as the
+// viewer. Add server-side permission checks before adding accounts,
+// tenants, or privileged operations.
+
 // selectRow makes track i the now-playing item.
 func (a *App) selectRow(i int) {
 	if i < 0 || i >= len(a.view.Tracks) {

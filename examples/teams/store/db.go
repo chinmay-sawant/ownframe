@@ -5,6 +5,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ type Store struct {
 // needed.
 func Open(path string) (*Store, error) {
 	if path != Memory {
-		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(path), storeDirPerm); err != nil {
 			return nil, err
 		}
 	}
@@ -36,8 +37,8 @@ func Open(path string) (*Store, error) {
 
 	db.SetMaxOpenConns(1)
 
-	if _, err := db.Exec(schema); err != nil {
-		db.Close()
+	if _, err := db.ExecContext(context.Background(), schema); err != nil {
+		_ = db.Close()
 
 		return nil, err
 	}

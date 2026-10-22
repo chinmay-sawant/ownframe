@@ -26,7 +26,7 @@ func shapeContains(op *layout.DisplayOp, x, y float64) bool {
 		}
 		return false
 	}
-	half := width / 2
+	half := width / halfDivisor
 	outerX, outerY, innerX, innerY := rx, ry, rx, ry
 	for i := range rx {
 		outerX[i], outerY[i] = rx[i]+half, ry[i]+half
@@ -43,5 +43,5 @@ func onLine(x, y, lx, ly, w, h, width float64) bool {
 	}
 	along := ((x-lx)*w + (y-ly)*h) / length
 	across := ((x-lx)*h - (y-ly)*w) / length
-	return along >= -width/2 && along <= length+width/2 && math.Abs(across) <= width/2
+	return along >= -width/halfDivisor && along <= length+width/halfDivisor && math.Abs(across) <= width/halfDivisor
 }

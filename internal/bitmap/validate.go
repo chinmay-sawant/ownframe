@@ -21,7 +21,7 @@ func validate(d *layout.Display) error {
 		depth := 0
 		for g := op.Group(); g != nil; g = g.Parent {
 			depth++
-			if depth > 7 {
+			if depth > maxBlendDepth {
 				return fmt.Errorf("bitmap: blend nesting exceeds 7")
 			}
 		}
@@ -39,7 +39,7 @@ func validate(d *layout.Display) error {
 		case layout.DisplayOpNoop, layout.DisplayOpLinkURI:
 		case layout.DisplayOpFillRect, layout.DisplayOpLine:
 		case layout.DisplayOpStrokeRect:
-			if op.StrokeMask & ^uint8(15) != 0 {
+			if op.StrokeMask & ^uint8(strokeMaskAll) != 0 {
 				return fmt.Errorf("bitmap: unknown stroke mask")
 			}
 		case layout.DisplayOpGridRun:

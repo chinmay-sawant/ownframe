@@ -2,36 +2,46 @@
 
 package clipboard
 
-func pad4(n int) int { return (n + 3) &^ 3 }
+import "math"
+
+func pad4(n int) int { return (n + xMask) &^ xMask }
 
 func put16(b []byte, v uint16) {
-	b[0] = byte(v)
-	b[1] = byte(v >> 8)
+	b[0] = byte(v) //nolint:gosec // reason: LE low byte.
+	b[1] = byte(v >> xShift8)
 }
 
 func put32(b []byte, v uint32) {
-	b[0] = byte(v)
-	b[1] = byte(v >> 8)
-	b[2] = byte(v >> 16)
-	b[3] = byte(v >> 24)
+	b[0] = byte(v)             //nolint:gosec // reason: LE low byte.
+	b[1] = byte(v >> xShift8)  //nolint:gosec // reason: LE 2nd byte.
+	b[2] = byte(v >> xShift16) //nolint:gosec // reason: LE 3rd byte.
+	b[3] = byte(v >> xShift24)
 }
 
 func get16(b []byte) uint16 {
-	return uint16(b[0]) | uint16(b[1])<<8
+	return uint16(b[0]) | uint16(b[1])<<xShift8
 }
 
 func get32(b []byte) uint32 {
-	return uint32(b[0]) | uint32(b[1])<<8 |
-		uint32(b[2])<<16 | uint32(b[3])<<24
+	return uint32(b[0]) | uint32(b[1])<<xShift8 |
+		uint32(b[2])<<xShift16 | uint32(b[3])<<xShift24
 }
 
 func setupReq(name, data []byte) []byte {
+	if len(name) > math.MaxUint16 {
+		name = name[:math.MaxUint16]
+	}
+
+	if len(data) > math.MaxUint16 {
+		data = data[:math.MaxUint16]
+	}
+
 	n := pad4(len(name))
 	buf := make([]byte, 12+n+pad4(len(data)))
 	buf[0] = 'l'
-	put16(buf[2:], 11)
-	put16(buf[6:], uint16(len(name)))
-	put16(buf[8:], uint16(len(data)))
+	put16(buf[2:], xProtoMajor)
+	put16(buf[6:], uint16(len(name))) //nolint:gosec // reason: name clamped to MaxUint16 above.
+	put16(buf[8:], uint16(len(data))) //nolint:gosec // reason: data clamped to MaxUint16 above.
 	copy(buf[12:], name)
 	copy(buf[12+n:], data)
 
@@ -43,7 +53,7 @@ func setupIDs(buf []byte) (uint32, uint32, int, bool) {
 		return 0, 0, 0, false
 	}
 
-	max := int(get16(buf[26:])) * 4
+	max := int(get16(buf[26:])) * xWord
 
 	return get32(buf[12:]), get32(buf[16:]), max, true
 }
@@ -53,8 +63,8 @@ func rootAt(buf []byte, screen int) (uint32, bool) {
 		return 0, false
 	}
 
-	off := (40 + int(get16(buf[24:])) + 3) &^ 3
-	off += int(buf[29]) * 8
+	off := (xHdr40 + int(get16(buf[24:])) + xMask) &^ xMask
+	off += int(buf[29]) * xHdr8
 
 	for s := 0; ; s++ {
 		if off+40 > len(buf) {
@@ -74,7 +84,7 @@ func rootAt(buf []byte, screen int) (uint32, bool) {
 			}
 
 			nv := int(get16(buf[off+2:]))
-			off += 8 + nv*24
+			off += xHdr8 + nv*xHdr24
 		}
 	}
 }

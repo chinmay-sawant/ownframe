@@ -1,0 +1,83 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# GEN-9: least privilege; tagging a release must not grant write beyond
+# what the release job needs. Never switch this to pull_request_target.
+permissions:
+  contents: read
+
+# GEN-1/GEN-2: same supply-chain posture as ci.yml: readonly modules,
+# verified sums, and a local-only toolchain.
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); comments name the source tag.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+          cache: false # tag-triggered gate: no shared cache writes
+      - run: go mod verify
+      - run: cd examples && go mod verify
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          package-manager-cache: false # tag-triggered gate: no shared cache
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm audit signatures
+        working-directory: frontend
+      - run: make test
+      - run: make lint
+
+  # GEN-12/GEN-13: every tag ships an SBOM with a SLSA attestation and a
+  # keyless cosign signature, so downstream users can verify what is in
+  # the release and that CI built it. See documentation/supply-chain.md.
+  supply-chain:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      # Pinned by full SHA (GEN-9); comments name the source tag.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+          cache: false # tag-triggered release: no shared cache writes
+      - run: go mod verify
+      - run: cd examples && go mod verify
+      # SBOM of both modules in SPDX JSON (GEN-13).
+      - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          path: ./
+          format: spdx-json
+          output-file: sbom.spdx.json
+      # SLSA build provenance over the SBOM (GEN-12).
+      - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: sbom.spdx.json
+      # Keyless cosign signature over the same file (GEN-12).
+      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - run: cosign sign-blob --yes --output-signature sbom.spdx.json.sig --output-certificate sbom.spdx.json.pem sbom.spdx.json
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: supply-chain
+          path: |
+            sbom.spdx.json
+            sbom.spdx.json.sig
+            sbom.spdx.json.pem
