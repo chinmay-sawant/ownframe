@@ -31,6 +31,6 @@ func SetScanning(on bool) {
 // CancelTouches ends any pointer gesture interrupted by Android lifecycle changes.
 func CancelTouches() {
 	if app != nil {
-		app.Page().CancelTouches()
+		app.Page().Testing().CancelTouches()
 	}
 }

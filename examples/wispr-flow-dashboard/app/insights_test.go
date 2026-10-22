@@ -13,7 +13,7 @@ func TestNewDrawsReplayableDashboard(t *testing.T) {
 
 	openInsights(t, app)
 
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("dashboard fell back to the bitmap path")
 	}
 }
@@ -35,7 +35,7 @@ func TestTabSwitchKeepsDisplayList(t *testing.T) {
 		t.Fatalf("Click: %v", err)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("the empty tab fell back to the bitmap path")
 	}
 }

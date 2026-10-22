@@ -21,6 +21,6 @@ type sample struct {
 func newDemo(p *ownframe.Page, v *view) *demo {
 	w, h := p.Size()
 
-	return &demo{p: p, v: v, gen: p.Generation(), samples: map[string]*sample{},
-		treeParses: p.Stats().Parses, sizeW: w, sizeH: h}
+	return &demo{p: p, v: v, gen: p.Testing().Generation(), samples: map[string]*sample{},
+		treeParses: p.Testing().Stats().Parses, sizeW: w, sizeH: h}
 }

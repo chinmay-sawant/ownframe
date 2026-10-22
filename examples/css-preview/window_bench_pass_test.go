@@ -12,7 +12,7 @@ import (
 // sync does: run the row window callback and redraw only when it changes.
 func windowBenchScroll(ctx context.Context, p *ownframe.Page, tb testing.TB) {
 	tb.Helper()
-	if p.StepScrollWindow() {
+	if p.Testing().StepScrollWindow() {
 		if err := p.Redraw(ctx); err != nil {
 			tb.Fatal(err)
 		}

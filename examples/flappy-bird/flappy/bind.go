@@ -54,7 +54,7 @@ func (a *App) bind(d *ownframe.Display) {
 	a.parts.again = textAt(d, boxes, "t-again")
 
 	a.bindBoard(d, boxes)
-	a.bound = a.page.Generation()
+	a.bound = a.page.Testing().Generation()
 }
 
 // bindBoard caches the panel fill and its hit-test box in CSS pixels, so

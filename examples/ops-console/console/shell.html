@@ -130,12 +130,16 @@
       {{if .Empty}}
       <p id="empty">No tickets on this filter.</p>
       {{end}}
+      <div id="board">
+      <div style="height: {{.ListTop}}px"></div>
       {{range .Tickets}}
       <div id="{{.ID}}" class="row" data-action="{{.Action}}">
         <div>{{.Title}}</div>
         <div class="meta">{{.Bay}} · <span class="st">{{.Status}}</span></div>
       </div>
       {{end}}
+      <div style="height: {{.ListBottom}}px"></div>
+      </div>
       {{end}}
       {{if eq .Screen "detail"}}
       <div id="detail">

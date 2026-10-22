@@ -39,7 +39,7 @@ func TestNotetakerPage(t *testing.T) {
 		t.Fatalf("notes = %d", got)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("notetaker fell back to a bitmap")
 	}
 }

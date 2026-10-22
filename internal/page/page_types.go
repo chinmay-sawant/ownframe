@@ -8,13 +8,13 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/host"
-
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
+	"github.com/chinmay-sawant/ownframe/internal/page/nav"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
-// Page is one template and its picture; single owner. Do not share between
-// Run and Serve; Tick/Draw stay on the page loop.
+// Page is one template and its picture.
 type Page struct {
 	title           string
 	tpl             *template.Template
@@ -34,9 +34,9 @@ type Page struct {
 	renderTrack     // generation and last frame key; lock: page loop
 	touchCancel     uint32
 	tickSlot
-	nav             navHistory
+	nav             nav.History
 	deepLinkSchemes map[string]struct{}
-	ff              formFocusState // owner: page_form_focus*.go; lock: page loop
+	ff              formFocusState
 	picker          PickFunc
 	cache           *render.Cache
 	stats           pageStats
@@ -50,7 +50,7 @@ type Page struct {
 	allowScroll     bool
 	touchScroll     TouchScrollOptions
 	watch           *watchState
-	dirty           dirtyTracker
+	dirty           dirty.Tracker
 	lastPatch       DisplayPatch
 	changedProps    []string
 	stateStore      *state.Store

@@ -55,7 +55,7 @@ func tick(t *testing.T, app *App, clock *testClock, frame time.Duration) {
 func press(t *testing.T, app *App, key string) {
 	t.Helper()
 
-	if err := app.page.KeyDown(context.Background(), key); err != nil {
+	if err := app.page.Testing().KeyDown(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
 }

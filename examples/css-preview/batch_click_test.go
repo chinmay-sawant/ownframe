@@ -18,13 +18,13 @@ func TestBatchedPressStartsPreview(t *testing.T) {
 	x, y := button.X+button.W/2, button.Y+button.H/2
 
 	err := redrawBatch(ctx, p, func() error {
-		if err := p.Press(ctx, x, y); err != nil {
+		if err := p.Testing().Press(ctx, x, y); err != nil {
 			return err
 		}
 		if err := p.SelectAt(ctx, x, y); err != nil {
 			return err
 		}
-		return p.Click(ctx, x, y)
+		return p.Testing().Click(ctx, x, y)
 	})
 	if err != nil {
 		t.Fatal(err)

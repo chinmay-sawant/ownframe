@@ -29,14 +29,14 @@ func TestRepaintMatchesFullRedraw(t *testing.T) {
 			inc := c.newPage(t)
 			full := c.newPage(t)
 
-			before := inc.PNG()
+			before := inc.Testing().PNG()
 			c.interact(t, inc, ctx)
 			c.interact(t, full, ctx)
 			if err := full.Redraw(ctx); err != nil {
 				t.Fatal(err)
 			}
 
-			after := inc.PNG()
+			after := inc.Testing().PNG()
 			if before == nil || after == nil {
 				t.Fatal("no PNG to compare")
 			}
@@ -55,7 +55,7 @@ func TestRepaintMatchesFullRedraw(t *testing.T) {
 				t.Fatal("the interaction did not change the picture")
 			}
 
-			fullImg, err := png.Decode(bytes.NewReader(full.PNG()))
+			fullImg, err := png.Decode(bytes.NewReader(full.Testing().PNG()))
 			if err != nil {
 				t.Fatal(err)
 			}

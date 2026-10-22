@@ -20,7 +20,7 @@ func tileOp(d *ownframe.Display, b ownframe.Box) *ownframe.DisplayOp {
 
 // settled reports whether every glyph cell's text op matches its view target.
 func settled(app *board.App, want map[string]string) bool {
-	d := app.Page().Display()
+	d := app.Page().Testing().Display()
 	if d == nil {
 		return false
 	}

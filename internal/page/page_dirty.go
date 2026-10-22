@@ -5,12 +5,12 @@ package page
 // on it also stores the changed, dirty, and region counters Stats reports;
 // TakeDirty clears only the region, never these counters.
 func (p *Page) dirtyFromDisplay(prev, display *Display) {
-	if p.dirty.full {
+	if p.dirty.Full {
 		return
 	}
 
 	if prev == nil {
-		p.dirty.markFull()
+		p.dirty.MarkFull()
 		if p.perf {
 			p.recordFull(len(display.Ops))
 		}
@@ -26,7 +26,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 
 	d, full, changed := diffDisplay(prev, display)
 	if full {
-		p.dirty.markFull()
+		p.dirty.MarkFull()
 		if p.perf {
 			p.recordFull(len(display.Ops))
 		}
@@ -42,7 +42,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	}
 
 	for i := 0; i < d.n; i++ {
-		p.dirty.markRect(d.rects[i])
+		p.dirty.MarkRect(d.rects[i])
 	}
 
 	if p.perf {
@@ -66,9 +66,9 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 // grew or shrank repaints the space it now uses too, then clears the map
 // for reuse instead of dropping it.
 func (p *Page) applyPending() {
-	for id := range p.dirty.pending {
+	for id := range p.dirty.Pending {
 		p.markElement(id)
 	}
 
-	clear(p.dirty.pending)
+	clear(p.dirty.Pending)
 }

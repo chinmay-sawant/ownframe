@@ -1,5 +1,7 @@
 # Clipboard
 
+On GNOME/Wayland, paste fails closed when `wl-copy` and `wl-paste` are missing.
+
 `clipboard.Write` stores the text in memory when `UseMemory(true)` has turned memory-only mode on, and tries the OS clipboard otherwise without touching the memory copy. With memory-only mode off, `clipboard.Read` returns the OS clipboard text, or `""` plus `ErrUnavailable` when that read fails; it never falls back to an older `Write`.
 
 The window still calls `Write` and `Read` for the text chords. `Read` returns `(string, error)`; paste callers skip on error and tests fail on it. No Go module was added. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH. The package does not start `xclip`, `pbcopy`, or PowerShell.

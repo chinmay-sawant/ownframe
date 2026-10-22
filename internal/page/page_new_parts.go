@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/ownframe/internal/element"
+	"github.com/chinmay-sawant/ownframe/internal/page/nav"
 )
 
 // assemblePage builds the Page shell; New clamps the size after it.
@@ -25,7 +26,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 			maxWidth:  cfg.MaxWidth,
 			maxHeight: cfg.MaxHeight,
 		},
-		nav:             newNavHistory(source),
+		nav:             nav.New(source),
 		deepLinkSchemes: schemes,
 		devtools:        cfg.DevTools,
 		perf:            cfg.Perf,

@@ -25,7 +25,7 @@ func main() {
 	}
 
 	if *perf {
-		app.Page().SetPerf(true)
+		app.Page().Testing().SetPerf(true)
 	}
 
 	ctx := context.Background()

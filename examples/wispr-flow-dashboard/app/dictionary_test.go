@@ -39,7 +39,7 @@ func TestDictionaryPage(t *testing.T) {
 		t.Fatalf("words = %d", got)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("dictionary fell back to a bitmap")
 	}
 }

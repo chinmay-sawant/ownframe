@@ -41,7 +41,7 @@ func BenchmarkRedrawScrollStep(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		app.page.SetScrollOffset(0, base+(i%100)*48)
-		app.page.StepScrollWindow()
+		app.page.Testing().StepScrollWindow()
 		if err := app.page.Redraw(ctx); err != nil {
 			b.Fatal(err)
 		}
@@ -63,7 +63,7 @@ func BenchmarkRedrawDense(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		app.page.SetScrollOffset(0, (i%100)*48)
-		app.page.StepScrollWindow()
+		app.page.Testing().StepScrollWindow()
 		if err := app.page.Redraw(ctx); err != nil {
 			b.Fatal(err)
 		}

@@ -19,7 +19,7 @@ func (p *Page) Route(action, html string) error {
 	if err := checkDOMLimits(html); err != nil {
 		return err
 	}
-	p.nav.route(action, html)
+	p.nav.Route(action, html)
 	return nil
 }
 
@@ -27,11 +27,11 @@ func (p *Page) drawAt(ctx context.Context, at int) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
-	tpl, err := template.New("page").Parse(p.nav.sourceAt(at))
+	tpl, err := template.New("page").Parse(p.nav.SourceAt(at))
 	if err != nil {
 		return err
 	}
-	p.nav.goTo(at)
+	p.nav.GoTo(at)
 	p.tpl = tpl
 	p.invalidateAccessibilityDocument()
 	p.invalidateCache()

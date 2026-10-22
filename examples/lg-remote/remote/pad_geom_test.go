@@ -32,7 +32,7 @@ func TestPadBoxIsTheHitTarget(t *testing.T) {
 
 	fake := &fakeLink{}
 	app.SetLink(fake)
-	err := app.Page().Click(context.Background(), note.X+note.W/2, note.Y+note.H/2)
+	err := app.Page().Testing().Click(context.Background(), note.X+note.W/2, note.Y+note.H/2)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -34,7 +34,7 @@ func (c *Companion) Draggable(x, y int) bool {
 		return false
 	}
 	top := 142.0
-	if a.image != nil && a.display == c.Page.Display() {
+	if a.image != nil && a.display == c.Page.Testing().Display() {
 		top = a.image.Y / a.display.PointsPerPixel
 	}
 	px, py := x-companionOffsetX, int(float64(y)-top)

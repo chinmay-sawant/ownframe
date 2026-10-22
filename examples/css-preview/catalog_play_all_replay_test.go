@@ -14,7 +14,7 @@ func TestStartReplaysAfterPlayAll(t *testing.T) {
 	if !ok {
 		t.Fatal("the play all button is missing")
 	}
-	if err := p.Click(ctx, all.X+all.W/2, all.Y+all.H/2); err != nil {
+	if err := p.Testing().Click(ctx, all.X+all.W/2, all.Y+all.H/2); err != nil {
 		t.Fatal(err)
 	}
 	if err := d.tick(ctx); err != nil {
@@ -32,7 +32,7 @@ func TestStartReplaysAfterPlayAll(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing %s", row.Button)
 	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+	if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
 	if err := d.tick(ctx); err != nil {

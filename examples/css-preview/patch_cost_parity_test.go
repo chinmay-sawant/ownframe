@@ -14,27 +14,27 @@ func TestPatchElementMatchesAFullRedraw(t *testing.T) {
 	if !patchCostStateSpan(ctx, p, card, true) {
 		t.Fatal("the state span patch was refused")
 	}
-	patchedCard := patchCostOps(p.Display(), card.id)
+	patchedCard := patchCostOps(p.Testing().Display(), card.id)
 	if len(patchedCard) < 2 {
 		t.Fatalf("the card owns %d operations, want the card's own paint", len(patchedCard))
 	}
-	patchedSpan := patchCostOps(p.Display(), card.state)
-	patchedBox, ok := patchCostBox(p.Display(), card.state)
+	patchedSpan := patchCostOps(p.Testing().Display(), card.state)
+	patchedBox, ok := patchCostBox(p.Testing().Display(), card.state)
 	if !ok {
 		t.Fatal("the state span has no box")
 	}
-	patchedOther := patchCostOtherOps(p.Display(), card.id)
+	patchedOther := patchCostOtherOps(p.Testing().Display(), card.id)
 
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	comparePatchOps(t, "card", patchedCard, patchCostOps(p.Display(), card.id))
-	comparePatchOps(t, "state span", patchedSpan, patchCostOps(p.Display(), card.state))
-	fullBox, ok := patchCostBox(p.Display(), card.state)
+	comparePatchOps(t, "card", patchedCard, patchCostOps(p.Testing().Display(), card.id))
+	comparePatchOps(t, "state span", patchedSpan, patchCostOps(p.Testing().Display(), card.state))
+	fullBox, ok := patchCostBox(p.Testing().Display(), card.state)
 	if !ok {
 		t.Fatal("the state span has no box after the redraw")
 	}
 	comparePatchBox(t, patchedBox, fullBox)
 	comparePatchOps(t, "rest of the page", patchedOther,
-		patchCostOtherOps(p.Display(), card.id))
+		patchCostOtherOps(p.Testing().Display(), card.id))
 }

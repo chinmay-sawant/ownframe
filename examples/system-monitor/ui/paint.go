@@ -4,7 +4,7 @@ package ui
 // text only when a result or handler changed it. A nil display list means
 // the page fell back to the bitmap path, so there is nothing to repaint.
 func (a *App) paint() {
-	d := a.page.Display()
+	d := a.page.Testing().Display()
 	if d == nil {
 		a.state.dirtyText = false
 

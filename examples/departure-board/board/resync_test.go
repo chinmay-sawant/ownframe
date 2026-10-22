@@ -47,7 +47,7 @@ func TestRedrawResyncsAfterRetargets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	d := app.Page().Display()
+	d := app.Page().Testing().Display()
 	boxes := app.Page().Boxes()
 
 	for _, row := range app.view.Rows {

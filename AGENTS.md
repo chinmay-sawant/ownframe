@@ -54,7 +54,7 @@ A page taller or wider than the window scrolls on the mouse wheel. A picture tha
 
 - No new `type X =` alias at the module root except documented re-exports named in `plans/v0.0.3/prod-ready-task/phase-01-public-api.md`.
 - No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.
-- No new public `Page` method unless an example cannot compile without it. Host-loop methods (`TakeDirty`, `TakeDirtyRects`, `PollReload`, `IMEReplace`, `PatchOp`, `Tick`) live on `Page.Testing()`.
+- Public `Page` keeps the app set: `SetData`, `Handle`, `AddHandlers`, `SetTheme`, `SetTick`, `SetImage`, `Ticking`, `Redraw`, `RedrawIfChanged`, `Title`, `Load`, `Back`, `Forward`, `Route`, `HTML`, `Size`, `MinSize`, `MaxSize`, `Clamp`, `SetSize`, `PatchElement`, `SetScrollWindow`, `SetViewportPinZ`, `ViewportPinZ`, `ScrollOffset`, `SetScrollOffset`, `SetWindowing`, `Windowing`, `ScrollTo`, `ScrollBy`, `SetAllowScroll`, `AllowScroll`, `FormValue`, `SetFormValue`, `FormChecked`, `SetFormChecked`, `FormSelected`, `LastFocusID`, `FocusedField`, `Focus`, `FocusID`, `FocusNext`, `FocusPrev`, `Copy`, `Cut`, `Paste`, `SelectAll`, `Undo`, `Redo`, `SelectAt`, `Boxes`, `AccessibilityTree`, `AccessibilityPerform`, `WantFrameAt`, `WantFrameIn`, and `Testing()`. Host/debug methods live on `Page.Testing()`.
 - No new example import of `github.com/chinmay-sawant/ownframe/internal/`. Existing pairs stay in `scripts/example-internal-allowlist.txt` until a public export replaces them. `make internal-import-check` records the set.
 
 v0 may break. Rules for names, errors, context, and examples are in `plans/v0.0.3/prod-ready-task/field-go-practices.md`.

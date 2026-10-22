@@ -2,11 +2,13 @@
 
 OwnFrame renders HTML and CSS screens while your app logic runs in Go. Blinkless lays out the page, and Ebitengine opens the native window. OwnFrame does not embed a browser or JavaScript runtime.
 
-1.0 native hosts are desktop `Run` and Android `BindMobile`. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not TalkBack. wasm is a canvas preview. `-web` is a PNG debugger. See [platforms.md](platforms.md).
+1.0 native hosts are desktop `Run` and Android `BindMobile`, for an operator you control. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not a screen reader. wasm is a canvas preview. `-web` is a PNG debugger. See [platforms.md](platforms.md).
 
 This page summarizes supported features and current limits. Use the linked guides for setup and examples. See [Android runtime limits](android-runtime.md) and [all examples](../examples/readme.md).
 
 ## CSS and HTML support
+
+This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `Page.SetScrollWindow` and `Page.SetViewportPinZ`. Those are not tickets on ownframe. A long list is a slice window plus spacers, not `content-visibility`. See `examples/list`, `examples/ops-console`, and [tricks-tips.md](tricks-tips.md).
 
 | Feature | 1.0 |
 |---|---|
@@ -15,9 +17,20 @@ This page summarizes supported features and current limits. Use the linked guide
 | Tables | yes; collapsed borders replay as `OpGridRun` ([screen.md](screen.md)) |
 | Circular corner radii | replay path |
 | `var()` | yes; theme sheets can define custom properties ([theming.md](theming.md)) |
-| `:hover`, `:focus`, `:active`, `:checked` | host state ([forms.md](forms.md)) |
+| `rgb()`, `hsl()` | yes in templates and theme sheets ([theming.md](theming.md)) |
+| `linear-gradient` | yes; engine rasterizes to `OpImage` |
+| `:hover`, `:focus`, `:focus-visible`, `:active`, `:checked` | host state ([forms.md](forms.md)) |
 | CSS masks | first pass: border box, simple sizes, `repeat` variants (see CSS masks below) |
 | CSS motion records | sampled from Blinkless; the window does not start them ([css-motion.md](css-motion.md)) |
+| `@media` width and orientation | yes ([theming.md](theming.md)) |
+| `overflow` clipping | yes; clipped ops become `OpNoop` ([screen.md](screen.md)) |
+| Overflowing page | the window scrolls content larger than the frame ([scrolling.md](scrolling.md)) |
+| `z-index` | yes; `Display.Order` ([screen.md](screen.md)) |
+| `position: relative` | yes; containing block ([screen.md](screen.md)) |
+| `position: absolute` | yes on a block container |
+| Letter-spacing, `text-transform` | replay path ([screen.md](screen.md)) |
+| `<img>`, `background-image` | PNG, JPEG, SVG via `SetImage` ([screen.md](screen.md)) |
+| `input`, `textarea`, `select`, `button` | yes ([forms.md](forms.md)) |
 
 | Absent or app workaround | 1.0 |
 |---|---|
@@ -26,10 +39,13 @@ This page summarizes supported features and current limits. Use the linked guide
 | `position: fixed` under window scroll | engine `Fixed` ops stay untranslated; sticky does not get that mark. |
 | Pinned chrome | `Page.SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
 | `@media print` | never matches ([theming.md](theming.md)) |
+| `@media (height)` | never matches. `TestMediaHeightFollowsTheFrame` is skipped. |
 | `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
 | Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
 | Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |
+| Rotated glyphs, fake oblique, font features, autospacing, missing font | bitmap fallback ([screen.md](screen.md)) |
 | `@container` vs element patch | a document with `@container` refuses every patch ([optimizations.md](optimizations.md)) |
+| `content-visibility` | not faked. Window the rows and pad with spacers. |
 
 ## Not in 1.0
 
@@ -174,9 +190,11 @@ Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md
 `Page.AccessibilityTree` returns semantic roles, names, descriptions, live
 form state, document order, and bounds where an element has a unique HTML ID.
 `Page.AccessibilityPerform` routes supported focus, activation, and text-value
-actions through the page's existing input paths. The snapshot is a host contract. Linux maps it to AT-SPI objects; a live
-bus client is not implemented. CSS-only hidden content and anonymous-node
-bounds remain unresolved.
+actions through the page's existing input paths. The snapshot is a host
+contract for the operator who runs the process. 1.0 does not ship a
+screen-reader product. Linux maps the tree to AT-SPI objects in process;
+`Live` is false, so Orca cannot inspect the window. CSS-only hidden content
+and anonymous-node bounds remain unresolved.
 
 Detail is in [accessibility.md](accessibility.md) and [atspi.md](atspi.md).
 

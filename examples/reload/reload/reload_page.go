@@ -28,5 +28,5 @@ func (a *App) Boxes() []ownframe.Box { return a.page.Boxes() }
 
 // Click hit-tests the page and applies the click.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Click(ctx, x, y)
+	return a.page.Testing().Click(ctx, x, y)
 }

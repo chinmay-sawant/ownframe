@@ -11,7 +11,7 @@ import (
 func pixel(t *testing.T, app *App, x, y int) [3]uint8 {
 	t.Helper()
 
-	data := app.page.PNG()
+	data := app.page.Testing().PNG()
 	if len(data) == 0 {
 		t.Fatal("no PNG")
 	}
@@ -65,7 +65,7 @@ func TestFrozenChromeAndScrollingCells(t *testing.T) {
 
 	// Scroll far down: the chrome stays, the cells move away.
 	app.page.SetScrollOffset(0, 1000)
-	app.page.StepScrollWindow()
+	app.page.Testing().StepScrollWindow()
 	if err := app.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}

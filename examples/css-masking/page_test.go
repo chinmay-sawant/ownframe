@@ -16,10 +16,10 @@ func TestMaskExamplePixelsAndRetainedDisplay(t *testing.T) {
 	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if p.Display() == nil || p.Image() != nil {
+	if p.Testing().Display() == nil || p.Testing().Image() != nil {
 		t.Fatal("masked page did not keep its display list")
 	}
-	img, err := png.Decode(bytes.NewReader(p.PNG()))
+	img, err := png.Decode(bytes.NewReader(p.Testing().PNG()))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -35,7 +35,7 @@ behavior and the limits are in
 |---|---|
 | [login](login) | Sign-in screen with real inputs, clipboard, and an app-level undo stack. |
 | [list](list) | Fixed-height row window helper: start, count, and spacers. Import it. There is no `go run`. |
-| [ops-console](ops-console) | Five-screen yard ops console: login, ticket list, detail, settings, and a shift report. One shell template, one `View`, `data-action` clicks. Not a brand clone. |
+| [ops-console](ops-console) | Five-screen yard ops console: login, ticket list, detail, settings, and a shift report. The board windows rows through examples/list. One shell template, one `View`, `data-action` clicks. Not a brand clone. |
 | [forms](forms) | Every form control: text, password, textarea, checkbox, radio, select, file. |
 | [bind](bind) | `data-bind` two-way binding of controls to a struct. |
 | [input-lab](input-lab) | All nine form and input demos in one window: plain controls, two-way binding, a locked bound field, edit undo, OS clipboard, scroll list, sign-in, and CSS states. |

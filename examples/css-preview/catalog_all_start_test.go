@@ -14,7 +14,7 @@ func TestEveryCatalogStartRunsOnlyItsOwnPreview(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing Start button for %s", row.Name)
 		}
-		if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+		if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 			t.Fatal(err)
 		}
 		if !v.Started[row.Button] || v.Selected != row.Name {

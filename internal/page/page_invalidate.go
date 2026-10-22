@@ -7,7 +7,7 @@ package page
 // that never calls it stays correct: Redraw diffs the display lists.
 func (p *Page) Invalidate(id string) {
 	if id == "" || !p.hasBox(id) {
-		p.dirty.markFull()
+		p.dirty.MarkFull()
 
 		return
 	}
@@ -25,7 +25,7 @@ func (p *Page) markPending(id string) {
 
 	p.markID(id)
 
-	p.dirty.pend(id)
+	p.dirty.Pend(id)
 }
 
 // markPair marks the boxes of two element ids, one before and one after a
@@ -42,7 +42,7 @@ func (p *Page) markID(id string) {
 	}
 
 	if !p.hasBox(id) {
-		p.dirty.markFull()
+		p.dirty.MarkFull()
 
 		return
 	}
@@ -54,9 +54,9 @@ func (p *Page) markID(id string) {
 // rect for the same id, so an element that moved repaints the space it left.
 func (p *Page) markElement(id string) {
 	r := p.growBox(boxRect(p.boxByID(id)))
-	p.dirty.markRect(r)
-	p.dirty.markRect(p.dirty.prev(id))
-	p.dirty.note(id, r)
+	p.dirty.MarkRect(r)
+	p.dirty.MarkRect(p.dirty.Prev(id))
+	p.dirty.Note(id, r)
 }
 
 // markToggle marks a checkbox or radio, its label box when the layout has
@@ -65,11 +65,11 @@ func (p *Page) markToggle(id string) {
 	p.markID(id)
 
 	ctl := boxRect(p.boxByID(id))
-	p.dirty.markRect(ctl.Inset(-labelGap))
+	p.dirty.MarkRect(ctl.Inset(-labelGap))
 
 	for _, b := range p.boxes {
 		if b.Tag == "label" && touches(ctl, boxRect(b), labelGap) {
-			p.dirty.markRect(boxRect(b))
+			p.dirty.MarkRect(boxRect(b))
 		}
 	}
 }

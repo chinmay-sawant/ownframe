@@ -4,17 +4,17 @@ import "context"
 
 // Type edits the focused field. A nil type handler does not stop the edit.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Testing().Type(ctx, text)
 }
 
 // Backspace drops the last rune of the focused field.
 func (a *App) Backspace(ctx context.Context) error {
-	return a.page.Backspace(ctx)
+	return a.page.Testing().Backspace(ctx)
 }
 
 // DeleteWord drops the last word of the focused field.
 func (a *App) DeleteWord(ctx context.Context) error {
-	return a.page.DeleteWord(ctx)
+	return a.page.Testing().DeleteWord(ctx)
 }
 
 // FormValue returns the stored value of a control id.

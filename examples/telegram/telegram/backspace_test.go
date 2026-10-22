@@ -31,7 +31,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := app.Page().Backspace(ctx); err != nil {
+	if err := app.Page().Testing().Backspace(ctx); err != nil {
 		t.Fatal(err)
 	}
 
@@ -39,7 +39,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatalf("value = %q", got)
 	}
 
-	_, caret, before, after, ok := app.Page().IMEContext()
+	_, caret, before, after, ok := app.Page().Testing().IMEContext()
 	if !ok || caret != 10 || before != "hello worl" || after != "" {
 		t.Fatalf("guard ok=%v caret=%d before=%q after=%q", ok, caret, before, after)
 	}
@@ -55,7 +55,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatalf("ime value = %q", got)
 	}
 
-	_, caret, before, after, ok = app.Page().IMEContext()
+	_, caret, before, after, ok = app.Page().Testing().IMEContext()
 	if !ok || caret != 4 || before != "hell" || after != " worl" {
 		t.Fatalf("ime ok=%v caret=%d before=%q after=%q", ok, caret, before, after)
 	}

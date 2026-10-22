@@ -17,33 +17,33 @@ func TestBitmapFallbackRepaints(t *testing.T) {
 	m := &fakeModel{}
 	s, clock := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, pageHTML(fallbackSrc))
 
-	if s.page.Display() != nil {
+	if s.page.Testing().Display() != nil {
 		t.Skip("the engine kept a display list for the fallback page")
 	}
 
-	gen := s.page.Generation()
+	gen := s.page.Testing().Generation()
 	m.f.Score = 5
 	tickAt(t, s, clock, time.Second/60)
 
-	if s.page.Generation() == gen {
+	if s.page.Testing().Generation() == gen {
 		t.Fatal("the bitmap path did not repaint a changed frame")
 	}
 
-	if s.page.Image() == nil {
+	if s.page.Testing().Image() == nil {
 		t.Fatal("the bitmap path has no image")
 	}
 
-	gen = s.page.Generation()
+	gen = s.page.Testing().Generation()
 	m.f.Score = 6
 	tickAt(t, s, clock, 10*time.Millisecond)
 
-	if s.page.Generation() != gen {
+	if s.page.Testing().Generation() != gen {
 		t.Fatal("the bitmap throttle did not hold")
 	}
 
 	tickAt(t, s, clock, 60*time.Millisecond)
 
-	if s.page.Generation() == gen {
+	if s.page.Testing().Generation() == gen {
 		t.Fatal("the bitmap throttle never released")
 	}
 }
@@ -52,16 +52,16 @@ func TestBitmapFallbackSkipsUnchangedFrames(t *testing.T) {
 	m := &fakeModel{}
 	s, clock := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, pageHTML(fallbackSrc))
 
-	if s.page.Display() != nil {
+	if s.page.Testing().Display() != nil {
 		t.Skip("the engine kept a display list for the fallback page")
 	}
 
 	tickAt(t, s, clock, time.Second/60)
-	gen := s.page.Generation()
+	gen := s.page.Testing().Generation()
 
 	tickAt(t, s, clock, 100*time.Millisecond)
 
-	if s.page.Generation() != gen {
+	if s.page.Testing().Generation() != gen {
 		t.Fatal("an unchanged bitmap frame was repainted")
 	}
 }

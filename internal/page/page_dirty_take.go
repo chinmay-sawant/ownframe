@@ -1,12 +1,16 @@
 package page
 
-import "image"
+import (
+	"image"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
+)
 
 // TakeDirtyRects returns the regions in CSS pixels changed since the
 // previous call and clears them. The tracker owns the damage state; the
-// page only supplies its content rect. See dirtyTracker.take.
+// page only supplies its content rect. See dirty.Tracker.Take.
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
-	return p.dirty.take(p.contentRect())
+	return p.dirty.Take(p.contentRect())
 }
 
 // TakeDirty returns the region in CSS pixels changed since the previous
@@ -19,5 +23,5 @@ func (p *Page) TakeDirty() (image.Rectangle, bool) {
 		return image.Rectangle{}, false
 	}
 
-	return boundingBox(rects), true
+	return dirty.BoundingBox(rects), true
 }

@@ -18,7 +18,7 @@ func TestRebuildKeepsTheStartedState(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing button %q", row.Button)
 		}
-		if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+		if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 			t.Fatal(err)
 		}
 	}

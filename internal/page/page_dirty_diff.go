@@ -6,7 +6,7 @@ import "github.com/chinmay-sawant/blinkless/layout"
 // between prev and next. full reports a difference too scattered or too
 // large to merge, and changed counts the operations that differ. A change
 // stays partial while its bounding box is under a third of the frame and
-// its merged rect list fits maxDirtyRects.
+// its merged rect list fits dirty.MaxRects.
 func diffDisplay(prev, next *Display) (dirtySet, bool, int) {
 	if prev.Width != next.Width || prev.Height != next.Height {
 		return dirtySet{}, true, len(next.Ops)

@@ -15,7 +15,7 @@ func TestWalkStatePageCounters(t *testing.T) {
 	if len(fields) != 20 {
 		t.Fatalf("state has %d fields, want 20", len(fields))
 	}
-	st := p.Stats()
+	st := p.Testing().Stats()
 	for _, c := range []struct {
 		index int
 		name  string

@@ -1,14 +1,16 @@
 package console
 
 func (a *App) syncView() {
-	a.view.Tickets = a.filtered()
-	a.view.Empty = a.view.Screen == screenList && len(a.view.Tickets) == 0
+	all := a.filtered()
+	a.view.Empty = a.view.Screen == screenList && len(all) == 0
 	a.view.OpenN, a.view.HoldN, a.view.ClosedN = a.counts()
 	a.view.Nav = a.navItems()
 
 	if t, ok := a.ticket(a.view.Current.ID); ok {
 		a.view.Current = t
 	}
+
+	a.sliceTickets(all)
 }
 
 func (a *App) filtered() []Ticket {

@@ -102,7 +102,7 @@ func (a *App) SetSize(width, height int) {
 
 // Generation increases by one on every successful Redraw.
 func (a *App) Generation() uint64 {
-	return a.page.Generation()
+	return a.page.Testing().Generation()
 }
 
 // Redraw fills the template and renders the current size.
@@ -112,7 +112,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last PNG, or nil when nothing has been drawn.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Testing().PNG()
 }
 
 // Boxes returns the last hit-test boxes.
@@ -122,22 +122,22 @@ func (a *App) Boxes() []ownframe.Box {
 
 // Click hit-tests the page and applies the login action.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Click(ctx, x, y)
+	return a.page.Testing().Click(ctx, x, y)
 }
 
 // Type appends text to the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Testing().Type(ctx, text)
 }
 
 // Backspace drops the last rune of the focused field.
 func (a *App) Backspace(ctx context.Context) error {
-	return a.page.Backspace(ctx)
+	return a.page.Testing().Backspace(ctx)
 }
 
 // Submit checks the email and password.
 func (a *App) Submit(ctx context.Context) error {
-	return a.page.Submit(ctx)
+	return a.page.Testing().Submit(ctx)
 }
 
 func (a *App) onClick(_ context.Context, box ownframe.Box) error {

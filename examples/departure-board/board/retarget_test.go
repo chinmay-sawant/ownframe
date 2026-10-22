@@ -15,7 +15,7 @@ func runTick(t *testing.T, ctx context.Context, app *App) {
 		t.Fatal(err)
 	}
 
-	app.Page().FrameDirty()
+	app.Page().Testing().FrameDirty()
 	app.Page().Testing().TakeDirtyRects()
 }
 
@@ -52,14 +52,14 @@ func TestRotationRetargets(t *testing.T) {
 		runTick(t, ctx, app)
 	}
 
-	gen := app.Page().Generation()
+	gen := app.Page().Testing().Generation()
 	forceRotation(app)
 
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().Generation(); got != gen {
+	if got := app.Page().Testing().Generation(); got != gen {
 		t.Fatalf("rotation redrew the page: generation %d -> %d", gen, got)
 	}
 

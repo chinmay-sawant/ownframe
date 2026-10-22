@@ -30,7 +30,7 @@ func clickID(t *testing.T, p *Page, ctx context.Context, id string) {
 	t.Helper()
 
 	x, y := boxCenter(t, p, id)
-	if err := p.Click(ctx, x, y); err != nil {
+	if err := p.Testing().Click(ctx, x, y); err != nil {
 		t.Fatal(err)
 	}
 }

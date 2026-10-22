@@ -12,7 +12,7 @@ import (
 func catalogScrollTo(ctx context.Context, t *testing.T, p *ownframe.Page, top int) {
 	t.Helper()
 	p.SetScrollOffset(0, top)
-	if !p.StepScrollWindow() {
+	if !p.Testing().StepScrollWindow() {
 		t.Fatal("the row window did not move")
 	}
 	if err := p.Redraw(ctx); err != nil {

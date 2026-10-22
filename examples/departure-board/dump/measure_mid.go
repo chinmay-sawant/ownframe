@@ -14,11 +14,11 @@ import (
 // Redraw time lands in RedrawNS.
 func midAction(ctx context.Context, app *board.App, mid string, rep *Report) error {
 	if mid == "rotate" {
-		gen := app.Page().Generation()
+		gen := app.Page().Testing().Generation()
 		if err := app.Rotate(ctx); err != nil {
 			return err
 		}
-		if got := app.Page().Generation(); got != gen {
+		if got := app.Page().Testing().Generation(); got != gen {
 			return fmt.Errorf("dump: rotate redrew the page: generation %d to %d", gen, got)
 		}
 		return nil

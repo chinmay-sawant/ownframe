@@ -65,7 +65,7 @@ func clickID(t *testing.T, app *App, id string) {
 		t.Fatalf("no box %s", id)
 	}
 
-	err := app.Page().Click(context.Background(), box.X+1, box.Y+1)
+	err := app.Page().Testing().Click(context.Background(), box.X+1, box.Y+1)
 	if err != nil {
 		t.Fatal(err)
 	}

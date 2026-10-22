@@ -18,7 +18,12 @@ func New() (*App, error) {
 		return nil, err
 	}
 
-	app := &App{page: page, tickets: seedTickets()}
+	app := &App{
+		page:     page,
+		tickets:  seedTickets(),
+		viewH:    DefaultHeight,
+		winStart: -1,
+	}
 	app.view.Screen = screenLogin
 	app.view.Site = sitePier
 	app.view.Filter = filterAll
@@ -28,6 +33,8 @@ func New() (*App, error) {
 		Change: app.onChange,
 		Submit: app.onSubmit,
 	})
+	page.SetWindowing(true)
+	page.SetScrollWindow(app.scrollWindow)
 	page.SetData(&app.view)
 
 	return app, nil

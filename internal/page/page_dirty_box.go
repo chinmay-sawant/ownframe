@@ -2,13 +2,6 @@ package page
 
 import "image"
 
-// dirtyPad is the margin a dirty rect gains for shadows, outlines, and
-// antialiasing.
-const dirtyPad = 4
-
-// dirtyGap is how near two dirty rects must sit to merge into one.
-const dirtyGap = 8
-
 // labelGap is how near a label must sit to a toggle to repaint with it.
 const labelGap = 12
 
@@ -17,12 +10,12 @@ const boxRound = 0.5
 
 // markRect queues one dirty rect on the page tracker.
 func (p *Page) markRect(r image.Rectangle) {
-	p.dirty.markRect(r)
+	p.dirty.MarkRect(r)
 }
 
 // markFull dirties the whole content on the page tracker.
 func (p *Page) markFull() {
-	p.dirty.markFull()
+	p.dirty.MarkFull()
 }
 
 // growBox covers the boxes inside r, so a nested span repaints with its

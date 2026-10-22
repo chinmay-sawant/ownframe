@@ -23,7 +23,7 @@ func TestTickSurvivesBitmapFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if page.Display() != nil {
+	if page.Testing().Display() != nil {
 		t.Skip("page is replayable; cannot exercise the bitmap fallback")
 	}
 

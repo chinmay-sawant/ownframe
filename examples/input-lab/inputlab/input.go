@@ -4,17 +4,17 @@ import "context"
 
 // Type edits the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Testing().Type(ctx, text)
 }
 
 // Backspace drops the last rune of the focused field.
 func (a *App) Backspace(ctx context.Context) error {
-	return a.page.Backspace(ctx)
+	return a.page.Testing().Backspace(ctx)
 }
 
 // DeleteWord drops the last word of the focused field.
 func (a *App) DeleteWord(ctx context.Context) error {
-	return a.page.DeleteWord(ctx)
+	return a.page.Testing().DeleteWord(ctx)
 }
 
 // Paste inserts text in the focused field.
@@ -59,15 +59,15 @@ func (a *App) FormSelected(id string) bool {
 
 // Hover sets the hovered element from a point.
 func (a *App) Hover(ctx context.Context, x, y float64) error {
-	return a.page.Hover(ctx, x, y)
+	return a.page.Testing().Hover(ctx, x, y)
 }
 
 // Press sets the pressed element from a point.
 func (a *App) Press(ctx context.Context, x, y float64) error {
-	return a.page.Press(ctx, x, y)
+	return a.page.Testing().Press(ctx, x, y)
 }
 
 // Release clears the pressed element.
 func (a *App) Release(ctx context.Context) error {
-	return a.page.Release(ctx)
+	return a.page.Testing().Release(ctx)
 }

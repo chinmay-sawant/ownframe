@@ -17,12 +17,12 @@ func TestVisibilityTransitionHasNoMatchedPaintOperation(t *testing.T) {
 	if len(box.Transitions) != 1 || box.Transitions[0].Behavior != "allow-discrete" {
 		t.Fatalf("Blinkless visibility metadata = %#v", box.Transitions)
 	}
-	from := cssmotion.Capture(visible.Display(), visibleBox)
-	indices := cssmotion.OperationIndices(hidden.Display(), box)
+	from := cssmotion.Capture(visible.Testing().Display(), visibleBox)
+	indices := cssmotion.OperationIndices(hidden.Testing().Display(), box)
 	if len(from) == 0 || len(indices) != 0 {
 		t.Fatalf("visible/hidden paint counts = %d/%d", len(from), len(indices))
 	}
-	if _, err := Bind(hidden.Display(), box, "visibility", indices, from, time.Time{}); err == nil {
+	if _, err := Bind(hidden.Testing().Display(), box, "visibility", indices, from, time.Time{}); err == nil {
 		t.Fatal("visibility transition bound without a matched paint operation")
 	}
 }

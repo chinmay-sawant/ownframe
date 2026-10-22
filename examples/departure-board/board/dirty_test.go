@@ -16,11 +16,11 @@ func TestTickOptsIntoFrameDirty(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !app.Page().FrameDirty() {
+	if !app.Page().Testing().FrameDirty() {
 		t.Fatal("tick did not opt into the frame dirty path")
 	}
 
-	if app.Page().FrameDirty() {
+	if app.Page().Testing().FrameDirty() {
 		t.Fatal("FrameDirty did not clear")
 	}
 }
@@ -39,7 +39,7 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		app.Page().FrameDirty()
+		app.Page().Testing().FrameDirty()
 		app.Page().Testing().TakeDirty()
 	}
 
@@ -49,7 +49,7 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 
 	app.Page().Testing().TakeDirty()
 
-	d := app.Page().Display()
+	d := app.Page().Testing().Display()
 	if d == nil {
 		t.Fatal("departure board fell back to a bitmap")
 	}
@@ -62,7 +62,7 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !app.Page().FrameDirty() {
+		if !app.Page().Testing().FrameDirty() {
 			t.Fatalf("frame %d did not opt into the frame dirty path", i)
 		}
 

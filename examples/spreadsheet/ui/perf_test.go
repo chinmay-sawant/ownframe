@@ -19,13 +19,13 @@ func TestPerfBreakdown(t *testing.T) {
 	settle(t, app)
 	ctx := context.Background()
 	app.page.SetScrollOffset(0, 480)
-	app.page.StepScrollWindow()
+	app.page.Testing().StepScrollWindow()
 	if err := app.page.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	s := app.page.Stats()
-	d := app.page.Display()
+	s := app.page.Testing().Stats()
+	d := app.page.Testing().Display()
 	kinds := map[string]int{}
 	for i := range d.Ops {
 		kinds[fmt.Sprint(d.Ops[i].Kind)]++

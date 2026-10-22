@@ -1,9 +1,12 @@
 # Linux AT-SPI first slice
 
-This is experimental. It maps `host.AccessibilityTree` to AT-SPI roles,
-states, and actions. It does not register an accessible application on the
-session bus. Orca, Accerciser, and other AT-SPI clients cannot inspect an
-ownframe window through this slice.
+This is experimental. `NewLiveBus` reports `Live: false`. Orca cannot inspect
+an ownframe window. 1.0 does not ship a screen-reader product.
+
+It maps `host.AccessibilityTree` to AT-SPI roles, states, and actions. It
+does not register an accessible application on the session bus. Accerciser
+and other AT-SPI clients cannot inspect an ownframe window through this
+slice either.
 
 Windows UI Automation, macOS VoiceOver / NSAccessibility, and Android
 TalkBack are not shipped. iOS is not a 1.0 target.
@@ -33,8 +36,8 @@ does not walk the page tree each frame.
 A D-Bus AT-SPI client: connect to the accessibility bus, own
 `org.a11y.atspi.ownframe.app`, export
 `/org/a11y/atspi/accessible/*`, and register with
-`org.a11y.atspi.Registry`. That client is not in this slice. No new D-Bus
-dependency was added.
+`org.a11y.atspi.Registry`. That client is not in this slice and is not a 1.0
+product. No new D-Bus dependency was added.
 
 Do not set an environment flag that claims the window is exposed to a
 screen reader.
@@ -46,5 +49,4 @@ go test -p 1 ./internal/atspi ./internal/page ./internal/window
 ```
 
 Those tests use the fake bus. They do not prove Orca can read the window.
-After a live client exists, use Accerciser and Orca as
-[accessibility-native.md](accessibility-native.md) describes.
+1.0 does not ship a screen-reader product.

@@ -47,7 +47,7 @@ func (a *App) repeatTick() bool {
 	if r.id == "" {
 		return false
 	}
-	if (a.page.PressedID() != r.id && a.nativeHeld != r.id) || a.view.Mode != r.mode || a.hostValue() != r.host {
+	if (a.page.Testing().PressedID() != r.id && a.nativeHeld != r.id) || a.view.Mode != r.mode || a.hostValue() != r.host {
 		a.stopRepeat()
 		return false
 	}

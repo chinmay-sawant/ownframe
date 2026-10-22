@@ -18,7 +18,7 @@ func TestPageActionButtonsReachTheAccessibilityAPI(t *testing.T) {
 		if !node.HasBounds {
 			t.Fatalf("button %q has no bounds", id)
 		}
-		if err := a.Page().Click(context.Background(), node.Bounds.X+node.Bounds.W/2, node.Bounds.Y+node.Bounds.H/2); err != nil {
+		if err := a.Page().Testing().Click(context.Background(), node.Bounds.X+node.Bounds.W/2, node.Bounds.Y+node.Bounds.H/2); err != nil {
 			t.Fatal(err)
 		}
 	}

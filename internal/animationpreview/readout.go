@@ -18,7 +18,7 @@ func describe(page *ownframe.Page) string {
 		}
 		var keyframes []any
 		for _, record := range box.Animations {
-			for _, rule := range page.Display().Keyframes {
+			for _, rule := range page.Testing().Display().Keyframes {
 				if rule.Name == record.Name {
 					keyframes = append(keyframes, rule)
 				}

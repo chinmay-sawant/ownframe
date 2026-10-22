@@ -25,7 +25,7 @@ func TestCatalogStartRunsEachPreviewKind(t *testing.T) {
 			if !ok {
 				t.Fatalf("missing button %q", selected.Button)
 			}
-			if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+			if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 				t.Fatal(err)
 			}
 			if !v.Started[selected.Button] || v.Selected != name {

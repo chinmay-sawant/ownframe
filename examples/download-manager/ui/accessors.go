@@ -26,7 +26,7 @@ func (a *App) Boxes() []ownframe.Box { return a.page.Boxes() }
 
 // Click hit-tests the page and applies the control's action.
 func (a *App) Click(ctx context.Context, x, y float64) error {
-	return a.page.Click(ctx, x, y)
+	return a.page.Testing().Click(ctx, x, y)
 }
 
 // Close removes the tick and stops the backend workers within its budget.

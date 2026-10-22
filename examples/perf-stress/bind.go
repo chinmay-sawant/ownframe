@@ -23,5 +23,5 @@ func (a *App) bind(d *ownframe.Display) {
 			a.state.label = ownframe.Text(d, b)
 		}
 	}
-	a.state.bound = a.page.Generation()
+	a.state.bound = a.page.Testing().Generation()
 }

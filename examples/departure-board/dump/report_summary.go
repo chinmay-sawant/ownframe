@@ -48,7 +48,7 @@ func (rep *Report) summarize(app *board.App, before, after runtime.MemStats) {
 
 	p := app.Page()
 	rep.Boxes = len(p.Boxes())
-	if d := p.Display(); d != nil {
+	if d := p.Testing().Display(); d != nil {
 		rep.Ops = len(d.Ops)
 	}
 }

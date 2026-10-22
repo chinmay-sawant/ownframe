@@ -47,9 +47,9 @@ func settle(t *testing.T, app *App) {
 	t.Helper()
 
 	flush(t, app)
-	if req, ok := app.page.TakeScroll(); ok {
+	if req, ok := app.page.Testing().TakeScroll(); ok {
 		app.page.SetScrollOffset(req.X, req.Y)
-		app.page.StepScrollWindow()
+		app.page.Testing().StepScrollWindow()
 		flush(t, app)
 	}
 
@@ -89,7 +89,7 @@ func clickAction(t *testing.T, app *App, action string) {
 func clickBox(t *testing.T, app *App, b Box) {
 	t.Helper()
 
-	if err := app.page.Click(context.Background(), float64(b.X+b.W/2), float64(b.Y+b.H/2)); err != nil {
+	if err := app.page.Testing().Click(context.Background(), float64(b.X+b.W/2), float64(b.Y+b.H/2)); err != nil {
 		t.Fatal(err)
 	}
 }

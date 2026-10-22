@@ -27,8 +27,8 @@ func TestVisualRepaintFullVsPartial(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			incPNG := inc.PNG()
-			fullPNG := full.PNG()
+			incPNG := inc.Testing().PNG()
+			fullPNG := full.Testing().PNG()
 			if bytes.Equal(incPNG, fullPNG) {
 				return
 			}

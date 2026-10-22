@@ -1,10 +1,13 @@
 # Native accessibility status and validation
 
+1.0 does not ship a screen-reader product. `NewLiveBus` reports `Live:
+false`. Orca cannot inspect an ownframe window. NVDA, VoiceOver, and
+TalkBack cannot either.
+
 1.0 ships the Go snapshot plus an experimental Linux AT-SPI mapping. Ownframe
 exposes page semantics through `host.Accessible`. Linux maps that snapshot
 to AT-SPI objects in process (`internal/atspi`). It does not register those
-objects on the accessibility bus, so screen readers cannot inspect an
-ownframe window yet.
+objects on the accessibility bus.
 
 There is no live AT-SPI D-Bus client, no UI Automation provider, no
 NSAccessibility / VoiceOver bridge, and no TalkBack bridge.
@@ -20,7 +23,7 @@ back to that loop.
 `internal/atspi` maps that snapshot to AT-SPI roles, states, and actions and
 offers a bus seam. Tests use `FakeBus`. `NewLiveBus` reports `Live: false`.
 Linux `internal/window` constructs the publisher and skips the tree walk
-until a live bus exists. See [atspi.md](atspi.md).
+because `Live` is false. See [atspi.md](atspi.md).
 
 The API does not provide a native window handle. `internal/window` draws the
 page through Ebitengine. A live adapter still needs a platform window
@@ -70,16 +73,17 @@ They do not validate a screen reader.
 
 ## Validate a native adapter
 
-After a live bus client exists, run the application on Linux. Use Accerciser
-to confirm that the app window and page nodes appear. Check the role,
-accessible name, description, value, focus, checked state, disabled state,
-and available actions on representative nodes.
+This checklist is for a live adapter. 1.0 does not ship one. Accerciser and
+Orca cannot inspect an ownframe window.
 
-Then use Orca to navigate the page, move focus, activate a control, and edit
-a text field. Confirm that page actions update the native tree and that
-native actions update the page. Check bounds after scrolling and resizing.
-Confirm that password fields expose neither their value nor typed characters
-through the accessibility API.
+A live Linux adapter would need Accerciser to show the app window and page
+nodes, with role, accessible name, description, value, focus, checked state,
+disabled state, and available actions on representative nodes. Orca would
+need to navigate the page, move focus, activate a control, and edit a text
+field. Page actions would have to update the native tree, and native actions
+would have to update the page. Bounds would have to stay correct after
+scrolling and resizing. Password fields must expose neither their value nor
+typed characters through the accessibility API.
 
 Passing the Go tests or inspecting the demo's tree does not prove native
 accessibility support. Do not treat the fake bus as a screen reader.

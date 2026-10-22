@@ -27,7 +27,7 @@ func TestPersistAcrossReopen(t *testing.T) {
 
 	first.Page().SetFormValue("chat-compose", "Persisted across restart")
 
-	if err := first.Page().Submit(context.Background()); err != nil {
+	if err := first.Page().Testing().Submit(context.Background()); err != nil {
 		t.Fatalf("Submit: %v", err)
 	}
 

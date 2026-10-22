@@ -55,7 +55,7 @@ func TestThemeToggleFromToolbarClick(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	if err := app.page.Click(ctx, float64(box.X+4), float64(box.Y+4)); err != nil {
+	if err := app.page.Testing().Click(ctx, float64(box.X+4), float64(box.Y+4)); err != nil {
 		t.Fatal(err)
 	}
 

@@ -8,7 +8,7 @@ Formerly known as **go-gpui**.
 
 Write screens in HTML and CSS, and application logic in Go. ownframe renders with [blinkless](https://github.com/chinmay-sawant/blinkless) and opens a window with Ebiten. It ships no Chromium, WebKit, WebView, or JavaScript runtime.
 
-1.0 ships native Go apps on desktop (Linux, Windows, macOS) and Android. Native means one compiled Go process and an Ebiten window or Activity. It does not mean OS widgets or a screen reader.
+1.0 ships native Go apps on desktop (Linux, Windows, macOS) and Android, for an operator you control. Native means one compiled Go process and an Ebiten window or Activity. Orca, NVDA, VoiceOver, and TalkBack cannot inspect that window. The experimental AT-SPI mapping has no live bus.
 
 `scripts/browser.sh` builds a wasm canvas preview. `-web` is a loopback PNG debugger. The capability matrix is in [documentation/platforms.md](documentation/platforms.md).
 
@@ -70,6 +70,8 @@ func main() {
 }
 ```
 
+On GNOME/Wayland, copy and paste need wl-clipboard (`wl-copy`/`wl-paste`) on PATH; without them paste does not work. X11, Windows, and macOS with cgo use the OS clipboard. Tests call `UseMemory`. See [clipboard.md](documentation/clipboard.md).
+
 ## Run the demos
 
 From this checkout:
@@ -98,9 +100,10 @@ Start with the [documentation index](documentation/README.md) or [feature list a
 - [Forms and data binding](documentation/binding.md)
 - [Theming](documentation/theming.md)
 - [Packaging](documentation/packaging.md)
+- [Clipboard](documentation/clipboard.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. Linux has an experimental AT-SPI mapping and bus seam; a live D-Bus client is not implemented, so Orca cannot inspect a window yet. UI Automation, VoiceOver, and TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. That snapshot is for the operator who runs the process, not for other people or screen-reader users. Linux has an experimental AT-SPI mapping and bus seam; there is no live D-Bus client, so `Live` is false. UI Automation, VoiceOver, and TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 

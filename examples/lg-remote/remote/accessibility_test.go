@@ -60,7 +60,7 @@ func TestNativeAccessibilityTracksViewportAndActions(t *testing.T) {
 	if err := a.accessibilityActions(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := a.Page().TakeScroll(); ok {
+	if _, ok := a.Page().Testing().TakeScroll(); ok {
 		t.Fatal("fitted accessibility action scrolled the page")
 	}
 }

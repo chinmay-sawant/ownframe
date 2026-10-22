@@ -13,7 +13,7 @@ func TestDisplayPatchHelperPatchOp(t *testing.T) {
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("no display")
 	}
 
@@ -43,7 +43,7 @@ func TestDisplayPatchHelperPatchDisplay(t *testing.T) {
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("no display")
 	}
 	app.Page().Testing().TakeDirtyRects()

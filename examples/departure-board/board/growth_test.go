@@ -25,7 +25,7 @@ func TestStatusGrowthShowsTail(t *testing.T) {
 		runTick(t, ctx, app)
 	}
 
-	gen := app.Page().Generation()
+	gen := app.Page().Testing().Generation()
 
 	// Row 1 starts on On time and steps once every fifth feed; feed 19 is
 	// the first feed where it reads Delayed 10.
@@ -43,7 +43,7 @@ func TestStatusGrowthShowsTail(t *testing.T) {
 		}
 	}
 
-	if got := app.Page().Generation(); got != gen {
+	if got := app.Page().Testing().Generation(); got != gen {
 		t.Fatalf("rotations redrew the page: generation %d -> %d", gen, got)
 	}
 

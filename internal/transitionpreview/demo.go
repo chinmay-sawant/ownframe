@@ -26,7 +26,7 @@ type demo struct {
 }
 
 func newDemo(page *ownframe.Page, data *view) *demo {
-	return &demo{page: page, data: data, gen: page.Generation(), samples: map[string]*sample{}}
+	return &demo{page: page, data: data, gen: page.Testing().Generation(), samples: map[string]*sample{}}
 }
 
 func (d *demo) click(_ context.Context, box ownframe.Box) error {
@@ -40,8 +40,8 @@ func (d *demo) click(_ context.Context, box ownframe.Box) error {
 			return nil
 		}
 		d.samples[item.key] = &sample{
-			base:    cssmotion.Capture(d.page.Display(), targetBox),
-			indices: cssmotion.OperationIndices(d.page.Display(), targetBox),
+			base:    cssmotion.Capture(d.page.Testing().Display(), targetBox),
+			indices: cssmotion.OperationIndices(d.page.Testing().Display(), targetBox),
 		}
 	}
 	d.samples[item.key].start = time.Now()

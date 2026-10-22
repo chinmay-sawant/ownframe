@@ -1,14 +1,10 @@
-package page
+package dirty
 
 import "image"
 
-// maxDirtyRects caps the damage list. Past the cap the list collapses to
-// its bounding box, so one take never pays for an unbounded list.
-const maxDirtyRects = 8
-
-// coalesceRects merges rects that meet within gap and returns the shorter
+// CoalesceRects merges rects that meet within gap and returns the shorter
 // list. It compacts in place on the given backing array.
-func coalesceRects(rects []image.Rectangle, gap int) []image.Rectangle {
+func CoalesceRects(rects []image.Rectangle, gap int) []image.Rectangle {
 	for merged := true; merged; {
 		merged = false
 
@@ -31,12 +27,12 @@ func coalesceRects(rects []image.Rectangle, gap int) []image.Rectangle {
 	return rects
 }
 
-// clampRects pads every rect by dirtyPad, confines it to content, and drops
+// clampRects pads every rect by Pad, confines it to content, and drops
 // the empties. It compacts in place on the given backing array.
 func clampRects(rects []image.Rectangle, content image.Rectangle) []image.Rectangle {
 	out := rects[:0]
 	for _, r := range rects {
-		r = r.Inset(-dirtyPad).Intersect(content)
+		r = r.Inset(-Pad).Intersect(content)
 		if r.Empty() {
 			continue
 		}
@@ -47,9 +43,9 @@ func clampRects(rects []image.Rectangle, content image.Rectangle) []image.Rectan
 	return out
 }
 
-// boundingBox is the one rect covering every rect. The caller passes a
+// BoundingBox is the one rect covering every rect. The caller passes a
 // non-empty list.
-func boundingBox(rects []image.Rectangle) image.Rectangle {
+func BoundingBox(rects []image.Rectangle) image.Rectangle {
 	r := rects[0]
 	for _, b := range rects[1:] {
 		r = r.Union(b)
@@ -67,4 +63,8 @@ func rectsArea(rects []image.Rectangle) int {
 	}
 
 	return area
+}
+
+func touches(a, b image.Rectangle, gap int) bool {
+	return !a.Inset(-gap).Intersect(b).Empty()
 }

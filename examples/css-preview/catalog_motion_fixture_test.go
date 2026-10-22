@@ -17,7 +17,7 @@ func motionFixture(t *testing.T, html, css string) (*ownframe.Display, ownframe.
 	if err = p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	d := p.Display()
+	d := p.Testing().Display()
 	b, ok := findBox(p.Boxes(), "target")
 	if d == nil || !ok {
 		t.Fatal("fixture did not produce target box and display")

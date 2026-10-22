@@ -1,9 +1,13 @@
 # Accessibility tree
 
-1.0 ships a Go accessibility snapshot. Linux has an experimental AT-SPI
-mapping and a fake-bus test seam ([atspi.md](atspi.md)). A live D-Bus AT-SPI
-client is not implemented. UI Automation, VoiceOver, and TalkBack are not
-shipped.
+1.0 ships a Go accessibility snapshot for the operator who runs the process.
+It does not ship a screen-reader product. `NewLiveBus` reports `Live: false`.
+Orca cannot inspect an ownframe window. NVDA, VoiceOver, and TalkBack cannot
+either.
+
+Linux has an experimental AT-SPI mapping and a fake-bus test seam
+([atspi.md](atspi.md)). There is no live D-Bus AT-SPI client. UI Automation
+is not shipped.
 
 `Page.AccessibilityTree` returns a detached semantic snapshot from the last
 successful redraw. The tree follows HTML document order and includes supported
@@ -53,7 +57,7 @@ go test ./examples/accessibility/...
 ```
 
 The demo is an API inspector. Linux maps the snapshot to AT-SPI objects in
-process; it does not yet register them on the accessibility bus. Windows UI
+process; it does not register them on the accessibility bus. Windows UI
 Automation, macOS VoiceOver, and Android TalkBack are not shipped. See the
 [native accessibility status](accessibility-native.md) and
 [AT-SPI first slice](atspi.md).
@@ -112,8 +116,8 @@ nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
 ## Limits
 
 This API supplies semantic page data to a host. Linux maps that tree to
-AT-SPI objects in process. A tree alone does not make an app accessible to
-Orca until the live bus client lands.
+AT-SPI objects in process. `Live` is false, so Orca cannot inspect the
+window. 1.0 does not ship a screen-reader product.
 
 The snapshot filters the `hidden` attribute, `aria-hidden="true"`, and
 non-content tags. It does not read computed CSS visibility. A node hidden by a

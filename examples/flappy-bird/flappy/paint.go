@@ -5,12 +5,12 @@ import "github.com/chinmay-sawant/ownframe"
 // paint moves the cached operations to match the game state. It runs every
 // tick and never parses the HTML again.
 func (a *App) paint() {
-	d := a.page.Display()
+	d := a.page.Testing().Display()
 	if d == nil {
 		return
 	}
 
-	if a.page.Generation() != a.bound {
+	if a.page.Testing().Generation() != a.bound {
 		a.bind(d)
 	}
 

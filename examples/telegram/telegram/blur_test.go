@@ -13,7 +13,7 @@ func TestKeyboardBackQueuesBlurAndPreservesDraft(t *testing.T) {
 	if err := app.Page().Focus(ctx, id); err != nil {
 		t.Fatal(err)
 	}
-	if err := app.Page().Type(ctx, "draft"); err != nil {
+	if err := app.Page().Testing().Type(ctx, "draft"); err != nil {
 		t.Fatal(err)
 	}
 	app.RequestBlur()

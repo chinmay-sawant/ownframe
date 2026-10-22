@@ -23,7 +23,7 @@ func TestWantFrameAsksForTheClock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	at := app.Page().NextFrameAt()
+	at := app.Page().Testing().NextFrameAt()
 	if at.IsZero() {
 		t.Fatal("the tick did not declare a frame")
 	}
@@ -56,13 +56,13 @@ func TestWantFrameSpinsEveryFrame(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app.Page().NextFrameAt()
+	app.Page().Testing().NextFrameAt()
 
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	at := app.Page().NextFrameAt()
+	at := app.Page().Testing().NextFrameAt()
 	if at.IsZero() {
 		t.Fatal("the spinning tick did not declare a frame")
 	}

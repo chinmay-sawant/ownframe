@@ -12,7 +12,7 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 		t.Fatal(err)
 	}
 	a.Page().Testing().TakeDirtyRects()
-	before := a.Page().Generation()
+	before := a.Page().Testing().Generation()
 	for _, box := range a.Page().Boxes() {
 		if box.ID == "dashboard" && box.H > 280 {
 			t.Fatalf("dashboard height = %.1f, exceeds the non-scroll panel height", box.H)
@@ -24,7 +24,7 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 	if err := a.Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if got := a.Page().Generation(); got != before {
+	if got := a.Page().Testing().Generation(); got != before {
 		t.Fatalf("generation = %d, want retained paint update at %d", got, before)
 	}
 	if got := a.ops.near.Text; got != "2.2 m" {

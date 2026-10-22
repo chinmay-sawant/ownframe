@@ -14,7 +14,7 @@ func TestPhoneKeyboardFocusActivatesButton(t *testing.T) {
 	if err := p.Focus(ctx, "volup"); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.KeyDown(ctx, "enter"); err != nil {
+	if err := p.Testing().KeyDown(ctx, "enter"); err != nil {
 		t.Fatal(err)
 	}
 	if f.spec != "vol:Up" {
@@ -24,7 +24,7 @@ func TestPhoneKeyboardFocusActivatesButton(t *testing.T) {
 	if err := p.Focus(ctx, "host"); err != nil {
 		t.Fatal(err)
 	}
-	if err := p.KeyDown(ctx, "enter"); err != nil {
+	if err := p.Testing().KeyDown(ctx, "enter"); err != nil {
 		t.Fatal(err)
 	}
 	if f.spec != "pair:" || f.host != "10.0.0.8" {
@@ -43,7 +43,7 @@ func TestPhonePadCaptureExcludesOtherControls(t *testing.T) {
 		if b.ID != "pad" && b.ID != "connect" {
 			continue
 		}
-		claimed, err := p.BeginDrag(ctx, b.X+1, b.Y+1)
+		claimed, err := p.Testing().BeginDrag(ctx, b.X+1, b.Y+1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -51,13 +51,13 @@ func TestPhonePadCaptureExcludesOtherControls(t *testing.T) {
 			t.Fatalf("claim %s=%v", b.ID, claimed)
 		}
 		if claimed {
-			if err = p.MoveDrag(ctx, b.X+21, b.Y+11); err != nil {
+			if err = p.Testing().MoveDrag(ctx, b.X+21, b.Y+11); err != nil {
 				t.Fatal(err)
 			}
 			if f.spec != "move:20,10" {
 				t.Fatalf("move %s", f.spec)
 			}
-			if err = p.EndDrag(ctx); err != nil {
+			if err = p.Testing().EndDrag(ctx); err != nil {
 				t.Fatal(err)
 			}
 		}

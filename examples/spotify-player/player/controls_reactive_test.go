@@ -68,7 +68,7 @@ func TestReactiveToggleStableIDs(t *testing.T) {
 		if _, ok := findBox(app.Boxes(), id); !ok {
 			t.Fatalf("missing stable id %s", id)
 		}
-		if app.Page().Element(id).ID != id {
+		if app.Page().Testing().Element(id).ID != id {
 			t.Fatalf("retained element %s has wrong id", id)
 		}
 	}

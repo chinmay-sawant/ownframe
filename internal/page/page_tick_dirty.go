@@ -53,7 +53,7 @@ func (p *Page) noteTickDamage(gen uint64, snap []DisplayOp) {
 }
 
 func (p *Page) flagTickDirty(gen uint64) {
-	if p.Generation() != gen || p.dirty.full || len(p.dirty.rects) > 0 {
+	if p.Generation() != gen || p.dirty.Full || len(p.dirty.Rects) > 0 {
 		p.frameDirty.Store(true)
 	}
 }

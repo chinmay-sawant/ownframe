@@ -49,7 +49,7 @@ func loginCase() repaintCase {
 func typeText(t *testing.T, p *Page, ctx context.Context, text string) {
 	t.Helper()
 
-	if err := p.Type(ctx, text); err != nil {
+	if err := p.Testing().Type(ctx, text); err != nil {
 		t.Fatal(err)
 	}
 }

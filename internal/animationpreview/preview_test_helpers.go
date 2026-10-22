@@ -24,7 +24,7 @@ func clickStart(t *testing.T, ctx context.Context, page *ownframe.Page, id strin
 	if !ok {
 		t.Fatalf("missing Start button %q", id)
 	}
-	if err := page.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+	if err := page.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
 }

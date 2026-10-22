@@ -13,7 +13,7 @@ func TestAnimationTickMarksPartialDamage(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing %s", row.Button)
 	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+	if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
 	// Drop the click's own damage so the tick's marks stand alone.
@@ -22,7 +22,7 @@ func TestAnimationTickMarksPartialDamage(t *testing.T) {
 	if err := d.tick(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if !p.FrameDirty() {
+	if !p.Testing().FrameDirty() {
 		t.Fatal("animation tick did not opt into the frame-dirty path")
 	}
 	rects, ok := p.Testing().TakeDirtyRects()
@@ -44,7 +44,7 @@ func TestFinishedTickDropsTheCallback(t *testing.T) {
 	if !ok {
 		t.Fatalf("missing %s", row.Button)
 	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+	if err := p.Testing().Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
 		t.Fatal(err)
 	}
 	if err := d.tick(ctx); err != nil {

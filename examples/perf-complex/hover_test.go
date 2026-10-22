@@ -18,7 +18,7 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 	if err = redraw(p); err != nil {
 		t.Fatal(err)
 	}
-	generation := p.Generation()
+	generation := p.Testing().Generation()
 	rows := map[string]ownframe.Box{}
 	for _, b := range p.Boxes() {
 		rows[b.ID] = b
@@ -27,14 +27,14 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 	c.bind(p)
 	for _, id := range []string{"row-1", "row-2"} {
 		b := rows[id]
-		if err = p.Hover(context.Background(), b.X+20, b.Y+20); err != nil {
+		if err = p.Testing().Hover(context.Background(), b.X+20, b.Y+20); err != nil {
 			t.Fatal(err)
 		}
 		op := c.rows[id]
 		if op == nil || op.R != 52.0/255 {
 			t.Fatalf("row %s not highlighted", id)
 		}
-		if p.Generation() != generation {
+		if p.Testing().Generation() != generation {
 			t.Fatal("hover performed a layout")
 		}
 		if _, ok := p.Testing().TakeDirty(); !ok {
@@ -47,7 +47,7 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 	if err = p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if err = p.Hover(context.Background(), rows["row-3"].X+20, rows["row-3"].Y+20); err != nil {
+	if err = p.Testing().Hover(context.Background(), rows["row-3"].X+20, rows["row-3"].Y+20); err != nil {
 		t.Fatal(err)
 	}
 	c.bind(p)

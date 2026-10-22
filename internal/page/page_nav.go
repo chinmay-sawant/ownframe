@@ -11,7 +11,7 @@ import (
 var ErrNoHistory = errors.New("ownframe: no history")
 
 // HTML returns the template source at the current history index.
-func (p *Page) HTML() string { return p.nav.current() }
+func (p *Page) HTML() string { return p.nav.Current() }
 
 // Load parses html, drops later history, and draws that page. html is
 // trusted author content: Go template actions in it may read fields and
@@ -33,7 +33,7 @@ func (p *Page) Load(ctx context.Context, html string) error {
 	if err != nil {
 		return err
 	}
-	p.nav.push(html)
+	p.nav.Push(html)
 	p.tpl = tpl
 	p.invalidateAccessibilityDocument()
 	p.invalidateCache()
@@ -46,10 +46,10 @@ func (p *Page) Back(ctx context.Context) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
-	if !p.nav.canBack() {
+	if !p.nav.CanBack() {
 		return ErrNoHistory
 	}
-	return p.drawAt(ctx, p.nav.backIndex())
+	return p.drawAt(ctx, p.nav.BackIndex())
 }
 
 // Forward draws the next template source.
@@ -57,8 +57,8 @@ func (p *Page) Forward(ctx context.Context) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
-	if !p.nav.canForward() {
+	if !p.nav.CanForward() {
 		return ErrNoHistory
 	}
-	return p.drawAt(ctx, p.nav.forwardIndex())
+	return p.drawAt(ctx, p.nav.ForwardIndex())
 }

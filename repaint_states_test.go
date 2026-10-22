@@ -20,7 +20,7 @@ func statesCase() repaintCase {
 		},
 		interact: func(t *testing.T, p *Page, ctx context.Context) {
 			x, y := boxCenter(t, p, "hover")
-			if err := p.Hover(ctx, x, y); err != nil {
+			if err := p.Testing().Hover(ctx, x, y); err != nil {
 				t.Fatal(err)
 			}
 		},

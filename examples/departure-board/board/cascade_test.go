@@ -31,7 +31,7 @@ func TestCascadeStaysBanded(t *testing.T) {
 		runTick(t, ctx, app)
 	}
 
-	gen := app.Page().Generation()
+	gen := app.Page().Testing().Generation()
 	forceRotation(app)
 
 	full, banded, empty := 0, 0, 0
@@ -41,7 +41,7 @@ func TestCascadeStaysBanded(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if !app.Page().FrameDirty() {
+		if !app.Page().Testing().FrameDirty() {
 			t.Fatalf("frame %d did not opt into the frame dirty path", i)
 		}
 
@@ -52,7 +52,7 @@ func TestCascadeStaysBanded(t *testing.T) {
 			continue
 		}
 
-		if coversFrame(app.Page().Display(), rects) {
+		if coversFrame(app.Page().Testing().Display(), rects) {
 			full++
 
 			continue
@@ -73,7 +73,7 @@ func TestCascadeStaysBanded(t *testing.T) {
 		t.Fatal("no frame blitted")
 	}
 
-	if got := app.Page().Generation(); got != gen {
+	if got := app.Page().Testing().Generation(); got != gen {
 		t.Fatalf("cascade redrew the page: generation %d -> %d", gen, got)
 	}
 }

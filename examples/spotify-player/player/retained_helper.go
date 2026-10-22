@@ -21,7 +21,7 @@ func (a *App) RetainedElement(id string) *ownframe.Element {
 	if a == nil || a.page == nil {
 		return nil
 	}
-	return a.page.Element(id)
+	return a.page.Testing().Element(id)
 }
 
 func (a *App) RetainedElements(ids ...string) []*ownframe.Element {
@@ -36,7 +36,7 @@ func (a *App) RetainElement(id, kind string) *ownframe.Element {
 	if a == nil || a.page == nil {
 		return nil
 	}
-	n := a.page.ElementRegistry().GetOrCreate(id, ownframe.ElementKind(kind))
+	n := a.page.Testing().ElementRegistry().GetOrCreate(id, ownframe.ElementKind(kind))
 	if n != nil {
 		n.ID = id
 	}
@@ -47,7 +47,7 @@ func RetainedRegistry(p *ownframe.Page) *ownframe.ElementRegistry {
 	if p == nil {
 		return nil
 	}
-	return p.ElementRegistry()
+	return p.Testing().ElementRegistry()
 }
 
 func RetainFromRegistry(r *ownframe.ElementRegistry, id, kind string) *ownframe.Element {

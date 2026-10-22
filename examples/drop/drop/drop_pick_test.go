@@ -17,7 +17,7 @@ func TestPickedPathPrints(t *testing.T) {
 
 	path := filepath.Join(t.TempDir(), "picked.txt")
 
-	app.Page().SetPicker(func(context.Context, string) (string, error) {
+	app.Page().Testing().SetPicker(func(context.Context, string) (string, error) {
 		return path, nil
 	})
 

@@ -43,11 +43,11 @@ The kinds are `ownframe.DisplayOpFillRect`, `OpStrokeRect`, `OpLine`, `ownframe.
 
 ## Position limits
 
-Three engine limits affect pages that pin content, and each one needs a workaround.
+These are blinkless holes, not ownframe bugs. 1.0 does not implement CSS sticky or flex-absolute. Pin chrome with `SetScrollWindow` and `SetViewportPinZ`. See the CSS matrix in [features.md](features.md).
 
-- `position: absolute` is ignored for a child of a flex container. The element stays in flow, so its `top` and `left` do nothing. The workaround is a block container around the screen: the Telegram chat puts an `app-thread` class on the app div, which overrides `display: flex` with `display: block`.
-- `position: fixed` and `position: sticky` do not pin during window scrolling; the window translates every display operation by the scroll offset. Two page-side workarounds exist and the Telegram example uses both. `Page.SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with, so a pinned layer stays at the viewport with no redraw. `Page.SetWindowing(true)` plus a `Page.SetScrollWindow` callback counter-moves each pinned element by the offset in its computed `top`, so the window's own translation lands it back at the viewport edge; this is the desktop path.
-- An absolutely positioned element resolves against its containing block's content origin, so a padding on the container shifts it. The workaround is to subtract that padding in the computed `top` value.
+- `position: absolute` on a flex child stays in flow, so `top` and `left` do nothing. Put a block container around the screen. Telegram's `app-thread` class sets `display: block` on the app div.
+- `position: sticky` stays in flow and has no `Fixed` ops. The window translates it with the page. `position: fixed` ops stay untranslated. `Page.SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with. `Page.SetWindowing(true)` plus `Page.SetScrollWindow` counter-moves each pinned element's `top` by the scroll offset, so the window's translation lands it back at the viewport edge. Telegram uses both.
+- An absolutely positioned element resolves against its containing block's content origin. Padding on the container shifts it. Subtract that padding in the computed `top`.
 
 `examples/telegram` is the worked example: `new.go` sets `SetWindowing(true)` and `SetViewportPinZ(2)`, `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
 

@@ -32,11 +32,11 @@ func (a *App) Tick(ctx context.Context) error {
 
 // paint moves the seek fill, pumps the eq bars, and rewrites the labels.
 func (a *App) paint() {
-	d := a.page.Display()
+	d := a.page.Testing().Display()
 	if d == nil {
 		return
 	}
-	if a.page.Generation() != a.state.bound {
+	if a.page.Testing().Generation() != a.state.bound {
 		a.bind(d)
 	}
 	frac := float64(a.view.Tick%progressCycle) / progressScale

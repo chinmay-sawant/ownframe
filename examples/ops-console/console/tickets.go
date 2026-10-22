@@ -1,7 +1,12 @@
 package console
 
+import "strconv"
+
+// seedExtra is enough rows that a 640px window cannot keep them all.
+const seedExtra = 80
+
 func seedTickets() []Ticket {
-	return []Ticket{
+	out := []Ticket{
 		{
 			ID:     "t1",
 			Title:  "Seal mismatch",
@@ -27,6 +32,20 @@ func seedTickets() []Ticket {
 			Action: "open-t3",
 		},
 	}
+	for i := range seedExtra {
+		n := i + 4
+		id := "t" + strconv.Itoa(n)
+		out = append(out, Ticket{
+			ID:     id,
+			Title:  "Bay check " + strconv.Itoa(n),
+			Bay:    "Bay " + strconv.Itoa(n),
+			Status: statusOpen,
+			Note:   "Routine check " + strconv.Itoa(n) + ".",
+			Action: "open-" + id,
+		})
+	}
+
+	return out
 }
 
 func (a *App) ticket(id string) (Ticket, bool) {

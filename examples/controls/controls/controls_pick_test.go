@@ -12,7 +12,7 @@ func TestDocPickerUpdatesStatus(t *testing.T) {
 	ctx := context.Background()
 	app := newApp(t, ctx)
 
-	app.Page().SetPicker(func(context.Context, string) (string, error) {
+	app.Page().Testing().SetPicker(func(context.Context, string) (string, error) {
 		return "/tmp/notes.txt", nil
 	})
 

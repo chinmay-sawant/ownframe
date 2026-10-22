@@ -8,11 +8,11 @@ import (
 func TestPaintPageStaysReplayable(t *testing.T) {
 	app, _ := newTestApp(t)
 
-	if app.page.Display() == nil {
+	if app.page.Testing().Display() == nil {
 		t.Fatal("the page fell back to the bitmap path")
 	}
 
-	if app.page.Image() != nil {
+	if app.page.Testing().Image() != nil {
 		t.Fatal("the page has a bitmap as well as a display list")
 	}
 }
@@ -63,7 +63,7 @@ func TestPaintFlapRaisesTheBird(t *testing.T) {
 		t.Fatal("the bird body was not bound")
 	}
 
-	pp := app.page.Display().PointsPerPixel
+	pp := app.page.Testing().Display().PointsPerPixel
 	top := func() float64 { return op.Y / pp }
 
 	before := top()

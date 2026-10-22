@@ -45,7 +45,11 @@ const (
 
 // App is the yard console screen.
 type App struct {
-	page    *ownframe.Page
-	view    View
-	tickets []Ticket
+	page     *ownframe.Page
+	view     View
+	tickets  []Ticket
+	offsetY  int
+	viewH    int
+	winStart int
+	winCount int
 }

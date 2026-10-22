@@ -48,3 +48,22 @@ func TestOpenTicketShowsDetail(t *testing.T) {
 
 	boxByID(t, app, "detail")
 }
+
+func TestListWindowsTickets(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	app := newApp(t, ctx)
+	signIn(t, ctx, app)
+
+	n := len(app.View().Tickets)
+	if n == 0 {
+		t.Fatal("Tickets window empty")
+	}
+
+	if n >= 80 {
+		t.Fatalf("Tickets window = %d, want < 80", n)
+	}
+
+	boxByID(t, app, "t1")
+}

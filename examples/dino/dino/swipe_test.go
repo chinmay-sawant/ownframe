@@ -72,7 +72,7 @@ func TestSwipeSidewaysIgnored(t *testing.T) {
 func swipe(t *testing.T, app *App, dx, dy float64) {
 	t.Helper()
 
-	if err := app.page.Swipe(context.Background(), dx, dy); err != nil {
+	if err := app.page.Testing().Swipe(context.Background(), dx, dy); err != nil {
 		t.Fatal(err)
 	}
 }

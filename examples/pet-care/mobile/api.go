@@ -8,7 +8,7 @@ func Back() bool { return application != nil && application.RequestBack() }
 
 func CancelTouches() {
 	if application != nil {
-		application.Page().CancelTouches()
+		application.Page().Testing().CancelTouches()
 	}
 }
 

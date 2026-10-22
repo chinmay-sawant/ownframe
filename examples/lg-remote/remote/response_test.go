@@ -35,16 +35,16 @@ func TestCommandsStartOnFingerDown(t *testing.T) {
 		a.SetLink(f)
 		b := remoteBox(t, a, id)
 		ctx := context.Background()
-		if err := a.page.Press(ctx, b.X+1, b.Y+1); err != nil {
+		if err := a.page.Testing().Press(ctx, b.X+1, b.Y+1); err != nil {
 			t.Fatal(err)
 		}
 		if f.calls != 1 {
 			t.Fatalf("%s waits for finger lift", id)
 		}
-		if err := a.page.Click(ctx, b.X+1, b.Y+1); err != nil {
+		if err := a.page.Testing().Click(ctx, b.X+1, b.Y+1); err != nil {
 			t.Fatal(err)
 		}
-		if err := a.page.Release(ctx); err != nil {
+		if err := a.page.Testing().Release(ctx); err != nil {
 			t.Fatal(err)
 		}
 		if f.calls != 1 {

@@ -35,7 +35,7 @@ func (a *App) Redo(ctx context.Context) error {
 
 // Type appends text to the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Testing().Type(ctx, text)
 }
 
 // FormValue returns the current value of id, or "" when id is absent.
@@ -55,7 +55,7 @@ func (a *App) focusLast(ctx context.Context) bool {
 			continue
 		}
 
-		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+		if err := a.page.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
 			return false
 		}
 

@@ -31,12 +31,12 @@ func (f *Flap) Tick(ctx context.Context) error {
 
 // paint moves the cached ops to match the game state.
 func (f *Flap) paint() {
-	d := f.page.Display()
+	d := f.page.Testing().Display()
 	if d == nil {
 		return
 	}
 
-	if f.page.Generation() != f.bound {
+	if f.page.Testing().Generation() != f.bound {
 		f.bind(d)
 	}
 
@@ -74,5 +74,5 @@ func (f *Flap) bind(d *ownframe.Display) {
 	}
 
 	f.text = textIn(d, boxes, "score")
-	f.bound = f.page.Generation()
+	f.bound = f.page.Testing().Generation()
 }

@@ -65,7 +65,7 @@ func (a *App) offline(err error) error {
 	a.view.Status = sampleStatus
 	a.ensureCredit()
 	a.page.SetData(&a.view)
-	a.page.SetChangedProperties([]string{"Status", "Credit"})
+	a.page.Testing().SetChangedProperties([]string{"Status", "Credit"})
 
 	return err
 }

@@ -12,11 +12,11 @@ func TestPhaseChangeRedrawsOverlay(t *testing.T) {
 	s, clock := newTestScene(t, m, nil, Options{Stepper: &fakeStepper{}})
 
 	m.f.Phase = game.PhasePaused
-	gen := s.page.Generation()
+	gen := s.page.Testing().Generation()
 
 	tickAt(t, s, clock, time.Second/60)
 
-	if s.page.Generation() == gen {
+	if s.page.Testing().Generation() == gen {
 		t.Fatal("the phase change did not redraw")
 	}
 

@@ -35,7 +35,7 @@ func (d *demo) queueRows(rows []catalogRow) {
 // the value the transition starts from.
 func (d *demo) captureBases() {
 	boxes := d.p.Boxes()
-	display := d.p.Display()
+	display := d.p.Testing().Display()
 	for _, key := range d.pending {
 		s := d.samples[key]
 		if s == nil || s.base != nil {

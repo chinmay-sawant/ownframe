@@ -1,13 +1,17 @@
 package page
 
-import "image"
+import (
+	"image"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
+)
 
 // dirtySet collects the rects one display diff found and decides whether
-// they stay a partial repaint. It keeps at most maxDirtyRects rects: past
+// they stay a partial repaint. It keeps at most dirty.MaxRects rects: past
 // the cap it unions the closest pair. The bounding box must stay under a
 // third of the frame, so a distant outlier still forces a full frame.
 type dirtySet struct {
-	rects   [maxDirtyRects]image.Rectangle
+	rects   [dirty.MaxRects]image.Rectangle
 	n       int
 	union   image.Rectangle
 	full    bool
@@ -45,9 +49,9 @@ func (d *dirtySet) add(r image.Rectangle) {
 	d.coalesce()
 }
 
-// coalesce merges every pair that meets within dirtyGap.
+// coalesce merges every pair that meets within dirty.Gap.
 func (d *dirtySet) coalesce() {
-	d.n = len(coalesceRects(d.rects[:d.n], dirtyGap))
+	d.n = len(dirty.CoalesceRects(d.rects[:d.n], dirty.Gap))
 }
 
 // mergeClosest unions the pair whose union is smallest, so the cap costs

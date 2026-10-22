@@ -17,7 +17,7 @@ func (h *DisplayPatchHelper) page() *ownframe.Page {
 
 func (h *DisplayPatchHelper) Report() ownframe.DisplayPatch {
 	if p := h.page(); p != nil {
-		return p.LastPatch()
+		return p.Testing().LastPatch()
 	}
 	return ownframe.DisplayPatch{}
 }
@@ -27,7 +27,7 @@ func (h *DisplayPatchHelper) LastReport() ownframe.DisplayPatch { return h.Repor
 func (h *DisplayPatchHelper) PatchReport() ownframe.DisplayPatch { return h.Report() }
 
 func (h *DisplayPatchHelper) PatchOp(i int, fn func(*ownframe.DisplayOp)) bool {
-	if p := h.page(); p != nil && p.Display() != nil {
+	if p := h.page(); p != nil && p.Testing().Display() != nil {
 		return p.Testing().PatchOp(i, fn)
 	}
 	return false
@@ -35,7 +35,7 @@ func (h *DisplayPatchHelper) PatchOp(i int, fn func(*ownframe.DisplayOp)) bool {
 
 func (h *DisplayPatchHelper) PatchDisplay(fn func(*ownframe.Display)) ownframe.DisplayPatch {
 	if p := h.page(); p != nil {
-		return p.PatchDisplay(fn)
+		return p.Testing().PatchDisplay(fn)
 	}
 	return ownframe.DisplayPatch{}
 }

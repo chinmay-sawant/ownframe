@@ -14,6 +14,3 @@ func (p *Page) RedrawIfChanged(ctx context.Context) error {
 
 // Title returns the window title.
 func (p *Page) Title() string { return innerPage(p).Title() }
-
-// Generation increases by one on every successful Redraw.
-func (p *Page) Generation() uint64 { return innerPage(p).Generation() }

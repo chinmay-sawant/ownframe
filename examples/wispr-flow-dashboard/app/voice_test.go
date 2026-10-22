@@ -24,7 +24,7 @@ func TestVoicePage(t *testing.T) {
 		}
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Testing().Display() == nil {
 		t.Fatal("the voice page fell back to the bitmap path")
 	}
 

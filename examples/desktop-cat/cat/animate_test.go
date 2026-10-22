@@ -30,7 +30,7 @@ func TestImageAnimationKeepsLayoutBetweenExpressions(t *testing.T) {
 	if err := a.paint(ctx, 0); err != nil {
 		t.Fatal(err)
 	}
-	before := a.page.Stats()
+	before := a.page.Testing().Stats()
 	y := a.image.Y
 	if err := a.paint(ctx, 1); err != nil {
 		t.Fatal(err)
@@ -38,7 +38,7 @@ func TestImageAnimationKeepsLayoutBetweenExpressions(t *testing.T) {
 	if a.image.Y == y {
 		t.Fatal("cat did not move")
 	}
-	if after := a.page.Stats(); after.Parses != before.Parses || after.Layouts != before.Layouts {
+	if after := a.page.Testing().Stats(); after.Parses != before.Parses || after.Layouts != before.Layouts {
 		t.Fatal("frame animation parsed or laid out the page")
 	}
 	if a.image.W != 200*a.display.PointsPerPixel || a.image.H != 200*a.display.PointsPerPixel {
@@ -50,7 +50,7 @@ func TestImageAnimationKeepsLayoutBetweenExpressions(t *testing.T) {
 	if err := a.paint(ctx, 2); err != nil {
 		t.Fatal(err)
 	}
-	if a.display != a.page.Display() {
+	if a.display != a.page.Testing().Display() {
 		t.Fatal("animation kept an obsolete display")
 	}
 }

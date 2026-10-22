@@ -12,7 +12,7 @@ import (
 // press to painted interval the click script measures.
 func BenchmarkWindowedPointerCycle(b *testing.B) {
 	ctx, p, v, d, m := windowBenchPage(b)
-	if !p.Perf() || len(v.Rows) >= len(v.Catalog) {
+	if !p.Testing().Perf() || len(v.Rows) >= len(v.Catalog) {
 		b.Fatal("catalog window or perf mode is not active")
 	}
 	windowBenchPass(ctx, p, v, d, m, b)

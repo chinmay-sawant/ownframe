@@ -26,7 +26,7 @@ func TestUICSVImportThroughPicker(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	page.SetPicker(func(context.Context, string) (string, error) {
+	page.Testing().SetPicker(func(context.Context, string) (string, error) {
 		return path, nil
 	})
 

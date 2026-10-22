@@ -13,7 +13,7 @@ func BenchmarkRedrawWindowReplace(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		app.page.SetScrollOffset(0, (i%40)*RowH*8)
-		app.page.StepScrollWindow()
+		app.page.Testing().StepScrollWindow()
 		if err := app.page.Redraw(ctx); err != nil {
 			b.Fatal(err)
 		}

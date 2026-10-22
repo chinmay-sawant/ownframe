@@ -14,7 +14,7 @@ func phoneApp(t *testing.T) *telegram.App {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := app.Page().PrepareMobile(ctx); err != nil {
+	if err := app.Page().Testing().PrepareMobile(ctx); err != nil {
 		t.Fatal(err)
 	}
 	app.SetInsets(28, 16)

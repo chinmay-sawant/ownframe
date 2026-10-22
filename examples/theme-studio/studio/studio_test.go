@@ -40,7 +40,7 @@ func clickBox(t *testing.T, app *studio.App, id string) {
 }
 
 func hasFill(t *testing.T, app *studio.App, c [3]float64) bool {
-	d := app.Page().Display()
+	d := app.Page().Testing().Display()
 	if d == nil {
 		t.Fatal("bitmap")
 	}

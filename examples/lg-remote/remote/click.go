@@ -55,7 +55,7 @@ func (a *App) onKey(ctx context.Context, key string) error {
 	if id := a.page.FocusID(); id != "" && (key == "enter" || key == "space") {
 		for _, box := range a.page.Boxes() {
 			if box.ID == id {
-				return a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2)
+				return a.page.Testing().Click(ctx, box.X+box.W/2, box.Y+box.H/2)
 			}
 		}
 	}

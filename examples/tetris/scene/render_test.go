@@ -10,7 +10,7 @@ import (
 func TestPageReplaysAndMinSize(t *testing.T) {
 	s, _ := newTestScene(t, &fakeModel{}, nil, Options{})
 
-	if s.page.Display() == nil {
+	if s.page.Testing().Display() == nil {
 		t.Fatal("the game page fell back to the bitmap path")
 	}
 
@@ -38,7 +38,7 @@ func TestTickPaintsScoreBoardAndPreview(t *testing.T) {
 
 	tickAt(t, s, clock, time.Second/60)
 
-	d := s.page.Display()
+	d := s.page.Testing().Display()
 	boxes := s.page.Boxes()
 
 	score := textAt(d, boxes, "t-score")

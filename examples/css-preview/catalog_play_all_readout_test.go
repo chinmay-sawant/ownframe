@@ -16,7 +16,7 @@ func TestPlayAllKeepsItsReadout(t *testing.T) {
 	if !ok {
 		t.Fatal("the play all button is missing")
 	}
-	if err := p.Click(ctx, all.X+all.W/2, all.Y+all.H/2); err != nil {
+	if err := p.Testing().Click(ctx, all.X+all.W/2, all.Y+all.H/2); err != nil {
 		t.Fatal(err)
 	}
 	if d.readout != "All previews are playing." {
