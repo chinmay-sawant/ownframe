@@ -32,7 +32,7 @@ func applyStatus(d *domain.ProcessDetail, data []byte) {
 		case "Threads":
 			d.Threads = domain.Count(float64(parseUint(fields[0])))
 		case "Uid":
-			if name, ok := userNames()[int32(parseUint(fields[0]))]; ok { //nolint:gosec // reason: UIDs are 32-bit values, which fit int32.
+			if name, ok := userNames()[parseInt32(fields[0])]; ok {
 				d.User = name
 			}
 		}
