@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const repaintWidth, repaintHeight, repaintStageCount = 600, 300, 6
+const repaintWidth, repaintHeight, repaintStageCount = 600, 300, 8
 
 // TestWindowRepaintPixels compares the retained window framebuffer against a
 // fresh full replay. Both painting and readback run inside Ebiten's Draw loop.
@@ -58,7 +58,7 @@ type repaintView struct {
 
 // Repeating a clean frame catches accidental clearing of untouched pixels.
 func repaintStageName(i int) string {
-	return [...]string{"initial", "color across tiles", "remove element", "scroll with fixed header", "clean frame", "change while scrolled"}[i]
+	return [...]string{"initial", "color across tiles", "remove element", "scroll with fixed header", "clean frame", "change while scrolled", "cleared mobile surface", "clean mobile surface"}[i]
 }
 
 type repaintPixelGame struct {
@@ -85,6 +85,9 @@ func (g *repaintPixelGame) Draw(dst *ebiten.Image) {
 	if err := g.shell.syncImage(); err != nil {
 		g.err = err
 		return
+	}
+	if g.step >= 6 {
+		dst.Clear()
 	}
 	g.shell.partial.focus = ebiten.IsFocused()
 	g.shell.Draw(dst)
@@ -127,6 +130,9 @@ func (g *repaintPixelGame) prepareNext() {
 		return
 	case cleanStage:
 		g.view.Color = "purple"
+	case 5:
+		ebiten.SetScreenClearedEveryFrame(true)
+		return
 	default:
 		return
 	}
