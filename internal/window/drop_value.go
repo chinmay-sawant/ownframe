@@ -29,10 +29,13 @@ func dropValue(fsys fs.FS, entry fs.DirEntry) (host.Drop, error) {
 			if err != nil {
 				return nil, err
 			}
-			defer f.Close()
-			data, err := io.ReadAll(io.LimitReader(f, maxDropBytes+1))
-			if err != nil {
-				return nil, err
+			data, rerr := io.ReadAll(io.LimitReader(f, maxDropBytes+1))
+			cerr := f.Close()
+			if rerr != nil {
+				return nil, rerr
+			}
+			if cerr != nil {
+				return nil, cerr
 			}
 			if int64(len(data)) > maxDropBytes {
 				return nil, fmt.Errorf("drop: %s exceeds %d bytes", name, maxDropBytes)

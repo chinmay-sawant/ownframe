@@ -4,8 +4,8 @@ package page
 // page with one on the full replay path, because a callback changes the
 // display list in place and leaves no dirty rect behind.
 func (p *Page) Ticking() bool {
-	p.tickSlot.mu.Lock()
-	defer p.tickSlot.mu.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	return p.tickSlot.fn != nil
+	return p.fn != nil
 }

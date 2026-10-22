@@ -8,12 +8,16 @@ func (a *App) SetInsets(top, bottom int) {
 	a.insetBot.Store(int64(clampInset(bottom)))
 }
 
+// maxInset caps one system bar inset in CSS px, so a rogue host cannot
+// corrupt the pinned layout.
+const maxInset = 2048
+
 func clampInset(v int) int {
 	if v < 0 {
 		return 0
 	}
-	if v > 2048 {
-		return 2048
+	if v > maxInset {
+		return maxInset
 	}
 	return v
 }

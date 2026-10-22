@@ -18,17 +18,17 @@ type tickSlot struct {
 // Redraw; either changes the next frame. nil removes the callback.
 // Serve does not tick.
 func (p *Page) SetTick(fn func(ctx context.Context) error) {
-	p.tickSlot.mu.Lock()
-	p.tickSlot.fn = fn
-	p.tickSlot.mu.Unlock()
+	p.mu.Lock()
+	p.fn = fn
+	p.mu.Unlock()
 }
 
 // Tick runs the frame callback registered with SetTick and the caret blink.
 // With no callback and no focused field it does nothing.
 func (p *Page) Tick(ctx context.Context) error {
-	p.tickSlot.mu.Lock()
-	fn := p.tickSlot.fn
-	p.tickSlot.mu.Unlock()
+	p.mu.Lock()
+	fn := p.fn
+	p.mu.Unlock()
 
 	if fn != nil {
 		if err := fn(ctx); err != nil {

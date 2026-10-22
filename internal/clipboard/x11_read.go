@@ -4,9 +4,11 @@ package clipboard
 
 import "io"
 
-// reqGate bounds concurrent SelectionRequest handlers. The X loop stays
+// reqGateSize bounds concurrent SelectionRequest handlers. The X loop stays
 // responsive: excess requests run inline instead of spawning goroutines.
-var reqGate = make(chan struct{}, 16)
+const reqGateSize = 16
+
+var reqGate = make(chan struct{}, reqGateSize)
 
 func (x *xClient) loop() {
 	defer recoverX(x, "x11 loop")
