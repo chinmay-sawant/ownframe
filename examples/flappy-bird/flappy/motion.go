@@ -12,7 +12,7 @@ func (g *game) step(dt float64, rng *rand.Rand) {
 
 	switch g.phase {
 	case ready:
-		g.birdY = sceneH/2 + math.Sin(g.run*3.2)*8
+		g.birdY = sceneH/halfDiv + math.Sin(g.run*bobFreq)*bobAmp
 
 		return
 	case over:

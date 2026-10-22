@@ -12,11 +12,11 @@ import (
 // reads bounded tiles instead of whole sheets.
 func (s *Store) LoadRange(ctx context.Context, sheet workbook.SheetID, r workbook.Rect, limit int) ([]workbook.CellEdit, error) {
 	if limit <= 0 {
-		limit = 5000
+		limit = rangeDefLimit
 	}
 
-	if limit > 50000 {
-		limit = 50000
+	if limit > rangeMaxLimit {
+		limit = rangeMaxLimit
 	}
 
 	var out []workbook.CellEdit
@@ -32,7 +32,7 @@ func (s *Store) LoadRange(ctx context.Context, sheet workbook.SheetID, r workboo
 			return err
 		}
 
-		defer rows.Close()
+		defer func() { _ = rows.Close() }()
 
 		out, err = scanEdits(rows)
 

@@ -16,7 +16,7 @@ func TestLockedDatabaseRespectsDeadline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	name, err := dsn(dir, false)
 	if err != nil {
@@ -27,7 +27,7 @@ func TestLockedDatabaseRespectsDeadline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer holder.Close()
+	defer func() { _ = holder.Close() }()
 
 	holder.SetMaxOpenConns(1)
 

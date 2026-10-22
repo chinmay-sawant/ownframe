@@ -43,14 +43,14 @@ func dataFromView(v View) store.Data {
 func (a *App) loadView(st *store.Store) View {
 	empty, err := st.Empty()
 	if err != nil {
-		log.Printf("teams: database state: %v", err)
+		log.Printf("teams: database state: %s", cleanLog(err.Error()))
 
 		return DefaultView()
 	}
 
 	if empty {
 		if err := st.Seed(); err != nil {
-			log.Printf("teams: seed: %v", err)
+			log.Printf("teams: seed: %s", cleanLog(err.Error()))
 
 			return DefaultView()
 		}
@@ -58,7 +58,7 @@ func (a *App) loadView(st *store.Store) View {
 
 	data, ok, err := st.Load()
 	if err != nil || !ok {
-		log.Printf("teams: load: %v", err)
+		log.Printf("teams: load: %s", cleanLog(err.Error()))
 
 		return DefaultView()
 	}
@@ -73,7 +73,7 @@ func (a *App) save() {
 	}
 
 	if err := a.store.Save(dataFromView(a.view)); err != nil {
-		log.Printf("teams: save: %v", err)
+		log.Printf("teams: save: %s", cleanLog(err.Error()))
 	}
 }
 

@@ -16,7 +16,7 @@ func TestChannelsRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if err := st.Seed(); err != nil {
 		t.Fatal(err)

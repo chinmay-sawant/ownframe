@@ -45,7 +45,7 @@ func (h *RuntimeBehaviorHelper) SampleWatchdog(n time.Time, w time.Duration, l i
 func (h *RuntimeBehaviorHelper) Reset() {
 	h.Loading.Reset()
 	h.Observer.Reset()
-	h.Visibility.Observer.Reset()
-	h.Resize.Observer.Reset()
+	h.Visibility.Reset()
+	h.Resize.Reset()
 	h.Watchdog.Reset()
 }

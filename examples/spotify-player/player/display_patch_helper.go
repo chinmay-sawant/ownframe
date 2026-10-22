@@ -17,7 +17,7 @@ func (h *DisplayPatchHelper) page() *ownframe.Page {
 
 func (h *DisplayPatchHelper) Report() ownframe.DisplayPatch {
 	if p := h.page(); p != nil {
-		return p.PatchReport()
+		return p.LastPatch()
 	}
 	return ownframe.DisplayPatch{}
 }

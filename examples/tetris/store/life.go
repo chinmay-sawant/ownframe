@@ -33,7 +33,7 @@ func Open(dir string) (*Store, error) {
 		dir = d
 	}
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, dirPerm); err != nil {
 		return nil, fmt.Errorf("store: data dir: %w", err)
 	}
 

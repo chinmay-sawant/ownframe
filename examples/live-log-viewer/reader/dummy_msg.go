@@ -12,33 +12,33 @@ func dummyMessage(key string, seq int64, r uint64) string {
 
 	switch key {
 	case "api":
-		msg = fmt.Sprintf("GET /v1/users/%d 200 %dms", r%1000, r%40+1)
+		msg = fmt.Sprintf("GET /v1/users/%d 200 %dms", r%dummyUsers, r%dummyMsA+1)
 	case "worker":
-		msg = fmt.Sprintf("job %d finished in %dms", seq/3, r%900+1)
+		msg = fmt.Sprintf("job %d finished in %dms", seq/dummyMod3, r%dummyMsB+1)
 	case "db":
-		msg = fmt.Sprintf("checkpoint %d pages wal=%dK", seq/10, r%64)
+		msg = fmt.Sprintf("checkpoint %d pages wal=%dK", seq/dummyPages, r%dummyWal)
 	default:
 		msg = fmt.Sprintf("%s record %d", key, seq)
 	}
 
 	switch {
-	case seq%71 < 2:
+	case seq%dummyMod71 < dummySevA:
 		msg = "connection refused; retrying"
-	case seq%73 == 0:
+	case seq%dummyMod73 == 0:
 		msg = "panic: runtime error: index out of range"
-	case seq%67 == 0:
+	case seq%dummyMod67 == 0:
 		msg = "stack for request\n\tat net/http.serverHandler\n\tat main.serve"
 	}
 
-	if seq%89 == 0 {
+	if seq%dummyMod89 == 0 {
 		msg += " — очередь ✓ 日本語 café 🚀"
 	}
 
-	if seq%83 == 0 {
-		msg += " " + strings.Repeat("payload ", 400)
+	if seq%dummyMod83 == 0 {
+		msg += " " + strings.Repeat("payload ", dummyRepeat)
 	}
 
-	if seq%101 == 0 {
+	if seq%dummyMod101 == 0 {
 		msg += "\x80\x80"
 	}
 
@@ -46,16 +46,16 @@ func dummyMessage(key string, seq int64, r uint64) string {
 }
 
 func severityFor(r uint64) entry.Severity {
-	switch n := r % 100; {
-	case n < 2:
+	switch n := r % dummySevMod; {
+	case n < dummySevA:
 		return entry.Trace
-	case n < 8:
+	case n < dummySevB:
 		return entry.Debug
-	case n < 70:
+	case n < dummySevC:
 		return entry.Info
-	case n < 88:
+	case n < dummySevD:
 		return entry.Warn
-	case n < 97:
+	case n < dummySevE:
 		return entry.Error
 	default:
 		return entry.Fatal

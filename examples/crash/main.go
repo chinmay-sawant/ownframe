@@ -20,7 +20,9 @@ func main() {
 
 	// SetCrashDir points Report and a recovered panic at crashes/ under the
 	// working directory. An empty dir restores the per-user default.
-	ownframe.SetCrashDir("crashes")
+	if err := ownframe.SetCrashDir("crashes"); err != nil {
+		log.Fatal(err)
+	}
 
 	app, err := crash.New()
 	if err != nil {

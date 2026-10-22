@@ -49,7 +49,7 @@ func (g *Game) hardDrop() []Event {
 		cells++
 	}
 
-	g.Score = addScore(g.Score, 2*cells)
+	g.Score = addScore(g.Score, hardDropPoints*cells)
 	ev := []Event{{Kind: EventHardDrop, Score: g.Score}}
 
 	return append(ev, g.lockPiece()...)

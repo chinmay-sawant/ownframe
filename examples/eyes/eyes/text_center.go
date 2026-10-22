@@ -36,5 +36,5 @@ func setCenteredText(op *ownframe.DisplayOp, value string, center float64) {
 	face := &text.GoTextFace{Source: source, Size: op.Size * pointsPerPixel}
 	width, _ := text.Measure(value, face, 0)
 	width = width/pointsPerPixel + op.LetterSpacing*float64(utf8.RuneCountInString(value))
-	op.X, op.W = center-width/2, width
+	op.X, op.W = center-width/halfDivisor, width
 }

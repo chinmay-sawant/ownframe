@@ -27,7 +27,7 @@ func TestDSNSpecialPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	sessions, err := st2.Sessions(bg())
 	if err != nil {
@@ -64,7 +64,7 @@ func TestDeletedStorageRecreates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	s, err := st2.Stats(bg())
 	if err != nil {
@@ -82,14 +82,14 @@ func TestMemoryStoresAreIndependent(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer a.Close()
+	defer func() { _ = a.Close() }()
 
 	b, err := Open(Memory)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	if _, err := a.EnsureSession(bg(), "only-a", "file"); err != nil {
 		t.Fatal(err)

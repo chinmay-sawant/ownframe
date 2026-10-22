@@ -13,10 +13,10 @@ func New(opts Options) (*App, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
 		Title:     "Live log viewer",
 		HTML:      buildHTML(),
-		Width:     1100,
-		Height:    720,
-		MinWidth:  1000,
-		MinHeight: 400,
+		Width:     uiWinW,
+		Height:    uiWinH,
+		MinWidth:  uiMinW,
+		MinHeight: uiMinH,
 	})
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func New(opts Options) (*App, error) {
 	a := &App{
 		page: page, feed: opts.Feed, dark: opts.Dark, perf: opts.Perf,
 		exportDir: opts.ExportDir, pollEvery: opts.Poll, ctx: ctx, cancel: cancel,
-		reqs: make(chan req, 16), outs: make(chan out, 64), started: time.Now(),
+		reqs: make(chan req, uiReqCap), outs: make(chan out, uiOutCap), started: time.Now(),
 	}
 	if a.pollEvery <= 0 {
 		a.pollEvery = PollEvery
@@ -50,7 +50,11 @@ func New(opts Options) (*App, error) {
 	page.SetScrollWindow(a.Pin)
 	page.SetTick(a.Tick)
 	page.SetData(&a.view)
-	a.applyTheme()
+	if err := a.applyTheme(); err != nil {
+		cancel()
+
+		return nil, err
+	}
 
 	return a, nil
 }

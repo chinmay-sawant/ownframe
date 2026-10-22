@@ -45,15 +45,22 @@ func (s *Store) Seed() error {
 	return tx.Commit()
 }
 
-// execScript runs a SQL script that holds one statement per line.
+// execScript runs a SQL script that holds one statement per line. The seed
+// files are compiled into the binary with go:embed, so they are trusted
+// build input, never user input. A line holding more than one statement is
+// rejected, so one Exec call can never run stacked statements.
 func execScript(tx *sql.Tx, script string) error {
 	for _, line := range strings.Split(script, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "--") {
 			continue
 		}
+		stmt, ok := singleStatement(line)
+		if !ok {
+			return errMultiStatement
+		}
 
-		if _, err := tx.Exec(line); err != nil {
+		if _, err := tx.Exec(stmt); err != nil {
 			return err
 		}
 	}

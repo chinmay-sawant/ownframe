@@ -31,7 +31,7 @@ func TestRejectNewerSchema(t *testing.T) {
 
 	path := filepath.Join(dir, dbName)
 
-	before, err := os.ReadFile(path)
+	before, err := os.ReadFile(path) //nolint:gosec // reason: test reads TempDir database copy to verify it is untouched
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func TestRejectNewerSchema(t *testing.T) {
 		t.Fatalf("err = %v, want ErrSchemaNewer", err)
 	}
 
-	after, err := os.ReadFile(path)
+	after, err := os.ReadFile(path) //nolint:gosec // reason: test reads TempDir database copy to verify it is untouched
 	if err != nil {
 		t.Fatal(err)
 	}

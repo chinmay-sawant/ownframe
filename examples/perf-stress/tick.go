@@ -40,7 +40,7 @@ func (a *App) paint() {
 	if a.page.Generation() != a.state.bound {
 		a.bind(d)
 	}
-	frac := float64(a.view.Tick%101) / 100
+	frac := float64(a.view.Tick%progressCycle) / progressScale
 	_, _, tw, _ := frame.BoxUnits(d, a.track)
 	if a.state.seek != nil {
 		a.state.seek.W = tw * frac
@@ -48,8 +48,8 @@ func (a *App) paint() {
 	_, ey, _, eh := frame.BoxUnits(d, a.eq)
 	now := float64(time.Now().UnixMilli())
 	for i, op := range a.state.bars {
-		f := 0.5 + 0.5*math.Sin(now/float64(120+35*i)+float64(i)*1.9)
-		h := (0.2 + 0.8*f) * eh
+		f := eqMid + eqMid*math.Sin(now/float64(eqPeriodBase+eqPeriodStep*i)+float64(i)*eqPhaseStep)
+		h := (eqFloor + eqSpan*f) * eh
 		op.H = h
 		op.Y = ey + eh - h
 	}

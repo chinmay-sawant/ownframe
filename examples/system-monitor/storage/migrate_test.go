@@ -32,7 +32,7 @@ func TestMigrateVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if version, err = st.SchemaVersionOf(t.Context()); err != nil || version != SchemaVersion {
 		t.Fatalf("version = %d err = %v", version, err)
@@ -52,7 +52,7 @@ func TestRejectNewerSchema(t *testing.T) {
 	if _, err := raw.Exec(`CREATE TABLE future (x INTEGER); PRAGMA user_version = 99`); err != nil {
 		t.Fatal(err)
 	}
-	raw.Close()
+	_ = raw.Close()
 
 	if _, err := Open(dir); !errors.Is(err, ErrSchemaNewer) {
 		t.Fatalf("err = %v, want ErrSchemaNewer", err)
@@ -62,7 +62,7 @@ func TestRejectNewerSchema(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer raw.Close()
+	defer func() { _ = raw.Close() }()
 
 	var version int
 	if err := raw.QueryRow("PRAGMA user_version").Scan(&version); err != nil {

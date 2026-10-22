@@ -56,7 +56,7 @@ func Open(dir string) (*Store, error) {
 	path := dir
 
 	if !memory {
-		if err := os.MkdirAll(dir, 0o700); err != nil {
+		if err := os.MkdirAll(dir, storeDirPerm); err != nil {
 			return nil, err
 		}
 
@@ -74,16 +74,16 @@ func Open(dir string) (*Store, error) {
 	s := &Store{
 		db:      db,
 		path:    path,
-		reqs:    make(chan request, 64),
+		reqs:    make(chan request, storeQueueCap),
 		quit:    make(chan struct{}),
 		done:    make(chan struct{}),
-		timeout: 10 * time.Second,
+		timeout: storeTimeout,
 	}
 
 	go s.worker()
 
 	if err := s.migrate(context.Background()); err != nil {
-		s.Close()
+		_ = s.Close()
 
 		return nil, err
 	}

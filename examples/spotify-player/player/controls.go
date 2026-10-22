@@ -47,13 +47,13 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.view.Repeat = !a.view.Repeat
 	case action == "mute":
 		a.toggleMute()
-		a.audio.SetVolume(float64(a.view.Volume) / 100)
+		a.audio.SetVolume(float64(a.view.Volume) / percentScale)
 	case strings.HasPrefix(action, "seek-"):
-		a.setProgress(slot(action, "seek-")*10 + 10)
-		a.audio.SeekFraction(float64(a.view.Progress) / 100)
+		a.setProgress(slot(action, "seek-")*seekStep + seekBase)
+		a.audio.SeekFraction(float64(a.view.Progress) / percentScale)
 	case strings.HasPrefix(action, "volume-"):
-		a.view.Volume = slot(action, "volume-")*10 + 10
-		a.audio.SetVolume(float64(a.view.Volume) / 100)
+		a.view.Volume = slot(action, "volume-")*volumeStep + volumeBase
+		a.audio.SetVolume(float64(a.view.Volume) / percentScale)
 	case action == "search":
 		return a.searchNow(ctx)
 	case action == "tracks-prev":

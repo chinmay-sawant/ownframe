@@ -25,7 +25,7 @@ func TestRoundTrip(t *testing.T) {
 	st, err := Open(Memory)
 	must(err)
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if err := st.Seed(); err != nil {
 		t.Fatal(err)

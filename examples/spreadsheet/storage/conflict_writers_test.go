@@ -17,14 +17,14 @@ func TestAlternatingWriters(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st1.Close()
+	defer func() { _ = st1.Close() }()
 
 	st2, err := Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	w, s := newBook(t, st1)
 	rev := w.SavedRev()

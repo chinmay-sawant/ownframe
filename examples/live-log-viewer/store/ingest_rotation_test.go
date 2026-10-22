@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -21,14 +23,16 @@ func TestIngestRestartAfterRotation(t *testing.T) {
 
 	if got := waitForEntries(t, st, 1, 3*time.Second); got < 1 {
 		cancel()
-		<-done
-
+		if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatal(err)
+		}
 		t.Fatalf("entries = %d", got)
 	}
 
 	cancel()
-	<-done
-
+	if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 	if err := in.Close(); err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +52,7 @@ func TestIngestRestartAfterRotation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := os.WriteFile(logPath, []byte("new entry\n"), 0o644); err != nil {
+	if err := os.WriteFile(logPath, []byte("new entry\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -56,14 +60,16 @@ func TestIngestRestartAfterRotation(t *testing.T) {
 
 	if got := waitForEntries(t, st, 2, 3*time.Second); got < 2 {
 		cancel2()
-		<-done2
-
+		if err := <-done2; err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatal(err)
+		}
 		t.Fatalf("entries after rotation = %d", got)
 	}
 
 	cancel2()
-	<-done2
-
+	if err := <-done2; err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 	if err := in2.Close(); err != nil {
 		t.Fatal(err)
 	}

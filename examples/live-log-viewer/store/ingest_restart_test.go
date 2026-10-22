@@ -38,7 +38,7 @@ func TestIngestRestartResumes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	setup2, err := st2.EnsureDummy(bg(), DummyOptions{Count: 200, Rate: 500})
 	if err != nil {

@@ -17,7 +17,7 @@ const undoLimit = 200
 func (b *Backend) Apply(id string, edits []ui.Edit) (uint64, error) {
 	sh, ok := b.sheet(id)
 	if !ok {
-		return uint64(b.wb.Rev()), ErrNoSheet
+		return uint64(b.wb.Rev()), ErrNoSheet //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 	}
 
 	cmd := workbook.Command{Sheet: sh.ID()}
@@ -33,18 +33,18 @@ func (b *Backend) Apply(id string, edits []ui.Edit) (uint64, error) {
 	inv := b.inverse(sh, cmd.Edits)
 
 	if _, err := b.wb.Apply(cmd); err != nil {
-		return uint64(b.wb.Rev()), err
+		return uint64(b.wb.Rev()), err //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 	}
 
 	if err := b.save(cmd); err != nil {
 		_, _ = b.wb.Apply(inv)
 
-		return uint64(b.wb.Rev()), err
+		return uint64(b.wb.Rev()), err //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 	}
 
 	b.push(step{fwd: cmd, inv: inv})
 
-	return uint64(b.wb.Rev()), nil
+	return uint64(b.wb.Rev()), nil //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 }
 
 // save writes one command through the store and acknowledges only after

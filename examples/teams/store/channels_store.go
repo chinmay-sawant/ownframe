@@ -9,7 +9,7 @@ import (
 // saveChannels replaces the channels tables with d.
 func saveChannels(tx *sql.Tx, d channels.Data) error {
 	for _, t := range []string{"teams", "channels", "posts", "replies", "reactions", "channel_files", "channel_state"} {
-		if _, err := tx.Exec("DELETE FROM " + t); err != nil {
+		if _, err := tx.Exec("DELETE FROM " + t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
 			return err
 		}
 	}

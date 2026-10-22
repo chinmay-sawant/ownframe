@@ -10,20 +10,24 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
 )
 
+// startNotifications serves the loopback agent API. Non-loopback binds
+// log a warning: add auth or a shared secret before exposing them.
 func startNotifications(ctx context.Context, addr string, inbox *cat.Inbox) (func(), error) {
 	if addr == "off" {
 		return func() {}, nil
+	}
+	if err := checkNotifyAddr(addr); err != nil {
+		return nil, err
 	}
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return nil, fmt.Errorf("notification server: %w", err)
 	}
-	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second}
+	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: notifyReadHeaderTimeout, ReadTimeout: notifyReadTimeout, WriteTimeout: notifyWriteTimeout, MaxHeaderBytes: maxNotifyHeaderBytes}
 	go func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Print(err)

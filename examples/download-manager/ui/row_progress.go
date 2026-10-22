@@ -22,7 +22,7 @@ func (r Row) Progress() string {
 		return "--"
 	}
 
-	return strconv.Itoa(int(f*100+0.5)) + "%"
+	return strconv.Itoa(int(f*percentScale+speedRound)) + "%"
 }
 
 // BarWidth is the initial CSS width of the progress fill. The small floor
@@ -30,9 +30,9 @@ func (r Row) Progress() string {
 // so the tick can grow it again later.
 func (r Row) BarWidth() string {
 	f := r.Fraction()
-	if f < 0.005 {
+	if f < barFloor {
 		return "0.5%"
 	}
 
-	return strconv.FormatFloat(f*100, 'f', 1, 64) + "%"
+	return strconv.FormatFloat(f*percentScale, 'f', 1, 64) + "%"
 }

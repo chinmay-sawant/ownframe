@@ -25,7 +25,7 @@ func (p *preview) PollReload(ctx context.Context) (bool, error) {
 	if !p.companion.receive() {
 		return false, nil
 	}
-	return true, p.Page.Redraw(ctx)
+	return true, p.Redraw(ctx)
 }
 
 func (p *preview) Watching() bool { return true }

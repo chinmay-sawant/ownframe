@@ -17,7 +17,7 @@ func makePosts(n int) []channels.Post {
 			Time:     "10:00 AM",
 			Subject:  fmt.Sprintf("Post %d subject", i),
 			Text:     "Synthetic body for channel scaling. Short text keeps layout comparable across runs.",
-			Likes:    i % 7,
+			Likes:    i % benchLike,
 		})
 	}
 	return out

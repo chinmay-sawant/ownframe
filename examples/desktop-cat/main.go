@@ -15,6 +15,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	o := flags()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -25,7 +31,7 @@ func main() {
 	inbox := cat.NewInbox()
 	closeServer, err := startNotifications(ctx, o.notifyAddr, inbox)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer closeServer()
 	if o.stdin {
@@ -36,23 +42,23 @@ func main() {
 		handled, err := launchNative(ctx, inbox, o.notifyAddr)
 		if handled {
 			if err != nil && !errors.Is(err, context.Canceled) {
-				log.Fatal(err)
+				return err
 			}
 
-			return
+			return nil
 		}
 	}
 
 	if o.snapshot {
 		printMedia(ctx)
-		return
+		return nil
 	}
 	if o.media {
 		startMedia(ctx, inbox, o.mediaEndpoint)
 	}
 	companion, err := cat.NewWithInbox(o.variant, inbox)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	companion.RandomBehavior = o.random
@@ -63,6 +69,8 @@ func main() {
 	}
 
 	if err != nil && !errors.Is(err, context.Canceled) {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }

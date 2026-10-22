@@ -55,7 +55,8 @@ func (a *App) syncReady() {
 	a.view.Ready = a.ready()
 }
 
-// signIn checks the secret/secret pair.
+// signIn checks the demo secret/secret pair. Demo only: no auth boundary.
+// A real app must verify against a trusted backend.
 func (a *App) signIn() {
 	if a.page.FormValue("si-email") == "secret" &&
 		a.page.FormValue("si-password") == "secret" {

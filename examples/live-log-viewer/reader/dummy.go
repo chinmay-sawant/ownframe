@@ -52,10 +52,10 @@ func mix64(seed uint64, key string, seq uint64) uint64 {
 	_, _ = h.Write(buf[:])
 
 	x := h.Sum64()
-	x ^= x >> 30
+	x ^= x >> mixShiftA
 	x *= 0xbf58476d1ce4e5b9
-	x ^= x >> 27
+	x ^= x >> mixShiftB
 	x *= 0x94d049bb133111eb
 
-	return x ^ (x >> 31)
+	return x ^ (x >> mixShiftC)
 }

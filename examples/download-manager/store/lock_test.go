@@ -44,10 +44,10 @@ func TestLockReclaimsStaleFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	path := filepath.Join(dir, lockName)
-	if err := os.WriteFile(path, []byte("99999\n0\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("99999\n0\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -70,7 +70,7 @@ func TestLockMemoryModeIsFree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
+	defer func() { _ = s.Close() }()
 
 	release, err := s.Lock()
 	if err != nil {

@@ -52,7 +52,7 @@ func TestPersistAcrossReopen(t *testing.T) {
 		t.Fatalf("reopen: %v", err)
 	}
 
-	defer second.Close()
+	defer func() { _ = second.Close() }()
 
 	found := false
 

@@ -5,12 +5,16 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/pet-care/model"
 )
 
-func (s *Store) Pets(ctx context.Context) ([]model.Pet, error) {
+func (s *Store) Pets(ctx context.Context) (_ []model.Pet, err error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id,name,species,breed,birth_date,notes FROM pets ORDER BY name`)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	var pets []model.Pet
 	for rows.Next() {
 		var p model.Pet

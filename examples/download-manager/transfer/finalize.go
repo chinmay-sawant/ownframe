@@ -20,7 +20,7 @@ type FinalizeOptions struct {
 // retries and backoff fill zero values.
 func (o FinalizeOptions) retries() int {
 	if o.Retries <= 0 {
-		return 5
+		return finalizeRetries
 	}
 
 	return o.Retries
@@ -28,7 +28,7 @@ func (o FinalizeOptions) retries() int {
 
 func (o FinalizeOptions) backoff() time.Duration {
 	if o.Backoff <= 0 {
-		return 30 * time.Millisecond
+		return finalizeBackoff
 	}
 
 	return o.Backoff
@@ -68,7 +68,7 @@ func Finalize(partial, dest string, opts FinalizeOptions) error {
 
 // syncFile flushes one file's bytes to the device.
 func syncFile(path string) error {
-	f, err := os.OpenFile(path, os.O_RDWR, 0)
+	f, err := os.OpenFile(path, os.O_RDWR, 0) //nolint:gosec // reason: partial path is the download temp file, local file.
 	if err != nil {
 		return err
 	}

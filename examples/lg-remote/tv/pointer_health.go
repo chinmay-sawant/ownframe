@@ -18,7 +18,7 @@ func watchPointer(conn *ws.Conn) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		for {
 			if _, err := conn.ReadText(); err != nil {
 				return

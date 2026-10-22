@@ -9,14 +9,14 @@ func (a *App) Tick(ctx context.Context) error {
 	}
 	now := a.now()
 	a.applyMotion(now)
-	dt := 1.0 / 60
+	dt := 1.0 / baseFPS
 	if !a.last.IsZero() {
 		dt = now.Sub(a.last).Seconds()
 		if dt < 0 {
 			dt = 0
 		}
-		if dt > 0.1 {
-			dt = 0.1
+		if dt > maxFrameDT {
+			dt = maxFrameDT
 		}
 	}
 	a.last = now

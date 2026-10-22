@@ -63,13 +63,13 @@ func TestTempStoresAreSeparate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer a.Close()
+	defer func() { _ = a.Close() }()
 
 	b, err := OpenWithOptions(Options{Temp: true})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer b.Close()
+	defer func() { _ = b.Close() }()
 
 	if err := a.SetSetting(ctx, "k", "a"); err != nil {
 		t.Fatal(err)

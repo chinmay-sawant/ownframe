@@ -31,7 +31,7 @@ func newTestApp(t *testing.T) (*App, *testClock) {
 
 	clock := &testClock{at: time.Unix(0, 0)}
 	app.now = clock.now
-	app.rng = rand.New(rand.NewPCG(1, 2))
+	app.rng = rand.New(rand.NewPCG(1, 2)) //nolint:gosec // reason: deterministic test clock seed, not security.
 
 	if err := app.page.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
@@ -56,15 +56,6 @@ func press(t *testing.T, app *App, key string) {
 	t.Helper()
 
 	if err := app.page.KeyDown(context.Background(), key); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// release sends a key release through the page handlers.
-func release(t *testing.T, app *App, key string) {
-	t.Helper()
-
-	if err := app.page.KeyUp(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
 }

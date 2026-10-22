@@ -2,7 +2,7 @@ package flappy
 
 // birdBox is the collision box, a little smaller than the sprite.
 func (g *game) birdBox() (x, y, w, h float64) {
-	return birdX - 15, g.birdY - 11, 30, 22
+	return birdX - collideDX, g.birdY - collideDY, collideW, collideH
 }
 
 // hits reports whether the bird touched the ground or a pipe.

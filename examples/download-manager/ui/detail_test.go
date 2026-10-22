@@ -10,12 +10,16 @@ func TestDetailUpdatesOnProgress(t *testing.T) {
 	ctx := context.Background()
 
 	back.send(Update{Kind: UpdateActive, Active: []Row{running("j1", 10, 100)}})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 	clickAction(t, app, "select-j1")
 
 	row := running("j1", 55, 100)
 	back.send(Update{Kind: UpdateProgress, Row: &row})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	if app.view.Detail == nil || app.view.Detail.Done != 55 {
 		t.Fatalf("detail = %+v", app.view.Detail)
@@ -27,7 +31,9 @@ func TestDetailSurvivesPageChange(t *testing.T) {
 	ctx := context.Background()
 
 	back.send(Update{Kind: UpdateActive, Active: []Row{running("j1", 10, 100)}})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 	clickAction(t, app, "select-j1")
 
 	req := back.pages[len(back.pages)-1]
@@ -36,7 +42,9 @@ func TestDetailSurvivesPageChange(t *testing.T) {
 		Rows:  []Row{{ID: "other", Name: "other"}},
 		Total: 1,
 	}})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	if app.view.Detail == nil || app.view.Detail.ID != "j1" {
 		t.Fatal("detail panel closed on a page change")
@@ -53,7 +61,9 @@ func TestDetailClearsOnRemove(t *testing.T) {
 
 	failed := Row{ID: "j1", Name: "j1", State: StateFailed, Done: 10, Total: 100}
 	back.send(Update{Kind: UpdateActive, Active: []Row{failed}})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 	clickAction(t, app, "select-j1")
 	clickAction(t, app, "remove-j1")
 

@@ -37,7 +37,11 @@ func run(data, mode string, stress bool, seed int64) error {
 	if err != nil {
 		return err
 	}
-	defer st.Close()
+	defer func() {
+		if cerr := st.Close(); cerr != nil {
+			log.Printf("system-monitor: store close: %v", cerr)
+		}
+	}()
 
 	// Seed the labeled fixture once; a reopen never duplicates it.
 	if !live {

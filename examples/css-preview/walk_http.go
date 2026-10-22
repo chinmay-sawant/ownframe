@@ -2,6 +2,19 @@ package main
 
 import (
 	"net/http"
+	"time"
+)
+
+// walkAddr is the loopback address the click-script walker serves on.
+const walkAddr = "127.0.0.1:6971"
+
+// walkTimeouts bounds the walker server I/O; the click script polls it.
+const (
+	walkReadHeaderTimeout = 3 * time.Second
+	walkReadTimeout       = 5 * time.Second
+	walkWriteTimeout      = 5 * time.Second
+	// walkQuitDelay lets the quit reply flush before the process exits.
+	walkQuitDelay = 100 * time.Millisecond
 )
 
 // serve exposes the walker to the Python clicker. It listens only while
@@ -17,5 +30,7 @@ func (w *walker) serve() {
 	mux.HandleFunc("/reset", w.handleReset)
 	mux.HandleFunc("/box", w.handleBox)
 	mux.HandleFunc("/state", w.handleState)
-	_ = http.ListenAndServe("127.0.0.1:6971", mux)
+	srv := &http.Server{Addr: walkAddr, Handler: mux,
+		ReadHeaderTimeout: walkReadHeaderTimeout, ReadTimeout: walkReadTimeout, WriteTimeout: walkWriteTimeout}
+	_ = srv.ListenAndServe()
 }

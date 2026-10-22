@@ -64,8 +64,7 @@ func (s *Store) worker() {
 			s.run(req)
 		case <-s.quit:
 			s.drain()
-			s.db.Close()
-
+			_ = s.db.Close()
 			return
 		}
 	}

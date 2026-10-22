@@ -37,8 +37,8 @@ func SafeName(raw string) string {
 // pathBase takes the last path element of a URL-ish string. Query and
 // fragment are dropped, and a backslash counts as a separator.
 func pathBase(raw string) string {
-	raw = strings.SplitN(raw, "?", 2)[0]
-	raw = strings.SplitN(raw, "#", 2)[0]
+	raw = strings.SplitN(raw, "?", splitParts)[0]
+	raw = strings.SplitN(raw, "#", splitParts)[0]
 	raw = strings.ReplaceAll(raw, "\\", "/")
 
 	parts := strings.Split(raw, "/")

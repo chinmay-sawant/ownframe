@@ -9,9 +9,9 @@ import (
 func (c *Conn) WriteText(p []byte) error {
 	c.wmu <- struct{}{}
 	defer func() { <-c.wmu }()
-	_ = c.c.SetWriteDeadline(time.Now().Add(2 * time.Second))
+	_ = c.c.SetWriteDeadline(time.Now().Add(writeTimeout))
 
-	return writeFrame(c.c, 0x1, p, true)
+	return writeFrame(c.c, opcodeText, p, true)
 }
 
 // ReadText returns the next text payload. Ping frames get a pong.
@@ -25,15 +25,15 @@ func (c *Conn) ReadText() ([]byte, error) {
 		}
 
 		switch op {
-		case 0x1, 0x0:
+		case opcodeText, opcodeCont:
 			buf = append(buf, payload...)
 			if fin {
 				return buf, nil
 			}
-		case 0x8:
+		case opcodeClose:
 			return nil, io.EOF
-		case 0x9:
-			if err := c.writeCtrl(0xA, payload); err != nil {
+		case opcodePing:
+			if err := c.writeCtrl(opcodePong, payload); err != nil {
 				return nil, err
 			}
 		default:
@@ -43,7 +43,7 @@ func (c *Conn) ReadText() ([]byte, error) {
 
 // Close sends a close frame and closes the socket.
 func (c *Conn) Close() error {
-	_ = c.writeCtrl(0x8, nil)
+	_ = c.writeCtrl(opcodeClose, nil)
 
 	return c.c.Close()
 }
@@ -51,10 +51,10 @@ func (c *Conn) Close() error {
 func (c *Conn) writeCtrl(op byte, p []byte) error {
 	c.wmu <- struct{}{}
 	defer func() { <-c.wmu }()
-	_ = c.c.SetWriteDeadline(time.Now().Add(2 * time.Second))
+	_ = c.c.SetWriteDeadline(time.Now().Add(writeTimeout))
 
 	return writeFrame(c.c, op, p, true)
 }
 
 // Ping keeps the pointer connection active without sending a TV command.
-func (c *Conn) Ping() error { return c.writeCtrl(0x9, nil) }
+func (c *Conn) Ping() error { return c.writeCtrl(opcodePing, nil) }

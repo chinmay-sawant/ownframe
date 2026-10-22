@@ -5,12 +5,16 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/pet-care/model"
 )
 
-func (s *Store) Records(ctx context.Context, petID string) ([]model.Record, error) {
+func (s *Store) Records(ctx context.Context, petID string) (_ []model.Record, err error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT id,pet_id,category,date,note,scheduled,complete FROM records WHERE ?='' OR pet_id=? ORDER BY date DESC`, petID, petID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if cerr := rows.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 	var out []model.Record
 	for rows.Next() {
 		var r model.Record

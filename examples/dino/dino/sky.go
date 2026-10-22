@@ -8,16 +8,16 @@ func (a *App) stepSky(dt float64) {
 	}
 
 	for i := range a.clouds {
-		a.clouds[i].x -= a.game.speed * 0.14 * dt
+		a.clouds[i].x -= a.game.speed * cloudDrift * dt
 		if a.clouds[i].x < -80 {
-			a.clouds[i].x = sceneW + 40 + float64(i)*60
+			a.clouds[i].x = sceneW + cloudRespawn + float64(i)*cloudGap
 		}
 	}
 
 	for i := range a.pebbles {
 		a.pebbles[i] -= a.game.speed * dt
 		if a.pebbles[i] < -16 {
-			a.pebbles[i] = sceneW + 20 + float64(i)*13
+			a.pebbles[i] = sceneW + pebbleRespawn + float64(i)*pebbleGap
 		}
 	}
 }

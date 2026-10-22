@@ -37,7 +37,7 @@ func loadActivity(db *sql.DB) (activity.Data, error) {
 		return activity.Data{}, err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []activity.Item
 

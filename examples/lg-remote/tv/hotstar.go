@@ -18,7 +18,7 @@ func (c *Client) hotstar() (string, error) {
 	}
 	id := hotstarID(p)
 	if id == "" {
-		return "", errors.New("Hotstar is not installed on this TV")
+		return "", errors.New("hotstar is not installed on this TV")
 	}
 	msg, err := c.launch(id)
 	if err == nil {

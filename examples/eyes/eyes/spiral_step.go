@@ -12,18 +12,18 @@ func (a *App) stepSpiral(dt float64, now time.Time) {
 	if s.mood == spiralMood {
 		target = 1
 		if s.automatic {
-			s.sacT = now.Add(500 * time.Millisecond)
+			s.sacT = now.Add(spiralSettle)
 			if !now.Before(s.tiltUntil) {
 				s.tLookX, s.tLookY = 0, 0
 			}
 		}
 	}
-	s.spiralMix += (target - s.spiralMix) * (1 - math.Exp(-dt*12))
-	if math.Abs(target-s.spiralMix) < 0.001 {
+	s.spiralMix += (target - s.spiralMix) * (1 - math.Exp(-dt*spiralRate))
+	if math.Abs(target-s.spiralMix) < spiralMinMix {
 		s.spiralMix = target
 	}
-	if s.spiralMix > 0.001 {
-		s.spiral = math.Mod(s.spiral+dt*600, 360)
+	if s.spiralMix > spiralMinMix {
+		s.spiral = math.Mod(s.spiral+dt*spiralSpin, spiralTurn)
 	}
 }
 

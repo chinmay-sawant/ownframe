@@ -28,7 +28,7 @@ func readInto[T any](db *sql.DB, query string, out *[]T, scan func(*sql.Rows, *T
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var v T

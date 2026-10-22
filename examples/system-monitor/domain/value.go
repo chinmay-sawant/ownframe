@@ -34,6 +34,9 @@ func (v Value) String() string {
 // Percent builds a 0 to 100 reading.
 func Percent(n float64) Value { return Value{N: n, Valid: true} }
 
+// percentScale turns a 0..1 ratio into a 0..100 percent reading.
+const percentScale = 100
+
 // Bytes builds a byte count reading.
 func Bytes(n float64) Value { return Value{N: n, Valid: true} }
 

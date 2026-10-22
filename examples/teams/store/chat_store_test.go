@@ -18,7 +18,7 @@ func TestChatRoundTrip(t *testing.T) {
 
 	st, err := Open(Memory)
 	must(err)
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	must(st.Seed())
 

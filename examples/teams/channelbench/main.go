@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	n := flag.Int("posts", 500, "synthetic posts in active channel")
+	n := flag.Int("posts", benchPosts, "synthetic posts in active channel")
 	flag.Parse()
 	s, err := app.New()
 	if err != nil {
@@ -32,5 +32,5 @@ func main() {
 	runtime.ReadMemStats(&a)
 	st2 := s.Page().Stats()
 	fmt.Printf("posts=%d redraw=%s alloc=%dKB boxes=%d ops=%d layout=%s list=%s\n",
-		*n, el, (a.TotalAlloc-b.TotalAlloc)/1024, len(s.Boxes()), st2.Ops, st2.LayoutTime, st2.DisplayListTime)
+		*n, el, (a.TotalAlloc-b.TotalAlloc)/benchKB, len(s.Boxes()), st2.Ops, st2.LayoutTime, st2.DisplayListTime)
 }

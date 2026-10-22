@@ -12,17 +12,17 @@ func (g *game) dinoPose() [8]rect {
 		return duckPose()
 	}
 
-	top := groundY - g.feet - 52
+	top := groundY - g.feet - dinoStandH
 
 	switch {
 	case g.phase != running:
-		return standPose(top, 8, 8)
+		return standPose(top, legLong, legLong)
 	case !g.onGround:
-		return standPose(top, 4, 4)
-	case int(g.run/0.09)%2 == 0:
-		return standPose(top, 8, 4)
+		return standPose(top, legShort, legShort)
+	case int(g.run/stridePeriod)%strideCycle == 0:
+		return standPose(top, legLong, legShort)
 	default:
-		return standPose(top, 4, 8)
+		return standPose(top, legShort, legLong)
 	}
 }
 
@@ -42,7 +42,7 @@ func standPose(top, leg1, leg2 float64) [8]rect {
 
 // duckPose is the low crouch under a high bird.
 func duckPose() [8]rect {
-	top := float64(groundY - 30)
+	top := float64(groundY - duckHeight)
 
 	return [8]rect{
 		{dinoX, top + 14, 10, 8},

@@ -4,15 +4,15 @@ package ui
 func (a *App) buildTabs() []Box {
 	y := a.scrollY + a.viewH - TabH
 	out := make([]Box, 0, len(a.sheets)+1)
-	x := a.scrollX + 6
+	x := a.scrollX + uiTabX
 	for _, sh := range a.sheets {
 		cls := "tab"
 		if sh.ID == a.active {
 			cls += " on"
 		}
 
-		out = append(out, Box{Action: act("sheet:" + sh.ID), Text: sh.Name, Class: cls, X: x, Y: y, W: 112, H: TabH - 8})
-		x += 116
+		out = append(out, Box{Action: act("sheet:" + sh.ID), Text: sh.Name, Class: cls, X: x, Y: y, W: uiTabW, H: TabH - uiChromePad})
+		x += uiTabStep
 	}
 
 	return out

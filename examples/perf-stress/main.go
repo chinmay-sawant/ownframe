@@ -17,7 +17,7 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8134", "listen address for -web")
 	flag.Parse()
 
-	app, err := newApp(280)
+	app, err := newApp(stressRows)
 	if err != nil {
 		log.Fatal(err)
 	}

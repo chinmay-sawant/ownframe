@@ -18,6 +18,10 @@ var ipcHTML string
 const (
 	DefaultWidth  = 640
 	DefaultHeight = 700
+	// maxEvents caps the message tape at the newest entries.
+	maxEvents = 6
+	// doubleFactor is the demo.double reply multiplier.
+	doubleFactor = 2
 )
 
 // View is the state the template prints.

@@ -14,10 +14,10 @@ type repeatState struct {
 	pending        atomic.Bool
 }
 
-var remoteRepeatPolicy = host.RepeatPolicy{Delay: 350 * time.Millisecond, Rates: []host.RepeatRate{
-	{After: 0, Interval: 120 * time.Millisecond},
-	{After: 2 * time.Second, Interval: 80 * time.Millisecond},
-	{After: 4 * time.Second, Interval: 50 * time.Millisecond},
+var remoteRepeatPolicy = host.RepeatPolicy{Delay: repeatInitDelay, Rates: []host.RepeatRate{
+	{After: 0, Interval: repeatFirstTick},
+	{After: repeatSecondAfter, Interval: repeatSecondTick},
+	{After: repeatThirdAfter, Interval: repeatThirdTick},
 }}
 
 func repeatable(id string) bool {

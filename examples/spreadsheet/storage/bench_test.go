@@ -15,7 +15,7 @@ func BenchmarkLoadRange(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if _, err := st.SeedWith(ctx, 1, workbook.SeedStress(10000)); err != nil {
 		b.Fatal(err)
@@ -51,7 +51,7 @@ func BenchmarkSaveCells(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	w, err := st.CreateWorkbook(ctx, "bench")
 	if err != nil {

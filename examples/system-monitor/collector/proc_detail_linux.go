@@ -19,7 +19,7 @@ func (s *procSource) Detail(ctx context.Context, id domain.ProcessIdentity) (dom
 	}
 
 	base := "/proc/" + strconv.Itoa(int(id.PID))
-	data, err := os.ReadFile(base + "/stat")
+	data, err := os.ReadFile(base + "/stat") //nolint:gosec // reason: fixed /proc/<pid>/stat path built from a numeric PID.
 	if err != nil {
 		return domain.ProcessDetail{}, domain.ErrGone
 	}

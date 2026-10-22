@@ -53,5 +53,5 @@ func decodePNG(t *testing.T, app *login.App) image.Image {
 func rgbaAt(img image.Image, x, y int) color.RGBA {
 	r, g, b, a := img.At(x, y).RGBA()
 
-	return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+	return color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)} //nolint:gosec // reason: image.RGBA returns 16-bit channels, so shifting right by 8 always fits a byte.
 }

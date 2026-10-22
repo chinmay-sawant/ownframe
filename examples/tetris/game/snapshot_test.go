@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"slices"
 	"testing"
 	"time"
 )
@@ -31,11 +31,11 @@ func TestSnapshotRoundTrip(t *testing.T) {
 		t.Fatal("the piece differs after the round trip")
 	}
 
-	if fmt.Sprint(back.Board.rows()) != fmt.Sprint(g.Board.rows()) {
+	if !slices.Equal(back.Board.rows(), g.Board.rows()) {
 		t.Fatal("the board differs after the round trip")
 	}
 
-	if fmt.Sprint(back.Next) != fmt.Sprint(g.Next) || fmt.Sprint(back.bag) != fmt.Sprint(g.bag) {
+	if !slices.Equal(back.Next, g.Next) || !slices.Equal(back.bag, g.bag) {
 		t.Fatal("the queues differ after the round trip")
 	}
 
@@ -68,8 +68,7 @@ func TestTwoResumesDivergeTogether(t *testing.T) {
 		b.Step(FixedStep)
 	}
 
-	if a.Piece != b.Piece || a.X != b.X || a.Y != b.Y ||
-		fmt.Sprint(a.Next) != fmt.Sprint(b.Next) {
+	if a.Piece != b.Piece || a.X != b.X || a.Y != b.Y || !slices.Equal(a.Next, b.Next) {
 		t.Fatal("two resumes of one snapshot diverged")
 	}
 }

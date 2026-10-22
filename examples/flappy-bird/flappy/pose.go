@@ -11,7 +11,7 @@ func (g *game) birdRects() [birdCount]rect {
 		age = g.run
 	}
 
-	wing := wingPoses[int(age*12)%3]
+	wing := wingPoses[int(age*wingRate)%3]
 
 	return [birdCount]rect{
 		{birdX - 17, g.birdY - 13.5, 34, 27},
@@ -26,9 +26,9 @@ func (g *game) birdRects() [birdCount]rect {
 // pipeRects returns the four fills of one pair: top body, top cap, bottom
 // body, bottom cap.
 func (g *game) pipeRects(p pipe) [pipePartCount]rect {
-	top := p.gapY - p.gap/2
-	bot := p.gapY + p.gap/2
-	side := p.x - (capW-pipeW)/2
+	top := p.gapY - p.gap/halfDiv
+	bot := p.gapY + p.gap/halfDiv
+	side := p.x - (capW-pipeW)/halfDiv
 
 	return [pipePartCount]rect{
 		{p.x, 0, pipeW, max(0, top-capH)},

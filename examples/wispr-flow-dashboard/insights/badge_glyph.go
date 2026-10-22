@@ -20,7 +20,7 @@ func drawGlyph(face font.Face, s string, ink color.RGBA) *image.RGBA {
 		Face: face,
 	}
 	width := d.MeasureString(s)
-	d.Dot = fixed.Point26_6{X: (fixed.I(box) - width) / 2, Y: fixed.I(box/2 + 11)}
+	d.Dot = fixed.Point26_6{X: (fixed.I(box) - width) / halfDivisor, Y: fixed.I(box/halfDivisor + glyphBoxHalf)}
 	d.DrawString(s)
 
 	return img
@@ -38,10 +38,10 @@ func rotateInto(dst, src *image.RGBA, cx, cy, angle float64) {
 				continue
 			}
 
-			sx := float64(x) - float64(w)/2
-			sy := float64(y) - float64(h)/2
-			dx := int(cx + sx*cos - sy*sin + 0.5)
-			dy := int(cy + sx*sin + sy*cos + 0.5)
+			sx := float64(x) - float64(w)/halfDivisor
+			sy := float64(y) - float64(h)/halfDivisor
+			dx := int(cx + sx*cos - sy*sin + roundHalf)
+			dy := int(cy + sx*sin + sy*cos + roundHalf)
 
 			if image.Pt(dx, dy).In(dst.Bounds()) {
 				dst.SetRGBA(dx, dy, c)

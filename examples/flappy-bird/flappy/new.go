@@ -29,17 +29,17 @@ func New() (*App, error) {
 	app := &App{
 		page:  page,
 		game:  newGame(),
-		rng:   rand.New(rand.NewPCG(seed, seed^0x9e3779b97f4a7c15)),
+		rng:   rand.New(rand.NewPCG(seed, seed^pcgStream)), //nolint:gosec // reason: deterministic game visuals, not security.
 		now:   time.Now,
 		bound: ^uint64(0),
 	}
 
 	for i := range app.clouds {
-		app.clouds[i] = 40 + float64(i)*170
+		app.clouds[i] = cloudBase + float64(i)*cloudSpacing
 	}
 
 	for i := range app.stripes {
-		app.stripes[i] = float64(i) * 80
+		app.stripes[i] = float64(i) * stripeSpacing
 	}
 
 	page.Handle(ownframe.Handlers{KeyDown: app.onKeyDown, Click: app.onClick})

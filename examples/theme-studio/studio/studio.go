@@ -26,6 +26,14 @@ type App struct {
 	path string
 }
 
+// studioWidth and friends are the desktop frame the editor opens in.
+const (
+	studioWidth  = 1100
+	studioHeight = 700
+	studioMinW   = 820
+	studioMinH   = 560
+)
+
 // New opens the theme file, seeding it with defaultCSS when it is missing or
 // blank, and builds the page with that file as its watched theme.
 func New() (*App, error) {
@@ -50,10 +58,10 @@ func New() (*App, error) {
 		Title:     "Theme studio",
 		HTML:      studioHTML,
 		ThemeFile: path,
-		Width:     1100,
-		Height:    700,
-		MinWidth:  820,
-		MinHeight: 560,
+		Width:     studioWidth,
+		Height:    studioHeight,
+		MinWidth:  studioMinW,
+		MinHeight: studioMinH,
 	})
 	if err != nil {
 		return nil, err

@@ -23,7 +23,7 @@ func TestIngestDummyEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	setup, err := st.EnsureDummy(bg(), DummyOptions{Count: 300, Rate: 500})
 	if err != nil {

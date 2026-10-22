@@ -18,7 +18,7 @@ func TestReactiveApplyStateUpdate(t *testing.T) {
 	redraw(t, app)
 
 	app.Page().ClearChangedProperties()
-	if err := app.Load(context.Background(), "canned"); err != nil {
+	if err := app.Load(testCtx(), "canned"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
 	if len(app.Page().ChangedProperties()) == 0 {

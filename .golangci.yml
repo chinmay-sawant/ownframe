@@ -35,10 +35,10 @@ linters:
       require-specific: true
       allow-unused: false
 
-# Only genuine noise is excluded, narrowly. Anything that could hide a
-# real bug stays enabled and is fixed in the Go code instead.
-issues:
+  # Only genuine noise is excluded, narrowly. Anything that could hide a
+  # real bug stays enabled and is fixed in the Go code instead.
   exclusions:
+    generated: lax
     rules:
       # errcheck flags `recover()` because it returns a value, but a bare
       # `recover()` in a deferred guard (internal/ipc/send.go) intentionally

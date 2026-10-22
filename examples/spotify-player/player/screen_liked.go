@@ -17,7 +17,7 @@ func defaultLiked() LikedData {
 	tracks := sampleTracks()
 	tracks = tracks[:8]
 
-	return LikedData{Count: 214, Tracks: tracks}
+	return LikedData{Count: likedCount, Tracks: tracks}
 }
 
 // clickLiked applies one action on the Liked Songs screen: the header play

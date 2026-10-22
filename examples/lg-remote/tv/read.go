@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
 )
@@ -90,7 +89,7 @@ func (c *Client) Request(uri string, payload map[string]any) (map[string]any, er
 		"uri":     "ssap://" + uri,
 		"payload": payload,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), roundTimeout)
 	defer cancel()
 
 	m, err := c.round(ctx, msg["id"].(string), msg)

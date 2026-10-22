@@ -11,7 +11,9 @@ func TestPumpRetriesDroppedRequests(t *testing.T) {
 	ctx := context.Background()
 
 	back.setBusy(true)
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	if !app.needActive {
 		t.Fatal("needActive cleared after a failed Active request")
@@ -23,7 +25,9 @@ func TestPumpRetriesDroppedRequests(t *testing.T) {
 
 	back.setBusy(false)
 	app.lastHistory = time.Time{}
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	if app.needActive {
 		t.Fatal("needActive not cleared after the retry")
@@ -43,7 +47,9 @@ func TestPaintRebindsAfterRedraw(t *testing.T) {
 	ctx := context.Background()
 
 	back.send(Update{Kind: UpdateActive, Active: []Row{running("j1", 10, 100)}})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	if app.bindings.fill[0] == nil {
 		t.Fatal("fill not bound")
@@ -57,7 +63,9 @@ func TestPaintRebindsAfterRedraw(t *testing.T) {
 
 	row := running("j1", 50, 100)
 	back.send(Update{Kind: UpdateProgress, Row: &row})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	if app.bindings.fill[0] == before {
 		t.Fatal("the operation was not reacquired after the redraw")

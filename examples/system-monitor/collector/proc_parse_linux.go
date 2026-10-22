@@ -10,6 +10,20 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/domain"
 )
 
+// kibibyte scales the KiB counters /proc reports up to bytes.
+const kibibyte = 1024
+
+// Field counts guard the /proc line shapes before indexing.
+const (
+	minCPUFields    = 5
+	minDiskFields   = 10
+	minMountFields  = 3
+	minStatFields   = 22
+	minPasswdFields = 3
+	// sectorBytes is the 512-byte sector unit diskstats counters use.
+	sectorBytes = 512
+)
+
 // parseLoadAvg reads the three load averages.
 func parseLoadAvg(data []byte) [3]domain.Value {
 	var out [3]domain.Value

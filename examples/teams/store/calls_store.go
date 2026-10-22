@@ -9,7 +9,7 @@ import (
 // saveCalls replaces the calls, voicemail, and tab tables with d.
 func saveCalls(tx *sql.Tx, d calls.Data) error {
 	for _, t := range []string{"calls", "voicemails", "calls_state"} {
-		if _, err := tx.Exec("DELETE FROM " + t); err != nil {
+		if _, err := tx.Exec("DELETE FROM " + t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
 			return err
 		}
 	}

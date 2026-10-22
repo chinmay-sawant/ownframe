@@ -47,7 +47,7 @@ func Dir() string {
 // Enqueue adds one command unless the 32-entry queue is full.
 func Enqueue(cmd string) bool {
 	mu.Lock()
-	if len(q) >= 32 {
+	if len(q) >= maxQueue {
 		mu.Unlock()
 		return false
 	}

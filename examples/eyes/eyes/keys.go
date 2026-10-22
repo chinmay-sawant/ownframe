@@ -17,13 +17,13 @@ func (a *App) onKeyDown(_ context.Context, k string) error {
 		a.st.blinkOn = true
 		a.st.blinkP = 0
 	case "arrowleft":
-		a.st.tLookX = -44
+		a.st.tLookX = -keyLookX
 	case "arrowright":
-		a.st.tLookX = 44
+		a.st.tLookX = keyLookX
 	case "arrowup":
-		a.st.tLookY = -26
+		a.st.tLookY = -keyLookY
 	case "arrowdown":
-		a.st.tLookY = 26
+		a.st.tLookY = keyLookY
 	}
 	return nil
 }

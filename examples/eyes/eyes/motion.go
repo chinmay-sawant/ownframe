@@ -30,12 +30,12 @@ func (a *App) applyMotion(now time.Time) {
 	a.motionMu.Unlock()
 	if m.tilt && a.st.automatic {
 		a.st.tiltX, a.st.tiltY = m.x, m.y
-		a.st.tiltUntil = now.Add(1500 * time.Millisecond)
+		a.st.tiltUntil = now.Add(tiltHold)
 	}
 	if m.shake && a.st.automatic {
 		s := &a.st
 		a.selectMood(spiralMood, now)
-		s.moodUntil = now.Add(650 * time.Millisecond)
+		s.moodUntil = now.Add(shakeMoodHold)
 		s.blinkOn, s.blinkP = false, 0
 		s.tLookX, s.tLookY = 0, 0
 	}

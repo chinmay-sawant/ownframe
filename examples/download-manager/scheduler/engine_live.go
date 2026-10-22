@@ -54,11 +54,11 @@ func New(opts Options) (*Engine, error) {
 	}
 
 	if opts.ProgressEvery <= 0 {
-		opts.ProgressEvery = 500 * time.Millisecond
+		opts.ProgressEvery = defaultProgressEvery
 	}
 
 	if opts.ShutdownBudget <= 0 {
-		opts.ShutdownBudget = 5 * time.Second
+		opts.ShutdownBudget = defaultShutdownBudget
 	}
 
 	return &Engine{

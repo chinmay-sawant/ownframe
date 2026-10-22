@@ -39,6 +39,12 @@ func peakText(p *panel) string {
 	return "peak " + formatRate(v, true)
 }
 
+// Row and detail name preview lengths, in runes.
+const (
+	rowNameLen    = 44
+	detailNameLen = 60
+)
+
 // buildRows renders the visible page of the frozen snapshot.
 func buildRows(rows []Process, sel string) []Row {
 	out := make([]Row, 0, len(rows))
@@ -47,7 +53,7 @@ func buildRows(rows []Process, sel string) []Row {
 		out = append(out, Row{
 			ID:    p.ID,
 			PID:   formatCount(p.PID),
-			Name:  truncate(p.Name, 44),
+			Name:  truncate(p.Name, rowNameLen),
 			State: nonEmpty(p.State),
 			CPU:   cpuText(p.CPU, p.CPUKnown),
 			Mem:   formatBytes(float64(p.Mem), p.MemKnown),
@@ -66,7 +72,7 @@ func buildSel(s *state) SelView {
 	}
 
 	v.ID = s.sel.id
-	v.Name = truncate(nonEmpty(s.sel.proc.Name), 60)
+	v.Name = truncate(nonEmpty(s.sel.proc.Name), detailNameLen)
 	v.PID = formatCount(s.sel.proc.PID)
 	v.Status = detailStatus(s.sel)
 	v.Loading = s.sel.trk.Loading

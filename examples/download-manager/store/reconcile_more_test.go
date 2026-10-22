@@ -17,7 +17,7 @@ func TestReconcileTruncatesLargerPartial(t *testing.T) {
 
 	_, dest := reconcileJob(t, s, "larger", domain.StateRunning, 4)
 
-	if err := os.WriteFile(transfer.PartialPath(dest), []byte("toolong"), 0o644); err != nil {
+	if err := os.WriteFile(transfer.PartialPath(dest), []byte("toolong"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

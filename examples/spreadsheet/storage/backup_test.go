@@ -26,7 +26,7 @@ func TestBackupAndRestore(t *testing.T) {
 		t.Fatal("backup over an existing destination succeeded")
 	}
 
-	st.Close()
+	_ = st.Close()
 
 	restoreDir := t.TempDir()
 
@@ -39,7 +39,7 @@ func TestBackupAndRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	got, err := st.LoadWorkbook(ctx, w.ID())
 	if err != nil {

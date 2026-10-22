@@ -48,8 +48,8 @@ func (s *Store) Page(ctx context.Context, q Query, o PageOptions) (Page, error) 
 		o.Limit = entry.DefaultPolicy().PageLimit
 	}
 
-	if o.Limit > 500 {
-		o.Limit = 500
+	if o.Limit > pageCap {
+		o.Limit = pageCap
 	}
 
 	return runJob(s, ctx, func(ctx context.Context, db *sql.DB) (Page, error) {

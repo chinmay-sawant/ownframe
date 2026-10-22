@@ -7,6 +7,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/domain"
 )
 
+// percentScale turns a 0..100 percent reading back into a 0..1 fraction.
+const percentScale = 100
+
 // toSummary converts one merged sample into the four overview readings.
 func toSummary(s domain.Sample) Summary {
 	return Summary{
@@ -24,7 +27,7 @@ func toSummary(s domain.Sample) Summary {
 // cpuReading shows percent of all cores plus the load averages.
 func cpuReading(s domain.Sample) Reading {
 	pct, ok := s.CPUPercent.Get()
-	frac := pct / 100
+	frac := pct / percentScale
 	r := Reading{ID: "cpu", Value: frac, OK: ok, Scale: 1, Text: formatPercent(frac, ok)}
 
 	load := make([]string, 0, len(s.Load))
@@ -46,7 +49,7 @@ func cpuReading(s domain.Sample) Reading {
 // memReading shows used percent with used and total bytes.
 func memReading(s domain.Sample) Reading {
 	pct, ok := s.Mem.UsedPercent.Get()
-	frac := pct / 100
+	frac := pct / percentScale
 	r := Reading{ID: "mem", Value: frac, OK: ok, Scale: 1, Text: formatPercent(frac, ok)}
 
 	used, uok := s.Mem.Used.Get()

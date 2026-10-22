@@ -10,7 +10,7 @@ import (
 // retryBusy runs fn and retries only lock failures, within the context
 // deadline. Every caller's operation is idempotent.
 func retryBusy(ctx context.Context, fn func() error) error {
-	delay := 5 * time.Millisecond
+	delay := retryDelay
 
 	for {
 		err := fn()
@@ -49,5 +49,5 @@ func clampLimit(limit int) int {
 		return DefaultLimit
 	}
 
-	return min(limit, 1000)
+	return min(limit, maxLimit)
 }

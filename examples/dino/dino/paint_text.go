@@ -18,7 +18,7 @@ func (a *App) paintText() {
 	setText(a.parts.score, fmt.Sprintf("HI %05d %05d", a.game.high, a.game.score))
 
 	if a.fps.fps > 0 {
-		setText(a.parts.fps, fmt.Sprintf("%03d FPS", min(a.fps.fps, 999)))
+		setText(a.parts.fps, fmt.Sprintf("%03d FPS", min(a.fps.fps, maxFPS)))
 	}
 
 	start, keys, again := startText, keysText, againText

@@ -16,6 +16,7 @@ func entryStats(ctx context.Context, db *sql.DB) (int64, int64, error) {
 }
 
 func deleteWhere(ctx context.Context, db *sql.DB, where string, arg any) (int64, error) {
+	//nolint:gosec // reason: where clause is built from internal placeholders in whereSQL, values are bound args
 	res, err := db.ExecContext(ctx,
 		`DELETE FROM entries WHERE id IN
 		 (SELECT id FROM entries WHERE `+where+` ORDER BY id LIMIT ?)`,

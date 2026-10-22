@@ -20,7 +20,7 @@ func cellColumns(c workbook.Cell) (kind int, number float64, text, source string
 
 // columnCell maps stored columns back to a cell.
 func columnCell(kind int, number float64, text, source string) (workbook.Cell, bool) {
-	switch workbook.Kind(kind) {
+	switch workbook.Kind(kind) { //nolint:gosec // reason: kind is a small workbook enum 0-3, always fits in uint8
 	case workbook.Number:
 		return workbook.Cell{Kind: workbook.Number, Number: number}, true
 	case workbook.Text:

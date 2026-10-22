@@ -39,7 +39,7 @@ func (s *Store) ListWorkbooks(ctx context.Context, cursor workbook.ID, size int)
 			return err
 		}
 
-		defer rows.Close()
+		defer func() { _ = rows.Close() }()
 
 		for rows.Next() {
 			var info WorkbookInfo

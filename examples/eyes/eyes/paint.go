@@ -18,17 +18,17 @@ func (a *App) paint() {
 	// Rebase when layout moved (resize) but generation stayed.
 	a.rebase(d)
 	m := moodName(a.st.mood)
-	eyeAlpha := max(0.0001, 1-a.st.spiralMix)
+	eyeAlpha := max(eyeAlphaMin, 1-a.st.spiralMix)
 	left, right := a.st.styleL, a.st.styleR
 	now := a.now()
 	if m == "angry" {
-		lean := 2 * math.Sin(now.Sub(a.st.birth).Seconds()*2.4)
+		lean := angrySwayAmp * math.Sin(now.Sub(a.st.birth).Seconds()*angrySwayHz)
 		left.slant += lean
 		right.slant -= lean
 	}
 	pose := poseFor(a.st.mood)
 	if pose.wink != winkNone {
-		open := 1 - .98*winkPulse(now.Sub(a.st.poseAt))
+		open := 1 - lidClose*winkPulse(now.Sub(a.st.poseAt))
 		if pose.wink == winkScreenLeft {
 			left.open = open
 		} else {

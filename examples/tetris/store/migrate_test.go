@@ -13,8 +13,7 @@ func TestFreshDatabaseMigratesToTheCurrentVersion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	got := s.scalar(t, `SELECT value FROM meta WHERE key = 'schema_version'`)
 	if got != strconv.Itoa(SchemaVersion) {
 		t.Fatalf("schema version %q, want %d", got, SchemaVersion)
@@ -61,8 +60,7 @@ func TestNewerSchemaIsRejectedUntouched(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer raw.Close()
-
+	defer func() { _ = raw.Close() }()
 	var v string
 	if err := raw.QueryRow(`SELECT value FROM meta WHERE key = 'schema_version'`).Scan(&v); err != nil {
 		t.Fatal(err)

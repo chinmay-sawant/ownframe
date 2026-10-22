@@ -64,14 +64,14 @@ func TestSeedPreservesUserChanges(t *testing.T) {
 
 	edit(t, st, w, s, workbook.Pos{Row: 0, Col: 0}, "user change")
 
-	st.Close()
+	_ = st.Close()
 
 	st, err = Open(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	wrote, err := st.SeedWith(ctx, 1, workbook.SeedStress(50))
 	if err != nil || wrote {

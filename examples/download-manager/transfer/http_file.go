@@ -9,7 +9,7 @@ import (
 
 // openPartial opens or creates the partial file at the plan's offset.
 func openPartial(path string, p plan) (*os.File, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), transferDirPerm); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrPartialUnwritable, err)
 	}
 
@@ -18,13 +18,13 @@ func openPartial(path string, p plan) (*os.File, error) {
 		flags |= os.O_TRUNC
 	}
 
-	file, err := os.OpenFile(path, flags, 0o644)
+	file, err := os.OpenFile(path, flags, transferFilePerm) //nolint:gosec // reason: partial path is the download temp file, local file.
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrPartialUnwritable, err)
 	}
 
 	if _, err := file.Seek(p.start, io.SeekStart); err != nil {
-		file.Close()
+		_ = file.Close()
 
 		return nil, err
 	}

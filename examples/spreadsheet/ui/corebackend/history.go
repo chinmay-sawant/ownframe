@@ -23,7 +23,7 @@ func (b *Backend) history(undo bool) (ui.UndoResult, error) {
 	}
 
 	if len(*from) == 0 {
-		return ui.UndoResult{Rev: uint64(b.wb.Rev())}, nil
+		return ui.UndoResult{Rev: uint64(b.wb.Rev())}, nil //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 	}
 
 	s := (*from)[len(*from)-1]
@@ -37,14 +37,14 @@ func (b *Backend) history(undo bool) (ui.UndoResult, error) {
 	if _, err := b.wb.Apply(cmd); err != nil {
 		*from = append(*from, s)
 
-		return ui.UndoResult{Rev: uint64(b.wb.Rev())}, err
+		return ui.UndoResult{Rev: uint64(b.wb.Rev())}, err //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 	}
 
 	if err := b.save(cmd); err != nil {
 		_, _ = b.wb.Apply(back)
 		*from = append(*from, s)
 
-		return ui.UndoResult{Rev: uint64(b.wb.Rev())}, err
+		return ui.UndoResult{Rev: uint64(b.wb.Rev())}, err //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 	}
 
 	*to = append(*to, s)
@@ -54,5 +54,5 @@ func (b *Backend) history(undo bool) (ui.UndoResult, error) {
 		label = "redo"
 	}
 
-	return ui.UndoResult{Rev: uint64(b.wb.Rev()), OK: true, Label: label}, nil
+	return ui.UndoResult{Rev: uint64(b.wb.Rev()), OK: true, Label: label}, nil //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 }

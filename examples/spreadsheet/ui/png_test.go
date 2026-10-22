@@ -28,7 +28,7 @@ func pixel(t *testing.T, app *App, x, y int) [3]uint8 {
 
 	r, g, bb, _ := img.At(b.Min.X+x, b.Min.Y+y).RGBA()
 
-	return [3]uint8{uint8(r >> 8), uint8(g >> 8), uint8(bb >> 8)}
+	return [3]uint8{uint8(r >> 8), uint8(g >> 8), uint8(bb >> 8)} //nolint:gosec // reason: RGBA>>8 yields 0-255 which always fits in uint8
 }
 
 // near reports whether two colors are within a tolerance per channel.

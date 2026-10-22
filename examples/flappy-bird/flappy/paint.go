@@ -40,7 +40,7 @@ func setFill(d *ownframe.Display, op *ownframe.DisplayOp, r rect, visible bool) 
 	// The replay reads opacity, not Alpha, so a hidden fill collapses to
 	// nothing and moves off the canvas: a zero-size rounded rect still
 	// paints a corner sparkle at its place.
-	op.X, op.Y = -1000, -1000
+	op.X, op.Y = offscreen, offscreen
 	op.W, op.H = 0, 0
 	op.Alpha = 0
 }

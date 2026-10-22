@@ -23,7 +23,7 @@ func TestRangeQueryPlan(t *testing.T) {
 			return err
 		}
 
-		defer rows.Close()
+		defer func() { _ = rows.Close() }()
 
 		for rows.Next() {
 			var (

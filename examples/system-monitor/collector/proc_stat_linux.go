@@ -39,16 +39,16 @@ func parseProcStat(data []byte) (procStat, error) {
 	st := procStat{comm: s[open+1 : closing]}
 
 	fields := strings.Fields(s[closing+1:])
-	if len(fields) < 22 {
+	if len(fields) < minStatFields {
 		return procStat{}, errBadStat
 	}
 
 	st.state = fields[0]
-	st.ppid = int32(parseUint(fields[1]))
+	st.ppid = int32(parseUint(fields[1])) //nolint:gosec // reason: Linux PIDs stay below pid_max (2^30 at most), which fits int32.
 	st.utime = parseUint(fields[11])
 	st.stime = parseUint(fields[12])
-	st.nice = int64(parseUint(fields[16]))
-	st.threads = int(parseUint(fields[17]))
+	st.nice = int64(parseUint(fields[16]))  //nolint:gosec // reason: nice values range from -20 to 19, which fit int64.
+	st.threads = int(parseUint(fields[17])) //nolint:gosec // reason: per-process thread counts fit int on every supported platform.
 	st.startTicks = parseUint(fields[19])
 	st.vsize = parseUint(fields[20])
 	st.rss = parseUint(fields[21])

@@ -43,8 +43,8 @@ func (a *App) say(bad bool, line string) {
 	a.view.Bad = bad
 
 	a.view.Events = append([]string{line}, a.view.Events...)
-	if len(a.view.Events) > 6 {
-		a.view.Events = a.view.Events[:6]
+	if len(a.view.Events) > maxEvents {
+		a.view.Events = a.view.Events[:maxEvents]
 	}
 }
 

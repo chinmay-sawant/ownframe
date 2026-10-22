@@ -11,51 +11,51 @@ import (
 func (a *App) step(dt float64, now time.Time) {
 	s := &a.st
 	if dt <= 0 {
-		dt = 1.0 / 60
+		dt = 1.0 / baseFPS
 	}
 	if s.automatic && !s.drag && !now.Before(s.moodUntil) {
 		a.selectMood((s.mood+1)%len(poses), now)
 	}
 	a.stepSpiral(dt, now)
 	if !s.drag && now.Before(s.tiltUntil) {
-		s.tLookX = clamp(s.tiltX*96, -48, 48)
-		s.tLookY = clamp(-s.tiltY*96, -30, 30)
-		s.sacT = now.Add(1500 * time.Millisecond)
+		s.tLookX = clamp(s.tiltX*tiltGain, -lookXRange, lookXRange)
+		s.tLookY = clamp(-s.tiltY*tiltGain, -lookYRange, lookYRange)
+		s.sacT = now.Add(tiltHold)
 	} else if !s.drag && s.mood != spiralMood && now.After(s.sacT) {
-		s.tLookX = (a.rng.Float64()*2 - 1) * 44
-		s.tLookY = (a.rng.Float64()*2 - 1) * 26
+		s.tLookX = (a.rng.Float64()*unitSpan - 1) * saccadeX
+		s.tLookY = (a.rng.Float64()*unitSpan - 1) * saccadeY
 		switch moodName(s.mood) {
 		case "squint":
-			s.tLookY = 6 + a.rng.Float64()*6
+			s.tLookY = squintShift + a.rng.Float64()*squintShift
 		case "angry":
-			s.tLookY = -6 - a.rng.Float64()*6
+			s.tLookY = -squintShift - a.rng.Float64()*squintShift
 		}
-		s.sacT = now.Add(time.Duration(1400+
-			a.rng.IntN(1600)) * time.Millisecond)
+		s.sacT = now.Add(time.Duration(saccadeDelayMin+
+			a.rng.IntN(saccadeDelayVar)) * time.Millisecond)
 	}
 	if !s.blinkOn && now.After(s.blinkT) {
 		s.blinkOn = true
 		s.blinkP = 0
 	}
 	if s.blinkOn {
-		s.blinkP += dt / 0.22
+		s.blinkP += dt / blinkPeriod
 		if s.blinkP >= 1 {
 			s.blinkOn = false
 			s.blinkP = 0
-			s.blinkT = now.Add(time.Duration(2200+
-				a.rng.IntN(2600)) * time.Millisecond)
+			s.blinkT = now.Add(time.Duration(blinkDelayMin+
+				a.rng.IntN(blinkDelayVar)) * time.Millisecond)
 		}
 	}
 	a.stepPose(dt)
 	bm := 1.0
 	if s.blinkOn {
-		bm = 1 - 0.98*math.Sin(math.Pi*min(max(s.blinkP, 0), 1))
+		bm = 1 - lidClose*math.Sin(math.Pi*min(max(s.blinkP, 0), 1))
 	}
 	s.bm = bm
-	br := 1 + 0.014*math.Sin(2*math.Pi*0.35*now.Sub(s.birth).Seconds())
+	br := 1 + breathAmp*math.Sin(twoPi*breathHz*now.Sub(s.birth).Seconds())
 	s.dispL = s.styleL.open * bm * br
 	s.dispR = s.styleR.open * bm * br
-	kL := 1 - math.Exp(-dt*18)
+	kL := 1 - math.Exp(-dt*lookRate)
 	s.lookX += (s.tLookX - s.lookX) * kL
 	s.lookY += (s.tLookY - s.lookY) * kL
 }

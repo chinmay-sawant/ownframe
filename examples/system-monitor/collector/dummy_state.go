@@ -12,16 +12,16 @@ func (d *Dummy) init() {
 	d.cores = 8
 	d.cpu = make([]domain.CPUTimes, d.cores)
 	for i := range d.cpu {
-		d.cpu[i] = domain.CPUTimes{Busy: 100 * uint64(i+3), Total: 100_000}
+		d.cpu[i] = domain.CPUTimes{Busy: coreBusyStep * uint64(i+coreBusyOffset), Total: coreTotalBase}
 	}
 
 	d.load = [3]float64{1.1, 1.4, 1.6}
-	d.memTotal = 32 << 30
-	d.memUsed = 12 << 30
-	d.swapUsed = 512 << 20
+	d.memTotal = memTotalInit
+	d.memUsed = memUsedInit
+	d.swapUsed = swapInit
 	d.disks = []dmDisk{
-		{name: "sda", mount: "/", total: 512 << 30, free: 220 << 30},
-		{name: "nvme0n1", mount: "/home", total: 1 << 40, free: 700 << 30},
+		{name: "sda", mount: "/", total: diskSdaTotal, free: diskSdaFree},
+		{name: "nvme0n1", mount: "/home", total: diskNvmeTotal, free: diskNvmeFree},
 	}
 	d.nets = []dmNet{{name: "eth0", up: true}, {name: "wlan0", up: true}}
 
@@ -43,11 +43,11 @@ func (d *Dummy) advance(stamp domain.Stamp) domain.Sample {
 	d.lastMono = stamp.Mono
 
 	if d.boot.IsZero() {
-		d.boot = stamp.At.Add(-72 * time.Hour)
+		d.boot = stamp.At.Add(-bootBackHours * time.Hour)
 	}
 
 	d.tick++
-	d.spike = d.tick%37 < 4
+	d.spike = d.tick%spikeEvery < spikeWidth
 
 	d.advanceCPU(elapsed)
 	d.advanceMem()
@@ -56,20 +56,6 @@ func (d *Dummy) advance(stamp domain.Stamp) domain.Sample {
 	d.advanceProcs()
 
 	return d.machineSample(stamp)
-}
-
-// newStart returns the next start value used for process identity.
-func (d *Dummy) newStart() uint64 {
-	d.nextStart++
-
-	return d.nextStart
-}
-
-// startedAt maps a start value to a start time up to three days back.
-func (d *Dummy) startedAt(id domain.ProcessIdentity) time.Time {
-	const age = uint64((72 * time.Hour) / time.Second)
-
-	return d.boot.Add(-time.Duration(id.Start%age) * time.Second)
 }
 
 // clampU64 clamps v into [lo, hi].
@@ -81,5 +67,5 @@ func clampU64(v, lo, hi int64) uint64 {
 		v = hi
 	}
 
-	return uint64(v)
+	return uint64(v) //nolint:gosec // reason: every caller passes a non-negative lo, so the clamped result stays non-negative.
 }

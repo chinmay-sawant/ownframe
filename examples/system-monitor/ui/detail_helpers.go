@@ -1,12 +1,15 @@
 package ui
 
+// errPreviewLen caps the error text in the status line, in runes.
+const errPreviewLen = 80
+
 // detailStatus words the selection's lifecycle and load state.
 func detailStatus(sel selection) string {
 	switch {
 	case sel.id == "":
 		return "no selection"
 	case sel.trk.Err != "":
-		return "error: " + truncate(sel.trk.Err, 80)
+		return "error: " + truncate(sel.trk.Err, errPreviewLen)
 	case sel.trk.Loading && !sel.trk.OK:
 		return "loading\u2026"
 	case !sel.found:
@@ -42,5 +45,5 @@ func countU64(n uint64, ok bool) string {
 		return unavailable
 	}
 
-	return formatCount(int(n))
+	return formatCount(int(n)) //nolint:gosec // reason: rendered counters stay far below MaxInt64; int is 64-bit on every supported platform.
 }

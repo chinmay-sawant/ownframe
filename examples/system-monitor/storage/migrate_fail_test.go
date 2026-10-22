@@ -20,7 +20,7 @@ func TestInterruptedMigration(t *testing.T) {
 	if _, err := raw.Exec(`CREATE TABLE metric_history (other INTEGER)`); err != nil {
 		t.Fatal(err)
 	}
-	raw.Close()
+	_ = raw.Close()
 
 	if _, err := Open(dir); err == nil {
 		t.Fatal("migration succeeded against a conflicting table")
@@ -30,7 +30,7 @@ func TestInterruptedMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer raw.Close()
+	defer func() { _ = raw.Close() }()
 
 	var version int
 	if err := raw.QueryRow("PRAGMA user_version").Scan(&version); err != nil {

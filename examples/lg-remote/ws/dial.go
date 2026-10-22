@@ -16,8 +16,8 @@ type Conn struct {
 	wmu chan struct{}
 }
 
-// Dial upgrades raw to a WebSocket. wss skips certificate checks because
-// the TV certificate is self-signed.
+// Dial upgrades raw to a WebSocket. wss verifies the TV certificate
+// with the system roots and TLS 1.2 or newer.
 func Dial(ctx context.Context, raw string) (*Conn, error) {
 	u, err := url.Parse(raw)
 	if err != nil {
@@ -51,13 +51,13 @@ func Dial(ctx context.Context, raw string) (*Conn, error) {
 		"Sec-WebSocket-Key: " + key + "\r\n" +
 		"Sec-WebSocket-Version: 13\r\n\r\n"
 	if _, err = nc.Write([]byte(req)); err != nil {
-		nc.Close()
+		_ = nc.Close()
 		return nil, err
 	}
 
 	br := bufio.NewReader(nc)
 	if err = accept(br, key); err != nil {
-		nc.Close()
+		_ = nc.Close()
 		return nil, err
 	}
 

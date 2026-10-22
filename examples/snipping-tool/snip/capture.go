@@ -6,7 +6,6 @@ package snip
 import (
 	"context"
 	"runtime"
-	"time"
 )
 
 // Capturer takes a fullscreen shot and returns PNG bytes.
@@ -24,7 +23,7 @@ func CaptureWith(ctx context.Context, c Capturer) ([]byte, error) {
 // Linux tries import, gnome-screenshot, scrot, then grim.
 // Windows uses PowerShell System.Drawing. Darwin uses screencapture.
 func Fullscreen(ctx context.Context) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, captureTimeout)
 	defer cancel()
 	switch runtime.GOOS {
 	case "windows":

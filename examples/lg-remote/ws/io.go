@@ -7,25 +7,27 @@ import (
 )
 
 func writeFrame(w io.Writer, op byte, p []byte, mask bool) error {
-	hdr := []byte{0x80 | op}
+	hdr := []byte{finBit | op}
 	n := len(p)
 
 	switch {
-	case n < 126:
+	case n < extLen16:
 		hdr = append(hdr, byte(n))
-	case n < 65536:
-		hdr = append(hdr, 126, byte(n>>8), byte(n))
+	case n < maxShortLen:
+		hdr = append(hdr, extLen16, byte(n>>byteShift), byte(n)) //nolint:gosec // reason: n is range-checked below 65536, so the two length bytes hold the value.
 	default:
 		var b [8]byte
 		binary.BigEndian.PutUint64(b[:], uint64(n))
-		hdr = append(hdr, 127)
+		hdr = append(hdr, extLen64)
 		hdr = append(hdr, b[:]...)
 	}
 
 	var m [4]byte
 	if mask {
-		hdr[1] |= 0x80
-		_, _ = rand.Read(m[:])
+		hdr[1] |= maskBit
+		if _, err := rand.Read(m[:]); err != nil {
+			return err
+		}
 		hdr = append(hdr, m[:]...)
 	}
 
@@ -54,13 +56,13 @@ func readFrame(r io.Reader) (bool, byte, []byte, error) {
 		return false, 0, nil, err
 	}
 
-	n, err := frameLen(r, int(h[1]&0x7f))
+	n, err := frameLen(r, int(h[1]&payloadMask))
 	if err != nil {
 		return false, 0, nil, err
 	}
 
 	var mask [4]byte
-	masked := h[1]&0x80 != 0
+	masked := h[1]&maskBit != 0
 	if masked {
 		if _, err = io.ReadFull(r, mask[:]); err != nil {
 			return false, 0, nil, err
@@ -78,26 +80,5 @@ func readFrame(r io.Reader) (bool, byte, []byte, error) {
 		}
 	}
 
-	return h[0]&0x80 != 0, h[0] & 0x0f, p, nil
-}
-
-func frameLen(r io.Reader, n int) (int, error) {
-	switch n {
-	case 126:
-		var b [2]byte
-		if _, err := io.ReadFull(r, b[:]); err != nil {
-			return 0, err
-		}
-
-		return int(binary.BigEndian.Uint16(b[:])), nil
-	case 127:
-		var b [8]byte
-		if _, err := io.ReadFull(r, b[:]); err != nil {
-			return 0, err
-		}
-
-		return int(binary.BigEndian.Uint64(b[:])), nil
-	default:
-		return n, nil
-	}
+	return h[0]&finBit != 0, h[0] & opcodeMask, p, nil
 }

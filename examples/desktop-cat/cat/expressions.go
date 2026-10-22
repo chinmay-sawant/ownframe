@@ -16,7 +16,7 @@ func Expressions() map[string]int {
 	for i, file := range files {
 		name := strings.TrimSuffix(filepath.Base(file)[3:], ".png")
 		result[name] = i + 1
-		emotion := strings.SplitN(name, "-", 2)[0]
+		emotion := strings.SplitN(name, "-", splitParts)[0]
 		if _, found := result[emotion]; !found {
 			result[emotion] = i + 1
 		}

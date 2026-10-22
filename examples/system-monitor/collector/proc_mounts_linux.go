@@ -21,7 +21,7 @@ func parseMounts(data []byte) []mount {
 
 	for _, line := range strings.Split(string(data), "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 3 {
+		if len(fields) < minMountFields {
 			continue
 		}
 		if !spaceFS(fields[2]) {

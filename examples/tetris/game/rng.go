@@ -8,14 +8,20 @@ type rng struct{ state uint64 }
 func (r *rng) next() uint64 {
 	r.state += 0x9e3779b97f4a7c15
 	z := r.state
-	z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9
-	z = (z ^ (z >> 27)) * 0x94d049bb133111eb
+	z = (z ^ (z >> splitShiftA)) * splitMixA
+	z = (z ^ (z >> splitShiftB)) * splitMixB
 
-	return z ^ (z >> 31)
+	return z ^ (z >> splitShiftC)
 }
 
 // intn returns a value in [0, n).
-func (r *rng) intn(n int) int { return int(r.next() % uint64(n)) }
+func (r *rng) intn(n int) int {
+	if n <= 0 {
+		return 0
+	}
+
+	return int(r.next() % uint64(n)) //nolint:gosec // reason: n is guarded positive above, so the int to uint64 conversion cannot wrap.
+}
 
 // nextPiece returns the next piece from the 7-bag, shuffling a fresh bag
 // when the current one runs out.

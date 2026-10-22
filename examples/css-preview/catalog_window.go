@@ -52,7 +52,7 @@ func (w *catalogWindow) slice(offsetY, viewH int) bool {
 	w.prevStart, w.prevEnd = start, end
 
 	v := w.view
-	cardStart, cardEnd := start*2, end*2
+	cardStart, cardEnd := start*cardsPerRow, end*cardsPerRow
 	if cardEnd > len(v.Catalog) {
 		cardEnd = len(v.Catalog)
 	}

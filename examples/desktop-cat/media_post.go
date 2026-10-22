@@ -8,13 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
 )
 
 func postMedia(ctx context.Context, endpoint string, n cat.Notification) error {
-	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, postTimeout)
 	defer cancel()
 	data, err := json.Marshal(n)
 	if err != nil {
@@ -29,7 +28,7 @@ func postMedia(ctx context.Context, endpoint string, n cat.Notification) error {
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
+	defer func() { _ = response.Body.Close() }()
 	if response.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("media notification returned %s", response.Status)
 	}

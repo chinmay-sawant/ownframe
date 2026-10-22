@@ -23,7 +23,7 @@ func (s *Store) Backup(ctx context.Context, dest string) error {
 		}
 
 		quoted := strings.ReplaceAll(dest, "'", "''")
-		if _, err := db.ExecContext(ctx, `VACUUM INTO '`+quoted+`'`); err != nil {
+		if _, err := db.ExecContext(ctx, `VACUUM INTO '`+quoted+`'`); err != nil { //nolint:gosec // reason: VACUUM INTO quotes the destination by doubling single quotes, no placeholders exist
 			return 0, err
 		}
 

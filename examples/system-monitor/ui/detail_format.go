@@ -1,5 +1,11 @@
 package ui
 
+// Preview lengths for the detail fields, in runes.
+const (
+	fieldPathLen = 96
+	commandLen   = 160
+)
+
 // detailValue formats one detail row.
 func detailValue(key string, sel selection) string {
 	d := sel.trk.Detail
@@ -39,11 +45,11 @@ func detailValue(key string, sel selection) string {
 	case "parent":
 		return nonEmpty(d.Parent)
 	case "exe":
-		return truncate(nonEmpty(d.Exe), 96)
+		return truncate(nonEmpty(d.Exe), fieldPathLen)
 	case "cwd":
-		return truncate(nonEmpty(d.Cwd), 96)
+		return truncate(nonEmpty(d.Cwd), fieldPathLen)
 	case "command":
-		return truncate(nonEmpty(d.Command), 160)
+		return truncate(nonEmpty(d.Command), commandLen)
 	}
 
 	return unavailable

@@ -21,17 +21,29 @@ type view struct {
 	Rows                  []row
 }
 
+// Fixture geometry in CSS pixels: row counts, row height, page size, and the
+// resize-mode width step.
+const (
+	fixtureRows       = 480
+	fixtureWindowRows = 48
+	fixtureRowH       = 76
+	fixtureWidth      = 1440
+	fixtureHeight     = 1000
+	resizeStep        = 80
+	resizeAlt         = 2
+)
+
 func fixture(window bool) (*page.Page, view, error) {
 	v := view{Nav: []string{"Overview", "Services", "Regions", "Deployments", "Incidents", "Capacity"}}
-	count := 480
+	count := fixtureRows
 	if window {
-		count = 48
-		v.Bottom = (480 - count) * 76
+		count = fixtureWindowRows
+		v.Bottom = (fixtureRows - count) * fixtureRowH
 	}
 	for i := 0; i < count; i++ {
 		v.Rows = append(v.Rows, row{i, i % 8, fmt.Sprintf("service-%04d", i)})
 	}
-	p, err := page.New(page.Config{HTML: source, Width: 1440, Height: 1000, Perf: true})
+	p, err := page.New(page.Config{HTML: source, Width: fixtureWidth, Height: fixtureHeight, Perf: true})
 	if err == nil {
 		p.SetData(v)
 	}

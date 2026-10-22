@@ -47,5 +47,5 @@ func cpuPercent(prev, next CPUTimes, elapsed time.Duration) (Value, bool) {
 		return Value{}, false
 	}
 
-	return Percent(float64(busy) / float64(total) * 100), true
+	return Percent(float64(busy) / float64(total) * percentScale), true
 }

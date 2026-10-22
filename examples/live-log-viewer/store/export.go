@@ -45,7 +45,7 @@ func (s *Store) Export(ctx context.Context, o ExportOptions) (Export, error) {
 	}
 
 	if o.MaxBytes <= 0 {
-		o.MaxBytes = 8 << 20
+		o.MaxBytes = exportDefaultCap
 	}
 
 	if o.MaxBytes > exportMaxBytes {

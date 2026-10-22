@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ func (a *App) search(ctx context.Context, term, entity string, limit int) ([]sea
 		return nil, err
 	}
 
-	if res.Status != 200 {
+	if res.Status != http.StatusOK {
 		return nil, fmt.Errorf("player: search status %d", res.Status)
 	}
 

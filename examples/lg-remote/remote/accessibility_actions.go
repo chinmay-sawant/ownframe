@@ -50,7 +50,7 @@ func (a *App) accessibilityActions(ctx context.Context) error {
 			if value == "back" {
 				h = -h
 			}
-			a.page.ScrollBy(0, h*3/4)
+			a.page.ScrollBy(0, h*3/scrollDivisor)
 		case "click":
 			for _, box := range a.page.Boxes() {
 				if box.ID == value {

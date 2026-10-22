@@ -47,7 +47,7 @@ func formatPercent(v float64, ok bool) string {
 		return unavailable
 	}
 
-	return fmt.Sprintf("%.1f%%", v*100)
+	return fmt.Sprintf("%.1f%%", v*percentScale)
 }
 
 // cpuText renders a process CPU value, already a percent of one core, so a

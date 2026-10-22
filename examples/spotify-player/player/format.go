@@ -12,7 +12,7 @@ func formatMillis(ms int) string {
 		return "0:00"
 	}
 
-	return formatSeconds(ms / 1000)
+	return formatSeconds(ms / millisPerSec)
 }
 
 // formatSeconds turns a count of seconds into m:ss.
@@ -21,13 +21,13 @@ func formatSeconds(sec int) string {
 		sec = 0
 	}
 
-	return fmt.Sprintf("%d:%02d", sec/60, sec%60)
+	return fmt.Sprintf("%d:%02d", sec/secsPerMin, sec%secsPerMin)
 }
 
 // lengthSeconds parses an m:ss length back into seconds.
 func lengthSeconds(length string) int {
-	parts := strings.SplitN(length, ":", 2)
-	if len(parts) != 2 {
+	parts := strings.SplitN(length, ":", timeParts)
+	if len(parts) != timeParts {
 		return 0
 	}
 
@@ -39,7 +39,7 @@ func lengthSeconds(length string) int {
 
 // yearOf keeps the first four characters of an iTunes release date.
 func yearOf(date string) string {
-	if len(date) < 4 {
+	if len(date) < dateMinLen {
 		return date
 	}
 

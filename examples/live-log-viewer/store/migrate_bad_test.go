@@ -21,7 +21,7 @@ func TestForeignDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	db.Close()
+	_ = db.Close()
 
 	if _, err := Open(dir); !errors.Is(err, ErrForeign) {
 		t.Fatalf("err = %v, want ErrForeign", err)
@@ -32,11 +32,11 @@ func TestCorruptDatabase(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, dbName)
 
-	if err := os.WriteFile(path, []byte("this is not a sqlite database"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("this is not a sqlite database"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
-	before, err := os.ReadFile(path)
+	before, err := os.ReadFile(path) //nolint:gosec // reason: test reads TempDir database copy to verify it is untouched
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestCorruptDatabase(t *testing.T) {
 		t.Fatalf("err = %v, want ErrCorrupt", err)
 	}
 
-	after, err := os.ReadFile(path)
+	after, err := os.ReadFile(path) //nolint:gosec // reason: test reads TempDir database copy to verify it is untouched
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestMigrationRollsBack(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	bad := []migration{
 		{1, `CREATE TABLE a (x TEXT)`},

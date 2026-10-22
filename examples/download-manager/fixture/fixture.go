@@ -39,7 +39,7 @@ type Server struct {
 
 // NewServer starts the fixture on a loopback port.
 func NewServer() *Server {
-	s := &Server{Size: 64 << 10, SlowPause: 25 * time.Millisecond}
+	s := &Server{Size: defaultBodySize, SlowPause: defaultSlowPause}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(PathOK, s.serveOK)
@@ -63,12 +63,12 @@ func (s *Server) Close() { s.Server.Close() }
 func (s *Server) fill(seed int) []byte {
 	size := s.Size
 	if size <= 0 {
-		size = 64 << 10
+		size = defaultBodySize
 	}
 
 	out := make([]byte, size)
 	for i := range out {
-		out[i] = byte(seed*31 + i*7)
+		out[i] = byte(seed*hashBase + i*bodyStep) //nolint:gosec // reason: seed and index bounded, test body fits a byte.
 	}
 
 	return out

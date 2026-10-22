@@ -7,11 +7,11 @@ type walkTrace struct {
 	started   int
 	selected  string
 	last      int64
-	redraws   int64
-	parses    int64
-	cascades  int64
-	layouts   int64
-	repaints  int64
+	redraws   uint64
+	parses    uint64
+	cascades  uint64
+	layouts   uint64
+	repaints  uint64
 	ops       int64
 	boxes     int64
 	tmpl      int64
@@ -40,9 +40,9 @@ func (w *walker) snapshot() {
 	st := w.p.Stats()
 	w.trace = walkTrace{
 		started: started, selected: selected,
-		last: st.LastRedraw.Microseconds(), redraws: int64(st.Redraws),
-		parses: int64(st.Parses), cascades: int64(st.Cascades),
-		layouts: int64(st.Layouts), repaints: int64(st.Repaints),
+		last: st.LastRedraw.Microseconds(), redraws: st.Redraws,
+		parses: st.Parses, cascades: st.Cascades,
+		layouts: st.Layouts, repaints: st.Repaints,
 		ops: int64(st.Ops), boxes: int64(st.Boxes),
 		tmpl: st.LastTemplate.Microseconds(), style: st.LayoutTime.Microseconds(),
 		display: st.DisplayListTime.Microseconds(), paint: st.PaintTime.Microseconds(),

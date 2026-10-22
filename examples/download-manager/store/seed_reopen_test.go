@@ -27,7 +27,7 @@ func TestSeedReopensWithoutDuplicates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s2.Close()
+	defer func() { _ = s2.Close() }()
 
 	if err := s2.SeedDummy(ctx, 50); err != nil {
 		t.Fatal(err)

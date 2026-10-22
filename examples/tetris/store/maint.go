@@ -64,7 +64,7 @@ func (s *Store) Backup(ctx context.Context, dest string) error {
 		return fmt.Errorf("%w: backup destination", ErrInvalid)
 	}
 
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dest), dirPerm); err != nil {
 		return err
 	}
 

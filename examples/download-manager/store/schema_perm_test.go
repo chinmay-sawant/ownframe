@@ -13,11 +13,11 @@ func TestUnwritableDirectoryFailsWithoutReset(t *testing.T) {
 	}
 
 	parent := t.TempDir()
-	if err := os.Chmod(parent, 0o555); err != nil {
+	if err := os.Chmod(parent, 0o500); err != nil { //nolint:gosec // reason: test makes TempDir read-only to prove Open fails.
 		t.Fatal(err)
 	}
 
-	t.Cleanup(func() { _ = os.Chmod(parent, 0o755) })
+	t.Cleanup(func() { _ = os.Chmod(parent, 0o700) }) //nolint:gosec // reason: test restores TempDir after read-only check.
 
 	if _, err := Open(filepath.Join(parent, "sub")); err == nil {
 		t.Fatal("read-only directory accepted")

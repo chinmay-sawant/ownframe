@@ -50,7 +50,7 @@ func newState(now func() time.Time) state {
 	t := now()
 	return state{moodUntil: t.Add(moodDuration(0)), poseAt: t,
 		hudUntil: t.Add(hudIdle), automatic: true,
-		sacT: t, blinkT: t.Add(2 * time.Second),
+		sacT: t, blinkT: t.Add(blinkInitial),
 		moodL: 1, moodR: 1, styleL: eyeStyle{open: 1, height: 1},
 		styleR: eyeStyle{open: 1, height: 1}, dispL: 1, dispR: 1, birth: t}
 }

@@ -48,7 +48,7 @@ func (a *App) capture(ctx context.Context) {
 	raw, err := CaptureWith(ctx, a.capturer)
 	a.demo = false
 	if err != nil || len(raw) == 0 {
-		raw = DemoImage(320, 200)
+		raw = DemoImage(demoWidth, demoHeight)
 		a.demo = true
 	}
 	a.setShot(raw)

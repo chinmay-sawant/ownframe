@@ -10,7 +10,7 @@ func parseDiskStats(data []byte) map[string]diskIO {
 
 	for _, line := range strings.Split(string(data), "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 10 {
+		if len(fields) < minDiskFields {
 			continue
 		}
 
@@ -20,8 +20,8 @@ func parseDiskStats(data []byte) map[string]diskIO {
 		}
 
 		out[name] = diskIO{
-			read:  parseUint(fields[5]) * 512,
-			write: parseUint(fields[9]) * 512,
+			read:  parseUint(fields[5]) * sectorBytes,
+			write: parseUint(fields[9]) * sectorBytes,
 		}
 	}
 

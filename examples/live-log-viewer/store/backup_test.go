@@ -28,7 +28,7 @@ func TestBackupRestore(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	got, err := st2.Stats(bg())
 	if err != nil {

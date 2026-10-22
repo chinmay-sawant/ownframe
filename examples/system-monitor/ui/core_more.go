@@ -6,13 +6,16 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/system-monitor/collector"
 )
 
+// problemErrLen caps the error text in the problems list.
+const problemErrLen = 90
+
 // Problems lists the collector's latest failure per step.
 func (c *Collector) Problems(context.Context) []string {
 	errs := c.mgr.Errors()
 	out := make([]string, 0, len(errs))
 
 	for _, e := range errs {
-		out = append(out, e.Step+": "+truncate(e.Err, 90))
+		out = append(out, e.Step+": "+truncate(e.Err, problemErrLen))
 	}
 
 	return out

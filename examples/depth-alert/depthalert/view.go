@@ -13,7 +13,7 @@ func distance(mm int32) string {
 	if mm <= 0 {
 		return "—"
 	}
-	return fmt.Sprintf("%.1f m", float64(mm)/1000)
+	return fmt.Sprintf("%.1f m", float64(mm)/mmPerM)
 }
 
 func coverage(percent int32) string { return fmt.Sprintf("%d%%", percent) }

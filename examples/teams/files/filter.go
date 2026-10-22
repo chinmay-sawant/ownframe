@@ -2,11 +2,6 @@ package files
 
 import "strings"
 
-// clone returns a copy of rows so no two Data values share state.
-func clone(rows []File) []File {
-	return append([]File(nil), rows...)
-}
-
 // matches reports whether f belongs under the filter and the query.
 func matches(f File, filter, query string) bool {
 	if query != "" && !strings.Contains(strings.ToLower(f.Name), query) {

@@ -2,7 +2,7 @@ package tv
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec // reason: SHA1 is required by RFC 6455 for the WebSocket test handshake, not a security hash.
 	"encoding/base64"
 	"encoding/json"
 	"net"
@@ -24,13 +24,13 @@ func socketURL(t *testing.T, reply func([]byte) []byte) string {
 		if err != nil {
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		mu.Lock()
 		clients = append(clients, conn)
 		mu.Unlock()
-		sum := sha1.Sum([]byte(r.Header.Get("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
-		buf.WriteString("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + base64.StdEncoding.EncodeToString(sum[:]) + "\r\n\r\n")
-		buf.Flush()
+		sum := sha1.Sum([]byte(r.Header.Get("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")) //nolint:gosec // reason: SHA1 is required by RFC 6455 for the WebSocket test handshake, not a security hash.
+		_, _ = buf.WriteString("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: " + base64.StdEncoding.EncodeToString(sum[:]) + "\r\n\r\n")
+		_ = buf.Flush()
 		for {
 			b, err := readSocketFrame(buf)
 			if err != nil {
@@ -46,7 +46,7 @@ func socketURL(t *testing.T, reply func([]byte) []byte) string {
 		mu.Lock()
 		defer mu.Unlock()
 		for _, c := range clients {
-			c.Close()
+			_ = c.Close()
 		}
 	})
 	return "ws" + strings.TrimPrefix(s.URL, "http")

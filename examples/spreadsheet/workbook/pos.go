@@ -63,8 +63,8 @@ func ColName(col int) string {
 	i := len(b)
 	for col >= 0 && i > 0 {
 		i--
-		b[i] = byte('A' + col%26)
-		col = col/26 - 1
+		b[i] = byte('A' + col%alphaBase)
+		col = col/alphaBase - 1
 	}
 
 	return string(b[i:])

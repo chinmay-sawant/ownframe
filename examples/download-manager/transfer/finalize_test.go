@@ -10,7 +10,7 @@ import (
 func TestCheckChecksum(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "body.bin")
 
-	if err := os.WriteFile(path, []byte("hello"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("hello"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -40,7 +40,7 @@ func TestFinalizeMovesAndRefusesOverwrite(t *testing.T) {
 	partial := filepath.Join(dir, "a.part")
 	dest := filepath.Join(dir, "a.bin")
 
-	if err := os.WriteFile(partial, []byte("data"), 0o644); err != nil {
+	if err := os.WriteFile(partial, []byte("data"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -52,7 +52,7 @@ func TestFinalizeMovesAndRefusesOverwrite(t *testing.T) {
 		t.Fatalf("dest missing: %v", err)
 	}
 
-	if err := os.WriteFile(partial, []byte("new"), 0o644); err != nil {
+	if err := os.WriteFile(partial, []byte("new"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -65,7 +65,7 @@ func TestFinalizeMovesAndRefusesOverwrite(t *testing.T) {
 		t.Error("partial removed after refused finalize")
 	}
 
-	data, readErr := os.ReadFile(dest)
+	data, readErr := os.ReadFile(dest) //nolint:gosec // reason: test reads back the file it wrote.
 	if readErr != nil || string(data) != "data" {
 		t.Errorf("dest changed: %q %v", data, readErr)
 	}

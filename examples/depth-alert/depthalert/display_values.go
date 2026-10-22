@@ -2,7 +2,7 @@ package depthalert
 
 func (d *displayFilter) view(scanning bool) view {
 	return view{Scanning: scanning, State: d.state.String(),
-		Distance: distance(d.nearView), Coverage: coverage((d.coverView + 2) / 5 * 5)}
+		Distance: distance(d.nearView), Coverage: coverage((d.coverView + coverBucket/2) / coverBucket * coverBucket)}
 }
 
 func settle(old, next, deadband int32) int32 {

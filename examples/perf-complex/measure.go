@@ -72,6 +72,6 @@ func prepare(mode string, p *page.Page, v *view, i int) {
 		p.SetData(*v)
 	}
 	if mode == "resize" {
-		p.SetSize(1440+(i%2)*80, 1000)
+		p.SetSize(fixtureWidth+(i%resizeAlt)*resizeStep, fixtureHeight)
 	}
 }

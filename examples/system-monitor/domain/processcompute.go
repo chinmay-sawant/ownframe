@@ -17,7 +17,7 @@ func ComputeProcesses(prev map[ProcessIdentity]uint64, next []Process, elapsed t
 			continue
 		}
 
-		next[i].CPU = Percent(float64(next[i].CPUTime-before) / float64(elapsed) * 100)
+		next[i].CPU = Percent(float64(next[i].CPUTime-before) / float64(elapsed) * percentScale)
 	}
 }
 

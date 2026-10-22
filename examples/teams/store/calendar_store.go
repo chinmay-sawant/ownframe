@@ -46,7 +46,7 @@ func loadCalendar(db *sql.DB) (calendar.Data, error) {
 		return calendar.Data{}, err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var events []calendar.Event
 

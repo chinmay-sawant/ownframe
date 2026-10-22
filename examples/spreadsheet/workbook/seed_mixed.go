@@ -8,7 +8,7 @@ func fillMixed(w *Workbook, s *Sheet) {
 		row := r + 1
 
 		w.put(s, Pos{r, 0}, Cell{Kind: Text, Text: "mix " + itoa(row)})
-		w.put(s, Pos{r, 1}, Cell{Kind: Number, Number: float64(r - 100)})
+		w.put(s, Pos{r, 1}, Cell{Kind: Number, Number: float64(r - seedOffset)})
 
 		if r == 5 || r == 15 || r == 25 {
 			w.put(s, Pos{r, 2}, formulaCell("B%d/0", row))
@@ -16,19 +16,19 @@ func fillMixed(w *Workbook, s *Sheet) {
 			w.put(s, Pos{r, 2}, formulaCell("B%d*3", row))
 		}
 
-		if r == 10 {
+		if r == seedRow10 {
 			w.put(s, Pos{r, 4}, Cell{Kind: Formula, Source: "NOSUCH1(1)"})
 		}
 
-		if r == 12 {
+		if r == seedRow12 {
 			w.put(s, Pos{r, 4}, Cell{Kind: Formula, Source: "Z99999999"})
 		}
 
-		if r == 40 {
+		if r == seedRow40 {
 			w.put(s, Pos{r, 5}, Cell{Kind: Formula, Source: "F42"})
 		}
 
-		if r == 41 {
+		if r == seedRow41 {
 			w.put(s, Pos{r, 5}, Cell{Kind: Formula, Source: "F41"})
 		}
 

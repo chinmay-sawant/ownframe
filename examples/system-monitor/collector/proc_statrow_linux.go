@@ -34,7 +34,7 @@ func stateName(state string) string {
 
 // startedAt converts a start tick count to wall clock time.
 func startedAt(boot time.Time, startTicks uint64) time.Time {
-	return boot.Add(time.Duration(startTicks) * time.Second / userHZ)
+	return boot.Add(time.Duration(startTicks) * time.Second / userHZ) //nolint:gosec // reason: boot-relative start ticks fit int64 for any realistic uptime.
 }
 
 // rowOfStat builds the table row for one stat read. The user name is left

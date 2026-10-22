@@ -34,11 +34,11 @@ func TestProcSourceSmoke(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	self := int32(os.Getpid())
+	self := os.Getpid()
 	var id domain.ProcessIdentity
 
 	for _, row := range rows {
-		if row.ID.PID == self {
+		if int(row.ID.PID) == self {
 			id = row.ID
 		}
 	}
@@ -71,9 +71,9 @@ func TestProcSourceGone(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	self := int32(os.Getpid())
+	self := os.Getpid()
 	for _, row := range rows {
-		if row.ID.PID != self {
+		if int(row.ID.PID) != self {
 			continue
 		}
 

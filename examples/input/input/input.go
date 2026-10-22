@@ -19,6 +19,8 @@ const (
 	// DefaultWidth and DefaultHeight are the size of a newly opened window.
 	DefaultWidth  = 420
 	DefaultHeight = 560
+	// scrollEnd scrolls past any content length.
+	scrollEnd = 1 << 30
 )
 
 // App is the input screen.
@@ -47,7 +49,7 @@ func New() (*App, error) {
 // click scrolls to the end when the link is pressed.
 func (a *App) click(_ context.Context, box ownframe.Box) error {
 	if box.ID == "more" {
-		a.scrollTo(0, 1<<30)
+		a.scrollTo(0, scrollEnd)
 	}
 
 	return nil

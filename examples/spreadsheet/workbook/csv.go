@@ -21,7 +21,7 @@ func DefaultCSVOptions() CSVOptions {
 		Delimiter:         ',',
 		InterpretNumbers:  true,
 		InterpretFormulas: true,
-		MaxCells:          2000000,
+		MaxCells:          csvMaxCells,
 	}
 }
 

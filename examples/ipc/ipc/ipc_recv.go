@@ -29,5 +29,5 @@ func (a *App) onDouble(_ context.Context, payload string) (string, error) {
 		return "", errors.New("not a number: " + payload)
 	}
 
-	return strconv.Itoa(n * 2), nil
+	return strconv.Itoa(n * doubleFactor), nil
 }

@@ -1,6 +1,8 @@
 package store
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -15,7 +17,7 @@ func TestIngestFileReplacePartial(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	src := fileSource(t, st, dir, "INFO first\nINFO partial")
 
@@ -23,21 +25,23 @@ func TestIngestFileReplacePartial(t *testing.T) {
 
 	if got := waitForEntries(t, st, 1, 3*time.Second); got < 1 {
 		cancel()
-		<-done
-
+		if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+			t.Fatal(err)
+		}
 		t.Fatalf("entries = %d", got)
 	}
 
 	cancel()
-	<-done
-
+	if err := <-done; err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 	if err := in.Close(); err != nil {
 		t.Fatal(err)
 	}
 
 	logPath := filepath.Join(dir, "app.log")
 
-	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0o600) //nolint:gosec // reason: test appends to its TempDir log file, path is fixture-controlled
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +50,7 @@ func TestIngestFileReplacePartial(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	f.Close()
+	_ = f.Close()
 
 	in2, cancel2, done2 := startFileIngest(t, st, src)
 
@@ -66,8 +70,9 @@ func TestIngestFileReplacePartial(t *testing.T) {
 	}
 
 	cancel2()
-	<-done2
-
+	if err := <-done2; err != nil && !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
 	if err := in2.Close(); err != nil {
 		t.Fatal(err)
 	}

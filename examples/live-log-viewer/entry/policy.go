@@ -37,17 +37,17 @@ type Policy struct {
 // DefaultPolicy returns the shipped limits.
 func DefaultPolicy() Policy {
 	return Policy{
-		BatchRecords:   256,
-		BatchBytes:     256 << 10,
-		MaxRecord:      64 << 10,
-		Poll:           250 * time.Millisecond,
-		MultilineLines: 200,
-		MultilineBytes: 256 << 10,
-		MultilineHold:  500 * time.Millisecond,
+		BatchRecords:   policyBatchRecords,
+		BatchBytes:     policyBatchBytes,
+		MaxRecord:      policyMaxRecord,
+		Poll:           policyPoll,
+		MultilineLines: policyMultiLines,
+		MultilineBytes: policyMultiBytes,
+		MultilineHold:  policyMultiHold,
 		Overflow:       OverflowPause,
-		QueryTimeout:   5 * time.Second,
-		PruneBatch:     1000,
-		PageLimit:      200,
+		QueryTimeout:   policyQueryTimeout,
+		PruneBatch:     policyPruneBatch,
+		PageLimit:      policyPageLimit,
 	}
 }
 

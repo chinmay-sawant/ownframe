@@ -7,13 +7,13 @@ import "github.com/chinmay-sawant/ownframe/examples/tetris/game"
 // only the next-piece picture.
 var previewShapes = [8][4]game.Point{
 	{},
-	{{X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}, {X: 3, Y: 1}}, // I
-	{{X: 1, Y: 0}, {X: 2, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 1}}, // O
-	{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 2, Y: 0}, {X: 1, Y: 1}}, // T
-	{{X: 1, Y: 0}, {X: 2, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}}, // S
-	{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 1}}, // Z
-	{{X: 0, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}}, // J
-	{{X: 2, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}, {X: 2, Y: 1}}, // L
+	{{X: 0, Y: 1}, {X: 1, Y: 1}, {X: previewMid, Y: 1}, {X: previewMax, Y: 1}}, // I
+	{{X: 1, Y: 0}, {X: previewMid, Y: 0}, {X: 1, Y: 1}, {X: previewMid, Y: 1}}, // O
+	{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: previewMid, Y: 0}, {X: 1, Y: 1}},          // T
+	{{X: 1, Y: 0}, {X: previewMid, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}},          // S
+	{{X: 0, Y: 0}, {X: 1, Y: 0}, {X: 1, Y: 1}, {X: previewMid, Y: 1}},          // Z
+	{{X: 0, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}, {X: previewMid, Y: 1}},          // J
+	{{X: previewMid, Y: 0}, {X: 0, Y: 1}, {X: 1, Y: 1}, {X: previewMid, Y: 1}}, // L
 }
 
 // nextSet marks the preview cells for a piece in a 4x4 box.

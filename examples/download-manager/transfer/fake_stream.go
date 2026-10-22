@@ -13,17 +13,17 @@ func (f *Fake) stream(ctx context.Context, req Request, offset, size, total int6
 	stop := int64(-1)
 
 	if fakeFails(req.JobID) && req.Attempt == 0 {
-		stop = size * 3 / 5
+		stop = size * failNumer / failDenom
 		if stop <= offset {
 			stop = -1
 		}
 	}
 
-	file, err := os.OpenFile(req.Partial, os.O_CREATE|os.O_WRONLY, 0o644)
+	file, err := os.OpenFile(req.Partial, os.O_CREATE|os.O_WRONLY, transferFilePerm)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	if _, err := file.Seek(offset, 0); err != nil {
 		return err

@@ -57,8 +57,8 @@ func (r *File) readChunk(max int) ([]byte, error) {
 		max = r.pol.BatchBytes
 	}
 
-	if max > 64<<10 {
-		max = 64 << 10
+	if max > readMaxCap {
+		max = readMaxCap
 	}
 
 	if cap(r.chunk) < max {

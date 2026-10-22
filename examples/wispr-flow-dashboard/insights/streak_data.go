@@ -22,11 +22,11 @@ type streakMonth struct {
 
 // streakMonths are the month labels in history order.
 var streakMonths = []streakMonth{
-	{Label: "Oct", Weeks: 4}, {Label: "Nov", Weeks: 4},
-	{Label: "Dec", Weeks: 4}, {Label: "Jan", Weeks: 5},
-	{Label: "Feb", Weeks: 4}, {Label: "Mar", Weeks: 4},
-	{Label: "Apr", Weeks: 4}, {Label: "May", Weeks: 4},
-	{Label: "Jun", Weeks: 4}, {Label: "Jul", Weeks: 3},
-	{Label: "Aug", Weeks: 4}, {Label: "Sep", Weeks: 6},
-	{Label: "Oct", Weeks: 2},
+	{Label: "Oct", Weeks: monthWeeks}, {Label: "Nov", Weeks: monthWeeks},
+	{Label: "Dec", Weeks: monthWeeks}, {Label: "Jan", Weeks: weeksLong},
+	{Label: "Feb", Weeks: monthWeeks}, {Label: "Mar", Weeks: monthWeeks},
+	{Label: "Apr", Weeks: monthWeeks}, {Label: "May", Weeks: monthWeeks},
+	{Label: "Jun", Weeks: monthWeeks}, {Label: "Jul", Weeks: weeksShort},
+	{Label: "Aug", Weeks: monthWeeks}, {Label: "Sep", Weeks: weeksPeak},
+	{Label: "Oct", Weeks: monthWeeksTail},
 }

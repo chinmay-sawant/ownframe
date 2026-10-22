@@ -14,13 +14,13 @@ const weekCount = 7
 // weekMeta computes the day headers, the "September 14 – September 18"
 // label, and the today column for week i. Nothing is stored.
 func weekMeta(i int) ([]Day, string, int) {
-	mon := weekStart.AddDate(0, 0, 7*i)
-	fri := mon.AddDate(0, 0, 4)
+	mon := weekStart.AddDate(0, 0, weekDays*i)
+	fri := mon.AddDate(0, 0, workWeekEnd)
 	today := -1
 
-	days := make([]Day, 0, 5)
+	days := make([]Day, 0, workDays)
 
-	for d := 0; d < 5; d++ {
+	for d := 0; d < workDays; d++ {
 		days = append(days, Day{Label: mon.AddDate(0, 0, d).Format("Mon 1/2")})
 	}
 

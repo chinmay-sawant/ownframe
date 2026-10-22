@@ -12,7 +12,7 @@ func (g *game) spawn(rng *rand.Rand) {
 	gap := max(gapMin, gapStart-float64(g.score)*3)
 	top := margin + rng.Float64()*(groundY-2*margin-gap)
 
-	g.pipes = append(g.pipes, pipe{x: sceneW + 30, gapY: top + gap/2, gap: gap})
+	g.pipes = append(g.pipes, pipe{x: sceneW + spawnOffset, gapY: top + gap/2, gap: gap})
 }
 
 // scored counts a pipe once when its right edge passes the bird.

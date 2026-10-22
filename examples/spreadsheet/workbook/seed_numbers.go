@@ -12,7 +12,7 @@ func fillNumbers(w *Workbook, s *Sheet) {
 
 		w.put(s, Pos{r, 0}, Cell{Kind: Text, Text: fmt.Sprintf("row %d", row)})
 
-		n := float64(r * 10)
+		n := float64(r * seedTimes10)
 		if r%2 == 1 {
 			n = -n
 		}
@@ -22,7 +22,7 @@ func fillNumbers(w *Workbook, s *Sheet) {
 		w.put(s, Pos{r, 3}, formulaCell("SUM(B1:B%d)", row))
 
 		if r%50 == 0 {
-			w.put(s, Pos{r, 4}, Cell{Kind: Number, Number: 1e12})
+			w.put(s, Pos{r, 4}, Cell{Kind: Number, Number: seedBig})
 		}
 
 		if r%3 == 0 {
@@ -35,7 +35,7 @@ func fillNumbers(w *Workbook, s *Sheet) {
 		w.put(s, Pos{r, 9}, formulaCell("C%d-B%d", row, row))
 
 		if r%10 == 0 {
-			w.put(s, Pos{r, 10}, Cell{Kind: Number, Number: float64(r * 10)})
+			w.put(s, Pos{r, 10}, Cell{Kind: Number, Number: float64(r * seedTimes10)})
 			w.put(s, Pos{r, 19}, Cell{Kind: Number, Number: float64(-r)})
 		}
 	}

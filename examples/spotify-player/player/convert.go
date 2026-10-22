@@ -17,9 +17,9 @@ func tracksFrom(songs []searchResult) []Track {
 
 		tracks = append(tracks, Track{
 			Index: i, Num: strconv.Itoa(i + 1),
-			Title: clip(s.TrackName, 44), Artist: clip(s.ArtistName, 40),
-			Album: clip(album, 26), Year: yearOf(s.ReleaseDate),
-			Genre:  clip(s.Genre, 24),
+			Title: clip(s.TrackName, trackTitleMax), Artist: clip(s.ArtistName, trackArtistMax),
+			Album: clip(album, albumMax), Year: yearOf(s.ReleaseDate),
+			Genre:  clip(s.Genre, genreMax),
 			Length: formatMillis(s.TrackMillis),
 			Cover:  "track-" + strconv.Itoa(i),
 			Active: i == 0,
@@ -32,13 +32,13 @@ func tracksFrom(songs []searchResult) []Track {
 // cardsFrom converts albums into six greeting tiles and six shelf cards.
 func cardsFrom(albums []searchResult) (picks, shelf []Card) {
 	for i, al := range albums {
-		if i < 6 {
-			picks = append(picks, Card{Index: i, Title: clip(al.CollectionName, 32), Sub: clip(al.ArtistName, 32), Cover: "pick-" + strconv.Itoa(i)})
+		if i < maxSongs {
+			picks = append(picks, Card{Index: i, Title: clip(al.CollectionName, pickTitleMax), Sub: clip(al.ArtistName, pickTitleMax), Cover: "pick-" + strconv.Itoa(i)})
 			continue
 		}
 
-		j := i - 6
-		shelf = append(shelf, Card{Index: j, Title: clip(al.CollectionName, 19), Sub: clip(al.ArtistName, 19), Cover: "card-" + strconv.Itoa(j)})
+		j := i - coverSplit
+		shelf = append(shelf, Card{Index: j, Title: clip(al.CollectionName, shelfTitleMax), Sub: clip(al.ArtistName, shelfTitleMax), Cover: "card-" + strconv.Itoa(j)})
 	}
 
 	return picks, shelf
@@ -46,17 +46,17 @@ func cardsFrom(albums []searchResult) (picks, shelf []Card) {
 
 // playlistsFrom fills the sidebar library from the shelf cards.
 func playlistsFrom(shelf []Card) []Playlist {
-	out := make([]Playlist, 0, 5)
+	out := make([]Playlist, 0, playlistsMax)
 
 	for _, card := range shelf {
-		if len(out) == 5 {
+		if len(out) == playlistsMax {
 			break
 		}
 
 		out = append(out, Playlist{
 			Index: len(out),
-			Name:  clip(card.Title, 24),
-			Meta:  clip("Playlist · "+card.Sub, 24),
+			Name:  clip(card.Title, playlistNameMax),
+			Meta:  clip("Playlist · "+card.Sub, playlistNameMax),
 			Cover: card.Cover,
 		})
 	}

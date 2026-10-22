@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"time"
 )
 
 // newClient builds the default client: one dial timeout, one response
@@ -13,21 +12,21 @@ import (
 func newClient(opts HTTPOptions) *http.Client {
 	connect := opts.ConnectTimeout
 	if connect <= 0 {
-		connect = 10 * time.Second
+		connect = connectTimeout
 	}
 
 	response := opts.ResponseTimeout
 	if response <= 0 {
-		response = 20 * time.Second
+		response = responseTimeout
 	}
 
-	dialer := &net.Dialer{Timeout: connect, KeepAlive: 30 * time.Second}
+	dialer := &net.Dialer{Timeout: connect, KeepAlive: keepAliveInterval}
 	tr := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		DialContext:           dialer.DialContext,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConns:          4,
-		IdleConnTimeout:       90 * time.Second,
+		MaxIdleConns:          maxIdleConns,
+		IdleConnTimeout:       idleConnTimeout,
 		TLSHandshakeTimeout:   connect,
 		ResponseHeaderTimeout: response,
 	}
@@ -35,7 +34,7 @@ func newClient(opts HTTPOptions) *http.Client {
 	return &http.Client{
 		Transport: tr,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) >= 10 {
+			if len(via) >= maxRedirects {
 				return errors.New("transfer: too many redirects")
 			}
 

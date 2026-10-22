@@ -21,7 +21,7 @@ func (d *displayFilter) reset() { *d = displayFilter{} }
 func (d *displayFilter) observe(mm, cover int32, tracking bool, state alert.State) bool {
 	if !tracking || cover < alert.MinimumCoveragePercent || mm <= 0 {
 		d.missing++
-		if d.missing >= 3 {
+		if d.missing >= missingFrames {
 			d.clearMeasurements()
 			return true
 		}
@@ -34,8 +34,8 @@ func (d *displayFilter) observe(mm, cover int32, tracking bool, state alert.Stat
 	if d.size < displaySamples {
 		d.size++
 	}
-	d.nearView = settle(d.nearView, median(d.near[:], d.size), 200)
-	d.coverView = settle(d.coverView, median(d.cover[:], d.size), 8)
+	d.nearView = settle(d.nearView, median(d.near[:], d.size), nearDeadband)
+	d.coverView = settle(d.coverView, median(d.cover[:], d.size), coverDeadband)
 	d.frames++
 	if changed || d.frames >= 3 {
 		d.frames = 0

@@ -9,8 +9,8 @@ import (
 func TestTextRoundTrip(t *testing.T) {
 	left, right := net.Pipe()
 	t.Cleanup(func() {
-		left.Close()
-		right.Close()
+		_ = left.Close()
+		_ = right.Close()
 	})
 
 	writer := &Conn{c: left, r: bufio.NewReader(left), wmu: make(chan struct{}, 1)}

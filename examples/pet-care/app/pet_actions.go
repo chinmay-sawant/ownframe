@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"time"
 )
 
 func (a *App) toggleTheme() {
@@ -54,8 +53,8 @@ func (a *App) selectPet(id string) {
 
 func id() string {
 	var raw [16]byte
-	if _, err := rand.Read(raw[:]); err == nil {
-		return hex.EncodeToString(raw[:])
+	if _, err := rand.Read(raw[:]); err != nil {
+		panic(err)
 	}
-	return fmt.Sprintf("%x", time.Now().UnixNano())
+	return hex.EncodeToString(raw[:])
 }

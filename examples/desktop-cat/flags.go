@@ -14,7 +14,7 @@ func flags() options {
 	var o options
 	flag.BoolVar(&o.web, "web", false, "serve a picture preview")
 	flag.StringVar(&o.addr, "addr", "127.0.0.1:8128", "preview listen address")
-	flag.IntVar(&o.margin, "margin", 48, "inset from monitor edges in CSS pixels")
+	flag.IntVar(&o.margin, "margin", defaultMargin, "inset from monitor edges in CSS pixels")
 	flag.IntVar(&o.variant, "variant", 0, "expression number, or 0 to cycle")
 	flag.StringVar(&o.notifyAddr, "notify-addr", "127.0.0.1:6969", "notification listen address, or off")
 	flag.BoolVar(&o.stdin, "stdin-notifications", false, "read launcher notifications from stdin")

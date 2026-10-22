@@ -6,7 +6,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // dsn builds the driver name. The driver takes a file: URI, so spaces,
@@ -38,4 +37,4 @@ func dsn(dir string, memory bool) (string, error) {
 }
 
 // busyMillis is the connection lock wait.
-func busyMillis() int64 { return (5 * time.Second).Milliseconds() }
+func busyMillis() int64 { return busyTimeout.Milliseconds() }

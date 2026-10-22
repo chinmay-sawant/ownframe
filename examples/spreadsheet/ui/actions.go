@@ -9,7 +9,7 @@ import (
 func parseCellAction(action string) (r, c int, ok bool) {
 	rest := strings.TrimPrefix(action, "cell:")
 	parts := strings.Split(rest, ":")
-	if len(parts) != 2 {
+	if len(parts) != uiParts {
 		return 0, 0, false
 	}
 

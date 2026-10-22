@@ -28,6 +28,9 @@ func (a *App) focusNote() bool {
 	return a.focusField("e-note")
 }
 
+// scrollEnd scrolls past any content length.
+const scrollEnd = 1 << 30
+
 // scrollTo moves the page; the window consumes ScrollTo.
 func (a *App) scrollTo(x, y int) {
 	type scroller interface{ ScrollTo(x, y int) }

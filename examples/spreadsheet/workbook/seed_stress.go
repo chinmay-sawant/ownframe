@@ -20,7 +20,7 @@ var demoLabels = [...]string{
 // formula values computed. Every row stores one number, every seventh row a
 // text note, and formulas appear every fifty rows.
 func SeedStress(rows int) *Workbook {
-	w := New(2, "Stress sparse")
+	w := New(stressSheets, "Stress sparse")
 	s := w.AddSheet("Sparse")
 
 	for r := 0; r < rows; r++ {
@@ -35,7 +35,7 @@ func SeedStress(rows int) *Workbook {
 		}
 
 		if r%500 == 0 && r >= 50 {
-			w.put(s, Pos{r, 3}, formulaCell("SUM(A%d:A%d)", r-49, r+1))
+			w.put(s, Pos{r, 3}, formulaCell("SUM(A%d:A%d)", r-stressBack, r+1))
 		}
 	}
 

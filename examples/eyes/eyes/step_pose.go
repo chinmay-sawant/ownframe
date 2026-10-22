@@ -18,7 +18,7 @@ func (a *App) stepPose(dt float64) {
 	s := &a.st
 	pose := poseFor(s.mood)
 	left, right := animatePose(pose, a.now().Sub(s.poseAt).Seconds())
-	k := 1 - math.Exp(-dt*4.5)
+	k := 1 - math.Exp(-dt*poseRate)
 	s.styleL = mixStyle(s.styleL, left, k)
 	s.styleR = mixStyle(s.styleR, right, k)
 	s.moodL, s.moodR = s.styleL.open, s.styleR.open

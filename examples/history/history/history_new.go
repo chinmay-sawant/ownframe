@@ -22,8 +22,12 @@ func New() (*App, error) {
 
 	app := &App{page: p}
 	app.view.Status = "html has initial"
-	p.Route("red", routePage("RED", "#b91c1c"))
-	p.Route("green", routePage("GREEN", "#176b45"))
+	if err := p.Route("red", routePage("RED", "#b91c1c")); err != nil {
+		return nil, err
+	}
+	if err := p.Route("green", routePage("GREEN", "#176b45")); err != nil {
+		return nil, err
+	}
 	p.Handle(ownframe.Handlers{Click: app.onClick})
 	p.SetData(&app.view)
 

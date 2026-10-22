@@ -17,7 +17,7 @@ func TestStableRoutes(t *testing.T) {
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 200 || len(body) != 64<<10 {
 		t.Fatalf("ok: status %d len %d", resp.StatusCode, len(body))
@@ -29,7 +29,7 @@ func TestStableRoutes(t *testing.T) {
 	}
 
 	body, _ = io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.ContentLength != -1 || len(body) != 64<<10 {
 		t.Fatalf("chunked: len %d body %d", resp.ContentLength, len(body))
@@ -41,7 +41,7 @@ func TestStableRoutes(t *testing.T) {
 	}
 
 	body, _ = io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 200 || len(body) != 64<<10 {
 		t.Fatalf("redirect: status %d len %d", resp.StatusCode, len(body))

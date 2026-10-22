@@ -15,5 +15,5 @@ func (a *App) phoneFit() (scale, x, y float64) {
 		ch = max(ch, int(math.Ceil(b.Y+b.H)))
 	}
 	scale = math.Min(float64(w)/float64(cw), float64(h)/float64(ch))
-	return scale, (float64(w) - float64(cw)*scale) / 2, (float64(h) - float64(ch)*scale) / 2
+	return scale, (float64(w) - float64(cw)*scale) / halfDivisor, (float64(h) - float64(ch)*scale) / halfDivisor
 }

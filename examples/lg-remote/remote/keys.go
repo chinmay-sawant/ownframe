@@ -86,7 +86,7 @@ func keysFrom(spec string) []Key {
 
 		parts := strings.Split(line, "|")
 		key := Key{ID: parts[0], Label: parts[1]}
-		if len(parts) > 2 {
+		if len(parts) > maxKeyParts {
 			key.Class = parts[2]
 		}
 

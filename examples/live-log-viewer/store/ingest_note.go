@@ -37,7 +37,7 @@ func (in *Ingestor) failed(err error) {
 
 func (in *Ingestor) poll() time.Duration {
 	if in.pol.Poll <= 0 {
-		return 50 * time.Millisecond
+		return ingestPollDef
 	}
 
 	return in.pol.Poll

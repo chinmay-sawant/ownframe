@@ -20,7 +20,7 @@ type tileCache struct {
 }
 
 func newTileCache() *tileCache {
-	return &tileCache{maxTiles: 16, maxCells: 16384}
+	return &tileCache{maxTiles: uiTileMax, maxCells: uiTileCells}
 }
 
 // get returns one cell from the first tile that holds it.

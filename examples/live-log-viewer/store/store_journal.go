@@ -49,7 +49,7 @@ func isReadOnly(err error) bool {
 	var se *sqlite.Error
 	if errors.As(err, &se) {
 		switch se.Code() {
-		case 3, 8, 14: // SQLITE_PERM, SQLITE_READONLY, SQLITE_CANTOPEN
+		case sqlitePerm, sqliteReadonly, sqliteCantOpen: // SQLITE_PERM, SQLITE_READONLY, SQLITE_CANTOPEN
 			return true
 		}
 	}

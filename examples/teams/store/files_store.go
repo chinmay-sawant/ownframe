@@ -9,7 +9,7 @@ import (
 // saveFiles replaces the files and filter tables with d.
 func saveFiles(tx *sql.Tx, d files.Data) error {
 	for _, t := range []string{"files", "files_state"} {
-		if _, err := tx.Exec("DELETE FROM " + t); err != nil {
+		if _, err := tx.Exec("DELETE FROM " + t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
 			return err
 		}
 	}

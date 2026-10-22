@@ -47,7 +47,7 @@ type Box struct {
 }
 
 // act builds a data-action token from a computed string.
-func act(s string) template.URL { return template.URL(s) }
+func act(s string) template.URL { return template.URL(s) } //nolint:gosec // reason: action strings are internal constants like cell: and sheet:, never user HTML
 
 // Editor is the active cell editor: the text before and after the caret.
 type Editor struct {

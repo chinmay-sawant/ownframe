@@ -32,9 +32,9 @@ func (d *Dummy) spawn() {
 		name:    procNames[d.rng.Intn(len(procNames))],
 		user:    procUsers[d.rng.Intn(len(procUsers))],
 		state:   "sleeping",
-		cpu:     uint64(d.rng.Int63n(3_600_000_000_000)),
-		mem:     8<<20 + uint64(d.rng.Int63n(400<<20)),
-		threads: 1 + d.rng.Intn(24),
-		nice:    d.rng.Intn(10),
+		cpu:     uint64(d.rng.Int63n(cpuCapNS)),                  //nolint:gosec // reason: Int63n never returns a negative value.
+		mem:     procMemBase + uint64(d.rng.Int63n(procMemSpan)), //nolint:gosec // reason: Int63n never returns a negative value.
+		threads: 1 + d.rng.Intn(maxNewThreads),
+		nice:    d.rng.Intn(niceSpan),
 	})
 }

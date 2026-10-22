@@ -14,12 +14,12 @@ type Limits struct {
 // DefaultLimits are the limits the example ships with.
 func DefaultLimits() Limits {
 	return Limits{
-		MaxLen:        400,
-		MaxDepth:      128,
-		MaxRangeCells: 10000,
-		MaxEvals:      200000,
-		MaxRows:       1048576,
-		MaxCols:       18278,
+		MaxLen:        limitLen,
+		MaxDepth:      limitDepth,
+		MaxRangeCells: limitCells,
+		MaxEvals:      limitEvals,
+		MaxRows:       limitRows,
+		MaxCols:       limitCols,
 	}
 }
 

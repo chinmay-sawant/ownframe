@@ -45,7 +45,7 @@ func (s *Scene) awaitSnapshot() {
 	for time.Now().Before(deadline) {
 		res, ok := s.store.Poll()
 		if !ok {
-			time.Sleep(2 * time.Millisecond)
+			time.Sleep(snapshotPoll)
 
 			continue
 		}

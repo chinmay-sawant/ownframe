@@ -6,7 +6,8 @@ import (
 	"net/http"
 )
 
-// Handler exposes the local agent notification API.
+// Handler exposes the loopback agent API. Remote use needs a reverse
+// proxy with auth or a shared secret checked before Submit.
 func (i *Inbox) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /expressions", func(w http.ResponseWriter, r *http.Request) {
@@ -20,26 +21,30 @@ func (i *Inbox) Handler() http.Handler {
 		}{n, v})
 	})
 	mux.HandleFunc("POST /notify", func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, 4096)
+		if !checkOrigin(r) {
+			reply(w, http.StatusForbidden, map[string]string{"error": "forbidden"})
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, maxNotifyBytes)
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 		var n Notification
 		if err := decoder.Decode(&n); err != nil {
-			reply(w, 400, map[string]string{"error": err.Error()})
+			reply(w, http.StatusBadRequest, map[string]string{"error": "invalid notification"})
 			return
 		}
 		var extra any
 		if err := decoder.Decode(&extra); err != io.EOF {
-			reply(w, 400, map[string]string{"error": "send one JSON object"})
+			reply(w, http.StatusBadRequest, map[string]string{"error": "send one JSON object"})
 			return
 		}
 		if err := i.Submit(n); err != nil {
-			reply(w, 400, map[string]string{"error": err.Error()})
+			reply(w, http.StatusBadRequest, map[string]string{"error": "invalid notification"})
 			return
 		}
 		reply(w, http.StatusAccepted, n)
 	})
-	return mux
+	return withHeaders(mux)
 }
 
 func reply(w http.ResponseWriter, status int, value any) {

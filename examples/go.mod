@@ -1,13 +1,13 @@
 module github.com/chinmay-sawant/ownframe/examples
 
-go 1.26.4
+go 1.26.10
 
 require (
 	github.com/chinmay-sawant/blinkless v0.0.2
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
-	golang.org/x/sys v0.47.0
+	golang.org/x/sys v0.48.0
 	modernc.org/sqlite v1.56.0
 )
 
@@ -42,9 +42,9 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.13 // indirect
 	github.com/tdewolff/parse/v2 v2.8.12 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
-	golang.org/x/net v0.55.0 // indirect
-	golang.org/x/sync v0.22.0 // indirect
-	golang.org/x/text v0.41.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	modernc.org/knuth v0.5.5 // indirect
 	modernc.org/libc v1.74.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

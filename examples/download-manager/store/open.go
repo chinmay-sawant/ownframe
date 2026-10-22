@@ -20,7 +20,7 @@ func open(dir string, memory bool) (*Store, error) {
 			return nil, errors.New("store: empty data directory")
 		}
 
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, storeDirPerm); err != nil {
 			return nil, err
 		}
 	}
@@ -40,7 +40,7 @@ func open(dir string, memory bool) (*Store, error) {
 
 	s := &Store{
 		db: db, dir: dir, memory: memory,
-		ops:  make(chan func(), 64),
+		ops:  make(chan func(), storeOpsQueue),
 		quit: make(chan struct{}),
 		done: make(chan struct{}),
 	}

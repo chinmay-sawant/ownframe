@@ -60,7 +60,7 @@ func TestEnsureDummySeedsOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st2.Close()
+	defer func() { _ = st2.Close() }()
 
 	third, err := st2.EnsureDummy(bg(), DummyOptions{})
 	if err != nil {

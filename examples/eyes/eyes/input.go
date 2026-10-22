@@ -49,9 +49,9 @@ func (a *App) toggleMode(now time.Time) {
 // onSwipe flicks the look target in the swipe direction.
 func (a *App) onSwipe(_ context.Context, dx, dy float64) error {
 	a.wakeHUD(a.now())
-	a.st.tLookX = clamp(dx*0.2, -48, 48)
-	a.st.tLookY = clamp(dy*0.2, -30, 30)
-	a.st.sacT = a.now().Add(2500000000)
+	a.st.tLookX = clamp(dx*swipeGain, -lookXRange, lookXRange)
+	a.st.tLookY = clamp(dy*swipeGain, -lookYRange, lookYRange)
+	a.st.sacT = a.now().Add(swipeCooldown)
 	return nil
 }
 

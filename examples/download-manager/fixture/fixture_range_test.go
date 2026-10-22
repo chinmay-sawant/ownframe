@@ -20,7 +20,7 @@ func TestRangeRoute(t *testing.T) {
 	}
 
 	body, _ := io.ReadAll(resp.Body)
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 206 || string(body) != string(fillFor(t, srv)[10:20]) {
 		t.Fatalf("206: status %d len %d", resp.StatusCode, len(body))
@@ -38,7 +38,7 @@ func TestRangeRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		t.Errorf("stale If-Range status %d", resp.StatusCode)
@@ -51,7 +51,7 @@ func TestRangeRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 416 {
 		t.Errorf("416 status %d", resp.StatusCode)

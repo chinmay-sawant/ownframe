@@ -19,8 +19,8 @@ type Retention struct {
 // 256 MiB of raw record bytes.
 func DefaultRetention() Retention {
 	return Retention{
-		MaxRows:  200_000,
-		MaxBytes: 256 << 20,
+		MaxRows:  retainRows,
+		MaxBytes: retainBytes,
 		MaxAge:   7 * 24 * time.Hour,
 	}
 }

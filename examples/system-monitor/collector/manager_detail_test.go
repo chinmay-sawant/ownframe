@@ -20,7 +20,7 @@ func TestManagerTrackDetail(t *testing.T) {
 	if err := m.Start(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	defer m.Close(t.Context())
+	defer func() { _ = m.Close(t.Context()) }()
 
 	first := domain.ProcessIdentity{PID: 10, Start: 1}
 	m.Track(first)

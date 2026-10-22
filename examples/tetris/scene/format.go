@@ -58,8 +58,8 @@ func shortID(id string) string {
 		return "-"
 	}
 
-	if len(id) > 8 {
-		return id[:8]
+	if len(id) > shortIDLen {
+		return id[:shortIDLen]
 	}
 
 	return id

@@ -7,17 +7,26 @@ import (
 	"time"
 )
 
+// Time scales and digit grouping for the formatters.
+const (
+	digitGroup  = 3
+	minuteSecs  = 60
+	hourSecs    = 3600
+	daySecs     = 86400
+	truncateMin = 2
+)
+
 // formatCount renders an integer with thousands separators.
 func formatCount(n int) string {
 	s := strconv.Itoa(n)
-	if len(s) <= 3 {
+	if len(s) <= digitGroup {
 		return s
 	}
 
 	var b strings.Builder
 
 	for i, r := range s {
-		if i > 0 && (len(s)-i)%3 == 0 {
+		if i > 0 && (len(s)-i)%digitGroup == 0 {
 			b.WriteByte(',')
 		}
 
@@ -36,14 +45,14 @@ func formatAge(d time.Duration) string {
 	sec := int(d.Seconds())
 
 	switch {
-	case sec < 60:
+	case sec < minuteSecs:
 		return fmt.Sprintf("%ds", sec)
-	case sec < 3600:
-		return fmt.Sprintf("%dm %ds", sec/60, sec%60)
-	case sec < 86400:
-		return fmt.Sprintf("%dh %dm", sec/3600, sec%3600/60)
+	case sec < hourSecs:
+		return fmt.Sprintf("%dm %ds", sec/minuteSecs, sec%minuteSecs)
+	case sec < daySecs:
+		return fmt.Sprintf("%dh %dm", sec/hourSecs, sec%hourSecs/minuteSecs)
 	default:
-		return fmt.Sprintf("%dd %dh", sec/86400, sec%86400/3600)
+		return fmt.Sprintf("%dd %dh", sec/daySecs, sec%daySecs/hourSecs)
 	}
 }
 
@@ -63,7 +72,7 @@ func truncate(s string, n int) string {
 		return s
 	}
 
-	if n < 2 {
+	if n < truncateMin {
 		return string(r[:n])
 	}
 

@@ -6,11 +6,8 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"math"
 
 	xdraw "golang.org/x/image/draw"
-	"golang.org/x/image/font/gofont/gobold"
-	"golang.org/x/image/font/opentype"
 )
 
 const (
@@ -26,9 +23,9 @@ const ringText = "SHARE · SHARE · SHARE · "
 func ShareBadgePNG() []byte {
 	side := badgeSize * badgeScale
 	img := image.NewRGBA(image.Rect(0, 0, side, side))
-	cream := color.RGBA{R: 245, G: 244, B: 240, A: 255}
+	cream := color.RGBA{R: creamRed, G: creamGreen, B: creamBlue, A: opaqueAlpha}
 
-	drawDisc(img, float64(side)/2, float64(side)/2, float64(side)/2, cream)
+	drawDisc(img, float64(side)/halfDivisor, float64(side)/halfDivisor, float64(side)/halfDivisor, cream)
 	drawRing(img)
 
 	small := image.NewRGBA(image.Rect(0, 0, badgeSize, badgeSize))
@@ -49,39 +46,5 @@ func drawDisc(img *image.RGBA, cx, cy, r float64, c color.RGBA) {
 				img.SetRGBA(x, y, c)
 			}
 		}
-	}
-}
-
-// drawRing places each ring rune upright against the rim.
-func drawRing(img *image.RGBA) {
-	ft, err := opentype.Parse(gobold.TTF)
-	if err != nil {
-		return
-	}
-
-	face, err := opentype.NewFace(ft, &opentype.FaceOptions{
-		Size: 8 * badgeScale,
-		DPI:  72,
-	})
-	if err != nil {
-		return
-	}
-	defer func() { _ = face.Close() }()
-
-	ink := color.RGBA{R: 10, G: 79, B: 69, A: 255}
-	side := float64(img.Bounds().Dx())
-	radius := side * 0.37
-	step := 2 * math.Pi / float64(len(ringText))
-
-	for i, r := range ringText {
-		if r == ' ' {
-			continue
-		}
-
-		angle := float64(i) * step
-		x := side/2 + radius*math.Sin(angle)
-		y := side/2 - radius*math.Cos(angle)
-
-		rotateInto(img, drawGlyph(face, string(r), ink), x, y, angle)
 	}
 }

@@ -17,6 +17,8 @@ const (
 	// DefaultWidth and DefaultHeight are the size of a newly opened window.
 	DefaultWidth  = 560
 	DefaultHeight = 480
+	// savedPNGPerm keeps saved pictures owner-only.
+	savedPNGPerm = 0o600
 )
 
 // View is the stamp and the status line the template prints.

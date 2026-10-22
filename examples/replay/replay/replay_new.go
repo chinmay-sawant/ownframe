@@ -15,8 +15,12 @@ func New() (*App, error) {
 	}
 
 	app := &App{page: page}
-	page.Route("replay", replayHTML)
-	page.Route("fallback", fallbackHTML)
+	if err := page.Route("replay", replayHTML); err != nil {
+		return nil, err
+	}
+	if err := page.Route("fallback", fallbackHTML); err != nil {
+		return nil, err
+	}
 	page.SetData(&app.view)
 
 	return app, nil

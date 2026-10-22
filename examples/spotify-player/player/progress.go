@@ -5,7 +5,7 @@ const cardLength = "3:30"
 
 // setNow swaps the now-playing item for a card.
 func (a *App) setNow(card Card) {
-	a.view.Now = Track{Index: card.Index, Title: clip(card.Title, 30), Artist: clip(card.Sub, 30), Length: cardLength, Cover: card.Cover}
+	a.view.Now = Track{Index: card.Index, Title: clip(card.Title, trackTitleClip), Artist: clip(card.Sub, trackTitleClip), Length: cardLength, Cover: card.Cover}
 	a.resetProgress()
 }
 
@@ -30,7 +30,7 @@ func (a *App) setProgress(progress int) {
 		progress = 0
 	}
 
-	if progress > 100 {
+	if progress > progressMax {
 		progress = 100
 	}
 
@@ -38,7 +38,7 @@ func (a *App) setProgress(progress int) {
 	// when the displayed progress actually changes.
 	if progress != a.view.Progress {
 		a.view.Progress = progress
-		elapsed := a.seconds * progress / 100
+		elapsed := a.seconds * progress / progressMax
 		a.view.Elapsed = formatSeconds(elapsed)
 		a.view.Remaining = formatSeconds(a.seconds - elapsed)
 	} else {

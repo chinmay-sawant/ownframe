@@ -4,10 +4,10 @@ package game
 // middle columns.
 func spawnX(p Piece) int {
 	if p == PieceO {
-		return 4
+		return spawnOriginO
 	}
 
-	return 3
+	return spawnOrigin
 }
 
 // spawnY returns the box origin row. Occupied cells start in rows -1 and

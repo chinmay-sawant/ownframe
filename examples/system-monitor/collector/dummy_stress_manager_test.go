@@ -19,7 +19,7 @@ func TestManagerStress(t *testing.T) {
 	if err := m.Start(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	defer m.Close(t.Context())
+	defer func() { _ = m.Close(t.Context()) }()
 
 	deadline := time.Now().Add(3 * time.Second)
 	for time.Now().Before(deadline) {

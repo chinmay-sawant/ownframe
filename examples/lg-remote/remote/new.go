@@ -25,10 +25,10 @@ func New(opts ...Option) (*App, error) {
 		dark:       true,
 		async:      true,
 		wantSearch: true,
-		notes:      make(chan update, 8),
+		notes:      make(chan update, noteQueueSize),
 		view: View{
-			FontSize:    16,
-			Sensitivity: 100,
+			FontSize:    defaultFontSize,
+			Sensitivity: defaultSensitivity,
 			Title:       "LG remote",
 			Status:      "Searching this Wi-Fi for the TV.",
 			Mode:        "Wi-Fi",

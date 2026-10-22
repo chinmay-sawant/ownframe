@@ -10,10 +10,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/audio/wav"
 )
 
+// sniffLen is the longest magic decode checks, the RIFF prefix.
+const sniffLen = 4
+
 // decode sniffs data and returns 16-bit stereo PCM at sampleRate with the
 // decoded length in bytes.
 func decode(data []byte, sampleRate int) (io.ReadSeeker, int64, error) {
-	if len(data) < 4 {
+	if len(data) < sniffLen {
 		return nil, 0, errors.New("music: audio too short")
 	}
 

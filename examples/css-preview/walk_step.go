@@ -14,6 +14,10 @@ func (w *walker) publishBoxes() {
 	w.boxes = w.p.Boxes()
 }
 
+// scrollLead leaves room above the aimed row when the walker scrolls it
+// into view.
+const scrollLead = 200
+
 func (w *walker) step() {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -39,7 +43,7 @@ func (w *walker) step() {
 	row := w.v.Catalog[w.next]
 	if w.m != nil && w.scrollFor == w.next {
 		_, viewH := w.p.Size()
-		y := w.m.rowTop[w.next/2] - 200
+		y := w.m.rowTop[w.next/cardsPerRow] - scrollLead
 		if maxY := w.m.contentH - viewH; y > maxY {
 			y = maxY
 		}
@@ -57,7 +61,7 @@ func (w *walker) step() {
 		return
 	}
 	if w.m == nil && w.scrollFor == w.next {
-		w.p.ScrollTo(0, int(b.Y)-200)
+		w.p.ScrollTo(0, int(b.Y)-scrollLead)
 		w.scrollFor = -1
 
 		return

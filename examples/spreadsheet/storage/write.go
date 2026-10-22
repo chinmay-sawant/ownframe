@@ -23,7 +23,7 @@ func writeCells(ctx context.Context, tx *sql.Tx, sheet workbook.SheetID, edits [
 		return err
 	}
 
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	del, err := tx.PrepareContext(ctx,
 		`DELETE FROM cells WHERE sheet_id = ? AND row_ix = ? AND col_ix = ?`)
@@ -31,7 +31,7 @@ func writeCells(ctx context.Context, tx *sql.Tx, sheet workbook.SheetID, edits [
 		return err
 	}
 
-	defer del.Close()
+	defer func() { _ = del.Close() }()
 
 	for i, e := range edits {
 		if i%batch == 0 {

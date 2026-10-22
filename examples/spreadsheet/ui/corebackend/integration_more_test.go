@@ -62,7 +62,7 @@ func TestUICtrlEndJumpsToUsedRange(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer app.Close()
+	defer func() { _ = app.Close() }()
 
 	ctx := context.Background()
 	waitFor(t, app, func() bool { return hasCell(app, "row 1") })

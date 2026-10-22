@@ -14,8 +14,7 @@ func TestSnapshotRoundTripThroughTheStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	ctx := context.Background()
 
 	if _, ok, err := s.LoadSnapshot(ctx); err != nil || ok {
@@ -56,8 +55,7 @@ func TestInvalidSnapshotIsRejectedByTheStore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer s.Close()
-
+	defer func() { _ = s.Close() }()
 	if err := s.SaveSnapshot(context.Background(), game.Snapshot{}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("empty snapshot returned %v", err)
 	}

@@ -14,7 +14,7 @@ func (s *Session) StartStep(host, spec string) (func() (string, error), error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.steps == nil {
-		s.steps = make(chan struct{}, 16)
+		s.steps = make(chan struct{}, stepsChanSize)
 	}
 	select {
 	case s.steps <- struct{}{}:

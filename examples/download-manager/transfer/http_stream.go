@@ -51,7 +51,7 @@ func (h *HTTP) receive(ctx context.Context, cancel context.CancelFunc, req Reque
 
 // pump copies body into file, resetting the stall timer on every read.
 func pump(ctx context.Context, body io.Reader, file *os.File, p plan, report Reporter, stalled *int32, reset func()) (int64, error) {
-	buf := make([]byte, 64<<10)
+	buf := make([]byte, streamChunk)
 	done := p.start
 
 	for {

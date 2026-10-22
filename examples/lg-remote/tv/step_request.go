@@ -30,7 +30,7 @@ func (c *Client) startStep(spec string) (func() (string, bool, error), error) {
 		c.drop(id)
 		return nil, err
 	}
-	timer := time.NewTimer(8 * time.Second)
+	timer := time.NewTimer(stepTimeout)
 	return func() (string, bool, error) {
 		defer timer.Stop()
 		defer c.drop(id)

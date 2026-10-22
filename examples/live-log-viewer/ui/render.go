@@ -15,11 +15,8 @@ func (a *App) Pin(offsetY, viewH int) bool {
 		}
 	}
 
-	changed := false
-	if a.view.BarTop != off || a.view.SideH != viewH ||
-		a.view.StatusTop != off+viewH-StatusH || wasH != viewH {
-		changed = true
-	}
+	changed := a.view.BarTop != off || a.view.SideH != viewH ||
+		a.view.StatusTop != off+viewH-StatusH || wasH != viewH
 
 	a.view.BarTop = off
 	a.view.SideH = viewH

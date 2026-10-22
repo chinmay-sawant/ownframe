@@ -26,8 +26,8 @@ func TestParseSeverity(t *testing.T) {
 }
 
 func TestSeverityOrderAndLabels(t *testing.T) {
-	if !(Unknown < Trace && Trace < Debug && Debug < Info &&
-		Info < Warn && Warn < Error && Error < Fatal) {
+	if Unknown >= Trace || Trace >= Debug || Debug >= Info ||
+		Info >= Warn || Warn >= Error || Error >= Fatal {
 		t.Fatal("severity order is not ascending")
 	}
 

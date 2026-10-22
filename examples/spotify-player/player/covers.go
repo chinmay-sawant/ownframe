@@ -21,8 +21,8 @@ func coverJobs(songs, albums []searchResult) []coverJob {
 
 	for i, al := range albums {
 		name := "pick-" + strconv.Itoa(i)
-		if i >= 6 {
-			name = "card-" + strconv.Itoa(i-6)
+		if i >= coverSplit {
+			name = "card-" + strconv.Itoa(i-coverSplit)
 		}
 
 		jobs = append(jobs, coverJob{name: name, url: upscale(al.Artwork)})

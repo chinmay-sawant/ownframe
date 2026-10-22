@@ -51,7 +51,7 @@ func (a *App) paintObstacle(d *ownframe.Display, p *[partsPerSlot]*ownframe.Disp
 
 // paintBird places the body, the beak, and the wing the flap cycle shows.
 func (a *App) paintBird(d *ownframe.Display, p *[partsPerSlot]*ownframe.DisplayOp, ob obstacle, top float64) {
-	up := int(ob.flap/0.16)%2 == 0
+	up := int(ob.flap/flapPeriod)%flapCycle == 0
 
 	a.setInk(d, p[0], rect{ob.x + 12, top + 10, 20, 10})
 	a.setInkUp(d, p[1], rect{ob.x + 10, top, 18, 8}, up)

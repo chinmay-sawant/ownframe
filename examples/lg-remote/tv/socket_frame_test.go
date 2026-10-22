@@ -39,9 +39,9 @@ func readSocketFrame(r *bufio.ReadWriter) ([]byte, error) {
 }
 
 func writeSocketFrame(w io.Writer, b []byte) {
-	h := []byte{0x81, byte(len(b))}
+	h := []byte{0x81, byte(len(b))} //nolint:gosec // reason: test frames are short fixtures, length fits in one byte.
 	if len(b) >= 126 {
-		h = []byte{0x81, 126, byte(len(b) >> 8), byte(len(b))}
+		h = []byte{0x81, 126, byte(len(b) >> 8), byte(len(b))} //nolint:gosec // reason: test frames are short fixtures, extended length bytes hold the value.
 	}
 	_, _ = w.Write(append(h, b...))
 }

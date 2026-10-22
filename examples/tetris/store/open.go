@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 // open opens one connection pool, migrates, activates the journal, seeds
@@ -26,12 +25,11 @@ func open(dsn, path string) (*Store, error) {
 		done: make(chan struct{}),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), openTimeout)
 	defer cancel()
 
 	if err := s.init(ctx); err != nil {
-		db.Close()
-
+		_ = db.Close()
 		return nil, err
 	}
 

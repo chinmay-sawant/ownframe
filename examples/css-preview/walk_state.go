@@ -14,11 +14,11 @@ func (w *walker) handleBox(rw http.ResponseWriter, r *http.Request) {
 	defer w.mu.Unlock()
 	for _, b := range w.boxes {
 		if b.ID == id {
-			fmt.Fprintf(rw, "%s %.1f %.1f %.1f %.1f\n", b.ID, b.X, b.Y, b.W, b.H)
+			_, _ = fmt.Fprintf(rw, "%s %.1f %.1f %.1f %.1f\n", b.ID, b.X, b.Y, b.W, b.H)
 			return
 		}
 	}
-	fmt.Fprintln(rw, "missing")
+	_, _ = fmt.Fprintln(rw, "missing")
 }
 
 // handleState reports the counters the click script polls. The field order
@@ -28,7 +28,7 @@ func (w *walker) handleState(rw http.ResponseWriter, _ *http.Request) {
 	w.mu.Lock()
 	next, tr := w.next, w.trace
 	w.mu.Unlock()
-	fmt.Fprintf(rw, "%d %d %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+	_, _ = fmt.Fprintf(rw, "%d %d %s %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
 		next, tr.started, tr.selected, tr.last, tr.redraws, tr.parses,
 		tr.cascades, tr.layouts, tr.repaints, tr.ops, tr.boxes, tr.tmpl,
 		tr.style, tr.display, tr.paint, tr.changed, tr.dirty, tr.alloc,

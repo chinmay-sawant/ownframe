@@ -47,8 +47,8 @@ func (g *game) fall(dt float64) {
 // holding jump reaches higher.
 func (g *game) gravity() float64 {
 	if g.vy > 0 && g.jumpHeld {
-		return 1500
+		return heldGravity
 	}
 
-	return 2500
+	return fallGravity
 }

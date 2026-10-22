@@ -4,7 +4,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 )
 
 func nameFrom(text string) string {
@@ -17,15 +16,14 @@ func nameFrom(text string) string {
 }
 
 func nameAt(rawURL string) string {
-	client := http.Client{Timeout: 700 * time.Millisecond}
+	client := http.Client{Timeout: nameTimeout}
 	resp, err := client.Get(rawURL)
 	if err != nil {
 		return ""
 	}
 
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 8192))
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(io.LimitReader(resp.Body, nameReadLimit))
 	if err != nil {
 		return ""
 	}

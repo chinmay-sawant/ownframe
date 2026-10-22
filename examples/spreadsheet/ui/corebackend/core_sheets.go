@@ -81,4 +81,4 @@ func (b *Backend) Info(id string) (ui.Sheet, bool) {
 }
 
 // Revision is the workbook content revision.
-func (b *Backend) Revision() uint64 { return uint64(b.wb.Rev()) }
+func (b *Backend) Revision() uint64 { return uint64(b.wb.Rev()) } //nolint:gosec // reason: non-negative revision counter

@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/pet-care/store"
@@ -23,8 +24,7 @@ func New(path string) (*App, error) {
 		storageWarning = "Local storage could not open. Changes stay temporary for this session."
 	}
 	if err := db.SeedDemo(context.Background()); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("pet-care demo data: %w", err)
+		return nil, errors.Join(fmt.Errorf("pet-care demo data: %w", err), db.Close())
 	}
 	html, err := files.ReadFile("index.html")
 	if err != nil {
@@ -35,10 +35,9 @@ func New(path string) (*App, error) {
 		return nil, err
 	}
 	source := strings.Replace(string(html), "<!-- styles -->", "<style>"+string(css)+"</style>", 1)
-	p, err := ownframe.New(ownframe.Config{DevTools: true, Title: "Pet care", HTML: source, Width: 1120, Height: 820, MinWidth: 360, MinHeight: 600, DisableTouchZoom: true})
+	p, err := ownframe.New(ownframe.Config{DevTools: true, Title: "Pet care", HTML: source, Width: windowWidth, Height: windowHeight, MinWidth: windowMinW, MinHeight: windowMinH, DisableTouchZoom: true})
 	if err != nil {
-		db.Close()
-		return nil, err
+		return nil, errors.Join(err, db.Close())
 	}
 	prepareImages(p)
 	a := &App{page: p, db: db, pickers: make(chan string, 1), exports: make(chan []byte, 1), imports: make(chan []byte, 1), view: View{Screen: "login", Email: "demo@petcare.local", Password: "pawprints", StorageWarning: storageWarning}}

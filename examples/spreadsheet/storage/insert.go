@@ -58,7 +58,7 @@ func insertCells(ctx context.Context, tx *sql.Tx, sheetID int64, sheet *workbook
 		return err
 	}
 
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 
 	var walkErr error
 

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/fetch/fetcher"
 )
 
@@ -33,7 +34,7 @@ func TestFetchedImageBecomesBackground(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(redImage))
 	t.Cleanup(srv.Close)
 
-	ctx := context.Background()
+	ctx := ownframe.AllowPrivate(context.Background())
 
 	app, err := fetcher.New()
 	if err != nil {

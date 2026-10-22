@@ -40,5 +40,5 @@ func (b *Backend) CommitCSV(id string, data []byte, replace bool) (ui.ImportResu
 		return ui.ImportResult{}, err
 	}
 
-	return ui.ImportResult{Rev: uint64(b.wb.Rev()), Rows: table.Rows(), Cols: table.Cols()}, nil
+	return ui.ImportResult{Rev: uint64(b.wb.Rev()), Rows: table.Rows(), Cols: table.Cols()}, nil //nolint:gosec // reason: revision is a non-negative counter, never exceeds MaxInt64
 }

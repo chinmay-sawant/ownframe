@@ -5,21 +5,21 @@ import "strings"
 // fracLayout returns the layout piece for a captured fraction, capped at
 // nanosecond precision.
 func fracLayout(frac string) string {
-	if len(frac) < 2 {
+	if len(frac) < fracMinLen {
 		return ""
 	}
 
 	n := len(frac) - 1
-	if n > 9 {
-		n = 9
+	if n > fracMaxPrec {
+		n = fracMaxPrec
 	}
 
 	return "." + strings.Repeat("0", n)
 }
 
 func fracText(frac string) string {
-	if len(frac) > 10 {
-		return frac[:10]
+	if len(frac) > fracMaxLen {
+		return frac[:fracMaxLen]
 	}
 
 	return frac
@@ -27,11 +27,11 @@ func fracText(frac string) string {
 
 func fracNanos(frac string) string {
 	frac = strings.TrimPrefix(frac, ".")
-	for len(frac) < 9 {
+	for len(frac) < fracPadWidth {
 		frac += "0"
 	}
 
-	return frac[:9]
+	return frac[:fracPadWidth]
 }
 
 func zoneLayout(zone string) string {
@@ -53,7 +53,7 @@ func parseInt(s string) int64 {
 			return n
 		}
 
-		n = n*10 + int64(r-'0')
+		n = n*fracBase + int64(r-'0')
 	}
 
 	return n

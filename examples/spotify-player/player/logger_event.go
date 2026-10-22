@@ -12,7 +12,7 @@ func (a *App) logEvent(event, action string) {
 		return
 	}
 
-	patch := a.page.PatchReport()
+	patch := a.page.LastPatch()
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 

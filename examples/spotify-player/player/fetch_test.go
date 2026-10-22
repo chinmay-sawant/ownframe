@@ -17,7 +17,7 @@ func TestLoadFromTestServer(t *testing.T) {
 		t.Fatalf("NewAt: %v", err)
 	}
 
-	if err := app.Load(context.Background(), "canned"); err != nil {
+	if err := app.Load(testCtx(), "canned"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
 

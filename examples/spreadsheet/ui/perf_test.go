@@ -15,7 +15,7 @@ func TestPerfBreakdown(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer app.Close()
+	defer func() { _ = app.Close() }()
 	settle(t, app)
 	ctx := context.Background()
 	app.page.SetScrollOffset(0, 480)

@@ -46,7 +46,7 @@ func TestNewerSchemaRejected(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	var max int
 	if err := db.QueryRow(`SELECT max(version) FROM schema_migrations`).Scan(&max); err != nil {
@@ -72,7 +72,7 @@ func TestCorruptDatabaseFailsWithoutReset(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "jobs.sqlite")
 
-	if err := os.WriteFile(path, []byte("not a database"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte("not a database"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -80,7 +80,7 @@ func TestCorruptDatabaseFailsWithoutReset(t *testing.T) {
 		t.Fatal("corrupt database opened")
 	}
 
-	data, _ := os.ReadFile(path)
+	data, _ := os.ReadFile(path) //nolint:gosec // reason: test reads back the corrupt file it wrote.
 	if string(data) != "not a database" {
 		t.Error("corrupt file was rewritten")
 	}

@@ -26,7 +26,11 @@ type Options struct {
 const (
 	defaultBusyTimeout = 5 * time.Second
 	defaultOpTimeout   = 5 * time.Second
+	pragmaTimeout      = 10 * time.Second
+	migrateTimeout     = 30 * time.Second
 	dbName             = "monitor.db"
+	// storeDirPerm keeps data directories out of group and other access.
+	storeDirPerm = 0o750
 )
 
 // Open and OpenWithOptions live in open.go.

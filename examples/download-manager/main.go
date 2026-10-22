@@ -15,6 +15,12 @@ import (
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	dataDir := flag.String("data", "", "storage directory; empty uses the per-user default")
 	real := flag.Bool("real", false, "use the real HTTP transport instead of dummy data")
 	fixture := flag.Bool("fixture", false, "start the local HTTP fixture service and log its URLs")
@@ -27,13 +33,13 @@ func main() {
 		Fixture: *fixture,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	screen, err := ui.New(ctx, backend)
 	if err != nil {
-		backend.Close()
-		log.Fatal(err)
+		_ = backend.Close()
+		return err
 	}
 
 	defer func() {
@@ -43,6 +49,8 @@ func main() {
 	}()
 
 	if err := ownframe.Run(ctx, screen.Page()); err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }

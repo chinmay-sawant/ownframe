@@ -51,7 +51,7 @@ func (a *App) advance(ctx context.Context) error {
 	}
 
 	if a.view.Shuffle && len(a.view.Tracks) > 0 {
-		a.selectRow(rand.Intn(len(a.view.Tracks)))
+		a.selectRow(rand.Intn(len(a.view.Tracks))) //nolint:gosec // reason: shuffle play order, not security.
 	} else {
 		a.step(1)
 	}

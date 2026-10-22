@@ -26,13 +26,13 @@ func applyStatus(d *domain.ProcessDetail, data []byte) {
 
 		switch key {
 		case "VmSize":
-			d.Virtual = domain.Bytes(float64(parseUint(fields[0])) * 1024)
+			d.Virtual = domain.Bytes(float64(parseUint(fields[0])) * kibibyte)
 		case "VmRSS":
-			d.Memory = domain.Bytes(float64(parseUint(fields[0])) * 1024)
+			d.Memory = domain.Bytes(float64(parseUint(fields[0])) * kibibyte)
 		case "Threads":
 			d.Threads = domain.Count(float64(parseUint(fields[0])))
 		case "Uid":
-			if name, ok := userNames()[int32(parseUint(fields[0]))]; ok {
+			if name, ok := userNames()[int32(parseUint(fields[0]))]; ok { //nolint:gosec // reason: UIDs are 32-bit values, which fit int32.
 				d.User = name
 			}
 		}
@@ -72,7 +72,7 @@ var userNames = sync.OnceValue(func() map[int32]string {
 
 	for _, line := range strings.Split(string(data), "\n") {
 		fields := strings.Split(line, ":")
-		if len(fields) < 3 {
+		if len(fields) < minPasswdFields {
 			continue
 		}
 

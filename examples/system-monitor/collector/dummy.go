@@ -58,7 +58,7 @@ func NewDummy(opts DummyOptions) *Dummy {
 		}
 	}
 
-	d := &Dummy{opts: opts, rng: rand.New(rand.NewSource(opts.Seed))}
+	d := &Dummy{opts: opts, rng: rand.New(rand.NewSource(opts.Seed))} //nolint:gosec // reason: the fixture requires deterministic math/rand output for a reproducible simulation, not cryptographic randomness.
 	d.init()
 
 	return d

@@ -6,10 +6,10 @@ import "embed"
 var files embed.FS
 
 // HTML returns the page fragment.
-func HTML() string { return string(file("stylepage.html")) }
+func HTML() string { return file("stylepage.html") }
 
 // CSS returns the page stylesheet.
-func CSS() string { return string(file("stylepage.css")) }
+func CSS() string { return file("stylepage.css") }
 
 // file returns one embedded fragment as text.
 func file(name string) string {

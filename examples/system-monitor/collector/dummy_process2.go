@@ -7,24 +7,24 @@ import "time"
 func (d *Dummy) evolveProc(p *dmProc) {
 	roll := d.rng.Float64()
 
-	delta := time.Duration(d.rng.Int63n(300_000))
-	if roll < 0.15 {
-		delta = time.Millisecond + time.Duration(d.rng.Int63n(int64(8*time.Millisecond)))
+	delta := time.Duration(d.rng.Int63n(evolveSpanNS))
+	if roll < settleChance {
+		delta = settleBase + time.Duration(d.rng.Int63n(int64(settleExtra)))
 	}
-	if d.spike && roll > 0.9 {
-		delta = 20 * time.Millisecond
+	if d.spike && roll > spikeEvolve {
+		delta = spikeEvolveDT
 	}
 	p.cpu += uint64(delta)
 
-	step := int64(d.rng.Intn(2<<20)) - (1 << 20)
-	p.mem = clampU64(int64(p.mem)+step, 1<<20, 2<<30)
+	step := int64(d.rng.Intn(procJitter)) - procJitterMid
+	p.mem = clampU64(int64(p.mem)+step, procMemFloor, procMemCeil) //nolint:gosec // reason: resident memory stays within the clamped 1 MiB to 2 GiB range.
 
-	if d.rng.Float64() < 0.1 {
-		p.read += uint64(d.rng.Int63n(4 << 20))
-		p.write += uint64(d.rng.Int63n(1 << 20))
+	if d.rng.Float64() < readChance {
+		p.read += uint64(d.rng.Int63n(readSpan))   //nolint:gosec // reason: Int63n never returns a negative value.
+		p.write += uint64(d.rng.Int63n(writeSpan)) //nolint:gosec // reason: Int63n never returns a negative value.
 	}
 
-	if d.rng.Float64() < 0.4 {
+	if d.rng.Float64() < runChance {
 		p.state = "running"
 	} else {
 		p.state = "sleeping"
@@ -43,16 +43,16 @@ func (d *Dummy) advanceProcs() {
 
 // churn exits a few processes and replaces them, keeping the table size.
 func (d *Dummy) churn() {
-	exits := 1 + d.rng.Intn(3)
+	exits := 1 + d.rng.Intn(exitSpan)
 
 	for range exits {
-		if len(d.procs) <= 16 {
+		if len(d.procs) <= procFloor {
 			break
 		}
 
 		idx := d.rng.Intn(len(d.procs))
 		d.retired = append(d.retired, d.procs[idx].id)
-		if len(d.retired) > 32 {
+		if len(d.retired) > retireCap {
 			d.retired = d.retired[1:]
 		}
 		d.procs = append(d.procs[:idx], d.procs[idx+1:]...)

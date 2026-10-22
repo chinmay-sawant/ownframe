@@ -38,16 +38,16 @@ func paginateTracks(view *View, page int) {
 		return
 	}
 
-	buf := make([]byte, 0, 64)
+	buf := make([]byte, 0, paginationBuf)
 	buf = append(buf, "Showing "...)
-	buf = strconv.AppendInt(buf, int64(start+1), 10)
+	buf = strconv.AppendInt(buf, int64(start+1), decimalBase)
 	buf = append(buf, "–"...)
-	buf = strconv.AppendInt(buf, int64(end), 10)
+	buf = strconv.AppendInt(buf, int64(end), decimalBase)
 	buf = append(buf, " of "...)
-	buf = strconv.AppendInt(buf, int64(count), 10)
+	buf = strconv.AppendInt(buf, int64(count), decimalBase)
 	buf = append(buf, " · Page "...)
-	buf = strconv.AppendInt(buf, int64(page+1), 10)
+	buf = strconv.AppendInt(buf, int64(page+1), decimalBase)
 	buf = append(buf, " of "...)
-	buf = strconv.AppendInt(buf, int64(pages), 10)
+	buf = strconv.AppendInt(buf, int64(pages), decimalBase)
 	view.TrackRange = string(buf)
 }

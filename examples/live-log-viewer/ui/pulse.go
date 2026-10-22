@@ -47,8 +47,8 @@ func (a *App) pulse(now time.Time) {
 		return
 	}
 
-	phase := math.Sin(now.Sub(a.started).Seconds() * 4)
-	a.pulseDot.Alpha = 0.35 + 0.4*(0.5+0.5*phase)
+	phase := math.Sin(now.Sub(a.started).Seconds() * uiPulseFreq)
+	a.pulseDot.Alpha = uiPulseBase + uiPulseAmp*(uiPulseHalf+uiPulseHalf*phase)
 }
 
 // boxByID returns the hit-test box with id.

@@ -35,7 +35,7 @@ func TestReconcileAdoptsFinalizedFile(t *testing.T) {
 
 	_, dest := reconcileJob(t, s, "adopt", domain.StateRunning, 4)
 
-	if err := os.WriteFile(dest, []byte("data"), 0o644); err != nil {
+	if err := os.WriteFile(dest, []byte("data"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
@@ -61,7 +61,7 @@ func TestReconcileFinalizesCompletePartial(t *testing.T) {
 
 	_, dest := reconcileJob(t, s, "finish", domain.StateRunning, 4)
 
-	if err := os.WriteFile(transfer.PartialPath(dest), []byte("data"), 0o644); err != nil {
+	if err := os.WriteFile(transfer.PartialPath(dest), []byte("data"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 

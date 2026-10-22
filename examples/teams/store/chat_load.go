@@ -14,7 +14,7 @@ func loadChats(db *sql.DB) ([]chat.Chat, error) {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var chats []chat.Chat
 
@@ -40,7 +40,7 @@ func loadThreads(db *sql.DB) (map[string][]chat.Message, error) {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	threads := map[string][]chat.Message{}
 

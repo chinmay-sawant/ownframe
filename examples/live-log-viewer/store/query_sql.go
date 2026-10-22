@@ -61,7 +61,7 @@ func pageTx(ctx context.Context, db *sql.DB, q Query, o PageOptions) (Page, erro
 		return p, err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		e, err := scanEntry(rows)

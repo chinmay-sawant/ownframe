@@ -10,8 +10,7 @@ import (
 	"github.com/chinmay-sawant/ownframe/examples/download-manager/ui"
 )
 
-// New opens the store, builds the transport and engine, and returns the
-// backend. Dummy mode seeds deterministic jobs.
+// New opens the store and builds the engine.
 func New(ctx context.Context, cfg Config) (*Backend, error) {
 	b := &Backend{
 		cmds:    make(chan command, commandQueue),
@@ -34,8 +33,7 @@ func New(ctx context.Context, cfg Config) (*Backend, error) {
 	return b, nil
 }
 
-// open picks the storage directory and builds the engine, falling back to
-// an in-memory database when the directory will not open.
+// open builds the engine, falling back to memory.
 func (b *Backend) open(ctx context.Context, cfg Config) error {
 	if dir := b.pickDir(cfg.DataDir); dir != "" {
 		if err := b.openDir(dir); err != nil {
@@ -54,12 +52,12 @@ func (b *Backend) open(ctx context.Context, cfg Config) error {
 	}
 
 	if _, err := b.store.Reconcile(ctx); err != nil {
-		log.Printf("download-manager: reconcile: %v", err)
+		log.Printf("download-manager: reconcile: %s", cleanLog(err.Error()))
 	}
 
 	if cfg.Dummy {
 		if err := b.store.SeedDummy(ctx, seedJobs); err != nil {
-			log.Printf("download-manager: seed: %v", err)
+			log.Printf("download-manager: seed: %s", cleanLog(err.Error()))
 		}
 	}
 
@@ -75,7 +73,7 @@ func (b *Backend) open(ctx context.Context, cfg Config) error {
 
 	b.eng = eng
 	if err := eng.Recover(ctx); err != nil {
-		log.Printf("download-manager: recover: %v", err)
+		log.Printf("download-manager: recover: %s", cleanLog(err.Error()))
 	}
 
 	return nil

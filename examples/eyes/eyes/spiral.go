@@ -12,14 +12,14 @@ func (a *App) paintSpiral(d *ownframe.Display, base rect,
 	if d == nil || op == nil || base.w <= 0 || base.h <= 0 {
 		return
 	}
-	if mix < 0.001 {
+	if mix < spiralMinMix {
 		setOp(d, op, -100, -100, 0, 0, 0)
 		op.XformSet = false
 		return
 	}
-	cx := base.x + base.w/2 + a.st.lookX
-	cy := base.y + base.h/2 + a.st.lookY
-	sz := min(base.w, base.h) * (0.82 + 0.24*math.Sin(math.Pi*mix))
+	cx := base.x + base.w/halfDivisor + a.st.lookX
+	cy := base.y + base.h/halfDivisor + a.st.lookY
+	sz := min(base.w, base.h) * (spiralBase + spiralPulse*math.Sin(math.Pi*mix))
 	setOp(d, op, cx-sz/2, cy-sz/2, sz, sz, mix)
 	setOpRotation(op, angle)
 }
@@ -32,9 +32,9 @@ func setOpRotation(op *ownframe.DisplayOp, deg float64) {
 		op.XformSet = false
 		return
 	}
-	r := deg * math.Pi / 180
+	r := deg * radPerDeg
 	c, s := math.Cos(r), math.Sin(r)
-	cx, cy := op.X+op.W/2, op.Y+op.H/2
+	cx, cy := op.X+op.W/halfDivisor, op.Y+op.H/halfDivisor
 	var zero ownframe.DisplayOp
 	m := zero.Transform()
 	m.A, m.B, m.C, m.D = c, s, -s, c

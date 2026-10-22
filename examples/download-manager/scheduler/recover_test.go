@@ -15,7 +15,7 @@ func TestRecoverLoadsActiveJobs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	ctx := context.Background()
 	queued := testSchedulerJob("recover-queued", domain.StateQueued)
@@ -40,7 +40,7 @@ func TestRecoverLoadsActiveJobs(t *testing.T) {
 	}
 
 	eng.Start(ctx)
-	defer eng.Close(context.Background())
+	defer func() { _ = eng.Close(context.Background()) }()
 
 	waitState(t, eng, queued.ID, domain.StateCompleted)
 

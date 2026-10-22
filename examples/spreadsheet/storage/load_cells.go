@@ -16,7 +16,7 @@ func loadCells(ctx context.Context, db *sql.DB, w *workbook.Workbook, sheet *wor
 		return err
 	}
 
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var (

@@ -28,7 +28,7 @@ func TestStatusRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 
 	if resp.StatusCode != 404 {
 		t.Errorf("status %d", resp.StatusCode)
@@ -44,7 +44,7 @@ func TestInterruptRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, readErr := io.ReadAll(resp.Body)
 	if readErr == nil {
@@ -60,11 +60,11 @@ func TestInterruptRoute(t *testing.T) {
 func etagOf(t *testing.T, url string) string {
 	t.Helper()
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec // reason: test fetches the local fixture URL.
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	_, _ = io.Copy(io.Discard, resp.Body)
 

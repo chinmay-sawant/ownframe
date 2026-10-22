@@ -16,7 +16,10 @@ func main() {
 	web, addr := benchutil.Flags("127.0.0.1:8132")
 	flag.Parse()
 
-	app, err := benchutil.NewLarge(1000)
+	// rowCount is the Benchmark B list length.
+	const rowCount = 1000
+
+	app, err := benchutil.NewLarge(rowCount)
 	if err != nil {
 		log.Fatal(err)
 	}

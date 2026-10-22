@@ -54,8 +54,7 @@ func pruneOnce(ctx context.Context, db *sql.DB, keep int) (int, error) {
 	for rows.Next() {
 		var id string
 		if err := rows.Scan(&id); err != nil {
-			rows.Close()
-
+			_ = rows.Close()
 			return 0, err
 		}
 
@@ -63,13 +62,11 @@ func pruneOnce(ctx context.Context, db *sql.DB, keep int) (int, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		rows.Close()
-
+		_ = rows.Close()
 		return 0, err
 	}
 
-	rows.Close()
-
+	_ = rows.Close()
 	if len(ids) == 0 {
 		return 0, nil
 	}
@@ -80,7 +77,7 @@ func pruneOnce(ctx context.Context, db *sql.DB, keep int) (int, error) {
 	}
 
 	res, err := db.ExecContext(ctx,
-		`DELETE FROM scores WHERE id IN (?`+strings.Repeat(",?", len(ids)-1)+`)`,
+		`DELETE FROM scores WHERE id IN (?`+strings.Repeat(",?", len(ids)-1)+`)`, //nolint:gosec // reason: placeholders are built from len(ids), no user input enters the SQL string.
 		args...)
 	if err != nil {
 		return 0, err

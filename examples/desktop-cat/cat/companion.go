@@ -43,7 +43,7 @@ func NewWithInbox(variant int, inbox *Inbox) (*Companion, error) {
 }
 
 func newCompanion(variant int, files []string, inbox *Inbox) (*Companion, error) {
-	page, err := ownframe.New(ownframe.Config{Title: "Desktop cat", HTML: source, Width: 320, Height: 350})
+	page, err := ownframe.New(ownframe.Config{Title: "Desktop cat", HTML: source, Width: windowWidth, Height: windowHeight})
 	if err != nil {
 		return nil, err
 	}

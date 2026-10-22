@@ -43,7 +43,7 @@ func (s *Store) Backup(ctx context.Context, dest string) error {
 	ctx, cancel := s.opCtx(ctx)
 	defer cancel()
 
-	_, err := s.db.ExecContext(ctx, "VACUUM INTO "+quoteSQL(dest))
+	_, err := s.db.ExecContext(ctx, "VACUUM INTO "+quoteSQL(dest)) //nolint:gosec // reason: VACUUM INTO takes no bind parameters; quoteSQL doubles embedded quotes, so the escaped path cannot break out of the literal.
 
 	return err
 }

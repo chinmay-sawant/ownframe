@@ -43,7 +43,7 @@ func Watch(ctx context.Context, publish func(Track) error) error {
 		return err
 	}
 	defer r.close()
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(watchInterval)
 	defer ticker.Stop()
 	var state tracker
 	for {

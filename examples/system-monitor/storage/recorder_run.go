@@ -1,9 +1,6 @@
 package storage
 
-import (
-	"context"
-	"time"
-)
+import "context"
 
 // run drains the queue on one goroutine, which is the serialized database
 // worker for the recording path.
@@ -11,7 +8,7 @@ func (r *Recorder) run() {
 	defer close(r.done)
 
 	for rows := range r.queue {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), defaultOpTimeout)
 		n, err := r.store.Append(ctx, r.sessionID, rows)
 		cancel()
 

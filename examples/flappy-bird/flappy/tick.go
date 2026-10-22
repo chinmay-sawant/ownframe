@@ -34,5 +34,5 @@ func (a *App) elapse(now time.Time) float64 {
 	dt := now.Sub(a.last).Seconds()
 	a.last = now
 
-	return min(max(dt, 0), 0.1)
+	return min(max(dt, 0), maxDT)
 }

@@ -3,7 +3,6 @@ package tv
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
 )
@@ -23,11 +22,11 @@ func Open(host, key string) (*Client, error) {
 	}
 	go c.read(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), helloTimeout)
 	_, _ = c.round(ctx, "hello", helloMsg())
 	cancel()
 
-	ctx, cancel = context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), sysTimeout)
 	if m, err := c.round(ctx, "sys", sysMsg()); err == nil {
 		c.Model = modelOf(m.Payload)
 	}
@@ -47,7 +46,7 @@ func Open(host, key string) (*Client, error) {
 }
 
 func dialMain(host string) (*ws.Conn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), mainTimeout)
 	defer cancel()
 
 	conn, err := ws.Dial(ctx, "ws://"+host+":3000/")
@@ -55,7 +54,7 @@ func dialMain(host string) (*ws.Conn, error) {
 		return conn, nil
 	}
 
-	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel = context.WithTimeout(context.Background(), tlsTimeout)
 	defer cancel()
 
 	conn, err = ws.Dial(ctx, "wss://"+host+":3001/")

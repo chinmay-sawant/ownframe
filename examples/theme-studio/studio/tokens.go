@@ -74,11 +74,11 @@ func newToken(name, value string) Token {
 	}
 
 	tok.RGB, tok.OK = rgb, true
-	tok.Style = template.CSS(fmt.Sprintf("background:rgb(%d,%d,%d)",
+	tok.Style = template.CSS(fmt.Sprintf("background:rgb(%d,%d,%d)", //nolint:gosec // reason: channels are ints from round255, no markup survives %d.
 		round255(rgb[0]), round255(rgb[1]), round255(rgb[2])))
 
 	return tok
 }
 
 // round255 turns a 0..1 channel into its 0..255 int.
-func round255(v float64) int { return int(math.Round(v * 255)) }
+func round255(v float64) int { return int(math.Round(v * channelMax)) }

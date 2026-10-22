@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// recentLimit is how many recent records the dashboard keeps.
+const recentLimit = 5
+
 func (a *App) reload(ctx context.Context) error {
 	if a.db == nil {
 		a.view.StorageWarning = "Local storage could not open. Changes stay temporary for this session."
@@ -35,8 +38,8 @@ func (a *App) reload(ctx context.Context) error {
 	}
 	rows := recordRows(records, pets)
 	a.view.Recent = rows
-	if len(a.view.Recent) > 5 {
-		a.view.Recent = a.view.Recent[:5]
+	if len(a.view.Recent) > recentLimit {
+		a.view.Recent = a.view.Recent[:recentLimit]
 	}
 	a.view.Records = visibleRecords(rows, a.view.Screen, a.view.Selected.ID, a.view.Search)
 	a.view.HasSelected = false

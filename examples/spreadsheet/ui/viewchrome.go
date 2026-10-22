@@ -2,31 +2,31 @@ package ui
 
 // buildToolbar lays out the frozen toolbar and the formula bar.
 func (a *App) buildToolbar() []Box {
-	x := a.scrollX + 6
-	y := a.scrollY + 5
+	x := a.scrollX + uiBarX
+	y := a.scrollY + uiBarY
 	theme := "Theme: Light"
 	if a.dark {
 		theme = "Theme: Dark"
 	}
 
-	out := make([]Box, 0, 6)
+	out := make([]Box, 0, uiBarCap)
 	for _, b := range []Box{
-		{Action: "undo", Text: "Undo", W: 52},
-		{Action: "redo", Text: "Redo", W: 52},
-		{Action: "import", Text: "Import", W: 64},
-		{Action: "export", Text: "Export", W: 64},
-		{Action: "theme", Text: theme, W: 104},
+		{Action: "undo", Text: "Undo", W: uiUndoW},
+		{Action: "redo", Text: "Redo", W: uiUndoW},
+		{Action: "import", Text: "Import", W: uiImportW},
+		{Action: "export", Text: "Export", W: uiImportW},
+		{Action: "theme", Text: theme, W: uiThemeW},
 	} {
-		b.Y, b.H, b.X = y, ToolH-10, x
+		b.Y, b.H, b.X = y, ToolH-uiToolTrim, x
 		b.Class = "btn"
 		out = append(out, b)
-		x += b.W + 6
+		x += b.W + uiBarGap
 	}
 
-	fy := a.scrollY + ToolH + 4
-	out = append(out, Box{Action: "formula", Text: "fx", Class: "fx", X: a.scrollX + 6, Y: fy, W: 22, H: FormulaH - 8})
-	out = append(out, Box{Action: "formula", Text: a.activeRef(), Class: "reflab", X: a.scrollX + 30, Y: fy, W: 54, H: FormulaH - 8})
-	out = append(out, Box{Action: "formula", Text: a.formulaText(), Class: "ftext", X: a.scrollX + 88, Y: fy, W: max(40, a.viewW-88-8), H: FormulaH - 8})
+	fy := a.scrollY + ToolH + uiFormulaPad
+	out = append(out, Box{Action: "formula", Text: "fx", Class: "fx", X: a.scrollX + uiFxX, Y: fy, W: uiFxW, H: FormulaH - uiChromePad})
+	out = append(out, Box{Action: "formula", Text: a.activeRef(), Class: "reflab", X: a.scrollX + uiRefX, Y: fy, W: uiRefW, H: FormulaH - uiChromePad})
+	out = append(out, Box{Action: "formula", Text: a.formulaText(), Class: "ftext", X: a.scrollX + uiTextX, Y: fy, W: max(uiTextMin, a.viewW-uiTextX-uiChromePad), H: FormulaH - uiChromePad})
 
 	return out
 }

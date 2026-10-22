@@ -29,7 +29,7 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 
 func (a *App) flash(id string) {
 	a.view.PressedID = id
-	a.pressedUntil = time.Now().Add(140 * time.Millisecond)
+	a.pressedUntil = time.Now().Add(pressFlashDelay)
 }
 
 func (a *App) releaseFlash() bool {

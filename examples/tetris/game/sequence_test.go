@@ -1,7 +1,7 @@
 package game
 
 import (
-	"fmt"
+	"slices"
 	"testing"
 )
 
@@ -9,7 +9,7 @@ func TestSequenceIsDeterministicAndBagged(t *testing.T) {
 	a := Sequence(7, 14)
 	b := Sequence(7, 14)
 
-	if fmt.Sprint(a) != fmt.Sprint(b) {
+	if !slices.Equal(a, b) {
 		t.Fatalf("the same seed gave %v then %v", a, b)
 	}
 
@@ -29,7 +29,7 @@ func TestSequenceIsDeterministicAndBagged(t *testing.T) {
 		}
 	}
 
-	if fmt.Sprint(Sequence(1, 14)) == fmt.Sprint(Sequence(2, 14)) {
+	if slices.Equal(Sequence(1, 14), Sequence(2, 14)) {
 		t.Fatal("different seeds produced the same pieces")
 	}
 }

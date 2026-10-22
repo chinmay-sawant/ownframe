@@ -55,7 +55,7 @@ func New() (*App, error) {
 
 	app := seed()
 	app.page = page
-	app.photos = make(chan []byte, 2)
+	app.photos = make(chan []byte, photoQueueSize)
 	app.view.Tab = "chats"
 	app.rebuild()
 	registerImages(page)
@@ -66,7 +66,7 @@ func New() (*App, error) {
 		LongPress: app.onLongPress,
 	})
 	page.SetWindowing(true)
-	page.SetViewportPinZ(2)
+	page.SetViewportPinZ(viewportPinZ)
 	page.SetScrollWindow(app.Pin)
 	page.SetTick(app.Tick)
 	page.SetData(&app.view)

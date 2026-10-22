@@ -17,6 +17,14 @@ type catalogMetrics struct {
 	contentH   int
 }
 
+// Grid shape the measure and windowing math share.
+const (
+	// cardsPerRow is the catalog grid width in cards.
+	cardsPerRow = 2
+	// maxCoord is larger than any CSS pixel coordinate the page reports.
+	maxCoord = 1 << 30
+)
+
 // measureCatalog reads the full-page boxes after the two setup redraws.
 func measureCatalog(p *ownframe.Page) (*catalogMetrics, bool) {
 	boxes := p.Boxes()
@@ -31,11 +39,11 @@ func measureCatalog(p *ownframe.Page) (*catalogMetrics, bool) {
 		}
 	}
 
-	cards := (len(catalogProperties) + 1) / 2
+	cards := (len(catalogProperties) + cardsPerRow - 1) / cardsPerRow
 	for row := 0; row < cards; row++ {
-		top, bottom := 1<<30, 0
-		for col := 0; col < 2; col++ {
-			card := row*2 + col
+		top, bottom := maxCoord, 0
+		for col := 0; col < cardsPerRow; col++ {
+			card := row*cardsPerRow + col
 			if card >= len(catalogProperties) {
 				break
 			}

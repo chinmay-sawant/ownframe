@@ -14,18 +14,18 @@ func (a *App) paintEye(d *ownframe.Display, eye, top, bot *ownframe.DisplayOp,
 	}
 	h := b.h * style.height
 	x := b.x + a.st.lookX + style.gazeX
-	y := b.y + a.st.lookY + style.gazeY + (b.h-h)/2
+	y := b.y + a.st.lookY + style.gazeY + (b.h-h)/halfDivisor
 	setOp(d, eye, x, y, b.w, h, 1)
-	eye.Radius = min(rc*h/b.h, min(b.w, h)/2*0.98) * p
+	eye.Radius = min(rc*h/b.h, min(b.w, h)/halfDivisor*eyeRound) * p
 	lid := (1 - min(style.open, 1)) * h
 	blink := (1 - a.st.bm) * h
-	topH := blink*.6 + lid*style.top
-	botH := blink*.4 + lid*style.bottom
-	if topH+botH > h-6 && h > 6 {
-		f := (h - 6) / (topH + botH)
+	topH := blink*lidTopShare + lid*style.top
+	botH := blink*lidLowShare + lid*style.bottom
+	if topH+botH > h-lidMinGap && h > lidMinGap {
+		f := (h - lidMinGap) / (topH + botH)
 		topH, botH = topH*f, botH*f
 	}
-	setLid(d, top, x-2, y-2, b.w+4, topH+2)
+	setLid(d, top, x-lidOutset, y-lidOutset, b.w+lidGrow, topH+lidOutset)
 	setOpRotation(top, style.slant)
-	setLid(d, bot, x-2, y+h-botH, b.w+4, botH+2)
+	setLid(d, bot, x-lidOutset, y+h-botH, b.w+lidGrow, botH+lidOutset)
 }

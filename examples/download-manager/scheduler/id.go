@@ -8,7 +8,9 @@ import (
 // newID returns a stable, collision-safe job ID.
 func newID() string {
 	var b [8]byte
-	_, _ = rand.Read(b[:])
+	if _, err := rand.Read(b[:]); err != nil {
+		panic(err)
+	}
 
 	return "job-" + hex.EncodeToString(b[:])
 }

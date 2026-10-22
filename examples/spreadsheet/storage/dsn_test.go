@@ -28,7 +28,7 @@ func TestOpenOddPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	defer st.Close()
+	defer func() { _ = st.Close() }()
 
 	if err := st.SetPref(ctx, "theme", "dark"); err != nil {
 		t.Fatal(err)

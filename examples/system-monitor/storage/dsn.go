@@ -70,7 +70,7 @@ func isWindows() bool { return runtime.GOOS == "windows" }
 
 // mkdirAll creates a data directory.
 func mkdirAll(dir string) error {
-	return os.MkdirAll(dir, 0o755)
+	return os.MkdirAll(dir, storeDirPerm)
 }
 
 // joinDir joins a data directory and a file name.

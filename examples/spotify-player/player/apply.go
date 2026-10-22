@@ -35,7 +35,7 @@ func (a *App) apply(term string, tracks []Track, picks, shelf []Card) {
 
 // songsFrom keeps up to six song results.
 func songsFrom(raw []searchResult) []searchResult {
-	out := make([]searchResult, 0, 6)
+	out := make([]searchResult, 0, maxSongs)
 
 	for _, s := range raw {
 		if s.Kind != "song" || s.TrackName == "" {
@@ -44,7 +44,7 @@ func songsFrom(raw []searchResult) []searchResult {
 
 		out = append(out, s)
 
-		if len(out) == 6 {
+		if len(out) == maxSongs {
 			break
 		}
 	}
@@ -54,7 +54,7 @@ func songsFrom(raw []searchResult) []searchResult {
 
 // albumsFrom keeps up to twelve unique album results.
 func albumsFrom(raw []searchResult) []searchResult {
-	out := make([]searchResult, 0, 12)
+	out := make([]searchResult, 0, maxAlbums)
 	seen := map[string]bool{}
 
 	for _, al := range raw {
@@ -70,7 +70,7 @@ func albumsFrom(raw []searchResult) []searchResult {
 		seen[key] = true
 		out = append(out, al)
 
-		if len(out) == 12 {
+		if len(out) == maxAlbums {
 			break
 		}
 	}

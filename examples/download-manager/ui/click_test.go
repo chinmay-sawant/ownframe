@@ -45,7 +45,9 @@ func TestClickControlAndSelect(t *testing.T) {
 	ctx := context.Background()
 
 	back.send(Update{Kind: UpdateActive, Active: []Row{running("j1", 10, 100)}})
-	app.Tick(ctx)
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
 	clickAction(t, app, "pause-j1")
 
 	if len(back.controls) != 1 || back.controls[0].Action != ControlPause || back.controls[0].ID != "j1" {

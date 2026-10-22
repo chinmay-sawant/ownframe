@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-// partialLimit is the most samples whose damage still fits the window's
-// eight-rect partial replay. Past it the union covers the page, and a full
-// replay is cheaper than a tile rebuild.
-const partialLimit = 8
-
 func (d *demo) tick(ctx context.Context) error {
 	if len(d.samples) == 0 && len(d.pending) == 0 && !d.treeDirty && !d.remeasure {
 		d.p.UseFrameDirty()
@@ -56,13 +51,13 @@ func (d *demo) tick(ctx context.Context) error {
 	case live:
 		d.p.WantFrameIn(0)
 	case waiting:
-		d.p.WantFrameIn(50 * time.Millisecond)
+		d.p.WantFrameIn(frameWait)
 	case d.remeasure:
 		d.p.WantFrameIn(remeasureWait)
 	case len(d.pending) > 0:
 		// A queued row waits for its first render. The scroll window
 		// queues it again when the row comes into view.
-		d.p.WantFrameIn(50 * time.Millisecond)
+		d.p.WantFrameIn(frameWait)
 	default:
 		d.p.SetTick(nil)
 	}

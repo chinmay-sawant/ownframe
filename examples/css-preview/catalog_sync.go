@@ -41,5 +41,8 @@ func (d *demo) afterRedraw(ctx context.Context) {
 	if !d.syncTree(ctx) {
 		return
 	}
-	d.p.Redraw(ctx)
+	if err := d.p.Redraw(ctx); err != nil {
+		// The state patch did not display; the next tick lays it out.
+		d.treeDirty = true
+	}
 }

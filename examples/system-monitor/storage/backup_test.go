@@ -36,7 +36,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer restored.Close()
+	defer func() { _ = restored.Close() }()
 
 	if got, _, err := restored.Setting(ctx, "theme"); err != nil || got != "dark" {
 		t.Fatalf("theme = %q err = %v", got, err)
@@ -61,7 +61,7 @@ func TestCheckpoint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer rollback.Close()
+	defer func() { _ = rollback.Close() }()
 
 	if err := rollback.Checkpoint(t.Context()); err != nil {
 		t.Fatal(err)
