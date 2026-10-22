@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
 func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	t.Helper()
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
-	p, err := previewwindow.New(ctx, previewwindow.Config{FixtureDir: filepath.Join("testdata", "css-preview"),
-		Data: v, Width: 960, Height: 1000, RetainState: true})
+	p, err := openCatalog(ctx, catalogOpen{
+		Data: v, Width: 960, Height: 1000, RetainState: true,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,7 +22,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	}
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
-	if err = previewwindow.Redraw(ctx, p, v); err != nil {
+	if err = redrawCatalog(ctx, p, v); err != nil {
 		t.Fatal(err)
 	}
 	if p.Display() == nil {
@@ -32,7 +31,7 @@ func fixturePage(t *testing.T) (*ownframe.Page, *demo, *view) {
 	v.Catalog = catalogRows(p)
 	v.Rows = v.Catalog
 	v.Readout = describe(p)
-	if err = previewwindow.Redraw(ctx, p, v); err != nil {
+	if err = redrawCatalog(ctx, p, v); err != nil {
 		t.Fatal(err)
 	}
 	d := newDemo(p, v)

@@ -21,8 +21,10 @@ This page summarizes supported features and current limits. Use the linked guide
 
 | Absent or app workaround | 1.0 |
 |---|---|
-| `position: absolute` on a flex child | ignored; the child stays in flow. Use a block container ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
-| `position: fixed` / `sticky` under window scroll | the window translates every op. Use `SetViewportPinZ` or `SetScrollWindow` ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
+| `position: absolute` on a flex child | blinkless hole: the child stays in flow, so `top` and `left` do nothing. Use a block container (Telegram `app-thread`). `internal/page` tests record this. ([screen.md](screen.md)) |
+| `position: sticky` under window scroll | blinkless hole: the header stays in flow and has no `Fixed` ops, so the window translates it with the page. Not CSS sticky. `internal/page` tests record this. ([screen.md](screen.md)) |
+| `position: fixed` under window scroll | engine `Fixed` ops stay untranslated; sticky does not get that mark. |
+| Pinned chrome | `Page.SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
 | `@media print` | never matches ([theming.md](theming.md)) |
 | `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
 | Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
@@ -172,11 +174,11 @@ Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md
 `Page.AccessibilityTree` returns semantic roles, names, descriptions, live
 form state, document order, and bounds where an element has a unique HTML ID.
 `Page.AccessibilityPerform` routes supported focus, activation, and text-value
-actions through the page's existing input paths. The snapshot is a host
-contract, not a native screen-reader bridge. CSS-only hidden content and
-anonymous-node bounds remain unresolved.
+actions through the page's existing input paths. The snapshot is a host contract. Linux maps it to AT-SPI objects; a live
+bus client is not implemented. CSS-only hidden content and anonymous-node
+bounds remain unresolved.
 
-Detail is in [accessibility.md](accessibility.md).
+Detail is in [accessibility.md](accessibility.md) and [atspi.md](atspi.md).
 
 ## Interaction
 
@@ -233,7 +235,7 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- Native screen-reader bridges (AT-SPI, UIA, NSAccessibility, TalkBack), native spellcheck, and OS-global shortcuts. The page accessibility tree is a Go snapshot for host code ([accessibility.md](accessibility.md)). `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

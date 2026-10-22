@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // bind re-finds the animated ops after a Redraw replaced the display list.
@@ -14,14 +13,14 @@ func (a *App) bind(d *ownframe.Display) {
 	for _, b := range boxes {
 		switch b.ID {
 		case "seek":
-			a.state.seek = frame.Fill(d, b, accent)
+			a.state.seek = ownframe.Fill(d, b, accent)
 		case "eq":
 			a.eq = b
-			a.state.bars = frame.Fills(d, b, accent)
+			a.state.bars = ownframe.Fills(d, b, accent)
 		case "ptrack":
 			a.track = b
 		case "tick":
-			a.state.label = frame.Text(d, b)
+			a.state.label = ownframe.Text(d, b)
 		}
 	}
 	a.state.bound = a.page.Generation()

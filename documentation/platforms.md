@@ -100,12 +100,19 @@ lists them all. login defaults to 8091, web to 8110, and platform to 8115.
 [web.md](web.md) has the routes, the click map, and what the mode drops. A
 file-backed page is polled before `GET /` and `GET /frame.png`, and the shell
 page refreshes the image while a watch is active
-([hot-reload.md](hot-reload.md)). There is no tick, no audio, no crash
-recover, and no relayout when the browser tab resizes.
+([hot-reload.md](hot-reload.md)). There is no tick, no audio, and no
+relayout when the browser tab resizes. A handler panic becomes HTTP 500.
+`Serve` writes no crash-report file.
 
 ## iOS
 
-There is no Xcode project. iOS is not a 1.0 target.
+iOS is not a 1.0 target. There is no Xcode project, no IPA pipeline, and no
+App Store listing. `BindMobile` is the Android host today. The mobile
+package already compiles under `//go:build android || ios`, so an iOS bind
+would reuse that Go entry. Next work, if anyone starts it, is
+`ebitenmobile bind -target ios`, an Xcode host that owns insets, Back, IME,
+and lifecycle the way `examples/android-host` does on Android, then signing
+and App Store review. None of that is in this repo.
 
 ## Capability matrix
 
@@ -115,12 +122,12 @@ There is no Xcode project. iOS is not a 1.0 target.
 | Clipboard | X11, Windows, macOS+cgo; Wayland uses `wl-copy`/`wl-paste` when on PATH, else memory-only ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
 | Files | desktop dialog (`internal/filepick`) | typed name; no file dialog. Telegram camera/gallery is app Java | typed name | typed name |
 | IME | Composer path with preedit; native IM unverified ([interaction.md](interaction.md)) | `exp/textinput` | canvas text | `/type` only |
-| A11y | Go snapshot; no AT-SPI, UIA, or NSAccessibility ([accessibility.md](accessibility.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |
-| Packaging | unsigned `scripts/package.sh` ([packaging.md](packaging.md)) | `scripts/android-release.sh`; APKs in [APPS.md](../examples/android-host/APPS.md) | wasm zip preview | not a ship target |
+| A11y | Go snapshot plus experimental Linux AT-SPI mapping; no live bus, no UIA, no NSAccessibility ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |
+| Packaging | unsigned `scripts/package.sh` ([packaging.md](packaging.md)) | `scripts/android-release.sh` sideload APK; Play is not 1.0 ([play-store.md](play-store.md), [APPS.md](../examples/android-host/APPS.md)) | wasm zip preview | not a ship target |
 | Idle | desktop park after clean frames (`idle_supported.go`) | off (`idle_supported_other.go`) | off | none |
 | Tick | yes ([frames.md](frames.md)) | yes | yes | no |
 | Hot reload | file watch, 250 ms poll ([hot-reload.md](hot-reload.md)) | none; file read once | none; file read once | poll per `GET /` and `/frame.png` |
-| Crash | report file 0600 ([crash.md](crash.md)) | panic recover and file | recover, no file | no recover |
+| Crash | report file 0600 ([crash.md](crash.md)) | panic recover and file | recover, no file | handler 500, no file |
 | Resize | window drag relayouts ([window.md](window.md)) | rotation and split relayout | browser canvas resize | no; picture stays at `Page.Size()` |
 
 Audio: `Run` and `BindMobile` create the 48 kHz Ebiten audio context; `Serve`

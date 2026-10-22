@@ -16,11 +16,14 @@ Build your screen with HTML and CSS. Handle data and actions in Go. 1.0 hosts ar
 - [Choose a platform](platforms.md)
 - [Serve a page in a browser](web.md)
 - [Create an Android app](android-app-creation.md)
+- [Play Store gaps](play-store.md)
 - [Package a release](packaging.md)
 
 ## Find a feature or example
 
 - [See supported features and limits](features.md)
+- [Accessibility tree](accessibility.md)
+- [Linux AT-SPI first slice](atspi.md)
 - [Browse the examples](../examples/readme.md)
 - [See the app showcase](../showcase.md)
 

@@ -91,11 +91,3 @@ func (p *Page) formControl(id string) bool {
 
 	return ok
 }
-
-func canEdit(c Control) bool {
-	if c.Tag == "select" || c.Type == "checkbox" || c.Type == "radio" {
-		return false
-	}
-
-	return c.Tag == "textarea" || textLike(c.Type)
-}

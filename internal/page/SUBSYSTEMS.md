@@ -4,7 +4,7 @@ Index only. No behavior change. Each group names its entry file.
 
 | Group | Entry file | Find |
 |---|---|---|
-| form | `form_html.go` (control rewrite), `form_input.go` (`clickControl`), `form_focus.go` (Tab order) | field paint, click, focus |
+| form | `internal/page/form` (control, caret, focus, value helpers); `form_html.go` (control rewrite), `form_input.go` (`clickControl`), `form_focus.go` (Tab order) | field paint, click, focus |
 | nav | `page_nav.go` (`Load`, `HTML`) | `Back` / `Forward` in `page_nav_history.go`, `Route` in `page_nav_route.go` |
 | dirty | `page_dirty.go` (display diff), `page_dirty_take.go` | `TakeDirty` / `TakeDirtyRects`; `Invalidate` in `page_invalidate.go`; `MarkRect` in `page_frame.go` |
 | draw | `page_draw.go` (`Redraw`) | commit in `page_draw_commit.go`; pipeline in `page_pipeline.go` |

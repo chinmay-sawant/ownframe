@@ -2,7 +2,6 @@ package board
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // bindBar binds the refresh fill in the livery accent.
@@ -17,8 +16,8 @@ func (f *flipper) bindBar(d *ownframe.Display, boxes []ownframe.Box, accent [3]f
 		return
 	}
 
-	f.bar = frame.Fill(d, b, accent)
-	_, _, f.barFullW, _ = frame.BoxUnits(d, b)
+	f.bar = ownframe.Fill(d, b, accent)
+	_, _, f.barFullW, _ = ownframe.BoxUnits(d, b)
 }
 
 // boxByID returns the first hit-test box with id.

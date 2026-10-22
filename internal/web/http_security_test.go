@@ -20,3 +20,16 @@ func TestSecurityHeadersSet(t *testing.T) {
 		t.Fatal("missing Permissions-Policy")
 	}
 }
+
+func TestPanicRecoveryReturns500(t *testing.T) {
+	t.Parallel()
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		panic("boom")
+	})
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequestWithContext(t.Context(), "GET", "/", nil)
+	panicRecovery(next).ServeHTTP(rec, req)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("code = %d", rec.Code)
+	}
+}

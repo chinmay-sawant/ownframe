@@ -2,12 +2,9 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/host"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
 func BenchmarkPointerCycleAll43(b *testing.B) {
@@ -18,26 +15,24 @@ func BenchmarkPointerCycleAll43NoBatch(b *testing.B) {
 	benchCycle(b, false)
 }
 
-func benchCycle(b *testing.B, batch bool) {
+func benchCycle(b *testing.B, useBatch bool) {
 	b.Helper()
 
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
-	p, err := previewwindow.New(ctx, previewwindow.Config{
-		FixtureDir: filepath.Join("testdata", "css-preview"),
-		Data:       v, Width: 960, Height: 1000})
+	p, err := openCatalog(ctx, catalogOpen{Data: v, Width: 960, Height: 1000})
 	if err != nil {
 		b.Fatal(err)
 	}
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		b.Fatal(err)
 	}
 	v.Catalog = catalogRows(p)
 	v.Rows = v.Catalog
 	v.Readout = describe(p)
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		b.Fatal(err)
 	}
 	d := newDemo(p, v)
@@ -75,8 +70,8 @@ func benchCycle(b *testing.B, batch bool) {
 				}
 				return p.Release(ctx)
 			}
-			if batch {
-				err = host.Batch(ctx, p, run)
+			if useBatch {
+				err = redrawBatch(ctx, p, run)
 			} else {
 				err = run()
 			}

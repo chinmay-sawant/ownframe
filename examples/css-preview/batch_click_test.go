@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // TestBatchedPressStartsPreview runs the real press, focus, and click sequence
@@ -19,7 +17,7 @@ func TestBatchedPressStartsPreview(t *testing.T) {
 	}
 	x, y := button.X+button.W/2, button.Y+button.H/2
 
-	err := host.Batch(ctx, p, func() error {
+	err := redrawBatch(ctx, p, func() error {
 		if err := p.Press(ctx, x, y); err != nil {
 			return err
 		}

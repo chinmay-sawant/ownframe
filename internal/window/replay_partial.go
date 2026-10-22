@@ -16,7 +16,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		return true
 	}
 	s.dropRetainedTiles()
-	s.partial.paints, s.partial.paintPx = 0, 0
+	s.partial.paints, s.partial.paintPx, s.partial.pins = 0, 0, 0
 	s.partial.blits, s.partial.blitPx = 0, 0
 
 	scroll := image.Pt(s.scrollX, s.scrollY)
@@ -26,7 +26,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	s.partial.live = true
 	taker, canTake := s.damageTaker()
 	contentW, contentH := s.contentSize()
-	if !canTake || s.fullReplay() || !s.bufferOrderSafe() || s.hasViewportOps() {
+	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
 		s.disposeViewport()
 		s.paintFullReplay(dst, display)
 

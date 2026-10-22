@@ -66,13 +66,16 @@ esac
 
 android="$root/examples/$dir/android"
 cd "$root"
+# gomobile copies packages into a temp module that cannot join go.work.
+unset GOWORK
+umask 077
 ebitenmobile bind -target "$target" \
 	-ldflags "-s -w -extldflags '-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384'" \
 	-javapkg "$pkg" -o "$android/$aar/$aar.aar" "./examples/$dir/mobile"
 (cd "$android" && ./gradlew --no-daemon --max-workers=2 :app:assembleRelease)
 
 artifact="$android/artifacts/$app-$abi-release.apk"
-mkdir -p "$(dirname "$artifact")"
+mkdir -p -m 0700 "$(dirname "$artifact")"
 "$sdk/build-tools/$build_tools/apksigner" sign \
 	--ks "$keystore" --ks-key-alias "$alias" \
 	--ks-pass "file:$storepass" --key-pass "file:$keypass" \

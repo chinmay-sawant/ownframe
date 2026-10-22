@@ -1,6 +1,6 @@
 # Crash reports
 
-`Run` stores every failure in a report file and returns the original error without the file path: a panic goes through the recover, and any startup or window error goes through the same writer with the error as the reason. `LastReportPath` exposes the file path. `BindMobile` recovers a panic on its own goroutine. `Serve` does not. The process does not panic again, and the file is not uploaded. In a browser build the recover still runs and returns an error, but no file is written, because Go's wasm file operations return an error there.
+`Run` stores every failure in a report file and returns the original error without the file path: a panic goes through the recover, and any startup or window error goes through the same writer with the error as the reason. `LastReportPath` exposes the file path. `BindMobile` recovers a panic on its own goroutine. `Serve` recovers a handler panic into HTTP 500 and writes no report file. The process does not panic again, and the file is not uploaded. In a browser build the recover still runs and returns an error, but no file is written, because Go's wasm file operations return an error there.
 
 ```go
 ownframe.SetCrashDir(dir)
@@ -27,9 +27,9 @@ The [crash example](../examples/crash) sets the folder to `crashes/`, writes a m
 
 Crash reports are local diagnostics. They can contain stack traces, panic text,
 page titles, and source paths. The default directory uses mode 0700 and files
-use mode 0600, so other local users cannot read them. `Serve` does not recover
-panics at all. `SetCrashDir` is a trusted path API and accepts any directory
-the process can write.
+use mode 0600, so other local users cannot read them. `Serve` recovers handler
+panics into HTTP 500 and does not write a report. `SetCrashDir` is a trusted
+path API and accepts any directory the process can write.
 
 Recommended protections:
 

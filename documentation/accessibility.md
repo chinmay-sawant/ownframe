@@ -1,7 +1,9 @@
 # Accessibility tree
 
-1.0 ships a Go accessibility snapshot only. It does not connect AT-SPI, UI
-Automation, NSAccessibility, or TalkBack.
+1.0 ships a Go accessibility snapshot. Linux has an experimental AT-SPI
+mapping and a fake-bus test seam ([atspi.md](atspi.md)). A live D-Bus AT-SPI
+client is not implemented. UI Automation, VoiceOver, and TalkBack are not
+shipped.
 
 `Page.AccessibilityTree` returns a detached semantic snapshot from the last
 successful redraw. The tree follows HTML document order and includes supported
@@ -50,10 +52,11 @@ coverage:
 go test ./examples/accessibility/...
 ```
 
-The demo is an API inspector. It does not connect the tree to Windows UI
-Automation, Linux AT-SPI, or macOS NSAccessibility. See the
-[native accessibility status and validation guide](accessibility-native.md)
-for the platform work that remains.
+The demo is an API inspector. Linux maps the snapshot to AT-SPI objects in
+process; it does not yet register them on the accessibility bus. Windows UI
+Automation, macOS VoiceOver, and Android TalkBack are not shipped. See the
+[native accessibility status](accessibility-native.md) and
+[AT-SPI first slice](atspi.md).
 
 ## Node identity and updates
 
@@ -108,9 +111,9 @@ nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
 
 ## Limits
 
-This API supplies semantic page data to a host. It does not expose the
-Ebitengine window to a native assistive-technology API, and a tree alone does
-not make an app accessible.
+This API supplies semantic page data to a host. Linux maps that tree to
+AT-SPI objects in process. A tree alone does not make an app accessible to
+Orca until the live bus client lands.
 
 The snapshot filters the `hidden` attribute, `aria-hidden="true"`, and
 non-content tags. It does not read computed CSS visibility. A node hidden by a

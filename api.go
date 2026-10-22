@@ -28,8 +28,9 @@ type Config = page.Config
 type Handlers = page.Handlers
 
 // Page is one HTML template and the last picture it produced.
+// The host page stays unexported so apps see only delegated methods.
 type Page struct {
-	*page.Page
+	inner *page.Page
 }
 
 const MaxSourceSize = page.MaxSourceSize

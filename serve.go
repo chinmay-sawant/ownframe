@@ -17,7 +17,7 @@ func Serve(ctx context.Context, page *Page, addr string) error {
 		return err
 	}
 
-	return web.ServeWithOptionsContext(ctx, page, addr, web.Options{})
+	return web.ServeWithOptionsContext(ctx, innerPage(page), addr, web.Options{})
 }
 
 // ServeOptions tunes ServeWithOptions. It re-exports the web options, so
@@ -36,5 +36,5 @@ func ServeWithOptions(ctx context.Context, page *Page, addr string, opts ServeOp
 		return err
 	}
 
-	return web.ServeWithOptionsContext(ctx, page, addr, opts)
+	return web.ServeWithOptionsContext(ctx, innerPage(page), addr, opts)
 }

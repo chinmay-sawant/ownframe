@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // accent is the progress green, #1db954.
@@ -41,11 +40,11 @@ func (a *App) paint() {
 		a.bind(d)
 	}
 	frac := float64(a.view.Tick%progressCycle) / progressScale
-	_, _, tw, _ := frame.BoxUnits(d, a.track)
+	_, _, tw, _ := ownframe.BoxUnits(d, a.track)
 	if a.state.seek != nil {
 		a.state.seek.W = tw * frac
 	}
-	_, ey, _, eh := frame.BoxUnits(d, a.eq)
+	_, ey, _, eh := ownframe.BoxUnits(d, a.eq)
 	now := float64(time.Now().UnixMilli())
 	for i, op := range a.state.bars {
 		f := eqMid + eqMid*math.Sin(now/float64(eqPeriodBase+eqPeriodStep*i)+float64(i)*eqPhaseStep)

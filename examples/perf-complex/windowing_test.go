@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // TestWindowMatchesFullRows is the 1.0 list-windowing check: a SetScrollWindow
@@ -22,14 +22,14 @@ func TestWindowMatchesFullRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	installWindow(window, v)
-	find := func(p *page.Page, id string) page.Box {
+	find := func(p *ownframe.Page, id string) ownframe.Box {
 		for _, b := range p.Boxes() {
 			if b.ID == id {
 				return b
 			}
 		}
 		t.Fatalf("box %s missing", id)
-		return page.Box{}
+		return ownframe.Box{}
 	}
 	for i, offset := range []int{0, 20000, 37000} {
 		window.SetScrollOffset(0, offset)

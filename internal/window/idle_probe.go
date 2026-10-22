@@ -5,8 +5,10 @@ package window
 // repaint and no overlay. The pacing wrapper calls it after Draw, and it
 // only reads state. Every condition that may have taken a full-replay or
 // scaled branch reads as dirty, so a missed idle frame is cheaper than a
-// wrongly throttled one. Chrome is the wrapper's call: an unchanged set of
-// chrome rects paints the same pixels and does not need the vsync loop.
+// wrongly throttled one. Pinned chrome stays on the tile path; a later
+// WantFrameAt still wakes an animating bar. Overlay chrome is the
+// wrapper's call: an unchanged set of chrome rects paints the same
+// pixels and does not need the vsync loop.
 func (s *shell) idleCleanFrame() bool {
 	if s.fallback || s.dev.on || s.display == nil {
 		return false
@@ -24,7 +26,7 @@ func (s *shell) idleCleanFrame() bool {
 		return false
 	}
 
-	if s.fullReplay() || !s.bufferOrderSafe() || s.hasViewportOps() {
+	if s.fullReplay() || !s.bufferOrderSafe() {
 		return false
 	}
 

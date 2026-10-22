@@ -2,7 +2,6 @@ package board
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // rowDelay is the frame offset between two rows of the flap cascade. Every
@@ -65,6 +64,6 @@ func (f *flipper) rebind(d *ownframe.Display, boxes []ownframe.Box, rows []Row) 
 	f.clock = nil
 
 	if b, ok := byID["clock"]; ok {
-		f.clock = frame.Text(d, b)
+		f.clock = ownframe.Text(d, b)
 	}
 }

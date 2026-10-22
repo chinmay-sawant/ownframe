@@ -4,7 +4,7 @@ Go library that opens an HTML template in a window. The sign-in program lives in
 
 ## Where code lives
 
-Package `ownframe` at the module root is the public API. `New`, `SetData`, and `Handle` build a page. `NewWithOptions` applies `Option` values first; `WithPerf(true)` opts into pipeline timing, dirty counters, and alloc tracking, off by default so shipped apps pay nothing. `Config.Theme` and `SetTheme` layer an extra stylesheet after the template's own styles. `Page.SetTick` registers a function the window calls once per frame before drawing; `Tick` also blinks the focused field's caret; `Serve` does not tick. `Run` opens the desktop or wasm window. `Serve` shows the picture page. `BindMobile` registers the phone view. 1.0 native hosts are desktop `Run` (Linux, Windows, macOS) and Android `BindMobile`. Wasm and `-web` are previews, not 1.0 hosts. The root files are aliases and those entry points. The page implementation is `internal/page`. `examples/` is its own Go module, `github.com/chinmay-sawant/ownframe/examples`, so the library module zip carries no examples. A committed `go.work` joins both modules. `examples/go.mod` requires `github.com/chinmay-sawant/ownframe` at the last published tag (`v0.0.2`) until `v0.0.3` is tagged, and `replace`s it with `../` for this checkout. The current library cycle is `v0.0.3`. `make test` and `make build` run both modules. A release tags the library, bumps the examples require to that tag, and drops the relative replace before tagging `examples/vX.Y.Z`; a tagged examples module cannot keep `replace => ../`.
+Package `ownframe` at the module root is the public API. Keep it there: do not move the library into `api/`. `New`, `SetData`, and `Handle` build a page. `ownframe.Page` holds an unexported `*page.Page` and delegates an explicit method set. `NewWithOptions` applies `Option` values first; `WithPerf(true)` opts into pipeline timing, dirty counters, and alloc tracking, off by default so shipped apps pay nothing. `Config.Theme` and `SetTheme` layer an extra stylesheet after the template's own styles. `Page.SetTick` registers a function the window calls once per frame before drawing; `Tick` also blinks the focused field's caret; `Serve` does not tick. `Run` opens the desktop or wasm window. `Serve` shows the picture page. `BindMobile` registers the phone view. 1.0 native hosts are desktop `Run` (Linux, Windows, macOS) and Android `BindMobile`. Wasm and `-web` are previews, not 1.0 hosts. The page implementation is `internal/page`. `examples/` is its own Go module, `github.com/chinmay-sawant/ownframe/examples`, so the library module zip carries no examples. A committed `go.work` joins both modules. `examples/go.mod` requires `github.com/chinmay-sawant/ownframe` at the last published tag (`v0.0.2`) until `v0.0.3` is tagged, and `replace`s it with `../` for this checkout. The current library cycle is `v0.0.3`. `make test` and `make build` run both modules. A release tags the library, bumps the examples require to that tag, and drops the relative replace before tagging `examples/vX.Y.Z`; a tagged examples module cannot keep `replace => ../`.
 
 `examples/telegram` is the phone-first demo: a Telegram-like chat list with search, contacts, settings with a dark theme, and one conversation with a composer. `examples/telegram/mobile` is the `ebitenmobile` package and `examples/telegram/android` is a Gradle project whose `:telegram` module wraps the generated `telegram.aar`. `MainActivity` intercepts the Android back key and calls the exported `mobile.Back`; it polls `mobile.AttachRequest` to open the camera or the photo picker and returns the bytes through `mobile.SetPhoto`; it reports the status bar, cutout, and IME insets through `mobile.SetInsets`, and `App.Tick` applies the queued work on the game loop. The chat top bar and composer are absolutely positioned and counter-moved by the scroll offset through `Page.SetScrollWindow`, so they stay pinned while the messages scroll and painted after the messages so a scrolled thread cannot cover them. `scripts/android.sh` binds, builds the debug APK, and with `install` runs `adb install -r`; `examples/telegram/android/README.md` has the SDK, NDK, and device steps. Do not export `GOWORK` for the bind: gomobile copies the packages into a temporary module and builds there, and the workspace file would disown that module.
 
@@ -17,6 +17,8 @@ Package `ownframe` at the module root is the public API. `New`, `SetData`, and `
 `examples/desktop-cat` is the transparent, click-through overlay: `RunWithOptions` with `WindowOptions{Transparent, Borderless, Floating, FixedSize, BottomRight, Margin}`, `cat.Draggable` hit-tests the current PNG's alpha so a four-pixel drag moves the window, and `cat.Interactive` adds the bubble, so every other pointer event passes through. The `cat` package embeds 30 expression PNGs, switches one every eight seconds, and draws an HTML/CSS bubble. `POST /notify` on 127.0.0.1:6969 takes an expression and message (`GET /expressions`, `GET /state`), and `.agents/skills/catnotify` sends to it. `-web` serves a still preview on 8128; the Windows-only `nowplaying` reader samples Chrome's system media session every two seconds (`-media`, `-media-snapshot`).
 
 `examples/wispr-flow-dashboard` is a 13-page app shell. `app/app.go` parses one template with a collapsible sidebar and the active page fragment; `View` carries every page's data, and a nav click sets `ActivePage`. Each page is its own package exposing `HTML` and `CSS`, listed in `app/pages.go` in sidebar order; `app/actions.go` handles the sidebar, tabs, streak chevrons, share, and get-app controls.
+
+`internal/atspi` maps `AccessibilityTree` to AT-SPI roles over a bus seam. Linux desktop `Run` wires it from `internal/window/a11y_atspi.go`. The live D-Bus client is not implemented, so `Live` stays false. Windows UIA, macOS VoiceOver, and Android TalkBack are not shipped. Tests use `FakeBus` and must not log accessible text.
 
 `internal/host` defines `Screen` and the optional interfaces a screen can add: `Ticker`, `Inspector`, `Reloader`, `Dropper`, `Focuser`, `ContextMenu`, `CursorShape`, `ScrollRequester`, `IME`, and `LongPresser`. `Dropper` receives `Drop.Path`, a sensitive local desktop path; copy bytes from `Drop.Read` during the call. The window and web packages call those. They do not import package `ownframe`.
 
@@ -46,15 +48,16 @@ Read `documentation/features.md` before changing paint, theming, frames, IPC, na
 
 A page taller or wider than the window scrolls on the mouse wheel. A picture that matches the window stays at one CSS pixel per window pixel. The sign-in example accepts the email `secret` and the password `secret`.
 
-## Public API freeze until Page wrap
+## Public API after the Page wrap
 
-Until the public `Page` wrap in `plans/v0.0.3/prod-ready-task/` lands, stop growing the shapes that wrap will delete:
+`ownframe.Page` is a defined type with an unexported inner page. Do not embed `*page.Page` again. Do not add an exported `Inner()`.
 
 - No new `type X =` alias at the module root except documented re-exports named in `plans/v0.0.3/prod-ready-task/phase-01-public-api.md`.
 - No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.
-- No new example import of `github.com/chinmay-sawant/ownframe/internal/`. Existing imports stay until Phase 1 exports replace them. `make internal-import-check` records the set.
+- No new public `Page` method unless an example cannot compile without it. Host-loop methods (`TakeDirty`, `PollReload`, `IMEReplace`) stay on `internal/page` unless they already have an explicit wrapper.
+- No new example import of `github.com/chinmay-sawant/ownframe/internal/`. Existing pairs stay in `scripts/example-internal-allowlist.txt` until a public export replaces them. `make internal-import-check` records the set.
 
-v0 may break. The wrap happens before v1. Rules for names, errors, context, and examples are in `plans/v0.0.3/prod-ready-task/field-go-practices.md`.
+v0 may break. Rules for names, errors, context, and examples are in `plans/v0.0.3/prod-ready-task/field-go-practices.md`.
 
 ## Working directory and paths
 
@@ -73,9 +76,9 @@ v0 may break. The wrap happens before v1. Rules for names, errors, context, and 
 
 ## Go file size
 
-Every Go file is at most 2000 characters. Count with `wc -m`. That number includes newlines. When a file would exceed 2000 characters, split it inside the same package and keep the behavior. One file in the package carries the package comment. The other files start with the package clause.
+Library module Go files (the root package and `internal/`) are at most 2000 characters. Count with `wc -m`. That number includes newlines. When a file would exceed 2000 characters, split it inside the same package and keep the behavior. One file in the package carries the package comment. The other files start with the package clause.
 
-This limit applies to Go files only. HTML, CSS, Markdown, and scripts have no character cap.
+This limit applies to library Go files only. HTML, CSS, Markdown, and scripts have no character cap. Downstream apps and examples are not under the 2000 cap; `scripts/check-file-size.sh` prunes `./examples`. The library still is.
 
 `make size-check` enforces it. It counts characters with `wc -m` over every non-pruned `.go` file, test files included, and compares the tree with `scripts/file-size-allowlist.txt`, the single source of truth for over-limit files. The gate fails when an over-limit file is unlisted, when a listed file is missing, no longer over the limit, or when its recorded count is stale. `make lint` runs it, so CI enforces it; a recorded count moves only as a deliberate, reviewed change.
 

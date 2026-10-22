@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func TestFadeOutStopsInvisible(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := FadeTo(d, []*ownframe.DisplayOp{op}, 0, time.Millisecond, Linear)
+	a := FadeTo(d, []*page.DisplayOp{op}, 0, time.Millisecond, Linear)
 
 	a.Step(t0)
 	a.Step(t0.Add(time.Millisecond))
@@ -30,13 +30,13 @@ func TestSetAlphaClamps(t *testing.T) {
 	t.Parallel()
 
 	_, op := cardDisplay()
-	SetAlpha([]*ownframe.DisplayOp{op}, 0)
+	SetAlpha([]*page.DisplayOp{op}, 0)
 
 	if op.Alpha != minAlpha {
 		t.Fatalf("hidden alpha = %v", op.Alpha)
 	}
 
-	SetAlpha([]*ownframe.DisplayOp{op}, 2)
+	SetAlpha([]*page.DisplayOp{op}, 2)
 
 	if op.Alpha != 1 {
 		t.Fatalf("capped alpha = %v", op.Alpha)

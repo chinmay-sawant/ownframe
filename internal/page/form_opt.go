@@ -5,25 +5,6 @@ import (
 	"strings"
 )
 
-func pickOption(opts []Option) string {
-	if len(opts) == 0 {
-		return ""
-	}
-
-	chosen := 0
-	for i := range opts {
-		if opts[i].Selected {
-			chosen = i
-			break
-		}
-	}
-	for i := range opts {
-		opts[i].Selected = i == chosen
-	}
-
-	return opts[chosen].Value
-}
-
 func readOptions(body string) []Option {
 	out := []Option{}
 	i := 0

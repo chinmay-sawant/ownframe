@@ -10,7 +10,7 @@ func wrapPage(p *page.Page, err error) (*Page, error) {
 		return nil, nil
 	}
 
-	return &Page{Page: p}, nil
+	return &Page{inner: p}, nil
 }
 
 func innerPage(p *Page) *page.Page {
@@ -18,5 +18,5 @@ func innerPage(p *Page) *page.Page {
 		return nil
 	}
 
-	return p.Page
+	return p.inner
 }

@@ -14,3 +14,13 @@ type ElementRegistry = element.Registry
 
 // ElementLayout holds CSS layout geometry apart from metadata.
 type ElementLayout = element.Layout
+
+// NewElement returns an empty retained node.
+func NewElement(id string, kind ElementKind) *Element {
+	return element.NewNode(id, kind)
+}
+
+// NewElementRegistry returns an empty retained-element registry.
+func NewElementRegistry() *ElementRegistry {
+	return element.NewRegistry()
+}

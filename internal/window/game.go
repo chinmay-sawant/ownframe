@@ -41,6 +41,7 @@ func newShell(ctx context.Context, app host.Screen) *shell {
 	}
 	game.wirePerf()
 	game.imeInit()
+	game.initA11y()
 	game.configureTouchScroll()
 
 	return game

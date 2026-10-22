@@ -13,30 +13,13 @@ import (
 // else copies only the damaged tiles. The retained screen still holds every
 // untouched tile, so the screen is complete when this returns.
 func (s *shell) blitFrame(dst *ebiten.Image, display *layout.Display, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) {
-	grid := s.partial.tiles
-	if stale || grid == nil || !withinTiles(grid, chrome) {
-		if !s.showTilesWhole(dst) {
-			s.paintFullReplay(dst, display)
-		}
+	if s.blitFromTiles(dst, plans, chrome, whole, stale) {
+		s.paintPinnedChrome(dst, display)
 
 		return
 	}
 
-	full, rects := blitPlan(plans, chrome)
-	if full {
-		s.showTilesWhole(dst)
-
-		return
-	}
-
-	if whole {
-		s.blitTiles(dst, s.visibleRect())
-		return
-	}
-
-	for _, rect := range rects {
-		s.blitTiles(dst, rect)
-	}
+	s.paintFullReplay(dst, display)
 }
 
 // showTilesWhole fills the screen with the page background and copies every

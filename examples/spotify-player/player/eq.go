@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // eqHeight is bar i's height as a fraction of the container, 0.2 to 1.
@@ -42,7 +41,7 @@ func (a *App) animateEq(d *ownframe.Display, boxes []ownframe.Box) {
 		return
 	}
 
-	x, y, w, h := frame.BoxUnits(d, eq)
+	x, y, w, h := ownframe.BoxUnits(d, eq)
 
 	eqBars = eqBars[:0]
 

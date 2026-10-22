@@ -31,7 +31,9 @@ TalkBack.
 - The APK is a large `.so` inside the package.
 
 Play Store restore and TalkBack stay out of 1.0. Telegram and eyes are the
-exhibits ([examples/readme.md](../examples/readme.md)).
+exhibits ([examples/readme.md](../examples/readme.md)). The remaining Play
+gaps (TalkBack, process death, IME contract, `GOWORK` unset for bind,
+signing) are listed in [play-store.md](play-store.md).
 
 ## Set up the mobile Go package
 

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // pulse colors match --unread in the light and dark sheets.
@@ -39,7 +38,7 @@ func (a *App) pulse(now time.Time) {
 				color = pulseDark
 			}
 
-			a.pulseDot = frame.Fill(d, box, color)
+			a.pulseDot = ownframe.Fill(d, box, color)
 		}
 	}
 

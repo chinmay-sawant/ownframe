@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // windowBenchClick sends the desktop sequence used by the real walk:
@@ -22,7 +21,7 @@ func windowBenchClick(ctx context.Context, p *ownframe.Page, tb testing.TB, id s
 		tb.Fatal(err)
 	}
 	before := p.Stats()
-	err := host.Batch(ctx, p, func() error {
+	err := redrawBatch(ctx, p, func() error {
 		if err := p.Press(ctx, x, y); err != nil {
 			return err
 		}

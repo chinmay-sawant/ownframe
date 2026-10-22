@@ -12,7 +12,6 @@ import (
 	"syscall"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
-	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 func main() {
@@ -36,7 +35,7 @@ func run() error {
 	}
 	defer closeServer()
 	if o.stdin {
-		safego.Go("notify stdin", func() { readNotifications(inbox) })
+		goSafe("notify stdin", func() { readNotifications(inbox) })
 	}
 
 	if !o.web {

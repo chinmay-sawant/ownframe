@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
@@ -14,7 +13,7 @@ const genHTML = `<style>#card{position:absolute;left:{{.X}}px;top:40px;` +
 	`width:120px;height:80px;background:#3366cc}</style><div id="card"></div>`
 
 // genCard builds the card page and returns the page, list, and card fill.
-func genCard(t *testing.T) (*page.Page, *ownframe.Display, *ownframe.DisplayOp) {
+func genCard(t *testing.T) (*page.Page, *page.Display, *page.DisplayOp) {
 	t.Helper()
 	s, err := page.New(page.Config{HTML: genHTML, Width: 640, Height: 480})
 	if err != nil {
@@ -28,7 +27,7 @@ func genCard(t *testing.T) (*page.Page, *ownframe.Display, *ownframe.DisplayOp) 
 	if d == nil {
 		t.Fatal("no display list")
 	}
-	box := ownframe.Box{X: 20, Y: 20, W: 300, H: 200}
+	box := page.Box{X: 20, Y: 20, W: 300, H: 200}
 	if f := Fill(d, box, [3]float64{0.2, 0.4, 0.8}); f != nil {
 		return s, d, f
 	}
@@ -41,7 +40,7 @@ func genCard(t *testing.T) (*page.Page, *ownframe.Display, *ownframe.DisplayOp) 
 func TestBoundAnimDiesOnRedraw(t *testing.T) {
 	t.Parallel()
 	s, d, fill := genCard(t)
-	a := TranslateTo(d, []*ownframe.DisplayOp{fill}, 30, 0, time.Second, Linear).Bind(s)
+	a := TranslateTo(d, []*page.DisplayOp{fill}, 30, 0, time.Second, Linear).Bind(s)
 	if a.Generation() != s.Generation() {
 		t.Fatal("generation not recorded")
 	}

@@ -11,7 +11,7 @@ The repo holds two Go modules joined by `go.work`: the library at the root and `
 - `make build` is the compile check. It runs `go vet` over every package. Do not run `go build ./...`; it links an executable for each example, takes about a minute, and leaves the binaries in this directory.
 - `make lint` runs golangci-lint, the file-size gate, the example internal-import gate, and the website lint.
 - Run `gofmt` on every Go file you edit.
-- Every Go file stays at most 2000 characters, counted with `wc -m`. Split an overlong file inside the same package and keep the behavior.
+- Library module Go files (the root package and `internal/`) stay at most 2000 characters, counted with `wc -m`. Split an overlong file inside the same package and keep the behavior. Downstream apps and examples are not under that cap.
 
 ## Public API freeze until Page wrap
 

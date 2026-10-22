@@ -13,6 +13,7 @@ import (
 // its operations and drops any bitmap; any other page keeps one Ebiten image
 // built from its picture. The old image is disposed when it is replaced.
 func (s *shell) syncImage() error {
+	s.syncA11y()
 	if s.built() {
 		return nil
 	}

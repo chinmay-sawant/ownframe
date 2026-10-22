@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // costFullCatalog renders the whole 43 row catalog. It is the shape Play
@@ -43,7 +42,7 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 		tb.Fatal(err)
 	}
 	before := p.Stats()
-	err := host.Batch(ctx, p, func() error {
+	err := redrawBatch(ctx, p, func() error {
 		if err := p.Press(ctx, x, y); err != nil {
 			return err
 		}

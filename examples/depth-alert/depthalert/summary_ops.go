@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 type summaryOps struct {
@@ -18,7 +17,7 @@ func (s *summaryOps) bind(p *ownframe.Page) error {
 		return errors.New("depth alert: summary has no display list")
 	}
 	for _, b := range p.Boxes() {
-		op := frame.Text(d, b)
+		op := ownframe.Text(d, b)
 		switch b.ID {
 		case "signal":
 			s.signal = op

@@ -1,28 +1,24 @@
 package player
 
-import (
-	"time"
-
-	rb "github.com/chinmay-sawant/ownframe/internal/runtimebehavior"
-)
+import "time"
 
 type RuntimeBehaviorHelper struct {
-	Loading    *rb.LoadingMarker
-	Marker     *rb.LoadingMarker
-	Observer   *rb.Observer
-	Visibility *rb.VisibilityObserver
-	Resize     *rb.ResizeObserver
-	Watchdog   *rb.Watchdog
+	Loading    *loadingMarker
+	Marker     *loadingMarker
+	Observer   *observer
+	Visibility *visibilityObserver
+	Resize     *resizeObserver
+	Watchdog   *watchdog
 }
 
 func NewRuntimeBehaviorHelper() *RuntimeBehaviorHelper {
-	m := &rb.LoadingMarker{}
+	m := &loadingMarker{}
 	return &RuntimeBehaviorHelper{
 		Loading: m, Marker: m,
-		Observer:   rb.NewObserver(nil),
-		Visibility: rb.NewVisibilityObserver(nil),
-		Resize:     rb.NewResizeObserver(nil),
-		Watchdog:   &rb.Watchdog{},
+		Observer:   &observer{},
+		Visibility: &visibilityObserver{},
+		Resize:     &resizeObserver{},
+		Watchdog:   &watchdog{},
 	}
 }
 

@@ -17,9 +17,9 @@ func (s *shell) bufferOrderSafe() bool {
 }
 
 // hasViewportOps reports a page with fixed or viewport-pinned operations.
-// Those layers paint on the screen outside the tile buffer, so a partial
-// blit would leave their old pixels; the frame repaints in full. 1.0 pins
-// chrome with SetScrollWindow / SetViewportPinZ and leaves the tile path.
+// Those layers paint on the screen after the unfixed tile blit, so a
+// partial frame keeps the 256 px grid. 1.0 pins chrome with
+// SetScrollWindow / SetViewportPinZ.
 func (s *shell) hasViewportOps() bool {
 	s.scanOrder()
 

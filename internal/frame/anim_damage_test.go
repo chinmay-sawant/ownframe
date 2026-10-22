@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func TestDamageCoversOldAndNew(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := TranslateTo(d, []*ownframe.DisplayOp{op}, 30, 0, 100*time.Millisecond, Linear)
+	a := TranslateTo(d, []*page.DisplayOp{op}, 30, 0, 100*time.Millisecond, Linear)
 	a.Step(t0)
 	dmg, _ := a.Step(t0.Add(100 * time.Millisecond))
 
@@ -46,7 +46,7 @@ func TestTickMarksOldAndNew(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := TranslateTo(d, []*ownframe.DisplayOp{op}, 30, 0, 100*time.Millisecond, Linear)
+	a := TranslateTo(d, []*page.DisplayOp{op}, 30, 0, 100*time.Millisecond, Linear)
 
 	var m marker
 	if !a.Tick(&m, t0) {
@@ -78,7 +78,7 @@ func TestZeroDurationFinishesNow(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := TranslateTo(d, []*ownframe.DisplayOp{op}, 5, 0, 0, Linear)
+	a := TranslateTo(d, []*page.DisplayOp{op}, 5, 0, 0, Linear)
 
 	dmg, live := a.Step(t0)
 	if live {

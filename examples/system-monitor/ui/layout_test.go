@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // boxByAction returns the first box whose action matches.
@@ -46,7 +45,7 @@ func TestOverviewLayout(t *testing.T) {
 			t.Fatalf("%s graph too small: %vx%v", id, box.W, box.H)
 		}
 
-		if bars := frame.Fills(d, box, accent); len(bars) != graphColsMax {
+		if bars := ownframe.Fills(d, box, accent); len(bars) != graphColsMax {
 			t.Fatalf("%s graph bars = %d, want %d", id, len(bars), graphColsMax)
 		}
 	}

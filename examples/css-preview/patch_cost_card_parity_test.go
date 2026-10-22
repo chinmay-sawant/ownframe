@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // TestPatchCardRowMatchesAFullRedraw is the same gate for the class change
@@ -14,7 +14,7 @@ import (
 func TestPatchCardRowMatchesAFullRedraw(t *testing.T) {
 	ctx, p, v := patchCostPage(t)
 	card := patchCostCardOf(v)
-	if err := p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: card.cardOn}); err != nil {
+	if err := p.PatchElement(ctx, card.id, ownframe.ElementEdit{Attribute: "class", Value: card.cardOn}); err != nil {
 		t.Fatal(err)
 	}
 	patched := patchCostOps(p.Display(), card.id)

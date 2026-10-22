@@ -78,7 +78,8 @@ behavior, and what survives a reload.
 - No audio context ([features.md](features.md), [window.md](window.md)).
 - No file dialog, so a file input keeps the typed name ([forms.md](forms.md)).
 - No dropped files. `Serve` is not the Ebiten loop, so it never reads `ebiten.DroppedFiles` ([drag-drop.md](drag-drop.md)).
-- No crash recovery ([crash.md](crash.md)).
+- No crash-report file. A handler panic becomes HTTP 500
+  ([crash.md](crash.md)).
 
 A click still focuses a control and `/type` still edits it, so a form takes
 text. Values survive a redraw like any other page.

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // paintGraph lays every bar of one card from the downsampled ring. The bar
@@ -16,7 +15,7 @@ func (a *App) paintGraph(d *ownframe.Display, p *panel) {
 		return
 	}
 
-	bx, by, bw, bh := frame.BoxUnits(d, box)
+	bx, by, bw, bh := ownframe.BoxUnits(d, box)
 	bottom := by + bh
 	pp := d.PointsPerPixel
 

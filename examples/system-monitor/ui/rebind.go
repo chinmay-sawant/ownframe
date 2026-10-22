@@ -2,7 +2,6 @@ package ui
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // accent is the single accent color, #2f6fd0. Every graph bar uses it, so
@@ -53,13 +52,13 @@ func (a *App) rebind() {
 	for _, p := range panelOrder {
 		if box, ok := boxByID(boxes, p+"-graph"); ok {
 			h.graph[p] = box
-			h.bars[p] = frame.Fills(d, box, accent)
+			h.bars[p] = ownframe.Fills(d, box, accent)
 		}
 	}
 
 	for _, id := range paintIDs() {
 		if box, ok := boxByID(boxes, id); ok {
-			h.text[id] = frame.Text(d, box)
+			h.text[id] = ownframe.Text(d, box)
 		}
 	}
 

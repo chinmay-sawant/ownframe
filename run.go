@@ -34,7 +34,7 @@ func BindMobile(ctx context.Context, page *Page) (err error) {
 	ensureAudio()
 
 	ebiten.SetTPS(ebiten.SyncWithFPS)
-	ebitenmobile.SetGame(window.NewGame(ctx, page))
+	ebitenmobile.SetGame(window.NewGame(ctx, innerPage(page)))
 
 	return nil
 }

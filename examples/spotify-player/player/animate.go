@@ -2,7 +2,6 @@ package player
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 var accent = [3]float64{29.0 / 255, 185.0 / 255, 84.0 / 255}
@@ -30,7 +29,7 @@ func (a *App) animate() {
 		if hasSeek {
 			fill := accentFill(d, seekBox)
 			if fill != nil {
-				_, _, w, _ := frame.BoxUnits(d, seekBox)
+				_, _, w, _ := ownframe.BoxUnits(d, seekBox)
 				fraction := float64(pos) / float64(dur)
 				if fraction < 0 {
 					fraction = 0
@@ -71,7 +70,7 @@ func accentFill(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
 		return nil
 	}
 
-	x, y, w, h := frame.BoxUnits(d, box)
+	x, y, w, h := ownframe.BoxUnits(d, box)
 	var best *ownframe.DisplayOp
 
 	for i := range d.Ops {

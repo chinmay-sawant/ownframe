@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
@@ -19,8 +19,8 @@ func TestPatchedXformStaysReplayable(t *testing.T) {
 	}
 
 	anims := []*Anim{
-		ScaleTo(d, []*ownframe.DisplayOp{op}, 2, time.Millisecond, Linear),
-		RotateTo(d, []*ownframe.DisplayOp{op}, 30, time.Millisecond, Linear),
+		ScaleTo(d, []*page.DisplayOp{op}, 2, time.Millisecond, Linear),
+		RotateTo(d, []*page.DisplayOp{op}, 30, time.Millisecond, Linear),
 	}
 
 	for _, a := range anims {

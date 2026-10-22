@@ -1,24 +1,14 @@
 package page
 
+import "github.com/chinmay-sawant/ownframe/internal/page/form"
+
 // focusOrder is the tab order: the document order of the control boxes,
 // with disabled controls and tabindex="-1" left out.
 func (p *Page) focusOrder() []string {
-	seen := map[string]bool{}
-	out := []string{}
+	ids := make([]string, 0, len(p.boxes))
 	for _, b := range p.boxes {
-		id := b.ID
-		if id == "" || seen[id] {
-			continue
-		}
-
-		c, ok := p.control(id)
-		if !ok || c.Disabled || c.TabIndex < 0 {
-			continue
-		}
-
-		seen[id] = true
-		out = append(out, id)
+		ids = append(ids, b.ID)
 	}
 
-	return out
+	return form.Order(ids, p.control)
 }

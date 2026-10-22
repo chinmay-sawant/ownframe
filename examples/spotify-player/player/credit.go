@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // ensureCredit keeps the now-bar credit line non-empty.
@@ -42,7 +41,7 @@ func (a *App) animateCredit(d *ownframe.Display, boxes []ownframe.Box) {
 		return
 	}
 
-	if op := frame.Text(d, box); op != nil && op.Text != text {
+	if op := ownframe.Text(d, box); op != nil && op.Text != text {
 		op.Text = text
 		a.page.Invalidate("credit")
 	}

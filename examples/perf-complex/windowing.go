@@ -1,6 +1,6 @@
 package main
 
-import "github.com/chinmay-sawant/ownframe/internal/page"
+import "github.com/chinmay-sawant/ownframe"
 
 // Windowing is the 1.0 list recipe: SetWindowing plus SetScrollWindow
 // slices app-owned rows around the viewport and pads with spacers so layout
@@ -13,7 +13,7 @@ const (
 	stripePair     = 2
 )
 
-func installWindow(p *page.Page, v view) {
+func installWindow(p *ownframe.Page, v view) {
 	all := v.Rows
 	previousStart, previousEnd := -1, -1
 	p.SetWindowing(true)

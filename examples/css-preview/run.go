@@ -3,19 +3,17 @@ package main
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
 func run(perf bool, width, height int) error {
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
-	p, err := previewwindow.New(ctx, previewwindow.Config{Title: "OwnFrame CSS property catalog",
-		FixtureDir: catalogFixtureDir(), Data: v, Width: width, Height: height,
-		RetainState: true})
+	p, err := openCatalog(ctx, catalogOpen{
+		Title: "OwnFrame CSS property catalog",
+		Data:  v, Width: width, Height: height, RetainState: true,
+	})
 	if err != nil {
 		return err
 	}
@@ -25,13 +23,13 @@ func run(perf bool, width, height int) error {
 	}
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		return err
 	}
 	v.Catalog = catalogRows(p)
 	v.Rows = v.Catalog
 	v.Readout = describe(p)
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		return err
 	}
 	metrics, ok := measureCatalog(p)
@@ -47,18 +45,4 @@ func run(perf bool, width, height int) error {
 	d.gen = p.Generation()
 	startWalk(p, d, v, metrics)
 	return ownframe.Run(ctx, p)
-}
-
-func catalogFixtureDir() string {
-	candidates := []string{
-		filepath.Join("examples", "css-preview", "testdata", "css-preview"),
-		filepath.Join("css-preview", "testdata", "css-preview"),
-		filepath.Join("testdata", "css-preview"),
-	}
-	for _, dir := range candidates {
-		if _, err := os.Stat(filepath.Join(dir, "index.html")); err == nil {
-			return dir
-		}
-	}
-	return filepath.Join("testdata", "css-preview")
 }

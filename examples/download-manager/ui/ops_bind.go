@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // bind reacquires every operation the paint uses. Call it after any Redraw
@@ -29,8 +28,8 @@ func (a *App) bind() {
 		a.bindings.trackW = append(a.bindings.trackW, 0)
 
 		if track, ok := byID["track-"+strconv.Itoa(i)]; ok {
-			a.bindings.fill[i] = frame.Fill(d, track, barColor)
-			_, _, w, _ := frame.BoxUnits(d, track)
+			a.bindings.fill[i] = ownframe.Fill(d, track, barColor)
+			_, _, w, _ := ownframe.BoxUnits(d, track)
 			a.bindings.trackW[i] = w
 		}
 
@@ -61,5 +60,5 @@ func textAt(d *ownframe.Display, byID map[string]ownframe.Box, id string) *ownfr
 		return nil
 	}
 
-	return frame.Text(d, box)
+	return ownframe.Text(d, box)
 }

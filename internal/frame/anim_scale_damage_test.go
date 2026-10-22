@@ -5,14 +5,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func TestScaleDamageCoversTheLargerBox(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := ScaleTo(d, []*ownframe.DisplayOp{op}, 2, 100*time.Millisecond, Linear)
+	a := ScaleTo(d, []*page.DisplayOp{op}, 2, 100*time.Millisecond, Linear)
 	a.Step(t0)
 	dmg, _ := a.Step(t0.Add(50 * time.Millisecond))
 

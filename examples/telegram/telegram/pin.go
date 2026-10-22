@@ -11,8 +11,8 @@ const (
 	keyboardMin = 100
 )
 
-// Pin is the 1.0 chrome contract: SetScrollWindow (not a tile pin layer)
-// keeps bars at the viewport while messages scroll. See documentation/repaint.md.
+// Pin is the 1.0 chrome contract: SetScrollWindow keeps bars at the
+// viewport while messages scroll. The window paints pin-z after the tile blit.
 // The callback runs before each redraw so the window's translation lands them
 // at the edges. It reports whether a scroll redraw is needed: never on the
 // phone, where replay draws the pinned z-layer at the viewport.

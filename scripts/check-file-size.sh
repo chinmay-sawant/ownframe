@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# File-size gate (AGENTS.md "Go file size": every Go file is at most 2,000
-# characters, counted with `wc -m`; newlines included).
+# File-size gate (AGENTS.md "Go file size": library Go files at the repo
+# root and under internal/ are at most 2,000 characters, counted with
+# `wc -m`; newlines included). examples/ is pruned: downstream apps and
+# examples are not under that cap.
 #
 # Scans repo .go files, test files included, and skips tool/artifact dirs.
 # Every scanned file over the limit must be recorded in
@@ -42,17 +44,17 @@ if [ ! -f "$allowlist" ]; then
 fi
 
 # Tool and artifact dirs excluded from the scan, as paths relative to the
-# repo root. Add to this list only for dirs that never hold hand-written Go.
+# repo root. ./examples is the examples module: not under the 2000 cap.
+# Add to this list only for dirs that never hold capped Go.
 prune_dirs=(
 	./.git
 	./temp
-	./examples/temp
+	./examples
 	./dist
 	./docs
 	./frontend
 	./node_modules
 	./testdata
-	./examples/testdata
 )
 
 find_expr=(-path "${prune_dirs[0]}")

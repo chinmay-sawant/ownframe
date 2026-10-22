@@ -3,18 +3,16 @@ package remote
 import (
 	"sync/atomic"
 	"time"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 type repeatState struct {
 	id, host, mode string
-	schedule       host.RepeatScheduler
+	schedule       repeatScheduler
 	epoch          atomic.Uint64
 	pending        atomic.Bool
 }
 
-var remoteRepeatPolicy = host.RepeatPolicy{Delay: repeatInitDelay, Rates: []host.RepeatRate{
+var remoteRepeatPolicy = repeatPolicy{Delay: repeatInitDelay, Rates: []repeatRate{
 	{After: 0, Interval: repeatFirstTick},
 	{After: repeatSecondAfter, Interval: repeatSecondTick},
 	{After: repeatThirdAfter, Interval: repeatThirdTick},

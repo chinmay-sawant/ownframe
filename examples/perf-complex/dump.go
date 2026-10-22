@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // dumpFilePerm keeps measurement dumps owner-only.
@@ -19,7 +19,7 @@ func writeJSON(path string, v any) error {
 	return os.WriteFile(path, append(b, '\n'), dumpFilePerm)
 }
 
-func writeDump(out, mode string, d dump, p *page.Page) error {
+func writeDump(out, mode string, d dump, p *ownframe.Page) error {
 	if err := writeJSON(filepath.Join(out, mode+".json"), d); err != nil {
 		return err
 	}

@@ -88,7 +88,7 @@ Start with the [documentation index](documentation/README.md) or [feature list a
 - [Packaging](documentation/packaging.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot; it does not connect AT-SPI, UI Automation, NSAccessibility, or TalkBack. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. Linux has an experimental AT-SPI mapping and bus seam; a live D-Bus client is not implemented, so Orca cannot inspect a window yet. UI Automation, VoiceOver, and TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 

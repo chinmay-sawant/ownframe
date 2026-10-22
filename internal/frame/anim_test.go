@@ -6,15 +6,15 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // t0 is the fixed clock every animation test steps against.
 var t0 = time.Unix(0, 0)
 
 // cardDisplay builds a 400x200 canvas with one 20x10-point card at (10,10).
-func cardDisplay() (*ownframe.Display, *layout.DisplayOp) {
-	d := &ownframe.Display{
+func cardDisplay() (*page.Display, *layout.DisplayOp) {
+	d := &page.Display{
 		Width: 400, Height: 200,
 		PointsPerPixel: 0.75, PixelPerPoint: 4.0 / 3,
 		Ops: []layout.DisplayOp{
@@ -30,7 +30,7 @@ func TestTranslatePatchesXY(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := TranslateTo(d, []*ownframe.DisplayOp{op}, 30, 20, 100*time.Millisecond, Linear)
+	a := TranslateTo(d, []*page.DisplayOp{op}, 30, 20, 100*time.Millisecond, Linear)
 
 	if _, live := a.Step(t0); !live {
 		t.Fatal("finished at the start")
@@ -73,7 +73,7 @@ func TestFadePatchesAlpha(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := FadeTo(d, []*ownframe.DisplayOp{op}, 0.25, 100*time.Millisecond, Linear)
+	a := FadeTo(d, []*page.DisplayOp{op}, 0.25, 100*time.Millisecond, Linear)
 
 	a.Step(t0)
 	a.Step(t0.Add(50 * time.Millisecond))

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // near compares two floats within a small epsilon.
@@ -16,7 +16,7 @@ func TestScalePatchesMatrix(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := ScaleTo(d, []*ownframe.DisplayOp{op}, 2, 100*time.Millisecond, Linear)
+	a := ScaleTo(d, []*page.DisplayOp{op}, 2, 100*time.Millisecond, Linear)
 
 	a.Step(t0)
 
@@ -49,7 +49,7 @@ func TestScaleComposesBakedTransform(t *testing.T) {
 	base.E = 5
 	op.SetXform(base)
 
-	a := ScaleTo(d, []*ownframe.DisplayOp{op}, 2, time.Millisecond, Linear)
+	a := ScaleTo(d, []*page.DisplayOp{op}, 2, time.Millisecond, Linear)
 	a.Step(t0)
 	a.Step(t0.Add(time.Millisecond))
 
@@ -65,7 +65,7 @@ func TestRotateTurnsAboutCenter(t *testing.T) {
 	t.Parallel()
 
 	d, op := cardDisplay()
-	a := RotateTo(d, []*ownframe.DisplayOp{op}, 90, time.Millisecond, Linear)
+	a := RotateTo(d, []*page.DisplayOp{op}, 90, time.Millisecond, Linear)
 	a.Step(t0)
 	a.Step(t0.Add(time.Millisecond))
 

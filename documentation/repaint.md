@@ -67,13 +67,15 @@ The content is the canvas grown to cover every box that overflows it, the
 same measure the scroll clamp uses, so a page with a fixed root stays painted
 when it scrolls.
 
-Pinned chrome is a different path. `Page.SetViewportPinZ` and
+Pinned chrome stays on the tile path. `Page.SetViewportPinZ` and
 `Page.SetScrollWindow` keep bars at the viewport ([screen.md](screen.md)).
-When `hasViewportOps` is true, `drawReplayPartial` skips the tile grid and
-replays the whole list (`internal/window/replay_partial.go`). Telegram uses
-that pinned path. Incremental tiles are the forms-style case: a replayable
-page that reports dirty rects and has no viewport-pinned ops. The measured
-table below is the forms family.
+Tiles hold only unfixed operations (`replay.DrawVisibleUnfixedZ`). After the
+dirty-tile blit, `drawReplayPartial` paints fixed and pin-z operations in
+screen space (`replay.DrawFixed`, `replay.DrawPinnedZ`), clipped to the
+strip the devtools dock leaves visible. Telegram uses that overlay. A
+scroll copies message tiles and then paints the header and composer, so
+`hasViewportOps` does not force a full replay. The measured table below is
+the forms family; a pinned page uses the same 256 px grid.
 
 Each rect in the list gets one partial repaint against that buffer. A list
 longer than the eight-rect cap, or a rect equal to the whole content, falls

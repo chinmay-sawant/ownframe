@@ -77,6 +77,9 @@ channel and applied on the game loop.
   still choose a private directory on shared machines.
 - `SetCrashDir` and other path APIs are trusted; the crash directory is not
   sandboxed.
+- The AT-SPI mapping must not log accessible names, descriptions, or
+  values. `internal/atspi.Summarize` prints role and path only. The live
+  bus client is not implemented; no accessibility socket is created.
 - Environment debug flags (`OWNFRAME_FILEPICK_DEBUG`, `OWNFRAME_PACE_DEBUG`)
   are dev-only and off unless explicitly set. They write to stderr and may
   include paths or command failure details, so keep them off in shipped binaries.

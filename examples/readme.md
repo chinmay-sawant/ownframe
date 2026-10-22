@@ -32,6 +32,7 @@ behavior and the limits are in
 | Folder | Shows |
 |---|---|
 | [login](login) | Sign-in screen with real inputs, clipboard, and an app-level undo stack. |
+| [ops-console](ops-console) | Five-screen yard ops console: login, ticket list, detail, settings, and a shift report. One shell template, one `View`, `data-action` clicks. Not a brand clone. |
 | [forms](forms) | Every form control: text, password, textarea, checkbox, radio, select, file. |
 | [bind](bind) | `data-bind` two-way binding of controls to a struct. |
 | [input-lab](input-lab) | All nine form and input demos in one window: plain controls, two-way binding, a locked bound field, edit undo, OS clipboard, scroll list, sign-in, and CSS states. |
@@ -77,6 +78,7 @@ behavior and the limits are in
 | [snipping-tool](snipping-tool) | Desktop screen capture: toolbar capture, form-field crop, save and copy, OS tools with demo fallback. | 8136 |
 | [departure-board](departure-board) | Split-flap departure board: eight rows of per-character tiles over a seeded timetable, four liveries with a night variant, tick-driven flaps that rebind per `Page.Generation()`, and a refresh bar found by the livery accent. | 8137 |
 | [theme-studio](theme-studio) | Theme editor with a live preview: Apply sets the page theme and writes the watched theme file, a token strip shows colour swatches, four presets. | 8138 |
+| [ops-console](ops-console) | Five-screen yard ops teaching sample: login, list, detail, settings, report. | 8141 |
 | [download-manager](download-manager) | Download queue with bounded workers: progress and speed, pause/resume with validated HTTP range resume, retry, cancel, and durable SQLite history. | — |
 | [live-log-viewer](live-log-viewer) | Multi-file log viewer: source sidebar, fixed-height rows, filters, follow/pause with unread count, entry detail, bounded export, and SQLite history. | — |
 | [spreadsheet](spreadsheet) | Sparse editable grid with a formula bar, SUM/AVERAGE formulas, range selection, undo/redo, CSV import/export, and SQLite workbooks. | — |

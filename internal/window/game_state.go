@@ -76,6 +76,7 @@ type shell struct {
 	frameOptIn bool
 	dev        devState
 	ime        imeState
+	a11y       a11yHost
 	commits    uint64
 	skipped    uint64
 }
