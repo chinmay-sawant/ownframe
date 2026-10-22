@@ -1,68 +1,37 @@
 # Current maintenance ledger
 
-This is the current status record. Release folders, PR records, `PHASES.md`, and `RENDERING-FINDINGS.md` preserve historical evidence and rationale. They do not define present support. User-facing behavior belongs in [documentation/features.md](../documentation/features.md) and [documentation/platforms.md](../documentation/platforms.md).
+This is the current status record. Historical release plans, `PHASES.md`, and `RENDERING-FINDINGS.md` preserve rationale, not present support. Public behavior belongs in [features](../documentation/features.md) and [platforms](../documentation/platforms.md). Earlier pass-by-pass results remain in Git history through `b32ea940`.
 
-Use one status per row:
+Use one state per row: implemented `[x]` with evidence, open `[ ]` awaiting work or validation, deferred `[-]` with a reconsideration condition, or superseded `[s]` with a replacement. A passing compile is not device evidence. Keep evidence beside its claim instead of appending duplicate closure sections.
 
-- `[x]` implemented, with a code or validation reference.
-- `[ ]` open, awaiting work or validation.
-- `[-]` deferred, with a reason and a condition for reconsideration.
-- `[s]` superseded, with a replacement reference.
+## Implemented responsibilities
 
-A documented non-goal is deferred, not implemented. Passing a compiler or a unit test does not prove device behavior. Do not copy a phase closure paragraph into other plans. Add evidence beside the row it proves.
+- [x] `COHESION` retire the character cap and consolidate related code and tests. Evidence: `AGENTS.md`, `CONTRIBUTING.md`, and the page/window/replay consolidations in `c59f1a51`; responsibility review replaces size bookkeeping.
+- [x] `STATE-OWNER` put subscription cancellation, binding generations, and metadata synchronization in `internal/state.Binding`. Evidence: binding and page integration race tests; `b32ea940`. Page paint invalidates encoded PNGs, and each page owns its changed-property lock.
+- [x] `PACING-OWNER` keep scheduling policy in `internal/window/pacing` and Ebiten modes, timers, and synchronization in its host adapter. Evidence: policy tests and `TestWindowIdleDeadline`, which checks the actual idle mode, timer wake, and resulting pixel.
+- [x] `GPU-FIXTURES` move replay fixture ownership into the library and run alpha pixel assertions inside the GPU game loop. Evidence: `internal/replay/testdata`, `gpu_alpha_pixels_test.go`, and the graphics gate; no library test reads downstream example fixtures.
+- [x] `GRAPHICS` require five isolated graphics sessions, including the scrollbar and actual window deadline. Evidence: `scripts/check-graphics.sh` rejects absent or skipped tests; `TestWindowRepaintPixels` also checks a surface cleared between clean frames.
+- [x] `DOCS` compile public guide examples and check operational claims. Evidence: `make docs-check` compiles 31 snippets, explicitly reports eight external illustrations, and rejects stale Go/engine pins, retired tick semantics, or invalid performance flags.
+- [x] `LINT` execute the exact declared linter with a curated policy. Evidence: version-selection regression, both Go module lint passes, and `.golangci.yml`; a mismatched PATH binary is preserved and replaced only for this invocation.
+- [x] `EXAMPLES` keep six teaching examples and classify experiments explicitly. Evidence: `examples/maintenance.json`, inventory rejection tests, and compatibility tests for every example package.
+- [x] `MODULE-CONSUMER` validate archive contents and an isolated public consumer. Evidence: `scripts/cmd/module-check`; nested modules are excluded, library fixtures remain, and the consumer resolves the archive without a workspace or replacement. An examples-tag check rejects filesystem replacements and vets the declared published dependency.
+- [x] `WEBSITE-GATE` check source tests, generated output, and browser layouts in CI. Evidence: `make site-check`, generated-output rejection tests, and `.github/workflows/ci.yml`.
+- [x] `RELEASE-CANDIDATE` verify local archive inventory, checksums, paths, modes, and wasm bytes; prepare signed and attested candidates after tag gates. Evidence: `make release-check`, archive corruption tests, and `release.yml`. The workflow definition is implemented; a successful OIDC tag run and publication are separate open checks below.
+- [x] `PERF-WORKLOAD` drive a repeatable page soak and reject missing web metrics. Evidence: `page_soak_test.go`, strict sampler regressions, and the 600-second result in the validation record. Web perf now returns actual runtime metrics without a callback that production never installed.
+- [x] `MOBILE-METRICS` use a collapsible bottom panel with a separate 48 dp X target on mobile. Evidence: geometry/touch/close regressions and cleared-surface GPU regression; desktop retains its right dock. Device results are recorded separately below.
+- [s] `OLD-CLOSURE` retire blanket production-readiness completion. Replacement: this ledger; archived rows under `v0.0.3/prod-ready-task` are explicitly superseded.
 
-## Repository maintenance
+## Validation and remaining gaps
 
-- [x] `COHESION` replace the character cap with responsibility and cohesion review; consolidate repaint, window-frame, Wayland-fixture, and GPU comparison tests. Evidence: `AGENTS.md`, `CONTRIBUTING.md`, and the consolidated test families; `make test` exit 0 on 2026-10-22.
-- [x] `DOCS` correct API references and compile guide snippets. Evidence: `make docs-check` compiled 31 snippets on 2026-10-22; eight third-party illustrations are explicitly excluded; public Page method references are checked.
-- [x] `GRAPHICS` run retained window pixels and replay parity in isolated sessions. Evidence: `make graphics-check` exit 0 on 2026-10-22, all three required tests passed under Xvfb software OpenGL; missing or skipped tests fail the gate.
-- [x] `LINT` execute the exact declared golangci-lint version. Evidence: `make lint-version` exit 0 on 2026-10-22; the fixture proves a wrong PATH runner is replaced and the exact cached version is reused.
-- [x] `EXAMPLES` maintain a focused teaching set and inventory experiments separately. Evidence: `make examples-check` exit 0 on 2026-10-22, six maintained teaching roots and 49 experimental or support roots; every example remains in `make test`.
-- [x] `GATES` run the final repository checks. Evidence: `make test`, `make lint`, `make graphics-check`, frontend `npm run build`, and frontend `npm run check:site` exited 0 on 2026-10-22. The browser check covered 120 layouts including the testing guide. `zizmor` reported no new findings on the edited workflows in offline mode.
-- [s] `OLD-CLOSURE` replace the blanket production-readiness closure. Replacement: this ledger; `v0.0.3/prod-ready-task/README.md` explains the archived rows.
-- [-] `PACKAGE-SPLIT` further extract page responsibilities and remaining window responsibilities after the pacing and state-binding extractions below. Reconsider when a concrete change crosses ownership boundaries; extract behavior with explicit inputs and outputs.
-- [-] `NATIVE-A11Y` live screen-reader adapters remain unshipped. Reconsider with an adapter owner and real assistive-technology validation; see `../documentation/accessibility-native.md`.
-- [-] `EXPERIMENTS` Reconsider promoting additional demos only when they teach a missing public capability and have a maintenance owner. Existing experimental examples remain in the compatibility suite.
+- [x] `FINAL-GATES` run full tests, library race detection, lint, graphics, module, local archive, and website checks on the isolated source snapshot. Evidence: [validation record](validation/2026-10-23-session.md); all passed after incorporating `69f083de`. Concurrent unfinished shared-checkout edits are excluded.
+- [x] `ANDROID-SESSION` complete guarded Pixel 7 keyboard, rotation, and same-process resume captures and visual review. Evidence: [session record](validation/2026-10-23-session.md), APK digest, reviewed captures, and the keyboard-gap regression. Complex IME composition remains outside this session.
+- [ ] `NATIVE-IME` validate native Windows preedit, cancellation, conversion, and commit. The native window was confirmed and Japanese Microsoft IME was added, but English typing and layout switching are insufficient.
+- [-] `MACOS-IME` defer native macOS validation at the author's request because no host is available. Reconsider when a macOS host can run the composing-input-method session.
+- [ ] `INDEPENDENT-HANDOFF` have a teammate follow the clean-checkout exercise without author assistance. The reusable [review prompt](../documentation/maintenance-review.md) is available; the exercise has not happened.
+- [x] `TAG-SIGNING` verify a successful candidate workflow, artifact checksums, and provenance at `a1d66b2d`. Evidence: [verification record](validation/2026-10-23-session.md). The [validation branch run](https://github.com/chinmay-sawant/ownframe/actions/runs/39836584963) prepares evidence without publishing a version tag or GitHub Release; a production tag remains a separate operator action.
+- [-] `INTERNAL-IMPORTS` preserve the current frozen exception inventory. Reconsider removing each pair when a coherent public seam replaces it or its experimental caller is retired. The maintained desktop-cat custom reloadable preview still needs its internal web adapter; adding public forwarding APIs solely to erase a count would make ownership worse.
+- [-] `PACKAGE-SPLIT` extract more page/window behavior only when it can own a responsibility with explicit inputs and outputs. Reconsider when a concrete change exposes duplicated state or crosses ownership boundaries.
+- [-] `NATIVE-A11Y` live screen-reader adapters remain unshipped. Reconsider with an adapter owner and real assistive-technology validation; see [native accessibility](../documentation/accessibility-native.md).
+- [-] `EXPERIMENTS` promote another teaching example only when it teaches a missing public capability and has a maintainer. Reconsider on that evidence; experiments remain in the compatibility suite.
 
-Validation used the local checkout with Go 1.26.10. CI workflow changes have been inspected locally, not executed on GitHub. The first maintenance pass was committed as `f8a2100a` and pushed to `origin/feat/prod-readiness` at the author's request. No release or version bump was made. Logs are in the ignored `temp/maintenance-*.log` files.
-
-## Follow-up maintenance
-
-- [x] `PNG-CACHE` invalidate encoded PNGs through page paint damage. Evidence: the new regression failed for operation patches, display patches, ticks, and explicit invalidation before the fix; all four now decode to the updated color without a redraw. The no-op cache test passes.
-- [x] `PAGE-LOCK` give each page its own changed-property mutex and remove the global-lock lint exemption. Evidence: `make test-race` exit 0 on 2026-10-22, including the concurrent changed-property regression.
-- [x] `COHESION-FILES` consolidate related production methods and update the subsystem maps. Evidence: page production files 185 to 148, window 200 to 179, replay 73 to 71, and the public Testing facade 18 files to one. The public API and platform file constraints are preserved; `make test` exit 0 on 2026-10-22.
-- [x] `LINT-OUTPUT` summarize each lint gate and preserve full failure diagnostics. Evidence: `make lint` exit 0 on 2026-10-22 prints eight gate results; `make tools-check` verifies compact success output, full failure output, verbose mode, missing-tool failure, and safe Go file consolidation.
-- [x] `FOLLOWUP-GATES` validate the final tooling and generated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Logs are in `temp/maintainability-*.log`.
-
-The follow-up maintenance was committed as `c59f1a51` and pushed to `origin/feat/prod-readiness` at the author's request. This ledger does not assign a perfect rating or claim untested platform support. Native input methods, hardware graphics drivers, Android lifecycle behavior, and live screen-reader adapters need platform-specific evidence; see the published support limits.
-
-## State ownership and gate validation
-
-- [x] `STATE-LIFECYCLE` cancel former state registrations on rebind and reject already-dispatched callbacks. Evidence: three regressions failed before the fix; full tests and the library race detector passed on 2026-10-22. Cancellation, reentry, concurrent rebinding, and independent page subscriptions have regressions. The obsolete internal SetState and RemoveListener callers were migrated to BindState and cancellation handles; the root public API is unchanged.
-- [x] `VALIDATION-GATES` reject malformed maintenance records even when Python assertions are disabled. Evidence: `PYTHONOPTIMIZE=1 make tools-check plans-check examples-check lint-version` and final `make lint` exited 0 on 2026-10-22. Negative tests reject bad states, missing evidence, duplicate identifiers, conflicting classifications, and stale example inventories.
-- [x] `STATE-GATES` run final full tests, race detection, lint, and generated-site checks. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Logs are in `temp/state-lifecycle-*.log`. Validation covered this pass after the pushed `c59f1a51` snapshot.
-
-A local display-free window unit test passed, so no additional Xvfb wrappers were added to non-graphics CI jobs on assumption alone. The graphics gate continues to require a real Xvfb game session. Native host and device claims remain subject to the platform limits in the guides.
-
-## Window pacing and desktop rendering evidence
-
-- [x] `PACING-OWNER` move scheduling into `internal/window/pacing`, leaving Ebiten mode changes, goroutine lifetime, and synchronization in the window adapter. Evidence: 16 tests exercise the policy through its caller interface, including deadline replacement, cancellation, wake consumption, timer sleep, and diagnostic snapshots. Display-free package tests and full library race detection exited 0 on 2026-10-22. The root public API is unchanged.
-- [x] `DESKTOP-PIXELS` support a repeatable current-desktop graphics session alongside isolated Xvfb. Evidence: both `make graphics-check` and `GRAPHICS_SESSION=desktop make graphics-check` exited 0 on 2026-10-22 with all three required pixel tests. The desktop session was WSLg X11 with `LIBGL_ALWAYS_SOFTWARE` unset. This proves neither native Windows execution nor hardware acceleration. Tooling regressions cover session selection, driver selection preservation, missing display, invalid modes, skipped tests, and a failing Go command.
-- [x] `PACING-GATES` validate the final library, examples, tooling, and generated website. Evidence: `make test`, `make test-race`, `make lint`, `PYTHONOPTIMIZE=1 make tools-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Logs are in ignored `temp/pacing-*.log` files.
-- [ ] `NATIVE-SESSIONS` collect native Windows/macOS input-method and Android lifecycle evidence. WSLg is the available desktop session; `adb devices -l` listed no connected device on 2026-10-22. These checks need the corresponding hosts and an authorized connected Android device. Cross-compilation and Xvfb cannot close this row.
-
-This pass was validated locally before publication. No release or version bump was made.
-
-## State binding ownership
-
-- [x] `STATE-OWNER` give `internal/state.Binding` ownership of subscription cancellation, binding generations, metadata queues, and synchronization. Evidence: seven direct binding tests and page integration tests passed under the race detector on 2026-10-22. Coverage includes rebinding the same store after detach while an older callback is in flight, snapshot ownership, and shared-store fallback. Page now holds one binding instead of five separate bookkeeping fields. Three unused internal aliases were removed; the root public API is unchanged.
-- [x] `BINDING-GATES` validate the final binding extraction and generated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, targeted state/page race tests, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. The strengthened page integration test checks exact store fallback and detachment. Logs are in ignored `temp/binding-*.log` files.
-
-The pacing snapshot was committed as `ae5ddbbf` and pushed to `origin/feat/prod-readiness` at the author's request. The subsequent binding extraction was validated locally before publication. Native host and device validation remains open under `NATIVE-SESSIONS`.
-
-## Runtime idle deadline validation
-
-- [x] `IDLE-SESSION` exercise the actual window pacing wrapper and timer in the graphics gate. Evidence: `TestWindowIdleDeadline` passed in Xvfb software OpenGL and WSLg on 2026-10-22, plus three additional independent Xvfb sessions. It requires initial red pixels, the blocking idle FPS mode, a declared quiet interval, a deadline-driven blue update, and restoration of vsync and the original tick rate. Temporarily removing the timer wake failed through the watchdog; replacing the blocking mode with an unthrottled loop failed the mode assertion. Both production mutations were restored before final validation.
-- [x] `IDLE-GATES` validate the four-test graphics gate and updated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, `GRAPHICS_SESSION=desktop make graphics-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Tooling tests require all four named graphics tests and reject skips and failing Go commands. Logs are in ignored `temp/idle-session-*.log` files.
-
-The binding extraction was committed as `b32ea940` and pushed to `origin/feat/prod-readiness` at the author's request. The subsequent runtime validation changes remain local. This test proves host integration in the tested sessions; it does not measure energy use, establish precise wake latency, or close `NATIVE-SESSIONS`.
+This ledger does not award a perfect rating. Dependency pins are checked against the modules, not copied as release promises. Prepared artifacts, published releases, and platform observations are different claims.

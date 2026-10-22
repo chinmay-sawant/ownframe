@@ -7,12 +7,12 @@ import (
 )
 
 func TestPinnedChromeDoesNotExtendScroll(t *testing.T) {
-	_, s := newPinShell()
+	screen, s := newPinShell()
 	// IDs deliberately differ from operation indexes.
 	s.display.Ops[0].ID = 19
 	s.display.Ops[3].ID = 73
 	s.display.Ops[3].Y = 900
-	s.app.(*pinScreen).boxes = []layout.Box{
+	screen.boxes = []layout.Box{
 		{Y: 0, H: 400, OperationIDs: []uint64{19}},
 		{Y: 900, H: 40, OperationIDs: []uint64{73}},
 	}
