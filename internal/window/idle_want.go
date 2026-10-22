@@ -8,8 +8,7 @@ import (
 )
 
 // pacePage is the wrapper's page-driven state: the deadline captured from the
-// page, the timer kick channel, and the debug counters. It is embedded so
-// idle_game.go stays inside the file size limit.
+// page, the timer kick channel, and the debug counters. The pacing wrapper embeds it.
 type pacePage struct {
 	want          time.Time
 	kick          chan struct{}

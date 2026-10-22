@@ -32,19 +32,19 @@ build:
 	$(GO) vet -p $(BUILD_P) ./... ./examples/...
 
 # Use exactly the declared runner version, including when PATH has another version.
-.PHONY: lint lint-version docs-check plans-check graphics-check examples-check
+.PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check
 lint-version:
 	bash scripts/lint_test.sh
 	bash scripts/lint.sh $(GOLANGCI_LINT_VERSION) --version
 
+# VERBOSE=1 prints the complete output from successful tools as well.
+VERBOSE ?= 0
 lint:
-	@status=0; \
-	bash scripts/lint_test.sh || status=1; \
-	bash scripts/lint.sh $(GOLANGCI_LINT_VERSION) || status=1; \
-	$(MAKE) --no-print-directory docs-check plans-check examples-check || status=1; \
-	$(MAKE) --no-print-directory internal-import-check || status=1; \
-	(cd frontend && npm run lint) || status=1; \
-	exit $$status
+	@python3 scripts/run-lint.py $(GOLANGCI_LINT_VERSION) $(if $(filter 1,$(VERBOSE)),--verbose)
+
+tools-check:
+	@python3 scripts/test_lint_output.py
+	@cd scripts && GOWORK=off $(GO) test -p 1 ./...
 
 docs-check:
 	python3 scripts/check-doc-snippets.py

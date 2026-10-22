@@ -20,11 +20,13 @@ make graphics-check
 
 `make examples-check` requires every example root to have a maintenance classification in [maintenance.json](../examples/maintenance.json). The maintained teaching set is login, bind, forms, list, desktop-cat, and telegram. Other examples remain in the compatibility suite. Classification is a scope decision, not a claim that Android or desktop behavior was validated on every platform.
 
+`make lint` prints one result per gate and includes complete diagnostics for any failed gate. Use `make lint VERBOSE=1` to see successful tool output, including each excluded third-party illustration. Every gate still runs after a failure. `make tools-check` tests the output runner and the Go consolidation tool. The output regression tests cover success suppression, failure diagnostics, missing tools, and verbose output.
+
 `make lint` runs the exact golangci-lint version declared by `GOLANGCI_LINT_VERSION`, both Go module lint passes, the documentation and ledger checks, the example import gate, and website ESLint. An installed runner with a different version is replaced for this invocation by a versioned local tool under ignored `temp/tools/`. It does not replace the user's PATH binary.
 
 ## Software pictures and window pixels
 
-`TestPagePictureMatchesRedraw` compares software PNGs after interactions with a fresh redraw and requires the interaction to change the picture. It protects retained page state and software-paint consistency. It does not capture the window's tile cache or prove browser parity.
+`TestPagePictureMatchesRedraw` compares software PNGs after interactions with a fresh redraw and requires the interaction to change the picture. It protects retained page state and software-paint consistency. It does not capture the window's tile cache or prove browser parity. `TestRetainedPaintInvalidatesEncodedPNG` checks decoded pixels after operation patches, display patches, tick mutations, and explicit invalidation, without requiring a redraw. A separate no-op test verifies cache reuse.
 
 `make graphics-check` runs three tests in separate processes and separate Xvfb sessions:
 

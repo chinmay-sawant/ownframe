@@ -613,7 +613,7 @@ it without the batch. `BenchmarkClickRedraw` measures one `SetData` plus
 Ownframe:
 
 - `internal/host/batch.go` defines `RedrawBatcher` and `Batch`.
-- `internal/page/page_redraw_batch.go` defers and flushes the draw.
+- `internal/page/page_after_redraw.go` defers and flushes the draw.
 - `internal/page/page_draw.go` records the pending draw.
 - `internal/page/page_render_key.go` stores the batch fields with the render
   state.
@@ -640,7 +640,7 @@ Ownframe:
 - `internal/page/form_spans.go` skips the control rewrite when only buttons
   are present.
 - `internal/page/page_boxindex.go` reuses the box index map.
-- `internal/page/page_draw_stages.go` sizes the template builder from the
+- `internal/page/page_draw.go` sizes the template builder from the
   previous source.
 - `examples/css-preview/batch_click_test.go` covers the batched press through
   a real animation start.

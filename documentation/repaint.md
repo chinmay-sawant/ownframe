@@ -171,7 +171,7 @@ When content exceeds the cache limits, a static page with `TakeDirty` keeps one 
 - A stretched or zoomed page. `internal/window/replay_scale.go` replays the
   whole list into a canvas-sized buffer each frame and scales it to the
   window.
-- `Page.Testing().PNG()` paints the retained display on the first request after a redraw and caches the encoded picture. It does not use window tiles. Tick-only edits do not invalidate an existing encoded picture; see [screen.md](screen.md#png-and-the-web-page).
+- `Page.Testing().PNG()` paints the retained display on the first request after a redraw and caches the encoded picture. It does not use window tiles. Paint damage, including tick-only edits, invalidates the encoded picture; see [screen.md](screen.md#png-and-the-web-page).
 
 ## Measured numbers
 

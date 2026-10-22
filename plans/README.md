@@ -24,4 +24,14 @@ A documented non-goal is deferred, not implemented. Passing a compiler or a unit
 - [-] `NATIVE-A11Y` live screen-reader adapters remain unshipped. Reconsider with an adapter owner and real assistive-technology validation; see `../documentation/accessibility-native.md`.
 - [-] `EXPERIMENTS` Reconsider promoting additional demos only when they teach a missing public capability and have a maintenance owner. Existing experimental examples remain in the compatibility suite.
 
-Validation used the local checkout with Go 1.26.10. CI workflow changes have been inspected locally, not executed on GitHub. No commit, push, release, or version bump was made. Logs are in the ignored `temp/maintenance-*.log` files.
+Validation used the local checkout with Go 1.26.10. CI workflow changes have been inspected locally, not executed on GitHub. The first maintenance pass was committed as `f8a2100a` and pushed to `origin/feat/prod-readiness` at the author's request. No release or version bump was made. Logs are in the ignored `temp/maintenance-*.log` files.
+
+## Follow-up maintenance
+
+- [x] `PNG-CACHE` invalidate encoded PNGs through page paint damage. Evidence: the new regression failed for operation patches, display patches, ticks, and explicit invalidation before the fix; all four now decode to the updated color without a redraw. The no-op cache test passes.
+- [x] `PAGE-LOCK` give each page its own changed-property mutex and remove the global-lock lint exemption. Evidence: `make test-race` exit 0 on 2026-10-22, including the concurrent changed-property regression.
+- [x] `COHESION-FILES` consolidate related production methods and update the subsystem maps. Evidence: page production files 185 to 148, window 200 to 179, replay 73 to 71, and the public Testing facade 18 files to one. The public API and platform file constraints are preserved; `make test` exit 0 on 2026-10-22.
+- [x] `LINT-OUTPUT` summarize each lint gate and preserve full failure diagnostics. Evidence: `make lint` exit 0 on 2026-10-22 prints eight gate results; `make tools-check` verifies compact success output, full failure output, verbose mode, missing-tool failure, and safe Go file consolidation.
+- [x] `FOLLOWUP-GATES` validate the final tooling and generated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Logs are in `temp/maintainability-*.log`.
+
+The follow-up changes are separate from the pushed snapshot. This ledger does not assign a perfect rating or claim untested platform support. Native input methods, hardware graphics drivers, Android lifecycle behavior, and live screen-reader adapters need platform-specific evidence; see the published support limits.

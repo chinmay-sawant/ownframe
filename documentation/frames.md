@@ -105,8 +105,8 @@ row when a track ends.
 - The window replays the display list, so operation changes show in the
   desktop window, the phone build, and the WebAssembly canvas. `Serve` never
   ticks. `Page.Testing().PNG()` paints the retained display when requested;
-  operation patches appear when a picture is first encoded after redraw. An
-  already cached PNG is not cleared by tick-only edits. This software path
+  operation patches and mutating ticks invalidate an already encoded picture.
+  A no-op tick keeps the PNG cache. This software path
   does not capture the window framebuffer.
 - A page that fell back to the bitmap path has no display list; `Display`
   returns nil and there is nothing to change.

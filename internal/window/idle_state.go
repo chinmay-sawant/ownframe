@@ -8,8 +8,7 @@ import (
 // paceState is the pacer's published state for the devtools Frame tab: the
 // next scheduled idle wake, the vsync frames skipped so far, and whether the
 // window is parked. The wrapper writes it on the game goroutine after each
-// frame; the tab reads it there. It lives in its own file so game_state.go
-// stays inside the file size limit.
+// frame; the tab reads it there. It is a snapshot for inspection rather than a scheduling policy.
 type paceState struct {
 	next    time.Time
 	skipped uint64

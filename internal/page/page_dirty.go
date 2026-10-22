@@ -10,7 +10,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	}
 
 	if prev == nil {
-		p.dirty.MarkFull()
+		p.markFull()
 		if p.perf {
 			p.recordFull(len(display.Ops))
 		}
@@ -26,7 +26,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 
 	d, full, changed := diffDisplay(prev, display)
 	if full {
-		p.dirty.MarkFull()
+		p.markFull()
 		if p.perf {
 			p.recordFull(len(display.Ops))
 		}
@@ -42,7 +42,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	}
 
 	for i := 0; i < d.n; i++ {
-		p.dirty.MarkRect(d.rects[i])
+		p.markRect(d.rects[i])
 	}
 
 	if p.perf {

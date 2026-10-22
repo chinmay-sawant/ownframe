@@ -22,6 +22,8 @@ A review answers these questions with the changed code:
 - Do tests keep related scenarios and fixtures together?
 - Does a helper hide meaningful behavior or merely add another jump?
 
+Use `go run scripts/merge-go.go destination.go source.go source.go` to preview a same-package consolidation, and add `-write` before the destination to apply it. The tool preserves declaration text and comments and refuses build constraints, platform suffixes, cgo, or conflicting import aliases. Keep platform-specific files separate and run the affected tests after a merge.
+
 Split code when responsibilities diverge. Consolidate files that were split only for a size count. Do not add synonym helpers, comment-only Go files, or detached constant files solely to satisfy lint.
 
 `make docs-check` compiles the Go snippets extracted from the guides against the public API. `make plans-check` checks the current status ledger. `make graphics-check` runs window pixel checks and replay parity in isolated Xvfb sessions. See [testing.md](documentation/testing.md) for scope and prerequisites.

@@ -53,7 +53,7 @@ These are blinkless holes, not ownframe bugs. 1.0 does not implement CSS sticky 
 
 ## PNG and the web page
 
-`Page.Testing().PNG()` encodes a software picture. On a replayed page it paints the retained display list, including operation patches, and caches the bytes until a redraw or element patch replaces the frame. `PatchOp`, `PatchDisplay`, and tick-only mutations do not clear an already encoded PNG, so that cached picture can be stale until a redraw. `Page.Testing().Image()` returns nil on a replayed page. PNG returns nil when the retained operations cannot be painted, when nothing has been drawn, or when encoding fails. It does not silently replace an unsupported retained display with a source repaint. `GET /frame.png` uses this software path; it does not capture the window's GPU tiles.
+`Page.Testing().PNG()` encodes a software picture. On a replayed page it paints the retained display list, including operation patches, and caches the bytes until the next paint change. Operation patches, display patches, mutating ticks, and explicit invalidation clear that cache; no-op display patches and ticks keep it. `Page.Testing().Image()` returns nil on a replayed page. PNG returns nil when the retained operations cannot be painted, when nothing has been drawn, or when encoding fails. It does not silently replace an unsupported retained display with a source repaint. `GET /frame.png` uses this software path; it does not capture the window's GPU tiles.
 
 `Prepare` draws the page when both `Image()` and `Display()` are nil. It no longer encodes a PNG just to test for that.
 

@@ -1,5 +1,9 @@
 package page
 
+import (
+	"context"
+)
+
 // afterRedrawState holds the after-redraw hook and the guards around it.
 type afterRedrawState struct {
 	fn     func()
@@ -42,4 +46,63 @@ func (p *Page) runAfterRedraw() {
 	defer func() { p.afterRedraw.busy = false }()
 
 	fn()
+}
+
+// afterRedrawDraw serves the redraw the callback asked for. The draw runs
+// after the callback returned, so the commit is never re-entered, and the
+// callback runs again in it, so state reapplied to a rebuilt tree lands. One
+// draw is enough: a callback that always asks for a draw cannot loop.
+func (p *Page) afterRedrawDraw(ctx context.Context) error {
+	if !p.afterRedraw.ask {
+		return nil
+	}
+
+	p.afterRedraw.ask = false
+	if p.afterRedraw.served {
+		return nil
+	}
+
+	p.afterRedraw.served = true
+	defer func() { p.afterRedraw.served = false }()
+
+	return p.redraw(ctx, false)
+}
+
+// BeginRedrawBatch defers page draws until EndRedrawBatch. The window wraps a
+// press, focus, click, and release in one batch so the final state draws once.
+//
+// A redraw that a failed draw left queued stays queued, so the flags survive
+// into the next batch and it commits the redraw.
+func (p *Page) BeginRedrawBatch() {
+	p.redrawBatch++
+}
+
+// EndRedrawBatch closes a batch and draws the final state once. An inner batch
+// leaves the draw to the outermost one. A plain Redraw in the batch forces the
+// final draw; only RedrawIfChanged calls let the final draw skip unchanged
+// state.
+//
+// A draw that fails leaves the redraw queued, so the next batch commits it
+// and the committed frame catches up with the state the batch changed.
+func (p *Page) EndRedrawBatch(ctx context.Context) error {
+	if p.redrawBatch == 0 {
+		return nil
+	}
+	p.redrawBatch--
+	if p.redrawBatch > 0 || !p.redrawPending {
+		return nil
+	}
+
+	force := p.redrawForce
+	p.redrawPending = false
+	p.redrawForce = false
+
+	if err := p.redraw(ctx, !force); err != nil {
+		p.redrawPending = true
+		p.redrawForce = force
+
+		return err
+	}
+
+	return nil
 }

@@ -1,5 +1,5 @@
 module github.com/chinmay-sawant/ownframe/scripts
 
-// Orphan module: helper scripts only, not in go.work, never vetted by
-// make build/lint. Kept on the same go line as the root module.
+// Maintenance tools have their own module. make tools-check tests them
+// with GOWORK=off, and make lint includes that gate.
 go 1.26.10

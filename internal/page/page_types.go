@@ -2,6 +2,7 @@ package page
 
 import (
 	"html/template"
+	"sync"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -50,6 +51,7 @@ type Page struct {
 	watch           *watchState
 	dirty           dirty.Tracker
 	lastPatch       DisplayPatch
+	changedPropsMu  sync.RWMutex
 	changedProps    []string
 	stateStore      *state.Store
 	elements        *element.Registry

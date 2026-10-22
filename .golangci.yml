@@ -171,10 +171,10 @@ linters:
       # singletons below predate it and are reviewed, not accidental.
       # Mutex-guarded registries and hooks: clipboard selection memory, the
       # X11 connection, IPC listeners, crash/report state, the render
-      # engine gate, the page patch gate, the font face cache, and the
+      # engine gate, the font face cache, and the
       # window debug snapshot hook.
       - linters: [gochecknoglobals]
-        path: "internal/(clipboard/(clipboard|x11_conn|x11_read)\\.go|crash/crash\\.go|ipc/ipc\\.go|render/engine\\.go|page/page_patch_props\\.go|web/debug_runtime\\.go|textrun/face\\.go)|report\\.go"
+        path: "internal/(clipboard/(clipboard|x11_conn|x11_read)\\.go|crash/crash\\.go|ipc/ipc\\.go|render/engine\\.go|web/debug_runtime\\.go|textrun/face\\.go)|report\\.go"
       # Immutable lookup tables: emoji data, blend modes, key chords, panel
       # names, state pseudos, and the preview target lists.
       - linters: [gochecknoglobals]

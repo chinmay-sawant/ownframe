@@ -22,7 +22,7 @@ func (p *Page) Display() *layout.Display {
 }
 
 // PNG encodes the page to PNG bytes. A display-list page rasterizes on
-// demand, once, and the bytes are cached until the next Redraw. It returns
+// demand, once, and the bytes are cached until the next paint change. It returns
 // a copy, so caller edits never corrupt the cache, and nil when the page
 // cannot be painted.
 func (p *Page) PNG() []byte {
