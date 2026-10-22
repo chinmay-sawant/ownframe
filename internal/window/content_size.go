@@ -15,7 +15,11 @@ func (s *shell) contentSize() (int, int) {
 
 	w, h := s.canvasSize()
 
+	viewport := s.viewportOperations()
 	for _, b := range s.app.Boxes() {
+		if viewportBox(b, viewport) {
+			continue
+		}
 		if right := int(math.Ceil(b.X + b.W)); right > w {
 			w = right
 		}
