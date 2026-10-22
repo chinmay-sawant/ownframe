@@ -156,6 +156,7 @@ func TestPartialFrameLeavesTheScreen(t *testing.T) {
 	game := &partialFrameGame{shell: shell, app: app}
 
 	ebiten.SetWindowSize(100, 100)
+	ebiten.SetScreenClearedEveryFrame(false)
 
 	if err := ebiten.RunGame(game); err != nil {
 		t.Fatal(err)

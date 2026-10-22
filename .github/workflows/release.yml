@@ -1,7 +1,10 @@
 name: release
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - "validation/release-candidate"
     tags:
       - "v*"
       - "examples/v*"
