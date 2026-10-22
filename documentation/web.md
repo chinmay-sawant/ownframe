@@ -1,8 +1,8 @@
 # Web mode
 
-`Serve` shows the page's latest picture in a browser and sends clicks and
-typing back to the same page. The window modes are in
-[platforms.md](platforms.md).
+`Serve` is a developer picture preview. It binds to loopback by default, has
+no tick and no audio, and mutates page state without authentication. It is
+not a 1.0 ship target. Native hosts are in [platforms.md](platforms.md).
 
 ## Starting it
 

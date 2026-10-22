@@ -1,12 +1,14 @@
 package frame
 
-import "github.com/chinmay-sawant/ownframe/internal/page"
+type genSrc interface {
+	Generation() uint64
+}
 
 // Bind records the page's display generation, so Step goes inactive once
 // a Redraw replaces the list instead of patching freed operations. It
 // returns the animation for chaining with its constructor. An unbound
 // animation keeps the old behavior: Step patches until it ends.
-func (a *Anim) Bind(p *page.Page) *Anim {
+func (a *Anim) Bind(p genSrc) *Anim {
 	a.src = p
 	if p != nil {
 		a.gen = p.Generation()

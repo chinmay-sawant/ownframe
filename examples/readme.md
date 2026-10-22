@@ -58,7 +58,7 @@ behavior and the limits are in
 | [fetch](fetch) | `Fetch` GET and `XHR` with method, headers, and body; a fetched PNG or JPEG becomes the page background. | 8112 |
 | [clipboard](clipboard) | Copy, cut, paste, select all, undo, and redo through the page APIs. | 8113 |
 | [crash](crash) | `Report` files and panic recovery by `Run`. | 8114 |
-| [platform](platform) | One page on desktop, WebAssembly, and mobile. The counter click calls `Invalidate("count")`, so only that box repaints. | 8115 |
+| [platform](platform) | Counter page on desktop native, Android native, and wasm preview. The counter click calls `Invalidate("count")`, so only that box repaints. | 8115 |
 | [theme](theme) | `Config.Theme` and `SetTheme` restyle a running page; the toggle swaps custom properties. | 8116 |
 | [wispr-flow-dashboard](wispr-flow-dashboard) | Wispr Flow app clone: collapsible sidebar with the Flow Pro logo, dictation history, notetaker, insights with usage/voice/leaderboard tabs, dictionary, snippets, style, transforms, scratchpad, invite, free month, settings, and help. UI only, sample data. | 8117 |
 | [teams](teams) | Microsoft Teams-like app clone: dark theme by default with a light theme toggle, six rail menus (Activity, Chat, Teams and channels, Calendar, Calls, Files), a More apps flyout, a profile flyout with status, chat compose, live chat and search filtering, expandable channel threads with emoji reactions, a meeting card with date and time picks, a dial pad, and file details. The state persists in SQLite, the initial data comes from `examples/teams/store/seed/*.sql`, and `-db` selects the database file (`:memory:` keeps it in memory). Marvel-cast sample data. | 8118 |
@@ -109,13 +109,23 @@ while flappy-bird flaps on a key or a click.
 `Ctrl+C`/`Ctrl+X`/`Ctrl+V`, `Ctrl+Z`, and `Ctrl+Y` are handled by the
 window, not by the examples.
 
-## Phone
+## Android native apps
 
-`examples/telegram` is the phone-first example. `sh scripts/android.sh` binds
-it with `ebitenmobile` and builds a debug APK with Gradle;
-`sh scripts/android.sh install` also runs `adb install -r`. The one-time
-Android SDK, NDK, and `ebitenmobile` setup is in
+1.0 ships native Android apps through `BindMobile` and
+`examples/android-host`. Native means a compiled Go process in an Ebiten
+Activity, not OS widgets and not TalkBack. The APK index is
+[android-host/APPS.md](android-host/APPS.md). Setup is in
+[../documentation/android-app-creation.md](../documentation/android-app-creation.md).
+
+`examples/telegram` is a native Android chat: list, search, IME, camera and
+gallery through app Java, and pinned chrome. `scripts/android-release.sh
+telegram` builds the release APK. `sh scripts/android.sh` binds a debug APK;
+`sh scripts/android.sh install` also runs `adb install -r`. SDK steps are in
 [telegram/android/README.md](telegram/android/README.md).
+
+`examples/eyes` is a native Android landscape app: device motion, tick-driven
+expressions, `scripts/android-eyes.sh` or `scripts/android-release.sh eyes`.
+See [eyes/README.md](eyes/README.md).
 
 ## Audio
 

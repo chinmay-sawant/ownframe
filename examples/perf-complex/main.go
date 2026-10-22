@@ -34,13 +34,14 @@ func main() {
 		log.Fatal(err)
 	}
 	ctx := context.Background()
+	host := &ownframe.Page{Page: p}
 	if *web {
-		if err := ownframe.Serve(ctx, p, *addr); err != nil {
+		if err := ownframe.Serve(ctx, host, *addr); err != nil {
 			log.Fatal(err)
 		}
 		return
 	}
-	if err := ownframe.Run(ctx, p); err != nil {
+	if err := ownframe.Run(ctx, host); err != nil {
 		log.Fatal(err)
 	}
 }

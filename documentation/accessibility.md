@@ -1,5 +1,8 @@
 # Accessibility tree
 
+1.0 ships a Go accessibility snapshot only. It does not connect AT-SPI, UI
+Automation, NSAccessibility, or TalkBack.
+
 `Page.AccessibilityTree` returns a detached semantic snapshot from the last
 successful redraw. The tree follows HTML document order and includes supported
 roles, names, descriptions, form state, actions, and bounds when the layout can

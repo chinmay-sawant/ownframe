@@ -6,7 +6,8 @@ import "os"
 
 func writeOS(text string) {
 	if os.Getenv("WAYLAND_DISPLAY") != "" {
-		// Wayland data-device is not implemented.
+		wlWrite(text)
+
 		return
 	}
 
@@ -18,7 +19,11 @@ func writeOS(text string) {
 }
 
 func readOS() (string, bool) {
-	if os.Getenv("WAYLAND_DISPLAY") != "" || os.Getenv("DISPLAY") == "" {
+	if os.Getenv("WAYLAND_DISPLAY") != "" {
+		return wlRead()
+	}
+
+	if os.Getenv("DISPLAY") == "" {
 		return "", false
 	}
 
@@ -26,7 +31,13 @@ func readOS() (string, bool) {
 }
 
 func clearOS() {
-	if os.Getenv("WAYLAND_DISPLAY") != "" || os.Getenv("DISPLAY") == "" {
+	if os.Getenv("WAYLAND_DISPLAY") != "" {
+		wlClear()
+
+		return
+	}
+
+	if os.Getenv("DISPLAY") == "" {
 		return
 	}
 

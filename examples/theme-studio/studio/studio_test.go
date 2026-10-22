@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/theme-studio/studio"
-	"github.com/chinmay-sawant/ownframe/internal/clipboard"
 )
 
 func must(t *testing.T, err error) {
@@ -91,7 +91,7 @@ func TestTypedCSS(t *testing.T) {
 }
 
 func TestCopyCSS(t *testing.T) {
-	clipboard.UseMemory(true)
+	ownframe.UseMemory(true)
 
 	app := start(t)
 	css := ":root { --accent: #0000ff; }"
@@ -99,7 +99,7 @@ func TestCopyCSS(t *testing.T) {
 	app.Page().SetFormValue("css", css)
 	clickBox(t, app, "btn-copy")
 
-	got, err := clipboard.Read()
+	got, err := ownframe.Read()
 	if err != nil || got != css {
 		t.Fatal(got, err)
 	}

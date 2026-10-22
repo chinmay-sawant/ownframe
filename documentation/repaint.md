@@ -37,32 +37,43 @@ padded, so shadows and outlines repaint too.
 
 ## The window repaints the rects
 
-`internal/replay.DrawRect` is `Draw` for one region. It walks `Display.Order`
-the same way, skips any op whose painted box does not meet the rect, and
-paints the ops it keeps into a sub-image of the destination. The sub-image
-matters: the display list carries a page background fill that covers the
-whole canvas and therefore meets every rect. Without the clip, that one op
-would repaint the background over everything outside the dirty rect, and the
-rest of the page would vanish until its own box is dirtied again.
+The live window path is `drawReplayPartial` in `internal/window`. For a
+replayable page that can report dirty rects, it paints a 256 by 256 tile grid
+sized to the content (`internal/window/replay_tile_paint.go` calls
+`replay.DrawVisibleUnfixedZ`). Each dirty rect is filled with the page
+background and replayed into every tile it touches, and only the damaged
+tiles are copied to the screen each frame. The screen is cleared between
+frames, so a clean frame copies nothing. The `bitmap fallback` badge draws on
+the screen after the tiles, so a repaint never wipes it.
+
+`internal/replay.DrawRect` is the same clip idea for tests and helpers. The
+window does not call it. It walks `Display.Order`, skips any op whose painted
+box does not meet the rect, and paints into a sub-image of the destination.
 
 ```go
 replay.DrawRect(dst, display, rect, dx, dy)
 ```
 
-Text needs care. An op carries its baseline in `Y`, so `DrawRect` tests the
+The window does not call `DrawRect`. `drawReplayPartial` in
+`internal/window/replay_partial.go` drives the tile grid; each damaged tile
+calls `replay.DrawVisibleUnfixedZ`. `DrawRect` is the test and helper path.
+
+Text needs care. An op carries its baseline in `Y`, so a rect test uses the
 line box from the font ascent above the baseline to `InkDescent` below it,
 not `Y` alone. Strokes and lines grow by half a stroke, and an op whose ink
 cannot be bounded, such as a rotated run, is always drawn.
 
-For content within the replay cache limits, the window keeps the replay path
-in a grid of 256 by 256 tiles that together cover the content. The content is
-the canvas grown to cover every box that overflows it, the same measure the
-scroll clamp uses, so a page with a fixed root stays painted when it scrolls.
-Each dirty rect is filled with the page background and replayed into every
-tile it touches, and only the damaged tiles are copied to the screen each
-frame. The screen is cleared between frames, so a clean frame copies nothing.
-The `bitmap fallback` badge draws on the screen after the tiles, so a repaint
-never wipes it.
+The content is the canvas grown to cover every box that overflows it, the
+same measure the scroll clamp uses, so a page with a fixed root stays painted
+when it scrolls.
+
+Pinned chrome is a different path. `Page.SetViewportPinZ` and
+`Page.SetScrollWindow` keep bars at the viewport ([screen.md](screen.md)).
+When `hasViewportOps` is true, `drawReplayPartial` skips the tile grid and
+replays the whole list (`internal/window/replay_partial.go`). Telegram uses
+that pinned path. Incremental tiles are the forms-style case: a replayable
+page that reports dirty rects and has no viewport-pinned ops. The measured
+table below is the forms family.
 
 Each rect in the list gets one partial repaint against that buffer. A list
 longer than the eight-rect cap, or a rect equal to the whole content, falls
@@ -151,10 +162,9 @@ When content exceeds the cache limits, a static page with `TakeDirty` keeps one 
   decision is recorded in
   [the plan](../plans/v0.0.2/incremental-repaint.md). The badge stays
   visible.
-- A page with a frame callback that did not call `Page.UseFrameDirty`.
-  A tick changes operations in place and leaves no dirty rect, so
-  `Page.Ticking` keeps the full replay. `UseFrameDirty` opts that tick
-  into the partial buffer. `Invalidate` and `MarkRect` name the regions.
+- A ticker that does not implement `FrameDirty` (not a `Page`). A `Page`
+  tick that patches ops is marked dirty by `Tick` itself and stays on the
+  tile path. A no-op tick blits the buffer. `UseFrameDirty` is an alias.
 - A stretched or zoomed page. `internal/window/replay_scale.go` replays the
   whole list into a canvas-sized buffer each frame and scales it to the
   window.

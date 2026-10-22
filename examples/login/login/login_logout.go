@@ -1,6 +1,6 @@
 package login
 
-import osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+import "github.com/chinmay-sawant/ownframe"
 
 // Logout clears the fields, the undo and redo stacks, and the clipboard.
 // Demo only; secret/secret stays the test login. DO NOT COPY.
@@ -10,6 +10,6 @@ func (a *App) Logout() {
 	a.undo = nil
 	a.redo = nil
 	a.view = View{}
-	a.page.SetData(a.view)
-	osclip.Clear()
+	a.page.SetData(&a.view)
+	ownframe.Clear()
 }

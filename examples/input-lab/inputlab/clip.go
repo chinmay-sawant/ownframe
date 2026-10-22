@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // clipClick runs the clipboard buttons.
@@ -38,7 +38,7 @@ func (a *App) copyButton(ctx context.Context) error {
 		a.setClip("nothing selected")
 		return nil
 	}
-	osclip.Write(text)
+	ownframe.Write(text)
 	a.setClip("copied: " + text)
 	return nil
 }
@@ -53,7 +53,7 @@ func (a *App) cutButton(ctx context.Context) error {
 		a.setClip("nothing selected")
 		return nil
 	}
-	osclip.Write(text)
+	ownframe.Write(text)
 	a.setClip("cut: " + text)
 	return nil
 }
@@ -76,7 +76,7 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 		a.setClip("nothing to paste into")
 		return nil
 	}
-	raw, _ := osclip.Read()
+	raw, _ := ownframe.Read()
 	text := strings.ReplaceAll(raw, "\r", "")
 	text = strings.ReplaceAll(text, "\n", "")
 	if text == "" {

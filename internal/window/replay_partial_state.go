@@ -6,8 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// ticking reports a page with a frame callback. A tick changes operations in
-// place without a dirty rect, so such a page keeps the full replay.
+// ticking reports a page with a frame callback. A Page marks mutated ops
+// itself and stays on the buffer path.
 type ticking interface {
 	Ticking() bool
 }

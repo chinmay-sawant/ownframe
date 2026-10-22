@@ -14,7 +14,7 @@ func TestDisabledControlsSkipHandler(t *testing.T) {
 		s := formPage(t, body)
 		calls := 0
 		s.Handle(page.Handlers{Click: func(context.Context, page.Box) error { calls++; return nil }})
-		page.InstallPicker(s, func(context.Context, string) (string, bool) { calls++; return "/tmp/x.txt", true })
+		page.InstallPicker(s, func(context.Context, string) (string, error) { calls++; return "/tmp/x.txt", nil })
 		before := val(s)
 		gen := s.Generation()
 		clickID(t, s, id)

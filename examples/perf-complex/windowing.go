@@ -2,8 +2,11 @@ package main
 
 import "github.com/chinmay-sawant/ownframe/internal/page"
 
-// Windowing keeps overscan rows around the viewport and pads the row count
-// to a full stripe pair, so nth-child stripes match the full document.
+// Windowing is the 1.0 list recipe: SetWindowing plus SetScrollWindow
+// slices app-owned rows around the viewport and pads with spacers so layout
+// stays cheap. This is not a compositor pin layer. Overscan rows sit around
+// the viewport; the row count pads to a stripe pair so nth-child stripes
+// match the full document.
 const (
 	windowOverscan = 10
 	windowSlack    = 5

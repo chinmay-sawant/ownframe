@@ -11,7 +11,7 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 		a.signIn()
 	}
 
-	a.page.SetData(a.view)
+	a.page.SetData(&a.view)
 
 	return nil
 }
@@ -33,7 +33,7 @@ func (a *App) onBeforeEdit(context.Context, ownframe.Box) error {
 
 	a.view.Status = ""
 	a.view.Error = ""
-	a.page.SetData(a.view)
+	a.page.SetData(&a.view)
 
 	return nil
 }

@@ -10,12 +10,3 @@ func (p *Page) lastFocusIDValue() string {
 
 // LastFocusID returns the control id cleared by the most recent blur.
 func (p *Page) LastFocusID() string { return p.lastFocusIDValue() }
-
-// PreviousFocusID is an alias for LastFocusID.
-func (p *Page) PreviousFocusID() string { return p.lastFocusIDValue() }
-
-// BlurredFocusID is an alias for LastFocusID.
-func (p *Page) BlurredFocusID() string { return p.lastFocusIDValue() }
-
-// LastFocused is an alias for LastFocusID.
-func (p *Page) LastFocused() string { return p.lastFocusIDValue() }

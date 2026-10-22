@@ -7,6 +7,8 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
+// TestWindowMatchesFullRows is the 1.0 list-windowing check: a SetScrollWindow
+// slice matches full-document row geometry at several offsets.
 func TestWindowMatchesFullRows(t *testing.T) {
 	full, _, err := fixture(false)
 	if err != nil {

@@ -50,4 +50,4 @@ The [screen guide](screen.md) describes that flow.
 
 This view supports a documented HTML and CSS subset, with no live DOM or JavaScript runtime.
 Read the [features and limits](features.md) for the supported behavior.
-Desktop, WebAssembly, Android, and iOS setup is in the [platform guide](platforms.md).
+Desktop, Android, WebAssembly, and `-web` setup is in the [platform guide](platforms.md). iOS is not a 1.0 target.

@@ -4,7 +4,11 @@ package filepick
 
 import "context"
 
-// Pick returns ok false where the system has no file dialog.
-func Pick(_ context.Context, _ string) (string, bool) {
-	return "", false
+// Pick returns ErrNoDialog where the system has no file dialog.
+func Pick(ctx context.Context, _ string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
+	}
+
+	return "", ErrNoDialog
 }

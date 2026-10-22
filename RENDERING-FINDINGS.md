@@ -1,3 +1,7 @@
+# Historical record (not live)
+
+This file records 2026-10 rendering research. It is not a live compositor diary. Current paint behavior is in `documentation/` and `AGENTS.md`.
+
 # Rendering findings: rasterize-to-image vs. real rendering
 
 Ten sub-agents surveyed the pipeline, the dependency tree, and the 2026

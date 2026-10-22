@@ -18,7 +18,7 @@ func TestPartialPathNeedsATaker(t *testing.T) {
 	}
 }
 
-func TestTickingPageKeepsFullReplay(t *testing.T) {
+func TestTickingPageKeepsBufferPath(t *testing.T) {
 	t.Parallel()
 
 	screen := &dirtyScreen{fakeScreen: &fakeScreen{width: 100, height: 100}}
@@ -28,12 +28,12 @@ func TestTickingPageKeepsFullReplay(t *testing.T) {
 
 	s.drawReplayPartial(partialBuf(100, 100))
 
-	if screen.takes != 0 {
-		t.Fatalf("damage calls = %d, want 0", screen.takes)
+	if screen.takes == 0 {
+		t.Fatal("ticking Page must take damage rects")
 	}
 
-	if s.partial.tiles != nil {
-		t.Fatal("grid built for a ticking page")
+	if s.partial.tiles == nil {
+		t.Fatal("grid missing for a ticking Page")
 	}
 }
 

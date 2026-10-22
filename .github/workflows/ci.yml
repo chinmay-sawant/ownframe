@@ -48,6 +48,18 @@ jobs:
       - run: make test
       - run: make lint
 
+  # Library-only race detector (TEST-01/02). Examples stay off this job.
+  test-race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - run: make test-race
+
   # GEN-21: the security regression suite (TestSec_*) is its own gate,
   # so a reverted fix fails CI even when the rest stays green.
   sec:
@@ -68,6 +80,7 @@ jobs:
       - run: go test -count=1 -run=NONE -fuzz=FuzzMethodHeader -fuzztime=15s ./internal/fetch/
       - run: go test -count=1 -run=NONE -fuzz=FuzzDOMLimits -fuzztime=15s ./internal/page/
       - run: go test -count=1 -run=NONE -fuzz=FuzzImageSrc -fuzztime=15s ./internal/page/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzSetCrashDir -fuzztime=15s ./internal/crash/
 
   # GEN-25: 32-bit and ARM compile checks plus the checkptr
   # instrumented run catch overflow and unsafe misuse amd64 hides.

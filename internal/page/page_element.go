@@ -16,16 +16,6 @@ func (p *Page) ensureElements() *element.Registry {
 
 // Element returns a retained handle for id.
 func (p *Page) Element(id string) *element.Node {
-	return p.RetainedElement(id)
-}
-
-// ElementHandle is an alias for Element.
-func (p *Page) ElementHandle(id string) *element.Node {
-	return p.RetainedElement(id)
-}
-
-// RetainedElement returns or creates a retained node handle.
-func (p *Page) RetainedElement(id string) *element.Node {
 	r := p.ensureElements()
 	n, ok := r.Get(id)
 	if ok && n != nil {
@@ -34,16 +24,6 @@ func (p *Page) RetainedElement(id string) *element.Node {
 	n = element.NewNode(id, "")
 	r.Put(n)
 	return n
-}
-
-// RetainedNode is an alias for RetainedElement.
-func (p *Page) RetainedNode(id string) *element.Node {
-	return p.RetainedElement(id)
-}
-
-// Handle is an alias for RetainedElement.
-func (p *Page) HandleElement(id string) *element.Node {
-	return p.RetainedElement(id)
 }
 
 // Elements returns all retained handles.

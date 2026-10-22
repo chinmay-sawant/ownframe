@@ -165,10 +165,24 @@ Copy everything below this line into the GitHub PR body (and into `plans/PR/pr-<
 
 ---
 
+## Library freeze (until Page wrap)
+
+Until `plans/v0.0.3/prod-ready-task/` wraps `Page`, reject the PR if it does any of the following.
+
+- [ ] No new `type X =` at the module root except documented re-exports
+- [ ] No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows
+- [ ] No new example `ownframe/internal/` imports (`make internal-import-check`)
+- [ ] No synonym names (`PreviousX` for `X`)
+- [ ] New exported methods return named types in package `ownframe` or a public subpackage, never `host.Stats` or `*state.Store` unless those types are re-exported in the same PR
+- [ ] Library code panics only for invariants; new user-facing failure paths return `error`
+- [ ] `context.Context` is the first parameter when the function already does I/O, cancel, or deadline; no hidden `time.After` that ignores the caller's ctx
+- [ ] No new examples whose primary purpose is resembling Telegram, Teams, Spotify, or Wispr
+
 ## Test plan
 
 - [ ] `make test`
 - [ ] `make lint` / `go vet`
+- [ ] `make test-race` (library module; when shared mutable state changes)
 - [ ] `make build` (when binary output is part of the change)
 - [ ] `make run` wall time vs baseline (hard &lt; 400ms; soft ±50ms of reference)
 - [ ] `make reference-metrics` / gopdfsuit hard metrics if detector surface changed
@@ -217,6 +231,8 @@ make run
 - [ ] Behavior matches summary and test plan
 - [ ] No unrelated changes in diff
 - [ ] Public API / CLI changes documented
+- [ ] No new root aliases, synonym methods, or example `internal/` imports
+- [ ] New exported methods return named `ownframe` types (not `host.Stats` / `*state.Store` unless re-exported here)
 - [ ] New rules have fixture coverage when applicable
 - [ ] PR has assignee and labels
 - [ ] Related issues use correct Closes/Relates keywords

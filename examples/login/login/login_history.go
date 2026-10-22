@@ -34,7 +34,7 @@ func (a *App) onSubmit(_ context.Context) error {
 	}
 
 	a.signIn()
-	a.page.SetData(a.view)
+	a.page.SetData(&a.view)
 
 	return nil
 }

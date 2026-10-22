@@ -26,6 +26,9 @@ var (
 	// ErrNilPage means Run, Serve, or BindMobile was called without a page.
 	ErrNilPage = errors.New("ownframe: nil page")
 
+	// ErrPatchRefused means PatchElement could not apply the edit.
+	ErrPatchRefused = errors.New("ownframe: element patch refused")
+
 	errNilContext = fetch.ErrNilContext
 
 	// errNoImage is the resolver answer for a src SetImage does not hold.

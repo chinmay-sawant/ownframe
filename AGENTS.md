@@ -4,7 +4,7 @@ Go library that opens an HTML template in a window. The sign-in program lives in
 
 ## Where code lives
 
-Package `ownframe` at the module root is the public API. `New`, `SetData`, and `Handle` build a page. `NewWithOptions` applies `Option` values first; `WithPerf(true)` opts into pipeline timing, dirty counters, and alloc tracking, off by default so shipped apps pay nothing. `Config.Theme` and `SetTheme` layer an extra stylesheet after the template's own styles. `Page.SetTick` registers a function the window calls once per frame before drawing; `Tick` also blinks the focused field's caret; `Serve` does not tick. `Run` opens the desktop or wasm window. `Serve` shows the picture page. `BindMobile` registers the phone view. The root files are aliases and those entry points. The page implementation is `internal/page`. `examples/` is its own Go module, `github.com/chinmay-sawant/ownframe/examples`, so the library module zip carries no examples. A committed `go.work` joins both modules. `examples/go.mod` requires `github.com/chinmay-sawant/ownframe` at the published tag (`v0.0.2`), with no replace. `make test` and `make build` run both modules. A release bumps the examples require to the new tag, drops the pin once the tag is pushed, and tags `examples/v0.0.2`.
+Package `ownframe` at the module root is the public API. `New`, `SetData`, and `Handle` build a page. `NewWithOptions` applies `Option` values first; `WithPerf(true)` opts into pipeline timing, dirty counters, and alloc tracking, off by default so shipped apps pay nothing. `Config.Theme` and `SetTheme` layer an extra stylesheet after the template's own styles. `Page.SetTick` registers a function the window calls once per frame before drawing; `Tick` also blinks the focused field's caret; `Serve` does not tick. `Run` opens the desktop or wasm window. `Serve` shows the picture page. `BindMobile` registers the phone view. 1.0 native hosts are desktop `Run` (Linux, Windows, macOS) and Android `BindMobile`. Wasm and `-web` are previews, not 1.0 hosts. The root files are aliases and those entry points. The page implementation is `internal/page`. `examples/` is its own Go module, `github.com/chinmay-sawant/ownframe/examples`, so the library module zip carries no examples. A committed `go.work` joins both modules. `examples/go.mod` requires `github.com/chinmay-sawant/ownframe` at the last published tag (`v0.0.2`) until `v0.0.3` is tagged, and `replace`s it with `../` for this checkout. The current library cycle is `v0.0.3`. `make test` and `make build` run both modules. A release tags the library, bumps the examples require to that tag, and drops the relative replace before tagging `examples/vX.Y.Z`; a tagged examples module cannot keep `replace => ../`.
 
 `examples/telegram` is the phone-first demo: a Telegram-like chat list with search, contacts, settings with a dark theme, and one conversation with a composer. `examples/telegram/mobile` is the `ebitenmobile` package and `examples/telegram/android` is a Gradle project whose `:telegram` module wraps the generated `telegram.aar`. `MainActivity` intercepts the Android back key and calls the exported `mobile.Back`; it polls `mobile.AttachRequest` to open the camera or the photo picker and returns the bytes through `mobile.SetPhoto`; it reports the status bar, cutout, and IME insets through `mobile.SetInsets`, and `App.Tick` applies the queued work on the game loop. The chat top bar and composer are absolutely positioned and counter-moved by the scroll offset through `Page.SetScrollWindow`, so they stay pinned while the messages scroll and painted after the messages so a scrolled thread cannot cover them. `scripts/android.sh` binds, builds the debug APK, and with `install` runs `adb install -r`; `examples/telegram/android/README.md` has the SDK, NDK, and device steps. Do not export `GOWORK` for the bind: gomobile copies the packages into a temporary module and builds there, and the workspace file would disown that module.
 
@@ -46,6 +46,16 @@ Read `documentation/features.md` before changing paint, theming, frames, IPC, na
 
 A page taller or wider than the window scrolls on the mouse wheel. A picture that matches the window stays at one CSS pixel per window pixel. The sign-in example accepts the email `secret` and the password `secret`.
 
+## Public API freeze until Page wrap
+
+Until the public `Page` wrap in `plans/v0.0.3/prod-ready-task/` lands, stop growing the shapes that wrap will delete:
+
+- No new `type X =` alias at the module root except documented re-exports named in `plans/v0.0.3/prod-ready-task/phase-01-public-api.md`.
+- No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.
+- No new example import of `github.com/chinmay-sawant/ownframe/internal/`. Existing imports stay until Phase 1 exports replace them. `make internal-import-check` records the set.
+
+v0 may break. The wrap happens before v1. Rules for names, errors, context, and examples are in `plans/v0.0.3/prod-ready-task/field-go-practices.md`.
+
 ## Working directory and paths
 
 - Always work from an explicit absolute path. For the main repository use
@@ -71,13 +81,13 @@ This limit applies to Go files only. HTML, CSS, Markdown, and scripts have no ch
 
 ## Lint
 
-`make lint` is the lint gate. It runs the pinned `golangci-lint` (v2.15.0, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then `make size-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
+`make lint` is the lint gate. It runs the pinned `golangci-lint` (v2.15.0, see `GOLANGCI_LINT_VERSION` in the Makefile) over both modules, then `make size-check`, then `make internal-import-check`, then the website lint from `frontend/`. The library at the root and the examples module under `examples/` are separate Go modules, so each gets its own pass; the examples tree is linted too, because it ships to users.
 
 The website gate is ESLint 10 through `npm run lint` in `frontend/`. Its flat config lives in `frontend/eslint.config.js` and needs no separate make target; `make lint` runs it in the same pass. `eslint-plugin-react` still declares a peer range that stops at ESLint 9, so `frontend/package.json` pins the range with an `overrides` entry and the config sets `settings.react.version` to skip the plugin's version detection, which calls an API ESLint 10 removed.
 
-The policy lives in `.golangci.yml`. It starts from `enable-all` and disables the linters that only restate house style (wsl, varnamelen, exhaustruct, lll, testpackage, and the rest of that list, each with a written reason). The linters that stay catch real defects: dead code (`unused`), magic numbers (`mnd`), unchecked errors (`errcheck`), deprecated API use (`staticcheck`), overflow and injection risks (`gosec`), and the rest of the correctness family. `//nolint` is a last resort and needs a written reason.
+The policy lives in `.golangci.yml`. It is a curated enable list, not `enable-all`: the runner defaults (`errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`) plus `gosec`, `gocritic`, `misspell`, `unconvert`, `mnd`, `nolintlint`, `depguard`, `bodyclose`, `noctx`, `contextcheck`, `errorlint`, `forcetypeassert`, `gochecknoglobals`, and `forbidigo`. `//nolint` is a last resort and needs a written reason.
 
-GitHub CI (`.github/workflows/ci.yml`) runs only `make test` and `make lint`. The release workflow (`.github/workflows/release.yml`) runs the same two gates before it creates the GitHub Release. Both set up Node.js 22 and install the website dependencies, so the website lint runs in CI.
+GitHub CI (`.github/workflows/ci.yml`) runs `make test` and `make lint` in the `gates` job, and `make test-race` (library module only) in the `test-race` job, plus the sec, cross, secrets, lint-actions, and reproducible jobs. The release workflow (`.github/workflows/release.yml`) runs `make test` and `make lint` before it creates the GitHub Release. Both set up Node.js 22 and install the website dependencies, so the website lint runs in CI.
 
 ## Writing
 

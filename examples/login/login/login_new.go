@@ -25,7 +25,7 @@ func New() (*App, error) {
 		Undo:       app.onUndo,
 		Redo:       app.onRedo,
 	})
-	page.SetData(app.view)
+	page.SetData(&app.view)
 
 	return app, nil
 }

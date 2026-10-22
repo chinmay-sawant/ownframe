@@ -46,7 +46,7 @@ A healthy normal page keeps p99 under budget with margin. When p95 passes budget
 
 A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `TakeDirtyRects` and the window replays each one with `replay.DrawRect`; a frame with no dirty rect blits the buffer it already has. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
+The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `TakeDirtyRects` and the window paints them through `drawReplayPartial` tiles (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, pinned-chrome full replay, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
 
 For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart changes report two rects instead of the bounding box around both. Many small changes inside one region stay partial, so a whole frame rect on an edit now means the change really covered more than a third of the frame or the page could not place it; a list longer than eight rects, or a rect the size of the whole content, makes the window rebuild its buffer once. A rebuild still only tessellates each repeated rounded shape once, because the replay bakes repeated fills and borders into a raster cache ([repaint.md](repaint.md)).
 
@@ -106,6 +106,13 @@ sh scripts/perf-baseline.sh
 ```
 
 The script runs each benchmark app and writes idle, frame, allocation, layout, and paint rows. Manual rows, such as soak verdicts and machine notes, go in by hand. Never copy numbers across machines. Label every entry with the commit hash.
+
+## Engine lock
+
+`internal/render/engine.go` holds a process-wide mutex around engine parse
+and apply. Two pages in one process queue on that lock. It is load-bearing
+engine state, not a tuning knob. Cut parse work with the render cache instead
+of narrowing the mutex.
 
 ## 8 Measure before optimizing
 

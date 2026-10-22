@@ -8,13 +8,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/snipping-tool/snip"
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
 )
 
 // TestMain keeps every test off the desktop clipboard.
 func TestMain(m *testing.M) {
-	osclip.UseMemory(true)
+	ownframe.UseMemory(true)
 	os.Exit(m.Run())
 }
 

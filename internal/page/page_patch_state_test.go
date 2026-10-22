@@ -51,12 +51,5 @@ func TestPageStateMetadataSurface(t *testing.T) {
 		t.Fatalf("patch props = %+v", patch)
 	}
 
-	// alias methods compile
-	_ = p.ChangedProps()
-	_ = p.LastChangedProperties()
 	_ = p.TakeChangedProperties()
-	_ = p.PropertiesChanged()
-	_ = p.Changed()
-	_ = p.Store()
-	_ = p.StateStore()
 }

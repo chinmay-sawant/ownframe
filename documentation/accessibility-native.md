@@ -1,8 +1,10 @@
 # Native accessibility status and validation
 
-Ownframe exposes page semantics through `host.Accessible`. It does not
-register those semantics with an operating system. Screen readers cannot
-inspect an ownframe window through this API yet.
+1.0 ships the Go snapshot only. Ownframe exposes page semantics through
+`host.Accessible`. It does not register those semantics with an operating
+system. Screen readers cannot inspect an ownframe window through this API.
+There is no AT-SPI, UI Automation, NSAccessibility, or TalkBack bridge in
+1.0.
 
 ## Current integration boundary
 

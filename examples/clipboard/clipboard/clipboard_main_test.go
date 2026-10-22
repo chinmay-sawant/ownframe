@@ -4,11 +4,11 @@ import (
 	"os"
 	"testing"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // TestMain keeps every test off the desktop clipboard.
 func TestMain(m *testing.M) {
-	osclip.UseMemory(true)
+	ownframe.UseMemory(true)
 	os.Exit(m.Run())
 }

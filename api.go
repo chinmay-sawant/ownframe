@@ -28,11 +28,13 @@ type Config = page.Config
 type Handlers = page.Handlers
 
 // Page is one HTML template and the last picture it produced.
-type Page = page.Page
+type Page struct {
+	*page.Page
+}
 
 const MaxSourceSize = page.MaxSourceSize
 
 // New parses html as an html/template page.
 func New(cfg Config) (*Page, error) {
-	return page.New(cfg)
+	return wrapPage(page.New(cfg))
 }

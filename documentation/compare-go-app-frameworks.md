@@ -8,7 +8,11 @@ Each example shows the same plain text, "Hello world". These are UI excerpts wit
 ownframe.Config{HTML: `<div>Hello world</div>`}
 ```
 
-HTML describes the screen. Our custom Go web view uses Blinkless, the HTML and CSS engine we built from scratch. OwnFrame connects data and actions to Go, and Ebitengine supplies the window and drawing. The same engine handles desktop, browser, and mobile screens. See the [complete window example](window.md) and [rendering guide](screen.md).
+HTML describes the screen. Blinkless parses HTML and CSS in process. OwnFrame
+connects data and actions to Go, and Ebitengine supplies the window and
+drawing. 1.0 native hosts are desktop and Android: one compiled Go process, no
+Chromium, no WebView. That is not native OS widgets. iOS is not shipped. See
+the [complete window example](window.md) and [rendering guide](screen.md).
 
 ## Wails v2
 
@@ -54,4 +58,4 @@ This call goes inside `Draw`, where `screen` is the drawing target. It uses Ebit
 
 Wails and webview_go use the system browser engine for HTML screens. Fyne uses Go widgets, and Gio uses Go layout and drawing operations. Ebitengine gives you a drawing loop for custom interfaces and games.
 
-OwnFrame gives you HTML and CSS screens with Go behavior through our own rendering engine. It has no browser DOM or JavaScript runtime, and it does not promise compatibility with arbitrary websites. Desktop, WebAssembly, Android, and iOS use the same page definition. Check the [platform setup](platforms.md) and [supported features and limits](features.md), including native accessibility limits, before choosing it for an app.
+OwnFrame gives you HTML and CSS screens with Go behavior through our own rendering engine. It has no browser DOM or JavaScript runtime, and it does not promise compatibility with arbitrary websites. The same page definition feeds desktop `Run` and Android `BindMobile`. wasm and `-web` are previews. iOS is not shipped. Check the [platform setup](platforms.md) and [supported features and limits](features.md), including the Go-snapshot accessibility limit, before choosing it for an app.

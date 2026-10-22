@@ -1,13 +1,16 @@
 # Lint findings
 
-Snapshot taken when the `make lint` gate was added, against commit `master`
-with the working tree as it stood at that moment.
+This page is historical. It is a snapshot from when the `make lint` gate was
+added, against commit `master` with the working tree as it stood at that
+moment. The counts below are not current.
 
-The gate is `make lint`: golangci-lint v1.64.8 with the policy in
-`.golangci.yml`, run over the library module and the examples module, then
-`make size-check`. The policy starts from `enable-all` and disables only the
-linters that restate house style, so the numbers below are the real defect
-count, not a formatting backlog.
+The live gate is golangci-lint v2.15.0 (`GOLANGCI_LINT_VERSION` in the
+Makefile) with a curated list in `.golangci.yml`, then `make size-check`. Do
+not treat this file as an `enable-all` or v1 policy.
+
+The snapshot used golangci-lint v1.64.8. At that time the policy started from
+`enable-all` and disabled only the linters that restated house style, so the
+numbers below were the defect count then, not a formatting backlog.
 
 ## Totals
 

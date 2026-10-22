@@ -22,7 +22,7 @@ func benchmarkElementPatchCardClass(b *testing.B) {
 		if i%2 == 0 {
 			class = card.cardOn
 		}
-		if p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: class}) {
+		if p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: class}) == nil {
 			applied++
 		}
 	}
@@ -57,5 +57,5 @@ func patchCostStateSpan(ctx context.Context, p *ownframe.Page, card patchCostCar
 	}
 	return p.PatchElement(ctx, card.state,
 		page.ElementEdit{Attribute: "class", Value: class},
-		page.ElementEdit{Text: &text})
+		page.ElementEdit{Text: &text}) == nil
 }

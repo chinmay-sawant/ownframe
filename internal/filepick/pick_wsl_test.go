@@ -4,6 +4,7 @@ package filepick
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 )
@@ -27,9 +28,9 @@ func TestPickWindows(t *testing.T) {
 	writeTool(t, dir, "wslpath", wslpathConvert)
 	t.Setenv("PATH", dir)
 
-	got, ok, handled := pickWindows(context.Background(), "Open")
-	if !handled || !ok || got != "/mnt/c/Users/me/notes.txt" {
-		t.Fatalf("pick = %q %v %v", got, ok, handled)
+	got, err := pickWindows(context.Background(), "Open")
+	if err != nil || got != "/mnt/c/Users/me/notes.txt" {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }
 
@@ -37,10 +38,10 @@ func TestPickWindowsCancel(t *testing.T) {
 	dir := t.TempDir()
 	writeTool(t, dir, "powershell.exe", "#!/bin/sh\nexit 0\n")
 
-	got, ok, handled := pickWindowsAt(context.Background(), "Open",
+	got, err := pickWindowsAt(context.Background(), "Open",
 		[]string{dir + "/powershell.exe"})
-	if !handled || ok || got != "" {
-		t.Fatalf("pick = %q %v %v", got, ok, handled)
+	if !errors.Is(err, ErrCanceled) || got != "" {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }
 
@@ -48,16 +49,16 @@ func TestPickWindowsShellError(t *testing.T) {
 	dir := t.TempDir()
 	writeTool(t, dir, "powershell.exe", "#!/bin/sh\nexit 1\n")
 
-	_, _, handled := pickWindowsAt(context.Background(), "Open",
+	_, err := pickWindowsAt(context.Background(), "Open",
 		[]string{dir + "/powershell.exe"})
-	if handled {
-		t.Fatal("handled = true after a shell error")
+	if !errors.Is(err, ErrNoDialog) {
+		t.Fatalf("err = %v", err)
 	}
 }
 
 func TestPickWindowsNoShell(t *testing.T) {
-	if _, _, handled := pickWindowsAt(context.Background(), "Open", nil); handled {
-		t.Fatal("handled = true with no shell")
+	if _, err := pickWindowsAt(context.Background(), "Open", nil); !errors.Is(err, ErrNoDialog) {
+		t.Fatal(err)
 	}
 }
 

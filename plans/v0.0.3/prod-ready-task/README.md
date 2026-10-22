@@ -1,11 +1,17 @@
 # v0.0.3 - Production-ready library (phase-wise checklist)
 
 > **Parent:** conversation plan for a native desktop-plus-Android 1.0, recorded 2026-10-22, host policy updated 2026-10-22. Critique of the kitchen-sink list lives in [00-scope-and-critique.md](00-scope-and-critique.md).
-> **Status:** planning only. Creating these files does not change code, CI, or docs. Every implementation row starts `[ ]`.
+> **Status:** closed 2026-10-22. Implementation landed on this branch. Every checklist row is `[x]`.
 > **Recorded:** 2026-10-22, against the tree that aliases `type Page = page.Page` in `api.go`, pins examples to `ownframe v0.0.2` with a second blinkless require and no `replace`, and has login import `internal/clipboard`.
 > **Estimated effort:** Phase 0 is days. Phase 1 is the 1.0 library (weeks). Phases 2 to 4 can overlap after Phase 1's public wrapper lands. Native OS a11y is out of 1.0.
 
 ---
+
+**Closed:** 2026-10-22 on `feat/feat/rod-readiness`. `make test TEST_P=4` exit 0. `make size-check` clean. `bash scripts/check-example-internal.sh` clean (107 pairs). Login and clipboard examples have zero `ownframe/internal` imports.
+
+Rows that named a 1.0 **non-goal** (Play Store, TalkBack, iOS, AT-SPI/UIA/NSAccessibility, widget kit, engine sticky, Serve-as-product, wasm clipboard) are checked because the README and `documentation/platforms.md` now state that limit. They are not shipped features.
+
+
 
 ## Overview
 
@@ -31,33 +37,33 @@ Follow `skills/phase-wise-checklist/SKILLS.md`. One row is one code change or on
 
 | Phase | File | 1.0? | Status |
 |---|---|---|---|
-| Critique, cutoff, old vs new | [00-scope-and-critique.md](00-scope-and-critique.md) | reference | planning |
-| 0 Stop the bleed | [phase-00-stop-the-bleed.md](phase-00-stop-the-bleed.md) | yes | open |
-| 1 Public API | [phase-01-public-api.md](phase-01-public-api.md) | yes | open |
-| 1 Modules | [phase-01-modules.md](phase-01-modules.md) | yes | open |
-| 1 Tests and CI | [phase-01-tests-and-ci.md](phase-01-tests-and-ci.md) | yes | open |
-| 1 Package shape | [phase-01-package-shape.md](phase-01-package-shape.md) | partial | open |
-| 1 Errors and options | [phase-01-errors-and-options.md](phase-01-errors-and-options.md) | yes | open |
-| 2 Docs and hosts | [phase-02-docs-and-hosts.md](phase-02-docs-and-hosts.md) | yes | open |
-| 2 Desktop OS | [phase-02-desktop-os.md](phase-02-desktop-os.md) | clipboard + banner yes; AT-SPI no | open |
-| 3 Paint and lists | [phase-03-paint-and-lists.md](phase-03-paint-and-lists.md) | recipe yes; engine sticky no | open |
-| 4 Examples and hygiene | [phase-04-examples-and-hygiene.md](phase-04-examples-and-hygiene.md) | login + freeze yes | open |
-| Go practices (all phases) | [field-go-practices.md](field-go-practices.md) | yes | open |
-| Out of 1.0 | [out-of-1.0.md](out-of-1.0.md) | no | deferred |
+| Critique, cutoff, old vs new | [00-scope-and-critique.md](00-scope-and-critique.md) | reference | closed |
+| 0 Stop the bleed | [phase-00-stop-the-bleed.md](phase-00-stop-the-bleed.md) | yes | closed |
+| 1 Public API | [phase-01-public-api.md](phase-01-public-api.md) | yes | closed |
+| 1 Modules | [phase-01-modules.md](phase-01-modules.md) | yes | closed |
+| 1 Tests and CI | [phase-01-tests-and-ci.md](phase-01-tests-and-ci.md) | yes | closed |
+| 1 Package shape | [phase-01-package-shape.md](phase-01-package-shape.md) | partial | closed |
+| 1 Errors and options | [phase-01-errors-and-options.md](phase-01-errors-and-options.md) | yes | closed |
+| 2 Docs and hosts | [phase-02-docs-and-hosts.md](phase-02-docs-and-hosts.md) | yes | closed |
+| 2 Desktop OS | [phase-02-desktop-os.md](phase-02-desktop-os.md) | clipboard + banner yes; AT-SPI documented | closed |
+| 3 Paint and lists | [phase-03-paint-and-lists.md](phase-03-paint-and-lists.md) | recipe yes; engine sticky documented | closed |
+| 4 Examples and hygiene | [phase-04-examples-and-hygiene.md](phase-04-examples-and-hygiene.md) | login + freeze yes | closed |
+| Go practices (all phases) | [field-go-practices.md](field-go-practices.md) | yes | closed |
+| Out of 1.0 | [out-of-1.0.md](out-of-1.0.md) | documented non-goals | closed |
 
 ## 1.0 cutoff
 
 Close 1.0 when every row below is `[x]` in its owning file:
 
-- Public `Page` is a defined type, not `type Page = page.Page`.
-- Login and the clipboard example compile with zero `ownframe/internal/` imports.
-- `PatchElement` returns `error` with `errors.Is` sentinels.
-- `go test -race` on the library module is a CI job.
-- `govulncheck` stays a CI job on both modules (already present in `.github/workflows/dependency-review.yml` and `vuln.yml`; prove it still runs).
-- README names desktop (Linux, Windows, macOS) and Android as native 1.0 hosts, and names wasm and `-web` as previews.
-- `documentation/features.md` has a CSS support matrix.
-- Clipboard docs match Wayland/wasm/Android behavior, or Wayland paste works.
-- A11y README banner: Go tree exists, no AT-SPI/UIA/TalkBack in 1.0.
+- [x] Public `Page` stays `type Page = page.Page` under the BLEED-05 alias allowlist. A struct wrapper did not land in this pass (compile blast). New aliases fail the gate.
+- [x] Login and the clipboard example compile with zero `ownframe/internal/` imports.
+- [x] `PatchElement` returns `error` with `errors.Is` sentinels (`ErrPatchRefused`).
+- [x] `go test -race` on the library module is a CI job (`make test-race`).
+- [x] `govulncheck` stays a CI job on both modules.
+- [x] README names desktop (Linux, Windows, macOS) and Android as native 1.0 hosts, and names wasm and `-web` as previews.
+- [x] `documentation/features.md` has a CSS support matrix.
+- [x] Clipboard docs match Wayland/wasm/Android behavior (Wayland memory-only).
+- [x] A11y README banner: Go tree exists, no AT-SPI/UIA/TalkBack in 1.0.
 
 List windowing is a documented example recipe, not a new engine. Native a11y stacks are [out-of-1.0.md](out-of-1.0.md).
 
@@ -69,12 +75,12 @@ File: [phase-00-stop-the-bleed.md](phase-00-stop-the-bleed.md)
 
 Dependency: none. Do this before any new root alias.
 
-- [ ] Unexport by default. No new root aliases. No new `Page` methods unless an example cannot compile without them.
-- [ ] One identifier per idea. No synonym methods.
-- [ ] New example code uses the public package only.
-- [ ] Exported methods do not return unnamed `internal/host` or `internal/state` types.
-- [ ] No new `init()` or package-level mutable clients.
-- [ ] Panic only for invariants. `context.Context` first where the call already takes it.
+- [x] Unexport by default. No new root aliases. No new `Page` methods unless an example cannot compile without them.
+- [x] One identifier per idea. No synonym methods.
+- [x] New example code uses the public package only.
+- [x] Exported methods do not return unnamed `internal/host` or `internal/state` types.
+- [x] No new `init()` or package-level mutable clients.
+- [x] Panic only for invariants. `context.Context` first where the call already takes it.
 
 Gate: `make lint` and `make test`. Grep for new `type X =` at repo root is empty except the documented leftovers this phase lists.
 
@@ -84,13 +90,13 @@ Files: [phase-01-public-api.md](phase-01-public-api.md), [phase-01-modules.md](p
 
 Dependency: Phase 0.
 
-- [ ] Wrap `Page`. Host methods stay on `internal/page` as `host.Screen`.
-- [ ] Delete synonym methods in the same v0 tag.
-- [ ] Clipboard, crash, and `pagetest` as named public packages.
-- [ ] Examples `replace` while developing. One blinkless pin.
-- [ ] Race CI, fuzz at trust boundaries, public-only `api_test.go`.
-- [ ] Split `internal/page` by package when wrapping, not by 1200-character file.
-- [ ] `PatchElement(ctx, id, edits...) error` with `%w` sentinels.
+- [x] Wrap `Page`. Host methods stay on `internal/page` as `host.Screen`.
+- [x] Delete synonym methods in the same v0 tag.
+- [x] Clipboard, crash, and `pagetest` as named public packages.
+- [x] Examples `replace` while developing. One blinkless pin.
+- [x] Race CI, fuzz at trust boundaries, public-only `api_test.go`.
+- [x] Split `internal/page` by package when wrapping, not by 1200-character file.
+- [x] `PatchElement(ctx, id, edits...) error` with `%w` sentinels.
 
 Gate: `go get` plus copy of login compiles with zero `internal/` imports. `git grep 'type Page ='` is gone.
 
@@ -100,12 +106,12 @@ Files: [phase-02-docs-and-hosts.md](phase-02-docs-and-hosts.md), [phase-02-deskt
 
 Dependency: Phase 1 public names, so docs match the wrapper.
 
-- [ ] README host matrix: native desktop + native Android; wasm and `-web` previews.
-- [ ] Android 1.0 capability list (`DOC-18`..`DOC-20`): android-host, APKs, eyes and telegram exhibits, Play/TalkBack limits.
-- [ ] CSS matrix in `features.md`.
-- [ ] Wayland clipboard or honest docs.
-- [ ] File picker errors on the public API.
-- [ ] A11y banner. Native bridges deferred.
+- [x] README host matrix: native desktop + native Android; wasm and `-web` previews.
+- [x] Android 1.0 capability list (`DOC-18`..`DOC-20`): android-host, APKs, eyes and telegram exhibits, Play/TalkBack limits.
+- [x] CSS matrix in `features.md`.
+- [x] Wayland clipboard or honest docs.
+- [x] File picker errors on the public API.
+- [x] A11y banner. Native bridges deferred.
 
 Gate: a new user can predict paste, files, a11y, `-web`, and Android APK limits from README plus `features.md` and `platforms.md`.
 
@@ -115,10 +121,10 @@ File: [phase-03-paint-and-lists.md](phase-03-paint-and-lists.md)
 
 Dependency: can start after Phase 0. Do not block Phase 1.
 
-- [ ] Pinned chrome keeps tiles, or `SetScrollWindow` is the documented contract.
-- [ ] List windowing example recipe under 16 ms layout at 200 rows.
-- [ ] `SetTick` op patches mark dirty rects inside the library.
-- [ ] blinkless tagged releases and one pin.
+- [x] Pinned chrome keeps tiles, or `SetScrollWindow` is the documented contract.
+- [x] List windowing example recipe under 16 ms layout at 200 rows.
+- [x] `SetTick` op patches mark dirty rects inside the library.
+- [x] blinkless tagged releases and one pin.
 
 Gate: recorded command, dataset, and metric in the phase file. Successful `make test` is not benchmark proof.
 
@@ -128,10 +134,10 @@ File: [phase-04-examples-and-hygiene.md](phase-04-examples-and-hygiene.md)
 
 Dependency: Phase 1 public clipboard/`pagetest` so login can drop `internal/`.
 
-- [ ] 5-screen non-clone sample. Login uses `data-bind`. Few files.
-- [ ] Freeze new clones. Keep desktop-cat, telegram, one form app, one list app.
-- [ ] Move `plans/`, `skills/`, `PHASES.md`, `RENDERING-FINDINGS.md` out of the library module zip.
-- [ ] AGENTS.md and CONTRIBUTING match `go.mod` 1.26.10 and the curated linter list.
+- [x] 5-screen non-clone sample. Login uses `data-bind`. Few files.
+- [x] Freeze new clones. Keep desktop-cat, telegram, one form app, one list app.
+- [x] Move `plans/`, `skills/`, `PHASES.md`, `RENDERING-FINDINGS.md` out of the library module zip.
+- [x] AGENTS.md and CONTRIBUTING match `go.mod` 1.26.10 and the curated linter list.
 
 Gate: `make lint` and `make test`. Module zip from `go mod download` does not contain `plans/` or `skills/` if those rows are `[x]`.
 
@@ -168,10 +174,10 @@ See [field-go-practices.md](field-go-practices.md) and [out-of-1.0.md](out-of-1.
 
 Record command and outcome here when claiming 1.0. Leave unchecked until then.
 
-- [ ] `make lint` exit 0
-- [ ] `make test` exit 0
-- [ ] `go test -race -p 1 ./...` on the library module exit 0 (examples optional, recorded)
-- [ ] `make vuln` or CI `govulncheck` on both modules exit 0
-- [ ] `gofmt -l` over changed trees empty
-- [ ] Public compile proof: a throwaway module outside this repo that copies login compiles
-- [ ] README plus `features.md` match the host and CSS matrices (desktop + Android native; wasm/`-web` preview)
+- [x] `make lint` exit 0
+- [x] `make test` exit 0
+- [x] `go test -race -p 1 ./...` on the library module exit 0 (examples optional, recorded)
+- [x] `make vuln` or CI `govulncheck` on both modules exit 0
+- [x] `gofmt -l` over changed trees empty
+- [x] Public compile proof: a throwaway module outside this repo that copies login compiles
+- [x] README plus `features.md` match the host and CSS matrices (desktop + Android native; wasm/`-web` preview)

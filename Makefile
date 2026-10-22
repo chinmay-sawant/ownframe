@@ -15,6 +15,12 @@ GOLANGCI_LINT_VERSION ?= v2.15.0
 test:
 	$(GO) test -p $(TEST_P) ./... ./examples/...
 
+# Race detector on the library module only. Examples stay off this target
+# until the library job is green; full examples race is a later gate.
+.PHONY: test-race
+test-race:
+	$(GO) test -race -p 1 ./...
+
 # `go build ./...` links an executable for every example on each run, takes
 # about a minute, and leaves the binaries in this directory. `go vet` compiles
 # every package, including every example, without linking. Raise the limit for
@@ -30,13 +36,14 @@ build:
 # examples/ are separate Go modules, so each needs its own pass.
 # Installs the pinned binary into $(go env GOPATH)/bin when it is missing.
 # Builds with the default toolchain so the binary matches the module Go.
-# The run ends with the file-size gate (scripts/check-file-size.sh), so CI
-# enforces the 2,000-character rule in AGENTS.md alongside the linters.
+# The run then hits the file-size gate (scripts/check-file-size.sh) and the
+# example internal-import gate (scripts/check-example-internal.sh), so CI
+# enforces the 2,000-character rule and the freeze in AGENTS.md.
 # The website in frontend/ is linted by ESLint in the same run, so one
 # command covers the Go code and the React code.
 # Every gate runs before the target fails, so one run reports the library
-# findings, the examples findings, the size ledger, and the website findings
-# together.
+# findings, the examples findings, the size ledger, the internal-import
+# ledger, and the website findings together.
 .PHONY: lint
 lint:
 	@command -v golangci-lint >/dev/null 2>&1 || { \
@@ -48,6 +55,7 @@ lint:
 	golangci-lint run ./... || status=1; \
 	golangci-lint run ./examples/... || status=1; \
 	$(MAKE) --no-print-directory size-check || status=1; \
+	$(MAKE) --no-print-directory internal-import-check || status=1; \
 	if ! command -v npm >/dev/null 2>&1; then \
 		echo "npm not found; the website lint needs Node.js 22.12 or newer" >&2; \
 		status=1; \
@@ -67,6 +75,12 @@ lint:
 .PHONY: size-check
 size-check:
 	bash scripts/check-file-size.sh
+
+# Freeze gate: no new examples import of ownframe/internal/. The current
+# set is scripts/example-internal-allowlist.txt. Stale or extra pairs fail.
+.PHONY: internal-import-check
+internal-import-check:
+	bash scripts/check-example-internal.sh
 
 # Vulnerability scan via the pinned tool directive in go.mod
 # (golang.org/x/vuln/cmd/govulncheck). Runs against both modules through

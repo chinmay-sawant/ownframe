@@ -1,12 +1,12 @@
 package login
 
-import "github.com/chinmay-sawant/ownframe/internal/secret"
+import "github.com/chinmay-sawant/ownframe"
 
 // snap is one saved pair of field values. The password stays a
-// secret.Secret so a %v or slog dump of undo history cannot leak it.
+// Secret so a %v or slog dump of undo history cannot leak it.
 type snap struct {
 	Email    string
-	Password secret.Secret
+	Password ownframe.Secret
 }
 
 func (a *App) signIn() {
@@ -14,7 +14,7 @@ func (a *App) signIn() {
 	errMsg := "Unknown email or password."
 	// Demo credentials only. DO NOT COPY into production: no auth
 	// boundary here; a real app must verify server side, not locally.
-	if a.page.FormValue("email") == "secret" && a.page.FormValue("password") == "secret" {
+	if a.view.Email == "secret" && a.view.Password.Reveal() == "secret" {
 		status = "Signed in."
 		errMsg = ""
 	}
@@ -27,12 +27,9 @@ func (a *App) signIn() {
 	a.view.Error = errMsg
 }
 
-// snapshot reads both fields. The library owns their values, not View.
+// snapshot copies both bound fields.
 func (a *App) snapshot() snap {
-	return snap{
-		Email:    a.page.FormValue("email"),
-		Password: secret.Secret(a.page.FormValue("password")),
-	}
+	return snap{Email: a.view.Email, Password: a.view.Password}
 }
 
 // push saves the current fields for undo. A snapshot equal to the last one
@@ -49,8 +46,10 @@ func (a *App) push() {
 	a.redo = nil
 }
 
-// restore writes a snapshot back into the page fields.
+// restore writes a snapshot into View. The next Redraw pushes it.
 func (a *App) restore(s snap) {
+	a.view.Email = s.Email
+	a.view.Password = s.Password
 	a.page.SetFormValue("email", s.Email)
 	a.page.SetFormValue("password", s.Password.Reveal())
 }

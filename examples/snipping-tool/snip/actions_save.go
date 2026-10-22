@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // save writes the cropped preview as snip-YYYYMMDD-HHMMSS.png. A
@@ -56,6 +56,6 @@ func (a *App) copy() {
 		a.view.Status = "capture " + a.view.Size + "; no clipboard in web preview"
 		return
 	}
-	osclip.Write(string(a.crop))
+	ownframe.Write(string(a.crop))
 	a.view.Status = "copied " + a.view.Size
 }

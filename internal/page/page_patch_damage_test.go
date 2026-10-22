@@ -14,9 +14,7 @@ func TestPatchElementDirtiesTheChangedInk(t *testing.T) {
 
 	p.TakeDirty()
 	prev := p.display
-	if !p.PatchElement(ctx, "d", ElementEdit{Attribute: "class", Value: "on"}) {
-		t.Fatal("the patch was refused")
-	}
+	mustPatch(t, p.PatchElement(ctx, "d", ElementEdit{Attribute: "class", Value: "on"}))
 
 	d, full, changed := diffDisplay(prev, p.display)
 	if full || d.n == 0 || changed == 0 {
@@ -45,9 +43,7 @@ func TestPatchElementRebuildsTheHitList(t *testing.T) {
 	ctx := context.Background()
 	p := patchPage(t, `<style>#p{width:100px;height:40px}</style><p id="p">text</p>`)
 
-	if !p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}) {
-		t.Fatal("the patch was refused")
-	}
+	mustPatch(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}))
 
 	box := p.boxByID("p")
 	box, ok := p.hitBox(box.X+box.W/2, box.Y+box.H/2)

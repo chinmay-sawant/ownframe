@@ -19,4 +19,7 @@ var (
 	// ErrSourceTooLarge means a template, theme, or source string exceeded
 	// MaxSourceSize.
 	ErrSourceTooLarge = page.ErrSourceTooLarge
+
+	// ErrPatchRefused means PatchElement could not apply the edit.
+	ErrPatchRefused = page.ErrPatchRefused
 )

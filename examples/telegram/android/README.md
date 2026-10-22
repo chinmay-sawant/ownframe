@@ -72,6 +72,8 @@ and accept the RSA prompt. `adb devices` lists the phone.
 sh scripts/android.sh install
 ```
 
+Do not export `GOWORK` for the bind: gomobile copies the packages into a temporary module and builds there, and the workspace file would disown that module.
+
 The first Gradle run downloads Gradle and the Android Gradle plugin. To build
 without installing:
 

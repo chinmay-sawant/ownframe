@@ -22,7 +22,7 @@ func (a *App) RetainedElement(id string) *element.Node {
 	if a == nil || a.page == nil {
 		return nil
 	}
-	return a.page.RetainedElement(id)
+	return a.page.Element(id)
 }
 
 func (a *App) RetainedElements(ids ...string) []*element.Node {

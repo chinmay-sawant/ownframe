@@ -16,7 +16,8 @@ type tickSlot struct {
 // SetTick registers fn to run once per frame before the window draws. fn can
 // read the display list and change an operation's geometry or text, or call
 // Redraw; either changes the next frame. nil removes the callback.
-// Serve does not tick.
+// Serve does not tick. Tick marks patched ops dirty; callers need not call
+// UseFrameDirty.
 func (p *Page) SetTick(fn func(ctx context.Context) error) {
 	p.mu.Lock()
 	p.fn = fn
@@ -24,17 +25,12 @@ func (p *Page) SetTick(fn func(ctx context.Context) error) {
 }
 
 // Tick runs the frame callback registered with SetTick and the caret blink.
-// With no callback and no focused field it does nothing.
+// With no callback and no focused field it does nothing. A callback that
+// mutated ops sets FrameDirty and TakeDirty; a no-op tick stays clean.
 func (p *Page) Tick(ctx context.Context) error {
 	p.mu.Lock()
 	fn := p.fn
 	p.mu.Unlock()
 
-	if fn != nil {
-		if err := fn(ctx); err != nil {
-			return err
-		}
-	}
-
-	return p.caretBlink(ctx)
+	return p.runTick(ctx, fn)
 }

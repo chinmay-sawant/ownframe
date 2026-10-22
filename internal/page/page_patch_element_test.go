@@ -37,9 +37,7 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 		t.Fatalf("the fill starts at %.2f, want the base colour", fill.R)
 	}
 
-	if !p.PatchElement(ctx, "box", ElementEdit{Attribute: "class", Value: "a on"}) {
-		t.Fatal("the patch was refused")
-	}
+	mustPatch(t, p.PatchElement(ctx, "box", ElementEdit{Attribute: "class", Value: "a on"}))
 	if p.Stats().Repaints != before+1 {
 		t.Fatalf("repaints = %d, want one more", p.Stats().Repaints)
 	}

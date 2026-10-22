@@ -1,7 +1,12 @@
 # Scoped style invalidation
 
-`internal/styleinvalid` tracks which boxes and style paths actually move during
-a state change so unmodified subtrees can be skipped during style and layout.
+This page is historical. `internal/styleinvalid` is not in the tree. Live
+layout and style work lives in blinkless and `internal/render`. The lists
+below are the old plan, not a current package.
+
+`internal/styleinvalid` tracked which boxes and style paths actually moved
+during a state change so unmodified subtrees could be skipped during style
+and layout.
 
 ## Supported
 

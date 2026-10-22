@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // pasteButton inserts the fixed Go text in the focused field.
@@ -32,7 +32,7 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 		return nil
 	}
 
-	raw, err := osclip.Read()
+	raw, err := ownframe.Read()
 	if err != nil {
 		a.setStatus("clipboard is empty")
 

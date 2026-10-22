@@ -24,15 +24,6 @@ func (p *Page) ChangedProperties() []string {
 	return local
 }
 
-// ChangedProps is an alias for ChangedProperties.
-func (p *Page) ChangedProps() []string { return p.ChangedProperties() }
-
-// LastChangedProperties returns the most recently surfaced properties.
-func (p *Page) LastChangedProperties() []string { return p.ChangedProperties() }
-
-// LastChangedProps is an alias.
-func (p *Page) LastChangedProps() []string { return p.LastChangedProperties() }
-
 // TakeChangedProperties returns a snapshot and drains local metadata.
 // A store fallback is snapshot-only; clear it via State().ClearChangedProperties.
 func (p *Page) TakeChangedProperties() []string {
@@ -50,12 +41,3 @@ func (p *Page) TakeChangedProperties() []string {
 	}
 	return local
 }
-
-// TakeChangedProps is an alias.
-func (p *Page) TakeChangedProps() []string { return p.TakeChangedProperties() }
-
-// PropertiesChanged is an alias.
-func (p *Page) PropertiesChanged() []string { return p.ChangedProperties() }
-
-// Changed returns surfaced metadata.
-func (p *Page) Changed() []string { return p.ChangedProperties() }

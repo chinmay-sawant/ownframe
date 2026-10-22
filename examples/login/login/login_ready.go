@@ -3,7 +3,7 @@ package login
 // ready reports whether both fields carry text, so the sign-in button can
 // turn blue and take a click only after the user filled them.
 func (a *App) ready() bool {
-	return a.page.FormValue("email") != "" && a.page.FormValue("password") != ""
+	return a.view.Email != "" && a.view.Password.Reveal() != ""
 }
 
 // refresh syncs View.Ready with the fields. The redraw that follows every
@@ -15,5 +15,5 @@ func (a *App) refresh() {
 	}
 
 	a.view.Ready = ready
-	a.page.SetData(a.view)
+	a.page.SetData(&a.view)
 }

@@ -2,6 +2,8 @@
 
 Index only. No behavior change. Each group names its entry file and state owner.
 
+Updated 2026-10-22. `replay_frame.go` `fullReplay`: ticking Pages stay on the buffer path; Tick marks mutated ops.
+
 | Group | Entry file | State owner |
 |---|---|---|
 | devtools | `devtools_dock.go` (overlay open/close, dock layout) | `devState` in `devtools.go`, held as `shell.dev` (`game_state.go`) |

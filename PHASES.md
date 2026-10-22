@@ -1,3 +1,7 @@
+# Historical record (not live)
+
+This file is a snapshot of the v0.0.2 phase diary. It is not the live 1.0 checklist. Current work is in `plans/v0.0.3/prod-ready-task/`.
+
 # Phase status
 
 Recorded 2026-10-04.

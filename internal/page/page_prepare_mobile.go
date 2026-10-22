@@ -13,3 +13,8 @@ func PrepareMobile(ctx context.Context, p *Page) error {
 	p.mobileViewport = true
 	return Prepare(ctx, p)
 }
+
+// PrepareMobile prepares this page for its native mobile viewport.
+func (p *Page) PrepareMobile(ctx context.Context) error {
+	return PrepareMobile(ctx, p)
+}

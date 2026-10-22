@@ -4,12 +4,39 @@ ownframe keeps one Go process and one HTML template. Bug reports, docs fixes, ex
 
 ## Setup
 
-The repo holds two Go modules joined by `go.work`: the library at the root and `examples/`. Use the Go version in `go.mod` (1.26.4 or newer).
+The repo holds two Go modules joined by `go.work`: the library at the root and `examples/`. Use the Go version in `go.mod` (1.26.10 or newer).
 
 - `make test` runs the test suite for both modules.
+- `make test-race` runs `go test -race -p 1 ./...` on the library module only.
 - `make build` is the compile check. It runs `go vet` over every package. Do not run `go build ./...`; it links an executable for each example, takes about a minute, and leaves the binaries in this directory.
+- `make lint` runs golangci-lint, the file-size gate, the example internal-import gate, and the website lint.
 - Run `gofmt` on every Go file you edit.
 - Every Go file stays at most 2000 characters, counted with `wc -m`. Split an overlong file inside the same package and keep the behavior.
+
+## Public API freeze until Page wrap
+
+v0 may break. The public `Page` wrap in [plans/v0.0.3/prod-ready-task/](plans/v0.0.3/prod-ready-task/) happens before v1. Until that wrap lands:
+
+- No new `type X =` alias at the module root except documented re-exports.
+- No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.
+- No new example import of `github.com/chinmay-sawant/ownframe/internal/`. `make internal-import-check` records the current set.
+- No synonym names (`PreviousX` for `X`).
+- New exported methods return named types in package `ownframe` or a public subpackage, never `host.Stats` or `*state.Store` unless those types are re-exported in the same PR.
+- Panic only for broken invariants. New user-facing failure paths return `error`.
+- `context.Context` is the first parameter when the function already does I/O, cancel, or deadline. Do not add a hidden `time.After` that ignores the caller's ctx.
+
+The longer list is [plans/v0.0.3/prod-ready-task/field-go-practices.md](plans/v0.0.3/prod-ready-task/field-go-practices.md).
+
+## Tagging the library and the examples module
+
+`examples/go.mod` `replace`s `github.com/chinmay-sawant/ownframe` with `../` so a `GOWORK=off` build in this checkout uses the parent, not the published tag. Keep the blinkless version in `examples/go.mod` equal to the root `go.mod`.
+
+Two-step tag:
+
+1. Tag the library `vX.Y.Z`.
+2. Bump the examples require to that tag, drop the relative replace, and tag `examples/vX.Y.Z`.
+
+A tagged examples module on the proxy cannot keep `replace => ../`. Keep the replace on the development branch after the tag rewrite.
 
 ## Features and demos
 
@@ -20,6 +47,8 @@ A new feature, or a new demo of one (something like `examples/controls` or `exam
 3. Index updates: a row in [documentation/README.md](documentation/README.md), a section in [documentation/features.md](documentation/features.md), and a row in [examples/readme.md](examples/readme.md).
 
 When the feature changes behavior that an existing guide describes, edit that guide in the same change.
+
+Do not add a new example whose primary purpose is resembling Telegram, Teams, Spotify, Wispr, Netflix, or another product clone. Feature demos stay small (`examples/bind`, `examples/forms`). Existing clones stay; they are not a template for new apps.
 
 ## Playground examples
 
@@ -33,7 +62,7 @@ Open a PR with the template in [skills/PR/PR_TEMPLATE.md](skills/PR/PR_TEMPLATE.
 - Labels: at least one. `feat` takes `enhancement`, `fix` takes `bug` or `enhancement`, `docs` takes `documentation`, and `perf`, `refactor`, and `chore` take `enhancement`.
 - Self-assign the PR.
 - Link issues with `Closes #N` when the PR completes one, and `Relates to #N` for partial work.
-- Run `make test` before you open it. Add `make build` when the change touches more than docs.
+- Run `make test` before you open it. Add `make build` when the change touches more than docs. Add `make test-race` when the change touches shared mutable state.
 
 ## Bugs
 

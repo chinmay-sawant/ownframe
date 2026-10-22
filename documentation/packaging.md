@@ -59,6 +59,8 @@ and needs no build.
 
 ## Signing and notarization
 
+Unsigned archives from `scripts/package.sh` are the 1.0 deliverable. Signing,
+notarization, and Authenticode are operator runbook steps, not library code.
 The script ships unsigned archives. Each system treats one differently.
 
 - Linux has no signing step. A `tar.gz` unpacks and runs.

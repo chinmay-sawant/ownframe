@@ -46,9 +46,9 @@
     <h1>Sign in</h1>
     <p id="message" class="{{if .Status}}status{{else}}error{{end}}">{{if .Status}}{{.Status}}{{else}}{{.Error}}{{end}}</p>
     <label>Email</label>
-    <input id="email" type="text" class="field" placeholder="Email">
+    <input id="email" type="text" class="field" placeholder="Email" data-bind="Email">
     <label>Password</label>
-    <input id="password" type="password" class="field" placeholder="Password">
+    <input id="password" type="password" class="field" placeholder="Password" data-bind="Password">
     <button id="login" data-action="login"{{if not .Ready}} disabled{{end}}>Sign in</button>
   </div>
 </body>

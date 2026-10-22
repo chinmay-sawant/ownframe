@@ -2,6 +2,7 @@ package page_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -13,10 +14,10 @@ func TestFileControlCancelKeepsValue(t *testing.T) {
 	screen := formPage(t, `<input id="f" type="file" value="old.txt"`+wide+`>`)
 
 	calls := 0
-	page.InstallPicker(screen, func(context.Context, string) (string, bool) {
+	page.InstallPicker(screen, func(context.Context, string) (string, error) {
 		calls++
 
-		return "", false
+		return "", errors.New("canceled")
 	})
 
 	clickID(t, screen, "f")
@@ -35,10 +36,10 @@ func TestFileControlDisabledSkipsPicker(t *testing.T) {
 	screen := formPage(t, `<input id="f" type="file" disabled`+wide+`>`)
 
 	calls := 0
-	page.InstallPicker(screen, func(context.Context, string) (string, bool) {
+	page.InstallPicker(screen, func(context.Context, string) (string, error) {
 		calls++
 
-		return "/tmp/a.txt", true
+		return "/tmp/a.txt", nil
 	})
 
 	clickID(t, screen, "f")

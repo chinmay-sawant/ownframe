@@ -6,9 +6,11 @@ Formerly known as **go-gpui**.
   <img src="assets/brand/gopher.webp" alt="ownframe Gopher mascot" width="140" />
 </p>
 
-Write screens in HTML and CSS, and application logic in Go. ownframe renders with [blinkless](https://github.com/chinmay-sawant/blinkless) and opens a window with Ebiten. It ships no Chromium, WebKit, or JavaScript runtime.
+Write screens in HTML and CSS, and application logic in Go. ownframe renders with [blinkless](https://github.com/chinmay-sawant/blinkless) and opens a window with Ebiten. It ships no Chromium, WebKit, WebView, or JavaScript runtime.
 
-The same page can run on desktop, in a browser through WebAssembly, or on a phone.
+1.0 ships native Go apps on desktop (Linux, Windows, macOS) and Android. Native means one compiled Go process and an Ebiten window or Activity. It does not mean OS widgets or a screen reader.
+
+`scripts/browser.sh` builds a wasm canvas preview. `-web` is a loopback PNG debugger. The capability matrix is in [documentation/platforms.md](documentation/platforms.md).
 
 ## Demo
 
@@ -28,7 +30,7 @@ Desktop cat overlay. Transparent, click-through cat that reports what is happeni
 go get github.com/chinmay-sawant/ownframe
 ```
 
-The root package is `ownframe`. The repository and module path already use the new name; the first tagged release at that path is `v0.0.2`. See the [rename and migration notes](documentation/rebrand.md).
+The root package is `ownframe`. The repository and module path already use the new name; the first tagged release at that path is `v0.0.2`. The current library cycle is `v0.0.3`. See the [rename and migration notes](documentation/rebrand.md).
 
 ```go
 package main
@@ -62,14 +64,15 @@ func main() {
 From this checkout:
 
 ```sh
-go run ./examples/login
-go run ./examples/login -web
-sh scripts/browser.sh
-go run ./examples/desktop-cat
-sh scripts/android.sh install
+go run ./examples/login              # desktop native
+sh scripts/android-release.sh login  # Android native APK
+sh scripts/android-eyes.sh           # Android native (eyes)
+go run ./examples/login -web         # PNG debugger preview
+sh scripts/browser.sh                # wasm canvas preview
+go run ./examples/desktop-cat        # desktop native overlay
 ```
 
-The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](examples/telegram/android/README.md) have the details. See [showcase.md](showcase.md) for the Telegram, Teams, Spotify Player, Pet Care, and other examples.
+The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](documentation/android-app-creation.md) have the details. See [showcase.md](showcase.md) for the Telegram, Teams, Spotify Player, Pet Care, and other examples.
 
 Nested module markers keep the website, generated site, screenshots, and development folders out of the library module archive. The examples remain in their own module.
 
@@ -78,14 +81,14 @@ Nested module markers keep the website, generated site, screenshots, and develop
 Start with the [documentation index](documentation/README.md) or [feature list and limits](documentation/features.md).
 
 - [Windows and sizing](documentation/window.md)
-- [Desktop, WebAssembly, and mobile](documentation/platforms.md)
+- [Desktop, Android, wasm preview, and Serve](documentation/platforms.md)
 - [Templates and rendering](documentation/screen.md)
 - [Forms and data binding](documentation/binding.md)
 - [Theming](documentation/theming.md)
 - [Packaging](documentation/packaging.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. There is one window and no accessibility tree. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot; it does not connect AT-SPI, UI Automation, NSAccessibility, or TalkBack. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 

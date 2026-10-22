@@ -26,11 +26,13 @@ const (
 
 // View is the login screen data.
 // The template prints Error and Status, and grays the button until Ready.
-// Field values live in the page.
+// Email and Password bind through data-bind.
 type View struct {
-	Error  string
-	Status string
-	Ready  bool
+	Error    string
+	Status   string
+	Ready    bool
+	Email    string
+	Password ownframe.Secret
 }
 
 // App is the sign-in screen.

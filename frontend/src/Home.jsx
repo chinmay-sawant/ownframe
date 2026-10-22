@@ -173,15 +173,15 @@ export default function Home() {
 
     <section id="mobile" className="mobile-section" aria-labelledby="mobile-title">
       <h2 id="mobile-title">Bring your screen to mobile</h2>
-      <p><code>BindMobile</code> connects your page to Ebitengine&apos;s Android and iOS view.
-        Reuse your HTML, CSS, and Go handlers. Android has a complete Telegram demo project;
-        iOS builds use the mobile binding and require Xcode.</p>
+      <p><code>BindMobile</code> connects your page to Ebitengine&apos;s Android view.
+        Reuse your HTML, CSS, and Go handlers. Android has Telegram and Eyes demo APKs.
+        iOS is not a target for now.</p>
       <p>Phone apps support touch scrolling and soft keyboard input. The clipboard uses an
         in-memory copy, and native screen-reader integration is still unavailable.
         Check the platform limits before shipping.</p>
       <div className="mobile-guides links">
         <a href="#docs/android-app-creation">Create an Android app</a>
-        <a href="#docs/platforms/phone">Android and iOS setup</a>
+        <a href="#docs/platforms">Platform matrix</a>
         <a href="#docs/android-runtime">Android runtime limits</a>
       </div>
     </section>

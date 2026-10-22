@@ -16,10 +16,10 @@ func TestTakeDrainsLocalProps(t *testing.T) {
 		t.Fatalf("second = %v, want empty", second)
 	}
 	p.SetChangedProperties([]string{"b"})
-	if got := p.TakeChangedProps(); len(got) != 1 || got[0] != "b" {
-		t.Fatalf("alias = %v", got)
+	if got := p.TakeChangedProperties(); len(got) != 1 || got[0] != "b" {
+		t.Fatalf("second set = %v", got)
 	}
-	if got := p.TakeChangedProps(); len(got) != 0 {
-		t.Fatalf("alias second = %v", got)
+	if got := p.TakeChangedProperties(); len(got) != 0 {
+		t.Fatalf("second drain = %v", got)
 	}
 }

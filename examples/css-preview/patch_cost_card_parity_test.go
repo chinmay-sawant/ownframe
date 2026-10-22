@@ -14,8 +14,8 @@ import (
 func TestPatchCardRowMatchesAFullRedraw(t *testing.T) {
 	ctx, p, v := patchCostPage(t)
 	card := patchCostCardOf(v)
-	if !p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: card.cardOn}) {
-		t.Fatal("the engine refused the card patch")
+	if err := p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: card.cardOn}); err != nil {
+		t.Fatal(err)
 	}
 	patched := patchCostOps(p.Display(), card.id)
 	if err := p.Redraw(ctx); err != nil {

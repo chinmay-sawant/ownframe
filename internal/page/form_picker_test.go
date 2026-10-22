@@ -13,10 +13,10 @@ func TestFileControlUsesPicker(t *testing.T) {
 	screen := formPage(t, `<input id="f" type="file"`+wide+`>`)
 
 	var title string
-	page.InstallPicker(screen, func(_ context.Context, got string) (string, bool) {
+	page.InstallPicker(screen, func(_ context.Context, got string) (string, error) {
 		title = got
 
-		return "/tmp/report.pdf", true
+		return "/tmp/report.pdf", nil
 	})
 
 	clickID(t, screen, "f")
@@ -53,8 +53,8 @@ func TestFileControlChangeAndBind(t *testing.T) {
 			return nil
 		},
 	})
-	page.InstallPicker(screen, func(context.Context, string) (string, bool) {
-		return "/tmp/x.txt", true
+	page.InstallPicker(screen, func(context.Context, string) (string, error) {
+		return "/tmp/x.txt", nil
 	})
 
 	clickID(t, screen, "f")

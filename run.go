@@ -27,7 +27,7 @@ func Run(ctx context.Context, page *Page) (err error) {
 func BindMobile(ctx context.Context, page *Page) (err error) {
 	defer savePanic(page, &err)
 
-	if err := pagepkg.PrepareMobile(ctx, page); err != nil {
+	if err := pagepkg.PrepareMobile(ctx, innerPage(page)); err != nil {
 		return err
 	}
 
@@ -40,7 +40,7 @@ func BindMobile(ctx context.Context, page *Page) (err error) {
 }
 
 func prepare(ctx context.Context, p *Page) error {
-	return pagepkg.Prepare(ctx, p)
+	return pagepkg.Prepare(ctx, innerPage(p))
 }
 
 func savePanic(page *Page, errp *error) {

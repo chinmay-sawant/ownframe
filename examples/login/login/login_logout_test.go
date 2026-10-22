@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestLogoutClearsFieldsAndHistory(t *testing.T) {
 	t.Parallel()
 
-	osclip.UseMemory(true)
-	osclip.Write("secret")
+	ownframe.UseMemory(true)
+	ownframe.Write("secret")
 	ctx := context.Background()
 	app := newApp(t, ctx)
 
@@ -35,7 +35,7 @@ func TestLogoutClearsFieldsAndHistory(t *testing.T) {
 		t.Fatalf("password = %q", got)
 	}
 
-	if got, _ := osclip.Read(); got != "" {
+	if got, _ := ownframe.Read(); got != "" {
 		t.Fatalf("clipboard = %q", got)
 	}
 
@@ -51,7 +51,7 @@ func TestLogoutClearsFieldsAndHistory(t *testing.T) {
 func TestLogoutClearsView(t *testing.T) {
 	t.Parallel()
 
-	osclip.UseMemory(true)
+	ownframe.UseMemory(true)
 	ctx := context.Background()
 	app := newApp(t, ctx)
 

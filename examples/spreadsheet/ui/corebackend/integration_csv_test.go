@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/examples/spreadsheet/ui"
-	pagepkg "github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func TestUICSVImportThroughPicker(t *testing.T) {
@@ -27,8 +26,8 @@ func TestUICSVImportThroughPicker(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pagepkg.InstallPicker(page, func(context.Context, string) (string, bool) {
-		return path, true
+	page.SetPicker(func(context.Context, string) (string, error) {
+		return path, nil
 	})
 
 	// Open the dialog from the toolbar, then click the file field.

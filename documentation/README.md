@@ -1,6 +1,6 @@
 # Start here
 
-Build your screen with HTML and CSS. Handle data and actions in Go. Open the same page on desktop, in a browser, or on a phone.
+Build your screen with HTML and CSS. Handle data and actions in Go. 1.0 hosts are desktop `Run` and Android `BindMobile`. wasm and `-web` are previews.
 
 ## Build a screen
 

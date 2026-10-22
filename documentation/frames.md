@@ -10,8 +10,9 @@ the event loop and wakes on input, or at the next deadline the page declared.
 `Page.WantFrameAt(t)` and `Page.WantFrameIn(d)` set that deadline, and
 `Page.NextFrameAt` returns and clears it; a page with no request falls back to
 a keep-alive frame every 125 ms, so a tick that never asks still runs. A tick
-that animates must report damage (`UseFrameDirty` plus marks), which returns
-the window to the full rate; a page that damages every frame is never paced.
+that animates must leave damage. `Tick` diffs patched ops and sets the
+frame-dirty flag itself; `MarkRect` and `Invalidate` still name extra regions.
+A page that damages every frame is never paced.
 `WindowOptions.NoIdlePace` turns the pacing off, and the phone and WebAssembly
 builds keep the plain sixty tick loop. The Frame tab's PACING section shows
 whether the window is idle, the next deadline in milliseconds, and how many
@@ -71,13 +72,15 @@ every frame. A click, key, or hover handler changes page content, and the
 page reports the changed boxes with `TakeDirtyRects` so the window repaints
 only those boxes; [repaint.md](repaint.md) has the call shapes. Reach for the
 tick when the change repeats every frame, and for the content path when it is
-one edit. A page with a tick registered keeps the full replay, because the
-window cannot tell which operation the callback changed. A tick that calls
-`Page.UseFrameDirty` is the exception: the window repaints the
-`TakeDirtyRects` list, and blits the cached buffer when the list is empty.
-`Invalidate` marks the elements that tick changed. `MarkRect` marks a
-CSS-pixel line that has no element id. A tick that never calls
-`UseFrameDirty` still replays the whole list.
+one edit. A tick that patches operations is marked dirty by the library. `Tick` diffs
+the display list, queues the changed boxes, and sets the frame-dirty flag, so
+callers need not remember `UseFrameDirty`. The window then repaints
+`TakeDirtyRects` and blits the buffer when that list is empty. A no-op tick
+leaves the page clean, so idle park can sleep. `UseFrameDirty` remains a
+working alias. `Invalidate` marks the elements that tick changed. `MarkRect`
+marks a CSS-pixel line that has no element id. A tick that patches operations
+should dirty those regions (`UseFrameDirty` plus marks). The library may later
+set that flag itself; until then the caller must.
 
 A rotation can retarget operations in the tick instead of calling `Redraw`.
 The [departure board](../examples/departure-board) does: when the feed is due,

@@ -16,4 +16,6 @@ blocks the tag.
 - Security regression tests (`go test -run Sec ./... ./examples/...`)
   pass.
 - Packaging notes (signing, sandboxing, permissions) still match the
-  shipped artifacts.
+  shipped artifacts. Unsigned `scripts/package.sh` archives are the 1.0
+  deliverable; signing and notarization stay in the operator runbook
+  ([packaging.md](packaging.md)).

@@ -30,18 +30,18 @@ func TestFromWindowsPath(t *testing.T) {
 	writeTool(t, dir, "wslpath", wslpathConvert)
 	t.Setenv("PATH", dir)
 
-	got, ok := fromWindowsPath(context.Background(), `C:\Users\me\notes.txt`)
-	if !ok || got != "/mnt/c/Users/me/notes.txt" {
-		t.Fatalf("path = %q %v", got, ok)
+	got, err := fromWindowsPath(context.Background(), `C:\Users\me\notes.txt`)
+	if err != nil || got != "/mnt/c/Users/me/notes.txt" {
+		t.Fatalf("path = %q %v", got, err)
 	}
 }
 
 func TestFromWindowsPathUNC(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 
-	got, ok := fromWindowsPath(context.Background(), `\\wsl$\Ubuntu\home\me\a.txt`)
-	if !ok || got != "/home/me/a.txt" {
-		t.Fatalf("path = %q %v", got, ok)
+	got, err := fromWindowsPath(context.Background(), `\\wsl$\Ubuntu\home\me\a.txt`)
+	if err != nil || got != "/home/me/a.txt" {
+		t.Fatalf("path = %q %v", got, err)
 	}
 }
 
@@ -53,8 +53,8 @@ func TestPickWSLUsesWindows(t *testing.T) {
 	t.Setenv("PATH", dir)
 	t.Setenv("WSL_DISTRO_NAME", "Ubuntu")
 
-	got, ok := Pick(context.Background(), "Open")
-	if !ok || got != "/mnt/c/Users/me/notes.txt" {
-		t.Fatalf("pick = %q %v", got, ok)
+	got, err := Pick(context.Background(), "Open")
+	if err != nil || got != "/mnt/c/Users/me/notes.txt" {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }

@@ -8,33 +8,32 @@ import (
 	"strings"
 )
 
-func fromWindowsPath(ctx context.Context, picked string) (string, bool) {
+func fromWindowsPath(ctx context.Context, picked string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
+	}
 	if !safeWindowsPath(picked) {
-		return "", false
+		return "", ErrCanceled
 	}
-
 	if linux, ok := uncToWSL(picked); ok {
-		return linux, true
+		return linux, nil
 	}
-
 	if picked == "" || strings.ContainsRune(picked, '\x00') {
-		return "", false
+		return "", ErrCanceled
 	}
-
 	//nolint:gosec // reason: picked is the local file-dialog choice, already rejected when empty or with NUL/control via safeWindowsPath.
 	out, err := exec.CommandContext(ctx, wslpathBin(), "-u", picked).Output()
 	if err != nil {
 		debugf("wslpath -u %q failed: %v", picked, err)
 
-		return "", false
+		return "", ErrCanceled
 	}
-
 	linux := strings.TrimRight(string(out), "\r\n")
 	if linux == "" || !strings.HasPrefix(linux, "/") || hasDotSegment(linux) {
-		return "", false
+		return "", ErrCanceled
 	}
 
-	return linux, true
+	return linux, nil
 }
 
 // wslpathBin finds wslpath, falling back to its standard location.

@@ -2,7 +2,44 @@
 
 OwnFrame renders HTML and CSS screens while your app logic runs in Go. Blinkless lays out the page, and Ebitengine opens the native window. OwnFrame does not embed a browser or JavaScript runtime.
 
+1.0 native hosts are desktop `Run` and Android `BindMobile`. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not TalkBack. wasm is a canvas preview. `-web` is a PNG debugger. See [platforms.md](platforms.md).
+
 This page summarizes supported features and current limits. Use the linked guides for setup and examples. See [Android runtime limits](android-runtime.md) and [all examples](../examples/readme.md).
+
+## CSS and HTML support
+
+| Feature | 1.0 |
+|---|---|
+| Flex | yes |
+| Grid | yes |
+| Tables | yes; collapsed borders replay as `OpGridRun` ([screen.md](screen.md)) |
+| Circular corner radii | replay path |
+| `var()` | yes; theme sheets can define custom properties ([theming.md](theming.md)) |
+| `:hover`, `:focus`, `:active`, `:checked` | host state ([forms.md](forms.md)) |
+| CSS masks | first pass: border box, simple sizes, `repeat` variants (see CSS masks below) |
+| CSS motion records | sampled from Blinkless; the window does not start them ([css-motion.md](css-motion.md)) |
+
+| Absent or app workaround | 1.0 |
+|---|---|
+| `position: absolute` on a flex child | ignored; the child stays in flow. Use a block container ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
+| `position: fixed` / `sticky` under window scroll | the window translates every op. Use `SetViewportPinZ` or `SetScrollWindow` ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
+| `@media print` | never matches ([theming.md](theming.md)) |
+| `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
+| Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
+| Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |
+| `@container` vs element patch | a document with `@container` refuses every patch ([optimizations.md](optimizations.md)) |
+
+## Not in 1.0
+
+These stay out of 1.0. Do not plan them as library work for this tag:
+
+- JavaScript
+- a live DOM
+- `<a href>` navigation
+- video
+- canvas
+- WebGL
+- `<audio>` as HTML (`Run` and `BindMobile` still create an Ebiten audio context for Go playback)
 
 ## Screen paint
 
@@ -114,7 +151,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, iOS, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
 
 Detail is in [clipboard.md](clipboard.md).
 
@@ -196,7 +233,7 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- Native screen-reader bridges, native spellcheck, and OS-global shortcuts. The page accessibility tree is available to host code, but it does not expose the Ebitengine window to assistive technology ([accessibility.md](accessibility.md)). `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android and iOS use Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- Native screen-reader bridges (AT-SPI, UIA, NSAccessibility, TalkBack), native spellcheck, and OS-global shortcuts. The page accessibility tree is a Go snapshot for host code ([accessibility.md](accessibility.md)). `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

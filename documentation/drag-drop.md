@@ -5,6 +5,10 @@ pass. A nil or empty file system means no drop. A non-empty one becomes a
 slice of `host.Drop` values, and the window calls `Drop` on a screen that
 implements `host.Dropper`. A screen without the method ignores the files.
 
+On desktop, `Drop.Path` is an absolute local path. Copy bytes from `Drop.Read`
+inside the callback. Do not log the path. On wasm the path is empty. `Serve`
+has no drop.
+
 ```go
 type Drop struct {
 	Name  string

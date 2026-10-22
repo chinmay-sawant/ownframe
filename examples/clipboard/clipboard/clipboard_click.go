@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe"
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
 )
 
 // onClick runs the button under the click. A click on a field records it as
@@ -49,7 +48,7 @@ func (a *App) copyButton(ctx context.Context) error {
 		return nil
 	}
 
-	osclip.Write(text)
+	ownframe.Write(text)
 	a.setStatus("copied: " + text)
 
 	return nil
@@ -69,7 +68,7 @@ func (a *App) cutButton(ctx context.Context) error {
 		return nil
 	}
 
-	osclip.Write(text)
+	ownframe.Write(text)
 	a.setStatus("cut: " + text)
 
 	return nil
