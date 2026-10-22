@@ -30,3 +30,6 @@ examples/*/android/artifacts/*-debug.apk
 
 # Temporary packages used to compile documentation fragments
 /.doc-snippets-*/
+
+# Python maintenance-check bytecode
+__pycache__/

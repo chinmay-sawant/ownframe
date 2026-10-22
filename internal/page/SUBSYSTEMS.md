@@ -14,6 +14,8 @@ Index only. No behavior change. Each group names its entry file.
 | host | `page_host.go` (interface assertions) | tick in `page_tick.go`; windowing in `page_scroll.go`; pin z in `page_scroll.go` |
 | tick | `page_tick.go` (`SetTick`, `Tick`) | op-diff dirty in `page_tick.go`; `UseFrameDirty` alias in `page_tick.go` |
 
+State binding lives in `page_patch_state.go`: replacing a store cancels the former registration, clears former metadata, and rejects in-flight callbacks from earlier bindings. `BindState(nil)` detaches.
+
 The page owns its changed-property mutex; independent pages do not share a metadata lock. Paint damage invalidates the encoded PNG cache through `markRect` and `markFull`.
 
 Notes: `Tick` diffs display ops after the callback. A mutating tick sets `FrameDirty` and queues rects; a no-op tick stays clean so idle park can sleep.

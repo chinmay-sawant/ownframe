@@ -54,6 +54,8 @@ type Page struct {
 	changedPropsMu  sync.RWMutex
 	changedProps    []string
 	stateStore      *state.Store
+	stateCancel     func()
+	stateEpoch      uint64
 	elements        *element.Registry
 	frameState      // deadline: loop sets, window takes; lock: atomic
 	pinZ            int

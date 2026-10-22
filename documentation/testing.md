@@ -16,7 +16,7 @@ make graphics-check
 
 [snippets.json](snippets.json) supplies imports and surrounding parameters for fragments. The Go inside the fence is compiled directly, rather than copied into a second example. A new fence or removed fence requires a manifest update. Third-party framework comparisons and optional keyring code are listed as external illustrations with reasons; the checker reports them. The internal replay fragment is explicitly marked as implementation code. App-facing snippets cannot import `ownframe/internal/`.
 
-`make plans-check` checks the distinct states and evidence fields in [the current ledger](../plans/README.md). It cannot establish whether prose evidence is true; reviewers must inspect the referenced result. Superseded production-readiness checklists are not proof of completion.
+`make plans-check` checks the distinct states and evidence fields in [the current ledger](../plans/README.md). Its rejection tests cover ambiguous states, duplicate identifiers, missing evidence, and disabled Python assertions. The checks use explicit validation, so `PYTHONOPTIMIZE=1` cannot bypass them. It cannot establish whether prose evidence is true; reviewers must inspect the referenced result. Superseded production-readiness checklists are not proof of completion.
 
 `make examples-check` requires every example root to have a maintenance classification in [maintenance.json](../examples/maintenance.json). The maintained teaching set is login, bind, forms, list, desktop-cat, and telegram. Other examples remain in the compatibility suite. Classification is a scope decision, not a claim that Android or desktop behavior was validated on every platform.
 
@@ -37,6 +37,12 @@ make graphics-check
 All pixel readback occurs in the running game. Replay comparison targets use standalone textures so atlas placement does not introduce different interpolation rounding between the two targets. Pixel equality remains exact. Each process has a 90-second timeout and runs with software OpenGL for repeatability. Ubuntu needs `xvfb`, `xauth`, and `libgl1-mesa-dri`. The script fails when these prerequisites are missing. It leaves the user's `~/.Xauthority` untouched.
 
 CI and release gates run the graphics target. Xvfb validates an X11 software graphics session; it does not establish native Wayland behavior, hardware GPU driver behavior, desktop IME correctness, or Android device behavior. Those require their own platform sessions.
+
+## State subscription lifecycle
+
+The internal retained-state tests cover rebinding a page to a store, repeated binding to the same store, detaching one of two pages, and rejecting a former store's already-dispatched callback. Listener cancellation uses registration identity rather than a closure's code address. Callbacks execute outside the store lock and may reenter the store. An already-dispatched callback may finish after cancellation, so the page also checks the binding generation before recording metadata.
+
+`go test -race -p 1 ./internal/page ./internal/state` exercises concurrent store patches, listener registration and cancellation, page rebinding, and metadata reads. These are internal engine seams, not additions to the public `ownframe.Page` method set.
 
 ## Review responsibility
 

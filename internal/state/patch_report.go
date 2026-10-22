@@ -51,8 +51,7 @@ func (s *Store) PatchWithSkipped(p Patch) ([]Change, []string) {
 	if len(out) > 0 {
 		s.redo = nil
 	}
-	ls := make([]func(Change), len(s.listeners))
-	copy(ls, s.listeners)
+	ls := s.listenersLocked()
 	s.mu.Unlock()
 	for _, c := range out {
 		for _, l := range ls {

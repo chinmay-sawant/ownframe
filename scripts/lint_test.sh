@@ -42,10 +42,12 @@ python3 - "$LINT_TEST_LOG" <<'PY'
 from pathlib import Path
 import sys
 calls = Path(sys.argv[1]).read_text().splitlines()
-assert calls == [
+expected = [
     'go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0',
     'lint run ./...',
     'lint run ./examples/...',
-], calls
+]
+if calls != expected:
+    raise SystemExit(f"unexpected linter calls: {calls!r}")
 print('lint-version-test: wrong PATH version replaced; exact cached version reused')
 PY

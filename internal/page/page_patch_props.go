@@ -10,9 +10,10 @@ func (p *Page) ChangedProperties() []string {
 	empty := len(p.changedProps) == 0
 	local := make([]string, len(p.changedProps))
 	copy(local, p.changedProps)
+	store := p.stateStore
 	p.changedPropsMu.RUnlock()
-	if empty && p.stateStore != nil {
-		return p.stateStore.ChangedProperties()
+	if empty && store != nil {
+		return store.ChangedProperties()
 	}
 	return local
 }
@@ -28,9 +29,10 @@ func (p *Page) TakeChangedProperties() []string {
 	copy(local, p.changedProps)
 	empty := len(p.changedProps) == 0
 	p.changedProps = p.changedProps[:0]
+	store := p.stateStore
 	p.changedPropsMu.Unlock()
-	if empty && p.stateStore != nil {
-		return p.stateStore.ChangedProperties()
+	if empty && store != nil {
+		return store.ChangedProperties()
 	}
 	return local
 }

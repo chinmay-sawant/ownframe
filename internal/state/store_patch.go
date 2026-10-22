@@ -23,8 +23,7 @@ func (s *Store) TryPatchChange(path string, value any) (Change, bool) {
 	s.changes = append(s.changes, c)
 	s.undo = append(s.undo, c)
 	s.redo = nil
-	ls := make([]func(Change), len(s.listeners))
-	copy(ls, s.listeners)
+	ls := s.listenersLocked()
 	s.mu.Unlock()
 	for _, l := range ls {
 		l(c)

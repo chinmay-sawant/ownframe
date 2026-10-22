@@ -43,7 +43,7 @@ lint:
 	@python3 scripts/run-lint.py $(GOLANGCI_LINT_VERSION) $(if $(filter 1,$(VERBOSE)),--verbose)
 
 tools-check:
-	@python3 scripts/test_lint_output.py
+	@python3 -m unittest discover -s scripts -p 'test_*.py'
 	@cd scripts && GOWORK=off $(GO) test -p 1 ./...
 
 docs-check:

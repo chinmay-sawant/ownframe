@@ -13,7 +13,7 @@ func TestPageStateMetadataSurface(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := state.NewStore(map[string]any{"count": 1})
-	p.SetState(st)
+	p.BindState(st)
 	if _, ok := st.TryPatchChange("count", 2); !ok {
 		t.Fatal("setPath failed for count")
 	}
