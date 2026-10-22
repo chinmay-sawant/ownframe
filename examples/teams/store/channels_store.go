@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/chinmay-sawant/ownframe/examples/teams/channels"
@@ -9,7 +10,7 @@ import (
 // saveChannels replaces the channels tables with d.
 func saveChannels(tx *sql.Tx, d channels.Data) error {
 	for _, t := range []string{"teams", "channels", "posts", "replies", "reactions", "channel_files", "channel_state"} {
-		if _, err := tx.Exec("DELETE FROM " + t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
+		if _, err := tx.ExecContext(context.Background(), "DELETE FROM "+t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
 			return err
 		}
 	}
@@ -26,7 +27,7 @@ func saveChannels(tx *sql.Tx, d channels.Data) error {
 		return err
 	}
 
-	_, err := tx.Exec(`INSERT OR REPLACE INTO channel_state (id, team, channel, tab) VALUES (1, ?, ?, ?)`, d.ActiveTeam, d.ActiveChannel, d.Tab)
+	_, err := tx.ExecContext(context.Background(), `INSERT OR REPLACE INTO channel_state (id, team, channel, tab) VALUES (1, ?, ?, ?)`, d.ActiveTeam, d.ActiveChannel, d.Tab)
 
 	return err
 }
@@ -34,12 +35,12 @@ func saveChannels(tx *sql.Tx, d channels.Data) error {
 // saveTeams writes the teams and their channels in slice order.
 func saveTeams(tx *sql.Tx, teams []channels.Team) error {
 	for i, t := range teams {
-		if _, err := tx.Exec(`INSERT INTO teams (id, position, name, initials, color, expanded) VALUES (?, ?, ?, ?, ?, ?)`, t.ID, i, t.Name, t.Initials, t.Color, t.Expanded); err != nil {
+		if _, err := tx.ExecContext(context.Background(), `INSERT INTO teams (id, position, name, initials, color, expanded) VALUES (?, ?, ?, ?, ?, ?)`, t.ID, i, t.Name, t.Initials, t.Color, t.Expanded); err != nil {
 			return err
 		}
 
 		for j, c := range t.Channels {
-			if _, err := tx.Exec(`INSERT INTO channels (id, team_id, position, name, unread) VALUES (?, ?, ?, ?, ?)`, c.ID, t.ID, j, c.Name, c.Unread); err != nil {
+			if _, err := tx.ExecContext(context.Background(), `INSERT INTO channels (id, team_id, position, name, unread) VALUES (?, ?, ?, ?, ?)`, c.ID, t.ID, j, c.Name, c.Unread); err != nil {
 				return err
 			}
 		}

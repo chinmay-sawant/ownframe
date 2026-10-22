@@ -1,8 +1,10 @@
 package tv
 
 import (
-	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 func (c *Client) pointerFailed() bool {
@@ -16,7 +18,7 @@ func (c *Client) pointerFailed() bool {
 
 func watchPointer(conn *ws.Conn) <-chan struct{} {
 	done := make(chan struct{})
-	go func() {
+	safego.Go("pointer read", func() {
 		defer close(done)
 		defer func() { _ = conn.Close() }()
 		for {
@@ -24,8 +26,8 @@ func watchPointer(conn *ws.Conn) <-chan struct{} {
 				return
 			}
 		}
-	}()
-	go func() {
+	})
+	safego.Go("pointer ping", func() {
 		tick := time.NewTicker(time.Second)
 		defer tick.Stop()
 		for {
@@ -39,6 +41,6 @@ func watchPointer(conn *ws.Conn) <-chan struct{} {
 				}
 			}
 		}
-	}()
+	})
 	return done
 }

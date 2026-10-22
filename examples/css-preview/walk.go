@@ -69,7 +69,7 @@ func startWalk(p *ownframe.Page, d *demo, v *view, m *catalogMetrics) {
 		if err := d.tick(ctx); err != nil {
 			return err
 		}
-		w.step()
+		w.step(ctx)
 		p.SetTick(tick)
 		return nil
 	}

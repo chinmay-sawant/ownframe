@@ -66,7 +66,7 @@ func wrapOpen(err error) error {
 	if strings.Contains(msg, "not a database") ||
 		strings.Contains(msg, "malformed") ||
 		strings.Contains(msg, "encrypted") {
-		return fmt.Errorf("%w: %v", ErrCorrupt, err)
+		return fmt.Errorf("%w: %w", ErrCorrupt, err)
 	}
 
 	return err

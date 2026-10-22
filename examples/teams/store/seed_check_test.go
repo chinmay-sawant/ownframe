@@ -1,6 +1,9 @@
 package store
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestSingleStatement(t *testing.T) {
 	stmt, ok := singleStatement("INSERT INTO meta (key, value) VALUES ('a', 'b');")
@@ -22,7 +25,7 @@ func TestExecScriptRejectsStacked(t *testing.T) {
 	}
 	defer func() { _ = st.Close() }()
 
-	tx, err := st.db.Begin()
+	tx, err := st.db.BeginTx(t.Context(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +35,7 @@ func TestExecScriptRejectsStacked(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = execScript(tx, "INSERT INTO meta (key, value) VALUES ('c', 'd'); DELETE FROM meta;")
-	if err != errMultiStatement {
+	if !errors.Is(err, errMultiStatement) {
 		t.Fatalf("err = %v", err)
 	}
 }

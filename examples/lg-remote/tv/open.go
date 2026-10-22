@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
+	"github.com/chinmay-sawant/ownframe/internal/safego"
+	"github.com/chinmay-sawant/ownframe/internal/secret"
 )
 
 // Open dials the TV, pairs, and opens the pointer socket.
@@ -18,9 +20,9 @@ func Open(host, key string) (*Client, error) {
 	c := &Client{
 		main: conn,
 		wait: map[string]chan Message{},
-		Key:  key,
+		Key:  secret.Secret(key),
 	}
-	go c.read(conn)
+	safego.Go("tv read", func() { c.read(conn) })
 
 	ctx, cancel := context.WithTimeout(context.Background(), helloTimeout)
 	_, _ = c.round(ctx, "hello", helloMsg())
@@ -38,7 +40,7 @@ func Open(host, key string) (*Client, error) {
 		return nil, err
 	}
 
-	c.Key = got
+	c.Key = secret.Secret(got)
 	c.openPointer()
 	c.readInfo()
 

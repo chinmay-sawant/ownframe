@@ -26,7 +26,7 @@ func (a *App) redoClip() error {
 
 // selectAllNote refocuses the note before selecting it.
 func (a *App) selectAllNote(ctx context.Context) error {
-	if !a.focusNote() {
+	if !a.focusNote(ctx) {
 		a.view.Status = "select-all needs a focused field"
 		a.page.SetData(&a.view)
 		return nil
@@ -36,7 +36,7 @@ func (a *App) selectAllNote(ctx context.Context) error {
 
 // selectAllClip selects the last clipboard field.
 func (a *App) selectAllClip(ctx context.Context) error {
-	if !a.focusLast() {
+	if !a.focusLast(ctx) {
 		a.setClip("nothing to select")
 		return nil
 	}

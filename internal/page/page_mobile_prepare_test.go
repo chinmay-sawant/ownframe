@@ -2,6 +2,7 @@ package page_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -26,7 +27,7 @@ func TestDesktopMinimumSurvivesMobilePrepareError(t *testing.T) {
 }
 
 func TestMobilePrepareRejectsNilPage(t *testing.T) {
-	if err := page.PrepareMobile(context.Background(), nil); err != page.ErrNilPage {
+	if err := page.PrepareMobile(context.Background(), nil); !errors.Is(err, page.ErrNilPage) {
 		t.Fatalf("nil page error = %v", err)
 	}
 }

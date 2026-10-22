@@ -12,6 +12,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	action := box.Action
 
 	switch {
+	case a.clickNav(ctx, action):
 	case action == "play":
 		a.togglePlayback(ctx)
 	case action == "next":
@@ -20,10 +21,6 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "prev":
 		a.step(-1)
 		a.playNow(ctx)
-	case action == "back":
-		a.moveNav(-1)
-	case action == "forward":
-		a.moveNav(1)
 	case strings.HasPrefix(action, "row-"):
 		a.selectRow(slot(action, "row-"))
 		a.playNow(ctx)
@@ -33,12 +30,6 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "card-"):
 		a.selectShelf(slot(action, "card-"))
 		a.playNow(ctx)
-	case strings.HasPrefix(action, "list-"):
-		a.selectList(slot(action, "list-"))
-	case action == "queue":
-		a.navigate("queue")
-	case strings.HasPrefix(action, "nav-"):
-		a.navigate(strings.TrimPrefix(action, "nav-"))
 	case action == "heart":
 		a.view.Liked = !a.view.Liked
 	case action == "shuffle":

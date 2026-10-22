@@ -1,8 +1,10 @@
 package store
 
+import "context"
+
 // Save replaces every table with the state in d.
 func (s *Store) Save(d Data) error {
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}

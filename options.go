@@ -1,7 +1,9 @@
 package ownframe
 
 // Option configures a page before New parses it. Options run in order, so
-// a later option wins when two set the same field.
+// a later option wins when two set the same field. Every option keeps the
+// zero value safe: opting into a risky surface always takes an explicit,
+// InsecureAllow-prefixed name where one exists.
 type Option func(*Config)
 
 // WithPerf records pipeline timing, dirty counters, and allocs in Stats.

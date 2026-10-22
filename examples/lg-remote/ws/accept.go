@@ -18,7 +18,7 @@ func nonce() string {
 }
 
 func accept(r *bufio.Reader, key string) error {
-	status, err := r.ReadString('\n')
+	status, err := readHeadLine(r)
 	if err != nil {
 		return err
 	}
@@ -30,15 +30,21 @@ func accept(r *bufio.Reader, key string) error {
 	sum := sha1.Sum([]byte(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")) //nolint:gosec // reason: SHA1 is required by RFC 6455 for the WebSocket handshake, not a security hash.
 	want := base64.StdEncoding.EncodeToString(sum[:])
 	ok := false
+	lines := 0
 
 	for {
-		line, err := r.ReadString('\n')
+		line, err := readHeadLine(r)
 		if err != nil {
 			return err
 		}
 
 		if line == "\r\n" {
 			break
+		}
+
+		lines++
+		if lines > maxHeadLines {
+			return ErrTooLarge
 		}
 
 		if !strings.HasPrefix(strings.ToLower(line), "sec-websocket-accept:") {
@@ -54,4 +60,24 @@ func accept(r *bufio.Reader, key string) error {
 	}
 
 	return nil
+}
+
+// readHeadLine reads one handshake line bounded by maxHeadBytes.
+func readHeadLine(r *bufio.Reader) (string, error) {
+	var sb strings.Builder
+
+	for sb.Len() <= maxHeadBytes {
+		c, err := r.ReadByte()
+		if err != nil {
+			return "", err
+		}
+
+		_ = sb.WriteByte(c)
+
+		if c == '\n' {
+			return sb.String(), nil
+		}
+	}
+
+	return "", ErrTooLarge
 }

@@ -22,7 +22,7 @@ func frameLen(r io.Reader, n int) (int, error) {
 
 		v := binary.BigEndian.Uint64(b[:])
 		if v > uint64(maxFrameLen) {
-			return 0, ErrHandshake
+			return 0, ErrTooLarge
 		}
 
 		return int(v), nil

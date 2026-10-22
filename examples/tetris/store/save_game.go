@@ -19,7 +19,7 @@ func (s *Store) SaveGame(ctx context.Context, res game.Result, rep *game.Replay)
 
 	if rep != nil {
 		if err := rep.Validate(); err != nil {
-			return fmt.Errorf("%w: %v", ErrInvalid, err)
+			return fmt.Errorf("%w: %w", ErrInvalid, err)
 		}
 	}
 

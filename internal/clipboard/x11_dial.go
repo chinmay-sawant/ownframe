@@ -7,6 +7,8 @@ import (
 	"net"
 	"os"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 func dialX() (*xClient, error) {
@@ -57,7 +59,7 @@ func dialX() (*xClient, error) {
 		max:  max,
 	}
 
-	go xc.loop()
+	safego.Go("x11 loop", xc.loop)
 	done = true
 
 	if err = xc.bootstrap(); err != nil {

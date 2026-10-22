@@ -12,9 +12,13 @@ type Options struct {
 	Floating bool
 	// MousePassthrough passes all pointer input, including painted pixels,
 	// to windows underneath. It also starts unfocused and ticks in background.
+	// A full pass-through window never accepts input: Interactive is
+	// ignored while this is set, so untrusted content cannot click.
 	MousePassthrough bool
 	// Interactive reports clickable window-local CSS pixels. When supplied,
 	// only other pixels pass through. It runs on the window update thread.
+	// Reserve only visibly rendered app pixels (never empty margins), and
+	// only app code may set it: page content cannot toggle passthrough.
 	Interactive func(x, y int) bool
 	// Draggable starts a window drag only on a user press in this region.
 	Draggable func(x, y int) bool

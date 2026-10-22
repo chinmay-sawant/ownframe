@@ -31,7 +31,7 @@ func TestLockedDatabase(t *testing.T) {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	if _, err := tx.Exec(`INSERT INTO settings(key, value, updated_ns) VALUES('x', '1', 1)`); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO settings(key, value, updated_ns) VALUES('x', '1', 1)`); err != nil {
 		t.Fatal(err)
 	}
 

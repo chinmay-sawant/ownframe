@@ -1,0 +1,26 @@
+name: semgrep
+
+# GEN-18: custom taint-adjacent rules for the shapes the audit bans
+# outright (typed template values, dead TLS verification, the default
+# mux, shell exec). Runs on push and on PRs; findings fail the job.
+on:
+  push:
+  pull_request:
+
+# GEN-9: least privilege; this job only reads.
+permissions:
+  contents: read
+
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); the comment names the source tag.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      # Pinned PyPI version, no third-party action in the loop.
+      - name: Run ownframe Semgrep rules
+        run: |
+          python3 -m pip install --quiet "semgrep==1.182.1"
+          semgrep --config .semgrep/rules/ownframe-go.yml --error --metrics=off .

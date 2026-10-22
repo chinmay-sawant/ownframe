@@ -6,6 +6,8 @@ import (
 	"context"
 	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -42,7 +44,9 @@ type openFileName struct {
 	FlagsEx       uint32
 }
 
-var procGetOpenFileName = syscall.NewLazyDLL("comdlg32.dll").NewProc("GetOpenFileNameW")
+// System32 only (LOAD_LIBRARY_SEARCH_SYSTEM32): a planted DLL in
+// the app dir or on PATH cannot win the load.
+var procGetOpenFileName = windows.NewLazySystemDLL("comdlg32.dll").NewProc("GetOpenFileNameW")
 
 // Pick shows the common open dialog.
 // ok is false when the person canceled.

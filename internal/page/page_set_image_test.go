@@ -44,7 +44,12 @@ func centerPixel(t *testing.T, data []byte) color.NRGBA {
 
 	bounds := img.Bounds()
 
-	return color.NRGBAModel.Convert(img.At(bounds.Dx()/2, bounds.Dy()/2)).(color.NRGBA)
+	c, ok := color.NRGBAModel.Convert(img.At(bounds.Dx()/2, bounds.Dy()/2)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
+
+	return c
 }
 
 func TestSetImagePaintsAndRemovesBackground(t *testing.T) {
@@ -62,7 +67,7 @@ func TestSetImagePaintsAndRemovesBackground(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		return centerPixel(t, screen.PNG())
+		return centerPixel(t, screen.PNGWithContext(ctx))
 	}
 
 	screen.SetImage("bg", redPNG(t))

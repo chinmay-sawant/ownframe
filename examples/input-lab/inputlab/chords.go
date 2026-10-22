@@ -29,7 +29,7 @@ func (a *App) onCut(context.Context) (string, bool, error) {
 // onPaste lands in the last clip field when none is focused.
 func (a *App) onPaste(ctx context.Context, text string) error {
 	if a.page.FocusedField() == "" {
-		a.focusLast()
+		a.focusLast(ctx)
 	}
 	a.setClip("pasted: " + text)
 	return nil
@@ -40,10 +40,10 @@ func (a *App) onSelectAll(ctx context.Context) error {
 	if a.page.FocusedField() != "" {
 		return a.page.SelectAll(ctx)
 	}
-	if a.focusLast() {
+	if a.focusLast(ctx) {
 		return a.page.SelectAll(ctx)
 	}
-	if !a.focusNote() {
+	if !a.focusNote(ctx) {
 		a.setClip("nothing to select")
 		return nil
 	}

@@ -1,12 +1,18 @@
 package window
 
 import (
+	"errors"
 	"image"
 
 	"github.com/chinmay-sawant/ownframe/internal/bitmap"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+// errViewportNotRGBA reports a viewport paint that is not NRGBA pixels.
+// bitmap.Paint always produces NRGBA, so this is unreachable in practice;
+// the checked assertion keeps the type gate honest.
+var errViewportNotRGBA = errors.New("ownframe: viewport pixels are not NRGBA")
 
 type bitmapView struct {
 	img  *ebiten.Image
@@ -46,7 +52,10 @@ func (s *shell) prepareBitmapViewport() error {
 		}
 		v.img = ebiten.NewImage(area.Dx(), area.Dy())
 	}
-	pixels := img.(*image.NRGBA)
+	pixels, ok := img.(*image.NRGBA)
+	if !ok {
+		return errViewportNotRGBA
+	}
 	v.img.WritePixels(pixels.Pix)
 	v.gen, v.area, v.zoom = gen, area, zoom
 	return nil

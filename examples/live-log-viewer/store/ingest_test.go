@@ -81,7 +81,7 @@ func TestIngestDummyEndToEnd(t *testing.T) {
 
 	var dupes int
 
-	if err := st.db.QueryRow(
+	if err := st.db.QueryRowContext(bg(),
 		`SELECT count(*) FROM (SELECT source_id, generation, position
 		 FROM entries GROUP BY source_id, generation, position
 		 HAVING count(*) > 1)`).Scan(&dupes); err != nil {

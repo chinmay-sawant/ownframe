@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 )
 
@@ -12,7 +13,7 @@ func TestWalkResetClearsReadout(t *testing.T) {
 	w := &walker{p: p, d: d, v: v}
 	d.readout = "opacity = 1\nIt fades."
 	v.Readout = d.readout
-	w.reset()
+	w.reset(context.Background())
 	if d.readout != "" {
 		t.Errorf("demo readout = %q, want it cleared", d.readout)
 	}

@@ -32,7 +32,10 @@ var displayOpPool = sync.Pool{
 }
 
 func (p *Page) rentOps(n int) []DisplayOp {
-	bp := displayOpPool.Get().(*[]DisplayOp)
+	bp, ok := displayOpPool.Get().(*[]DisplayOp)
+	if !ok {
+		return make([]DisplayOp, 0, n)
+	}
 	buf := *bp
 	if cap(buf) < n {
 		buf = make([]DisplayOp, 0, n)

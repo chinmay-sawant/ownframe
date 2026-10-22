@@ -32,7 +32,10 @@ func TestFallbackPaintsGeometryAndCompositing(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := color.NRGBAModel.Convert(img.At(tc.x, tc.y)).(color.NRGBA)
+			got, ok := color.NRGBAModel.Convert(img.At(tc.x, tc.y)).(color.NRGBA)
+			if !ok {
+				t.Fatal("pixel model changed")
+			}
 			if got != tc.want {
 				t.Fatalf("pixel %+v want %+v", got, tc.want)
 			}

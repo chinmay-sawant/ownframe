@@ -1,57 +1,48 @@
 package fetch
 
 import (
-	"context"
+	"crypto/tls"
 	"net"
 	"net/http"
+	"time"
 )
 
-// pinnedTransport clones the default transport with a dialer that
-// validates the dialed IP. Redirect hops dial through the same path.
+// Transport timeouts bound slow servers. Proxy stays nil so a hostile
+// environment cannot route fetches elsewhere; call UseSystemProxy to
+// opt into HTTP(S)_PROXY handling.
+const (
+	dialTimeout           = 10 * time.Second
+	tlsTimeout            = 10 * time.Second
+	headerTimeout         = 10 * time.Second
+	expectContinueTimeout = 2 * time.Second
+	idleConnTimeout       = 30 * time.Second
+	dialKeepAlive         = 30 * time.Second
+)
+
+// pinnedTransport builds a fresh transport with a validating dialer.
+// It never clones the shared global transport, so global tunables cannot
+// change fetch behavior.
 func pinnedTransport() *http.Transport {
-	if t, ok := http.DefaultTransport.(*http.Transport); ok {
-		c := t.Clone()
-		c.DialContext = dialValidated
-		return c
+	return &http.Transport{
+		Proxy:                  nil,
+		DialContext:            dialValidated,
+		TLSHandshakeTimeout:    tlsTimeout,
+		ResponseHeaderTimeout:  headerTimeout,
+		MaxResponseHeaderBytes: MaxHeaderBytes,
+		TLSClientConfig:        &tls.Config{MinVersion: tls.VersionTLS12},
+		ExpectContinueTimeout:  expectContinueTimeout,
+		IdleConnTimeout:        idleConnTimeout,
 	}
-	return &http.Transport{Proxy: http.ProxyFromEnvironment, DialContext: dialValidated}
 }
 
-// dialValidated resolves the dial host once and dials a validated IP.
-// Literal blocked IPs fail. Hostnames fail when any answer is blocked.
-func dialValidated(ctx context.Context, network, addr string) (net.Conn, error) {
-	host, port, err := net.SplitHostPort(addr)
-	if err != nil {
-		return nil, err
+// UseSystemProxy opts into HTTP(S)_PROXY for callers behind a proxy.
+func UseSystemProxy() {
+	if t, ok := client.Transport.(*http.Transport); ok {
+		t.Proxy = http.ProxyFromEnvironment
 	}
-	if allowPrivate(ctx) {
-		return (&net.Dialer{}).DialContext(ctx, network, addr)
-	}
-	if ip := net.ParseIP(host); ip != nil {
-		if blockedIP(ip) {
-			return nil, ErrPrivateAddress
-		}
-		return (&net.Dialer{}).DialContext(ctx, network, addr)
-	}
-	addrs, err := net.DefaultResolver.LookupIPAddr(ctx, host)
-	if err != nil {
-		return nil, err
-	}
-	for _, a := range addrs {
-		if blockedIP(a.IP) {
-			return nil, ErrPrivateAddress
-		}
-	}
-	var last error
-	for _, a := range addrs {
-		c, e := (&net.Dialer{}).DialContext(ctx, network, net.JoinHostPort(a.IP.String(), port))
-		if e == nil {
-			return c, nil
-		}
-		last = e
-	}
-	if last != nil {
-		return nil, last
-	}
-	return nil, ErrPrivateAddress
+}
+
+// dialer bounds connection setup; the request context still wins first.
+func dialer() *net.Dialer {
+	return &net.Dialer{Timeout: dialTimeout, KeepAlive: dialKeepAlive}
 }

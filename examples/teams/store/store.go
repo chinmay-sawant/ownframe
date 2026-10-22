@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/chinmay-sawant/ownframe/examples/teams/activity"
@@ -27,7 +28,7 @@ type Data struct {
 func (s *Store) Empty() (bool, error) {
 	var n int
 
-	err := s.db.QueryRow(`SELECT COUNT(*) FROM meta WHERE key = 'seeded'`).Scan(&n)
+	err := s.db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM meta WHERE key = 'seeded'`).Scan(&n)
 
 	return n == 0, err
 }

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/chinmay-sawant/ownframe/examples/teams/chat"
@@ -8,7 +9,7 @@ import (
 
 // loadChats reads the chat rows in position order.
 func loadChats(db *sql.DB) ([]chat.Chat, error) {
-	rows, err := db.Query(`SELECT id, name, initials, color, preview, time, unread,
+	rows, err := db.QueryContext(context.Background(), `SELECT id, name, initials, color, preview, time, unread,
 		pinned, muted, is_group FROM chats ORDER BY position`)
 	if err != nil {
 		return nil, err
@@ -34,7 +35,7 @@ func loadChats(db *sql.DB) ([]chat.Chat, error) {
 
 // loadThreads reads every message and groups it by chat id.
 func loadThreads(db *sql.DB) (map[string][]chat.Message, error) {
-	rows, err := db.Query(`SELECT id, chat_id, author, initials, color, time, text,
+	rows, err := db.QueryContext(context.Background(), `SELECT id, chat_id, author, initials, color, time, text,
 		own FROM chat_messages ORDER BY chat_id, position`)
 	if err != nil {
 		return nil, err

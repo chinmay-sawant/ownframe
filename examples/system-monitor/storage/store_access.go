@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 // Close flushes WAL and closes the database. It is safe to call twice. The
 // checkpoint matters on Windows: a rename or delete of the database needs the
 // WAL folded back first, and the WAL and SHM files are never deleted by hand.
@@ -12,7 +14,7 @@ func (s *Store) Close() error {
 	}
 
 	if s.journal == "wal" {
-		_, _ = s.db.Exec("PRAGMA wal_checkpoint(TRUNCATE)")
+		_, _ = s.db.ExecContext(context.Background(), "PRAGMA wal_checkpoint(TRUNCATE)")
 	}
 
 	return s.db.Close()

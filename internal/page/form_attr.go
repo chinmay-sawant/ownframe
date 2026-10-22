@@ -4,7 +4,9 @@ package page
 type fieldAttr struct {
 	id, kind, name, val, bind   string
 	tabindex                    int
+	maxlen                      int
 	hasVal                      bool
+	hasMaxlen                   bool
 	checked, disabled, selected bool
 }
 

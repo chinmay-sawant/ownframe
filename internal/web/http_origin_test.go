@@ -1,34 +1,14 @@
 package web
 
 import (
-	"context"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
-
-type auditClick struct {
-	host.Screen
-	err error
-}
-
-func (f *auditClick) Click(context.Context, float64, float64) error { return f.err }
-
-func clickRec(app *auditClick, target, origin string) *httptest.ResponseRecorder {
-	r := httptest.NewRequest("POST", target, nil)
-	if origin != "" {
-		r.Header.Set("Origin", origin)
-	}
-	rec := httptest.NewRecorder()
-	(&server{app: app}).click(rec, r)
-	return rec
-}
 
 func TestSameOriginRules(t *testing.T) {
 	t.Parallel()
 	mk := func(origin string) bool {
-		r := httptest.NewRequest("GET", "http://example.com/", nil)
+		r := httptest.NewRequestWithContext(t.Context(), "GET", "http://example.com/", nil)
 		if origin != "" {
 			r.Header.Set("Origin", origin)
 		}
@@ -45,7 +25,7 @@ func TestSameOriginRules(t *testing.T) {
 func TestRequireOriginRules(t *testing.T) {
 	t.Parallel()
 	mk := func(origin string) bool {
-		r := httptest.NewRequest("POST", "http://example.com/click", nil)
+		r := httptest.NewRequestWithContext(t.Context(), "POST", "http://example.com/click", nil)
 		if origin != "" {
 			r.Header.Set("Origin", origin)
 		}

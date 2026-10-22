@@ -1,12 +1,13 @@
 package cat
 
 import (
+	"context"
 	"net/http/httptest"
 	"testing"
 )
 
 func stateReq(host, origin string) *httptest.ResponseRecorder {
-	r := httptest.NewRequest("GET", "http://"+host+"/state", nil)
+	r := httptest.NewRequestWithContext(context.Background(), "GET", "http://"+host+"/state", nil)
 	if origin != "" {
 		r.Header.Set("Origin", origin)
 	}
@@ -30,7 +31,7 @@ func TestStateOriginCheck(t *testing.T) {
 
 func TestCatSecurityHeaders(t *testing.T) {
 	t.Parallel()
-	r := httptest.NewRequest("GET", "http://127.0.0.1:6969/expressions", nil)
+	r := httptest.NewRequestWithContext(t.Context(), "GET", "http://127.0.0.1:6969/expressions", nil)
 	rec := httptest.NewRecorder()
 	NewInbox().Handler().ServeHTTP(rec, r)
 	for k, want := range map[string]string{"X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer"} {

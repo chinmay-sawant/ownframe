@@ -28,7 +28,9 @@ func (s *Server) serveSlow(w http.ResponseWriter, r *http.Request) {
 		}
 
 		_, _ = w.Write(body[off:end])
-		w.(http.Flusher).Flush()
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
 
 		if s.SlowPause > 0 {
 			select {
@@ -52,6 +54,8 @@ func (s *Server) serveChunked(w http.ResponseWriter, r *http.Request) {
 		}
 
 		_, _ = w.Write(body[off:end])
-		w.(http.Flusher).Flush()
+		if f, ok := w.(http.Flusher); ok {
+			f.Flush()
+		}
 	}
 }

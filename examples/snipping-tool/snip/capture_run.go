@@ -2,6 +2,7 @@ package snip
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,8 +23,9 @@ func tempPNG() (string, func(), error) {
 func runOut(ctx context.Context, name string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // reason: screenshot tool is a fixed allowlist, no shell.
 	out, err := cmd.Output()
-	if ee, ok := err.(*exec.ExitError); ok {
-		return nil, fmt.Errorf("%s: %v: %s", name, err, ee.Stderr)
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		return nil, fmt.Errorf("%s: %w: %s", name, err, ee.Stderr)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", name, err)
@@ -40,7 +42,7 @@ func shotToFile(ctx context.Context, name string, args ...string) ([]byte, error
 	defer cleanup()
 	cmd := exec.CommandContext(ctx, name, append(args, path)...) //nolint:gosec // reason: temp path appended to fixed tool args, local file.
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("%s: %v: %s", name, err, out)
+		return nil, fmt.Errorf("%s: %w: %s", name, err, out)
 	}
 	raw, err := os.ReadFile(path) //nolint:gosec // reason: temp PNG from CreateTemp, local file.
 	if err != nil {

@@ -1,8 +1,9 @@
 package inputlab
 
+import "context"
+
 // focusField clicks the center of id so it takes focus.
-func (a *App) focusField(id string) bool {
-	ctx := bg()
+func (a *App) focusField(ctx context.Context, id string) bool {
 	for _, box := range a.page.Boxes() {
 		if box.ID != id || box.W <= 0 || box.H <= 0 {
 			continue
@@ -16,16 +17,16 @@ func (a *App) focusField(id string) bool {
 }
 
 // focusLast focuses the last clipboard field for button chords.
-func (a *App) focusLast() bool {
+func (a *App) focusLast(ctx context.Context) bool {
 	if a.page.FocusedField() != "" {
 		return true
 	}
-	return a.focusField(a.lastClip)
+	return a.focusField(ctx, a.lastClip)
 }
 
 // focusNote refocuses the edit note after a button blurred it.
-func (a *App) focusNote() bool {
-	return a.focusField("e-note")
+func (a *App) focusNote(ctx context.Context) bool {
+	return a.focusField(ctx, "e-note")
 }
 
 // scrollEnd scrolls past any content length.

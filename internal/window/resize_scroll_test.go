@@ -34,8 +34,7 @@ func TestScrollClampsAfterAShrink(t *testing.T) {
 	app := &scrollScreen{fakeScreen: fakeScreen{width: 600, height: 300, minW: 1, minH: 1}}
 	app.boxes = []layout.Box{{ID: "tall", X: 0, Y: 0, W: 600, H: 1200}}
 
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 
 	if _, contentH := shell.contentSize(); contentH != 1200 {
 		t.Fatalf("content height = %d, want 1200", contentH)

@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"embed"
 	"io/fs"
@@ -22,7 +23,7 @@ func (s *Store) Seed() error {
 
 	sort.Strings(names)
 
-	tx, err := s.db.Begin()
+	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -38,7 +39,7 @@ func (s *Store) Seed() error {
 		}
 	}
 
-	if _, err := tx.Exec(`INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded', '1')`); err != nil {
+	if _, err := tx.ExecContext(context.Background(), `INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded', '1')`); err != nil {
 		return fail(tx, err)
 	}
 
@@ -60,7 +61,7 @@ func execScript(tx *sql.Tx, script string) error {
 			return errMultiStatement
 		}
 
-		if _, err := tx.Exec(stmt); err != nil {
+		if _, err := tx.ExecContext(context.Background(), stmt); err != nil {
 			return err
 		}
 	}

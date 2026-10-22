@@ -186,3 +186,19 @@ Wrapper validation: `gradle-wrapper.properties` carries no checksum stanza,
 so trust is TLS plus the wrapper jar. After any bump, verify with
 `sha256sum gradle/wrapper/gradle-wrapper.jar` and confirm
 `./gradlew --version` downloads the expected distribution.
+
+## Dependency verification (audit GEN-6)
+
+Maven artifacts are trusted on TLS alone. Generate the verification
+metadata once from a provisioned machine and commit it:
+
+```
+sh scripts/gen-gradle-verification.sh
+git add gradle/verification-metadata.xml
+```
+
+The script runs `./gradlew --write-verification-metadata sha256
+assembleDebug` inside this folder. Review the hash diff before
+committing, and re-run after any AGP or dependency bump: builds then
+fail on unsigned or mismatched artifacts instead of downloading them
+silently.

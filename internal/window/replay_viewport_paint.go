@@ -49,7 +49,10 @@ func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int)
 	if rect.Empty() {
 		return
 	}
-	clip := s.viewport.buf.SubImage(rect).(*ebiten.Image)
+	clip, ok := s.viewport.buf.SubImage(rect).(*ebiten.Image)
+	if !ok {
+		return
+	}
 	clip.Clear()
 	clip.Fill(s.pageBackground())
 	replay.DrawVisibleUnfixedZ(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)

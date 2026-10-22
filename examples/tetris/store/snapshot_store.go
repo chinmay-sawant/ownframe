@@ -14,7 +14,7 @@ import (
 // single slot. An invalid snapshot is rejected with ErrInvalid.
 func (s *Store) SaveSnapshot(ctx context.Context, snap game.Snapshot) error {
 	if err := snap.Validate(); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalid, err)
+		return fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 
 	data, err := json.Marshal(snap)

@@ -17,7 +17,7 @@ func TestInterruptedMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 	// A table with this name makes the schema's index creation fail.
-	if _, err := raw.Exec(`CREATE TABLE metric_history (other INTEGER)`); err != nil {
+	if _, err := raw.ExecContext(t.Context(), `CREATE TABLE metric_history (other INTEGER)`); err != nil {
 		t.Fatal(err)
 	}
 	_ = raw.Close()
@@ -33,7 +33,7 @@ func TestInterruptedMigration(t *testing.T) {
 	defer func() { _ = raw.Close() }()
 
 	var version int
-	if err := raw.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
+	if err := raw.QueryRowContext(t.Context(), "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 	if version != 0 {
@@ -41,7 +41,7 @@ func TestInterruptedMigration(t *testing.T) {
 	}
 
 	var n int
-	if err := raw.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name = 'meta'`).Scan(&n); err != nil {
+	if err := raw.QueryRowContext(t.Context(), `SELECT COUNT(*) FROM sqlite_master WHERE name = 'meta'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 	if n != 0 {

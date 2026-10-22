@@ -36,7 +36,7 @@ func TestInterruptedMigration(t *testing.T) {
 	}
 
 	var version int
-	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+	if err := db.QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 
@@ -45,7 +45,7 @@ func TestInterruptedMigration(t *testing.T) {
 	}
 
 	var n int
-	if err := db.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE name = 't2'`).Scan(&n); err != nil {
+	if err := db.QueryRowContext(t.Context(), `SELECT COUNT(*) FROM sqlite_master WHERE name = 't2'`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}
 

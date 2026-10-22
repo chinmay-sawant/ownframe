@@ -36,7 +36,7 @@ func (s *Store) Replay(ctx context.Context, id string) (game.Replay, error) {
 
 	rep.Fixture = fixture
 	if err := json.Unmarshal([]byte(events), &rep.Events); err != nil {
-		return game.Replay{}, fmt.Errorf("%w: replay events: %v", ErrInvalid, err)
+		return game.Replay{}, fmt.Errorf("%w: replay events: %w", ErrInvalid, err)
 	}
 
 	return rep, rep.Validate()

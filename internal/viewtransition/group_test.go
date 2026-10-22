@@ -1,6 +1,9 @@
 package viewtransition
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestViewTransitionGroupBuildsNestedNamedHierarchy(t *testing.T) {
 	markup := `<style>.a{view-transition-name:outer;view-transition-group:contain}.b{view-transition-name:middle;view-transition-group:normal}.c{view-transition-name:near;view-transition-group:nearest}.d{view-transition-name:custom;view-transition-group:outer}</style><main class="a"><section class="b"><b class="c">near</b></section><i class="d">custom</i></main>`
@@ -19,7 +22,7 @@ func TestViewTransitionGroupBuildsNestedNamedHierarchy(t *testing.T) {
 
 func TestViewTransitionDuplicateNameFailsDiscovery(t *testing.T) {
 	d := snapshot(t, `<style>.n{view-transition-name:repeat}</style><p class="n">one</p><p class="n">two</p>`)
-	if _, err := New(d, d, Scope{DocumentRoot, DocumentRoot}, nil); err != ErrDuplicateName {
+	if _, err := New(d, d, Scope{DocumentRoot, DocumentRoot}, nil); !errors.Is(err, ErrDuplicateName) {
 		t.Fatalf("duplicate name error=%v, want %v", err, ErrDuplicateName)
 	}
 }

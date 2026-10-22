@@ -24,7 +24,7 @@ func (i *Inbox) Handler() http.Handler {
 			Sequence uint64 `json:"sequence"`
 		}{n, v})
 	})
-	mux.HandleFunc("POST /notify", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("POST /notify", i.limitNotify(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !checkOrigin(r) {
 			reply(w, http.StatusForbidden, map[string]string{"error": "forbidden"})
 			return
@@ -47,7 +47,7 @@ func (i *Inbox) Handler() http.Handler {
 			return
 		}
 		reply(w, http.StatusAccepted, n)
-	})
+	})))
 	return withHeaders(mux)
 }
 

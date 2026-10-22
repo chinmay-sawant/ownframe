@@ -51,26 +51,13 @@ func (s *Server) serveChanging(w http.ResponseWriter, r *http.Request) {
 }
 
 // serveRedirect sends a 302 to the stable route.
-func (s *Server) serveRedirect(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, PathOK, http.StatusFound)
-}
-
-// serveInterrupt writes half the body and drops the connection.
 func (s *Server) serveInterrupt(w http.ResponseWriter, r *http.Request) {
 	body := s.fill(requestSeed(r))
 	w.Header().Set("Content-Length", strconv.Itoa(len(body)))
 	_, _ = w.Write(body[:len(body)/2])
-	w.(http.Flusher).Flush()
-
-	panic(http.ErrAbortHandler)
-}
-
-// serveStatus answers with ?code=.
-func (s *Server) serveStatus(w http.ResponseWriter, r *http.Request) {
-	code, err := strconv.Atoi(r.URL.Query().Get("code"))
-	if err != nil || code < 100 || code > 599 {
-		code = http.StatusTeapot
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
 	}
 
-	w.WriteHeader(code)
+	panic(http.ErrAbortHandler)
 }

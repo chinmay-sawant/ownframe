@@ -50,6 +50,9 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 		if errors.Is(err, ErrTooManyRedirects) {
 			return Response{}, ErrTooManyRedirects
 		}
+		if strings.Contains(err.Error(), "response headers exceeded") {
+			return Response{}, ErrHeadersTooLarge
+		}
 
 		return Response{}, err
 	}
@@ -75,13 +78,4 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	}
 
 	return Response{Status: resp.StatusCode, Header: flat(resp.Header), Body: out}, nil
-}
-
-func flat(h http.Header) map[string]string {
-	out := make(map[string]string, len(h))
-	for key, values := range h {
-		out[key] = strings.Join(values, ", ")
-	}
-
-	return out
 }

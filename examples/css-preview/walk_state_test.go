@@ -11,7 +11,7 @@ import (
 func walkStateFields(t *testing.T, w *walker) []string {
 	t.Helper()
 	rec := httptest.NewRecorder()
-	w.handleState(rec, httptest.NewRequest(http.MethodGet, "/state", nil))
+	w.handleState(rec, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/state", nil))
 	return strings.Fields(rec.Body.String())
 }
 

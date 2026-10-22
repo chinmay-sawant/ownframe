@@ -15,7 +15,7 @@ func TestDebugRuntimeAbsentByDefault(t *testing.T) {
 
 	srv := &server{app: &fakeDebug{display: &layout.Display{Width: 10, Height: 10}}}
 	rec := httptest.NewRecorder()
-	srv.debug(rec, httptest.NewRequest("GET", "/debug/state", nil))
+	srv.debug(rec, httptest.NewRequestWithContext(t.Context(), "GET", "/debug/state", nil))
 
 	var body map[string]any
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
@@ -39,7 +39,7 @@ func TestDebugRuntimePresentWhenHookSet(t *testing.T) {
 		},
 	}}}
 	rec := httptest.NewRecorder()
-	srv.debug(rec, httptest.NewRequest("GET", "/debug/state", nil))
+	srv.debug(rec, httptest.NewRequestWithContext(t.Context(), "GET", "/debug/state", nil))
 
 	var state debugState
 	if err := json.Unmarshal(rec.Body.Bytes(), &state); err != nil {

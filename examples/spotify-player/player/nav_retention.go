@@ -36,7 +36,7 @@ func (a *App) saveNavState() {
 }
 
 // restoreNavState applies a previously saved focus and scroll state.
-func (a *App) restoreNavState(screen string) {
+func (a *App) restoreNavState(ctx context.Context, screen string) {
 	if a.page == nil {
 		return
 	}
@@ -47,7 +47,7 @@ func (a *App) restoreNavState(screen string) {
 	if ok {
 		a.page.SetScrollOffset(state.ScrollX, state.ScrollY)
 		if state.Focus != "" {
-			_ = a.page.Focus(context.Background(), state.Focus)
+			_ = a.page.Focus(ctx, state.Focus)
 		}
 	}
 	a.storeNavStateRetained(screen, state)

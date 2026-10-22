@@ -2,7 +2,6 @@ package fixture
 
 import (
 	"io"
-	"net/http"
 	"testing"
 )
 
@@ -11,10 +10,7 @@ func TestStableRoutes(t *testing.T) {
 	srv := NewServer()
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + PathOK)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := testGet(t, srv.URL+PathOK)
 
 	body, _ := io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
@@ -23,10 +19,7 @@ func TestStableRoutes(t *testing.T) {
 		t.Fatalf("ok: status %d len %d", resp.StatusCode, len(body))
 	}
 
-	resp, err = http.Get(srv.URL + PathChunked)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp = testGet(t, srv.URL+PathChunked)
 
 	body, _ = io.ReadAll(resp.Body)
 	_ = resp.Body.Close()
@@ -35,10 +28,7 @@ func TestStableRoutes(t *testing.T) {
 		t.Fatalf("chunked: len %d body %d", resp.ContentLength, len(body))
 	}
 
-	resp, err = http.Get(srv.URL + PathRedirect)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp = testGet(t, srv.URL+PathRedirect)
 
 	body, _ = io.ReadAll(resp.Body)
 	_ = resp.Body.Close()

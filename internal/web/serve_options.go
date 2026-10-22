@@ -2,15 +2,27 @@ package web
 
 import "time"
 
-// Options tunes ServeWithOptions. Perf registers /debug/pprof/* for CPU,
-// heap, goroutine, and trace profiles. Debug gates /debug/state (and implies
-// Perf-style inspector access). Both are off by default, so a shipped
-// server exposes no developer endpoints until a developer opts in.
-// Debug and Perf expose layout boxes with field text, stats, and runtime
-// snapshot on loopback only; keep them off before any non-loopback bind.
+// Options tunes ServeWithOptions. The zero value is safe: no developer
+// endpoints are registered and only loopback binds are accepted. Risky
+// opt-ins carry an InsecureAllow prefix so call sites read risky.
 type Options struct {
-	Perf  bool
+	// Deprecated: use InsecureAllowPprof. Either field registers the
+	// GET /debug/pprof/* endpoints.
+	Perf bool
+	// Deprecated: use InsecureAllowDebugState. Either field registers
+	// GET /debug/state (and implies inspector access).
 	Debug bool
+	// InsecureAllowPprof registers GET /debug/pprof/* for CPU, heap,
+	// goroutine, and trace profiles. The name marks the exposure.
+	InsecureAllowPprof bool
+	// InsecureAllowDebugState registers GET /debug/state, which exposes
+	// layout boxes with field text, stats, and runtime snapshot. Keep
+	// it off before any non-loopback bind.
+	InsecureAllowDebugState bool
+	// InsecureAllowRemoteBind permits a non-loopback listen address.
+	// Without it Serve accepts loopback binds only: plaintext HTTP plus
+	// a LAN listener would expose clicks, typing, and debug state.
+	InsecureAllowRemoteBind bool
 }
 
 // maxFormBytes caps the POST form bodies the preview handlers read.

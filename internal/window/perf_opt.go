@@ -24,7 +24,7 @@ func perfEnabled(app host.Screen) bool {
 // NewGameWithOptions returns the screen loop with perf sampling on or off.
 // It keeps the NewGame behavior for every other setting.
 func NewGameWithOptions(ctx context.Context, app host.Screen, options Options) ebiten.Game {
-	game := NewGame(ctx, app).(*shell)
+	game := newShell(ctx, app)
 	game.perf = options.Perf || game.perf
 	game.wirePerf()
 

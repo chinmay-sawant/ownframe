@@ -1,5 +1,7 @@
 package main
 
+import "context"
+
 // publishBoxes copies the page boxes on the game goroutine and keeps them
 // for the HTTP /box route. The route reads this snapshot under the walker
 // mutex, so it never reads the page while the loop swaps the boxes. The
@@ -18,13 +20,13 @@ func (w *walker) publishBoxes() {
 // into view.
 const scrollLead = 200
 
-func (w *walker) step() {
+func (w *walker) step(ctx context.Context) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	if w.resetReq {
 		w.resetReq = false
-		w.reset()
+		w.reset(ctx)
 		if w.resetDone != nil {
 			close(w.resetDone)
 			w.resetDone = nil

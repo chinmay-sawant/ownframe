@@ -1,6 +1,7 @@
 package tv
 
 import (
+	"context"
 	"net"
 	"sync"
 )
@@ -86,7 +87,7 @@ func probe(local net.IP) []Hit {
 }
 
 func portOpen(ip, port string) bool {
-	conn, err := net.DialTimeout("tcp", net.JoinHostPort(ip, port), probeTimeout)
+	conn, err := (&net.Dialer{Timeout: probeTimeout}).DialContext(context.Background(), "tcp", net.JoinHostPort(ip, port))
 	if err != nil {
 		return false
 	}

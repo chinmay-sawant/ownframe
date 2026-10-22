@@ -1,18 +1,14 @@
 package tv
 
 import (
-	"context"
 	"crypto/sha1" //nolint:gosec // reason: SHA1 is required by RFC 6455 for the WebSocket test handshake, not a security hash.
 	"encoding/base64"
-	"encoding/json"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
 )
 
 func socketURL(t *testing.T, reply func([]byte) []byte) string {
@@ -20,7 +16,11 @@ func socketURL(t *testing.T, reply func([]byte) []byte) string {
 	var mu sync.Mutex
 	clients := []net.Conn{}
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		conn, buf, err := w.(http.Hijacker).Hijack()
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			return
+		}
+		conn, buf, err := hj.Hijack()
 		if err != nil {
 			return
 		}
@@ -50,24 +50,4 @@ func socketURL(t *testing.T, reply func([]byte) []byte) string {
 		}
 	})
 	return "ws" + strings.TrimPrefix(s.URL, "http")
-}
-
-func testClient(t *testing.T, payload func(map[string]any) map[string]any) *Client {
-	t.Helper()
-	url := socketURL(t, func(b []byte) []byte {
-		var req map[string]any
-		if json.Unmarshal(b, &req) != nil {
-			return nil
-		}
-		out, _ := json.Marshal(map[string]any{"id": req["id"], "type": "response", "payload": payload(req)})
-		return out
-	})
-	main, err := ws.Dial(context.Background(), url)
-	if err != nil {
-		t.Fatal(err)
-	}
-	c := &Client{main: main, wait: map[string]chan Message{}}
-	go c.read(main)
-	t.Cleanup(c.Close)
-	return c
 }

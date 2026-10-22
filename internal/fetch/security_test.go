@@ -2,6 +2,7 @@ package fetch_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,7 +15,7 @@ func TestUserinfoRejected(t *testing.T) {
 	t.Parallel()
 
 	_, err := fetch.Do(context.Background(), http.MethodGet, "http://user:pass@example.test/", nil, nil)
-	if err != fetch.ErrCredentialsInURL {
+	if !errors.Is(err, fetch.ErrCredentialsInURL) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -29,7 +30,7 @@ func TestRedirectUserinfoRejected(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
-	if err != fetch.ErrCredentialsInURL {
+	if !errors.Is(err, fetch.ErrCredentialsInURL) {
 		t.Fatalf("err = %v", err)
 	}
 }
@@ -44,7 +45,7 @@ func TestHeaderCapRejected(t *testing.T) {
 	t.Cleanup(srv.Close)
 
 	_, err := fetch.Do(fetch.AllowPrivate(context.Background()), http.MethodGet, srv.URL, nil, nil)
-	if err != fetch.ErrHeadersTooLarge {
+	if !errors.Is(err, fetch.ErrHeadersTooLarge) {
 		t.Fatalf("err = %v", err)
 	}
 }

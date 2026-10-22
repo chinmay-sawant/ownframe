@@ -49,7 +49,7 @@ func TestNewerSchemaRejected(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	var max int
-	if err := db.QueryRow(`SELECT max(version) FROM schema_migrations`).Scan(&max); err != nil {
+	if err := db.QueryRowContext(ctx, `SELECT max(version) FROM schema_migrations`).Scan(&max); err != nil {
 		t.Fatal(err)
 	}
 
@@ -58,7 +58,7 @@ func TestNewerSchemaRejected(t *testing.T) {
 	}
 
 	var jobs int
-	if err := db.QueryRow(`SELECT count(*) FROM jobs`).Scan(&jobs); err != nil {
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM jobs`).Scan(&jobs); err != nil {
 		t.Fatal(err)
 	}
 

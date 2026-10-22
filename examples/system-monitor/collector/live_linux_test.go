@@ -3,6 +3,7 @@
 package collector
 
 import (
+	"errors"
 	"os"
 	"testing"
 
@@ -80,7 +81,7 @@ func TestProcSourceGone(t *testing.T) {
 		stale := row.ID
 		stale.Start++
 
-		if _, err := s.Detail(t.Context(), stale); err != domain.ErrGone {
+		if _, err := s.Detail(t.Context(), stale); !errors.Is(err, domain.ErrGone) {
 			t.Fatalf("err = %v, want ErrGone", err)
 		}
 

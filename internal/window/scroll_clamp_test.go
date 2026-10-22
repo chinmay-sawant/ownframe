@@ -13,8 +13,7 @@ func TestScrollClampsAfterARedraw(t *testing.T) {
 	app := &scrollScreen{fakeScreen: fakeScreen{width: 600, height: 300, minW: 1, minH: 1}}
 	app.boxes = []layout.Box{{ID: "tall", X: 0, Y: 0, W: 600, H: 1200}}
 
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 
 	if err := shell.syncImage(); err != nil {
 		t.Fatal(err)

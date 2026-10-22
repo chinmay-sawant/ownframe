@@ -17,11 +17,21 @@ type Conn struct {
 }
 
 // Dial upgrades raw to a WebSocket. wss verifies the TV certificate
-// with the system roots and TLS 1.2 or newer.
+// with the system roots and TLS 1.2 or newer. Only ws and wss schemes
+// are accepted. The handshake carries read and write deadlines so a
+// silent peer cannot park the dial.
 func Dial(ctx context.Context, raw string) (*Conn, error) {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return nil, err
+	}
+
+	if u.Scheme != "ws" && u.Scheme != "wss" {
+		return nil, ErrHandshake
+	}
+
+	if u.Host == "" {
+		return nil, ErrHandshake
 	}
 
 	host := u.Host
@@ -43,6 +53,8 @@ func Dial(ctx context.Context, raw string) (*Conn, error) {
 	if path == "" {
 		path = "/"
 	}
+
+	_ = nc.SetDeadline(time.Now().Add(shakeTimeout))
 
 	req := "GET " + path + " HTTP/1.1\r\n" +
 		"Host: " + u.Host + "\r\n" +

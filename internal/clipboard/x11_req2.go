@@ -4,9 +4,13 @@ package clipboard
 
 import "math"
 
+// sliceCap clamps counts to a bound valid on every arch: on 386 and
+// arm int is 32 bits, so math.MaxUint32 is not a slice bound (GEN-25).
+const sliceCap = math.MaxInt32
+
 func prop32(win, prop, typ uint32, vals []uint32) []byte {
-	if len(vals) > math.MaxUint32 {
-		vals = vals[:math.MaxUint32]
+	if uint64(len(vals)) > uint64(math.MaxUint32) {
+		vals = vals[:sliceCap] //nolint:gosec // reason: sliceCap is MaxInt32, always a valid bound.
 	}
 
 	size := xHdr24 + xWord*len(vals)
@@ -27,8 +31,8 @@ func prop32(win, prop, typ uint32, vals []uint32) []byte {
 }
 
 func prop8(win, prop, typ uint32, data []byte) []byte {
-	if len(data) > math.MaxUint32 {
-		data = data[:math.MaxUint32]
+	if uint64(len(data)) > uint64(math.MaxUint32) {
+		data = data[:sliceCap]
 	}
 
 	size := pad4(xHdr24 + len(data))

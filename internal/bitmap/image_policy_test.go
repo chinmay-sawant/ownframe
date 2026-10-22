@@ -65,7 +65,10 @@ func TestTranslucentImagePixel(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := color.NRGBAModel.Convert(img.At(10, 10)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(img.At(10, 10)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got.A != 255 || got.R != 255 || got.G < 120 || got.G > 135 {
 		t.Fatalf("pixel %+v", got)
 	}

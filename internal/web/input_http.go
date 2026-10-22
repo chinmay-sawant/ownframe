@@ -18,7 +18,7 @@ func (s *server) typeText(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if err := s.kbd().Type(r.Context(), r.PostFormValue("text")); err != nil {
-		log.Printf("type: %s", sanitizeLine(err.Error())) //nolint:gosec // reason: value passes through sanitizeLine (CR/LF stripped, capped).
+		log.Printf("type: %s", sanitizeLine(err.Error()))
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}

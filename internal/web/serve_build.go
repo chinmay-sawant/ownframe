@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"html/template"
+	"log"
 	"net"
 	"net/http"
-	"net/http/pprof"
 
+	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-// ServeWithOptions listens on addr and blocks.
+// ServeWithOptions listens on addr.
 func ServeWithOptions(app host.Screen, addr string, opts Options) error {
 	return ServeWithOptionsContext(context.Background(), app, addr, opts)
 }
@@ -24,36 +25,36 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	if app == nil {
 		return ErrNilApp
 	}
-	if err := validateBindAddr(addr); err != nil {
+	if err := checkBindAddr(addr, opts); err != nil {
 		return err
 	}
 	t, err := template.New("shell").Parse(shellHTML)
 	if err != nil {
 		return err
 	}
-	srv := &server{app: app, shell: t, perf: opts.Perf, debugEnabled: opts.Perf || opts.Debug}
+	srv := &server{app: app, shell: t, perf: effectivePprof(opts), debugEnabled: effectiveDebug(opts)}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", srv.page)
 	mux.HandleFunc("GET /frame.png", srv.frame)
 	if srv.debugEnabled {
-		mux.HandleFunc("GET /debug/state", srv.debug)
+		if debugtag.Enabled {
+			mux.HandleFunc("GET /debug/state", srv.debug)
+		} else {
+			log.Print("web: debug endpoints need -tags ownframe_debug")
+		}
 	}
-	if opts.Perf {
-		mux.HandleFunc("GET /debug/pprof/", pprof.Index)
-		mux.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
-		mux.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
-		mux.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
-		mux.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
+	if effectivePprof(opts) {
+		registerPprof(mux)
 	}
-	mux.HandleFunc("POST /click", srv.click)
-	mux.HandleFunc("POST /type", srv.typeText)
-	mux.HandleFunc("POST /backspace", srv.backspace)
-	ln, err := net.Listen("tcp", addr)
+	mux.Handle("POST /click", srv.limit(http.HandlerFunc(srv.click)))
+	mux.Handle("POST /type", srv.limit(http.HandlerFunc(srv.typeText)))
+	mux.Handle("POST /backspace", srv.limit(http.HandlerFunc(srv.backspace)))
+	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", addr)
 	if err != nil {
 		return err
 	}
 	fmt.Println("http://" + addr + "/")
-	hs := &http.Server{Handler: panicRecovery(securityHeaders(mux)), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
+	hs := &http.Server{Handler: panicRecovery(securityHeaders(requireLocalHost(bindHostName(addr), mux))), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
 	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
 	defer stop()
 	err = hs.Serve(ln)

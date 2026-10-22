@@ -24,12 +24,12 @@ func TestSaveGameRetriesALockedDatabaseThenSucceeds(t *testing.T) {
 	defer func() { _ = raw.Close() }()
 	raw.SetMaxOpenConns(1)
 
-	tx, err := raw.Begin()
+	tx, err := raw.BeginTx(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := tx.Exec(`UPDATE scores SET score = score WHERE id = 'dummy-0001'`); err != nil {
+	if _, err := tx.ExecContext(context.Background(), `UPDATE scores SET score = score WHERE id = 'dummy-0001'`); err != nil {
 		t.Fatal(err)
 	}
 

@@ -62,7 +62,7 @@ func TestIngestRestartResumes(t *testing.T) {
 
 	var dupes int
 
-	if err := st2.db.QueryRow(
+	if err := st2.db.QueryRowContext(context.Background(),
 		`SELECT count(*) FROM (SELECT source_id, generation, position
 		 FROM entries GROUP BY source_id, generation, position
 		 HAVING count(*) > 1)`).Scan(&dupes); err != nil {

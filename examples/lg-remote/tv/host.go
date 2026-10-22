@@ -32,7 +32,7 @@ func (s *Session) ensure(host string) error {
 
 	s.c = c
 	s.store.Host = host
-	s.store.Key = c.Key
+	s.store.Key = c.Key.Reveal()
 	if c.Model != "" {
 		s.store.Model = c.Model
 	}

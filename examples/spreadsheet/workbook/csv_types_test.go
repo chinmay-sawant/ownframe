@@ -1,6 +1,7 @@
 package workbook
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -50,7 +51,7 @@ func TestCSVTooLarge(t *testing.T) {
 	opt := DefaultCSVOptions()
 	opt.MaxCells = 2
 
-	if _, err := ParseCSV([]byte("1,2,3\n"), opt); err != ErrTooLarge {
+	if _, err := ParseCSV([]byte("1,2,3\n"), opt); !errors.Is(err, ErrTooLarge) {
 		t.Fatalf("err = %v, want ErrTooLarge", err)
 	}
 }

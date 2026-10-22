@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"os"
@@ -33,7 +34,7 @@ func Open(path string) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	if _, err = db.Exec(schema); err != nil {
+	if _, err = db.ExecContext(context.Background(), schema); err != nil {
 		return nil, errors.Join(err, db.Close())
 	}
 	return &Store{db: db}, nil

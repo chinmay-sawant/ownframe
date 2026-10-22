@@ -29,8 +29,12 @@ func (p *Page) SetImage(src string, data []byte) {
 
 // imageBytes resolves one image source for the layout engine. A src the
 // page never registered falls back to the bundled emoji pictures, so the
-// replacer needs no per-page setup.
+// replacer needs no per-page setup. Blocked schemes (GEN-30) fail before
+// any lookup.
 func (p *Page) imageBytes(src string) ([]byte, error) {
+	if err := checkImageSrc(src); err != nil {
+		return nil, err
+	}
 	if data, ok := p.images[src]; ok {
 		return data, nil
 	}

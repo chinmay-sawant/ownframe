@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 )
@@ -15,7 +16,7 @@ const maxSettingsJSON = 4096
 func (s *Store) SaveSettings(ctx context.Context, set Settings) error {
 	data, err := json.Marshal(set)
 	if err != nil {
-		return fmt.Errorf("%w: settings: %v", ErrInvalid, err)
+		return fmt.Errorf("%w: settings: %w", ErrInvalid, err)
 	}
 
 	if len(data) > maxSettingsJSON {
@@ -42,7 +43,7 @@ func (s *Store) Settings(ctx context.Context) (Settings, error) {
 		return db.QueryRowContext(ctx,
 			`SELECT json FROM settings WHERE id = 1`).Scan(&raw)
 	})
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return DefaultSettings(), nil
 	}
 
@@ -52,7 +53,7 @@ func (s *Store) Settings(ctx context.Context) (Settings, error) {
 
 	var set Settings
 	if err := json.Unmarshal([]byte(raw), &set); err != nil {
-		return Settings{}, fmt.Errorf("%w: settings json: %v", ErrInvalid, err)
+		return Settings{}, fmt.Errorf("%w: settings json: %w", ErrInvalid, err)
 	}
 
 	return set, nil

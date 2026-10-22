@@ -29,11 +29,11 @@ func (s *Store) LoadSnapshot(ctx context.Context) (game.Snapshot, bool, error) {
 
 	var snap game.Snapshot
 	if err := json.Unmarshal([]byte(raw), &snap); err != nil {
-		return game.Snapshot{}, false, fmt.Errorf("%w: snapshot json: %v", ErrInvalid, err)
+		return game.Snapshot{}, false, fmt.Errorf("%w: snapshot json: %w", ErrInvalid, err)
 	}
 
 	if err := snap.Validate(); err != nil {
-		return game.Snapshot{}, false, fmt.Errorf("%w: %v", ErrInvalid, err)
+		return game.Snapshot{}, false, fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 
 	return snap, true, nil

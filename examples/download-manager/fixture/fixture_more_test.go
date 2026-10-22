@@ -2,7 +2,6 @@ package fixture
 
 import (
 	"io"
-	"net/http"
 	"testing"
 )
 
@@ -24,10 +23,7 @@ func TestStatusRoute(t *testing.T) {
 	srv := NewServer()
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + "/status?code=404")
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := testGet(t, srv.URL+"/status?code=404")
 	_ = resp.Body.Close()
 
 	if resp.StatusCode != 404 {
@@ -40,10 +36,7 @@ func TestInterruptRoute(t *testing.T) {
 	srv := NewServer()
 	defer srv.Close()
 
-	resp, err := http.Get(srv.URL + PathInterrupt)
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := testGet(t, srv.URL+PathInterrupt)
 	defer func() { _ = resp.Body.Close() }()
 
 	body, readErr := io.ReadAll(resp.Body)
@@ -60,10 +53,7 @@ func TestInterruptRoute(t *testing.T) {
 func etagOf(t *testing.T, url string) string {
 	t.Helper()
 
-	resp, err := http.Get(url) //nolint:gosec // reason: test fetches the local fixture URL.
-	if err != nil {
-		t.Fatal(err)
-	}
+	resp := testGet(t, url)
 	defer func() { _ = resp.Body.Close() }()
 
 	_, _ = io.Copy(io.Discard, resp.Body)

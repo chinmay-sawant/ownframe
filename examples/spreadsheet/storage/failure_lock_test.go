@@ -13,11 +13,11 @@ func TestLockedDatabaseSurfacesError(t *testing.T) {
 
 	other := raw(t, dir)
 
-	if _, err := other.Exec(`BEGIN IMMEDIATE`); err != nil {
+	if _, err := other.ExecContext(t.Context(), `BEGIN IMMEDIATE`); err != nil {
 		t.Fatal(err)
 	}
 
-	defer func() { _, _ = other.Exec(`ROLLBACK`) }()
+	defer func() { _, _ = other.ExecContext(t.Context(), `ROLLBACK`) }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
@@ -31,7 +31,7 @@ func TestLockedDatabaseSurfacesError(t *testing.T) {
 		t.Fatalf("lock error = %v", err)
 	}
 
-	if _, err := other.Exec(`ROLLBACK`); err != nil {
+	if _, err := other.ExecContext(t.Context(), `ROLLBACK`); err != nil {
 		t.Fatal(err)
 	}
 

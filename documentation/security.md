@@ -28,6 +28,22 @@ then read the focused notes:
   controls.
 - `Fetch` and `XHR` load remote URLs chosen and validated by the app.
 
+## Release refresh
+
+Before tagging a release, re-check the assumptions above and the data
+flow below against what actually shipped. New screens, inputs, fetch
+callers, or mobile surfaces since the last tag can move a trust
+boundary without touching this file.
+
+```
+author template/theme ──► New/Load/Route ──► layout ──► window / Serve
+untrusted text/URLs ──► app validation ──► FormValue/fetch ──► display
+OS/user files ──► dialog or Drop.Read ──► app ──► SetImage ──► display
+```
+
+The gate is documentation/release-checklist.md: the threat-model item
+must be signed off before the tag.
+
 ## Drop path handling
 
 `Drop.Path` is desktop only and is an absolute local path. It is sensitive
@@ -46,11 +62,13 @@ channel and applied on the game loop.
 ## Debug and developer surfaces
 
 - `Serve` exposes no `/debug/state` endpoint. `ServeWithOptions` registers
-  `GET /debug/state` only with `ServeOptions{Debug: true}` or
-  `ServeOptions{Perf: true}`. Treat it as privileged: it exposes layout
+  `GET /debug/state` only with `ServeOptions` debug opt-ins. Treat it as privileged: it exposes layout
   boxes with field text, stats, and runtime snapshot on loopback only.
-  Reduce or gate it before exposing a preview. `ServeOptions{Perf: true}`
-  is the only opt in that adds `GET /debug/pprof/*`.
+  Reduce or gate it before exposing a preview. `ServeOptions` pprof opt-ins
+  are the only ones that add `GET /debug/pprof/*`.
+  Both registrations additionally need `-tags ownframe_debug`: in a
+  default build the routes answer 404 and `net/http/pprof` is not
+  linked. See `supply-chain.md` ("Compiling out debug surfaces").
 - DevTools summarizes rendered data on screen. Keep it off in shipped binaries
   unless debugging is intended. The examples enable `Config.DevTools` for
   debugging; a shipped binary leaves it false.
@@ -107,3 +125,66 @@ The devtools dock has no setting for OS clipboard writes: clicking an Ops row co
 ## Captured photo retention
 
 The Telegram example registers each captured photo under a `photo-N` key and keeps it in `Page` image memory until the app calls `SetImage(id, nil)`. There is no automatic eviction. An app that handles sensitive images should remove the entry when the message or chat no longer needs it.
+
+## Supply chain and CI (audit 3, GEN-1 to GEN-10)
+
+Go modules: CI sets `GOFLAGS=-mod=readonly` and runs `go mod verify`
+for both modules, so builds fail when the cache disagrees with `go.sum`.
+Never set `GONOSUMDB`, `GOINSECURE`, or `GOFLAGS=-insecure`; `GOPRIVATE`
+stays unset so the proxy and the checksum database verify every module.
+`GOTOOLCHAIN=local` is set in CI and both `go.mod` files carry a
+`toolchain go1.26.10` line, so the compiler never silently upgrades
+itself; bump that line on purpose.
+
+Tags are immutable: proxy.golang.org caches them forever, so a bad or
+vulnerable release is fixed with a `retract` directive in `go.mod` plus a
+new tag, never by re-tagging. `v*` tags and `master` are protected and
+force-push is off.
+
+Transitive parser surface: blinkless pulls goldmark, fpdf, star-tex,
+minify, brotli, and canvas. `go mod why -m` shows they arrive only via
+`blinkless/internal/...`; nothing in ownframe imports them directly, and
+a `depguard` rule in `.golangci.yml` fails the gate on any direct
+import, so untrusted input reaches them only through the reviewed
+engine path. Re-run `go mod why -m` and `go mod graph` on every engine
+bump and review what changed before committing.
+
+Frontend: CI installs with `npm ci --ignore-scripts` (lockfile-only, no
+install-time code execution) and runs `npm audit signatures`.
+
+Android: Maven artifacts are trusted on TLS only. Run
+`sh scripts/gen-gradle-verification.sh` from a provisioned machine and
+commit `examples/telegram/android/gradle/verification-metadata.xml`;
+unsigned or mismatched artifacts then fail the build. Re-run after any
+AGP or dependency bump. See `examples/telegram/android/README.md`.
+
+Dependencies on PRs: `dependency-review.yml` fails on high-severity
+CVEs and non-allowlisted licenses, and the `go-licenses check` step
+covers both modules. Every new module needs manual provenance review
+(owner, pkg.go.dev, stars) before it merges; see CONTRIBUTING.md.
+
+Workflows: actions are pinned by full commit SHA (the comment names the
+source tag), top-level `permissions` is `contents: read`, and there is
+no `pull_request_target` with a checkout. The `lint-actions` job runs
+actionlint (pinned tarball, SHA checked) and zizmor (pinned version).
+
+Secrets: `.gitleaks.toml` is the shared config for the pre-commit hook
+(`.pre-commit-config.yaml`) and the CI `secrets` job, which scans full
+history. Also turn on GitHub push protection under repository Settings
+> Code security so secrets never reach history.
+
+## Reporting vulnerabilities
+
+Do not open a public issue for a suspected vulnerability. The process
+is in `SECURITY.md`: private reporting through the repository Security
+tab, response targets, and public GHSA disclosure that feeds the Go
+vulnerability database. Maintainers enable the reporting entry point
+under Settings > Code security.
+
+## Release hardening checklist
+
+Branch protection, signed commits and tags, SBOM and SLSA provenance,
+reproducible builds, the `ownframe_debug` build tag, binary hardening,
+and OS signing live in `supply-chain.md`. The packaging side (archive
+layouts, signing steps, sandboxing, updater rules) is in
+`packaging.md`.

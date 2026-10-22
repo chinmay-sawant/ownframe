@@ -5,13 +5,34 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
 )
+
+// mediaTimeout bounds post I/O; mediaHeaderBytes caps response headers.
+const (
+	mediaTimeout     = 5 * time.Second
+	mediaHeaderBytes = 1 << 16
+)
+
+// mediaClient never uses the shared global client: it has its own timeouts
+// and a TLS 1.2 minimum, so global client state cannot change posts.
+var mediaClient = &http.Client{
+	Timeout: mediaTimeout,
+	Transport: &http.Transport{
+		Proxy:                  nil,
+		TLSHandshakeTimeout:    mediaTimeout,
+		ResponseHeaderTimeout:  mediaTimeout,
+		MaxResponseHeaderBytes: mediaHeaderBytes,
+		TLSClientConfig:        &tls.Config{MinVersion: tls.VersionTLS12},
+	},
+}
 
 func postMedia(ctx context.Context, endpoint string, n cat.Notification) error {
 	ctx, cancel := context.WithTimeout(ctx, postTimeout)
@@ -28,7 +49,7 @@ func postMedia(ctx context.Context, endpoint string, n cat.Notification) error {
 	if u, err := url.Parse(endpoint); err == nil && u.Scheme != "" && u.Host != "" {
 		request.Header.Set("Origin", u.Scheme+"://"+u.Host)
 	}
-	response, err := http.DefaultClient.Do(request)
+	response, err := mediaClient.Do(request)
 	if err != nil {
 		return err
 	}

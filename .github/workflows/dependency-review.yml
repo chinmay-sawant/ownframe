@@ -1,0 +1,41 @@
+name: dependency-review
+
+# GEN-7: new Go/npm dependencies and licenses land here before they can
+# merge unnoticed. Runs on every PR against the default branch.
+on:
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      # Pinned by full SHA (GEN-9); fails on high-severity CVEs and on
+      # licenses outside the allow list. Bump the SHA with the tag.
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+          fail-on-scopes: runtime
+          allow-licenses: Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, MIT, MPL-2.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      # License inventory for both modules; every new module needs manual
+      # provenance review per CONTRIBUTING.md (GEN-8).
+      - name: Check Go licenses
+        run: |
+          go install github.com/google/go-licenses@v2.0.1
+          $(go env GOPATH)/bin/go-licenses check ./...
+          cd examples && $(go env GOPATH)/bin/go-licenses check ./...

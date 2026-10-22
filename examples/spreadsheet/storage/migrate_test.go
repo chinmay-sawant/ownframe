@@ -26,7 +26,7 @@ func TestMigrationFreshAndReopen(t *testing.T) {
 	}
 
 	var version int
-	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+	if err := db.QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 
@@ -63,7 +63,7 @@ func TestSchemaNewerRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`PRAGMA user_version = 99`); err != nil {
+	if _, err := db.ExecContext(t.Context(), `PRAGMA user_version = 99`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -81,7 +81,7 @@ func TestSchemaNewerRejected(t *testing.T) {
 	defer func() { _ = db.Close() }()
 
 	var version int
-	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+	if err := db.QueryRowContext(t.Context(), `PRAGMA user_version`).Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 

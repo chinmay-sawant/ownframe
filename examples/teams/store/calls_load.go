@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/chinmay-sawant/ownframe/examples/teams/calls"
@@ -34,7 +35,7 @@ func loadCalls(db *sql.DB) (out calls.Data, err error) {
 
 	var tab string
 
-	err = db.QueryRow(`SELECT COALESCE((SELECT tab FROM calls_state WHERE id = 1), 'history')`).Scan(&tab)
+	err = db.QueryRowContext(context.Background(), `SELECT COALESCE((SELECT tab FROM calls_state WHERE id = 1), 'history')`).Scan(&tab)
 	if err != nil {
 		return out, err
 	}

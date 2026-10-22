@@ -12,7 +12,7 @@ func TestHotReloadPollsOnTheInterval(t *testing.T) {
 	app := newReloadScreen()
 	app.left = 1
 
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 	if err := s.Update(); err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestHotReloadWaitsForTheInterval(t *testing.T) {
 	app := newReloadScreen()
 	app.left = 1
 
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 	s.lastPoll = time.Now()
 
 	if err := s.Update(); err != nil {

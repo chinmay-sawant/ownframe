@@ -47,7 +47,7 @@ func TestPerfStageZeroSafe(t *testing.T) {
 		t.Fatalf("draw = %v, want >= 0", st.draw)
 	}
 	want := errors.New("tick boom")
-	if err := perfTimedErr(&st.tick, func() error { return want }); err != want {
+	if err := perfTimedErr(&st.tick, func() error { return want }); !errors.Is(err, want) {
 		t.Fatalf("timed err = %v, want %v", err, want)
 	}
 	var s shell

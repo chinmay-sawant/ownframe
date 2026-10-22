@@ -32,7 +32,10 @@ func (s *shell) drawDevContent(screen *ebiten.Image) {
 		return
 	}
 
-	clip := screen.SubImage(image.Rect(int(c.X), int(c.Y), int(c.X+c.W), int(c.Y+c.H))).(*ebiten.Image)
+	clip, ok := screen.SubImage(image.Rect(int(c.X), int(c.Y), int(c.X+c.W), int(c.Y+c.H))).(*ebiten.Image)
+	if !ok {
+		return
+	}
 	lineH := devLineHeight()
 	y := c.Y - s.dev.scroll
 

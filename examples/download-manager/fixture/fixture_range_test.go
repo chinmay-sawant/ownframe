@@ -11,10 +11,10 @@ func TestRangeRoute(t *testing.T) {
 	srv := NewServer()
 	defer srv.Close()
 
-	req, _ := http.NewRequest("GET", srv.URL+PathRange, nil)
+	req, _ := http.NewRequestWithContext(t.Context(), "GET", srv.URL+PathRange, nil)
 	req.Header.Set("Range", "bytes=10-19")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := testClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,11 +30,11 @@ func TestRangeRoute(t *testing.T) {
 		t.Errorf("Content-Range %q", got)
 	}
 
-	req, _ = http.NewRequest("GET", srv.URL+PathRange, nil)
+	req, _ = http.NewRequestWithContext(t.Context(), "GET", srv.URL+PathRange, nil)
 	req.Header.Set("Range", "bytes=10-19")
 	req.Header.Set("If-Range", `"stale"`)
 
-	resp, err = http.DefaultClient.Do(req)
+	resp, err = testClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,10 +44,10 @@ func TestRangeRoute(t *testing.T) {
 		t.Errorf("stale If-Range status %d", resp.StatusCode)
 	}
 
-	req, _ = http.NewRequest("GET", srv.URL+PathRange, nil)
+	req, _ = http.NewRequestWithContext(t.Context(), "GET", srv.URL+PathRange, nil)
 	req.Header.Set("Range", "bytes=999999-")
 
-	resp, err = http.DefaultClient.Do(req)
+	resp, err = testClient().Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -94,8 +94,18 @@ need() {
 build() { # $1 output, rest source packages
 	out=$1
 	shift
+	# GEN-16: position-independent binaries plus C stack and link
+	# hardening where the toolchain supports them. Windows gets ASLR
+	# from the OS loader, so pie stays off there; check with
+	# `checksec --file=` on the result. See documentation/packaging.md.
+	pie=""
+	case $target_os in
+	linux | darwin) pie="-buildmode=pie" ;;
+	esac
 	env GOOS="$target_os" GOARCH="$target_arch" \
-		go build -C "$root" -trimpath -ldflags "-s -w" -o "$out" "$@" "./examples/$example"
+		CGO_CFLAGS="-O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong" \
+		CGO_LDFLAGS="-Wl,-z,relro,-z,now" \
+		go build -C "$root" -trimpath $pie -ldflags "-s -w" -o "$out" "$@" "./examples/$example"
 }
 
 desktop_entry() {
@@ -179,6 +189,15 @@ if command -v sha256sum >/dev/null 2>&1; then
 	(cd "$dist" && sha256sum $archives) > "$dist/SHA256SUMS"
 else
 	(cd "$dist" && shasum -a 256 $archives) > "$dist/SHA256SUMS"
+fi
+
+# GEN-12: keyless cosign signature over the checksums. Opt in with
+# COSIGN=1; the default stays unsigned so local builds need no network.
+if [ "${COSIGN:-0}" = 1 ]; then
+	need cosign "signing"
+	(cd "$dist" && cosign sign-blob --yes \
+		--output-signature SHA256SUMS.sig \
+		--output-certificate SHA256SUMS.pem SHA256SUMS)
 fi
 
 echo "wrote $dist"

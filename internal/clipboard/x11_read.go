@@ -2,7 +2,11 @@
 
 package clipboard
 
-import "io"
+import (
+	"io"
+
+	"github.com/chinmay-sawant/ownframe/internal/safego"
+)
 
 // reqGateSize bounds concurrent SelectionRequest handlers. The X loop stays
 // responsive: excess requests run inline instead of spawning goroutines.
@@ -39,10 +43,10 @@ func (x *xClient) loop() {
 			copy(ev, hdr[:])
 			select {
 			case reqGate <- struct{}{}:
-				go func() {
+				safego.Go("x11 request", func() {
 					defer func() { <-reqGate }()
 					x.onRequest(ev)
-				}()
+				})
 			default:
 				x.onRequest(ev)
 			}

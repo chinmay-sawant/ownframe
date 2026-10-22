@@ -31,7 +31,7 @@ func windowsFullscreen(ctx context.Context) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "powershell", "-NoProfile", //nolint:gosec // reason: fixed powershell with static flags, path is quoted.
 		"-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return nil, fmt.Errorf("powershell: %v: %s", err, out)
+		return nil, fmt.Errorf("powershell: %w: %s", err, out)
 	}
 	raw, err := os.ReadFile(path) //nolint:gosec // reason: temp PNG from CreateTemp, local file.
 	if err != nil {

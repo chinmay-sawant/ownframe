@@ -1,13 +1,14 @@
 package cat
 
 import (
+	"context"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
 
 func notifyReq(method, host, origin, body string) *httptest.ResponseRecorder {
-	r := httptest.NewRequest(method, "http://"+host+"/notify", strings.NewReader(body))
+	r := httptest.NewRequestWithContext(context.Background(), method, "http://"+host+"/notify", strings.NewReader(body))
 	if origin != "" {
 		r.Header.Set("Origin", origin)
 	}

@@ -31,12 +31,12 @@ func TestLockedDatabaseRespectsDeadline(t *testing.T) {
 
 	holder.SetMaxOpenConns(1)
 
-	tx, err := holder.Begin()
+	tx, err := holder.BeginTx(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if _, err := tx.Exec(`UPDATE meta SET value = 'held' WHERE key = 'missing'`); err != nil {
+	if _, err := tx.ExecContext(context.Background(), `UPDATE meta SET value = 'held' WHERE key = 'missing'`); err != nil {
 		t.Fatal(err)
 	}
 

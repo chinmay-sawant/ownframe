@@ -1,7 +1,9 @@
 package store
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/chinmay-sawant/ownframe/examples/teams/files"
 )
@@ -9,18 +11,18 @@ import (
 // saveFiles replaces the files and filter tables with d.
 func saveFiles(tx *sql.Tx, d files.Data) error {
 	for _, t := range []string{"files", "files_state"} {
-		if _, err := tx.Exec("DELETE FROM " + t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
+		if _, err := tx.ExecContext(context.Background(), "DELETE FROM "+t); err != nil { //nolint:gosec // reason: table names are internal constants from a fixed list, never user input
 			return err
 		}
 	}
 
 	for i, f := range d.AllFiles() {
-		if _, err := tx.Exec(`INSERT INTO files (id, position, name, badge, badge_text, kind, modified, modified_by, size, location, team, shared, starred) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, f.ID, i, f.Name, f.Badge, f.BadgeText, f.Kind, f.Modified, f.ModifiedBy, f.Size, f.Where, f.Team, f.Shared, f.Starred); err != nil {
+		if _, err := tx.ExecContext(context.Background(), `INSERT INTO files (id, position, name, badge, badge_text, kind, modified, modified_by, size, location, team, shared, starred) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, f.ID, i, f.Name, f.Badge, f.BadgeText, f.Kind, f.Modified, f.ModifiedBy, f.Size, f.Where, f.Team, f.Shared, f.Starred); err != nil {
 			return err
 		}
 	}
 
-	_, err := tx.Exec(`INSERT OR REPLACE INTO files_state (id, filter, active) VALUES (1, ?, ?)`, d.Filter, d.Active)
+	_, err := tx.ExecContext(context.Background(), `INSERT OR REPLACE INTO files_state (id, filter, active) VALUES (1, ?, ?)`, d.Filter, d.Active)
 
 	return err
 }
@@ -38,8 +40,8 @@ func loadFiles(db *sql.DB) (out files.Data, err error) {
 
 	var filter, active string
 
-	err = db.QueryRow(`SELECT filter, active FROM files_state WHERE id = 1`).Scan(&filter, &active)
-	if err != nil && err != sql.ErrNoRows {
+	err = db.QueryRowContext(context.Background(), `SELECT filter, active FROM files_state WHERE id = 1`).Scan(&filter, &active)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return out, err
 	}
 

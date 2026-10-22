@@ -39,8 +39,11 @@ func compareGroupPixels(d *render.Display, name string, points [][2]int) error {
 // three channel steps.
 func closePixel(pixels []byte, want image.Image, stride, x, y int) error {
 	at := (y*stride + x) * 4
-	w := color.NRGBAModel.Convert(want.At(x, y)).(color.NRGBA)
-	wantRGBA := []uint8{w.R, w.G, w.B, w.A}
+	c, ok := color.NRGBAModel.Convert(want.At(x, y)).(color.NRGBA)
+	if !ok {
+		return fmt.Errorf("pixel model changed for %T", want.At(x, y))
+	}
+	wantRGBA := []uint8{c.R, c.G, c.B, c.A}
 
 	for i, v := range wantRGBA {
 		if delta := int(pixels[at+i]) - int(v); delta < -3 || delta > 3 {

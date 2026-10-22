@@ -79,7 +79,7 @@ func pump(ctx context.Context, body io.Reader, file *os.File, p plan, report Rep
 
 		if readErr != nil {
 			if atomic.LoadInt32(stalled) == 1 {
-				return done, fmt.Errorf("%w: %v", ErrStall, readErr)
+				return done, fmt.Errorf("%w: %w", ErrStall, readErr)
 			}
 
 			if err := ctx.Err(); err != nil {

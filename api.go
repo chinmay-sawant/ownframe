@@ -20,6 +20,8 @@ type Box = page.Box
 // MinWidth and MinHeight are the smallest frame. Zero means 1.
 // MaxWidth and MaxHeight ask the host to cap the window. Zero means no cap.
 // They do not cap the picture, so the layout follows the window.
+// The zero Config is safe: developer overlays and pipeline sampling stay
+// off until DevTools or Perf opts in.
 type Config = page.Config
 
 // Handlers contains optional callbacks for input and host-delivered links.

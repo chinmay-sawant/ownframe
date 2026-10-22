@@ -16,6 +16,9 @@ func (p *Page) Route(action, html string) error {
 	if len(html) > MaxSourceSize {
 		return sourceTooLarge("route:"+action, int64(len(html)))
 	}
+	if err := checkDOMLimits(html); err != nil {
+		return err
+	}
 	p.nav.route(action, html)
 	return nil
 }

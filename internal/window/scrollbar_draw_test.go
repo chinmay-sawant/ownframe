@@ -14,7 +14,7 @@ func TestDrawPaintsVerticalThumb(t *testing.T) {
 	if os.Getenv("OWNFRAME_SCROLLBAR_GPU_TEST") != "1" {
 		t.Skip("requires a graphics session; set OWNFRAME_SCROLLBAR_GPU_TEST=1")
 	}
-	s := NewGame(context.Background(), &fakeScreen{width: 100, height: 100}).(*shell)
+	s := newShell(context.Background(), &fakeScreen{width: 100, height: 100})
 	s.display = &layout.Display{Width: 100, Height: 200, PointsPerPixel: 1}
 	ebiten.SetWindowSize(100, 100)
 	g := &scrollbarDrawGame{shell: s}

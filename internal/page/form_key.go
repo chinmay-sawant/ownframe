@@ -51,6 +51,12 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
 		return false, nil
 	}
 
+	// GEN-28: every edit funnels here, so clamp once for all writers.
+	next.Value = clampField(next.Value, fieldCap(next))
+	if n := runeLen(next.Value); caret > n || anchor > n {
+		caret, anchor = min(caret, n), min(anchor, n)
+	}
+
 	if err := p.beforeEdit(ctx, p.formState().focusID); err != nil {
 		return false, err
 	}

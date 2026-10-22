@@ -14,7 +14,7 @@ type ctxFake struct{ host.Screen }
 
 func freeAddr(t *testing.T) string {
 	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func freeAddr(t *testing.T) string {
 func waitUp(t *testing.T, addr string) {
 	t.Helper()
 	for i := 0; i < 50; i++ {
-		c, err := net.DialTimeout("tcp", addr, 50*time.Millisecond)
+		c, err := (&net.Dialer{Timeout: 50 * time.Millisecond}).DialContext(t.Context(), "tcp", addr)
 		if err == nil {
 			_ = c.Close()
 			return
@@ -52,7 +52,7 @@ func TestCancelStopsListener(t *testing.T) {
 	case <-time.After(3 * time.Second):
 		t.Fatal("serve did not stop after cancel")
 	}
-	if _, err := net.DialTimeout("tcp", addr, 200*time.Millisecond); err == nil {
+	if _, err := (&net.Dialer{Timeout: 200 * time.Millisecond}).DialContext(t.Context(), "tcp", addr); err == nil {
 		t.Fatal("listener still open after cancel")
 	}
 }

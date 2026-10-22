@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 )
 
 // paceDebugEnv turns on one pacing line per second on stderr, so a headless
@@ -12,8 +14,12 @@ import (
 const paceDebugEnv = "OWNFRAME_PACE_DEBUG"
 
 // paceDebugWriter returns stderr when the debug environment variable is set
-// and nil otherwise. It is read once, when the wrapper starts.
+// and nil otherwise. It is read once, when the wrapper starts. The variable
+// is ignored without -tags ownframe_debug.
 func paceDebugWriter() *os.File {
+	if !debugtag.Enabled {
+		return nil
+	}
 	if os.Getenv(paceDebugEnv) == "" {
 		return nil
 	}

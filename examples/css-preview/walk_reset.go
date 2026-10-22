@@ -7,7 +7,7 @@ import (
 
 // reset clears the walk state on the game goroutine. The HTTP /reset handler
 // only sets resetReq; step performs the view, sample, and page reset.
-func (w *walker) reset() {
+func (w *walker) reset(ctx context.Context) {
 	w.v.Started = map[string]bool{}
 	w.v.Selected = ""
 	w.v.Readout = ""
@@ -24,5 +24,5 @@ func (w *walker) reset() {
 	w.p.ScrollTo(0, 0)
 	w.d.gen = w.p.Generation()
 	w.p.SetData(w.v)
-	_ = w.p.Redraw(context.Background())
+	_ = w.p.Redraw(ctx)
 }

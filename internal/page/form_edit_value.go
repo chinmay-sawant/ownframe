@@ -9,6 +9,13 @@ func (p *Page) insertValue(c Control, caret, anchor int, text string) (Control, 
 	runes := []rune(c.Value)
 	start, end := rangeOf(anchor, caret, len(runes))
 	ins := []rune(text)
+	// GEN-28: keep the merged value inside the field cap.
+	if limit := fieldCap(c) - (len(runes) - (end - start)); limit < len(ins) {
+		if limit <= 0 {
+			return c, caret, anchor, false
+		}
+		ins = ins[:limit]
+	}
 	out := make([]rune, 0, len(runes)-(end-start)+len(ins))
 	out = append(out, runes[:start]...)
 	out = append(out, ins...)

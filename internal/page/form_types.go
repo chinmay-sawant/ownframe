@@ -16,7 +16,10 @@ type Control struct {
 	// TabIndex is the author's tabindex. A negative value keeps the control
 	// out of the Tab order. Zero means the attribute was absent.
 	TabIndex int
-	Options  []Option
+	// MaxLength is the author's maxlength, or zero when absent. Edits clamp
+	// to it (or the default cap), so pastes cannot grow state unbounded.
+	MaxLength int
+	Options   []Option
 }
 
 // Option is one choice inside a select.

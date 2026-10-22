@@ -26,6 +26,9 @@ func (p *Page) Load(ctx context.Context, html string) error {
 	if strings.TrimSpace(html) == "" {
 		return ErrEmptyHTML
 	}
+	if err := checkDOMLimits(html); err != nil {
+		return err
+	}
 	tpl, err := template.New("page").Parse(html)
 	if err != nil {
 		return err

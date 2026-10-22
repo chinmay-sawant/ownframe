@@ -2,6 +2,7 @@ package store
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"errors"
 	"os"
@@ -17,7 +18,7 @@ func TestForeignDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := db.Exec(`CREATE TABLE other (x TEXT)`); err != nil {
+	if _, err := db.ExecContext(context.Background(), `CREATE TABLE other (x TEXT)`); err != nil {
 		t.Fatal(err)
 	}
 
@@ -79,7 +80,7 @@ func TestMigrationRollsBack(t *testing.T) {
 
 	var n int
 
-	if err := db.QueryRow(
+	if err := db.QueryRowContext(t.Context(),
 		`SELECT count(*) FROM sqlite_master WHERE name IN ('a', 'b')`).Scan(&n); err != nil {
 		t.Fatal(err)
 	}

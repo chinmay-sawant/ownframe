@@ -20,16 +20,20 @@ type Inbox struct {
 	latest  Notification
 	version uint64
 	Updates chan Notification
+	// limitMu guards the /notify throttle table and semaphore.
+	limitMu      sync.Mutex
+	throttleHits map[string]*notifySeen
+	notifyLive   chan struct{}
 }
 
 func NewInbox() *Inbox {
-	return &Inbox{latest: Notification{Expression: "happy", Message: "Your cat is here. Waiting for a message.", Source: "Desktop cat"}, version: 1, Updates: make(chan Notification, 1)}
+	return &Inbox{latest: Notification{Expression: "happy", Message: "Your cat is here. Waiting for a message.", Source: "Desktop cat"}, version: 1, Updates: make(chan Notification, 1), throttleHits: map[string]*notifySeen{}, notifyLive: make(chan struct{}, notifyInflight)}
 }
 
 // Submit validates and replaces the latest notification.
 func (i *Inbox) Submit(n Notification) error {
 	n.Expression = strings.ToLower(strings.TrimSpace(n.Expression))
-	n.Message, n.Source = strings.TrimSpace(n.Message), strings.TrimSpace(n.Source)
+	n.Message, n.Source = sanitizeBidi(strings.TrimSpace(n.Message)), sanitizeBidi(strings.TrimSpace(n.Source))
 	if _, err := expressionIndex(n.Expression); err != nil {
 		return err
 	}

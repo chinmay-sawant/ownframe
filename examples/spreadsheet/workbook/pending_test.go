@@ -1,6 +1,9 @@
 package workbook
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 func TestPending(t *testing.T) {
 	p := NewPending(2)
@@ -21,7 +24,7 @@ func TestPending(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := p.Push(third); err != ErrPendingFull {
+	if err := p.Push(third); !errors.Is(err, ErrPendingFull) {
 		t.Fatalf("push past capacity = %v, want ErrPendingFull", err)
 	}
 

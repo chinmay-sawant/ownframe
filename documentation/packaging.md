@@ -94,3 +94,125 @@ closes its window.
 
 See the [browser API and updater proposal](../plans/v0.0.2/browser-apis-and-updater-proposal.md)
 for the library boundary and future acceptance criteria.
+
+## Signed updates
+
+A naive updater is remote code execution. An updater that downloads and
+runs files must authenticate every byte before executing or installing it:
+
+- Sign a release manifest (artifact names plus SHA-256 hashes) with an
+  offline key, and verify the signature in the updater before fetching
+  anything else. Reference: TUF (`github.com/theupdateframework/go-tuf`)
+  or a minimal `minisign`/`ed25519` signature over the manifest.
+- Pin the manifest's version and refuse rollbacks: never install an
+  artifact older than the running build.
+- Fetch manifests and artifacts over HTTPS only, with the platform TLS
+  roots; do not add opt-out flags.
+- Stage the download next to the install, verify the hash, swap it in,
+  and keep the previous copy until the new build starts cleanly.
+
+## OS sandboxing
+
+Sandboxing limits the blast radius of a renderer bug. Apply the platform
+mechanism in your release pipeline; the package script stays unsigned and
+unsandboxed by default.
+
+- macOS: sign with the hardened runtime and a minimal entitlements plist.
+  Ship only the entitlements the app needs; no `com.apple.security.cs.allow-jit`
+  or `allow-unsigned-executable-memory` unless the app justifies it:
+  ```xml
+  <dict>
+    <key>com.apple.security.app-sandbox</key><true/>
+    <key>com.apple.security.network.client</key><true/>
+  </dict>
+  ```
+- Linux: ship a Flatpak manifest with narrow permissions. Start from no
+  filesystem access and add only what the app reads or writes:
+  ```json
+  "finish-args": ["--share=ipc", "--socket=x11", "--socket=wayland",
+                  "--share=network", "--filesystem=xdg-download"]
+  ```
+- Windows: embed an `asInvoker` application manifest so the app never
+  gains elevation it did not ask for:
+  ```xml
+  <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+  ```
+
+## Secret scan
+
+Before tagging, run `sh scripts/scan-secrets.sh`. API keys stay server
+side (see [secrets.md](secrets.md)): the scan greps tracked source for
+token patterns and runs `strings` over the `dist/` archives. Install
+`gitleaks` for the full rule set; `.gitleaks.toml` allowlists only the
+demo credentials by path.
+
+## Binary hardening
+
+`scripts/package.sh` links position-independent binaries on Linux and
+macOS (`-buildmode=pie`; Windows gets ASLR from the OS loader) with the
+C stack protector and full RELRO:
+
+```
+CGO_CFLAGS="-O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong"
+CGO_LDFLAGS="-Wl,-z,relro,-z,now"
+```
+
+Verify the result before tagging. Install `checksec` and confirm PIE
+and RELRO on the unpacked binary:
+
+```
+checksec --file=dist/ownframe-login/login
+```
+
+Look for `PIE enabled` and `Full RELRO`. A `No PIE` or `Partial RELRO`
+line means the flags did not reach the link; rebuild with
+`sh scripts/package.sh` and check that no environment override cleared
+`CGO_CFLAGS` or `CGO_LDFLAGS`.
+
+## Signed artifacts and provenance
+
+Checksums detect corruption, not tampering. Tags additionally ship:
+
+- `sbom.spdx.json`: the release workflow generates it with
+  `anchore/sbom-action` and uploads it with the build provenance.
+- A SLSA build attestation over the SBOM
+  (`actions/attest-build-provenance`), verifiable on the release page
+  and with `gh attestation verify`.
+- A keyless cosign signature (`cosign sign-blob --yes`) over the same
+  file, verifiable with `cosign verify-blob`.
+
+For a local archive, opt into the same signature step:
+
+```
+COSIGN=1 sh scripts/package.sh login
+```
+
+That signs `dist/SHA256SUMS` into `SHA256SUMS.sig` plus the Fulcio
+certificate `SHA256SUMS.pem`. Verify with
+`cosign verify-blob --cert SHA256SUMS.pem --signature SHA256SUMS.sig SHA256SUMS`.
+
+Reproducibility backs all of this: `sh scripts/reproducible-check.sh`
+builds the login example twice with fixed inputs and fails on any byte
+difference, and the `reproducible` CI job runs it on every push.
+`documentation/supply-chain.md` has the full release checklist.
+
+## OS code signing in CI
+
+Unsigned apps train users to bypass Gatekeeper and SmartScreen. Sign in
+CI, never on a dev laptop:
+
+- macOS: `codesign --deep --sign "$APPLE_DEVELOPER_ID"` with the
+  hardened runtime, then `xcrun notarytool submit --wait` and
+  `xcrun stapler staple`. Notarization needs an App Store Connect API
+  key, not a developer password.
+- Windows: `AzureSignTool sign` against a certificate in Azure Key Vault
+  (or `signtool` with a cloud-backed key). The private key never leaves
+  the HSM; CI holds only short-lived credentials.
+
+`scripts/sign-release.sh` runs exactly those steps. It reads every
+secret from the environment and skips a platform with a message when
+its tooling or credentials are absent. Wire it to a protected
+`release-signing` environment (required reviewers, short-lived secrets,
+no secret ever echoed) once a publish job lands in
+`.github/workflows/release.yml`, and keep the signing keys out of
+developer machines, chat logs, and the repository.

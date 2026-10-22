@@ -47,7 +47,7 @@ func TestMigrateReopen(t *testing.T) {
 
 	var rows int
 
-	if err := st2.db.QueryRow(
+	if err := st2.db.QueryRowContext(t.Context(),
 		`SELECT count(*) FROM meta WHERE key = 'schema_version'`).Scan(&rows); err != nil {
 		t.Fatal(err)
 	}

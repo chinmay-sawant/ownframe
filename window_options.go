@@ -9,7 +9,9 @@ import (
 )
 
 // WindowOptions controls desktop window appearance and input.
-// The zero value opens the same window as Run.
+// The zero value opens the same window as Run. Risky surfaces stay off
+// unless opted in: MousePassthrough passes pointer input through painted
+// pixels, so keep it false unless the app is a click-through overlay.
 type WindowOptions = window.Options
 
 // RunWithOptions opens a page with optional desktop window settings.

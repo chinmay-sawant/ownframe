@@ -3,9 +3,10 @@
 package clipboard
 
 import (
-	"syscall"
 	"unicode/utf16"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -14,8 +15,9 @@ const (
 )
 
 var (
-	user32   = syscall.NewLazyDLL("user32.dll")
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
+	// System32 only; ignore PATH DLLs.
+	user32   = windows.NewLazySystemDLL("user32.dll")
+	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
 
 	openClip  = user32.NewProc("OpenClipboard")
 	emptyClip = user32.NewProc("EmptyClipboard")

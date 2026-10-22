@@ -1,6 +1,7 @@
 package tv
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"strings"
@@ -17,7 +18,11 @@ func nameFrom(text string) string {
 
 func nameAt(rawURL string) string {
 	client := http.Client{Timeout: nameTimeout}
-	resp, err := client.Get(rawURL)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, rawURL, nil)
+	if err != nil {
+		return ""
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		return ""
 	}

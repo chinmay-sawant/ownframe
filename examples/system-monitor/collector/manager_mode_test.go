@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -56,7 +57,7 @@ func TestManagerSetModeRejectsClosed(t *testing.T) {
 	if err := m.Close(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if err := m.SetMode(ModeLive); err != ErrClosed {
+	if err := m.SetMode(ModeLive); !errors.Is(err, ErrClosed) {
 		t.Fatalf("err = %v, want ErrClosed", err)
 	}
 }

@@ -19,8 +19,7 @@ func TestResizeReResolvesHoverAndPress(t *testing.T) {
 	app.hover = "close"
 	app.pressed = "close"
 
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 	shell.cursorX, shell.cursorY = 550, 40
 	shell.mouseDown = true
 

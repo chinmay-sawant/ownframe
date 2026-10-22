@@ -31,7 +31,7 @@ func (f *auditDbg) Stats() host.Stats        { return host.Stats{LastReloadError
 func TestDebugSanitizesReloadError(t *testing.T) {
 	t.Parallel()
 	rec := httptest.NewRecorder()
-	(&server{app: &auditDbg{reloadErr: "bad\nline\r/tmp/x"}}).debug(rec, httptest.NewRequest("GET", "/debug/state", nil))
+	(&server{app: &auditDbg{reloadErr: "bad\nline\r/tmp/x"}}).debug(rec, httptest.NewRequestWithContext(t.Context(), "GET", "/debug/state", nil))
 	body := rec.Body.String()
 	if !strings.Contains(body, "bad_line_/tmp/x") || strings.Contains(body, "bad\nline") {
 		t.Fatalf("unsanitized: %q", body)

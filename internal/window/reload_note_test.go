@@ -37,7 +37,7 @@ func TestHotReloadErrorKeepsDrawing(t *testing.T) {
 	app := newReloadScreen()
 	app.err = errors.New("/tmp/index.html: stat: no such file")
 
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 	if err := s.Update(); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestReloadClampsScroll(t *testing.T) {
 	app.left = 1
 	app.boxes = []layout.Box{{Y: 500, H: 100, W: 10}}
 
-	s := NewGame(context.Background(), app).(*shell)
+	s := newShell(context.Background(), app)
 	s.scrollY = 550
 
 	if err := s.Update(); err != nil {

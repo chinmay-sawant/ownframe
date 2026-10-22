@@ -8,7 +8,7 @@ func TestStorePatchChangeRecordsChange(t *testing.T) {
 	if c.Path != "count" || c.Old != 0 || c.New != 1 {
 		t.Fatalf("change = %+v", c)
 	}
-	if got := s.Data().(map[string]any)["count"]; got != 1 {
+	if got := dataMap(t, s)["count"]; got != 1 {
 		t.Fatalf("data count = %v", got)
 	}
 	if len(s.Changes()) != 1 || !s.CanUndo() {
@@ -20,14 +20,14 @@ func TestStoreUndoRedo(t *testing.T) {
 	s := NewStore(map[string]any{"count": 0})
 	s.PatchChange("count", 1)
 	s.Undo()
-	if got := s.Data().(map[string]any)["count"]; got != 0 {
+	if got := dataMap(t, s)["count"]; got != 0 {
 		t.Fatalf("after undo count = %v", got)
 	}
 	if !s.CanRedo() {
 		t.Fatal("redo unavailable")
 	}
 	s.Redo()
-	if got := s.Data().(map[string]any)["count"]; got != 1 {
+	if got := dataMap(t, s)["count"]; got != 1 {
 		t.Fatalf("after redo count = %v", got)
 	}
 }
@@ -38,11 +38,11 @@ func TestStorePatchChangeNested(t *testing.T) {
 	if c.Old != "a" || c.New != "b" {
 		t.Fatalf("change = %+v", c)
 	}
-	if got := s.Data().(map[string]any)["user"].(map[string]any)["name"]; got != "b" {
+	if got := dataUser(t, s)["name"]; got != "b" {
 		t.Fatalf("nested data = %v", got)
 	}
 	s.Undo()
-	if got := s.Data().(map[string]any)["user"].(map[string]any)["name"]; got != "a" {
+	if got := dataUser(t, s)["name"]; got != "a" {
 		t.Fatalf("undo nested = %v", got)
 	}
 }
@@ -51,7 +51,7 @@ func TestStoreUndoRedoEmpty(t *testing.T) {
 	s := NewStore(map[string]any{"count": 0})
 	s.Undo()
 	s.Redo()
-	if got := s.Data().(map[string]any)["count"]; got != 0 {
+	if got := dataMap(t, s)["count"]; got != 0 {
 		t.Fatalf("count = %v", got)
 	}
 }

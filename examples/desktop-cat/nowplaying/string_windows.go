@@ -5,9 +5,13 @@ import (
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
+
+	"golang.org/x/sys/windows"
 )
 
-var combase = syscall.NewLazyDLL("combase.dll")
+// System32 only (LOAD_LIBRARY_SEARCH_SYSTEM32): a planted DLL in the
+// app dir or on PATH cannot win the load.
+var combase = windows.NewLazySystemDLL("combase.dll")
 var createString = combase.NewProc("WindowsCreateString")
 var deleteString = combase.NewProc("WindowsDeleteString")
 var stringBuffer = combase.NewProc("WindowsGetStringRawBuffer")
@@ -37,6 +41,6 @@ func (o *object) text(index int) (string, error) {
 		return "", errors.New("media string too long")
 	}
 	value := make([]uint16, length)
-	syscall.NewLazyDLL("ntdll.dll").NewProc("RtlMoveMemory").Call(uintptr(unsafe.Pointer(&value[0])), pointer, uintptr(length)*2)
+	windows.NewLazySystemDLL("ntdll.dll").NewProc("RtlMoveMemory").Call(uintptr(unsafe.Pointer(&value[0])), pointer, uintptr(length)*2)
 	return string(utf16.Decode(value)), nil
 }

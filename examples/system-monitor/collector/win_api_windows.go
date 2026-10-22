@@ -2,13 +2,15 @@
 
 package collector
 
-import "syscall"
+import "golang.org/x/sys/windows"
 
-// Windows API bindings. LazyDLL keeps the calls out of the startup path.
+// Windows API bindings. SystemDLL loads only from System32
+// (LOAD_LIBRARY_SEARCH_SYSTEM32), so a planted DLL in the app dir
+// or on PATH cannot win the load.
 
 var (
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
-	psapi    = syscall.NewLazyDLL("psapi.dll")
+	kernel32 = windows.NewLazySystemDLL("kernel32.dll")
+	psapi    = windows.NewLazySystemDLL("psapi.dll")
 
 	procGetSystemTimes            = kernel32.NewProc("GetSystemTimes")
 	procGlobalMemoryStatusEx      = kernel32.NewProc("GlobalMemoryStatusEx")

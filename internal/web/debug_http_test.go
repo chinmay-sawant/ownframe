@@ -41,7 +41,7 @@ func TestDebugStateHandler(t *testing.T) {
 	}}}
 
 	rec := httptest.NewRecorder()
-	srv.debug(rec, httptest.NewRequest("GET", "/debug/state", nil))
+	srv.debug(rec, httptest.NewRequestWithContext(t.Context(), "GET", "/debug/state", nil))
 
 	var state debugState
 	if err := json.Unmarshal(rec.Body.Bytes(), &state); err != nil {

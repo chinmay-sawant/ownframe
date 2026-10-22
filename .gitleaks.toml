@@ -1,0 +1,22 @@
+# GEN-10: gitleaks config shared by the pre-commit hook and the CI job.
+# Run `gitleaks detect --config .gitleaks.toml` locally; CI runs the same
+# on every push/PR. Also enable GitHub Settings > Code security >
+# "Push protection" so secrets never reach history in the first place.
+title = "ownframe gitleaks config"
+
+[extend]
+useDefault = true
+
+# ownframe-specific: example apps carry demo credentials, not real ones.
+# If a rule fires on a fixture, add a narrow allowlist here with a comment,
+# never a blanket exclude.
+[allowlist]
+description = "demo credentials in examples and docs"
+paths = [
+  '''examples/login/.*''',
+  '''documentation/.*''',
+  '''plans/.*''',
+]
+regexes = [
+  '''secret''',
+]

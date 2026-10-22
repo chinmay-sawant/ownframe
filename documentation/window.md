@@ -114,8 +114,10 @@ with animated transparent PNG artwork and an HTML/CSS speech bubble.
 Set `WindowOptions.Interactive` to a function receiving window-local CSS
 coordinates. The window reads the pointer each frame and passes input through
 where the function returns false. It starts unfocused and continues ticking
-in the background. The callback runs on the window update thread. It takes
-precedence over `MousePassthrough` when both are set. Browser input routing needs a separate DOM solution.
+in the background. The callback runs on the window update thread.
+Full click-through wins when both are set: `MousePassthrough` ignores
+`Interactive` and the window never accepts input. Page content cannot
+toggle either setting; only app code sets `WindowOptions`. Browser input routing needs a separate DOM solution.
 
 This setting samples pointer position each frame, so a boundary transition
 may take one frame. The callback reserves input regions; it does not move
@@ -127,3 +129,21 @@ starts dragging; a release without dragging sends the page a normal click.
 Dragging retains input until release and moves the window while preserving
 the grab point. Only a user's press can begin movement. This option does not
 move the cursor. Browser canvases need their own DOM drag behavior.
+
+### Overlay trust
+
+A transparent, always-on-top, click-through window (see
+[desktop cat](../examples/desktop-cat)) sits above other apps' prompts,
+so it earns extra rules:
+
+- Never accept input while fully click-through. `MousePassthrough`
+  drops every pointer event, including painted pixels.
+- Reserve only visibly rendered app pixels in `Interactive`: the cat
+  claims opaque sprite pixels and its open speech bubble, and empty
+  margins pass through. The visible artwork is the focus and ownership
+  indicator; a region the user cannot see must not capture clicks.
+- Only app code sets transparency and passthrough. Page content,
+  notifications, and untrusted data cannot toggle them: there is no page
+  API for it, and `Interactive`/`Draggable` callbacks are fixed at
+  startup. Treat a request from untrusted content to change them as a
+  finding, not a feature.

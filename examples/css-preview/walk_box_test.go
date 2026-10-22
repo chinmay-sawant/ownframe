@@ -24,7 +24,7 @@ func TestWalkBoxRouteDuringRedraw(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodGet, "/box?id=catalog-row-01", nil)
+		req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/box?id=catalog-row-01", nil)
 		for {
 			select {
 			case <-stop:

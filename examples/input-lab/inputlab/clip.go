@@ -29,7 +29,7 @@ func (a *App) clipClick(ctx context.Context, id string) error {
 }
 
 func (a *App) copyButton(ctx context.Context) error {
-	a.focusLast()
+	a.focusLast(ctx)
 	text, ok, err := a.page.Copy(ctx)
 	if err != nil {
 		return err
@@ -44,7 +44,7 @@ func (a *App) copyButton(ctx context.Context) error {
 }
 
 func (a *App) cutButton(ctx context.Context) error {
-	a.focusLast()
+	a.focusLast(ctx)
 	text, ok, err := a.page.Cut(ctx)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (a *App) cutButton(ctx context.Context) error {
 
 // pasteGo inserts the fixed Go text in the last field.
 func (a *App) pasteGo(ctx context.Context) error {
-	if !a.focusLast() {
+	if !a.focusLast(ctx) {
 		return nil
 	}
 	if err := a.page.Paste(ctx, pasteFromGo); err != nil {
@@ -72,7 +72,7 @@ func (a *App) pasteGo(ctx context.Context) error {
 
 // pasteClipboard inserts OS text with newlines dropped.
 func (a *App) pasteClipboard(ctx context.Context) error {
-	if !a.focusLast() {
+	if !a.focusLast(ctx) {
 		a.setClip("nothing to paste into")
 		return nil
 	}

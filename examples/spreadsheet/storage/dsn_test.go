@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,7 +80,7 @@ func TestClosedStoreRejectsCalls(t *testing.T) {
 		t.Fatal("second close:", err)
 	}
 
-	if _, err := st.CreateWorkbook(context.Background(), "x"); err != ErrClosed {
+	if _, err := st.CreateWorkbook(context.Background(), "x"); !errors.Is(err, ErrClosed) {
 		t.Fatalf("call after close = %v, want ErrClosed", err)
 	}
 }

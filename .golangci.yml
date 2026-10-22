@@ -6,7 +6,12 @@
 # staticcheck, unused), plus the correctness batch added after the gate
 # went green: gosec (overflow and injection), mnd (magic numbers),
 # gocritic (bug and style diagnostics), misspell and unconvert (free),
-# and nolintlint (every //nolint needs a reason).
+# and nolintlint (every //nolint needs a reason). GEN-18 added CodeQL and
+# Semgrep outside this file; GEN-19 added bodyclose (unclosed response
+# bodies), noctx (context-free net/http calls), contextcheck (contexts
+# that are not inherited), errorlint (== on errors, unwrapped %v),
+# forcetypeassert (unchecked assertions), gochecknoglobals (new globals),
+# and depguard (risky std imports) here.
 version: "2"
 linters:
   enable:
@@ -21,7 +26,75 @@ linters:
     - unconvert
     - mnd
     - nolintlint
+    - depguard
+    - bodyclose
+    - noctx
+    - contextcheck
+    - errorlint
+    - forcetypeassert
+    - gochecknoglobals
+    - forbidigo
   settings:
+    forbidigo:
+      forbid:
+        - pattern: 'http\.DefaultServeMux'
+          msg: "GEN-38: use http.NewServeMux, never the default mux"
+        - pattern: 'http\.DefaultClient'
+          msg: "GEN-38: use a custom http.Client with timeouts"
+        - pattern: 'http\.DefaultTransport'
+          msg: "GEN-38: build a hardened transport, never the default"
+        - pattern: 'http\.Get\('
+          msg: "GEN-38: use a custom http.Client with timeouts"
+        - pattern: 'http\.Post\('
+          msg: "GEN-38: use a custom http.Client with timeouts"
+        - pattern: 'http\.Head\('
+          msg: "GEN-38: use a custom http.Client with timeouts"
+        - pattern: 'http\.HandleFunc'
+          msg: "GEN-38: register on http.NewServeMux, never the default mux"
+        - pattern: 'http\.Handle\('
+          msg: "GEN-38: register on http.NewServeMux, never the default mux"
+        - pattern: 'template\.HTML\('
+          msg: "GEN-35: template helpers must return plain strings"
+        - pattern: 'template\.JS\('
+          msg: "GEN-35: template helpers must return plain strings"
+    depguard:
+      rules:
+        # GEN-4: blinkless pulls goldmark, fpdf, star-tex, minify, brotli,
+        # and canvas, all parsers of complex input. Nothing in ownframe
+        # imports them directly (verified: no matches repo-wide), and it
+        # must stay that way: untrusted input reaches them only through
+        # the reviewed blinkless path. Any direct import fails the gate.
+        no-untrusted-parser-imports:
+          deny:
+            - pkg: github.com/yuin/goldmark
+              desc: parser surface, reach only through blinkless
+            - pkg: codeberg.org/go-pdf/fpdf
+              desc: parser surface, reach only through blinkless
+            - pkg: star-tex.org/x/tex
+              desc: parser surface, reach only through blinkless
+            - pkg: github.com/tdewolff/minify/v2
+              desc: parser surface, reach only through blinkless
+            - pkg: github.com/andybalholm/brotli
+              desc: parser surface, reach only through blinkless
+            - pkg: github.com/tdewolff/canvas
+              desc: parser surface, reach only through blinkless
+          files:
+            - $all
+        # GEN-19: unsafe, pprof, and math/rand stay out of new code.
+        # unsafe lives only in the darwin/windows syscall shims and one
+        # test reflection helper; net/http/pprof only links under
+        # -tags ownframe_debug; math/rand v1 only in deterministic example
+        # fixtures (v2 everywhere else). Anything else fails the gate.
+        no-risky-std-imports:
+          deny:
+            - pkg: unsafe
+              desc: needs a reviewed syscall-shim allowlist entry
+            - pkg: net/http/pprof
+              desc: registers only under the ownframe_debug build tag
+            - pkg: math/rand
+              desc: use math/rand/v2 or crypto/rand instead
+          files:
+            - $all
     mnd:
       checks:
         - argument
@@ -56,3 +129,142 @@ linters:
       - linters: [staticcheck]
         path: "internal/fetch/canonical_test\\.go"
         text: "do not pass a nil Context"
+
+      # GEN-19 noctx: dialX opens a fixed /tmp/.X11-unix/ socket and sets
+      # its own deadline right after; Dialer.DialContext adds nothing.
+      - linters: [noctx]
+        path: "internal/clipboard/x11_dial\\.go"
+        text: "net.DialTimeout must not be called"
+
+      # GEN-19 contextcheck: the shapes below cannot take a context.
+      # PNG is the public no-arg wrapper over PNGWithContext; the click
+      # closure shares r.Context already handed to host.Batch, whose
+      # func() error signature is fixed; AfterFunc fixes its own callback
+      # signature while the ctx is already threaded through AfterFunc;
+      # NewGame keeps a nil-tolerant run-scoped ctx because Run and
+      # BindMobile accept a nil ctx.
+      - linters: [contextcheck]
+        path: "internal/page/page_image\\.go"
+        text: "Non-inherited new context"
+      - linters: [contextcheck]
+        path: "internal/web/click_http\\.go"
+        text: "should pass the context parameter"
+      - linters: [contextcheck]
+        path: "internal/web/serve_build\\.go"
+        text: "should pass the context parameter"
+      - linters: [contextcheck]
+        path: "internal/window/game\\.go"
+        text: "Non-inherited new context"
+
+      # GEN-19 gochecknoglobals: test files hold fixture scratch, never
+      # process singletons, so the linter only guards non-test files.
+      - linters: [gochecknoglobals]
+        path: "_test\\.go"
+      # GEN-19 gochecknoglobals: the linter guards every new file, but the
+      # singletons below predate it and are reviewed, not accidental.
+      # Mutex-guarded registries and hooks: clipboard selection memory, the
+      # X11 connection, IPC listeners, crash/report state, the render
+      # engine gate, the page patch gate, the font face cache, and the
+      # window debug snapshot hook.
+      - linters: [gochecknoglobals]
+        path: "internal/(clipboard/(clipboard|x11_conn|x11_read)\\.go|crash/crash\\.go|ipc/ipc\\.go|render/engine\\.go|page/page_patch_props\\.go|web/debug_runtime\\.go|textrun/face\\.go)|report\\.go"
+      # Immutable lookup tables: emoji data, blend modes, key chords, panel
+      # names, state pseudos, and the preview target lists.
+      - linters: [gochecknoglobals]
+        path: "internal/(emoji/emoji_(table|more)\\.go|masking/blend\\.go|window/(chord_watch|devtools_keys|devtools_ops_lines|devtools_tabs|update)\\.go|render/state_pseudos\\.go|(animation|transition)preview/targets\\.go)"
+      # Intentional process caches: the fetch client, the file dialog list,
+      # the page patch pool and source registry, the replay raster caches,
+      # and the precomputed window palette and scrollbar art.
+      - linters: [gochecknoglobals]
+        path: "internal/(fetch/scheme\\.go|filepick/pick_linux\\.go|page/(page_patch|page_source_reader)\\.go|replay/(chunk_cache_types|chunk_count|group_plan|group_shader|image_cache_store|raster_cache|text_cache|text_raster_cache)\\.go|window/(badge|devtools_measure|devtools_palette|menu_draw|scrollbar)\\.go)"
+      # Intentional process clients: the desktop-cat media poster keeps one
+      # hardened client (own timeouts, TLS 1.2 minimum), like fetch/scheme.go.
+      - linters: [gochecknoglobals]
+        path: "examples/desktop-cat/media_post\\.go"
+
+      # GEN-19 depguard: unsafe stays limited to the OS syscall shims
+      # (darwin/windows clipboard and file dialog) and one test-only
+      # reflection helper. Anything else importing unsafe fails the gate.
+      - linters: [depguard]
+        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/image_test\\.go)"
+        text: "import 'unsafe' is not allowed"
+      # GEN-19 depguard: math/rand/v2 is the sanctioned replacement
+      # (seeded PCG, no global lock), so only v1 is banned outside the
+      # fixture allowlist below. This exempts v2 imports everywhere.
+      - linters: [depguard]
+        text: "import 'math/rand/v2' is not allowed"
+      # GEN-19 depguard: math/rand v1 stays only in deterministic example
+      # fixtures (board flaps, simulation counters, shuffle order) that
+      # never touch security decisions. Everything else uses math/rand/v2.
+      - linters: [depguard]
+        path: "examples/(departure-board/board/flip\\.go|system-monitor/collector/dummy(_temps)?\\.go|spotify-player/player/playback_advance\\.go)"
+        text: "import 'math/rand' is not allowed"
+
+      # GEN-19 gochecknoglobals in examples: fixture tables and catalog
+      # data compiled into demos (departure board seeds and liveries,
+      # css-preview catalog and target cache, history routes, demo pets,
+      # streak data, perf flap gaps).
+      - linters: [gochecknoglobals]
+        path: "examples/(departure-board/(board/(data_seed|data_widths|liveries)|dump/measure_scenario)\\.go|css-preview/(catalog_names|catalog_target_cache)\\.go|history/history/history_routes\\.go|pet-care/store/demo_pets\\.go|wispr-flow-dashboard/insights/streak_data\\.go|perf-benchmarks/benchutil/flap_step\\.go)"
+      # GEN-19 gochecknoglobals in examples: mobile entry-point singletons
+      # (one app and page per mobile binary) and game part tables.
+      - linters: [gochecknoglobals]
+        path: "examples/((depth-alert|digital-wellbeing|dino|eyes|pet-care|telegram)/mobile/.*\\.go|dino/dino/(ids|paint_text)\\.go)"
+      # GEN-19 gochecknoglobals in examples: the download-manager domain
+      # tables, migration list, seed names, test time seams, and lock
+      # interval, plus the teams fixture maps and the telegram styles.
+      - linters: [gochecknoglobals]
+        path: "examples/(download-manager/(domain/(domain|transitions)|scheduler/start|store/(lock|rows|schema|seed_names)|transfer/dest)\\.go|teams/(calendar/(data|slots)|calls/handle|channels/(data|emojis)|chat/maps)\\.go|telegram/telegram/(build|images)\\.go)"
+      # GEN-19 gochecknoglobals in examples: mobile entry-point singletons
+      # (one app and page per mobile binary).
+      - linters: [gochecknoglobals]
+        path: "examples/[^/]+/mobile/[^/]*\\.go"
+      # GEN-19 gochecknoglobals in examples: game and animation tables
+      # (dino and flappy-bird parts and poses, tetris kicks/cells/scores/
+      # shapes/palette/dummy/migration, perf scene scratch, spotify player
+      # catalog, art, equalizer scratch, and log directory).
+      - linters: [gochecknoglobals]
+        path: "examples/((dino/dino|flappy-bird/flappy)/(ids|paint_text|pose)\\.go|tetris/(game/(kick|piece_cells|score)|scene/(palette_table|shapes)|store/(dummy|migrate))\\.go|perf-(complex/hover|stress/(tick|view))\\.go|eyes/eyes/pose\\.go|spotify-player/player/(animate|audio_catalog|build|eq|logger)\\.go)"
+      # GEN-19 gochecknoglobals in examples: UI style, palette, page, and
+      # asset tables compiled into the teams, wispr-flow-dashboard,
+      # system-monitor, live-log-viewer, download-manager, and theme-studio
+      # demos.
+      - linters: [gochecknoglobals]
+        path: "examples/(teams/app/(assets|data|pages|styles)|wispr-flow-dashboard/app/(actions|actions_extra|assets|pages|styles|tab)|system-monitor/ui/(detail|format|rebind|state)|live-log-viewer/ui/(pulse|view)|download-manager/ui/ops|theme-studio/studio/studio_html)\\.go"
+      # GEN-19 gochecknoglobals in examples: fixture, seed, sampler, and
+      # migration data, plus error sentinels and parser tables.
+      - linters: [gochecknoglobals]
+        path: "examples/(live-log-viewer/(entry/severity|parser/grouper_add|reader/dummy|store/(migrate|seed))|spreadsheet/(storage/migrate|workbook/seed_stress)|system-monitor/(collector/(dummy_names|proc_status_linux|runtime)|storage/(errors|migrate)))\\.go"
+      # GEN-19 gochecknoglobals in examples: lg-remote bridge queue state
+      # and the remote command tables.
+      - linters: [gochecknoglobals]
+        path: "examples/lg-remote/(bridge/(accessibility|bridge|phone)|remote/(actions|actions_more|bt|repeat))\\.go"
+
+      # GEN-19 contextcheck in examples: persistence that must survive its
+      # caller's cancellation (the transfer ctx is already cancelled when
+      # finish runs), the report callback whose transfer.Transport shape is
+      # fixed, sql.Open with no ctx variant, the shutdown commit that runs
+      # after cancellation, and worker loops that tolerate a nil request
+      # ctx from example UI callers.
+      - linters: [contextcheck]
+        path: "examples/download-manager/scheduler/progress\\.go"
+        text: "should pass the context parameter"
+      - linters: [contextcheck]
+        path: "examples/download-manager/ui/wire/wire_open\\.go"
+        text: "should pass the context parameter"
+      - linters: [contextcheck]
+        path: "examples/live-log-viewer/store/ingest_run\\.go"
+        text: "should pass the context parameter"
+      - linters: [contextcheck]
+        path: "examples/spreadsheet/storage/worker\\.go"
+        text: "Non-inherited new context"
+      - linters: [contextcheck]
+        path: "examples/tetris/store/worker\\.go"
+        text: "Non-inherited new context"
+      # GEN-19 contextcheck in examples: the teams store API is
+      # synchronous local sqlite with no cancellation source, so Save and
+      # its helpers take no ctx; the UI handlers already pass theirs to
+      # every call that accepts one.
+      - linters: [contextcheck]
+        path: "examples/teams/app/(actions|handlers)\\.go"
+        text: "should pass the context parameter"

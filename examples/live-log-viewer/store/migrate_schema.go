@@ -15,7 +15,7 @@ func schemaOf(ctx context.Context, db *sql.DB) (int, error) {
 
 	if err := db.QueryRowContext(ctx,
 		`SELECT count(*) FROM sqlite_master WHERE type = 'table'`).Scan(&tables); err != nil {
-		return 0, fmt.Errorf("%w: %v", ErrCorrupt, err)
+		return 0, fmt.Errorf("%w: %w", ErrCorrupt, err)
 	}
 
 	if tables == 0 {
@@ -30,7 +30,7 @@ func schemaOf(ctx context.Context, db *sql.DB) (int, error) {
 	}
 
 	if err != nil {
-		return 0, fmt.Errorf("%w: %v", ErrForeign, err)
+		return 0, fmt.Errorf("%w: %w", ErrForeign, err)
 	}
 
 	if app != appID {

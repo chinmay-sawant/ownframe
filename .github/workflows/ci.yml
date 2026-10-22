@@ -4,20 +4,133 @@ on:
   push:
   pull_request:
 
+# GEN-9: least privilege; each job gets only what it needs (this file has
+# no deploy job, so read-only is enough). Never use pull_request_target
+# with a checkout: it would run attacker-controlled code with write tokens.
+permissions:
+  contents: read
+
+# GEN-1: builds fail if go.sum drifts; never set GONOSUMDB, GOINSECURE,
+# GOFLAGS=-insecure, or GOFLAGS=-mod=mod here. GOPRIVATE stays
+# unset so the proxy + sumdb verify every module.
+# GEN-2: GOTOOLCHAIN=local stops the toolchain from silently upgrading
+# itself; the toolchain line in go.mod is the bump mechanism.
+env:
+  GOFLAGS: -mod=readonly
+  GOTOOLCHAIN: local
+
 jobs:
   gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      # Pinned by full SHA (GEN-9); the trailing comment names the tag the
+      # SHA was resolved from so bumps stay reviewable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
-      - uses: actions/setup-node@v4
+      # GEN-1: fail the build when the module cache disagrees with go.sum.
+      - run: go mod verify
+      - run: cd examples && go mod verify
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      # GEN-5: --ignore-scripts blocks install-time code execution;
+      # lockfile-only installs (npm ci) plus signature audit below.
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm audit signatures
         working-directory: frontend
       - run: make test
       - run: make lint
+
+  # GEN-21: the security regression suite (TestSec_*) is its own gate,
+  # so a reverted fix fails CI even when the rest stays green.
+  sec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - run: go test -p 1 -count=1 -run Sec ./... ./examples/...
+      # GEN-24: short fuzz smoke per target; sustained runs belong to
+      # continuous fuzzing, not to this gate.
+      - run: go test -count=1 -run=NONE -fuzz=FuzzReplace -fuzztime=15s ./internal/emoji/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzSanitizeLine -fuzztime=15s ./internal/web/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzBlockedIP -fuzztime=15s ./internal/fetch/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzMethodHeader -fuzztime=15s ./internal/fetch/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzDOMLimits -fuzztime=15s ./internal/page/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzImageSrc -fuzztime=15s ./internal/page/
+
+  # GEN-25: 32-bit and ARM compile checks plus the checkptr
+  # instrumented run catch overflow and unsafe misuse amd64 hides.
+  cross:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goarch: [386, arm]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - run: GOARCH=${{ matrix.goarch }} go vet -p 1 ./internal/... .
+      - run: GOOS=windows go vet -p 1 ./internal/... .
+      - run: GOOS=darwin go vet -p 1 ./internal/... .
+      - run: go test -gcflags=all=-d=checkptr=2 -count=1 -run Sec ./internal/... .
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # GEN-10: gitleaks scans the full history for committed secrets.
+      # Enable GitHub push protection too; see documentation/security.md.
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint-actions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      # GEN-9: actionlint (pinned tarball, SHA checked) plus zizmor
+      # (pinned PyPI version) keep new workflow edits honest.
+      - name: Lint workflows with actionlint and zizmor
+        run: |
+          curl -sSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.9/actionlint_1.7.9_linux_amd64.tar.gz
+          echo "233b280d05e100837f4af1433c7b40a5dcb306e3aa68fb4f17f8a7f45a7df7b4  actionlint.tar.gz" | sha256sum -c -
+          tar xzf actionlint.tar.gz actionlint
+          ./actionlint .github/workflows/*.yml
+          python3 -m pip install --quiet "zizmor==1.31.1"
+          zizmor .github/workflows
+
+  # GEN-14: prove release binaries are reproducible. The script builds
+  # the login example twice with fixed inputs and fails on any byte
+  # difference. See documentation/supply-chain.md.
+  reproducible:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); the trailing comment names the tag the
+      # SHA was resolved from so bumps stay reviewable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - run: go mod verify
+      - run: bash scripts/reproducible-check.sh

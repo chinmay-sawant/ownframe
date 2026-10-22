@@ -58,7 +58,10 @@ func TestFetchedImageBecomesBackground(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got := color.NRGBAModel.Convert(img.At(5, 5)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(img.At(5, 5)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got.R < 200 || got.G > 60 || got.B > 60 {
 		t.Fatalf("corner pixel %+v, want the fetched red", got)
 	}

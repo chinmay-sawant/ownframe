@@ -21,11 +21,15 @@ func Serve(ctx context.Context, page *Page, addr string) error {
 }
 
 // ServeOptions tunes ServeWithOptions. It re-exports the web options, so
-// callers stay on package ownframe.
+// callers stay on package ownframe. The zero value is safe: no developer
+// endpoints and loopback binds only. Risky opt-ins use an InsecureAllow
+// prefix; see web.Options.
 type ServeOptions = web.Options
 
 // ServeWithOptions listens on addr like Serve, with optional developer
-// endpoints. ServeOptions{Perf: true} serves /debug/pprof/*.
+// endpoints. ServeOptions{InsecureAllowPprof: true} serves /debug/pprof/*,
+// and ServeOptions{InsecureAllowDebugState: true} serves /debug/state.
+// A non-loopback addr needs ServeOptions{InsecureAllowRemoteBind: true}.
 // Cancel ends the listener.
 func ServeWithOptions(ctx context.Context, page *Page, addr string, opts ServeOptions) error {
 	if err := prepare(ctx, page); err != nil {

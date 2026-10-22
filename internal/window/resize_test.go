@@ -49,8 +49,7 @@ func TestResizeClampsBeforeRedraw(t *testing.T) {
 		minW: 320, minH: 400,
 		maxW: 800, maxH: 900,
 	}
-	game := NewGame(context.Background(), app)
-	shell := game.(*shell)
+	shell := newShell(context.Background(), app)
 
 	shell.Layout(50, 50)
 	if err := shell.resize(); err != nil {
