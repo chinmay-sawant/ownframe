@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
 )
@@ -24,6 +25,9 @@ func postMedia(ctx context.Context, endpoint string, n cat.Notification) error {
 		return err
 	}
 	request.Header.Set("Content-Type", "application/json")
+	if u, err := url.Parse(endpoint); err == nil && u.Scheme != "" && u.Host != "" {
+		request.Header.Set("Origin", u.Scheme+"://"+u.Host)
+	}
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		return err

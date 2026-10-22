@@ -19,6 +19,9 @@ func Do(ctx context.Context, method, rawURL string, header map[string]string, bo
 	if err := checkURL(ctx, rawURL); err != nil {
 		return Response{}, err
 	}
+	if err := checkMethodHeader(method, header); err != nil {
+		return Response{}, err
+	}
 	if method == "" {
 		method = http.MethodGet
 	}

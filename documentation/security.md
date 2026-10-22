@@ -47,9 +47,10 @@ channel and applied on the game loop.
 
 - `Serve` exposes no `/debug/state` endpoint. `ServeWithOptions` registers
   `GET /debug/state` only with `ServeOptions{Debug: true}` or
-  `ServeOptions{Perf: true}`. Treat it as privileged. Reduce or gate it before
-  exposing a preview. `ServeOptions{Perf: true}` is the only opt in that adds
-  `GET /debug/pprof/*`.
+  `ServeOptions{Perf: true}`. Treat it as privileged: it exposes layout
+  boxes with field text, stats, and runtime snapshot on loopback only.
+  Reduce or gate it before exposing a preview. `ServeOptions{Perf: true}`
+  is the only opt in that adds `GET /debug/pprof/*`.
 - DevTools summarizes rendered data on screen. Keep it off in shipped binaries
   unless debugging is intended. The examples enable `Config.DevTools` for
   debugging; a shipped binary leaves it false.
@@ -73,8 +74,11 @@ channel and applied on the game loop.
 ## Local notification endpoints
 
 `examples/desktop-cat` serves `POST /notify` on `127.0.0.1:6969` by default.
-The handler checks a present `Origin` against the request scheme and host,
-sets `nosniff` and `X-Frame-Options: DENY`, caps the body at 4 KiB, and
+`POST /notify` and `GET /state` require a matching `Origin` against the
+request scheme and host; a missing `Origin` returns 403, and curl callers
+send `Origin` explicitly. The handler sets `nosniff`, `X-Frame-Options: DENY`,
+`Referrer-Policy: no-referrer`, and a restrictive `Permissions-Policy`,
+caps the body at 4 KiB, sets an idle timeout, and
 returns generic `invalid notification` errors. Empty and wildcard binds are
 rejected; other non-loopback binds log a warning. Remote use needs an
 authenticated reverse proxy or a shared secret checked before `Submit`, plus
@@ -92,6 +96,8 @@ body cap, crash files at mode `0600`, and a source size limit of
 ## Helper executables
 
 Native helper tools such as `zenity`, `powershell.exe`, and `pwsh.exe` are discovered through `PATH` and their normal OS locations, including WSL `/mnt` paths. Treat the executable search path and installed helpers as trusted local environment components.
+
+In hardened deployments, pin absolute dialog tool paths instead of relying on `PATH` lookup (for example, resolve `zenity` once at startup and reject unexpected locations). No behavior change by default: the file picker keeps `PATH` discovery unless the app pins paths itself.
 
 ## Devtools clipboard
 

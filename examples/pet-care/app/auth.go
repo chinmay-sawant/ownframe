@@ -9,6 +9,8 @@ func (a *App) RequestBack() bool {
 }
 
 func (a *App) login() {
+	// Demo pair only. DO NOT COPY into production; verify server side
+	// over TLS with a slow hash, never a plaintext == comparison.
 	if a.page.FormValue("email") == "demo@petcare.local" && a.page.FormValue("password") == "pawprints" {
 		a.view.SignedIn = true
 		a.view.Screen = "dashboard"

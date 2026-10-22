@@ -27,7 +27,7 @@ func startNotifications(ctx context.Context, addr string, inbox *cat.Inbox) (fun
 	if err != nil {
 		return nil, fmt.Errorf("notification server: %w", err)
 	}
-	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: notifyReadHeaderTimeout, ReadTimeout: notifyReadTimeout, WriteTimeout: notifyWriteTimeout, MaxHeaderBytes: maxNotifyHeaderBytes}
+	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: notifyReadHeaderTimeout, ReadTimeout: notifyReadTimeout, WriteTimeout: notifyWriteTimeout, IdleTimeout: notifyIdleTimeout, MaxHeaderBytes: maxNotifyHeaderBytes}
 	go func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Print(err)

@@ -44,28 +44,25 @@ var plans struct {
 
 // planFor returns the display's group tree, from a small cache keyed on the
 // display pointer. A display is replaced wholesale on redraw, so a pointer
-// match is a plan match.
+// match is a plan match. Call on the draw path only; the display must not be
+// mutated concurrently. Tick patches ops on the same loop, so never share a
+// Page across goroutines. The lock stays held across a miss build, so two
+// concurrent callers serialize instead of building twice and evicting.
 func planFor(d *layout.Display) *groupNode {
 	plans.mu.Lock()
+	defer plans.mu.Unlock()
 
 	for i := range plans.entries {
 		if plans.entries[i].d == d {
-			root := plans.entries[i].root
-			plans.mu.Unlock()
-
-			return root
+			return plans.entries[i].root
 		}
 	}
 
-	plans.mu.Unlock()
-
 	root := buildPlan(d)
-	plans.mu.Lock()
 
 	disposePlan(plans.entries[plans.next].root)
 	plans.entries[plans.next] = planEntry{d: d, root: root}
 	plans.next = (plans.next + 1) % len(plans.entries)
-	plans.mu.Unlock()
 
 	return root
 }

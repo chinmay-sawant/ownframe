@@ -1,10 +1,21 @@
 package telegram
 
 // SetInsets records the system bar insets in CSS pixels. The activity calls
-// it from the UI thread; the next tick pads the page.
+// it from the UI thread; the next tick pads the page. Values clamp to
+// 0..2048 so a rogue host cannot corrupt the pinned layout.
 func (a *App) SetInsets(top, bottom int) {
-	a.insetTop.Store(int64(top))
-	a.insetBot.Store(int64(bottom))
+	a.insetTop.Store(int64(clampInset(top)))
+	a.insetBot.Store(int64(clampInset(bottom)))
+}
+
+func clampInset(v int) int {
+	if v < 0 {
+		return 0
+	}
+	if v > 2048 {
+		return 2048
+	}
+	return v
 }
 
 // applyInsets pads the page for the system bars and keeps the newest

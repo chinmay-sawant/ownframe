@@ -8,8 +8,9 @@ import (
 
 // client is shared. Jar stays nil, so no cookie is stored or sent.
 // Timeout is the default client timeout; a request context with a shorter
-// deadline still wins.
+// deadline still wins. Transport pins DNS at dial time (FETCH-1).
 var client = &http.Client{
+	Transport:     pinnedTransport(),
 	Timeout:       fetchTimeout,
 	CheckRedirect: redirect,
 }

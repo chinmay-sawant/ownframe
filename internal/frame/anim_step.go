@@ -2,8 +2,6 @@ package frame
 
 import (
 	"time"
-
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // Step applies the value at now and reports the boxes it changed. The
@@ -11,6 +9,9 @@ import (
 // the final value and reports false. A later step, or one after a Redraw
 // replaced a bound list, changes nothing.
 func (a *Anim) Step(now time.Time) (Damage, bool) {
+	if a == nil {
+		return Damage{}, false
+	}
 	if a.stale() {
 		a.live = false
 		return Damage{}, false
@@ -29,6 +30,9 @@ func (a *Anim) Step(now time.Time) (Damage, bool) {
 	var dmg Damage
 
 	for i, op := range a.ops {
+		if op == nil {
+			continue
+		}
 		old := OpBox(a.d, op)
 		a.patch(i, op, p)
 		dmg.Old = dmg.Old.Union(old)
@@ -46,28 +50,15 @@ func (a *Anim) Step(now time.Time) (Damage, bool) {
 // whether the animation is still running, so a tick can stop asking for
 // frames once every animation is done.
 func (a *Anim) Tick(m Marker, now time.Time) bool {
+	if a == nil {
+		return false
+	}
 	dmg, live := a.Step(now)
 	if m != nil && !dmg.Empty() {
 		m.MarkRect(dmg.Box())
 	}
 
 	return live
-}
-
-// patch applies the value at progress p to one op.
-func (a *Anim) patch(i int, op *page.DisplayOp, p float64) {
-	switch a.kind {
-	case animTranslate:
-		j := i * pairStride
-		op.X = lerp(a.from[j], a.to[j], p)
-		op.Y = lerp(a.from[j+1], a.to[j+1], p)
-	case animFade:
-		op.Alpha = clampAlpha(lerp(a.from[i], a.to[i], p))
-	case animScale:
-		a.setScale(i, op, lerp(a.from[i], a.to[i], p))
-	case animRotate:
-		a.setRotate(i, op, lerp(a.from[i], a.to[i], p))
-	}
 }
 
 // progress clamps now against the animation's window to 0..1.

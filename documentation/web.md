@@ -114,10 +114,12 @@ Recommended protections:
   counts. Reduce or gate it before exposing a preview. Keep both off in
   shipped binaries unless debugging or profiling is needed;
   `ServeOptions{Perf: true}` alone also adds `GET /debug/pprof/*`.
+  `Debug` and `Perf` expose layout with field text; keep them on loopback only.
 - The built in server now sets `MaxHeaderBytes` (64 KiB), `ReadHeaderTimeout`
   (5s), `ReadTimeout` (15s), `WriteTimeout` (15s), and `IdleTimeout` (60s),
   limits `/type` to 256 KiB, rejects non finite `/click` coordinates, requires
-  `Origin` on mutating routes, and sets `nosniff` and `X-Frame-Options: DENY`.
+  `Origin` on mutating routes, and sets `nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: no-referrer`, and a restrictive `Permissions-Policy`.
   `/backspace` reads at most 256 KiB. Put a scoped proxy
   or custom `http.Server` in front of it when exposure is needed.
 

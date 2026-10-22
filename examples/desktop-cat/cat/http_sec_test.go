@@ -22,8 +22,8 @@ func TestNotifyOriginCheck(t *testing.T) {
 	if rec := notifyReq("POST", "127.0.0.1:6969", "http://127.0.0.1:6969", ok); rec.Code != 202 {
 		t.Fatalf("valid origin: %d %s", rec.Code, rec.Body.String())
 	}
-	if rec := notifyReq("POST", "127.0.0.1:6969", "", ok); rec.Code != 202 {
-		t.Fatalf("missing origin (curl): %d %s", rec.Code, rec.Body.String())
+	if rec := notifyReq("POST", "127.0.0.1:6969", "", ok); rec.Code != 403 {
+		t.Fatalf("missing origin fails closed: %d %s", rec.Code, rec.Body.String())
 	}
 	if rec := notifyReq("POST", "127.0.0.1:6969", "http://evil.com", ok); rec.Code != 403 {
 		t.Fatalf("evil origin: %d", rec.Code)
@@ -35,11 +35,12 @@ func TestNotifyOriginCheck(t *testing.T) {
 
 func TestNotifyGenericErrors(t *testing.T) {
 	t.Parallel()
-	rec := notifyReq("POST", "127.0.0.1:6969", "", `{"expression":"nope","message":"x"}`)
+	good := "http://127.0.0.1:6969"
+	rec := notifyReq("POST", "127.0.0.1:6969", good, `{"expression":"nope","message":"x"}`)
 	if rec.Code != 400 || !strings.Contains(rec.Body.String(), "invalid notification") {
 		t.Fatalf("submit error: %d %s", rec.Code, rec.Body.String())
 	}
-	rec = notifyReq("POST", "127.0.0.1:6969", "", `{"expression":`)
+	rec = notifyReq("POST", "127.0.0.1:6969", good, `{"expression":`)
 	if rec.Code != 400 || strings.Contains(rec.Body.String(), "unexpected") {
 		t.Fatalf("decode error: %d %s", rec.Code, rec.Body.String())
 	}

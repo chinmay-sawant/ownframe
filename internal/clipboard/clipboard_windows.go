@@ -62,6 +62,17 @@ func writeOS(text string) {
 	}
 }
 
+// clearOS empties the desktop clipboard.
+func clearOS() {
+	opened, _, _ := openClip.Call(0)
+	if opened == 0 {
+		return
+	}
+
+	defer closeClip.Call()
+	emptyClip.Call()
+}
+
 func readOS() (string, bool) {
 	opened, _, _ := openClip.Call(0)
 	if opened == 0 {

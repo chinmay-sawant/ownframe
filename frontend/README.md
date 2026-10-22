@@ -45,6 +45,8 @@ The repository's `make lint` runs this same `npm run lint` after the Go linters,
 
 `eslint-plugin-react` still declares a peer range that stops at ESLint 9, and its version detection calls an API ESLint 10 removed. The `overrides` entry in `package.json` resolves the peer range to the installed ESLint, and `settings.react.version` in the config skips that detection. Two rules are off on purpose: `react/prop-types`, because the site has no PropTypes layer, and `react-hooks/set-state-in-effect`, because the site does not run the React Compiler and two effects reset state on purpose.
 
+Reverify after any `npm install` or ESLint bump: `npm ls eslint` must resolve to one ESLint 10, `npm run lint` must pass, and no major version may move. The override stays invisible in `package-lock.json` (lockfileVersion 3 records no top-level overrides key), so re-check `package.json` itself. Remove the workaround only when `eslint-plugin-react` declares ESLint 10 support.
+
 The build writes to the root `docs/` folder, including the public demo assets. It preserves `docs/go.mod` so the generated site stays outside the library module archive. `npm run preview` serves the generated site.
 
 ## Publish to GitHub Pages

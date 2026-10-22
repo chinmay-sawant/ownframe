@@ -4,7 +4,9 @@ import "context"
 
 // Redraw renders the current size: a display list for a replayable page,
 // a bitmap otherwise. Parsed trees and sheets are reused. Stage timing and
-// allocs track only with Perf on.
+// allocs track only with Perf on. One Page has one owner: never call Redraw
+// concurrently on the same Page; keep Tick, MarkRect, and Redraw on the
+// page loop the way Run and Serve each own their Page.
 func (p *Page) Redraw(ctx context.Context) error {
 	return p.redraw(ctx, false)
 }

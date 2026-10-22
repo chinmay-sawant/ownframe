@@ -8,11 +8,16 @@ import (
 	"net/http"
 )
 
-// securityHeaders sets nosniff and DENY framing on web responses.
+// securityHeaders sets nosniff, DENY framing, no-referrer, and a
+// restrictive permissions policy on web responses. A full CSP still
+// needs nonces or hashes: the shell page uses inline onclick and script
+// handlers, so keep that markup static until a nonced CSP can ship.
 func securityHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		next.ServeHTTP(w, r)
 	})
 }

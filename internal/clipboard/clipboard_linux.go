@@ -24,3 +24,11 @@ func readOS() (string, bool) {
 
 	return xRead()
 }
+
+func clearOS() {
+	if os.Getenv("WAYLAND_DISPLAY") != "" || os.Getenv("DISPLAY") == "" {
+		return
+	}
+
+	xWrite("")
+}

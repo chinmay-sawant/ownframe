@@ -1,6 +1,7 @@
 package nowplaying
 
 import (
+	"errors"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
@@ -31,6 +32,9 @@ func (o *object) text(index int) (string, error) {
 	pointer, _, _ := stringBuffer.Call(handle, uintptr(unsafe.Pointer(&length)))
 	if length == 0 {
 		return "", nil
+	}
+	if length > 4096 {
+		return "", errors.New("media string too long")
 	}
 	value := make([]uint16, length)
 	syscall.NewLazyDLL("ntdll.dll").NewProc("RtlMoveMemory").Call(uintptr(unsafe.Pointer(&value[0])), pointer, uintptr(length)*2)

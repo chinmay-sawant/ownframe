@@ -19,11 +19,11 @@ import (
 //
 // Concurrency contract: a Cache is safe for concurrent method calls, which
 // serialize through its mutex. Relayout replaces the styled document returned
-// by Styled; a caller that still holds a *css.Document from a previous call
-// must not read or mutate it after starting a new Relayout. Cache methods do
-// not lock the returned *css.Document, so the same Cache must not be shared
-// across overlapping Relayout or Styled consumers. Multiple Pages keep their
-// own Cache and do not share one.
+// by Styled; a holder must not read or mutate an older doc after a Relayout.
+// Call Styled and Relayout from the page loop only; never retain the doc
+// across a Relayout or share the Cache across concurrent loops. Multiple
+// Pages keep their own Cache and do not share one. Tick and Draw stay on the
+// same goroutine, so no live race occurs under that single-owner use.
 type Cache struct {
 	mu     sync.Mutex
 	source string

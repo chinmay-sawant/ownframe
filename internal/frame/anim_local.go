@@ -8,7 +8,11 @@ import (
 )
 
 // localBox is op's painted box in points before its transform.
+// A nil op reports the zero box.
 func localBox(op *page.DisplayOp) (x0, y0, x1, y1 float64) {
+	if op == nil {
+		return 0, 0, 0, 0
+	}
 	x0, y0 = op.X, op.Y
 	x1, y1 = op.X+op.W, op.Y+op.H
 

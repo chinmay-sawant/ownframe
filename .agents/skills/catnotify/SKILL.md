@@ -14,8 +14,12 @@ characters. The bubble appears without moving the user's mouse.
 curl --silent --show-error --fail-with-body --max-time 2 \
   http://127.0.0.1:6969/notify \
   -H 'Content-Type: application/json' \
+  -H 'Origin: http://127.0.0.1:6969' \
   --data-binary '{"expression":"happy","message":"Response is ready. The work is done.","source":"Open Code"}'
 ```
+
+`POST /notify` and `GET /state` require a matching `Origin` header;
+a missing `Origin` returns 403. Send the `Origin` header explicitly.
 
 Serialize dynamic text as JSON before passing it to curl. Keep shell commands
 literal so quotes or dollar signs in a message cannot execute as shell code.
@@ -35,10 +39,12 @@ refusal. Run curl through WSL interop, which executes it on Windows:
 /mnt/c/Windows/System32/curl.exe --silent --show-error --fail-with-body --max-time 2 \
   http://127.0.0.1:6969/notify \
   -H 'Content-Type: application/json' \
+  -H 'Origin: http://127.0.0.1:6969' \
   --data-binary '{"expression":"happy","message":"Response is ready. The work is done.","source":"Open Code"}'
 ```
 
-`GET http://127.0.0.1:6969/state` through the same `curl.exe` tells you whether
+`GET http://127.0.0.1:6969/state` with `-H 'Origin: http://127.0.0.1:6969'`
+through the same `curl.exe` tells you whether
 the server is up. HTTP 202 still means accepted, and the send-once rule stands.
 
 When interop is unavailable, either enable mirrored networking in `.wslconfig`

@@ -19,6 +19,12 @@ func result(code uintptr) error {
 }
 
 func (o *object) call(index int, args ...uintptr) error {
+	if o == nil {
+		return fmt.Errorf("media object is nil")
+	}
+	if index < 0 || index >= len(o.table) {
+		return fmt.Errorf("media vtable index %d out of range", index)
+	}
 	values := append([]uintptr{uintptr(unsafe.Pointer(o))}, args...)
 	code, _, _ := syscall.SyscallN(o.table[index], values...)
 	runtime.KeepAlive(o)
@@ -32,12 +38,18 @@ func (o *object) release() {
 }
 
 func (o *object) get(index int) (*object, error) {
+	if o == nil {
+		return nil, fmt.Errorf("media object is nil")
+	}
 	var value *object
 	err := o.call(index, uintptr(unsafe.Pointer(&value)))
 	return value, err
 }
 
 func (o *object) query(id string) (*object, error) {
+	if o == nil {
+		return nil, fmt.Errorf("media object is nil")
+	}
 	guid, err := windows.GUIDFromString(id)
 	if err != nil {
 		return nil, err

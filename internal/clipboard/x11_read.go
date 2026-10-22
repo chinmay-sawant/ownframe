@@ -4,6 +4,10 @@ package clipboard
 
 import "io"
 
+// reqGate bounds concurrent SelectionRequest handlers. The X loop stays
+// responsive: excess requests run inline instead of spawning goroutines.
+var reqGate = make(chan struct{}, 16)
+
 func (x *xClient) loop() {
 	defer recoverX(x, "x11 loop")
 
@@ -31,7 +35,15 @@ func (x *xClient) loop() {
 		case xSelReq:
 			ev := make([]byte, xEvSize)
 			copy(ev, hdr[:])
-			go x.onRequest(ev)
+			select {
+			case reqGate <- struct{}{}:
+				go func() {
+					defer func() { <-reqGate }()
+					x.onRequest(ev)
+				}()
+			default:
+				x.onRequest(ev)
+			}
 		case xSelNotify:
 			x.gotSel(get32(hdr[20:]))
 		case xSelClear:

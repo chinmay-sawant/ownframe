@@ -10,16 +10,19 @@ func withHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 		next.ServeHTTP(w, r)
 	})
 }
 
-// checkOrigin allows missing Origin (curl agents send none). A present
-// Origin must match the request scheme and host.
+// checkOrigin fails closed: a missing Origin is rejected on gated
+// routes. Curl callers send an explicit Origin header matching the
+// request scheme and host.
 func checkOrigin(r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
-		return true
+		return false
 	}
 	u, err := url.Parse(origin)
 	if err != nil || u.Host == "" {

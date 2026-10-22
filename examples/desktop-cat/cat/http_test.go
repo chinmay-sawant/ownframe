@@ -23,7 +23,11 @@ func TestNotificationHTTP(t *testing.T) {
 		{"GET", "/notify", "", 405},
 	} {
 		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body)))
+		req := httptest.NewRequest(tc.method, tc.path, strings.NewReader(tc.body))
+		if tc.path == "/notify" || tc.path == "/state" {
+			req.Header.Set("Origin", "http://example.com")
+		}
+		handler.ServeHTTP(w, req)
 		if w.Code != tc.status {
 			t.Fatalf("%s %s: %d %s", tc.method, tc.path, w.Code, w.Body.String())
 		}

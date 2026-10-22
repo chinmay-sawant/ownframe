@@ -14,6 +14,10 @@ func (i *Inbox) Handler() http.Handler {
 		reply(w, http.StatusOK, Expressions())
 	})
 	mux.HandleFunc("GET /state", func(w http.ResponseWriter, r *http.Request) {
+		if !checkOrigin(r) {
+			reply(w, http.StatusForbidden, map[string]string{"error": "forbidden"})
+			return
+		}
 		n, v := i.Latest()
 		reply(w, http.StatusOK, struct {
 			Notification

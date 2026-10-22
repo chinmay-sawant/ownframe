@@ -55,7 +55,11 @@ func xformAnim(d *page.Display, ops []*page.DisplayOp, k animKind,
 }
 
 // effectiveAlpha is op's alpha, reading the engine's zero as opaque.
+// A nil op reads as opaque.
 func effectiveAlpha(op *page.DisplayOp) float64 {
+	if op == nil {
+		return 1
+	}
 	if op.Alpha > 0 && op.Alpha < 1 {
 		return op.Alpha
 	}

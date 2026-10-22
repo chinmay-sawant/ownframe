@@ -59,3 +59,5 @@ func readOS() (string, bool) {
 
 	return C.GoString(p), true
 }
+
+func clearOS() { C.ownframePut(nil, 0) }

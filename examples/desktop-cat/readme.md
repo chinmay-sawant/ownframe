@@ -78,7 +78,9 @@ native example. Set `OWNFRAME_BROWSER_PORT` when port 8092 is already in use.
 ## Agent notifications
 
 The native command also starts a simple HTTP server at
-`http://127.0.0.1:6969`. Under WSL the server stays in Linux and forwards
+`http://127.0.0.1:6969`. Keep it on loopback: traffic is plaintext HTTP
+with no auth, so a LAN bind would expose notification content. Under WSL
+the server stays in Linux and forwards
 notifications to the Windows cat through its stdin pipe. An agent running
 in WSL can use the same loopback URL. `-notify-addr` changes the address;
 `-notify-addr off` disables the listener.
@@ -86,14 +88,20 @@ in WSL can use the same loopback URL. `-notify-addr` changes the address;
 ```sh
 curl --fail-with-body --max-time 2 http://127.0.0.1:6969/notify \
   -H 'Content-Type: application/json' \
+  -H 'Origin: http://127.0.0.1:6969' \
   --data-binary '{"expression":"happy","message":"The work is done. Response is ready.","source":"Open Code"}'
 ```
 
+`POST /notify` and `GET /state` require a matching `Origin` (scheme
+and host); a missing `Origin` returns 403. Curl callers send the
+`Origin` header explicitly. Responses set `nosniff`, `DENY` framing,
+`Referrer-Policy: no-referrer`, and a restrictive `Permissions-Policy`.
+
 | Route | Result |
 |---|---|
-| `POST /notify` | Accepts `expression`, `message`, and optional `source`; returns HTTP 202. |
+| `POST /notify` | Accepts `expression`, `message`, and optional `source`; returns HTTP 202. Requires matching `Origin`; missing `Origin` is 403. |
 | `GET /expressions` | Maps 15 emotion names and 30 individual pose names to image numbers. |
-| `GET /state` | Returns the last accepted notification and its sequence number. |
+| `GET /state` | Returns the last accepted notification and its sequence number. Requires matching `Origin`; missing `Origin` is 403. |
 
 Use `happy`, `sad`, `angry`, `sleepy`, `worried`, or another name returned by
 `/expressions`. Individual poses include `happy-soft-smile`, `sad-tear`,

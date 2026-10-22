@@ -68,6 +68,13 @@ lint:
 size-check:
 	bash scripts/check-file-size.sh
 
+# Vulnerability scan via the pinned tool directive in go.mod
+# (golang.org/x/vuln/cmd/govulncheck). Runs against both modules through
+# the workspace. Usage: make vuln
+.PHONY: vuln
+vuln:
+	go tool govulncheck ./...
+
 # Every folder under examples/ that `make open` can walk.
 EXAMPLES := $(patsubst examples/%/,%,$(wildcard examples/*/))
 

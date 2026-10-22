@@ -17,6 +17,7 @@ const (
 	notifyReadHeaderTimeout = 3 * time.Second
 	notifyReadTimeout       = 5 * time.Second
 	notifyWriteTimeout      = 5 * time.Second
+	notifyIdleTimeout       = 60 * time.Second
 )
 
 // checkNotifyAddr rejects empty and wildcard binds. Other non-loopback

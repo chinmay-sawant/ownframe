@@ -13,8 +13,10 @@ var ErrEmptyDir = errors.New("crash: empty directory")
 // ErrBadDir reports that SetDir was given an invalid path.
 var ErrBadDir = errors.New("crash: invalid directory")
 
-// SetDir sets the folder Write uses. It rejects an empty or unsafe path
-// and stores the absolute form. An earlier value stays when rejected.
+// SetDir sets the folder Write uses. It rejects an empty or unsafe path,
+// resolves symlinks, and stores the absolute form. Files use O_EXCL plus
+// 0600 and dirs use 0700, so a pre-created symlink cannot overwrite.
+// An earlier value stays when rejected.
 func SetDir(dir string) error {
 	clean, err := validateDir(dir)
 	if err != nil {
@@ -77,9 +79,5 @@ func validateDir(dir string) (string, error) {
 		return "", ErrBadDir
 	}
 
-	return clean, nil
-}
-
-func isSep(r rune) bool {
-	return r == '/' || r == '\\'
+	return resolveSymlinks(clean), nil
 }

@@ -2,12 +2,19 @@ module github.com/chinmay-sawant/ownframe/examples
 
 go 1.26.10
 
+// Standalone builds (GOWORK=off) resolve ownframe and blinkless from the
+// proxy, so they need the published tags below. Inside this repo go.work
+// masks those pins and builds the local parent instead; keep both pins
+// aligned with the root go.mod after each release. No replace directives.
 require (
-	github.com/chinmay-sawant/blinkless v0.0.2
+	github.com/chinmay-sawant/blinkless v0.0.3-0.20261021155643-c1054ff46202
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
-	golang.org/x/sys v0.48.0
+	golang.org/x/sys v0.49.0
+	// Examples-only TCB: modernc.org/sqlite plus libc, memory, mathutil,
+	// uuid, go-mp3, and pprof stay out of the shipped library. Pure Go
+	// but large; track updates on the examples release schedule.
 	modernc.org/sqlite v1.56.0
 )
 
@@ -42,9 +49,10 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.13 // indirect
 	github.com/tdewolff/parse/v2 v2.8.12 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
-	golang.org/x/net v0.60.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/tools v0.52.0 // indirect
 	modernc.org/knuth v0.5.5 // indirect
 	modernc.org/libc v1.74.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

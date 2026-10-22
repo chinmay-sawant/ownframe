@@ -9,8 +9,8 @@ type snap struct {
 func (a *App) signIn() {
 	status := ""
 	errMsg := "Unknown email or password."
-	// Demo credentials only. This example has no auth boundary; a real
-	// app must verify against a trusted backend, not a hardcoded pair.
+	// Demo credentials only. DO NOT COPY into production: no auth
+	// boundary here; a real app must verify server side, not locally.
 	if a.page.FormValue("email") == "secret" && a.page.FormValue("password") == "secret" {
 		status = "Signed in."
 		errMsg = ""

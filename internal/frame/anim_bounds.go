@@ -11,6 +11,9 @@ import (
 // moves, fades, or changes shape. It honors a baked transform and the text
 // baseline, matching the page's own dirty boxes.
 func OpBox(d *page.Display, op *page.DisplayOp) image.Rectangle {
+	if op == nil {
+		return image.Rectangle{}
+	}
 	x0, y0, x1, y1 := localBox(op)
 
 	m := op.Transform()

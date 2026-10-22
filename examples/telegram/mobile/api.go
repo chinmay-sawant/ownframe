@@ -26,11 +26,17 @@ func AttachRequest() string {
 	return app.TakeAttach()
 }
 
+// maxPhotoBytes caps one captured image before enqueue, so a hostile
+// caller cannot queue an unbounded allocation. QueuePhoto stays
+// non-blocking, so a full channel still drops.
+const maxPhotoBytes = 32 << 20
+
 // SetPhoto hands captured image bytes to the page.
 func SetPhoto(data []byte) {
-	if app != nil {
-		app.QueuePhoto(data)
+	if app == nil || len(data) > maxPhotoBytes {
+		return
 	}
+	app.QueuePhoto(data)
 }
 
 // SetInsets passes the system bar insets in CSS pixels to the page.

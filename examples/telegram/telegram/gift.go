@@ -5,7 +5,10 @@ import "strconv"
 // giftChat is the only chat that allows sending a gift.
 const giftChat = "anna"
 
-// gift appends a gift bubble to the open chat.
+// gift appends a gift bubble to the open chat. Double-gated: the thread
+// template only renders the gift button when CanGift is set, and this
+// handler rechecks the chat id. Demo boundary: single-user local demo
+// with no authz; add server-side permission checks for real accounts.
 func (a *App) gift() {
 	id := a.view.Active
 	if id != giftChat {

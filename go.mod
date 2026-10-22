@@ -6,10 +6,21 @@ require (
 	github.com/chinmay-sawant/blinkless v0.0.3-0.20261021155643-c1054ff46202
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
-	golang.org/x/text v0.42.0
+	golang.org/x/text v0.43.0
 )
 
 require (
+	golang.org/x/mod v0.42.0 // indirect
+	golang.org/x/telemetry v0.0.0-20261010193011-f71dc92da45e // indirect
+	golang.org/x/tools v0.52.0 // indirect
+	golang.org/x/vuln v1.9.0 // indirect
+)
+
+require (
+	// Upstream tracking: ancient indirects below (freetype-go and
+	// graphics-go 2016, xgb 2021, poly2tri-go 2017, freetype 2017,
+	// rasterx 2022, scanx 2019) have no in-repo upgrade path. Track
+	// upstream Ebiten and blinkless bumps; pinned hashes limit tampering.
 	codeberg.org/go-pdf/fpdf v0.11.1 // indirect
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
@@ -34,10 +45,12 @@ require (
 	github.com/tdewolff/minify/v2 v2.24.13 // indirect
 	github.com/tdewolff/parse/v2 v2.8.12 // indirect
 	github.com/yuin/goldmark v1.8.2 // indirect
-	golang.org/x/net v0.60.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	modernc.org/knuth v0.5.5 // indirect
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
+
+tool golang.org/x/vuln/cmd/govulncheck

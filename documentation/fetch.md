@@ -37,7 +37,10 @@ response body cap. A small compressed response can still expand up to that
 cap.
 
 `AllowPrivate` returns a context that skips the address block for tests and
-trusted local tooling. Scheme and userinfo checks still apply.
+trusted local tooling. Scheme and userinfo checks still apply. Method and
+header checks still apply: only `GET`, `POST`, `PUT`, `PATCH`, `DELETE`,
+`HEAD`, and `OPTIONS` are allowed, and `Cookie`, `Authorization`, `Host`,
+`Content-Length`, `Transfer-Encoding`, and `Connection` headers are blocked.
 
 Recommended protections:
 
@@ -45,11 +48,13 @@ Recommended protections:
   URLs to `Fetch` or `XHR`.
 - Pass a context with a deadline. A nil context returns an error and
   `context.Background()` can hang forever.
-- When any input is untrusted, add host allowlisting in the app. The library
-  does not pin DNS between the check and the connection, so a hostile
-  resolver can still rebind a name after it was checked.
-- Account for the shared client: it honors environment proxy variables and
-  accepts any method.
+- When any input is untrusted, add host allowlisting in the app. The client
+  resolves each dial host once and dials a validated IP, rechecking every
+  redirect hop, so a hostile resolver cannot rebind between check and
+  connection for direct dials. Proxied requests still depend on the proxy's
+  resolver.
+- The client only sends allowlisted methods with blocked sensitive headers
+  stripped by rejection. `Fetch` always uses `GET` with no body.
 
 See the security audit in
 [plans/v0.0.2/security](../plans/v0.0.2/security/00-overview-threat-model-and-priority.md).
