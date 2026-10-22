@@ -4,7 +4,7 @@
 // and registers Handlers for clicks and keys. An optional theme stylesheet
 // passed to New or SetTheme restyles the page after the template's own
 // styles. Run opens the window. Serve shows the same picture in a browser.
-// BindMobile registers the page for an Android or iOS bind. Redraw parses
+// BindMobile registers the page for an Android bind. Redraw parses
 // the HTML, applies the CSS, and lays the page out through blinkless.
 // This package has no layout of its own.
 package ownframe

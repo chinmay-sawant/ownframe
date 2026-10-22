@@ -64,7 +64,7 @@ behavior and the limits are in
 | [states](states) | Host `:focus`, `:focus-visible`, `:hover`, `:active`, `:checked` styles. | 8107 |
 | [scrolling](scrolling) | Oversized pages scroll on the wheel and touch drags, with no visible page scrollbar. | 8108 |
 | [history](history) | `Load`, `Back`, `Forward`, `HTML`, and `data-action` routes. | 8109 |
-| [web](web) | Web mode routes: `/`, `/frame.png`, `/debug/state`, `/click`, `/type`, `/backspace`. | 8110 |
+| [web](web) | Plain `Serve` routes: `GET /`, `GET /frame.png`, `POST /click`, `POST /type`, `POST /backspace`. `GET /debug/state` stays off unless `ServeOptions` sets `Debug` or `Perf` and the build uses `-tags ownframe_debug`. | 8110 |
 | [ipc](ipc) | In-process `Send`, `Listen`, `Handle`, `Request`, with registered state and cancel. | 8111 |
 | [fetch](fetch) | `Fetch` GET and `XHR` with method, headers, and body; a fetched PNG or JPEG becomes the page background. | 8112 |
 | [clipboard](clipboard) | Copy, cut, paste, select all, undo, and redo through the page APIs. | 8113 |
@@ -83,10 +83,10 @@ behavior and the limits are in
 | [drop](drop) | Dropped files print their absolute path on desktop and the entry name in a browser; a file control takes a path from the picker. | 8124 |
 | [input](input) | Focus traversal, caret keys, drag selection, context menu, cursor shapes, touch scroll and pinch, page scrolling, and F11. | 8126 |
 | [input-lab](input-lab) | The nine form and input demos (forms, controls, bind, bind-hooks, editing, clipboard, input, login, states) in one window. | 8130 |
-| [desktop-cat](desktop-cat) | Transparent orange backpack cat with 30 expression PNGs, native click-through, a notification server on 127.0.0.1:6969, and a WASM canvas preview; web mode is a still picture. | 8128 |
+| [desktop-cat](desktop-cat) | Transparent orange backpack cat with 30 expression PNGs, native click-through, a notification listener on the default Unix socket (`-notify-addr=auto`), TCP `127.0.0.1:6969` as opt-in, and a WASM canvas preview; web mode is a still picture. | 8128 |
 | [resize](resize) | Window resize: two columns switch at a media query, a 100vw bar, rewrapping text, and a hover control. | 8127 |
 | [snipping-tool](snipping-tool) | Desktop screen capture: toolbar capture, form-field crop, save and copy, OS tools with demo fallback. | 8136 |
-| [departure-board](departure-board) | Split-flap departure board: eight rows of per-character tiles over a seeded timetable, four liveries with a night variant, tick-driven flaps that rebind per `Page.Generation()`, and a refresh bar found by the livery accent. | 8137 |
+| [departure-board](departure-board) | Split-flap departure board: eight rows of per-character tiles over a seeded timetable, four liveries with a night variant, tick-driven flaps that rebind per `Page.Testing().Generation()`, and a refresh bar found by the livery accent. | 8137 |
 | [theme-studio](theme-studio) | Theme editor with a live preview: Apply sets the page theme and writes the watched theme file, a token strip shows colour swatches, four presets. | 8138 |
 | [ops-console](ops-console) | Five-screen yard ops teaching sample: login, list, detail, settings, report. | 8141 |
 | [download-manager](download-manager) | Download queue with bounded workers: progress and speed, pause/resume with validated HTTP range resume, retry, cancel, and durable SQLite history. | — |

@@ -22,8 +22,12 @@ func TestUnusedStatePseudosSkipRedraw(t *testing.T) {
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p.statePseudos.Hover {
-		t.Skip("engine does not report which state pseudo-classes the sheets use")
+	if p.statePseudos.Hover || p.statePseudos.Active {
+		t.Fatalf("unused state reported as used: %+v", p.statePseudos)
+	}
+
+	if !p.statePseudos.Focus {
+		t.Fatal("focus-visible was not reported")
 	}
 
 	before := p.Stats().Redraws

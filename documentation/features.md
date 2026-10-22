@@ -39,7 +39,7 @@ This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `
 | `position: fixed` under window scroll | engine `Fixed` ops stay untranslated; sticky does not get that mark. |
 | Pinned chrome | `Page.SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
 | `@media print` | never matches ([theming.md](theming.md)) |
-| `@media (height)` | never matches. `TestMediaHeightFollowsTheFrame` is skipped. |
+| `@media (height)` | never matches. `TestMediaHeightFollowsTheFrame` asserts the hole. |
 | `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
 | Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
 | Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |

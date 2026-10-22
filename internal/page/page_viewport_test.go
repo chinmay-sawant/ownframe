@@ -31,21 +31,17 @@ func TestMediaWidthFollowsTheFrame(t *testing.T) {
 func TestMediaHeightFollowsTheFrame(t *testing.T) {
 	t.Parallel()
 
-	// Engine gap: the media-feature parser accepts only width and
-	// inline-size, so height, min-height, and max-height never match
-	// (internal/css/container.go parseSizeFeature). Recorded in
-	// plans/v0.0.2/dynamic-resize.md; remove the skip when the engine
-	// parses height.
-	t.Skip("engine gap: height media features do not parse")
-
+	// parseSizeFeature accepts width and inline-size only, so a min-height
+	// query never matches and the box stays at the unqueried height. This
+	// fails when the engine starts parsing height features.
 	source := `<html><head><style>body{margin:0}` +
 		`#a{height:30px}` +
 		`@media (min-height: 500px){#a{height:90px}}` +
 		`</style></head><body><div id="a"></div></body></html>`
 
 	p := newViewportPage(t, source, 800, 600)
-	if got := viewportBox(t, p, "a").H; got != 90 {
-		t.Fatalf("tall height = %.0f, want 90", got)
+	if got := viewportBox(t, p, "a").H; got != 30 {
+		t.Fatalf("tall height = %.0f, want 30; a min-height query matched", got)
 	}
 
 	p.SetSize(400, 400)
@@ -54,6 +50,6 @@ func TestMediaHeightFollowsTheFrame(t *testing.T) {
 	}
 
 	if got := viewportBox(t, p, "a").H; got != 30 {
-		t.Fatalf("short height = %.0f, want 30", got)
+		t.Fatalf("short height = %.0f, want 30; a min-height query matched", got)
 	}
 }

@@ -39,6 +39,21 @@ func command(ctx context.Context, dir string, env []string, args ...string) ([]b
 	return out, nil
 }
 
+// moduleResidue reports root paths that stay in git but must not ship in the library zip.
+func moduleResidue(name string) bool {
+	name = filepath.ToSlash(name)
+	switch name {
+	case "go.work", "go.work.sum":
+		return true
+	}
+	for _, prefix := range []string{".agents/", ".github/", ".semgrep/", "cmd/"} {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func archive(root string, names []string, manifest []byte) ([]byte, module.Version, error) {
 	parsed, err := modfile.Parse("go.mod", manifest, nil)
 	if err != nil {
@@ -50,7 +65,7 @@ func archive(root string, names []string, manifest []byte) ([]byte, module.Versi
 	var files []modzip.File
 	hash := sha256.New()
 	for _, name := range names {
-		if name == "" {
+		if name == "" || moduleResidue(name) {
 			continue
 		}
 		f := sourceFile{root: root, name: filepath.ToSlash(name)}
@@ -81,6 +96,20 @@ func archive(root string, names []string, manifest []byte) ([]byte, module.Versi
 	return output.Bytes(), version, nil
 }
 
+func rejectArchive(entries *zip.Reader, version module.Version) error {
+	prefix := version.Path + "@" + version.Version + "/"
+	for _, entry := range entries.File {
+		relative := strings.TrimPrefix(entry.Name, prefix)
+		if strings.HasPrefix(relative, "examples/") || strings.HasPrefix(relative, "scripts/") {
+			return fmt.Errorf("nested module leaked into archive: %s", relative)
+		}
+		if moduleResidue(relative) {
+			return fmt.Errorf("module residue leaked into archive: %s", relative)
+		}
+	}
+	return nil
+}
+
 func run(root string) error {
 	root, err := filepath.Abs(root)
 	if err != nil {
@@ -104,11 +133,8 @@ func run(root string) error {
 	if err != nil {
 		return err
 	}
-	for _, entry := range entries.File {
-		relative := strings.TrimPrefix(entry.Name, version.Path+"@"+version.Version+"/")
-		if strings.HasPrefix(relative, "examples/") || strings.HasPrefix(relative, "scripts/") {
-			return fmt.Errorf("nested module leaked into archive: %s", relative)
-		}
+	if err := rejectArchive(entries, version); err != nil {
+		return err
 	}
 	scratch, err := os.MkdirTemp("", "ownframe-consumer-")
 	if err != nil {

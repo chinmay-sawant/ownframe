@@ -10,7 +10,7 @@ import (
 func TestTickSurvivesBitmapFallback(t *testing.T) {
 	app := newTestApp(t, &fakeSource{}, nil)
 
-	page, err := ownframe.New(ownframe.Config{
+	replayable, err := ownframe.New(ownframe.Config{
 		HTML:   `<html><body><div style="mix-blend-mode:multiply">blend</div></body></html>`,
 		Width:  400,
 		Height: 300,
@@ -19,15 +19,53 @@ func TestTickSurvivesBitmapFallback(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := page.Redraw(context.Background()); err != nil {
+	if err := replayable.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 
-	if page.Testing().Display() != nil {
-		t.Skip("page is replayable; cannot exercise the bitmap fallback")
+	if replayable.Testing().Display() == nil {
+		t.Fatal("separable blend fell back to the bitmap")
 	}
 
-	app.page = page
+	if replayable.Testing().Image() != nil {
+		t.Fatal("separable blend required the bitmap fallback")
+	}
+
+	app.page = replayable
+	app.state.h = handles{}
+	app.mail.putSummary(app.currentGen(), sample("cpu", 0.5))
+
+	if err := app.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	fallback, err := ownframe.New(ownframe.Config{
+		HTML: `<html><body><div style="width:60px;height:40px;background:#123456;` +
+			`border-radius:50% / 20%"></div></body></html>`,
+		Width:  400,
+		Height: 300,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := fallback.Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if fallback.Testing().Display() != nil {
+		t.Fatal("elliptical border was replayed")
+	}
+
+	if fallback.Testing().Image() == nil {
+		t.Fatal("no fallback bitmap")
+	}
+
+	if len(fallback.Testing().PNG()) == 0 {
+		t.Fatal("fallback page has no PNG")
+	}
+
+	app.page = fallback
 	app.state.h = handles{}
 	app.mail.putSummary(app.currentGen(), sample("cpu", 0.5))
 

@@ -94,7 +94,7 @@ channel and applied on the game loop.
 
 ## Local notification endpoints
 
-`examples/desktop-cat` serves `POST /notify` on `127.0.0.1:6969` by default.
+`examples/desktop-cat` listens for `POST /notify` on a Unix socket by default (`-notify-addr` is `auto`). TCP `127.0.0.1:6969` is opt-in with `-notify-addr=127.0.0.1:6969`.
 `POST /notify` and `GET /state` require a matching `Origin` against the
 request scheme and host; a missing `Origin` returns 403, and curl callers
 send `Origin` explicitly. The handler sets `nosniff`, `X-Frame-Options: DENY`,

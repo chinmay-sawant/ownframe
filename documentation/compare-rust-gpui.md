@@ -40,7 +40,7 @@ See the [complete OwnFrame program](../README.md#get-started) and [window setup]
 | Styles | Rust builder methods | CSS |
 | App logic | Rust state and event handlers | Go data and handlers |
 
-## Our own Go web view
+## A Go HTML/CSS renderer plus an Ebitengine window
 
 OwnFrame uses our own HTML and CSS view written in Go.
 We built [Blinkless](https://github.com/chinmay-sawant/blinkless) from scratch as the shared engine across OwnFrame screens.
