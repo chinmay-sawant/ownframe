@@ -1,7 +1,7 @@
 package page
 
 func synonymAllow() map[string]bool {
-	return splitNames("DisplayPatch,ElementRegistry,FocusNext,FocusPrev,LastFocusID,MarkRect,PNG,PatchReport,PressedID,RecordChangedProperties,RecordChangedProperty,Redo,Redraw,RedrawIfChanged,SelectLineAt,SelectWordAt,SetChangedProps,Submit,Undo,WantFrameIn")
+	return splitNames("DisplayPatch,ElementRegistry,FocusNext,FocusPrev,LastFocusID,MarkRect,PNG,PatchReport,PressedID,Redo,Redraw,RedrawIfChanged,SelectLineAt,SelectWordAt,Submit,Undo,WantFrameIn")
 }
 
 func splitNames(s string) map[string]bool {

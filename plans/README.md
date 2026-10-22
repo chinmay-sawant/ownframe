@@ -20,7 +20,7 @@ A documented non-goal is deferred, not implemented. Passing a compiler or a unit
 - [x] `EXAMPLES` maintain a focused teaching set and inventory experiments separately. Evidence: `make examples-check` exit 0 on 2026-10-22, six maintained teaching roots and 49 experimental or support roots; every example remains in `make test`.
 - [x] `GATES` run the final repository checks. Evidence: `make test`, `make lint`, `make graphics-check`, frontend `npm run build`, and frontend `npm run check:site` exited 0 on 2026-10-22. The browser check covered 120 layouts including the testing guide. `zizmor` reported no new findings on the edited workflows in offline mode.
 - [s] `OLD-CLOSURE` replace the blanket production-readiness closure. Replacement: this ledger; `v0.0.3/prod-ready-task/README.md` explains the archived rows.
-- [-] `PACKAGE-SPLIT` further extract page responsibilities and remaining window responsibilities after the pacing extraction below. Reconsider when a concrete change crosses ownership boundaries; extract behavior with explicit inputs and outputs.
+- [-] `PACKAGE-SPLIT` further extract page responsibilities and remaining window responsibilities after the pacing and state-binding extractions below. Reconsider when a concrete change crosses ownership boundaries; extract behavior with explicit inputs and outputs.
 - [-] `NATIVE-A11Y` live screen-reader adapters remain unshipped. Reconsider with an adapter owner and real assistive-technology validation; see `../documentation/accessibility-native.md`.
 - [-] `EXPERIMENTS` Reconsider promoting additional demos only when they teach a missing public capability and have a maintenance owner. Existing experimental examples remain in the compatibility suite.
 
@@ -52,3 +52,10 @@ A local display-free window unit test passed, so no additional Xvfb wrappers wer
 - [ ] `NATIVE-SESSIONS` collect native Windows/macOS input-method and Android lifecycle evidence. WSLg is the available desktop session; `adb devices -l` listed no connected device on 2026-10-22. These checks need the corresponding hosts and an authorized connected Android device. Cross-compilation and Xvfb cannot close this row.
 
 This pass was validated locally before publication. No release or version bump was made.
+
+## State binding ownership
+
+- [x] `STATE-OWNER` give `internal/state.Binding` ownership of subscription cancellation, binding generations, metadata queues, and synchronization. Evidence: seven direct binding tests and page integration tests passed under the race detector on 2026-10-22. Coverage includes rebinding the same store after detach while an older callback is in flight, snapshot ownership, and shared-store fallback. Page now holds one binding instead of five separate bookkeeping fields. Three unused internal aliases were removed; the root public API is unchanged.
+- [x] `BINDING-GATES` validate the final binding extraction and generated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, targeted state/page race tests, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. The strengthened page integration test checks exact store fallback and detachment. Logs are in ignored `temp/binding-*.log` files.
+
+The pacing snapshot was committed as `ae5ddbbf` and pushed to `origin/feat/prod-readiness` at the author's request. The subsequent binding extraction was validated locally before publication. Native host and device validation remains open under `NATIVE-SESSIONS`.

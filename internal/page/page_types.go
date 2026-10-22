@@ -2,7 +2,6 @@ package page
 
 import (
 	"html/template"
-	"sync"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -51,11 +50,7 @@ type Page struct {
 	watch           *watchState
 	dirty           dirty.Tracker
 	lastPatch       DisplayPatch
-	changedPropsMu  sync.RWMutex
-	changedProps    []string
-	stateStore      *state.Store
-	stateCancel     func()
-	stateEpoch      uint64
+	stateBinding    state.Binding
 	elements        *element.Registry
 	frameState      // deadline: loop sets, window takes; lock: atomic
 	pinZ            int

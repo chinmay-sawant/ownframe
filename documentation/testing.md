@@ -48,9 +48,9 @@ To run the same pixel checks against your current Linux desktop session, use `GR
 
 ## State subscription lifecycle
 
-The internal retained-state tests cover rebinding a page to a store, repeated binding to the same store, detaching one of two pages, and rejecting a former store's already-dispatched callback. Listener cancellation uses registration identity rather than a closure's code address. Callbacks execute outside the store lock and may reenter the store. An already-dispatched callback may finish after cancellation, so the page also checks the binding generation before recording metadata.
+`internal/state.Binding` owns subscription cancellation, binding generations, and changed-property queues. Seven direct tests cover rebinding, independent subscriptions, concurrent metadata access, snapshot ownership, shared-store fallback, and callbacks from a detached binding. The callback checks include detaching and rebinding the same store, where pointer equality cannot identify a stale registration. Listener cancellation uses registration identity rather than a closure's code address. Callbacks execute outside the store lock and may reenter the store. An already-dispatched callback may finish after cancellation, so the binding checks its generation before recording metadata.
 
-`go test -race -p 1 ./internal/page ./internal/state` exercises concurrent store patches, listener registration and cancellation, page rebinding, and metadata reads. These are internal engine seams, not additions to the public `ownframe.Page` method set.
+`go test -race -p 1 ./internal/page ./internal/state` exercises concurrent store patches, listener registration and cancellation, binding changes, and metadata reads. Page integration tests retain coverage for rendering metadata and the public testing facade. These changes add no methods to public `ownframe.Page`.
 
 ## Review responsibility
 
