@@ -82,7 +82,7 @@ sh scripts/android.sh
 adb install -r examples/telegram/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The debug APK is self-signed with the debug key. Use the release command above
+The debug APK uses package `com.chinmaysawant.telegram.debug` and label "Telegram demo debug", so it can coexist with the signed demo. It is self-signed with the debug key. Use the release command above
 for the signed app artifact. Copy an APK to a phone and open it there if USB is
 not an option ("install unknown apps" permission required).
 
@@ -110,9 +110,15 @@ rebuild, or `./gradlew clean`, writes it fresh.
 
 ## WSL2 and the phone
 
-WSL2 does not see USB devices, so `adb devices` stays empty when the phone is
-plugged into the Windows host. Wireless debugging is the short path; Android
-11 or newer and the phone on the same Wi-Fi are the requirements.
+For a phone connected to Windows, use Windows ADB from WSL2:
+
+```
+ADB=/mnt/c/Users/acer/platform-tools/adb.exe ANDROID_TARGET=android/arm64 sh scripts/android.sh install
+```
+
+Set `ADB_PORT` if the Windows ADB server uses a port other than 5037. The install script converts the APK path for Windows. Do not switch to Linux ADB for a Windows-attached phone.
+
+Wireless debugging is another option with Android 11 or newer and the phone on the same Wi-Fi:
 
 1. On the phone, enable Developer options and Wireless debugging, then tap
    "Pair device with pairing code". The screen shows an `IP:port` and a
@@ -169,9 +175,8 @@ them.
 - `SDK location not found`: export `ANDROID_HOME`, or write
   `local.properties` next to `settings.gradle` with `sdk.dir=<path>`.
 - `INSTALL_FAILED_UPDATE_INCOMPATIBLE`: a differently signed build is
-  installed; run `adb uninstall com.chinmaysawant.telegram` first.
-- The app closes when you press the system back button: Android handles that
-  key, so use the on-screen back arrow to leave a chat.
+  installed. Use the separate debug package or the matching signing key. Uninstalling deletes application data.
+- System back should leave a conversation before closing the list. Record the screen and device version if this routing fails.
 
 ## Toolchain pins (audit DEP-11)
 
@@ -204,3 +209,13 @@ assembleDebug` inside this folder. Review the hash diff before
 committing, and re-run after any AGP or dependency bump: builds then
 fail on unsigned or mismatched artifacts instead of downloading them
 silently.
+
+## Device screenshots for validation
+
+Screenshots remain blocked by default. A debuggable APK can explicitly permit capture for a validation launch:
+
+```
+adb shell am start -S -W -n com.chinmaysawant.telegram.debug/com.chinmaysawant.telegram.MainActivity --ez ownframe.validation true
+```
+
+This extra cannot disable secure capture in a release APK. Use the selected Windows ADB executable and server port when running from WSL2. The mobile metrics panel starts collapsed; tap its header to expand and X to close. It does not change the desktop dock.

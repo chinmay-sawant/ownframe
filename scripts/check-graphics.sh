@@ -21,6 +21,7 @@ echo "graphics-check: session=$session; DISPLAY=${DISPLAY:-unset}; LIBGL_ALWAYS_
 export EBITENGINE_GRAPHICS_LIBRARY=opengl
 export OWNFRAME_FRAME_GPU_TEST=1
 export OWNFRAME_REPLAY_GPU_TEST=1
+export OWNFRAME_SCROLLBAR_GPU_TEST=1
 
 run_test() {
     # Do not set HOME or touch the user's Xauthority. xvfb-run owns a temporary cookie.
@@ -43,4 +44,6 @@ if not passed:
 # A missing, renamed, or skipped test is a failure, even when go test exits zero.
 run_test ./internal/window TestPartialFrameLeavesTheScreen
 run_test ./internal/window TestWindowRepaintPixels
+run_test ./internal/window TestWindowIdleDeadline
+run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity

@@ -63,8 +63,13 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         // Chats may hold sensitive data: keep them out of screenshots
         // and the recent-apps thumbnail.
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE);
+        boolean debuggable = (getApplicationInfo().flags
+            & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        boolean validation = debuggable && getIntent().getBooleanExtra("ownframe.validation", false);
+        if (!validation) {
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
+        }
         getWindow().setStatusBarColor(Color.TRANSPARENT);
         getWindow().setNavigationBarColor(Color.TRANSPARENT);
         setContentView(buildLayout());

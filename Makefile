@@ -129,3 +129,24 @@ $(EXAMPLES):
 # Unknown names fail with a pointer to `make open`.
 %:
 	@echo "make: unknown target '$@'; run 'make open <example>'" >&2; exit 1
+
+.PHONY: module-check
+module-check:
+	@cd scripts && GOWORK=off $(GO) run ./cmd/module-check -root ..
+
+.PHONY: site-check
+site-check:
+	@npm --prefix frontend test
+	@python3 scripts/check-generated-site.py
+	@npm --prefix frontend run check:site
+
+.PHONY: release-check
+release-check:
+	@sh scripts/package_test.sh
+	@sh scripts/package.sh login
+	@python3 scripts/check-release-bundle.py dist
+
+SOAK_SECONDS ?= 600
+.PHONY: soak-check
+soak-check:
+	@OWNFRAME_SOAK_SECONDS=$(SOAK_SECONDS) OWNFRAME_SOAK_COMMIT="$$(git rev-parse HEAD)" $(GO) test -p 1 -count=1 -v -timeout=35m -run '^TestPageSoak$$' ./internal/page

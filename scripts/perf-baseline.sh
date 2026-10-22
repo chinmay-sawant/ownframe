@@ -12,11 +12,18 @@ while [ $# -gt 0 ]; do
   esac
 done
 mkdir -p "$(dirname "$OUT")"
-{
+# Avoid a tee pipeline swallowing a failing benchmark command.
+if (
 echo "# ownframe perf baseline $(date -u +%FT%TZ)"
 echo "# $(go version)"
-go test -p 1 ./internal/page -run XXX -bench 'BenchmarkRedrawStages|BenchmarkRedrawWarm|BenchmarkRedrawCold|BenchmarkRedrawHeavyWarm' -benchmem -count 1
-go test -p 1 ./internal/replay -run XXX -bench BenchmarkDrawRectScan -benchmem -count 1
+go test -p 1 ./internal/page -run XXX -bench 'BenchmarkRedrawStages|BenchmarkRedrawWarm|BenchmarkRedrawCold|BenchmarkRedrawHeavyWarm' -benchmem -count 1 || exit $?
+go test -p 1 ./internal/replay -run XXX -bench BenchmarkDrawRectScan -benchmem -count 1 || exit $?
 go test -p 1 ./examples/platform/... -run XXX -bench BenchmarkClickCount -benchmem -count 1
-} 2>&1 | tee "$OUT"
-echo "Wrote $OUT"
+) >"$OUT" 2>&1; then
+  cat "$OUT"
+  echo "Wrote $OUT"
+else
+  status=$?
+  cat "$OUT" >&2
+  exit "$status"
+fi

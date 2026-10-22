@@ -59,3 +59,10 @@ This pass was validated locally before publication. No release or version bump w
 - [x] `BINDING-GATES` validate the final binding extraction and generated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, targeted state/page race tests, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. The strengthened page integration test checks exact store fallback and detachment. Logs are in ignored `temp/binding-*.log` files.
 
 The pacing snapshot was committed as `ae5ddbbf` and pushed to `origin/feat/prod-readiness` at the author's request. The subsequent binding extraction was validated locally before publication. Native host and device validation remains open under `NATIVE-SESSIONS`.
+
+## Runtime idle deadline validation
+
+- [x] `IDLE-SESSION` exercise the actual window pacing wrapper and timer in the graphics gate. Evidence: `TestWindowIdleDeadline` passed in Xvfb software OpenGL and WSLg on 2026-10-22, plus three additional independent Xvfb sessions. It requires initial red pixels, the blocking idle FPS mode, a declared quiet interval, a deadline-driven blue update, and restoration of vsync and the original tick rate. Temporarily removing the timer wake failed through the watchdog; replacing the blocking mode with an unthrottled loop failed the mode assertion. Both production mutations were restored before final validation.
+- [x] `IDLE-GATES` validate the four-test graphics gate and updated website. Evidence: `make test`, `make test-race`, `make lint`, `make graphics-check`, `GRAPHICS_SESSION=desktop make graphics-check`, frontend build, and 120 browser layout checks exited 0 on 2026-10-22. Tooling tests require all four named graphics tests and reject skips and failing Go commands. Logs are in ignored `temp/idle-session-*.log` files.
+
+The binding extraction was committed as `b32ea940` and pushed to `origin/feat/prod-readiness` at the author's request. The subsequent runtime validation changes remain local. This test proves host integration in the tested sessions; it does not measure energy use, establish precise wake latency, or close `NATIVE-SESSIONS`.

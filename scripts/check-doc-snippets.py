@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compile every registered Go fence; additions and exclusions require review."""
+from doc_claims import validate as validate_claims
 import json
 from pathlib import Path
 import re
@@ -37,6 +38,7 @@ def snippets():
 
 
 def main():
+    validate_claims(ROOT)
     found = snippets()
     manifest = json.loads((ROOT / 'documentation/snippets.json').read_text())
     if found.keys() != manifest.keys():

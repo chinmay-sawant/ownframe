@@ -8,6 +8,13 @@ import tempfile
 import unittest
 
 SCRIPT = Path(__file__).resolve().with_name("check-graphics.sh")
+REQUIRED_TESTS = {
+    "TestPartialFrameLeavesTheScreen",
+    "TestWindowRepaintPixels",
+    "TestWindowIdleDeadline",
+    "TestGPUVisibleParity",
+    "TestDrawPaintsVerticalThumb",
+}
 
 
 class GraphicsGateTests(unittest.TestCase):
@@ -59,14 +66,14 @@ class GraphicsGateTests(unittest.TestCase):
             with self.subTest(software=software):
                 result, calls = self.run_gate("desktop", software=software)
                 self.assertEqual(result.returncode, 0, result.stdout)
-                self.assertEqual(len(calls), 3)
+                self.assertEqual(len(calls), len(REQUIRED_TESTS))
                 self.assertTrue(all(call["software"] == software for call in calls))
-                self.assertEqual(len({call["test"] for call in calls}), 3)
+                self.assertEqual({call["test"] for call in calls}, REQUIRED_TESTS)
 
     def test_xvfb_selects_software_rendering(self):
         result, calls = self.run_gate("xvfb")
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertEqual(len(calls), 3)
+        self.assertEqual({call["test"] for call in calls}, REQUIRED_TESTS)
         self.assertTrue(all(call["software"] == "1" for call in calls))
 
     def test_missing_display_and_invalid_session_fail(self):

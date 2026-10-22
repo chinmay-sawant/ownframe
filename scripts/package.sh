@@ -12,6 +12,14 @@
 # gets the wasm zip. No network, no new modules.
 set -eu
 
+# Packaging uses the already verified module and toolchain caches.
+export GOPROXY=off
+# Resolve an already cached toolchain before forbidding further selection.
+package_goroot=$(go env GOROOT)
+PATH="$package_goroot/bin:$PATH"
+export PATH
+export GOTOOLCHAIN=local
+
 usage() {
 	echo "usage: scripts/package.sh [-n] <example>" >&2
 	exit 2

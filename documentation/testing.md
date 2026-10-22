@@ -28,11 +28,13 @@ make graphics-check
 
 `TestPagePictureMatchesRedraw` compares software PNGs after interactions with a fresh redraw and requires the interaction to change the picture. It protects retained page state and software-paint consistency. It does not capture the window's tile cache or prove browser parity. `TestRetainedPaintInvalidatesEncodedPNG` checks decoded pixels after operation patches, display patches, tick mutations, and explicit invalidation, without requiring a redraw. A separate no-op test verifies cache reuse.
 
-`make graphics-check` runs three tests in separate processes and separate Xvfb sessions:
+`make graphics-check` runs five tests in separate processes and separate Xvfb sessions:
 
 - `TestPartialFrameLeavesTheScreen` checks damage-only blits, full rebuilds, scroll copies, and hiding then restoring content under the devtools dock.
 - `TestWindowRepaintPixels` uses a real page and compares the retained window framebuffer with a fresh full replay across a color change crossing tile boundaries, element removal, scrolling with a fixed header, a clean frame, and an edit while scrolled. It requires the color change to take the partial repaint path.
-- `TestGPUVisibleParity` checks replay pixels, shape and text caches, transformed operations, and composited groups inside Ebiten's `Draw` loop.
+- `TestWindowIdleDeadline` runs the actual pacing wrapper and timer. It requires the blocking idle FPS mode, a quiet interval with a declared deadline, a deadline-driven tick that paints blue, and restoration of the original tick rate. A watchdog wakes a stuck loop only to fail the test. Keep the test window free of input during this check.
+- `TestDrawPaintsVerticalThumb` checks visible scrollbar pixels inside the running game.
+- `TestGPUVisibleParity` checks replay pixels, shape and text caches, transformed operations, composited groups, and translucent fills, images, and grids inside Ebiten's `Draw` loop. Replay fixtures live under `internal/replay/testdata`, so a library module zip contains them.
 
 All pixel readback occurs in the running game. Replay comparison targets use standalone textures so atlas placement does not introduce different interpolation rounding between the two targets. Pixel equality remains exact. Each process has a 90-second timeout and runs with software OpenGL for repeatability. Ubuntu needs `xvfb`, `xauth`, and `libgl1-mesa-dri`. The script fails when these prerequisites are missing. It leaves the user's `~/.Xauthority` untouched.
 
@@ -44,7 +46,7 @@ To run the same pixel checks against your current Linux desktop session, use `GR
 
 `internal/window/pacing` owns idle transitions, declared frame deadlines, keep-alive scheduling, and diagnostic counters. Its tests use supplied times and the same interface as the window adapter. They run without a display or Ebiten dependency. Deadline replacement, cancellation, exactly-once wake consumption, timer sleep, and snapshot reads have explicit checks.
 
-`idle_game.go`, `idle_frame.go`, and `idle_timer.go` retain the Ebiten mode changes, timer goroutine, and locking. The policy tests prove scheduling decisions. Pixel checks prove rendering; neither check simulates native keyboard input or establishes actual event-wait timing.
+`idle_game.go`, `idle_frame.go`, and `idle_timer.go` retain the Ebiten mode changes, timer goroutine, and locking. The policy tests prove scheduling decisions. `TestWindowIdleDeadline` checks that these decisions reach the running host and update its pixels. It rejects extra frames during the declared quiet interval, but does not measure energy use or promise precise wake latency. Native keyboard input remains outside this check.
 
 ## State subscription lifecycle
 
@@ -55,3 +57,13 @@ To run the same pixel checks against your current Linux desktop session, use `GR
 ## Review responsibility
 
 There is no character cap. Keep related implementation and test scenarios together. Extract a package when it can own a responsibility with explicit inputs and outputs, rather than to reduce a file count. Use the cohesion questions in [CONTRIBUTING.md](../CONTRIBUTING.md).
+
+## Distribution and website checks
+
+`make module-check` builds a module zip with Go's archive rules, including library fixtures and excluding nested example and tooling modules. It compiles a separate public-API consumer with `GOWORK=off` and rejects replacements in the resolved library graph. Dependencies may come from the existing module cache or the public proxy; this is not an empty-cache offline test. Before an examples tag, run `cd scripts && GOWORK=off go run ./cmd/module-check -root .. -examples-tag examples/vX.Y.Z`. It rejects local filesystem replacements and checks the examples against their published library requirement.
+
+`make site-check` runs website unit tests, rebuilds the site and rejects stale tracked output, then checks browser layouts. Refresh intentional changes with `npm --prefix frontend run build` first. CI runs this gate alongside module and graphics checks.
+
+`make release-check` packages the login candidate locally with dependency downloads disabled and verifies archive inventory, checksums, paths, executable modes, and wasm magic. It neither publishes a release nor proves OS signing. Tag CI prepares a signed and attested candidate after its gates pass; that workflow needs its own successful run before claiming signing evidence.
+
+`make soak-check` runs a bounded page workload for ten minutes by default. See [performance.md](performance.md) for scope and limits. A web endpoint sampler and a page workload do not prove native input, Android lifecycle behavior, or window frame pacing.

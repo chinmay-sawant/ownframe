@@ -9,7 +9,10 @@ func (s *shell) viewSize() (int, int) {
 
 // viewOf is viewSize for an outside size that Layout has not published yet.
 func (s *shell) viewOf(w, h int) (int, int) {
-	if s.dev.on {
+	if s.dev.on && s.dev.mobile {
+		panel := devMobileRect(w, h, s.dev.mobileExpanded)
+		h -= int(panel.H + devMobileSafeBottom)
+	} else if s.dev.on {
 		dock := int(s.devDockWidth())
 		if dock > w {
 			dock = w

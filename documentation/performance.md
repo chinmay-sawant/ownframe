@@ -24,10 +24,10 @@ keep-alive frame about eight times a second, and input wakes the full rate.
 The Frame tab's FPS and TPS rows show the paced rate while a page sits still;
 that is expected, not a stall.
 
-Run the idle script against a benchmark app, wait for the window to settle, then read CPU and RSS with the system monitor while the window stays untouched. No input, no tick animation, no reload.
+The idle helper prints a manual desktop checklist. It neither finds a process nor measures idle CPU. Build the named app, capture the binary PID, and read CPU and RSS for that exact process after warmup. Leave it untouched, without animation or reload.
 
 ```sh
-sh scripts/perf-idle.sh examples/perf-benchmarks/normal
+sh scripts/perf-idle.sh --example examples/perf-benchmarks/normal
 ```
 
 A quiet page should sit near zero CPU. RSS should hold flat across the sample window. Write both numbers into the baseline table under Idle RSS and Idle CPU, with the machine name and the commit hash. Repeat on the same machine before comparing releases.
@@ -46,19 +46,25 @@ A healthy normal page keeps p99 under budget with margin. When p95 passes budget
 
 A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `TakeDirtyRects` and the window paints them through `drawReplayPartial` tiles (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, pinned chrome painted after the tile blit, and the cases that still repaint in full, such as fallback pages and ticking pages that do not call `UseFrameDirty`.
+The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `TakeDirtyRects` and the window paints them through `drawReplayPartial` tiles (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the eight-rect cap, the one-third area collapse, pinned chrome painted after the tile blit, and the cases that still repaint in full, such as bitmap fallback pages. Tick callbacks automatically report operation damage; a clean ticking page can remain idle.
 
 For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart changes report two rects instead of the bounding box around both. Many small changes inside one region stay partial, so a whole frame rect on an edit now means the change really covered more than a third of the frame or the page could not place it; a list longer than eight rects, or a rect the size of the whole content, makes the window rebuild its buffer once. A rebuild still only tessellates each repeated rounded shape once, because the replay bakes repeated fills and borders into a raster cache ([repaint.md](repaint.md)).
 
 ## 4 Soak matrix
 
-Run one scenario for 10 to 30 minutes and watch memory and scheduling stay flat.
+For a display-free page workload, run `make soak-check`. It drives resize, hit-tested clicks, typing, backspace, scrolling, conditional content, and PNG encoding for 600 seconds. Its JSON log records cycle p95, retained heap after GC, and goroutine counts. Coarse limits reject heap growth over 64 MiB or more than four extra goroutines. It does not exercise a native window or IME.
+
+For an actual window, drive the scenarios below for 10 to 30 minutes. Web sampling is separate: start an explicitly enabled server first, then sample it from another terminal.
 
 ```sh
-sh scripts/perf-longrun.sh examples/perf-benchmarks/normal
+go run -tags ownframe_debug ./examples/perf-benchmarks/normal -web -addr 127.0.0.1:8128
 ```
 
-Cover each row at least once per release. Combine them in one session when time is short.
+```sh
+sh scripts/perf-longrun.sh --minutes 15 --url http://127.0.0.1:8128/debug/state
+```
+
+The sampler writes CSV and JSON metadata and fails on missing metrics, request errors, counter resets, or configured heap/goroutine growth. It does not drive interactions or measure desktop frame pacing. Cover each row at least once per release.
 
 | Scenario | What to do |
 |---|---|
@@ -105,7 +111,7 @@ Fill [performance-baseline.md](performance-baseline.md) once per release, on the
 sh scripts/perf-baseline.sh
 ```
 
-The script runs each benchmark app and writes idle, frame, allocation, layout, and paint rows. Manual rows, such as soak verdicts and machine notes, go in by hand. Never copy numbers across machines. Label every entry with the commit hash.
+The script runs display-free Go microbenchmarks for redraw stages, replay scans, and the platform click handler. It does not launch benchmark apps or record idle CPU, native frame percentiles, or RSS. Enter those session measurements and machine notes separately. Never copy numbers across machines. Label every entry with the commit hash.
 
 ## Engine lock
 

@@ -10,6 +10,7 @@ android {
         targetSdkVersion 34
         versionCode 1
         versionName '0.0.2'
+        manifestPlaceholders = [appLabel: "Telegram demo"]
     }
 
     compileOptions {
@@ -19,6 +20,10 @@ android {
 
     // Release hardening: R8 minifies and shrinks the demo APK.
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            manifestPlaceholders = [appLabel: "Telegram demo debug"]
+        }
         release {
             minifyEnabled true
             shrinkResources true

@@ -88,6 +88,9 @@ func devOpRow(op *layout.DisplayOp, i, n int, ink color.RGBA, ppt float64) devRo
 // dock, so a stroke under the panel or off the window is skipped. The dock
 // covering the whole window leaves it empty.
 func (s *shell) devOpsView() devRect {
+	if s.dev.mobile {
+		return devRect{W: float64(s.screenW), H: s.dev.panel.Y}
+	}
 	if s.dev.panel.W <= 0 {
 		return devRect{W: float64(s.screenW), H: float64(s.screenH)}
 	}

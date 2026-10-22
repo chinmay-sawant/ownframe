@@ -174,7 +174,7 @@ linters:
       # engine gate, the font face cache, and the
       # window debug snapshot hook.
       - linters: [gochecknoglobals]
-        path: "internal/(clipboard/(clipboard|x11_conn|x11_read)\\.go|crash/crash\\.go|ipc/ipc\\.go|render/engine\\.go|web/debug_runtime\\.go|textrun/face\\.go)|report\\.go"
+        path: "internal/(clipboard/(clipboard|x11_conn|x11_read)\\.go|crash/crash\\.go|ipc/ipc\\.go|render/engine\\.go|textrun/face\\.go)|report\\.go"
       # Immutable lookup tables: emoji data, blend modes, key chords, panel
       # names, state pseudos, and the preview target lists.
       - linters: [gochecknoglobals]

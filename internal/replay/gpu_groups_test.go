@@ -52,7 +52,7 @@ func checkGroupClip() error {
 }
 
 func checkGroupMask() error {
-	data, err := os.ReadFile("../../examples/css-masking/assets/alpha-half.png")
+	data, err := os.ReadFile("testdata/alpha-half.png")
 	if err != nil {
 		return err
 	}
@@ -111,9 +111,9 @@ func checkGroupNested() error {
 
 func checkPhotoMaskGPU() error {
 	files := map[string]string{
-		"mask.png":           "../../examples/css-masking/assets/alpha-half.png",
-		"assets/flowers.jpg": "../../examples/css-masking/assets/flowers.jpg",
-		"assets/coast.jpg":   "../../examples/css-masking/assets/coast.jpg",
+		"mask.png":           "testdata/alpha-half.png",
+		"assets/flowers.jpg": "testdata/flowers.jpg",
+		"assets/coast.jpg":   "testdata/coast.jpg",
 	}
 	images := make(map[string][]byte, len(files))
 	for src, path := range files {

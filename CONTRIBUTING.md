@@ -103,3 +103,5 @@ plausible-but-wrong security code.
   fixtures. The gitleaks pre-commit hook and CI job scan for them; the
   `secret`/`secret` demo credentials in `examples/login` are the only
   sanctioned placeholder.
+
+For a separate maintainer assessment, use the [review prompt and handoff exercise](documentation/maintenance-review.md). Record what the new maintainer actually ran.

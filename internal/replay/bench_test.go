@@ -14,7 +14,7 @@ import (
 // BenchmarkDrawRectScan times the op filter on the platform example, once
 // for a counter-sized dirty rect and once for the whole frame.
 func BenchmarkDrawRectScan(b *testing.B) {
-	html, err := os.ReadFile("../../examples/platform/platform/platform.html")
+	html, err := os.ReadFile("testdata/platform.html")
 	if err != nil {
 		b.Fatal(err)
 	}

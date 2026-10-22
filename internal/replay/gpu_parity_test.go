@@ -17,7 +17,7 @@ func TestGPUVisibleParity(t *testing.T) {
 	if os.Getenv("OWNFRAME_REPLAY_GPU_TEST") != "1" && os.Getenv("GPUI_REPLAY_GPU_TEST") != "1" {
 		t.Skip("requires an isolated graphics session")
 	}
-	source, err := os.ReadFile("../../examples/perf-complex/layout.html")
+	source, err := os.ReadFile("testdata/layout.html")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,6 +66,10 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 	}
 	if g.step == 0 {
 		if err := checkSleepyEyeRenders(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkTranslucentPixels(); err != nil {
 			g.err = err
 			return
 		}

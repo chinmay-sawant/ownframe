@@ -32,7 +32,7 @@ func newShell(ctx context.Context, app host.Screen) *shell {
 		chords:   newChordWatch(),
 		watched:  newKeyWatch(),
 		pageZoom: 1,
-		dev:      devState{watch: newKeyWatch()},
+		dev:      devState{watch: newKeyWatch(), mobile: mobileDevTools},
 		pendingW: width,
 		pendingH: height,
 		screenW:  width,

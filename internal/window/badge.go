@@ -49,7 +49,7 @@ func badgeRectInset(screenW float64, label string, inset float64) (x, y, width, 
 // devtools dock pushes it left.
 func (s *shell) drawBadge(screen *ebiten.Image) {
 	inset := 0.0
-	if s.dev.on {
+	if s.dev.on && !s.dev.mobile {
 		inset = s.dev.panel.W
 	}
 

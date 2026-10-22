@@ -26,7 +26,7 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		s.dev.resizing = false
 	}
 
-	if pressed && devOnEdge(s.dev.panel, x, y) {
+	if !s.dev.mobile && pressed && devOnEdge(s.dev.panel, x, y) {
 		s.dev.resizing = true
 
 		return nil

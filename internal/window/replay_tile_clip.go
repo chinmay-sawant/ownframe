@@ -10,7 +10,7 @@ import (
 // from the live dock width, the same geometry devLayout paints later this
 // frame. With the dock off the content width comes back, so nothing clips.
 func (s *shell) dockClipX(contentW int) int {
-	if !s.dev.on {
+	if !s.dev.on || s.dev.mobile {
 		return contentW
 	}
 

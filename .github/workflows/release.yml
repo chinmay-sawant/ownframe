@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+      - "examples/v*"
 
 # GEN-9: least privilege; tagging a release must not grant write beyond
 # what the release job needs. Never switch this to pull_request_target.
@@ -43,11 +44,21 @@ jobs:
       - run: xvfb-run -a make test
       - run: make lint
       - run: make graphics-check
+      - run: make module-check
+      - name: Validate examples release boundary
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          case "$RELEASE_TAG" in
+            examples/*) cd scripts && GOWORK=off go run ./cmd/module-check -root .. -examples-tag "$RELEASE_TAG" ;;
+          esac
+      - run: make site-check
 
   # GEN-12/GEN-13: every tag ships an SBOM with a SLSA attestation and a
   # keyless cosign signature, so downstream users can verify what is in
   # the release and that CI built it. See documentation/supply-chain.md.
   supply-chain:
+    needs: gates
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -64,6 +75,14 @@ jobs:
           cache: false # tag-triggered release: no shared cache writes
       - run: go mod verify
       - run: cd examples && go mod verify
+      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - name: Build and verify release candidate
+        env:
+          COSIGN: "1"
+          CGO_ENABLED: "0"
+        run: |
+          sh scripts/package.sh login
+          python3 scripts/check-release-bundle.py dist
       # SBOM of both modules in SPDX JSON (GEN-13).
       - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
@@ -73,14 +92,18 @@ jobs:
       # SLSA build provenance over the SBOM (GEN-12).
       - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
-          subject-path: sbom.spdx.json
+          subject-path: |
+            sbom.spdx.json
+            dist/SHA256SUMS
+            dist/*.tar.gz
+            dist/*.zip
       # Keyless cosign signature over the same file (GEN-12).
-      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
       - run: cosign sign-blob --yes --output-signature sbom.spdx.json.sig --output-certificate sbom.spdx.json.pem sbom.spdx.json
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: supply-chain
+          name: release-candidate
           path: |
             sbom.spdx.json
             sbom.spdx.json.sig
             sbom.spdx.json.pem
+            dist/

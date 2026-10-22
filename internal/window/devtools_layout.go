@@ -10,6 +10,10 @@ const (
 // devLayout places the dock, builds the active tab's rows, and records this
 // frame's clickable regions.
 func (s *shell) devLayout() {
+	if s.dev.mobile {
+		s.devMobileLayout()
+		return
+	}
 	s.dev.panel = devDockRect(s.screenW, s.screenH, s.devDockWidth())
 	s.dev.content = devRect{
 		X: s.dev.panel.X + devPanelPad,

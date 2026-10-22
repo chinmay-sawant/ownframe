@@ -50,6 +50,8 @@ jobs:
       - run: xvfb-run -a make test
       - run: make lint
       - run: make graphics-check
+      - run: make module-check
+      - run: make site-check
 
   # Library-only race detector (TEST-01/02). Examples stay off this job.
   test-race:

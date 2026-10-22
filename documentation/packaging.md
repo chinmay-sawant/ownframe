@@ -2,7 +2,9 @@
 
 `scripts/package.sh <example>` builds one example for this system and writes
 a release archive to `dist/`. The build uses `-trimpath` and
-`-ldflags "-s -w"`. The script makes no network calls and adds no modules.
+`-ldflags "-s -w"`. The script disables module downloads and toolchain downloads. Populate and verify
+the dependency cache before packaging. Missing cached inputs fail the build.
+Optional `COSIGN=1` signing uses the network, as described below.
 
 ```
 sh scripts/package.sh login          # archive the login example

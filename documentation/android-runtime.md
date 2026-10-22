@@ -23,8 +23,8 @@ gradients, and other CSS features arrive as geometry or encoded images.
 
 ## Coordinates and repainting
 
-The engine pin is `blinkless v0.0.2` (tag `23cc975`, 2026-10-15), required by
-both Go modules. The display factors are `PointsPerPixel` at 0.75 points per
+Both Go modules require the same Blinkless engine revision. [go.mod](../go.mod)
+is the current pin; historical validation records identify the revision tested. The display factors are `PointsPerPixel` at 0.75 points per
 CSS pixel and `PixelPerPoint` at 4/3 CSS pixels per point. Hit boxes use CSS
 pixels, and operation coordinates use points.
 
