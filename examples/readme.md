@@ -1,5 +1,7 @@
 # Examples
 
+Copy [login](login) or [ops-console](ops-console), not the brand clones.
+
 Most examples open one HTML template in a window. `go run ./examples/<name>`
 opens a desktop window. `go run ./examples/<name> -web` serves the same picture
 in a browser on the printed address. Android-only examples document their
@@ -32,6 +34,7 @@ behavior and the limits are in
 | Folder | Shows |
 |---|---|
 | [login](login) | Sign-in screen with real inputs, clipboard, and an app-level undo stack. |
+| [list](list) | Fixed-height row window helper: start, count, and spacers. Import it. There is no `go run`. |
 | [ops-console](ops-console) | Five-screen yard ops console: login, ticket list, detail, settings, and a shift report. One shell template, one `View`, `data-action` clicks. Not a brand clone. |
 | [forms](forms) | Every form control: text, password, textarea, checkbox, radio, select, file. |
 | [bind](bind) | `data-bind` two-way binding of controls to a struct. |

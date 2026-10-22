@@ -45,14 +45,25 @@ import (
 func main() {
 	page, err := ownframe.New(ownframe.Config{
 		Title:  "Hello",
-		HTML:   `<h1>{{.Title}}</h1>`,
+		HTML:   `<h1>{{.Title}}</h1><button data-action="ok">OK</button>`,
 		Width:  480,
 		Height: 640,
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
-	page.SetData(struct{ Title string }{"Hello"})
+	view := struct{ Title string }{"Hello"}
+	page.SetData(view)
+	page.Handle(ownframe.Handlers{
+		Click: func(_ context.Context, box ownframe.Box) error {
+			if box.Action != "ok" {
+				return nil
+			}
+			view.Title = "OK"
+			page.SetData(view)
+			return nil
+		},
+	})
 	if err := ownframe.Run(context.Background(), page); err != nil {
 		log.Fatal(err)
 	}
@@ -65,6 +76,7 @@ From this checkout:
 
 ```sh
 go run ./examples/login              # desktop native
+go run ./examples/ops-console        # five-screen yard ops
 sh scripts/android-release.sh login  # Android native APK
 sh scripts/android-eyes.sh           # Android native (eyes)
 go run ./examples/login -web         # PNG debugger preview
@@ -72,7 +84,7 @@ sh scripts/browser.sh                # wasm canvas preview
 go run ./examples/desktop-cat        # desktop native overlay
 ```
 
-The login demo accepts `secret` for both fields. [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](documentation/android-app-creation.md) have the details. See [showcase.md](showcase.md) for the Telegram, Teams, Spotify Player, Pet Care, and other examples.
+Start with login and ops-console. The login demo accepts `secret` for both fields. Clones are unofficial skins later in [showcase.md](showcase.md). [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](documentation/android-app-creation.md) have the details.
 
 Nested module markers keep the website, generated site, screenshots, and development folders out of the library module archive. The examples remain in their own module.
 

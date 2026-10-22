@@ -56,7 +56,7 @@ compares GPU mask compositing with the software painter
 
 ## Known gaps
 
-Documented in [features.md](features.md) and [../PHASES.md](../PHASES.md), not
+Documented in [features.md](features.md) and [../plans/PHASES.md](../plans/PHASES.md), not
 implemented: JS engine/Chromium, cookies/sessions, native menus/tray,
 auto-update, video/WebGL, a library-level audio API (the examples play
 audio through `examples/music`), an accessibility tree, and some engine CSS limits

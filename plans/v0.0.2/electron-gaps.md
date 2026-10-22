@@ -125,7 +125,7 @@ error that names `SavePDF`.
       returns the bytes with `Content-Type: application/pdf`.
 - [x] `documentation/printing.md`, a `documentation/web.md` route row, a
       `documentation/README.md` row, and a features.md section.
-- [x] Record in `../../PHASES.md` that the live window still cannot print
+- [x] Record in `../PHASES.md` that the live window still cannot print
       its own display list; the PDF is a re-render from source.
 
 Exit: `SavePDF` writes a file the system PDF reader opens, `Print` reaches

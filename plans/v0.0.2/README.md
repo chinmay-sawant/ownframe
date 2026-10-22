@@ -9,7 +9,7 @@ checklist is closed. The devtools overlay became a right dock with Elements,
 Frame, and Ops tabs ([devtools.md](devtools.md)), and the guides named in the
 definition of done are linked from `documentation/README.md`. The engine branch
 is pushed and `go.mod` pins it with no local `replace`; the release state is in
-`../../PHASES.md`.
+`../PHASES.md`.
 
 The follow-up checklist for desktop IME, accessibility, and the remaining
 platform gaps is [accessibility-desktop-ime.md](accessibility-desktop-ime.md).
@@ -63,7 +63,7 @@ Carried from `AGENTS.md`, restated because every phase here touches Go code.
   checkout first and keep the replace.
 - The engine work for v0.0.2 goes on its own branch in `gowkhtmltopdf`, the way
   `chore/changes-for-go-gpui` did for v0.0.1. The push order and the pinned
-  commit are recorded in `../../PHASES.md`.
+  commit are recorded in `../PHASES.md`.
 - Never touch `~/.Xauthority`. Keep clipboard tests on `clipboard.UseMemory`.
 
 ## Definition of done

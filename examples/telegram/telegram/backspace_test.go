@@ -47,7 +47,7 @@ func TestComposerBackspace(t *testing.T) {
 	// The IME commit for a backspace after "hello": the window hands the
 	// page prefix+text+suffix, and the caret belongs after the prefix, not
 	// at the end of the field.
-	if err := app.Page().IMEReplace(ctx, 0, 10, "hell worl", 4); err != nil {
+	if err := app.Page().Testing().IMEReplace(ctx, 0, 10, "hell worl", 4); err != nil {
 		t.Fatal(err)
 	}
 

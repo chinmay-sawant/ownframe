@@ -25,7 +25,7 @@ func TestDisplayPatchHelperPatchOp(t *testing.T) {
 	if report.Changed != 1 || report.Full {
 		t.Fatalf("report = %+v", report)
 	}
-	rects, ok := app.Page().TakeDirtyRects()
+	rects, ok := app.Page().Testing().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatalf("no dirty rects: %v %v", rects, ok)
 	}
@@ -46,7 +46,7 @@ func TestDisplayPatchHelperPatchDisplay(t *testing.T) {
 	if app.Page().Display() == nil {
 		t.Fatal("no display")
 	}
-	app.Page().TakeDirtyRects()
+	app.Page().Testing().TakeDirtyRects()
 
 	h := app.DisplayPatchHelper()
 	report := h.PatchDisplay(func(d *ownframe.Display) {
@@ -58,7 +58,7 @@ func TestDisplayPatchHelperPatchDisplay(t *testing.T) {
 	if report.Changed != 1 {
 		t.Fatalf("report = %+v", report)
 	}
-	rects, ok := app.Page().TakeDirtyRects()
+	rects, ok := app.Page().Testing().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatalf("no dirty rects: %v %v", rects, ok)
 	}

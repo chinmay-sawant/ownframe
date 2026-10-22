@@ -54,7 +54,7 @@ A page taller or wider than the window scrolls on the mouse wheel. A picture tha
 
 - No new `type X =` alias at the module root except documented re-exports named in `plans/v0.0.3/prod-ready-task/phase-01-public-api.md`.
 - No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.
-- No new public `Page` method unless an example cannot compile without it. Host-loop methods (`TakeDirty`, `PollReload`, `IMEReplace`) stay on `internal/page` unless they already have an explicit wrapper.
+- No new public `Page` method unless an example cannot compile without it. Host-loop methods (`TakeDirty`, `TakeDirtyRects`, `PollReload`, `IMEReplace`, `PatchOp`, `Tick`) live on `Page.Testing()`.
 - No new example import of `github.com/chinmay-sawant/ownframe/internal/`. Existing pairs stay in `scripts/example-internal-allowlist.txt` until a public export replaces them. `make internal-import-check` records the set.
 
 v0 may break. Rules for names, errors, context, and examples are in `plans/v0.0.3/prod-ready-task/field-go-practices.md`.

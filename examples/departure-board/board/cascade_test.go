@@ -25,7 +25,7 @@ func TestCascadeStaysBanded(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app.Page().TakeDirtyRects()
+	app.Page().Testing().TakeDirtyRects()
 
 	for i := 0; i < 3; i++ {
 		runTick(t, ctx, app)
@@ -45,7 +45,7 @@ func TestCascadeStaysBanded(t *testing.T) {
 			t.Fatalf("frame %d did not opt into the frame dirty path", i)
 		}
 
-		rects, ok := app.Page().TakeDirtyRects()
+		rects, ok := app.Page().Testing().TakeDirtyRects()
 		if !ok {
 			empty++
 

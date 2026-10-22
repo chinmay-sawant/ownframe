@@ -40,9 +40,9 @@ func TestReactiveTogglePartialDirty(t *testing.T) {
 	redraw(t, app)
 
 	for _, id := range []string{"play", "heart", "shuffle", "repeat"} {
-		app.Page().TakeDirty()
+		app.Page().Testing().TakeDirty()
 		click(t, app, id)
-		rect, ok := app.Page().TakeDirty()
+		rect, ok := app.Page().Testing().TakeDirty()
 		if !ok || rect.Empty() {
 			t.Fatalf("%s left no dirty region", id)
 		}

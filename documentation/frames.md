@@ -78,9 +78,7 @@ callers need not remember `UseFrameDirty`. The window then repaints
 `TakeDirtyRects` and blits the buffer when that list is empty. A no-op tick
 leaves the page clean, so idle park can sleep. `UseFrameDirty` remains a
 working alias. `Invalidate` marks the elements that tick changed. `MarkRect`
-marks a CSS-pixel line that has no element id. A tick that patches operations
-should dirty those regions (`UseFrameDirty` plus marks). The library may later
-set that flag itself; until then the caller must.
+marks a CSS-pixel line that has no element id.
 
 A rotation can retarget operations in the tick instead of calling `Redraw`.
 The [departure board](../examples/departure-board) does: when the feed is due,

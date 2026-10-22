@@ -16,7 +16,7 @@ func runTick(t *testing.T, ctx context.Context, app *App) {
 	}
 
 	app.Page().FrameDirty()
-	app.Page().TakeDirtyRects()
+	app.Page().Testing().TakeDirtyRects()
 }
 
 // forceRotation makes the next tick rotate the feed.

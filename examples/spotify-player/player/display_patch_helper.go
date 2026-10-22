@@ -28,7 +28,7 @@ func (h *DisplayPatchHelper) PatchReport() ownframe.DisplayPatch { return h.Repo
 
 func (h *DisplayPatchHelper) PatchOp(i int, fn func(*ownframe.DisplayOp)) bool {
 	if p := h.page(); p != nil && p.Display() != nil {
-		return p.PatchOp(i, fn)
+		return p.Testing().PatchOp(i, fn)
 	}
 	return false
 }

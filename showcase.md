@@ -1,6 +1,20 @@
 # Showcase
 
+Start with the original apps, login and ops-console. The clones below are unofficial illustrations, not templates. Telegram, Teams, and Spotify Player are unofficial skins, not affiliated with those products.
+
 Choose an example in the left navigation to view its screenshots or demo.
+
+## Login
+
+`examples/login` is the sign-in starter. `go run ./examples/login` opens it on desktop. Both fields accept `secret`.
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/login)
+
+## Ops console
+
+`examples/ops-console` is a five-screen yard ops app: login, ticket list, detail, settings, and a shift report. One shell template, one `View`, `data-action` clicks. `go run ./examples/ops-console` opens it on desktop.
+
+[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/ops-console)
 
 ## Telegram
 

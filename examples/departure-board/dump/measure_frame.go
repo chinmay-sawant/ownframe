@@ -29,7 +29,7 @@ func tickFrame(ctx context.Context, app *board.App) (Frame, error) {
 	}
 
 	full := p.Ticking() && !p.FrameDirty()
-	rects, ok := p.TakeDirtyRects()
+	rects, ok := p.Testing().TakeDirtyRects()
 	f.Rect = bounds(rects)
 	f.Rects = len(rects)
 	f.Area = areaOf(rects)

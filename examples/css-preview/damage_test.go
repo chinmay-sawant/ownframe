@@ -17,7 +17,7 @@ func TestAnimationTickMarksPartialDamage(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Drop the click's own damage so the tick's marks stand alone.
-	p.TakeDirtyRects()
+	p.Testing().TakeDirtyRects()
 
 	if err := d.tick(ctx); err != nil {
 		t.Fatal(err)
@@ -25,7 +25,7 @@ func TestAnimationTickMarksPartialDamage(t *testing.T) {
 	if !p.FrameDirty() {
 		t.Fatal("animation tick did not opt into the frame-dirty path")
 	}
-	rects, ok := p.TakeDirtyRects()
+	rects, ok := p.Testing().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatal("animation tick marked no damage")
 	}

@@ -6,7 +6,8 @@ import "github.com/chinmay-sawant/ownframe"
 // slices app-owned rows around the viewport and pads with spacers so layout
 // stays cheap. This is not a compositor pin layer. Overscan rows sit around
 // the viewport; the row count pads to a stripe pair so nth-child stripes
-// match the full document.
+// match the full document. The reusable clamp lives in
+// github.com/chinmay-sawant/ownframe/examples/list.
 const (
 	windowOverscan = 10
 	windowSlack    = 5

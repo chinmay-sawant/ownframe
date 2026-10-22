@@ -16,7 +16,7 @@ func TestProgressTickIsPartial(t *testing.T) {
 	voice.pos = 30 * time.Second
 
 	before := app.Page().Stats().Redraws
-	app.Page().TakeDirtyRects()
+	app.Page().Testing().TakeDirtyRects()
 
 	if err := app.Tick(context.Background()); err != nil {
 		t.Fatalf("Tick: %v", err)
@@ -30,7 +30,7 @@ func TestProgressTickIsPartial(t *testing.T) {
 		t.Fatalf("Elapsed = %q, want %q", app.View().Elapsed, formatSeconds(30))
 	}
 
-	rects, ok := app.Page().TakeDirtyRects()
+	rects, ok := app.Page().Testing().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatalf("progress tick left no dirty rects")
 	}
@@ -59,7 +59,7 @@ func TestSeekClickUpdatesProgressThroughRedraw(t *testing.T) {
 		t.Fatalf("seek click redraws = %d, want %d", got, before+1)
 	}
 
-	rects, ok := app.Page().TakeDirtyRects()
+	rects, ok := app.Page().Testing().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatal("seek click left no dirty rects")
 	}

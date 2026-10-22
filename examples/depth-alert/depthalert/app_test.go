@@ -11,7 +11,7 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.Page().TakeDirtyRects()
+	a.Page().Testing().TakeDirtyRects()
 	before := a.Page().Generation()
 	for _, box := range a.Page().Boxes() {
 		if box.ID == "dashboard" && box.H > 280 {
@@ -33,7 +33,7 @@ func TestTickUpdatesOnlySummaryValues(t *testing.T) {
 	if got := a.ops.coverage.Text; got != "60%" {
 		t.Fatalf("coverage operation = %q, want updated summary value", got)
 	}
-	rects, ok := a.Page().TakeDirtyRects()
+	rects, ok := a.Page().Testing().TakeDirtyRects()
 	if !ok {
 		t.Fatal("summary value changes did not report damage")
 	}

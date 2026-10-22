@@ -15,7 +15,7 @@ func waitFor(t *testing.T, app *ui.App, cond func() bool) {
 	ctx := context.Background()
 	deadline := time.Now().Add(10 * time.Second)
 	for time.Now().Before(deadline) {
-		if err := app.Page().Tick(ctx); err != nil {
+		if err := app.Page().Testing().Tick(ctx); err != nil {
 			t.Fatal(err)
 		}
 

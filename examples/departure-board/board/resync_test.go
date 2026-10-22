@@ -23,7 +23,7 @@ func TestRedrawResyncsAfterRetargets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app.Page().TakeDirtyRects()
+	app.Page().Testing().TakeDirtyRects()
 
 	for feed := 1; feed <= 5; feed++ {
 		forceRotation(app)

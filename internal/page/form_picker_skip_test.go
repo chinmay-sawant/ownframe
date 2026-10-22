@@ -2,9 +2,9 @@ package page_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe/internal/filepick"
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
@@ -17,7 +17,7 @@ func TestFileControlCancelKeepsValue(t *testing.T) {
 	page.InstallPicker(screen, func(context.Context, string) (string, error) {
 		calls++
 
-		return "", errors.New("canceled")
+		return "", filepick.ErrCanceled
 	})
 
 	clickID(t, screen, "f")

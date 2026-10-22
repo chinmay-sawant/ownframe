@@ -238,7 +238,7 @@ fills the screen.
 
 ## Phase 8: IME, recorded, the API exists
 
-- [x] Record the Ebiten route in this file and in `../../PHASES.md`: Ebiten
+- [x] Record the Ebiten route in this file and in `../PHASES.md`: Ebiten
       v2.10.4 ships the experimental `exp/textinput` package, where
       `Composer.OnComposition` carries the preedit text,
       `SessionOptions.CaretBounds` the caret rectangle, and `OnCommit` and
@@ -269,7 +269,7 @@ Exit: the ask and the design are written down and no partial IME path ships.
 - [x] New `documentation/interaction.md` linked from
       `documentation/README.md`, with the call shapes.
 - [x] Add the new files to the map in `../../AGENTS.md`, and record what
-      shipped in `../../PHASES.md`.
+      shipped in `../PHASES.md`.
 - [x] `examples/readme.md` row.
 
 ## Risks and limits

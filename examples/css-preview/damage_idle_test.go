@@ -11,7 +11,7 @@ import (
 func TestIdleTickOptsIntoFrameDirty(t *testing.T) {
 	ctx := context.Background()
 	p, d, _ := fixturePage(t)
-	p.TakeDirtyRects()
+	p.Testing().TakeDirtyRects()
 
 	if err := d.tick(ctx); err != nil {
 		t.Fatal(err)

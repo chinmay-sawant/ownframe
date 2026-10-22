@@ -5,6 +5,7 @@ package filepick
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -59,7 +60,7 @@ func pickLinux(ctx context.Context, title string) (string, error) {
 		return run(ctx, path, t.args(title))
 	}
 
-	return "", ErrNoDialog
+	return "", fmt.Errorf("%w: tried zenity, qarma, matedialog, kdialog", ErrNoDialog)
 }
 
 func run(ctx context.Context, path string, args []string) (string, error) {

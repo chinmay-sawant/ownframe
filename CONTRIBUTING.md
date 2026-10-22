@@ -13,9 +13,9 @@ The repo holds two Go modules joined by `go.work`: the library at the root and `
 - Run `gofmt` on every Go file you edit.
 - Library module Go files (the root package and `internal/`) stay at most 2000 characters, counted with `wc -m`. Split an overlong file inside the same package and keep the behavior. Downstream apps and examples are not under that cap.
 
-## Public API freeze until Page wrap
+## Public API after the Page wrap
 
-v0 may break. The public `Page` wrap in [plans/v0.0.3/prod-ready-task/](plans/v0.0.3/prod-ready-task/) happens before v1. Until that wrap lands:
+The wrap has landed: `ownframe.Page` is a struct with an unexported inner page. v0 may still break. Keep the public API small:
 
 - No new `type X =` alias at the module root except documented re-exports.
 - No new `func (p *Page)` on `internal/page` that exists only so `ownframe.Page` grows.

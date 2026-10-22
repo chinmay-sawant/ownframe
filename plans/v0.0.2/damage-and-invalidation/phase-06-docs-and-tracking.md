@@ -17,7 +17,7 @@ the shipped behavior instead of the old single-rect story.
       with the same command lines.
 - [ ] `examples/readme.md` and `documentation/features-examples.md` if a new
       example, flag, or dump scenario appears.
-- [ ] `../../../PHASES.md`: what shipped, with commit hashes.
+- [ ] `../../PHASES.md`: what shipped, with commit hashes.
 - [ ] `../../../AGENTS.md`: the map line for a new folder or entry point.
 - [ ] `../../README.md`: add this folder to the v0.0.2 plan table.
 

@@ -37,7 +37,7 @@ func TestRowHoverPaintsWithoutLayout(t *testing.T) {
 		if p.Generation() != generation {
 			t.Fatal("hover performed a layout")
 		}
-		if _, ok := p.TakeDirty(); !ok {
+		if _, ok := p.Testing().TakeDirty(); !ok {
 			t.Fatal("hover did not invalidate its pixels")
 		}
 	}
