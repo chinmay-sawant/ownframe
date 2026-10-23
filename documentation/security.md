@@ -135,14 +135,15 @@ Go modules: CI sets `GOFLAGS=-mod=readonly` and runs `go mod verify`
 for both modules, so builds fail when the cache disagrees with `go.sum`.
 Never set `GONOSUMDB`, `GOINSECURE`, or `GOFLAGS=-insecure`; `GOPRIVATE`
 stays unset so the proxy and the checksum database verify every module.
-`GOTOOLCHAIN=local` is set in CI and both `go.mod` files carry a
-`toolchain go1.26.10` line, so the compiler never silently upgrades
-itself; bump that line on purpose.
+`GOTOOLCHAIN=local` is set in CI. Both modules declare their minimum Go
+version with the `go` directive. CI pins the installed version and rejects
+automatic toolchain downloads.
 
 Tags are immutable: proxy.golang.org caches them forever, so a bad or
 vulnerable release is fixed with a `retract` directive in `go.mod` plus a
-new tag, never by re-tagging. `v*` tags and `master` are protected and
-force-push is off.
+new tag, never by re-tagging. Branch and tag protections require operator verification;
+[`supply-chain.md`](supply-chain.md#protected-branches-and-tags) records the
+known gaps and required settings. Do not move or delete published version tags.
 
 Transitive parser surface: blinkless pulls goldmark, fpdf, star-tex,
 minify, brotli, and canvas. `go mod why -m` shows they arrive only via

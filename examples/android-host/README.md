@@ -81,7 +81,7 @@ touches = TouchCancellation.attach(game, Mobile::cancelTouches);
 ```
 
 Call `touches.cancel()` before suspending the game. Call `touches.close()` when
-the Activity is destroyed. In Go, call `Page.CancelTouches()` from
+the Activity is destroyed. In Go, call `Page.Edit().CancelTouches()` from
 `Mobile.cancelTouches`.
 
 ## Keep Back changes on the game loop

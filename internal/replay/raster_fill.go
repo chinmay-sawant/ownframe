@@ -8,7 +8,7 @@ import (
 
 // cachedRoundedFill draws a rounded fill through the raster cache. ok is
 // false when the shape is too large to cache; the caller draws it directly.
-func cachedRoundedFill(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, dy float64) bool {
+func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, dy float64) bool {
 	x := float32(op.X*pxPerPt + dx)
 	y := float32(op.Y*pxPerPt + dy)
 	w := float32(op.W * pxPerPt)
@@ -27,7 +27,7 @@ func cachedRoundedFill(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64
 		fx: x - float32(left),
 		fy: y - float32(top),
 	}
-	img := rasters.raster(key, size, func(img *ebiten.Image) {
+	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		path := roundedFillPath(key.fx, key.fy, w, h, r)
 		options := &vector.DrawPathOptions{AntiAlias: true}
 		options.ColorScale.ScaleWithColor(key.col)

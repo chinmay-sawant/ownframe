@@ -34,6 +34,11 @@ func (s redrawSurface) QueueBatch(skipSame bool) bool {
 }
 
 func (s redrawSurface) BeginSample() (draw.Sample, bool) {
+	s.p.stats.lastTemplate = 0
+	s.p.stats.styleTime = 0
+	s.p.stats.layoutTime = 0
+	s.p.stats.paintTime = 0
+	s.p.stats.otherTime = 0
 	if !s.p.perf {
 		return draw.BeginSample(false, false)
 	}
@@ -114,7 +119,7 @@ func (p *Page) styleStaged(
 	styled, err := draw.StyleDocument(
 		ctx,
 		track,
-		&p.stats.layoutTime,
+		&p.stats.styleTime,
 		p.cache,
 		source,
 		p.viewport(),
@@ -145,7 +150,7 @@ func (p *Page) drawStaged(
 	drawStart := draw.Clock(true)
 	ds := draw.Clock(track)
 	display, err := draw.List(ctx, styled, state)
-	draw.Note(track, &p.stats.displayListTime, ds)
+	draw.Note(track, &p.stats.layoutTime, ds)
 	if err != nil {
 		return err
 	}
@@ -185,6 +190,10 @@ func (p *Page) noteCommit(drawStart time.Time) {
 
 func (p *Page) finishRedraw(track, memOK bool, m0 runtime.MemStats, start time.Time) {
 	p.stats.lastRedraw = time.Since(start)
+	if track {
+		p.stats.otherTime = max(0, p.stats.lastRedraw-p.stats.lastTemplate-
+			p.stats.styleTime-p.stats.layoutTime-p.stats.paintTime)
+	}
 	if track && memOK {
 		p.stats.allocFrame = draw.AllocUsed(m0)
 	}

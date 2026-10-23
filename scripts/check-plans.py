@@ -23,7 +23,9 @@ def validate_ledger(text):
         if identifier[1] in seen:
             raise ValueError(f'plans-check: duplicate identifier {identifier[1]}')
         seen.add(identifier[1])
-        if state == 'x' and ('Evidence:' not in row or 'pending' in row.lower()):
+        evidence = row.partition('Evidence:')[2]
+        reference = re.search(r'`(?:make [^`]+|go test [^`]+|Test[A-Za-z0-9_]+|[0-9a-f]{7,40}|[^`]+/[^`]+|[^`]+\.(?:go|md|json|yml))`|\[[^]]+\]\([^)]+\)', evidence)
+        if state == 'x' and (not reference or 'pending' in evidence.lower()):
             raise ValueError(f'plans-check: implemented row needs evidence: {row}')
         if state == 's' and 'Replacement:' not in row:
             raise ValueError(f'plans-check: superseded row needs replacement: {row}')

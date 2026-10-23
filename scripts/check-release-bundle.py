@@ -15,7 +15,7 @@ def safe_name(name):
         raise ValueError(f'unsafe archive path: {name}')
 
 
-def verify(directory):
+def verify(directory, required_platforms=()):
     checksums = directory / 'SHA256SUMS'
     rows = checksums.read_text().splitlines()
     seen = set()
@@ -73,14 +73,18 @@ def verify(directory):
         raise ValueError(f'archives and checksums disagree: {actual ^ seen}')
     if not any(name.endswith('-wasm.zip') for name in seen) or not any(not name.endswith('-wasm.zip') for name in seen):
         raise ValueError('bundle needs a desktop archive and a wasm preview')
+    for platform in required_platforms:
+        if not any(f'-{platform}-' in name for name in seen):
+            raise ValueError(f'missing required platform archive: {platform}')
     return len(seen)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('directory', type=Path)
+    parser.add_argument('--require-platform', action='append', choices=('linux', 'windows', 'macos'), default=[])
     args = parser.parse_args()
-    print(f'release-check: {verify(args.directory)} archives verified; no release published')
+    print(f'release-check: {verify(args.directory, args.require_platform)} archives verified; no release published')
 
 
 if __name__ == '__main__':

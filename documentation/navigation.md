@@ -29,8 +29,9 @@ The [history example](../examples/history) drives `Load`, `Back`, `Forward`, `HT
 ## Receive app deep links
 
 Register each scheme your app accepts in `Config.DeepLinkSchemes`. Add a
-`Handlers.DeepLink` callback, then pass OS-delivered URLs to
-`Page.Testing().DispatchDeepLink` on the page's owning event loop.
+`Handlers.DeepLink` callback. The test facade can dispatch URLs on the page's
+owning loop, but direct OS delivery has no public production entry point yet.
+Do not call the Testing facade from application code.
 
 ```go
 import (
@@ -62,7 +63,7 @@ Set at least one scheme to accept URLs. An empty list rejects every URL.
 `New` rejects malformed schemes and blocks `javascript`, `data`, `vbscript`,
 `file`, `blob`, and `about`. Dispatch rejects relative URLs and schemes outside
 the allowlist. It lowercases the scheme before the callback runs.
-`Page.Testing().DispatchDeepLink` does not draw. The callback can call `Load`, or update app
+Dispatch through the test helper does not draw. The callback can call `Load`, or update app
 data and call `Redraw`.
 
 Ownframe does not register URL protocols with the operating system. The app

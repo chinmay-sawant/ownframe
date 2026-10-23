@@ -149,4 +149,4 @@ release-check:
 SOAK_SECONDS ?= 600
 .PHONY: soak-check
 soak-check:
-	@OWNFRAME_SOAK_SECONDS=$(SOAK_SECONDS) OWNFRAME_SOAK_COMMIT="$$(git rev-parse HEAD)" $(GO) test -p 1 -count=1 -v -timeout=35m -run '^TestPageSoak$$' ./internal/page
+	@OWNFRAME_SOAK_SECONDS=$(SOAK_SECONDS) OWNFRAME_SOAK_COMMIT="$$(git rev-parse HEAD 2>/dev/null || printf unknown)" $(GO) test -p 1 -count=1 -v -timeout=35m -run '^TestPageSoak$$' ./internal/page

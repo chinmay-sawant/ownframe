@@ -21,7 +21,7 @@ if err != nil {
 }
 
 for _, node := range tree.Nodes {
-	log.Printf("%s %s: %s", node.Role, node.ID, node.Name)
+	log.Printf("role=%s id=%s", node.Role, node.ID)
 }
 
 return page.Access().AccessibilityPerform(ctx, ownframe.AccessibilityRequest{

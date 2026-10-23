@@ -48,3 +48,22 @@ func TestCheckNameRejectsForeignBus(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestFakeBusRejectsOperationsAfterClose(t *testing.T) {
+	bus := NewFakeBus()
+	if err := bus.Close(); err != nil {
+		t.Fatal(err)
+	}
+	for _, err := range []error{
+		bus.Claim(DefaultName),
+		bus.Publish(Map(sampleTree())),
+		bus.Emit(Event{Kind: "children-changed"}),
+	} {
+		if !errors.Is(err, ErrLiveUnavailable) {
+			t.Fatalf("closed operation = %v", err)
+		}
+	}
+	if len(bus.Apps()) != 0 || len(bus.Events()) != 0 || len(bus.Claimed()) != 0 {
+		t.Fatal("closed bus recorded an operation")
+	}
+}

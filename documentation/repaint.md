@@ -166,7 +166,7 @@ When content exceeds the cache limits, a static page with `TakeDirty` keeps one 
   [the plan](../plans/v0.0.2/incremental-repaint.md). The badge stays
   visible.
 - A ticker that does not implement `FrameDirty` (not a `Page`). A page
-  tick that patches ops is marked dirty by `Page.Testing().Tick` and stays on the
+  tick that patches ops is marked dirty by the inner screen's `Tick` and stays on the
   tile path. A no-op tick blits the buffer. `page.Probe().UseFrameDirty` is an alias.
   The window calls the inner screen.
 - A stretched or zoomed page. `internal/window/replay_scale.go` replays the

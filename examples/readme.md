@@ -57,14 +57,14 @@ behavior and the limits are in
 | [replay](replay) | Display-list replay and the bitmap fallback. | 8101 |
 | [shapes](shapes) | Rounded and elliptical fills, masked strokes, letter-spaced text, caches. | 8102 |
 | [css-masking](css-masking) | Retained mask-group compositing with alpha and luminance masks, SVG `mask-type`, and two-layer `exclude` composition. | 8139 |
-| [png](png) | `Page.PNG` on-demand rasterization and caching. | 8103 |
+| [png](png) | `Page.Probe().PNG` on-demand rasterization and caching. | 8103 |
 | [controls](controls) | Click to focus, toggle, check, and cycle controls; typing edits; a file control opens the OS dialog. | 8104 |
 | [bind-hooks](bind-hooks) | Two-way binding plus `BeforeEdit` veto and `Change` callback. | 8105 |
 | [editing](editing) | Select all, undo, redo, and edits that survive a redraw. | 8106 |
 | [states](states) | Host `:focus`, `:focus-visible`, `:hover`, `:active`, `:checked` styles. | 8107 |
 | [scrolling](scrolling) | Oversized pages scroll on the wheel and touch drags, with no visible page scrollbar. | 8108 |
 | [history](history) | `Load`, `Back`, `Forward`, `HTML`, and `data-action` routes. | 8109 |
-| [web](web) | Plain `Serve` routes: `GET /`, `GET /frame.png`, `POST /click`, `POST /type`, `POST /backspace`. `GET /debug/state` stays off unless `ServeOptions` sets `Debug` or `Perf` and the build uses `-tags ownframe_debug`. | 8110 |
+| [web](web) | Plain `Serve` routes: `GET /`, `GET /frame.png`, `POST /click`, `POST /type`, `POST /backspace`. `GET /debug/state` stays off unless `ServeOptions` sets `InsecureAllowDebugState` or `InsecureAllowPprof` and the build uses `-tags ownframe_debug`. | 8110 |
 | [ipc](ipc) | In-process `Send`, `Listen`, `Handle`, `Request`, with registered state and cancel. | 8111 |
 | [fetch](fetch) | `Fetch` GET and `XHR` with method, headers, and body; a fetched PNG or JPEG becomes the page background. | 8112 |
 | [clipboard](clipboard) | Copy, cut, paste, select all, undo, and redo through the page APIs. | 8113 |
@@ -86,7 +86,7 @@ behavior and the limits are in
 | [desktop-cat](desktop-cat) | Transparent orange backpack cat with 30 expression PNGs, native click-through, a notification listener on the default Unix socket (`-notify-addr=auto`), TCP `127.0.0.1:6969` as opt-in, and a WASM canvas preview; web mode is a still picture. | 8128 |
 | [resize](resize) | Window resize: two columns switch at a media query, a 100vw bar, rewrapping text, and a hover control. | 8127 |
 | [snipping-tool](snipping-tool) | Desktop screen capture: toolbar capture, form-field crop, save and copy, OS tools with demo fallback. | 8136 |
-| [departure-board](departure-board) | Split-flap departure board: eight rows of per-character tiles over a seeded timetable, four liveries with a night variant, tick-driven flaps that rebind per `Page.Generation()`, and a refresh bar found by the livery accent. | 8137 |
+| [departure-board](departure-board) | Split-flap departure board: eight rows of per-character tiles over a seeded timetable, four liveries with a night variant, tick-driven flaps that rebind per `Page.Probe().Generation()`, and a refresh bar found by the livery accent. | 8137 |
 | [theme-studio](theme-studio) | Theme editor with a live preview: Apply sets the page theme and writes the watched theme file, a token strip shows colour swatches, four presets. | 8138 |
 | [ops-console](ops-console) | Five-screen yard ops teaching sample: login, list, detail, settings, report. | 8141 |
 | [download-manager](download-manager) | Download queue with bounded workers: progress and speed, pause/resume with validated HTTP range resume, retry, cancel, and durable SQLite history. | — |

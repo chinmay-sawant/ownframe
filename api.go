@@ -29,6 +29,9 @@ type Handlers = page.Handlers
 
 // Page is one HTML template and the last picture it produced.
 // The host page stays unexported so apps see only delegated methods.
+// Page belongs to one application loop. Call its methods and callbacks on that
+// loop; concurrent access to the same Page is unsupported. Queue background
+// results onto the loop before calling SetData, editing, or redrawing.
 type Page struct {
 	inner *page.Page
 }

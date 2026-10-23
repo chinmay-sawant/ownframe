@@ -8,9 +8,9 @@ sixty times a second. A desktop window that has drawn five clean frames in a
 row and has seen no input for 250 ms stops presenting every frame: it waits in
 the event loop and wakes on input, or at the next deadline the page declared.
 `Page.WantFrameAt(t)` and `Page.WantFrameIn(d)` set that deadline, and
-`Page.Testing().NextFrameAt` returns and clears it; a page with no request falls back to
+the window consumes and clears it through its inner screen. A page with no request falls back to
 a keep-alive frame every 125 ms, so a tick that never asks still runs. A tick
-that animates must leave damage. `Page.Testing().Tick` diffs patched ops and sets the
+that animates must leave damage. The inner screen's `Tick` diffs patched ops and sets the
 frame-dirty flag itself. The window calls that tick on the inner screen. `page.Probe().MarkRect` and `page.Probe().Invalidate` still name extra regions.
 A page that damages every frame is never paced.
 `WindowOptions.NoIdlePace` turns the pacing off, and the phone and WebAssembly
@@ -71,7 +71,7 @@ every frame. A click, key, or hover handler changes page content, and the
 page reports the changed boxes with `page.Probe().TakeDirtyRects` so the window repaints
 only those boxes; [repaint.md](repaint.md) has the call shapes. Reach for the
 tick when the change repeats every frame, and for the content path when it is
-one edit. A tick that patches operations is marked dirty by the library. `Page.Testing().Tick` diffs
+one edit. A tick that patches operations is marked dirty by the library. The inner screen's `Tick` diffs
 the display list, queues the changed boxes, and sets the frame-dirty flag, so
 callers need not remember `page.Probe().UseFrameDirty`. The window then repaints
 `page.Probe().TakeDirtyRects` and blits the buffer when that list is empty. A no-op tick
@@ -95,10 +95,10 @@ the dump.
 
 Changing an operation is cheap and can run every frame. A `Redraw` is not: the
 engine lays the page out again, and parses and cascades when the executed
-source changed. On the Spotify example that is about 400 ms, mostly from
-re-rasterizing the SVG artwork. An animation should change operations per
-frame and reserve `Redraw` for real content changes, such as moving the active
-row when a track ends.
+source changed. Redraw cost depends on the template and engine version. The
+[Spotify measurement report](../examples/spotify-player/PERFORMANCE.md)
+records a specific comparison after SVG artwork was replaced with PNGs.
+Remeasure with the current benchmark before choosing an animation path.
 
 ## Limits
 

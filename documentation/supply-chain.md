@@ -127,3 +127,11 @@ behind the protected `release-signing` environment with HSM or
 KMS-backed keys, never on a dev laptop. `scripts/sign-release.sh`
 implements the steps and skips platforms whose tooling or credentials
 are absent.
+
+
+The release workflow now calls the reusable CI workflow before preparing its
+candidate. Native Windows/macOS packaging jobs provide desktop archives, while
+Android arm64 binding remains a separate compile artifact. CI adds example
+race shards, debug-tag routes, a bounded page soak, wasm vet, and same-runner
+benchmark comparison. Local validation of these definitions does not establish
+hosted job success, repository rules, or device behaviour.

@@ -2,8 +2,6 @@ module github.com/chinmay-sawant/ownframe/examples
 
 go 1.26.10
 
-toolchain go1.26.10
-
 // The require pins the last published ownframe tag (v0.0.2) until v0.0.3
 // exists on the proxy. The replace below points at the parent so
 // GOWORK=off in this checkout builds local code. Keep the blinkless

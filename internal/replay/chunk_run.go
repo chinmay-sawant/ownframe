@@ -39,11 +39,11 @@ func runOpaque(c *chunkRun) bool {
 }
 
 // drawRunDirect paints the picked ops one by one.
-func drawRunDirect(dst *ebiten.Image, c *chunkRun, pick opPicker) {
+func (renderer *Renderer) drawRunDirect(dst *ebiten.Image, c *chunkRun, pick opPicker) {
 	for _, op := range c.ops {
 		if dx, dy, ok := pick(op); ok {
 			countOp()
-			drawOp(dst, op, dx, dy)
+			renderer.drawOp(dst, op, dx, dy)
 		}
 	}
 }

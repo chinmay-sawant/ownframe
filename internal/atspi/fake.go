@@ -24,6 +24,9 @@ func (b *FakeBus) Status() Status {
 }
 
 func (b *FakeBus) Claim(name string) error {
+	if !b.Live() {
+		return ErrLiveUnavailable
+	}
 	if err := CheckName(name); err != nil {
 		return err
 	}
@@ -36,11 +39,17 @@ func (b *FakeBus) Claim(name string) error {
 }
 
 func (b *FakeBus) Publish(app Application) error {
+	if !b.Live() {
+		return ErrLiveUnavailable
+	}
 	b.apps = append(b.apps, app)
 	return nil
 }
 
 func (b *FakeBus) Emit(ev Event) error {
+	if !b.Live() {
+		return ErrLiveUnavailable
+	}
 	b.events = append(b.events, ev)
 	return nil
 }

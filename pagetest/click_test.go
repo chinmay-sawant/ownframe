@@ -38,3 +38,28 @@ func TestClickFindsBox(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestTypeEditsFocusedField(t *testing.T) {
+	ctx := context.Background()
+	p, err := ownframe.New(ownframe.Config{
+		HTML: `<input id="name" value="A">`, Width: 320, Height: 200,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Form().Focus(ctx, "name"); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.Type(ctx, p, "da"); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Form().FormValue("name"); got != "Ada" {
+		t.Fatalf("typed value = %q", got)
+	}
+	if err := pagetest.Type(ctx, nil, "x"); !errors.Is(err, pagetest.ErrNoBox) {
+		t.Fatalf("nil page = %v", err)
+	}
+}

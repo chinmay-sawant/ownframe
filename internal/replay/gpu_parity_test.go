@@ -37,6 +37,7 @@ func TestGPUVisibleParity(t *testing.T) {
 	d.Order = append(d.Order, len(d.Ops))
 	d.Ops = append(d.Ops, layout.DisplayOp{Kind: layout.DisplayOpFillRect, Fixed: true, X: 10, Y: 10, W: 20, H: 20, R: 1})
 	g := &parityGame{display: d}
+	defer g.renderer.Close()
 	ebiten.SetWindowSize(1908, 999)
 	if err = ebiten.RunGame(g); err != nil {
 		t.Fatal(err)
@@ -47,6 +48,7 @@ func TestGPUVisibleParity(t *testing.T) {
 }
 
 type parityGame struct {
+	renderer      Renderer
 	display       *layout.Display
 	before, after *ebiten.Image
 	step          int
@@ -121,7 +123,7 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 		op := &g.display.Ops[i]
 		drawOp(g.before, op, 0, dy)
 	}
-	DrawVisible(g.after, g.display, 0, dy)
+	g.renderer.DrawVisible(g.after, g.display, 0, dy)
 	a, b := make([]byte, 1908*999*4), make([]byte, 1908*999*4)
 	g.before.ReadPixels(a)
 	g.after.ReadPixels(b)

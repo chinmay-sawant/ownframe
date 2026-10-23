@@ -49,7 +49,7 @@ func (s *shell) wirePerf() {
 			return 0, 0, 0, 0, 0, 0, 0, false
 		}
 
-		return st.LastTemplate, st.LayoutTime, st.DisplayListTime, st.PaintTime, st.DirtyOps, st.DirtyRegions, st.ChangedOps, true
+		return st.LastTemplate, st.StyleTime, st.LayoutTime, st.PaintTime, st.DirtyOps, st.DirtyRegions, st.ChangedOps, true
 	}
 	s.perfHooks.devRuntimePerf = func() (alloc, heap, rss uint64, gr int, ok bool) {
 		if !s.perf {

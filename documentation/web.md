@@ -28,7 +28,7 @@ field, and a reset button on one page.
 |-------|--------------|
 | `GET /` | Returns the shell HTML: the frame image with a usemap, a text form, and a backspace form. `Cache-Control: no-store`. |
 | `GET /frame.png` | Returns the PNG with `Cache-Control: no-store`, or 404 `no frame` when the page has no picture. |
-| `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{Debug: true}` or `ServeOptions{Perf: true}`; plain `Serve` returns 404. |
+| `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{InsecureAllowDebugState: true}`; plain `Serve` returns 404. |
 | `POST /click` | Reads the query or form floats `x` and `y` in CSS pixels and places the caret at the point before the click handler runs. Requires a matching `Origin` (scheme and host); a missing `Origin` is rejected. 400 `bad coordinates` when either fails to parse, 403 `forbidden` on origin mismatch, 303 to `/` on success, generic 500 when the page returns an error. Query parameters are bounded. |
 | `POST /type` | Reads the urlencoded form field `text`. Requires a matching `Origin`. 400 `bad form` when the body does not parse, 303 to `/`, or generic 500. |
 | `POST /backspace` | Deletes one character in the focused text control. Requires a matching `Origin`. 303 to `/`, or generic 500. |
@@ -110,12 +110,12 @@ Recommended protections:
   validate a session on its own.
 - Do not expose plain `Serve` on a shared network. Treat `/click`, `/type`,
   `/backspace`, and `/debug/state` as privileged.
-- `GET /debug/state` is registered only with `ServeOptions{Debug: true}` or
-  `ServeOptions{Perf: true}`. It returns box text, coordinates, and operation
+- `GET /debug/state` is registered only with `ServeOptions{InsecureAllowDebugState: true}`. It returns box text, coordinates, and operation
   counts. Reduce or gate it before exposing a preview. Keep both off in
   shipped binaries unless debugging or profiling is needed;
-  `ServeOptions{Perf: true}` alone also adds `GET /debug/pprof/*`.
-  `Debug` and `Perf` expose layout with field text; keep them on loopback only.
+  `ServeOptions{InsecureAllowPprof: true}` adds `GET /debug/pprof/*`.
+  Debug state exposes layout with field text. Profiling exposes process state.
+  Keep both on loopback only.
 - The built in server now sets `MaxHeaderBytes` (64 KiB), `ReadHeaderTimeout`
   (5s), `ReadTimeout` (15s), `WriteTimeout` (15s), and `IdleTimeout` (60s),
   limits `/type` to 256 KiB, rejects non finite `/click` coordinates, requires

@@ -1,8 +1,10 @@
 package atspi
 
 import (
-	"strconv"
+	"encoding/hex"
 	"strings"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // DefaultName is the only well-known name this process may claim.
@@ -30,6 +32,6 @@ func CheckName(name string) error {
 	return nil
 }
 
-func objectPath(index int) string {
-	return accessiblePath + strconv.Itoa(index)
+func objectPath(id host.AccessibilityNodeID) string {
+	return accessiblePath + "n" + hex.EncodeToString([]byte(id))
 }

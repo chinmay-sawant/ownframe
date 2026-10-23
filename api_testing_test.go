@@ -16,11 +16,28 @@ func TestTestingTickTakeDirty(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.SetTick(func(context.Context) error { return nil })
-	if err := p.Testing().Tick(context.Background()); err != nil {
+	if err := p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 	p.Probe().TakeDirty()
+	var calls int
+	p.SetTick(func(context.Context) error {
+		calls++
+		p.Probe().Invalidate("n")
+		return nil
+	})
+	if err := p.Testing().Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("tick callback calls = %d", calls)
+	}
+	if rect, ok := p.Probe().TakeDirty(); !ok || rect.Empty() {
+		t.Fatal("tick did not expose its invalidated region")
+	}
+	if _, ok := p.Probe().TakeDirty(); ok {
+		t.Fatal("dirty region was not drained")
+	}
 }
 
 func TestTestingClickAfterRedraw(t *testing.T) {

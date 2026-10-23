@@ -11,8 +11,8 @@ import (
 // so a repaint that covers static text blits one baked image instead of
 // reshaping and redrawing every glyph. A run the cache cannot hold takes the
 // direct path below.
-func drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
-	face := textFace(op)
+func (renderer *Renderer) drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+	face := renderer.textFace(op)
 	if face == nil || op.Text == "" {
 		return
 	}
@@ -21,27 +21,27 @@ func drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	x := op.X*pxPerPt + dx
 	y := op.Y*pxPerPt + dy - face.Metrics().HAscent
 
-	if cachedTextRun(dst, op, face, content, x, y) {
+	if renderer.cachedTextRun(dst, op, face, content, x, y) {
 		return
 	}
 
-	drawTextRun(dst, face, content, x, y, op)
+	renderer.drawTextRun(dst, face, content, x, y, op)
 }
 
 // drawTextRun is the direct path. The engine stores X and Y as the baseline
 // origin, while Ebiten's text origin is the top of the line, so the caller
 // has already moved up by the face ascent. A letter-spaced run is drawn glyph
 // by glyph with the extra advance.
-func drawTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, x, y float64, op *layout.DisplayOp) {
+func (renderer *Renderer) drawTextRun(dst *ebiten.Image, face *text.GoTextFace, content string, x, y float64, op *layout.DisplayOp) {
 	if op.LetterSpacing == 0 {
-		drawRun(dst, content, face, x, y, op)
+		renderer.drawRun(dst, content, face, x, y, op)
 
 		return
 	}
 
 	for _, r := range content {
 		glyph := string(r)
-		drawRun(dst, glyph, face, x, y, op)
+		renderer.drawRun(dst, glyph, face, x, y, op)
 		width, _ := text.Measure(glyph, face, 0)
 		x += width + op.LetterSpacing*pxPerPt
 	}

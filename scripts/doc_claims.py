@@ -35,7 +35,16 @@ def check_perf_commands(text, options):
                     raise ValueError(f'docs-check: missing value for {flag}')
 
 
+
+def check_current_options(text):
+    if re.search(r'ServeOptions\s*\{[^}]*\b(?:Perf|Debug)\s*:', text):
+        raise ValueError('docs-check: use explicit InsecureAllow serve options')
+
+
 def validate(root):
+    for path in [root / 'README.md', *sorted((root / 'documentation').glob('*.md')),
+                 *sorted((root / 'examples').rglob('*.md'))]:
+        check_current_options(path.read_text())
     _, engine = check_versions([(root / name).read_text() for name in ('go.mod', 'examples/go.mod')])
     android = (root / 'documentation/android-runtime.md').read_text()
     for pin in re.findall(r'blinkless (v[\w.\-]+)', android):
@@ -49,5 +58,5 @@ def validate(root):
     check_perf_commands(performance, {
         'scripts/perf-idle.sh': {'--example', '--web', '--seconds', '--url'},
         'scripts/perf-longrun.sh': sample_flags,
-        'scripts/perf-baseline.sh': {'--out'},
+        'scripts/perf-baseline.sh': {'--out', '--root', '--exclude', '--baseline', '--max-ratio', '--count', '--benchtime'},
     })

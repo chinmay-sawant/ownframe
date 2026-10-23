@@ -233,14 +233,14 @@ Ops row outlines that operation and copies its line to the clipboard. It is
 window chrome, so `page.Probe().PNG`, the display list, and the box list never
 change. A custom screen implements `host.Inspector` to opt in; a screen
 without it gets no overlay.
-`GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{Debug: true}` or `{Perf: true}`).
+`GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{InsecureAllowDebugState: true}`).
 
 Detail is in [devtools.md](devtools.md).
 
 ## Performance
 
 The perf checklist lives in [performance.md](performance.md), with per release numbers in [performance-baseline.md](performance-baseline.md). The Frame tab carries PERFORMANCE, PIPELINE DETAIL, and MEMORY counters for frame stages, repaint work, and memory, and `GET /debug/state` serves the same data in web mode when that endpoint is
-enabled (`ServeOptions{Debug: true}` or `{Perf: true}`). Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{Perf: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
+enabled (`ServeOptions{InsecureAllowDebugState: true}`). Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{InsecureAllowPprof: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
 
 ## Still absent
 
@@ -253,7 +253,7 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. `Page.Testing().DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. The deep-link test helper validates URLs under a scheme allowlist; direct OS delivery has no public production entry point yet. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

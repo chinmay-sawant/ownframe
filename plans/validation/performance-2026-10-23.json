@@ -1,0 +1,293 @@
+{
+  "status": "passed",
+  "started_at": "2026-10-23T07:47:54.397340+00:00",
+  "count": 5,
+  "benchtime": "100ms",
+  "max_ratio": 1.3,
+  "excluded_benchmarks": "",
+  "raw_output": "plans/validation/performance-2026-10-23.txt",
+  "benchmarks": {
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawHeavyWarm": {
+      "ns/op": {
+        "count": 5,
+        "min": 245753.0,
+        "median": 342665.0,
+        "sample_p95": 422957.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 202256.0,
+        "median": 202257.0,
+        "sample_p95": 202274.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 564.0,
+        "median": 564.0,
+        "sample_p95": 564.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawStages/TemplateExecute": {
+      "ns/op": {
+        "count": 5,
+        "min": 351.6,
+        "median": 378.6,
+        "sample_p95": 518.1
+      },
+      "B/op": {
+        "count": 5,
+        "min": 560.0,
+        "median": 560.0,
+        "sample_p95": 560.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 5.0,
+        "median": 5.0,
+        "sample_p95": 5.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawStages/HTMLParse": {
+      "ns/op": {
+        "count": 5,
+        "min": 2048.0,
+        "median": 2298.0,
+        "sample_p95": 3512.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 2736.0,
+        "median": 2736.0,
+        "sample_p95": 2736.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 29.0,
+        "median": 29.0,
+        "sample_p95": 29.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawStages/CSSApply": {
+      "ns/op": {
+        "count": 5,
+        "min": 3040.0,
+        "median": 4410.0,
+        "sample_p95": 6038.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 3112.0,
+        "median": 3112.0,
+        "sample_p95": 3112.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 36.0,
+        "median": 36.0,
+        "sample_p95": 36.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawStages/DisplayList": {
+      "ns/op": {
+        "count": 5,
+        "min": 176160.0,
+        "median": 214147.0,
+        "sample_p95": 255503.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 96552.0,
+        "median": 96552.0,
+        "sample_p95": 96553.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 151.0,
+        "median": 151.0,
+        "sample_p95": 151.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawWarm": {
+      "ns/op": {
+        "count": 5,
+        "min": 118145.0,
+        "median": 139363.0,
+        "sample_p95": 188920.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 100200.0,
+        "median": 100200.0,
+        "sample_p95": 100201.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 173.0,
+        "median": 173.0,
+        "sample_p95": 173.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/page/BenchmarkRedrawCold": {
+      "ns/op": {
+        "count": 5,
+        "min": 142304.0,
+        "median": 150259.0,
+        "sample_p95": 155944.0
+      },
+      "parses/op": {
+        "count": 5,
+        "min": 1.0,
+        "median": 1.0,
+        "sample_p95": 1.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 105967.0,
+        "median": 105974.0,
+        "sample_p95": 105976.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 249.0,
+        "median": 249.0,
+        "sample_p95": 249.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/replay/BenchmarkDrawRectScan/dirty": {
+      "ns/op": {
+        "count": 5,
+        "min": 122.5,
+        "median": 146.7,
+        "sample_p95": 224.9
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/internal/replay/BenchmarkDrawRectScan/full": {
+      "ns/op": {
+        "count": 5,
+        "min": 185.7,
+        "median": 225.2,
+        "sample_p95": 284.9
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/platform/platform/BenchmarkClickCount": {
+      "ns/op": {
+        "count": 5,
+        "min": 465684.0,
+        "median": 591250.0,
+        "sample_p95": 693417.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 278818.0,
+        "median": 278861.0,
+        "sample_p95": 278892.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 698.0,
+        "median": 699.0,
+        "sample_p95": 699.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkFlappyTick": {
+      "ns/op": {
+        "count": 5,
+        "min": 67.24,
+        "median": 71.79,
+        "sample_p95": 83.29
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkLargeRedraw": {
+      "ns/op": {
+        "count": 5,
+        "min": 110141716.0,
+        "median": 132667189.0,
+        "sample_p95": 167038914.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 34320168.0,
+        "median": 34345944.0,
+        "sample_p95": 34388352.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 134185.0,
+        "median": 134192.0,
+        "sample_p95": 134196.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkNormalRedraw": {
+      "ns/op": {
+        "count": 5,
+        "min": 352670.0,
+        "median": 477405.0,
+        "sample_p95": 1120138.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 249840.0,
+        "median": 249855.0,
+        "sample_p95": 249858.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 424.0,
+        "median": 424.0,
+        "sample_p95": 424.0
+      }
+    }
+  },
+  "source_commit": "24d4267a655c7bae03c5fd7888c59e9a02211dbd",
+  "source_dirty": true,
+  "go": {
+    "CGO_ENABLED": "1",
+    "GOAMD64": "v1",
+    "GOARCH": "amd64",
+    "GOOS": "linux",
+    "GOVERSION": "go1.26.10"
+  },
+  "gomaxprocs": "runtime default",
+  "cpu": 24,
+  "machine": "Chinmay",
+  "gomaxprocs_effective": [
+    24
+  ],
+  "finished_at": "2026-10-23T07:48:10.465156+00:00"
+}

@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -46,5 +45,5 @@ func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect ima
 	s.partial.paints++
 	s.partial.paintPx += part.Dx() * part.Dy()
 	sub.Fill(s.pageBackground())
-	replay.DrawVisibleUnfixedZ(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
+	s.renderer.DrawVisibleUnfixedZ(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
 }

@@ -5,11 +5,12 @@ import (
 	"image"
 )
 
-// Probe reads paint, dirty regions, and counters.
+// Probe inspects retained paint and counters, edits paint metadata, and drains
+// host damage. Calls that drain or mark damage mutate the page.
 // Example programs call these methods. Simulated input stays on Testing.
 type Probe struct{ page *Page }
 
-// Probe returns paint, dirty-region, and counter reads for this page.
+// Probe returns retained-paint, damage, and counter operations for this page.
 func (p *Page) Probe() Probe { return Probe{page: p} }
 
 // TakeDirty drains the host dirty bounding box.

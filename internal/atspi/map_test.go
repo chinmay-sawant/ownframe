@@ -48,3 +48,31 @@ func byID(t *testing.T, app Application, id host.AccessibilityNodeID) Object {
 	t.Fatalf("missing %s", id)
 	return Object{}
 }
+
+func TestMapPathsSurviveInsertion(t *testing.T) {
+	tree := sampleTree()
+	before := Map(tree)
+	tree.Nodes = append([]host.AccessibilityNode{{ID: "id:inserted", Role: host.AccessibilityText}}, tree.Nodes...)
+	after := Map(tree)
+	seen := map[string]bool{}
+	for _, obj := range after.Objects {
+		if seen[obj.Path] {
+			t.Fatal("duplicate object path")
+		}
+		seen[obj.Path] = true
+	}
+	for _, obj := range before.Objects {
+		if byID(t, after, obj.ID).Path != obj.Path {
+			t.Fatal("insertion changed an existing object path")
+		}
+	}
+	password := byID(t, after, "id:pw")
+	if password.State.Editable {
+		t.Fatal("password advertises editable state")
+	}
+	for _, action := range password.Actions {
+		if action == ActionSetText {
+			t.Fatal("password advertises set-text")
+		}
+	}
+}

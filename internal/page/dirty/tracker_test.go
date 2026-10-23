@@ -43,3 +43,24 @@ func TestTrackerFullReturnsContent(t *testing.T) {
 		t.Fatalf("rects %v ok %v", rects, ok)
 	}
 }
+
+func TestTakeAtOneThirdKeepsSeparateRegions(t *testing.T) {
+	// The public four-pixel padding produces two 200x150 regions, exactly
+	// one third of this 600x300 content. One extra column must collapse them.
+	for _, extra := range []int{0, 1} {
+		var tracker Tracker
+		tracker.MarkRect(image.Rect(4, 4, 196, 146))
+		tracker.MarkRect(image.Rect(304, 4, 496+extra, 146))
+		rects, ok := tracker.Take(image.Rect(0, 0, 600, 300))
+		want := 2
+		if extra == 1 {
+			want = 1
+		}
+		if !ok || len(rects) != want {
+			t.Fatalf("extra=%d: got %v, want %d regions", extra, rects, want)
+		}
+		if extra == 0 && (rects[0] != image.Rect(0, 0, 200, 150) || rects[1] != image.Rect(300, 0, 500, 150)) {
+			t.Fatalf("padding changed: %v", rects)
+		}
+	}
+}

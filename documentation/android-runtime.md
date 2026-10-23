@@ -68,7 +68,7 @@ on pause before `suspendGame`; resume calls `resumeGame`.
 
 Mobile IME sessions report the focused field and surrounding text. OwnFrame
 converts the field rectangle through zoom and pending resize before handing it
-to Ebiten. `Page.Testing().IMEContext` already removes the page scroll offset. Late
+to Ebiten. The inner screen's `IMEContext` already removes the page scroll offset. Late
 composition callbacks from an old focus cannot edit the new field. The old
 field retains its displayed preedit as draft text when focus changes.
 

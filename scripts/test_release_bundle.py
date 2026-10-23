@@ -61,3 +61,10 @@ class ReleaseBundleTests(unittest.TestCase):
             (root / 'unlisted.zip').write_bytes(b'x')
             with self.assertRaisesRegex(ValueError, 'disagree'):
                 MODULE.verify(root)
+
+    def test_missing_promised_platform_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_bundle(root)
+            with self.assertRaisesRegex(ValueError, 'missing required platform archive: windows'):
+                MODULE.verify(root, ('windows',))

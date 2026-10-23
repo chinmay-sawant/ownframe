@@ -78,7 +78,7 @@ The second pass removed a second full page build and made the grid build each
 item once.
 
 - A desktop press ran two page builds before any frame was drawn:
-  `page.Testing().SelectAt` focused the button and redrew, then `page.Click` ran the handler and
+  the inner screen's `SelectAt` focused the button and redrew, then `page.Click` ran the handler and
   redrew. The focus build was never presented.
 - Add a redraw batch around press, focus, click, and release. The page records
   that a draw is pending and draws the final focus, active, source, and
@@ -676,7 +676,7 @@ Ownframe pins Blinkless
 paths and the element patch work. The 12.5 ms and 6.16 ms columns use the
 earlier pin, `e0c3c9c`, and the patch cost numbers use `c1054ff`. The main
 module has no replace, so the build and the module zip carry the same engine.
-The examples module still pins Blinkless `v0.0.2`, and the patch cost harness
-calls `layout.RelayoutElement`, which only the newer pin carries, so the
-examples module builds through the committed `go.work` until the release
-process bumps its pin.
+The examples module uses the same Blinkless requirement as the root module.
+See [go.mod](../go.mod) and [examples/go.mod](../examples/go.mod) for the current
+pins. The local ownframe replacement in the examples module is removed when
+publishing its version tag.

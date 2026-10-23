@@ -31,6 +31,6 @@ func TestPerfBreakdown(t *testing.T) {
 		kinds[fmt.Sprint(d.Ops[i].Kind)]++
 	}
 
-	t.Logf("ops=%d kinds=%v template=%v layout=%v display=%v draw=%v redraw=%v",
-		len(d.Ops), kinds, s.LastTemplate, s.LayoutTime, s.DisplayListTime, s.LastDraw, s.LastRedraw)
+	t.Logf("ops=%d kinds=%v template=%v style=%v layout=%v draw=%v redraw=%v",
+		len(d.Ops), kinds, s.LastTemplate, s.StyleTime, s.LayoutTime, s.LastDraw, s.LastRedraw)
 }

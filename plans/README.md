@@ -18,7 +18,7 @@ Use one state per row: implemented `[x]` with evidence, open `[ ]` awaiting work
 - [x] `WEBSITE-GATE` check source tests, generated output, and browser layouts in CI. Evidence: `make site-check`, generated-output rejection tests, and `.github/workflows/ci.yml`.
 - [x] `RELEASE-CANDIDATE` verify local archive inventory, checksums, paths, modes, and wasm bytes; prepare signed and attested candidates after tag gates. Evidence: `make release-check`, archive corruption tests, and `release.yml`. The workflow definition is implemented; a successful OIDC tag run and publication are separate open checks below.
 - [x] `PERF-WORKLOAD` drive a repeatable page soak and reject missing web metrics. Evidence: `page_soak_test.go`, strict sampler regressions, and the 600-second result in the validation record. Web perf now returns actual runtime metrics without a callback that production never installed.
-- [x] `MOBILE-METRICS` use a collapsible bottom panel with a separate 48 dp X target on mobile. Evidence: geometry/touch/close regressions and cleared-surface GPU regression; desktop retains its right dock. Device results are recorded separately below.
+- [x] `MOBILE-METRICS` use a collapsible bottom panel with a separate 48 dp X target on mobile. Evidence: `internal/window/devtools_mobile_test.go` geometry/touch/close regressions and cleared-surface GPU regression; desktop retains its right dock. Device results are recorded separately below.
 - [s] `OLD-CLOSURE` retire blanket production-readiness completion. Replacement: this ledger; archived rows under `v0.0.3/prod-ready-task` are explicitly superseded.
 
 ## Validation and remaining gaps

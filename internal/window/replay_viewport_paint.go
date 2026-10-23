@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -55,5 +54,5 @@ func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int)
 	}
 	clip.Clear()
 	clip.Fill(s.pageBackground())
-	replay.DrawVisibleUnfixedZ(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)
+	s.renderer.DrawVisibleUnfixedZ(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)
 }

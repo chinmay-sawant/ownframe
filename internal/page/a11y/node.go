@@ -20,6 +20,7 @@ func (b *builder) makeNode(
 	}
 	node.Name = b.names.Name(n, role)
 	node.Description = b.names.Description(n)
+	applyMarkupControl(&node, n)
 	ariaDisabled := strings.EqualFold(n.Attrs["aria-disabled"], "true")
 	node.Disabled = ariaDisabled
 	if HasAttr(n, "disabled") {
@@ -71,8 +72,27 @@ func (b *builder) applyControl(node host.AccessibilityNode, n *markup.Node, aria
 		node.Actions = append(node.Actions, host.AccessibilityActivate)
 	}
 	readonly := HasAttr(n, "readonly") || strings.EqualFold(n.Attrs["aria-readonly"], "true")
-	if c.Editable && c.Type != "file" && !readonly && !ariaDisabled {
+	if c.Editable && c.Type != "file" && !node.Password && !readonly && !ariaDisabled {
 		node.Actions = append(node.Actions, host.AccessibilitySetValue)
 	}
 	return node
+}
+
+// Anonymous controls have no page action target. Preserve their declared
+// state without advertising input operations the page cannot route.
+func applyMarkupControl(node *host.AccessibilityNode, n *markup.Node) {
+	if n.Name != "input" && n.Name != "textarea" && n.Name != "select" {
+		return
+	}
+	kind := strings.ToLower(n.Attrs["type"])
+	node.Password = kind == "password"
+	if !node.Password {
+		node.Value = n.Attrs["value"]
+		if n.Name == "textarea" {
+			node.Value = NodeText(n)
+		}
+	}
+	if kind == "checkbox" || kind == "radio" {
+		node.Checked, node.HasChecked = HasAttr(n, "checked"), true
+	}
 }

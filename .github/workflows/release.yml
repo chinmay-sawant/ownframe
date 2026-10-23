@@ -22,32 +22,18 @@ env:
 
 jobs:
   gates:
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository] -- use the widely supported local reusable-workflow syntax
+
+  examples-boundary:
     runs-on: ubuntu-latest
     steps:
-      # Pinned by full SHA (GEN-9); comments name the source tag.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
-          cache: false # tag-triggered gate: no shared cache writes
-      - run: go mod verify
-      - run: cd examples && go mod verify
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-          package-manager-cache: false # tag-triggered gate: no shared cache
-      - run: npm ci --ignore-scripts
-        working-directory: frontend
-      - run: npm audit signatures
-        working-directory: frontend
-      - name: Install graphics test dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
-      - run: xvfb-run -a make test
-      - run: make lint
-      - run: make graphics-check
-      - run: make module-check
+          cache: false
       - name: Validate examples release boundary
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -55,13 +41,12 @@ jobs:
           case "$RELEASE_TAG" in
             examples/*) cd scripts && GOWORK=off go run ./cmd/module-check -root .. -examples-tag "$RELEASE_TAG" ;;
           esac
-      - run: make site-check
 
   # GEN-12/GEN-13: every tag ships an SBOM with a SLSA attestation and a
   # keyless cosign signature, so downstream users can verify what is in
   # the release and that CI built it. See documentation/supply-chain.md.
   supply-chain:
-    needs: gates
+    needs: [gates, examples-boundary]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -83,13 +68,18 @@ jobs:
       - run: go mod verify
       - run: cd examples && go mod verify
       - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          pattern: native-package-*
+          path: dist
+          merge-multiple: true
       - name: Build and verify release candidate
         env:
           COSIGN: "1"
           CGO_ENABLED: "0"
         run: |
           sh scripts/package.sh login
-          python3 scripts/check-release-bundle.py dist
+          python3 scripts/check-release-bundle.py dist --require-platform linux --require-platform windows --require-platform macos
       # SBOM of both modules in SPDX JSON (GEN-13).
       - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:

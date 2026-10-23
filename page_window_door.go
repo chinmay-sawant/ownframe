@@ -92,3 +92,9 @@ func (w Window) Watching() bool {
 
 	return p.Watching()
 }
+
+// DevTools reports whether the page requests the window devtools overlay.
+func (w Window) DevTools() bool {
+	p := innerPage(w.page)
+	return p != nil && p.DevTools()
+}

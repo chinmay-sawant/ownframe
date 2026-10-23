@@ -12,10 +12,7 @@ type dirtySet struct {
 	rects          [dirty.MaxRects]image.Rectangle
 	n              int
 	added, removed int
-	union          image.Rectangle
 }
-
-func (d *dirtySet) bounds() image.Rectangle { return d.union }
 
 // diffDisplay returns the regions covering the operations that differ
 // between prev and next. See dirty.Diff.
@@ -27,7 +24,6 @@ func diffDisplay(prev, next *Display) (dirtySet, bool, int) {
 		n:       set.N,
 		added:   set.Added,
 		removed: set.Removed,
-		union:   set.Bounds(),
 	}, full, changed
 }
 
@@ -198,7 +194,7 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	}
 
 	if p.perf {
-		p.recordPartial(changed, d.bounds(), display)
+		p.recordPartial(changed, d.rects[:d.n], display)
 	}
 
 	regionCount := d.n
@@ -231,19 +227,26 @@ func (p *Page) recordFull(n int) {
 	p.stats.changedOps = n
 	p.stats.dirtyOps = n
 	p.stats.dirtyRegions = 1
+	r := p.contentRect()
+	p.stats.dirtyArea = r.Dx() * r.Dy()
 }
 
-// recordPartial stores the counters for one display diff. An empty rect
-// means nothing changed; any other rect dirties one region.
-func (p *Page) recordPartial(changed int, r image.Rectangle, d *Display) {
+// recordPartial counts the diff regions and each intersecting operation once.
+func (p *Page) recordPartial(changed int, rects []image.Rectangle, d *Display) {
 	p.stats.changedOps = changed
-	if r.Empty() {
-		p.stats.dirtyOps = 0
-		p.stats.dirtyRegions = 0
-
-		return
+	p.stats.dirtyOps = 0
+	p.stats.dirtyRegions = len(rects)
+	p.stats.dirtyArea = 0
+	for _, r := range rects {
+		p.stats.dirtyArea += r.Dx() * r.Dy()
 	}
-
-	p.stats.dirtyOps = dirty.CountOps(d, r)
-	p.stats.dirtyRegions = 1
+	for i := range d.Ops {
+		bounds := dirty.OpBounds(&d.Ops[i], d)
+		for _, r := range rects {
+			if bounds.Overlaps(r) {
+				p.stats.dirtyOps++
+				break
+			}
+		}
+	}
 }

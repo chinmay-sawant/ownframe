@@ -2,8 +2,6 @@ package window
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
 // drawFitted paints the whole page inside the window.
@@ -17,7 +15,7 @@ func (s *shell) drawFitted(dst *ebiten.Image) {
 
 	if s.display != nil {
 		s.blitFitted(dst, w, h, scale, ox, oy, func(buf *ebiten.Image) {
-			replay.Draw(buf, s.display, 0, 0)
+			s.renderer.Draw(buf, s.display, 0, 0)
 		})
 
 		return

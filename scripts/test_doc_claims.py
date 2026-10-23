@@ -1,5 +1,5 @@
 import unittest
-from doc_claims import check_perf_commands, check_versions
+from doc_claims import check_perf_commands, check_versions, check_current_options
 
 
 class DocClaimTests(unittest.TestCase):
@@ -16,3 +16,11 @@ class DocClaimTests(unittest.TestCase):
         for command in ('examples/login', '--typo', '--seconds', '--example --seconds 10'):
             with self.subTest(command=command), self.assertRaises(ValueError):
                 check_perf_commands('sh scripts/perf-idle.sh ' + command, flags)
+
+
+class CurrentOptionTests(unittest.TestCase):
+    def test_deprecated_serve_options_fail(self):
+        for field in ('Debug', 'Perf'):
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                check_current_options('ServeOptions{' + field + ': true}')
+        check_current_options('ServeOptions{InsecureAllowPprof: true}')

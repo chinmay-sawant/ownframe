@@ -27,7 +27,8 @@ def snippets():
             for name in door_names:
                 door_methods[name].update(re.findall(
                     r'func \([A-Za-z0-9]+ ' + name + r'\) (\w+)\(', text))
-    for path in [ROOT / 'README.md', *sorted((ROOT / 'documentation').glob('*.md'))]:
+    for path in [ROOT / 'README.md', *sorted((ROOT / 'documentation').glob('*.md')),
+                 *sorted((ROOT / 'examples').rglob('*.md'))]:
         text = path.read_text()
         unknown = set(re.findall(r'\bPage\.([A-Z]\w*)', text)) - methods
         unknown_testing = set(re.findall(r'\bPage\.Testing\(\)\.([A-Z]\w*)', text)) - testing_methods
@@ -44,6 +45,8 @@ def snippets():
                 f'unknown Probe methods {sorted(unknown_probe)}; '
                 + '; '.join(unknown_door)
             )
+        if path.is_relative_to(ROOT / 'examples'):
+            continue
         for index, match in enumerate(re.finditer(r'^```go[^\n]*\n(.*?)^```', path.read_text(), re.M | re.S), 1):
             key = f'{path.relative_to(ROOT)}#{index}'
             found[key] = (match.group(1), path, path.read_text()[:match.start(1)].count('\n') + 1)

@@ -4,7 +4,7 @@ The homepage shows desktop and mobile examples first, then explains the shared e
 
 ## Run locally
 
-Use Node.js 22.12 or newer.
+Use Node.js 22.13 or newer.
 
 ```sh
 cd /home/chinmay/ChinmayPersonalProjects/ownframe/frontend

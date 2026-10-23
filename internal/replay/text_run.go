@@ -11,7 +11,7 @@ import (
 // and fake bold strikes the string twice one pixel apart. Both the direct
 // path and the bake call this, so a baked run is the direct run shifted by an
 // integer origin.
-func drawRun(dst *ebiten.Image, content string, face *text.GoTextFace, x, y float64, op *layout.DisplayOp) {
+func (renderer *Renderer) drawRun(dst *ebiten.Image, content string, face *text.GoTextFace, x, y float64, op *layout.DisplayOp) {
 	options := &text.DrawOptions{}
 	options.GeoM.Translate(x, y)
 	options.ColorScale.ScaleWithColor(rgba(op))

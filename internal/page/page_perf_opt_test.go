@@ -20,7 +20,7 @@ func TestPerfOffByDefault(t *testing.T) {
 	}
 
 	s := p.Stats()
-	if s.LastTemplate != 0 || s.LayoutTime != 0 || s.DisplayListTime != 0 || s.PaintTime != 0 {
+	if s.LastTemplate != 0 || s.StyleTime != 0 || s.LayoutTime != 0 || s.PaintTime != 0 {
 		t.Fatalf("stages tracked while off: %+v", s)
 	}
 	if s.AllocFrame != 0 || s.DirtyOps != 0 || s.DirtyRegions != 0 || s.ChangedOps != 0 {

@@ -6,8 +6,8 @@ import "github.com/chinmay-sawant/ownframe/internal/host"
 // child order follow the snapshot. Password values are cleared.
 func Map(tree host.AccessibilityTree) Application {
 	paths := make(map[host.AccessibilityNodeID]string, len(tree.Nodes))
-	for i, n := range tree.Nodes {
-		paths[n.ID] = objectPath(i)
+	for _, n := range tree.Nodes {
+		paths[n.ID] = objectPath(n.ID)
 	}
 	objects := make([]Object, 0, len(tree.Nodes))
 	for _, n := range tree.Nodes {

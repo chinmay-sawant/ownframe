@@ -1,6 +1,9 @@
 package atspi
 
-import "github.com/chinmay-sawant/ownframe/internal/host"
+import (
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"slices"
+)
 
 func mapNode(n host.AccessibilityNode, paths map[host.AccessibilityNodeID]string, focused host.AccessibilityNodeID) Object {
 	obj := Object{
@@ -19,6 +22,8 @@ func mapNode(n host.AccessibilityNode, paths map[host.AccessibilityNodeID]string
 	}
 	if n.Password {
 		obj.Value = ""
+		obj.State.Editable = false
+		obj.Actions = slices.DeleteFunc(obj.Actions, func(action string) bool { return action == ActionSetText })
 	}
 	obj.Children = childPaths(n.Children, paths)
 	return obj

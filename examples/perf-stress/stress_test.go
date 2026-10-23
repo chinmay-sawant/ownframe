@@ -37,7 +37,7 @@ func TestStressOps(t *testing.T) {
 	if st.Parses == 0 || st.Layouts == 0 || st.Redraws == 0 {
 		t.Fatalf("stats not tracked: %+v", st)
 	}
-	if st.LastRedraw == 0 && st.LayoutTime == 0 {
+	if st.LastRedraw == 0 && st.StyleTime == 0 {
 		t.Fatalf("no perf timing: %+v", st)
 	}
 }

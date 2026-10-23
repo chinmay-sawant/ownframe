@@ -14,7 +14,7 @@ validate_inventory = runpy.run_path(str(HERE / 'check-examples.py'))['validate_i
 class MaintenanceChecks(unittest.TestCase):
     def test_valid_statuses(self):
         text = '\n'.join([
-            '- [x] `DONE` implemented. Evidence: command exit 0.',
+            '- [x] `DONE` implemented. Evidence: `make test` exit 0.',
             '- [ ] `OPEN` awaiting work.',
             '- [-] `LATER` Reconsider when the host exists.',
             '- [s] `OLD` Replacement: current ledger.',
@@ -23,7 +23,7 @@ class MaintenanceChecks(unittest.TestCase):
 
     def test_invalid_status_records_fail(self):
         cases = [
-            '', '- [~] `A` ambiguous.', '- [x] `A` no proof.',
+            '- [x] `A` Evidence: tests pass.', '', '- [~] `A` ambiguous.', '- [x] `A` no proof.',
             '- [x] `A` Evidence: pending.', '- [-] `A` no condition.',
             '- [s] `A` no replacement.', '- [ ] no identifier.',
             '- [x] `A` [s] Evidence: conflicting.',

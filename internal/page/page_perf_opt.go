@@ -35,11 +35,13 @@ func (p *Page) Perf() bool { return p.perf }
 // page that opts out never shows stale developer numbers.
 func (p *Page) clearPerf() {
 	p.stats.lastTemplate = 0
+	p.stats.styleTime = 0
 	p.stats.layoutTime = 0
-	p.stats.displayListTime = 0
 	p.stats.paintTime = 0
+	p.stats.otherTime = 0
 	p.stats.dirtyOps = 0
 	p.stats.dirtyRegions = 0
+	p.stats.dirtyArea = 0
 	p.stats.changedOps = 0
 	p.stats.allocFrame = 0
 }

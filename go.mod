@@ -2,8 +2,6 @@ module github.com/chinmay-sawant/ownframe
 
 go 1.26.10
 
-toolchain go1.26.10
-
 require (
 	github.com/chinmay-sawant/blinkless v0.0.3-0.20261021155643-c1054ff46202
 	github.com/hajimehoshi/ebiten/v2 v2.10.4

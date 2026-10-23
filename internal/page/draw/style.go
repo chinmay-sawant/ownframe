@@ -7,12 +7,12 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
-// StyleDocument calls Style and, when track is true, stores the elapsed time in layoutTime.
-// A nil layoutTime skips the store. The Styled result is Style's result, including a Style error.
+// StyleDocument calls Style and, when track is true, stores the elapsed time in styleTime.
+// A nil styleTime skips the store. The Styled result is Style's result, including a Style error.
 func StyleDocument(
 	ctx context.Context,
 	track bool,
-	layoutTime *time.Duration,
+	styleTime *time.Duration,
 	cache *render.Cache,
 	source string,
 	view Viewport,
@@ -20,8 +20,8 @@ func StyleDocument(
 ) (Styled, error) {
 	start := Clock(track)
 	styled, err := Style(ctx, cache, source, view, state)
-	if layoutTime != nil {
-		Note(track, layoutTime, start)
+	if styleTime != nil {
+		Note(track, styleTime, start)
 	}
 
 	return styled, err

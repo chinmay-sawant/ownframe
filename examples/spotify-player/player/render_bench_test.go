@@ -30,8 +30,8 @@ func BenchmarkScreenSetDataRedraw(b *testing.B) {
 			stats := app.page.Probe().Stats()
 			parses := stats.Parses - before
 			b.ReportMetric(float64(parses)/float64(b.N), "parses/op")
+			b.ReportMetric(float64(stats.StyleTime.Nanoseconds()), "style-ns/op")
 			b.ReportMetric(float64(stats.LayoutTime.Nanoseconds()), "layout-ns/op")
-			b.ReportMetric(float64(stats.DisplayListTime.Nanoseconds()), "display-ns/op")
 			b.ReportMetric(float64(stats.Boxes), "boxes/page")
 			b.ReportMetric(float64(stats.Ops), "ops/page")
 		})

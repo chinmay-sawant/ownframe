@@ -7,7 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// chunkMaxEntries and chunkMaxPixels bound the chunk images one process
+// chunkMaxEntries and chunkMaxPixels bound the chunk images one renderer
 // keeps. Oldest insertion evicts first, and its image is disposed. A paint
 // only needs the chunks of the region it draws, so the cap covers the
 // visible rows rather than the whole page.
@@ -25,9 +25,7 @@ const (
 //
 // The signature has to survive a redraw for that to pay off, so it folds
 // values a layout reproduces (see chunk_sig_op.go) and never a per-run
-// pointer. Two displays that live at once share the sequence, so they write
-// the same slots; the signature check keeps the pixels right, and the slot
-// is baked again when the other display took it.
+// pointer. A renderer owns these slots, so a second page cannot replace them.
 type chunkKey struct {
 	id int
 }
@@ -39,8 +37,6 @@ type chunkEntry struct {
 	sig uint64
 	box image.Rectangle
 }
-
-var chunks chunkStore
 
 type chunkStore struct {
 	mu      sync.Mutex

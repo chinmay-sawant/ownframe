@@ -26,7 +26,7 @@ feature index with links to the detailed docs.
 - Browser-style history `Load`/`Back`/`Forward`/`HTML` with `ErrNoHistory`; `data-action` route map (`internal/page/page_nav.go`)
 - Desktop window via Ebiten, wasm browser build, and mobile binding; sizing is in [window.md](window.md) and the run modes are in [platforms.md](platforms.md) (`internal/window/run.go`, `scripts/browser.sh`, `BindMobile`)
 - DevTools overlay: a right dock with Frame (window and pipeline counters), Elements (element JSON), and Ops (operation list with outlines) tabs; it opens on Frame, F12 or Ctrl+Shift+I toggles it, `Config.DevTools` starts it on, and `Page.Window().SetDevTools` changes it at runtime ([devtools.md](devtools.md), `internal/window/devtools*.go`, `internal/host/inspect.go`)
-- Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state` (with `ServeOptions{Debug: true}` or `{Perf: true}`), `POST /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
+- Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state` (with `ServeOptions{InsecureAllowDebugState: true}`), `POST /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
 
 ## Services
 
@@ -59,7 +59,7 @@ compares GPU mask compositing with the software painter
 Documented in [features.md](features.md) and [../plans/PHASES.md](../plans/PHASES.md), not
 implemented: JS engine/Chromium, cookies/sessions, native menus/tray,
 auto-update, video/WebGL, a library-level audio API (the examples play
-audio through `examples/music`), an accessibility tree, and some engine CSS limits
+audio through `examples/music`), a live native screen-reader bridge, and some engine CSS limits
 (transformed WOFF2, `:disabled`, `::placeholder`).
 Desktop IME composition is implemented in the window and page packages, with
 native input-method checks still open in the

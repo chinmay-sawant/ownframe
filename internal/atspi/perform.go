@@ -2,6 +2,7 @@ package atspi
 
 import (
 	"context"
+	"slices"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
@@ -16,11 +17,8 @@ func (p *Publisher) Perform(ctx context.Context, acc host.Accessible, path, acti
 		return host.ErrAccessibilityNode
 	}
 	kind, ok := ActionKind(action)
-	if !ok {
+	if !ok || !slices.Contains(obj.Actions, action) {
 		return host.ErrAccessibilityAction
-	}
-	if obj.Password {
-		value = ""
 	}
 	return acc.AccessibilityPerform(ctx, host.AccessibilityRequest{
 		Document: p.doc,

@@ -8,7 +8,7 @@ import (
 
 func (s *shell) Draw(screen *ebiten.Image) {
 	s.devFrameTime()
-	s.perfFrameSample()
+	defer s.perfFrameSample()
 	s.frameBegin()
 	defer s.frameCommit()
 

@@ -69,7 +69,10 @@ cd "$root"
 # gomobile copies packages into a temp module that cannot join go.work.
 unset GOWORK
 umask 077
-ebitenmobile bind -target "$target" \
+source_commit=$(git rev-parse HEAD)
+engine=$(go list -m -f '{{.Version}}' github.com/chinmay-sawant/blinkless)
+source_dirty=$(git status --porcelain --untracked-files=no)
+ebitenmobile bind -trimpath -target "$target" \
 	-ldflags "-s -w -extldflags '-Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384'" \
 	-javapkg "$pkg" -o "$android/$aar/$aar.aar" "./examples/$dir/mobile"
 (cd "$android" && ./gradlew --no-daemon --max-workers=2 :app:assembleRelease)
@@ -81,4 +84,22 @@ mkdir -p -m 0700 "$(dirname "$artifact")"
 	--ks-pass "file:$storepass" --key-pass "file:$keypass" \
 	--out "$artifact" "$android/app/build/outputs/apk/release/app-release-unsigned.apk"
 "$sdk/build-tools/$build_tools/apksigner" verify --verbose "$artifact"
+export source_commit engine source_dirty artifact
+python3 - <<'META'
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+apk = Path(os.environ['artifact'])
+report = {
+    'source_commit': os.environ['source_commit'],
+    'source_dirty': bool(os.environ['source_dirty']),
+    'engine': os.environ['engine'],
+    'go': subprocess.check_output(['go', 'version'], text=True).strip(),
+    'sha256': hashlib.sha256(apk.read_bytes()).hexdigest(),
+}
+apk.with_suffix('.json').write_text(json.dumps(report, indent=2) + '\n')
+META
+"$sdk/build-tools/$build_tools/apksigner" verify --print-certs "$artifact" > "$artifact.cert.txt"
 echo "APK: $artifact"

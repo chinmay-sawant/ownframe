@@ -6,7 +6,9 @@ Full procedure lives in [performance.md](performance.md).
 
 ## How to fill it
 
-Run the automated script first. It exercises each benchmark app in `examples/perf-benchmarks` and prints the rows below.
+Run the automated script first. It runs page, replay-scan, platform-click, and Normal/Large/Flappy workload
+benchmarks. It does not launch windows or fill idle CPU, RSS, or native frame
+rows. Raw text and a sibling JSON report retain the samples and provenance.
 
 ```sh
 sh scripts/perf-baseline.sh
@@ -117,3 +119,23 @@ These rows predate the baseline scripts. They come from `plans/v0.0.2/release-no
 | login `#message`, 18 ops | 3 repainted, 15 skipped | repaint.md measured numbers |
 | states `#hover-btn`, 16 ops | 4 repainted, 12 skipped | repaint.md measured numbers |
 | forms `#remember`, 45 ops | 5 repainted, 40 skipped | repaint.md measured numbers |
+
+
+## Local v0.0.3 review baseline, 2026-10-23
+
+[Raw samples](../plans/validation/performance-2026-10-23.txt) and
+[JSON provenance](../plans/validation/performance-2026-10-23.json) record five
+100 ms samples on the local uncommitted review tree based on `24d4267a`.
+This is local validation, not a published release result or a native-host test.
+The cold benchmark changes template output and reports one parse per operation.
+
+| Workload | Median ms/op | Allocs/op |
+|---|---:|---:|
+| Warm redraw | 0.139363 | 173.0 |
+| Cold redraw | 0.150259 | 249.0 |
+| Normal | 0.477405 | 424.0 |
+| Large | 132.667189 | 134192.0 |
+| Flappy tick | 0.000072 | 0.0 |
+
+These are local descriptive samples. Runtime checks overlapped the capture,
+so use a fresh isolated run for controlled release comparisons.

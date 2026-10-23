@@ -1,14 +1,11 @@
 package atspi
 
-import "github.com/chinmay-sawant/ownframe/internal/host"
-
 // Publisher maps snapshots onto a Bus. It does not log accessible text.
 type Publisher struct {
-	bus   Bus
-	app   Application
-	doc   uint64
-	rev   uint64
-	focus host.AccessibilityNodeID
+	bus       Bus
+	app       Application
+	doc       uint64
+	published bool
 }
 
 // NewPublisher wraps bus. A nil bus is treated as not live.

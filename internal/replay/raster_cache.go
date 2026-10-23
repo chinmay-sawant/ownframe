@@ -24,7 +24,7 @@ type rasterCache struct {
 	pixels  int
 }
 
-var rasters rasterCache
+var defaultRenderer Renderer
 
 // raster returns the raster for key, baking it into an image of size once.
 // The bake draws the shape so the origin's integer part is the image's

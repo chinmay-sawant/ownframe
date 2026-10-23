@@ -11,7 +11,7 @@ import (
 // cachedTextRun draws one run through the text raster cache and reports
 // whether it painted. It reports false when the run keeps the direct path: an
 // empty run, or one whose baked image would pass the size caps.
-func cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp, face *text.GoTextFace, content string, x, y float64) bool {
+func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp, face *text.GoTextFace, content string, x, y float64) bool {
 	if content == "" {
 		return false
 	}
@@ -30,10 +30,10 @@ func cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp, face *text.GoTextFac
 		fy:       textPhase(offY),
 	}
 
-	entry, ok := textRuns.lookup(key)
+	entry, ok := renderer.textRuns.lookup(key)
 	if !ok {
-		entry = textRuns.raster(key, func() (textRasterEntry, bool) {
-			return bakeTextRun(op, face, key, offX, offY)
+		entry = renderer.textRuns.raster(key, func() (textRasterEntry, bool) {
+			return renderer.bakeTextRun(op, face, key, offX, offY)
 		})
 	}
 	if entry.img == nil {

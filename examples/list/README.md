@@ -14,13 +14,13 @@ view.Top = w.Top
 view.Bottom = w.Bottom
 ```
 
-Call `Page.SetWindowing(true)` and `Page.SetScrollWindow` so the host redraws
+Call `Page.Scroll().SetWindowing(true)` and `Page.SetScrollWindow` so the host redraws
 only when the window moved. Return false from the callback while overscan
 still covers the viewport.
 
 CSS `position: sticky` and `position: fixed` do not pin under window scroll.
 blinkless does not mark sticky as fixed. Pin chrome with
-`Page.SetScrollWindow` and `Page.SetViewportPinZ`. Telegram is the worked
+`Page.SetScrollWindow` and `Page.Scroll().SetViewportPinZ`. Telegram is the worked
 example.
 
 `examples/perf-complex` is the full 480-row fixture.

@@ -15,7 +15,7 @@ overlay and sends one hover for the current cursor, so a stale `:hover` does
 not stick.
 
 `Config.DevTools` starts the overlay on, and `Page.Window().SetDevTools` and
-`Page.Testing().DevTools` read and change the flag at runtime. Use those in a browser
+`Page.Window().DevTools` read and change the flag at runtime. Use those in a browser
 and on a phone: a browser may keep F12 for itself, and a phone has no
 keyboard.
 
@@ -187,7 +187,7 @@ overlay is on, and `Stats().LastDraw` reports it. That hook is separate from
 ## Web mode
 
 `GET /debug/state` returns the same data as JSON when the server is started
-with `ServeOptions{Debug: true}` or `ServeOptions{Perf: true}`: `width` and
+with `ServeOptions{InsecureAllowDebugState: true}`: `width` and
 `height`,
 `generation`, `fallback`, `boxes`, `stats`, and `ops`. `stats` is omitted
 when the screen has no inspector, and `ops` when there is no display list.

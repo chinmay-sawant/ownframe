@@ -62,4 +62,4 @@ reuse. Both runs used the same benchmark command.
 The measurements came from Go 1.26.4 on Linux amd64 with an Intel Core
 i7-13700HX. They time Go template execution, page rendering, and display-list
 creation. They do not measure window presentation, audio playback, network
-requests, or frame rate. `Page.PNG` is not called by this benchmark.
+requests, or frame rate. `Page.Probe().PNG` is not called by this benchmark.

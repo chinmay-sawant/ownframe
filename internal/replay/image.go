@@ -13,8 +13,8 @@ import (
 // gate rejects a non-identity transform only on non-image ops, so the
 // placement is the op rectangle scaled from the decoded pixel bounds and then
 // the op's own transform.
-func drawImage(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
-	src := decodedImage(op)
+func (renderer *Renderer) drawImage(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+	src := renderer.decodedImage(op)
 	if src == nil || masking.SkipImageSize(op) {
 		return
 	}

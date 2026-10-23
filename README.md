@@ -109,7 +109,7 @@ The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or W
 
 `make build` compiles both Go modules without linking executables. `make test` runs their tests one package at a time. `make lint` runs the Go linters, the documentation, plan, and example checks, the internal-import check, and the website lint.
 
-The React documentation and demo website lives in [frontend/](frontend/README.md). Run `npm ci` and `npm run dev` there with Node.js 22.12 or newer, then open the `/ownframe/` address Vite prints.
+The React documentation and demo website lives in [frontend/](frontend/README.md). Run `npm ci` and `npm run dev` there with Node.js 22.13 or newer, then open the `/ownframe/` address Vite prints.
 
 ## AI assistance
 

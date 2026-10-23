@@ -44,8 +44,8 @@ func (w *walker) snapshot() {
 		parses: st.Parses, cascades: st.Cascades,
 		layouts: st.Layouts, repaints: st.Repaints,
 		ops: int64(st.Ops), boxes: int64(st.Boxes),
-		tmpl: st.LastTemplate.Microseconds(), style: st.LayoutTime.Microseconds(),
-		display: st.DisplayListTime.Microseconds(), paint: st.PaintTime.Microseconds(),
+		tmpl: st.LastTemplate.Microseconds(), style: st.StyleTime.Microseconds(),
+		display: st.LayoutTime.Microseconds(), paint: st.PaintTime.Microseconds(),
 		changed: int64(st.ChangedOps), dirty: int64(st.DirtyOps), alloc: st.AllocFrame,
 		startedNS: w.d.startedAt.UnixNano(), seq: w.d.startedSeq,
 	}

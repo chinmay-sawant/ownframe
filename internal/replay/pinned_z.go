@@ -7,13 +7,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func DrawUnfixedZ(dst *ebiten.Image, d *layout.Display, z int) {
-	paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+func (renderer *Renderer) DrawUnfixedZ(dst *ebiten.Image, d *layout.Display, z int) {
+	renderer.paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
 		return 0, 0, scrollContentOp(op, z)
 	})
 }
 
-func DrawRectUnfixedZ(dst *ebiten.Image, d *layout.Display, rect image.Rectangle, z int) {
+func (renderer *Renderer) DrawRectUnfixedZ(dst *ebiten.Image, d *layout.Display, rect image.Rectangle, z int) {
 	if dst == nil || d == nil {
 		return
 	}
@@ -29,20 +29,20 @@ func DrawRectUnfixedZ(dst *ebiten.Image, d *layout.Display, rect image.Rectangle
 	}
 
 	ppt := d.PointsPerPixel
-	paintChunked(clip, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+	renderer.paintChunked(clip, d, func(op *layout.DisplayOp) (float64, float64, bool) {
 		return 0, 0, scrollContentOp(op, z) && opTouches(op, ppt, rect)
 	})
 }
 
-func DrawVisibleUnfixedZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int) {
-	visitVisibleZ(dst, d, dx, dy, z, false)
+func (renderer *Renderer) DrawVisibleUnfixedZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int) {
+	renderer.visitVisibleZ(dst, d, dx, dy, z, false)
 }
 
-func DrawPinnedZ(dst *ebiten.Image, d *layout.Display, z int, dx, dy float64) {
-	visitVisibleZ(dst, d, dx, dy, z, true)
+func (renderer *Renderer) DrawPinnedZ(dst *ebiten.Image, d *layout.Display, z int, dx, dy float64) {
+	renderer.visitVisibleZ(dst, d, dx, dy, z, true)
 }
 
-func visitVisibleZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int, pinned bool) {
+func (renderer *Renderer) visitVisibleZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int, pinned bool) {
 	if dst == nil || d == nil {
 		return
 	}
@@ -50,7 +50,7 @@ func visitVisibleZ(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int, 
 	r := visibleRect(dst.Bounds(), dx, dy)
 	ppt := d.PointsPerPixel
 
-	paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
+	renderer.paintChunked(dst, d, func(op *layout.DisplayOp) (float64, float64, bool) {
 		if op.Fixed || atPinZ(op, z) != pinned || !opTouches(op, ppt, r) {
 			return 0, 0, false
 		}

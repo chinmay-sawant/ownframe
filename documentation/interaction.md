@@ -16,7 +16,7 @@ A mouse press in a field calls `page.Testing().SelectAt(ctx, x, y)`, which focus
 
 Two rapid presses at one spot call `SelectWordAt`; a third calls `SelectLineAt`. The gap is 400 ms and the spot may move 4 px. `internal/window/drag_select.go` and `internal/window/click_watch.go` hold the window side. The page holds the caret and the range ([editing.md](editing.md)).
 
-A press held within 8 px for 450 ms calls `Page.Testing().LongPress`. A text field under the point selects its word, the same selection a double click makes, and claims the press. Any other box reaches `Handlers.LongPress`, which receives the innermost box under the point the way `page.Click` finds it. A claim keeps the gesture: each move until release calls `Drag`, and the lift is not a tap, so a phone can hold a word and then extend the selection. A press that moves past the slop before the delay never fires. `internal/window/long_press.go` holds the delay and the slop, and `internal/window/hold.go` checks the timer once per frame.
+A press held within 8 px for 450 ms calls the inner screen's `LongPress`. A text field under the point selects its word, the same selection a double click makes, and claims the press. Any other box reaches `Handlers.LongPress`, which receives the innermost box under the point the way `page.Click` finds it. A claim keeps the gesture: each move until release calls `Drag`, and the lift is not a tap, so a phone can hold a word and then extend the selection. A press that moves past the slop before the delay never fires. `internal/window/long_press.go` holds the delay and the slop, and `internal/window/hold.go` checks the timer once per frame.
 
 ## Context menu
 

@@ -2,6 +2,7 @@ package window
 
 import (
 	"context"
+	"github.com/chinmay-sawant/ownframe/internal/replay"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -10,6 +11,7 @@ import (
 )
 
 type shell struct {
+	renderer    replay.Renderer
 	transparent bool
 	interactive func(int, int) bool
 	draggable   func(int, int) bool

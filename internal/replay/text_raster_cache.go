@@ -37,5 +37,3 @@ type textRasterCache struct {
 	order   []textRasterKey
 	pixels  int
 }
-
-var textRuns textRasterCache

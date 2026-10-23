@@ -10,8 +10,8 @@ import (
 // drawStrokeRect strokes a rounded rectangle. A zero StrokeMask strokes the
 // whole border; a non-zero mask strokes only the selected sides. Corners may
 // be elliptical. A repeated shape comes from the raster cache.
-func drawStrokeRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
-	if cachedStroke(dst, op, dx, dy) {
+func (renderer *Renderer) drawStrokeRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+	if renderer.cachedStroke(dst, op, dx, dy) {
 		return
 	}
 

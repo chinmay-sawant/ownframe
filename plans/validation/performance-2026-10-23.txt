@@ -1,0 +1,91 @@
+goos: linux
+goarch: amd64
+pkg: github.com/chinmay-sawant/ownframe/internal/page
+cpu: 13th Gen Intel(R) Core(TM) i7-13700HX
+BenchmarkRedrawHeavyWarm-24    	     426	    281692 ns/op	  202270 B/op	     564 allocs/op
+BenchmarkRedrawHeavyWarm-24    	     282	    403521 ns/op	  202256 B/op	     564 allocs/op
+BenchmarkRedrawHeavyWarm-24    	     418	    245753 ns/op	  202257 B/op	     564 allocs/op
+BenchmarkRedrawHeavyWarm-24    	     351	    342665 ns/op	  202274 B/op	     564 allocs/op
+BenchmarkRedrawHeavyWarm-24    	     244	    422957 ns/op	  202257 B/op	     564 allocs/op
+BenchmarkRedrawStages/TemplateExecute-24         	  218416	       461.4 ns/op	     560 B/op	       5 allocs/op
+BenchmarkRedrawStages/TemplateExecute-24         	  422664	       358.2 ns/op	     560 B/op	       5 allocs/op
+BenchmarkRedrawStages/TemplateExecute-24         	  483044	       378.6 ns/op	     560 B/op	       5 allocs/op
+BenchmarkRedrawStages/TemplateExecute-24         	  255475	       518.1 ns/op	     560 B/op	       5 allocs/op
+BenchmarkRedrawStages/TemplateExecute-24         	  348912	       351.6 ns/op	     560 B/op	       5 allocs/op
+BenchmarkRedrawStages/HTMLParse-24               	   35671	      3512 ns/op	    2736 B/op	      29 allocs/op
+BenchmarkRedrawStages/HTMLParse-24               	   38890	      2903 ns/op	    2736 B/op	      29 allocs/op
+BenchmarkRedrawStages/HTMLParse-24               	   49358	      2227 ns/op	    2736 B/op	      29 allocs/op
+BenchmarkRedrawStages/HTMLParse-24               	   48364	      2298 ns/op	    2736 B/op	      29 allocs/op
+BenchmarkRedrawStages/HTMLParse-24               	   53216	      2048 ns/op	    2736 B/op	      29 allocs/op
+BenchmarkRedrawStages/CSSApply-24                	   39711	      3040 ns/op	    3112 B/op	      36 allocs/op
+BenchmarkRedrawStages/CSSApply-24                	   37539	      3082 ns/op	    3112 B/op	      36 allocs/op
+BenchmarkRedrawStages/CSSApply-24                	   38096	      5431 ns/op	    3112 B/op	      36 allocs/op
+BenchmarkRedrawStages/CSSApply-24                	   19772	      6038 ns/op	    3112 B/op	      36 allocs/op
+BenchmarkRedrawStages/CSSApply-24                	   24337	      4410 ns/op	    3112 B/op	      36 allocs/op
+BenchmarkRedrawStages/DisplayList-24             	     758	    205698 ns/op	   96552 B/op	     151 allocs/op
+BenchmarkRedrawStages/DisplayList-24             	     567	    255503 ns/op	   96553 B/op	     151 allocs/op
+BenchmarkRedrawStages/DisplayList-24             	     542	    214147 ns/op	   96552 B/op	     151 allocs/op
+BenchmarkRedrawStages/DisplayList-24             	     722	    176160 ns/op	   96552 B/op	     151 allocs/op
+BenchmarkRedrawStages/DisplayList-24             	     555	    214347 ns/op	   96552 B/op	     151 allocs/op
+BenchmarkRedrawWarm-24                           	     604	    188920 ns/op	  100200 B/op	     173 allocs/op
+BenchmarkRedrawWarm-24                           	     879	    139363 ns/op	  100200 B/op	     173 allocs/op
+BenchmarkRedrawWarm-24                           	     876	    135691 ns/op	  100200 B/op	     173 allocs/op
+BenchmarkRedrawWarm-24                           	     858	    147916 ns/op	  100201 B/op	     173 allocs/op
+BenchmarkRedrawWarm-24                           	    1002	    118145 ns/op	  100201 B/op	     173 allocs/op
+BenchmarkRedrawCold-24                           	     775	    155006 ns/op	         1.000 parses/op	  105970 B/op	     249 allocs/op
+BenchmarkRedrawCold-24                           	     691	    155944 ns/op	         1.000 parses/op	  105967 B/op	     249 allocs/op
+BenchmarkRedrawCold-24                           	     768	    145121 ns/op	         1.000 parses/op	  105974 B/op	     249 allocs/op
+BenchmarkRedrawCold-24                           	     764	    142304 ns/op	         1.000 parses/op	  105974 B/op	     249 allocs/op
+BenchmarkRedrawCold-24                           	     814	    150259 ns/op	         1.000 parses/op	  105976 B/op	     249 allocs/op
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/page	4.422s
+goos: linux
+goarch: amd64
+pkg: github.com/chinmay-sawant/ownframe/internal/replay
+cpu: 13th Gen Intel(R) Core(TM) i7-13700HX
+BenchmarkDrawRectScan/dirty-24         	 1000000	       122.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/dirty-24         	 1000000	       146.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/dirty-24         	  984790	       155.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/dirty-24         	  776702	       142.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/dirty-24         	 1000000	       224.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/full-24          	  432327	       284.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/full-24          	  481296	       212.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/full-24          	  889443	       185.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/full-24          	  822634	       235.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkDrawRectScan/full-24          	  546388	       225.2 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/replay	1.606s
+?   	github.com/chinmay-sawant/ownframe/examples/platform	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/platform/mobile	[no test files]
+goos: linux
+goarch: amd64
+pkg: github.com/chinmay-sawant/ownframe/examples/platform/platform
+cpu: 13th Gen Intel(R) Core(TM) i7-13700HX
+BenchmarkClickCount-24    	     216	    488547 ns/op	  278861 B/op	     699 allocs/op
+BenchmarkClickCount-24    	     150	    693417 ns/op	  278818 B/op	     698 allocs/op
+BenchmarkClickCount-24    	     202	    677275 ns/op	  278870 B/op	     699 allocs/op
+BenchmarkClickCount-24    	     188	    591250 ns/op	  278841 B/op	     699 allocs/op
+BenchmarkClickCount-24    	     246	    465684 ns/op	  278892 B/op	     699 allocs/op
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/platform/platform	1.115s
+goos: linux
+goarch: amd64
+pkg: github.com/chinmay-sawant/ownframe/examples/perf-benchmarks
+cpu: 13th Gen Intel(R) Core(TM) i7-13700HX
+BenchmarkFlappyTick-24      	 1708213	        68.46 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFlappyTick-24      	 1846664	        67.24 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFlappyTick-24      	 1557351	        75.73 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFlappyTick-24      	 1630860	        83.29 ns/op	       0 B/op	       0 allocs/op
+BenchmarkFlappyTick-24      	 1721491	        71.79 ns/op	       0 B/op	       0 allocs/op
+BenchmarkLargeRedraw-24     	       1	 167038914 ns/op	34320168 B/op	  134196 allocs/op
+BenchmarkLargeRedraw-24     	       1	 112124650 ns/op	34345944 B/op	  134186 allocs/op
+BenchmarkLargeRedraw-24     	       1	 110141716 ns/op	34345816 B/op	  134185 allocs/op
+BenchmarkLargeRedraw-24     	       1	 137793663 ns/op	34351392 B/op	  134192 allocs/op
+BenchmarkLargeRedraw-24     	       1	 132667189 ns/op	34388352 B/op	  134196 allocs/op
+BenchmarkNormalRedraw-24    	     355	    437580 ns/op	  249852 B/op	     424 allocs/op
+BenchmarkNormalRedraw-24    	     194	    697956 ns/op	  249840 B/op	     424 allocs/op
+BenchmarkNormalRedraw-24    	     100	   1120138 ns/op	  249857 B/op	     424 allocs/op
+BenchmarkNormalRedraw-24    	     234	    477405 ns/op	  249855 B/op	     424 allocs/op
+BenchmarkNormalRedraw-24    	     330	    352670 ns/op	  249858 B/op	     424 allocs/op
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks	2.669s

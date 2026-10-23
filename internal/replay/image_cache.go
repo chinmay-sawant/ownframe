@@ -10,12 +10,12 @@ import (
 // decodedImage decodes op's payload once and caches the Ebiten image.
 // Bytes to pixels, caps, and alpha live in masking; this fork only uploads.
 // It returns nil for a skip or decode error, so the caller skips the draw.
-func decodedImage(op *layout.DisplayOp) *ebiten.Image {
+func (renderer *Renderer) decodedImage(op *layout.DisplayOp) *ebiten.Image {
 	if op == nil {
 		return nil
 	}
 	key := imageBytesKey(op)
-	if img := images.get(key); img != nil {
+	if img := renderer.images.get(key); img != nil {
 		return img
 	}
 	src, _, skip, err := masking.DecodeImage(op)
@@ -26,5 +26,5 @@ func decodedImage(op *layout.DisplayOp) *ebiten.Image {
 	if masking.PixelsTooBig(w, h) {
 		return nil
 	}
-	return images.put(key, src, w*h)
+	return renderer.images.put(key, src, w*h)
 }

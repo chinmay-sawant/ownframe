@@ -2,6 +2,7 @@ package atspi
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -21,7 +22,7 @@ func (f *fakeAcc) AccessibilityPerform(_ context.Context, req host.Accessibility
 	return nil
 }
 
-func TestPerformMapsClickAndRedactsPasswordValue(t *testing.T) {
+func TestPerformMapsClickAndRejectsPasswordEdit(t *testing.T) {
 	p := NewPublisher(NewFakeBus())
 	tree := sampleTree()
 	if err := p.Publish(tree); err != nil {
@@ -36,10 +37,11 @@ func TestPerformMapsClickAndRedactsPasswordValue(t *testing.T) {
 		t.Fatalf("req %+v", acc.req)
 	}
 	pwPath := byID(t, p.app, "id:pw").Path
-	if err := p.Perform(context.Background(), acc, pwPath, ActionSetText, "secret"); err != nil {
-		t.Fatal(err)
+	before := acc.req
+	if err := p.Perform(context.Background(), acc, pwPath, ActionSetText, "secret"); !errors.Is(err, host.ErrAccessibilityAction) {
+		t.Fatalf("password edit = %v", err)
 	}
-	if acc.req.Value != "" || acc.req.Kind != host.AccessibilitySetValue {
-		t.Fatalf("password value leaked: %+v", acc.req)
+	if acc.req != before {
+		t.Fatal("rejected edit reached the page")
 	}
 }

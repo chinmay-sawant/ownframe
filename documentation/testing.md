@@ -67,3 +67,22 @@ There is no character cap. Keep related implementation and test scenarios togeth
 `make release-check` packages the login candidate locally with dependency downloads disabled and verifies archive inventory, checksums, paths, executable modes, and wasm magic. It neither publishes a release nor proves OS signing. Tag CI prepares a signed and attested candidate after its gates pass; that workflow needs its own successful run before claiming signing evidence.
 
 `make soak-check` runs a bounded page workload for ten minutes by default. See [performance.md](performance.md) for scope and limits. A web endpoint sampler and a page workload do not prove native input, Android lifecycle behavior, or window frame pacing.
+
+
+## Review regression coverage
+
+CI now shards example race tests with `scripts/test-examples-race.sh`, runs the
+`ownframe_debug` web tests and a 60-second page soak, and compares repeated
+parent/candidate benchmarks on the same runner. The release workflow reuses
+these gates. Workflow definitions are not evidence that their native jobs have
+run successfully.
+
+The partial-frame graphics fixture has a committed 100 by 100 pixel golden in
+`internal/window/testdata/partial-frame.png`. Its white background and red
+12..32 pixel rectangle are independently specified; the first frame checks
+every pixel, and partial frames check all red ink inside the reported damage.
+Other parity comparisons still test consistency between replay paths.
+
+Each window owns a `replay.Renderer`. Its six mutable caches cannot evict
+another window's entries, and `Close` releases their GPU images. Package drawing
+helpers retain a default renderer for existing internal callers and tests.

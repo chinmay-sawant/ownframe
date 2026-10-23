@@ -15,17 +15,19 @@ type pageStats struct {
 	lastRedraw time.Duration
 	lastDraw   time.Duration
 	frameDraw  time.Duration
-	// lastTemplate, layoutTime, displayListTime, and paintTime split the
+	// lastTemplate, styleTime, layoutTime, and paintTime split the
 	// last Redraw into stages. dirtyOps, dirtyRegions, and changedOps
 	// describe its dirty region. allocFrame is the bytes allocated during
 	// the last sampled Redraw. Sampling runs about twice a second.
 	// Unsampled redraws keep the previous value.
-	lastTemplate    time.Duration
-	layoutTime      time.Duration
-	displayListTime time.Duration
-	paintTime       time.Duration
-	dirtyOps        int
-	dirtyRegions    int
-	changedOps      int
-	allocFrame      uint64
+	lastTemplate time.Duration
+	styleTime    time.Duration
+	layoutTime   time.Duration
+	paintTime    time.Duration
+	otherTime    time.Duration
+	dirtyOps     int
+	dirtyRegions int
+	dirtyArea    int
+	changedOps   int
+	allocFrame   uint64
 }

@@ -220,3 +220,20 @@ its tooling or credentials are absent. Wire it to a protected
 no secret ever echoed) once a publish job lands in
 `.github/workflows/release.yml`, and keep the signing keys out of
 developer machines, chat logs, and the repository.
+
+
+## Archive reproducibility and signing
+
+`package.sh` writes sorted tar/gzip and ZIP entries with normalized timestamps,
+owners and modes through `scripts/release_archive.py`. `SOURCE_DATE_EPOCH`
+defaults to the source commit timestamp. `scripts/reproducible-check.sh` builds
+Linux and wasm candidates twice on this host and compares complete archive
+checksums. This does not promise identical bytes across different toolchains
+or operating systems.
+
+`sign-release.sh --platform windows` or `--platform macos` extracts matching
+archives, signs executable members, notarizes and staples macOS app bundles,
+repacks and refreshes `SHA256SUMS`. Missing tools, credentials, or signable
+inputs fail. Old checksum signatures are removed; re-sign checksums after the
+archive contents change. Fixture tests prove invocation and repacking; real
+platform signatures require an operator run with credentials.

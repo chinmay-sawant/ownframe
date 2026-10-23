@@ -4,7 +4,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 )
 
 // drawReplayScaled draws the display list through an offscreen buffer and
@@ -34,7 +33,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 
 	s.replayBuf.Clear()
 	s.replayBuf.Fill(s.pageBackground())
-	replay.Draw(s.replayBuf, s.display, 0, 0)
+	s.renderer.Draw(s.replayBuf, s.display, 0, 0)
 
 	var op ebiten.DrawImageOptions
 	op.Filter = ebiten.FilterLinear
@@ -57,7 +56,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 // buffer can hold it. Viewport-pinned layers draw at the offset the display
 // was built with, so they stay at the viewport while the page scrolls.
 func (s *shell) directReplay(dst *ebiten.Image, display *layout.Display) {
-	replay.DrawVisiblePinned(dst, display,
+	s.renderer.DrawVisiblePinned(dst, display,
 		-float64(s.scrollX), -float64(s.scrollY),
 		s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
 }

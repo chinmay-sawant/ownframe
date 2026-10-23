@@ -55,3 +55,24 @@ func TestPerfStageZeroSafe(t *testing.T) {
 		t.Fatal("empty summary must read zero")
 	}
 }
+
+func TestPerfFrameCostExcludesParkedGap(t *testing.T) {
+	s := &shell{perf: true}
+	s.dev.frame = 125 * time.Millisecond
+	s.dev.stages.pendingUpdate = 2 * time.Millisecond
+	s.dev.stages.draw = 3 * time.Millisecond
+	s.dev.stages.present = time.Millisecond
+	s.perfFrameSample()
+	avg, _, p99, long := s.perfSummary()
+	if avg != 6*time.Millisecond || p99 != 6*time.Millisecond || long != 0 {
+		t.Fatalf("work avg=%s p99=%s long=%d", avg, p99, long)
+	}
+	if s.dev.stages.pendingUpdate != 0 {
+		t.Fatal("update work counted twice")
+	}
+	s.dev.stages.draw = 20 * time.Millisecond
+	s.perfFrameSample()
+	if _, _, _, long := s.perfSummary(); long != 1 {
+		t.Fatal("20ms draw must exceed the 60Hz budget")
+	}
+}

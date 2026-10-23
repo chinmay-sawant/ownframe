@@ -62,3 +62,37 @@ func TestIDPrefersUnique(t *testing.T) {
 		t.Fatal("dup id")
 	}
 }
+
+func TestAnonymousControlsPreserveDeclaredState(t *testing.T) {
+	root, err := markup.Parse([]byte(`<main><input type="checkbox" checked><input type="radio"><input type="password" value="private"><textarea>draft</textarea></main>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tree := build(root, View{})
+	found := map[host.AccessibilityRole]int{}
+	passwords, drafts := 0, 0
+	for _, node := range tree.Nodes {
+		found[node.Role]++
+		if node.Role == host.AccessibilityCheckbox && (!node.HasChecked || !node.Checked) {
+			t.Fatal("anonymous checkbox lost checked state")
+		}
+		if node.Role == host.AccessibilityRadio && (!node.HasChecked || node.Checked) {
+			t.Fatal("anonymous radio lost unchecked state")
+		}
+		if node.Password {
+			passwords++
+			if node.Value != "" {
+				t.Fatal("anonymous password leaked a value")
+			}
+		}
+		if node.Value == "draft" {
+			drafts++
+		}
+		if node.ElementID == "" && len(node.Actions) != 0 {
+			t.Fatal("anonymous node advertised an unsupported action")
+		}
+	}
+	if found[host.AccessibilityCheckbox] != 1 || found[host.AccessibilityRadio] != 1 || passwords != 1 || drafts != 1 {
+		t.Fatal("control nodes missing")
+	}
+}

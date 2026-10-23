@@ -18,11 +18,13 @@ type Counts struct {
 	LastDraw        time.Duration
 	FrameDraw       time.Duration
 	LastTemplate    time.Duration
+	StyleTime       time.Duration
 	LayoutTime      time.Duration
-	DisplayListTime time.Duration
 	PaintTime       time.Duration
+	OtherTime       time.Duration
 	DirtyOps        int
 	DirtyRegions    int
+	DirtyArea       int
 	ChangedOps      int
 	AllocFrame      uint64
 	Reloads         uint64
@@ -51,11 +53,13 @@ func Snapshot(c *Counts, boxes, ops int) host.Stats {
 		Reloads:         c.Reloads,
 		LastReloadError: c.LastReloadError,
 		LastTemplate:    c.LastTemplate,
+		StyleTime:       c.StyleTime,
 		LayoutTime:      c.LayoutTime,
-		DisplayListTime: c.DisplayListTime,
 		PaintTime:       c.PaintTime,
+		OtherTime:       c.OtherTime,
 		DirtyOps:        c.DirtyOps,
 		DirtyRegions:    c.DirtyRegions,
+		DirtyArea:       c.DirtyArea,
 		ChangedOps:      c.ChangedOps,
 		AllocFrame:      c.AllocFrame,
 	}

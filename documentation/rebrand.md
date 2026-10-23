@@ -51,8 +51,9 @@ the same repository before and after its rename.
 
 ## GitHub rename and release
 
-The source changes are prepared locally. The remote repository name,
-description, topics, release tags, and Git remote are unchanged.
+The repository and module now use `ownframe`. The steps below are an operator
+runbook for a rename or a fresh checkout, not a list of pending source changes.
+Check the live repository settings and release state before acting.
 
 1. Rename `chinmay-sawant/go-gpui` to `chinmay-sawant/ownframe` in GitHub
    repository settings when ready to publish the source migration.

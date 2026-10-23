@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"image"
 	"image/color"
+	"image/png"
 	"os"
 	"slices"
 	"testing"
@@ -22,9 +23,43 @@ func (g *partialFrameGame) check(bounds image.Rectangle, pixels []byte) {
 	white := [4]byte{255, 255, 255, 255}
 	corner := bounds.Max.Sub(image.Pt(10, 10))
 	outside := g.at(bounds, pixels, corner.X, corner.Y)
-	inside := bounds.Min.Add(image.Pt(bounds.Dx()/8, bounds.Dy()/8))
+	inside := bounds.Min.Add(image.Pt(bounds.Dx()/5, bounds.Dy()/5))
 	scale := bounds.Dx() / 100
 
+	if g.frame == 0 {
+		file, err := os.Open("testdata/partial-frame.png")
+		if err != nil {
+			g.err = err
+			return
+		}
+		golden, err := png.Decode(file)
+		closeErr := file.Close()
+		if err != nil {
+			g.err = err
+			return
+		}
+		if closeErr != nil {
+			g.err = closeErr
+			return
+		}
+		if bounds.Dx() != 100 || bounds.Dy() != 100 {
+			g.err = fmt.Errorf("golden size differs: %v", bounds)
+			return
+		}
+		for y := range 100 {
+			for x := range 100 {
+				r, gv, b, a := golden.At(x, y).RGBA()
+				got := g.at(bounds, pixels, x, y)
+				const channelScale = 257
+				differs := r != uint32(got[0])*channelScale || gv != uint32(got[1])*channelScale ||
+					b != uint32(got[2])*channelScale || a != uint32(got[3])*channelScale
+				if differs {
+					g.err = fmt.Errorf("golden differs at %d,%d: %v != %v", x, y, got, golden.At(x, y))
+					return
+				}
+			}
+		}
+	}
 	switch g.frame {
 	case 0, 3:
 		if outside == green {
@@ -35,11 +70,23 @@ func (g *partialFrameGame) check(bounds image.Rectangle, pixels []byte) {
 			g.err = fmt.Errorf("partial frame filled the screen: pixel = %v", outside)
 		}
 
-		if g.at(bounds, pixels, inside.X, inside.Y) == green {
-			g.err = fmt.Errorf("partial frame did not blit the damage")
+		if g.at(bounds, pixels, inside.X, inside.Y) != red {
+			g.err = fmt.Errorf("partial frame did not blit the red ink")
+		}
+		for y := 10 * scale; y < 30*scale; y++ {
+			for x := 10 * scale; x < 30*scale; x++ {
+				want := white
+				if x >= 12*scale && y >= 12*scale {
+					want = red
+				}
+				if got := g.at(bounds, pixels, x, y); got != want {
+					g.err = fmt.Errorf("partial damage differs at %d,%d: %v != %v", x, y, got, want)
+					return
+				}
+			}
 		}
 	case 4:
-		// The ink sits at 13..40 px before the scroll. After a 20 px scroll
+		// The ink sits at 12..32 px before the scroll. After a 20 px scroll
 		// up, row 5 shows the box and row 35 shows the page under it.
 		if got := g.at(bounds, pixels, 15*scale, 5*scale); got != red {
 			g.err = fmt.Errorf("scroll copy lost the scrolled ink: pixel = %v", got)

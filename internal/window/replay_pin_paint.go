@@ -4,7 +4,6 @@ import (
 	"image"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -22,8 +21,8 @@ func (s *shell) paintPinnedChrome(dst *ebiten.Image, d *layout.Display) {
 	}
 
 	s.partial.pins++
-	replay.DrawFixed(clip, d)
-	replay.DrawPinnedZ(clip, d, s.viewportPinZ(),
+	s.renderer.DrawFixed(clip, d)
+	s.renderer.DrawPinnedZ(clip, d, s.viewportPinZ(),
 		-float64(s.redrawX), -float64(s.redrawY))
 }
 

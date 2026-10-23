@@ -34,9 +34,7 @@ type textCache struct {
 	faces   map[faceKey]*text.GoTextFace
 }
 
-var fonts textCache
-
-func textFace(op *layout.DisplayOp) *text.GoTextFace {
+func (renderer *Renderer) textFace(op *layout.DisplayOp) *text.GoTextFace {
 	if op.Font == nil {
 		return nil
 	}
@@ -44,13 +42,13 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 	size := op.Size * pxPerPt
 	key := faceKey{source: op.Font, size: size, language: op.TextLanguage()}
 
-	fonts.mu.RLock()
-	source := fonts.sources[op.Font]
-	if face := fonts.faces[key]; face != nil {
-		fonts.mu.RUnlock()
+	renderer.fonts.mu.RLock()
+	source := renderer.fonts.sources[op.Font]
+	if face := renderer.fonts.faces[key]; face != nil {
+		renderer.fonts.mu.RUnlock()
 		return face
 	}
-	fonts.mu.RUnlock()
+	renderer.fonts.mu.RUnlock()
 
 	if source == nil {
 		parsed, err := text.NewGoTextFaceSource(bytes.NewReader(op.Font.Bytes()))
@@ -60,27 +58,27 @@ func textFace(op *layout.DisplayOp) *text.GoTextFace {
 		source = parsed
 	}
 
-	fonts.mu.Lock()
-	defer fonts.mu.Unlock()
+	renderer.fonts.mu.Lock()
+	defer renderer.fonts.mu.Unlock()
 
-	if face := fonts.faces[key]; face != nil {
+	if face := renderer.fonts.faces[key]; face != nil {
 		return face
 	}
-	if have := fonts.sources[op.Font]; have != nil {
+	if have := renderer.fonts.sources[op.Font]; have != nil {
 		source = have
 	} else {
-		if fonts.sources == nil || len(fonts.sources) >= faceSourceCap {
-			fonts.sources = make(map[any]*text.GoTextFaceSource)
-			fonts.faces = make(map[faceKey]*text.GoTextFace)
+		if renderer.fonts.sources == nil || len(renderer.fonts.sources) >= faceSourceCap {
+			renderer.fonts.sources = make(map[any]*text.GoTextFaceSource)
+			renderer.fonts.faces = make(map[faceKey]*text.GoTextFace)
 		}
-		fonts.sources[op.Font] = source
+		renderer.fonts.sources[op.Font] = source
 	}
 
 	face := &text.GoTextFace{Source: source, Size: size, Language: language.Make(key.language)}
-	if len(fonts.faces) >= faceCap {
-		clear(fonts.faces)
+	if len(renderer.fonts.faces) >= faceCap {
+		clear(renderer.fonts.faces)
 	}
-	fonts.faces[key] = face
+	renderer.fonts.faces[key] = face
 
 	return face
 }

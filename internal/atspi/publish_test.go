@@ -50,3 +50,48 @@ func TestPublisherLiveBusDoesNotClaimSuccess(t *testing.T) {
 		t.Fatal("status")
 	}
 }
+
+func TestPublisherPublishesContentWithoutRevisionChange(t *testing.T) {
+	bus := NewFakeBus()
+	p := NewPublisher(bus)
+	tree := sampleTree()
+	if err := p.Publish(tree); err != nil {
+		t.Fatal(err)
+	}
+	tree.Nodes[1].Value = "Grace"
+	if err := p.Publish(tree); err != nil {
+		t.Fatal(err)
+	}
+	apps := bus.Apps()
+	if len(apps) != 2 || byID(t, apps[1], "id:name").Value != "Grace" {
+		t.Fatal("value-only edit was not published")
+	}
+}
+
+type retryBus struct {
+	*FakeBus
+	failed bool
+}
+
+func (b *retryBus) Publish(app Application) error {
+	if !b.failed {
+		b.failed = true
+		return ErrLiveUnavailable
+	}
+	return b.FakeBus.Publish(app)
+}
+
+func TestPublisherRetriesFailedPublication(t *testing.T) {
+	bus := &retryBus{FakeBus: NewFakeBus()}
+	p := NewPublisher(bus)
+	tree := sampleTree()
+	if err := p.Publish(tree); !errors.Is(err, ErrLiveUnavailable) {
+		t.Fatalf("first publish = %v", err)
+	}
+	if err := p.Publish(tree); err != nil {
+		t.Fatal(err)
+	}
+	if len(bus.Apps()) != 1 {
+		t.Fatal("unchanged tree was not retried after failure")
+	}
+}
