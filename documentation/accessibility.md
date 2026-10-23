@@ -1,31 +1,40 @@
 # Accessibility tree
 
-`Page.AccessibilityTree` returns a detached semantic snapshot from the last
+1.0 ships a Go accessibility snapshot for the operator who runs the process.
+It does not ship a screen-reader product. `NewLiveBus` reports `Live: false`.
+Orca cannot inspect an ownframe window. NVDA, VoiceOver, and TalkBack cannot
+either.
+
+Linux has an experimental AT-SPI mapping and a fake-bus test seam
+([atspi.md](atspi.md)). There is no live D-Bus AT-SPI client. UI Automation
+is not shipped.
+
+`Page.Access().AccessibilityTree` returns a detached semantic snapshot from the last
 successful redraw. The tree follows HTML document order and includes supported
 roles, names, descriptions, form state, actions, and bounds when the layout can
 provide them.
 
 ```go
-var accessible ownframe.Accessible = page
-tree, err := accessible.AccessibilityTree()
+tree, err := page.Access().AccessibilityTree()
 if err != nil {
 	return err
 }
 
 for _, node := range tree.Nodes {
-	log.Printf("%s %s: %s", node.Role, node.ID, node.Name)
+	log.Printf("role=%s id=%s", node.Role, node.ID)
 }
 
-return accessible.AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
+return page.Access().AccessibilityPerform(ctx, ownframe.AccessibilityRequest{
 	Document: tree.Document,
 	Node:     "id:save",
 	Kind:     ownframe.AccessibilityActivate,
 })
 ```
 
-Call both methods on the page's owning loop. A native adapter must queue
-actions back to that loop. `Accessible` is optional for hosts and does not add
-requirements to `host.Screen`.
+Call both methods on the page's owning loop. The window still calls the inner
+screen. A native adapter must queue actions back to that loop. `Accessible` is
+optional for hosts and does not add requirements to `host.Screen`. 1.0 does
+not ship a screen reader.
 
 ## Try the example
 
@@ -47,10 +56,11 @@ coverage:
 go test ./examples/accessibility/...
 ```
 
-The demo is an API inspector. It does not connect the tree to Windows UI
-Automation, Linux AT-SPI, or macOS NSAccessibility. See the
-[native accessibility status and validation guide](accessibility-native.md)
-for the platform work that remains.
+The demo is an API inspector. Linux maps the snapshot to AT-SPI objects in
+process; it does not register them on the accessibility bus. Windows UI
+Automation, macOS VoiceOver, and Android TalkBack are not shipped. See the
+[native accessibility status](accessibility-native.md) and
+[AT-SPI first slice](atspi.md).
 
 ## Node identity and updates
 
@@ -105,9 +115,9 @@ nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
 
 ## Limits
 
-This API supplies semantic page data to a host. It does not expose the
-Ebitengine window to a native assistive-technology API, and a tree alone does
-not make an app accessible.
+This API supplies semantic page data to a host. Linux maps that tree to
+AT-SPI objects in process. `Live` is false, so Orca cannot inspect the
+window. 1.0 does not ship a screen-reader product.
 
 The snapshot filters the `hidden` attribute, `aria-hidden="true"`, and
 non-content tags. It does not read computed CSS visibility. A node hidden by a

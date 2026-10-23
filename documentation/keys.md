@@ -74,7 +74,7 @@ and selects the Ops tab, and does not type. The overlay's keys use the same
 two-frame guard as every other key.
 
 Backspace deletes on the frame of the press, then every 4 frames once the
-key has been held 30 frames. `Ctrl+Backspace` (`DeleteWord`) deletes on the
+key has been held 30 frames. `Ctrl+Backspace` (`page.Edit().DeleteWord`) deletes on the
 same cadence. After a chord fires, its key stops typing while it stays down,
 and it types again once the key has been up for 50 ms.
 

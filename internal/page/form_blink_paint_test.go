@@ -9,8 +9,12 @@ import (
 func TestWholeSelectionPaintsASelectionSpan(t *testing.T) {
 	src := `<input id="e" type="text" value="x">`
 	ctrl := Control{ID: "e", Tag: "input", Type: "text", Value: "x"}
-	got := rewriteControls(src, []controlSpan{whole(src, ctrl)}, nil, "e", true)
-	if !strings.Contains(spanPart(got), `<span data-ownframe-selection="1">x</span>`) {
+	got := rewriteControls(src, []controlSpan{{Control: ctrl, Start: 0, End: len(src)}}, nil, "e", true)
+	part := got
+	if i := strings.Index(got, "<span"); i >= 0 {
+		part = got[i:]
+	}
+	if !strings.Contains(part, `<span data-ownframe-selection="1">x</span>`) {
 		t.Fatalf("whole selection has no selection span: %s", got)
 	}
 }

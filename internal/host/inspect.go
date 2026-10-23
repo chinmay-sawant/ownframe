@@ -14,19 +14,25 @@ type Stats struct {
 	Ops        int
 	LastRedraw time.Duration
 	LastDraw   time.Duration
-	// LastTemplate, LayoutTime, DisplayListTime, and PaintTime split the
-	// last Redraw into template, style, display-list, and paint stages.
-	LastTemplate    time.Duration
-	LayoutTime      time.Duration
-	DisplayListTime time.Duration
-	PaintTime       time.Duration
-	// DirtyOps counts display ops meeting the dirty rect, DirtyRegions is
-	// 1 when the last Redraw dirtied a region, and ChangedOps counts the
-	// ops the display diff found changed.
+	// LastTemplate, StyleTime, LayoutTime, and PaintTime split the
+	// last Redraw into template execution, CSS styling, placement/list emission,
+	// and software paint. OtherTime covers form sync, dirty diff, callbacks,
+	// and remaining bookkeeping. Stages describe this call, including cache hits.
+	LastTemplate time.Duration
+	StyleTime    time.Duration
+	LayoutTime   time.Duration
+	PaintTime    time.Duration
+	OtherTime    time.Duration
+	// DirtyOps counts each op intersecting any changed region once. DirtyRegions
+	// and DirtyArea describe the unpadded display-diff rectangles in CSS pixels.
+	// The host may pad, merge, or tile these regions before repainting.
 	DirtyOps     int
 	DirtyRegions int
+	DirtyArea    int
 	ChangedOps   int
-	// AllocFrame is the bytes allocated during the last Redraw.
+	// AllocFrame is the bytes allocated during the last sampled Redraw.
+	// Sampling runs about twice a second. Unsampled redraws keep the
+	// previous value.
 	AllocFrame uint64
 	Reloads    uint64
 	// LastReloadError is the most recent failed hot reload, empty when none.

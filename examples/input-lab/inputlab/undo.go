@@ -31,7 +31,7 @@ func (a *App) onRedo(context.Context) error {
 // undoGroup is the focused section, or the last edited one when the
 // click on a button blurred the form first.
 func (a *App) undoGroup() string {
-	if g := focusedGroup(a.page.FocusedField()); g != "" {
+	if g := focusedGroup(a.page.Edit().FocusedField()); g != "" {
 		return g
 	}
 	return a.lastEdit
@@ -53,7 +53,7 @@ func focusedGroup(id string) string {
 // pushNote saves e-note with dedup, like the old editing demo.
 func (a *App) pushNote() {
 	a.lastEdit = "e"
-	next := a.page.FormValue("e-note")
+	next := a.page.Form().FormValue("e-note")
 	if n := len(a.eUndo); n == 0 || a.eUndo[n-1] != next {
 		a.eUndo = append(a.eUndo, next)
 		if len(a.eUndo) > undoLimit {
@@ -69,8 +69,8 @@ func (a *App) undoNote() error {
 		a.refresh()
 		return nil
 	}
-	a.eRedo = append(a.eRedo, a.page.FormValue("e-note"))
-	a.page.SetFormValue("e-note", a.eUndo[len(a.eUndo)-1])
+	a.eRedo = append(a.eRedo, a.page.Form().FormValue("e-note"))
+	a.page.Form().SetFormValue("e-note", a.eUndo[len(a.eUndo)-1])
 	a.eUndo = a.eUndo[:len(a.eUndo)-1]
 	a.refresh()
 	return nil
@@ -82,8 +82,8 @@ func (a *App) redoNote() error {
 		a.refresh()
 		return nil
 	}
-	a.eUndo = append(a.eUndo, a.page.FormValue("e-note"))
-	a.page.SetFormValue("e-note", a.eRedo[len(a.eRedo)-1])
+	a.eUndo = append(a.eUndo, a.page.Form().FormValue("e-note"))
+	a.page.Form().SetFormValue("e-note", a.eRedo[len(a.eRedo)-1])
 	a.eRedo = a.eRedo[:len(a.eRedo)-1]
 	a.refresh()
 	return nil

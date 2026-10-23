@@ -6,8 +6,8 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// ticking reports a page with a frame callback. A tick changes operations in
-// place without a dirty rect, so such a page keeps the full replay.
+// ticking reports a page with a frame callback. A Page marks mutated ops
+// itself and stays on the buffer path.
 type ticking interface {
 	Ticking() bool
 }
@@ -27,8 +27,7 @@ type ticking interface {
 // retained tiles at one to one, so a scaled, fitted, or bitmap frame forces
 // the next replay frame to repaint everything. paints counts the tiles the
 // frame repainted and paintPx their area; blits and blitPx count the tile
-// blits and their area. clipX is the first page x this frame's dock hides;
-// a wider clip repaints the strip the dock hid.
+// blits; pins counts post-blit chrome draws. clipX is the dock clip.
 type partialState struct {
 	buf     *ebiten.Image
 	tiles   *tileGrid
@@ -41,6 +40,7 @@ type partialState struct {
 	paintPx int
 	blits   int
 	blitPx  int
+	pins    int
 	focus   bool
 	live    bool
 	whole   bool

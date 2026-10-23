@@ -39,9 +39,9 @@ func (s *shell) gridTooBig(contentW, contentH int) bool {
 	return int64(contentW)*int64(contentH) > int64(maxGridViewports)*int64(winW)*int64(winH)
 }
 
-// isTicking reports a screen that changes operations from a frame callback.
-// A tick changes operations in place without a dirty rect, so such a page
-// keeps the full replay.
+// isTicking reports a screen with a frame callback. A Page marks mutated
+// ops itself and stays on the buffer path; a ticker without FrameDirty
+// still replays in full.
 func (s *shell) isTicking() bool {
 	t, ok := s.app.(ticking)
 

@@ -19,13 +19,13 @@ func TestClickHandsValidatedOutboundLinkToApp(t *testing.T) {
 		got = link
 		return nil
 	}})
-	for i := range p.display.Ops {
-		op := &p.display.Ops[i]
+	for i := range p.draw.Display.Ops {
+		op := &p.draw.Display.Ops[i]
 		if op.Kind != DisplayOpLinkURI {
 			continue
 		}
-		x := (op.X + op.W/2) / p.display.PointsPerPixel
-		y := (op.Y + op.H/2) / p.display.PointsPerPixel
+		x := (op.X + op.W/2) / p.draw.Display.PointsPerPixel
+		y := (op.Y + op.H/2) / p.draw.Display.PointsPerPixel
 		if err = p.Click(context.Background(), x, y); err != nil {
 			t.Fatal(err)
 		}

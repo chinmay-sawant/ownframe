@@ -12,12 +12,12 @@ func BenchmarkScreenSetDataRedraw(b *testing.B) {
 		b.Run(screen, func(b *testing.B) {
 			app, _ := newFakeApp(b)
 			app.view.Nav = screen
-			app.page.SetPerf(true)
+			app.page.Window().SetPerf(true)
 			app.page.SetData(app.view)
 			if err := app.Redraw(context.Background()); err != nil {
 				b.Fatal(err)
 			}
-			before := app.page.Stats().Parses
+			before := app.page.Probe().Stats().Parses
 			b.ReportAllocs()
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
@@ -27,11 +27,11 @@ func BenchmarkScreenSetDataRedraw(b *testing.B) {
 				}
 			}
 			b.StopTimer()
-			stats := app.page.Stats()
+			stats := app.page.Probe().Stats()
 			parses := stats.Parses - before
 			b.ReportMetric(float64(parses)/float64(b.N), "parses/op")
+			b.ReportMetric(float64(stats.StyleTime.Nanoseconds()), "style-ns/op")
 			b.ReportMetric(float64(stats.LayoutTime.Nanoseconds()), "layout-ns/op")
-			b.ReportMetric(float64(stats.DisplayListTime.Nanoseconds()), "display-ns/op")
 			b.ReportMetric(float64(stats.Boxes), "boxes/page")
 			b.ReportMetric(float64(stats.Ops), "ops/page")
 		})

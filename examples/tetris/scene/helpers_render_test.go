@@ -32,7 +32,7 @@ func newTestSceneHTML(t *testing.T, m Model, st Store, opts Options, src string)
 
 // hasText reports whether the display carries a text run containing want.
 func hasText(s *Scene, want string) bool {
-	d := s.page.Display()
+	d := s.page.Probe().Display()
 	if d == nil {
 		return false
 	}
@@ -50,7 +50,7 @@ func hasText(s *Scene, want string) bool {
 func press(t *testing.T, s *Scene, key string) {
 	t.Helper()
 
-	if err := s.page.KeyDown(context.Background(), key); err != nil {
+	if err := s.page.Edit().KeyDown(context.Background(), key); err != nil {
 		t.Fatal(err)
 	}
 }

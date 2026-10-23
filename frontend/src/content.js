@@ -30,6 +30,8 @@ const labels = {
   'compare-electron': 'Electron',
   'compare-go-app-frameworks': 'Go frameworks',
   'compare-syntax': 'Hello world syntax',
+  accessibility: 'Accessibility tree',
+  atspi: 'Linux AT-SPI',
   'accessibility-native': 'Native accessibility',
   'desktop-shell-integrations': 'Desktop integration',
   'performance-baseline': 'Performance measurements',

@@ -51,7 +51,7 @@ type Anim struct {
 	ease  Easing
 	live  bool
 	// src is the bound page, gen its Generation at Bind time.
-	src *page.Page
+	src genSrc
 	gen uint64
 }
 

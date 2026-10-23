@@ -4,7 +4,7 @@ Complete the v0.0.1 workstream: finish the form and replay fidelity work, and ad
 
 ## Motivation / context
 
-- Plans: [`plans/v0.0.1/compare.md`](plans/v0.0.1/compare.md), the Electron gap list that defines v0.0.1. [`PHASES.md`](PHASES.md) records the integration state and the known engine and replay limits.
+- Plans: [`plans/v0.0.1/compare.md`](plans/v0.0.1/compare.md), the Electron gap list that defines v0.0.1. [`PHASES.md`](../../PHASES.md) records the integration state and the known engine and replay limits.
 - Branch `chore/pending`: 37 commits on top of `master` (`ac2ddc4`); the `feature/v0.0.1` stack and its follow-ups are merged in. This PR carries the remaining integration: 545 files, +20,764 / -380.
 - No issue is linked; the repo has no issues, same as the earlier v0.0.1 PR.
 

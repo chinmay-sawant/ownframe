@@ -57,7 +57,7 @@ func (a *animation) paint(ctx context.Context, seconds float64) error {
 		}
 	}
 
-	d := a.page.Display()
+	d := a.page.Probe().Display()
 	if d == nil {
 		return fmt.Errorf("desktop cat: the PNG template requires display-list replay")
 	}

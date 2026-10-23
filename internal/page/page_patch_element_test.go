@@ -28,7 +28,7 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 	if p.boxByID("box").ID == "" {
 		t.Fatal("no box")
 	}
-	if p.display == nil {
+	if p.draw.Display == nil {
 		t.Fatal("the page has no display list")
 	}
 	if fill := p.boxFill("box"); fill == nil {
@@ -37,9 +37,7 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 		t.Fatalf("the fill starts at %.2f, want the base colour", fill.R)
 	}
 
-	if !p.PatchElement(ctx, "box", ElementEdit{Attribute: "class", Value: "a on"}) {
-		t.Fatal("the patch was refused")
-	}
+	mustPatch(t, p.PatchElement(ctx, "box", ElementEdit{Attribute: "class", Value: "a on"}))
 	if p.Stats().Repaints != before+1 {
 		t.Fatalf("repaints = %d, want one more", p.Stats().Repaints)
 	}
@@ -57,14 +55,14 @@ func TestPatchElementEditsOneBox(t *testing.T) {
 
 // boxFill returns the first fill operation the box owns.
 func (p *Page) boxFill(id string) *DisplayOp {
-	for _, b := range p.display.Boxes {
+	for _, b := range p.draw.Display.Boxes {
 		if b.ID != id {
 			continue
 		}
-		for i := range p.display.Ops {
+		for i := range p.draw.Display.Ops {
 			for _, own := range b.OperationIDs {
-				if p.display.Ops[i].ID == own && p.display.Ops[i].Kind == DisplayOpFillRect {
-					return &p.display.Ops[i]
+				if p.draw.Display.Ops[i].ID == own && p.draw.Display.Ops[i].Kind == DisplayOpFillRect {
+					return &p.draw.Display.Ops[i]
 				}
 			}
 		}

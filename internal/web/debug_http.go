@@ -44,7 +44,9 @@ func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
 		stats.LastReloadError = sanitizeReload(stats.LastReloadError)
 		state.Stats = &stats
 	}
-	state.Runtime = runtimeSnapshot()
+	if s.perf {
+		state.Runtime = runtimeSnapshot()
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	if err := json.NewEncoder(w).Encode(state); err != nil {

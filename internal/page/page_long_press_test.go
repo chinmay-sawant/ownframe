@@ -25,7 +25,7 @@ func TestLongPressSelectsWord(t *testing.T) {
 		t.Fatal("a text-field hold is unclaimed")
 	}
 
-	if start, end := p.formState().bounds(11); start != 0 || end != 5 {
+	if start, end := p.formState().Bounds(11); start != 0 || end != 5 {
 		t.Fatalf("word [%d,%d)", start, end)
 	}
 }

@@ -43,10 +43,10 @@ func TestNativeAccessibilityTracksViewportAndActions(t *testing.T) {
 	if err := a.onTick(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if a.Page().FormValue("host") != "10.0.0.8" {
+	if a.Page().Form().FormValue("host") != "10.0.0.8" {
 		t.Fatal("host edit lost")
 	}
-	a.Page().SetScrollOffset(0, 600)
+	a.Page().Scroll().SetScrollOffset(0, 600)
 	a.publishAccessibility()
 	if err := json.Unmarshal([]byte(bridge.Accessibility()), &state); err != nil {
 		t.Fatal(err)
@@ -60,7 +60,7 @@ func TestNativeAccessibilityTracksViewportAndActions(t *testing.T) {
 	if err := a.accessibilityActions(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := a.Page().TakeScroll(); ok {
+	if _, ok := a.Page().Testing().TakeScroll(); ok {
 		t.Fatal("fitted accessibility action scrolled the page")
 	}
 }

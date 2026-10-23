@@ -11,12 +11,11 @@ const (
 	keyboardMin = 100
 )
 
-// Pin positions the pinned tabs and thread bars for a scroll offset and a viewport
-// height. The page's scroll-window callback runs it before each redraw, so
-// the window's own translation lands them back at the viewport edges. It
-// reports whether a scroll redraw is needed: never on the phone, where the
-// replay draws the pinned z-layer at the viewport and one settle redraw
-// bakes the new positions.
+// Pin is the 1.0 chrome contract: SetScrollWindow keeps bars at the
+// viewport while messages scroll. The window paints pin-z after the tile blit.
+// The callback runs before each redraw so the window's translation lands them
+// at the edges. It reports whether a scroll redraw is needed: never on the
+// phone, where replay draws the pinned z-layer at the viewport.
 func (a *App) Pin(offsetY, viewH int) bool {
 	// A phone list starts at the top when its viewport height changes.
 	if a.view.Phone && a.view.Active == "" && a.viewportH != 0 && a.viewportH != viewH {

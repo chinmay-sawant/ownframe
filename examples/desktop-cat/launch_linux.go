@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
-	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 // WSLg does not carry this window's alpha and input regions to Windows.
@@ -44,7 +43,7 @@ func launchNative(ctx context.Context, inbox *cat.Inbox, addr string) (bool, err
 		return true, err
 	}
 	defer func() { _ = pipe.Close() }()
-	safego.Go("notify forward", func() { forwardNotifications(ctx, inbox, pipe) })
+	goSafe("notify forward", func() { forwardNotifications(ctx, inbox, pipe) })
 	err = child.Run()
 	if ctx.Err() != nil {
 		return true, ctx.Err()

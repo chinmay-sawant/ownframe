@@ -4,7 +4,7 @@
 // and registers Handlers for clicks and keys. An optional theme stylesheet
 // passed to New or SetTheme restyles the page after the template's own
 // styles. Run opens the window. Serve shows the same picture in a browser.
-// BindMobile registers the page for an Android or iOS bind. Redraw parses
+// BindMobile registers the page for an Android bind. Redraw parses
 // the HTML, applies the CSS, and lays the page out through blinkless.
 // This package has no layout of its own.
 package ownframe
@@ -28,11 +28,17 @@ type Config = page.Config
 type Handlers = page.Handlers
 
 // Page is one HTML template and the last picture it produced.
-type Page = page.Page
+// The host page stays unexported so apps see only delegated methods.
+// Page belongs to one application loop. Call its methods and callbacks on that
+// loop; concurrent access to the same Page is unsupported. Queue background
+// results onto the loop before calling SetData, editing, or redrawing.
+type Page struct {
+	inner *page.Page
+}
 
 const MaxSourceSize = page.MaxSourceSize
 
 // New parses html as an html/template page.
 func New(cfg Config) (*Page, error) {
-	return page.New(cfg)
+	return wrapPage(page.New(cfg))
 }

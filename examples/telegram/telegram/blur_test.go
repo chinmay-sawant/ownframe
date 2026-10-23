@@ -10,23 +10,23 @@ func TestKeyboardBackQueuesBlurAndPreservesDraft(t *testing.T) {
 	app := newApp(t, ctx)
 	click(t, ctx, app, "", "open-anna")
 	id := "compose"
-	if err := app.Page().Focus(ctx, id); err != nil {
+	if err := app.Page().Form().Focus(ctx, id); err != nil {
 		t.Fatal(err)
 	}
-	if err := app.Page().Type(ctx, "draft"); err != nil {
+	if err := app.Page().Edit().Type(ctx, "draft"); err != nil {
 		t.Fatal(err)
 	}
 	app.RequestBlur()
-	if app.Page().FocusedField() == "" {
+	if app.Page().Edit().FocusedField() == "" {
 		t.Fatal("UI thread changed focus")
 	}
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if app.Page().FocusedField() != "" {
+	if app.Page().Edit().FocusedField() != "" {
 		t.Fatal("focus survived keyboard Back")
 	}
-	if value := app.Page().FormValue(id); value != "draft" {
+	if value := app.Page().Form().FormValue(id); value != "draft" {
 		t.Fatalf("draft %q", value)
 	}
 	if app.View().Active == "" {

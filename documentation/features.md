@@ -2,7 +2,62 @@
 
 OwnFrame renders HTML and CSS screens while your app logic runs in Go. Blinkless lays out the page, and Ebitengine opens the native window. OwnFrame does not embed a browser or JavaScript runtime.
 
+1.0 native hosts are desktop `Run` and Android `BindMobile`, for an operator you control. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not a screen reader. wasm is a canvas preview. `-web` is a PNG debugger. See [platforms.md](platforms.md).
+
 This page summarizes supported features and current limits. Use the linked guides for setup and examples. See [Android runtime limits](android-runtime.md) and [all examples](../examples/readme.md).
+
+## CSS and HTML support
+
+This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `Page.SetScrollWindow` and `Page.Scroll().SetViewportPinZ`. Those are not tickets on ownframe. A long list is a slice window plus spacers, not `content-visibility`. See `examples/list`, `examples/ops-console`, and [tricks-tips.md](tricks-tips.md).
+
+| Feature | 1.0 |
+|---|---|
+| Flex | yes |
+| Grid | yes |
+| Tables | yes; collapsed borders replay as `OpGridRun` ([screen.md](screen.md)) |
+| Circular corner radii | replay path |
+| `var()` | yes; theme sheets can define custom properties ([theming.md](theming.md)) |
+| `rgb()`, `hsl()` | yes in templates and theme sheets ([theming.md](theming.md)) |
+| `linear-gradient` | yes; engine rasterizes to `OpImage` |
+| `:hover`, `:focus`, `:focus-visible`, `:active`, `:checked` | host state ([forms.md](forms.md)) |
+| CSS masks | first pass: border box, simple sizes, `repeat` variants (see CSS masks below) |
+| CSS motion records | sampled from Blinkless; the window does not start them ([css-motion.md](css-motion.md)) |
+| `@media` width and orientation | yes ([theming.md](theming.md)) |
+| `overflow` clipping | yes; clipped ops become `OpNoop` ([screen.md](screen.md)) |
+| Overflowing page | the window scrolls content larger than the frame ([scrolling.md](scrolling.md)) |
+| `z-index` | yes; `Display.Order` ([screen.md](screen.md)) |
+| `position: relative` | yes; containing block ([screen.md](screen.md)) |
+| `position: absolute` | yes on a block container |
+| Letter-spacing, `text-transform` | replay path ([screen.md](screen.md)) |
+| `<img>`, `background-image` | PNG, JPEG, SVG via `SetImage` ([screen.md](screen.md)) |
+| `input`, `textarea`, `select`, `button` | yes ([forms.md](forms.md)) |
+
+| Absent or app workaround | 1.0 |
+|---|---|
+| `position: absolute` on a flex child | blinkless hole: the child stays in flow, so `top` and `left` do nothing. Use a block container (Telegram `app-thread`). `internal/page` tests record this. ([screen.md](screen.md)) |
+| `position: sticky` under window scroll | blinkless hole: the header stays in flow and has no `Fixed` ops, so the window translates it with the page. Not CSS sticky. `internal/page` tests record this. ([screen.md](screen.md)) |
+| `position: fixed` under window scroll | engine `Fixed` ops stay untranslated; sticky does not get that mark. |
+| Pinned chrome | `Page.Scroll().SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
+| `@media print` | never matches ([theming.md](theming.md)) |
+| `@media (height)` | never matches. `TestMediaHeightFollowsTheFrame` asserts the hole. |
+| `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
+| Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
+| Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |
+| Rotated glyphs, fake oblique, font features, autospacing, missing font | bitmap fallback ([screen.md](screen.md)) |
+| `@container` vs element patch | a document with `@container` refuses every patch ([optimizations.md](optimizations.md)) |
+| `content-visibility` | not faked. Window the rows and pad with spacers. |
+
+## Not in 1.0
+
+These stay out of 1.0. Do not plan them as library work for this tag:
+
+- JavaScript
+- a live DOM
+- `<a href>` navigation
+- video
+- canvas
+- WebGL
+- `<audio>` as HTML (`Run` and `BindMobile` still create an Ebiten audio context for Go playback)
 
 ## Screen paint
 
@@ -12,13 +67,13 @@ OwnFrame updates the page from its template and draws it in the window. A page c
 
 `Config.RetainState` keeps the layout state a single element patch needs: the resolved styles of the document and the box tree the placement produced. It is off by default, so a page that never patches an element pays nothing for it.
 
-With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. The call reports false then, and the patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `Page.SetAfterRedraw` is for.
+With it on, `Page.PatchElement(ctx, id, edits...)` edits an element in the cached tree, asks the engine to re-lay out that element alone, and adopts the patched display the engine hands back. The engine hands over the whole display because a patch that changes the operation count moves every later operation index, and with it the paint order and the owners. The page rebuilds its box index, marks the changed operations dirty the way a redraw does, drops the cached picture, and refreshes the accessibility tree, so the window repaints the card and not the canvas. The engine refuses the cases it cannot represent, such as a subtree that holds a float, a sticky box, an anchored element, a named flow, or an out-of-flow box whose containing block lies outside the subtree, an element that changed size or place, or a document that uses a container query. `PatchElement` then returns an error wrapping `ErrPatchRefused`; check with `errors.Is`. The patch is atomic: a refused patch drops the cached tree, so the next redraw parses the source again and the page shows the source's state. An app that keeps state only in the tree must re-apply it, which is what `page.Probe().SetAfterRedraw` is for.
 
 Text set through a patch does not go through the emoji pass. The pass runs on the source before it is parsed, and a text edit lands on the parsed tree, so an emoji in patched text paints as text rather than as the color image the same emoji gets from the template. The engine's tree API only writes a text node, so the image cannot be built inside the tree.
 
 `Handlers.ClickPaint` runs after a click handler and after a control's own change. When it reports that it painted the frame, the page skips the redraw, so a click that patched an element does not also pay for a layout.
 
-`Page.SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
+`page.Probe().SetAfterRedraw(fn)` registers a callback that runs after a committed redraw, so an app that keeps its state in the parsed tree can reapply it after the page rebuilt.
 
 Detail is in [optimizations.md](optimizations.md). The measured cost of an
 element patch against a full redraw is in
@@ -35,7 +90,7 @@ compositing, then draws that layer back into the page
 ([internal/replay/group_paint.go:37-45](../internal/replay/group_paint.go),
 [internal/replay/group_layer.go:16-36](../internal/replay/group_layer.go),
 [internal/replay/group_mask.go:10-25](../internal/replay/group_mask.go)).
-`Page.PNG` uses the software painter when PNG pixels are requested
+`page.Probe().PNG` uses the software painter when PNG pixels are requested
 ([internal/page/page_image.go:35-40](../internal/page/page_image.go)). The
 mask painter reads raster alpha or luminance and supports `add`, `subtract`,
 `intersect`, and `exclude` layer composition. The first pass uses the element
@@ -102,7 +157,7 @@ Detail is in [navigation.md](navigation.md).
 
 ## Crash reports
 
-`Run` stores every failure in a text file and returns an error that includes the file path: panics go through the recover, and startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
+`Run` stores a startup or window failure in a text file and returns the original error. A canceled context or a deadline returns that error and writes no file. `LastReportPath` returns the file path: panics go through the recover, and other startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
 
 Detail is in [crash.md](crash.md).
 
@@ -114,7 +169,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. Linux with `DISPLAY` uses the X11 `CLIPBOARD` selection. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Wayland, Android, iOS, wasm, and macOS without cgo stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. No helper program is started.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH. If they are missing, Linux uses the X11 `CLIPBOARD` selection when `DISPLAY` is set. Without the helpers and without `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`; without cgo it stays on the memory copy. wasm and Android stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. `Serve` has no clipboard route.
 
 Detail is in [clipboard.md](clipboard.md).
 
@@ -132,18 +187,20 @@ Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md
 
 ## Accessibility tree
 
-`Page.AccessibilityTree` returns semantic roles, names, descriptions, live
+`Page.Access().AccessibilityTree` returns semantic roles, names, descriptions, live
 form state, document order, and bounds where an element has a unique HTML ID.
-`Page.AccessibilityPerform` routes supported focus, activation, and text-value
-actions through the page's existing input paths. The snapshot is a host
-contract, not a native screen-reader bridge. CSS-only hidden content and
-anonymous-node bounds remain unresolved.
+`Page.Access().AccessibilityPerform` routes supported focus, activation, and text-value
+actions through the page's existing input paths. Example programs call them on `Page`. The window still calls the inner screen. The snapshot
+is a host contract for the operator who runs the process. 1.0 does not ship a
+screen-reader product. Linux maps the tree to AT-SPI objects in process;
+`Live` is false, so Orca cannot inspect the window. CSS-only hidden content
+and anonymous-node bounds remain unresolved.
 
-Detail is in [accessibility.md](accessibility.md).
+Detail is in [accessibility.md](accessibility.md) and [atspi.md](atspi.md).
 
 ## Interaction
 
-Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
+Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.Window().SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
 
 Detail is in [interaction.md](interaction.md).
 
@@ -165,7 +222,7 @@ is in [window.md](window.md).
 ## DevTools
 
 The window can draw an inspector over the page. F12 or Ctrl+Shift+I toggles
-it, `Config.DevTools` starts it on, and `Page.SetDevTools` changes it at
+it, `Config.DevTools` starts it on, and `Page.Window().SetDevTools` changes it at
 runtime. The inspector is a right-side dock with three tabs. It opens on
 Frame, which shows the frame and pipeline counters; Elements shows the pinned
 or hovered element as pretty JSON, and Ops lists the display operations
@@ -173,17 +230,17 @@ colour by kind. The dock shrinks the page viewport while it is open, so the
 page relayouts to the strip left of it. It outlines the box under the cursor,
 and a pick opens the Ops tab on the operation inside the box. A click on an
 Ops row outlines that operation and copies its line to the clipboard. It is
-window chrome, so `Page.PNG`, the display list, and the box list never
+window chrome, so `page.Probe().PNG`, the display list, and the box list never
 change. A custom screen implements `host.Inspector` to opt in; a screen
 without it gets no overlay.
-`GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{Debug: true}` or `{Perf: true}`).
+`GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{InsecureAllowDebugState: true}`).
 
 Detail is in [devtools.md](devtools.md).
 
 ## Performance
 
 The perf checklist lives in [performance.md](performance.md), with per release numbers in [performance-baseline.md](performance-baseline.md). The Frame tab carries PERFORMANCE, PIPELINE DETAIL, and MEMORY counters for frame stages, repaint work, and memory, and `GET /debug/state` serves the same data in web mode when that endpoint is
-enabled (`ServeOptions{Debug: true}` or `{Perf: true}`). Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{Perf: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
+enabled (`ServeOptions{InsecureAllowDebugState: true}`). Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{InsecureAllowPprof: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
 
 ## Still absent
 
@@ -196,7 +253,7 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- Native screen-reader bridges, native spellcheck, and OS-global shortcuts. The page accessibility tree is available to host code, but it does not expose the Ebitengine window to assistive technology ([accessibility.md](accessibility.md)). `Page.DispatchDeepLink` accepts app-delivered URLs under a scheme allowlist. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android and iOS use Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. The deep-link test helper validates URLs under a scheme allowlist; direct OS delivery has no public production entry point yet. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

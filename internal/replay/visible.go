@@ -11,14 +11,14 @@ import (
 // DrawVisible skips offscreen operations before text shaping or GPU
 // submission. Unbounded ink is retained. Translation maps the target back
 // into page space. Blend and isolation groups composite as a unit.
-func DrawVisible(dst *ebiten.Image, display *layout.Display, dx, dy float64) {
-	DrawVisiblePinned(dst, display, dx, dy, 0, 0, 0)
+func (renderer *Renderer) DrawVisible(dst *ebiten.Image, display *layout.Display, dx, dy float64) {
+	renderer.DrawVisiblePinned(dst, display, dx, dy, 0, 0, 0)
 }
 
 // DrawVisiblePinned is DrawVisible with a viewport-pinned layer: operations
 // whose z-index is at least pinZ are drawn at pinDx, pinDy instead of the
 // scroll translation, so they stay at the viewport without a redraw.
-func DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float64, pinZ int, pinDx, pinDy float64) {
+func (renderer *Renderer) DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float64, pinZ int, pinDx, pinDy float64) {
 	if dst == nil || display == nil {
 		return
 	}
@@ -27,7 +27,7 @@ func DrawVisiblePinned(dst *ebiten.Image, display *layout.Display, dx, dy float6
 	pinRect := visibleRect(dst.Bounds(), pinDx, pinDy)
 	ppt := display.PointsPerPixel
 
-	paintChunked(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+	renderer.paintChunked(dst, display, func(op *layout.DisplayOp) (float64, float64, bool) {
 		odx, ody, r := dx, dy, rect
 		if pinZ > 0 && op.ZIndexSet && op.ZIndex >= pinZ {
 			odx, ody, r = pinDx, pinDy, pinRect

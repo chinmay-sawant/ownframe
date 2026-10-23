@@ -1,7 +1,10 @@
 # Compare with Electron
 
 Electron and OwnFrame both accept HTML and CSS for the interface.
-Electron runs a browser-based interface with JavaScript. OwnFrame connects its own Go web view to Go app logic.
+Electron runs a browser-based interface with JavaScript. OwnFrame is a native
+Go process: Blinkless lays out HTML and CSS, Ebitengine opens a desktop window
+or an Android Activity, and there is no Chromium and no WebView. Native here
+does not mean OS widgets. iOS is not shipped.
 These examples display the same plain text, `Hello world`, with no added styles.
 
 ## The same screen
@@ -39,10 +42,9 @@ Electron uses Chromium for the interface and Node.js in its main process.
 A `BrowserWindow` loads the page into a renderer process, where HTML, CSS, and JavaScript run.
 The [Electron process model](https://www.electronjs.org/docs/latest/tutorial/process-model) explains those roles.
 
-OwnFrame uses our own HTML and CSS view written in Go.
-We built [Blinkless](https://github.com/chinmay-sawant/blinkless) from scratch as the shared engine across OwnFrame screens.
+OwnFrame uses Blinkless, an in-process HTML and CSS engine written in Go, not a WebView and not OS widgets.
 Blinkless parses HTML, applies CSS, and calculates layout.
-OwnFrame handles Go data, actions, and input. Ebitengine opens the window and draws the result.
+OwnFrame handles Go data, actions, and input. Ebitengine opens the desktop window or Android Activity and draws the result.
 The [screen guide](screen.md) describes that flow.
 
 ## Where the app logic lives
@@ -56,4 +58,5 @@ The [screen guide](screen.md) describes that flow.
 OwnFrame's view supports a documented HTML and CSS subset, with no live DOM or JavaScript runtime.
 Existing web apps that depend on browser APIs need changes to run in OwnFrame.
 Read the [features and limits](features.md) for the supported behavior.
-Desktop, WebAssembly, Android, and iOS setup is in the [platform guide](platforms.md).
+Desktop and Android native hosts, plus the wasm and Serve previews, are in
+the [platform guide](platforms.md). iOS is not a 1.0 target.

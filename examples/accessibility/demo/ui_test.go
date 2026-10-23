@@ -18,12 +18,17 @@ func TestPageActionButtonsReachTheAccessibilityAPI(t *testing.T) {
 		if !node.HasBounds {
 			t.Fatalf("button %q has no bounds", id)
 		}
-		if err := a.Page().Click(context.Background(), node.Bounds.X+node.Bounds.W/2, node.Bounds.Y+node.Bounds.H/2); err != nil {
+		err = a.Page().Click(
+			context.Background(),
+			node.Bounds.X+node.Bounds.W/2,
+			node.Bounds.Y+node.Bounds.H/2,
+		)
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
 	click("api-set-value")
-	if got := a.Page().FormValue("display-name"); got != "Updated through the tree action" {
+	if got := a.Page().Form().FormValue("display-name"); got != "Updated through the tree action" {
 		t.Fatalf("button SetValue result = %q", got)
 	}
 	click("probe-stale")

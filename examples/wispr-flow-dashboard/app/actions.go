@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe"
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
 )
 
 // shareText is the link the share badge copies.
@@ -40,7 +39,7 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 	case "get-app-close":
 		a.view.GetApp = false
 	case "get-app-store":
-		osclip.Write("https://wisprflow.ai/download")
+		ownframe.Write("https://wisprflow.ai/download")
 		a.view.GetApp = false
 		a.view.Note = "Download link copied"
 	case "streak-prev":
@@ -48,7 +47,7 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 	case "streak-next":
 		a.shiftStreak(-1)
 	case "share":
-		osclip.Write(shareText)
+		ownframe.Write(shareText)
 		a.view.Note = "Share link copied"
 	case "download":
 		a.view.Note = "Download link sent to your phone"

@@ -5,7 +5,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
@@ -14,7 +13,7 @@ const pointsPerPixel = 4.0 / 3
 func textCenterX(d *ownframe.Display, boxes []ownframe.Box, id string) float64 {
 	for _, box := range boxes {
 		if box.ID == id {
-			x, _, w, _ := frame.BoxUnits(d, box)
+			x, _, w, _ := ownframe.BoxUnits(d, box)
 			return x + w/2
 		}
 	}

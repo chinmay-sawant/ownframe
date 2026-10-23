@@ -3,7 +3,7 @@ package player
 import (
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe/internal/element"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestRetainedHelperStableIDs(t *testing.T) {
@@ -42,11 +42,11 @@ func TestRetainedHelperRegistry(t *testing.T) {
 }
 
 func TestRetainedHelperLifecycle(t *testing.T) {
-	n := element.NewNode("life", "button")
-	element.Mount(n)
-	element.Update(n, []string{"label"})
+	n := ownframe.NewElement("life", "button")
+	n.Mounted, n.Lifecycle.Mounted = true, true
+	n.Updated, n.Lifecycle.Updated = true, true
 	AssertRetainedLifecycle(t, n, true, true, false)
-	n2 := element.NewNode("life2", "button")
-	element.Mount(n2)
+	n2 := ownframe.NewElement("life2", "button")
+	n2.Mounted, n2.Lifecycle.Mounted = true, true
 	_ = n2
 }

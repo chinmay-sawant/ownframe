@@ -69,8 +69,10 @@ Run the full repository suite with `make test`.
 
 ## Know what this demo does not test
 
-The tree preview checks the page API. It does not connect the window to a
-screen reader. Native AT-SPI, UI Automation, and NSAccessibility adapters are
-still open work. CSS-hidden elements may also remain in the tree because
-Blinkless does not expose computed visibility. See the
-[native accessibility status and validation guide](../../documentation/accessibility-native.md).
+The tree preview checks the page API. Linux maps that tree to AT-SPI objects
+in tests; it does not register them on the accessibility bus, so Orca cannot
+inspect this demo yet. UI Automation, VoiceOver, and TalkBack are not
+shipped. CSS-hidden elements may also remain in the tree because Blinkless
+does not expose computed visibility. See
+[atspi.md](../../documentation/atspi.md) and the
+[native accessibility status](../../documentation/accessibility-native.md).

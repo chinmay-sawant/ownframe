@@ -34,7 +34,7 @@ Gate order at closure:
 1. `make test`
 2. `make golden` plus a fresh uncached `go test -p 1 -parallel 2 -count=1 ./internal/convert/ -run 'TestGoldenCorpus' -v` (65/65 PASS)
 3. `make claim-scan`
-4. `make lint` (golangci-lint v1.64.8, plus `size-check` and frontend ESLint)
+4. `make lint` (the declared golangci-lint version, documentation and maintenance checks, plus frontend ESLint)
 5. `make test-race` (convert, layout, pdf, imageout, load)
 6. `make build`
 7. `compliance/verify_pdfs.sh` (PDF/A-4 and PDF/UA-2, invoked directly)

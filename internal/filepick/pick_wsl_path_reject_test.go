@@ -18,7 +18,7 @@ func TestFromWindowsPathRejectsUnsafeConvert(t *testing.T) {
 		writeTool(t, dir, "wslpath", "#!/bin/sh\nprintf '%s\\n' '"+out+"'\n")
 		t.Setenv("PATH", dir)
 
-		if got, ok := fromWindowsPath(context.Background(), `C:\Users\me\notes.txt`); ok {
+		if got, err := fromWindowsPath(context.Background(), `C:\Users\me\notes.txt`); err == nil {
 			t.Fatalf("fromWindowsPath accepted %q", got)
 		}
 	}

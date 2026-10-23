@@ -1,6 +1,9 @@
 package ownframe
 
-import "github.com/chinmay-sawant/ownframe/internal/page"
+import (
+	"github.com/chinmay-sawant/ownframe/internal/filepick"
+	"github.com/chinmay-sawant/ownframe/internal/page"
+)
 
 var (
 	// ErrEmptyHTML means New was given a blank template.
@@ -19,4 +22,13 @@ var (
 	// ErrSourceTooLarge means a template, theme, or source string exceeded
 	// MaxSourceSize.
 	ErrSourceTooLarge = page.ErrSourceTooLarge
+
+	// ErrPatchRefused means PatchElement could not apply the edit.
+	ErrPatchRefused = page.ErrPatchRefused
+
+	// ErrNoDialog means this system has no file dialog.
+	ErrNoDialog = filepick.ErrNoDialog
+
+	// ErrCanceled means the person closed the file dialog.
+	ErrCanceled = filepick.ErrCanceled
 )

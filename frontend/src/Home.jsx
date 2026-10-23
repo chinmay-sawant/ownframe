@@ -161,7 +161,7 @@ export default function Home() {
             <tr><th scope="row">The screen</th><td>HTML templates</td><td>Rust elements and builder calls</td></tr>
             <tr><th scope="row">The styles</th><td>CSS</td><td>Rust methods such as <code>.flex()</code></td></tr>
             <tr><th scope="row">The app logic</th><td>Go data and handlers</td><td>Rust state and event handlers</td></tr>
-            <tr><th scope="row">The renderer</th><td>Our own Go web view, with HTML/CSS layout powered by Blinkless</td><td>GPUI&apos;s renderer for Rust-defined interfaces</td></tr>
+            <tr><th scope="row">The renderer</th><td>A Go HTML/CSS renderer plus an Ebitengine window, with HTML/CSS layout powered by Blinkless</td><td>GPUI&apos;s renderer for Rust-defined interfaces</td></tr>
           </tbody>
         </table>
       </div>
@@ -173,15 +173,15 @@ export default function Home() {
 
     <section id="mobile" className="mobile-section" aria-labelledby="mobile-title">
       <h2 id="mobile-title">Bring your screen to mobile</h2>
-      <p><code>BindMobile</code> connects your page to Ebitengine&apos;s Android and iOS view.
-        Reuse your HTML, CSS, and Go handlers. Android has a complete Telegram demo project;
-        iOS builds use the mobile binding and require Xcode.</p>
+      <p><code>BindMobile</code> connects your page to Ebitengine&apos;s Android view.
+        Reuse your HTML, CSS, and Go handlers. Android has Telegram and Eyes demo APKs.
+        iOS is not a target for now.</p>
       <p>Phone apps support touch scrolling and soft keyboard input. The clipboard uses an
         in-memory copy, and native screen-reader integration is still unavailable.
         Check the platform limits before shipping.</p>
       <div className="mobile-guides links">
         <a href="#docs/android-app-creation">Create an Android app</a>
-        <a href="#docs/platforms/phone">Android and iOS setup</a>
+        <a href="#docs/platforms">Platform matrix</a>
         <a href="#docs/android-runtime">Android runtime limits</a>
       </div>
     </section>

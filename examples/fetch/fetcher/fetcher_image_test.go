@@ -53,7 +53,7 @@ func TestFetchedImageBecomesBackground(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	img, err := png.Decode(bytes.NewReader(app.Page().PNG()))
+	img, err := png.Decode(bytes.NewReader(app.Page().Probe().PNG()))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -40,8 +40,7 @@ func (s *Store) PatchProjected(values map[string]any) []Change {
 	if len(out) > 0 {
 		s.redo = nil
 	}
-	ls := make([]func(Change), len(s.listeners))
-	copy(ls, s.listeners)
+	ls := s.listenersLocked()
 	s.mu.Unlock()
 	for _, c := range out {
 		for _, l := range ls {

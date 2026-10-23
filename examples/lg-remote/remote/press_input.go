@@ -47,4 +47,4 @@ func (a *App) pressedClass(id string) string {
 	return ""
 }
 
-func (a *App) hostValue() string { return strings.TrimSpace(a.page.FormValue("host")) }
+func (a *App) hostValue() string { return strings.TrimSpace(a.page.Form().FormValue("host")) }

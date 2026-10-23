@@ -43,8 +43,8 @@ func TestFullReplayCapturesOptInPerTick(t *testing.T) {
 
 	app.dirty = false
 	s.captureFrameOptIn()
-	if !s.fullReplay() {
-		t.Fatal("a tick without the opt-in must replay in full")
+	if s.fullReplay() {
+		t.Fatal("a Page ticker without the opt-in stays on the buffer path")
 	}
 }
 

@@ -13,7 +13,7 @@ type Store struct {
 
 	changes []Change
 
-	listeners []func(Change)
+	listeners []*listener
 
 	origin Origin
 

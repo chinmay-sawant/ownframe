@@ -9,7 +9,7 @@ import (
 
 // drawXformScratch rasterizes a shape too large for the raster cache into a
 // local scratch image and blits it through the op matrix.
-func drawXformScratch(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+func (renderer *Renderer) drawXformScratch(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	left, top, size, ok := xformScratch(op)
 	if !ok {
 		return
@@ -22,9 +22,9 @@ func drawXformScratch(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 
 	switch op.Kind {
 	case layout.DisplayOpFillRect:
-		fillRect(scratch, op, ox, oy)
+		renderer.fillRect(scratch, op, ox, oy)
 	case layout.DisplayOpStrokeRect:
-		drawStrokeRect(scratch, op, ox, oy)
+		renderer.drawStrokeRect(scratch, op, ox, oy)
 	case layout.DisplayOpLine:
 		drawLine(scratch, op, ox, oy)
 	}

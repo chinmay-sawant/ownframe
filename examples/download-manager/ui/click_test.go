@@ -13,15 +13,15 @@ func TestClickAddJob(t *testing.T) {
 		t.Fatalf("Redraw: %v", err)
 	}
 
-	app.page.SetFormValue("url", "https://example.com/a.bin")
-	app.page.SetFormValue("dest", "/tmp/downloads")
+	app.page.Form().SetFormValue("url", "https://example.com/a.bin")
+	app.page.Form().SetFormValue("dest", "/tmp/downloads")
 	clickVisible(t, app, "add")
 
 	if len(back.added) != 1 || back.added[0].URL != "https://example.com/a.bin" {
 		t.Fatalf("add = %+v", back.added)
 	}
 
-	if got := app.page.FormValue("url"); got != "" {
+	if got := app.page.Form().FormValue("url"); got != "" {
 		t.Fatalf("url field = %q, want empty", got)
 	}
 }

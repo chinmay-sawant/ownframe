@@ -14,13 +14,13 @@ func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 		return nil
 	}
 
-	path := a.page.FormValue("dest-file")
+	path := a.page.Form().FormValue("dest-file")
 	if path == "" {
 		return nil
 	}
 
-	a.page.SetFormValue("dest-file", "")
-	a.page.SetFormValue("dest", filepath.Dir(path))
+	a.page.Form().SetFormValue("dest-file", "")
+	a.page.Form().SetFormValue("dest", filepath.Dir(path))
 	a.page.SetData(a.view)
 
 	return nil
@@ -28,7 +28,7 @@ func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 
 // onSubmit adds the job when Enter lands in the URL or folder field.
 func (a *App) onSubmit(ctx context.Context) error {
-	switch a.page.FocusID() {
+	switch a.page.Form().FocusID() {
 	case "url", "dest":
 		a.addJob()
 		a.syncPage()

@@ -31,7 +31,7 @@ func (a *App) selectAllNote(ctx context.Context) error {
 		a.page.SetData(&a.view)
 		return nil
 	}
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }
 
 // selectAllClip selects the last clipboard field.
@@ -40,5 +40,5 @@ func (a *App) selectAllClip(ctx context.Context) error {
 		a.setClip("nothing to select")
 		return nil
 	}
-	return a.page.SelectAll(ctx)
+	return a.page.Edit().SelectAll(ctx)
 }

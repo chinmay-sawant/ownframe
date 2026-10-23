@@ -1,8 +1,8 @@
 # Web mode
 
-`Serve` shows the page's latest picture in a browser and sends clicks and
-typing back to the same page. The window modes are in
-[platforms.md](platforms.md).
+`Serve` is a developer picture preview. It binds to loopback by default, has
+no tick and no audio, and mutates page state without authentication. It is
+not a 1.0 ship target. Native hosts are in [platforms.md](platforms.md).
 
 ## Starting it
 
@@ -28,7 +28,7 @@ field, and a reset button on one page.
 |-------|--------------|
 | `GET /` | Returns the shell HTML: the frame image with a usemap, a text form, and a backspace form. `Cache-Control: no-store`. |
 | `GET /frame.png` | Returns the PNG with `Cache-Control: no-store`, or 404 `no frame` when the page has no picture. |
-| `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{Debug: true}` or `ServeOptions{Perf: true}`; plain `Serve` returns 404. |
+| `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{InsecureAllowDebugState: true}`; plain `Serve` returns 404. |
 | `POST /click` | Reads the query or form floats `x` and `y` in CSS pixels and places the caret at the point before the click handler runs. Requires a matching `Origin` (scheme and host); a missing `Origin` is rejected. 400 `bad coordinates` when either fails to parse, 403 `forbidden` on origin mismatch, 303 to `/` on success, generic 500 when the page returns an error. Query parameters are bounded. |
 | `POST /type` | Reads the urlencoded form field `text`. Requires a matching `Origin`. 400 `bad form` when the body does not parse, 303 to `/`, or generic 500. |
 | `POST /backspace` | Deletes one character in the focused text control. Requires a matching `Origin`. 303 to `/`, or generic 500. |
@@ -52,7 +52,7 @@ click anywhere can still focus a control or reach a click handler.
 
 `Serve` draws the page first when it has not been drawn yet. `GET /` reads the
 current boxes and size, and `GET /frame.png` returns the latest PNG. A page
-kept as a display list has no bitmap, so `Page.PNG` paints once from the
+kept as a display list has no bitmap, so `page.Probe().PNG` paints once from the
 stored template source and caches the bytes until the next `Redraw`
 ([screen.md](screen.md)). The shell page states that the screen is the image,
 not the HTML around it.
@@ -61,7 +61,7 @@ not the HTML around it.
 
 A file-backed page is polled before `GET /` and `GET /frame.png`, under the
 same mutex, so an edit to the template or the theme shows on the next request.
-While `Page.Watching()` is true the shell page carries a small script that
+While `Page.Window().Watching()` is true the shell page carries a small script that
 reloads the frame image every 250 ms, the same interval the window uses. A
 string page has no watch, so the shell emits no script.
 [hot-reload.md](hot-reload.md) has the config fields, the parse-error
@@ -78,7 +78,8 @@ behavior, and what survives a reload.
 - No audio context ([features.md](features.md), [window.md](window.md)).
 - No file dialog, so a file input keeps the typed name ([forms.md](forms.md)).
 - No dropped files. `Serve` is not the Ebiten loop, so it never reads `ebiten.DroppedFiles` ([drag-drop.md](drag-drop.md)).
-- No crash recovery ([crash.md](crash.md)).
+- No crash-report file. A handler panic becomes HTTP 500
+  ([crash.md](crash.md)).
 
 A click still focuses a control and `/type` still edits it, so a form takes
 text. Values survive a redraw like any other page.
@@ -109,12 +110,12 @@ Recommended protections:
   validate a session on its own.
 - Do not expose plain `Serve` on a shared network. Treat `/click`, `/type`,
   `/backspace`, and `/debug/state` as privileged.
-- `GET /debug/state` is registered only with `ServeOptions{Debug: true}` or
-  `ServeOptions{Perf: true}`. It returns box text, coordinates, and operation
+- `GET /debug/state` is registered only with `ServeOptions{InsecureAllowDebugState: true}`. It returns box text, coordinates, and operation
   counts. Reduce or gate it before exposing a preview. Keep both off in
   shipped binaries unless debugging or profiling is needed;
-  `ServeOptions{Perf: true}` alone also adds `GET /debug/pprof/*`.
-  `Debug` and `Perf` expose layout with field text; keep them on loopback only.
+  `ServeOptions{InsecureAllowPprof: true}` adds `GET /debug/pprof/*`.
+  Debug state exposes layout with field text. Profiling exposes process state.
+  Keep both on loopback only.
 - The built in server now sets `MaxHeaderBytes` (64 KiB), `ReadHeaderTimeout`
   (5s), `ReadTimeout` (15s), `WriteTimeout` (15s), and `IdleTimeout` (60s),
   limits `/type` to 256 KiB, rejects non finite `/click` coordinates, requires

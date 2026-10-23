@@ -12,6 +12,17 @@
 # gets the wasm zip. No network, no new modules.
 set -eu
 
+# Packaging uses the already verified module and toolchain caches.
+export GOPROXY=off
+# Resolve an already cached toolchain before forbidding further selection.
+package_goroot=$(go env GOROOT)
+if command -v cygpath >/dev/null 2>&1; then
+	package_goroot=$(cygpath -u "$package_goroot")
+fi
+PATH="$package_goroot/bin:$PATH"
+export PATH
+export GOTOOLCHAIN=local
+
 usage() {
 	echo "usage: scripts/package.sh [-n] <example>" >&2
 	exit 2
@@ -44,7 +55,9 @@ cd "$root"
 target_os=$(go env GOOS)
 target_arch=$(go env GOARCH)
 name="ownframe-$example"
-dist="$root/dist"
+dist=${OWNFRAME_DIST_DIR:-"$root/dist"}
+SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH:-$(git log -1 --format=%ct)}
+export SOURCE_DATE_EPOCH
 
 show() { # $1 archive, $2.. entries
 	printf 'archive: %s\n' "$1"
@@ -99,12 +112,16 @@ build() { # $1 output, rest source packages
 	# from the OS loader, so pie stays off there; check with
 	# `checksec --file=` on the result. See documentation/packaging.md.
 	pie=""
+	link_hardening=""
+	if [ "$target_os" = linux ]; then
+		link_hardening="-Wl,-z,relro,-z,now"
+	fi
 	case $target_os in
 	linux | darwin) pie="-buildmode=pie" ;;
 	esac
 	env GOOS="$target_os" GOARCH="$target_arch" \
 		CGO_CFLAGS="-O2 -D_FORTIFY_SOURCE=2 -fstack-protector-strong" \
-		CGO_LDFLAGS="-Wl,-z,relro,-z,now" \
+		CGO_LDFLAGS="$link_hardening" \
 		go build -C "$root" -trimpath $pie -ldflags "-s -w" -o "$out" "$@" "./examples/$example"
 }
 
@@ -139,37 +156,32 @@ mkdir -p "$dist"
 staging=$(mktemp -d)
 trap 'rm -rf "$staging"' EXIT
 
-archives=""
-
 case $target_os in
 linux)
-	need tar "Linux"
+	need python3 "Linux"
 	stage="$staging/$name"
 	mkdir -p "$stage"
 	build "$stage/$example"
 	desktop_entry "$stage/$example.desktop"
 	cp "$root/README.md" "$stage/README.md"
-	tar -C "$staging" -czf "$dist/$name-linux-$target_arch.tar.gz" "$name"
-	archives="$archives $name-linux-$target_arch.tar.gz"
+	python3 "$root/scripts/release_archive.py" pack "$staging" "$dist/$name-linux-$target_arch.tar.gz" "$name"
 	;;
 darwin)
-	need zip "macOS"
+	need python3 "macOS"
 	app="$staging/$name.app"
 	mkdir -p "$app/Contents/MacOS"
 	build "$app/Contents/MacOS/$example"
 	info_plist "$app/Contents/Info.plist"
-	(cd "$staging" && zip -qr "$dist/$name-macos-$target_arch.zip" "$name.app")
-	archives="$archives $name-macos-$target_arch.zip"
+	python3 "$root/scripts/release_archive.py" pack "$staging" "$dist/$name-macos-$target_arch.zip" "$name.app"
 	;;
 windows)
-	need zip "Windows"
+	need python3 "Windows"
 	build "$staging/$name.exe"
-	(cd "$staging" && zip -q "$dist/$name-windows-$target_arch.zip" "$name.exe")
-	archives="$archives $name-windows-$target_arch.zip"
+	python3 "$root/scripts/release_archive.py" pack "$staging" "$dist/$name-windows-$target_arch.zip" "$name.exe"
 	;;
 esac
 
-need zip "wasm"
+need python3 "wasm"
 wasm_stage="$staging/wasm"
 mkdir -p "$wasm_stage"
 env GOOS=js GOARCH=wasm \
@@ -182,14 +194,9 @@ else
 	cp "$goroot/misc/wasm/wasm_exec.js" "$wasm_stage/wasm_exec.js"
 fi
 cp "$root/browser/index.html" "$wasm_stage/index.html"
-(cd "$wasm_stage" && zip -q "$dist/$name-wasm.zip" ownframe.wasm wasm_exec.js index.html)
-archives="$archives $name-wasm.zip"
+python3 "$root/scripts/release_archive.py" pack "$wasm_stage" "$dist/$name-wasm.zip" ownframe.wasm wasm_exec.js index.html
 
-if command -v sha256sum >/dev/null 2>&1; then
-	(cd "$dist" && sha256sum $archives) > "$dist/SHA256SUMS"
-else
-	(cd "$dist" && shasum -a 256 $archives) > "$dist/SHA256SUMS"
-fi
+python3 "$root/scripts/release_archive.py" checksums "$dist"
 
 # GEN-12: keyless cosign signature over the checksums. Opt in with
 # COSIGN=1; the default stays unsigned so local builds need no network.

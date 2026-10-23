@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Yard Ledger</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg, #e8e2d4);
+    font-family: sans-serif;
+    color: var(--ink, #1c1915);
+  }
+  .app { display: flex; min-height: 100%; }
+  .rail {
+    width: 160px;
+    background: var(--rail, #2c241c);
+    color: #f7f3ea;
+    padding: 16px 0;
+  }
+  .brand { font-size: 16px; padding: 0 16px 16px; }
+  .op { font-size: 12px; color: #c8c2b4; padding: 0 16px 16px; }
+  .nav {
+    display: block;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+  .nav.on { background: #8a4b12; color: #fff; }
+  .out { margin-top: 24px; }
+  .main { flex: 1; padding: 20px 24px; }
+  .notice { font-size: 13px; color: #176b45; min-height: 18px; margin: 0 0 8px; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  p { font-size: 13px; margin: 0 0 8px; }
+  .muted { color: var(--muted, #6b6560); }
+  .card {
+    width: 320px;
+    background: var(--card, #f7f3ea);
+    padding: 24px;
+    margin: 48px auto;
+    border: 1px solid var(--line, #c8c2b4);
+  }
+  label { display: block; font-size: 13px; margin-top: 12px; }
+  .field {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid var(--line, #c8c2b4);
+    padding: 8px;
+    margin-top: 4px;
+    min-height: 18px;
+    background: #fff;
+    color: #1c1915;
+  }
+  .field[data-ownframe-focus="1"] { border: 1px solid #8a4b12; outline: 1px solid #8a4b12; }
+  .error { color: #9b2335; font-size: 13px; min-height: 18px; margin: 0; }
+  #sign-in, .btn {
+    display: block;
+    border: 0;
+    margin-top: 16px;
+    background: #8a4b12;
+    color: #ffffff;
+    padding: 10px;
+    text-align: center;
+  }
+  #sign-in[disabled] { background: #c8c2b4; color: #6b6560; }
+  .chips { margin: 8px 0 16px; }
+  .chip {
+    display: inline-block;
+    padding: 6px 10px;
+    margin-right: 6px;
+    background: var(--card, #f7f3ea);
+    border: 1px solid var(--line, #c8c2b4);
+    font-size: 12px;
+  }
+  .chip.on { background: #8a4b12; color: #fff; }
+  .row {
+    display: block;
+    background: var(--card, #f7f3ea);
+    border: 1px solid var(--line, #c8c2b4);
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .compact .row { padding: 6px; }
+  .st { font-size: 12px; color: #8a4b12; }
+  .meta { font-size: 12px; color: var(--muted, #6b6560); }
+  .stat {
+    display: inline-block;
+    width: 120px;
+    background: var(--card, #f7f3ea);
+    border: 1px solid var(--line, #c8c2b4);
+    padding: 12px;
+    margin-right: 8px;
+  }
+  .num { font-size: 28px; }
+  .tog { margin-top: 12px; }
+</style>
+</head>
+<body>
+{{if eq .Screen "login"}}
+  <div id="login" class="card">
+    <h1>Yard Ledger</h1>
+    <p class="muted">Pier 9 night board. Demo operator dock, pin 1947.</p>
+    <p id="message" class="error">{{.Error}}</p>
+    <label>Operator</label>
+    <input id="name" type="text" class="field" placeholder="Operator" data-bind="Name">
+    <label>Pin</label>
+    <input id="pin" type="password" class="field" placeholder="Pin" data-bind="PIN">
+    <button id="sign-in" data-action="sign-in"{{if not .Ready}} disabled{{end}}>Open shift</button>
+  </div>
+{{else}}
+  <div class="app{{if .Compact}} compact{{end}}">
+    <aside class="rail">
+      <div class="brand">Yard Ledger</div>
+      <div class="op">{{.Operator}} · {{.Site}}</div>
+      {{range .Nav}}
+      <div id="{{.Action}}" class="nav{{if .On}} on{{end}}" data-action="{{.Action}}">{{.Label}}</div>
+      {{end}}
+      <div id="sign-out" class="nav out" data-action="sign-out">Sign out</div>
+    </aside>
+    <main class="main">
+      <p id="notice" class="notice">{{.Notice}}</p>
+      {{if eq .Screen "list"}}
+      <h1>Open board</h1>
+      <div class="chips">
+        <div id="filter-all" class="chip{{if eq .Filter "all"}} on{{end}}" data-action="filter-all">All</div>
+        <div id="filter-open" class="chip{{if eq .Filter "open"}} on{{end}}" data-action="filter-open">Open</div>
+        <div id="filter-hold" class="chip{{if eq .Filter "hold"}} on{{end}}" data-action="filter-hold">Hold</div>
+        <div id="filter-closed" class="chip{{if eq .Filter "closed"}} on{{end}}" data-action="filter-closed">Closed</div>
+      </div>
+      {{if .Empty}}
+      <p id="empty">No tickets on this filter.</p>
+      {{end}}
+      <div id="board">
+      <div style="height: {{.ListTop}}px"></div>
+      {{range .Tickets}}
+      <div id="{{.ID}}" class="row" data-action="{{.Action}}">
+        <div>{{.Title}}</div>
+        <div class="meta">{{.Bay}} · <span class="st">{{.Status}}</span></div>
+      </div>
+      {{end}}
+      <div style="height: {{.ListBottom}}px"></div>
+      </div>
+      {{end}}
+      {{if eq .Screen "detail"}}
+      <div id="detail">
+        <div id="back-list" class="btn" data-action="back-list">Back to board</div>
+        <h1>{{.Current.Title}}</h1>
+        <p class="meta">{{.Current.Bay}} · {{.Current.Status}}</p>
+        <label>Yard note</label>
+        <textarea id="note" class="field" data-bind="Note">{{.Note}}</textarea>
+        <div id="save-note" class="btn" data-action="save-note">Save note</div>
+        <div class="chips">
+          <div id="status-open" class="chip" data-action="status-open">Open</div>
+          <div id="status-hold" class="chip" data-action="status-hold">Hold</div>
+          <div id="status-closed" class="chip" data-action="status-closed">Close</div>
+        </div>
+      </div>
+      {{end}}
+      {{if eq .Screen "settings"}}
+      <div id="settings">
+        <h1>Shift settings</h1>
+        <p class="muted">Site {{.Site}}. Compact rows {{if .Compact}}on{{else}}off{{end}}. Night dock {{if .Night}}on{{else}}off{{end}}.</p>
+        <div id="toggle-compact" class="btn tog" data-action="toggle-compact">Toggle compact rows</div>
+        <div id="toggle-night" class="btn tog" data-action="toggle-night">Toggle night dock</div>
+        <div id="site-pier" class="btn tog" data-action="site-pier">Pier 9</div>
+        <div id="site-annex" class="btn tog" data-action="site-annex">Annex</div>
+      </div>
+      {{end}}
+      {{if eq .Screen "report"}}
+      <div id="report">
+        <h1>Shift report</h1>
+        <p class="muted">{{.Site}} counts from the live board.</p>
+        <div id="stat-open" class="stat"><div class="num">{{.OpenN}}</div><div>Open</div></div>
+        <div id="stat-hold" class="stat"><div class="num">{{.HoldN}}</div><div>Hold</div></div>
+        <div id="stat-closed" class="stat"><div class="num">{{.ClosedN}}</div><div>Closed</div></div>
+      </div>
+      {{end}}
+    </main>
+  </div>
+{{end}}
+</body>
+</html>

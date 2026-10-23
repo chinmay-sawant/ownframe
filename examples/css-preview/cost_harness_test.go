@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // costFullCatalog renders the whole 43 row catalog. It is the shape Play
@@ -39,15 +38,15 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 		tb.Fatalf("missing %s", id)
 	}
 	x, y := box.X+box.W/2, box.Y+box.H/2
-	if err := p.Hover(ctx, x, y); err != nil {
+	if err := p.Edit().Hover(ctx, x, y); err != nil {
 		tb.Fatal(err)
 	}
-	before := p.Stats()
-	err := host.Batch(ctx, p, func() error {
-		if err := p.Press(ctx, x, y); err != nil {
+	before := p.Probe().Stats()
+	err := redrawBatch(ctx, p, func() error {
+		if err := p.Edit().Press(ctx, x, y); err != nil {
 			return err
 		}
-		if err := p.SelectAt(ctx, x, y); err != nil {
+		if err := p.Testing().SelectAt(ctx, x, y); err != nil {
 			return err
 		}
 
@@ -56,12 +55,12 @@ func costClick(ctx context.Context, p *ownframe.Page, tb testing.TB,
 	if err != nil {
 		tb.Fatal(err)
 	}
-	after := p.Stats()
+	after := p.Probe().Stats()
 	if after.Redraws != before.Redraws+1 || after.Layouts != before.Layouts+1 {
 		tb.Fatalf("%s: redraws %d->%d layouts %d->%d, want one draw",
 			id, before.Redraws, after.Redraws, before.Layouts, after.Layouts)
 	}
-	if err := p.Release(ctx); err != nil {
+	if err := p.Edit().Release(ctx); err != nil {
 		tb.Fatal(err)
 	}
 

@@ -16,7 +16,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		return true
 	}
 	s.dropRetainedTiles()
-	s.partial.paints, s.partial.paintPx = 0, 0
+	s.partial.paints, s.partial.paintPx, s.partial.pins = 0, 0, 0
 	s.partial.blits, s.partial.blitPx = 0, 0
 
 	scroll := image.Pt(s.scrollX, s.scrollY)
@@ -26,7 +26,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	s.partial.live = true
 	taker, canTake := s.damageTaker()
 	contentW, contentH := s.contentSize()
-	if !canTake || s.fullReplay() || !s.bufferOrderSafe() || s.hasViewportOps() {
+	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
 		s.disposeViewport()
 		s.paintFullReplay(dst, display)
 
@@ -34,11 +34,15 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	}
 
 	if oversized(contentW, contentH) || s.gridTooBig(contentW, contentH) {
-		// A grid that dwarfs the window takes the viewport path, which
-		// drops the tile grid; keep the frame clock.
+		// The viewport path drops the tile grid. A later stable blit may
+		// idle. A scroll, a generation change, a dirty region, a focus or
+		// size stale frame, or a ticker keeps the frame clock.
 		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
 		s.drawViewport(dst, display, taker)
 		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held
+		if stale {
+			s.viewport.blitOnly = false
+		}
 
 		return true
 	}

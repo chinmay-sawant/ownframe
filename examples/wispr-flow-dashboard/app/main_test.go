@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // testIcon is a transparent 1x1 PNG. Tests replace every SVG with it so a
@@ -20,7 +20,7 @@ var testIcon = func() []byte {
 
 // TestMain keeps every test off the desktop clipboard and on tiny icons.
 func TestMain(m *testing.M) {
-	osclip.UseMemory(true)
+	ownframe.UseMemory(true)
 	assetData = func(string) []byte { return testIcon }
 	os.Exit(m.Run())
 }

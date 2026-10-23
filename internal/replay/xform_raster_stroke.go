@@ -12,7 +12,7 @@ import (
 
 // strokeRaster caches a transformed border. The key carries the stroke width,
 // the side mask, and the elliptical radii, as the direct painter's bake does.
-func strokeRaster(op *layout.DisplayOp, x, y, w, h float32) (*ebiten.Image, image.Point, bool) {
+func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32) (*ebiten.Image, image.Point, bool) {
 	if op.StrokeMask&^0x0F != 0 {
 		return nil, image.Point{}, false
 	}
@@ -39,7 +39,7 @@ func strokeRaster(op *layout.DisplayOp, x, y, w, h float32) (*ebiten.Image, imag
 		fy: y - float32(top),
 	}
 
-	img := rasters.raster(key, size, func(img *ebiten.Image) {
+	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		path := strokePathAt(key)
 		stroke := &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound}
 		options := &vector.DrawPathOptions{AntiAlias: true}

@@ -142,7 +142,7 @@ inside `#count`.
       to a device-space rect. It must return a picture of the rect size, and its
       content must match the full paint byte for byte.
 - [x] If no: a fallback page keeps a full repaint, and this is documented as a
-      limit next to the other replay fallbacks in `../../PHASES.md`.
+      limit next to the other replay fallbacks in `../PHASES.md`.
 - [x] Whatever the answer, `render.Replayable` keeps its current meaning. Do not
       let a page switch paths because it took the fast route.
 
@@ -153,7 +153,7 @@ replay cannot draw. The window repaints a fallback page in full every frame
 and keeps the badge, `render.Replayable` is unchanged, and the limit is
 written in [documentation/repaint.md](../../documentation/repaint.md). The
 integrator adds the matching line to the replay fallback list in
-`../../PHASES.md`.
+`../PHASES.md`.
 
 Exit: the fallback decision is written down, and either the engine call exists
 with a test or the limit is documented.
@@ -225,7 +225,7 @@ one rect.
 - [x] `documentation/pointer.md`: a hover change dirties two boxes.
 - [x] New `documentation/repaint.md` with the call shapes and the measured
       numbers, linked from `documentation/README.md`.
-- [x] Record what shipped in `../../PHASES.md` and add the new files to the map
+- [x] Record what shipped in `../PHASES.md` and add the new files to the map
       in `../../AGENTS.md`.
 
 ## Risks and limits

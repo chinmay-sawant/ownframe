@@ -6,11 +6,11 @@ func (a *App) saveNavRetention() navFocusState {
 	if a == nil || a.page == nil {
 		return navFocusState{}
 	}
-	f := a.page.FocusID()
+	f := a.page.Form().FocusID()
 	if f == "" {
-		f = a.page.LastFocusID()
+		f = a.page.Edit().LastFocusID()
 	}
-	x, y := a.page.ScrollOffset()
+	x, y := a.page.Scroll().ScrollOffset()
 	s := a.view.Nav
 	a.ensureNavFocusStates()
 	st := navFocusState{Focus: f, ScrollX: x, ScrollY: y}
@@ -32,9 +32,9 @@ func (a *App) restoreNavRetention(s string) {
 		st = a.retainedNavState(s)
 	}
 	a.page.SetData(a.view)
-	a.page.SetScrollOffset(st.ScrollX, st.ScrollY)
+	a.page.Scroll().SetScrollOffset(st.ScrollX, st.ScrollY)
 	if st.Focus != "" {
-		_ = a.page.Focus(context.Background(), st.Focus)
+		_ = a.page.Form().Focus(context.Background(), st.Focus)
 	}
 	if ok || st.Focus != "" || st.ScrollX != 0 || st.ScrollY != 0 {
 		a.navFocusStates[s] = st
@@ -48,9 +48,9 @@ func (a *App) retainedNavState(s string) navFocusState {
 	if a == nil || a.page == nil || s == "" {
 		return st
 	}
-	n := a.page.RetainedElement("nav-" + s)
+	n := a.page.Probe().Element("nav-" + s)
 	if n == nil || n.Metadata == nil {
-		n = a.page.RetainedElement("nav-row")
+		n = a.page.Probe().Element("nav-row")
 	}
 	if n == nil || n.Metadata == nil {
 		return st

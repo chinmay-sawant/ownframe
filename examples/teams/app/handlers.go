@@ -31,7 +31,7 @@ func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 
 // onSubmit sends the focused composer on Enter or NumpadEnter.
 func (a *App) onSubmit(ctx context.Context) error {
-	id := a.page.FocusID()
+	id := a.page.Form().FocusID()
 
 	switch {
 	case id == "chat-compose":

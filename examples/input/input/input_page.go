@@ -28,14 +28,14 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Type types into the focused field.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // FocusedField returns the id of the focused control, or "".
-func (a *App) FocusedField() string { return a.page.FocusedField() }
+func (a *App) FocusedField() string { return a.page.Edit().FocusedField() }
 
 // FormValue returns the value of a control.
-func (a *App) FormValue(id string) string { return a.page.FormValue(id) }
+func (a *App) FormValue(id string) string { return a.page.Form().FormValue(id) }
 
 // FormChecked returns the checked state of a checkbox.
-func (a *App) FormChecked(id string) bool { return a.page.FormChecked(id) }
+func (a *App) FormChecked(id string) bool { return a.page.Form().FormChecked(id) }

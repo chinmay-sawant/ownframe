@@ -1,9 +1,13 @@
 name: release
 
 on:
+  workflow_dispatch:
   push:
+    branches:
+      - "validation/release-candidate"
     tags:
       - "v*"
+      - "examples/v*"
 
 # GEN-9: least privilege; tagging a release must not grant write beyond
 # what the release job needs. Never switch this to pull_request_target.
@@ -18,33 +22,31 @@ env:
 
 jobs:
   gates:
+    uses: ./.github/workflows/ci.yml # zizmor: ignore[self-repository] -- use the widely supported local reusable-workflow syntax
+
+  examples-boundary:
     runs-on: ubuntu-latest
     steps:
-      # Pinned by full SHA (GEN-9); comments name the source tag.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
-          cache: false # tag-triggered gate: no shared cache writes
-      - run: go mod verify
-      - run: cd examples && go mod verify
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-        with:
-          node-version: 22
-          package-manager-cache: false # tag-triggered gate: no shared cache
-      - run: npm ci --ignore-scripts
-        working-directory: frontend
-      - run: npm audit signatures
-        working-directory: frontend
-      - run: make test
-      - run: make lint
+          cache: false
+      - name: Validate examples release boundary
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          case "$RELEASE_TAG" in
+            examples/*) cd scripts && GOWORK=off go run ./cmd/module-check -root .. -examples-tag "$RELEASE_TAG" ;;
+          esac
 
   # GEN-12/GEN-13: every tag ships an SBOM with a SLSA attestation and a
   # keyless cosign signature, so downstream users can verify what is in
   # the release and that CI built it. See documentation/supply-chain.md.
   supply-chain:
+    needs: [gates, examples-boundary]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -59,8 +61,25 @@ jobs:
         with:
           go-version: "1.26.10"
           cache: false # tag-triggered release: no shared cache writes
+      - name: Populate module caches for offline packaging
+        run: |
+          go mod download
+          cd examples && go mod download
       - run: go mod verify
       - run: cd examples && go mod verify
+      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          pattern: native-package-*
+          path: dist
+          merge-multiple: true
+      - name: Build and verify release candidate
+        env:
+          COSIGN: "1"
+          CGO_ENABLED: "0"
+        run: |
+          sh scripts/package.sh login
+          python3 scripts/check-release-bundle.py dist --require-platform linux --require-platform windows --require-platform macos
       # SBOM of both modules in SPDX JSON (GEN-13).
       - uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
@@ -70,14 +89,81 @@ jobs:
       # SLSA build provenance over the SBOM (GEN-12).
       - uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
         with:
-          subject-path: sbom.spdx.json
+          subject-path: |
+            sbom.spdx.json
+            dist/SHA256SUMS
+            dist/*.tar.gz
+            dist/*.zip
       # Keyless cosign signature over the same file (GEN-12).
-      - uses: sigstore/cosign-installer@7e8b541eb2e61bf99390e1afd4be13a184e9ebc5 # v3.10.1
       - run: cosign sign-blob --yes --output-signature sbom.spdx.json.sig --output-certificate sbom.spdx.json.pem sbom.spdx.json
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: supply-chain
+          name: release-candidate
           path: |
             sbom.spdx.json
             sbom.spdx.json.sig
             sbom.spdx.json.pem
+            dist/
+
+  # Publish library tags only. examples/v* still runs gates and
+  # supply-chain, and this job does not publish those tags.
+  publish:
+    needs: supply-chain
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Pinned by full SHA (GEN-9); comments name the source tag.
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: release-candidate
+          path: release-candidate
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -eu
+          root="release-candidate"
+          if [ ! -d "$root" ]; then
+            echo "release-candidate artifact is missing" >&2
+            exit 1
+          fi
+          missing=0
+          for required in \
+            "$root/sbom.spdx.json" \
+            "$root/sbom.spdx.json.sig" \
+            "$root/sbom.spdx.json.pem" \
+            "$root/dist/SHA256SUMS"
+          do
+            if [ ! -f "$required" ]; then
+              echo "release-candidate artifact is missing: $required" >&2
+              missing=1
+            fi
+          done
+          shopt -s nullglob
+          archives=("$root"/dist/*.tar.gz "$root"/dist/*.zip)
+          if [ "${#archives[@]}" -eq 0 ]; then
+            echo "release-candidate artifact is missing dist archives" >&2
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+          # One gh release create call. It fails when the tag already has a
+          # release. Do not pass --clobber, and do not split the file list.
+          files=()
+          while IFS= read -r -d '' f; do
+            files+=("$f")
+          done < <(find "$root" -type f -print0 | sort -z)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "release-candidate artifact is missing" >&2
+            exit 1
+          fi
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "$RELEASE_TAG" \
+            --notes "Archives, SHA256SUMS, and SBOM from the supply-chain job." \
+            "${files[@]}"

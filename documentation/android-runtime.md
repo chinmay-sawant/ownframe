@@ -23,8 +23,8 @@ gradients, and other CSS features arrive as geometry or encoded images.
 
 ## Coordinates and repainting
 
-The engine pin is `blinkless v0.0.2` (tag `23cc975`, 2026-10-15), required by
-both Go modules. The display factors are `PointsPerPixel` at 0.75 points per
+Both Go modules require the same Blinkless engine revision. [go.mod](../go.mod)
+is the current pin; historical validation records identify the revision tested. The display factors are `PointsPerPixel` at 0.75 points per
 CSS pixel and `PixelPerPoint` at 4/3 CSS pixels per point. Hit boxes use CSS
 pixels, and operation coordinates use points.
 
@@ -61,14 +61,14 @@ before pinch zoom. Long press can claim text selection instead of scrolling.
 
 `TouchCancellation` observes the native view. Ebitengine v2.10.4 ignores Android
 `ACTION_CANCEL`, so the adapter releases every native pointer and calls the
-bound `Mobile.cancelTouches`. `Page.CancelTouches` queues that request from the
+bound `Mobile.cancelTouches`. `Page.Edit().CancelTouches` queues that request from the
 UI thread. The window drops the hold, drag capture, and scroll velocity, then
 suppresses touch input until native IDs clear. Each Android example also cancels
 on pause before `suspendGame`; resume calls `resumeGame`.
 
 Mobile IME sessions report the focused field and surrounding text. OwnFrame
 converts the field rectangle through zoom and pending resize before handing it
-to Ebiten. `Page.IMEContext` already removes the page scroll offset. Late
+to Ebiten. The inner screen's `IMEContext` already removes the page scroll offset. Late
 composition callbacks from an old focus cannot edit the new field. The old
 field retains its displayed preedit as draft text when focus changes.
 

@@ -3,6 +3,7 @@ name: ci
 on:
   push:
   pull_request:
+  workflow_call:
 
 # GEN-9: least privilege; each job gets only what it needs (this file has
 # no deploy job, so read-only is enough). Never use pull_request_target
@@ -14,7 +15,7 @@ permissions:
 # GOFLAGS=-insecure, or GOFLAGS=-mod=mod here. GOPRIVATE stays
 # unset so the proxy + sumdb verify every module.
 # GEN-2: GOTOOLCHAIN=local stops the toolchain from silently upgrading
-# itself; the toolchain line in go.mod is the bump mechanism.
+# itself; update the pinned setup-go version and module go directives together.
 env:
   GOFLAGS: -mod=readonly
   GOTOOLCHAIN: local
@@ -45,8 +46,27 @@ jobs:
         working-directory: frontend
       - run: npm audit signatures
         working-directory: frontend
-      - run: make test
+      - name: Install graphics test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+      - run: xvfb-run -a make test
       - run: make lint
+      - run: make graphics-check
+      - run: make module-check
+      - run: make site-check
+
+  # Library race detector; examples run in independent shards below.
+  test-race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - run: make test-race
+      - run: go test -p 1 -tags ownframe_debug ./internal/web
+      - run: make soak-check SOAK_SECONDS=60
 
   # GEN-21: the security regression suite (TestSec_*) is its own gate,
   # so a reverted fix fails CI even when the rest stays green.
@@ -68,6 +88,7 @@ jobs:
       - run: go test -count=1 -run=NONE -fuzz=FuzzMethodHeader -fuzztime=15s ./internal/fetch/
       - run: go test -count=1 -run=NONE -fuzz=FuzzDOMLimits -fuzztime=15s ./internal/page/
       - run: go test -count=1 -run=NONE -fuzz=FuzzImageSrc -fuzztime=15s ./internal/page/
+      - run: go test -count=1 -run=NONE -fuzz=FuzzSetCrashDir -fuzztime=15s ./internal/crash/
 
   # GEN-25: 32-bit and ARM compile checks plus the checkptr
   # instrumented run catch overflow and unsafe misuse amd64 hides.
@@ -84,6 +105,7 @@ jobs:
         with:
           go-version: "1.26.10"
       - run: GOARCH=${{ matrix.goarch }} go vet -p 1 ./internal/... .
+      - run: GOOS=js GOARCH=wasm go vet -p 1 ./internal/... .
       - run: GOOS=windows go vet -p 1 ./internal/... .
       - run: GOOS=darwin go vet -p 1 ./internal/... .
       - run: go test -gcflags=all=-d=checkptr=2 -count=1 -run Sec ./internal/... .
@@ -118,9 +140,7 @@ jobs:
           python3 -m pip install --quiet "zizmor==1.31.1"
           zizmor .github/workflows
 
-  # GEN-14: prove release binaries are reproducible. The script builds
-  # the login example twice with fixed inputs and fails on any byte
-  # difference. See documentation/supply-chain.md.
+  # GEN-14: compare complete release archives across independent builds. See documentation/supply-chain.md.
   reproducible:
     runs-on: ubuntu-latest
     steps:
@@ -133,4 +153,119 @@ jobs:
         with:
           go-version: "1.26.10"
       - run: go mod verify
+      - run: go mod download
+      - run: cd examples && go mod download
       - run: bash scripts/reproducible-check.sh
+
+  examples-race:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - name: Run examples race shard
+        env:
+          RACE_SHARD: ${{ matrix.shard }}
+        run: bash scripts/test-examples-race.sh "$RACE_SHARD" 4
+
+  native-package:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+          cache: false
+      - name: Download both module graphs
+        run: |
+          go mod download
+          cd examples && go mod download
+      - name: Compile native cgo code and test clipboard with memory fixtures
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          make build
+          go test -p 1 ./internal/clipboard -run '^(TestMemoryRoundTrip|TestUTF16Clipboard|TestClearEmptiesMemory)$'
+      - name: Package native host and wasm preview
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          sh scripts/package.sh login
+          python3 scripts/check-release-bundle.py dist
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: native-package-${{ matrix.os }}
+          path: |
+            dist/*-windows-*.zip
+            dist/*-macos-*.zip
+          if-no-files-found: error
+
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - name: Compare parent and candidate on the same runner
+        run: |
+          set -eu
+          mkdir -p temp/performance
+          git worktree add --detach temp/performance/base HEAD^
+          sh scripts/perf-baseline.sh --root temp/performance/base --exclude BenchmarkRedrawCold --out temp/performance/base.txt
+          sh scripts/perf-baseline.sh --exclude BenchmarkRedrawCold --out temp/performance/candidate.txt --baseline temp/performance/base.json --max-ratio 1.5
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        if: always()
+        with:
+          name: performance-reports
+          path: |
+            temp/performance/*.txt
+            temp/performance/*.json
+          if-no-files-found: error
+
+  android-bind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+      - name: Install pinned Android binding tools and NDK
+        run: |
+          sdkmanager "platforms;android-34" "ndk;27.2.12479018"
+          go install github.com/hajimehoshi/ebiten/v2/cmd/ebitenmobile@v2.10.4
+          go install github.com/ebitengine/gomobile/cmd/gobind@v0.0.0-20260820040257-d11f821a26a6
+      - name: Compile Android arm64 binding
+        run: |
+          unset GOWORK
+          mkdir -p temp/android-ci
+          ebitenmobile bind -trimpath -target android/arm64 -javapkg com.chinmaysawant.telegram -o temp/android-ci/telegram.aar ./examples/telegram/mobile
+          git rev-parse HEAD > temp/android-ci/source-commit.txt
+          go list -m github.com/chinmay-sawant/blinkless > temp/android-ci/engine.txt
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: android-arm64-binding
+          path: temp/android-ci/
+          if-no-files-found: error

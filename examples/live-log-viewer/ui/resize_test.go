@@ -9,7 +9,7 @@ func TestResizeKeepsAnchor(t *testing.T) {
 	a := newHeadless(t)
 	ctx := context.Background()
 
-	a.page.SetScrollOffset(0, 30*RowH)
+	a.page.Scroll().SetScrollOffset(0, 30*RowH)
 	if err := a.draw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +38,7 @@ func TestResizeAtBottomStaysBottom(t *testing.T) {
 	a := newHeadless(t)
 	ctx := context.Background()
 
-	a.page.SetScrollOffset(0, a.listHeight()-720)
+	a.page.Scroll().SetScrollOffset(0, a.listHeight()-720)
 	if err := a.draw(ctx); err != nil {
 		t.Fatal(err)
 	}

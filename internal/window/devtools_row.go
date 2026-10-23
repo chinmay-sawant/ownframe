@@ -25,13 +25,14 @@ type devLine struct {
 type devAct int
 
 const (
-	devActNone      devAct = iota
-	devActTab              // select the tab named by arg
-	devActOpsToggle        // flip the operation outlines
-	devActJSON             // collapse or expand the JSON node named by key
-	devActOp               // outline the operation at index arg
-	devActPicker           // toggle element picker mode
-	devActClose            // close the dock
+	devActNone         devAct = iota
+	devActTab                 // select the tab named by arg
+	devActOpsToggle           // flip the operation outlines
+	devActJSON                // collapse or expand the JSON node named by key
+	devActOp                  // outline the operation at index arg
+	devActPicker              // toggle element picker mode
+	devActClose               // close the dock
+	devActMobileExpand        // expand or collapse the mobile metrics sheet
 )
 
 // devRow is one content line plus the click action it carries. w is the line

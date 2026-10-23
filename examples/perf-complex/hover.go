@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // channelMax scales 0..255 hover tints down to the 0..1 op channels.
@@ -19,7 +18,7 @@ var (
 	hoverNext = [3]float64{52, 65, 89}
 )
 
-func installHover(p *page.Page) error {
+func installHover(p *ownframe.Page) error {
 	if err := p.SetTheme(`.row{background:#141820}`); err != nil {
 		return err
 	}

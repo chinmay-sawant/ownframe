@@ -1,10 +1,12 @@
 package window
 
 import (
-	"image"
-
+	"fmt"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"image"
+	"image/color"
 )
 
 // devOpsHalf is the half-pixel reach of the 1 px outline; devOpsFull
@@ -57,4 +59,46 @@ func (s *shell) drawDevOps(screen *ebiten.Image) {
 	if !union.Empty() {
 		s.frameNote(union)
 	}
+}
+
+// devOpTextCap caps the quoted text runes in an Ops row.
+const devOpTextCap = 40
+
+// devOpRow builds one Ops-tab row for the operation at index i, the nth
+// painted operation.
+func devOpRow(op *layout.DisplayOp, i, n int, ink color.RGBA, ppt float64) devRow {
+	x := devOpRect(op, ppt)
+	sp := []devSpan{
+		{text: fmt.Sprintf("#%d ", n), ink: devDim},
+		{text: devOpsListName[op.Kind], ink: ink},
+		{text: fmt.Sprintf(" x%g y%g %gx%g", x.X, x.Y, x.W, x.H), ink: devDim},
+	}
+	if op.Kind == layout.DisplayOpText || op.Kind == layout.DisplayOpBullet {
+		t := op.Text
+		if len([]rune(t)) > devOpTextCap {
+			t = string([]rune(t)[:devOpTextCap]) + "..."
+		}
+		sp = append(sp, devSpan{text: fmt.Sprintf(" %q", t), ink: devStrInk})
+	}
+
+	return devRow{line: devLine{spans: sp}, act: devActOp, arg: i}
+}
+
+// devOpsView is the page area an outline may land in: the window minus the
+// dock, so a stroke under the panel or off the window is skipped. The dock
+// covering the whole window leaves it empty.
+func (s *shell) devOpsView() devRect {
+	if s.dev.mobile {
+		return devRect{W: float64(s.screenW), H: s.dev.panel.Y}
+	}
+	if s.dev.panel.W <= 0 {
+		return devRect{W: float64(s.screenW), H: float64(s.screenH)}
+	}
+
+	return devRect{W: s.dev.panel.X, H: float64(s.screenH)}
+}
+
+// devRectsMeet reports whether two screen rects overlap.
+func devRectsMeet(a, b devRect) bool {
+	return a.X < b.X+b.W && b.X < a.X+a.W && a.Y < b.Y+b.H && b.Y < a.Y+a.H
 }

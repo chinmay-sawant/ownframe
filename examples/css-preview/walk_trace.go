@@ -37,15 +37,15 @@ func (w *walker) snapshot() {
 	if selected == "" {
 		selected = "-"
 	}
-	st := w.p.Stats()
+	st := w.p.Probe().Stats()
 	w.trace = walkTrace{
 		started: started, selected: selected,
 		last: st.LastRedraw.Microseconds(), redraws: st.Redraws,
 		parses: st.Parses, cascades: st.Cascades,
 		layouts: st.Layouts, repaints: st.Repaints,
 		ops: int64(st.Ops), boxes: int64(st.Boxes),
-		tmpl: st.LastTemplate.Microseconds(), style: st.LayoutTime.Microseconds(),
-		display: st.DisplayListTime.Microseconds(), paint: st.PaintTime.Microseconds(),
+		tmpl: st.LastTemplate.Microseconds(), style: st.StyleTime.Microseconds(),
+		display: st.LayoutTime.Microseconds(), paint: st.PaintTime.Microseconds(),
 		changed: int64(st.ChangedOps), dirty: int64(st.DirtyOps), alloc: st.AllocFrame,
 		startedNS: w.d.startedAt.UnixNano(), seq: w.d.startedSeq,
 	}

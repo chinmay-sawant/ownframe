@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/examples/lg-remote/ws"
-	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 func (c *Client) pointerFailed() bool {
@@ -18,7 +17,7 @@ func (c *Client) pointerFailed() bool {
 
 func watchPointer(conn *ws.Conn) <-chan struct{} {
 	done := make(chan struct{})
-	safego.Go("pointer read", func() {
+	goSafe("pointer read", func() {
 		defer close(done)
 		defer func() { _ = conn.Close() }()
 		for {
@@ -27,7 +26,7 @@ func watchPointer(conn *ws.Conn) <-chan struct{} {
 			}
 		}
 	})
-	safego.Go("pointer ping", func() {
+	goSafe("pointer ping", func() {
 		tick := time.NewTicker(time.Second)
 		defer tick.Stop()
 		for {

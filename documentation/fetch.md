@@ -46,8 +46,9 @@ Recommended protections:
 
 - Pass URLs that the app owns or has validated. Do not forward user controlled
   URLs to `Fetch` or `XHR`.
-- Pass a context with a deadline. A nil context returns an error and
-  `context.Background()` can hang forever.
+- Pass a context with a deadline. A nil context returns an error. The
+  shared client stops the request after 30 seconds. A shorter caller
+  deadline still wins, so `context.Background()` does not hang forever.
 - When any input is untrusted, add host allowlisting in the app. The client
   resolves each dial host once and dials a validated IP, rechecking every
   redirect hop, so a hostile resolver cannot rebind between check and

@@ -21,7 +21,7 @@ func TestCalendarCreate(t *testing.T) {
 
 	before := len(app.View().Calendar.Events)
 
-	app.Page().SetFormValue("cal-title", "Budget review")
+	app.Page().Form().SetFormValue("cal-title", "Budget review")
 	calClick(t, app, "cal-date-1")
 	calClick(t, app, "cal-start-11")
 	calClick(t, app, "cal-dur-2")

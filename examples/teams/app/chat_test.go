@@ -61,7 +61,7 @@ func TestChatSendAppendsMessage(t *testing.T) {
 	app := newChatApp(t)
 
 	before := len(app.View().Chat.Messages)
-	app.Page().SetFormValue("chat-compose", "  Hello team  ")
+	app.Page().Form().SetFormValue("chat-compose", "  Hello team  ")
 	clickChat(t, app, "chat-send")
 
 	c := app.View().Chat
@@ -70,7 +70,7 @@ func TestChatSendAppendsMessage(t *testing.T) {
 		t.Fatalf("message = %+v", m)
 	}
 
-	if app.Page().FormValue("chat-compose") != "" {
+	if app.Page().Form().FormValue("chat-compose") != "" {
 		t.Fatal("compose input not cleared")
 	}
 }

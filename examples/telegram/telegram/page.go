@@ -23,7 +23,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last PNG, or nil when nothing has been drawn.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.
@@ -38,15 +38,15 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Focus focuses one control, so a test can type without a click.
 func (a *App) Focus(ctx context.Context, id string) error {
-	return a.page.Focus(ctx, id)
+	return a.page.Form().Focus(ctx, id)
 }
 
 // Type sends text to the focused control.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // Submit sends the focused composer.
 func (a *App) Submit(ctx context.Context) error {
-	return a.page.Submit(ctx)
+	return a.page.Edit().Submit(ctx)
 }

@@ -34,6 +34,7 @@ func TestReadOSFailureHasNoText(t *testing.T) {
 
 	UseMemory(false)
 	t.Setenv("WAYLAND_DISPLAY", "test-unavailable")
+	t.Setenv("DISPLAY", "")
 	defer UseMemory(true)
 
 	if got, err := Read(); err == nil || got != "" {
@@ -47,6 +48,7 @@ func TestWriteOutsideMemoryLeavesMemory(t *testing.T) {
 
 	UseMemory(false)
 	t.Setenv("WAYLAND_DISPLAY", "test-unavailable")
+	t.Setenv("DISPLAY", "")
 	defer UseMemory(true)
 	Write("dropped")
 

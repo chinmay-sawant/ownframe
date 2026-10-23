@@ -193,7 +193,7 @@ browser tab shows the new page within the interval.
 - [x] `documentation/platforms.md`: wasm and mobile read the file at startup
       only.
 - [x] Add the new files to the map in `../../AGENTS.md`, and record what
-      shipped in `../../PHASES.md`.
+      shipped in `../PHASES.md`.
 
 Exit: `go run ./examples/reload`, edit `index.html` in place, and the counter
 keeps its value while the paragraph changes.

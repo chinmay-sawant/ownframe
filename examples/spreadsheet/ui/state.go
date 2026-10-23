@@ -62,7 +62,7 @@ func New(opts Options) (*App, error) {
 	p.SetData(&a.view)
 	p.Handle(a.handlers())
 	p.SetTick(a.tick)
-	p.SetWindowing(true)
+	p.Scroll().SetWindowing(true)
 	p.SetScrollWindow(a.scrollWindow)
 	if err := a.Redraw(context.Background()); err != nil {
 		return nil, err

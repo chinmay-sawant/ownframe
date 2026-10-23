@@ -33,7 +33,7 @@ func newApp(rows int) (*App, error) {
 	a := &App{page: page, view: makeView(rows), rows: rows}
 	a.all = a.view.Rows
 	a.winStart, a.winEnd = -1, -1
-	page.SetWindowing(true)
+	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.applyWindow)
 	a.applyWindow(0, stressHeight)
 	page.Handle(ownframe.Handlers{Click: a.onClick, Change: a.onChange})
@@ -54,7 +54,7 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 		a.view = makeView(a.rows)
 		a.all = a.view.Rows
 		a.winStart, a.winEnd = -1, -1
-		_, y := a.page.ScrollOffset()
+		_, y := a.page.Scroll().ScrollOffset()
 		a.applyWindow(y, stressHeight)
 	}
 	a.page.SetData(a.view)

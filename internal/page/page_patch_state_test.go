@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"slices"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/state"
@@ -13,7 +14,7 @@ func TestPageStateMetadataSurface(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := state.NewStore(map[string]any{"count": 1})
-	p.SetState(st)
+	p.BindState(st)
 	if _, ok := st.TryPatchChange("count", 2); !ok {
 		t.Fatal("setPath failed for count")
 	}
@@ -27,8 +28,8 @@ func TestPageStateMetadataSurface(t *testing.T) {
 
 	p.SetChangedProperties([]string{"score"})
 	p.ClearChangedProperties()
-	if len(p.ChangedProperties()) != 0 && p.stateStore == nil {
-		t.Fatal("clear failed")
+	if got := p.ChangedProperties(); !slices.Equal(got, st.ChangedProperties()) {
+		t.Fatalf("local clear did not restore the store fallback: %v", got)
 	}
 	// state store still has count
 	if got := p.State().ChangedProperties(); len(got) == 0 {
@@ -51,12 +52,34 @@ func TestPageStateMetadataSurface(t *testing.T) {
 		t.Fatalf("patch props = %+v", patch)
 	}
 
-	// alias methods compile
-	_ = p.ChangedProps()
-	_ = p.LastChangedProperties()
-	_ = p.TakeChangedProperties()
-	_ = p.PropertiesChanged()
-	_ = p.Changed()
-	_ = p.Store()
-	_ = p.StateStore()
+	p.BindState(nil)
+	if p.State() != nil {
+		t.Fatal("detached page still exposes a store")
+	}
+	st.TryPatchChange("count", 3)
+	if got := p.ChangedProperties(); len(got) != 0 {
+		t.Fatalf("detached page receives metadata: %v", got)
+	}
+}
+
+func TestTakeDrainsLocalProps(t *testing.T) {
+	p, err := New(Config{HTML: `<div id="a">A</div>`, Width: 320, Height: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetChangedProperties([]string{"a"})
+	first := p.TakeChangedProperties()
+	if len(first) != 1 || first[0] != "a" {
+		t.Fatalf("first = %v", first)
+	}
+	if second := p.TakeChangedProperties(); len(second) != 0 {
+		t.Fatalf("second = %v, want empty", second)
+	}
+	p.SetChangedProperties([]string{"b"})
+	if got := p.TakeChangedProperties(); len(got) != 1 || got[0] != "b" {
+		t.Fatalf("second set = %v", got)
+	}
+	if got := p.TakeChangedProperties(); len(got) != 0 {
+		t.Fatalf("second drain = %v", got)
+	}
 }

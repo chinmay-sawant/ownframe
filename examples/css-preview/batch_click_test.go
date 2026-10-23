@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // TestBatchedPressStartsPreview runs the real press, focus, and click sequence
@@ -19,11 +17,11 @@ func TestBatchedPressStartsPreview(t *testing.T) {
 	}
 	x, y := button.X+button.W/2, button.Y+button.H/2
 
-	err := host.Batch(ctx, p, func() error {
-		if err := p.Press(ctx, x, y); err != nil {
+	err := redrawBatch(ctx, p, func() error {
+		if err := p.Edit().Press(ctx, x, y); err != nil {
 			return err
 		}
-		if err := p.SelectAt(ctx, x, y); err != nil {
+		if err := p.Testing().SelectAt(ctx, x, y); err != nil {
 			return err
 		}
 		return p.Click(ctx, x, y)
@@ -32,7 +30,7 @@ func TestBatchedPressStartsPreview(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.FocusID(); got != row.Button {
+	if got := p.Form().FocusID(); got != row.Button {
 		t.Fatalf("focus = %q, want %q", got, row.Button)
 	}
 	if err := d.tick(ctx); err != nil {

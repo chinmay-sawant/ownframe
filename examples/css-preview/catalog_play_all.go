@@ -35,7 +35,7 @@ func (d *demo) playAll(ctx context.Context) error {
 		s.source = row.Button
 		if s.base == nil {
 			if box, ok := findBox(d.p.Boxes(), target.id); ok {
-				s.base = capture(d.p.Display(), box)
+				s.base = capture(d.p.Probe().Display(), box)
 			}
 		}
 		d.v.Started[target.key] = true

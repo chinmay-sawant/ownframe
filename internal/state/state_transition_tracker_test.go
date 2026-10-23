@@ -23,15 +23,16 @@ func TestStateTransitionsTrackerAndListeners(t *testing.T) {
 
 	// Listeners.
 	gotListener := ""
-	s.AddListener(func(c Change) {
+	cancel := s.AddListener(func(c Change) {
 		gotListener = c.Path
 	})
 	s.PatchChange("count", 99)
 	if gotListener != "count" {
 		t.Fatalf("listener = %q", gotListener)
 	}
-	if !s.RemoveListener(s.Listeners()[len(s.Listeners())-1]) {
-		t.Fatal("remove listener failed")
+	cancel()
+	if len(s.Listeners()) != 0 {
+		t.Fatal("listener cancellation failed")
 	}
 
 	// Undo/redo empty safety.

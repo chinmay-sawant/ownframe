@@ -14,7 +14,7 @@ func Handle(_ context.Context, page *ownframe.Page, d *Data, action string) bool
 	case action == "chat-send":
 		send(page, d)
 	case action == "chat-query":
-		d.Query = page.FormValue("chat-search")
+		d.Query = page.Form().FormValue("chat-search")
 		d.rebuild()
 	case action == "chat-pin":
 		toggle(d, true)
@@ -37,7 +37,7 @@ func Handle(_ context.Context, page *ownframe.Page, d *Data, action string) bool
 
 // send appends the compose text as an own message on the open chat.
 func send(page *ownframe.Page, d *Data) {
-	text := strings.TrimSpace(page.FormValue("chat-compose"))
+	text := strings.TrimSpace(page.Form().FormValue("chat-compose"))
 	if text == "" || d.Active == "" {
 		return
 	}
@@ -72,5 +72,5 @@ func send(page *ownframe.Page, d *Data) {
 		c.Time = "Now"
 	}
 
-	page.SetFormValue("chat-compose", "")
+	page.Form().SetFormValue("chat-compose", "")
 }

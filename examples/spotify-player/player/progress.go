@@ -45,9 +45,9 @@ func (a *App) setProgress(progress int) {
 		a.view.Progress = progress
 	}
 
-	a.page.Invalidate("seek")
-	a.page.Invalidate("elapsed")
-	a.page.Invalidate("remaining")
+	a.page.Probe().Invalidate("seek")
+	a.page.Probe().Invalidate("elapsed")
+	a.page.Probe().Invalidate("remaining")
 	a.logEvent("progress", "setProgress")
 }
 
@@ -63,8 +63,8 @@ func (a *App) resetProgress() {
 		a.view.Remaining = formatSeconds(a.seconds)
 	}
 
-	a.page.Invalidate("seek")
-	a.page.Invalidate("elapsed")
-	a.page.Invalidate("remaining")
+	a.page.Probe().Invalidate("seek")
+	a.page.Probe().Invalidate("elapsed")
+	a.page.Probe().Invalidate("remaining")
 	a.logEvent("progress", "resetProgress")
 }

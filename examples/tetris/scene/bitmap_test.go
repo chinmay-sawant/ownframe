@@ -5,46 +5,43 @@ import (
 	"time"
 )
 
-// fallbackSrc is a template the replay cannot accept: the transform makes
-// the engine paint a bitmap instead of a display list.
+// fallbackSrc is a rotated score. The replay painter keeps the display list,
+// so this page does not need the bitmap path.
 const fallbackSrc = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <!-- stylesheet --></head><body>
 <div style="position:relative;width:100%;height:100%">
 <div id="t-score" style="transform:rotate(10deg)">000000000</div>
 </div></body></html>`
 
+// ellipticalSrc is a fill the replay gate rejects. Display stays nil, the
+// page keeps a bitmap, and that is the case the window badges.
+const ellipticalSrc = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
+<div style="width:60px;height:40px;background:#123456;border-radius:50% / 20%"></div>
+</body></html>`
+
 func TestBitmapFallbackRepaints(t *testing.T) {
 	m := &fakeModel{}
 	s, clock := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, pageHTML(fallbackSrc))
 
-	if s.page.Display() != nil {
-		t.Skip("the engine kept a display list for the fallback page")
+	if s.page.Probe().Display() == nil {
+		t.Fatal("rotated score fell back to the bitmap")
 	}
 
-	gen := s.page.Generation()
+	if s.page.Probe().Image() != nil {
+		t.Fatal("rotated score required the bitmap fallback")
+	}
+
+	gen := s.page.Probe().Generation()
 	m.f.Score = 5
 	tickAt(t, s, clock, time.Second/60)
 
-	if s.page.Generation() == gen {
-		t.Fatal("the bitmap path did not repaint a changed frame")
+	if s.page.Probe().Generation() != gen {
+		t.Fatal("a replayable score change redrew the page")
 	}
 
-	if s.page.Image() == nil {
-		t.Fatal("the bitmap path has no image")
-	}
-
-	gen = s.page.Generation()
-	m.f.Score = 6
-	tickAt(t, s, clock, 10*time.Millisecond)
-
-	if s.page.Generation() != gen {
-		t.Fatal("the bitmap throttle did not hold")
-	}
-
-	tickAt(t, s, clock, 60*time.Millisecond)
-
-	if s.page.Generation() == gen {
-		t.Fatal("the bitmap throttle never released")
+	score := textAt(s.page.Probe().Display(), s.page.Boxes(), "t-score")
+	if score == nil || score.Text != padScore(5) {
+		t.Fatalf("score text = %v, want %s", score, padScore(5))
 	}
 }
 
@@ -52,16 +49,37 @@ func TestBitmapFallbackSkipsUnchangedFrames(t *testing.T) {
 	m := &fakeModel{}
 	s, clock := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, pageHTML(fallbackSrc))
 
-	if s.page.Display() != nil {
-		t.Skip("the engine kept a display list for the fallback page")
+	if s.page.Probe().Display() == nil {
+		t.Fatal("rotated score fell back to the bitmap")
 	}
 
 	tickAt(t, s, clock, time.Second/60)
-	gen := s.page.Generation()
+	gen := s.page.Probe().Generation()
 
 	tickAt(t, s, clock, 100*time.Millisecond)
 
-	if s.page.Generation() != gen {
-		t.Fatal("an unchanged bitmap frame was repainted")
+	if s.page.Probe().Generation() != gen {
+		t.Fatal("an unchanged replayable frame was redrawn")
+	}
+
+	if s.page.Probe().Display() == nil {
+		t.Fatal("the tick dropped the display list")
+	}
+}
+
+func TestBitmapFallbackElliptical(t *testing.T) {
+	m := &fakeModel{}
+	s, _ := newTestSceneHTML(t, m, nil, Options{Stepper: &fakeStepper{}}, ellipticalSrc)
+
+	if s.page.Probe().Display() != nil {
+		t.Fatal("elliptical border was replayed")
+	}
+
+	if s.page.Probe().Image() == nil {
+		t.Fatal("no fallback bitmap")
+	}
+
+	if len(s.page.Probe().PNG()) == 0 {
+		t.Fatal("fallback page has no PNG")
 	}
 }

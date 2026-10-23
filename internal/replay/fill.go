@@ -14,7 +14,7 @@ import (
 // fillRect draws one filled rectangle. Corners are circular; the caller has
 // already rejected elliptical corners. Plain fills snap to whole pixels, the
 // same geometry the engine's raster painter uses.
-func fillRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+func (renderer *Renderer) fillRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	radii, ok := masking.FillRadii(op)
 	if !ok {
 		return
@@ -29,7 +29,7 @@ func fillRect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 
 	// A repeated rounded shape comes from the raster cache; a shape too large
 	// to cache falls through to the direct path.
-	if cachedRoundedFill(dst, op, radii, dx, dy) {
+	if renderer.cachedRoundedFill(dst, op, radii, dx, dy) {
 		return
 	}
 

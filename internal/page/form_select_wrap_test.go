@@ -14,11 +14,11 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 	bftDraw(t, p, nil)
 
 	box := p.boxByID("t")
-	pt := p.display.PointsPerPixel
+	pt := p.draw.Display.PointsPerPixel
 
 	var first, last *DisplayOp
-	for i := range p.display.Ops {
-		op := &p.display.Ops[i]
+	for i := range p.draw.Display.Ops {
+		op := &p.draw.Display.Ops[i]
 		if op.Kind != DisplayOpText || op.Text == "" || op.Font == nil {
 			continue
 		}
@@ -48,7 +48,8 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	start, end := p.formState().bounds(runeLen(value))
+	st := p.formState()
+	start, end := st.Bounds(runeLen(value))
 	if start != 0 || end != runeLen(value) {
 		t.Fatalf("wrapped range [%d,%d) of %d", start, end, runeLen(value))
 	}

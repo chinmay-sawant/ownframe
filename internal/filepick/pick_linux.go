@@ -4,6 +4,8 @@ package filepick
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os/exec"
 	"strings"
 )
@@ -28,18 +30,16 @@ func zenityArgs(title string) []string {
 }
 
 // Pick runs the Windows dialog under WSL, then the first dialog program on PATH.
-// ok is false when the person canceled or no program is installed.
-func Pick(ctx context.Context, title string) (string, bool) {
-	if ctx == nil {
-		return "", false
+func Pick(ctx context.Context, title string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
 	}
 	if inWSL() {
 		debugf("WSL detected")
-
-		if path, ok, handled := pickWindows(ctx, title); handled {
-			return path, ok
+		path, err := pickWindows(ctx, title)
+		if !errors.Is(err, ErrNoDialog) {
+			return path, err
 		}
-
 		debugf("falling back to Linux dialogs")
 	}
 
@@ -47,9 +47,9 @@ func Pick(ctx context.Context, title string) (string, bool) {
 }
 
 // pickLinux runs the first dialog program on PATH.
-func pickLinux(ctx context.Context, title string) (string, bool) {
-	if ctx == nil {
-		return "", false
+func pickLinux(ctx context.Context, title string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
 	}
 	for _, t := range tools {
 		path, err := exec.LookPath(t.name)
@@ -60,24 +60,23 @@ func pickLinux(ctx context.Context, title string) (string, bool) {
 		return run(ctx, path, t.args(title))
 	}
 
-	return "", false
+	return "", fmt.Errorf("%w: tried zenity, qarma, matedialog, kdialog", ErrNoDialog)
 }
 
-func run(ctx context.Context, path string, args []string) (string, bool) {
-	if ctx == nil {
-		return "", false
+func run(ctx context.Context, path string, args []string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
 	}
 	out, err := exec.CommandContext(ctx, path, args...).Output() //nolint:gosec // reason: binary is a known dialog tool resolved from PATH, fixed arg builders, no shell.
 	if err != nil {
 		debugf("%s %v failed: %v", path, args, err)
 
-		return "", false
+		return "", ErrCanceled
 	}
-
 	picked := strings.TrimRight(string(out), "\r\n")
 	if picked == "" {
-		return "", false
+		return "", ErrCanceled
 	}
 
-	return picked, true
+	return picked, nil
 }

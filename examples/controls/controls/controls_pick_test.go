@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func TestDocPickerUpdatesStatus(t *testing.T) {
@@ -14,8 +12,8 @@ func TestDocPickerUpdatesStatus(t *testing.T) {
 	ctx := context.Background()
 	app := newApp(t, ctx)
 
-	page.InstallPicker(app.Page(), func(context.Context, string) (string, bool) {
-		return "/tmp/notes.txt", true
+	app.Page().Testing().SetPicker(func(context.Context, string) (string, error) {
+		return "/tmp/notes.txt", nil
 	})
 
 	click(t, ctx, app, "doc")

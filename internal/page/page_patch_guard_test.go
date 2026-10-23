@@ -16,9 +16,7 @@ func TestPatchElementRefusesWithoutRetainedState(t *testing.T) {
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}) {
-		t.Fatal("the patch was not refused")
-	}
+	mustRefuse(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}))
 }
 
 // TestPatchElementRefusesAnEditThatChangesNothing checks that a patch with
@@ -28,15 +26,9 @@ func TestPatchElementRefusesAnEditThatChangesNothing(t *testing.T) {
 	ctx := context.Background()
 	p := patchPage(t, `<p id="p">x</p>`)
 
-	if p.PatchElement(ctx, "p") {
-		t.Fatal("the empty patch was not refused")
-	}
-	if p.PatchElement(ctx, "p", ElementEdit{Attribute: "", Value: "on"}) {
-		t.Fatal("the patch without a name was not refused")
-	}
-	if p.PatchElement(ctx, "missing", ElementEdit{Attribute: "class", Value: "on"}) {
-		t.Fatal("the patch on a missing element was not refused")
-	}
+	mustRefuse(t, p.PatchElement(ctx, "p"))
+	mustRefuse(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "", Value: "on"}))
+	mustRefuse(t, p.PatchElement(ctx, "missing", ElementEdit{Attribute: "class", Value: "on"}))
 }
 
 // TestPatchElementFollowsTheCacheStateRules checks that the page reads the
@@ -45,9 +37,7 @@ func TestPatchElementFollowsTheCacheStateRules(t *testing.T) {
 	ctx := context.Background()
 	p := patchPage(t, `<style>#p{width:10px;height:10px}</style><p id="p">x</p>`)
 
-	if !p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}) {
-		t.Fatal("the patch was refused")
-	}
+	mustPatch(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "class", Value: "on"}))
 	if p.statePseudos != p.cache.StatePseudos() {
 		t.Fatalf("the page reports %+v and the cache %+v", p.statePseudos, p.cache.StatePseudos())
 	}

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestSaveWritesTempFile(t *testing.T) {
@@ -53,7 +53,7 @@ func TestCopySetsStatus(t *testing.T) {
 		t.Fatalf("status = %q", got)
 	}
 
-	got, err := osclip.Read()
+	got, err := ownframe.Read()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -57,10 +57,15 @@ echo "==> ./gradlew :app:assembleDebug"
 echo "APK: $apk"
 
 if [ "${1:-}" = "install" ]; then
-	if ! command -v adb >/dev/null 2>&1; then
+	adb=${ADB:-adb}
+	if ! command -v "$adb" >/dev/null 2>&1; then
 		echo "android: adb is not on PATH; install platform-tools" >&2
 		exit 1
 	fi
 
-	adb install -r "$apk"
+	install_path=$apk
+	case "$adb" in
+	*.exe) install_path=$(wslpath -w "$apk") ;;
+	esac
+	"$adb" -P "${ADB_PORT:-5037}" install -r "$install_path"
 fi

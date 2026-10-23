@@ -1,8 +1,7 @@
 package window
 
-// gestureState holds the shell's drag and key-chord tracking. It is embedded
-// so game_state.go stays inside the file size limit; no caller sets these
-// fields in a shell literal, so promotion keeps every existing reference.
+// gestureState holds the shell's drag and key-chord tracking. The shell embeds
+// this state; the game loop owns its fields.
 type gestureState struct {
 	gesture       pointerDrag
 	touchCanceled bool

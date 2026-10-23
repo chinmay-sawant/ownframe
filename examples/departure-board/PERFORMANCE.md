@@ -6,7 +6,7 @@ The board was reported at 13 to 14 FPS with a tick at 60 per second: about
 ## Why it happened
 
 A page with a registered tick keeps the window's full replay unless its tick
-calls `Page.UseFrameDirty`. `internal/window/replay_frame.go` makes
+calls `Page.Probe().UseFrameDirty`. `internal/window/replay_frame.go` makes
 `fullReplay` true when the page reports `Ticking` and `FrameDirty` is false.
 `internal/window/replay_partial.go` then skips the persistent buffer and calls
 `directReplay`, which walks the whole display list and draws every operation
@@ -65,7 +65,7 @@ PATTERN BLANK as the filler, so every tile including the gaps has a text op
 to retarget. The fixed grid moved the board from 631 and 640 operations to
 844.
 
-The devtools Ops tab caches its row list per `Page.Generation()` and culls
+The devtools Ops tab caches its row list per `Page.Probe().Generation()` and culls
 outline strokes to the page area the dock leaves visible
 (`internal/window/devtools_sync.go`, `devtools_ops.go`), so a still board
 rebuilds no rows.
@@ -239,7 +239,7 @@ operation list does not grow with the window.
   operations. The paced cascade measures 115 (three rects, 27,532 px squared)
   on the 844-operation board, down from 630 through the one union rect. The
   remaining cost is several row bands active at once.
-- `Page.Invalidate` still walks every box per call through `growBox`
+- `Page.Probe().Invalidate` still walks every box per call through `growBox`
   (`internal/page/page_dirty_box.go`), and `BenchmarkInvalidateMany` marks
   3000 ids on a 3000-box page in about 31 ms. A caller with many ids should
   mark rects, as the board does.

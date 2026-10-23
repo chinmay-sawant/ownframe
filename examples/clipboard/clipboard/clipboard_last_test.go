@@ -25,7 +25,7 @@ func TestButtonsUseLastFocusedField(t *testing.T) {
 	}
 
 	click(t, ctx, app, "selectall")
-	if !app.Page().FormSelected("right") {
+	if !app.Page().Form().FormSelected("right") {
 		t.Fatal("selectall did not select the right field")
 	}
 

@@ -11,7 +11,7 @@ import (
 // run goes through the same glyph loop the direct path uses, shifted by the
 // integer origin and the ink offset, so the bake carries the exact sub-pixel
 // phase of the draw that first asked for it.
-func bakeTextRun(op *layout.DisplayOp, face *text.GoTextFace, key textRasterKey, offX, offY float64) (textRasterEntry, bool) {
+func (renderer *Renderer) bakeTextRun(op *layout.DisplayOp, face *text.GoTextFace, key textRasterKey, offX, offY float64) (textRasterEntry, bool) {
 	ink, found := textInkBox(face, key.content, key.spacing)
 	if !found {
 		return textRasterEntry{}, false
@@ -32,7 +32,7 @@ func bakeTextRun(op *layout.DisplayOp, face *text.GoTextFace, key textRasterKey,
 		single.Bold = false
 		strike = &single
 	}
-	drawTextRun(img, face, key.content, offX-float64(dx), offY-float64(dy), strike)
+	renderer.drawTextRun(img, face, key.content, offX-float64(dx), offY-float64(dy), strike)
 
 	return textRasterEntry{img: img, dx: dx, dy: dy}, true
 }

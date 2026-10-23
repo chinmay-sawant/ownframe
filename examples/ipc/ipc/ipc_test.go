@@ -26,7 +26,7 @@ func TestIPCExampleClicks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(app.Page().PNG()) == 0 {
+	if len(app.Page().Probe().PNG()) == 0 {
 		t.Fatal("PNG is empty after Redraw")
 	}
 
@@ -48,7 +48,7 @@ func TestIPCExampleClicks(t *testing.T) {
 		t.Fatalf("Status = %q, want the doubled 21", got)
 	}
 
-	app.Page().SetFormValue("num", "abc")
+	app.Page().Form().SetFormValue("num", "abc")
 	click(t, ctx, app, "request")
 	if got := app.View().Status; !strings.Contains(got, "not a number") {
 		t.Fatalf("Status = %q, want the handler error", got)

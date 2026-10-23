@@ -4,14 +4,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe/internal/host"
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 type sample struct {
 	ElapsedNS          int64
 	AllocBytes, Allocs uint64
-	Stats              host.Stats
+	Stats              ownframe.Stats
 }
 type dump struct {
 	Mode, GoVersion, GOOS, GOARCH string
@@ -19,12 +18,12 @@ type dump struct {
 	ProfileIterations             int
 }
 
-func measure(mode string, p *page.Page, v view) (dump, *page.Page, error) {
+func measure(mode string, p *ownframe.Page, v view) (dump, *ownframe.Page, error) {
 	d := dump{Mode: mode, GoVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH}
 	for i := 0; i < 7; i++ {
 		if mode == "initial" {
 			var err error
-			var fresh *page.Page
+			var fresh *ownframe.Page
 			fresh, v, err = fixture(false)
 			if err == nil {
 				p = fresh
@@ -42,14 +41,14 @@ func measure(mode string, p *page.Page, v view) (dump, *page.Page, error) {
 		}
 		elapsed := time.Since(start).Nanoseconds()
 		runtime.ReadMemStats(&after)
-		d.Samples = append(d.Samples, sample{elapsed, after.TotalAlloc - before.TotalAlloc, after.Mallocs - before.Mallocs, p.Stats()})
+		d.Samples = append(d.Samples, sample{elapsed, after.TotalAlloc - before.TotalAlloc, after.Mallocs - before.Mallocs, p.Probe().Stats()})
 	}
 	start := time.Now()
 	for time.Since(start) < 2*time.Second {
 		prepare(mode, p, &v, d.ProfileIterations)
 		if mode == "initial" {
 			var err error
-			var fresh *page.Page
+			var fresh *ownframe.Page
 			fresh, v, err = fixture(false)
 			if err == nil {
 				p = fresh
@@ -66,7 +65,7 @@ func measure(mode string, p *page.Page, v view) (dump, *page.Page, error) {
 	return d, p, nil
 }
 
-func prepare(mode string, p *page.Page, v *view, i int) {
+func prepare(mode string, p *ownframe.Page, v *view, i int) {
 	if mode == "data" {
 		v.Revision++
 		p.SetData(*v)

@@ -51,5 +51,5 @@ func (a *App) bind(d *ownframe.Display) {
 	a.parts.over = textAt(d, boxes, "t-over")
 	a.parts.again = textAt(d, boxes, "t-again")
 
-	a.bound = a.page.Generation()
+	a.bound = a.page.Probe().Generation()
 }

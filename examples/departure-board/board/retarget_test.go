@@ -15,8 +15,8 @@ func runTick(t *testing.T, ctx context.Context, app *App) {
 		t.Fatal(err)
 	}
 
-	app.Page().FrameDirty()
-	app.Page().TakeDirtyRects()
+	app.Page().Probe().FrameDirty()
+	app.Page().Probe().TakeDirtyRects()
 }
 
 // forceRotation makes the next tick rotate the feed.
@@ -52,14 +52,14 @@ func TestRotationRetargets(t *testing.T) {
 		runTick(t, ctx, app)
 	}
 
-	gen := app.Page().Generation()
+	gen := app.Page().Probe().Generation()
 	forceRotation(app)
 
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().Generation(); got != gen {
+	if got := app.Page().Probe().Generation(); got != gen {
 		t.Fatalf("rotation redrew the page: generation %d -> %d", gen, got)
 	}
 

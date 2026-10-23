@@ -55,14 +55,6 @@ func (a *App) click(_ context.Context, box ownframe.Box) error {
 	return nil
 }
 
-// scroller is the page scroll surface the window consumes. The assertion
-// keeps the example building before the page side of v0.0.2 lands.
-type scroller interface {
-	ScrollTo(x, y int)
-}
-
 func (a *App) scrollTo(x, y int) {
-	if sc, ok := any(a.page).(scroller); ok {
-		sc.ScrollTo(x, y)
-	}
+	a.page.ScrollTo(x, y)
 }

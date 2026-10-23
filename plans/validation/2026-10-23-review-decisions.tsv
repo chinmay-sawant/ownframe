@@ -1,0 +1,13 @@
+ts	phase	decision	why	evidence	result
+2026-10-23	frame	Preserve current HEAD and leave edits local	User prohibits commits and pushes	24d4267a	clean starting tree
+2026-10-23	workflow	Separate performance tooling distribution and accessibility into worktrees	Independent changes must not overwrite each other	plans/validation/2026-10-23-review-fixes.md	in progress
+2026-10-23	measurement	Rename style and layout timers and account for other redraw work	Actual placement must appear in the layout row	plans/validation/stages-2026-10-23.txt	passed
+2026-10-23	measurement	Measure Update and Draw work instead of between-Draw gaps	Idle pacing is not rendering cost	internal/window/perf_sample_test.go	passed
+2026-10-23	measurement	Count distinct diff regions and ops once across those regions	A bounding box overstates separated work	internal/page/perf_accounting_test.go	passed
+2026-10-23	graphics	Use independently specified fill golden and whole damage assertions	Shared replay cannot detect common geometry errors	internal/window/testdata/partial-frame.png	half-pixel mutation rejected
+2026-10-23	ownership	Own six mutable caches per window renderer and cancel Run context	One page must not evict another and shutdown must release lifecycle state	internal/replay/renderer_test.go	unit race and graphics passed
+2026-10-23	release	Normalize complete archives and sign extracted executable members	Binary equality does not prove archive equality and packaged inputs must reach signing tools	scripts/test_release_archive.py	repeat Linux and wasm checksums matched
+2026-10-23	release	Reuse CI for releases and build native candidates in native jobs	Release must wait for the same checks as source changes	.github/workflows/release.yml	definitions linted; hosted execution unverified
+2026-10-23	documentation	Audit example readmes and reject deprecated serve options and empty evidence claims	The old docs gate missed stale public API prose	scripts/test_doc_claims.py	passed
+2026-10-23	scope	Retain external validation and anonymous input identity as open limits	Local Linux code changes cannot establish external runtime observations	plans/validation/2026-10-23-review-fixes.md	open limits recorded
+2026-10-23	publication	Commit and push the integrated review changes to feat/prod-readiness	User explicitly superseded the earlier local-only boundary	plans/validation/2026-10-23-review-fixes.md	authorized

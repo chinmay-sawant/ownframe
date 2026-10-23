@@ -75,3 +75,32 @@ func TestLoadRejectsBlankHTML(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 }
+
+func TestLoadAfterBackReplacesForwardHistory(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	first := `<div id="a">A</div>`
+	second := `<div id="b">B</div>`
+	third := `<div id="c">C</div>`
+	screen := navPage(t, first)
+	if err := screen.Load(ctx, second); err != nil {
+		t.Fatal(err)
+	}
+	if err := screen.Back(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := screen.Load(ctx, third); err != nil {
+		t.Fatal(err)
+	}
+	if err := screen.Back(ctx); err != nil {
+		t.Fatal(err)
+	}
+	navAt(t, screen, first, "a")
+	if err := screen.Forward(ctx); err != nil {
+		t.Fatal(err)
+	}
+	navAt(t, screen, third, "c")
+	if err := screen.Forward(ctx); !errors.Is(err, page.ErrNoHistory) {
+		t.Fatalf("forward after replacement = %v", err)
+	}
+}

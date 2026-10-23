@@ -29,7 +29,7 @@ func (d *demo) syncTree(ctx context.Context) bool {
 // calls it after every redraw, so a scroll or a reload does not lose the
 // started state of the other cards.
 func (d *demo) afterRedraw(ctx context.Context) {
-	parses := d.p.Stats().Parses
+	parses := d.p.Probe().Stats().Parses
 	if parses == d.treeParses {
 		return
 	}

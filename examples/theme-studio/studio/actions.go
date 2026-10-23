@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
 )
 
 // onClick routes a click by control id. Click draws the page after this
@@ -14,10 +13,10 @@ import (
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	switch box.ID {
 	case "btn-apply":
-		return a.Apply(ctx, a.page.FormValue("css"))
+		return a.Apply(ctx, a.page.Form().FormValue("css"))
 	case "btn-copy":
-		css := a.page.FormValue("css")
-		osclip.Write(css)
+		css := a.page.Form().FormValue("css")
+		ownframe.Write(css)
 		a.view.Status = fmt.Sprintf("copied %d bytes", len(css))
 		a.page.SetData(&a.view)
 
@@ -28,7 +27,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			return err
 		}
 
-		a.page.SetFormValue("css", css)
+		a.page.Form().SetFormValue("css", css)
 
 		return a.Apply(ctx, css)
 	}
@@ -43,7 +42,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			continue
 		}
 
-		a.page.SetFormValue("css", p.CSS)
+		a.page.Form().SetFormValue("css", p.CSS)
 		if err := a.Apply(ctx, p.CSS); err != nil {
 			return err
 		}

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // BenchmarkPatchCost measures a full redraw and an element patch of the same
@@ -35,7 +35,7 @@ func benchmarkFullRedrawCardClass(b *testing.B) {
 		if i%2 == 0 {
 			class = card.cardOn
 		}
-		p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: class})
+		_ = p.PatchElement(ctx, card.id, ownframe.ElementEdit{Attribute: "class", Value: class})
 		p.SetData(v)
 		if err := p.Redraw(ctx); err != nil {
 			b.Fatal(err)

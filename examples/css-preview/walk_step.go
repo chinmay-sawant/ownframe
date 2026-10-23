@@ -8,7 +8,7 @@ import "context"
 // page bumps its generation on every redraw and on every element patch,
 // which are the two paths that replace the boxes.
 func (w *walker) publishBoxes() {
-	gen := w.p.Generation()
+	gen := w.p.Probe().Generation()
 	if gen == w.boxGen {
 		return
 	}
@@ -68,7 +68,7 @@ func (w *walker) step(ctx context.Context) {
 
 		return
 	}
-	_, scrollY := w.p.ScrollOffset()
+	_, scrollY := w.p.Scroll().ScrollOffset()
 	clientY := int(b.Y+b.H/2) - scrollY
 	_, viewH := w.p.Size()
 	if clientY < 0 || clientY > viewH {

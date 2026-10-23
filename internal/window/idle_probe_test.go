@@ -84,7 +84,7 @@ func TestIdleCleanFrameTicking(t *testing.T) {
 	s.drawReplayPartial(dst)
 	s.frameCommit()
 
-	if s.idleCleanFrame() {
-		t.Fatal("a ticking page without the opt-in replays in full")
+	if !s.idleCleanFrame() {
+		t.Fatal("a ticking page with no damage must still idle")
 	}
 }

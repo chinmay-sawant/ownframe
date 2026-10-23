@@ -12,7 +12,7 @@ func longPress(t *testing.T, ctx context.Context, app *telegram.App, id string) 
 	t.Helper()
 
 	x, y := center(t, app, id, "")
-	if _, err := app.Page().LongPress(ctx, x, y); err != nil {
+	if _, err := app.Page().Testing().LongPress(ctx, x, y); err != nil {
 		t.Fatal(err)
 	}
 }

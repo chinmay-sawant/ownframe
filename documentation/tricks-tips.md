@@ -15,6 +15,35 @@ Fix: use three layers, each smaller than the last.
 
 Scrolling up past the window slides the window. Scrolling past the cache triggers one paged fetch keyed by time or id, then the window slides. Cache expiry only drops the local copy. It never deletes server history.
 
-The row window pattern lives in `examples/perf-complex/windowing.go`. It keeps 48 of 480 rows, reuses the window while overscan covers the viewport, and returns false when no rebuild is needed. That fixture went from 306 ms to 35 ms per redraw. Teams posts vary in height because threads expand, so anchor the window by post id and measured box position instead of fixed row math. A latest-50 view with a load-older control is a fine first step before full scroll windowing.
+The row window math lives in `examples/list`. The 480-row fixture is `examples/perf-complex/windowing.go`. It keeps 48 of 480 rows, reuses the window while overscan covers the viewport, and returns false when no rebuild is needed. That fixture went from 306 ms to 35 ms per redraw, not 16 ms. Teams posts vary in height because threads expand, so anchor the window by post id and measured box position instead of fixed row math. A latest-50 view with a load-older control is a fine first step before full scroll windowing.
 
 See `examples/teams/channelbench` for the synthetic post benchmark, `examples/teams/channels` for the posts template, and `examples/teams/store` for the SQLite layer.
+
+## Windowed list recipe
+
+Start with `examples/list`. `list.Window` clamps start, count, and spacer
+heights for a fixed-height list. ownframe has no virtual DOM: pass that
+window of rows in the template plus spacers, then call
+`Page.Scroll().SetWindowing(true)` and `Page.SetScrollWindow`. Sticky and fixed
+chrome use `SetScrollWindow` / `SetViewportPinZ` because blinkless does
+not pin CSS sticky.
+
+The Teams 50 / 200 / 500 numbers above are the warning: do not send the whole
+list through the template. 500 unwindowed posts took about 7.3 s.
+
+The app owns a slice window plus spacers.
+
+1. Keep the full dataset off the template (SQLite or a Go slice).
+2. Hold a window of rows around the viewport, for example 50.
+3. Put a spacer above and below so the document still scrolls to the full
+   content height.
+4. On scroll, slide the window: drop rows that left the overscan, append rows
+   that entered it, and resize the spacers.
+5. Call `Page.Scroll().SetWindowing(true)` and `Page.SetScrollWindow` so the host
+   redraws only when the window moved ([frames.md](frames.md)).
+
+The full fixture is `examples/perf-complex/windowing.go`: 48 of 480 rows,
+about 35 ms on the recorded machine, not 16 ms. `examples/ops-console` is a
+small ticket list. Teams posts vary in height, so anchor by post id and
+measured box position instead of fixed row math. A latest-50 view with a
+load-older control is a fine first step.

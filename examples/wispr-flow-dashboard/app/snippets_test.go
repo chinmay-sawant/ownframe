@@ -36,7 +36,7 @@ func TestSnippetsPage(t *testing.T) {
 		t.Fatalf("first snippet = %+v", rows[0])
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("snippets fell back to the bitmap path")
 	}
 }

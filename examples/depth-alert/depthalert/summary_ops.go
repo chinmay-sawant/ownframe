@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 type summaryOps struct {
@@ -13,12 +12,12 @@ type summaryOps struct {
 }
 
 func (s *summaryOps) bind(p *ownframe.Page) error {
-	d := p.Display()
+	d := p.Probe().Display()
 	if d == nil {
 		return errors.New("depth alert: summary has no display list")
 	}
 	for _, b := range p.Boxes() {
-		op := frame.Text(d, b)
+		op := ownframe.Text(d, b)
 		switch b.ID {
 		case "signal":
 			s.signal = op
@@ -33,7 +32,7 @@ func (s *summaryOps) bind(p *ownframe.Page) error {
 	if s.signal == nil || s.scan == nil || s.near == nil || s.coverage == nil {
 		return errors.New("depth alert: summary text operations are missing")
 	}
-	s.generation = p.Generation()
+	s.generation = p.Probe().Generation()
 	return nil
 }
 
@@ -51,6 +50,6 @@ func (s *summaryOps) update(p *ownframe.Page, v view) {
 func (s *summaryOps) set(p *ownframe.Page, id string, op *ownframe.DisplayOp, value string) {
 	if op.Text != value {
 		op.Text = value
-		p.Invalidate(id)
+		p.Probe().Invalidate(id)
 	}
 }

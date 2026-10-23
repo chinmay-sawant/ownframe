@@ -4,18 +4,44 @@ Use this guide when you add an Android app for an ownframe page. The shared
 Java helpers live in `examples/android-host`. App navigation and data stay in
 the Go example.
 
+## 1.0 native Android
+
+Android `BindMobile` is a 1.0 native host: one compiled Go process inside an
+Ebiten Activity, no Chromium, no WebView. That is not OS widgets and not
+TalkBack.
+
+- `ownframe.BindMobile` registers the page. Call it from the `mobile/`
+  package that `ebitenmobile bind` compiles.
+- `examples/android-host` owns insets, Back, lifecycle (`onResume` /
+  `onPause`), and `TouchCancellation`.
+- Unset `GOWORK` for the bind. Gomobile copies packages into a temporary
+  module.
+- `scripts/android-release.sh` binds, assembles, and signs an arm64 APK.
+- The APK index is [examples/android-host/APPS.md](../examples/android-host/APPS.md):
+  login, platform, dino, lg-remote, telegram, eyes.
+
+1.0 limits on this host:
+
+- Clipboard is process memory ([clipboard.md](clipboard.md)).
+- There is no file picker dialog. Telegram camera and gallery are app Java,
+  not `internal/filepick`.
+- Idle park is off (`internal/window/idle_supported_other.go`).
+- There is no TalkBack node. Process death does not restore page state.
+- IME is `exp/textinput`.
+- The APK is a large `.so` inside the package.
+
+Play Store restore and TalkBack stay out of 1.0. Telegram and eyes are the
+exhibits ([examples/readme.md](../examples/readme.md)). The remaining Play
+gaps (TalkBack, process death, IME contract, `GOWORK` unset for bind,
+signing) are listed in [play-store.md](play-store.md).
+
 ## Set up the mobile Go package
 
 Create a `mobile` package that constructs the app and binds its page:
 
 ```go
-func start(configDir string) error {
-	instance, err := app.New(configDir)
-	if err != nil {
-		return err
-	}
-	application = instance
-	return ownframe.BindMobile(context.Background(), instance.Page())
+func start(page *ownframe.Page) error {
+    return ownframe.BindMobile(context.Background(), page)
 }
 ```
 
@@ -126,7 +152,7 @@ disable touch scrolling. Use `Page.ScrollTo` or `Page.ScrollBy` when an app
 needs to move to a specific point.
 
 Pinch zoom is enabled by default. Two fingers change the page zoom from 0.25 to
-4. Set `Config.DisableTouchZoom` or call `Page.SetTouchZoomAllowed(false)` when
+4. Set `Config.DisableTouchZoom` or call `Page.Window().SetTouchZoomAllowed(false)` when
 the app needs two-finger gestures for another action. Disabling pinch zoom does
 not disable touch scrolling. Read [scrolling](scrolling.md) and
 [interaction](interaction.md) for gesture thresholds and scroll behavior.

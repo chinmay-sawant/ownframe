@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
 // windowBenchPage mirrors examples/css-preview/run.go: 960x860, perf on
@@ -20,23 +18,21 @@ func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ow
 	tb.Helper()
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
-	p, err := previewwindow.New(ctx, previewwindow.Config{
-		FixtureDir: filepath.Join("testdata", "css-preview"),
-		Data:       v, Width: width, Height: height})
+	p, err := openCatalog(ctx, catalogOpen{Data: v, Width: width, Height: height})
 	if err != nil {
 		tb.Fatal(err)
 	}
-	p.SetPerf(true)
-	p.SetDevTools(true)
+	p.Window().SetPerf(true)
+	p.Window().SetDevTools(true)
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		tb.Fatal(err)
 	}
 	v.Catalog = catalogRows(p)
 	v.Rows = v.Catalog
 	v.Readout = describe(p)
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		tb.Fatal(err)
 	}
 	m, ok := measureCatalog(p)
@@ -48,7 +44,7 @@ func windowBenchPageSize(tb testing.TB, width, height int) (context.Context, *ow
 	if err := installCatalogWindow(ctx, p, v, d, m); err != nil {
 		tb.Fatal(err)
 	}
-	p.SetDevTools(false)
+	p.Window().SetDevTools(false)
 	return ctx, p, v, d, m
 }
 
@@ -60,8 +56,8 @@ func windowBenchReset(ctx context.Context, p *ownframe.Page, v *view, d *demo, t
 	v.Readout = ""
 	d.samples = map[string]*sample{}
 	d.pending = nil
-	p.SetScrollOffset(0, 0)
-	if p.StepScrollWindow() {
+	p.Scroll().SetScrollOffset(0, 0)
+	if p.Testing().StepScrollWindow() {
 		if err := p.Redraw(ctx); err != nil {
 			tb.Fatal(err)
 		}

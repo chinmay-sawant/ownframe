@@ -26,7 +26,7 @@ page, err := ownframe.New(ownframe.Config{
 
 `Size` returns the frame size in CSS pixels. `MinSize` returns the smallest frame and `MaxSize` the window bound from `Config`. `SetSize(width, height)` stores the size the next `Redraw` uses, pulled up to the minimum; it does not draw. `Clamp(width, height)` returns a size pulled up to the minimum without storing it. Neither one caps a frame at the maximum.
 
-`Generation` increases by one on every successful `Redraw`, on both the replay and bitmap paths. `SetSize`, `SetData`, and `SetTheme` do not move it on their own. `internal/window/sync.go` caches the drawn artifact with the generation it came from and rebuilds it when `Generation` differs.
+`page.Probe().Generation` increases by one on every successful `Redraw`, on both the replay and bitmap paths. `SetSize`, `SetData`, and `SetTheme` do not move it on their own. `internal/window/sync.go` caches the drawn artifact with the generation it came from and rebuilds it when that generation differs. The window reads the inner screen.
 
 ## The window
 
@@ -60,7 +60,7 @@ The library has no DPI code. No code reads a device scale factor or applies one 
 
 ## Pacing and update order
 
-Ebiten updates the window at its default rate, about 60 TPS. The library never calls `SetTPS`, so the rate is not tunable here. `OWNFRAME_PACE_DEBUG=1` prints one pacing line per second to stderr; it is dev-only and off by default, so keep it off in shipped binaries. Every `Update` runs a context check, devtools sync, IME, keys, resize, the passthrough update, pointer, touch scroll, hold, drop, tick, the frame opt-in capture, a reload poll, sync, the page scroll request, a devtools refresh, wheel, the scroll-window sync, and the bitmap viewport in that order (`internal/window/update.go`). Resize runs before pointer, so a hit test uses the boxes of the frame being drawn. The tick is `Page.SetTick`; its call shape and cost are in [frames.md](frames.md). The reload poll asks a file-backed page for changes at most every 250 ms ([hot-reload.md](hot-reload.md)).
+Ebiten starts the window at its default rate, about 60 TPS. The public API does not expose TPS. Idle park and `BindMobile` do call `SetTPS`. `BindMobile` in `run.go` calls `ebiten.SetTPS(ebiten.SyncWithFPS)`. Idle park calls `ebiten.SetTPS(ebiten.SyncWithFPS)` in `applyIdle` and `ebiten.SetTPS(g.base)` in `applyFast`, both in `internal/window/idle_frame.go`. `paceWindow` in `internal/window/idle_game.go` stores `g.base` from `ebiten.TPS()` before the first park. `OWNFRAME_PACE_DEBUG=1` prints one pacing line per second to stderr; it is dev-only and off by default, so keep it off in shipped binaries. Every `Update` runs a context check, devtools sync, IME, keys, resize, the passthrough update, pointer, touch scroll, hold, drop, tick, the frame opt-in capture, a reload poll, sync (including the Linux AT-SPI publisher hook, which is a no-op until a live bus exists), the page scroll request, a devtools refresh, wheel, the scroll-window sync, and the bitmap viewport in that order (`internal/window/update.go`). Resize runs before pointer, so a hit test uses the boxes of the frame being drawn. The tick is `Page.SetTick`; its call shape and cost are in [frames.md](frames.md). The reload poll asks a file-backed page for changes at most every 250 ms ([hot-reload.md](hot-reload.md)).
 
 ## Errors
 
@@ -76,7 +76,7 @@ A tick callback that returns an error stops the window, and `Run` returns it. Ca
 - `BindMobile` registers the page with Ebitengine's mobile view. Call it from the package that `ebitenmobile bind` compiles, and do not call `Run` from that package. It returns after registering.
 - `Serve` listens on `addr` and blocks. The page at `/` shows the latest picture, and clicks and the type form call the same handlers as `Run` ([forms.md](forms.md)).
 
-All three return `ErrNilPage` when the page is nil. `Run` wraps every failure in a crash report and returns an error naming that file; `BindMobile` recovers a panic and returns the crash report path ([crash.md](crash.md)). Build targets are in [platforms.md](platforms.md).
+All three return `ErrNilPage` when the page is nil. `Run` stores a startup or window failure in a crash report and returns the original error. A canceled context or a deadline returns that error and writes no file. `BindMobile` recovers a panic and returns the crash report path ([crash.md](crash.md)). Build targets are in [platforms.md](platforms.md).
 
 ## Limits
 

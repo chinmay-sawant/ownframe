@@ -9,10 +9,10 @@ import (
 func (a *App) selectFields() {
 	w, h := a.shotSize()
 	a.sel = Clamp(Rect{
-		X: num(a.page.FormValue("x")),
-		Y: num(a.page.FormValue("y")),
-		W: num(a.page.FormValue("w")),
-		H: num(a.page.FormValue("h")),
+		X: num(a.page.Form().FormValue("x")),
+		Y: num(a.page.Form().FormValue("y")),
+		W: num(a.page.Form().FormValue("w")),
+		H: num(a.page.Form().FormValue("h")),
 	}, Rect{W: w, H: h})
 	a.recrop()
 	a.view.Status = fmt.Sprintf("crop %dx%d+%d+%d",

@@ -40,7 +40,7 @@ func (a *App) onClick(_ context.Context, box ownframe.Box) error {
 // onChange mirrors the note field into View so the template prints it.
 func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 	if box.ID == "note" {
-		a.view.Note = a.page.FormValue("note")
+		a.view.Note = a.page.Form().FormValue("note")
 	}
 
 	return nil

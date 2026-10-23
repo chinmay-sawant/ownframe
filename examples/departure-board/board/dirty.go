@@ -18,7 +18,7 @@ func (a *App) setClockText(text string) {
 	}
 
 	a.flip.clock.Text = text
-	a.page.Invalidate("clock")
+	a.page.Probe().Invalidate("clock")
 }
 
 // barEvery is the refresh fill's cadence: about 10 Hz. A bar this size reads
@@ -51,7 +51,7 @@ func (a *App) moveBar() {
 	}
 
 	a.flip.bar.W = w
-	a.page.Invalidate("refresh-fill")
+	a.page.Probe().Invalidate("refresh-fill")
 }
 
 // invalidateCells marks every tile the flap step changed this frame. Each
@@ -60,7 +60,7 @@ func (a *App) moveBar() {
 func (a *App) invalidateCells(ids []string) {
 	for _, id := range ids {
 		if fl := a.flip.cells[id]; fl != nil {
-			a.page.MarkRect(fl.box)
+			a.page.Probe().MarkRect(fl.box)
 		}
 	}
 }

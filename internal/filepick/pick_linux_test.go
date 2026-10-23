@@ -4,6 +4,7 @@ package filepick
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,9 +30,9 @@ echo /tmp/report.pdf
 `)
 	t.Setenv("PATH", dir)
 
-	got, ok := pickLinux(context.Background(), "Open")
-	if !ok || got != "/tmp/report.pdf" {
-		t.Fatalf("pick = %q %v", got, ok)
+	got, err := pickLinux(context.Background(), "Open")
+	if err != nil || got != "/tmp/report.pdf" {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }
 
@@ -40,8 +41,8 @@ func TestPickZenityCancel(t *testing.T) {
 	writeTool(t, dir, "zenity", "#!/bin/sh\nexit 1\n")
 	t.Setenv("PATH", dir)
 
-	if got, ok := pickLinux(context.Background(), "Open"); ok {
-		t.Fatalf("pick = %q, want cancel", got)
+	if got, err := pickLinux(context.Background(), "Open"); !errors.Is(err, ErrCanceled) {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }
 
@@ -53,9 +54,9 @@ echo /tmp/kde.txt
 `)
 	t.Setenv("PATH", dir)
 
-	got, ok := pickLinux(context.Background(), "Open")
-	if !ok || got != "/tmp/kde.txt" {
-		t.Fatalf("pick = %q %v", got, ok)
+	got, err := pickLinux(context.Background(), "Open")
+	if err != nil || got != "/tmp/kde.txt" {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }
 
@@ -65,15 +66,16 @@ func TestPickZenityFirst(t *testing.T) {
 	writeTool(t, dir, "kdialog", "#!/bin/sh\necho /tmp/kde\n")
 	t.Setenv("PATH", dir)
 
-	if got, ok := pickLinux(context.Background(), "Open"); !ok || got != "/tmp/zen" {
-		t.Fatalf("pick = %q %v", got, ok)
+	got, err := pickLinux(context.Background(), "Open")
+	if err != nil || got != "/tmp/zen" {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }
 
 func TestPickNoTool(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 
-	if got, ok := pickLinux(context.Background(), "Open"); ok {
-		t.Fatalf("pick = %q, want no dialog", got)
+	if got, err := pickLinux(context.Background(), "Open"); !errors.Is(err, ErrNoDialog) {
+		t.Fatalf("pick = %q %v", got, err)
 	}
 }

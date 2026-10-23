@@ -11,13 +11,13 @@ func TestChatEnterSends(t *testing.T) {
 	app := newTestApp(t)
 	before := len(app.View().Chat.Messages)
 
-	if err := app.Page().Focus(context.Background(), "chat-compose"); err != nil {
+	if err := app.Page().Form().Focus(context.Background(), "chat-compose"); err != nil {
 		t.Fatalf("Focus: %v", err)
 	}
 
-	app.Page().SetFormValue("chat-compose", "Avengers assemble")
+	app.Page().Form().SetFormValue("chat-compose", "Avengers assemble")
 
-	if err := app.Page().Submit(context.Background()); err != nil {
+	if err := app.Page().Edit().Submit(context.Background()); err != nil {
 		t.Fatalf("Submit: %v", err)
 	}
 
@@ -31,7 +31,7 @@ func TestChatEnterSends(t *testing.T) {
 		t.Fatalf("last = %+v", last)
 	}
 
-	if app.Page().FormValue("chat-compose") != "" {
+	if app.Page().Form().FormValue("chat-compose") != "" {
 		t.Fatal("compose input not cleared")
 	}
 }

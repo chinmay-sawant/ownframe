@@ -39,27 +39,33 @@ func BenchmarkRedrawWarm(b *testing.B) {
 	}
 }
 
-// BenchmarkRedrawCold measures a Redraw after SetData, which drops the cache
-// and pays for the template, the parse, and the cascade again.
+// BenchmarkRedrawCold changes executed HTML each iteration, forcing parse and cascade.
 func BenchmarkRedrawCold(b *testing.B) {
 	ctx := context.Background()
 	data := struct{ N int }{}
 
-	screen, err := page.New(page.Config{HTML: benchHTML, Width: benchWidth, Height: benchHeight})
+	screen, err := page.New(page.Config{HTML: benchHTML + `<span>{{.N}}</span>`, Width: benchWidth, Height: benchHeight})
 	if err != nil {
 		b.Fatal(err)
 	}
 
+	screen.SetData(data)
 	if err := screen.Redraw(ctx); err != nil {
 		b.Fatal(err)
 	}
 
+	parses := screen.Stats().Parses
 	for i := 0; b.Loop(); i++ {
-		data.N = i
+		data.N = i + 1
 		screen.SetData(data)
 
 		if err := screen.Redraw(ctx); err != nil {
 			b.Fatal(err)
 		}
+	}
+	parsed := screen.Stats().Parses - parses
+	b.ReportMetric(float64(parsed)/float64(b.N), "parses/op")
+	if parsed != uint64(max(b.N, 0)) {
+		b.Fatalf("cold redraw parsed %d times for %d iterations", parsed, b.N)
 	}
 }

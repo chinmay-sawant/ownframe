@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
@@ -22,7 +21,7 @@ const (
 )
 
 // benchCard builds the card page and returns the card's fill and label ops.
-func benchCard(b *testing.B) (*page.Page, []*ownframe.DisplayOp) {
+func benchCard(b *testing.B) (*page.Page, []*page.DisplayOp) {
 	b.Helper()
 
 	screen, err := page.New(page.Config{HTML: cardHTML, Width: 640, Height: 480})
@@ -41,14 +40,14 @@ func benchCard(b *testing.B) (*page.Page, []*ownframe.DisplayOp) {
 		b.Fatal("no display list")
 	}
 
-	box := ownframe.Box{X: 20, Y: 20, W: 300, H: 200}
+	box := page.Box{X: 20, Y: 20, W: 300, H: 200}
 	fill := Fill(d, box, [3]float64{0.2, 0.4, 0.8})
 	label := Text(d, box)
 	if fill == nil || label == nil {
 		b.Fatal("card ops not found")
 	}
 
-	return screen, []*ownframe.DisplayOp{fill, label}
+	return screen, []*page.DisplayOp{fill, label}
 }
 
 // BenchmarkAnimCardRedraw animates the card with a Redraw per frame: one

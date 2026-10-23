@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 func imageAt(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.DisplayOp {
@@ -12,7 +11,7 @@ func imageAt(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.Dis
 		if b.ID != id {
 			continue
 		}
-		x, y, w, h := frame.BoxUnits(d, b)
+		x, y, w, h := ownframe.BoxUnits(d, b)
 		for i := range d.Ops {
 			op := &d.Ops[i]
 			data, _, _ := op.ImageBytes()

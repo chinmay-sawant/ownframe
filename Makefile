@@ -15,6 +15,12 @@ GOLANGCI_LINT_VERSION ?= v2.15.0
 test:
 	$(GO) test -p $(TEST_P) ./... ./examples/...
 
+# Race detector on the library module only. Examples stay off this target
+# until the library job is green; full examples race is a later gate.
+.PHONY: test-race
+test-race:
+	$(GO) test -race -p 1 ./...
+
 # `go build ./...` links an executable for every example on each run, takes
 # about a minute, and leaves the binaries in this directory. `go vet` compiles
 # every package, including every example, without linking. Raise the limit for
@@ -25,48 +31,38 @@ BUILD_P ?= 1
 build:
 	$(GO) vet -p $(BUILD_P) ./... ./examples/...
 
-# Lint both modules with the pinned golangci-lint and the policy in
-# .golangci.yml. The library at the root and the examples module under
-# examples/ are separate Go modules, so each needs its own pass.
-# Installs the pinned binary into $(go env GOPATH)/bin when it is missing.
-# Builds with the default toolchain so the binary matches the module Go.
-# The run ends with the file-size gate (scripts/check-file-size.sh), so CI
-# enforces the 2,000-character rule in AGENTS.md alongside the linters.
-# The website in frontend/ is linted by ESLint in the same run, so one
-# command covers the Go code and the React code.
-# Every gate runs before the target fails, so one run reports the library
-# findings, the examples findings, the size ledger, and the website findings
-# together.
-.PHONY: lint
-lint:
-	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "golangci-lint not found; installing $(GOLANGCI_LINT_VERSION) with default Go toolchain..."; \
-		go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
-	}
-	golangci-lint version
-	@status=0; \
-	golangci-lint run ./... || status=1; \
-	golangci-lint run ./examples/... || status=1; \
-	$(MAKE) --no-print-directory size-check || status=1; \
-	if ! command -v npm >/dev/null 2>&1; then \
-		echo "npm not found; the website lint needs Node.js 22.12 or newer" >&2; \
-		status=1; \
-	else \
-		if [ ! -d frontend/node_modules ]; then \
-			echo "frontend dependencies missing; running npm ci..."; \
-			(cd frontend && npm ci) || status=1; \
-		fi; \
-		(cd frontend && npm run lint) || status=1; \
-	fi; \
-	exit $$status
+# Use exactly the declared runner version, including when PATH has another version.
+.PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check
+lint-version:
+	bash scripts/lint_test.sh
+	bash scripts/lint.sh $(GOLANGCI_LINT_VERSION) --version
 
-# File-size gate (AGENTS.md "Go file size": every Go file is at most 2,000
-# characters, counted with `wc -m`; newlines included). Scans every
-# non-pruned .go file, test files included, and compares the tree with
-# scripts/file-size-allowlist.txt.
-.PHONY: size-check
-size-check:
-	bash scripts/check-file-size.sh
+# VERBOSE=1 prints the complete output from successful tools as well.
+VERBOSE ?= 0
+lint:
+	@python3 scripts/run-lint.py $(GOLANGCI_LINT_VERSION) $(if $(filter 1,$(VERBOSE)),--verbose)
+
+tools-check:
+	@python3 -m unittest discover -s scripts -p 'test_*.py'
+	@cd scripts && GOWORK=off $(GO) test -p 1 ./...
+
+docs-check:
+	python3 scripts/check-doc-snippets.py
+
+plans-check:
+	python3 scripts/check-plans.py
+
+examples-check:
+	python3 scripts/check-examples.py
+
+graphics-check:
+	bash scripts/check-graphics.sh
+
+# Freeze gate: no new examples import of ownframe/internal/. The current
+# set is scripts/example-internal-allowlist.txt. Stale or extra pairs fail.
+.PHONY: internal-import-check
+internal-import-check:
+	bash scripts/check-example-internal.sh
 
 # Vulnerability scan via the pinned tool directive in go.mod
 # (golang.org/x/vuln/cmd/govulncheck). Runs against both modules through
@@ -133,3 +129,24 @@ $(EXAMPLES):
 # Unknown names fail with a pointer to `make open`.
 %:
 	@echo "make: unknown target '$@'; run 'make open <example>'" >&2; exit 1
+
+.PHONY: module-check
+module-check:
+	@cd scripts && GOWORK=off $(GO) run ./cmd/module-check -root ..
+
+.PHONY: site-check
+site-check:
+	@npm --prefix frontend test
+	@python3 scripts/check-generated-site.py
+	@npm --prefix frontend run check:site
+
+.PHONY: release-check
+release-check:
+	@sh scripts/package_test.sh
+	@sh scripts/package.sh login
+	@python3 scripts/check-release-bundle.py dist
+
+SOAK_SECONDS ?= 600
+.PHONY: soak-check
+soak-check:
+	@OWNFRAME_SOAK_SECONDS=$(SOAK_SECONDS) OWNFRAME_SOAK_COMMIT="$$(git rev-parse HEAD 2>/dev/null || printf unknown)" $(GO) test -p 1 -count=1 -v -timeout=35m -run '^TestPageSoak$$' ./internal/page

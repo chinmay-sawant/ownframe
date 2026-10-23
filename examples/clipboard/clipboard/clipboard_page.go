@@ -28,7 +28,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // PNG returns the last PNG, or nil when nothing has been drawn.
 func (a *App) PNG() []byte {
-	return a.page.PNG()
+	return a.page.Probe().PNG()
 }
 
 // Boxes returns the last hit-test boxes.
@@ -43,5 +43,5 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // FocusedField returns the focused control id, or "" when none is focused.
 func (a *App) FocusedField() string {
-	return a.page.FocusedField()
+	return a.page.Edit().FocusedField()
 }

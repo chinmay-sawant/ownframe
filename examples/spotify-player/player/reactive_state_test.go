@@ -17,11 +17,11 @@ func TestReactiveApplyStateUpdate(t *testing.T) {
 	}
 	redraw(t, app)
 
-	app.Page().ClearChangedProperties()
+	app.Page().Testing().ClearChangedProperties()
 	if err := app.Load(testCtx(), "canned"); err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if len(app.Page().ChangedProperties()) == 0 {
+	if len(app.Page().Testing().ChangedProperties()) == 0 {
 		t.Fatal("Load left no changed properties")
 	}
 	if got := app.View().Status; !containsSubstring(got, "Live") {
@@ -37,11 +37,11 @@ func TestReactiveOfflineStateUpdate(t *testing.T) {
 	}
 	redraw(t, app)
 
-	app.Page().ClearChangedProperties()
+	app.Page().Testing().ClearChangedProperties()
 	if err := app.Load(context.Background(), "canned"); err == nil {
 		t.Fatal("Load: want an error")
 	}
-	if len(app.Page().ChangedProperties()) == 0 {
+	if len(app.Page().Testing().ChangedProperties()) == 0 {
 		t.Fatal("offline Load left no changed properties")
 	}
 	if got := app.View().Status; got != sampleStatus {

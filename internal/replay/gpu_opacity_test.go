@@ -5,11 +5,10 @@ import (
 	"image/color"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func checkGPUOpacity() error {
-	img := ebiten.NewImage(32, 32)
+	img := newParityImage(32, 32)
 	defer img.Deallocate()
 	img.Fill(color.White)
 	op := layout.DisplayOp{Kind: layout.DisplayOpFillRect, W: 24, H: 24, R: .2, G: .4, B: .6, Alpha: .5}

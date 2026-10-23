@@ -17,21 +17,25 @@ POSIX path of (choose file with prompt (item 1 of argv))
 end run`
 
 // Pick shows the macOS open dialog through osascript.
-// ok is false when the person canceled.
-func Pick(ctx context.Context, title string) (string, bool) {
+func Pick(ctx context.Context, title string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
+	}
+	if _, err := exec.LookPath("osascript"); err != nil {
+		return "", ErrNoDialog
+	}
 	out, err := exec.CommandContext(ctx, "osascript", "-e", script, title).Output()
 	if err != nil {
 		debugf("osascript failed: %v", err)
 
-		return "", false
+		return "", ErrCanceled
 	}
-
 	picked := strings.TrimRight(string(out), "\r\n")
 	if picked == "" {
-		return "", false
+		return "", ErrCanceled
 	}
 
-	return picked, true
+	return picked, nil
 }
 
 // debugf writes to stderr when OWNFRAME_FILEPICK_DEBUG is not empty.

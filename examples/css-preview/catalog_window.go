@@ -29,9 +29,9 @@ func installCatalogWindow(
 ) error {
 	w := &catalogWindow{prevStart: -1, prevEnd: -1, metrics: m, view: v, demo: d, page: p}
 	d.window = w
-	p.SetWindowing(true)
+	p.Scroll().SetWindowing(true)
 	p.SetScrollWindow(w.slice)
-	p.SetScrollOffset(0, 0)
+	p.Scroll().SetScrollOffset(0, 0)
 
 	_, viewH := p.Size()
 	w.slice(0, viewH)

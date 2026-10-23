@@ -41,7 +41,7 @@ func TestControlFlowFixture(t *testing.T) {
 	}
 
 	url := backend.fixture.URL + fixture.PathSlow
-	app.Page().SetFormValue("url", url)
+	app.Page().Form().SetFormValue("url", url)
 	clickVisible(t, app, "add")
 
 	id := waitState(t, app, url, ui.StateRunning, 5*time.Second)

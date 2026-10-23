@@ -12,7 +12,7 @@ Write the screen in HTML and CSS. Connect it to Go. OwnFrame uses Blinkless to l
 
 ## Run on desktop or mobile
 
-The [platform guide](platforms.md) explains desktop, browser, Android, and iOS targets. For a phone app, start with [Android setup](android-app-creation.md) or [the Telegram Android example](../examples/telegram/android/README.md). \`BindMobile\` connects the page to the mobile window.
+The [platform guide](platforms.md) explains native desktop (Linux, Windows, macOS) and native Android, plus browser and \`-web\` previews. iOS is not a 1.0 target. For a phone app, start with [Android setup](android-app-creation.md) or [the Telegram Android example](../examples/telegram/android/README.md). \`BindMobile\` connects the page to the Android window.
 
 ## Check support before you build
 

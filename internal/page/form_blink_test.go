@@ -23,16 +23,17 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
 		t.Fatalf("visible caret kind = %v, want fill rect", got)
 	}
 
-	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
+	st := p.formState()
+	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpNoop {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpNoop {
 		t.Fatalf("hidden caret kind = %v, want noop", got)
 	}
 
@@ -40,16 +41,17 @@ func TestCaretBlinkHidesAndShows(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpNoop {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpNoop {
 		t.Fatalf("caret returned early with kind %v", got)
 	}
 
-	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
+	st = p.formState()
+	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := p.display.Ops[len(p.display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
+	if got := p.draw.Display.Ops[len(p.draw.Display.Ops)-1].Kind; got != layout.DisplayOpFillRect {
 		t.Fatalf("caret did not return, kind = %v", got)
 	}
 }
@@ -69,12 +71,13 @@ func TestEditResetsBlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
+	st := p.formState()
+	st.BlinkAt = time.Now().Add(-caretBlinkInterval)
 	if err := p.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if p.formState().blinkOn {
+	if p.formState().BlinkOn {
 		t.Fatal("blink did not turn off")
 	}
 
@@ -82,7 +85,7 @@ func TestEditResetsBlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !p.formState().blinkOn {
+	if !p.formState().BlinkOn {
 		t.Fatal("typing did not reset the blink")
 	}
 }

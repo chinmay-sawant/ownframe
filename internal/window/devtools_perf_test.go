@@ -46,7 +46,7 @@ func TestDevPerfPipelineHook(t *testing.T) {
 	}
 
 	got := devFrameText(s.devFrameRows(320))
-	for _, want := range []string{"Display list", "Dirty ops", "Dirty regions", "Changed ops", "1.0ms", "4.0ms"} {
+	for _, want := range []string{"Style", "Layout", "Dirty ops", "Dirty regions", "Changed ops", "1.0ms", "4.0ms"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("frame rows = %q, want %q", got, want)
 		}

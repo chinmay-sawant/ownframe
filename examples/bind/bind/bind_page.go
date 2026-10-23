@@ -33,7 +33,7 @@ func (a *App) Click(ctx context.Context, x, y float64) error {
 
 // Type edits the focused control. The binding layer owns the struct write.
 func (a *App) Type(ctx context.Context, text string) error {
-	return a.page.Type(ctx, text)
+	return a.page.Edit().Type(ctx, text)
 }
 
 // View returns the struct the bound controls write.

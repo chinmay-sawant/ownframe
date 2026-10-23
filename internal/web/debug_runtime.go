@@ -1,53 +1,47 @@
 package web
 
 import (
-	"fmt"
-	"log"
-	"sync"
+	"os"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
-// runtimeSnapshotMu guards runtimeSnapshotFn. All access goes through
-// SetRuntimeSnapshot/GetRuntimeSnapshot so replacement cannot race with
-// a request.
-var runtimeSnapshotMu sync.RWMutex
+const procStatMinFields = 2
 
-// runtimeSnapshotFn reports window runtime stats for /debug/state. The
-// window package sets it; it stays nil in tests and headless builds.
-var runtimeSnapshotFn func() map[string]any
-
-// SetRuntimeSnapshot installs fn as the runtime stats hook used by
-// /debug/state. Passing nil clears the hook. Safe for any goroutine.
-func SetRuntimeSnapshot(fn func() map[string]any) {
-	runtimeSnapshotMu.Lock()
-	defer runtimeSnapshotMu.Unlock()
-
-	runtimeSnapshotFn = fn
-}
-
-// GetRuntimeSnapshot returns the current hook without invoking it.
-func GetRuntimeSnapshot() func() map[string]any {
-	runtimeSnapshotMu.RLock()
-	defer runtimeSnapshotMu.RUnlock()
-
-	return runtimeSnapshotFn
-}
-
-// runtimeSnapshot safely invokes the hook. A panic in the hook is
-// recovered so one bad sampler cannot abort the debug request.
+// runtimeSnapshot samples only an explicitly opted-in server's debug request.
+// Each server owns its perf flag; no global callback can enable another server.
 func runtimeSnapshot() map[string]any {
-	runtimeSnapshotMu.RLock()
-	fn := runtimeSnapshotFn
-	runtimeSnapshotMu.RUnlock()
-
-	if fn == nil {
-		return nil
+	var memory runtime.MemStats
+	runtime.ReadMemStats(&memory)
+	snapshot := map[string]any{
+		"heap_alloc":  memory.HeapAlloc,
+		"heap_sys":    memory.HeapSys,
+		"total_alloc": memory.TotalAlloc,
+		"goroutines":  runtime.NumGoroutine(),
+		"num_gc":      memory.NumGC,
 	}
+	if rss, ok := runtimeRSS(); ok {
+		snapshot["rss_bytes"] = rss
+	}
+	return snapshot
+}
 
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("runtime snapshot panic: %s", sanitizeLine(fmt.Sprint(r)))
-		}
-	}()
-
-	return fn()
+func runtimeRSS() (uint64, bool) {
+	if runtime.GOOS != "linux" {
+		return 0, false
+	}
+	data, err := os.ReadFile("/proc/self/statm")
+	if err != nil {
+		return 0, false
+	}
+	fields := strings.Fields(string(data))
+	if len(fields) < procStatMinFields {
+		return 0, false
+	}
+	pages, err := strconv.ParseUint(fields[1], 10, 64)
+	if err != nil {
+		return 0, false
+	}
+	return pages * uint64(max(os.Getpagesize(), 0)), true
 }

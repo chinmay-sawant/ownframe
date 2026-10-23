@@ -23,7 +23,7 @@ func (a *App) Redraw(ctx context.Context) error {
 
 // Display returns the last display list, or nil on a fallback page.
 func (a *App) Display() *ownframe.Display {
-	return a.page.Display()
+	return a.page.Probe().Display()
 }
 
 // Boxes returns the last hit-test boxes.

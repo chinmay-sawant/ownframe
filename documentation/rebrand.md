@@ -21,12 +21,13 @@ update their imports and selectors when adopting the renamed release. Go
 imports under the two module paths are separate package identities; keep one
 version of the library in an application.
 
-The committed `go.work` joins both local modules, and `examples/go.mod`
-requires `github.com/chinmay-sawant/ownframe` at the published tag, `v0.0.2`,
-with no replace, so local `make test`, `make build`, and example commands run
-in the workspace. Existing release tags retain their original module
-declarations; a repository redirect does not rewrite those files. External
-installs use the v0.0.2 release, which declares the new module path.
+The committed `go.work` joins both local modules. `examples/go.mod` requires
+`github.com/chinmay-sawant/ownframe` at the last published tag (`v0.0.2`)
+until `v0.0.3` is tagged, and `replace`s it with `../` so local `make test`,
+`make build`, and example commands use this checkout. Existing release tags
+retain their original module declarations; a repository redirect does not
+rewrite those files. External installs still resolve `v0.0.2` until the
+`v0.0.3` library tag lands. The current library cycle is `v0.0.3`.
 
 ## Templates and settings
 
@@ -50,8 +51,9 @@ the same repository before and after its rename.
 
 ## GitHub rename and release
 
-The source changes are prepared locally. The remote repository name,
-description, topics, release tags, and Git remote are unchanged.
+The repository and module now use `ownframe`. The steps below are an operator
+runbook for a rename or a fresh checkout, not a list of pending source changes.
+Check the live repository settings and release state before acting.
 
 1. Rename `chinmay-sawant/go-gpui` to `chinmay-sawant/ownframe` in GitHub
    repository settings when ready to publish the source migration.

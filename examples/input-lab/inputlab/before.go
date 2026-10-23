@@ -10,7 +10,7 @@ const lockedMsg = "name is locked"
 
 // isLocked reports whether the locked name still holds its preset.
 func (a *App) isLocked() bool {
-	return a.page.FormValue("l-name") == "locked"
+	return a.page.Form().FormValue("l-name") == "locked"
 }
 
 // onBeforeEdit snapshots undo stacks and clears old sign-in messages.

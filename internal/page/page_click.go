@@ -4,77 +4,86 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/click"
 )
 
-// Click hit-tests the last picture.
-// The innermost box is the last one in document order that contains the point.
-// A box without an id falls back to the innermost id-bearing element under the
-// point, so a click on a child icon reaches its control.
-// A field is activated. An enabled button can follow a route.
-// A disabled control is not toggled and does not blur.
-// Any other hit blurs the form. A routed data-action then loads that HTML
-// and skips the handler. Click draws the page again.
+// Click hit-tests the last picture and applies the click.
 func (p *Page) Click(ctx context.Context, x, y float64) error {
-	if err := useContext(ctx); err != nil {
-		return err
-	}
+	return click.Run(ctx, clickSurface{p}, x, y)
+}
 
-	box, ok := p.hitBox(x, y)
-	if ok && box.ID == "" {
-		if id := p.boxIDAt(x, y); id != "" {
-			box = p.boxByID(id)
-		}
-	}
-	if ok && p.consumePress(box.ID) {
-		return p.Redraw(ctx)
-	}
+// clickSurface adapts Page to click.Surface.
+// Each method delegates to the page method the sequence already used.
+type clickSurface struct{ p *Page }
 
-	if ok && p.formControl(box.ID) {
-		c, _ := p.control(box.ID)
-		if c.Tag == "button" && !c.Disabled && box.Action != "" {
-			if html, ok := p.nav.lookup(box.Action); ok {
-				return p.Load(ctx, html)
-			}
-		}
-		return p.clickControl(ctx, box)
-	}
+func (s clickSurface) HitBox(x, y float64) (Box, bool) {
+	return s.p.hitBox(x, y)
+}
 
-	if ok {
-		p.blurForm()
-		if box.Action != "" {
-			if html, ok := p.nav.lookup(box.Action); ok {
-				return p.Load(ctx, html)
-			}
-		}
-	}
+func (s clickSurface) BoxIDAt(x, y float64) string {
+	return s.p.boxIDAt(x, y)
+}
 
-	if p.handlers.OpenLink != nil && (!ok || box.Action == "") {
-		if handled, err := p.openLinkAt(ctx, x, y); handled {
-			return err
-		}
-	}
+func (s clickSurface) BoxByID(id string) Box {
+	return s.p.boxByID(id)
+}
 
-	if ok && p.handlers.Click != nil {
-		if err := p.handlers.Click(ctx, box); err != nil {
-			return err
-		}
-	}
+func (s clickSurface) ConsumePress(id string) bool {
+	return s.p.consumePress(id)
+}
 
-	if ok {
-		painted, err := p.clickPainted(ctx, box)
-		if err != nil {
-			return err
-		}
-		if painted {
-			return nil
-		}
-	}
+func (s clickSurface) FormControl(id string) bool {
+	return s.p.formControl(id)
+}
 
-	// The handler may have changed the data, which makes the source differ
-	// and redraws. A click that changed nothing visible skips the layout. A
-	// refused patch forgot the render key, so this redraw lays the page out
-	// again and the tree matches the display.
-	return p.RedrawIfChanged(ctx)
+func (s clickSurface) Control(id string) (Control, bool) {
+	return s.p.control(id)
+}
+
+func (s clickSurface) Lookup(action string) (string, bool) {
+	return s.p.nav.Lookup(action)
+}
+
+func (s clickSurface) Load(ctx context.Context, html string) error {
+	return s.p.Load(ctx, html)
+}
+
+func (s clickSurface) ClickControl(ctx context.Context, box Box) error {
+	return s.p.clickControl(ctx, box)
+}
+
+func (s clickSurface) BlurForm() {
+	s.p.blurForm()
+}
+
+func (s clickSurface) HasOpenLink() bool {
+	return s.p.handlers.OpenLink != nil
+}
+
+func (s clickSurface) OpenLinkAt(ctx context.Context, x, y float64) (bool, error) {
+	return s.p.openLinkAt(ctx, x, y)
+}
+
+func (s clickSurface) HasClick() bool {
+	return s.p.handlers.Click != nil
+}
+
+func (s clickSurface) HandlerClick(ctx context.Context, box Box) error {
+	return s.p.handlers.Click(ctx, box)
+}
+
+func (s clickSurface) ClickPainted(ctx context.Context, box Box) (bool, error) {
+	return s.p.clickPainted(ctx, box)
+}
+
+func (s clickSurface) Redraw(ctx context.Context) error {
+	return s.p.Redraw(ctx)
+}
+
+func (s clickSurface) RedrawIfChanged(ctx context.Context) error {
+	return s.p.RedrawIfChanged(ctx)
 }
 
 var _ host.Screen = (*Page)(nil)
+
+var _ click.Surface = clickSurface{}

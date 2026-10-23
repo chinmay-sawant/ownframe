@@ -20,8 +20,8 @@ func TestPerfFirstRedraw(t *testing.T) {
 	}
 
 	s := p.Stats()
-	if s.LastTemplate < 0 || s.LayoutTime < 0 || s.DisplayListTime < 0 || s.PaintTime < 0 {
-		t.Fatalf("stages %v %v %v %v", s.LastTemplate, s.LayoutTime, s.DisplayListTime, s.PaintTime)
+	if s.LastTemplate < 0 || s.StyleTime < 0 || s.LayoutTime < 0 || s.PaintTime < 0 {
+		t.Fatalf("stages %v %v %v %v", s.LastTemplate, s.StyleTime, s.LayoutTime, s.PaintTime)
 	}
 	if s.LastRedraw <= 0 || s.AllocFrame == 0 {
 		t.Fatalf("redraw %v alloc %d", s.LastRedraw, s.AllocFrame)
@@ -66,5 +66,23 @@ func TestPerfDirtyCounts(t *testing.T) {
 	}
 	if s := p.Stats(); s.DirtyRegions != 1 || s.ChangedOps <= 0 {
 		t.Fatalf("resize %d/%d", s.DirtyRegions, s.ChangedOps)
+	}
+}
+
+func TestPerfStageAccounting(t *testing.T) {
+	p := newCachePage(t, `<p>stage accounting</p>`)
+	p.SetPerf(true)
+	for range 2 {
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		s := p.Stats()
+		sum := s.LastTemplate + s.StyleTime + s.LayoutTime + s.PaintTime + s.OtherTime
+		if sum != s.LastRedraw {
+			t.Fatalf("stage sum %s != redraw %s", sum, s.LastRedraw)
+		}
+		if s.StyleTime <= 0 || s.LayoutTime <= 0 {
+			t.Fatal("style and placement must be measured independently")
+		}
 	}
 }

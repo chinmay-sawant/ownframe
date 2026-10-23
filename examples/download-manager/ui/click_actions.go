@@ -20,21 +20,21 @@ func (a *App) toggleTheme() {
 
 // addJob queues the URL in the form, or explains what is missing.
 func (a *App) addJob() {
-	raw := strings.TrimSpace(a.page.FormValue("url"))
+	raw := strings.TrimSpace(a.page.Form().FormValue("url"))
 	if raw == "" {
 		a.view.Notice = "Enter a URL first"
 
 		return
 	}
 
-	dest := strings.TrimSpace(a.page.FormValue("dest"))
+	dest := strings.TrimSpace(a.page.Form().FormValue("dest"))
 	if err := a.backend.Add(AddRequest{URL: raw, Destination: dest}); err != nil {
 		a.view.Notice = "Add failed: " + err.Error()
 
 		return
 	}
 
-	a.page.SetFormValue("url", "")
+	a.page.Form().SetFormValue("url", "")
 	a.view.Notice = "Queued"
 	a.historyDirty = true
 }

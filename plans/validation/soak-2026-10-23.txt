@@ -1,0 +1,42 @@
+=== RUN   TestPageSoak
+    page_soak_test.go:123: {
+          "arch": "amd64",
+          "go": "go1.26.10",
+          "gomaxprocs": 24,
+          "goroutines_after": 2,
+          "goroutines_before": 2,
+          "heap_after": 5037696,
+          "heap_before": 5016592,
+          "os": "linux",
+          "png_p95_limit_ms": 100,
+          "redraw_p95_limit_ms": 16.67,
+          "scenarios": [
+            {
+              "cycle_p95_ms": 33.82131,
+              "cycles": 200,
+              "name": "resize/click/type/backspace/scroll/conditional",
+              "png_p95_ms": 30.543189,
+              "redraw_p95_ms": 0.322456
+            },
+            {
+              "cycle_p95_ms": 31.584945,
+              "cycles": 200,
+              "name": "image/theme/shaped-text/tick",
+              "png_p95_ms": 30.472639,
+              "redraw_p95_ms": 1.454737
+            },
+            {
+              "cycle_p95_ms": 9.700553,
+              "cycles": 200,
+              "name": "navigation",
+              "png_p95_ms": 8.276025,
+              "redraw_p95_ms": 0.166013
+            }
+          ],
+          "seconds": 60.008917897,
+          "source_commit": "24d4267a655c7bae03c5fd7888c59e9a02211dbd",
+          "status": "passed"
+        }
+--- PASS: TestPageSoak (60.51s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/page	60.520s

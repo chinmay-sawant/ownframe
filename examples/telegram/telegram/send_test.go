@@ -38,7 +38,7 @@ func TestSendFromComposer(t *testing.T) {
 		t.Fatalf("draft = %q", view.Draft)
 	}
 
-	if got := app.Page().FormValue("compose"); got != "" {
+	if got := app.Page().Form().FormValue("compose"); got != "" {
 		t.Fatalf("compose value = %q", got)
 	}
 

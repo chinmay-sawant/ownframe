@@ -14,35 +14,38 @@ func inWSL() bool {
 	if os.Getenv("WSL_DISTRO_NAME") != "" || os.Getenv("WSL_INTEROP") != "" {
 		return true
 	}
-
 	release, err := os.ReadFile("/proc/sys/kernel/osrelease")
 	if err != nil {
 		return false
 	}
-
 	name := strings.ToLower(string(release))
 
 	return strings.Contains(name, "microsoft") || strings.Contains(name, "wsl")
 }
 
 // pickWindows asks the Windows open dialog through interop and converts
-// the chosen path back to Linux. handled is false when no Windows shell
-// can run, so the Linux tools still get a chance.
-func pickWindows(ctx context.Context, title string) (string, bool, bool) {
+// the chosen path back to Linux. ErrNoDialog means no Windows shell ran,
+// so the Linux tools still get a chance.
+func pickWindows(ctx context.Context, title string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
+	}
 	shells := shellPaths()
 	if len(shells) == 0 {
 		debugf("no Windows PowerShell found")
 
-		return "", false, false
+		return "", ErrNoDialog
 	}
 
 	return pickWindowsAt(ctx, title, shells)
 }
 
 // pickWindowsAt tries each shell until one runs the dialog to a decision.
-func pickWindowsAt(ctx context.Context, title string, shells []string) (string, bool, bool) {
+func pickWindowsAt(ctx context.Context, title string, shells []string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
+	}
 	script := windowScript(title)
-
 	for _, shell := range shells {
 		out, err := exec.CommandContext(ctx, shell, "-NoProfile", "-STA", "-Command", script).Output() //nolint:gosec // reason: fixed shell binary plus static flags, script built from title only, picked path flows out and is validated (safeWindowsPath/hasDotSegment).
 		if err != nil {
@@ -50,23 +53,21 @@ func pickWindowsAt(ctx context.Context, title string, shells []string) (string, 
 
 			continue
 		}
-
 		picked := strings.TrimRight(string(out), "\r\n")
 		if picked == "" {
 			debugf("%s: canceled", shell)
 
-			return "", false, true
+			return "", ErrCanceled
 		}
-
-		linux, ok := fromWindowsPath(ctx, picked)
-		if !ok {
+		linux, err := fromWindowsPath(ctx, picked)
+		if err != nil {
 			debugf("cannot convert Windows path %q", picked)
 
-			return "", false, true
+			return "", err
 		}
 
-		return linux, true, true
+		return linux, nil
 	}
 
-	return "", false, false
+	return "", ErrNoDialog
 }

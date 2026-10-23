@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // boxByAction returns the first box whose action matches.
@@ -34,7 +33,7 @@ func clickBox(t *testing.T, app *App, b ownframe.Box) {
 
 func TestOverviewLayout(t *testing.T) {
 	app := newTestApp(t, &fakeSource{}, nil)
-	d := app.page.Display()
+	d := app.page.Probe().Display()
 
 	for _, id := range panelOrder {
 		box, ok := boxByID(app.page.Boxes(), id+"-graph")
@@ -46,7 +45,7 @@ func TestOverviewLayout(t *testing.T) {
 			t.Fatalf("%s graph too small: %vx%v", id, box.W, box.H)
 		}
 
-		if bars := frame.Fills(d, box, accent); len(bars) != graphColsMax {
+		if bars := ownframe.Fills(d, box, accent); len(bars) != graphColsMax {
 			t.Fatalf("%s graph bars = %d, want %d", id, len(bars), graphColsMax)
 		}
 	}

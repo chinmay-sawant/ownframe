@@ -8,15 +8,15 @@ import (
 )
 
 func (a *App) addRecord(ctx context.Context) error {
-	petID := a.page.FormValue("record-pet")
+	petID := a.page.Form().FormValue("record-pet")
 	if petID == "" {
 		petID = a.view.Selected.ID
 	}
 	if petID == "" && len(a.view.Pets) > 0 {
 		petID = a.view.Pets[0].ID
 	}
-	category := strings.TrimSpace(a.page.FormValue("record-category"))
-	date := a.page.FormValue("record-date")
+	category := strings.TrimSpace(a.page.Form().FormValue("record-category"))
+	date := a.page.Form().FormValue("record-date")
 	if petID == "" || category == "" {
 		a.view.Error = "Choose a pet and enter a care type."
 		return a.redraw(ctx)
@@ -25,7 +25,7 @@ func (a *App) addRecord(ctx context.Context) error {
 		a.view.Error = "Enter a valid care date."
 		return a.redraw(ctx)
 	}
-	r := model.Record{ID: id(), PetID: petID, Category: category, Date: date, Note: a.page.FormValue("record-note"), Scheduled: a.page.FormChecked("record-scheduled")}
+	r := model.Record{ID: id(), PetID: petID, Category: category, Date: date, Note: a.page.Form().FormValue("record-note"), Scheduled: a.page.Form().FormChecked("record-scheduled")}
 	if a.db == nil {
 		a.view.Error = "This session is temporary, so this record cannot be saved."
 		return a.redraw(ctx)

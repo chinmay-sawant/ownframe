@@ -4,11 +4,12 @@ import "time"
 
 // perfStage holds per-frame section timings.
 type perfStage struct {
-	update  time.Duration
-	tick    time.Duration
-	sync    time.Duration
-	draw    time.Duration
-	present time.Duration
+	update        time.Duration
+	tick          time.Duration
+	sync          time.Duration
+	draw          time.Duration
+	present       time.Duration
+	pendingUpdate time.Duration
 }
 
 // perfTimed times f into d.
@@ -26,13 +27,16 @@ func perfTimedErr(d *time.Duration, f func() error) error {
 	return err
 }
 
-// perfFrameSample records the wall frame into the ring and refreshes the
+// perfFrameSample records Update and Draw work, excluding time between calls, into
+// the ring and refreshes the
 // cached summary. It is a no-op unless the shell opted into Perf.
 func (s *shell) perfFrameSample() {
 	if !s.perf {
 		return
 	}
-	if d := s.dev.frame; d > 0 {
+	d := s.dev.stages.pendingUpdate + s.dev.stages.draw + s.dev.stages.present
+	s.dev.stages.pendingUpdate = 0
+	if d > 0 {
 		s.dev.ring.record(d)
 		avg, p95, p99, long := s.dev.ring.summary()
 		s.dev.perfAvg, s.dev.perfP95, s.dev.perfP99, s.dev.perfLong = avg, p95, p99, long

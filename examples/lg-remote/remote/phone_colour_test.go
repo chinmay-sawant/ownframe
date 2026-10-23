@@ -11,7 +11,7 @@ import (
 func buttonColour(t *testing.T, a *App, id string) color.Color {
 	t.Helper()
 	b := remoteBox(t, a, id)
-	img, err := png.Decode(bytes.NewReader(a.page.PNG()))
+	img, err := png.Decode(bytes.NewReader(a.page.Probe().PNG()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func TestPhoneHighlightsOnlySelectedButton(t *testing.T) {
 		}
 		selected := buttonColour(t, a, "volup")
 		other := buttonColour(t, a, "voldn")
-		if err := a.page.Focus(context.Background(), "volup"); err != nil {
+		if err := a.page.Form().Focus(context.Background(), "volup"); err != nil {
 			t.Fatal(err)
 		}
 		if buttonColour(t, a, "volup") == selected {

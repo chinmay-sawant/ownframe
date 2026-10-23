@@ -36,7 +36,7 @@ type planEntry struct {
 	plan *chunkPlan
 }
 
-var plans struct {
+type planCache struct {
 	mu      sync.Mutex
 	entries [2]planEntry
 	next    int
@@ -48,21 +48,21 @@ var plans struct {
 // mutated concurrently. Tick patches ops on the same loop, so never share a
 // Page across goroutines. The lock stays held across a miss build, so two
 // concurrent callers serialize instead of building twice and evicting.
-func planFor(d *layout.Display) *groupNode {
-	plans.mu.Lock()
-	defer plans.mu.Unlock()
+func (renderer *Renderer) planFor(d *layout.Display) *groupNode {
+	renderer.plans.mu.Lock()
+	defer renderer.plans.mu.Unlock()
 
-	for i := range plans.entries {
-		if plans.entries[i].d == d {
-			return plans.entries[i].root
+	for i := range renderer.plans.entries {
+		if renderer.plans.entries[i].d == d {
+			return renderer.plans.entries[i].root
 		}
 	}
 
 	root := buildPlan(d)
 
-	disposePlan(plans.entries[plans.next].root)
-	plans.entries[plans.next] = planEntry{d: d, root: root}
-	plans.next = (plans.next + 1) % len(plans.entries)
+	disposePlan(renderer.plans.entries[renderer.plans.next].root)
+	renderer.plans.entries[renderer.plans.next] = planEntry{d: d, root: root}
+	renderer.plans.next = (renderer.plans.next + 1) % len(renderer.plans.entries)
 
 	return root
 }

@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat"
-	"github.com/chinmay-sawant/ownframe/internal/safego"
 )
 
 // startNotifications serves the loopback agent API. The default "auto"
@@ -25,14 +24,14 @@ func startNotifications(ctx context.Context, addr string, inbox *cat.Inbox) (fun
 		return nil, err
 	}
 	server := &http.Server{Handler: inbox.Handler(), ReadHeaderTimeout: notifyReadHeaderTimeout, ReadTimeout: notifyReadTimeout, WriteTimeout: notifyWriteTimeout, IdleTimeout: notifyIdleTimeout, MaxHeaderBytes: maxNotifyHeaderBytes}
-	safego.Go("notify serve", func() {
+	goSafe("notify serve", func() {
 		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Print(err)
 		}
 	})
 	log.Printf("desktop cat notifications: %s://%s", listener.Addr().Network(), listener.Addr())
 	stop := func() { _ = server.Close() }
-	safego.Go("notify stop", func() { <-ctx.Done(); stop() })
+	goSafe("notify stop", func() { <-ctx.Done(); stop() })
 	return stop, nil
 }
 

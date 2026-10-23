@@ -23,7 +23,7 @@ func TestSettingsPage(t *testing.T) {
 		t.Fatal("no settings page")
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("settings fell back to the bitmap path")
 	}
 

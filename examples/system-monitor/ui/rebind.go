@@ -2,7 +2,6 @@ package ui
 
 import (
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // accent is the single accent color, #2f6fd0. Every graph bar uses it, so
@@ -30,10 +29,10 @@ type handles struct {
 // rebind reacquires operation pointers from the current display list.
 func (a *App) rebind() {
 	s := a.state
-	gen := a.page.Generation()
+	gen := a.page.Probe().Generation()
 	s.lastGen = gen
 
-	d := a.page.Display()
+	d := a.page.Probe().Display()
 	if d == nil {
 		// The page fell back to the bitmap path; there is nothing to
 		// repaint in place.
@@ -53,13 +52,13 @@ func (a *App) rebind() {
 	for _, p := range panelOrder {
 		if box, ok := boxByID(boxes, p+"-graph"); ok {
 			h.graph[p] = box
-			h.bars[p] = frame.Fills(d, box, accent)
+			h.bars[p] = ownframe.Fills(d, box, accent)
 		}
 	}
 
 	for _, id := range paintIDs() {
 		if box, ok := boxByID(boxes, id); ok {
-			h.text[id] = frame.Text(d, box)
+			h.text[id] = ownframe.Text(d, box)
 		}
 	}
 
@@ -68,5 +67,5 @@ func (a *App) rebind() {
 
 // valid reports whether the retained handles still match the page.
 func (a *App) valid() bool {
-	return a.state.h.gen == a.page.Generation()
+	return a.state.h.gen == a.page.Probe().Generation()
 }

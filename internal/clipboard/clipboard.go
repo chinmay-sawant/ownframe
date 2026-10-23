@@ -76,7 +76,10 @@ func Read() (string, error) {
 func Clear() {
 	mu.Lock()
 	mem = ""
+	only := memory
 	mu.Unlock()
 
-	clearOS()
+	if !only {
+		clearOS()
+	}
 }

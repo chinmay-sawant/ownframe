@@ -2,10 +2,12 @@ module github.com/chinmay-sawant/ownframe/examples
 
 go 1.26.10
 
-// Standalone builds (GOWORK=off) resolve ownframe and blinkless from the
-// proxy, so they need the published tags below. Inside this repo go.work
-// masks those pins and builds the local parent instead; keep both pins
-// aligned with the root go.mod after each release. No replace directives.
+// The require pins the last published ownframe tag (v0.0.2) until v0.0.3
+// exists on the proxy. The replace below points at the parent so
+// GOWORK=off in this checkout builds local code. Keep the blinkless
+// version equal to the root go.mod. A tagged examples module cannot keep
+// a relative replace; drop it when tagging examples/vX.Y.Z after the
+// library tag.
 require (
 	github.com/chinmay-sawant/blinkless v0.0.3-0.20261021155643-c1054ff46202
 	github.com/chinmay-sawant/ownframe v0.0.2
@@ -52,7 +54,7 @@ require (
 	golang.org/x/net v0.61.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
-	golang.org/x/tools v0.52.0 // indirect
+	golang.org/x/time v0.14.0 // indirect
 	modernc.org/knuth v0.5.5 // indirect
 	modernc.org/libc v1.74.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
@@ -60,3 +62,5 @@ require (
 	modernc.org/token v1.1.0 // indirect
 	star-tex.org/x/tex v0.7.1 // indirect
 )
+
+replace github.com/chinmay-sawant/ownframe => ../

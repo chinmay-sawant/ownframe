@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/examples/telegram/telegram"
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func phoneApp(t *testing.T) *telegram.App {
@@ -15,7 +14,7 @@ func phoneApp(t *testing.T) *telegram.App {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := page.PrepareMobile(ctx, app.Page()); err != nil {
+	if err := app.Page().Testing().PrepareMobile(ctx); err != nil {
 		t.Fatal(err)
 	}
 	app.SetInsets(28, 16)

@@ -9,7 +9,7 @@ import (
 
 // TestPageChangedPropsConcurrent covers RACE-1: store listeners fire on
 // arbitrary goroutines while the page loop drains changedProps metadata.
-// Run with -race: every access must hold changedPropsMu.
+// Run with -race: the binding must serialize every metadata access.
 func TestPageChangedPropsConcurrent(t *testing.T) {
 	p, err := New(Config{HTML: `<div>hi</div>`, Width: 320, Height: 200})
 	if err != nil {

@@ -31,14 +31,14 @@ func TestSettingsApplyThemeAndRestore(t *testing.T) {
 		Has:      true,
 	}})
 
-	gen := s.page.Generation()
+	gen := s.page.Probe().Generation()
 	tickAt(t, s, clock, time.Second/60)
 
 	if !s.dark {
 		t.Fatal("the saved dark theme was not applied")
 	}
 
-	if s.page.Generation() == gen {
+	if s.page.Probe().Generation() == gen {
 		t.Fatal("the theme change did not redraw")
 	}
 

@@ -26,7 +26,7 @@ inner layout follow the window.
    the drag, not the one the new size produces.
 4. `internal/page/pointer_state.go:53` redraws the whole page when the hover id
    changes, because `:hover` is matched during the cascade. There is no cheaper
-   path, and `../../PHASES.md:32` records that the engine matches the exact id
+   path, and `../PHASES.md:32` records that the engine matches the exact id
    only, with no ancestor hover.
 5. `css.Apply` recollects every `<style>` sheet and re-merges the font registry
    on every call (engine `css/css.go:146`), so a size change pays for CSS work
@@ -193,7 +193,7 @@ Every value that depends on the frame must be recalculated, not carried over.
 - [x] Verify `:hover`, `:active`, `:focus`, `:focus-visible`, and `:checked`
       still resolve after a relayout, since they ride in the cascade options.
 - [x] Land any engine gaps found above in the sibling checkout and note them in
-      `../../PHASES.md`. Out of scope for the resize worktree: the engine
+      `../PHASES.md`. Out of scope for the resize worktree: the engine
       checkout and `PHASES.md` belong to the engine and integrator agents. The
       height gap is recorded here for the engine branch.
 
@@ -252,7 +252,7 @@ says so in its guide.
       already says this for `Redraw`; check the wording still fits.
 - [x] Add the new files to the map in `../../AGENTS.md`. The integrator owns
       `AGENTS.md` (shared contract rule 8), so this is left for that pass.
-- [x] Record the shipped items in `../../PHASES.md`. The integrator owns
+- [x] Record the shipped items in `../PHASES.md`. The integrator owns
       `PHASES.md` (shared contract rule 8), so this is left for that pass.
 
 ## Risks and limits
@@ -265,7 +265,7 @@ says so in its guide.
   rewrite in `syncForm`. A missed invalidation shows as a stale page, so write
   the invalidation test before the cache.
 - Engine hover matching is exact id only, so `:hover` on a parent of the
-  hovered element still does not match (`../../PHASES.md:32`). That is engine
+  hovered element still does not match (`../PHASES.md:32`). That is engine
   work and out of scope here unless it blocks Phase 4.
 - A page with an unsupported operation keeps the bitmap path, and that path
   re-rasterizes the whole page. Phase 3 makes it lay out less often; it does

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Platform</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: #f4f1ea;
+    font-family: sans-serif;
+    color: #1c1915;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card { width: 320px; background: #ffffff; padding: 24px; text-align: center; }
+  h1 { font-size: 22px; margin: 0 0 8px; }
+  #count { font-size: 48px; margin: 8px 0; }
+  #inc {
+    display: block;
+    background: #1a56db;
+    color: #ffffff;
+    padding: 10px;
+    text-align: center;
+  }
+  #hover-box {
+    display: block;
+    margin-top: 12px;
+    padding: 8px;
+    background: #e5e7eb;
+  }
+  #hover-box:hover { background: #1a56db; color: #ffffff; }
+  label { display: block; font-size: 13px; margin-top: 12px; }
+  #agree { width: 18px; height: 18px; }
+  #agree:checked { outline: 3px solid #176b45; }
+</style>
+</head>
+<body>
+  <div id="card" class="card">
+    <h1>Platform</h1>
+    <p id="count">{{.Count}}</p>
+    <div id="inc">Click me</div>
+    <div id="hover-box">Hover me</div>
+    <label id="agree-label" for="agree">Agree</label>
+    <input id="agree" type="checkbox">
+  </div>
+</body>
+</html>

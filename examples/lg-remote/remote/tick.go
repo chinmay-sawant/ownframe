@@ -48,7 +48,7 @@ func (a *App) load() bool {
 	a.loaded = true
 	link := a.use()
 	if host := link.SavedHost(); host != "" {
-		a.page.SetFormValue("host", host)
+		a.page.Form().SetFormValue("host", host)
 	}
 
 	dirty := false
@@ -83,7 +83,7 @@ func (a *App) drain() bool {
 				a.view.Title = u.title
 			}
 			if u.host != "" {
-				a.page.SetFormValue("host", u.host)
+				a.page.Form().SetFormValue("host", u.host)
 			}
 			if u.setPower && (u.powerSeq != 0 || !a.powerIntent.pending) {
 				a.view.PowerOn = u.powerOn

@@ -15,15 +15,15 @@ func TestPickRejectsNilContext(t *testing.T) {
 		t.Fatalf("alias = %v", ErrNilContext)
 	}
 	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
-	if got, ok := Pick(nil, "Open"); ok || got != "" {
-		t.Fatalf("Pick = %q %v", got, ok)
+	if got, err := Pick(nil, "Open"); !errors.Is(err, ErrNilContext) || got != "" {
+		t.Fatalf("Pick = %q %v", got, err)
 	}
 	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
-	if got, ok := pickLinux(nil, "Open"); ok || got != "" {
-		t.Fatalf("pickLinux = %q %v", got, ok)
+	if got, err := pickLinux(nil, "Open"); !errors.Is(err, ErrNilContext) || got != "" {
+		t.Fatalf("pickLinux = %q %v", got, err)
 	}
 	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
-	if got, ok := run(nil, "/bin/true", nil); ok || got != "" {
-		t.Fatalf("run = %q %v", got, ok)
+	if got, err := run(nil, "/bin/true", nil); !errors.Is(err, ErrNilContext) || got != "" {
+		t.Fatalf("run = %q %v", got, err)
 	}
 }

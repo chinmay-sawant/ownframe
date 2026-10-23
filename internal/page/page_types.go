@@ -2,63 +2,57 @@ package page
 
 import (
 	"html/template"
-	"image"
+	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/element"
-	"github.com/chinmay-sawant/ownframe/internal/host"
-
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
+	"github.com/chinmay-sawant/ownframe/internal/page/nav"
+	"github.com/chinmay-sawant/ownframe/internal/page/scroll"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 	"github.com/chinmay-sawant/ownframe/internal/state"
 )
 
-// Page is one template and its picture; single owner. Do not share between
-// Run and Serve; Tick/Draw stay on the page loop.
+// Page is one template and its picture.
 type Page struct {
-	title           string
-	tpl             *template.Template
-	data            any
-	theme           *css.Sheet
-	themeSrc        string
-	handlers        Handlers
-	gesture         pageDrag
-	images          map[string][]byte
-	img             image.Image
-	display         *layout.Display
-	fallbackDisplay *layout.Display
-	boxes           []layout.Box
-	source          string
-	png             []byte
-	pageGeom        // size: New inits, SetSize writes; lock: page loop
-	renderTrack     // generation and last frame key; lock: page loop
-	touchCancel     uint32
+	title       string
+	tpl         *template.Template
+	data        any
+	theme       *css.Sheet
+	themeSrc    string
+	handlers    Handlers
+	gesture     pageDrag
+	images      map[string][]byte
+	draw        draw.Frame
+	boxes       []layout.Box
+	source      string
+	pageGeom    // size: New inits, SetSize writes; lock: page loop
+	renderTrack // generation and last frame key; lock: page loop
+	touchCancel uint32
 	tickSlot
-	nav             navHistory
+	nav             nav.History
 	deepLinkSchemes map[string]struct{}
-	ff              formFocusState // owner: page_form_focus*.go; lock: page loop
+	ff              formFocusState
 	picker          PickFunc
 	cache           *render.Cache
 	stats           pageStats
 	devtools        bool
 	perf            bool
+	allocAt         time.Time // last allocator sample; zero means the next Perf redraw is due
 	retainState     bool
 	lockView        bool
-	scrollbar       host.ScrollbarMode
 	mobileViewport  bool
 	allowTouchZoom  bool
-	allowScroll     bool
-	touchScroll     TouchScrollOptions
 	watch           *watchState
-	dirty           dirtyTracker
+	dirty           dirty.Tracker
 	lastPatch       DisplayPatch
-	changedProps    []string
-	stateStore      *state.Store
+	stateBinding    state.Binding
 	elements        *element.Registry
 	frameState      // deadline: loop sets, window takes; lock: atomic
-	pinZ            int
 	index           map[string]Box
 	hits            []hitItem
 	pageContent     // paint rect: box cache writes; lock: page loop
-	pageScrollState // scroll: window writes via Set*; lock: loop
+	scroll          scroll.State
 }

@@ -6,7 +6,7 @@ import "context"
 // typing in the search box never fires a shortcut. KeyDown does not draw;
 // the handler renders what it changed.
 func (a *App) onKey(ctx context.Context, key string) error {
-	if a.page.FocusedField() != "" {
+	if a.page.Edit().FocusedField() != "" {
 		return nil
 	}
 

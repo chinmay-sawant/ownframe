@@ -14,7 +14,7 @@ var errLocked = errors.New("bindhooks: name is locked")
 // onBeforeEdit vetoes an edit of name while its stored value is "locked".
 // Every other control edits normally.
 func (a *App) onBeforeEdit(_ context.Context, box ownframe.Box) error {
-	if box.ID == "name" && a.page.FormValue("name") == "locked" {
+	if box.ID == "name" && a.page.Form().FormValue("name") == "locked" {
 		return errLocked
 	}
 
@@ -34,8 +34,8 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 func (a *App) valueOf(id string) string {
 	switch id {
 	case "agree", "free", "pro":
-		return fmt.Sprintf("%t", a.page.FormChecked(id))
+		return fmt.Sprintf("%t", a.page.Form().FormChecked(id))
 	default:
-		return a.page.FormValue(id)
+		return a.page.Form().FormValue(id)
 	}
 }

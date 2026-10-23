@@ -32,7 +32,7 @@ func (a *App) movePad(ctx context.Context, dx, dy float64) error {
 		return nil
 	}
 
-	host := a.page.FormValue("host")
+	host := a.page.Form().FormValue("host")
 	a.queueMotion(host, dx, dy)
 
 	return nil

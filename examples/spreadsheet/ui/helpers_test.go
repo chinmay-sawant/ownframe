@@ -47,9 +47,9 @@ func settle(t *testing.T, app *App) {
 	t.Helper()
 
 	flush(t, app)
-	if req, ok := app.page.TakeScroll(); ok {
-		app.page.SetScrollOffset(req.X, req.Y)
-		app.page.StepScrollWindow()
+	if req, ok := app.page.Testing().TakeScroll(); ok {
+		app.page.Scroll().SetScrollOffset(req.X, req.Y)
+		app.page.Testing().StepScrollWindow()
 		flush(t, app)
 	}
 

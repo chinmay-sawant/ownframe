@@ -23,8 +23,6 @@ type imageCache struct {
 	total   int
 }
 
-var images imageCache
-
 func (c *imageCache) get(key uint64) *ebiten.Image {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

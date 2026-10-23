@@ -7,9 +7,9 @@ operation, is in [frames.md](frames.md).
 
 ## The page reports the regions
 
-`Page.TakeDirtyRects` returns the regions that changed since the previous
+`page.Probe().TakeDirtyRects` returns the regions that changed since the previous
 call, in CSS pixels, and clears them. A handler can declare the id it changed
-with `Invalidate`; for handlers that forget, the page diffs the previous
+with `page.Probe().Invalidate`; for handlers that forget, the page diffs the previous
 display list against the new one and unions the bounds of every changed
 operation. An operation removed from the list dirties its old bounds, so a
 vanishing element leaves no ghost. A change the page cannot place, such as a
@@ -25,11 +25,11 @@ that touches its neighbour repaints once. Past eight rects the page collapses
 the whole list to one bounding box. When the page hands the list over, each
 rect is padded, clamped to the content, and coalesced again. If the surviving
 rects cover more than a third of the content, the call returns one bounding
-box instead. `TakeDirty` keeps its old signature and returns that bounding
+box instead. `page.Probe().TakeDirty` keeps its old signature and returns that bounding
 box, so a caller that wants one rect still gets one.
 
 ```go
-rects, ok := page.TakeDirtyRects()
+rects, ok := page.Probe().TakeDirtyRects()
 ```
 
 `ok` false means nothing changed since the previous call. Each rect is
@@ -37,32 +37,46 @@ padded, so shadows and outlines repaint too.
 
 ## The window repaints the rects
 
-`internal/replay.DrawRect` is `Draw` for one region. It walks `Display.Order`
-the same way, skips any op whose painted box does not meet the rect, and
-paints the ops it keeps into a sub-image of the destination. The sub-image
-matters: the display list carries a page background fill that covers the
-whole canvas and therefore meets every rect. Without the clip, that one op
-would repaint the background over everything outside the dirty rect, and the
-rest of the page would vanish until its own box is dirtied again.
+The live window path is `drawReplayPartial` in `internal/window`. For a
+replayable page that can report dirty rects, it paints a 256 by 256 tile grid
+sized to the content (`internal/window/replay_tile_paint.go` calls
+`replay.DrawVisibleUnfixedZ`). Each dirty rect is filled with the page
+background and replayed into every tile it touches, and only the damaged
+regions are copied on a partial frame. The window retains the previous screen
+between frames, so a clean frame needs no page copy. A stale screen or scroll
+change copies the visible tiles again. The `bitmap fallback` badge draws on
+the screen after the tiles, so a repaint never wipes it.
+
+`internal/replay.DrawRect` is the same clip idea for tests and helpers. The
+window does not call it. It walks `Display.Order`, skips any op whose painted
+box does not meet the rect, and paints into a sub-image of the destination.
 
 ```go
 replay.DrawRect(dst, display, rect, dx, dy)
 ```
 
-Text needs care. An op carries its baseline in `Y`, so `DrawRect` tests the
+The window does not call `DrawRect`. `drawReplayPartial` in
+`internal/window/replay_partial.go` drives the tile grid; each damaged tile
+calls `replay.DrawVisibleUnfixedZ`. `DrawRect` is the test and helper path.
+
+Text needs care. An op carries its baseline in `Y`, so a rect test uses the
 line box from the font ascent above the baseline to `InkDescent` below it,
 not `Y` alone. Strokes and lines grow by half a stroke, and an op whose ink
 cannot be bounded, such as a rotated run, is always drawn.
 
-For content within the replay cache limits, the window keeps the replay path
-in a grid of 256 by 256 tiles that together cover the content. The content is
-the canvas grown to cover every box that overflows it, the same measure the
-scroll clamp uses, so a page with a fixed root stays painted when it scrolls.
-Each dirty rect is filled with the page background and replayed into every
-tile it touches, and only the damaged tiles are copied to the screen each
-frame. The screen is cleared between frames, so a clean frame copies nothing.
-The `bitmap fallback` badge draws on the screen after the tiles, so a repaint
-never wipes it.
+The content is the canvas grown to cover every box that overflows it, the
+same measure the scroll clamp uses, so a page with a fixed root stays painted
+when it scrolls.
+
+Pinned chrome stays on the tile path. `Page.Scroll().SetViewportPinZ` and
+`Page.SetScrollWindow` keep bars at the viewport ([screen.md](screen.md)).
+Tiles hold only unfixed operations (`replay.DrawVisibleUnfixedZ`). After the
+dirty-tile blit, `drawReplayPartial` paints fixed and pin-z operations in
+screen space (`replay.DrawFixed`, `replay.DrawPinnedZ`), clipped to the
+strip the devtools dock leaves visible. Telegram uses that overlay. A
+scroll copies message tiles and then paints the header and composer, so
+`hasViewportOps` does not force a full replay. The measured table below is
+the forms family; a pinned page uses the same 256 px grid.
 
 Each rect in the list gets one partial repaint against that buffer. A list
 longer than the eight-rect cap, or a rect equal to the whole content, falls
@@ -140,7 +154,7 @@ layers, and matrices that cannot be bounded.
 
 ## Oversized pages
 
-When content exceeds the cache limits, a static page with `TakeDirty` keeps one viewport image with at most 256 pixels of vertical overscan on each side. Scrolling inside that area reuses the image. Crossing its edge moves the area and repaints visible operations. Dirty changes follow the list: a single rect repaints that rect, several repaint their bounding box, and the work covers only the intersection with the cached area. A generation change without a dirty region rebuilds it. Resizing disposes the old image. The viewport path disposes the content buffers, so they are not retained together.
+When content exceeds the cache limits, a static page with `TakeDirty` keeps one viewport image with at most 256 pixels of vertical overscan on each side. Scrolling inside that area reuses the image. Crossing its edge moves the area and repaints visible operations. Dirty changes follow the list: a single rect repaints that rect, several repaint their bounding box, and the work covers only the intersection with the cached area. A generation change without a dirty region rebuilds it. Resizing disposes the old image. The viewport path disposes the content buffers, so they are not retained together. A stationary frame that only blits the viewport image can park on the desktop idle clock. A scroll, a generation change, a dirty region, a focus or size change, or a frame callback keeps the vsync loop.
 
 `DrawVisible` filters operations before replay while preserving paint order and retaining operations whose ink cannot be bounded. Ticking pages replay visible operations each frame. This still scans the operation list; row windowing reduces the list itself.
 
@@ -151,15 +165,14 @@ When content exceeds the cache limits, a static page with `TakeDirty` keeps one 
   decision is recorded in
   [the plan](../plans/v0.0.2/incremental-repaint.md). The badge stays
   visible.
-- A page with a frame callback that did not call `Page.UseFrameDirty`.
-  A tick changes operations in place and leaves no dirty rect, so
-  `Page.Ticking` keeps the full replay. `UseFrameDirty` opts that tick
-  into the partial buffer. `Invalidate` and `MarkRect` name the regions.
+- A ticker that does not implement `FrameDirty` (not a `Page`). A page
+  tick that patches ops is marked dirty by the inner screen's `Tick` and stays on the
+  tile path. A no-op tick blits the buffer. `page.Probe().UseFrameDirty` is an alias.
+  The window calls the inner screen.
 - A stretched or zoomed page. `internal/window/replay_scale.go` replays the
   whole list into a canvas-sized buffer each frame and scales it to the
   window.
-- `Page.PNG` paints from the template source on demand, so `GET /frame.png`
-  always costs a full paint.
+- `page.Probe().PNG()` paints the retained display on the first request after a redraw and caches the encoded picture. It does not use window tiles. Paint damage, including tick-only edits, invalidates the encoded picture; see [screen.md](screen.md#png-and-the-web-page).
 
 ## Measured numbers
 
@@ -199,10 +212,14 @@ The worst steady frame skips the first frame after a draw, which repaints the
 whole content once. On the same board the single union rect replayed 630 of
 631 operations on the worst cascade frame, so the list removes about 82
 percent of the worst-frame operation count. The `rotate` row takes the tick's
-retarget path: `Page.Generation()` does not move, `RedrawNS` stays the initial
+retarget path: `page.Probe().Generation()` does not move, `RedrawNS` stays the initial
 draw, and no frame after the first is full-content. The full tables and the
 command lines are in `examples/departure-board/PERFORMANCE.md`.
 
 ## Proving it with counters
 
 The PIPELINE DETAIL group of the Frame tab reports dirty ops, dirty regions, and changed ops with Perf on, and `GET /debug/state` serves the same data in web mode. The full checklist, budgets, and soak and baseline scripts live in [performance.md](performance.md).
+
+## Validate repaint behavior
+
+The software-picture comparison tests do not capture window tiles. Run `make graphics-check` for retained-window pixel checks, damage blits, scrolling, dock restoration, and replay parity. See [testing.md](testing.md) for prerequisites and platform limits.

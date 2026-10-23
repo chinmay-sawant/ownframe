@@ -19,7 +19,7 @@ func (d *demo) patchGrid(ctx context.Context) bool {
 		return true
 	}
 
-	return d.p.PatchElement(ctx, catalogGridID, edits...)
+	return d.p.PatchElement(ctx, catalogGridID, edits...) == nil
 }
 
 // stateEdits collects the class and the text every started or selected row

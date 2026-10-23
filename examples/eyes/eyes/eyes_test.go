@@ -20,7 +20,7 @@ func TestTpl(t *testing.T) {
 func TestTickBinds(t *testing.T) {
 	a, c := newT(t)
 	tk(t, a, c, time.Second/60)
-	if a.page.Display() == nil {
+	if a.page.Probe().Display() == nil {
 		t.Fatal("bitmap fallback")
 	}
 	if a.pm.left == nil || a.pm.right == nil {
@@ -54,13 +54,13 @@ func TestDevToggle(t *testing.T) {
 	if err := a.onTap(t.Context(), dev); err != nil {
 		t.Fatal(err)
 	}
-	if !a.st.dev || !a.page.DevTools() {
+	if !a.st.dev || !a.page.Testing().DevTools() {
 		t.Fatal("dev tap did not open the dock")
 	}
 	if err := a.onTap(t.Context(), dev); err != nil {
 		t.Fatal(err)
 	}
-	if a.st.dev || a.page.DevTools() {
+	if a.st.dev || a.page.Testing().DevTools() {
 		t.Fatal("dev tap did not close the dock")
 	}
 }

@@ -46,7 +46,7 @@ func New(opts Options) (*App, error) {
 	}
 
 	page.Handle(ownframe.Handlers{Click: a.onClick, Change: a.onChange, KeyDown: a.onKey})
-	page.SetWindowing(true)
+	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.Pin)
 	page.SetTick(a.Tick)
 	page.SetData(&a.view)

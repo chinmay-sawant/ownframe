@@ -26,11 +26,11 @@ func (a *App) themeName() string {
 func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 	switch box.ID {
 	case "csvpath":
-		if path := a.page.FormValue("csvpath"); path != "" {
+		if path := a.page.Form().FormValue("csvpath"); path != "" {
 			a.loadCSV(path)
 		}
 	case "csvsave":
-		a.csv.path = a.page.FormValue("csvsave")
+		a.csv.path = a.page.Form().FormValue("csvsave")
 	}
 
 	return nil

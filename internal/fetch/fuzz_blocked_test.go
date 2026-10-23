@@ -1,7 +1,9 @@
 package fetch
 
 import (
+	"errors"
 	"net"
+	"net/http"
 	"testing"
 )
 
@@ -23,12 +25,35 @@ func FuzzBlockedIP(f *testing.F) {
 }
 
 // FuzzMethodHeader feeds methods and headers to the guard (GEN-24).
+// An empty method is rewritten to GET. Any other method off the
+// allowlist, including one that contains a newline, is rejected.
 func FuzzMethodHeader(f *testing.F) {
 	for _, seed := range []string{"GET", "POST", "BREW", "", "get", "Cookie"} {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, method string) {
-		_ = checkMethodHeader(method, map[string]string{"X-Test": method})
-		_ = checkMethodHeader(method, map[string]string{method: "v"})
+		err := checkMethodHeader(method, map[string]string{"X-Test": method})
+		errKey := checkMethodHeader(method, map[string]string{method: "v"})
+		if method == "" || methodAllowed(method) {
+			if err != nil || errKey != nil {
+				t.Fatalf("method %q: header err %v, key err %v", method, err, errKey)
+			}
+			return
+		}
+		if !errors.Is(err, ErrMethod) || !errors.Is(errKey, ErrMethod) {
+			t.Fatalf("method %q: header err %v, key err %v", method, err, errKey)
+		}
 	})
+}
+
+// methodAllowed reports the methods checkMethodHeader accepts as written.
+// Empty is not a member: the guard rewrites that to GET before the switch.
+func methodAllowed(method string) bool {
+	switch method {
+	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodDelete, http.MethodHead, http.MethodOptions:
+		return true
+	default:
+		return false
+	}
 }

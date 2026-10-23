@@ -12,8 +12,8 @@ import (
 func addPatchStages(p *ownframe.Page, template, cascade, layout time.Duration) (
 	time.Duration, time.Duration, time.Duration,
 ) {
-	s := p.Stats()
-	return template + s.LastTemplate, cascade + s.LayoutTime, layout + s.DisplayListTime
+	s := p.Probe().Stats()
+	return template + s.LastTemplate, cascade + s.StyleTime, layout + s.LayoutTime
 }
 
 // comparePatchOps compares two operation slices operation by operation. The

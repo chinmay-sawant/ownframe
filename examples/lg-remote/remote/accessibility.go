@@ -11,15 +11,15 @@ func (a *App) publishAccessibility() {
 	if !a.phone {
 		return
 	}
-	x, y := a.page.ScrollOffset()
-	now := accessState{gen: a.page.Generation(), x: x, y: y}
+	x, y := a.page.Scroll().ScrollOffset()
+	now := accessState{gen: a.page.Probe().Generation(), x: x, y: y}
 	if now == a.access {
 		return
 	}
 	a.access = now
 	w, h := a.page.Size()
 	scale, ox, oy := 1.0, 0.0, 0.0
-	if a.page.ViewLocked() {
+	if a.page.Probe().ViewLocked() {
 		scale, ox, oy = a.phoneFit()
 		x, y = 0, 0
 	}
@@ -54,7 +54,7 @@ func (a *App) publishAccessibility() {
 			node.Value = a.view.SensitivityLabel
 		}
 		if node.Editable {
-			node.Value = a.page.FormValue("host")
+			node.Value = a.page.Form().FormValue("host")
 			node.Button = false
 		}
 		node.Selected = box.ID == "tab-"+a.view.Panel
@@ -67,7 +67,7 @@ func (a *App) publishAccessibility() {
 		Panel         string
 		Scrollable    bool
 		Nodes         []accessibleNode
-	}{w, h, a.view.Panel, a.page.AllowScroll() && !a.page.ViewLocked(), nodes})
+	}{w, h, a.view.Panel, a.page.Scroll().AllowScroll() && !a.page.Probe().ViewLocked(), nodes})
 	if err == nil {
 		bridge.SetAccessibility(string(data))
 	}

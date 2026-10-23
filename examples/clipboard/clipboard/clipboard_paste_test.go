@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestCopyAndCutWriteClipboard(t *testing.T) {
@@ -18,7 +18,7 @@ func TestCopyAndCutWriteClipboard(t *testing.T) {
 	}
 
 	click(t, ctx, app, "copy")
-	got, err := osclip.Read()
+	got, err := ownframe.Read()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestCopyAndCutWriteClipboard(t *testing.T) {
 	}
 
 	click(t, ctx, app, "cut")
-	got, err = osclip.Read()
+	got, err = ownframe.Read()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func TestPastePullsClipboardText(t *testing.T) {
 	ctx := context.Background()
 	app := newApp(t, ctx)
 
-	osclip.Write("first\nsecond")
+	ownframe.Write("first\nsecond")
 
 	click(t, ctx, app, "left")
 	click(t, ctx, app, "paste")

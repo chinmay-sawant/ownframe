@@ -32,7 +32,7 @@ Save writes a PNG named `snip-YYYYMMDD-HHMMSS.png` under `os.UserConfigDir()/own
 ## Copy
 
 Copy sends the cropped PNG bytes to the text clipboard through
-`internal/clipboard`, which only handles text. The bytes round-trip
+`ownframe.Write`, which only handles text. The bytes round-trip
 in memory and the tests read them back, but pasting as an image into
 another OS app is not guaranteed. In web mode there is no OS
 clipboard, so Copy reports the capture size in the status line instead

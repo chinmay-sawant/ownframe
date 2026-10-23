@@ -77,6 +77,9 @@ channel and applied on the game loop.
   still choose a private directory on shared machines.
 - `SetCrashDir` and other path APIs are trusted; the crash directory is not
   sandboxed.
+- The AT-SPI mapping must not log accessible names, descriptions, or
+  values. `internal/atspi.Summarize` prints role and path only. The live
+  bus client is not implemented; no accessibility socket is created.
 - Environment debug flags (`OWNFRAME_FILEPICK_DEBUG`, `OWNFRAME_PACE_DEBUG`)
   are dev-only and off unless explicitly set. They write to stderr and may
   include paths or command failure details, so keep them off in shipped binaries.
@@ -91,7 +94,7 @@ channel and applied on the game loop.
 
 ## Local notification endpoints
 
-`examples/desktop-cat` serves `POST /notify` on `127.0.0.1:6969` by default.
+`examples/desktop-cat` listens for `POST /notify` on a Unix socket by default (`-notify-addr` is `auto`). TCP `127.0.0.1:6969` is opt-in with `-notify-addr=127.0.0.1:6969`.
 `POST /notify` and `GET /state` require a matching `Origin` against the
 request scheme and host; a missing `Origin` returns 403, and curl callers
 send `Origin` explicitly. The handler sets `nosniff`, `X-Frame-Options: DENY`,
@@ -132,14 +135,15 @@ Go modules: CI sets `GOFLAGS=-mod=readonly` and runs `go mod verify`
 for both modules, so builds fail when the cache disagrees with `go.sum`.
 Never set `GONOSUMDB`, `GOINSECURE`, or `GOFLAGS=-insecure`; `GOPRIVATE`
 stays unset so the proxy and the checksum database verify every module.
-`GOTOOLCHAIN=local` is set in CI and both `go.mod` files carry a
-`toolchain go1.26.10` line, so the compiler never silently upgrades
-itself; bump that line on purpose.
+`GOTOOLCHAIN=local` is set in CI. Both modules declare their minimum Go
+version with the `go` directive. CI pins the installed version and rejects
+automatic toolchain downloads.
 
 Tags are immutable: proxy.golang.org caches them forever, so a bad or
 vulnerable release is fixed with a `retract` directive in `go.mod` plus a
-new tag, never by re-tagging. `v*` tags and `master` are protected and
-force-push is off.
+new tag, never by re-tagging. Branch and tag protections require operator verification;
+[`supply-chain.md`](supply-chain.md#protected-branches-and-tags) records the
+known gaps and required settings. Do not move or delete published version tags.
 
 Transitive parser surface: blinkless pulls goldmark, fpdf, star-tex,
 minify, brotli, and canvas. `go mod why -m` shows they arrive only via

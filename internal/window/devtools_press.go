@@ -31,6 +31,11 @@ func (s *shell) devOpHitText(arg int) string {
 // output. See documentation/devtools.md and security.md.
 func (s *shell) devRun(hit devHit) {
 	switch hit.act {
+	case devActMobileExpand:
+		if s.dev.mobile {
+			s.dev.mobileExpanded = !s.dev.mobileExpanded
+			s.dev.scroll = 0
+		}
 	case devActTab:
 		s.dev.tab = devTabAt(hit.arg)
 		s.dev.scroll = 0

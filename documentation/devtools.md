@@ -3,7 +3,7 @@
 The window can draw an inspector over the page. It outlines the element under
 the cursor, pins one to read its properties as JSON, outlines the display
 operations, and prints the frame numbers. The overlay is window chrome, like
-the scrollbar thumbs and the fallback badge. It never enters `Page.PNG`, the
+the scrollbar thumbs and the fallback badge. It never enters `page.Probe().PNG`, the
 display list, or the box list.
 
 ## Turning it on
@@ -14,8 +14,8 @@ the matching release is swallowed too. Pressing the key again closes the
 overlay and sends one hover for the current cursor, so a stale `:hover` does
 not stick.
 
-`Config.DevTools` starts the overlay on, and `Page.SetDevTools` and
-`Page.DevTools` read and change the flag at runtime. Use those in a browser
+`Config.DevTools` starts the overlay on, and `Page.Window().SetDevTools` and
+`Page.Window().DevTools` read and change the flag at runtime. Use those in a browser
 and on a phone: a browser may keep F12 for itself, and a phone has no
 keyboard.
 
@@ -28,7 +28,13 @@ page, err := ownframe.New(ownframe.Config{
 })
 ```
 
-## The dock
+## Mobile metrics
+
+Android and iOS hosts use a bottom metrics panel instead of the desktop side dock. It starts as a 48 dp header and keeps the page at full width. Tap the header to expand to at most 40% of the window height; drag inside the expanded panel to scroll metrics. Tap X to close it and restore the full viewport. X has its own 48 dp touch target and does not send a click to the page.
+
+Closing the panel leaves explicitly enabled perf collection running. Reopen through `Page.Window().SetDevTools(true)`. Mobile shows frame, memory, and pipeline metrics; Elements and Ops remain desktop tools. The Telegram Android demo enables perf collection in its mobile profile. Desktop profiles retain their existing behavior.
+
+## The desktop dock
 
 The panel is a full-height dock on the right edge, 340 pixels wide by
 default, drawn in the Chrome DevTools dark theme. Drag the strip on its left
@@ -64,7 +70,7 @@ pinned box when there is one and the hovered box otherwise. Alt+click
 forwards the press, the click, and the release to the page, so a control can
 still be exercised while inspecting. Closing the overlay clears the hovered
 and pinned boxes. A new generation drops either pick when its id is gone
-from `Boxes()`, and clears the operation pick.
+from `Page.Boxes()`, and clears the operation pick.
 
 The dock hit-tests its own rows, never `Page.Boxes()`. A dock click switches
 tabs, folds JSON, toggles the outlines, or picks an operation; it never
@@ -155,7 +161,7 @@ offers no list.
 
 The Ops tab is the costliest of the three: it costs milliseconds per frame to
 draw, so an fps or frame time read while the tab is open includes the dock's
-own work. The row list is cached per `Page.Generation()`, so a still page
+own work. The row list is cached per `page.Probe().Generation()`, so a still page
 rebuilds nothing and pays only to draw the rows and the outlines in view. Read
 fps and frame time on the Frame tab.
 
@@ -171,8 +177,9 @@ type Inspector interface {
 }
 ```
 
-A screen without it gets no overlay and no compile change. `Stats` is the
-snapshot the Frame tab prints. A screen that also implements
+A screen without it gets no overlay and no compile change. `Stats` on that
+interface is the snapshot the Frame tab prints. A page reads the same snapshot
+with `page.Probe().Stats`. The window calls the inner screen. A screen that also implements
 `SetDrawTime(time.Duration)` receives the window's draw time while the
 overlay is on, and `Stats().LastDraw` reports it. That hook is separate from
 `host.Inspector`, so the interface keeps its three methods.
@@ -180,7 +187,7 @@ overlay is on, and `Stats().LastDraw` reports it. That hook is separate from
 ## Web mode
 
 `GET /debug/state` returns the same data as JSON when the server is started
-with `ServeOptions{Debug: true}` or `ServeOptions{Perf: true}`: `width` and
+with `ServeOptions{InsecureAllowDebugState: true}`: `width` and
 `height`,
 `generation`, `fallback`, `boxes`, `stats`, and `ops`. `stats` is omitted
 when the screen has no inspector, and `ops` when there is no display list.
@@ -195,4 +202,4 @@ attributes, not `font-size` or `margin`. Suppressing pointer input freezes
 the page's hover and press state at their last value. A page that cannot
 shrink to the dock-free strip, because of its own minimum size, scrolls
 instead of scaling. F12 is a browser key in a wasm build, and
-`Config.DevTools` or `SetDevTools` is the cross-platform way in.
+`Config.DevTools` or `Page.Window().SetDevTools` is the cross-platform way in.

@@ -7,7 +7,7 @@ import (
 
 // paintGroup draws one buffered group: the visible members into a layer the
 // size of the group's window, then one composite with the group's mode.
-func paintGroup(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) {
+func (renderer *Renderer) paintGroup(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) {
 	rect, base, ok := groupWindow(dst, d, n, pick)
 	if !ok {
 		return
@@ -22,7 +22,7 @@ func paintGroup(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicke
 		return dx - float64(rect.Min.X), dy - float64(rect.Min.Y), ok
 	}
 
-	paintItems(layer, d, n, inner)
+	renderer.paintItems(layer, d, n, inner)
 	if n.group.Mask != nil {
 		mask := groupMaskTexture(n)
 		if mask == nil {

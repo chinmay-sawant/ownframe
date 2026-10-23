@@ -49,8 +49,10 @@ type openFileName struct {
 var procGetOpenFileName = windows.NewLazySystemDLL("comdlg32.dll").NewProc("GetOpenFileNameW")
 
 // Pick shows the common open dialog.
-// ok is false when the person canceled.
-func Pick(_ context.Context, title string) (string, bool) {
+func Pick(ctx context.Context, title string) (string, error) {
+	if err := requireCtx(ctx); err != nil {
+		return "", err
+	}
 	buf := make([]uint16, 4096)
 	ofn := openFileName{
 		StructSize: uint32(unsafe.Sizeof(openFileName{})),
@@ -58,17 +60,19 @@ func Pick(_ context.Context, title string) (string, bool) {
 		MaxFile:    uint32(len(buf)),
 		Flags:      ofnExplorer | ofnFileMustExist | ofnPathMustExist | ofnNoChangeDir,
 	}
-
 	if title != "" {
 		if t, err := syscall.UTF16PtrFromString(title); err == nil {
 			ofn.Title = t
 		}
 	}
-
 	ok, _, _ := procGetOpenFileName.Call(uintptr(unsafe.Pointer(&ofn)))
 	if ok == 0 {
-		return "", false
+		return "", ErrCanceled
+	}
+	picked := syscall.UTF16ToString(buf)
+	if picked == "" {
+		return "", ErrCanceled
 	}
 
-	return syscall.UTF16ToString(buf), true
+	return picked, nil
 }

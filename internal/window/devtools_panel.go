@@ -8,6 +8,10 @@ import (
 // drawDevPanel paints the dock: the background, the header, the tab strip,
 // the content, the scrollbar, and the footer hint.
 func (s *shell) drawDevPanel(screen *ebiten.Image) {
+	if s.dev.mobile {
+		s.drawDevMobile(screen)
+		return
+	}
 	r := s.dev.panel
 	if r.W <= 0 || r.H <= 0 {
 		return

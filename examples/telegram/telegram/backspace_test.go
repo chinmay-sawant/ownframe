@@ -22,7 +22,7 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	app.Page().SetScrollOffset(0, 120)
+	app.Page().Scroll().SetScrollOffset(0, 120)
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -31,15 +31,15 @@ func TestComposerBackspace(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := app.Page().Backspace(ctx); err != nil {
+	if err := app.Page().Edit().Backspace(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().FormValue("compose"); got != "hello worl" {
+	if got := app.Page().Form().FormValue("compose"); got != "hello worl" {
 		t.Fatalf("value = %q", got)
 	}
 
-	_, caret, before, after, ok := app.Page().IMEContext()
+	_, caret, before, after, ok := app.Page().Testing().IMEContext()
 	if !ok || caret != 10 || before != "hello worl" || after != "" {
 		t.Fatalf("guard ok=%v caret=%d before=%q after=%q", ok, caret, before, after)
 	}
@@ -47,15 +47,15 @@ func TestComposerBackspace(t *testing.T) {
 	// The IME commit for a backspace after "hello": the window hands the
 	// page prefix+text+suffix, and the caret belongs after the prefix, not
 	// at the end of the field.
-	if err := app.Page().IMEReplace(ctx, 0, 10, "hell worl", 4); err != nil {
+	if err := app.Page().Testing().IMEReplace(ctx, 0, 10, "hell worl", 4); err != nil {
 		t.Fatal(err)
 	}
 
-	if got := app.Page().FormValue("compose"); got != "hell worl" {
+	if got := app.Page().Form().FormValue("compose"); got != "hell worl" {
 		t.Fatalf("ime value = %q", got)
 	}
 
-	_, caret, before, after, ok = app.Page().IMEContext()
+	_, caret, before, after, ok = app.Page().Testing().IMEContext()
 	if !ok || caret != 4 || before != "hell" || after != " worl" {
 		t.Fatalf("ime ok=%v caret=%d before=%q after=%q", ok, caret, before, after)
 	}

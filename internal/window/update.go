@@ -35,9 +35,6 @@ var stages = []updateStage{
 		if err := s.timedErr(&s.dev.stages.sync, s.syncImage); err != nil {
 			return err
 		}
-		if s.perf {
-			s.dev.stages.update = s.dev.stages.tick + s.dev.stages.sync
-		}
 		return nil
 	}},
 	{"scrollReq", void((*shell).applyScrollRequest)},
@@ -48,6 +45,15 @@ var stages = []updateStage{
 }
 
 func (s *shell) Update() error {
+	if s.perf {
+		start := time.Now()
+		defer func() {
+			elapsed := time.Since(start)
+			s.dev.stages.update = elapsed
+			s.dev.stages.pendingUpdate += elapsed
+		}()
+	}
+
 	if s.app == nil {
 		return errNilApp
 	}

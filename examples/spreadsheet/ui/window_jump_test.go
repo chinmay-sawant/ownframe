@@ -21,13 +21,13 @@ func TestKeyboardJumpToOffscreenCell(t *testing.T) {
 		t.Fatalf("active = %d,%d", s.ActiveR, s.ActiveC)
 	}
 
-	req, ok := app.page.TakeScroll()
+	req, ok := app.page.Testing().TakeScroll()
 	if !ok || !req.Absolute {
 		t.Fatal("no scroll request for the offscreen cell")
 	}
 
-	app.page.SetScrollOffset(req.X, req.Y)
-	app.page.StepScrollWindow()
+	app.page.Scroll().SetScrollOffset(req.X, req.Y)
+	app.page.Testing().StepScrollWindow()
 	flush(t, app)
 	if err := app.Redraw(context.Background()); err != nil {
 		t.Fatal(err)

@@ -20,9 +20,7 @@ func TestPatchElementRefreshesTheAccessibilityTree(t *testing.T) {
 	}
 
 	text := "new"
-	if !p.PatchElement(ctx, "p", ElementEdit{Text: &text}) {
-		t.Fatal("the patch was refused")
-	}
+	mustPatch(t, p.PatchElement(ctx, "p", ElementEdit{Text: &text}))
 
 	tree, err = p.AccessibilityTree()
 	if err != nil {
@@ -47,11 +45,9 @@ func TestPatchElementClearsTheCachedPicture(t *testing.T) {
 		t.Fatal("the page has no picture")
 	}
 
-	if !p.PatchElement(ctx, "p", ElementEdit{Attribute: "style",
-		Value: "width:40px;height:20px;background:#445566"}) {
-		t.Fatal("the patch was refused")
-	}
-	if p.png != nil {
+	mustPatch(t, p.PatchElement(ctx, "p", ElementEdit{Attribute: "style",
+		Value: "width:40px;height:20px;background:#445566"}))
+	if p.draw.PNG != nil {
 		t.Fatal("the patch kept the cached picture")
 	}
 }

@@ -14,13 +14,13 @@ _ = page.HTML()
 
 `Back` on the first entry, and `Forward` past the last entry, return `ErrNoHistory`. `Load` of blank HTML returns `ErrEmptyHTML`. A template that does not parse is returned as the parse error and does not move history.
 
-`Route` maps a `data-action` value to HTML for `Click` to load. It returns nothing and does not parse or draw. An empty action is ignored. Routing the same action again replaces the HTML.
+`Route` maps a `data-action` value to HTML for `page.Click` to load. It returns nothing and does not parse or draw. An empty action is ignored. Routing the same action again replaces the HTML.
 
 ```go
 page.Route("inbox", `<h1 id="in">Inbox</h1>`)
 ```
 
-`Click` hit-tests the last picture and draws the page again; an error returns before the redraw. A box without an id falls back to the innermost id-bearing element under the point, so a click on a child icon reaches its control. A hit box with a non-empty action and a registered route calls `Load` with that HTML and does not call the click handler. An action with no route falls through to the click handler. A form control activates and never follows a route. The layout box has no `href` field, so an `<a href>` does not navigate. Put the route name in `data-action`.
+`page.Click` hit-tests the last picture and draws the page again; an error returns before the redraw. A box without an id falls back to the innermost id-bearing element under the point, so a click on a child icon reaches its control. A hit box with a non-empty action and a registered route calls `Load` with that HTML and does not call the click handler. An action with no route falls through to the click handler. A form control activates and never follows a route. The layout box has no `href` field, so an `<a href>` does not navigate. Put the route name in `data-action`.
 
 `SetData` still applies to whichever template is current. `Load` does not change the data. `Load`, `Back`, and `Forward` reset form state, because the current document changed ([forms.md](forms.md)). The theme is untouched, and the window keeps the scroll offset, pulled back inside a page that got shorter.
 
@@ -29,8 +29,9 @@ The [history example](../examples/history) drives `Load`, `Back`, `Forward`, `HT
 ## Receive app deep links
 
 Register each scheme your app accepts in `Config.DeepLinkSchemes`. Add a
-`Handlers.DeepLink` callback, then pass OS-delivered URLs to
-`Page.DispatchDeepLink` on the page's owning event loop.
+`Handlers.DeepLink` callback. The test facade can dispatch URLs on the page's
+owning loop, but direct OS delivery has no public production entry point yet.
+Do not call the Testing facade from application code.
 
 ```go
 import (
@@ -62,7 +63,7 @@ Set at least one scheme to accept URLs. An empty list rejects every URL.
 `New` rejects malformed schemes and blocks `javascript`, `data`, `vbscript`,
 `file`, `blob`, and `about`. Dispatch rejects relative URLs and schemes outside
 the allowlist. It lowercases the scheme before the callback runs.
-`DispatchDeepLink` does not draw. The callback can call `Load`, or update app
+Dispatch through the test helper does not draw. The callback can call `Load`, or update app
 data and call `Redraw`.
 
 Ownframe does not register URL protocols with the operating system. The app

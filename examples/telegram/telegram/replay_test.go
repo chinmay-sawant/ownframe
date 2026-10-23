@@ -16,7 +16,7 @@ func replay(t *testing.T, ctx context.Context, app *telegram.App) {
 		t.Fatal(err)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("page fell back to the bitmap")
 	}
 }
@@ -46,7 +46,7 @@ func TestThreadsStayReplayable(t *testing.T) {
 	t.Run("design-scrolled", func(t *testing.T) {
 		app := newApp(t, ctx)
 		click(t, ctx, app, "", "open-design")
-		app.Page().SetScrollOffset(0, 600)
+		app.Page().Scroll().SetScrollOffset(0, 600)
 		replay(t, ctx, app)
 	})
 

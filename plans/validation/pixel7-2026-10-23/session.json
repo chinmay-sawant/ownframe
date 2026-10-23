@@ -1,0 +1,25 @@
+{
+  "source_commit": "69626f88866e8254b1046d583d423c28bc042e1a",
+  "apk_sha256": "cf3ebe8b53b594d143529c78b290dc1ee3fe1c3b0d0a35dbef4aa2704450a221",
+  "device": "Pixel 7",
+  "android": "17",
+  "state": "captured-awaiting-visual-review",
+  "limits": "Pixel 7 coordinates; synthetic committed characters, not complex IME composition; screenshot review required",
+  "same_process_resume": true,
+  "keyboard_gap_check": "passed: lower thread edge is not blank white",
+  "rotation_restored": true,
+  "visual_review": {
+    "result": "passed for observed session",
+    "captures_reviewed": [
+      "01-collapsed",
+      "02-expanded",
+      "03-closed",
+      "04-keyboard-qa",
+      "05-rotation-1",
+      "05-rotation-3",
+      "05-rotation-0",
+      "06-resumed"
+    ],
+    "observations": "Devtools expands and X closes it; qa remains committed; keyboard shown in portrait and first landscape, dismissed after opposite rotation; portrait wallpaper reaches composer after rotation and same-process resume."
+  }
+}

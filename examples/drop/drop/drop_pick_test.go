@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/examples/drop/drop"
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 func TestPickedPathPrints(t *testing.T) {
@@ -18,8 +17,8 @@ func TestPickedPathPrints(t *testing.T) {
 
 	path := filepath.Join(t.TempDir(), "picked.txt")
 
-	page.InstallPicker(app.Page(), func(context.Context, string) (string, bool) {
-		return path, true
+	app.Page().Testing().SetPicker(func(context.Context, string) (string, error) {
+		return path, nil
 	})
 
 	click(t, ctx, app, "pick")

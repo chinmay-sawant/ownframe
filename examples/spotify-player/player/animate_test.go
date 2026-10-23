@@ -5,18 +5,18 @@ import (
 	"math"
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe/internal/frame"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // eqHeights returns the equalizer bar heights in display units.
 func eqHeights(app *App) []float64 {
-	d := app.Page().Display()
+	d := app.Page().Probe().Display()
 	box, ok := findBox(app.Boxes(), "eq")
 	if !ok {
 		return nil
 	}
 
-	bars := frame.Fills(d, box, accent)
+	bars := ownframe.Fills(d, box, accent)
 	out := make([]float64, len(bars))
 
 	for i, op := range bars {
@@ -41,18 +41,18 @@ func TestTickAnimatesDisplay(t *testing.T) {
 		t.Fatalf("Tick: %v", err)
 	}
 
-	d := app.Page().Display()
+	d := app.Page().Probe().Display()
 	seek, ok := findBox(app.Boxes(), "seek")
 	if !ok {
 		t.Fatal("no seek box")
 	}
 
-	fill := frame.Fill(d, seek, accent)
+	fill := ownframe.Fill(d, seek, accent)
 	if fill == nil || fill.W <= 0 {
 		t.Fatalf("seek fill = %+v", fill)
 	}
 
-	_, _, w, _ := frame.BoxUnits(d, seek)
+	_, _, w, _ := ownframe.BoxUnits(d, seek)
 	if want := w / 2; math.Abs(fill.W-want) > 0.01 {
 		t.Fatalf("fill.W = %v want %v", fill.W, want)
 	}
@@ -62,7 +62,7 @@ func TestTickAnimatesDisplay(t *testing.T) {
 		t.Fatal("no elapsed box")
 	}
 
-	if op := frame.Text(d, elapsed); op == nil || op.Text != formatSeconds(int(voice.pos.Seconds())) {
+	if op := ownframe.Text(d, elapsed); op == nil || op.Text != formatSeconds(int(voice.pos.Seconds())) {
 		t.Fatalf("elapsed = %+v", op)
 	}
 

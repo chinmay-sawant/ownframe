@@ -1,40 +1,42 @@
 package state
 
-import "reflect"
+// listener identity belongs to the registration, not a closure's code address.
+type listener struct{ fn func(Change) }
 
 // Deprecated: use AddListener.
 func (s *Store) OnChange(fn func(Change)) {
 	s.AddListener(fn)
 }
 
-// AddListener registers a change listener.
-func (s *Store) AddListener(fn func(Change)) {
+// AddListener registers fn and returns an idempotent cancellation function.
+// Cancellation removes future notifications. A callback already copied by a
+// dispatch may finish; listeners run outside the store lock and may reenter it.
+func (s *Store) AddListener(fn func(Change)) (cancel func()) {
 	if s == nil || fn == nil {
-		return
+		return func() {}
 	}
+	entry := &listener{fn: fn}
 	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.listeners = append(s.listeners, fn)
-}
-
-// Deprecated: use AddListener.
-func (s *Store) Subscribe(fn func(Change)) { s.AddListener(fn) }
-
-// RemoveListener removes a previously registered listener.
-func (s *Store) RemoveListener(fn func(Change)) bool {
-	if s == nil || fn == nil {
-		return false
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	for i, l := range s.listeners {
-		if fnPtrEqual(l, fn) {
-			s.listeners = append(s.listeners[:i], s.listeners[i+1:]...)
-			return true
+	s.listeners = append(s.listeners, entry)
+	s.mu.Unlock()
+	return func() {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		for i, current := range s.listeners {
+			if current != entry {
+				continue
+			}
+			copy(s.listeners[i:], s.listeners[i+1:])
+			s.listeners[len(s.listeners)-1] = nil
+			s.listeners = s.listeners[:len(s.listeners)-1]
+			entry.fn = nil
+			return
 		}
 	}
-	return false
 }
+
+// Deprecated: use AddListener and retain its cancellation function.
+func (s *Store) Subscribe(fn func(Change)) { s.AddListener(fn) }
 
 // Listeners returns a copy of registered listeners.
 func (s *Store) Listeners() []func(Change) {
@@ -43,9 +45,7 @@ func (s *Store) Listeners() []func(Change) {
 	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	out := make([]func(Change), len(s.listeners))
-	copy(out, s.listeners)
-	return out
+	return s.listenersLocked()
 }
 
 // OnFieldChange registers a listener that only fires for path and its children.
@@ -60,8 +60,13 @@ func (s *Store) OnFieldChange(path string, fn func(Change)) {
 // Deprecated: use OnFieldChange.
 func (s *Store) BindField(path string, fn func(Change)) { s.OnFieldChange(path, fn) }
 
-func fnPtrEqual(a, b func(Change)) bool {
-	return reflect.ValueOf(a).Pointer() == reflect.ValueOf(b).Pointer()
+// listenersLocked copies callbacks while the caller holds s.mu.
+func (s *Store) listenersLocked() []func(Change) {
+	out := make([]func(Change), len(s.listeners))
+	for i, entry := range s.listeners {
+		out[i] = entry.fn
+	}
+	return out
 }
 
 func hasPrefixPath(path, prefix string) bool {

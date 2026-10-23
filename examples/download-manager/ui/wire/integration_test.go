@@ -53,7 +53,7 @@ func TestEndToEndDummy(t *testing.T) {
 		t.Fatalf("Redraw: %v", err)
 	}
 
-	app.Page().SetFormValue("url", "https://example.invalid/manual.bin")
+	app.Page().Form().SetFormValue("url", "https://example.invalid/manual.bin")
 	clickVisible(t, app, "add")
 	waitSeen(t, app, "https://example.invalid/manual.bin", 3*time.Second)
 

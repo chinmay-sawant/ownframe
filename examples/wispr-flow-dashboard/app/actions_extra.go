@@ -1,8 +1,6 @@
 package app
 
-import (
-	osclip "github.com/chinmay-sawant/ownframe/internal/clipboard"
-)
+import "github.com/chinmay-sawant/ownframe"
 
 // inviteURL is the shareable link the invite page copies.
 const inviteURL = "https://wisprflow.ai/invite/chinmay"
@@ -29,7 +27,7 @@ var extraNotes = map[string]string{
 // dispatchExtra runs page controls that do not switch pages or tabs.
 func (a *App) dispatchExtra(action string) {
 	if action == "inv-copy" {
-		osclip.Write(inviteURL)
+		ownframe.Write(inviteURL)
 		a.view.Note = "Invite link copied"
 
 		return

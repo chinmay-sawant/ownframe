@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // fillAt returns the fill laid out at the element box.
@@ -21,7 +20,7 @@ func fillAt(d *ownframe.Display, bx []ownframe.Box, id string) *ownframe.Display
 	if !ok {
 		return nil
 	}
-	x, y, w, h := frame.BoxUnits(d, b)
+	x, y, w, h := ownframe.BoxUnits(d, b)
 	for i := range d.Ops {
 		op := &d.Ops[i]
 		if op.Kind != ownframe.DisplayOpFillRect {
@@ -52,7 +51,7 @@ func textOpsAt(d *ownframe.Display, bx []ownframe.Box, id string) []*ownframe.Di
 		if v.ID != id {
 			continue
 		}
-		x, y, w, h := frame.BoxUnits(d, v)
+		x, y, w, h := ownframe.BoxUnits(d, v)
 		var ops []*ownframe.DisplayOp
 		for i := range d.Ops {
 			op := &d.Ops[i]

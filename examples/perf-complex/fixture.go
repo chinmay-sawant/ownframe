@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
 //go:embed layout.html
@@ -33,7 +33,7 @@ const (
 	resizeAlt         = 2
 )
 
-func fixture(window bool) (*page.Page, view, error) {
+func fixture(window bool) (*ownframe.Page, view, error) {
 	v := view{Nav: []string{"Overview", "Services", "Regions", "Deployments", "Incidents", "Capacity"}}
 	count := fixtureRows
 	if window {
@@ -43,20 +43,20 @@ func fixture(window bool) (*page.Page, view, error) {
 	for i := 0; i < count; i++ {
 		v.Rows = append(v.Rows, row{i, i % 8, fmt.Sprintf("service-%04d", i)})
 	}
-	p, err := page.New(page.Config{HTML: source, Width: fixtureWidth, Height: fixtureHeight, Perf: true})
+	p, err := ownframe.New(ownframe.Config{HTML: source, Width: fixtureWidth, Height: fixtureHeight, Perf: true})
 	if err == nil {
 		p.SetData(v)
 	}
 	return p, v, err
 }
 
-func redraw(p *page.Page) error {
+func redraw(p *ownframe.Page) error {
 	if err := p.Redraw(context.Background()); err != nil {
 		return err
 	}
-	if p.Display() == nil {
+	if p.Probe().Display() == nil {
 		return fmt.Errorf("fixture triggered raster fallback")
 	}
-	p.TakeDirty()
+	p.Probe().TakeDirty()
 	return nil
 }

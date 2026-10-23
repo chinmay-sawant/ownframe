@@ -12,9 +12,9 @@ func TestSecondAnimationRebindsFirstAcrossRedraw(t *testing.T) {
 	startCatalog(t, p, d, "animation")
 	first := d.samples[catalogSampleKey("animation")]
 	origin := first.origin
-	gen := p.Generation()
+	gen := p.Probe().Generation()
 	startCatalog(t, p, d, "-webkit-animation")
-	if p.Generation() <= gen {
+	if p.Probe().Generation() <= gen {
 		t.Fatal("second click did not redraw")
 	}
 	if err := d.tick(context.Background()); err != nil {
@@ -23,7 +23,7 @@ func TestSecondAnimationRebindsFirstAcrossRedraw(t *testing.T) {
 	if !first.origin.Equal(origin) {
 		t.Fatal("first sample origin changed")
 	}
-	if d.gen != p.Generation() || !planInDisplay(p.Display(), first.plan) {
+	if d.gen != p.Probe().Generation() || !planInDisplay(p.Probe().Display(), first.plan) {
 		t.Fatal("first sample was not rebound to the current display")
 	}
 	first.plan.step(first.plan.start.Add(first.plan.delay + first.plan.duration/2))

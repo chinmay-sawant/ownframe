@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // benchmarkElementPatchCardClass measures the element patch of the class
@@ -22,7 +21,7 @@ func benchmarkElementPatchCardClass(b *testing.B) {
 		if i%2 == 0 {
 			class = card.cardOn
 		}
-		if p.PatchElement(ctx, card.id, page.ElementEdit{Attribute: "class", Value: class}) {
+		if p.PatchElement(ctx, card.id, ownframe.ElementEdit{Attribute: "class", Value: class}) == nil {
 			applied++
 		}
 	}
@@ -56,6 +55,6 @@ func patchCostStateSpan(ctx context.Context, p *ownframe.Page, card patchCostCar
 		class, text = card.spanOn, "Started / selected"
 	}
 	return p.PatchElement(ctx, card.state,
-		page.ElementEdit{Attribute: "class", Value: class},
-		page.ElementEdit{Text: &text})
+		ownframe.ElementEdit{Attribute: "class", Value: class},
+		ownframe.ElementEdit{Text: &text}) == nil
 }

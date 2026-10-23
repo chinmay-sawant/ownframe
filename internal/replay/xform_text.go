@@ -11,8 +11,8 @@ import (
 // baseline origin maps through the matrix, and the run's own geometry stays
 // in text space, so a rotation tilts the glyphs instead of stair-stepping
 // them. Letter spacing advances in text space, as in the direct painter.
-func drawXformText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
-	face := textFace(op)
+func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+	face := renderer.textFace(op)
 	if face == nil || op.Text == "" {
 		return
 	}
@@ -22,7 +22,7 @@ func drawXformText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	shiftLocal(&geom, 0, -face.Metrics().HAscent)
 
 	if op.LetterSpacing == 0 {
-		drawXformRun(dst, content, face, geom, op)
+		renderer.drawXformRun(dst, content, face, geom, op)
 
 		return
 	}
@@ -33,7 +33,7 @@ func drawXformText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		glyph := string(r)
 		at := geom
 		shiftLocal(&at, pen, 0)
-		drawXformRun(dst, glyph, face, at, op)
+		renderer.drawXformRun(dst, glyph, face, at, op)
 
 		width, _ := text.Measure(glyph, face, 0)
 		pen += width + op.LetterSpacing*pxPerPt
@@ -42,7 +42,7 @@ func drawXformText(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 
 // drawXformRun draws one string at the text origin of geom. Fake bold strikes
 // the string twice one local pixel apart, as the direct painter does.
-func drawXformRun(dst *ebiten.Image, content string, face *text.GoTextFace, geom ebiten.GeoM, op *layout.DisplayOp) {
+func (renderer *Renderer) drawXformRun(dst *ebiten.Image, content string, face *text.GoTextFace, geom ebiten.GeoM, op *layout.DisplayOp) {
 	options := &text.DrawOptions{}
 	options.GeoM = geom
 	options.ColorScale.ScaleWithColor(rgba(op))

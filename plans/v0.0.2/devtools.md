@@ -240,7 +240,7 @@ and two calls around a click show the generation difference.
       pauses hover and click, and Alt+click forwards.
 - [x] `documentation/web.md`: the `/debug/state` route.
 - [x] Add the new files to the map in `../../AGENTS.md`, and record what
-      shipped in `../../PHASES.md`.
+      shipped in `../PHASES.md`.
 
 ## Risks and limits
 
@@ -255,7 +255,7 @@ and two calls around a click show the generation difference.
 - There are no computed styles to show. The engine styles a document
   internally and publishes no per-element reader, so the picker shows
   geometry and attributes, not `font-size` or `margin`. A computed-style call
-  for one element id is the follow-up; record it in `../../PHASES.md` as
+  for one element id is the follow-up; record it in `../PHASES.md` as
   engine work, not here.
 - The panel uses `basicfont.Face7x13`, not the page's fonts. It is chrome and
   should not depend on the page it inspects.

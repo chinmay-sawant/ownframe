@@ -2,12 +2,9 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/host"
-	"github.com/chinmay-sawant/ownframe/internal/previewwindow"
 )
 
 func BenchmarkPointerCycleAll43(b *testing.B) {
@@ -18,26 +15,24 @@ func BenchmarkPointerCycleAll43NoBatch(b *testing.B) {
 	benchCycle(b, false)
 }
 
-func benchCycle(b *testing.B, batch bool) {
+func benchCycle(b *testing.B, useBatch bool) {
 	b.Helper()
 
 	ctx := context.Background()
 	v := &view{Started: map[string]bool{}}
-	p, err := previewwindow.New(ctx, previewwindow.Config{
-		FixtureDir: filepath.Join("testdata", "css-preview"),
-		Data:       v, Width: 960, Height: 1000})
+	p, err := openCatalog(ctx, catalogOpen{Data: v, Width: 960, Height: 1000})
 	if err != nil {
 		b.Fatal(err)
 	}
 	v.Catalog = catalogRows(nil)
 	v.Rows = v.Catalog
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		b.Fatal(err)
 	}
 	v.Catalog = catalogRows(p)
 	v.Rows = v.Catalog
 	v.Readout = describe(p)
-	if err := previewwindow.Redraw(ctx, p, v); err != nil {
+	if err := redrawCatalog(ctx, p, v); err != nil {
 		b.Fatal(err)
 	}
 	d := newDemo(p, v)
@@ -60,23 +55,23 @@ func benchCycle(b *testing.B, batch bool) {
 				b.Fatalf("missing %s", row.Button)
 			}
 			x, y := box.X+box.W/2, box.Y+box.H/2
-			if err := p.Hover(ctx, x, y); err != nil {
+			if err := p.Edit().Hover(ctx, x, y); err != nil {
 				b.Fatal(err)
 			}
 			run := func() error {
-				if err := p.Press(ctx, x, y); err != nil {
+				if err := p.Edit().Press(ctx, x, y); err != nil {
 					return err
 				}
-				if err := p.SelectAt(ctx, x, y); err != nil {
+				if err := p.Testing().SelectAt(ctx, x, y); err != nil {
 					return err
 				}
 				if err := p.Click(ctx, x, y); err != nil {
 					return err
 				}
-				return p.Release(ctx)
+				return p.Edit().Release(ctx)
 			}
-			if batch {
-				err = host.Batch(ctx, p, run)
+			if useBatch {
+				err = redrawBatch(ctx, p, run)
 			} else {
 				err = run()
 			}

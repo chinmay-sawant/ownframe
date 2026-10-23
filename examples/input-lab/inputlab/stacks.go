@@ -3,8 +3,8 @@ package inputlab
 // snapshotClip reads both clipboard fields.
 func (a *App) snapshotClip() csnap {
 	return csnap{
-		Left:  a.page.FormValue("c-left"),
-		Right: a.page.FormValue("c-right"),
+		Left:  a.page.Form().FormValue("c-left"),
+		Right: a.page.Form().FormValue("c-right"),
 	}
 }
 
@@ -22,15 +22,15 @@ func (a *App) pushClip() {
 }
 
 func (a *App) restoreClip(s csnap) {
-	a.page.SetFormValue("c-left", s.Left)
-	a.page.SetFormValue("c-right", s.Right)
+	a.page.Form().SetFormValue("c-left", s.Left)
+	a.page.Form().SetFormValue("c-right", s.Right)
 }
 
 // snapshotLogin reads both sign-in fields.
 func (a *App) snapshotLogin() lsnap {
 	return lsnap{
-		Email: a.page.FormValue("si-email"),
-		Pass:  a.page.FormValue("si-password"),
+		Email: a.page.Form().FormValue("si-email"),
+		Pass:  a.page.Form().FormValue("si-password"),
 	}
 }
 
@@ -48,8 +48,8 @@ func (a *App) pushLogin() {
 }
 
 func (a *App) restoreLogin(s lsnap) {
-	a.page.SetFormValue("si-email", s.Email)
-	a.page.SetFormValue("si-password", s.Pass)
+	a.page.Form().SetFormValue("si-email", s.Email)
+	a.page.Form().SetFormValue("si-password", s.Pass)
 }
 
 func (a *App) undoLogin() error {

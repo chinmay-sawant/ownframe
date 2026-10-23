@@ -9,14 +9,14 @@ import (
 
 // paintChunked replays display in paint order with element runs served from
 // the chunk cache. It falls back to the direct walk when no plan is cached.
-func paintChunked(dst *ebiten.Image, d *layout.Display, pick opPicker) {
+func (renderer *Renderer) paintChunked(dst *ebiten.Image, d *layout.Display, pick opPicker) {
 	if dst == nil || d == nil {
 		return
 	}
 
-	p := chunkPlanFor(d)
+	p := renderer.chunkPlanFor(d)
 	if p == nil {
-		paintDisplay(dst, d, pick)
+		renderer.paintDisplay(dst, d, pick)
 
 		return
 	}
@@ -26,13 +26,13 @@ func paintChunked(dst *ebiten.Image, d *layout.Display, pick opPicker) {
 
 		switch {
 		case it.group != nil:
-			paintGroup(dst, d, it.group, pick)
+			renderer.paintGroup(dst, d, it.group, pick)
 		case it.run != nil:
-			paintRun(dst, d, p, it.run, pick)
+			renderer.paintRun(dst, d, p, it.run, pick)
 		case it.op != nil:
 			if dx, dy, ok := pick(it.op); ok {
 				countOp()
-				drawOp(dst, it.op, dx, dy)
+				renderer.drawOp(dst, it.op, dx, dy)
 			}
 		}
 	}
@@ -42,21 +42,21 @@ func paintChunked(dst *ebiten.Image, d *layout.Display, pick opPicker) {
 // translation the picked members share. A mixed translation, a fractional
 // one, or a translucent member keeps the per-op path: an image blit can only
 // copy whole pixels, and a translucent op cannot promise byte parity.
-func paintRun(dst *ebiten.Image, d *layout.Display, p *chunkPlan, c *chunkRun, pick opPicker) {
+func (renderer *Renderer) paintRun(dst *ebiten.Image, d *layout.Display, p *chunkPlan, c *chunkRun, pick opPicker) {
 	tx, ty, picked, shared := pickRun(c, pick)
 	if !picked {
 		return
 	}
 
 	if !shared || tx != math.Trunc(tx) || ty != math.Trunc(ty) || !runOpaque(c) {
-		drawRunDirect(dst, c, pick)
+		renderer.drawRunDirect(dst, c, pick)
 
 		return
 	}
 
-	e := chunkRaster(d, p, c)
+	e := renderer.chunkRaster(d, p, c)
 	if e == nil {
-		drawRunDirect(dst, c, pick)
+		renderer.drawRunDirect(dst, c, pick)
 
 		return
 	}

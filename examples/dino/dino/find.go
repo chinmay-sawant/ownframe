@@ -4,7 +4,6 @@ import (
 	"math"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/frame"
 )
 
 // fillAt returns the fill laid out exactly at the element's box, so a part
@@ -15,7 +14,7 @@ func fillAt(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.Disp
 		return nil
 	}
 
-	x, y, w, h := frame.BoxUnits(d, box)
+	x, y, w, h := ownframe.BoxUnits(d, box)
 
 	for i := range d.Ops {
 		op := &d.Ops[i]
@@ -38,7 +37,7 @@ func textAt(d *ownframe.Display, boxes []ownframe.Box, id string) *ownframe.Disp
 		return nil
 	}
 
-	return frame.Text(d, box)
+	return ownframe.Text(d, box)
 }
 
 // boxByID finds one hit-test box by id.

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 type rowPaintCache struct {
@@ -20,13 +19,13 @@ func paintPosition(x, y float64) [2]int64 {
 // coordScale fixes op coordinates to integers for the paint-position keys.
 const coordScale = 1000
 
-func (c *rowPaintCache) bind(p *page.Page) {
-	if c.generation == p.Generation() {
+func (c *rowPaintCache) bind(p *ownframe.Page) {
+	if c.generation == p.Probe().Generation() {
 		return
 	}
-	c.generation = p.Generation()
+	c.generation = p.Probe().Generation()
 	c.rows = map[string]*ownframe.DisplayOp{}
-	d := p.Display()
+	d := p.Probe().Display()
 	positions := map[[2]int64]string{}
 	for _, b := range p.Boxes() {
 		if strings.HasPrefix(b.ID, "row-") {

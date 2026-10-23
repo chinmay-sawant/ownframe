@@ -1,12 +1,10 @@
 package page
 
-// afterRedrawState holds the after-redraw hook and the guards around it.
-type afterRedrawState struct {
-	fn     func()
-	busy   bool
-	ask    bool
-	served bool
-}
+import (
+	"context"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
+)
 
 // SetAfterRedraw registers fn to run after a redraw commits a new display.
 //
@@ -26,20 +24,57 @@ func (p *Page) SetAfterRedraw(fn func()) {
 		return
 	}
 
-	p.afterRedraw.fn = fn
+	p.afterRedraw.Set(fn)
 }
 
 // runAfterRedraw calls the registered callback after a commit installed the
 // display and the boxes. A callback that asks for a redraw does not re-enter
 // the commit: the request waits for the callback to return.
 func (p *Page) runAfterRedraw() {
-	fn := p.afterRedraw.fn
-	if fn == nil || p.afterRedraw.busy {
-		return
+	p.afterRedraw.Run()
+}
+
+// afterRedrawDraw serves the redraw the callback asked for. The draw runs
+// after the callback returned, so the commit is never re-entered, and the
+// callback runs again in it, so state reapplied to a rebuilt tree lands. One
+// draw is enough: a callback that always asks for a draw cannot loop.
+func (p *Page) afterRedrawDraw(ctx context.Context) error {
+	if !p.afterRedraw.Take() {
+		return nil
 	}
 
-	p.afterRedraw.busy = true
-	defer func() { p.afterRedraw.busy = false }()
+	defer p.afterRedraw.Done()
 
-	fn()
+	return p.redraw(ctx, false)
+}
+
+// BeginRedrawBatch defers page draws until EndRedrawBatch. The window wraps a
+// press, focus, click, and release in one batch so the final state draws once.
+//
+// A redraw that a failed draw left queued stays queued, so the flags survive
+// into the next batch and it commits the redraw.
+func (p *Page) BeginRedrawBatch() {
+	draw.OpenBatch(&p.redrawBatch)
+}
+
+// EndRedrawBatch closes a batch and draws the final state once. An inner batch
+// leaves the draw to the outermost one. A plain Redraw in the batch forces the
+// final draw; only RedrawIfChanged calls let the final draw skip unchanged
+// state.
+//
+// A draw that fails leaves the redraw queued, so the next batch commits it
+// and the committed frame catches up with the state the batch changed.
+func (p *Page) EndRedrawBatch(ctx context.Context) error {
+	run, force := draw.CloseBatch(&p.redrawBatch, &p.redrawPending, &p.redrawForce)
+	if !run {
+		return nil
+	}
+
+	if err := p.redraw(ctx, !force); err != nil {
+		draw.RestoreBatch(&p.redrawPending, &p.redrawForce, force)
+
+		return err
+	}
+
+	return nil
 }

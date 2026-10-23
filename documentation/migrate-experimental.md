@@ -17,7 +17,7 @@ fallback when partial data is unavailable.
 5. Keep focus and scroll state attached to stable element identities.
 6. Preserve Undo/Redo references on stable element identity, not box hits.
 7. Surface changed-property metadata from handlers to the page layer.
-8. Use `Page.Invalidate` when a fetch, timer, or clock mutates pixels the
+8. Use `page.Probe().Invalidate` when a fetch, timer, or clock mutates pixels the
    diff does not know about.
 9. Use loading markers and suspense placeholders instead of blank repaints
    while deferred data loads.

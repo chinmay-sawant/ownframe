@@ -86,7 +86,7 @@ func TestNightAndPause(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("no display after night redraw")
 	}
 

@@ -10,7 +10,7 @@ import (
 // cachedStroke draws a rounded or masked border through the raster cache. ok
 // is false for a shape too large to cache or an unknown mask bit, which the
 // caller handles as before.
-func cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) bool {
+func (renderer *Renderer) cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) bool {
 	if op.StrokeMask&^0x0F != 0 {
 		return false
 	}
@@ -40,7 +40,7 @@ func cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) bool 
 		fx: x - float32(left),
 		fy: y - float32(top),
 	}
-	img := rasters.raster(key, size, func(img *ebiten.Image) {
+	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		path := strokePathAt(key)
 		stroke := &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound}
 		options := &vector.DrawPathOptions{AntiAlias: true}

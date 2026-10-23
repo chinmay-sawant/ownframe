@@ -78,7 +78,7 @@ The second pass removed a second full page build and made the grid build each
 item once.
 
 - A desktop press ran two page builds before any frame was drawn:
-  `SelectAt` focused the button and redrew, then `Click` ran the handler and
+  the inner screen's `SelectAt` focused the button and redrew, then `page.Click` ran the handler and
   redrew. The focus build was never presented.
 - Add a redraw batch around press, focus, click, and release. The page records
   that a draw is pending and draws the final focus, active, source, and
@@ -210,7 +210,7 @@ page paints the patched region. Nothing is rebuilt.
 - `Handlers.ClickPaint` reports that the handler painted the frame, so the
   click skips the redraw and the redraw batch waits for no draw that will not
   come.
-- `Page.SetAfterRedraw` puts the tree state back after the template replaced
+- `page.Probe().SetAfterRedraw` puts the tree state back after the template replaced
   the tree, so a scroll or a reload does not lose the started cards.
 
 Measured with the real click script, 43 clicks, 1908x999:
@@ -613,7 +613,7 @@ it without the batch. `BenchmarkClickRedraw` measures one `SetData` plus
 Ownframe:
 
 - `internal/host/batch.go` defines `RedrawBatcher` and `Batch`.
-- `internal/page/page_redraw_batch.go` defers and flushes the draw.
+- `internal/page/page_after_redraw.go` defers and flushes the draw.
 - `internal/page/page_draw.go` records the pending draw.
 - `internal/page/page_render_key.go` stores the batch fields with the render
   state.
@@ -640,7 +640,7 @@ Ownframe:
 - `internal/page/form_spans.go` skips the control rewrite when only buttons
   are present.
 - `internal/page/page_boxindex.go` reuses the box index map.
-- `internal/page/page_draw_stages.go` sizes the template builder from the
+- `internal/page/page_draw.go` sizes the template builder from the
   previous source.
 - `examples/css-preview/batch_click_test.go` covers the batched press through
   a real animation start.
@@ -676,7 +676,7 @@ Ownframe pins Blinkless
 paths and the element patch work. The 12.5 ms and 6.16 ms columns use the
 earlier pin, `e0c3c9c`, and the patch cost numbers use `c1054ff`. The main
 module has no replace, so the build and the module zip carry the same engine.
-The examples module still pins Blinkless `v0.0.2`, and the patch cost harness
-calls `layout.RelayoutElement`, which only the newer pin carries, so the
-examples module builds through the committed `go.work` until the release
-process bumps its pin.
+The examples module uses the same Blinkless requirement as the root module.
+See [go.mod](../go.mod) and [examples/go.mod](../examples/go.mod) for the current
+pins. The local ownframe replacement in the examples module is removed when
+publishing its version tag.

@@ -8,8 +8,7 @@ import (
 )
 
 // pacePage is the wrapper's page-driven state: the deadline captured from the
-// page, the timer kick channel, and the debug counters. It is embedded so
-// idle_game.go stays inside the file size limit.
+// page, the timer kick channel, and the debug counters. The pacing wrapper embeds it.
 type pacePage struct {
 	want          time.Time
 	kick          chan struct{}
@@ -35,12 +34,11 @@ func (g *paceGame) captureFrameWant() {
 // The game goroutine writes it; the timer goroutine owns the policy lock.
 func (g *paceGame) publish(now time.Time) {
 	g.mu.Lock()
-	next, skipped := g.policy.next(), g.policy.skipped
-	presents, idle := g.policy.presents, !g.policy.fast
+	state := g.policy.Snapshot()
 	g.mu.Unlock()
 
-	g.shell.pace.next, g.shell.pace.skipped, g.shell.pace.idle = next, skipped, idle
-	g.debugLine(now, presents, skipped, idle)
+	g.shell.pace.next, g.shell.pace.skipped, g.shell.pace.idle = state.Next, state.Skipped, state.Idle
+	g.debugLine(now, state.Presents, state.Skipped, state.Idle)
 }
 
 // kickTimer asks the timer goroutine to recompute its sleep after the policy

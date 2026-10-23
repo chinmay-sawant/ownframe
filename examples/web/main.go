@@ -26,7 +26,7 @@ func main() {
 	ctx := context.Background()
 
 	if *webMode {
-		// Serve owns the HTTP routes: GET /, GET /frame.png, GET /click,
+		// Serve owns the HTTP routes: GET /, GET /frame.png, POST /click,
 		// POST /type, and POST /backspace act on this same page.
 		if err := ownframe.Serve(ctx, app.Page(), *addr); err != nil {
 			log.Fatal(err)

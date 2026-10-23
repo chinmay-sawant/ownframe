@@ -38,7 +38,7 @@ func (a *App) search(ctx context.Context, term, entity string, limit int) ([]sea
 
 // searchNow runs a live search when the box has a non-empty value.
 func (a *App) searchNow(ctx context.Context) error {
-	q := strings.TrimSpace(a.page.FormValue("q"))
+	q := strings.TrimSpace(a.page.Form().FormValue("q"))
 	if q == "" {
 		return nil
 	}
@@ -47,7 +47,7 @@ func (a *App) searchNow(ctx context.Context) error {
 
 	if err := a.Load(ctx, q); err != nil {
 		a.page.SetData(&a.view)
-		a.page.SetChangedProperties([]string{"Query", "Status"})
+		a.page.Probe().SetChangedProperties([]string{"Query", "Status"})
 	}
 
 	return nil

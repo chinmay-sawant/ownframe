@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe"
 )
 
+// TestWindowMatchesFullRows is the 1.0 list-windowing check: a SetScrollWindow
+// slice matches full-document row geometry at several offsets.
 func TestWindowMatchesFullRows(t *testing.T) {
 	full, _, err := fixture(false)
 	if err != nil {
@@ -20,17 +22,17 @@ func TestWindowMatchesFullRows(t *testing.T) {
 		t.Fatal(err)
 	}
 	installWindow(window, v)
-	find := func(p *page.Page, id string) page.Box {
+	find := func(p *ownframe.Page, id string) ownframe.Box {
 		for _, b := range p.Boxes() {
 			if b.ID == id {
 				return b
 			}
 		}
 		t.Fatalf("box %s missing", id)
-		return page.Box{}
+		return ownframe.Box{}
 	}
 	for i, offset := range []int{0, 20000, 37000} {
-		window.SetScrollOffset(0, offset)
+		window.Scroll().SetScrollOffset(0, offset)
 		if err := redraw(window); err != nil {
 			t.Fatal(err)
 		}
@@ -42,7 +44,7 @@ func TestWindowMatchesFullRows(t *testing.T) {
 		if find(window, "grid").H != find(full, "grid").H {
 			t.Fatal("grid height changed")
 		}
-		if len(window.Display().Ops) >= 1500 {
+		if len(window.Probe().Display().Ops) >= 1500 {
 			t.Fatal("window retained too many operations")
 		}
 	}

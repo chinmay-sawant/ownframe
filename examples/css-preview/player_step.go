@@ -37,10 +37,10 @@ func (d *demo) stepSamples(now time.Time, partial bool) (live, waiting bool) {
 // stepSample advances one sample and marks where its operations were and
 // where they landed, so the window repaints only those tiles.
 func (d *demo) stepSample(s *sample, now time.Time) bool {
-	display := d.p.Display()
+	display := d.p.Probe().Display()
 	before := sampleBox(display, s.plan.pairs)
 	active := s.plan.step(now)
-	d.p.MarkRect(before.Union(sampleBox(display, s.plan.pairs)))
+	d.p.Probe().MarkRect(before.Union(sampleBox(display, s.plan.pairs)))
 	return active
 }
 

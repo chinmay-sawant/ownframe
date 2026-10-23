@@ -38,7 +38,7 @@ func TestInsightsLeaderboardTab(t *testing.T) {
 		t.Fatalf("lead-you text = %q", you.Text)
 	}
 
-	if app.Page().Display() == nil {
+	if app.Page().Probe().Display() == nil {
 		t.Fatal("the leaderboard tab fell back to the bitmap path")
 	}
 

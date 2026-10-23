@@ -33,8 +33,8 @@ func TestEditorTextSurvivesViewportReplacement(t *testing.T) {
 	}
 
 	// Scroll far down: A1 leaves the rendered window.
-	app.page.SetScrollOffset(0, 5000)
-	app.page.StepScrollWindow()
+	app.page.Scroll().SetScrollOffset(0, 5000)
+	app.page.Testing().StepScrollWindow()
 	flush(t, app)
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
@@ -49,8 +49,8 @@ func TestEditorTextSurvivesViewportReplacement(t *testing.T) {
 	}
 
 	// Scroll back: the buffer and the caret return with the cell.
-	app.page.SetScrollOffset(0, 0)
-	app.page.StepScrollWindow()
+	app.page.Scroll().SetScrollOffset(0, 0)
+	app.page.Testing().StepScrollWindow()
 	flush(t, app)
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatal(err)
@@ -65,8 +65,8 @@ func TestHorizontalWindow(t *testing.T) {
 	app := newTestApp(t, newFake())
 	settle(t, app)
 
-	app.page.SetScrollOffset(1000, 0)
-	app.page.StepScrollWindow()
+	app.page.Scroll().SetScrollOffset(1000, 0)
+	app.page.Testing().StepScrollWindow()
 	flush(t, app)
 	if err := app.Redraw(context.Background()); err != nil {
 		t.Fatal(err)

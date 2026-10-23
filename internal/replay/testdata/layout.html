@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        font-family: sans-serif;
+        font-size: 12px;
+        color: #d7dce5;
+        background: #141820;
+      }
+      header {
+        padding: 16px;
+        background: #242b39;
+        display: flex;
+        gap: 30px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0;
+      }
+      .shell {
+        display: flex;
+        gap: 16px;
+      }
+      .side {
+        width: 150px;
+        padding: 12px;
+        background: #202633;
+      }
+      .side p {
+        padding: 8px;
+        border-bottom: 1px solid #394052;
+      }
+      .main {
+        width: 1120px;
+        padding: 12px;
+      }
+      .cards {
+        display: flex;
+        gap: 12px;
+      }
+      .card {
+        width: 160px;
+        padding: 12px;
+        background: #252e3d;
+        border: 1px solid #40506a;
+      }
+      .value {
+        font-size: 24px;
+        color: #92d5b5;
+      }
+      .panels {
+        display: flex;
+        gap: 12px;
+        margin: 12px 0;
+      }
+      .panel {
+        width: 510px;
+        padding: 12px;
+        background: #222a38;
+      }
+      .bar {
+        height: 8px;
+        margin: 5px;
+        background: #64a9ce;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        padding: 12px;
+      }
+      .row {
+        height: 76px;
+        box-sizing: border-box;
+        display: flex;
+        gap: 8px;
+        padding: 8px;
+        border-bottom: 1px solid #3a4353;
+      }
+      .identity {
+        width: 160px;
+      }
+      .description {
+        width: 300px;
+        line-height: 16px;
+      }
+      .metrics {
+        width: 220px;
+        display: flex;
+        gap: 8px;
+      }
+      .metric {
+        width: 65px;
+        padding: 4px;
+        background: #293748;
+      }
+      .status {
+        width: 95px;
+      }
+      .spark {
+        width: 120px;
+        display: flex;
+        gap: 4px;
+        align-items: flex-end;
+        height: 32px;
+      }
+      .spark span {
+        width: 9px;
+        background: #71c5a0;
+      }
+      .row:nth-child(even) {
+        background: #1d2532;
+      }
+      .row:hover {
+        background: #344159;
+      }
+      .identity strong {
+        color: #a3c8f5;
+      }
+      .tag {
+        padding: 2px;
+        background: #354259;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Operations control room</h1>
+      <span id="revision">Revision {{.Revision}}</span
+      ><span>480 services across 8 regions</span>
+    </header>
+    <div class="shell">
+      <div class="side">
+        {{range .Nav}}
+        <p>{{.}}</p>
+        {{end}}
+      </div>
+      <div class="main">
+        <div class="cards">
+          {{range .Nav}}
+          <div class="card">
+            <div>{{.}}</div>
+            <div class="value">99.98%</div>
+            <p>Rolling health across production traffic</p>
+          </div>
+          {{end}}
+        </div>
+        <div class="panels">
+          <div class="panel">
+            <h2>Regional throughput</h2>
+            {{range .Nav}}
+            <div>{{.}}</div>
+            <div class="bar" style="width: 280px"></div>
+            {{end}}
+          </div>
+          <div class="panel">
+            <h2>Incident timeline</h2>
+            {{range .Nav}}
+            <p>
+              <strong>{{.}}</strong> Deployment completed with traffic shifted
+              across three availability zones.
+            </p>
+            {{end}}
+          </div>
+        </div>
+        <div class="filters">
+          <input id="search" value="Search services" /><select id="region">
+            <option>All regions</option>
+            <option>Europe</option></select
+          ><input id="healthy" type="checkbox" checked /><button id="apply">
+            Apply filters
+          </button>
+        </div>
+        <div id="grid">
+          <div id="top-space" style="height:{{.Top}}px"></div>
+          {{range .Rows}}
+          <div class="row" id="row-{{.ID}}">
+            <div class="identity">
+              <strong>{{.Name}}</strong>
+              <p><span class="tag">production</span> region {{.Region}}</p>
+            </div>
+            <div class="description">
+              Requests traverse the gateway, cache and storage workers. Review
+              latency distribution before scheduling the next deployment.
+            </div>
+            <div class="metrics">
+              <div class="metric">
+                p50
+                <p>12 ms</p>
+              </div>
+              <div class="metric">
+                p95
+                <p>48 ms</p>
+              </div>
+              <div class="metric">
+                p99
+                <p>91 ms</p>
+              </div>
+            </div>
+            <div class="status">
+              Healthy
+              <p>Owner {{.Region}}</p>
+            </div>
+            <div class="spark">
+              <span style="height: 12px"></span
+              ><span style="height: 24px"></span
+              ><span style="height: 18px"></span
+              ><span style="height: 30px"></span
+              ><span style="height: 22px"></span
+              ><span style="height: 16px"></span>
+            </div>
+          </div>
+          {{end}}
+          <div id="bottom-space" style="height:{{.Bottom}}px"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

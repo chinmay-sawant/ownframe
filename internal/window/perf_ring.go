@@ -7,7 +7,7 @@ import (
 
 const perfRingCap = 120
 
-const perfLongThreshold = 25 * time.Millisecond
+const perfLongThreshold = time.Second / 60
 
 const perfP95Quantile = 0.95
 
