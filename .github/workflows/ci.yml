@@ -251,6 +251,7 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       - name: Install pinned Android binding tools and NDK
         run: |
           sdkmanager "platforms;android-34" "ndk;27.2.12479018"
