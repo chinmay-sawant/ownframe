@@ -50,7 +50,7 @@ function App() {
         <a href="#docs/showcase/wispr-flow">Example apps</a>
         <a href="#compare">Comparison</a>
         <a href="#start">Get started</a>
-        <a href="#docs/readme" aria-current={isDocs ? 'page' : undefined}>Docs</a>
+        <a href="#docs/showcase/wispr-flow" aria-current={isDocs ? 'page' : undefined}>Docs</a>
       </nav>
       <ThemeToggle />
       <a className="github" href={repository} title="View ownframe on GitHub">
@@ -65,8 +65,8 @@ function App() {
     </main>
     <footer>
       <a href={repository}>Source on GitHub</a>
-      <a href="#docs/readme">Documentation</a>
-      <a href="#docs/platforms">Desktop and mobile</a>
+      <a href="#docs/showcase/wispr-flow">Example apps</a>
+      <a href="#docs/compare-rust-gpui">Comparisons</a>
     </footer>
   </div>;
 }

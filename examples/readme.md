@@ -55,7 +55,7 @@ behavior and the limits are in
 | [perf-complex](perf-complex) | Complex 480-row performance baseline, optional live row windowing, and headless profiling with `-dump`. | 8135 |
 | [layout](layout) | HTML -> CSS -> layout pipeline with hit-test boxes. | 8100 |
 | [replay](replay) | Display-list replay and the bitmap fallback. | 8101 |
-| [shapes](shapes) | Rounded and elliptical fills, masked strokes, letter-spaced text, caches. | 8102 |
+| [grid](grid) | CSS grid layout with clickable tiles. | 8140 |
 | [css-masking](css-masking) | Retained mask-group compositing with alpha and luminance masks, SVG `mask-type`, and two-layer `exclude` composition. | 8139 |
 | [png](png) | `Page.Probe().PNG` on-demand rasterization and caching. | 8103 |
 | [controls](controls) | Click to focus, toggle, check, and cycle controls; typing edits; a file control opens the OS dialog. | 8104 |

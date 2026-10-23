@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Grid</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body { font-family: sans-serif; background: #f6f3ee; color: #1c1915; padding: 16px; box-sizing: border-box; }
+  h1 { margin: 0 0 8px; font-size: 24px; }
+  h2 { margin: 16px 0 8px; font-size: 16px; color: #6b6358; }
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
+  .tile { min-height: 72px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600; cursor: pointer; user-select: none; background: #e3ddd2; color: #1c1915; }
+  .tile.on { outline: 3px solid #1c1915; }
+  .span-3 { grid-column: span 3; }
+  .span-4 { grid-column: span 4; }
+  .span-6 { grid-column: span 6; }
+  .span-8 { grid-column: span 8; }
+  .span-12 { grid-column: span 12; }
+  .auto-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 8px; }
+  .auto-grid .tile { min-height: 60px; font-size: 16px; }
+  .hint { font-size: 13px; color: #6b6358; margin-top: 12px; }
+</style>
+</head>
+<body>
+  <h1>{{.Title}}</h1>
+  <h2>12-column grid (spans)</h2>
+  <div class="grid">
+    {{range .Tiles}}
+    <div id="{{.ID}}" class="tile {{.Class}}" data-action="toggle">{{.Label}}</div>
+    {{end}}
+  </div>
+  <h2>Auto-fit grid</h2>
+  <div class="auto-grid">
+    <div class="tile">1</div>
+    <div class="tile">2</div>
+    <div class="tile">3</div>
+    <div class="tile">4</div>
+    <div class="tile">5</div>
+    <div class="tile">6</div>
+  </div>
+  <p class="hint">Click a tile to toggle its selected state. Layout is CSS grid.</p>
+</body>
+</html>

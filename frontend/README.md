@@ -17,16 +17,15 @@ Open the `/ownframe/` address Vite prints. The site supports dark and light them
 ## Edit the site
 
 - `src/Home.jsx` contains the homepage copy, code sample, and demo cards.
-- `src/Documentation.jsx` renders the guides and handles documentation navigation.
+- `src/Documentation.jsx` renders the example and comparison pages and handles documentation navigation.
 - `src/showcase.js` defines the website's Example apps content and media dimensions.
-- `src/docs-overview.js` contains the short starting guide.
-- `src/content.js` groups Markdown documents and resolves their links and images.
+- `src/content.js` groups the example and comparison Markdown documents and resolves their links and images.
 - `src/main.jsx` contains the shared header, footer, and route selection.
 - `src/style.css` styles the homepage and documentation for desktop and mobile.
 
-The documentation overview links six main guides. Examples and comparisons have separate menus; the remaining reference sits under All guides. Guides use one page scroll. Scrollbar rails are hidden, while wheel, touch, and keyboard scrolling remain available.
+The docs section shows Examples and Comparisons only. Guides use one page scroll. Scrollbar rails are hidden, while wheel, touch, and keyboard scrolling remain available.
 
-Guides come from `../documentation/*.md`, `../examples/readme.md`, the desktop cat guide, and the Android guide. The website's Example apps page uses `src/showcase.js`; `../showcase.md` remains a separate repository document and does not set the website media sizes. Relative guide links stay on the site; source links open GitHub. Existing `#docs/<slug>/<heading>` links still work.
+Example and comparison pages come from `../documentation/compare-*.md` and `../examples/readme.md`. The website's Example apps page uses `src/showcase.js`; `../showcase.md` remains a separate repository document and does not set the website media sizes. Relative guide links stay on the site; source links open GitHub. Existing `#docs/<slug>/<heading>` links for examples and comparisons still work.
 
 Keep the engine roles clear in the copy. Blinkless parses HTML, applies CSS, and calculates layout. OwnFrame renders its display list and connects the page to Ebitengine's window and input loop. This is an app UI engine with a supported HTML and CSS subset. It does not run website JavaScript.
 

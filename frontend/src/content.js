@@ -10,37 +10,24 @@ const extras = import.meta.glob([
 ], { query: '?raw', import: 'default', eager: true });
 
 const labels = {
-  readme: 'Overview',
   showcase: 'Example apps',
-  'css-motion': 'Animations and transitions',
-  window: 'Open a window',
-  screen: 'Rendering',
-  binding: 'Data and actions',
-  theming: 'Styling and themes',
-  platforms: 'Desktop and mobile',
-  features: 'Features and limits',
-  'android-app-creation': 'Create an Android app',
-  'android-build': 'Build for Android',
-  'android-runtime': 'Android runtime',
-  'examples-telegram-android-readme': 'Telegram on Android',
-  'examples-readme': 'Run an example',
-  'examples-desktop-cat-readme': 'Desktop cat',
-  'features-examples': 'Feature examples',
+  'examples-readme': 'Feature example',
   'compare-rust-gpui': 'Rust GPUI',
   'compare-electron': 'Electron',
-  'compare-go-app-frameworks': 'Go frameworks',
+  'compare-wails': 'Wails',
+  'compare-fyne': 'Fyne',
+  'compare-gio': 'Gio',
+  'compare-webview': 'webview_go',
+  'compare-ebitengine': 'Ebitengine',
   'compare-syntax': 'Hello world syntax',
-  accessibility: 'Accessibility tree',
-  atspi: 'Linux AT-SPI',
-  'accessibility-native': 'Native accessibility',
-  'desktop-shell-integrations': 'Desktop integration',
-  'performance-baseline': 'Performance measurements',
-  'runtime-behavior': 'Runtime behavior',
-  styleinvalid: 'Style invalidation',
-  'migrate-experimental': 'Migrate an older app',
-  rebrand: 'Project rename',
-  'tricks-tips': 'Tips',
 };
+
+const keptSlugs = new Set([
+  'showcase', 'examples-readme',
+  'compare-rust-gpui', 'compare-electron',
+  'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview',
+  'compare-ebitengine', 'compare-syntax',
+]);
 
 const markdownDocuments = Object.entries({ ...sources, ...extras }).map(([path, text]) => ({
   path: path.replace('../../', ''),
@@ -51,43 +38,28 @@ const markdownDocuments = Object.entries({ ...sources, ...extras }).map(([path, 
   text,
 })).map((entry) => ({ ...entry, title: labels[entry.slug] ?? entry.title }));
 
-export const documents = [...markdownDocuments, {
+export const documents = [...markdownDocuments.filter((entry) => keptSlugs.has(entry.slug)), {
   path: 'showcase.md',
   slug: 'showcase',
   title: labels.showcase,
   text: '',
-}].sort((a, b) => {
-  if (a.slug === 'readme') return -1;
-  if (b.slug === 'readme') return 1;
-  return a.title.localeCompare(b.title);
-});
+}].sort((a, b) => a.title.localeCompare(b.title));
 
 const navigation = [
-  { title: 'Start here', slugs: ['readme'], standalone: true },
-  { title: 'Window', slugs: ['window'], standalone: true },
-  { title: 'Data', slugs: ['binding'], standalone: true },
-  { title: 'Styling', slugs: ['theming', 'css-motion'] },
-  { title: 'Platforms', slugs: ['platforms'], standalone: true },
-  { title: 'Features', slugs: ['features'], standalone: true },
   {
     title: 'Examples',
-    slugs: ['showcase', 'examples-readme', 'examples-telegram-android-readme', 'examples-desktop-cat-readme', 'features-examples'],
+    slugs: ['showcase', 'examples-readme'],
   },
   {
     title: 'Comparisons',
-    slugs: ['compare-rust-gpui', 'compare-electron', 'compare-go-app-frameworks', 'compare-syntax'],
+    slugs: ['compare-rust-gpui', 'compare-electron', 'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview', 'compare-ebitengine', 'compare-syntax'],
   },
 ];
 
-export const documentGroups = navigation.map(({ title, slugs, standalone }) => ({
+export const documentGroups = navigation.map(({ title, slugs }) => ({
   title,
-  standalone,
   documents: slugs.map((slug) => documents.find((entry) => entry.slug === slug)).filter(Boolean),
 })).filter((group) => group.documents.length);
-
-const groupedSlugs = new Set(documentGroups.flatMap((group) => group.documents.map((entry) => entry.slug)));
-const otherDocuments = documents.filter((entry) => !groupedSlugs.has(entry.slug));
-if (otherDocuments.length) documentGroups.push({ title: 'All guides', documents: otherDocuments, keepClosed: true });
 
 const images = import.meta.glob([
   '../../assets/screenshots/**/*.webp', '../../assets/screenshots/**/*.jpg', '../../assets/screenshots/**/*.png',
