@@ -88,21 +88,16 @@ var _ draw.RedrawSurface = redrawSurface{}
 
 // execTemplate runs the trusted template, timing it when tracked.
 func (p *Page) execTemplate(track bool) (string, error) {
-	ts := draw.Clock(track)
 	p.applyScrollWindow()
 
-	var body strings.Builder
-	if len(p.source) > 0 {
-		body.Grow(len(p.source))
-	}
-	if err := p.tpl.Execute(&body, p.data); err != nil {
-		return "", err
-	}
-
-	executed := body.String()
-	draw.Note(track, &p.stats.lastTemplate, ts)
-
-	return executed, nil
+	return draw.Execute(
+		track,
+		len(p.source),
+		&p.stats.lastTemplate,
+		func(b *strings.Builder) error {
+			return p.tpl.Execute(b, p.data)
+		},
+	)
 }
 
 // styleStaged styles the source, timing it when tracked.
@@ -112,11 +107,27 @@ func (p *Page) styleStaged(
 	source string,
 	state render.State,
 ) (*css.Document, error) {
-	ls := draw.Clock(track)
-	styled, err := p.styledDocument(ctx, source, state)
-	draw.Note(track, &p.stats.layoutTime, ls)
+	styled, err := draw.StyleDocument(
+		ctx,
+		track,
+		&p.stats.layoutTime,
+		p.cache,
+		source,
+		p.viewport(),
+		state,
+	)
+	if err != nil {
+		return nil, err
+	}
 
-	return styled, err
+	p.cache = styled.Cache
+	if styled.Fresh {
+		p.statePseudos = styled.Pseudos
+		p.stats.parses++
+		p.stats.cascades++
+	}
+
+	return styled.Doc, nil
 }
 
 // drawStaged builds the list and commits either path.
@@ -180,25 +191,23 @@ func (p *Page) finishRedraw(track bool, m0 runtime.MemStats, start time.Time) {
 // bitmap of its own. The hit map is built here too, so a fixed box still
 // wins over the content it covers on the bitmap path.
 func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) error {
-	ps := draw.Clock(track)
-	img, err := draw.Picture(display)
+	bitmap, err := draw.PaintBitmap(track, &p.stats.paintTime, display)
 	if err != nil {
 		return err
 	}
-	draw.Note(track, &p.stats.paintTime, ps)
 
 	boxes := display.Boxes
 	p.noteCommit(drawStart)
-	p.draw.CommitBitmap(display, img)
+	p.draw.CommitBitmap(display, bitmap.Image)
 	p.setBoxes(boxes)
 	p.hits = hitList(boxes, fixedBoxes(display))
 	p.generation++
 	p.markFull()
 	p.lastPatch = DisplayPatch{
-		Changed: len(display.Ops),
-		Added:   len(display.Ops),
-		Regions: 1,
-		Full:    true,
+		Changed: bitmap.Changed,
+		Added:   bitmap.Added,
+		Regions: bitmap.Regions,
+		Full:    bitmap.Full,
 	}
 	if track {
 		p.recordFull(len(boxes))
