@@ -273,7 +273,7 @@ func (f *fake) ClearPerf() { f.note("ClearPerf") }
 
 func (f *fake) CountRedraw() { f.note("CountRedraw") }
 
-func (f *fake) FinishRedraw(track bool, _ runtime.MemStats, start time.Time) {
+func (f *fake) FinishRedraw(track bool, _ bool, _ runtime.MemStats, start time.Time) {
 	f.note("FinishRedraw")
 	f.finishTrack = track
 	f.finishStart = start

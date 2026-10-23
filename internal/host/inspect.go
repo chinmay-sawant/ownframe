@@ -26,7 +26,9 @@ type Stats struct {
 	DirtyOps     int
 	DirtyRegions int
 	ChangedOps   int
-	// AllocFrame is the bytes allocated during the last Redraw.
+	// AllocFrame is the bytes allocated during the last sampled Redraw.
+	// Sampling runs about twice a second. Unsampled redraws keep the
+	// previous value.
 	AllocFrame uint64
 	Reloads    uint64
 	// LastReloadError is the most recent failed hot reload, empty when none.

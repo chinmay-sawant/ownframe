@@ -34,15 +34,19 @@ func (s redrawSurface) QueueBatch(skipSame bool) bool {
 }
 
 func (s redrawSurface) BeginSample() (draw.Sample, bool) {
-	return draw.BeginSample(s.p.perf)
+	if !s.p.perf {
+		return draw.BeginSample(false, false)
+	}
+
+	return draw.BeginSample(true, s.p.allocDue(time.Now()))
 }
 
 func (s redrawSurface) ClearPerf() { s.p.clearPerf() }
 
 func (s redrawSurface) CountRedraw() { s.p.stats.redraws++ }
 
-func (s redrawSurface) FinishRedraw(track bool, mem runtime.MemStats, start time.Time) {
-	s.p.finishRedraw(track, mem, start)
+func (s redrawSurface) FinishRedraw(track, memOK bool, mem runtime.MemStats, start time.Time) {
+	s.p.finishRedraw(track, memOK, mem, start)
 }
 
 func (s redrawSurface) ExecTemplate(track bool) (string, error) {
@@ -179,9 +183,9 @@ func (p *Page) noteCommit(drawStart time.Time) {
 	draw.NoteCommit(&p.stats.layouts, &p.stats.repaints, &p.stats.lastDraw, drawStart)
 }
 
-func (p *Page) finishRedraw(track bool, m0 runtime.MemStats, start time.Time) {
+func (p *Page) finishRedraw(track, memOK bool, m0 runtime.MemStats, start time.Time) {
 	p.stats.lastRedraw = time.Since(start)
-	if track {
+	if track && memOK {
 		p.stats.allocFrame = draw.AllocUsed(m0)
 	}
 }

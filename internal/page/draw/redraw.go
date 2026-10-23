@@ -21,15 +21,17 @@ type RedrawSurface interface {
 	// QueueBatch records this draw while a batch is open.
 	// It reports that the caller should return without drawing.
 	QueueBatch(skipSame bool) bool
-	// BeginSample samples the allocator when perf is on.
+	// BeginSample samples the allocator when perf is on and a memory sample is due.
 	// The bool tells the caller to clear opt-in counters before starting the clock.
 	BeginSample() (Sample, bool)
 	// ClearPerf zeroes opt-in counters before the clock starts.
 	ClearPerf()
 	// CountRedraw counts this redraw.
 	CountRedraw()
-	// FinishRedraw records the redraw duration and, when track is true, allocations.
-	FinishRedraw(track bool, mem runtime.MemStats, start time.Time)
+	// FinishRedraw records the redraw duration and, when memOK is true, the
+	// bytes allocated since that sample. A redraw that did not sample leaves
+	// the previous allocation count.
+	FinishRedraw(track bool, memOK bool, mem runtime.MemStats, start time.Time)
 	// ExecTemplate runs the template and returns the executed source.
 	ExecTemplate(track bool) (string, error)
 	// SyncForm stores the form-synced source and returns that same string.
@@ -89,7 +91,7 @@ func Run(ctx context.Context, s RedrawSurface, skipSame bool) error {
 	sample.StartClock()
 	s.CountRedraw()
 
-	defer s.FinishRedraw(sample.Track, sample.Mem, sample.Start)
+	defer s.FinishRedraw(sample.Track, sample.MemOK, sample.Mem, sample.Start)
 
 	executed, err := s.ExecTemplate(sample.Track)
 	if err != nil {

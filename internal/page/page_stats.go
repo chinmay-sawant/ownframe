@@ -17,7 +17,9 @@ type pageStats struct {
 	frameDraw  time.Duration
 	// lastTemplate, layoutTime, displayListTime, and paintTime split the
 	// last Redraw into stages. dirtyOps, dirtyRegions, and changedOps
-	// describe its dirty region; allocFrame counts its allocations.
+	// describe its dirty region. allocFrame is the bytes allocated during
+	// the last sampled Redraw. Sampling runs about twice a second.
+	// Unsampled redraws keep the previous value.
 	lastTemplate    time.Duration
 	layoutTime      time.Duration
 	displayListTime time.Duration

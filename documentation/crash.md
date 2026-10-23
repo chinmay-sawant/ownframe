@@ -1,6 +1,6 @@
 # Crash reports
 
-`Run` stores every failure in a report file and returns the original error without the file path: a panic goes through the recover, and any startup or window error goes through the same writer with the error as the reason. `LastReportPath` exposes the file path. `BindMobile` recovers a panic on its own goroutine. `Serve` recovers a handler panic into HTTP 500 and writes no report file. The process does not panic again, and the file is not uploaded. In a browser build the recover still runs and returns an error, but no file is written, because Go's wasm file operations return an error there.
+`Run` stores a startup or window failure in a report file and returns the original error without the file path: a panic goes through the recover, and any other startup or window error goes through the same writer with the error as the reason. A canceled context or a deadline returns that error and writes no file. `LastReportPath` exposes the file path. `BindMobile` recovers a panic on its own goroutine. `Serve` recovers a handler panic into HTTP 500 and writes no report file. The process does not panic again, and the file is not uploaded. In a browser build the recover still runs and returns an error, but no file is written, because Go's wasm file operations return an error there.
 
 ```go
 if err := ownframe.SetCrashDir(dir); err != nil {

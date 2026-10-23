@@ -157,7 +157,7 @@ Detail is in [navigation.md](navigation.md).
 
 ## Crash reports
 
-`Run` stores every failure in a text file and returns the original error. `LastReportPath` returns the file path: panics go through the recover, and startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
+`Run` stores a startup or window failure in a text file and returns the original error. A canceled context or a deadline returns that error and writes no file. `LastReportPath` returns the file path: panics go through the recover, and other startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
 
 Detail is in [crash.md](crash.md).
 

@@ -2,6 +2,7 @@ package page
 
 import (
 	"html/template"
+	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -39,6 +40,7 @@ type Page struct {
 	stats           pageStats
 	devtools        bool
 	perf            bool
+	allocAt         time.Time // last allocator sample; zero means the next Perf redraw is due
 	retainState     bool
 	lockView        bool
 	mobileViewport  bool

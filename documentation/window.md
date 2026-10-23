@@ -76,7 +76,7 @@ A tick callback that returns an error stops the window, and `Run` returns it. Ca
 - `BindMobile` registers the page with Ebitengine's mobile view. Call it from the package that `ebitenmobile bind` compiles, and do not call `Run` from that package. It returns after registering.
 - `Serve` listens on `addr` and blocks. The page at `/` shows the latest picture, and clicks and the type form call the same handlers as `Run` ([forms.md](forms.md)).
 
-All three return `ErrNilPage` when the page is nil. `Run` wraps every failure in a crash report and returns an error naming that file; `BindMobile` recovers a panic and returns the crash report path ([crash.md](crash.md)). Build targets are in [platforms.md](platforms.md).
+All three return `ErrNilPage` when the page is nil. `Run` stores a startup or window failure in a crash report and returns the original error. A canceled context or a deadline returns that error and writes no file. `BindMobile` recovers a panic and returns the crash report path ([crash.md](crash.md)). Build targets are in [platforms.md](platforms.md).
 
 ## Limits
 

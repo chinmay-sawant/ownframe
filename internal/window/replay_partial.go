@@ -34,11 +34,15 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	}
 
 	if oversized(contentW, contentH) || s.gridTooBig(contentW, contentH) {
-		// A grid that dwarfs the window takes the viewport path, which
-		// drops the tile grid; keep the frame clock.
+		// The viewport path drops the tile grid. A later stable blit may
+		// idle. A scroll, a generation change, a dirty region, a focus or
+		// size stale frame, or a ticker keeps the frame clock.
 		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
 		s.drawViewport(dst, display, taker)
 		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held
+		if stale {
+			s.viewport.blitOnly = false
+		}
 
 		return true
 	}
