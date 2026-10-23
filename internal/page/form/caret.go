@@ -44,3 +44,14 @@ func MoveCaret(key, value string, caret, start, end int) (int, bool, bool) {
 
 	return ClampPos(pos, n), extend, true
 }
+
+// CaretMoved reports whether storing pos would change the caret.
+// extend false also treats a moved anchor or a select-all as a change.
+func CaretMoved(caret, anchor, pos int, all, extend bool) bool {
+	changed := pos != caret
+	if !extend {
+		changed = changed || anchor != pos || all
+	}
+
+	return changed
+}

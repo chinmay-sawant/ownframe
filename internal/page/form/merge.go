@@ -64,3 +64,18 @@ func keepSelect(cur Control, value string) Control {
 
 	return cur
 }
+
+// ApplyBinds copies each bound control through read.
+// A control with an empty bind, or a read that reports false, stays as it is.
+// A nil map does nothing.
+func ApplyBinds(byID map[string]Control, read func(Control) (Control, bool)) {
+	for id, ctrl := range byID {
+		if ctrl.Bind == "" {
+			continue
+		}
+
+		if c, ok := read(ctrl); ok {
+			byID[id] = c
+		}
+	}
+}

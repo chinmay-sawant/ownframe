@@ -46,3 +46,14 @@ func SetRunes(c Control, runes []rune) Control {
 
 	return c
 }
+
+// ClampEdited caps c.Value to the field cap and pulls the caret and the
+// anchor back inside the capped value.
+func ClampEdited(c Control, caret, anchor int) (Control, int, int) {
+	c.Value = ClampField(c.Value, FieldCap(c))
+	if n := RuneLen(c.Value); caret > n || anchor > n {
+		caret, anchor = min(caret, n), min(anchor, n)
+	}
+
+	return c, caret, anchor
+}

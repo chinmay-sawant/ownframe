@@ -1,10 +1,6 @@
 package page
 
-import (
-	"time"
-
-	"github.com/chinmay-sawant/ownframe/internal/host"
-)
+import "time"
 
 // pageStats counts the stages of every Redraw. The devtools overlay reads
 // them through Stats.
@@ -30,41 +26,4 @@ type pageStats struct {
 	dirtyRegions    int
 	changedOps      int
 	allocFrame      uint64
-}
-
-// Stats returns one snapshot of the page counters and the last frame sizes.
-// LastDraw is the window's draw time once SetDrawTime has recorded one, and
-// the display-list or paint stage of the last Redraw before that.
-func (p *Page) Stats() host.Stats {
-	ops := 0
-	if p.draw.Display != nil {
-		ops = len(p.draw.Display.Ops)
-	}
-
-	lastDraw := p.stats.lastDraw
-	if p.stats.frameDraw > 0 {
-		lastDraw = p.stats.frameDraw
-	}
-
-	return host.Stats{
-		Redraws:         p.stats.redraws,
-		Parses:          p.stats.parses,
-		Cascades:        p.stats.cascades,
-		Layouts:         p.stats.layouts,
-		Repaints:        p.stats.repaints,
-		Boxes:           len(p.boxes),
-		Ops:             ops,
-		LastRedraw:      p.stats.lastRedraw,
-		LastDraw:        lastDraw,
-		Reloads:         p.stats.reloads,
-		LastReloadError: p.stats.reloadErr,
-		LastTemplate:    p.stats.lastTemplate,
-		LayoutTime:      p.stats.layoutTime,
-		DisplayListTime: p.stats.displayListTime,
-		PaintTime:       p.stats.paintTime,
-		DirtyOps:        p.stats.dirtyOps,
-		DirtyRegions:    p.stats.dirtyRegions,
-		ChangedOps:      p.stats.changedOps,
-		AllocFrame:      p.stats.allocFrame,
-	}
 }

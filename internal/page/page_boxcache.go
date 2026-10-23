@@ -1,6 +1,10 @@
 package page
 
-import "image"
+import (
+	"image"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
+)
 
 // setBoxes stores the hit-test boxes from a Redraw. It rebuilds the id
 // index so lookups stay O(1) on large pages, and drops the cached content
@@ -8,7 +12,7 @@ import "image"
 func (p *Page) setBoxes(boxes []Box) {
 	p.boxes = boxes
 	p.hits = nil
-	p.index = fillBoxIndex(p.index, boxes)
+	p.index = hit.Index(p.index, boxes)
 	p.contentOK = false
 }
 
@@ -21,18 +25,12 @@ func (p *Page) Boxes() []Box {
 // boxByID returns the last box laid out with that id, or Box{ID: id}. The
 // lookup is one map read, never a walk over p.boxes.
 func (p *Page) boxByID(id string) Box {
-	if b, ok := p.index[id]; ok {
-		return b
-	}
-
-	return Box{ID: id}
+	return hit.ByID(p.index, id)
 }
 
 // hasBox reports whether the last layout has a box for id, in one map read.
 func (p *Page) hasBox(id string) bool {
-	_, ok := p.index[id]
-
-	return ok
+	return hit.Has(p.index, id)
 }
 
 // contentRect is the painted page in CSS pixels: the canvas plus any box

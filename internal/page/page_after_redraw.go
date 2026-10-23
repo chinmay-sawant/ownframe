@@ -2,15 +2,9 @@ package page
 
 import (
 	"context"
-)
 
-// afterRedrawState holds the after-redraw hook and the guards around it.
-type afterRedrawState struct {
-	fn     func()
-	busy   bool
-	ask    bool
-	served bool
-}
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
+)
 
 // SetAfterRedraw registers fn to run after a redraw commits a new display.
 //
@@ -30,22 +24,14 @@ func (p *Page) SetAfterRedraw(fn func()) {
 		return
 	}
 
-	p.afterRedraw.fn = fn
+	p.afterRedraw.Set(fn)
 }
 
 // runAfterRedraw calls the registered callback after a commit installed the
 // display and the boxes. A callback that asks for a redraw does not re-enter
 // the commit: the request waits for the callback to return.
 func (p *Page) runAfterRedraw() {
-	fn := p.afterRedraw.fn
-	if fn == nil || p.afterRedraw.busy {
-		return
-	}
-
-	p.afterRedraw.busy = true
-	defer func() { p.afterRedraw.busy = false }()
-
-	fn()
+	p.afterRedraw.Run()
 }
 
 // afterRedrawDraw serves the redraw the callback asked for. The draw runs
@@ -53,17 +39,11 @@ func (p *Page) runAfterRedraw() {
 // callback runs again in it, so state reapplied to a rebuilt tree lands. One
 // draw is enough: a callback that always asks for a draw cannot loop.
 func (p *Page) afterRedrawDraw(ctx context.Context) error {
-	if !p.afterRedraw.ask {
+	if !p.afterRedraw.Take() {
 		return nil
 	}
 
-	p.afterRedraw.ask = false
-	if p.afterRedraw.served {
-		return nil
-	}
-
-	p.afterRedraw.served = true
-	defer func() { p.afterRedraw.served = false }()
+	defer p.afterRedraw.Done()
 
 	return p.redraw(ctx, false)
 }
@@ -74,7 +54,7 @@ func (p *Page) afterRedrawDraw(ctx context.Context) error {
 // A redraw that a failed draw left queued stays queued, so the flags survive
 // into the next batch and it commits the redraw.
 func (p *Page) BeginRedrawBatch() {
-	p.redrawBatch++
+	draw.OpenBatch(&p.redrawBatch)
 }
 
 // EndRedrawBatch closes a batch and draws the final state once. An inner batch
@@ -85,21 +65,13 @@ func (p *Page) BeginRedrawBatch() {
 // A draw that fails leaves the redraw queued, so the next batch commits it
 // and the committed frame catches up with the state the batch changed.
 func (p *Page) EndRedrawBatch(ctx context.Context) error {
-	if p.redrawBatch == 0 {
+	run, force := draw.CloseBatch(&p.redrawBatch, &p.redrawPending, &p.redrawForce)
+	if !run {
 		return nil
 	}
-	p.redrawBatch--
-	if p.redrawBatch > 0 || !p.redrawPending {
-		return nil
-	}
-
-	force := p.redrawForce
-	p.redrawPending = false
-	p.redrawForce = false
 
 	if err := p.redraw(ctx, !force); err != nil {
-		p.redrawPending = true
-		p.redrawForce = force
+		draw.RestoreBatch(&p.redrawPending, &p.redrawForce, force)
 
 		return err
 	}

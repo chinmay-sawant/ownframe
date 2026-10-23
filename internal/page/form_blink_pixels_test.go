@@ -21,7 +21,9 @@ func TestCaretBlinkDoesNotMoveFieldText(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, caret := range []int{0, 13, 27} {
-		p.formState().caret, p.formState().anchor = caret, caret
+		st := p.formState().snap()
+		st.Caret, st.Anchor = caret, caret
+		p.formState().store(&st)
 		p.resetCaretBlink()
 		if err = p.Redraw(ctx); err != nil {
 			t.Fatal(err)
@@ -30,7 +32,9 @@ func TestCaretBlinkDoesNotMoveFieldText(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		p.formState().blinkAt = time.Now().Add(-caretBlinkInterval)
+		st = p.formState().snap()
+		st.BlinkAt = time.Now().Add(-caretBlinkInterval)
+		p.formState().store(&st)
 		if err = p.Tick(ctx); err != nil {
 			t.Fatal(err)
 		}

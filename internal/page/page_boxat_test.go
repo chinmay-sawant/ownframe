@@ -3,6 +3,8 @@ package page
 import (
 	"context"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
 
 func overlapFixture() []Box {
@@ -33,7 +35,7 @@ func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 	p := overlapPage(t)
 	p.setBoxes(overlapFixture())
 
-	box, ok := hit(p.Boxes(), 13, 13)
+	box, ok := hit.Hit(p.Boxes(), 13, 13)
 	if !ok || box.ID != "" {
 		t.Fatalf("hit = %+v, %v, want the innermost anonymous box", box, ok)
 	}
