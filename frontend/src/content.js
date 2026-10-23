@@ -1,5 +1,6 @@
 import { defaultUrlTransform } from 'react-markdown';
 import { repository } from './project';
+import { displayTextForDocument } from './compareDisplay';
 
 const sources = import.meta.glob('../../documentation/*.md', {
   query: '?raw', import: 'default', eager: true,
@@ -19,24 +20,26 @@ const labels = {
   'compare-gio': 'Gio',
   'compare-webview': 'webview_go',
   'compare-ebitengine': 'Ebitengine',
-  'compare-syntax': 'Hello world syntax',
 };
 
 const keptSlugs = new Set([
   'showcase', 'examples-readme',
   'compare-rust-gpui', 'compare-electron',
   'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview',
-  'compare-ebitengine', 'compare-syntax',
+  'compare-ebitengine',
 ]);
 
-const markdownDocuments = Object.entries({ ...sources, ...extras }).map(([path, text]) => ({
-  path: path.replace('../../', ''),
-  slug: path.startsWith('../../documentation/')
+const markdownDocuments = Object.entries({ ...sources, ...extras }).map(([path, text]) => {
+  const slug = path.startsWith('../../documentation/')
     ? path.split('/').pop().replace('.md', '').toLowerCase()
-    : path.replace('../../', '').replace(/\.md$/, '').replaceAll('/', '-').toLowerCase(),
-  title: text.match(/^# (.+)/m)?.[1] ?? path,
-  text,
-})).map((entry) => ({ ...entry, title: labels[entry.slug] ?? entry.title }));
+    : path.replace('../../', '').replace(/\.md$/, '').replaceAll('/', '-').toLowerCase();
+  return {
+    path: path.replace('../../', ''),
+    slug,
+    title: text.match(/^# (.+)/m)?.[1] ?? path,
+    text: displayTextForDocument(slug, text),
+  };
+}).map((entry) => ({ ...entry, title: labels[entry.slug] ?? entry.title }));
 
 export const documents = [...markdownDocuments.filter((entry) => keptSlugs.has(entry.slug)), {
   path: 'showcase.md',
@@ -52,7 +55,7 @@ const navigation = [
   },
   {
     title: 'Comparisons',
-    slugs: ['compare-rust-gpui', 'compare-electron', 'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview', 'compare-ebitengine', 'compare-syntax'],
+    slugs: ['compare-rust-gpui', 'compare-electron', 'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview', 'compare-ebitengine'],
   },
 ];
 

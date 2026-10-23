@@ -47,10 +47,9 @@ function App() {
     <header>
       <a className="brand" href="#home">ownframe</a>
       <nav aria-label="Main navigation">
-        <a href="#docs/showcase/wispr-flow">Example apps</a>
-        <a href="#compare">Comparison</a>
+        <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
+        <a href="#docs/compare-rust-gpui" aria-current={hash.startsWith('#docs/compare') ? 'page' : undefined}>Comparison</a>
         <a href="#start">Get started</a>
-        <a href="#docs/showcase/wispr-flow" aria-current={isDocs ? 'page' : undefined}>Docs</a>
       </nav>
       <ThemeToggle />
       <a className="github" href={repository} title="View ownframe on GitHub">

@@ -84,7 +84,7 @@ try {
   for (const [width, height] of [[320, 740], [390, 844], [768, 1024], [844, 390], [1440, 1000]]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 1000 });
     for (const theme of ['dark', 'light']) {
-      for (const hash of ['#home', '#docs/showcase/wispr-flow', '#docs/showcase/telegram', '#docs/showcase/pet-care', '#docs/examples-readme', '#docs/compare-rust-gpui', '#docs/compare-electron', '#docs/compare-wails', '#docs/compare-fyne', '#docs/compare-gio', '#docs/compare-webview', '#docs/compare-ebitengine', '#docs/compare-syntax']) {
+      for (const hash of ['#home', '#docs/showcase/wispr-flow', '#docs/showcase/telegram', '#docs/showcase/pet-care', '#docs/examples-readme', '#docs/compare-rust-gpui', '#docs/compare-electron', '#docs/compare-wails', '#docs/compare-fyne', '#docs/compare-gio', '#docs/compare-webview', '#docs/compare-ebitengine']) {
         await navigate(hash);
         if (hash === '#docs/showcase/wispr-flow') {
           assert.equal(await evaluate(`Array.from(document.querySelectorAll('.docs-nav a')).find(link => link.getAttribute('href') === '#docs/showcase/wispr-flow')?.textContent`), 'Example apps');
