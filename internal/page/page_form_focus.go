@@ -1,10 +1,12 @@
 package page
 
+import "github.com/chinmay-sawant/ownframe/internal/page/form"
+
 // formFocusState owns the form document, the pointer hit state, and the
 // accessibility snapshot. Only this file and page_form_focus_hit.go write
 // its fields; Page delegates below. No lock: the page loop serializes it.
 type formFocusState struct {
-	form           *formState
+	form           *form.State
 	hover          string
 	hoverX, hoverY float64
 	active         string
@@ -13,10 +15,10 @@ type formFocusState struct {
 }
 
 // formState returns the owned form document, or nil before first sync.
-func (p *Page) formState() *formState { return p.ff.form }
+func (p *Page) formState() *form.State { return p.ff.form }
 
 // setFormState replaces the owned form document.
-func (p *Page) setFormState(s *formState) { p.ff.form = s }
+func (p *Page) setFormState(s *form.State) { p.ff.form = s }
 
 // hoverID is the hovered element id, or "" when none.
 func (p *Page) hoverID() string { return p.ff.hover }

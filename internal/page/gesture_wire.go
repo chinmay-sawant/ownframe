@@ -36,7 +36,7 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 
 	var field Control
 	if fs := p.formState(); fs != nil {
-		field, _ = p.control(fs.focusID)
+		field, _ = p.control(fs.FocusID)
 	}
 
 	switch gesture.KeyDown(field, field.Value, key) {
@@ -123,7 +123,7 @@ func (p *Page) Copy(ctx context.Context) (string, bool, error) {
 	}
 
 	if c, ok := p.focusedEditable(); ok {
-		return gesture.Selected(c.Value, p.formState().anchor, p.formState().caret), true, nil
+		return gesture.Selected(c.Value, p.formState().Anchor, p.formState().Caret), true, nil
 	}
 
 	if p.handlers.Copy == nil {
@@ -144,16 +144,16 @@ func (p *Page) Cut(ctx context.Context) (string, bool, error) {
 	}
 
 	if c, ok := p.focusedEditable(); ok {
-		id := p.formState().focusID
+		id := p.formState().FocusID
 		if err := p.beforeEdit(ctx, id); err != nil {
 			return "", false, err
 		}
 
-		c, text, pos := gesture.Cut(c, p.formState().anchor, p.formState().caret)
-		p.formState().caret, p.formState().anchor = pos, pos
-		p.formState().all = false
+		c, text, pos := gesture.Cut(c, p.formState().Anchor, p.formState().Caret)
+		p.formState().Caret, p.formState().Anchor = pos, pos
+		p.formState().All = false
 		p.resetCaretBlink()
-		p.formState().byID[id] = c
+		p.formState().ByID[id] = c
 		p.markPending(id)
 		bindWrite(p, c)
 		if err := p.change(ctx, id); err != nil {
@@ -212,8 +212,8 @@ func (p *Page) SelectAll(ctx context.Context) error {
 
 	if c, ok := p.typingTarget(); ok {
 		sel := gesture.SelectAll(c.Value)
-		p.formState().anchor, p.formState().caret = sel.Anchor, sel.Caret
-		p.formState().all = sel.All
+		p.formState().Anchor, p.formState().Caret = sel.Anchor, sel.Caret
+		p.formState().All = sel.All
 		p.resetCaretBlink()
 
 		return p.Redraw(ctx)
@@ -561,7 +561,7 @@ func (p *Page) IMEContext() (layout.Box, int, string, string, bool) {
 	// The window reports the caret to the platform in screen coordinates,
 	// so take the scroll offset out of the box. Ebiten pans the canvas when
 	// the keyboard would cover this rectangle.
-	before, after, n := gesture.SplitCaret(c.Value, p.formState().caret)
+	before, after, n := gesture.SplitCaret(c.Value, p.formState().Caret)
 	box := gesture.Unscroll(p.boxByID(c.ID), float64(p.scroll.Windowing.X), float64(p.scroll.Windowing.Y))
 
 	return box, n, before, after, true
@@ -579,18 +579,18 @@ func (p *Page) IMEAnchor() (layout.Box, bool) {
 
 	fs := p.formState()
 	pre := gesture.Preedit{
-		ID:    fs.preeditID,
-		Text:  fs.preedit,
-		Start: fs.preeditStart,
-		End:   fs.preeditEnd,
+		ID:    fs.PreeditID,
+		Text:  fs.Preedit,
+		Start: fs.PreeditStart,
+		End:   fs.PreeditEnd,
 	}
 
 	return gesture.Anchor(
 		p.draw.Display,
 		c,
 		c.Value,
-		fs.caret,
-		fs.anchor,
+		fs.Caret,
+		fs.Anchor,
 		pre,
 		float64(p.scroll.Windowing.X),
 		float64(p.scroll.Windowing.Y),
@@ -611,18 +611,18 @@ func (p *Page) SetIMEComposition(ctx context.Context, text string, start, end in
 
 	_, has := p.typingTarget()
 	cur := gesture.Preedit{
-		ID:    fs.preeditID,
-		Text:  fs.preedit,
-		Start: fs.preeditStart,
-		End:   fs.preeditEnd,
+		ID:    fs.PreeditID,
+		Text:  fs.Preedit,
+		Start: fs.PreeditStart,
+		End:   fs.PreeditEnd,
 	}
-	next, redraw := gesture.Compose(cur, fs.focusID, text, start, end, has)
+	next, redraw := gesture.Compose(cur, fs.FocusID, text, start, end, has)
 	if !redraw {
 		return nil
 	}
 
-	fs.preeditID, fs.preedit = next.ID, next.Text
-	fs.preeditStart, fs.preeditEnd = next.Start, next.End
+	fs.PreeditID, fs.Preedit = next.ID, next.Text
+	fs.PreeditStart, fs.PreeditEnd = next.Start, next.End
 
 	return p.Redraw(ctx)
 }

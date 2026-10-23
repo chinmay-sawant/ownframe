@@ -18,7 +18,7 @@ func TestCaretSurvivesRedraw(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState().snap()
+	st := p.formState()
 	if st.Caret != 4 || st.Anchor != 4 || p.FocusID() != "t" {
 		t.Fatalf("caret %d anchor %d focus %q", st.Caret, st.Anchor, p.FocusID())
 	}

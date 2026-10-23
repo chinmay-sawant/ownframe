@@ -20,8 +20,8 @@ func (p *Page) AccessibilityTree() (host.AccessibilityTree, error) {
 func (p *Page) accessibilityView() a11y.View {
 	controls := map[string]a11y.Control{}
 	if st := p.formState(); st != nil {
-		controls = make(map[string]a11y.Control, len(st.byID))
-		for id, c := range st.byID {
+		controls = make(map[string]a11y.Control, len(st.ByID))
+		for id, c := range st.ByID {
 			controls[id] = accessibilityControl(c)
 		}
 	}

@@ -9,7 +9,7 @@ import (
 func (p *Page) renderState() render.State {
 	focus := ""
 	if st := p.formState(); st != nil {
-		focus = st.focusID
+		focus = st.FocusID
 	}
 
 	return draw.RenderState(p.hoverID(), p.activeID(), focus, p.theme, p.imageBytes, p.retainState)

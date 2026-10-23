@@ -48,7 +48,7 @@ func TestDragAcrossWrappedLines(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	st := p.formState().snap()
+	st := p.formState()
 	start, end := st.Bounds(runeLen(value))
 	if start != 0 || end != runeLen(value) {
 		t.Fatalf("wrapped range [%d,%d) of %d", start, end, runeLen(value))

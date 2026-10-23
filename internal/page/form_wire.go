@@ -21,26 +21,6 @@ type Option = form.Option
 // Start is the index of '<'. End is the index after the element.
 type controlSpan = form.Span
 
-// formState keeps the field names page_form_focus, gesture_wire, a11y_wire,
-// and page_perf already read. snap and store move those fields to form.State,
-// which owns the caret, focus, and value changes.
-type formState struct {
-	byID         map[string]Control
-	order        []string
-	focusID      string
-	lastFocusID  string
-	caret        int
-	anchor       int
-	all          bool
-	doc          int
-	blinkOn      bool
-	blinkAt      time.Time
-	preeditID    string
-	preedit      string
-	preeditStart int
-	preeditEnd   int
-}
-
 const (
 	commentOpenLen  = form.CommentOpenLen
 	commentTotalLen = form.CommentTotalLen
@@ -52,56 +32,6 @@ const (
 	// MaxPasteRunes caps one paste or type call before it merges.
 	MaxPasteRunes = form.MaxPasteRunes
 )
-
-func (s *formState) snap() form.State {
-	return form.State{
-		ByID:         s.byID,
-		Order:        s.order,
-		FocusID:      s.focusID,
-		LastFocusID:  s.lastFocusID,
-		Caret:        s.caret,
-		Anchor:       s.anchor,
-		All:          s.all,
-		Doc:          s.doc,
-		BlinkOn:      s.blinkOn,
-		BlinkAt:      s.blinkAt,
-		PreeditID:    s.preeditID,
-		Preedit:      s.preedit,
-		PreeditStart: s.preeditStart,
-		PreeditEnd:   s.preeditEnd,
-	}
-}
-
-func (s *formState) store(st *form.State) {
-	s.byID = st.ByID
-	s.order = st.Order
-	s.focusID = st.FocusID
-	s.lastFocusID = st.LastFocusID
-	s.caret = st.Caret
-	s.anchor = st.Anchor
-	s.all = st.All
-	s.doc = st.Doc
-	s.blinkOn = st.BlinkOn
-	s.blinkAt = st.BlinkAt
-	s.preeditID = st.PreeditID
-	s.preedit = st.Preedit
-	s.preeditStart = st.PreeditStart
-	s.preeditEnd = st.PreeditEnd
-}
-
-func (p *Page) editState(fn func(*form.State)) {
-	fs := p.formState()
-	st := fs.snap()
-	fn(&st)
-	fs.store(&st)
-}
-
-// bounds normalizes the form range to [start, end) clamped to n runes.
-func (s *formState) bounds(n int) (int, int) {
-	st := s.snap()
-
-	return st.Bounds(n)
-}
 
 func textLike(kind string) bool { return form.TextLike(kind) }
 
@@ -180,7 +110,7 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 
 	if id == "" {
 		fs := p.formState()
-		if fs == nil || fs.focusID == "" {
+		if fs == nil || fs.FocusID == "" {
 			return nil
 		}
 
@@ -194,10 +124,7 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 		return nil
 	}
 
-	var moved, reveal bool
-	p.editState(func(st *form.State) {
-		moved, reveal = st.TakeFocus(id, c, ok)
-	})
+	moved, reveal := p.formState().TakeFocus(id, c, ok)
 	if !moved {
 		return nil
 	}
@@ -216,7 +143,7 @@ func (p *Page) FocusID() string {
 		return ""
 	}
 
-	return fs.focusID
+	return fs.FocusID
 }
 
 // LastFocusID returns the control id cleared by the most recent blur.
@@ -226,7 +153,7 @@ func (p *Page) LastFocusID() string {
 		return ""
 	}
 
-	return fs.lastFocusID
+	return fs.LastFocusID
 }
 
 func (p *Page) focusStep(ctx context.Context, step int) error {
@@ -266,7 +193,7 @@ func (p *Page) SelectAt(ctx context.Context, x, y float64) error {
 	c, ok := p.control(id)
 	if !ok {
 		fs := p.formState()
-		if fs == nil || fs.focusID == "" {
+		if fs == nil || fs.FocusID == "" {
 			return nil
 		}
 
@@ -299,10 +226,7 @@ func (p *Page) Drag(ctx context.Context, x, y float64) error {
 	}
 
 	off := p.offsetAt(p.boxByID(c.ID), c, x, y)
-	changed := false
-	p.editState(func(st *form.State) {
-		changed = st.DragTo(off)
-	})
+	changed := p.formState().DragTo(off)
 	if !changed {
 		return nil
 	}
@@ -333,9 +257,7 @@ func (p *Page) selectSpan(ctx context.Context, x, y float64, bounds func(string,
 
 	off := p.offsetAt(p.boxByID(id), c, x, y)
 	start, end := bounds(c.Value, off)
-	p.editState(func(st *form.State) {
-		st.SelectSpan(c.ID, start, end)
-	})
+	p.formState().SelectSpan(c.ID, start, end)
 
 	return p.Redraw(ctx)
 }
@@ -349,10 +271,7 @@ func (p *Page) offsetAt(box Box, c Control, x, y float64) int {
 
 // focusCaret focuses c and puts the caret and the anchor at off.
 func (p *Page) focusCaret(ctx context.Context, c Control, off int) error {
-	changed := false
-	p.editState(func(st *form.State) {
-		changed = st.FocusCaret(c.ID, off)
-	})
+	changed := p.formState().FocusCaret(c.ID, off)
 	if !changed {
 		return nil
 	}
@@ -384,9 +303,7 @@ func (p *Page) setCaret(pos int, extend bool) {
 		n = runeLen(c.Value)
 	}
 
-	p.editState(func(st *form.State) {
-		st.SetCaret(pos, n, extend)
-	})
+	p.formState().SetCaret(pos, n, extend)
 }
 
 // hasSelection reports whether the focused field has a non-empty range.
@@ -396,7 +313,7 @@ func (p *Page) hasSelection() bool {
 		return false
 	}
 
-	start, end := p.formState().bounds(runeLen(c.Value))
+	start, end := p.formState().Bounds(runeLen(c.Value))
 
 	return start != end
 }
@@ -411,21 +328,19 @@ func (p *Page) caretKey(ctx context.Context, key string) error {
 	}
 
 	fs := p.formState()
-	st := fs.snap()
 	n := runeLen(c.Value)
-	caret := form.ClampPos(st.Caret, n)
-	start, end := st.Bounds(n)
+	caret := form.ClampPos(fs.Caret, n)
+	start, end := fs.Bounds(n)
 	pos, extend, ok := form.MoveCaret(key, c.Value, caret, start, end)
 	if !ok {
 		return nil
 	}
 
-	if !form.CaretMoved(st.Caret, st.Anchor, pos, st.All, extend) {
+	if !form.CaretMoved(fs.Caret, fs.Anchor, pos, fs.All, extend) {
 		return nil
 	}
 
-	st.SetCaret(pos, n, extend)
-	fs.store(&st)
+	fs.SetCaret(pos, n, extend)
 
 	return p.Redraw(ctx)
 }
@@ -438,7 +353,7 @@ func (p *Page) resetCaretBlink() {
 		return
 	}
 
-	fs.blinkOn, fs.blinkAt = form.ResetBlink()
+	fs.RestartBlink()
 }
 
 // caretBlink toggles the focused field's caret on the blink clock and draws
@@ -456,9 +371,7 @@ func (p *Page) caretBlink(ctx context.Context) error {
 		n = runeLen(c.Value)
 	}
 
-	st := fs.snap()
-	draw := st.StepBlink(time.Now(), n, ok, form.IsFileInput(c))
-	fs.store(&st)
+	draw := fs.StepBlink(time.Now(), n, ok, form.IsFileInput(c))
 	if !draw {
 		return nil
 	}
@@ -473,43 +386,39 @@ func (p *Page) paintCaret(d *layout.Display) {
 	}
 
 	c, ok := p.focusedEditable()
-	st := fs.snap()
-	v := st.View()
+	v := fs.View()
 	if ok {
 		v.Control = c
 	}
 
-	form.PaintCaret(d, v, ok, form.IsFileInput(c), fs.blinkOn)
+	form.PaintCaret(d, v, ok, form.IsFileInput(c), fs.BlinkOn)
 }
 
 func (p *Page) syncForm(body string) string {
 	doc := p.nav.Doc()
 	fs := p.formState()
-	if fs == nil || fs.doc != doc {
-		fs = &formState{}
+	if fs == nil || fs.Doc != doc {
 		fresh := form.NewDoc(doc)
-		fs.store(&fresh)
+		fs = &fresh
 		p.setFormState(fs)
 	}
 
 	body = rewriteButtons(body)
 	spans := form.Scan(body)
-	st := fs.snap()
-	byID, order := form.Merge(st.ByID, spans)
+	byID, order := form.Merge(fs.ByID, spans)
 	form.ApplyBinds(byID, func(c Control) (Control, bool) {
 		return bindRead(p, c)
 	})
-	st.ByID = byID
-	st.Order = order
-	if _, ok := byID[st.FocusID]; !ok {
-		st.FocusID = ""
-		st.ClearRange()
+	fs.ByID = byID
+	fs.Order = order
+	if _, ok := byID[fs.FocusID]; !ok {
+		fs.FocusID = ""
+		fs.ClearRange()
 	}
 
-	st.ClampToFocus()
-	fs.store(&st)
+	fs.ClampToFocus()
 
-	return emojiPass(form.RewriteState(body, spans, byID, form.CaretOf(st.View())))
+	return emojiPass(form.RewriteState(body, spans, byID, form.CaretOf(fs.View())))
 }
 
 func (p *Page) clickControl(ctx context.Context, box Box) error {
@@ -614,7 +523,7 @@ func (p *Page) applyPicked(ctx context.Context, box Box, c Control) error {
 	}
 
 	c.Value = path
-	p.formState().byID[box.ID] = c
+	p.formState().ByID[box.ID] = c
 	bindWrite(p, c)
 	p.markPending(box.ID)
 
@@ -627,9 +536,7 @@ func (p *Page) blurForm() {
 		return
 	}
 
-	st := fs.snap()
-	old := st.Blur()
-	fs.store(&st)
+	old := fs.Blur()
 	p.markPair(old, "")
 }
 
@@ -654,12 +561,7 @@ func (p *Page) activate(id string) bool {
 		return false
 	}
 
-	changed := false
-	p.editState(func(st *form.State) {
-		changed = st.Activate(id)
-	})
-
-	return changed
+	return fs.Activate(id)
 }
 
 func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) error {
@@ -686,8 +588,8 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 	}
 
 	if changed {
-		p.markPending(p.formState().focusID)
-		if err := p.change(ctx, p.formState().focusID); err != nil {
+		p.markPending(p.formState().FocusID)
+		if err := p.change(ctx, p.formState().FocusID); err != nil {
 			return err
 		}
 	}
@@ -702,21 +604,21 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
 	}
 
 	fs := p.formState()
-	next, caret, anchor, changed := edit(c, fs.caret, fs.anchor)
+	next, caret, anchor, changed := edit(c, fs.Caret, fs.Anchor)
 	if !changed {
 		return false, nil
 	}
 
 	// GEN-28: every edit funnels here, so clamp once for all writers.
 	next, caret, anchor = form.ClampEdited(next, caret, anchor)
-	if err := p.beforeEdit(ctx, fs.focusID); err != nil {
+	if err := p.beforeEdit(ctx, fs.FocusID); err != nil {
 		return false, err
 	}
 
 	fs = p.formState()
-	fs.byID[fs.focusID] = next
-	fs.caret, fs.anchor = caret, anchor
-	fs.all = false
+	fs.ByID[fs.FocusID] = next
+	fs.Caret, fs.Anchor = caret, anchor
+	fs.All = false
 	p.resetCaretBlink()
 	bindWrite(p, next)
 
@@ -738,7 +640,7 @@ func (p *Page) focusedEditable() (Control, bool) {
 		return Control{}, false
 	}
 
-	c, ok := p.control(fs.focusID)
+	c, ok := p.control(fs.FocusID)
 	if !ok || !canEdit(c) {
 		return Control{}, false
 	}
@@ -783,9 +685,7 @@ func (p *Page) SetFormValue(id, value string) {
 		return
 	}
 
-	p.editState(func(st *form.State) {
-		st.WriteValue(id, value)
-	})
+	fs.WriteValue(id, value)
 }
 
 // FormChecked reports whether id is checked.
@@ -806,9 +706,7 @@ func (p *Page) SetFormChecked(id string, checked bool) {
 		return
 	}
 
-	p.editState(func(st *form.State) {
-		st.WriteChecked(id, checked)
-	})
+	fs.WriteChecked(id, checked)
 }
 
 // FocusedField returns the focused field id, excluding buttons.
@@ -819,9 +717,7 @@ func (p *Page) FocusedField() string {
 		return ""
 	}
 
-	st := fs.snap()
-
-	return st.FieldID()
+	return fs.FieldID()
 }
 
 func (p *Page) control(id string) (Control, bool) {
@@ -830,9 +726,7 @@ func (p *Page) control(id string) (Control, bool) {
 		return Control{}, false
 	}
 
-	st := fs.snap()
-
-	return st.Lookup(id)
+	return fs.Lookup(id)
 }
 
 // FormSelected reports whether id is the focused control and its whole
@@ -840,11 +734,9 @@ func (p *Page) control(id string) (Control, bool) {
 // page has no form yet, or when another control is focused.
 func (p *Page) FormSelected(id string) bool {
 	fs := p.formState()
-	if fs == nil || fs.focusID != id {
+	if fs == nil || fs.FocusID != id {
 		return false
 	}
 
-	st := fs.snap()
-
-	return form.WholeSelected(st.View(), id)
+	return form.WholeSelected(fs.View(), id)
 }

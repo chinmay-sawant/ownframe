@@ -13,52 +13,78 @@ import (
 )
 
 func (p *Page) redraw(ctx context.Context, skipSame bool) error {
-	if err := useContext(ctx); err != nil {
-		return err
-	}
-	if p.afterRedraw.Busy() {
-		// The after-redraw callback asked for a draw. The commit that runs
-		// the callback must not start another one inside it, so the request
-		// waits for the commit to finish.
-		p.afterRedraw.Ask()
-
-		return nil
-	}
-	if draw.QueueBatch(p.redrawBatch, &p.redrawPending, &p.redrawForce, skipSame) {
-		return nil
-	}
-
-	sample, clear := draw.BeginSample(p.perf)
-	if clear {
-		p.clearPerf()
-	}
-	sample.StartClock()
-	p.stats.redraws++
-
-	defer p.finishRedraw(sample.Track, sample.Mem, sample.Start)
-
-	executed, err := p.execTemplate(sample.Track)
-	if err != nil {
-		return err
-	}
-
-	p.source = p.syncForm(executed)
-	state := p.renderState()
-	if skipSame && p.unchanged(state) {
-		return nil
-	}
-
-	p.draw.DropPNG()
-	styled, err := p.styleStaged(ctx, sample.Track, p.source, state)
-	if err != nil {
-		return err
-	}
-	if err := p.drawStaged(ctx, sample.Track, styled, state, executed); err != nil {
-		return err
-	}
-
-	return p.afterRedrawDraw(ctx)
+	return draw.Run(ctx, redrawSurface{p}, skipSame)
 }
+
+// redrawSurface adapts Page to draw.RedrawSurface.
+// Each method delegates to the page step the sequence already used.
+type redrawSurface struct{ p *Page }
+
+func (s redrawSurface) AfterBusy() bool { return s.p.afterRedraw.Busy() }
+
+func (s redrawSurface) AfterAsk() { s.p.afterRedraw.Ask() }
+
+func (s redrawSurface) QueueBatch(skipSame bool) bool {
+	return draw.QueueBatch(
+		s.p.redrawBatch,
+		&s.p.redrawPending,
+		&s.p.redrawForce,
+		skipSame,
+	)
+}
+
+func (s redrawSurface) BeginSample() (draw.Sample, bool) {
+	return draw.BeginSample(s.p.perf)
+}
+
+func (s redrawSurface) ClearPerf() { s.p.clearPerf() }
+
+func (s redrawSurface) CountRedraw() { s.p.stats.redraws++ }
+
+func (s redrawSurface) FinishRedraw(track bool, mem runtime.MemStats, start time.Time) {
+	s.p.finishRedraw(track, mem, start)
+}
+
+func (s redrawSurface) ExecTemplate(track bool) (string, error) {
+	return s.p.execTemplate(track)
+}
+
+func (s redrawSurface) SyncForm(executed string) string {
+	s.p.source = s.p.syncForm(executed)
+
+	return s.p.source
+}
+
+func (s redrawSurface) RenderState() render.State { return s.p.renderState() }
+
+func (s redrawSurface) Unchanged(state render.State) bool { return s.p.unchanged(state) }
+
+func (s redrawSurface) DropPNG() { s.p.draw.DropPNG() }
+
+func (s redrawSurface) StyleStaged(
+	ctx context.Context,
+	track bool,
+	source string,
+	state render.State,
+) (*css.Document, error) {
+	return s.p.styleStaged(ctx, track, source, state)
+}
+
+func (s redrawSurface) DrawStaged(
+	ctx context.Context,
+	track bool,
+	styled *css.Document,
+	state render.State,
+	executed string,
+) error {
+	return s.p.drawStaged(ctx, track, styled, state, executed)
+}
+
+func (s redrawSurface) AfterRedrawDraw(ctx context.Context) error {
+	return s.p.afterRedrawDraw(ctx)
+}
+
+var _ draw.RedrawSurface = redrawSurface{}
 
 // execTemplate runs the trusted template, timing it when tracked.
 func (p *Page) execTemplate(track bool) (string, error) {

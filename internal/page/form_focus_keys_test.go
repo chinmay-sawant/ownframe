@@ -72,13 +72,13 @@ func TestCaretKeys(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if p.formState().snap().Caret != step.want {
-			t.Fatalf("%s caret %d want %d", step.key, p.formState().snap().Caret, step.want)
+		if p.formState().Caret != step.want {
+			t.Fatalf("%s caret %d want %d", step.key, p.formState().Caret, step.want)
 		}
 	}
 
-	if p.formState().snap().Anchor != 5 {
-		t.Fatalf("shift anchor %d", p.formState().snap().Anchor)
+	if p.formState().Anchor != 5 {
+		t.Fatalf("shift anchor %d", p.formState().Anchor)
 	}
 
 	if len(seen) != len(steps) || seen[0] != "arrowleft" {
