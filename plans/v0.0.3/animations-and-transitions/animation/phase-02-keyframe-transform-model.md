@@ -167,6 +167,18 @@ projection, so intersecting 3D planes and true back-face culling are not
 rendered. The animation matches the static projection, which is the correct
 target for this track. Do not promise a 3D scene.
 
+## Known limits
+
+- Matching `rotate3d()` lists with different axes interpolate the axis components
+  linearly. CSS normalizes the axes and falls back to matrices when they differ.
+- A 180 degree rotation through the matrix path has two equally short quaternion
+  routes. The midpoint sign follows the WebKit/Blink convention; the endpoints
+  are correct either way.
+- A singular 2D endpoint such as `scale(0)` still uses the 2D decomposition,
+  which drops the zero scale.
+- `perspective(none)` inside a `transform` list is not parsed. Only the
+  `perspective` property can express no perspective.
+
 ## Checklist
 
 ### A. Model

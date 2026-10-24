@@ -57,6 +57,36 @@ exists in the blinkless pin. Until then, geometry keyframes are counted as
 deferred, left at their base value, and listed in the compatibility matrix. Do
 not ship the inline-style workaround.
 
+## Engine status
+
+`RelayoutElementWithOverrides` is implemented on the blinkless feature branch,
+on top of the pushed `72e595d` commit. The pin still points at `72e595d`; bump it
+when the host wiring lands.
+
+```go
+type Override struct {
+    ElementID string
+    Property  string
+    Value     string
+}
+func RelayoutElementWithOverrides(ctx, doc, prev, elementID string,
+    overrides []Override, options Options) (*ElementPatch, error)
+```
+
+The pass targets the containing block, not only the element, so siblings reflow.
+It clones the element style and custom properties, applies the override, resolves
+descendants with the clone as the inherited parent, builds the containing block,
+then restores every base style pointer. `Old` and `New` are the element's border
+box. Sibling operations are re-emitted and get new op IDs, so the phase 01 rebind
+must keep their timelines. Tile damage should come from `dirtyFromDisplay`, not
+`Old`/`New` alone, because a moved sibling is outside those two rectangles.
+
+Not overridable this way: transforms and perspective, SVG paint, paint-only
+properties, flow and box-kind properties, many shorthands, table cells and rows,
+sticky, float, anchored, named-flow, and viewport-fixed elements. A reflow that
+resizes the containing block returns `ErrOverrideReflow`; the caller falls back to
+a full display build for that frame.
+
 ## Design
 
 1. Retain state on demand. At first bind, scan `display.Keyframes` for a property

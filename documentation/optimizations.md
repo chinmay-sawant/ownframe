@@ -393,7 +393,7 @@ the state span inside it rides along with that one patch.
 
 ## Next: the two gaps against a browser
 
-The first gap is closed. The second one is the list to work from next.
+The first gap is closed. The second is partly addressed.
 
 ### What a browser does
 
@@ -431,12 +431,24 @@ elements it changed, and the page paints the patched region.
 
 ### Gap two, a running animation repaints the page
 
-With 43 animations running, every frame replays the display list. A browser
-moves a layer instead.
+This gap is partly addressed. A running animation no longer replays the page,
+but it does not move a composited layer either.
 
-- The replay path already carries an op transform matrix, a group composite,
-  and viewport-pinned ops. What is missing is a layer the window can blit
-  without repainting the page under it.
+With 43 animations running, the automatic CSS driver samples each player, writes
+only the fields its property owns, and reports the union of the painted bounds
+before and after the sample. A 2D transform moves the operation's matrix, so
+replay draws that operation through its matrix without a layout, and a colour or
+opacity write touches only the operations the element owns. The window then
+repaints the damaged tiles rather than the whole page. A 3D transform or
+perspective goes through one engine re-projection pass per tick and marks the
+patch's old and new boxes. [css-motion.md](css-motion.md) has the property
+coverage and the counters; [repaint.md](repaint.md) has the matrix and chunk
+rules.
+
+What is still missing is a composited layer the window can blit without
+replaying the damage under it. The 43 cards share one display list, and a moving
+op still pays a chunk or raster blit each frame. The window does not composite
+animation layers yet; do not count them as shipped.
 
 ### The Play All click cost
 

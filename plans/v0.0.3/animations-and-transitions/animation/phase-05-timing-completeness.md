@@ -45,6 +45,34 @@ auto duration, accumulate, end delay, fractional iterations, and pause/resume.
 | zero duration | undefined here | apply the end value immediately, honor fill |
 | comma-separated list | one `Effect` per item | keep, test list repetition when the keyframe-name list is shorter |
 
+## Composition status
+
+The transform composition pass has landed:
+
+- `add` is the ordered matrix product of the underlying element transform and
+  the sampled transform. Two `translateX(100px)` effects produce 200px.
+- `accumulate` adds translation, rotation, and skew components. Scale is
+  one-based (`a+b-1`), and 3D rotations compose by quaternion product.
+- A missing underlying value is treated as the matching identity, so a single
+  effect keeps its authored value.
+- `replace` is unchanged.
+- Transform and perspective segments use the easing on the keyframe that starts
+  the segment, cached at bind.
+
+Not covered:
+
+- `iterationComposite: accumulate`. CSS animations do not set it; the
+  `animation-composition: accumulate` rule is applied once per sample, as
+  Web Animations specifies.
+- A 3D effect followed by another effect on the same element: the 3D value lives
+  only in the player's restamp slot, so the second effect composes from the
+  element's own transform. This needs a player change.
+- `accumulate` over a multi-function list uses matrix decomposition rather than
+  per-function accumulation with leftover concatenation. Single-function lists
+  match the spec.
+- Composition between `perspective` property effects is not implemented; only
+  its per-keyframe easing is.
+
 ## Design
 
 1. Per-keyframe easing. Add `TimingFunction string` to `animation.Keyframe` and

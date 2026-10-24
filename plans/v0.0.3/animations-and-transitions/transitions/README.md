@@ -1,7 +1,8 @@
 # v0.0.3 - CSS transition track
 
 > **Parent:** [animations and transitions](../README.md)
-> **Status:** planning
+> **Status:** landed on `features/animations-and-transitions`; geometry and
+> discrete rules are implemented, the display cross-fade is blocked.
 > **Coverage:** [coverage.md](../coverage.md) maps every implemented animatable
 > property to a phase, an exclusion, or a blocker.
 > **Goal:** a style change that matches a `transition` declaration animates from

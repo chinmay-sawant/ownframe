@@ -58,10 +58,15 @@ to patch.
 re-serializes one inline SVG with a paint override, rasterizes it, and returns an
 `ElementPatch`. This phase integrates that API under the phase 04 budget.
 
-If phase 11 ships root-only, this phase covers inherited root paint. Per-part
-animation waits for part metadata. If the API has not landed, count the property
-as deferred. Do not rewrite the SVG string in OwnFrame; the serializer lives in
-the engine.
+Landed at root level: keyframes parse and sample, `BindBox` creates an SVG paint
+player, the page calls `RestyleInlineSVG` with one restyle per frame, and block
+and inline SVGs both work. `Stats` reports requests, restyles, queue depth,
+budget hits, deferred paint, and errors. A paint server such as `url(#gradient)`
+counts a gap and leaves base paint.
+
+Per-part remains open: the engine exports only the `<svg>` root box, so a
+keyframe on an inner shape is not addressable. Do not rewrite the SVG string in
+OwnFrame; the serializer lives in the engine.
 
 ### C. Bitmap fallback
 
@@ -84,21 +89,29 @@ counter and the matrix note are mandatory.
 
 ### A. Path replay
 
-- [ ] Add `OpPath` to the render kind table.
-- [ ] Add the painter, including fill, stroke, matrix, and opacity.
-- [ ] Add `OpPath` to `replayableOp`.
-- [ ] Add path bounds to `opBounds` and the chunk signature.
-- [ ] Add a corner-shape page that stays on the list path.
-- [ ] Add a golden for a corner-shape box.
+- [x] Add `OpPath` to the render kind table.
+- [x] Add the painter, including fill, stroke, matrix, and opacity.
+- [x] Add `OpPath` to `replayableOp`.
+- [x] Add path bounds to `opBounds` and the chunk signature.
+- [x] Add a corner-shape page that stays on the list path.
+- [x] Add a golden for a corner-shape box.
+- [x] Add the GPU parity checks for fill, border, transform, and group.
+- [x] Teach `internal/bitmap` to paint a path for the fallback path.
+- [x] Add the devtools op row for a path.
+- [x] Target path ops from `internal/frame` fill helpers and motion colour writes.
+- [ ] Accept an elliptical pen for a non-uniform matrix, or document the
+      geometric-mean stroke width as the limit.
 
 ### B. SVG paint
 
-- [ ] Consume `RestyleInlineSVG` for fill and stroke paint.
-- [ ] Adopt its `ElementPatch` through the existing splice path.
-- [ ] Route it through the phase 04 budget with a per-element cap.
-- [ ] Root-only mode: document the per-part gap.
-- [ ] No API: count the property as deferred and add the matrix note.
-- [ ] Add a card for `fill` and `stroke-width` with the chosen behaviour.
+- [x] Consume `RestyleInlineSVG` for fill and stroke paint.
+- [x] Adopt its `ElementPatch` through the existing splice path.
+- [x] Route it through a one-per-frame budget with counters.
+- [x] Root-only mode: document the per-part gap.
+- [x] Add an SVG paint card to the conformance example.
+- [ ] Target a child shape when the engine exports part metadata.
+- [ ] Add the large-SVG size cap.
+- [ ] Accept paint servers or reject them with a named error.
 
 ### C. Bitmap fallback
 

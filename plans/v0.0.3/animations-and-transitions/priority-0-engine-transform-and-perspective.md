@@ -420,12 +420,8 @@ queue. Measure a 20-card 3D and perspective page before raising the budget.
   refresh the metadata.
 - The host rebinds motion after each restamp, so `Stats.Rebinds` grows during a
   3D animation. That is correct but worth watching in a profile.
-- An implicit `perspective` or `perspective-origin` keyframe endpoint uses `none`
-  and `50% 50%`, not the element's static values. An explicit endpoint is exact;
-  a partial list on an element with a static camera interpolates from the wrong
-  start.
-- `perspective-origin` accepts one or two components. The three- and four-value
-  edge-offset syntax is rejected.
+- `perspective(none)` inside a `transform` list is not parsed. Only the
+  `perspective` property can express no perspective.
 
 ## Gate
 

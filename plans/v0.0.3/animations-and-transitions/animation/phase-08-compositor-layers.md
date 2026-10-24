@@ -9,6 +9,37 @@ This is the Chrome behaviour the current architecture is missing, and it is the
 reason this phase exists. It is not a second thread. Ebiten draws on the game
 goroutine; the win comes from not repainting content, not from parallelism.
 
+## First milestone landed
+
+The replay side is in:
+
+- `layer.go` captures an element's owned ops in paint order and renders the base
+  pose into a texture. The content signature clears `XformSet`, so the animation
+  matrix never re-bakes the texture.
+- `layer_cache.go` keys layers by element id, box index, and generation, with
+  16-layer and 32 Mi-pixel caps, LRU eviction, and Begin/Demote/Close lifecycle.
+- `layer_paint.go` composites at the first paint-order position and skips every
+  owned op. The window merges old and new pose damage.
+- `group_composite.go` shares the matrix and alpha composite path.
+- `internal/window/replay_partial.go` and `replay_tile_paint.go` consume a
+  `LayerSource`, but no page implements it yet.
+- A rotated-card benchmark pays 40 op draws once, then one background op and one
+  layer blit per frame.
+
+Still open:
+
+- [ ] Add `LayerSpecs(display)` to the page or its adapter and expose active
+      entries, property masks, and group alpha from `internal/motion`.
+- [ ] Do not bake the sampled alpha into the ops when a layer applies it.
+- [ ] Group-contained promotion. A page with any blend, isolation, or mask group
+      currently demotes every layer.
+- [ ] Nested and overlapping promoted elements; they are demoted today.
+- [ ] Viewport and full-replay paths. Only the tile path consumes layers.
+- [ ] Layer counters in `Probe().Motion()`.
+- [ ] Filter, clip-path, and mask animations on a layer.
+- [ ] Add the gated GPU layer checks to `make graphics-check`.
+- [ ] 0/50/100 percent goldens and a 43-card benchmark.
+
 ## Where it lives
 
 - `internal/replay/group_layer.go:10-37` already renders a subtree into an

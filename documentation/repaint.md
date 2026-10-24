@@ -131,12 +131,13 @@ A dirty rect used to replay every operation it met, changed or not. The
 painter now groups consecutive operations that sit inside the same element
 box from `Display.Boxes` into a chunk, rasterizes the chunk once into a
 bounded image, and blits it on later damage. A content signature covers every
-field that affects pixels, so a tick that patches an operation re-bakes only
-its chunk. Chunks paint in order, which keeps overlaps correct, and stay
-direct for fixed or z-indexed operations, translucent runs, ink that cannot
-be bounded, boxes over half the content, and everything inside a non-normal
-or masked group. The cache holds a bounded number of chunks and pixels, and
-an evicted chunk re-bakes on the next draw.
+field that affects pixels, including an operation's baked matrix, so a tick
+that patches an operation re-bakes only its chunk and a transform that moves
+each frame re-bakes only the chunk it belongs to. Chunks paint in order, which
+keeps overlaps correct, and stay direct for fixed or z-indexed operations,
+translucent runs, ink that cannot be bounded, boxes over half the content, and
+everything inside a non-normal or masked group. The cache holds a bounded number
+of chunks and pixels, and an evicted chunk re-bakes on the next draw.
 
 ## Transforms and blend groups
 
@@ -146,6 +147,16 @@ text draws with the matrix on the text options. A blend or isolation group
 buffers its members into a layer and composites the layer once with the CSS
 blend formula in a Kage shader, so a partially transparent backdrop stays
 exact. Nested groups buffer inside the parent, up to four deep.
+
+Automatic CSS motion makes the matrix path run per frame. A 2D transform sample
+writes the operation's matrix, and the dirty-bounds helper
+(`internal/page/dirty`, `OpBounds`) maps the operation's local paint box through
+that matrix, so a damage rect covers where the ink lands after the move rather
+than the laid-out box. A 3D transform or perspective sample does not write a
+matrix: the page hands the values to the engine's re-projection pass and marks
+the patch's old and new painted boxes (`internal/page/motion_wire.go`,
+`adoptRestamp`). A matrix the replay cannot bound still falls to the bitmap, as
+the next paragraph lists.
 
 The gate still sends several cases to the bitmap: non-separable blend modes
 (hue, saturation, color, luminosity), transformed grids, rotated or oblique

@@ -1,7 +1,8 @@
 # v0.0.3 - examples migration track
 
 > **Parent:** [animations and transitions](../README.md)
-> **Status:** planning
+> **Status:** landed on `features/animations-and-transitions`; animations and
+> css-preview are migrated, the manual exceptions are listed in the phase files.
 > **Goal:** no example carries a hand-written animation driver, and every example
 > that declares CSS motion renders it from the automatic runtime.
 

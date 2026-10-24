@@ -1,7 +1,8 @@
 # v0.0.3 - CSS animation track
 
 > **Parent:** [animations and transitions](../README.md)
-> **Status:** planning
+> **Status:** landed on `features/animations-and-transitions`; the open limits are
+> recorded in each phase file.
 > **Coverage:** [coverage.md](../coverage.md) maps every implemented animatable
 > property to a phase, an exclusion, or a blocker.
 > **Goal:** every `@keyframes` animation in a page runs, at the right time and on

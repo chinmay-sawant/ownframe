@@ -193,8 +193,8 @@ note.
 | 3D transform functions, `perspective`, `perspective-origin` | projective; [priority 0](priority-0-engine-transform-and-perspective.md) adds `RestampTransforms`, because a 2D layer matrix cannot represent them | 02, 04, priority 0 |
 | Named timelines (`animation-timeline: --x`) | [phase 11](animation/phase-11-engine-named-timelines-and-svg-paint.md) adds `scroll-timeline-*` and `view-timeline-*`; nested scrollers and `timeline-scope` stay out of scope | 06, phase 11 |
 | `scroll()`, `view()` timelines | host input is available; not blocked | 06 |
-| Corner shapes (`corner-*` and `DisplayOpPath`) | `internal/replay` has no painter for `DisplayOpPath`, so the page falls back to a bitmap and no op patch is visible | 10 |
-| SVG `fill`/`stroke` paint | inline SVG serializes to an `OpImage`; [phase 11](animation/phase-11-engine-named-timelines-and-svg-paint.md) adds `RestyleInlineSVG`, and phase 10 integrates it | 10, phase 11 |
+| SVG `fill`/`stroke` paint | root-level fill and stroke animate through `RestyleInlineSVG`; a keyframe that targets a child shape needs engine part metadata | 10, phase 11 |
+| SVG paint on a child shape | the engine exports only the `<svg>` root box, so a keyframe on an inner `<rect>`/`<path>` is not addressable | phase 11 follow-up |
 | Motion on a bitmap-fallback page | the window draws the picture, not the display list, so patched ops are invisible | 10 |
 | `will-change` | parsed and ignored by the engine (§2.3); promotion uses the animated property instead | 08 |
 
