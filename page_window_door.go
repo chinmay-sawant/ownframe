@@ -2,10 +2,10 @@ package ownframe
 
 import "context"
 
-// Window reads and sets reload, perf, devtools, and touch policy.
+// Window reads and sets reload, motion, perf, devtools, and touch policy.
 type Window struct{ page *Page }
 
-// Window returns reload, perf, devtools, and touch policy for this page.
+// Window returns reload, motion, perf, devtools, and touch policy for this page.
 func (p *Page) Window() Window { return Window{page: p} }
 
 // PollReload rereads a watched source file.
@@ -16,6 +16,26 @@ func (w Window) PollReload(ctx context.Context) (bool, error) {
 	}
 
 	return p.PollReload(ctx)
+}
+
+// SetAnimations turns the automatic CSS motion driver on or off. It is on by
+// default; turning it off releases the bound players at once.
+func (w Window) SetAnimations(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetAnimations(on)
+}
+
+// Animations reports whether the automatic CSS motion driver is on.
+func (w Window) Animations() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Animations()
 }
 
 // SetPerf turns pipeline timing, dirty counters, and alloc tracking on or off.

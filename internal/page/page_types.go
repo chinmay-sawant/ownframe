@@ -7,6 +7,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/element"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/page/nav"
@@ -40,8 +41,11 @@ type Page struct {
 	stats           pageStats
 	devtools        bool
 	perf            bool
+	motion          *motion.Runtime
+	animationsOff   bool
 	allocAt         time.Time // last allocator sample; zero means the next Perf redraw is due
 	retainState     bool
+	restampRedraw   bool
 	lockView        bool
 	mobileViewport  bool
 	allowTouchZoom  bool

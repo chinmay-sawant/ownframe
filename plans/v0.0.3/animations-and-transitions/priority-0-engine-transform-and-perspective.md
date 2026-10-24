@@ -299,7 +299,8 @@ queue. Measure a 20-card 3D and perspective page before raising the budget.
 - [ ] Set `HasMatrix` only when the element has a transform.
 - [ ] Set `HasTransform3D` when the element participates in a 3D composition.
 - [ ] Export `Perspective`, its origin, `Style`, and `Backface`.
-- [ ] Keep the fields zero for an element with no transform.
+- [ ] Populate Parent and origin for every element box, including one with no
+      static transform. `HasMatrix` reports a static transform only.
 - [ ] Do not change op emission. The display list must be byte-identical when
       the fields are ignored.
 
@@ -394,6 +395,37 @@ queue. Measure a 20-card 3D and perspective page before raising the budget.
 - String serialization per frame can allocate. Give the host a buffer and measure
   it; a 3D transform animation is already on the slow path, but zero allocations
   is still the target.
+
+## Known limits after the first implementation
+
+- A restamp does not cull back faces. Zeroing an op would destroy geometry that a
+  later frame cannot restore, and an op already culled by the static pass stays
+  culled. Changing `transform-style` or `backface-visibility` still needs a
+  relayout.
+- Table-cell targets return `ErrNotRestampable`. The static path does not set
+  `needsXformStamp` for a transform declared on a cell alone, so a restamp would
+  paint a projection the page does not show. A table element itself works.
+- `em` lengths in an override resolve against the element's resolved font size.
+  There is no `rem` base threaded through, matching the parser's existing call
+  site.
+- The pass mutates the retained placement in place and is not goroutine-safe, the
+  same contract as `RelayoutElement`.
+- Pristine op geometry is retained only on ops that carry a projective transform,
+  which is the rare 3D set. A 2D op still restamps from its live matrix.
+- The host can restamp only an element with an id. A duplicate id resolves to the
+  first box. An element without an id is counted and skipped.
+- The returned patch does not refresh `Parent`/`World` on the boxes, so a 2D
+  transform animation nested inside a restamped 3D subtree composes against the
+  metadata from before the override. Give nested 2D motion its own pass or
+  refresh the metadata.
+- The host rebinds motion after each restamp, so `Stats.Rebinds` grows during a
+  3D animation. That is correct but worth watching in a profile.
+- An implicit `perspective` or `perspective-origin` keyframe endpoint uses `none`
+  and `50% 50%`, not the element's static values. An explicit endpoint is exact;
+  a partial list on an element with a static camera interpolates from the wrong
+  start.
+- `perspective-origin` accepts one or two components. The three- and four-value
+  edge-offset syntax is rejected.
 
 ## Gate
 

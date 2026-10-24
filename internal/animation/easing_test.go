@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestStepUsesSharedCSSTimingFunction(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, Alpha: 1}
 	p, err := New([]Target{{Op: op, From: cssmotion.Read(op)}}, []Keyframe{
 		{Offset: 0, Move: true}, {Offset: 1, X: 10, Move: true},
 	}, Timing{Duration: time.Second, Iterations: 1, TimingFunction: "steps(2, start)"})

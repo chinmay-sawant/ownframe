@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/ownframe/internal/element"
+	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/nav"
 	"github.com/chinmay-sawant/ownframe/internal/page/scroll"
 )
@@ -31,6 +32,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		deepLinkSchemes: schemes,
 		devtools:        cfg.DevTools,
 		perf:            cfg.Perf,
+		motion:          motion.New(),
 		retainState:     cfg.RetainState,
 		lockView:        cfg.LockView,
 		allowTouchZoom:  !cfg.DisableTouchZoom,

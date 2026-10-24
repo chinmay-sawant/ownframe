@@ -3,9 +3,6 @@ package animation
 import "github.com/chinmay-sawant/ownframe/internal/cssmotion"
 
 type valueOf func(Keyframe) (float64, bool)
-type stop struct{ at, value float64 }
-
-const extraStops = 2
 
 func moveX(k Keyframe) (float64, bool)   { return k.X, k.Move }
 func moveY(k Keyframe) (float64, bool)   { return k.Y, k.Move }
@@ -14,41 +11,60 @@ func red(k Keyframe) (float64, bool)     { return k.R, k.ColorSet }
 func green(k Keyframe) (float64, bool)   { return k.G, k.ColorSet }
 func blue(k Keyframe) (float64, bool)    { return k.B, k.ColorSet }
 
+// sample resolves one field at at. The live path uses the precomputed
+// effectTable; compose keeps this scan for callers that still hold a bare
+// Effect. It walks the frames once and allocates nothing.
 func (e Effect) sample(at, fallback float64, value valueOf) float64 {
-	stops := make([]stop, 0, len(e.Frames)+extraStops)
+	var prev, last stop
+	havePrev, first := false, true
 	for _, frame := range e.Frames {
-		if v, ok := value(frame); ok {
-			stops = append(stops, stop{frame.Offset, v})
-		}
-	}
-	if len(stops) == 0 {
-		return fallback
-	}
-	if stops[0].at > 0 {
-		stops = append([]stop{{0, fallback}}, stops...)
-	}
-	if stops[len(stops)-1].at < 1 {
-		stops = append(stops, stop{1, fallback})
-	}
-	if at <= stops[0].at {
-		return stops[0].value
-	}
-	for i := 1; i < len(stops); i++ {
-		if at > stops[i].at {
+		v, ok := value(frame)
+		if !ok {
 			continue
 		}
-		prev, next := stops[i-1], stops[i]
-		span := next.at - prev.at
-		if span <= 0 {
-			return next.value
+		cur := stop{at: frame.Offset, value: v}
+		if first {
+			first = false
+			if cur.at > 0 {
+				if at <= 0 {
+					return fallback
+				}
+				prev, havePrev = stop{at: 0, fromBase: 1}, true
+			}
 		}
-		part := (at - prev.at) / span
-		if e.Timing.Easing != nil {
-			part = e.Timing.Easing(part)
-		} else {
-			part = cssmotion.Ease(e.Timing.TimingFunction, part)
+		if havePrev && at <= cur.at {
+			return e.mix(prev, cur, at, fallback)
 		}
-		return prev.value + (next.value-prev.value)*part
+		if !havePrev && at <= cur.at {
+			return cur.value
+		}
+		prev, havePrev, last = cur, true, cur
 	}
-	return stops[len(stops)-1].value
+	if first {
+		return fallback
+	}
+	if last.at < 1 {
+		if at > 1 {
+			return fallback
+		}
+		return e.mix(last, stop{at: 1, fromBase: 1}, at, fallback)
+	}
+	return last.value
+}
+
+// mix interpolates between two stops. A base-dependent sentinel is resolved
+// against fallback, the target paint for this sample.
+func (e Effect) mix(prev, next stop, at, fallback float64) float64 {
+	span := next.at - prev.at
+	if span <= 0 {
+		return next.value
+	}
+	part := (at - prev.at) / span
+	if e.Timing.Easing != nil {
+		part = e.Timing.Easing(part)
+	} else {
+		part = cssmotion.Ease(e.Timing.TimingFunction, part)
+	}
+	return prev.value + (next.value-prev.value)*part +
+		(prev.fromBase+(next.fromBase-prev.fromBase)*part)*fallback
 }

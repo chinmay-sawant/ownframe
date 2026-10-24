@@ -1,4 +1,4 @@
-package cssanimation
+package cssanimation_test
 
 import (
 	"math"
@@ -10,7 +10,13 @@ func TestOwnFrameAnimationComposition(t *testing.T) {
 	for _, c := range []struct {
 		mode string
 		want float64
-	}{{"add,add", 30}, {"replace,replace", 20}} {
+	}{
+		// A transform-list keyframe samples one matrix, so the later effect's
+		// matrix replaces the earlier one. Concatenating additive transform
+		// lists is a composition phase, not this one.
+		{"add,add", 20},
+		{"replace,replace", 20},
+	} {
 		d, _, indices, paints, p, start := runtimePlayer(t, base+`animation-composition:`+c.mode+`;`)
 		if p.EffectCount() != 2 {
 			t.Fatalf("effects = %d, want 2", p.EffectCount())

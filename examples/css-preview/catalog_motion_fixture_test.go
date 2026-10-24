@@ -29,3 +29,11 @@ func motionFixture(t *testing.T, html, css string) (*ownframe.Display, ownframe.
 	}
 	return d, b, indices, initial
 }
+
+// xformDeltaX reports how far a sampled transform moved an operation along x,
+// in display points. A transform-list keyframe writes the operation's matrix
+// and leaves its X at the laid-out position, so a paint difference must come
+// from the matrix translation.
+func xformDeltaX(op *ownframe.DisplayOp, base cssmotion.Paint) float64 {
+	return op.Transform().E - base.Matrix.E
+}

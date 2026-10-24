@@ -178,6 +178,7 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.setBoxes(display.Boxes)
 	p.hits = hitList(display.Boxes, fixedBoxes(display))
 	p.generation++
+	p.bindMotion(display)
 	p.remember(state)
 	p.commitAccessibility(executed)
 	p.applyPending()
@@ -215,6 +216,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 	p.setBoxes(boxes)
 	p.hits = hitList(boxes, fixedBoxes(display))
 	p.generation++
+	p.bindMotion(nil)
 	p.markFull()
 	p.lastPatch = DisplayPatch{
 		Changed: bitmap.Changed,

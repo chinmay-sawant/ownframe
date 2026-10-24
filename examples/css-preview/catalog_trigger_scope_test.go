@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
 )
 
@@ -26,8 +25,8 @@ func TestCatalogTriggerScopeLimitsOwnFrameActions(t *testing.T) {
 	}
 	inside.Step(start.Add(1500 * time.Millisecond))
 	outside.Step(start.Add(1500 * time.Millisecond))
-	in := (cssmotion.Read(&d.Ops[inOps[0]]).X - inBase[0].X) / d.PointsPerPixel
-	out := cssmotion.Read(&d.Ops[outOps[0]]).X - outBase[0].X
+	in := xformDeltaX(&d.Ops[inOps[0]], inBase[0]) / d.PointsPerPixel
+	out := xformDeltaX(&d.Ops[outOps[0]], outBase[0])
 	if in < 49.9 || in > 50.1 || out != 0 {
 		t.Fatalf("inside/outside samples = %.2f/%.2f px, want 50/0", in, out/d.PointsPerPixel)
 	}

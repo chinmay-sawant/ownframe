@@ -18,8 +18,9 @@ func TestAnimationSamplesTransformOpacityAndColor(t *testing.T) {
 			continue
 		}
 		found = true
-		if math.Abs(pair.op.X-pair.from.X-90*p.Probe().Display().PointsPerPixel) > .01 {
-			t.Errorf("x = %v, want 90px translation", pair.op.X-pair.from.X)
+		moved := xformDeltaX(pair.op, pair.from)
+		if math.Abs(moved-90*p.Probe().Display().PointsPerPixel) > .01 {
+			t.Errorf("x = %v, want 90px translation", moved)
 		}
 		if math.Abs(pair.op.Opacity()-.72) > .01 || math.Abs(pair.op.R-226.0/255) > .01 {
 			t.Errorf("midframe paint opacity=%v red=%v", pair.op.Opacity(), pair.op.R)

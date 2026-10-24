@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
@@ -14,7 +14,7 @@ import (
 // must hold the underlying color, and a transform omitted there must leave
 // the operation where it started.
 func TestMissingKeyframeValuesUseTheUnderlyingPaint(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 40, Y: 12,
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 40, Y: 12,
 		R: .42, G: .62, B: .21, Alpha: 1}
 	base := cssmotion.Read(op)
 	p, err := New([]Target{{Op: op, From: base}}, []Keyframe{

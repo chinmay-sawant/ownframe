@@ -4,13 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
-func triggeredPlayer(t *testing.T, timing Timing) (*Player, *ownframe.DisplayOp, time.Time) {
+func triggeredPlayer(t *testing.T, timing Timing) (*Player, *layout.DisplayOp, time.Time) {
 	t.Helper()
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, Alpha: 1}
 	p, err := NewComposite([]Target{{Op: op, From: cssmotion.Read(op)}}, []Effect{{
 		Frames: []Keyframe{{Offset: 0, X: 10, Move: true}, {Offset: 1, X: 110, Move: true}},
 		Timing: timing, Trigger: "--fire play",

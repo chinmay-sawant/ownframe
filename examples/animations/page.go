@@ -4,16 +4,10 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"image"
 	"strconv"
 	"strings"
-	"time"
 
-	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 //go:embed animations.html
@@ -25,8 +19,6 @@ const (
 	scoreUnit     = 1
 	maxQuestions  = 6
 	expectedParts = 3
-	frameSlack    = 2
-	frameInterval = 16 * time.Millisecond
 )
 
 // Option is a multiple-choice option for a quiz question.
@@ -88,32 +80,17 @@ type ViewState struct {
 	Catalog       []CatalogEntry
 }
 
-// chipSample manages runtime binding for one animated chip driven by CSS keyframes.
-type chipSample struct {
-	id         string
-	questionID string
-	trackIndex int
-	kind       string
-	indices    []int
-	base       []cssmotion.Paint
-	player     *animation.Player
-	start      time.Time
-	active     bool
-}
-
-// App manages the CSS animation showcase, quiz, and real-time tick engine.
+// App manages the CSS animation showcase and quiz. The automatic page runtime
+// drives every chip from its declared @keyframes; the app only holds view state
+// and click handlers.
 type App struct {
-	page      *ownframe.Page
-	view      ViewState
-	boundGen  uint64
-	startTime time.Time
-	chips     []*chipSample
+	page *ownframe.Page
+	view ViewState
 }
 
 // newApp constructs and initializes the animations showcase application.
 func newApp() (*App, error) {
 	app := &App{
-		startTime: time.Now(),
 		view: ViewState{
 			Score:         0,
 			Total:         maxQuestions,
@@ -124,7 +101,6 @@ func newApp() (*App, error) {
 			Catalog:       initialCatalog(),
 		},
 	}
-	app.initChips()
 
 	p, err := ownframe.New(ownframe.Config{
 		Title:    "CSS Animation Knowledge Lab",
@@ -143,8 +119,6 @@ func newApp() (*App, error) {
 		return nil, fmt.Errorf("initial redraw: %w", err)
 	}
 
-	app.bind(p.Probe().Display())
-	p.SetTick(app.Tick)
 	p.Handle(ownframe.Handlers{
 		Click: app.handleClick,
 	})
@@ -155,189 +129,6 @@ func newApp() (*App, error) {
 // Page returns the underlying ownframe.Page.
 func (a *App) Page() *ownframe.Page {
 	return a.page
-}
-
-// initChips registers all chip bindings for real-time tick animation.
-func (a *App) initChips() {
-	a.chips = make([]*chipSample, 0)
-	for _, q := range a.view.Questions {
-		for _, t := range q.Tracks {
-			a.chips = append(a.chips, &chipSample{
-				id:         t.ChipID,
-				questionID: q.ID,
-				trackIndex: t.Index,
-				kind:       t.Kind,
-				start:      a.startTime,
-				active:     true,
-			})
-		}
-	}
-}
-
-// Tick advances the CSS-driven animation players on each window frame.
-func (a *App) Tick(ctx context.Context) error {
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if !a.view.IsPlaying {
-		return nil
-	}
-
-	d := a.page.Probe().Display()
-	if d == nil {
-		return nil
-	}
-
-	if a.page.Probe().Generation() != a.boundGen {
-		a.bind(d)
-	}
-
-	now := time.Now()
-	var dirty image.Rectangle
-	anyActive := false
-
-	for _, chip := range a.chips {
-		if !chip.active || chip.player == nil {
-			continue
-		}
-
-		before := chipBox(d, chip.indices)
-		active := chip.player.Step(now)
-		after := chipBox(d, chip.indices)
-
-		chipDirty := before.Union(after)
-		if dirty.Empty() {
-			dirty = chipDirty
-		} else {
-			dirty = dirty.Union(chipDirty)
-		}
-
-		if active {
-			anyActive = true
-		}
-	}
-
-	if !dirty.Empty() {
-		a.page.Probe().MarkRect(dirty)
-	}
-	if anyActive {
-		a.page.WantFrameIn(frameInterval)
-	}
-
-	return nil
-}
-
-// bind resolves display operations and constructs CSS animation players for each chip.
-func (a *App) bind(d *ownframe.Display) {
-	if d == nil {
-		return
-	}
-	boxes := a.page.Boxes()
-	for _, chip := range a.chips {
-		box, ok := findBox(boxes, chip.id)
-		if !ok || len(box.Animations) == 0 {
-			chip.player = nil
-			chip.indices = nil
-			continue
-		}
-
-		indices := cssmotion.OperationIndices(d, box)
-		if len(indices) == 0 {
-			chip.player = nil
-			chip.indices = nil
-			continue
-		}
-
-		base := cssmotion.Capture(d, box)
-		if len(base) != len(indices) {
-			continue
-		}
-
-		chip.indices = indices
-		chip.base = base
-		if chip.start.IsZero() {
-			chip.start = a.startTime
-		}
-
-		runBox := running(box)
-		player, err := cssanimation.Bind(d, runBox, indices, base, chip.start)
-		if err != nil {
-			continue
-		}
-
-		chip.player = player
-		chip.active = true
-	}
-	a.boundGen = a.page.Probe().Generation()
-}
-
-// running marks all animations on a box as actively running without trigger blocks.
-func running(b ownframe.Box) ownframe.Box {
-	if len(b.Animations) == 0 {
-		return b
-	}
-	animations := make([]layout.Animation, len(b.Animations))
-	copy(animations, b.Animations)
-	for i := range animations {
-		animations[i].PlayState = "running"
-		if animations[i].Trigger != "" && animations[i].Trigger != "none" {
-			animations[i].Trigger = "none"
-		}
-	}
-	b.Animations = animations
-	return b
-}
-
-// chipBox calculates the CSS pixel bounding box enclosing a chip's display operations.
-func chipBox(d *ownframe.Display, indices []int) image.Rectangle {
-	if d == nil || len(indices) == 0 {
-		return image.Rectangle{}
-	}
-	ppp := d.PointsPerPixel
-	if ppp <= 0 {
-		ppp = 1.0
-	}
-	var box image.Rectangle
-	ops := cssmotion.Resolve(d, indices)
-	for _, op := range ops {
-		if op == nil {
-			continue
-		}
-		r := image.Rect(
-			int(op.X/ppp)-frameSlack,
-			int(op.Y/ppp)-frameSlack,
-			int((op.X+op.W)/ppp)+frameSlack,
-			int((op.Y+op.H)/ppp)+frameSlack,
-		)
-		if box.Empty() {
-			box = r
-		} else {
-			box = box.Union(r)
-		}
-	}
-	return box
-}
-
-// findBox locates a hit-test box by element id.
-func findBox(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
-	for _, b := range boxes {
-		if b.ID == id {
-			return b, true
-		}
-	}
-	return ownframe.Box{}, false
-}
-
-// opX returns the X position of the chip's primary display operation.
-func (c *chipSample) opX(d *ownframe.Display) float64 {
-	if d == nil || len(c.indices) == 0 {
-		return 0
-	}
-	ops := cssmotion.Resolve(d, c.indices)
-	if len(ops) == 0 || ops[0] == nil {
-		return 0
-	}
-	return ops[0].X
 }
 
 // handleClick routes user interactions across buttons, filters, options, and tracks.
@@ -352,16 +143,6 @@ func (a *App) handleClick(ctx context.Context, box ownframe.Box) error {
 		a.resetQuiz()
 	case id == "btn-toggle-play":
 		a.view.IsPlaying = !a.view.IsPlaying
-		if a.view.IsPlaying {
-			now := time.Now()
-			for _, chip := range a.chips {
-				if chip.player != nil {
-					chip.start = now
-					chip.player.Start(now)
-					chip.active = true
-				}
-			}
-		}
 	case strings.HasPrefix(id, "filter-"):
 		category := strings.TrimPrefix(id, "filter-")
 		a.view.ActiveFilter = category
@@ -374,19 +155,14 @@ func (a *App) handleClick(ctx context.Context, box ownframe.Box) error {
 	}
 
 	a.page.SetData(&a.view)
-	if err := a.page.Redraw(ctx); err != nil {
-		return err
-	}
-	a.bind(a.page.Probe().Display())
-	return nil
+	return a.page.Redraw(ctx)
 }
 
-// resetQuiz clears all user answers, restores initial state, and restarts all players.
+// resetQuiz clears all user answers and restores the initial view. The chips
+// keep their declared animation; reset is quiz state, not a motion restart.
 func (a *App) resetQuiz() {
 	a.view.Score = 0
 	a.view.AnsweredCount = 0
-	now := time.Now()
-	a.startTime = now
 	for i := range a.view.Questions {
 		q := &a.view.Questions[i]
 		q.Answered = false
@@ -395,13 +171,6 @@ func (a *App) resetQuiz() {
 		for j := range q.Tracks {
 			q.Tracks[j].IsActive = false
 		}
-	}
-	for _, chip := range a.chips {
-		chip.start = now
-		if chip.player != nil {
-			chip.player.Start(now)
-		}
-		chip.active = true
 	}
 }
 
@@ -463,9 +232,12 @@ func (a *App) handlePlayClick(id string) {
 	a.activateTrack(qid, trackIndex)
 }
 
-// activateTrack marks a track active and restarts its CSS animation player immediately.
+// activateTrack marks one track active, which the template expresses as the
+// .active-track class the stylesheet already declares. The automatic runtime
+// keeps each chip's phase across the redraw, so this does not restart the
+// keyframes; a real replay needs animation-trigger, owned by animation phase 06
+// (plans/v0.0.3/animations-and-transitions/animation/phase-06-timelines-ranges-triggers.md).
 func (a *App) activateTrack(qid string, trackIndex int) {
-	now := time.Now()
 	for i := range a.view.Questions {
 		q := &a.view.Questions[i]
 		if q.ID != qid {
@@ -476,18 +248,11 @@ func (a *App) activateTrack(qid string, trackIndex int) {
 		}
 		break
 	}
-	for _, chip := range a.chips {
-		if chip.questionID == qid && chip.trackIndex == trackIndex {
-			chip.start = now
-			if chip.player != nil {
-				chip.player.Start(now)
-			}
-			chip.active = true
-		}
-	}
 }
 
 // initialQuestions sets up 6 challenge categories covering compatibility matrix properties.
+//
+//nolint:mnd // the catalog data names its track and option indices explicitly
 func initialQuestions() []Question {
 	return []Question{
 		{

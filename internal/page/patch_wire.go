@@ -130,6 +130,7 @@ func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
 	p.hits = hitList(d.Boxes, fixedBoxes(d))
 	p.dirtyFromDisplay(prev, d)
 	p.generation++
+	p.bindMotion(d)
 	p.stats.layouts++
 	p.stats.repaints++
 	p.refreshAccessibility(id, edits)

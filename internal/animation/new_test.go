@@ -4,11 +4,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 func TestNewSortsKeyframesAndRejectsInvalidTargets(t *testing.T) {
-	op := &ownframe.DisplayOp{}
+	op := &layout.DisplayOp{}
 	p, err := New([]Target{{Op: op}}, []Keyframe{{Offset: 1}, {Offset: 0}}, Timing{})
 	if err != nil || p.effects[0].Frames[0].Offset != 0 {
 		t.Fatalf("New() = %v, %v; want sorted frames", p, err)
@@ -22,7 +22,7 @@ func TestNewSortsKeyframesAndRejectsInvalidTargets(t *testing.T) {
 }
 
 func TestPausedPlayerDoesNotChangePaint(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 8, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 8, Alpha: 1}
 	p, err := New([]Target{{Op: op}}, []Keyframe{{Offset: 1, X: 90, Move: true}},
 		Timing{Duration: 1, Iterations: 1, Play: Paused})
 	if err != nil {

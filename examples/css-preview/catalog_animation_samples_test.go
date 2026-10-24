@@ -6,7 +6,6 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/internal/animation"
 	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func sampleMotion(t *testing.T, declarations string, input animation.FrameInput) float64 {
@@ -22,5 +21,5 @@ func sampleMotion(t *testing.T, declarations string, input animation.FrameInput)
 		input.Now = start
 	}
 	p.StepWithInput(input)
-	return (cssmotion.Read(&d.Ops[indices[0]]).X - base[0].X) / d.PointsPerPixel
+	return xformDeltaX(&d.Ops[indices[0]], base[0]) / d.PointsPerPixel
 }

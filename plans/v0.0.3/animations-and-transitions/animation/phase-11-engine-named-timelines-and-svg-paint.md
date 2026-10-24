@@ -315,6 +315,36 @@ Out of scope:
 that inherits follows; one that sets its own paint does not. The image payload
 rebuilds only when the paint changes. The cost is measured and capped.
 
+## Known limits after the first implementation
+
+- Inline-level SVG is retained now. The inline collector keeps the SVG box, the
+  parent line box attributes the image op to it, and `boxForID` finds it. Block,
+  inline, and per-part restyles all work.
+- A raster cache keyed by the serialized string lives on the retained layout,
+  bounded at 8 entries and 2 Mi pixels, oldest-first. It dies with the layout or
+  its clone. A raster larger than the pixel budget is never stored, so it
+  restyles and misses every time.
+- The per-frame budget and the large-SVG size cap are still host-side. Phase 10
+  must cap restyle calls until the engine adds a budget.
+- `fill` and `stroke` accept CSS colours and `none`. A paint server such as
+  `url(#gradient)` is rejected because `ResolvedStyle` stores paint as RGB.
+  `currentcolor` resolves against the root element's used colour for inherited
+  descendants, not each child's colour.
+- The normal, non-restyled serializer still emits `fill-opacity="0"` for a
+  cascade `fill:none`. The restyle path tracks no-fill separately. This is
+  pre-existing behaviour and is left alone.
+- A CSS transform on an inline `<svg>` now reaches its op because the icon has a
+  box in the stamp walk. Before, the transform was ignored. This is closer to
+  Chrome and is not a restyle-path change.
+
+Checklist follow-ups:
+
+- [x] Retain the inline SVG box and attribute its image op so inline icons work.
+- [x] Cache the raster by the serialized string.
+- [ ] Add the per-frame budget and size cap with a snap counter.
+- [ ] Accept paint servers or reject them with a named error.
+- [ ] Resolve `currentcolor` per element.
+
 ---
 
 # Release and integration

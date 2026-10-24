@@ -1,4 +1,4 @@
-package cssanimation
+package cssanimation_test
 
 import (
 	"math"

@@ -5,8 +5,150 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe"
 )
+
+// findBox locates a hit-test box by element id.
+func findBox(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
+	for _, b := range boxes {
+		if b.ID == id {
+			return b, true
+		}
+	}
+
+	return ownframe.Box{}, false
+}
+
+// chipHitBox returns the hit-test box for one chip element.
+func chipHitBox(t *testing.T, p *ownframe.Page, id string) ownframe.Box {
+	t.Helper()
+
+	box, ok := findBox(p.Boxes(), id)
+	if !ok {
+		t.Fatalf("chip %s has no hit-test box", id)
+	}
+
+	return box
+}
+
+// opInBox reports whether an operation paints inside box. A text op carries a
+// baseline in Y, so its top-left corner is the point to test; a fill carries
+// its top-left corner and is tested by its centre.
+func opInBox(d *ownframe.Display, box ownframe.Box, op *ownframe.DisplayOp) bool {
+	const (
+		boxSlack      = 0.5
+		centerDivisor = 2.0
+	)
+
+	p := d.PointsPerPixel
+	x, y := op.X, op.Y
+	if op.Kind != layout.DisplayOpText {
+		x, y = op.X+op.W/centerDivisor, op.Y+op.H/centerDivisor
+	}
+
+	return x >= box.X*p-boxSlack && x <= (box.X+box.W)*p+boxSlack &&
+		y >= box.Y*p-boxSlack && y <= (box.Y+box.H)*p+boxSlack
+}
+
+// fillOpInBox returns the first fill operation painted inside box.
+func fillOpInBox(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
+	for i := range d.Ops {
+		op := &d.Ops[i]
+		if op.Kind == layout.DisplayOpFillRect && opInBox(d, box, op) {
+			return op
+		}
+	}
+
+	return nil
+}
+
+// textOpInBox returns the first text operation painted inside box.
+func textOpInBox(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
+	for i := range d.Ops {
+		op := &d.Ops[i]
+		if op.Kind == layout.DisplayOpText && opInBox(d, box, op) {
+			return op
+		}
+	}
+
+	return nil
+}
+
+// xformX is the operation's horizontal translation after its baked matrix.
+// A transform-list keyframe writes translate through SetXform and leaves X at
+// the laid-out position, so the matrix is the only place the chip moves.
+func xformX(op *ownframe.DisplayOp) float64 {
+	return op.Transform().E
+}
+
+// TestChipGeometry pins the .chip rule that the stylesheet's truncated rule
+// used to drop. Only X is pinned; Y depends on how the text above the stage
+// wraps, so it is only checked to be laid out below the top.
+func TestChipGeometry(t *testing.T) {
+	app, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp failed: %v", err)
+	}
+
+	box := chipHitBox(t, app.Page(), "chip-q1-0")
+
+	const wantW, wantH = 76.0, 32.0
+	if box.W != wantW || box.H != wantH {
+		t.Fatalf("chip-q1-0 size = %vx%v, want %vx%v", box.W, box.H, wantW, wantH)
+	}
+
+	// .chip is absolutely positioned at left:6px inside the track. The track's
+	// padding edge sits at x=65: body padding 24 + card border 1 + card padding
+	// 22 + stage border 1 + stage padding 16 + track border 1.
+	const wantX = 71.0
+	if box.X != wantX {
+		t.Fatalf("chip-q1-0 X = %v, want %v", box.X, wantX)
+	}
+	if box.Y <= 0 {
+		t.Fatalf("chip-q1-0 Y = %v, want a laid-out position below the top", box.Y)
+	}
+}
+
+// TestChipLabelKeepsItsColour pins the phase 03 target rule: a background-color
+// keyframe writes the chip's fill operation only, never its label text.
+// plans/v0.0.3/animations-and-transitions/animation/phase-03-paint-property-coverage.md
+func TestChipLabelKeepsItsColour(t *testing.T) {
+	app, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp failed: %v", err)
+	}
+
+	p := app.Page()
+	box := chipHitBox(t, p, "chip-q1-0")
+	label := textOpInBox(p.Probe().Display(), box)
+	if label == nil {
+		t.Fatal("expected a text op inside chip-q1-0")
+	}
+	wantR, wantG, wantB := label.R, label.G, label.B
+
+	if err := p.Testing().Tick(context.Background()); err != nil {
+		t.Fatalf("tick failed: %v", err)
+	}
+
+	label = textOpInBox(p.Probe().Display(), box)
+	if label == nil {
+		t.Fatal("the label text op disappeared after a tick")
+	}
+	if label.R != wantR || label.G != wantG || label.B != wantB {
+		t.Fatalf("the background keyframe recoloured the label to %v,%v,%v (was %v,%v,%v)",
+			label.R, label.G, label.B, wantR, wantG, wantB)
+	}
+
+	fill := fillOpInBox(p.Probe().Display(), box)
+	if fill == nil {
+		t.Fatal("expected a fill op inside chip-q1-0")
+	}
+	if fill.R == label.R && fill.G == label.G && fill.B == label.B {
+		t.Fatalf("the chip fill and its label share colour %v,%v,%v; the keyframe did not target the fill",
+			fill.R, fill.G, fill.B)
+	}
+}
 
 func TestNewApp(t *testing.T) {
 	app, err := newApp()
@@ -31,36 +173,88 @@ func TestNewApp(t *testing.T) {
 	if !app.view.IsPlaying {
 		t.Fatal("expected initial play state to be true")
 	}
-	if len(app.chips) == 0 {
-		t.Fatal("expected registered chips for animation")
+
+	tracks := 0
+	for _, q := range app.view.Questions {
+		tracks += len(q.Tracks)
+	}
+	if tracks == 0 {
+		t.Fatal("expected the quiz data to carry animation tracks")
 	}
 }
 
-func TestCSSAnimationBinding(t *testing.T) {
+// TestAutomaticMotionBinding checks that the page's own publish path bound the
+// declared CSS animations, with no application driver involved.
+func TestAutomaticMotionBinding(t *testing.T) {
 	app, err := newApp()
 	if err != nil {
 		t.Fatalf("newApp failed: %v", err)
 	}
-	d := app.Page().Probe().Display()
-	if d == nil {
-		t.Fatal("expected non-nil display")
+
+	if d := app.Page().Probe().Display(); d == nil {
+		t.Fatal("expected a non-nil display")
 	}
 
-	var boundChip *chipSample
-	for _, chip := range app.chips {
-		if chip.id == "chip-q1-0" {
-			boundChip = chip
-			break
-		}
+	stats := app.Page().Probe().Motion()
+	if stats.Bound == 0 {
+		t.Fatal("expected the automatic runtime to bind the chip animations")
 	}
-	if boundChip == nil {
-		t.Fatal("expected chip-q1-0 in registered chips")
+	if stats.LastError != "" {
+		t.Fatalf("motion bind failed: %s", stats.LastError)
 	}
-	if boundChip.player == nil {
-		t.Fatal("expected chip-q1-0 to have bound CSS animation player")
+}
+
+// TestAutomaticMotionDrivesPage is the phase 01 acceptance proof: the example
+// registers no frame callback, yet two Tick calls sample the bound animations
+// and report damage for the next window draw.
+func TestAutomaticMotionDrivesPage(t *testing.T) {
+	app, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp failed: %v", err)
 	}
-	if len(boundChip.indices) == 0 {
-		t.Fatal("expected chip-q1-0 to have captured operation indices")
+
+	p := app.Page()
+	if p.Probe().Ticking() {
+		t.Fatal("the example registered a tick callback")
+	}
+
+	d := p.Probe().Display()
+	if d == nil {
+		t.Fatal("expected a non-nil display")
+	}
+	chip := fillOpInBox(d, chipHitBox(t, p, "chip-q1-0"))
+	if chip == nil {
+		t.Fatal("expected a fill op inside chip-q1-0")
+	}
+	base := xformX(chip)
+
+	ctx := context.Background()
+	if err := p.Testing().Tick(ctx); err != nil {
+		t.Fatalf("first tick failed: %v", err)
+	}
+	if !p.Probe().FrameDirty() {
+		t.Fatal("the first Tick did not report animation damage")
+	}
+	if stats := p.Probe().Motion(); stats.Bound == 0 || stats.Sampled == 0 {
+		t.Fatalf("first Tick: bound=%d sampled=%d, want both non-zero", stats.Bound, stats.Sampled)
+	}
+	if !chip.XformSet {
+		t.Fatal("the first Tick left the chip without a transform matrix")
+	}
+
+	first := xformX(chip)
+	if first <= base {
+		t.Fatalf("first Tick left the chip translation at %v, want it past the base %v", first, base)
+	}
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Testing().Tick(ctx); err != nil {
+		t.Fatalf("second tick failed: %v", err)
+	}
+	if !p.Probe().FrameDirty() {
+		t.Fatal("the second Tick did not report animation damage")
+	}
+	if second := xformX(chip); second <= first {
+		t.Fatalf("chip translation stayed at %v across two Tick calls (base %v)", first, base)
 	}
 }
 
@@ -135,46 +329,6 @@ func TestHandlePlayClick(t *testing.T) {
 	}
 }
 
-func TestTickAnimation(t *testing.T) {
-	app, err := newApp()
-	if err != nil {
-		t.Fatalf("newApp failed: %v", err)
-	}
-
-	ctx := context.Background()
-
-	// Initial tick advances CSS animation players
-	err = app.Tick(ctx)
-	if err != nil {
-		t.Fatalf("tick failed: %v", err)
-	}
-
-	// Find the first bound chip with player
-	var boundChip *chipSample
-	for _, chip := range app.chips {
-		if chip.player != nil && len(chip.indices) > 0 {
-			boundChip = chip
-			break
-		}
-	}
-
-	if boundChip == nil {
-		t.Fatal("expected at least one bound chip player")
-	}
-
-	d := app.Page().Probe().Display()
-	startX := boundChip.opX(d)
-
-	// Advance time artificially and step
-	now := time.Now().Add(500 * time.Millisecond)
-	boundChip.player.Step(now)
-
-	newX := boundChip.opX(d)
-	if newX == startX {
-		t.Fatalf("expected chip operation X to change during animation step, got %f", newX)
-	}
-}
-
 func TestTogglePlayback(t *testing.T) {
 	app, err := newApp()
 	if err != nil {
@@ -203,6 +357,50 @@ func TestTogglePlayback(t *testing.T) {
 	}
 	if !app.view.IsPlaying {
 		t.Fatal("expected playback to be resumed")
+	}
+}
+
+// TestPausedPageDoesNotAdvance proves the automatic runtime reads the play state
+// the stylesheet declares. The pause button only toggles the view; the body's
+// is-paused class reaches the chips through the existing CSS rule and the
+// runtime leaves the last sampled pose in place.
+func TestPausedPageDoesNotAdvance(t *testing.T) {
+	app, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp failed: %v", err)
+	}
+
+	p := app.Page()
+	ctx := context.Background()
+
+	if err := p.Testing().Tick(ctx); err != nil {
+		t.Fatalf("tick failed: %v", err)
+	}
+
+	if err := app.handleClick(ctx, ownframe.Box{ID: "btn-toggle-play"}); err != nil {
+		t.Fatalf("click toggle play failed: %v", err)
+	}
+
+	box := chipHitBox(t, p, "chip-q1-0")
+	if len(box.Animations) == 0 || box.Animations[0].PlayState != "paused" {
+		t.Fatalf("chip-q1-0 animations = %+v, want a paused sample", box.Animations)
+	}
+
+	chip := fillOpInBox(p.Probe().Display(), box)
+	if chip == nil {
+		t.Fatal("expected a fill op inside chip-q1-0")
+	}
+	before := xformX(chip)
+
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Testing().Tick(ctx); err != nil {
+		t.Fatalf("tick failed: %v", err)
+	}
+	if got := xformX(chip); got != before {
+		t.Fatalf("paused chip moved from translation %v to %v", before, got)
+	}
+	if got := p.Probe().Motion().Active; got != 0 {
+		t.Fatalf("paused page reports %d active players, want 0", got)
 	}
 }
 

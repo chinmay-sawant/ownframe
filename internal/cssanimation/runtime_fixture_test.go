@@ -1,4 +1,4 @@
-package cssanimation
+package cssanimation_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/animation"
+	"github.com/chinmay-sawant/ownframe/internal/cssanimation"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
@@ -35,13 +36,15 @@ func runtimePlayer(t *testing.T, declarations string) (*ownframe.Display, ownfra
 		t.Fatal("fixture has no target paint")
 	}
 	start := time.Unix(100, 0)
-	p, err := Bind(d, box, indices, base, start)
+	p, err := cssanimation.Bind(d, box, indices, base, start)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return d, box, indices, base, p, start
 }
 
+// movedX reports how far a sampled transform moved the operation along x. A
+// transform-list keyframe writes the operation matrix, not the paint X.
 func movedX(d *ownframe.Display, indices []int, base []cssmotion.Paint) float64 {
-	return d.Ops[indices[0]].X - base[0].X
+	return cssmotion.Read(&d.Ops[indices[0]]).Matrix.E - base[0].Matrix.E
 }

@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/animation"
-	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
 )
 
@@ -16,8 +15,8 @@ func TestCatalogAnimationTriggerChangesOwnFrameAfterHostEvent(t *testing.T) {
 	start := time.Unix(100, 0)
 	p, target, ops, base := bindCatalogTarget(t, d, "target", start)
 	p.Step(start.Add(time.Second))
-	if got := cssmotion.Read(&d.Ops[ops[0]]).X; got != base[0].X {
-		t.Fatalf("pending animation moved to %v, want %v", got, base[0].X)
+	if got := xformDeltaX(&d.Ops[ops[0]], base[0]); got != 0 {
+		t.Fatalf("pending animation moved %v points, want 0", got)
 	}
 	source := catalogBoxIndex(d.Boxes, "source")
 	if source < 0 {
@@ -27,14 +26,14 @@ func TestCatalogAnimationTriggerChangesOwnFrameAfterHostEvent(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.Step(start.Add(1500 * time.Millisecond))
-	if got := (cssmotion.Read(&d.Ops[ops[0]]).X - base[0].X) / d.PointsPerPixel; got < 59.9 || got > 60.1 {
+	if got := xformDeltaX(&d.Ops[ops[0]], base[0]) / d.PointsPerPixel; got < 59.9 || got > 60.1 {
 		t.Fatalf("triggered sample = %.2f px, want 60", got)
 	}
 	if err := csstrigger.Dispatch(d.Boxes, csstrigger.Event{Name: "--fire", Source: source, Active: false}, map[int]*animation.Player{target: p}, start.Add(1500*time.Millisecond)); err != nil {
 		t.Fatal(err)
 	}
 	p.Step(start.Add(1600 * time.Millisecond))
-	if got := (cssmotion.Read(&d.Ops[ops[0]]).X - base[0].X) / d.PointsPerPixel; got < 9.9 || got > 10.1 {
+	if got := xformDeltaX(&d.Ops[ops[0]], base[0]) / d.PointsPerPixel; got < 9.9 || got > 10.1 {
 		t.Fatalf("reset trigger sample = %.2f px, want first keyframe at 10", got)
 	}
 }

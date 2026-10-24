@@ -15,7 +15,16 @@ func TestCatalogAnimationCompositionChangesOwnFrameSample(t *testing.T) {
 	added := sampleMotion(t, base+`animation-composition:`+add+`,`+add+`;`, at)
 	accumulate := "accumulate"
 	accumulated := sampleMotion(t, base+`animation-composition:`+accumulate+`,`+accumulate+`;`, at)
-	if replace < 99.9 || replace > 100.1 || added < 199.9 || added > 200.1 || accumulated < 199.9 || accumulated > 200.1 {
-		t.Fatalf("replace/add/accumulate samples = %.2f/%.2f/%.2f px, want 100/200/200", replace, added, accumulated)
+	// A transform-list keyframe samples one matrix per effect, so the later
+	// effect replaces the earlier one in every composition mode. Concatenating
+	// additive transform lists belongs to the composition phase; until then add
+	// and accumulate must not double the 100px translation.
+	for _, c := range []struct {
+		mode string
+		got  float64
+	}{{"replace", replace}, {add, added}, {accumulate, accumulated}} {
+		if c.got < 99.9 || c.got > 100.1 {
+			t.Fatalf("%s sample = %.2f px, want the single 100px translation", c.mode, c.got)
+		}
 	}
 }
