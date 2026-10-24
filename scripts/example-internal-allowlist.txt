@@ -4,6 +4,9 @@
 # is missing, or a recorded pair is gone. Existing pairs stay until a
 # public export replaces them. Do not add rows for new work.
 #
+examples/animations/page.go	github.com/chinmay-sawant/ownframe/internal/animation
+examples/animations/page.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
+examples/animations/page.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
 examples/css-preview/bind.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
 examples/css-preview/bind.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
 examples/css-preview/bind.go	github.com/chinmay-sawant/ownframe/internal/csstransition

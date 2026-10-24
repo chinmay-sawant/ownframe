@@ -9,6 +9,7 @@
   },
   "experimental": [
     "accessibility",
+    "animations",
     "bind-hooks",
     "clipboard",
     "controls",
