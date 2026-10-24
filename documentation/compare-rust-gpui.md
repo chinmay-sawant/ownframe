@@ -5,15 +5,44 @@ These examples display the same plain text, `Hello world`, with no added styles.
 
 ## The same screen
 
-These are UI excerpts. Both omit imports, application initialization, window setup, and error handling.
-Complete setup is linked separately for each framework.
+Both render the same plain text, `Hello world`, with no added styles.
+The GPUI program below is complete and follows the official example, trimmed to unstyled text.
+The OwnFrame program below is complete.
 
 ### Rust GPUI
 
-The body of a view's `render` method:
-
 ```rust
-div().child("Hello world")
+use gpui::{
+    div, prelude::*, px, size, App, Application, Bounds, Context,
+    Window, WindowBounds, WindowOptions,
+};
+
+struct HelloWorld;
+
+impl Render for HelloWorld {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .size_full()
+            .justify_center()
+            .items_center()
+            .child("Hello world")
+    }
+}
+
+fn main() {
+    Application::new().run(|cx: &mut App| {
+        let bounds = Bounds::centered(None, size(px(500.), px(500.0)), cx);
+        cx.open_window(
+            WindowOptions {
+                window_bounds: Some(WindowBounds::Windowed(bounds)),
+                ..Default::default()
+            },
+            |_, cx| cx.new(|_| HelloWorld),
+        )
+        .unwrap();
+    });
+}
 ```
 
 GPUI's [official example](https://gpui.rs/) shows `Render`, `div`, and `child` in a complete application.
@@ -21,16 +50,31 @@ Its [text element source](https://github.com/zed-industries/zed/blob/main/crates
 
 ### OwnFrame
 
-The HTML field in a page configuration:
-
 ```go
-ownframe.Config{
-	HTML: `<div>Hello world</div>`,
+package main
+
+import (
+	"context"
+	"log"
+
+	"github.com/chinmay-sawant/ownframe"
+)
+
+func main() {
+	page, err := ownframe.New(ownframe.Config{
+		Title:  "Hello",
+		HTML:   "<div>Hello world</div>",
+		Width:  480,
+		Height: 320,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := ownframe.Run(context.Background(), page); err != nil {
+		log.Fatal(err)
+	}
 }
 ```
-
-A complete app also supplies a window size, creates the page with `New`, and opens it with `Run`.
-See the [complete OwnFrame program](../README.md#get-started) and [window setup](window.md).
 
 ## Where the code lives
 

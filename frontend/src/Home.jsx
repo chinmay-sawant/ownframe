@@ -69,7 +69,7 @@ const demos = [
     image: telegramPreview,
     alt: 'Telegram demo conversation running on Android.',
     phone: true,
-    href: '#docs/examples-telegram-android-readme',
+    href: '#docs/showcase/telegram',
     link: 'Build the Android demo',
   },
 ];
@@ -127,8 +127,7 @@ export default function Home() {
           <p>Draw the result and connect input to Go handlers.</p>
         </div>
       </div>
-      <p>No embedded browser or JavaScript runtime.
-        {' '}<a href="#docs/features">See supported features and limits</a>.</p>
+      <p>No embedded browser or JavaScript runtime.</p>
     </section>
 
     <section id="start" className="start-section" aria-labelledby="start-title">
@@ -145,8 +144,7 @@ export default function Home() {
         <div className="code-example"><GoCode source={quickStart} /></div>
       </details>
       <p>Add CSS to your HTML or load a template file. Connect changing data with
-        {' '}<a href="#docs/binding"><code>SetData</code> and Go handlers</a>.
-        The <a href="#docs/window">window guide</a> covers setup and sizing.</p>
+        {' '}<code>SetData</code> and Go handlers.</p>
     </section>
 
     <section id="compare" className="comparison-section" aria-labelledby="compare-title">
@@ -177,12 +175,10 @@ export default function Home() {
         Reuse your HTML, CSS, and Go handlers. Android has Telegram and Eyes demo APKs.
         iOS is not a target for now.</p>
       <p>Phone apps support touch scrolling and soft keyboard input. The clipboard uses an
-        in-memory copy, and native screen-reader integration is still unavailable.
-        Check the platform limits before shipping.</p>
+        in-memory copy, and native screen-reader integration is still unavailable.</p>
       <div className="mobile-guides links">
-        <a href="#docs/android-app-creation">Create an Android app</a>
-        <a href="#docs/platforms">Platform matrix</a>
-        <a href="#docs/android-runtime">Android runtime limits</a>
+        <a href="#docs/showcase/telegram">Build the Android demo</a>
+        <a href="#docs/showcase/telegram">See phone examples</a>
       </div>
     </section>
   </div>;

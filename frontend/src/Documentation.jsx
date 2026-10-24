@@ -6,7 +6,6 @@ import rehypeRaw from 'rehype-raw';
 import rehypeSlug from 'rehype-slug';
 import rehypeHighlight from 'rehype-highlight';
 import { documents, documentGroups, contentUrl } from './content';
-import { docsOverview } from './docs-overview';
 import { showcaseIntro, showcaseSections } from './showcase';
 
 // useReducedMotion reports the reduced motion preference and follows it when
@@ -67,12 +66,13 @@ export default function Documentation({ hash }) {
   const [lightbox, setLightbox] = useState(null);
   const contentPane = useRef(null);
   const menuButton = useRef(null);
-  const [, slug = 'readme', anchor] = hash.split('/');
+  const [, rawSlug = 'showcase', anchor] = hash.split('/');
+  const slug = rawSlug === 'readme' ? 'showcase' : rawSlug;
   const doc = documents.find((entry) => entry.slug === slug);
   const isShowcase = doc?.slug === 'showcase';
   const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : showcaseSections[0].id;
   const showcase = isShowcase ? showcaseSections.find((entry) => entry.id === activeShowcase) : null;
-  const text = slug === 'readme' && !anchor ? docsOverview : doc?.text;
+  const text = doc?.text;
   const mediaResolution = (src, width, height) => setLightbox((box) => {
     if (!width || !height || !box || box.items[box.index]?.src !== src) return box;
     const items = box.items.slice();
@@ -165,12 +165,8 @@ export default function Documentation({ hash }) {
       </button>
       <nav id="documentation-topics" className="docs-nav" aria-label="Documentation topics"
         onClick={(event) => { if (event.target.closest('a')) setMenuOpen(false); }}>
-        {documentGroups.map((group) => group.standalone
-          ? <a key={group.title} href={`#docs/${group.documents[0].slug}`}
-            aria-current={slug === group.documents[0].slug ? 'page' : undefined}
-            className="docs-nav-parent">{group.documents[0].title}</a>
-          : <details key={`${group.title}/${slug}`} className="docs-nav-group"
-            open={!group.keepClosed && group.documents.some((entry) => entry.slug === slug)}>
+        {documentGroups.map((group) => <details key={`${group.title}/${slug}`} className="docs-nav-group"
+          open={group.documents.some((entry) => entry.slug === slug)}>
             <summary>{group.title}</summary>
             <div className="docs-nav-links">
               {group.documents.map((entry) => <div key={entry.slug} className="docs-nav-entry">
@@ -213,7 +209,7 @@ export default function Documentation({ hash }) {
         </div>
         <Markdown {...markdownProps}>{showcase.after}</Markdown>
       </> : <Markdown {...markdownProps}>{text}</Markdown>
-        : <><h1>Document not found</h1><p><a href="#docs/readme">Open the documentation overview</a></p></>}
+        : <><h1>Document not found</h1><p><a href={`#docs/showcase/${showcaseSections[0].id}`}>Open the example apps</a></p></>}
     </article>
     {lightboxItem && createPortal(<div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
       <div className="lightbox-card" role="dialog" aria-modal="true"

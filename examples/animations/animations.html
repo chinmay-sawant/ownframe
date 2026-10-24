@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CSS Animation Knowledge Lab &amp; Showcase</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background-color: #f0f4f8;
+      color: #1e293b;
+      font-family: sans-serif;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    /* Header styling */
+    .header {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px 0;
+      font-size: 12px;
+      font-weight: bold;
+      color: #2563eb;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 26px;
+      color: #0f172a;
+    }
+
+    .intro {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    /* Status and Controls Toolbar */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .stat-pill {
+      padding: 4px 10px;
+      border-radius: 6px;
+      background-color: #e2e8f0;
+      color: #334155;
+    }
+
+    .stat-pill.score-pill {
+      background-color: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .stat-pill.state-pill {
+      background-color: #dcfce7;
+      color: #15803d;
+    }
+
+    .stat-pill.state-pill.paused {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background-color: #ffffff;
+      color: #1e293b;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #f1f5f9;
+    }
+
+    .btn-primary {
+      background-color: #2563eb;
+      color: #ffffff;
+      border-color: #1d4ed8;
+    }
+
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+    }
+
+    .btn-toggle {
+      background-color: #0f766e;
+      color: #ffffff;
+      border-color: #115e59;
+    }
+
+    .btn-toggle:hover {
+      background-color: #115e59;
+    }
+
+    /* Filter tabs */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .filter-btn {
+      padding: 6px 12px;
+      font-size: 12px;
+      border-radius: 20px;
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #475569;
+    }
+
+    .filter-btn.active {
+      background-color: #2563eb;
+      color: #ffffff;
+      border-color: #2563eb;
+    }
+
+    /* Quiz Card Component */
+    .card {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .card-category {
+      font-size: 11px;
+      font-weight: bold;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      background-color: #e2e8f0;
+      color: #475569;
+    }
+
+    .card-badge.correct {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+
+    .card-badge.incorrect {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    h2 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: #0f172a;
+    }
+
+    .question-prompt {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: #334155;
+    }
+
+    /* Interactive Live Animation Stage */
+    .stage {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .stage-title {
+      margin: 0 0 10px 0;
+      font-size: 11px;
+      font-weight: bold;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .track {
+      position: relative;
+      height: 48px;
+      background-color: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      overflow: hidden;
+      padding: 4px 8px;
+    }
+
+    .track.active-track {
+      border: 2px solid #2563eb;
+      background-color: #eff6ff;
+    }
+
+    .track:last-child {
+      margin-bottom: 0;
+    }
+
+    .track-tag {
+      position: absolute;
+      right: 90px;
+      top: 14px;
+      font-size: 11px;
+      color: #64748b;
+      font-weight: bold;
+    }
+
+    .track-play-btn {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      padding: 5px 12px;
+      font-size: 11px;
+      font-weight: bold;
+      border-radius: 5px;
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .track-play-btn:hover {
+      background-color: #1d4ed8;
+    }
+      position: absolute;
+      right: 8px;
+      top: 13px;
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: bold;
+    }
+
+    /* Animation Targets */
+    .chip {
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      width: 76px;
+      height: 32px;
+      line-height: 32px;
+      text-align: center;
+      border-radius: 6px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    /* Global Play-State Modifier */
+    body.is-paused .chip {
+      animation-play-state: paused !important;
+      -webkit-animation-play-state: paused !important;
+    }
+
+    /* Options Selection */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      text-align: left;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background-color: #ffffff;
+      color: #1e293b;
+      font-size: 13px;
+      font-weight: normal;
+    }
+
+    .option-btn:hover {
+      background-color: #f1f5f9;
+      border-color: #94a3b8;
+    }
+
+    .option-btn.selected {
+      border-color: #2563eb;
+      background-color: #eff6ff;
+    }
+
+    .option-btn.correct-choice {
+      border-color: #16a34a;
+      background-color: #f0fdf4;
+      color: #15803d;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong-choice {
+      border-color: #dc2626;
+      background-color: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .option-key {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+      border-radius: 4px;
+      background-color: #e2e8f0;
+      color: #334155;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    /* Explanation & Deep Dive box */
+    .explanation-box {
+      background-color: #f8fafc;
+      border-left: 4px solid #2563eb;
+      border-radius: 0 6px 6px 0;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .explanation-title {
+      margin: 0 0 6px 0;
+      font-size: 13px;
+      font-weight: bold;
+      color: #1e293b;
+    }
+
+    .explanation-text {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    code {
+      display: block;
+      padding: 8px 12px;
+      background-color: #1e293b;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 12px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
+
+    /* Reference Table */
+    .reference-section {
+      background-color: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      padding: 24px;
+      margin-top: 30px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      font-size: 12px;
+    }
+
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: bold;
+    }
+
+    /* ==========================================================================
+       Keyframes and Demonstration Styles (Compatibility Matrix Properties)
+       ========================================================================== */
+
+    /* 1. Timing Function Animations */
+    @keyframes kf-glide {
+      0% {
+        transform: translateX(0px);
+        background-color: #2563eb;
+      }
+      50% {
+        transform: translateX(140px);
+        background-color: #d97706;
+      }
+      100% {
+        transform: translateX(280px);
+        background-color: #059669;
+      }
+    }
+
+    .chip-ease {
+      background-color: #2563eb;
+      animation: kf-glide 2.0s ease-in-out 0s infinite alternate both;
+      animation-timing-function: ease-in-out;
+    }
+
+    .chip-linear {
+      background-color: #0284c7;
+      animation: kf-glide 2.0s linear 0s infinite alternate both;
+      animation-timing-function: linear;
+    }
+
+    .chip-bezier {
+      background-color: #7c3aed;
+      animation: kf-glide 2.0s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0s infinite alternate both;
+      animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+
+    .chip-steps {
+      background-color: #e11d48;
+      animation: kf-glide 2.0s steps(5, jump-end) 0s infinite alternate both;
+      animation-timing-function: steps(5, jump-end);
+    }
+
+    /* 2. Direction & Iteration Animations */
+    .chip-dir-normal {
+      background-color: #2563eb;
+      animation-name: kf-glide;
+      animation-duration: 1.8s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-direction: normal;
+    }
+
+    .chip-dir-reverse {
+      background-color: #dc2626;
+      animation-name: kf-glide;
+      animation-duration: 1.8s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-direction: reverse;
+    }
+
+    .chip-dir-alternate {
+      background-color: #16a34a;
+      animation-name: kf-glide;
+      animation-duration: 1.8s;
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-direction: alternate;
+    }
+
+    /* 3. Delay & Start/End Animations */
+    @keyframes kf-pulse {
+      0% {
+        transform: translateX(0px);
+        opacity: 0.3;
+      }
+      50% {
+        transform: translateX(140px);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(280px);
+        opacity: 0.3;
+      }
+    }
+
+    .chip-delay-zero {
+      background-color: #2563eb;
+      animation: kf-pulse 2.0s ease-in-out 0s infinite alternate both;
+      animation-delay: 0s;
+      animation-delay-start: 0s;
+      animation-delay-end: 0s;
+    }
+
+    .chip-delay-pos {
+      background-color: #d97706;
+      animation: kf-pulse 2.0s ease-in-out 0.8s infinite alternate both;
+      animation-delay: 0.8s;
+      animation-delay-start: 0.8s;
+    }
+
+    .chip-delay-neg {
+      background-color: #059669;
+      animation: kf-pulse 2.0s ease-in-out -1.0s infinite alternate both;
+      animation-delay: -1.0s;
+      animation-delay-start: -1.0s;
+    }
+
+    /* 4. Fill-Mode Animations */
+    @keyframes kf-one-shot {
+      0% {
+        transform: translateX(0px);
+        background-color: #7c3aed;
+      }
+      100% {
+        transform: translateX(260px);
+        background-color: #059669;
+      }
+    }
+
+    .chip-fill-none {
+      background-color: #7c3aed;
+      animation: kf-one-shot 2.2s ease 0.4s 1 normal none;
+      animation-fill-mode: none;
+    }
+
+    .chip-fill-forwards {
+      background-color: #7c3aed;
+      animation: kf-one-shot 2.2s ease 0.4s 1 normal forwards;
+      animation-fill-mode: forwards;
+    }
+
+    .chip-fill-both {
+      background-color: #7c3aed;
+      animation: kf-one-shot 2.2s ease 0.4s 1 normal both;
+      animation-fill-mode: both;
+    }
+
+    /* 5. WebKit Prefixed Aliases */
+    @-webkit-keyframes kf-webkit-hop {
+      0% {
+        transform: translateY(0px);
+        background-color: #7c3aed;
+      }
+      50% {
+        transform: translateY(-10px);
+        background-color: #ec4899;
+      }
+      100% {
+        transform: translateY(0px);
+        background-color: #7c3aed;
+      }
+    }
+
+    .chip-webkit-sample {
+      background-color: #7c3aed;
+      -webkit-animation: kf-webkit-hop 1.4s ease-in-out 0s infinite alternate both;
+      -webkit-animation-name: kf-webkit-hop;
+      -webkit-animation-duration: 1.4s;
+      -webkit-animation-timing-function: ease-in-out;
+      -webkit-animation-delay: 0s;
+      -webkit-animation-iteration-count: infinite;
+      -webkit-animation-direction: alternate;
+      -webkit-animation-fill-mode: both;
+      -webkit-animation-play-state: running;
+    }
+
+    /* 6. Composition, Range & Trigger */
+    @keyframes kf-composite {
+      0% {
+        transform: translateX(0px);
+      }
+      50% {
+        transform: translateX(120px);
+        background-color: #f59e0b;
+      }
+      100% {
+        transform: translateX(240px);
+      }
+    }
+
+    .chip-composite {
+      background-color: #0f766e;
+      animation: kf-composite 1.8s ease-in-out 0s infinite alternate both;
+      animation-composition: replace;
+      animation-timeline: auto;
+      animation-range: entry 10% exit 90%;
+      animation-range-start: entry 10%;
+      animation-range-end: exit 90%;
+      animation-range-center: normal;
+      animation-trigger: none;
+    }
+  </style>
+</head>
+<body class="{{if not .IsPlaying}}is-paused{{end}}">
+  <main class="container">
+    <!-- Header -->
+    <header class="header">
+      <p class="eyebrow">OwnFrame Interactive Showcase</p>
+      <h1>CSS Animation Knowledge Lab</h1>
+      <p class="intro">
+        A single-component application demonstrating all 27 standard and WebKit animation properties
+        defined in the engine compatibility matrix. Test your CSS motion knowledge with the interactive questions below
+        while observing live animation behaviors rendered by the engine.
+      </p>
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="stats">
+          <span class="stat-pill score-pill">Score: {{.Score}} / {{.Total}}</span>
+          <span class="stat-pill">Answered: {{.AnsweredCount}} / {{.Total}}</span>
+          <span class="stat-pill state-pill {{if not .IsPlaying}}paused{{end}}">
+            Playback: {{if .IsPlaying}}RUNNING{{else}}PAUSED{{end}}
+          </span>
+        </div>
+        <div class="actions">
+          <button id="btn-toggle-play" class="btn-toggle" type="button">
+            {{if .IsPlaying}}Pause Animations{{else}}Resume Animations{{end}}
+          </button>
+          <button id="btn-reset" type="button">Reset Quiz</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Filters -->
+    <nav class="filters" aria-label="Category filters">
+      <button id="filter-all" class="filter-btn {{if eq .ActiveFilter "all"}}active{{end}}" type="button">All Questions</button>
+      <button id="filter-timing" class="filter-btn {{if eq .ActiveFilter "timing"}}active{{end}}" type="button">Timing &amp; Curves</button>
+      <button id="filter-direction" class="filter-btn {{if eq .ActiveFilter "direction"}}active{{end}}" type="button">Direction &amp; Loops</button>
+      <button id="filter-delays" class="filter-btn {{if eq .ActiveFilter "delays"}}active{{end}}" type="button">Delays</button>
+      <button id="filter-fill" class="filter-btn {{if eq .ActiveFilter "fill"}}active{{end}}" type="button">Fill Modes</button>
+      <button id="filter-webkit" class="filter-btn {{if eq .ActiveFilter "webkit"}}active{{end}}" type="button">WebKit Prefixes</button>
+      <button id="filter-advanced" class="filter-btn {{if eq .ActiveFilter "advanced"}}active{{end}}" type="button">Advanced &amp; Composite</button>
+    </nav>
+
+    <!-- Questions List -->
+    {{range .Questions}}
+    {{if or (eq $.ActiveFilter "all") (eq $.ActiveFilter .Category)}}
+    <article id="{{.CardID}}" class="card">
+      <div class="card-header">
+        <span class="card-category">{{.CategoryLabel}} &bull; Question {{.Number}}</span>
+        <span class="card-badge {{if .Answered}}{{if .IsCorrect}}correct{{else}}incorrect{{end}}{{end}}">
+          {{if not .Answered}}Pending{{else if .IsCorrect}}Correct (+1){{else}}Incorrect{{end}}
+        </span>
+      </div>
+
+      <h2>{{.Title}}</h2>
+      <p class="question-prompt">{{.Prompt}}</p>
+
+      <!-- Live Demonstration Stage -->
+      <div class="stage">
+        <p class="stage-title">Live Animation Demonstration</p>
+        {{range .Tracks}}
+        <div class="track {{if .IsActive}}active-track{{end}}">
+          <div id="{{.ChipID}}" class="chip {{.ChipClass}}">{{.ChipLabel}}</div>
+          <span class="track-tag">{{.TrackLabel}}</span>
+          <button id="{{.PlayBtnID}}" class="track-play-btn" type="button">&#9654; Play</button>
+        </div>
+        {{end}}
+      </div>
+
+      <!-- Multiple Choice Options -->
+      <div class="options-grid">
+        {{$qID := .ID}}
+        {{$answered := .Answered}}
+        {{$selected := .SelectedIndex}}
+        {{$correct := .CorrectIndex}}
+        {{range .Options}}
+        <button id="opt-{{$qID}}-{{.Index}}" type="button" class="option-btn {{if $answered}}{{if eq .Index $correct}}correct-choice{{else if eq .Index $selected}}wrong-choice{{end}}{{else if eq .Index $selected}}selected{{end}}">
+          <span class="option-key">{{.Key}}</span>
+          <span>{{.Text}}</span>
+        </button>
+        {{end}}
+      </div>
+
+      <!-- Answer Disclosure & Explanation (Revealed once answered) -->
+      {{if .Answered}}
+      <div class="explanation-box">
+        <p class="explanation-title">{{if .IsCorrect}}&check; Correct Answer: {{.CorrectAnswerLabel}}{{else}}&cross; Correct Answer: {{.CorrectAnswerLabel}}{{end}}</p>
+        <p class="explanation-text">{{.Explanation}}</p>
+        <code>{{.CSSDeclaration}}</code>
+      </div>
+      {{end}}
+    </article>
+    {{end}}
+    {{end}}
+
+    <!-- Catalog Reference Section -->
+    <section class="reference-section">
+      <h2>CSS Animation Properties Matrix Reference</h2>
+      <p class="intro">
+        All 27 animation properties implemented in Blinkless and sampled by OwnFrame, as specified in
+        <code>documentation/compatibility-matrix.md</code>:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Accepted Values</th>
+            <th>Engine Scope / Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Catalog}}
+          <tr>
+            <td><strong>{{.Name}}</strong></td>
+            <td>{{.Type}}</td>
+            <td>{{.Accepted}}</td>
+            <td>{{.Behavior}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

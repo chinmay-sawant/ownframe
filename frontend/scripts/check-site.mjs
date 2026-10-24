@@ -84,11 +84,11 @@ try {
   for (const [width, height] of [[320, 740], [390, 844], [768, 1024], [844, 390], [1440, 1000]]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 1000 });
     for (const theme of ['dark', 'light']) {
-      for (const hash of ['#home', '#docs/readme', '#docs/binding', '#docs/testing', '#docs/platforms', '#docs/css-motion', '#docs/showcase/telegram', '#docs/compare-rust-gpui', '#docs/examples-readme', '#docs/compare-electron', '#docs/compare-go-app-frameworks', '#docs/compare-syntax']) {
+      for (const hash of ['#home', '#docs/showcase/wispr-flow', '#docs/showcase/telegram', '#docs/showcase/pet-care', '#docs/examples-readme', '#docs/compare-rust-gpui', '#docs/compare-electron', '#docs/compare-wails', '#docs/compare-fyne', '#docs/compare-gio', '#docs/compare-webview', '#docs/compare-ebitengine']) {
         await navigate(hash);
-        if (hash === '#docs/css-motion') {
-          assert.equal(await evaluate(`Array.from(document.querySelectorAll('.docs-nav a')).find(link => link.getAttribute('href') === '#docs/css-motion')?.textContent`), 'Animations and transitions');
-          assert.equal(await evaluate('document.querySelector("main h1").textContent'), 'CSS animations and transitions');
+        if (hash === '#docs/showcase/wispr-flow') {
+          assert.equal(await evaluate(`Array.from(document.querySelectorAll('.docs-nav a')).find(link => link.getAttribute('href') === '#docs/showcase/wispr-flow')?.textContent`), 'Example apps');
+          assert.equal(await evaluate('document.querySelector("main h1").textContent'), 'Example apps');
         }
         if (await evaluate('document.documentElement.dataset.theme') !== theme) {
           await evaluate('document.querySelector(".theme-toggle").click()');
@@ -138,28 +138,28 @@ try {
           assert.ok(await evaluate(`Array.from(document.querySelectorAll('.docs-content pre code')).every(code =>
             code.textContent.includes('Hello world'))`), 'A comparison code example shows different content');
         }
-        if (hash === '#docs/readme' && [390, 1440].includes(width)) await screenshot(`docs-${width}-${theme}`);
+        if (hash === '#docs/showcase/wispr-flow' && [390, 1440].includes(width)) await screenshot(`docs-${width}-${theme}`);
       }
     }
   }
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await navigate('#docs/readme');
+  await navigate('#docs/showcase/wispr-flow');
   await evaluate('document.querySelector(".docs-menu-toggle").click()');
   assert.equal(await evaluate('document.querySelector(".docs-menu-toggle").getAttribute("aria-expanded")'), 'true');
   await evaluate(`(() => {
-    let parent = document.querySelector('.docs-nav a[href="#docs/binding"]').parentElement;
+    let parent = document.querySelector('.docs-nav a[href="#docs/examples-readme"]').parentElement;
     while (parent) {
       if (parent.tagName === 'DETAILS') parent.open = true;
       parent = parent.parentElement;
     }
   })()`);
-  await evaluate(`document.querySelector('.docs-nav a[href="#docs/binding"]').click()`);
+  await evaluate(`document.querySelector('.docs-nav a[href="#docs/examples-readme"]').click()`);
   await pause(200);
-  assert.equal(await evaluate('location.hash'), '#docs/binding');
+  assert.equal(await evaluate('location.hash'), '#docs/examples-readme');
   assert.equal(await evaluate('document.querySelector(".docs-menu-toggle").getAttribute("aria-expanded")'), 'false');
-  await evaluate('location.hash = "#docs/binding/example"');
+  await evaluate('location.hash = "#docs/examples-readme/feature-examples"');
   await pause(200);
-  assert.ok(await evaluate('Math.abs(document.querySelector("#example").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16 * Number(getComputedStyle(document.documentElement).getPropertyValue("--site-scale"))) < 4'), 'Mobile anchor did not clear the sticky header');
+  assert.ok(await evaluate('Math.abs(document.querySelector("#feature-examples").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16 * Number(getComputedStyle(document.documentElement).getPropertyValue("--site-scale"))) < 4'), 'Mobile anchor did not clear the sticky header');
   await screenshot('mobile-docs');
   await navigate('#docs/showcase/pet-care');
   assert.equal(await evaluate('document.querySelector(".docs-content h2").textContent'), 'Pet Care');
@@ -185,12 +185,12 @@ try {
   await evaluate(`document.querySelector('header a[href="#start"]').click()`);
   await pause(200);
   assert.ok(await evaluate('Math.abs(document.querySelector("#start").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 24 * Number(getComputedStyle(document.documentElement).getPropertyValue("--site-scale"))) < 4'), 'Get started link did not clear the sticky header');
-  await evaluate(`document.querySelector('header a[href="#docs/readme"]').click()`);
+  await evaluate(`document.querySelector('header a[href="#docs/showcase/wispr-flow"]').click()`);
   await pause(200);
-  assert.equal(await evaluate('location.hash'), '#docs/readme');
+  assert.equal(await evaluate('location.hash'), '#docs/showcase/wispr-flow');
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".docs-content")).overflowY'), 'visible');
   await evaluate('document.querySelector(".skip").click()');
-  assert.equal(await evaluate('location.hash'), '#docs/readme');
+  assert.equal(await evaluate('location.hash'), '#docs/showcase/wispr-flow');
   assert.equal(await evaluate('document.activeElement.id'), 'main');
   await evaluate('document.querySelector(".docs-menu-toggle").click()');
   await evaluate('document.querySelector(".docs-menu-toggle").focus()');

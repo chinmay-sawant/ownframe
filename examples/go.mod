@@ -9,7 +9,7 @@ go 1.26.10
 // a relative replace; drop it when tagging examples/vX.Y.Z after the
 // library tag.
 require (
-	github.com/chinmay-sawant/blinkless v0.0.3-0.20261021155643-c1054ff46202
+	github.com/chinmay-sawant/blinkless v0.0.3
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0

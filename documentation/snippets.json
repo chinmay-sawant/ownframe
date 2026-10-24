@@ -36,35 +36,67 @@
       "github.com/chinmay-sawant/ownframe"
     ]
   },
-  "documentation/compare-go-app-frameworks.md#1": {
+  "documentation/compare-webview.md#1": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-webview.md#2": {
     "mode": "expression",
     "after": "return nil",
     "imports": [
       "github.com/chinmay-sawant/ownframe"
     ]
   },
-  "documentation/compare-go-app-frameworks.md#2": {
+  "documentation/compare-ebitengine.md#1": {
     "mode": "illustration",
     "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
   },
-  "documentation/compare-go-app-frameworks.md#3": {
+  "documentation/compare-ebitengine.md#2": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-wails.md#1": {
     "mode": "illustration",
     "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
   },
-  "documentation/compare-go-app-frameworks.md#4": {
+  "documentation/compare-wails.md#2": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-fyne.md#1": {
     "mode": "illustration",
     "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
   },
-  "documentation/compare-go-app-frameworks.md#5": {
+  "documentation/compare-fyne.md#2": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
+  },
+  "documentation/compare-fyne.md#1": {
     "mode": "illustration",
     "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-gio.md#1": {
+    "mode": "illustration",
+    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/compare-gio.md#2": {
+    "mode": "expression",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe"
+    ]
   },
   "documentation/compare-rust-gpui.md#1": {
-    "mode": "expression",
-    "after": "return nil",
-    "imports": [
-      "github.com/chinmay-sawant/ownframe"
-    ]
+    "mode": "file"
   },
   "documentation/compare-syntax.md#1": {
     "mode": "expression",
