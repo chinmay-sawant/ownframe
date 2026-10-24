@@ -4,26 +4,12 @@ import (
 	"context"
 	"testing"
 	"time"
-
-	"github.com/chinmay-sawant/ownframe"
 )
 
-// catalogScrollTo moves the window to the row that starts at the given top.
-func catalogScrollTo(ctx context.Context, t *testing.T, p *ownframe.Page, top int) {
-	t.Helper()
-	p.Scroll().SetScrollOffset(0, top)
-	if !p.Testing().StepScrollWindow() {
-		t.Fatal("the row window did not move")
-	}
-	if err := p.Redraw(ctx); err != nil {
-		t.Fatal(err)
-	}
-}
-
-// TestScrollQueuesTheRowThatComesIntoView checks that a row that scrolls
-// into view starts its preview and that the queue drains again. A queue that
-// never drains keeps the window awake forever.
-func TestScrollQueuesTheRowThatComesIntoView(t *testing.T) {
+// TestScrollStartsTheRowThatComesIntoView checks that a row that scrolls
+// into view with its started class binds its preview, and that the automatic
+// driver then keeps it moving.
+func TestScrollStartsTheRowThatComesIntoView(t *testing.T) {
 	ctx := context.Background()
 	p, d, v := fixturePage(t)
 	m, ok := measureCatalog(p)
@@ -33,33 +19,23 @@ func TestScrollQueuesTheRowThatComesIntoView(t *testing.T) {
 	if err := installCatalogWindow(ctx, p, v, d, m); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.playAll(ctx); err != nil {
-		t.Fatal(err)
+	clickID(t, p, playAllID)
+	tickPage(t, p)
+
+	late := v.Catalog[29]
+	if _, found := findBox(p.Boxes(), late.TargetID); found {
+		t.Fatal("the late row was already in the window")
 	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
+	scrollTo(t, ctx, p, m, m.rowTop[14]-200)
+	time.Sleep(5 * time.Millisecond)
+	tickPage(t, p)
+	if _, found := findBox(p.Boxes(), late.TargetID); !found {
+		t.Fatal("the late row did not scroll into the window")
 	}
-	if len(d.pending) != 0 {
-		t.Fatalf("pending = %d, want an empty queue", len(d.pending))
+	if got := p.Probe().Motion().Bound; got == 0 {
+		t.Fatalf("bound players = %d after the scroll", got)
 	}
-	catalogScrollTo(ctx, t, p, m.rowTop[16])
-	if len(d.pending) == 0 {
-		t.Fatal("the row that came into view was not queued")
-	}
-	d.pendingAt = time.Now().Add(-time.Second)
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
-	}
-	if len(d.pending) != 0 {
-		t.Fatalf("pending = %d, want an empty queue", len(d.pending))
-	}
-	started := 0
-	for _, s := range d.samples {
-		if s.active {
-			started++
-		}
-	}
-	if started == 0 {
-		t.Fatal("no preview started after the scroll")
+	if got := xformX(targetOp(t, p, late.TargetID), p.Probe().Display().PointsPerPixel); got == 0 {
+		t.Fatalf("%s did not bind after it scrolled into view", late.Name)
 	}
 }

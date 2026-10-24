@@ -3,7 +3,7 @@ package csstransition
 import (
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
@@ -14,7 +14,7 @@ import (
 // captured indices, because the paint it writes as the destination is the
 // one the display holds. BindTo checks them, because it writes a paint the
 // caller captured on an earlier display.
-func Bind(d *ownframe.Display, box ownframe.Box, property string,
+func Bind(d *layout.Display, box layout.Box, property string,
 	indices []int, initial []cssmotion.Paint, start time.Time) (*transition.Renderer, error) {
 	return BindTo(d, box, property, indices, initial, nil, start)
 }

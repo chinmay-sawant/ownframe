@@ -247,7 +247,7 @@ func TestRuntimeStepAllocFree(t *testing.T) {
 	}
 }
 
-func TestRuntimePausedPlayerIsInactive(t *testing.T) {
+func TestRuntimePausedPlayerSamplesOnceAndParks(t *testing.T) {
 	r := New()
 	r.now = testClock
 	d := animatedDisplay("paused", false)
@@ -256,14 +256,16 @@ func TestRuntimePausedPlayerIsInactive(t *testing.T) {
 		t.Fatalf("bind: %v", err)
 	}
 
-	if r.Active() {
-		t.Fatal("a paused player is active before its first sample")
+	// A paused animation still has a pose to show, so it asks for the one
+	// sample that reaches it and then stops asking.
+	if !r.Active() {
+		t.Fatal("a freshly bound paused player did not ask for its first sample")
 	}
 
 	r.Step(d, testClock().Add(50*time.Millisecond))
 
 	if r.Active() {
-		t.Fatal("a paused player reports active")
+		t.Fatal("a sampled paused player reports active")
 	}
 
 	if got := r.Stats().Active; got != 0 {
@@ -272,6 +274,12 @@ func TestRuntimePausedPlayerIsInactive(t *testing.T) {
 
 	if got := movedBy(&d.Ops[0]); got != 0 {
 		t.Fatalf("paused player wrote matrix translation = %v, want the identity transform", got)
+	}
+
+	// The second step must skip the frozen sample instead of dirtying the
+	// page for the same pose again.
+	if damage := r.Step(d, testClock().Add(60*time.Millisecond)); !damage.Empty() {
+		t.Fatalf("a second paused step produced damage %v", damage.Bounds())
 	}
 
 	if got := d.Boxes[0].Animations[0].PlayState; got != "paused" {

@@ -56,7 +56,7 @@ func TestTransformCSSSerializesEveryFunctionUnit(t *testing.T) {
 			"matrix(1, 0, 0, 1, 10px, 20px)"},
 		{"matrix3d", TransformFunction{Name: Matrix3D,
 			Args: []float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 7.5, 15, 22.5, 1}},
-			"matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10px, 20px, 30px, 1)"},
+			"matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 7.5, 15, 22.5, 1)"},
 		{"perspective", TransformFunction{Name: Perspective, Args: []float64{375}}, "perspective(500px)"},
 	}
 

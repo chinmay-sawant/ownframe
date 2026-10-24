@@ -1,7 +1,5 @@
 package animation
 
-import "github.com/chinmay-sawant/ownframe/internal/cssmotion"
-
 type valueOf func(Keyframe) (float64, bool)
 
 func moveX(k Keyframe) (float64, bool)   { return k.X, k.Move }
@@ -22,7 +20,7 @@ func (e Effect) sample(at, fallback float64, value valueOf) float64 {
 		if !ok {
 			continue
 		}
-		cur := stop{at: frame.Offset, value: v}
+		cur := stop{at: frame.Offset, value: v, ease: frame.ease}
 		if first {
 			first = false
 			if cur.at > 0 {
@@ -53,18 +51,20 @@ func (e Effect) sample(at, fallback float64, value valueOf) float64 {
 }
 
 // mix interpolates between two stops. A base-dependent sentinel is resolved
-// against fallback, the target paint for this sample.
+// against fallback, the target paint for this sample. The easing is the one
+// declared on the keyframe that starts the interval, or the effect's own
+// function when that keyframe declares none.
 func (e Effect) mix(prev, next stop, at, fallback float64) float64 {
 	span := next.at - prev.at
 	if span <= 0 {
 		return next.value
 	}
 	part := (at - prev.at) / span
-	if e.Timing.Easing != nil {
-		part = e.Timing.Easing(part)
-	} else {
-		part = cssmotion.Ease(e.Timing.TimingFunction, part)
+	ease := prev.ease
+	if ease == nil {
+		ease = effectEase(e.Timing)
 	}
+	part = ease(part)
 	return prev.value + (next.value-prev.value)*part +
 		(prev.fromBase+(next.fromBase-prev.fromBase)*part)*fallback
 }

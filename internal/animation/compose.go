@@ -1,7 +1,6 @@
 package animation
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -49,9 +48,11 @@ func composeSampled(
 		{moveX, fieldX}, {moveY, fieldY}, {opacity, fieldOpacity}, {red, fieldR}, {green, fieldG}, {blue, fieldB},
 	}
 	fallbacks := missingFallbacks(base, mode)
-	transform := hasTransform(e.Frames)
+	// hasTransform also reports inline-SVG paint, which shares this per-target
+	// path; a paint-only effect simply has no transform stops to sample.
+	perTarget := hasTransform(e.Frames)
 	for i, item := range fields {
-		if transform && (item.kind == fieldX || item.kind == fieldY) {
+		if perTarget && (item.kind == fieldX || item.kind == fieldY) {
 			continue
 		}
 		v := e.sample(at, fallbacks[i], item.get)
@@ -62,14 +63,15 @@ func composeSampled(
 	}
 
 	var sample restampSample
-	if transform {
-		// Bind rejects a mismatched 3D pair, so ok is false only for a frame
-		// list that changed after NewComposite. Leaving the underlying paint
-		// in place is safer than snapping the transform.
+	if perTarget {
+		// A singular endpoint makes the interval discrete, and a frame list
+		// that changed after NewComposite can still fail here. Both leave the
+		// underlying paint in place rather than snapping the transform.
 		if value, ok := e.sampleTransform(at); ok {
+			composed, restamp := composeTransform(target, &current, value, mode)
 			sample.hasTransform = true
-			sample.transform = value
-			sample.transformRestamp = applyTransform(target, &current, value)
+			sample.transform = composed
+			sample.transformRestamp = restamp
 		}
 	}
 	if hasPerspective(e.Frames) {
@@ -78,16 +80,23 @@ func composeSampled(
 			sample.perspective = value
 		}
 	}
+	if hasSVGPaint(e.Frames) {
+		// Inline-SVG paint is not a display field, so the only per-target work
+		// is collecting the sample the page hands to RestyleInlineSVG.
+		target.svg = e.sampleSVGPaint(at)
+	}
 
 	return current, sample
 }
 
-// hasTransform reports whether any keyframe carries a parsed transform list or
-// a perspective declaration. Both sample per target instead of through the
-// precomputed paint field table.
+// hasTransform reports whether any keyframe carries a parsed transform list, a
+// perspective declaration, or inline-SVG paint. All three sample per target
+// instead of through the precomputed paint field table: a transform and a
+// perspective compose against the target's captured matrix, and SVG paint is
+// collected for the target's element.
 func hasTransform(frames []Keyframe) bool {
 	for _, frame := range frames {
-		if frame.Transform.declared() || frame.Perspective.declared() {
+		if frame.Transform.declared() || frame.Perspective.declared() || frame.SVG.declared() {
 			return true
 		}
 	}
@@ -140,9 +149,25 @@ func apply(p *cssmotion.Paint, base cssmotion.Paint, field int, v float64, mode 
 	}
 }
 
-// applyTransform writes a sampled transform through the operation's matrix.
-// Legacy X/Y-only keyframes never reach here; apply keeps them on the scalar
-// path.
+// composeTransform folds one effect's sampled transform onto the transform the
+// target already carries and reports the value the restamp path should see,
+// plus whether the element needs the engine's re-projection pass. Legacy X/Y
+// keyframes never reach here; apply keeps them on the scalar path.
+//
+// The composition follows animation-composition in declaration order:
+//
+//   - replace: the sample replaces the transform the target carries;
+//   - add: the two transform lists concatenate, which is the ordered matrix
+//     product of the underlying transform and the sample;
+//   - accumulate: corresponding components add, with the one-based scale
+//     components combining as a+b-1, which is not the same transform as add.
+//
+// The underlying transform is recovered from the paint instead of kept in
+// per-target state. A paint always holds parent * anim * world^-1 * base, so
+// inverting that expression yields the animation transform earlier effects
+// installed, and a target with no earlier transform yields the element's own
+// static transform. That makes an effect stack fold without a reset marker,
+// and a later effect cannot read a previous frame's value.
 //
 // The composed matrix replaces the element's static transform instead of
 // stacking on top of it, because the operation's captured matrix already
@@ -150,35 +175,294 @@ func apply(p *cssmotion.Paint, base cssmotion.Paint, field int, v float64, mode 
 //
 //	M_target = Parent * M_anim * World^-1 * Base
 //
-// M_anim is the sampled decomposition with the element's transform-origin
-// baked in, and Base is the matrix the operation carried at bind. World^-1
-// strips the element's static transform from Base, so a static transform is
-// replaced, not doubled, while any transform deeper than the element survives.
+// M_anim is the two-dimensional composition with the element's
+// transform-origin baked in, and Base is the matrix the operation carried at
+// bind. World^-1 strips the element's static transform from Base, so a static
+// transform is replaced, not doubled, while any transform deeper than the
+// element survives.
 //
 // A 3D keyframe or a 3D element cannot be expressed as a 2D matrix. That
-// sample leaves the operation alone, clears any earlier 2D matrix write, and
-// reports that the element needs the engine's 3D pass; RestampValues hands the
-// serialized list to the page, which calls layout.RestampTransforms.
+// sample leaves the operation alone and reports that the element needs the
+// engine's 3D pass; RestampValues hands the serialized list to the page, which
+// calls layout.RestampTransforms. Composition for that path happens in 4x4
+// matrices, because the recovered underlying transform is a matrix, not the
+// authored function list.
 //
 // The caller sets Paint.NeedsRestamp from the collected samples, so a
 // perspective sample in the same step is not hidden by a later 2D write.
-//
-// Every composition mode replaces the matrix. Concatenating additive transform
-// lists belongs to the composition phase; a second effect on the same element
-// writes last, matching the scalar path's replacing mode.
-func applyTransform(target *Target, p *cssmotion.Paint, value TransformValue) bool {
+func composeTransform(
+	target *Target,
+	p *cssmotion.Paint,
+	value TransformValue,
+	mode Composition,
+) (TransformValue, bool) {
 	if !p.Writes(cssmotion.MaskMatrix) {
-		return false
+		return value, false
 	}
-	if target.HasTransform3D || value.ThreeD {
-		return true
+	restamp := target.HasTransform3D || value.ThreeD
+	if mode == Replace {
+		// Replace keeps the authored list so a single effect serializes
+		// exactly as it was declared.
+		if !restamp {
+			writeTransform(target, p, value.Decomposed)
+		}
+
+		return value, restamp
 	}
-	anim := layout.BakeOrigin(matrixFromTransform(value.Decomposed), target.OriginX, target.OriginY)
+	underlying := underlyingTransform(target, p)
+	// CSS converts a missing underlying value to the matching identity list,
+	// so an additive or accumulated effect over none is just the sample. Keep
+	// the authored list in that case; a matrix round trip would serialize a 3D
+	// sample as matrix3d() for no gain. A 3D element is excluded because its
+	// static transform is not recoverable from the flattened paint matrix.
+	if !target.HasTransform3D && matrixFromTransform(underlying.Decomposed).IsIdentity() {
+		if !restamp {
+			writeTransform(target, p, deltaTransform(value))
+		}
+
+		return value, restamp
+	}
+	if restamp {
+		return composeTransform3D(underlying, value, mode), true
+	}
+	composed := composeTransform2D(underlying.Decomposed, value, mode)
+	writeTransform(target, p, composed)
+
+	return TransformValue{Decomposed: composed}, false
+}
+
+// writeTransform installs one two-dimensional animation transform through the
+// operation matrix, baking the element's transform-origin.
+func writeTransform(target *Target, p *cssmotion.Paint, value Transform) {
+	anim := layout.BakeOrigin(matrixFromTransform(value), target.OriginX, target.OriginY)
 	parent, world := targetMatrices(target)
 	p.Matrix = parent.Mul(anim).Mul(inverseMatrix2D(world)).Mul(matrixOrIdentity(target.From.Matrix))
 	p.HasMatrix = true
+}
 
-	return false
+// underlyingTransform recovers the animation transform the paint carries
+// before this effect, in the element's own coordinate space:
+//
+//	A = T(-origin) * Parent^-1 * M * Base^-1 * World * T(origin)
+//
+// The paint matrix is Parent * BakeOrigin(A) * World^-1 * Base, so this
+// inverts that construction exactly. With no effect applied yet, M is Base and
+// A is the element's static transform, which is the underlying value CSS
+// composes an additive or accumulated effect onto. The recovered value is a
+// matrix, so its function list is empty.
+//
+// A 3D sample writes no matrix, so a second 3D effect after one cannot see the
+// first one's value here: the running 3D transform lives in the player's
+// restamp slot, which the sampler does not read. That stack composes from the
+// element's own transform instead. See the phase notes; wiring it needs the
+// render loop to hand the slot back to the sampler.
+func underlyingTransform(target *Target, p *cssmotion.Paint) TransformValue {
+	parent, world := targetMatrices(target)
+	paint := layout.IdentityMatrix()
+	if p.HasMatrix {
+		paint = matrixOrIdentity(p.Matrix)
+	}
+	base := matrixOrIdentity(target.From.Matrix)
+	anim := inverseMatrix2D(parent).Mul(paint).Mul(inverseMatrix2D(base)).Mul(world)
+	anim = unbakeOrigin(anim, target.OriginX, target.OriginY)
+
+	return TransformValue{Decomposed: decomposeMatrix2D(anim)}
+}
+
+// composeTransform2D folds a two-dimensional sample onto the underlying
+// decomposition. Add multiplies the matrices in declaration order, which is the
+// same transform as concatenating the two lists; accumulate adds the decomposed
+// components instead.
+func composeTransform2D(underlying Transform, value TransformValue, mode Composition) Transform {
+	delta := deltaTransform(value)
+	if mode == Accumulate {
+		return accumulateTransform(underlying, delta)
+	}
+
+	return decomposeMatrix2D(matrixFromTransform(underlying).Mul(matrixFromTransform(delta)))
+}
+
+// composeTransform3D folds a sample that needs the restamp pass onto the
+// underlying transform. Both sides become four-by-four matrices: the underlying
+// animation is a matrix, and CSS converts both lists to matrices when they do
+// not match function by function. Add multiplies them in declaration order;
+// accumulate adds the decomposed components.
+func composeTransform3D(underlying TransformValue, value TransformValue, mode Composition) TransformValue {
+	if mode == Accumulate {
+		if m, ok := accumulateMatrix4(matrix4FromTransformValue(underlying), matrix4FromTransformValue(value)); ok {
+			return transformValueFromMatrix4(m)
+		}
+
+		return value
+	}
+
+	return transformValueFromMatrix4(matrix4FromTransformValue(underlying).Mul(matrix4FromTransformValue(value)))
+}
+
+// deltaTransform returns a sample's two-dimensional decomposition. A keyframe
+// built by the parser carries both the decomposition and the list; a value with
+// only a list still decomposes through its matrix.
+func deltaTransform(value TransformValue) Transform {
+	if value.Decomposed.Set {
+		return value.Decomposed
+	}
+	if len(value.Functions) > 0 {
+		return decomposeMatrix2D(matrix2DFromMatrix4(Matrix4FromFunctions(value.Functions)))
+	}
+
+	return IdentityTransform()
+}
+
+// accumulateTransform is the CSS accumulation procedure for two decomposed
+// two-dimensional transforms: translation, rotation, and skew add, while every
+// one-based scale component combines as a+b-1. A keyframed zero scale therefore
+// contributes -1, exactly as the spec's one-based rule says.
+func accumulateTransform(a, b Transform) Transform {
+	a, b = withIdentity(a), withIdentity(b)
+
+	return Transform{
+		Tx:     a.Tx + b.Tx,
+		Ty:     a.Ty + b.Ty,
+		Sx:     a.Sx + b.Sx - 1,
+		Sy:     a.Sy + b.Sy - 1,
+		Rotate: a.Rotate + b.Rotate,
+		SkewX:  a.SkewX + b.SkewX,
+		SkewY:  a.SkewY + b.SkewY,
+		Set:    true,
+	}
+}
+
+// accumulateMatrix4 is the CSS accumulation procedure for two matrices: both
+// are decomposed, the translation, skew, and perspective components add, every
+// one-based scale component combines as a+b-1, the perspective w component is
+// one-based, and the rotations compose through their quaternions. A singular
+// endpoint has no decomposition, so the caller keeps the sampled value.
+func accumulateMatrix4(a, b Matrix4) (Matrix4, bool) {
+	from, err := Decompose3D(a)
+	if err != nil {
+		return Matrix4{}, false
+	}
+	to, err := Decompose3D(b)
+	if err != nil {
+		return Matrix4{}, false
+	}
+	for i := range from.Translate {
+		from.Translate[i] += to.Translate[i]
+		from.Scale[i] += to.Scale[i] - 1
+		from.Skew[i] += to.Skew[i]
+	}
+	for i := range from.Perspective {
+		from.Perspective[i] += to.Perspective[i]
+	}
+	from.Perspective[perspectiveWIndex] -= 1
+	// Decompose3D reads the matrix columns as basis vectors, so the left
+	// operand's rotation is the product's right quaternion.
+	from.Quaternion = multiplyQuaternions(to.Quaternion, from.Quaternion)
+
+	return Compose3D(from), true
+}
+
+// perspectiveWIndex is the homogeneous w component of Decomposition3D.Perspective.
+const perspectiveWIndex = 3
+
+// multiplyQuaternions returns the Hamilton product a*b, which composes their
+// rotations. It matches the quaternion convention Decompose3D and Compose3D
+// share.
+func multiplyQuaternions(a, b [4]float64) [4]float64 {
+	ax, ay, az, aw := a[0], a[1], a[2], a[3]
+	bx, by, bz, bw := b[0], b[1], b[2], b[3]
+
+	return [4]float64{
+		aw*bx + ax*bw + ay*bz - az*by,
+		aw*by - ax*bz + ay*bw + az*bx,
+		aw*bz + ax*by - ay*bx + az*bw,
+		aw*bw - ax*bx - ay*by - az*bz,
+	}
+}
+
+// matrix4FromTransformValue lifts a transform value into four-by-four space.
+// The parsed function list wins because it is the authored geometry; a legacy
+// or composed value falls back to its two-dimensional decomposition.
+func matrix4FromTransformValue(value TransformValue) Matrix4 {
+	if len(value.Functions) > 0 {
+		return Matrix4FromFunctions(value.Functions)
+	}
+
+	return matrix4FromMatrix2D(matrixFromTransform(deltaTransform(value)))
+}
+
+// matrix4FromMatrix2D lifts a two-dimensional affine matrix into the
+// four-by-four form with z untouched.
+func matrix4FromMatrix2D(m layout.Matrix2D) Matrix4 {
+	return Matrix4{
+		m.A, m.B, 0, 0,
+		m.C, m.D, 0, 0,
+		0, 0, 1, 0,
+		m.E, m.F, 0, 1,
+	}
+}
+
+// matrix2DFromMatrix4 drops the z row and column. A four-by-four matrix that
+// came from two-dimensional inputs is exactly representable this way.
+func matrix2DFromMatrix4(m Matrix4) layout.Matrix2D {
+	return layout.Matrix2D{
+		A: m[0], B: m[1],
+		C: m[4], D: m[5],
+		E: m[indexM41], F: m[indexM42],
+	}
+}
+
+// transformValueFromMatrix4 is the value the restamp path serializes as one
+// matrix3d().
+func transformValueFromMatrix4(m Matrix4) TransformValue {
+	args := make([]float64, len(m))
+	copy(args, m[:])
+
+	return TransformValue{
+		Decomposed: Transform{Tx: m[indexM41], Ty: m[indexM42], Sx: 1, Sy: 1, Set: true},
+		Functions:  []TransformFunction{{Name: Matrix3D, Args: args}},
+		ThreeD:     true,
+	}
+}
+
+// unbakeOrigin converts a transform baked about the element's origin back to
+// the element's own coordinate space.
+func unbakeOrigin(m layout.Matrix2D, ox, oy float64) layout.Matrix2D {
+	return translateMatrix(-ox, -oy).Mul(m).Mul(translateMatrix(ox, oy))
+}
+
+// translateMatrix builds a pure translation matrix. The public layout package
+// re-exports the matrix type but not its constructors.
+func translateMatrix(x, y float64) layout.Matrix2D {
+	return layout.Matrix2D{A: 1, D: 1, E: x, F: y}
+}
+
+// decomposeMatrix2D is the WebKit two-dimensional unmatrix: translation,
+// scale, rotation, and one XY shear. ScaleX is signed positive and ScaleY
+// carries the determinant sign, so matrixFromTransform reproduces any
+// invertible matrix. The decomposition mirrors the one
+// internal/cssanimation performs on a parsed list; it lives here because
+// internal/cssanimation imports this package for the keyframe model.
+func decomposeMatrix2D(m layout.Matrix2D) Transform {
+	row0x, row0y := m.A, m.B
+	scaleX := math.Hypot(row0x, row0y)
+	if scaleX != 0 {
+		row0x, row0y = row0x/scaleX, row0y/scaleX
+	} else {
+		row0x, row0y = 1, 0
+	}
+	// Project the second column onto the rotated axes. The perpendicular
+	// component is the signed Y scale; the parallel component is the shear.
+	scaleY := -row0y*m.C + row0x*m.D
+	skew := 0.0
+	if scaleY != 0 {
+		skew = (row0x*m.C + row0y*m.D) / scaleY
+	}
+
+	return Transform{
+		Tx: m.E, Ty: m.F, Sx: scaleX, Sy: scaleY,
+		Rotate: math.Atan2(row0y, row0x), SkewX: math.Atan(skew), Set: true,
+	}
 }
 
 // matrixFromTransform builds the sampled decomposition as the CSS product
@@ -273,6 +557,213 @@ func (p *Player) WantsRestamp() bool {
 	return false
 }
 
+// LayoutAt samples the player's layout-tier effects at the instant input
+// names and appends one value per property to buf. It reports whether any
+// effect is still live, so the driver knows whether the element needs another
+// sample on a later frame.
+//
+// The player clock is not advanced: the sample is a read of the state the
+// element's Start and SetClock calls installed, which is the same clock the
+// paint players on the element use. A paused effect samples at its freeze time,
+// so a paused layout animation holds the pose it stopped at. The returned slice
+// may alias buf; the caller consumes it before the next sample.
+func (p *Player) LayoutAt(input FrameInput, buf []LayoutValue) ([]LayoutValue, bool) {
+	if p == nil {
+		return buf, false
+	}
+
+	p.ensureBound()
+	live := false
+	for i := range p.effects {
+		state := p.states[i]
+		if !state.enabled || !state.started {
+			continue
+		}
+		now := input.Now
+		if state.paused && !state.pausedAt.IsZero() {
+			now = state.pausedAt
+		}
+		progress, _, effectLive, apply, available := statePosition(&state, withNow(input, now))
+		if !available {
+			continue
+		}
+		live = live || effectLive
+		if !apply {
+			continue
+		}
+		buf = mergeLayout(buf, p.effects[i].sampleLayout(progress))
+	}
+
+	return buf, live
+}
+
+// mergeLayout writes one effect's sampled values over the running set. A later
+// effect in the element's animation list replaces an earlier value for the same
+// property, which is the cascade's declaration order.
+func mergeLayout(buf []LayoutValue, values []LayoutValue) []LayoutValue {
+	for _, value := range values {
+		replaced := false
+		for i := range buf {
+			if buf[i].Property == value.Property {
+				buf[i], replaced = value, true
+
+				break
+			}
+		}
+		if !replaced {
+			buf = append(buf, value)
+		}
+	}
+
+	return buf
+}
+
+// layoutStop is one keyframe's value of one layout property at a normalized
+// offset. ease is the timing function declared on this keyframe, which eases
+// the interval that starts here.
+type layoutStop struct {
+	at    float64
+	value LayoutValue
+	ease  easingFn
+}
+
+// sampleLayout samples every layout-tier property the effect declares, in the
+// order the properties first appear. A property omitted from a keyframe holds
+// the nearest declared value rather than the element's base style: the driver
+// cannot read a computed base value for a property it only sees inside a
+// keyframe. The interval from keyframe i to i+1 uses keyframe i's timing
+// function.
+func (e Effect) sampleLayout(at float64) []LayoutValue {
+	properties := make([]string, 0, len(e.Frames))
+	for i := range e.Frames {
+		for j := range e.Frames[i].Layout {
+			property := e.Frames[i].Layout[j].Property
+			if !containsProperty(properties, property) {
+				properties = append(properties, property)
+			}
+		}
+	}
+	if len(properties) == 0 {
+		return nil
+	}
+
+	values := make([]LayoutValue, 0, len(properties))
+	for _, property := range properties {
+		stops := layoutStops(e.Frames, property)
+		if len(stops) == 0 {
+			continue
+		}
+		values = append(values, sampleLayoutStops(stops, e.Timing, at))
+	}
+
+	return values
+}
+
+func containsProperty(properties []string, property string) bool {
+	for _, candidate := range properties {
+		if candidate == property {
+			return true
+		}
+	}
+
+	return false
+}
+
+// layoutStops collects the keyframes that declare one layout property, in
+// sorted frame order.
+func layoutStops(frames []Keyframe, property string) []layoutStop {
+	stops := make([]layoutStop, 0, len(frames))
+	for i := range frames {
+		for j := range frames[i].Layout {
+			value := frames[i].Layout[j]
+			if value.Property != property {
+				continue
+			}
+			stops = append(stops, layoutStop{
+				at: frames[i].Offset, value: value, ease: frames[i].frameEasing(nil),
+			})
+
+			break
+		}
+	}
+
+	return stops
+}
+
+// sampleLayoutStops samples one property's stops at at. A sample before the
+// first stop or after the last holds that endpoint; the driver has no base
+// value to fall back to.
+func sampleLayoutStops(stops []layoutStop, timing Timing, at float64) LayoutValue {
+	if at <= stops[0].at {
+		return stops[0].value
+	}
+	for i := 1; i < len(stops); i++ {
+		if at > stops[i].at {
+			continue
+		}
+		prev, next := stops[i-1], stops[i]
+		span := next.at - prev.at
+		if span <= 0 {
+			return next.value
+		}
+		part := segmentEase(prev.ease, timing, (at-prev.at)/span)
+
+		return interpolateLayout(prev.value, next.value, part)
+	}
+
+	return stops[len(stops)-1].value
+}
+
+// interpolateLayout blends two values of one property. Matching numeric lists
+// with compatible units interpolate term by term; a keyword pair that differs,
+// a list with a different shape, or a pair of incompatible units is discrete
+// and steps at the midpoint, the way CSS treats a value form with no
+// continuous interpolation.
+func interpolateLayout(a, b LayoutValue, t float64) LayoutValue {
+	discrete := a
+	if t >= discreteMidpoint {
+		discrete = b
+	}
+	if a.Property != b.Property || len(a.Terms) != len(b.Terms) {
+		return discrete
+	}
+
+	terms := make([]LayoutTerm, len(a.Terms))
+	for i := range a.Terms {
+		term, ok := interpolateLayoutTerm(a.Terms[i], b.Terms[i], t)
+		if !ok {
+			return discrete
+		}
+		terms[i] = term
+	}
+
+	return LayoutValue{Property: a.Property, Terms: terms}
+}
+
+// interpolateLayoutTerm blends one term pair. Two numbers with the same unit
+// interpolate linearly, and a unitless zero takes the other side's unit so a
+// common 0 to 10px keyframe pair animates. A keyword pair matches only when
+// both sides spell the same keyword.
+func interpolateLayoutTerm(a, b LayoutTerm, t float64) (LayoutTerm, bool) {
+	if a.Keyword != "" || b.Keyword != "" {
+		if a.Keyword == "" || a.Keyword != b.Keyword {
+			return LayoutTerm{}, false
+		}
+
+		return a, true
+	}
+	switch {
+	case a.Unit == b.Unit:
+		return LayoutTerm{Number: lerp(a.Number, b.Number, t), Unit: a.Unit}, true
+	case a.Unit == "" && a.Number == 0:
+		return LayoutTerm{Number: lerp(0, b.Number, t), Unit: b.Unit}, true
+	case b.Unit == "" && b.Number == 0:
+		return LayoutTerm{Number: lerp(a.Number, 0, t), Unit: a.Unit}, true
+	}
+
+	return LayoutTerm{}, false
+}
+
 // color applies one sRGB channel. Legacy CSS colours interpolate in sRGB, so
 // the channel stays in that space and is clamped to [0,1]; oklab and color()
 // interpolation is out of scope until the engine exposes it.
@@ -309,42 +800,54 @@ func hasValue(frames []Keyframe, field valueOf) bool {
 	return false
 }
 
+// transformStop is one keyframe's transform at a normalized offset. ease is the
+// timing function declared on this keyframe, which eases the interval that
+// starts here; nil means the effect's own function, so an unbound Effect does
+// not parse a CSS string per sample.
 type transformStop struct {
 	at    float64
 	value TransformValue
+	ease  easingFn
 }
 
 // rotate3DArgCount is the axis plus angle count of rotate3d().
 const rotate3DArgCount = 4
 
 // transformStops collects the keyframes that declare a transform, in sorted
-// order.
+// order, with the easing that applies from each one.
 func transformStops(frames []Keyframe) []transformStop {
 	stops := make([]transformStop, 0, len(frames)+extraStops)
 	for _, frame := range frames {
 		if value, ok := frame.transformValue(); ok {
-			stops = append(stops, transformStop{frame.Offset, value})
+			stops = append(stops, transformStop{
+				at: frame.Offset, value: value, ease: frame.frameEasing(nil),
+			})
 		}
 	}
+
 	return stops
 }
 
 // padStops brackets the stops with the underlying none at 0% and 100%. A
 // keyframe that omits transform holds the underlying paint, which is the
-// identity matrix.
+// identity matrix. A synthetic endpoint uses the effect's own easing.
 func padStops(stops []transformStop) []transformStop {
 	fallback := TransformValue{Decomposed: IdentityTransform()}
 	if stops[0].at > 0 {
-		stops = append([]transformStop{{0, fallback}}, stops...)
+		stops = append([]transformStop{{at: 0, value: fallback}}, stops...)
 	}
 	if stops[len(stops)-1].at < 1 {
-		stops = append(stops, transformStop{1, fallback})
+		stops = append(stops, transformStop{at: 1, value: fallback})
 	}
+
 	return stops
 }
 
 // sampleTransform samples the decomposed transform and, for a matching
-// function list, the parsed functions.
+// function list, the parsed functions. A singular matrix endpoint has no
+// interpolation, so the interval steps to one endpoint at its midpoint: CSS
+// falls back to a discrete animation when a matrix cannot be decomposed. The
+// interval from keyframe i to i+1 uses keyframe i's timing function.
 func (e Effect) sampleTransform(at float64) (TransformValue, bool) {
 	stops := transformStops(e.Frames)
 	if len(stops) == 0 {
@@ -363,28 +866,45 @@ func (e Effect) sampleTransform(at float64) (TransformValue, bool) {
 		if span <= 0 {
 			return next.value, true
 		}
-		part := eased(e.Timing, (at-prev.at)/span)
+		part := segmentEase(prev.ease, e.Timing, (at-prev.at)/span)
 		value, err := interpolateTransform(prev.value, next.value, part)
 		if err != nil {
-			return TransformValue{}, false
+			if part < discreteMidpoint {
+				return prev.value, true
+			}
+			return next.value, true
 		}
 		return value, true
 	}
 	return stops[len(stops)-1].value, true
 }
 
+// segmentEase applies the easing of the keyframe that starts an interval, or
+// the effect's own function when the keyframe declares none.
+func segmentEase(ease easingFn, t Timing, part float64) float64 {
+	if ease != nil {
+		return ease(part)
+	}
+
+	return eased(t, part)
+}
+
+// eased applies the effect-level timing to a segment fraction.
 func eased(t Timing, part float64) float64 {
 	if t.Easing != nil {
 		return t.Easing(part)
 	}
+
 	return cssmotion.Ease(t.TimingFunction, part)
 }
 
 // perspectiveStop is one keyframe's perspective declaration at a normalized
-// offset.
+// offset. ease is the timing function declared on this keyframe, which eases
+// the interval that starts here.
 type perspectiveStop struct {
 	at    float64
 	value PerspectiveValue
+	ease  easingFn
 }
 
 // discreteMidpoint is the CSS threshold inside a keyframe interval that is
@@ -393,34 +913,75 @@ const discreteMidpoint = 0.5
 
 // perspectiveStops collects the keyframes that declare perspective or
 // perspective-origin, in sorted order, together with the implicit endpoint the
-// padding uses. keyframes() resolves the element's 50% 50% origin on every
-// frame, so the implicit endpoint holds the same default origin.
+// padding uses. keyframes() resolves the element's static vanishing point on
+// every frame, so the implicit endpoint holds that point; a frame that carried a
+// static perspective base also supplies its distance, so a partial list starts
+// and ends at the element's camera rather than at none.
+//
+// When the binder supplied a base, every stop also carries the static distance
+// for a keyframe that omits perspective and the static origin for a keyframe
+// that omits perspective-origin. CSS holds the underlying value at such a
+// keyframe, so an origin-only stop in the middle of a distance animation does
+// not pull the distance to zero. The Has flags on the fallback stay limited to
+// the properties the list actually animates, so an origin-only list still
+// leaves the static distance to the engine.
 func perspectiveStops(frames []Keyframe) ([]perspectiveStop, PerspectiveValue) {
-	fallback := PerspectiveValue{HasDistance: true}
+	fallback := PerspectiveValue{}
+	var base PerspectiveBase
+	hasBase := false
 	if len(frames) > 0 {
 		fallback.OriginX = frames[0].Perspective.OriginX
 		fallback.OriginY = frames[0].Perspective.OriginY
+		for i := range frames {
+			if !hasBase && frames[i].PerspectiveBase.Set {
+				base, hasBase = frames[i].PerspectiveBase, true
+			}
+			fallback.HasDistance = fallback.HasDistance || frames[i].Perspective.HasDistance
+			fallback.HasOrigin = fallback.HasOrigin || frames[i].Perspective.HasOrigin
+		}
+	}
+	baseDistance := 0.0
+	if hasBase {
+		baseDistance = base.Distance
+		if !base.HasDistance {
+			baseDistance = 0
+		}
+		fallback.Distance = baseDistance
+		fallback.OriginX, fallback.OriginY = base.OriginX, base.OriginY
 	}
 	stops := make([]perspectiveStop, 0, len(frames)+extraStops)
 	for _, frame := range frames {
-		if frame.Perspective.declared() {
-			stops = append(stops, perspectiveStop{frame.Offset, frame.Perspective})
+		if !frame.Perspective.declared() {
+			continue
 		}
+		value := frame.Perspective
+		if hasBase {
+			if !value.HasDistance {
+				value.Distance = baseDistance
+				value.HasDistance = fallback.HasDistance
+			}
+			if !value.HasOrigin {
+				value.OriginX, value.OriginY = base.OriginX, base.OriginY
+			}
+		}
+		stops = append(stops, perspectiveStop{
+			at: frame.Offset, value: value, ease: frame.frameEasing(nil),
+		})
 	}
 
 	return stops, fallback
 }
 
-// padPerspectiveStops brackets the stops with the underlying none at 0% and
-// 100%. A keyframe that omits perspective holds the element's underlying
-// value; the host cannot read the element's static perspective here, so the
-// implicit endpoint is none.
+// padPerspectiveStops brackets the stops with the underlying value at 0% and
+// 100%. A keyframe that omits perspective holds the element's underlying value;
+// the fallback carries the element's static camera when the binder supplied it,
+// and none otherwise. A synthetic endpoint uses the effect's own easing.
 func padPerspectiveStops(stops []perspectiveStop, fallback PerspectiveValue) []perspectiveStop {
 	if stops[0].at > 0 {
-		stops = append([]perspectiveStop{{0, fallback}}, stops...)
+		stops = append([]perspectiveStop{{at: 0, value: fallback}}, stops...)
 	}
 	if stops[len(stops)-1].at < 1 {
-		stops = append(stops, perspectiveStop{1, fallback})
+		stops = append(stops, perspectiveStop{at: 1, value: fallback})
 	}
 
 	return stops
@@ -428,7 +989,8 @@ func padPerspectiveStops(stops []perspectiveStop, fallback PerspectiveValue) []p
 
 // samplePerspective samples the camera distance and vanishing point at at. The
 // distance is a length that interpolates linearly; a none endpoint switches at
-// the midpoint. The origin always interpolates component-wise.
+// the midpoint. The origin always interpolates component-wise. The interval
+// from keyframe i to i+1 uses keyframe i's timing function.
 func (e Effect) samplePerspective(at float64) (PerspectiveValue, bool) {
 	stops, fallback := perspectiveStops(e.Frames)
 	if len(stops) == 0 {
@@ -447,7 +1009,7 @@ func (e Effect) samplePerspective(at float64) (PerspectiveValue, bool) {
 		if span <= 0 {
 			return next.value, true
 		}
-		part := eased(e.Timing, (at-prev.at)/span)
+		part := segmentEase(prev.ease, e.Timing, (at-prev.at)/span)
 
 		return interpolatePerspective(prev.value, next.value, part), true
 	}
@@ -499,8 +1061,10 @@ func interpolatePerspective(a, b PerspectiveValue, t float64) PerspectiveValue {
 // interpolateTransform blends two transform values. Matching function lists
 // interpolate argument by argument. Mismatched 2D lists interpolate the
 // decomposed translation, scale, rotation, and skew, which is the WebKit
-// two-dimensional decomposition. A mismatched 3D list returns ErrTransform3D
-// rather than snapping to one endpoint.
+// two-dimensional decomposition. Any pair with a 3D function on either side,
+// matched or not, goes through the CSS Transforms Level 2 four-by-four
+// decomposition; only a singular endpoint reports an error, and the sampler
+// falls back to a discrete step for it.
 func interpolateTransform(a, b TransformValue, t float64) (TransformValue, error) {
 	if a.ThreeD || b.ThreeD {
 		return interpolate3D(a, b, t)
@@ -512,44 +1076,54 @@ func interpolateTransform(a, b TransformValue, t float64) (TransformValue, error
 	return value, nil
 }
 
+// interpolate3D blends a pair that includes at least one 3D function. A
+// missing list is the underlying none, which CSS replaces with the identity
+// list of the other side, so none to rotateY still interpolates the angle.
+// Lists that do not match function by function, and the matrix, matrix3d, and
+// perspective functions CSS converts first, blend through the four-by-four
+// decomposition and collapse to one matrix3d() for the restamp pass.
 func interpolate3D(a, b TransformValue, t float64) (TransformValue, error) {
 	from, to := a.Functions, b.Functions
 	if len(from) == 0 && len(to) > 0 {
-		var ok bool
-		from, ok = identityFunctions(to)
-		if !ok {
-			return TransformValue{}, Decompose3DError(from, to)
+		if identity, ok := identityFunctions(to); ok {
+			from = identity
 		}
 	}
 	if len(to) == 0 && len(from) > 0 {
-		var ok bool
-		to, ok = identityFunctions(from)
-		if !ok {
-			return TransformValue{}, Decompose3DError(from, to)
+		if identity, ok := identityFunctions(from); ok {
+			to = identity
 		}
 	}
-	if !interpolable(from, to) {
-		return TransformValue{}, Decompose3DError(from, to)
+	if interpolable(from, to) {
+		return TransformValue{
+			Decomposed: blendTransform(a.Decomposed, b.Decomposed, t),
+			Functions:  blendFunctions(from, to, t),
+			ThreeD:     true,
+		}, nil
 	}
+	return interpolateMatrix3D(from, to, t)
+}
+
+// interpolateMatrix3D is the CSS Transforms Level 2 matrix interpolation: both
+// lists become four-by-four matrices, each is decomposed into translation,
+// scale, skew, perspective, and a rotation quaternion, the components are
+// interpolated, and the result is recomposed. The returned list is the single
+// matrix3d() the engine restamps.
+func interpolateMatrix3D(from, to []TransformFunction, t float64) (TransformValue, error) {
+	decomposedFrom, err := Decompose3D(Matrix4FromFunctions(from))
+	if err != nil {
+		return TransformValue{}, err
+	}
+	decomposedTo, err := Decompose3D(Matrix4FromFunctions(to))
+	if err != nil {
+		return TransformValue{}, err
+	}
+	m := Compose3D(interpolateDecomposition(decomposedFrom, decomposedTo, t))
 	return TransformValue{
-		Decomposed: blendTransform(a.Decomposed, b.Decomposed, t),
-		Functions:  blendFunctions(from, to, t),
+		Decomposed: Transform{Tx: m[indexM41], Ty: m[indexM42], Sx: 1, Sy: 1, Set: true},
+		Functions:  []TransformFunction{{Name: Matrix3D, Args: m[:]}},
 		ThreeD:     true,
 	}, nil
-}
-
-// Decompose3D is the entry point for blending two mismatched 3D function
-// lists through the CSS Transforms Level 2 four-by-four decomposition. That
-// algorithm is not implemented yet: it reports ErrTransform3D instead of
-// snapping the list at one endpoint. NewComposite turns the error into one
-// bind failure per effect.
-func Decompose3D(from, to []TransformFunction, _ float64) ([]TransformFunction, error) {
-	return nil, Decompose3DError(from, to)
-}
-
-// Decompose3DError builds the shared mismatch error.
-func Decompose3DError(from, to []TransformFunction) error {
-	return fmt.Errorf("%w: %s to %s", ErrTransform3D, listNames(from), listNames(to))
 }
 
 // interpolable reports whether two lists can blend function by function.
@@ -608,8 +1182,9 @@ func lerp(a, b, t float64) float64 { return a + (b-a)*t }
 
 // identityFunctions builds a neutral list with the same function signatures.
 // It turns a missing keyframe (the underlying none) into a value that can
-// blend with a 3D list. A perspective function has no finite identity, so it
-// reports false and the caller returns ErrTransform3D.
+// blend with a 3D list. A perspective function has no finite identity list, so
+// it reports false and the caller falls through to the matrix decomposition,
+// where none is the identity matrix.
 func identityFunctions(functions []TransformFunction) ([]TransformFunction, bool) {
 	out := make([]TransformFunction, len(functions))
 	for i, f := range functions {
@@ -637,18 +1212,4 @@ func identityFunctions(functions []TransformFunction) ([]TransformFunction, bool
 		}
 	}
 	return out, true
-}
-
-func listNames(functions []TransformFunction) string {
-	if len(functions) == 0 {
-		return "none"
-	}
-	names := ""
-	for i, f := range functions {
-		if i > 0 {
-			names += " "
-		}
-		names += string(f.Name)
-	}
-	return names
 }

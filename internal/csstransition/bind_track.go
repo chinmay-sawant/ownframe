@@ -3,7 +3,7 @@ package csstransition
 import (
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
@@ -12,7 +12,7 @@ import (
 // tracks the renderer samples. The captured destination is the paint the
 // first bind read, and the endpoints keep the operation's current value for
 // every field the layout changed since the capture.
-func buildTracks(ops []*ownframe.DisplayOp, initial, final []cssmotion.Paint,
+func buildTracks(ops []*layout.DisplayOp, initial, final []cssmotion.Paint,
 	record transitionRecord, property string) []transition.Track {
 	tracks := make([]transition.Track, len(ops))
 	discrete := discretePaintProperty(property)

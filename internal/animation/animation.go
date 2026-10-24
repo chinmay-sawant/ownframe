@@ -3,6 +3,9 @@ package animation
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
@@ -34,6 +37,11 @@ type Target struct {
 
 	OriginX, OriginY float64
 
+	// svg is the latest sampled inline-SVG paint for this target. It never
+	// reaches a display operation: the page turns it into a
+	// layout.SVGPaintOverride and asks the engine to restyle the SVG raster.
+	svg SVGPaintValue
+
 	// HasElementTransform reports whether the stylesheet declares a static
 	// transform on the element. The matrix path replaces that transform rather
 	// than stacking onto it.
@@ -44,11 +52,11 @@ type Target struct {
 	HasTransform3D bool
 }
 
-// ErrTransform3D reports two mismatched transform lists that need the CSS
-// Transforms Level 2 four-by-four decomposition. That algorithm is not
-// implemented yet; the bind fails with this error instead of snapping the
-// transform at the midpoint.
-var ErrTransform3D = errors.New("animation: mismatched 3D transform lists need 4x4 decomposition")
+// ErrSingularMatrix reports a four-by-four transform matrix that cannot be
+// decomposed, so the pair it belongs to has no matrix interpolation. CSS falls
+// back to a discrete step for that interval; a mismatched 3D pair with two
+// invertible endpoints no longer fails to bind.
+var ErrSingularMatrix = errors.New("animation: singular 3D transform matrix")
 
 // TransformFunc names one CSS transform function.
 type TransformFunc string
@@ -133,8 +141,9 @@ func (v TransformValue) declared() bool {
 // declaration. Distance is the camera distance in layout points; zero means
 // none. OriginX and OriginY are the resolved perspective-origin in layout
 // points, as an offset from the element's border-box origin; they always carry
-// the resolved point (the element's 50% 50% default when the keyframe does not
-// declare an origin), and HasOrigin reports whether the keyframe declared one.
+// the resolved point (the element's static vanishing point, or its 50% 50%
+// default when the element has no perspective), and HasOrigin reports whether
+// the keyframe declared one.
 //
 // HasDistance distinguishes a declared perspective:none from a property the
 // keyframe omits. Discrete reports that the sample picked one endpoint because
@@ -149,10 +158,81 @@ type PerspectiveValue struct {
 	Discrete    bool
 }
 
+// PerspectiveBase is the element's static perspective and perspective-origin,
+// the used value a keyframe that omits either property holds. A keyframe list
+// with no perspective or perspective-origin stop at 0% or 100% pads that
+// endpoint from this base instead of snapping to none and 50% 50%.
+//
+// Distance is in layout points. HasDistance is false when the element's static
+// perspective is none, so an implicit endpoint keeps that none rather than
+// inventing a camera. OriginX and OriginY are always resolved: a declared
+// perspective carries the engine's resolved origin, and an element without one
+// uses the initial 50% 50% point against its border box. Set reports that the
+// binder supplied a base; a keyframe built by hand keeps the legacy endpoint.
+type PerspectiveBase struct {
+	Distance    float64
+	OriginX     float64
+	OriginY     float64
+	HasDistance bool
+	Set         bool
+}
+
 // declared reports whether the keyframe mentions perspective or
 // perspective-origin.
 func (v PerspectiveValue) declared() bool {
 	return v.HasDistance || v.HasOrigin
+}
+
+// SVGPaintColor is one inline-SVG paint colour in sRGB. None is the CSS none
+// keyword: it has no channels, so a pair with none on either side is discrete
+// rather than interpolated. A is the colour's own alpha; fill-opacity and
+// stroke-opacity are sampled as separate properties.
+type SVGPaintColor struct {
+	R, G, B, A float64
+	None       bool
+}
+
+// SVGPaintValue is one element's sampled inline-SVG paint. The Has flags name
+// the properties the keyframes declared; a property whose flag is false keeps
+// the element's used value. Colours are sRGB in 0..1, opacities are 0..1, and
+// lengths are layout points, ready for layout.SVGPaintOverride.
+//
+// This value is not a display field. A paint change on an inline SVG rebuilds
+// its raster, so the page hands the value to layout.RestyleInlineSVG instead of
+// writing an operation.
+//
+// Target indexes the targets the player was built with. Deferred carries the
+// reason a declaration cannot be restyled, such as a url(#gradient) paint
+// server; the property then keeps its base paint.
+type SVGPaintValue struct {
+	Target int
+
+	Fill        SVGPaintColor
+	FillOpacity float64
+
+	Stroke           SVGPaintColor
+	StrokeOpacity    float64
+	StrokeWidth      float64
+	StrokeDashArray  []float64
+	StrokeDashOffset float64
+
+	HasFill             bool
+	HasFillOpacity      bool
+	HasStroke           bool
+	HasStrokeOpacity    bool
+	HasStrokeWidth      bool
+	HasStrokeDashArray  bool
+	HasStrokeDashOffset bool
+
+	Deferred string
+}
+
+// declared reports whether the value carries any SVG paint property or a
+// deferral. A zero value means the element declared no SVG paint.
+func (v SVGPaintValue) declared() bool {
+	return v.HasFill || v.HasFillOpacity || v.HasStroke || v.HasStrokeOpacity ||
+		v.HasStrokeWidth || v.HasStrokeDashArray || v.HasStrokeDashOffset ||
+		v.Deferred != ""
 }
 
 // Keyframe stores values declared at Offset. X and Y stay as readable aliases
@@ -173,7 +253,27 @@ type Keyframe struct {
 	ColorAlphaSet bool
 	Transform     TransformValue
 	Perspective   PerspectiveValue
-	Err           error
+	// PerspectiveBase is the element's static camera. The binder fills it so
+	// an omitted 0% or 100% perspective or perspective-origin endpoint uses
+	// the static value instead of none and the box centre.
+	PerspectiveBase PerspectiveBase
+	// SVG holds the inline-SVG paint declarations of this keyframe. The paint
+	// classes ignore it: the value is collected per target and handed to the
+	// engine's RestyleInlineSVG, never written onto an operation.
+	SVG SVGPaintValue
+	// TimingFunction is an animation-timing-function declared inside the
+	// keyframe block. It eases the interval that starts at this keyframe; an
+	// empty value uses the effect's own timing function.
+	TimingFunction string
+	// Layout holds the layout-tier declarations of this keyframe, one value
+	// per property. The paint classes ignore it; the layout driver samples it
+	// into the engine's override relayout request.
+	Layout []LayoutValue
+	// ease caches TimingFunction, or the effect's function when the keyframe
+	// declares none. The binder fills it once so a sample does not parse a
+	// CSS timing function.
+	ease easingFn
+	Err  error
 }
 
 // transformValue returns the keyframe's transform, including the legacy X/Y
@@ -186,4 +286,63 @@ func (k Keyframe) transformValue() (TransformValue, bool) {
 		return TransformValue{Decomposed: Transform{Tx: k.X, Ty: k.Y, Sx: 1, Sy: 1, Set: true}}, true
 	}
 	return TransformValue{}, false
+}
+
+// LayoutTerm is one component of a layout-tier value: a number with its unit,
+// or a keyword such as auto or normal. The slash that separates the horizontal
+// and vertical halves of border-radius is kept as a keyword term, so a pair of
+// matching radius lists interpolates component-wise.
+//
+// Unit is empty for a unitless number (a flex factor or a line-height
+// multiplier). An absolute length is already resolved to px by the keyframe
+// parser; a percentage and a font- or viewport-relative unit keep the authored
+// unit, because the engine resolves them against the element's containing
+// block.
+type LayoutTerm struct {
+	Number  float64
+	Unit    string
+	Keyword string
+}
+
+// LayoutValue is one layout-tier property value sampled from a keyframe list.
+// The property name is the CSS longhand or shorthand the override names, and
+// the terms are the sampled value in the form the engine accepts.
+type LayoutValue struct {
+	Property string
+	Terms    []LayoutTerm
+}
+
+// CSS renders the value in the form the engine's override relayout accepts.
+func (v LayoutValue) CSS() string {
+	var b strings.Builder
+	for i := range v.Terms {
+		if i > 0 {
+			b.WriteByte(' ')
+		}
+		b.WriteString(v.Terms[i].CSS())
+	}
+	return b.String()
+}
+
+// CSS renders one term. A keyword keeps its spelling; a number keeps its unit
+// and prints without trailing zeros, so a live sample costs no padding.
+func (t LayoutTerm) CSS() string {
+	if t.Keyword != "" {
+		return t.Keyword
+	}
+	return strconv.FormatFloat(t.Number, 'f', -1, 64) + t.Unit
+}
+
+// NewLayout builds a player that samples layout-tier keyframes only. The
+// effects carry no paint fields, so the single scratch operation the player
+// addresses is never written for drawing; it exists because a player samples
+// its effects against an operation. The caller starts the player with the
+// element's clock, the same clock a paint player on the element uses.
+func NewLayout(effects []Effect) (*Player, error) {
+	if len(effects) == 0 {
+		return nil, fmt.Errorf("animation: a layout player needs at least one effect")
+	}
+
+	var scratch layout.DisplayOp
+	return NewComposite([]Target{{Op: &scratch}}, effects)
 }

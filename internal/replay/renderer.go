@@ -10,6 +10,7 @@ type Renderer struct {
 	textRuns textRasterCache
 	chunks   chunkStore
 	plans    planCache
+	layers   layerStore
 }
 
 // Close releases retained GPU images and forgets cached plans and fonts.
@@ -52,6 +53,8 @@ func (renderer *Renderer) Close() {
 	}
 	renderer.plans.next = 0
 	renderer.plans.mu.Unlock()
+
+	renderer.layers.close()
 
 	renderer.fonts.mu.Lock()
 	clear(renderer.fonts.faces)

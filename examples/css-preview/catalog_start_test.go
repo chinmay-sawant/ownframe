@@ -1,47 +1,35 @@
 package main
 
 import (
-	"context"
 	"strings"
 	"testing"
+	"time"
 )
 
+// TestCatalogStartRunsEachPreviewKind clicks one card of each kind and checks
+// the app records the state and the runtime takes the preview.
 func TestCatalogStartRunsEachPreviewKind(t *testing.T) {
 	for _, name := range []string{"-webkit-animation", "transition-property", "animation-composition"} {
 		t.Run(name, func(t *testing.T) {
-			ctx := context.Background()
 			p, d, v := fixturePage(t)
-			var selected catalogRow
-			for _, row := range v.Catalog {
-				if row.Name == name {
-					selected = row
-					break
-				}
-			}
-			if selected.Name == "" {
-				t.Fatalf("missing catalog row %q", name)
-			}
-			button, ok := findBox(p.Boxes(), selected.Button)
-			if !ok {
-				t.Fatalf("missing button %q", selected.Button)
-			}
-			if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
-				t.Fatal(err)
-			}
-			if !v.Started[selected.Button] || v.Selected != name {
+			row := catalogRowByName(t, v, name)
+			clickID(t, p, row.Button)
+			if !v.Started[row.Button] || v.Selected != name {
 				t.Fatalf("start state not recorded: %+v", v)
 			}
-			if selected.SampleKey == "" {
-				if len(d.samples) != 0 || !strings.Contains(v.Readout, selected.Value) {
-					t.Fatalf("metadata selection started motion or lost value: %+v", v)
-				}
+			if !strings.Contains(v.Readout, row.Value) {
+				t.Fatalf("readout = %q, want the card value %q", v.Readout, row.Value)
+			}
+			if row.SampleKey == "" {
 				return
 			}
-			if err := d.tick(ctx); err != nil {
-				t.Fatal(err)
-			}
-			if d.samples[selected.SampleKey] == nil {
-				t.Fatalf("button %q did not start sample %q", selected.Button, selected.SampleKey)
+			time.Sleep(5 * time.Millisecond)
+			tickPage(t, p)
+			if got := xformX(targetOp(t, p, row.TargetID), p.Probe().Display().PointsPerPixel); got == 0 {
+				manual := d.manual[row.SampleKey]
+				if manual == nil || !manual.active {
+					t.Fatalf("%s started neither an automatic nor a manual preview", name)
+				}
 			}
 		})
 	}

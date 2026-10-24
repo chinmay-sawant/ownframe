@@ -34,8 +34,7 @@ func (w *walker) step(ctx context.Context) {
 	}
 	if w.stopReq {
 		w.stopReq = false
-		w.d.samples = map[string]*sample{}
-		w.d.pending = nil
+		w.d.manual = map[string]*manualSample{}
 	}
 	w.snapshot()
 	w.publishBoxes()

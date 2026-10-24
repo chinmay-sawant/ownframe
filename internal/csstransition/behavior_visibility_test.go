@@ -1,4 +1,4 @@
-package csstransition
+package csstransition_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 func TestVisibilityTransitionHasNoMatchedPaintOperation(t *testing.T) {
@@ -22,7 +23,7 @@ func TestVisibilityTransitionHasNoMatchedPaintOperation(t *testing.T) {
 	if len(from) == 0 || len(indices) != 0 {
 		t.Fatalf("visible/hidden paint counts = %d/%d", len(from), len(indices))
 	}
-	if _, err := Bind(hidden.Probe().Display(), box, "visibility", indices, from, time.Time{}); err == nil {
+	if _, err := csstransition.Bind(hidden.Probe().Display(), box, "visibility", indices, from, time.Time{}); err == nil {
 		t.Fatal("visibility transition bound without a matched paint operation")
 	}
 }

@@ -40,7 +40,7 @@ func Select(d *layout.Display, box layout.Box, boxIndex int, kind Kind) []int {
 	if boxIndex >= 0 && len(d.OpOwners) == len(d.Ops) {
 		var out []int
 		for i := range d.Ops {
-			if d.OpOwners[i] == boxIndex && matches(kind, d.Ops[i].Kind) {
+			if d.OpOwners[i] == boxIndex && matches(kind, &d.Ops[i]) {
 				out = append(out, i)
 			}
 		}
@@ -50,24 +50,46 @@ func Select(d *layout.Display, box layout.Box, boxIndex int, kind Kind) []int {
 	// to the kinds it paints. The caller counts the fallback.
 	var out []int
 	for _, index := range OperationIndices(d, box) {
-		if matches(kind, d.Ops[index].Kind) {
+		if matches(kind, &d.Ops[index]) {
 			out = append(out, index)
 		}
 	}
 	return out
 }
 
-// matches reports whether one operation kind belongs to a property kind. A
-// kind outside these sets is not a paint field a keyframe can write: an image
-// and a grid run carry no colour, and a background never paints text.
-func matches(kind Kind, op layout.DisplayKind) bool {
+// matches reports whether one operation belongs to a property kind. A kind
+// outside these sets is not a paint field a keyframe can write: an image and a
+// grid run carry no colour, and a background never paints text.
+//
+// A corner-shape path carries both a fill and a border under one op kind, so
+// the path's Stroke flag decides: a background recolours the fill path and a
+// border or outline recolours the stroke path. Without this, a corner-shaped
+// element would keep its declared colours while its rectangular neighbours
+// moved.
+func matches(kind Kind, op *layout.DisplayOp) bool {
+	if op.Kind == layout.DisplayOpPath {
+		corner, ok := op.CornerPathValue()
+		if !ok || corner == nil {
+			return false
+		}
+
+		switch kind {
+		case KindFill:
+			return !corner.Stroke
+		case KindStroke:
+			return corner.Stroke
+		}
+
+		return false
+	}
+
 	switch kind {
 	case KindFill:
-		return op == layout.DisplayOpFillRect
+		return op.Kind == layout.DisplayOpFillRect
 	case KindInk:
-		return op == layout.DisplayOpText
+		return op.Kind == layout.DisplayOpText
 	case KindStroke:
-		return op == layout.DisplayOpStrokeRect || op == layout.DisplayOpLine
+		return op.Kind == layout.DisplayOpStrokeRect || op.Kind == layout.DisplayOpLine
 	}
 	return false
 }

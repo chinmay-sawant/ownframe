@@ -1,6 +1,10 @@
 package cssmotion
 
-import "github.com/chinmay-sawant/blinkless/layout"
+import (
+	"math"
+
+	"github.com/chinmay-sawant/blinkless/layout"
+)
 
 // Mask names the paint fields a keyframed property writes. A field outside the
 // mask keeps the operation's own value, so a transform-only animation never
@@ -105,17 +109,84 @@ func Write(op *layout.DisplayOp, p Paint) {
 	}
 }
 
-// Blend linearly interpolates every sampled paint value. The matrix is not
-// interpolated yet: the destination matrix is kept until transitions grow
-// their own matrix decomposition path. The mask is the union of the endpoints,
-// so a paint either endpoint may write stays writable after the blend.
+// Blend linearly interpolates every sampled paint value. A pair where both
+// endpoints carry a matrix interpolates it through the two-dimensional
+// decomposition, so a rotate or scale transition follows the same path a
+// keyframe does. When only one side carries a matrix the destination matrix is
+// kept, which is the keyframe path that writes a full paint from one endpoint.
+// The mask is the union of the endpoints, so a paint either endpoint may write
+// stays writable after the blend.
 func Blend(a, b Paint, t float64) Paint {
 	f := func(x, y float64) float64 { return x + (y-x)*t }
-	return Paint{X: f(a.X, b.X), Y: f(a.Y, b.Y), W: f(a.W, b.W), H: f(a.H, b.H),
+	out := Paint{X: f(a.X, b.X), Y: f(a.Y, b.Y), W: f(a.W, b.W), H: f(a.H, b.H),
 		R: f(a.R, b.R), G: f(a.G, b.G), B: f(a.B, b.B), Alpha: f(a.Alpha, b.Alpha),
 		Opacity: f(a.Opacity, b.Opacity), Matrix: b.Matrix, HasMatrix: b.HasMatrix,
 		Mask: a.Mask | b.Mask}
+	if a.HasMatrix && b.HasMatrix {
+		out.Matrix = blendMatrix2D(a.Matrix, b.Matrix, t)
+	}
+	return out
 }
+
+// matrixScaleFloor is the scale below which a two-dimensional matrix is
+// treated as singular and blended component by component. Decomposing a
+// singular matrix cannot recover a rotation or a shear.
+const matrixScaleFloor = 1e-12
+
+// blendMatrix2D interpolates two affine matrices through translation, scale,
+// rotation, and one XY shear. The reconstruction is T * R * SkewX * S, the
+// same order the animation compositor uses.
+func blendMatrix2D(a, b layout.Matrix2D, t float64) layout.Matrix2D {
+	atx, aty, asx, asy, arotate, askew := decomposeMatrix2D(a)
+	btx, bty, bsx, bsy, brotate, bskew := decomposeMatrix2D(b)
+	if math.Abs(asx) < matrixScaleFloor || math.Abs(asy) < matrixScaleFloor ||
+		math.Abs(bsx) < matrixScaleFloor || math.Abs(bsy) < matrixScaleFloor {
+		return layout.Matrix2D{
+			A: lerp(a.A, b.A, t),
+			B: lerp(a.B, b.B, t),
+			C: lerp(a.C, b.C, t),
+			D: lerp(a.D, b.D, t),
+			E: lerp(a.E, b.E, t),
+			F: lerp(a.F, b.F, t),
+		}
+	}
+
+	return composeMatrix2D(
+		lerp(atx, btx, t), lerp(aty, bty, t),
+		lerp(asx, bsx, t), lerp(asy, bsy, t),
+		lerp(arotate, brotate, t), lerp(askew, bskew, t),
+	)
+}
+
+// decomposeMatrix2D is the WebKit two-dimensional unmatrix: translation,
+// scale, rotation, and one XY shear. ScaleX is signed positive and ScaleY
+// carries the determinant sign.
+func decomposeMatrix2D(m layout.Matrix2D) (tx, ty, sx, sy, rotation, skew float64) {
+	rowX, rowY := m.A, m.B
+	sx = math.Hypot(rowX, rowY)
+	if sx != 0 {
+		rowX, rowY = rowX/sx, rowY/sx
+	} else {
+		rowX, rowY = 1, 0
+	}
+	sy = -rowY*m.C + rowX*m.D
+	if sy != 0 {
+		skew = (rowX*m.C + rowY*m.D) / sy
+	}
+	return m.E, m.F, sx, sy, math.Atan2(rowY, rowX), math.Atan(skew)
+}
+
+// composeMatrix2D rebuilds the matrix a decomposition describes.
+func composeMatrix2D(tx, ty, sx, sy, rotation, skew float64) layout.Matrix2D {
+	sin, cos := math.Sincos(rotation)
+	m := layout.Matrix2D{A: 1, D: 1, E: tx, F: ty}
+	m = m.Mul(layout.Matrix2D{A: cos, B: sin, C: -sin, D: cos})
+	m = m.Mul(layout.Matrix2D{A: 1, D: 1, C: math.Tan(skew)})
+	return m.Mul(layout.Matrix2D{A: sx, D: sy})
+}
+
+// lerp interpolates one scalar.
+func lerp(a, b, t float64) float64 { return a + (b-a)*t }
 
 // paintOpacity returns the operation's element opacity without folding in its
 // ALPHA. The public Opacity accessor multiplies the two for the painters, but a

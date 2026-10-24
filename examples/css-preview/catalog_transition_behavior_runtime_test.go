@@ -8,6 +8,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
+// TestCatalogTransitionBehaviorReachesOwnFrameFrames keeps the position
+// transition on csstransition; the automatic driver does not capture position
+// yet.
 func TestCatalogTransitionBehaviorReachesOwnFrameFrames(t *testing.T) {
 	for _, behavior := range []string{"allow-discrete", "normal"} {
 		t.Run(behavior, func(t *testing.T) {

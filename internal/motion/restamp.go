@@ -68,8 +68,9 @@ func (r *Runtime) addRestamp(e *entry, values []animation.RestampValue) {
 }
 
 // NeedsRetainedState reports whether the last bind found motion that needs the
-// engine's re-projection pass. The page lays out with retained state from this
-// answer: without the retained box tree the pass cannot run.
+// engine's retained layout state: the 3D and perspective re-projection pass or
+// the layout-tier override relayout. The page lays out with retained state from
+// this answer: without the retained box tree neither pass can run.
 func (r *Runtime) NeedsRetainedState() bool {
 	return r != nil && r.stats.NeedsRetainedState
 }

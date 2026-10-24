@@ -1,10 +1,11 @@
-package csstrigger
+package csstrigger_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/internal/csstrigger"
 )
 
 func TestResolveUsesCommaAlignedAnimationRecords(t *testing.T) {
@@ -26,7 +27,7 @@ func TestResolveUsesCommaAlignedAnimationRecords(t *testing.T) {
 			box.Animations[1].Trigger != "--close play reset" {
 			t.Fatalf("animation records = %#v", box.Animations)
 		}
-		got := Resolve(boxes, Event{Name: "--close", Source: boxIndex, Active: false})
+		got := csstrigger.Resolve(boxes, csstrigger.Event{Name: "--close", Source: boxIndex, Active: false})
 		if len(got) != 1 || got[0].AnimationIndex != 1 || got[0].Value != "reset" {
 			t.Fatalf("close actions = %#v, want reset on animation 1", got)
 		}

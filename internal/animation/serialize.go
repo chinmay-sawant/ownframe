@@ -26,10 +26,6 @@ const (
 	// matrixFirstLength is the first argument of matrix() whose unit is a
 	// length: e and f. a, b, c, and d are unitless.
 	matrixFirstLength = 4
-	// matrix3DFirstLength and matrix3DLastLength bound the translations of
-	// matrix3d(): m41, m42, and m43 are lengths, m44 is unitless.
-	matrix3DFirstLength = 12
-	matrix3DLastLength  = 14
 	// floatBits is the float64 bit size strconv formats.
 	floatBits = 64
 )
@@ -123,10 +119,8 @@ func appendTransformArg(dst []byte, name TransformFunc, index, count int, value 
 
 		return appendNumber(dst, value)
 	case Matrix3D:
-		if index >= matrix3DFirstLength && index <= matrix3DLastLength {
-			return appendLength(dst, value)
-		}
-
+		// matrix3d() takes sixteen unitless numbers. The parser stores the
+		// translation components in layout points, so write them back raw.
 		return appendNumber(dst, value)
 	case Scale, ScaleX, ScaleY, Scale3D, ScaleZ:
 		return appendNumber(dst, value)

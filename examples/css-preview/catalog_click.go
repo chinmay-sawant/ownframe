@@ -7,68 +7,75 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// click applies a Start or Play all click. The card's state is template data,
+// so the class that starts a CSS animation reaches the layout through one
+// SetData and Redraw. No driver call is made here.
 func (d *demo) click(ctx context.Context, b ownframe.Box) error {
-	d.dataChanged = false
 	if b.ID == playAllID {
 		return d.playAll(ctx)
 	}
-	for _, row := range d.v.Catalog {
-		if row.Button != b.ID {
-			continue
-		}
-		d.prevSelected = d.v.Selected
-		d.v.Started[row.Button] = true
-		d.v.Selected = row.Name
-		readout := row.Name + " = " + row.Value + "\n" + row.Action
-		if readout != d.readout {
-			// The readout lives in the parsed tree, so the click patches it
-			// instead of rebuilding the page. The template keeps the
-			// initial snapshot, so the executed source does not change.
-			d.readout = readout
-			if !d.patchReadout(ctx, readout) {
-				// The engine refused the readout, so the page has to
-				// draw again and the template renders it.
-				d.v.Readout = readout
-				d.dataChanged = true
-			}
-		}
-		if row.SampleKey == "" {
-			d.startedAt = time.Now()
-			d.startedSeq++
-			d.p.SetData(d.v)
-			return nil
-		}
-		selected, ok := targetByKey(row.SampleKey)
-		if !ok {
-			return nil
-		}
-		return d.start(selected, row.Button)
-	}
-	selected, ok := targetByButton(b.ID)
+	row, ok := d.rowForButton(b.ID)
 	if !ok {
 		return nil
 	}
-	return d.start(selected, selected.button)
+	d.selectRow(row)
+	d.prepareManual(row)
+	return d.commit(ctx)
 }
 
-func (d *demo) start(selected target, button string) error {
-	box, ok := findBox(d.p.Boxes(), selected.id)
-	if !ok {
-		return nil
+// selectRow records one row's click state. A second Start on the same row
+// flips the keyframe-name variant, which restarts the animation in CSS.
+func (d *demo) selectRow(row catalogRow) {
+	if d.v.Started[row.Button] {
+		d.v.Restart[row.Button] = !d.v.Restart[row.Button]
+		d.v.Restarting[row.Button] = true
 	}
-	if d.samples[selected.key] == nil {
-		d.samples[selected.key] = &sample{base: capture(d.p.Probe().Display(), box)}
-	}
-	d.samples[selected.key].source = button
-	d.samples[selected.key].origin = time.Now()
-	d.v.Started[selected.key] = true
-	d.v.Started[button] = true
+	d.v.Started[row.Button] = true
+	d.v.Selected = row.Name
+	d.readout = row.Name + " = " + row.Value + "\n" + row.Action
+	d.v.Readout = d.readout
 	d.startedAt = time.Now()
 	d.startedSeq++
-	d.pending = append(d.pending, selected.key)
-	d.p.SetData(d.v)
-	if !walkActive() {
-		d.p.SetTick(d.tick)
+}
+
+// commit renders the view and starts the previews the runtime does not drive.
+// A restart first publishes with the target hidden, so the player the old
+// keyframe name bound is released; the next publish brings the target back
+// with the other keyframe name and a fresh clock.
+func (d *demo) commit(ctx context.Context) error {
+	if d.restarting() {
+		d.v.applyRows()
+		d.p.SetData(d.v)
+		if err := d.p.Redraw(ctx); err != nil {
+			return err
+		}
+		d.clearRestarting()
 	}
+	d.v.applyRows()
+	d.p.SetData(d.v)
+	if err := d.p.Redraw(ctx); err != nil {
+		return err
+	}
+	if err := d.bindManual(d.v.Rows); err != nil {
+		return err
+	}
+	d.wake()
 	return nil
+}
+
+// restarting reports whether a publish has to hide a target first.
+func (d *demo) restarting() bool {
+	for _, on := range d.v.Restarting {
+		if on {
+			return true
+		}
+	}
+	return false
+}
+
+// clearRestarting removes the hide class before the card is published again.
+func (d *demo) clearRestarting() {
+	for key := range d.v.Restarting {
+		delete(d.v.Restarting, key)
+	}
 }

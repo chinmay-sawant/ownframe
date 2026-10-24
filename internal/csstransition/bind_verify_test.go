@@ -1,4 +1,4 @@
-package csstransition
+package csstransition_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 // twoElementFrame lays out a target element and a second element, so a
@@ -53,7 +54,7 @@ func TestBindToRefusesOperationsOutsideTheBox(t *testing.T) {
 		t.Fatal("the other element has no operation")
 	}
 
-	_, err := BindTo(display, target, "background-color", indices, from, to, time.Unix(7, 0))
+	_, err := csstransition.BindTo(display, target, "background-color", indices, from, to, time.Unix(7, 0))
 	if err == nil {
 		t.Fatal("a rebind onto another element's operations was accepted")
 	}

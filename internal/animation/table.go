@@ -1,6 +1,8 @@
 package animation
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
@@ -19,10 +21,13 @@ type easingFn func(float64) float64
 // stop is one precomputed keyframe value at a normalized offset. fromBase is
 // the coefficient of the target's own paint for a sentinel: a missing keyframe
 // after a replacing effect holds the underlying paint, so the value at that
-// stop is base-dependent. A real keyframe has fromBase 0.
+// stop is base-dependent. A real keyframe has fromBase 0. ease is the timing
+// function declared on the keyframe at this stop, which eases the interval that
+// starts here; a synthetic sentinel carries the effect's own function.
 type stop struct {
 	at, value float64
 	fromBase  float64
+	ease      easingFn
 }
 
 // segment is the interval between two adjacent stops. span is next.at-prev.at,
@@ -108,7 +113,9 @@ func buildEffectTable(e Effect) effectTable {
 }
 
 // buildFieldTable flattens one field's keyframes into a sorted stop list with
-// explicit 0 and 1 sentinels when the keyframes omit those offsets.
+// explicit 0 and 1 sentinels when the keyframes omit those offsets. Each real
+// stop carries the timing function declared on its keyframe, so the interval
+// that starts at that keyframe eases with it.
 func buildFieldTable(frames []Keyframe, get valueOf, ease easingFn, fallback float64) fieldTable {
 	present := 0
 	for i := range frames {
@@ -130,19 +137,20 @@ func buildFieldTable(frames []Keyframe, get valueOf, ease easingFn, fallback flo
 		if seen == 0 {
 			first = frames[i].Offset
 			if first > 0 {
-				stops = append(stops, stop{at: 0, fromBase: fallback})
+				stops = append(stops, stop{at: 0, fromBase: fallback, ease: ease})
 			}
 		}
-		stops = append(stops, stop{at: frames[i].Offset, value: v})
+		stops = append(stops, stop{at: frames[i].Offset, value: v,
+			ease: frames[i].frameEasing(ease)})
 		last = frames[i].Offset
 		seen++
 	}
 	if last < 1 {
-		stops = append(stops, stop{at: 1, fromBase: fallback})
+		stops = append(stops, stop{at: 1, fromBase: fallback, ease: ease})
 	}
 	segments := make([]segment, len(stops)-1)
 	for i := range segments {
-		segments[i] = segment{span: stops[i+1].at - stops[i].at, ease: ease}
+		segments[i] = segment{span: stops[i+1].at - stops[i].at, ease: stops[i].ease}
 	}
 	return fieldTable{stops: stops, segments: segments, present: true}
 }
@@ -171,11 +179,53 @@ func effectEase(t Timing) easingFn {
 	if t.Easing != nil {
 		return easingFn(t.Easing)
 	}
-	name := t.TimingFunction
-	if name == "" || name == "linear" {
+	return cssEase(t.TimingFunction)
+}
+
+// frameEasing returns the easing for the interval that starts at this keyframe.
+// A keyframe that declares animation-timing-function eases that interval; one
+// that does not uses the effect's function. The binder fills ease once, so the
+// sample path never parses the string.
+func (k Keyframe) frameEasing(fallback easingFn) easingFn {
+	if k.ease != nil {
+		return k.ease
+	}
+	if k.TimingFunction != "" {
+		return cssEase(k.TimingFunction)
+	}
+	return fallback
+}
+
+// cssEase parses one CSS timing-function string into a sampler. An invalid
+// steps(1, jump-none) is dropped by the cascade, so a direct Timing that still
+// carries it falls back to the initial ease instead of a linear ramp.
+func cssEase(value string) easingFn {
+	if value == "" || strings.EqualFold(strings.TrimSpace(value), "linear") {
 		return linearEase
 	}
-	return func(part float64) float64 { return cssmotion.Ease(name, part) }
+	if invalidStepsJumpNone(value) {
+		value = "ease"
+	}
+	return func(part float64) float64 { return cssmotion.Ease(value, part) }
+}
+
+// stepsJumpNoneMin is the smallest step count jump-none accepts. CSS Easing
+// rejects steps(1, jump-none), so that function has no sample to compute.
+const stepsJumpNoneMin = 2
+
+// invalidStepsJumpNone reports steps(n, jump-none) with fewer than two steps.
+func invalidStepsJumpNone(value string) bool {
+	const prefix, suffix = "steps(", ")"
+	lower := strings.ToLower(strings.TrimSpace(value))
+	if !strings.HasPrefix(lower, prefix) || !strings.HasSuffix(lower, suffix) {
+		return false
+	}
+	parts := strings.Split(strings.TrimSuffix(lower[len(prefix):], suffix), ",")
+	if len(parts) != stepsJumpNoneMin || strings.TrimSpace(parts[1]) != "jump-none" {
+		return false
+	}
+	count, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	return err == nil && count < stepsJumpNoneMin
 }
 
 func linearEase(part float64) float64 { return part }
@@ -259,10 +309,21 @@ func baseFieldValue(base cssmotion.Paint, field int) float64 {
 	return 0
 }
 
-// bind precomputes the per-effect tables and the per-target compose scratch.
+// bind precomputes the per-effect tables and the per-target compose scratch. It
+// also parses every keyframe timing function once, because the compose path
+// reads a frame's easing per sample.
 func (p *Player) bind() {
 	p.tables = make([]effectTable, len(p.effects))
 	for i := range p.effects {
+		ease := effectEase(p.effects[i].Timing)
+		for j := range p.effects[i].Frames {
+			frame := &p.effects[i].Frames[j]
+			if frame.TimingFunction == "" {
+				frame.ease = ease
+			} else {
+				frame.ease = cssEase(frame.TimingFunction)
+			}
+		}
 		p.tables[i] = buildEffectTable(p.effects[i])
 	}
 	p.current = make([]cssmotion.Paint, len(p.targets))

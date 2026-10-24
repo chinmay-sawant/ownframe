@@ -17,7 +17,6 @@ func costFullCatalog(ctx context.Context, p *ownframe.Page, v *view,
 	tb.Helper()
 	v.Rows = v.Catalog
 	v.TopPad, v.BotPad = 0, 0
-	d.allPlaying = true
 	p.SetScrollWindow(func(int, int) bool { return false })
 	p.SetData(v)
 	if err := p.Redraw(ctx); err != nil {

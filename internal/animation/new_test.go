@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestNewSortsKeyframesAndRejectsInvalidTargets(t *testing.T) {
@@ -21,14 +22,27 @@ func TestNewSortsKeyframesAndRejectsInvalidTargets(t *testing.T) {
 	}
 }
 
-func TestPausedPlayerDoesNotChangePaint(t *testing.T) {
+func TestPausedPlayerHoldsItsFrozenPose(t *testing.T) {
 	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 8, Alpha: 1}
-	p, err := New([]Target{{Op: op}}, []Keyframe{{Offset: 1, X: 90, Move: true}},
-		Timing{Duration: 1, Iterations: 1, Play: Paused})
+	base := cssmotion.Read(op)
+	p, err := New([]Target{{Op: op, From: base}}, []Keyframe{
+		{Offset: 0, Move: true}, {Offset: 1, X: 90, Move: true},
+	}, Timing{Duration: time.Second, Iterations: 1, Play: Paused})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Step(time.Unix(50, 0)) || op.X != 8 {
-		t.Fatal("paused player changed paint or remained active")
+	start := time.Unix(50, 0)
+	if p.Step(start) || op.X != 8 {
+		t.Fatal("a paused player changed paint or reported active")
+	}
+	if p.Step(start.Add(900*time.Millisecond)) || op.X != 8 {
+		t.Fatal("a paused player advanced its pose")
+	}
+	p.Resume(start.Add(900 * time.Millisecond))
+	if !p.Step(start.Add(time.Second)) {
+		t.Fatal("a resumed player stopped reporting active")
+	}
+	if op.X != 17 {
+		t.Fatalf("resumed x = %v, want 17 from the frozen 0%% pose after 100 ms", op.X)
 	}
 }

@@ -26,6 +26,13 @@ func opBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
 		return image.Rectangle{}, false
 	}
 
+	// A corner path bounds itself from its command points, through the rebase
+	// onto the op box and the op matrix. The box corners xformBounds maps do
+	// not cover a concave shaped outline.
+	if op.Kind == layout.DisplayOpPath {
+		return pathBounds(op, ppt), true
+	}
+
 	if op.XformSet && !op.Transform().IsIdentity() {
 		return xformBounds(op, ppt)
 	}
@@ -44,6 +51,20 @@ func opBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
 	}
 
 	return image.Rectangle{}, true
+}
+
+// pathBounds converts a corner path's mapped ink box to a whole-pixel box.
+// The command points bound the curves, because a quadratic or cubic stays
+// inside the convex hull of its control points, and a stroke grows the box by
+// half its width. An op with no command point paints nothing and gets an
+// empty box.
+func pathBounds(op *layout.DisplayOp, ppt float64) image.Rectangle {
+	left, top, right, bottom, grow, ok := pathInkBox(op)
+	if !ok {
+		return image.Rectangle{}
+	}
+
+	return boxBounds(left, top, right-left, bottom-top, grow, ppt)
 }
 
 // boxBounds converts a point-space box to a whole-pixel box, grown by pad

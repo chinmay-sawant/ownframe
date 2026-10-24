@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestStepAppliesDelayThenInterpolates(t *testing.T) {
-	op := ownframe.DisplayOp{}
+	op := layout.DisplayOp{}
 	r := renderer(t, &op, time.Second, 200*time.Millisecond, "linear")
 	start := time.Unix(1, 0)
 	r.Start(start)
@@ -25,7 +25,7 @@ func TestStepAppliesDelayThenInterpolates(t *testing.T) {
 }
 
 func TestStepUsesNegativeDelayAndEasing(t *testing.T) {
-	op := ownframe.DisplayOp{}
+	op := layout.DisplayOp{}
 	r := renderer(t, &op, time.Second, -500*time.Millisecond, "linear")
 	start := time.Unix(2, 0)
 	r.Start(start)
@@ -40,7 +40,7 @@ func TestStepUsesNegativeDelayAndEasing(t *testing.T) {
 }
 
 func TestZeroDurationWritesFinalPaint(t *testing.T) {
-	op := ownframe.DisplayOp{}
+	op := layout.DisplayOp{}
 	r := renderer(t, &op, 0, 0, "linear")
 	r.Start(time.Unix(3, 0))
 	if r.Step(time.Unix(3, 0)) || op.X != 100 {
@@ -48,7 +48,30 @@ func TestZeroDurationWritesFinalPaint(t *testing.T) {
 	}
 }
 
-func renderer(t *testing.T, op *ownframe.DisplayOp, duration, delay time.Duration, ease string) *Renderer {
+// TestRetargetMovesTracksWithoutRestarting keeps the clock across a display
+// commit: the renderer writes the new operation at the same phase.
+func TestRetargetMovesTracksWithoutRestarting(t *testing.T) {
+	first := layout.DisplayOp{}
+	next := layout.DisplayOp{}
+	r, err := New([]Track{{Op: &first, From: cssmotion.Paint{Opacity: 1},
+		To: cssmotion.Paint{X: 100, Opacity: 1}, Duration: time.Second, Easing: "linear"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Unix(4, 0)
+	r.Start(start)
+	if !r.Step(start.Add(500*time.Millisecond)) || first.X != 50 {
+		t.Fatalf("first sample X = %g, want 50", first.X)
+	}
+	if err := r.Retarget([]*layout.DisplayOp{&next}); err != nil {
+		t.Fatal(err)
+	}
+	if !r.Step(start.Add(750*time.Millisecond)) || next.X != 75 {
+		t.Fatalf("retargeted sample X = %g, want 75", next.X)
+	}
+}
+
+func renderer(t *testing.T, op *layout.DisplayOp, duration, delay time.Duration, ease string) *Renderer {
 	t.Helper()
 	r, err := New([]Track{{Op: op, From: cssmotion.Paint{Opacity: 1},
 		To: cssmotion.Paint{X: 100, Opacity: 0}, Duration: duration, Delay: delay, Easing: ease}})

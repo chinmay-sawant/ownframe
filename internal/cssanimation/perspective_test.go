@@ -81,7 +81,7 @@ func TestParsePerspectiveOriginPositions(t *testing.T) {
 		{name: "keyword and length", value: "right 10px", x: 150, y: 7.5},
 		{name: "two horizontal keywords", value: "left right", fails: true},
 		{name: "two vertical keywords", value: "top bottom", fails: true},
-		{name: "three values", value: "left 10px top", fails: true},
+		{name: "three values", value: "left 10px top", x: 7.5, y: 0},
 		{name: "empty", value: "", fails: true},
 		{name: "unitless", value: "10 20", fails: true},
 	} {

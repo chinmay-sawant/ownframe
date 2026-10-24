@@ -1,10 +1,11 @@
-package csstransition
+package csstransition_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 // TestBindToKeepsTheSizeAfterAResize checks that a rebind after the layout
@@ -19,7 +20,7 @@ func TestBindToKeepsTheSizeAfterAResize(t *testing.T) {
 	cssmotion.Write(ops[0], resized)
 
 	start := time.Unix(8, 0)
-	r, err := BindTo(display, box, "background-color", indices, from, to, start)
+	r, err := csstransition.BindTo(display, box, "background-color", indices, from, to, start)
 	if err != nil {
 		t.Fatal(err)
 	}

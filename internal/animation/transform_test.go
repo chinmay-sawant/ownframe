@@ -3,6 +3,7 @@ package animation
 import (
 	"errors"
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,6 +87,9 @@ func TestInterpolateMismatchedTwoDimensionalLists(t *testing.T) {
 	if value.Decomposed.Tx != 5 || math.Abs(value.Decomposed.Rotate-math.Pi/4) > 1e-9 {
 		t.Fatalf("decomposed = %+v, want midpoint translation and rotation", value.Decomposed)
 	}
+	if value.ThreeD {
+		t.Fatal("a 2D pair took the 3D path")
+	}
 	if value.Functions != nil {
 		t.Fatal("a mismatched list kept a function list that cannot be applied")
 	}
@@ -118,27 +122,52 @@ func TestInterpolateThreeDimensionalListWithUnderlyingNone(t *testing.T) {
 	}
 }
 
-func TestInterpolateMismatchedThreeDimensionalListsReportsAnError(t *testing.T) {
-	_, err := interpolateTransform(rotateValue(RotateX, 0, true), rotateValue(RotateY, 0, true), .5)
-	if !errors.Is(err, ErrTransform3D) {
-		t.Fatalf("mismatched 3D lists = %v, want ErrTransform3D", err)
+func TestInterpolateMismatchedThreeDimensionalLists(t *testing.T) {
+	from := rotateValue(RotateX, 0, true)
+	to := rotateValue(RotateY, math.Pi/2, true)
+	value, err := interpolateTransform(from, to, .5)
+	if err != nil {
+		t.Fatal(err)
 	}
-	_, err = interpolateTransform(rotateValue(RotateY, 0, true),
-		TransformValue{Decomposed: IdentityTransform(), ThreeD: true,
-			Functions: []TransformFunction{{Name: Perspective, Args: []float64{100}}}}, .5)
-	if !errors.Is(err, ErrTransform3D) {
-		t.Fatalf("perspective against none = %v, want ErrTransform3D", err)
+	if !value.ThreeD || len(value.Functions) != 1 || value.Functions[0].Name != Matrix3D {
+		t.Fatalf("mismatched 3D pair sampled %+v, want one matrix3d list", value.Functions)
 	}
-	matrix := TransformValue{Decomposed: IdentityTransform(), ThreeD: true,
-		Functions: []TransformFunction{{Name: Matrix3D, Args: identityMatrix3D()}}}
-	_, err = interpolateTransform(matrix, matrix, .5)
-	if !errors.Is(err, ErrTransform3D) {
-		t.Fatalf("matrix3d pair = %v, want ErrTransform3D", err)
+	// Slerping identity to rotateY(90deg) is rotateY(45deg).
+	requireMatrix4Near(t, Matrix4FromFunctions(value.Functions), rotateY4(math.Pi/4), matrixTolerance)
+}
+
+func TestInterpolatePerspectiveAgainstNone(t *testing.T) {
+	to := TransformValue{
+		Decomposed: IdentityTransform(),
+		Functions:  []TransformFunction{{Name: Perspective, Args: []float64{100}}},
+		ThreeD:     true,
+	}
+	value, err := interpolateTransform(TransformValue{Decomposed: IdentityTransform()}, to, .5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The perspective matrix is [0, 0, -1/d, 1] and identity carries
+	// [0, 0, 0, 1], so the midpoint is the matrix for d=200.
+	m := Matrix4FromFunctions(value.Functions)
+	if math.Abs(m[indexM34]-(-1.0/200)) > matrixTolerance {
+		t.Fatalf("perspective midpoint m34 = %v, want %v", m[indexM34], -1.0/200)
 	}
 }
 
-func identityMatrix3D() []float64 {
-	return []float64{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}
+func TestInterpolateMatrix3DPair(t *testing.T) {
+	rotation := rotateX4(math.Pi / 2)
+	to := TransformValue{
+		Decomposed: IdentityTransform(),
+		Functions:  []TransformFunction{{Name: Matrix3D, Args: matrixArgs(rotation)}},
+		ThreeD:     true,
+	}
+	value, err := interpolateTransform(TransformValue{Decomposed: IdentityTransform(), ThreeD: true,
+		Functions: []TransformFunction{{Name: Matrix3D, Args: identityMatrix3D()}}}, to, .5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Identity to rotateX(90deg) passes through rotateX(45deg).
+	requireMatrix4Near(t, Matrix4FromFunctions(value.Functions), rotateX4(math.Pi/4), matrixTolerance)
 }
 
 func TestComposeAppliesTwoDimensionalTranslation(t *testing.T) {
@@ -202,24 +231,42 @@ func TestNewRejectsMalformedTransform(t *testing.T) {
 	}
 }
 
-func TestNewRejectsMismatchedThreeDimensionalLists(t *testing.T) {
+func TestNewAcceptsMismatchedThreeDimensionalLists(t *testing.T) {
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, Alpha: 1}
 	frames := []Keyframe{
 		{Offset: 0, Transform: rotateValue(RotateX, 0, true)},
 		{Offset: 1, Transform: rotateValue(RotateY, math.Pi/2, true)},
 	}
-	_, err := New([]Target{{Op: &layout.DisplayOp{}}}, frames, Timing{})
-	if !errors.Is(err, ErrTransform3D) {
-		t.Fatalf("New with mismatched 3D lists = %v, want ErrTransform3D", err)
+	p, err := New([]Target{{Op: op, From: cssmotion.Read(op)}}, frames,
+		Timing{Duration: time.Second, Iterations: 1, TimingFunction: "linear"})
+	if err != nil {
+		t.Fatalf("New with mismatched 3D lists = %v, want a bound player", err)
+	}
+	start := time.Unix(74, 0)
+	p.Start(start)
+	p.Step(start.Add(500 * time.Millisecond))
+
+	if !p.RestampPending() {
+		t.Fatal("a mismatched 3D sample did not reach the restamp path")
+	}
+	values := p.RestampValues()
+	if len(values) != 1 {
+		t.Fatalf("restamp values = %d, want one", len(values))
+	}
+	if !strings.HasPrefix(values[0].Transform, "matrix3d(") {
+		t.Fatalf("restamp transform = %q, want matrix3d()", values[0].Transform)
+	}
+	if op.XformSet {
+		t.Fatal("a 3D sample wrote a 2D operation matrix")
 	}
 }
 
-func TestDecompose3DReportsTheMissingAlgorithm(t *testing.T) {
-	from := []TransformFunction{{Name: RotateX, Args: []float64{0}}}
-	to := []TransformFunction{{Name: RotateY, Args: []float64{0}}}
-	if _, err := Decompose3D(from, to, .5); !errors.Is(err, ErrTransform3D) {
-		t.Fatalf("Decompose3D = %v, want ErrTransform3D", err)
+func TestDecompose3DRejectsASingularMatrix(t *testing.T) {
+	if _, err := Decompose3D(Matrix4{}); !errors.Is(err, ErrSingularMatrix) {
+		t.Fatalf("zero matrix = %v, want ErrSingularMatrix", err)
 	}
-	if err := Decompose3DError(from, to); !errors.Is(err, ErrTransform3D) {
-		t.Fatalf("Decompose3DError = %v, want ErrTransform3D", err)
+	scaleZ := Matrix4FromFunctions([]TransformFunction{{Name: ScaleZ, Args: []float64{0}}})
+	if _, err := Decompose3D(scaleZ); !errors.Is(err, ErrSingularMatrix) {
+		t.Fatalf("scaleZ(0) = %v, want ErrSingularMatrix", err)
 	}
 }

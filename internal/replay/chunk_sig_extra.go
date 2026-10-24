@@ -26,6 +26,31 @@ func sigGrid(h uint64, op *layout.DisplayOp) uint64 {
 	return h
 }
 
+// sigPath folds a corner path's command list, or a zero marker for every
+// other op. The whole point triple and every verb are folded, so a mutated
+// payload cannot keep a stale cached raster.
+func sigPath(h uint64, op *layout.DisplayOp) uint64 {
+	corner, ok := op.CornerPathValue()
+	if !ok || corner == nil {
+		return mix64(h, 0)
+	}
+
+	h = mix64(h, uint64(len(corner.Cmds))+1)
+	h = mix64(h, bit(corner.Stroke))
+
+	for i := range corner.Cmds {
+		cmd := &corner.Cmds[i]
+		h = mix64(h, uint64(cmd.Verb))
+
+		for _, p := range cmd.Pts {
+			h = mixF(h, p.X)
+			h = mixF(h, p.Y)
+		}
+	}
+
+	return h
+}
+
 // sigImage folds an image payload's identity, or a zero marker. The payload
 // hash is the same one the decoded-image cache keys on.
 func sigImage(h uint64, op *layout.DisplayOp) uint64 {

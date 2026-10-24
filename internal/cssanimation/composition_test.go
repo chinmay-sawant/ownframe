@@ -11,10 +11,10 @@ func TestOwnFrameAnimationComposition(t *testing.T) {
 		mode string
 		want float64
 	}{
-		// A transform-list keyframe samples one matrix, so the later effect's
-		// matrix replaces the earlier one. Concatenating additive transform
-		// lists is a composition phase, not this one.
-		{"add,add", 20},
+		// An additive transform list concatenates onto the earlier effect, so
+		// ten (0 to 10px) plus twenty (0 to 20px) moves 30px. A replacing list
+		// still writes only the later effect's 20px.
+		{"add,add", 30},
 		{"replace,replace", 20},
 	} {
 		d, _, indices, paints, p, start := runtimePlayer(t, base+`animation-composition:`+c.mode+`;`)

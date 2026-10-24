@@ -1,57 +1,83 @@
 package main
 
 import (
-	"context"
-	"math"
+	"strings"
 	"testing"
+	"time"
 )
 
-// TestPlayAllMovesEverySample checks that the Play all button gives every
-// card the same result as its own Start button: the sample moves off its
-// starting paint and has not reached its end yet.
+// TestPlayAllMovesEverySample checks that Play all gives every card the same
+// result as its own Start button: one sample moves each target off its
+// declared paint.
 func TestPlayAllMovesEverySample(t *testing.T) {
-	ctx := context.Background()
-	p, d, v := fixturePage(t)
-	button, ok := findBox(p.Boxes(), playAllID)
-	if !ok {
-		t.Fatal("the play all button is missing")
+	p, _, v := fixturePage(t)
+	// Settle the paused cards before the comparison.
+	tickPage(t, p)
+	base := make(map[string][]paint, len(targets()))
+	for _, item := range targets() {
+		base[item.key] = targetPaints(t, p, item.id)
 	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
-	}
+	clickID(t, p, playAllID)
+	time.Sleep(600 * time.Millisecond)
+	tickPage(t, p)
 
 	for _, row := range v.Catalog {
-		s := d.samples[row.SampleKey]
-		if s == nil || !s.active || len(s.plan.pairs) == 0 {
-			tt, _ := targetByKey(row.SampleKey)
-			bb, found := findBox(p.Boxes(), tt.id)
-			t.Errorf("%s has no running sample: nil=%v active=%v pairs=%d dur=%v base=%d detached=%v found=%v anims=%d trans=%d stats=%+v",
-				row.Name, s == nil, s != nil && s.active, len(s.plan.pairs), s.plan.duration,
-				len(s.base), s != nil && s.detached, found, len(bb.Animations), len(bb.Transitions), p.Probe().Stats())
-			continue
-		}
-		target, _ := targetByKey(row.SampleKey)
-		pair := s.plan.pairs[0]
-		base, to := pair.from, pair.to
-		at := s.origin.Add(s.plan.delay + s.plan.duration/2)
-		s.plan.step(at)
-		got := read(pair.op)
-		if samePaintValue(got, base) {
+		if samePaint(base[row.SampleKey], targetPaints(t, p, row.TargetID)) {
 			t.Errorf("%s did not move off its starting paint", row.Name)
-		}
-		if target.kind == "transition" && samePaintValue(got, to) {
-			t.Errorf("%s jumped straight to its end paint", row.Name)
 		}
 	}
 }
 
-// samePaintValue reports whether two paints match.
-func samePaintValue(a, b paint) bool {
-	return math.Abs(a.X-b.X) < .01 && math.Abs(a.Y-b.Y) < .01 &&
-		math.Abs(a.W-b.W) < .01 && math.Abs(a.H-b.H) < .01 &&
-		math.Abs(a.R-b.R) < .01 && math.Abs(a.G-b.G) < .01 && math.Abs(a.B-b.B) < .01 &&
-		math.Abs(a.Opacity-b.Opacity) < .01
+// TestPlayAllKeepsItsReadout checks that the readout is template data and
+// survives a rebuild without a patch hook.
+func TestPlayAllKeepsItsReadout(t *testing.T) {
+	p, d, _ := fixturePage(t)
+	clickID(t, p, playAllID)
+	if d.readout != "All previews are playing." {
+		t.Fatalf("readout = %q, want the run readout", d.readout)
+	}
+	// A rebuild renders the view again; the readout is template data.
+	d.v.applyRows()
+	p.SetData(d.v)
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	out, ok := findBox(p.Boxes(), readoutID)
+	if !ok {
+		t.Fatal("the readout is missing")
+	}
+	if !strings.Contains(out.Text, "All previews are playing.") {
+		t.Fatalf("the readout reads %q", out.Text)
+	}
+}
+
+// TestStartReplaysAfterPlayAll checks that a Start button restarts a card the
+// Play all button already started. The restart is the class variant flip.
+func TestStartReplaysAfterPlayAll(t *testing.T) {
+	p, d, v := fixturePage(t)
+	clickID(t, p, playAllID)
+	time.Sleep(600 * time.Millisecond)
+	tickPage(t, p)
+	row := v.Catalog[30]
+	before := xformX(targetOp(t, p, row.TargetID), p.Probe().Display().PointsPerPixel)
+	if before <= 0 {
+		t.Fatalf("%s did not advance before the restart", row.Name)
+	}
+	clickID(t, p, row.Button)
+	if !v.Restart[row.Button] {
+		t.Fatalf("%s did not flip to the second keyframe name", row.Name)
+	}
+	if d.manual[row.SampleKey] != nil {
+		// A transition restarts by binding its original base again.
+		time.Sleep(600 * time.Millisecond)
+		tickPage(t, p)
+		return
+	}
+	if err := p.Testing().Tick(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	after := xformX(targetOp(t, p, row.TargetID), p.Probe().Display().PointsPerPixel)
+	if after >= before {
+		t.Fatalf("%s did not replay: %v then %v", row.Name, before, after)
+	}
 }

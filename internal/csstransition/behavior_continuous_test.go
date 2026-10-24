@@ -1,10 +1,11 @@
-package csstransition
+package csstransition_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 func TestTransitionBehaviorKeepsContinuousPaintInterpolation(t *testing.T) {
@@ -19,7 +20,7 @@ func TestTransitionBehaviorKeepsContinuousPaintInterpolation(t *testing.T) {
 		t.Fatalf("old/new continuous paint counts = %d/%d", len(from), len(indices))
 	}
 	start := time.Unix(3, 0)
-	r, err := Bind(newDisplay, box, "background-color", indices, from, start)
+	r, err := csstransition.Bind(newDisplay, box, "background-color", indices, from, start)
 	if err != nil {
 		t.Fatal(err)
 	}

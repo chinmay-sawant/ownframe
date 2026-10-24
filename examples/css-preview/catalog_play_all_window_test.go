@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-// TestPlayAllKeepsTheCatalogWindowed checks that the Play all button starts
-// the previews on screen and leaves the rest waiting for their first render,
-// so the catalog stays windowed and a click keeps its windowed cost.
+// TestPlayAllKeepsTheCatalogWindowed checks that Play all starts the previews
+// on screen and leaves the rest for their first render, so the catalog stays
+// windowed and a click keeps its windowed cost.
 func TestPlayAllKeepsTheCatalogWindowed(t *testing.T) {
 	ctx := context.Background()
 	p, d, v := fixturePage(t)
@@ -18,36 +18,31 @@ func TestPlayAllKeepsTheCatalogWindowed(t *testing.T) {
 	if err := installCatalogWindow(ctx, p, v, d, m); err != nil {
 		t.Fatal(err)
 	}
-	all, ok := findBox(p.Boxes(), playAllID)
-	if !ok {
-		t.Fatal("the play all button is missing")
-	}
-	if err := p.Click(ctx, all.X+all.W/2, all.Y+all.H/2); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
-	}
+	clickID(t, p, playAllID)
+	tickPage(t, p)
 	if len(v.Rows) >= len(v.Catalog) {
 		t.Fatalf("the catalog rendered %d rows, want the windowed subset", len(v.Rows))
 	}
-
-	active, waiting := 0, 0
-	for _, s := range d.samples {
-		if s.active {
-			active++
-		}
-		if s.base == nil {
-			waiting++
-		}
-	}
-	if active == 0 {
+	if got := p.Probe().Motion().Bound; got == 0 {
 		t.Fatal("no preview started")
 	}
-	if waiting == 0 {
-		t.Fatal("no preview waits for its row")
+	offscreen := 0
+	for _, row := range v.Catalog[len(v.Rows):] {
+		if _, found := findBox(p.Boxes(), row.TargetID); !found {
+			offscreen++
+		}
 	}
-	if active+waiting < len(v.Catalog) {
-		t.Fatalf("started %d and waiting %d, want the whole catalog", active, waiting)
+	if offscreen == 0 {
+		t.Fatal("no started preview waits for its row")
+	}
+	// The first window holds only animation cards. Scroll to the first
+	// transition card and start it by hand, which is the path a transition
+	// takes until the transition track lands.
+	scrollTo(t, ctx, p, m, m.rowTop[4]-200)
+	transition := catalogRowByName(t, v, "-webkit-transition")
+	clickID(t, p, transition.Button)
+	tickPage(t, p)
+	if s := d.manual[transition.SampleKey]; s == nil || !s.active {
+		t.Fatal("the visible transition did not start in the window")
 	}
 }

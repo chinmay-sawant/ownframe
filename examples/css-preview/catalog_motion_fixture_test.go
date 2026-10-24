@@ -8,32 +8,50 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
-func motionFixture(t *testing.T, html, css string) (*ownframe.Display, ownframe.Box, []int, []cssmotion.Paint) {
+// motionPage builds a page from raw HTML and CSS, draws it, and returns it.
+// The CSS controls the animation; no Go binds a player.
+func motionPage(t *testing.T, html, css string) *ownframe.Page {
 	t.Helper()
-	p, err := ownframe.New(ownframe.Config{HTML: html, Theme: css, Width: 300, Height: 120})
+	p, err := ownframe.New(ownframe.Config{HTML: html, Theme: css, Width: 400, Height: 200})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err = p.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	d := p.Probe().Display()
-	b, ok := findBox(p.Boxes(), "target")
-	if d == nil || !ok {
-		t.Fatal("fixture did not produce target box and display")
-	}
-	indices := cssmotion.OperationIndices(d, b)
-	initial := cssmotion.Capture(d, b)
-	if len(indices) == 0 || len(initial) != len(indices) {
-		t.Fatal("fixture did not produce target paint operations")
-	}
-	return d, b, indices, initial
+	return p
 }
 
-// xformDeltaX reports how far a sampled transform moved an operation along x,
-// in display points. A transform-list keyframe writes the operation's matrix
-// and leaves its X at the laid-out position, so a paint difference must come
-// from the matrix translation.
-func xformDeltaX(op *ownframe.DisplayOp, base cssmotion.Paint) float64 {
-	return op.Transform().E - base.Matrix.E
+// targetOp returns the first display operation the element with id owns.
+func targetOp(t *testing.T, p *ownframe.Page, id string) *ownframe.DisplayOp {
+	t.Helper()
+	box, ok := findBox(p.Boxes(), id)
+	if !ok {
+		t.Fatalf("missing target box %q", id)
+	}
+	indices := cssmotion.OperationIndices(p.Probe().Display(), box)
+	if len(indices) == 0 {
+		t.Fatalf("target %q owns no display operation", id)
+	}
+	return &p.Probe().Display().Ops[indices[0]]
+}
+
+// targetPaints returns the paints of every operation the element owns.
+func targetPaints(t *testing.T, p *ownframe.Page, id string) []paint {
+	t.Helper()
+	box, ok := findBox(p.Boxes(), id)
+	if !ok {
+		t.Fatalf("missing target box %q", id)
+	}
+	return cssmotion.Capture(p.Probe().Display(), box)
+}
+
+// xformX is the painted x translation of an operation in CSS pixels. A
+// transform-list keyframe writes the matrix and leaves the op's laid-out X
+// in place.
+func xformX(op *ownframe.DisplayOp, pointsPerPixel float64) float64 {
+	if pointsPerPixel <= 0 {
+		pointsPerPixel = 1
+	}
+	return op.Transform().E / pointsPerPixel
 }

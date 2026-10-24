@@ -1,7 +1,7 @@
 package csstrigger
 
 import (
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
 // Event is a named host event tied to the element that produced it.
@@ -22,7 +22,7 @@ type Action struct {
 const minActions = 2
 
 // Resolve matches a named event to CSS animation-trigger records.
-func Resolve(boxes []ownframe.Box, event Event) []Action {
+func Resolve(boxes []layout.Box, event Event) []Action {
 	if event.Source < 0 || event.Source >= len(boxes) || event.Name == "" {
 		return nil
 	}

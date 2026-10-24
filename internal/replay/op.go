@@ -10,13 +10,14 @@ import (
 // A viewport-fixed op ignores the scroll translation: the engine placed it
 // against the viewport, so it stays on screen while the page moves. An op
 // with a non-identity transform draws through its baked matrix; an image
-// already places itself through its own transform.
+// already places itself through its own transform, and a corner path maps
+// each command point through the matrix as it builds the vector path.
 func (renderer *Renderer) drawOp(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	if op.Fixed {
 		dx, dy = 0, 0
 	}
 
-	if op.XformSet && op.Kind != layout.DisplayOpImage &&
+	if op.XformSet && op.Kind != layout.DisplayOpImage && op.Kind != layout.DisplayOpPath &&
 		!op.Transform().IsIdentity() {
 		renderer.drawXform(dst, op, dx, dy)
 
@@ -28,6 +29,8 @@ func (renderer *Renderer) drawOp(dst *ebiten.Image, op *layout.DisplayOp, dx, dy
 		renderer.fillRect(dst, op, dx, dy)
 	case layout.DisplayOpStrokeRect:
 		renderer.drawStrokeRect(dst, op, dx, dy)
+	case layout.DisplayOpPath:
+		drawPath(dst, op, dx, dy)
 	case layout.DisplayOpImage:
 		renderer.drawImage(dst, op, dx, dy)
 	case layout.DisplayOpLine:

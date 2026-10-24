@@ -44,6 +44,12 @@ const (
 	// OpGridRun is one table row's collapsed border grid, carried as ordered
 	// segments. Replay the segments in order.
 	OpGridRun = layout.DisplayOpGridRun
+
+	// OpPath is one corner-shape path for a non-round box. Read the command
+	// list with CornerPathValue: Stroke is false for a background fill and
+	// true for a border stroke painted with Width. A round box never uses
+	// this kind; it keeps the fill and stroke rect radii.
+	OpPath = layout.DisplayOpPath
 )
 
 // Kind is the operation kind type.

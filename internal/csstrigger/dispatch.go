@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/animation"
 )
 
 // Dispatch applies matching trigger actions to each box's animation player.
-func Dispatch(boxes []ownframe.Box, event Event, players map[int]*animation.Player, now time.Time) error {
+func Dispatch(boxes []layout.Box, event Event, players map[int]*animation.Player, now time.Time) error {
 	for _, action := range Resolve(boxes, event) {
 		player := players[action.BoxIndex]
 		if player == nil {

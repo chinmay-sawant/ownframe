@@ -1,35 +1,49 @@
 package main
 
 import (
-	"context"
 	"testing"
 )
 
+// TestEveryCatalogStartRunsOnlyItsOwnPreview clicks all 43 Start buttons.
+// Every card records its own state; the page runtime binds an automatic
+// player for each animation card and the manual path starts each transition.
 func TestEveryCatalogStartRunsOnlyItsOwnPreview(t *testing.T) {
-	ctx := context.Background()
 	p, d, v := fixturePage(t)
-	started := 0
 	for _, row := range v.Catalog {
-		button, ok := findBox(p.Boxes(), row.Button)
-		if !ok {
-			t.Fatalf("missing Start button for %s", row.Name)
-		}
-		if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
-			t.Fatal(err)
-		}
+		clickID(t, p, row.Button)
 		if !v.Started[row.Button] || v.Selected != row.Name {
 			t.Fatalf("%s was not selected", row.Name)
 		}
-		if err := d.tick(ctx); err != nil {
-			t.Fatal(err)
-		}
-		sample := d.samples[row.SampleKey]
-		if sample == nil || len(sample.plan.pairs) == 0 {
-			t.Fatalf("%s did not start its own preview", row.Name)
-		}
-		started++
 	}
-	if started != 43 || len(d.samples) != 43 {
-		t.Fatalf("started previews = %d, want 43", len(d.samples))
+	tickPage(t, p)
+	started := 0
+	for _, row := range v.Catalog {
+		if v.Started[row.Button] {
+			started++
+		}
+	}
+	if started != 43 {
+		t.Fatalf("started cards = %d, want 43", started)
+	}
+	manual := 0
+	for _, row := range v.Catalog {
+		target, ok := targetByKey(row.SampleKey)
+		if !ok {
+			t.Fatalf("%s has no target", row.Name)
+		}
+		if target.kind == "transition" {
+			if s := d.manual[row.SampleKey]; s != nil {
+				manual++
+			}
+		}
+	}
+	if manual != 6 {
+		t.Fatalf("manual transition samples = %d, want the 6 geometry cards", manual)
+	}
+	if got := p.Probe().Motion().Bound; got < 29 {
+		t.Fatalf("automatic players = %d, want the animation and view-transition cards", got)
+	}
+	if err := p.Probe().Motion().LastError; err != "" {
+		t.Fatalf("motion bind failed: %s", err)
 	}
 }

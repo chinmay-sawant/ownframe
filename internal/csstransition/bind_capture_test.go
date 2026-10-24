@@ -1,4 +1,4 @@
-package csstransition
+package csstransition_test
 
 import (
 	"testing"

@@ -40,15 +40,16 @@ func (p *Page) Tick(ctx context.Context) error {
 	return p.runTick(ctx, fn)
 }
 
-// runTick steps the CSS motion driver, runs fn, then the caret blink, then
-// records in-place op patches as dirty rects. The driver damage is marked
-// before the callback snapshot, so the callback diff never covers an
-// animation change. A no-op leaves FrameDirty unset so idle park can sleep.
-// The 3D re-projection runs last, so it cannot invalidate the callback's
-// snapshot.
+// runTick runs the CSS layout pass, steps the paint driver, runs fn, then the
+// caret blink, then records in-place op patches as dirty rects. The layout pass
+// runs first so every later sample composes against the display it produced.
+// The driver damage is marked before the callback snapshot, so the callback
+// diff never covers an animation change. A no-op leaves FrameDirty unset so
+// idle park can sleep. The 3D re-projection runs last, so it cannot invalidate
+// the callback's snapshot.
 func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) error {
 	gen := p.Generation()
-	p.stepMotion()
+	p.stepMotion(ctx)
 	if fn == nil {
 		err := p.caretBlink(ctx)
 		p.flagTickDirty(gen)

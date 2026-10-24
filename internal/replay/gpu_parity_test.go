@@ -111,6 +111,18 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			g.err = err
 			return
 		}
+		if err := checkPathGolden(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkPathXform(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkPathGroup(); err != nil {
+			g.err = err
+			return
+		}
 	}
 	if g.before == nil {
 		g.before = newParityImage(1908, 999)

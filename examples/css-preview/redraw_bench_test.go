@@ -7,7 +7,7 @@ import (
 
 func BenchmarkClickRedraw(b *testing.B) {
 	ctx := context.Background()
-	v := &view{Started: map[string]bool{}}
+	v := newView()
 	p, err := openCatalog(ctx, catalogOpen{Data: v, Width: 960, Height: 860})
 	if err != nil {
 		b.Fatal(err)
@@ -28,6 +28,7 @@ func BenchmarkClickRedraw(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		v.Started[row.Button] = i%2 == 0
 		v.Selected = row.Name
+		v.applyRows()
 		if err := redrawCatalog(ctx, p, v); err != nil {
 			b.Fatal(err)
 		}

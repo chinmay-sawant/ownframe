@@ -39,6 +39,13 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		field, _ = p.control(fs.FocusID)
 	}
 
+	if activationKey(key) && p.activationTarget(field) {
+		_, err := p.fireTriggers(ctx, p.boxByID(field.ID), true)
+		if err != nil {
+			return err
+		}
+	}
+
 	switch gesture.KeyDown(field, field.Value, key) {
 	case gesture.EffectBlur:
 		return p.Focus(ctx, "")
@@ -409,6 +416,12 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 		return nil
 	}
 
+	if box, ok := p.activationBox(x, y); ok {
+		if err := p.pressTriggers(ctx, box); err != nil {
+			return err
+		}
+	}
+
 	p.markPair(p.activeID(), id)
 	p.setActiveID(id)
 	p.setPressUsed(false)
@@ -433,6 +446,10 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 // Release clears the pressed element and draws when it changed.
 func (p *Page) Release(ctx context.Context) error {
 	if err := useContext(ctx); err != nil {
+		return err
+	}
+
+	if err := p.releaseTriggers(ctx); err != nil {
 		return err
 	}
 

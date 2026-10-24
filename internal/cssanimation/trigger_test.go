@@ -15,9 +15,9 @@ func TestOwnFrameTriggeredAnimationWaitsForAction(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.Step(start.Add(1500 * time.Millisecond))
-	// A transform-list keyframe writes one matrix per effect, so the activated
-	// effect's 10px replaces the first effect's 10px instead of summing with it.
-	if got := movedX(d, indices, paints) / d.PointsPerPixel; got < 9.98 || got > 10.02 {
-		t.Fatalf("activated second effect moved %v px, want 10", got)
+	// Both effects are additive, so the activated twenty effect (10px at its
+	// midpoint) concatenates after the finished ten effect's 10px.
+	if got := movedX(d, indices, paints) / d.PointsPerPixel; got < 19.98 || got > 20.02 {
+		t.Fatalf("activated second effect moved %v px, want 20", got)
 	}
 }

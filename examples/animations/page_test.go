@@ -362,8 +362,9 @@ func TestTogglePlayback(t *testing.T) {
 
 // TestPausedPageDoesNotAdvance proves the automatic runtime reads the play state
 // the stylesheet declares. The pause button only toggles the view; the body's
-// is-paused class reaches the chips through the existing CSS rule and the
-// runtime leaves the last sampled pose in place.
+// is-paused class reaches the chips through the existing CSS rule. The redraw
+// that posts the class must keep the sampled pose (no snap to the base paint),
+// and the ticks after it must leave that pose alone.
 func TestPausedPageDoesNotAdvance(t *testing.T) {
 	app, err := newApp()
 	if err != nil {
@@ -373,34 +374,65 @@ func TestPausedPageDoesNotAdvance(t *testing.T) {
 	p := app.Page()
 	ctx := context.Background()
 
+	// Give the chip a phase worth freezing: a tick right after the initial
+	// redraw can still be at 0%.
+	time.Sleep(5 * time.Millisecond)
 	if err := p.Testing().Tick(ctx); err != nil {
 		t.Fatalf("tick failed: %v", err)
 	}
+	box := chipHitBox(t, p, "chip-q1-0")
+	chip := fillOpInBox(p.Probe().Display(), box)
+	if chip == nil {
+		t.Fatal("expected a fill op inside chip-q1-0")
+	}
+	sampled := xformX(chip)
 
 	if err := app.handleClick(ctx, ownframe.Box{ID: "btn-toggle-play"}); err != nil {
 		t.Fatalf("click toggle play failed: %v", err)
 	}
 
-	box := chipHitBox(t, p, "chip-q1-0")
+	box = chipHitBox(t, p, "chip-q1-0")
 	if len(box.Animations) == 0 || box.Animations[0].PlayState != "paused" {
 		t.Fatalf("chip-q1-0 animations = %+v, want a paused sample", box.Animations)
 	}
 
-	chip := fillOpInBox(p.Probe().Display(), box)
+	chip = fillOpInBox(p.Probe().Display(), box)
 	if chip == nil {
-		t.Fatal("expected a fill op inside chip-q1-0")
+		t.Fatal("expected a fill op inside chip-q1-0 after the pause redraw")
 	}
-	before := xformX(chip)
+	if got := xformX(chip); got != sampled {
+		t.Fatalf("pausing the chip snapped it from translation %v to %v", sampled, got)
+	}
 
 	time.Sleep(5 * time.Millisecond)
 	if err := p.Testing().Tick(ctx); err != nil {
 		t.Fatalf("tick failed: %v", err)
 	}
-	if got := xformX(chip); got != before {
-		t.Fatalf("paused chip moved from translation %v to %v", before, got)
+	if got := xformX(chip); got != sampled {
+		t.Fatalf("paused chip moved from translation %v to %v", sampled, got)
 	}
 	if got := p.Probe().Motion().Active; got != 0 {
 		t.Fatalf("paused page reports %d active players, want 0", got)
+	}
+
+	// Resuming continues from the frozen phase instead of restarting at 0.
+	if err := app.handleClick(ctx, ownframe.Box{ID: "btn-toggle-play"}); err != nil {
+		t.Fatalf("click toggle play failed: %v", err)
+	}
+	time.Sleep(5 * time.Millisecond)
+	if err := p.Testing().Tick(ctx); err != nil {
+		t.Fatalf("tick after resume failed: %v", err)
+	}
+	box = chipHitBox(t, p, "chip-q1-0")
+	chip = fillOpInBox(p.Probe().Display(), box)
+	if chip == nil {
+		t.Fatal("expected a fill op inside chip-q1-0 after the resume redraw")
+	}
+	if got := p.Probe().Motion().Active; got == 0 {
+		t.Fatal("the resumed page reports no active players")
+	}
+	if got := xformX(chip); got <= sampled {
+		t.Fatalf("resumed chip stayed at translation %v (paused at %v), want it to continue", got, sampled)
 	}
 }
 

@@ -19,7 +19,7 @@ func benchCycle(b *testing.B, useBatch bool) {
 	b.Helper()
 
 	ctx := context.Background()
-	v := &view{Started: map[string]bool{}}
+	v := newView()
 	p, err := openCatalog(ctx, catalogOpen{Data: v, Width: 960, Height: 1000})
 	if err != nil {
 		b.Fatal(err)
@@ -44,7 +44,10 @@ func benchCycle(b *testing.B, useBatch bool) {
 	for i := 0; i < b.N; i++ {
 		b.StopTimer()
 		v.Started = map[string]bool{}
+		v.Restart = map[string]bool{}
+		v.Restarting = map[string]bool{}
 		v.Selected = ""
+		v.applyRows()
 		if err := p.Redraw(ctx); err != nil {
 			b.Fatal(err)
 		}

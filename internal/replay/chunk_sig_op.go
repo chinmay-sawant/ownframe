@@ -43,7 +43,7 @@ func sigOp(h uint64, op *layout.DisplayOp) uint64 {
 	h = mix64(h, ptrBits(op.Font))
 	h = sigGroup(h, op)
 
-	return sigXform(sigImage(sigGrid(h, op), op), op)
+	return sigXform(sigImage(sigGrid(sigPath(h, op), op), op), op)
 }
 
 // sigGroup folds the identity of the operation's blend or isolation group.

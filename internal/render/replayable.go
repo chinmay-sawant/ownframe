@@ -13,6 +13,7 @@ import (
 // the outline paint layer, so outlines replay. A finite 2D transform replays
 // on every kind the painter draws from geometry, and a blend or isolation
 // group replays when its mode is separable and it stays inside one paint band.
+// A corner-shape path replays when it carries a non-empty command list.
 func Replayable(display *layout.Display) bool {
 	if display == nil {
 		return false
@@ -69,6 +70,10 @@ func replayableOp(op *layout.DisplayOp, ppp float64) bool {
 		return replayableText(op)
 	case layout.DisplayOpGridRun:
 		return op.Grid != nil
+	case layout.DisplayOpPath:
+		path, ok := op.CornerPathValue()
+
+		return ok && path != nil && len(path.Cmds) > 0
 	default:
 		return false
 	}

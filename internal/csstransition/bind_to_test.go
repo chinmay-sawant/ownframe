@@ -1,10 +1,11 @@
-package csstransition
+package csstransition_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 // TestBindToAnimatesToTheCapturedDestination checks that a rebind with an
@@ -21,7 +22,7 @@ func TestBindToAnimatesToTheCapturedDestination(t *testing.T) {
 	cssmotion.Write(ops[0], cssmotion.Blend(from[0], to[0], .5))
 
 	start := time.Unix(5, 0)
-	r, err := BindTo(display, box, "background-color", indices, from, to, start)
+	r, err := csstransition.BindTo(display, box, "background-color", indices, from, to, start)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +46,7 @@ func TestBindToAnimatesToTheCapturedDestination(t *testing.T) {
 func TestBindToRefusesAMismatchedDestination(t *testing.T) {
 	display, box, indices, from, _ := colorCaptures(t)
 	final := append(append([]cssmotion.Paint{}, from...), from...)
-	if _, err := BindTo(display, box, "background-color", indices, from, final, time.Unix(6, 0)); err == nil {
+	if _, err := csstransition.BindTo(display, box, "background-color", indices, from, final, time.Unix(6, 0)); err == nil {
 		t.Fatal("a destination paint count that does not match was accepted")
 	}
 }

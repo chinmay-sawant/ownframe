@@ -53,52 +53,31 @@ const (
 	phaseTransform = 2
 	phaseLayout    = 4
 	phaseFilter    = 8
-	phaseSVG       = 11
 )
 
+// deferredPhase names the phase that owns a property this binder leaves at the
+// element's base paint. Inline-SVG paint is not here: the parser samples it in
+// svg_values.go and BindBox routes the sample to layout.RestyleInlineSVG.
 func deferredPhase(property string) (int, bool) {
 	switch property {
 	case "filter", "backdrop-filter", "clip-path", "mask-position", "mask-size",
 		"mix-blend-mode", "isolation":
 		return phaseFilter, true
-	case "fill", "fill-opacity", "stroke", "stroke-opacity", "stroke-width",
-		"stroke-dasharray", "stroke-dashoffset":
-		return phaseSVG, true
 	case "translate", "rotate", "scale":
 		return phaseTransform, true
 	}
-	if layoutProperty(property) {
+	if deferredLayoutProperty(property) {
 		return phaseLayout, true
 	}
 	return 0, false
 }
 
-// layoutProperty reports a property whose animation needs a re-place rather
-// than a paint write.
-func layoutProperty(property string) bool {
-	switch property {
-	case "width", "height", "min-width", "min-height", "max-width", "max-height",
-		"inset", "top", "right", "bottom", "left",
-		"font-size", "line-height", "letter-spacing", "word-spacing",
-		"box-shadow", "text-shadow", "background-image", "background-position",
-		"background-size", "outline-width", "outline-offset",
-		"column-rule-width", "row-rule-width", "rule-width":
-		return true
-	}
-	for _, prefix := range []string{"margin", "padding", "border-image"} {
-		if strings.HasPrefix(property, prefix) {
-			return true
-		}
-	}
-	return strings.HasSuffix(property, "radius")
-}
-
 // keyframes parses one rule's declarations for every paint class. The binder
-// parses one class at a time through keyframesFor; this form keeps the
+// parses one class at a time through keyframesForBase; this form keeps the
 // per-declaration view the transform and perspective tests use.
 func keyframes(rules []layout.KeyframesRule, name string, pointsPerPixel, width, height float64) []animation.Keyframe {
 	size := transformSize{width: width, height: height, pointsPerPixel: pointsPerPixel, hasBox: true}
-	return parseKeyframes(rules, name, size, nil, Color{}, false)
+	return parseKeyframes(rules, name, size, nil, Color{}, false, animation.PerspectiveBase{})
 }
 
 // keyframesFor parses one rule's declarations for one paint class. A
@@ -107,22 +86,49 @@ func keyframes(rules []layout.KeyframesRule, name string, pointsPerPixel, width,
 // class never sees the background colour.
 func keyframesFor(source []layout.Keyframe, size transformSize,
 	class paintClass, current Color, hasCurrent bool) []animation.Keyframe {
-	return parseFrames(source, size, &class, current, hasCurrent)
+	return parseFrames(source, size, &class, current, hasCurrent, animation.PerspectiveBase{})
+}
+
+// keyframesForBase is keyframesFor with the element's static perspective and
+// vanishing point, so an implicit endpoint holds the element's static camera.
+func keyframesForBase(source []layout.Keyframe, size transformSize,
+	class paintClass, current Color, hasCurrent bool, base animation.PerspectiveBase) []animation.Keyframe {
+	return parseFrames(source, size, &class, current, hasCurrent, base)
 }
 
 // parseKeyframes parses every declaration of one rule. A nil class keeps every
 // property, which is the unfiltered view the legacy bind uses.
 func parseKeyframes(rules []layout.KeyframesRule, name string, size transformSize,
-	class *paintClass, current Color, hasCurrent bool) []animation.Keyframe {
-	return parseFrames(ruleFor(rules, name), size, class, current, hasCurrent)
+	class *paintClass, current Color, hasCurrent bool,
+	base animation.PerspectiveBase) []animation.Keyframe {
+	return parseFrames(ruleFor(rules, name), size, class, current, hasCurrent, base)
 }
 
 func parseFrames(source []layout.Keyframe, size transformSize,
-	class *paintClass, current Color, hasCurrent bool) []animation.Keyframe {
+	class *paintClass, current Color, hasCurrent bool,
+	base animation.PerspectiveBase) []animation.Keyframe {
 	frames := make([]animation.Keyframe, len(source))
 	for i, item := range source {
-		frame := animation.Keyframe{Offset: item.Offset, Perspective: defaultPerspective(size)}
+		frame := animation.Keyframe{
+			Offset:          item.Offset,
+			Perspective:     framePerspective(size, base),
+			PerspectiveBase: base,
+		}
 		for _, declaration := range item.Declarations {
+			// A keyframe timing function is not a paint property, so it is
+			// read before the paint-class filter: every paint class of the
+			// rule eases its segment with the same declared function.
+			if keyframeTimingFunction(declaration) {
+				frame.TimingFunction = strings.TrimSpace(declaration.Value)
+				continue
+			}
+			// Inline-SVG paint targets no display operation, so it is read
+			// before the paint-class filter: every class of the rule carries
+			// the same sampled paint for the element's SVG box.
+			if isSVGPaintProperty(declaration.Property) {
+				parseSVGPaintDeclaration(&frame, declaration, size, current, hasCurrent)
+				continue
+			}
 			pc, ok := propertyClass(declaration.Property)
 			if !ok || (class != nil && pc != *class) {
 				continue
@@ -133,6 +139,16 @@ func parseFrames(source []layout.Keyframe, size transformSize,
 	}
 	sort.SliceStable(frames, func(i, j int) bool { return frames[i].Offset < frames[j].Offset })
 	return frames
+}
+
+// keyframeTimingFunction reports a declaration that eases the interval starting
+// at this keyframe. It belongs to no paint class, so the parser handles it for
+// every class. The vendor-prefixed form is the same longhand alias the engine
+// accepts outside a keyframe block.
+func keyframeTimingFunction(declaration layout.KeyframeDeclaration) bool {
+	property := strings.TrimSpace(declaration.Property)
+	return strings.EqualFold(property, "animation-timing-function") ||
+		strings.EqualFold(property, "-webkit-animation-timing-function")
 }
 
 // parseDeclaration writes one declaration into a frame. A value this phase

@@ -12,14 +12,14 @@ import (
 // Example programs call these methods. Simulated input stays on Testing.
 type Probe struct{ page *Page }
 
-// MotionStats is one snapshot of the automatic CSS motion counters and the
-// last bind error.
+// MotionStats is one snapshot of the automatic CSS animation and transition
+// counters and the last bind error.
 type MotionStats = page.MotionStats
 
 // Probe returns retained-paint, damage, and counter operations for this page.
 func (p *Page) Probe() Probe { return Probe{page: p} }
 
-// Motion returns the automatic CSS motion counters.
+// Motion returns the automatic CSS animation and transition counters.
 func (pr Probe) Motion() MotionStats {
 	p := innerPage(pr.page)
 	if p == nil {

@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // Track describes one display operation's transition.
 type Track struct {
-	Op              *ownframe.DisplayOp
+	Op              *layout.DisplayOp
 	From, To        cssmotion.Paint
 	Duration, Delay time.Duration
 	Easing          string
@@ -51,4 +51,26 @@ func (r *Renderer) Start(now time.Time) {
 		return
 	}
 	r.start, r.started = now, true
+}
+
+// Retarget points every track at the operation at the same position in ops.
+// A display commit rebuilds the operation list, so a renderer that keeps its
+// clock and endpoints must write through the new list. It refuses a different
+// track count, because a renderer built for one target set must not half-write
+// another.
+func (r *Renderer) Retarget(ops []*layout.DisplayOp) error {
+	if r == nil {
+		return errors.New("transition: renderer is nil")
+	}
+	if len(ops) != len(r.tracks) {
+		return fmt.Errorf("transition: retarget has %d operations, want %d",
+			len(ops), len(r.tracks))
+	}
+	for i := range ops {
+		if ops[i] == nil {
+			return fmt.Errorf("transition: retarget operation %d is nil", i)
+		}
+		r.tracks[i].Op = ops[i]
+	}
+	return nil
 }

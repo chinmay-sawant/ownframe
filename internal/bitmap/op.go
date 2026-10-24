@@ -11,6 +11,8 @@ func paintOp(img *image.NRGBA, op *layout.DisplayOp, faces faceCache) error {
 	switch op.Kind {
 	case layout.DisplayOpFillRect, layout.DisplayOpStrokeRect, layout.DisplayOpLine:
 		paintShape(img, op)
+	case layout.DisplayOpPath:
+		paintPath(img, op)
 	case layout.DisplayOpGridRun:
 		if op.Grid == nil {
 			return nil

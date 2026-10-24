@@ -47,6 +47,8 @@ behavior and the limits are in
 | [bind](bind) | `data-bind` two-way binding of controls to a struct. |
 | [input-lab](input-lab) | All nine form and input demos in one window: plain controls, two-way binding, a locked bound field, edit undo, OS clipboard, scroll list, sign-in, and CSS states. |
 | [accessibility](accessibility) | Labeled form, desktop IME composition, semantic tree snapshot and action, password redaction, and scrolling thumb cursor. |
+| [animations](animations) | CSS-only motion showcase: timing, direction, delay, fill, 2D, 3D, perspective, and paint. No tick callback or manual player. |
+| [motion-conformance](motion-conformance) | One CSS-only card per animation class that ships and the three shipped transition classes, with tests that sample the 2D matrix, 3D re-projection, paint-only colour writes, corner paths, the paused clock, and transition midpoints. |
 
 ## Feature examples
 
@@ -150,6 +152,48 @@ needs; `-web` has none. Every track's title, creator, license, and checksum are
 in `spotify-player/player/assets/audio/catalog.json`, with the full attribution
 table and the CC0 text in the README beside it. Tests inject a fake engine and
 never touch the audio device or the network.
+
+## Motion audit
+
+Every `SetTick` in this catalog has a written reason. The ticks that look like
+animation come first; none of them duplicates a CSS declaration, so none moves
+to `@keyframes`:
+
+| Example | Why it keeps its tick or manual sampler |
+|---|---|
+| [spotify-player](spotify-player) | Audio position, not CSS motion. The tick reads the decoder's clock for the seek fill, elapsed and remaining text, credit, and equalizer. |
+| [dino](dino) | Game loop: gravity, obstacles, sky, and the dinosaur pose advance from elapsed frame time. |
+| [eyes](eyes) | Game loop: blink, breathe, gaze sway, and expression easing advance from the tick clock; Android device motion feeds the spiral. |
+| [flappy-bird](flappy-bird) | Game loop: gravity, pipe pairs, and the score advance from elapsed frame time. |
+| [tetris](tetris) | Game loop: the fixed-step model moves the falling piece and paints the board, score, and preview. |
+| [departure-board](departure-board) | Data-driven flap: the tick retargets the timetable and steps per-tile flaps, and the stylesheet declares no transition or keyframe. |
+| [perf-benchmarks](perf-benchmarks) | Measurement fixture: `BenchmarkFlappyTick` times one paint tick over retained operations, which a CSS fixture would not exercise. |
+| [animation-preview](../cmd/animation-preview) | Manual harness: a click starts one sample and its own tick steps the player directly from the wall clock, without the automatic driver. |
+| [transition-preview](../cmd/transition-preview) | Manual harness: the same click-and-step path for the transition sampler, which keeps the low-level API tested. |
+
+The remaining ticks are input or I/O bridges, not animation:
+
+| Example | Why it ticks |
+|---|---|
+| [css-preview](css-preview) | Manual catalog harness: plays one declared animation or transition on request so a property page can be inspected. |
+| [spreadsheet](spreadsheet) | Worker results: drains a bounded batch of fetch, edit, undo, and CSV answers, then redraws once. |
+| [download-manager](download-manager) | Worker results and progress: drains download events and repaints the retained progress operations in place. |
+| [live-log-viewer](live-log-viewer) | Worker results and follow: drains log batches, retries a snapshot, and polls the feed on a slow clock. |
+| [system-monitor](system-monitor) | Collector results: drains CPU, memory, disk, and process samples, then repaints retained operations. |
+| [depth-alert](depth-alert) | Live depth data: applies a queued view from the device and updates retained operations. |
+| [digital-wellbeing](digital-wellbeing) | Queued Android data: applies usage, app icons, restore, and back presses on the game loop. |
+| [pet-care](pet-care) | Queued Android data: applies an imported backup and hardware back presses. |
+| [telegram](telegram) | Phone host bridge: applies insets, back presses, and camera or picker photos on the game loop. |
+| [lg-remote](lg-remote) | Remote bridge: drains TV events, key repeat, wake polling, and Bluetooth status. |
+| [desktop-cat](desktop-cat) | Overlay content: switches expression PNGs on a timer and bobs the image from elapsed seconds. |
+| [perf-stress](perf-stress) | Measurement loop: advances synthetic progress and equalizer values to stress the paint path. |
+
+[wispr-flow-dashboard](wispr-flow-dashboard) is the ordinary app that proves the
+automatic path outside the animation catalog. `.nav-item` declares
+`transition: background-color 120ms`; the existing sidebar click changes
+`ActivePage`, the template swaps the `on` class, and
+`app/transition_test.go` samples the fill mid-run. The example registers no tick
+and calls no motion package.
 
 ## Tests
 

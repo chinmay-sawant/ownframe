@@ -43,9 +43,12 @@ type Page struct {
 	perf            bool
 	motion          *motion.Runtime
 	animationsOff   bool
+	transitionsOff  bool
+	triggerPress    triggerPressState
 	allocAt         time.Time // last allocator sample; zero means the next Perf redraw is due
 	retainState     bool
 	restampRedraw   bool
+	layoutAdopting  bool
 	lockView        bool
 	mobileViewport  bool
 	allowTouchZoom  bool

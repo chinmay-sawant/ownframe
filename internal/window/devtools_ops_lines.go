@@ -6,8 +6,9 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-// devOpsListName is the per-kind label.
-var devOpsListName = [...]string{"", "fill", "stroke", "line", "text", "image", "", "text", "grid"}
+// devOpsListName is the per-kind label. A corner-shape path is one label
+// whether the op is the fill or the border, matching its one kind.
+var devOpsListName = [...]string{"", "fill", "stroke", "line", "text", "image", "", "text", "grid", "path"}
 
 // devOpsBuildRows builds the cached Ops rows.
 func (s *shell) devOpsBuildRows() []devRow {
@@ -24,8 +25,8 @@ func (s *shell) devOpsBuildRows() []devRow {
 
 	h("DISPLAY")
 	c := devCountOps(s.display)
-	v := [6]int{c.Fill, c.Stroke, c.Line, c.Text, c.Image, c.Grid}
-	k := [...]layout.DisplayKind{1, 2, 3, 4, 5, 8}
+	v := [7]int{c.Fill, c.Stroke, c.Line, c.Text, c.Image, c.Grid, c.Path}
+	k := [...]layout.DisplayKind{1, 2, 3, 4, 5, 8, 9}
 	for i, kind := range k {
 		ink, _ := devOpInk(kind)
 		lbl, num := devFg, devNumInk
@@ -43,7 +44,7 @@ func (s *shell) devOpsBuildRows() []devRow {
 			continue
 		}
 		op := &s.display.Ops[i]
-		ink, ok := devOpInk(op.Kind)
+		ink, ok := devOpPaintInk(op)
 		if !ok {
 			continue
 		}

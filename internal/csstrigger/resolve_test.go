@@ -4,11 +4,10 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestAnimationTriggerActionsRespectTriggerScope(t *testing.T) {
-	boxes := []ownframe.Box{
+	boxes := []layout.Box{
 		{ID: "scope", ParentIndex: -1, TriggerScope: "--ready"},
 		{ID: "source", ParentIndex: 0},
 		{ID: "inside", ParentIndex: 0, Animations: []layout.Animation{{Trigger: "--ready play pause"}}},

@@ -30,10 +30,10 @@ func Bind(d *layout.Display, box layout.Box, indices []int, initial []cssmotion.
 		return nil, errors.New("cssanimation: target operation paints do not match")
 	}
 	targets := make([]animation.Target, len(ops))
-	for i := range targets {
+	for i, op := range ops {
 		targets[i] = animation.Target{
-			Op:      ops[i],
-			From:    initial[i],
+			Op:      op,
+			From:    initial[i], //nolint:gosec // len(initial) is checked against len(ops) above
 			Parent:  box.Transform.Parent,
 			World:   box.Transform.World,
 			OriginX: box.Transform.OriginX,
@@ -44,11 +44,12 @@ func Bind(d *layout.Display, box layout.Box, indices []int, initial []cssmotion.
 		}
 	}
 	size := transformSize{width: box.W, height: box.H, pointsPerPixel: displayScale(d), hasBox: true}
+	base := perspectiveBaseFromTransform(size, box.Transform)
 	effects := make([]animation.Effect, 0, len(box.Animations))
 	for _, item := range box.Animations {
 		var frames []animation.Keyframe
 		if item.Name != "none" && item.Name != "" {
-			frames = keyframes(d.Keyframes, item.Name, size.pointsPerPixel, box.W, box.H)
+			frames = parseKeyframes(d.Keyframes, item.Name, size, nil, Color{}, false, base)
 		}
 		effects = append(effects, animation.Effect{Frames: frames,
 			Timing: timing(item), Trigger: item.Trigger})
@@ -80,6 +81,13 @@ type Bound struct {
 // the whole subtree. Two classes with the same target set share one player, so
 // two animations with disjoint fields still compose on one operation.
 //
+// Inline-SVG paint is not a display field: an animation whose only declarations
+// are fill or stroke targets the SVG root's image operation with SVGPaintMask,
+// so the player samples the paint without writing the operation. The page
+// restyles the raster through layout.RestyleInlineSVG. A rule that also declares
+// a paint class keeps the SVG sample on that player, because every class parses
+// the same SVG declarations.
+//
 // A property this phase cannot write is left at the element's base paint and
 // reported as a fidelity gap. The returned gaps are ordered and deduplicated
 // per element and reason.
@@ -88,6 +96,7 @@ func BindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time) (
 		return nil, nil, errors.New("cssanimation: box has no animation metadata")
 	}
 	size := transformSize{width: box.W, height: box.H, pointsPerPixel: displayScale(d), hasBox: true}
+	base := perspectiveBaseFromTransform(size, box.Transform)
 	var report gapList
 
 	current, hasCurrent := Color{}, false
@@ -106,21 +115,46 @@ func BindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time) (
 			continue
 		}
 		reportDeferred(&report, box, source)
-		for _, class := range effectClasses(source) {
-			frames := keyframesFor(source, size, class, current, hasCurrent)
+		classes := effectClasses(source)
+		if len(classes) == 0 && declaresSVGPaint(source) {
+			classes = []paintClass{svgPaintClass()}
+		}
+		for _, class := range classes {
+			frames := keyframesForBase(source, size, class, current, hasCurrent, base)
 			if len(frames) == 0 {
 				continue
 			}
 			if err := frameError(frames); err != nil {
 				return nil, report.list, fmt.Errorf("keyframe %s: %w", class.name(), err)
 			}
-			if class.kind != cssmotion.KindSubtree && boxIndex < 0 {
-				report.add(fmt.Sprintf(
-					"box %q has no display index; owner-scoped colours fall back to its subtree", box.ID))
-			}
-			indices := cssmotion.Select(d, box, boxIndex, class.kind)
-			if len(indices) == 0 {
-				continue
+			reportSVGPaintDeferred(&report, box, frames)
+			var indices []int
+			if class.mask == SVGPaintMask {
+				if box.ID == "" {
+					report.add(fmt.Sprintf(
+						"box %q: inline-svg paint needs an element id", box.ID))
+					continue
+				}
+				if box.Tag != "svg" {
+					report.add(fmt.Sprintf(
+						"box %q: <%s> does not paint an inline svg", box.ID, box.Tag))
+					continue
+				}
+				indices = svgImageIndices(d, box, boxIndex)
+				if len(indices) == 0 {
+					report.add(fmt.Sprintf(
+						"box %q: inline-svg paint found no svg raster", box.ID))
+					continue
+				}
+			} else {
+				if class.kind != cssmotion.KindSubtree && boxIndex < 0 {
+					report.add(fmt.Sprintf(
+						"box %q has no display index; owner-scoped colours fall back to its subtree", box.ID))
+				}
+				indices = cssmotion.Select(d, box, boxIndex, class.kind)
+				if len(indices) == 0 {
+					continue
+				}
 			}
 			reportColorAlpha(&report, box, frames)
 			group := groupFor(&groups, indices)
@@ -224,10 +258,15 @@ func usesCurrentColor(source []layout.Keyframe) bool {
 
 // reportDeferred counts the keyframe properties that belong to a later phase.
 // The declarations stay at the element's base paint, so the animation runs but
-// that property does not move.
+// that property does not move. Inline-SVG paint is not one of them any more:
+// the binder routes it to the restyle path, and a paint server it cannot use is
+// reported by reportSVGPaintDeferred instead.
 func reportDeferred(report *gapList, box layout.Box, source []layout.Keyframe) {
 	for i := range source {
 		for _, declaration := range source[i].Declarations {
+			if isSVGPaintProperty(declaration.Property) {
+				continue
+			}
 			phase, ok := deferredPhase(declaration.Property)
 			if !ok {
 				continue

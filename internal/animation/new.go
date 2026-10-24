@@ -38,9 +38,6 @@ func NewComposite(targets []Target, effects []Effect) (*Player, error) {
 				return nil, fmt.Errorf("effect %d keyframe %d: %w", i, j, frames[j].Err)
 			}
 		}
-		if err := checkTransform(frames); err != nil {
-			return nil, fmt.Errorf("effect %d: %w", i, err)
-		}
 		effects[i].Frames = frames
 	}
 	targets = append([]Target(nil), targets...)
@@ -50,22 +47,4 @@ func NewComposite(targets []Target, effects []Effect) (*Player, error) {
 		states[i].rate = 1
 	}
 	return &Player{targets: targets, effects: effects, states: states}, nil
-}
-
-// checkTransform rejects a mismatched 3D pair at bind. The four-by-four
-// decomposition is not implemented, so interpolating that pair would snap;
-// one bind error per effect is counted instead. The check uses the same stop
-// table the sampler uses, including the underlying none at 0% and 100%.
-func checkTransform(frames []Keyframe) error {
-	stops := transformStops(frames)
-	if len(stops) == 0 {
-		return nil
-	}
-	stops = padStops(stops)
-	for i := 1; i < len(stops); i++ {
-		if _, err := interpolateTransform(stops[i-1].value, stops[i].value, 0); err != nil {
-			return err
-		}
-	}
-	return nil
 }

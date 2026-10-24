@@ -36,7 +36,7 @@ func (s *shell) drawDevOps(screen *ebiten.Image) {
 		}
 
 		op := &s.display.Ops[index]
-		ink, ok := devOpInk(op.Kind)
+		ink, ok := devOpPaintInk(op)
 		if !ok {
 			continue
 		}

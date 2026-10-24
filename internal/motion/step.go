@@ -29,6 +29,7 @@ func (r *Runtime) Step(d *Display, now time.Time) Damage {
 
 	if d == nil {
 		_ = r.Bind(nil)
+		r.ReleaseTransitions()
 
 		return damage
 	}
@@ -41,16 +42,41 @@ func (r *Runtime) Step(d *Display, now time.Time) Damage {
 
 	r.stats.Active, r.stats.Sampled, r.stats.NeedsRestamp = 0, 0, 0
 	r.stats.Restamped = 0
+	r.stats.InactiveTimelines = 0
+	r.stats.TransitionsActive, r.stats.TransitionsSampled = 0, 0
+	r.stats.SVGPaintRequests, r.stats.SVGPaintRestyles = 0, 0
+	r.stats.SVGPaintQueued, r.stats.SVGPaintBudgetHit = 0, false
+	r.stats.SVGPaintDeferred, r.stats.SVGPaintDeferredReason = 0, ""
 	r.restamp = r.restamp[:0]
+	r.svg.requests = r.svg.requests[:0]
+	damage = r.stepTransitions(d, now)
 	for i := range r.entries {
 		e := &r.entries[i]
-		if e.mask == 0 {
+		if e.layout || (e.mask == 0 && !e.svg) {
+			// The layout player owns no paint target; StepLayout samples it
+			// before this pass, against the display the relayout produced.
 			continue
 		}
 
+		// A paused player is sampled once, to reach the pose it froze at, and
+		// then skipped: repeating the same sample would dirty the page every
+		// tick and keep a paused window painting. An SVG entry is the
+		// exception: its held sample may still be waiting for the one-frame
+		// retained-state redraw, and collecting it again is what keeps the
+		// request alive until the page can apply it.
+		paused := e.player.Paused()
+		if paused && e.wasPaused && e.sampled && !e.svg {
+			continue
+		}
+		e.wasPaused = paused
+
 		before := e.bounds(d)
-		active := e.player.Step(now)
-		e.sampled = true
+		input, inactive := r.input(e, now)
+		if inactive > 0 {
+			r.stats.InactiveTimelines++
+		}
+		active := e.player.StepWithInput(input)
+		e.sampled, e.sampledAt = true, now
 		r.stats.Sampled++
 		if active {
 			r.stats.Active++
@@ -59,12 +85,20 @@ func (r *Runtime) Step(d *Display, now time.Time) Damage {
 			r.stats.NeedsRestamp++
 			r.addRestamp(e, values)
 		}
+		if e.svg {
+			r.collectSVGPaint(e)
+		}
 
 		after := before
 		if e.mask.geometry() {
 			after = e.bounds(d)
 		}
-		damage.Add(before.Union(after))
+		// An SVG entry writes no operation; the page marks the engine patch's
+		// image bounds when it adopts the restyle. Marking the unchanged image
+		// box here would repaint a raster that has not been rebuilt yet.
+		if !e.svg {
+			damage.Add(before.Union(after))
+		}
 	}
 
 	return damage

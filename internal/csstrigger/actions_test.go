@@ -4,11 +4,10 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestResolveUsesLastMatchingTriggerRecord(t *testing.T) {
-	boxes := []ownframe.Box{{ParentIndex: -1, Animations: []layout.Animation{{
+	boxes := []layout.Box{{ParentIndex: -1, Animations: []layout.Animation{{
 		Trigger: "--ready play --other pause --ready reset",
 	}}}}
 	got := Resolve(boxes, Event{Name: "--ready", Source: 0, Active: true})
@@ -22,7 +21,7 @@ func TestResolveUsesLastMatchingTriggerRecord(t *testing.T) {
 }
 
 func TestResolveIgnoresInvalidEventActionCount(t *testing.T) {
-	boxes := []ownframe.Box{{ParentIndex: -1, Animations: []layout.Animation{{
+	boxes := []layout.Box{{ParentIndex: -1, Animations: []layout.Animation{{
 		Trigger: "--ready play pause reset",
 	}}}}
 	if got := Resolve(boxes, Event{Name: "--ready", Source: 0, Active: true}); len(got) != 0 {

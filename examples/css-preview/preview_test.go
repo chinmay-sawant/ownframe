@@ -1,36 +1,32 @@
 package main
 
 import (
-	"context"
 	"testing"
+	"time"
 )
 
+// TestStartChangesOnlyItsTarget checks that one Start click changes the
+// clicked card's preview and leaves the other 42 previews at their declared
+// paint.
 func TestStartChangesOnlyItsTarget(t *testing.T) {
 	for _, name := range []string{"animation", "transition-property"} {
 		t.Run(name, func(t *testing.T) {
-			p, d, v := fixturePage(t)
+			p, _, _ := fixturePage(t)
+			// Settle the paused cards once; their 0% pose is the declared paint
+			// on the first sample and must not count as a sibling change.
+			tickPage(t, p)
 			selected, ok := targetByKey(catalogSampleKey(name))
 			if !ok {
 				t.Fatalf("missing sample for %q", name)
 			}
 			base := make(map[string][]paint, len(targets()))
 			for _, item := range targets() {
-				box, found := findBox(p.Boxes(), item.id)
-				if !found {
-					t.Fatalf("missing target box %q", item.id)
-				}
-				base[item.key] = capture(p.Probe().Display(), box)
+				base[item.key] = targetPaints(t, p, item.id)
 			}
-			startCatalog(t, p, d, name)
-			sample := d.samples[selected.key]
-			if sample == nil || len(sample.plan.pairs) == 0 {
-				t.Fatalf("button %q produced no motion", selected.button)
-			}
-			sample.plan.step(sample.plan.start.Add(sample.plan.delay + sample.plan.duration/2))
-			changed := false
-			for _, pair := range sample.plan.pairs {
-				changed = changed || read(pair.op) != pair.from
-			}
+			clickID(t, p, selected.button)
+			time.Sleep(300 * time.Millisecond)
+			tickPage(t, p)
+			changed := !samePaint(base[selected.key], targetPaints(t, p, selected.id))
 			if !changed {
 				t.Fatalf("target %q did not change", selected.id)
 			}
@@ -38,16 +34,9 @@ func TestStartChangesOnlyItsTarget(t *testing.T) {
 				if item.key == selected.key {
 					continue
 				}
-				box, _ := findBox(p.Boxes(), item.id)
-				if !samePaint(base[item.key], capture(p.Probe().Display(), box)) {
+				if !samePaint(base[item.key], targetPaints(t, p, item.id)) {
 					t.Errorf("starting %q changed sibling %q", selected.key, item.key)
 				}
-			}
-			if !v.Started[selected.key] {
-				t.Fatalf("start key %q was not recorded", selected.key)
-			}
-			if err := d.tick(context.Background()); err != nil {
-				t.Fatal(err)
 			}
 		})
 	}
