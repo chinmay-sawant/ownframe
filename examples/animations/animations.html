@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>CSS Animation Knowledge Lab &amp; Showcase</title>
+  <title>CSS Animation Showcase</title>
   <style>
     * {
       box-sizing: border-box;
@@ -10,33 +10,37 @@
 
     body {
       margin: 0;
-      padding: 24px;
+      padding: 28px;
       background-color: #f0f4f8;
       color: #1e293b;
       font-family: sans-serif;
     }
 
     .container {
-      max-width: 920px;
+      max-width: 1080px;
       margin: 0 auto;
     }
 
-    /* Header styling */
+    /* Header */
     .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 24px;
+      margin-bottom: 24px;
       background-color: #ffffff;
       border: 1px solid #cbd5e1;
       border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 20px;
     }
 
     .eyebrow {
       margin: 0 0 6px 0;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
       color: #2563eb;
-      text-transform: uppercase;
       letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
     h1 {
@@ -46,498 +50,250 @@
     }
 
     .intro {
-      margin: 0 0 16px 0;
-      font-size: 14px;
-      color: #475569;
+      max-width: 660px;
+      margin: 0;
+      font-size: 13px;
       line-height: 1.5;
-    }
-
-    /* Status and Controls Toolbar */
-    .toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 18px;
-      background-color: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-    }
-
-    .stats {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .stat-pill {
-      padding: 4px 10px;
-      border-radius: 6px;
-      background-color: #e2e8f0;
-      color: #334155;
-    }
-
-    .stat-pill.score-pill {
-      background-color: #dbeafe;
-      color: #1d4ed8;
-    }
-
-    .stat-pill.state-pill {
-      background-color: #dcfce7;
-      color: #15803d;
-    }
-
-    .stat-pill.state-pill.paused {
-      background-color: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    button {
-      padding: 8px 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      background-color: #ffffff;
-      color: #1e293b;
-      font-size: 13px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #f1f5f9;
-    }
-
-    .btn-primary {
-      background-color: #2563eb;
-      color: #ffffff;
-      border-color: #1d4ed8;
-    }
-
-    .btn-primary:hover {
-      background-color: #1d4ed8;
+      color: #475569;
     }
 
     .btn-toggle {
+      flex: none;
+      padding: 10px 18px;
+      border: 1px solid #115e59;
+      border-radius: 8px;
       background-color: #0f766e;
       color: #ffffff;
-      border-color: #115e59;
+      font-size: 13px;
+      font-weight: bold;
+      white-space: nowrap;
+      cursor: pointer;
     }
 
     .btn-toggle:hover {
       background-color: #115e59;
     }
 
-    /* Filter tabs */
-    .filters {
+    /* Gallery sections */
+    .section {
+      margin-bottom: 26px;
+    }
+
+    .section-head {
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
+      align-items: baseline;
+      gap: 12px;
+      margin: 0 0 12px 2px;
     }
 
-    .filter-btn {
-      padding: 6px 12px;
-      font-size: 12px;
-      border-radius: 20px;
-      background-color: #ffffff;
-      border: 1px solid #cbd5e1;
-      color: #475569;
-    }
-
-    .filter-btn.active {
-      background-color: #2563eb;
-      color: #ffffff;
-      border-color: #2563eb;
-    }
-
-    /* Quiz Card Component */
-    .card {
-      background-color: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 22px;
-      margin-bottom: 20px;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .card-category {
-      font-size: 11px;
-      font-weight: bold;
-      color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .card-badge {
-      padding: 3px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: bold;
-      background-color: #e2e8f0;
-      color: #475569;
-    }
-
-    .card-badge.correct {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-
-    .card-badge.incorrect {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-
-    h2 {
-      margin: 0 0 8px 0;
-      font-size: 18px;
+    .section-head h2 {
+      margin: 0;
+      font-size: 17px;
       color: #0f172a;
     }
 
-    .question-prompt {
-      margin: 0 0 16px 0;
-      font-size: 14px;
-      font-weight: 500;
-      color: #334155;
-    }
-
-    /* Interactive Live Animation Stage */
-    .stage {
-      background-color: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-
-    .stage-title {
-      margin: 0 0 10px 0;
-      font-size: 11px;
-      font-weight: bold;
+    .section-note {
+      margin: 0;
+      font-size: 12px;
       color: #64748b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
-    .track {
-      position: relative;
-      height: 48px;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      padding: 14px;
       background-color: #ffffff;
-      border: 1px dashed #cbd5e1;
-      border-radius: 6px;
-      margin-bottom: 8px;
+      border: 1px solid #d7deea;
+      border-radius: 10px;
+    }
+
+    .stage {
+      display: flex;
+      align-items: center;
+      height: 88px;
+      padding: 0 12px;
+      background-color: #eef2f8;
+      border-radius: 8px;
       overflow: hidden;
-      padding: 4px 8px;
     }
 
-    .track.active-track {
-      border: 2px solid #2563eb;
-      background-color: #eff6ff;
+    .stage.center {
+      justify-content: center;
     }
 
-    .track:last-child {
-      margin-bottom: 0;
+    .stage.deep {
+      perspective: 520px;
     }
 
-    .track-tag {
-      position: absolute;
-      right: 90px;
-      top: 14px;
-      font-size: 11px;
-      color: #64748b;
-      font-weight: bold;
-    }
-
-    .track-play-btn {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      padding: 5px 12px;
-      font-size: 11px;
-      font-weight: bold;
-      border-radius: 5px;
-      background-color: #2563eb;
-      color: #ffffff;
-      border: none;
-      cursor: pointer;
-    }
-
-    .track-play-btn:hover {
-      background-color: #1d4ed8;
-    }
-
-    /* Animation Targets */
     .chip {
-      position: absolute;
-      left: 6px;
-      top: 6px;
-      width: 76px;
+      flex: none;
+      width: 74px;
       height: 32px;
       line-height: 32px;
-      text-align: center;
-      border-radius: 6px;
       color: #ffffff;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: bold;
+      text-align: center;
+      white-space: nowrap;
+      border-radius: 7px;
     }
 
-    /* Global Play-State Modifier */
-    body.is-paused .chip {
+    .card h3 {
+      margin: 10px 0 2px 0;
+      font-size: 13px;
+      color: #0f172a;
+    }
+
+    .property {
+      margin: 0;
+      font-family: monospace;
+      font-size: 11px;
+      color: #64748b;
+    }
+
+    .expect {
+      margin: 10px 0 0 0;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #475569;
+    }
+
+    .expect-label {
+      display: inline-block;
+      margin-right: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #2563eb;
+    }
+
+    .snippet {
+      display: block;
+      margin-top: 8px;
+      padding: 6px 8px;
+      overflow: hidden;
+      background-color: #1e293b;
+      color: #7dd3fc;
+      font-family: monospace;
+      font-size: 10px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      border-radius: 5px;
+    }
+
+    /* The one control. The class reaches every animated element. */
+    body.is-paused .motion {
       animation-play-state: paused !important;
       -webkit-animation-play-state: paused !important;
     }
 
-    /* Options Selection */
-    .options-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-
-    .option-btn {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      text-align: left;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      background-color: #ffffff;
-      color: #1e293b;
-      font-size: 13px;
-      font-weight: normal;
-    }
-
-    .option-btn:hover {
-      background-color: #f1f5f9;
-      border-color: #94a3b8;
-    }
-
-    .option-btn.selected {
-      border-color: #2563eb;
-      background-color: #eff6ff;
-    }
-
-    .option-btn.correct-choice {
-      border-color: #16a34a;
-      background-color: #f0fdf4;
-      color: #15803d;
-      font-weight: bold;
-    }
-
-    .option-btn.wrong-choice {
-      border-color: #dc2626;
-      background-color: #fef2f2;
-      color: #b91c1c;
-    }
-
-    .option-key {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      line-height: 20px;
-      text-align: center;
-      border-radius: 4px;
-      background-color: #e2e8f0;
-      color: #334155;
-      font-size: 11px;
-      font-weight: bold;
-    }
-
-    /* Explanation & Deep Dive box */
-    .explanation-box {
-      background-color: #f8fafc;
-      border-left: 4px solid #2563eb;
-      border-radius: 0 6px 6px 0;
-      padding: 14px;
-      margin-top: 14px;
-    }
-
-    .explanation-title {
-      margin: 0 0 6px 0;
-      font-size: 13px;
-      font-weight: bold;
-      color: #1e293b;
-    }
-
-    .explanation-text {
-      margin: 0 0 8px 0;
-      font-size: 13px;
-      color: #475569;
-      line-height: 1.45;
-    }
-
-    code {
-      display: block;
-      padding: 8px 12px;
-      background-color: #1e293b;
-      color: #38bdf8;
-      font-family: monospace;
-      font-size: 12px;
-      border-radius: 6px;
-      white-space: pre-wrap;
-    }
-
-    /* Reference Table */
-    .reference-section {
-      background-color: #ffffff;
-      border: 1px solid #cbd5e1;
-      border-radius: 12px;
-      padding: 24px;
-      margin-top: 30px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 14px;
-      font-size: 12px;
-    }
-
-    th, td {
-      border: 1px solid #e2e8f0;
-      padding: 8px 12px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #f8fafc;
-      color: #475569;
-      font-weight: bold;
-    }
-
     /* ==========================================================================
-       Keyframes and Demonstration Styles (Compatibility Matrix Properties)
+       Keyframes and gallery targets. Every card's motion lives here.
        ========================================================================== */
 
-    /* 1. Timing Function Animations */
+    /* Timing functions */
     @keyframes kf-glide {
       0% {
         transform: translateX(0px);
         background-color: #2563eb;
       }
       50% {
-        transform: translateX(140px);
+        transform: translateX(90px);
         background-color: #d97706;
       }
       100% {
-        transform: translateX(280px);
+        transform: translateX(180px);
         background-color: #059669;
       }
     }
 
     .chip-ease {
       background-color: #2563eb;
-      animation: kf-glide 2.0s ease-in-out 0s infinite alternate both;
-      animation-timing-function: ease-in-out;
+      animation: kf-glide 2.4s ease 0s infinite alternate both;
     }
 
     .chip-linear {
       background-color: #0284c7;
-      animation: kf-glide 2.0s linear 0s infinite alternate both;
-      animation-timing-function: linear;
+      animation: kf-glide 2.4s linear 0s infinite alternate both;
     }
 
     .chip-bezier {
       background-color: #7c3aed;
-      animation: kf-glide 2.0s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0s infinite alternate both;
-      animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      animation: kf-glide 2.4s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0s infinite alternate both;
     }
 
     .chip-steps {
       background-color: #e11d48;
-      animation: kf-glide 2.0s steps(5, jump-end) 0s infinite alternate both;
-      animation-timing-function: steps(5, jump-end);
+      animation: kf-glide 2.4s steps(5, jump-end) 0s infinite alternate both;
     }
 
-    /* 2. Direction & Iteration Animations */
-    .chip-dir-normal {
-      background-color: #2563eb;
+    /* Direction */
+    .chip-direction {
       animation-name: kf-glide;
-      animation-duration: 1.8s;
+      animation-duration: 2s;
       animation-timing-function: linear;
       animation-iteration-count: infinite;
+      animation-fill-mode: both;
+    }
+
+    .chip-direction-normal {
+      background-color: #2563eb;
       animation-direction: normal;
     }
 
-    .chip-dir-reverse {
+    .chip-direction-reverse {
       background-color: #dc2626;
-      animation-name: kf-glide;
-      animation-duration: 1.8s;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
       animation-direction: reverse;
     }
 
-    .chip-dir-alternate {
+    .chip-direction-alternate {
       background-color: #16a34a;
-      animation-name: kf-glide;
-      animation-duration: 1.8s;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
       animation-direction: alternate;
     }
 
-    /* 3. Delay & Start/End Animations */
+    .chip-direction-alternate-reverse {
+      background-color: #9333ea;
+      animation-direction: alternate-reverse;
+    }
+
+    /* Delay and fill */
     @keyframes kf-pulse {
       0% {
         transform: translateX(0px);
         opacity: 0.3;
       }
       50% {
-        transform: translateX(140px);
+        transform: translateX(90px);
         opacity: 1;
       }
       100% {
-        transform: translateX(280px);
+        transform: translateX(180px);
         opacity: 0.3;
       }
     }
 
-    .chip-delay-zero {
-      background-color: #2563eb;
-      animation: kf-pulse 2.0s ease-in-out 0s infinite alternate both;
-      animation-delay: 0s;
-      animation-delay-start: 0s;
-      animation-delay-end: 0s;
-    }
-
-    .chip-delay-pos {
+    .chip-delay-positive {
       background-color: #d97706;
-      animation: kf-pulse 2.0s ease-in-out 0.8s infinite alternate both;
-      animation-delay: 0.8s;
-      animation-delay-start: 0.8s;
+      animation: kf-pulse 2s ease-in-out 0.8s infinite alternate both;
     }
 
-    .chip-delay-neg {
+    .chip-delay-negative {
       background-color: #059669;
-      animation: kf-pulse 2.0s ease-in-out -1.0s infinite alternate both;
-      animation-delay: -1.0s;
-      animation-delay-start: -1.0s;
+      animation: kf-pulse 2s ease-in-out -1s infinite alternate both;
     }
 
-    /* 4. Fill-Mode Animations */
     @keyframes kf-one-shot {
       0% {
         transform: translateX(0px);
         background-color: #7c3aed;
       }
       100% {
-        transform: translateX(260px);
+        transform: translateX(170px);
         background-color: #059669;
       }
     }
@@ -545,22 +301,289 @@
     .chip-fill-none {
       background-color: #7c3aed;
       animation: kf-one-shot 2.2s ease 0.4s 1 normal none;
-      animation-fill-mode: none;
     }
 
     .chip-fill-forwards {
       background-color: #7c3aed;
       animation: kf-one-shot 2.2s ease 0.4s 1 normal forwards;
-      animation-fill-mode: forwards;
     }
 
     .chip-fill-both {
       background-color: #7c3aed;
       animation: kf-one-shot 2.2s ease 0.4s 1 normal both;
-      animation-fill-mode: both;
     }
 
-    /* 5. WebKit Prefixed Aliases */
+    /* Iteration */
+    @keyframes kf-iteration {
+      0% {
+        transform: translateX(0px);
+      }
+      100% {
+        transform: translateX(130px);
+      }
+    }
+
+    .chip-iteration-once {
+      background-color: #2563eb;
+      animation: kf-iteration 1.2s linear 0s 1 normal both;
+    }
+
+    .chip-iteration-three {
+      background-color: #7c3aed;
+      animation: kf-iteration 1.2s linear 0s 3 normal both;
+    }
+
+    .chip-iteration-infinite {
+      background-color: #0f766e;
+      animation: kf-iteration 1.2s linear 0s infinite normal both;
+    }
+
+    /* 2D transforms */
+    @keyframes kf-translate {
+      0% {
+        transform: translateX(0px);
+      }
+      100% {
+        transform: translateX(150px);
+      }
+    }
+
+    @keyframes kf-rotate {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(150deg);
+      }
+    }
+
+    @keyframes kf-scale {
+      0% {
+        transform: scale(0.72);
+      }
+      100% {
+        transform: scale(1.22);
+      }
+    }
+
+    @keyframes kf-skew {
+      0% {
+        transform: skewX(0deg);
+      }
+      100% {
+        transform: skewX(22deg);
+      }
+    }
+
+    @keyframes kf-matrix {
+      0% {
+        transform: matrix(1, 0, 0, 1, 0, 0);
+      }
+      100% {
+        transform: matrix(1, 0.18, -0.18, 1, 64, 0);
+      }
+    }
+
+    .chip-translate {
+      background-color: #2563eb;
+      animation: kf-translate 3s linear -1.5s infinite;
+    }
+
+    .chip-rotate {
+      background-color: #d97706;
+      animation: kf-rotate 3s linear -1.5s infinite;
+    }
+
+    .chip-scale {
+      background-color: #059669;
+      animation: kf-scale 3s linear -1.5s infinite;
+    }
+
+    .chip-skew {
+      background-color: #7c3aed;
+      animation: kf-skew 3s linear -1.5s infinite;
+    }
+
+    .chip-matrix {
+      background-color: #dc2626;
+      animation: kf-matrix 3s linear -1.5s infinite;
+    }
+
+    /* 3D transforms */
+    @keyframes kf-rotate-x {
+      0% {
+        transform: rotateX(0deg);
+      }
+      100% {
+        transform: rotateX(70deg);
+      }
+    }
+
+    @keyframes kf-rotate-y {
+      0% {
+        transform: rotateY(0deg);
+      }
+      100% {
+        transform: rotateY(70deg);
+      }
+    }
+
+    @keyframes kf-translate-z {
+      0% {
+        transform: translateZ(0px);
+      }
+      100% {
+        transform: translateZ(70px);
+      }
+    }
+
+    @keyframes kf-matrix3d {
+      0% {
+        transform: matrix3d(0.866, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866, 0, 0, 0, 24, 1);
+      }
+      100% {
+        transform: matrix3d(0.866, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866, 0, 0, 0, 64, 1);
+      }
+    }
+
+    .chip-rotate-x {
+      background-color: #2563eb;
+      animation: kf-rotate-x 3s linear -1.5s infinite alternate;
+    }
+
+    .chip-rotate-y {
+      background-color: #0f766e;
+      animation: kf-rotate-y 3s linear -1.5s infinite alternate;
+    }
+
+    .chip-translate-z {
+      background-color: #d97706;
+      animation: kf-translate-z 3s linear -1.5s infinite;
+    }
+
+    .chip-matrix3d {
+      background-color: #9333ea;
+      animation: kf-matrix3d 3s linear -1.5s infinite;
+    }
+
+    /* Perspective */
+    @keyframes kf-camera {
+      0% {
+        perspective: 320px;
+      }
+      100% {
+        perspective: 920px;
+      }
+    }
+
+    @keyframes kf-camera-origin {
+      0% {
+        perspective: 600px;
+        perspective-origin: left top;
+      }
+      100% {
+        perspective: 600px;
+        perspective-origin: right bottom;
+      }
+    }
+
+    .stage-camera {
+      animation: kf-camera 3s linear -1.5s infinite;
+    }
+
+    .stage-camera-origin {
+      animation: kf-camera-origin 3s linear -1.5s infinite;
+    }
+
+    .chip-perspective {
+      background-color: #2563eb;
+      transform: rotateY(35deg);
+    }
+
+    /* Paint */
+    @keyframes kf-fade {
+      0% {
+        opacity: 0.2;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes kf-bg-colour {
+      0% {
+        background-color: #1d4ed8;
+      }
+      100% {
+        background-color: #ef4444;
+      }
+    }
+
+    @keyframes kf-ink-colour {
+      0% {
+        color: #f8fafc;
+      }
+      100% {
+        color: #fbbf24;
+      }
+    }
+
+    @keyframes kf-edge-colour {
+      0% {
+        border-color: #2563eb;
+      }
+      100% {
+        border-color: #ef4444;
+      }
+    }
+
+    .chip-opacity {
+      background-color: #2563eb;
+      animation: kf-fade 3s ease-in-out -1.5s infinite;
+    }
+
+    .chip-background {
+      background-color: #1d4ed8;
+      color: #ffffff;
+      animation: kf-bg-colour 3s linear -1.5s infinite;
+    }
+
+    .chip-color {
+      background-color: #1e293b;
+      animation: kf-ink-colour 3s linear -1.5s infinite;
+    }
+
+    .chip-border {
+      width: 84px;
+      height: 36px;
+      line-height: 30px;
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 3px solid #2563eb;
+      animation: kf-edge-colour 3s linear -1.5s infinite;
+    }
+
+    /* Path and vendor alias */
+    @keyframes kf-path-colour {
+      0% {
+        background-color: #3060c0;
+      }
+      100% {
+        background-color: #f97316;
+      }
+    }
+
+    .chip-corner {
+      width: 96px;
+      height: 44px;
+      line-height: 36px;
+      background-color: #3060c0;
+      border: 4px solid #102030;
+      border-radius: 20px;
+      corner-shape: bevel;
+      animation: kf-path-colour 3s linear -1.5s infinite;
+    }
+
     @-webkit-keyframes kf-webkit-hop {
       0% {
         transform: translateY(0px);
@@ -576,7 +599,7 @@
       }
     }
 
-    .chip-webkit-sample {
+    .chip-webkit {
       background-color: #7c3aed;
       -webkit-animation: kf-webkit-hop 1.4s ease-in-out 0s infinite alternate both;
       -webkit-animation-name: kf-webkit-hop;
@@ -588,154 +611,401 @@
       -webkit-animation-fill-mode: both;
       -webkit-animation-play-state: running;
     }
-
-    /* 6. Composition, Range & Trigger */
-    @keyframes kf-composite {
-      0% {
-        transform: translateX(0px);
-      }
-      50% {
-        transform: translateX(120px);
-        background-color: #f59e0b;
-      }
-      100% {
-        transform: translateX(240px);
-      }
-    }
-
-    .chip-composite {
-      background-color: #0f766e;
-      animation: kf-composite 1.8s ease-in-out 0s infinite alternate both;
-      animation-composition: replace;
-      animation-timeline: auto;
-      animation-range: entry 10% exit 90%;
-      animation-range-start: entry 10%;
-      animation-range-end: exit 90%;
-      animation-range-center: normal;
-      animation-trigger: none;
-    }
   </style>
 </head>
 <body class="{{if not .IsPlaying}}is-paused{{end}}">
   <main class="container">
-    <!-- Header -->
     <header class="header">
-      <p class="eyebrow">OwnFrame Interactive Showcase</p>
-      <h1>CSS Animation Knowledge Lab</h1>
-      <p class="intro">
-        A single-component application demonstrating all 27 standard and WebKit animation properties
-        defined in the engine compatibility matrix. Test your CSS motion knowledge with the interactive questions below
-        while observing live animation behaviors rendered by the engine.
-      </p>
-
-      <!-- Toolbar -->
-      <div class="toolbar">
-        <div class="stats">
-          <span class="stat-pill score-pill">Score: {{.Score}} / {{.Total}}</span>
-          <span class="stat-pill">Answered: {{.AnsweredCount}} / {{.Total}}</span>
-          <span class="stat-pill state-pill {{if not .IsPlaying}}paused{{end}}">
-            Playback: {{if .IsPlaying}}RUNNING{{else}}PAUSED{{end}}
-          </span>
-        </div>
-        <div class="actions">
-          <button id="btn-toggle-play" class="btn-toggle" type="button">
-            {{if .IsPlaying}}Pause Animations{{else}}Resume Animations{{end}}
-          </button>
-          <button id="btn-reset" type="button">Reset Quiz</button>
-        </div>
+      <div>
+        <p class="eyebrow">OwnFrame / examples</p>
+        <h1>CSS Animation Showcase</h1>
+        <p class="intro">
+          Every card is a CSS declaration. The page registers no tick callback,
+          builds no player, and imports no internal package: OwnFrame binds each
+          keyframe at redraw and samples it from the window tick.
+        </p>
       </div>
+      <button id="toggle-play" class="btn-toggle" type="button">
+        {{if .IsPlaying}}Pause all{{else}}Play all{{end}}
+      </button>
     </header>
 
-    <!-- Filters -->
-    <nav class="filters" aria-label="Category filters">
-      <button id="filter-all" class="filter-btn {{if eq .ActiveFilter "all"}}active{{end}}" type="button">All Questions</button>
-      <button id="filter-timing" class="filter-btn {{if eq .ActiveFilter "timing"}}active{{end}}" type="button">Timing &amp; Curves</button>
-      <button id="filter-direction" class="filter-btn {{if eq .ActiveFilter "direction"}}active{{end}}" type="button">Direction &amp; Loops</button>
-      <button id="filter-delays" class="filter-btn {{if eq .ActiveFilter "delays"}}active{{end}}" type="button">Delays</button>
-      <button id="filter-fill" class="filter-btn {{if eq .ActiveFilter "fill"}}active{{end}}" type="button">Fill Modes</button>
-      <button id="filter-webkit" class="filter-btn {{if eq .ActiveFilter "webkit"}}active{{end}}" type="button">WebKit Prefixes</button>
-      <button id="filter-advanced" class="filter-btn {{if eq .ActiveFilter "advanced"}}active{{end}}" type="button">Advanced &amp; Composite</button>
-    </nav>
-
-    <!-- Questions List -->
-    {{range .Questions}}
-    {{if or (eq $.ActiveFilter "all") (eq $.ActiveFilter .Category)}}
-    <article id="{{.CardID}}" class="card">
-      <div class="card-header">
-        <span class="card-category">{{.CategoryLabel}} &bull; Question {{.Number}}</span>
-        <span class="card-badge {{if .Answered}}{{if .IsCorrect}}correct{{else}}incorrect{{end}}{{end}}">
-          {{if not .Answered}}Pending{{else if .IsCorrect}}Correct (+1){{else}}Incorrect{{end}}
-        </span>
+    <section class="section">
+      <div class="section-head">
+        <h2>Timing</h2>
+        <p class="section-note">Same distance, different easing curves.</p>
       </div>
-
-      <h2>{{.Title}}</h2>
-      <p class="question-prompt">{{.Prompt}}</p>
-
-      <!-- Live Demonstration Stage -->
-      <div class="stage">
-        <p class="stage-title">Live Animation Demonstration</p>
-        {{range .Tracks}}
-        <div class="track {{if .IsActive}}active-track{{end}}">
-          <div id="{{.ChipID}}" class="chip {{.ChipClass}}">{{.ChipLabel}}</div>
-          <span class="track-tag">{{.TrackLabel}}</span>
-          <button id="{{.PlayBtnID}}" class="track-play-btn" type="button">&#9654; Play</button>
-        </div>
-        {{end}}
+      <div class="grid">
+        <article class="card">
+          <div class="stage">
+            <div id="show-ease" class="chip chip-ease motion">ease</div>
+          </div>
+          <h3>ease</h3>
+          <p class="property">animation-timing-function</p>
+          <code class="snippet">animation-timing-function: ease;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Moves right, accelerating then slowing into the turn, then returns. The start and stop are soft.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-linear" class="chip chip-linear motion">linear</div>
+          </div>
+          <h3>linear</h3>
+          <p class="property">animation-timing-function</p>
+          <code class="snippet">animation-timing-function: linear;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Moves at a constant speed to the right, then back. No acceleration or easing.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-bezier" class="chip chip-bezier motion">bezier</div>
+          </div>
+          <h3>overshoot</h3>
+          <p class="property">animation-timing-function</p>
+          <code class="snippet">animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Overshoots past 180px, then settles back. The bounce comes from the negative and above-one control points.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-steps" class="chip chip-steps motion">steps</div>
+          </div>
+          <h3>stepped</h3>
+          <p class="property">animation-timing-function</p>
+          <code class="snippet">animation-timing-function: steps(5, jump-end);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Moves in five equal jumps, not a slide. The chip holds each position until the next step.</p>
+        </article>
       </div>
+    </section>
 
-      <!-- Multiple Choice Options -->
-      <div class="options-grid">
-        {{$qID := .ID}}
-        {{$answered := .Answered}}
-        {{$selected := .SelectedIndex}}
-        {{$correct := .CorrectIndex}}
-        {{range .Options}}
-        <button id="opt-{{$qID}}-{{.Index}}" type="button" class="option-btn {{if $answered}}{{if eq .Index $correct}}correct-choice{{else if eq .Index $selected}}wrong-choice{{end}}{{else if eq .Index $selected}}selected{{end}}">
-          <span class="option-key">{{.Key}}</span>
-          <span>{{.Text}}</span>
-        </button>
-        {{end}}
+    <section class="section">
+      <div class="section-head">
+        <h2>Direction</h2>
+        <p class="section-note">Which way each iteration runs.</p>
       </div>
-
-      <!-- Answer Disclosure & Explanation (Revealed once answered) -->
-      {{if .Answered}}
-      <div class="explanation-box">
-        <p class="explanation-title">{{if .IsCorrect}}&check; Correct Answer: {{.CorrectAnswerLabel}}{{else}}&cross; Correct Answer: {{.CorrectAnswerLabel}}{{end}}</p>
-        <p class="explanation-text">{{.Explanation}}</p>
-        <code>{{.CSSDeclaration}}</code>
+      <div class="grid">
+        <article class="card">
+          <div class="stage">
+            <div id="show-direction-normal" class="chip chip-direction chip-direction-normal motion">normal</div>
+          </div>
+          <h3>normal</h3>
+          <p class="property">animation-direction</p>
+          <code class="snippet">animation-direction: normal;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Each cycle runs left to right, then snaps back to the left to start again.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-direction-reverse" class="chip chip-direction chip-direction-reverse motion">reverse</div>
+          </div>
+          <h3>reverse</h3>
+          <p class="property">animation-direction</p>
+          <code class="snippet">animation-direction: reverse;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Each cycle runs right to left, then snaps back to the right.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-direction-alternate" class="chip chip-direction chip-direction-alternate motion">alternate</div>
+          </div>
+          <h3>alternate</h3>
+          <p class="property">animation-direction</p>
+          <code class="snippet">animation-direction: alternate;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Runs left to right, then right to left, alternating forever.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-direction-alternate-reverse" class="chip chip-direction chip-direction-alternate-reverse motion">alt-rev</div>
+          </div>
+          <h3>alternate-reverse</h3>
+          <p class="property">animation-direction</p>
+          <code class="snippet">animation-direction: alternate-reverse;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Starts at the right edge, runs right to left, then alternates.</p>
+        </article>
       </div>
-      {{end}}
-    </article>
-    {{end}}
-    {{end}}
+    </section>
 
-    <!-- Catalog Reference Section -->
-    <section class="reference-section">
-      <h2>CSS Animation Properties Matrix Reference</h2>
-      <p class="intro">
-        All 27 animation properties implemented in Blinkless and sampled by OwnFrame, as specified in
-        <code>documentation/compatibility-matrix.md</code>:
-      </p>
-      <table>
-        <thead>
-          <tr>
-            <th>Property</th>
-            <th>Type</th>
-            <th>Accepted Values</th>
-            <th>Engine Scope / Behavior</th>
-          </tr>
-        </thead>
-        <tbody>
-          {{range .Catalog}}
-          <tr>
-            <td><strong>{{.Name}}</strong></td>
-            <td>{{.Type}}</td>
-            <td>{{.Accepted}}</td>
-            <td>{{.Behavior}}</td>
-          </tr>
-          {{end}}
-        </tbody>
-      </table>
+    <section class="section">
+      <div class="section-head">
+        <h2>Delay and fill</h2>
+        <p class="section-note">When playback starts, and what it keeps when it ends.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="stage">
+            <div id="show-delay-positive" class="chip chip-delay-positive motion">+0.8s</div>
+          </div>
+          <h3>positive delay</h3>
+          <p class="property">animation-delay</p>
+          <code class="snippet">animation-delay: 0.8s;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Holds the start pose for 0.8s, then moves. The pause before motion is the delay.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-delay-negative" class="chip chip-delay-negative motion">-1s</div>
+          </div>
+          <h3>negative delay</h3>
+          <p class="property">animation-delay</p>
+          <code class="snippet">animation-delay: -1s;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Starts already 1s into the two-second cycle, so the first visible frame is mid-path.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-fill-none" class="chip chip-fill-none motion">none</div>
+          </div>
+          <h3>fill: none</h3>
+          <p class="property">animation-fill-mode</p>
+          <code class="snippet">animation-fill-mode: none;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Runs once, then snaps back to the start pose and start colour. Nothing is held.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-fill-forwards" class="chip chip-fill-forwards motion">forwards</div>
+          </div>
+          <h3>fill: forwards</h3>
+          <p class="property">animation-fill-mode</p>
+          <code class="snippet">animation-fill-mode: forwards;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Runs once and keeps the final position and colour.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-fill-both" class="chip chip-fill-both motion">both</div>
+          </div>
+          <h3>fill: both</h3>
+          <p class="property">animation-fill-mode</p>
+          <code class="snippet">animation-fill-mode: both;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Shows the start pose during the 0.4s delay and keeps the final pose after the run.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Iteration</h2>
+        <p class="section-note">How many cycles a card runs.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="stage">
+            <div id="show-iteration-once" class="chip chip-iteration-once motion">once</div>
+          </div>
+          <h3>once</h3>
+          <p class="property">animation-iteration-count</p>
+          <code class="snippet">animation-iteration-count: 1;</code>
+          <p class="expect"><span class="expect-label">Expect</span> One pass from left to right, then holds the end because fill is both.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-iteration-three" class="chip chip-iteration-three motion">three</div>
+          </div>
+          <h3>three times</h3>
+          <p class="property">animation-iteration-count</p>
+          <code class="snippet">animation-iteration-count: 3;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Three passes, then holds the end.</p>
+        </article>
+        <article class="card">
+          <div class="stage">
+            <div id="show-iteration-infinite" class="chip chip-iteration-infinite motion">infinite</div>
+          </div>
+          <h3>infinite</h3>
+          <p class="property">animation-iteration-count</p>
+          <code class="snippet">animation-iteration-count: infinite;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Loops without a visible restart.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>2D transforms</h2>
+        <p class="section-note">The operation matrix moves, rotates, scales, skews, and shears.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="stage">
+            <div id="show-translate" class="chip chip-translate motion">translate</div>
+          </div>
+          <h3>translate</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: translateX(150px);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Moves 150px right, then returns. The chip keeps its size and angle.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-rotate" class="chip chip-rotate motion">rotate</div>
+          </div>
+          <h3>rotate</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: rotate(150deg);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Turns 150 degrees clockwise around its own center, then unwinds.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-scale" class="chip chip-scale motion">scale</div>
+          </div>
+          <h3>scale</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: scale(1.22);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Grows from 0.72 to 1.22 and back. Text and border grow with the chip.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-skew" class="chip chip-skew motion">skew</div>
+          </div>
+          <h3>skew</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: skewX(22deg);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Leans to the right as the top edge shifts sideways, then straightens.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-matrix" class="chip chip-matrix motion">matrix</div>
+          </div>
+          <h3>matrix</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: matrix(1, 0.18, -0.18, 1, 64, 0);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Slides 64px right while turning and shearing. One matrix supplies translation and rotation.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>3D transforms</h2>
+        <p class="section-note">These cards re-project the retained box tree each sample.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="stage deep center">
+            <div id="show-rotate-x" class="chip chip-rotate-x motion">rotateX</div>
+          </div>
+          <h3>rotateX</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: rotateX(110deg);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Tips back around the horizontal axis. The top edge recedes and the chip looks shorter.</p>
+        </article>
+        <article class="card">
+          <div class="stage deep center">
+            <div id="show-rotate-y" class="chip chip-rotate-y motion">rotateY</div>
+          </div>
+          <h3>rotateY</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: rotateY(110deg);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Turns around the vertical axis. One side edge recedes and the chip narrows.</p>
+        </article>
+        <article class="card">
+          <div class="stage deep center">
+            <div id="show-translate-z" class="chip chip-translate-z motion">translateZ</div>
+          </div>
+          <h3>translateZ</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: translateZ(70px);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Moves toward the camera and grows, then recedes and shrinks.</p>
+        </article>
+        <article class="card">
+          <div class="stage deep center">
+            <div id="show-matrix3d" class="chip chip-matrix3d motion">matrix3d</div>
+          </div>
+          <h3>matrix3d</h3>
+          <p class="property">transform</p>
+          <code class="snippet">transform: matrix3d(0.866, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866, 0, 0, 0, 64, 1);</code>
+          <p class="expect"><span class="expect-label">Expect</span> A full 4x4 projection: the chip is rotated and moves toward the viewer as z rises from 24 to 64.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Perspective</h2>
+        <p class="section-note">The camera animates while the chip stays still.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div id="show-perspective" class="stage deep center motion stage-camera">
+            <div class="chip chip-perspective">camera</div>
+          </div>
+          <h3>camera pull</h3>
+          <p class="property">perspective</p>
+          <code class="snippet">perspective: 320px;</code>
+          <p class="expect"><span class="expect-label">Expect</span> The camera pulls from 320px to 920px. The tilted chip looks strongly foreshortened, then flatter; the chip itself does not move.</p>
+        </article>
+        <article class="card">
+          <div id="show-perspective-origin" class="stage deep center motion stage-camera-origin">
+            <div class="chip chip-perspective">origin</div>
+          </div>
+          <h3>origin slide</h3>
+          <p class="property">perspective-origin</p>
+          <code class="snippet">perspective-origin: left top;</code>
+          <p class="expect"><span class="expect-label">Expect</span> The vanishing point slides from top-left to bottom-right. The same tilted chip projects from a different corner.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Paint</h2>
+        <p class="section-note">Opacity and colour writes stay inside the element that owns them.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="stage center">
+            <div id="show-opacity" class="chip chip-opacity motion">fade</div>
+          </div>
+          <h3>fade</h3>
+          <p class="property">opacity</p>
+          <code class="snippet">opacity: 0.2;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Fades from 20 percent to opaque, then restarts at 20 percent. Position and colour stay fixed.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-background" class="chip chip-background motion">fill</div>
+          </div>
+          <h3>fill colour</h3>
+          <p class="property">background-color</p>
+          <code class="snippet">background-color: #1d4ed8;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Cycles from blue to red, then restarts at blue. The white label stays white.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-color" class="chip chip-color motion">ink</div>
+          </div>
+          <h3>ink colour</h3>
+          <p class="property">color</p>
+          <code class="snippet">color: #f8fafc;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Ink cycles from white to amber, then restarts at white. The dark chip stays dark.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-border" class="chip chip-border motion">edge</div>
+          </div>
+          <h3>edge colour</h3>
+          <p class="property">border-color</p>
+          <code class="snippet">border-color: #2563eb;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Only the 3px border cycles from blue to red, then restarts. The white fill and dark label stay.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <h2>Path and alias</h2>
+        <p class="section-note">A corner path recolours as a fill, and the vendor keyframes resolve to the same driver.</p>
+      </div>
+      <div class="grid">
+        <article class="card">
+          <div class="stage center">
+            <div id="show-corner" class="chip chip-corner motion">corner</div>
+          </div>
+          <h3>corner fill</h3>
+          <p class="property">background-color on corner-shape: bevel</p>
+          <code class="snippet">corner-shape: bevel;</code>
+          <p class="expect"><span class="expect-label">Expect</span> The beveled fill cycles from blue to orange. The dark border and the cut corner keep their shape.</p>
+        </article>
+        <article class="card">
+          <div class="stage center">
+            <div id="show-webkit" class="chip chip-webkit motion">alias</div>
+          </div>
+          <h3>vendor alias</h3>
+          <p class="property">-webkit-animation / @-webkit-keyframes</p>
+          <code class="snippet">-webkit-animation: kf-webkit-hop 1.4s ease-in-out infinite alternate both;</code>
+          <p class="expect"><span class="expect-label">Expect</span> The WebKit-prefixed keyframes should hop up 10px and turn pink, matching the unprefixed syntax.</p>
+        </article>
+      </div>
     </section>
   </main>
 </body>
