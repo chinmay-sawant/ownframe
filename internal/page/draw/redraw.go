@@ -63,9 +63,14 @@ type RedrawSurface interface {
 // so the commit does not start another draw inside itself.
 // An open batch records the draw and returns.
 // The clock starts after a perf clear. The template runs, then the form
-// is synced into the source. When skipSame is set, an unchanged frame
-// returns after that sync. Otherwise the page drops its PNG, styles,
-// draws, and serves one follow-up the callback asked for.
+// is synced into the source. When the frame matches the last committed
+// one, the page returns after that sync: the retained list, boxes, and
+// picture already show it, so an identical Redraw costs no style, layout,
+// or repaint. skipSame only reaches the batch queue: it records whether
+// the flush runs the sequence, and the flush skips an unchanged frame
+// either way. A skipped call still counts the redraw. Otherwise the page
+// drops its PNG, styles, draws, and serves one follow-up the callback
+// asked for.
 // FinishRedraw runs on the way out once the clock has started, including
 // when a later step returns an error.
 func Run(ctx context.Context, s RedrawSurface, skipSame bool) error {
@@ -100,7 +105,7 @@ func Run(ctx context.Context, s RedrawSurface, skipSame bool) error {
 
 	source := s.SyncForm(executed)
 	state := s.RenderState()
-	if skipSame && s.Unchanged(state) {
+	if s.Unchanged(state) {
 		return nil
 	}
 

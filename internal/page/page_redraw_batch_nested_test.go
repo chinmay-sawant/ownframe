@@ -6,7 +6,8 @@ import (
 )
 
 // TestRedrawBatchNestedDrawsOnce checks that a nested batch draws once: the
-// inner EndRedrawBatch leaves the draw to the outer one.
+// inner EndRedrawBatch leaves the draw to the outer one. The resize changes
+// the frame so the outer flush has a layout to commit.
 func TestRedrawBatchNestedDrawsOnce(t *testing.T) {
 	t.Parallel()
 
@@ -17,6 +18,7 @@ func TestRedrawBatchNestedDrawsOnce(t *testing.T) {
 	}
 	before := p.Stats().Layouts
 
+	p.SetSize(400, 300)
 	p.BeginRedrawBatch()
 	p.BeginRedrawBatch()
 	if err := p.Redraw(ctx); err != nil {
@@ -63,6 +65,9 @@ func TestRedrawBatchQueuesAFailedDraw(t *testing.T) {
 		t.Fatalf("layouts = %d, want no draw", got-before)
 	}
 
+	// The failed draw stays queued; a resize gives the retry a changed frame
+	// so the next batch commits it.
+	p.SetSize(400, 300)
 	p.BeginRedrawBatch()
 	if err := p.EndRedrawBatch(ctx); err != nil {
 		t.Fatal(err)

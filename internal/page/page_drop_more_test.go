@@ -56,7 +56,12 @@ func TestDropRedrawsWithoutHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if screen.Generation() <= before {
+	// No handler changed page input, so the redraw runs but commits an
+	// identical frame: one more redraw, no new generation.
+	if got := screen.Stats().Redraws; got != 2 {
+		t.Fatalf("redraws = %d, want 2", got)
+	}
+	if screen.Generation() != before {
 		t.Fatalf("generation = %d, before = %d", screen.Generation(), before)
 	}
 }

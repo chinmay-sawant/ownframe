@@ -35,7 +35,8 @@ func TestClickPaintPlainClick(t *testing.T) {
 }
 
 // TestClickPaintFalseRedraws checks that a click whose paint handler does
-// not paint still redraws.
+// not paint still runs the redraw sequence. The click changes no page input,
+// so the identical frame commits nothing.
 func TestClickPaintFalseRedraws(t *testing.T) {
 	t.Parallel()
 
@@ -51,7 +52,7 @@ func TestClickPaintFalseRedraws(t *testing.T) {
 	if got := screen.Stats().Redraws; got != before.Redraws+1 {
 		t.Fatalf("redraws = %d, want %d", got, before.Redraws+1)
 	}
-	if got := screen.Generation(); got <= gen {
-		t.Fatalf("generation = %d, want past %d", got, gen)
+	if got := screen.Generation(); got != gen {
+		t.Fatalf("generation = %d, want %d", got, gen)
 	}
 }

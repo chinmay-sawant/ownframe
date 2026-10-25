@@ -24,7 +24,7 @@ func TestRedrawSequenceOrder(t *testing.T) {
 	const (
 		stopped = "AfterBusy QueueBatch BeginSample CountRedraw ExecTemplate"
 		drew    = " DropPNG StyleStaged DrawStaged AfterRedrawDraw"
-		full    = stopped + " SyncForm RenderState" + drew + " FinishRedraw"
+		full    = stopped + " SyncForm RenderState Unchanged" + drew + " FinishRedraw"
 	)
 
 	cases := []struct {
@@ -51,6 +51,11 @@ func TestRedrawSequenceOrder(t *testing.T) {
 			want:     stopped + " SyncForm RenderState Unchanged FinishRedraw",
 		},
 		{
+			name: "unchanged skips without skipSame",
+			f:    fake{unchanged: true},
+			want: stopped + " SyncForm RenderState Unchanged FinishRedraw",
+		},
+		{
 			name:     "perf off clears counters before the template",
 			f:        fake{clear: true, unchanged: true},
 			skipSame: true,
@@ -75,13 +80,13 @@ func TestRedrawSequenceOrder(t *testing.T) {
 		{
 			name:    "style error stops before the draw",
 			f:       fake{styleErr: errRedraw},
-			want:    stopped + " SyncForm RenderState DropPNG StyleStaged FinishRedraw",
+			want:    stopped + " SyncForm RenderState Unchanged DropPNG StyleStaged FinishRedraw",
 			wantErr: errRedraw,
 		},
 		{
 			name:    "draw error stops before the follow-up",
 			f:       fake{drawErr: errRedraw},
-			want:    stopped + " SyncForm RenderState DropPNG StyleStaged DrawStaged FinishRedraw",
+			want:    stopped + " SyncForm RenderState Unchanged DropPNG StyleStaged DrawStaged FinishRedraw",
 			wantErr: errRedraw,
 		},
 		{

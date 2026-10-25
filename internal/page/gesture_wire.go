@@ -376,8 +376,10 @@ func (p *Page) LongPress(ctx context.Context, x, y float64) (bool, error) {
 	return true, p.Redraw(ctx)
 }
 
-// Drop calls the drop handler with the files dropped on the window and draws
-// the page again. An error returns before the redraw.
+// Drop calls the drop handler with the files dropped on the window and runs
+// the redraw sequence again. An error returns before the redraw. When the
+// handler changed no page input, the frame is identical and the redraw
+// commits nothing.
 func (p *Page) Drop(ctx context.Context, files []Drop) error {
 	if err := useContext(ctx); err != nil {
 		return err

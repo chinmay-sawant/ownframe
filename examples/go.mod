@@ -10,7 +10,7 @@ go 1.26.10
 // library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
-	github.com/chinmay-sawant/blinkless v0.0.4-0.20261025105255-96d7b9d95338
+	github.com/chinmay-sawant/blinkless v0.0.4-0.20261025194338-a599ae55e239
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
