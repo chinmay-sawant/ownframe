@@ -5,7 +5,7 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 ## Motivation / context
 
 - Plans: `plans/v0.0.3/animations-and-transitions/` (11 animation phases, 5 transition phases, 5 example phases, plus `coverage.md` and the priority-0 engine plan).
-- Engine work: `chinmay-sawant/blinkless` branch `feature/animations-and-transitions` supplies the three primitives this branch consumes: `layout.RelayoutElementWithOverrides`, `layout.RestampTransforms`, and `layout.RestyleInlineSVG`. The pin moves to `v0.0.4-0.20261025051907-2b608a5fe66d`.
+- Engine work: `chinmay-sawant/blinkless` branch `feature/animations-and-transitions` supplies the three primitives this branch consumes: `layout.RelayoutElementWithOverrides`, `layout.RestampTransforms`, and `layout.RestyleInlineSVG`. Blinkless merged that branch as #25, and the pin moves to `v0.0.4-0.20261025081705-d92be38a7295`.
 - Before this branch the runtime packages existed but the page did not start motion by itself; the examples that animated drove their own clocks. `documentation/css-motion.md` describes the caller-driven path that remains available for Go-side motion through `internal/frame`.
 
 ## Changes
@@ -59,7 +59,7 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 
 - Add `documentation/css-motion.md` and update `features.md`, `frames.md`, `repaint.md`, `optimizations.md`, `performance.md`, `devtools.md`, `testing.md`, `window.md`, `compatibility-matrix.md`, and `AGENTS.md`.
 - Record the branch status under `plans/v0.0.3/animations-and-transitions/`, including the phase plans, `coverage.md`, and the example audit.
-- Move `github.com/chinmay-sawant/blinkless` to `v0.0.4-0.20261025051907-2b608a5fe66d` in `go.mod` and `examples/go.mod`. There is still no `replace` for blinkless.
+- Move `github.com/chinmay-sawant/blinkless` to `v0.0.4-0.20261025081705-d92be38a7295` in `go.mod` and `examples/go.mod`, matching blinkless master after #25. There is still no `replace` for blinkless.
 - Shrink `scripts/example-internal-allowlist.txt` from 40 rows to 16 and extend `scripts/check-graphics.sh` and `scripts/test_graphics_gate.py` with the three viewport GPU tests, for eight required invocations.
 
 ## Impact
@@ -70,7 +70,7 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 | **Memory** | The motion runtime allocates zero bytes per live step, per layer read, per timeline sample, and per effect-table step (asserted with `testing.AllocsPerRun`). Layer textures are capped at 16 entries and 32 Mi pixels, about 128 MiB. The viewport path holds two window-sized images plus overscan, and keeps warmup scratch images alive. |
 | **Behavior / correctness** | CSS `@keyframes` and `transition` declarations now advance without application code. Automatic capture, reversal, interruption, timing, fill, direction, composition, ranges, and named scroll/view timelines are covered. Triggers are resolved, but three `css-preview` trigger cards keep a manual sample. Discrete transitions ship only for `start`/`end` with `allow-discrete`; geometry and `display` entry/exit do not. |
 | **API / CLI** | Additive root API: `Page.Probe().Motion()` with `MotionStats` (a documented alias), and `Page.Window().SetAnimations`/`Animations`/`SetTransitions`/`Transitions`. No existing signature changes. New example flags are listed above. |
-| **Dependencies** | The Blinkless pin moves to `v0.0.4-0.20261025051907-2b608a5fe66d`. No other module changes and no new external dependencies. |
+| **Dependencies** | The Blinkless pin moves to `v0.0.4-0.20261025081705-d92be38a7295`, the blinkless master commit after #25. No other module changes and no new external dependencies. |
 | **Binary size / build time** | Adds `internal/motion`, a rewritten `animations` example, and a new `motion-conformance` example. No new C or wasm artifacts. |
 
 ## Breaking changes / migration
@@ -148,7 +148,7 @@ None. No issue is linked to this work.
 - `transform-origin` keyframes, nested timeline scopes, and a named scroll-container timeline are not implemented.
 - A promoted layer uses normal blending only; `mix-blend-mode` is not read.
 - `Serve` still shows a picture page and does not tick, so automatic motion is a native-host behavior.
-- Documentation cleanup: `AGENTS.md:45` still names the previous Blinkless pin; the parent animations plan still says "planning" while the track READMEs say landed; `compatibility-matrix.md:1083-1086` still describes caller-driven transitions; `examples/css-preview/PROFILING.md` and `PATCH_COST.md` still describe the deleted patch-cost path.
+- Documentation cleanup: the parent animations plan still says "planning" while the track READMEs say landed; `compatibility-matrix.md:1083-1086` still describes caller-driven transitions; `examples/css-preview/PROFILING.md` and `PATCH_COST.md` still describe the deleted patch-cost path.
 - No checked-in performance gate exists for tick time, scroll gaps, or FPS. The allocation assertions pin storage reuse only.
 
 ## Reviewer checklist
@@ -174,10 +174,10 @@ None. No issue is linked to this work.
 | `.go` | 363 | 36995 | 3781 |
 | `.html` | 3 | 1729 | 509 |
 | `.json` | 1 | 1 | 0 |
-| `.md` | 43 | 5678 | 118 |
+| `.md` | 44 | 5861 | 118 |
 | `.mod` | 2 | 2 | 2 |
 | `.py` | 1 | 3 | 0 |
 | `.sh` | 1 | 3 | 0 |
 | `.sum` | 2 | 12 | 0 |
 | `.txt` | 1 | 5 | 29 |
-| **Total** | **419** | **44516** | **4440** |
+| **Total** | **420** | **44699** | **4440** |

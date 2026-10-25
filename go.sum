@@ -28,14 +28,8 @@ github.com/benoitkugler/textlayout v0.3.2/go.mod h1:o+1hFV+JSHBC9qNLIuwVoLedERU7
 github.com/benoitkugler/textlayout-testdata v0.1.1/go.mod h1:i/qZl09BbUOtd7Bu/W1CAubRwTWrEXWq6JwMkw8wYxo=
 github.com/benoitkugler/textprocessing v0.0.6 h1:obkMyj62GEPg3xUVYqROlCN22z1OleuZm6ULqX9Om1g=
 github.com/benoitkugler/textprocessing v0.0.6/go.mod h1:Io0gN08/PXEzrSOWFa88xHx2Xv3VjvLMY7H76YoI23A=
-github.com/chinmay-sawant/blinkless v0.0.3 h1:/FO8eDtUXDBhSWdIe4DYAfN6XRhVNKTKGeEMwSaOzPM=
-github.com/chinmay-sawant/blinkless v0.0.3/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261024101905-72e595d83185 h1:lk84IlQGvx/YAWiTe8rqKsEiDp+vnQpprTf0ADPh5rk=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261024101905-72e595d83185/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261024120823-8d4693ea24ec h1:HTjsd8X0hudrScj//9igX3jySfwa4Ig1lZyeQVn/1Lw=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261024120823-8d4693ea24ec/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261025051907-2b608a5fe66d h1:nc0Tb1UZJJoMUO/NydINVyAVDtAdFvtou/SKjdSu+gI=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261025051907-2b608a5fe66d/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
+github.com/chinmay-sawant/blinkless v0.0.4-0.20261025081705-d92be38a7295 h1:cLV+dHz1wOJBUpmPDdSH/aFhjVLi4RJUarlwfD7+8Ac=
+github.com/chinmay-sawant/blinkless v0.0.4-0.20261025081705-d92be38a7295/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 h1:Tnc3YtzxhgsvNdNrER9wWkGJbyjOwyUuzjUY5rZK72k=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6/go.mod h1:gwnFEwdzWZpNehgwkeK4756Ez58f58bXz6bgEAq+xqk=
 github.com/ebitengine/hideconsole v1.0.0 h1:5J4U0kXF+pv/DhiXt5/lTz0eO5ogJ1iXb8Yj1yReDqE=
