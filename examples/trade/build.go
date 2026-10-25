@@ -31,7 +31,7 @@ func buildHTML() string {
 	b.WriteString(shellBody)
 	b.WriteString(file("components/topbar.html"))
 	b.WriteString(file("components/rail.html"))
-	b.WriteString(`<main class="workspace">`)
+	b.WriteString(`<main class="workspace" id="workspace">`)
 
 	b.WriteString(`{{if eq .Screen "watchlist"}}`)
 	b.WriteString(file("components/watchlist.html"))

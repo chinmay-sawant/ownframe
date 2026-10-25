@@ -679,15 +679,6 @@ func chartParsePoint(pair string) (float64, float64, bool) {
 	return x, y, true
 }
 
-// chartPctText formats one design axis value as a percentage.
-func chartPctText(value, total float64) string {
-	if total == 0 {
-		total = 1
-	}
-
-	return strconv.FormatFloat(value/total*chartPercentBase, 'f', chartPositionDigits, 64) + "%"
-}
-
 // chartGrow formats one design-space value as a flex-grow weight. Only the
 // ratio of the weights on one flex line matters, so the value is used as is.
 func chartGrow(value float64) string {

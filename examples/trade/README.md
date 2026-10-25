@@ -147,6 +147,26 @@ OWNFRAME_TRADE_SCREENSHOT=1 go test -run '^TestScreenshot$' ./examples/trade
 The screenshots are written to `/tmp/opencode/trade-shots/`; nothing is added
 to the repository.
 
+For a fast responsive layout check:
+
+```sh
+OWNFRAME_TRADE_RESPONSIVE=1 go test -run '^TestResponsiveScreens$' ./examples/trade
+```
+
+This renders the watchlist at 1600x900, 2560x1440, and 1280x720, then the
+other six screens at 1280x720. It asserts that the canvas, the status bar,
+and every screen root stay inside the requested window. It does not
+rasterize PNGs, and it turns CSS motion off for the sweep, so it is a layout
+check rather than a visual diff. The four-size matrix also covers
+1920x1080 in full mode.
+
+The full seven-screen by four-size PNG matrix is still available. It is slow
+because every capture paints the whole page in software:
+
+```sh
+OWNFRAME_TRADE_RESPONSIVE=1 OWNFRAME_TRADE_RESPONSIVE_FULL=1   go test -run '^TestResponsiveScreens$' ./examples/trade
+```
+
 ## Limits
 
 - Desktop only for the full experience. `-web` serves a still picture because
