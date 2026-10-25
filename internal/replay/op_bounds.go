@@ -21,8 +21,22 @@ func opBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
 	if ppt <= 0 {
 		return image.Rectangle{}, false
 	}
-	if matrix, ok := textProjection(op); ok {
-		return matrixBounds(op, ppt, matrix)
+
+	// A projected run paints through its matrix, so its box is the matrix box.
+	// Only text and bullets can carry that payload, and the scan meets every
+	// op, so the presence check and the rebase stay inline. Calling
+	// textProjection here costs an out-of-line call and a whole-matrix
+	// equality for every text run, and most carry no matrix.
+	if (op.Kind == layout.DisplayOpText || op.Kind == layout.DisplayOpBullet) && !op.XformSet {
+		m := op.XformValue()
+		if m.A != 0 || m.B != 0 || m.C != 0 || m.D != 0 || m.E != 0 || m.F != 0 {
+			if !m.IsIdentity() {
+				m.E = op.X - m.A*op.X - m.C*op.Y
+				m.F = op.Y - m.B*op.X - m.D*op.Y
+
+				return matrixBounds(op, ppt, m)
+			}
+		}
 	}
 
 	if op.RotateDeg != 0 {
