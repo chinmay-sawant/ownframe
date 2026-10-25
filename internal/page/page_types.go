@@ -62,7 +62,7 @@ type Page struct {
 	stateBinding    state.Binding
 	elements        *element.Registry
 	frameState      // deadline: loop sets, window takes; lock: atomic
-	index           map[string]Box
+	index           map[string]*Box
 	hits            []hitItem
 	pageContent     // paint rect: box cache writes; lock: page loop
 	scroll          scroll.State

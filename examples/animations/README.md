@@ -86,9 +86,10 @@ go run ./examples/animations -profile-seconds=30 -vsync=false
 The samplers wait for the first drawn frame and then for a two second warmup,
 so the window's opening does not land in the samples.
 
-The tall gallery also pre-renders its scrollable page once after the first
-frame. That pass warms the shape, chunk, and text caches, so the first scroll
-does not stall on first-time bakes.
+The tall gallery warms its background caches in narrow bands over successive
+frames. Scrolling beyond the viewport buffer reuses the overlapping pixels and
+paints the newly exposed strips. Large viewport textures stay outside the
+sprite atlas.
 
 Serve the picture page in a browser:
 
@@ -115,3 +116,19 @@ callback, that the translate card advances its matrix across two ticks, that the
 rotateY card restamps and changes projection on both ticks, that the background
 keyframe leaves the label colour alone, that the corner path recolours the fill
 and leaves the border, and that pause holds the pose while resume continues.
+
+To measure native scrolling with VSync off, run this command from the repository
+root. It opens a 1908 by 999 window, scrolls to the bottom and back, then repeats
+the downward pass:
+
+```sh
+OWNFRAME_ANIMATIONS_GPU_TEST=1 go test -p 1 -count=1 -run '^TestNativeScrollProfile$' ./examples/animations
+```
+
+The test writes `frames.json` and `bottom.png` under
+`temp/animations-native-profile/`. Frame gaps include GPU submission and
+presentation waits between Draw calls. Work timings cover Update and Draw.
+Memory samples include the running heap and frame rate once per simulated
+second; the final heap value is recorded after garbage collection with the
+game and its caches still retained. These values measure this native session,
+not the browser or Android hosts.

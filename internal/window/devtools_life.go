@@ -27,6 +27,9 @@ func (s *shell) devRefresh() {
 
 	s.dev.gen = gen
 	s.dev.haveOp = false
+	if !s.dev.haveHov && !s.dev.havePin {
+		return
+	}
 	boxes := s.app.Boxes()
 
 	if s.dev.haveHov && !devHasBox(boxes, s.dev.hovered) {

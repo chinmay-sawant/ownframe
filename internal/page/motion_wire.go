@@ -389,8 +389,7 @@ func (p *Page) adoptRestamp(patch *layout.ElementPatch) bool {
 	}
 
 	previous := p.draw.SwapList(d)
-	p.setBoxes(d.Boxes)
-	p.hits = hitList(d.Boxes, fixedBoxes(d))
+	p.setDisplayBoxes(d)
 	p.markRect(patch.Old)
 	if patch.New != patch.Old {
 		p.markRect(patch.New)

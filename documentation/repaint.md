@@ -48,16 +48,22 @@ between frames, so a clean frame needs no page copy. A stale screen or scroll
 change copies the visible tiles again. The `bitmap fallback` badge draws on
 the screen after the tiles, so a repaint never wipes it.
 
-A taller page keeps one window-sized viewport image with 256 pixels of vertical
-overscan on each side, because a content-sized grid would cost several viewport
-buffers. Each dirty rect is painted into that image on its own, not as one
-bounding box of every moving element. Scrolling inside the overscan reuses the
-image; crossing its edge repaints the visible operations at the new offset. The
-first viewport frame also paints the scrollable page once into a scratch image,
-up to a 12-megapixel budget, so the raster, chunk, and text caches already hold
-the shapes and runs the first scroll needs. Without that pass, the frame that
-crosses the overscan pays for the first-time bakes and the buffer rebuild
-together, which is long enough to read as a scroll freeze.
+A taller page keeps a viewport image with 256 pixels of vertical overscan on
+each side. Scrolling inside the overscan reuses that image. Crossing its edge
+copies the overlapping pixels into a second image of the same size and replays
+only the newly exposed strips. The two images alternate on later moves. A jump
+with no overlap rebuilds the viewport. Dirty rects still repaint individually,
+including changes inside the copied overlap. These render targets stay outside
+Ebitengine's automatic sprite atlas, so switching between painting and copying
+them does not migrate a large image through that atlas.
+
+Warmup submits one band, at most 128 pixels tall and one viewport wide, per
+frame into a reusable scratch image. A small page eventually warms in full;
+a document beyond the 12-megapixel budget warms a neighbourhood around the
+viewport and starts another sweep when scrolling leaves it. Warmup uses the
+same background replay as the visible viewport. Pending bands keep the idle
+pacer awake until the sweep finishes. This avoids submitting the whole page's
+cold graphics work in its first frame.
 
 Both buffers keep the page background only. A visible element with an active
 2D transform or opacity animation can be promoted to a retained layer
@@ -195,7 +201,17 @@ layers, and matrices that cannot be bounded.
 
 ## Oversized pages
 
-When content exceeds the cache limits, a static page with `TakeDirty` keeps one viewport image with at most 256 pixels of vertical overscan on each side. Scrolling inside that area reuses the image. Crossing its edge moves the area and repaints visible operations. Dirty changes follow the list: a single rect repaints that rect, several repaint their bounding box, and the work covers only the intersection with the cached area. A generation change without a dirty region rebuilds it. Resizing disposes the old image. The viewport path disposes the content buffers, so they are not retained together. A stationary frame that only blits the viewport image can park on the desktop idle clock. A scroll, a generation change, a dirty region, a focus or size change, or a frame callback keeps the vsync loop.
+When content exceeds the cache limits, a static page with `TakeDirty` keeps
+viewport buffers with at most 256 pixels of vertical overscan on each side.
+Scrolling inside that area reuses the current image. Crossing its edge copies
+the overlap and paints the newly exposed strips; a jump with no overlap
+rebuilds the image. Dirty rects repaint only their intersections with the cached
+area. A generation change without dirty regions rebuilds it. Resizing disposes
+the old buffers. The viewport path drops the content-sized tile grid.
+
+A stationary frame can park on the desktop idle clock after warmup finishes.
+A scroll, generation change, dirty region, focus or size change, or frame
+callback keeps the frame clock running.
 
 `DrawVisible` filters operations before replay while preserving paint order and retaining operations whose ink cannot be bounded. Ticking pages replay visible operations each frame. This still scans the operation list; row windowing reduces the list itself.
 

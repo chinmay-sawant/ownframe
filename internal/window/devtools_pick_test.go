@@ -83,3 +83,13 @@ func TestDevToolsDropsStalePicks(t *testing.T) {
 		t.Fatal("a stale pick survived the generation change")
 	}
 }
+
+func TestDevToolsRefreshWithoutPicksSkipsBoxes(t *testing.T) {
+	d := newDevScreen()
+	s := newDevShell(d)
+	d.redraws++
+	s.devRefresh()
+	if d.boxReads != 0 {
+		t.Fatalf("refresh read boxes %d times without a selection", d.boxReads)
+	}
+}

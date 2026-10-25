@@ -177,8 +177,7 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.dirtyFromDisplay(previous, display)
 	p.noteCommit(drawStart)
 	p.draw.CommitList(display)
-	p.setBoxes(display.Boxes)
-	p.hits = hitList(display.Boxes, fixedBoxes(display))
+	p.setDisplayBoxes(display)
 	p.generation++
 	p.layerGen++
 	p.bindMotion(previous, display)
@@ -214,13 +213,11 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 		return err
 	}
 
-	boxes := display.Boxes
 	previous := p.draw.Display
 	p.captureTransitions(previous, display)
 	p.noteCommit(drawStart)
 	p.draw.CommitBitmap(display, bitmap.Image)
-	p.setBoxes(boxes)
-	p.hits = hitList(boxes, fixedBoxes(display))
+	p.setDisplayBoxes(display)
 	p.generation++
 	p.layerGen++
 	p.bindMotion(previous, nil)
@@ -233,7 +230,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 		Full:    bitmap.Full,
 	}
 	if track {
-		p.recordFull(len(boxes))
+		p.recordFull(len(display.Boxes))
 	}
 	p.applyPending()
 	p.runAfterRedraw()

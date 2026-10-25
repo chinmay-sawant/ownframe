@@ -13,14 +13,14 @@ type viewportKey struct {
 }
 
 type viewportState struct {
-	buf        *ebiten.Image
-	key        viewportKey
-	area       image.Rectangle
-	scroll     image.Point
-	valid      bool
-	blitOnly   bool
-	prewarmed  bool
-	prewarmGen uint64
+	buf      *ebiten.Image
+	spare    *ebiten.Image
+	key      viewportKey
+	area     image.Rectangle
+	scroll   image.Point
+	valid    bool
+	blitOnly bool
+	warmup   viewportWarmup
 }
 
 func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTaker) {
@@ -42,9 +42,8 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	specs := s.layerSpecs(d)
 	s.renderer.BeginLayers(d, s.layerGeneration(), specs)
 	s.syncPromotedLayers()
-	// One cached image: a single dirty rect is used as is, and a list is
-	// painted rect by rect so a moving chip costs its own box instead of the
-	// bounding box of every moving chip.
+	// Paint dirty rects separately so a moving chip costs its own box instead
+	// of the bounding box of every moving chip.
 	rects, changed := taker.TakeDirtyRects()
 	// A promotion opens a hole in the background and a demotion closes one.
 	// Ordinary layer motion needs neither, because the pixels under a layer
@@ -57,8 +56,19 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	full := !s.viewport.valid || s.viewport.key.bounds != bounds || !wanted.In(s.viewport.area)
 	full = full || (s.viewport.key.generation != key.generation && !changed)
 	if full {
+		previous := s.viewport.area
+		reuse := s.viewport.valid && s.viewport.key.bounds == bounds &&
+			(s.viewport.key.generation == key.generation || changed)
+		buffer := s.viewport.buf
 		s.setViewportArea(bounds)
-		s.paintViewport(d, s.viewport.area, s.viewportPinZ())
+		if reuse && s.viewport.buf == buffer && previous.Overlaps(s.viewport.area) {
+			s.moveViewport(d, previous)
+			if changed {
+				s.paintViewportRects(d, rects)
+			}
+		} else {
+			s.paintViewport(d, s.viewport.area, s.viewportPinZ())
+		}
 	} else if changed && len(rects) > 0 {
 		s.paintViewportRects(d, rects)
 	}
@@ -78,14 +88,18 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	s.renderer.DrawLayers(dst, d, -float64(s.scrollX), -float64(s.scrollY))
 	s.renderer.DrawFixed(dst, d)
 	s.renderer.DrawPinnedZ(dst, d, s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
-	if gen := s.layerGeneration(); !s.viewport.prewarmed || s.viewport.prewarmGen != gen {
-		s.viewport.prewarmed = true
-		s.viewport.prewarmGen = gen
-		s.prewarmViewport(d, bounds)
+	if s.prewarmViewport(d, bounds) {
+		s.viewport.blitOnly = false
 	}
 }
 
 func (s *shell) disposeViewport() {
+	if s.viewport.spare != nil {
+		s.viewport.spare.Deallocate()
+	}
+	if s.viewport.warmup.scratch != nil {
+		s.viewport.warmup.scratch.Deallocate()
+	}
 	if s.viewport.buf != nil {
 		s.viewport.buf.Deallocate()
 	}

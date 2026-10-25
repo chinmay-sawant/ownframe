@@ -20,7 +20,11 @@ func (s *shell) setViewportArea(bounds image.Rectangle) {
 	}
 	if s.viewport.buf == nil || s.viewport.buf.Bounds().Size() != image.Pt(width, height) {
 		s.disposeViewport()
-		s.viewport.buf = ebiten.NewImage(width, height)
+		// This image alternates between a render target and a scroll source.
+		// Keep it out of the sprite atlas so those switches never migrate it.
+		s.viewport.buf = ebiten.NewImageWithOptions(
+			image.Rect(0, 0, width, height), &ebiten.NewImageOptions{Unmanaged: true},
+		)
 	}
 	top := max(0, s.scrollY-gap)
 	s.viewport.area = image.Rect(s.scrollX, top, s.scrollX+width, top+height)
@@ -66,6 +70,8 @@ func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int)
 	if !ok {
 		return
 	}
+	s.partial.paints++
+	s.partial.paintPx += rect.Dx() * rect.Dy()
 	clip.Clear()
 	clip.Fill(s.pageBackground())
 	s.renderer.DrawVisibleUnfixedZBackground(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)

@@ -86,6 +86,46 @@ func TestIndexLastBox(t *testing.T) {
 	}
 }
 
+func TestIndexRebuildReusesStorage(t *testing.T) {
+	boxes := []layout.Box{{ID: "first"}, {ID: "second"}}
+	ix := Index(nil, boxes)
+	allocs := testing.AllocsPerRun(100, func() {
+		ix = Index(ix, boxes)
+	})
+	if allocs != 0 {
+		t.Fatalf("index rebuild allocated %g times, want zero", allocs)
+	}
+}
+
+func TestListRebuildReusesStorage(t *testing.T) {
+	boxes, items := fixedStack()
+	first := &items[0]
+	boxes[0].X = 100
+	allocs := testing.AllocsPerRun(100, func() {
+		items = List(items, boxes, nil)
+	})
+	if allocs != 0 {
+		t.Fatalf("list rebuild allocated %g times, want zero", allocs)
+	}
+	if &items[0] != first || items[0].Box.X != 100 {
+		t.Fatal("list rebuild did not reuse storage with updated geometry")
+	}
+	for _, item := range items {
+		if item.Fixed {
+			t.Fatal("list rebuild kept a stale fixed flag")
+		}
+	}
+	items = List(items, boxes[:1], boxes[:1])
+	if len(items) != 1 || !items[0].Fixed {
+		t.Fatal("shortened list did not update its fixed root")
+	}
+	for _, item := range items[:cap(items)][1:] {
+		if item.Box.ID != "" || item.Fixed {
+			t.Fatal("shortened list retained a removed box")
+		}
+	}
+}
+
 func fixedStack() ([]layout.Box, []Item) {
 	boxes := []layout.Box{
 		{ID: "head", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 50},
@@ -93,7 +133,7 @@ func fixedStack() ([]layout.Box, []Item) {
 		{ID: "body", ParentIndex: -1, X: 0, Y: 0, W: 100, H: 80},
 	}
 
-	return boxes, List(boxes, []layout.Box{boxes[0]})
+	return boxes, List(nil, boxes, []layout.Box{boxes[0]})
 }
 
 func TestListPinsFixedSubtree(t *testing.T) {
@@ -164,7 +204,7 @@ func TestListWithoutFixedCopiesDocumentOrder(t *testing.T) {
 	t.Parallel()
 
 	boxes := overlapBoxes()
-	items := List(boxes, nil)
+	items := List(nil, boxes, nil)
 	if len(items) != len(boxes) {
 		t.Fatalf("len = %d, want %d", len(items), len(boxes))
 	}

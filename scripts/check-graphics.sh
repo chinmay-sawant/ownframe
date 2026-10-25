@@ -44,6 +44,7 @@ if not passed:
 # A missing, renamed, or skipped test is a failure, even when go test exits zero.
 run_test ./internal/window TestPartialFrameLeavesTheScreen
 run_test ./internal/window TestWindowRepaintPixels
+run_test ./internal/window TestViewportScrollPixels
 run_test ./internal/window TestWindowIdleDeadline
 run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity

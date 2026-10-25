@@ -12,10 +12,16 @@ import (
 // devScreen is a screen double with an inspector and a click count.
 type devScreen struct {
 	*fakeScreen
-	on      bool
-	clicked int
-	hovers  int
-	draw    time.Duration
+	on       bool
+	clicked  int
+	hovers   int
+	draw     time.Duration
+	boxReads int
+}
+
+func (d *devScreen) Boxes() []layout.Box {
+	d.boxReads++
+	return d.fakeScreen.Boxes()
 }
 
 func (d *devScreen) DevTools() bool              { return d.on }

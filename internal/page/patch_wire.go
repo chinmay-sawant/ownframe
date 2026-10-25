@@ -140,8 +140,7 @@ func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
 // is the damage source, not ElementPatch.Old and New alone.
 func (p *Page) adoptSpliced(d *Display) *Display {
 	prev := p.draw.SwapList(d)
-	p.setBoxes(d.Boxes)
-	p.hits = hitList(d.Boxes, fixedBoxes(d))
+	p.setDisplayBoxes(d)
 	p.dirtyFromDisplay(prev, d)
 	p.generation++
 	p.layerGen++

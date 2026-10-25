@@ -10,12 +10,19 @@ type Item struct {
 	Fixed bool
 }
 
-// List builds the hit list in document order, so the innermost box under
-// a point still wins inside one layer. A box the window pins to the viewport
-// is marked, because the window paints that layer last and a click has to
-// land on the box the user sees on top.
-func List(boxes, fixed []layout.Box) []Item {
-	out := make([]Item, 0, len(boxes))
+// List rebuilds the hit list in out's storage in document order, so the
+// innermost box under a point still wins inside one layer. A viewport-pinned
+// box is marked because the window paints that layer last and a click has
+// to land on the box the user sees on top.
+func List(out []Item, boxes, fixed []layout.Box) []Item {
+	if cap(out) < len(boxes) {
+		out = make([]Item, 0, len(boxes))
+	} else {
+		if len(out) > len(boxes) {
+			clear(out[len(boxes):])
+		}
+		out = out[:0]
+	}
 	if len(fixed) == 0 {
 		for _, b := range boxes {
 			out = append(out, Item{Box: b})

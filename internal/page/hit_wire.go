@@ -40,13 +40,6 @@ func (p *Page) isFixed(box Box) bool {
 	return hit.IsFixed(p.hits, box)
 }
 
-// hitList builds the hit list in document order, so the innermost box under
-// a point still wins inside one layer. A box the window pins to the viewport
-// is marked, because the window paints that layer last.
-func hitList(boxes []Box, fixed []Box) []hitItem {
-	return hit.List(boxes, fixed)
-}
-
 // fixedBoxes returns the boxes the window pins to the viewport, such as a
 // fixed header. The first operation of a fixed range belongs to that box.
 func fixedBoxes(d *Display) []Box {
