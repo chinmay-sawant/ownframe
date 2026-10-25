@@ -23,7 +23,7 @@ Open the `/ownframe/` address Vite prints. The site supports dark and light them
 - `src/main.jsx` contains the shared header, footer, and route selection.
 - `src/style.css` styles the homepage and documentation for desktop and mobile.
 
-The docs section shows Examples and Comparisons only. Guides use one page scroll. Scrollbar rails are hidden, while wheel, touch, and keyboard scrolling remain available.
+The docs section shows About, Examples, and Comparisons. The About page is sourced from `../documentation/why-ownframe.md`. Guides use one page scroll. Scrollbar rails are hidden, while wheel, touch, and keyboard scrolling remain available.
 
 Example and comparison pages come from `../documentation/compare-*.md` and `../examples/readme.md`. The website's Example apps page uses `src/showcase.js`; `../showcase.md` remains a separate repository document and does not set the website media sizes. Relative guide links stay on the site; source links open GitHub. Existing `#docs/<slug>/<heading>` links for examples and comparisons still work.
 
