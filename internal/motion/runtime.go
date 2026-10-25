@@ -198,7 +198,7 @@ func (r *Runtime) animationsActive() bool {
 // NextFrame returns the next time the runtime needs a sample. An animation and
 // a running transition ask for the next frame; a transition still inside its
 // delay asks for the delay end instead, so a delayed page parks rather than
-// repainting the same starting paint every vsync. ok is false when nothing is
+// repainting the same starting paint every frame. ok is false when nothing is
 // running.
 func (r *Runtime) NextFrame(now time.Time) (time.Time, bool) {
 	if r == nil {

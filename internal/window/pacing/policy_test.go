@@ -200,9 +200,9 @@ func TestPaceZeroDeadlineFallsBackToKeepAlive(t *testing.T) {
 	}
 }
 
-// TestPaceEveryFrameRequestKeepsVsync pins that a page that asks for the next
+// TestPaceEveryFrameRequestKeepsDrawing pins that a page that asks for the next
 // frame now on every tick never leaves the fast loop.
-func TestPaceEveryFrameRequestKeepsVsync(t *testing.T) {
+func TestPaceEveryFrameRequestKeepsDrawing(t *testing.T) {
 	base := time.Unix(9000, 0)
 	p := pacing.New(base)
 	at := base
@@ -220,7 +220,7 @@ func TestPaceEveryFrameRequestKeepsVsync(t *testing.T) {
 }
 
 // TestPaceImmediateRequestWakesIdle pins that an immediate request from an
-// idle window returns to vsync at once.
+// idle window returns to uncapped drawing at once.
 func TestPaceImmediateRequestWakesIdle(t *testing.T) {
 	base := time.Unix(9500, 0)
 	p := pacing.New(base)
@@ -236,7 +236,7 @@ func TestPaceImmediateRequestWakesIdle(t *testing.T) {
 }
 
 // TestPaceDeclaredDirtyStaysIdle pins that a page that declared its next
-// frame is trusted: one dirty frame does not burst or return to vsync.
+// frame is trusted: one dirty frame does not burst or return to uncapped drawing.
 func TestPaceDeclaredDirtyStaysIdle(t *testing.T) {
 	base := time.Unix(9750, 0)
 	p := pacing.New(base)

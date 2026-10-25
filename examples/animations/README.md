@@ -36,7 +36,12 @@ The header button (`#toggle-play`) flips `ViewState.IsPlaying` and publishes the
 `is-paused` class on the body. The stylesheet turns that class into
 `animation-play-state: paused` for every target, so pausing is CSS too. A paused
 player stops asking for frames. Pressing play again continues from the frozen
-phase instead of restarting the keyframes. There is no reset or per-card control.
+phase instead of restarting the keyframes.
+
+Each card has a Play button at its bottom right. It pauses the other cards and
+restarts the selected animation, including its delay and finite iteration count.
+The selected button reads Replay and can restart that card again. Play all in the
+header leaves solo playback and resumes every card from its current phase.
 
 A redraw paints the declared base values. The window runs the motion tick before
 it draws, and that tick writes the carried pose back, so the paused card stays
@@ -60,15 +65,9 @@ the gallery without that tracking. Close the dock with:
 go run ./examples/animations -dev=false
 ```
 
-A virtual display or remote session whose compositor holds a large window below
-its refresh rate can cap the frame rate even when the page is idle. Turn vsync
-off on that kind of host:
-
-```sh
-go run ./examples/animations -vsync=false
-```
-
-Leave vsync on for a normal desktop, where it prevents tearing. `-width` and
+OwnFrame disables VSync and draws active pages without a frame-rate cap.
+Static desktop pages can still idle. The update tick rate is separate from
+rendering. `-width` and
 `-height` set the window size and `-monitor` chooses the display index:
 
 ```sh
@@ -80,7 +79,7 @@ prints the frame rate, the page pipeline, the motion counters, and memory, then
 closes the window:
 
 ```sh
-go run ./examples/animations -profile-seconds=30 -vsync=false
+go run ./examples/animations -profile-seconds=30
 ```
 
 The samplers wait for the first drawn frame and then for a two second warmup,
@@ -132,3 +131,24 @@ Memory samples include the running heap and frame rate once per simulated
 second; the final heap value is recorded after garbage collection with the
 game and its caches still retained. These values measure this native session,
 not the browser or Android hosts.
+
+To capture frames immediately after scrolling while animations continue, add
+`OWNFRAME_ANIMATIONS_SCROLL_SNAPSHOTS=1` to the native test command. This mode
+writes PNGs under `temp/animations-card-snapshots/`. Pixel readback and PNG
+encoding affect timing, so use it for visual inspection, not FPS comparison.
+
+[The card audit](ANIMATION_AUDIT.md) records each declaration and the behavior its
+Expect text describes. The tests also freeze every card at start, midpoint,
+and end keyframes to check that all 33 effects reach the display list.
+
+For a focused native Play/Replay check of positive delay, fill none, fill forwards,
+and fill both, run:
+
+```sh
+OWNFRAME_ANIMATIONS_GPU_TEST=1 go test -p 1 -count=1 -timeout=45s -run '^TestNativeDelayAndFillReplay$' ./examples/animations
+```
+
+This test uses native click batching with the dock open, plays each card twice,
+and compares its stage pixels before and after the declared delay. Start and
+moving screenshots are saved under `temp/animations-card-replay/`. It leaves the
+dock open throughout the run.

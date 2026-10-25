@@ -63,11 +63,14 @@ func sigImage(h uint64, op *layout.DisplayOp) uint64 {
 
 // sigXform folds a baked transform, or a zero marker.
 func sigXform(h uint64, op *layout.DisplayOp) uint64 {
-	if !op.XformSet {
-		return mix64(h, 0)
-	}
-
 	m := op.Transform()
+	if !op.XformSet {
+		var projected bool
+		m, projected = textProjection(op)
+		if !projected {
+			return mix64(h, 0)
+		}
+	}
 
 	for _, v := range [6]float64{m.A, m.B, m.C, m.D, m.E, m.F} {
 		h = mixF(h, v)

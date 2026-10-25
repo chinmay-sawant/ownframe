@@ -12,7 +12,7 @@ import (
 // that the blocked WaitEvents polls, so the next frame runs then. The timer
 // sleeps until the policy's next wake: a page deadline when the page asked,
 // the keep-alive fallback when it did not, and half a keep-alive on the fast
-// path, where the vsync loop already supplies every frame. The game loop
+// path, where the active drawing loop already supplies every frame. The game loop
 // kicks the timer after every step, so a policy change never waits out a
 // stale sleep.
 func (g *paceGame) timer(ctx context.Context) {

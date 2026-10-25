@@ -6,7 +6,7 @@ import (
 )
 
 // paceState is the pacer's published state for the devtools Frame tab: the
-// next scheduled idle wake, the vsync frames skipped so far, and whether the
+// next scheduled idle wake, the 60 Hz frames skipped so far, and whether the
 // window is parked. The wrapper writes it on the game goroutine after each
 // frame; the tab reads it there. It is a snapshot for inspection rather than a scheduling policy.
 type paceState struct {
@@ -16,7 +16,7 @@ type paceState struct {
 }
 
 // devPaceNext renders the time until the next scheduled idle wake, or "-"
-// when the pacer is on the vsync loop and nothing is scheduled.
+// when the pacer is on the active drawing loop and nothing is scheduled.
 func devPaceNext(next time.Time) string {
 	if next.IsZero() {
 		return "-"

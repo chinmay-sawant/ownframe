@@ -15,6 +15,7 @@ func NewGame(ctx context.Context, app host.Screen) ebiten.Game {
 // newShell builds the shell NewGame and NewGameWithOptions share, so
 // neither needs a type assertion on the game value.
 func newShell(ctx context.Context, app host.Screen) *shell {
+	ebiten.SetVsyncEnabled(false)
 	if ctx == nil {
 		ctx = context.Background()
 	}

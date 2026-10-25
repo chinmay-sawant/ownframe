@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -18,15 +19,15 @@ const (
 )
 
 // ViewState is the complete template data model. Every card's motion is a CSS
-// declaration in animations.html, so the only runtime state is the shared play
-// switch.
+// declaration in animations.html; playback selects all cards or one card.
 type ViewState struct {
 	IsPlaying bool
+	Solo      string
+	Reset     bool
 }
 
 // App manages the CSS animation showcase. The automatic page runtime drives
-// every card from its declared @keyframes; the app holds view state and the one
-// click handler.
+// every card from its declared @keyframes; the app controls playback selection.
 type App struct {
 	page *ownframe.Page
 	view ViewState
@@ -74,15 +75,40 @@ func (a *App) Page() *ownframe.Page {
 	return a.page
 }
 
-// handleClick toggles the shared play switch. The button only flips the view;
-// the body's is-paused class reaches every card through the stylesheet rule.
+// Remove the selected track in the click batch, then rebind it on the frame
+// tick. Two redraws inside a click would be merged by native pointer batching.
 func (a *App) handleClick(ctx context.Context, box ownframe.Box) error {
-	if box.ID != togglePlayID {
+	if box.ID == togglePlayID {
+		a.view.IsPlaying = !a.view.IsPlaying
+		a.view.Solo = ""
+		a.view.Reset = false
+		a.page.SetTick(nil)
+		return a.redraw(ctx)
+	}
+	target, ok := strings.CutPrefix(box.ID, "play-")
+	if !ok {
 		return nil
 	}
+	for _, candidate := range a.page.Boxes() {
+		if candidate.ID != target || len(candidate.Animations) == 0 {
+			continue
+		}
+		a.view.IsPlaying = false
+		a.view.Solo = target
+		a.view.Reset = true
+		a.page.SetTick(a.finishReplay)
+		return a.redraw(ctx)
+	}
+	return nil
+}
 
-	a.view.IsPlaying = !a.view.IsPlaying
+func (a *App) finishReplay(ctx context.Context) error {
+	a.view.Reset = false
+	a.page.SetTick(nil)
+	return a.redraw(ctx)
+}
+
+func (a *App) redraw(ctx context.Context) error {
 	a.page.SetData(&a.view)
-
 	return a.page.Redraw(ctx)
 }

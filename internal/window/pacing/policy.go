@@ -12,7 +12,7 @@ const (
 	Hold Action = iota
 	// ToIdle switches to the minimum FPS mode.
 	ToIdle
-	// ToFast switches back to vsync.
+	// ToFast switches back to uncapped drawing.
 	ToFast
 	// Burst stays idle and schedules one frame immediately, so a
 	// changing page is stepped again before the keep-alive interval.
@@ -36,10 +36,10 @@ const (
 	paceKeepAlive = 125 * time.Millisecond
 )
 
-// Policy decides when a window may leave the vsync loop. It is pure
+// Policy decides when a window may leave the active drawing loop. It is pure
 // state: callers pass the time, so tests need no window. In fast mode it
 // idles after cleanFrames clean frames and paceGrace without input; idle
-// mode returns to vsync at once on input, on an immediate page request, and
+// mode returns to uncapped drawing at once on input, on an immediate page request, and
 // after idleBurst dirty frames that came without a declared deadline. A page
 // deadline still ahead schedules the next idle wake; with no deadline the
 // keep-alive fallback does.
@@ -209,7 +209,7 @@ func (p *Policy) Wait(now time.Time) time.Duration {
 	return time.Millisecond
 }
 
-// skip counts the vsync frames the gap since the previous step covers, minus
+// skip counts the 60 Hz frames the gap since the previous step covers, minus
 // the frame the step presents, so a 60 Hz loop reports none and a one second
 // sleep reports about 61. A policy that was not built by New has no
 // previous time and records nothing.

@@ -343,7 +343,7 @@ func TestTransitionFitFailureSnapsAndCounts(t *testing.T) {
 
 // TestDelayedTransitionAsksForTheDelayEnd checks pacing: a delayed run holds
 // its from paint without rewriting it, and the runtime asks for the delay end
-// rather than the next vsync.
+// rather than the next frame.
 func TestDelayedTransitionAsksForTheDelayEnd(t *testing.T) {
 	record := layout.Transition{Property: "background-color", DurationMS: transitionFrameMS,
 		DelayMS: transitionFrameMS, TimingFunction: "linear"}

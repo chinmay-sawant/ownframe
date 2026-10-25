@@ -92,8 +92,8 @@ func logProfileSummary(p *ownframe.Page, samples []profileSample, elapsed time.D
 	fpsP95, tpsP95 := percentile(fps, profileP95), percentile(tps, profileP95)
 
 	pageW, pageH := p.Size()
-	log.Printf("profile seconds=%.0f samples=%d page=%dx%d window=%dx%d vsync=%v fps_avg=%.1f fps_min=%.1f fps_p95=%.1f tps_avg=%.1f tps_min=%.1f tps_p95=%.1f",
-		elapsed.Seconds(), len(samples), pageW, pageH, winW, winH, ebiten.IsVsyncEnabled(),
+	log.Printf("profile seconds=%.0f samples=%d page=%dx%d window=%dx%d drawing=uncapped fps_avg=%.1f fps_min=%.1f fps_p95=%.1f tps_avg=%.1f tps_min=%.1f tps_p95=%.1f",
+		elapsed.Seconds(), len(samples), pageW, pageH, winW, winH,
 		fpsAvg, fpsMin, fpsP95, tpsAvg, tpsMin, tpsP95)
 	log.Printf("profile fps_series=%v", series)
 

@@ -99,6 +99,10 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			g.err = err
 			return
 		}
+		if err := checkProjectedText(); err != nil {
+			g.err = err
+			return
+		}
 		if err := checkGroupComposite(); err != nil {
 			g.err = err
 			return

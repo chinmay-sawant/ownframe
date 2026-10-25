@@ -11,7 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// paceGame wraps the shell and moves the window between the vsync loop and
+// paceGame wraps the shell and moves the window between the active drawing loop and
 // the minimum FPS mode. Ebiten runs Update and Draw on its game goroutine,
 // where SetFPSMode and SetTPS are safe; the keep-alive timer runs on its
 // own goroutine and only calls the concurrent-safe ScheduleFrame.

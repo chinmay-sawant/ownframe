@@ -11,6 +11,9 @@ import (
 // hits and its resize edge; the content pins the box under the cursor.
 // Alt+click forwards press, caret, and click to the page.
 func (s *shell) devPointer(x, y int, px, py float64) error {
+	if err := s.devPointerHover(x, y, px, py); err != nil {
+		return err
+	}
 	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
 	released := inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft)
 	pressed := pressEdge(down, released, s.mouseDown)
@@ -40,10 +43,6 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		return nil
 	}
 
-	if s.devPickerOn() {
-		s.devHover(px, py)
-	}
-
 	if pressed {
 		if err := s.devPick(px, py, ebiten.IsKeyPressed(ebiten.KeyAlt)); err != nil {
 			return err
@@ -65,6 +64,25 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 	}
 
 	return nil
+}
+
+// devPointerHover keeps normal page hover and cursor feedback unless the
+// pointer belongs to dock chrome or the explicitly enabled picker.
+func (s *shell) devPointerHover(x, y int, px, py float64) error {
+	if s.dev.resizing || !s.dev.mobile && devOnEdge(s.dev.panel, x, y) {
+		s.setCursorShape(ebiten.CursorShapeEWResize)
+		return nil
+	}
+	if devInRect(s.dev.panel, float64(x), float64(y)) {
+		s.setCursorShape(ebiten.CursorShapeDefault)
+		return nil
+	}
+	if s.devPickerOn() {
+		s.setCursorShape(ebiten.CursorShapeDefault)
+		s.devHover(px, py)
+		return nil
+	}
+	return s.hoverCursor(x, y, px, py)
 }
 
 // devOpAt returns the topmost painted operation whose box holds the point
@@ -147,23 +165,15 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 
 // devPickerOn reports whether the element picker mode is active.
 func (s *shell) devPickerOn() bool {
-	return s.dev.picker || s.dev.pickerMode || s.dev.inspect ||
-		s.dev.inspectMode || s.dev.pick || s.dev.pickMode
+	return s.dev.on && s.dev.picker
 }
 
-// devSetPicker turns element picker mode on or off, keeping the public boolean
-// aliases in sync for tests and panel state. Toggling off drops the hovered
-// and pinned picks, so the picker's outline effect (and the entries it drives)
-// disappears with the mode.
+// devSetPicker changes the explicit picker selection. Turning it off drops
+// the hovered and pinned picks and the operation selected through the picker.
 func (s *shell) devSetPicker(on bool) {
-	s.dev.picker = on
-	s.dev.pickerMode = on
-	s.dev.inspect = on
-	s.dev.inspectMode = on
-	s.dev.pick = on
-	s.dev.pickMode = on
+	s.dev.picker = on && s.dev.on
 
-	if !on {
+	if !s.dev.picker {
 		s.dev.haveHov = false
 		s.dev.havePin = false
 

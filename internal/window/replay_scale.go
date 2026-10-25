@@ -2,6 +2,7 @@ package window
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"image"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -28,12 +29,12 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 			s.replayBuf.Deallocate()
 		}
 
-		s.replayBuf = ebiten.NewImage(w, h)
+		s.replayBuf = ebiten.NewImageWithOptions(image.Rect(0, 0, w, h), &ebiten.NewImageOptions{Unmanaged: true})
 	}
 
 	s.replayBuf.Clear()
 	s.replayBuf.Fill(s.pageBackground())
-	s.renderer.Draw(s.replayBuf, s.display, 0, 0)
+	s.renderer.DrawVisible(s.replayBuf, s.display, 0, 0)
 
 	var op ebiten.DrawImageOptions
 	op.Filter = ebiten.FilterLinear

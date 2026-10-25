@@ -45,6 +45,8 @@ if not passed:
 run_test ./internal/window TestPartialFrameLeavesTheScreen
 run_test ./internal/window TestWindowRepaintPixels
 run_test ./internal/window TestViewportScrollPixels
+run_test ./internal/window TestViewportAnimatedReturnPixels
+run_test ./internal/window TestViewportDirectAnimationReturnPixels
 run_test ./internal/window TestWindowIdleDeadline
 run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity

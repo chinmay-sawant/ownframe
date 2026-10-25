@@ -24,7 +24,6 @@ func main() {
 	width := flag.Int("width", 0, "window width (0 uses the example default)")
 	height := flag.Int("height", 0, "window height (0 uses the example default)")
 	monitor := flag.Int("monitor", -1, "monitor index to open on (-1 uses the current monitor)")
-	vsync := flag.Bool("vsync", true, "wait for the display refresh; pass -vsync=false on a virtual display that holds a large window below its rate")
 	flag.Parse()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -58,7 +57,7 @@ func main() {
 		profile = startProfile(time.Duration(*profileSeconds)*time.Second, cancel)
 	}
 
-	if err := ownframe.RunWithOptions(ctx, app.Page(), ownframe.WindowOptions{NoVsync: !*vsync, Perf: *performance}); err != nil && !errors.Is(err, context.Canceled) {
+	if err := ownframe.RunWithOptions(ctx, app.Page(), ownframe.WindowOptions{Perf: *performance}); err != nil && !errors.Is(err, context.Canceled) {
 		log.Fatal(err)
 	}
 	cancel()

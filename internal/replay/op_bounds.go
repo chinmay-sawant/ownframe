@@ -21,6 +21,9 @@ func opBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
 	if ppt <= 0 {
 		return image.Rectangle{}, false
 	}
+	if matrix, ok := textProjection(op); ok {
+		return matrixBounds(op, ppt, matrix)
+	}
 
 	if op.RotateDeg != 0 {
 		return image.Rectangle{}, false

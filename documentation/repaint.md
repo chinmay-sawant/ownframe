@@ -73,8 +73,12 @@ texture owns, so such an element stays direct and never re-bakes per frame. The
 background replay skips the operations the layer owns, so their pixels are a
 hole, and the window composites each layer after the background blit
 (`replay.DrawVisibleUnfixedZBackground`, `replay.DrawLayers`). A layer that
-only moves needs no background work. A promotion or demotion repaints the pose
-it leaves behind (`LayerTopologyDamage`). A layer already held through a rest
+only moves needs no background work. A promotion or demotion reports the pose
+it leaves behind (`LayerTopologyDamage`). The viewport cache rebuilds its
+background on a membership change because overscan can hold an older pose from
+before the element was promoted. Scrolling also refreshes strips entering the
+screen, even when the buffer's overscan already covers them: direct animations
+keep sampling while offscreen without reporting repaint damage. A layer already held through a rest
 pose keeps its texture, so an alternate animation does not demote and
 re-promote at every turn. A layer whose content still changes every frame is
 demoted after two frames and re-promoted after a cooldown. `LayerGeneration`

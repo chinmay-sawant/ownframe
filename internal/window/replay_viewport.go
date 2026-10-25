@@ -50,6 +50,10 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	// stay background.
 	if topology := s.renderer.LayerTopologyDamage(); len(topology) > 0 {
 		rects = append(rects, topology...)
+		// Overscan can contain an unpromoted pose painted many ticks ago.
+		// Current layer bounds cannot locate it after an offscreen animation
+		// moves, so a membership change invalidates the cached background.
+		s.viewport.valid = false
 	}
 	changed = changed || len(rects) > 0
 	wanted := bounds.Add(scroll)
@@ -71,6 +75,13 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 		}
 	} else if changed && len(rects) > 0 {
 		s.paintViewportRects(d, rects)
+	}
+	if had && scroll != prevScroll {
+		// Offscreen motion keeps sampling without page damage. Refresh the
+		// strips entering the screen even when the overscan already covers them.
+		for _, strip := range viewportExposed(wanted, bounds.Add(prevScroll)) {
+			s.paintViewport(d, strip, s.viewportPinZ())
+		}
 	}
 	noPaint := !full && !changed
 	s.viewport.blitOnly = had && noPaint && scroll == prevScroll

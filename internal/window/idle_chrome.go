@@ -9,7 +9,7 @@ import (
 
 // chromeChanged reports chrome that differs from the previous set and
 // records the new set. An unchanged overlay repaints the same pixels, so it
-// does not need the vsync loop. The buffers swap, allocating nothing.
+// does not need the active drawing loop. The buffers swap, allocating nothing.
 func (g *paceGame) chromeChanged(restore []image.Rectangle) bool {
 	g.chromeNext = append(g.chromeNext[:0], restore...)
 	changed := !slices.Equal(g.chromeNext, g.chrome)

@@ -16,6 +16,10 @@ func (renderer *Renderer) drawOp(dst *ebiten.Image, op *layout.DisplayOp, dx, dy
 	if op.Fixed {
 		dx, dy = 0, 0
 	}
+	if _, ok := textProjection(op); ok {
+		renderer.drawXformText(dst, op, dx, dy)
+		return
+	}
 
 	if op.XformSet && op.Kind != layout.DisplayOpImage && op.Kind != layout.DisplayOpPath &&
 		!op.Transform().IsIdentity() {

@@ -37,7 +37,7 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	g.publish(now)
 }
 
-// applyIdle leaves the vsync loop: the backend blocks in WaitEvents, and a
+// applyIdle leaves the active drawing loop: the backend blocks in WaitEvents, and a
 // scheduled post or an input event wakes it. TPS syncs with the frame rate
 // there, so one wake-up runs one Update.
 func (g *paceGame) applyIdle() {
@@ -51,13 +51,13 @@ func (g *paceGame) applyIdle() {
 	ebiten.SetTPS(ebiten.SyncWithFPS)
 }
 
-// applyFast restores the vsync loop and the TPS the app started with.
+// applyFast restores uncapped drawing and the TPS the app started with.
 func (g *paceGame) applyFast() {
 	if !g.idle {
 		return
 	}
 
 	g.idle = false
-	ebiten.SetVsyncEnabled(true)
+	ebiten.SetVsyncEnabled(false)
 	ebiten.SetTPS(g.base)
 }

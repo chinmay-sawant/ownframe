@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"image"
 	"image/png"
 	"os"
@@ -25,6 +26,9 @@ func TestNativeScrollProfile(t *testing.T) {
 		t.Skip("set OWNFRAME_ANIMATIONS_GPU_TEST=1 for the native scroll workload")
 	}
 	dir := filepath.Join("..", "..", "temp", "animations-native-profile")
+	if os.Getenv("OWNFRAME_ANIMATIONS_SCROLL_SNAPSHOTS") == "1" {
+		dir = filepath.Join("..", "..", "temp", "animations-card-snapshots")
+	}
 	if err := os.MkdirAll(dir, 0750); err != nil {
 		t.Fatal(err)
 	}
@@ -98,6 +102,8 @@ type scrollProfileGame struct {
 	top        bool
 	captured   bool
 	captureErr error
+	shots      int
+	shotY      int
 }
 
 func (g *scrollProfileGame) Update() error {
@@ -151,18 +157,35 @@ func (g *scrollProfileGame) Draw(dst *ebiten.Image) {
 		WorkMS: float64(g.work+time.Since(start)) / float64(time.Millisecond),
 	})
 	g.work = 0
+	if os.Getenv("OWNFRAME_ANIMATIONS_SCROLL_SNAPSHOTS") == "1" {
+		distance := y - g.shotY
+		if g.shots == 0 || distance >= 600 || distance <= -600 ||
+			(y == 0 || y == g.maxY) && y != g.shotY {
+			img := image.NewRGBA(dst.Bounds())
+			dst.ReadPixels(img.Pix)
+			g.captureErr = g.saveImage(img, fmt.Sprintf("scroll-%02d-y-%04d.png", g.shots, y))
+			g.shots++
+			g.shotY = y
+			g.last = time.Now()
+		}
+	}
 	if !g.captured && g.tick >= 190 {
 		g.captured = true
 		bounds := dst.Bounds()
 		img := image.NewRGBA(bounds)
 		dst.ReadPixels(img.Pix)
-		g.captureErr = g.saveImage(img)
+		g.captureErr = g.saveImage(img, "bottom.png")
 		g.last = time.Now()
 	}
 }
 
-func (g *scrollProfileGame) saveImage(img image.Image) error {
-	f, err := os.Create(filepath.Join(g.dir, "bottom.png"))
+func (g *scrollProfileGame) saveImage(img image.Image, name string) error {
+	root, err := os.OpenRoot(g.dir)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = root.Close() }()
+	f, err := root.Create(name)
 	if err != nil {
 		return err
 	}

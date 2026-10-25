@@ -12,12 +12,15 @@ import (
 // parallelogram instead of its layout box. ok is false for a kind the
 // painter cannot bound, such as a transformed grid.
 func xformBounds(op *layout.DisplayOp, ppt float64) (image.Rectangle, bool) {
+	return matrixBounds(op, ppt, op.Transform())
+}
+
+func matrixBounds(op *layout.DisplayOp, ppt float64, m layout.Matrix2D) (image.Rectangle, bool) {
 	l, t, r, b, ok := xformPointsBox(op)
 	if !ok {
 		return image.Rectangle{}, false
 	}
 
-	m := op.Transform()
 	loX, loY := math.Inf(1), math.Inf(1)
 	hiX, hiY := math.Inf(-1), math.Inf(-1)
 

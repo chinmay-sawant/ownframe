@@ -12,6 +12,8 @@ REQUIRED_TESTS = {
     "TestPartialFrameLeavesTheScreen",
     "TestWindowRepaintPixels",
     "TestViewportScrollPixels",
+    "TestViewportAnimatedReturnPixels",
+    "TestViewportDirectAnimationReturnPixels",
     "TestWindowIdleDeadline",
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",

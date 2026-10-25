@@ -58,8 +58,8 @@ while the overlay is on.
 
 ## Picking
 
-While the overlay is on, the pointer belongs to the overlay. The `Picker`
-toggle in the title bar arms the element picker: moving the cursor outlines
+The dock owns pointer input inside its panel. Outside the panel, page hover
+and cursor feedback work normally when picking is off. The `Picker` toggle in the title bar arms the element picker: moving the cursor outlines
 the innermost box under it, and the page picture stays still. The window
 sends no hover, so the pixels the numbers describe do not change. A click
 pins the box, opens the Ops tab, selects the operation whose centre sits in
@@ -69,7 +69,9 @@ page reaches the page control under the cursor. The Elements tab shows the
 pinned box when there is one and the hovered box otherwise. Alt+click
 forwards the press, the click, and the release to the page, so a control can
 still be exercised while inspecting. Closing the overlay clears the hovered
-and pinned boxes. A new generation drops either pick when its id is gone
+and pinned boxes and turns the picker off. It stays off when the dock reopens
+until you select Picker again. The picker is off when DevTools first opens.
+A new generation drops either pick when its id is gone
 from `Page.Boxes()`, and clears the operation pick.
 
 The dock hit-tests its own rows, never `Page.Boxes()`. A dock click switches

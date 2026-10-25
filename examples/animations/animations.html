@@ -106,6 +106,8 @@
 
     .card {
       padding: 14px;
+      display: flex;
+      flex-direction: column;
       background-color: #ffffff;
       border: 1px solid #d7deea;
       border-radius: 10px;
@@ -176,20 +178,61 @@
       display: block;
       margin-top: 8px;
       padding: 6px 8px;
-      overflow: hidden;
+      min-width: 0;
+      max-width: 100%;
       background-color: #1e293b;
       color: #7dd3fc;
       font-family: monospace;
       font-size: 10px;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      white-space: normal;
       border-radius: 5px;
     }
 
-    /* The one control. The class reaches every animated element. */
+    .card-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: auto;
+      padding-top: 10px;
+    }
+
+    .btn-card {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      height: 44px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-card:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 2px;
+    }
+
+    .card.is-solo .btn-card {
+      background-color: #0f766e;
+      color: #ffffff;
+    }
+
+    /* Shared playback can be overridden by one selected card. */
     body.is-paused .motion {
       animation-play-state: paused !important;
       -webkit-animation-play-state: paused !important;
+    }
+
+    .card.is-solo .motion {
+      animation-play-state: running !important;
+      -webkit-animation-play-state: running !important;
+    }
+
+    .card.is-reset .motion {
+      animation-name: none !important;
+      -webkit-animation-name: none !important;
     }
 
     /* ==========================================================================
@@ -227,9 +270,14 @@
       animation: kf-glide 2.4s cubic-bezier(0.68, -0.55, 0.27, 1.55) 0s infinite alternate both;
     }
 
+    @keyframes kf-stepped {
+      0% { transform: translateX(0px); background-color: #2563eb; }
+      100% { transform: translateX(180px); background-color: #059669; }
+    }
+
     .chip-steps {
       background-color: #e11d48;
-      animation: kf-glide 2.4s steps(5, jump-end) 0s infinite alternate both;
+      animation: kf-stepped 2.4s steps(5, jump-end) 0s infinite alternate both;
     }
 
     /* Direction */
@@ -299,17 +347,17 @@
     }
 
     .chip-fill-none {
-      background-color: #7c3aed;
+      background-color: #475569;
       animation: kf-one-shot 2.2s ease 0.4s 1 normal none;
     }
 
     .chip-fill-forwards {
-      background-color: #7c3aed;
+      background-color: #475569;
       animation: kf-one-shot 2.2s ease 0.4s 1 normal forwards;
     }
 
     .chip-fill-both {
-      background-color: #7c3aed;
+      background-color: #475569;
       animation: kf-one-shot 2.2s ease 0.4s 1 normal both;
     }
 
@@ -458,12 +506,12 @@
 
     .chip-translate-z {
       background-color: #d97706;
-      animation: kf-translate-z 3s linear -1.5s infinite;
+      animation: kf-translate-z 3s linear -1.5s infinite alternate;
     }
 
     .chip-matrix3d {
       background-color: #9333ea;
-      animation: kf-matrix3d 3s linear -1.5s infinite;
+      animation: kf-matrix3d 3s linear -1.5s infinite alternate;
     }
 
     /* Perspective */
@@ -620,9 +668,10 @@
         <p class="eyebrow">OwnFrame / examples</p>
         <h1>CSS Animation Showcase</h1>
         <p class="intro">
-          Every card is a CSS declaration. The page registers no tick callback,
-          builds no player, and imports no internal package: OwnFrame binds each
-          keyframe at redraw and samples it from the window tick.
+          Each card demonstrates a CSS animation. Delays and one-shot runs start
+          when this page opens; scrolling does not restart them. Loops keep running
+          offscreen. Pause all freezes every card. Each card's Play button restarts
+          just that animation and pauses the others.
         </p>
       </div>
       <button id="toggle-play" class="btn-toggle" type="button">
@@ -636,41 +685,45 @@
         <p class="section-note">Same distance, different easing curves.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-ease" class="card {{if eq .Solo "show-ease"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-ease" class="chip chip-ease motion">ease</div>
           </div>
           <h3>ease</h3>
           <p class="property">animation-timing-function</p>
           <code class="snippet">animation-timing-function: ease;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Moves right, accelerating then slowing into the turn, then returns. The start and stop are soft.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Moves 180px right and back with a soft start and finish. Blue, orange, and green mark the keyframe positions.</p>
+          <div class="card-actions"><button id="play-show-ease" class="btn-card" type="button" aria-label="Play ease only">{{if eq .Solo "show-ease"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-linear" class="card {{if eq .Solo "show-linear"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-linear" class="chip chip-linear motion">linear</div>
           </div>
           <h3>linear</h3>
           <p class="property">animation-timing-function</p>
           <code class="snippet">animation-timing-function: linear;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Moves at a constant speed to the right, then back. No acceleration or easing.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Moves 180px right and back at constant speed. The colour follows the same keyframes as ease.</p>
+          <div class="card-actions"><button id="play-show-linear" class="btn-card" type="button" aria-label="Play linear only">{{if eq .Solo "show-linear"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-bezier" class="card {{if eq .Solo "show-bezier"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-bezier" class="chip chip-bezier motion">bezier</div>
           </div>
           <h3>overshoot</h3>
           <p class="property">animation-timing-function</p>
           <code class="snippet">animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Overshoots past 180px, then settles back. The bounce comes from the negative and above-one control points.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Pulls back and overshoots around the keyframe positions, then reverses. The negative and above-one curve values create the bounce.</p>
+          <div class="card-actions"><button id="play-show-bezier" class="btn-card" type="button" aria-label="Play overshoot only">{{if eq .Solo "show-bezier"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-steps" class="card {{if eq .Solo "show-steps"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-steps" class="chip chip-steps motion">steps</div>
           </div>
           <h3>stepped</h3>
           <p class="property">animation-timing-function</p>
           <code class="snippet">animation-timing-function: steps(5, jump-end);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Moves in five equal jumps, not a slide. The chip holds each position until the next step.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Moves in five equal jumps per pass, holding each position until the next step, then reverses.</p>
+          <div class="card-actions"><button id="play-show-steps" class="btn-card" type="button" aria-label="Play stepped only">{{if eq .Solo "show-steps"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -681,7 +734,7 @@
         <p class="section-note">Which way each iteration runs.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-direction-normal" class="card {{if eq .Solo "show-direction-normal"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-direction-normal" class="chip chip-direction chip-direction-normal motion">normal</div>
           </div>
@@ -689,8 +742,9 @@
           <p class="property">animation-direction</p>
           <code class="snippet">animation-direction: normal;</code>
           <p class="expect"><span class="expect-label">Expect</span> Each cycle runs left to right, then snaps back to the left to start again.</p>
+          <div class="card-actions"><button id="play-show-direction-normal" class="btn-card" type="button" aria-label="Play normal only">{{if eq .Solo "show-direction-normal"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-direction-reverse" class="card {{if eq .Solo "show-direction-reverse"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-direction-reverse" class="chip chip-direction chip-direction-reverse motion">reverse</div>
           </div>
@@ -698,8 +752,9 @@
           <p class="property">animation-direction</p>
           <code class="snippet">animation-direction: reverse;</code>
           <p class="expect"><span class="expect-label">Expect</span> Each cycle runs right to left, then snaps back to the right.</p>
+          <div class="card-actions"><button id="play-show-direction-reverse" class="btn-card" type="button" aria-label="Play reverse only">{{if eq .Solo "show-direction-reverse"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-direction-alternate" class="card {{if eq .Solo "show-direction-alternate"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-direction-alternate" class="chip chip-direction chip-direction-alternate motion">alternate</div>
           </div>
@@ -707,15 +762,17 @@
           <p class="property">animation-direction</p>
           <code class="snippet">animation-direction: alternate;</code>
           <p class="expect"><span class="expect-label">Expect</span> Runs left to right, then right to left, alternating forever.</p>
+          <div class="card-actions"><button id="play-show-direction-alternate" class="btn-card" type="button" aria-label="Play alternate only">{{if eq .Solo "show-direction-alternate"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-direction-alternate-reverse" class="card {{if eq .Solo "show-direction-alternate-reverse"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-direction-alternate-reverse" class="chip chip-direction chip-direction-alternate-reverse motion">alt-rev</div>
           </div>
           <h3>alternate-reverse</h3>
           <p class="property">animation-direction</p>
           <code class="snippet">animation-direction: alternate-reverse;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Starts at the right edge, runs right to left, then alternates.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Starts 180px to the right, moves left, then alternates direction each pass.</p>
+          <div class="card-actions"><button id="play-show-direction-alternate-reverse" class="btn-card" type="button" aria-label="Play alternate-reverse only">{{if eq .Solo "show-direction-alternate-reverse"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -726,50 +783,55 @@
         <p class="section-note">When playback starts, and what it keeps when it ends.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-delay-positive" class="card {{if eq .Solo "show-delay-positive"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-delay-positive" class="chip chip-delay-positive motion">+0.8s</div>
           </div>
           <h3>positive delay</h3>
           <p class="property">animation-delay</p>
           <code class="snippet">animation-delay: 0.8s;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Holds the start pose for 0.8s, then moves. The pause before motion is the delay.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Waits once for 0.8s after the page opens at 30 percent opacity, then moves and brightens. Scrolling does not restart the delay.</p>
+          <div class="card-actions"><button id="play-show-delay-positive" class="btn-card" type="button" aria-label="Play positive delay only">{{if eq .Solo "show-delay-positive"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-delay-negative" class="card {{if eq .Solo "show-delay-negative"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-delay-negative" class="chip chip-delay-negative motion">-1s</div>
           </div>
           <h3>negative delay</h3>
           <p class="property">animation-delay</p>
           <code class="snippet">animation-delay: -1s;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Starts already 1s into the two-second cycle, so the first visible frame is mid-path.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Starts 1s into its two-second pass, halfway along the path at full opacity. It then moves and fades in alternating directions.</p>
+          <div class="card-actions"><button id="play-show-delay-negative" class="btn-card" type="button" aria-label="Play negative delay only">{{if eq .Solo "show-delay-negative"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-fill-none" class="card {{if eq .Solo "show-fill-none"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-fill-none" class="chip chip-fill-none motion">none</div>
           </div>
           <h3>fill: none</h3>
           <p class="property">animation-fill-mode</p>
           <code class="snippet">animation-fill-mode: none;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Runs once, then snaps back to the start pose and start colour. Nothing is held.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Waits grey for 0.4s, makes one purple-to-green pass, then returns to the left and grey. No keyframe pose is held.</p>
+          <div class="card-actions"><button id="play-show-fill-none" class="btn-card" type="button" aria-label="Play fill: none only">{{if eq .Solo "show-fill-none"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-fill-forwards" class="card {{if eq .Solo "show-fill-forwards"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-fill-forwards" class="chip chip-fill-forwards motion">forwards</div>
           </div>
           <h3>fill: forwards</h3>
           <p class="property">animation-fill-mode</p>
           <code class="snippet">animation-fill-mode: forwards;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Runs once and keeps the final position and colour.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Waits grey for 0.4s, runs once for 2.2s, then holds the right-hand position and green colour.</p>
+          <div class="card-actions"><button id="play-show-fill-forwards" class="btn-card" type="button" aria-label="Play fill: forwards only">{{if eq .Solo "show-fill-forwards"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-fill-both" class="card {{if eq .Solo "show-fill-both"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-fill-both" class="chip chip-fill-both motion">both</div>
           </div>
           <h3>fill: both</h3>
           <p class="property">animation-fill-mode</p>
           <code class="snippet">animation-fill-mode: both;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Shows the start pose during the 0.4s delay and keeps the final pose after the run.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Shows the purple start pose during the 0.4s delay, then holds the green final pose after the 2.2s run.</p>
+          <div class="card-actions"><button id="play-show-fill-both" class="btn-card" type="button" aria-label="Play fill: both only">{{if eq .Solo "show-fill-both"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -780,7 +842,7 @@
         <p class="section-note">How many cycles a card runs.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-iteration-once" class="card {{if eq .Solo "show-iteration-once"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-iteration-once" class="chip chip-iteration-once motion">once</div>
           </div>
@@ -788,8 +850,9 @@
           <p class="property">animation-iteration-count</p>
           <code class="snippet">animation-iteration-count: 1;</code>
           <p class="expect"><span class="expect-label">Expect</span> One pass from left to right, then holds the end because fill is both.</p>
+          <div class="card-actions"><button id="play-show-iteration-once" class="btn-card" type="button" aria-label="Play once only">{{if eq .Solo "show-iteration-once"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-iteration-three" class="card {{if eq .Solo "show-iteration-three"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-iteration-three" class="chip chip-iteration-three motion">three</div>
           </div>
@@ -797,15 +860,17 @@
           <p class="property">animation-iteration-count</p>
           <code class="snippet">animation-iteration-count: 3;</code>
           <p class="expect"><span class="expect-label">Expect</span> Three passes, then holds the end.</p>
+          <div class="card-actions"><button id="play-show-iteration-three" class="btn-card" type="button" aria-label="Play three times only">{{if eq .Solo "show-iteration-three"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-iteration-infinite" class="card {{if eq .Solo "show-iteration-infinite"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-iteration-infinite" class="chip chip-iteration-infinite motion">infinite</div>
           </div>
           <h3>infinite</h3>
           <p class="property">animation-iteration-count</p>
           <code class="snippet">animation-iteration-count: infinite;</code>
-          <p class="expect"><span class="expect-label">Expect</span> Loops without a visible restart.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Repeats a 130px pass every 1.2s. Each pass snaps back to the left before starting again.</p>
+          <div class="card-actions"><button id="play-show-iteration-infinite" class="btn-card" type="button" aria-label="Play infinite only">{{if eq .Solo "show-iteration-infinite"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -816,50 +881,55 @@
         <p class="section-note">The operation matrix moves, rotates, scales, skews, and shears.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-translate" class="card {{if eq .Solo "show-translate"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage">
             <div id="show-translate" class="chip chip-translate motion">translate</div>
           </div>
           <h3>translate</h3>
           <p class="property">transform</p>
           <code class="snippet">transform: translateX(150px);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Moves 150px right, then returns. The chip keeps its size and angle.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Moves 150px right over three seconds, then snaps back to the start. Its size and angle stay fixed.</p>
+          <div class="card-actions"><button id="play-show-translate" class="btn-card" type="button" aria-label="Play translate only">{{if eq .Solo "show-translate"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-rotate" class="card {{if eq .Solo "show-rotate"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-rotate" class="chip chip-rotate motion">rotate</div>
           </div>
           <h3>rotate</h3>
           <p class="property">transform</p>
           <code class="snippet">transform: rotate(150deg);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Turns 150 degrees clockwise around its own center, then unwinds.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Turns 150 degrees clockwise around its centre over three seconds, then snaps back to zero.</p>
+          <div class="card-actions"><button id="play-show-rotate" class="btn-card" type="button" aria-label="Play rotate only">{{if eq .Solo "show-rotate"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-scale" class="card {{if eq .Solo "show-scale"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-scale" class="chip chip-scale motion">scale</div>
           </div>
           <h3>scale</h3>
           <p class="property">transform</p>
           <code class="snippet">transform: scale(1.22);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Grows from 0.72 to 1.22 and back. Text and border grow with the chip.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Grows from 0.72 to 1.22 over three seconds, then restarts small. The label scales with the chip.</p>
+          <div class="card-actions"><button id="play-show-scale" class="btn-card" type="button" aria-label="Play scale only">{{if eq .Solo "show-scale"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-skew" class="card {{if eq .Solo "show-skew"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-skew" class="chip chip-skew motion">skew</div>
           </div>
           <h3>skew</h3>
           <p class="property">transform</p>
           <code class="snippet">transform: skewX(22deg);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Leans to the right as the top edge shifts sideways, then straightens.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Shears by 22 degrees: the top edge moves left and the bottom edge moves right, then the chip resets.</p>
+          <div class="card-actions"><button id="play-show-skew" class="btn-card" type="button" aria-label="Play skew only">{{if eq .Solo "show-skew"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-matrix" class="card {{if eq .Solo "show-matrix"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-matrix" class="chip chip-matrix motion">matrix</div>
           </div>
           <h3>matrix</h3>
           <p class="property">transform</p>
           <code class="snippet">transform: matrix(1, 0.18, -0.18, 1, 64, 0);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Slides 64px right while turning and shearing. One matrix supplies translation and rotation.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Slides 64px right, rotates clockwise about 10 degrees, and grows slightly, then resets. One matrix combines these changes.</p>
+          <div class="card-actions"><button id="play-show-matrix" class="btn-card" type="button" aria-label="Play matrix only">{{if eq .Solo "show-matrix"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -867,44 +937,48 @@
     <section class="section">
       <div class="section-head">
         <h2>3D transforms</h2>
-        <p class="section-note">These cards re-project the retained box tree each sample.</p>
+        <p class="section-note">Watch the chip tilt around an axis or move toward the camera.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-rotate-x" class="card {{if eq .Solo "show-rotate-x"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage deep center">
             <div id="show-rotate-x" class="chip chip-rotate-x motion">rotateX</div>
           </div>
           <h3>rotateX</h3>
           <p class="property">transform</p>
-          <code class="snippet">transform: rotateX(110deg);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Tips back around the horizontal axis. The top edge recedes and the chip looks shorter.</p>
+          <code class="snippet">transform: rotateX(70deg);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Tilts from flat to 70 degrees around the horizontal axis and back. The chip and its label become shorter together.</p>
+          <div class="card-actions"><button id="play-show-rotate-x" class="btn-card" type="button" aria-label="Play rotateX only">{{if eq .Solo "show-rotate-x"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-rotate-y" class="card {{if eq .Solo "show-rotate-y"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage deep center">
             <div id="show-rotate-y" class="chip chip-rotate-y motion">rotateY</div>
           </div>
           <h3>rotateY</h3>
           <p class="property">transform</p>
-          <code class="snippet">transform: rotateY(110deg);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Turns around the vertical axis. One side edge recedes and the chip narrows.</p>
+          <code class="snippet">transform: rotateY(70deg);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Turns from flat to 70 degrees around the vertical axis and back. The chip and its label become narrower together.</p>
+          <div class="card-actions"><button id="play-show-rotate-y" class="btn-card" type="button" aria-label="Play rotateY only">{{if eq .Solo "show-rotate-y"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-translate-z" class="card {{if eq .Solo "show-translate-z"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage deep center">
             <div id="show-translate-z" class="chip chip-translate-z motion">translateZ</div>
           </div>
           <h3>translateZ</h3>
           <p class="property">transform</p>
           <code class="snippet">transform: translateZ(70px);</code>
-          <p class="expect"><span class="expect-label">Expect</span> Moves toward the camera and grows, then recedes and shrinks.</p>
+          <p class="expect"><span class="expect-label">Expect</span> Moves 70px toward a camera 520px away and back. The chip and label grow together, without a sideways slide.</p>
+          <div class="card-actions"><button id="play-show-translate-z" class="btn-card" type="button" aria-label="Play translateZ only">{{if eq .Solo "show-translate-z"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-matrix3d" class="card {{if eq .Solo "show-matrix3d"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage deep center">
             <div id="show-matrix3d" class="chip chip-matrix3d motion">matrix3d</div>
           </div>
           <h3>matrix3d</h3>
           <p class="property">transform</p>
-          <code class="snippet">transform: matrix3d(0.866, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866, 0, 0, 0, 64, 1);</code>
-          <p class="expect"><span class="expect-label">Expect</span> A full 4x4 projection: the chip is rotated and moves toward the viewer as z rises from 24 to 64.</p>
+          <code id="snippet-matrix3d" class="snippet">transform: matrix3d(0.866, 0, -0.5, 0, 0, 1, 0, 0, 0.5, 0, 0.866, 0, 0, 0, 64, 1);</code>
+          <p class="expect"><span class="expect-label">Expect</span> Keeps a 30-degree turn around the vertical axis while moving between 24px and 64px of depth. The chip and label grow and shrink together.</p>
+          <div class="card-actions"><button id="play-show-matrix3d" class="btn-card" type="button" aria-label="Play matrix3d only">{{if eq .Solo "show-matrix3d"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -915,7 +989,7 @@
         <p class="section-note">The camera animates while the chip stays still.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-perspective" class="card {{if eq .Solo "show-perspective"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div id="show-perspective" class="stage deep center motion stage-camera">
             <div class="chip chip-perspective">camera</div>
           </div>
@@ -923,8 +997,9 @@
           <p class="property">perspective</p>
           <code class="snippet">perspective: 320px;</code>
           <p class="expect"><span class="expect-label">Expect</span> The camera pulls from 320px to 920px. The tilted chip looks strongly foreshortened, then flatter; the chip itself does not move.</p>
+          <div class="card-actions"><button id="play-show-perspective" class="btn-card" type="button" aria-label="Play camera pull only">{{if eq .Solo "show-perspective"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-perspective-origin" class="card {{if eq .Solo "show-perspective-origin"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div id="show-perspective-origin" class="stage deep center motion stage-camera-origin">
             <div class="chip chip-perspective">origin</div>
           </div>
@@ -932,6 +1007,7 @@
           <p class="property">perspective-origin</p>
           <code class="snippet">perspective-origin: left top;</code>
           <p class="expect"><span class="expect-label">Expect</span> The vanishing point slides from top-left to bottom-right. The same tilted chip projects from a different corner.</p>
+          <div class="card-actions"><button id="play-show-perspective-origin" class="btn-card" type="button" aria-label="Play origin slide only">{{if eq .Solo "show-perspective-origin"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -942,7 +1018,7 @@
         <p class="section-note">Opacity and colour writes stay inside the element that owns them.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-opacity" class="card {{if eq .Solo "show-opacity"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-opacity" class="chip chip-opacity motion">fade</div>
           </div>
@@ -950,8 +1026,9 @@
           <p class="property">opacity</p>
           <code class="snippet">opacity: 0.2;</code>
           <p class="expect"><span class="expect-label">Expect</span> Fades from 20 percent to opaque, then restarts at 20 percent. Position and colour stay fixed.</p>
+          <div class="card-actions"><button id="play-show-opacity" class="btn-card" type="button" aria-label="Play fade only">{{if eq .Solo "show-opacity"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-background" class="card {{if eq .Solo "show-background"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-background" class="chip chip-background motion">fill</div>
           </div>
@@ -959,8 +1036,9 @@
           <p class="property">background-color</p>
           <code class="snippet">background-color: #1d4ed8;</code>
           <p class="expect"><span class="expect-label">Expect</span> Cycles from blue to red, then restarts at blue. The white label stays white.</p>
+          <div class="card-actions"><button id="play-show-background" class="btn-card" type="button" aria-label="Play fill colour only">{{if eq .Solo "show-background"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-color" class="card {{if eq .Solo "show-color"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-color" class="chip chip-color motion">ink</div>
           </div>
@@ -968,8 +1046,9 @@
           <p class="property">color</p>
           <code class="snippet">color: #f8fafc;</code>
           <p class="expect"><span class="expect-label">Expect</span> Ink cycles from white to amber, then restarts at white. The dark chip stays dark.</p>
+          <div class="card-actions"><button id="play-show-color" class="btn-card" type="button" aria-label="Play ink colour only">{{if eq .Solo "show-color"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-border" class="card {{if eq .Solo "show-border"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-border" class="chip chip-border motion">edge</div>
           </div>
@@ -977,6 +1056,7 @@
           <p class="property">border-color</p>
           <code class="snippet">border-color: #2563eb;</code>
           <p class="expect"><span class="expect-label">Expect</span> Only the 3px border cycles from blue to red, then restarts. The white fill and dark label stay.</p>
+          <div class="card-actions"><button id="play-show-border" class="btn-card" type="button" aria-label="Play edge colour only">{{if eq .Solo "show-border"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>
@@ -987,7 +1067,7 @@
         <p class="section-note">A corner path recolours as a fill, and the vendor keyframes resolve to the same driver.</p>
       </div>
       <div class="grid">
-        <article class="card">
+        <article id="card-show-corner" class="card {{if eq .Solo "show-corner"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-corner" class="chip chip-corner motion">corner</div>
           </div>
@@ -995,15 +1075,17 @@
           <p class="property">background-color on corner-shape: bevel</p>
           <code class="snippet">corner-shape: bevel;</code>
           <p class="expect"><span class="expect-label">Expect</span> The beveled fill cycles from blue to orange. The dark border and the cut corner keep their shape.</p>
+          <div class="card-actions"><button id="play-show-corner" class="btn-card" type="button" aria-label="Play corner fill only">{{if eq .Solo "show-corner"}}Replay{{else}}Play{{end}}</button></div>
         </article>
-        <article class="card">
+        <article id="card-show-webkit" class="card {{if eq .Solo "show-webkit"}}is-solo {{if .Reset}}is-reset{{end}}{{end}}">
           <div class="stage center">
             <div id="show-webkit" class="chip chip-webkit motion">alias</div>
           </div>
           <h3>vendor alias</h3>
           <p class="property">-webkit-animation / @-webkit-keyframes</p>
-          <code class="snippet">-webkit-animation: kf-webkit-hop 1.4s ease-in-out infinite alternate both;</code>
-          <p class="expect"><span class="expect-label">Expect</span> The WebKit-prefixed keyframes should hop up 10px and turn pink, matching the unprefixed syntax.</p>
+          <code id="snippet-webkit" class="snippet">-webkit-animation: kf-webkit-hop 1.4s ease-in-out infinite alternate both;</code>
+          <p class="expect"><span class="expect-label">Expect</span> Rises 10px and turns from purple to pink, then returns down and purple. Alternate playback reverses this sequence; the prefix uses the same animation driver.</p>
+          <div class="card-actions"><button id="play-show-webkit" class="btn-card" type="button" aria-label="Play vendor alias only">{{if eq .Solo "show-webkit"}}Replay{{else}}Play{{end}}</button></div>
         </article>
       </div>
     </section>

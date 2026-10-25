@@ -154,7 +154,7 @@ var _ host.FrameWanter = (*Page)(nil)
 // WantFrameAt declares the next time the page needs the window to draw. The
 // desktop window reads it once per frame, before it draws, and schedules its
 // idle wake for that time; a time at or before now asks for the next frame at
-// once and keeps a per-frame animation on the vsync loop. The window clears the
+// once and keeps a per-frame animation on the active drawing loop. The window clears the
 // request when it reads it, like the FrameDirty opt-in, so a tick that wants
 // another frame must ask again on every frame. The zero time means the page
 // does not ask: the window falls back to its keep-alive pacing. Serve and the
