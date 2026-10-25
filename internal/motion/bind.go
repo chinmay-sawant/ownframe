@@ -111,6 +111,17 @@ func (r *Runtime) Bind(d *Display) error {
 	return r.BindAfter(r.display, d)
 }
 
+// AdoptDisplay installs next without rebuilding the players. A restamp mutates
+// the same operation slice in place, so every target pointer and index stays
+// valid; only the display pointer the runtime checks for a rebind changes.
+func (r *Runtime) AdoptDisplay(next *Display) {
+	if r == nil {
+		return
+	}
+
+	r.display = next
+}
+
 // BindAfter resolves the animations of next, handing each player the clock and
 // paused pose it had in previous. A page passes the display it drew last as
 // previous, so a redraw that changes animation-play-state keeps the phase

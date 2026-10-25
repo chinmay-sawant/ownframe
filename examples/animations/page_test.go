@@ -54,7 +54,7 @@ func TestEveryCardExplainsItsEffect(t *testing.T) {
 func newTestPage(t *testing.T) *ownframe.Page {
 	t.Helper()
 
-	app, err := newApp(false)
+	app, err := newApp(false, false)
 	if err != nil {
 		t.Fatalf("newApp failed: %v", err)
 	}
@@ -241,7 +241,7 @@ func projectionOf(t *testing.T, p *ownframe.Page, id string) projection {
 }
 
 func TestNewApp(t *testing.T) {
-	app, err := newApp(false)
+	app, err := newApp(false, false)
 	if err != nil {
 		t.Fatalf("newApp failed: %v", err)
 	}
@@ -473,7 +473,7 @@ func TestCornerPathCardRecoloursTheFill(t *testing.T) {
 // on the paused ticks leave the pose alone, and resuming continues from it
 // instead of restarting at zero.
 func TestPauseKeepsThePoseAndResumeContinues(t *testing.T) {
-	app, err := newApp(false)
+	app, err := newApp(false, false)
 	if err != nil {
 		t.Fatalf("newApp failed: %v", err)
 	}

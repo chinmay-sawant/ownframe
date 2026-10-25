@@ -127,7 +127,7 @@ func TestLayerLRUEvictionAndPixelCap(t *testing.T) {
 			alpha:  1,
 			matrix: layout.IdentityMatrix(),
 		}
-		if _, _, ok := store.getLocked(cand, nil, renderer, d); !ok {
+		if _, _, ok, _ := store.getLocked(cand, nil, renderer, d); !ok {
 			t.Fatalf("layer %d was not retained", i)
 		}
 	}
@@ -151,7 +151,7 @@ func TestLayerLRUEvictionAndPixelCap(t *testing.T) {
 		box: image.Rect(0, 0, 6000, 6000), sig: 1, alpha: 1,
 		matrix: layout.IdentityMatrix(),
 	}
-	if _, _, ok := store.getLocked(huge, nil, renderer, d); ok {
+	if _, _, ok, _ := store.getLocked(huge, nil, renderer, d); ok {
 		t.Fatal("a layer larger than the pixel cap was retained")
 	}
 }
@@ -166,8 +166,8 @@ func TestLayerPromotionPredicate(t *testing.T) {
 	}
 
 	noAnim := layout.IdentityMatrix()
-	if _, reason := resolveLayer(d, LayerSpec{BoxIndex: 1, Matrix: noAnim, Alpha: 1}, 1, nil, nil); reason == "" {
-		t.Fatal("a static element was promoted")
+	if _, reason := resolveLayer(d, LayerSpec{BoxIndex: 1, Matrix: noAnim, Alpha: 1}, 1, nil, nil); reason != "" {
+		t.Fatalf("a rest-pose candidate was rejected before the cache check: %s", reason)
 	}
 
 	d.Boxes[1].Transform.HasTransform3D = true
@@ -479,7 +479,7 @@ func checkLayerAlphaOneMatchesDirect() error {
 		return fmt.Errorf("alpha-one candidate: %s", reason)
 	}
 	cand.matrix = layout.IdentityMatrix()
-	layer, _, ok := renderer.layers.getLocked(cand, nil, &renderer, d)
+	layer, _, ok, _ := renderer.layers.getLocked(cand, nil, &renderer, d)
 	if !ok {
 		return fmt.Errorf("alpha-one layer was not retained")
 	}
@@ -782,4 +782,81 @@ func bytesNear(a, b []byte, tol int) bool {
 	}
 
 	return true
+}
+
+// TestLayerContentChurnDemotes keeps a per-frame content animation from
+// re-baking a texture every frame. After two misses the layer is dropped and
+// a cooldown keeps it direct until its content settles.
+func TestLayerContentChurnDemotes(t *testing.T) {
+	d := layerDisplay()
+	var renderer Renderer
+	defer renderer.Close()
+
+	specs := layerSpecsFor(d, layerTranslate(4, 0), 1)
+	renderer.BeginLayers(d, 7, specs)
+	if !renderer.LayersActive(d) {
+		t.Fatal("the first frame did not promote")
+	}
+
+	d.Ops[1].R = 0.5
+	renderer.BeginLayers(d, 7, specs)
+	d.Ops[1].R = 0.4
+	renderer.BeginLayers(d, 7, specs)
+
+	if renderer.LayersActive(d) {
+		t.Fatal("a layer that re-bakes every frame stayed active")
+	}
+	if got := renderer.Layers().Reasons[layerReasonContentChurn]; got != 1 {
+		t.Fatalf("churn reasons = %v, want one %q", renderer.Layers().Reasons, layerReasonContentChurn)
+	}
+
+	renderer.BeginLayers(d, 7, specs)
+	if renderer.LayersActive(d) {
+		t.Fatal("a churning layer promoted during its cooldown")
+	}
+
+	for range layerChurnCooldown + 2 {
+		renderer.BeginLayers(d, 7, specs)
+	}
+	if !renderer.LayersActive(d) {
+		t.Fatal("a settled layer did not promote after the cooldown")
+	}
+}
+
+// TestLayerRestPoseKeepsRetainedLayer keeps an alternate animation on its
+// layer at the turn. A new static element is still rejected, but an element
+// already held as a layer keeps its texture through the identity pose instead
+// of demoting and re-promoting on the next frame.
+func TestLayerRestPoseKeepsRetainedLayer(t *testing.T) {
+	d := layerDisplay()
+	var renderer Renderer
+	defer renderer.Close()
+
+	renderer.BeginLayers(d, 7, layerSpecsFor(d, layerTranslate(4, 0), 1))
+	layer := renderer.layers.entries[layerKey{id: "card", box: 1, gen: 7}]
+	if layer == nil {
+		t.Fatal("the moving layer was not retained")
+	}
+	tex := layer.Tex
+
+	renderer.BeginLayers(d, 7, layerSpecsFor(d, layout.IdentityMatrix(), 1))
+	if !renderer.LayersActive(d) {
+		t.Fatal("the rest pose demoted a held layer")
+	}
+	if layer.Tex != tex {
+		t.Fatal("the rest pose re-baked the texture")
+	}
+	if !layer.Matrix.IsIdentity() {
+		t.Fatalf("rest matrix = %+v, want identity", layer.Matrix)
+	}
+
+	var fresh Renderer
+	defer fresh.Close()
+	fresh.BeginLayers(d, 7, layerSpecsFor(d, layout.IdentityMatrix(), 1))
+	if fresh.LayersActive(d) {
+		t.Fatal("a new static element was promoted")
+	}
+	if got := fresh.Layers().Reasons[layerReasonRest]; got != 1 {
+		t.Fatalf("rest reasons = %v, want one %q", fresh.Layers().Reasons, layerReasonRest)
+	}
 }

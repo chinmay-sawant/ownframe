@@ -38,4 +38,9 @@ type Options struct {
 	// idle page stops presenting and runs page ticks at a low keep-alive
 	// rate, and input or damage returns the window to vsync.
 	NoIdlePace bool
+	// NoVsync presents frames without waiting for the display refresh. It is
+	// for virtual displays and remote sessions whose compositor holds a large
+	// window below its panel rate. A normal desktop keeps vsync on so frames
+	// do not tear.
+	NoVsync bool
 }

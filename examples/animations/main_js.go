@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	app, err := newApp(false)
+	app, err := newApp(false, false)
 	if err != nil {
 		log.Fatal(err)
 	}

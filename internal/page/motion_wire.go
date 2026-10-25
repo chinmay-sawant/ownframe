@@ -341,6 +341,20 @@ func (p *Page) applyRestamp(ctx context.Context, requests []motion.Request) {
 	p.motion.NoteRestamp(len(requests), nil)
 }
 
+// sameOpSlice reports whether two displays share the same operation storage.
+// A restamp mutates that storage in place, so the bound players stay valid and
+// do not need to be rebuilt.
+func sameOpSlice(previous, next *Display) bool {
+	if previous == nil || next == nil || len(previous.Ops) != len(next.Ops) {
+		return false
+	}
+	if len(previous.Ops) == 0 {
+		return true
+	}
+
+	return &previous.Ops[0] == &next.Ops[0]
+}
+
 // restampOverride maps one sampled request onto the engine override. A
 // perspective-only request leaves HasTransform false so the pass keeps the
 // element's static transform; it replaces only the camera the element gives its
@@ -382,7 +396,11 @@ func (p *Page) adoptRestamp(patch *layout.ElementPatch) bool {
 		p.markRect(patch.New)
 	}
 	p.generation++
-	p.bindMotion(previous, d)
+	if sameOpSlice(previous, d) {
+		p.motion.AdoptDisplay(d)
+	} else {
+		p.bindMotion(previous, d)
+	}
 	p.bindTransitions(nil)
 	p.stats.repaints++
 

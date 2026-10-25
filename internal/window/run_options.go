@@ -12,6 +12,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	width, height := app.Size()
 	minW, minH := app.MinSize()
 	maxW, maxH := windowBounds(app)
+	ebiten.SetVsyncEnabled(!options.NoVsync)
 	ebiten.SetWindowTitle(app.Title())
 	ebiten.SetWindowSize(width, height)
 	ebiten.SetWindowSizeLimits(minW, minH, maxW, maxH)

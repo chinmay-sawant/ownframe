@@ -266,12 +266,8 @@ func TestLayerEntriesFilters(t *testing.T) {
 		}
 		r.Step(d, testClock().Add(testDurationMS/2*time.Millisecond))
 
-		entries := r.LayerEntries()
-		if len(entries) != 1 {
-			t.Fatalf("entries = %d, want only the transform entry", len(entries))
-		}
-		if !entries[0].Has2DTransform || entries[0].HasOpacity {
-			t.Fatalf("entry = %+v, want the transform entry", entries[0])
+		if entries := r.LayerEntries(); len(entries) != 0 {
+			t.Fatalf("entries = %+v, want none: the colour entry would re-bake the layer every frame", entries)
 		}
 	})
 

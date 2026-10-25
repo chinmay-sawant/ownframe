@@ -16,12 +16,12 @@ vanishing element leaves no ghost. A change the page cannot place, such as a
 theme switch or a `Load`, returns the whole frame, and so does a diff whose
 running bounding box covers more than a third of the frame. A generation with
 many small changes inside one region stays partial: the changed boxes merge
-within the eight-pixel gap, and when the list would pass eight rects the
+within the eight-pixel gap, and when the list would pass the rect cap the
 closest pair unions instead of the whole list collapsing.
 
 The list holds one rect per separated change. A new rect merges into an
 existing one when the two come within eight pixels of each other, so a shadow
-that touches its neighbour repaints once. Past eight rects the page collapses
+that touches its neighbour repaints once. Past 24 rects the page collapses
 the whole list to one bounding box. When the page hands the list over, each
 rect is padded, clamped to the content, and coalesced again. If the surviving
 rects cover more than a third of the content, the call returns one bounding
@@ -37,15 +37,43 @@ padded, so shadows and outlines repaint too.
 
 ## The window repaints the rects
 
-The live window path is `drawReplayPartial` in `internal/window`. For a
-replayable page that can report dirty rects, it paints a 256 by 256 tile grid
-sized to the content (`internal/window/replay_tile_paint.go` calls
+The live window path is `drawReplayPartial` in `internal/window`. A
+replayable page that can report dirty rects takes one of two retained buffers.
+A page no more than three viewports tall keeps a 256 by 256 tile grid sized to
+the content (`internal/window/replay_tile_paint.go` calls
 `replay.DrawVisibleUnfixedZ`). Each dirty rect is filled with the page
 background and replayed into every tile it touches, and only the damaged
 regions are copied on a partial frame. The window retains the previous screen
 between frames, so a clean frame needs no page copy. A stale screen or scroll
 change copies the visible tiles again. The `bitmap fallback` badge draws on
 the screen after the tiles, so a repaint never wipes it.
+
+A taller page keeps one window-sized viewport image with 256 pixels of vertical
+overscan on each side, because a content-sized grid would cost several viewport
+buffers. Each dirty rect is painted into that image on its own, not as one
+bounding box of every moving element. Scrolling inside the overscan reuses the
+image; crossing its edge repaints the visible operations at the new offset. The
+first viewport frame also paints the scrollable page once into a scratch image,
+up to a 12-megapixel budget, so the raster, chunk, and text caches already hold
+the shapes and runs the first scroll needs. Without that pass, the frame that
+crosses the overscan pays for the first-time bakes and the buffer rebuild
+together, which is long enough to read as a scroll freeze.
+
+Both buffers keep the page background only. A visible element with an active
+2D transform or opacity animation can be promoted to a retained layer
+(`internal/replay/layer_cache.go`), as long as no animation on that element
+writes colour, layout, or SVG paint. Those writes change the whole subtree the
+texture owns, so such an element stays direct and never re-bakes per frame. The
+background replay skips the operations the layer owns, so their pixels are a
+hole, and the window composites each layer after the background blit
+(`replay.DrawVisibleUnfixedZBackground`, `replay.DrawLayers`). A layer that
+only moves needs no background work. A promotion or demotion repaints the pose
+it leaves behind (`LayerTopologyDamage`). A layer already held through a rest
+pose keeps its texture, so an alternate animation does not demote and
+re-promote at every turn. A layer whose content still changes every frame is
+demoted after two frames and re-promoted after a cooldown. `LayerGeneration`
+keys the cache to display content, not to a re-projection pass, so a 3D
+animation does not re-bake every frame.
 
 `internal/replay.DrawRect` is the same clip idea for tests and helpers. The
 window does not call it. It walks `Display.Order`, skips any op whose painted
@@ -79,7 +107,7 @@ scroll copies message tiles and then paints the header and composer, so
 the forms family; a pinned page uses the same 256 px grid.
 
 Each rect in the list gets one partial repaint against that buffer. A list
-longer than the eight-rect cap, or a rect equal to the whole content, falls
+longer than the 24-rect cap, or a rect equal to the whole content, falls
 back to one full buffer rebuild. When the list is empty and the generation
 has not changed, the window replays nothing and blits the buffer it already
 has. A screen that only implements `TakeDirty` is read as a one-element
@@ -104,18 +132,20 @@ and one full replay grew the graphics command queue's vertex buffer to about
 87 MB, which the process then held for its lifetime.
 
 `internal/replay` bakes a vector shape once into an image and blits the baked
-pixels for every repeat. A `rasterKey` names the shape exactly: the variant
-(fill or stroke), the size, the corner radii, the stroke width and mask, the
-color, and the sub-pixel offset of the op's origin. The integer part of the
-position is not in the key: the raster bakes with that part moved to the
-image's origin and blits back at it, so one image serves every copy of a
-shape in every integer position. Source-over compositing is associative, so
-compositing the baked raster is pixel-identical to drawing the path there. A
-gated GPU test compares the two for fills, borders, transparent colors, and
-two positions, and a second compares a `DrawRect` sub-image clip against the
-direct draw.
+pixels for every repeat. The raster is a white mask, and the blit applies the
+operation's colour through `ColorScale`, so one image serves every colour of
+the same shape and a colour animation does not re-rasterize its path per
+frame. A `rasterKey` names the shape exactly: the variant (fill or stroke),
+the size, the corner radii, the stroke width and mask, and the sub-pixel
+offset of the op's origin. The integer part of the position is not in the
+key: the raster bakes with that part moved to the image's origin and blits
+back at it, so one image serves every copy of a shape in every integer
+position. Source-over compositing is associative, so compositing the baked
+raster is pixel-identical to drawing the path there. A gated GPU test
+compares the two for fills, borders, transparent colors, and two positions,
+and a second compares a `DrawRect` sub-image clip against the direct draw.
 
-The cache holds at most 64 rasters and 4 megapixels; past either bound the
+The cache holds at most 256 rasters and 4 megapixels; past either bound the
 oldest entry is disposed. A shape larger than 512 px a side, or an unknown
 stroke mask bit, falls through to the direct path. The cache is
 process-wide and keyed per shape, like the decoded-image cache.

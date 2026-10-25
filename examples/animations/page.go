@@ -33,7 +33,7 @@ type App struct {
 }
 
 // newApp constructs the gallery and publishes its initial state.
-func newApp(devtools bool) (*App, error) {
+func newApp(devtools, performance bool) (*App, error) {
 	app := &App{view: ViewState{IsPlaying: true}}
 
 	p, err := ownframe.New(ownframe.Config{
@@ -44,6 +44,10 @@ func newApp(devtools bool) (*App, error) {
 		// The dock is open by default so the Frame, Elements, and Ops panels
 		// are one key away; pass -dev=false to close it.
 		DevTools: devtools,
+		// The Frame tab's PERFORMANCE, PIPELINE DETAIL, and MEMORY rows read
+		// "-" until the page records timings. This is the gallery's own
+		// profiling view, so it is on unless -performance=false.
+		Perf: performance,
 		// The 3D and perspective cards need the retained box tree for the
 		// re-projection pass, so keep it from the first layout.
 		RetainState: true,

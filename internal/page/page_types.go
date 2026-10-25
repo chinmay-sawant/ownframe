@@ -31,6 +31,10 @@ type Page struct {
 	source      string
 	pageGeom    // size: New inits, SetSize writes; lock: page loop
 	renderTrack // generation and last frame key; lock: page loop
+	// layerGen keys the compositor's retained element layers. It moves when a
+	// publish or an element patch changes display content, and stays put when
+	// a re-projection pass only rewrites operation matrices in place.
+	layerGen    uint64
 	touchCancel uint32
 	tickSlot
 	nav             nav.History

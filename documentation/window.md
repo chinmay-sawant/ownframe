@@ -91,6 +91,9 @@ unpainted pixels transparent; the template must also have transparent
 backgrounds. Use a replayable page, because bitmap rendering may paint a
 background. `Borderless` removes the title bar and window borders, `Floating`
 requests a window above normal windows, and `FixedSize` disables resizing.
+`NoVsync` presents without waiting for the display refresh; use it on a
+virtual display or remote session whose compositor holds a large window below
+its rate, and leave it off on a normal desktop to avoid tearing.
 
 `MousePassthrough` passes every pointer event to the application underneath,
 including clicks on painted pixels. It starts the window unfocused and keeps

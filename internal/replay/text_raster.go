@@ -40,9 +40,9 @@ func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp,
 		return false
 	}
 
-	blitRaster(dst, entry.img, left+entry.dx, top+entry.dy)
+	blitRaster(dst, entry.img, left+entry.dx, top+entry.dy, opaqueWhite)
 	if key.fakeBold {
-		blitRaster(dst, entry.img, left+entry.dx+1, top+entry.dy)
+		blitRaster(dst, entry.img, left+entry.dx+1, top+entry.dy, opaqueWhite)
 	}
 
 	return true

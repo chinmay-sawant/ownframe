@@ -240,7 +240,9 @@ Detail is in [interaction.md](interaction.md).
 `RunWithOptions` opens the desktop window with a `WindowOptions` value.
 `Transparent` leaves unpainted pixels transparent, `Borderless` removes the
 frame, `Floating` keeps the window above normal windows, and `FixedSize`
-stops resizing. `BottomRight` places the window at the current monitor's
+stops resizing. `NoVsync` presents without waiting for the display refresh,
+for a virtual display whose compositor holds a large window below its rate.
+`BottomRight` places the window at the current monitor's
 bottom right, inset by `Margin` CSS pixels. `MousePassthrough` sends every
 pointer event to the application underneath, `Interactive` keeps input only
 where its callback returns true, and `Draggable` reserves a region for moving

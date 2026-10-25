@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 )
 
 // coveredBy reports whether one of the rects contains b.
@@ -19,8 +20,8 @@ func coveredBy(rects []image.Rectangle, b image.Rectangle) bool {
 	return false
 }
 
-// Twelve dots past the merge gap in a small area must merge under the
-// window's eight-rect cap instead of overflowing it.
+// Twelve dots past the merge gap in a small area must stay a rect list under
+// the damage cap instead of overflowing to one frame-sized box.
 func TestDiffRectListUnderWindowCap(t *testing.T) {
 	t.Parallel()
 
@@ -60,8 +61,8 @@ func TestDiffRectListUnderWindowCap(t *testing.T) {
 	}
 
 	rects, ok := screen.TakeDirtyRects()
-	if !ok || len(rects) > 8 {
-		t.Fatalf("rects %d ok %v over the window cap", len(rects), ok)
+	if !ok || len(rects) > dirty.MaxRects {
+		t.Fatalf("rects %d ok %v over the damage cap", len(rects), ok)
 	}
 
 	if isFullFrame(rects, mergeW, mergeH) {

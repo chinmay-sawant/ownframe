@@ -95,6 +95,36 @@ func TestRotateYAnimationRestampsTheProjectionOnEveryTick(t *testing.T) {
 	}
 }
 
+// TestRestampReusesBoundPlayers checks that a re-projection pass keeps the
+// operation slice in place, so the page does not rebuild every animation player
+// on each animated frame.
+func TestRestampReusesBoundPlayers(t *testing.T) {
+	t.Parallel()
+
+	p := newRestampPage(t, true)
+	if err := p.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Motion().Restamped; got == 0 {
+		t.Fatal("the first tick did not restamp")
+	}
+	before := p.Motion().Rebinds
+	layerGen := p.LayerGeneration()
+
+	if err := p.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := p.Motion().Restamped; got == 0 {
+		t.Fatal("the second tick did not restamp")
+	}
+	if got := p.Motion().Rebinds; got != before {
+		t.Fatalf("rebinds = %d, want %d; the restamp rebuilt the players", got, before)
+	}
+	if got := p.LayerGeneration(); got != layerGen {
+		t.Fatalf("layer generation = %d, want %d; a restamp must reuse layer textures", got, layerGen)
+	}
+}
+
 func TestFirstTickEnablesRetainedStateAndSecondTickMoves(t *testing.T) {
 	t.Parallel()
 

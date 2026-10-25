@@ -156,8 +156,30 @@ func (r *Runtime) LayerEntriesFor(d *Display) []LayerEntry {
 
 	entries := r.layerEntries[:0]
 	if r.display == d {
+		// An element with one entry that writes colour, layout, or SVG cannot
+		// be a stable layer: the texture owns the whole subtree and would
+		// re-bake every frame. Block the element instead of promoting its
+		// transform-only entry and demoting it on the next content change.
+		var blocked map[int]struct{}
 		for i := range r.entries {
-			entry, ok := r.layerEntry(&r.entries[i], d)
+			e := &r.entries[i]
+			if e.boxIndex < 0 || (!e.layout && !e.svg && e.mask&^(fieldMatrix|fieldOpacity) == 0) {
+				continue
+			}
+			if blocked == nil {
+				blocked = make(map[int]struct{})
+			}
+			blocked[e.boxIndex] = struct{}{}
+		}
+		for i := range r.entries {
+			e := &r.entries[i]
+			if _, ok := blocked[e.boxIndex]; ok {
+				continue
+			}
+			if !r.visible(e) {
+				continue
+			}
+			entry, ok := r.layerEntry(e, d)
 			if !ok {
 				continue
 			}
@@ -165,6 +187,9 @@ func (r *Runtime) LayerEntriesFor(d *Display) []LayerEntry {
 		}
 	}
 	for i := range r.transitions {
+		if box := transitionBoxIndex(d, r.transitions[i].key.element); box >= 0 && r.blockedByAnimation(box) {
+			continue
+		}
 		entry, ok, _ := r.transitionLayerEntry(&r.transitions[i], d)
 		if !ok {
 			continue
@@ -579,4 +604,20 @@ func layerAlpha(alpha float64) float64 {
 	}
 
 	return alpha
+}
+
+// blockedByAnimation reports that an element has an entry a retained layer
+// cannot follow: colour, layout, SVG paint, or a legacy X/Y write.
+func (r *Runtime) blockedByAnimation(box int) bool {
+	for i := range r.entries {
+		e := &r.entries[i]
+		if e.boxIndex != box {
+			continue
+		}
+		if e.layout || e.svg || e.mask&^(fieldMatrix|fieldOpacity) != 0 {
+			return true
+		}
+	}
+
+	return false
 }

@@ -21,5 +21,7 @@ type repaintPlan struct {
 }
 
 // maxRepaintRects caps the dirty rects of one frame. Each rect costs a scan
-// of the operation list, so a longer list rebuilds the whole buffer.
-const maxRepaintRects = 8
+// of the operation list, so a longer list rebuilds the whole buffer. The page
+// tracker keeps up to dirty.MaxRects, and a gallery of animated cards needs
+// each one painted on its own or the frame pays for a whole-page replay.
+const maxRepaintRects = 24

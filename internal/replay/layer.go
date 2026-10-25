@@ -46,6 +46,11 @@ type Layer struct {
 
 	// pose is the last composited page box, kept for old ∪ new damage.
 	pose image.Rectangle
+
+	// misses counts consecutive frames whose content signature changed. A
+	// layer that re-bakes every frame costs more than painting it directly,
+	// so it is demoted after a couple of misses.
+	misses int
 }
 
 // The screen's display must stay drawable without layers: the full replay and
@@ -130,9 +135,6 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 
 	matrix := normalMatrix(spec.Matrix)
 	alpha := clampLayerAlpha(spec.Alpha)
-	if matrix.IsIdentity() && alpha == 1 {
-		return out, "no transform or opacity motion"
-	}
 	if !normalMode(spec.Mode) && !layerTranslation(matrix) {
 		return out, "blend mode with a matrix"
 	}
@@ -197,11 +199,10 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 	if firstRank == len(d.Order) || lastRank < 0 {
 		return out, "no painted ops"
 	}
-	if lastRank-firstRank+1 != len(owned) {
-		// A layer paints as one unit at its first position. Operations that
-		// interleave with another element's paint order would be clipped into
-		// the wrong order, so keep such a subtree direct until the layer tree
-		// can represent it.
+	if !layerOrderSafe(d, owned, firstRank, lastRank, boxRect, matrix, ppt) {
+		// A layer paints as one unit at its first position. An operation
+		// painted between its owned ranks that could cover it would land in
+		// the wrong order, so keep such a subtree direct.
 		return out, "non-contiguous ops"
 	}
 
@@ -223,6 +224,72 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 	}
 
 	return out, ""
+}
+
+// layerOrderSafe reports whether a layer's owned operations may paint as one
+// unit at their first rank. An operation painted between the first and last
+// owned ranks is out of order only when the layer could cover it: if its box
+// stays outside the layer's captured and animated boxes, the two paints the
+// same pixels either way.
+func layerOrderSafe(d *layout.Display, owned []int, firstRank, lastRank int, box image.Rectangle,
+	matrix layout.Matrix2D, ppt float64) bool {
+	if lastRank-firstRank+1 == len(owned) {
+		return true
+	}
+	if d == nil || box.Empty() {
+		return false
+	}
+
+	isOwned := make(map[int]struct{}, len(owned))
+	for _, index := range owned {
+		isOwned[index] = struct{}{}
+	}
+
+	animated := layerMatrixBox(box, matrix, ppt)
+	for rank := firstRank; rank <= lastRank && rank < len(d.Order); rank++ {
+		index := d.Order[rank]
+		if index < 0 || index >= len(d.Ops) {
+			continue
+		}
+		if _, ok := isOwned[index]; ok {
+			continue
+		}
+		op := &d.Ops[index]
+		if op.Group() != nil || op.HasProjective {
+			return false
+		}
+		b, ok := layerOpBox(op, layout.IdentityMatrix(), ppt)
+		if !ok || b.Empty() || b.Overlaps(box) || b.Overlaps(animated) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// pose returns the candidate's composited page box, matching layerPose.
+func (cand *layerCandidate) pose(d *layout.Display) image.Rectangle {
+	return layerMatrixBox(cand.box, cand.matrix, layerPixelPerPoint(d))
+}
+
+// layerMatrixBox maps a page box through a layer matrix and rounds the result
+// outward, matching layerPose.
+func layerMatrixBox(b image.Rectangle, m layout.Matrix2D, ppp float64) image.Rectangle {
+	box := image.Rectangle{}
+
+	for _, p := range [4][2]float64{
+		{float64(b.Min.X), float64(b.Min.Y)},
+		{float64(b.Max.X), float64(b.Min.Y)},
+		{float64(b.Max.X), float64(b.Max.Y)},
+		{float64(b.Min.X), float64(b.Max.Y)},
+	} {
+		x := m.A*p[0] + m.C*p[1] + m.E*ppp
+		y := m.B*p[0] + m.D*p[1] + m.F*ppp
+		box = box.Union(image.Rect(int(math.Floor(x))-1, int(math.Floor(y))-1,
+			int(math.Ceil(x))+1, int(math.Ceil(y))+1))
+	}
+
+	return box
 }
 
 // layerRanks maps each operation index to its position in Display.Order, or
@@ -514,24 +581,7 @@ func layerPose(layer *Layer, d *layout.Display) image.Rectangle {
 		return image.Rectangle{}
 	}
 
-	m := layer.Matrix
-	ppp := layerPixelPerPoint(d)
-	b := layer.Box
-	box := image.Rectangle{}
-
-	for _, p := range [4][2]float64{
-		{float64(b.Min.X), float64(b.Min.Y)},
-		{float64(b.Max.X), float64(b.Min.Y)},
-		{float64(b.Max.X), float64(b.Max.Y)},
-		{float64(b.Min.X), float64(b.Max.Y)},
-	} {
-		x := m.A*p[0] + m.C*p[1] + m.E*ppp
-		y := m.B*p[0] + m.D*p[1] + m.F*ppp
-		box = box.Union(image.Rect(int(math.Floor(x))-1, int(math.Floor(y))-1,
-			int(math.Ceil(x))+1, int(math.Ceil(y))+1))
-	}
-
-	return box
+	return layerMatrixBox(layer.Box, layer.Matrix, layerPixelPerPoint(d))
 }
 
 // layerTouches reports whether the layer's last composited box meets rect.

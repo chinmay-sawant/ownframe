@@ -51,11 +51,44 @@ go run ./examples/animations
 ```
 
 The developer tools dock is open by default. It starts on the Frame tab, and
-the Elements and Ops tabs are available beside it. Close it with:
+the Elements and Ops tabs are available beside it. The Frame tab records the
+pipeline and frame timings by default, so the PERFORMANCE, PIPELINE DETAIL, and
+MEMORY rows report numbers instead of `-`. Pass `-performance=false` to measure
+the gallery without that tracking. Close the dock with:
 
 ```sh
 go run ./examples/animations -dev=false
 ```
+
+A virtual display or remote session whose compositor holds a large window below
+its refresh rate can cap the frame rate even when the page is idle. Turn vsync
+off on that kind of host:
+
+```sh
+go run ./examples/animations -vsync=false
+```
+
+Leave vsync on for a normal desktop, where it prevents tearing. `-width` and
+`-height` set the window size and `-monitor` chooses the display index:
+
+```sh
+go run ./examples/animations -width=1920 -height=1080 -monitor=1
+```
+
+To measure without watching the dock, run a fixed window of time. The summary
+prints the frame rate, the page pipeline, the motion counters, and memory, then
+closes the window:
+
+```sh
+go run ./examples/animations -profile-seconds=30 -vsync=false
+```
+
+The samplers wait for the first drawn frame and then for a two second warmup,
+so the window's opening does not land in the samples.
+
+The tall gallery also pre-renders its scrollable page once after the first
+frame. That pass warms the shape, chunk, and text caches, so the first scroll
+does not stall on first-time bakes.
 
 Serve the picture page in a browser:
 

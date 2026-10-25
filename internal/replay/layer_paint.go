@@ -101,6 +101,63 @@ func (renderer *Renderer) DrawRectUnfixedZLayers(dst *ebiten.Image, d *layout.Di
 	}
 }
 
+// DrawVisibleUnfixedZBackground replays the display without the operations a
+// promoted layer owns, and does not composite the layers. The caller keeps the
+// result as the page background: the owned operations leave holes, so a layer
+// can move over the background without the page under it being repainted.
+//
+// A page with no active layers takes the ordinary replay, so the background is
+// also the complete frame.
+func (renderer *Renderer) DrawVisibleUnfixedZBackground(dst *ebiten.Image, d *layout.Display, dx, dy float64, z int) {
+	if dst == nil || d == nil {
+		return
+	}
+
+	frame := &renderer.layers.frame
+	if frame.display != d || len(frame.active) == 0 {
+		renderer.DrawVisibleUnfixedZ(dst, d, dx, dy, z)
+
+		return
+	}
+
+	rect := visibleRect(dst.Bounds(), dx, dy)
+	ppt := d.PointsPerPixel
+
+	for _, index := range d.Order {
+		if index < 0 || index >= len(d.Ops) || index >= len(frame.skip) || frame.skip[index] {
+			continue
+		}
+		op := &d.Ops[index]
+		if op.Fixed || atPinZ(op, z) || !opTouches(op, ppt, rect) {
+			continue
+		}
+		countOp()
+		renderer.drawOp(dst, op, dx, dy)
+	}
+}
+
+// DrawLayers composites every active retained layer onto dst in paint order.
+// The caller must already have blitted the background DrawVisibleUnfixedZBackground
+// produced, at the same dx and dy.
+func (renderer *Renderer) DrawLayers(dst *ebiten.Image, d *layout.Display, dx, dy float64) {
+	if dst == nil || d == nil {
+		return
+	}
+
+	frame := &renderer.layers.frame
+	if frame.display != d || len(frame.active) == 0 {
+		return
+	}
+
+	for rank := range d.Order {
+		layer := frame.start[rank]
+		if layer == nil {
+			continue
+		}
+		renderer.drawLayerPose(dst, d, layer, dx, dy)
+	}
+}
+
 func (renderer *Renderer) drawLayerPose(dst *ebiten.Image, d *layout.Display, layer *Layer, dx, dy float64) {
 	if layer == nil || layer.Alpha <= 0 {
 		// A fully transparent layer composites nothing. The tile is still

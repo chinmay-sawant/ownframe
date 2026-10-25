@@ -180,6 +180,7 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.setBoxes(display.Boxes)
 	p.hits = hitList(display.Boxes, fixedBoxes(display))
 	p.generation++
+	p.layerGen++
 	p.bindMotion(previous, display)
 	p.bindTransitions(captures)
 	p.remember(state)
@@ -221,6 +222,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 	p.setBoxes(boxes)
 	p.hits = hitList(boxes, fixedBoxes(display))
 	p.generation++
+	p.layerGen++
 	p.bindMotion(previous, nil)
 	p.bindTransitions(nil)
 	p.markFull()

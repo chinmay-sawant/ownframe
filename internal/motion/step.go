@@ -96,7 +96,11 @@ func (r *Runtime) Step(d *Display, now time.Time) Damage {
 		// An SVG entry writes no operation; the page marks the engine patch's
 		// image bounds when it adopts the restyle. Marking the unchanged image
 		// box here would repaint a raster that has not been rebuilt yet.
-		if !e.svg {
+		// An offscreen entry still samples, so its phase is right when it
+		// scrolls in, but its write needs no repaint. A promoted entry writes
+		// into its retained layer, so the page background under it does not
+		// change either.
+		if !e.svg && r.visible(e) && !r.promotedEntry(e) {
 			damage.Add(before.Union(after))
 		}
 	}

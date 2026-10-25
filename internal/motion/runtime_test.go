@@ -337,3 +337,32 @@ func TestRuntimeWithoutAnimationsStaysIdle(t *testing.T) {
 		t.Fatalf("bound count = %d, want 0", got)
 	}
 }
+
+// TestPromotedLayerStopsStepDamage pins the compositor seam: an element the
+// renderer holds as a retained layer writes into its texture, so Step stops
+// damaging the page background. Clearing the set (a demotion) restores the
+// damage for the next sample.
+func TestPromotedLayerStopsStepDamage(t *testing.T) {
+	t.Parallel()
+
+	r := New()
+	r.now = testClock
+	d := animatedDisplay("running", true)
+
+	if err := r.Bind(d); err != nil {
+		t.Fatalf("bind: %v", err)
+	}
+	r.Step(d, testClock().Add(10*time.Millisecond))
+
+	r.SetPromotedLayers([]string{testChipID})
+	damage := r.Step(d, testClock().Add(30*time.Millisecond))
+	if !damage.Empty() {
+		t.Fatalf("promoted damage = %v, want none", damage.Bounds())
+	}
+
+	r.SetPromotedLayers(nil)
+	damage = r.Step(d, testClock().Add(50*time.Millisecond))
+	if damage.Empty() {
+		t.Fatal("demoted entry reported no damage")
+	}
+}

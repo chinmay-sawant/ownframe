@@ -14,9 +14,19 @@ const (
 	// layerMaxPixels bounds the retained layer pixels one renderer keeps.
 	layerMaxPixels = 32 << 20
 
+	layerChurnMisses    = 2
+	layerChurnCooldown  = 60
 	layerReasonCountCap = "layer count cap"
 	layerReasonPixelCap = "layer pixel cap"
 	layerReasonEvicted  = "evicted by last use"
+	// layerReasonContentChurn names a layer whose content changed on every
+	// frame. Re-baking it per frame costs more than painting its operations
+	// into the page, so it stays direct until its content settles.
+	layerReasonContentChurn = "content churn"
+	// layerReasonRest names a new layer spec whose pose is the rest pose. An
+	// element already held as a layer keeps it through that pose, so an
+	// alternate animation does not demote and re-promote at every turn.
+	layerReasonRest = "no transform or opacity motion"
 	// layerReasonEnded names a promoted element that left the specification
 	// list. It covers both tracks: an animation that finished, paused, or was
 	// replaced, and a transition that ended, cancelled, or was replaced.
@@ -47,6 +57,12 @@ type layerStore struct {
 	stats   LayerStats
 	reasons map[string]int
 	damage  []image.Rectangle
+	// topology is the subset of damage where layer membership changed, not
+	// just a pose: a promotion, a demotion, or a moved texture box. The
+	// compositor repaints the page background only for these.
+	topology []image.Rectangle
+	// churn holds the frame each churn key may be promoted again.
+	churn map[layerKey]uint64
 
 	frame layerFrame
 }
@@ -62,6 +78,7 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 
 	store.resetFrameStats()
 	store.damage = store.damage[:0]
+	store.topology = store.topology[:0]
 	store.frame.reset()
 
 	if d == nil {
@@ -83,6 +100,10 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 		candidate, reason := resolveLayer(d, spec, gen, claimed, ranks)
 		if reason != "" {
 			store.demote(reason)
+			continue
+		}
+		if candidate.matrix.IsIdentity() && candidate.alpha == 1 && store.entries[candidate.key] == nil {
+			store.demote(layerReasonRest)
 			continue
 		}
 		for _, index := range candidate.owned {
@@ -108,9 +129,13 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 			oldMatrix, oldAlpha, oldMode = old.Matrix, old.Alpha, old.Mode
 		}
 
-		layer, hit, ok := store.getLocked(*cand, keep, renderer, d)
+		if until, ok := store.churn[cand.key]; ok && store.use < until {
+			store.demote(layerReasonContentChurn)
+			continue
+		}
+		layer, hit, ok, reason := store.getLocked(*cand, keep, renderer, d)
 		if !ok {
-			store.demote(layerReasonPixelCap)
+			store.demote(reason)
 			continue
 		}
 		if old == nil {
@@ -129,6 +154,7 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 
 		if old == nil {
 			store.addDamage(layer.pose)
+			store.addTopology(layer.pose)
 		} else if !hit || oldPose != layer.pose ||
 			oldMatrix != layer.Matrix || oldAlpha != layer.Alpha || oldMode != layer.Mode {
 			store.addDamage(oldPose.Union(layer.pose))
@@ -246,10 +272,10 @@ func countDropped(drop []bool) int {
 // its signature changed, or its box moved. keep holds the keys BeginLayers
 // intends to use this frame, so an LRU eviction never drops one of them.
 func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
-	renderer *Renderer, d *layout.Display) (*Layer, bool, bool) {
+	renderer *Renderer, d *layout.Display) (*Layer, bool, bool, string) {
 	area := cand.box.Dx() * cand.box.Dy()
 	if area > layerMaxPixels {
-		return nil, false, false
+		return nil, false, false, layerReasonPixelCap
 	}
 	if store.entries == nil {
 		store.entries = make(map[layerKey]*Layer)
@@ -260,8 +286,26 @@ func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
 		if old.Sig == cand.sig {
 			old.Ops = setLayerOps(old.Ops, cand.owned)
 			old.Box = cand.box
+			old.misses = 0
 
-			return old, true, true
+			return old, true, true, ""
+		}
+		old.misses++
+		if old.misses >= layerChurnMisses {
+			// The content changes every frame. Painting it into the page is
+			// cheaper than clearing and baking a texture per frame, so keep
+			// it direct for a while and let the topology damage repair the
+			// pose this layer leaves behind.
+			store.addDamage(old.pose)
+			store.addTopology(old.pose)
+			store.addTopology(cand.pose(d))
+			store.dropLocked(cand.key)
+			if store.churn == nil {
+				store.churn = make(map[layerKey]uint64)
+			}
+			store.churn[cand.key] = store.use + layerChurnCooldown
+
+			return nil, false, false, layerReasonContentChurn
 		}
 		old.Tex.Clear()
 		store.bake(renderer, d, old.Tex, cand)
@@ -269,19 +313,21 @@ func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
 		old.Ops = setLayerOps(old.Ops, cand.owned)
 		old.Valid = true
 
-		return old, false, true
+		return old, false, true, ""
 	}
 
 	// A new box needs room. Evict the least recently used slot that this
 	// frame is not keeping.
 	for old == nil && (len(store.entries) >= layerMaxEntries || store.pixels+area > layerMaxPixels) {
 		if !store.evictLRU(cand.key, keep) {
-			return nil, false, false
+			return nil, false, false, layerReasonPixelCap
 		}
 		old = store.entries[cand.key]
 	}
 
 	if old != nil {
+		store.addTopology(old.pose)
+		store.addTopology(cand.pose(d))
 		store.pixels -= old.Box.Dx() * old.Box.Dy()
 		old.Tex.Deallocate()
 		delete(store.entries, cand.key)
@@ -305,7 +351,20 @@ func (store *layerStore) getLocked(cand layerCandidate, keep map[layerKey]bool,
 	store.entries[cand.key] = layer
 	store.pixels += area
 
-	return layer, false, true
+	return layer, false, true, ""
+}
+
+// dropLocked releases a layer texture without counting an eviction.
+func (store *layerStore) dropLocked(key layerKey) {
+	entry := store.entries[key]
+	if entry == nil {
+		return
+	}
+
+	store.pixels -= entry.Box.Dx() * entry.Box.Dy()
+	entry.Tex.Deallocate()
+	entry.Valid = false
+	delete(store.entries, key)
 }
 
 // bake renders cand's owned operations in their captured base pose into img.
@@ -386,6 +445,7 @@ func (store *layerStore) drop(key layerKey) {
 		return
 	}
 	store.addDamage(entry.pose)
+	store.addTopology(entry.pose)
 	store.pixels -= entry.Box.Dx() * entry.Box.Dy()
 	entry.Tex.Deallocate()
 	entry.Valid = false
@@ -401,6 +461,7 @@ func (store *layerStore) demoteMissingLocked(keep map[layerKey]bool) {
 			continue
 		}
 		store.addDamage(entry.pose)
+		store.addTopology(entry.pose)
 		store.pixels -= entry.Box.Dx() * entry.Box.Dy()
 		entry.Tex.Deallocate()
 		entry.Valid = false
@@ -413,6 +474,7 @@ func (store *layerStore) demoteMissingLocked(keep map[layerKey]bool) {
 func (store *layerStore) demoteAllLocked(reason string) {
 	for key, entry := range store.entries {
 		store.addDamage(entry.pose)
+		store.addTopology(entry.pose)
 		entry.Tex.Deallocate()
 		entry.Valid = false
 		delete(store.entries, key)
@@ -422,6 +484,7 @@ func (store *layerStore) demoteAllLocked(reason string) {
 	store.stats.Active = 0
 	store.stats.Pixels = 0
 	store.stats.Bytes = 0
+	clear(store.churn)
 }
 
 // buildFrame prepares the paint skip and the per-order-position composite
@@ -456,6 +519,45 @@ func (store *layerStore) addDamage(rect image.Rectangle) {
 		return
 	}
 	store.damage = append(store.damage, rect)
+}
+
+// addTopology records the page area whose layer membership changed: a
+// promotion, a demotion, or a moved layer box. A compositor that keeps the
+// background must repaint these, and only these; a layer that merely moves
+// needs no background work.
+func (store *layerStore) addTopology(rect image.Rectangle) {
+	if rect.Empty() {
+		return
+	}
+	store.topology = append(store.topology, rect)
+}
+
+// LayerTopologyDamage returns this frame's promotion, demotion, and box-move
+// area. BeginLayers resets it, so read it after that call.
+func (renderer *Renderer) LayerTopologyDamage() []image.Rectangle {
+	store := &renderer.layers
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	return store.topology
+}
+
+// ActiveLayerIDs returns the element ids of this frame's retained layers. A
+// page hands them to its motion driver, so a sampled element that draws into a
+// layer stops damaging the page background.
+func (renderer *Renderer) ActiveLayerIDs() []string {
+	store := &renderer.layers
+	store.mu.Lock()
+	defer store.mu.Unlock()
+
+	ids := make([]string, 0, len(store.frame.active))
+	for _, layer := range store.frame.active {
+		if layer.ElementID != "" {
+			ids = append(ids, layer.ElementID)
+		}
+	}
+
+	return ids
 }
 
 func (store *layerStore) resetFrameStats() {

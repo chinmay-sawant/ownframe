@@ -29,6 +29,9 @@ type Runtime struct {
 
 	entries []entry
 	stats   Stats
+	// promoted holds the element ids the compositor kept as retained layers
+	// on the last frame. Step leaves their page damage to the layer cache.
+	promoted map[string]struct{}
 
 	// transitions is the second registry: one renderer per element, property,
 	// and target set. It shares the runtime and the Step call with the
@@ -82,6 +85,61 @@ type Runtime struct {
 // New returns an idle runtime with no players bound.
 func New() *Runtime {
 	return &Runtime{now: time.Now}
+}
+
+// viewportSlack keeps a card just above or below the scrollport warm, so a
+// short scroll does not sample a card for the first time as it appears.
+const viewportSlack = 96.0
+
+// SetPromotedLayers tells the runtime which elements the compositor kept as
+// retained layers on the last frame. A promoted element paints into its layer
+// texture, so Step stops adding page background damage for it. A demotion
+// repairs the pose through the renderer's layer topology damage.
+func (r *Runtime) SetPromotedLayers(ids []string) {
+	if r == nil {
+		return
+	}
+	if len(ids) == 0 {
+		r.promoted = nil
+
+		return
+	}
+
+	set := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		if id != "" {
+			set[id] = struct{}{}
+		}
+	}
+	r.promoted = set
+}
+
+// promotedEntry reports that the entry's changed paint lands in a retained
+// layer, so it needs no background repaint. A layout entry on the same
+// element still moves the page and keeps its damage.
+func (r *Runtime) promotedEntry(e *entry) bool {
+	if r == nil || len(r.promoted) == 0 || e.layout || e.svg {
+		return false
+	}
+
+	_, ok := r.promoted[e.key.id]
+
+	return ok
+}
+
+// visible reports whether the entry's border box is in or near the page's
+// scroll viewport. A runtime with no view keeps every entry visible.
+func (r *Runtime) visible(e *entry) bool {
+	if r == nil || !r.hasView {
+		return true
+	}
+
+	v := r.view
+
+	return e.boxX+e.boxW >= v.ScrollX-viewportSlack &&
+		e.boxX <= v.ScrollX+v.Width+viewportSlack &&
+		e.boxY+e.boxH >= v.ScrollY-viewportSlack &&
+		e.boxY <= v.ScrollY+v.Height+viewportSlack
 }
 
 // Active reports whether the runtime needs another frame: a time-driven

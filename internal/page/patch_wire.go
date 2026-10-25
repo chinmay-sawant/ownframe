@@ -144,6 +144,7 @@ func (p *Page) adoptSpliced(d *Display) *Display {
 	p.hits = hitList(d.Boxes, fixedBoxes(d))
 	p.dirtyFromDisplay(prev, d)
 	p.generation++
+	p.layerGen++
 	p.stats.layouts++
 	p.stats.repaints++
 

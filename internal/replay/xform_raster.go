@@ -43,7 +43,6 @@ func (renderer *Renderer) fillRaster(op *layout.DisplayOp, x, y, w, h float32) (
 	r := radius4(radii)
 	key := rasterKey{
 		variant: rasterFill,
-		col:     rgba(op),
 		w:       w, h: h,
 		r:  r,
 		fx: x - float32(left),
@@ -53,7 +52,6 @@ func (renderer *Renderer) fillRaster(op *layout.DisplayOp, x, y, w, h float32) (
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		path := roundedFillPath(key.fx, key.fy, w, h, r)
 		options := &vector.DrawPathOptions{AntiAlias: true}
-		options.ColorScale.ScaleWithColor(key.col)
 		vector.FillPath(img, &path, nil, options)
 	})
 

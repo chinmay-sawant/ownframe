@@ -28,6 +28,12 @@ func (s *shell) idleCleanFrame() bool {
 		return false
 	}
 
+	// A retained layer is composited after the background blit, so the frame
+	// is not clean even when the page reports no damage: the layer may move.
+	if s.display != nil && s.renderer.LayersActive(s.display) {
+		return false
+	}
+
 	if s.viewport.valid && s.viewport.buf != nil {
 		return s.viewport.blitOnly && !s.isTicking()
 	}

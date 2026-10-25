@@ -21,10 +21,27 @@ func TestPlayAllMovesEverySample(t *testing.T) {
 	time.Sleep(600 * time.Millisecond)
 	tickPage(t, p)
 
-	for _, row := range v.Catalog {
-		if samePaint(base[row.SampleKey], targetPaints(t, p, row.TargetID)) {
-			t.Errorf("%s did not move off its starting paint", row.Name)
+	// A card whose iteration length divides 600ms can be exactly at its start
+	// pose on the first sample. Give only the stuck rows one more sample in the
+	// middle of the next iteration instead of failing on a scheduling boundary.
+	stuck := func() []catalogRow {
+		var rows []catalogRow
+		for _, row := range v.Catalog {
+			if samePaint(base[row.SampleKey], targetPaints(t, p, row.TargetID)) {
+				rows = append(rows, row)
+			}
 		}
+		return rows
+	}
+	rows := stuck()
+	if len(rows) > 0 {
+		time.Sleep(150 * time.Millisecond)
+		tickPage(t, p)
+		rows = stuck()
+	}
+
+	for _, row := range rows {
+		t.Errorf("%s did not move off its starting paint", row.Name)
 	}
 }
 

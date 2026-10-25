@@ -445,10 +445,16 @@ patch's old and new boxes. [css-motion.md](css-motion.md) has the property
 coverage and the counters; [repaint.md](repaint.md) has the matrix and chunk
 rules.
 
-What is still missing is a composited layer the window can blit without
-replaying the damage under it. The 43 cards share one display list, and a moving
-op still pays a chunk or raster blit each frame. The window does not composite
-animation layers yet; do not count them as shipped.
+A visible element with an active 2D transform or opacity track can now be
+promoted to a retained layer. The window keeps the page background without its
+operations and composites the layer after the blit, so a moving element costs
+one blit instead of a replay of its damage. An element that also writes colour,
+layout, or SVG paint stays direct, because the texture owns its whole subtree
+and would re-bake every frame. A layer held through a rest pose keeps its
+texture, so an alternate animation does not demote at each turn. A layer whose
+content still changes every frame is demoted for 60 frames after two misses.
+The 43 cards still share one display list, so a colour-animated card paints its
+own damaged rect each frame; a transform-only card composites.
 
 ### The Play All click cost
 

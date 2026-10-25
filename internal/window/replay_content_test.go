@@ -15,7 +15,7 @@ func TestBufferCoversContentPastTheCanvas(t *testing.T) {
 
 	screen := &dirtyScreen{fakeScreen: &fakeScreen{width: 100, height: 100}}
 	screen.display = partialDisplay(100, 100)
-	screen.boxes = []layout.Box{{X: 0, Y: 0, W: 100, H: 400}}
+	screen.boxes = []layout.Box{{X: 0, Y: 0, W: 100, H: 300}}
 	screen.gen = 1
 	s := newDirtyShell(screen)
 
@@ -25,11 +25,11 @@ func TestBufferCoversContentPastTheCanvas(t *testing.T) {
 		t.Fatal("no tile grid for the taller content")
 	}
 
-	if got := s.partial.tiles.height; got != 400 {
-		t.Fatalf("grid height = %d, want the 400 px content", got)
+	if got := s.partial.tiles.height; got != 300 {
+		t.Fatalf("grid height = %d, want the 300 px content", got)
 	}
 
-	if len(s.partial.last) != 1 || s.partial.last[0].Dy() != 400 {
-		t.Fatalf("full plan rects = %v, want one 400 px rect", s.partial.last)
+	if len(s.partial.last) != 1 || s.partial.last[0].Dy() != 300 {
+		t.Fatalf("full plan rects = %v, want one 300 px rect", s.partial.last)
 	}
 }

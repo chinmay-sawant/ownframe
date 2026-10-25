@@ -42,6 +42,18 @@ var _ host.LayerSource = (*Page)(nil)
 //
 // The runtime reuses its entry slice, so every field is copied into a new slice
 // here. The window consumes the result before the next frame asks again.
+// SetPromotedLayers tells the motion driver which elements the compositor
+// kept as retained layers on the last frame. Their paint changes land in the
+// layer textures, so the next Step leaves their page damage to the layer
+// cache; a demotion reports the pose it leaves behind.
+func (p *Page) SetPromotedLayers(ids []string) {
+	if p == nil || p.motion == nil {
+		return
+	}
+
+	p.motion.SetPromotedLayers(ids)
+}
+
 func (p *Page) LayerSpecs(display *layout.Display) []host.LayerSpec {
 	if p == nil || p.motion == nil || (p.animationsOff && p.transitionsOff) {
 		return nil

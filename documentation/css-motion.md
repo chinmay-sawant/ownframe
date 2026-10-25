@@ -353,9 +353,9 @@ timeline offset.
 last bind. `TransitionsSkipped`, `TransitionsNoID`, `TransitionsNoOld`, and
 `TransitionError` cover the last capture and bind. A blocked or skipped change
 is not a failed draw; it means that property snapped instead of moving. A struct
-with no driver returns the zero value. There are no layer, byte, re-bake, or
-demotion fields because the page path does not composite animation layers yet;
-do not read one counter as a promise of another.
+with no driver returns the zero value. `MotionStats` has no layer field: the
+renderer's layer cache keeps its own promoted, demoted, re-baked, and eviction
+counters, and the page probe does not mirror them.
 
 ## Named limits
 
@@ -373,13 +373,23 @@ do not read one counter as a promise of another.
   camera. A keyframe that omits `perspective-origin` uses that resolved default
   at that endpoint. A `none` endpoint is discrete: the distance flips at the
   midpoint of the interval, while the origin interpolates component-wise.
-- **No layers yet.** `opacity` writes each targeted operation's element
-  opacity. Two operations from separate branches of the element whose painted
-  boxes overlap fade independently instead of compositing as one group; the
-  bind reports that as a gap, and the overlap scan is capped at 128 operations
-  per element (`internal/motion/bind.go`, `opacityGap`). The window does not
-  composite an animation layer yet, so a moving element still pays the replay
-  of its damaged operations.
+- **Layer promotion is narrow.** A visible element with an active 2D transform
+  or opacity track can be promoted to a retained texture. The window leaves
+  its operations out of the cached background and composites the layer after
+  the blit, so a moving element stops repainting the page under it. An element
+  with any colour, layout, or SVG paint track stays direct: the texture owns
+  the whole subtree, so that write would re-bake it every frame. Promotion is
+  also refused for a fixed, pinned, z-indexed, or 3D target, for a subtree
+  whose operations paint non-contiguously across another element, and for a
+  page with a blend or isolation group. A layer
+  already held through a rest pose keeps its texture, so an alternate
+  animation does not demote at every turn. A layer whose content still changes
+  every frame is demoted for 60 frames after two misses.
+  `opacity` still writes each targeted operation's element opacity, so two
+  operations from separate branches of the element whose painted boxes overlap
+  fade independently instead of compositing as one group; the bind reports
+  that as a gap, and the overlap scan is capped at 128 operations per element
+  (`internal/motion/bind.go`, `opacityGap`).
 - `transform-origin` is not a keyframed property. A keyframe that declares it
   writes nothing and adds no gap; the runtime uses the element's laid-out
   transform origin.
