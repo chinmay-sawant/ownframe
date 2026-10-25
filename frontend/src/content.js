@@ -12,6 +12,7 @@ const extras = import.meta.glob([
 
 const labels = {
   showcase: 'Example apps',
+  'why-ownframe': 'Why ownframe exists',
   'examples-readme': 'Feature example',
   'compare-rust-gpui': 'Rust GPUI',
   'compare-electron': 'Electron',
@@ -23,7 +24,7 @@ const labels = {
 };
 
 const keptSlugs = new Set([
-  'showcase', 'examples-readme',
+  'showcase', 'examples-readme', 'why-ownframe',
   'compare-rust-gpui', 'compare-electron',
   'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview',
   'compare-ebitengine',
@@ -49,6 +50,10 @@ export const documents = [...markdownDocuments.filter((entry) => keptSlugs.has(e
 }].sort((a, b) => a.title.localeCompare(b.title));
 
 const navigation = [
+  {
+    title: 'About',
+    slugs: ['why-ownframe'],
+  },
   {
     title: 'Examples',
     slugs: ['showcase', 'examples-readme'],
