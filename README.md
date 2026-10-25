@@ -14,6 +14,16 @@ Write screens in HTML and CSS, and application logic in Go. ownframe renders wit
 
 `scripts/browser.sh` builds a wasm canvas preview. `-web` is a loopback PNG debugger. The capability matrix is in [documentation/platforms.md](documentation/platforms.md).
 
+## Why ownframe exists
+
+ownframe is an experiment driven by a question: **How far can we push Go for native application development?**
+
+I wanted to explore what it takes to build desktop and mobile interfaces with HTML and CSS while keeping application logic and rendering in Go, without bundling a full browser or JavaScript runtime. Working with [blinkless](https://github.com/chinmay-sawant/blinkless) is part of that exploration.
+
+This is a place to learn by building: test ideas against real use cases, understand the trade-offs and limitations, and see where a lightweight, Go-first approach works and where it doesn't. AI-assisted development is part of the process too, with generated changes reviewed and tested rather than accepted on trust.
+
+The goal isn't to claim that existing frameworks are obsolete or that every application should use this approach. It's to challenge assumptions, discover what's practical, and push my understanding of what Go can do. The direction may evolve as the experiments reveal new possibilities and constraints.
+
 ## Demo
 
 ownframe preview. HTML and CSS layout with a layout engine written in Go, no Chromium or WebKit.
