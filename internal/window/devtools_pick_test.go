@@ -83,3 +83,105 @@ func TestDevToolsDropsStalePicks(t *testing.T) {
 		t.Fatal("a stale pick survived the generation change")
 	}
 }
+
+func TestDevToolsRefreshWithoutPicksSkipsBoxes(t *testing.T) {
+	d := newDevScreen()
+	s := newDevShell(d)
+	d.redraws++
+	s.devRefresh()
+	if d.boxReads != 0 {
+		t.Fatalf("refresh read boxes %d times without a selection", d.boxReads)
+	}
+}
+
+func TestDevToolsPickerRequiresExplicitSelection(t *testing.T) {
+	d := newDevScreen()
+	s := newDevShell(d)
+	s.devLayout()
+	if s.devPickerOn() {
+		t.Fatal("opening DevTools enabled the picker")
+	}
+	if err := s.devPick(20, 20, false); err != nil {
+		t.Fatal(err)
+	}
+	if d.clicked != 1 || s.dev.havePin {
+		t.Fatal("default DevTools state intercepted a page click")
+	}
+}
+
+func TestDevToolsCloseDisarmsPicker(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		name := "unselected"
+		if enabled {
+			name = "selected"
+		}
+		t.Run(name, func(t *testing.T) {
+			d := newDevScreen()
+			s := newDevShell(d)
+			s.devLayout()
+			if enabled {
+				for _, hit := range s.dev.hits {
+					if hit.act == devActPicker {
+						s.devPanelPress(int(hit.rect.X+hit.rect.W/2), int(hit.rect.Y+hit.rect.H/2))
+						break
+					}
+				}
+				if !s.devPickerOn() {
+					t.Fatal("explicit Picker click did not enable picking")
+				}
+				if err := s.devPick(20, 20, false); err != nil {
+					t.Fatal(err)
+				}
+				if !s.dev.havePin || d.clicked != 0 {
+					t.Fatal("selected picker did not intercept the click")
+				}
+			}
+			close, _ := devHeaderRight(s.dev.panel)
+			s.devPanelPress(int(close.X+devClosePad+devTextWidth("X")/2), int(close.Y+close.H/2))
+			if d.on {
+				t.Fatal("the drawn X did not request close")
+			}
+			if err := s.devSync(); err != nil {
+				t.Fatal(err)
+			}
+			if s.devPickerOn() || s.dev.havePin || s.dev.haveHov {
+				t.Fatal("closing DevTools left picking active")
+			}
+			// Finish the X press, then use the normal closed-dock pointer path.
+			s.mouseDown = true
+			if _, err := s.pointerMouse(
+				20, 20, 20, 20, false, true, false,
+			); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.pointerMouse(
+				20, 20, 20, 20, true, false, false,
+			); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := s.pointerMouse(
+				20, 20, 20, 20, false, true, false,
+			); err != nil {
+				t.Fatal(err)
+			}
+			if d.clicked != 1 {
+				t.Fatal("closed DevTools intercepted a normal page click")
+			}
+			if err := s.devToggle(); err != nil {
+				t.Fatal(err)
+			}
+			if err := s.devSync(); err != nil {
+				t.Fatal(err)
+			}
+			if s.devPickerOn() {
+				t.Fatal("reopening DevTools enabled picking without a Picker click")
+			}
+			if err := s.devPick(20, 20, false); err != nil {
+				t.Fatal(err)
+			}
+			if d.clicked != 2 || s.dev.havePin {
+				t.Fatal("reopened DevTools intercepted a normal page click")
+			}
+		})
+	}
+}

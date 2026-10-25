@@ -3,6 +3,9 @@ package window
 import (
 	"image"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe/internal/replay"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // viewportTaker reports scripted dirty rects for the oversized path.
@@ -68,5 +71,49 @@ func TestViewportDirtyBounds(t *testing.T) {
 	}
 	if got := viewportDirtyBounds(nil); !got.Empty() {
 		t.Fatalf("empty list = %v, want empty", got)
+	}
+}
+
+// promotedLayerScreen records the layer ids the window hands back to the page.
+type promotedLayerScreen struct {
+	*layerDirtyScreen
+	promoted []string
+}
+
+func (s *promotedLayerScreen) SetPromotedLayers(ids []string) {
+	s.promoted = append([]string(nil), ids...)
+}
+
+// TestViewportCompositesRetainedLayer pins the background-plus-layer path: a
+// tall page bakes the promoted card into a layer, leaves its operations out of
+// the cached background, and reports the promoted id back to the page so the
+// next sample stops damaging the page under it.
+func TestViewportCompositesRetainedLayer(t *testing.T) {
+	d := windowLayerDisplay()
+	app := &promotedLayerScreen{layerDirtyScreen: &layerDirtyScreen{
+		dirtyScreen: &dirtyScreen{
+			fakeScreen: &fakeScreen{width: 100, height: 100},
+			display:    d,
+			gen:        1,
+			ok:         true,
+		},
+		specs: []replay.LayerSpec{{ElementID: "card", BoxIndex: 1, Matrix: windowLayerMatrix(2), Alpha: 1}},
+	}}
+	shell := newDirtyShell(app.dirtyScreen)
+	shell.app = app
+	shell.display = d
+	dst := ebiten.NewImage(100, 100)
+	defer dst.Deallocate()
+
+	shell.drawViewport(dst, d, &viewportTaker{})
+
+	if shell.viewport.buf == nil {
+		t.Fatal("the viewport path kept no background buffer")
+	}
+	if !shell.renderer.LayersActive(d) {
+		t.Fatal("the card was not promoted")
+	}
+	if len(app.promoted) != 1 || app.promoted[0] != "card" {
+		t.Fatalf("promoted ids = %v, want [card]", app.promoted)
 	}
 }

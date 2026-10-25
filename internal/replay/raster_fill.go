@@ -21,7 +21,6 @@ func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.Displa
 	r := radius4(radii)
 	key := rasterKey{
 		variant: rasterFill,
-		col:     rgba(op),
 		w:       w, h: h,
 		r:  r,
 		fx: x - float32(left),
@@ -30,10 +29,9 @@ func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.Displa
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
 		path := roundedFillPath(key.fx, key.fy, w, h, r)
 		options := &vector.DrawPathOptions{AntiAlias: true}
-		options.ColorScale.ScaleWithColor(key.col)
 		vector.FillPath(img, &path, nil, options)
 	})
-	blitRaster(dst, img, left, top)
+	blitRaster(dst, img, left, top, rgba(op))
 
 	return true
 }

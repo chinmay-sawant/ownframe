@@ -99,6 +99,10 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			g.err = err
 			return
 		}
+		if err := checkProjectedText(); err != nil {
+			g.err = err
+			return
+		}
 		if err := checkGroupComposite(); err != nil {
 			g.err = err
 			return
@@ -108,6 +112,18 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			return
 		}
 		if err := checkChunkParity(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkPathGolden(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkPathXform(); err != nil {
+			g.err = err
+			return
+		}
+		if err := checkPathGroup(); err != nil {
 			g.err = err
 			return
 		}

@@ -39,6 +39,9 @@ func TestDevCloseHitClosesDock(t *testing.T) {
 	s.dev.hits = []devHit{{rect: cls, act: devActClose}}
 
 	s.devPanelPress(int(cls.X+cls.W-4), 10)
+	if err := s.devSync(); err != nil {
+		t.Fatal(err)
+	}
 	if s.dev.on || d.on {
 		t.Fatal("the close key did not shut the dock")
 	}

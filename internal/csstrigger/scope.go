@@ -3,10 +3,10 @@ package csstrigger
 import (
 	"strings"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-func inScope(boxes []ownframe.Box, source, target int, name string) bool {
+func inScope(boxes []layout.Box, source, target int, name string) bool {
 	for index := source; index >= 0; index = boxes[index].ParentIndex {
 		if scopesName(boxes[index].TriggerScope, name) && !descendant(boxes, index, target) {
 			return false
@@ -29,7 +29,7 @@ func scopesName(scope, name string) bool {
 	return false
 }
 
-func descendant(boxes []ownframe.Box, ancestor, child int) bool {
+func descendant(boxes []layout.Box, ancestor, child int) bool {
 	for child >= 0 {
 		if child == ancestor {
 			return true

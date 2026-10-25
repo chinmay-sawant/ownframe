@@ -255,6 +255,12 @@ button {
 
 .catalog-row.has-trigger-scope { trigger-scope: --scope-start; }
 
+/* A restart hides the target for one publish. The runtime keeps a player's
+   clock across a rebind, so removing the element is what gives the new
+   keyframe name a fresh start. The target is absolutely positioned, so the
+   card does not move while it is hidden. */
+.catalog-row.restarting .catalog-preview-target { display: none; }
+
 .catalog-preview-webkit-animation { background-color: #7a3fc1; border-radius: 14px 4px; -webkit-animation: wk-shorthand 1400ms ease-in-out 0s 1 normal both paused; }
 .catalog-preview-webkit-animation-delay { background-color: #168c9a; border-radius: 13px 5px; -webkit-animation: wk-delay 1200ms ease-in-out 350ms 1 normal both paused; -webkit-animation-delay: 350ms; }
 .catalog-preview-webkit-animation-direction { background-color: #d44e42; border-radius: 4px 14px; -webkit-animation: wk-direction 1400ms ease-in-out 0s 1 reverse both paused; -webkit-animation-direction: reverse; }
@@ -342,36 +348,115 @@ button {
   50% { transform: translateX(90px); opacity: 0.72; background-color: #e27a27; }
   100% { transform: translateX(180px); opacity: 1; background-color: #2459d3; }
 }
+@keyframes standard-glide-b {
+  0% { transform: translateX(0px); opacity: 1; }
+  50% { transform: translateX(90px); opacity: 0.72; background-color: #e27a27; }
+  100% { transform: translateX(180px); opacity: 1; background-color: #2459d3; }
+}
 
 @-webkit-keyframes wk-shorthand { 0% { transform: translate(0px, 0px); } 50% { transform: translate(85px, -12px); background-color: #d760a8; } 100% { transform: translate(180px, 8px); background-color: #7a3fc1; } }
+@-webkit-keyframes wk-shorthand-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(85px, -12px); background-color: #d760a8; } 100% { transform: translate(180px, 8px); background-color: #7a3fc1; } }
 @-webkit-keyframes wk-delay { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -12px); background-color: #46b6a3; } 50% { transform: translate(90px, 10px); } 75% { transform: translate(135px, -9px); background-color: #dfc34b; } 100% { transform: translate(180px, 0px); } }
+@-webkit-keyframes wk-delay-b { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -12px); background-color: #46b6a3; } 50% { transform: translate(90px, 10px); } 75% { transform: translate(135px, -9px); background-color: #dfc34b; } 100% { transform: translate(180px, 0px); } }
 @-webkit-keyframes wk-direction { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -18px); background-color: #f19b47; } 100% { transform: translate(180px, 0px); background-color: #d44e42; } }
+@-webkit-keyframes wk-direction-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -18px); background-color: #f19b47; } 100% { transform: translate(180px, 0px); background-color: #d44e42; } }
 @-webkit-keyframes wk-duration { 0% { transform: translate(0px, 0px); } 35% { transform: translate(60px, -17px); background-color: #f0c948; } 70% { transform: translate(125px, 10px); background-color: #ec7042; } 100% { transform: translate(180px, -3px); } }
+@-webkit-keyframes wk-duration-b { 0% { transform: translate(0px, 0px); } 35% { transform: translate(60px, -17px); background-color: #f0c948; } 70% { transform: translate(125px, 10px); background-color: #ec7042; } 100% { transform: translate(180px, -3px); } }
 @-webkit-keyframes wk-fill { 0% { transform: translate(0px, 0px); } 55% { transform: translate(95px, 18px); background-color: #efaa48; } 100% { transform: translate(180px, -8px); background-color: #e56b4a; } }
+@-webkit-keyframes wk-fill-b { 0% { transform: translate(0px, 0px); } 55% { transform: translate(95px, 18px); background-color: #efaa48; } 100% { transform: translate(180px, -8px); background-color: #e56b4a; } }
 @-webkit-keyframes wk-iterations { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -15px); background-color: #e6c43b; } 50% { transform: translate(90px, 12px); background-color: #e87836; } 75% { transform: translate(135px, -10px); background-color: #a6c843; } 100% { transform: translate(180px, 0px); } }
+@-webkit-keyframes wk-iterations-b { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -15px); background-color: #e6c43b; } 50% { transform: translate(90px, 12px); background-color: #e87836; } 75% { transform: translate(135px, -10px); background-color: #a6c843; } 100% { transform: translate(180px, 0px); } }
 @-webkit-keyframes wk-name { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -19px); background-color: #b3d262; } 100% { transform: translate(180px, 0px); background-color: #31856a; } }
+@-webkit-keyframes wk-name-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -19px); background-color: #b3d262; } 100% { transform: translate(180px, 0px); background-color: #31856a; } }
 @-webkit-keyframes wk-play { 0% { transform: translate(0px, 0px); opacity: 1; } 50% { transform: translate(90px, 14px); opacity: 0.45; background-color: #d1a1e8; } 100% { transform: translate(180px, -12px); opacity: 1; } }
+@-webkit-keyframes wk-play-b { 0% { transform: translate(0px, 0px); opacity: 1; } 50% { transform: translate(90px, 14px); opacity: 0.45; background-color: #d1a1e8; } 100% { transform: translate(180px, -12px); opacity: 1; } }
 @-webkit-keyframes wk-timing { 0% { transform: translateX(0px); } 25% { transform: translateX(45px); background-color: #68a9dd; } 50% { transform: translateX(90px); background-color: #bdc9ea; } 75% { transform: translateX(135px); background-color: #73c5c1; } 100% { transform: translateX(180px); } }
+@-webkit-keyframes wk-timing-b { 0% { transform: translateX(0px); } 25% { transform: translateX(45px); background-color: #68a9dd; } 50% { transform: translateX(90px); background-color: #bdc9ea; } 75% { transform: translateX(135px); background-color: #73c5c1; } 100% { transform: translateX(180px); } }
 
 @keyframes sample-composition { 0% { transform: translate(0px, 5px); } 50% { transform: translate(85px, -16px); background-color: #f180bd; } 100% { transform: translate(170px, 7px); } }
+@keyframes sample-composition-b { 0% { transform: translate(0px, 5px); } 50% { transform: translate(85px, -16px); background-color: #f180bd; } 100% { transform: translate(170px, 7px); } }
 @keyframes sample-delay { 0% { transform: translate(0px, 0px); } 30% { transform: translate(55px, -15px); background-color: #47c4bd; } 65% { transform: translate(115px, 12px); } 100% { transform: translate(180px, -4px); } }
+@keyframes sample-delay-b { 0% { transform: translate(0px, 0px); } 30% { transform: translate(55px, -15px); background-color: #47c4bd; } 65% { transform: translate(115px, 12px); } 100% { transform: translate(180px, -4px); } }
 @keyframes sample-delay-end { 0% { transform: translate(0px, 0px); } 60% { transform: translate(100px, 15px); background-color: #d6a9f0; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-delay-end-b { 0% { transform: translate(0px, 0px); } 60% { transform: translate(100px, 15px); background-color: #d6a9f0; } 100% { transform: translate(180px, 0px); } }
 @keyframes sample-delay-start { 0% { transform: translate(0px, 0px); } 50% { transform: translate(85px, -20px); background-color: #f3a34b; } 100% { transform: translate(150px, -9px); } }
+@keyframes sample-delay-start-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(85px, -20px); background-color: #f3a34b; } 100% { transform: translate(150px, -9px); } }
 @keyframes sample-direction { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -15px); background-color: #718fd8; } 100% { transform: translate(180px, 12px); } }
+@keyframes sample-direction-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -15px); background-color: #718fd8; } 100% { transform: translate(180px, 12px); } }
 @keyframes sample-duration { 0% { transform: translate(0px, 0px); } 35% { transform: translate(55px, -16px); background-color: #4baee0; } 70% { transform: translate(125px, 15px); background-color: #e39a3a; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-duration-b { 0% { transform: translate(0px, 0px); } 35% { transform: translate(55px, -16px); background-color: #4baee0; } 70% { transform: translate(125px, 15px); background-color: #e39a3a; } 100% { transform: translate(180px, 0px); } }
 @keyframes sample-fill { 0% { transform: translate(0px, 0px); } 45% { transform: translate(85px, -10px); background-color: #8ad5bf; } 100% { transform: translate(175px, 12px); background-color: #319b91; } }
+@keyframes sample-fill-b { 0% { transform: translate(0px, 0px); } 45% { transform: translate(85px, -10px); background-color: #8ad5bf; } 100% { transform: translate(175px, 12px); background-color: #319b91; } }
 @keyframes sample-iterations { 0% { transform: translate(0px, 0px); } 20% { transform: translate(35px, -12px); background-color: #e0a9ec; } 50% { transform: translate(90px, 13px); background-color: #e7c64c; } 80% { transform: translate(145px, -10px); background-color: #b9db67; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-iterations-b { 0% { transform: translate(0px, 0px); } 20% { transform: translate(35px, -12px); background-color: #e0a9ec; } 50% { transform: translate(90px, 13px); background-color: #e7c64c; } 80% { transform: translate(145px, -10px); background-color: #b9db67; } 100% { transform: translate(180px, 0px); } }
 @keyframes sample-name { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -20px); background-color: #b989df; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-name-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -20px); background-color: #b989df; } 100% { transform: translate(180px, 0px); } }
 @keyframes sample-play-state { 0% { transform: translate(0px, 0px); opacity: 1; } 50% { transform: translate(90px, 18px); opacity: 0.3; background-color: #f39b85; } 100% { transform: translate(180px, -7px); opacity: 0.75; } }
+@keyframes sample-play-state-b { 0% { transform: translate(0px, 0px); opacity: 1; } 50% { transform: translate(90px, 18px); opacity: 0.3; background-color: #f39b85; } 100% { transform: translate(180px, -7px); opacity: 0.75; } }
 @keyframes sample-range { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -12px); } 50% { transform: translate(90px, -18px); background-color: #edb65b; } 75% { transform: translate(135px, 7px); } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-range-b { 0% { transform: translate(0px, 0px); } 25% { transform: translate(45px, -12px); } 50% { transform: translate(90px, -18px); background-color: #edb65b; } 75% { transform: translate(135px, 7px); } 100% { transform: translate(180px, 0px); } }
 @keyframes sample-range-center { 0% { opacity: 0.2; } 50% { opacity: 0.9; background-color: #9bcf82; } 100% { opacity: 0.35; } }
+@keyframes sample-range-center-b { 0% { opacity: 0.2; } 50% { opacity: 0.9; background-color: #9bcf82; } 100% { opacity: 0.35; } }
 @keyframes sample-range-end { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, 18px); background-color: #a18ad2; } 100% { transform: translate(180px, -8px); } }
+@keyframes sample-range-end-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, 18px); background-color: #a18ad2; } 100% { transform: translate(180px, -8px); } }
 @keyframes sample-range-start { 0% { transform: translate(0px, 0px); } 25% { transform: translateX(45px); background-color: #ecaa43; } 50% { transform: translateX(90px); } 75% { transform: translateX(135px); background-color: #f0cd6a; } 100% { transform: translateX(180px); } }
+@keyframes sample-range-start-b { 0% { transform: translate(0px, 0px); } 25% { transform: translateX(45px); background-color: #ecaa43; } 50% { transform: translateX(90px); } 75% { transform: translateX(135px); background-color: #f0cd6a; } 100% { transform: translateX(180px); } }
 @keyframes sample-timeline { 0% { transform: translate(0px, 18px); } 50% { transform: translate(90px, -18px); background-color: #64a8d8; } 100% { transform: translate(180px, 18px); } }
+@keyframes sample-timeline-b { 0% { transform: translate(0px, 18px); } 50% { transform: translate(90px, -18px); background-color: #64a8d8; } 100% { transform: translate(180px, 18px); } }
 @keyframes sample-timing { 0% { transform: translateX(0px); } 25% { transform: translateX(45px); background-color: #80b9ec; } 50% { transform: translateX(90px); background-color: #b6d6f3; } 75% { transform: translateX(135px); background-color: #5698d1; } 100% { transform: translateX(180px); } }
+@keyframes sample-timing-b { 0% { transform: translateX(0px); } 25% { transform: translateX(45px); background-color: #80b9ec; } 50% { transform: translateX(90px); background-color: #b6d6f3; } 75% { transform: translateX(135px); background-color: #5698d1; } 100% { transform: translateX(180px); } }
 @keyframes sample-trigger { 0% { transform: translate(0px, 14px); opacity: 1; } 50% { transform: translate(90px, -10px); opacity: 0.4; background-color: #f4d951; } 100% { transform: translate(180px, 12px); opacity: 1; } }
+@keyframes sample-trigger-b { 0% { transform: translate(0px, 14px); opacity: 1; } 50% { transform: translate(90px, -10px); opacity: 0.4; background-color: #f4d951; } 100% { transform: translate(180px, 12px); opacity: 1; } }
 @keyframes sample-trigger-scope { 0% { transform: translate(0px, 0px); } 30% { transform: translate(50px, -16px); background-color: #72c8a8; } 70% { transform: translate(130px, 12px); } 100% { transform: translate(180px, -5px); } }
+@keyframes sample-trigger-scope-b { 0% { transform: translate(0px, 0px); } 30% { transform: translate(50px, -16px); background-color: #72c8a8; } 70% { transform: translate(130px, 12px); } 100% { transform: translate(180px, -5px); } }
 @keyframes sample-view-class { 0% { transform: translate(0px, 12px); } 50% { transform: translate(90px, -12px); background-color: #d880a1; } 100% { transform: translate(180px, 12px); } }
+@keyframes sample-view-class-b { 0% { transform: translate(0px, 12px); } 50% { transform: translate(90px, -12px); background-color: #d880a1; } 100% { transform: translate(180px, 12px); } }
 @keyframes sample-view-group { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -19px); background-color: #efc75a; } 100% { transform: translate(180px, 0px); } }
+@keyframes sample-view-group-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, -19px); background-color: #efc75a; } 100% { transform: translate(180px, 0px); } }
 @keyframes sample-view-name { 0% { transform: translate(0px, 0px); } 50% { transform: translate(70px, -18px); background-color: #e87c70; } 100% { transform: translate(180px, 15px); } }
+@keyframes sample-view-name-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(70px, -18px); background-color: #e87c70; } 100% { transform: translate(180px, 15px); } }
 @keyframes sample-view-scope { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, 16px); background-color: #b99bdb; } 100% { transform: translate(180px, -12px); } }
+@keyframes sample-view-scope-b { 0% { transform: translate(0px, 0px); } 50% { transform: translate(90px, 16px); background-color: #b99bdb; } 100% { transform: translate(180px, -12px); } }
+
+/* Trigger scope cards: the Start button sits inside the card, so the
+   card scopes the name the target listens for. */
+.catalog-row.has-standard-trigger { trigger-scope: --standard-start; }
+.catalog-row.has-trigger-start { trigger-scope: --trigger-start; }
+
+/* Restart without a driver call: pressing Start again flips the card to
+   restart-b, which names the identical -b keyframe block. A new name is a
+   new animation instance, so the sample starts at that bind. Do not
+   "simplify" this back into a player restart: the two blocks are the
+   restart, and both stay because each card needs both variants. */
+.catalog-row.restart-b .catalog-preview-animation { animation-name: standard-glide-b; }
+.catalog-row.restart-b .catalog-preview-animation-composition { animation-name: sample-composition-b; }
+.catalog-row.restart-b .catalog-preview-animation-delay { animation-name: sample-delay-b; }
+.catalog-row.restart-b .catalog-preview-animation-delay-end { animation-name: sample-delay-end-b; }
+.catalog-row.restart-b .catalog-preview-animation-delay-start { animation-name: sample-delay-start-b; }
+.catalog-row.restart-b .catalog-preview-animation-direction { animation-name: sample-direction-b; }
+.catalog-row.restart-b .catalog-preview-animation-duration { animation-name: sample-duration-b; }
+.catalog-row.restart-b .catalog-preview-animation-fill-mode { animation-name: sample-fill-b; }
+.catalog-row.restart-b .catalog-preview-animation-iteration-count { animation-name: sample-iterations-b; }
+.catalog-row.restart-b .catalog-preview-animation-name { animation-name: sample-name-b; }
+.catalog-row.restart-b .catalog-preview-animation-play-state { animation-name: sample-play-state-b; }
+.catalog-row.restart-b .catalog-preview-animation-range { animation-name: sample-range-b; }
+.catalog-row.restart-b .catalog-preview-animation-range-center { animation-name: sample-range-center-b; }
+.catalog-row.restart-b .catalog-preview-animation-range-end { animation-name: sample-range-end-b; }
+.catalog-row.restart-b .catalog-preview-animation-range-start { animation-name: sample-range-start-b; }
+.catalog-row.restart-b .catalog-preview-animation-timeline { animation-name: sample-timeline-b; }
+.catalog-row.restart-b .catalog-preview-animation-timing-function { animation-name: sample-timing-b; }
+.catalog-row.restart-b .catalog-preview-animation-trigger { animation-name: sample-trigger-b; }
+.catalog-row.restart-b .catalog-preview-trigger-scope { animation-name: sample-trigger-scope-b; }
+.catalog-row.restart-b .catalog-preview-view-transition-class { animation-name: sample-view-class-b; }
+.catalog-row.restart-b .catalog-preview-view-transition-group { animation-name: sample-view-group-b; }
+.catalog-row.restart-b .catalog-preview-view-transition-name { animation-name: sample-view-name-b; }
+.catalog-row.restart-b .catalog-preview-view-transition-scope { animation-name: sample-view-scope-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation { -webkit-animation-name: wk-shorthand-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-delay { -webkit-animation-name: wk-delay-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-direction { -webkit-animation-name: wk-direction-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-duration { -webkit-animation-name: wk-duration-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-fill-mode { -webkit-animation-name: wk-fill-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-iteration-count { -webkit-animation-name: wk-iterations-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-name { -webkit-animation-name: wk-name-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-play-state { -webkit-animation-name: wk-play-b; }
+.catalog-row.restart-b .catalog-preview-webkit-animation-timing-function { -webkit-animation-name: wk-timing-b; }

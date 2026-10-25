@@ -1,4 +1,4 @@
-package cssanimation
+package cssanimation_test
 
 import (
 	"math"
@@ -10,7 +10,13 @@ func TestOwnFrameAnimationComposition(t *testing.T) {
 	for _, c := range []struct {
 		mode string
 		want float64
-	}{{"add,add", 30}, {"replace,replace", 20}} {
+	}{
+		// An additive transform list concatenates onto the earlier effect, so
+		// ten (0 to 10px) plus twenty (0 to 20px) moves 30px. A replacing list
+		// still writes only the later effect's 20px.
+		{"add,add", 30},
+		{"replace,replace", 20},
+	} {
 		d, _, indices, paints, p, start := runtimePlayer(t, base+`animation-composition:`+c.mode+`;`)
 		if p.EffectCount() != 2 {
 			t.Fatalf("effects = %d, want 2", p.EffectCount())

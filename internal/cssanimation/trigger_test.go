@@ -1,4 +1,4 @@
-package cssanimation
+package cssanimation_test
 
 import (
 	"testing"
@@ -15,6 +15,8 @@ func TestOwnFrameTriggeredAnimationWaitsForAction(t *testing.T) {
 		t.Fatal(err)
 	}
 	p.Step(start.Add(1500 * time.Millisecond))
+	// Both effects are additive, so the activated twenty effect (10px at its
+	// midpoint) concatenates after the finished ten effect's 10px.
 	if got := movedX(d, indices, paints) / d.PointsPerPixel; got < 19.98 || got > 20.02 {
 		t.Fatalf("activated second effect moved %v px, want 20", got)
 	}

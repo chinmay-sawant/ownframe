@@ -8,7 +8,7 @@ package window
 // dirty, so a missed idle frame is cheaper than a wrongly throttled one.
 // Pinned chrome stays on the tile path; a later WantFrameAt still wakes an
 // animating bar. Overlay chrome is the wrapper's call: an unchanged set of
-// chrome rects paints the same pixels and does not need the vsync loop.
+// chrome rects paints the same pixels and does not need the active drawing loop.
 // A ticker keeps the viewport path on the frame clock. The tile path may
 // still idle when that ticker reported no damage.
 func (s *shell) idleCleanFrame() bool {
@@ -25,6 +25,12 @@ func (s *shell) idleCleanFrame() bool {
 	}
 
 	if _, canTake := s.damageTaker(); !canTake {
+		return false
+	}
+
+	// A retained layer is composited after the background blit, so the frame
+	// is not clean even when the page reports no damage: the layer may move.
+	if s.display != nil && s.renderer.LayersActive(s.display) {
 		return false
 	}
 

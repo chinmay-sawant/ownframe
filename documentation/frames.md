@@ -1,8 +1,10 @@
 # Frames
 
 `Page.SetTick` registers one function the window calls before it draws each
-frame; `SetTick(nil)` removes it. The callback can move a bar, wave a level
-meter, or call `Redraw`, so a page can animate without parsing the HTML again. The desktop window, the phone
+frame; `SetTick(nil)` removes it. The same tick steps the automatic CSS motion
+driver first, so a page that only declares `@keyframes` does not need a
+callback. The callback can move a bar, wave a level meter, or call `Redraw`, so
+a page can animate without parsing the HTML again. The desktop window, the phone
 build, and the WebAssembly canvas call it at Ebiten's default tick rate, about
 sixty times a second. A desktop window that has drawn five clean frames in a
 row and has seen no input for 250 ms stops presenting every frame: it waits in
@@ -91,6 +93,29 @@ whose glyph changed, so the window repaints one row band instead of the whole
 board. `Advance`, the `SetData` plus `Redraw` pair, stays for tests and for
 the dump.
 
+## CSS motion and Go-driven motion
+
+A CSS declaration animates by itself. Every commit binds the element's
+`@keyframes` records to its retained operations, and the window tick samples
+them before the application callback, so `Page.SetTick` is not required and the
+[animations example](../examples/animations) registers none. The driver asks for
+a frame while a player is active, writes only the fields its properties own, and
+reports damage for the boxes it changed. [css-motion.md](css-motion.md) has the
+property coverage, the counters, and the limits.
+
+`internal/frame` is the path for motion with no CSS source. `frame.Fill`,
+`frame.Fills`, and `frame.Text` find operations by box and colour,
+`frame.BoxUnits` converts a hit-test box to display units, and the
+`frame.*To` anims patch geometry, alpha, or the matrix and report their old and
+new boxes as damage. Use it for an audio position, a game sprite, or a one-off
+effect that no stylesheet declares.
+
+Both paths write the same retained operations. Do not drive an operation that a
+CSS animation already writes: the automatic sample and the manual step overwrite
+each other every frame. Turn the automatic driver off for the page with
+`Page.Window().SetAnimations(false)` before a manual player takes over. The
+switch is page-wide, not per element.
+
 ## Cost
 
 Changing an operation is cheap and can run every frame. A `Redraw` is not: the
@@ -109,12 +134,13 @@ Remeasure with the current benchmark before choosing an animation path.
   A no-op tick keeps the PNG cache. This software path
   does not capture the window framebuffer.
 - A page that fell back to the bitmap path has no display list. `page.Probe().Display`
-  returns nil and there is nothing to change.
-- CSS `@keyframes` and `transition` use separate CSS-specific runtime packages.
-  A caller binds Blinkless records to paint operations and supplies the clock,
-  timeline values, trigger events, or before and after displays. The Page
-  window does not start them automatically. See [CSS motion](css-motion.md).
-  The `Page.SetTick` helpers above still suit Go-controlled motion.
+  returns nil and there is nothing to change. The automatic CSS driver binds
+  nothing on that path.
+- Automatic CSS motion runs on the same tick. `Serve` does not tick, so a served
+  page does not animate. A pause, a trigger wait, or a finished player stops
+  asking for another frame. Go-driven motion still uses the `Page.SetTick`
+  helpers above; [CSS motion](css-motion.md) covers the automatic driver and the
+  manual preview packages.
 
 The [Spotify player](../examples/spotify-player) example uses the tick for a
 moving seek bar, a running clock, and a sine-driven equalizer. It plays

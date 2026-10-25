@@ -11,6 +11,9 @@ SCRIPT = Path(__file__).resolve().with_name("check-graphics.sh")
 REQUIRED_TESTS = {
     "TestPartialFrameLeavesTheScreen",
     "TestWindowRepaintPixels",
+    "TestViewportScrollPixels",
+    "TestViewportAnimatedReturnPixels",
+    "TestViewportDirectAnimationReturnPixels",
     "TestWindowIdleDeadline",
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",

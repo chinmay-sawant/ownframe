@@ -4,44 +4,20 @@
 # is missing, or a recorded pair is gone. Existing pairs stay until a
 # public export replaces them. Do not add rows for new work.
 #
-examples/animations/page.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/animations/page.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
-examples/animations/page.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/bind.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
-examples/css-preview/bind.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/bind.go	github.com/chinmay-sawant/ownframe/internal/csstransition
-examples/css-preview/catalog_animation_composition_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_animation_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
-examples/css-preview/catalog_animation_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/catalog_animation_ranges_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_animation_samples_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_animation_samples_test.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
-examples/css-preview/catalog_animation_samples_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/catalog_animation_timeline_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_animation_trigger_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_animation_trigger_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/catalog_animation_trigger_test.go	github.com/chinmay-sawant/ownframe/internal/csstrigger
 examples/css-preview/catalog_motion_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
 examples/css-preview/catalog_transition_behavior_runtime_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
 examples/css-preview/catalog_transition_behavior_runtime_test.go	github.com/chinmay-sawant/ownframe/internal/csstransition
 examples/css-preview/catalog_transition_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
 examples/css-preview/catalog_transition_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/csstransition
-examples/css-preview/catalog_trigger_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_trigger_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
-examples/css-preview/catalog_trigger_fixture_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/catalog_trigger_scope_test.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_trigger_scope_test.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/catalog_trigger_scope_test.go	github.com/chinmay-sawant/ownframe/internal/csstrigger
-examples/css-preview/catalog_triggers.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/catalog_triggers.go	github.com/chinmay-sawant/ownframe/internal/csstrigger
 examples/css-preview/catalog_view_transition_class_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
 examples/css-preview/catalog_view_transition_group_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
 examples/css-preview/catalog_view_transition_name_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
 examples/css-preview/catalog_view_transition_scope_test.go	github.com/chinmay-sawant/ownframe/internal/viewtransition
-examples/css-preview/easing.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/motion.go	github.com/chinmay-sawant/ownframe/internal/animation
-examples/css-preview/motion.go	github.com/chinmay-sawant/ownframe/internal/transition
+examples/css-preview/manual_motion.go	github.com/chinmay-sawant/ownframe/internal/animation
+examples/css-preview/manual_motion.go	github.com/chinmay-sawant/ownframe/internal/cssanimation
+examples/css-preview/manual_motion.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
+examples/css-preview/manual_motion.go	github.com/chinmay-sawant/ownframe/internal/csstransition
+examples/css-preview/manual_motion.go	github.com/chinmay-sawant/ownframe/internal/csstrigger
 examples/css-preview/paint.go	github.com/chinmay-sawant/ownframe/internal/cssmotion
-examples/css-preview/player_step.go	github.com/chinmay-sawant/ownframe/internal/frame
 examples/desktop-cat/cat/preview.go	github.com/chinmay-sawant/ownframe/internal/web
 

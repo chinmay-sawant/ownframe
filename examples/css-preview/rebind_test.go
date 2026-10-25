@@ -1,56 +1,33 @@
 package main
 
 import (
-	"context"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe"
+	"time"
 )
 
+// TestSecondAnimationRebindsFirstAcrossRedraw checks that a redraw caused by
+// another Start rebuilds the first card's player at the clock it reached, not
+// at zero.
 func TestSecondAnimationRebindsFirstAcrossRedraw(t *testing.T) {
-	p, d, _ := fixturePage(t)
-	startCatalog(t, p, d, "animation")
-	first := d.samples[catalogSampleKey("animation")]
-	origin := first.origin
-	gen := p.Probe().Generation()
-	startCatalog(t, p, d, "-webkit-animation")
-	if p.Probe().Generation() <= gen {
-		t.Fatal("second click did not redraw")
+	p, _, v := fixturePage(t)
+	first := catalogRowByName(t, v, "animation-name")
+	clickID(t, p, first.Button)
+	time.Sleep(10 * time.Millisecond)
+	tickPage(t, p)
+	before := xformX(targetOp(t, p, first.TargetID), p.Probe().Display().PointsPerPixel)
+	if before <= 0 {
+		t.Fatalf("the first sample did not advance: %v", before)
 	}
-	if err := d.tick(context.Background()); err != nil {
-		t.Fatal(err)
+	rebinds := p.Probe().Motion().Rebinds
+	second := catalogRowByName(t, v, "-webkit-animation")
+	clickID(t, p, second.Button)
+	if p.Probe().Motion().Rebinds <= rebinds {
+		t.Fatal("the second click did not rebind the first player")
 	}
-	if !first.origin.Equal(origin) {
-		t.Fatal("first sample origin changed")
+	time.Sleep(5 * time.Millisecond)
+	tickPage(t, p)
+	after := xformX(targetOp(t, p, first.TargetID), p.Probe().Display().PointsPerPixel)
+	if after < before {
+		t.Fatalf("the redraw restarted the first sample: %v then %v", before, after)
 	}
-	if d.gen != p.Probe().Generation() || !planInDisplay(p.Probe().Display(), first.plan) {
-		t.Fatal("first sample was not rebound to the current display")
-	}
-	first.plan.step(first.plan.start.Add(first.plan.delay + first.plan.duration/2))
-	changed := false
-	for _, pair := range first.plan.pairs {
-		changed = changed || read(pair.op) != pair.from
-	}
-	if !changed {
-		t.Fatal("first sample could not render its deterministic mid-frame")
-	}
-}
-
-func planInDisplay(d *ownframe.Display, m motion) bool {
-	if d == nil || len(m.pairs) == 0 {
-		return false
-	}
-	for _, pair := range m.pairs {
-		found := false
-		for i := range d.Ops {
-			if pair.op == &d.Ops[i] {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
 }

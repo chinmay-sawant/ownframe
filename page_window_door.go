@@ -2,10 +2,12 @@ package ownframe
 
 import "context"
 
-// Window reads and sets reload, perf, devtools, and touch policy.
+// Window reads and sets reload, the animation and transition switches, perf,
+// devtools, and touch policy.
 type Window struct{ page *Page }
 
-// Window returns reload, perf, devtools, and touch policy for this page.
+// Window returns reload, the animation and transition switches, perf, devtools,
+// and touch policy for this page.
 func (p *Page) Window() Window { return Window{page: p} }
 
 // PollReload rereads a watched source file.
@@ -16,6 +18,49 @@ func (w Window) PollReload(ctx context.Context) (bool, error) {
 	}
 
 	return p.PollReload(ctx)
+}
+
+// SetAnimations turns the automatic CSS motion driver on or off. It is on by
+// default; turning it off releases the bound players at once.
+func (w Window) SetAnimations(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetAnimations(on)
+}
+
+// Animations reports whether the automatic CSS motion driver is on.
+func (w Window) Animations() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Animations()
+}
+
+// SetTransitions turns the automatic CSS transition driver on or off. It is on
+// by default. Turning it off releases the live renderers without writing, so a
+// transition in flight freezes at the paint it had already presented; turning
+// it back on lets the next style change capture. The animation switch is
+// independent.
+func (w Window) SetTransitions(on bool) {
+	p := innerPage(w.page)
+	if p == nil {
+		return
+	}
+	p.SetTransitions(on)
+}
+
+// Transitions reports whether the automatic CSS transition driver is on.
+func (w Window) Transitions() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.Transitions()
 }
 
 // SetPerf turns pipeline timing, dirty counters, and alloc tracking on or off.

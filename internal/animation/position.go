@@ -2,14 +2,6 @@ package animation
 
 import "time"
 
-func position(t Timing, start time.Time, input FrameInput) (float64, int, bool, bool, bool) {
-	raw, available := rawPosition(t, start, input)
-	if !available {
-		return 0, 0, false, false, false
-	}
-	return samplePosition(t, raw)
-}
-
 func rawPosition(t Timing, start time.Time, input FrameInput) (float64, bool) {
 	raw, available := timelineProgress(t, input)
 	if !available {

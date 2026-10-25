@@ -24,6 +24,7 @@ func TestDisplayNamesEveryKindItEmits(t *testing.T) {
 		render.OpLinkURI:    true,
 		render.OpBullet:     true,
 		render.OpGridRun:    true,
+		render.OpPath:       true,
 	}
 
 	sources := []string{
@@ -31,6 +32,7 @@ func TestDisplayNamesEveryKindItEmits(t *testing.T) {
 		`<p>text</p><ul><li>bullet</li></ul><a href="/x">link</a>`,
 		`<table style="border-collapse:collapse"><tr><td style="border:1px solid #ccc">a</td></tr></table>`,
 		`<div style="isolation:isolate;background:#eee">group</div>`,
+		`<div style="background:#eee;border:2px solid #333;border-radius:12px;corner-shape:bevel">path</div>`,
 	}
 
 	for _, source := range sources {

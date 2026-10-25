@@ -1,53 +1,38 @@
 package main
 
 import (
-	"context"
+	"math"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe"
+	"time"
 )
 
-func TestCatalogStartDispatchesAnimationTriggers(t *testing.T) {
+// TestCatalogStartRunsTriggerCards covers the three cards whose effect waits
+// for an animation-trigger. The manual path in manual_motion.go dispatches
+// after the click's redraw; these cards are the reason that file exists.
+func TestCatalogStartRunsTriggerCards(t *testing.T) {
 	for _, name := range []string{"animation", "animation-trigger", "trigger-scope"} {
 		t.Run(name, func(t *testing.T) {
-			p, d, _ := fixturePage(t)
-			startCatalog(t, p, d, name)
-			s := d.samples[catalogSampleKey(name)]
-			if s == nil || s.plan.animation == nil {
-				t.Fatal("Start did not bind an animation player")
-			}
-			active := s.plan.step(s.plan.start.Add(s.plan.delay + s.plan.duration/2))
-			changed := false
-			for _, pair := range s.plan.pairs {
-				changed = changed || read(pair.op) != pair.from
-			}
-			if !active || !changed {
-				t.Fatalf("Start did not dispatch the trigger: active=%v changed=%v", active, changed)
+			p, _, v := fixturePage(t)
+			row := catalogRowByName(t, v, name)
+			clickID(t, p, row.Button)
+			time.Sleep(200 * time.Millisecond)
+			tickPage(t, p)
+			op := targetOp(t, p, row.TargetID)
+			if got := xformX(op, p.Probe().Display().PointsPerPixel); math.Abs(got) < .1 {
+				t.Fatalf("%s did not move after Start", name)
 			}
 		})
 	}
 }
 
-func startCatalog(t *testing.T, p *ownframe.Page, d *demo, name string) {
+// catalogRowByName returns the row with the given property name.
+func catalogRowByName(t *testing.T, v *view, name string) catalogRow {
 	t.Helper()
-	var row catalogRow
-	for _, candidate := range d.v.Catalog {
-		if candidate.Name == name {
-			row = candidate
-			break
+	for _, row := range v.Catalog {
+		if row.Name == name {
+			return row
 		}
 	}
-	if row.Name == "" {
-		t.Fatalf("missing property %q", name)
-	}
-	button, ok := findBox(p.Boxes(), row.Button)
-	if !ok {
-		t.Fatalf("missing catalog button %q", row.Button)
-	}
-	if err := p.Click(context.Background(), button.X+button.W/2, button.Y+button.H/2); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.tick(context.Background()); err != nil {
-		t.Fatal(err)
-	}
+	t.Fatalf("missing property %q", name)
+	return catalogRow{}
 }

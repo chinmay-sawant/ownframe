@@ -100,6 +100,7 @@ Keep the first name. Delete the rest. Update tests in the same PR.
 
 - [s] `API-23` `Stats()` - re-export `type Stats` in `ownframe` **or** unexport the method on the public type. Do not return `host.Stats` from an exported method. Proof: `go doc` of public `Page.Stats` shows `ownframe.Stats` or the method is gone.
 - [s] `API-24` `State()` - re-export a store type **or** hide it. Callers of `*state.Store` in examples must compile. Proof: `go vet ./examples/...` after the wrap.
+- [s] `API-25` `MotionStats` - root alias for `page.MotionStats`, itself an alias for `internal/motion.Stats`. `Probe().Motion()` returns it for the automatic CSS motion counters. Proof: the alias gate lists `page_probe.go:MotionStats`; `go doc` shows the alias.
 
 ## Dependencies
 

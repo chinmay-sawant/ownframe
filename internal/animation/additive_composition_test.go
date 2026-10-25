@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
@@ -14,7 +14,7 @@ import (
 // underlying paint must survive at 0% and 100% instead of being added to
 // itself and saturating.
 func TestAdditiveMissingKeyframeAddsNothing(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 8, Y: 6,
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 8, Y: 6,
 		R: .2, G: .4, B: .6, Alpha: 1}
 	op.SetPaintOpacity(.5)
 	base := cssmotion.Read(op)
@@ -46,7 +46,7 @@ func TestAdditiveMissingKeyframeAddsNothing(t *testing.T) {
 }
 
 // checkAdditivePaint reports whether the op holds the wanted paint.
-func checkAdditivePaint(t *testing.T, op *ownframe.DisplayOp, want cssmotion.Paint, when string) {
+func checkAdditivePaint(t *testing.T, op *layout.DisplayOp, want cssmotion.Paint, when string) {
 	t.Helper()
 	if math.Abs(op.R-want.R) > .001 || math.Abs(op.G-want.G) > .001 ||
 		math.Abs(op.B-want.B) > .001 {

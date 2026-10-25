@@ -38,8 +38,7 @@ func windowBenchPass(ctx context.Context, p *ownframe.Page, v *view,
 		}
 		p.Scroll().SetScrollOffset(0, y)
 		windowBenchScroll(ctx, p, tb)
-		d.samples = map[string]*sample{}
-		d.pending = nil
+		d.manual = map[string]*manualSample{}
 		out = append(out, windowBenchClick(ctx, p, tb, row.Button))
 	}
 	return out

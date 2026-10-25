@@ -82,7 +82,6 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 type rasterKey struct {
 	variant uint8
 	mask    uint8
-	col     color.RGBA
 	w, h    float32
 	width   float32
 	r, ry   [4]float32
@@ -129,10 +128,19 @@ func rasterBox(x, y, w, h, grow float32) (left, top int, size image.Point, ok bo
 	return left, top, size, true
 }
 
-// blitRaster copies a baked raster to dst at an integer origin. An integer
-// translation leaves every texel on its center, so the copy is exact.
-func blitRaster(dst, img *ebiten.Image, left, top int) {
+// opaqueWhite is the tint that leaves a baked white raster unchanged.
+var opaqueWhite = color.RGBA{
+	R: math.MaxUint8, G: math.MaxUint8, B: math.MaxUint8, A: math.MaxUint8,
+}
+
+// blitRaster copies a baked white raster to dst at an integer origin and
+// applies the op's colour. An integer translation leaves every texel on its
+// center, so the copy is exact. Baking the shape as a white mask lets one
+// cached raster serve every colour, so a colour animation reuses it instead
+// of re-rasterizing the path each frame.
+func blitRaster(dst, img *ebiten.Image, left, top int, tint color.RGBA) {
 	opts := &ebiten.DrawImageOptions{}
 	opts.GeoM.Translate(float64(left), float64(top))
+	opts.ColorScale.ScaleWithColor(tint)
 	dst.DrawImage(img, opts)
 }

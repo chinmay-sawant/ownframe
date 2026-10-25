@@ -10,8 +10,11 @@ const Pad = 4
 const Gap = 8
 
 // MaxRects caps the damage list. Past the cap the list collapses to
-// its bounding box, so one take never pays for an unbounded list.
-const MaxRects = 8
+// its bounding box, so one take never pays for an unbounded list. The cap
+// covers a gallery of independently animated cards: at eight, a wider window
+// that showed more cards collapsed every frame to one box and repainted the
+// whole page.
+const MaxRects = 24
 
 // frameThird is the area divisor for a collapse to one box. A damage
 // list or a display diff whose area exceeds the frame divided by

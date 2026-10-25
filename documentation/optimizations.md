@@ -393,7 +393,7 @@ the state span inside it rides along with that one patch.
 
 ## Next: the two gaps against a browser
 
-The first gap is closed. The second one is the list to work from next.
+The first gap is closed. The second is partly addressed.
 
 ### What a browser does
 
@@ -431,12 +431,30 @@ elements it changed, and the page paints the patched region.
 
 ### Gap two, a running animation repaints the page
 
-With 43 animations running, every frame replays the display list. A browser
-moves a layer instead.
+This gap is partly addressed. A running animation no longer replays the page,
+but it does not move a composited layer either.
 
-- The replay path already carries an op transform matrix, a group composite,
-  and viewport-pinned ops. What is missing is a layer the window can blit
-  without repainting the page under it.
+With 43 animations running, the automatic CSS driver samples each player, writes
+only the fields its property owns, and reports the union of the painted bounds
+before and after the sample. A 2D transform moves the operation's matrix, so
+replay draws that operation through its matrix without a layout, and a colour or
+opacity write touches only the operations the element owns. The window then
+repaints the damaged tiles rather than the whole page. A 3D transform or
+perspective goes through one engine re-projection pass per tick and marks the
+patch's old and new boxes. [css-motion.md](css-motion.md) has the property
+coverage and the counters; [repaint.md](repaint.md) has the matrix and chunk
+rules.
+
+A visible element with an active 2D transform or opacity track can now be
+promoted to a retained layer. The window keeps the page background without its
+operations and composites the layer after the blit, so a moving element costs
+one blit instead of a replay of its damage. An element that also writes colour,
+layout, or SVG paint stays direct, because the texture owns its whole subtree
+and would re-bake every frame. A layer held through a rest pose keeps its
+texture, so an alternate animation does not demote at each turn. A layer whose
+content still changes every frame is demoted for 60 frames after two misses.
+The 43 cards still share one display list, so a colour-animated card paints its
+own damaged rect each frame; a transform-only card composites.
 
 ### The Play All click cost
 

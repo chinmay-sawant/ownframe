@@ -33,6 +33,11 @@ func NewComposite(targets []Target, effects []Effect) (*Player, error) {
 			}
 		}
 		sort.SliceStable(frames, func(a, b int) bool { return frames[a].Offset < frames[b].Offset })
+		for j := range frames {
+			if frames[j].Err != nil {
+				return nil, fmt.Errorf("effect %d keyframe %d: %w", i, j, frames[j].Err)
+			}
+		}
 		effects[i].Frames = frames
 	}
 	targets = append([]Target(nil), targets...)

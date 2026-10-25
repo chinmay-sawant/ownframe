@@ -42,6 +42,10 @@ func validate(d *layout.Display) error {
 			if op.StrokeMask & ^uint8(strokeMaskAll) != 0 {
 				return fmt.Errorf("bitmap: unknown stroke mask")
 			}
+		case layout.DisplayOpPath:
+			// The command list is the shape. A payload with no command point
+			// paints nothing, which is the picture the page asked for, so any
+			// path is paint-safe here.
 		case layout.DisplayOpGridRun:
 			if op.Grid == nil {
 				return fmt.Errorf("bitmap: missing grid")

@@ -8,15 +8,28 @@ import (
 )
 
 func paintShape(img *image.NRGBA, op *layout.DisplayOp) {
-	bounds := shapeBounds(op).Intersect(img.Bounds())
+	paintCoverage(img, op, shapeBounds(op), func(x, y float64) bool {
+		return shapeContains(op, x, y)
+	})
+}
+
+// paintCoverage paints one operation's ink at four subsamples per pixel,
+// scaling the colour's alpha by how many subsamples land inside. hit reports
+// whether one point in the operation's local space is ink; the caller bounds
+// the loop because a rounded rectangle and a shaped path bound themselves
+// differently.
+func paintCoverage(img *image.NRGBA, op *layout.DisplayOp, bounds image.Rectangle,
+	hit func(x, y float64) bool) {
+	bounds = bounds.Intersect(img.Bounds())
 	c := opColor(op)
+
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
 		for x := bounds.Min.X; x < bounds.Max.X; x++ {
 			count := 0
 			for _, oy := range [2]float64{.25, .75} {
 				for _, ox := range [2]float64{.25, .75} {
 					px, py, ok := untransform(op, (float64(x)+ox)/pxPerPt, (float64(y)+oy)/pxPerPt)
-					if ok && shapeContains(op, px, py) {
+					if ok && hit(px, py) {
 						count++
 					}
 				}

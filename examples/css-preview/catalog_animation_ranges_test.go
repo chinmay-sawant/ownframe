@@ -3,35 +3,50 @@ package main
 import (
 	"math"
 	"testing"
-
-	"github.com/chinmay-sawant/ownframe/internal/animation"
 )
 
-func TestCatalogAnimationRangeReachesOwnFrameFrame(t *testing.T) {
-	assertRangeSample(t, "animation-range", "entry 10px exit 90px", animation.FrameInput{
-		ScrollProgress: .5,
-		RangeEdges:     map[string]float64{"entry 10px": .25, "exit 90px": .75},
-	})
+// rangePose builds a scroll-driven route and samples it at half the page
+// scroll range.
+func rangePose(t *testing.T, declaration string) float64 {
+	t.Helper()
+	html := `<style>@keyframes route{from{transform:translateX(0px)}to{transform:translateX(100px)}}` +
+		`body{margin:0;height:2000px}` +
+		`#target{width:40px;height:20px;background:#123456;animation-name:route;` +
+		`animation-duration:1000ms;animation-fill-mode:both;animation-timing-function:linear;` +
+		`animation-timeline:scroll();` + declaration + `;}</style>` +
+		`<body><div id="target"></div></body>`
+	p := motionPage(t, html, "")
+	p.Scroll().SetScrollOffset(0, 900)
+	if err := p.Testing().Tick(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	return xformX(targetOp(t, p, "target"), p.Probe().Display().PointsPerPixel)
 }
-func TestCatalogAnimationRangeStartReachesOwnFrameFrame(t *testing.T) {
-	assertRangeSample(t, "animation-range-start", "25%", animation.FrameInput{ScrollProgress: .625})
-}
-func TestCatalogAnimationRangeEndReachesOwnFrameFrame(t *testing.T) {
-	assertRangeSample(t, "animation-range-end", "75%", animation.FrameInput{ScrollProgress: .375})
-}
-func TestCatalogAnimationRangeCenterReachesOwnFrameFrame(t *testing.T) {
-	center := "source 50%"
-	got := sampleMotion(t, `animation-name:route;animation-duration:1s;animation-timeline:scroll();animation-fill-mode:both;animation-timing-function:linear;animation-range-center:`+center+`;`, animation.FrameInput{ScrollProgress: .3, SourceProgress: .1, TargetProgress: .5})
-	if math.Abs(got-50) > .1 {
-		t.Fatalf("animation-range-center:%s sampled %.2f px, want 50", center, got)
+
+func assertRangePose(t *testing.T, name, declaration string, want float64) {
+	t.Helper()
+	if got := rangePose(t, declaration); math.Abs(got-want) > .1 {
+		t.Fatalf("%s sampled %.2f px, want %.2f", name, got, want)
 	}
 }
 
-func assertRangeSample(t *testing.T, property, value string, input animation.FrameInput) {
-	t.Helper()
-	css := `animation-name:route;animation-duration:1s;animation-timeline:scroll();animation-fill-mode:both;animation-timing-function:linear;` + property + `:` + value + `;`
-	got := sampleMotion(t, css, input)
-	if math.Abs(got-50) > .1 {
-		t.Fatalf("%s:%s sampled %.2f px, want 50", property, value, got)
-	}
+// TestCatalogAnimationRangeReachesOwnFrameFrame covers the range shorthand
+// through the page driver at a fixed scroll position.
+func TestCatalogAnimationRangeReachesOwnFrameFrame(t *testing.T) {
+	assertRangePose(t, "animation-range", "animation-range:25% 75%", 50)
+}
+
+func TestCatalogAnimationRangeStartReachesOwnFrameFrame(t *testing.T) {
+	assertRangePose(t, "animation-range-start", "animation-range-start:25%", 100.0/3)
+}
+
+func TestCatalogAnimationRangeEndReachesOwnFrameFrame(t *testing.T) {
+	assertRangePose(t, "animation-range-end", "animation-range-end:75%", 200.0/3)
+}
+
+// TestCatalogAnimationRangeCenterReachesOwnFrameFrame checks the center
+// longhand on the same driver. A center at the middle of the source range
+// leaves the middle of the animation at the middle of the scroll range.
+func TestCatalogAnimationRangeCenterReachesOwnFrameFrame(t *testing.T) {
+	assertRangePose(t, "animation-range-center", "animation-range-center:50%", 50)
 }

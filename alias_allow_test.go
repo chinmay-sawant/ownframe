@@ -23,6 +23,7 @@ elements.go:ElementLayout
 elements.go:ElementRegistry
 fetch.go:FetchResponse
 hover.go:HoverHandler
+page_probe.go:MotionStats
 scrollbar.go:ScrollbarMode
 secret.go:Secret
 serve.go:ServeOptions

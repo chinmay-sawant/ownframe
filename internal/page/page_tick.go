@@ -28,9 +28,10 @@ func (p *Page) SetTick(fn func(ctx context.Context) error) {
 	p.mu.Unlock()
 }
 
-// Tick runs the frame callback registered with SetTick and the caret blink.
-// With no callback and no focused field it does nothing. A callback that
-// mutated ops sets FrameDirty and TakeDirty; a no-op tick stays clean.
+// Tick steps the automatic CSS motion driver, runs the frame callback
+// registered with SetTick, and blinks the caret. With no callback, no focused
+// field, and no animation it does nothing. A mutating tick sets FrameDirty and
+// TakeDirty; a no-op tick stays clean.
 func (p *Page) Tick(ctx context.Context) error {
 	p.mu.Lock()
 	fn := p.fn
@@ -39,15 +40,24 @@ func (p *Page) Tick(ctx context.Context) error {
 	return p.runTick(ctx, fn)
 }
 
-// runTick runs fn then the caret blink, then records in-place op patches
-// as dirty rects. A no-op leaves FrameDirty unset so idle park can sleep.
+// runTick runs the CSS layout pass, steps the paint driver, runs fn, then the
+// caret blink, then records in-place op patches as dirty rects. The layout pass
+// runs first so every later sample composes against the display it produced.
+// The driver damage is marked before the callback snapshot, so the callback
+// diff never covers an animation change. A no-op leaves FrameDirty unset so
+// idle park can sleep. The 3D re-projection runs last, so it cannot invalidate
+// the callback's snapshot.
 func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) error {
 	gen := p.Generation()
+	p.stepMotion(ctx)
 	if fn == nil {
 		err := p.caretBlink(ctx)
 		p.flagTickDirty(gen)
+		if err != nil {
+			return err
+		}
 
-		return err
+		return p.restampTick(ctx, gen)
 	}
 
 	snap := p.captureTickOps()
@@ -60,8 +70,30 @@ func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) erro
 	err := p.caretBlink(ctx)
 	p.noteTickDamage(gen, snap)
 	p.freeOps(snap)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return p.restampTick(ctx, gen)
+}
+
+// restampTick applies the 3D re-projection requests of the sample stepMotion
+// just took, then performs the one redraw that turns retained layout state on
+// when the pass needed it. Both replace the display the tick started with, so
+// the tick is marked dirty even when the callback changed nothing.
+func (p *Page) restampTick(ctx context.Context, gen uint64) error {
+	p.restampMotion(ctx)
+	if p.restampRedraw {
+		p.restampRedraw = false
+		if err := p.Redraw(ctx); err != nil {
+			p.restampRedraw = true
+
+			return err
+		}
+	}
+	p.flagTickDirty(gen)
+
+	return nil
 }
 
 func (p *Page) captureTickOps() []DisplayOp {
@@ -122,7 +154,7 @@ var _ host.FrameWanter = (*Page)(nil)
 // WantFrameAt declares the next time the page needs the window to draw. The
 // desktop window reads it once per frame, before it draws, and schedules its
 // idle wake for that time; a time at or before now asks for the next frame at
-// once and keeps a per-frame animation on the vsync loop. The window clears the
+// once and keeps a per-frame animation on the active drawing loop. The window clears the
 // request when it reads it, like the FrameDirty opt-in, so a tick that wants
 // another frame must ask again on every frame. The zero time means the page
 // does not ask: the window falls back to its keep-alive pacing. Serve and the

@@ -3,6 +3,8 @@ package window
 import (
 	"image"
 
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/replay"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -47,9 +49,24 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		return true
 	}
 	s.disposeViewport()
+	// Prepare this frame's retained layers before planning, so their old ∪
+	// new damage joins the page's dirty rects and the tile pass can skip their
+	// owned operations.
+	layerDamage := s.renderer.BeginLayers(display, s.layerGeneration(), s.layerSpecs(display))
 
 	clipX := s.dockClipX(contentW)
 	rects, ok := taker.TakeDirtyRects()
+	if ok && len(layerDamage) > 0 {
+		content := image.Rect(0, 0, contentW, contentH)
+		combined := make([]image.Rectangle, 0, len(rects)+len(layerDamage))
+		combined = append(combined, rects...)
+		for _, rect := range layerDamage {
+			if inside := rect.Intersect(content); !inside.Empty() {
+				combined = append(combined, inside)
+			}
+		}
+		rects = combined
+	}
 	plans := planRepaints(contentW, contentH, s.partial, s.app.Generation(), rects, ok, clipX)
 	s.partial.mode = plans[0].mode
 	s.partial.clipX = clipX
@@ -65,4 +82,51 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	s.blitFrame(dst, display, plans, chrome, whole, stale)
 
 	return true
+}
+
+// layerSpecs asks the screen for this frame's promoted elements. A screen
+// without the role keeps the direct replay path.
+func (s *shell) layerSpecs(d *layout.Display) []replay.LayerSpec {
+	source, ok := s.app.(replay.LayerSource)
+	if !ok {
+		return nil
+	}
+
+	return source.LayerSpecs(d)
+}
+
+// layerGeneration keys the retained layer cache. It is the page's content
+// generation, so a re-projection pass that rewrites operation matrices in
+// place reuses the layer textures instead of re-baking them every frame. A
+// screen without the role falls back to its display generation.
+func (s *shell) layerGeneration() uint64 {
+	if source, ok := s.app.(layerGenerator); ok {
+		return source.LayerGeneration()
+	}
+
+	return s.app.Generation()
+}
+
+// layerGenerator is the optional screen role that separates display content
+// from a re-projection pass.
+type layerGenerator interface {
+	LayerGeneration() uint64
+}
+
+// layerPromoter is the optional screen role that learns which retained layers
+// the compositor kept this frame. A promoted element's paint changes land in
+// its layer texture, so the page stops damaging the background for it.
+type layerPromoter interface {
+	SetPromotedLayers(ids []string)
+}
+
+// syncPromotedLayers hands the active layer ids back to the page. A demoted
+// layer leaves the set, so its next sample damages the background again.
+func (s *shell) syncPromotedLayers() {
+	promoter, ok := s.app.(layerPromoter)
+	if !ok {
+		return
+	}
+
+	promoter.SetPromotedLayers(s.renderer.ActiveLayerIDs())
 }

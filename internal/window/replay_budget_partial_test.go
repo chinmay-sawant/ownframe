@@ -81,8 +81,7 @@ func TestPartialBudgetViewportIdles(t *testing.T) {
 	}
 
 	screen.ok = false
-	s.drawReplayPartial(dst)
-	s.frameCommit()
+	settleViewportWarmup(s, dst)
 	if !s.idleCleanFrame() {
 		t.Fatal("a stable viewport blit must read clean")
 	}
@@ -108,8 +107,7 @@ func TestPartialBudgetViewportIdles(t *testing.T) {
 		t.Fatal("a generation change must read dirty")
 	}
 
-	s.drawReplayPartial(dst)
-	s.frameCommit()
+	settleViewportWarmup(s, dst)
 	if !s.idleCleanFrame() {
 		t.Fatal("the new generation with no dirty must read clean")
 	}
@@ -134,5 +132,16 @@ func TestPartialBudgetViewportIdles(t *testing.T) {
 	s.frameCommit()
 	if s.idleCleanFrame() {
 		t.Fatal("a dirty rect must read dirty")
+	}
+}
+
+// Warmup progresses over frames before a static page can park.
+func settleViewportWarmup(s *shell, dst *ebiten.Image) {
+	for range 100 {
+		s.drawReplayPartial(dst)
+		s.frameCommit()
+		if s.idleCleanFrame() {
+			return
+		}
 	}
 }

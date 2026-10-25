@@ -1,9 +1,9 @@
 package cssmotion
 
-import "github.com/chinmay-sawant/ownframe"
+import "github.com/chinmay-sawant/blinkless/layout"
 
 // Capture returns paint values for operations inside a layout box.
-func Capture(d *ownframe.Display, box ownframe.Box) []Paint {
+func Capture(d *layout.Display, box layout.Box) []Paint {
 	var out []Paint
 	for _, op := range Operations(d, box) {
 		out = append(out, Read(op))
@@ -12,13 +12,13 @@ func Capture(d *ownframe.Display, box ownframe.Box) []Paint {
 }
 
 // Operations returns pointers to display operations whose centers lie in box.
-func Operations(d *ownframe.Display, box ownframe.Box) []*ownframe.DisplayOp {
+func Operations(d *layout.Display, box layout.Box) []*layout.DisplayOp {
 	return Resolve(d, OperationIndices(d, box))
 }
 
 // Resolve finds the current display operations at previously captured indices.
-func Resolve(d *ownframe.Display, indices []int) []*ownframe.DisplayOp {
-	var out []*ownframe.DisplayOp
+func Resolve(d *layout.Display, indices []int) []*layout.DisplayOp {
+	var out []*layout.DisplayOp
 	if d == nil {
 		return out
 	}
@@ -31,9 +31,9 @@ func Resolve(d *ownframe.Display, indices []int) []*ownframe.DisplayOp {
 }
 
 // Contains reports whether an operation's center lies inside a layout box.
-func Contains(d *ownframe.Display, box ownframe.Box, op ownframe.DisplayOp) bool {
+func Contains(d *layout.Display, box layout.Box, op layout.DisplayOp) bool {
 	x, y := op.X+op.W/halfDivisor, op.Y+op.H/halfDivisor
-	if op.Kind == ownframe.DisplayOpText {
+	if op.Kind == layout.DisplayOpText {
 		y = op.Y
 	}
 	p := d.PointsPerPixel

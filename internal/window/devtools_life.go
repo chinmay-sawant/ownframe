@@ -27,6 +27,9 @@ func (s *shell) devRefresh() {
 
 	s.dev.gen = gen
 	s.dev.haveOp = false
+	if !s.dev.haveHov && !s.dev.havePin {
+		return
+	}
 	boxes := s.app.Boxes()
 
 	if s.dev.haveHov && !devHasBox(boxes, s.dev.hovered) {
@@ -42,8 +45,7 @@ func (s *shell) devRefresh() {
 // the current cursor, so a stale :hover does not stick after the overlay
 // closes.
 func (s *shell) devClose() error {
-	s.dev.haveHov = false
-	s.dev.havePin = false
+	s.devSetPicker(false)
 	s.dev.panelTrack = panelTrack{}
 
 	x, y := ebiten.CursorPosition()

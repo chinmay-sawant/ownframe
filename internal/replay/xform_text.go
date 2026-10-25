@@ -19,6 +19,10 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 
 	content := layout.DisplayTransformText(op.Text, op.TextTransformValue())
 	geom := xformGeom(op, dx, dy)
+	if !op.XformSet {
+		geom.SetElement(0, geomTransCol, op.X*pxPerPt+dx)
+		geom.SetElement(1, geomTransCol, op.Y*pxPerPt+dy)
+	}
 	shiftLocal(&geom, 0, -face.Metrics().HAscent)
 
 	if op.LetterSpacing == 0 {

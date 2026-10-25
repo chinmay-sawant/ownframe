@@ -25,7 +25,7 @@ func (s *shell) drawDevOpPick(screen *ebiten.Image) {
 
 	op := &s.display.Ops[s.dev.opPick]
 
-	ink, ok := devOpInk(op.Kind)
+	ink, ok := devOpPaintInk(op)
 	if !ok {
 		return
 	}
@@ -51,7 +51,22 @@ func devOpInk(kind layout.DisplayKind) (color.RGBA, bool) {
 		return devImageInk, true
 	case layout.DisplayOpGridRun:
 		return devGridInk, true
+	case layout.DisplayOpPath:
+		return devFillInk, true
 	}
 
 	return color.RGBA{}, false
+}
+
+// devOpPaintInk is devOpInk for one operation, so a corner-shape border path
+// shows the stroke colour the same kind's fill path shows the fill colour.
+// Both share DisplayOpPath, which the count row can only label once.
+func devOpPaintInk(op *layout.DisplayOp) (color.RGBA, bool) {
+	if op.Kind == layout.DisplayOpPath {
+		if corner, ok := op.CornerPathValue(); ok && corner != nil && corner.Stroke {
+			return devStrokeInk, true
+		}
+	}
+
+	return devOpInk(op.Kind)
 }

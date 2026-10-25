@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestTriggerResetPausesOnFirstDirectedKeyframe(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 8, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 8, Alpha: 1}
 	p, err := NewComposite([]Target{{Op: op, From: cssmotion.Read(op)}}, []Effect{{
 		Frames: []Keyframe{{Offset: 0, X: 24, Move: true}, {Offset: 1, X: 90, Move: true}},
 		Timing: Timing{Duration: time.Second, Iterations: 1, Fill: FillBoth}, Trigger: "--show play reset",

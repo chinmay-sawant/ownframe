@@ -1080,9 +1080,10 @@ apply.
 | `-webkit-mask-box-image-repeat` | `mask-border-repeat` | Partial: repeat pair on the blend group, host applies the frame |
 
 **Group D - 20 animation / transition / 3D / UI aliases:** 14 animation and
-transition aliases normalize to their base properties, then the paired
-OwnFrame runtime samples those values when the caller supplies time and other
-runtime inputs (`../ownframe/internal/animation/player.go:22-64`,
+transition aliases normalize to their base properties. A Page samples
+`@keyframes` animation values automatically; transition records and the preview
+packages still take time and other runtime inputs from the caller
+(`../ownframe/internal/animation/player.go:22-64`,
 `../ownframe/internal/transition/step.go:10-44`). Four transform aliases are
 Implemented through their base properties. Two UI aliases remain Unsupported.
 

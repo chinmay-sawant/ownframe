@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/transition"
 )
@@ -19,7 +19,7 @@ import (
 // checks that the operations are still the ones the box owns, and a field
 // the layout changed keeps the operation's current value. See bind_verify.go
 // and bind_paint.go.
-func BindTo(d *ownframe.Display, box ownframe.Box, property string,
+func BindTo(d *layout.Display, box layout.Box, property string,
 	indices []int, initial, final []cssmotion.Paint, start time.Time) (*transition.Renderer, error) {
 	if d == nil {
 		return nil, errors.New("csstransition: display is nil")

@@ -1,61 +1,43 @@
 package main
 
 import (
-	"context"
 	"testing"
 )
 
-// TestPlayAllStartsEverySample checks the Play all button: one click wakes
-// every card in the catalog.
+// TestPlayAllStartsEverySample checks the Play all button: one click marks
+// every card started and the page binds the ones its window holds.
 func TestPlayAllStartsEverySample(t *testing.T) {
-	ctx := context.Background()
-	p, d, _ := fixturePage(t)
-	button, ok := findBox(p.Boxes(), playAllID)
-	if !ok {
-		t.Fatal("the play all button is missing")
-	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
-		t.Fatal(err)
-	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
-	}
-	active := 0
-	for _, s := range d.samples {
-		if s.active {
-			active++
+	p, d, v := fixturePage(t)
+	clickID(t, p, playAllID)
+	started := 0
+	for _, row := range v.Catalog {
+		if v.Started[row.Button] {
+			started++
 		}
 	}
-	if active < len(catalogProperties)-3 {
-		t.Fatalf("active samples = %d, want the whole catalog", active)
+	if started != 43 {
+		t.Fatalf("started cards = %d, want the whole catalog", started)
+	}
+	tickPage(t, p)
+	if got := p.Probe().Motion().Bound; got < 29 {
+		t.Fatalf("bound players = %d, want the animation cards", got)
+	}
+	if len(d.manual) != 9 {
+		t.Fatalf("manual samples = %d, want the 6 geometry transitions and 3 trigger cards", len(d.manual))
 	}
 }
 
-// TestRapidClicksQueueEverySample checks that clicks that land before the
+// TestRapidClicksStartEverySample checks that clicks that land before the
 // next tick all start, instead of only the last one.
-func TestRapidClicksQueueEverySample(t *testing.T) {
-	ctx := context.Background()
-	p, d, v := fixturePage(t)
+func TestRapidClicksStartEverySample(t *testing.T) {
+	p, _, v := fixturePage(t)
 	for _, row := range v.Catalog[:3] {
-		button, ok := findBox(p.Boxes(), row.Button)
-		if !ok {
-			t.Fatalf("missing %s", row.Button)
-		}
-		if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
-			t.Fatal(err)
-		}
+		clickID(t, p, row.Button)
 	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
-	}
-	active := 0
+	tickPage(t, p)
 	for _, row := range v.Catalog[:3] {
-		s := d.samples[row.SampleKey]
-		if s != nil && s.active {
-			active++
+		if !v.Started[row.Button] {
+			t.Fatalf("%s was not started", row.Name)
 		}
-	}
-	if active != 3 {
-		t.Fatalf("active samples = %d, want 3", active)
 	}
 }

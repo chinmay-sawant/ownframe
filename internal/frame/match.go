@@ -3,11 +3,29 @@ package frame
 import (
 	"math"
 
+	"github.com/chinmay-sawant/blinkless/layout"
+
 	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // centerDivisor halves a size to reach its center.
 const centerDivisor = 2
+
+// isFill reports whether an operation paints a solid fill this query can match:
+// a fill rectangle, or the background half of a corner-shape path. The border
+// half of a path carries the border colour, so it is not a fill.
+func isFill(op *page.DisplayOp) bool {
+	if op.Kind == layout.DisplayOpFillRect {
+		return true
+	}
+	if op.Kind != layout.DisplayOpPath {
+		return false
+	}
+
+	corner, ok := op.CornerPathValue()
+
+	return ok && corner != nil && !corner.Stroke
+}
 
 // inside reports whether op's center lies in the box, with a half-point of
 // slack for rounded edges.

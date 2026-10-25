@@ -22,6 +22,9 @@ func TestDevToolsToggleSwallowsF12(t *testing.T) {
 	if d.on {
 		t.Fatal("f12 did not close the overlay")
 	}
+	if err := s.devSync(); err != nil {
+		t.Fatal(err)
+	}
 
 	if d.hovers != 1 {
 		t.Fatalf("close hovers = %d, want 1", d.hovers)

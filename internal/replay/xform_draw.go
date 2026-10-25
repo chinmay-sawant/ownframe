@@ -32,8 +32,10 @@ func (renderer *Renderer) drawXformShape(dst *ebiten.Image, op *layout.DisplayOp
 
 	geom := xformGeom(op, dx, dy)
 	shiftLocal(&geom, float64(at.X)-op.X*pxPerPt, float64(at.Y)-op.Y*pxPerPt)
-	dst.DrawImage(img, &ebiten.DrawImageOptions{
+	opts := &ebiten.DrawImageOptions{
 		GeoM:   geom,
 		Filter: ebiten.FilterLinear,
-	})
+	}
+	opts.ColorScale.ScaleWithColor(rgba(op))
+	dst.DrawImage(img, opts)
 }

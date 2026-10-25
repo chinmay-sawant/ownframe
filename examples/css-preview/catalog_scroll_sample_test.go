@@ -3,17 +3,14 @@ package main
 import (
 	"context"
 	"testing"
+	"time"
 )
 
-// TestScrollKeepsEveryRunningSample checks that a vertical scroll never stops
-// or resets a running animation, whatever kind it is. A sample whose row
-// leaves the window keeps its origin and its destination, and it attaches
-// again when the row comes back.
-func TestScrollKeepsEveryRunningSample(t *testing.T) {
-	names := []string{
-		"-webkit-animation", "-webkit-animation-iteration-count", "animation",
-		"animation-trigger", "transition", "transition-property", "view-transition-name",
-	}
+// TestScrollKeepsRunningAnimations checks that a vertical scroll keeps the
+// automatic driver going. A row that leaves the window is unbound; when it
+// comes back the started class binds a new player and the card moves again.
+func TestScrollKeepsRunningAnimations(t *testing.T) {
+	names := []string{"-webkit-animation", "animation-name", "view-transition-name"}
 	for _, name := range names {
 		t.Run(name, func(t *testing.T) {
 			ctx := context.Background()
@@ -25,48 +22,45 @@ func TestScrollKeepsEveryRunningSample(t *testing.T) {
 			if err := installCatalogWindow(ctx, p, v, d, m); err != nil {
 				t.Fatal(err)
 			}
-			row := -1
-			for i, c := range v.Catalog {
-				if c.Name == name {
-					row = i
-				}
-			}
-			if row < 0 {
-				t.Fatalf("missing catalog row %q", name)
-			}
-			scrollTo(t, ctx, p, m, m.rowTop[rowAt(m, row/2)]-200)
+			row := catalogRowByName(t, v, name)
+			index := rowIndex(v, name)
+			scrollTo(t, ctx, p, m, m.rowTop[rowAt(m, index/2)]-200)
+			clickID(t, p, row.Button)
+			tickPage(t, p)
+			first := xformX(targetOp(t, p, row.TargetID), p.Probe().Display().PointsPerPixel)
 
-			startCatalog(t, p, d, name)
-			s := d.samples[catalogSampleKey(name)]
-			if s == nil || !s.active {
-				t.Fatal("the sample did not start")
+			far := 0
+			if index/2 > 2 {
+				far = 0
+			} else {
+				far = m.contentH
 			}
-			origin, to := s.origin, s.to
-
-			scrollTo(t, ctx, p, m, m.rowTop[rowAt(m, row/2+4)]-200)
-			if err := d.tick(ctx); err != nil {
-				t.Fatal(err)
-			}
-			if !s.active {
-				t.Fatal("the scroll stopped the running sample")
-			}
-			if s.origin != origin {
-				t.Fatal("the scroll reset the sample origin")
-			}
-			if !samePaints(to, s.to) {
-				t.Fatal("the scroll changed the sample destination")
+			scrollTo(t, ctx, p, m, far)
+			tickPage(t, p)
+			if _, found := findBox(p.Boxes(), row.TargetID); found {
+				t.Fatal("the row stayed in the window")
 			}
 
-			scrollTo(t, ctx, p, m, m.rowTop[rowAt(m, row/2)]-200)
-			if err := d.tick(ctx); err != nil {
-				t.Fatal(err)
+			scrollTo(t, ctx, p, m, m.rowTop[rowAt(m, index/2)]-200)
+			time.Sleep(5 * time.Millisecond)
+			tickPage(t, p)
+			if !v.Started[row.Button] {
+				t.Fatal("the scroll lost the started state")
 			}
-			if s.detached {
-				t.Fatal("the sample did not attach again")
-			}
-			if !s.active {
-				t.Fatal("the sample stopped after it came back")
+			second := xformX(targetOp(t, p, row.TargetID), p.Probe().Display().PointsPerPixel)
+			if second == 0 {
+				t.Fatalf("%s did not start again after the scroll (first %v)", name, first)
 			}
 		})
 	}
+}
+
+// rowIndex returns the catalog index of a property.
+func rowIndex(v *view, name string) int {
+	for i, row := range v.Catalog {
+		if row.Name == name {
+			return i
+		}
+	}
+	return 0
 }

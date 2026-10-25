@@ -33,7 +33,6 @@ func (renderer *Renderer) cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, 
 	key := rasterKey{
 		variant: rasterStroke,
 		mask:    op.StrokeMask,
-		col:     rgba(op),
 		w:       w, h: h, width: width,
 		r:  radius4(rx),
 		ry: radius4(ry),
@@ -44,10 +43,9 @@ func (renderer *Renderer) cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, 
 		path := strokePathAt(key)
 		stroke := &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound}
 		options := &vector.DrawPathOptions{AntiAlias: true}
-		options.ColorScale.ScaleWithColor(key.col)
 		vector.StrokePath(img, &path, stroke, options)
 	})
-	blitRaster(dst, img, left, top)
+	blitRaster(dst, img, left, top, rgba(op))
 
 	return true
 }

@@ -57,6 +57,13 @@ func costWindowRun(tb testing.TB, mode string, target int) {
 	costReportFrames(tb, mode, c.costPick(target))
 	tb.Logf("%s: rows=%d ops=%d boxes=%d draws=%d", mode, len(v.Rows),
 		p.Probe().Stats().Ops, p.Probe().Stats().Boxes, g.draws)
+	motion := p.Probe().Motion()
+	st := p.Probe().Stats()
+	tb.Logf("%s motion: bound=%d active=%d sampled=%d rebinds=%d restamped=%d gaps=%d "+
+		"transitions started=%d active=%d sampled=%d writes=%d dirty=%d",
+		mode, motion.Bound, motion.Active, motion.Sampled, motion.Rebinds, motion.Restamped,
+		len(motion.Gaps), motion.TransitionsStarted, motion.TransitionsActive,
+		motion.TransitionsSampled, st.ChangedOps, st.DirtyOps)
 	tb.Logf("%s actives: %v", mode, costActives(c.frames))
 	tb.Logf("%s draws: %v", mode, costDraws(c.frames))
 }

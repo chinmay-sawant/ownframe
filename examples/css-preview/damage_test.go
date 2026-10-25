@@ -1,25 +1,19 @@
 package main
 
 import (
-	"context"
 	"testing"
 )
 
+// TestAnimationTickMarksPartialDamage checks that one automatic sample marks
+// the card, not the whole page, and that the tick opts into the frame dirty
+// path.
 func TestAnimationTickMarksPartialDamage(t *testing.T) {
-	ctx := context.Background()
-	p, d, v := fixturePage(t)
-	row := v.Catalog[14] // animation-name, an untriggered keyframe sample
-	button, ok := findBox(p.Boxes(), row.Button)
-	if !ok {
-		t.Fatalf("missing %s", row.Button)
-	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
-		t.Fatal(err)
-	}
-	// Drop the click's own damage so the tick's marks stand alone.
+	p := motionPage(t, `<div id="target"></div><div id="still"></div>`,
+		`@keyframes route{from{transform:translateX(0px)}to{transform:translateX(20px)}}
+		#target{width:40px;height:20px;background:#2459d3;animation:route 1s linear infinite}
+		#still{width:40px;height:20px;margin-top:80px;background:#999}`)
 	p.Probe().TakeDirtyRects()
-
-	if err := d.tick(ctx); err != nil {
+	if err := p.Testing().Tick(t.Context()); err != nil {
 		t.Fatal(err)
 	}
 	if !p.Probe().FrameDirty() {
@@ -30,34 +24,27 @@ func TestAnimationTickMarksPartialDamage(t *testing.T) {
 		t.Fatal("animation tick marked no damage")
 	}
 	for _, rect := range rects {
-		if rect.Dx() > 400 || rect.Dy() > 400 {
-			t.Fatalf("tick damage %v is the whole page, want the animated card", rect)
+		if rect.Dx() > 100 || rect.Dy() > 100 {
+			t.Fatalf("tick damage %v is the whole page, want the animated element", rect)
 		}
 	}
 }
 
-func TestFinishedTickDropsTheCallback(t *testing.T) {
-	ctx := context.Background()
-	p, d, v := fixturePage(t)
-	row := v.Catalog[14]
-	button, ok := findBox(p.Boxes(), row.Button)
-	if !ok {
-		t.Fatalf("missing %s", row.Button)
-	}
-	if err := p.Click(ctx, button.X+button.W/2, button.Y+button.H/2); err != nil {
+// TestFinishedAnimationStopsAskingForFrames checks that the automatic driver
+// parks once its sample is over. A paused sample is sampled once and then
+// skipped, so a still page stops requesting frames.
+func TestFinishedAnimationStopsAskingForFrames(t *testing.T) {
+	p := motionPage(t, `<div id="target"></div>`,
+		`@keyframes route{from{transform:translateX(0px)}to{transform:translateX(20px)}}
+		#target{width:20px;height:20px;background:#123456;
+		animation:route 20ms linear 1 normal both paused;}`)
+	if err := p.Testing().Tick(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
+	if p.Probe().Motion().Active != 0 {
+		t.Fatal("a paused sample kept the driver active")
 	}
-	for _, s := range d.samples {
-		s.plan = motion{}
-		s.active = true
-	}
-	if err := d.tick(ctx); err != nil {
-		t.Fatal(err)
-	}
-	if p.Probe().Ticking() {
-		t.Fatal("finished tick kept the callback")
+	if !p.Testing().NextFrameAt().IsZero() {
+		t.Fatal("a paused sample asked for another frame")
 	}
 }

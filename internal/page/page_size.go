@@ -53,6 +53,15 @@ func (p *Page) Generation() uint64 {
 	return p.generation
 }
 
+// LayerGeneration keys the compositor's retained element layers. It changes
+// when a publish or an element patch changes display content, and stays put
+// through a re-projection pass, because that pass rewrites operation matrices
+// in place. A layer texture reuses its bake across a 3D animation; the layer
+// signature still catches a colour or text change.
+func (p *Page) LayerGeneration() uint64 {
+	return p.layerGen
+}
+
 func clampMin(v, min int) int {
 	if v < min {
 		return min

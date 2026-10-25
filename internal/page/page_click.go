@@ -9,7 +9,19 @@ import (
 
 // Click hit-tests the last picture and applies the click.
 func (p *Page) Click(ctx context.Context, x, y float64) error {
+	if box, ok := p.activationBox(x, y); ok && !p.triggerActivated(box) {
+		if _, err := p.fireTriggers(ctx, box, true); err != nil {
+			return err
+		}
+	}
+
 	return click.Run(ctx, clickSurface{p}, x, y)
+}
+
+// triggerActivated reports whether the press that started this gesture already
+// fired the entry actions for box, so the click does not repeat them.
+func (p *Page) triggerActivated(box Box) bool {
+	return p.triggerPress.armed && sameBox(p.triggerPress.box, box)
 }
 
 // clickSurface adapts Page to click.Surface.

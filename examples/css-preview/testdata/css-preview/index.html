@@ -26,12 +26,12 @@
       <div id="catalog-grid" class="catalog-grid">
         {{if .TopPad}}<div class="catalog-pad" style="height:{{.TopPad}}px"></div><div class="catalog-pad" style="height:{{.TopPad}}px"></div>{{end}}
         {{range .Rows}}
-        <article id="{{.CardID}}" class="{{.BaseClass}}">
+        <article id="{{.CardID}}" class="{{.Class}}">
           <div class="catalog-details">
             <h3><span class="property-number">{{.Number}}</span>{{.Name}}</h3>
             <code>{{.Value}}</code>
             <span class="catalog-action"><strong>What to expect:</strong> {{.Action}}</span>
-            <span id="{{.StateID}}" class="catalog-state">Ready</span>
+            <span id="{{.StateID}}" class="catalog-state{{if .Started}} is-started{{end}}{{if .Selected}} is-selected{{end}}">{{if .Started}}Started / selected{{else}}Ready{{end}}</span>
           </div>
           <div class="catalog-playback">
             <div class="catalog-stage">

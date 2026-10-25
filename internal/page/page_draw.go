@@ -172,12 +172,16 @@ func (p *Page) drawStaged(
 
 // commitDisplay installs a replayable list and its dirty region.
 func (p *Page) commitDisplay(display *Display, executed string, drawStart time.Time, state render.State) {
-	p.dirtyFromDisplay(p.draw.Display, display)
+	previous := p.draw.Display
+	captures := p.captureTransitions(previous, display)
+	p.dirtyFromDisplay(previous, display)
 	p.noteCommit(drawStart)
 	p.draw.CommitList(display)
-	p.setBoxes(display.Boxes)
-	p.hits = hitList(display.Boxes, fixedBoxes(display))
+	p.setDisplayBoxes(display)
 	p.generation++
+	p.layerGen++
+	p.bindMotion(previous, display)
+	p.bindTransitions(captures)
 	p.remember(state)
 	p.commitAccessibility(executed)
 	p.applyPending()
@@ -209,12 +213,15 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 		return err
 	}
 
-	boxes := display.Boxes
+	previous := p.draw.Display
+	p.captureTransitions(previous, display)
 	p.noteCommit(drawStart)
 	p.draw.CommitBitmap(display, bitmap.Image)
-	p.setBoxes(boxes)
-	p.hits = hitList(boxes, fixedBoxes(display))
+	p.setDisplayBoxes(display)
 	p.generation++
+	p.layerGen++
+	p.bindMotion(previous, nil)
+	p.bindTransitions(nil)
 	p.markFull()
 	p.lastPatch = DisplayPatch{
 		Changed: bitmap.Changed,
@@ -223,7 +230,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 		Full:    bitmap.Full,
 	}
 	if track {
-		p.recordFull(len(boxes))
+		p.recordFull(len(display.Boxes))
 	}
 	p.applyPending()
 	p.runAfterRedraw()

@@ -1,10 +1,11 @@
-package csstransition
+package csstransition_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 func TestTransitionBehaviorNormalSkipsDiscretePositionTransition(t *testing.T) {
@@ -18,7 +19,7 @@ func TestTransitionBehaviorNormalSkipsDiscretePositionTransition(t *testing.T) {
 	if len(indices) != 1 || len(from) != 1 {
 		t.Fatalf("old/new position paint counts = %d/%d", len(from), len(indices))
 	}
-	r, err := Bind(newDisplay, newBox, "position", indices, from, time.Unix(2, 0))
+	r, err := csstransition.Bind(newDisplay, newBox, "position", indices, from, time.Unix(2, 0))
 	if err != nil {
 		t.Fatal(err)
 	}

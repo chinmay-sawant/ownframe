@@ -9,8 +9,10 @@ import (
 // maxGridViewports bounds the content-sized tile grid against the window.
 // The grid holds every content pixel, so it may cost this many viewport
 // buffers before the window takes the viewport path, which keeps only a
-// window-sized buffer.
-const maxGridViewports = 4
+// window-sized buffer. A gallery of animated cards a few screens tall takes
+// the viewport path, where a background blit plus retained layers is cheaper
+// than clearing and replaying tiles that hold the same static content.
+const maxGridViewports = 3
 
 // oversized reports a content size no Ebiten image can hold. A zero device
 // limit means the game is not running, so nothing is oversized. A large but

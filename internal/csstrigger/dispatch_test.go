@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/internal/animation"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestDispatchRunsEntryAndExitActions(t *testing.T) {
 	start := time.Unix(1, 0)
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 4, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 4, Alpha: 1}
 	base := cssmotion.Paint{X: 4, Alpha: 1, Opacity: 1}
 	player, err := animation.NewComposite([]animation.Target{{Op: op, From: base}}, []animation.Effect{{
 		Frames:  []animation.Keyframe{{Offset: 0, Move: true}, {Offset: 1, X: 100, Move: true}},
@@ -22,7 +21,7 @@ func TestDispatchRunsEntryAndExitActions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	boxes := []ownframe.Box{{ParentIndex: -1}, {ParentIndex: -1,
+	boxes := []layout.Box{{ParentIndex: -1}, {ParentIndex: -1,
 		Animations: []layout.Animation{{Trigger: "--ready play reset"}}}}
 	players := map[int]*animation.Player{1: player}
 	player.Step(start)

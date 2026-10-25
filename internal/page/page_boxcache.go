@@ -16,6 +16,12 @@ func (p *Page) setBoxes(boxes []Box) {
 	p.contentOK = false
 }
 
+func (p *Page) setDisplayBoxes(d *Display) {
+	hits := p.hits
+	p.setBoxes(d.Boxes)
+	p.hits = hit.List(hits, d.Boxes, fixedBoxes(d))
+}
+
 // Boxes returns a copy of the last hit-test boxes, or nil when nothing has
 // been drawn. Caller edits never corrupt the page index.
 func (p *Page) Boxes() []Box {

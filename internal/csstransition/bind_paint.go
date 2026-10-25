@@ -1,7 +1,7 @@
 package csstransition
 
 import (
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
@@ -15,7 +15,7 @@ const paintSlack = 0.5
 // captured value, so the transition animates it. A field the layout changed
 // keeps the operation's current value, so a rebind does not write a stale
 // size or position back.
-func endpoints(op *ownframe.DisplayOp, initial, final cssmotion.Paint) (cssmotion.Paint, cssmotion.Paint) {
+func endpoints(op *layout.DisplayOp, initial, final cssmotion.Paint) (cssmotion.Paint, cssmotion.Paint) {
 	current := cssmotion.Read(op)
 
 	return adjust(initial, initial, final, current), adjust(final, initial, final, current)

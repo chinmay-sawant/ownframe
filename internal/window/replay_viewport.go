@@ -14,11 +14,13 @@ type viewportKey struct {
 
 type viewportState struct {
 	buf      *ebiten.Image
+	spare    *ebiten.Image
 	key      viewportKey
 	area     image.Rectangle
 	scroll   image.Point
 	valid    bool
 	blitOnly bool
+	warmup   viewportWarmup
 }
 
 func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTaker) {
@@ -33,31 +35,82 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	prevScroll := s.viewport.scroll
 	scroll := image.Pt(s.scrollX, s.scrollY)
 	key := viewportKey{generation: s.seq, bounds: bounds}
-	// One cached image, one clipped replay: a single dirty rect is used as
-	// is, several use their bounding box. viewportDirtyBounds has the why.
+	// Bake this frame's retained layers before reading dirty state. The
+	// background below leaves their operations as holes, and the layers are
+	// composited after the blit, so a moving layer never repaints the page
+	// under it.
+	specs := s.layerSpecs(d)
+	s.renderer.BeginLayers(d, s.layerGeneration(), specs)
+	s.syncPromotedLayers()
+	// Paint dirty rects separately so a moving chip costs its own box instead
+	// of the bounding box of every moving chip.
 	rects, changed := taker.TakeDirtyRects()
-	dirty := viewportDirtyBounds(rects)
+	// A promotion opens a hole in the background and a demotion closes one.
+	// Ordinary layer motion needs neither, because the pixels under a layer
+	// stay background.
+	if topology := s.renderer.LayerTopologyDamage(); len(topology) > 0 {
+		rects = append(rects, topology...)
+		// Overscan can contain an unpromoted pose painted many ticks ago.
+		// Current layer bounds cannot locate it after an offscreen animation
+		// moves, so a membership change invalidates the cached background.
+		s.viewport.valid = false
+	}
+	changed = changed || len(rects) > 0
 	wanted := bounds.Add(scroll)
 	full := !s.viewport.valid || s.viewport.key.bounds != bounds || !wanted.In(s.viewport.area)
 	full = full || (s.viewport.key.generation != key.generation && !changed)
 	if full {
+		previous := s.viewport.area
+		reuse := s.viewport.valid && s.viewport.key.bounds == bounds &&
+			(s.viewport.key.generation == key.generation || changed)
+		buffer := s.viewport.buf
 		s.setViewportArea(bounds)
-		s.paintViewport(d, s.viewport.area, s.viewportPinZ())
-	} else if changed {
-		s.paintViewport(d, dirty, s.viewportPinZ())
+		if reuse && s.viewport.buf == buffer && previous.Overlaps(s.viewport.area) {
+			s.moveViewport(d, previous)
+			if changed {
+				s.paintViewportRects(d, rects)
+			}
+		} else {
+			s.paintViewport(d, s.viewport.area, s.viewportPinZ())
+		}
+	} else if changed && len(rects) > 0 {
+		s.paintViewportRects(d, rects)
+	}
+	if had && scroll != prevScroll {
+		// Offscreen motion keeps sampling without page damage. Refresh the
+		// strips entering the screen even when the overscan already covers them.
+		for _, strip := range viewportExposed(wanted, bounds.Add(prevScroll)) {
+			s.paintViewport(d, strip, s.viewportPinZ())
+		}
 	}
 	noPaint := !full && !changed
 	s.viewport.blitOnly = had && noPaint && scroll == prevScroll
 	s.viewport.scroll = scroll
 	s.viewport.key, s.viewport.valid = key, true
 	var options ebiten.DrawImageOptions
-	options.GeoM.Translate(float64(s.viewport.area.Min.X-s.scrollX), float64(s.viewport.area.Min.Y-s.scrollY))
+	options.GeoM.Translate(
+		float64(s.viewport.area.Min.X-s.scrollX),
+		float64(s.viewport.area.Min.Y-s.scrollY),
+	)
 	dst.DrawImage(s.viewport.buf, &options)
+	// Layers composite onto dst in page coordinates, not into the buffer, so
+	// they take the scroll offset alone. Adding the buffer origin here put
+	// every retained layer one overscan band low once the page scrolled.
+	s.renderer.DrawLayers(dst, d, -float64(s.scrollX), -float64(s.scrollY))
 	s.renderer.DrawFixed(dst, d)
 	s.renderer.DrawPinnedZ(dst, d, s.viewportPinZ(), -float64(s.redrawX), -float64(s.redrawY))
+	if s.prewarmViewport(d, bounds) {
+		s.viewport.blitOnly = false
+	}
 }
 
 func (s *shell) disposeViewport() {
+	if s.viewport.spare != nil {
+		s.viewport.spare.Deallocate()
+	}
+	if s.viewport.warmup.scratch != nil {
+		s.viewport.warmup.scratch.Deallocate()
+	}
 	if s.viewport.buf != nil {
 		s.viewport.buf.Deallocate()
 	}

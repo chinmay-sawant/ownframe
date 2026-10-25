@@ -6,10 +6,6 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-// catalogGridID is the element that holds the rows. One patch of the grid
-// carries the state of every row inside it.
-const catalogGridID = "catalog-grid"
-
 // catalogWindow slices the card list into the rows the viewport shows. The
 // spacers keep the grid height and the scroll range at the full-page values.
 type catalogWindow struct {
@@ -60,9 +56,6 @@ func (w *catalogWindow) slice(offsetY, viewH int) bool {
 	v.TopPad = m.topPad(start)
 	v.BotPad = m.botPad(end)
 	w.page.SetData(v)
-	// A row that scrolled into view starts the preview it still owes.
-	w.demo.queueRows(v.Rows)
-	w.demo.wake()
 
 	return true
 }

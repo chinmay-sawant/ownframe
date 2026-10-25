@@ -6,6 +6,9 @@ import (
 
 var accent = [3]float64{29.0 / 255, 185.0 / 255, 84.0 / 255}
 
+// animate paints the seek fill, the time labels, the credit, and the
+// equalizer. Audio position, not CSS motion: the player's clock, not a
+// timeline.
 func (a *App) animate() {
 	d := a.page.Probe().Display()
 	if d == nil {

@@ -10,5 +10,3 @@ type paint = cssmotion.Paint
 func capture(d *ownframe.Display, box ownframe.Box) []paint {
 	return cssmotion.Capture(d, box)
 }
-
-func read(o *ownframe.DisplayOp) paint { return cssmotion.Read(o) }

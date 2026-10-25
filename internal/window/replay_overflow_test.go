@@ -13,7 +13,7 @@ func TestOverflowEditRepaintsOneRect(t *testing.T) {
 	t.Parallel()
 
 	const ppt = 72.0 / 96.0
-	boxes := []layout.Box{{X: 0, Y: 0, W: 100, H: 400}}
+	boxes := []layout.Box{{X: 0, Y: 0, W: 100, H: 300}}
 	display := &layout.Display{
 		Width: 100, Height: 100, PointsPerPixel: ppt,
 		Boxes: boxes,
@@ -33,8 +33,8 @@ func TestOverflowEditRepaintsOneRect(t *testing.T) {
 
 	s.drawReplayPartial(dst)
 
-	if s.partial.tiles == nil || s.partial.tiles.content() != image.Rect(0, 0, 100, 400) {
-		t.Fatalf("grid covers %v, want the 100x400 content", s.partial.tiles)
+	if s.partial.tiles == nil || s.partial.tiles.content() != image.Rect(0, 0, 100, 300) {
+		t.Fatalf("grid covers %v, want the 100x300 content", s.partial.tiles)
 	}
 
 	overflow := image.Rect(0, 140, 100, 180)

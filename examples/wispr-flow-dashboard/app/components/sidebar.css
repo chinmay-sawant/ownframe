@@ -56,12 +56,14 @@
   font-size: 14px;
   line-height: 18px;
   color: #2c2a26;
+  background-color: #f5f4f0;
+  transition: background-color 120ms;
   margin-bottom: 2px;
 }
 
 .nav-icon { width: 19px; height: 19px; flex: none; }
 
-.nav-item.on { background: #ece9e1; font-weight: 600; }
+.nav-item.on { background-color: #ece9e1; font-weight: 600; }
 
 .mobile-card {
   margin-top: auto;

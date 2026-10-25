@@ -132,9 +132,9 @@ func (g *idleSessionGame) Draw(screen *ebiten.Image) {
 		g.err = fmt.Errorf("deadline wake did not restore the fast loop and its original TPS")
 		return
 	}
-	//nolint:staticcheck // reason: verify that the host restored actual vsync mode, independently of its bookkeeping flag.
-	if ebiten.FPSMode() != ebiten.FPSModeVsyncOn {
-		g.err = fmt.Errorf("deadline wake did not restore vsync mode")
+	//nolint:staticcheck // reason: verify the actual drawing mode after waking, independently of the bookkeeping flag.
+	if ebiten.FPSMode() != ebiten.FPSModeVsyncOffMaximum {
+		g.err = fmt.Errorf("deadline wake did not restore uncapped drawing")
 		return
 	}
 	if got := idleSessionPixel(screen); got != [4]uint32{0, 0, 0xffff, 0xffff} {

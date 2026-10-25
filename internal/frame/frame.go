@@ -20,8 +20,8 @@ func BoxUnits(d *page.Display, b page.Box) (x, y, w, h float64) {
 	return b.X * p, b.Y * p, b.W * p, b.H * p
 }
 
-// Fill returns the first fill rectangle of the given 0..1 color inside box,
-// or nil. Fills returns them all, left to right.
+// Fill returns the first fill rectangle or corner-shape path fill of the given
+// 0..1 color inside box, or nil. Fills returns them all, left to right.
 func Fill(d *page.Display, box page.Box, color [3]float64) *page.DisplayOp {
 	fills := Fills(d, box, color)
 	if len(fills) == 0 {
@@ -31,8 +31,9 @@ func Fill(d *page.Display, box page.Box, color [3]float64) *page.DisplayOp {
 	return fills[0]
 }
 
-// Fills returns the fill rectangles of the given color inside box, ordered
-// left to right, or nil.
+// Fills returns the fill rectangles and corner-shape path fills of the given
+// color inside box, ordered left to right, or nil. A path's border stroke is
+// not a fill and is skipped.
 func Fills(d *page.Display, box page.Box, color [3]float64) []*page.DisplayOp {
 	if d == nil {
 		return nil
@@ -43,7 +44,7 @@ func Fills(d *page.Display, box page.Box, color [3]float64) []*page.DisplayOp {
 
 	for i := range d.Ops {
 		op := &d.Ops[i]
-		if op.Kind != page.DisplayOpFillRect || !inside(op, x, y, w, h) {
+		if !isFill(op) || !inside(op, x, y, w, h) {
 			continue
 		}
 

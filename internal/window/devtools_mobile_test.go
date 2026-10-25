@@ -102,6 +102,9 @@ func TestMobileMetricsCloseTouchRestoresViewport(t *testing.T) {
 			t.Fatal("close touch did not produce tap")
 		}
 		s.devPanelPress(taps[0].x, taps[0].y)
+		if err := s.devSync(); err != nil {
+			t.Fatal(err)
+		}
 		if s.dev.on || d.DevTools() {
 			t.Fatal("X left devtools open")
 		}

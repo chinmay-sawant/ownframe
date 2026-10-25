@@ -38,7 +38,7 @@ func (c *costCollector) tick(ctx context.Context) error {
 		draw:   float64(c.g.last.Microseconds()) / 1000,
 		tick:   float64(elapsed.Microseconds()) / 1000,
 		alloc:  float64(now-c.lastAlloc) / 1024,
-		active: costActive(c.d),
+		active: costActive(c.p) + costManual(c.d),
 	}
 	if !c.lastTick.IsZero() {
 		frame.gap = float64(start.Sub(c.lastTick).Microseconds()) / 1000

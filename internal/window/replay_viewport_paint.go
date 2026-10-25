@@ -20,18 +20,19 @@ func (s *shell) setViewportArea(bounds image.Rectangle) {
 	}
 	if s.viewport.buf == nil || s.viewport.buf.Bounds().Size() != image.Pt(width, height) {
 		s.disposeViewport()
-		s.viewport.buf = ebiten.NewImage(width, height)
+		// This image alternates between a render target and a scroll source.
+		// Keep it out of the sprite atlas so those switches never migrate it.
+		s.viewport.buf = ebiten.NewImageWithOptions(
+			image.Rect(0, 0, width, height), &ebiten.NewImageOptions{Unmanaged: true},
+		)
 	}
 	top := max(0, s.scrollY-gap)
 	s.viewport.area = image.Rect(s.scrollX, top, s.scrollX+width, top+height)
 }
 
-// viewportDirtyBounds is the one region a viewport repaint covers: the sole
-// dirty rect when the page reports one, otherwise the bounding box of the
-// list. The page coalesces nearby rects and caps the list, and paintViewport
-// clips the region to the cached area, so the box stays a bounded overdraw.
-// The alternative, one clipped replay per rect, would walk the display list
-// once per rect instead of once per frame.
+// viewportDirtyBounds is the fallback region a viewport repaint covers: the
+// bounding box of the list. paintViewportRects uses it only when the list is
+// longer than one frame should scan; a short list paints rect by rect.
 func viewportDirtyBounds(rects []image.Rectangle) image.Rectangle {
 	if len(rects) == 0 {
 		return image.Rectangle{}
@@ -43,6 +44,23 @@ func viewportDirtyBounds(rects []image.Rectangle) image.Rectangle {
 	return box
 }
 
+// paintViewportRects repaints each dirty rect in turn. A moving chip then
+// costs its own box, not the bounding box of every moving card on screen. A
+// list past the frame cap falls back to one bounding-box pass.
+func (s *shell) paintViewportRects(d *layout.Display, rects []image.Rectangle) {
+	if len(rects) == 0 {
+		return
+	}
+	if len(rects) > maxRepaintRects {
+		s.paintViewport(d, viewportDirtyBounds(rects), s.viewportPinZ())
+
+		return
+	}
+	for _, rect := range rects {
+		s.paintViewport(d, rect, s.viewportPinZ())
+	}
+}
+
 func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int) {
 	rect = rect.Intersect(s.viewport.area).Sub(s.viewport.area.Min)
 	if rect.Empty() {
@@ -52,7 +70,9 @@ func (s *shell) paintViewport(d *layout.Display, rect image.Rectangle, pinZ int)
 	if !ok {
 		return
 	}
+	s.partial.paints++
+	s.partial.paintPx += rect.Dx() * rect.Dy()
 	clip.Clear()
 	clip.Fill(s.pageBackground())
-	s.renderer.DrawVisibleUnfixedZ(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)
+	s.renderer.DrawVisibleUnfixedZBackground(clip, d, -float64(s.viewport.area.Min.X), -float64(s.viewport.area.Min.Y), pinZ)
 }

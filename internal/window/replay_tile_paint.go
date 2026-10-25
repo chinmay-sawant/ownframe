@@ -45,5 +45,10 @@ func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect ima
 	s.partial.paints++
 	s.partial.paintPx += part.Dx() * part.Dy()
 	sub.Fill(s.pageBackground())
+	if s.renderer.LayersActive(d) {
+		s.renderer.DrawVisibleUnfixedZLayers(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
+
+		return
+	}
 	s.renderer.DrawVisibleUnfixedZ(sub, d, -float64(tile.Min.X), -float64(tile.Min.Y), s.viewportPinZ())
 }

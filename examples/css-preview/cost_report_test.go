@@ -4,6 +4,8 @@ import (
 	"runtime"
 	"sort"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // costReport prints the sorted numbers of one measurement.
@@ -33,10 +35,16 @@ func costAlloc() uint64 {
 	return m.TotalAlloc
 }
 
-// costActive counts the samples that are still running.
-func costActive(d *demo) int {
+// costActive counts the previews that still run: the page's automatic
+// players plus the manual transition samples.
+func costActive(p *ownframe.Page) int {
+	return p.Probe().Motion().Active
+}
+
+// costManual counts the manual samples that still run.
+func costManual(d *demo) int {
 	n := 0
-	for _, s := range d.samples {
+	for _, s := range d.manual {
 		if s.active {
 			n++
 		}

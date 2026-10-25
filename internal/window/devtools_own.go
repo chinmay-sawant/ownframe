@@ -39,21 +39,16 @@ func devKeyIndex(key ebiten.Key) int {
 	return -1
 }
 
-// devToggle flips the overlay through the page's own flag.
+// devToggle requests the change through the page flag. devSync applies it
+// before resize on the next update, including toggles from pointer handling.
 func (s *shell) devToggle() error {
 	insp := s.devInspector()
 	if insp == nil {
 		return nil
 	}
 
-	on := !s.dev.on
-	insp.SetDevTools(on)
+	insp.SetDevTools(!insp.DevTools())
 	s.dev.available = true
-	s.dev.on = on
-
-	if !on {
-		return s.devClose()
-	}
 
 	return nil
 }

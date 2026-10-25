@@ -27,15 +27,3 @@ func rowAt(m *catalogMetrics, i int) int {
 	}
 	return i
 }
-
-func samePaints(a, b []paint) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}

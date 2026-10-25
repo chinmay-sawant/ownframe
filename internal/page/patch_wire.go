@@ -125,14 +125,29 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 // operation index. The page rebuilds its box index, marks the changed
 // operations dirty, drops the picture, and refreshes the a11y tree.
 func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
+	captures := p.captureTransitions(p.draw.Display, d)
+	prev := p.adoptSpliced(d)
+	p.bindMotion(prev, d)
+	p.bindTransitions(captures)
+	p.refreshAccessibility(id, edits)
+}
+
+// adoptSpliced installs a display the engine spliced and returns the list the
+// page drew before it. It is the shared adoption body for an element edit and
+// for the layout driver's relayout: boxes and hits are rebuilt, the difference
+// between the two displays is marked dirty, and the generation is bumped. A
+// moved sibling is outside the patched element's own box, so the display diff
+// is the damage source, not ElementPatch.Old and New alone.
+func (p *Page) adoptSpliced(d *Display) *Display {
 	prev := p.draw.SwapList(d)
-	p.setBoxes(d.Boxes)
-	p.hits = hitList(d.Boxes, fixedBoxes(d))
+	p.setDisplayBoxes(d)
 	p.dirtyFromDisplay(prev, d)
 	p.generation++
+	p.layerGen++
 	p.stats.layouts++
 	p.stats.repaints++
-	p.refreshAccessibility(id, edits)
+
+	return prev
 }
 
 // rollbackPatch undoes the edits of a refused patch. The cached tree is

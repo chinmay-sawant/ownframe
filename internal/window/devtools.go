@@ -20,11 +20,6 @@ type devState struct {
 	on             bool
 	available      bool
 	picker         bool
-	pickerMode     bool
-	inspect        bool
-	inspectMode    bool
-	pick           bool
-	pickMode       bool
 	ops            bool
 	tab            devTab
 	dockW          float64

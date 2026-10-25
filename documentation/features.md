@@ -21,7 +21,10 @@ This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `
 | `linear-gradient` | yes; engine rasterizes to `OpImage` |
 | `:hover`, `:focus`, `:focus-visible`, `:active`, `:checked` | host state ([forms.md](forms.md)) |
 | CSS masks | first pass: border box, simple sizes, `repeat` variants (see CSS masks below) |
-| CSS motion records | sampled from Blinkless; the window does not start them ([css-motion.md](css-motion.md)) |
+| `@keyframes` on `transform` (2D), `opacity`, and colours | automatic from the window tick ([css-motion.md](css-motion.md)) |
+| 3D `transform` lists and `perspective` | automatic through the engine re-projection; retained state turns on by itself ([css-motion.md](css-motion.md)) |
+| `transition` on colour, `opacity`, and 2D `transform` | automatic from the next style change; the window tick samples it ([css-motion.md](css-motion.md)) |
+| CSS motion counters | `Page.Probe().Motion()`: animation, transition, re-stamp, rebind, error, and gap counters ([css-motion.md](css-motion.md)) |
 | `@media` width and orientation | yes ([theming.md](theming.md)) |
 | `overflow` clipping | yes; clipped ops become `OpNoop` ([screen.md](screen.md)) |
 | Overflowing page | the window scrolls content larger than the frame ([scrolling.md](scrolling.md)) |
@@ -44,6 +47,10 @@ This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `
 | Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
 | Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |
 | Rotated glyphs, fake oblique, font features, autospacing, missing font | bitmap fallback ([screen.md](screen.md)) |
+| Transitioned geometry (`width`, `height`, `top`, `left`) | transition phase 02; the shipped set is colour, `opacity`, and 2D `transform` ([css-motion.md](css-motion.md)) |
+| Discrete transitions (`display`, `visibility`, `content-visibility`, `position`, `z-index`, `order`, grid lines) | transition phases 02 and 04; no `@starting-style` ([css-motion.md](css-motion.md)) |
+| A `display` cross-fade | blocked on the outgoing layer; the change snaps ([css-motion.md](css-motion.md)) |
+| Keyframed layout, filter, or SVG paint properties | left at base paint and listed in `Probe().Motion().Gaps` ([css-motion.md](css-motion.md)) |
 | `@container` vs element patch | a document with `@container` refuses every patch ([optimizations.md](optimizations.md)) |
 | `content-visibility` | not faked. Window the rows and pad with spacers. |
 
@@ -114,14 +121,38 @@ Detail is in [theming.md](theming.md).
 
 ## CSS motion
 
-OwnFrame can sample CSS animation and transition records from Blinkless and
-write each frame into retained drawing operations. The caller supplies time,
-timeline progress, trigger events, and before and after displays where needed.
-The Page window does not start this runtime automatically.
+Blinkless reads `@keyframes` records, and the page samples them automatically.
+The driver binds at every commit and steps before the `SetTick` callback, so a
+page that declares an animation and draws gets motion with no callback and no
+manual player. `Page.Window().SetAnimations(false)` turns the page driver off;
+there is no per-element switch. `Page.Probe().Motion()` reports the bound,
+active, and sampled players, the 3D re-projection counts, rebinds, the last bind
+and re-projection errors, and the fidelity gaps.
 
-The [CSS motion guide](css-motion.md) explains the inputs and limits. The
-[CSS property catalog example](../examples/css-preview) has a separate Start
-button for each of its 43 motion properties. Its
+A transition adds no callback either. A style change at a commit captures the
+paint before it, binds one renderer after the commit, and steps it before the
+animation pass. Colour, `opacity`, and 2D `transform` are the shipped set.
+Reversal starts from the paint on screen and shortens the duration by the CSS
+reversing factor. `Page.Window().SetTransitions(false)` releases the live
+renderers without writing, so an interrupted transition freezes at its presented
+paint; `Transitions()` reports the switch, which is independent of the animation
+switch. Geometry, discrete properties, and the `display` cross-fade are the next
+phase.
+
+A 2D `transform` writes the operation's matrix, so the element moves without a
+layout. `opacity` and colour keyframes write only the operations the element
+owns. A 3D transform list or `perspective` goes through the engine re-projection
+pass, which needs `Config.RetainState`; the page turns it on by itself and pays
+one redraw, so a page that starts without it shows the first 3D sample one tick
+later. Keyframed layout, filter, and SVG paint properties stay at base paint and
+are listed in `Probe().Motion().Gaps`.
+
+The [CSS motion guide](css-motion.md) has the property tables, the counters, and
+the limits. The [animations example](../examples/animations) declares all of its
+motion in CSS. The [motion-conformance example](../examples/motion-conformance)
+has one sampled card per animation class and the three shipped transition
+classes. The [CSS property catalog example](../examples/css-preview) keeps a
+manual Start button for each of its 43 motion properties. Its
 [profiling notes](../examples/css-preview/PROFILING.md) cover running the
 example and measuring a click.
 
@@ -209,7 +240,9 @@ Detail is in [interaction.md](interaction.md).
 `RunWithOptions` opens the desktop window with a `WindowOptions` value.
 `Transparent` leaves unpainted pixels transparent, `Borderless` removes the
 frame, `Floating` keeps the window above normal windows, and `FixedSize`
-stops resizing. `BottomRight` places the window at the current monitor's
+stops resizing. Drawing is uncapped with VSync disabled; there is no VSync
+option. Idle desktop pages can still park between scheduled frames.
+`BottomRight` places the window at the current monitor's
 bottom right, inset by `Margin` CSS pixels. `MousePassthrough` sends every
 pointer event to the application underneath, `Interactive` keeps input only
 where its callback returns true, and `Draggable` reserves a region for moving

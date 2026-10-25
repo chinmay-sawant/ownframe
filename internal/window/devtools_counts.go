@@ -10,10 +10,11 @@ type devOpCounts struct {
 	Text   int
 	Image  int
 	Grid   int
+	Path   int
 }
 
 func (c devOpCounts) total() int {
-	return c.Fill + c.Stroke + c.Line + c.Text + c.Image + c.Grid
+	return c.Fill + c.Stroke + c.Line + c.Text + c.Image + c.Grid + c.Path
 }
 
 // devCountOps counts the operations that paint, in one pass.
@@ -37,6 +38,8 @@ func devCountOps(display *layout.Display) devOpCounts {
 			c.Image++
 		case layout.DisplayOpGridRun:
 			c.Grid++
+		case layout.DisplayOpPath:
+			c.Path++
 		}
 	}
 

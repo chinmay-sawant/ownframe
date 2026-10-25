@@ -1,10 +1,11 @@
-package csstransition
+package csstransition_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
+	"github.com/chinmay-sawant/ownframe/internal/csstransition"
 )
 
 func TestTransitionBehaviorAllowDiscreteSwitchesPositionAtMidpoint(t *testing.T) {
@@ -24,7 +25,7 @@ func TestTransitionBehaviorAllowDiscreteSwitchesPositionAtMidpoint(t *testing.T)
 		t.Fatal("position change did not move the Blinkless paint operation")
 	}
 	start := time.Unix(1, 0)
-	r, err := Bind(newDisplay, newBox, "position", indices, from, start)
+	r, err := csstransition.Bind(newDisplay, newBox, "position", indices, from, start)
 	if err != nil {
 		t.Fatal(err)
 	}

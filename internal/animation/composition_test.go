@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestAccumulateComposesCurrentValueOnLaterIteration(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 12, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 12, Alpha: 1}
 	base := cssmotion.Read(op)
 	p, err := New([]Target{{Op: op, From: base}}, []Keyframe{
 		{Offset: 0, X: 4, Move: true}, {Offset: 1, X: 10, Move: true},

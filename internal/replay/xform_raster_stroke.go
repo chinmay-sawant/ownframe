@@ -31,7 +31,6 @@ func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32)
 	key := rasterKey{
 		variant: rasterStroke,
 		mask:    op.StrokeMask,
-		col:     rgba(op),
 		w:       w, h: h, width: width,
 		r:  radius4(rx),
 		ry: radius4(ry),
@@ -43,7 +42,6 @@ func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32)
 		path := strokePathAt(key)
 		stroke := &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound}
 		options := &vector.DrawPathOptions{AntiAlias: true}
-		options.ColorScale.ScaleWithColor(key.col)
 		vector.StrokePath(img, &path, stroke, options)
 	})
 

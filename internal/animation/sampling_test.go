@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 func TestStepSamplesTransformOpacityAndColor(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, X: 10, Y: 4,
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, X: 10, Y: 4,
 		W: 20, H: 10, R: 0, B: 1, Alpha: 1}
 	p, err := New([]Target{{Op: op, From: cssmotion.Read(op)}}, []Keyframe{
 		{Offset: 1, X: 180, Move: true, Opacity: 1, OpacitySet: true, R: 0, B: 1, ColorSet: true},
@@ -31,7 +31,7 @@ func TestStepSamplesTransformOpacityAndColor(t *testing.T) {
 }
 
 func TestStepUsesEasingInsideKeyframeInterval(t *testing.T) {
-	op := &ownframe.DisplayOp{Kind: ownframe.DisplayOpFillRect, Alpha: 1}
+	op := &layout.DisplayOp{Kind: layout.DisplayOpFillRect, Alpha: 1}
 	p, err := New([]Target{{Op: op, From: cssmotion.Read(op)}}, []Keyframe{
 		{Offset: 0, X: 0, Move: true}, {Offset: .5, X: 90, Move: true},
 	}, Timing{Duration: time.Second, Iterations: 1, Easing: func(v float64) float64 { return v * v }})
