@@ -1,0 +1,845 @@
+/* Screener screen — Meridian terminal. Every class is scoped with scr-. */
+
+.screen-page.scr-page {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  /* The workspace is the shell band between the topbar and statusbar. The
+     engine does not resolve 100% against this flex parent, so name the band
+     height; the rows below subtract their own bands from it. */
+  height: calc(100vh - var(--header-h) - var(--status-h));
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+/* ---------- header ---------- */
+
+.scr-head {
+  flex: 0 0 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+
+.scr-head-copy {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.scr-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 13px;
+  min-width: 0;
+}
+
+.scr-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.scr-matches {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 9px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.scr-matches strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.scr-updated { display: none; }
+
+.scr-updated span { color: var(--muted); }
+
+.scr-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+
+.scr-action {
+  height: 29px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #0b0e12;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.scr-action:hover {
+  color: var(--text);
+  background-color: var(--panel-3);
+  border-color: #323b47;
+}
+
+.scr-action svg { width: 13px; height: 13px; flex: 0 0 auto; }
+
+.scr-action-run {
+  color: #06110a;
+  background-color: var(--green);
+  border-color: var(--green);
+  font-weight: 750;
+}
+
+.scr-action-run:hover {
+  color: #06110a;
+  background: #55e396;
+  border-color: #55e396;
+}
+
+/* ---------- preset strip ---------- */
+
+.scr-presets {
+  flex: 0 0 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.scr-presets-label {
+  margin-right: 3px;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.scr-preset {
+  height: 26px;
+  padding: 0 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: #0b0e12;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.scr-preset-dot {
+  width: 5px;
+  height: 5px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background-color: var(--green);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.scr-preset:hover {
+  color: var(--text);
+  border-color: #333d49;
+  transform: translateY(-1px);
+}
+
+.scr-preset.on {
+  color: var(--green);
+  background-color: var(--green-soft);
+  border-color: var(--green-line);
+}
+
+.scr-preset.on .scr-preset-dot {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.scr-presets-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.scr-presets-note .dot { width: 5px; height: 5px; }
+
+.scr-presets-empty {
+  font-size: 9px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* ---------- layout ---------- */
+
+.scr-content {
+  flex: 0 0 auto;
+  height: calc(100vh - 204px);
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 12px;
+}
+
+/* ---------- filter builder ---------- */
+
+/* Every height here is the shell band minus the fixed rows above and below.
+   The engine sizes nested 1fr tracks against the parent, so the bands are
+   subtracted explicitly instead of grown. */
+
+.scr-builder {
+  height: calc(100vh - 204px);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scr-builder-head {
+  height: 36px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.scr-builder-count {
+  min-width: 18px;
+  height: 15px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  background-color: var(--panel-3);
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.scr-cards {
+  height: calc(100vh - 306px);
+  min-height: 0;
+  padding: 10px 10px 0;
+  overflow: hidden;
+}
+
+.scr-card {
+  height: calc((100vh - 334px) / 3);
+  min-height: 0;
+  padding: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: #0a0c10;
+}
+
+.scr-card + .scr-card { margin-top: 9px; }
+
+.scr-card-head {
+  height: 24px;
+  margin: 0;
+  padding: 0 0 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.scr-card-title {
+  font-size: 10px;
+  font-weight: 650;
+  color: #d7dee7;
+  letter-spacing: 0.01em;
+}
+
+.scr-card-note {
+  font-size: 8px;
+  color: var(--dim);
+}
+
+.scr-chips {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.scr-filter {
+  flex: 0 0 auto;
+  min-height: 15px;
+  height: calc((100vh - 511px) / 12);
+  max-height: 32px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: #0d1014;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.scr-filter:hover {
+  color: var(--text);
+  background-color: var(--panel-3);
+  border-color: var(--line);
+}
+
+.scr-filter.on {
+  color: var(--text);
+  background-color: var(--green-soft);
+  border-color: var(--green-line);
+}
+
+.scr-filter-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scr-filter-value {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 104px;
+  padding: 2px 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dim);
+  font-size: 8px;
+  line-height: 1.2;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.scr-filter.on .scr-filter-value {
+  background: rgba(61, 220, 132, 0.1);
+  color: var(--green);
+}
+
+.scr-filter-empty {
+  padding: 7px 0;
+  font-size: 9px;
+  color: var(--dim);
+}
+
+.scr-builder-foot {
+  height: 58px;
+  margin-top: 8px;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.scr-run {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: 6px;
+  background-color: var(--green);
+  color: #06110a;
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  transition: background-color 160ms ease;
+}
+
+.scr-run:hover { background: #55e396; }
+.scr-run svg { width: 13px; height: 13px; flex: 0 0 auto; }
+
+.scr-run-sheen {
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(100deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.28) 42%, rgba(255, 255, 255, 0.36) 50%, rgba(255, 255, 255, 0.28) 58%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.scr-run-note {
+  margin: 8px 0 0;
+  padding: 0 2px;
+  font-size: 8px;
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+/* ---------- results ---------- */
+
+/* 36px head + 27px column head + 12 rows + 32px foot. */
+.scr-results {
+  height: calc(100vh - 204px);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scr-results-head {
+  height: 36px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.scr-results-matches {
+  padding-left: 9px;
+  border-left: 1px solid var(--line-soft);
+  font-size: 9px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.scr-results-hint {
+  font-size: 8px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.scr-table {
+  height: calc(100vh - 272px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scr-thead,
+.scr-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.5fr) 0.95fr 0.85fr 1fr 0.95fr 1fr 0.55fr 0.5fr 0.85fr 1.15fr 0.8fr;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.scr-thead {
+  height: 27px;
+  border-bottom: 1px solid var(--line-soft);
+  background: #080a0d;
+}
+
+.scr-thead span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.scr-num { text-align: right; }
+
+.scr-rows {
+  height: calc(100vh - 299px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scr-row {
+  position: relative;
+  height: calc((100vh - 299px) / 12);
+  border-bottom: 1px solid rgba(23, 27, 33, 0.7);
+  font-size: 9.5px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.scr-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: transparent;
+  transition: background-color 150ms ease;
+}
+
+.scr-row:hover {
+  color: var(--text);
+  background-color: var(--panel-2);
+}
+
+.scr-row.scr-up:hover::before { background-color: var(--green); }
+.scr-row.scr-down:hover::before { background-color: var(--red); }
+
+.scr-cell {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scr-sym-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.scr-sym {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 10.5px;
+  font-weight: 650;
+  color: #dde4ec;
+}
+
+.scr-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 8.5px;
+  color: var(--dim);
+}
+
+.scr-row:hover .scr-name { color: var(--muted); }
+.scr-sector { color: var(--muted); font-size: 9px; }
+.scr-price { color: #d8e0e9; font-size: 10px; }
+
+.scr-change {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.scr-change span {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.scr-change-pct { font-size: 8px; opacity: 0.74; }
+
+.scr-signal {
+  display: inline-block;
+  max-width: 100%;
+  height: 17px;
+  padding: 0 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background-color: var(--panel-3);
+  color: var(--muted);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 17px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.scr-signal.up { color: var(--green); background-color: var(--green-soft); }
+.scr-signal.down { color: var(--red); background-color: var(--red-soft); }
+.scr-signal.amber { color: var(--amber); background-color: var(--amber-soft); }
+.scr-signal.dim { color: var(--dim); background-color: var(--panel-3); }
+
+.scr-score-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.scr-score-track {
+  flex: 1 1 auto;
+  min-width: 26px;
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--panel-3);
+  overflow: hidden;
+}
+
+.scr-score-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--dim);
+  transform-origin: left center;
+  animation-delay: 170ms;
+}
+
+.scr-score-fill.strong { background-color: var(--green); }
+.scr-score-fill.good { background-color: var(--blue); }
+.scr-score-fill.mid { background-color: var(--amber); }
+.scr-score-fill.low { background-color: var(--dim); }
+
+.scr-score-num {
+  width: 20px;
+  flex: 0 0 20px;
+  text-align: right;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.scr-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.5px;
+  height: 18px;
+  padding-left: 2px;
+}
+
+.scr-spark-bar {
+  flex: 1 1 0;
+  min-width: 2px;
+  max-width: 5px;
+  min-height: 2px;
+  border-radius: 1px;
+  background-color: var(--muted);
+  opacity: 0.78;
+}
+
+.scr-spark-bar.up { background-color: var(--green); }
+.scr-spark-bar.down { background-color: var(--red); }
+
+.scr-empty {
+  padding: 48px 20px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--dim);
+}
+
+.scr-results-foot {
+  height: 32px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-top: 1px solid var(--line-soft);
+  background: #080a0d;
+  font-size: 8.5px;
+  color: var(--dim);
+}
+
+.scr-foot-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--green);
+  flex: 0 0 auto;
+}
+
+.scr-results-foot .mono { color: var(--muted); }
+
+/* ---------- motion stagger ---------- */
+
+.scr-row:nth-child(1) { animation-delay: 30ms; }
+.scr-row:nth-child(2) { animation-delay: 55ms; }
+.scr-row:nth-child(3) { animation-delay: 80ms; }
+.scr-row:nth-child(4) { animation-delay: 105ms; }
+.scr-row:nth-child(5) { animation-delay: 130ms; }
+.scr-row:nth-child(6) { animation-delay: 155ms; }
+.scr-row:nth-child(7) { animation-delay: 180ms; }
+.scr-row:nth-child(8) { animation-delay: 205ms; }
+.scr-row:nth-child(9) { animation-delay: 230ms; }
+.scr-row:nth-child(10) { animation-delay: 255ms; }
+.scr-row:nth-child(11) { animation-delay: 280ms; }
+.scr-row:nth-child(12) { animation-delay: 305ms; }
+
+.scr-filter:nth-child(1) { animation-delay: 40ms; }
+.scr-filter:nth-child(2) { animation-delay: 95ms; }
+.scr-filter:nth-child(3) { animation-delay: 150ms; }
+.scr-filter:nth-child(4) { animation-delay: 205ms; }
+.scr-filter:nth-child(5) { animation-delay: 260ms; }
+
+.scr-spark-bar:nth-child(2n) { animation-delay: 60ms; }
+.scr-spark-bar:nth-child(3n) { animation-delay: 100ms; }
+
+/* ---------- responsive layout ---------- */
+
+/* Wide desktops get more room for the builder cards and a taller footer with
+   the run note. */
+@media (min-width: 1760px) {
+  .scr-content { grid-template-columns: 360px minmax(0, 1fr); }
+  .scr-cards { height: calc(100vh - 332px); }
+  .scr-card { height: calc((100vh - 360px) / 3); }
+  .scr-card-head { height: 38px; }
+  .scr-filter { height: calc((100vh - 588px) / 12); max-height: 48px; }
+  .scr-builder-foot { height: 82px; margin-top: 10px; }
+}
+
+/* 1600-wide terminals: drop the card captions and tighten the chip gaps so
+   four filters still fit each card at 900 tall. */
+@media (max-width: 1759px) {
+  .scr-card-note { display: none; }
+  .scr-chips { gap: 5px; }
+  .scr-run-note { display: none; }
+}
+
+/* 1500px and below: drop sector and P/E. */
+@media (max-width: 1500px) {
+  .scr-thead,
+  .scr-row {
+    grid-template-columns: minmax(150px, 1.5fr) 0.9fr 1fr 0.95fr 1fr 0.55fr 0.9fr 1.15fr 0.8fr;
+  }
+  .scr-col-sector,
+  .scr-col-pe { display: none; }
+}
+
+/* Compact page: the 1280x720 target. Tighter bands, three cards of three
+   filters, and nine result rows so nothing clips at 720 tall. */
+@media (max-width: 1399px) {
+  .screen-page.scr-page { gap: 8px; padding: 10px 12px; }
+  .scr-head { flex: 0 0 44px; height: 44px; gap: 14px; }
+  .scr-head-copy { gap: 5px; }
+  .scr-title { font-size: 18px; }
+  .scr-presets { flex: 0 0 28px; height: 28px; }
+  .scr-preset { height: 24px; padding: 0 9px; }
+  .scr-content { height: calc(100vh - 182px); }
+  .scr-builder { height: calc(100vh - 182px); }
+  .scr-results { height: calc(100vh - 182px); }
+  .scr-builder-head,
+  .scr-results-head {
+    height: 32px;
+    padding: 0 10px;
+  }
+  .scr-cards { height: calc(100vh - 275px); padding: 8px 8px 0; }
+  .scr-card { height: calc((100vh - 297px) / 3); padding: 7px 8px; }
+  .scr-card + .scr-card { margin-top: 7px; }
+  .scr-card-head { height: 22px; padding-bottom: 4px; }
+  .scr-chips { gap: 4px; }
+  .scr-chips .scr-filter { height: calc((100vh - 429px) / 9); max-height: 36px; }
+  .scr-card .scr-filter:nth-child(n+4) { display: none; }
+  .scr-builder-foot { height: 53px; margin-top: 8px; padding: 8px 8px 9px; }
+  .scr-run { height: 36px; }
+  .scr-run-note { display: none; }
+  .scr-table { height: calc(100vh - 242px); }
+  .scr-thead { height: 25px; }
+  .scr-thead,
+  .scr-row { gap: 7px; padding: 0 10px; }
+  .scr-rows { height: calc(100vh - 267px); }
+  .scr-row { height: calc((100vh - 267px) / 9); }
+  .scr-rows .scr-row:nth-child(n+10) { display: none; }
+  .scr-results-hint { display: none; }
+  .scr-results-foot { height: 28px; padding: 0 10px; }
+}
+
+/* 1320px and below: drop market cap and the sparkline. */
+@media (max-width: 1320px) {
+  .scr-thead,
+  .scr-row {
+    grid-template-columns: minmax(140px, 1.6fr) 1fr 1.05fr 1fr 0.6fr 1fr 1.2fr;
+  }
+  .scr-col-cap,
+  .scr-col-spark { display: none; }
+  .scr-content { grid-template-columns: 280px minmax(0, 1fr); }
+}
+
+/* 1180px and below: drop volume. */
+@media (max-width: 1180px) {
+  .scr-thead,
+  .scr-row {
+    grid-template-columns: minmax(130px, 1.7fr) 1fr 1.05fr 0.6fr 1fr 1.2fr;
+  }
+  .scr-col-volume { display: none; }
+}
+
+/* 1040px and below: keep symbol, price, change, signal, and score. */
+@media (max-width: 1040px) {
+  .scr-thead,
+  .scr-row {
+    grid-template-columns: minmax(120px, 1.8fr) 1fr 1.05fr 1fr 1.15fr;
+  }
+  .scr-col-rsi { display: none; }
+}
+
+/* Short windows: hide the least important card filter and three rows. The
+   engine's media matcher ignores height features, so the width rules above
+   carry the same states; browsers that honour max-height get the sharper
+   version. */
+@media (max-height: 780px) {
+  .scr-card { padding: 7px 9px; }
+  .scr-card-note { display: none; }
+  .scr-card-head { height: 22px; padding-bottom: 4px; }
+  .scr-chips { gap: 4px; }
+  .scr-card .scr-filter:nth-child(n+4) { display: none; }
+  .scr-run { height: 36px; }
+  .scr-rows .scr-row:nth-child(n+10) { display: none; }
+}
+
+@media (max-height: 780px) and (min-width: 1400px) {
+  .scr-row { height: calc((100vh - 299px) / 9); }
+}
+
+/* A narrow but tall window keeps all twelve rows and four filters per card. */
+@media (min-height: 781px) and (max-width: 1399px) {
+  .scr-rows .scr-row:nth-child(n+10) { display: grid; }
+  .scr-row { height: calc((100vh - 267px) / 12); }
+  .scr-card .scr-filter:nth-child(n+4) { display: flex; }
+  .scr-chips .scr-filter { height: calc((100vh - 441px) / 12); max-height: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scr-row,
+  .scr-filter,
+  .scr-score-fill,
+  .scr-spark-bar,
+  .scr-run-sheen { animation: none; }
+  .scr-run-sheen { display: none; }
+  .scr-preset,
+  .scr-preset-dot,
+  .scr-filter,
+  .scr-action,
+  .scr-row { transition: none; }
+}

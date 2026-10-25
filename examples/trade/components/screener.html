@@ -1,0 +1,175 @@
+<section class="screen-page scr-page">
+  <header class="scr-head">
+    <div class="scr-head-copy">
+      <span class="eyebrow">DISCOVERY</span>
+      <div class="scr-title-row">
+        <h1 class="scr-title">Screener</h1>
+        <span class="scr-matches"><strong class="mono">{{.Screener.Matches}}</strong>matches</span>
+        <span class="scr-updated">Updated <span class="mono">{{.Screener.Updated}}</span></span>
+      </div>
+    </div>
+    <div class="scr-actions">
+      <button id="scr-refresh" class="scr-action" type="button" data-action="refresh-data">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 6.2A5.4 5.4 0 1 0 13.4 9.4"></path><polyline points="13.4 3.2 13.4 6.4 10.2 6.4"></polyline></svg>
+        <span>Refresh</span>
+      </button>
+      <button id="scr-save" class="scr-action" type="button" data-action="screener-save">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h8v11L8 10.6 4 13.5v-11Z"></path></svg>
+        <span>Save</span>
+      </button>
+      <button id="scr-run" class="scr-action scr-action-run" type="button" data-action="screener-run">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h10"></path><path d="M3 11h10"></path><circle cx="6" cy="5" r="1.4"></circle><circle cx="10" cy="11" r="1.4"></circle></svg>
+        <span>Run screen</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="scr-presets">
+    <span class="scr-presets-label">Presets</span>
+    {{range .Screener.Presets}}
+    <button id="scr-preset-{{.Key}}" class="scr-preset{{if .Active}} on{{end}}" type="button" data-action="screener-preset-{{.Key}}"><span class="scr-preset-dot"></span>{{.Label}}</button>
+    {{else}}
+    <span class="scr-presets-empty">No presets saved</span>
+    {{end}}
+    <span class="spacer"></span>
+    <span class="scr-presets-note"><span class="dot{{if not .MarketOpen}} amber{{end}}"></span>{{.MarketStatus}} · {{.SessionText}}</span>
+  </div>
+
+  <div class="scr-content">
+    <aside class="panel scr-builder">
+      <div class="scr-builder-head">
+        <span class="panel-title">Filter builder</span>
+        <span class="spacer"></span>
+        <span class="scr-builder-count mono">{{len .Screener.Filters}}</span>
+      </div>
+
+      <div class="scr-cards">
+        <section class="scr-card">
+          <div class="scr-card-head">
+            <span class="scr-card-title">Universe</span>
+            <span class="scr-card-note">Market, sector and size</span>
+          </div>
+          <div class="scr-chips">
+            {{range .ScreenerUniverseFilters}}
+            <button id="scr-filter-{{.Key}}" class="scr-filter anim-pop{{if .Active}} on{{end}}" type="button" data-action="screener-filter-{{.Key}}">
+              <span class="scr-filter-label">{{.Label}}</span>
+              {{if .Value}}<span class="scr-filter-value mono">{{.Value}}</span>{{end}}
+            </button>
+            {{else}}
+            <span class="scr-filter-empty">No universe filters</span>
+            {{end}}
+          </div>
+        </section>
+
+        <section class="scr-card">
+          <div class="scr-card-head">
+            <span class="scr-card-title">Price &amp; liquidity</span>
+            <span class="scr-card-note">Price, volume and turnover</span>
+          </div>
+          <div class="scr-chips">
+            {{range .ScreenerPriceFilters}}
+            <button id="scr-filter-{{.Key}}" class="scr-filter anim-pop{{if .Active}} on{{end}}" type="button" data-action="screener-filter-{{.Key}}">
+              <span class="scr-filter-label">{{.Label}}</span>
+              {{if .Value}}<span class="scr-filter-value mono">{{.Value}}</span>{{end}}
+            </button>
+            {{else}}
+            <span class="scr-filter-empty">No price or liquidity filters</span>
+            {{end}}
+          </div>
+        </section>
+
+        <section class="scr-card">
+          <div class="scr-card-head">
+            <span class="scr-card-title">Technicals</span>
+            <span class="scr-card-note">Trend and momentum</span>
+          </div>
+          <div class="scr-chips">
+            {{range .ScreenerTechnicalFilters}}
+            <button id="scr-filter-{{.Key}}" class="scr-filter anim-pop{{if .Active}} on{{end}}" type="button" data-action="screener-filter-{{.Key}}">
+              <span class="scr-filter-label">{{.Label}}</span>
+              {{if .Value}}<span class="scr-filter-value mono">{{.Value}}</span>{{end}}
+            </button>
+            {{else}}
+            <span class="scr-filter-empty">No technical filters</span>
+            {{end}}
+          </div>
+        </section>
+      </div>
+
+      <div class="scr-builder-foot">
+        <button id="scr-run-builder" class="scr-run" type="button" data-action="screener-run">
+          <span class="scr-run-sheen anim-sheen"></span>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 3.6 12.4 8l-6.9 4.4V3.6Z"></path></svg>
+          <span>Run screen</span>
+        </button>
+        <p class="scr-run-note">Ranks the current universe on momentum, liquidity and trend.</p>
+      </div>
+    </aside>
+
+    <section class="panel scr-results">
+      <div class="scr-results-head">
+        <span class="panel-title">Results</span>
+        <span class="scr-results-matches mono">{{.Screener.Matches}} matches</span>
+        <span class="spacer"></span>
+        <span class="scr-results-hint">Click a row to inspect it</span>
+      </div>
+
+      <div class="scr-table">
+        <div class="scr-thead">
+          <span>Symbol / Name</span>
+          <span class="scr-col-sector">Sector</span>
+          <span class="scr-num">Price</span>
+          <span class="scr-num">Change</span>
+          <span class="scr-col-volume scr-num">Volume</span>
+          <span class="scr-col-cap scr-num">Market cap</span>
+          <span class="scr-col-pe scr-num">P/E</span>
+          <span class="scr-col-rsi scr-num">RSI</span>
+          <span>Signal</span>
+          <span>Score</span>
+          <span class="scr-col-spark">Trend</span>
+        </div>
+        <div class="scr-rows">
+          {{if .Screener.Rows}}
+          {{range $i, $r := .Screener.Rows}}{{if lt $i 12}}
+          <div id="scr-row-{{$r.Symbol}}" class="scr-row anim-rise{{if $r.Up}} scr-up{{else}} scr-down{{end}}" role="row" data-action="screener-row-{{$r.Symbol}}">
+            <span class="scr-cell scr-sym-cell">
+              <span class="scr-sym mono">{{$r.Symbol}}</span>
+              <span class="scr-name">{{$r.Name}}</span>
+            </span>
+            <span class="scr-cell scr-col-sector scr-sector">{{$r.Sector}}</span>
+            <span class="scr-cell scr-num mono scr-price">{{$r.Price}}</span>
+            <span class="scr-cell scr-num scr-change {{if $r.Up}}up{{else}}down{{end}}">
+              <span>{{$r.Change}}</span>
+              <span class="scr-change-pct">{{$r.Pct}}</span>
+            </span>
+            <span class="scr-cell scr-col-volume scr-num mono">{{$r.Volume}}</span>
+            <span class="scr-cell scr-col-cap scr-num mono">{{$r.MarketCap}}</span>
+            <span class="scr-cell scr-col-pe scr-num mono">{{$r.PE}}</span>
+            <span class="scr-cell scr-col-rsi scr-num mono">{{$r.RSI}}</span>
+            <span class="scr-cell">{{if $r.Signal}}<span class="scr-signal {{$.ScreenerSignalClass $r.Signal}}">{{$r.Signal}}</span>{{end}}</span>
+            <span class="scr-cell scr-score-cell">
+              <span class="scr-score-track"><span class="scr-score-fill {{if ge $r.Score 80}}strong{{else if ge $r.Score 60}}good{{else if ge $r.Score 40}}mid{{else}}low{{end}} anim-grow-x" style="width: {{$r.Score}}%"></span></span>
+              <span class="scr-score-num mono">{{$r.Score}}</span>
+            </span>
+            <span class="scr-cell scr-col-spark scr-spark">
+              {{range $r.Spark}}
+              <span class="scr-spark-bar {{if .Up}}up{{else}}down{{end}} anim-grow-y" style="height: {{.Height}}%"></span>
+              {{end}}
+            </span>
+          </div>
+          {{end}}{{end}}
+          {{else}}
+          <div class="scr-empty">No securities match the current filters.</div>
+          {{end}}
+        </div>
+      </div>
+
+      <div class="scr-results-foot">
+        <span class="scr-foot-dot"></span>
+        <span>Ranked by composite score</span>
+        <span class="spacer"></span>
+        <span class="mono">{{.Screener.Updated}}</span>
+      </div>
+    </section>
+  </div>
+</section>

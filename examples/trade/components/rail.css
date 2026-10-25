@@ -1,0 +1,187 @@
+/* Icon rail: brand equalizer at the top, seven destinations, and the utility
+   cluster pinned to the bottom of the workspace row. */
+
+.rail {
+  grid-column: 1;
+  grid-row: 2;
+  width: var(--rail-w);
+  min-width: var(--rail-w);
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 12px;
+  background: #07090c;
+  border-right: 1px solid var(--line-soft);
+  position: relative;
+  z-index: 9;
+}
+
+.rail-brand {
+  flex: none;
+  width: 100%;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rail-mark {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background-color: var(--panel-2);
+}
+
+.rail-eq {
+  height: 14px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.rail-eq-bar {
+  width: 3px;
+  border-radius: 1px;
+  background-color: var(--green);
+}
+
+.rail-eq-1 { height: 6px; }
+.rail-eq-2 { height: 11px; }
+.rail-eq-3 { height: 8px; }
+.rail-eq-4 { height: 13px; }
+
+.rail-nav {
+  flex: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 2px;
+}
+
+.rail-sep {
+  width: 22px;
+  height: 1px;
+  margin: 3px 0;
+  background-color: var(--line-soft);
+}
+
+.rail-btn {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.rail-btn > svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+
+.rail-btn:hover {
+  color: var(--text);
+  background-color: var(--panel-3);
+}
+
+.rail-btn.on,
+.rail-btn.on:hover {
+  color: var(--green);
+  background-color: var(--green-soft);
+  border-color: var(--green-line);
+}
+
+.rail-active-bar {
+  position: absolute;
+  left: -12.5px;
+  top: 8px;
+  width: 2px;
+  height: 16px;
+  border-radius: 0 2px 2px 0;
+  background-color: var(--green);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.rail-btn.on .rail-active-bar { opacity: 1; }
+
+.rail-foot {
+  margin-top: auto;
+  flex: none;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.rail-me {
+  position: relative;
+  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rail-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 9px;
+  font-weight: 750;
+  color: var(--green);
+  background: rgba(61, 220, 132, 0.13);
+  border: 1px solid var(--green-line);
+}
+
+.rail-avatar.avatar-a {
+  color: var(--green);
+  background: rgba(61, 220, 132, 0.16);
+  border-color: var(--green-line);
+}
+
+.rail-avatar:hover {
+  background: rgba(61, 220, 132, 0.22);
+  border-color: var(--green);
+}
+
+.rail-live {
+  position: absolute;
+  top: -3px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--green);
+  border: 2px solid #07090c;
+  z-index: 2;
+}
+
+/* Short windows: 720 px leaves 646 px for the rail once the two bars are
+   removed. Tighten the brand and the gaps instead of hiding a destination;
+   every button and the footer cluster stay in the flow. */
+@media (max-height: 800px) {
+  .rail { padding-bottom: 8px; }
+  .rail-brand { height: 40px; }
+
+  .rail-nav { gap: 4px; }
+  .rail-sep { margin: 1px 0; }
+  .rail-btn { width: 32px; height: 32px; }
+
+  .rail-foot { gap: 4px; padding-top: 6px; }
+  .rail-me { margin-top: 1px; }
+}

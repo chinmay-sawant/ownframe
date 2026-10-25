@@ -1,0 +1,137 @@
+<section class="screen-page news-page">
+  <header class="news-head">
+    <div class="news-head-copy">
+      <span class="eyebrow">Intelligence</span>
+      <div class="news-head-row">
+        <h1 class="news-title">News</h1>
+        <span class="news-live"><span class="dot anim-pulse"></span>Live</span>
+        {{if .News.GaugeText}}<span class="news-gauge {{if ge .News.Gauge 55}}up{{else if ge .News.Gauge 45}}amber{{else}}down{{end}}">{{.News.GaugeText}}</span>{{end}}
+      </div>
+      <div class="news-meta">
+        <span>Real-time wire</span>
+        <span class="news-meta-sep"></span>
+        <span class="mono">{{.Clock}}</span>
+        <span class="news-meta-sep"></span>
+        <span>24h coverage</span>
+      </div>
+    </div>
+
+    <div class="news-actions">
+      <button class="chip news-action" id="news-refresh" data-action="refresh-data">
+        <svg class="news-btn-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.2 8A5.2 5.2 0 1 1 11.6 4.2" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round"/><path d="M13.2 2.6v3.6H9.6" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Refresh
+      </button>
+      <button class="chip news-action" id="news-alerts" data-action="news-alerts">
+        <svg class="news-btn-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.4a3.4 3.4 0 0 0-3.4 3.4v2.4L3.4 10.1h9.2l-1.2-1.9V5.8A3.4 3.4 0 0 0 8 2.4Z" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M6.6 12.1a1.5 1.5 0 0 0 2.8 0" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Alerts
+      </button>
+    </div>
+  </header>
+
+  <div class="news-filters">
+    <span class="news-filter-label">Sources</span>
+    <div class="news-filter-chips">
+      {{range .News.Sources}}<button class="chip{{if .Active}} on{{end}}" id="news-filter-{{.Key}}" data-action="news-filter-{{.Key}}">{{.Label}}</button>{{end}}
+    </div>
+    <span class="spacer"></span>
+    <span class="news-filter-count"><b class="mono">{{len .News.Items}}</b> stories</span>
+  </div>
+
+  <div class="news-grid">
+    <section class="panel news-feed">
+      <div class="panel-head">
+        <span class="panel-title">Top stories</span>
+        <span class="panel-sub">Latest first</span>
+        <span class="spacer"></span>
+        <span class="news-wire"><span class="dot anim-pulse"></span>Wire</span>
+      </div>
+
+      <div class="news-list">
+        {{range .News.Items}}<div class="news-item" data-action="news-open">
+          <div class="news-meta-row">
+            <span class="news-source">{{.Source}}</span>
+            <span class="news-time mono">{{.Time}}</span>
+            {{if .Hot}}<span class="news-hot"><i class="anim-pulse"></i>Hot</span>{{end}}
+            <span class="spacer"></span>
+            <span class="news-cat">{{.Tag}}</span>
+          </div>
+          <div class="news-body">
+            <div class="news-copy">
+              <h2 class="news-headline">{{.Title}}</h2>
+              {{if .Summary}}<p class="news-summary">{{.Summary}}</p>{{end}}
+            </div>
+            <span class="news-tail">
+              {{if .Ticker}}<span class="tag news-ticker mono">{{.Ticker}}</span>{{end}}
+              <svg class="news-arrow" width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 8h9.2" fill="none" stroke="#5c6573" stroke-width="1.6" stroke-linecap="round"/><path d="M9 4.8 12.2 8 9 11.2" fill="none" stroke="#5c6573" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+          </div>
+        </div>{{else}}<div class="news-empty">No stories match this source.</div>{{end}}
+      </div>
+
+      <div class="news-tape">
+        <span class="news-tape-label">Tape</span>
+        <div class="news-tape-list">
+          {{range .Tickers}}<span class="news-tape-chip"><b class="mono">{{.Symbol}}</b><em class="mono {{if .Up}}up{{else}}down{{end}}">{{.ChangePct}}</em></span>{{end}}
+        </div>
+      </div>
+    </section>
+
+    <aside class="news-side">
+      <section class="panel news-trending">
+        <div class="panel-head">
+          <span class="panel-title">Trending</span>
+          <span class="panel-sub">24h mentions</span>
+          <span class="spacer"></span>
+          <span class="tag">{{len .News.Trending}}</span>
+        </div>
+        <div class="news-trend-list">
+          {{range .News.Trending}}<div class="news-trend" id="news-trend-{{.Symbol}}" data-action="trending-{{.Symbol}}">
+            <span class="news-rank mono" aria-hidden="true"></span>
+            <span class="news-trend-id"><b class="mono">{{.Symbol}}</b><span>{{.Name}}</span></span>
+            <span class="news-trend-stats"><span class="news-trend-mentions mono">{{.Mentions}}</span><span class="news-trend-change mono {{if .Up}}up{{else}}down{{end}}">{{.Pct}}</span></span>
+          </div>{{end}}
+        </div>
+      </section>
+
+      <section class="panel news-sentiment">
+        <div class="panel-head">
+          <span class="panel-title">Sentiment</span>
+          <span class="panel-sub">Tape skew</span>
+          <span class="spacer"></span>
+          <span class="news-index mono">{{.News.Gauge}}</span>
+        </div>
+        <div class="news-sent-body">
+          {{range .News.Sentiment}}<div class="news-sent">
+            <div class="news-sent-head"><span class="news-sent-label">{{.Label}}</span><b class="mono {{if .Up}}up{{else}}down{{end}}">{{.Pct}}</b></div>
+            <span class="news-sent-track"><i class="anim-grow-x {{if .Up}}news-sent-up{{else}}news-sent-down{{end}}" style="width:{{.Pct}};"></i></span>
+          </div>{{end}}
+        </div>
+      </section>
+
+      <section class="panel news-calendar">
+        <div class="panel-head">
+          <span class="panel-title">Economic calendar</span>
+          <span class="panel-sub">Today</span>
+          <span class="spacer"></span>
+          <span class="news-cal-legend"><i class="dot amber"></i>High impact</span>
+        </div>
+        <div class="news-cal-list">
+          {{range .News.Calendar}}<div class="news-cal">
+            <div class="news-cal-top">
+              <span class="mono news-cal-time">{{.Time}}</span>
+              <span class="news-cal-country mono">{{.Country}}</span>
+              <span class="spacer"></span>
+              <span class="news-impact {{if .High}}news-impact-high{{end}}">{{.Impact}}</span>
+            </div>
+            <div class="news-cal-event">{{.Event}}</div>
+            <div class="news-cal-figures mono">
+              <span>Fcst {{.Forecast}}</span>
+              <span>Prior {{.Prior}}</span>
+              {{if .Actual}}<span class="up">Act {{.Actual}}</span>{{end}}
+            </div>
+          </div>{{else}}<div class="news-empty">No releases scheduled.</div>{{end}}
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>

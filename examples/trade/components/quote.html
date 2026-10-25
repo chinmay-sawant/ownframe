@@ -1,0 +1,170 @@
+<aside class="quote-rail" aria-label="Quote detail, order book and time and sales">
+  <section class="qp-head {{if .Quote.Up}}up{{else}}down{{end}}" id="qp-head">
+    <span class="qp-wash" aria-hidden="true"></span>
+
+    <div class="qp-ident">
+      <span class="qp-logo {{.Quote.LogoClass}}" id="qp-logo" aria-hidden="true">{{.Quote.Symbol}}</span>
+      <div class="qp-ident-copy">
+        <div class="qp-symbol-line">
+          <span class="qp-symbol">{{.Quote.Symbol}}</span>
+          {{if .Quote.Market}}<span class="tag qp-market">{{.Quote.Market}}</span>{{end}}
+        </div>
+        <div class="qp-name">{{.Quote.Name}}</div>
+        <div class="qp-venue">{{.Quote.Exchange}}{{if .Quote.Currency}} · {{.Quote.Currency}}{{end}}</div>
+      </div>
+      <div class="qp-actions">
+        <button class="qp-ico" id="qp-bell" data-action="bell" title="Price alerts" aria-label="Price alerts">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.7a4 4 0 0 0-4 4v2.6L3.7 11.4h10.6L13 9.3V6.7a4 4 0 0 0-4-4z"/><path d="M7.3 14.3a1.8 1.8 0 0 0 3.4 0"/></svg>
+        </button>
+        <button class="qp-ico" id="qp-update" data-action="update" title="Update available" aria-label="Update available">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.6v7.2"/><path d="m6.1 7 2.9 2.9L11.9 7"/><path d="M3.4 12.2v1.6h11.2v-1.6"/></svg>
+        </button>
+        <button class="qp-ico qp-heart" id="qp-star" data-action="star-{{.Quote.Symbol}}" title="Toggle watchlist star" aria-label="Toggle watchlist star">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15.1C6.4 13 3.2 10.4 3.2 7.5a2.9 2.9 0 0 1 5.8-.8 2.9 2.9 0 0 1 5.8.8c0 2.9-3.2 5.5-5.8 7.6z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="qp-price-block">
+      <div class="qp-price-row">
+        <span class="qp-price mono">{{.Quote.Price}}</span>
+        <div class="qp-price-side">
+          <span class="qp-change mono {{if .Quote.Up}}up{{else}}down{{end}}" id="qp-change">{{.Quote.Change}}</span>
+          {{if .Quote.ChangePct}}<span class="qp-chg mono {{if .Quote.Up}}up{{else}}down{{end}}" id="qp-chg">{{.Quote.ChangePct}}</span>{{end}}
+        </div>
+      </div>
+    </div>
+
+    <div class="qp-meta">
+      <span class="qp-status {{if .MarketOpen}}open{{else}}closed{{end}}" id="qp-status">
+        <i class="qp-live anim-pulse" aria-hidden="true"></i>{{.Quote.Status}}
+      </span>
+      {{if .Quote.Session}}<span class="qp-meta-sep" aria-hidden="true"></span><span class="qp-meta-t">{{.Quote.Session}}</span>{{end}}
+      <span class="qp-spacer"></span>
+      {{if .Quote.Updated}}<span class="qp-updated mono">{{.Quote.Updated}}</span>{{end}}
+      <button class="qp-ico qp-refresh" id="qp-refresh" data-action="refresh-data" title="Refresh feed" aria-label="Refresh feed">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.6 8A5.6 5.6 0 1 1 11.9 4"/><path d="M13.8 2.4v3.4h-3.4"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <section class="qp-stats" id="qp-stats" aria-label="Session statistics">
+    <div class="qp-sec-head">
+      <span class="qp-sec-kicker">Session stats</span>
+      <span class="qp-spacer"></span>
+      {{if .Quote.PrevClose}}<span class="qp-sec-meta">Prev close <b class="mono">{{.Quote.PrevClose}}</b></span>{{end}}
+    </div>
+    <div class="qp-stat-grid">
+      {{range $i, $s := .QuoteStats}}
+      <div class="qp-stat" id="qp-stat-{{$i}}">
+        <span class="qp-stat-l">{{$s.Label}}</span>
+        <span class="qp-stat-v mono{{if $s.Tone}} qp-tone-{{$s.Tone}}{{end}}">{{$s.Value}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="qp-bbo" id="qp-bbo" aria-label="Best bid and offer">
+    <div class="qp-bbo-head">
+      <span class="qp-bbo-tag">BBO</span>
+      <span class="qp-bbo-note">Best bid / offer</span>
+      <span class="qp-spacer"></span>
+      <span class="qp-bbo-lvl">L1</span>
+    </div>
+    <div class="qp-bbo-split">
+      <div class="qp-bbo-side bid" id="qp-bbo-bid">
+        <span class="qp-bbo-k">Bid</span>
+        <span class="qp-bbo-price mono">{{.BBO.BidPrice}}</span>
+        <span class="qp-spacer"></span>
+        <span class="qp-bbo-size">SZ <b class="mono">{{.BBO.BidSize}}</b></span>
+        <span class="qp-sheen anim-sheen" aria-hidden="true"></span>
+      </div>
+      <div class="qp-bbo-side ask" id="qp-bbo-ask">
+        <span class="qp-bbo-k">Ask</span>
+        <span class="qp-bbo-price mono">{{.BBO.AskPrice}}</span>
+        <span class="qp-spacer"></span>
+        <span class="qp-bbo-size">SZ <b class="mono">{{.BBO.AskSize}}</b></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="qp-book" id="qp-book" aria-label="Order book">
+    <div class="qp-sec-head">
+      <span class="qp-sec-kicker">Order Book</span>
+      <span class="qp-spacer"></span>
+      <span class="qp-ratio"><i>B/A</i> <b class="mono">{{.DepthRatio}}</b></span>
+    </div>
+    <div class="qp-book-cols" aria-hidden="true">
+      <span>Price</span>
+      <span>Size</span>
+      <span>Total</span>
+    </div>
+    <div class="qp-book-list">
+      {{range $i, $row := .Book}}
+      <div class="qp-book-row {{$row.Side}}{{if $row.Best}} best{{end}}{{if $row.Best}}{{if or (eq $row.Side "ask") (eq $row.Side "sell")}} anim-flash-down{{else}} anim-flash-up{{end}}{{end}}" id="qp-book-{{$i}}">
+        <span class="qp-depth {{$row.Side}}" style="width:{{$row.Depth}}%;"></span>
+        <span class="qp-book-price mono">{{$row.Price}}</span>
+        <span class="qp-book-size mono">{{$row.Size}}</span>
+        <span class="qp-book-total mono">{{$row.Total}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="qp-trades" id="qp-trades" aria-label="Time and sales">
+    <div class="qp-sec-head">
+      <span class="qp-sec-kicker">Time &amp; Sales</span>
+      <span class="qp-sec-note">(Intraday)</span>
+      <i class="qp-tape-live anim-blink" id="qp-tape-live" aria-hidden="true"></i>
+      <span class="qp-spacer"></span>
+      <span class="qp-collapse" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3.8 6.1 4.2 4.2 4.2-4.2"/></svg>
+      </span>
+    </div>
+    <div class="qp-trade-cols" aria-hidden="true">
+      <span>Time</span>
+      <span>Price</span>
+      <span>Size</span>
+    </div>
+    <div class="qp-trade-list">
+      {{range $i, $t := .Trades}}
+      <div class="qp-trade-row {{if $t.Up}}up{{else}}down{{end}}" id="qp-trade-{{$i}}">
+        <span class="qp-trade-time mono">{{$t.Time}}</span>
+        <span class="qp-trade-price mono">{{$t.Price}}</span>
+        <span class="qp-trade-size mono">{{$t.Size}}{{if $t.Aggressor}}<i class="qp-aggr">{{$t.Aggressor}}</i>{{end}}</span>
+      </div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="qp-flow" id="qp-flow" aria-label="Transaction statistics">
+    <div class="qp-sec-head">
+      <span class="qp-sec-kicker">Transaction Statistics</span>
+      <span class="qp-spacer"></span>
+      {{if .Donut.Unit}}<span class="qp-unit">{{.Donut.Unit}}</span>{{end}}
+    </div>
+    <div class="qp-flow-body" id="qp-flow-body">
+      <div class="qp-donut" id="qp-donut">
+        <svg class="qp-donut-svg" viewBox="0 0 120 120" aria-hidden="true">
+          <circle cx="60" cy="60" r="44" fill="none" stroke="#161c23" stroke-width="18"></circle>
+          {{range .Donut.Segments}}{{if .Path}}<path d="{{.Path}}" fill="none" stroke="{{.Color}}" stroke-width="18" stroke-linecap="butt"></path>{{end}}{{end}}
+        </svg>
+        <span class="qp-orbit anim-spin" aria-hidden="true"><i class="qp-orbit-dot"></i></span>
+        <div class="qp-donut-center">
+          <span class="qp-donut-cap">{{if .Donut.NetUp}}Net inflow{{else}}Net outflow{{end}}</span>
+          <strong class="qp-donut-net mono {{if .Donut.NetUp}}up{{else}}down{{end}}" id="qp-donut-net">{{.Donut.Net}}</strong>
+          {{if .Donut.NetPct}}<span class="qp-donut-pct mono {{if .Donut.NetUp}}up{{else}}down{{end}}" id="qp-donut-pct">{{.Donut.NetPct}}</span>{{end}}
+        </div>
+      </div>
+      <div class="qp-legend" id="qp-legend">
+        {{range $i, $l := .DonutLegend}}
+        <div class="qp-legend-row {{if $l.Up}}up{{else}}down{{end}}" id="qp-legend-{{$i}}">
+          <svg class="qp-swatch" width="6" height="6" viewBox="0 0 6 6" aria-hidden="true"><rect width="6" height="6" rx="1.5" fill="{{$l.Color}}"></rect></svg>
+          <span class="qp-legend-l">{{$l.Label}}</span>
+          <span class="qp-legend-v mono">{{$l.Value}}</span>
+        </div>
+        {{end}}
+      </div>
+    </div>
+  </section>
+</aside>

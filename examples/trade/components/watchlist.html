@@ -1,0 +1,92 @@
+<aside class="watchlist" id="watchlist-main">
+  <div class="wl-head anim-rise">
+    <span class="wl-live" aria-hidden="true">
+      <span class="wl-halo anim-halo"></span>
+      <span class="dot"></span>
+    </span>
+    <div class="wl-title-wrap">
+      <span class="wl-title">Watchlist</span>
+      <span class="wl-count mono">{{.WatchCount}}</span>
+    </div>
+    <span class="spacer"></span>
+    <span class="wl-market">US/HK</span>
+    <button class="icon-btn wl-head-btn" data-action="watch-add" type="button" title="Add symbol" aria-label="Add symbol">
+      <svg class="icon" width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M7 2.5v9M2.5 7h9"/></svg>
+    </button>
+    <button class="icon-btn wl-head-btn" data-action="watch-more" type="button" title="More watchlist actions" aria-label="More watchlist actions">
+      <svg class="icon" width="13" height="13" viewBox="0 0 14 14" fill="#8b95a5"><circle cx="3" cy="7" r="1.05"/><circle cx="7" cy="7" r="1.05"/><circle cx="11" cy="7" r="1.05"/></svg>
+    </button>
+  </div>
+
+  <div class="wl-filters">
+    {{range .WatchFilters}}
+    <button class="chip wl-chip{{if .Active}} on{{end}}" id="watch-filter-{{.Key}}" data-action="watch-filter-{{.Key}}" type="button">{{.Label}}</button>
+    {{end}}
+    <span class="spacer"></span>
+  </div>
+
+  <div class="wl-thead">
+    <span class="wl-th">Name / Code
+      <svg class="wl-th-mark" width="6" height="9" viewBox="0 0 6 9" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.2 3 .7l2 2.5"/><path d="M1 5.8 3 8.3l2-2.5"/></svg>
+    </span>
+    <span class="wl-th wl-th-right">Last Price
+      <svg class="wl-th-mark" width="6" height="9" viewBox="0 0 6 9" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.2 3 .7l2 2.5"/><path d="M1 5.8 3 8.3l2-2.5"/></svg>
+    </span>
+    <span class="wl-th wl-th-right">%Chg
+      <svg class="wl-th-mark" width="6" height="9" viewBox="0 0 6 9" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M1 3.2 3 .7l2 2.5"/><path d="M1 5.8 3 8.3l2-2.5"/></svg>
+    </span>
+  </div>
+
+  <div class="wl-list">
+    {{range .Watch}}
+    <div class="wl-row{{if .Active}} on{{end}}" id="wl-row-{{.Symbol}}" data-action="watch-{{.Symbol}}">
+      <div class="wl-ident">
+        <span class="wl-mkt {{if eq .Market "HK"}}wl-mkt-hk{{else if eq .Market "EV"}}wl-mkt-ev{{else}}wl-mkt-us{{end}}" aria-hidden="true"></span>
+        <div class="wl-idtext">
+          <div class="wl-idline">
+            <span class="wl-sym mono">{{.Symbol}}</span>
+            {{if eq .Market "HK"}}<span class="tag hk wl-tag">HK</span>{{end}}
+            {{if eq .Market "EV"}}<span class="tag ev wl-tag">EV</span>{{end}}
+          </div>
+          <div class="wl-name">{{.Name}}</div>
+        </div>
+        <button class="wl-star{{if .Starred}} on{{end}}" id="wl-star-{{.Symbol}}" data-action="star-{{.Symbol}}" type="button" title="{{if .Starred}}Unstar{{else}}Star{{end}} {{.Symbol}}" aria-label="{{if .Starred}}Unstar{{else}}Star{{end}} {{.Symbol}}">
+          <svg class="icon" width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"><path d="M6 1.2 7.5 4.3l3.4.5-2.5 2.4.6 3.4L6 9.9 3 10.6l.6-3.4L1.1 4.8l3.4-.5z"/></svg>
+        </button>
+      </div>
+      <div class="wl-quote" id="wl-quote-{{.Symbol}}">
+        <span class="wl-price mono">{{.Price}}</span>
+        <span class="wl-abs mono {{if .Up}}up{{else}}down{{end}}">{{.Change}}</span>
+      </div>
+      <div class="wl-change" id="wl-change-{{.Symbol}}">
+        <span class="wl-pct mono {{if .Up}}up{{else}}down{{end}}" id="wl-pct-{{.Symbol}}">
+          <svg width="5" height="6" viewBox="0 0 6 6" aria-hidden="true"><path d="{{if .Up}}M3 1 5.4 5H.6Z{{else}}M3 5 .6 1h4.8Z{{end}}" fill="{{if .Up}}#3ddc84{{else}}#f0606a{{end}}"/></svg>
+          {{.ChangePct}}
+        </span>
+      </div>
+    </div>
+    {{else}}
+    <div class="wl-empty">
+      <span class="wl-empty-mark"></span>
+      <span>No symbols in this filter</span>
+    </div>
+    {{end}}
+  </div>
+
+  {{if .Watch}}
+  <div class="wl-internals">
+    <span class="wl-int-label">Market internals</span>
+    <span class="wl-breadth"><span class="wl-breadth-up"></span><span class="wl-breadth-down"></span></span>
+    <span class="wl-legend"><span class="up">Adv</span><span class="dim">/</span><span class="down">Dec</span></span>
+  </div>
+  {{end}}
+
+  <div class="wl-foot">
+    <span class="wl-feed">Simulated feed</span>
+    <span class="spacer"></span>
+    <span class="wl-feed-live"><span class="dot anim-pulse"></span>Live</span>
+    <button class="icon-btn wl-refresh" data-action="refresh-data" type="button" title="Refresh data" aria-label="Refresh data">
+      <svg class="icon" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13.2 8a5.2 5.2 0 1 1-1.5-3.7"/><path d="M13.4 2.6v3.1H10.3"/></svg>
+    </button>
+  </div>
+</aside>
