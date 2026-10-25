@@ -5,7 +5,7 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 ## Motivation / context
 
 - Plans: `plans/v0.0.3/animations-and-transitions/` (11 animation phases, 5 transition phases, 5 example phases, plus `coverage.md` and the priority-0 engine plan).
-- Engine work: `chinmay-sawant/blinkless` branch `feature/animations-and-transitions` supplies the three primitives this branch consumes: `layout.RelayoutElementWithOverrides`, `layout.RestampTransforms`, and `layout.RestyleInlineSVG`. Blinkless merged that branch as #25, and the pin moves to `v0.0.4-0.20261025081705-d92be38a7295`.
+- Engine work: `chinmay-sawant/blinkless` branch `feature/animations-and-transitions` supplies the three primitives this branch consumes: `layout.RelayoutElementWithOverrides`, `layout.RestampTransforms`, and `layout.RestyleInlineSVG`. Blinkless merged that branch as #25, the race fixes as #26, and the copyless transform accessor as #27. The pin moves to `v0.0.4-0.20261025105255-96d7b9d95338`.
 - Before this branch the runtime packages existed but the page did not start motion by itself; the examples that animated drove their own clocks. `documentation/css-motion.md` describes the caller-driven path that remains available for Go-side motion through `internal/frame`.
 
 ## Changes
@@ -59,7 +59,7 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 
 - Add `documentation/css-motion.md` and update `features.md`, `frames.md`, `repaint.md`, `optimizations.md`, `performance.md`, `devtools.md`, `testing.md`, `window.md`, `compatibility-matrix.md`, and `AGENTS.md`.
 - Record the branch status under `plans/v0.0.3/animations-and-transitions/`, including the phase plans, `coverage.md`, and the example audit.
-- Move `github.com/chinmay-sawant/blinkless` to `v0.0.4-0.20261025081705-d92be38a7295` in `go.mod` and `examples/go.mod`, matching blinkless master after #25. There is still no `replace` for blinkless.
+- Move `github.com/chinmay-sawant/blinkless` to `v0.0.4-0.20261025105255-96d7b9d95338` in `go.mod` and `examples/go.mod`, matching blinkless master after #25, #26, and #27. There is still no `replace` for blinkless.
 - Shrink `scripts/example-internal-allowlist.txt` from 40 rows to 16 and extend `scripts/check-graphics.sh` and `scripts/test_graphics_gate.py` with the three viewport GPU tests, for eight required invocations.
 
 ## Impact
@@ -68,9 +68,9 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 |------|--------|
 | **Performance** | One desktop session (1908x999, dock open, VSync off): `BenchmarkAnimationTick` median fell from 468,145 to 275,957 bytes/tick and from 0.748 to 0.603 ms/tick. Median scroll frame-gap p99 fell from 164.8 to 42.9 ms and the worst gap from 444.0 to 58.1 ms across three interleaved native runs. The first one-second heap sample fell from 135.8 to 54.6 MiB. These are single-machine measurements, not a gate; frame gaps include scheduling and driver waits, and 50-80 ms gaps remain. |
 | **Memory** | The motion runtime allocates zero bytes per live step, per layer read, per timeline sample, and per effect-table step (asserted with `testing.AllocsPerRun`). Layer textures are capped at 16 entries and 32 Mi pixels, about 128 MiB. The viewport path holds two window-sized images plus overscan, and keeps warmup scratch images alive. |
-| **Behavior / correctness** | CSS `@keyframes` and `transition` declarations now advance without application code. Automatic capture, reversal, interruption, timing, fill, direction, composition, ranges, and named scroll/view timelines are covered. Triggers are resolved, but three `css-preview` trigger cards keep a manual sample. Discrete transitions ship only for `start`/`end` with `allow-discrete`; geometry and `display` entry/exit do not. |
+| **Behavior / correctness** | CSS `@keyframes` and `transition` declarations now advance without application code. Automatic capture, reversal, interruption, timing, fill, direction, composition, ranges, and named scroll/view timelines are covered. Triggers are resolved, but three `css-preview` trigger cards keep a manual sample. Geometry transitions relayout through the engine override path. Discrete transitions cover `visibility`, `content-visibility`, `z-index`, and `position` at the midpoint. `display`, `order`, grid-line integers, and the generic `inset` shorthand still snap. |
 | **API / CLI** | Additive root API: `Page.Probe().Motion()` with `MotionStats` (a documented alias), and `Page.Window().SetAnimations`/`Animations`/`SetTransitions`/`Transitions`. No existing signature changes. New example flags are listed above. |
-| **Dependencies** | The Blinkless pin moves to `v0.0.4-0.20261025081705-d92be38a7295`, the blinkless master commit after #25. No other module changes and no new external dependencies. |
+| **Dependencies** | The Blinkless pin moves to `v0.0.4-0.20261025105255-96d7b9d95338`, the blinkless master commit after #25, #26, and #27. No other module changes and no new external dependencies. |
 | **Binary size / build time** | Adds `internal/motion`, a rewritten `animations` example, and a new `motion-conformance` example. No new C or wasm artifacts. |
 
 ## Breaking changes / migration
@@ -79,7 +79,7 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 |------|-----------|
 | None in Go signatures | No source migration needed. |
 | VSync is now off for every desktop and mobile window constructor | Active drawing is uncapped. An application that relied on display-refresh pacing has no public switch back; `WindowOptions.NoIdlePace` only affects clean-page idle pacing. Documented in `documentation/window.md:63`, `:94-95`. |
-| Geometry and discrete transitions are not shipped | A declaration that transitions `width`, `height`, `inset`, or `display` snaps today. The plans and `documentation/css-motion.md:104-111` list this as a gap. |
+| Some transitions still snap | `display`, `order`, grid-line integers, and the generic `inset` shorthand do not interpolate; they take the destination at the start or midpoint and report a skip reason. |
 
 ## Library freeze (until Page wrap)
 
@@ -98,11 +98,16 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 - [x] `make lint` using the repository's pinned `golangci-lint` v2.15.0
 - [x] `go test -race -p 1 ./internal/window`
 - [x] `make build`
+- [x] `make module-check`
 - [x] `make graphics-check` with all eight required GPU tests (recorded on `c25b869e`; the gate needs a GPU host)
 - [x] `make docs-check plans-check examples-check`
 - [x] `make internal-import-check`
+- [x] `make site-check` and `npm --prefix frontend run check:site`
 - [x] `go test -v -p 1 ./examples/animations/...`
 - [x] `cd examples && go test -count=1 ./motion-conformance/...`
+- [x] `go test -race -count=10 -run 'TestSecondStartRestartsAManualTransition|TestSecondStartRestartsATriggerCard' ./examples/css-preview`
+- [x] `go test ./internal/replay ./internal/window`
+- [x] `BenchmarkDrawRectScan` within 1.5x of `origin/master` (1.26x on the development machine)
 
 ### Commands
 
@@ -110,12 +115,17 @@ Make CSS animations and transitions run automatically in the page loop. A new `i
 make test
 make lint
 make build
+make module-check
 make graphics-check
 make docs-check plans-check examples-check
 make internal-import-check
+make site-check
 go test -v -p 1 ./examples/animations/...
 go test -race -p 1 ./internal/window
 cd examples && go test -count=1 ./motion-conformance/...
+go test -race -count=10 -run 'TestSecondStartRestartsAManualTransition|TestSecondStartRestartsATriggerCard' ./examples/css-preview
+go test ./internal/replay ./internal/window
+go test -bench=BenchmarkDrawRectScan -benchmem -count=5 ./internal/replay
 ```
 
 Focused coverage in the branch:
@@ -143,12 +153,13 @@ None. No issue is linked to this work.
 
 ## Follow-ups (out of scope)
 
-- Transitioned geometry, discrete transitions beyond `start`/`end`, and display entry/exit cross-fades stay in later phases. `display` entry/exit needs retention work that this branch does not ship.
+- `display` entry/exit cross-fades, `order`, grid-line integers, and the generic `inset` shorthand still snap. Morphing children under `display` needs retention work that this branch does not ship.
 - Keyframed `filter`, `backdrop-filter`, `clip-path`, mask position/size, `mix-blend-mode`, and `isolation` are reported as gaps.
 - `transform-origin` keyframes, nested timeline scopes, and a named scroll-container timeline are not implemented.
 - A promoted layer uses normal blending only; `mix-blend-mode` is not read.
 - `Serve` still shows a picture page and does not tick, so automatic motion is a native-host behavior.
 - Documentation cleanup: the parent animations plan still says "planning" while the track READMEs say landed; `compatibility-matrix.md:1083-1086` still describes caller-driven transitions; `examples/css-preview/PROFILING.md` and `PATCH_COST.md` still describe the deleted patch-cost path.
+- The documentation behavior audit found more drift than the CI gates cover. `documentation/css-motion.md` and `features.md` still say geometry, discrete, layout-keyframe, and SVG-paint animation are missing or next-phase, while the runtime ships them. The `MotionStats` table lists 23 of 35 fields. The animations example is described as having no tick callback, but a Play or Replay click registers one for a frame. `plans/v0.0.3/animations-and-transitions/` indexes and checklists still read "Planned" under a landed track. These need a docs pass; no gate checks prose against code.
 - No checked-in performance gate exists for tick time, scroll gaps, or FPS. The allocation assertions pin storage reuse only.
 
 ## Reviewer checklist
@@ -171,13 +182,14 @@ None. No issue is linked to this work.
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
 | `.css` | 2 | 88 | 1 |
-| `.go` | 363 | 36995 | 3781 |
-| `.html` | 3 | 1729 | 509 |
+| `.go` | 364 | 37171 | 3781 |
+| `.html` | 4 | 1730 | 510 |
+| `.js` | 2 | 144 | 134 |
 | `.json` | 1 | 1 | 0 |
-| `.md` | 44 | 5861 | 118 |
+| `.md` | 44 | 5873 | 119 |
 | `.mod` | 2 | 2 | 2 |
 | `.py` | 1 | 3 | 0 |
 | `.sh` | 1 | 3 | 0 |
-| `.sum` | 2 | 12 | 0 |
+| `.sum` | 2 | 4 | 4 |
 | `.txt` | 1 | 5 | 29 |
-| **Total** | **420** | **44699** | **4440** |
+| **Total** | **424** | **45024** | **4580** |
