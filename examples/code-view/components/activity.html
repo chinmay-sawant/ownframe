@@ -1,36 +1,36 @@
 <nav class="activity" id="activity" aria-label="Views">
-  <button class="act{{if eq .Mode "explorer"}} on{{end}}" id="act-explorer" data-action="mode-explorer" type="button" title="Explorer (1)">
+  <button class="act{{if eq .Mode "explorer"}} on{{end}}" id="act-explorer" data-action="mode-explorer" type="button" title="Explorer (1)" aria-label="Explorer"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.4" stroke-linejoin="round">
       <path d="M2.4 4.6h5l1.5 2h8.7V16H2.4z"/>
       <path d="M2.4 6.6h15.2" opacity=".5"/>
     </svg>
   </button>
-  <button class="act{{if eq .Mode "changes"}} on{{end}}" id="act-changes" data-action="mode-changes" type="button" title="Source control (2)">
+  <button class="act{{if eq .Mode "changes"}} on{{end}}" id="act-changes" data-action="mode-changes" type="button" title="Source control (2)" aria-label="Source control"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.4" stroke-linecap="round">
       <circle cx="5" cy="4.4" r="2.1"/><circle cx="5" cy="15.6" r="2.1"/><circle cx="15" cy="7.4" r="2.1"/>
       <path d="M5 6.5v7M15 9.5c0 3.2-3.6 3.4-7.2 4.4"/>
     </svg>
     {{if .Changed}}<span class="act-badge">{{.Changed}}</span>{{end}}
   </button>
-  <button class="act" id="act-search" data-action="palette-open" type="button" title="Quick open (Ctrl+P)">
+  <button class="act" id="act-search" data-action="search-open" type="button" title="Search workspace (Ctrl+Shift+F)" aria-label="Search workspace"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.5" stroke-linecap="round">
       <circle cx="8.6" cy="8.6" r="5.8"/>
       <path d="m13 13 4 4"/>
     </svg>
   </button>
-  <button class="act{{if .Details}} on{{end}}" id="act-details" data-action="details-toggle" type="button" title="Details (3)" aria-label="Details {{if .Details}}open{{else}}closed{{end}}">
+  <button class="act{{if .Details}} on{{end}}" id="act-details" data-action="details-toggle" type="button" title="Details (3)" aria-label="Details {{if .Details}}open{{else}}closed{{end}}" aria-pressed="{{if .Details}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.4">
       <rect x="2.2" y="3.2" width="15.6" height="13.6" rx="1.8"/>
       <path d="M12.6 3.2v13.6"/>
     </svg>
   </button>
   <span class="act-fill"></span>
-  <button class="act" id="act-collapse" data-action="collapse-all" type="button" title="Collapse all folders">
+  <button class="act" id="act-collapse" data-action="collapse-all" type="button" title="Collapse all folders" aria-label="Collapse all folders"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.5" stroke-linecap="round">
       <path d="M4 6.4h12M4 10h12M4 13.6h8"/>
     </svg>
   </button>
-  <button class="act{{if .DevOn}} on{{end}}" id="act-devtools" data-action="devtools" type="button" title="Developer tools (F12)" aria-label="Developer tools {{if .DevOn}}on{{else}}off{{end}}">
+  <button class="act{{if .DevOn}} on{{end}}" id="act-devtools" data-action="devtools" type="button" title="Developer tools (F12)" aria-label="Developer tools {{if .DevOn}}on{{else}}off{{end}}" aria-pressed="{{if .DevOn}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.4" stroke-linecap="round">
       <path d="M6.4 6a4.2 4.2 0 0 1 7.2 0M10 10v1.5"/>
       <circle cx="10" cy="10" r="7.6"/>

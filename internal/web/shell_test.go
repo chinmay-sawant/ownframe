@@ -38,6 +38,20 @@ func TestShellRefreshesFrameWhileWatching(t *testing.T) {
 	}
 }
 
+func TestShellIncludesInteractiveScript(t *testing.T) {
+	t.Parallel()
+
+	shell := renderShell(t, shellData{Width: 100, Height: 50, Generation: 7})
+	for _, want := range []string{`id="frame"`, `usemap="#screen"`, "/state", "/key", "/wheel", "/click", "/type"} {
+		if !strings.Contains(shell, want) {
+			t.Fatalf("shell is missing %q:\n%s", want, shell)
+		}
+	}
+	if strings.Contains(shell, "window.location.reload") {
+		t.Fatalf("shell reloads the whole page:\n%s", shell)
+	}
+}
+
 func TestReloadNotePrintsOncePerDistinctError(t *testing.T) {
 	t.Parallel()
 

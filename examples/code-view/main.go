@@ -1,7 +1,7 @@
 //go:build !js
 
 // Command code-view opens the Code Review example.
-// Pass -web to serve the static picture in a browser instead.
+// Pass -web to serve the interactive picture in a browser instead.
 package main
 
 import (
@@ -16,18 +16,30 @@ func main() {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8145", "listen address for -web")
 	root := flag.String("root", ".", "directory to browse; defaults to the current directory")
+	files := flag.Int("files", maxWorkspaceFiles, "maximum files to scan; raise it for a large repository")
 	dev := flag.Bool("dev", true, "open the developer tools dock at startup")
 	perf := flag.Bool("perf", true, "enable pipeline sampling for the devtools Frame tab")
 	flag.Parse()
 
-	app, err := New(*root)
+	app, err := NewWithLimit(*root, *files)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	app.EnableSession()
+
+	devSet := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "dev" {
+			devSet = true
+		}
+	})
+
 	ctx := context.Background()
 	app.reloadChanges(ctx, false)
-	app.SetDevTools(*dev)
+	if devSet || !app.sessionRestored {
+		app.SetDevTools(*dev)
+	}
 
 	if *perf {
 		app.Page().Window().SetPerf(true)

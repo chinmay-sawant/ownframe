@@ -2,10 +2,10 @@
 
 Goal: reach a file or a line without the pointer.
 
-Status: partly landed. Quick open, five default suggestions, path filtering,
-the keyboard path, and in-file find are in `examples/code-view`. Fuzzy ranking,
-content search, symbol search, filter history, and the full keyboard sweep are
-open.
+Status: mostly landed. Quick open, five default suggestions, path filtering,
+the keyboard path, in-file find, workspace content search, and the modal focus
+trap are in `examples/code-view`. Fuzzy ranking, symbol search, filter history,
+and a fuzzy total count are open.
 
 ## Design
 
@@ -30,6 +30,10 @@ open.
       Evidence: `TestQuickOpenPalette`.
 - [x] Focus the palette input and handle arrows, Enter, Escape, and a backdrop
       click. Evidence: `TestQuickOpenPalette`.
+- [x] Add workspace content search with `Ctrl+Shift+F`, a case toggle, a
+      bounded result list, and jump-to-line. Evidence: `search_ops.go`,
+      `workspace_search.go`, `TestFeatureWorkspaceSearch`,
+      `TestWorkspaceSearchFindsAcrossFiles`.
 - [ ] Add fuzzy ranking with a total match count.
 - [x] Add the in-file find bar with match offsets. Evidence:
       `TestFindInFile`, `find.go`.
@@ -38,8 +42,11 @@ open.
 - [ ] Add filter history.
 - [x] Restore the previous focus after Escape. Evidence: `find.go`,
       `closePalette`.
-- [ ] Add tests for a keyboard-only open, a keyboard-only close, and a find
-      match that scrolls.
+- [x] Trap focus inside the palette, content search, and branch picker with
+      `tabindex="-1"` on background controls. Evidence:
+      `TestFeatureModalFocusTrap`, `TestAccessibilityPaletteDialog`.
+- [x] Add tests for a keyboard-only open, a keyboard-only close, and a find
+      match that scrolls. Evidence: `TestFindInFile`, `TestKeyboard`.
 
 ## Gate
 

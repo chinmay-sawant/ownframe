@@ -1,8 +1,10 @@
 # Web mode
 
 `Serve` is a developer picture preview. It binds to loopback by default, has
-no tick and no audio, and mutates page state without authentication. It is
-not a 1.0 ship target. Native hosts are in [platforms.md](platforms.md).
+no audio, and mutates page state without authentication. It ticks a page that
+registers a tick callback, forwards browser keys, wheel events, and clicks, and
+refreshes the image when the page reports damage. It is not a 1.0 ship target.
+Native hosts are in [platforms.md](platforms.md).
 
 ## Starting it
 
@@ -26,15 +28,18 @@ field, and a reset button on one page.
 
 | Route | What it does |
 |-------|--------------|
-| `GET /` | Returns the shell HTML: the frame image with a usemap, a text form, and a backspace form. `Cache-Control: no-store`. |
+| `GET /` | Returns the interactive shell HTML: the frame image with a usemap, the key/wheel/click script, and no-JS text and backspace forms. `Cache-Control: no-store`. |
 | `GET /frame.png` | Returns the PNG with `Cache-Control: no-store`, or 404 `no frame` when the page has no picture. |
+| `GET /state` | Returns JSON `{generation,width,height,ticking}` with `Cache-Control: no-store`. The shell polls it and swaps the frame only when the generation or frame counter changes. It exposes no boxes or field text. |
 | `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{InsecureAllowDebugState: true}`; plain `Serve` returns 404. |
 | `POST /click` | Reads the query or form floats `x` and `y` in CSS pixels and places the caret at the point before the click handler runs. Requires a matching `Origin` (scheme and host); a missing `Origin` is rejected. 400 `bad coordinates` when either fails to parse, 403 `forbidden` on origin mismatch, 303 to `/` on success, generic 500 when the page returns an error. Query parameters are bounded. |
 | `POST /type` | Reads the urlencoded form field `text`. Requires a matching `Origin`. 400 `bad form` when the body does not parse, 303 to `/`, or generic 500. |
 | `POST /backspace` | Deletes one character in the focused text control. Requires a matching `Origin`. 303 to `/`, or generic 500. |
+| `POST /key` | Reads `key` and `down` (`1` or `0`), plus optional `shift=1` for Tab. Special names only: arrows, page keys, Home, End, Enter, Escape, Space, Tab, Backspace, Delete, and modifiers. Tab calls `host.Focuser`; other names reach `KeyDown`/`KeyUp`. 400 `bad key` or `bad down`, 403 on origin mismatch, 204 on success. |
+| `POST /wheel` | Reads finite `x`, `y`, `dx`, `dy` floats and calls `host.WheelHandler.Wheel`. 400 `bad wheel`, 403 on origin mismatch, 204 on success. |
 
-One mutex serializes the handlers, so two requests never touch the page at
-once.
+One mutex serializes the handlers and the tick loop, so two requests never
+touch the page at once.
 
 ## The image map
 
@@ -57,25 +62,27 @@ stored template source and caches the bytes until the next `Redraw`
 ([screen.md](screen.md)). The shell page states that the screen is the image,
 not the HTML around it.
 
-## Hot reload
+## Hot reload and ticks
 
 A file-backed page is polled before `GET /` and `GET /frame.png`, under the
 same mutex, so an edit to the template or the theme shows on the next request.
-While `Page.Window().Watching()` is true the shell page carries a small script that
-reloads the frame image every 250 ms, the same interval the window uses. A
-string page has no watch, so the shell emits no script.
+While `Page.Window().Watching()` is true the shell page polls `/state` and swaps
+the frame image when the generation changes. A string page has no watch, so the
+shell still polls `/state` and only swaps when the page redraws.
 [hot-reload.md](hot-reload.md) has the config fields, the parse-error
 behavior, and what survives a reload.
 
+When the screen implements `host.Ticker`, `Serve` starts a loop at about 60 Hz.
+It locks the same mutex, calls `Tick`, and redraws only when the page reports
+dirty state or the generation changes. Cancel the context to stop it.
+
 ## What it drops
 
-`Serve` has no window loop:
+`Serve` is not the native window loop:
 
-- No tick ([frames.md](frames.md)).
-- No key events ([keys.md](keys.md)).
-- No clipboard, undo, redo, select-all, delete-word, or submit route. The
-  only text input routes are `/type` and `/backspace`.
 - No audio context ([features.md](features.md), [window.md](window.md)).
+- No clipboard, undo, redo, select-all, delete-word, or submit route. The
+  only text routes are `/type`, `/backspace`, and the special keys in `/key`.
 - No file dialog, so a file input keeps the typed name ([forms.md](forms.md)).
 - No dropped files. `Serve` is not the Ebiten loop, so it never reads `ebiten.DroppedFiles` ([drag-drop.md](drag-drop.md)).
 - No crash-report file. A handler panic becomes HTTP 500
@@ -93,9 +100,10 @@ not the layout inside it.
 `Serve` is a developer preview. It assumes the browser peer is the same user on
 the same machine. It returns the rendered page plus its boxes and dimensions,
 mutates page state from clicks and typed input, and runs any app handler reached
-by `/click`. It has no authentication, sessions, or TLS. Mutating routes
-(`/click`, `/type`, `/backspace`) require a matching `Origin` header (scheme
-and host); a missing `Origin` fails closed there, while safe `GET`s allow it.
+by `/click`, `/key`, or `/wheel`. It has no authentication, sessions, or TLS.
+Mutating routes (`/click`, `/type`, `/backspace`, `/key`, `/wheel`) require a
+matching `Origin` header (scheme and host); a missing `Origin` fails closed
+there, while safe `GET`s allow it.
 `/click` bounds its query parameters, the server caps header bytes at 64 KiB,
 handler failures return a generic `500 internal server error` with the detail
 logged server-side sanitized, and `/debug/state` sanitizes reload errors before
@@ -109,7 +117,7 @@ Recommended protections:
   reverse proxy or equivalent) before exposure; `Serve` cannot establish or
   validate a session on its own.
 - Do not expose plain `Serve` on a shared network. Treat `/click`, `/type`,
-  `/backspace`, and `/debug/state` as privileged.
+  `/backspace`, `/key`, `/wheel`, and `/debug/state` as privileged.
 - `GET /debug/state` is registered only with `ServeOptions{InsecureAllowDebugState: true}`. It returns box text, coordinates, and operation
   counts. Reduce or gate it before exposing a preview. Keep both off in
   shipped binaries unless debugging or profiling is needed;

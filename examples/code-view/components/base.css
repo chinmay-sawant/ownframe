@@ -64,6 +64,11 @@ button:focus, input:focus {
   outline-offset: -2px;
 }
 
+button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .void { display: block; height: 0; }
 .scroll-space { display: block; width: 1px; }
 
@@ -160,3 +165,16 @@ button:focus, input:focus {
 .st-d { background: var(--red-bg); color: var(--red); }
 .st-u { background: var(--accent-soft); color: var(--accent); }
 .st-r { background: rgba(192, 132, 252, 0.13); color: var(--purple); }
+
+/* Motion ------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .app .toast, .app .toast.on {
+    transition: none;
+    transform: none;
+  }
+
+  .details { transition: none; }
+  /* The closed drawer keeps its off-screen transform; only the slide is cut. */
+  .with-details .details { transition: none; transform: none; }
+}

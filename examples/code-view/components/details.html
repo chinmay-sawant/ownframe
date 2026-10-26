@@ -1,7 +1,7 @@
-{{if .Details}}<aside class="details" id="details-panel" aria-label="Details">
+{{if .Details}}<aside class="details" id="details-panel" role="region" aria-label="Details">
   <header class="det-head">
     <span class="det-kicker">Details</span>
-    <button class="det-x" id="det-close" data-action="details-close" type="button" title="Close details" aria-label="Close details">×</button>
+    <button class="det-x" id="det-close" data-action="details-close" type="button" title="Close details" aria-label="Close details"{{if .Modal}} tabindex="-1"{{end}}>×</button>
   </header>
 
   {{if .Active}}
@@ -23,7 +23,7 @@
 
   <div class="outline">
     {{range .Outline}}
-    <button class="orow" id="outline-{{.Line}}" data-action="outline:{{.Line}}" type="button" style="padding-left:calc(16px + {{.Depth}}px)" title="Line {{.No}}">
+    <button class="orow" id="outline-{{.Line}}" data-action="outline:{{.Line}}" type="button" style="padding-left:calc(16px + {{.Depth}}px)" title="Line {{.No}}" aria-label="Go to {{.Name}} on line {{.No}}"{{if $.Modal}} tabindex="-1"{{end}}>
       <span class="okind ok-{{.Kind}}">{{.Kind}}</span>
       <span class="oname">{{.Name}}</span>
       <span class="olno mono">{{.No}}</span>

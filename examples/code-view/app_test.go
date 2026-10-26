@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -560,6 +561,55 @@ func TestScreenshot(t *testing.T) {
 	writeShot(t, app, "details")
 
 	app.toggleDetails()
+
+	app.openFile("README.md")
+	app.toggleEdit()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "edit")
+	app.finishEdit()
+	app.toggleSplit()
+	app.openFileIn(1, "web/theme.css")
+	app.resetScroll()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "split-editor")
+	app.toggleSplit()
+
+	if err := app.openWorkspaceSearch(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	app.searchQuery = "Beacon"
+	app.runWorkspaceSearch(context.Background())
+
+	deadline := time.Now().Add(3 * time.Second)
+
+	for time.Now().Before(deadline) {
+		if err := app.tickWatch(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		if !app.View().Search.Busy {
+			break
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "search")
+	_ = app.closeWorkspaceSearch(context.Background())
+
 	app.scrollTo(1600)
 	app.Page().Scroll().SetScrollOffset(0, 1600)
 

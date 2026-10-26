@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -125,6 +126,161 @@ func TestDiskWorkspaceAndBinary(t *testing.T) {
 
 	if doc := ws.openDoc("main.go"); doc.Err != "" || len(doc.Lines) != 3 {
 		t.Fatalf("main.go = %+v", doc)
+	}
+}
+
+// writeScanFiles fills dir with count text files the scanner accepts.
+func writeScanFiles(t *testing.T, dir string, count int) {
+	t.Helper()
+
+	for i := range count {
+		name := fmt.Sprintf("file%02d.txt", i)
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("package main\n"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestLoadDiskWorkspaceLimitTruncates(t *testing.T) {
+	t.Parallel()
+
+	for _, limit := range []int{1, 3} {
+		t.Run(fmt.Sprintf("limit%d", limit), func(t *testing.T) {
+			t.Parallel()
+
+			dir := t.TempDir()
+			writeScanFiles(t, dir, 5)
+
+			ws, err := loadDiskWorkspaceWithLimit(dir, limit)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(ws.Files) != limit {
+				t.Fatalf("files = %d, want %d", len(ws.Files), limit)
+			}
+
+			if !ws.Truncated {
+				t.Fatal("workspace not marked truncated")
+			}
+
+			if ws.Limit != limit {
+				t.Fatalf("limit = %d, want %d", ws.Limit, limit)
+			}
+
+			if want := fmt.Sprintf("%d files", limit); !strings.Contains(ws.TruncatedNote, want) {
+				t.Errorf("note %q does not contain %q", ws.TruncatedNote, want)
+			}
+
+			for _, word := range []string{"explorer", "quick open", "search", "raise the limit"} {
+				if !strings.Contains(ws.TruncatedNote, word) {
+					t.Errorf("note %q does not mention %q", ws.TruncatedNote, word)
+				}
+			}
+
+			budget := ws.ScanBudget()
+			if budget == "" || !strings.Contains(budget, fmt.Sprint(limit)) {
+				t.Errorf("scan budget = %q, want the %d-file budget", budget, limit)
+			}
+
+			if ws.ScanMillis < 0 {
+				t.Errorf("scan millis = %d", ws.ScanMillis)
+			}
+		})
+	}
+}
+
+func TestLoadDiskWorkspaceExactLimitNotTruncated(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	writeScanFiles(t, dir, 3)
+
+	ws, err := loadDiskWorkspaceWithLimit(dir, 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ws.Files) != 3 {
+		t.Fatalf("files = %d, want 3", len(ws.Files))
+	}
+
+	if ws.Truncated {
+		t.Fatal("exact-limit scan marked truncated")
+	}
+
+	if ws.Limit != 3 {
+		t.Fatalf("limit = %d, want 3", ws.Limit)
+	}
+
+	if ws.TruncatedNote != "" {
+		t.Fatalf("note = %q, want empty", ws.TruncatedNote)
+	}
+
+	if budget := ws.ScanBudget(); budget != "" {
+		t.Fatalf("scan budget = %q, want empty", budget)
+	}
+}
+
+func TestLoadDiskWorkspaceDefaultLimitNoTruncation(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	writeScanFiles(t, dir, 5)
+
+	ws, err := loadDiskWorkspace(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(ws.Files) != 5 || ws.Truncated {
+		t.Fatalf("files = %d truncated = %v", len(ws.Files), ws.Truncated)
+	}
+
+	if ws.Limit != maxWorkspaceFiles {
+		t.Fatalf("limit = %d, want %d", ws.Limit, maxWorkspaceFiles)
+	}
+
+	if ws.TruncatedNote != "" || ws.ScanBudget() != "" {
+		t.Fatalf("note = %q budget = %q", ws.TruncatedNote, ws.ScanBudget())
+	}
+
+	zero, err := loadDiskWorkspaceWithLimit(dir, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if zero.Limit != maxWorkspaceFiles || zero.Truncated || len(zero.Files) != 5 {
+		t.Fatalf("zero limit = %d files = %d truncated = %v", zero.Limit, len(zero.Files), zero.Truncated)
+	}
+}
+
+func TestSampleWorkspaceBudgetEmpty(t *testing.T) {
+	t.Parallel()
+
+	ws, err := loadSampleWorkspace()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ws.Truncated {
+		t.Fatal("sample workspace marked truncated")
+	}
+
+	if ws.TruncatedNote != "" {
+		t.Fatalf("sample note = %q, want empty", ws.TruncatedNote)
+	}
+
+	if budget := ws.ScanBudget(); budget != "" {
+		t.Fatalf("sample budget = %q, want empty", budget)
+	}
+
+	if ws.Limit != 0 && ws.Limit != maxWorkspaceFiles {
+		t.Fatalf("sample limit = %d", ws.Limit)
+	}
+
+	if ws.ScanMillis < 0 {
+		t.Fatalf("sample scan millis = %d", ws.ScanMillis)
 	}
 }
 

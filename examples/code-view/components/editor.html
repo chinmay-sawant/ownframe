@@ -1,29 +1,32 @@
 <main class="void" id="void"><div class="scroll-space" style="height:{{.SpaceHeight}}px"></div></main>
 
-<section class="editor" id="editor-window">
+<section class="editor{{if .Split}} split{{end}}{{if eq .FocusGroup 0}} focus{{end}}" id="editor-window" style="left:{{.PaneLeft}}px;width:{{.PaneWidth}}px">
   <div class="tabstrip" id="tabstrip">
     <div class="tabs">
       {{if eq .Mode "changes"}}
       <div class="tab on diff-tab">
-        <button class="tab-main" id="tab-working" data-action="history-working" type="button" title="{{if .Diff.CommitShort}}{{.Diff.CommitSubject}}{{else}}Working tree{{end}}">
+        <button class="tab-main" id="tab-working" data-action="history-working" type="button" title="{{if .Diff.CommitShort}}{{.Diff.CommitSubject}}{{else}}Working tree{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
           <svg width="12" height="13" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
           <span class="tab-name">{{if .Diff.CommitShort}}{{.Diff.CommitShort}}{{else}}Working tree{{end}}</span>
         </button>
-        <button class="tab-x" id="tab-close-working" data-action="tab-close-working" type="button" title="Close Working tree" aria-label="Close Working tree">×</button>
+        <button class="tab-x" id="tab-close-working" data-action="tab-close-working" type="button" title="Close Working tree" aria-label="Close Working tree"{{if .Modal}} tabindex="-1"{{end}}>×</button>
       </div>
       {{end}}
       {{range $i, $t := .Tabs}}
       <div class="tab{{if $t.Active}} on{{end}}">
-        <button class="tab-main" id="tab-{{$i}}" data-action="tab:{{$i}}" type="button" title="{{$t.Path}}">
+        <button class="tab-main" id="tab-{{$i}}" data-action="tab:{{$i}}" type="button" title="{{$t.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
           <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
           <span class="tab-name">{{$t.Name}}</span>
           <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
         </button>
-        <button class="tab-x" id="tab-close-{{$i}}" data-action="tab-close:{{$i}}" type="button" title="Close" aria-label="Close {{$t.Name}}">×</button>
+        <button class="tab-x" id="tab-close-{{$i}}" data-action="tab-close:{{$i}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}"{{if $.Modal}} tabindex="-1"{{end}}>×</button>
       </div>
       {{end}}
     </div>
-    <button class="tab-tool{{if .Details}} on{{end}}" id="tab-details" data-action="details-toggle" type="button" title="Details" aria-label="Details {{if .Details}}open{{else}}closed{{end}}">
+    <button class="tab-tool{{if .Split}} on{{end}}" id="split-toggle" data-action="split-toggle" type="button" title="Split editor (Ctrl+\)" aria-label="Split editor {{if .Split}}on{{else}}off{{end}}" aria-pressed="{{if .Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.4"><rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M8 2.4v11.2"/></svg>
+    </button>
+    <button class="tab-tool{{if .Details}} on{{end}}" id="tab-details" data-action="details-toggle" type="button" title="Details" aria-label="Details {{if .Details}}open{{else}}closed{{end}}" aria-pressed="{{if .Details}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.4">
         <rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M10 2.4v11.2"/>
       </svg>
@@ -39,40 +42,51 @@
       <span class="crumb-path">{{if .Diff.Dir}}{{.Diff.Dir}}/{{end}}<b>{{.Diff.Name}}</b></span>
       <span class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
       <div class="seg">
-        <button class="seg-btn{{if not .Diff.Split}} on{{end}}" id="seg-unified" data-action="diff-unified" type="button">Unified</button>
-        <button class="seg-btn{{if .Diff.Split}} on{{end}}" id="seg-split" data-action="diff-split" type="button">Split</button>
+        <button class="seg-btn{{if not .Diff.Split}} on{{end}}" id="seg-unified" data-action="diff-unified" type="button" aria-pressed="{{if .Diff.Split}}false{{else}}true{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Unified</button>
+        <button class="seg-btn{{if .Diff.Split}} on{{end}}" id="seg-split" data-action="diff-split" type="button" aria-pressed="{{if .Diff.Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Split</button>
       </div>
-      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk" aria-label="Previous hunk">↑</button>
-      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk" aria-label="Next hunk">↓</button>
-      <button class="crumb-btn" id="crumb-refresh" data-action="diff-refresh" type="button">Refresh</button>
+      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk" aria-label="Previous hunk"{{if .Modal}} tabindex="-1"{{end}}>↑</button>
+      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk" aria-label="Next hunk"{{if .Modal}} tabindex="-1"{{end}}>↓</button>
+      <button class="crumb-btn{{if .Wrap}} on{{end}}" id="diff-wrap-toggle" data-action="wrap-toggle" type="button" title="Wrap long diff lines (Z)" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
+      <button class="crumb-btn" id="crumb-refresh" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Refresh</button>
       <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.Diff.Hunks}} hunks</span>
       {{else}}
       <span class="crumb-path">Source control</span>
       <span class="tabs-fill"></span>
-      <button class="crumb-btn" id="empty-refresh" data-action="diff-refresh" type="button">Refresh</button>
+      <button class="crumb-btn" id="empty-refresh" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Refresh</button>
       {{end}}
     {{else if .Active}}
       <span class="cstat {{.StatusClass}}">{{.Status}}</span>
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
       <span class="crumb-path">{{if .ActiveDir}}{{.ActiveDir}}/{{end}}<b>{{.ActiveName}}</b></span>
-      {{if .FindOpen}}
+      {{if .Editing}}
+      <span class="edit-flag">{{if .EditDirty}}unsaved{{else}}saved{{end}}</span>
+      <button class="crumb-btn on" id="edit-save" data-action="edit-save" type="button" title="Save (Ctrl+S)">Save</button>
+      <button class="crumb-btn" id="edit-toggle" data-action="edit-toggle" type="button" title="Back to the source view (Esc)">Done</button>
+      <span class="tabs-fill"></span>
+      <span class="crumb-meta">{{.LineCount}} lines · Ctrl+S saves</span>
+      {{else if .FindOpen}}
       <div class="findbar" id="findbar">
-        <input id="find" class="find-input" type="text" data-bind="FindQuery" placeholder="Find in file" autocomplete="off" spellcheck="false">
-        <span class="find-count mono" id="find-count">{{.FindCurrent}}/{{.FindTotal}}</span>
-        <button class="find-btn{{if .FindCase}} on{{end}}" id="find-case" data-action="find-case" type="button" title="Match case">Aa</button>
-        <button class="find-btn" id="find-prev" data-action="find-prev" type="button" title="Previous match">↑</button>
-        <button class="find-btn" id="find-next" data-action="find-next" type="button" title="Next match">↓</button>
-        <button class="find-btn" id="find-close" data-action="find-close" type="button" title="Close find">×</button>
+        <input id="find" class="find-input" type="text" data-bind="FindQuery" placeholder="Find in file" autocomplete="off" spellcheck="false" aria-label="Find in file"{{if .Modal}} tabindex="-1"{{end}}>
+        <span class="find-count mono" id="find-count" aria-live="polite" aria-atomic="true">{{.FindCurrent}}/{{.FindTotal}}</span>
+        <button class="find-btn{{if .FindCase}} on{{end}}" id="find-case" data-action="find-case" type="button" title="Match case" aria-label="Match case" aria-pressed="{{if .FindCase}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Aa</button>
+        <button class="find-btn" id="find-prev" data-action="find-prev" type="button" title="Previous match" aria-label="Previous match"{{if .Modal}} tabindex="-1"{{end}}>↑</button>
+        <button class="find-btn" id="find-next" data-action="find-next" type="button" title="Next match" aria-label="Next match"{{if .Modal}} tabindex="-1"{{end}}>↓</button>
+        <button class="find-btn" id="find-close" data-action="find-close" type="button" title="Close find" aria-label="Close find"{{if .Modal}} tabindex="-1"{{end}}>×</button>
       </div>
       {{else}}
-      {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)">{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
-      <button class="crumb-btn{{if .Wrap}} on{{end}}" id="wrap-toggle" data-action="wrap-toggle" type="button" title="Soft wrap (Z)" aria-label="Soft wrap {{if .Wrap}}on{{else}}off{{end}}">Wrap</button>
-      <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button">Copy path</button>
-      <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button">Copy file</button>
+      {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)" aria-pressed="{{if .Preview}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
+      {{if .CanEdit}}<button class="crumb-btn" id="edit-toggle" data-action="edit-toggle" type="button" title="Edit this file (Ctrl+E)"{{if .Modal}} tabindex="-1"{{end}}>Edit</button>{{end}}
+      <button class="crumb-btn{{if .Wrap}} on{{end}}" id="wrap-toggle" data-action="wrap-toggle" type="button" title="Soft wrap (Z)" aria-label="Soft wrap {{if .Wrap}}on{{else}}off{{end}}" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
+      <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy path</button>
+      <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy file</button>
       <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.LineCount}} lines · {{.ByteSize}}</span>
       {{end}}
+    {{else if .Split}}
+      <span class="crumb-path">Second editor group</span>
+      <span class="tabs-fill"></span>
     {{end}}
   </div>
 
@@ -82,21 +96,21 @@
       <div class="track{{if .Diff.Split}} split-track{{end}}" style="top:{{.Diff.TrackTop}}px">
         {{range .Diff.Rows}}
           {{if eq .Kind "hunk"}}
-          <div class="drow hunk"><span class="dhunk">{{.Hunk}}</span></div>
+          <div class="drow hunk{{if .Cont}} cont{{end}}"><span class="dhunk">{{.Hunk}}</span></div>
           {{else if eq .Kind "meta"}}
-          <div class="drow meta"><span class="dmeta">{{.Hunk}}</span></div>
+          <div class="drow meta{{if .Cont}} cont{{end}}"><span class="dmeta">{{.Hunk}}</span></div>
           {{else if eq .Kind "split"}}
-          <div class="drow split">
+          <div class="drow split{{if or .LeftCont .RightCont}} cont{{end}}">
             <span class="dnum {{.LeftKind}}">{{.LeftNo}}</span>
             <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
             <span class="dnum {{.RightKind}}">{{.RightNo}}</span>
             <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext">{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
           </div>
           {{else}}
-          <div class="drow {{.Kind}}">
+          <div class="drow {{.Kind}}{{if .Cont}} cont{{end}}">
             <span class="dnum">{{.OldNo}}</span>
             <span class="dnum">{{.NewNo}}</span>
-            <span class="dsign">{{if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
+            <span class="dsign">{{if .Cont}}{{else if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
             <span class="dcell"><span class="dlinetext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
           </div>
           {{end}}
@@ -107,7 +121,7 @@
         <span class="empty-mark ok">✅</span>
         <h2>{{if .Diff.EmptyTitle}}{{.Diff.EmptyTitle}}{{else}}Working tree clean{{end}}</h2>
         <p>{{.Diff.Note}}</p>
-        <button class="button" id="empty-check" data-action="diff-refresh" type="button">Check again</button>
+        <button class="button" id="empty-check" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Check again</button>
       </div>
       {{end}}
     {{else if .Welcome}}
@@ -124,7 +138,7 @@
 
           <div class="quick">
             {{range .Recent}}
-            <button class="quick-row" id="quick-{{.Path}}" data-action="open:{{.Path}}" type="button">
+            <button class="quick-row" id="quick-{{.Path}}" data-action="open:{{.Path}}" type="button"{{if $.Modal}} tabindex="-1"{{end}}>
               <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
               <span class="quick-text"><b>{{.Name}}</b><span>{{.Dir}}</span></span>
               <span class="quick-go">↵</span>
@@ -148,7 +162,12 @@
         <span class="empty-mark{{if eq .EmptyKind "error"}} warn{{end}}">{{if eq .EmptyKind "error"}}⚠️{{else}}·{{end}}</span>
         <h2>{{.EmptyTitle}}</h2>
         <p>{{.EmptyBody}}</p>
-        <button class="button" id="empty-explorer" data-action="mode-explorer" type="button">Back to the explorer</button>
+        <button class="button" id="empty-explorer" data-action="mode-explorer" type="button"{{if .Modal}} tabindex="-1"{{end}}>Back to the explorer</button>
+      </div>
+    {{else if .Editing}}
+      <div class="edit-wrap">
+        <textarea id="editor" class="edit-area" data-bind="EditText" spellcheck="false" autocomplete="off" aria-label="Edit {{.Active}}"></textarea>
+        <div class="edit-hint" id="edit-hint">{{if .EditDirty}}Unsaved changes — Ctrl+S saves, Esc returns to the source view.{{else}}Ctrl+S saves, Esc returns to the source view.{{end}}</div>
       </div>
     {{else if .Preview}}
       <div class="preview" id="markdown-preview">
@@ -173,3 +192,76 @@
     {{end}}
   </div>
 </section>
+
+{{if .Split}}
+<section class="editor editor-second{{if eq .FocusGroup 1}} focus{{end}}" id="editor-window-2" style="left:{{.Second.Left}}px;width:{{.Second.Width}}px">
+  <div class="tabstrip" id="tabstrip-2">
+    <div class="tabs">
+      {{range $i, $t := .Second.Tabs}}
+      <div class="tab{{if $t.Active}} on{{end}}">
+        <button class="tab-main" id="tab2-{{$i}}" data-action="tab2:{{$i}}" type="button" title="{{$t.Path}}">
+          <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
+          <span class="tab-name">{{$t.Name}}</span>
+          <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
+        </button>
+        <button class="tab-x" id="tab2-close-{{$i}}" data-action="tab2-close:{{$i}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}">×</button>
+      </div>
+      {{end}}
+    </div>
+    <button class="tab-tool" id="pane-left" data-action="focus-group:0" type="button" title="Focus the left editor" aria-label="Focus the left editor">L</button>
+    <button class="tab-tool on" id="split-close" data-action="split-toggle" type="button" title="Close the split editor" aria-label="Close the split editor">▥</button>
+    <span class="tabs-fill"></span>
+  </div>
+
+  <div class="crumbs" id="crumbs-2">
+    {{if .Second.Active}}
+    <span class="cstat {{.Second.StatusClass}}">{{.Second.Status}}</span>
+    <span class="lang-pill lang-{{.Second.Lang}}">{{.Second.LangLabel}}</span>
+    <span class="crumb-path">{{if .Second.ActiveDir}}{{.Second.ActiveDir}}/{{end}}<b>{{.Second.ActiveName}}</b></span>
+    <span class="tabs-fill"></span>
+    <span class="crumb-meta">{{.Second.LineCount}} lines · {{.Second.ByteSize}}</span>
+    {{else}}
+    <span class="crumb-path">Second editor group</span>
+    <span class="tabs-fill"></span>
+    <span class="crumb-meta">Open a file from the explorer</span>
+    {{end}}
+  </div>
+
+  <div class="code-body" id="code-body-2">
+    {{if .Second.Welcome}}
+      <div class="welcome">
+        <div class="welcome-card">
+          <h1>Second group</h1>
+          <p>Open a file from the explorer or click a tab in this pane.</p>
+        </div>
+      </div>
+    {{else if .Second.Empty}}
+      <div class="empty">
+        <span class="empty-mark{{if eq .Second.EmptyKind "error"}} warn{{end}}">{{if eq .Second.EmptyKind "error"}}⚠️{{else}}·{{end}}</span>
+        <h2>{{.Second.EmptyTitle}}</h2>
+        <p>{{.Second.EmptyBody}}</p>
+      </div>
+    {{else if .Second.Preview}}
+      <div class="preview" id="markdown-preview-2">
+        <div class="preview-track" style="top:{{.Second.TrackTop}}px">
+          {{range .Second.PreviewRows}}
+          <div class="prow prow-{{.Kind}}">
+            <span class="pmark">{{.Marker}}</span>
+            <span class="ptext"><span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    {{else}}
+      <div class="track" style="top:{{.Second.TrackTop}}px">
+        {{range .Second.Rows}}
+        <div class="crow">
+          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+        </div>
+        {{end}}
+      </div>
+    {{end}}
+  </div>
+</section>
+{{end}}

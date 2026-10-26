@@ -2,7 +2,10 @@
 
 Goal: keep the tree, the open file, and the diff current without a restart.
 
-Status: planned.
+Status: mostly landed. The watcher rescans files and git metadata, the tree
+keeps expansion, the scan budget is visible, recent files and layout persist,
+and open documents reload unless they have unsaved edits. A slow git-status
+poll is not needed because `.git/index` and ref changes are watched directly.
 
 ## Design
 
@@ -27,13 +30,21 @@ Status: planned.
       `TestWatcherUpdatesWorkingTree`.
 - [x] Scroll the explorer with the wheel. Evidence: `onWheel`,
       `TestTreeWheelAfterPageScroll`.
-- [ ] Rescan and preserve expansion, tab, and selection.
-- [ ] Poll `git status` and update the changed count.
+- [x] Rescan and preserve expansion, tab, and selection. Evidence:
+      `TestWatcherRescanAddsAndRemovesFiles`, `rescan.go`.
+- [x] Follow `.git/HEAD`, refs, and the index so an external commit or branch
+      switch updates history. Evidence:
+      `TestWatcherSeesExternalBranchChange`, `isGitMetadataChange`.
 - [x] Window the explorer tree. Evidence: `TestTreeExpandedFolderScrolls`.
-- [ ] Persist recent files.
-- [ ] Enforce the scan budget with a visible message.
-- [ ] Reload the active file on disk change.
-- [ ] Add tests for add, change, remove, and a preserved selection.
+- [x] Persist recent files, tabs, and layout. Evidence: `session.go`,
+      `TestFeatureSessionRestoresLayout`.
+- [x] Enforce the scan budget with a visible message and `-files` control.
+      Evidence: `TestFeatureScanBudget`, `TestLoadDiskWorkspaceLimitTruncates`.
+- [x] Reload the active file on disk change, but keep unsaved edits.
+      Evidence: `applyWatchChanges`, `installRescan`.
+- [x] Add tests for add, change, remove, and a preserved selection. Evidence:
+      `TestWatcherRescanAddsAndRemovesFiles`,
+      `TestApplyWatchChangesPreservesSelection`.
 
 ## Gate
 

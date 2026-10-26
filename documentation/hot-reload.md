@@ -31,10 +31,10 @@ a different hash parses. `internal/window` runs the poll after `tickFrame`
 and before `syncImage`, so the existing generation sync picks up the new
 picture.
 
-`Serve` has no frame loop. It polls before answering `GET /` and
-`GET /frame.png`, under the same mutex as the other routes, so the next
-request sees an edit. While a watch is active the shell page reloads
-`/frame.png` every 250 ms in the browser. A string page emits no script.
+`Serve` polls before answering `GET /`, `GET /frame.png`, and `GET /state`,
+under the same mutex as the other routes, so the next poll sees an edit. The
+shell polls `/state` and swaps `/frame.png` when the generation changes. A
+string page still polls `/state` and only swaps on a redraw.
 
 ## Parse errors
 

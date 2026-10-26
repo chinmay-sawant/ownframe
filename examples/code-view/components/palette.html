@@ -1,17 +1,52 @@
-{{if .Palette.Open}}
-<div class="palette-layer" id="palette-layer">
-  <div class="palette-back" id="palette-back" data-action="palette-close"></div>
-  <div class="palette" id="palette-panel">
+{{if .Search.Open}}
+<div class="palette-layer" id="search-layer">
+  <div class="palette-back" id="search-back" data-action="search-close"></div>
+  <div class="palette search-panel" id="search-panel" role="dialog" aria-modal="true" aria-label="Search workspace">
     <div class="palette-search">
       <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke-width="1.5" stroke-linecap="round">
         <circle cx="6" cy="6" r="4.1"/><path d="m9.2 9.2 3 3"/>
       </svg>
-      <input id="palette" class="palette-input" type="text" data-bind="PaletteQuery" placeholder="Search files by name" autocomplete="off" spellcheck="false">
+      <input id="workspace-search" class="palette-input" type="text" data-bind="SearchQuery" placeholder="Search workspace contents" autocomplete="off" spellcheck="false" aria-label="Search workspace contents">
+      <button class="palette-close" id="search-case" data-action="search-case" type="button" title="Match case" aria-label="Match case" aria-pressed="{{if .Search.Case}}true{{else}}false{{end}}">Aa</button>
+      <button class="palette-close" id="search-close" data-action="search-close" type="button" title="Close search" aria-label="Close search">×</button>
+    </div>
+    <div class="search-meta">
+      <span>{{.Search.Files}} files · {{len .Search.Rows}} shown</span>
+      {{if .Search.Busy}}<span class="search-busy">searching…</span>{{else if .Search.Truncated}}<span class="search-more">more results hidden</span>{{end}}
+      {{if .Search.Note}}<span class="search-note">{{.Search.Note}}</span>{{end}}
+    </div>
+    <div class="palette-list search-list">
+      {{range .Search.Rows}}
+      <button class="palette-row search-row{{if .Selected}} on{{end}}" id="search-hit-{{.Index}}" data-action="search-hit:{{.Index}}" type="button" title="{{.Path}}:{{.Line}}">
+        <span class="search-loc mono">{{.Line}}:{{.Col}}</span>
+        <span class="palette-text search-text">
+          <b>{{.Name}} <span class="search-dir">{{.Dir}}</span></b>
+          <span class="search-line"><span class="search-before">{{.Before}}</span><span class="search-match">{{.Match}}</span><span class="search-after">{{.After}}</span></span>
+        </span>
+      </button>
+      {{else}}
+      <div class="palette-empty">{{if .Search.Busy}}Searching the workspace…{{else if .Search.Query}}No content matches this search.{{else}}Type to search every text file in the workspace.{{end}}</div>
+      {{end}}
+    </div>
+    <div class="palette-foot"><span>↑↓ choose · Enter open · Esc close</span><span>Ctrl+Shift+F</span></div>
+  </div>
+</div>
+{{end}}
+
+{{if .Palette.Open}}
+<div class="palette-layer" id="palette-layer">
+  <div class="palette-back" id="palette-back" data-action="palette-close" aria-hidden="true"></div>
+  <div class="palette" id="palette-panel" role="dialog" aria-modal="true" aria-label="Quick open">
+    <div class="palette-search">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="6" cy="6" r="4.1"/><path d="m9.2 9.2 3 3"/>
+      </svg>
+      <input id="palette" class="palette-input" type="text" data-bind="PaletteQuery" placeholder="Search files by name" autocomplete="off" spellcheck="false" aria-label="Search files">
       <button class="palette-close" id="palette-close" data-action="palette-close" type="button" title="Close search" aria-label="Close search">×</button>
     </div>
-    <div class="palette-list">
+    <div class="palette-list" role="group" aria-label="Quick open results">
       {{range .Palette.Rows}}
-      <button class="palette-row{{if .Active}} on{{end}}" id="palette-{{.Path}}" data-action="open:{{.Path}}" type="button">
+      <button class="palette-row{{if .Active}} on{{end}}" id="palette-{{.Path}}" data-action="open:{{.Path}}" type="button" aria-label="Open {{.Path}}">
         <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
         <span class="palette-text"><b>{{.Name}}</b><span>{{.Dir}}</span></span>
         <span class="palette-go">↵</span>

@@ -54,6 +54,11 @@ const (
 	historyMinRatio      = 0.18
 	historyMaxRatio      = 0.82
 	historyDefaultRatio  = 0.55
+	defaultSplitRatio    = 0.5
+	branchLogLimit       = 16
+	branchPickerPad      = 96
+	branchPickerRowH     = 26
+	branchPickerMinRows  = 4
 	historyExpandedRows  = 3
 	historyAutoRows      = 8
 	historyAutoPad       = 4
@@ -106,6 +111,29 @@ type App struct {
 	active int
 	docs   map[string]*fileDoc
 
+	split      bool
+	focusGroup int
+	tabs2      []string
+	active2    int
+	splitRatio float64
+
+	editing bool
+	edit    *editBuffer
+	dirty   map[string]bool
+
+	searchOpen      bool
+	searchQuery     string
+	searchCase      bool
+	searchHits      []workspaceHit
+	searchIndex     int
+	searchReturn    string
+	searchNote      string
+	searchTruncated bool
+	searchToken     int
+	searchBusy      bool
+	searchResult    chan searchReply
+	searchCancel    context.CancelFunc
+
 	diffPath   string
 	diffSplit  bool
 	diffRows   []diffRow
@@ -126,6 +154,8 @@ type App struct {
 	commitRows    []diffRow
 	commitPreview []diffRow
 	commitPage    int
+	patchLoader   *commitPatchLoader
+	branchLogs    *branchLogCache
 
 	historyRatio  float64
 	historyManual bool
@@ -133,6 +163,7 @@ type App struct {
 	historyDrag   bool
 	historyDy     float64
 	hoverCommit   string
+	hoverPath     string
 
 	details bool
 	devOn   bool
@@ -162,12 +193,23 @@ type App struct {
 
 	watch        *fsnotify.Watcher
 	watchCancel  context.CancelFunc
-	watchChanges chan changeSet
+	watchUpdates chan watchUpdate
+	watchNote    string
+
+	sessionPath     string
+	sessionLast     string
+	sessionReady    bool
+	sessionRestored bool
+	scanLimit       int
 }
 
 // New scans the workspace, builds the page, and opens the README. An empty
 // root uses the embedded sample project.
-func New(root string) (*App, error) {
+func New(root string) (*App, error) { return NewWithLimit(root, 0) }
+
+// NewWithLimit is New with a file scan budget. A limit of zero or less uses
+// the default maxWorkspaceFiles.
+func NewWithLimit(root string, limit int) (*App, error) {
 	var (
 		ws  *workspace
 		err error
@@ -176,7 +218,7 @@ func New(root string) (*App, error) {
 	if root == "" {
 		ws, err = loadSampleWorkspace()
 	} else {
-		ws, err = loadDiskWorkspace(root)
+		ws, err = loadDiskWorkspaceWithLimit(root, limit)
 	}
 
 	if err != nil {
@@ -186,15 +228,20 @@ func New(root string) (*App, error) {
 	a := &App{
 		ws:            ws,
 		docs:          map[string]*fileDoc{},
+		dirty:         map[string]bool{},
 		folders:       map[string]bool{},
 		statuses:      map[string]string{},
 		commitDetails: map[string]*changedFile{},
 		mode:          "explorer",
 		diffSource:    "working",
 		historyRatio:  historyDefaultRatio,
+		splitRatio:    defaultSplitRatio,
 		viewportH:     defaultHeight,
 		devOn:         true,
 		wrap:          true,
+		branchLogs:    newBranchLogCache(branchLogLimit),
+		searchResult:  make(chan searchReply, 1),
+		scanLimit:     ws.Limit,
 	}
 
 	if ws.Sample {
@@ -226,6 +273,12 @@ func New(root string) (*App, error) {
 	}
 
 	a.page = page
+	if !ws.Sample {
+		// New has no caller context. The patch worker lives for the app and
+		// Close cancels its in-flight git read.
+		a.patchLoader = NewCommitPatchLoader(ws.Root, maxCommitPatchCache)
+	}
+
 	page.Handle(ownframe.Handlers{
 		Click:     a.onClick,
 		Change:    a.onChange,
@@ -240,6 +293,7 @@ func New(root string) (*App, error) {
 	})
 	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.onScroll)
+	page.SetTick(a.tickWatch)
 
 	a.openInitial()
 	a.refresh()
@@ -282,6 +336,7 @@ func (a *App) openInitial() {
 func (a *App) refresh() {
 	a.view = a.buildView()
 	a.page.SetData(&a.view)
+	a.persistSession()
 }
 
 // onScroll is the windowing callback. It slices the code or diff rows around
@@ -329,10 +384,15 @@ func (a *App) buildView() View {
 		Filter:      a.filter,
 		Details:     a.details,
 		DevOn:       a.devOn,
+		Modal:       a.paletteOpen || a.branchOpen || a.searchOpen,
 		Workspace:   baseName(a.ws.Root),
 		Branch:      a.changes.Branch,
 		Changed:     len(a.changes.Files),
 		DevNote:     a.changes.Note,
+		ScanBudget:  a.ws.ScanBudget(),
+		WatchNote:   a.watchNote,
+		HoverPath:   a.hoverPath,
+		Dirty:       a.dirtyCount(),
 		Toast:       a.toast,
 		Wrap:        a.wrap,
 		FindQuery:   a.findQuery,
@@ -341,6 +401,8 @@ func (a *App) buildView() View {
 		FindCurrent: a.findCurrent(),
 		FindTotal:   len(a.findHits),
 		BranchQuery: a.branchQuery,
+		Split:       a.split && a.mode == "explorer",
+		FocusGroup:  a.focusGroup,
 	}
 
 	v.Tree, v.TreeTotal, v.TreeCount, v.Filtered = a.treeRows()
@@ -351,9 +413,13 @@ func (a *App) buildView() View {
 	v.Recent = a.recentRows()
 	v.ActiveTab = a.active
 	v.PaletteQuery = a.paletteQuery
+	v.SearchQuery = a.searchQuery
 	v.Palette = a.paletteView()
+	v.Search = a.searchViewState()
 
-	if doc := a.activeDoc(); doc != nil {
+	v.PaneLeft, v.PaneWidth = a.paneGeometry()
+
+	if doc := a.groupDoc(0); doc != nil {
 		v.Active = doc.Path
 		v.ActiveDir = dirName(doc.Path)
 		v.ActiveName = baseName(doc.Path)
@@ -368,6 +434,13 @@ func (a *App) buildView() View {
 		v.Status = a.statuses[doc.Path]
 		v.StatusClass = "st-" + strings.ToLower(v.Status)
 		v.Outline = doc.Outline
+		v.CanEdit = doc.Err == "" && !doc.Binary
+		v.Editing = a.editing && a.editPath() == doc.Path
+		v.EditDirty = a.dirty[doc.Path]
+
+		if v.Editing && a.edit != nil {
+			v.EditText = a.edit.Text()
+		}
 	}
 
 	if a.mode == "changes" {
@@ -377,14 +450,18 @@ func (a *App) buildView() View {
 		a.fillCode(&v)
 	}
 
+	if v.Split {
+		v.Second = a.secondView()
+	}
+
 	v.SpaceHeight = a.contentHeight()
 
 	return v
 }
 
-// fillCode fills the active document, its visible rows, and the empty state.
+// fillCode fills the first editor group, its visible rows, and the empty state.
 func (a *App) fillCode(v *View) {
-	doc := a.activeDoc()
+	doc := a.groupDoc(0)
 	if doc == nil {
 		v.Welcome = true
 		v.Active = ""
@@ -411,10 +488,11 @@ func (a *App) fillCode(v *View) {
 	}
 
 	v.Previewable = doc.Lang == langMarkdown
-	v.Preview = a.preview && v.Previewable
+	v.Preview = a.preview && v.Previewable && a.activeGroup() == 0
+	cols := a.codeColsForGroup(0)
 
 	if v.Preview {
-		doc.ensurePreview()
+		doc.ensurePreview(cols)
 		start, end, track := a.windowSlice(len(doc.Preview))
 		v.TrackTop = track
 
@@ -427,7 +505,7 @@ func (a *App) fillCode(v *View) {
 
 	start, end, track := a.windowSlice(len(doc.Lines))
 	if a.wrap {
-		plan := doc.wrapped(a.codeCols())
+		plan := doc.wrapped(cols)
 		start, end, track = a.windowSlice(len(plan.Rows))
 		v.TrackTop = track
 		v.Rows = a.copyFindRows(plan.Rows[start:end])
@@ -470,6 +548,18 @@ func (a *App) currentDiffRows() []diffRow {
 	}
 
 	return a.diffRows
+}
+
+// diffDisplayRows expands the selected diff to the visual rows the page draws.
+func (a *App) diffDisplayRows() []diffRow {
+	rows := a.currentDiffRows()
+	if len(rows) == 0 {
+		return nil
+	}
+
+	unified, split := a.diffColumns()
+
+	return wrapDiffRows(rows, unified, split, a.wrap)
 }
 
 // fillDiff fills the Source Control list and the selected diff rows.
@@ -571,7 +661,13 @@ func (a *App) fillCommitDiff(v *View, d *diffView) {
 
 	file := a.commitDetails[commitDetailKey(commit.Hash, path)]
 	if file == nil {
-		d.Note = "Choose a file in the commit to read its patch."
+		if !a.ws.Sample && path != "" {
+			d.Note = "Loading the patch for " + path + "…"
+			d.Loading = true
+		} else {
+			d.Note = "Choose a file in the commit to read its patch."
+		}
+
 		d.EmptyTitle = "Commit diff"
 
 		return
@@ -624,13 +720,14 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 		v.StatusClass = "st-" + strings.ToLower(v.Status)
 	}
 
+	unified, split := a.diffColumns()
+	rows = wrapDiffRows(rows, unified, split, a.wrap)
+
 	start, end, track := a.windowSlice(len(rows))
 	d.TrackTop = track
 
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
-		unified, split := a.diffColumns()
-		clipDiffRows(visible, unified, split)
 		d.Rows = visible
 	}
 }
@@ -769,6 +866,7 @@ func (a *App) fillHistory(v *View) {
 	h.Note = a.commits.Note
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
+	h.Loading = v.Diff.Loading
 
 	if a.branchOpen {
 		a.fillBranchList(&h)
@@ -886,24 +984,14 @@ func (a *App) fillHistory(v *View) {
 
 // fillBranchList builds the filtered branch picker rows.
 func (a *App) fillBranchList(h *historyView) {
-	query := strings.ToLower(strings.TrimSpace(a.branchQuery))
-	rows := make([]branchRow, 0, len(a.branches))
-
-	for _, branch := range a.branches {
-		if query != "" && !strings.Contains(strings.ToLower(branch.Name), query) {
-			continue
-		}
-
-		rows = append(rows, branch)
+	limit := (h.Height - branchPickerPad) / branchPickerRowH
+	if limit < branchPickerMinRows {
+		limit = branchPickerMinRows
 	}
 
-	const maxBranchRows = 8
-	if len(rows) > maxBranchRows {
-		h.BranchMore = len(rows) - maxBranchRows
-		rows = rows[:maxBranchRows]
-	}
-
+	rows, more := filterBranches(a.branches, a.branchQuery, limit)
 	h.Branches = rows
+	h.BranchMore = more
 }
 
 // windowSlice returns the row range the fixed body shows and the track offset.
@@ -935,17 +1023,16 @@ func (a *App) windowSlice(total int) (int, int, int) {
 func (a *App) contentHeight() int {
 	rows := 0
 
-	if a.mode == "changes" {
-		rows = len(a.currentDiffRows())
-	} else if doc := a.activeDoc(); doc != nil {
-		switch {
-		case a.preview && doc.Lang == langMarkdown && doc.Err == "" && !doc.Binary:
-			doc.ensurePreview()
-			rows = len(doc.Preview)
-		case a.wrap && doc.Err == "" && !doc.Binary:
-			rows = len(doc.wrapped(a.codeCols()).Rows)
-		default:
-			rows = len(doc.Lines)
+	switch {
+	case a.mode == "changes":
+		rows = len(a.diffDisplayRows())
+	case a.editing:
+		rows = a.bodyHeight() / rowH
+	default:
+		rows = a.paneRowCount(0, a.groupDoc(0))
+
+		if a.split {
+			rows = max(rows, a.paneRowCount(1, a.groupDoc(1)))
 		}
 	}
 
@@ -989,15 +1076,9 @@ func (a *App) editorWidth() int {
 	return w - chromeLeft
 }
 
-// codeCols is the number of monospace cells that fit in the code body.
+// codeCols is the number of monospace cells that fit in the focused pane.
 func (a *App) codeCols() int {
-	avail := a.editorWidth() - codeGutter - codePadRight - editorBorderPad
-	cols := int(float64(avail) / codeCellW)
-	if cols < wrapMinCols {
-		cols = wrapMinCols
-	}
-
-	return cols
+	return a.codeColsForGroup(a.activeGroup())
 }
 
 // topSourceLine is the source line at the top of the code view.
@@ -1011,8 +1092,9 @@ func (a *App) topSourceLine() int {
 
 // toggleWrap flips soft wrap and keeps the top source line in view.
 func (a *App) toggleWrap() {
-	if a.mode != "explorer" {
-		a.showToast("info", "Soft wrap", "Wrap applies to the file view. Switch to Explorer.")
+	if a.mode == "changes" {
+		a.wrap = !a.wrap
+		a.resetScroll()
 		a.refresh()
 
 		return
@@ -1217,11 +1299,16 @@ func countTreeOpen(nodes []*fileNode, open map[string]bool) int {
 	return total
 }
 
-// tabRows returns the open tabs.
-func (a *App) tabRows() []tabRow {
-	rows := make([]tabRow, 0, len(a.tabs))
+// tabRows returns the open tabs in the first group.
+func (a *App) tabRows() []tabRow { return a.tabRowsFor(0) }
 
-	for i, path := range a.tabs {
+// tabRowsFor returns one group's open tabs.
+func (a *App) tabRowsFor(group int) []tabRow {
+	tabs := a.groupTabs(group)
+	active := a.groupActive(group)
+	rows := make([]tabRow, 0, len(tabs))
+
+	for i, path := range tabs {
 		doc := a.docs[path]
 		lang := languageOf(path)
 		if doc != nil {
@@ -1237,7 +1324,7 @@ func (a *App) tabRows() []tabRow {
 			Badge:       languageInfo(lang).Badge,
 			Status:      status,
 			StatusClass: "st-" + strings.ToLower(status),
-			Active:      i == a.active && a.mode == "explorer",
+			Active:      i == active && a.mode == "explorer",
 		})
 	}
 
@@ -1285,17 +1372,16 @@ func (a *App) addRecent(path string) {
 	a.recent = next
 }
 
-// activeDoc returns the document behind the active tab.
+// activeDoc returns the document behind the focused group's active tab.
 func (a *App) activeDoc() *fileDoc {
-	if a.active < 0 || a.active >= len(a.tabs) {
-		return nil
-	}
-
-	return a.docs[a.tabs[a.active]]
+	return a.groupDoc(a.activeGroup())
 }
 
-// openFile opens or focuses one file and resets the scroll.
-func (a *App) openFile(path string) {
+// openFile opens or focuses one file in the group that has focus.
+func (a *App) openFile(path string) { a.openFileIn(a.activeGroup(), path) }
+
+// openFileIn opens or focuses one file in a specific editor group.
+func (a *App) openFileIn(group int, path string) {
 	if a.ws.ByPath[path] == nil {
 		a.showToast("error", "Not in workspace", path+" is not part of this workspace.")
 		a.refresh()
@@ -1303,13 +1389,25 @@ func (a *App) openFile(path string) {
 		return
 	}
 
+	a.finishEdit()
+
 	if _, ok := a.docs[path]; !ok {
 		a.docs[path] = a.ws.openDoc(path)
 	}
 
+	tabs := &a.tabs
+	active := &a.active
+
+	if group == 1 && a.split {
+		tabs = &a.tabs2
+		active = &a.active2
+	} else {
+		group = 0
+	}
+
 	found := -1
 
-	for i, open := range a.tabs {
+	for i, open := range *tabs {
 		if open == path {
 			found = i
 
@@ -1318,15 +1416,16 @@ func (a *App) openFile(path string) {
 	}
 
 	if found < 0 {
-		a.tabs = append(a.tabs, path)
-		if len(a.tabs) > maxTabs {
-			a.tabs = append(a.tabs[:0], a.tabs[1:]...)
+		*tabs = append(*tabs, path)
+		if len(*tabs) > maxTabs {
+			*tabs = append((*tabs)[:0], (*tabs)[1:]...)
 		}
 
-		found = len(a.tabs) - 1
+		found = len(*tabs) - 1
 	}
 
-	a.active = found
+	*active = found
+	a.focusGroup = group
 	a.mode = "explorer"
 	a.preview = false
 	a.paletteOpen = false
@@ -1337,37 +1436,80 @@ func (a *App) openFile(path string) {
 	a.refresh()
 }
 
-// selectTab focuses one tab.
-func (a *App) selectTab(index int) {
-	if index < 0 || index >= len(a.tabs) {
+// selectTab focuses one tab in the first group.
+func (a *App) selectTab(index int) { a.selectTabIn(0, index) }
+
+// selectTabIn focuses one tab in a specific group.
+func (a *App) selectTabIn(group, index int) {
+	tabs := a.groupTabs(group)
+	if index < 0 || index >= len(tabs) {
 		return
 	}
 
-	a.active = index
+	a.finishEdit()
+
+	if group == 1 && a.split {
+		a.active2 = index
+	} else {
+		group = 0
+		a.active = index
+	}
+
+	a.focusGroup = group
 	a.mode = "explorer"
 	a.preview = false
 	a.resetScroll()
 	a.refresh()
 }
 
-// closeTab closes one tab and picks the next one.
-func (a *App) closeTab(index int) {
-	if index < 0 || index >= len(a.tabs) {
+// closeTab closes one tab in the first group.
+func (a *App) closeTab(index int) { a.closeTabIn(0, index) }
+
+// closeTabIn closes one tab in a specific group.
+func (a *App) closeTabIn(group, index int) {
+	tabs := a.groupTabs(group)
+	if index < 0 || index >= len(tabs) {
 		return
 	}
 
-	a.tabs = append(a.tabs[:index], a.tabs[index+1:]...)
+	a.finishEdit()
 
-	if index < a.active {
-		a.active--
+	next := append([]string(nil), tabs[:index]...)
+	next = append(next, tabs[index+1:]...)
+
+	if group == 1 && a.split {
+		a.tabs2 = next
+		if index < a.active2 {
+			a.active2--
+		}
+
+		if a.active2 >= len(a.tabs2) {
+			a.active2 = len(a.tabs2) - 1
+		}
+
+		if a.active2 < 0 {
+			a.active2 = 0
+		}
+	} else {
+		group = 0
+		a.tabs = next
+
+		if index < a.active {
+			a.active--
+		}
+
+		if a.active >= len(a.tabs) {
+			a.active = len(a.tabs) - 1
+		}
+
+		if a.active < 0 {
+			a.active = 0
+		}
 	}
 
-	if a.active >= len(a.tabs) {
-		a.active = len(a.tabs) - 1
-	}
-
-	if a.active < 0 {
-		a.active = 0
+	if a.split && len(a.tabs2) == 0 && group == 1 {
+		a.split = false
+		a.focusGroup = 0
 	}
 
 	a.preview = false
@@ -1539,6 +1681,8 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 				Note:        "History unavailable: " + historyErr.Error(),
 				Unavailable: false,
 			}
+		} else if a.historyRef != "" {
+			a.branchLogs.Put(a.historyRef, history)
 		}
 
 		if history.Head != a.commits.Head {
@@ -1640,12 +1784,18 @@ func (a *App) pickBranch(ctx context.Context, ref string) {
 		}
 	}
 
-	history, err := loadCommitLog(ctx, a.ws.Root, ref)
-	if err != nil {
-		a.showToast("error", "Branch history unavailable", err.Error())
-		a.refresh()
+	history, cached := a.branchLogs.Get(ref)
+	if !cached {
+		next, err := loadCommitLog(ctx, a.ws.Root, ref)
+		if err != nil {
+			a.showToast("error", "Branch history unavailable", err.Error())
+			a.refresh()
 
-		return
+			return
+		}
+
+		history = next
+		a.branchLogs.Put(ref, history)
 	}
 
 	a.historyRef = ref
@@ -1768,8 +1918,9 @@ func (a *App) openCommitDiff(ctx context.Context, hash string) {
 	a.selectCommitFile(ctx, hash, path)
 }
 
-// ensureCommitFile reads and caches one commit patch.
-func (a *App) ensureCommitFile(ctx context.Context, hash, path string) {
+// ensureCommitFile requests one commit patch. The worker reads git off the
+// page loop; pollPatches stores the result when it arrives.
+func (a *App) ensureCommitFile(_ context.Context, hash, path string) {
 	if path == "" || a.ws.Sample {
 		return
 	}
@@ -1779,21 +1930,64 @@ func (a *App) ensureCommitFile(ctx context.Context, hash, path string) {
 		return
 	}
 
-	file, err := loadCommitFile(ctx, a.ws.Root, hash, path)
-	if err != nil {
-		a.showToast("error", "Commit diff unavailable", err.Error())
-
-		return
+	if a.patchLoader == nil {
+		// This fallback exists for an App built by a test without New. The
+		// worker lives for the app and Close cancels its in-flight read.
+		a.patchLoader = NewCommitPatchLoader(a.ws.Root, maxCommitPatchCache) //nolint:contextcheck // app-lifetime patch worker
 	}
 
-	a.commitDetails[key] = file
-	a.commitKeys = append(a.commitKeys, key)
+	// The loader owns a process-lifetime context; this call is not tied to a
+	// request, and Close cancels an in-flight read.
+	a.patchLoader.Request(context.Background(), hash, path) //nolint:contextcheck // app-lifetime patch worker
+}
 
-	for len(a.commitKeys) > maxCommitPatchCache {
-		old := a.commitKeys[0]
-		a.commitKeys = a.commitKeys[1:]
-		delete(a.commitDetails, old)
+// pollPatches drains finished commit patches on the page loop.
+func (a *App) pollPatches(ctx context.Context) bool {
+	if a.patchLoader == nil {
+		return false
 	}
+
+	changed := false
+
+	for {
+		result, ok := a.patchLoader.Poll()
+		if !ok {
+			break
+		}
+
+		if result.Err != nil {
+			a.showToast("error", "Commit diff unavailable", result.Err.Error())
+			changed = true
+
+			continue
+		}
+
+		if result.File == nil {
+			continue
+		}
+
+		a.commitDetails[result.Key] = result.File
+		a.commitKeys = append(a.commitKeys, result.Key)
+
+		for len(a.commitKeys) > maxCommitPatchCache {
+			old := a.commitKeys[0]
+			a.commitKeys = a.commitKeys[1:]
+			delete(a.commitDetails, old)
+		}
+
+		changed = true
+	}
+
+	if changed {
+		if a.diffSource == "commit" {
+			a.rebuildCommitRows()
+			a.refresh()
+		}
+
+		_ = a.page.Redraw(ctx)
+	}
+
+	return changed
 }
 
 // focusCommitPage moves the history pager to the page holding hash.
@@ -1842,7 +2036,7 @@ func (a *App) setSplit(split bool) {
 
 // jumpHunk moves to the previous or next hunk header.
 func (a *App) jumpHunk(delta int) {
-	rows := a.currentDiffRows()
+	rows := a.diffDisplayRows()
 	if len(rows) == 0 {
 		return
 	}
@@ -1901,7 +2095,7 @@ func (a *App) togglePreview() {
 
 	a.preview = !a.preview
 	if a.preview {
-		doc.ensurePreview()
+		doc.ensurePreview(a.previewCols())
 	}
 
 	a.resetScroll()

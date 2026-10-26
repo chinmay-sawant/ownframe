@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 const (
@@ -56,8 +57,15 @@ type workspace struct {
 	Files     []*fileMeta
 	ByPath    map[string]*fileMeta
 	Tree      []*fileNode
-	Truncated bool
 	Bytes     int64
+	Truncated bool
+	// Limit is the file cap the scan ran under, so the UI can name it.
+	Limit int
+	// TruncatedNote explains a stopped scan. It is empty when the whole
+	// workspace was scanned.
+	TruncatedNote string
+	// ScanMillis is how long the walk took, in milliseconds.
+	ScanMillis int64
 }
 
 // loadSampleWorkspace scans the embedded demo project.
@@ -68,6 +76,7 @@ func loadSampleWorkspace() (*workspace, error) {
 	}
 
 	w := &workspace{Root: "sample", Sample: true, ByPath: map[string]*fileMeta{}}
+	started := time.Now()
 
 	err = fs.WalkDir(sub, ".", func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -100,6 +109,7 @@ func loadSampleWorkspace() (*workspace, error) {
 		return nil, fmt.Errorf("sample workspace: %w", err)
 	}
 
+	w.ScanMillis = time.Since(started).Milliseconds()
 	w.finish()
 
 	return w, nil
@@ -107,6 +117,16 @@ func loadSampleWorkspace() (*workspace, error) {
 
 // loadDiskWorkspace scans a real directory for the -root flag.
 func loadDiskWorkspace(root string) (*workspace, error) {
+	return loadDiskWorkspaceWithLimit(root, maxWorkspaceFiles)
+}
+
+// loadDiskWorkspaceWithLimit scans a real directory and stops before the file
+// after limit. A limit of zero or less means maxWorkspaceFiles.
+func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
+	if limit <= 0 {
+		limit = maxWorkspaceFiles
+	}
+
 	abs, err := filepath.Abs(root)
 	if err != nil {
 		return nil, fmt.Errorf("workspace path: %w", err)
@@ -121,7 +141,8 @@ func loadDiskWorkspace(root string) (*workspace, error) {
 		return nil, fmt.Errorf("workspace %s is not a directory", abs)
 	}
 
-	w := &workspace{Root: abs, ByPath: map[string]*fileMeta{}}
+	w := &workspace{Root: abs, ByPath: map[string]*fileMeta{}, Limit: limit}
+	started := time.Now()
 
 	err = filepath.WalkDir(abs, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -169,13 +190,16 @@ func loadDiskWorkspace(root string) (*workspace, error) {
 			return nil
 		}
 
-		w.addFile(rel, name, info.Size())
-
-		if len(w.Files) >= maxWorkspaceFiles {
+		// Stop before adding the file that trips the limit, so a scan that
+		// ends exactly at the limit is not reported as truncated.
+		if len(w.Files) >= limit {
 			w.Truncated = true
+			w.TruncatedNote = truncatedNote(limit)
 
 			return fs.SkipAll
 		}
+
+		w.addFile(rel, name, info.Size())
 
 		return nil
 	})
@@ -183,9 +207,35 @@ func loadDiskWorkspace(root string) (*workspace, error) {
 		return nil, fmt.Errorf("workspace %s: %w", abs, err)
 	}
 
+	w.ScanMillis = time.Since(started).Milliseconds()
 	w.finish()
 
 	return w, nil
+}
+
+// truncatedNote is the explanation shown when the scan stopped at its file
+// limit. The wording is stable so the UI and tests read the same sentence.
+func truncatedNote(limit int) string {
+	return fmt.Sprintf(
+		"Scan stopped at the limit of %d files. The explorer, quick open, and search only show the first %d files; raise the limit to scan the whole repository.",
+		limit,
+		limit,
+	)
+}
+
+// ScanBudget is the short budget sentence for the explorer, or "" when the
+// scan saw the whole workspace.
+func (w *workspace) ScanBudget() string {
+	if !w.Truncated {
+		return ""
+	}
+
+	limit := w.Limit
+	if limit <= 0 {
+		limit = maxWorkspaceFiles
+	}
+
+	return fmt.Sprintf("Showing the first %d files...", limit)
 }
 
 // addFile appends one scanned file.

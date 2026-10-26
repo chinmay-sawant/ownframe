@@ -15,13 +15,39 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 	switch {
 	case action == "":
-		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" {
+		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" || box.ID == "workspace-search" {
 			return nil
 		}
 
 		return a.page.Form().Focus(ctx, "")
 	case action == "toast-close":
 		a.clearToast()
+	case action == "split-toggle":
+		a.toggleSplit()
+	case strings.HasPrefix(action, "focus-group:"):
+		if index, ok := actionIndex(action, "focus-group:"); ok {
+			a.setFocusGroup(index)
+		}
+	case action == "edit-toggle":
+		a.toggleEdit()
+	case action == "edit-save":
+		a.saveEdit()
+	case action == "search-open":
+		return a.openWorkspaceSearch(ctx)
+	case action == "search-close":
+		return a.closeWorkspaceSearch(ctx)
+	case action == "search-case":
+		a.toggleSearchCase(ctx)
+
+		return a.page.Form().Focus(ctx, "workspace-search")
+	case action == "search-prev":
+		a.searchStep(-1)
+	case action == "search-next":
+		a.searchStep(1)
+	case strings.HasPrefix(action, "search-hit:"):
+		if index, ok := actionIndex(action, "search-hit:"); ok {
+			a.openSearchHit(index)
+		}
 	case action == "mode-explorer":
 		a.setMode(ctx, "explorer")
 	case action == "mode-changes":
@@ -154,6 +180,14 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		if index, ok := actionIndex(action, "tab-close:"); ok {
 			a.closeTab(index)
 		}
+	case strings.HasPrefix(action, "tab2-close:"):
+		if index, ok := actionIndex(action, "tab2-close:"); ok {
+			a.closeTabIn(1, index)
+		}
+	case strings.HasPrefix(action, "tab2:"):
+		if index, ok := actionIndex(action, "tab2:"); ok {
+			a.selectTabIn(1, index)
+		}
 	case strings.HasPrefix(action, "tab:"):
 		if index, ok := actionIndex(action, "tab:"); ok {
 			a.selectTab(index)
@@ -171,7 +205,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 // onChange keeps the filter and the palette query in app state after the
 // binder writes the fields.
-func (a *App) onChange(_ context.Context, box ownframe.Box) error {
+func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 	switch box.ID {
 	case "filter":
 		next := a.view.Filter
@@ -208,6 +242,17 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 		a.paletteQuery = next
 		a.paletteIndex = 0
 		a.refresh()
+	case "editor":
+		a.applyEditText(a.view.EditText)
+	case "workspace-search":
+		next := a.view.SearchQuery
+		if next == a.searchQuery {
+			return nil
+		}
+
+		a.searchQuery = next
+		a.searchIndex = 0
+		a.runWorkspaceSearch(ctx)
 	}
 
 	return nil
@@ -291,6 +336,46 @@ func (a *App) onHover(_ context.Context, _, next ownframe.Box) (bool, error) {
 	}
 
 	short := ""
+	path := ""
+
+	switch {
+	case strings.HasPrefix(next.ID, "tree-"):
+		path = strings.TrimPrefix(next.ID, "tree-")
+	case strings.HasPrefix(next.ID, "tab-") && !strings.HasPrefix(next.ID, "tab-close-") && next.ID != "tab-details":
+		if index, ok := actionIndex(next.ID, "tab-"); ok && index < len(a.tabs) {
+			path = a.tabs[index]
+		}
+	case strings.HasPrefix(next.ID, "tab2-") && !strings.HasPrefix(next.ID, "tab2-close-"):
+		if index, ok := actionIndex(next.ID, "tab2-"); ok && index < len(a.tabs2) {
+			path = a.tabs2[index]
+		}
+	}
+
+	if strings.HasPrefix(path, "close") || strings.HasPrefix(path, "working") || strings.HasPrefix(path, "details") {
+		path = ""
+	}
+
+	if path != "" {
+		if doc := a.docs[path]; doc != nil {
+			if path != a.hoverPath {
+				a.hoverPath = path
+				a.refresh()
+			}
+
+			return false, nil
+		}
+
+		for _, file := range a.ws.Files {
+			if file.Path == path {
+				if path != a.hoverPath {
+					a.hoverPath = path
+					a.refresh()
+				}
+
+				return false, nil
+			}
+		}
+	}
 
 	if strings.HasPrefix(next.ID, "commit-") &&
 		!strings.HasPrefix(next.ID, "commit-file-") &&
@@ -298,11 +383,17 @@ func (a *App) onHover(_ context.Context, _, next ownframe.Box) (bool, error) {
 		short = strings.TrimPrefix(next.ID, "commit-")
 	}
 
-	if short == a.hoverCommit {
+	if short == a.hoverCommit && path == "" && a.hoverPath == "" {
 		return false, nil
 	}
 
+	if short == a.hoverCommit && a.hoverPath != "" {
+		a.hoverPath = ""
+		a.refresh()
+	}
+
 	a.hoverCommit = short
+	a.hoverPath = ""
 	a.refresh()
 
 	return false, nil
@@ -599,14 +690,76 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return a.openPalette(ctx)
 	}
 
+	if a.ctrl && a.shift && key == "f" {
+		return a.openWorkspaceSearch(ctx)
+	}
+
 	if a.ctrl && key == "f" {
 		return a.openFind(ctx)
+	}
+
+	if a.ctrl && key == "s" {
+		if a.editing {
+			a.saveEdit()
+
+			return a.page.Redraw(ctx)
+		}
+
+		return nil
+	}
+
+	if a.ctrl && key == "e" {
+		a.toggleEdit()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.ctrl && key == "backslash" {
+		a.toggleSplit()
+
+		return a.page.Redraw(ctx)
 	}
 
 	if a.ctrl && a.shift && key == "v" {
 		a.togglePreview()
 
 		return a.page.Redraw(ctx)
+	}
+
+	if a.editing && key == "escape" {
+		a.finishEdit()
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.editing && a.page.Form().FocusID() == "editor" {
+		return nil
+	}
+
+	if a.searchOpen && key == "escape" {
+		return a.closeWorkspaceSearch(ctx)
+	}
+
+	if a.page.Form().FocusID() == "workspace-search" {
+		switch key {
+		case "arrowdown":
+			a.searchStep(1)
+
+			return a.page.Redraw(ctx)
+		case "arrowup":
+			a.searchStep(-1)
+
+			return a.page.Redraw(ctx)
+		case "enter":
+			a.openSearchHit(a.searchIndex)
+
+			return a.page.Redraw(ctx)
+		case "escape":
+			return a.closeWorkspaceSearch(ctx)
+		default:
+			return nil
+		}
 	}
 
 	if a.branchOpen && key == "escape" {
@@ -855,7 +1008,7 @@ func (a *App) focusFilter(ctx context.Context) error {
 
 // copyActive puts the active path, or the whole file, on the clipboard.
 func (a *App) copyActive(wholeFile bool) {
-	path := a.view.Active
+	path := a.activeDocPath()
 	if path == "" {
 		return
 	}

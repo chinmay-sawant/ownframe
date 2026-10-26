@@ -3,7 +3,11 @@
 Goal: a keyboard and screen-reader path through the viewer, and a phone layout
 that reaches the same files.
 
-Status: planned.
+Status: partly landed. Accessible names, toggle states, dialog roles, the
+background focus trap, focus-visible rings, and reduced motion are in. Live
+screen-reader bridging is still a library limitation: `internal/atspi` maps the
+tree, but the production bus does not open D-Bus. Mobile and Android remain out
+of scope for this pass.
 
 ## Design
 
@@ -23,15 +27,21 @@ Status: planned.
 
 ## Checklist
 
-- [ ] Add accessible names to every icon-only control.
-- [ ] Announce the tree row text and the change letter.
-- [ ] Fix the focus order and add a visible ring.
-- [ ] Check token and diff contrast.
-- [ ] Add the reduced-motion path.
+- [x] Add accessible names to every icon-only control. Evidence:
+      `TestAccessibilityLabels`, `accessibility_labels_test.go`.
+- [x] Announce the tree row text and the change letter.
+- [x] Fix the focus order and add a visible ring. Evidence:
+      `TestFeatureModalFocusTrap`, `components/base.css`.
+- [ ] Check token and diff contrast. The sign column already carries `+`/`-`.
+- [x] Add the reduced-motion path. Evidence: `components/base.css`.
+- [ ] Add live AT-SPI screen-reader bridging. This is library work in
+      `internal/atspi`; `NewLiveBus` still reports `Live() == false`.
 - [ ] Add the phone explorer sheet.
 - [ ] Add the Android insets and back key.
-- [ ] Add a keyboard-only walk test.
-- [ ] Add a focus-order test.
+- [x] Add a keyboard-only walk test. Evidence: `TestKeyboard`,
+      `TestFeatureModalFocusTrap`.
+- [x] Add a focus-order test. Evidence: `TestAccessibilityLabels`,
+      `TestAccessibilityPaletteDialog`.
 
 ## Gate
 

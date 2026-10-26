@@ -36,9 +36,11 @@ Closing the panel leaves explicitly enabled perf collection running. Reopen thro
 
 ## The desktop dock
 
-The panel is a full-height dock on the right edge, 340 pixels wide by
-default, drawn in the Chrome DevTools dark theme. Drag the strip on its left
-edge to resize it; the width clamps to 220 pixels and to the window. The
+The panel is a full-height dock on the right edge. It is 340 pixels wide on a
+window at least 1180 pixels wide by default; below that the default shrinks to
+28% of the window, floored at 220 pixels, so the page keeps usable width.
+Drag the strip on its left edge to resize it; a dragged width clamps to leave
+at least 320 pixels of page (and to a 220 pixel minimum) and to the window. The
 wheel scrolls the dock content while the pointer is over it, and a thumb on
 the right edge shows how far the content runs. Opening, closing, or resizing
 the dock shrinks or restores the page viewport like a docked browser

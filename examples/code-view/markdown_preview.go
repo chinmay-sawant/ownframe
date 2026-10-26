@@ -1,12 +1,23 @@
 package main
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
 const (
-	previewCols      = 72
-	previewRuleRunes = 30
-	previewParts     = 4
+	previewDefaultCols = 72
+	previewMinCols     = 24
+	previewRuleRunes   = 30
+	previewParts       = 4
+
+	previewTableBorders = 3
+	previewBorderPad    = 2
 )
+
+// previewWidths remembers the column count each rendered preview used. fileDoc
+// lives in workspace.go, so the width is kept here rather than on the struct.
+var previewWidths sync.Map //nolint:gochecknoglobals // per-document preview width cache, one entry per open file
 
 // previewRow is one rendered Markdown row. It is exactly one editor row high,
 // so the existing windowing math still applies.
@@ -16,20 +27,40 @@ type previewRow struct {
 	Segments []segment
 }
 
-// ensurePreview builds and caches the rendered rows for one Markdown file.
-func (doc *fileDoc) ensurePreview() {
-	if doc.Preview != nil {
-		return
+// ensurePreview builds and caches the rendered rows at the default width.
+// A caller that knows the editor width passes it and gets a reflowed preview.
+func (doc *fileDoc) ensurePreview(cols ...int) {
+	width := previewDefaultCols
+	if len(cols) > 0 {
+		width = cols[0]
 	}
 
-	rows, anchors := previewRows(doc.Lines)
+	doc.ensurePreviewWidth(width)
+}
+
+// ensurePreviewWidth builds and caches the rendered rows for one Markdown file
+// at the given width. The rows are rebuilt when the width changes.
+func (doc *fileDoc) ensurePreviewWidth(cols int) {
+	cols = normalizePreviewCols(cols)
+
+	if doc.Preview != nil {
+		if width, ok := previewWidths.Load(doc); ok {
+			if cached, ok := width.(int); ok && cached == cols {
+				return
+			}
+		}
+	}
+
+	rows, anchors := previewRows(doc.Lines, cols)
 	doc.Preview = rows
 	doc.PreviewLine = anchors
+	previewWidths.Store(doc, cols)
 }
 
 // previewRows parses the Markdown source into rows and maps each source line
-// to the preview row that starts its block.
-func previewRows(lines []string) ([]previewRow, []int) {
+// to the preview row that starts its block. The preview is reflowed to cols.
+func previewRows(lines []string, cols int) ([]previewRow, []int) {
+	cols = normalizePreviewCols(cols)
 	rows := make([]previewRow, 0, len(lines))
 	anchors := make([]int, len(lines))
 
@@ -52,21 +83,54 @@ func previewRows(lines []string) ([]previewRow, []int) {
 	}
 
 	inFence := false
+	fenceInfo := ""
+	var fenceLines []string
+	var fenceNos []int
 
 	for i < len(lines) {
 		line := lines[i]
 		trimmed := strings.TrimSpace(line)
 
 		if inFence {
-			if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
+			if isFenceLine(trimmed) {
+				if isMermaidInfo(fenceInfo) {
+					base := len(rows)
+					var lineRows []int
+
+					rows, lineRows = appendMermaid(rows, fenceLines, cols)
+					for k, no := range fenceNos {
+						anchors[no] = base
+						if k < len(lineRows) {
+							anchors[no] = base + lineRows[k]
+						}
+					}
+				}
+
 				inFence = false
+				fenceInfo = ""
+				fenceLines = nil
+				fenceNos = nil
 				i++
 
 				continue
 			}
 
-			rows = append(rows, previewRow{Kind: "code", Segments: []segment{{Text: lineOrSpace(line), Class: classCode}}})
-			anchors[i] = len(rows) - 1
+			if isMermaidInfo(fenceInfo) {
+				fenceLines = append(fenceLines, line)
+				fenceNos = append(fenceNos, i)
+			} else {
+				rows = append(rows, previewRow{Kind: "code", Segments: []segment{{Text: lineOrSpace(line), Class: classCode}}})
+				anchors[i] = len(rows) - 1
+			}
+
+			i++
+
+			continue
+		}
+
+		if isFenceLine(trimmed) {
+			inFence = true
+			fenceInfo = fenceInfoOf(trimmed)
 			i++
 
 			continue
@@ -75,9 +139,6 @@ func previewRows(lines []string) ([]previewRow, []int) {
 		marker, itemText := listMarker(trimmed)
 
 		switch {
-		case strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~"):
-			inFence = true
-			i++
 		case trimmed == "":
 			if len(rows) == 0 || rows[len(rows)-1].Kind != "gap" {
 				rows = append(rows, previewRow{Kind: "gap"})
@@ -88,33 +149,74 @@ func previewRows(lines []string) ([]previewRow, []int) {
 			r := []rune(strings.TrimLeft(line, " "))
 			level, marker := headingLevel(r)
 			text := strings.TrimSpace(string(r[marker:]))
-			rows = append(rows, previewRow{Kind: headingKind(level), Segments: previewInline(text)})
-			anchors[i] = len(rows) - 1
+			start := len(rows)
+			rows = appendPreviewWrapped(rows, headingKind(level), "", text, cols)
+			anchors[i] = start
 			i++
 		case isMarkdownHR(trimmed):
-			rows = append(rows, previewRow{Kind: "rule", Segments: []segment{{Text: strings.Repeat("─", previewRuleRunes), Class: classHR}}})
+			width := previewRuleRunes
+			if cols < width {
+				width = cols
+			}
+
+			rows = append(rows, previewRow{Kind: "rule", Segments: []segment{{Text: strings.Repeat("─", width), Class: classHR}}})
 			anchors[i] = len(rows) - 1
 			i++
+		case isTableStart(lines, i):
+			firstLine := i
+			start := len(rows)
+			var lineRows []int
+
+			rows, lineRows, i = appendTable(rows, lines, i, cols)
+			for k, rel := range lineRows {
+				if firstLine+k < len(anchors) {
+					anchors[firstLine+k] = start + rel
+				}
+			}
+		case strings.HasPrefix(trimmed, "|"):
+			start := len(rows)
+			rows = appendTableRow(rows, splitTableRow(trimmed), nil, nil, 0, cols, false)
+			anchors[i] = start
+			i++
+		case isHTMLBlockStart(trimmed):
+			start := len(rows)
+			startLine := i
+
+			var parts []string
+
+			for i < len(lines) && strings.TrimSpace(lines[i]) != "" {
+				parts = append(parts, lines[i])
+				i++
+			}
+
+			for _, text := range htmlTextLines(strings.Join(parts, " ")) {
+				rows = appendPreviewWrapped(rows, "p", "", text, cols)
+			}
+
+			if len(rows) == start {
+				rows = append(rows, previewRow{Kind: "gap"})
+				anchors[startLine] = start
+			} else {
+				for no := startLine; no < i; no++ {
+					anchors[no] = start
+				}
+			}
 		case strings.HasPrefix(trimmed, ">"):
 			text := strings.TrimSpace(strings.TrimLeft(trimmed, ">"))
 			start := len(rows)
-			rows, _ = appendWrapped(rows, "quote", "", text)
+			rows = appendPreviewWrapped(rows, "quote", "", text, cols)
 			anchors[i] = start
-			i++
-		case strings.HasPrefix(trimmed, "|"):
-			rows = append(rows, previewRow{Kind: "table", Segments: previewInline(trimmed)})
-			anchors[i] = len(rows) - 1
 			i++
 		case marker != "":
 			start := len(rows)
-			rows, _ = appendWrapped(rows, "li", marker, itemText)
+			rows = appendPreviewWrapped(rows, "li", marker, itemText, cols)
 			anchors[i] = start
 			i++
 		default:
 			start := i
 			parts := make([]string, 0, previewParts)
 
-			for i < len(lines) && !specialStart(lines[i]) {
+			for i < len(lines) && !specialStart(lines[i]) && !isTableStart(lines, i) {
 				parts = append(parts, strings.TrimSpace(lines[i]))
 				i++
 			}
@@ -125,12 +227,34 @@ func previewRows(lines []string) ([]previewRow, []int) {
 			}
 
 			startRow := len(rows)
-			rows, _ = appendWrapped(rows, "p", "", strings.Join(parts, " "))
+			rows = appendPreviewWrapped(rows, "p", "", strings.Join(parts, " "), cols)
 			anchors[start] = startRow
 		}
 	}
 
+	if inFence && isMermaidInfo(fenceInfo) {
+		base := len(rows)
+		var lineRows []int
+
+		rows, lineRows = appendMermaid(rows, fenceLines, cols)
+		for k, no := range fenceNos {
+			anchors[no] = base
+			if k < len(lineRows) {
+				anchors[no] = base + lineRows[k]
+			}
+		}
+	}
+
 	return rows, anchors
+}
+
+// normalizePreviewCols keeps a preview readable at the narrowest editor width.
+func normalizePreviewCols(cols int) int {
+	if cols < previewMinCols {
+		return previewMinCols
+	}
+
+	return cols
 }
 
 // headingStart reports whether a line can start an ATX heading.
@@ -148,12 +272,12 @@ func specialStart(line string) bool {
 		return true
 	}
 
-	if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") ||
+	if isFenceLine(trimmed) ||
 		strings.HasPrefix(trimmed, ">") || strings.HasPrefix(trimmed, "|") {
 		return true
 	}
 
-	if headingStart(line) || isMarkdownHR(trimmed) {
+	if headingStart(line) || isMarkdownHR(trimmed) || isHTMLBlockStart(trimmed) {
 		return true
 	}
 
@@ -180,24 +304,47 @@ func listMarker(trimmed string) (string, string) {
 	return "", ""
 }
 
-// appendWrapped wraps text and appends one row per visual line.
-func appendWrapped(rows []previewRow, kind, marker, text string) ([]previewRow, string) {
-	lines := wrapText(text, previewCols)
+// appendPreviewWrapped wraps text and appends one row per visual line. Raw
+// HTML is stripped here, and a <br> starts a new row.
+func appendPreviewWrapped(rows []previewRow, kind, marker, text string, cols int) []previewRow {
+	cols = normalizePreviewCols(cols)
 
-	for i, line := range lines {
-		rowMarker := ""
-		if i == 0 {
-			rowMarker = marker
+	hardLines := strings.Split(stripHTML(text), "\n")
+	wrote := false
+
+	for _, hardLine := range hardLines {
+		line := strings.Join(strings.Fields(hardLine), " ")
+		if line == "" {
+			if len(hardLines) > 1 {
+				rows = append(rows, previewRow{Kind: kind, Segments: []segment{{Text: " ", Class: classPlain}}})
+				wrote = true
+			}
+
+			continue
 		}
 
-		rows = append(rows, previewRow{Kind: kind, Marker: rowMarker, Segments: previewInline(line)})
+		for i, visual := range wrapText(line, cols) {
+			rowMarker := ""
+			if !wrote && i == 0 {
+				rowMarker = marker
+			}
+
+			rows = append(rows, previewRow{Kind: kind, Marker: rowMarker, Segments: previewInline(visual)})
+		}
+
+		wrote = true
 	}
 
-	return rows, marker
+	if !wrote {
+		rows = append(rows, previewRow{Kind: kind, Marker: marker, Segments: previewInline("")})
+	}
+
+	return rows
 }
 
 // previewInline strips the Markdown source markers and keeps the token classes.
 func previewInline(text string) []segment {
+	text = strings.ReplaceAll(stripHTML(text), "\n", " ")
 	segs := markdownInline(text)
 	out := make([]segment, 0, len(segs))
 
@@ -207,10 +354,23 @@ func previewInline(text string) []segment {
 			class = ""
 		}
 
-		out = addSeg(out, stripMarkers(seg), class)
+		out = addSeg(out, decodeHTMLEntities(stripMarkers(seg)), class)
 	}
 
 	return finishLine(out)
+}
+
+// plainInline returns the text a rendered inline run will show.
+func plainInline(text string) string {
+	segs := previewInline(text)
+
+	var b strings.Builder
+
+	for _, seg := range segs {
+		b.WriteString(seg.Text)
+	}
+
+	return b.String()
 }
 
 // stripMarkers removes the markers a rendered view should not print.
@@ -243,16 +403,15 @@ func linkLabel(text string) string {
 		return text
 	}
 
-	label := text[open+1 : open+close]
-	if strings.HasPrefix(text, "!") {
-		return label
-	}
-
-	return label
+	return text[open+1 : open+close]
 }
 
 // wrapText breaks text at spaces and hard-breaks a word longer than width.
 func wrapText(text string, width int) []string {
+	if width < 1 {
+		width = 1
+	}
+
 	words := strings.Fields(text)
 	if len(words) == 0 {
 		return []string{""}
@@ -311,4 +470,361 @@ func lineOrSpace(line string) string {
 	}
 
 	return line
+}
+
+// isFenceLine reports whether a trimmed line opens or closes a code fence.
+func isFenceLine(trimmed string) bool {
+	return strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~")
+}
+
+// fenceInfoOf returns the info string after the opening fence markers.
+func fenceInfoOf(trimmed string) string {
+	return strings.TrimSpace(strings.TrimLeft(trimmed, "`~"))
+}
+
+// tableAlign is the Markdown column alignment.
+type tableAlign int
+
+const (
+	tableLeft tableAlign = iota
+	tableRight
+	tableCenter
+)
+
+// isTableStart reports whether line i starts a Markdown table.
+func isTableStart(lines []string, i int) bool {
+	if i < 0 || i+1 >= len(lines) || !strings.Contains(lines[i], "|") {
+		return false
+	}
+
+	_, ok := tableAlignments(lines[i+1])
+
+	return ok
+}
+
+// tableAlignments parses a separator row and reports whether it is valid.
+func tableAlignments(line string) ([]tableAlign, bool) {
+	cells := splitTableRow(line)
+	if len(cells) == 0 {
+		return nil, false
+	}
+
+	out := make([]tableAlign, len(cells))
+
+	for i, cell := range cells {
+		cell = strings.TrimSpace(cell)
+		if cell == "" || strings.Trim(cell, "-:") != "" || !strings.Contains(cell, "-") {
+			return nil, false
+		}
+
+		left := strings.HasPrefix(cell, ":")
+		right := strings.HasSuffix(cell, ":")
+
+		switch {
+		case left && right:
+			out[i] = tableCenter
+		case right:
+			out[i] = tableRight
+		default:
+			out[i] = tableLeft
+		}
+	}
+
+	return out, true
+}
+
+// splitTableRow removes the outer pipes and splits one row into cells. A
+// backslash escapes a pipe, so the pipe stays in the cell text.
+func splitTableRow(line string) []string {
+	line = strings.TrimSpace(line)
+
+	var (
+		cells []string
+		cell  strings.Builder
+	)
+
+	for i := 0; i < len(line); i++ {
+		if line[i] == '\\' && i+1 < len(line) {
+			if line[i+1] == '|' || line[i+1] == '\\' {
+				cell.WriteByte(line[i+1])
+				i++
+
+				continue
+			}
+		}
+
+		if line[i] == '|' {
+			cells = append(cells, cell.String())
+			cell.Reset()
+
+			continue
+		}
+
+		cell.WriteByte(line[i])
+	}
+
+	cells = append(cells, cell.String())
+
+	if len(cells) > 0 && strings.TrimSpace(cells[0]) == "" {
+		cells = cells[1:]
+	}
+
+	if len(cells) > 0 && strings.TrimSpace(cells[len(cells)-1]) == "" {
+		cells = cells[:len(cells)-1]
+	}
+
+	for i := range cells {
+		cells[i] = strings.TrimSpace(cells[i])
+	}
+
+	return cells
+}
+
+// appendTable renders one table block and maps each source line to a row.
+func appendTable(rows []previewRow, lines []string, start, cols int) ([]previewRow, []int, int) {
+	header := splitTableRow(lines[start])
+	align, hasSeparator := tableAlignments(lines[start+1])
+
+	bodyStart := start + 1
+	if hasSeparator {
+		bodyStart = start + previewBorderPad
+	}
+
+	var body [][]string
+
+	j := bodyStart
+	if hasSeparator {
+		for j < len(lines) && isTableBodyLine(lines[j]) {
+			body = append(body, splitTableRow(lines[j]))
+			j++
+		}
+	}
+
+	lineRows := make([]int, j-start)
+	if !hasSeparator {
+		rows = appendTableRow(rows, header, align, nil, 0, cols, false)
+
+		return rows, lineRows, j
+	}
+
+	base := len(rows)
+	widths, columns := tableWidths(header, body, cols)
+	rows = appendTableRow(rows, header, align, widths, columns, cols, true)
+	rows = append(rows, previewRow{Kind: "table", Segments: tableRule(widths)})
+
+	for k, cells := range body {
+		lineRows[bodyStart-start+k] = len(rows) - base
+		rows = appendTableRow(rows, cells, align, widths, columns, cols, false)
+	}
+
+	return rows, lineRows, j
+}
+
+// isTableBodyLine reports whether a line belongs to the body of a table.
+func isTableBodyLine(line string) bool {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" || !strings.Contains(trimmed, "|") {
+		return false
+	}
+
+	if isFenceLine(trimmed) || headingStart(line) || isMarkdownHR(trimmed) ||
+		isHTMLBlockStart(trimmed) || strings.HasPrefix(trimmed, ">") {
+		return false
+	}
+
+	marker, _ := listMarker(trimmed)
+
+	return marker == ""
+}
+
+// tableWidths returns the fitted column widths and the column count.
+func tableWidths(header []string, body [][]string, cols int) ([]int, int) {
+	columns := len(header)
+
+	for _, row := range body {
+		if len(row) > columns {
+			columns = len(row)
+		}
+	}
+
+	if columns < 1 {
+		columns = 1
+	}
+
+	maxColumns := (cols - 1) / (previewTableBorders + 1)
+	if maxColumns < 1 {
+		maxColumns = 1
+	}
+
+	if columns > maxColumns {
+		columns = maxColumns
+	}
+
+	natural := make([]int, columns)
+	for i := range natural {
+		natural[i] = 1
+	}
+
+	for i, cell := range header {
+		if i < columns {
+			natural[i] = max(natural[i], len([]rune(plainInline(cell))))
+		}
+	}
+
+	for _, row := range body {
+		for i, cell := range row {
+			if i < columns {
+				natural[i] = max(natural[i], len([]rune(plainInline(cell))))
+			}
+		}
+	}
+
+	budget := cols - (previewTableBorders*columns + 1)
+	if budget < columns {
+		budget = columns
+	}
+
+	total := 0
+	for _, width := range natural {
+		total += width
+	}
+
+	for total > budget {
+		widest := -1
+
+		for i, width := range natural {
+			if width > 1 && (widest < 0 || width > natural[widest]) {
+				widest = i
+			}
+		}
+
+		if widest < 0 {
+			break
+		}
+
+		natural[widest]--
+		total--
+	}
+
+	return natural, columns
+}
+
+// appendTableRow renders one logical table row, wrapping every cell to its
+// column width. A nil widths slice computes the widths from the row itself.
+func appendTableRow(rows []previewRow, cells []string, align []tableAlign, widths []int, columns, cols int, header bool) []previewRow {
+	if widths == nil || columns < 1 {
+		widths, columns = tableWidths(cells, nil, cols)
+	}
+
+	cells = padTableCells(cells, columns)
+
+	for i := range cells {
+		cells[i] = plainInline(cells[i])
+	}
+
+	wrapped := make([][]string, columns)
+
+	depth := 1
+
+	for i := range wrapped {
+		wrapped[i] = wrapText(cells[i], widths[i])
+		depth = max(depth, len(wrapped[i]))
+	}
+
+	for line := 0; line < depth; line++ {
+		segs := addSeg(nil, "│", classPunc)
+
+		for i := 0; i < columns; i++ {
+			text := ""
+			if line < len(wrapped[i]) {
+				text = wrapped[i][line]
+			}
+
+			text = padTableCell(text, widths[i], tableAlignAt(align, i))
+			segs = addSeg(segs, " ", classPunc)
+
+			for _, seg := range previewInline(text) {
+				class := seg.Class
+				if header {
+					class = classBold
+				}
+
+				segs = addSeg(segs, seg.Text, class)
+			}
+
+			segs = addSeg(segs, " ", classPunc)
+			if i < columns-1 {
+				segs = addSeg(segs, "│", classPunc)
+			}
+		}
+
+		segs = addSeg(segs, "│", classPunc)
+		rows = append(rows, previewRow{Kind: "table", Segments: segs})
+	}
+
+	return rows
+}
+
+// padTableCells pads or merges cells to the table column count.
+func padTableCells(cells []string, columns int) []string {
+	if len(cells) > columns {
+		merged := append([]string(nil), cells[:columns-1]...)
+		merged = append(merged, strings.Join(cells[columns-1:], " "))
+
+		return merged
+	}
+
+	out := make([]string, columns)
+	copy(out, cells)
+
+	return out
+}
+
+// tableAlignAt returns the alignment for a column.
+func tableAlignAt(align []tableAlign, i int) tableAlign {
+	if i < len(align) {
+		return align[i]
+	}
+
+	return tableLeft
+}
+
+// padTableCell pads a cell to the column width using its alignment.
+func padTableCell(text string, width int, align tableAlign) string {
+	r := []rune(text)
+	if len(r) > width {
+		r = r[:width]
+	}
+
+	gap := width - len(r)
+	if gap <= 0 {
+		return string(r)
+	}
+
+	switch align {
+	case tableRight:
+		return strings.Repeat(" ", gap) + string(r)
+	case tableCenter:
+		left := gap / previewBorderPad
+
+		return strings.Repeat(" ", left) + string(r) + strings.Repeat(" ", gap-left)
+	default:
+		return string(r) + strings.Repeat(" ", gap)
+	}
+}
+
+// tableRule renders the separator between the header and the body.
+func tableRule(widths []int) []segment {
+	segs := []segment{{Text: "├", Class: classPunc}}
+
+	for i, width := range widths {
+		segs = append(segs, segment{Text: strings.Repeat("─", width+previewBorderPad), Class: classPunc})
+		if i < len(widths)-1 {
+			segs = append(segs, segment{Text: "┼", Class: classPunc})
+		}
+	}
+
+	segs = append(segs, segment{Text: "┤", Class: classPunc})
+
+	return segs
 }

@@ -55,6 +55,12 @@ func shortcutChord(m modifiers, key ebiten.Key) chord {
 		}
 	case ebiten.KeyV:
 		if command {
+			// A command with Shift is a page chord, not a text edit.
+			// Only the unshifted chord pastes.
+			if m.Shift {
+				return chordNone
+			}
+
 			return chordPaste
 		}
 	case ebiten.KeyX:

@@ -67,6 +67,8 @@
 
 .prow-rule .ptext { color: #3a4152; }
 .prow-table .ptext { color: #9aa5b8; font-family: var(--mono); font-size: 11px; }
+.prow-diagram .ptext { color: var(--accent); font-family: var(--mono); font-size: 11px; }
+.prow-diagram .pmark { color: var(--accent); }
 .prow-li .pmark { color: var(--accent); }
 .prow-gap { height: var(--row-h); }
 

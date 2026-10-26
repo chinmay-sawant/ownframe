@@ -141,8 +141,8 @@ A running transition asks for the next frame at once, a delayed run asks for the
 delay end, and a finished or released run asks for nothing. Each sample marks
 the union of the target operations' painted bounds before and after the write,
 and the page feeds that into its ordinary dirty set. A page with only
-transitions therefore parks like a static page once the run ends. `Serve` does
-not tick, so a served page shows its committed frame.
+transitions therefore parks like a static page once the run ends. `Serve` runs
+the same tick and redraws on damage, so a served page follows the transition.
 
 ### Switch
 

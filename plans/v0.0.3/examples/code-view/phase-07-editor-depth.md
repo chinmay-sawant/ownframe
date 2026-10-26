@@ -2,7 +2,10 @@
 
 Goal: read two files at once and read a long line without losing the row math.
 
-Status: planned.
+Status: partly landed. Two editor groups, the wrap toggle, diff wrapping, and
+inline Markdown preview are in. Each group has its own tab list and active
+path, but the two panes share one page scroll. Horizontal scroll, diff context
+expansion, go-to-line, breadcrumb dropdowns, and a minimap are open.
 
 ## Design
 
@@ -21,17 +24,24 @@ Status: planned.
 
 ## Checklist
 
-- [ ] Add the second editor group and its tab list.
-- [ ] Give each group an active path and a scroll offset.
-- [ ] Route the scroll callback to the focused group.
+- [x] Add the second editor group and its tab list. Evidence:
+      `TestFeatureSplitEditor`, `editor_group.go`, `pane.go`.
+- [x] Give each group an active path. Evidence: `TestFeatureSplitEditor`.
+- [ ] Give each group an independent scroll offset. The panes share the page
+      offset today.
+- [ ] Route the scroll callback to the focused group. It still drives both.
 - [ ] Add a horizontal track offset.
 - [x] Add a wrap toggle with fixed visual rows. Evidence:
   `TestWrapLongCodeLine`, `wrap.go`.
+- [x] Wrap unified and split diff cells. Evidence: `TestDiffWrapUnified`,
+  `TestFeatureDiffWrapIntegration`, `diff_wrap.go`.
+- [x] Add edit, selection, and save in the source view. Evidence:
+  `TestFeatureEditAndSave`, `edit_buffer.go`, `workspace_write.go`.
 - [ ] Add expandable diff context.
 - [ ] Add go-to-line and range copy.
 - [ ] Add breadcrumb dropdowns.
 - [ ] Add the minimap or overview.
-- [ ] Add tests for the split groups, wrap, and context expansion.
+- [x] Add tests for the split groups, wrap, diff wrap, and editing.
 
 ## Gate
 

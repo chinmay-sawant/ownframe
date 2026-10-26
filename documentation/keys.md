@@ -80,5 +80,7 @@ key has been held 30 frames. `Ctrl+Backspace` (`page.Edit().DeleteWord`) deletes
 same cadence. After a chord fires, its key stops typing while it stays down,
 and it types again once the key has been up for 50 ms.
 
-`Serve` has no window, so its page receives no key events. The desktop
-window, the phone build, and the WebAssembly canvas all send them.
+`Serve` has no Ebiten window, so its browser shell forwards keydown and keyup
+to `/key`, printable characters to `/type`, and Tab to `host.Focuser`. The
+desktop window, the phone build, and the WebAssembly canvas send the same key
+names directly.

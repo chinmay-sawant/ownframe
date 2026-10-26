@@ -22,7 +22,7 @@ func TestLimitMutating(t *testing.T) {
 		t.Fatalf("first: %d", rec.Code)
 	}
 	denied := false
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 120; i++ {
 		if rec := mk("10.9.8.7:1"); rec.Code == http.StatusTooManyRequests {
 			denied = true
 			break

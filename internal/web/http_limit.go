@@ -8,11 +8,12 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// one mutating token per 100ms; burst 10. maxInflight caps handlers;
-// maxThrottleIP bounds the table.
+// one mutating token per 50ms; burst 40. maxInflight caps handlers;
+// maxThrottleIP bounds the table. The burst leaves room for typing and
+// wheel events while still bounding a scripted flood.
 const (
-	limitEvery    = 100 * time.Millisecond
-	limitBurst    = 10
+	limitEvery    = 50 * time.Millisecond
+	limitBurst    = 40
 	maxInflight   = 8
 	maxThrottleIP = 1024
 	throttleKeep  = 5 * time.Minute
@@ -49,7 +50,12 @@ func (s *server) allowAddr(addr string) bool {
 }
 
 func mutatingPath(path string) bool {
-	return path == "/click" || path == "/type" || path == "/backspace"
+	switch path {
+	case "/click", "/type", "/backspace", "/key", "/wheel":
+		return true
+	}
+
+	return false
 }
 
 // limit caps mutating POSTs per IP with 429 and in-flight with 503.

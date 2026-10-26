@@ -63,6 +63,9 @@ type diffRow struct {
 	RightKind string
 	LeftPad   bool
 	RightPad  bool
+	Cont      bool
+	LeftCont  bool
+	RightCont bool
 }
 
 // clipDiffRows trims long diff text so a cell cannot paint into its neighbour.

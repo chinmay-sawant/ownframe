@@ -7,12 +7,16 @@ type View struct {
 	Filter  string
 	Details bool
 	DevOn   bool
+	Modal   bool
 
 	Workspace   string
 	Branch      string
 	BranchQuery string
 	Changed     int
 	DevNote     string
+	ScanBudget  string
+	WatchNote   string
+	HoverPath   string
 
 	Tree         []treeRow
 	TreeCount    int
@@ -60,12 +64,91 @@ type View struct {
 	EmptyBody   string
 	Recent      []recentRow
 
+	Editing   bool
+	EditText  string
+	EditDirty bool
+	CanEdit   bool
+	SaveNote  string
+	Dirty     int
+
+	Split      bool
+	FocusGroup int
+	PaneLeft   int
+	PaneWidth  int
+	Second     secondaryView
+
 	Diff         diffView
 	History      historyView
 	Outline      []symbolRow
 	Toast        toastView
 	Palette      paletteView
 	PaletteQuery string
+	SearchQuery  string
+	Search       searchView
+}
+
+// secondaryView is the right-hand editor group. It carries only the fields
+// that pane draws; the left group keeps the top-level View fields.
+type secondaryView struct {
+	Open        bool
+	Left        int
+	Width       int
+	Tabs        []tabRow
+	ActiveTab   int
+	Active      string
+	ActiveDir   string
+	ActiveName  string
+	Lang        string
+	LangLabel   string
+	Badge       string
+	LineCount   int
+	ByteSize    string
+	Status      string
+	StatusClass string
+	Truncated   bool
+
+	Rows        []codeRow
+	TrackTop    int
+	Welcome     bool
+	Preview     bool
+	Previewable bool
+	PreviewRows []previewRow
+	Empty       bool
+	EmptyKind   string
+	EmptyTitle  string
+	EmptyBody   string
+
+	Editing   bool
+	EditText  string
+	EditDirty bool
+	CanEdit   bool
+}
+
+// searchView is the workspace content search panel.
+type searchView struct {
+	Open      bool
+	Query     string
+	Case      bool
+	Index     int
+	Files     int
+	Note      string
+	Truncated bool
+	Busy      bool
+	Rows      []searchRow
+}
+
+// searchRow is one content-search match.
+type searchRow struct {
+	Index    int
+	Path     string
+	Name     string
+	Dir      string
+	Line     int
+	Col      int
+	Before   string
+	Match    string
+	After    string
+	Selected bool
 }
 
 // treeRow is one file or folder in the explorer.
@@ -142,6 +225,7 @@ type diffView struct {
 	CommitSubject string
 	CommitAuthor  string
 	CommitDate    string
+	Loading       bool
 }
 
 // historyView is the commit rail above the diff.
@@ -163,6 +247,7 @@ type historyView struct {
 	Tip         commitTipView
 	Note        string
 	Unborn      bool
+	Loading     bool
 }
 
 // commitRow is one commit in the history rail.

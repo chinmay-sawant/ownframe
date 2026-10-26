@@ -36,6 +36,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", srv.page)
 	mux.HandleFunc("GET /frame.png", srv.frame)
+	mux.HandleFunc("GET /state", srv.state)
 	if srv.debugEnabled {
 		if debugtag.Enabled {
 			mux.HandleFunc("GET /debug/state", srv.debug)
@@ -49,10 +50,14 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	mux.Handle("POST /click", srv.limit(http.HandlerFunc(srv.click)))
 	mux.Handle("POST /type", srv.limit(http.HandlerFunc(srv.typeText)))
 	mux.Handle("POST /backspace", srv.limit(http.HandlerFunc(srv.backspace)))
+	mux.Handle("POST /key", srv.limit(http.HandlerFunc(srv.key)))
+	mux.Handle("POST /wheel", srv.limit(http.HandlerFunc(srv.wheel)))
 	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", addr)
 	if err != nil {
 		return err
 	}
+	stopTick := srv.startTick(ctx)
+	defer stopTick()
 	fmt.Println("http://" + addr + "/")
 	hs := &http.Server{Handler: panicRecovery(securityHeaders(requireLocalHost(bindHostName(addr), mux))), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
 	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })

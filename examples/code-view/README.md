@@ -15,24 +15,30 @@ go run ./examples/code-view
 
 The viewer opens the current directory and reads the working-tree diff at
 startup. The default window is 1500x900 and the minimum is 840x700. The
-developer dock takes 340 px, so close it with F12 on windows narrower than about
-1180 px if the page needs the full width. The bundled `testdata/sample` is the
-deterministic fixture the test suite uses.
+developer dock is 340 px on wide windows and shrinks below 1180 px, so the page
+keeps usable width; F12 still closes it. The scan stops at 10,000 files by
+default; `-files 25000` raises the budget and the status bar says when the limit
+was hit. The bundled `testdata/sample` is the deterministic fixture the test
+suite uses.
 
 Point the viewer at another directory:
 
 ```sh
 go run ./examples/code-view -root /path/to/repo
+go run ./examples/code-view -root /path/to/monorepo -files 25000
 ```
 
 Source Control runs `git diff HEAD` and lists untracked files. A background
-fsnotify watcher refreshes the changed count and diff when a file in the current
-folder changes. It ignores `.git` churn, so a commit made outside the viewer
-still needs Refresh. A clean tree says so; a directory without a repository says
-that too. The viewer never writes to the repository.
+fsnotify watcher rescans the tree, updates the diff, reopens changed documents,
+and follows `.git/HEAD` and refs, so a new file appears without a restart and
+an external commit or branch switch updates history. Expanded folders and open
+tabs stay put; tabs for deleted files close. A clean tree says so; a directory
+without a repository says that too. The viewer writes only when you edit a file
+and press Save.
 
 Other flags: `-dev=false` hides the developer dock, `-perf=false` stops pipeline
-sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
+sampling, `-addr` changes the `-web` address, and `-web` serves the interactive
+page (tick, keys, wheel, clicks, live frame updates).
 
 ## Screen
 
@@ -43,26 +49,37 @@ sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
   change letters. Folders show a right or down chevron. The header has a
   collapse-all icon. When the tree is taller than the sidebar, use the mouse
   wheel over the tree, drag the thin scrollbar, use the footer arrows, or move
-  focus with the keyboard.
+  focus with the keyboard. Hover a clipped tree row or tab to read its full
+  path in the status bar.
 - Tabs keep up to eight files and shrink their names so all eight stay
   visible. The Working tree tab has its own X; closing it returns to the open
-  file. Closing the last file tab shows the welcome panel.
+  file. Closing the last file tab shows the welcome panel. The split button
+  beside the tabs opens a second editor group with its own tab list; click a
+  tab or the L button to move focus, and close the split from either strip.
 - The editor has line numbers, token colours, Copy path, Copy file, a Wrap
-  toggle, `Ctrl+F` find, and a Markdown preview toggle. The active tab shows
-  M, A, D, or U for a changed file.
+  toggle, `Ctrl+F` find, `Ctrl+E` edit, a split editor, and a Markdown preview
+  toggle. `Ctrl+S` saves an edited file. The active tab shows M, A, D, or U for
+  a changed file and an unsaved dot in the status bar.
+- Editing is a plain textarea over the editor body: selection, cut, copy,
+  paste, undo, and redo use the same window chords as a form field. The sample
+  workspace is read-only and Save reports that; a disk workspace writes the
+  file and reloads its tokens.
 - Details reads the active file: language, line count, exact size, encoding,
   indentation, change status, and an outline. In Source Control it follows the
   selected diff file. Click an outline row to jump to the line.
 - The status bar shows the branch, changed count, the active language or the
-  diff counts, and the devtools state.
+  diff counts, the devtools state, the scan budget, rescan summaries, and
+  unsaved files.
 
 The developer dock opens on start, so F12 closes it instead of opening it. The
 window lays the page out beside the dock, so the page controls stay clickable.
 The layout fits a 1280x720 window and a 1920x1080 one.
 
-Long lines soft-wrap by default. The Wrap chip in the breadcrumb or `Z` turns
-that off and back on. Wrapped rows keep the 20 px grid, and a continuation row
-leaves the line number column blank.
+Long lines soft-wrap by default in files and diffs. The Wrap chip in the
+breadcrumb or `Z` turns that off and back on. Wrapped rows keep the 20 px grid,
+and a continuation row leaves the line number column blank. A long unified diff
+cell wraps inside its column; a split cell wraps independently and the taller
+side sets the row count.
 
 ## Search
 
@@ -77,17 +94,32 @@ the tree is open.
 `Ctrl+F` opens find in the active file. It shows the match count, supports
 case-sensitive matching, next and previous with wrap-around, and highlights
 the visible matches. Escape closes the bar and restores the previous focus.
-Workspace content search is not part of this pass.
+
+`Ctrl+Shift+F`, or the magnifier in the activity bar, opens workspace content
+search. It reads every scanned text file, skips binary and oversized files,
+caps one file at eight hits, and returns up to 200 matches. The list windows
+eight rows around the selection; arrows move, Enter opens the file at the
+source line, and Escape closes. Case matching is a toggle.
 
 ## Markdown preview
 
 Press `Ctrl+Shift+V` or click Preview in the breadcrumb on a Markdown file. The
 editor renders headings, paragraphs, lists, quotes, fenced code, tables, rules,
-bold, italic, inline code, and links. `Source` returns to the token view.
+bold, italic, inline code, links, raw HTML text, and Mermaid flowcharts and
+sequence diagrams as fixed-row text diagrams. `Source` returns to the token
+view.
+
+The preview reflows to the current editor width when the window or details
+drawer changes. Table cells wrap inside aligned columns instead of printing
+their pipes, and a long cell grows the row block. HTML comments are removed and
+common tags (`b`, `i`, `code`, `a`, `br`, `img alt`, and block tags) render
+their text instead of their source. Mermaid fences with `flowchart`, `graph`,
+or `sequenceDiagram` render boxes and arrows; other diagram types show a note
+and their source lines.
 
 The preview uses the same 20 px rows as the code view, so the scroll and
-windowing math is unchanged. The preview is a fixed-row approximation: a table
-keeps its pipes, and a long line clips instead of wrapping.
+windowing math is unchanged. It is a fixed-row approximation, not a browser:
+HTML is reduced to text and Mermaid has no subgraph layout.
 
 ## Languages
 
@@ -120,15 +152,19 @@ words carry a stronger tint than the line background. Hunk arrows walk the
 The Source Control drawer holds the working-tree files at the top and a
 History pane below them. It reads up to 20 recent non-merge commits with one
 `git log` call. Click a commit to expand its author line and changed files
-inside the pane; clicking a file opens that patch in the editor. Hover a commit
-to read its message. Drag the divider between the files and History to resize
-them; the pane auto-fits the commit count until you drag it. `Working tree`
-returns the editor to the uncommitted diff.
+inside the pane; clicking a file opens that patch in the editor. A patch is
+read by a background worker and the pane says it is loading, so a click never
+blocks the page. Hover a commit to read its message. Drag the divider between
+the files and History to resize them; the pane auto-fits the commit count until
+you drag it. `Working tree` returns the editor to the uncommitted diff.
 
 In a live repository, click the branch name in the History header to list local
-and remote branches and filter by name. Picking a branch loads its commits
-without changing the checkout. The status bar keeps showing the checked-out
-branch. `Follow HEAD` returns the pane to the checked-out branch.
+and remote branches and filter by name. The picker shows as many matches as the
+pane height fits (at least four, up to 20) and says how many are hidden; type to
+filter. Picking a branch loads its commits without changing the checkout, and
+the result is cached for the session and across restarts. The status bar keeps
+showing the checked-out branch. `Follow HEAD` returns the pane to the
+checked-out branch.
 
 The bundled sample uses a fixed three-commit history built from
 `fixtures/sample.diff`. It is labeled `sample` and never runs git. A directory
@@ -169,6 +205,13 @@ slice and spacer math exact.
 The details drawer is 280 px. Opening it narrows the editor and its code rows,
 so the windowing slice is rebuilt.
 
+The viewer saves recents, both groups' tabs and active files, the split, the
+history ratio, details, the dock state, wrap, preview, and diff mode under
+`ownframe/code-view/session-<hash>.json` in the user config directory. The file
+is written atomically with owner-only permissions and restored by `main` at
+startup. Tests call `New` directly, so they never touch that file. `EnableSession`
+is the only entry point that reads or writes it.
+
 The history pane is a fixed paged region at the bottom of the Source Control
 drawer. The divider changes how much of the drawer the file list and History
 get. The diff uses the full editor body and the page scroll. The history pane
@@ -180,8 +223,12 @@ pages its commits, so it does not need a second scroll viewport.
 |---|---|
 | `Ctrl+P` | Quick open |
 | `Ctrl+F` | Find in the active file |
+| `Ctrl+Shift+F` | Search workspace contents |
+| `Ctrl+E` | Edit the active file |
+| `Ctrl+S` | Save while editing |
+| `Ctrl+\` | Split or close the second editor |
 | `M` or `Ctrl+Shift+V` | Markdown preview |
-| `Z` | Toggle soft wrap |
+| `Z` | Toggle soft wrap in files and diffs |
 | `Enter` `Space` | Activate the focused control |
 | `1` | Explorer |
 | `2` | Source control |
@@ -194,30 +241,58 @@ pages its commits, so it does not need a second scroll viewport.
 | `W` | Close the active tab, or the Working tree tab in Source Control |
 | `S` `U` | Split or unified diff |
 | `N` `P` | Next or previous hunk |
-| `Esc` | Close Details or the toast |
+| `Esc` | Close Details, the toast, search, or the edit buffer |
 
 F12 and Ctrl+Shift+I belong to the window and toggle the developer dock. Tab
-moves through the id-bearing controls. The window may consume Ctrl+Shift+V as
-a paste chord, so the breadcrumb Preview button is the fallback.
+moves through the id-bearing controls; while the palette, content search, or
+branch picker is open, background controls get `tabindex="-1"`, so Tab stays
+inside the overlay. Ctrl+Shift+V now reaches the app; the window keeps plain
+Ctrl+V for paste.
+
+## Accessibility
+
+Icon-only buttons and rows carry accessible names, toggles expose `aria-pressed`,
+the palette, search panel, and branch picker are dialogs, and the toast and find
+count are live regions. Focus rings use `:focus-visible`, and reduced motion
+disables the toast and drawer transforms. Live screen-reader bridging is still
+a library limitation: `internal/atspi` maps the tree but `NewLiveBus` does not
+open D-Bus, so Orca and similar tools cannot attach yet.
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | `app.go` | State, view assembly, windowing, tabs, modes |
+| `pane.go` | Two-group pane geometry and the second editor's rows |
+| `split_ops.go` | Split toggle and focus routing |
+| `edit_ops.go` | Edit buffer, save, and dirty tracking |
+| `search_ops.go` | Workspace content search panel |
+| `session.go` | Session file load, save, sanitize |
+| `app_session.go` | Restore and persist layout |
 | `actions.go` | Click, filter, search, and keyboard routing |
 | `palette.go` | Quick-open rows, selection, and focus |
 | `markdown_preview.go` | Rendered Markdown rows and source anchors |
+| `markdown_html.go` | HTML text extraction and entities |
+| `markdown_mermaid.go` | Flowchart and sequence diagrams |
 | `syntax.go` | Shared lexer and the Go, Python, and JavaScript specs |
 | `syntax_markup.go` | CSS, JSON, HTML, YAML, and shell |
 | `syntax_markdown.go` | Markdown blocks and inline spans |
 | `diff.go` | Unified diff parser, word emphasis, row builders |
+| `diff_wrap.go` | Unified and split diff wrapping |
 | `workspace.go` | Sample and disk scanning, file reads, limits |
+| `workspace_write.go` | Save one file under the root |
+| `workspace_search.go` | Content-search engine |
+| `edit_buffer.go` | Text editing model |
+| `editor_group.go` | One group's tab list |
+| `rescan.go` | Workspace delta and git metadata detection |
 | `outline.go` | The details panel symbols |
 | `git.go` | Live working-tree changes |
-| `watch.go` | Recursive fsnotify watcher and background diff refresh |
+| `watch.go` | Recursive fsnotify watcher, rescan, git refresh |
 | `branches.go` | Local and remote branch list for the history picker |
+| `branch_filter.go` | Branch filter and rank |
+| `branch_cache.go` | Session branch-log cache |
 | `commits.go` | Commit metadata and one-file patches |
+| `commit_loader.go` | Background patch worker |
 | `sample_history.go` | Fixed sample commits built from the fixture diff |
 | `find.go` | In-file find, match rows, and highlights |
 | `wrap.go` | Soft-wrap plan and source-line anchors |
@@ -225,32 +300,38 @@ a paste chord, so the breadcrumb Preview button is the fallback.
 
 ## Limits
 
-- ownframe has no second native window. The panes in this example live in one
-  window.
+- ownframe has no second native window. The two editor groups live in one
+  window and share one page scroll, so a split keeps both panes on the same
+  row offset.
 - Files over 512 KB and files with a NUL byte show a notice. A file over 20,000
   lines keeps the first 20,000.
 - The tree windows its visible rows. The wheel scrolls it under the pointer;
   the scrollbar, footer arrows, and keyboard also work.
 - The scan skips `.git`, `node_modules`, `vendor`, build output, and binary
-  extensions.
-- There is no horizontal scroll. The file view soft-wraps; a diff row clips a
-  long line inside its cell and marks the cut with an ellipsis.
-- The History pane keeps 20 commits and 20 files per commit. A patch read on
-  click shares the three-second git budget, and only one patch is read at a
-  time. The branch picker shows eight matches at a time; type to filter.
+  extensions. It stops at 10,000 files unless `-files` raises the budget; the
+  explorer badge, status bar, and quick open all say when the limit was hit.
+- There is no horizontal scroll. Files and diff cells soft-wrap; `Z` turns it
+  off and the diff clips with an ellipsis.
+- The History pane keeps 20 commits and 20 files per commit. Patches load on a
+  background worker with a three-second git budget. The branch picker shows as
+  many matches as the pane fits and reports how many more need the filter.
 - This example targets desktop. There is no phone layout, Android host, or
   mobile accessibility path.
 - The fsnotify watcher is desktop-only. `-web` keeps the manual Refresh and `R`
-  path. The watcher ignores `.git` events, so external commits need Refresh.
-- `-web` serves one frame because `Serve` does not tick. The desktop window is
-  the interactive path.
-- Quick open searches file names, not file contents.
-- The Markdown preview uses fixed rows; a table keeps its pipes and a long
-  line clips.
+  path. The watcher follows file adds, removes, and changes plus `.git/HEAD`
+  and refs, so an external commit or branch switch updates without Refresh.
+- `-web` serves the same tick, key, wheel, click, and live-frame loop as the
+  browser shell; it does not start the fsnotify watcher.
+- Quick open searches file names; `Ctrl+Shift+F` searches file contents.
+- The Markdown preview uses fixed rows. Tables wrap and raw HTML is reduced to
+  text; Mermaid supports basic flowcharts and sequence diagrams, not subgraphs
+  or browser HTML.
 - The sample fixture is synthetic test data; the default workspace is the
   current directory.
-- The viewer is read-only. Editing, saving, and a second editor group are in
-  the plan.
+- Editing is a plain textarea, not an IDE: no syntax highlighting inside the
+  textarea, no multi-cursor, and no unsaved-change prompt when a tab closes.
+  The sample workspace is read-only. A very long file edits in a fixed-height
+  field, so use the source view for reading long files.
 
 ## Tests
 
@@ -260,14 +341,18 @@ go test -p 1 ./examples/code-view
 
 The suite covers language detection, token text preservation, Go, Python,
 JavaScript, and Markdown tokens, the diff parser, hunk numbers, word emphasis,
-split pairing, untracked files, workspace scanning, shell metrics, tabs, modes,
-filtering, pointer hits on the activity/tree/tab/diff/status controls, quick
-open defaults and filtering, Markdown preview rows and the chord, outline
-scroll jumps, details metadata, the diff pager, live and sample commit history,
-branch picking without checkout, commit expansion, the sidebar history divider,
-diff-cell clipping, soft-wrap rows, in-file find, explorer windowing, wheel and
-keyboard navigation, background file watching, scrolling after a long file
-opens, devtools, the clipboard, and keyboard routing and activation.
+split pairing, unified and split diff wrapping, untracked files, workspace
+scanning and scan limits, content search, session round trips, shell metrics,
+tabs, modes, two editor groups, editing and saving, filtering, pointer hits on
+the activity/tree/tab/diff/status controls, quick open defaults and filtering,
+Markdown preview rows, tables, HTML, Mermaid, reflow, and the chord, outline
+scroll jumps, details metadata, the diff pager, async commit patches, live and
+sample commit history, branch filtering without checkout, commit expansion, the
+sidebar history divider, diff-cell clipping, soft-wrap rows, in-file find,
+explorer windowing, wheel and keyboard navigation, background file watching and
+rescan, external branch changes, scrolling after a long file opens, devtools,
+the clipboard, accessibility names and the modal focus trap, and keyboard
+routing and activation.
 
 Capture the review frames:
 
@@ -276,8 +361,8 @@ OWNFRAME_CODE_VIEW_SCREENSHOT=1 go test -run '^TestScreenshot$' ./examples/code-
 ```
 
 PNGs land in `/tmp/opencode/code-view-shots/`: `explorer`, `preview`, `palette`,
-`changes`, `split`, `details`, `scrolled`, and `welcome`. Nothing is added to
-the repository.
+`changes`, `split`, `details`, `edit`, `split-editor`, `search`, `scrolled`, and
+`welcome`. Nothing is added to the repository.
 
 The size matrix runs five views at 1280x720, 1500x900, and 1920x1080:
 

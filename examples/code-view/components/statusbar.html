@@ -1,8 +1,12 @@
 <footer class="statusbar" id="statusbar">
-  <button class="sb-item sb-branch" id="sb-branch" data-action="mode-changes" type="button" title="Source control"><svg width="10" height="11" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>{{.Branch}}</button>
+  <button class="sb-item sb-branch" id="sb-branch" data-action="mode-changes" type="button" title="Source control" aria-label="Source control: {{.Branch}}"{{if .Modal}} tabindex="-1"{{end}}><svg width="10" height="11" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>{{.Branch}}</button>
   <span class="sb-item"><span class="sb-dot"></span>{{.Workspace}}</span>
   {{if .Changed}}<span class="sb-item sb-changed">{{.Changed}} changed</span>{{end}}
   <span class="sb-fill"></span>
+  {{if .HoverPath}}<span class="sb-item sb-path mono" id="sb-hover-path">{{.HoverPath}}</span>{{end}}
+  {{if .WatchNote}}<span class="sb-item sb-watch" id="sb-watch">{{.WatchNote}}</span>{{end}}
+  {{if .Dirty}}<span class="sb-item sb-dirty" id="sb-dirty">{{.Dirty}} unsaved</span>{{end}}
+  {{if .ScanBudget}}<span class="sb-item sb-scan" id="sb-scan" title="{{.ScanBudget}}">{{.ScanBudget}}</span>{{end}}
   {{if eq .Mode "changes"}}
   <span class="sb-item">{{.Diff.Add}} additions</span>
   <span class="sb-item">{{.Diff.Del}} deletions</span>
@@ -14,16 +18,16 @@
   <span class="sb-item">{{.Encoding}}</span>
   <span class="sb-item">{{.Indent}}</span>
   {{end}}
-  <button class="sb-item sb-dev{{if .DevOn}} on{{end}}" id="sb-devtools" data-action="devtools" type="button" title="Toggle developer tools">
+  <button class="sb-item sb-dev{{if .DevOn}} on{{end}}" id="sb-devtools" data-action="devtools" type="button" title="Toggle developer tools" aria-pressed="{{if .DevOn}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
     <span class="sb-dot"></span>DevTools {{if .DevOn}}on{{else}}off{{end}}
   </button>
 </footer>
 
-{{if .Toast.Show}}<div class="toast-layer" aria-live="polite">
+{{if .Toast.Show}}<div class="toast-layer" aria-live="polite" role="status">
   <div class="toast {{.Toast.Kind}}{{if .Toast.Show}} on{{end}}">
     <span class="toast-icon">{{if eq .Toast.Kind "success"}}✓{{else if eq .Toast.Kind "error"}}!{{else}}i{{end}}</span>
     <span class="toast-text"><b>{{.Toast.Title}}</b><span>{{.Toast.Message}}</span></span>
-    <button class="toast-x" id="toast-close" data-action="toast-close" type="button" title="Close" aria-label="Dismiss notification">×</button>
+    <button class="toast-x" id="toast-close" data-action="toast-close" type="button" title="Close" aria-label="Dismiss notification"{{if .Modal}} tabindex="-1"{{end}}>×</button>
   </div>
 </div>
 {{end}}

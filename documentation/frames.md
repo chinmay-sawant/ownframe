@@ -22,7 +22,9 @@ presents were skipped. Each frame runs
 devtools sync, keys, resize, the passthrough update, pointer, drop, tick, a
 reload poll, sync, the page scroll request, a devtools refresh, and wheel, in
 that order. An error from the
-callback stops the window, and `Run` returns it. `Serve` does not tick.
+callback stops the window, and `Run` returns it. `Serve` runs a 60 Hz tick
+loop, calls `Tick`, and redraws only when the page reports damage or changes
+generation.
 
 ```go
 page.SetTick(func(ctx context.Context) error {
@@ -128,18 +130,19 @@ Remeasure with the current benchmark before choosing an animation path.
 ## Limits
 
 - The window replays the display list, so operation changes show in the
-  desktop window, the phone build, and the WebAssembly canvas. `Serve` never
-  ticks. `page.Probe().PNG()` paints the retained display when requested;
+  desktop window, the phone build, the WebAssembly canvas, and the `Serve`
+  tick loop. `page.Probe().PNG()` paints the retained display when requested;
   operation patches and mutating ticks invalidate an already encoded picture.
   A no-op tick keeps the PNG cache. This software path
   does not capture the window framebuffer.
 - A page that fell back to the bitmap path has no display list. `page.Probe().Display`
   returns nil and there is nothing to change. The automatic CSS driver binds
   nothing on that path.
-- Automatic CSS motion runs on the same tick. `Serve` does not tick, so a served
-  page does not animate. A pause, a trigger wait, or a finished player stops
-  asking for another frame. Go-driven motion still uses the `Page.SetTick`
-  helpers above; [CSS motion](css-motion.md) covers the automatic driver and the
+- Automatic CSS motion runs on the same tick. `Serve` runs that tick and
+  redraws on damage, so a served page animates like the desktop window. A
+  pause, a trigger wait, or a finished player stops asking for another frame.
+  Go-driven motion still uses the `Page.SetTick` helpers above;
+  [CSS motion](css-motion.md) covers the automatic driver and the
   manual preview packages.
 
 The [Spotify player](../examples/spotify-player) example uses the tick for a

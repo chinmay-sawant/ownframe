@@ -7,11 +7,12 @@ import (
 )
 
 // Serve listens on addr and blocks. Cancel ends the listener.
-// The page at / shows the latest picture. Clicks and the type form call the
-// same handlers as Run. Serve draws the page first when it has not been drawn yet.
+// The page at / shows the latest picture and forwards pointer, wheel, and key
+// input to the same handlers as Run. The page is ticked at about 60 Hz while
+// Serve runs.
+// Serve draws the page first when it has not been drawn yet.
 // Developer endpoints stay off; ServeWithOptions opts into them.
-// A Page has one owner: never share it between Run and Serve. Draw and tick
-// stay on the page loop.
+// A Page has one owner: never share it between Run and Serve.
 func Serve(ctx context.Context, page *Page, addr string) error {
 	if err := prepare(ctx, page); err != nil {
 		return err

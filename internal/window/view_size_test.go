@@ -16,8 +16,9 @@ func TestViewSizeShrinksForDock(t *testing.T) {
 	}
 
 	s.dev.on = true
-	if w, h := s.viewSize(); w != 460 || h != 600 {
-		t.Fatalf("open dock view = %dx%d, want 460x600", w, h)
+	// An 800 px window gives the panel 224 px, not the full 340.
+	if w, h := s.viewSize(); w != 576 || h != 600 {
+		t.Fatalf("open dock view = %dx%d, want 576x600", w, h)
 	}
 }
 
@@ -37,8 +38,8 @@ func TestResizeShrinksPageForDock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if w, h := d.Size(); w != 460 || h != 600 {
-		t.Fatalf("open dock page = %dx%d, want 460x600", w, h)
+	if w, h := d.Size(); w != 576 || h != 600 {
+		t.Fatalf("open dock page = %dx%d, want 576x600", w, h)
 	}
 
 	s.dev.on = false

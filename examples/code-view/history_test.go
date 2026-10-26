@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -77,7 +78,6 @@ func historyRepo(t *testing.T) (string, []string) {
 
 func newHistoryApp(t *testing.T) (*App, []string) {
 	t.Helper()
-
 	dir, hashes := historyRepo(t)
 	app, err := New(dir)
 	if err != nil {
@@ -99,6 +99,27 @@ func newHistoryApp(t *testing.T) (*App, []string) {
 	}
 
 	return app, hashes
+}
+
+// waitForCommitPatch drains the asynchronous patch worker in tests.
+func waitForCommitPatch(t *testing.T, app *App) {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+
+	for time.Now().Before(deadline) {
+		if err := app.tickWatch(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		if app.View().Diff.HasFiles && app.View().Diff.Source == "commit" {
+			return
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Fatalf("commit patch did not arrive: %+v", app.View().Diff)
 }
 
 func TestSampleHistoryRail(t *testing.T) {
@@ -169,6 +190,7 @@ func TestHistoryPaneAndCommitExpand(t *testing.T) {
 
 	short := view.History.Commits[0].Short
 	clickID(t, app, "commit-"+short)
+	waitForCommitPatch(t, app)
 
 	view = app.View()
 	if !view.History.Commits[0].Expanded || view.Diff.Source != "commit" || !view.Diff.HasFiles {

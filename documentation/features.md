@@ -168,13 +168,13 @@ Detail is in [hot-reload.md](hot-reload.md).
 
 ## Frames
 
-`Page.SetTick` registers one function the window calls before it draws each frame. The function can change an operation in the retained display list, or call `Redraw`, so a page can animate without parsing the HTML again. `Serve` does not tick.
+`Page.SetTick` registers one function the window calls before it draws each frame. The function can change an operation in the retained display list, or call `Redraw`, so a page can animate without parsing the HTML again. `Serve` runs the same tick at about 60 Hz and redraws only when a tick reports damage.
 
 Detail is in [frames.md](frames.md).
 
 ## Keys
 
-`Handlers.KeyDown` and `Handlers.KeyUp` receive key presses and releases the window does not own, with a lowercase key name, such as `"space"` or `"arrowdown"`; `Digit1` arrives as `"1"`, and a caret key held with a modifier arrives as `"shift+arrowleft"`. A key handler does not draw; an error stops the window, and `Run` returns it. The window drops auto-repeat pulses with a two-frame guard, so a tap shorter than two frames loses its release. Tab and Shift+Tab are consumed when focus moves; F11, F12, Ctrl+Shift+I, and the zoom chords are consumed by the window. Tab and Shift+Tab move focus when the page has a focusable control, and F11 toggles fullscreen on desktop; [interaction.md](interaction.md) covers both. `Serve` receives no key events.
+`Handlers.KeyDown` and `Handlers.KeyUp` receive key presses and releases the window does not own, with a lowercase key name, such as `"space"` or `"arrowdown"`; `Digit1` arrives as `"1"`, and a caret key held with a modifier arrives as `"shift+arrowleft"`. A key handler does not draw; an error stops the window, and `Run` returns it. The window drops auto-repeat pulses with a two-frame guard, so a tap shorter than two frames loses its release. Tab and Shift+Tab are consumed when focus moves; F11, F12, Ctrl+Shift+I, and the zoom chords are consumed by the window. Tab and Shift+Tab move focus when the page has a focusable control, and F11 toggles fullscreen on desktop; [interaction.md](interaction.md) covers both. `Serve` forwards the same key names from its browser page, moves focus on Tab, and forwards wheel events to the page.
 
 Detail is in [keys.md](keys.md).
 

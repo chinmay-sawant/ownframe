@@ -226,6 +226,23 @@ button.sb-item:hover { background-color: var(--panel-3); color: var(--text); }
 .sb-dev.on { color: var(--green); }
 .sb-dev.on .sb-dot { background-color: var(--green); }
 .sb-fill { flex: 1; }
+.sb-path { max-width: 42vw; overflow: hidden; color: var(--accent); font-family: var(--mono); font-size: 9px; white-space: nowrap; }
+.sb-watch { color: var(--green); }
+.sb-scan { color: var(--amber); }
+.sb-dirty { color: var(--amber); }
+.scan-badge {
+  height: 15px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background-color: var(--amber-soft);
+  color: var(--amber);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
 
 /* Toast -------------------------------------------------------------------- */
 
