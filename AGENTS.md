@@ -20,7 +20,7 @@ Package `ownframe` at the module root is the public API. Keep it there: do not m
 
 `internal/atspi` maps `AccessibilityTree` to AT-SPI roles over a bus seam. Linux desktop `Run` wires it from `internal/window/a11y_atspi.go`. The live D-Bus client is not implemented, so `Live` stays false. Windows UIA, macOS VoiceOver, and Android TalkBack are not shipped. Tests use `FakeBus` and must not log accessible text.
 
-`internal/host` defines `Screen` and the optional interfaces a screen can add: `Ticker`, `Inspector`, `Reloader`, `Dropper`, `Focuser`, `ContextMenu`, `CursorShape`, `ScrollRequester`, `IME`, and `LongPresser`. `Dropper` receives `Drop.Path`, a sensitive local desktop path; copy bytes from `Drop.Read` during the call. The window and web packages call those. They do not import package `ownframe`.
+`internal/host` defines `Screen` and the optional interfaces a screen can add: `Ticker`, `Inspector`, `Reloader`, `Dropper`, `Focuser`, `Hoverer`, `ContextMenu`, `CursorShape`, `ScrollRequester`, `IME`, and `LongPresser`. `Dropper` receives `Drop.Path`, a sensitive local desktop path; copy bytes from `Drop.Read` during the call. The window and web packages call those. They do not import package `ownframe`.
 
 `internal/clipboard` reads and writes the OS clipboard, and keeps an in-memory copy. It is desktop and window only: `Serve` and `/debug/state` expose no clipboard route. Tests call `UseMemory`.
 

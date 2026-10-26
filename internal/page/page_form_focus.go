@@ -20,8 +20,10 @@ func (p *Page) formState() *form.State { return p.ff.form }
 // setFormState replaces the owned form document.
 func (p *Page) setFormState(s *form.State) { p.ff.form = s }
 
-// hoverID is the hovered element id, or "" when none.
-func (p *Page) hoverID() string { return p.ff.hover }
+// HoverID returns the element the page paints as hovered, or "" when none.
+// The window reads it through host.Hoverer so a hover the page set itself
+// survives a frame that did not move the pointer.
+func (p *Page) HoverID() string { return p.ff.hover }
 
 // setHoverID records the hovered element id.
 func (p *Page) setHoverID(id string) { p.ff.hover = id }

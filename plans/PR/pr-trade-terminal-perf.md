@@ -23,6 +23,8 @@ Brings the Meridian trading terminal example plus three rounds of engine and win
 
 - Identical-frame `Redraw` short-circuits when the executed source, viewport, focus, hover, theme, and images all match, counting the redraw with no style, layout, or repaint; motion, retained-state debt, and caret blink force rebuilds.
 - Hover restyle re-places only the boxes the style diff touches (enter/leave from nothing scopes to the hovered element or its id-bearing scope, budget-checked) instead of relaying out the whole page; full layout remains the fallback.
+- The hover patch keeps its change set to the patched operations (stable op identity and a per-element damage box), so the display diff no longer escalates a single-row hover to full-content damage.
+- `host.Hoverer` and `internal/window/hover_cursor.go`: the window re-resolves a still cursor on a generation change only while the page still paints the element the window pushed, so a page that moved its own hover is left alone and a hover frame pays one layout instead of two.
 - Scrollable content size intersects each box with its recorded ancestor overflow clip, so clipped paint (marquee tape, sheens) no longer extends the document or summons a horizontal scrollbar.
 
 ### Motion binding (`internal/motion`, `internal/cssanimation`, `internal/cssmotion`)
@@ -48,11 +50,11 @@ Brings the Meridian trading terminal example plus three rounds of engine and win
 
 | Area | Impact |
 |------|--------|
-| **Performance** | Watchlist hover 178.5ms to 19-23ms (~88% faster); news hover 97.3ms to 11ms (~89%); orders hover 123.6ms to 83ms (~33%, engine display-rebuild skip still open). First renders 6 to 20x faster than the original build (news 157ms to 113ms under identical conditions in the latest round). Trade suite 11.2s to 8.7-8.9s. |
+| **Performance** | Watchlist hover 178.5ms to 19.9ms (~89% faster); orders hover 123.6ms to 10.8ms (~91%); news hover 97.3ms to 10.6-26ms. Live-loop hover frames pay one layout, Update 141ms to 1.4ms. First renders 6 to 20x faster than the original build (news 157ms to 113ms under identical conditions in the latest round). Trade suite 11.2s to 8.7-8.9s. |
 | **Memory** | Headless redraws peak at 34MB heap and retain 6MB; image, text, chunk, and layer stores are capped with LRU eviction; park releases pixel caches; frame buffers cut ~17MB steady state. |
 | **Behavior / correctness** | Transformed paint is clipped to ancestor overflow boxes at composite time; abspos flex children overlay instead of consuming line space; stretched abspos resolves per CSS 2.1 section 10.6.4; max-content no longer clamps to the lane. |
 | **API / CLI** | `-perf` defaults on for the trade example (`-perf=false` opts out). No library API changes. |
-| **Dependencies** | Blinkless pinned to `v0.0.4-0.20261026111446-52dcd0692e54` (perf/example-trade merged as PR #28). |
+| **Dependencies** | Blinkless pinned to `v0.0.4-0.20261026120705-9d2ba1c7b728` (blinkless PR #28 and #29 merged: first-launch layout work, then stretch-aware subtree relayout). |
 | **Binary size / build time** | No new dependencies; trade test binary unchanged in kind. |
 
 ---
@@ -102,9 +104,13 @@ Hover averages, `Edit().Hover` only, 1600x900 headless:
 
 | Screen | Before | After |
 |---|---|---|
-| watchlist | 178.5ms | **19 to 23ms** |
-| orders | 123.6ms | **83ms** |
-| news | 97.3ms | **11ms** |
+| watchlist | 178.5ms | **19.9ms** |
+| orders | 123.6ms | **10.8ms** |
+| news | 97.3ms | **10.6 to 26ms** |
+
+Orders needed a blinkless fix: the hover patch was refused because a flex-stretched row's kept height differed from its content height, so every orders hover fell back to a full layout. Stretch-aware subtree relayout (blinkless PR #29) accepts the assigned block size and the patch applies.
+
+The live loop also paid layout twice per hover: the window re-pushed a stale hover point on the frame after any generation change. `host.Hoverer` lets the window confirm the page still paints the element it pushed, so one hover frame pays one layout. Update dropped from 141ms to 1.4ms.
 
 ---
 
@@ -125,8 +131,8 @@ Hover averages, `Edit().Hover` only, 1600x900 headless:
 
 ## Follow-ups (out of scope)
 
-- Orders hover at 83ms needs the engine-side display-rebuild skip (two full rebuilds per hover).
-- `game.Update()` re-lays out after small-damage hovers (120-275ms); full-damage path stays near 1ms.
+- Watchlist hover patch still assembles the display list after the patch; a splice-aware or batched `RelayoutElements` would cut that remaining share.
+- Per-screen hover averages include a one-time full layout on first entry to the list (79 to 175ms); steady row-to-row is the number above.
 - Hover highlight PNG checks and per-screen ms targets live in a temporary test, deleted before merge; re-add if hover budgets regress.
 
 ---

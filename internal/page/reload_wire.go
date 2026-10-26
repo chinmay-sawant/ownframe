@@ -106,7 +106,7 @@ func (p *Page) resolveStates() {
 			ids[box.ID] = true
 		}
 	}
-	if p.hoverID() != "" && !ids[p.hoverID()] {
+	if p.HoverID() != "" && !ids[p.HoverID()] {
 		p.clearHoverID()
 	}
 	if p.activeID() != "" && !ids[p.activeID()] {

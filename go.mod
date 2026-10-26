@@ -3,7 +3,7 @@ module github.com/chinmay-sawant/ownframe
 go 1.26.10
 
 require (
-	github.com/chinmay-sawant/blinkless v0.0.4-0.20261026111446-52dcd0692e54
+	github.com/chinmay-sawant/blinkless v0.0.4-0.20261026120705-9d2ba1c7b728
 	github.com/hajimehoshi/ebiten/v2 v2.10.4
 	golang.org/x/image v0.45.0
 	golang.org/x/text v0.43.0

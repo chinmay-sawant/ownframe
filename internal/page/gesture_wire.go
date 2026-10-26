@@ -469,7 +469,7 @@ func (p *Page) Release(ctx context.Context) error {
 }
 
 func (p *Page) setHover(ctx context.Context, id string) error {
-	if gesture.SameHit(p.hoverID(), id) {
+	if gesture.SameHit(p.HoverID(), id) {
 		return nil
 	}
 
@@ -478,7 +478,7 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 		return err
 	}
 
-	p.markPair(p.hoverID(), id)
+	p.markPair(p.HoverID(), id)
 	p.setHoverID(id)
 	if gesture.SkipHoverRedraw(handled, p.statePseudos.Hover) {
 		return nil
@@ -492,7 +492,7 @@ func (p *Page) paintHover(ctx context.Context, id string) (bool, error) {
 		return false, nil
 	}
 
-	return p.handlers.Hover(ctx, p.boxByID(p.hoverID()), p.boxByID(id))
+	return p.handlers.Hover(ctx, p.boxByID(p.HoverID()), p.boxByID(id))
 }
 
 // boxIDAt returns the innermost box with an id that contains the point, or
@@ -547,7 +547,7 @@ func (p *Page) ContextMenu() []host.MenuItem {
 // arrow everywhere else.
 func (p *Page) CursorShape() host.Shape {
 	in := gesture.Cursor{}
-	if id := p.hoverID(); id != "" {
+	if id := p.HoverID(); id != "" {
 		in.HoverID = id
 		if c, ok := p.control(id); ok {
 			in.Control = true

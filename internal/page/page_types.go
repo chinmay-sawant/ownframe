@@ -63,11 +63,21 @@ type Page struct {
 	watch          *watchState
 	dirty          dirty.Tracker
 	lastPatch      DisplayPatch
-	stateBinding   state.Binding
-	elements       *element.Registry
-	frameState     // deadline: loop sets, window takes; lock: atomic
-	index          map[string]*Box
-	hits           []hitItem
-	pageContent    // paint rect: box cache writes; lock: page loop
-	scroll         scroll.State
+	// painted is the display the host last took damage for. A redraw that
+	// finds damage already marked full can diff this display against the new
+	// one, so a small change made after a full mark keeps its own region
+	// instead of repainting the page.
+	painted *Display
+	// fullGen is the generation whose commit last marked the whole frame
+	// dirty. A mark from an earlier generation is covered by the display
+	// diff against painted; one from the current generation may describe an
+	// in-place tick change no display diff can see.
+	fullGen      uint64
+	stateBinding state.Binding
+	elements     *element.Registry
+	frameState   // deadline: loop sets, window takes; lock: atomic
+	index        map[string]*Box
+	hits         []hitItem
+	pageContent  // paint rect: box cache writes; lock: page loop
+	scroll       scroll.State
 }

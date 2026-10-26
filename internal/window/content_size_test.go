@@ -13,9 +13,10 @@ import (
 func TestContentSizeIgnoresClippedOverflow(t *testing.T) {
 	t.Parallel()
 
-	s := newShell(context.Background(), &fakeScreen{width: 1600, height: 900})
+	fake := &fakeScreen{width: 1600, height: 900}
+	s := newShell(context.Background(), fake)
 
-	s.app.(*fakeScreen).boxes = []layout.Box{
+	fake.boxes = []layout.Box{
 		{ID: "page", Tag: "div", X: 0, Y: 0, W: 1600, H: 900},
 		{
 			ID: "tape-track", Tag: "div", X: 400, Y: 860, W: 2097, H: 28,

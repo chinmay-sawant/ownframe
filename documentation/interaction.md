@@ -24,6 +24,10 @@ A right click asks the page for rows with `ContextMenu() []host.MenuItem` and dr
 
 A left click on a row runs the action and closes the menu. A left click elsewhere or Escape closes it, and a new right click reopens it at the new point. The menu is chrome. `internal/window/menu_draw.go` paints it after the page, so it never enters `page.Probe().PNG`, the display list, or a `Redraw`. The page is only asked for its rows when the menu opens.
 
+## Hover
+
+After the first frame, the window sends the element under the pointer with `Hover(ctx, x, y)` when the point moves, and again after a redraw that changed the built generation. The second pass is skipped when the screen implements `host.Hoverer` and paints an element other than the one the window set. That means the page moved its hover itself, so the window leaves the new hover until the pointer moves. One frame pays for one layout, not two.
+
 ## Cursor shape
 
 When the screen implements `host.CursorShape`, the window reads `CursorShape()` after each hover and sets the Ebiten cursor only when the shape changed. Text fields and textareas map to the I-beam, links and controls to the hand, and everything else to the default arrow. wasm and mobile keep their own cursor and ignore the call. The last shape stays on the shell for tests.

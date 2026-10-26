@@ -56,6 +56,7 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 
 	quarter := d.Width * d.Height / 4
 	reported, empty := 0, 0
+	gen := app.Page().Probe().Generation()
 
 	for i := 0; i < 120; i++ {
 		if err := app.Tick(ctx); err != nil {
@@ -66,6 +67,13 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 			t.Fatalf("frame %d did not opt into the frame dirty path", i)
 		}
 
+		// A generation change is a full Redraw (a feed rotation or the night
+		// sheet), which legitimately repaints the board. The area bound is
+		// about the flap cascade between those events, so a frame that
+		// committed a new display starts a fresh baseline.
+		redrawn := app.Page().Probe().Generation() != gen
+		gen = app.Page().Probe().Generation()
+
 		rect, ok := app.Page().Probe().TakeDirty()
 		if !ok {
 			empty++
@@ -73,6 +81,10 @@ func TestCascadeDirtyRectsStaySmall(t *testing.T) {
 		}
 
 		reported++
+
+		if redrawn {
+			continue
+		}
 
 		if i >= 2 && rect.Dx()*rect.Dy() >= quarter {
 			t.Fatalf("frame %d rect %v area %d, want under %d", i, rect, rect.Dx()*rect.Dy(), quarter)
