@@ -1,0 +1,833 @@
+diff --git a/backend/probe.go b/backend/probe.go
+index 78c06eb..ca31573 100644
+--- a/backend/probe.go
++++ b/backend/probe.go
+@@ -2,9 +2,12 @@ package main
+ 
+ import (
+ 	"context"
++	"crypto/tls"
++	"errors"
+ 	"fmt"
+ 	"io"
+ 	"log/slog"
++	"net"
+ 	"net/http"
+ 	"net/http/httptrace"
+ 	"time"
+@@ -12,12 +15,14 @@ import (
+ 
+ // Result is one probe outcome. Err is empty when the request completed.
+ type Result struct {
+-	Service string
+-	At      time.Time
+-	State   string
+-	Status  int
+-	Total   time.Duration
+-	Err     string
++	Service  string
++	At       time.Time
++	State    string
++	Status   int
++	Total    time.Duration
++	TTFB     time.Duration
++	Err      string
++	Attempts int
+ }
+ 
+ // States a probe can report.
+@@ -28,8 +33,10 @@ const (
+ )
+ 
+ const (
+-	bodyLimit      = 64 << 10
+-	probeUserAgent = "beacon/1.2 (+https://example.com/beacon)"
++	defaultAttempts = 3
++	retryBackoff    = 150 * time.Millisecond
++	bodyLimit       = 64 << 10
++	probeUserAgent  = "beacon/1.4 (+https://example.com/beacon)"
+ )
+ 
+ // Prober runs HTTP checks with a bounded client and a latency budget.
+@@ -46,62 +53,118 @@ func NewProber(timeout, budget time.Duration, log *slog.Logger) *Prober {
+ 		timeout = 4 * time.Second
+ 	}
+ 
++	transport := &http.Transport{
++		Proxy:                 http.ProxyFromEnvironment,
++		DialContext:           (&net.Dialer{Timeout: 3 * time.Second}).DialContext,
++		MaxIdleConns:          32,
++		MaxIdleConnsPerHost:   4,
++		IdleConnTimeout:       90 * time.Second,
++		TLSHandshakeTimeout:   3 * time.Second,
++		ResponseHeaderTimeout: timeout,
++		ForceAttemptHTTP2:     true,
++		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12},
++	}
++
+ 	return &Prober{
+-		client:  &http.Client{Timeout: timeout},
++		client:  &http.Client{Transport: transport, Timeout: timeout},
+ 		timeout: timeout,
+ 		budget:  budget,
+ 		log:     log,
+ 	}
+ }
+ 
+-// Probe checks one service once.
++// Probe checks one service, retrying transport errors and 5xx answers.
+ func (p *Prober) Probe(ctx context.Context, svc Service) Result {
+ 	result := Result{Service: svc.Name, At: time.Now().UTC(), State: StateDown}
+ 
+-	attemptCtx, cancel := context.WithTimeout(ctx, p.timeout)
+-	defer cancel()
+-
+-	start := time.Now()
+-	status, err := p.once(attemptCtx, svc.URL)
+-	result.Total = time.Since(start)
+-	result.Status = status
+-
+-	switch {
+-	case err != nil:
+-		result.Err = err.Error()
+-	case status >= http.StatusInternalServerError:
+-		result.Err = fmt.Sprintf("status %d", status)
+-	case status >= http.StatusBadRequest:
+-		result.Err = fmt.Sprintf("status %d", status)
+-	case result.Total > p.budget:
+-		result.State = StateSlow
+-	default:
+-		result.State = StateUp
++	var last error
++
++	for attempt := 1; attempt <= defaultAttempts; attempt++ {
++		result.Attempts = attempt
++
++		attemptCtx, cancel := context.WithTimeout(ctx, p.timeout)
++		start := time.Now()
++		status, ttfb, err := p.once(attemptCtx, svc.URL)
++		cancel()
++
++		result.Total = time.Since(start)
++		result.TTFB = ttfb
++		result.Status = status
++
++		if err == nil && status < http.StatusInternalServerError {
++			result.State = StateUp
++			if result.Total > p.budget {
++				result.State = StateSlow
++			}
++
++			return result
++		}
++
++		if err != nil {
++			last = err
++		} else {
++			last = fmt.Errorf("status %d", status)
++		}
++
++		if status >= http.StatusBadRequest && status < http.StatusInternalServerError {
++			break
++		}
++
++		if attempt < defaultAttempts {
++			select {
++			case <-ctx.Done():
++				result.Err = ctx.Err().Error()
++
++				return result
++			case <-time.After(retryBackoff * time.Duration(attempt)):
++			}
++		}
+ 	}
+ 
+-	p.log.Debug("probe", "service", svc.Name, "state", result.State, "err", result.Err)
++	if last != nil {
++		result.Err = last.Error()
++	}
++
++	p.log.Debug("probe", "service", svc.Name, "state", result.State, "err", result.Err, "attempts", result.Attempts)
+ 
+ 	return result
+ }
+ 
+-// once sends one request and returns the status and a transport error.
+-func (p *Prober) once(ctx context.Context, url string) (int, error) {
+-	req, err := http.NewRequestWithContext(httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{}), http.MethodGet, url, nil)
++// once sends one request and returns the status, the time to first byte, and
++// a transport error.
++func (p *Prober) once(ctx context.Context, url string) (int, time.Duration, error) {
++	var (
++		firstByte time.Time
++		start     = time.Now()
++	)
++
++	trace := &httptrace.ClientTrace{
++		GotFirstResponseByte: func() {
++			if firstByte.IsZero() {
++				firstByte = time.Now()
++			}
++		},
++	}
++
++	req, err := http.NewRequestWithContext(httptrace.WithClientTrace(ctx, trace), http.MethodGet, url, nil)
+ 	if err != nil {
+-		return 0, fmt.Errorf("build request: %w", err)
++		return 0, 0, fmt.Errorf("build request: %w", err)
+ 	}
+ 
+ 	req.Header.Set("User-Agent", probeUserAgent)
++	req.Header.Set("Accept", "text/html,application/json;q=0.9,*/*;q=0.8")
+ 
+ 	resp, err := p.client.Do(req)
+ 	if err != nil {
+-		return 0, fmt.Errorf("request: %w", err)
++		return 0, 0, fmt.Errorf("request: %w", err)
+ 	}
+ 	defer resp.Body.Close()
+ 
+-	if _, err := io.Copy(io.Discard, io.LimitReader(resp.Body, bodyLimit)); err != nil {
+-		return resp.StatusCode, fmt.Errorf("read body: %w", err)
++	// Drain a bounded prefix so the connection can be reused. A broken body
++	// is a failed check, not an ignored one.
++	if _, err := io.Copy(io.Discard, io.LimitReader(resp.Body, bodyLimit)); err != nil && !errors.Is(err, io.EOF) {
++		return resp.StatusCode, firstByte.Sub(start), fmt.Errorf("read body: %w", err)
+ 	}
+ 
+-	return resp.StatusCode, nil
++	return resp.StatusCode, firstByte.Sub(start), nil
+ }
+diff --git a/backend/store.go b/backend/store.go
+new file mode 100644
+index 0000000..563fda1
+--- /dev/null
++++ b/backend/store.go
+@@ -0,0 +1,183 @@
++package main
++
++import (
++	"context"
++	"database/sql"
++	"errors"
++	"fmt"
++	"time"
++
++	_ "modernc.org/sqlite"
++)
++
++// Store keeps the probe history in SQLite.
++type Store struct {
++	db *sql.DB
++}
++
++// OpenStore opens the database and applies the schema.
++func OpenStore(path string) (*Store, error) {
++	db, err := sql.Open("sqlite", path)
++	if err != nil {
++		return nil, fmt.Errorf("open sqlite: %w", err)
++	}
++
++	db.SetMaxOpenConns(1)
++	db.SetConnMaxIdleTime(time.Minute)
++
++	store := &Store{db: db}
++
++	if err := store.migrate(context.Background()); err != nil {
++		_ = db.Close()
++
++		return nil, err
++	}
++
++	return store, nil
++}
++
++// Close closes the database.
++func (s *Store) Close() error {
++	return s.db.Close()
++}
++
++// migrate creates the one table and its indexes.
++func (s *Store) migrate(ctx context.Context) error {
++	const schema = `
++CREATE TABLE IF NOT EXISTS probes (
++	id       INTEGER PRIMARY KEY AUTOINCREMENT,
++	service  TEXT NOT NULL,
++	at       INTEGER NOT NULL,
++	state    TEXT NOT NULL,
++	status   INTEGER NOT NULL,
++	total_us INTEGER NOT NULL,
++	ttfb_us  INTEGER NOT NULL,
++	err      TEXT NOT NULL DEFAULT '',
++	attempts INTEGER NOT NULL DEFAULT 1
++);
++CREATE INDEX IF NOT EXISTS probes_service_at ON probes (service, at DESC);
++CREATE INDEX IF NOT EXISTS probes_at ON probes (at DESC);
++`
++
++	if _, err := s.db.ExecContext(ctx, schema); err != nil {
++		return fmt.Errorf("schema: %w", err)
++	}
++
++	return nil
++}
++
++// Record stores one probe result.
++func (s *Store) Record(ctx context.Context, result Result) error {
++	const insert = `
++INSERT INTO probes (service, at, state, status, total_us, ttfb_us, err, attempts)
++VALUES (?, ?, ?, ?, ?, ?, ?, ?)
++`
++
++	_, err := s.db.ExecContext(ctx, insert,
++		result.Service,
++		result.At.Unix(),
++		result.State,
++		result.Status,
++		result.Total.Microseconds(),
++		result.TTFB.Microseconds(),
++		result.Err,
++		result.Attempts,
++	)
++	if err != nil {
++		return fmt.Errorf("insert probe: %w", err)
++	}
++
++	return nil
++}
++
++// Latest returns the newest row for each service.
++func (s *Store) Latest(ctx context.Context) ([]Result, error) {
++	const query = `
++SELECT p.service, p.at, p.state, p.status, p.total_us, p.ttfb_us, p.err, p.attempts
++FROM probes p
++JOIN (
++	SELECT service, MAX(at) AS at FROM probes GROUP BY service
++) newest ON newest.service = p.service AND newest.at = p.at
++ORDER BY p.service
++`
++
++	rows, err := s.db.QueryContext(ctx, query)
++	if err != nil {
++		return nil, fmt.Errorf("latest: %w", err)
++	}
++	defer rows.Close()
++
++	var out []Result
++
++	for rows.Next() {
++		var (
++			result        Result
++			at            int64
++			total, ttfb   int64
++		)
++
++		if err := rows.Scan(&result.Service, &at, &result.State, &result.Status, &total, &ttfb, &result.Err, &result.Attempts); err != nil {
++			return nil, fmt.Errorf("scan latest: %w", err)
++		}
++
++		result.At = time.Unix(at, 0).UTC()
++		result.Total = time.Duration(total) * time.Microsecond
++		result.TTFB = time.Duration(ttfb) * time.Microsecond
++		out = append(out, result)
++	}
++
++	return out, rows.Err()
++}
++
++// History returns the newest checks for one service.
++func (s *Store) History(ctx context.Context, service string, limit int) ([]Result, error) {
++	const query = `
++SELECT service, at, state, status, total_us, ttfb_us, err, attempts
++FROM probes
++WHERE service = ?
++ORDER BY at DESC
++LIMIT ?
++`
++
++	rows, err := s.db.QueryContext(ctx, query, service, limit)
++	if err != nil {
++		return nil, fmt.Errorf("history: %w", err)
++	}
++	defer rows.Close()
++
++	var out []Result
++
++	for rows.Next() {
++		var (
++			result      Result
++			at          int64
++			total, ttfb int64
++		)
++
++		if err := rows.Scan(&result.Service, &at, &result.State, &result.Status, &total, &ttfb, &result.Err, &result.Attempts); err != nil {
++			return nil, fmt.Errorf("scan history: %w", err)
++		}
++
++		result.At = time.Unix(at, 0).UTC()
++		result.Total = time.Duration(total) * time.Microsecond
++		result.TTFB = time.Duration(ttfb) * time.Microsecond
++		out = append(out, result)
++	}
++
++	return out, rows.Err()
++}
++
++// Prune drops rows older than the retention window.
++func (s *Store) Prune(ctx context.Context, keep time.Duration) (int64, error) {
++	cutoff := time.Now().Add(-keep).Unix()
++
++	res, err := s.db.ExecContext(ctx, `DELETE FROM probes WHERE at < ?`, cutoff)
++	if err != nil {
++		return 0, fmt.Errorf("prune: %w", err)
++	}
++
++	return res.RowsAffected()
++}
++
++// ErrEmptyHistory reports a service that has never been checked.
++var ErrEmptyHistory = errors.New("empty history")
+diff --git a/config/services.yaml b/config/services.yaml
+index 6f261a1..cfa70ad 100644
+--- a/config/services.yaml
++++ b/config/services.yaml
+@@ -7,6 +7,9 @@ services:
+   - name: checkout-api
+     url: https://api.example.com/health
+     tags: [api, critical]
++  - name: catalog
++    url: https://api.example.com/catalog/health
++    tags: [api]
+   - name: search
+     url: https://api.example.com/search/health
+     tags: [api]
+@@ -19,6 +22,9 @@ services:
+   - name: postgres
+     url: tcp://db.internal:5432
+     tags: [infra, critical]
++  - name: redis
++    url: tcp://cache.internal:6379
++    tags: [infra]
+   - name: mailer
+     url: http://mailer.internal:8081/healthz
+     tags: [internal]
+diff --git a/docs/deployment.md b/docs/deployment.md
+index 4105e74..94fadf9 100644
+--- a/docs/deployment.md
++++ b/docs/deployment.md
+@@ -1,7 +1,7 @@
+ # Deployment
+ 
+-Beacon runs as one process and one SQLite file. There is no queue and no
+-shared cache.
++Beacon runs as one process and one SQLite file. There is no queue, no worker
++pool, and no shared cache.
+ 
+ ## Build
+ 
+@@ -10,26 +10,92 @@ cd backend
+ CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o /usr/local/bin/beacon .
+ ```
+ 
+-Install the binary and the `web/` directory next to it. The server resolves
+-the dashboard from `../web`.
+-
+-## Run
++The dashboard files are served from `../web` relative to the working
++directory. Install both:
+ 
+ ```sh
+-beacon -addr 127.0.0.1:8099 -db /var/lib/beacon/beacon.db
++install -d /srv/beacon/web /var/lib/beacon
++install -m 0644 web/*.css web/*.html web/*.js /srv/beacon/web/
++```
++
++## Configuration
++
++| Variable | Default | Meaning |
++|---|---|---|
++| `BEACON_ADDR` | `127.0.0.1:8099` | Listen address |
++| `BEACON_DB` | `beacon.db` | SQLite path |
++| `BEACON_CONFIG` | `config/services.yaml` | Service catalog |
++| `BEACON_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
++
++Durations in the catalog use Go syntax: `30s`, `750ms`, `4s`. A zero interval
++becomes 30 seconds, and a zero timeout becomes 4 seconds.
++
++## systemd
++
++```ini
++[Unit]
++Description=Beacon endpoint health
++After=network-online.target
++Wants=network-online.target
++
++[Service]
++Type=simple
++User=beacon
++Group=beacon
++WorkingDirectory=/srv/beacon
++Environment=BEACON_DB=/var/lib/beacon/beacon.db
++ExecStart=/usr/local/bin/beacon -config /srv/beacon/config/services.yaml
++Restart=on-failure
++RestartSec=5s
++
++# The SQLite file and its journal live here.
++ReadWritePaths=/var/lib/beacon
++
++[Install]
++WantedBy=multi-user.target
+ ```
+ 
+-Keep the process on loopback. It sends no authentication and trusts every
+-caller.
++## Reverse proxy
++
++Terminate TLS at the proxy and keep Beacon on loopback. It sends no
++authentication of its own.
++
++```nginx
++location / {
++    proxy_pass http://127.0.0.1:8099;
++    proxy_set_header Host $host;
++    proxy_read_timeout 10s;
++}
++```
++
++Add a header check at the proxy if the dashboard leaves the machine:
++
++```nginx
++if ($http_x_beacon_token != "replace-me") {
++    return 401;
++}
++```
+ 
+ ## Retention
+ 
+ History grows by one row per service per interval. Eight services at 30
+-seconds is about 23,000 rows a day.
++seconds is about 23,000 rows a day, under 8 MB with the indexes.
++
++A daily prune keeps the window bounded:
+ 
+ ```sh
+ sqlite3 /var/lib/beacon/beacon.db \
+   "DELETE FROM probes WHERE at < strftime('%s','now') - 86400;"
+ ```
+ 
+-Run the prune from a timer, not from the request path.
++Run it from a timer, not from the request path.
++
++## Upgrades
++
++1. Stop the service.
++2. Back up the database file and any `-wal` and `-shm` siblings.
++3. Replace the binary and the `web/` files.
++4. Start the service and check `/api/health`.
++
++The schema is additive, so an older binary against a newer file is the only
++direction that breaks.
+diff --git a/tools/legacy.py b/tools/legacy.py
+deleted file mode 100644
+index 1c98d6f..0000000
+--- a/tools/legacy.py
++++ /dev/null
+@@ -1,35 +0,0 @@
+-#!/usr/bin/env python3
+-"""Deprecated CSV exporter. Superseded by report.py --format csv."""
+-
+-import csv
+-import sqlite3
+-import sys
+-from pathlib import Path
+-
+-FIELDS = ["service", "at", "state", "status", "total_us"]
+-
+-
+-def main() -> int:
+-    if len(sys.argv) != 3:
+-        print("usage: legacy.py DB OUT.csv", file=sys.stderr)
+-        return 2
+-
+-    database, out = Path(sys.argv[1]), Path(sys.argv[2])
+-    connection = sqlite3.connect(database)
+-
+-    try:
+-        rows = connection.execute(
+-            "SELECT service, at, state, status, total_us FROM probes ORDER BY at"
+-        )
+-        with out.open("w", newline="", encoding="utf-8") as handle:
+-            writer = csv.writer(handle)
+-            writer.writerow(FIELDS)
+-            writer.writerows(rows)
+-    finally:
+-        connection.close()
+-
+-    return 0
+-
+-
+-if __name__ == "__main__":
+-    raise SystemExit(main())
+diff --git a/tools/report.py b/tools/report.py
+index 74e45f7..b8523e9 100644
+--- a/tools/report.py
++++ b/tools/report.py
+@@ -1,57 +1,186 @@
+ #!/usr/bin/env python3
+-"""Print the last day of Beacon checks from SQLite."""
++"""Summarise Beacon probe history from SQLite.
++
++The report reads the same database the server writes. Use --copy when the
++server is running so a long query never holds the write lock.
++
++Examples:
++    python3 report.py --db /tmp/beacon.db
++    python3 report.py --db /tmp/beacon.db --since 6h --format csv
++"""
+ 
+ from __future__ import annotations
+ 
+ import argparse
++import csv
+ import sqlite3
++import sys
++from dataclasses import dataclass
+ from datetime import UTC, datetime, timedelta
+ from pathlib import Path
+ 
++WINDOWS = {
++    "15m": timedelta(minutes=15),
++    "1h": timedelta(hours=1),
++    "6h": timedelta(hours=6),
++    "24h": timedelta(hours=24),
++    "7d": timedelta(days=7),
++}
++
++
++@dataclass(frozen=True)
++class Row:
++    service: str
++    checks: int
++    up: int
++    slow: int
++    down: int
++    p50_ms: float
++    p95_ms: float
++    last_error: str
++
++    @property
++    def uptime(self) -> float:
++        if self.checks == 0:
++            return 0.0
++        return (self.up + self.slow) / self.checks * 100.0
++
++
++def parse_since(value: str) -> datetime:
++    """Turn 6h, 30m, or an ISO timestamp into a UTC start time."""
++    now = datetime.now(UTC)
++
++    if value in WINDOWS:
++        return now - WINDOWS[value]
++
++    try:
++        parsed = datetime.fromisoformat(value)
++    except ValueError as error:
++        raise argparse.ArgumentTypeError(f"bad --since {value!r}") from error
++
++    if parsed.tzinfo is None:
++        return parsed.replace(tzinfo=UTC)
++    return parsed.astimezone(UTC)
+ 
+-def summarise(connection: sqlite3.Connection, since: datetime) -> list[tuple]:
+-    """Return one (service, checks, down, average) tuple per service."""
++
++def percentile(values: list[int], fraction: float) -> float:
++    """Return the nearest-rank percentile in milliseconds."""
++    if not values:
++        return 0.0
++    ordered = sorted(values)
++    index = min(len(ordered) - 1, round(fraction * (len(ordered) - 1)))
++    return ordered[index] / 1000.0
++
++
++def summarise(conn: sqlite3.Connection, since: datetime, tag: str | None) -> list[Row]:
++    """Aggregate one window into a row per service."""
+     query = """
+-        SELECT service, state, total_us
++        SELECT service, state, status, total_us, err
+         FROM probes
+         WHERE at >= ?
+         ORDER BY service, at
+     """
+-    buckets: dict[str, dict] = {}
++    services: dict[str, dict] = {}
+ 
+-    for service, state, total_us in connection.execute(query, (int(since.timestamp()),)):
+-        bucket = buckets.setdefault(service, {"checks": 0, "down": 0, "total": 0})
++    for service, state, status, total_us, err in conn.execute(query, (int(since.timestamp()),)):
++        bucket = services.setdefault(
++            service,
++            {"checks": 0, "up": 0, "slow": 0, "down": 0, "latency": [], "error": ""},
++        )
+         bucket["checks"] += 1
+-        bucket["total"] += int(total_us)
+-        if state == "down":
+-            bucket["down"] += 1
++        bucket[state] = bucket.get(state, 0) + 1
++        bucket["latency"].append(int(total_us))
++
++        if err:
++            bucket["error"] = f"{status or '—'} {err}"[:80]
++
++    rows = [
++        Row(
++            service=service,
++            checks=data["checks"],
++            up=data["up"],
++            slow=data["slow"],
++            down=data["down"],
++            p50_ms=percentile(data["latency"], 0.50),
++            p95_ms=percentile(data["latency"], 0.95),
++            last_error=data["error"],
++        )
++        for service, data in services.items()
++    ]
++
++    if tag:
++        rows = [row for row in rows if tag in row.service]
++    return sorted(rows, key=lambda row: row.p95_ms, reverse=True)
+ 
+-    rows = []
+-    for service, data in buckets.items():
+-        average_ms = data["total"] / data["checks"] / 1000.0
+-        rows.append((service, data["checks"], data["down"], average_ms))
+ 
+-    return sorted(rows, key=lambda row: row[3], reverse=True)
++def render_table(rows: list[Row]) -> str:
++    """Render a fixed-width table for a terminal."""
++    header = f"{'SERVICE':<24} {'CHECKS':>6} {'UP%':>6} {'P50':>8} {'P95':>8}  ERROR"
++    lines = [header, "-" * len(header)]
++    for row in rows:
++        lines.append(
++            f"{row.service:<24} {row.checks:>6} {row.uptime:>6.1f} "
++            f"{row.p50_ms:>7.1f} {row.p95_ms:>7.1f}  {row.last_error}"
++        )
++    return "\n".join(lines)
+ 
+ 
+-def main() -> int:
++def render_csv(rows: list[Row], stream) -> None:
++    """Write the same columns as CSV."""
++    writer = csv.writer(stream)
++    writer.writerow(
++        ["service", "checks", "up", "slow", "down", "uptime_pct", "p50_ms", "p95_ms", "last_error"]
++    )
++    for row in rows:
++        writer.writerow(
++            [
++                row.service,
++                row.checks,
++                row.up,
++                row.slow,
++                row.down,
++                f"{row.uptime:.1f}",
++                f"{row.p50_ms:.1f}",
++                f"{row.p95_ms:.1f}",
++                row.last_error,
++            ]
++        )
++
++
++def main(argv: list[str] | None = None) -> int:
+     parser = argparse.ArgumentParser(description=__doc__)
+-    parser.add_argument("--db", type=Path, default=Path("beacon.db"))
+-    parser.add_argument("--hours", type=int, default=24)
+-    args = parser.parse_args()
++    parser.add_argument("--db", type=Path, default=Path("beacon.db"), help="SQLite database")
++    parser.add_argument("--since", default="24h", help="15m, 1h, 6h, 24h, 7d, or ISO time")
++    parser.add_argument("--tag", help="only services whose name contains this text")
++    parser.add_argument("--format", choices=("table", "csv"), default="table")
++    parser.add_argument("--limit", type=int, default=0, help="keep the N slowest rows")
++    args = parser.parse_args(argv)
++
++    if not args.db.exists():
++        parser.error(f"no database at {args.db}")
+ 
+-    since = datetime.now(UTC) - timedelta(hours=args.hours)
++    since = parse_since(args.since)
+     connection = sqlite3.connect(f"file:{args.db}?mode=ro", uri=True)
+ 
+     try:
+-        rows = summarise(connection, since)
++        rows = summarise(connection, since, args.tag)
++    except sqlite3.Error as error:
++        print(f"query failed: {error}", file=sys.stderr)
++        return 1
+     finally:
+         connection.close()
+ 
+-    print(f"{'SERVICE':<24} {'CHECKS':>6} {'DOWN':>5} {'AVG':>8}")
+-    print("-" * 46)
+-    for service, checks, down, average_ms in rows:
+-        print(f"{service:<24} {checks:>6} {down:>5} {average_ms:>7.1f}")
++    if args.limit > 0:
++        rows = rows[: args.limit]
++
++    if not rows:
++        print(f"no checks since {since.isoformat(timespec='seconds')}", file=sys.stderr)
++        return 0
++
++    if args.format == "csv":
++        render_csv(rows, sys.stdout)
++    else:
++        print(render_table(rows))
+ 
+     return 0
+ 
+diff --git a/web/theme.css b/web/theme.css
+new file mode 100644
+index 0000000..8d83c9a
+--- /dev/null
++++ b/web/theme.css
+@@ -0,0 +1,41 @@
++/* Beacon accent themes. The dashboard picks one with data-accent on <html>. */
++:root {
++  --grid-line: rgba(122, 162, 247, 0.08);
++}
++
++html[data-accent="mint"] {
++  --accent: #5eead4;
++  --accent-soft: rgba(94, 234, 212, 0.14);
++}
++
++html[data-accent="amber"] {
++  --accent: #f0b75a;
++  --accent-soft: rgba(240, 183, 90, 0.14);
++}
++
++@media (prefers-reduced-motion: reduce) {
++  .dot,
++  .row {
++    animation: none;
++  }
++
++  .detail,
++  .chip,
++  .icon {
++    transition: none;
++  }
++}
++
++/* A faint grid behind the page keeps the dark background from going flat. */
++body::before {
++  content: "";
++  position: fixed;
++  inset: 0;
++  z-index: -1;
++  background-image:
++    linear-gradient(var(--grid-line) 1px, transparent 1px),
++    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
++  background-size: 48px 48px;
++  mask-image: radial-gradient(600px 400px at 60% 0%, #000, transparent 75%);
++  pointer-events: none;
++}
