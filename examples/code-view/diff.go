@@ -8,10 +8,11 @@ import (
 
 // changeSet is the pending diff the Source Control view shows.
 type changeSet struct {
-	Files  []changedFile
-	Branch string
-	Sample bool
-	Note   string
+	Files      []changedFile
+	Branch     string
+	Sample     bool
+	Note       string
+	EmptyTitle string
 }
 
 // changedFile is one file in a diff, with its hunks already parsed.

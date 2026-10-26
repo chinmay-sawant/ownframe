@@ -14,7 +14,8 @@
     <span>Language</span><b>{{.LangLabel}}</b>
     <span>Lines</span><b class="mono">{{.LineCount}}</b>
     <span>Size</span><b class="mono">{{.ByteSize}}</b>
-    <span>Encoding</span><b class="mono">UTF-8</b>
+    <span>Encoding</span><b class="mono">{{.Encoding}}</b>
+    <span>Indentation</span><b class="mono">{{.Indent}}</b>
     <span>Status</span><b>{{if .Status}}{{.Status}}{{else}}clean{{end}}</b>
   </div>
 
@@ -22,7 +23,7 @@
 
   <div class="outline">
     {{range .Outline}}
-    <button class="orow" id="outline-{{.Line}}" data-action="outline:{{.Line}}" type="button" style="padding-left:{{.Depth}}px" title="Line {{.No}}">
+    <button class="orow" id="outline-{{.Line}}" data-action="outline:{{.Line}}" type="button" style="padding-left:calc(16px + {{.Depth}}px)" title="Line {{.No}}">
       <span class="okind ok-{{.Kind}}">{{.Kind}}</span>
       <span class="oname">{{.Name}}</span>
       <span class="olno mono">{{.No}}</span>

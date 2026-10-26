@@ -34,7 +34,7 @@
         <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
         {{end}}
         <span class="tname">{{.Name}}</span>
-        {{if .Status}}<span class="fstat {{.StatusClass}}">{{.Status}}</span>{{end}}
+        <span class="fstat {{.StatusClass}}">{{.Status}}</span>
       </button>
       {{end}}
 
@@ -58,6 +58,13 @@
         </svg>
         {{.Branch}}
       </button>
+      {{if gt .Diff.Pages 1}}
+      <span class="sc-pager">
+        <button class="sc-page-btn" id="diff-page-prev" data-action="diff-page-prev" type="button" title="Previous files">‹</button>
+        <span class="sc-page-num mono">{{.Diff.Page}}/{{.Diff.Pages}}</span>
+        <button class="sc-page-btn" id="diff-page-next" data-action="diff-page-next" type="button" title="Next files">›</button>
+      </span>
+      {{end}}
       <span class="sc-stats"><b class="add">+{{.Diff.TotalAdd}}</b><b class="del">−{{.Diff.TotalDel}}</b></span>
     </div>
 
@@ -72,15 +79,15 @@
           <span class="change-name">{{.Name}}</span>
           <span class="change-dir">{{.Dir}}</span>
         </span>
-        <span class="cstat {{.StatusClass}}">{{.Status}}</span>
         <span class="change-num"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+        <span class="cstat {{.StatusClass}}">{{.Status}}</span>
       </button>
       {{end}}
     </div>
     {{else}}
     <div class="clean">
       <span class="clean-mark">✅</span>
-      <b>No changes</b>
+      <b>{{if .Diff.EmptyTitle}}{{.Diff.EmptyTitle}}{{else}}No changes{{end}}</b>
       <span class="clean-note">{{.Diff.Note}}</span>
     </div>
     {{end}}

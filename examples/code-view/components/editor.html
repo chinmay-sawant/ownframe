@@ -16,6 +16,7 @@
         <button class="tab-main" id="tab-{{$i}}" data-action="tab:{{$i}}" type="button" title="{{$t.Path}}">
           <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
           <span class="tab-name">{{$t.Name}}</span>
+          <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
         </button>
         <button class="tab-x" id="tab-close-{{$i}}" data-action="tab-close:{{$i}}" type="button" title="Close">×</button>
       </div>
@@ -50,9 +51,9 @@
       <button class="crumb-btn" id="empty-refresh" data-action="diff-refresh" type="button">Refresh</button>
       {{end}}
     {{else if .Active}}
+      <span class="cstat {{.StatusClass}}">{{.Status}}</span>
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
       <span class="crumb-path">{{if .ActiveDir}}{{.ActiveDir}}/{{end}}<b>{{.ActiveName}}</b></span>
-      {{if .Status}}<span class="cstat {{.StatusClass}}">{{.Status}}</span>{{end}}
       {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (Ctrl+Shift+V)">{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
       <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button">Copy path</button>
       <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button">Copy file</button>
@@ -90,7 +91,7 @@
       {{else}}
       <div class="empty">
         <span class="empty-mark ok">✅</span>
-        <h2>Working tree clean</h2>
+        <h2>{{if .Diff.EmptyTitle}}{{.Diff.EmptyTitle}}{{else}}Working tree clean{{end}}</h2>
         <p>{{.Diff.Note}}</p>
         <button class="button" id="empty-check" data-action="diff-refresh" type="button">Check again</button>
       </div>

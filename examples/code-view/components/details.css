@@ -21,7 +21,7 @@
   flex: 0 0 34px;
   display: flex;
   align-items: center;
-  padding: 0 8px 0 13px;
+  padding: 0 8px 0 16px;
   border-bottom: 1px solid var(--line-soft);
 }
 
@@ -29,22 +29,24 @@
 .det-x { margin-left: auto; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: #8a93a6; font-size: 14px; line-height: 1; }
 .det-x:hover { background-color: var(--panel-3); color: var(--text); }
 
-.det-file { display: flex; align-items: center; gap: 9px; padding: 12px 13px; border-bottom: 1px solid var(--line-soft); }
-.det-file-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.det-file-text b { font-size: 11px; font-weight: 600; overflow: hidden; white-space: nowrap; }
-.det-file-text span { color: var(--dim); font-size: 9px; overflow: hidden; white-space: nowrap; }
+.det-file { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line-soft); }
+.det-file-text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.det-file-text b { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.det-file-text span { color: var(--dim); font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.det-grid { display: grid; grid-template-columns: 68px 1fr; gap: 6px 8px; padding: 12px 13px; font-size: 9.5px; }
+.det-grid { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 0 10px; padding: 14px 16px; font-size: 9.5px; }
+
+.det-grid > span, .det-grid > b { padding: 3.5px 0; line-height: 1.35; }
 .det-grid span { color: var(--dim); }
 .det-grid b { color: var(--muted); font-weight: 500; text-align: right; }
 
-.det-sub { display: flex; align-items: center; justify-content: space-between; padding: 9px 13px 5px; border-top: 1px solid var(--line-soft); color: var(--dim); font-size: 8.5px; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
+.det-sub { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px 6px; border-top: 1px solid var(--line-soft); color: var(--dim); font-size: 8.5px; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
 
-.outline { flex: 1; min-height: 0; overflow: hidden; padding: 2px 0 6px; }
+.outline { flex: 1; min-height: 0; overflow: hidden; padding: 4px 0 8px; }
 
-.orow { width: 100%; height: 23px; display: flex; align-items: center; gap: 7px; padding: 0 11px; color: var(--muted); }
+.orow { width: 100%; height: 26px; display: flex; align-items: center; gap: 8px; padding: 0 16px; color: var(--muted); }
 .orow:hover { background-color: var(--panel-2); }
-.okind { width: 25px; flex: 0 0 25px; font-family: var(--mono); font-size: 8px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dim); }
+.okind { width: 26px; flex: 0 0 26px; font-family: var(--mono); font-size: 8px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dim); }
 .ok-fn { color: #82aaff; }
 .ok-type { color: var(--amber); }
 .ok-class { color: var(--purple); }
@@ -55,4 +57,4 @@
 .oname { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-family: var(--mono); font-size: 9px; }
 .olno { color: var(--dim); font-size: 8.5px; }
 
-.det-empty { padding: 15px 13px; color: var(--dim); font-size: 9.5px; line-height: 1.5; }
+.det-empty { padding: 16px; color: var(--dim); font-size: 9.5px; line-height: 1.5; }

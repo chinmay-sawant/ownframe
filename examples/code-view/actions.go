@@ -31,6 +31,16 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "diff-note":
 		a.showToast("info", "Sample changes", a.changes.Note)
 		a.refresh()
+	case action == "diff-page-prev":
+		if a.changePage > 0 {
+			a.changePage--
+			a.selectChangePage()
+		}
+	case action == "diff-page-next":
+		if (a.changePage+1)*diffPageRows < len(a.changes.Files) {
+			a.changePage++
+			a.selectChangePage()
+		}
 	case action == "diff-split":
 		a.setSplit(true)
 	case action == "diff-unified":
@@ -77,7 +87,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.selectDiff(strings.TrimPrefix(action, "diff-file:"))
 	case strings.HasPrefix(action, "outline:"):
 		if line, ok := actionIndex(action, "outline:"); ok {
-			a.scrollToSourceLine(line)
+			a.outlineLine(line)
 		}
 	}
 
@@ -181,7 +191,11 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "w":
 		a.closeTab(a.active)
 	case "r":
-		a.reloadActive(ctx)
+		if a.mode == "changes" {
+			a.reloadChanges(ctx, true)
+		} else {
+			a.reloadActive(ctx)
+		}
 	case "s":
 		if a.mode == "changes" {
 			a.setSplit(true)
@@ -299,11 +313,21 @@ func (a *App) copyActive(wholeFile bool) {
 func (a *App) reloadActive(_ context.Context) {
 	doc := a.activeDoc()
 	if doc == nil {
+		a.showToast("info", "No file open", "Open a file before reloading it.")
+		a.refresh()
+
 		return
 	}
 
-	a.docs[doc.Path] = a.ws.openDoc(doc.Path)
-	a.showToast("success", "File reloaded", doc.Path)
+	next := a.ws.openDoc(doc.Path)
+	a.docs[doc.Path] = next
+
+	if next.Err != "" {
+		a.showToast("error", "Reload failed", next.Err)
+	} else {
+		a.showToast("success", "File reloaded", doc.Path)
+	}
+
 	a.refresh()
 }
 

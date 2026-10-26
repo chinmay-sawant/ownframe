@@ -16,7 +16,7 @@ const (
 	maxFileBytes      = 512 << 10
 	maxFileLines      = 20000
 	maxLineRunes      = 600
-	maxWorkspaceFiles = 4000
+	maxWorkspaceFiles = 10000
 	maxTreeDepth      = 12
 	maxFileBytesKB    = maxFileBytes >> 10
 	byteKB            = 1 << 10
@@ -28,13 +28,15 @@ var errBinaryFile = errors.New("binary file")
 // fileMeta is one file the explorer found. The viewer reads the bytes only
 // when the file opens.
 type fileMeta struct {
-	Path  string
-	Name  string
-	Dir   string
-	Size  int64
-	Lang  string
-	Big   bool
-	Lines int
+	Path     string
+	Name     string
+	Dir      string
+	Size     int64
+	Lang     string
+	Big      bool
+	Lines    int
+	Encoding string
+	Indent   string
 }
 
 // fileNode is one directory or file in the tree.
@@ -65,7 +67,7 @@ func loadSampleWorkspace() (*workspace, error) {
 		return nil, fmt.Errorf("sample workspace: %w", err)
 	}
 
-	w := &workspace{Root: "beacon", Sample: true, ByPath: map[string]*fileMeta{}}
+	w := &workspace{Root: "sample", Sample: true, ByPath: map[string]*fileMeta{}}
 
 	err = fs.WalkDir(sub, ".", func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -317,7 +319,20 @@ func (w *workspace) readLines(path string) ([]string, bool, error) {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
 	text = strings.TrimSuffix(text, "\n")
 
-	lines := strings.Split(text, "\n")
+	switch {
+	case strings.HasPrefix(text, "\ufeff"):
+		meta.Encoding = "UTF-8 BOM"
+		text = strings.TrimPrefix(text, "\ufeff")
+	default:
+		meta.Encoding = "UTF-8"
+	}
+
+	var lines []string
+	if text != "" {
+		lines = strings.Split(text, "\n")
+	}
+
+	meta.Indent = detectIndent(lines)
 	truncated := false
 
 	if len(lines) > maxFileLines {
@@ -351,6 +366,33 @@ func (w *workspace) readFile(path string) ([]byte, error) {
 	}
 
 	return os.ReadFile(filepath.Join(w.Root, clean)) //nolint:gosec // path is checked against the scanned root above
+}
+
+// detectIndent reports the indentation the file actually uses.
+func detectIndent(lines []string) string {
+	tabs := false
+	smallest := 0
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, "\t") {
+			tabs = true
+		}
+
+		n := len(line) - len(strings.TrimLeft(line, " "))
+		if n > 0 && (smallest == 0 || n < smallest) {
+			smallest = n
+		}
+	}
+
+	if tabs {
+		return "Tabs"
+	}
+
+	if smallest > 0 {
+		return fmt.Sprintf("Spaces: %d", smallest)
+	}
+
+	return "None"
 }
 
 // isBinary reports whether the first block contains a NUL byte.
@@ -397,6 +439,8 @@ type fileDoc struct {
 	Truncated   bool
 	Binary      bool
 	Err         string
+	Encoding    string
+	Indent      string
 }
 
 // openDoc reads and tokenizes one file.
@@ -404,6 +448,13 @@ func (w *workspace) openDoc(path string) *fileDoc {
 	meta := w.ByPath[path]
 	if meta == nil {
 		return &fileDoc{Path: path, Err: "This file is not in the workspace."}
+	}
+
+	if !w.Sample {
+		if info, statErr := os.Stat(filepath.Join(w.Root, filepath.FromSlash(path))); statErr == nil {
+			meta.Size = info.Size()
+			meta.Big = meta.Size > maxFileBytes
+		}
 	}
 
 	doc := &fileDoc{Path: path, Lang: meta.Lang, ByteSize: meta.Size}
@@ -420,6 +471,8 @@ func (w *workspace) openDoc(path string) *fileDoc {
 
 	doc.Lines = lines
 	doc.Truncated = truncated
+	doc.Encoding = meta.Encoding
+	doc.Indent = meta.Indent
 	doc.Tokens = tokenize(doc.Lang, lines)
 	doc.Outline = outline(doc.Lang, lines)
 

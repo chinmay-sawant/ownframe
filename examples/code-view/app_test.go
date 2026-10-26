@@ -406,12 +406,16 @@ func TestLiveRoot(t *testing.T) {
 		t.Skip("git is not installed")
 	}
 
-	// A plain temporary directory is not a repository. Reloading must report
-	// the failure and leave the empty change set in place.
+	// A plain temporary directory is not a repository. A quiet reload must
+	// replace the change set with a no-repository state, not a startup toast.
 	app.reloadChanges(context.Background(), false)
 
-	if !app.View().Toast.Show || app.View().Toast.Kind != "error" {
-		t.Fatalf("reload toast = %+v", app.View().Toast)
+	if app.View().Toast.Show {
+		t.Fatalf("quiet reload shows a toast: %+v", app.View().Toast)
+	}
+
+	if app.changes.EmptyTitle != "Git unavailable" || !strings.Contains(app.changes.Note, "Git") {
+		t.Fatalf("no-repository state = %+v", app.changes)
 	}
 }
 
@@ -609,5 +613,30 @@ func TestAppName(t *testing.T) {
 
 	if strings.Contains(html, "Beacon CODE VIEW") {
 		t.Fatal("the old Beacon brand is still in the shell")
+	}
+}
+
+func TestRealWorkspaceAtStartup(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+
+	app, err := New(".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if app.ws.Sample {
+		t.Fatal("the current directory was scanned as the sample")
+	}
+
+	if app.View().Workspace != "code-view" || app.View().Active != "README.md" {
+		t.Fatalf("workspace = %q active = %q", app.View().Workspace, app.View().Active)
+	}
+
+	app.reloadChanges(context.Background(), false)
+
+	if app.changes.Sample || app.changes.Branch == "" || app.changes.Branch == "no git" {
+		t.Fatalf("live change set = %+v", app.changes)
 	}
 }

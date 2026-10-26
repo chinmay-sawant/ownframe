@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -314,4 +315,151 @@ func TestActionControlsHaveIDs(t *testing.T) {
 	}
 
 	check()
+}
+
+func TestOutlineClickScrolls(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+	app.toggleDetails()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	target := -1
+
+	for _, symbol := range app.View().Outline {
+		if symbol.Name == "Probe" {
+			target = symbol.Line
+		}
+	}
+
+	if target < 0 {
+		t.Fatal("no Probe outline row")
+	}
+
+	clickID(t, app, fmt.Sprintf("outline-%d", target))
+
+	if app.scrollY == 0 {
+		t.Fatal("outline click did not scroll")
+	}
+
+	if len(app.View().Rows) == 0 || app.View().Rows[0].No == 1 {
+		t.Fatalf("first row = %d", app.View().Rows[0].No)
+	}
+}
+
+func TestDetailsMetadata(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+	app.toggleDetails()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	view := app.View()
+	if view.LangLabel != "Go" || view.LineCount != 170 || view.Encoding != "UTF-8" || view.Indent != "Tabs" {
+		t.Fatalf("probe metadata = %+v", view)
+	}
+
+	if view.Status != "M" || len(view.Outline) == 0 {
+		t.Fatalf("probe status = %q outline = %d", view.Status, len(view.Outline))
+	}
+
+	app.openFile("README.md")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	view = app.View()
+	if view.LangLabel != "Markdown" || view.Indent == "Tabs" || view.Status != "" {
+		t.Fatalf("README metadata = %+v", view)
+	}
+
+	if len(view.Outline) == 0 || view.Outline[0].Name != "Beacon" {
+		t.Fatalf("README outline = %+v", view.Outline)
+	}
+}
+
+func TestDiffPager(t *testing.T) {
+	app := newTestApp(t)
+	app.mode = "changes"
+	app.changes = changeSet{Branch: "test", Note: "test"}
+
+	for i := 0; i < diffPageRows+2; i++ {
+		app.changes.Files = append(app.changes.Files, changedFile{Path: fmt.Sprintf("file-%02d.go", i), Status: "M"})
+	}
+
+	app.statuses = statusMap(app.changes)
+	app.selectFirstDiff()
+	app.refresh()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().Diff.Pages != 2 || app.View().Diff.Page != 1 || len(app.View().Diff.Files) != diffPageRows {
+		t.Fatalf("page 1 = %+v", app.View().Diff)
+	}
+
+	clickID(t, app, "diff-page-next")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().Diff.Page != 2 || len(app.View().Diff.Files) != 2 {
+		t.Fatalf("page 2 = %+v", app.View().Diff)
+	}
+
+	clickID(t, app, "diff-page-prev")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().Diff.Page != 1 || len(app.View().Diff.Files) != diffPageRows {
+		t.Fatalf("page 1 again = %+v", app.View().Diff)
+	}
+}
+
+func TestTabsStayInsideStrip(t *testing.T) {
+	app := newTestApp(t)
+
+	opened := 0
+
+	for _, file := range app.ws.Files {
+		if file.Path == "README.md" {
+			continue
+		}
+
+		app.openFile(file.Path)
+		opened++
+
+		if opened == maxTabs {
+			break
+		}
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	editor, ok := boxByID(app.Page().Boxes(), "editor-window")
+	if !ok {
+		t.Fatal("no editor")
+	}
+
+	for i := 0; i < maxTabs; i++ {
+		box, ok := boxByID(app.Page().Boxes(), fmt.Sprintf("tab-%d", i))
+		if !ok {
+			t.Fatalf("missing tab-%d", i)
+		}
+
+		if box.X < editor.X-1 || box.X+box.W > editor.X+editor.W+1 {
+			t.Fatalf("tab-%d at %.0f..%.0f outside %.0f..%.0f", i, box.X, box.X+box.W, editor.X, editor.X+editor.W)
+		}
+	}
 }

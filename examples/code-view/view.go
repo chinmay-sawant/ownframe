@@ -28,6 +28,8 @@ type View struct {
 	Badge       string
 	LineCount   int
 	ByteSize    string
+	Encoding    string
+	Indent      string
 	Status      string
 	StatusClass string
 	Truncated   bool
@@ -67,11 +69,13 @@ type treeRow struct {
 
 // tabRow is one open editor tab.
 type tabRow struct {
-	Path   string
-	Name   string
-	Lang   string
-	Badge  string
-	Active bool
+	Path        string
+	Name        string
+	Lang        string
+	Badge       string
+	Status      string
+	StatusClass string
+	Active      bool
 }
 
 // codeRow is one source line with its prebuilt spans.
@@ -91,26 +95,29 @@ type recentRow struct {
 
 // diffView is the Source Control panel and the diff header.
 type diffView struct {
-	Files     []diffFileRow
-	Selected  string
-	Split     bool
-	Status    string
-	StatusCls string
-	Path      string
-	Name      string
-	Dir       string
-	Lang      string
-	Badge     string
-	Add       int
-	Del       int
-	TotalAdd  int
-	TotalDel  int
-	Hunks     int
-	Rows      []diffRow
-	TrackTop  int
-	HasFiles  bool
-	Sample    bool
-	Note      string
+	Files      []diffFileRow
+	Selected   string
+	Split      bool
+	Status     string
+	StatusCls  string
+	Path       string
+	Name       string
+	Dir        string
+	Lang       string
+	Badge      string
+	Add        int
+	Del        int
+	TotalAdd   int
+	TotalDel   int
+	Hunks      int
+	Rows       []diffRow
+	TrackTop   int
+	HasFiles   bool
+	Page       int
+	Pages      int
+	Sample     bool
+	Note       string
+	EmptyTitle string
 }
 
 // diffFileRow is one changed file in the source control list.

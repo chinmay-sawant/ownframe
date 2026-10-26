@@ -10,7 +10,7 @@ import (
 const (
 	defaultWidth  = 1500
 	defaultHeight = 900
-	minWidth      = 1180
+	minWidth      = 840
 	minHeight     = 700
 
 	activityW    = 46
@@ -26,9 +26,10 @@ const (
 	rowH     = 20
 	overscan = 8
 
-	maxTabs   = 8
-	maxTree   = 26
-	maxRecent = 4
+	maxTabs      = 8
+	maxTree      = 26
+	diffPageRows = 13
+	maxRecent    = 4
 
 	scrollStep = 96
 	pageScroll = 420
@@ -54,18 +55,23 @@ type App struct {
 	active int
 	docs   map[string]*fileDoc
 
-	diffPath  string
-	diffSplit bool
-	diffRows  []diffRow
+	diffPath   string
+	diffSplit  bool
+	diffRows   []diffRow
+	changePage int
 
 	details bool
 	devOn   bool
 
-	scrollY   int
-	viewportH int
-	toast     toastView
+	scrollY       int
+	viewportH     int
+	scrollPending bool
+	scrollTarget  int
+	lastScroll    int
+	toast         toastView
 
 	paletteOpen  bool
+	recent       []string
 	paletteQuery string
 	paletteIndex int
 	ctrl         bool
@@ -101,8 +107,10 @@ func New(root string) (*App, error) {
 		devOn:     true,
 	}
 
-	a.folders["backend"] = true
-	a.folders["web"] = true
+	if ws.Sample {
+		a.folders["backend"] = true
+		a.folders["web"] = true
+	}
 
 	if ws.Sample {
 		a.changes = sampleChangeSet()
@@ -115,7 +123,7 @@ func New(root string) (*App, error) {
 
 	page, err := ownframe.New(ownframe.Config{
 		DevTools:  true,
-		Title:     "Beacon — Code View",
+		Title:     "Code Review",
 		HTML:      buildHTML(),
 		Width:     defaultWidth,
 		Height:    defaultHeight,
@@ -171,6 +179,7 @@ func (a *App) openInitial() {
 	a.docs[target] = a.ws.openDoc(target)
 	a.tabs = []string{target}
 	a.active = 0
+	a.addRecent(target)
 }
 
 // refresh publishes one snapshot.
@@ -185,6 +194,19 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 	if viewH <= 0 {
 		viewH = a.viewportH
 	}
+
+	if a.scrollPending {
+		switch offsetY {
+		case a.scrollTarget:
+			a.scrollPending = false
+		case a.lastScroll:
+			return false
+		default:
+			a.scrollPending = false
+		}
+	}
+
+	a.lastScroll = offsetY
 
 	if offsetY == a.scrollY && viewH == a.viewportH {
 		return false
@@ -228,6 +250,8 @@ func (a *App) buildView() View {
 		v.Badge = languageInfo(doc.Lang).Badge
 		v.LineCount = len(doc.Lines)
 		v.ByteSize = humanSize(doc.ByteSize)
+		v.Encoding = doc.Encoding
+		v.Indent = doc.Indent
 		v.Truncated = doc.Truncated
 		v.Status = a.statuses[doc.Path]
 		v.StatusClass = "st-" + strings.ToLower(v.Status)
@@ -300,18 +324,37 @@ func (a *App) fillCode(v *View) {
 // fillDiff fills the Source Control list and the selected diff rows.
 func (a *App) fillDiff(v *View) {
 	d := diffView{
-		Split:    a.diffSplit,
-		TotalAdd: 0,
-		TotalDel: 0,
-		Sample:   a.changes.Sample,
-		Note:     a.changes.Note,
-		HasFiles: len(a.changes.Files) > 0,
+		Split:      a.diffSplit,
+		TotalAdd:   0,
+		TotalDel:   0,
+		Sample:     a.changes.Sample,
+		Note:       a.changes.Note,
+		EmptyTitle: a.changes.EmptyTitle,
+		HasFiles:   len(a.changes.Files) > 0,
 	}
 
 	add, del := a.changes.totals()
 	d.TotalAdd, d.TotalDel = add, del
 
-	for _, file := range a.changes.Files {
+	pages := 0
+	if len(a.changes.Files) > 0 {
+		pages = (len(a.changes.Files) + diffPageRows - 1) / diffPageRows
+	}
+
+	page := a.changePage
+	if page >= pages {
+		page = pages - 1
+	}
+
+	if page < 0 {
+		page = 0
+	}
+
+	d.Page, d.Pages = page+1, pages
+	from := page * diffPageRows
+	to := min(from+diffPageRows, len(a.changes.Files))
+
+	for _, file := range a.changes.Files[from:to] {
 		d.Files = append(d.Files, diffFileRow{
 			Path:        file.Path,
 			Name:        baseName(file.Path),
@@ -348,6 +391,29 @@ func (a *App) fillDiff(v *View) {
 	d.Add = file.Add
 	d.Del = file.Del
 	d.Hunks = len(file.Hunks)
+
+	doc := a.docs[file.Path]
+	if doc == nil {
+		doc = a.ws.openDoc(file.Path)
+		a.docs[file.Path] = doc
+	}
+
+	if doc != nil {
+		v.Active = doc.Path
+		v.ActiveDir = dirName(doc.Path)
+		v.ActiveName = baseName(doc.Path)
+		v.Lang = doc.Lang
+		v.LangLabel = languageInfo(doc.Lang).Label
+		v.Badge = languageInfo(doc.Lang).Badge
+		v.LineCount = len(doc.Lines)
+		v.ByteSize = humanSize(doc.ByteSize)
+		v.Encoding = doc.Encoding
+		v.Indent = doc.Indent
+		v.Truncated = doc.Truncated
+		v.Status = a.statuses[doc.Path]
+		v.StatusClass = "st-" + strings.ToLower(v.Status)
+		v.Outline = doc.Outline
+	}
 
 	start, end, track := a.windowSlice(len(a.diffRows))
 	d.TrackTop = track
@@ -437,6 +503,8 @@ func (a *App) clampScroll(y int) int {
 func (a *App) scrollTo(y int) {
 	target := a.clampScroll(y)
 	a.scrollY = target
+	a.scrollTarget = target
+	a.scrollPending = true
 	a.page.ScrollTo(0, target)
 	a.refresh()
 }
@@ -444,6 +512,8 @@ func (a *App) scrollTo(y int) {
 // resetScroll returns to the top when a new file or mode opens.
 func (a *App) resetScroll() {
 	a.scrollY = 0
+	a.scrollTarget = 0
+	a.scrollPending = true
 	a.page.ScrollTo(0, 0)
 }
 
@@ -561,12 +631,16 @@ func (a *App) tabRows() []tabRow {
 			lang = doc.Lang
 		}
 
+		status := a.statuses[path]
+
 		rows = append(rows, tabRow{
-			Path:   path,
-			Name:   baseName(path),
-			Lang:   lang,
-			Badge:  languageInfo(lang).Badge,
-			Active: i == a.active && a.mode == "explorer",
+			Path:        path,
+			Name:        baseName(path),
+			Lang:        lang,
+			Badge:       languageInfo(lang).Badge,
+			Status:      status,
+			StatusClass: "st-" + strings.ToLower(status),
+			Active:      i == a.active && a.mode == "explorer",
 		})
 	}
 
@@ -575,10 +649,9 @@ func (a *App) tabRows() []tabRow {
 
 // recentRows lists the welcome shortcuts that exist in this workspace.
 func (a *App) recentRows() []recentRow {
-	paths := []string{"README.md", "backend/probe.go", "web/index.html", "tools/report.py", "docs/architecture.md"}
 	rows := make([]recentRow, 0, maxRecent)
 
-	for _, path := range paths {
+	for _, path := range a.recent {
 		if a.ws.ByPath[path] == nil {
 			continue
 		}
@@ -598,6 +671,21 @@ func (a *App) recentRows() []recentRow {
 	}
 
 	return rows
+}
+
+// addRecent moves path to the front of the recent list.
+func (a *App) addRecent(path string) {
+	next := []string{path}
+
+	for _, old := range a.recent {
+		if old == path || a.ws.ByPath[old] == nil || len(next) >= maxRecent {
+			continue
+		}
+
+		next = append(next, old)
+	}
+
+	a.recent = next
 }
 
 // activeDoc returns the document behind the active tab.
@@ -647,6 +735,7 @@ func (a *App) openFile(path string) {
 	a.paletteOpen = false
 	a.paletteQuery = ""
 	a.paletteIndex = 0
+	a.addRecent(path)
 	a.resetScroll()
 	a.refresh()
 }
@@ -710,16 +799,12 @@ func (a *App) collapseAll() {
 }
 
 // setMode switches the activity bar destination.
-func (a *App) setMode(ctx context.Context, mode string) {
+func (a *App) setMode(_ context.Context, mode string) {
 	if mode != "explorer" && mode != "changes" {
 		return
 	}
 
 	a.mode = mode
-
-	if mode == "changes" && !a.ws.Sample {
-		a.reloadChanges(ctx, false)
-	}
 
 	a.resetScroll()
 	a.refresh()
@@ -732,7 +817,21 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 	} else {
 		next, err := loadLiveChanges(ctx, a.ws.Root)
 		if err != nil {
-			a.showToast("error", "Git unavailable", err.Error())
+			if announce {
+				a.showToast("error", "Git unavailable", err.Error())
+				a.refresh()
+
+				return
+			}
+
+			a.changes = changeSet{
+				Branch:     "no git",
+				EmptyTitle: "Git unavailable",
+				Note:       "Git is unavailable at " + a.ws.Root + ". The explorer still reads the folder.",
+			}
+			a.statuses = statusMap(a.changes)
+			a.selectFirstDiff()
+			a.rebuildDiffRows()
 			a.refresh()
 
 			return
@@ -742,14 +841,18 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 	}
 
 	a.statuses = statusMap(a.changes)
+	a.changePage = 0
 	a.selectFirstDiff()
 	a.rebuildDiffRows()
 	a.resetScroll()
 
 	if announce {
-		if len(a.changes.Files) == 0 {
+		switch {
+		case a.ws.Sample:
+			a.showToast("info", "Sample changes", "The bundled fixture is fixed. Use -root for a live repository.")
+		case len(a.changes.Files) == 0:
 			a.showToast("info", "Working tree clean", "No tracked or untracked changes were found.")
-		} else {
+		default:
 			a.showToast("success", "Changes refreshed", "Read the working tree from git.")
 		}
 	}
@@ -788,6 +891,18 @@ func (a *App) rebuildDiffRows() {
 	} else {
 		a.diffRows = diffRowsUnified(*file, lang)
 	}
+}
+
+// selectChangePage selects the first file on the current page.
+func (a *App) selectChangePage() {
+	from := a.changePage * diffPageRows
+	if from < len(a.changes.Files) {
+		a.diffPath = a.changes.Files[from].Path
+		a.rebuildDiffRows()
+	}
+
+	a.resetScroll()
+	a.refresh()
 }
 
 // selectDiff shows one file's diff.
@@ -876,6 +991,16 @@ func (a *App) togglePreview() {
 
 	a.resetScroll()
 	a.refresh()
+}
+
+// outlineLine jumps from the details outline to the source line. In changes
+// mode the outline belongs to the selected diff file, so open it first.
+func (a *App) outlineLine(line int) {
+	if a.mode == "changes" && a.diffPath != "" {
+		a.openFile(a.diffPath)
+	}
+
+	a.scrollToSourceLine(line)
 }
 
 // scrollToSourceLine jumps to a source line, using the preview anchor when the

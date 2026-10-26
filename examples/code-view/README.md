@@ -13,17 +13,20 @@ From the repository root:
 go run ./examples/code-view
 ```
 
-The bundled workspace is a small uptime monitor. Source Control shows a
-checked-in sample diff so the view has something to read.
+The viewer opens the current directory and reads the working-tree diff at
+startup. The default window is 1500x900 and the minimum is 840x700, so the page
+fits beside the 340 px developer dock. The bundled `testdata/sample` is the
+deterministic fixture the test suite uses.
 
-Point the viewer at a real directory:
+Point the viewer at another directory:
 
 ```sh
 go run ./examples/code-view -root /path/to/repo
 ```
 
-With `-root`, Source Control runs `git diff HEAD` and lists untracked files. A
-clean tree says so. The viewer never writes to the repository.
+Source Control runs `git diff HEAD` and lists untracked files. A clean tree says
+so; a directory without a repository says that too. The viewer never writes to
+the repository.
 
 Other flags: `-dev=false` hides the developer dock, `-perf=false` stops pipeline
 sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
@@ -35,11 +38,14 @@ sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
   opens Details, collapses the tree, and toggles the developer dock.
 - The explorer is a foldered tree with a file filter, language badges, and
   change letters. Its header collapse and refresh controls are clickable.
-- Tabs keep up to eight files. Closing the last tab shows the welcome panel.
+- Tabs keep up to eight files and shrink their names so all eight stay
+  visible. Closing the last tab shows the welcome panel.
 - The editor has line numbers, token colours, Copy path, Copy file, and a
-  Markdown preview toggle.
-- Details shows language, line count, size, status, and an outline. Click an
-  outline row to jump to it.
+  Markdown preview toggle. The active tab shows M, A, D, or U for a changed
+  file.
+- Details reads the active file: language, line count, exact size, encoding,
+  indentation, change status, and an outline. In Source Control it follows the
+  selected diff file. Click an outline row to jump to the line.
 - The status bar shows the branch, changed count, the active language or the
   diff counts, and the devtools state.
 
@@ -79,8 +85,7 @@ read one. The viewer does not run JavaScript and has no script tag.
 
 ## Source control
 
-The bundled diff is a fixture in `fixtures/sample.diff`. It touches seven files:
-modified, added, and deleted. With `-root`, the viewer runs:
+The viewer runs these against the workspace at startup and on every refresh:
 
 ```sh
 git -C <root> diff --no-color --no-ext-diff HEAD
@@ -89,10 +94,16 @@ git -C <root> ls-files --others --exclude-standard -z
 
 Untracked files become all-added hunks. Binary files get a notice instead of
 rows. A repository without a first commit falls back to the working tree and
-index diffs. Git gets a three-second budget.
+index diffs. Git gets a three-second budget. A directory without a repository
+keeps the explorer and reports that git is unavailable.
 
-The diff has unified and split modes. Changed words carry a stronger tint than
-the line background. Hunk arrows walk the `@@` rows.
+The file list pages 13 changed files at a time. The arrows in the Source
+Control summary switch pages. The diff has unified and split modes. Changed
+words carry a stronger tint than the line background. Hunk arrows walk the
+`@@` rows.
+
+`fixtures/sample.diff` is the checked-in fixture for the sample workspace. It
+touches seven files: modified, added, and deleted.
 
 ### Regenerating the sample diff
 
@@ -106,8 +117,8 @@ The fixture has to match the shipped `testdata/sample` tree. To rebuild it:
 5. Add the new side and write the diff:
 
 ```sh
-git -C /tmp/beacon-old add -A
-git -C /tmp/beacon-old diff --cached --no-color --no-ext-diff HEAD > examples/code-view/fixtures/sample.diff
+git -C /tmp/code-view-old add -A
+git -C /tmp/code-view-old diff --cached --no-color --no-ext-diff HEAD > examples/code-view/fixtures/sample.diff
 ```
 
 Keep the paths relative to the workspace root (`backend/probe.go`,
@@ -182,8 +193,8 @@ a paste chord, so the breadcrumb Preview button is the fallback.
 - Quick open searches file names, not file contents.
 - The Markdown preview uses fixed rows; a table keeps its pipes and a long
   line clips.
-- The bundled project is called Beacon. The viewer is called Code Review.
-- The sample diff is fixed data. Only `-root` reads the working tree.
+- The sample fixture is synthetic test data; the default workspace is the
+  current directory.
 - The viewer is read-only. Editing, saving, and a second editor group are in
   the plan.
 
@@ -197,8 +208,9 @@ The suite covers language detection, token text preservation, Go, Python,
 JavaScript, and Markdown tokens, the diff parser, hunk numbers, word emphasis,
 split pairing, untracked files, workspace scanning, shell metrics, tabs, modes,
 filtering, pointer hits on the activity/tree/tab/diff/status controls, quick
-open defaults and filtering, Markdown preview rows and the chord, scrolling,
-details, devtools, the clipboard, and keyboard routing.
+open defaults and filtering, Markdown preview rows and the chord, outline
+scroll jumps, details metadata, the diff pager, scrolling, devtools, the
+clipboard, and keyboard routing.
 
 Capture the review frames:
 
