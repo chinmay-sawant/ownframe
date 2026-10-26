@@ -49,6 +49,7 @@ function App() {
       <nav aria-label="Main navigation">
         <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
         <a href="#docs/compare-rust-gpui" aria-current={hash.startsWith('#docs/compare') ? 'page' : undefined}>Comparison</a>
+        <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>About</a>
         <a href="#start">Get started</a>
       </nav>
       <ThemeToggle />
