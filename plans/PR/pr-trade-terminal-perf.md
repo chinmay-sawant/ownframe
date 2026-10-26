@@ -156,11 +156,11 @@ The live loop also paid layout twice per hover: the window re-pushed a stale hov
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
-| `.css` | 19 | 10988 | 7 |
-| `.go` | 102 | 7296 | 417 |
+| `.css` | 20 | 10994 | 9 |
+| `.go` | 112 | 7761 | 451 |
 | `.html` | 15 | 1993 | 4 |
 | `.json` | 1 | 1 | 0 |
-| `.md` | 6 | 197 | 11 |
+| `.md` | 8 | 376 | 12 |
 | `.mod` | 2 | 3 | 2 |
-| `.sum` | 2 | 22 | 4 |
-| **Total** | **147** | **20500** | **445** |
+| `.sum` | 2 | 26 | 4 |
+| **Total** | **160** | **21154** | **482** |
