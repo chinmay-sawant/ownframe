@@ -1,0 +1,151 @@
+:root {
+  --bg: #08090d;
+  --panel: #0c0e14;
+  --panel-2: #10131b;
+  --panel-3: #151924;
+  --line: #1e2330;
+  --line-soft: #171b25;
+  --text: #d7dce8;
+  --muted: #8a93a6;
+  --dim: #596274;
+  --accent: #7aa2f7;
+  --accent-soft: rgba(122, 162, 247, 0.12);
+  --green: #3ddc84;
+  --green-bg: rgba(63, 185, 80, 0.13);
+  --green-word: rgba(63, 185, 80, 0.30);
+  --red: #f0606a;
+  --red-bg: rgba(248, 81, 73, 0.12);
+  --red-word: rgba(248, 81, 73, 0.28);
+  --amber: #f0b75a;
+  --amber-soft: rgba(240, 183, 90, 0.12);
+  --purple: #c792ea;
+  --mono: "SF Mono", "JetBrains Mono", "Cascadia Mono", "DejaVu Sans Mono", "Roboto Mono", monospace;
+  --sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --titlebar-h: 42px;
+  --status-h: 24px;
+  --activity-w: 46px;
+  --side-w: 268px;
+  --tab-h: 38px;
+  --crumb-h: 30px;
+  --row-h: 20px;
+}
+
+html, body { margin: 0; padding: 0; background-color: var(--bg); }
+
+body {
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 12px;
+  overflow-x: hidden;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+button {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+input { font: inherit; }
+svg { display: block; flex: 0 0 auto; }
+
+.app { width: 100vw; min-height: 100vh; }
+
+.void { display: block; height: 0; }
+.scroll-space { display: block; width: 1px; }
+
+.mono { font-family: var(--mono); letter-spacing: -0.01em; }
+.dim { color: var(--dim); }
+.add { color: var(--green); }
+.del { color: var(--red); }
+
+/* File badges -------------------------------------------------------------- */
+
+.ficon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.ficon.sm { width: 16px; height: 16px; flex-basis: 16px; font-size: 8px; }
+.ficon.lg { width: 30px; height: 30px; flex-basis: 30px; font-size: 11px; border-radius: 7px; }
+
+.lang-go { background: #0a2830; color: #5bd6f5; }
+.lang-python { background: #2a2410; color: #f0c674; }
+.lang-javascript { background: #2a2708; color: #f7df1e; }
+.lang-markdown { background: #101c2e; color: #7aa2f7; }
+.lang-css { background: #1a1230; color: #c792ea; }
+.lang-json { background: #231a10; color: #f0b75a; }
+.lang-html { background: #2a1410; color: #f07178; }
+.lang-yaml { background: #12251f; color: #5eead4; }
+.lang-shell { background: #16210f; color: #a6e22e; }
+.lang-plain { background: #191d26; color: #8a93a6; }
+
+/* Source tokens ------------------------------------------------------------ */
+
+.t-plain { color: #c4cddd; }
+.t-kw { color: #c792ea; }
+.t-type { color: #ffcb6b; }
+.t-fn { color: #82aaff; }
+.t-str { color: #c3e88d; }
+.t-num { color: #f78c6c; }
+.t-com { color: #566072; }
+.t-op { color: #89ddff; }
+.t-punc { color: #8b96aa; }
+.t-var { color: #f07178; }
+.t-lit { color: #ff9e64; }
+.t-dec { color: #ffcb6b; }
+.t-tag { color: #f07178; }
+.t-attr { color: #ffcb6b; }
+.t-val { color: #c3e88d; }
+.t-meta { color: #7fdbca; }
+.t-h1 { color: #82aaff; }
+.t-h2 { color: #7fdbca; }
+.t-h3 { color: #c792ea; }
+.t-h4 { color: #ffcb6b; }
+.t-h5 { color: #c3e88d; }
+.t-h6 { color: #f78c6c; }
+.t-bold { color: #e6ebf5; }
+.t-ital { color: #b7c2d6; }
+.t-code { color: #c3e88d; background-color: rgba(255, 255, 255, 0.045); }
+.t-link { color: #82aaff; }
+.t-quote { color: #9aa5b8; }
+.t-hr { color: #3a4152; }
+
+/* Small shared pieces ------------------------------------------------------ */
+
+.spacer { flex: 1; }
+
+.cstat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.st-m { background: var(--amber-soft); color: var(--amber); }
+.st-a { background: var(--green-bg); color: var(--green); }
+.st-d { background: var(--red-bg); color: var(--red); }
+.st-u { background: var(--accent-soft); color: var(--accent); }
+.st-r { background: rgba(192, 132, 252, 0.13); color: var(--purple); }

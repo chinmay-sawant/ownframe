@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Beacon — endpoint health</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="mark" aria-hidden="true"></span>
+      <span class="brand-name">Beacon</span>
+    </a>
+
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <span>Endpoints</span>
+      <span class="sep">/</span>
+      <span class="on">Overview</span>
+    </nav>
+
+    <div class="topbar-right">
+      <span class="live" id="live"><span class="dot" aria-hidden="true"></span> Live</span>
+      <span class="stamp" id="updated">waiting for the first round</span>
+      <button class="icon" id="refresh" type="button" title="Refresh now" aria-label="Refresh now">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+          <path d="M2.5 8a5.5 5.5 0 0 1 9.4-3.9L14 6.2M13.5 8a5.5 5.5 0 0 1-9.4 3.9L2 10.3"/>
+          <path d="M14 2.8v3.4h-3.4M2 13.2V9.8h3.4"/>
+        </svg>
+      </button>
+      <button class="avatar" type="button" title="Signed in as ada">AR</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>Endpoint health</h1>
+        <p>Every service the scheduler watches, with the last round on top.</p>
+      </div>
+      <div class="hero-actions">
+        <label class="search">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="6" cy="6" r="4.2"/>
+            <path d="m9.4 9.4 2.8 2.8"/>
+          </svg>
+          <input id="search" type="search" placeholder="Filter by name or tag" autocomplete="off">
+        </label>
+        <button class="button primary" id="add" type="button">
+          <span aria-hidden="true">+</span> Add endpoint
+        </button>
+      </div>
+    </section>
+
+    <section class="stats" id="stats">
+      <article class="stat">
+        <span class="stat-label">Watching</span>
+        <strong class="stat-value" id="stat-watch">—</strong>
+        <span class="stat-note">endpoints in the catalog</span>
+      </article>
+      <article class="stat up">
+        <span class="stat-label">Up</span>
+        <strong class="stat-value" id="stat-up">—</strong>
+        <span class="stat-note">2xx or 3xx on the last round</span>
+      </article>
+      <article class="stat slow">
+        <span class="stat-label">Slow</span>
+        <strong class="stat-value" id="stat-slow">—</strong>
+        <span class="stat-note">answered over the 750 ms budget</span>
+      </article>
+      <article class="stat down">
+        <span class="stat-label">Down</span>
+        <strong class="stat-value" id="stat-down">—</strong>
+        <span class="stat-note">timeout, 4xx, or 5xx</span>
+      </article>
+    </section>
+
+    <section class="board">
+      <div class="board-head">
+        <div class="board-title">
+          <h2>Services</h2>
+          <span class="count" id="count">—</span>
+        </div>
+        <div class="filters" id="filters" role="group" aria-label="Filter by tag">
+          <button class="chip on" data-tag="" type="button">All</button>
+          <button class="chip" data-tag="api" type="button">API</button>
+          <button class="chip" data-tag="web" type="button">Web</button>
+          <button class="chip" data-tag="infra" type="button">Infra</button>
+          <button class="chip" data-tag="internal" type="button">Internal</button>
+        </div>
+      </div>
+
+      <table class="checks">
+        <thead>
+          <tr>
+            <th class="col-name">Service</th>
+            <th class="col-state">State</th>
+            <th class="col-code">Code</th>
+            <th class="col-latency">Latency</th>
+            <th class="col-ttfb">TTFB</th>
+            <th class="col-at">Last check</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr class="empty"><td colspan="6">No round has been recorded yet.</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <aside class="detail" id="detail" aria-hidden="true">
+    <header class="detail-head">
+      <div>
+        <span class="detail-kicker">Endpoint</span>
+        <h2 id="detail-name">—</h2>
+      </div>
+      <button class="icon" id="detail-close" type="button" title="Close" aria-label="Close details">×</button>
+    </header>
+    <div class="detail-body" id="detail-body"></div>
+  </aside>
+
+  <footer class="foot">
+    <span>Beacon 1.4</span>
+    <span class="sep">·</span>
+    <span>single node</span>
+    <span class="spacer"></span>
+    <span class="dim">history kept for 24 hours</span>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,37 @@
+<aside class="details" id="details-panel" aria-label="Details">
+  <header class="det-head">
+    <span class="det-kicker">Details</span>
+    <button class="det-x" data-action="details-close" type="button" title="Close details">×</button>
+  </header>
+
+  {{if .Active}}
+  <div class="det-file">
+    <span class="ficon lg lang-{{.Lang}}">{{.Badge}}</span>
+    <span class="det-file-text"><b>{{.ActiveName}}</b><span>{{.ActiveDir}}</span></span>
+  </div>
+
+  <div class="det-grid">
+    <span>Language</span><b>{{.LangLabel}}</b>
+    <span>Lines</span><b class="mono">{{.LineCount}}</b>
+    <span>Size</span><b class="mono">{{.ByteSize}}</b>
+    <span>Encoding</span><b class="mono">UTF-8</b>
+    <span>Status</span><b>{{if .Status}}{{.Status}}{{else}}clean{{end}}</b>
+  </div>
+
+  <div class="det-sub"><span>Outline</span><span class="mono dim">{{len .Outline}}</span></div>
+
+  <div class="outline">
+    {{range .Outline}}
+    <button class="orow" data-action="outline:{{.Line}}" type="button" style="padding-left:{{.Depth}}px" title="Line {{.No}}">
+      <span class="okind ok-{{.Kind}}">{{.Kind}}</span>
+      <span class="oname">{{.Name}}</span>
+      <span class="olno mono">{{.No}}</span>
+    </button>
+    {{else}}
+    <div class="det-empty">No symbols found in this file.</div>
+    {{end}}
+  </div>
+  {{else}}
+  <div class="det-empty">Open a file to see its language, size, and outline.</div>
+  {{end}}
+</aside>

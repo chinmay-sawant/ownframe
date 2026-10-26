@@ -1,0 +1,19 @@
+{
+  "name": "beacon-dashboard",
+  "version": "1.4.0",
+  "private": true,
+  "description": "Static dashboard for the Beacon probe scheduler",
+  "scripts": {
+    "start": "python3 -m http.server 8100 --directory web",
+    "format": "prettier --write web",
+    "lint": "eslint web",
+    "test": "node --test web"
+  },
+  "devDependencies": {
+    "eslint": "^9.14.0",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
