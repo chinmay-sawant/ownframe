@@ -221,6 +221,7 @@
 button.sb-item:hover { background-color: var(--panel-3); color: var(--text); }
 .sb-branch { color: var(--accent); font-family: var(--mono); font-size: 9.5px; }
 .sb-changed { color: var(--amber); }
+#sb-change-summary { max-width: 34vw; overflow: hidden; white-space: nowrap; }
 .sb-dot { width: 5px; height: 5px; flex: 0 0 5px; border-radius: 50%; background-color: var(--green); }
 .sb-dev .sb-dot { background-color: var(--icon); }
 .sb-dev.on { color: var(--green); }

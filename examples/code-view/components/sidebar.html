@@ -164,13 +164,6 @@
         {{if not .History.Commits}}<div class="hist-empty">{{if .History.Loading}}Loading the commit patch…{{else if .History.Note}}{{.History.Note}}{{else}}No commits on this branch yet.{{end}}</div>{{end}}
         {{end}}
       </div>
-      {{if .History.Tip.Show}}
-      <div class="hist-tip" id="commit-tip" style="top:{{.History.Tip.Top}}px">
-        <b>{{.History.Tip.Subject}}</b>
-        {{if .History.Tip.Body}}<span>{{.History.Tip.Body}}</span>{{end}}
-        <em>{{.History.Tip.Meta}}</em>
-      </div>
-      {{end}}
     </section>
     {{end}}
 

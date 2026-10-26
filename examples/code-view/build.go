@@ -17,7 +17,7 @@ func buildHTML() string {
 
 	for _, name := range []string{
 		"base.css", "chrome.css", "sidebar.css",
-		"editor.css", "diff.css", "history.css", "details.css", "palette.css", "preview.css", "motion.css",
+		"editor.css", "diff.css", "history.css", "details.css", "palette.css", "preview.css", "file_nav.css", "inline_card.css", "motion.css",
 	} {
 		b.WriteString(file("components/" + name))
 	}
@@ -29,6 +29,9 @@ func buildHTML() string {
 	b.WriteString(file("components/editor.html"))
 	b.WriteString(file("components/details.html"))
 	b.WriteString(file("components/statusbar.html"))
+	b.WriteString(file("components/file_nav.html"))
+	b.WriteString(file("components/commit_tip.html"))
+	b.WriteString(file("components/inline_card.html"))
 	b.WriteString(file("components/palette.html"))
 	b.WriteString(`</div></body></html>`)
 

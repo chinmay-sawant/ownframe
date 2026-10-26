@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -75,6 +76,102 @@ func TestFeatureEditSelection(t *testing.T) {
 	text, ok, err := app.Page().Edit().Copy(ctx)
 	if err != nil || !ok || !strings.Contains(text, "# Beacon") {
 		t.Fatalf("copy = %q ok=%v err=%v", text, ok, err)
+	}
+}
+
+// TestFeatureFileNav checks the bottom-center widget moves through changes.
+func TestFeatureFileNav(t *testing.T) {
+	app := newTestApp(t)
+
+	view := app.View()
+	if !view.FileNav.Open || view.FileNav.Total != 7 {
+		t.Fatalf("file nav = %+v", view.FileNav)
+	}
+
+	first := view.FileNav.Name
+
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "file-nav-next"}); err != nil {
+		t.Fatal(err)
+	}
+
+	view = app.View()
+	if view.FileNav.Name == first {
+		t.Fatalf("next did not move: %+v", view.FileNav)
+	}
+
+	if baseName(view.Active) != view.FileNav.Name {
+		t.Fatalf("active = %q file nav = %+v", view.Active, view.FileNav)
+	}
+}
+
+// TestFeatureChangedLineMarkers checks a modified open file carries gutter
+// marks and that the marker opens the line card.
+func TestFeatureChangedLineMarkers(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	line := 0
+
+	for _, row := range app.View().Rows {
+		if row.Mark != "" {
+			line = row.ChangeLine
+			break
+		}
+	}
+
+	if line == 0 {
+		t.Fatal("open modified file has no gutter markers")
+	}
+
+	box, ok := boxByID(app.Page().Boxes(), "gutter-"+strconv.Itoa(line))
+	if !ok {
+		t.Fatalf("no gutter box for line %d", line)
+	}
+
+	if err := app.Page().Click(context.Background(), box.X+box.W/2, box.Y+box.H/2); err != nil {
+		t.Fatal(err)
+	}
+
+	card := app.View().InlineCard
+	if !card.Show || card.Title != "Line "+strconv.Itoa(line) {
+		t.Fatalf("inline card = %+v", card)
+	}
+
+	if card.Left <= chromeLeft {
+		t.Fatalf("card left = %d, want inside the editor", card.Left)
+	}
+}
+
+// TestFeatureCommitTipFloatsBesideHistory checks the hover card leaves the rail.
+func TestFeatureCommitTipFloatsBesideHistory(t *testing.T) {
+	app := newTestApp(t)
+	clickID(t, app, "act-changes")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	short := app.View().History.Commits[0].Short
+	box, ok := boxByID(app.Page().Boxes(), "commit-"+short)
+	if !ok {
+		t.Fatal("no commit row")
+	}
+
+	if err := app.Page().Edit().Hover(context.Background(), box.X+box.W/2, box.Y+box.H/2); err != nil {
+		t.Fatal(err)
+	}
+
+	tip := app.View().CommitTip
+	if !tip.Show || len(tip.Lines) == 0 {
+		t.Fatalf("float tip = %+v", tip)
+	}
+
+	if tip.Left <= activityW+sideWidth {
+		t.Fatalf("tip left = %d, want it right of the sidebar", tip.Left)
 	}
 }
 

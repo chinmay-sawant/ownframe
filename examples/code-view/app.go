@@ -59,6 +59,7 @@ const (
 	branchPickerPad      = 96
 	branchPickerRowH     = 26
 	branchPickerMinRows  = 4
+	commitTipCellWidth   = 7
 	historyExpandedRows  = 3
 	historyAutoRows      = 8
 	historyAutoPad       = 4
@@ -97,6 +98,8 @@ type App struct {
 	changes  changeSet
 	statuses map[string]string
 	view     View
+	fileNav  *modifiedNav
+	summary  changeSummary
 
 	mode           string
 	filter         string
@@ -164,6 +167,8 @@ type App struct {
 	historyDy     float64
 	hoverCommit   string
 	hoverPath     string
+	commitTip     commitFloatView
+	inlineCard    inlineCard
 
 	details bool
 	devOn   bool
@@ -257,6 +262,7 @@ func NewWithLimit(root string, limit int) (*App, error) {
 	}
 
 	a.statuses = statusMap(a.changes)
+	a.syncFileNav()
 	a.selectFirstDiff()
 
 	page, err := ownframe.New(ownframe.Config{
@@ -371,6 +377,7 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 	a.scrollY = offsetY
 	a.viewportH = viewH
 	a.viewportCols = cols
+	a.inlineCard = inlineCard{}
 	a.view = a.buildView()
 	a.page.SetData(&a.view)
 
@@ -416,6 +423,8 @@ func (a *App) buildView() View {
 	v.SearchQuery = a.searchQuery
 	v.Palette = a.paletteView()
 	v.Search = a.searchViewState()
+	v.FileNav = a.fileNavViewState()
+	v.ChangeLabel = a.fileNavSummary()
 
 	v.PaneLeft, v.PaneWidth = a.paneGeometry()
 
@@ -454,6 +463,8 @@ func (a *App) buildView() View {
 		v.Second = a.secondView()
 	}
 
+	v.CommitTip = a.commitTip
+	v.InlineCard = a.inlineCard
 	v.SpaceHeight = a.contentHeight()
 
 	return v
@@ -508,7 +519,8 @@ func (a *App) fillCode(v *View) {
 		plan := doc.wrapped(cols)
 		start, end, track = a.windowSlice(len(plan.Rows))
 		v.TrackTop = track
-		v.Rows = a.copyFindRows(plan.Rows[start:end])
+		v.Rows = a.copyFindRows(cloneCodeRows(plan.Rows[start:end]))
+		a.decorateCodeRows(doc, v.Rows)
 
 		return
 	}
@@ -521,6 +533,7 @@ func (a *App) fillCode(v *View) {
 	}
 
 	v.Rows = a.copyFindRows(v.Rows)
+	a.decorateCodeRows(doc, v.Rows)
 }
 
 // diffColumns is the text cell count for the unified or split diff.
@@ -796,6 +809,45 @@ func (a *App) historyHeight() int {
 	return h
 }
 
+// historyPaneTop is the page y of the history rail's top edge.
+func (a *App) historyPaneTop() int {
+	return a.viewportH - chromeBottom - treeFootH - a.historyHeight()
+}
+
+// pageWidth is the current page width, with the default as a fallback.
+func (a *App) pageWidth() int {
+	w, _ := a.page.Size()
+	if w < 1 {
+		w = defaultWidth
+	}
+
+	return w
+}
+
+// buildCommitTip places the floating commit card beside the history rail.
+func (a *App) buildCommitTip(commit *gitCommit, rowTop int) commitFloatView {
+	body := strings.Join(strings.Fields(commit.Body), " ")
+	meta := commit.Short + " · " + commit.Author + " · " + commit.Date
+	pageTop := a.historyPaneTop() + rowTop
+
+	lines := commitTipText(commit.Subject, body, meta, commitTipWidth/commitTipCellWidth)
+	layout := layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
+	if !layout.Show {
+		return commitFloatView{}
+	}
+
+	lines = commitTipText(commit.Subject, body, meta, layout.Width/commitTipCellWidth)
+	layout = layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
+
+	return commitFloatView{
+		Show:  layout.Show,
+		Left:  layout.Left,
+		Top:   layout.Top,
+		Width: layout.Width,
+		Lines: lines,
+	}
+}
+
 // diffBodyHeight is the editor body. History lives in the sidebar.
 func (a *App) diffBodyHeight() int { return a.bodyHeight() }
 
@@ -843,6 +895,7 @@ func (a *App) commitPageSize() int {
 
 // fillHistory builds the commit rail and its expanded preview.
 func (a *App) fillHistory(v *View) {
+	a.commitTip = commitFloatView{}
 	h := historyView{
 		Visible:     a.historyVisible(),
 		Sample:      a.commits.Sample,
@@ -893,6 +946,7 @@ func (a *App) fillHistory(v *View) {
 	from := a.commitPage * size
 	to := min(from+size, len(a.commits.Commits))
 	tipTop := histHeadH + historyPad
+	tipRowTop := 0
 
 	for _, commit := range a.commits.Commits[from:to] {
 		rowTop := tipTop
@@ -946,6 +1000,7 @@ func (a *App) fillHistory(v *View) {
 		}
 
 		if a.hoverCommit == commit.Short {
+			tipRowTop = rowTop
 			tip := rowTop + histRowH + historyTipGap
 			if tip+historyTipFlipH > h.Height {
 				tip = rowTop - historyTipFlipH
@@ -976,6 +1031,7 @@ func (a *App) fillHistory(v *View) {
 				Body:    body,
 				Meta:    commit.Short + " · " + commit.Author + " · " + commit.Date,
 			}
+			a.commitTip = a.buildCommitTip(&commit, tipRowTop)
 		}
 	}
 
@@ -1116,6 +1172,7 @@ func (a *App) toggleWrap() {
 // scrollTo moves the page and rebuilds the visible slice.
 func (a *App) scrollTo(y int) {
 	target := a.clampScroll(y)
+	a.inlineCard = inlineCard{}
 	a.scrollY = target
 	a.scrollTarget = target
 	a.scrollPending = true
@@ -1428,9 +1485,13 @@ func (a *App) openFileIn(group int, path string) {
 	a.focusGroup = group
 	a.mode = "explorer"
 	a.preview = false
+	a.inlineCard = inlineCard{}
 	a.paletteOpen = false
 	a.paletteQuery = ""
 	a.paletteIndex = 0
+	if a.fileNav != nil {
+		a.fileNav.Select(path)
+	}
 	a.addRecent(path)
 	a.resetScroll()
 	a.refresh()
@@ -1614,6 +1675,10 @@ func (a *App) setMode(_ context.Context, mode string) {
 	}
 
 	a.mode = mode
+	a.inlineCard = inlineCard{}
+	if mode == "changes" && a.diffPath != "" && a.fileNav != nil {
+		a.fileNav.Select(a.diffPath)
+	}
 
 	a.resetScroll()
 	a.refresh()
@@ -1647,6 +1712,7 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 			a.commitRows = nil
 			a.commitPreview = nil
 			a.statuses = statusMap(a.changes)
+			a.syncFileNav()
 			a.selectFirstDiff()
 			a.rebuildDiffRows()
 			a.refresh()
@@ -1706,6 +1772,7 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 	}
 
 	a.statuses = statusMap(a.changes)
+	a.syncFileNav()
 	a.changePage = 0
 	a.selectFirstDiff()
 	a.rebuildDiffRows()
@@ -1736,6 +1803,10 @@ func (a *App) selectFirstDiff() {
 
 	if findFile(a.changes.Files, a.diffPath) == nil {
 		a.diffPath = a.changes.Files[0].Path
+	}
+
+	if a.fileNav != nil {
+		a.fileNav.Select(a.diffPath)
 	}
 
 	a.rebuildDiffRows()
@@ -1769,6 +1840,9 @@ func (a *App) selectChangePage() {
 	from := a.changePage * a.changePageRows()
 	if from < len(a.changes.Files) {
 		a.diffPath = a.changes.Files[from].Path
+		if a.fileNav != nil {
+			a.fileNav.Select(a.diffPath)
+		}
 		a.rebuildDiffRows()
 	}
 
@@ -1824,6 +1898,10 @@ func (a *App) selectDiff(path string) {
 	a.diffPath = path
 	a.diffSource = "working"
 	a.mode = "changes"
+	a.inlineCard = inlineCard{}
+	if a.fileNav != nil {
+		a.fileNav.Select(path)
+	}
 	a.rebuildDiffRows()
 	a.resetScroll()
 	a.refresh()

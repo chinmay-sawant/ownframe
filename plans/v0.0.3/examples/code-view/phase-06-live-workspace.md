@@ -40,6 +40,10 @@ poll is not needed because `.git/index` and ref changes are watched directly.
       `TestFeatureSessionRestoresLayout`.
 - [x] Enforce the scan budget with a visible message and `-files` control.
       Evidence: `TestFeatureScanBudget`, `TestLoadDiskWorkspaceLimitTruncates`.
+- [x] Keep a bottom-center changed-file navigator in sync with the diff.
+      Evidence: `TestFeatureFileNav`, `file_nav_ops.go`.
+- [x] Float the commit message beside the history rail on hover. Evidence:
+      `TestFeatureCommitTipFloatsBesideHistory`, `commit_tip.go`.
 - [x] Reload the active file on disk change, but keep unsaved edits.
       Evidence: `applyWatchChanges`, `installRescan`.
 - [x] Add tests for add, change, remove, and a preserved selection. Evidence:

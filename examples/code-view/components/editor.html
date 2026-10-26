@@ -77,7 +77,6 @@
       </div>
       {{else}}
       {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)" aria-pressed="{{if .Preview}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
-      {{if .CanEdit}}<button class="crumb-btn" id="edit-toggle" data-action="edit-toggle" type="button" title="Edit this file (Ctrl+E)"{{if .Modal}} tabindex="-1"{{end}}>Edit</button>{{end}}
       <button class="crumb-btn{{if .Wrap}} on{{end}}" id="wrap-toggle" data-action="wrap-toggle" type="button" title="Soft wrap (Z)" aria-label="Soft wrap {{if .Wrap}}on{{else}}off{{end}}" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
       <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy path</button>
       <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy file</button>
@@ -183,12 +182,14 @@
     {{else}}
       <div class="track" style="top:{{.TrackTop}}px">
         {{range .Rows}}
-        <div class="crow">
+        <div class="crow {{.ChangeClass}}">
+          {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
           <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
         </div>
         {{end}}
       </div>
+      {{if .CanEdit}}<button class="edit-surface" id="edit-surface" data-action="edit-begin" type="button" title="Click to edit" aria-label="Edit {{.Active}}"{{if .Modal}} tabindex="-1"{{end}}></button>{{end}}
     {{end}}
   </div>
 </section>
@@ -255,7 +256,8 @@
     {{else}}
       <div class="track" style="top:{{.Second.TrackTop}}px">
         {{range .Second.Rows}}
-        <div class="crow">
+        <div class="crow {{.ChangeClass}}">
+          <span class="gutter-mark {{.MarkClass}}">{{.Mark}}</span>
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
           <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
         </div>

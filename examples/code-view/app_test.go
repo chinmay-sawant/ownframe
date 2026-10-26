@@ -571,6 +571,26 @@ func TestScreenshot(t *testing.T) {
 
 	writeShot(t, app, "edit")
 	app.finishEdit()
+	app.openFile("backend/probe.go")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, row := range app.View().Rows {
+		if row.Mark != "" {
+			app.showInlineCard(row.ChangeLine)
+			break
+		}
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "inline-card")
+	app.closeInlineCard()
+
 	app.toggleSplit()
 	app.openFileIn(1, "web/theme.css")
 	app.resetScroll()
@@ -630,6 +650,22 @@ func TestScreenshot(t *testing.T) {
 	}
 
 	writeShot(t, app, "changes")
+
+	if len(app.View().History.Commits) > 0 {
+		short := app.View().History.Commits[0].Short
+		if box, ok := boxByID(app.Page().Boxes(), "commit-"+short); ok {
+			if err := app.Page().Edit().Hover(context.Background(), box.X+box.W/2, box.Y+box.H/2); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := app.Page().Redraw(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+
+			writeShot(t, app, "commit-tip")
+			_ = app.Page().Edit().Hover(context.Background(), 1, 1)
+		}
+	}
 
 	app.selectDiff("docs/deployment.md")
 	app.setSplit(true)

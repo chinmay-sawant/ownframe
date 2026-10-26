@@ -267,6 +267,310 @@ func TestPreviewHTMLBlock(t *testing.T) {
 	}
 }
 
+func TestPreviewRowsNeverContainNewlines(t *testing.T) {
+	t.Parallel()
+
+	const cols = 32
+
+	lines := []string{
+		"# A heading that is long enough to wrap over several preview rows",
+		"",
+		"A paragraph with <b>inline bold</b> and a verylongunbrokenwordthatmusthardbreakacrossrows and more words.",
+		"",
+		"- a list item that also wraps because it is long enough to need more than one row",
+		"",
+		"> a quote that wraps onto another row because the width is narrow",
+		"",
+		"| Name | Description |",
+		"| --- | --- |",
+		"| alpha | a cell that wraps over several rows to force the sanitizer to work |",
+		"",
+		"```go",
+		`fmt.Println("a code line that is much longer than the preview width allows")`,
+		"```",
+		"",
+		"<details><summary>A summary</summary><p>Body with <em>emphasis</em> and a long tail that wraps.</p></details>",
+	}
+
+	rows, _ := previewRows(lines, cols)
+
+	for i, row := range rows {
+		if strings.ContainsAny(row.Marker, "\n\r") {
+			t.Fatalf("row %d marker has a newline: %q", i, row.Marker)
+		}
+
+		if text := lineText(row.Segments); len([]rune(text)) > cols {
+			t.Fatalf("row %d is %d columns wide: %q", i, len([]rune(text)), text)
+		}
+
+		for _, seg := range row.Segments {
+			if strings.ContainsAny(seg.Text, "\n\r") {
+				t.Fatalf("row %d segment has a newline: %q", i, seg.Text)
+			}
+		}
+	}
+
+	long := "one\ntwo three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen"
+	clean, starts := sanitizePreviewRows([]previewRow{{
+		Kind:     "p",
+		Segments: []segment{{Text: long, Class: classPlain}},
+	}}, previewMinCols)
+
+	if len(starts) != 1 || starts[0] != 0 {
+		t.Fatalf("sanitizer starts = %v", starts)
+	}
+
+	if len(clean) < 2 {
+		t.Fatalf("sanitizer rows = %d, want a split", len(clean))
+	}
+
+	for _, row := range clean {
+		text := lineText(row.Segments)
+		if strings.ContainsAny(text, "\n\r") {
+			t.Fatalf("sanitized row has a newline: %q", text)
+		}
+
+		if width := len([]rune(text)); width > previewMinCols {
+			t.Fatalf("sanitized row is %d columns wide: %q", width, text)
+		}
+	}
+}
+
+func TestPreviewTableWrappedRowsDoNotOverlap(t *testing.T) {
+	t.Parallel()
+
+	const cols = 44
+
+	lines := []string{
+		"| Name | Description |",
+		"| --- | --- |",
+		"| alpha | A long description that wraps over several preview rows. |",
+		"| beta | Another long description that also wraps over several rows. |",
+	}
+
+	rows, anchors := previewRows(lines, cols)
+
+	for i := range lines {
+		if anchors[i] < 0 || anchors[i] >= len(rows) {
+			t.Fatalf("table anchor %d = %d", i, anchors[i])
+		}
+	}
+
+	tableRows := 0
+	hasRule := false
+	var pipePos []int
+
+	for i, row := range rows {
+		text := lineText(row.Segments)
+		if width := len([]rune(text)); width > cols {
+			t.Fatalf("row %d is %d columns wide: %q", i, width, text)
+		}
+
+		if row.Kind == "table" && strings.Contains(text, "┼") {
+			hasRule = true
+		}
+
+		if row.Kind != "table" || !strings.HasPrefix(text, "│") {
+			continue
+		}
+
+		tableRows++
+
+		var pos []int
+
+		for j, r := range []rune(text) {
+			if r == '│' {
+				pos = append(pos, j)
+			}
+		}
+
+		if len(pos) == 0 {
+			t.Fatalf("table row %d has no separators: %q", i, text)
+		}
+
+		if pipePos == nil {
+			pipePos = pos
+
+			continue
+		}
+
+		if len(pos) != len(pipePos) {
+			t.Fatalf("table row %d separators = %v, want %v", i, pos, pipePos)
+		}
+
+		for k := range pos {
+			if pos[k] != pipePos[k] {
+				t.Fatalf("table row %d separators = %v, want %v: %q", i, pos, pipePos, text)
+			}
+		}
+	}
+
+	if tableRows < 5 {
+		t.Fatalf("table rows = %d, want a wrapped header and body", tableRows)
+	}
+
+	if !hasRule {
+		t.Fatal("table has no header rule")
+	}
+
+	gap := false
+
+	for i := anchors[2]; i < anchors[3]; i++ {
+		if rows[i].Kind == "gap" {
+			gap = true
+		}
+	}
+
+	if !gap {
+		t.Fatal("wrapped table rows have no gap row between them")
+	}
+}
+
+func TestPreviewLongParagraphUsesOneRowPerLine(t *testing.T) {
+	t.Parallel()
+
+	const cols = 40
+
+	paragraph := strings.TrimSpace(strings.Repeat("alpha ", 30))
+	lines := []string{paragraph, "", "Beta paragraph."}
+
+	rows, anchors := previewRows(lines, cols)
+	want := wrapText(paragraph, cols)
+
+	var rowsForParagraph []string
+
+	gaps := 0
+
+	for i, row := range rows {
+		text := lineText(row.Segments)
+		if width := len([]rune(text)); width > cols {
+			t.Fatalf("row %d is %d columns wide: %q", i, width, text)
+		}
+
+		switch row.Kind {
+		case "gap":
+			gaps++
+		case "p":
+			if gaps == 0 {
+				rowsForParagraph = append(rowsForParagraph, text)
+			}
+		}
+	}
+
+	if len(rowsForParagraph) != len(want) {
+		t.Fatalf("paragraph rows = %d, want %d: %v", len(rowsForParagraph), len(want), rowsForParagraph)
+	}
+
+	if strings.Join(rowsForParagraph, " ") != paragraph {
+		t.Fatalf("paragraph rows do not rejoin: %q", rowsForParagraph)
+	}
+
+	if gaps != 1 {
+		t.Fatalf("gap rows = %d, want exactly one for the blank source line", gaps)
+	}
+
+	if anchors[2] <= anchors[0] {
+		t.Fatalf("second paragraph anchor %d is not after the first %d", anchors[2], anchors[0])
+	}
+}
+
+func TestPreviewRawHTMLHeadingsAndTable(t *testing.T) {
+	t.Parallel()
+
+	lines := []string{
+		"<h2>Overview</h2>",
+		"<p>Some <strong>bold</strong> text and <code>code()</code>.</p>",
+		"<table>",
+		"<tr><th>Name</th><th>Role</th></tr>",
+		"<tr><td>Ada</td><td>Engineer</td></tr>",
+		"<tr><td>Grace</td><td>Admiral and compiler author</td></tr>",
+		"<tr><td>R&amp;D</td><td>Research</td></tr>",
+		"</table>",
+	}
+
+	rows, anchors := previewRows(lines, previewDefaultCols)
+	all := previewText(rows)
+
+	hasHeading := false
+
+	for _, row := range rows {
+		if row.Kind == "h2" && lineText(row.Segments) == "Overview" {
+			hasHeading = true
+		}
+	}
+
+	if !hasHeading {
+		t.Fatalf("raw HTML heading missing: %q", all)
+	}
+
+	for _, want := range []string{"Overview", "bold", "code()", "Name", "Role", "Ada", "Engineer", "Grace", "Admiral", "R&D", "Research"} {
+		if !strings.Contains(all, want) {
+			t.Errorf("raw HTML preview missing %q: %q", want, all)
+		}
+	}
+
+	for _, unwanted := range []string{"<h2>", "<table>", "<tr>", "<td>", "<th>", "<strong>", "<p>"} {
+		if strings.Contains(all, unwanted) {
+			t.Errorf("raw HTML preview kept tag %q: %q", unwanted, all)
+		}
+	}
+
+	for i := range lines {
+		if anchors[i] < 0 || anchors[i] >= len(rows) {
+			t.Errorf("HTML anchor %d = %d", i, anchors[i])
+		}
+	}
+
+	bold := false
+
+	for _, row := range rows {
+		if row.Kind != "table" || !strings.HasPrefix(lineText(row.Segments), "│") {
+			continue
+		}
+
+		for _, seg := range row.Segments {
+			if seg.Class == classBold {
+				bold = true
+			}
+		}
+
+		break
+	}
+
+	if !bold {
+		t.Error("raw HTML table header is not emphasised")
+	}
+}
+
+func TestPreviewHTMLScriptStripped(t *testing.T) {
+	t.Parallel()
+
+	lines := []string{
+		"<div>",
+		`<script>const leak = "hidden";</script>`,
+		`<style>.leak { color: red; }</style>`,
+		`<p>Visible <strong>text</strong> before <script>alert("x")</script> after.</p>`,
+		"<ul><li>First</li><li>Second</li></ul>",
+		"<details><summary>More</summary><p>Details body</p></details>",
+		"</div>",
+	}
+
+	rows, _ := previewRows(lines, 60)
+	all := previewText(rows)
+
+	for _, want := range []string{"Visible", "text", "before", "after", "First", "Second", "More", "Details body"} {
+		if !strings.Contains(all, want) {
+			t.Errorf("script preview missing %q: %q", want, all)
+		}
+	}
+
+	for _, unwanted := range []string{"leak", "hidden", "color: red", "alert", "<script", "<style", "<div", "<p", "</"} {
+		if strings.Contains(all, unwanted) {
+			t.Errorf("script preview kept %q: %q", unwanted, all)
+		}
+	}
+}
+
 func TestPreviewMermaidFlowchart(t *testing.T) {
 	t.Parallel()
 

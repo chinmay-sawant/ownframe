@@ -1,0 +1,5 @@
+{{if .CommitTip.Show}}
+<div class="commit-tip-float" id="commit-tip-float" style="left:{{.CommitTip.Left}}px;top:{{.CommitTip.Top}}px;width:{{.CommitTip.Width}}px" role="tooltip">
+  {{range $i, $line := .CommitTip.Lines}}<span class="{{if eq $i 0}}tip-subject{{end}}">{{$line}}</span>{{end}}
+</div>
+{{end}}

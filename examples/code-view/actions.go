@@ -15,11 +15,22 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 	switch {
 	case action == "":
-		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" || box.ID == "workspace-search" {
+		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" ||
+			box.ID == "workspace-search" || box.ID == "editor" || box.ID == "edit-surface" {
 			return nil
 		}
 
+		if a.inlineCard.Show {
+			a.closeInlineCard()
+		}
+
 		return a.page.Form().Focus(ctx, "")
+	case action == "inline-card-close":
+		a.closeInlineCard()
+	case strings.HasPrefix(action, "inline-card:"):
+		if line, ok := actionIndex(action, "inline-card:"); ok {
+			a.showInlineCard(line)
+		}
 	case action == "toast-close":
 		a.clearToast()
 	case action == "split-toggle":
@@ -28,12 +39,27 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		if index, ok := actionIndex(action, "focus-group:"); ok {
 			a.setFocusGroup(index)
 		}
+	case action == "edit-begin":
+		a.inlineCard = inlineCard{}
+		a.toggleEdit()
+
+		if err := a.page.Redraw(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Form().Focus(ctx, "editor")
 	case action == "edit-toggle":
 		a.toggleEdit()
 	case action == "edit-save":
 		a.saveEdit()
 	case action == "search-open":
 		return a.openWorkspaceSearch(ctx)
+	case action == "file-nav-prev":
+		a.fileNavStep(-1)
+	case action == "file-nav-next":
+		a.fileNavStep(1)
+	case action == "file-nav-open":
+		a.fileNavOpen()
 	case action == "search-close":
 		return a.closeWorkspaceSearch(ctx)
 	case action == "search-case":
@@ -922,10 +948,13 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 			a.jumpHunk(-1)
 		}
 	case "escape":
-		if a.details {
+		switch {
+		case a.inlineCard.Show:
+			a.closeInlineCard()
+		case a.details:
 			a.details = false
 			a.refresh()
-		} else if a.toast.Show {
+		case a.toast.Show:
 			a.clearToast()
 		}
 	default:

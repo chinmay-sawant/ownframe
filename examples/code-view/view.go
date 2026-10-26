@@ -85,6 +85,34 @@ type View struct {
 	PaletteQuery string
 	SearchQuery  string
 	Search       searchView
+	FileNav      fileNavView
+	ChangeLabel  string
+	CommitTip    commitFloatView
+	InlineCard   inlineCard
+}
+
+// commitFloatView is the page-space commit message card that floats to the
+// right of the history rail.
+type commitFloatView struct {
+	Show  bool
+	Left  int
+	Top   int
+	Width int
+	Lines []string
+}
+
+// fileNavView is the bottom-center changed-file navigator.
+type fileNavView struct {
+	Open     bool
+	Label    string
+	Path     string
+	Name     string
+	Dir      string
+	Position int
+	Total    int
+	Add      int
+	Del      int
+	Multiple bool
 }
 
 // secondaryView is the right-hand editor group. It carries only the fields
@@ -178,10 +206,15 @@ type tabRow struct {
 // codeRow is one visual source row with its prebuilt spans. No is zero on a
 // wrapped continuation row.
 type codeRow struct {
-	No       int
-	Line     int
-	Start    int
-	Segments []segment
+	No          int
+	Line        int
+	Start       int
+	Segments    []segment
+	Mark        string
+	MarkClass   string
+	Hint        string
+	ChangeClass string
+	ChangeLine  int
 }
 
 // recentRow is one quick-open entry on the welcome panel.

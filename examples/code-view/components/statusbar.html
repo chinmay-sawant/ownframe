@@ -1,7 +1,7 @@
 <footer class="statusbar" id="statusbar">
   <button class="sb-item sb-branch" id="sb-branch" data-action="mode-changes" type="button" title="Source control" aria-label="Source control: {{.Branch}}"{{if .Modal}} tabindex="-1"{{end}}><svg width="10" height="11" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>{{.Branch}}</button>
   <span class="sb-item"><span class="sb-dot"></span>{{.Workspace}}</span>
-  {{if .Changed}}<span class="sb-item sb-changed">{{.Changed}} changed</span>{{end}}
+  {{if .ChangeLabel}}<span class="sb-item sb-changed" id="sb-change-summary">{{.ChangeLabel}}</span>{{else if .Changed}}<span class="sb-item sb-changed">{{.Changed}} changed</span>{{end}}
   <span class="sb-fill"></span>
   {{if .HoverPath}}<span class="sb-item sb-path mono" id="sb-hover-path">{{.HoverPath}}</span>{{end}}
   {{if .WatchNote}}<span class="sb-item sb-watch" id="sb-watch">{{.WatchNote}}</span>{{end}}

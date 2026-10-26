@@ -37,6 +37,11 @@ expansion, go-to-line, breadcrumb dropdowns, and a minimap are open.
   `TestFeatureDiffWrapIntegration`, `diff_wrap.go`.
 - [x] Add edit, selection, and save in the source view. Evidence:
   `TestFeatureEditAndSave`, `edit_buffer.go`, `workspace_write.go`.
+- [x] Start editing by clicking inside the file, with gutter markers on
+  changed lines and a line card. Evidence:
+  `TestEditSurfaceClickBeginsEditing`, `TestFeatureChangedLineMarkers`.
+- [x] Add a bottom-center changed-file navigator. Evidence:
+  `TestFeatureFileNav`, `modified_nav.go`.
 - [ ] Add expandable diff context.
 - [ ] Add go-to-line and range copy.
 - [ ] Add breadcrumb dropdowns.

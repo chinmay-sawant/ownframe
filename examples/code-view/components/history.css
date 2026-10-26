@@ -278,6 +278,62 @@
 .hist-tip span { width: 100%; max-height: 58px; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.45; white-space: normal; }
 .hist-tip em { color: var(--dim); font-family: var(--mono); font-size: 8px; font-style: normal; }
 
+/* A hover card for one history row. It sits at the page root rather than
+   inside the rail, because the rail clips its children. The model sets left,
+   top, and width inline; the fixed position keeps it above the editor and the
+   row it describes. It takes no pointer events, so moving the pointer onto
+   the card leaves the row's hover intact. */
+.commit-tip-float {
+  position: fixed;
+  z-index: 45;
+  max-width: 340px;
+  max-height: 160px;
+  overflow: hidden;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 7px;
+  background-color: #0d1018;
+  box-shadow: 0 10px 26px rgba(1, 4, 9, 0.55);
+  pointer-events: none;
+}
+
+.commit-tip-float b {
+  display: block;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.commit-tip-float span {
+  display: block;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 14px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.commit-tip-float span.tip-subject {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.commit-tip-float em {
+  display: block;
+  overflow: hidden;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-style: normal;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
 /* Splitter ----------------------------------------------------------------- */
 
 .hsplit {

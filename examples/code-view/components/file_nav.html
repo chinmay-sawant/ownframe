@@ -1,0 +1,11 @@
+{{if .FileNav.Open}}{{$single := le .FileNav.Total 1}}
+<div class="file-nav" id="file-nav" role="group" aria-label="Changed files">
+  <button class="file-nav-arrow{{if $single}} off{{end}}" id="file-nav-prev" data-action="file-nav-prev" type="button" title="Previous changed file" aria-label="Previous changed file"{{if $single}} disabled{{end}}>‹</button>
+  <span class="file-nav-pos mono" id="file-nav-pos" aria-live="polite" aria-atomic="true">{{.FileNav.Position}}/{{.FileNav.Total}}</span>
+  <button class="file-nav-current" id="file-nav-current" data-action="file-nav-open" type="button" title="Open {{if .FileNav.Path}}{{.FileNav.Path}}/{{end}}{{.FileNav.Label}}" aria-label="Open {{.FileNav.Label}}, changed file {{.FileNav.Position}} of {{.FileNav.Total}}">{{.FileNav.Label}}</button>
+  {{if .FileNav.Path}}<div class="file-nav-dir" title="{{.FileNav.Path}}">{{.FileNav.Path}}</div>{{end}}
+  <div class="file-nav-fill"></div>
+  <span class="file-nav-stats"><b class="add">+{{.FileNav.Add}}</b><b class="del">−{{.FileNav.Del}}</b></span>
+  <button class="file-nav-arrow{{if $single}} off{{end}}" id="file-nav-next" data-action="file-nav-next" type="button" title="Next changed file" aria-label="Next changed file"{{if $single}} disabled{{end}}>›</button>
+</div>
+{{end}}

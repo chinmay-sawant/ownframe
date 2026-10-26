@@ -181,7 +181,8 @@ func (a *App) secondView() secondaryView {
 		plan := doc.wrapped(cols)
 		start, end, track := a.windowSlice(len(plan.Rows))
 		s.TrackTop = track
-		s.Rows = plan.Rows[start:end]
+		s.Rows = cloneCodeRows(plan.Rows[start:end])
+		a.decorateCodeRows(doc, s.Rows)
 
 		return s
 	}
@@ -193,7 +194,22 @@ func (a *App) secondView() secondaryView {
 		s.Rows = append(s.Rows, codeRow{No: i + 1, Line: i, Segments: doc.Tokens[i]})
 	}
 
+	a.decorateCodeRows(doc, s.Rows)
+
 	return s
+}
+
+// cloneCodeRows copies a visible slice so gutter marks never leak back into a
+// cached wrap plan.
+func cloneCodeRows(rows []codeRow) []codeRow {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	out := make([]codeRow, len(rows))
+	copy(out, rows)
+
+	return out
 }
 
 // paneRowCount is the visual row count for one document in one pane.

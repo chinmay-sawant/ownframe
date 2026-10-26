@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 	"sync"
+	"unicode"
 )
 
 const (
@@ -175,7 +176,7 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 			}
 		case strings.HasPrefix(trimmed, "|"):
 			start := len(rows)
-			rows = appendTableRow(rows, splitTableRow(trimmed), nil, nil, 0, cols, false)
+			rows, _ = appendTableRow(rows, splitTableRow(trimmed), nil, nil, 0, cols, false)
 			anchors[i] = start
 			i++
 		case isHTMLBlockStart(trimmed):
@@ -189,9 +190,7 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 				i++
 			}
 
-			for _, text := range htmlTextLines(strings.Join(parts, " ")) {
-				rows = appendPreviewWrapped(rows, "p", "", text, cols)
-			}
+			rows = appendHTMLPreview(rows, strings.Join(parts, "\n"), cols)
 
 			if len(rows) == start {
 				rows = append(rows, previewRow{Kind: "gap"})
@@ -242,6 +241,14 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 			if k < len(lineRows) {
 				anchors[no] = base + lineRows[k]
 			}
+		}
+	}
+
+	rows, starts := sanitizePreviewRows(rows, cols)
+
+	for i, anchor := range anchors {
+		if anchor >= 0 && anchor < len(starts) {
+			anchors[i] = starts[anchor]
 		}
 	}
 
@@ -304,39 +311,86 @@ func listMarker(trimmed string) (string, string) {
 	return "", ""
 }
 
-// appendPreviewWrapped wraps text and appends one row per visual line. Raw
-// HTML is stripped here, and a <br> starts a new row.
+// appendPreviewWrapped wraps prose and appends one row per visual line. Inline
+// HTML and Markdown become styled runs before wrapping, so a tag never prints.
 func appendPreviewWrapped(rows []previewRow, kind, marker, text string, cols int) []previewRow {
+	return appendPreviewStyled(rows, kind, marker, previewInlineRuns(text), cols)
+}
+
+// appendPreviewStyled wraps styled runs and appends one row per visual line. A
+// hard newline from <br> starts a new row, and the marker only lands on the
+// first row of the block.
+func appendPreviewStyled(rows []previewRow, kind, marker string, runs []segment, cols int) []previewRow {
 	cols = normalizePreviewCols(cols)
 
-	hardLines := strings.Split(stripHTML(text), "\n")
-	wrote := false
+	hard := splitRowSegments(runs)
 
-	for _, hardLine := range hardLines {
-		line := strings.Join(strings.Fields(hardLine), " ")
-		if line == "" {
-			if len(hardLines) > 1 {
-				rows = append(rows, previewRow{Kind: kind, Segments: []segment{{Text: " ", Class: classPlain}}})
-				wrote = true
-			}
+	for len(hard) > 0 && !segmentsHaveText(hard[0]) {
+		hard = hard[1:]
+	}
+
+	for len(hard) > 0 && !segmentsHaveText(hard[len(hard)-1]) {
+		hard = hard[:len(hard)-1]
+	}
+
+	if len(hard) == 0 {
+		return append(rows, previewRow{Kind: kind, Marker: marker, Segments: previewInline("")})
+	}
+
+	markerSet := false
+
+	for _, hardLine := range hard {
+		visual := wrapStyledRuns(hardLine, cols)
+		if len(visual) == 0 {
+			rows = append(rows, previewRow{Kind: kind, Segments: []segment{{Text: " ", Class: classPlain}}})
 
 			continue
 		}
 
-		for i, visual := range wrapText(line, cols) {
+		for _, segs := range visual {
 			rowMarker := ""
-			if !wrote && i == 0 {
+			if !markerSet {
 				rowMarker = marker
+				markerSet = true
 			}
 
-			rows = append(rows, previewRow{Kind: kind, Marker: rowMarker, Segments: previewInline(visual)})
+			rows = append(rows, previewRow{Kind: kind, Marker: rowMarker, Segments: finishLine(segs)})
 		}
-
-		wrote = true
 	}
 
-	if !wrote {
-		rows = append(rows, previewRow{Kind: kind, Marker: marker, Segments: previewInline("")})
+	return rows
+}
+
+// appendHTMLPreview turns one raw HTML block into structured preview rows. It
+// falls back to the plain text lines when nothing structured came out.
+func appendHTMLPreview(rows []previewRow, raw string, cols int) []previewRow {
+	blocks := htmlPreviewBlocks(raw)
+	start := len(rows)
+
+	for _, block := range blocks {
+		if len(rows) > start && (block.Kind != "li" || rows[len(rows)-1].Kind != "li") {
+			rows = append(rows, previewRow{Kind: "gap"})
+		}
+
+		switch {
+		case block.Table != nil:
+			rows, _ = appendTableBlock(rows, block.Table.Header, block.Table.Rows, nil, cols)
+		case block.Kind == "rule":
+			width := previewRuleRunes
+			if cols < width {
+				width = cols
+			}
+
+			rows = append(rows, previewRow{Kind: "rule", Segments: []segment{{Text: strings.Repeat("─", width), Class: classHR}}})
+		default:
+			rows = appendPreviewStyled(rows, block.Kind, block.Marker, block.Runs, cols)
+		}
+	}
+
+	if len(rows) == start {
+		for _, text := range htmlTextLines(raw) {
+			rows = appendPreviewWrapped(rows, "p", "", text, cols)
+		}
 	}
 
 	return rows
@@ -461,6 +515,273 @@ func wrapText(text string, width int) []string {
 	}
 
 	return lines
+}
+
+// previewGlyph is one visible rune and the token class it carries.
+type previewGlyph struct {
+	r     rune
+	class string
+}
+
+// wrapStyledRuns wraps styled runs at spaces, hard-breaking a word longer than
+// width. It returns one segment slice per visual line.
+func wrapStyledRuns(segs []segment, width int) [][]segment {
+	return wrapGlyphs(glyphsFromSegments(segs), width)
+}
+
+// glyphsFromSegments flattens styled runs and collapses whitespace so a row
+// never carries a newline or a run of spaces into the renderer.
+func glyphsFromSegments(segs []segment) []previewGlyph {
+	out := make([]previewGlyph, 0, len(segs))
+	pendingSpace := false
+
+	for _, seg := range segs {
+		for _, r := range seg.Text {
+			if unicode.IsSpace(r) {
+				if len(out) > 0 {
+					pendingSpace = true
+				}
+
+				continue
+			}
+
+			if pendingSpace {
+				out = append(out, previewGlyph{r: ' ', class: seg.Class})
+				pendingSpace = false
+			}
+
+			out = append(out, previewGlyph{r: r, class: seg.Class})
+		}
+	}
+
+	return out
+}
+
+// wrapGlyphs breaks glyphs into visual lines no wider than width.
+func wrapGlyphs(glyphs []previewGlyph, width int) [][]segment {
+	if width < 1 {
+		width = 1
+	}
+
+	if len(glyphs) == 0 {
+		return nil
+	}
+
+	lines := make([][]segment, 0, len(glyphs)/width+1)
+	start := 0
+
+	for start < len(glyphs) {
+		for start < len(glyphs) && glyphs[start].r == ' ' {
+			start++
+		}
+
+		if start >= len(glyphs) {
+			break
+		}
+
+		end := start
+		lastSpace := -1
+
+		for end < len(glyphs) && end-start < width {
+			if glyphs[end].r == ' ' {
+				lastSpace = end
+			}
+
+			end++
+		}
+
+		if end < len(glyphs) && glyphs[end].r != ' ' && lastSpace > start {
+			end = lastSpace
+		}
+
+		line := glyphs[start:end]
+
+		for len(line) > 0 && line[len(line)-1].r == ' ' {
+			line = line[:len(line)-1]
+		}
+
+		lines = append(lines, segmentsFromGlyphs(line))
+		start = end
+	}
+
+	return lines
+}
+
+// segmentsFromGlyphs groups one visual line back into styled runs.
+func segmentsFromGlyphs(glyphs []previewGlyph) []segment {
+	if len(glyphs) == 0 {
+		return nil
+	}
+
+	out := make([]segment, 0, previewParts)
+
+	var b strings.Builder
+
+	class := glyphs[0].class
+
+	for _, glyph := range glyphs {
+		if glyph.class != class {
+			if b.Len() > 0 {
+				out = append(out, segment{Text: b.String(), Class: class})
+				b.Reset()
+			}
+
+			class = glyph.class
+		}
+
+		b.WriteRune(glyph.r)
+	}
+
+	if b.Len() > 0 {
+		out = append(out, segment{Text: b.String(), Class: class})
+	}
+
+	return out
+}
+
+// splitRowSegments splits styled runs at hard newlines, keeping each class.
+func splitRowSegments(segs []segment) [][]segment {
+	lines := [][]segment{nil}
+
+	for _, seg := range segs {
+		text := strings.ReplaceAll(seg.Text, "\r\n", "\n")
+		text = strings.ReplaceAll(text, "\r", "\n")
+
+		for k, part := range strings.Split(text, "\n") {
+			if k > 0 {
+				lines = append(lines, nil)
+			}
+
+			if part != "" {
+				lines[len(lines)-1] = append(lines[len(lines)-1], segment{Text: part, Class: seg.Class})
+			}
+		}
+	}
+
+	return lines
+}
+
+// segmentsHaveText reports whether the runs print anything but whitespace.
+func segmentsHaveText(segs []segment) bool {
+	for _, seg := range segs {
+		for _, r := range seg.Text {
+			if !unicode.IsSpace(r) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// sanitizePreviewRows enforces the one-row-one-line rule. It returns the new
+// rows and the first new row of every old row, so source anchors can be
+// remapped after wrapping or splitting.
+func sanitizePreviewRows(rows []previewRow, cols int) ([]previewRow, []int) {
+	cols = normalizePreviewCols(cols)
+	starts := make([]int, len(rows))
+	out := make([]previewRow, 0, len(rows))
+
+	for i, row := range rows {
+		starts[i] = len(out)
+		out = append(out, sanitizePreviewRow(row, cols)...)
+	}
+
+	return out, starts
+}
+
+// sanitizePreviewRow splits embedded newlines and keeps every row inside cols.
+// Table, diagram, rule, and code rows clip so their alignment survives; prose
+// rows wrap.
+func sanitizePreviewRow(row previewRow, cols int) []previewRow {
+	if row.Kind == "gap" {
+		return []previewRow{{Kind: row.Kind}}
+	}
+
+	hard := splitRowSegments(row.Segments)
+	markerSet := false
+
+	switch row.Kind {
+	case "table", "diagram", "rule", "code":
+		out := make([]previewRow, 0, len(hard))
+
+		for _, line := range hard {
+			segs := clipPreviewSegments(line, cols)
+			if len(segs) == 0 {
+				segs = []segment{{Text: " ", Class: classPlain}}
+			}
+
+			marker := ""
+			if !markerSet {
+				marker = row.Marker
+				markerSet = true
+			}
+
+			out = append(out, previewRow{Kind: row.Kind, Marker: marker, Segments: segs})
+		}
+
+		return out
+	default:
+		out := make([]previewRow, 0, len(hard))
+
+		for _, line := range hard {
+			visual := wrapStyledRuns(line, cols)
+			if len(visual) == 0 {
+				out = append(out, previewRow{Kind: row.Kind, Marker: nextPreviewMarker(&markerSet, row.Marker), Segments: []segment{{Text: " ", Class: classPlain}}})
+
+				continue
+			}
+
+			for _, segs := range visual {
+				out = append(out, previewRow{Kind: row.Kind, Marker: nextPreviewMarker(&markerSet, row.Marker), Segments: finishLine(segs)})
+			}
+		}
+
+		if len(out) == 0 {
+			out = append(out, previewRow{Kind: row.Kind, Segments: []segment{{Text: " ", Class: classPlain}}})
+		}
+
+		return out
+	}
+}
+
+// nextPreviewMarker returns the marker once, on the first row only.
+func nextPreviewMarker(set *bool, marker string) string {
+	if *set {
+		return ""
+	}
+
+	*set = true
+
+	return marker
+}
+
+// clipPreviewSegments caps styled runs at cols runes and marks a cut with an
+// ellipsis that counts toward the width.
+func clipPreviewSegments(segs []segment, cols int) []segment {
+	out := make([]segment, 0, len(segs))
+	left := cols
+
+	for _, seg := range segs {
+		if left <= 0 {
+			break
+		}
+
+		r := []rune(seg.Text)
+		if len(r) > left {
+			if left > 1 {
+				out = append(out, segment{Text: string(r[:left-1]) + "…", Class: seg.Class})
+			} else {
+				out = append(out, segment{Text: "…", Class: seg.Class})
+			}
+
+			break
+		}
+		out = append(out, seg)
+		left -= len(r)
+	}
+
+	return out
 }
 
 // lineOrSpace keeps an empty code row visible.
@@ -602,22 +923,53 @@ func appendTable(rows []previewRow, lines []string, start, cols int) ([]previewR
 
 	lineRows := make([]int, j-start)
 	if !hasSeparator {
-		rows = appendTableRow(rows, header, align, nil, 0, cols, false)
+		rows, _ = appendTableRow(rows, header, align, nil, 0, cols, false)
 
 		return rows, lineRows, j
 	}
 
 	base := len(rows)
+	rows, starts := appendTableBlock(rows, header, body, align, cols)
+
+	for k, rel := range starts {
+		index := 0
+		if k > 0 {
+			index = bodyStart - start + k - 1
+		}
+
+		if index >= 0 && index < len(lineRows) {
+			lineRows[index] = rel - base
+		}
+	}
+	return rows, lineRows, j
+}
+
+// appendTableBlock renders a header and body into table rows. It returns the
+// row offset of every logical row: index 0 is the header, then one per body
+// row. A gap row follows a wrapped row so adjacent multiline rows stay apart.
+func appendTableBlock(rows []previewRow, header []string, body [][]string, align []tableAlign, cols int) ([]previewRow, []int) {
 	widths, columns := tableWidths(header, body, cols)
-	rows = appendTableRow(rows, header, align, widths, columns, cols, true)
+	starts := make([]int, len(body)+1)
+	starts[0] = len(rows)
+
+	var depth int
+
+	rows, depth = appendTableRow(rows, header, align, widths, columns, cols, true)
 	rows = append(rows, previewRow{Kind: "table", Segments: tableRule(widths)})
 
+	wrapped := depth > 1
+
 	for k, cells := range body {
-		lineRows[bodyStart-start+k] = len(rows) - base
-		rows = appendTableRow(rows, cells, align, widths, columns, cols, false)
+		if wrapped {
+			rows = append(rows, previewRow{Kind: "gap"})
+		}
+
+		starts[k+1] = len(rows)
+		rows, depth = appendTableRow(rows, cells, align, widths, columns, cols, false)
+		wrapped = depth > 1
 	}
 
-	return rows, lineRows, j
+	return rows, starts
 }
 
 // isTableBodyLine reports whether a line belongs to the body of a table.
@@ -710,8 +1062,9 @@ func tableWidths(header []string, body [][]string, cols int) ([]int, int) {
 }
 
 // appendTableRow renders one logical table row, wrapping every cell to its
-// column width. A nil widths slice computes the widths from the row itself.
-func appendTableRow(rows []previewRow, cells []string, align []tableAlign, widths []int, columns, cols int, header bool) []previewRow {
+// column width. A nil widths slice computes the widths from the row itself. It
+// returns the number of visual rows the logical row used.
+func appendTableRow(rows []previewRow, cells []string, align []tableAlign, widths []int, columns, cols int, header bool) ([]previewRow, int) {
 	if widths == nil || columns < 1 {
 		widths, columns = tableWidths(cells, nil, cols)
 	}
@@ -731,6 +1084,11 @@ func appendTableRow(rows []previewRow, cells []string, align []tableAlign, width
 		depth = max(depth, len(wrapped[i]))
 	}
 
+	class := ""
+	if header {
+		class = classBold
+	}
+
 	for line := 0; line < depth; line++ {
 		segs := addSeg(nil, "│", classPunc)
 
@@ -742,17 +1100,9 @@ func appendTableRow(rows []previewRow, cells []string, align []tableAlign, width
 
 			text = padTableCell(text, widths[i], tableAlignAt(align, i))
 			segs = addSeg(segs, " ", classPunc)
-
-			for _, seg := range previewInline(text) {
-				class := seg.Class
-				if header {
-					class = classBold
-				}
-
-				segs = addSeg(segs, seg.Text, class)
-			}
-
+			segs = addSeg(segs, text, class)
 			segs = addSeg(segs, " ", classPunc)
+
 			if i < columns-1 {
 				segs = addSeg(segs, "│", classPunc)
 			}
@@ -762,7 +1112,7 @@ func appendTableRow(rows []previewRow, cells []string, align []tableAlign, width
 		rows = append(rows, previewRow{Kind: "table", Segments: segs})
 	}
 
-	return rows
+	return rows, depth
 }
 
 // padTableCells pads or merges cells to the table column count.

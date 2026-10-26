@@ -57,9 +57,17 @@ page (tick, keys, wheel, clicks, live frame updates).
   beside the tabs opens a second editor group with its own tab list; click a
   tab or the L button to move focus, and close the split from either strip.
 - The editor has line numbers, token colours, Copy path, Copy file, a Wrap
-  toggle, `Ctrl+F` find, `Ctrl+E` edit, a split editor, and a Markdown preview
-  toggle. `Ctrl+S` saves an edited file. The active tab shows M, A, D, or U for
-  a changed file and an unsaved dot in the status bar.
+  toggle, `Ctrl+F` find, click-to-edit, a split editor, and a Markdown preview
+  toggle. Click anywhere in the source (or press `Ctrl+E`) to start editing;
+  there is no separate Edit button. `Ctrl+S` saves. The active tab shows M, A,
+  D, or U for a changed file and an unsaved dot in the status bar.
+- A changed file shows a gutter mark on each added, modified, or deleted line
+  (`+`, `~`, or `-`) and a faint line tint. Click the mark to open a line card
+  with the old and new text, above the editor.
+- A translucent changed-file bar sits at the bottom center with previous and
+  next arrows, the current position, and the file's add/delete counts. It has
+  no backdrop, so the editor behind it stays visible. Click the file name to
+  open it, or use the arrows to move through the working tree.
 - Editing is a plain textarea over the editor body: selection, cut, copy,
   paste, undo, and redo use the same window chords as a form field. The sample
   workspace is read-only and Save reports that; a disk workspace writes the
@@ -67,7 +75,7 @@ page (tick, keys, wheel, clicks, live frame updates).
 - Details reads the active file: language, line count, exact size, encoding,
   indentation, change status, and an outline. In Source Control it follows the
   selected diff file. Click an outline row to jump to the line.
-- The status bar shows the branch, changed count, the active language or the
+- The status bar shows the branch, change summary, the active language or the
   diff counts, the devtools state, the scan budget, rescan summaries, and
   unsaved files.
 
@@ -105,21 +113,23 @@ source line, and Escape closes. Case matching is a toggle.
 
 Press `Ctrl+Shift+V` or click Preview in the breadcrumb on a Markdown file. The
 editor renders headings, paragraphs, lists, quotes, fenced code, tables, rules,
-bold, italic, inline code, links, raw HTML text, and Mermaid flowcharts and
-sequence diagrams as fixed-row text diagrams. `Source` returns to the token
-view.
+bold, italic, inline code, links, structured HTML, and Mermaid flowcharts and
+sequence diagrams as fixed-row text. `Source` returns to the token view.
 
 The preview reflows to the current editor width when the window or details
 drawer changes. Table cells wrap inside aligned columns instead of printing
-their pipes, and a long cell grows the row block. HTML comments are removed and
-common tags (`b`, `i`, `code`, `a`, `br`, `img alt`, and block tags) render
-their text instead of their source. Mermaid fences with `flowchart`, `graph`,
-or `sequenceDiagram` render boxes and arrows; other diagram types show a note
-and their source lines.
+their pipes, wrapped rows get a gap row, and every visual row is exactly 20 px
+with its own line height. HTML block tags become structured rows: headings,
+paragraphs, lists, quotes, details/summary, images with alt text, and tables
+with rows or cells. Inline tags keep their emphasis. `script` and `style`
+contents are removed. Mermaid fences with `flowchart`, `graph`, or
+`sequenceDiagram` render boxes and arrows; other diagram types show a note and
+their source lines.
 
 The preview uses the same 20 px rows as the code view, so the scroll and
 windowing math is unchanged. It is a fixed-row approximation, not a browser:
-HTML is reduced to text and Mermaid has no subgraph layout.
+HTML becomes preview rows rather than live DOM, and Mermaid has no subgraph
+layout.
 
 ## Languages
 
@@ -154,9 +164,11 @@ History pane below them. It reads up to 20 recent non-merge commits with one
 `git log` call. Click a commit to expand its author line and changed files
 inside the pane; clicking a file opens that patch in the editor. A patch is
 read by a background worker and the pane says it is loading, so a click never
-blocks the page. Hover a commit to read its message. Drag the divider between
-the files and History to resize them; the pane auto-fits the commit count until
-you drag it. `Working tree` returns the editor to the uncommitted diff.
+blocks the page. Hover a commit to read its message in a floating card to the
+right of the history rail; the card clamps to the window and shows the subject,
+body, author, and date. Drag the divider between the files and History to
+resize them; the pane auto-fits the commit count until you drag it. `Working
+tree` returns the editor to the uncommitted diff.
 
 In a live repository, click the branch name in the History header to list local
 and remote branches and filter by name. The picker shows as many matches as the
@@ -224,7 +236,7 @@ pages its commits, so it does not need a second scroll viewport.
 | `Ctrl+P` | Quick open |
 | `Ctrl+F` | Find in the active file |
 | `Ctrl+Shift+F` | Search workspace contents |
-| `Ctrl+E` | Edit the active file |
+| `Ctrl+E` | Edit the active file (or click inside it) |
 | `Ctrl+S` | Save while editing |
 | `Ctrl+\` | Split or close the second editor |
 | `M` or `Ctrl+Shift+V` | Markdown preview |
@@ -272,7 +284,7 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `actions.go` | Click, filter, search, and keyboard routing |
 | `palette.go` | Quick-open rows, selection, and focus |
 | `markdown_preview.go` | Rendered Markdown rows and source anchors |
-| `markdown_html.go` | HTML text extraction and entities |
+| `markdown_html.go` | Structured HTML preview blocks and entities |
 | `markdown_mermaid.go` | Flowchart and sequence diagrams |
 | `syntax.go` | Shared lexer and the Go, Python, and JavaScript specs |
 | `syntax_markup.go` | CSS, JSON, HTML, YAML, and shell |
@@ -297,6 +309,7 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `find.go` | In-file find, match rows, and highlights |
 | `wrap.go` | Soft-wrap plan and source-line anchors |
 | `components/` | HTML fragments and the stylesheets |
+| `file_nav_ops.go` | Bottom-center changed-file navigator |
 
 ## Limits
 
@@ -323,9 +336,11 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 - `-web` serves the same tick, key, wheel, click, and live-frame loop as the
   browser shell; it does not start the fsnotify watcher.
 - Quick open searches file names; `Ctrl+Shift+F` searches file contents.
-- The Markdown preview uses fixed rows. Tables wrap and raw HTML is reduced to
-  text; Mermaid supports basic flowcharts and sequence diagrams, not subgraphs
-  or browser HTML.
+- The Markdown preview uses fixed rows. Tables wrap, raw HTML becomes preview
+  rows, and Mermaid supports basic flowcharts and sequence diagrams, not
+  subgraphs or a live browser DOM.
+- Gutter marks and their line cards cover working-tree changes only. A commit
+  patch keeps its unified/split diff view.
 - The sample fixture is synthetic test data; the default workspace is the
   current directory.
 - Editing is a plain textarea, not an IDE: no syntax highlighting inside the
@@ -345,14 +360,15 @@ split pairing, unified and split diff wrapping, untracked files, workspace
 scanning and scan limits, content search, session round trips, shell metrics,
 tabs, modes, two editor groups, editing and saving, filtering, pointer hits on
 the activity/tree/tab/diff/status controls, quick open defaults and filtering,
-Markdown preview rows, tables, HTML, Mermaid, reflow, and the chord, outline
-scroll jumps, details metadata, the diff pager, async commit patches, live and
-sample commit history, branch filtering without checkout, commit expansion, the
-sidebar history divider, diff-cell clipping, soft-wrap rows, in-file find,
-explorer windowing, wheel and keyboard navigation, background file watching and
-rescan, external branch changes, scrolling after a long file opens, devtools,
-the clipboard, accessibility names and the modal focus trap, and keyboard
-routing and activation.
+Markdown preview rows, tables, HTML, Mermaid, reflow, and the chord, click-to-edit
+and typing, inline change cards, gutter markers, the bottom-center navigator,
+the floating commit tooltip, outline scroll jumps, details metadata, the diff
+pager, async commit patches, live and sample commit history, branch filtering
+without checkout, commit expansion, the sidebar history divider, diff-cell
+clipping, soft-wrap rows, in-file find, explorer windowing, wheel and keyboard
+navigation, background file watching and rescan, external branch changes,
+scrolling after a long file opens, devtools, the clipboard, accessibility names
+and the modal focus trap, and keyboard routing and activation.
 
 Capture the review frames:
 
@@ -361,8 +377,9 @@ OWNFRAME_CODE_VIEW_SCREENSHOT=1 go test -run '^TestScreenshot$' ./examples/code-
 ```
 
 PNGs land in `/tmp/opencode/code-view-shots/`: `explorer`, `preview`, `palette`,
-`changes`, `split`, `details`, `edit`, `split-editor`, `search`, `scrolled`, and
-`welcome`. Nothing is added to the repository.
+`changes`, `split`, `details`, `edit`, `inline-card`, `split-editor`,
+`commit-tip`, `search`, `scrolled`, and `welcome`. Nothing is added to the
+repository.
 
 The size matrix runs five views at 1280x720, 1500x900, and 1920x1080:
 

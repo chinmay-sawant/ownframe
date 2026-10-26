@@ -307,6 +307,7 @@ func (a *App) installRescan(next *workspace, delta workspaceDelta) {
 
 	a.recent = keepExistingTabs(a.recent, next)
 	a.statuses = statusMap(a.changes)
+	a.syncFileNav()
 
 	if a.diffPath != "" && findFile(a.changes.Files, a.diffPath) == nil {
 		a.selectFirstDiff()
@@ -359,6 +360,7 @@ func rescanNote(delta workspaceDelta) string {
 func (a *App) applyWatchChanges(ctx context.Context, changes changeSet) {
 	a.changes = changes
 	a.statuses = statusMap(a.changes)
+	a.syncFileNav()
 
 	if a.diffSource == "working" {
 		if findFile(a.changes.Files, a.diffPath) == nil {
