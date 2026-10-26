@@ -1,6 +1,6 @@
 //go:build !js
 
-// Command code-view opens the Beacon code view example.
+// Command code-view opens the Code Review example.
 // Pass -web to serve the static picture in a browser instead.
 package main
 

@@ -43,7 +43,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  color: var(--dim);
+  color: var(--icon);
 }
 
 .side-btn:hover { background-color: var(--panel-3); color: var(--text); }
@@ -65,7 +65,7 @@
 }
 
 .filter:focus-within { border-color: rgba(122, 162, 247, 0.55); background-color: #0d1018; }
-.filter-icon { color: var(--dim); }
+.filter-icon { color: var(--icon); pointer-events: none; }
 .filter-input {
   flex: 1;
   min-width: 0;
@@ -97,7 +97,7 @@
 
 .trow:hover { background-color: var(--panel-2); color: var(--text); }
 .trow.dir { color: #9aa4b7; }
-.trow.dir .chev { color: #5f6a7e; }
+.trow.dir .chev { color: var(--icon-strong); }
 .trow.open { color: var(--text); }
 
 .tname { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11px; }

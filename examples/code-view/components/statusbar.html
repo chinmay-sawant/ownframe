@@ -1,6 +1,6 @@
 <footer class="statusbar" id="statusbar">
-  <button class="sb-item sb-branch" data-action="mode-changes" type="button" title="Source control">
-    <svg width="10" height="11" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
+  <button class="sb-item sb-branch" id="sb-branch" data-action="mode-changes" type="button" title="Source control">
+    <svg width="10" height="11" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round">
       <circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/>
       <path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/>
     </svg>
@@ -18,15 +18,16 @@
   {{end}}
   <span class="sb-item">UTF-8</span>
   <span class="sb-item">Spaces: 4</span>
-  <button class="sb-item sb-dev{{if .DevOn}} on{{end}}" data-action="devtools" type="button" title="Toggle developer tools">
+  <button class="sb-item sb-dev{{if .DevOn}} on{{end}}" id="sb-devtools" data-action="devtools" type="button" title="Toggle developer tools">
     <span class="sb-dot"></span>DevTools {{if .DevOn}}on{{else}}off{{end}}
   </button>
 </footer>
 
-<div class="toast-layer" aria-live="polite">
+{{if .Toast.Show}}<div class="toast-layer" aria-live="polite">
   <div class="toast {{.Toast.Kind}}{{if .Toast.Show}} on{{end}}">
     <span class="toast-icon">{{if eq .Toast.Kind "success"}}✓{{else if eq .Toast.Kind "error"}}!{{else}}i{{end}}</span>
     <span class="toast-text"><b>{{.Toast.Title}}</b><span>{{.Toast.Message}}</span></span>
-    <button class="toast-x" data-action="toast-close" type="button" title="Close">×</button>
+    <button class="toast-x" id="toast-close" data-action="toast-close" type="button" title="Close">×</button>
   </div>
 </div>
+{{end}}

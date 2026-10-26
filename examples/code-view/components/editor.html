@@ -5,36 +5,28 @@
     <div class="tabs">
       {{if eq .Mode "changes"}}
       <div class="tab on diff-tab">
-        <button class="tab-main" data-action="mode-changes" type="button" title="Working tree">
-          <svg width="12" height="13" viewBox="0 0 12 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
+        <button class="tab-main" id="tab-working" data-action="mode-changes" type="button" title="Working tree">
+          <svg width="12" height="13" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
           <span class="tab-name">Working tree</span>
         </button>
       </div>
       {{end}}
       {{range $i, $t := .Tabs}}
       <div class="tab{{if $t.Active}} on{{end}}">
-        <button class="tab-main" data-action="tab:{{$i}}" type="button" title="{{$t.Path}}">
+        <button class="tab-main" id="tab-{{$i}}" data-action="tab:{{$i}}" type="button" title="{{$t.Path}}">
           <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
           <span class="tab-name">{{$t.Name}}</span>
         </button>
-        <button class="tab-x" data-action="tab-close:{{$i}}" type="button" title="Close">×</button>
+        <button class="tab-x" id="tab-close-{{$i}}" data-action="tab-close:{{$i}}" type="button" title="Close">×</button>
       </div>
       {{end}}
     </div>
-    <span class="tabs-fill"></span>
-    {{if eq .Mode "changes"}}
-    <div class="seg">
-      <button class="seg-btn{{if not .Diff.Split}} on{{end}}" data-action="diff-unified" type="button">Unified</button>
-      <button class="seg-btn{{if .Diff.Split}} on{{end}}" data-action="diff-split" type="button">Split</button>
-    </div>
-    <button class="tab-tool" data-action="hunk-prev" type="button" title="Previous hunk">↑</button>
-    <button class="tab-tool" data-action="hunk-next" type="button" title="Next hunk">↓</button>
-    {{end}}
-    <button class="tab-tool{{if .Details}} on{{end}}" data-action="details-toggle" type="button" title="Details">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+    <button class="tab-tool{{if .Details}} on{{end}}" id="tab-details" data-action="details-toggle" type="button" title="Details">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.4">
         <rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M10 2.4v11.2"/>
       </svg>
     </button>
+    <span class="tabs-fill"></span>
   </div>
 
   <div class="crumbs" id="crumbs">
@@ -43,22 +35,29 @@
       <span class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
       <span class="crumb-path">{{if .Diff.Dir}}{{.Diff.Dir}}/{{end}}<b>{{.Diff.Name}}</b></span>
       <span class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
+      <div class="seg">
+        <button class="seg-btn{{if not .Diff.Split}} on{{end}}" id="seg-unified" data-action="diff-unified" type="button">Unified</button>
+        <button class="seg-btn{{if .Diff.Split}} on{{end}}" id="seg-split" data-action="diff-split" type="button">Split</button>
+      </div>
+      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk">↑</button>
+      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk">↓</button>
+      <button class="crumb-btn" id="crumb-refresh" data-action="diff-refresh" type="button">Refresh</button>
       <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.Diff.Hunks}} hunks</span>
-      <button class="crumb-btn" data-action="diff-refresh" type="button">Refresh</button>
       {{else}}
       <span class="crumb-path">Source control</span>
       <span class="tabs-fill"></span>
-      <button class="crumb-btn" data-action="diff-refresh" type="button">Refresh</button>
+      <button class="crumb-btn" id="empty-refresh" data-action="diff-refresh" type="button">Refresh</button>
       {{end}}
     {{else if .Active}}
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
       <span class="crumb-path">{{if .ActiveDir}}{{.ActiveDir}}/{{end}}<b>{{.ActiveName}}</b></span>
       {{if .Status}}<span class="cstat {{.StatusClass}}">{{.Status}}</span>{{end}}
+      {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (Ctrl+Shift+V)">{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
+      <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button">Copy path</button>
+      <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button">Copy file</button>
       <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.LineCount}} lines · {{.ByteSize}}</span>
-      <button class="crumb-btn" data-action="copy-path" type="button">Copy path</button>
-      <button class="crumb-btn" data-action="copy-file" type="button">Copy file</button>
     {{end}}
   </div>
 
@@ -74,16 +73,16 @@
           {{else if eq .Kind "split"}}
           <div class="drow split">
             <span class="dnum {{.LeftKind}}">{{.LeftNo}}</span>
-            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}{{end}}</span>
+            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
             <span class="dnum {{.RightKind}}">{{.RightNo}}</span>
-            <span class="dcell {{.RightKind}}">{{if not .RightPad}}{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}{{end}}</span>
+            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext">{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
           </div>
           {{else}}
           <div class="drow {{.Kind}}">
             <span class="dnum">{{.OldNo}}</span>
             <span class="dnum">{{.NewNo}}</span>
             <span class="dsign">{{if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
-            <span class="dcell">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>
+            <span class="dcell"><span class="dlinetext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
           </div>
           {{end}}
         {{end}}
@@ -93,14 +92,14 @@
         <span class="empty-mark ok">✅</span>
         <h2>Working tree clean</h2>
         <p>{{.Diff.Note}}</p>
-        <button class="button" data-action="diff-refresh" type="button">Check again</button>
+        <button class="button" id="empty-check" data-action="diff-refresh" type="button">Check again</button>
       </div>
       {{end}}
     {{else if .Welcome}}
       <div class="welcome">
         <div class="welcome-card">
           <span class="welcome-mark">
-            <svg width="52" height="52" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-linejoin="round">
+            <svg width="52" height="52" viewBox="0 0 20 20" fill="none" stroke-linejoin="round">
               <path d="M10 1.8 18 6v8l-8 4.2L2 14V6z" stroke-width=".8"/>
               <path d="M10 1.8v16.4M2 6l8 4.3L18 6" stroke-width=".55" opacity=".55"/>
             </svg>
@@ -110,7 +109,7 @@
 
           <div class="quick">
             {{range .Recent}}
-            <button class="quick-row" data-action="open:{{.Path}}" type="button">
+            <button class="quick-row" id="quick-{{.Path}}" data-action="open:{{.Path}}" type="button">
               <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
               <span class="quick-text"><b>{{.Name}}</b><span>{{.Dir}}</span></span>
               <span class="quick-go">↵</span>
@@ -134,14 +133,25 @@
         <span class="empty-mark{{if eq .EmptyKind "error"}} warn{{end}}">{{if eq .EmptyKind "error"}}⚠️{{else}}·{{end}}</span>
         <h2>{{.EmptyTitle}}</h2>
         <p>{{.EmptyBody}}</p>
-        <button class="button" data-action="mode-explorer" type="button">Back to the explorer</button>
+        <button class="button" id="empty-explorer" data-action="mode-explorer" type="button">Back to the explorer</button>
+      </div>
+    {{else if .Preview}}
+      <div class="preview" id="markdown-preview">
+        <div class="preview-track" style="top:{{.TrackTop}}px">
+          {{range .PreviewRows}}
+          <div class="prow prow-{{.Kind}}">
+            <span class="pmark">{{.Marker}}</span>
+            <span class="ptext"><span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+          </div>
+          {{end}}
+        </div>
       </div>
     {{else}}
       <div class="track" style="top:{{.TrackTop}}px">
         {{range .Rows}}
         <div class="crow">
           <span class="ln">{{.No}}</span>
-          <span class="cline">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>
+          <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
         </div>
         {{end}}
       </div>

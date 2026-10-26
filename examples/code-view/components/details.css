@@ -26,7 +26,7 @@
 }
 
 .det-kicker { color: var(--muted); font-size: 9.5px; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
-.det-x { margin-left: auto; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: var(--dim); font-size: 14px; line-height: 1; }
+.det-x { margin-left: auto; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: #8a93a6; font-size: 14px; line-height: 1; }
 .det-x:hover { background-color: var(--panel-3); color: var(--text); }
 
 .det-file { display: flex; align-items: center; gap: 9px; padding: 12px 13px; border-bottom: 1px solid var(--line-soft); }

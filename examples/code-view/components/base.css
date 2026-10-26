@@ -8,6 +8,8 @@
   --text: #d7dce8;
   --muted: #8a93a6;
   --dim: #596274;
+  --icon: #8b95a5;
+  --icon-strong: #9aa4b7;
   --accent: #7aa2f7;
   --accent-soft: rgba(122, 162, 247, 0.12);
   --green: #3ddc84;
@@ -42,6 +44,7 @@ body {
 *, *::before, *::after { box-sizing: border-box; }
 
 button {
+  position: relative;
   margin: 0;
   padding: 0;
   border: 0;
@@ -51,8 +54,9 @@ button {
   text-align: left;
 }
 
+
 input { font: inherit; }
-svg { display: block; flex: 0 0 auto; }
+svg { display: block; flex: 0 0 auto; stroke: currentColor; }
 
 .app { width: 100vw; min-height: 100vh; }
 
@@ -119,7 +123,7 @@ svg { display: block; flex: 0 0 auto; }
 .t-h4 { color: #ffcb6b; }
 .t-h5 { color: #c3e88d; }
 .t-h6 { color: #f78c6c; }
-.t-bold { color: #e6ebf5; }
+.t-bold { color: #e6ebf5; font-weight: 700; }
 .t-ital { color: #b7c2d6; }
 .t-code { color: #c3e88d; background-color: rgba(255, 255, 255, 0.045); }
 .t-link { color: #82aaff; }

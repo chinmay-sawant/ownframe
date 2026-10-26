@@ -64,6 +64,13 @@ type App struct {
 	scrollY   int
 	viewportH int
 	toast     toastView
+
+	paletteOpen  bool
+	paletteQuery string
+	paletteIndex int
+	ctrl         bool
+	shift        bool
+	preview      bool
 }
 
 // New scans the workspace, builds the page, and opens the README. An empty
@@ -124,6 +131,8 @@ func New(root string) (*App, error) {
 		Click:   a.onClick,
 		Change:  a.onChange,
 		KeyDown: a.onKeyDown,
+		KeyUp:   a.onKeyUp,
+		Submit:  a.onSubmit,
 	})
 	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.onScroll)
@@ -207,6 +216,8 @@ func (a *App) buildView() View {
 	v.Tabs = a.tabRows()
 	v.Recent = a.recentRows()
 	v.ActiveTab = a.active
+	v.PaletteQuery = a.paletteQuery
+	v.Palette = a.paletteView()
 
 	if doc := a.activeDoc(); doc != nil {
 		v.Active = doc.Path
@@ -258,6 +269,21 @@ func (a *App) fillCode(v *View) {
 		v.EmptyKind = "binary"
 		v.EmptyTitle = "Binary file"
 		v.EmptyBody = "The viewer reads text files only. Pick a source file in the explorer."
+
+		return
+	}
+
+	v.Previewable = doc.Lang == langMarkdown
+	v.Preview = a.preview && v.Previewable
+
+	if v.Preview {
+		doc.ensurePreview()
+		start, end, track := a.windowSlice(len(doc.Preview))
+		v.TrackTop = track
+
+		if len(doc.Preview) > 0 {
+			v.PreviewRows = doc.Preview[start:end]
+		}
 
 		return
 	}
@@ -373,7 +399,12 @@ func (a *App) contentHeight() int {
 	if a.mode == "changes" {
 		rows = len(a.diffRows)
 	} else if doc := a.activeDoc(); doc != nil {
-		rows = len(doc.Lines)
+		if a.preview && doc.Lang == langMarkdown && doc.Err == "" && !doc.Binary {
+			doc.ensurePreview()
+			rows = len(doc.Preview)
+		} else {
+			rows = len(doc.Lines)
+		}
 	}
 
 	h := editorBodyTop + rows*rowH + chromeBottom
@@ -582,6 +613,7 @@ func (a *App) activeDoc() *fileDoc {
 func (a *App) openFile(path string) {
 	if a.ws.ByPath[path] == nil {
 		a.showToast("error", "Not in workspace", path+" is not part of this workspace.")
+		a.refresh()
 
 		return
 	}
@@ -611,6 +643,10 @@ func (a *App) openFile(path string) {
 
 	a.active = found
 	a.mode = "explorer"
+	a.preview = false
+	a.paletteOpen = false
+	a.paletteQuery = ""
+	a.paletteIndex = 0
 	a.resetScroll()
 	a.refresh()
 }
@@ -623,6 +659,7 @@ func (a *App) selectTab(index int) {
 
 	a.active = index
 	a.mode = "explorer"
+	a.preview = false
 	a.resetScroll()
 	a.refresh()
 }
@@ -647,6 +684,7 @@ func (a *App) closeTab(index int) {
 		a.active = 0
 	}
 
+	a.preview = false
 	a.resetScroll()
 	a.refresh()
 }
@@ -661,6 +699,11 @@ func (a *App) toggleFolder(path string) {
 func (a *App) collapseAll() {
 	for path := range a.folders {
 		delete(a.folders, path)
+	}
+
+	if a.filter != "" {
+		a.filter = ""
+		a.page.Form().SetFormValue("filter", "")
 	}
 
 	a.refresh()
@@ -790,6 +833,8 @@ func (a *App) jumpHunk(delta int) {
 
 		if delta < 0 && i < current {
 			target = i
+
+			break
 		}
 	}
 
@@ -812,6 +857,39 @@ func (a *App) showToast(kind, title, message string) {
 func (a *App) clearToast() {
 	a.toast = toastView{}
 	a.refresh()
+}
+
+// togglePreview switches a Markdown file between source and rendered rows.
+func (a *App) togglePreview() {
+	doc := a.activeDoc()
+	if doc == nil || doc.Lang != langMarkdown || doc.Err != "" || doc.Binary {
+		a.showToast("info", "Markdown preview", "Preview is available for Markdown files.")
+		a.refresh()
+
+		return
+	}
+
+	a.preview = !a.preview
+	if a.preview {
+		doc.ensurePreview()
+	}
+
+	a.resetScroll()
+	a.refresh()
+}
+
+// scrollToSourceLine jumps to a source line, using the preview anchor when the
+// rendered view is active.
+func (a *App) scrollToSourceLine(line int) {
+	target := line
+
+	if doc := a.activeDoc(); a.preview && doc != nil && doc.Lang == langMarkdown && len(doc.PreviewLine) > 0 {
+		if line >= 0 && line < len(doc.PreviewLine) && doc.PreviewLine[line] >= 0 {
+			target = doc.PreviewLine[line]
+		}
+	}
+
+	a.scrollTo(target * rowH)
 }
 
 // toggleDetails opens or closes the details drawer.

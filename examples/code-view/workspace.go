@@ -386,15 +386,17 @@ func clipLine(line string) string {
 
 // fileDoc is one opened file: its lines, tokens, and outline.
 type fileDoc struct {
-	Path      string
-	Lang      string
-	ByteSize  int64
-	Lines     []string
-	Tokens    [][]segment
-	Outline   []symbolRow
-	Truncated bool
-	Binary    bool
-	Err       string
+	Path        string
+	Lang        string
+	ByteSize    int64
+	Lines       []string
+	Tokens      [][]segment
+	Outline     []symbolRow
+	Preview     []previewRow
+	PreviewLine []int
+	Truncated   bool
+	Binary      bool
+	Err         string
 }
 
 // openDoc reads and tokenizes one file.

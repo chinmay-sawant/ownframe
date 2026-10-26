@@ -36,15 +36,20 @@ type View struct {
 	TrackTop    int
 	SpaceHeight int
 	Welcome     bool
+	Preview     bool
+	Previewable bool
+	PreviewRows []previewRow
 	Empty       bool
 	EmptyKind   string
 	EmptyTitle  string
 	EmptyBody   string
 	Recent      []recentRow
 
-	Diff    diffView
-	Outline []symbolRow
-	Toast   toastView
+	Diff         diffView
+	Outline      []symbolRow
+	Toast        toastView
+	Palette      paletteView
+	PaletteQuery string
 }
 
 // treeRow is one file or folder in the explorer.

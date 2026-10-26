@@ -1,4 +1,4 @@
-# Code view example
+# Code review example
 
 > **Status:** phases 01 to 04 and phase 09 are in `examples/code-view`.
 > Phases 05 to 08 are checklists only.
@@ -43,7 +43,7 @@ pane or a tab. ownframe has no second OS window.
 | 02 | Syntax | Landed | 01 | `phase-02-syntax.md` |
 | 03 | Diff | Landed | 01 | `phase-03-diff.md` |
 | 04 | Scrolling and chrome | Landed | 01 | `phase-04-scrolling-and-chrome.md` |
-| 05 | Search and command palette | Planned | 01, 02 | `phase-05-search-and-palette.md` |
+| 05 | Search and command palette | Partly landed | 01, 02 | `phase-05-search-and-palette.md` |
 | 06 | Live workspace | Planned | 01, 03 | `phase-06-live-workspace.md` |
 | 07 | Editor depth | Planned | 02, 04 | `phase-07-editor-depth.md` |
 | 08 | Accessibility and mobile | Planned | 01, 04 | `phase-08-accessibility-and-mobile.md` |
@@ -109,7 +109,11 @@ pane or a tab. ownframe has no second OS window.
 
 ### Phase 05: search and command palette
 
-- [ ] `Ctrl+P` quick open with a fuzzy file match and recent files.
+- [x] `Ctrl+P` quick open with five default file suggestions and path
+      filtering. Evidence: `TestQuickOpenPalette`, `palette.go`.
+- [x] Open, arrow, Enter, Escape, and backdrop close paths. Evidence:
+      `TestQuickOpenPalette`.
+- [ ] Fuzzy ranking with a total match count.
 - [ ] `Ctrl+F` in-file find with a match count and next/previous.
 - [ ] Symbol search over the details outline.
 - [ ] Filter history and a clear shortcut.

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -522,6 +523,29 @@ func TestScreenshot(t *testing.T) {
 	app := newTestApp(t)
 	writeShot(t, app, "explorer")
 
+	app.togglePreview()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "preview")
+	app.togglePreview()
+
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "palette-open"}); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "palette")
+
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "palette-close"}); err != nil {
+		t.Fatal(err)
+	}
+
 	app.openFile("backend/probe.go")
 	app.toggleDetails()
 
@@ -574,4 +598,16 @@ func TestScreenshot(t *testing.T) {
 	}
 
 	writeShot(t, app, "welcome")
+}
+
+func TestAppName(t *testing.T) {
+	html := buildHTML()
+
+	if !strings.Contains(html, "Code Review") {
+		t.Fatal("the shell does not use the Code Review name")
+	}
+
+	if strings.Contains(html, "Beacon CODE VIEW") {
+		t.Fatal("the old Beacon brand is still in the shell")
+	}
 }

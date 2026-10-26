@@ -2,7 +2,9 @@
 
 Goal: reach a file or a line without the pointer.
 
-Status: planned.
+Status: partly landed. Quick open, five default suggestions, path filtering, and
+the keyboard path are in `examples/code-view`. Fuzzy ranking, in-file find,
+symbol search, history, and the full keyboard sweep are open.
 
 ## Design
 
@@ -21,14 +23,18 @@ Status: planned.
 
 ## Checklist
 
-- [ ] Add the palette view state and the modal markup.
-- [ ] Build a fuzzy matcher over `ws.Files` with a bounded result list.
-- [ ] Focus the palette input and trap Escape and Enter.
+- [x] Add the palette view state and the overlay markup. Evidence:
+      `palette.go`, `components/palette.html`, `components/palette.css`.
+- [x] Show five default files and filter the open workspace by path.
+      Evidence: `TestQuickOpenPalette`.
+- [x] Focus the palette input and handle arrows, Enter, Escape, and a backdrop
+      click. Evidence: `TestQuickOpenPalette`.
+- [ ] Add fuzzy ranking with a total match count.
 - [ ] Add the in-file find bar with match offsets.
 - [ ] Mark find matches on the visible rows.
 - [ ] Add symbol search over the active outline.
 - [ ] Add filter history.
-- [ ] Restore focus after Escape.
+- [ ] Restore the previous focus after Escape.
 - [ ] Add tests for a keyboard-only open, a keyboard-only close, and a find
       match that scrolls.
 

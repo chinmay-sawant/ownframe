@@ -22,6 +22,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.setMode(ctx, "explorer")
 	case action == "mode-changes":
 		a.setMode(ctx, "changes")
+	case action == "palette-open":
+		return a.openPalette(ctx)
+	case action == "palette-close":
+		return a.closePalette(ctx)
 	case action == "diff-refresh":
 		a.reloadChanges(ctx, true)
 	case action == "diff-note":
@@ -37,6 +41,8 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.jumpHunk(1)
 	case action == "details-toggle":
 		a.toggleDetails()
+	case action == "preview-toggle":
+		a.togglePreview()
 	case action == "details-close":
 		a.details = false
 		a.refresh()
@@ -71,33 +77,82 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.selectDiff(strings.TrimPrefix(action, "diff-file:"))
 	case strings.HasPrefix(action, "outline:"):
 		if line, ok := actionIndex(action, "outline:"); ok {
-			a.scrollTo(line * rowH)
+			a.scrollToSourceLine(line)
 		}
 	}
 
 	return nil
 }
 
-// onChange keeps the filter in app state after the binder writes the field.
+// onChange keeps the filter and the palette query in app state after the
+// binder writes the fields.
 func (a *App) onChange(_ context.Context, box ownframe.Box) error {
-	if box.ID != "filter" {
-		return nil
-	}
+	switch box.ID {
+	case "filter":
+		next := a.view.Filter
+		if next == a.filter {
+			return nil
+		}
 
-	next := a.view.Filter
-	if next == a.filter {
-		return nil
-	}
+		a.filter = next
+		a.refresh()
+	case "palette":
+		next := a.view.PaletteQuery
+		if next == a.paletteQuery {
+			return nil
+		}
 
-	a.filter = next
-	a.refresh()
+		a.paletteQuery = next
+		a.paletteIndex = 0
+		a.refresh()
+	}
 
 	return nil
 }
 
-// onKeyDown maps the single-key shortcuts. It leaves every key alone while
-// the filter input has focus, so typing stays typing.
+// onKeyDown maps the single-key shortcuts and tracks the modifiers that the
+// window sends as separate key events.
 func (a *App) onKeyDown(ctx context.Context, key string) error {
+	switch key {
+	case "control", "controlleft", "controlright", "meta", "metaleft", "metaright":
+		a.ctrl = true
+
+		return nil
+	case "shift", "shiftleft", "shiftright":
+		a.shift = true
+
+		return nil
+	}
+
+	if a.ctrl && key == "p" {
+		return a.openPalette(ctx)
+	}
+
+	if a.ctrl && a.shift && key == "v" {
+		a.togglePreview()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.paletteOpen {
+		switch key {
+		case "arrowdown":
+			a.movePalette(1)
+
+			return a.page.Redraw(ctx)
+		case "arrowup":
+			a.movePalette(-1)
+
+			return a.page.Redraw(ctx)
+		case "escape":
+			return a.closePalette(ctx)
+		case "enter":
+			return a.onSubmit(ctx)
+		default:
+			return nil
+		}
+	}
+
 	if a.page.Form().FocusID() == "filter" {
 		return nil
 	}
@@ -146,12 +201,55 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "escape":
 		if a.details {
 			a.details = false
+			a.refresh()
 		} else if a.toast.Show {
-			a.toast = toastView{}
+			a.clearToast()
 		}
 	default:
 		return nil
 	}
+
+	return a.page.Redraw(ctx)
+}
+
+// onKeyUp clears the tracked modifiers and closes the palette on the release
+// so the input blur does not swallow the close.
+func (a *App) onKeyUp(ctx context.Context, key string) error {
+	switch key {
+	case "control", "controlleft", "controlright", "meta", "metaleft", "metaright":
+		a.ctrl = false
+	case "shift", "shiftleft", "shiftright":
+		a.shift = false
+	case "escape":
+		if a.paletteOpen {
+			return a.closePalette(ctx)
+		}
+	}
+
+	return nil
+}
+
+// onSubmit opens the selected palette row. Enter and NumpadEnter arrive here.
+func (a *App) onSubmit(ctx context.Context) error {
+	if !a.paletteOpen || a.page.Form().FocusID() != "palette" {
+		return nil
+	}
+
+	rows := a.paletteRows()
+	if len(rows) == 0 {
+		return nil
+	}
+
+	index := a.paletteIndex
+	if index < 0 {
+		index = 0
+	}
+
+	if index >= len(rows) {
+		index = len(rows) - 1
+	}
+
+	a.openFile(rows[index].Path)
 
 	return a.page.Redraw(ctx)
 }

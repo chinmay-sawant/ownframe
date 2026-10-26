@@ -1,0 +1,103 @@
+.palette-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  width: 100vw;
+  height: 100vh;
+}
+
+.palette-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(3, 5, 9, 0.62);
+}
+
+.palette {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  width: 600px;
+  margin-left: -300px;
+  max-width: calc(100vw - 40px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: #0d1018;
+  overflow: hidden;
+}
+
+.palette-search {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--icon);
+}
+
+.palette-input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: 0;
+  background-color: transparent;
+  color: var(--text);
+  font-size: 12px;
+  outline: 0;
+}
+
+.palette-close {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--icon);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.palette-close:hover { background-color: var(--panel-3); color: var(--text); }
+
+.palette-list { padding: 5px 0; }
+
+.palette-row {
+  width: 100%;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 11px;
+  color: var(--muted);
+}
+
+.palette-row:hover, .palette-row.on { background-color: var(--accent-soft); }
+.palette-row.on .palette-text b { color: #ffffff; }
+
+.palette-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.palette-text b { color: var(--text); font-size: 10.5px; font-weight: 600; overflow: hidden; white-space: nowrap; }
+.palette-text span { color: var(--dim); font-size: 9px; overflow: hidden; white-space: nowrap; }
+.palette-go { color: var(--dim); font-size: 10px; }
+
+.palette-empty { padding: 22px 12px; color: var(--dim); font-size: 10px; text-align: center; }
+
+.palette-foot {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--dim);
+  font-size: 9px;
+}

@@ -63,7 +63,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  color: var(--dim);
+  color: var(--icon);
   font-size: 11px;
 }
 
@@ -130,6 +130,7 @@
 }
 
 .cline {
+  position: relative;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -139,6 +140,14 @@
   font-size: 12.2px;
   line-height: var(--row-h);
   color: #c4cddd;
+}
+
+.clinetext {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  white-space: pre;
 }
 
 /* Welcome and empty states ------------------------------------------------- */
