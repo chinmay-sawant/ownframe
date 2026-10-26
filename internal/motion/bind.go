@@ -199,6 +199,11 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 	needsRetained := false
 	unresolvedTimelines := 0
 	scale := displayPointsPerPixel(next)
+	// The operation index is built once for the display every selection
+	// resolves against, so a bind with dozens of animated boxes shares one
+	// ownership scan instead of repeating it per box per paint class. It is
+	// built lazily: a page with no animations pays no scan.
+	var index *cssmotion.Index
 
 	// The old entries are no longer read: snapshotCarry and starts copied what
 	// the replacement needs before the first append.
@@ -230,7 +235,10 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 			start = now
 		}
 
-		bounds, boxGaps, err := cssanimation.BindBox(next, box, boxIndex, start)
+		if index == nil {
+			index = cssmotion.NewIndex(next)
+		}
+		bounds, boxGaps, err := cssanimation.BindBoxWithIndex(next, box, boxIndex, start, index)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("motion: box %q: %w", box.ID, err))
 
@@ -248,7 +256,7 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 		}
 		timelines, unresolved := bindTimelines(next, box, i)
 		unresolvedTimelines += unresolved
-		triggerAnims, triggerGap := triggerAlignment(next, box, boxIndex, bounds, start)
+		triggerAnims, triggerGap := triggerAlignment(next, box, boxIndex, bounds, start, index)
 		if triggerGap != "" {
 			gaps = append(gaps, triggerGap)
 		}
@@ -651,7 +659,7 @@ func displayPointsPerPixel(d *Display) float64 {
 // reports an element whose alignment failed; the animation still plays, it
 // just cannot be triggered.
 func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanimation.Bound,
-	start time.Time) ([][]layout.Animation, string) {
+	start time.Time, idx *cssmotion.Index) ([][]layout.Animation, string) {
 	if !hasTrigger(box.Animations) || len(bounds) == 0 {
 		return nil, ""
 	}
@@ -667,7 +675,7 @@ func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanim
 	for i := range box.Animations {
 		solo := box
 		solo.Animations = box.Animations[i : i+1]
-		soloBounds, _, err := cssanimation.BindBox(d, solo, boxIndex, start)
+		soloBounds, _, err := cssanimation.BindBoxWithIndex(d, solo, boxIndex, start, idx)
 		if err != nil {
 			return nil, fmt.Sprintf("box %q: animation-trigger could not be aligned: %v", box.ID, err)
 		}

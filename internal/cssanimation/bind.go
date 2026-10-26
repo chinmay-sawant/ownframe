@@ -92,6 +92,21 @@ type Bound struct {
 // reported as a fidelity gap. The returned gaps are ordered and deduplicated
 // per element and reason.
 func BindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time) ([]Bound, []string, error) {
+	return bindBox(d, box, boxIndex, start, nil)
+}
+
+// BindBoxWithIndex builds the players for one element's CSS animations,
+// resolving every operation through an index the caller shares across boxes.
+// It returns exactly what BindBox returns for the same display; sharing one
+// index across a bind replaces a full operation scan per box per paint class
+// with lookups. A nil index selects directly, as BindBox does.
+func BindBoxWithIndex(d *layout.Display, box layout.Box, boxIndex int, start time.Time,
+	idx *cssmotion.Index) ([]Bound, []string, error) {
+	return bindBox(d, box, boxIndex, start, idx)
+}
+
+func bindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time,
+	idx *cssmotion.Index) ([]Bound, []string, error) {
 	if d == nil || len(box.Animations) == 0 {
 		return nil, nil, errors.New("cssanimation: box has no animation metadata")
 	}
@@ -102,7 +117,7 @@ func BindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time) (
 	current, hasCurrent := Color{}, false
 	for i := range box.Animations {
 		if usesCurrentColor(ruleFor(d.Keyframes, box.Animations[i].Name)) {
-			current, hasCurrent = elementColor(d, box, boxIndex)
+			current, hasCurrent = elementColor(d, box, boxIndex, idx)
 			break
 		}
 	}
@@ -140,7 +155,7 @@ func BindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time) (
 						"box %q: <%s> does not paint an inline svg", box.ID, box.Tag))
 					continue
 				}
-				indices = svgImageIndices(d, box, boxIndex)
+				indices = svgImageIndices(d, box, boxIndex, idx)
 				if len(indices) == 0 {
 					report.add(fmt.Sprintf(
 						"box %q: inline-svg paint found no svg raster", box.ID))
@@ -151,7 +166,11 @@ func BindBox(d *layout.Display, box layout.Box, boxIndex int, start time.Time) (
 					report.add(fmt.Sprintf(
 						"box %q has no display index; owner-scoped colours fall back to its subtree", box.ID))
 				}
-				indices = cssmotion.Select(d, box, boxIndex, class.kind)
+				if idx != nil {
+					indices = idx.Select(box, boxIndex, class.kind)
+				} else {
+					indices = cssmotion.Select(d, box, boxIndex, class.kind)
+				}
 				if len(indices) == 0 {
 					continue
 				}
@@ -232,8 +251,14 @@ func (g targetGroup) targets(d *layout.Display, box layout.Box) ([]animation.Tar
 // engine does not export the computed colour on the box, so a box whose text is
 // painted by something else reports false and a currentColor keyframe becomes a
 // bind error.
-func elementColor(d *layout.Display, box layout.Box, boxIndex int) (Color, bool) {
-	for _, index := range cssmotion.Select(d, box, boxIndex, cssmotion.KindInk) {
+func elementColor(d *layout.Display, box layout.Box, boxIndex int, idx *cssmotion.Index) (Color, bool) {
+	var indices []int
+	if idx != nil {
+		indices = idx.Select(box, boxIndex, cssmotion.KindInk)
+	} else {
+		indices = cssmotion.Select(d, box, boxIndex, cssmotion.KindInk)
+	}
+	for _, index := range indices {
 		op := &d.Ops[index]
 		return Color{R: op.R, G: op.G, B: op.B, A: maxChannel}, true
 	}

@@ -22,16 +22,30 @@ const hoverPatchSides = 2
 // changed. Everything above the common ancestor matched :hover in both
 // frames, so its paint is already correct.
 //
+// An empty side (entering from or leaving to no element) patches the hovered
+// element itself, or its parent when the hovered element is a leaf: a leaf
+// hover paints its ancestors (the row behind the cell), so the parent scope
+// covers both. Ancestors above the chosen scope matched :hover in neither
+// frame when leaving, and only in the new frame when entering; the patch
+// leaves them stale, so a page whose sheets style those top containers with
+// :hover must keep the full layout. In practice those containers are layout
+// shells without :hover paint, and the budget keeps a near-page patch on the
+// full path. A missing box, no common ancestor, or subtrees wider than the
+// patch budget falls back to the full layout.
+//
 // Sibling combinators after :hover and :has() can style elements outside
 // those subtrees; HoverPatchRisky guards those patterns and the caller falls
 // back to the full layout when the sheets use them.
 //
-// ok is false when the change cannot be scoped: an empty side (entering from
-// or leaving to no element reaches up to the document root), a missing box,
-// no common ancestor, or subtrees wider than the patch budget.
+// ok is false when the change cannot be scoped: a missing box, no common
+// ancestor, or subtrees wider than the patch budget.
 func HoverPatchRoots(boxes []layout.Box, oldID, newID string) ([]string, bool) {
-	if oldID == "" || newID == "" || oldID == newID {
+	if oldID == newID {
 		return nil, false
+	}
+
+	if oldID == "" || newID == "" {
+		return hoverEnterLeaveRoots(boxes, oldID, newID)
 	}
 
 	index := make(map[string]int, len(boxes))
@@ -87,6 +101,71 @@ func HoverPatchRoots(boxes []layout.Box, oldID, newID string) ([]string, bool) {
 	}
 
 	return ids, true
+}
+
+// hoverEnterLeaveRoots returns the single root an entering or leaving hover
+// must re-lay out: the hovered element itself, or its parent when the
+// hovered element is a leaf. A leaf hover changes its ancestors' :hover
+// paint (the row behind the price), so patching the leaf alone would miss
+// the row; patching the parent covers both. ok is false when the hovered id
+// is missing, has no id-bearing scope, or that scope is wider than the
+// patch budget.
+func hoverEnterLeaveRoots(boxes []layout.Box, oldID, newID string) ([]string, bool) {
+	hovered := newID
+	if hovered == "" {
+		hovered = oldID
+	}
+
+	if hovered == "" {
+		return nil, false
+	}
+
+	index := make(map[string]int, len(boxes))
+	for i := range boxes {
+		if boxes[i].ID != "" {
+			if _, seen := index[boxes[i].ID]; !seen {
+				index[boxes[i].ID] = i
+			}
+		}
+	}
+
+	start, ok := index[hovered]
+	if !ok {
+		return nil, false
+	}
+
+	// A leaf hover paints its ancestors (the row behind the cell), so start
+	// from the parent; otherwise start from the hovered element itself.
+	scope := start
+	if hoverIsLeaf(boxes, start) {
+		scope = boxes[start].ParentIndex
+	}
+
+	// Walk up to the nearest id-bearing scope.
+	for scope >= 0 && scope < len(boxes) && boxes[scope].ID == "" {
+		scope = boxes[scope].ParentIndex
+	}
+
+	if scope < 0 || scope >= len(boxes) || boxes[scope].ID == "" {
+		return nil, false
+	}
+
+	if !hoverPatchFits(boxes, []int{scope}) {
+		return nil, false
+	}
+
+	return []string{boxes[scope].ID}, true
+}
+
+// hoverIsLeaf reports whether no box names idx as its parent.
+func hoverIsLeaf(boxes []layout.Box, idx int) bool {
+	for i := range boxes {
+		if boxes[i].ParentIndex == idx {
+			return false
+		}
+	}
+
+	return true
 }
 
 // hoverAncestors returns the box chain from idx up to the outermost ancestor,

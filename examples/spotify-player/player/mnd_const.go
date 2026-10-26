@@ -25,9 +25,6 @@ const (
 	defaultPlaylists = 5
 	defaultFollowers = 48
 	defaultFollowing = 31
-	eqIdleHeight     = 0.3
-	eqBasePeriod     = 120
-	eqMinHeight      = 0.2
 	millisPerSec     = 1000
 	secsPerMin       = 60
 	timeParts        = 2
@@ -43,6 +40,5 @@ const (
 	slowThreshold    = 2 * time.Second
 	watchdogLimit    = 120
 	trackTitleClip   = 30
-	eqHalf           = 0.5
 	progressMax      = 100
 )

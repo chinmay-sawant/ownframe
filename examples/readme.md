@@ -75,7 +75,7 @@ behavior and the limits are in
 | [theme](theme) | `Config.Theme` and `SetTheme` restyle a running page; the toggle swaps custom properties. | 8116 |
 | [wispr-flow-dashboard](wispr-flow-dashboard) | Wispr Flow app clone: collapsible sidebar with the Flow Pro logo, dictation history, notetaker, insights with usage/voice/leaderboard tabs, dictionary, snippets, style, transforms, scratchpad, invite, free month, settings, and help. UI only, sample data. | 8117 |
 | [teams](teams) | Microsoft Teams-like app clone: dark theme by default with a light theme toggle, six rail menus (Activity, Chat, Teams and channels, Calendar, Calls, Files), a More apps flyout, a profile flyout with status, chat compose, live chat and search filtering, expandable channel threads with emoji reactions, a meeting card with date and time picks, a dial pad, and file details. The state persists in SQLite, the initial data comes from `examples/teams/store/seed/*.sql`, and `-db` selects the database file (`:memory:` keeps it in memory). Marvel-cast sample data. | 8118 |
-| [spotify-player](spotify-player) | Dark Spotify-like player: eight screens (home, search, library, liked, browse, radio, queue, profile), live iTunes data, local free-music playback, and an animated now-bar equalizer. | 8119 |
+| [spotify-player](spotify-player) | Dark Spotify-like player: eight screens (home, search, library, liked, browse, radio, queue, profile), live iTunes data, local free-music playback, a CSS-animated now-bar equalizer, and CSS hover motion. | 8119 |
 | [trade](trade) | Meridian trading terminal: watchlist, candlestick chart, quote rail, order blotter, and six more screens over a seeded synthetic market. All motion is CSS; devtools open by default. | 8144 |
 | [telegram](telegram) | Telegram-like chat demo sized for a phone: chat list with search, contacts, settings with a dark theme, and one open conversation with a composer. The Android project under `telegram/android` builds an installable APK. | 8129 |
 | [dino](dino) | Chrome-style dinosaur game: keyboard jump and duck, cacti and birds, running score, and a live frames-per-second readout. | 8120 |
@@ -147,7 +147,8 @@ See [eyes/README.md](eyes/README.md).
 The Spotify player plays real music in the desktop window. It ships 30 CC0
 tracks from the Open Lo-Fi collection and reads them from the binary, so
 playback is offline and needs no API key and no network call. It plays them
-through Ebiten audio while the frame tick moves the seek bar and equalizer.
+through Ebiten audio. The frame tick moves the seek fill and the time labels;
+the equalizer and the hover motion are CSS declarations.
 `ownframe.Run` and `ownframe.BindMobile` create the Ebiten audio context the player
 needs; `-web` has none. Every track's title, creator, license, and checksum are
 in `spotify-player/player/assets/audio/catalog.json`, with the full attribution
@@ -162,7 +163,7 @@ to `@keyframes`:
 
 | Example | Why it keeps its tick or manual sampler |
 |---|---|
-| [spotify-player](spotify-player) | Audio position, not CSS motion. The tick reads the decoder's clock for the seek fill, elapsed and remaining text, credit, and equalizer. |
+| [spotify-player](spotify-player) | Audio position, not CSS motion. The tick reads the decoder's clock for the seek fill, elapsed and remaining text, and credit. The equalizer and hover motion are CSS declarations in `player/components/motion.css`. |
 | [dino](dino) | Game loop: gravity, obstacles, sky, and the dinosaur pose advance from elapsed frame time. |
 | [eyes](eyes) | Game loop: blink, breathe, gaze sway, and expression easing advance from the tick clock; Android device motion feeds the spiral. |
 | [flappy-bird](flappy-bird) | Game loop: gravity, pipe pairs, and the score advance from elapsed frame time. |

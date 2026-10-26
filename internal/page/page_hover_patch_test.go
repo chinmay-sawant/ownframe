@@ -104,14 +104,18 @@ func TestHoverPatchTakenAndMatchesFull(t *testing.T) {
 	calls := stubHoverPatch(patched, true)
 	hoverAt(t, patched, "row-a")
 
-	if len(*calls) != 0 {
-		t.Fatalf("entering hover patched %v, want full layout", *calls)
+	// Entering from no hover patches the parent list: the row has no child
+	// boxes of its own, so the leaf scope walks up to the list. The list
+	// itself has no :hover paint, so the patch still matches the full
+	// layout below.
+	if len(*calls) != 1 || (*calls)[0][0] != "list" {
+		t.Fatalf("entering hover patched %v, want [[list]]", *calls)
 	}
 
 	hoverAt(t, patched, "row-b")
 
-	if len(*calls) != 2 || (*calls)[0][0] != "row-a" || (*calls)[1][0] != "row-b" {
-		t.Fatalf("patch calls = %v, want [[row-a] [row-b]]", *calls)
+	if len(*calls) != 3 || (*calls)[1][0] != "row-a" || (*calls)[2][0] != "row-b" {
+		t.Fatalf("patch calls = %v, want [[list] [row-a] [row-b]]", *calls)
 	}
 
 	assertSameDisplay(t, patched, full)

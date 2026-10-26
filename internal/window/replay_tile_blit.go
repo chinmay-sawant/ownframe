@@ -12,7 +12,7 @@ import (
 // else copies only the damaged tiles. The retained screen still holds every
 // untouched tile, so the screen is complete when this returns.
 func (s *shell) blitFrame(dst *ebiten.Image, display *layout.Display, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) {
-	if s.blitFromTiles(dst, plans, chrome, whole, stale) {
+	if s.blitFromTiles(dst, display, plans, chrome, whole, stale) {
 		s.paintPinnedChrome(dst, display)
 
 		return
@@ -24,15 +24,16 @@ func (s *shell) blitFrame(dst *ebiten.Image, display *layout.Display, plans []re
 // showTilesWhole fills the screen with the page background and copies every
 // tile. The grid is current for the frame, so this replaces a second full
 // replay of the display list on a frame that only needs the screen
-// repainted. It reports whether the grid could supply the frame.
-func (s *shell) showTilesWhole(dst *ebiten.Image) bool {
+// repainted. It reports whether the grid could supply the frame. Tiles the
+// paint pass left dirty repaint on demand as the copy reaches them.
+func (s *shell) showTilesWhole(dst *ebiten.Image, d *layout.Display) bool {
 	g := s.partial.tiles
 	if g == nil {
 		return false
 	}
 
 	dst.Fill(s.pageBackground())
-	s.blitTiles(dst, g.content())
+	s.blitTiles(dst, d, g.content())
 
 	return true
 }
@@ -63,8 +64,10 @@ func (s *shell) visibleRect() image.Rectangle {
 
 // blitTiles copies the tiles covering rect to dst, each placed where the
 // scroll puts it, trimmed to the page the devtools dock leaves visible. A
-// rect that misses the content copies nothing.
-func (s *shell) blitTiles(dst *ebiten.Image, rect image.Rectangle) {
+// rect that misses the content copies nothing. A tile whose damage arrived
+// while it sat offscreen repaints first, so a scroll never copies stale
+// pixels.
+func (s *shell) blitTiles(dst *ebiten.Image, d *layout.Display, rect image.Rectangle) {
 	g := s.partial.tiles
 	if g == nil || dst == nil {
 		return
@@ -75,15 +78,17 @@ func (s *shell) blitTiles(dst *ebiten.Image, rect image.Rectangle) {
 
 	for row := row0; row < row1; row++ {
 		for col := col0; col < col1; col++ {
-			s.blitTile(dst, g, col, row, rect)
+			s.blitTile(dst, d, g, col, row, rect)
 		}
 	}
 }
 
 // blitTile copies one tile's part of rect to the screen. The copy replaces
 // pixels, so a transparent page erases. The screen intersection decides the
-// source, so a rect that reaches past the window copies only what shows.
-func (s *shell) blitTile(dst *ebiten.Image, g *tileGrid, col, row int, rect image.Rectangle) {
+// source, so a rect that reaches past the window copies only what shows. A
+// dirty tile repaints whole before the copy, so a scroll into skipped tiles
+// shows current pixels.
+func (s *shell) blitTile(dst *ebiten.Image, d *layout.Display, g *tileGrid, col, row int, rect image.Rectangle) {
 	tile := g.rectAt(col, row)
 	part := rect.Intersect(tile)
 	if part.Empty() {
@@ -94,6 +99,10 @@ func (s *shell) blitTile(dst *ebiten.Image, g *tileGrid, col, row int, rect imag
 	at := part.Sub(offset).Intersect(dst.Bounds())
 	if at.Empty() {
 		return
+	}
+
+	if !g.cleanAt(col, row) {
+		s.paintTile(d, g, col, row, tile)
 	}
 
 	src, ok := g.at(col, row).SubImage(at.Add(offset).Sub(tile.Min)).(*ebiten.Image)
@@ -112,25 +121,25 @@ func (s *shell) blitTile(dst *ebiten.Image, g *tileGrid, col, row int, rect imag
 
 // blitFromTiles copies the frame from the tile grid. false means the
 // tiles cannot supply the screen, so the caller paints a full replay.
-func (s *shell) blitFromTiles(dst *ebiten.Image, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) bool {
+func (s *shell) blitFromTiles(dst *ebiten.Image, display *layout.Display, plans []repaintPlan, chrome []image.Rectangle, whole, stale bool) bool {
 	grid := s.partial.tiles
 	if stale || grid == nil || !withinTiles(grid, chrome) {
-		return s.showTilesWhole(dst)
+		return s.showTilesWhole(dst, display)
 	}
 
 	full, rects := blitPlan(plans, chrome)
 	if full {
-		return s.showTilesWhole(dst)
+		return s.showTilesWhole(dst, display)
 	}
 
 	if whole {
-		s.blitTiles(dst, s.visibleRect())
+		s.blitTiles(dst, display, s.visibleRect())
 
 		return true
 	}
 
 	for _, rect := range rects {
-		s.blitTiles(dst, rect)
+		s.blitTiles(dst, display, rect)
 	}
 
 	return true

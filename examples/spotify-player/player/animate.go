@@ -6,9 +6,9 @@ import (
 
 var accent = [3]float64{29.0 / 255, 185.0 / 255, 84.0 / 255}
 
-// animate paints the seek fill, the time labels, the credit, and the
-// equalizer. Audio position, not CSS motion: the player's clock, not a
-// timeline.
+// animate paints the seek fill, the time labels, and the credit. Audio
+// position, not CSS motion: the player's clock, not a timeline. The
+// equalizer and the hover motion are CSS declarations in motion.css.
 func (a *App) animate() {
 	d := a.page.Probe().Display()
 	if d == nil {
@@ -55,7 +55,6 @@ func (a *App) animate() {
 	}
 
 	a.animateCredit(d, boxes)
-	a.animateEq(d, boxes)
 }
 
 func boxByID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
@@ -68,6 +67,9 @@ func boxByID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 	return ownframe.Box{}, false
 }
 
+// accentFill finds the seek fill by its accent colour. The stylesheet must
+// not recolour that operation on hover, or the tick would stop finding it;
+// motion.css keeps the seek and volume bars out of the hover surface.
 func accentFill(d *ownframe.Display, box ownframe.Box) *ownframe.DisplayOp {
 	if d == nil {
 		return nil

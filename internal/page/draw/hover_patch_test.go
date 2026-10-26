@@ -95,9 +95,8 @@ func TestHoverPatchRootsRejects(t *testing.T) {
 		old  string
 		new  string
 	}{
-		{"empty old", "", "price-a"},
-		{"empty new", "price-a", ""},
 		{"same", "price-a", "price-a"},
+		{"both empty", "", ""},
 		{"missing old", "gone", "price-a"},
 		{"missing new", "price-a", "gone"},
 	} {
@@ -108,6 +107,34 @@ func TestHoverPatchRootsRejects(t *testing.T) {
 				t.Fatalf("roots for %q to %q scoped", tc.old, tc.new)
 			}
 		})
+	}
+}
+
+func TestHoverPatchRootsEnterLeave(t *testing.T) {
+	t.Parallel()
+
+	boxes := hoverTestBoxes()
+
+	// Entering from no hover patches the highest fitting ancestor of the
+	// hovered element: price-a sits under row-a, which fits the budget,
+	// while the list and body cover too much of the page.
+	roots, ok := HoverPatchRoots(boxes, "", "price-a")
+	if !ok {
+		t.Fatal("entering hover did not scope")
+	}
+
+	if len(roots) != 1 || roots[0] != "row-a" {
+		t.Fatalf("entering roots = %v, want [row-a]", roots)
+	}
+
+	// Leaving to no hover patches the same single root.
+	roots, ok = HoverPatchRoots(boxes, "price-a", "")
+	if !ok {
+		t.Fatal("leaving hover did not scope")
+	}
+
+	if len(roots) != 1 || roots[0] != "row-a" {
+		t.Fatalf("leaving roots = %v, want [row-a]", roots)
 	}
 }
 
