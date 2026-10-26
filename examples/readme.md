@@ -203,8 +203,9 @@ and calls no motion package.
 make test
 ```
 
-`make test` runs `go test -p 1 ./...` by default so the packages do not all
-build and run at once. Set `TEST_P` for more parallelism: `make test TEST_P=4`.
+`make test` runs `go test -p 4 ./...` by default. Lower it on a machine short
+of memory with `make test TEST_P=1`, or raise it for a faster run:
+`make test TEST_P=8`.
 
 ## Perf benchmarks
 

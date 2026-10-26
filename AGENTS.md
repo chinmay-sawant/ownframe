@@ -106,7 +106,7 @@ Do not run `go build ./...`. Every run links an executable for each example, tak
 
 For documentation or maintenance tooling, run `make docs-check plans-check examples-check`. For paint or window changes, also run `make graphics-check`; see `documentation/testing.md` for prerequisites and limits.
 
-Run `gofmt` on every Go file you edit. From this directory, run `make test`. It calls `go test -p 1 ./... ./examples/...` so the packages do not all build and run at once. Raise the limit when a faster run is worth the load: `make test TEST_P=4`.
+Run `gofmt` on every Go file you edit. From this directory, run `make test`. It calls `go test -p 4 ./... ./examples/...`, so four packages build and run at once. Lower the limit on a machine short of memory: `make test TEST_P=1`.
 
 Leave `~/.Xauthority` untouched. The window toolkit logs a missing authority file and still opens the window.
 
