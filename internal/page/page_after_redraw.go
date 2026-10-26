@@ -58,9 +58,10 @@ func (p *Page) BeginRedrawBatch() {
 }
 
 // EndRedrawBatch closes a batch and draws the final state once. An inner batch
-// leaves the draw to the outermost one. A plain Redraw in the batch forces the
-// final draw; only RedrawIfChanged calls let the final draw skip unchanged
-// state.
+// leaves the draw to the outermost one. The flush runs the redraw sequence
+// once; when the frame is unchanged it counts the redraw without laying the
+// page out again, whether the batch held plain Redraw or RedrawIfChanged
+// calls.
 //
 // A draw that fails leaves the redraw queued, so the next batch commits it
 // and the committed frame catches up with the state the batch changed.

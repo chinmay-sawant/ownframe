@@ -19,6 +19,14 @@ many small changes inside one region stays partial: the changed boxes merge
 within the eight-pixel gap, and when the list would pass the rect cap the
 closest pair unions instead of the whole list collapsing.
 
+A full-frame mark that is still pending when another display list lands is
+diffed against the display the host last painted, not the display the page
+committed last. When those changes stay inside the partial rules, the pending
+full frame narrows to them, so a small hover patch that follows an unpainted
+full commit keeps its own region. Without a painted display, or when the full
+mark came from an in-place tick change the display diff cannot see, the frame
+stays full.
+
 The list holds one rect per separated change. A new rect merges into an
 existing one when the two come within eight pixels of each other, so a shadow
 that touches its neighbour repaints once. Past 24 rects the page collapses
@@ -160,10 +168,12 @@ oldest entry is disposed. A shape larger than 512 px a side, or an unknown
 stroke mask bit, falls through to the direct path. The cache is
 process-wide and keyed per shape, like the decoded-image cache.
 
-Text runs take the same route: a run bakes once and blits while its face,
-content, color, fake-bold flag, letter spacing, and sub-pixel origin match, so
-a damaged rect over static text stops reshaping it. The run cache is bounded
-at 128 entries and 4 megapixels, and an oversized run draws directly.
+Text runs take the same route: a run bakes once into a white mask and blits
+with the op color, so one raster serves every color of the same run while its
+face, content, size, fake-bold flag, letter spacing, and sub-pixel origin
+match, and a damaged rect over static text stops reshaping it. The run cache
+is bounded at 512 entries and 4 megapixels with least-recently-used eviction,
+and an oversized run draws directly.
 
 ## Element paint chunks
 

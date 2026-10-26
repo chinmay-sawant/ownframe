@@ -85,16 +85,17 @@ func transitionReportProperty(property string) bool {
 // with allow-discrete, or when the display holds no operation the rule could
 // write.
 func (r *Runtime) captureDiscreteChange(previous *Display, old boxRef, next *Display,
-	current boxRef, property string, record layout.Transition) (TransitionCapture, bool) {
+	current boxRef, property string, record layout.Transition,
+	prevIndex, nextIndex *cssmotion.Index) (TransitionCapture, bool) {
 	if record.DurationMS <= 0 || record.Behavior != "allow-discrete" {
 		return TransitionCapture{}, false
 	}
 
 	switch property {
 	case "visibility", "content-visibility":
-		return r.capturePresence(previous, old, next, current, property)
+		return r.capturePresence(previous, old, next, current, property, prevIndex, nextIndex)
 	case "z-index":
-		return r.captureStack(previous, old, next, current, property)
+		return r.captureStack(previous, old, next, current, property, prevIndex, nextIndex)
 	}
 
 	return TransitionCapture{}, false
@@ -106,9 +107,10 @@ func (r *Runtime) captureDiscreteChange(previous *Display, old boxRef, next *Dis
 // exposes. An exiting run whose new display kept nothing cannot be painted
 // without an outgoing layer and is counted as blocked.
 func (r *Runtime) capturePresence(previous *Display, old boxRef, next *Display,
-	current boxRef, property string) (TransitionCapture, bool) {
-	oldIndices := cssmotion.Select(previous, old.box, old.index, cssmotion.KindSubtree)
-	newIndices := cssmotion.Select(next, current.box, current.index, cssmotion.KindSubtree)
+	current boxRef, property string,
+	prevIndex, nextIndex *cssmotion.Index) (TransitionCapture, bool) {
+	oldIndices := prevIndex.Select(old.box, old.index, cssmotion.KindSubtree)
+	newIndices := nextIndex.Select(current.box, current.index, cssmotion.KindSubtree)
 	if len(oldIndices) == len(newIndices) {
 		return TransitionCapture{}, false
 	}
@@ -160,9 +162,10 @@ func (r *Runtime) capturePresence(previous *Display, old boxRef, next *Display,
 // the z values are compared by position; the paint order is captured alongside
 // them and flipped at the midpoint.
 func (r *Runtime) captureStack(previous *Display, old boxRef, next *Display,
-	current boxRef, property string) (TransitionCapture, bool) {
-	oldIndices := cssmotion.Select(previous, old.box, old.index, cssmotion.KindSubtree)
-	newIndices := cssmotion.Select(next, current.box, current.index, cssmotion.KindSubtree)
+	current boxRef, property string,
+	prevIndex, nextIndex *cssmotion.Index) (TransitionCapture, bool) {
+	oldIndices := prevIndex.Select(old.box, old.index, cssmotion.KindSubtree)
+	newIndices := nextIndex.Select(current.box, current.index, cssmotion.KindSubtree)
 	if len(oldIndices) != len(newIndices) ||
 		!sameOpKinds(previous, oldIndices, next, newIndices) {
 		return TransitionCapture{}, false

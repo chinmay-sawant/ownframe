@@ -52,11 +52,20 @@ func TestAfterRedrawRefusesAReentrantRedraw(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	p := afterRedrawPage(t, afterRedrawHTML)
+	p, err := New(Config{HTML: `<div id="a">{{.}}</div>`, Width: 200, Height: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetData(0)
 
+	// The callback changes the data, so the queued follow-up still has a
+	// frame to commit. A callback that changed nothing would skip it.
+	n := 0
 	calls := 0
 	p.SetAfterRedraw(func() {
 		calls++
+		n++
+		p.SetData(n)
 		if err := p.Redraw(ctx); err != nil {
 			t.Errorf("Redraw in the callback: %v", err)
 		}

@@ -1,0 +1,304 @@
+<section class="screen-page ord-page" id="ord-page">
+  <header class="ord-head">
+    <div class="ord-head-copy">
+      <span class="eyebrow">EXECUTION</span>
+      <div class="ord-title-row">
+        <h1 class="ord-title">Orders</h1>
+        <span class="ord-live{{if not .MarketOpen}} ord-closed{{end}}"><span class="ord-live-dot{{if .MarketOpen}} anim-pulse{{end}}"></span>{{if .MarketOpen}}Live · {{end}}{{.MarketStatus}}</span>
+        <span class="ord-session">{{.SessionText}} · <span class="mono">{{.Clock}}</span></span>
+      </div>
+    </div>
+    <div class="ord-stats">
+      <div class="ord-stat">
+        <span class="ord-stat-label">Filled</span>
+        <strong class="ord-stat-value mono up">{{.OrderStats.Filled}}</strong>
+      </div>
+      <div class="ord-stat">
+        <span class="ord-stat-label">Working</span>
+        <strong class="ord-stat-value mono amber">{{.OrderStats.Working}}</strong>
+      </div>
+      <div class="ord-stat">
+        <span class="ord-stat-label">Cancelled</span>
+        <strong class="ord-stat-value mono dim">{{.OrderStats.Cancelled}}</strong>
+      </div>
+      <div class="ord-stat">
+        <span class="ord-stat-label">Notional</span>
+        <strong class="ord-stat-value mono">{{.OrderStats.Notional}}</strong>
+      </div>
+    </div>
+    <div class="ord-actions">
+      <button id="ord-refresh" class="ord-action" type="button" data-action="refresh-data">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 6.2A5.4 5.4 0 1 0 13.4 9.4"></path><polyline points="13.4 3.2 13.4 6.4 10.2 6.4"></polyline></svg>
+        <span>Refresh</span>
+      </button>
+      <button id="ord-export" class="ord-action ord-action-primary" type="button" data-action="orders-export">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v7"></path><polyline points="5.4 6.8 8 9.4 10.6 6.8"></polyline><path d="M3.2 11.2v1.5a.8.8 0 0 0 .8.8h8a.8.8 0 0 0 .8-.8v-1.5"></path></svg>
+        <span>Export</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="ord-grid" id="ord-grid">
+    <section class="panel ord-blotter">
+      <div class="ord-blotter-head">
+        <span class="panel-title">Order blotter</span>
+        <span class="ord-session-tag">{{.SessionText}}</span>
+        <span class="spacer"></span>
+        <span class="ord-paper-tag"><span class="dot"></span>Paper account</span>
+      </div>
+
+      <div class="ord-tabs" role="tablist">
+        {{range .OrderTabs}}
+        <button id="ord-tab-{{.Key}}" class="ord-tab{{if .Active}} on{{end}}" type="button" role="tab" aria-selected="{{if .Active}}true{{else}}false{{end}}" data-action="orders-tab-{{.Key}}">
+          <span>{{.Label}}</span>
+          <span class="ord-tab-count mono">{{.Count}}</span>
+        </button>
+        {{end}}
+      </div>
+
+      <div class="ord-toolbar">
+        {{range .OrderFilters}}
+        <div class="ord-select">
+          <span class="ord-select-label">{{.Label}}</span>
+          <span class="ord-select-value">{{.Value}}</span>
+          <svg class="ord-chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="4.5 6.5 8 10 11.5 6.5"></polyline></svg>
+        </div>
+        {{end}}
+        <span class="spacer"></span>
+        <span class="ord-sort">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8"></path><path d="M4 8h5.5"></path><path d="M4 11h3"></path></svg>
+          Sorted by time
+        </span>
+      </div>
+
+      {{if eq .OrderTab "holdings"}}
+      <div class="ord-hold">
+        <div class="ord-hold-head">
+          <span>Symbol</span>
+          <span>Name</span>
+          <span class="ord-num">Qty</span>
+          <span class="ord-num">Avg</span>
+          <span class="ord-num">Last</span>
+          <span class="ord-num">Value</span>
+          <span class="ord-num">P&amp;L</span>
+          <span>Weight</span>
+        </div>
+        <div class="ord-hold-rows">
+          {{range .Holdings}}
+          <div id="ord-hold-{{.Symbol}}" class="ord-hold-row">
+            <span class="ord-cell mono ord-hold-sym">{{.Symbol}}</span>
+            <span class="ord-cell ord-name">{{.Name}}</span>
+            <span class="ord-cell ord-num mono">{{.Qty}}</span>
+            <span class="ord-cell ord-num mono">{{.Avg}}</span>
+            <span class="ord-cell ord-num mono">{{.Last}}</span>
+            <span class="ord-cell ord-num mono">{{.Value}}</span>
+            <span class="ord-cell ord-num mono {{if .Up}}up{{else}}down{{end}}">{{.PNL}}</span>
+            <span class="ord-cell ord-weight">
+              <span class="ord-weight-track"><span class="ord-weight-fill anim-grow-x" style="width: {{.Bar}}%"></span></span>
+              <span class="ord-weight-text mono">{{.Weight}}</span>
+            </span>
+          </div>
+          {{else}}
+          <div class="ord-empty">No positions in the paper account.</div>
+          {{end}}
+        </div>
+      </div>
+      {{else}}
+      <div class="ord-table" id="ord-table">
+        <div class="ord-thead">
+          <span>Action</span>
+          <span>Symbol</span>
+          <span>Name</span>
+          <span>Status</span>
+          <span class="ord-col-direction">Direction</span>
+          <span>Type</span>
+          <span class="ord-num">Qty</span>
+          <span class="ord-num">Filled</span>
+          <span class="ord-num">Limit</span>
+          <span class="ord-col-tif">TIF</span>
+          <span class="ord-num">Time</span>
+        </div>
+        <div class="ord-rows" id="ord-rows">
+          {{range .Orders}}
+          <div id="ord-row-{{.Index}}" class="ord-row anim-rise{{if .Sell}} ord-sell{{end}}{{if .Cancelled}} ord-cancelled{{end}}{{if .Pending}} ord-working{{end}}" role="row" data-action="order-{{.ID}}">
+            <span class="ord-cell"><span class="ord-side-pill {{if .Sell}}sell{{else}}buy{{end}}">{{.Side}}</span></span>
+            <span class="ord-cell ord-sym-cell mono">{{.Symbol}}</span>
+            <span class="ord-cell ord-name">{{.Name}}</span>
+            <span class="ord-cell"><span class="ord-status {{if .Done}}done{{else if .Pending}}working{{else}}cancelled{{end}}"><span class="ord-dot {{if .Done}}green{{else if .Pending}}amber{{else}}dim{{end}}"></span>{{.Status}}</span></span>
+            <span class="ord-cell ord-col-direction ord-dir {{if .Sell}}down{{else}}up{{end}}">
+              {{if .Sell}}
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l8 8"></path><polyline points="12 6.4 12 12 6.4 12"></polyline></svg>
+              {{else}}
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12 12 4"></path><polyline points="6.4 4 12 4 12 9.6"></polyline></svg>
+              {{end}}
+              <span>{{.Side}}</span>
+            </span>
+            <span class="ord-cell ord-type">{{.Type}}</span>
+            <span class="ord-cell ord-num mono">{{.Qty}}</span>
+            <span class="ord-cell ord-num mono">{{.Filled}}</span>
+            <span class="ord-cell ord-num mono">{{.Limit}}</span>
+            <span class="ord-cell ord-col-tif mono">Day</span>
+            <span class="ord-cell ord-num mono ord-time">{{.Time}}</span>
+          </div>
+          {{else}}
+          <div class="ord-empty">No orders in this window.</div>
+          {{end}}
+        </div>
+      </div>
+      {{end}}
+
+      <div class="ord-foot" id="ord-foot">
+        <span class="ord-foot-mark">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.2 13 4v4.1c0 3-2.1 4.9-5 5.7-2.9-.8-5-2.7-5-5.7V4l5-1.8Z"></path><path d="m5.8 8 1.5 1.5 3-3"></path></svg>
+        </span>
+        <div class="ord-foot-copy">
+          <strong>Simulated executions</strong>
+          <span>Paper account · no orders are routed to a live venue</span>
+        </div>
+        <div class="ord-foot-updated">
+          <span class="eyebrow">Last update</span>
+          <strong class="mono">{{.Quote.Updated}}</strong>
+        </div>
+      </div>
+    </section>
+
+    <aside class="ord-rail">
+      <section class="panel ord-ticket anim-tilt">
+        <div class="ord-ticket-head">
+          <span class="panel-title">Order ticket</span>
+          <span class="spacer"></span>
+          <span class="ord-ticket-status"><span class="dot"></span>{{.Ticket.Status}}</span>
+        </div>
+
+        <div class="ord-instrument">
+          <div class="ord-instrument-id">
+            <div class="ord-symbol-row">
+              <span class="ord-symbol">{{.Quote.Symbol}}</span>
+              <span class="tag">{{.Quote.Exchange}}</span>
+              <span class="ord-market">{{.Quote.Market}}</span>
+            </div>
+            <div class="ord-instrument-name">{{.Quote.Name}}</div>
+          </div>
+          <div class="ord-instrument-price">
+            <span class="ord-price mono">{{.Quote.Price}}</span>
+            <span class="ord-change mono {{if .Quote.Up}}up{{else}}down{{end}}">{{.Quote.Change}} <span>{{.Quote.ChangePct}}</span></span>
+          </div>
+        </div>
+
+        <div class="ord-side-toggle">
+          <button id="ord-side-buy" class="ord-side-btn buy{{if .Ticket.SideBuy}} on{{end}}" type="button" data-action="order-side-buy">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12 12 4"></path><polyline points="6.4 4 12 4 12 9.6"></polyline></svg>
+            <span>Buy</span>
+          </button>
+          <button id="ord-side-sell" class="ord-side-btn sell{{if not .Ticket.SideBuy}} on{{end}}" type="button" data-action="order-side-sell">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l8 8"></path><polyline points="12 6.4 12 12 6.4 12"></polyline></svg>
+            <span>Sell</span>
+          </button>
+        </div>
+
+        <div class="ord-fields">
+          <div class="ord-field">
+            <div class="ord-field-head">
+              <span class="ord-label">Order type</span>
+              <span class="ord-field-note">{{.Ticket.Type}}</span>
+            </div>
+            <div class="ord-choice-row two">
+              <button id="ord-type-market" class="ord-choice{{if eq .Ticket.Type "Market"}} on{{end}}" type="button" data-action="order-type-market">Market</button>
+              <button id="ord-type-limit" class="ord-choice{{if eq .Ticket.Type "Limit"}} on{{end}}" type="button" data-action="order-type-limit">Limit</button>
+            </div>
+          </div>
+
+          <div class="ord-field">
+            <div class="ord-field-head">
+              <span class="ord-label">Quantity</span>
+              <span class="ord-field-note mono">{{.Ticket.Qty}} sh</span>
+            </div>
+            <div class="ord-choice-row four">
+              <button id="ord-qty-1" class="ord-choice{{if eq .Ticket.Qty "1"}} on{{end}}" type="button" data-action="order-qty-1">1</button>
+              <button id="ord-qty-10" class="ord-choice{{if eq .Ticket.Qty "10"}} on{{end}}" type="button" data-action="order-qty-10">10</button>
+              <button id="ord-qty-100" class="ord-choice{{if eq .Ticket.Qty "100"}} on{{end}}" type="button" data-action="order-qty-100">100</button>
+              <button id="ord-qty-500" class="ord-choice{{if eq .Ticket.Qty "500"}} on{{end}}" type="button" data-action="order-qty-500">500</button>
+            </div>
+          </div>
+
+          <div class="ord-field">
+            <div class="ord-field-head">
+              <span class="ord-label">Time in force</span>
+              <span class="ord-field-note">{{.Ticket.TIF}}</span>
+            </div>
+            <div class="ord-choice-row two">
+              <button id="ord-tif-day" class="ord-choice{{if eq .Ticket.TIF "Day"}} on{{end}}" type="button" data-action="order-tif-day">Day</button>
+              <button id="ord-tif-gtc" class="ord-choice{{if eq .Ticket.TIF "GTC"}} on{{end}}" type="button" data-action="order-tif-gtc">GTC</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ord-limit">
+          <div class="ord-field-head">
+            <span class="ord-label">Limit price</span>
+            <span class="ord-limit-tag">Read-only</span>
+          </div>
+          <div id="ord-limit" class="ord-limit-field" role="textbox" aria-readonly="true" aria-label="Limit price">
+            <span class="ord-limit-ccy">USD</span>
+            <span class="ord-limit-value mono">{{.Ticket.Limit}}</span>
+            <span class="spacer"></span>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="7" width="9" height="6.2" rx="1"></rect><path d="M5.5 7V5.4a2.5 2.5 0 0 1 5 0V7"></path></svg>
+          </div>
+        </div>
+
+        <div class="ord-ticket-spacer"></div>
+
+        <div class="ord-costs">
+          <div class="ord-cost">
+            <span>Estimated cost</span>
+            <strong class="mono">{{.Ticket.Estimated}}</strong>
+          </div>
+          <div class="ord-cost">
+            <span>Buying power</span>
+            <strong class="mono">{{.Ticket.BuyingPower}}</strong>
+          </div>
+        </div>
+
+        <div class="ord-submit-row">
+          <button id="ord-submit" class="ord-submit {{if .Ticket.SideBuy}}buy{{else}}sell{{end}}" type="button" data-action="order-submit">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8h9"></path><polyline points="9.5 5 12.5 8 9.5 11"></polyline></svg>
+            <span>Submit {{if .Ticket.SideBuy}}buy{{else}}sell{{end}} order</span>
+          </button>
+          <button id="ord-reset" class="ord-reset" type="button" data-action="order-reset">Reset</button>
+        </div>
+
+        <div class="ord-risk">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.2 13 4v4.1c0 3-2.1 4.9-5 5.7-2.9-.8-5-2.7-5-5.7V4l5-1.8Z"></path><path d="M8 7v2.4"></path><path d="M8 11.2v.2"></path></svg>
+          <span>Paper order · fills simulate at the prevailing quote. No live venue is connected.</span>
+        </div>
+      </section>
+
+      <section class="panel ord-fills">
+        <div class="ord-fills-head">
+          <span class="panel-title">Recent fills</span>
+          <span class="ord-fills-sym mono">{{.Quote.Symbol}}</span>
+          <span class="spacer"></span>
+          <span class="ord-fills-live"><span class="dot anim-pulse"></span>Tape</span>
+        </div>
+        <div class="ord-fills-cols">
+          <span>Time</span>
+          <span>Side</span>
+          <span class="ord-num">Price</span>
+          <span class="ord-num">Size</span>
+        </div>
+        {{if .Trades}}
+        {{range $i, $t := .Trades}}{{if lt $i 6}}
+        <div class="ord-fill-row {{if $t.Up}}up{{else}}down{{end}}">
+          <span class="ord-fill-time mono">{{$t.Time}}</span>
+          <span class="ord-fill-aggr">{{if $t.Aggressor}}{{$t.Aggressor}}{{else}}{{if $t.Up}}Buy{{else}}Sell{{end}}{{end}}</span>
+          <span class="ord-fill-price mono ord-num">{{$t.Price}}</span>
+          <span class="ord-fill-size mono ord-num">{{$t.Size}}</span>
+        </div>
+        {{end}}{{end}}
+        {{else}}
+        <div class="ord-fills-empty">No prints on the tape.</div>
+        {{end}}
+      </section>
+    </aside>
+  </div>
+</section>

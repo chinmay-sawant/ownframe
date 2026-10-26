@@ -1,0 +1,795 @@
+/* Watchlist column: header, filter strip, dense table, breadth strip and feed
+   footer. The shell owns the 22/26/32 percent column width; this block fills
+   its grid cell at any viewport size. Only the list flexes. */
+
+.watchlist {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--panel);
+  border-right: 1px solid var(--line-soft);
+}
+
+/* The shell gives the workspace its viewport height, but a percentage height
+   on this grid child resolves against auto in the engine, so the column grew
+   past the statusbar. Take the same workspace height explicitly. */
+.workspace > .watchlist {
+  height: calc(100vh - var(--header-h) - var(--status-h));
+}
+
+/* Header ------------------------------------------------------------------ */
+
+.wl-head {
+  flex: 0 0 auto;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel);
+}
+
+.wl-live {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wl-live .dot {
+  width: 6px;
+  height: 6px;
+}
+
+.wl-halo {
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--green-line);
+  border-radius: 50%;
+}
+
+.wl-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wl-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.wl-count {
+  min-width: 18px;
+  height: 17px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background-color: var(--panel-3);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.wl-market {
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.wl-head-btn {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  border: 1px solid var(--line-soft);
+  border-radius: 5px;
+  color: var(--muted);
+}
+
+.wl-head-btn:hover {
+  color: var(--text);
+  background-color: var(--panel-3);
+  border-color: var(--line);
+}
+
+/* Filters ----------------------------------------------------------------- */
+
+.wl-filters {
+  flex: 0 0 auto;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel);
+}
+
+.wl-chip {
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.wl-sort {
+  width: 20px;
+  height: 22px;
+  flex: 0 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: var(--dim);
+  background-color: transparent;
+  transition: color 160ms ease;
+}
+
+.wl-sort:hover {
+  color: var(--text);
+}
+
+/* Table head -------------------------------------------------------------- */
+
+.wl-thead {
+  flex: 0 0 auto;
+  height: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px 70px;
+  column-gap: 4px;
+  align-items: center;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background-color: var(--panel);
+}
+
+.wl-th {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.wl-th-right {
+  justify-content: flex-end;
+}
+
+.wl-th-mark {
+  margin-left: 4px;
+  flex: 0 0 6px;
+  opacity: 0.85;
+}
+
+/* Rows -------------------------------------------------------------------- */
+
+.wl-list {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--panel);
+}
+
+.wl-row {
+  position: relative;
+  height: min(46px, calc((100vh - var(--header-h) - var(--status-h) - 172px - 4px) / 16));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 80px 70px;
+  column-gap: 4px;
+  align-items: center;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: transparent;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.wl-row:last-child {
+  border-bottom: 0;
+}
+
+.wl-row:hover {
+  background-color: #0c1015;
+}
+
+.wl-row.on {
+  background-color: #0d1b14;
+}
+
+.wl-row.on:hover {
+  background-color: #0e1d15;
+}
+
+.wl-row.on .wl-sym {
+  color: #f3f8f4;
+}
+
+.wl-row.on .wl-name {
+  color: #b9c4d1;
+}
+
+.wl-row.on .wl-price {
+  color: #ffffff;
+}
+
+.wl-row.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--green);
+  z-index: 1;
+}
+
+.wl-row.on::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background-color: var(--green);
+  animation: trade-breathe 2.8s ease-in-out infinite;
+}
+
+/* Entry stagger: only the first eight rows move; the rest paint at rest. */
+
+.wl-list .wl-row:nth-child(1) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 20ms both; }
+.wl-list .wl-row:nth-child(2) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 50ms both; }
+.wl-list .wl-row:nth-child(3) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both; }
+.wl-list .wl-row:nth-child(4) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 110ms both; }
+.wl-list .wl-row:nth-child(5) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+.wl-list .wl-row:nth-child(6) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 170ms both; }
+.wl-list .wl-row:nth-child(7) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both; }
+.wl-list .wl-row:nth-child(8) { animation: trade-rise 440ms cubic-bezier(0.22, 1, 0.36, 1) 230ms both; }
+
+/* Left cell --------------------------------------------------------------- */
+
+.wl-ident {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.wl-mkt {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 2px;
+  background-color: var(--dim);
+}
+
+.wl-mkt-us {
+  background: #5d84b8;
+}
+
+.wl-mkt-hk {
+  background-color: var(--red);
+  opacity: 0.8;
+}
+
+.wl-mkt-ev {
+  background-color: var(--green);
+  opacity: 0.8;
+}
+
+.wl-idtext {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.wl-idline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wl-sym {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #dde4ec;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 160ms ease;
+}
+
+.wl-tag {
+  flex: 0 0 auto;
+  height: 13px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 6.5px;
+}
+
+.wl-name {
+  font-size: 9px;
+  line-height: 1.15;
+  color: var(--muted);
+  letter-spacing: 0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 160ms ease;
+}
+
+.wl-star {
+  width: 16px;
+  height: 22px;
+  flex: 0 0 16px;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  color: #414a56;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.wl-star:hover {
+  color: var(--amber);
+}
+
+.wl-star:active {
+  transform: scale(0.88);
+}
+
+.wl-star.on {
+  color: var(--amber);
+}
+
+.wl-star.on svg {
+  fill: currentColor;
+  fill-opacity: 0.28;
+}
+
+/* Price and change -------------------------------------------------------- */
+
+.wl-quote {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.wl-price {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #c8d1dc;
+  transition: color 160ms ease;
+}
+
+.wl-abs {
+  font-size: 8.5px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.wl-change {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.wl-pct {
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  transition: color 160ms ease, background-color 160ms ease;
+}
+
+.wl-pct svg {
+  flex: 0 0 5px;
+}
+
+.wl-pct.up {
+  color: var(--green);
+  background-color: var(--green-soft);
+}
+
+.wl-pct.down {
+  color: var(--red);
+  background-color: var(--red-soft);
+}
+
+/* Empty filter state ------------------------------------------------------ */
+
+.wl-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 10px;
+}
+
+.wl-empty-mark {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  position: relative;
+}
+
+.wl-empty-mark::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 10px;
+  width: 10px;
+  height: 1px;
+  background-color: var(--dim);
+}
+
+/* Market internals -------------------------------------------------------- */
+
+.wl-internals {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line-soft);
+  background-color: var(--panel);
+}
+
+.wl-int-label {
+  flex: 0 0 auto;
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.wl-breadth {
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 3px;
+  display: flex;
+  border-radius: 1px;
+  overflow: hidden;
+}
+
+.wl-breadth-up {
+  width: 62%;
+  height: 100%;
+  background-color: var(--green);
+  opacity: 0.6;
+}
+
+.wl-breadth-down {
+  width: 38%;
+  height: 100%;
+  background-color: var(--red);
+  opacity: 0.55;
+}
+
+.wl-legend {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+
+/* Footer ------------------------------------------------------------------ */
+
+.wl-foot {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 0 12px;
+  border-top: 1px solid var(--line-soft);
+  background-color: var(--panel);
+}
+
+.wl-feed {
+  color: var(--dim);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.wl-feed-live {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.wl-feed-live .dot {
+  width: 5px;
+  height: 5px;
+}
+
+.wl-refresh {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: var(--dim);
+}
+
+.wl-refresh:hover {
+  color: var(--text);
+  background-color: var(--panel-3);
+}
+
+/* Narrower shell column ---------------------------------------------------
+   The shell shrinks the column in three steps; the two price tracks shrink
+   first so the symbol/name cell keeps enough room for the ticker and tag. */
+
+@media (max-width: 1420px) {
+  .wl-head {
+    gap: 6px;
+    padding: 0 6px 0 10px;
+  }
+
+  .wl-filters {
+    padding: 0 6px 0 10px;
+  }
+
+  .wl-thead,
+  .wl-row {
+    grid-template-columns: minmax(0, 1fr) 74px 64px;
+    padding-left: 10px;
+    padding-right: 8px;
+  }
+
+  .wl-thead {
+    font-size: 7.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .wl-internals {
+    gap: 6px;
+    padding: 0 10px;
+  }
+
+  .wl-foot {
+    padding: 0 6px 0 10px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .wl-head {
+    padding-left: 9px;
+  }
+
+  .wl-filters {
+    padding-left: 9px;
+  }
+
+  .wl-thead,
+  .wl-row {
+    grid-template-columns: minmax(0, 1fr) 68px 60px;
+    column-gap: 3px;
+    padding-left: 9px;
+    padding-right: 6px;
+  }
+
+  .wl-thead {
+    letter-spacing: 0.08em;
+  }
+
+  .wl-internals {
+    padding: 0 8px;
+  }
+
+  .wl-foot {
+    padding-left: 9px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .wl-head {
+    gap: 5px;
+    padding: 0 5px 0 8px;
+  }
+
+  .wl-filters {
+    gap: 3px;
+    padding: 0 5px 0 8px;
+  }
+
+  .wl-thead,
+  .wl-row {
+    grid-template-columns: minmax(0, 1fr) 66px 54px;
+    column-gap: 3px;
+    padding-left: 8px;
+    padding-right: 6px;
+  }
+
+  .wl-thead {
+    font-size: 7px;
+    letter-spacing: 0.06em;
+  }
+
+  .wl-pct {
+    gap: 2px;
+    padding: 0 3px;
+  }
+
+  .wl-internals {
+    gap: 5px;
+    padding: 0 8px;
+  }
+
+  .wl-foot {
+    gap: 5px;
+    padding: 0 5px 0 8px;
+  }
+}
+
+@media (max-width: 900px) {
+  .wl-head {
+    padding-left: 8px;
+  }
+
+  .wl-filters {
+    padding-left: 8px;
+  }
+
+  .wl-thead,
+  .wl-row {
+    grid-template-columns: minmax(0, 1fr) 60px 52px;
+    column-gap: 2px;
+    padding-left: 8px;
+    padding-right: 5px;
+  }
+
+  .wl-thead {
+    font-size: 6.5px;
+    letter-spacing: 0.04em;
+  }
+
+  .wl-ident {
+    gap: 5px;
+  }
+
+  .wl-price,
+  .wl-pct {
+    font-size: 9.5px;
+  }
+
+  .wl-pct {
+    gap: 2px;
+    padding: 0 2px;
+  }
+
+  .wl-abs {
+    font-size: 8px;
+  }
+
+  .wl-internals {
+    gap: 4px;
+    padding: 0 6px;
+  }
+
+  .wl-foot {
+    gap: 4px;
+    padding: 0 4px 0 8px;
+  }
+}
+
+/* Row-count ladder --------------------------------------------------------
+   The engine's @media (height) never matches, so the short-window ladder is
+   keyed to width. The reference frame is 16:9, where 1600x900 and 1280x720
+   need 14 and 12 rows. The row height also takes the real 100vh height, so a
+   taller or shorter window at any of those widths still fits its rows instead
+   of clipping the last one. 172px is the fixed chrome above and below the
+   list; 4px is a rounding reserve. */
+
+@media (max-width: 1600px) {
+  .wl-row {
+    height: min(46px, calc((100vh - var(--header-h) - var(--status-h) - 172px - 4px) / 14));
+  }
+
+  .wl-list .wl-row:nth-child(15),
+  .wl-list .wl-row:nth-child(16) {
+    display: none;
+  }
+}
+
+@media (max-width: 1280px) {
+  .wl-row {
+    height: min(46px, calc((100vh - var(--header-h) - var(--status-h) - 172px - 4px) / 12));
+  }
+
+  .wl-list .wl-row:nth-child(13),
+  .wl-list .wl-row:nth-child(14),
+  .wl-list .wl-row:nth-child(15),
+  .wl-list .wl-row:nth-child(16) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-head,
+  .wl-halo,
+  .wl-live .dot,
+  .wl-feed-live .dot,
+  .wl-list .wl-row,
+  .wl-row.on::after {
+    animation: none;
+  }
+
+  .wl-chip,
+  .wl-sort,
+  .wl-row,
+  .wl-sym,
+  .wl-name,
+  .wl-price,
+  .wl-pct,
+  .wl-star {
+    transition: none;
+  }
+}

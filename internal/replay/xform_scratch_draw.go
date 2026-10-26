@@ -43,7 +43,11 @@ func (renderer *Renderer) drawXformScratch(dst *ebiten.Image, op *layout.Display
 
 	geom := xformGeom(op, dx, dy)
 	shiftLocal(&geom, float64(left)-op.X*pxPerPt, float64(top)-op.Y*pxPerPt)
-	dst.DrawImage(src, &ebiten.DrawImageOptions{
+	clipped, paint := scissorOverflow(dst, op, dx, dy)
+	if !paint {
+		return
+	}
+	clipped.DrawImage(src, &ebiten.DrawImageOptions{
 		GeoM:   geom,
 		Filter: ebiten.FilterLinear,
 	})

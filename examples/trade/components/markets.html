@@ -1,0 +1,177 @@
+<section class="screen-page mk-page" id="mk-page">
+  <header class="mk-head">
+    <div class="mk-head-copy">
+      <span class="eyebrow">Market overview</span>
+      <div class="mk-head-line">
+        <h1 class="mk-title">Markets</h1>
+        <span class="mk-live {{if .MarketOpen}}open{{else}}closed{{end}}">
+          <span class="mk-live-dot"><span class="mk-live-halo anim-halo"></span><span class="mk-live-core anim-pulse"></span></span>
+          <span class="mk-live-label">{{.MarketStatus}}</span>
+        </span>
+      </div>
+      <div class="mk-meta">
+        <span class="mk-session-label">{{.SessionText}}</span>
+        <span class="mk-sep"></span>
+        <span class="mono">{{.Clock}}</span>
+        <span class="mk-sep"></span>
+        <span class="mk-date">{{.Date}}</span>
+      </div>
+    </div>
+    <div class="mk-actions">
+      <button class="chip mk-btn" id="mk-watchlist" data-action="nav-watchlist">
+        <svg class="mk-btn-icon" width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 1.45l1.32 2.68 2.95.43-2.14 2.08.51 2.95L6 8.2 3.36 9.59l.51-2.95L1.73 4.56l2.95-.43z"/></svg>
+        Watchlist
+      </button>
+      <button class="chip mk-btn" id="mk-refresh" data-action="refresh-data">
+        <svg class="mk-btn-icon" width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 4.35A4.1 4.1 0 1 0 10.1 7.6"/><polyline points="10 1.9 10 4.55 7.35 4.55"/></svg>
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <div class="mk-index-row" id="mk-index-row">
+    {{range .Markets.Indices}}<button class="panel mk-index anim-rise" id="mk-index-{{.Symbol}}" data-action="markets-index-{{.Symbol}}">
+      <span class="mk-index-top"><span class="mk-index-name">{{.Name}}</span><span class="mk-index-sym mono">{{.Symbol}}</span></span>
+      <span class="mk-index-value mono">{{.Value}}</span>
+      <span class="mk-index-delta {{if .Up}}up{{else}}down{{end}}">
+        <svg class="mk-arrow" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{if .Up}}<polyline points="0.6 6.6 5 2.2 9.4 6.6"/>{{else}}<polyline points="0.6 3.4 5 7.8 9.4 3.4"/>{{end}}</svg>
+        <span class="mono">{{.Change}}</span>
+        <span class="mono">{{.Pct}}</span>
+      </span>
+      <span class="mk-spark">{{range .Spark}}<span class="mk-spark-bar {{if .Up}}g{{else}}r{{end}} anim-grow-y" style="height:{{printf "%.0f" .Height}}%"></span>{{end}}</span>
+    </button>{{end}}
+  </div>
+
+  <div class="mk-main" id="mk-main">
+    <div class="mk-left">
+      <section class="panel mk-breadth">
+        <div class="panel-head">
+          <span class="panel-title">Market breadth</span>
+          <span class="panel-sub">Advance / decline</span>
+          <span class="spacer"></span>
+          <span class="tag">{{len .Markets.Breadth}} metrics</span>
+        </div>
+        <div class="mk-breadth-body">
+          {{range .Markets.Breadth}}<div class="mk-breadth-row">
+            <span class="mk-breadth-line">
+              <span class="mk-breadth-label">{{.Label}}</span>
+              <span class="mk-breadth-note">{{.Note}}</span>
+              <span class="mk-breadth-value mono {{if .Up}}up{{else}}down{{end}}">{{.Value}}</span>
+            </span>
+            <span class="mk-meter"><span class="mk-meter-fill {{if .Up}}g{{else}}r{{end}} anim-grow-x" style="width:{{printf "%.0f" .Pct}}%"><span class="mk-sheen anim-sheen"></span></span></span>
+          </div>{{end}}
+        </div>
+      </section>
+
+      <section class="panel mk-heatpanel" id="mk-heat-panel">
+        <div class="panel-head">
+          <span class="panel-title">Sector heatmap</span>
+          <span class="panel-sub">Percent change · session</span>
+          <span class="spacer"></span>
+          <span class="mk-scale"><span class="mk-scale-down"></span><span class="mk-scale-labels mono"><span>-2%</span><span>0</span><span>+2%</span></span><span class="mk-scale-up"></span></span>
+        </div>
+        <div class="mk-heat">
+          {{range $i, $s := .Markets.Sectors}}<button class="mk-tile {{if $s.Up}}g{{else}}r{{end}} anim-pop {{$s.Delay}}" id="mk-sector-{{$i}}" data-action="markets-sector">
+            <span class="mk-tile-top">
+              <span class="mk-tile-name">{{$s.Name}}</span>
+              <svg class="mk-tile-arrow" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{if $s.Up}}<polyline points="0.6 6.6 5 2.2 9.4 6.6"/>{{else}}<polyline points="0.6 3.4 5 7.8 9.4 3.4"/>{{end}}</svg>
+            </span>
+            <span class="mk-tile-pct mono">{{$s.Pct}}</span>
+            <span class="mk-tile-foot"><span class="mk-tile-wt">Wt {{printf "%.0f" $s.Weight}}%</span><span class="mk-tile-track"><span style="width:{{printf "%.0f" $s.Weight}}%"></span></span></span>
+          </button>{{end}}
+        </div>
+      </section>
+    </div>
+
+    <div class="mk-side">
+      <section class="panel mk-movers">
+        <div class="panel-head">
+          <span class="panel-title">Top movers</span>
+          <span class="panel-sub">Session</span>
+          <span class="spacer"></span>
+          <span class="mono mk-head-time">{{.Markets.Updated}}</span>
+        </div>
+        <div class="mk-movers-body">
+          <div class="mk-mover-col g">
+            <div class="mk-mover-head"><span class="eyebrow">Gainers</span><span class="mk-count mono">{{len .Markets.Gainers}}</span></div>
+            <div class="mk-mover-list">
+              {{range .Markets.Gainers}}<div class="mk-mover" id="mk-mover-{{.Symbol}}" data-action="mover-{{.Symbol}}">
+                <span class="mk-mover-id"><span class="mk-mover-sym mono">{{.Symbol}}</span><span class="mk-mover-name">{{.Name}}</span></span>
+                <span class="mk-mover-quote"><span class="mk-mover-px mono">{{.Price}}</span><span class="mk-mover-meta"><span class="mk-mover-vol mono">{{.Volume}}</span><span class="mono {{if .Up}}up{{else}}down{{end}}">{{.Pct}}</span></span></span>
+              </div>{{end}}
+            </div>
+          </div>
+          <div class="mk-mover-col r">
+            <div class="mk-mover-head"><span class="eyebrow">Losers</span><span class="mk-count mono">{{len .Markets.Losers}}</span></div>
+            <div class="mk-mover-list">
+              {{range .Markets.Losers}}<div class="mk-mover" id="mk-mover-{{.Symbol}}" data-action="mover-{{.Symbol}}">
+                <span class="mk-mover-id"><span class="mk-mover-sym mono">{{.Symbol}}</span><span class="mk-mover-name">{{.Name}}</span></span>
+                <span class="mk-mover-quote"><span class="mk-mover-px mono">{{.Price}}</span><span class="mk-mover-meta"><span class="mk-mover-vol mono">{{.Volume}}</span><span class="mono {{if .Up}}up{{else}}down{{end}}">{{.Pct}}</span></span></span>
+              </div>{{end}}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel mk-flows">
+        <div class="panel-head">
+          <span class="panel-title">Flows</span>
+          <span class="panel-sub">Net 1D</span>
+          <span class="spacer"></span>
+          <span class="tag">Capital</span>
+        </div>
+        <div class="mk-flow-grid">
+          {{range .Markets.Flows}}<div class="mk-flow">
+            <span class="mk-flow-line"><span class="mk-flow-label">{{.Label}}</span><span class="mk-flow-value mono {{if .Up}}up{{else}}down{{end}}">{{.Value}}</span></span>
+            <span class="mk-meter"><span class="mk-meter-fill {{if .Up}}g{{else}}r{{end}} anim-grow-x" style="width:{{printf "%.0f" .Pct}}%"></span></span>
+          </div>{{end}}
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="mk-bottom" id="mk-bottom">
+    <section class="panel mk-cal">
+      <div class="panel-head">
+        <span class="panel-title">Economic calendar</span>
+        <span class="panel-sub">Today</span>
+        <span class="spacer"></span>
+        <span class="mk-legend"><span class="dot amber"></span>High impact</span>
+      </div>
+      <div class="mk-cal-head">
+        <span>Time</span><span>Country</span><span>Event</span><span class="mk-num">Actual</span><span class="mk-num">Forecast</span><span class="mk-num">Prior</span><span>Impact</span>
+      </div>
+      <div class="mk-cal-body">
+        {{range .Markets.Calendar}}<div class="mk-cal-row">
+          <span class="mono">{{.Time}}</span>
+          <span class="mk-country mono">{{.Country}}</span>
+          <span class="mk-event">{{.Event}}</span>
+          <span class="mk-num mono">{{if .Actual}}{{.Actual}}{{else}}—{{end}}</span>
+          <span class="mk-num mono dim">{{.Forecast}}</span>
+          <span class="mk-num mono dim">{{.Prior}}</span>
+          <span class="mk-impact">{{if .High}}<span class="tag mk-high">{{.Impact}}</span>{{else}}<span class="tag">{{.Impact}}</span>{{end}}</span>
+        </div>{{end}}
+      </div>
+    </section>
+
+    <section class="panel mk-sessions">
+      <div class="panel-head">
+        <span class="panel-title">Session map</span>
+        <span class="panel-sub">Global</span>
+        <span class="spacer"></span>
+        <span class="mono mk-head-time">{{len .Markets.Sessions}} markets</span>
+      </div>
+      <div class="mk-sessions-grid">
+        {{range .Markets.Sessions}}<div class="mk-session {{if .Open}}open{{else}}closed{{end}}">
+          <div class="mk-session-top">
+            <span class="eyebrow">{{.Region}}</span>
+            <span class="mk-status {{if .Open}}open{{else}}closed{{end}}"><span class="dot{{if .Open}} anim-pulse{{end}}"></span>{{.Status}}</span>
+          </div>
+          <span class="mk-session-name">{{.Name}}</span>
+          <span class="mk-session-move mono {{if .Up}}up{{else}}down{{end}}">{{.Change}}<em>{{.Pct}}</em></span>
+          <span class="mk-session-track"><span class="mk-session-sheen {{if .Open}}anim-sheen{{end}}"></span></span>
+        </div>{{end}}
+      </div>
+    </section>
+  </div>
+</section>

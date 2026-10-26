@@ -12,7 +12,7 @@ func TestRedrawBatchDrawsFocusAndClickOnce(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	p := newCachePage(t, `<button id="go">Start</button>`)
+	p := newCachePage(t, `<style>#go:focus{color:#ff0000}</style><button id="go">Start</button>`)
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -38,9 +38,10 @@ func TestRedrawBatchDrawsFocusAndClickOnce(t *testing.T) {
 	}
 }
 
-// TestRedrawBatchForcesPlainRedraw checks that a plain Redraw in the batch
-// forces the final draw even when the source and state are unchanged.
-func TestRedrawBatchForcesPlainRedraw(t *testing.T) {
+// TestRedrawBatchSkipsUnchangedFlush checks that the flush runs the redraw
+// sequence once but lays nothing out when the source and state are unchanged,
+// whether the batch held a plain Redraw or only RedrawIfChanged calls.
+func TestRedrawBatchSkipsUnchangedFlush(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -48,7 +49,7 @@ func TestRedrawBatchForcesPlainRedraw(t *testing.T) {
 	if err := p.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
-	before := p.Stats().Layouts
+	before := p.Stats()
 
 	p.BeginRedrawBatch()
 	if err := p.RedrawIfChanged(ctx); err != nil {
@@ -61,7 +62,10 @@ func TestRedrawBatchForcesPlainRedraw(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.Stats().Layouts; got != before+1 {
-		t.Fatalf("layouts = %d, want one forced draw", got-before)
+	if got := p.Stats(); got.Layouts != before.Layouts || got.Repaints != before.Repaints {
+		t.Fatalf("layouts = %d, repaints = %d, want no draw", got.Layouts-before.Layouts, got.Repaints-before.Repaints)
+	}
+	if got := p.Stats().Redraws; got != before.Redraws+1 {
+		t.Fatalf("redraws = %d, want one flush", got-before.Redraws)
 	}
 }

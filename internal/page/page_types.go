@@ -41,29 +41,43 @@ type Page struct {
 	deepLinkSchemes map[string]struct{}
 	ff              formFocusState
 	picker          PickFunc
-	cache           *render.Cache
-	stats           pageStats
-	devtools        bool
-	perf            bool
-	motion          *motion.Runtime
-	animationsOff   bool
-	transitionsOff  bool
-	triggerPress    triggerPressState
-	allocAt         time.Time // last allocator sample; zero means the next Perf redraw is due
-	retainState     bool
-	restampRedraw   bool
-	layoutAdopting  bool
-	lockView        bool
-	mobileViewport  bool
-	allowTouchZoom  bool
-	watch           *watchState
-	dirty           dirty.Tracker
-	lastPatch       DisplayPatch
-	stateBinding    state.Binding
-	elements        *element.Registry
-	frameState      // deadline: loop sets, window takes; lock: atomic
-	index           map[string]*Box
-	hits            []hitItem
-	pageContent     // paint rect: box cache writes; lock: page loop
-	scroll          scroll.State
+	// hoverPatch re-lays one element's subtree for a hover-only change.
+	// Production pages use the engine patch; tests swap it per page to
+	// observe which roots a hover change patches.
+	hoverPatch     hoverPatchFunc
+	cache          *render.Cache
+	stats          pageStats
+	devtools       bool
+	perf           bool
+	motion         *motion.Runtime
+	animationsOff  bool
+	transitionsOff bool
+	triggerPress   triggerPressState
+	allocAt        time.Time // last allocator sample; zero means the next Perf redraw is due
+	retainState    bool
+	restampRedraw  bool
+	layoutAdopting bool
+	lockView       bool
+	mobileViewport bool
+	allowTouchZoom bool
+	watch          *watchState
+	dirty          dirty.Tracker
+	lastPatch      DisplayPatch
+	// painted is the display the host last took damage for. A redraw that
+	// finds damage already marked full can diff this display against the new
+	// one, so a small change made after a full mark keeps its own region
+	// instead of repainting the page.
+	painted *Display
+	// fullGen is the generation whose commit last marked the whole frame
+	// dirty. A mark from an earlier generation is covered by the display
+	// diff against painted; one from the current generation may describe an
+	// in-place tick change no display diff can see.
+	fullGen      uint64
+	stateBinding state.Binding
+	elements     *element.Registry
+	frameState   // deadline: loop sets, window takes; lock: atomic
+	index        map[string]*Box
+	hits         []hitItem
+	pageContent  // paint rect: box cache writes; lock: page loop
+	scroll       scroll.State
 }

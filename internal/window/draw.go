@@ -50,6 +50,7 @@ func (s *shell) drawContent(screen *ebiten.Image) bool {
 
 	if s.bitmapView.img != nil {
 		s.partial.live = false
+		s.dropDisplayBuffers()
 		screen.Fill(s.pageBackground())
 		screen.DrawImage(s.bitmapView.img, nil)
 

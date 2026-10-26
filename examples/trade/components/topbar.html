@@ -1,0 +1,54 @@
+<header class="topbar" id="topbar-main">
+  <div class="tb-lights" aria-hidden="true">
+    <span class="tb-light tb-light-red"></span>
+    <span class="tb-light tb-light-amber"></span>
+    <span class="tb-light tb-light-green"></span>
+  </div>
+
+  <div class="tb-history">
+    <button class="tb-ico" id="tb-back" data-action="nav-back" title="Back" aria-label="Back">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.8 3.4 5.2 8l4.6 4.6"/></svg>
+    </button>
+    <button class="tb-ico is-dim" id="tb-forward" data-action="nav-forward" title="Forward" aria-label="Forward">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.2 3.4 10.8 8l-4.6 4.6"/></svg>
+    </button>
+  </div>
+
+  <div class="tb-tab anim-rise" id="tb-tab">
+    <span class="tb-tab-logo" aria-hidden="true"></span>
+    <span class="tb-tab-symbol">{{if .Quote.Symbol}}{{.Quote.Symbol}}{{else}}MERIDIAN{{end}}</span>
+    <span class="tb-tab-sep" aria-hidden="true">·</span>
+    <span class="tb-tab-screen">{{.TopbarScreenLabel}}</span>
+  </div>
+
+  <div class="tb-search-wrap">
+    <div class="tb-search" id="tb-search" data-action="search" role="button" tabindex="0" aria-label="Search the terminal">
+      <svg class="tb-search-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7.1" cy="7.1" r="4.3"/><path d="m10.4 10.4 3 3"/></svg>
+      <span class="tb-search-ph">Type / to search</span>
+      <span class="tb-key mono" aria-hidden="true">/</span>
+    </div>
+  </div>
+
+  <div class="tb-right">
+    {{if .UpdateAvailable}}
+    <button class="tb-update" id="tb-update" data-action="update" title="Update available">
+      <span class="tb-update-dot anim-breathe" aria-hidden="true"></span>
+      <span class="tb-update-label">Update available</span>
+    </button>
+    {{end}}
+    <span class="tag tb-preview">Preview</span>
+    <span class="tb-market {{if .MarketOpen}}open{{else}}closed{{end}}" title="{{.MarketStatus}}">
+      <span class="tb-mkt-dot anim-pulse" aria-hidden="true"></span>
+      <span class="tb-mkt-label">{{if .MarketStatus}}{{.MarketStatus}}{{else}}Market{{end}}</span>
+    </span>
+    <div class="tb-clock">
+      <span class="tb-clock-time mono">{{.Clock}}</span>
+      <span class="tb-date">{{.Date}}</span>
+    </div>
+    <button class="tb-bell" id="tb-bell" data-action="bell" title="Notifications" aria-label="Notifications">
+      <svg class="tb-bell-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.7a4 4 0 0 0-4 4v2.6L3.7 11.4h10.6L13 9.3V6.7a4 4 0 0 0-4-4z"/><path d="M7.3 14.3a1.8 1.8 0 0 0 3.4 0"/></svg>
+      {{if gt .Notifications 0}}<span class="tb-badge mono">{{.Notifications}}</span>{{end}}
+    </button>
+    <button class="avatar tb-avatar {{.AvatarClass}}" id="tb-profile" data-action="profile" title="{{.ProfileName}}" aria-label="Profile">{{.ProfileInitials}}</button>
+  </div>
+</header>

@@ -149,7 +149,7 @@ func (p *Page) drawStaged(
 ) error {
 	drawStart := draw.Clock(true)
 	ds := draw.Clock(track)
-	display, err := draw.List(ctx, styled, state)
+	display, err := p.layoutStaged(ctx, styled, state)
 	draw.Note(track, &p.stats.layoutTime, ds)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func (p *Page) drawStaged(
 
 		return nil
 	}
-	if err := p.paintFallback(display, drawStart, track); err != nil {
+	if err := p.paintFallback(display, drawStart, track, state); err != nil {
 		return err
 	}
 
@@ -207,7 +207,7 @@ func (p *Page) finishRedraw(track, memOK bool, m0 runtime.MemStats, start time.T
 // picture is a replay of that same list. blinkless does not paint a page
 // bitmap of its own. The hit map is built here too, so a fixed box still
 // wins over the content it covers on the bitmap path.
-func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) error {
+func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, state render.State) error {
 	bitmap, err := draw.PaintBitmap(track, &p.stats.paintTime, display)
 	if err != nil {
 		return err
@@ -222,6 +222,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool) 
 	p.layerGen++
 	p.bindMotion(previous, nil)
 	p.bindTransitions(nil)
+	p.remember(state)
 	p.markFull()
 	p.lastPatch = DisplayPatch{
 		Changed: bitmap.Changed,

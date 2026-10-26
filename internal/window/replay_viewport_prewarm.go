@@ -82,7 +82,10 @@ func (s *shell) prewarmViewport(d *layout.Display, bounds image.Rectangle) bool 
 		if w.scratch != nil {
 			w.scratch.Deallocate()
 		}
-		w.scratch = ebiten.NewImage(size.X, size.Y)
+		// A transient render target: keep it out of the sprite atlas.
+		w.scratch = ebiten.NewImageWithOptions(
+			image.Rectangle{Max: size}, &ebiten.NewImageOptions{Unmanaged: true},
+		)
 	}
 	clip, ok := w.scratch.SubImage(image.Rectangle{Max: r.Size()}).(*ebiten.Image)
 	if !ok {

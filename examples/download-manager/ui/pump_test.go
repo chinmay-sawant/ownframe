@@ -57,12 +57,18 @@ func TestPaintRebindsAfterRedraw(t *testing.T) {
 
 	before := app.bindings.fill[0]
 
+	// Advance the download so the redraw replaces the display list with new
+	// progress. An identical redraw keeps the list and the binding.
+	row := running("j1", 50, 100)
+	back.send(Update{Kind: UpdateProgress, Row: &row})
+	if err := app.Tick(ctx); err != nil {
+		t.Fatal(err)
+	}
+
 	if err := app.Redraw(ctx); err != nil {
 		t.Fatalf("Redraw: %v", err)
 	}
 
-	row := running("j1", 50, 100)
-	back.send(Update{Kind: UpdateProgress, Row: &row})
 	if err := app.Tick(ctx); err != nil {
 		t.Fatal(err)
 	}

@@ -8,7 +8,11 @@ import (
 )
 
 // Redraw renders the current size: a display list for a replayable page,
-// a bitmap otherwise. Parsed trees and sheets are reused. Stage timing and
+// a bitmap otherwise. Parsed trees and sheets are reused. When the frame
+// matches the last committed one, Redraw returns after the template and
+// form sync without laying the page out again: the retained list, boxes,
+// and picture already show it. A skipped call still counts the redraw but
+// no layout or repaint. Stage timing and
 // allocs track only with Perf on. One Page has one owner: never call Redraw
 // concurrently on the same Page; keep Tick, MarkRect, and Redraw on the
 // page loop the way Run and Serve each own their Page.
@@ -17,9 +21,10 @@ func (p *Page) Redraw(ctx context.Context) error {
 }
 
 // RedrawIfChanged renders unless the executed source, viewport, focus,
-// hover, theme, and images all match the last committed frame. It is for
-// callers that redraw after every event and would otherwise lay out the
-// same frame again. A skipped call counts no layout or repaint.
+// hover, theme, and images all match the last committed frame. It shares
+// Redraw's unchanged check, so an identical frame skips the layout either
+// way. It is for callers that redraw after every event and would otherwise
+// lay the same frame out again. A skipped call counts no layout or repaint.
 func (p *Page) RedrawIfChanged(ctx context.Context) error {
 	return p.redraw(ctx, true)
 }

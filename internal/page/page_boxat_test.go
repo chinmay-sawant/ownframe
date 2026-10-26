@@ -58,8 +58,8 @@ func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 	if err := p.Hover(ctx, 13, 13); err != nil {
 		t.Fatal(err)
 	}
-	if p.hoverID() != "inner" {
-		t.Fatalf("hover = %q, want inner", p.hoverID())
+	if p.HoverID() != "inner" {
+		t.Fatalf("hover = %q, want inner", p.HoverID())
 	}
 
 	p.setBoxes(overlapFixture())

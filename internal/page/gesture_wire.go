@@ -376,8 +376,10 @@ func (p *Page) LongPress(ctx context.Context, x, y float64) (bool, error) {
 	return true, p.Redraw(ctx)
 }
 
-// Drop calls the drop handler with the files dropped on the window and draws
-// the page again. An error returns before the redraw.
+// Drop calls the drop handler with the files dropped on the window and runs
+// the redraw sequence again. An error returns before the redraw. When the
+// handler changed no page input, the frame is identical and the redraw
+// commits nothing.
 func (p *Page) Drop(ctx context.Context, files []Drop) error {
 	if err := useContext(ctx); err != nil {
 		return err
@@ -467,7 +469,7 @@ func (p *Page) Release(ctx context.Context) error {
 }
 
 func (p *Page) setHover(ctx context.Context, id string) error {
-	if gesture.SameHit(p.hoverID(), id) {
+	if gesture.SameHit(p.HoverID(), id) {
 		return nil
 	}
 
@@ -476,7 +478,7 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 		return err
 	}
 
-	p.markPair(p.hoverID(), id)
+	p.markPair(p.HoverID(), id)
 	p.setHoverID(id)
 	if gesture.SkipHoverRedraw(handled, p.statePseudos.Hover) {
 		return nil
@@ -490,7 +492,7 @@ func (p *Page) paintHover(ctx context.Context, id string) (bool, error) {
 		return false, nil
 	}
 
-	return p.handlers.Hover(ctx, p.boxByID(p.hoverID()), p.boxByID(id))
+	return p.handlers.Hover(ctx, p.boxByID(p.HoverID()), p.boxByID(id))
 }
 
 // boxIDAt returns the innermost box with an id that contains the point, or
@@ -545,7 +547,7 @@ func (p *Page) ContextMenu() []host.MenuItem {
 // arrow everywhere else.
 func (p *Page) CursorShape() host.Shape {
 	in := gesture.Cursor{}
-	if id := p.hoverID(); id != "" {
+	if id := p.HoverID(); id != "" {
 		in.HoverID = id
 		if c, ok := p.control(id); ok {
 			in.Control = true

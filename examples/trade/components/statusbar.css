@@ -1,0 +1,313 @@
+/* Status strip: the fixed 28 px footer under the workspace. It spans the rail
+   and the workspace columns, then runs three groups left to right: session
+   state with index prints, the scrolling tape, and the connection cluster.
+   The numbers are mono and the tape is the only moving part inside the strip. */
+
+.statusbar {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  position: relative;
+  height: var(--status-h);
+  min-height: var(--status-h);
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  background: #07090c;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* A 1 px green hairline that breathes along the top edge. It is a real element
+   so the shared .anim-breathe class drives it; the keyframes write only a
+   colour and opacity. */
+.st-edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--green);
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* --- left: live state and index prints ---------------------------------- */
+
+.st-left {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  position: relative;
+  background-color: #07090c;
+}
+
+/* Every index print is in the flow at wide widths. The rules at the bottom
+   remove them from the last one back, then hide the latency readout, so the
+   tape always keeps a clipped lane of its own. */
+
+.st-live {
+  position: relative;
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  margin: 0 1px;
+}
+
+.st-halo,
+.st-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--green);
+}
+
+.st-halo { opacity: 0.45; }
+
+.st-live.is-open .st-halo,
+.st-live.is-open .st-pulse { background-color: var(--green); }
+
+.st-live.is-closed .st-halo,
+.st-live.is-closed .st-pulse { background-color: var(--amber); }
+
+.st-status {
+  flex: 0 0 auto;
+  font-weight: 650;
+  letter-spacing: 0.015em;
+}
+
+.st-session {
+  flex: 0 0 auto;
+  height: 14px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.st-indices {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.st-idx {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line-soft);
+}
+
+.st-idx-name {
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.st-idx-val {
+  color: #c9d2de;
+  font-size: 9.5px;
+}
+
+.st-idx-chg { font-size: 9px; font-weight: 600; }
+
+.st-idx-slash {
+  padding: 0 2px;
+  color: var(--dim);
+}
+
+/* --- middle: the scrolling tape ----------------------------------------- */
+
+.st-tape {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 0 10px;
+  border-left: 1px solid var(--line-soft);
+  border-right: 1px solid var(--line-soft);
+}
+
+/* The two sets inside the track are identical, so translating the track by
+   half its width with trade-marquee lands exactly on the first set again. */
+.st-track {
+  flex: 0 0 auto;
+  width: max-content;
+  display: flex;
+  align-items: center;
+}
+
+.st-set {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.st-tick {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.st-tick > * { flex: none; }
+
+.st-tick-sym {
+  color: var(--muted);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.st-tick-price { color: #c9d2de; }
+
+.st-tick-pct { font-weight: 600; }
+
+.st-sep {
+  flex: none;
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* --- right: latency, link, clock, refresh ------------------------------- */
+
+.st-right {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  position: relative;
+  background-color: #07090c;
+}
+
+.st-lat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.st-lat-label {
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+}
+
+.st-lat-val {
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.st-conn {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.st-conn-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--green);
+  border: 1px solid var(--green-line);
+}
+
+.st-clock {
+  color: var(--muted);
+  font-size: 9.5px;
+  letter-spacing: 0.02em;
+}
+
+.st-refresh {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--dim);
+  background-color: transparent;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.st-refresh:hover {
+  color: var(--text);
+  background-color: var(--panel-3);
+}
+
+.st-refresh:active { transform: scale(0.94); }
+
+.st-icon {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+/* --- narrow windows ----------------------------------------------------- */
+
+/* The tape owns the middle of the strip. As width falls, the fifth index
+   print goes first, then the fourth, third, and second; after the prints the
+   latency label and value go. The clock and refresh never hide, and the tape
+   keeps overflow:hidden so a moving set cannot paint over either cluster. */
+
+@media (max-width: 1780px) {
+  .st-idx-4 { display: none; }
+}
+
+@media (max-width: 1600px) {
+  .st-idx-3 { display: none; }
+}
+
+@media (max-width: 1440px) {
+  .st-idx-2 { display: none; }
+  .st-idx-net,
+  .st-idx-slash { display: none; }
+}
+
+@media (max-width: 1300px) {
+  .st-idx-1 { display: none; }
+}
+
+@media (max-width: 1260px) {
+  .st-lat-label { display: none; }
+}
+
+@media (max-width: 1200px) {
+  .st-lat { display: none; }
+  .statusbar { gap: 8px; padding: 0 8px; }
+  .st-tape { padding: 0 8px; }
+  .st-right { gap: 7px; }
+}

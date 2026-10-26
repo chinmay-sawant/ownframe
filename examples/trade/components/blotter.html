@@ -1,0 +1,97 @@
+<section class="blotter panel" id="blotter-main">
+  <div class="bl-tabs">
+    {{range .OrderTabs}}
+    <button class="bl-tab{{if .Active}} on{{end}}" id="orders-tab-{{.Key}}" data-action="orders-tab-{{.Key}}" type="button">
+      {{.Label}}{{if .Count}}<span class="bl-tab-count mono">{{.Count}}</span>{{end}}
+    </button>
+    {{end}}
+    <span class="spacer"></span>
+    <span class="bl-sim"><span class="dot anim-pulse"></span>Simulated</span>
+  </div>
+
+  <div class="bl-toolbar">
+    {{range .OrderFilters}}
+    <span class="bl-select"><i>{{.Label}}</i><b>{{.Value}}</b><span class="bl-caret">⌄</span></span>
+    {{end}}
+    <span class="spacer"></span>
+    <span class="bl-stat"><i>Filled</i><b class="mono up">{{.OrderStats.Filled}}</b></span>
+    <span class="bl-stat"><i>Working</i><b class="mono amber">{{.OrderStats.Working}}</b></span>
+    <span class="bl-stat"><i>Notional</i><b class="mono">{{.OrderStats.Notional}}</b></span>
+    <button class="bl-ico" id="bl-filter" data-action="order-filter" type="button" title="Order filters" aria-label="Order filters">
+      <svg viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4.2h10M5 8h6M6.8 11.8h2.4"/></svg>
+    </button>
+    <button class="bl-ico" id="bl-export" data-action="orders-export" type="button" title="Export blotter" aria-label="Export blotter">
+      <svg viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.4v7.2"/><path d="M5.4 7.2 8 9.8l2.6-2.6"/><path d="M3 12.5h10"/></svg>
+    </button>
+    <button class="bl-ico" id="bl-refresh" data-action="refresh-data" type="button" title="Refresh blotter" aria-label="Refresh blotter">
+      <svg viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 8a5.2 5.2 0 1 1-1.5-3.7"/><path d="M13.4 2.6v3.1H10.3"/></svg>
+    </button>
+  </div>
+
+  {{if eq .OrderTab "holdings"}}
+  <div class="bl-table bl-hold-table">
+    <div class="bl-head bl-head-hold">
+      <span>Symbol</span><span>Name</span><span class="bl-r">Qty</span><span class="bl-r">Avg</span><span class="bl-r">Last</span><span class="bl-r">Value</span><span class="bl-r">P&amp;L</span><span>Weight</span>
+    </div>
+    <div class="bl-body">
+      {{range .Holdings}}
+      <div class="bl-hold-row" id="bl-holding-{{.Symbol}}" data-action="holding-{{.Symbol}}">
+        <span class="bl-sym mono">{{.Symbol}}</span>
+        <span class="bl-name">{{.Name}}</span>
+        <span class="bl-num mono">{{.Qty}}</span>
+        <span class="bl-num mono">{{.Avg}}</span>
+        <span class="bl-num mono">{{.Last}}</span>
+        <span class="bl-num mono">{{.Value}}</span>
+        <span class="bl-num mono {{if .Up}}up{{else}}down{{end}}">{{.PNL}}</span>
+        <span class="bl-weight"><i class="bl-weight-fill anim-grow-x" style="width:{{.Bar}}%;"></i><b class="mono">{{.Weight}}</b></span>
+      </div>
+      {{else}}
+      <div class="bl-empty"><span>No positions in this account.</span></div>
+      {{end}}
+    </div>
+  </div>
+  {{else}}
+  <div class="bl-table">
+    <div class="bl-head">
+      <span></span>
+      <span>Symbol</span>
+      <span>Name</span>
+      <span>Order Status</span>
+      <span>Side</span>
+      <span>Type</span>
+      <span class="bl-r">Qty</span>
+      <span class="bl-r">Limit</span>
+      <span>TIF</span>
+      <span>Time</span>
+    </div>
+    <div class="bl-body">
+      {{range $i, $order := .Orders}}{{if lt $i 8}}
+      <div class="bl-order-row{{if $order.Sell}} is-sell{{end}}{{if $order.Pending}} is-working{{end}}" id="bl-order-{{$order.Index}}" data-action="order-{{$order.ID}}">
+        <span class="bl-mark{{if $order.Done}} done{{else if $order.Pending}} working{{else}} cancelled{{end}}">
+          {{if $order.Done}}✓{{else if $order.Pending}}•{{else}}×{{end}}
+        </span>
+        <span class="bl-sym mono">{{$order.Symbol}}</span>
+        <span class="bl-name">{{$order.Name}}</span>
+        <span class="bl-status{{if $order.Done}} done{{else if $order.Pending}} working{{else}} cancelled{{end}}"><i></i>{{$order.Status}}</span>
+        <span class="bl-side{{if $order.Sell}} sell{{end}}">{{$order.Side}}</span>
+        <span class="bl-type">{{$order.Type}}</span>
+        <span class="bl-num mono">{{$order.Qty}}</span>
+        <span class="bl-num mono">{{$order.Limit}}</span>
+        <span class="bl-tif">Day</span>
+        <span class="bl-time mono">{{$order.Time}}</span>
+      </div>
+      {{end}}{{else}}
+      <div class="bl-empty"><span>No orders in this tab.</span></div>
+      {{end}}
+    </div>
+  </div>
+  {{end}}
+
+  <div class="bl-foot">
+    <span class="bl-foot-dot"></span>
+    <span>Simulated executions · no orders leave this machine</span>
+    <span class="spacer"></span>
+    <span class="mono">{{.OrderStats.Working}} working</span>
+    <button class="bl-new" id="bl-new-order" data-action="nav-orders" type="button">New order <b>↗</b></button>
+  </div>
+</section>

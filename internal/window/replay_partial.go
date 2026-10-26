@@ -30,6 +30,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	contentW, contentH := s.contentSize()
 	if !canTake || s.fullReplay() || !s.bufferOrderSafe() {
 		s.disposeViewport()
+		s.dropScaleBuf()
 		s.paintFullReplay(dst, display)
 
 		return true
@@ -49,6 +50,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		return true
 	}
 	s.disposeViewport()
+	s.dropScaleBuf()
 	// Prepare this frame's retained layers before planning, so their old ∪
 	// new damage joins the page's dirty rects and the tile pass can skip their
 	// owned operations.

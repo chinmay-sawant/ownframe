@@ -72,17 +72,29 @@ func TestPerfDirtyCounts(t *testing.T) {
 func TestPerfStageAccounting(t *testing.T) {
 	p := newCachePage(t, `<p>stage accounting</p>`)
 	p.SetPerf(true)
-	for range 2 {
-		if err := p.Redraw(t.Context()); err != nil {
-			t.Fatal(err)
-		}
-		s := p.Stats()
-		sum := s.LastTemplate + s.StyleTime + s.LayoutTime + s.PaintTime + s.OtherTime
-		if sum != s.LastRedraw {
-			t.Fatalf("stage sum %s != redraw %s", sum, s.LastRedraw)
-		}
-		if s.StyleTime <= 0 || s.LayoutTime <= 0 {
-			t.Fatal("style and placement must be measured independently")
-		}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	s := p.Stats()
+	sum := s.LastTemplate + s.StyleTime + s.LayoutTime + s.PaintTime + s.OtherTime
+	if sum != s.LastRedraw {
+		t.Fatalf("stage sum %s != redraw %s", sum, s.LastRedraw)
+	}
+	if s.StyleTime <= 0 || s.LayoutTime <= 0 {
+		t.Fatal("style and placement must be measured independently")
+	}
+
+	// An identical frame skips the style and placement stages, so they read
+	// zero while the stage sum still matches the redraw.
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	s = p.Stats()
+	sum = s.LastTemplate + s.StyleTime + s.LayoutTime + s.PaintTime + s.OtherTime
+	if sum != s.LastRedraw {
+		t.Fatalf("stage sum %s != redraw %s", sum, s.LastRedraw)
+	}
+	if s.StyleTime != 0 || s.LayoutTime != 0 {
+		t.Fatalf("skipped style %s layout %s, want both 0", s.StyleTime, s.LayoutTime)
 	}
 }

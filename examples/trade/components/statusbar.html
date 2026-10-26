@@ -1,0 +1,28 @@
+<footer class="statusbar" id="statusbar-main">
+  <span class="st-edge anim-breathe" aria-hidden="true"></span>
+
+  <div class="st-left">
+    <span class="st-live {{if .MarketOpen}}is-open{{else}}is-closed{{end}}" aria-hidden="true">
+      <span class="st-halo anim-halo"></span>
+      <span class="st-pulse anim-pulse"></span>
+    </span>
+    <span class="st-status {{if .MarketOpen}}up{{else}}amber{{end}}">{{.MarketStatus}}</span>
+    <span class="st-session">{{.SessionText}}</span>
+    <span class="st-indices">{{range $i, $ix := .Indices}}{{if lt $i 5}}<span class="st-idx st-idx-{{$i}}"><span class="st-idx-name">{{$ix.Name}}</span><span class="st-idx-val mono">{{$ix.Value}}</span><span class="st-idx-chg mono {{if $ix.Up}}up{{else}}down{{end}}"><span class="st-idx-net">{{$ix.Change}}</span><span class="st-idx-slash">/</span>{{$ix.ChangePct}}</span></span>{{end}}{{end}}</span>
+  </div>
+
+  <div class="st-tape" role="group" aria-label="Market ticker">
+    <div class="st-track anim-marquee-webkit">
+      <div class="st-set">{{range .Tickers}}<span class="st-tick"><span class="st-tick-sym">{{.Symbol}}</span><span class="st-tick-price mono">{{.Price}}</span><span class="st-tick-pct mono {{if .Up}}up{{else}}down{{end}}">{{.ChangePct}}</span></span><span class="st-sep" aria-hidden="true">·</span>{{end}}</div><div class="st-set" aria-hidden="true">{{range .Tickers}}<span class="st-tick"><span class="st-tick-sym">{{.Symbol}}</span><span class="st-tick-price mono">{{.Price}}</span><span class="st-tick-pct mono {{if .Up}}up{{else}}down{{end}}">{{.ChangePct}}</span></span><span class="st-sep">·</span>{{end}}</div>
+    </div>
+  </div>
+
+  <div class="st-right">
+    <span class="st-lat"><span class="st-lat-label">LAT</span><span class="st-lat-val mono">{{.Latency}}</span></span>
+    <span class="st-conn"><span class="st-conn-dot" role="img" aria-label="Connected"></span></span>
+    <span class="st-clock mono">{{.Clock}}</span>
+    <button class="st-refresh" id="st-refresh" type="button" data-action="refresh-data" title="Refresh data" aria-label="Refresh data">
+      <svg class="st-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15.4 2.7 15.4 6.7 11.4 6.7"></polyline><path d="M13.7 10a6 6 0 1 1-1.4-6.2L15.4 6.7"></path></svg>
+    </button>
+  </div>
+</footer>

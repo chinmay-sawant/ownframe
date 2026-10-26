@@ -7,6 +7,12 @@
   margin-top: 12px;
 }
 
+/* Keep the tile free of overflow: hidden. The tile lifts on hover, and a
+   transformed box that clips its descendants makes the layout deactivate the
+   artwork of the tile that just lost hover and the tone fill of the tile that
+   gained it, so the previous cover vanishes into a dark square and the next
+   tile loses its colour. The title clips itself, and the artwork sits inside
+   the border box, so the tile does not need the clip. */
 .srch-tile {
   position: relative;
   width: 246px;
@@ -15,7 +21,6 @@
   padding: 12px;
   border: 2px solid transparent;
   border-radius: 8px;
-  overflow: hidden;
 }
 
 .srch-tile.on { border-color: #1db954; }
@@ -38,7 +43,6 @@
   height: 68px;
   display: block;
   border-radius: 4px;
-  background-color: #1f1f1f;
   background-repeat: no-repeat;
   background-position: center;
   background-size: 68px 68px;

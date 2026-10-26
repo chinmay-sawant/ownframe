@@ -12,9 +12,14 @@ import (
 // buffer it replaces, and no tile lies outside the content.
 const tileSize = 256
 
-// tileGrid is the content as a row-major grid of tile images.
+// tileGrid is the content as a row-major grid of tile images. clean tracks
+// which tiles hold current pixels: a tile turns dirty when damage covers it
+// while it sits outside the visible viewport, and the blit repaints it on
+// demand before copying. Skipping offscreen tiles keeps a full-content
+// damage rect at viewport cost; a scroll catches the skipped tiles up.
 type tileGrid struct {
 	images []*ebiten.Image
+	clean  []bool
 	cols   int
 	rows   int
 	width  int
@@ -31,6 +36,7 @@ func newTileGrid(width, height int) *tileGrid {
 	g := &tileGrid{
 		cols: gridTiles(width), rows: gridTiles(height),
 		width: width, height: height,
+		clean: make([]bool, gridTiles(width)*gridTiles(height)),
 	}
 	g.images = make([]*ebiten.Image, 0, g.cols*g.rows)
 
@@ -47,6 +53,24 @@ func newTileGrid(width, height int) *tileGrid {
 // gridTiles is the number of tiles needed to cover n pixels.
 func gridTiles(n int) int {
 	return (n + tileSize - 1) / tileSize
+}
+
+// cleanAt reports whether the tile holds current pixels. A fresh grid
+// starts dirty: nothing is painted until a paint or an on-demand blit
+// fills it.
+func (g *tileGrid) cleanAt(col, row int) bool {
+	return g.clean[row*g.cols+col]
+}
+
+// markClean records that the tile was just repainted.
+func (g *tileGrid) markClean(col, row int) {
+	g.clean[row*g.cols+col] = true
+}
+
+// markDirty records that damage covered a tile the paint pass skipped, so a
+// later blit repaints it before copying.
+func (g *tileGrid) markDirty(col, row int) {
+	g.clean[row*g.cols+col] = false
 }
 
 // rectAt returns a tile's rect in page pixels, clipped at the content edge.

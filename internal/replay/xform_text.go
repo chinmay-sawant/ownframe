@@ -17,6 +17,11 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 		return
 	}
 
+	dst, paint := scissorOverflow(dst, op, dx, dy)
+	if !paint {
+		return
+	}
+
 	content := layout.DisplayTransformText(op.Text, op.TextTransformValue())
 	geom := xformGeom(op, dx, dy)
 	if !op.XformSet {

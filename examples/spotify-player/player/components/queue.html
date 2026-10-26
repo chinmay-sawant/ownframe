@@ -6,7 +6,7 @@
   <div class="q-now">
     <span class="q-now-art" style="background-image:url({{.Now.Cover}})"></span>
     <span class="q-now-text"><span class="q-now-title">{{.Now.Title}}</span><span class="q-now-artist">{{.Now.Artist}}</span></span>
-    <span class="q-now-right"><span class="q-eq"><span class="q-eq-bar q-eq-a"></span><span class="q-eq-bar q-eq-b"></span><span class="q-eq-bar q-eq-c"></span></span><span class="q-now-label">Playing</span></span>
+    <span class="q-now-right"><span class="q-eq{{if .Playing}} playing{{end}}"><span id="q-eq-0" class="q-eq-bar q-eq-a"></span><span id="q-eq-1" class="q-eq-bar q-eq-b"></span><span id="q-eq-2" class="q-eq-bar q-eq-c"></span></span><span class="q-now-label">Playing</span></span>
   </div>
   <div class="sect-head q-head">
     <h2 class="q-subtitle">Next in queue</h2>

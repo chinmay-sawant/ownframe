@@ -9,8 +9,10 @@ import (
 )
 
 // cachedTextRun draws one run through the text raster cache and reports
-// whether it painted. It reports false when the run keeps the direct path: an
-// empty run, or one whose baked image would pass the size caps.
+// whether it painted. The raster is a white mask shared by every color, so
+// the blit tints it with the op color. It reports false when the run keeps
+// the direct path: an empty run, or one whose baked image would pass the
+// size caps.
 func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp, face *text.GoTextFace, content string, x, y float64) bool {
 	if content == "" {
 		return false
@@ -24,7 +26,6 @@ func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp,
 		language: op.TextLanguage(),
 		size:     op.Size,
 		spacing:  op.LetterSpacing * pxPerPt,
-		col:      rgba(op),
 		fakeBold: layout.DisplayFakeBold(op),
 		fx:       textPhase(offX),
 		fy:       textPhase(offY),
@@ -33,16 +34,17 @@ func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp,
 	entry, ok := renderer.textRuns.lookup(key)
 	if !ok {
 		entry = renderer.textRuns.raster(key, func() (textRasterEntry, bool) {
-			return renderer.bakeTextRun(op, face, key, offX, offY)
+			return renderer.bakeTextRun(face, key, offX, offY)
 		})
 	}
 	if entry.img == nil {
 		return false
 	}
 
-	blitRaster(dst, entry.img, left+entry.dx, top+entry.dy, opaqueWhite)
+	tint := rgba(op)
+	blitRaster(dst, entry.img, left+entry.dx, top+entry.dy, tint)
 	if key.fakeBold {
-		blitRaster(dst, entry.img, left+entry.dx+1, top+entry.dy, opaqueWhite)
+		blitRaster(dst, entry.img, left+entry.dx+1, top+entry.dy, tint)
 	}
 
 	return true

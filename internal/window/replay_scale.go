@@ -7,6 +7,32 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
+// ensureScaleBuf keeps the one shared content-sized buffer both scaled draws
+// reuse: the zoomed replay and the fitted replay never run on the same frame,
+// so they share one image instead of pinning two content-sized buffers.
+func (s *shell) ensureScaleBuf(w, h int) *ebiten.Image {
+	if s.scaleBuf == nil || s.scaleBuf.Bounds().Dx() != w || s.scaleBuf.Bounds().Dy() != h {
+		if s.scaleBuf != nil {
+			s.scaleBuf.Deallocate()
+		}
+
+		// This image alternates between a render target and a blit source.
+		// Keep it out of the sprite atlas so those switches never migrate it.
+		s.scaleBuf = ebiten.NewImageWithOptions(image.Rect(0, 0, w, h), &ebiten.NewImageOptions{Unmanaged: true})
+	}
+
+	return s.scaleBuf
+}
+
+// dropScaleBuf releases the shared scaled buffer. Tile, viewport, and direct
+// frames never read it, so they drop it instead of pinning a stale copy.
+func (s *shell) dropScaleBuf() {
+	if s.scaleBuf != nil {
+		s.scaleBuf.Deallocate()
+		s.scaleBuf = nil
+	}
+}
+
 // drawReplayScaled draws the display list through an offscreen buffer and
 // scales it to the window, matching the bitmap path on a resized or clamped
 // window.
@@ -24,17 +50,13 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 		return
 	}
 
-	if s.replayBuf == nil || s.replayBuf.Bounds().Dx() != w || s.replayBuf.Bounds().Dy() != h {
-		if s.replayBuf != nil {
-			s.replayBuf.Deallocate()
-		}
+	// The scaled frame reads neither the tile grid nor the viewport cache.
+	s.dropDisplayBuffers()
+	buf := s.ensureScaleBuf(w, h)
 
-		s.replayBuf = ebiten.NewImageWithOptions(image.Rect(0, 0, w, h), &ebiten.NewImageOptions{Unmanaged: true})
-	}
-
-	s.replayBuf.Clear()
-	s.replayBuf.Fill(s.pageBackground())
-	s.renderer.DrawVisible(s.replayBuf, s.display, 0, 0)
+	buf.Clear()
+	buf.Fill(s.pageBackground())
+	s.renderer.DrawVisible(buf, s.display, 0, 0)
 
 	var op ebiten.DrawImageOptions
 	op.Filter = ebiten.FilterLinear
@@ -49,7 +71,7 @@ func (s *shell) drawReplayScaled(dst *ebiten.Image) {
 		op.GeoM.Translate(-float64(s.scrollX), -float64(s.scrollY))
 	}
 
-	dst.DrawImage(s.replayBuf, &op)
+	dst.DrawImage(buf, &op)
 }
 
 // directReplay draws the list straight to the screen. Ticking pages use it

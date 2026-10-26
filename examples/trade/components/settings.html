@@ -1,0 +1,235 @@
+<section class="screen-page set-page" id="set-page">
+  <header class="set-head">
+    <div class="set-head-copy">
+      <span class="eyebrow">Terminal</span>
+      <div class="set-title-row">
+        <h1 class="set-title">Settings</h1>
+        <span class="set-build mono">{{.Settings.Build}}</span>
+      </div>
+      <div class="set-head-sub">
+        <span class="set-source">{{.Settings.DataSource}}</span>
+        <span class="set-sep"></span>
+        <span class="set-live">
+          <span class="set-live-dot{{if not .MarketOpen}} off{{else}} anim-pulse{{end}}"></span>
+          {{.MarketStatus}}
+        </span>
+      </div>
+    </div>
+    <div class="set-head-actions">
+      <button type="button" class="set-btn" data-action="refresh-data">
+        <svg class="set-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M13.2 6.4A5.4 5.4 0 1 0 13.4 9"></path>
+          <polyline points="13.5 3.1 13.5 6.6 10 6.6"></polyline>
+        </svg>
+        Refresh data
+      </button>
+      <button type="button" class="set-btn set-btn-ghost" data-action="settings-reset">Reset</button>
+    </div>
+  </header>
+
+  <div class="set-body">
+    <nav class="panel set-index" aria-label="Settings categories">
+      <div class="set-index-head"><span class="eyebrow">Categories</span></div>
+
+      <button type="button" class="set-cat on" id="set-cat-trading" data-action="settings-cat-trading">
+        <svg class="set-cat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="2.2 12.6 5.9 8.1 8.5 10.3 13.8 3.7"></polyline>
+          <polyline points="11.2 3.7 13.8 3.7 13.8 6.3"></polyline>
+        </svg>
+        <span class="set-cat-label">Trading</span>
+      </button>
+
+      <button type="button" class="set-cat" id="set-cat-appearance" data-action="settings-cat-appearance">
+        <svg class="set-cat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="3.1"></circle>
+          <line x1="8" y1="1.6" x2="8" y2="3"></line>
+          <line x1="8" y1="13" x2="8" y2="14.4"></line>
+          <line x1="1.6" y1="8" x2="3" y2="8"></line>
+          <line x1="13" y1="8" x2="14.4" y2="8"></line>
+          <line x1="3.5" y1="3.5" x2="4.5" y2="4.5"></line>
+          <line x1="11.5" y1="11.5" x2="12.5" y2="12.5"></line>
+          <line x1="12.5" y1="3.5" x2="11.5" y2="4.5"></line>
+          <line x1="4.5" y1="11.5" x2="3.5" y2="12.5"></line>
+        </svg>
+        <span class="set-cat-label">Appearance</span>
+      </button>
+
+      <button type="button" class="set-cat" id="set-cat-data" data-action="settings-cat-data">
+        <svg class="set-cat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="11" height="11" rx="1.6"></rect>
+          <line x1="2.5" y1="6.2" x2="13.5" y2="6.2"></line>
+          <line x1="2.5" y1="9.8" x2="13.5" y2="9.8"></line>
+        </svg>
+        <span class="set-cat-label">Data</span>
+      </button>
+
+      <button type="button" class="set-cat" id="set-cat-advanced" data-action="settings-cat-advanced">
+        <svg class="set-cat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="2" y1="4.4" x2="14" y2="4.4"></line>
+          <circle cx="6" cy="4.4" r="1.7"></circle>
+          <line x1="2" y1="11.6" x2="14" y2="11.6"></line>
+          <circle cx="10.4" cy="11.6" r="1.7"></circle>
+        </svg>
+        <span class="set-cat-label">Advanced</span>
+      </button>
+
+      <button type="button" class="set-cat" id="set-cat-shortcuts" data-action="settings-cat-shortcuts">
+        <svg class="set-cat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="1.6" y="3.4" width="12.8" height="9.2" rx="1.6"></rect>
+          <line x1="4.1" y1="6.2" x2="5.3" y2="6.2"></line>
+          <line x1="7.4" y1="6.2" x2="8.6" y2="6.2"></line>
+          <line x1="10.7" y1="6.2" x2="11.9" y2="6.2"></line>
+          <line x1="4.1" y1="9.4" x2="5.3" y2="9.4"></line>
+          <line x1="7.4" y1="9.4" x2="11.9" y2="9.4"></line>
+        </svg>
+        <span class="set-cat-label">Shortcuts</span>
+      </button>
+
+      <button type="button" class="set-cat" id="set-cat-about" data-action="settings-cat-about">
+        <svg class="set-cat-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="8" cy="8" r="5.9"></circle>
+          <line x1="8" y1="7.2" x2="8" y2="11"></line>
+          <line x1="8" y1="4.9" x2="8" y2="5.2"></line>
+        </svg>
+        <span class="set-cat-label">About</span>
+      </button>
+
+      <div class="set-index-foot">
+        <span class="eyebrow">Session</span>
+        <div class="set-session">
+          <span class="dot anim-blink"></span>
+          <span>Preferences apply to this window only.</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="set-middle">
+      <div class="set-groups">
+        {{range .Settings.Sections}}
+        <section class="panel set-group" id="set-group-{{.Key}}">
+          <div class="set-group-head">
+            <div class="set-group-head-copy">
+              <span class="eyebrow">{{.Title}}</span>
+              <span class="set-group-note">{{.Note}}</span>
+            </div>
+            <span class="tag set-group-count">{{len .Rows}}</span>
+          </div>
+          {{range .Rows}}
+          <div class="set-row{{if eq .Kind "choice"}} set-row-choice{{end}}" id="set-row-{{.Key}}">
+            <div class="set-row-copy">
+              <div class="set-row-title-line">
+                <span class="set-row-title">{{.Title}}</span>
+              </div>
+              <span class="set-row-detail">{{.Detail}}</span>
+            </div>
+            {{if eq .Kind "choice"}}
+            <div class="set-choice-wrap">
+              <span class="set-row-value mono">{{.Value}}</span>
+            </div>
+            {{else}}
+            <button type="button" class="set-switch{{if .On}} on{{end}}" id="set-toggle-{{.Key}}" data-action="toggle-setting-{{.Key}}" aria-label="Toggle {{.Title}}" aria-pressed="{{if .On}}true{{else}}false{{end}}">
+              <span class="set-knob"></span>
+            </button>
+            {{end}}
+          </div>
+          {{end}}
+        </section>
+        {{end}}
+
+        <section class="panel set-group set-session-group" id="set-group-session">
+          <div class="set-group-head">
+            <div class="set-group-head-copy">
+              <span class="eyebrow">Session</span>
+              <span class="set-group-note">Read-only details for this local paper account.</span>
+            </div>
+            <span class="tag set-group-count">6</span>
+          </div>
+          <div class="set-session-grid">
+            <div class="set-info"><span class="set-info-label">Theme</span><span class="set-info-value">{{.Settings.Theme}}</span></div>
+            <div class="set-info"><span class="set-info-label">Density</span><span class="set-info-value">{{.Settings.Density}}</span></div>
+            <div class="set-info"><span class="set-info-label">Currency</span><span class="set-info-value mono">{{.Settings.Currency}}</span></div>
+            <div class="set-info"><span class="set-info-label">Timezone</span><span class="set-info-value">{{.Settings.Timezone}}</span></div>
+            <div class="set-info"><span class="set-info-label">Data source</span><span class="set-info-value">{{.Settings.DataSource}}</span></div>
+            <div class="set-info"><span class="set-info-label">Build</span><span class="set-info-value mono">{{.Settings.Build}}</span></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <aside class="set-rail">
+      <section class="panel set-shortcuts">
+        <div class="panel-head">
+          <span class="panel-title">Shortcuts</span>
+          <span class="spacer"></span>
+          <span class="tag">{{len .Settings.Shortcuts}}</span>
+        </div>
+        <div class="set-shortcut-list">
+          {{range .Settings.Shortcuts}}
+          <div class="set-shortcut">
+            <span class="set-key mono">{{.Keys}}</span>
+            <span class="set-shortcut-action">{{.Action}}</span>
+          </div>
+          {{end}}
+        </div>
+      </section>
+
+      <section class="panel set-workspace">
+        <div class="panel-head">
+          <span class="panel-title">Workspace</span>
+          <span class="spacer"></span>
+          <span class="eyebrow">Profile</span>
+        </div>
+        <div class="set-workspace-body">
+          <div class="set-info">
+            <span class="set-info-label">Theme</span>
+            <span class="set-info-value">{{.Settings.Theme}}</span>
+          </div>
+          <div class="set-info">
+            <span class="set-info-label">Density</span>
+            <span class="set-info-value">{{.Settings.Density}}</span>
+          </div>
+          <div class="set-info">
+            <span class="set-info-label">Currency</span>
+            <span class="set-info-value mono">{{.Settings.Currency}}</span>
+          </div>
+          <div class="set-info">
+            <span class="set-info-label">Timezone</span>
+            <span class="set-info-value">{{.Settings.Timezone}}</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel set-about">
+        <div class="panel-head">
+          <span class="panel-title">About</span>
+          <span class="spacer"></span>
+          <span class="set-about-live"><span class="dot anim-blink"></span>Local</span>
+        </div>
+        <div class="set-about-body">
+          <div class="set-info">
+            <span class="set-info-label">Build</span>
+            <span class="set-info-value mono">{{.Settings.Build}}</span>
+          </div>
+          <div class="set-info">
+            <span class="set-info-label">Data source</span>
+            <span class="set-info-value">{{.Settings.DataSource}}</span>
+          </div>
+          <div class="set-about-note">
+            <span class="set-about-mark"></span>
+            <span>Simulated data · no orders leave this machine</span>
+          </div>
+          <div class="set-about-actions">
+            <button type="button" class="set-btn set-btn-primary" data-action="set-reset-all">Reset demo</button>
+            <button type="button" class="set-btn" data-action="settings-docs">
+              <svg class="set-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6.2 3.6h6.2v6.2"></path>
+                <line x1="12.4" y1="3.6" x2="7.4" y2="8.6"></line>
+              </svg>
+              Open docs
+            </button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>
