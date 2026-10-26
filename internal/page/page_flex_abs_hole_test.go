@@ -12,29 +12,23 @@ func flexAbsSource(display string) string {
 		`</body></html>`
 }
 
-// TestFlexChildAbsoluteStaysInFlow records the blinkless hole:
-// position:absolute on a flex child is ignored. The child stays in flow
-// and top/left do nothing. A block container is the app workaround.
-func TestFlexChildAbsoluteStaysInFlow(t *testing.T) {
+// TestFlexChildAbsoluteOverlays pins that position:absolute takes a flex
+// child out of flow: it paints at its static-plus-offset position and the
+// sibling lays out as if it were absent. Block containers behave the same.
+func TestFlexChildAbsoluteOverlays(t *testing.T) {
 	t.Parallel()
 
-	p := newViewportPage(t, flexAbsSource("display:flex"), 200, 100)
-	abs := viewportBox(t, p, "abs")
-	sib := viewportBox(t, p, "sib")
-	if abs.X != 0 || abs.Y != 0 {
-		t.Fatalf("flex abs = %.0f,%.0f, want in-flow 0,0", abs.X, abs.Y)
-	}
-	if sib.X != 20 {
-		t.Fatalf("flex sib X = %.0f, want 20 (abs kept in flow)", sib.X)
-	}
+	for _, display := range []string{"display:flex", "position:relative;display:block"} {
+		p := newViewportPage(t, flexAbsSource(display), 200, 100)
+		abs := viewportBox(t, p, "abs")
+		sib := viewportBox(t, p, "sib")
 
-	b := newViewportPage(t, flexAbsSource("position:relative;display:block"), 200, 100)
-	abs = viewportBox(t, b, "abs")
-	sib = viewportBox(t, b, "sib")
-	if abs.X != 40 || abs.Y != 10 {
-		t.Fatalf("block abs = %.0f,%.0f, want 40,10", abs.X, abs.Y)
-	}
-	if sib.X != 0 {
-		t.Fatalf("block sib X = %.0f, want 0 (abs out of flow)", sib.X)
+		if abs.X != 40 || abs.Y != 10 {
+			t.Fatalf("%s abs = %.0f,%.0f, want 40,10", display, abs.X, abs.Y)
+		}
+
+		if sib.X != 0 {
+			t.Fatalf("%s sib X = %.0f, want 0 (abs out of flow)", display, sib.X)
+		}
 	}
 }

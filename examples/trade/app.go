@@ -178,7 +178,11 @@ func (a *App) buildView() View {
 	view.WatchTotal = len(demo.Watch)
 	view.WatchFilter = a.watchFilter
 
-	view.Chart = prepareChart(quote.Quote, quote.Candles, a.timeframe)
+	// The chart plot only renders on the watchlist chart tab, so skip the
+	// candle window, SMA lines, and volume prep on every other screen.
+	if a.screen == "watchlist" && a.chartTab == "chart" {
+		view.Chart = prepareChart(quote.Quote, quote.Candles, a.timeframe)
+	}
 	view.Orders = a.orderRows()
 	view.Holdings = demo.Holdings
 	view.OrderStats = orderStats(demo.Orders)

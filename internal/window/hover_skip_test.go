@@ -42,6 +42,7 @@ func TestHoverStillPointerSkipsUntilRedraw(t *testing.T) {
 	t.Parallel()
 
 	s, app := newHoverShell(1)
+	s.frameCommit()
 
 	for i := 0; i < 2; i++ {
 		if err := s.hoverCursor(50, 50, 50, 50); err != nil {
@@ -71,6 +72,8 @@ func TestHoverMovedPointResolves(t *testing.T) {
 	t.Parallel()
 
 	s, app := newHoverShell(1)
+	s.frameCommit()
+
 	points := [][2]float64{{50, 50}, {60, 60}, {60, 108}}
 	for _, p := range points {
 		if err := s.hoverCursor(int(p[0]), int(p[1]), p[0], p[1]); err != nil {
@@ -79,5 +82,30 @@ func TestHoverMovedPointResolves(t *testing.T) {
 	}
 	if app.hovers != 3 {
 		t.Fatalf("moving point calls = %d, want 3", app.hovers)
+	}
+}
+
+// TestHoverDeferredUntilFirstFrame keeps the first update from pushing the
+// cursor hover to the page, so startup paints without a hover redraw. The
+// skip leaves the hover due, so the update after the first committed frame
+// still resolves it.
+func TestHoverDeferredUntilFirstFrame(t *testing.T) {
+	t.Parallel()
+
+	s, app := newHoverShell(1)
+
+	if err := s.hoverCursor(50, 50, 50, 50); err != nil {
+		t.Fatal(err)
+	}
+	if app.hovers != 0 {
+		t.Fatalf("pre-frame calls = %d, want 0", app.hovers)
+	}
+
+	s.frameCommit()
+	if err := s.hoverCursor(50, 50, 50, 50); err != nil {
+		t.Fatal(err)
+	}
+	if app.hovers != 1 {
+		t.Fatalf("post-frame calls = %d, want 1", app.hovers)
 	}
 }

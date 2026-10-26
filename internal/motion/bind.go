@@ -61,6 +61,12 @@ type entry struct {
 	// sampled once to reach its pose and then skipped, so a page that is
 	// paused parks instead of rewriting the same paint every tick.
 	wasPaused bool
+	// settled records that the latest Step found the player at rest and
+	// already marked that pose. A repeated resting sample paints nothing
+	// new, so Step marks no damage for it and a settled page parks; the
+	// first resting sample still marks, because a fill mode can snap back
+	// to base and a rebind repaints from base.
+	settled bool
 	// idle marks a player whose declared effects are all triggered or
 	// unnamed. Sampling it cannot make it active, so it never asks for a
 	// frame, not even the first one after a bind.
@@ -318,6 +324,7 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 
 	r.entries = entries
 	r.display = next
+	stampTransformClips(next, entries)
 	r.restamp = r.restamp[:0]
 	r.stats.Bound = len(entries)
 	r.stats.Active, r.stats.Sampled = 0, 0

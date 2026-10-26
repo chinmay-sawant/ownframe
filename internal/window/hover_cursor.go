@@ -17,9 +17,13 @@ func (h *hoverState) due(px, py float64, seq uint64) bool {
 
 // hoverCursor sends page hover, then picks the cursor. Over a scrollbar
 // thumb the resize shape pointerScrollbar applied stands, so the page
-// shape never overwrites it.
+// shape never overwrites it. The first update runs before the first draw,
+// so its hover push is deferred until one frame is committed: resolving it
+// redraws the whole page for a cursor the user has not seen a frame under
+// yet. Skipping the state record keeps it due, so the next update applies
+// it after the first visible frame.
 func (s *shell) hoverCursor(x, y int, px, py float64) error {
-	if s.hover.due(px, py, s.seq) {
+	if s.hover.due(px, py, s.seq) && s.frameSeen() {
 		if err := s.ptr().Hover(s.ctx, px, py); err != nil {
 			return err
 		}

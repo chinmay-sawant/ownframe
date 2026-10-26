@@ -19,6 +19,9 @@ func TestDevToolsNormalHoverUpdatesCursor(t *testing.T) {
 	s := newDevShell(d.devScreen)
 	s.app = d
 	s.devLayout()
+	// The routing under test runs after startup, so commit a frame: the
+	// first update defers the page hover until the first paint.
+	s.frameCommit()
 	s.cursor = ebiten.CursorShapeText
 	s.setCursor = func(ebiten.CursorShapeType) {}
 	if err := s.devPointer(20, 20, 20, 20); err != nil {

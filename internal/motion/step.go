@@ -99,13 +99,33 @@ func (r *Runtime) Step(d *Display, now time.Time) Damage {
 		// An offscreen entry still samples, so its phase is right when it
 		// scrolls in, but its write needs no repaint. A promoted entry writes
 		// into its retained layer, so the page background under it does not
-		// change either.
-		if !e.svg && r.visible(e) && !r.promotedEntry(e) {
+		// change either. A player that did no work holds the pose it already
+		// presented, so only its first resting sample can still change the
+		// screen; a repeated rest pose marks nothing and a settled page
+		// parks instead of repainting static elements every tick.
+		if !e.svg && r.visible(e) && !r.promotedEntry(e) && freshPaint(e, active) {
 			damage.Add(before.Union(after))
 		}
 	}
 
 	return damage
+}
+
+// freshPaint reports that this sample may have changed the element's paint,
+// so the frame must cover its bounds. A player that did no work holds the
+// pose it already presented; only its first resting sample can still change
+// the screen (a fill mode snapping back to base, or a rebind repainting from
+// base), so a repeated rest pose marks nothing and a settled page parks.
+func freshPaint(e *entry, active bool) bool {
+	if active {
+		e.settled = false
+		return true
+	}
+	if e.settled {
+		return false
+	}
+	e.settled = true
+	return true
 }
 
 // bounds is the union of the painted boxes of the entry's target

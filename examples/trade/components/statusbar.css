@@ -48,6 +48,9 @@
   align-items: center;
   gap: 8px;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  background-color: #07090c;
 }
 
 /* Every index print is in the flow at wide widths. The rules at the bottom
@@ -204,6 +207,9 @@
   display: flex;
   align-items: center;
   gap: 9px;
+  position: relative;
+  z-index: 1;
+  background-color: #07090c;
 }
 
 .st-lat {
