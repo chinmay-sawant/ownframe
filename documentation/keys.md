@@ -57,11 +57,13 @@ the page too, and does not scroll it. The zoom stays between 0.25 and 4,
 the same range a pinch uses, and it scales the painted page without
 changing the layout, so a click still lands on the box under the pointer.
 
-Tab and Shift+Tab move focus when the screen has fields. The window calls
-`FocusNext` or `FocusPrev`, the page moves the ring, and the handler does
-not see the key. A page without fields keeps the key, so a game can still
-read Tab. Escape closes the context menu, or clears focus when the menu is
-closed, and still reaches the handler. F11 toggles fullscreen on desktop
+Tab and Shift+Tab move focus when the screen has a focusable control; an
+id-bearing button counts. The window calls `FocusNext` or `FocusPrev`, the page
+moves the ring, and the handler does not see the key. A page without a
+focusable control keeps the key, so a game can still read Tab. Escape closes
+the context menu, or clears focus when the menu is closed; a press that closed
+the menu is consumed, while its release and both edges of an Escape with no
+menu open reach the handler. F11 toggles fullscreen on desktop
 and is consumed there; wasm and mobile keep their own fullscreen. Arrow
 keys, Home, and End still reach the handler, and the focused field moves
 its caret for them. [interaction.md](interaction.md) has the full

@@ -14,7 +14,7 @@ _ = page.HTML()
 
 `Back` on the first entry, and `Forward` past the last entry, return `ErrNoHistory`. `Load` of blank HTML returns `ErrEmptyHTML`. A template that does not parse is returned as the parse error and does not move history.
 
-`Route` maps a `data-action` value to HTML for `page.Click` to load. It returns nothing and does not parse or draw. An empty action is ignored. Routing the same action again replaces the HTML.
+`Route` maps a `data-action` value to HTML for `page.Click` to load. It returns an error for HTML beyond `MaxSourceSize` or the DOM limits, and does not draw. An empty action is ignored. Routing the same action again replaces the HTML.
 
 ```go
 page.Route("inbox", `<h1 id="in">Inbox</h1>`)

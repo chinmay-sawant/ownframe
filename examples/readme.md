@@ -48,7 +48,7 @@ behavior and the limits are in
 | [input-lab](input-lab) | All nine form and input demos in one window: plain controls, two-way binding, a locked bound field, edit undo, OS clipboard, scroll list, sign-in, and CSS states. |
 | [accessibility](accessibility) | Labeled form, desktop IME composition, semantic tree snapshot and action, password redaction, and scrolling thumb cursor. |
 | [animations](animations) | CSS-only animation gallery: timing, direction, delay, fill, iteration, 2D, 3D, perspective, paint, path, and vendor alias. No tick callback or manual player. |
-| [motion-conformance](motion-conformance) | One CSS-only card per animation class that ships and the three shipped transition classes, with tests that sample the 2D matrix, 3D re-projection, paint-only colour writes, corner paths, the paused clock, and transition midpoints. |
+| [motion-conformance](motion-conformance) | One CSS-only card per animation class that ships and three transition cards (colour, opacity, transform), with tests that sample the 2D matrix, 3D re-projection, paint-only colour writes, corner paths, the paused clock, and transition midpoints. |
 
 ## Feature examples
 

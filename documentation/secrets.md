@@ -54,7 +54,7 @@ func loadToken(account string) (string, error) {
 
 ## Redacting secret types
 
-`internal/secret.Secret` is a string that renders as `[REDACTED]`
+`ownframe.Secret` (the public alias of `internal/secret.Secret`) is a string that renders as `[REDACTED]`
 through `String`, `GoString`, `Format`, and `slog.LogValuer`. Use it
 for every in-memory password, token, and pairing key:
 

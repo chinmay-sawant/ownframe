@@ -25,8 +25,8 @@ feature index with links to the detailed docs.
 
 - Browser-style history `Load`/`Back`/`Forward`/`HTML` with `ErrNoHistory`; `data-action` route map (`internal/page/page_nav.go`)
 - Desktop window via Ebiten, wasm browser build, and mobile binding; sizing is in [window.md](window.md) and the run modes are in [platforms.md](platforms.md) (`internal/window/run.go`, `scripts/browser.sh`, `BindMobile`)
-- DevTools overlay: a right dock with Frame (window and pipeline counters), Elements (element JSON), and Ops (operation list with outlines) tabs; it opens on Frame, F12 or Ctrl+Shift+I toggles it, `Config.DevTools` starts it on, and `Page.Window().SetDevTools` changes it at runtime ([devtools.md](devtools.md), `internal/window/devtools*.go`, `internal/host/inspect.go`)
-- Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state` (with `ServeOptions{InsecureAllowDebugState: true}`), `POST /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
+- DevTools overlay: a desktop right dock with Frame (window and pipeline counters), Elements (element JSON), and Ops (operation list with outlines) tabs, and a bottom metrics panel on Android; it opens on Frame, F12 or Ctrl+Shift+I toggles it, `Config.DevTools` starts it on, and `Page.Window().SetDevTools` changes it at runtime ([devtools.md](devtools.md), `internal/window/devtools*.go`, `internal/host/inspect.go`)
+- Web mode HTTP server: `GET /`, `GET /frame.png`, `GET /debug/state` (with `ServeOptions{InsecureAllowDebugState: true}` and `-tags ownframe_debug`), `POST /click`, `POST /type`, `POST /backspace` ([web.md](web.md), `internal/web/server.go`)
 
 ## Services
 

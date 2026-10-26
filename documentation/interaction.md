@@ -4,9 +4,9 @@ The window owns the focus keys, the pointer gestures, the context menu, the curs
 
 ## Focus
 
-Tab and Shift+Tab move focus in document order when the screen implements `host.Focuser` and a field takes the focus. The window calls `FocusNext` or `FocusPrev`, then reads `FocusID`. An empty id means no field moved, so the key reaches the page handler as before. When a field moves, the window consumes the press and its release, so `Handlers.KeyDown` does not see `"tab"`.
+Tab and Shift+Tab move focus in document order when the screen implements `host.Focuser` and a control takes the focus. The window calls `FocusNext` or `FocusPrev`, then reads `FocusID`. An empty id means no control moved, so the key reaches the page handler as before. When a control moves, the window consumes the press and its release, so `Handlers.KeyDown` does not see `"tab"`.
 
-The page sets the same `:focus-visible` host state a click sets, so the focus ring draws at each stop. Escape closes the context menu first. With the menu closed it calls `Focus(ctx, "")` and clears the ring. Escape itself still reaches the handler. `internal/window/focus_keys.go` holds the window side.
+The page sets the same `:focus-visible` host state a click sets, so the focus ring draws at each stop. Escape closes the context menu first. With the menu closed it calls `Focus(ctx, "")` and clears the ring. An Escape press that closed the menu is consumed; its release still reaches the handler, as does both edges when no menu was open. `internal/window/focus_keys.go` holds the window side.
 
 Buttons with an id join the focus order. Disabled buttons are skipped and ignore clicks. Focusing an offscreen button requests a scroll to reveal it. `FocusID` reports button focus. `page.Edit().FocusedField` reports fields only. The application's `KeyDown` handler can activate a focused button on Enter or Space by passing its box center to `Page.Click`. Enabled buttons keep their `data-action` routes.
 

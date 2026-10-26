@@ -2,13 +2,13 @@
 
 OwnFrame renders HTML and CSS screens while your app logic runs in Go. Blinkless lays out the page, and Ebitengine opens the native window. OwnFrame does not embed a browser or JavaScript runtime.
 
-1.0 native hosts are desktop `Run` and Android `BindMobile`, for an operator you control. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not a screen reader. wasm is a canvas preview. `-web` is a PNG debugger. See [platforms.md](platforms.md).
+1.0 native hosts are desktop `Run` and Android `BindMobile`, for an operator you control. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not a screen reader. wasm is a canvas preview. `-web` / `Serve` is a PNG debugger for a machine you control: it binds loopback by default, has no authentication, and is not a 1.0 ship target. The Android 1.0 deliverable is a signed arm64 APK for sideload; a Play Store listing is not part of 1.0. See [platforms.md](platforms.md) and [web.md](web.md).
 
 This page summarizes supported features and current limits. Use the linked guides for setup and examples. See [Android runtime limits](android-runtime.md) and [all examples](../examples/readme.md).
 
 ## CSS and HTML support
 
-This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `Page.SetScrollWindow` and `Page.Scroll().SetViewportPinZ`. Those are not tickets on ownframe. A long list is a slice window plus spacers, not `content-visibility`. See `examples/list`, `examples/ops-console`, and [tricks-tips.md](tricks-tips.md).
+This matrix is the 1.0 language. Most holes are blinkless. The motion rows below name the ownframe phases that are still open. ownframe's workaround is `Page.SetScrollWindow` and `Page.Scroll().SetViewportPinZ`. Those are not tickets on ownframe. A long list is a slice window plus spacers, not `content-visibility`. See `examples/list`, `examples/ops-console`, and [tricks-tips.md](tricks-tips.md).
 
 | Feature | 1.0 |
 |---|---|
@@ -19,12 +19,13 @@ This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `
 | `var()` | yes; theme sheets can define custom properties ([theming.md](theming.md)) |
 | `rgb()`, `hsl()` | yes in templates and theme sheets ([theming.md](theming.md)) |
 | `linear-gradient` | yes; engine rasterizes to `OpImage` |
-| `:hover`, `:focus`, `:focus-visible`, `:active`, `:checked` | host state ([forms.md](forms.md)) |
+| `:hover`, `:focus`, `:focus-visible`, `:active`, `:checked` | host state for hover, focus, and active; `:checked` follows the control's `checked` attribute ([forms.md](forms.md)) |
 | CSS masks | first pass: border box, simple sizes, `repeat` variants (see CSS masks below) |
 | `@keyframes` on `transform` (2D), `opacity`, and colours | automatic from the window tick ([css-motion.md](css-motion.md)) |
 | 3D `transform` lists and `perspective` | automatic through the engine re-projection; retained state turns on by itself ([css-motion.md](css-motion.md)) |
-| `transition` on colour, `opacity`, and 2D `transform` | automatic from the next style change; the window tick samples it ([css-motion.md](css-motion.md)) |
-| CSS motion counters | `Page.Probe().Motion()`: animation, transition, re-stamp, rebind, error, and gap counters ([css-motion.md](css-motion.md)) |
+| `transition` on colour, `opacity`, 2D `transform`, and `width`, `height`, `top`, `left` | automatic from the next style change; the window tick samples it ([css-motion.md](css-motion.md)) |
+| `transition-behavior: allow-discrete` on `visibility`, `content-visibility`, `z-index`, and `position` | automatic; `display`, `order`, and the grid-line integers stay blocked ([css-motion.md](css-motion.md)) |
+| CSS motion counters | `Page.Probe().Motion()`: animation, transition, timeline, layout, SVG paint, re-stamp, rebind, error, and gap counters ([css-motion.md](css-motion.md)) |
 | `@media` width and orientation | yes ([theming.md](theming.md)) |
 | `overflow` clipping | yes; clipped ops become `OpNoop` ([screen.md](screen.md)) |
 | Overflowing page | the window scrolls content larger than the frame ([scrolling.md](scrolling.md)) |
@@ -46,13 +47,13 @@ This matrix is the 1.0 language. Holes are blinkless. ownframe's workaround is `
 | `prefers-color-scheme` | never matches ([theming.md](theming.md)) |
 | Elliptical fill radii | bitmap fallback ([screen.md](screen.md)) |
 | Non-separable blend modes | bitmap fallback ([repaint.md](repaint.md)) |
-| Rotated glyphs, fake oblique, font features, autospacing, missing font | bitmap fallback ([screen.md](screen.md)) |
-| Transitioned geometry (`width`, `height`, `top`, `left`) | transition phase 02; the shipped set is colour, `opacity`, and 2D `transform` ([css-motion.md](css-motion.md)) |
-| Discrete transitions (`display`, `visibility`, `content-visibility`, `position`, `z-index`, `order`, grid lines) | transition phases 02 and 04; no `@starting-style` ([css-motion.md](css-motion.md)) |
+| Rotated glyphs, fake oblique, font features, autospacing, missing font | bitmap fallback on desktop; on Android `FontFeatures` and `TextAutospaceGap` fail bitmap painting ([screen.md](screen.md), [android-runtime.md](android-runtime.md)) |
+| `display`, `order`, and grid-line transitions | blocked by the engine; the change snaps, and `Probe().Motion()` reports the reason ([css-motion.md](css-motion.md)) |
+| `@starting-style` | not read ([css-motion.md](css-motion.md)) |
 | A `display` cross-fade | blocked on the outgoing layer; the change snaps ([css-motion.md](css-motion.md)) |
-| Keyframed layout, filter, or SVG paint properties | left at base paint and listed in `Probe().Motion().Gaps` ([css-motion.md](css-motion.md)) |
+| Keyframed `filter` and `backdrop-filter` | left at base paint and listed in `Probe().Motion().Gaps` ([css-motion.md](css-motion.md)) |
 | `@container` vs element patch | a document with `@container` refuses every patch ([optimizations.md](optimizations.md)) |
-| `content-visibility` | not faked. Window the rows and pad with spacers. |
+| `content-visibility` as a list-windowing substitute | not used by ownframe. Window the rows and pad with spacers. |
 
 ## Not in 1.0
 
@@ -131,34 +132,37 @@ and re-projection errors, and the fidelity gaps.
 
 A transition adds no callback either. A style change at a commit captures the
 paint before it, binds one renderer after the commit, and steps it before the
-animation pass. Colour, `opacity`, and 2D `transform` are the shipped set.
+animation pass. Colour, `opacity`, 2D `transform`, and the four box lengths are
+the shipped paint set; `visibility`, `content-visibility`, `z-index`, and
+`position` need `transition-behavior: allow-discrete`.
 Reversal starts from the paint on screen and shortens the duration by the CSS
 reversing factor. `Page.Window().SetTransitions(false)` releases the live
 renderers without writing, so an interrupted transition freezes at its presented
 paint; `Transitions()` reports the switch, which is independent of the animation
-switch. Geometry, discrete properties, and the `display` cross-fade are the next
-phase.
+switch. `display`, `order`, the grid-line integers, and the `display` cross-fade
+are still blocked.
 
 A 2D `transform` writes the operation's matrix, so the element moves without a
 layout. `opacity` and colour keyframes write only the operations the element
 owns. A 3D transform list or `perspective` goes through the engine re-projection
 pass, which needs `Config.RetainState`; the page turns it on by itself and pays
 one redraw, so a page that starts without it shows the first 3D sample one tick
-later. Keyframed layout, filter, and SVG paint properties stay at base paint and
-are listed in `Probe().Motion().Gaps`.
+later. Keyframed layout properties relayout the one element per frame, inline SVG
+paint restyles through the engine, and `filter`/`backdrop-filter` stay at base
+paint and are listed in `Probe().Motion().Gaps`.
 
 The [CSS motion guide](css-motion.md) has the property tables, the counters, and
 the limits. The [animations example](../examples/animations) declares all of its
 motion in CSS. The [motion-conformance example](../examples/motion-conformance)
-has one sampled card per animation class and the three shipped transition
-classes. The [CSS property catalog example](../examples/css-preview) keeps a
+has one sampled card per animation class and its three colour, opacity, and
+transform transition cards. The [CSS property catalog example](../examples/css-preview) keeps a
 manual Start button for each of its 43 motion properties. Its
 [profiling notes](../examples/css-preview/PROFILING.md) cover running the
 example and measuring a click.
 
 ## Hot reload
 
-`Config.File` reads the template from disk at `New` and watches it; `Config.ThemeFile` does the same for the theme. The window polls the files every 250 ms and swaps the template without touching history, so form values, focus, hover, and active survive while their elements do, and `SetImage` and `SetTick` stay. A parse error keeps the last good picture and prints one line to stderr; the bytes are retried on the next poll. `Serve` polls before `GET /` and `GET /frame.png`, and the shell page refreshes the image while a watch is active. wasm and mobile read the file once. Setting `HTML` and `File` together is `ErrBadSource`.
+`Config.File` reads the template from disk at `New` and watches it; `Config.ThemeFile` does the same for the theme. The window polls the files every 250 ms and swaps the template, replacing the current history entry in place, so form values, focus, hover, and active survive while their elements do, and `SetImage` and `SetTick` stay. A parse error keeps the last good picture and prints one line to stderr; the bytes are retried on the next poll. `Serve` polls before `GET /` and `GET /frame.png`, and the shell page refreshes the image while a watch is active. wasm and mobile read the file once. Setting `HTML` and `File` together is `ErrBadSource`.
 
 Detail is in [hot-reload.md](hot-reload.md).
 
@@ -170,7 +174,7 @@ Detail is in [frames.md](frames.md).
 
 ## Keys
 
-`Handlers.KeyDown` and `Handlers.KeyUp` receive each key press and release with a lowercase key name, such as `"space"` or `"arrowdown"`. A key handler does not draw; the page paints from its tick or calls `Redraw` itself. The window sends one pair per real key event and drops auto-repeat pulses. Tab and Shift+Tab move focus when the page has fields, and F11 toggles fullscreen on desktop; [interaction.md](interaction.md) covers both.
+`Handlers.KeyDown` and `Handlers.KeyUp` receive key presses and releases the window does not own, with a lowercase key name, such as `"space"` or `"arrowdown"`; `Digit1` arrives as `"1"`, and a caret key held with a modifier arrives as `"shift+arrowleft"`. A key handler does not draw; an error stops the window, and `Run` returns it. The window drops auto-repeat pulses with a two-frame guard, so a tap shorter than two frames loses its release. Tab and Shift+Tab are consumed when focus moves; F11, F12, Ctrl+Shift+I, and the zoom chords are consumed by the window. Tab and Shift+Tab move focus when the page has a focusable control, and F11 toggles fullscreen on desktop; [interaction.md](interaction.md) covers both. `Serve` receives no key events.
 
 Detail is in [keys.md](keys.md).
 
@@ -182,13 +186,13 @@ Detail is in [ipc.md](ipc.md).
 
 ## Navigation
 
-`Load` replaces the template and pushes history. `Back` and `Forward` move through that history. `Route` maps a `data-action` value to HTML, and a click on that action loads it instead of calling the click handler. `HTML` returns the current template source. There is no `loadURL`, no `<a href>` navigation, and no custom protocol.
+`Load` replaces the template, drops every forward entry, and pushes history; a blank template is `ErrEmptyHTML`. `Back` and `Forward` move through that history and return `ErrNoHistory` at either end. `Route` maps a `data-action` value to HTML. It returns an error for HTML beyond `MaxSourceSize` or the DOM limits, and a click on that action loads the HTML instead of calling the click handler; an empty action is ignored, an action with no route falls through to the handler, and a form control never follows a route. `HTML` returns the current template source. `Handlers.OpenLink` receives `http`, `https`, and `mailto` targets from clicked anchors, and `Config.DeepLinkSchemes` with `Handlers.DeepLink` receives app URLs, though the library never registers an OS protocol. There is no `loadURL`, no `<a href>` navigation, and no custom protocol.
 
 Detail is in [navigation.md](navigation.md).
 
 ## Crash reports
 
-`Run` stores a startup or window failure in a text file and returns the original error. A canceled context or a deadline returns that error and writes no file. `LastReportPath` returns the file path: panics go through the recover, and other startup or window errors go through the same writer. `BindMobile` recovers a panic the same way; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic. Nothing is uploaded.
+`Run` stores a startup or window failure in a text file and returns the original error. A canceled context or a deadline returns that error and writes no file. `LastReportPath` returns the file path: panics go through the recover, and other startup or window errors go through the same writer. `BindMobile` recovers a panic the same way and returns the original error as well. `Serve` turns a handler panic into HTTP 500 and writes no file; a browser build recovers and returns an error, but writes no file. `Report` writes the same kind of file without a panic, and `SetCrashDir` points both `Report` and a recovered panic at another directory. The default is `ownframe/crashes` under `os.UserConfigDir`, or `ownframe-crashes` under `os.TempDir` when that cannot be resolved; the directory is mode `0700` and each file `0600`. Nothing is uploaded.
 
 Detail is in [crash.md](crash.md).
 
@@ -200,7 +204,7 @@ Detail is in [fetch.md](fetch.md).
 
 ## Clipboard
 
-`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH. If they are missing, Linux uses the X11 `CLIPBOARD` selection when `DISPLAY` is set. Without the helpers and without `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`; without cgo it stays on the memory copy. wasm and Android stay on the memory copy. Tests call `UseMemory` and do not touch the desktop clipboard. `Serve` has no clipboard route.
+`Write` stores the memory copy in memory-only mode and otherwise writes only the OS clipboard, so a failed read cannot resurface older text. `Read` returns the OS text, or `""` plus `ErrUnavailable` when the OS read fails. On Wayland, `Write` and `Read` run `wl-copy` and `wl-paste` when those binaries are on PATH. If they are missing, Linux uses the X11 `CLIPBOARD` selection when `DISPLAY` is set. Without the helpers and without `DISPLAY`, a write is a no-op and a read returns `ErrUnavailable`. Windows uses `CF_UNICODETEXT`. macOS with cgo uses `NSPasteboard`. Without cgo, on wasm, and on Android there is no OS clipboard, so a write is a no-op and a read returns `ErrUnavailable` unless the app calls `UseMemory(true)`. Tests call `UseMemory(true)` and do not touch the desktop clipboard. `Serve` has no clipboard route.
 
 Detail is in [clipboard.md](clipboard.md).
 
@@ -212,26 +216,32 @@ Detail is in [drag-drop.md](drag-drop.md).
 
 ## Forms
 
-An `input`, `textarea`, or `select` with an id is stored on the page. A click focuses a text field or a textarea, toggles a checkbox, checks a radio, or cycles a select. Typing edits the focused text field even when the type handler is nil. A file input opens the desktop file dialog under `Run` and stores the chosen path; wasm, mobile, and `-web` keep the typed name. `SetFormValue` and `SetFormChecked` do not redraw. A control with `data-bind` is tied to a field on the pointer passed to `SetData`; an edit writes through before the redraw, and `Handlers.Change` receives the changed control's box. `:focus`, `:hover`, and `:active` match with host state, and `:checked` follows the control's `checked` attribute; `data-ownframe-*` remains the attribute alternative. The engine's default stylesheet gives a `<button>` a face when the author does not style it, and a submit-like `input` is rewritten to a `button`. The login example uses a button.
+An `input`, `textarea`, or `select` with an id is stored on the page. A click focuses a text field or a textarea, toggles a checkbox, checks a radio, or cycles a select. Typing edits the focused text field even when the type handler is nil. A file input opens the desktop file dialog under `Run` or `RunWithOptions` and stores the chosen path; a missing dialog returns `ErrNoDialog`; wasm, mobile, and `-web` keep the typed name. `SetFormValue` and `SetFormChecked` do not redraw. A control with `data-bind` is tied to a field on the pointer passed to `SetData`; `Handlers.BeforeEdit` runs before the built-in edit and can refuse it, an edit writes through before the redraw, and `Handlers.Change` receives the changed control's box. `:focus`, `:hover`, and `:active` match with host state, and `:checked` follows the control's `checked` attribute; `data-ownframe-*` remains the attribute alternative. The engine's default stylesheet gives a `<button>` a face when the author does not style it, and an `input` with `type=submit`, `button`, or `reset` is rewritten to a `button`. The login example uses a button.
 
 Detail is in [forms.md](forms.md). Select all, undo, and redo are in [editing.md](editing.md).
 
 ## Accessibility tree
 
-`Page.Access().AccessibilityTree` returns semantic roles, names, descriptions, live
-form state, document order, and bounds where an element has a unique HTML ID.
-`Page.Access().AccessibilityPerform` routes supported focus, activation, and text-value
-actions through the page's existing input paths. Example programs call them on `Page`. The window still calls the inner screen. The snapshot
+`Page.Access().AccessibilityTree` returns a detached snapshot from the last
+successful redraw: semantic roles, names, descriptions, live form state,
+document order, actions, and bounds. A node gets bounds from a unique HTML ID,
+or from a unique tag and normalized-text match against the placed boxes; only an
+ambiguous anonymous match lacks them. Password values are always empty.
+`Page.Access().AccessibilityPerform` routes supported focus, activation, and
+text-value actions through the page's existing input paths; link activation is
+not supported. Example programs call both on the `Page.Access()` door. The
+window still calls the inner screen. The snapshot
 is a host contract for the operator who runs the process. 1.0 does not ship a
 screen-reader product. Linux maps the tree to AT-SPI objects in process;
 `Live` is false, so Orca cannot inspect the window. CSS-only hidden content
-and anonymous-node bounds remain unresolved.
+remains unresolved.
 
-Detail is in [accessibility.md](accessibility.md) and [atspi.md](atspi.md).
+Detail is in [accessibility.md](accessibility.md),
+[accessibility-native.md](accessibility-native.md), and [atspi.md](atspi.md).
 
 ## Interaction
 
-Tab and Shift+Tab move focus in document order when a page has fields, and Escape clears it. A mouse press in a field places the caret, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.Window().SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=` and `Ctrl+-` zoom the page while `Ctrl+0` resets it, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
+Tab and Shift+Tab move focus in document order when a page has a focusable control; id-bearing buttons join the order and an offscreen one scrolls into view. Escape closes the context menu first, then clears focus. A mouse press in a field places the caret, a press outside a control blurs it, a drag extends the selection, a double-click selects a word, a triple-click selects a line, and a press held in place selects the word under the point or reaches `Handlers.LongPress`. A right click opens a shell menu with cut, copy, paste, select all, undo, and redo. The hovered shape picks the cursor, a touch drag scrolls with a fling after lift and a pinch zooms by default; `Config.DisableTouchZoom` or `Page.Window().SetTouchZoomAllowed(false)` disables only pinch zoom. A page without that option can still pinch on devices that provide touch input. `Ctrl+=`, `Ctrl++`, and `Ctrl+-` zoom the page by 10 percent per press while `Ctrl+0` resets it, Ctrl+wheel zooms too, the zoom stays between 0.25 and 4 on desktop, `Page.ScrollTo` and `Page.ScrollBy` move the offset, and F11 toggles fullscreen on desktop.
 
 Detail is in [interaction.md](interaction.md).
 
@@ -256,37 +266,41 @@ is in [window.md](window.md).
 
 The window can draw an inspector over the page. F12 or Ctrl+Shift+I toggles
 it, `Config.DevTools` starts it on, and `Page.Window().SetDevTools` changes it at
-runtime. The inspector is a right-side dock with three tabs. It opens on
+runtime. On desktop the inspector is a right-side dock with three tabs; Android
+uses a bottom metrics panel with frame, memory, and pipeline counters, and
+Elements and Ops stay desktop tools. The dock opens on
 Frame, which shows the frame and pipeline counters; Elements shows the pinned
 or hovered element as pretty JSON, and Ops lists the display operations
 colour by kind. The dock shrinks the page viewport while it is open, so the
-page relayouts to the strip left of it. It outlines the box under the cursor,
-and a pick opens the Ops tab on the operation inside the box. A click on an
-Ops row outlines that operation and copies its line to the clipboard. It is
-window chrome, so `page.Probe().PNG`, the display list, and the box list never
-change. A custom screen implements `host.Inspector` to opt in; a screen
-without it gets no overlay.
-`GET /debug/state` serves the same data in web mode when that endpoint is enabled (`ServeOptions{InsecureAllowDebugState: true}`).
+page relayouts to the strip left of it. The Picker toggle arms the element
+picker, which starts off, and the armed picker outlines the innermost box under
+the cursor; a click pins the box and opens the Ops tab on the operation inside
+it. A click on an Ops row outlines that operation and copies its line to the
+clipboard. The dock adds no operations of its own, so `page.Probe().PNG` never
+shows it; opening or resizing it relayouts the page at the new viewport width,
+so the display list and box list are rebuilt there. A custom screen implements
+`host.Inspector` to opt in; a screen without it gets no overlay.
+`GET /debug/state` serves the page pipeline and runtime memory in web mode when the endpoint is enabled (`ServeOptions{InsecureAllowDebugState: true}`) and the build uses `-tags ownframe_debug`; it has no native frame ring.
 
 Detail is in [devtools.md](devtools.md).
 
 ## Performance
 
-The perf checklist lives in [performance.md](performance.md), with per release numbers in [performance-baseline.md](performance-baseline.md). The Frame tab carries PERFORMANCE, PIPELINE DETAIL, and MEMORY counters for frame stages, repaint work, and memory, and `GET /debug/state` serves the same data in web mode when that endpoint is
-enabled (`ServeOptions{InsecureAllowDebugState: true}`). Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `ServeOptions{InsecureAllowPprof: true}` opts in. The three benchmark apps sit in `examples/perf-benchmarks`, and `scripts/perf-idle.sh`, `scripts/perf-longrun.sh`, and `scripts/perf-baseline.sh` run the idle, soak, and baseline passes.
+The perf checklist lives in [performance.md](performance.md), with per release numbers in [performance-baseline.md](performance-baseline.md). The Frame tab carries PERFORMANCE, PIPELINE DETAIL, PACING, and MEMORY counters for frame stages, repaint work, idle pacing, and memory. `GET /debug/state` serves the page pipeline and runtime memory in web mode when the endpoint is
+enabled (`ServeOptions{InsecureAllowDebugState: true}`) and the build uses `-tags ownframe_debug`; it has no native frame ring. Sampling is off by default and costs nothing; `Config.Perf`, `ownframe.WithPerf(true)`, `WindowOptions.Perf`, or `Page.Window().SetPerf(true)` opts in. `ServeOptions{InsecureAllowPprof: true}` is separate: it adds `GET /debug/pprof/*` and the server runtime memory, not page timing. The three benchmark apps sit in `examples/perf-benchmarks`; `scripts/perf-idle.sh` prints a manual idle checklist, `scripts/perf-longrun.sh` samples a running debug endpoint, `scripts/perf-baseline.sh` records the baseline, and `make soak-check` runs the automated soak pass.
 
 ## Still absent
 
 These Electron pieces are not in this branch. The scan that listed them is [../plans/v0.0.1/compare.md](../plans/v0.0.1/compare.md).
 
 - Chromium, V8, preload, `contextBridge`, and Node.
-- Cross-process IPC, native menus, tray, and more than one window. The library ships no notification API; `examples/desktop-cat` draws its own message bubble, takes agent messages over a local HTTP endpoint, and reads Chrome's media session on Windows. File dialogs exist on desktop `Run` only; wasm, mobile, and `-web` keep the typed name.
+- Cross-process IPC, native menus, tray, and more than one window. The library ships no notification API; `examples/desktop-cat` draws its own message bubble, takes agent messages over a local HTTP endpoint, and reads Chrome's media session on Windows. File dialogs exist on desktop `Run` and `RunWithOptions` only; wasm, mobile, and `-web` keep the typed name.
 - Session, cookies, cache, and web storage.
 - An ownframe auto-updater, installer, and uploaded crash dump. Applications
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
 - Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
-- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. The deep-link test helper validates URLs under a scheme allowlist; direct OS delivery has no public production entry point yet. The app and its installer still own OS protocol registration and delivery. Clicked `http`, `https`, and `mailto` links can be handed to an app callback. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
+- A live AT-SPI D-Bus client, UI Automation, VoiceOver, and TalkBack. Linux maps the Go tree to AT-SPI objects and records them on a fake bus in tests; it does not register on the accessibility bus ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native spellcheck and OS-global shortcuts are also out. The deep-link test helper validates URLs under a scheme allowlist; direct OS delivery has no public production entry point yet. The app and its installer still own OS protocol registration and delivery. Android uses Ebiten's experimental `exp/textinput`; desktop builds have a Composer path with temporary preedit painting, pending native input-method checks ([interaction.md](interaction.md)). iOS is not shipped. The phase plan is [here](../plans/v0.0.2/accessibility-desktop-ime.md).
 - Sandbox, CSP, and context isolation.
 
 Paint-only hover handlers and scroll callbacks that reuse overscan are described in [frames.md](frames.md).

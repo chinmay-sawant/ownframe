@@ -27,7 +27,7 @@ Build your screen with HTML and CSS. Handle data and actions in Go. 1.0 hosts ar
 - [Browse the examples](../examples/readme.md)
 - [See the app showcase](../showcase.md)
 
-Use the topic groups in the sidebar to browse other guides.
+Use the topic groups in the sidebar to browse other guides, or open the files next to this one: [navigation](navigation.md), [ipc](ipc.md), [crash reports](crash.md), [fetch and XHR](fetch.md), [clipboard](clipboard.md), [drag and drop](drag-drop.md), [secrets](secrets.md), and [security](security.md).
 
 ## Contribute
 
