@@ -1,10 +1,17 @@
 package replay
 
 import (
+	"image"
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
+
+// testImage builds a small in-memory image for cache-level tests without an
+// encoded payload, so the tests do not depend on shared renderer state.
+func testImage(w, h int) image.Image {
+	return image.NewNRGBA(image.Rect(0, 0, w, h))
+}
 
 func TestDecodedImageCacheHitAndMiss(t *testing.T) {
 	data := tinyPNG(t, 255)
@@ -59,5 +66,41 @@ func TestDecodedImageEvictsOldest(t *testing.T) {
 
 	if decodedImage(&target) == first {
 		t.Fatal("oldest entry was not evicted")
+	}
+}
+
+func TestImageCacheHitRefreshesRecency(t *testing.T) {
+	var c imageCache
+	for i := range imageCacheLimit {
+		c.put(uint64(i+1), testImage(4, 4), 16)
+	}
+	if c.get(1) == nil {
+		t.Fatal("first entry missing before refresh")
+	}
+	c.put(uint64(imageCacheLimit+1), testImage(4, 4), 16)
+
+	if c.get(1) == nil {
+		t.Fatal("recently used entry was evicted before an untouched one")
+	}
+	if c.get(2) != nil {
+		t.Fatal("least recently used entry survived eviction")
+	}
+}
+
+func TestImageCacheCapsTotalPixels(t *testing.T) {
+	var c imageCache
+	third := maxImageCachePixels/3 + 1
+	c.put(1, testImage(4, 4), third)
+	c.put(2, testImage(4, 4), third)
+	c.put(3, testImage(4, 4), third)
+
+	if c.get(1) != nil {
+		t.Fatal("pixel cap did not evict the oldest entry")
+	}
+	if c.total > maxImageCachePixels {
+		t.Fatalf("cache holds %d pixels over the %d cap", c.total, maxImageCachePixels)
+	}
+	if len(c.order) != 2 {
+		t.Fatalf("cache holds %d entries, want 2 after pixel eviction", len(c.order))
 	}
 }

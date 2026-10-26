@@ -39,25 +39,35 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 
 // applyIdle leaves the active drawing loop: the backend blocks in WaitEvents, and a
 // scheduled post or an input event wakes it. TPS syncs with the frame rate
-// there, so one wake-up runs one Update.
+// there, so one wake-up runs one Update. The replay pixel caches are released
+// first: parked keep-alive frames only blit the tile buffers, so the bakes
+// would sit resident until the next dirty paint.
 func (g *paceGame) applyIdle() {
 	if g.idle {
 		return
 	}
 
 	g.idle = true
+	if g.shell != nil {
+		g.shell.renderer.SetIdle()
+	}
 	//nolint:staticcheck // reason: needs FPSModeVsyncOffMinimum event-wait; SetVsyncEnabled(false) selects Maximum busy loop and would pin CPU.
 	ebiten.SetFPSMode(ebiten.FPSModeVsyncOffMinimum)
 	ebiten.SetTPS(ebiten.SyncWithFPS)
 }
 
-// applyFast restores uncapped drawing and the TPS the app started with.
+// applyFast restores uncapped drawing and the TPS the app started with. The
+// pixel-cache containers are pre-sized first, so the first post-wake paints
+// do not regrow them under the draw lock.
 func (g *paceGame) applyFast() {
 	if !g.idle {
 		return
 	}
 
 	g.idle = false
+	if g.shell != nil {
+		g.shell.renderer.Wake()
+	}
 	ebiten.SetVsyncEnabled(false)
 	ebiten.SetTPS(g.base)
 }

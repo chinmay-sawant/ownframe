@@ -7,6 +7,8 @@ import "github.com/hajimehoshi/ebiten/v2"
 // otherwise. A size that has not been laid out yet is scaled until the new
 // picture arrives.
 func (s *shell) drawBitmapPage(screen *ebiten.Image, zoom float64) {
+	// The bitmap frame never reads the display-list buffers.
+	s.dropDisplayBuffers()
 	img := s.img
 	if img == nil {
 		return

@@ -40,21 +40,17 @@ func (s *shell) blitFitted(dst *ebiten.Image, w, h int, scale, ox, oy float64, p
 		return
 	}
 
-	if s.fitBuf == nil || s.fitBuf.Bounds().Dx() != w || s.fitBuf.Bounds().Dy() != h {
-		if s.fitBuf != nil {
-			s.fitBuf.Deallocate()
-		}
+	// The fitted frame reads neither the tile grid nor the viewport cache.
+	s.dropDisplayBuffers()
+	buf := s.ensureScaleBuf(w, h)
 
-		s.fitBuf = ebiten.NewImage(w, h)
-	}
-
-	s.fitBuf.Clear()
-	s.fitBuf.Fill(s.pageBackground())
-	paint(s.fitBuf)
+	buf.Clear()
+	buf.Fill(s.pageBackground())
+	paint(buf)
 
 	var op ebiten.DrawImageOptions
 	op.Filter = ebiten.FilterLinear
 	op.GeoM.Scale(scale, scale)
 	op.GeoM.Translate(ox, oy)
-	dst.DrawImage(s.fitBuf, &op)
+	dst.DrawImage(buf, &op)
 }

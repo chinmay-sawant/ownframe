@@ -15,7 +15,7 @@ import (
 func main() {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8144", "listen address for -web")
-	perf := flag.Bool("perf", false, "enable pipeline sampling for the devtools Frame tab")
+	perf := flag.Bool("perf", true, "enable pipeline sampling for the devtools Frame tab")
 	dev := flag.Bool("dev", true, "open the developer tools dock at startup")
 	flag.Parse()
 

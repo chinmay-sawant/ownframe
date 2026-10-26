@@ -96,6 +96,8 @@ GitHub CI (`.github/workflows/ci.yml`) runs `make test` and `make lint` in the `
 
 Load the `unslop` skill before writing prose: replies, docs, commit messages, and PR or issue text. Apply its fixes before sending.
 
+Tables highlight their key column with plain markdown bold (`**value**`), which the opencode UI renders yellow. Never use HTML highlight tags like `<mark>` in tables.
+
 ## Builds
 
 Do not run `go build ./...`. Every run links an executable for each example, takes about a minute, and leaves the binaries in this directory; the default `-p 24` loads the machine. For the same compile check, run `make build`. It calls `go vet -p 1 ./... ./examples/...`, which compiles every package including the examples, links nothing, and writes nothing. Raise the limit with `make build BUILD_P=4`. To check one example, name it: `go vet -p 1 ./examples/login`.

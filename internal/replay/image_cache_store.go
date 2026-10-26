@@ -12,9 +12,9 @@ import (
 const imageCacheLimit = 64
 const maxImageCachePixels = 64 << 20
 
-// imageCache keeps decoded images by payload key, oldest first. Hits
-// resolve under a read lock; decode runs lock-free and only the GPU upload
-// plus insert hold the write lock, with a second hit check.
+// imageCache keeps decoded images by payload key, least recently used first.
+// Hits take the write lock to refresh recency; decode runs lock-free and only
+// the GPU upload plus insert hold the write lock, with a second hit check.
 type imageCache struct {
 	mu      sync.RWMutex
 	entries map[uint64]*ebiten.Image
@@ -24,9 +24,26 @@ type imageCache struct {
 }
 
 func (c *imageCache) get(key uint64) *ebiten.Image {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.entries[key]
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	img := c.entries[key]
+	if img == nil {
+		return nil
+	}
+	c.touch(key)
+	return img
+}
+
+// touch moves a hit key to the back of the order, so eviction drops the
+// least recently used entry first. The caller holds the write lock.
+func (c *imageCache) touch(key uint64) {
+	for i, k := range c.order {
+		if k == key {
+			c.order = append(c.order[:i], c.order[i+1:]...)
+			c.order = append(c.order, key)
+			return
+		}
+	}
 }
 
 func (c *imageCache) put(key uint64, src image.Image, px int) *ebiten.Image {

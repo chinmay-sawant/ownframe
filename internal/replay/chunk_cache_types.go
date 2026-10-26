@@ -8,7 +8,7 @@ import (
 )
 
 // chunkMaxEntries and chunkMaxPixels bound the chunk images one renderer
-// keeps. Oldest insertion evicts first, and its image is disposed. A paint
+// keeps. Least-recently used evicts first, and its image is disposed. A paint
 // only needs the chunks of the region it draws, so the cap covers the
 // visible rows rather than the whole page.
 const (

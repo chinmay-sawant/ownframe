@@ -26,13 +26,13 @@ func TestScaledPathKeepsLargePage(t *testing.T) {
 
 	s.drawReplayScaled(dst)
 
-	if s.replayBuf == nil {
+	if s.scaleBuf == nil {
 		t.Fatal("a large page fell back to a direct replay")
 	}
-	if got := s.replayBuf.Bounds().Size(); got != image.Pt(1920, 2200) {
+	if got := s.scaleBuf.Bounds().Size(); got != image.Pt(1920, 2200) {
 		t.Fatalf("buffer = %v", got)
 	}
-	s.replayBuf.Deallocate()
+	s.scaleBuf.Deallocate()
 }
 
 // TestFittedPathKeepsLargePage checks that a large page draws through the
@@ -52,11 +52,11 @@ func TestFittedPathKeepsLargePage(t *testing.T) {
 
 	s.drawFitted(dst)
 
-	if s.fitBuf == nil {
+	if s.scaleBuf == nil {
 		t.Fatal("a large page fell back to a direct replay")
 	}
-	if got := s.fitBuf.Bounds().Size(); got != image.Pt(1920, 2200) {
+	if got := s.scaleBuf.Bounds().Size(); got != image.Pt(1920, 2200) {
 		t.Fatalf("buffer = %v", got)
 	}
-	s.fitBuf.Deallocate()
+	s.scaleBuf.Deallocate()
 }

@@ -5,6 +5,16 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
+// dropDisplayBuffers releases every retained display-list buffer: the tile
+// grid, the viewport cache, and the shared scaled buffer. Frames that paint
+// without them (scaled, fitted, bitmap, direct) call it instead of pinning
+// a stale copy beside the buffer they actually read.
+func (s *shell) dropDisplayBuffers() {
+	s.dropTiles()
+	s.disposeViewport()
+	s.dropScaleBuf()
+}
+
 // applyRepaint brings the tile grid up to date for this frame. A rebuild
 // ensures the grid matches the content and repaints all of it; a rect plan
 // repaints only the tiles the rect covers. A blit plan changes no pixels.

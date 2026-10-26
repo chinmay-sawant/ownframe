@@ -85,6 +85,14 @@ func (s *shell) drawViewport(dst *ebiten.Image, d *layout.Display, taker dirtyTa
 	}
 	noPaint := !full && !changed
 	s.viewport.blitOnly = had && noPaint && scroll == prevScroll
+	if s.viewport.blitOnly && s.viewport.spare != nil {
+		// The scroll copy only needs its spare while crossing overscan.
+		// Release it on idle frames so a settled page pins one
+		// window-sized buffer instead of two; the next crossing
+		// reallocates it.
+		s.viewport.spare.Deallocate()
+		s.viewport.spare = nil
+	}
 	s.viewport.scroll = scroll
 	s.viewport.key, s.viewport.valid = key, true
 	var options ebiten.DrawImageOptions
@@ -123,8 +131,8 @@ func (s *shell) dropContentBuffers() {
 		s.partial = partialState{}
 	}
 
-	if s.replayBuf != nil {
-		s.replayBuf.Deallocate()
-		s.replayBuf = nil
+	if s.scaleBuf != nil {
+		s.scaleBuf.Deallocate()
+		s.scaleBuf = nil
 	}
 }

@@ -7,7 +7,8 @@ import (
 )
 
 // textRunMaxEntries and textRunMaxPixels bound what one page caches. A page
-// with more runs than this keeps the newest; the oldest rasters are disposed.
+// with more runs than this keeps the most-recently-used; the
+// least-recently-used rasters are disposed.
 const (
 	textRunMaxEntries = 512
 	textRunMaxPixels  = 4 << 20
@@ -30,7 +31,8 @@ func (e textRasterEntry) pixels() int {
 	return e.img.Bounds().Dx() * e.img.Bounds().Dy()
 }
 
-// textRasterCache keeps baked text rasters, oldest insertion first.
+// textRasterCache keeps baked text rasters, least-recently-used first. A hit
+// moves to the back, so a repaint that reuses its runs never evicts them.
 type textRasterCache struct {
 	mu      sync.Mutex
 	entries map[textRasterKey]textRasterEntry

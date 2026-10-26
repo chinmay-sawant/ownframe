@@ -160,10 +160,12 @@ oldest entry is disposed. A shape larger than 512 px a side, or an unknown
 stroke mask bit, falls through to the direct path. The cache is
 process-wide and keyed per shape, like the decoded-image cache.
 
-Text runs take the same route: a run bakes once and blits while its face,
-content, color, fake-bold flag, letter spacing, and sub-pixel origin match, so
-a damaged rect over static text stops reshaping it. The run cache is bounded
-at 128 entries and 4 megapixels, and an oversized run draws directly.
+Text runs take the same route: a run bakes once into a white mask and blits
+with the op color, so one raster serves every color of the same run while its
+face, content, size, fake-bold flag, letter spacing, and sub-pixel origin
+match, and a damaged rect over static text stops reshaping it. The run cache
+is bounded at 512 entries and 4 megapixels with least-recently-used eviction,
+and an oversized run draws directly.
 
 ## Element paint chunks
 

@@ -28,8 +28,8 @@ go run ./examples/trade -dev=false
 ```
 
 Resize the window at any time; the shell and panels follow the new size. `-perf`
-turns on the pipeline sampling used by the Frame tab. It is off by default; the
-CSS motion runs either way.
+is on by default and feeds the pipeline sampling used by the Frame tab; the
+CSS motion runs either way. Pass `-perf=false` for a still page profile.
 
 Serve the current frame in a browser:
 

@@ -7,7 +7,6 @@
   grid-column: 1 / -1;
   grid-row: 3;
   position: relative;
-  z-index: 8;
   height: var(--status-h);
   min-height: var(--status-h);
   min-width: 0;
@@ -49,7 +48,6 @@
   gap: 8px;
   overflow: hidden;
   position: relative;
-  z-index: 1;
   background-color: #07090c;
 }
 
@@ -208,7 +206,6 @@
   align-items: center;
   gap: 9px;
   position: relative;
-  z-index: 1;
   background-color: #07090c;
 }
 
