@@ -59,6 +59,11 @@ svg { display: block; flex: 0 0 auto; stroke: currentColor; }
 
 .app { width: 100vw; min-height: 100vh; }
 
+button:focus, input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .void { display: block; height: 0; }
 .scroll-space { display: block; width: 1px; }
 
@@ -128,6 +133,9 @@ svg { display: block; flex: 0 0 auto; stroke: currentColor; }
 .t-link { color: #82aaff; }
 .t-quote { color: #9aa5b8; }
 .t-hr { color: #3a4152; }
+
+.find-hit { background-color: rgba(240, 183, 90, 0.28); border-radius: 2px; }
+.find-cur { background-color: rgba(240, 183, 90, 0.62); color: #0b0e14; }
 
 /* Small shared pieces ------------------------------------------------------ */
 

@@ -15,7 +15,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 	switch {
 	case action == "":
-		if box.ID == "filter" || box.ID == "palette" {
+		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" {
 			return nil
 		}
 
@@ -43,7 +43,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			a.selectChangePage()
 		}
 	case action == "diff-page-next":
-		if (a.changePage+1)*diffPageRows < len(a.changes.Files) {
+		if (a.changePage+1)*a.changePageRows() < len(a.changes.Files) {
 			a.changePage++
 			a.selectChangePage()
 		}
@@ -61,6 +61,20 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.togglePreview()
 	case action == "wrap-toggle":
 		a.toggleWrap()
+	case action == "find-close":
+		return a.closeFind(ctx)
+	case action == "find-prev":
+		a.findStep(-1)
+
+		return a.page.Form().Focus(ctx, "find")
+	case action == "find-next":
+		a.findStep(1)
+
+		return a.page.Form().Focus(ctx, "find")
+	case action == "find-case":
+		a.toggleFindCase()
+
+		return a.page.Form().Focus(ctx, "find")
 	case action == "details-close":
 		a.details = false
 		a.refresh()
@@ -68,6 +82,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.collapseAll()
 	case action == "filter-clear":
 		a.filter = ""
+		a.treeOffset = 0
 		a.page.Form().SetFormValue("filter", "")
 		a.refresh()
 	case action == "focus-filter":
@@ -79,6 +94,36 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "devtools":
 		a.showToast("info", "Developer tools", devMessage(!a.devOn))
 		a.SetDevTools(!a.devOn)
+	case action == "branch-picker":
+		a.branchOpen = !a.branchOpen
+		a.branchQuery = ""
+
+		if !a.branchOpen {
+			a.refresh()
+
+			break
+		}
+
+		a.refresh()
+		if err := a.page.Redraw(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Form().Focus(ctx, "branch-filter")
+	case action == "branch-close":
+		a.branchOpen = false
+		a.branchQuery = ""
+		a.refresh()
+	case action == "branch-head":
+		a.pickBranch(ctx, "")
+	case strings.HasPrefix(action, "branch-pick:"):
+		if index, ok := actionIndex(action, "branch-pick:"); ok && index < len(a.view.History.Branches) {
+			a.pickBranch(ctx, a.view.History.Branches[index].Ref)
+		}
+	case action == "tree-up":
+		a.scrollTree(-(a.treeVisibleRows() - 1))
+	case action == "tree-down":
+		a.scrollTree(a.treeVisibleRows() - 1)
 	case action == "history-working":
 		a.showWorkingDiff()
 	case action == "history-prev":
@@ -135,6 +180,24 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 		}
 
 		a.filter = next
+		a.treeOffset = 0
+		a.refresh()
+	case "find":
+		next := a.view.FindQuery
+		if next == a.findQuery {
+			return nil
+		}
+
+		a.findQuery = next
+		a.reindexFind()
+		a.refresh()
+	case "branch-filter":
+		next := a.view.BranchQuery
+		if next == a.branchQuery {
+			return nil
+		}
+
+		a.branchQuery = next
 		a.refresh()
 	case "palette":
 		next := a.view.PaletteQuery
@@ -148,6 +211,77 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 	}
 
 	return nil
+}
+
+func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
+	for _, box := range boxes {
+		if box.ID == id {
+			return box, true
+		}
+	}
+
+	return ownframe.Box{}, false
+}
+
+// onWheel scrolls the explorer when the pointer is over its tree.
+func (a *App) onWheel(ctx context.Context, x, y, _, dy float64) (bool, error) {
+	if a.mode != "explorer" || dy == 0 || a.paletteOpen || !a.view.TreeScroll {
+		return false, nil
+	}
+
+	tree, ok := findBoxID(a.page.Boxes(), "tree-pane")
+	if !ok {
+		return false, nil
+	}
+
+	scrollX, scrollY := a.page.Scroll().ScrollOffset()
+	x -= float64(scrollX)
+	y -= float64(scrollY)
+
+	if x < tree.X || x > tree.X+tree.W || y < tree.Y || y > tree.Y+tree.H {
+		a.treeWheelAccum = 0
+
+		return false, nil
+	}
+
+	a.treeWheelAccum += -dy * treeWheelRows
+	rows := int(a.treeWheelAccum)
+	a.treeWheelAccum -= float64(rows)
+
+	if rows != 0 {
+		a.scrollTree(rows)
+		a.keepTreeFocus(ctx)
+	}
+
+	return true, a.page.Redraw(ctx)
+}
+
+// keepTreeFocus moves focus to the first visible row when a wheel scroll
+// carried the focused row out of the window.
+func (a *App) keepTreeFocus(ctx context.Context) {
+	focus := a.page.Form().FocusID()
+	if !strings.HasPrefix(focus, "tree-") {
+		return
+	}
+
+	path := strings.TrimPrefix(focus, "tree-")
+
+	for _, row := range a.view.Tree {
+		if row.Path == path {
+			return
+		}
+	}
+
+	if len(a.view.Tree) > 0 {
+		_ = a.page.Form().Focus(ctx, "tree-"+a.view.Tree[0].Path)
+	}
+}
+
+// scrollTree moves the explorer window by rows.
+func (a *App) scrollTree(rows int) {
+	a.treeOffset += rows
+	a.clampTreeOffset(a.view.TreeTotal, a.treeVisibleRows())
+	a.refresh()
 }
 
 // onHover shows the commit message card while a history row is hovered.
@@ -174,14 +308,186 @@ func (a *App) onHover(_ context.Context, _, next ownframe.Box) (bool, error) {
 	return false, nil
 }
 
-// onDragStart claims the history divider.
+// treeKeyDown moves focus through the visible explorer rows.
+func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
+	focus := a.page.Form().FocusID()
+	if focus == "tree-up" || focus == "tree-down" {
+		switch key {
+		case "arrowdown", "pagedown":
+			a.scrollTree(a.treeVisibleRows() - 1)
+		case "arrowup", "pageup":
+			a.scrollTree(-(a.treeVisibleRows() - 1))
+		default:
+			return false, nil
+		}
+
+		a.refresh()
+
+		return true, a.page.Redraw(ctx)
+	}
+
+	if !strings.HasPrefix(focus, "tree-") || focus == "tree-scroll" {
+		return false, nil
+	}
+
+	path := strings.TrimPrefix(focus, "tree-")
+	index := -1
+
+	for i, row := range a.view.Tree {
+		if row.Path == path {
+			index = i
+
+			break
+		}
+	}
+
+	if index < 0 {
+		return false, nil
+	}
+
+	switch key {
+	case "arrowdown":
+		if index+1 >= len(a.view.Tree) {
+			a.scrollTree(1)
+			if err := a.page.Redraw(ctx); err != nil {
+				return true, err
+			}
+
+			index = 0
+		} else {
+			index++
+		}
+	case "arrowup":
+		if index == 0 {
+			a.scrollTree(-1)
+			if err := a.page.Redraw(ctx); err != nil {
+				return true, err
+			}
+
+			index = 0
+		} else {
+			index--
+		}
+	case "pagedown":
+		a.scrollTree(a.treeVisibleRows() - 1)
+		if err := a.page.Redraw(ctx); err != nil {
+			return true, err
+		}
+
+		index = 0
+	case "pageup":
+		a.scrollTree(-(a.treeVisibleRows() - 1))
+		if err := a.page.Redraw(ctx); err != nil {
+			return true, err
+		}
+
+		index = len(a.view.Tree) - 1
+	case "home":
+		a.treeOffset = 0
+		a.refresh()
+
+		if err := a.page.Redraw(ctx); err != nil {
+			return true, err
+		}
+
+		index = 0
+	case "end":
+		a.treeOffset = max(0, a.view.TreeTotal-a.treeVisibleRows())
+		a.refresh()
+
+		if err := a.page.Redraw(ctx); err != nil {
+			return true, err
+		}
+
+		index = len(a.view.Tree) - 1
+	case "arrowright":
+		if a.folders[path] {
+			return true, nil
+		}
+
+		if a.view.Tree[index].Dir {
+			a.toggleFolder(path)
+			if err := a.page.Redraw(ctx); err != nil {
+				return true, err
+			}
+		}
+
+		return true, a.page.Form().Focus(ctx, focus)
+	case "arrowleft":
+		if a.folders[path] {
+			a.toggleFolder(path)
+			if err := a.page.Redraw(ctx); err != nil {
+				return true, err
+			}
+
+			return true, a.page.Form().Focus(ctx, focus)
+		}
+
+		parent := dirName(path)
+		if parent == "." || parent == "" {
+			return true, nil
+		}
+
+		visible := false
+
+		for _, row := range a.view.Tree {
+			if row.Path == parent {
+				visible = true
+
+				break
+			}
+		}
+
+		if !visible {
+			index := 0
+			if treeRowIndex(a.ws.Tree, a.folders, parent, &index) {
+				a.treeOffset = max(0, index-treeParentPad)
+				a.refresh()
+
+				if err := a.page.Redraw(ctx); err != nil {
+					return true, err
+				}
+			}
+		}
+
+		return true, a.page.Form().Focus(ctx, "tree-"+parent)
+	default:
+		return false, nil
+	}
+
+	if index >= 0 && index < len(a.view.Tree) {
+		return true, a.page.Form().Focus(ctx, "tree-"+a.view.Tree[index].Path)
+	}
+
+	return true, nil
+}
+
+// onDragStart claims the history divider or the explorer thumb.
 func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	if box.ID == "tree-thumb" && a.mode == "explorer" && a.view.TreeScroll {
+		visible := a.treeVisibleRows()
+		track := visible * treeRowH
+		thumb := a.view.TreeThumbH
+		total := a.view.TreeTotal
+
+		if total <= visible || track <= thumb {
+			return false, nil
+		}
+
+		a.treeDrag = true
+		a.treeDragAt = a.treeOffset
+		a.treeScale = float64(total-visible) / float64(track-thumb)
+
+		return true, nil
+	}
+
 	if box.ID != "history-divider" || !a.historyVisible() {
 		return false, nil
 	}
 
 	a.historyDrag = true
-	a.historyStart = a.historyRatio
+	a.historyStart = float64(a.historyHeight()) / float64(a.drawerStackHeight())
+	a.historyManual = true
 	a.historyDy = 0
 	a.hoverCommit = ""
 
@@ -192,20 +498,45 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 	return true, nil
 }
 
-// onDragMove resizes the two panes from the drag delta.
+// onDragMove resizes the panes or moves the explorer thumb.
 func (a *App) onDragMove(ctx context.Context, _, dy float64) error {
+	if a.treeDrag {
+		offset := a.treeDragAt + int(dy*a.treeScale+roundHalf)
+		maxOffset := a.view.TreeTotal - a.treeVisibleRows()
+		if maxOffset < 0 {
+			maxOffset = 0
+		}
+
+		if offset < 0 {
+			offset = 0
+		}
+
+		if offset > maxOffset {
+			offset = maxOffset
+		}
+
+		if offset == a.treeOffset {
+			return nil
+		}
+
+		a.treeOffset = offset
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
 	if !a.historyDrag {
 		return nil
 	}
 
 	a.historyDy += dy
 
-	body := float64(a.bodyHeight() - histSplitH)
+	body := float64(a.drawerStackHeight())
 	if body <= 0 {
 		return nil
 	}
 
-	ratio := a.historyStart + a.historyDy/body
+	ratio := a.historyStart - a.historyDy/body
 	if ratio < historyMinRatio {
 		ratio = historyMinRatio
 	}
@@ -228,6 +559,8 @@ func (a *App) onDragMove(ctx context.Context, _, dy float64) error {
 func (a *App) onDragEnd(context.Context) error {
 	a.historyDrag = false
 	a.historyDy = 0
+	a.treeDrag = false
+	a.treeScale = 0
 
 	return nil
 }
@@ -246,12 +579,40 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return nil
 	}
 
+	if !a.paletteOpen && (key == "enter" || key == "space") && a.page.Edit().FocusedField() == "" {
+		if id := a.page.Form().FocusID(); id != "" {
+			if box, ok := findBoxID(a.page.Boxes(), id); ok {
+				if err := a.onClick(ctx, box); err != nil {
+					return err
+				}
+
+				if a.page.Form().FocusID() == "" {
+					_ = a.page.Form().Focus(ctx, id)
+				}
+
+				return a.page.Redraw(ctx)
+			}
+		}
+	}
+
 	if a.ctrl && key == "p" {
 		return a.openPalette(ctx)
 	}
 
+	if a.ctrl && key == "f" {
+		return a.openFind(ctx)
+	}
+
 	if a.ctrl && a.shift && key == "v" {
 		a.togglePreview()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.branchOpen && key == "escape" {
+		a.branchOpen = false
+		a.branchQuery = ""
+		a.refresh()
 
 		return a.page.Redraw(ctx)
 	}
@@ -275,6 +636,42 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		}
 	}
 
+	if a.page.Form().FocusID() == "find" {
+		switch key {
+		case "escape":
+			return a.closeFind(ctx)
+		case "enter":
+			a.findStep(1)
+
+			return a.page.Redraw(ctx)
+		default:
+			return nil
+		}
+	}
+
+	if handled, err := a.treeKeyDown(ctx, key); handled || err != nil {
+		return err
+	}
+
+	if a.page.Form().FocusID() == "branch-filter" {
+		switch key {
+		case "escape":
+			a.branchOpen = false
+			a.branchQuery = ""
+			a.refresh()
+
+			return a.page.Redraw(ctx)
+		case "enter":
+			if len(a.view.History.Branches) > 0 {
+				a.pickBranch(ctx, a.view.History.Branches[0].Ref)
+			}
+
+			return a.page.Redraw(ctx)
+		default:
+			return nil
+		}
+	}
+
 	if a.page.Form().FocusID() == "filter" {
 		switch key {
 		case "arrowup", "arrowdown", "pageup", "pagedown":
@@ -284,13 +681,17 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	}
 
 	if a.page.Form().FocusID() == "history-divider" && a.historyVisible() {
+		if !a.historyManual {
+			a.historyRatio = float64(a.historyHeight()) / float64(a.drawerStackHeight())
+		}
+
 		ratio := a.historyRatio
 
 		switch key {
 		case "arrowup":
-			ratio -= historyStep
-		case "arrowdown":
 			ratio += historyStep
+		case "arrowdown":
+			ratio -= historyStep
 		case "home":
 			ratio = historyDefaultRatio
 		default:
@@ -306,6 +707,7 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		}
 
 		a.historyRatio = ratio
+		a.historyManual = true
 		a.refresh()
 
 		return a.page.Redraw(ctx)
@@ -340,6 +742,10 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		}
 	case "z":
 		a.toggleWrap()
+	case "m":
+		a.togglePreview()
+
+		return a.page.Redraw(ctx)
 	case "r":
 		if a.mode == "changes" {
 			a.reloadChanges(ctx, true)
@@ -393,8 +799,20 @@ func (a *App) onKeyUp(ctx context.Context, key string) error {
 	return nil
 }
 
-// onSubmit opens the selected palette row. Enter and NumpadEnter arrive here.
+// onSubmit opens the selected palette row or advances find. Enter and
+// NumpadEnter arrive here.
 func (a *App) onSubmit(ctx context.Context) error {
+	if a.findOpen && a.page.Form().FocusID() == "find" {
+		delta := 1
+		if a.shift {
+			delta = -1
+		}
+
+		a.findStep(delta)
+
+		return a.page.Redraw(ctx)
+	}
+
 	if !a.paletteOpen || a.page.Form().FocusID() != "palette" {
 		return nil
 	}

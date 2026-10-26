@@ -82,7 +82,7 @@
 
 /* Tree --------------------------------------------------------------------- */
 
-.tree { flex: 1; min-height: 0; overflow: hidden; padding: 1px 0 4px; }
+.tree { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 1px 0 4px; }
 
 .trow {
   width: 100%;
@@ -97,7 +97,8 @@
 
 .trow:hover { background-color: var(--panel-2); color: var(--text); }
 .trow.dir { color: #9aa4b7; }
-.trow.dir .chev { color: var(--icon-strong); }
+.chev { width: 10px; height: 10px; flex: 0 0 10px; margin-right: 8px; color: #aeb8c9; }
+.trow.dir .chev { color: #aeb8c9; }
 .trow.open { color: var(--text); }
 
 .tname { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11px; }
@@ -122,6 +123,27 @@
 .fstat.st-a { color: var(--green); }
 .fstat.st-d { color: var(--red); }
 .fstat.st-u { color: var(--accent); }
+
+.tree-scroll {
+  position: absolute;
+  top: 1px;
+  right: 0;
+  bottom: 4px;
+  width: 8px;
+  display: block;
+}
+
+.tree-thumb {
+  position: absolute;
+  left: 1px;
+  width: 6px;
+  min-height: 18px;
+  display: block;
+  border-radius: 3px;
+  background-color: #2a303d;
+}
+
+.tree-scroll:hover .tree-thumb, .tree-thumb:hover { background-color: #4a5466; }
 
 .tree-tag {
   padding: 5px 13px 7px;
@@ -157,9 +179,24 @@
 }
 
 .side-foot-stack { height: auto; flex: 0 0 auto; padding: 8px 14px 10px; line-height: 1.4; white-space: normal; }
+.note-one { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-hsplit { width: 100%; }
+.side-history { border-bottom: 0; border-top: 1px solid var(--line-soft); }
+.side-history .hist-head { gap: 4px; padding: 0 6px 0 10px; }
+.side-history .hist-hash { width: 42px; flex: 0 0 42px; }
+.side-history .hist-row { gap: 5px; padding: 0 6px 0 7px; }
+.side-history .hist-subject { font-size: 9.5px; }
+.side-history .hist-when, .side-history .hist-stat { display: none; }
+.side-history .hist-meta { padding-left: 17px; }
+.side-history .hist-file { padding: 0 6px 0 17px; gap: 5px; }
+.side-history .hist-file-name { font-size: 9.5px; }
+.side-history .hist-tip { left: 6px; right: 6px; bottom: 4px; }
+.branch-actions { display: flex; align-items: center; gap: 4px; padding: 0 10px 4px 12px; }
+.side-history .branch-filter { height: auto; padding: 0 10px 4px 12px; }
 .ws-mark { width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background-color: var(--green); }
 .ws-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-weight: 600; }
 .side-sep { margin: 0 2px; color: #3a4152; }
+.tree-nav { margin-left: auto; display: flex; align-items: center; gap: 2px; }
 
 /* Source control ----------------------------------------------------------- */
 
@@ -197,6 +234,21 @@
 }
 
 .sample-pill:hover { color: var(--amber); border-color: rgba(240, 183, 90, 0.35); }
+
+.changes-head {
+  height: 28px;
+  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.changes-title { color: var(--text); font-size: 9.5px; font-weight: 650; }
+.changes-title:hover { color: var(--accent); }
+.changes-count { color: var(--dim); font-size: 8.5px; }
+.side-tag { color: var(--amber); font-family: var(--mono); font-size: 7.5px; text-transform: uppercase; }
 
 .changes { flex: 1; min-height: 0; overflow: hidden; padding: 3px 0; }
 

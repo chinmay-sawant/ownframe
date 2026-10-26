@@ -30,16 +30,6 @@ github.com/benoitkugler/textprocessing v0.0.6 h1:obkMyj62GEPg3xUVYqROlCN22z1Oleu
 github.com/benoitkugler/textprocessing v0.0.6/go.mod h1:Io0gN08/PXEzrSOWFa88xHx2Xv3VjvLMY7H76YoI23A=
 github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OUREFm80=
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261025203908-c1c0ad5820b8 h1:jsDq+6w1eBSDIxuLX7WXKBlA/CjDaTh0j7yoTf3dMGc=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261025203908-c1c0ad5820b8/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026052034-2c22297cf87e h1:qrMZM/+ns4RxkLj+l+vCaTeujjwgUlNJ99qTCP9P/Oo=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026052034-2c22297cf87e/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026082921-0f8530be4846 h1:AQkZiM1OFFxQlZFoFWdhSdfoXUwZikS+8adTbqruOkk=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026082921-0f8530be4846/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026083414-f6edf620a1ff h1:C5zg4Sej/iv0mLhpjtEvusdAUsOpt1RLzBVz5Mt3gCc=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026083414-f6edf620a1ff/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026111446-52dcd0692e54 h1:u1vGCcs3rwn63HJOVnUQzvoDvyVbmb/Stt9ahPt1gc0=
-github.com/chinmay-sawant/blinkless v0.0.4-0.20261026111446-52dcd0692e54/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/chinmay-sawant/blinkless v0.0.4-0.20261026120705-9d2ba1c7b728 h1:Ob8mmBHAP7BbwhS48OTZstB1wNkdy7OuLp0Zwmmy8Yg=
 github.com/chinmay-sawant/blinkless v0.0.4-0.20261026120705-9d2ba1c7b728/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
@@ -52,6 +42,8 @@ github.com/ebitengine/oto/v3 v3.5.0 h1:8ZDhKP3Hhslyb9NL3g4HWvhRQqwI+hKOHAXAqD6GP
 github.com/ebitengine/oto/v3 v3.5.0/go.mod h1:Elkm7yzTRns3w2efvibzVOoQ65YOwmec9a76dCiK10o=
 github.com/ebitengine/purego v0.11.0 h1:jhp/D+Nyv7UUW8HAcmcjt2N2rYrYi9m3SL21k0Ua/NI=
 github.com/ebitengine/purego v0.11.0/go.mod h1:DCHPP08djqhNSoTfImcnHYQRZmd0qhakvrozqaEYhGQ=
+github.com/fsnotify/fsnotify v1.10.1 h1:b0/UzAf9yR5rhf3RPm9gf3ehBPpf0oZKIjtpKrx59Ho=
+github.com/fsnotify/fsnotify v1.10.1/go.mod h1:TLheqan6HD6GBK6PrDWyDPBaEV8LspOxvPSjC+bVfgo=
 github.com/go-fonts/latin-modern v0.3.3 h1:g2xNgI8yzdNzIVm+qvbMryB6yGPe0pSMss8QT3QwlJ0=
 github.com/go-fonts/latin-modern v0.3.3/go.mod h1:tHaiWDGze4EPB0Go4cLT5M3QzRY3peya09Z/8KSCrpY=
 github.com/go-text/typesetting v0.3.5 h1:XZPUooClHY0Vf/rFyUyuPRNEkawARaFzLMQcXLSEyPk=

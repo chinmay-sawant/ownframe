@@ -124,6 +124,34 @@
 .crumb-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
 .crumb-btn.on { border-color: rgba(122, 162, 247, 0.5); background-color: var(--accent-soft); color: var(--accent); }
 
+.findbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; }
+.find-input {
+  width: 190px;
+  min-width: 80px;
+  height: 21px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: 0;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 9.5px;
+}
+.find-input:focus { border-color: rgba(122, 162, 247, 0.55); }
+.find-count { color: var(--dim); font-size: 8.5px; white-space: nowrap; }
+.find-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.find-btn:hover, .find-btn.on { border-color: rgba(122, 162, 247, 0.5); background-color: var(--accent-soft); color: var(--accent); }
+
 /* Code body ---------------------------------------------------------------- */
 
 .code-body {

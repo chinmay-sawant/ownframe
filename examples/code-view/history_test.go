@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -98,6 +99,52 @@ func newHistoryApp(t *testing.T) (*App, []string) {
 	}
 
 	return app, hashes
+}
+
+func TestSampleHistoryRail(t *testing.T) {
+	app := newTestApp(t)
+	clickID(t, app, "act-changes")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	view := app.View()
+	if !view.History.Visible || !view.History.Sample || len(view.History.Commits) != 3 {
+		t.Fatalf("sample history = %+v", view.History)
+	}
+
+	if view.History.Branch != "feat/probe-retries" {
+		t.Fatalf("sample branch = %q", view.History.Branch)
+	}
+
+	add, del := 0, 0
+	for _, commit := range view.History.Commits {
+		add += commit.Add
+		del += commit.Del
+	}
+
+	if add != 562 || del != 109 {
+		t.Fatalf("sample totals = +%d -%d", add, del)
+	}
+
+	short := view.History.Commits[0].Short
+	clickID(t, app, "commit-"+short)
+
+	view = app.View()
+	if view.Diff.Source != "commit" || !view.Diff.HasFiles || view.Diff.CommitShort != short {
+		t.Fatalf("sample commit diff = %+v", view.Diff)
+	}
+
+	if len(view.Diff.Rows) == 0 {
+		t.Fatal("sample commit has no diff rows")
+	}
+
+	clickID(t, app, "history-working")
+
+	if app.View().Diff.Source != "working" {
+		t.Fatalf("sample working source = %q", app.View().Diff.Source)
+	}
 }
 
 func TestHistoryPaneAndCommitExpand(t *testing.T) {
@@ -233,7 +280,7 @@ func TestHistoryHoverAndSplitDrag(t *testing.T) {
 		t.Fatalf("drag claim = %v %v", claimed, err)
 	}
 
-	if err := app.Page().Testing().MoveDrag(context.Background(), divider.X+divider.W/2, divider.Y+divider.H/2+90); err != nil {
+	if err := app.Page().Testing().MoveDrag(context.Background(), divider.X+divider.W/2, divider.Y+divider.H/2-90); err != nil {
 		t.Fatal(err)
 	}
 
@@ -515,5 +562,404 @@ func TestScrollAfterOpeningLongFile(t *testing.T) {
 
 	if app.scrollY != 200 || len(app.View().Rows) == 0 || app.View().Rows[0].No <= 1 {
 		t.Fatalf("scrollY=%d first=%d", app.scrollY, app.View().Rows[0].No)
+	}
+}
+
+func TestTreeExpandedFolderScrolls(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", "# Fixture\n")
+
+	for i := 0; i < 60; i++ {
+		writeFile(t, dir, fmt.Sprintf("many/file%02d.go", i), "package many\n")
+	}
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.Page().SetSize(1280, 720)
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	clickID(t, app, "tree-many")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	view := app.View()
+	if !view.TreeScroll || view.TreeTotal <= view.TreeVisible || len(view.Tree) >= view.TreeTotal {
+		t.Fatalf("tree total=%d visible=%d rows=%d scroll=%v", view.TreeTotal, view.TreeVisible, len(view.Tree), view.TreeScroll)
+	}
+
+	treeBox, ok := boxByID(app.Page().Boxes(), "tree-pane")
+	if !ok {
+		t.Fatal("no tree pane")
+	}
+
+	handled, err := app.onWheel(context.Background(), treeBox.X+treeBox.W/2, treeBox.Y+treeBox.H/2, 0, -3)
+	if err != nil || !handled {
+		t.Fatalf("tree wheel = %v %v", handled, err)
+	}
+
+	if app.treeOffset == 0 {
+		t.Fatal("tree wheel did not scroll")
+	}
+
+	app.treeOffset = 0
+	app.refresh()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	first := view.Tree[0].Path
+	thumb, ok := boxByID(app.Page().Boxes(), "tree-thumb")
+	if !ok {
+		t.Fatal("no tree thumb")
+	}
+
+	if _, ok := boxByID(app.Page().Boxes(), "tree-up"); !ok {
+		t.Fatal("no tree up button")
+	}
+
+	if _, ok := boxByID(app.Page().Boxes(), "tree-down"); !ok {
+		t.Fatal("no tree down button")
+	}
+
+	claimed, err := app.Page().Testing().BeginDrag(context.Background(), thumb.X+thumb.W/2, thumb.Y+thumb.H/2)
+	if err != nil || !claimed {
+		t.Fatalf("tree drag claim = %v %v", claimed, err)
+	}
+
+	if err := app.Page().Testing().MoveDrag(context.Background(), thumb.X+thumb.W/2, thumb.Y+thumb.H/2+120); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Testing().EndDrag(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.treeOffset == 0 || app.View().Tree[0].Path == first {
+		t.Fatalf("tree offset=%d first=%q", app.treeOffset, app.View().Tree[0].Path)
+	}
+}
+
+func TestBranchPickerLoadsHistoryWithoutCheckout(t *testing.T) {
+	app, _ := newHistoryApp(t)
+	dir := app.ws.Root
+
+	runGit(t, dir, "checkout", "-q", "-b", "feature")
+	writeFile(t, dir, "feature.go", "package main\n\nconst feature = true\n")
+	runGit(t, dir, "add", "-A")
+	runGit(t, dir, "commit", "-q", "-m", "feature work")
+	runGit(t, dir, "checkout", "-q", "main")
+
+	app.reloadChanges(context.Background(), false)
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	clickID(t, app, "branch-picker")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	view := app.View()
+	if !view.History.BranchOpen {
+		t.Fatal("branch picker did not open")
+	}
+
+	index := -1
+
+	for i, branch := range view.History.Branches {
+		if branch.Name == "feature" {
+			index = i
+		}
+	}
+
+	if index < 0 {
+		t.Fatalf("feature branch missing from %+v", view.History.Branches)
+	}
+
+	clickID(t, app, fmt.Sprintf("branch-%d", index))
+
+	view = app.View()
+	if view.History.Branch != "feature" || len(view.History.Commits) != 4 {
+		t.Fatalf("feature history = %+v", view.History)
+	}
+
+	if view.Branch != "main" {
+		t.Fatalf("status branch = %q, want main", view.Branch)
+	}
+
+	if view.Diff.Source != "working" {
+		t.Fatalf("diff source = %q", view.Diff.Source)
+	}
+
+	if head := runGit(t, dir, "rev-parse", "--abbrev-ref", "HEAD"); head != "main" {
+		t.Fatalf("git HEAD moved to %q", head)
+	}
+}
+
+func TestFindInFile(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+	ctx := context.Background()
+
+	if err := app.openFind(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if !app.View().FindOpen || app.Page().Form().FocusID() != "find" {
+		t.Fatalf("find open=%v focus=%q", app.View().FindOpen, app.Page().Form().FocusID())
+	}
+
+	app.view.FindQuery = "func"
+	if err := app.onChange(ctx, ownframe.Box{ID: "find"}); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := app.docs["backend/probe.go"]
+	want := strings.Count(strings.ToLower(strings.Join(doc.Lines, "\n")), "func")
+
+	if app.View().FindTotal != want || want == 0 {
+		t.Fatalf("matches = %d, want %d", app.View().FindTotal, want)
+	}
+
+	app.findStep(1)
+
+	if app.View().FindCurrent != 2 {
+		t.Fatalf("current = %d", app.View().FindCurrent)
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	match := false
+
+	for _, row := range app.View().Rows {
+		for _, seg := range row.Segments {
+			if strings.Contains(seg.Class, "find-hit") {
+				match = true
+			}
+		}
+	}
+
+	if !match {
+		t.Fatal("visible match was not highlighted")
+	}
+
+	if err := app.closeFind(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().FindOpen || len(app.findHits) != 0 {
+		t.Fatal("find did not close")
+	}
+}
+
+func TestKeyboardActivatesFocusedControl(t *testing.T) {
+	app := newTestApp(t)
+	ctx := context.Background()
+
+	if err := app.Page().Form().Focus(ctx, "act-changes"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.onKeyDown(ctx, "enter"); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().Mode != "changes" {
+		t.Fatalf("mode = %q", app.View().Mode)
+	}
+
+	if app.Page().Form().FocusID() != "act-changes" {
+		t.Fatalf("focus = %q", app.Page().Form().FocusID())
+	}
+
+	clickID(t, app, "act-explorer")
+
+	if err := app.Page().Form().Focus(ctx, "tree-backend/main.go"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.onKeyDown(ctx, "space"); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().Active != "backend/main.go" {
+		t.Fatalf("active = %q", app.View().Active)
+	}
+}
+
+func TestTreeKeyboardNavigation(t *testing.T) {
+	app := newTestApp(t)
+	ctx := context.Background()
+
+	if err := app.Page().Form().Focus(ctx, "tree-backend"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.onKeyDown(ctx, "arrowdown"); err != nil {
+		t.Fatal(err)
+	}
+
+	if focus := app.Page().Form().FocusID(); focus != "tree-backend/main.go" {
+		t.Fatalf("focus after down = %q", focus)
+	}
+
+	if err := app.onKeyDown(ctx, "arrowup"); err != nil {
+		t.Fatal(err)
+	}
+
+	if focus := app.Page().Form().FocusID(); focus != "tree-backend" {
+		t.Fatalf("focus after up = %q", focus)
+	}
+}
+
+func TestHistoryLivesInSidebar(t *testing.T) {
+	app := newTestApp(t)
+	clickID(t, app, "act-changes")
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	sidebar, ok := boxByID(app.Page().Boxes(), "sidebar")
+	if !ok {
+		t.Fatal("no sidebar")
+	}
+
+	pane, ok := boxByID(app.Page().Boxes(), "history-pane")
+	if !ok {
+		t.Fatal("history pane is not in the sidebar")
+	}
+
+	divider, ok := boxByID(app.Page().Boxes(), "history-divider")
+	if !ok {
+		t.Fatal("no history divider")
+	}
+
+	code, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("no code body")
+	}
+
+	if pane.X < sidebar.X || pane.X+pane.W > sidebar.X+sidebar.W+1 {
+		t.Fatalf("history outside sidebar: pane %.0f..%.0f sidebar %.0f..%.0f", pane.X, pane.X+pane.W, sidebar.X, sidebar.X+sidebar.W)
+	}
+
+	if divider.X < sidebar.X || divider.X+divider.W > sidebar.X+sidebar.W+1 {
+		t.Fatalf("divider outside sidebar: %.0f..%.0f", divider.X, divider.X+divider.W)
+	}
+
+	if want := float64(defaultHeight - editorBodyTop - chromeBottom); code.H != want {
+		t.Fatalf("code body height = %.0f, want %.0f", code.H, want)
+	}
+
+	if int(pane.H) != app.View().History.Height {
+		t.Fatalf("pane height = %.0f, view = %d", pane.H, app.View().History.Height)
+	}
+}
+
+func TestTreeWheelAfterPageScroll(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", "# Fixture\n")
+	for i := 0; i < 60; i++ {
+		writeFile(t, dir, fmt.Sprintf("many/file%02d.go", i), "package many\n")
+	}
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.Page().SetSize(1280, 720)
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	clickID(t, app, "tree-many")
+	app.scrollTo(400)
+	app.Page().Scroll().SetScrollOffset(0, 400)
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	tree, ok := boxByID(app.Page().Boxes(), "tree-pane")
+	if !ok {
+		t.Fatal("no tree")
+	}
+
+	before := app.treeOffset
+	handled, err := app.onWheel(context.Background(), tree.X+20, tree.Y+20+400, 0, -3)
+	if err != nil || !handled {
+		t.Fatalf("wheel = %v %v", handled, err)
+	}
+
+	if app.treeOffset <= before {
+		t.Fatalf("tree offset = %d, before %d", app.treeOffset, before)
+	}
+
+	if _, scrollY := app.Page().Scroll().ScrollOffset(); scrollY != 400 {
+		t.Fatalf("page scroll moved to %d", scrollY)
+	}
+}
+
+func TestMouseDragHistoryDivider(t *testing.T) {
+	app, _ := newHistoryApp(t)
+	divider, ok := boxByID(app.Page().Boxes(), "history-divider")
+	if !ok {
+		t.Fatal("no divider")
+	}
+
+	before := app.View().History.Height
+	ctx := context.Background()
+
+	claimed, err := app.Page().Testing().BeginDrag(ctx, divider.X+divider.W/2, divider.Y+divider.H/2)
+	if err != nil || !claimed {
+		t.Fatalf("begin drag = %v %v", claimed, err)
+	}
+
+	if err := app.Page().Testing().MoveDrag(ctx, divider.X+divider.W/2, divider.Y+divider.H/2-80); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Testing().EndDrag(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().History.Height <= before {
+		t.Fatalf("history height = %d, before %d", app.View().History.Height, before)
+	}
+}
+
+func TestCollapseAllIcon(t *testing.T) {
+	app := newTestApp(t)
+
+	if len(app.folders) == 0 {
+		t.Fatal("sample should start with open folders")
+	}
+
+	clickID(t, app, "side-collapse")
+
+	if len(app.folders) != 0 {
+		t.Fatalf("folders = %v", app.folders)
 	}
 }

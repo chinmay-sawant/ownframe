@@ -25,9 +25,11 @@ Point the viewer at another directory:
 go run ./examples/code-view -root /path/to/repo
 ```
 
-Source Control runs `git diff HEAD` and lists untracked files. A clean tree says
-so; a directory without a repository says that too. The viewer never writes to
-the repository.
+Source Control runs `git diff HEAD` and lists untracked files. A background
+fsnotify watcher refreshes the changed count and diff when a file in the current
+folder changes. It ignores `.git` churn, so a commit made outside the viewer
+still needs Refresh. A clean tree says so; a directory without a repository says
+that too. The viewer never writes to the repository.
 
 Other flags: `-dev=false` hides the developer dock, `-perf=false` stops pipeline
 sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
@@ -38,13 +40,16 @@ sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
 - The activity bar switches Explorer and Source Control, opens quick open,
   opens Details, collapses the tree, and toggles the developer dock.
 - The explorer is a foldered tree with a file filter, language badges, and
-  change letters. Its header collapse and refresh controls are clickable.
+  change letters. Folders show a right or down chevron. The header has a
+  collapse-all icon. When the tree is taller than the sidebar, use the mouse
+  wheel over the tree, drag the thin scrollbar, use the footer arrows, or move
+  focus with the keyboard.
 - Tabs keep up to eight files and shrink their names so all eight stay
   visible. The Working tree tab has its own X; closing it returns to the open
   file. Closing the last file tab shows the welcome panel.
 - The editor has line numbers, token colours, Copy path, Copy file, a Wrap
-  toggle, and a Markdown preview toggle. The active tab shows M, A, D, or U for
-  a changed file.
+  toggle, `Ctrl+F` find, and a Markdown preview toggle. The active tab shows
+  M, A, D, or U for a changed file.
 - Details reads the active file: language, line count, exact size, encoding,
   indentation, change status, and an outline. In Source Control it follows the
   selected diff file. Click an outline row to jump to the line.
@@ -67,7 +72,12 @@ the workspace. Typing filters the paths in the open folder. Enter opens the
 selected row, the arrows move it, and Escape or a click outside closes it.
 
 The sidebar filter is separate. It keeps a path filter on the explorer while
-the tree is open. Content search is not part of this pass.
+the tree is open.
+
+`Ctrl+F` opens find in the active file. It shows the match count, supports
+case-sensitive matching, next and previous with wrap-around, and highlights
+the visible matches. Escape closes the bar and restores the previous focus.
+Workspace content search is not part of this pass.
 
 ## Markdown preview
 
@@ -107,16 +117,22 @@ Control summary switch pages. The diff has unified and split modes. Changed
 words carry a stronger tint than the line background. Hunk arrows walk the
 `@@` rows.
 
-In a repository, a History rail sits above the diff. It reads up to 20 recent
-non-merge commits on the checked-out branch with one `git log` call. Click a
-commit to expand its author line, changed files, and a short patch preview
-inside the rail. Hover a commit to read its message. `Open full diff` puts the
-patch in the lower pane, and `Working tree` returns to the uncommitted changes.
-Drag the divider between the rail and the diff to resize them. The rail pages
-its commits, so it does not need a second scroll region.
+The Source Control drawer holds the working-tree files at the top and a
+History pane below them. It reads up to 20 recent non-merge commits with one
+`git log` call. Click a commit to expand its author line and changed files
+inside the pane; clicking a file opens that patch in the editor. Hover a commit
+to read its message. Drag the divider between the files and History to resize
+them; the pane auto-fits the commit count until you drag it. `Working tree`
+returns the editor to the uncommitted diff.
 
-The rail is hidden for the bundled sample and for a directory without a
-repository. The sample remains the deterministic test fixture.
+In a live repository, click the branch name in the History header to list local
+and remote branches and filter by name. Picking a branch loads its commits
+without changing the checkout. The status bar keeps showing the checked-out
+branch. `Follow HEAD` returns the pane to the checked-out branch.
+
+The bundled sample uses a fixed three-commit history built from
+`fixtures/sample.diff`. It is labeled `sample` and never runs git. A directory
+without a repository hides the pane.
 
 `fixtures/sample.diff` is the checked-in fixture for the sample workspace. It
 touches seven files: modified, added, and deleted.
@@ -153,18 +169,20 @@ slice and spacer math exact.
 The details drawer is 280 px. Opening it narrows the editor and its code rows,
 so the windowing slice is rebuilt.
 
-The history rail is a fixed paged region. It shares the editor with the diff,
-and the divider changes how much of the editor each pane gets. Only the diff
-uses the page scroll. The rail rows are capped so they never need a nested
-scroll viewport.
+The history pane is a fixed paged region at the bottom of the Source Control
+drawer. The divider changes how much of the drawer the file list and History
+get. The diff uses the full editor body and the page scroll. The history pane
+pages its commits, so it does not need a second scroll viewport.
 
 ## Keys
 
 | Key | Action |
 |---|---|
 | `Ctrl+P` | Quick open |
-| `Ctrl+Shift+V` | Markdown preview |
+| `Ctrl+F` | Find in the active file |
+| `M` or `Ctrl+Shift+V` | Markdown preview |
 | `Z` | Toggle soft wrap |
+| `Enter` `Space` | Activate the focused control |
 | `1` | Explorer |
 | `2` | Source control |
 | `3` | Details |
@@ -197,7 +215,11 @@ a paste chord, so the breadcrumb Preview button is the fallback.
 | `workspace.go` | Sample and disk scanning, file reads, limits |
 | `outline.go` | The details panel symbols |
 | `git.go` | Live working-tree changes |
-| `commits.go` | Branch history, commit metadata, and one-file patches |
+| `watch.go` | Recursive fsnotify watcher and background diff refresh |
+| `branches.go` | Local and remote branch list for the history picker |
+| `commits.go` | Commit metadata and one-file patches |
+| `sample_history.go` | Fixed sample commits built from the fixture diff |
+| `find.go` | In-file find, match rows, and highlights |
 | `wrap.go` | Soft-wrap plan and source-line anchors |
 | `components/` | HTML fragments and the stylesheets |
 
@@ -207,15 +229,19 @@ a paste chord, so the breadcrumb Preview button is the fallback.
   window.
 - Files over 512 KB and files with a NUL byte show a notice. A file over 20,000
   lines keeps the first 20,000.
-- The tree shows 26 rows. Use the filter to reach the rest of a large
-  repository.
+- The tree windows its visible rows. The wheel scrolls it under the pointer;
+  the scrollbar, footer arrows, and keyboard also work.
 - The scan skips `.git`, `node_modules`, `vendor`, build output, and binary
   extensions.
 - There is no horizontal scroll. The file view soft-wraps; a diff row clips a
   long line inside its cell and marks the cut with an ellipsis.
-- The History rail keeps 20 commits and 20 files per commit. A patch read on
+- The History pane keeps 20 commits and 20 files per commit. A patch read on
   click shares the three-second git budget, and only one patch is read at a
-  time.
+  time. The branch picker shows eight matches at a time; type to filter.
+- This example targets desktop. There is no phone layout, Android host, or
+  mobile accessibility path.
+- The fsnotify watcher is desktop-only. `-web` keeps the manual Refresh and `R`
+  path. The watcher ignores `.git` events, so external commits need Refresh.
 - `-web` serves one frame because `Serve` does not tick. The desktop window is
   the interactive path.
 - Quick open searches file names, not file contents.
@@ -237,9 +263,11 @@ JavaScript, and Markdown tokens, the diff parser, hunk numbers, word emphasis,
 split pairing, untracked files, workspace scanning, shell metrics, tabs, modes,
 filtering, pointer hits on the activity/tree/tab/diff/status controls, quick
 open defaults and filtering, Markdown preview rows and the chord, outline
-scroll jumps, details metadata, the diff pager, live commit history, commit
-expansion, the history divider, diff-cell clipping, soft-wrap rows, scrolling
-after a long file opens, devtools, the clipboard, and keyboard routing.
+scroll jumps, details metadata, the diff pager, live and sample commit history,
+branch picking without checkout, commit expansion, the sidebar history divider,
+diff-cell clipping, soft-wrap rows, in-file find, explorer windowing, wheel and
+keyboard navigation, background file watching, scrolling after a long file
+opens, devtools, the clipboard, and keyboard routing and activation.
 
 Capture the review frames:
 

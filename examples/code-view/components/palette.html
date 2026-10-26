@@ -7,7 +7,7 @@
         <circle cx="6" cy="6" r="4.1"/><path d="m9.2 9.2 3 3"/>
       </svg>
       <input id="palette" class="palette-input" type="text" data-bind="PaletteQuery" placeholder="Search files by name" autocomplete="off" spellcheck="false">
-      <button class="palette-close" id="palette-close" data-action="palette-close" type="button" title="Close search">×</button>
+      <button class="palette-close" id="palette-close" data-action="palette-close" type="button" title="Close search" aria-label="Close search">×</button>
     </div>
     <div class="palette-list">
       {{range .Palette.Rows}}

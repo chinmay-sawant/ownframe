@@ -26,11 +26,13 @@ const (
 // commitLog is the recent history of the checked-out branch.
 type commitLog struct {
 	Branch      string
+	Ref         string
 	Head        string
 	Commits     []gitCommit
 	Note        string
 	Unborn      bool
 	Unavailable bool
+	Sample      bool
 }
 
 // gitCommit is one commit from git log, with its file stats already parsed.
@@ -57,25 +59,37 @@ type commitFile struct {
 	Binary  bool
 }
 
-// loadCommitLog reads the recent commits on HEAD in one git process.
-func loadCommitLog(ctx context.Context, root string) (commitLog, error) {
+// loadCommitLog reads the recent commits on ref in one git process. An empty
+// ref means HEAD and follows the checked-out branch.
+func loadCommitLog(ctx context.Context, root, ref string) (commitLog, error) {
 	ctx, cancel := context.WithTimeout(ctx, gitTimeout)
 	defer cancel()
 
-	log := commitLog{Branch: "detached"}
+	log := commitLog{Branch: "HEAD", Ref: ref}
 
-	branch, err := gitText(ctx, root, "symbolic-ref", "--quiet", "--short", "HEAD")
-	switch {
-	case err == nil && branch != "":
-		log.Branch = branch
-	case err != nil:
-		if short, shortErr := gitText(ctx, root, "rev-parse", "--short", "HEAD"); shortErr == nil && short != "" {
-			log.Branch = "HEAD detached at " + short
+	revision := ref
+	if revision == "" {
+		revision = "HEAD"
+
+		branch, err := gitText(ctx, root, "symbolic-ref", "--quiet", "--short", "HEAD")
+		switch {
+		case err == nil && branch != "":
+			log.Branch = branch
+		case err != nil:
+			if short, shortErr := gitText(ctx, root, "rev-parse", "--short", "HEAD"); shortErr == nil && short != "" {
+				log.Branch = "HEAD detached at " + short
+			}
 		}
+	} else {
+		log.Branch = branchLabel(ref)
 	}
 
-	head, err := gitText(ctx, root, "rev-parse", "--verify", "HEAD")
+	head, err := gitText(ctx, root, "rev-parse", "--verify", revision)
 	if err != nil {
+		if ref != "" {
+			return log, err
+		}
+
 		log.Unborn = true
 		log.Note = "No commits on this branch yet."
 
@@ -90,7 +104,7 @@ func loadCommitLog(ctx context.Context, root string) (commitLog, error) {
 		"--no-color", "--no-decorate", "--no-notes", "--no-show-signature",
 		"--name-status", "--numstat",
 		"--format=%x1e%H%x00%h%x00%an%x00%aI%x00%s%x00%b%x00",
-		"HEAD", "--",
+		revision, "--",
 	)
 	if err != nil {
 		return log, err

@@ -8,15 +8,22 @@ type View struct {
 	Details bool
 	DevOn   bool
 
-	Workspace string
-	Branch    string
-	Changed   int
-	DevNote   string
+	Workspace   string
+	Branch      string
+	BranchQuery string
+	Changed     int
+	DevNote     string
 
-	Tree      []treeRow
-	TreeMore  int
-	TreeCount int
-	Filtered  bool
+	Tree         []treeRow
+	TreeCount    int
+	TreeTotal    int
+	TreeStart    int
+	TreeVisible  int
+	TreeScroll   bool
+	TreeThumbTop int
+	TreeThumbH   int
+	TreeTrackH   int
+	Filtered     bool
 
 	Tabs        []tabRow
 	ActiveTab   int
@@ -38,6 +45,11 @@ type View struct {
 	TrackTop    int
 	SpaceHeight int
 	Wrap        bool
+	FindQuery   string
+	FindOpen    bool
+	FindCase    bool
+	FindCurrent int
+	FindTotal   int
 	Welcome     bool
 	Preview     bool
 	Previewable bool
@@ -134,15 +146,23 @@ type diffView struct {
 
 // historyView is the commit rail above the diff.
 type historyView struct {
-	Visible bool
-	Height  int
-	Branch  string
-	Commits []commitRow
-	Page    int
-	Pages   int
-	Tip     commitTipView
-	Note    string
-	Unborn  bool
+	Visible     bool
+	Sample      bool
+	Height      int
+	Branch      string
+	HeadBranch  string
+	Browsing    bool
+	Detached    bool
+	Branches    []branchRow
+	BranchOpen  bool
+	BranchQuery string
+	BranchMore  int
+	Commits     []commitRow
+	Page        int
+	Pages       int
+	Tip         commitTipView
+	Note        string
+	Unborn      bool
 }
 
 // commitRow is one commit in the history rail.
@@ -182,6 +202,7 @@ type commitFileRow struct {
 // commitTipView is the hover card for one commit.
 type commitTipView struct {
 	Show    bool
+	Top     int
 	Subject string
 	Body    string
 	Meta    string

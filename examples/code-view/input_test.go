@@ -412,8 +412,9 @@ func TestDiffPager(t *testing.T) {
 	app := newTestApp(t)
 	app.mode = "changes"
 	app.changes = changeSet{Branch: "test", Note: "test"}
+	pageRows := app.changePageRows()
 
-	for i := 0; i < diffPageRows+2; i++ {
+	for i := 0; i < pageRows+2; i++ {
 		app.changes.Files = append(app.changes.Files, changedFile{Path: fmt.Sprintf("file-%02d.go", i), Status: "M"})
 	}
 
@@ -425,7 +426,7 @@ func TestDiffPager(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if app.View().Diff.Pages != 2 || app.View().Diff.Page != 1 || len(app.View().Diff.Files) != diffPageRows {
+	if app.View().Diff.Pages != 2 || app.View().Diff.Page != 1 || len(app.View().Diff.Files) != pageRows {
 		t.Fatalf("page 1 = %+v", app.View().Diff)
 	}
 
@@ -445,7 +446,7 @@ func TestDiffPager(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if app.View().Diff.Page != 1 || len(app.View().Diff.Files) != diffPageRows {
+	if app.View().Diff.Page != 1 || len(app.View().Diff.Files) != pageRows {
 		t.Fatalf("page 1 again = %+v", app.View().Diff)
 	}
 }

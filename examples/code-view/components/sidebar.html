@@ -4,12 +4,12 @@
     <span class="side-tools">
       {{if eq .Mode "explorer"}}
       <span class="side-count mono">{{.TreeCount}}</span>
-      <button class="side-btn" id="side-collapse" data-action="collapse-all" type="button" title="Collapse folders">
-        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M3 5.5 7 9.5l4-4"/></svg>
+      <button class="side-btn" id="side-collapse" data-action="collapse-all" type="button" title="Collapse all folders" aria-label="Collapse all folders">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 8 2.5l5 5M3 13.5l5-5 5 5"/></svg>
       </button>
       {{else}}
       <span class="side-count mono">{{.Changed}}</span>
-      <button class="side-btn" id="side-refresh" data-action="diff-refresh" type="button" title="Refresh changes">
+      <button class="side-btn" id="side-refresh" data-action="diff-refresh" type="button" title="Refresh changes" aria-label="Refresh changes">
         <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke-width="1.4" stroke-linecap="round"><path d="M2.2 7a4.8 4.8 0 0 1 8.2-3.4L13 6M11.8 7a4.8 4.8 0 0 1-8.2 3.4L1 8"/><path d="M13 2.4V6H9.4M1 11.6V8h3.6"/></svg>
       </button>
       {{end}}
@@ -22,14 +22,14 @@
         <circle cx="6" cy="6" r="4.1"/><path d="m9.2 9.2 3 3"/>
       </svg>
       <input id="filter" class="filter-input" type="text" data-bind="Filter" placeholder="Filter by name or path" autocomplete="off" spellcheck="false">
-      {{if .Filter}}<button class="filter-x" id="filter-clear" data-action="filter-clear" type="button" title="Clear filter">×</button>{{end}}
+      {{if .Filter}}<button class="filter-x" id="filter-clear" data-action="filter-clear" type="button" title="Clear filter" aria-label="Clear filter">×</button>{{end}}
     </div>
 
-    <div class="tree">
+    <div class="tree" id="tree-pane">
       {{range .Tree}}
-      <button class="trow{{if .Dir}} dir{{end}}{{if .Open}} open{{end}}" id="tree-{{.Path}}" style="padding-left:{{.Indent}}px" data-action="{{if .Dir}}dir:{{else}}open:{{end}}{{.Path}}" type="button" title="{{.Path}}">
+      <button class="trow{{if .Dir}} dir{{end}}{{if .Open}} open{{end}}" id="tree-{{.Path}}" style="padding-left:{{.Indent}}px" data-action="{{if .Dir}}dir:{{else}}open:{{end}}{{.Path}}" type="button" title="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{end}}{{.Path}}">
         {{if .Dir}}
-        <svg class="chev" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m3.4 1.8 3.2 3.2-3.2 3.2"/></svg>
+        {{if .Open}}<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m1.8 3.6 3.2 3.2 3.2-3.2"/></svg>{{else}}<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.6 1.8 3.2 3.2-3.2 3.2"/></svg>{{end}}
         {{else}}
         <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
         {{end}}
@@ -40,7 +40,11 @@
 
       {{if not .Tree}}<div class="tree-more">No readable files in this workspace.</div>{{end}}
       {{if .Filtered}}<div class="tree-tag">matching paths</div>{{end}}
-      {{if .TreeMore}}<div class="tree-more">{{.TreeMore}} more rows hidden. Narrow the filter.</div>{{end}}
+      {{if .TreeScroll}}
+      <button class="tree-scroll" id="tree-scroll" type="button" title="Drag to scroll files" aria-label="Scroll files" tabindex="-1" style="height:{{.TreeTrackH}}px">
+        <span class="tree-thumb" id="tree-thumb" style="top:{{.TreeThumbTop}}px;height:{{.TreeThumbH}}px"></span>
+      </button>
+      {{end}}
     </div>
 
     <div class="side-foot">
@@ -48,27 +52,27 @@
       <span class="ws-name">{{.Workspace}}</span>
       <span class="side-sep">·</span>
       <span class="dim">{{.TreeCount}} files</span>
+      {{if .TreeScroll}}
+      <span class="tree-nav">
+        <button class="side-btn" id="tree-up" data-action="tree-up" type="button" title="Scroll files up" aria-label="Scroll files up">↑</button>
+        <button class="side-btn" id="tree-down" data-action="tree-down" type="button" title="Scroll files down" aria-label="Scroll files down">↓</button>
+      </span>
+      {{end}}
     </div>
   {{else}}
-    <div class="sc-summary">
-      <button class="sc-branch" id="sc-branch" data-action="diff-refresh" type="button" title="Refresh changes">
-        <svg width="11" height="12" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round">
-          <circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/>
-          <path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/>
-        </svg>
-        {{.Branch}}
-      </button>
+    <div class="changes-head">
+      <button class="changes-title" id="history-working" data-action="history-working" type="button" title="Show the working tree diff">Working tree</button>
+      <span class="changes-count mono">{{.Changed}}</span>
+      {{if .Diff.Sample}}<span class="side-tag">sample</span>{{end}}
       {{if gt .Diff.Pages 1}}
       <span class="sc-pager">
-        <button class="sc-page-btn" id="diff-page-prev" data-action="diff-page-prev" type="button" title="Previous files">‹</button>
+        <button class="sc-page-btn" id="diff-page-prev" data-action="diff-page-prev" type="button" title="Previous files" aria-label="Previous files">‹</button>
         <span class="sc-page-num mono">{{.Diff.Page}}/{{.Diff.Pages}}</span>
-        <button class="sc-page-btn" id="diff-page-next" data-action="diff-page-next" type="button" title="Next files">›</button>
+        <button class="sc-page-btn" id="diff-page-next" data-action="diff-page-next" type="button" title="Next files" aria-label="Next files">›</button>
       </span>
       {{end}}
       <span class="sc-stats"><b class="add">+{{.Diff.TotalAdd}}</b><b class="del">−{{.Diff.TotalDel}}</b></span>
     </div>
-
-    {{if .Diff.Sample}}<button class="sample-pill" id="sample-pill" data-action="diff-note" type="button">Sample diff · not a live repo</button>{{end}}
 
     {{if .Diff.HasChanges}}
     <div class="changes">
@@ -92,8 +96,85 @@
     </div>
     {{end}}
 
-    <div class="side-foot side-foot-stack">
-      <span class="dim">{{.Diff.Note}}</span>
+    {{if .History.Visible}}
+    <button class="hsplit side-hsplit" id="history-divider" type="button" title="Drag to resize History" aria-label="Drag or use Up and Down to resize History"><span class="hsplit-grip">⇕</span></button>
+    <section class="history side-history" id="history-pane" style="height:{{.History.Height}}px">
+      <header class="hist-head">
+        <span class="hist-kicker">History</span>
+        {{if .History.Sample}}
+        <span class="hist-sample">sample</span>
+        {{else}}
+        <button class="hist-branch" id="branch-picker" data-action="branch-picker" type="button" title="View commits for another branch" aria-label="Choose a branch for history">{{.History.Branch}} ▾</button>
+        {{end}}
+        {{if not .History.BranchOpen}}<span class="hist-pages mono">{{.History.Page}}/{{.History.Pages}}</span>{{end}}
+        <span class="tabs-fill"></span>
+        {{if and (gt .History.Pages 1) (not .History.BranchOpen)}}
+        <button class="hist-btn" id="history-prev" data-action="history-prev" type="button" title="Previous commits" aria-label="Previous commits">‹</button>
+        <button class="hist-btn" id="history-next" data-action="history-next" type="button" title="Next commits" aria-label="Next commits">›</button>
+        {{end}}
+        <button class="hist-btn" id="history-refresh" data-action="diff-refresh" type="button" title="Refresh history" aria-label="Refresh history">↻</button>
+      </header>
+      <div class="hist-list">
+        {{if .History.BranchOpen}}
+        <div class="branch-panel">
+          <div class="branch-filter">
+            <input id="branch-filter" class="branch-input" type="text" data-bind="BranchQuery" placeholder="Filter branches" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="branch-actions">
+            <button class="hist-btn" id="branch-head" data-action="branch-head" type="button">Follow HEAD</button>
+            <button class="hist-btn" id="branch-close" data-action="branch-close" type="button">Close</button>
+          </div>
+          {{range $i, $branch := .History.Branches}}
+          <button class="branch-row{{if $branch.CheckedOut}} current{{end}}" id="branch-{{$i}}" data-action="branch-pick:{{$i}}" type="button" title="{{if $branch.Track}}{{$branch.Track}}{{else}}{{$branch.Ref}}{{end}}">
+            <span class="branch-mark">{{if $branch.CheckedOut}}●{{else}}○{{end}}</span>
+            <span class="branch-name">{{$branch.Name}}</span>
+            {{if $branch.Remote}}<span class="branch-tag">remote</span>{{end}}
+            {{if $branch.Track}}<span class="branch-track">{{$branch.Track}}</span>{{end}}
+          </button>
+          {{end}}
+          {{if .History.BranchMore}}<div class="branch-more">+{{.History.BranchMore}} more branches. Filter by name.</div>{{end}}
+          {{if not .History.Branches}}<div class="hist-empty">No matching branches.</div>{{end}}
+        </div>
+        {{else}}
+        {{range $commit := .History.Commits}}
+        <div class="hist-commit{{if $commit.Expanded}} open{{end}}{{if $commit.Selected}} on{{end}}">
+          <button class="hist-row" id="commit-{{$commit.Short}}" data-action="commit:{{$commit.Hash}}" type="button" title="{{$commit.Subject}}">
+            <span class="hist-dot{{if $commit.Head}} head{{end}}"></span>
+            <span class="hist-hash mono">{{$commit.Short}}</span>
+            <span class="hist-subject">{{$commit.Subject}}</span>
+            <span class="hist-when">{{$commit.Date}}</span>
+            <span class="hist-stat"><b class="add">+{{$commit.Add}}</b><b class="del">−{{$commit.Del}}</b></span>
+            <span class="hist-chev">{{if $commit.Expanded}}▾{{else}}▸{{end}}</span>
+          </button>
+          {{if $commit.Expanded}}
+          <div class="hist-meta">{{$commit.Author}} · {{$commit.Date}}{{if $commit.Head}} · HEAD{{end}}</div>
+          {{range $commit.Files}}
+          <button class="hist-file{{if .Selected}} on{{end}}" id="commit-file-{{$commit.Hash}}-{{.Path}}" data-action="commit-file:{{$commit.Hash}}:{{.Path}}" type="button" title="{{.Path}}">
+            <span class="ficon sm lang-{{.Lang}}">{{.Badge}}</span>
+            <span class="hist-file-name">{{.Name}}</span>
+            <span class="hist-file-stat"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+            <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+          </button>
+          {{end}}
+          {{if $commit.More}}<div class="hist-more">+{{$commit.More}} more files</div>{{end}}
+          {{end}}
+        </div>
+        {{end}}
+        {{if not .History.Commits}}<div class="hist-empty">{{if .History.Note}}{{.History.Note}}{{else}}No commits on this branch yet.{{end}}</div>{{end}}
+        {{end}}
+      </div>
+      {{if .History.Tip.Show}}
+      <div class="hist-tip" id="commit-tip" style="top:{{.History.Tip.Top}}px">
+        <b>{{.History.Tip.Subject}}</b>
+        {{if .History.Tip.Body}}<span>{{.History.Tip.Body}}</span>{{end}}
+        <em>{{.History.Tip.Meta}}</em>
+      </div>
+      {{end}}
+    </section>
+    {{end}}
+
+    <div class="side-foot">
+      <span class="dim note-one">{{.Diff.Note}}</span>
     </div>
   {{end}}
 </aside>

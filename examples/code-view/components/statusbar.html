@@ -23,7 +23,7 @@
   <div class="toast {{.Toast.Kind}}{{if .Toast.Show}} on{{end}}">
     <span class="toast-icon">{{if eq .Toast.Kind "success"}}✓{{else if eq .Toast.Kind "error"}}!{{else}}i{{end}}</span>
     <span class="toast-text"><b>{{.Toast.Title}}</b><span>{{.Toast.Message}}</span></span>
-    <button class="toast-x" id="toast-close" data-action="toast-close" type="button" title="Close">×</button>
+    <button class="toast-x" id="toast-close" data-action="toast-close" type="button" title="Close" aria-label="Dismiss notification">×</button>
   </div>
 </div>
 {{end}}

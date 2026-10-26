@@ -25,6 +25,8 @@ type Handlers struct {
 	// DragMove takes CSS deltas.
 	DragMove func(ctx context.Context, dx, dy float64) error
 	DragEnd  func(ctx context.Context) error
+	// Wheel offers a wheel event before the window pans the page.
+	Wheel func(ctx context.Context, x, y, dx, dy float64) (bool, error)
 	// BeforeEdit may reject an edit.
 	BeforeEdit func(ctx context.Context, box Box) error
 	// Change runs after edits; errors skip redraw.

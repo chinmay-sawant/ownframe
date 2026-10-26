@@ -39,7 +39,7 @@ var stages = []updateStage{
 	}},
 	{"scrollReq", void((*shell).applyScrollRequest)},
 	{"devRefresh", void((*shell).devRefresh)},
-	{"wheel", void((*shell).wheel)},
+	{"wheel", (*shell).wheel},
 	{"scrollWin", func(s *shell) error { return s.syncScrollWindow() }},
 	{"bitmap", func(s *shell) error { return s.prepareBitmapViewport() }},
 }

@@ -41,7 +41,13 @@ func main() {
 		return
 	}
 
-	if err := ownframe.Run(ctx, app.Page()); err != nil {
-		log.Fatal(err)
+	if err := app.StartWatcher(ctx); err != nil {
+		log.Printf("code-view: watcher unavailable: %v", err)
+	}
+	runErr := ownframe.Run(ctx, app.Page())
+	app.StopWatcher()
+
+	if runErr != nil {
+		log.Fatal(runErr)
 	}
 }

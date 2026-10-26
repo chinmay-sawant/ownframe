@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/fsnotify/fsnotify"
 )
 
 const (
@@ -34,30 +35,47 @@ const (
 	diffSplitW   = 44 + 12
 	wrapMinCols  = 8
 
+	treeRowH     = 26
+	treeHeadH    = 34
+	treeFilterH  = 42
+	treeFootH    = 32
+	treeInnerPad = 5
+	treeThumbMin = 18
+
 	histHeadH    = 32
-	histRowH     = 34
-	histFileH    = 24
+	histRowH     = 42
+	histFileH    = 30
 	histPreviewH = 18
 	histSplitH   = 7
-	histMinH     = 168
-	diffMinH     = 240
+	histMinH     = 120
+	changesHeadH = 28
+	changesMinH  = 120
 
-	historyMinRatio     = 0.18
-	historyMaxRatio     = 0.82
-	historyDefaultRatio = 0.5
-	historyExpandedRows = 3
-	historyMaxRows      = 6
-	historyPad          = 8
-	historyTipBody      = 280
-	historyStep         = 0.03
-	editorBorderPad     = 2
-	actionPair          = 2
-	halfDivisor         = 2
+	historyMinRatio      = 0.18
+	historyMaxRatio      = 0.82
+	historyDefaultRatio  = 0.55
+	historyExpandedRows  = 3
+	historyAutoRows      = 8
+	historyAutoPad       = 4
+	historyMetaH         = 22
+	historyExpandedFiles = 5
+	historyTipGap        = 2
+	historyTipFlipH      = 96
+	changeRowH           = 38
+	changeListPad        = 6
+	historyPad           = 8
+	historyTipBody       = 280
+	historyStep          = 0.03
+	editorBorderPad      = 2
+	actionPair           = 2
+	halfDivisor          = 2
+	roundHalf            = 0.5
+	treeWheelRows        = 3.0
 
-	maxTabs      = 8
-	maxTree      = 26
-	diffPageRows = 13
-	maxRecent    = 4
+	maxTabs           = 8
+	maxChangePageRows = 13
+	maxRecent         = 4
+	treeParentPad     = 2
 
 	scrollStep = 96
 	pageScroll = 420
@@ -75,9 +93,14 @@ type App struct {
 	statuses map[string]string
 	view     View
 
-	mode    string
-	filter  string
-	folders map[string]bool
+	mode           string
+	filter         string
+	folders        map[string]bool
+	treeOffset     int
+	treeDrag       bool
+	treeDragAt     int
+	treeScale      float64
+	treeWheelAccum float64
 
 	tabs   []string
 	active int
@@ -90,6 +113,12 @@ type App struct {
 	diffSource string
 
 	commits       commitLog
+	branches      []branchRow
+	headBranch    string
+	historyRef    string
+	historyLabel  string
+	branchOpen    bool
+	branchQuery   string
 	commitDetails map[string]*changedFile
 	commitKeys    []string
 	commitOpen    string
@@ -98,11 +127,12 @@ type App struct {
 	commitPreview []diffRow
 	commitPage    int
 
-	historyRatio float64
-	historyStart float64
-	historyDrag  bool
-	historyDy    float64
-	hoverCommit  string
+	historyRatio  float64
+	historyManual bool
+	historyStart  float64
+	historyDrag   bool
+	historyDy     float64
+	hoverCommit   string
 
 	details bool
 	devOn   bool
@@ -123,6 +153,16 @@ type App struct {
 	preview      bool
 	wrap         bool
 	viewportCols int
+	findOpen     bool
+	findQuery    string
+	findCase     bool
+	findIndex    int
+	findHits     []findHit
+	findReturn   string
+
+	watch        *fsnotify.Watcher
+	watchCancel  context.CancelFunc
+	watchChanges chan changeSet
 }
 
 // New scans the workspace, builds the page, and opens the README. An empty
@@ -164,6 +204,7 @@ func New(root string) (*App, error) {
 
 	if ws.Sample {
 		a.changes = sampleChangeSet()
+		a.useSampleHistory()
 	} else {
 		a.changes = changeSet{Note: "Open Source Control to read the working tree."}
 	}
@@ -195,6 +236,7 @@ func New(root string) (*App, error) {
 		DragStart: a.onDragStart,
 		DragMove:  a.onDragMove,
 		DragEnd:   a.onDragEnd,
+		Wheel:     a.onWheel,
 	})
 	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.onScroll)
@@ -283,19 +325,28 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 // buildView assembles one frame from the current state.
 func (a *App) buildView() View {
 	v := View{
-		Mode:      a.mode,
-		Filter:    a.filter,
-		Details:   a.details,
-		DevOn:     a.devOn,
-		Workspace: baseName(a.ws.Root),
-		Branch:    a.changes.Branch,
-		Changed:   len(a.changes.Files),
-		DevNote:   a.changes.Note,
-		Toast:     a.toast,
-		Wrap:      a.wrap,
+		Mode:        a.mode,
+		Filter:      a.filter,
+		Details:     a.details,
+		DevOn:       a.devOn,
+		Workspace:   baseName(a.ws.Root),
+		Branch:      a.changes.Branch,
+		Changed:     len(a.changes.Files),
+		DevNote:     a.changes.Note,
+		Toast:       a.toast,
+		Wrap:        a.wrap,
+		FindQuery:   a.findQuery,
+		FindOpen:    a.findOpen,
+		FindCase:    a.findCase,
+		FindCurrent: a.findCurrent(),
+		FindTotal:   len(a.findHits),
+		BranchQuery: a.branchQuery,
 	}
 
-	v.Tree, v.TreeMore, v.TreeCount, v.Filtered = a.treeRows()
+	v.Tree, v.TreeTotal, v.TreeCount, v.Filtered = a.treeRows()
+	v.TreeStart = a.treeOffset
+	v.TreeVisible = a.treeVisibleRows()
+	a.fillTreeScroll(&v)
 	v.Tabs = a.tabRows()
 	v.Recent = a.recentRows()
 	v.ActiveTab = a.active
@@ -379,7 +430,7 @@ func (a *App) fillCode(v *View) {
 		plan := doc.wrapped(a.codeCols())
 		start, end, track = a.windowSlice(len(plan.Rows))
 		v.TrackTop = track
-		v.Rows = plan.Rows[start:end]
+		v.Rows = a.copyFindRows(plan.Rows[start:end])
 
 		return
 	}
@@ -390,6 +441,8 @@ func (a *App) fillCode(v *View) {
 	for i := start; i < end; i++ {
 		v.Rows = append(v.Rows, codeRow{No: i + 1, Line: i, Segments: doc.Tokens[i]})
 	}
+
+	v.Rows = a.copyFindRows(v.Rows)
 }
 
 // diffColumns is the text cell count for the unified or split diff.
@@ -432,9 +485,10 @@ func (a *App) fillDiff(v *View) {
 	add, del := a.changes.totals()
 	d.TotalAdd, d.TotalDel = add, del
 
+	pageRows := a.changePageRows()
 	pages := 0
 	if len(a.changes.Files) > 0 {
-		pages = (len(a.changes.Files) + diffPageRows - 1) / diffPageRows
+		pages = (len(a.changes.Files) + pageRows - 1) / pageRows
 	}
 
 	page := a.changePage
@@ -446,9 +500,10 @@ func (a *App) fillDiff(v *View) {
 		page = 0
 	}
 
+	a.changePage = page
 	d.Page, d.Pages = page+1, pages
-	from := page * diffPageRows
-	to := min(from+diffPageRows, len(a.changes.Files))
+	from := page * pageRows
+	to := min(from+pageRows, len(a.changes.Files))
 
 	for _, file := range a.changes.Files[from:to] {
 		d.Files = append(d.Files, diffFileRow{
@@ -603,7 +658,7 @@ func (a *App) bodyHeight() int {
 
 // historyVisible reports whether the commit rail shares the editor.
 func (a *App) historyVisible() bool {
-	return a.mode == "changes" && !a.ws.Sample && !a.commits.Unavailable && a.commits.Branch != ""
+	return a.mode == "changes" && !a.commits.Unavailable && a.historyLabel != ""
 }
 
 // historyHeight is the clamped top pane height.
@@ -612,38 +667,66 @@ func (a *App) historyHeight() int {
 		return 0
 	}
 
-	body := a.bodyHeight() - histSplitH
-	maxTop := body - diffMinH
+	stack := a.drawerStackHeight()
+	maxH := stack - changesMinH
 
-	h := int(float64(body) * a.historyRatio)
+	h := 0
+	if !a.historyManual {
+		rows := min(len(a.commits.Commits), historyAutoRows)
+		if rows < 1 {
+			rows = 1
+		}
+
+		h = histHeadH + historyPad + rows*histRowH + historyAutoPad
+		if a.commitOpen != "" {
+			h = histHeadH + historyPad + historyExpandedRows*histRowH + historyMetaH + historyExpandedFiles*histFileH + historyAutoPad
+		}
+	} else {
+		h = int(float64(stack) * a.historyRatio)
+	}
 	if h < histMinH {
 		h = histMinH
 	}
 
-	if maxTop < histMinH {
-		return body / halfDivisor
+	if maxH < histMinH {
+		return stack / halfDivisor
 	}
 
-	if h > maxTop {
-		h = maxTop
+	if h > maxH {
+		h = maxH
 	}
 
 	return h
 }
 
-// diffBodyHeight is the remaining space for diff rows.
-func (a *App) diffBodyHeight() int {
-	split := 0
-	if a.historyVisible() {
-		split = histSplitH
-	}
+// diffBodyHeight is the editor body. History lives in the sidebar.
+func (a *App) diffBodyHeight() int { return a.bodyHeight() }
 
-	h := a.bodyHeight() - a.historyHeight() - split
-	if h < rowH {
-		h = rowH
+// drawerStackHeight is the Source Control space between the side header and
+// footer, after the changes header and divider.
+func (a *App) drawerStackHeight() int {
+	h := a.viewportH - chromeTop - chromeBottom - treeHeadH - treeFootH - changesHeadH - histSplitH
+	if h < 1 {
+		h = 1
 	}
 
 	return h
+}
+
+// changePageRows is how many 38 px change rows fit above History.
+func (a *App) changePageRows() int {
+	stack := a.drawerStackHeight()
+	body := stack - a.historyHeight()
+	rows := (body - changeListPad) / changeRowH
+	if rows < 1 {
+		rows = 1
+	}
+
+	if rows > maxChangePageRows {
+		rows = maxChangePageRows
+	}
+
+	return rows
 }
 
 // commitPageSize is the number of commit rows that fit on one history page.
@@ -658,26 +741,41 @@ func (a *App) commitPageSize() int {
 		size = 1
 	}
 
-	if size > historyMaxRows {
-		size = 6
-	}
-
 	return size
 }
 
 // fillHistory builds the commit rail and its expanded preview.
 func (a *App) fillHistory(v *View) {
-	h := historyView{Visible: a.historyVisible()}
+	h := historyView{
+		Visible:     a.historyVisible(),
+		Sample:      a.commits.Sample,
+		Branch:      a.historyLabel,
+		HeadBranch:  a.headBranch,
+		Browsing:    a.historyRef != "",
+		Detached:    strings.HasPrefix(a.headBranch, "HEAD detached"),
+		BranchOpen:  a.branchOpen,
+		BranchQuery: a.branchQuery,
+	}
 	if !h.Visible {
 		v.History = h
 
 		return
 	}
 
-	h.Branch = a.commits.Branch
+	if h.Branch == "" {
+		h.Branch = a.commits.Branch
+	}
+
 	h.Note = a.commits.Note
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
+
+	if a.branchOpen {
+		a.fillBranchList(&h)
+		v.History = h
+
+		return
+	}
 
 	size := a.commitPageSize()
 	h.Pages = (len(a.commits.Commits) + size - 1) / size
@@ -696,8 +794,10 @@ func (a *App) fillHistory(v *View) {
 	h.Page = a.commitPage + 1
 	from := a.commitPage * size
 	to := min(from+size, len(a.commits.Commits))
+	tipTop := histHeadH + historyPad
 
 	for _, commit := range a.commits.Commits[from:to] {
+		rowTop := tipTop
 		row := commitRow{
 			Hash:     commit.Hash,
 			Short:    commit.Short,
@@ -722,8 +822,6 @@ func (a *App) fillHistory(v *View) {
 
 			shown := min(len(commit.Files), fileRows)
 			row.More += len(commit.Files) - shown
-			left -= shown * histFileH
-
 			for _, file := range commit.Files[:shown] {
 				lang := languageOf(file.Path)
 				row.Files = append(row.Files, commitFileRow{
@@ -740,28 +838,27 @@ func (a *App) fillHistory(v *View) {
 				})
 			}
 
-			if a.commitFile != "" && a.diffSource == "commit" {
-				previewRows := left / histPreviewH
-				if previewRows < 0 {
-					previewRows = 0
-				}
-
-				if previewRows > len(a.commitPreview) {
-					previewRows = len(a.commitPreview)
-				}
-
-				row.PreviewPath = a.commitFile
-
-				if previewRows > 0 {
-					preview := append([]diffRow(nil), a.commitPreview[:previewRows]...)
-					unified, _ := a.diffColumns()
-					clipDiffRows(preview, unified, unified)
-					row.Preview = preview
-				}
-			}
 		}
 
 		h.Commits = append(h.Commits, row)
+		tipTop += histRowH
+
+		if row.Expanded {
+			tipTop += historyMetaH + len(row.Files)*histFileH
+		}
+
+		if a.hoverCommit == commit.Short {
+			tip := rowTop + histRowH + historyTipGap
+			if tip+historyTipFlipH > h.Height {
+				tip = rowTop - historyTipFlipH
+			}
+
+			if tip < histHeadH {
+				tip = histHeadH
+			}
+
+			h.Tip.Top = tip
+		}
 	}
 
 	if a.hoverCommit != "" {
@@ -785,6 +882,28 @@ func (a *App) fillHistory(v *View) {
 	}
 
 	v.History = h
+}
+
+// fillBranchList builds the filtered branch picker rows.
+func (a *App) fillBranchList(h *historyView) {
+	query := strings.ToLower(strings.TrimSpace(a.branchQuery))
+	rows := make([]branchRow, 0, len(a.branches))
+
+	for _, branch := range a.branches {
+		if query != "" && !strings.Contains(strings.ToLower(branch.Name), query) {
+			continue
+		}
+
+		rows = append(rows, branch)
+	}
+
+	const maxBranchRows = 8
+	if len(rows) > maxBranchRows {
+		h.BranchMore = len(rows) - maxBranchRows
+		rows = rows[:maxBranchRows]
+	}
+
+	h.Branches = rows
 }
 
 // windowSlice returns the row range the fixed body shows and the track offset.
@@ -830,12 +949,7 @@ func (a *App) contentHeight() int {
 		}
 	}
 
-	top := a.historyHeight()
-	if top > 0 {
-		top += histSplitH
-	}
-
-	h := editorBodyTop + top + rows*rowH + chromeBottom
+	h := editorBodyTop + rows*rowH + chromeBottom
 	if h < a.viewportH {
 		h = a.viewportH
 	}
@@ -929,82 +1043,101 @@ func (a *App) scrollTo(y int) {
 
 // resetScroll returns to the top when a new file or mode opens.
 func (a *App) resetScroll() {
+	a.resetFind()
 	a.scrollY = 0
 	a.scrollTarget = 0
 	a.scrollPending = true
 	a.page.ScrollTo(0, 0)
 }
 
-// treeRows returns the explorer list, the number of hidden rows, and the
-// workspace file count.
+// resetFind clears the find bar without touching focus.
+func (a *App) resetFind() {
+	a.findOpen = false
+	a.findQuery = ""
+	a.findCase = false
+	a.findHits = nil
+	a.findIndex = 0
+	a.findReturn = ""
+}
+
+// treeVisibleRows is the number of 26 px rows that fit in the sidebar.
+func (a *App) treeVisibleRows() int {
+	h := a.viewportH - chromeTop - chromeBottom - treeHeadH - treeFilterH - treeFootH - treeInnerPad
+	rows := h / treeRowH
+	if rows < 1 {
+		rows = 1
+	}
+
+	return rows
+}
+
+// treeRows returns the visible explorer rows, the total row count, the file
+// count, and whether the filter is active.
 func (a *App) treeRows() ([]treeRow, int, int, bool) {
 	count := len(a.ws.Files)
-
 	if a.filter != "" {
 		return a.filteredRows()
 	}
 
 	total := countTreeOpen(a.ws.Tree, a.folders)
-	rows := make([]treeRow, 0, min(total, maxTree))
-	a.walkTree(a.ws.Tree, 0, &rows)
+	visible := a.treeVisibleRows()
+	a.clampTreeOffset(total, visible)
 
-	more := total - len(rows)
-	if more < 0 {
-		more = 0
-	}
+	rows := make([]treeRow, 0, min(total, visible))
+	index := 0
+	a.walkTree(a.ws.Tree, 0, &rows, &index, a.treeOffset, a.treeOffset+visible)
 
-	return rows, more, count, false
+	return rows, total, count, false
 }
 
-// walkTree appends visible nodes until the row cap.
-func (a *App) walkTree(nodes []*fileNode, depth int, rows *[]treeRow) {
+// walkTree appends the visible nodes in the current offset window.
+func (a *App) walkTree(nodes []*fileNode, depth int, rows *[]treeRow, index *int, start, end int) {
 	for _, node := range nodes {
-		if len(*rows) >= maxTree {
+		if *index >= end {
 			return
 		}
 
-		row := treeRow{
-			Path:   node.Path,
-			Name:   node.Name,
-			Dir:    node.Dir,
-			Indent: treePad + depth*treeIndent,
+		pos := *index
+		*index++
+
+		if pos >= start {
+			row := treeRow{
+				Path:   node.Path,
+				Name:   node.Name,
+				Dir:    node.Dir,
+				Indent: treePad + depth*treeIndent,
+			}
+
+			if node.Dir {
+				row.Open = a.folders[node.Path]
+			} else if node.Meta != nil {
+				row.Lang = node.Meta.Lang
+				row.Badge = languageInfo(node.Meta.Lang).Badge
+				row.Status = a.statuses[node.Path]
+				row.StatusClass = "st-" + strings.ToLower(row.Status)
+			}
+
+			*rows = append(*rows, row)
 		}
 
-		if node.Dir {
-			row.Open = a.folders[node.Path]
-		} else if node.Meta != nil {
-			row.Lang = node.Meta.Lang
-			row.Badge = languageInfo(node.Meta.Lang).Badge
-			row.Status = a.statuses[node.Path]
-			row.StatusClass = "st-" + strings.ToLower(row.Status)
-		}
-
-		*rows = append(*rows, row)
-
-		if node.Dir && row.Open {
-			a.walkTree(node.Children, depth+1, rows)
+		if node.Dir && a.folders[node.Path] {
+			a.walkTree(node.Children, depth+1, rows, index, start, end)
 		}
 	}
 }
 
-// filteredRows returns a flat path list for the filter box.
+// filteredRows returns the visible slice of matching paths.
 func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 	query := strings.ToLower(a.filter)
-	rows := make([]treeRow, 0, maxTree)
-	matched := 0
+	visible := a.treeVisibleRows()
+	all := make([]treeRow, 0, min(len(a.ws.Files), visible))
 
 	for _, file := range a.ws.Files {
 		if !strings.Contains(strings.ToLower(file.Path), query) {
 			continue
 		}
 
-		matched++
-
-		if len(rows) >= maxTree {
-			continue
-		}
-
-		rows = append(rows, treeRow{
+		all = append(all, treeRow{
 			Path:        file.Path,
 			Name:        file.Name,
 			Indent:      treePad,
@@ -1015,12 +1148,58 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 		})
 	}
 
-	more := matched - len(rows)
-	if more < 0 {
-		more = 0
+	a.clampTreeOffset(len(all), visible)
+	from := min(a.treeOffset, len(all))
+	to := min(from+visible, len(all))
+
+	return all[from:to], len(all), len(a.ws.Files), true
+}
+
+// clampTreeOffset keeps the first visible row inside the list.
+func (a *App) clampTreeOffset(total, visible int) {
+	maxOffset := total - visible
+	if maxOffset < 0 {
+		maxOffset = 0
 	}
 
-	return rows, more, len(a.ws.Files), true
+	if a.treeOffset > maxOffset {
+		a.treeOffset = maxOffset
+	}
+
+	if a.treeOffset < 0 {
+		a.treeOffset = 0
+	}
+}
+
+// fillTreeScroll publishes the scrollbar thumb geometry.
+func (a *App) fillTreeScroll(v *View) {
+	if v.TreeTotal <= v.TreeVisible || v.TreeVisible < 1 {
+		v.TreeScroll = false
+
+		return
+	}
+
+	track := v.TreeVisible * treeRowH
+	thumb := track * v.TreeVisible / v.TreeTotal
+	if thumb < treeThumbMin {
+		thumb = 18
+	}
+
+	if thumb > track {
+		thumb = track
+	}
+
+	maxOffset := v.TreeTotal - v.TreeVisible
+	room := track - thumb
+	top := 0
+	if maxOffset > 0 && room > 0 {
+		top = v.TreeStart * room / maxOffset
+	}
+
+	v.TreeScroll = true
+	v.TreeThumbH = thumb
+	v.TreeThumbTop = top
+	v.TreeTrackH = track
 }
 
 // countTreeOpen counts every visible node with the current fold state.
@@ -1196,6 +1375,24 @@ func (a *App) closeTab(index int) {
 	a.refresh()
 }
 
+// useSampleHistory installs the fixed sample rail without running git.
+func (a *App) useSampleHistory() {
+	history, details := sampleCommitLog()
+	a.commits = history
+	a.historyLabel = history.Branch
+	a.headBranch = history.Branch
+	a.commitDetails = details
+	a.commitKeys = nil
+	a.commitOpen = ""
+	a.commitFile = ""
+	a.commitRows = nil
+	a.commitPreview = nil
+	a.commitPage = 0
+	a.hoverCommit = ""
+	a.branchOpen = false
+	a.branchQuery = ""
+}
+
 // closeWorkingTree leaves Source Control and returns to the open file. When
 // every tab is closed it opens the initial file first.
 func (a *App) closeWorkingTree(ctx context.Context) {
@@ -1206,10 +1403,50 @@ func (a *App) closeWorkingTree(ctx context.Context) {
 	a.setMode(ctx, "explorer")
 }
 
-// toggleFolder flips one directory.
+// toggleFolder flips one directory and reveals its children when it opens.
 func (a *App) toggleFolder(path string) {
 	a.folders[path] = !a.folders[path]
+
+	if a.folders[path] {
+		a.revealTreeFolder(path)
+	}
+
 	a.refresh()
+}
+
+// revealTreeFolder puts a newly expanded folder at the top of the tree.
+func (a *App) revealTreeFolder(path string) {
+	index := 0
+	if !treeRowIndex(a.ws.Tree, a.folders, path, &index) {
+		return
+	}
+
+	visible := a.treeVisibleRows()
+	if index > a.treeOffset+visible-4 {
+		a.treeOffset = index
+	}
+
+	a.clampTreeOffset(countTreeOpen(a.ws.Tree, a.folders), visible)
+}
+
+// treeRowIndex finds the row index of one path in the current fold state.
+func treeRowIndex(nodes []*fileNode, open map[string]bool, path string, index *int) bool {
+	for _, node := range nodes {
+		pos := *index
+		*index++
+
+		if node.Path == path {
+			*index = pos
+
+			return true
+		}
+
+		if node.Dir && open[node.Path] && treeRowIndex(node.Children, open, path, index) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // collapseAll closes every folder.
@@ -1217,6 +1454,8 @@ func (a *App) collapseAll() {
 	for path := range a.folders {
 		delete(a.folders, path)
 	}
+
+	a.treeOffset = 0
 
 	if a.filter != "" {
 		a.filter = ""
@@ -1242,7 +1481,7 @@ func (a *App) setMode(_ context.Context, mode string) {
 func (a *App) reloadChanges(ctx context.Context, announce bool) {
 	if a.ws.Sample {
 		a.changes = sampleChangeSet()
-		a.commits = commitLog{Unavailable: true, Note: "The bundled sample is not a git repository."}
+		a.useSampleHistory()
 		a.diffSource = "working"
 	} else {
 		next, err := loadLiveChanges(ctx, a.ws.Root)
@@ -1275,10 +1514,28 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 
 		a.changes = next
 
-		history, historyErr := loadCommitLog(ctx, a.ws.Root)
+		branches, head, branchErr := loadBranches(ctx, a.ws.Root)
+		if branchErr == nil {
+			a.branches = branches
+			a.headBranch = head
+
+			if a.changes.Branch == "detached" && head != "" {
+				a.changes.Branch = head
+			}
+
+			if a.historyRef != "" {
+				if _, ok := branchByRef(a.branches, a.historyRef); !ok {
+					a.historyRef = ""
+					a.historyLabel = head
+				}
+			}
+		}
+
+		history, historyErr := loadCommitLog(ctx, a.ws.Root, a.historyRef)
 		if historyErr != nil {
 			history = commitLog{
 				Branch:      next.Branch,
+				Ref:         a.historyRef,
 				Note:        "History unavailable: " + historyErr.Error(),
 				Unavailable: false,
 			}
@@ -1290,10 +1547,7 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 		}
 
 		a.commits = history
-
-		if history.Branch != "" {
-			a.changes.Branch = history.Branch
-		}
+		a.historyLabel = history.Branch
 
 		if a.commitOpen != "" && a.findCommit(a.commitOpen) == nil {
 			a.commitOpen = ""
@@ -1368,12 +1622,45 @@ func (a *App) rebuildDiffRows() {
 
 // selectChangePage selects the first file on the current page.
 func (a *App) selectChangePage() {
-	from := a.changePage * diffPageRows
+	from := a.changePage * a.changePageRows()
 	if from < len(a.changes.Files) {
 		a.diffPath = a.changes.Files[from].Path
 		a.rebuildDiffRows()
 	}
 
+	a.resetScroll()
+	a.refresh()
+}
+
+// pickBranch loads history for a ref without changing the checkout.
+func (a *App) pickBranch(ctx context.Context, ref string) {
+	if ref != "" {
+		if _, ok := branchByRef(a.branches, ref); !ok {
+			return
+		}
+	}
+
+	history, err := loadCommitLog(ctx, a.ws.Root, ref)
+	if err != nil {
+		a.showToast("error", "Branch history unavailable", err.Error())
+		a.refresh()
+
+		return
+	}
+
+	a.historyRef = ref
+	a.historyLabel = history.Branch
+	a.commits = history
+	a.commitOpen = ""
+	a.commitFile = ""
+	a.commitRows = nil
+	a.commitPreview = nil
+	a.commitPage = 0
+	a.hoverCommit = ""
+	a.diffSource = "working"
+	a.branchOpen = false
+	a.branchQuery = ""
+	a.rebuildDiffRows()
 	a.resetScroll()
 	a.refresh()
 }

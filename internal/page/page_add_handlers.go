@@ -36,6 +36,9 @@ func (p *Page) AddHandlers(h Handlers) {
 	if h.DragEnd != nil {
 		p.handlers.DragEnd = h.DragEnd
 	}
+	if h.Wheel != nil {
+		p.handlers.Wheel = h.Wheel
+	}
 	if h.BeforeEdit != nil {
 		p.handlers.BeforeEdit = h.BeforeEdit
 	}

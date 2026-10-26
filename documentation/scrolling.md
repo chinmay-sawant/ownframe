@@ -22,6 +22,15 @@ controls whether the page can scroll at all. Stretched pages do not show thumbs.
 
 The window maps a cursor before the page sees it ([pointer.md](pointer.md)). A scrolling page adds the offset, so page coordinates start at the content's top left. A stretched picture scales the cursor instead, so a point halfway across the window is halfway across the picture. Both mappings are in `internal/window/fit.go`.
 
+## Inner regions
+
+A page can claim a wheel event before the window pans the page. Set
+`Handlers.Wheel` to `func(ctx context.Context, x, y, dx, dy float64) (bool, error)`.
+The point is in page coordinates, including the current offset. Return true to
+consume the event; return false to let the window scroll the page. The handler
+owns any redraw. The code-view explorer uses this to scroll its file tree while
+the editor keeps the page offset.
+
 ## Page requests
 
 `Page.ScrollTo(x, y)` and `Page.ScrollBy(dx, dy)` store one request. The window consumes it through `host.ScrollRequester`, clamps it to the content, and clears it. The offset stays owned by the shell, so a request, the wheel, and a touch drag all move the same value. [interaction.md](interaction.md) has the calls.

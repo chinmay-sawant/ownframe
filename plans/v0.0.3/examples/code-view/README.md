@@ -30,8 +30,8 @@ pane or a tab. ownframe has no second OS window.
   carries no script file.
 - The diff: unified and split rows, file statuses, word emphasis, hunk
   navigation, and live `git diff HEAD` with `-root`.
-- The windowing: fixed chrome, `SetScrollWindow`, 20 px rows, and a 26-row
-  explorer cap.
+- The windowing: fixed chrome, `SetScrollWindow`, 20 px rows, a windowed
+  explorer with wheel/rail/keyboard scrolling, and a sidebar history split.
 - The details drawer: language, size, status, and outline.
 - Developer tools on by default.
 
@@ -95,11 +95,16 @@ pane or a tab. ownframe has no second OS window.
       `git.go`, `TestLiveRoot`.
 - [x] Hunk navigation, refresh, and a clean-tree state. Evidence:
       `TestModesAndDiff`, `TestCleanChangeSet`.
-- [x] Branch history rail with expandable commits, hover messages, and a
+- [x] Sidebar history pane with expandable commits, hover messages, and a
       lazy one-file patch. Evidence: `TestHistoryPaneAndCommitExpand`,
       `commits.go`.
-- [x] Draggable split between the history rail and the diff. Evidence:
-      `TestHistoryHoverAndSplitDrag`.
+- [x] Branch picker that loads history without changing the checkout.
+      Evidence: `TestBranchPickerLoadsHistoryWithoutCheckout`, `branches.go`.
+- [x] Fixed sample history built from the sample diff. Evidence:
+      `TestSampleHistoryRail`, `sample_history.go`.
+- [x] Draggable split between the working-tree files and History in the left
+      drawer. Evidence: `TestHistoryLivesInSidebar`,
+      `TestMouseDragHistoryDivider`.
 
 ### Phase 04: scrolling and chrome
 
@@ -122,7 +127,8 @@ pane or a tab. ownframe has no second OS window.
 - [x] Open, arrow, Enter, Escape, and backdrop close paths. Evidence:
       `TestQuickOpenPalette`.
 - [ ] Fuzzy ranking with a total match count.
-- [ ] `Ctrl+F` in-file find with a match count and next/previous.
+- [x] `Ctrl+F` in-file find with a match count and next/previous. Evidence:
+      `TestFindInFile`, `find.go`.
 - [ ] Symbol search over the details outline.
 - [ ] Filter history and a clear shortcut.
 - [ ] Keyboard-only path for every action.
@@ -134,7 +140,8 @@ pane or a tab. ownframe has no second OS window.
 - [ ] Watch the workspace for added, changed, and removed files.
 - [ ] Poll git status on a slow clock and refresh the changed count.
 - [ ] Keep folder expansion and the active file across a rescan.
-- [ ] Window the explorer tree instead of the 26-row cap.
+- [x] Window the explorer tree instead of the 26-row cap. Evidence:
+      `TestTreeExpandedFolderScrolls`.
 - [ ] Recent files list that survives a restart.
 - [ ] Large-repository budget: stop scanning at one clear limit and say so.
 - Gate: a new file on disk appears in the tree without a restart, and the

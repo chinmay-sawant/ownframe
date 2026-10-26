@@ -39,6 +39,7 @@
 }
 
 .hist-pages { color: var(--dim); font-size: 8.5px; }
+.hist-sample { color: var(--amber); font-family: var(--mono); font-size: 8px; }
 
 .hist-btn {
   height: 19px;
@@ -56,13 +57,37 @@
 
 .hist-list { flex: 1; min-height: 0; overflow: hidden; padding: 4px 0; }
 
+.branch-panel { display: flex; flex-direction: column; padding: 4px 0; }
+.branch-filter { height: 26px; flex: 0 0 26px; display: flex; align-items: center; gap: 5px; padding: 0 10px 4px 12px; }
+.branch-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: 0;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 9.5px;
+}
+.branch-input:focus { border-color: rgba(122, 162, 247, 0.55); }
+.branch-row { width: 100%; height: 26px; display: flex; align-items: center; gap: 7px; padding: 0 12px; color: var(--muted); }
+.branch-row:hover { background-color: var(--panel-2); color: var(--text); }
+.branch-row.current { color: var(--text); }
+.branch-mark { width: 9px; flex: 0 0 9px; color: var(--accent); font-size: 8px; }
+.branch-name { flex: 1; min-width: 0; overflow: hidden; font-family: var(--mono); font-size: 9px; white-space: nowrap; }
+.branch-tag { color: var(--dim); font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.branch-track { color: var(--green); font-family: var(--mono); font-size: 8px; }
+.branch-more { padding: 4px 12px 6px 28px; color: var(--dim); font-size: 8.5px; }
+
 .hist-commit { border-left: 2px solid transparent; }
 .hist-commit.open { border-left-color: rgba(122, 162, 247, 0.5); background-color: #0c1017; }
 .hist-commit.on { border-left-color: var(--accent); }
 
 .hist-row {
   width: 100%;
-  height: 34px;
+  height: 42px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -93,10 +118,12 @@
 .hist-subject {
   flex: 1;
   min-width: 0;
+  max-height: 25px;
   overflow: hidden;
   color: #c9d2e2;
-  font-size: 10.5px;
-  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .hist-row:hover .hist-subject { color: #fff; }
@@ -117,11 +144,11 @@
 
 .hist-file {
   width: 100%;
-  height: 24px;
+  min-height: 30px;
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0 10px 0 23px;
+  padding: 3px 10px 3px 23px;
   color: var(--muted);
 }
 
@@ -129,11 +156,13 @@
 .hist-file.on { background-color: var(--panel-3); color: var(--text); }
 
 .hist-file-name {
-  flex: 0 1 auto;
+  flex: 1;
   min-width: 0;
+  max-height: 24px;
   overflow: hidden;
-  font-size: 10px;
-  white-space: nowrap;
+  font-size: 9.5px;
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .hist-file-dir {
@@ -222,7 +251,6 @@
   position: absolute;
   left: 10px;
   right: 10px;
-  bottom: 6px;
   z-index: 40;
   display: flex;
   flex-direction: column;
@@ -234,15 +262,15 @@
   background-color: #0d1018;
 }
 
-.hist-tip b { color: var(--text); font-size: 10.5px; font-weight: 600; }
-.hist-tip span { max-height: 58px; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.45; white-space: pre-line; }
+.hist-tip b { width: 100%; color: var(--text); font-size: 10px; font-weight: 600; line-height: 1.3; white-space: normal; }
+.hist-tip span { width: 100%; max-height: 58px; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.45; white-space: normal; }
 .hist-tip em { color: var(--dim); font-family: var(--mono); font-size: 8px; font-style: normal; }
 
 /* Splitter ----------------------------------------------------------------- */
 
 .hsplit {
-  height: 7px;
-  flex: 0 0 7px;
+  height: 9px;
+  flex: 0 0 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -252,8 +280,8 @@
 }
 
 .hsplit:hover { background-color: rgba(122, 162, 247, 0.08); }
-.hsplit-grip { width: 34px; height: 2px; display: block; border-radius: 2px; background-color: #3a4152; }
-.hsplit:hover .hsplit-grip { background-color: var(--accent); }
+.hsplit-grip { width: 34px; height: 9px; display: flex; align-items: center; justify-content: center; color: #4a5466; font-size: 10px; line-height: 1; }
+.hsplit:hover .hsplit-grip { color: var(--accent); }
 
 .crumb-commit {
   height: 16px;

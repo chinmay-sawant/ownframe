@@ -12,9 +12,9 @@ Status: planned.
    the branch update only when they change.
 3. A rescan keeps folder expansion, the active tab, and the diff selection when
    those paths still exist.
-4. The explorer becomes a windowed list. It uses the same `SetScrollWindow`
-   pattern as the editor, with a second offset only while the pointer is over
-   the sidebar.
+4. The explorer becomes a windowed list with its own offset. The page wheel
+   handler scrolls it under the pointer; the draggable rail, footer arrows, and
+   keyboard remain the alternatives.
 5. Recent files persist under the user config directory, with a bounded list.
 6. A scan budget stops at one clear file count and says so. A repository larger
    than the budget is still usable through the filter.
@@ -23,10 +23,13 @@ Status: planned.
 
 ## Checklist
 
-- [ ] Add a debounced watcher behind `-root`.
+- [x] Add a debounced watcher behind `-root`. Evidence: `watch.go`,
+      `TestWatcherUpdatesWorkingTree`.
+- [x] Scroll the explorer with the wheel. Evidence: `onWheel`,
+      `TestTreeWheelAfterPageScroll`.
 - [ ] Rescan and preserve expansion, tab, and selection.
 - [ ] Poll `git status` and update the changed count.
-- [ ] Window the explorer tree.
+- [x] Window the explorer tree. Evidence: `TestTreeExpandedFolderScrolls`.
 - [ ] Persist recent files.
 - [ ] Enforce the scan budget with a visible message.
 - [ ] Reload the active file on disk change.
