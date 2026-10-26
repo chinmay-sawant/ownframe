@@ -441,6 +441,7 @@ type fileDoc struct {
 	Err         string
 	Encoding    string
 	Indent      string
+	Wrap        *wrapPlan
 }
 
 // openDoc reads and tokenizes one file.

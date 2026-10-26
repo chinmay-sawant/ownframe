@@ -10,8 +10,8 @@ Status: planned.
    path, and scroll offset. The page scroll belongs to the focused group.
 2. Add a horizontal offset to the code track. A wide track defines the page
    width, and the body clips to the viewport.
-3. Add a wrap toggle. A wrapped row changes height, so switch to a variable
-   row layout and stop using the fixed 20 px slice while wrap is on.
+3. Add a wrap toggle. Wrapped source lines become fixed 20 px visual rows, so
+   the existing slice and spacer math stays exact.
 4. Between hunks, show a collapsed context row with the skipped line count.
    Clicking it expands the context.
 5. Add go-to-line and a line-range copy.
@@ -25,7 +25,8 @@ Status: planned.
 - [ ] Give each group an active path and a scroll offset.
 - [ ] Route the scroll callback to the focused group.
 - [ ] Add a horizontal track offset.
-- [ ] Add a wrap toggle with a variable-row layout.
+- [x] Add a wrap toggle with fixed visual rows. Evidence:
+  `TestWrapLongCodeLine`, `wrap.go`.
 - [ ] Add expandable diff context.
 - [ ] Add go-to-line and range copy.
 - [ ] Add breadcrumb dropdowns.
@@ -39,8 +40,8 @@ exact.
 
 ## Risks
 
-- A variable row height breaks the fixed slice. Wrap needs its own windowing
-  path, or the row math must measure every line.
+- Wrapped rows must stay one visual row per 20 px slice. A variable row height
+  would break the spacer math; the plan keeps every visual row fixed.
 - Two editor groups double the state. Keep one owner per group and pass the
   focused group to the scroll callback.
 - A minimap is a paint cost. It needs a separate budget and an off switch.

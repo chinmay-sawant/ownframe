@@ -117,12 +117,50 @@ func gitText(ctx context.Context, root string, args ...string) (string, error) {
 	return strings.TrimSpace(string(out)), nil
 }
 
+// cappedBuffer keeps at most limit bytes and drains the rest without an EPIPE.
+type cappedBuffer struct {
+	buf       []byte
+	limit     int
+	truncated bool
+}
+
+func (b *cappedBuffer) Write(p []byte) (int, error) {
+	if room := b.limit - len(b.buf); room > 0 {
+		if len(p) <= room {
+			b.buf = append(b.buf, p...)
+		} else {
+			b.buf = append(b.buf, p[:room]...)
+			b.truncated = true
+		}
+	} else if len(p) > 0 {
+		b.truncated = true
+	}
+
+	return len(p), nil
+}
+
+// gitBytesCapped runs one git command and caps its stdout.
+func gitBytesCapped(ctx context.Context, root string, limit int, args ...string) ([]byte, bool, error) {
+	full := append([]string{"-C", root}, args...)
+	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed binary, fixed subcommand, operator-selected -C
+	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
+
+	buf := &cappedBuffer{limit: limit}
+	cmd.Stdout = buf
+
+	if err := cmd.Run(); err != nil {
+		return nil, false, fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+	}
+
+	return buf.buf, buf.truncated, nil
+}
+
 // gitBytes runs one git command. The arguments are fixed by the caller and
 // -C carries the operator-selected workspace root.
 func gitBytes(ctx context.Context, root string, args ...string) ([]byte, error) {
 	full := append([]string{"-C", root}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed binary, fixed subcommand, operator-selected -C
-	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0")
+	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
 
 	out, err := cmd.Output()
 	if err != nil {

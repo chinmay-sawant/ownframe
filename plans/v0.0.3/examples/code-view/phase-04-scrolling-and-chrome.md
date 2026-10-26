@@ -21,11 +21,12 @@ the app into a manual canvas.
    the code or diff rows and calls `SetData` only when the slice changes.
 4. `SetWindowing(true)` makes a scroll offset relayout instead of a full frame
    repaint.
-5. Every code and diff row is 20 px. The track sits at `start*20 - scrollY`.
-   The slice is trimmed so no row extends past the code body.
-6. Eight overscan rows above the band hide the seam while a wheel notch moves
-   the page 48 px. There is no bottom overscan, so a row cannot paint over the
-   status bar.
+5. Every code and diff row is 20 px. The slice starts at the first visible
+   row, so the track stays at zero and no row box overlaps the tab strip or
+   breadcrumbs. Hit testing does not apply CSS overflow clips.
+6. There is no top overscan. Eight overscan rows used to paint above the body;
+   their hit boxes stayed live under the fixed chrome. A wheel notch moves the
+   page 48 px, and the next slice starts at the new first row.
 7. The details drawer changes the editor width, which changes how many rows fit.
    The next callback rebuilds the slice for the new width.
 8. `Page.ScrollTo` queues the target. In a headless test,
@@ -35,20 +36,20 @@ the app into a manual canvas.
 
 - [x] Fixed shell with explicit pane heights.
 - [x] Page height from the code or diff row count.
-- [x] Row slice with eight-row top overscan.
+- [x] Row slice with no top overscan and no chrome overlap.
 - [x] Track offset and no bottom overhang.
 - [x] Rebuild the slice on resize.
 - [x] Reset to the top when a file, mode, or diff selection changes.
 - [x] Arrow, page, home, and end keys.
 - [x] Drawer width change rebuilds the slice.
-- [ ] Horizontal scroll or wrap for long lines.
+- [x] Soft wrap for long lines.
 - [ ] Mouse-wheel row step that matches the 48 px notch.
 - [ ] Save and restore the offset per tab.
 
 ## Gate
 
-`TestScrollWindow` confirms the track is negative, the first row advances, the
-callback reports a change, and the reset returns to row 1.
+`TestScrollWindow` confirms the track stays at zero, the first row advances,
+the callback reports a change, and the reset returns to row 1.
 `TestShellMetrics` confirms the code body height at 1500x900.
 
 ## Risks

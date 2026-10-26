@@ -95,17 +95,25 @@ pane or a tab. ownframe has no second OS window.
       `git.go`, `TestLiveRoot`.
 - [x] Hunk navigation, refresh, and a clean-tree state. Evidence:
       `TestModesAndDiff`, `TestCleanChangeSet`.
+- [x] Branch history rail with expandable commits, hover messages, and a
+      lazy one-file patch. Evidence: `TestHistoryPaneAndCommitExpand`,
+      `commits.go`.
+- [x] Draggable split between the history rail and the diff. Evidence:
+      `TestHistoryHoverAndSplitDrag`.
 
 ### Phase 04: scrolling and chrome
 
 - [x] Page scroll with fixed title bar, activity bar, explorer, tab strip,
       breadcrumbs, details, and status bar. Evidence: `TestShellMetrics`.
-- [x] Windowed code and diff rows with a 20 px row and eight-row overscan.
-      Evidence: `TestScrollWindow`.
+- [x] Windowed code and diff rows with a 20 px row. The slice starts at the
+      first visible row so overscan boxes cannot sit over the chrome. Evidence:
+      `TestScrollWindow`.
 - [x] Optional details drawer that narrows the editor and rebuilds the slice.
       Evidence: `TestDetails`.
 - [x] Single-key navigation for views, scrolling, tabs, hunks, and details.
       Evidence: `TestKeyboard`.
+- [x] Soft-wrap long lines as fixed 20 px visual rows. Evidence:
+      `TestWrapLongCodeLine`, `wrap.go`.
 
 ### Phase 05: search and command palette
 
@@ -135,7 +143,8 @@ pane or a tab. ownframe has no second OS window.
 ### Phase 07: editor depth
 
 - [ ] A second editor group with its own tab list.
-- [ ] Horizontal scroll and a word-wrap toggle for long lines.
+- [ ] Horizontal scroll.
+- [x] A word-wrap toggle for long lines. Evidence: `TestWrapLongCodeLine`.
 - [ ] Expandable diff context between hunks.
 - [ ] Go-to-line and a line-range copy.
 - [ ] Breadcrumb dropdowns for directories and symbols.

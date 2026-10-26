@@ -5,10 +5,11 @@
     <div class="tabs">
       {{if eq .Mode "changes"}}
       <div class="tab on diff-tab">
-        <button class="tab-main" id="tab-working" data-action="mode-changes" type="button" title="Working tree">
+        <button class="tab-main" id="tab-working" data-action="history-working" type="button" title="{{if .Diff.CommitShort}}{{.Diff.CommitSubject}}{{else}}Working tree{{end}}">
           <svg width="12" height="13" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
-          <span class="tab-name">Working tree</span>
+          <span class="tab-name">{{if .Diff.CommitShort}}{{.Diff.CommitShort}}{{else}}Working tree{{end}}</span>
         </button>
+        <button class="tab-x" id="tab-close-working" data-action="tab-close-working" type="button" title="Close Working tree">×</button>
       </div>
       {{end}}
       {{range $i, $t := .Tabs}}
@@ -33,6 +34,7 @@
   <div class="crumbs" id="crumbs">
     {{if eq .Mode "changes"}}
       {{if .Diff.HasFiles}}
+      {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>{{end}}
       <span class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
       <span class="crumb-path">{{if .Diff.Dir}}{{.Diff.Dir}}/{{end}}<b>{{.Diff.Name}}</b></span>
       <span class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
@@ -55,12 +57,86 @@
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
       <span class="crumb-path">{{if .ActiveDir}}{{.ActiveDir}}/{{end}}<b>{{.ActiveName}}</b></span>
       {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (Ctrl+Shift+V)">{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
+      <button class="crumb-btn{{if .Wrap}} on{{end}}" id="wrap-toggle" data-action="wrap-toggle" type="button" title="Soft wrap (Z)">Wrap</button>
       <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button">Copy path</button>
       <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button">Copy file</button>
       <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.LineCount}} lines · {{.ByteSize}}</span>
     {{end}}
   </div>
+
+  {{if .History.Visible}}
+  <section class="history" id="history-pane" style="height:{{.History.Height}}px">
+    <header class="hist-head">
+      <span class="hist-kicker">History</span>
+      <span class="hist-branch">{{.History.Branch}}</span>
+      <span class="hist-pages mono">{{.History.Page}}/{{.History.Pages}}</span>
+      <span class="tabs-fill"></span>
+      {{if gt .History.Pages 1}}
+      <button class="hist-btn" id="history-prev" data-action="history-prev" type="button" title="Previous commits">‹</button>
+      <button class="hist-btn" id="history-next" data-action="history-next" type="button" title="Next commits">›</button>
+      {{end}}
+      <button class="hist-btn" id="history-refresh" data-action="diff-refresh" type="button">Refresh</button>
+      <button class="hist-btn" id="history-working" data-action="history-working" type="button">Working tree</button>
+    </header>
+    <div class="hist-list">
+      {{range $commit := .History.Commits}}
+      <div class="hist-commit{{if $commit.Expanded}} open{{end}}{{if $commit.Selected}} on{{end}}">
+        <button class="hist-row" id="commit-{{$commit.Short}}" data-action="commit:{{$commit.Hash}}" type="button" title="{{$commit.Subject}}">
+          <span class="hist-dot{{if $commit.Head}} head{{end}}"></span>
+          <span class="hist-hash mono">{{$commit.Short}}</span>
+          <span class="hist-subject">{{$commit.Subject}}</span>
+          <span class="hist-when">{{$commit.Date}}</span>
+          <span class="hist-stat"><b class="add">+{{$commit.Add}}</b><b class="del">−{{$commit.Del}}</b></span>
+          <span class="hist-chev">{{if $commit.Expanded}}▾{{else}}▸{{end}}</span>
+        </button>
+        {{if $commit.Expanded}}
+        <div class="hist-meta">{{$commit.Author}} · {{$commit.Date}}{{if $commit.Head}} · HEAD{{end}}</div>
+        {{range $commit.Files}}
+        <button class="hist-file{{if .Selected}} on{{end}}" id="commit-file-{{$commit.Hash}}-{{.Path}}" data-action="commit-file:{{$commit.Hash}}:{{.Path}}" type="button" title="{{.Path}}">
+          <span class="ficon sm lang-{{.Lang}}">{{.Badge}}</span>
+          <span class="hist-file-name">{{.Name}}</span>
+          <span class="hist-file-dir">{{.Dir}}</span>
+          <span class="hist-file-stat"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+          <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+        </button>
+        {{end}}
+        {{if $commit.More}}<div class="hist-more">+{{$commit.More}} more files</div>{{end}}
+        {{if $commit.Preview}}
+        <div class="hist-preview">
+          {{range $commit.Preview}}
+          {{if eq .Kind "hunk"}}
+          <div class="hdrow hunk"><span class="hdhunk">{{.Hunk}}</span></div>
+          {{else if eq .Kind "meta"}}
+          <div class="hdrow meta"><span class="hdmeta">{{.Hunk}}</span></div>
+          {{else}}
+          <div class="hdrow {{.Kind}}">
+            <span class="hdnum">{{.OldNo}}</span>
+            <span class="hdnum">{{.NewNo}}</span>
+            <span class="hdsign">{{if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
+            <span class="hdcell"><span class="hdtext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+          </div>
+          {{end}}
+          {{end}}
+        </div>
+        <button class="hist-open" id="commit-open-{{$commit.Short}}" data-action="commit-open:{{$commit.Hash}}" type="button">Open full diff</button>
+        {{end}}
+        {{if $commit.PreviewErr}}<div class="hist-error">{{$commit.PreviewErr}}</div>{{end}}
+        {{end}}
+      </div>
+      {{end}}
+      {{if not .History.Commits}}<div class="hist-empty">{{if .History.Note}}{{.History.Note}}{{else}}No commits on this branch yet.{{end}}</div>{{end}}
+    </div>
+    {{if .History.Tip.Show}}
+    <div class="hist-tip" id="commit-tip">
+      <b>{{.History.Tip.Subject}}</b>
+      {{if .History.Tip.Body}}<span>{{.History.Tip.Body}}</span>{{end}}
+      <em>{{.History.Tip.Meta}}</em>
+    </div>
+    {{end}}
+  </section>
+  <button class="hsplit" id="history-divider" type="button" title="Drag to resize History"><span class="hsplit-grip"></span></button>
+  {{end}}
 
   <div class="code-body" id="code-body">
     {{if eq .Mode "changes"}}
@@ -151,7 +227,7 @@
       <div class="track" style="top:{{.TrackTop}}px">
         {{range .Rows}}
         <div class="crow">
-          <span class="ln">{{.No}}</span>
+          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
           <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
         </div>
         {{end}}

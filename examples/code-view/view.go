@@ -37,6 +37,7 @@ type View struct {
 	Rows        []codeRow
 	TrackTop    int
 	SpaceHeight int
+	Wrap        bool
 	Welcome     bool
 	Preview     bool
 	Previewable bool
@@ -48,6 +49,7 @@ type View struct {
 	Recent      []recentRow
 
 	Diff         diffView
+	History      historyView
 	Outline      []symbolRow
 	Toast        toastView
 	Palette      paletteView
@@ -78,9 +80,12 @@ type tabRow struct {
 	Active      bool
 }
 
-// codeRow is one source line with its prebuilt spans.
+// codeRow is one visual source row with its prebuilt spans. No is zero on a
+// wrapped continuation row.
 type codeRow struct {
 	No       int
+	Line     int
+	Start    int
 	Segments []segment
 }
 
@@ -95,29 +100,91 @@ type recentRow struct {
 
 // diffView is the Source Control panel and the diff header.
 type diffView struct {
-	Files      []diffFileRow
-	Selected   string
-	Split      bool
-	Status     string
-	StatusCls  string
-	Path       string
-	Name       string
-	Dir        string
-	Lang       string
-	Badge      string
-	Add        int
-	Del        int
-	TotalAdd   int
-	TotalDel   int
-	Hunks      int
-	Rows       []diffRow
-	TrackTop   int
-	HasFiles   bool
-	Page       int
-	Pages      int
-	Sample     bool
-	Note       string
-	EmptyTitle string
+	Files         []diffFileRow
+	Selected      string
+	Split         bool
+	Status        string
+	StatusCls     string
+	Path          string
+	Name          string
+	Dir           string
+	Lang          string
+	Badge         string
+	Add           int
+	Del           int
+	TotalAdd      int
+	TotalDel      int
+	Hunks         int
+	Rows          []diffRow
+	TrackTop      int
+	HasFiles      bool
+	HasChanges    bool
+	Page          int
+	Pages         int
+	Sample        bool
+	Note          string
+	EmptyTitle    string
+	Source        string
+	CommitHash    string
+	CommitShort   string
+	CommitSubject string
+	CommitAuthor  string
+	CommitDate    string
+}
+
+// historyView is the commit rail above the diff.
+type historyView struct {
+	Visible bool
+	Height  int
+	Branch  string
+	Commits []commitRow
+	Page    int
+	Pages   int
+	Tip     commitTipView
+	Note    string
+	Unborn  bool
+}
+
+// commitRow is one commit in the history rail.
+type commitRow struct {
+	Hash        string
+	Short       string
+	Subject     string
+	Author      string
+	Date        string
+	Body        string
+	Add         int
+	Del         int
+	Files       []commitFileRow
+	More        int
+	Expanded    bool
+	Selected    bool
+	Head        bool
+	Preview     []diffRow
+	PreviewPath string
+	PreviewErr  string
+}
+
+// commitFileRow is one changed file inside an expanded commit.
+type commitFileRow struct {
+	Path        string
+	Name        string
+	Dir         string
+	Status      string
+	StatusClass string
+	Lang        string
+	Badge       string
+	Add         int
+	Del         int
+	Selected    bool
+}
+
+// commitTipView is the hover card for one commit.
+type commitTipView struct {
+	Show    bool
+	Subject string
+	Body    string
+	Meta    string
 }
 
 // diffFileRow is one changed file in the source control list.

@@ -42,9 +42,13 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
+  width: 100%;
+  overflow: hidden;
   white-space: pre;
+  font-family: var(--mono);
 }
+
+.dlinetext span { font-family: var(--mono); }
 
 .drow.add { background-color: var(--green-bg); }
 .drow.add .dnum, .drow.add .dsign { background-color: rgba(63, 185, 80, 0.10); color: var(--green); }

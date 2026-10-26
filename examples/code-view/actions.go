@@ -15,13 +15,19 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 	switch {
 	case action == "":
-		return nil
+		if box.ID == "filter" || box.ID == "palette" {
+			return nil
+		}
+
+		return a.page.Form().Focus(ctx, "")
 	case action == "toast-close":
 		a.clearToast()
 	case action == "mode-explorer":
 		a.setMode(ctx, "explorer")
 	case action == "mode-changes":
 		a.setMode(ctx, "changes")
+	case action == "tab-close-working":
+		a.closeWorkingTree(ctx)
 	case action == "palette-open":
 		return a.openPalette(ctx)
 	case action == "palette-close":
@@ -53,6 +59,8 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.toggleDetails()
 	case action == "preview-toggle":
 		a.togglePreview()
+	case action == "wrap-toggle":
+		a.toggleWrap()
 	case action == "details-close":
 		a.details = false
 		a.refresh()
@@ -71,6 +79,28 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "devtools":
 		a.showToast("info", "Developer tools", devMessage(!a.devOn))
 		a.SetDevTools(!a.devOn)
+	case action == "history-working":
+		a.showWorkingDiff()
+	case action == "history-prev":
+		if a.commitPage > 0 {
+			a.commitPage--
+			a.refresh()
+		}
+	case action == "history-next":
+		size := a.commitPageSize()
+		if (a.commitPage+1)*size < len(a.commits.Commits) {
+			a.commitPage++
+			a.refresh()
+		}
+	case strings.HasPrefix(action, "commit-file:"):
+		rest := strings.TrimPrefix(action, "commit-file:")
+		if parts := strings.SplitN(rest, ":", actionPair); len(parts) == actionPair {
+			a.selectCommitFile(ctx, parts[0], parts[1])
+		}
+	case strings.HasPrefix(action, "commit-open:"):
+		a.openCommitDiff(ctx, strings.TrimPrefix(action, "commit-open:"))
+	case strings.HasPrefix(action, "commit:"):
+		a.toggleCommit(ctx, strings.TrimPrefix(action, "commit:"))
 	case strings.HasPrefix(action, "open:"):
 		a.openFile(strings.TrimPrefix(action, "open:"))
 	case strings.HasPrefix(action, "dir:"):
@@ -91,7 +121,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 	}
 
-	return nil
+	return a.page.Form().Focus(ctx, "")
 }
 
 // onChange keeps the filter and the palette query in app state after the
@@ -116,6 +146,88 @@ func (a *App) onChange(_ context.Context, box ownframe.Box) error {
 		a.paletteIndex = 0
 		a.refresh()
 	}
+
+	return nil
+}
+
+// onHover shows the commit message card while a history row is hovered.
+func (a *App) onHover(_ context.Context, _, next ownframe.Box) (bool, error) {
+	if a.historyDrag {
+		return false, nil
+	}
+
+	short := ""
+
+	if strings.HasPrefix(next.ID, "commit-") &&
+		!strings.HasPrefix(next.ID, "commit-file-") &&
+		!strings.HasPrefix(next.ID, "commit-open-") {
+		short = strings.TrimPrefix(next.ID, "commit-")
+	}
+
+	if short == a.hoverCommit {
+		return false, nil
+	}
+
+	a.hoverCommit = short
+	a.refresh()
+
+	return false, nil
+}
+
+// onDragStart claims the history divider.
+func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	if box.ID != "history-divider" || !a.historyVisible() {
+		return false, nil
+	}
+
+	a.historyDrag = true
+	a.historyStart = a.historyRatio
+	a.historyDy = 0
+	a.hoverCommit = ""
+
+	if err := a.page.Form().Focus(ctx, "history-divider"); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// onDragMove resizes the two panes from the drag delta.
+func (a *App) onDragMove(ctx context.Context, _, dy float64) error {
+	if !a.historyDrag {
+		return nil
+	}
+
+	a.historyDy += dy
+
+	body := float64(a.bodyHeight() - histSplitH)
+	if body <= 0 {
+		return nil
+	}
+
+	ratio := a.historyStart + a.historyDy/body
+	if ratio < historyMinRatio {
+		ratio = historyMinRatio
+	}
+
+	if ratio > historyMaxRatio {
+		ratio = historyMaxRatio
+	}
+
+	if ratio == a.historyRatio {
+		return nil
+	}
+
+	a.historyRatio = ratio
+	a.refresh()
+
+	return a.page.Redraw(ctx)
+}
+
+// onDragEnd releases the history divider.
+func (a *App) onDragEnd(context.Context) error {
+	a.historyDrag = false
+	a.historyDy = 0
 
 	return nil
 }
@@ -164,7 +276,39 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	}
 
 	if a.page.Form().FocusID() == "filter" {
-		return nil
+		switch key {
+		case "arrowup", "arrowdown", "pageup", "pagedown":
+		default:
+			return nil
+		}
+	}
+
+	if a.page.Form().FocusID() == "history-divider" && a.historyVisible() {
+		ratio := a.historyRatio
+
+		switch key {
+		case "arrowup":
+			ratio -= historyStep
+		case "arrowdown":
+			ratio += historyStep
+		case "home":
+			ratio = historyDefaultRatio
+		default:
+			return nil
+		}
+
+		if ratio < historyMinRatio {
+			ratio = historyMinRatio
+		}
+
+		if ratio > historyMaxRatio {
+			ratio = historyMaxRatio
+		}
+
+		a.historyRatio = ratio
+		a.refresh()
+
+		return a.page.Redraw(ctx)
 	}
 
 	switch key {
@@ -189,7 +333,13 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "f":
 		return a.focusFilter(ctx)
 	case "w":
-		a.closeTab(a.active)
+		if a.mode == "changes" {
+			a.closeWorkingTree(ctx)
+		} else {
+			a.closeTab(a.active)
+		}
+	case "z":
+		a.toggleWrap()
 	case "r":
 		if a.mode == "changes" {
 			a.reloadChanges(ctx, true)
@@ -264,6 +414,10 @@ func (a *App) onSubmit(ctx context.Context) error {
 	}
 
 	a.openFile(rows[index].Path)
+
+	if err := a.page.Form().Focus(ctx, ""); err != nil {
+		return err
+	}
 
 	return a.page.Redraw(ctx)
 }

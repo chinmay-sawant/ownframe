@@ -1,0 +1,292 @@
+/* Commit history rail ------------------------------------------------------- */
+
+.history {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: #0b0e14;
+}
+
+.hist-head {
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.hist-kicker {
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hist-branch {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.hist-pages { color: var(--dim); font-size: 8.5px; }
+
+.hist-btn {
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.hist-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
+
+.hist-list { flex: 1; min-height: 0; overflow: hidden; padding: 4px 0; }
+
+.hist-commit { border-left: 2px solid transparent; }
+.hist-commit.open { border-left-color: rgba(122, 162, 247, 0.5); background-color: #0c1017; }
+.hist-commit.on { border-left-color: var(--accent); }
+
+.hist-row {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 8px;
+  color: var(--muted);
+}
+
+.hist-row:hover { background-color: var(--panel-2); color: var(--text); }
+
+.hist-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border: 1px solid #3a4152;
+  border-radius: 50%;
+  background-color: #0b0e14;
+}
+
+.hist-dot.head { border-color: var(--accent); background-color: var(--accent); }
+
+.hist-hash {
+  width: 52px;
+  flex: 0 0 52px;
+  color: var(--dim);
+  font-size: 8.5px;
+}
+
+.hist-subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #c9d2e2;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.hist-row:hover .hist-subject { color: #fff; }
+.hist-when { flex: 0 0 auto; color: var(--dim); font-family: var(--mono); font-size: 8.5px; }
+.hist-stat { flex: 0 0 auto; display: flex; gap: 5px; font-family: var(--mono); font-size: 8.5px; font-weight: 700; }
+.hist-chev { width: 10px; flex: 0 0 10px; color: var(--dim); font-size: 9px; text-align: center; }
+
+.hist-meta {
+  height: 22px;
+  padding: 0 12px 0 23px;
+  overflow: hidden;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.hist-file {
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px 0 23px;
+  color: var(--muted);
+}
+
+.hist-file:hover { background-color: var(--panel-2); color: var(--text); }
+.hist-file.on { background-color: var(--panel-3); color: var(--text); }
+
+.hist-file-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.hist-file-dir {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.hist-file-stat { display: flex; gap: 5px; font-family: var(--mono); font-size: 8px; font-weight: 700; }
+
+.hist-more, .hist-error {
+  padding: 2px 12px 4px 23px;
+  color: var(--dim);
+  font-size: 8.5px;
+}
+
+.hist-error { color: var(--amber); }
+
+.hist-preview {
+  margin: 2px 8px 2px 23px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #090c12;
+}
+
+.hdrow {
+  height: 18px;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 18px;
+  white-space: nowrap;
+  color: #b9c3d4;
+}
+
+.hdnum {
+  width: 28px;
+  flex: 0 0 28px;
+  padding-right: 5px;
+  text-align: right;
+  color: #394253;
+  font-size: 8px;
+}
+
+.hdsign { width: 14px; flex: 0 0 14px; text-align: center; color: #566072; font-weight: 700; }
+.hdcell { position: relative; flex: 1; min-width: 0; overflow: hidden; padding-right: 8px; }
+.hdtext { position: absolute; top: 0; left: 0; width: 100%; overflow: hidden; white-space: pre; font-family: var(--mono); }
+
+.hdrow.add { background-color: var(--green-bg); }
+.hdrow.add .hdnum, .hdrow.add .hdsign { color: var(--green); }
+.hdrow.del { background-color: var(--red-bg); }
+.hdrow.del .hdnum, .hdrow.del .hdsign { color: var(--red); }
+.hdrow.hunk { background-color: rgba(122, 162, 247, 0.075); }
+.hdhunk { padding-left: 8px; color: #7d9bd6; font-size: 8.5px; }
+.hdrow.meta { background-color: rgba(240, 183, 90, 0.06); }
+.hdmeta { padding-left: 8px; color: var(--amber); font-size: 8.5px; }
+
+.hist-open {
+  margin: 3px 8px 5px 23px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 8.5px;
+}
+
+.hist-open:hover { border-color: rgba(122, 162, 247, 0.4); color: var(--accent); }
+
+.hist-empty {
+  padding: 18px 16px;
+  color: var(--dim);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.hist-tip {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 6px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 7px;
+  background-color: #0d1018;
+}
+
+.hist-tip b { color: var(--text); font-size: 10.5px; font-weight: 600; }
+.hist-tip span { max-height: 58px; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.45; white-space: pre-line; }
+.hist-tip em { color: var(--dim); font-family: var(--mono); font-size: 8px; font-style: normal; }
+
+/* Splitter ----------------------------------------------------------------- */
+
+.hsplit {
+  height: 7px;
+  flex: 0 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background-color: #090c11;
+}
+
+.hsplit:hover { background-color: rgba(122, 162, 247, 0.08); }
+.hsplit-grip { width: 34px; height: 2px; display: block; border-radius: 2px; background-color: #3a4152; }
+.hsplit:hover .hsplit-grip { background-color: var(--accent); }
+
+.crumb-commit {
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  border-radius: 3px;
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  font-size: 8.5px;
+}
+
+.crumb-subject {
+  max-width: 280px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1300px) {
+  .hist-when { display: none; }
+  .hist-tip span { max-height: 40px; }
+}
+
+@media (max-width: 1050px) {
+  .hist-kicker { display: none; }
+  #history-working { display: none; }
+  .hist-subject { font-size: 10px; }
+  .crumb-subject { max-width: 140px; }
+}
+
+@media (max-width: 900px) {
+  .hist-when, .hist-stat { display: none; }
+  .hist-btn { padding: 0 4px; }
+}

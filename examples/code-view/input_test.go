@@ -317,6 +317,31 @@ func TestActionControlsHaveIDs(t *testing.T) {
 	check()
 }
 
+func TestFixedChromeClickAfterScroll(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+	app.scrollTo(400)
+	app.Page().Scroll().SetScrollOffset(0, 400)
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	tab, ok := boxByID(app.Page().Boxes(), "tab-0")
+	if !ok {
+		t.Fatal("no first tab")
+	}
+
+	// The window adds the page offset before hit testing a fixed box.
+	if err := app.Page().Click(context.Background(), tab.X+tab.W/2, tab.Y+tab.H/2+400); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.active != 0 {
+		t.Fatalf("tab click after scroll left active=%d", app.active)
+	}
+}
+
 func TestOutlineClickScrolls(t *testing.T) {
 	app := newTestApp(t)
 	app.openFile("backend/probe.go")

@@ -14,8 +14,9 @@ go run ./examples/code-view
 ```
 
 The viewer opens the current directory and reads the working-tree diff at
-startup. The default window is 1500x900 and the minimum is 840x700, so the page
-fits beside the 340 px developer dock. The bundled `testdata/sample` is the
+startup. The default window is 1500x900 and the minimum is 840x700. The
+developer dock takes 340 px, so close it with F12 on windows narrower than about
+1180 px if the page needs the full width. The bundled `testdata/sample` is the
 deterministic fixture the test suite uses.
 
 Point the viewer at another directory:
@@ -39,10 +40,11 @@ sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
 - The explorer is a foldered tree with a file filter, language badges, and
   change letters. Its header collapse and refresh controls are clickable.
 - Tabs keep up to eight files and shrink their names so all eight stay
-  visible. Closing the last tab shows the welcome panel.
-- The editor has line numbers, token colours, Copy path, Copy file, and a
-  Markdown preview toggle. The active tab shows M, A, D, or U for a changed
-  file.
+  visible. The Working tree tab has its own X; closing it returns to the open
+  file. Closing the last file tab shows the welcome panel.
+- The editor has line numbers, token colours, Copy path, Copy file, a Wrap
+  toggle, and a Markdown preview toggle. The active tab shows M, A, D, or U for
+  a changed file.
 - Details reads the active file: language, line count, exact size, encoding,
   indentation, change status, and an outline. In Source Control it follows the
   selected diff file. Click an outline row to jump to the line.
@@ -51,8 +53,11 @@ sampling, `-addr` changes the `-web` address, and `-web` serves the first frame.
 
 The developer dock opens on start, so F12 closes it instead of opening it. The
 window lays the page out beside the dock, so the page controls stay clickable.
-The layout fits a 1280x720 window and a 1920x1080 one, but long lines clip
-sooner on the small size.
+The layout fits a 1280x720 window and a 1920x1080 one.
+
+Long lines soft-wrap by default. The Wrap chip in the breadcrumb or `Z` turns
+that off and back on. Wrapped rows keep the 20 px grid, and a continuation row
+leaves the line number column blank.
 
 ## Search
 
@@ -102,6 +107,17 @@ Control summary switch pages. The diff has unified and split modes. Changed
 words carry a stronger tint than the line background. Hunk arrows walk the
 `@@` rows.
 
+In a repository, a History rail sits above the diff. It reads up to 20 recent
+non-merge commits on the checked-out branch with one `git log` call. Click a
+commit to expand its author line, changed files, and a short patch preview
+inside the rail. Hover a commit to read its message. `Open full diff` puts the
+patch in the lower pane, and `Working tree` returns to the uncommitted changes.
+Drag the divider between the rail and the diff to resize them. The rail pages
+its commits, so it does not need a second scroll region.
+
+The rail is hidden for the bundled sample and for a directory without a
+repository. The sample remains the deterministic test fixture.
+
 `fixtures/sample.diff` is the checked-in fixture for the sample workspace. It
 touches seven files: modified, added, and deleted.
 
@@ -137,12 +153,18 @@ slice and spacer math exact.
 The details drawer is 280 px. Opening it narrows the editor and its code rows,
 so the windowing slice is rebuilt.
 
+The history rail is a fixed paged region. It shares the editor with the diff,
+and the divider changes how much of the editor each pane gets. Only the diff
+uses the page scroll. The rail rows are capped so they never need a nested
+scroll viewport.
+
 ## Keys
 
 | Key | Action |
 |---|---|
 | `Ctrl+P` | Quick open |
 | `Ctrl+Shift+V` | Markdown preview |
+| `Z` | Toggle soft wrap |
 | `1` | Explorer |
 | `2` | Source control |
 | `3` | Details |
@@ -151,7 +173,7 @@ so the windowing slice is rebuilt.
 | `Page Up` `Page Down` | Scroll a page |
 | `Home` `End` | First or last row |
 | `R` | Reload the open file, or refresh the diff |
-| `W` | Close the active tab |
+| `W` | Close the active tab, or the Working tree tab in Source Control |
 | `S` `U` | Split or unified diff |
 | `N` `P` | Next or previous hunk |
 | `Esc` | Close Details or the toast |
@@ -174,7 +196,9 @@ a paste chord, so the breadcrumb Preview button is the fallback.
 | `diff.go` | Unified diff parser, word emphasis, row builders |
 | `workspace.go` | Sample and disk scanning, file reads, limits |
 | `outline.go` | The details panel symbols |
-| `git.go` | Live `-root` changes |
+| `git.go` | Live working-tree changes |
+| `commits.go` | Branch history, commit metadata, and one-file patches |
+| `wrap.go` | Soft-wrap plan and source-line anchors |
 | `components/` | HTML fragments and the stylesheets |
 
 ## Limits
@@ -187,7 +211,11 @@ a paste chord, so the breadcrumb Preview button is the fallback.
   repository.
 - The scan skips `.git`, `node_modules`, `vendor`, build output, and binary
   extensions.
-- Long lines clip. There is no horizontal scroll or word wrap yet.
+- There is no horizontal scroll. The file view soft-wraps; a diff row clips a
+  long line inside its cell and marks the cut with an ellipsis.
+- The History rail keeps 20 commits and 20 files per commit. A patch read on
+  click shares the three-second git budget, and only one patch is read at a
+  time.
 - `-web` serves one frame because `Serve` does not tick. The desktop window is
   the interactive path.
 - Quick open searches file names, not file contents.
@@ -209,8 +237,9 @@ JavaScript, and Markdown tokens, the diff parser, hunk numbers, word emphasis,
 split pairing, untracked files, workspace scanning, shell metrics, tabs, modes,
 filtering, pointer hits on the activity/tree/tab/diff/status controls, quick
 open defaults and filtering, Markdown preview rows and the chord, outline
-scroll jumps, details metadata, the diff pager, scrolling, devtools, the
-clipboard, and keyboard routing.
+scroll jumps, details metadata, the diff pager, live commit history, commit
+expansion, the history divider, diff-cell clipping, soft-wrap rows, scrolling
+after a long file opens, devtools, the clipboard, and keyboard routing.
 
 Capture the review frames:
 

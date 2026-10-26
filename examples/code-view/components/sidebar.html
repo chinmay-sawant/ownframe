@@ -70,7 +70,7 @@
 
     {{if .Diff.Sample}}<button class="sample-pill" id="sample-pill" data-action="diff-note" type="button">Sample diff · not a live repo</button>{{end}}
 
-    {{if .Diff.HasFiles}}
+    {{if .Diff.HasChanges}}
     <div class="changes">
       {{range .Diff.Files}}
       <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}">

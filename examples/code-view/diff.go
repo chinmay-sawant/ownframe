@@ -65,6 +65,65 @@ type diffRow struct {
 	RightPad  bool
 }
 
+// clipDiffRows trims long diff text so a cell cannot paint into its neighbour.
+func clipDiffRows(rows []diffRow, unified, split int) {
+	for i := range rows {
+		row := &rows[i]
+		cols := unified
+
+		if row.Kind == "split" {
+			cols = split
+			row.Left = clipSegments(row.Left, cols)
+			row.Right = clipSegments(row.Right, cols)
+
+			continue
+		}
+
+		row.Left = clipSegments(row.Left, cols)
+		row.Right = clipSegments(row.Right, cols)
+
+		if row.Hunk != "" {
+			runes := []rune(row.Hunk)
+			if len(runes) > cols {
+				row.Hunk = string(runes[:cols]) + "…"
+			}
+		}
+	}
+}
+
+// clipSegments keeps at most max runes and marks the cut with an ellipsis.
+func clipSegments(segs []segment, max int) []segment {
+	if max < 1 {
+		return nil
+	}
+
+	var (
+		out   []segment
+		count int
+	)
+
+	for _, seg := range segs {
+		runes := []rune(seg.Text)
+		if count+len(runes) <= max {
+			out = append(out, seg)
+			count += len(runes)
+
+			continue
+		}
+
+		take := max - count
+		if take > 0 {
+			out = append(out, segment{Text: string(runes[:take]) + "…", Class: seg.Class})
+		} else if len(out) > 0 {
+			out[len(out)-1].Text += "…"
+		}
+
+		return out
+	}
+
+	return out
+}
+
 const (
 	diffLinesPerFileEstimate = 8
 	diffRowsPerHunkEstimate  = 8
