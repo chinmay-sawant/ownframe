@@ -1,0 +1,179 @@
+<section class="screen-page pf-page" id="pf-page">
+  <header class="pf-head">
+    <div class="pf-head-copy">
+      <span class="eyebrow">Account</span>
+      <div class="pf-head-row">
+        <h1 class="pf-title">Portfolio</h1>
+        <span class="pf-value mono">{{.Portfolio.TotalValue}}</span>
+        <span class="pf-live"><span class="dot anim-pulse"></span>Live</span>
+      </div>
+      <div class="pf-pl">
+        <span class="pf-pl-item">
+          <span class="pf-pl-label">Day P&amp;L</span>
+          <span class="pf-pl-val mono {{if .Portfolio.DayUp}}up{{else}}down{{end}}">{{.Portfolio.DayPL}}<em>{{.Portfolio.DayPct}}</em></span>
+        </span>
+        <span class="pf-pl-divider"></span>
+        <span class="pf-pl-item">
+          <span class="pf-pl-label">Total P&amp;L</span>
+          <span class="pf-pl-val mono {{if .Portfolio.TotalUp}}up{{else}}down{{end}}">{{.Portfolio.TotalPL}}<em>{{.Portfolio.TotalPct}}</em></span>
+        </span>
+      </div>
+    </div>
+
+    <div class="pf-head-side">
+      <div class="pf-head-chips">
+        <span class="pf-head-chip"><span>Buying power</span><b class="mono">{{.Portfolio.BuyingPower}}</b></span>
+        <span class="pf-head-chip"><span>Cash</span><b class="mono">{{.Portfolio.Cash}}</b></span>
+      </div>
+      <div class="pf-actions">
+        <button class="chip pf-action" id="pf-refresh" data-action="refresh-data">
+          <svg class="pf-btn-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M13.2 8A5.2 5.2 0 1 1 11.6 4.2" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round"/><path d="M13.2 2.6v3.6H9.6" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Refresh
+        </button>
+        <button class="chip pf-action" id="pf-export" data-action="portfolio-export">
+          <svg class="pf-btn-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2.4v7.3" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round"/><path d="M5.1 7 8 9.9 10.9 7" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.8 12.6h10.4" fill="none" stroke="#8b95a5" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="pf-stats">
+    <article class="pf-stat anim-rise">
+      <span class="pf-stat-label">Buying Power</span>
+      <span class="pf-stat-value mono">{{.Portfolio.BuyingPower}}</span>
+      <div class="pf-stat-foot"><span class="pf-stat-note">Available</span><span class="pf-stat-bar"><i class="anim-grow-x"></i></span></div>
+    </article>
+    <article class="pf-stat anim-rise">
+      <span class="pf-stat-label">Cash</span>
+      <span class="pf-stat-value mono">{{.Portfolio.Cash}}</span>
+      <div class="pf-stat-foot"><span class="pf-stat-note">Settled</span><span class="pf-stat-bar"><i class="anim-grow-x"></i></span></div>
+    </article>
+    <article class="pf-stat anim-rise">
+      <span class="pf-stat-label">Invested</span>
+      <span class="pf-stat-value mono">{{.Portfolio.Invested}}</span>
+      <div class="pf-stat-foot"><span class="pf-stat-note">At cost</span><span class="pf-stat-bar"><i class="anim-grow-x"></i></span></div>
+    </article>
+    <article class="pf-stat anim-rise">
+      <span class="pf-stat-label">Margin</span>
+      <span class="pf-stat-value mono">{{.Portfolio.Margin}}</span>
+      <div class="pf-stat-foot"><span class="pf-stat-note">Used</span><span class="pf-stat-bar"><i class="anim-grow-x"></i></span></div>
+    </article>
+  </div>
+
+  <div class="pf-grid">
+    <div class="pf-main">
+      <section class="panel pf-perf">
+        <div class="panel-head">
+          <span class="panel-title">Performance</span>
+          <span class="panel-sub">Value vs benchmark</span>
+          <span class="spacer"></span>
+          <span class="pf-legend"><i class="pf-legend-line"></i>Portfolio</span>
+          <span class="pf-legend pf-legend-muted"><i class="pf-legend-line"></i>Benchmark</span>
+        </div>
+
+        <div class="pf-chart">
+          <div class="pf-stage" aria-hidden="true">
+            {{range $i, $label := .Portfolio.Performance.YLabels}}<span class="pf-rule" style="transform:translate(0%,{{$.PFGuideY $i}}%);"><i></i></span>{{end}}
+            {{range .Portfolio.Performance.BenchmarkSegments}}<span class="pf-seg pf-seg-bench" style="transform:translate({{$.PFSegmentX .}}%,{{$.PFSegmentY .}}%);"><i style="width:{{$.PFSegmentWidth .}}%;height:{{.Width}}px;top:{{$.PFSegmentTop .}}px;transform:rotate({{.Angle}}deg);"></i></span>{{end}}
+            {{range .Portfolio.Performance.Segments}}<span class="pf-seg pf-seg-main" style="transform:translate({{$.PFSegmentX .}}%,{{$.PFSegmentY .}}%);"><i style="width:{{$.PFSegmentWidth .}}%;height:{{.Width}}px;top:{{$.PFSegmentTop .}}px;transform:rotate({{.Angle}}deg);"></i></span>{{end}}
+            {{range $i, $label := .Portfolio.Performance.YLabels}}<span class="pf-guide" style="transform:translate(0%,{{$.PFGuideY $i}}%);"><span class="pf-ylabel mono {{$label.Tone}}">{{$label.Text}}</span></span>{{end}}
+            <span class="pf-lastdot" style="transform:translate({{.PFLastPointX}}%,{{.PFLastPointY}}%);"><span class="pf-lastdot-cell"><i class="pf-lastdot-halo anim-halo"></i><i class="pf-lastdot-core anim-pulse"></i></span></span>
+            {{range $i, $label := .Portfolio.Performance.XLabels}}<span class="pf-xlabel{{if eq $i 0}} pf-xlabel-first{{end}}" style="transform:translate({{$label.Left}},{{$label.Top}});"><i class="mono {{$label.Tone}}">{{$label.Text}}</i></span>{{end}}
+          </div>
+
+          <span class="pf-scan anim-scan"></span>
+        </div>
+
+        <div class="pf-perf-foot">
+          <span class="pf-perf-stat"><span>Start</span><b class="mono">{{.Portfolio.Performance.Start}}</b></span>
+          <span class="pf-perf-stat"><span>End</span><b class="mono">{{.Portfolio.Performance.End}}</b></span>
+          <span class="pf-perf-stat pf-perf-return"><span>Return</span><b class="mono {{if .Portfolio.Performance.Up}}up{{else}}down{{end}}">{{.Portfolio.Performance.Return}}</b></span>
+        </div>
+      </section>
+
+      <section class="panel pf-holdings">
+        <div class="panel-head">
+          <span class="panel-title">Holdings</span>
+          <span class="panel-sub">{{len .Portfolio.Holdings}} positions</span>
+          <span class="spacer"></span>
+          <span class="pf-head-note">Weight of book</span>
+        </div>
+
+        <div class="pf-thead">
+          <span>Symbol / Name</span>
+          <span class="pf-num">Qty</span>
+          <span class="pf-num">Avg</span>
+          <span class="pf-num">Last</span>
+          <span class="pf-num">Value</span>
+          <span class="pf-num">P&amp;L</span>
+          <span class="pf-num">Weight</span>
+        </div>
+
+        <div class="pf-tbody">
+          {{range .Portfolio.Holdings}}<div class="pf-row" id="pf-holding-{{.Symbol}}" data-action="holding-{{.Symbol}}">
+            <span class="pf-sym"><b class="mono">{{.Symbol}}</b><span>{{.Name}}</span></span>
+            <span class="mono pf-num">{{.Qty}}</span>
+            <span class="mono pf-num">{{.Avg}}</span>
+            <span class="mono pf-num">{{.Last}}</span>
+            <span class="mono pf-num pf-value-cell">{{.Value}}</span>
+            <span class="pf-pnl {{if .Up}}up{{else}}down{{end}}"><b class="mono">{{.PNL}}</b><i class="mono">{{.Pct}}</i></span>
+            <span class="pf-weight"><span class="pf-weight-bar"><i style="width:{{printf "%.1f" .Bar}}%"></i></span><em class="mono">{{.Weight}}</em></span>
+          </div>{{end}}
+        </div>
+      </section>
+    </div>
+
+    <aside class="pf-side">
+      <section class="panel pf-alloc">
+        <div class="panel-head">
+          <span class="panel-title">Allocation</span>
+          <span class="spacer"></span>
+          <span class="panel-sub">{{len .Portfolio.Allocation}} sleeves</span>
+        </div>
+        <div class="pf-alloc-body">
+          <div class="pf-alloc-bar">
+            {{range .Portfolio.Allocation}}<span class="pf-alloc-seg anim-grow-x" style="width:{{printf "%.1f" .Weight}}%;background:{{.Color}};"></span>{{end}}
+          </div>
+          <div class="pf-alloc-legend">
+            {{range .Portfolio.Allocation}}<div class="pf-alloc-row">
+              <i class="pf-swatch" style="background:{{.Color}};"></i>
+              <span class="pf-alloc-label">{{.Label}}</span>
+              <span class="pf-alloc-value mono">{{.Value}}</span>
+              <span class="pf-alloc-pct mono">{{.Pct}}</span>
+            </div>{{end}}
+          </div>
+        </div>
+      </section>
+
+      <section class="panel pf-acct">
+        <div class="panel-head">
+          <span class="panel-title">Account stats</span>
+          <span class="spacer"></span>
+          <span class="panel-sub">Live</span>
+        </div>
+        <div class="pf-acct-grid">
+          {{range .Portfolio.Stats}}<div class="pf-acct-cell">
+            <span class="pf-acct-label">{{.Label}}</span>
+            <span class="pf-acct-value mono {{if .Tone}}{{.Tone}}{{else if .Up}}up{{else}}down{{end}}">{{.Value}}</span>
+          </div>{{end}}
+        </div>
+      </section>
+
+      <section class="panel pf-activity">
+        <div class="panel-head">
+          <span class="panel-title">Activity</span>
+          <span class="spacer"></span>
+          <span class="pf-live pf-live-small"><span class="dot anim-pulse"></span>Feed</span>
+        </div>
+        <div class="pf-events">
+          {{range .Portfolio.Events}}<div class="pf-event">
+            <span class="pf-event-time mono">{{.Time}}</span>
+            <span class="pf-event-text">{{.Text}}</span>
+            <span class="pf-event-value mono {{if .Up}}up{{else}}down{{end}}">{{.Value}}</span>
+          </div>{{end}}
+        </div>
+      </section>
+    </aside>
+  </div>
+</section>

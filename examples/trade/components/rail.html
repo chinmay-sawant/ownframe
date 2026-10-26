@@ -1,0 +1,66 @@
+<nav class="rail" id="rail-main" aria-label="Terminal sections">
+  <div class="rail-brand" title="Meridian Terminal">
+    <span class="rail-mark" aria-hidden="true">
+      <span class="rail-eq">
+        <span class="rail-eq-bar rail-eq-1 anim-eq phase-1"></span>
+        <span class="rail-eq-bar rail-eq-2 anim-eq phase-2"></span>
+        <span class="rail-eq-bar rail-eq-3 anim-eq phase-3"></span>
+        <span class="rail-eq-bar rail-eq-4 anim-eq phase-4"></span>
+      </span>
+    </span>
+  </div>
+
+  <div class="rail-nav">
+    <button class="rail-btn{{if eq .Screen "watchlist"}} on{{end}}" id="rail-watchlist" aria-label="Watchlist" data-action="nav-watchlist">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.4" y="3.2" width="13.2" height="11.6" rx="1.4"/><path d="M2.4 7.1h13.2M7.1 7.1v7.7"/><path d="M4.6 5.1h.01M4.6 9h.01M4.6 12.9h.01"/><path d="M9.1 5.1h4.3M9.1 9h4.3M9.1 12.9h4.3"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+
+    <button class="rail-btn{{if eq .Screen "markets"}} on{{end}}" id="rail-markets" aria-label="Markets" data-action="nav-markets">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.3"/><path d="M2.7 9h12.6"/><path d="M9 2.7c1.9 1.8 2.9 3.9 2.9 6.3S10.9 13.5 9 15.3C7.1 13.5 6.1 11.4 6.1 9S7.1 4.5 9 2.7z"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+
+    <div class="rail-sep" role="separator" aria-orientation="horizontal"></div>
+
+    <button class="rail-btn{{if eq .Screen "portfolio"}} on{{end}}" id="rail-portfolio" aria-label="Portfolio" data-action="nav-portfolio">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.2" stroke-dasharray="28 11"/><circle cx="9" cy="9" r="2.4"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+
+    <button class="rail-btn{{if eq .Screen "orders"}} on{{end}}" id="rail-orders" aria-label="Orders" data-action="nav-orders">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.2"/><path d="M9 5.3V9l2.6 1.5"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+
+    <button class="rail-btn{{if eq .Screen "screener"}} on{{end}}" id="rail-screener" aria-label="Screener" data-action="nav-screener">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 3.4h13l-5 5.9v4.4l-3 1.7v-6.1z"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+
+    <button class="rail-btn{{if eq .Screen "news"}} on{{end}}" id="rail-news" aria-label="News" data-action="nav-news">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.4" width="10.2" height="11.2" rx="1.3"/><path d="M12.7 6.4h1.7c.6 0 1.1.5 1.1 1.1v5.4c0 .9-.7 1.6-1.6 1.6H5.4"/><path d="M4.8 6.5h5.6M4.8 9.1h5.6M4.8 11.7h3.4"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+
+    <button class="rail-btn{{if eq .Screen "settings"}} on{{end}}" id="rail-settings" aria-label="Settings" data-action="nav-settings">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.1 2.2h1.8l.25 1.55.98.4 1.28-.92 1.27 1.27-.92 1.28.4.98 1.55.25v1.8l-1.55.25-.4.98.92 1.28-1.27 1.27-1.28-.92-.98.4-.25 1.55H8.1l-.25-1.55-.98-.4-1.28.92-1.27-1.27.92-1.28-.4-.98-1.55-.25V8.1l1.55-.25.4-.98-.92-1.28 1.27-1.27 1.28.92.98-.4z"/><circle cx="9" cy="9" r="2.2"/></svg>
+      <span class="rail-active-bar" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <div class="rail-foot">
+    <button class="rail-btn" id="rail-shortcuts" aria-label="Keyboard shortcuts" data-action="shortcuts">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.3" y="5.1" width="13.4" height="8.5" rx="1.5"/><circle cx="4.9" cy="7.6" r="0.55" fill="#8b95a5" stroke="none"/><circle cx="7.2" cy="7.6" r="0.55" fill="#8b95a5" stroke="none"/><circle cx="9.5" cy="7.6" r="0.55" fill="#8b95a5" stroke="none"/><circle cx="11.8" cy="7.6" r="0.55" fill="#8b95a5" stroke="none"/><path d="M4.9 10.6h6.1"/></svg>
+    </button>
+
+    <button class="rail-btn" id="rail-help" aria-label="Help" data-action="help">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="6.3"/><path d="M6.9 6.7a2.2 2.2 0 0 1 4.2 1c0 1.4-2.1 1.5-2.1 2.9"/><circle cx="9" cy="13.1" r="0.75" fill="#8b95a5" stroke="none"/></svg>
+    </button>
+
+    <div class="rail-me">
+      <span class="rail-live anim-pulse" aria-hidden="true"></span>
+      <button class="avatar rail-avatar {{.AvatarClass}}" id="rail-profile" data-action="profile" title="{{.ProfileName}}" aria-label="Profile">{{.ProfileInitials}}</button>
+    </div>
+  </div>
+</nav>

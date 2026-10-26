@@ -1,0 +1,275 @@
+<section class="chart-area" id="chart-area">
+  <header class="chart-header">
+    <div class="chart-quote">
+      <span class="chart-logo {{.Quote.LogoClass}}" aria-hidden="true">{{.ChartLogoText}}</span>
+      <div class="chart-quote-id">
+        <div class="chart-quote-line">
+          <span class="chart-symbol">{{if .Quote.Symbol}}{{.Quote.Symbol}}{{else}}MERIDIAN{{end}}</span>
+          {{if .Quote.Market}}<span class="tag chart-mkt{{if eq .Quote.Market "HK"}} hk{{else if eq .Quote.Market "EV"}} ev{{end}}">{{.Quote.Market}}</span>{{end}}
+          {{if .Quote.Exchange}}<span class="chart-exchange">{{.Quote.Exchange}}</span>{{end}}
+        </div>
+        <span class="chart-name">{{if .Quote.Name}}{{.Quote.Name}}{{else}}No instrument selected{{end}}</span>
+      </div>
+    </div>
+
+    <div class="chart-price-block">
+      <span class="chart-price mono">{{if .Quote.Price}}{{.Quote.Price}}{{else}}—{{end}}</span>
+      <span class="chart-change">
+        <span class="mono {{if .Quote.Up}}up{{else}}down{{end}}">{{if .Quote.Change}}{{.Quote.Change}}{{else}}0.00{{end}}</span>
+        <span class="mono {{if .Quote.Up}}up{{else}}down{{end}}">{{if .Quote.ChangePct}}{{.Quote.ChangePct}}{{else}}0.00%{{end}}</span>
+        <span class="chart-live-inline"><span class="dot anim-pulse"></span>Live{{if .Quote.Updated}} · {{.Quote.Updated}}{{end}}</span>
+      </span>
+    </div>
+
+    <div class="chart-bbo">
+      <div class="chart-bbo-col">
+        <span class="chart-bbo-label">Bid</span>
+        <span class="chart-bbo-value"><span class="mono up">{{if .BBO.BidPrice}}{{.BBO.BidPrice}}{{else}}{{.Quote.Bid}}{{end}}</span><span class="chart-bbo-size mono">{{.BBO.BidSize}}</span></span>
+      </div>
+      <span class="chart-bbo-rule" aria-hidden="true"></span>
+      <div class="chart-bbo-col">
+        <span class="chart-bbo-label">Ask</span>
+        <span class="chart-bbo-value"><span class="mono down">{{if .BBO.AskPrice}}{{.BBO.AskPrice}}{{else}}{{.Quote.Ask}}{{end}}</span><span class="chart-bbo-size mono">{{.BBO.AskSize}}</span></span>
+      </div>
+    </div>
+
+    <span class="spacer"></span>
+
+    <div class="chart-actions">
+      <button class="icon-btn chart-icon-btn" id="chart-update" data-action="update" type="button" title="Update available" aria-label="Update available">
+        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v6.8"/><path d="M5.2 7 8 9.8 10.8 7"/><path d="M3 12.4h10"/></svg>
+      </button>
+      <button class="icon-btn chart-icon-btn" id="chart-refresh" data-action="refresh-data" type="button" title="Refresh data" aria-label="Refresh data">
+        <svg class="icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.2 8a5.2 5.2 0 1 1-1.5-3.7"/><path d="M13.4 2.6v3.1H10.3"/></svg>
+      </button>
+      <button class="icon-btn chart-icon-btn chart-bell" id="chart-bell" data-action="bell" type="button" title="Notifications" aria-label="Notifications">
+        <svg class="icon" width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.7a4 4 0 0 0-4 4v2.6L3.7 11.4h10.6L13 9.3V6.7a4 4 0 0 0-4-4z"/><path d="M7.3 14.3a1.8 1.8 0 0 0 3.4 0"/></svg>
+        {{if gt .Notifications 0}}<span class="chart-bell-badge mono">{{.Notifications}}</span>{{end}}
+      </button>
+      <span class="chart-live-tag"><span class="chart-live-orb" aria-hidden="true"><span class="chart-live-halo anim-halo"></span><span class="chart-live-dot anim-pulse"></span></span>LIVE</span>
+    </div>
+  </header>
+
+  <div class="chart-tabs">
+    {{range .ChartTabs}}
+    <button class="chart-tab{{if .Active}} on{{end}}" id="chart-tab-{{.Key}}" data-action="chart-tab-{{.Key}}" type="button">{{.Label}}{{if .Count}}<span class="chart-tab-count mono">{{.Count}}</span>{{end}}</button>
+    {{end}}
+    <span class="spacer"></span>
+    <span class="chart-tabs-status"><span class="dot{{if not .MarketOpen}} dim{{end}}"></span>{{if .Quote.Status}}{{.Quote.Status}}{{else}}{{.MarketStatus}}{{end}}</span>
+  </div>
+
+  <div class="chart-card">
+    <div class="panel-head chart-head">
+      <span class="panel-title">{{if eq .ChartTab "options"}}Option chain{{else if eq .ChartTab "news"}}Headlines{{else if eq .ChartTab "financial"}}Financials{{else}}Chart{{end}}</span>
+      {{if and .Quote.Currency (ne .ChartTab "news")}}<span class="chart-head-note">{{.Quote.Currency}}</span>{{end}}
+      {{if eq .ChartTab "chart"}}
+      <div class="chart-tf-strip">
+        {{range .Timeframes}}
+        <button class="chart-tf{{if .Active}} on{{end}}" id="tf-{{.Key}}" data-action="tf-{{.Key}}" type="button">{{.Label}}</button>
+        {{end}}
+      </div>
+      {{end}}
+      <span class="spacer"></span>
+      {{if eq .ChartTab "chart"}}
+      <div class="chart-legend">
+        <span class="chart-legend-item"><i class="chart-legend-swatch chart-swatch-a"></i>SMA 8</span>
+        <span class="chart-legend-item"><i class="chart-legend-swatch chart-swatch-b"></i>SMA 21</span>
+        <span class="chart-legend-item"><i class="chart-legend-swatch chart-swatch-c"></i>SMA 50</span>
+      </div>
+      {{end}}
+    </div>
+
+    <div class="chart-body">
+      {{if eq .ChartTab "options"}}
+      <div class="chart-pane chart-options-pane">
+        <div class="chart-options-row chart-options-head">
+          <span>Strike</span>
+          <span>Last</span>
+          <span>Bid</span>
+          <span>Ask</span>
+          <span>Volume</span>
+          <span>OI</span>
+          <span>IV</span>
+          <span>Delta</span>
+        </div>
+        <div class="chart-options-list">
+          {{range .Options}}
+          <div class="chart-options-row{{if .ITM}} itm{{end}}">
+            <span class="chart-strike mono">{{.Strike}}</span>
+            <span class="mono">{{.Last}}</span>
+            <span class="mono up">{{.Bid}}</span>
+            <span class="mono down">{{.Ask}}</span>
+            <span class="mono">{{.Volume}}</span>
+            <span class="mono">{{.OI}}</span>
+            <span class="mono">{{.IV}}</span>
+            <span class="mono">{{.Delta}}</span>
+          </div>
+          {{else}}
+          <div class="chart-empty">No option chain for this symbol.</div>
+          {{end}}
+        </div>
+      </div>
+      {{else if eq .ChartTab "news"}}
+      <div class="chart-pane chart-news-pane">
+        <div class="chart-news-list">
+          {{range .ChartNews}}
+          <div class="chart-news-row{{if .Hot}} hot{{end}}">
+            <span class="chart-news-meta"><span class="chart-news-source">{{.Source}}</span><span class="chart-news-time mono">{{.Time}}</span></span>
+            <span class="chart-news-title">{{.Title}}</span>
+            <span class="chart-news-ticker mono">{{.Ticker}}</span>
+            <span class="tag {{if .Up}}green{{else}}red{{end}} chart-news-tag">{{.Tag}}</span>
+          </div>
+          {{else}}
+          <div class="chart-empty">No headlines for this symbol.</div>
+          {{end}}
+        </div>
+        <div class="chart-news-foot"><span class="dot amber" aria-hidden="true"></span><span>Synthetic headlines · no live feed</span><span class="spacer"></span><span class="mono">{{len .ChartNews}} items</span></div>
+      </div>
+      {{else if eq .ChartTab "financial"}}
+      <div class="chart-pane chart-fin-pane">
+        <div class="chart-fin-grid">
+          {{range .Financials}}
+          <div class="chart-fin-cell">
+            <span class="chart-fin-label">{{.Label}}</span>
+            <span class="chart-fin-value mono{{if .Up}} up{{end}}">{{.Value}}</span>
+          </div>
+          {{else}}
+          <div class="chart-empty">No financial summary for this symbol.</div>
+          {{end}}
+        </div>
+      </div>
+      {{else}}
+      <div class="chart-summary">
+        <span class="chart-summary-period">{{.Chart.Summary.Period}}</span>
+        <span class="chart-summary-delta {{if .Chart.Summary.Up}}up{{else}}down{{end}}">
+          <svg class="chart-summary-arrow" width="6" height="6" viewBox="0 0 6 6" aria-hidden="true"><path d="{{if .Chart.Summary.Up}}M3 1 5.4 5H.6Z{{else}}M3 5 .6 1h4.8Z{{end}}" fill="{{if .Chart.Summary.Up}}#3ddc84{{else}}#f0606a{{end}}"/></svg>
+          <span class="mono">{{.Chart.Summary.Change}}</span>
+          <span class="mono chart-summary-pct">{{.Chart.Summary.Pct}}</span>
+        </span>
+        <span class="chart-summary-stats">
+          <span class="chart-summary-stat chart-stat-o"><i>O</i><b class="mono">{{if .Chart.Summary.Open}}{{.Chart.Summary.Open}}{{else}}—{{end}}</b></span>
+          <span class="chart-summary-stat chart-stat-h"><i>H</i><b class="mono">{{if .Chart.Summary.High}}{{.Chart.Summary.High}}{{else}}—{{end}}</b></span>
+          <span class="chart-summary-stat chart-stat-l"><i>L</i><b class="mono">{{if .Chart.Summary.Low}}{{.Chart.Summary.Low}}{{else}}—{{end}}</b></span>
+          <span class="chart-summary-stat chart-stat-c"><i>C</i><b class="mono">{{if .Chart.Summary.Close}}{{.Chart.Summary.Close}}{{else}}—{{end}}</b></span>
+          <span class="chart-summary-stat chart-stat-vol"><i>Vol</i><b class="mono">{{if .Chart.Summary.Volume}}{{.Chart.Summary.Volume}}{{else}}—{{end}}</b></span>
+        </span>
+        <span class="spacer"></span>
+        <span class="chart-summary-venue">Simulated feed</span>
+      </div>
+
+      <div class="chart-plot" id="chart-plot">
+        <div class="chart-plot-main">
+          <div class="chart-yaxis">
+            <span class="chart-yaxis-gap" style="flex:6 1 0;"></span>
+            <div class="chart-ylabels">
+              {{range .Chart.YLabels}}<span class="chart-ylabel mono {{.Tone}}">{{.Text}}</span>{{end}}
+            </div>
+            <span class="chart-yaxis-gap" style="flex:25 1 0;"></span>
+          </div>
+
+          <div class="chart-stage" id="chart-stage">
+            <div class="chart-layer chart-grid-layer" aria-hidden="true">
+              <span class="chart-gap" style="flex:24 1 0;"></span><span class="chart-grid-h"></span>
+              <span class="chart-gap" style="flex:69 1 0;"></span><span class="chart-grid-h"></span>
+              <span class="chart-gap" style="flex:69 1 0;"></span><span class="chart-grid-h"></span>
+              <span class="chart-gap" style="flex:69 1 0;"></span><span class="chart-grid-h"></span>
+              <span class="chart-gap" style="flex:69 1 0;"></span><span class="chart-grid-h"></span>
+              <span class="chart-gap" style="flex:100 1 0;"></span>
+            </div>
+
+            <div class="chart-layer chart-vgrid-layer" aria-hidden="true">
+              <span class="chart-gap" style="flex:24 1 0;"></span>
+              <div class="chart-vgrid-band">
+                <span class="chart-gap" style="flex:44 1 0;"></span><span class="chart-grid-v"></span>
+                <span class="chart-gap" style="flex:188 1 0;"></span><span class="chart-grid-v"></span>
+                <span class="chart-gap" style="flex:188 1 0;"></span><span class="chart-grid-v"></span>
+                <span class="chart-gap" style="flex:188 1 0;"></span><span class="chart-grid-v"></span>
+                <span class="chart-gap" style="flex:188 1 0;"></span><span class="chart-grid-v"></span>
+                <span class="chart-gap" style="flex:188 1 0;"></span><span class="chart-grid-v"></span>
+                <span class="chart-gap" style="flex:16 1 0;"></span>
+              </div>
+              <span class="chart-gap" style="flex:100 1 0;"></span>
+            </div>
+
+            <div class="chart-layer chart-volume-layer">
+              <span class="chart-slot-pad" style="width:{{.Chart.SlotLead}};"></span>
+              {{range .Chart.Volume}}<span class="chart-slot" style="width:{{$.Chart.SlotWidth}};"><span class="chart-gap" style="flex:{{.GrowTop}} 1 0;"></span><span class="chart-volume {{if .Up}}up{{else}}down{{end}}" style="flex:{{.GrowBar}} 1 0;"></span><span class="chart-gap" style="flex:{{.GrowBottom}} 1 0;"></span></span>{{end}}
+            </div>
+
+            <div class="chart-layer chart-ma-layer">
+              {{range .Chart.Lines}}<span class="chart-slot-pad" style="width:{{.SlotLead}};"></span>{{range .Segments}}<span class="chart-slot chart-dot-slot" style="width:{{$.Chart.SlotWidth}};"><span class="chart-gap" style="flex:{{.GrowTop}} 1 0;"></span><span class="chart-dot" style="background-color:{{.Color}};"></span><span class="chart-gap" style="flex:{{.GrowBottom}} 1 0;"></span></span>{{end}}{{end}}
+            </div>
+
+            <div class="chart-layer chart-wick-layer">
+              <span class="chart-slot-pad" style="width:{{.Chart.SlotLead}};"></span>
+              {{range .Chart.Candles}}<span class="chart-slot chart-wick-slot" style="width:{{$.Chart.SlotWidth}};"><span class="chart-gap" style="flex:{{.GrowWickTop}} 1 0;"></span><span class="chart-wick" style="flex:{{.GrowWick}} 1 0;background-color:{{if .Up}}rgba(61, 220, 132, 0.75){{else}}rgba(240, 96, 106, 0.7){{end}};"></span><span class="chart-gap" style="flex:{{.GrowWickBottom}} 1 0;"></span></span>{{end}}
+            </div>
+
+            <div class="chart-layer chart-candle-layer">
+              <span class="chart-slot-pad" style="width:{{.Chart.SlotLead}};"></span>
+              {{range .Chart.Candles}}<span class="chart-slot chart-body-slot" style="width:{{$.Chart.SlotWidth}};"><span class="chart-gap" style="flex:{{.GrowBodyTop}} 1 0;"></span><span class="chart-candle {{if .Up}}up{{else}}down{{end}}" style="flex:{{.GrowBody}} 1 0;width:{{.BodyShare}};background-color:{{if .Up}}#3ddc84{{else}}#f0606a{{end}};"></span><span class="chart-gap" style="flex:{{.GrowBodyBottom}} 1 0;"></span></span>{{end}}
+            </div>
+
+            {{if .Chart.Candles}}
+            <div class="chart-layer chart-cross-v-layer" aria-hidden="true">
+              <span class="chart-gap" style="flex:{{.Chart.CrossX}} 1 0;"></span><span class="chart-cross-v"></span><span class="chart-gap" style="flex:{{.Chart.RestLeft .Chart.CrossX}} 1 0;"></span>
+            </div>
+            <div class="chart-layer chart-cross-h-layer" aria-hidden="true">
+              <span class="chart-gap" style="flex:{{.Chart.CrossY}} 1 0;"></span><span class="chart-cross-h"></span><span class="chart-gap" style="flex:{{.Chart.RestTop .Chart.CrossY}} 1 0;"></span>
+            </div>
+            {{end}}
+
+            <div class="chart-layer chart-watermark-layer" aria-hidden="true"><span class="chart-watermark">MERIDIAN</span></div>
+
+            {{if .Chart.LastPrice}}
+            <div class="chart-layer chart-last-layer">
+              <span class="chart-gap" style="flex:{{.Chart.LastTop}} 1 0;"></span>
+              <div class="chart-last-row">
+                <span class="chart-last-line {{if .Chart.Up}}up{{else}}down{{end}}"></span>
+                <span class="chart-last-tag {{if .Chart.Up}}up{{else}}down{{end}} mono" id="chart-last-tag"><span class="chart-last-dot anim-pulse"></span>{{.Chart.LastPrice}}</span>
+              </div>
+              <span class="chart-gap" style="flex:{{.Chart.RestTop .Chart.LastTop}} 1 0;"></span>
+            </div>
+            {{end}}
+
+            {{if .Chart.HighLabel}}
+            <div class="chart-layer chart-extreme-layer">
+              <span class="chart-gap" style="flex:{{.Chart.HighTop}} 1 0;"></span>
+              <div class="chart-extreme-row"><span class="chart-extreme chart-high mono">H {{.Chart.HighLabel}}</span></div>
+              <span class="chart-gap" style="flex:{{.Chart.RestTop .Chart.HighTop}} 1 0;"></span>
+            </div>
+            {{end}}
+
+            {{if .Chart.LowLabel}}
+            <div class="chart-layer chart-extreme-layer">
+              <span class="chart-gap" style="flex:{{.Chart.LowTop}} 1 0;"></span>
+              <div class="chart-extreme-row"><span class="chart-extreme chart-low mono">L {{.Chart.LowLabel}}</span></div>
+              <span class="chart-gap" style="flex:{{.Chart.RestTop .Chart.LowTop}} 1 0;"></span>
+            </div>
+            {{end}}
+
+            {{if .Chart.Candles}}
+            <div class="chart-layer chart-tooltip-layer">
+              <span class="chart-gap" style="flex:{{.Chart.CrossY}} 1 0;"></span>
+              <div class="chart-tooltip-row">
+                <span class="chart-tooltip">
+                  <span class="chart-tooltip-price mono">{{.Chart.CrossPrice}}</span>
+                  <span class="chart-tooltip-time">{{.Chart.CrossTime}}</span>
+                </span>
+              </div>
+              <span class="chart-gap" style="flex:{{.Chart.RestTop .Chart.CrossY}} 1 0;"></span>
+            </div>
+            {{else}}
+            <div class="chart-layer chart-watermark-layer"><span class="chart-empty chart-plot-empty">No chart data</span></div>
+            {{end}}
+          </div>
+        </div>
+
+        <div class="chart-xaxis">
+          {{range .Chart.XLabels}}<span class="chart-xlabel mono {{.Tone}}">{{.Text}}</span>{{end}}
+        </div>
+      </div>
+      {{end}}
+    </div>
+  </div>
+</section>

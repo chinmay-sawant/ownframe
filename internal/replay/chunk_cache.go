@@ -20,6 +20,7 @@ func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 
 	old := c.entries[key]
 	if old != nil && old.sig == sig && old.box == box {
+		c.touch(key)
 		return old
 	}
 
@@ -45,6 +46,8 @@ func (c *chunkStore) get(key chunkKey, sig uint64, box image.Rectangle,
 
 	if old == nil {
 		c.order = append(c.order, key)
+	} else {
+		c.touch(key)
 	}
 
 	e := &chunkEntry{img: img, sig: sig, box: box}

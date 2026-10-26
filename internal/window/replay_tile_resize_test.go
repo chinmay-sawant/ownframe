@@ -8,7 +8,9 @@ import (
 )
 
 // TestContentChangeRebuildsTheGrid checks a content size change disposes the
-// old grid and allocates one for the new content.
+// old grid and allocates one for the new content. Only the visible tiles
+// paint; the row below the fold stays dirty until a scroll brings it on
+// screen, when the blit repaints it on demand.
 func TestContentChangeRebuildsTheGrid(t *testing.T) {
 	t.Parallel()
 
@@ -32,7 +34,15 @@ func TestContentChangeRebuildsTheGrid(t *testing.T) {
 		t.Fatalf("new grid covers %v, want the 600x700 content", got)
 	}
 
-	if s.partial.paints != s.partial.tiles.cols*s.partial.tiles.rows {
-		t.Fatalf("painted %d tiles, want the whole new grid", s.partial.paints)
+	if s.partial.paints != 6 {
+		t.Fatalf("painted %d tiles, want the 6 visible ones", s.partial.paints)
+	}
+
+	s.scrollY = 400
+	screen.ok = false
+	s.drawReplayPartial(partialBuf(600, 300))
+
+	if s.partial.paints != 3 {
+		t.Fatalf("scroll painted %d tiles, want the 3 newly visible ones", s.partial.paints)
 	}
 }

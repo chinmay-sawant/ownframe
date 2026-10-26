@@ -42,10 +42,14 @@ func declaresSVGPaint(source []layout.Keyframe) bool {
 // svgImageIndices returns the operation index of the inline SVG's raster. The
 // SVG root owns exactly one image operation; a background or border the element
 // declares paints before it, and the engine bakes the last image of the box as
-// the raster. An empty slice means the element did not paint an SVG.
-func svgImageIndices(d *layout.Display, box layout.Box, boxIndex int) []int {
+// the raster. An empty slice means the element did not paint an SVG. A shared
+// index resolves the lookup without scanning the display again.
+func svgImageIndices(d *layout.Display, box layout.Box, boxIndex int, idx *cssmotion.Index) []int {
 	if d == nil {
 		return nil
+	}
+	if idx != nil {
+		return idx.ImageIndex(box, boxIndex)
 	}
 	if boxIndex >= 0 && len(d.OpOwners) == len(d.Ops) {
 		last := -1

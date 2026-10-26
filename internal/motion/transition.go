@@ -303,6 +303,19 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 	oldBoxes := indexBoxes(previous.Boxes)
 	var out []TransitionCapture
 	ordinals := make(map[string]int, len(next.Boxes))
+	// Both displays are resolved through one shared index each, so the
+	// per-property selections below share two ownership scans instead of
+	// repeating them for every transitioning element. The indices are built
+	// only when some box declares a transition, so a transition-free publish
+	// pays no scan.
+	var prevIndex, nextIndex *cssmotion.Index
+	for i := range next.Boxes {
+		if len(next.Boxes[i].Transitions) != 0 {
+			prevIndex = cssmotion.NewIndex(previous)
+			nextIndex = cssmotion.NewIndex(next)
+			break
+		}
+	}
 	for i := range next.Boxes {
 		box := next.Boxes[i]
 		if box.ID == "" {
@@ -371,7 +384,8 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 				continue
 			}
 			if transitionDiscreteProperty(property) {
-				capture, ok := r.captureDiscreteChange(previous, old, next, current, property, record)
+				capture, ok := r.captureDiscreteChange(previous, old, next, current, property, record,
+					prevIndex, nextIndex)
 				if !ok {
 					continue
 				}
@@ -397,7 +411,7 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 			}
 			_, mask, _ := transitionPaintTarget(property)
 			capture, changed, ok := captureTransition(previous, old, next, current,
-				property, record, &r.transitionCapture)
+				property, record, &r.transitionCapture, prevIndex, nextIndex)
 			if !ok {
 				continue
 			}
@@ -477,7 +491,7 @@ func sameTransitionTarget(seen []transitionTarget, indices []int, mask cssmotion
 // when the operation set itself cannot carry a transition.
 func captureTransition(previous *Display, old boxRef, next *Display, current boxRef,
 	property string, record layout.Transition,
-	counts *transitionCaptureCounts) (capture TransitionCapture, changed, ok bool) {
+	counts *transitionCaptureCounts, prevIndex, nextIndex *cssmotion.Index) (capture TransitionCapture, changed, ok bool) {
 	kind, mask, ok := transitionPaintTarget(property)
 	if !ok {
 		return TransitionCapture{}, false, false
@@ -489,8 +503,8 @@ func captureTransition(previous *Display, old boxRef, next *Display, current box
 		counts.skipped++
 		return TransitionCapture{}, false, false
 	}
-	oldIndices := cssmotion.Select(previous, old.box, old.index, kind)
-	newIndices := cssmotion.Select(next, current.box, current.index, kind)
+	oldIndices := prevIndex.Select(old.box, old.index, kind)
+	newIndices := nextIndex.Select(current.box, current.index, kind)
 	if len(oldIndices) != len(newIndices) || !sameOpKinds(previous, oldIndices, next, newIndices) {
 		if len(oldIndices) > 0 || len(newIndices) > 0 {
 			counts.skipped++
@@ -686,12 +700,12 @@ func transitionMatrix(paint cssmotion.Paint) layout.Matrix2D {
 }
 
 // transitionIndices resolves the operations a property owns on one box.
-func transitionIndices(d *Display, ref boxRef, property string) ([]int, bool) {
+func transitionIndices(ref boxRef, property string, idx *cssmotion.Index) ([]int, bool) {
 	kind, _, ok := transitionPaintTarget(property)
 	if !ok {
 		return nil, false
 	}
-	return cssmotion.Select(d, ref.box, ref.index, kind), true
+	return idx.Select(ref.box, ref.index, kind), true
 }
 
 // BindTransitions installs the captures as renderers and keeps every live
@@ -945,6 +959,10 @@ func (r *Runtime) AdoptTransitions(next *Display) {
 // resolve.
 func (r *Runtime) keepTransitions(next *Display, elements map[entryKey]boxRef,
 	records map[entryKey]map[string]layout.Transition, captured map[transitionKey]struct{}) {
+	if len(r.transitions) == 0 && len(r.geometry) == 0 && len(r.discrete) == 0 {
+		return
+	}
+	index := cssmotion.NewIndex(next)
 	kept := r.transitions[:0]
 	for i := range r.transitions {
 		entry := r.transitions[i]
@@ -971,7 +989,7 @@ func (r *Runtime) keepTransitions(next *Display, elements map[entryKey]boxRef,
 			r.stats.TransitionsCancelled++
 			continue
 		}
-		indices, ok := transitionIndices(next, ref, entry.key.property)
+		indices, ok := transitionIndices(ref, entry.key.property, index)
 		if !ok || len(indices) != len(entry.indices) || !sameKindList(next, indices, entry.kinds) {
 			r.stats.TransitionsCancelled++
 			continue
@@ -1035,7 +1053,7 @@ func (r *Runtime) keepTransitions(next *Display, elements map[entryKey]boxRef,
 				continue
 			}
 		}
-		ops := cssmotion.Resolve(next, cssmotion.Select(next, ref.box, ref.index, cssmotion.KindSubtree))
+		ops := cssmotion.Resolve(next, index.Select(ref.box, ref.index, cssmotion.KindSubtree))
 		if entry.rule.Retarget(next, ops) != nil {
 			r.stats.TransitionsCancelled++
 			continue

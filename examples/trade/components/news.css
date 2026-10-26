@@ -1,0 +1,861 @@
+/* News screen: source filters, lead story feed, trending tickers, sentiment,
+   and the economic calendar. Every movement is a CSS declaration. */
+
+@keyframes trade-news-hot {
+  0%, 100% { background-color: rgba(240, 96, 106, 0.12); }
+  50% { background-color: rgba(240, 96, 106, 0.26); }
+}
+
+.screen-page.news-page {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+/* ---------- header ---------- */
+
+.news-head {
+  flex: 0 0 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+}
+
+.news-head-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.news-head-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.news-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.05;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+.news-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 19px;
+  padding: 0 8px;
+  border: 1px solid var(--green-line);
+  border-radius: 10px;
+  background-color: var(--green-soft);
+  color: var(--green);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.news-live .dot {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+}
+
+.news-gauge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: var(--panel-2);
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.news-gauge.up { color: var(--green); background-color: var(--green-soft); border-color: var(--green-line); }
+.news-gauge.amber { color: var(--amber); background-color: var(--amber-soft); border-color: rgba(240, 183, 90, 0.3); }
+.news-gauge.down { color: var(--red); background-color: var(--red-soft); border-color: var(--red-line); }
+
+.news-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.news-meta-sep {
+  width: 1px;
+  height: 9px;
+  background-color: var(--line);
+}
+
+.news-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.news-action {
+  height: 26px;
+  gap: 6px;
+  padding: 0 9px;
+}
+
+.news-btn-icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* ---------- source filters ---------- */
+
+.news-filters {
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.news-filter-label {
+  flex: 0 0 auto;
+  font-size: 8.5px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.news-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.news-filter-count {
+  flex: 0 0 auto;
+  font-size: 9px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.news-filter-count b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ---------- layout ---------- */
+
+.news-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.news-feed {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.news-feed > .panel-head {
+  flex: 0 0 34px;
+}
+
+.news-wire {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.news-wire .dot {
+  width: 5px;
+  height: 5px;
+}
+
+.news-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- feed rows ---------- */
+
+.news-item {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  animation: trade-slide-right 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: background-color 160ms ease;
+}
+
+.news-item:nth-child(2) { animation-delay: 40ms; }
+.news-item:nth-child(3) { animation-delay: 80ms; }
+.news-item:nth-child(4) { animation-delay: 120ms; }
+.news-item:nth-child(5) { animation-delay: 160ms; }
+.news-item:nth-child(6) { animation-delay: 200ms; }
+.news-item:nth-child(7) { animation-delay: 240ms; }
+.news-item:nth-child(8) { animation-delay: 280ms; }
+
+.news-item:first-child {
+  flex-grow: 1.9;
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  background-color: var(--panel-2);
+  animation: trade-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.news-item:nth-child(n+9) {
+  display: none;
+}
+
+.news-item:last-child {
+  border-bottom: 0;
+}
+
+.news-item:hover {
+  background-color: var(--panel-2);
+}
+
+.news-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin-bottom: 4px;
+  font-size: 8.5px;
+  line-height: 12px;
+  color: var(--dim);
+}
+
+.news-source {
+  flex: 0 0 auto;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.news-time {
+  flex: 0 0 auto;
+  font-size: 8px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.news-hot {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 15px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background-color: var(--red-soft);
+  color: var(--red);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: trade-news-hot 2.4s ease-in-out infinite;
+}
+
+.news-hot i {
+  display: block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--red);
+}
+
+.news-cat {
+  flex: 0 0 auto;
+  font-size: 7.5px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.news-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.news-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.news-headline {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.news-summary {
+  margin: 3px 0 0;
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.news-tail {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-top: 1px;
+}
+
+.news-ticker {
+  height: 18px;
+  padding: 0 6px;
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.news-arrow {
+  display: block;
+  flex: 0 0 auto;
+  transition: transform 160ms ease;
+}
+
+.news-item:hover .news-arrow {
+  transform: translateX(2px);
+}
+
+/* ---------- lead story ---------- */
+
+.news-item:first-child .news-meta-row {
+  margin-bottom: 6px;
+}
+
+.news-item:first-child .news-source {
+  font-size: 9px;
+  color: var(--green);
+}
+
+.news-item:first-child .news-cat {
+  font-size: 8px;
+}
+
+.news-item:first-child .news-headline {
+  font-size: 18px;
+  line-height: 1.28;
+  font-weight: 650;
+  letter-spacing: -0.012em;
+  max-height: 46px;
+  white-space: normal;
+}
+
+.news-item:first-child .news-summary {
+  margin-top: 5px;
+  max-height: 32px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  white-space: normal;
+  overflow: hidden;
+}
+
+.news-item:first-child .news-tail {
+  padding-top: 4px;
+}
+
+.news-empty {
+  padding: 26px 14px;
+  font-size: 10px;
+  color: var(--dim);
+  text-align: center;
+}
+
+/* ---------- ticker tape ---------- */
+
+.news-tape {
+  flex: 0 0 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+  overflow: hidden;
+}
+
+.news-tape-label {
+  flex: 0 0 auto;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.news-tape-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.news-tape-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 19px;
+  padding: 0 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: #0b0e12;
+  font-size: 8.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.news-tape-chip b {
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.news-tape-chip em {
+  font-style: normal;
+}
+
+.news-tape-chip:nth-child(n+9) {
+  display: none;
+}
+
+/* ---------- right rail ---------- */
+
+.news-side {
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  /* Trending, sentiment, then the calendar takes the rest of the rail. */
+  grid-template-rows: 31% 18% minmax(0, 1fr);
+  gap: 12px;
+}
+
+.news-side > .panel {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: block;
+}
+
+.news-side .panel-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 34px;
+}
+
+.news-trend-list {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0;
+  overflow: hidden;
+  counter-reset: news-trend;
+}
+
+.news-trend {
+  counter-increment: news-trend;
+  flex: 0 0 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  height: auto;
+  padding: 5px 12px;
+  border-top: 1px solid var(--line-soft);
+  min-width: 0;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.news-trend:first-child {
+  border-top: 0;
+}
+
+.news-trend:hover {
+  background-color: var(--panel-2);
+  transform: translateX(2px);
+}
+
+.news-rank {
+  font-size: 8.5px;
+  text-align: right;
+  color: var(--dim);
+}
+
+.news-rank::before {
+  content: counter(news-trend);
+}
+
+.news-trend-id {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.news-trend-id b {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.news-trend-id span {
+  font-size: 9px;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.news-trend-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.news-trend-mentions {
+  font-size: 8px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.news-trend-change {
+  font-size: 9.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- sentiment ---------- */
+
+.news-index {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.news-sent-body {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 12px 8px;
+  overflow: hidden;
+}
+
+.news-sent {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.news-sent-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9px;
+  color: var(--muted);
+}
+
+.news-sent-head b {
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.news-sent-track {
+  display: block;
+  height: 3px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background-color: var(--panel-3);
+  overflow: hidden;
+}
+
+.news-sent-track i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--green);
+  transform-origin: left center;
+}
+
+.news-sent-track i.news-sent-down {
+  background-color: var(--red);
+}
+
+.news-sent:nth-child(2) .news-sent-track i { animation-delay: 60ms; }
+.news-sent:nth-child(3) .news-sent-track i { animation-delay: 120ms; }
+.news-sent:nth-child(4) .news-sent-track i { animation-delay: 180ms; }
+.news-sent:nth-child(5) .news-sent-track i { animation-delay: 240ms; }
+
+/* ---------- economic calendar ---------- */
+
+.news-calendar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.news-cal-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.news-cal-legend .dot {
+  width: 4px;
+  height: 4px;
+}
+
+.news-cal-list {
+  position: absolute;
+  top: 34px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.news-cal {
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.news-cal:first-child {
+  border-top: 0;
+}
+
+.news-cal-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.news-cal-time {
+  font-size: 8.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.news-cal-country {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.news-impact {
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background-color: var(--panel-3);
+  color: var(--dim);
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.news-impact-high {
+  background-color: var(--amber-soft);
+  color: var(--amber);
+}
+
+.news-cal-event {
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.news-cal-figures {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+  font-size: 8px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+@media (max-width: 1420px) {
+  .screen-page.news-page { padding-left: 12px; padding-right: 12px; }
+  .news-grid { gap: 10px; }
+  .news-side { gap: 10px; }
+  .news-item { padding-left: 12px; padding-right: 12px; }
+  .news-item:first-child { padding: 12px; }
+  .news-headline { font-size: 11.5px; }
+  .news-item:first-child .news-headline { font-size: 17px; }
+}
+
+/* Compact tier for 1280x720. The engine never matches @media (height), so the
+   short-window rules are keyed to the 16:9 width: at 1280 the viewport is 720
+   tall, and the rail gives the calendar three rows while the feed drops its
+   secondary summaries. */
+@media (max-width: 1366px) {
+  .screen-page.news-page {
+    gap: 8px;
+    padding: 10px 12px 8px;
+  }
+
+  .news-head { flex: 0 0 52px; }
+  .news-title { font-size: 18px; }
+  .news-meta { font-size: 8.5px; }
+  .news-action { height: 24px; }
+
+  .news-filters { flex: 0 0 26px; }
+  .news-filter-chips .chip {
+    height: 21px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .news-grid { gap: 10px; }
+  .news-page .panel-head { height: 30px; }
+  .news-feed > .panel-head { flex: 0 0 30px; }
+  .news-side { grid-template-rows: 28% 19% minmax(0, 1fr); gap: 8px; }
+  .news-side .panel-head { height: 30px; }
+  .news-trend-list,
+  .news-sent-body,
+  .news-cal-list { top: 30px; }
+
+  .news-item { padding: 6px 12px; }
+  .news-item:first-child { flex-grow: 2.4; padding: 10px 12px; }
+  .news-meta-row { margin-bottom: 3px; }
+  .news-summary { display: none; }
+  .news-item:first-child .news-summary { display: block; }
+
+  .news-trend { padding: 3px 12px; }
+  .news-trend-mentions { display: none; }
+  .news-trend-stats { flex-direction: row; align-items: center; gap: 6px; }
+
+  .news-sent-body { gap: 2px; padding: 2px 10px 4px; }
+  .news-sent-track { margin-top: 2px; }
+
+  .news-cal:nth-child(n+5) { display: none; }
+  .news-cal-list { justify-content: flex-start; }
+  .news-cal { padding: 5px 10px; }
+  .news-calendar .panel-sub { display: none; }
+
+  .news-tape { flex: 0 0 28px; }
+}
+
+/* 1440 px viewport (2560 wide): the taller feed fits the wire's remaining
+   stories. The height media query never matches, so the tier is keyed to the
+   large 16:9 width. */
+@media (min-width: 2200px) {
+  .news-item:nth-child(n+9) { display: flex; }
+}

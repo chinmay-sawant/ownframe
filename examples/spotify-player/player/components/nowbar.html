@@ -15,18 +15,18 @@
     <div class="nb-progress">
       <span id="elapsed" class="nb-time">{{.Elapsed}}</span>
       <div id="seek" data-action="seek" class="bar">
-        <div class="bar-fill" style="width:{{.Progress}}%"></div>
+        <div id="seek-fill" class="bar-fill" style="width:{{.Progress}}%"></div>
         <div class="segs"><span id="seek-0" data-action="seek-0" class="seg"></span><span id="seek-1" data-action="seek-1" class="seg"></span><span id="seek-2" data-action="seek-2" class="seg"></span><span id="seek-3" data-action="seek-3" class="seg"></span><span id="seek-4" data-action="seek-4" class="seg"></span><span id="seek-5" data-action="seek-5" class="seg"></span><span id="seek-6" data-action="seek-6" class="seg"></span><span id="seek-7" data-action="seek-7" class="seg"></span><span id="seek-8" data-action="seek-8" class="seg"></span><span id="seek-9" data-action="seek-9" class="seg"></span></div>
       </div>
       <span id="remaining" class="nb-time right">{{.Remaining}}</span>
     </div>
   </div>
   <div class="nb-right">
-    <span id="eq" class="eq"><span class="eq-bar"></span><span class="eq-bar"></span><span class="eq-bar"></span><span class="eq-bar"></span></span>
+    <span id="eq" class="eq{{if .Playing}} playing{{end}}"><span id="eq-0" class="eq-bar eq-a"></span><span id="eq-1" class="eq-bar eq-b"></span><span id="eq-2" class="eq-bar eq-c"></span><span id="eq-3" class="eq-bar eq-d"></span></span>
     <span id="queue" data-action="queue" class="nb-btn nb-queue"></span>
     <span id="mute" data-action="mute" class="nb-btn nb-vol{{if eq .Volume 0}} muted{{end}}"></span>
     <div id="volume" data-action="volume" class="bar vol">
-      <div class="bar-fill" style="width:{{.Volume}}%"></div>
+      <div id="volume-fill" class="bar-fill" style="width:{{.Volume}}%"></div>
       <div class="segs"><span id="volume-0" data-action="volume-0" class="seg"></span><span id="volume-1" data-action="volume-1" class="seg"></span><span id="volume-2" data-action="volume-2" class="seg"></span><span id="volume-3" data-action="volume-3" class="seg"></span><span id="volume-4" data-action="volume-4" class="seg"></span><span id="volume-5" data-action="volume-5" class="seg"></span><span id="volume-6" data-action="volume-6" class="seg"></span><span id="volume-7" data-action="volume-7" class="seg"></span><span id="volume-8" data-action="volume-8" class="seg"></span><span id="volume-9" data-action="volume-9" class="seg"></span></div>
     </div>
   </div>

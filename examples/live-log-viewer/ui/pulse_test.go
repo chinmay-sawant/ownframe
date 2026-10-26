@@ -27,6 +27,10 @@ func TestPulseAnimatesRetainedOp(t *testing.T) {
 
 	gen := a.pulseGen
 
+	// Resize so the redraw replaces the display list. An identical redraw
+	// keeps the list and the binding, so there would be nothing to rebind.
+	w, h := a.page.Size()
+	a.page.SetSize(w+10, h+10)
 	if err := a.draw(ctx); err != nil {
 		t.Fatal(err)
 	}

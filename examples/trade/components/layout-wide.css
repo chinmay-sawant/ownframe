@@ -1,0 +1,12 @@
+/* Shared fluid helpers. Component stylesheets own their own narrow rules;
+   this file ties the shell columns to the workspace row. */
+
+.watchlist {
+  height: 100%;
+}
+
+.rail,
+.center-column,
+.quote-rail {
+  height: calc(100vh - var(--header-h) - var(--status-h));
+}

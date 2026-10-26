@@ -61,6 +61,12 @@ type entry struct {
 	// sampled once to reach its pose and then skipped, so a page that is
 	// paused parks instead of rewriting the same paint every tick.
 	wasPaused bool
+	// settled records that the latest Step found the player at rest and
+	// already marked that pose. A repeated resting sample paints nothing
+	// new, so Step marks no damage for it and a settled page parks; the
+	// first resting sample still marks, because a fill mode can snap back
+	// to base and a rebind repaints from base.
+	settled bool
 	// idle marks a player whose declared effects are all triggered or
 	// unnamed. Sampling it cannot make it active, so it never asks for a
 	// frame, not even the first one after a bind.
@@ -193,6 +199,11 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 	needsRetained := false
 	unresolvedTimelines := 0
 	scale := displayPointsPerPixel(next)
+	// The operation index is built once for the display every selection
+	// resolves against, so a bind with dozens of animated boxes shares one
+	// ownership scan instead of repeating it per box per paint class. It is
+	// built lazily: a page with no animations pays no scan.
+	var index *cssmotion.Index
 
 	// The old entries are no longer read: snapshotCarry and starts copied what
 	// the replacement needs before the first append.
@@ -224,7 +235,10 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 			start = now
 		}
 
-		bounds, boxGaps, err := cssanimation.BindBox(next, box, boxIndex, start)
+		if index == nil {
+			index = cssmotion.NewIndex(next)
+		}
+		bounds, boxGaps, err := cssanimation.BindBoxWithIndex(next, box, boxIndex, start, index)
 		if err != nil {
 			failures = append(failures, fmt.Errorf("motion: box %q: %w", box.ID, err))
 
@@ -242,7 +256,7 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 		}
 		timelines, unresolved := bindTimelines(next, box, i)
 		unresolvedTimelines += unresolved
-		triggerAnims, triggerGap := triggerAlignment(next, box, boxIndex, bounds, start)
+		triggerAnims, triggerGap := triggerAlignment(next, box, boxIndex, bounds, start, index)
 		if triggerGap != "" {
 			gaps = append(gaps, triggerGap)
 		}
@@ -318,6 +332,7 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 
 	r.entries = entries
 	r.display = next
+	stampTransformClips(next, entries)
 	r.restamp = r.restamp[:0]
 	r.stats.Bound = len(entries)
 	r.stats.Active, r.stats.Sampled = 0, 0
@@ -644,7 +659,7 @@ func displayPointsPerPixel(d *Display) float64 {
 // reports an element whose alignment failed; the animation still plays, it
 // just cannot be triggered.
 func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanimation.Bound,
-	start time.Time) ([][]layout.Animation, string) {
+	start time.Time, idx *cssmotion.Index) ([][]layout.Animation, string) {
 	if !hasTrigger(box.Animations) || len(bounds) == 0 {
 		return nil, ""
 	}
@@ -660,7 +675,7 @@ func triggerAlignment(d *Display, box layout.Box, boxIndex int, bounds []cssanim
 	for i := range box.Animations {
 		solo := box
 		solo.Animations = box.Animations[i : i+1]
-		soloBounds, _, err := cssanimation.BindBox(d, solo, boxIndex, start)
+		soloBounds, _, err := cssanimation.BindBoxWithIndex(d, solo, boxIndex, start, idx)
 		if err != nil {
 			return nil, fmt.Sprintf("box %q: animation-trigger could not be aligned: %v", box.ID, err)
 		}

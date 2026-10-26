@@ -21,6 +21,15 @@ func (renderer *Renderer) drawImage(dst *ebiten.Image, op *layout.DisplayOp, dx,
 
 	bounds := src.Bounds()
 
+	if op.XformSet && !op.Transform().IsIdentity() {
+		clipped, paint := scissorOverflow(dst, op, dx, dy)
+		if !paint {
+			return
+		}
+
+		dst = clipped
+	}
+
 	options := &ebiten.DrawImageOptions{
 		GeoM:   imageGeom(op, dx, dy, bounds.Dx(), bounds.Dy()),
 		Filter: ebiten.FilterLinear,

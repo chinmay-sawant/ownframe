@@ -1,0 +1,251 @@
+/* CSS-only motion for the terminal. Every effect is a declaration in this
+   stylesheet or a component stylesheet; no Go callback drives a frame. */
+
+@keyframes trade-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.38; }
+}
+
+@keyframes trade-halo {
+  0% { transform: scale(0.7); opacity: 0.55; }
+  72% { transform: scale(2.1); opacity: 0; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
+
+@keyframes trade-blink {
+  0%, 46% { opacity: 1; }
+  47%, 100% { opacity: 0.22; }
+}
+
+@keyframes trade-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes trade-rise {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes trade-slide-right {
+  from { transform: translateX(-12px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes trade-sheen {
+  0% { transform: translateX(-150%) skewX(-18deg); }
+  100% { transform: translateX(280%) skewX(-18deg); }
+}
+
+@keyframes trade-eq {
+  from { transform: scaleY(0.22); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes trade-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes trade-swing {
+  0%, 100% { transform: rotate(0deg); }
+  18% { transform: rotate(-12deg); }
+  38% { transform: rotate(9deg); }
+  58% { transform: rotate(-5deg); }
+  78% { transform: rotate(2deg); }
+}
+
+@keyframes trade-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes trade-tilt {
+  from { transform: perspective(620px) rotateX(-9deg) translateY(8px); opacity: 0; }
+  to { transform: perspective(620px) rotateX(0deg) translateY(0); opacity: 1; }
+}
+
+@keyframes trade-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes trade-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes trade-flash-up {
+  0% { background-color: rgba(61, 220, 132, 0.26); }
+  100% { background-color: rgba(61, 220, 132, 0); }
+}
+
+@keyframes trade-flash-down {
+  0% { background-color: rgba(240, 96, 106, 0.26); }
+  100% { background-color: rgba(240, 96, 106, 0); }
+}
+
+@keyframes trade-scan {
+  0% { transform: translateX(0); opacity: 0; }
+  7% { opacity: 0.75; }
+  90% { opacity: 0.75; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes trade-scan-down {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 0.65; }
+  88% { opacity: 0.65; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+@keyframes trade-breathe {
+  0%, 100% { opacity: 0.45; background-color: rgba(61, 220, 132, 0.12); }
+  50% { opacity: 1; background-color: rgba(61, 220, 132, 0.3); }
+}
+
+@keyframes trade-shift-up {
+  0% { transform: translateY(7px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes trade-pop {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  65% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.anim-pulse { animation: trade-pulse 1.7s ease-in-out infinite; }
+.anim-halo { animation: trade-halo 2.2s ease-out infinite; }
+.anim-blink { animation: trade-blink 1.8s steps(2, jump-end) infinite; }
+.anim-marquee { animation: trade-marquee 42s linear infinite; }
+.anim-rise { animation: trade-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-slide-right { animation: trade-slide-right 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-sheen { animation: trade-sheen 3.4s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+.anim-eq { transform-origin: 50% 100%; animation: trade-eq 780ms ease-in-out infinite alternate; }
+.anim-spin { animation: trade-spin 16s linear infinite; }
+.anim-spin-fast { animation: trade-spin 2.4s linear infinite; }
+.anim-swing { transform-origin: 50% 8%; animation: trade-swing 4.8s ease-in-out infinite; }
+.anim-float { animation: trade-float 4.2s ease-in-out infinite; }
+.anim-tilt { animation: trade-tilt 620ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-grow-x { transform-origin: left center; animation: trade-grow-x 820ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-grow-y { transform-origin: 50% 100%; animation: trade-grow-y 720ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-flash-up { animation: trade-flash-up 1600ms ease-out both; }
+.anim-flash-down { animation: trade-flash-down 1600ms ease-out both; }
+.anim-scan { animation: trade-scan 6s linear infinite; }
+.anim-scan-down { animation: trade-scan-down 7s linear infinite; }
+.anim-breathe { animation: trade-breathe 2.8s ease-in-out infinite; }
+.anim-shift-up { animation: trade-shift-up 380ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.anim-pop { animation: trade-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* The vendor alias is wired on purpose: same keyframes, prefixed declaration. */
+@-webkit-keyframes trade-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.anim-marquee-webkit { -webkit-animation: trade-marquee 54s linear infinite; }
+
+.delay-1 { animation-delay: 60ms; }
+.delay-2 { animation-delay: 120ms; }
+.delay-3 { animation-delay: 180ms; }
+.delay-4 { animation-delay: 240ms; }
+.delay-5 { animation-delay: 300ms; }
+.delay-6 { animation-delay: 360ms; }
+
+.phase-1 { animation-delay: -160ms; }
+.phase-2 { animation-delay: -320ms; }
+.phase-3 { animation-delay: -480ms; }
+.phase-4 { animation-delay: -640ms; }
+.phase-5 { animation-delay: -800ms; }
+.phase-6 { animation-delay: -960ms; }
+
+/* The runtime enters idle state when no time-driven player asks for a frame.
+   These declarations are time-driven, so the terminal stays live while the
+   tape, status dot, and equalizer are visible. */
+
+.nav-transition,
+.rail-btn,
+.chip,
+.tab,
+.watch-row,
+.book-row,
+.trade-row,
+.order-row,
+.news-row,
+.icon-btn,
+.avatar,
+.rail-item {
+  transition: color 160ms ease, background-color 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+.rail-btn:hover,
+.icon-btn:hover { color: var(--text); background-color: var(--panel-3); }
+
+.chip:hover { color: var(--text); border-color: var(--line); }
+.chip.on:hover { color: #06110a; border-color: var(--green); }
+.nav-transition:hover { color: var(--text); }
+
+.rail-btn:active,
+.chip:active,
+.icon-btn:active { transform: scale(0.96); }
+
+/* ---------------------------------------------------------------------------
+   Status strip wiring
+
+   The footer is the always-mounted demonstration of the shared catalog:
+   .st-track runs .anim-marquee-webkit, so the vendor-prefixed marquee alias is
+   live rather than only declared here; .st-pulse runs .anim-pulse with its
+   sibling .st-halo on .anim-halo; and the top hairline runs .anim-breathe.
+   Every class in this file writes only transform, opacity, background-color,
+   color, border-color, or the supported 3D transform and perspective values.
+   Nothing animates layout, box-shadow, filter, or SVG internals.
+
+   A hand on the tape pauses it so a print can be read. The class keeps its
+   phase, so leaving the strip resumes where it stopped. */
+
+.st-tape:hover .st-track { animation-play-state: paused; }
+
+/* Stagger a shared entrance across a list without an inline delay. Pair these
+   with .anim-rise, .anim-shift-up, or .anim-pop. Each class writes only the
+   animation delay, so the existing .delay-* and .phase-* sets stay untouched. */
+.anim-stagger-1 { animation-delay: 40ms; }
+.anim-stagger-2 { animation-delay: 80ms; }
+.anim-stagger-3 { animation-delay: 120ms; }
+.anim-stagger-4 { animation-delay: 160ms; }
+.anim-stagger-5 { animation-delay: 200ms; }
+.anim-stagger-6 { animation-delay: 240ms; }
+.anim-stagger-7 { animation-delay: 280ms; }
+.anim-stagger-8 { animation-delay: 320ms; }
+
+/* A still page on request. The live dots and state blink remain useful; the
+   decorative loops stop. */
+@media (prefers-reduced-motion: reduce) {
+  .anim-marquee,
+  .anim-marquee-webkit,
+  .anim-sheen,
+  .anim-eq,
+  .anim-spin,
+  .anim-spin-fast,
+  .anim-swing,
+  .anim-float,
+  .anim-scan,
+  .anim-scan-down,
+  .anim-breathe {
+    animation: none;
+  }
+
+  .toast,
+  .rail-btn,
+  .chip,
+  .tab,
+  .icon-btn,
+  .watch-row,
+  .book-row,
+  .trade-row,
+  .order-row,
+  .news-row,
+  .rail-item {
+    transition: none;
+  }
+}

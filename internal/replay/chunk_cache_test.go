@@ -66,3 +66,28 @@ func TestChunkCacheStaysBounded(t *testing.T) {
 		t.Fatalf("pixels = %d, want at most %d", chunks.pixels, chunkMaxPixels)
 	}
 }
+
+// TestChunkCacheEvictsLeastRecentlyUsed pins the recency policy: a hit marks
+// the slot most-recently used, so the next eviction drops an untouched slot
+// instead of the hot one.
+func TestChunkCacheEvictsLeastRecentlyUsed(t *testing.T) {
+	flushChunks()
+	defer flushChunks()
+
+	box := image.Rect(0, 0, 16, 16)
+	for i := range chunkMaxEntries {
+		chunks.get(chunkKey{id: i}, uint64(i), box, func(*ebiten.Image) {})
+	}
+
+	hot := chunkKey{id: 0}
+	chunks.get(hot, 0, box, func(*ebiten.Image) {})
+	chunks.get(chunkKey{id: chunkMaxEntries}, chunkMaxEntries, box, func(*ebiten.Image) {})
+
+	if _, ok := chunks.entries[hot]; !ok {
+		t.Fatal("recently used chunk 0 was evicted")
+	}
+
+	if _, ok := chunks.entries[chunkKey{id: 1}]; ok {
+		t.Fatal("untouched chunk 1 survived ahead of recently used chunk 0")
+	}
+}

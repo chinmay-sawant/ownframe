@@ -20,7 +20,7 @@ Package `ownframe` at the module root is the public API. Keep it there: do not m
 
 `internal/atspi` maps `AccessibilityTree` to AT-SPI roles over a bus seam. Linux desktop `Run` wires it from `internal/window/a11y_atspi.go`. The live D-Bus client is not implemented, so `Live` stays false. Windows UIA, macOS VoiceOver, and Android TalkBack are not shipped. Tests use `FakeBus` and must not log accessible text.
 
-`internal/host` defines `Screen` and the optional interfaces a screen can add: `Ticker`, `Inspector`, `Reloader`, `Dropper`, `Focuser`, `ContextMenu`, `CursorShape`, `ScrollRequester`, `IME`, and `LongPresser`. `Dropper` receives `Drop.Path`, a sensitive local desktop path; copy bytes from `Drop.Read` during the call. The window and web packages call those. They do not import package `ownframe`.
+`internal/host` defines `Screen` and the optional interfaces a screen can add: `Ticker`, `Inspector`, `Reloader`, `Dropper`, `Focuser`, `Hoverer`, `ContextMenu`, `CursorShape`, `ScrollRequester`, `IME`, and `LongPresser`. `Dropper` receives `Drop.Path`, a sensitive local desktop path; copy bytes from `Drop.Read` during the call. The window and web packages call those. They do not import package `ownframe`.
 
 `internal/clipboard` reads and writes the OS clipboard, and keeps an in-memory copy. It is desktop and window only: `Serve` and `/debug/state` expose no clipboard route. Tests call `UseMemory`.
 
@@ -44,7 +44,7 @@ Package `ownframe` at the module root is the public API. Keep it there: do not m
 
 `github.com/chinmay-sawant/blinkless` `v0.0.4-0.20261025105255-96d7b9d95338` parses the HTML, applies the CSS, and lays the page out. That require is the only engine pin. There is no replace. That commit carries the one-pass grid paths, the element patch work (`layout.RelayoutElement` with `html.SetText` and `html.SetAttribute`), per-element transform metadata with `layout.RestampTransforms`, single-element overrides through `layout.RelayoutElementWithOverrides`, scroll and view timeline declarations, inline SVG paint restyling through `layout.RestyleInlineSVG`, lock-free engine reader registration, and the copyless `Op.XformValue` accessor. `layout.DisplayList` is the placement. A replayable page keeps those operations and no picture. Any other page replays the same list into `page.Probe().Image`. The window replays or blits accordingly. blinkless does not paint a page bitmap. Text replay needs Ebiten v2.10.4 or newer, because blinkless requires `go-text/typesetting` v0.3.4 and older Ebiten builds its font face without the lookup cache v0.3.4 added. `css.Relayout` re-places an already styled document at a new viewport and state.
 
-`examples/music` is shared example support: it decodes MP3 and WAV and plays them through Ebiten audio. The Spotify player example imports it and supplies clips from the bundled CC0 soundtrack in `spotify-player/player/assets/audio/`; `DemoTune` renders a short generated WAV for tests. Package `ownframe` does not import it. `Run` and `BindMobile` create the Ebiten audio context, because Ebiten v2.10 does not; `Serve` has none. `examples/spotify-player` uses `Page.SetTick` to move the seek bar and equalizer from the audio position.
+`examples/music` is shared example support: it decodes MP3 and WAV and plays them through Ebiten audio. The Spotify player example imports it and supplies clips from the bundled CC0 soundtrack in `spotify-player/player/assets/audio/`; `DemoTune` renders a short generated WAV for tests. Package `ownframe` does not import it. `Run` and `BindMobile` create the Ebiten audio context, because Ebiten v2.10 does not; `Serve` has none. `examples/spotify-player` uses `Page.SetTick` to move the seek fill and the time labels from the audio position; its equalizer and hover motion are CSS declarations.
 
 Read `documentation/features.md` before changing paint, theming, frames, IPC, navigation, crash reports, fetch, the clipboard, drag and drop, or the devtools overlay. The call shapes and the limits are in the other files under `documentation/`.
 
@@ -96,6 +96,8 @@ GitHub CI (`.github/workflows/ci.yml`) runs `make test` and `make lint` in the `
 
 Load the `unslop` skill before writing prose: replies, docs, commit messages, and PR or issue text. Apply its fixes before sending.
 
+Tables highlight their key column with plain markdown bold (`**value**`), which the opencode UI renders yellow. Never use HTML highlight tags like `<mark>` in tables.
+
 ## Builds
 
 Do not run `go build ./...`. Every run links an executable for each example, takes about a minute, and leaves the binaries in this directory; the default `-p 24` loads the machine. For the same compile check, run `make build`. It calls `go vet -p 1 ./... ./examples/...`, which compiles every package including the examples, links nothing, and writes nothing. Raise the limit with `make build BUILD_P=4`. To check one example, name it: `go vet -p 1 ./examples/login`.
@@ -104,7 +106,7 @@ Do not run `go build ./...`. Every run links an executable for each example, tak
 
 For documentation or maintenance tooling, run `make docs-check plans-check examples-check`. For paint or window changes, also run `make graphics-check`; see `documentation/testing.md` for prerequisites and limits.
 
-Run `gofmt` on every Go file you edit. From this directory, run `make test`. It calls `go test -p 1 ./... ./examples/...` so the packages do not all build and run at once. Raise the limit when a faster run is worth the load: `make test TEST_P=4`.
+Run `gofmt` on every Go file you edit. From this directory, run `make test`. It calls `go test -p 4 ./... ./examples/...`, so four packages build and run at once. Lower the limit on a machine short of memory: `make test TEST_P=1`.
 
 Leave `~/.Xauthority` untouched. The window toolkit logs a missing authority file and still opens the window.
 

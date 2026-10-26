@@ -4,9 +4,21 @@ set -euo pipefail
 cd -- "$(dirname -- "$0")/.."
 version=${1:?expected golangci-lint version}
 shift
+# v1 and v2 disagree on the machine-readable flag (`version --format json`
+# against `version --json`), so read the plain line both print.
+lint_version() {
+    "$1" version | python3 -c '
+import re
+import sys
+match = re.search(r"\bversion\s+(\S+)", sys.stdin.read())
+if not match:
+    raise SystemExit("lint: could not read golangci-lint version")
+print(match.group(1))
+'
+}
 runner=$(command -v golangci-lint || true)
 if [ -n "$runner" ]; then
-    actual=$("$runner" version --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+    actual=$(lint_version "$runner")
 else
     actual=
 fi
@@ -20,7 +32,7 @@ if [ "${actual#v}" != "${version#v}" ]; then
         mv -- "$install_dir/golangci-lint" "$runner"
     fi
 fi
-actual=$("$runner" version --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])')
+actual=$(lint_version "$runner")
 if [ "${actual#v}" != "${version#v}" ]; then
     echo "lint: expected $version, got $actual from $runner" >&2
     exit 1

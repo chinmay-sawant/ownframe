@@ -26,8 +26,13 @@ func TestStatsCountRedraws(t *testing.T) {
 		t.Fatalf("redraws = %d, parses = %d, want 2 and a parse", stats.Redraws, stats.Parses)
 	}
 
-	if stats.Layouts != 2 || stats.Repaints != 2 {
-		t.Fatalf("layouts = %d, repaints = %d, want 2 each", stats.Layouts, stats.Repaints)
+	// The second Redraw sees an identical frame and skips the layout, so
+	// it counts the redraw but no layout or repaint, and no layout time.
+	if stats.Layouts != 1 || stats.Repaints != 1 {
+		t.Fatalf("layouts = %d, repaints = %d, want 1 each", stats.Layouts, stats.Repaints)
+	}
+	if stats.LayoutTime != 0 {
+		t.Fatalf("layout time = %v, want 0 on the skipped frame", stats.LayoutTime)
 	}
 
 	if stats.Boxes == 0 || stats.Ops == 0 {

@@ -53,13 +53,17 @@ func (p *Page) markRect(r image.Rectangle) {
 func (p *Page) markFull() {
 	p.draw.DropPNG()
 	p.dirty.MarkFull()
+	p.fullGen = p.generation
 }
 
 // TakeDirtyRects returns the regions in CSS pixels changed since the
 // previous call and clears them. The tracker owns the damage state; the
 // page only supplies its content rect. See dirty.Tracker.Take.
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
-	return p.dirty.Take(p.contentRect())
+	rects, ok := p.dirty.Take(p.contentRect())
+	p.painted = p.draw.Display
+
+	return rects, ok
 }
 
 // TakeDirty returns the region in CSS pixels changed since the previous
@@ -68,6 +72,7 @@ func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 // changed since the previous call.
 func (p *Page) TakeDirty() (image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
+	p.painted = p.draw.Display
 	if !ok {
 		return image.Rectangle{}, false
 	}
@@ -153,10 +158,6 @@ func (p *Page) markToggle(id string) {
 // on it also stores the changed, dirty, and region counters Stats reports;
 // TakeDirty clears only the region, never these counters.
 func (p *Page) dirtyFromDisplay(prev, display *Display) {
-	if p.dirty.Full {
-		return
-	}
-
 	if prev == nil {
 		p.markFull()
 		if p.perf {
@@ -172,11 +173,32 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		return
 	}
 
-	d, full, changed := diffDisplay(prev, display)
-	if full {
+	// A full mark left from an earlier display must not hide this update's
+	// own change set. When a display was painted since that mark, diffing
+	// against it recovers every change the host has not seen and can often
+	// narrow the frame to the region the update actually touched. Without a
+	// painted display there is no baseline to recover from, so the frame
+	// stays full; the report still describes this update instead of the one
+	// that first marked full.
+	if p.dirty.Full {
+		if p.painted != nil && p.fullGen < p.generation {
+			if d, full, changed := diffDisplay(p.painted, display); !full {
+				p.dirty.Full = false
+				p.markDisplayPartial(d, display, changed)
+
+				return
+			}
+		}
+
+		d, _, changed := diffDisplay(prev, display)
 		p.markFull()
+		// This commit carries a mark that was already pending, so a later
+		// diff from painted cannot recover what the mark covered (an
+		// in-place tick, for example). Bind the mark to the new generation;
+		// only a full diff from this commit stays recoverable.
+		p.fullGen = p.generation + 1
 		if p.perf {
-			p.recordFull(len(display.Ops))
+			p.recordFullChanged(changed, len(display.Ops))
 		}
 		p.lastPatch = DisplayPatch{
 			Changed: changed,
@@ -189,6 +211,29 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		return
 	}
 
+	d, full, changed := diffDisplay(prev, display)
+	if full {
+		p.markFull()
+		if p.perf {
+			p.recordFullChanged(changed, len(display.Ops))
+		}
+		p.lastPatch = DisplayPatch{
+			Changed: changed,
+			Added:   d.added,
+			Removed: d.removed,
+			Regions: 1,
+			Full:    true,
+		}
+
+		return
+	}
+
+	p.markDisplayPartial(d, display, changed)
+}
+
+// markDisplayPartial queues the regions one partial display diff found and
+// records the counters and report that describe it.
+func (p *Page) markDisplayPartial(d dirtySet, display *Display, changed int) {
 	for i := range d.n {
 		p.markRect(d.rects[i])
 	}
@@ -197,15 +242,11 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		p.recordPartial(changed, d.rects[:d.n], display)
 	}
 
-	regionCount := d.n
-	if regionCount == 0 {
-		regionCount = 0
-	}
 	p.lastPatch = DisplayPatch{
 		Changed: changed,
 		Added:   d.added,
 		Removed: d.removed,
-		Regions: regionCount,
+		Regions: d.n,
 		Full:    false,
 	}
 }
@@ -224,7 +265,15 @@ func (p *Page) applyPending() {
 // recordFull stores whole-frame dirty counters for a first draw, a size
 // change, or a paint fallback. n is the ops or boxes now on screen.
 func (p *Page) recordFull(n int) {
-	p.stats.changedOps = n
+	p.recordFullChanged(n, n)
+}
+
+// recordFullChanged is recordFull with the operations that actually differ
+// kept separate from the operations the full repaint meets. A full damage
+// region still counts every operation as dirty; only the changed count is
+// the display diff's own result.
+func (p *Page) recordFullChanged(changed, n int) {
+	p.stats.changedOps = changed
 	p.stats.dirtyOps = n
 	p.stats.dirtyRegions = 1
 	r := p.contentRect()

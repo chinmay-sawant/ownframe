@@ -1,13 +1,30 @@
 package replay
 
-// lookup returns the entry for key, if one has been baked or declined.
+// lookup returns the entry for key, if one has been baked or declined. A hit
+// moves to the back of the eviction order, so the cache evicts the
+// least-recently-used run first.
 func (c *textRasterCache) lookup(key textRasterKey) (textRasterEntry, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	entry, ok := c.entries[key]
+	if ok {
+		c.touch(key)
+	}
 
 	return entry, ok
+}
+
+// touch moves key to the back of the eviction order. The caller holds mu.
+func (c *textRasterCache) touch(key textRasterKey) {
+	for i, candidate := range c.order {
+		if candidate == key {
+			c.order = append(c.order[:i], c.order[i+1:]...)
+			c.order = append(c.order, key)
+
+			return
+		}
+	}
 }
 
 // raster returns the entry for key, running bake once while the key is new.
@@ -21,6 +38,8 @@ func (c *textRasterCache) raster(key textRasterKey, bake func() (textRasterEntry
 		c.entries = make(map[textRasterKey]textRasterEntry)
 	}
 	if entry, ok := c.entries[key]; ok {
+		c.touch(key)
+
 		return entry
 	}
 
@@ -32,23 +51,14 @@ func (c *textRasterCache) raster(key textRasterKey, bake func() (textRasterEntry
 	}
 
 	for len(c.order) > textRunMaxEntries || c.pixels > textRunMaxPixels {
-		idx := -1
-		var victim textRasterKey
-		for i, candidate := range c.order {
-			if candidate == key {
-				continue
-			}
-			victim = candidate
-			idx = i
-			break
-		}
-		if idx < 0 {
+		victim := c.order[0]
+		if victim == key {
 			// Only the entry being returned remains; keep it.
 			break
 		}
 
 		c.evict(victim)
-		c.order = append(c.order[:idx], c.order[idx+1:]...)
+		c.order = c.order[1:]
 	}
 
 	return entry

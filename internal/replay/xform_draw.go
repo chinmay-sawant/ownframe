@@ -30,6 +30,11 @@ func (renderer *Renderer) drawXformShape(dst *ebiten.Image, op *layout.DisplayOp
 		return
 	}
 
+	dst, ok = scissorOverflow(dst, op, dx, dy)
+	if !ok {
+		return
+	}
+
 	geom := xformGeom(op, dx, dy)
 	shiftLocal(&geom, float64(at.X)-op.X*pxPerPt, float64(at.Y)-op.Y*pxPerPt)
 	opts := &ebiten.DrawImageOptions{

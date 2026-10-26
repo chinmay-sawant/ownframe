@@ -1,9 +1,9 @@
 GO ?= go
 
-# Test binaries run one package at a time by default so the suite does not
-# build every package at once. Raise the limit for a faster run:
-# make test TEST_P=4
-TEST_P ?= 1
+# Test binaries run four packages at a time by default. Lower the limit on a
+# machine short of memory, raise it for a faster run:
+# make test TEST_P=8
+TEST_P ?= 4
 
 # Pin golangci-lint for local + CI reproducibility. Override:
 # make lint GOLANGCI_LINT_VERSION=vX.Y.Z

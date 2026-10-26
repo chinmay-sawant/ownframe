@@ -17,7 +17,7 @@ var styles = []string{
 	"base.css", "sidebar.css", "topbar.css", "greeting.css",
 	"shelf.css", "tracklist.css", "profile.css", "nowbar.css",
 	"search.css", "library.css", "liked.css", "browse.css",
-	"radio.css", "queue.css",
+	"radio.css", "queue.css", "motion.css",
 }
 
 // screens are the nav values that swap the main panel for one component.

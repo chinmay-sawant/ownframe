@@ -26,7 +26,7 @@ type shell struct {
 	// cancel releases ctx; set once with ctx, never replaced.
 	cancel       context.CancelFunc
 	img          *ebiten.Image
-	fitBuf       *ebiten.Image
+	scaleBuf     *ebiten.Image
 	display      *layout.Display
 	fallback     bool
 	bitmapView   bitmapView
@@ -66,8 +66,6 @@ type shell struct {
 	lastRelayout     time.Time
 	cursorX, cursorY int
 	hover            hoverState
-
-	replayBuf *ebiten.Image
 
 	lastPoll time.Time
 	lastNote string

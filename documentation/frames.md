@@ -143,8 +143,8 @@ Remeasure with the current benchmark before choosing an animation path.
   manual preview packages.
 
 The [Spotify player](../examples/spotify-player) example uses the tick for a
-moving seek bar, a running clock, and a sine-driven equalizer. It plays
-locally through [examples/music](../examples/music). The
+moving seek bar and a running clock; its equalizer and hover motion are CSS
+declarations. It plays locally through [examples/music](../examples/music). The
 [dino](../examples/dino) and [flappy-bird](../examples/flappy-bird) examples
 step their games and paint the scene from the tick. The
 [departure board](../examples/departure-board) example rotates its feed by

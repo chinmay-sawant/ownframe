@@ -10,8 +10,8 @@ cp scripts/lint.sh "$fixture/scripts/"
 export LINT_TEST_LOG="$fixture/calls"
 cat > "$fixture/bin/golangci-lint" <<'TOOL'
 #!/usr/bin/env bash
-if [ "$1" = version ] && [ "${2:-}" = --json ]; then
-    echo '{"version":"0.0.0"}'
+if [ "$1" = version ]; then
+    echo 'golangci-lint has version 0.0.0 built with go1.26'
     exit 0
 fi
 echo 'wrong PATH runner executed' >&2
@@ -24,11 +24,7 @@ printf 'go %s\n' "$*" >> "$LINT_TEST_LOG"
 cat > "$GOBIN/golangci-lint" <<'PINNED'
 #!/usr/bin/env bash
 if [ "$1" = version ]; then
-    if [ "${2:-}" = --json ]; then
-        echo '{"version":"2.15.0"}'
-    else
-        echo 'golangci-lint has version 2.15.0'
-    fi
+    echo 'golangci-lint has version 2.15.0 built with go1.26'
 else
     printf 'lint %s\n' "$*" >> "$LINT_TEST_LOG"
 fi

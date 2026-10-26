@@ -180,6 +180,12 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 		if op.Group() != nil {
 			return out, "op inside a blend group"
 		}
+		if _, _, _, _, clipped := op.OverflowClip(); clipped {
+			// A layer bakes the clip into the texture, but the composite
+			// pose moves it with the animation. Keep such subtrees direct
+			// so the replay scissor holds the ancestor clip still.
+			return out, "clipped op"
+		}
 		b, ok := layerOpBox(op, base, ppt)
 		if !ok || b.Empty() {
 			return out, "unbounded op"

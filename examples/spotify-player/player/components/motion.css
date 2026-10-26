@@ -1,0 +1,250 @@
+/* Motion lives in CSS declarations. The automatic runtime samples the
+   keyframes and transitions listed in documentation/css-motion.md, so no Go
+   callback writes the equalizer, hover colour, or hover lift. Keyframes and
+   transitions use only the shipped write fields: transform, opacity, colour,
+   background colour, and border colour. */
+
+@keyframes sp-eq-a {
+  0% { transform: scaleY(0.25); }
+  45% { transform: scaleY(1); }
+  100% { transform: scaleY(0.4); }
+}
+
+@keyframes sp-eq-b {
+  0% { transform: scaleY(0.9); }
+  50% { transform: scaleY(0.3); }
+  100% { transform: scaleY(0.75); }
+}
+
+@keyframes sp-eq-c {
+  0% { transform: scaleY(0.45); }
+  35% { transform: scaleY(0.95); }
+  100% { transform: scaleY(0.35); }
+}
+
+@keyframes sp-eq-d {
+  0% { transform: scaleY(0.7); }
+  60% { transform: scaleY(0.2); }
+  100% { transform: scaleY(0.85); }
+}
+
+/* The bars stay paused at their declared phase until the now bar carries the
+   playing class. A paused player asks for no frames, so a stopped track parks
+   the page. */
+
+.eq-bar {
+  height: 100%;
+  transform: scaleY(0.4);
+  transform-origin: center bottom;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-fill-mode: both;
+  animation-play-state: paused;
+}
+
+.eq-a {
+  animation-name: sp-eq-a;
+  animation-duration: 900ms;
+  animation-delay: -120ms;
+}
+
+.eq-b {
+  animation-name: sp-eq-b;
+  animation-duration: 640ms;
+  animation-delay: -320ms;
+}
+
+.eq-c {
+  animation-name: sp-eq-c;
+  animation-duration: 780ms;
+  animation-delay: -60ms;
+}
+
+.eq-d {
+  animation-name: sp-eq-d;
+  animation-duration: 1060ms;
+  animation-delay: -460ms;
+}
+
+.eq.playing .eq-bar {
+  animation-play-state: running;
+}
+
+.q-eq-bar {
+  height: 100%;
+  transform: scaleY(0.5);
+  transform-origin: center bottom;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-fill-mode: both;
+  animation-play-state: paused;
+}
+
+.q-eq-a {
+  animation-name: sp-eq-c;
+  animation-duration: 620ms;
+  animation-delay: -100ms;
+}
+
+.q-eq-b {
+  animation-name: sp-eq-a;
+  animation-duration: 840ms;
+  animation-delay: -300ms;
+}
+
+.q-eq-c {
+  animation-name: sp-eq-d;
+  animation-duration: 540ms;
+  animation-delay: -200ms;
+}
+
+.q-eq.playing .q-eq-bar {
+  animation-play-state: running;
+}
+
+/* Hover motion follows the Meridian pattern: one transition surface on the
+   interactive elements, then :hover rules that change only a shippable
+   property. Border colour is in the shipped transition set in css-motion.md. */
+
+.nav-item,
+.list-row,
+.lib-head,
+.card,
+.pick,
+.trow,
+.lib-card,
+.lib-pill,
+.srch-tile,
+.srch-row,
+.brw-hero,
+.brw-tile,
+.rad-card,
+.q-row,
+.q-frow,
+.prof-card,
+.page-button,
+.nb-btn,
+.nb-play,
+.liked-play,
+.liked-heart,
+.liked-more,
+.rad-play,
+.avatar,
+.circle,
+.search-go,
+.prof-edit,
+.show-all {
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease,
+    opacity 160ms ease, transform 160ms ease;
+}
+
+.nav-item:hover {
+  color: #ffffff;
+  background-color: #1f1f1f;
+}
+
+.list-row:hover {
+  background-color: #1f1f1f;
+}
+
+.lib-head:hover {
+  color: #ffffff;
+}
+
+.card:hover,
+.lib-card:hover,
+.prof-card:hover {
+  background-color: #303030;
+  transform: translateY(-2px);
+}
+
+.pick:hover {
+  background-color: #333333;
+}
+
+.trow:hover,
+.srch-row:hover,
+.q-row:hover,
+.q-frow:hover {
+  background-color: #1f1f1f;
+}
+
+.lib-pill:hover {
+  color: #ffffff;
+  background-color: #333333;
+}
+
+.lib-pill.on:hover {
+  color: #000000;
+  background-color: #f0f0f0;
+}
+
+.srch-tile:hover,
+.brw-tile:hover,
+.brw-hero:hover {
+  transform: translateY(-2px);
+}
+
+.rad-card:hover {
+  background-color: #222222;
+}
+
+.page-button:hover {
+  background-color: #333333;
+}
+
+.page-button.disabled:hover {
+  color: #777777;
+  background-color: #202020;
+}
+
+.nb-btn:hover {
+  opacity: 0.75;
+  transform: scale(1.08);
+}
+
+.nb-play:hover,
+.liked-play:hover,
+.rad-play:hover {
+  transform: scale(1.06);
+}
+
+.liked-heart:hover,
+.liked-more:hover {
+  opacity: 0.75;
+}
+
+.avatar:hover {
+  background-color: #1ed760;
+  transform: scale(1.05);
+}
+
+.circle:hover {
+  background-color: #1f1f1f;
+}
+
+.circle.disabled:hover {
+  background-color: #000000;
+}
+
+.search-go:hover {
+  background-color: #1ed760;
+}
+
+.prof-edit:hover {
+  color: #000000;
+  background-color: #ffffff;
+}
+
+.show-all:hover {
+  color: #ffffff;
+}
+
+/* The seek and volume bars stay out of the hover surface. Their fill is a
+   separate operation the frame tick positions from the audio clock, and the
+   tick finds it by its accent colour. A hover recolour hides that operation,
+   and a hover on one of the ten seek zones would paint a green strip away
+   from the playhead. Keep the track and the fill static unless the audio
+   position moves them. */
