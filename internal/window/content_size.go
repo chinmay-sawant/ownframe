@@ -20,11 +20,31 @@ func (s *shell) contentSize() (int, int) {
 		if viewportBox(b, viewport) {
 			continue
 		}
-		if right := int(math.Ceil(b.X + b.W)); right > w {
+
+		x2, y2 := b.X+b.W, b.Y+b.H
+
+		if b.HasOverflowClip {
+			// Paint clipped by an overflow ancestor never extends the
+			// scrollable document: intersect the box with the recorded
+			// clip instead of the raw border box. A marquee track twice
+			// its lane, for example, must not summon a horizontal
+			// scrollbar on every page that clips it.
+			c := b.OverflowClip
+			x1 := math.Max(b.X, c[0])
+			y1 := math.Max(b.Y, c[1])
+			x2 = math.Min(x2, c[0]+c[2])
+			y2 = math.Min(y2, c[1]+c[3])
+
+			if x2 <= x1 || y2 <= y1 {
+				continue
+			}
+		}
+
+		if right := int(math.Ceil(x2)); right > w {
 			w = right
 		}
 
-		if bottom := int(math.Ceil(b.Y + b.H)); bottom > h {
+		if bottom := int(math.Ceil(y2)); bottom > h {
 			h = bottom
 		}
 	}

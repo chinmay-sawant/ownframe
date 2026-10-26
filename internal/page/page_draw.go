@@ -149,7 +149,7 @@ func (p *Page) drawStaged(
 ) error {
 	drawStart := draw.Clock(true)
 	ds := draw.Clock(track)
-	display, err := draw.List(ctx, styled, state)
+	display, err := p.layoutStaged(ctx, styled, state)
 	draw.Note(track, &p.stats.layoutTime, ds)
 	if err != nil {
 		return err

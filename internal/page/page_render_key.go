@@ -20,6 +20,12 @@ type renderTrack struct {
 	// statePseudos records the interactive pseudo-classes the sheets use. All
 	// true means unknown, which keeps the old redraw behavior.
 	statePseudos render.StatePseudos
+	// hoverGuardHash keys the hover risk scan input: the committed source
+	// plus the theme. A hash keeps no extra copy of either string alive.
+	// hoverGuardRisky records whether those sheets can style outside the
+	// hovered subtrees, which disables the scoped hover patch.
+	hoverGuardHash  uint64
+	hoverGuardRisky bool
 	// redrawBatch defers draws across a pointer sequence. Any Redraw in the
 	// batch sets pending; a Redraw (not RedrawIfChanged) also sets force.
 	redrawBatch   int
