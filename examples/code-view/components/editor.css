@@ -437,3 +437,57 @@ button.gutter-mark:hover { color: var(--text); }
 @media (max-width: 1120px) {
   .crumb-meta { display: none; }
 }
+
+/* Diff expander accordion rows */
+.drow.expand {
+  background-color: rgba(122, 162, 247, 0.08);
+  border-top: 1px solid rgba(122, 162, 247, 0.15);
+  border-bottom: 1px solid rgba(122, 162, 247, 0.15);
+  height: var(--row-h);
+  line-height: var(--row-h);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.drow.expand .dnum-expand {
+  color: #566072;
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.dcell-expand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  height: var(--row-h);
+  overflow: hidden;
+}
+
+.expand-btn {
+  background: rgba(122, 162, 247, 0.12);
+  border: 1px solid rgba(122, 162, 247, 0.25);
+  border-radius: 3px;
+  color: #7aa2f7;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 14px;
+  height: 16px;
+  padding: 0 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.expand-btn:hover {
+  background: rgba(122, 162, 247, 0.22);
+  color: #9ab8ff;
+  border-color: rgba(122, 162, 247, 0.4);
+}
+
+.expand-btn.expand-all {
+  font-weight: 600;
+}

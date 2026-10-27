@@ -3,5 +3,5 @@
 package atspi
 
 func liveReason() string {
-	return "linux AT-SPI mapping is experimental; D-Bus client is not implemented"
+	return "at-spi bus socket not found"
 }

@@ -649,6 +649,11 @@ func (w *workspace) readFile(path string) ([]byte, error) {
 	return os.ReadFile(filepath.Join(w.Root, clean)) //nolint:gosec // path is checked against the scanned root above
 }
 
+// ReadFile returns the bytes of one workspace file, handling sample files automatically.
+func (w *workspace) ReadFile(path string) ([]byte, error) {
+	return w.readFile(path)
+}
+
 // detectIndent reports the indentation the file actually uses.
 func detectIndent(lines []string) string {
 	tabs := false

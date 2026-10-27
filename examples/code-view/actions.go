@@ -66,6 +66,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.fileNavStep(-1)
 	case action == "file-nav-next":
 		a.fileNavStep(1)
+	case action == "file-nav-change-prev":
+		a.fileNavChangeStep(-1)
+	case action == "file-nav-change-next":
+		a.fileNavChangeStep(1)
 	case action == "file-nav-open":
 		a.fileNavOpen()
 	case action == "search-close":
@@ -111,6 +115,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.jumpHunk(1)
 	case action == "details-toggle":
 		a.toggleDetails()
+	case action == "scroll-left":
+		a.scrollHorizontal(-hscrollStep)
+	case action == "scroll-right":
+		a.scrollHorizontal(hscrollStep)
 	case action == "preview-toggle":
 		a.togglePreview()
 	case action == "wrap-toggle":
@@ -215,6 +223,18 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 	case strings.HasPrefix(action, "diff-file:"):
 		a.selectDiff(strings.TrimPrefix(action, "diff-file:"))
+	case strings.HasPrefix(action, "diff-expand-up:"):
+		if idx, ok := actionIndex(action, "diff-expand-up:"); ok {
+			a.diffExpandUp(idx)
+		}
+	case strings.HasPrefix(action, "diff-expand-down:"):
+		if idx, ok := actionIndex(action, "diff-expand-down:"); ok {
+			a.diffExpandDown(idx)
+		}
+	case strings.HasPrefix(action, "diff-expand-all:"):
+		if idx, ok := actionIndex(action, "diff-expand-all:"); ok {
+			a.diffExpandAll(idx)
+		}
 	case strings.HasPrefix(action, "outline:"):
 		if line, ok := actionIndex(action, "outline:"); ok {
 			a.outlineLine(line)
@@ -289,16 +309,38 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 	return ownframe.Box{}, false
 }
 
-// onWheel scrolls the explorer tree or the changed-file list under the
-// pointer.
-func (a *App) onWheel(ctx context.Context, x, y, _, dy float64) (bool, error) {
-	if dy == 0 || a.paletteOpen || a.searchOpen || a.branchOpen {
+// onWheel scrolls the explorer tree, the changed-file list, or the unwrapped
+// code/diff lines under the pointer.
+func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
+	if a.paletteOpen || a.searchOpen || a.branchOpen {
 		return false, nil
 	}
 
 	scrollX, scrollY := a.page.Scroll().ScrollOffset()
 	x -= float64(scrollX)
 	y -= float64(scrollY)
+
+	if !a.wrap && ((dx != 0) || (a.shift && dy != 0)) && a.isOverEditor(x, y) {
+		delta := -dx
+		if dx == 0 && a.shift && dy != 0 {
+			delta = -dy
+		}
+		step := int(delta * float64(hscrollWheelStep))
+		if step == 0 && delta != 0 {
+			if delta > 0 {
+				step = 1
+			} else {
+				step = -1
+			}
+		}
+		a.scrollHorizontal(step)
+
+		return true, a.page.Redraw(ctx)
+	}
+
+	if dy == 0 {
+		return false, nil
+	}
 
 	if a.mode == "changes" && a.view.Diff.Scroll {
 		box, ok := findBoxID(a.page.Boxes(), "changes-list")
@@ -324,31 +366,49 @@ func (a *App) onWheel(ctx context.Context, x, y, _, dy float64) (bool, error) {
 		}
 	}
 
-	if a.mode != "explorer" || !a.view.TreeScroll {
-		return false, nil
+	if a.mode == "explorer" {
+		if a.split {
+			if a.isOverPane(1, x, y) {
+				a.scrollEditorGroupByWheel(1, dy)
+
+				return true, a.page.Redraw(ctx)
+			}
+
+			if a.isOverPane(0, x, y) {
+				a.scrollEditorGroupByWheel(0, dy)
+
+				return true, a.page.Redraw(ctx)
+			}
+		}
+
+		if !a.view.TreeScroll {
+			return false, nil
+		}
+
+		tree, ok := findBoxID(a.page.Boxes(), "tree-pane")
+		if !ok {
+			return false, nil
+		}
+
+		if x < tree.X || x > tree.X+tree.W || y < tree.Y || y > tree.Y+tree.H {
+			a.treeWheelAccum = 0
+
+			return false, nil
+		}
+
+		a.treeWheelAccum += -dy * treeWheelRows
+		rows := int(a.treeWheelAccum)
+		a.treeWheelAccum -= float64(rows)
+
+		if rows != 0 {
+			a.scrollTree(rows)
+			a.keepTreeFocus(ctx)
+		}
+
+		return true, a.page.Redraw(ctx)
 	}
 
-	tree, ok := findBoxID(a.page.Boxes(), "tree-pane")
-	if !ok {
-		return false, nil
-	}
-
-	if x < tree.X || x > tree.X+tree.W || y < tree.Y || y > tree.Y+tree.H {
-		a.treeWheelAccum = 0
-
-		return false, nil
-	}
-
-	a.treeWheelAccum += -dy * treeWheelRows
-	rows := int(a.treeWheelAccum)
-	a.treeWheelAccum -= float64(rows)
-
-	if rows != 0 {
-		a.scrollTree(rows)
-		a.keepTreeFocus(ctx)
-	}
-
-	return true, a.page.Redraw(ctx)
+	return false, nil
 }
 
 // keepTreeFocus moves focus to the first visible row when a wheel scroll
@@ -987,17 +1047,29 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "3":
 		a.toggleDetails()
 	case "arrowdown":
-		a.scrollTo(a.scrollY + scrollStep)
+		a.scrollFocusedGroup(scrollStep)
 	case "arrowup":
-		a.scrollTo(a.scrollY - scrollStep)
+		a.scrollFocusedGroup(-scrollStep)
+	case "arrowleft":
+		if !a.wrap {
+			a.scrollHorizontal(-hscrollStep)
+
+			return a.page.Redraw(ctx)
+		}
+	case "arrowright":
+		if !a.wrap {
+			a.scrollHorizontal(hscrollStep)
+
+			return a.page.Redraw(ctx)
+		}
 	case "pagedown":
-		a.scrollTo(a.scrollY + pageScroll)
+		a.scrollFocusedGroup(pageScroll)
 	case "pageup":
-		a.scrollTo(a.scrollY - pageScroll)
+		a.scrollFocusedGroup(-pageScroll)
 	case "home":
-		a.scrollTo(0)
+		a.scrollFocusedGroupTo(0)
 	case "end":
-		a.scrollTo(a.contentHeight())
+		a.scrollFocusedGroupToEnd()
 	case "f":
 		return a.focusFilter(ctx)
 	case "w":

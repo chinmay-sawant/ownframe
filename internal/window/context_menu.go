@@ -38,6 +38,11 @@ func (s *shell) menuRows(x, y int) []host.MenuItem {
 
 	id := ""
 	px, py := s.contentPointAt(x, y)
+	if menu, ok := s.app.(interface {
+		ContextMenuAt(x, y float64) []host.MenuItem
+	}); ok {
+		return menu.ContextMenuAt(px, py)
+	}
 	if box, ok := devBoxAt(s.app.Boxes(), px, py); ok {
 		id = box.ID
 	}

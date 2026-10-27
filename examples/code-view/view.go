@@ -49,6 +49,7 @@ type View struct {
 	TrackTop    int
 	SpaceHeight int
 	Wrap        bool
+	ScrollX     int
 	FindQuery   string
 	FindOpen    bool
 	FindCase    bool
@@ -137,6 +138,7 @@ type secondaryView struct {
 
 	Rows        []codeRow
 	TrackTop    int
+	ScrollX     int
 	Welcome     bool
 	Preview     bool
 	Previewable bool
@@ -218,6 +220,7 @@ type codeRow struct {
 	ChangeLine  int
 	Caret       bool
 	CaretLeft   int
+	ScrollX     int
 }
 
 // recentRow is one quick-open entry on the welcome panel.
@@ -248,6 +251,7 @@ type diffView struct {
 	Hunks         int
 	Rows          []diffRow
 	TrackTop      int
+	ScrollX       int
 	HasFiles      bool
 	HasChanges    bool
 	Page          int

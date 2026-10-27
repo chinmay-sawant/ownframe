@@ -17,13 +17,14 @@ type changeSet struct {
 
 // changedFile is one file in a diff, with its hunks already parsed.
 type changedFile struct {
-	Path    string
-	OldPath string
-	Status  string
-	Add     int
-	Del     int
-	Hunks   []hunk
-	Binary  bool
+	Path       string
+	OldPath    string
+	Status     string
+	Add        int
+	Del        int
+	Hunks      []hunk
+	Binary     bool
+	TotalLines int
 }
 
 // hunk is one `@@` block from a unified diff.
@@ -66,12 +67,18 @@ type diffRow struct {
 	Cont      bool
 	LeftCont  bool
 	RightCont bool
+	Expand    *diffExpandRow
+	ScrollX   int
 }
 
 // clipDiffRows trims long diff text so a cell cannot paint into its neighbour.
 func clipDiffRows(rows []diffRow, unified, split int) {
 	for i := range rows {
 		row := &rows[i]
+		if row.Kind == rowExpand {
+			continue
+		}
+
 		cols := unified
 
 		if row.Kind == "split" {
@@ -132,11 +139,12 @@ const (
 	diffRowsPerHunkEstimate  = 8
 	markRangeParts           = 2
 
-	rowHunk = "hunk"
-	rowCtx  = "ctx"
-	rowAdd  = "add"
-	rowDel  = "del"
-	rowMeta = "meta"
+	rowHunk   = "hunk"
+	rowCtx    = "ctx"
+	rowAdd    = "add"
+	rowDel    = "del"
+	rowMeta   = "meta"
+	rowExpand = "expand"
 )
 
 // parseDiff turns unified diff text into files and hunks. It accepts the
@@ -469,7 +477,28 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 		return []diffRow{{Kind: rowMeta, Hunk: "No textual changes in this file."}}
 	}
 
-	for _, h := range file.Hunks {
+	gaps := identifyGaps(file)
+	var gapBefore *diffGap
+	var gapAfter *diffGap
+	gapBetween := make(map[int]diffGap)
+
+	for _, g := range gaps {
+		if g.Before {
+			copy := g
+			gapBefore = &copy
+		} else if g.After {
+			copy := g
+			gapAfter = &copy
+		} else {
+			gapBetween[g.HunkIdx] = g
+		}
+	}
+
+	if gapBefore != nil {
+		rows = append(rows, newDiffExpandRow(*gapBefore))
+	}
+
+	for i, h := range file.Hunks {
 		rows = append(rows, diffRow{Kind: rowHunk, Hunk: hunkLabel(h)})
 
 		for _, line := range h.Lines {
@@ -487,6 +516,14 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 
 			rows = append(rows, row)
 		}
+
+		if g, ok := gapBetween[i]; ok {
+			rows = append(rows, newDiffExpandRow(g))
+		}
+	}
+
+	if gapAfter != nil {
+		rows = append(rows, newDiffExpandRow(*gapAfter))
 	}
 
 	return rows
@@ -504,7 +541,28 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 		return []diffRow{{Kind: rowMeta, Hunk: "No textual changes in this file."}}
 	}
 
-	for _, h := range file.Hunks {
+	gaps := identifyGaps(file)
+	var gapBefore *diffGap
+	var gapAfter *diffGap
+	gapBetween := make(map[int]diffGap)
+
+	for _, g := range gaps {
+		if g.Before {
+			copy := g
+			gapBefore = &copy
+		} else if g.After {
+			copy := g
+			gapAfter = &copy
+		} else {
+			gapBetween[g.HunkIdx] = g
+		}
+	}
+
+	if gapBefore != nil {
+		rows = append(rows, newDiffExpandRow(*gapBefore))
+	}
+
+	for hunkIdx, h := range file.Hunks {
 		rows = append(rows, diffRow{Kind: rowHunk, Hunk: hunkLabel(h)})
 
 		i := 0
@@ -556,6 +614,14 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 				rows = append(rows, row)
 			}
 		}
+
+		if g, ok := gapBetween[hunkIdx]; ok {
+			rows = append(rows, newDiffExpandRow(g))
+		}
+	}
+
+	if gapAfter != nil {
+		rows = append(rows, newDiffExpandRow(*gapAfter))
 	}
 
 	return rows

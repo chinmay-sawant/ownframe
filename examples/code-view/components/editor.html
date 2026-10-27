@@ -101,16 +101,35 @@
           {{else if eq .Kind "split"}}
           <div class="drow split{{if or .LeftCont .RightCont}} cont{{end}}">
             <span class="dnum {{.LeftKind}}">{{.LeftNo}}</span>
-            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
             <span class="dnum {{.RightKind}}">{{.RightNo}}</span>
-            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext">{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+          </div>
+          {{else if eq .Kind "expand"}}
+          <div class="drow expand" id="diff-expand-row-{{.Expand.Index}}">
+            {{if $.Diff.Split}}
+            <span class="dnum dnum-expand">···</span>
+            {{else}}
+            <span class="dnum dnum-expand">···</span>
+            <span class="dnum dnum-expand">···</span>
+            <span class="dsign">↕</span>
+            {{end}}
+            <div class="dcell-expand">
+              {{if .Expand.CanDown}}
+              <button class="expand-btn expand-down" id="diff-expand-down-{{.Expand.Index}}" data-action="diff-expand-down:{{.Expand.Index}}" type="button" title="{{.Expand.DownText}}"{{if $.Modal}} tabindex="-1"{{end}}>{{.Expand.DownText}}</button>
+              {{end}}
+              <button class="expand-btn expand-all" id="diff-expand-all-{{.Expand.Index}}" data-action="diff-expand-all:{{.Expand.Index}}" type="button" title="{{.Expand.AllText}}"{{if $.Modal}} tabindex="-1"{{end}}>{{.Expand.AllText}}</button>
+              {{if .Expand.CanUp}}
+              <button class="expand-btn expand-up" id="diff-expand-up-{{.Expand.Index}}" data-action="diff-expand-up:{{.Expand.Index}}" type="button" title="{{.Expand.UpText}}"{{if $.Modal}} tabindex="-1"{{end}}>{{.Expand.UpText}}</button>
+              {{end}}
+            </div>
           </div>
           {{else}}
           <div class="drow {{.Kind}}{{if .Cont}} cont{{end}}">
             <span class="dnum">{{.OldNo}}</span>
             <span class="dnum">{{.NewNo}}</span>
             <span class="dsign">{{if .Cont}}{{else if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
-            <span class="dcell"><span class="dlinetext">{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+            <span class="dcell"><span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
           </div>
           {{end}}
         {{end}}
@@ -169,7 +188,7 @@
         <div class="crow {{.ChangeClass}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
-          <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{if .Caret}}<span class="edit-caret" style="left:{{.CaretLeft}}px"></span>{{end}}</span>
+          <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{if .Caret}}<span class="edit-caret" style="left:{{.CaretLeft}}px"></span>{{end}}</span>
         </div>
         {{end}}
       </div>
@@ -190,7 +209,7 @@
         <div class="crow {{.ChangeClass}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
-          <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+          <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
           <button class="edit-line-hit" id="edit-line-{{.Line}}" data-action="edit-begin-line:{{.Line}}" type="button" title="Edit line {{if .No}}{{.No}}{{end}}" aria-label="Edit line {{if .No}}{{.No}}{{end}}" tabindex="-1"></button>
         </div>
         {{end}}
@@ -265,7 +284,7 @@
         <div class="crow {{.ChangeClass}}">
           <span class="gutter-mark {{.MarkClass}}">{{.Mark}}</span>
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
-          <span class="cline"><span class="clinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+          <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
         </div>
         {{end}}
       </div>

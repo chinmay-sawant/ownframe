@@ -33,6 +33,12 @@ func wrapDiffRows(rows []diffRow, unifiedCols, splitCols int, wrap bool) []diffR
 	out := make([]diffRow, 0, len(rows))
 
 	for _, row := range rows {
+		if row.Kind == rowExpand {
+			out = append(out, row)
+
+			continue
+		}
+
 		if row.Kind == "split" {
 			out = append(out, wrapSplitDiffRow(row, splitCols)...)
 

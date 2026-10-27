@@ -167,7 +167,7 @@ func (a *App) secondView() secondaryView {
 
 	if s.Preview {
 		doc.ensurePreview(cols)
-		start, end, track := a.windowSlice(len(doc.Preview))
+		start, end, track := a.windowSliceForGroup(1, len(doc.Preview))
 		s.TrackTop = track
 
 		if len(doc.Preview) > 0 {
@@ -179,7 +179,7 @@ func (a *App) secondView() secondaryView {
 
 	if a.wrap {
 		plan := doc.wrapped(cols)
-		start, end, track := a.windowSlice(len(plan.Rows))
+		start, end, track := a.windowSliceForGroup(1, len(plan.Rows))
 		s.TrackTop = track
 		s.Rows = cloneCodeRows(plan.Rows[start:end])
 		a.decorateCodeRows(doc, s.Rows)
@@ -187,11 +187,18 @@ func (a *App) secondView() secondaryView {
 		return s
 	}
 
-	start, end, track := a.windowSlice(len(doc.Lines))
+	start, end, track := a.windowSliceForGroup(1, len(doc.Lines))
 	s.TrackTop = track
+	if !a.wrap {
+		s.ScrollX = a.scrollX
+	}
 
 	for i := start; i < end; i++ {
-		s.Rows = append(s.Rows, codeRow{No: i + 1, Line: i, Segments: doc.Tokens[i]})
+		row := codeRow{No: i + 1, Line: i, Segments: doc.Tokens[i]}
+		if !a.wrap {
+			row.ScrollX = a.scrollX
+		}
+		s.Rows = append(s.Rows, row)
 	}
 
 	a.decorateCodeRows(doc, s.Rows)

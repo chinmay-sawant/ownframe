@@ -43,6 +43,8 @@
 
 .file-nav-arrow:hover { background-color: var(--panel-3); color: var(--text); }
 
+.file-nav-change { width: 20px; flex-basis: 20px; font-size: 14px; }
+
 .file-nav-arrow.off { color: #3a4252; }
 .file-nav-arrow.off:hover { background-color: transparent; color: #3a4252; }
 
@@ -80,8 +82,8 @@
 
 .file-nav-dir {
   display: block;
-  width: 100px;
-  flex: 0 0 100px;
+  width: 60px;
+  flex: 0 0 60px;
   height: 18px;
   padding: 0 4px;
   color: var(--dim);
@@ -116,7 +118,7 @@
    hint is the first thing to go. The offset is half of the new width. */
 @media (max-width: 900px) {
   .file-nav { left: calc(50% - 160px); width: 320px; }
-  .file-nav-current { width: 150px; flex-basis: 150px; }
+  .file-nav-current { width: 110px; flex-basis: 110px; }
   .file-nav-dir { display: none; }
 }
 
@@ -124,5 +126,5 @@
    has and sits on an even 16 px inset. */
 @media (max-width: 352px) {
   .file-nav { left: 16px; width: calc(100vw - 32px); }
-  .file-nav-current { width: 100px; flex-basis: 100px; }
+  .file-nav-current { width: 60px; flex-basis: 60px; }
 }

@@ -2,6 +2,103 @@ package main
 
 import "strings"
 
+type changeNavigation struct {
+	path   string
+	mode   string
+	group  int
+	row    int
+	scroll int
+	valid  bool
+}
+
+// fileNavChangeStep visits change blocks in the selected file.
+func (a *App) fileNavChangeStep(delta int) {
+	if a.fileNav == nil {
+		return
+	}
+	path, ok := a.fileNav.Current()
+	if !ok {
+		return
+	}
+	if a.mode == "changes" {
+		if a.diffPath != path || a.diffSource != "working" {
+			a.openChangedPath(path)
+		}
+	} else if doc := a.activeDoc(); doc == nil || doc.Path != path {
+		a.openChangedPath(path)
+	}
+
+	rows := a.fileNavChangeRows(path)
+	if len(rows) == 0 {
+		return
+	}
+	scroll := a.scrollY
+	if a.split && a.mode != "changes" {
+		scroll = a.scrollGroup[a.activeGroup()]
+	}
+	current := scroll / rowH
+	continuing := a.changeNav.valid && a.changeNav.path == path &&
+		a.changeNav.mode == a.mode && a.changeNav.group == a.activeGroup() && a.changeNav.scroll == scroll
+	if continuing {
+		current = a.changeNav.row
+	}
+	index := -1
+	if delta > 0 {
+		for i, row := range rows {
+			if row > current || !continuing && row == current {
+				index = i
+				break
+			}
+		}
+	} else {
+		for i := len(rows) - 1; i >= 0; i-- {
+			if rows[i] < current {
+				index = i
+				break
+			}
+		}
+	}
+	if index < 0 {
+		return
+	}
+	if a.split && a.mode != "changes" {
+		a.scrollGroupTo(a.activeGroup(), rows[index]*rowH)
+		scroll = a.scrollGroup[a.activeGroup()]
+	} else {
+		a.scrollTo(rows[index] * rowH)
+		scroll = a.scrollY
+	}
+	a.changeNav = changeNavigation{path: path, mode: a.mode, group: a.activeGroup(), row: rows[index], scroll: scroll, valid: true}
+}
+
+func (a *App) fileNavChangeRows(path string) []int {
+	var rows []int
+	if a.mode == "changes" {
+		for i, row := range a.diffDisplayRows() {
+			if row.Kind == rowHunk {
+				rows = append(rows, i)
+			}
+		}
+		return rows
+	}
+	doc := a.activeDoc()
+	if doc == nil || doc.Path != path {
+		return nil
+	}
+	previous := -2
+	for _, line := range inlineChangeLines(a.changedLinesFor(path)) {
+		if line != previous+1 {
+			row := line - 1
+			if a.wrap {
+				row = doc.wrapped(a.codeColsForGroup(a.activeGroup())).firstRow(row)
+			}
+			rows = append(rows, row)
+		}
+		previous = line
+	}
+	return rows
+}
+
 // syncFileNav rebuilds the changed-file navigator and keeps the current path
 // selected when it still exists.
 func (a *App) syncFileNav() {

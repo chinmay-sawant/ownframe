@@ -96,11 +96,12 @@ type App struct {
 	page *ownframe.Page
 	ws   *workspace
 
-	changes  changeSet
-	statuses map[string]string
-	view     View
-	fileNav  *modifiedNav
-	summary  changeSummary
+	changes   changeSet
+	statuses  map[string]string
+	view      View
+	fileNav   *modifiedNav
+	summary   changeSummary
+	changeNav changeNavigation
 
 	mode           string
 	filter         string
@@ -115,11 +116,13 @@ type App struct {
 	active int
 	docs   map[string]*fileDoc
 
-	split      bool
-	focusGroup int
-	tabs2      []string
-	active2    int
-	splitRatio float64
+	split           bool
+	focusGroup      int
+	tabs2           []string
+	active2         int
+	splitRatio      float64
+	scrollGroup     [2]int
+	splitWheelAccum [2]float64
 
 	editing    bool
 	edit       *editBuffer
@@ -206,6 +209,7 @@ type App struct {
 	shift        bool
 	preview      bool
 	wrap         bool
+	scrollX      int
 	viewportCols int
 	findOpen     bool
 	findQuery    string
@@ -407,7 +411,10 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 		return false
 	}
 
-	a.scrollY = offsetY
+	if !a.split {
+		a.scrollY = offsetY
+		a.scrollGroup[0] = offsetY
+	}
 	a.viewportH = viewH
 	a.viewportCols = cols
 	a.inlineCard = inlineCard{}
@@ -435,6 +442,7 @@ func (a *App) buildView() View {
 		Dirty:       a.dirtyCount(),
 		Toast:       a.toast,
 		Wrap:        a.wrap,
+		ScrollX:     0,
 		FindQuery:   a.findQuery,
 		FindOpen:    a.findOpen,
 		FindCase:    a.findCase,
@@ -443,6 +451,10 @@ func (a *App) buildView() View {
 		BranchQuery: a.branchQuery,
 		Split:       a.split && a.mode == "explorer",
 		FocusGroup:  a.focusGroup,
+	}
+
+	if !a.wrap {
+		v.ScrollX = a.scrollX
 	}
 
 	v.Tree, v.TreeTotal, v.TreeCount, v.Filtered = a.treeRows()
@@ -537,7 +549,7 @@ func (a *App) fillCode(v *View) {
 
 	if v.Preview {
 		doc.ensurePreview(cols)
-		start, end, track := a.windowSlice(len(doc.Preview))
+		start, end, track := a.windowSliceForGroup(0, len(doc.Preview))
 		v.TrackTop = track
 
 		if len(doc.Preview) > 0 {
@@ -547,10 +559,10 @@ func (a *App) fillCode(v *View) {
 		return
 	}
 
-	start, end, track := a.windowSlice(len(doc.Lines))
+	start, end, track := a.windowSliceForGroup(0, len(doc.Lines))
 	if a.wrap {
 		plan := doc.wrapped(cols)
-		start, end, track = a.windowSlice(len(plan.Rows))
+		start, end, track = a.windowSliceForGroup(0, len(plan.Rows))
 		v.TrackTop = track
 		v.Rows = a.copyFindRows(cloneCodeRows(plan.Rows[start:end]))
 		a.decorateCodeRows(doc, v.Rows)
@@ -563,7 +575,11 @@ func (a *App) fillCode(v *View) {
 	v.Rows = make([]codeRow, 0, end-start)
 
 	for i := start; i < end; i++ {
-		v.Rows = append(v.Rows, codeRow{No: i + 1, Line: i, Segments: doc.Tokens[i]})
+		row := codeRow{No: i + 1, Line: i, Segments: doc.Tokens[i]}
+		if !a.wrap {
+			row.ScrollX = a.scrollX
+		}
+		v.Rows = append(v.Rows, row)
 	}
 
 	v.Rows = a.copyFindRows(v.Rows)
@@ -605,9 +621,12 @@ func (a *App) diffDisplayRows() []diffRow {
 		return nil
 	}
 
-	unified, split := a.diffColumns()
+	if a.wrap {
+		unified, split := a.diffColumns()
+		return wrapDiffRows(rows, unified, split, true)
+	}
 
-	return wrapDiffRows(rows, unified, split, a.wrap)
+	return rows
 }
 
 // fillDiff fills the Source Control list and the selected diff rows.
@@ -764,14 +783,23 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 		v.StatusClass = "st-" + strings.ToLower(v.Status)
 	}
 
-	unified, split := a.diffColumns()
-	rows = wrapDiffRows(rows, unified, split, a.wrap)
+	if a.wrap {
+		unified, split := a.diffColumns()
+		rows = wrapDiffRows(rows, unified, split, true)
+	} else {
+		d.ScrollX = a.scrollX
+	}
 
 	start, end, track := a.windowSlice(len(rows))
 	d.TrackTop = track
 
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
+		if !a.wrap {
+			for i := range visible {
+				visible[i].ScrollX = a.scrollX
+			}
+		}
 		d.Rows = visible
 	}
 }
@@ -1097,26 +1125,7 @@ func (a *App) fillBranchList(h *historyView) {
 
 // windowSlice returns the row range the fixed body shows and the track offset.
 func (a *App) windowSlice(total int) (int, int, int) {
-	bodyH := a.diffBodyHeight()
-	if bodyH < rowH {
-		bodyH = rowH
-	}
-
-	first := a.scrollY / rowH
-	start := first
-	if start > total {
-		start = total
-	}
-
-	end := start + bodyH/rowH + 1
-	if end > total {
-		end = total
-	}
-
-	// Rows start at the top of the body. A negative overscan row would paint
-	// and hit-test over the tab strip and breadcrumbs because hit testing
-	// does not apply CSS overflow clips.
-	return start, end, 0
+	return a.windowSliceForGroup(0, total)
 }
 
 // contentHeight is the page height for the current mode. The fixed chrome
@@ -1192,6 +1201,9 @@ func (a *App) topSourceLine() int {
 func (a *App) toggleWrap() {
 	if a.mode == "changes" {
 		a.wrap = !a.wrap
+		if a.wrap {
+			a.scrollX = 0
+		}
 		a.resetScroll()
 		a.refresh()
 
@@ -1200,6 +1212,9 @@ func (a *App) toggleWrap() {
 
 	line := a.topSourceLine()
 	a.wrap = !a.wrap
+	if a.wrap {
+		a.scrollX = 0
+	}
 	a.viewportCols = 0
 
 	if doc := a.activeDoc(); doc != nil && a.wrap {
@@ -1216,6 +1231,7 @@ func (a *App) scrollTo(y int) {
 	target := a.clampScroll(y)
 	a.inlineCard = inlineCard{}
 	a.scrollY = target
+	a.scrollGroup[0] = target
 	a.scrollTarget = target
 	a.scrollPending = true
 	a.page.ScrollTo(0, target)
@@ -1226,8 +1242,12 @@ func (a *App) scrollTo(y int) {
 func (a *App) resetScroll() {
 	a.resetFind()
 	a.scrollY = 0
+	a.scrollGroup[0] = 0
+	a.scrollGroup[1] = 0
+	a.splitWheelAccum = [2]float64{}
 	a.scrollTarget = 0
 	a.scrollPending = true
+	a.scrollX = 0
 	a.page.ScrollTo(0, 0)
 }
 
@@ -1537,7 +1557,18 @@ func (a *App) openFileIn(group int, path string) {
 		a.fileNav.Select(path)
 	}
 	a.addRecent(path)
-	a.resetScroll()
+	if a.split {
+		a.scrollGroup[group] = 0
+		a.splitWheelAccum[group] = 0
+		if group == 0 {
+			a.scrollY = 0
+			if a.page != nil {
+				a.page.ScrollTo(0, 0)
+			}
+		}
+	} else {
+		a.resetScroll()
+	}
 	a.refresh()
 }
 
@@ -1563,7 +1594,18 @@ func (a *App) selectTabIn(group, index int) {
 	a.focusGroup = group
 	a.mode = "explorer"
 	a.preview = false
-	a.resetScroll()
+	if a.split {
+		a.scrollGroup[group] = 0
+		a.splitWheelAccum[group] = 0
+		if group == 0 {
+			a.scrollY = 0
+			if a.page != nil {
+				a.page.ScrollTo(0, 0)
+			}
+		}
+	} else {
+		a.resetScroll()
+	}
 	a.refresh()
 }
 
@@ -1878,6 +1920,10 @@ func (a *App) rebuildDiffRows() {
 		return
 	}
 
+	if file.TotalLines == 0 {
+		file.TotalLines = a.fileTotalLines(file.Path)
+	}
+
 	lang := languageOf(file.Path)
 	if a.diffSplit {
 		a.diffRows = diffRowsSplit(*file, lang)
@@ -2153,6 +2199,10 @@ func (a *App) rebuildCommitRows() {
 	file := a.commitDetails[commitDetailKey(a.commitOpen, a.commitFile)]
 	if file == nil {
 		return
+	}
+
+	if file.TotalLines == 0 {
+		file.TotalLines = a.fileTotalLines(file.Path)
 	}
 
 	lang := languageOf(file.Path)

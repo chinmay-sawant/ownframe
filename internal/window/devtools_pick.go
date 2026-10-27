@@ -15,6 +15,12 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		return err
 	}
 	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	if handled, err := s.devMenuPointer(x, y,
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight),
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)); handled || err != nil {
+		s.mouseDown = down
+		return err
+	}
 	released := inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft)
 	pressed := pressEdge(down, released, s.mouseDown)
 	s.mouseDown = down
@@ -64,6 +70,20 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 	}
 
 	return nil
+}
+
+// devMenuPointer gives the menu content clicks while keeping dock input local.
+func (s *shell) devMenuPointer(x, y int, right, left bool) (bool, error) {
+	if s.menu.open && left {
+		return s.menuClick(x, y)
+	}
+	if right && !s.dev.resizing &&
+		!devInRect(s.dev.panel, float64(x), float64(y)) &&
+		(s.dev.mobile || !devOnEdge(s.dev.panel, x, y)) {
+		s.openMenu(x, y)
+		return true, nil
+	}
+	return false, nil
 }
 
 // devPointerHover keeps normal page hover and cursor feedback unless the

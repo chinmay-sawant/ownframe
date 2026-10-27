@@ -385,6 +385,9 @@ func (a *App) decorateEditRows(rows []codeRow) {
 		if row.Line == caretLine && caretCol >= row.Start && caretCol <= row.Start+length {
 			row.Caret = true
 			row.CaretLeft = int(float64(caretCol-row.Start) * codeCellW)
+			if !a.wrap && a.scrollX > 0 {
+				row.CaretLeft -= a.scrollX
+			}
 		}
 
 		if selStart == selEnd || row.Line < startLine || row.Line > endLine {

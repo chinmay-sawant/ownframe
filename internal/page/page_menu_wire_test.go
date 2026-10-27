@@ -12,6 +12,21 @@ var (
 	_ host.MenuActioner   = (*Page)(nil)
 )
 
+func TestContextMenuAtResolvesFixedChildAfterScroll(t *testing.T) {
+	p := bftPage(t, `<div style="position:fixed;top:0;left:0;width:100px;height:40px"><button id="tab-0" style="width:100px;height:40px"><span>file.go</span></button></div><div style="height:1000px"></div>`)
+	bftDraw(t, p, nil)
+	p.scroll.Windowing.Y = 200
+	var asked string
+	p.Handle(Handlers{ContextMenuFor: func(id string) []MenuItem {
+		asked = id
+		return []MenuItem{{ID: "close-all", Label: "Close All", Enabled: true}}
+	}})
+	rows := p.ContextMenuAt(10, 210)
+	if asked != "tab-0" || len(rows) != 1 || rows[0].ID != "close-all" {
+		t.Fatalf("target = %q, rows = %+v", asked, rows)
+	}
+}
+
 // TestContextMenuWireUsesHandler proves the hit-tested id reaches the
 // callback registered through Handle and that its rows replace the built-in
 // editing menu.

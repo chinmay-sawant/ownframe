@@ -8,7 +8,44 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/internal/clipboard"
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
+
+func TestDevToolsRightClickFileTabAndCloseAll(t *testing.T) {
+	ctx := context.Background()
+	p, err := page.New(page.Config{HTML: `<div style="position:fixed;top:0;left:0"><button id="tab-0" style="width:100px;height:30px"><span>README.md</span></button></div>`, Width: 300, Height: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var action string
+	p.Handle(page.Handlers{
+		ContextMenuFor: func(id string) []page.MenuItem {
+			if id != "tab-0" {
+				return nil
+			}
+			return []page.MenuItem{{ID: "code-view:tab-close-all:0", Label: "Close All", Enabled: true}}
+		},
+		MenuAction: func(_ context.Context, id string) error { action = id; return nil },
+	})
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	s := &shell{app: p, ctx: ctx, screenW: 300, screenH: 200}
+	s.dev.on = true
+	s.dev.panel = devRect{X: 200, Y: 0, W: 100, H: 200}
+	handled, err := s.devMenuPointer(20, 15, true, false)
+	if err != nil || !handled || !s.menu.open || len(s.menu.items) != 1 || s.menu.items[0].Label != "Close All" {
+		t.Fatalf("right click: handled=%v err=%v menu=%+v", handled, err, s.menu)
+	}
+	handled, err = s.devMenuPointer(25, 20, false, true)
+	if err != nil || !handled || action != "code-view:tab-close-all:0" || s.menu.open {
+		t.Fatalf("menu click: handled=%v err=%v action=%q menu=%+v", handled, err, action, s.menu)
+	}
+	handled, err = s.devMenuPointer(250, 20, true, false)
+	if err != nil || handled || s.menu.open {
+		t.Fatalf("dock right click: handled=%v err=%v menu=%+v", handled, err, s.menu)
+	}
+}
 
 // menuForScreen is a menuScreen that names rows for one element and records
 // the custom action the window runs.
@@ -17,6 +54,25 @@ type menuForScreen struct {
 	rows  map[string][]host.MenuItem
 	asked string
 	acted string
+}
+
+type menuAtScreen struct {
+	*menuForScreen
+	called bool
+}
+
+func (f *menuAtScreen) ContextMenuAt(_, _ float64) []host.MenuItem {
+	f.called = true
+	return []host.MenuItem{{ID: "close-all", Label: "Close All", Enabled: true}}
+}
+
+func TestMenuUsesPageHitTesting(t *testing.T) {
+	app := &menuAtScreen{menuForScreen: &menuForScreen{menuScreen: &menuScreen{fakeScreen: &fakeScreen{width: 300, height: 300}}}}
+	s := &shell{app: app, screenW: 300, screenH: 300}
+	s.openMenu(10, 20)
+	if !app.called || !s.menu.open || s.menu.items[0].ID != "close-all" {
+		t.Fatalf("called = %v, menu = %+v", app.called, s.menu)
+	}
 }
 
 func (f *menuForScreen) ContextMenuFor(id string) []host.MenuItem {
