@@ -55,4 +55,11 @@ func (e *Engine) Close() {
 	if voice != nil {
 		_ = voice.Close()
 	}
+
+	e.latestMu.Lock()
+	if e.latest.Voice != nil {
+		_ = e.latest.Voice.Close()
+		e.latest.Voice = nil
+	}
+	e.latestMu.Unlock()
 }

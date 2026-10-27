@@ -96,18 +96,20 @@ func (p *Page) restampTick(ctx context.Context, gen uint64) error {
 	return nil
 }
 
-func (p *Page) captureTickOps() []DisplayOp {
+func (p *Page) captureTickOps() *opBuffer {
 	if p.draw.Display == nil {
 		return nil
 	}
 
-	return append(p.rentOps(len(p.draw.Display.Ops)), p.draw.Display.Ops...)
+	buf := p.rentOps(len(p.draw.Display.Ops))
+	buf.Ops = append(buf.Ops, p.draw.Display.Ops...)
+	return buf
 }
 
-func (p *Page) noteTickDamage(gen uint64, snap []DisplayOp) {
+func (p *Page) noteTickDamage(gen uint64, snap *opBuffer) {
 	if p.Generation() == gen && p.draw.Display != nil && snap != nil {
 		before := *p.draw.Display
-		before.Ops = snap
+		before.Ops = snap.Ops
 		d, full, _ := diffDisplay(&before, p.draw.Display)
 		if full {
 			p.markFull()

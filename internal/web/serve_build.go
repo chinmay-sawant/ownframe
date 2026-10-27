@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 	"github.com/chinmay-sawant/ownframe/internal/host"
@@ -24,6 +25,13 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	}
 	if app == nil {
 		return ErrNilApp
+	}
+	if opts.Listener != nil {
+		if addr == "" || strings.HasSuffix(addr, ":0") {
+			if laddr := opts.Listener.Addr(); laddr != nil {
+				addr = laddr.String()
+			}
+		}
 	}
 	if err := checkBindAddr(addr, opts); err != nil {
 		return err
@@ -52,9 +60,15 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	mux.Handle("POST /backspace", srv.limit(http.HandlerFunc(srv.backspace)))
 	mux.Handle("POST /key", srv.limit(http.HandlerFunc(srv.key)))
 	mux.Handle("POST /wheel", srv.limit(http.HandlerFunc(srv.wheel)))
-	ln, err := (&net.ListenConfig{}).Listen(ctx, "tcp", addr)
-	if err != nil {
-		return err
+	var ln net.Listener
+	if opts.Listener != nil {
+		ln = opts.Listener
+	} else {
+		var err error
+		ln, err = (&net.ListenConfig{}).Listen(ctx, "tcp", addr)
+		if err != nil {
+			return err
+		}
 	}
 	stopTick := srv.startTick(ctx)
 	defer stopTick()

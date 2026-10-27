@@ -12,6 +12,8 @@ import (
 // DisplayPatch reports how a retained display changed.
 type DisplayPatch = patch.DisplayPatch
 
+type opBuffer = patch.OpBuffer
+
 // ElementEdit is one change to an element in the retained tree: an attribute
 // to set, or the text to replace. A nil Text and an empty Attribute change
 // nothing.
@@ -78,11 +80,11 @@ func (p *Page) PatchOp(i int, fn func(o *DisplayOp)) bool {
 	return true
 }
 
-func (p *Page) rentOps(n int) []DisplayOp {
+func (p *Page) rentOps(n int) *opBuffer {
 	return patch.Rent(&displayOpPool, n)
 }
 
-func (p *Page) freeOps(buf []DisplayOp) {
+func (p *Page) freeOps(buf *opBuffer) {
 	patch.Free(&displayOpPool, buf)
 }
 

@@ -62,3 +62,83 @@ func TestEngineStartsOnUpdate(t *testing.T) {
 		t.Fatalf("credit = %+v", engine.Credit())
 	}
 }
+
+func TestEngineAsyncDecode(t *testing.T) {
+	t.Parallel()
+
+	opened := make(chan struct{})
+	engine, voice := newFakeEngine()
+	engine.Open = func([]byte) (Voice, error) {
+		close(opened)
+		return voice, nil
+	}
+	engine.Want(context.Background(), "jazz", 1)
+
+	select {
+	case <-opened:
+		// Decode was triggered asynchronously without Update!
+	case <-time.After(time.Second):
+		t.Fatal("e.Open was not called in background")
+	}
+
+	// Update applies the already-decoded voice without decoding on UI thread
+	engine.Update()
+	if engine.Loading() {
+		t.Fatal("engine still loading after Update with decoded voice")
+	}
+}
+
+func TestEngineNewerGenClosesVoice(t *testing.T) {
+	t.Parallel()
+
+	voice1 := &fakeVoice{dur: time.Minute}
+	voice2 := &fakeVoice{dur: time.Minute}
+
+	blockDecode := make(chan struct{})
+	engine := NewEngine(&fakeResolver{})
+	engine.Open = func(data []byte) (Voice, error) {
+		if string(data) == "first" {
+			<-blockDecode
+			return voice1, nil
+		}
+		return voice2, nil
+	}
+
+	engine.res = resolverFunc(func(ctx context.Context, query string, pick int) (Clip, error) {
+		return Clip{Title: query, Data: []byte(query)}, nil
+	})
+
+	engine.Want(context.Background(), "first", 0)
+
+	// Issue a newer Want
+	engine.Want(context.Background(), "second", 0)
+
+	// Unblock decode for the first track
+	close(blockDecode)
+
+	// Wait for first voice to be closed
+	deadline := time.Now().Add(2 * time.Second)
+	for !voice1.closed && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+
+	if !voice1.closed {
+		t.Fatal("superseded voice was not closed")
+	}
+
+	// Wait for engine to resolve track 2
+	for engine.Loading() && time.Now().Before(deadline) {
+		engine.Update()
+		time.Sleep(time.Millisecond)
+	}
+
+	if engine.Credit().Title != "second" {
+		t.Fatalf("credit = %v, want second", engine.Credit().Title)
+	}
+}
+
+type resolverFunc func(ctx context.Context, query string, pick int) (Clip, error)
+
+func (f resolverFunc) Resolve(ctx context.Context, query string, pick int) (Clip, error) {
+	return f(ctx, query, pick)
+}

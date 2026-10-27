@@ -43,6 +43,11 @@ func (s *server) startTick(ctx context.Context) func() {
 	go func() {
 		defer close(done)
 		defer s.setTicking(false)
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("web tick panic: %v", r)
+			}
+		}()
 		s.runTick(tickCtx, ticker)
 	}()
 

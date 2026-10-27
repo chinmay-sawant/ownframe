@@ -8,7 +8,9 @@ func (p *Page) Handle(h Handlers) {
 
 // SetData stores the value the template prints on the next Redraw.
 func (p *Page) SetData(data any) {
+	p.dataMu.Lock()
 	p.data = data
+	p.dataMu.Unlock()
 }
 
 // Title returns the window title.

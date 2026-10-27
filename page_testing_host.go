@@ -1,9 +1,6 @@
 package ownframe
 
-import (
-	"context"
-	"time"
-)
+import "context"
 
 // Tick runs the frame callback registered with SetTick and the caret blink.
 func (t Testing) Tick(ctx context.Context) error {
@@ -54,20 +51,3 @@ func (t Testing) SetPicker(pick func(ctx context.Context, title string) (string,
 	p.SetPicker(pick)
 }
 
-// WantFrameAt declares the next time the page needs the window to draw.
-func (page *Page) WantFrameAt(at time.Time) {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.WantFrameAt(at)
-}
-
-// WantFrameIn declares the next frame in d.
-func (page *Page) WantFrameIn(d time.Duration) {
-	p := innerPage(page)
-	if p == nil {
-		return
-	}
-	p.WantFrameIn(d)
-}

@@ -10,7 +10,6 @@ import (
 // It stays in this file so the gochecknoglobals allowlist still covers it.
 var displayOpPool = sync.Pool{
 	New: func() any {
-		b := patch.EmptyOps()
-		return &b
+		return patch.NewOpBuffer()
 	},
 }

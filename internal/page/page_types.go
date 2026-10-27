@@ -2,6 +2,7 @@ package page
 
 import (
 	"html/template"
+	"sync"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
@@ -20,6 +21,7 @@ import (
 type Page struct {
 	title       string
 	tpl         *template.Template
+	dataMu      sync.RWMutex
 	data        any
 	theme       *css.Sheet
 	themeSrc    string

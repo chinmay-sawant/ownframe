@@ -29,6 +29,9 @@ const (
 	dbusHeaderSignature   byte = 8
 
 	dbusProtoVersion byte = 1
+
+	maxFieldsLen uint32 = 64 * 1024       // 64KB
+	maxBodyLen   uint32 = 4 * 1024 * 1024 // 4MB
 )
 
 type dbusMsg struct {
@@ -156,8 +159,14 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 		flags:   fixed[2],
 	}
 	bodyLen := binary.LittleEndian.Uint32(fixed[4:8])
+	if bodyLen > maxBodyLen {
+		return nil, fmt.Errorf("dbus body length %d exceeds 4MB limit", bodyLen)
+	}
 	msg.serial = binary.LittleEndian.Uint32(fixed[8:12])
 	fieldsLen := binary.LittleEndian.Uint32(fixed[12:16])
+	if fieldsLen > maxFieldsLen {
+		return nil, fmt.Errorf("dbus fields length %d exceeds 64KB limit", fieldsLen)
+	}
 
 	fieldsBytes := make([]byte, fieldsLen)
 	if fieldsLen > 0 {
@@ -209,11 +218,12 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 			if offset+4 > len(fieldsBytes) {
 				break
 			}
-			strLen := int(binary.LittleEndian.Uint32(fieldsBytes[offset : offset+4]))
+			uStrLen := binary.LittleEndian.Uint32(fieldsBytes[offset : offset+4])
 			offset += 4
-			if offset+strLen > len(fieldsBytes) {
+			if uStrLen > uint32(len(fieldsBytes)-offset) {
 				break
 			}
+			strLen := int(uStrLen)
 			val := string(fieldsBytes[offset : offset+strLen])
 			offset += strLen + 1
 
@@ -298,10 +308,11 @@ func decodeRequestNameBody(body []byte) (string, uint32, error) {
 	if len(body) < 4 {
 		return "", 0, errors.New("short body")
 	}
-	strLen := int(binary.LittleEndian.Uint32(body[0:4]))
-	if len(body) < 4+strLen+1 {
+	uLen := binary.LittleEndian.Uint32(body[0:4])
+	if uLen > maxBodyLen || uint64(uLen)+5 > uint64(len(body)) {
 		return "", 0, errors.New("short string body")
 	}
+	strLen := int(uLen)
 	name := string(body[4 : 4+strLen])
 	offset := 4 + strLen + 1
 	rem := offset % 4
@@ -319,10 +330,11 @@ func decodeStringBody(body []byte) (string, error) {
 	if len(body) < 4 {
 		return "", errors.New("short string body")
 	}
-	strLen := int(binary.LittleEndian.Uint32(body[0:4]))
-	if len(body) < 4+strLen {
+	uLen := binary.LittleEndian.Uint32(body[0:4])
+	if uLen > maxBodyLen || uLen > uint32(len(body)-4) {
 		return "", errors.New("short string body data")
 	}
+	strLen := int(uLen)
 	return string(body[4 : 4+strLen]), nil
 }
 
@@ -353,10 +365,11 @@ func decodeEmbedBody(body []byte) (string, string, error) {
 	if len(body) < 4 {
 		return "", "", errors.New("short embed body")
 	}
-	nameLen := int(binary.LittleEndian.Uint32(body[0:4]))
-	if len(body) < 4+nameLen+1 {
+	uNameLen := binary.LittleEndian.Uint32(body[0:4])
+	if uNameLen > maxBodyLen || uint64(uNameLen)+5 > uint64(len(body)) {
 		return "", "", errors.New("short embed name data")
 	}
+	nameLen := int(uNameLen)
 	name := string(body[4 : 4+nameLen])
 	offset := 4 + nameLen + 1
 	rem := offset % 4
@@ -366,11 +379,12 @@ func decodeEmbedBody(body []byte) (string, string, error) {
 	if len(body) < offset+4 {
 		return name, "", errors.New("short embed path len")
 	}
-	pathLen := int(binary.LittleEndian.Uint32(body[offset : offset+4]))
+	uPathLen := binary.LittleEndian.Uint32(body[offset : offset+4])
 	offset += 4
-	if len(body) < offset+pathLen {
+	if uPathLen > maxBodyLen || uPathLen > uint32(len(body)-offset) {
 		return name, "", errors.New("short embed path data")
 	}
+	pathLen := int(uPathLen)
 	rootPath := string(body[offset : offset+pathLen])
 	return name, rootPath, nil
 }

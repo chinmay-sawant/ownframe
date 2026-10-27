@@ -23,9 +23,9 @@ func TestNotificationHTTP(t *testing.T) {
 		{"GET", "/notify", "", 405},
 	} {
 		w := httptest.NewRecorder()
-		req := httptest.NewRequestWithContext(t.Context(), tc.method, tc.path, strings.NewReader(tc.body))
+		req := httptest.NewRequestWithContext(t.Context(), tc.method, "http://127.0.0.1:6969"+tc.path, strings.NewReader(tc.body))
 		if tc.path == "/notify" || tc.path == "/state" {
-			req.Header.Set("Origin", "http://example.com")
+			req.Header.Set("Origin", "http://127.0.0.1:6969")
 		}
 		handler.ServeHTTP(w, req)
 		if w.Code != tc.status {

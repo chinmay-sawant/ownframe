@@ -23,11 +23,35 @@ func (e *Engine) Want(ctx context.Context, query string, pick int) {
 		defer cancel()
 
 		clip, err := e.res.Resolve(ctx, query, pick)
+		var voice Voice
+		if err == nil {
+			voice, err = e.Open(clip.Data)
+		}
+
+		e.mu.Lock()
+		cancelled := gen < e.gen
+		e.mu.Unlock()
+		if cancelled {
+			if voice != nil {
+				_ = voice.Close()
+			}
+
+			return
+		}
 
 		e.latestMu.Lock()
-		if gen >= e.latest.Gen {
-			e.latest = Result{Gen: gen, Clip: clip, Err: err}
+		if gen < e.latest.Gen {
+			e.latestMu.Unlock()
+			if voice != nil {
+				_ = voice.Close()
+			}
+
+			return
 		}
+		if e.latest.Voice != nil {
+			_ = e.latest.Voice.Close()
+		}
+		e.latest = Result{Gen: gen, Clip: clip, Voice: voice, Err: err}
 		e.latestMu.Unlock()
 	}()
 }

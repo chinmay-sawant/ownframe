@@ -8,7 +8,6 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
-	"github.com/chinmay-sawant/ownframe/internal/page"
 )
 
 // debugState is the JSON body of GET /debug/state.
@@ -28,7 +27,7 @@ type debugState struct {
 func (s *server) debug(w http.ResponseWriter, _ *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	front := page.SelectFront(s.app)
+	front := host.SelectFront(s.app)
 	state := debugState{
 		Width:      front.Width,
 		Height:     front.Height,

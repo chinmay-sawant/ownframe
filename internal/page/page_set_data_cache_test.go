@@ -25,3 +25,28 @@ func TestSetDataKeepsCacheWhenOutputIsUnchanged(t *testing.T) {
 		t.Fatalf("parses = %d after unchanged output, want %d", got, parses)
 	}
 }
+
+func TestSetDataConcurrentWithRedraw(t *testing.T) {
+	t.Parallel()
+	p, err := page.New(page.Config{HTML: `<p>{{.Text}}</p>`, Width: 320, Height: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 50; i++ {
+			p.SetData(map[string]string{"Text": "hello"})
+		}
+		close(done)
+	}()
+	for {
+		select {
+		case <-done:
+			return
+		default:
+			_ = p.Redraw(ctx)
+		}
+	}
+}
+

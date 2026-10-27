@@ -32,6 +32,9 @@ func effectiveDebug(o Options) bool {
 // a non-loopback host needs InsecureAllowRemoteBind. Unresolvable names
 // fail safe the same way.
 func checkBindAddr(addr string, o Options) error {
+	if o.Listener != nil {
+		return nil
+	}
 	if err := validateBindAddr(addr); err != nil {
 		return err
 	}

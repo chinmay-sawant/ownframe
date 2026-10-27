@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 // frameState is the JSON body of GET /state. It carries no boxes or field
@@ -36,7 +36,7 @@ func (s *server) state(w http.ResponseWriter, r *http.Request) {
 
 // frameSnapshotLocked builds the state while the caller holds s.mu.
 func (s *server) frameSnapshotLocked() frameState {
-	front := page.SelectFront(s.app)
+	front := host.SelectFront(s.app)
 
 	return frameState{
 		Generation: front.Generation + s.frameGen,
