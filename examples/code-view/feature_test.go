@@ -12,7 +12,7 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-// TestFeatureEditAndSave checks the textarea path from the app down to disk.
+// TestFeatureEditAndSave checks the custom editor buffer writes to disk.
 func TestFeatureEditAndSave(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, "main.go", "package main\n\nfunc main() {}\n")
@@ -29,9 +29,12 @@ func TestFeatureEditAndSave(t *testing.T) {
 		t.Fatalf("edit view = %+v", app.View().Editing)
 	}
 
-	app.view.EditText = "package main\n\nfunc main() { println(7) }\n"
+	ctx := context.Background()
+	if err := app.onSelectAll(ctx); err != nil {
+		t.Fatal(err)
+	}
 
-	if err := app.onChange(context.Background(), ownframe.Box{ID: "editor"}); err != nil {
+	if err := app.onPaste(ctx, "package main\n\nfunc main() { println(7) }\n"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -55,25 +58,17 @@ func TestFeatureEditAndSave(t *testing.T) {
 	}
 }
 
-// TestFeatureEditSelection checks the textarea accepts select-all and copy.
+// TestFeatureEditSelection checks the editor accepts select-all and copy.
 func TestFeatureEditSelection(t *testing.T) {
 	app := newTestApp(t)
 	app.toggleEdit()
 	ctx := context.Background()
 
-	if err := app.Page().Redraw(ctx); err != nil {
+	if err := app.onSelectAll(ctx); err != nil {
 		t.Fatal(err)
 	}
 
-	if err := app.Page().Form().Focus(ctx, "editor"); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := app.Page().Edit().SelectAll(ctx); err != nil {
-		t.Fatal(err)
-	}
-
-	text, ok, err := app.Page().Edit().Copy(ctx)
+	text, ok, err := app.onCopy(ctx)
 	if err != nil || !ok || !strings.Contains(text, "# Beacon") {
 		t.Fatalf("copy = %q ok=%v err=%v", text, ok, err)
 	}
@@ -175,13 +170,53 @@ func TestFeatureCommitTipFloatsBesideHistory(t *testing.T) {
 	}
 }
 
+// TestFeatureInlineCardSteps checks the line card stops at the first and last
+// changed line in the open file.
+func TestFeatureInlineCardSteps(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+
+	lines := inlineChangeLines(app.changedLinesFor("backend/probe.go"))
+	if len(lines) < 2 {
+		t.Skip("sample file has fewer than two changed lines")
+	}
+
+	app.showInlineCard(lines[0])
+	card := app.View().InlineCard
+	if card.HasPrev || !card.HasNext {
+		t.Fatalf("first card bounds = prev %v next %v", card.HasPrev, card.HasNext)
+	}
+
+	app.inlineCardStep(-1)
+	if app.View().InlineCard.Line != lines[0] {
+		t.Fatal("previous moved before the first change")
+	}
+
+	for range len(lines) {
+		app.inlineCardStep(1)
+	}
+
+	card = app.View().InlineCard
+	if card.Line != lines[len(lines)-1] || card.HasNext {
+		t.Fatalf("last card = line %d next %v, want line %d next false", card.Line, card.HasNext, lines[len(lines)-1])
+	}
+
+	if !card.HasPrev {
+		t.Fatal("last card should still allow previous")
+	}
+}
+
 // TestFeatureSampleReadOnly checks the bundled workspace refuses a write.
 func TestFeatureSampleReadOnly(t *testing.T) {
 	app := newTestApp(t)
 	app.toggleEdit()
-	app.view.EditText = "# changed\n"
+	ctx := context.Background()
 
-	if err := app.onChange(context.Background(), ownframe.Box{ID: "editor"}); err != nil {
+	if err := app.onSelectAll(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.onPaste(ctx, "# changed\n"); err != nil {
 		t.Fatal(err)
 	}
 

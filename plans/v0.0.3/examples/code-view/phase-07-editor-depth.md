@@ -3,14 +3,17 @@
 Goal: read two files at once and read a long line without losing the row math.
 
 Status: partly landed. Two editor groups, the wrap toggle, diff wrapping, and
-inline Markdown preview are in. Each group has its own tab list and active
-path, but the two panes share one page scroll. Horizontal scroll, diff context
-expansion, go-to-line, breadcrumb dropdowns, and a minimap are open.
+inline Markdown preview are in. Editing keeps the highlighted rows, with
+click-to-caret, mouse drag selection, `Ctrl+A`, `Ctrl+C`, and a line card that
+steps between changed lines. A tab context menu closes one tab, the others, or
+all of them. Each group has its own tab list and active path, but the two panes
+share one page scroll. Horizontal scroll, diff context expansion, go-to-line,
+breadcrumb dropdowns, and a minimap are open.
 
 ## Design
 
-1. Split the editor into two groups. Each group has its own tab list, active
-   path, and scroll offset. The page scroll belongs to the focused group.
+1. Split the editor into two groups. Each group has its own tab list and active
+   path; the page scroll stays shared.
 2. Add a horizontal offset to the code track. A wide track defines the page
    width, and the body clips to the viewport.
 3. Add a wrap toggle. Wrapped source lines become fixed 20 px visual rows, so
@@ -21,6 +24,11 @@ expansion, go-to-line, breadcrumb dropdowns, and a minimap are open.
 6. Add breadcrumb dropdowns for the directories and the outline.
 7. For files over 500 lines, add a minimap or a scroll overview. The overview
    is a fixed strip of marks, not a second render of the code.
+8. Edit the same 20 px rows the source view paints. The buffer is tokenized
+   again after each change, so the caret and selection stay on syntax spans
+   instead of moving to a textarea.
+9. A tab context menu closes one tab, the other tabs, or every tab in its
+   group.
 
 ## Checklist
 
@@ -40,6 +48,15 @@ expansion, go-to-line, breadcrumb dropdowns, and a minimap are open.
 - [x] Start editing by clicking inside the file, with gutter markers on
   changed lines and a line card. Evidence:
   `TestEditSurfaceClickBeginsEditing`, `TestFeatureChangedLineMarkers`.
+- [x] Keep the syntax rows while editing, place the caret at the clicked
+  glyph while editing, and support mouse drag selection, `Ctrl+A`, and
+  `Ctrl+C`. Evidence:
+  `TestEditCaretClickTypesAndMoves`, `TestEditSelectionDrag`,
+  `TestFeatureEditSelection`.
+- [x] Step the inline change card between changed lines with previous and next
+  arrows. Evidence: `TestFeatureInlineCardSteps`.
+- [x] Close, close others, or close all from a tab's right-click menu. Evidence:
+  `TestContextMenuTabRows`, `TestContextMenuCloseAll`.
 - [x] Add a bottom-center changed-file navigator. Evidence:
   `TestFeatureFileNav`, `modified_nav.go`.
 - [ ] Add expandable diff context.

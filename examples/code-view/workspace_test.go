@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -282,6 +284,101 @@ func TestSampleWorkspaceBudgetEmpty(t *testing.T) {
 	if ws.ScanMillis < 0 {
 		t.Fatalf("sample scan millis = %d", ws.ScanMillis)
 	}
+}
+
+func TestWorkspaceMarksGitIgnoredPaths(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q")
+	writeFile(t, dir, ".gitignore", "ignored/\n*.log\nsecret.txt\nnode_modules/\nempty-ignored/\n")
+	writeFile(t, dir, "keep.go", "package keep\n")
+	writeFile(t, dir, "secret.txt", "secret\n")
+	writeFile(t, dir, "logs/app.log", "log\n")
+	writeFile(t, dir, "ignored/a.go", "package ignored\n")
+	writeFile(t, dir, "node_modules/pkg/index.js", "x\n")
+
+	if err := os.MkdirAll(filepath.Join(dir, "empty-ignored"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+
+	ws, err := loadDiskWorkspace(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, path := range []string{"secret.txt", "logs/app.log", "ignored/a.go", "ignored"} {
+		if !pathIgnored(map[string]bool{"secret.txt": true, "logs": true, "ignored": true}, path) {
+			t.Errorf("%s not ignored by the path walk", path)
+		}
+	}
+
+	if !ws.ByPath["secret.txt"].Ignored || !ws.ByPath["ignored/a.go"].Ignored {
+		t.Fatal("workspace metadata did not mark ignored files")
+	}
+
+	if ws.ByPath["node_modules/pkg/index.js"] != nil {
+		t.Fatal("scanner walked node_modules")
+	}
+
+	if node := findTreeNode(ws.Tree, "node_modules"); node == nil || !node.Ignored {
+		t.Fatalf("skipped ignored directory placeholder = %+v", node)
+	}
+
+	if node := findTreeNode(ws.Tree, "empty-ignored"); node == nil || !node.Ignored {
+		t.Fatalf("empty ignored directory placeholder = %+v", node)
+	}
+
+	if ws.ByPath["keep.go"].Ignored {
+		t.Fatal("keep.go was marked ignored")
+	}
+
+	var ignoredDir *fileNode
+
+	for _, node := range ws.Tree {
+		if node.Path == "ignored" {
+			ignoredDir = node
+		}
+	}
+
+	if ignoredDir == nil || !ignoredDir.Ignored {
+		t.Fatalf("ignored directory = %+v", ignoredDir)
+	}
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	found := false
+	foundIgnored := false
+
+	for _, row := range app.View().Tree {
+		if row.Path == "keep.go" {
+			found = true
+			if row.Ignored {
+				t.Fatal("keep.go row is ignored")
+			}
+		}
+
+		if row.Path == "ignored" {
+			foundIgnored = true
+			if !row.Ignored {
+				t.Fatal("ignored directory row is not marked")
+			}
+		}
+	}
+
+	if !found || !foundIgnored {
+		t.Fatalf("tree rows keep=%v ignored=%v", found, foundIgnored)
+	}
+
 }
 
 func TestLargeFileIsRefused(t *testing.T) {

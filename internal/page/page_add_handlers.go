@@ -75,6 +75,12 @@ func (p *Page) AddHandlers(h Handlers) {
 	if h.Redo != nil {
 		p.handlers.Redo = h.Redo
 	}
+	if h.ContextMenuFor != nil {
+		p.handlers.ContextMenuFor = h.ContextMenuFor
+	}
+	if h.MenuAction != nil {
+		p.handlers.MenuAction = h.MenuAction
+	}
 	if h.Drop != nil {
 		p.handlers.Drop = h.Drop
 	}

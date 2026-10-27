@@ -168,7 +168,7 @@
 
 .edit-surface {
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   top: 0;
   left: 16px;
   right: 0;
@@ -236,7 +236,32 @@
 
 .track { position: absolute; left: 0; right: 0; top: 0; }
 
-.crow { height: var(--row-h); display: flex; align-items: stretch; }
+.crow { position: relative; height: var(--row-h); display: flex; align-items: stretch; }
+.edit-line-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 16px;
+  right: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: text;
+}
+.edit-line-hit:focus { outline: 0; }
+.code-body.editing { cursor: text; }
+.edit-caret {
+  position: absolute;
+  top: 4px;
+  width: 2px;
+  height: 13px;
+  background-color: var(--accent);
+  z-index: 3;
+  animation: edit-blink 1s steps(1) infinite;
+}
+.edit-sel { background-color: rgba(122, 162, 247, 0.28); border-radius: 2px; }
+@keyframes edit-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
 .crow.line-add { background-color: rgba(63, 185, 80, 0.055); }
 .crow.line-del { background-color: rgba(248, 81, 73, 0.055); }
 .crow.line-mod { background-color: rgba(240, 183, 90, 0.055); }

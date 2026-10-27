@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -408,46 +409,113 @@ func TestDetailsMetadata(t *testing.T) {
 	}
 }
 
-func TestDiffPager(t *testing.T) {
+func TestDiffScroll(t *testing.T) {
 	app := newTestApp(t)
 	app.mode = "changes"
 	app.changes = changeSet{Branch: "test", Note: "test"}
-	pageRows := app.changePageRows()
+	visible := app.changeVisibleRows()
 
-	for i := 0; i < pageRows+2; i++ {
+	for i := 0; i < visible+2; i++ {
 		app.changes.Files = append(app.changes.Files, changedFile{Path: fmt.Sprintf("file-%02d.go", i), Status: "M"})
 	}
 
 	app.statuses = statusMap(app.changes)
 	app.selectFirstDiff()
+	app.changesScroll.SetOffset(0, len(app.changes.Files), visible)
 	app.refresh()
 
 	if err := app.Page().Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 
-	if app.View().Diff.Pages != 2 || app.View().Diff.Page != 1 || len(app.View().Diff.Files) != pageRows {
-		t.Fatalf("page 1 = %+v", app.View().Diff)
+	if !app.View().Diff.Scroll || len(app.View().Diff.Files) != visible || !app.View().Diff.AtTop {
+		t.Fatalf("top = %+v", app.View().Diff)
 	}
 
-	clickID(t, app, "diff-page-next")
+	app.scrollChanges(visible)
 
 	if err := app.Page().Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 
-	if app.View().Diff.Page != 2 || len(app.View().Diff.Files) != 2 {
-		t.Fatalf("page 2 = %+v", app.View().Diff)
+	if app.View().Diff.AtTop || !app.View().Diff.AtEnd || len(app.View().Diff.Files) == 0 {
+		t.Fatalf("bottom = %+v", app.View().Diff)
 	}
 
-	clickID(t, app, "diff-page-prev")
+	if got := app.View().Diff.Files[0].Path; got != fmt.Sprintf("file-%02d.go", len(app.changes.Files)-visible) {
+		t.Fatalf("first visible = %q", got)
+	}
+}
+
+func TestHistoryScrollLoadsMore(t *testing.T) {
+	dir, _ := historyRepo(t)
+
+	for i := 0; i < 24; i++ {
+		writeFile(t, dir, "app.go", fmt.Sprintf("package main\n\nfunc main() { println(%d) }\n", i))
+		runGit(t, dir, "add", "-A")
+		runGit(t, dir, "commit", "-q", "-m", fmt.Sprintf("commit %02d", i))
+	}
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	log, err := loadCommitLogLimit(context.Background(), dir, "", maxCommits)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(log.Commits) == 0 {
+		t.Fatalf("direct log = %+v", log)
+	}
+
+	app.reloadChanges(context.Background(), false)
+	app.setMode(context.Background(), "changes")
+
+	if len(app.commits.Commits) != maxCommits {
+		t.Fatalf("initial commits = %d, want %d", len(app.commits.Commits), maxCommits)
+	}
+
+	if !app.View().History.Scroll {
+		t.Fatal("history does not expose a scroll rail")
+	}
+
+	app.scrollHistory(context.Background(), 100)
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) && len(app.commits.Commits) <= maxCommits {
+		if err := app.tickWatch(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	if len(app.commits.Commits) <= maxCommits {
+		t.Fatalf("history did not load more: %d", len(app.commits.Commits))
+	}
+
+	if len(app.View().History.Commits[0].Graph) == 0 {
+		t.Fatal("history row has no graph cells")
+	}
+}
+
+func TestSampleHistoryGraph(t *testing.T) {
+	app := newTestApp(t)
+	clickID(t, app, "act-changes")
 
 	if err := app.Page().Redraw(context.Background()); err != nil {
 		t.Fatal(err)
 	}
 
-	if app.View().Diff.Page != 1 || len(app.View().Diff.Files) != pageRows {
-		t.Fatalf("page 1 again = %+v", app.View().Diff)
+	view := app.View()
+	if len(view.History.Commits) == 0 || len(view.History.Commits[0].Graph) == 0 {
+		t.Fatalf("sample graph = %+v", view.History.Commits)
+	}
+
+	for _, cell := range view.History.Commits[0].Graph {
+		t.Logf("graph cell: %+v", cell)
 	}
 }
 

@@ -1,5 +1,7 @@
 package main
 
+import "sort"
+
 // changedLinesFor returns the working-tree line changes for one path. Sample
 // and live workspaces both use the parsed change set.
 func (a *App) changedLinesFor(path string) map[int]inlineLine {
@@ -75,6 +77,16 @@ func (a *App) showInlineCard(line int) {
 		return
 	}
 
+	lines := inlineChangeLines(changes)
+	index := -1
+
+	for i, changed := range lines {
+		if changed == line {
+			index = i
+			break
+		}
+	}
+
 	visual := line - 1
 	if a.wrap {
 		plan := doc.wrapped(a.codeColsForGroup(0))
@@ -88,10 +100,61 @@ func (a *App) showInlineCard(line int) {
 	}
 
 	card := inlineCardFor(rowTop, a.pageWidth(), a.viewportH, line, change, doc.Path, newText)
+	card.Line = line
 	card.Left = chromeLeft + inlineCardLeft
+	card.HasPrev = index > 0
+	card.HasNext = index >= 0 && index < len(lines)-1
 
 	a.inlineCard = card
 	a.refresh()
+}
+
+// inlineCardStep moves the line card to the previous or next changed line in
+// the same file. It stops at the first and last change.
+func (a *App) inlineCardStep(delta int) {
+	doc := a.groupDoc(0)
+	if doc == nil || !a.inlineCard.Show {
+		return
+	}
+
+	lines := inlineChangeLines(a.changedLinesFor(doc.Path))
+	if len(lines) == 0 {
+		return
+	}
+
+	line := a.inlineCard.Line
+	index := -1
+
+	for i, changed := range lines {
+		if line == changed {
+			index = i
+			break
+		}
+	}
+
+	if index < 0 {
+		return
+	}
+
+	next := index + delta
+	if next < 0 || next >= len(lines) {
+		return
+	}
+
+	a.showInlineCard(lines[next])
+}
+
+// inlineChangeLines sorts the changed 1-based lines of one file.
+func inlineChangeLines(changes map[int]inlineLine) []int {
+	lines := make([]int, 0, len(changes))
+
+	for line := range changes {
+		lines = append(lines, line)
+	}
+
+	sort.Ints(lines)
+
+	return lines
 }
 
 // closeInlineCard hides the line card.

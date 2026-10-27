@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -12,16 +13,18 @@ import (
 )
 
 const (
-	tabWidth          = 4
-	tabSpaces         = "    "
-	maxFileBytes      = 512 << 10
-	maxFileLines      = 20000
-	maxLineRunes      = 600
-	maxWorkspaceFiles = 10000
-	maxTreeDepth      = 12
-	maxFileBytesKB    = maxFileBytes >> 10
-	byteKB            = 1 << 10
-	byteMB            = 1 << 20
+	tabWidth            = 4
+	tabSpaces           = "    "
+	maxFileBytes        = 512 << 10
+	maxFileLines        = 20000
+	maxLineRunes        = 600
+	maxWorkspaceFiles   = 10000
+	maxIgnoredDirs      = 200
+	maxIgnoreCandidates = 5000
+	maxTreeDepth        = 12
+	maxFileBytesKB      = maxFileBytes >> 10
+	byteKB              = 1 << 10
+	byteMB              = 1 << 20
 )
 
 var errBinaryFile = errors.New("binary file")
@@ -35,6 +38,7 @@ type fileMeta struct {
 	Size     int64
 	Lang     string
 	Big      bool
+	Ignored  bool
 	Lines    int
 	Encoding string
 	Indent   string
@@ -45,6 +49,7 @@ type fileNode struct {
 	Path     string
 	Name     string
 	Dir      bool
+	Ignored  bool
 	Meta     *fileMeta
 	Children []*fileNode
 }
@@ -142,6 +147,7 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 	}
 
 	w := &workspace{Root: abs, ByPath: map[string]*fileMeta{}, Limit: limit}
+	dirs := make([]string, 0, maxIgnoreCandidates)
 	started := time.Now()
 
 	err = filepath.WalkDir(abs, func(path string, entry fs.DirEntry, walkErr error) error {
@@ -166,6 +172,10 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 		name := entry.Name()
 
 		if entry.IsDir() {
+			if len(dirs) < maxIgnoreCandidates {
+				dirs = append(dirs, rel)
+			}
+
 			if skipDir(name) || strings.Count(rel, "/") >= maxTreeDepth {
 				return fs.SkipDir
 			}
@@ -210,7 +220,228 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 	w.ScanMillis = time.Since(started).Milliseconds()
 	w.finish()
 
+	ignored := loadIgnoredPaths(abs)
+	for path := range loadIgnoredDirs(abs, dirs) {
+		if ignored == nil {
+			ignored = map[string]bool{}
+		}
+
+		ignored[path] = true
+	}
+
+	if len(ignored) > 0 {
+		w.markIgnored(ignored)
+	}
+
 	return w, nil
+}
+
+// loadIgnoredDirs asks git which scanned directories match .gitignore. One
+// check-ignore call covers skipped folders, empty folders, and folders whose
+// files git does not list because they have no content.
+func loadIgnoredDirs(root string, dirs []string) map[string]bool {
+	if len(dirs) == 0 {
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+
+	input := strings.Join(dirs, "\x00") + "\x00"
+	raw, err := gitBytesStdin(ctx, root, input, "check-ignore", "--no-index", "--stdin", "-z")
+	if err != nil {
+		return nil
+	}
+
+	ignored := map[string]bool{}
+	for _, path := range strings.Split(string(raw), "\x00") {
+		path = strings.TrimSpace(path)
+		path = strings.TrimSuffix(path, "/")
+		if path != "" {
+			ignored[path] = true
+		}
+	}
+
+	return ignored
+}
+
+// loadIgnoredPaths reads the paths git says are ignored. A directory entry is
+// returned without its trailing slash, so a parent match covers its children.
+// A non-repository or a failed git call yields nil and the tree stays as it is.
+func loadIgnoredPaths(root string) map[string]bool {
+	ctx, cancel := context.WithTimeout(context.Background(), gitTimeout)
+	defer cancel()
+
+	raw, err := gitBytes(ctx, root, "ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z")
+	if err != nil {
+		return nil
+	}
+
+	ignored := map[string]bool{}
+
+	for _, path := range strings.Split(string(raw), "\x00") {
+		path = strings.TrimSpace(path)
+		path = strings.TrimSuffix(path, "/")
+		if path != "" {
+			ignored[path] = true
+		}
+	}
+
+	return ignored
+}
+
+// markIgnored sets the ignored flag on file metadata and every tree node whose
+// path is listed or sits under a listed directory. Skipped directories that
+// git ignores are added as dim, empty rows so they stay visible.
+func (w *workspace) markIgnored(ignored map[string]bool) {
+	for _, meta := range w.Files {
+		meta.Ignored = pathIgnored(ignored, meta.Path)
+	}
+
+	markTreeIgnored(w.Tree, ignored)
+	w.addIgnoredDirs(ignored)
+}
+
+func markTreeIgnored(nodes []*fileNode, ignored map[string]bool) {
+	for _, node := range nodes {
+		node.Ignored = pathIgnored(ignored, node.Path)
+		markTreeIgnored(node.Children, ignored)
+	}
+}
+
+// addIgnoredDirs adds an empty row for an ignored directory the scanner
+// skipped, such as node_modules. The row carries no children, so the scan
+// budget is not spent on a tree the person did not open.
+func (w *workspace) addIgnoredDirs(ignored map[string]bool) {
+	if w.Sample || len(ignored) == 0 {
+		return
+	}
+
+	paths := make([]string, 0, len(ignored))
+
+	for path := range ignored {
+		paths = append(paths, path)
+	}
+
+	sort.Slice(paths, func(i, j int) bool {
+		di := strings.Count(paths[i], "/")
+		dj := strings.Count(paths[j], "/")
+
+		if di != dj {
+			return di < dj
+		}
+
+		return paths[i] < paths[j]
+	})
+
+	existing := treeNodePaths(w.Tree)
+	root := &fileNode{Dir: true, Children: w.Tree}
+	added := 0
+
+	for _, path := range paths {
+		if added >= maxIgnoredDirs {
+			break
+		}
+
+		if existing[path] {
+			continue
+		}
+
+		info, err := os.Stat(filepath.Join(w.Root, filepath.FromSlash(path)))
+		if err != nil || !info.IsDir() {
+			continue
+		}
+
+		parent := ensureTreeNode(root, dirName(path), existing, ignored)
+		if parent == nil {
+			continue
+		}
+
+		node := &fileNode{Path: path, Name: baseName(path), Dir: true, Ignored: true}
+		parent.Children = append(parent.Children, node)
+		existing[path] = true
+		added++
+	}
+
+	if added > 0 {
+		sortTree(root.Children)
+		w.Tree = root.Children
+	}
+}
+
+// ensureTreeNode finds or creates a directory below root.
+func ensureTreeNode(root *fileNode, path string, existing map[string]bool, ignored map[string]bool) *fileNode {
+	if path == "" || path == "." {
+		return root
+	}
+
+	if node := findTreeNode(root.Children, path); node != nil {
+		return node
+	}
+
+	parent := ensureTreeNode(root, dirName(path), existing, ignored)
+	if parent == nil {
+		return nil
+	}
+
+	node := &fileNode{Path: path, Name: baseName(path), Dir: true, Ignored: ignored[path]}
+	parent.Children = append(parent.Children, node)
+	existing[path] = true
+
+	return node
+}
+
+func findTreeNode(nodes []*fileNode, path string) *fileNode {
+	for _, node := range nodes {
+		if node.Path == path {
+			return node
+		}
+
+		if node.Dir && strings.HasPrefix(path, node.Path+"/") {
+			if found := findTreeNode(node.Children, path); found != nil {
+				return found
+			}
+		}
+	}
+
+	return nil
+}
+
+func treeNodePaths(nodes []*fileNode) map[string]bool {
+	out := map[string]bool{}
+	var walk func([]*fileNode)
+
+	walk = func(list []*fileNode) {
+		for _, node := range list {
+			out[node.Path] = true
+			walk(node.Children)
+		}
+	}
+
+	walk(nodes)
+
+	return out
+}
+
+// pathIgnored walks the parent chain so a listed ignored directory covers all
+// of its children without a prefix scan over every pattern.
+func pathIgnored(ignored map[string]bool, path string) bool {
+	if ignored == nil || path == "" {
+		return false
+	}
+
+	for {
+		if ignored[path] {
+			return true
+		}
+
+		i := strings.LastIndexByte(path, '/')
+		if i < 0 {
+			return false
+		}
+
+		path = path[:i]
+	}
 }
 
 // truncatedNote is the explanation shown when the scan stopped at its file

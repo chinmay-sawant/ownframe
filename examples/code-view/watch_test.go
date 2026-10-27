@@ -149,7 +149,6 @@ func TestApplyWatchChangesPreservesSelection(t *testing.T) {
 	app, _ := newHistoryApp(t)
 	app.diffPath = "README.md"
 	app.diffSource = "working"
-	app.changePage = 0
 
 	changes := app.changes
 	changes.Files = append([]changedFile(nil), changes.Files...)

@@ -14,20 +14,45 @@ type menuState struct {
 	items []host.MenuItem
 }
 
-// openMenu asks the page for its rows and shows the menu at a point. A page
-// without a context menu keeps the right click.
+// openMenu asks the page for its rows and shows the menu at a point. A screen
+// that names the element under the pointer gets first refusal; a screen with
+// no rows for that element falls back to the state-wide menu. A page without
+// a context menu keeps the right click.
 func (s *shell) openMenu(x, y int) {
-	menu, ok := s.app.(host.ContextMenu)
-	if !ok {
-		return
-	}
-
-	items := menu.ContextMenu()
+	items := s.menuRows(x, y)
 	if len(items) == 0 {
 		return
 	}
 
 	s.menu = menuState{open: true, x: x, y: y, items: items}
+}
+
+// menuRows asks the screen for the rows at a window point. The hit-tested box
+// id goes to ContextMenuFor when the screen implements it. An empty answer
+// falls back to ContextMenu, so an element the app does not customize keeps
+// the built-in editing rows.
+func (s *shell) menuRows(x, y int) []host.MenuItem {
+	if s.app == nil {
+		return nil
+	}
+
+	id := ""
+	px, py := s.contentPointAt(x, y)
+	if box, ok := devBoxAt(s.app.Boxes(), px, py); ok {
+		id = box.ID
+	}
+
+	if menu, ok := s.app.(host.ContextMenuFor); ok {
+		if items := menu.ContextMenuFor(id); len(items) > 0 {
+			return items
+		}
+	}
+
+	if menu, ok := s.app.(host.ContextMenu); ok {
+		return menu.ContextMenu()
+	}
+
+	return nil
 }
 
 // closeMenu hides the menu.

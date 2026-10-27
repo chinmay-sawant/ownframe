@@ -519,7 +519,86 @@ func TestScreenshotMatrix(t *testing.T) {
 	}
 }
 
-// TestScreenshot writes the five review frames when explicitly requested.
+// TestScreenshotScrollRails renders a long change list and history rail.
+func TestScreenshotScrollRails(t *testing.T) {
+	if os.Getenv("OWNFRAME_CODE_VIEW_SCREENSHOT") != "1" {
+		t.Skip("set OWNFRAME_CODE_VIEW_SCREENSHOT=1 to capture the page")
+	}
+
+	app := newTestApp(t)
+	app.mode = "changes"
+	app.changes = changeSet{Branch: "feature/rails", Note: "Synthetic rail fixture."}
+
+	for i := 0; i < 30; i++ {
+		app.changes.Files = append(app.changes.Files, changedFile{
+			Path: fmt.Sprintf("pkg/file-%02d.go", i), Status: "M", Add: i, Del: i / 2,
+		})
+	}
+
+	app.commits.Commits = nil
+	app.commits.Branch = "feature/rails"
+
+	for i := 0; i < 30; i++ {
+		hash := fmt.Sprintf("%040x", i+1)
+		app.commits.Commits = append(app.commits.Commits, gitCommit{
+			Hash: hash, Short: hash[:7], Subject: fmt.Sprintf("Commit %02d", i),
+			Author: "Mira Chen", Date: "2026-10-24",
+			Parents: func() []string {
+				if i+1 < 30 {
+					return []string{fmt.Sprintf("%040x", i+2)}
+				}
+
+				return nil
+			}(),
+		})
+	}
+
+	app.historyLabel = "feature/rails"
+	app.headBranch = "feature/rails"
+	app.statuses = statusMap(app.changes)
+	app.selectFirstDiff()
+	app.historyScroll.SetOffset(0, len(app.commits.Commits), app.historyVisibleRows())
+	app.changesScroll.SetOffset(0, len(app.changes.Files), app.changeVisibleRows())
+	app.refresh()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "scrollrails")
+}
+
+// TestScreenshotIgnored renders a workspace with git-ignored files and
+// folders.
+func TestScreenshotIgnored(t *testing.T) {
+	if os.Getenv("OWNFRAME_CODE_VIEW_SCREENSHOT") != "1" {
+		t.Skip("set OWNFRAME_CODE_VIEW_SCREENSHOT=1 to capture the page")
+	}
+
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q")
+	writeFile(t, dir, ".gitignore", "build/\nnode_modules/\n*.test\nsecret.txt\n")
+	writeFile(t, dir, "main.go", "package main\n\nfunc main() {}\n")
+	writeFile(t, dir, "secret.txt", "secret\n")
+	writeFile(t, dir, "motion.test", "ignored\n")
+	writeFile(t, dir, "build/out.txt", "build\n")
+	writeFile(t, dir, "node_modules/pkg/index.js", "module\n")
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.folders["build"] = true
+	app.refresh()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	writeShot(t, app, "ignored")
+}
+
 func TestScreenshot(t *testing.T) {
 	if os.Getenv("OWNFRAME_CODE_VIEW_SCREENSHOT") != "1" {
 		t.Skip("set OWNFRAME_CODE_VIEW_SCREENSHOT=1 to capture the page")

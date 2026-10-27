@@ -27,13 +27,14 @@
 
     <div class="tree" id="tree-pane">
       {{range .Tree}}
-      <button class="trow{{if .Dir}} dir{{end}}{{if .Open}} open{{end}}" id="tree-{{.Path}}" style="padding-left:{{.Indent}}px" data-action="{{if .Dir}}dir:{{else}}open:{{end}}{{.Path}}" type="button" title="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{end}}{{.Path}}" aria-label="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{.Path}}{{else}}Open {{.Path}}{{end}}"{{if $.Modal}} tabindex="-1"{{end}}>
+      <button class="trow{{if .Dir}} dir{{end}}{{if .Open}} open{{end}}{{if .Ignored}} ignored{{end}}" id="tree-{{.Path}}" style="padding-left:{{.Indent}}px" data-action="{{if .Dir}}dir:{{else}}open:{{end}}{{.Path}}" type="button" title="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{end}}{{.Path}}{{if .Ignored}} (git ignored){{end}}" aria-label="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{.Path}}{{else}}Open {{.Path}}{{end}}{{if .Ignored}}, git ignored{{end}}"{{if $.Modal}} tabindex="-1"{{end}}>
         {{if .Dir}}
         {{if .Open}}<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m1.8 3.6 3.2 3.2 3.2-3.2"/></svg>{{else}}<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.6 1.8 3.2 3.2-3.2 3.2"/></svg>{{end}}
         {{else}}
         <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
         {{end}}
         <span class="tname">{{.Name}}</span>
+        {{if .Ignored}}<span class="tree-note">ignored</span>{{end}}
         <span class="fstat {{.StatusClass}}">{{.Status}}</span>
       </button>
       {{end}}
@@ -65,18 +66,11 @@
       <button class="changes-title" id="history-working" data-action="history-working" type="button" title="Show the working tree diff"{{if .Modal}} tabindex="-1"{{end}}>Working tree</button>
       <span class="changes-count mono">{{.Changed}}</span>
       {{if .Diff.Sample}}<span class="side-tag">sample</span>{{end}}
-      {{if gt .Diff.Pages 1}}
-      <span class="sc-pager">
-        <button class="sc-page-btn" id="diff-page-prev" data-action="diff-page-prev" type="button" title="Previous files" aria-label="Previous files"{{if .Modal}} tabindex="-1"{{end}}>‹</button>
-        <span class="sc-page-num mono">{{.Diff.Page}}/{{.Diff.Pages}}</span>
-        <button class="sc-page-btn" id="diff-page-next" data-action="diff-page-next" type="button" title="Next files" aria-label="Next files"{{if .Modal}} tabindex="-1"{{end}}>›</button>
-      </span>
-      {{end}}
       <span class="sc-stats"><b class="add">+{{.Diff.TotalAdd}}</b><b class="del">−{{.Diff.TotalDel}}</b></span>
     </div>
 
     {{if .Diff.HasChanges}}
-    <div class="changes">
+    <div class="changes{{if .Diff.Scroll}} scroll-fade{{end}}{{if .Diff.AtTop}} at-top{{end}}{{if .Diff.AtEnd}} at-end{{end}}" id="changes-list">
       {{range .Diff.Files}}
       <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
         <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
@@ -107,15 +101,12 @@
         {{else}}
         <button class="hist-branch" id="branch-picker" data-action="branch-picker" type="button" title="View commits for another branch" aria-label="Choose a branch for history"{{if .Modal}} tabindex="-1"{{end}}>{{.History.Branch}} ▾</button>
         {{end}}
-        {{if not .History.BranchOpen}}<span class="hist-pages mono">{{.History.Page}}/{{.History.Pages}}</span>{{end}}
+        {{if not .History.BranchOpen}}<span class="hist-pages mono">{{len .History.Commits}}</span>{{end}}
+        {{if .History.LoadingMore}}<span class="hist-pages">loading…</span>{{end}}
         <span class="tabs-fill"></span>
-        {{if and (gt .History.Pages 1) (not .History.BranchOpen)}}
-        <button class="hist-btn" id="history-prev" data-action="history-prev" type="button" title="Previous commits" aria-label="Previous commits"{{if .Modal}} tabindex="-1"{{end}}>‹</button>
-        <button class="hist-btn" id="history-next" data-action="history-next" type="button" title="Next commits" aria-label="Next commits"{{if .Modal}} tabindex="-1"{{end}}>›</button>
-        {{end}}
         <button class="hist-btn" id="history-refresh" data-action="diff-refresh" type="button" title="Refresh history" aria-label="Refresh history"{{if .Modal}} tabindex="-1"{{end}}>↻</button>
       </header>
-      <div class="hist-list">
+      <div class="hist-list{{if .History.Scroll}} scroll-fade{{end}}{{if .History.AtTop}} at-top{{end}}{{if .History.AtEnd}} at-end{{end}}" id="history-list">
         {{if .History.BranchOpen}}
         <div class="branch-panel" role="dialog" aria-modal="true" aria-label="Choose a branch">
           <div class="branch-filter">
@@ -138,27 +129,16 @@
         </div>
         {{else}}
         {{range $commit := .History.Commits}}
-        <div class="hist-commit{{if $commit.Expanded}} open{{end}}{{if $commit.Selected}} on{{end}}">
+        <div class="hist-commit{{if $commit.Selected}} on{{end}}">
           <button class="hist-row" id="commit-{{$commit.Short}}" data-action="commit:{{$commit.Hash}}" type="button" title="{{$commit.Subject}}" aria-label="Commit {{$commit.Short}}: {{$commit.Subject}}"{{if $.Modal}} tabindex="-1"{{end}}>
-            <span class="hist-dot{{if $commit.Head}} head{{end}}"></span>
+            <span class="hist-graph">
+              {{range $cell := $commit.Graph}}{{if eq $cell.Kind "node"}}<span class="glane g{{$cell.Lane}}"></span><span class="gnode-bar g{{$cell.Lane}}"></span>{{else if eq $cell.Kind "vert"}}<span class="glane g{{$cell.Lane}}"></span>{{else if eq $cell.Kind "branch"}}<span class="glane g{{$cell.Lane}}"></span><span class="gnode-bar g{{$cell.Lane}}"></span>{{else if eq $cell.Kind "merge"}}<span class="glane g{{$cell.Lane}}"></span><span class="gnode-bar g{{$cell.Lane}}"></span>{{end}}{{end}}
+            </span>
             <span class="hist-hash mono">{{$commit.Short}}</span>
             <span class="hist-subject">{{$commit.Subject}}</span>
             <span class="hist-when">{{$commit.Date}}</span>
             <span class="hist-stat"><b class="add">+{{$commit.Add}}</b><b class="del">−{{$commit.Del}}</b></span>
-            <span class="hist-chev">{{if $commit.Expanded}}▾{{else}}▸{{end}}</span>
           </button>
-          {{if $commit.Expanded}}
-          <div class="hist-meta">{{$commit.Author}} · {{$commit.Date}}{{if $commit.Head}} · HEAD{{end}}</div>
-          {{range $commit.Files}}
-          <button class="hist-file{{if .Selected}} on{{end}}" id="commit-file-{{$commit.Hash}}-{{.Path}}" data-action="commit-file:{{$commit.Hash}}:{{.Path}}" type="button" title="{{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
-            <span class="ficon sm lang-{{.Lang}}">{{.Badge}}</span>
-            <span class="hist-file-name">{{.Name}}</span>
-            <span class="hist-file-stat"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
-            <span class="cstat {{.StatusClass}}">{{.Status}}</span>
-          </button>
-          {{end}}
-          {{if $commit.More}}<div class="hist-more">+{{$commit.More}} more files</div>{{end}}
-          {{end}}
         </div>
         {{end}}
         {{if not .History.Commits}}<div class="hist-empty">{{if .History.Loading}}Loading the commit patch…{{else if .History.Note}}{{.History.Note}}{{else}}No commits on this branch yet.{{end}}</div>{{end}}
@@ -170,5 +150,16 @@
     <div class="side-foot">
       <span class="dim note-one">{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}</span>
     </div>
+  {{end}}
+
+  {{if .Diff.Scroll}}
+  <button class="tree-scroll list-scroll" id="changes-scroll" type="button" title="Drag to scroll changed files" aria-label="Scroll changed files" tabindex="-1" style="top:62px;bottom:auto;height:{{.Diff.ScrollTrack}}px">
+    <span class="tree-thumb list-thumb" id="changes-thumb" style="top:{{.Diff.ScrollTop}}px;height:{{.Diff.ScrollHeight}}px"></span>
+  </button>
+  {{end}}
+  {{if and .History.Visible .History.Scroll}}
+  <button class="tree-scroll hist-scroll" id="history-scroll" type="button" title="Drag to scroll history" aria-label="Scroll history" tabindex="-1" style="top:{{.History.RailTop}}px;bottom:auto;height:{{.History.ScrollTrack}}px">
+    <span class="tree-thumb hist-thumb" id="history-thumb" style="top:{{.History.ScrollTop}}px;height:{{.History.ScrollHeight}}px"></span>
+  </button>
   {{end}}
 </aside>

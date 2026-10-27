@@ -40,9 +40,48 @@ func (a *App) toggleEdit() {
 
 	a.edit = newEditBuffer(doc.Path, raw)
 	a.editing = true
+	a.editCaret = 0
+	a.editAnchor = 0
+	a.editUndo = nil
+	a.editRedo = nil
 	a.preview = false
 	a.findOpen = false
 	a.resetScroll()
+	a.ensureEditCaretVisible()
+	a.refresh()
+}
+
+// beginEditAtLine enters edit mode with the caret on the clicked source line.
+func (a *App) beginEditAtLine(line int) {
+	a.inlineCard = inlineCard{}
+
+	if !a.editing {
+		a.toggleEdit()
+	}
+
+	if a.edit == nil {
+		return
+	}
+
+	runes := []rune(a.edit.Text())
+	offset := 0
+
+	for i := 0; i < line; i++ {
+		next := offset
+		for next < len(runes) && runes[next] != '\n' {
+			next++
+		}
+
+		if next >= len(runes) {
+			break
+		}
+
+		offset = next + 1
+	}
+
+	a.editCaret = offset
+	a.editAnchor = offset
+	a.ensureEditCaretVisible()
 	a.refresh()
 }
 
@@ -77,6 +116,10 @@ func (a *App) finishEdit() {
 	a.commitEditBuffer()
 	a.editing = false
 	a.edit = nil
+	a.editCaret = 0
+	a.editAnchor = 0
+	a.editUndo = nil
+	a.editRedo = nil
 }
 
 // commitEditBuffer updates the document behind the buffer without writing to
@@ -92,7 +135,12 @@ func (a *App) commitEditBuffer() {
 	}
 
 	text := a.edit.Text()
-	lines := append([]string(nil), a.edit.Lines...)
+	lines := make([]string, len(a.edit.Lines))
+
+	for i, line := range a.edit.Lines {
+		lines[i] = clipLine(expandTabs(strings.TrimSuffix(line, "\r")))
+	}
+
 	doc.Lines = lines
 	doc.Tokens = tokenize(doc.Lang, lines)
 	doc.Outline = outline(doc.Lang, lines)

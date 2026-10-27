@@ -185,6 +185,7 @@ type treeRow struct {
 	Name        string
 	Dir         bool
 	Open        bool
+	Ignored     bool
 	Indent      int
 	Lang        string
 	Badge       string
@@ -215,6 +216,8 @@ type codeRow struct {
 	Hint        string
 	ChangeClass string
 	ChangeLine  int
+	Caret       bool
+	CaretLeft   int
 }
 
 // recentRow is one quick-open entry on the welcome panel.
@@ -249,6 +252,14 @@ type diffView struct {
 	HasChanges    bool
 	Page          int
 	Pages         int
+	Scroll        bool
+	ScrollTop     int
+	ScrollHeight  int
+	ScrollTrack   int
+	RailThumbTop  int
+	ThumbCells    int
+	AtTop         bool
+	AtEnd         bool
 	Sample        bool
 	Note          string
 	EmptyTitle    string
@@ -263,24 +274,34 @@ type diffView struct {
 
 // historyView is the commit rail above the diff.
 type historyView struct {
-	Visible     bool
-	Sample      bool
-	Height      int
-	Branch      string
-	HeadBranch  string
-	Browsing    bool
-	Detached    bool
-	Branches    []branchRow
-	BranchOpen  bool
-	BranchQuery string
-	BranchMore  int
-	Commits     []commitRow
-	Page        int
-	Pages       int
-	Tip         commitTipView
-	Note        string
-	Unborn      bool
-	Loading     bool
+	Visible      bool
+	Sample       bool
+	Height       int
+	Branch       string
+	HeadBranch   string
+	Browsing     bool
+	Detached     bool
+	Branches     []branchRow
+	BranchOpen   bool
+	BranchQuery  string
+	BranchMore   int
+	Commits      []commitRow
+	Page         int
+	Pages        int
+	Tip          commitTipView
+	Note         string
+	Unborn       bool
+	Loading      bool
+	Scroll       bool
+	ScrollTop    int
+	ScrollHeight int
+	ScrollTrack  int
+	AtTop        bool
+	AtEnd        bool
+	LoadingMore  bool
+	RailTop      int
+	RailThumbTop int
+	ThumbCells   int
 }
 
 // commitRow is one commit in the history rail.
@@ -301,6 +322,8 @@ type commitRow struct {
 	Preview     []diffRow
 	PreviewPath string
 	PreviewErr  string
+	Graph       []graphCell
+	Lanes       int
 }
 
 // commitFileRow is one changed file inside an expanded commit.

@@ -4,15 +4,17 @@ Goal: keep the tree, the open file, and the diff current without a restart.
 
 Status: mostly landed. The watcher rescans files and git metadata, the tree
 keeps expansion, the scan budget is visible, recent files and layout persist,
-and open documents reload unless they have unsaved edits. A slow git-status
-poll is not needed because `.git/index` and ref changes are watched directly.
+and open documents reload unless they have unsaved edits. The Source Control
+lists scroll with draggable rails, and the History rail loads larger pages on a
+background worker as it moves. Git metadata is watched directly, so there is
+no slow status poll.
 
 ## Design
 
 1. A file watcher reports added, changed, and removed paths. The app debounces
    the batch and rescans once.
-2. Git status polls on a slow clock, not on every frame. The dirty file list and
-   the branch update only when they change.
+2. Git metadata changes are watched directly through `.git/HEAD`, refs, and the
+   index; there is no slow status poll.
 3. A rescan keeps folder expansion, the active tab, and the diff selection when
    those paths still exist.
 4. The explorer becomes a windowed list with its own offset. The page wheel
@@ -23,6 +25,9 @@ poll is not needed because `.git/index` and ref changes are watched directly.
    than the budget is still usable through the filter.
 7. The active file reloads when it changes on disk. A conflict opens a notice,
    not a silent overwrite.
+8. The changed-file list and the History rail each own a vertical offset and a
+   drag rail. The History rail draws a lane graph and asks for a larger page
+   off the page loop when the scroll passes half of the rows it holds.
 
 ## Checklist
 
@@ -42,6 +47,15 @@ poll is not needed because `.git/index` and ref changes are watched directly.
       Evidence: `TestFeatureScanBudget`, `TestLoadDiskWorkspaceLimitTruncates`.
 - [x] Keep a bottom-center changed-file navigator in sync with the diff.
       Evidence: `TestFeatureFileNav`, `file_nav_ops.go`.
+- [x] Scroll the changed-file list with a draggable rail and the wheel instead
+      of a pager. Evidence: `TestChangesScrollE2E`, `TestScrollRailsPaint`.
+- [x] Scroll the History rail with a draggable rail and the wheel instead of a
+      pager. Evidence: `TestHistoryScrollE2E`, `TestHistoryScrollWheel`.
+- [x] Draw commit graph lanes and preload a larger history page at half scroll.
+      Evidence: `TestHistoryScrollPreloadAtHalf`, `TestHistoryAsync`.
+- [x] Show git-ignored rows as solid muted rows with an `IGNORED` badge, and
+      keep skipped ignored directories visible. Evidence:
+      `TestGitignoreRows`, `TestWorkspaceMarksGitIgnoredPaths`.
 - [x] Float the commit message beside the history rail on hover. Evidence:
       `TestFeatureCommitTipFloatsBesideHistory`, `commit_tip.go`.
 - [x] Reload the active file on disk change, but keep unsaved edits.

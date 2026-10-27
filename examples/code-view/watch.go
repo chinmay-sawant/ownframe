@@ -160,7 +160,7 @@ func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root str
 		update := watchUpdate{Git: gitChange}
 
 		if rescan {
-			next, delta, err := rescanDiskWorkspace(root, last, limit)
+			next, delta, err := rescanDiskWorkspace(root, last, limit) //nolint:contextcheck // the rescan owns its bounded git timeout
 			if err == nil {
 				update.Workspace = next
 				update.Delta = delta
@@ -250,6 +250,7 @@ func (a *App) tickWatch(ctx context.Context) error {
 
 	a.pollPatches(ctx)
 	a.receiveSearch(ctx)
+	a.receiveHistoryLoad(ctx)
 
 	return nil
 }
@@ -373,7 +374,7 @@ func (a *App) applyWatchChanges(ctx context.Context, changes changeSet) {
 
 		for i, file := range a.changes.Files {
 			if file.Path == a.diffPath {
-				a.changePage = i / a.changePageRows()
+				a.revealChangeIndex(i)
 
 				break
 			}
@@ -419,7 +420,7 @@ func (a *App) applyGitRefresh(ctx context.Context, update watchUpdate) {
 		}
 	}
 
-	history, err := loadCommitLog(ctx, a.ws.Root, a.historyRef)
+	history, err := loadCommitLogLimit(ctx, a.ws.Root, a.historyRef, a.historyLimit)
 	if err != nil {
 		return
 	}
@@ -430,6 +431,8 @@ func (a *App) applyGitRefresh(ctx context.Context, update watchUpdate) {
 
 	a.commits = history
 	a.historyLabel = history.Branch
+	a.historyScroll.Limit = len(history.Commits)
+	a.historyDone = len(history.Commits) < a.historyLimit || a.historyLimit >= maxHistoryCommits
 
 	if a.commitOpen != "" && a.findCommit(a.commitOpen) == nil {
 		a.commitOpen = ""

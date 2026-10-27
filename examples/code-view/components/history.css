@@ -55,7 +55,7 @@
 
 .hist-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
 
-.hist-list { flex: 1; min-height: 0; overflow: hidden; padding: 4px 0; }
+.hist-list { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 4px 0; }
 
 .branch-panel { display: flex; flex-direction: column; padding: 4px 0; }
 .branch-filter { height: 26px; flex: 0 0 26px; display: flex; align-items: center; gap: 5px; padding: 0 10px 4px 12px; }

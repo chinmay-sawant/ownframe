@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 const (
@@ -90,6 +91,10 @@ func (s *shell) menuAction(id string) error {
 		return s.clip().Undo(s.ctx)
 	case "redo":
 		return s.clip().Redo(s.ctx)
+	}
+
+	if app, ok := s.app.(host.MenuActioner); ok {
+		return app.MenuAction(s.ctx, id)
 	}
 
 	return nil

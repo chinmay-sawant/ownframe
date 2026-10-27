@@ -11,12 +11,13 @@ import (
 
 const (
 	maxCommits          = 20
+	maxHistoryCommits   = 500
 	maxCommitFiles      = 20
 	maxCommitBody       = 2000
 	maxCommitPatchCache = 24
 	maxCommitPatchBytes = 512 << 10
 	commitHashLen       = 40
-	commitFields        = 7
+	commitFields        = 8
 	commitDateLen       = 10
 	commitFileSeeds     = 8
 	commitParts         = 3
@@ -39,6 +40,7 @@ type commitLog struct {
 type gitCommit struct {
 	Hash    string
 	Short   string
+	Parents []string
 	Subject string
 	Body    string
 	Author  string
@@ -62,6 +64,16 @@ type commitFile struct {
 // loadCommitLog reads the recent commits on ref in one git process. An empty
 // ref means HEAD and follows the checked-out branch.
 func loadCommitLog(ctx context.Context, root, ref string) (commitLog, error) {
+	return loadCommitLogLimit(ctx, root, ref, maxCommits)
+}
+
+// loadCommitLogLimit reads up to limit recent commits on ref in one git
+// process. A non-positive limit falls back to maxCommits.
+func loadCommitLogLimit(ctx context.Context, root, ref string, limit int) (commitLog, error) {
+	if limit < 1 {
+		limit = maxCommits
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, gitTimeout)
 	defer cancel()
 
@@ -99,11 +111,10 @@ func loadCommitLog(ctx context.Context, root, ref string) (commitLog, error) {
 	log.Head = head
 
 	raw, err := gitBytes(ctx, root,
-		"log", "-n", fmt.Sprint(maxCommits),
-		"--no-merges", "--first-parent",
+		"log", "-n", fmt.Sprint(limit), "--topo-order",
 		"--no-color", "--no-decorate", "--no-notes", "--no-show-signature",
 		"--name-status", "--numstat",
-		"--format=%x1e%H%x00%h%x00%an%x00%aI%x00%s%x00%b%x00",
+		"--format=%x1e%H%x00%h%x00%P%x00%an%x00%aI%x00%s%x00%b%x00",
 		revision, "--",
 	)
 	if err != nil {
@@ -143,8 +154,8 @@ func parseCommitRecord(record string) (gitCommit, bool) {
 		return gitCommit{}, false
 	}
 
-	subject := strings.TrimSpace(fields[4])
-	body := strings.TrimSpace(fields[5])
+	subject := strings.TrimSpace(fields[5])
+	body := strings.TrimSpace(fields[6])
 	if len([]rune(body)) > maxCommitBody {
 		body = string([]rune(body)[:maxCommitBody])
 	}
@@ -152,8 +163,9 @@ func parseCommitRecord(record string) (gitCommit, bool) {
 	commit := gitCommit{
 		Hash:    strings.TrimSpace(fields[0]),
 		Short:   strings.TrimSpace(fields[1]),
-		Author:  strings.TrimSpace(fields[2]),
-		Date:    formatCommitDate(strings.TrimSpace(fields[3])),
+		Parents: parseCommitParents(fields[2]),
+		Author:  strings.TrimSpace(fields[3]),
+		Date:    formatCommitDate(strings.TrimSpace(fields[4])),
 		Subject: subject,
 		Body:    body,
 	}
@@ -162,7 +174,7 @@ func parseCommitRecord(record string) (gitCommit, bool) {
 		return gitCommit{}, false
 	}
 
-	commit.Files = parseCommitFiles(fields[6])
+	commit.Files = parseCommitFiles(fields[7])
 
 	for _, file := range commit.Files {
 		commit.Add += file.Add
@@ -175,6 +187,20 @@ func parseCommitRecord(record string) (gitCommit, bool) {
 	}
 
 	return commit, true
+}
+
+// parseCommitParents splits the space-separated %P field and keeps only the
+// 40-character hex hashes. A root commit has no parents and yields nil.
+func parseCommitParents(raw string) []string {
+	var parents []string
+
+	for _, field := range strings.Fields(raw) {
+		if validCommitHash(field) {
+			parents = append(parents, field)
+		}
+	}
+
+	return parents
 }
 
 func formatCommitDate(raw string) string {

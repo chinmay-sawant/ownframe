@@ -57,6 +57,22 @@
   font-size: 13px;
   line-height: 1;
 }
+.inline-card-step {
+  width: 20px;
+  height: 18px;
+  flex: 0 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1;
+}
+.inline-card-step:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.inline-card-step:disabled { color: #3a4252; border-color: var(--line-soft); }
 .inline-card-x:hover { background-color: var(--panel-3); color: var(--text); }
 
 .inline-card-line {

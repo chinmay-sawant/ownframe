@@ -52,10 +52,12 @@ page (tick, keys, wheel, clicks, live frame updates).
   focus with the keyboard. Hover a clipped tree row or tab to read its full
   path in the status bar.
 - Tabs keep up to eight files and shrink their names so all eight stay
-  visible. The Working tree tab has its own X; closing it returns to the open
-  file. Closing the last file tab shows the welcome panel. The split button
-  beside the tabs opens a second editor group with its own tab list; click a
-  tab or the L button to move focus, and close the split from either strip.
+  visible. Right-click a tab or its close button for Close, Close Others, and
+  Close All; Close Others needs at least two tabs. The Working tree tab has
+  its own X; closing it returns to the open file. Closing the last file tab
+  shows the welcome panel. The split button beside the tabs opens a second
+  editor group with its own tab list; click a tab or the L button to move
+  focus, and close the split from either strip.
 - The editor has line numbers, token colours, Copy path, Copy file, a Wrap
   toggle, `Ctrl+F` find, click-to-edit, a split editor, and a Markdown preview
   toggle. Click anywhere in the source (or press `Ctrl+E`) to start editing;
@@ -63,15 +65,23 @@ page (tick, keys, wheel, clicks, live frame updates).
   D, or U for a changed file and an unsaved dot in the status bar.
 - A changed file shows a gutter mark on each added, modified, or deleted line
   (`+`, `~`, or `-`) and a faint line tint. Click the mark to open a line card
-  with the old and new text, above the editor.
+  with the old and new text. The card has up and down arrows that stop at the
+  first and last change in the same file.
 - A translucent changed-file bar sits at the bottom center with previous and
   next arrows, the current position, and the file's add/delete counts. It has
   no backdrop, so the editor behind it stays visible. Click the file name to
   open it, or use the arrows to move through the working tree.
-- Editing is a plain textarea over the editor body: selection, cut, copy,
-  paste, undo, and redo use the same window chords as a form field. The sample
-  workspace is read-only and Save reports that; a disk workspace writes the
-  file and reloads its tokens.
+- Editing keeps the highlighted code view. Click a line to start editing on
+  it; after that, a click places the caret at the glyph, and a drag selects.
+  The token colours, line numbers, gutter marks, caret, and selection stay in
+  place. `Ctrl+A` selects all, and `Ctrl+C` copies. Arrow keys, Home/End, Page
+  Up/Down, Enter, Backspace, Delete, word delete, cut, paste, undo, and redo
+  work on the buffer. The sample workspace is read-only and Save reports
+  that; a disk workspace writes the file and refreshes its tokens.
+- Files and folders listed in `.gitignore` stay in the explorer as solid,
+  muted gray rows with an `IGNORED` badge. A skipped ignored directory such as
+  `node_modules` still gets one row so it is visible without scanning its
+  tree.
 - Details reads the active file: language, line count, exact size, encoding,
   indentation, change status, and an outline. In Source Control it follows the
   selected diff file. Click an outline row to jump to the line.
@@ -154,21 +164,25 @@ rows. A repository without a first commit falls back to the working tree and
 index diffs. Git gets a three-second budget. A directory without a repository
 keeps the explorer and reports that git is unavailable.
 
-The file list pages 13 changed files at a time. The arrows in the Source
-Control summary switch pages. The diff has unified and split modes. Changed
+The changed-file list is a vertical scroll with a draggable rail and the mouse
+wheel; it has no pager buttons. The diff has unified and split modes. Changed
 words carry a stronger tint than the line background. Hunk arrows walk the
 `@@` rows.
 
 The Source Control drawer holds the working-tree files at the top and a
-History pane below them. It reads up to 20 recent non-merge commits with one
-`git log` call. Click a commit to expand its author line and changed files
-inside the pane; clicking a file opens that patch in the editor. A patch is
-read by a background worker and the pane says it is loading, so a click never
-blocks the page. Hover a commit to read its message in a floating card to the
-right of the history rail; the card clamps to the window and shows the subject,
-body, author, and date. Drag the divider between the files and History to
-resize them; the pane auto-fits the commit count until you drag it. `Working
-tree` returns the editor to the uncommitted diff.
+History pane below them. The History rail reads 20 recent commits at a time,
+draws a VS Code-style lane graph, and scrolls vertically with a draggable rail;
+it has no pager buttons. The graph keeps a first parent in its lane, opens a
+lane for an extra parent, and joins a lane another commit already owns, up to
+six lanes. When the scroll passes half of the loaded rows it asks for a larger
+page on a background worker, growing 20, 40, 60, 90, up to 500. Click a commit
+to load its first patch in the editor. A patch is read by a background worker
+and the pane says it is loading, so a click never blocks the page. Hover a
+commit to read its message in a floating card to the right of the history
+rail; the card clamps to the window and shows the subject, body, author, and
+date. Drag the divider between the files and History to resize them; the pane
+auto-fits the commit count until you drag it. `Working tree` returns the editor
+to the uncommitted diff.
 
 In a live repository, click the branch name in the History header to list local
 and remote branches and filter by name. The picker shows as many matches as the
@@ -224,10 +238,11 @@ is written atomically with owner-only permissions and restored by `main` at
 startup. Tests call `New` directly, so they never touch that file. `EnableSession`
 is the only entry point that reads or writes it.
 
-The history pane is a fixed paged region at the bottom of the Source Control
+The history pane is a fixed region at the bottom of the Source Control
 drawer. The divider changes how much of the drawer the file list and History
 get. The diff uses the full editor body and the page scroll. The history pane
-pages its commits, so it does not need a second scroll viewport.
+has its own vertical scroll and loads a larger commit page when the user passes
+half of the rows already loaded.
 
 ## Keys
 
@@ -238,6 +253,8 @@ pages its commits, so it does not need a second scroll viewport.
 | `Ctrl+Shift+F` | Search workspace contents |
 | `Ctrl+E` | Edit the active file (or click inside it) |
 | `Ctrl+S` | Save while editing |
+| `Ctrl+A` | Select all in the edit buffer |
+| `Ctrl+C` | Copy the edit selection |
 | `Ctrl+\` | Split or close the second editor |
 | `M` or `Ctrl+Shift+V` | Markdown preview |
 | `Z` | Toggle soft wrap in files and diffs |
@@ -282,6 +299,8 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `session.go` | Session file load, save, sanitize |
 | `app_session.go` | Restore and persist layout |
 | `actions.go` | Click, filter, search, and keyboard routing |
+| `context_menu.go` | Tab context-menu rows and close actions |
+| `context_menu_bridge.go` | Public menu row conversion |
 | `palette.go` | Quick-open rows, selection, and focus |
 | `markdown_preview.go` | Rendered Markdown rows and source anchors |
 | `markdown_html.go` | Structured HTML preview blocks and entities |
@@ -295,16 +314,23 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `workspace_write.go` | Save one file under the root |
 | `workspace_search.go` | Content-search engine |
 | `edit_buffer.go` | Text editing model |
+| `selection_model.go` | Selection ranges, word and line marks |
+| `selection_ops.go` | Click and drag selection in the edit body |
+| `text_edit.go` | Caret keys, undo, clipboard, and edit snapshots |
 | `editor_group.go` | One group's tab list |
 | `rescan.go` | Workspace delta and git metadata detection |
 | `outline.go` | The details panel symbols |
 | `git.go` | Live working-tree changes |
+| `changes_scroll.go` | Changed-file list scroll model and thumb |
 | `watch.go` | Recursive fsnotify watcher, rescan, git refresh |
 | `branches.go` | Local and remote branch list for the history picker |
 | `branch_filter.go` | Branch filter and rank |
 | `branch_cache.go` | Session branch-log cache |
 | `commits.go` | Commit metadata and one-file patches |
 | `commit_loader.go` | Background patch worker |
+| `commit_graph.go` | Commit lane graph layout |
+| `history_scroll.go` | History rail scroll and page-growth math |
+| `history_load.go` | Background history page worker |
 | `sample_history.go` | Fixed sample commits built from the fixture diff |
 | `find.go` | In-file find, match rows, and highlights |
 | `wrap.go` | Soft-wrap plan and source-line anchors |
@@ -325,9 +351,10 @@ open D-Bus, so Orca and similar tools cannot attach yet.
   explorer badge, status bar, and quick open all say when the limit was hit.
 - There is no horizontal scroll. Files and diff cells soft-wrap; `Z` turns it
   off and the diff clips with an ellipsis.
-- The History pane keeps 20 commits and 20 files per commit. Patches load on a
-  background worker with a three-second git budget. The branch picker shows as
-  many matches as the pane fits and reports how many more need the filter.
+- The History pane loads 20 commits, then grows the page as the rail crosses
+  half of the loaded rows, up to 500. Patches load on a background worker with a
+  three-second git budget. The branch picker shows as many matches as the pane
+  fits and reports how many more need the filter.
 - This example targets desktop. There is no phone layout, Android host, or
   mobile accessibility path.
 - The fsnotify watcher is desktop-only. `-web` keeps the manual Refresh and `R`
@@ -343,10 +370,14 @@ open D-Bus, so Orca and similar tools cannot attach yet.
   patch keeps its unified/split diff view.
 - The sample fixture is synthetic test data; the default workspace is the
   current directory.
-- Editing is a plain textarea, not an IDE: no syntax highlighting inside the
-  textarea, no multi-cursor, and no unsaved-change prompt when a tab closes.
-  The sample workspace is read-only. A very long file edits in a fixed-height
-  field, so use the source view for reading long files.
+- Editing keeps the highlighted view, not a plain textarea: syntax tokens,
+  line numbers, selection, and a blinking caret stay visible. It is still a
+  simple buffer: no multi-cursor, no language server, and no unsaved-change
+  prompt when a tab closes. The sample workspace is read-only.
+- Git-ignored paths stay in the explorer as solid, muted gray rows with an
+  `IGNORED` badge. The viewer asks git for the ignored list, so a non-git
+  directory has no ignored styling; a skipped ignored directory gets one empty
+  placeholder row.
 
 ## Tests
 
@@ -361,14 +392,17 @@ scanning and scan limits, content search, session round trips, shell metrics,
 tabs, modes, two editor groups, editing and saving, filtering, pointer hits on
 the activity/tree/tab/diff/status controls, quick open defaults and filtering,
 Markdown preview rows, tables, HTML, Mermaid, reflow, and the chord, click-to-edit
-and typing, inline change cards, gutter markers, the bottom-center navigator,
-the floating commit tooltip, outline scroll jumps, details metadata, the diff
-pager, async commit patches, live and sample commit history, branch filtering
-without checkout, commit expansion, the sidebar history divider, diff-cell
-clipping, soft-wrap rows, in-file find, explorer windowing, wheel and keyboard
-navigation, background file watching and rescan, external branch changes,
-scrolling after a long file opens, devtools, the clipboard, accessibility names
-and the modal focus trap, and keyboard routing and activation.
+with preserved syntax spans and caret typing, drag selection, select all and
+copy, inline change cards with prev/next arrows, gutter markers, the
+bottom-center navigator, tab context menus, the floating commit tooltip,
+git-ignored tree rows, outline scroll jumps, details metadata, the changed-file
+scroll rail, commit graph lanes, async history pages, async commit patches,
+live and sample commit history, branch filtering without checkout, commit
+expansion, the sidebar history divider, diff-cell clipping, soft-wrap rows,
+in-file find, explorer windowing, wheel and keyboard navigation, background
+file watching and rescan, external branch changes, scrolling after a long file
+opens, devtools, the clipboard, accessibility names and the modal focus trap,
+and keyboard routing and activation.
 
 Capture the review frames:
 
@@ -378,8 +412,8 @@ OWNFRAME_CODE_VIEW_SCREENSHOT=1 go test -run '^TestScreenshot$' ./examples/code-
 
 PNGs land in `/tmp/opencode/code-view-shots/`: `explorer`, `preview`, `palette`,
 `changes`, `split`, `details`, `edit`, `inline-card`, `split-editor`,
-`commit-tip`, `search`, `scrolled`, and `welcome`. Nothing is added to the
-repository.
+`commit-tip`, `search`, `scrolled`, `scrollrails`, `ignored`, and `welcome`.
+Nothing is added to the repository.
 
 The size matrix runs five views at 1280x720, 1500x900, and 1920x1080:
 

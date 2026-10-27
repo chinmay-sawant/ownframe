@@ -169,3 +169,19 @@ func gitBytes(ctx context.Context, root string, args ...string) ([]byte, error) 
 
 	return out, nil
 }
+
+// gitBytesStdin runs one git command with input on stdin. It is used for
+// check-ignore batches, where one process answers for every scanned directory.
+func gitBytesStdin(ctx context.Context, root, input string, args ...string) ([]byte, error) {
+	full := append([]string{"-C", root}, args...)
+	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed binary, fixed subcommand, operator-selected -C
+	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
+	cmd.Stdin = strings.NewReader(input)
+
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git %s: %w", strings.Join(args, " "), err)
+	}
+
+	return out, nil
+}

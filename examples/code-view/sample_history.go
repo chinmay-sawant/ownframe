@@ -85,6 +85,12 @@ func sampleCommitLog() (commitLog, map[string]*changedFile) {
 		commits = append(commits, commit)
 	}
 
+	for i := range commits {
+		if i+1 < len(commits) {
+			commits[i].Parents = []string{commits[i+1].Hash}
+		}
+	}
+
 	log := commitLog{
 		Branch:  "feat/probe-retries",
 		Head:    commits[0].Hash,

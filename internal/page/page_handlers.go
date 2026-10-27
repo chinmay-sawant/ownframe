@@ -41,6 +41,10 @@ type Handlers struct {
 	SelectAll  func(ctx context.Context) error
 	Undo       func(ctx context.Context) error
 	Redo       func(ctx context.Context) error
+	// ContextMenuFor returns custom rows for one hit-tested element.
+	ContextMenuFor func(id string) []MenuItem
+	// MenuAction runs a custom row the page reported.
+	MenuAction func(ctx context.Context, id string) error
 	// Drop readers work in the callback.
 	Drop func(ctx context.Context, files []Drop) error
 	// OpenLink takes validated links.

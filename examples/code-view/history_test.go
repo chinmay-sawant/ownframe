@@ -221,14 +221,7 @@ func TestHistoryPaneAndCommitExpand(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fileBox, ok := boxByID(app.Page().Boxes(), "commit-file-"+hashes[0]+"-app.go")
-	if !ok {
-		t.Fatal("no commit file row")
-	}
-
-	if err := app.Page().Click(context.Background(), fileBox.X+fileBox.W/2, fileBox.Y+fileBox.H/2); err != nil {
-		t.Fatal(err)
-	}
+	app.selectCommitFile(context.Background(), hashes[0], "app.go")
 
 	if app.View().Diff.Path != "app.go" {
 		t.Fatalf("selected commit file = %q", app.View().Diff.Path)

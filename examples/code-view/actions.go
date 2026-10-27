@@ -27,6 +27,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return a.page.Form().Focus(ctx, "")
 	case action == "inline-card-close":
 		a.closeInlineCard()
+	case action == "inline-card-prev":
+		a.inlineCardStep(-1)
+	case action == "inline-card-next":
+		a.inlineCardStep(1)
 	case strings.HasPrefix(action, "inline-card:"):
 		if line, ok := actionIndex(action, "inline-card:"); ok {
 			a.showInlineCard(line)
@@ -41,13 +45,17 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 	case action == "edit-begin":
 		a.inlineCard = inlineCard{}
-		a.toggleEdit()
-
-		if err := a.page.Redraw(ctx); err != nil {
-			return err
+		if !a.editing {
+			a.toggleEdit()
 		}
 
-		return a.page.Form().Focus(ctx, "editor")
+		return a.page.Redraw(ctx)
+	case strings.HasPrefix(action, "edit-begin-line:"):
+		if line, ok := actionIndex(action, "edit-begin-line:"); ok {
+			a.beginEditAtLine(line)
+		}
+
+		return a.page.Redraw(ctx)
 	case action == "edit-toggle":
 		a.toggleEdit()
 	case action == "edit-save":
@@ -90,15 +98,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.showToast("info", "Sample changes", a.changes.Note)
 		a.refresh()
 	case action == "diff-page-prev":
-		if a.changePage > 0 {
-			a.changePage--
-			a.selectChangePage()
-		}
+		a.scrollChanges(-1)
 	case action == "diff-page-next":
-		if (a.changePage+1)*a.changePageRows() < len(a.changes.Files) {
-			a.changePage++
-			a.selectChangePage()
-		}
+		a.scrollChanges(1)
 	case action == "diff-split":
 		a.setSplit(true)
 	case action == "diff-unified":
@@ -179,16 +181,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "history-working":
 		a.showWorkingDiff()
 	case action == "history-prev":
-		if a.commitPage > 0 {
-			a.commitPage--
-			a.refresh()
-		}
+		a.scrollHistory(ctx, -1)
 	case action == "history-next":
-		size := a.commitPageSize()
-		if (a.commitPage+1)*size < len(a.commits.Commits) {
-			a.commitPage++
-			a.refresh()
-		}
+		a.scrollHistory(ctx, 1)
 	case strings.HasPrefix(action, "commit-file:"):
 		rest := strings.TrimPrefix(action, "commit-file:")
 		if parts := strings.SplitN(rest, ":", actionPair); len(parts) == actionPair {
@@ -294,9 +289,42 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 	return ownframe.Box{}, false
 }
 
-// onWheel scrolls the explorer when the pointer is over its tree.
+// onWheel scrolls the explorer tree or the changed-file list under the
+// pointer.
 func (a *App) onWheel(ctx context.Context, x, y, _, dy float64) (bool, error) {
-	if a.mode != "explorer" || dy == 0 || a.paletteOpen || !a.view.TreeScroll {
+	if dy == 0 || a.paletteOpen || a.searchOpen || a.branchOpen {
+		return false, nil
+	}
+
+	scrollX, scrollY := a.page.Scroll().ScrollOffset()
+	x -= float64(scrollX)
+	y -= float64(scrollY)
+
+	if a.mode == "changes" && a.view.Diff.Scroll {
+		box, ok := findBoxID(a.page.Boxes(), "changes-list")
+		if ok && x >= box.X && x <= box.X+box.W && y >= box.Y && y <= box.Y+box.H {
+			rows := a.changesScroll.WheelRows(-dy * treeWheelRows)
+			if rows != 0 {
+				a.scrollChanges(rows)
+			}
+
+			return true, a.page.Redraw(ctx)
+		}
+	}
+
+	if a.mode == "changes" && a.view.History.Visible {
+		box, ok := findBoxID(a.page.Boxes(), "history-pane")
+		if ok && x >= box.X && x <= box.X+box.W && y >= box.Y && y <= box.Y+box.H {
+			rows := a.historyScroll.WheelRows(-dy * treeWheelRows)
+			if rows != 0 {
+				a.scrollHistory(ctx, rows)
+			}
+
+			return true, a.page.Redraw(ctx)
+		}
+	}
+
+	if a.mode != "explorer" || !a.view.TreeScroll {
 		return false, nil
 	}
 
@@ -304,10 +332,6 @@ func (a *App) onWheel(ctx context.Context, x, y, _, dy float64) (bool, error) {
 	if !ok {
 		return false, nil
 	}
-
-	scrollX, scrollY := a.page.Scroll().ScrollOffset()
-	x -= float64(scrollX)
-	y -= float64(scrollY)
 
 	if x < tree.X || x > tree.X+tree.W || y < tree.Y || y > tree.Y+tree.H {
 		a.treeWheelAccum = 0
@@ -581,6 +605,42 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 
 // onDragStart claims the history divider or the explorer thumb.
 func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	if a.onDragClaim(box) {
+		return true, nil
+	}
+
+	if box.ID == "history-thumb" && a.mode == "changes" && a.view.History.Scroll {
+		visible := a.historyVisibleRows()
+		track := a.historyTrackHeight()
+		thumb := a.view.History.ScrollHeight
+		total := len(a.commits.Commits)
+		if total <= visible || track <= thumb {
+			return false, nil
+		}
+
+		a.historyListDrag = true
+		a.historyListAt = a.historyScroll.Offset
+		a.historyListScale = float64(total-visible) / float64(track-thumb)
+
+		return true, nil
+	}
+
+	if box.ID == "changes-thumb" && a.mode == "changes" && a.view.Diff.Scroll {
+		visible := a.changeVisibleRows()
+		track := a.changesTrackHeight()
+		thumb := a.view.Diff.ScrollHeight
+		total := len(a.changes.Files)
+		if total <= visible || track <= thumb {
+			return false, nil
+		}
+
+		a.changesDrag = true
+		a.changesDragAt = a.changesScroll.Offset
+		a.changesScale = float64(total-visible) / float64(track-thumb)
+
+		return true, nil
+	}
+
 	if box.ID == "tree-thumb" && a.mode == "explorer" && a.view.TreeScroll {
 		visible := a.treeVisibleRows()
 		track := visible * treeRowH
@@ -616,7 +676,35 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 }
 
 // onDragMove resizes the panes or moves the explorer thumb.
-func (a *App) onDragMove(ctx context.Context, _, dy float64) error {
+func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
+	if a.dragSelect {
+		a.extendEditSelection(a.selX+dx, a.selY+dy)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.historyListDrag {
+		offset := a.historyListAt + int(dy*a.historyListScale+roundHalf)
+		total := len(a.commits.Commits)
+		visible := a.historyVisibleRows()
+		a.historyScroll.SetOffset(offset, total, visible)
+		a.maybeLoadMoreHistory(ctx)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.changesDrag {
+		offset := a.changesDragAt + int(dy*a.changesScale+roundHalf)
+		total := len(a.changes.Files)
+		visible := a.changeVisibleRows()
+		a.changesScroll.SetOffset(offset, total, visible)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
 	if a.treeDrag {
 		offset := a.treeDragAt + int(dy*a.treeScale+roundHalf)
 		maxOffset := a.view.TreeTotal - a.treeVisibleRows()
@@ -673,11 +761,23 @@ func (a *App) onDragMove(ctx context.Context, _, dy float64) error {
 }
 
 // onDragEnd releases the history divider.
-func (a *App) onDragEnd(context.Context) error {
+func (a *App) onDragEnd(ctx context.Context) error {
+	wasSelect := a.dragSelect
+	a.dragSelect = false
 	a.historyDrag = false
 	a.historyDy = 0
 	a.treeDrag = false
 	a.treeScale = 0
+	a.changesDrag = false
+	a.changesScale = 0
+	a.historyListDrag = false
+	a.historyListScale = 0
+
+	if wasSelect {
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
 
 	return nil
 }
@@ -712,6 +812,10 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		}
 	}
 
+	if a.editing {
+		return a.editKey(ctx, key)
+	}
+
 	if a.ctrl && key == "p" {
 		return a.openPalette(ctx)
 	}
@@ -725,12 +829,6 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	}
 
 	if a.ctrl && key == "s" {
-		if a.editing {
-			a.saveEdit()
-
-			return a.page.Redraw(ctx)
-		}
-
 		return nil
 	}
 
@@ -750,17 +848,6 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.togglePreview()
 
 		return a.page.Redraw(ctx)
-	}
-
-	if a.editing && key == "escape" {
-		a.finishEdit()
-		a.refresh()
-
-		return a.page.Redraw(ctx)
-	}
-
-	if a.editing && a.page.Form().FocusID() == "editor" {
-		return nil
 	}
 
 	if a.searchOpen && key == "escape" {
@@ -984,6 +1071,10 @@ func (a *App) onKeyUp(ctx context.Context, key string) error {
 // onSubmit opens the selected palette row or advances find. Enter and
 // NumpadEnter arrive here.
 func (a *App) onSubmit(ctx context.Context) error {
+	if a.editing {
+		return a.insertEditText(ctx, "\n")
+	}
+
 	if a.findOpen && a.page.Form().FocusID() == "find" {
 		delta := 1
 		if a.shift {

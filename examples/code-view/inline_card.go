@@ -30,6 +30,7 @@ const (
 // page pixels, and the text fields are already flattened onto one line.
 type inlineCard struct {
 	Show    bool
+	Line    int
 	Left    int
 	Top     int
 	Width   int
@@ -39,6 +40,8 @@ type inlineCard struct {
 	OldText string
 	NewText string
 	Hint    string
+	HasPrev bool
+	HasNext bool
 }
 
 // inlineCardFor builds the card for one changed line. rowTop is the row's top

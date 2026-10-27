@@ -32,10 +32,12 @@ pane or a tab. ownframe has no second OS window.
 - The diff: unified and split rows, file statuses, word emphasis, hunk
   navigation, wrapped cells, async commit patches, and live `git diff HEAD`
   with `-root`.
+- The Source Control sidebar: a changed-file list with a draggable scroll rail,
+  a lane commit graph, async history pages, hover messages, and a branch picker.
 - The live workspace: a debounced fsnotify rescan, git metadata watch, scan
-  budget, and session restore.
-- Two editor groups with their own tab lists, edit/save, in-file find, and
-  workspace content search.
+  budget, ignored-row styling, and session restore.
+- Two editor groups with their own tab lists, click-to-caret editing, drag
+  selection, in-file find, workspace content search, and a tab context menu.
 - The windowing: fixed chrome, `SetScrollWindow`, 20 px rows, a windowed
   explorer with wheel/rail/keyboard scrolling, and a sidebar history split.
 - The details drawer: language, size, status, and outline.
@@ -102,9 +104,9 @@ pane or a tab. ownframe has no second OS window.
       `git.go`, `TestLiveRoot`.
 - [x] Hunk navigation, refresh, and a clean-tree state. Evidence:
       `TestModesAndDiff`, `TestCleanChangeSet`.
-- [x] Sidebar history pane with expandable commits, hover messages, and a
+- [x] Sidebar history pane with a lane commit graph, hover messages, and a
       lazy one-file patch. Evidence: `TestHistoryPaneAndCommitExpand`,
-      `commits.go`.
+      `TestCommitGraphBranchLane`, `commits.go`.
 - [x] Branch picker that loads history without changing the checkout.
       Evidence: `TestBranchPickerLoadsHistoryWithoutCheckout`, `branches.go`.
 - [x] Fixed sample history built from the sample diff. Evidence:
@@ -161,6 +163,16 @@ pane or a tab. ownframe has no second OS window.
       `TestFeatureSessionRestoresLayout`, `session.go`.
 - [x] Large-repository budget: stop scanning at one clear limit and say so.
       Evidence: `TestFeatureScanBudget`, `TestLoadDiskWorkspaceLimitTruncates`.
+- [x] Scroll the changed-file list and the History rail with draggable rails
+      and the mouse wheel instead of pagers. Evidence:
+      `TestChangesScrollE2E`, `TestHistoryScrollE2E`, `TestScrollRailsPaint`.
+- [x] Draw commit graph lanes and preload larger history pages on a background
+      worker at half scroll, from 20 up to 500. Evidence:
+      `TestHistoryScrollPreloadAtHalf`, `TestHistoryAsync`,
+      `TestCommitGraphBranchLane`.
+- [x] Keep git-ignored rows as solid muted rows with an `IGNORED` badge,
+      including skipped directories. Evidence: `TestGitignoreRows`,
+      `TestWorkspaceMarksGitIgnoredPaths`.
 - Gate: a new file on disk appears in the tree without a restart, and the
   expanded folders stay open.
 
@@ -175,6 +187,14 @@ pane or a tab. ownframe has no second OS window.
       `TestFeatureDiffWrapIntegration`, `diff_wrap.go`.
 - [x] Edit, selection, and save in the source view. Evidence:
       `TestFeatureEditAndSave`, `edit_buffer.go`.
+- [x] Click-to-caret editing that keeps the syntax rows, with mouse drag
+      selection, `Ctrl+A`, and `Ctrl+C`. Evidence:
+      `TestEditCaretClickTypesAndMoves`, `TestEditSelectionDrag`,
+      `TestFeatureEditSelection`.
+- [x] Previous and next arrows on the inline change card. Evidence:
+      `TestFeatureInlineCardSteps`.
+- [x] Tab context menu for Close, Close Others, and Close All. Evidence:
+      `TestContextMenuTabRows`, `TestContextMenuCloseAll`.
 - [ ] Expandable diff context between hunks.
 - [ ] Go-to-line and a line-range copy.
 - [ ] Breadcrumb dropdowns for directories and symbols.

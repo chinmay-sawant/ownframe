@@ -60,6 +60,8 @@ const (
 	branchPickerRowH     = 26
 	branchPickerMinRows  = 4
 	commitTipCellWidth   = 7
+	changesRailTop       = 62
+	thumbCellH           = 14
 	historyExpandedRows  = 3
 	historyAutoRows      = 8
 	historyAutoPad       = 4
@@ -78,10 +80,9 @@ const (
 	roundHalf            = 0.5
 	treeWheelRows        = 3.0
 
-	maxTabs           = 8
-	maxChangePageRows = 13
-	maxRecent         = 4
-	treeParentPad     = 2
+	maxTabs       = 8
+	maxRecent     = 4
+	treeParentPad = 2
 
 	scrollStep = 96
 	pageScroll = 420
@@ -120,9 +121,16 @@ type App struct {
 	active2    int
 	splitRatio float64
 
-	editing bool
-	edit    *editBuffer
-	dirty   map[string]bool
+	editing    bool
+	edit       *editBuffer
+	dirty      map[string]bool
+	editCaret  int
+	editAnchor int
+	editUndo   []editSnapshot
+	editRedo   []editSnapshot
+	dragSelect bool
+	selX       float64
+	selY       float64
 
 	searchOpen      bool
 	searchQuery     string
@@ -137,28 +145,38 @@ type App struct {
 	searchResult    chan searchReply
 	searchCancel    context.CancelFunc
 
-	diffPath   string
-	diffSplit  bool
-	diffRows   []diffRow
-	changePage int
-	diffSource string
+	diffPath      string
+	diffSplit     bool
+	diffRows      []diffRow
+	changesScroll changesScroll
+	changesDrag   bool
+	changesDragAt int
+	changesScale  float64
+	diffSource    string
 
-	commits       commitLog
-	branches      []branchRow
-	headBranch    string
-	historyRef    string
-	historyLabel  string
-	branchOpen    bool
-	branchQuery   string
-	commitDetails map[string]*changedFile
-	commitKeys    []string
-	commitOpen    string
-	commitFile    string
-	commitRows    []diffRow
-	commitPreview []diffRow
-	commitPage    int
-	patchLoader   *commitPatchLoader
-	branchLogs    *branchLogCache
+	commits          commitLog
+	branches         []branchRow
+	headBranch       string
+	historyRef       string
+	historyLabel     string
+	branchOpen       bool
+	branchQuery      string
+	commitDetails    map[string]*changedFile
+	commitKeys       []string
+	commitOpen       string
+	commitFile       string
+	commitRows       []diffRow
+	commitPreview    []diffRow
+	patchLoader      *commitPatchLoader
+	branchLogs       *branchLogCache
+	historyScroll    historyScroll
+	historyLimit     int
+	historyDone      bool
+	historyListDrag  bool
+	historyListAt    int
+	historyListScale float64
+	historyToken     int
+	historyLoad      chan historyLoadReply
 
 	historyRatio  float64
 	historyManual bool
@@ -247,6 +265,9 @@ func NewWithLimit(root string, limit int) (*App, error) {
 		branchLogs:    newBranchLogCache(branchLogLimit),
 		searchResult:  make(chan searchReply, 1),
 		scanLimit:     ws.Limit,
+		historyLimit:  maxCommits,
+		historyScroll: historyScroll{Limit: maxCommits},
+		historyLoad:   make(chan historyLoadReply, 1),
 	}
 
 	if ws.Sample {
@@ -286,16 +307,28 @@ func NewWithLimit(root string, limit int) (*App, error) {
 	}
 
 	page.Handle(ownframe.Handlers{
-		Click:     a.onClick,
-		Change:    a.onChange,
-		KeyDown:   a.onKeyDown,
-		KeyUp:     a.onKeyUp,
-		Submit:    a.onSubmit,
-		Hover:     a.onHover,
-		DragStart: a.onDragStart,
-		DragMove:  a.onDragMove,
-		DragEnd:   a.onDragEnd,
-		Wheel:     a.onWheel,
+		Click:          a.onClick,
+		Press:          a.onPress,
+		Change:         a.onChange,
+		KeyDown:        a.onKeyDown,
+		KeyUp:          a.onKeyUp,
+		Submit:         a.onSubmit,
+		Hover:          a.onHover,
+		DragStart:      a.onDragStart,
+		DragMove:       a.onDragMove,
+		DragEnd:        a.onDragEnd,
+		Wheel:          a.onWheel,
+		Type:           a.onType,
+		Backspace:      a.onBackspace,
+		DeleteWord:     a.onDeleteWord,
+		Copy:           a.onCopy,
+		Cut:            a.onCut,
+		Paste:          a.onPaste,
+		SelectAll:      a.onSelectAll,
+		Undo:           a.onUndo,
+		Redo:           a.onRedo,
+		ContextMenuFor: a.contextMenuForPage,
+		MenuAction:     a.MenuAction,
 	})
 	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.onScroll)
@@ -521,6 +554,7 @@ func (a *App) fillCode(v *View) {
 		v.TrackTop = track
 		v.Rows = a.copyFindRows(cloneCodeRows(plan.Rows[start:end]))
 		a.decorateCodeRows(doc, v.Rows)
+		a.decorateEditRows(v.Rows)
 
 		return
 	}
@@ -534,6 +568,7 @@ func (a *App) fillCode(v *View) {
 
 	v.Rows = a.copyFindRows(v.Rows)
 	a.decorateCodeRows(doc, v.Rows)
+	a.decorateEditRows(v.Rows)
 }
 
 // diffColumns is the text cell count for the unified or split diff.
@@ -588,25 +623,21 @@ func (a *App) fillDiff(v *View) {
 	add, del := a.changes.totals()
 	d.TotalAdd, d.TotalDel = add, del
 
-	pageRows := a.changePageRows()
-	pages := 0
-	if len(a.changes.Files) > 0 {
-		pages = (len(a.changes.Files) + pageRows - 1) / pageRows
-	}
+	total := len(a.changes.Files)
+	visible := a.changeVisibleRows()
+	from, to := a.changesScroll.Rows(total, visible)
 
-	page := a.changePage
-	if page >= pages {
-		page = pages - 1
-	}
+	d.Scroll = total > visible
+	d.AtTop = from == 0
+	d.AtEnd = to >= total
 
-	if page < 0 {
-		page = 0
+	if d.Scroll {
+		track := a.changesTrackHeight()
+		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, treeThumbMin)
+		d.ScrollTrack = track
+		d.RailThumbTop = changesRailTop + d.ScrollTop
+		d.ThumbCells = max(1, d.ScrollHeight/thumbCellH)
 	}
-
-	a.changePage = page
-	d.Page, d.Pages = page+1, pages
-	from := page * pageRows
-	to := min(from+pageRows, len(a.changes.Files))
 
 	for _, file := range a.changes.Files[from:to] {
 		d.Files = append(d.Files, diffFileRow{
@@ -788,9 +819,6 @@ func (a *App) historyHeight() int {
 		}
 
 		h = histHeadH + historyPad + rows*histRowH + historyAutoPad
-		if a.commitOpen != "" {
-			h = histHeadH + historyPad + historyExpandedRows*histRowH + historyMetaH + historyExpandedFiles*histFileH + historyAutoPad
-		}
 	} else {
 		h = int(float64(stack) * a.historyRatio)
 	}
@@ -812,6 +840,27 @@ func (a *App) historyHeight() int {
 // historyPaneTop is the page y of the history rail's top edge.
 func (a *App) historyPaneTop() int {
 	return a.viewportH - chromeBottom - treeFootH - a.historyHeight()
+}
+
+// historyVisibleRows is how many 42 px commit rows fit in the rail.
+func (a *App) historyVisibleRows() int {
+	h := a.historyHeight() - histHeadH - historyPad
+	rows := h / histRowH
+	if rows < 1 {
+		rows = 1
+	}
+
+	return rows
+}
+
+// historyTrackHeight is the rail's pixel height below its header.
+func (a *App) historyTrackHeight() int {
+	h := a.historyHeight() - histHeadH - historyPad
+	if h < 1 {
+		h = 1
+	}
+
+	return h
 }
 
 // pageWidth is the current page width, with the default as a fallback.
@@ -862,8 +911,8 @@ func (a *App) drawerStackHeight() int {
 	return h
 }
 
-// changePageRows is how many 38 px change rows fit above History.
-func (a *App) changePageRows() int {
+// changeVisibleRows is how many 38 px change rows fit above History.
+func (a *App) changeVisibleRows() int {
 	stack := a.drawerStackHeight()
 	body := stack - a.historyHeight()
 	rows := (body - changeListPad) / changeRowH
@@ -871,26 +920,48 @@ func (a *App) changePageRows() int {
 		rows = 1
 	}
 
-	if rows > maxChangePageRows {
-		rows = maxChangePageRows
-	}
-
 	return rows
 }
 
-// commitPageSize is the number of commit rows that fit on one history page.
-func (a *App) commitPageSize() int {
-	avail := a.historyHeight() - histHeadH - historyPad
-	if a.commitOpen != "" {
-		return historyExpandedRows
+// revealChangeIndex scrolls the changed-file list so one row is visible.
+func (a *App) revealChangeIndex(index int) {
+	total := len(a.changes.Files)
+	visible := a.changeVisibleRows()
+	start, end := a.changesScroll.Rows(total, visible)
+
+	switch {
+	case index < start:
+		a.changesScroll.SetOffset(index, total, visible)
+	case index >= end:
+		a.changesScroll.SetOffset(index-visible+1, total, visible)
+	}
+}
+
+// revealChangePath reveals one changed file by path.
+func (a *App) revealChangePath(path string) {
+	for i, file := range a.changes.Files {
+		if file.Path == path {
+			a.revealChangeIndex(i)
+
+			return
+		}
+	}
+}
+
+// scrollChanges moves the changed-file list by rows.
+func (a *App) scrollChanges(rows int) {
+	a.changesScroll.ScrollBy(rows, len(a.changes.Files), a.changeVisibleRows())
+	a.refresh()
+}
+
+// changesTrackHeight is the pixel height of the changed-file rail.
+func (a *App) changesTrackHeight() int {
+	h := a.drawerStackHeight() - a.historyHeight() - changeListPad
+	if h < 1 {
+		h = 1
 	}
 
-	size := avail / histRowH
-	if size < 1 {
-		size = 1
-	}
-
-	return size
+	return h
 }
 
 // fillHistory builds the commit rail and its expanded preview.
@@ -920,6 +991,7 @@ func (a *App) fillHistory(v *View) {
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
 	h.Loading = v.Diff.Loading
+	h.RailTop = a.historyPaneTop() - chromeTop + histHeadH
 
 	if a.branchOpen {
 		a.fillBranchList(&h)
@@ -928,27 +1000,29 @@ func (a *App) fillHistory(v *View) {
 		return
 	}
 
-	size := a.commitPageSize()
-	h.Pages = (len(a.commits.Commits) + size - 1) / size
-	if h.Pages < 1 {
-		h.Pages = 1
+	visible := a.historyVisibleRows()
+	total := len(a.commits.Commits)
+	from, to := a.historyScroll.Rows(total, visible)
+
+	h.Scroll = total > visible
+	h.AtTop = from == 0
+	h.AtEnd = to >= total
+	h.LoadingMore = a.historyScroll.Loading
+
+	if h.Scroll {
+		track := a.historyTrackHeight()
+		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, treeThumbMin)
+		h.ScrollTrack = track
+		h.RailThumbTop = h.RailTop + h.ScrollTop
+		h.ThumbCells = max(1, h.ScrollHeight/thumbCellH)
 	}
 
-	if a.commitPage >= h.Pages {
-		a.commitPage = h.Pages - 1
-	}
-
-	if a.commitPage < 0 {
-		a.commitPage = 0
-	}
-
-	h.Page = a.commitPage + 1
-	from := a.commitPage * size
-	to := min(from+size, len(a.commits.Commits))
+	graph := buildCommitGraph(a.commits.Commits)
 	tipTop := histHeadH + historyPad
 	tipRowTop := 0
 
-	for _, commit := range a.commits.Commits[from:to] {
+	for i := from; i < to; i++ {
+		commit := a.commits.Commits[i]
 		rowTop := tipTop
 		row := commitRow{
 			Hash:     commit.Hash,
@@ -963,41 +1037,12 @@ func (a *App) fillHistory(v *View) {
 			Head:     commit.Hash == a.commits.Head,
 			Expanded: commit.Hash == a.commitOpen,
 			Selected: commit.Hash == a.commitOpen && a.diffSource == "commit",
-		}
-
-		if row.Expanded {
-			left := a.historyHeight() - histHeadH - historyPad - size*histRowH
-			fileRows := left / histFileH
-			if fileRows < 0 {
-				fileRows = 0
-			}
-
-			shown := min(len(commit.Files), fileRows)
-			row.More += len(commit.Files) - shown
-			for _, file := range commit.Files[:shown] {
-				lang := languageOf(file.Path)
-				row.Files = append(row.Files, commitFileRow{
-					Path:        file.Path,
-					Name:        baseName(file.Path),
-					Dir:         dirName(file.Path),
-					Status:      file.Status,
-					StatusClass: "st-" + strings.ToLower(file.Status),
-					Lang:        lang,
-					Badge:       languageInfo(lang).Badge,
-					Add:         file.Add,
-					Del:         file.Del,
-					Selected:    file.Path == a.commitFile && a.diffSource == "commit",
-				})
-			}
-
+			Graph:    graph.Rows[commit.Hash],
+			Lanes:    graph.Lanes,
 		}
 
 		h.Commits = append(h.Commits, row)
 		tipTop += histRowH
-
-		if row.Expanded {
-			tipTop += historyMetaH + len(row.Files)*histFileH
-		}
 
 		if a.hoverCommit == commit.Short {
 			tipRowTop = rowTop
@@ -1079,12 +1124,9 @@ func (a *App) windowSlice(total int) (int, int, int) {
 func (a *App) contentHeight() int {
 	rows := 0
 
-	switch {
-	case a.mode == "changes":
+	if a.mode == "changes" {
 		rows = len(a.diffDisplayRows())
-	case a.editing:
-		rows = a.bodyHeight() / rowH
-	default:
+	} else {
 		rows = a.paneRowCount(0, a.groupDoc(0))
 
 		if a.split {
@@ -1241,10 +1283,11 @@ func (a *App) walkTree(nodes []*fileNode, depth int, rows *[]treeRow, index *int
 
 		if pos >= start {
 			row := treeRow{
-				Path:   node.Path,
-				Name:   node.Name,
-				Dir:    node.Dir,
-				Indent: treePad + depth*treeIndent,
+				Path:    node.Path,
+				Name:    node.Name,
+				Dir:     node.Dir,
+				Ignored: node.Ignored,
+				Indent:  treePad + depth*treeIndent,
 			}
 
 			if node.Dir {
@@ -1280,6 +1323,7 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 			Path:        file.Path,
 			Name:        file.Name,
 			Indent:      treePad,
+			Ignored:     file.Ignored,
 			Lang:        file.Lang,
 			Badge:       languageInfo(file.Lang).Badge,
 			Status:      a.statuses[file.Path],
@@ -1590,7 +1634,9 @@ func (a *App) useSampleHistory() {
 	a.commitFile = ""
 	a.commitRows = nil
 	a.commitPreview = nil
-	a.commitPage = 0
+	a.historyScroll.SetOffset(0, len(history.Commits), a.historyVisibleRows())
+	a.historyScroll.Limit = len(history.Commits)
+	a.historyDone = true
 	a.hoverCommit = ""
 	a.branchOpen = false
 	a.branchQuery = ""
@@ -1758,6 +1804,8 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 
 		a.commits = history
 		a.historyLabel = history.Branch
+		a.historyScroll.Limit = len(history.Commits)
+		a.historyDone = len(history.Commits) < a.historyLimit || a.historyLimit >= maxHistoryCommits
 
 		if a.commitOpen != "" && a.findCommit(a.commitOpen) == nil {
 			a.commitOpen = ""
@@ -1771,9 +1819,12 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 		}
 	}
 
+	a.historyLimit = maxCommits
+	a.historyDone = false
+	a.historyScroll.SetOffset(0, len(a.commits.Commits), a.historyVisibleRows())
 	a.statuses = statusMap(a.changes)
 	a.syncFileNav()
-	a.changePage = 0
+	a.changesScroll.SetOffset(0, len(a.changes.Files), a.changeVisibleRows())
 	a.selectFirstDiff()
 	a.rebuildDiffRows()
 	a.resetScroll()
@@ -1835,21 +1886,6 @@ func (a *App) rebuildDiffRows() {
 	}
 }
 
-// selectChangePage selects the first file on the current page.
-func (a *App) selectChangePage() {
-	from := a.changePage * a.changePageRows()
-	if from < len(a.changes.Files) {
-		a.diffPath = a.changes.Files[from].Path
-		if a.fileNav != nil {
-			a.fileNav.Select(a.diffPath)
-		}
-		a.rebuildDiffRows()
-	}
-
-	a.resetScroll()
-	a.refresh()
-}
-
 // pickBranch loads history for a ref without changing the checkout.
 func (a *App) pickBranch(ctx context.Context, ref string) {
 	if ref != "" {
@@ -1879,8 +1915,10 @@ func (a *App) pickBranch(ctx context.Context, ref string) {
 	a.commitFile = ""
 	a.commitRows = nil
 	a.commitPreview = nil
-	a.commitPage = 0
-	a.hoverCommit = ""
+	a.historyLimit = maxCommits
+	a.historyDone = len(history.Commits) < maxCommits
+	a.historyScroll.SetOffset(0, len(history.Commits), a.historyVisibleRows())
+	a.historyScroll.Limit = len(history.Commits)
 	a.diffSource = "working"
 	a.branchOpen = false
 	a.branchQuery = ""
@@ -1899,6 +1937,7 @@ func (a *App) selectDiff(path string) {
 	a.diffSource = "working"
 	a.mode = "changes"
 	a.inlineCard = inlineCard{}
+	a.revealChangePath(path)
 	if a.fileNav != nil {
 		a.fileNav.Select(path)
 	}
@@ -2068,20 +2107,42 @@ func (a *App) pollPatches(ctx context.Context) bool {
 	return changed
 }
 
-// focusCommitPage moves the history pager to the page holding hash.
+// focusCommitPage scrolls the history rail to the commit with hash.
 func (a *App) focusCommitPage(hash string) {
-	size := a.commitPageSize()
-	if size < 1 {
-		size = 1
-	}
-
 	for i, commit := range a.commits.Commits {
 		if commit.Hash == hash {
-			a.commitPage = i / size
+			a.revealHistoryIndex(i)
 
 			return
 		}
 	}
+}
+
+// revealHistoryIndex scrolls the commit rail so one row is visible.
+func (a *App) revealHistoryIndex(index int) {
+	total := len(a.commits.Commits)
+	visible := a.historyVisibleRows()
+	start, end := a.historyScroll.Rows(total, visible)
+
+	switch {
+	case index < start:
+		a.historyScroll.SetOffset(index, total, visible)
+	case index >= end:
+		a.historyScroll.SetOffset(index-visible+1, total, visible)
+	}
+}
+
+// scrollHistory moves the commit rail by rows and may load the next batch.
+func (a *App) scrollHistory(ctx context.Context, rows int) {
+	a.historyScroll.ScrollBy(rows, len(a.commits.Commits), a.historyVisibleRows())
+	a.maybeLoadMoreHistory(ctx)
+	a.refresh()
+}
+
+// maybeLoadMoreHistory asks for a larger commit log when the rail crosses
+// half of the commits it already has. The git read runs off the page loop.
+func (a *App) maybeLoadMoreHistory(ctx context.Context) {
+	a.startHistoryLoad(ctx)
 }
 
 // rebuildCommitRows renders the selected commit file's patch.

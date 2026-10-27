@@ -100,6 +100,22 @@
 .chev { width: 10px; height: 10px; flex: 0 0 10px; margin-right: 8px; color: #aeb8c9; }
 .trow.dir .chev { color: #aeb8c9; }
 .trow.open { color: var(--text); }
+.trow.ignored { background-color: #141923; color: #7d8798; }
+.trow.ignored .tname { color: #8f9aab; }
+.trow.ignored .ficon, .trow.ignored .chev, .trow.ignored .fstat { color: #6f7a8b; }
+.trow.ignored:hover { background-color: #19202c; color: #9aa5b8; }
+.tree-note {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border-radius: 3px;
+  background-color: rgba(138, 147, 166, 0.10);
+  color: #6f7889;
+  font-family: var(--mono);
+  font-size: 7px;
+  line-height: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 .tname { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 11px; }
 .trow.dir .tname { font-weight: 600; }
@@ -250,7 +266,7 @@
 .changes-count { color: var(--dim); font-size: 8.5px; }
 .side-tag { color: var(--amber); font-family: var(--mono); font-size: 7.5px; text-transform: uppercase; }
 
-.changes { flex: 1; min-height: 0; overflow: hidden; padding: 3px 0; }
+.changes { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 3px 0; }
 
 .change {
   width: 100%;
