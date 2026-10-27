@@ -401,8 +401,11 @@ func appendHTMLPreview(rows []previewRow, raw string, cols int) []previewRow {
 }
 
 // previewInline strips the Markdown source markers and keeps the token classes.
+// Boundary spaces become plain runs: markdownInline moves a trailing space into
+// the next styled run, so a styled run may start or end with one.
 func previewInline(text string) []segment {
 	text = strings.ReplaceAll(stripHTML(text), "\n", " ")
+	text = stripLinkedImages(text)
 	segs := markdownInline(text)
 	out := make([]segment, 0, len(segs))
 
@@ -412,10 +415,68 @@ func previewInline(text string) []segment {
 			class = ""
 		}
 
-		out = addSeg(out, decodeHTMLEntities(stripMarkers(seg)), class)
+		out = appendPreviewRun(out, decodeHTMLEntities(stripMarkers(seg)), class)
 	}
 
 	return finishLine(out)
+}
+
+// appendPreviewRun adds one preview run without moving its trailing space into
+// the next run, so a word gap never leaves the plain run that carries it. A
+// styled run contributes its boundary spaces as plain runs on either side.
+func appendPreviewRun(dst []segment, text, class string) []segment {
+	if text == "" {
+		return dst
+	}
+
+	if class == "" {
+		return appendPlainRun(dst, text)
+	}
+
+	lead, core, trail := splitBoundarySpace(text)
+	if core == "" {
+		return appendPlainRun(dst, text)
+	}
+
+	dst = appendPlainRun(dst, lead)
+	dst = appendClassRun(dst, core, class)
+
+	return appendPlainRun(dst, trail)
+}
+
+// appendPlainRun appends plain text, merging with a plain run already at the end.
+func appendPlainRun(dst []segment, text string) []segment {
+	return appendClassRun(dst, text, "")
+}
+
+// appendClassRun appends text with a class, merging with the previous run when
+// the class matches.
+func appendClassRun(dst []segment, text, class string) []segment {
+	if text == "" {
+		return dst
+	}
+
+	if n := len(dst); n > 0 && dst[n-1].Class == class {
+		dst[n-1].Text += text
+
+		return dst
+	}
+
+	return append(dst, segment{Text: text, Class: class})
+}
+
+// splitBoundarySpace separates the leading and trailing spaces of one run from
+// its content, so a styled run never owns a word gap.
+func splitBoundarySpace(text string) (lead, core, trail string) {
+	core = strings.TrimSpace(text)
+	if core == "" {
+		return text, "", ""
+	}
+
+	start := strings.Index(text, core)
+	end := start + len(core)
+
+	return text[:start], core, text[end:]
 }
 
 // plainInline returns the text a rendered inline run will show.
@@ -431,37 +492,96 @@ func plainInline(text string) string {
 	return b.String()
 }
 
-// stripMarkers removes the markers a rendered view should not print.
+// stripMarkers removes the markers a rendered view should not print. Spaces
+// outside a marker pair stay in the string for appendPreviewRun to separate.
 func stripMarkers(seg segment) string {
-	text := seg.Text
+	if seg.Class == "" || seg.Class == classPlain {
+		return seg.Text
+	}
+
+	lead, core, trail := splitBoundarySpace(seg.Text)
+	if core == "" {
+		return seg.Text
+	}
 
 	switch seg.Class {
 	case classBold:
-		text = strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSuffix(text, "**"), "**"), "__"), "__")
+		core = trimAffixes(core, "**", "__")
 	case classItal:
-		text = strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSuffix(text, "*"), "*"), "_"), "_")
+		core = trimAffixes(core, "*", "_")
 	case classCode:
-		text = strings.Trim(text, "`")
+		core = strings.Trim(core, "`")
 	case classLink:
-		text = linkLabel(text)
+		core = linkLabel(core)
+	}
+
+	return lead + core + trail
+}
+
+// trimAffixes removes one marker from each end of text.
+func trimAffixes(text string, markers ...string) string {
+	for _, marker := range markers {
+		text = strings.TrimSuffix(strings.TrimPrefix(text, marker), marker)
 	}
 
 	return text
 }
 
-// linkLabel returns the visible part of a Markdown link or image.
+// stripLinkedImages replaces a linked image, [![alt](src)](href), with its alt
+// text before the inline scanner runs. The scanner stops at the inner ](, so
+// without this the outer URL leaks into the rendered prose.
+func stripLinkedImages(text string) string {
+	for {
+		start := strings.Index(text, "[![")
+		if start < 0 {
+			return text
+		}
+
+		inner := strings.Index(text[start+3:], "](")
+		if inner < 0 {
+			return text
+		}
+
+		innerEnd := strings.Index(text[start+3+inner+2:], ")")
+		if innerEnd < 0 {
+			return text
+		}
+
+		after := start + 3 + inner + 2 + innerEnd + 1
+		if !strings.HasPrefix(text[after:], "](") {
+			return text
+		}
+
+		outerEnd := strings.Index(text[after+2:], ")")
+		if outerEnd < 0 {
+			return text
+		}
+
+		alt := text[start+3 : start+3+inner]
+		end := after + 2 + outerEnd + 1
+		text = text[:start] + alt + text[end:]
+	}
+}
+
+// linkLabel returns the visible part of a Markdown link or image. Spaces around
+// the link stay in the string so a word gap is never dropped.
 func linkLabel(text string) string {
-	open := strings.Index(text, "[")
-	if open < 0 {
-		return strings.TrimSuffix(strings.TrimPrefix(text, "<"), ">")
+	lead, core, trail := splitBoundarySpace(text)
+	if core == "" {
+		return text
 	}
 
-	close := strings.Index(text[open:], "]")
+	open := strings.Index(core, "[")
+	if open < 0 {
+		return lead + strings.TrimSuffix(strings.TrimPrefix(core, "<"), ">") + trail
+	}
+
+	close := strings.Index(core[open:], "]")
 	if close < 0 {
 		return text
 	}
 
-	return text[open+1 : open+close]
+	return lead + core[open+1:open+close] + trail
 }
 
 // wrapText breaks text at spaces and hard-breaks a word longer than width.
@@ -534,12 +654,19 @@ func wrapStyledRuns(segs []segment, width int) [][]segment {
 }
 
 // glyphsFromSegments flattens styled runs and collapses whitespace so a row
-// never carries a newline or a run of spaces into the renderer.
+// never carries a newline or a run of spaces into the renderer. A space where
+// two classes meet is plain, so a link or code pill never swallows the gap
+// around it.
 func glyphsFromSegments(segs []segment) []previewGlyph {
 	out := make([]previewGlyph, 0, len(segs))
 	pendingSpace := false
 
 	for _, seg := range segs {
+		class := seg.Class
+		if class == classPlain {
+			class = ""
+		}
+
 		for _, r := range seg.Text {
 			if unicode.IsSpace(r) {
 				if len(out) > 0 {
@@ -550,11 +677,16 @@ func glyphsFromSegments(segs []segment) []previewGlyph {
 			}
 
 			if pendingSpace {
-				out = append(out, previewGlyph{r: ' ', class: seg.Class})
+				spaceClass := class
+				if out[len(out)-1].class != class {
+					spaceClass = ""
+				}
+
+				out = append(out, previewGlyph{r: ' ', class: spaceClass})
 				pendingSpace = false
 			}
 
-			out = append(out, previewGlyph{r: r, class: seg.Class})
+			out = append(out, previewGlyph{r: r, class: class})
 		}
 	}
 

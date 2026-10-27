@@ -10,11 +10,23 @@ const paneMinWidth = 220
 // matches codeCellW; without this slack a full row still enters the right padding.
 const codeClipSlack = 8
 
-// Preview rows do not use the source gutter. .prow pads both sides and .pmark
-// takes the left marker, so the column budget has to subtract those itself.
+// Preview rows do not use the source gutter. .prow pads both sides, .pmark
+// takes an 18 px marker whose 7 px right padding is ink headroom, and a quote
+// row adds a 2 px left border. The budget subtracts the marker box, repeats
+// the marker padding on the right, and rounds the measured 7.321 px advance of
+// the 12.2 px body face up to 7.5 px, so a full row keeps at least one glyph
+// clear of the right padding.
 const (
-	previewPadX  = 22
-	previewMarkW = 18
+	previewPadX        = 22
+	previewMarkW       = 18
+	previewMarkPad     = 7
+	previewQuoteBorder = 2
+	previewCellW       = 7.5
+	previewSlack       = 8
+
+	// previewHeadingCellW covers the 14 px heading face. A heading row drops
+	// the marker column, so its budget starts after the row padding only.
+	previewHeadingCellW = 8.5
 )
 
 // activeGroup returns the group that receives file opens and shortcuts.
@@ -129,7 +141,7 @@ func (a *App) groupEditorWidth(group int) int {
 func (a *App) codeColsForGroup(group int) int {
 	width := a.groupEditorWidth(group)
 	if a.preview && a.activeGroup() == group {
-		return a.previewColsFor(width)
+		return a.previewColsForDoc(width, a.groupDoc(group))
 	}
 
 	return a.codeColsFor(width)
@@ -137,19 +149,81 @@ func (a *App) codeColsForGroup(group int) int {
 
 // previewCols is the column budget for rendered Markdown.
 func (a *App) previewCols() int {
-	return a.previewColsFor(a.groupEditorWidth(a.activeGroup()))
+	return a.previewColsForDoc(a.groupEditorWidth(a.activeGroup()), a.activeDoc())
 }
 
-// previewColsFor is the cell count inside a preview pane. The budget subtracts
-// the preview row's padding and marker, then one glyph of slack.
+// previewColsFor is the cell count inside a preview pane. The budget is
+// conservative: every subtracted length comes from the preview stylesheet and
+// previewCellW is wider than the painted advance, so a full row cannot reach
+// the right padding even when the face resolves a little wide.
 func (a *App) previewColsFor(width int) int {
-	avail := width - previewPadX - previewPadX - previewMarkW - codeClipSlack
-	cols := int(float64(avail) / codeCellW)
+	avail := width - previewPadX - previewPadX - previewMarkW - previewMarkPad - previewQuoteBorder - previewSlack
+	cols := int(float64(avail) / previewCellW)
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}
 
 	return cols
+}
+
+// previewColsForDoc narrows the whole preview to the heading budget when a
+// heading uses the larger face and would not fit the body budget.
+func (a *App) previewColsForDoc(width int, doc *fileDoc) int {
+	cols := a.previewColsFor(width)
+	if doc == nil {
+		return cols
+	}
+
+	headingCols := a.previewHeadingColsFor(width)
+	if headingCols >= cols || !hasWideHeading(doc.Lines, headingCols) {
+		return cols
+	}
+
+	return headingCols
+}
+
+// previewHeadingColsFor is the heading cell count inside a preview pane. A
+// heading row has no marker column, so only the row padding and slack apply.
+func (a *App) previewHeadingColsFor(width int) int {
+	avail := width - previewPadX - previewPadX - previewSlack
+	cols := int(float64(avail) / previewHeadingCellW)
+	if cols < wrapMinCols {
+		cols = wrapMinCols
+	}
+
+	return cols
+}
+
+// hasWideHeading reports whether a heading's visible text is longer than cols.
+// Fenced code is skipped so a comment starting with # cannot narrow the page.
+func hasWideHeading(lines []string, cols int) bool {
+	inFence := false
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		if isFenceLine(trimmed) {
+			inFence = !inFence
+
+			continue
+		}
+
+		if inFence || !strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+
+		r := []rune(trimmed)
+		level, offset := headingLevel(r)
+		if level == 0 {
+			continue
+		}
+
+		if len([]rune(plainInline(strings.TrimSpace(string(r[offset:]))))) > cols {
+			return true
+		}
+	}
+
+	return false
 }
 
 // secondView builds the right-hand editor pane.
@@ -264,7 +338,7 @@ func (a *App) paneRowCount(group int, doc *fileDoc) int {
 	cols := a.codeColsForGroup(group)
 
 	if a.activeGroup() == group && a.preview && doc.Lang == langMarkdown {
-		doc.ensurePreview(a.previewColsFor(a.groupEditorWidth(group)))
+		doc.ensurePreview(cols)
 		n := len(doc.Preview)
 		if n == 0 {
 			return 0

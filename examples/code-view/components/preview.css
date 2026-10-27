@@ -20,7 +20,7 @@
   overflow: hidden;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 12.2px;
+  font-size: 12px;
   line-height: var(--row-h);
   color: #c4cddd;
 }
@@ -58,9 +58,26 @@
 
 .prow .ptext .t-plain { color: inherit; }
 .prow-quote { border-left: 2px solid var(--line); }
-.prow-h1 .ptext { color: #82aaff; font-weight: 700; }
-.prow-h2 .ptext { color: #7fdbca; font-weight: 700; }
-.prow-h3 .ptext { color: #c792ea; font-weight: 700; }
+
+/* Heading rows keep the 20 px row. The largest face is 14 px; the mono
+   fallbacks report an ascent plus descent of up to 1.32 em, so the tallest
+   line box is 18.5 px and the ink never meets the row edge. Heading rows also
+   drop the empty marker column the body rows use, so a title starts at the row
+   padding and gains the 18 px the marker would take. */
+.prow-h1 .pmark,
+.prow-h2 .pmark,
+.prow-h3 .pmark,
+.prow-h4 .pmark,
+.prow-h5 .pmark,
+.prow-h6 .pmark {
+  width: 0;
+  flex: 0 0 0;
+  padding-right: 0;
+}
+
+.prow-h1 .ptext { color: #f4f7fe; font-size: 14px; font-weight: 700; }
+.prow-h2 .ptext { color: #7fdbca; font-size: 13px; font-weight: 700; }
+.prow-h3 .ptext { color: #c792ea; font-size: 12px; font-weight: 700; }
 .prow-h4 .ptext { color: #ffcb6b; font-weight: 700; }
 .prow-h5 .ptext { color: #c3e88d; font-weight: 700; }
 .prow-h6 .ptext { color: #f78c6c; font-weight: 700; }
@@ -68,7 +85,7 @@
 .prow-summary .pmark { color: var(--accent); }
 
 .prow-code { background-color: rgba(255, 255, 255, 0.035); }
-.prow-code .ptext { color: #c3e88d; font-family: var(--mono); font-size: 11.5px; }
+.prow-code .ptext { color: #c3e88d; font-family: var(--mono); font-size: 11px; }
 .prow-code .pmark { background-color: rgba(255, 255, 255, 0.035); }
 
 .prow-quote .ptext { color: var(--muted); }
@@ -80,6 +97,10 @@
 .prow-diagram .pmark { color: var(--accent); }
 .pdiag { display: block; height: 20px; }
 .prow-li .pmark { color: var(--accent); }
+
+/* A blank line is one full grid row. The window slices preview rows by rowH
+   and positions the track from scrollY % rowH, so a shorter gap would desync
+   scrolling; test preview_style_test.go holds this. */
 .prow-gap { height: var(--row-h); }
 
 .prow-code,

@@ -746,3 +746,90 @@ func TestPreviewMermaidPie(t *testing.T) {
 		}
 	}
 }
+
+// TestPreviewInlineKeepsBoundarySpaces covers prose where an inline style
+// starts or ends at a word boundary. Every boundary keeps exactly one plain
+// space, and no source marker reaches the rendered run.
+func TestPreviewInlineKeepsBoundarySpaces(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{"bold", "Formerly known as **go-gpu**.", "Formerly known as go-gpu."},
+		{"link", "ownframe renders with [blinkless](url) and opens", "ownframe renders with blinkless and opens"},
+		{"code", "`scripts/browser.sh` builds", "scripts/browser.sh builds"},
+		{"code after period", "preview. `-web` is", "preview. -web is"},
+		{"path link", "is in [documentation/platforms.md](https://example.com)", "is in documentation/platforms.md"},
+		{"link and code", "Use [blinkless](https://x) and `code` here.", "Use blinkless and code here."},
+		{"linked image", "[![ownframe preview](assets/demo.webp)](https://x) and more", "ownframe preview and more"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			segs := previewInline(tc.source)
+			if got := lineText(segs); got != tc.want {
+				t.Fatalf("previewInline(%q) = %q, want %q", tc.source, got, tc.want)
+			}
+
+			for _, seg := range segs {
+				if seg.Class == "" || seg.Class == classPlain {
+					continue
+				}
+
+				if strings.HasPrefix(seg.Text, " ") || strings.HasSuffix(seg.Text, " ") {
+					t.Fatalf("styled run %q carries a boundary space", seg.Text)
+				}
+			}
+		})
+	}
+}
+
+// TestPreviewInlineWrapKeepsSpaces checks that wrapping the styled runs keeps
+// every word boundary once, with no leading, trailing, or doubled space.
+func TestPreviewInlineWrapKeepsSpaces(t *testing.T) {
+	t.Parallel()
+
+	const width = 28
+
+	source := "ownframe renders with [blinkless](https://x) and opens a window with `scripts/browser.sh` when the page is ready."
+	want := "ownframe renders with blinkless and opens a window with scripts/browser.sh when the page is ready."
+
+	lines := wrapStyledRuns(previewInline(source), width)
+	if len(lines) < 2 {
+		t.Fatalf("wrap produced %d lines, want a wrapped paragraph", len(lines))
+	}
+
+	parts := make([]string, len(lines))
+
+	for i, line := range lines {
+		text := lineText(line)
+		if text != strings.TrimSpace(text) {
+			t.Fatalf("wrapped line %d has a boundary space: %q", i, text)
+		}
+
+		if strings.Contains(text, "  ") {
+			t.Fatalf("wrapped line %d doubles a space: %q", i, text)
+		}
+
+		for _, seg := range line {
+			if seg.Class == "" || seg.Class == classPlain {
+				continue
+			}
+
+			if strings.HasPrefix(seg.Text, " ") || strings.HasSuffix(seg.Text, " ") {
+				t.Fatalf("wrapped styled run %q carries a boundary space", seg.Text)
+			}
+		}
+
+		parts[i] = text
+	}
+
+	if got := strings.Join(parts, " "); got != want {
+		t.Fatalf("wrapped text = %q, want %q", got, want)
+	}
+}

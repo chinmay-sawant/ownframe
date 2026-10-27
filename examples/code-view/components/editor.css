@@ -199,7 +199,7 @@
   background-color: #0a0d13;
   color: #c4cddd;
   font-family: var(--mono);
-  font-size: 12.2px;
+  font-size: 12px;
   line-height: var(--row-h);
   white-space: pre;
   overflow: hidden;
@@ -352,7 +352,7 @@ button.gutter-mark:hover { color: var(--text); }
   padding-right: 22px;
   white-space: nowrap;
   font-family: var(--mono);
-  font-size: 12.2px;
+  font-size: 12px;
   line-height: var(--row-h);
   color: #c4cddd;
 }
