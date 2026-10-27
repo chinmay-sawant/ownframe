@@ -713,6 +713,16 @@ type fileDoc struct {
 	Encoding    string
 	Indent      string
 	Wrap        *wrapPlan
+	Syntax      *syntaxCache
+}
+
+// tokenizeLines highlights lines using the document's incremental token cache.
+func (d *fileDoc) tokenizeLines(lines []string) [][]segment {
+	if d.Syntax == nil || d.Syntax.lang != d.Lang {
+		d.Syntax = newSyntaxCache(d.Lang)
+	}
+
+	return d.Syntax.tokenize(lines)
 }
 
 // openDoc reads and tokenizes one file.
@@ -745,7 +755,7 @@ func (w *workspace) openDoc(path string) *fileDoc {
 	doc.Truncated = truncated
 	doc.Encoding = meta.Encoding
 	doc.Indent = meta.Indent
-	doc.Tokens = tokenize(doc.Lang, lines)
+	doc.Tokens = doc.tokenizeLines(lines)
 	doc.Outline = outline(doc.Lang, lines)
 
 	return doc

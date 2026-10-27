@@ -33,8 +33,9 @@ func textInkBox(face *text.GoTextFace, content string, spacing float64) (image.R
 	}
 
 	x := 0.0
-	for _, r := range content {
-		glyph := string(r)
+	for i := 0; i < len(content); {
+		glyph, size := glyphAt(content, i)
+		i += size
 		add(text.AppendLazyGlyphs(nil, glyph, face, nil), x)
 		width, _ := text.Measure(glyph, face, 0)
 		x += width + spacing

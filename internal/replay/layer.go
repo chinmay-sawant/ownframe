@@ -114,7 +114,7 @@ type layerCandidate struct {
 
 // resolveLayer applies the narrow promotion predicate and captures the
 // element's operations in paint order. reason is non-empty on rejection.
-func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool, ranks []int) (layerCandidate, string) {
+func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool, ranks []int, owners ...[]int) (layerCandidate, string) {
 	var out layerCandidate
 	if d == nil {
 		return out, "no display"
@@ -145,7 +145,11 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 		return out, "blend mode with group alpha"
 	}
 
-	owned := layerOwnedOps(d, spec.BoxIndex)
+	var ownerBuf []int
+	if len(owners) > 0 {
+		ownerBuf = owners[0]
+	}
+	owned := layerOwnedOps(d, spec.BoxIndex, ownerBuf)
 	if len(owned) == 0 {
 		return out, "no owned ops"
 	}
@@ -158,7 +162,7 @@ func resolveLayer(d *layout.Display, spec LayerSpec, gen uint64, claimed []bool,
 	boxRect := image.Rectangle{}
 	sig := fnvOffsetBasis
 	firstRank, lastRank := len(d.Order), -1
-	if ranks == nil {
+	if len(ranks) < len(d.Ops) {
 		ranks = layerRanks(d)
 	}
 
@@ -300,8 +304,16 @@ func layerMatrixBox(b image.Rectangle, m layout.Matrix2D, ppp float64) image.Rec
 
 // layerRanks maps each operation index to its position in Display.Order, or
 // -1 when the op never paints.
-func layerRanks(d *layout.Display) []int {
-	ranks := make([]int, len(d.Ops))
+func layerRanks(d *layout.Display, buf ...[]int) []int {
+	var ranks []int
+	if len(buf) > 0 {
+		ranks = buf[0]
+	}
+	if cap(ranks) < len(d.Ops) {
+		ranks = make([]int, len(d.Ops))
+	} else {
+		ranks = ranks[:len(d.Ops)]
+	}
 	for i := range ranks {
 		ranks[i] = -1
 	}
@@ -314,17 +326,37 @@ func layerRanks(d *layout.Display) []int {
 	return ranks
 }
 
-// layerOwnedOps returns the element's owned operation indices in paint order.
-// It mirrors the viewtransition capture helper: the nearest owner from
-// OpOwners, with the OperationIDs fallback for a display that predates it.
-func layerOwnedOps(d *layout.Display, root int) []int {
-	owners := make([]int, len(d.Ops))
+// layerOwners returns the nearest owner index for each operation in d.Ops.
+func layerOwners(d *layout.Display, buf ...[]int) []int {
+	var owners []int
+	if len(buf) > 0 {
+		owners = buf[0]
+	}
+	if cap(owners) < len(d.Ops) {
+		owners = make([]int, len(d.Ops))
+	} else {
+		owners = owners[:len(d.Ops)]
+	}
 	if len(d.OpOwners) == len(d.Ops) {
 		copy(owners, d.OpOwners)
 	} else {
 		for i := range d.Ops {
 			owners[i] = layerOwnerFromIDs(d, d.Ops[i].ID)
 		}
+	}
+
+	return owners
+}
+
+// layerOwnedOps returns the element's owned operation indices in paint order.
+// It mirrors the viewtransition capture helper: the nearest owner from
+// OpOwners, with the OperationIDs fallback for a display that predates it.
+func layerOwnedOps(d *layout.Display, root int, optionalOwners ...[]int) []int {
+	var owners []int
+	if len(optionalOwners) > 0 && len(optionalOwners[0]) >= len(d.Ops) {
+		owners = optionalOwners[0]
+	} else {
+		owners = layerOwners(d)
 	}
 
 	owned := make([]int, 0, layerOwnedCap)

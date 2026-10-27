@@ -237,3 +237,124 @@ func TestSpacesAtTokenBoundaries(t *testing.T) {
 		}
 	}
 }
+
+func TestSyntaxCache_IncrementalReuse(t *testing.T) {
+	lines := []string{
+		"package main",
+		"",
+		"func add(a, b int) int {",
+		"\treturn a + b",
+		"}",
+		"",
+		"func sub(a, b int) int {",
+		"\treturn a - b",
+		"}",
+	}
+
+	cache := newSyntaxCache(langGo)
+	initial := cache.tokenize(lines)
+	if len(initial) != len(lines) {
+		t.Fatalf("expected %d lines, got %d", len(lines), len(initial))
+	}
+
+	// Capture segment slice pointers for lines 0..2
+	p0 := &initial[0][0]
+	p2 := &initial[2][0]
+
+	// Edit only line 7 ("\treturn a - b" -> "\treturn a - b - 1")
+	linesCopy := make([]string, len(lines))
+	copy(linesCopy, lines)
+	linesCopy[7] = "\treturn a - b - 1"
+
+	cache.markDirty(7)
+	updated := cache.tokenize(linesCopy)
+
+	// Verify line 7 changed
+	if lineText(updated[7]) != "\treturn a - b - 1" {
+		t.Fatalf("line 7 not updated: %q", lineText(updated[7]))
+	}
+
+	// Verify unmodified lines 0 and 2 retained identical underlying token segment addresses
+	if &updated[0][0] != p0 {
+		t.Errorf("line 0 was re-allocated instead of reused")
+	}
+	if &updated[2][0] != p2 {
+		t.Errorf("line 2 was re-allocated instead of reused")
+	}
+}
+
+func TestSyntaxCache_MultilinePropagation(t *testing.T) {
+	lines := []string{
+		"package main",
+		"/*",
+		"start of block comment",
+		"end of block comment",
+		"*/",
+		"func hello() {}",
+	}
+
+	cache := newSyntaxCache(langGo)
+	initial := cache.tokenize(lines)
+
+	if !classesOf([][]segment{initial[2]})[classCom] {
+		t.Fatalf("line 2 should be comment")
+	}
+	if !classesOf([][]segment{initial[5]})[classKw] {
+		t.Fatalf("line 5 should be func keyword")
+	}
+
+	// Remove "*/" on line 4, so line 5 becomes part of comment
+	linesCopy := make([]string, len(lines))
+	copy(linesCopy, lines)
+	linesCopy[4] = "// no longer closing"
+
+	cache.markDirty(4)
+	updated := cache.tokenize(linesCopy)
+
+	// Now line 5 should have comment class, not keyword class
+	if classesOf([][]segment{updated[5]})[classKw] {
+		t.Errorf("line 5 still has keyword class after block comment extended")
+	}
+	if !classesOf([][]segment{updated[5]})[classCom] {
+		t.Errorf("line 5 missing comment class after block comment extended")
+	}
+}
+
+func TestWrapPlanArena_CapacityRetained(t *testing.T) {
+	lines := []string{
+		"package main",
+		"func longFunctionSignature(ctx context.Context, firstArgument int, secondArgument string) error {",
+		"\treturn nil",
+		"}",
+	}
+
+	doc := &fileDoc{
+		Path:   "test.go",
+		Lang:   langGo,
+		Lines:  lines,
+		Tokens: tokenize(langGo, lines),
+	}
+
+	plan1 := doc.wrapped(40)
+	if plan1 == nil || len(plan1.Rows) == 0 {
+		t.Fatalf("plan1 empty")
+	}
+	if len(plan1.arena.offsets) != len(plan1.Rows) || len(plan1.arena.lengths) != len(plan1.Rows) {
+		t.Errorf("arena offsets/lengths mismatch: %d vs %d", len(plan1.arena.offsets), len(plan1.Rows))
+	}
+
+	rowsCap1 := cap(plan1.Rows)
+	firstCap1 := cap(plan1.First)
+
+	// Resize to cols 60
+	plan2 := doc.wrapped(60)
+	if plan2 != plan1 {
+		t.Errorf("wrapPlan object was re-allocated instead of reused on resize")
+	}
+	if cap(plan2.Rows) < rowsCap1 {
+		t.Errorf("rows capacity decreased")
+	}
+	if cap(plan2.First) < firstCap1 {
+		t.Errorf("first capacity decreased")
+	}
+}

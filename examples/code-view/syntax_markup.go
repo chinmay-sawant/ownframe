@@ -7,217 +7,230 @@ import (
 
 const cssVarPrefix = 2
 
-// tokenizeCSS highlights selectors, declarations, and values. It tracks one
-// mode at a time rather than a full parser: selector, property, or value.
-func tokenizeCSS(lines []string) [][]segment {
-	out := make([][]segment, len(lines))
-	inComment := false
-	mode := "selector"
-	container := false
-	valueWords := keywordSet(
+var (
+	cssValueWords = keywordSet(
 		"auto", "inherit", "initial", "none", "normal", "revert", "unset",
 		"absolute", "relative", "fixed", "sticky", "block", "inline", "flex",
 		"grid", "hidden", "visible", "center", "bold", "italic", "transparent",
 	)
-	ruleAtRules := keywordSet("@media", "@supports", "@keyframes", "@layer", "@container", "@scope", "@document")
+	cssRuleAtRules = keywordSet("@media", "@supports", "@keyframes", "@layer", "@container", "@scope", "@document")
+)
 
-	for li, line := range lines {
-		r := []rune(line)
-		var segs []segment
+// scanLineCSS highlights one line of CSS given the current scanner mode and comment state.
+func scanLineCSS(state lineState, line string) ([]segment, lineState) {
+	inComment := state.inComment
+	mode := state.mode
+	if mode == "" {
+		mode = "selector"
+	}
+	container := state.container
 
-		i := 0
-	lineLoop:
-		for i < len(r) {
-			if inComment {
-				end := indexRunes(r, i, "*/", false)
-				if end < 0 {
-					segs = addSeg(segs, string(r[i:]), classCom)
+	r := []rune(line)
+	var segs []segment
 
-					break lineLoop
-				}
+	i := 0
+lineLoop:
+	for i < len(r) {
+		if inComment {
+			end := indexRunes(r, i, "*/", false)
+			if end < 0 {
+				segs = addSeg(segs, string(r[i:]), classCom)
 
-				segs = addSeg(segs, string(r[i:end+len("*/")]), classCom)
-				i = end + len("*/")
-				inComment = false
-
-				continue
+				break lineLoop
 			}
 
-			c := r[i]
+			segs = addSeg(segs, string(r[i:end+len("*/")]), classCom)
+			i = end + len("*/")
+			inComment = false
 
+			continue
+		}
+
+		c := r[i]
+
+		switch {
+		case unicode.IsSpace(c):
+			j := i + 1
+			for j < len(r) && unicode.IsSpace(r[j]) {
+				j++
+			}
+
+			segs = addSeg(segs, string(r[i:j]), classPlain)
+			i = j
+		case hasRunes(r, i, "/*"):
+			end := indexRunes(r, i+len("/*"), "*/", false)
+			if end < 0 {
+				segs = addSeg(segs, string(r[i:]), classCom)
+				inComment = true
+
+				break lineLoop
+			}
+
+			segs = addSeg(segs, string(r[i:end+len("*/")]), classCom)
+			i = end + len("*/")
+		case c == '"' || c == '\'':
+			end := indexRunes(r, i+1, string(c), true)
+			if end < 0 {
+				segs = addSeg(segs, string(r[i:]), classStr)
+
+				break lineLoop
+			}
+
+			segs = addSeg(segs, string(r[i:end+1]), classStr)
+			i = end + 1
+		case mode == "value":
 			switch {
-			case unicode.IsSpace(c):
+			case c == ';':
+				segs = addSeg(segs, ";", classPunc)
+				mode = "prop"
+				i++
+			case c == '}':
+				segs = addSeg(segs, "}", classPunc)
+				mode = "selector"
+				i++
+			case c == '#':
 				j := i + 1
-				for j < len(r) && unicode.IsSpace(r[j]) {
+				for j < len(r) && isHexRune(r[j]) {
 					j++
 				}
 
-				segs = addSeg(segs, string(r[i:j]), classPlain)
+				segs = addSeg(segs, string(r[i:j]), classNum)
 				i = j
-			case hasRunes(r, i, "/*"):
-				end := indexRunes(r, i+len("/*"), "*/", false)
-				if end < 0 {
-					segs = addSeg(segs, string(r[i:]), classCom)
-					inComment = true
-
-					break lineLoop
+			case c == '!' && hasRunes(r, i, "!important"):
+				segs = addSeg(segs, "!important", classKw)
+				i += len("!important")
+			case c == '-' && i+1 < len(r) && r[i+1] == '-':
+				j := scanCSSVar(r, i)
+				segs = addSeg(segs, string(r[i:j]), classVar)
+				i = j
+			case unicode.IsDigit(c) || (c == '.' && i+1 < len(r) && unicode.IsDigit(r[i+1])):
+				j := scanCSSNumber(r, i)
+				segs = addSeg(segs, string(r[i:j]), classNum)
+				i = j
+			case isIdentStart(c):
+				j := i + 1
+				for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
+					j++
 				}
 
-				segs = addSeg(segs, string(r[i:end+len("*/")]), classCom)
-				i = end + len("*/")
-			case c == '"' || c == '\'':
-				end := indexRunes(r, i+1, string(c), true)
-				if end < 0 {
-					segs = addSeg(segs, string(r[i:]), classStr)
+				word := string(r[i:j])
+				class := classPlain
 
-					break lineLoop
+				if j < len(r) && r[j] == '(' {
+					class = classFn
+				} else if cssValueWords[word] {
+					class = classKw
 				}
 
-				segs = addSeg(segs, string(r[i:end+1]), classStr)
-				i = end + 1
-			case mode == "value":
-				switch {
-				case c == ';':
-					segs = addSeg(segs, ";", classPunc)
+				segs = addSeg(segs, word, class)
+				i = j
+			case strings.ContainsRune("(),/+*", c):
+				segs = addSeg(segs, string(c), classPunc)
+				i++
+			default:
+				segs = addSeg(segs, string(c), classPlain)
+				i++
+			}
+		case mode == "prop":
+			switch {
+			case c == ':':
+				segs = addSeg(segs, ":", classPunc)
+				mode = "value"
+				i++
+			case c == ';':
+				segs = addSeg(segs, ";", classPunc)
+				i++
+			case c == '}':
+				segs = addSeg(segs, "}", classPunc)
+				mode = "selector"
+				i++
+			case c == '{':
+				segs = addSeg(segs, "{", classPunc)
+				i++
+			case isIdentStart(c) || (c == '-' && i+1 < len(r) && r[i+1] == '-') || c == '-':
+				j := i + 1
+				for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
+					j++
+				}
+
+				segs = addSeg(segs, string(r[i:j]), classAttr)
+				i = j
+			case unicode.IsSpace(c):
+				segs = addSeg(segs, string(c), classPlain)
+				i++
+			default:
+				segs = addSeg(segs, string(c), classPunc)
+				i++
+			}
+		default: // selector
+			switch {
+			case c == '@':
+				j := i + 1
+				for j < len(r) && isIdentRune(r[j]) {
+					j++
+				}
+
+				word := string(r[i:j])
+				segs = addSeg(segs, word, classKw)
+				container = cssRuleAtRules[word]
+				i = j
+			case c == '{':
+				segs = addSeg(segs, "{", classPunc)
+				if container {
+					mode = "selector"
+				} else {
 					mode = "prop"
-					i++
-				case c == '}':
-					segs = addSeg(segs, "}", classPunc)
-					mode = "selector"
-					i++
-				case c == '#':
-					j := i + 1
-					for j < len(r) && isHexRune(r[j]) {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classNum)
-					i = j
-				case c == '!' && hasRunes(r, i, "!important"):
-					segs = addSeg(segs, "!important", classKw)
-					i += len("!important")
-				case c == '-' && i+1 < len(r) && r[i+1] == '-':
-					j := scanCSSVar(r, i)
-					segs = addSeg(segs, string(r[i:j]), classVar)
-					i = j
-				case unicode.IsDigit(c) || (c == '.' && i+1 < len(r) && unicode.IsDigit(r[i+1])):
-					j := scanCSSNumber(r, i)
-					segs = addSeg(segs, string(r[i:j]), classNum)
-					i = j
-				case isIdentStart(c):
-					j := i + 1
-					for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
-						j++
-					}
-
-					word := string(r[i:j])
-					class := classPlain
-
-					if j < len(r) && r[j] == '(' {
-						class = classFn
-					} else if valueWords[word] {
-						class = classKw
-					}
-
-					segs = addSeg(segs, word, class)
-					i = j
-				case strings.ContainsRune("(),/+*", c):
-					segs = addSeg(segs, string(c), classPunc)
-					i++
-				default:
-					segs = addSeg(segs, string(c), classPlain)
-					i++
 				}
-			case mode == "prop":
-				switch {
-				case c == ':':
-					segs = addSeg(segs, ":", classPunc)
-					mode = "value"
-					i++
-				case c == ';':
-					segs = addSeg(segs, ";", classPunc)
-					i++
-				case c == '}':
-					segs = addSeg(segs, "}", classPunc)
-					mode = "selector"
-					i++
-				case c == '{':
-					segs = addSeg(segs, "{", classPunc)
-					i++
-				case isIdentStart(c) || (c == '-' && i+1 < len(r) && r[i+1] == '-') || c == '-':
-					j := i + 1
-					for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
-						j++
-					}
 
-					segs = addSeg(segs, string(r[i:j]), classAttr)
-					i = j
-				case unicode.IsSpace(c):
-					segs = addSeg(segs, string(c), classPlain)
-					i++
-				default:
-					segs = addSeg(segs, string(c), classPunc)
-					i++
+				container = false
+				i++
+			case c == '}':
+				segs = addSeg(segs, "}", classPunc)
+				mode = "selector"
+				i++
+			case c == ';':
+				segs = addSeg(segs, ";", classPunc)
+				i++
+			case c == '.' || c == '#' || c == ':' || c == '[':
+				j := i + 1
+				for j < len(r) && (isIdentRune(r[j]) || r[j] == '-' || r[j] == ']' || r[j] == '"' || r[j] == '\'') {
+					j++
 				}
-			default: // selector
-				switch {
-				case c == '@':
-					j := i + 1
-					for j < len(r) && isIdentRune(r[j]) {
-						j++
-					}
 
-					word := string(r[i:j])
-					segs = addSeg(segs, word, classKw)
-					container = ruleAtRules[word]
-					i = j
-				case c == '{':
-					segs = addSeg(segs, "{", classPunc)
-					if container {
-						mode = "selector"
-					} else {
-						mode = "prop"
-					}
-
-					container = false
-					i++
-				case c == '}':
-					segs = addSeg(segs, "}", classPunc)
-					mode = "selector"
-					i++
-				case c == ';':
-					segs = addSeg(segs, ";", classPunc)
-					i++
-				case c == '.' || c == '#' || c == ':' || c == '[':
-					j := i + 1
-					for j < len(r) && (isIdentRune(r[j]) || r[j] == '-' || r[j] == ']' || r[j] == '"' || r[j] == '\'') {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classTag)
-					i = j
-				case c == '>' || c == '+' || c == '~' || c == '*':
-					segs = addSeg(segs, string(c), classOp)
-					i++
-				case c == ',' || c == '(' || c == ')':
-					segs = addSeg(segs, string(c), classPunc)
-					i++
-				case isIdentStart(c):
-					j := i + 1
-					for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classTag)
-					i = j
-				default:
-					segs = addSeg(segs, string(c), classPlain)
-					i++
+				segs = addSeg(segs, string(r[i:j]), classTag)
+				i = j
+			case c == '>' || c == '+' || c == '~' || c == '*':
+				segs = addSeg(segs, string(c), classOp)
+				i++
+			case c == ',' || c == '(' || c == ')':
+				segs = addSeg(segs, string(c), classPunc)
+				i++
+			case isIdentStart(c):
+				j := i + 1
+				for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
+					j++
 				}
+
+				segs = addSeg(segs, string(r[i:j]), classTag)
+				i = j
+			default:
+				segs = addSeg(segs, string(c), classPlain)
+				i++
 			}
 		}
+	}
 
-		out[li] = finishLine(segs)
+	return finishLine(segs), lineState{inComment: inComment, mode: mode, container: container}
+}
+
+// tokenizeCSS highlights selectors, declarations, and values. It tracks one
+// mode at a time rather than a full parser: selector, property, or value.
+func tokenizeCSS(lines []string) [][]segment {
+	out := make([][]segment, len(lines))
+	st := lineState{mode: "selector"}
+
+	for li, line := range lines {
+		out[li], st = scanLineCSS(st, line)
 	}
 
 	return out
@@ -330,130 +343,137 @@ func tokenizeJSON(lines []string) [][]segment {
 	return out
 }
 
-// tokenizeHTML colours tags, attributes, and quoted values outside comments.
-func tokenizeHTML(lines []string) [][]segment {
-	out := make([][]segment, len(lines))
-	inComment := false
-	inTag := false
+// scanLineHTML colours one line of HTML given the active tag and comment continuation state.
+func scanLineHTML(state lineState, line string) ([]segment, lineState) {
+	inComment := state.inComment
+	inTag := state.inTag
 
-	for li, line := range lines {
-		r := []rune(line)
-		var segs []segment
+	r := []rune(line)
+	var segs []segment
 
-		i := 0
-	htmlLoop:
-		for i < len(r) {
-			if inComment {
-				end := indexRunes(r, i, "-->", false)
-				if end < 0 {
-					segs = addSeg(segs, string(r[i:]), classCom)
+	i := 0
+htmlLoop:
+	for i < len(r) {
+		if inComment {
+			end := indexRunes(r, i, "-->", false)
+			if end < 0 {
+				segs = addSeg(segs, string(r[i:]), classCom)
 
-					break htmlLoop
-				}
-
-				segs = addSeg(segs, string(r[i:end+len("-->")]), classCom)
-				i = end + len("-->")
-				inComment = false
-
-				continue
+				break htmlLoop
 			}
 
-			c := r[i]
+			segs = addSeg(segs, string(r[i:end+len("-->")]), classCom)
+			i = end + len("-->")
+			inComment = false
 
-			switch {
-			case hasRunes(r, i, "<!--") && !inTag:
-				end := indexRunes(r, i+len("<!--"), "-->", false)
-				if end < 0 {
-					segs = addSeg(segs, string(r[i:]), classCom)
-					inComment = true
+			continue
+		}
 
-					break htmlLoop
-				}
+		c := r[i]
 
-				segs = addSeg(segs, string(r[i:end+len("-->")]), classCom)
-				i = end + len("-->")
-			case !inTag && (c == '<' && i+1 < len(r) && (isIdentStart(r[i+1]) || r[i+1] == '/' || r[i+1] == '!')):
-				inTag = true
-				j := i + 1
-				if j < len(r) && r[j] == '/' {
+		switch {
+		case hasRunes(r, i, "<!--") && !inTag:
+			end := indexRunes(r, i+len("<!--"), "-->", false)
+			if end < 0 {
+				segs = addSeg(segs, string(r[i:]), classCom)
+				inComment = true
+
+				break htmlLoop
+			}
+
+			segs = addSeg(segs, string(r[i:end+len("-->")]), classCom)
+			i = end + len("-->")
+		case !inTag && (c == '<' && i+1 < len(r) && (isIdentStart(r[i+1]) || r[i+1] == '/' || r[i+1] == '!')):
+			inTag = true
+			j := i + 1
+			if j < len(r) && r[j] == '/' {
+				j++
+			}
+
+			segs = addSeg(segs, string(r[i:j]), classPunc)
+			i = j
+
+			if i < len(r) && r[i] == '!' {
+				j = i + 1
+				for j < len(r) && unicode.IsLetter(r[j]) {
 					j++
 				}
 
-				segs = addSeg(segs, string(r[i:j]), classPunc)
+				segs = addSeg(segs, string(r[i:j]), classMeta)
 				i = j
-
-				if i < len(r) && r[i] == '!' {
-					j = i + 1
-					for j < len(r) && unicode.IsLetter(r[j]) {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classMeta)
-					i = j
-				} else if i < len(r) && isIdentStart(r[i]) {
-					j = i + 1
-					for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classTag)
-					i = j
-				}
-			case inTag:
-				switch {
-				case c == '>':
-					segs = addSeg(segs, ">", classPunc)
-					inTag = false
-					i++
-				case c == '/' && i+1 < len(r) && r[i+1] == '>':
-					segs = addSeg(segs, "/>", classPunc)
-					inTag = false
-					i += 2
-				case c == '=':
-					segs = addSeg(segs, "=", classOp)
-					i++
-				case c == '"' || c == '\'':
-					end := indexRunes(r, i+1, string(c), false)
-					if end < 0 {
-						segs = addSeg(segs, string(r[i:]), classStr)
-
-						break htmlLoop
-					}
-
-					segs = addSeg(segs, string(r[i:end+1]), classStr)
-					i = end + 1
-				case unicode.IsSpace(c):
-					j := i + 1
-					for j < len(r) && unicode.IsSpace(r[j]) {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classPlain)
-					i = j
-				case isIdentStart(c):
-					j := i + 1
-					for j < len(r) && (isIdentRune(r[j]) || r[j] == '-' || r[j] == ':') {
-						j++
-					}
-
-					segs = addSeg(segs, string(r[i:j]), classAttr)
-					i = j
-				default:
-					segs = addSeg(segs, string(c), classVal)
-					i++
-				}
-			default:
+			} else if i < len(r) && isIdentStart(r[i]) {
 				j := i + 1
-				for j < len(r) && r[j] != '<' {
+				for j < len(r) && (isIdentRune(r[j]) || r[j] == '-') {
+					j++
+				}
+
+				segs = addSeg(segs, string(r[i:j]), classTag)
+				i = j
+			}
+		case inTag:
+			switch {
+			case c == '>':
+				segs = addSeg(segs, ">", classPunc)
+				inTag = false
+				i++
+			case c == '/' && i+1 < len(r) && r[i+1] == '>':
+				segs = addSeg(segs, "/>", classPunc)
+				inTag = false
+				i += 2
+			case c == '=':
+				segs = addSeg(segs, "=", classOp)
+				i++
+			case c == '"' || c == '\'':
+				end := indexRunes(r, i+1, string(c), false)
+				if end < 0 {
+					segs = addSeg(segs, string(r[i:]), classStr)
+
+					break htmlLoop
+				}
+
+				segs = addSeg(segs, string(r[i:end+1]), classStr)
+				i = end + 1
+			case unicode.IsSpace(c):
+				j := i + 1
+				for j < len(r) && unicode.IsSpace(r[j]) {
 					j++
 				}
 
 				segs = addSeg(segs, string(r[i:j]), classPlain)
 				i = j
-			}
-		}
+			case isIdentStart(c):
+				j := i + 1
+				for j < len(r) && (isIdentRune(r[j]) || r[j] == '-' || r[j] == ':') {
+					j++
+				}
 
-		out[li] = finishLine(segs)
+				segs = addSeg(segs, string(r[i:j]), classAttr)
+				i = j
+			default:
+				segs = addSeg(segs, string(c), classVal)
+				i++
+			}
+		default:
+			j := i + 1
+			for j < len(r) && r[j] != '<' {
+				j++
+			}
+
+			segs = addSeg(segs, string(r[i:j]), classPlain)
+			i = j
+		}
+	}
+
+	return finishLine(segs), lineState{inComment: inComment, inTag: inTag}
+}
+
+// tokenizeHTML colours tags, attributes, and quoted values outside comments.
+func tokenizeHTML(lines []string) [][]segment {
+	out := make([][]segment, len(lines))
+	var st lineState
+
+	for li, line := range lines {
+		out[li], st = scanLineHTML(st, line)
 	}
 
 	return out
@@ -649,4 +669,31 @@ func tokenizeShell(lines []string) [][]segment {
 	}
 
 	return out
+}
+
+// scanLineJSON highlights one line of JSON.
+func scanLineJSON(line string) []segment {
+	out := tokenizeJSON([]string{line})
+	if len(out) > 0 {
+		return out[0]
+	}
+	return finishLine([]segment{{Text: line, Class: classPlain}})
+}
+
+// scanLineYAML highlights one line of YAML.
+func scanLineYAML(line string) []segment {
+	out := tokenizeYAML([]string{line})
+	if len(out) > 0 {
+		return out[0]
+	}
+	return finishLine([]segment{{Text: line, Class: classPlain}})
+}
+
+// scanLineShell highlights one line of shell.
+func scanLineShell(line string) []segment {
+	out := tokenizeShell([]string{line})
+	if len(out) > 0 {
+		return out[0]
+	}
+	return finishLine([]segment{{Text: line, Class: classPlain}})
 }

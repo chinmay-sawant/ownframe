@@ -34,6 +34,9 @@ func (s *shell) pinClip(dst *ebiten.Image) *ebiten.Image {
 	if rect.Empty() {
 		return nil
 	}
+	if rect == dst.Bounds() {
+		return dst
+	}
 
 	clip, ok := dst.SubImage(rect).(*ebiten.Image)
 	if !ok {

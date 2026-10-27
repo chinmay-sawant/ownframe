@@ -241,6 +241,10 @@ func (a *App) replaceEditRange(ctx context.Context, text string, start, end int,
 	a.dirty[a.edit.Path] = a.edit.Dirty
 	a.editCaret = start + utf8.RuneCountInString(insert)
 	a.editAnchor = a.editCaret
+	line, _ := a.editDisplayLineCol()
+	if doc := a.docs[a.edit.Path]; doc != nil && doc.Syntax != nil {
+		doc.Syntax.markDirty(line)
+	}
 	a.commitEditBuffer()
 	a.ensureEditCaretVisible()
 	a.refresh()

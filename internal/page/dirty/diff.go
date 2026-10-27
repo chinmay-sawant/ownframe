@@ -1,6 +1,91 @@
 package dirty
 
-import "github.com/chinmay-sawant/blinkless/layout"
+import (
+	"math"
+	"sync"
+
+	"github.com/chinmay-sawant/blinkless/layout"
+)
+
+// diffArena holds reusable flat index structures for diffByPosition.
+type diffArena struct {
+	head []int
+	next []int
+	seen []bool
+}
+
+var diffArenaPool = sync.Pool{
+	New: func() any {
+		return &diffArena{}
+	},
+}
+
+const maxPooledArenaCap = 65536
+
+func getDiffArena(numBuckets, numOps int) *diffArena {
+	a := diffArenaPool.Get().(*diffArena)
+	if cap(a.head) < numBuckets {
+		a.head = make([]int, numBuckets)
+	} else {
+		a.head = a.head[:numBuckets]
+	}
+	for i := range a.head {
+		a.head[i] = -1
+	}
+
+	if cap(a.next) < numOps {
+		a.next = make([]int, numOps)
+	} else {
+		a.next = a.next[:numOps]
+	}
+
+	if cap(a.seen) < numOps {
+		a.seen = make([]bool, numOps)
+	} else {
+		a.seen = a.seen[:numOps]
+		clear(a.seen)
+	}
+	return a
+}
+
+func putDiffArena(a *diffArena) {
+	if cap(a.head) > maxPooledArenaCap || cap(a.next) > maxPooledArenaCap {
+		return
+	}
+	diffArenaPool.Put(a)
+}
+
+func nextPowerOf2(n int) int {
+	if n <= 16 {
+		return 16
+	}
+	n--
+	n |= n >> 1
+	n |= n >> 2
+	n |= n >> 4
+	n |= n >> 8
+	n |= n >> 16
+	n++
+	return n
+}
+
+func hashKey(k opKey) uint64 {
+	const offsetBasis = 14695981039346656037
+	const prime = 1099511628211
+	h := (offsetBasis ^ uint64(k.kind)) * prime
+	h = (h ^ floatBits(k.x)) * prime
+	h = (h ^ floatBits(k.y)) * prime
+	h = (h ^ floatBits(k.w)) * prime
+	h = (h ^ floatBits(k.h)) * prime
+	return h
+}
+
+func floatBits(v float64) uint64 {
+	if v == 0 {
+		return 0
+	}
+	return math.Float64bits(v)
+}
 
 // Diff returns the regions covering the operations that differ between
 // prev and next. full reports a difference too scattered or too large to
@@ -38,21 +123,70 @@ func Diff(prev, next *layout.Display) (Set, bool, int) {
 // differ in length. An operation with no partner dirties its bounds, and
 // changed counts every unpaired or repainted operation.
 func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
-	queue := make(map[opKey][]int, len(next.Ops))
-	for i := range next.Ops {
-		k := keyOf(&next.Ops[i])
-		queue[k] = append(queue[k], i)
-	}
-
-	seen := make([]bool, len(next.Ops))
 	d := newSet(next.Width, next.Height)
 	changed := 0
 
+	if len(next.Ops) == 0 {
+		for i := range prev.Ops {
+			changed++
+			d.Removed++
+			d.add(OpBounds(&prev.Ops[i], prev))
+			if d.full {
+				return d, true, changed
+			}
+		}
+		return d, false, changed
+	}
+
+	if len(prev.Ops) == 0 {
+		for j := range next.Ops {
+			changed++
+			d.Added++
+			d.add(OpBounds(&next.Ops[j], next))
+			if d.full {
+				return d, true, changed
+			}
+		}
+		return d, false, changed
+	}
+
+	numOps := len(next.Ops)
+	numBuckets := nextPowerOf2(numOps * 2)
+	mask := uint64(numBuckets - 1)
+
+	arena := getDiffArena(numBuckets, numOps)
+	defer putDiffArena(arena)
+
+	// Build bucket chains in reverse order so arena.head[b] yields ops in
+	// FIFO index order.
+	for i := numOps - 1; i >= 0; i-- {
+		k := keyOf(&next.Ops[i])
+		b := hashKey(k) & mask
+		arena.next[i] = arena.head[b]
+		arena.head[b] = i
+	}
+
 	for i := range prev.Ops {
 		k := keyOf(&prev.Ops[i])
-		list := queue[k]
+		b := hashKey(k) & mask
 
-		if len(list) == 0 {
+		found := -1
+		prevIdx := -1
+		for curr := arena.head[b]; curr != -1; {
+			if keyOf(&next.Ops[curr]) == k {
+				found = curr
+				if prevIdx == -1 {
+					arena.head[b] = arena.next[curr]
+				} else {
+					arena.next[prevIdx] = arena.next[curr]
+				}
+				break
+			}
+			prevIdx = curr
+			curr = arena.next[curr]
+		}
+
+		if found == -1 {
 			changed++
 			d.Removed++
 			d.add(OpBounds(&prev.Ops[i], prev))
@@ -63,9 +197,8 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 			continue
 		}
 
-		j := list[0]
-		queue[k] = list[1:]
-		seen[j] = true
+		j := found
+		arena.seen[j] = true
 
 		if SameOp(&prev.Ops[i], &next.Ops[j]) {
 			continue
@@ -79,7 +212,7 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 	}
 
 	for j := range next.Ops {
-		if seen[j] {
+		if arena.seen[j] {
 			continue
 		}
 

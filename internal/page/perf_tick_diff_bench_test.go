@@ -50,12 +50,17 @@ func benchTickCaptureAndDamage(b *testing.B, opCount int, modify bool) {
 	b.ResetTimer()
 
 	for i := 0; b.Loop(); i++ {
-		snap := p.captureTickOps()
 		if modify {
+			p.tickMutated.Store(true)
+			snap := p.captureTickOps()
 			p.draw.Display.Ops[0].R = float64(i%2) * 0.8
+			p.noteTickDamage(gen, snap)
+			p.freeOps(snap)
+		} else if p.tickMutated.Load() {
+			snap := p.captureTickOps()
+			p.noteTickDamage(gen, snap)
+			p.freeOps(snap)
 		}
-		p.noteTickDamage(gen, snap)
-		p.freeOps(snap)
 		p.dirty.Rects = p.dirty.Rects[:0]
 	}
 }
@@ -116,7 +121,7 @@ func benchFullTick(b *testing.B, opCount int, modify bool) {
 	i := 0
 	p.SetTick(func(ctx context.Context) error {
 		if modify {
-			p.draw.Display.Ops[0].R = float64(i%2) * 0.8
+			p.Display().Ops[0].R = float64(i%2) * 0.8
 		}
 		return nil
 	})

@@ -3,6 +3,7 @@ package main
 import (
 	"sort"
 	"strings"
+	"unicode/utf8"
 )
 
 const (
@@ -13,12 +14,21 @@ const (
 	planPair         = 2
 )
 
+// wrapPlanArena holds capacity-retained flat buffers for row plan calculation,
+// eliminating slice churn during continuous window resize events.
+type wrapPlanArena struct {
+	offsets []int
+	lengths []int
+	cells   []wrapCell
+}
+
 // wrapPlan maps source lines onto fixed-height visual rows. A plan is cached
 // on the document and rebuilt only when the available column count changes.
 type wrapPlan struct {
 	Cols  int
 	Rows  []codeRow
 	First []int
+	arena wrapPlanArena
 }
 
 // wrapCell is one rune with its token class.
@@ -37,7 +47,22 @@ func (d *fileDoc) wrapped(cols int) *wrapPlan {
 		return d.Wrap
 	}
 
-	plan := &wrapPlan{Cols: cols, First: make([]int, len(d.Tokens)+1)}
+	plan := d.Wrap
+	if plan == nil {
+		plan = &wrapPlan{}
+		d.Wrap = plan
+	}
+
+	plan.Cols = cols
+	plan.Rows = plan.Rows[:0]
+	plan.arena.offsets = plan.arena.offsets[:0]
+	plan.arena.lengths = plan.arena.lengths[:0]
+
+	if cap(plan.First) < len(d.Tokens)+1 {
+		plan.First = make([]int, len(d.Tokens)+1)
+	} else {
+		plan.First = plan.First[:len(d.Tokens)+1]
+	}
 
 	for line, tokens := range d.Tokens {
 		plan.First[line] = len(plan.Rows)
@@ -45,7 +70,6 @@ func (d *fileDoc) wrapped(cols int) *wrapPlan {
 	}
 
 	plan.First[len(d.Tokens)] = len(plan.Rows)
-	d.Wrap = plan
 
 	return plan
 }
@@ -54,19 +78,40 @@ func (d *fileDoc) wrapped(cols int) *wrapPlan {
 // a space and falls back to a hard edge break for one long token. A
 // continuation row has No zero.
 func (p *wrapPlan) wrapLine(line int, tokens []segment, cols int) {
-	cells := make([]wrapCell, 0, len(tokens)*wrapCellEstimate)
-
-	for _, token := range tokens {
-		for _, r := range token.Text {
-			cells = append(cells, wrapCell{r: r, class: token.Class})
-		}
-	}
-
-	if len(cells) == 0 {
+	if len(tokens) == 0 {
 		p.Rows = append(p.Rows, codeRow{No: line + 1, Line: line})
+		p.arena.offsets = append(p.arena.offsets, 0)
+		p.arena.lengths = append(p.arena.lengths, 0)
 		return
 	}
 
+	var totalRunes int
+	for _, token := range tokens {
+		totalRunes += utf8.RuneCountInString(token.Text)
+	}
+
+	if totalRunes == 0 {
+		p.Rows = append(p.Rows, codeRow{No: line + 1, Line: line})
+		p.arena.offsets = append(p.arena.offsets, 0)
+		p.arena.lengths = append(p.arena.lengths, 0)
+		return
+	}
+
+	if totalRunes <= cols {
+		p.Rows = append(p.Rows, codeRow{No: line + 1, Line: line, Start: 0, Segments: tokens})
+		p.arena.offsets = append(p.arena.offsets, 0)
+		p.arena.lengths = append(p.arena.lengths, totalRunes)
+		return
+	}
+
+	p.arena.cells = p.arena.cells[:0]
+	for _, token := range tokens {
+		for _, r := range token.Text {
+			p.arena.cells = append(p.arena.cells, wrapCell{r: r, class: token.Class})
+		}
+	}
+
+	cells := p.arena.cells
 	start := 0
 	first := true
 
@@ -100,6 +145,8 @@ func (p *wrapPlan) wrapLine(line int, tokens []segment, cols int) {
 		}
 
 		p.Rows = append(p.Rows, row)
+		p.arena.offsets = append(p.arena.offsets, start)
+		p.arena.lengths = append(p.arena.lengths, cut)
 		cells = cells[cut:]
 		start += cut
 	}

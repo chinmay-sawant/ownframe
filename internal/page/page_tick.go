@@ -60,18 +60,43 @@ func (p *Page) runTick(ctx context.Context, fn func(context.Context) error) erro
 		return p.restampTick(ctx, gen)
 	}
 
-	snap := p.captureTickOps()
-	if err := fn(ctx); err != nil {
-		p.freeOps(snap)
+	p.tickMutated.Store(false)
+	p.tickActive = true
+	p.tickSnap = nil
+
+	err := fn(ctx)
+	p.tickActive = false
+	if err != nil {
+		if p.tickSnap != nil {
+			p.freeOps(p.tickSnap)
+			p.tickSnap = nil
+		}
 
 		return err
 	}
 
-	err := p.caretBlink(ctx)
-	p.noteTickDamage(gen, snap)
-	p.freeOps(snap)
-	if err != nil {
-		return err
+	blinkErr := p.caretBlink(ctx)
+
+	mutated := p.tickMutated.Load() || p.Generation() != gen || p.dirty.Full || len(p.dirty.Rects) > 0 || p.tickSnap != nil
+	if !mutated {
+		if p.restampRedraw {
+			return p.restampTick(ctx, gen)
+		}
+
+		return blinkErr
+	}
+
+	snap := p.tickSnap
+	p.tickSnap = nil
+	if snap != nil {
+		p.noteTickDamage(gen, snap)
+		p.freeOps(snap)
+	} else {
+		p.flagTickDirty(gen)
+	}
+
+	if blinkErr != nil {
+		return blinkErr
 	}
 
 	return p.restampTick(ctx, gen)
@@ -145,7 +170,10 @@ func (p *Page) MarkRect(r image.Rectangle) { p.markRect(r) }
 // UseFrameDirty is a kept alias. Tick sets the flag when ops change or dirty
 // rects remain. An explicit call still sets it, including a no-op tick that
 // wants the buffer path without damage.
-func (p *Page) UseFrameDirty() { p.frameDirty.Store(true) }
+func (p *Page) UseFrameDirty() {
+	p.tickMutated.Store(true)
+	p.frameDirty.Store(true)
+}
 
 // FrameDirty reports the opt-in from UseFrameDirty or from a mutating tick
 // and clears it.

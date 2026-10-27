@@ -65,6 +65,10 @@ type layerStore struct {
 	churn map[layerKey]uint64
 
 	frame layerFrame
+
+	claimed []bool
+	ranks   []int
+	owners  []int
 }
 
 // BeginLayers resolves the requested promotions, keeps or bakes their
@@ -93,11 +97,17 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 	}
 
 	// Resolve every request first, rejecting nested or ineligible elements.
-	claimed := make([]bool, len(d.Ops))
-	ranks := layerRanks(d)
+	if cap(store.claimed) < len(d.Ops) {
+		store.claimed = make([]bool, len(d.Ops))
+	} else {
+		store.claimed = store.claimed[:len(d.Ops)]
+		clear(store.claimed)
+	}
+	store.ranks = layerRanks(d, store.ranks)
+	store.owners = layerOwners(d, store.owners)
 	candidates := make([]layerCandidate, 0, min(len(specs), layerMaxEntries))
 	for _, spec := range specs {
-		candidate, reason := resolveLayer(d, spec, gen, claimed, ranks)
+		candidate, reason := resolveLayer(d, spec, gen, store.claimed, store.ranks, store.owners)
 		if reason != "" {
 			store.demote(reason)
 			continue
@@ -107,7 +117,7 @@ func (renderer *Renderer) BeginLayers(d *layout.Display, gen uint64, specs []Lay
 			continue
 		}
 		for _, index := range candidate.owned {
-			claimed[index] = true
+			store.claimed[index] = true
 		}
 		candidates = append(candidates, candidate)
 	}
@@ -605,6 +615,9 @@ func (store *layerStore) close() {
 	store.frame.reset()
 	store.stats = LayerStats{}
 	store.reasons = nil
+	store.claimed = nil
+	store.ranks = nil
+	store.owners = nil
 }
 
 // setLayerOps reuses dst when it has room and copies src into it.

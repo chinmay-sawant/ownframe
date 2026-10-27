@@ -16,6 +16,10 @@ func (p *Page) Image() image.Image {
 // Display returns the last display list, or nil when the page is drawn as a
 // rasterized picture.
 func (p *Page) Display() *layout.Display {
+	if p.tickActive && p.tickSnap == nil {
+		p.tickSnap = p.captureTickOps()
+		p.tickMutated.Store(true)
+	}
 	return p.draw.Display
 }
 

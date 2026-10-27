@@ -29,24 +29,26 @@ type ticking interface {
 // frame repainted and paintPx their area; blits and blitPx count the tile
 // blits; pins counts post-blit chrome draws. clipX is the dock clip.
 type partialState struct {
-	buf     *ebiten.Image
-	tiles   *tileGrid
-	gen     uint64
-	last    []image.Rectangle
-	plans   []repaintPlan
-	chrome  []image.Rectangle
-	mode    repaintMode
-	paints  int
-	paintPx int
-	blits   int
-	blitPx  int
-	pins    int
-	focus   bool
-	live    bool
-	whole   bool
-	scroll  image.Point
-	screen  image.Point
-	clipX   int
+	buf       *ebiten.Image
+	tiles     *tileGrid
+	gen       uint64
+	last      []image.Rectangle
+	plans     []repaintPlan
+	chrome    []image.Rectangle
+	blitRects []image.Rectangle
+	mode      repaintMode
+	paints    int
+	paintPx   int
+	blits     int
+	blitPx    int
+	pins      int
+	focus     bool
+	live      bool
+	whole     bool
+	scroll    image.Point
+	screen    image.Point
+	clipX     int
+	blitOpts  ebiten.DrawImageOptions
 }
 
 // gridCurrent reports that the tile grid covers exactly this content size.

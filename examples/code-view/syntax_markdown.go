@@ -10,44 +10,46 @@ const (
 	markerLen  = 2
 )
 
+// scanLineMarkdown tokenizes one line of Markdown and advances the fence/front-matter state.
+func scanLineMarkdown(li int, state lineState, line string) ([]segment, lineState) {
+	inFront := state.inFront
+	inFence := state.inFence
+	trimmed := strings.TrimSpace(line)
+
+	if li == 0 && trimmed == "---" {
+		inFront = true
+		return finishLine([]segment{{Text: line, Class: classMeta}}), lineState{inFence: inFence, inFront: inFront}
+	}
+
+	if inFront && li > 0 && trimmed == "---" {
+		inFront = false
+		return finishLine([]segment{{Text: line, Class: classMeta}}), lineState{inFence: inFence, inFront: inFront}
+	}
+
+	if inFront {
+		return finishLine([]segment{{Text: line, Class: classMeta}}), lineState{inFence: inFence, inFront: inFront}
+	}
+
+	if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
+		inFence = !inFence
+		return finishLine([]segment{{Text: line, Class: classMeta}}), lineState{inFence: inFence, inFront: inFront}
+	}
+
+	if inFence {
+		return finishLine([]segment{{Text: line, Class: classCode}}), lineState{inFence: inFence, inFront: inFront}
+	}
+
+	return finishLine(markdownLine(line)), lineState{inFence: inFence, inFront: inFront}
+}
+
 // tokenizeMarkdown highlights headings, fences, quotes, lists, tables, and
 // inline emphasis. The whole file goes through one pass so a code fence and a
 // front-matter block carry across lines.
 func tokenizeMarkdown(lines []string) [][]segment {
 	out := make([][]segment, len(lines))
-	inFence := false
-	inFront := len(lines) > 0 && strings.TrimSpace(lines[0]) == "---"
-
+	var st lineState
 	for li, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		if inFront && li > 0 && trimmed == "---" {
-			inFront = false
-			out[li] = finishLine([]segment{{Text: line, Class: classMeta}})
-
-			continue
-		}
-
-		if inFront {
-			out[li] = finishLine([]segment{{Text: line, Class: classMeta}})
-
-			continue
-		}
-
-		if strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~") {
-			inFence = !inFence
-			out[li] = finishLine([]segment{{Text: line, Class: classMeta}})
-
-			continue
-		}
-
-		if inFence {
-			out[li] = finishLine([]segment{{Text: line, Class: classCode}})
-
-			continue
-		}
-
-		out[li] = finishLine(markdownLine(line))
+		out[li], st = scanLineMarkdown(li, st, line)
 	}
 
 	return out

@@ -42,6 +42,7 @@ func boxRect(b Box) image.Rectangle {
 // markRect queues one dirty rect on the page tracker and drops a cached
 // picture when the rect paints something.
 func (p *Page) markRect(r image.Rectangle) {
+	p.tickMutated.Store(true)
 	if !r.Empty() {
 		p.draw.DropPNG()
 	}
@@ -51,6 +52,7 @@ func (p *Page) markRect(r image.Rectangle) {
 
 // markFull dirties the whole content on the page tracker.
 func (p *Page) markFull() {
+	p.tickMutated.Store(true)
 	p.draw.DropPNG()
 	p.dirty.MarkFull()
 	p.fullGen = p.generation

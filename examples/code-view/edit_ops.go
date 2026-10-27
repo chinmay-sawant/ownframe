@@ -142,7 +142,7 @@ func (a *App) commitEditBuffer() {
 	}
 
 	doc.Lines = lines
-	doc.Tokens = tokenize(doc.Lang, lines)
+	doc.Tokens = doc.tokenizeLines(lines)
 	doc.Outline = outline(doc.Lang, lines)
 	doc.ByteSize = int64(len(text))
 	doc.Truncated = len(lines) > maxFileLines

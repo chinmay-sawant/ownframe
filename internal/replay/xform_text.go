@@ -38,8 +38,9 @@ func (renderer *Renderer) drawXformText(dst *ebiten.Image, op *layout.DisplayOp,
 
 	pen := 0.0
 
-	for _, r := range content {
-		glyph := string(r)
+	for i := 0; i < len(content); {
+		glyph, size := glyphAt(content, i)
+		i += size
 		at := geom
 		shiftLocal(&at, pen, 0)
 		renderer.drawXformRun(dst, glyph, face, at, op)

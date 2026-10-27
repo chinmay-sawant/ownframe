@@ -79,7 +79,7 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		s.partial.last = append(s.partial.last, plan.rect)
 	}
 
-	chrome := chromeRects(s.frameRestore(), scroll)
+	chrome := chromeRectsBuf(s.partial.chrome[:0], s.frameRestore(), scroll)
 	s.partial.plans, s.partial.chrome, s.partial.whole = plans, chrome, whole
 	s.blitFrame(dst, display, plans, chrome, whole, stale)
 

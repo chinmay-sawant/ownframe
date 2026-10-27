@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -128,28 +129,201 @@ func languageInfo(lang string) langInfo {
 	}
 }
 
-// tokenize splits every line into highlighted segments. The whole file goes
-// through one pass so block comments, Python triple quotes, and Markdown code
-// fences carry across lines.
-func tokenize(lang string, lines []string) [][]segment {
+// lineState captures the cross-line scanner continuation state.
+type lineState struct {
+	// C-family (Go, Python, JS)
+	inBlock   bool
+	inString  string
+	pending   string
+	funcAwait bool
+	paren     int
+
+	// Markdown
+	inFence bool
+	inFront bool
+
+	// CSS
+	mode      string
+	container bool
+
+	// HTML & CSS
+	inComment bool
+	inTag     bool
+}
+
+// initialLineState returns the starting scanner state for a language.
+func initialLineState(lang string) lineState {
+	if lang == langCSS {
+		return lineState{mode: "selector"}
+	}
+
+	return lineState{}
+}
+
+// syntaxCache stores line-level cached tokens and continuation states
+// to allow fast incremental re-tokenization during editing.
+type syntaxCache struct {
+	lang       string
+	lines      []string
+	tokenCache [][]segment
+	states     []lineState
+	dirty      map[int]bool
+}
+
+// newSyntaxCache constructs an empty syntaxCache for a language.
+func newSyntaxCache(lang string) *syntaxCache {
+	return &syntaxCache{
+		lang:  lang,
+		dirty: make(map[int]bool),
+	}
+}
+
+// markDirty records that a source line has been edited.
+func (c *syntaxCache) markDirty(line int) {
+	if c.dirty == nil {
+		c.dirty = make(map[int]bool)
+	}
+
+	c.dirty[line] = true
+}
+
+// tokenize tokenizes lines incrementally, reusing cached tokens for lines that
+// did not change and whose starting state was not altered by earlier edits.
+func (c *syntaxCache) tokenize(lines []string) [][]segment {
+	n := len(lines)
+	if n == 0 {
+		c.lines = nil
+		c.tokenCache = nil
+		c.states = nil
+		c.dirty = make(map[int]bool)
+
+		return nil
+	}
+
+	// Line count changed: reuse common clean prefix and tokenize suffix.
+	if len(c.lines) != n {
+		firstDiff := 0
+		for firstDiff < len(c.lines) && firstDiff < n && c.lines[firstDiff] == lines[firstDiff] {
+			firstDiff++
+		}
+
+		newLines := make([]string, n)
+		copy(newLines, lines)
+		newTokenCache := make([][]segment, n)
+		newStates := make([]lineState, n)
+
+		if firstDiff > 0 {
+			copy(newTokenCache[:firstDiff], c.tokenCache[:firstDiff])
+			copy(newStates[:firstDiff], c.states[:firstDiff])
+		}
+
+		st := initialLineState(c.lang)
+		if firstDiff > 0 {
+			st = c.states[firstDiff-1]
+			_, st = scanLineWithState(c.lang, st, firstDiff-1, lines[firstDiff-1])
+		}
+
+		for i := firstDiff; i < n; i++ {
+			newStates[i] = st
+			segs, next := scanLineWithState(c.lang, st, i, lines[i])
+			newTokenCache[i] = segs
+			st = next
+		}
+
+		c.lines = newLines
+		c.tokenCache = newTokenCache
+		c.states = newStates
+		c.dirty = make(map[int]bool)
+
+		out := make([][]segment, n)
+		copy(out, c.tokenCache)
+
+		return out
+	}
+
+	// Same line count: find first dirty or modified line.
+	firstDirty := -1
+	for i, line := range lines {
+		if (c.dirty != nil && c.dirty[i]) || line != c.lines[i] {
+			firstDirty = i
+
+			break
+		}
+	}
+
+	if firstDirty < 0 {
+		// Fast path: entire file matches cache.
+		out := make([][]segment, n)
+		copy(out, c.tokenCache)
+
+		return out
+	}
+
+	// Incremental re-tokenization starting at firstDirty.
+	st := c.states[firstDirty]
+	i := firstDirty
+	for i < n {
+		isDirty := (c.dirty != nil && c.dirty[i]) || lines[i] != c.lines[i] || c.states[i] != st
+		if !isDirty {
+			// Clean line whose starting state matches cached state.
+			break
+		}
+
+		c.states[i] = st
+		c.lines[i] = lines[i]
+		segs, next := scanLineWithState(c.lang, st, i, lines[i])
+		c.tokenCache[i] = segs
+		st = next
+		i++
+	}
+
+	c.dirty = make(map[int]bool)
+
+	out := make([][]segment, n)
+	copy(out, c.tokenCache)
+
+	return out
+}
+
+// scanLineWithState highlights one line in any supported language given its continuation state.
+func scanLineWithState(lang string, state lineState, li int, line string) ([]segment, lineState) {
 	switch lang {
 	case langGo, langPython, langJS:
-		return tokenizeC(lines, cSpecFor(lang))
+		return scanLineC(cSpecFor(lang), state, line)
 	case langMarkdown:
-		return tokenizeMarkdown(lines)
+		return scanLineMarkdown(li, state, line)
 	case langCSS:
-		return tokenizeCSS(lines)
-	case langJSON:
-		return tokenizeJSON(lines)
+		return scanLineCSS(state, line)
 	case langHTML:
-		return tokenizeHTML(lines)
+		return scanLineHTML(state, line)
+	case langJSON:
+		return scanLineJSON(line), lineState{}
 	case langYAML:
-		return tokenizeYAML(lines)
+		return scanLineYAML(line), lineState{}
 	case langShell:
-		return tokenizeShell(lines)
+		return scanLineShell(line), lineState{}
 	default:
-		return plainLines(lines)
+		return finishLine([]segment{{Text: line, Class: classPlain}}), lineState{}
 	}
+}
+
+var (
+	globalCacheMu sync.Mutex
+	globalCaches  = make(map[string]*syntaxCache)
+)
+
+// tokenize splits every line into highlighted segments using incremental line caching.
+func tokenize(lang string, lines []string) [][]segment {
+	globalCacheMu.Lock()
+	defer globalCacheMu.Unlock()
+
+	c, ok := globalCaches[lang]
+	if !ok || c == nil {
+		c = newSyntaxCache(lang)
+		globalCaches[lang] = c
+	}
+
+	return c.tokenize(lines)
 }
 
 // highlightLine tokenizes one line on its own. Diff rows use it because a
@@ -159,12 +333,9 @@ func highlightLine(lang, text string) []segment {
 		return []segment{{Text: " ", Class: classPlain}}
 	}
 
-	lines := tokenize(lang, []string{text})
-	if len(lines) == 0 {
-		return []segment{{Text: text, Class: classPlain}}
-	}
+	segs, _ := scanLineWithState(lang, initialLineState(lang), 0, text)
 
-	return lines[0]
+	return finishLine(segs)
 }
 
 // plainLines returns one plain segment per line.
@@ -324,13 +495,35 @@ type cState struct {
 	paren     int
 }
 
+// scanLineC tokenizes one line using C-family lexical rules (Go, Python, JS).
+func scanLineC(spec cSpec, state lineState, line string) ([]segment, lineState) {
+	st := cState{
+		spec:      spec,
+		inBlock:   state.inBlock,
+		inString:  state.inString,
+		pending:   state.pending,
+		funcAwait: state.funcAwait,
+		paren:     state.paren,
+	}
+	segs := finishLine(st.scanLine([]rune(line)))
+	next := lineState{
+		inBlock:   st.inBlock,
+		inString:  st.inString,
+		pending:   st.pending,
+		funcAwait: st.funcAwait,
+		paren:     st.paren,
+	}
+
+	return segs, next
+}
+
 // tokenizeC is the shared lexer for Go, Python, and JavaScript.
 func tokenizeC(lines []string, spec cSpec) [][]segment {
 	out := make([][]segment, len(lines))
-	st := cState{spec: spec}
+	var st lineState
 
 	for li, line := range lines {
-		out[li] = finishLine(st.scanLine([]rune(line)))
+		out[li], st = scanLineC(spec, st, line)
 	}
 
 	return out

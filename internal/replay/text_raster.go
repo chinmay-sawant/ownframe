@@ -42,9 +42,9 @@ func (renderer *Renderer) cachedTextRun(dst *ebiten.Image, op *layout.DisplayOp,
 	}
 
 	tint := rgba(op)
-	blitRaster(dst, entry.img, left+entry.dx, top+entry.dy, tint)
+	renderer.blitRaster(dst, entry.img, left+entry.dx, top+entry.dy, tint)
 	if key.fakeBold {
-		blitRaster(dst, entry.img, left+entry.dx+1, top+entry.dy, tint)
+		renderer.blitRaster(dst, entry.img, left+entry.dx+1, top+entry.dy, tint)
 	}
 
 	return true

@@ -3,6 +3,7 @@ package page
 import (
 	"html/template"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
@@ -38,6 +39,9 @@ type Page struct {
 	// a re-projection pass only rewrites operation matrices in place.
 	layerGen    uint64
 	touchCancel uint32
+	tickMutated atomic.Bool
+	tickActive  bool
+	tickSnap    *opBuffer
 	tickSlot
 	nav             nav.History
 	deepLinkSchemes map[string]struct{}

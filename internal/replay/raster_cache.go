@@ -138,9 +138,18 @@ var opaqueWhite = color.RGBA{
 // center, so the copy is exact. Baking the shape as a white mask lets one
 // cached raster serve every colour, so a colour animation reuses it instead
 // of re-rasterizing the path each frame.
-func blitRaster(dst, img *ebiten.Image, left, top int, tint color.RGBA) {
-	opts := &ebiten.DrawImageOptions{}
+func (renderer *Renderer) blitRaster(dst, img *ebiten.Image, left, top int, tint color.RGBA) {
+	if renderer == nil {
+		renderer = &defaultRenderer
+	}
+	opts := &renderer.drawOpts
+	opts.GeoM.Reset()
+	opts.ColorScale.Reset()
 	opts.GeoM.Translate(float64(left), float64(top))
 	opts.ColorScale.ScaleWithColor(tint)
 	dst.DrawImage(img, opts)
+}
+
+func blitRaster(dst, img *ebiten.Image, left, top int, tint color.RGBA) {
+	defaultRenderer.blitRaster(dst, img, left, top, tint)
 }
