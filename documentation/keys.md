@@ -53,7 +53,10 @@ control.
 and Command works in place of Ctrl. The window consumes them, so the page's
 key handler never sees the presses. One press moves the zoom by 10 percent,
 and `Ctrl+0` returns it to 100 percent. While Ctrl is down the wheel zooms
-the page too, and does not scroll it. The zoom stays between 0.25 and 4,
+the page too, and does not scroll it. `Config.DisableWheelZoom` turns that
+zoom off, and the wheel scrolls. `Config.DisableKeyZoom` turns the keyboard
+chords off. The window still consumes them, so the page does not scale.
+The zoom stays between 0.25 and 4,
 the same range a pinch uses, and it scales the painted page without
 changing the layout, so a click still lands on the box under the pointer.
 

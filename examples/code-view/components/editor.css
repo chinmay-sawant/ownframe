@@ -230,13 +230,21 @@
   color: var(--amber);
   font-family: var(--mono);
   font-size: 8px;
-  text-transform: uppercase;
   letter-spacing: 0.06em;
+}
+
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  display: inline-block;
+  border-radius: 3px;
+  background-color: var(--text);
 }
 
 .track { position: absolute; left: 0; right: 0; top: 0; }
 
-.crow { position: relative; height: var(--row-h); display: flex; align-items: stretch; }
+.crow { position: relative; height: var(--row-h); display: flex; align-items: stretch; overflow: hidden; }
 .edit-line-hit {
   position: absolute;
   top: 0;
@@ -257,11 +265,47 @@
   width: 2px;
   height: 13px;
   background-color: var(--accent);
-  z-index: 3;
-  animation: edit-blink 1s steps(1) infinite;
+  animation: edit-blink 500ms linear infinite alternate;
 }
-.edit-sel { background-color: rgba(122, 162, 247, 0.28); border-radius: 2px; }
-@keyframes edit-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.edit-selection { position: absolute; top: 0; height: 20px; display: block; background-color: rgba(122, 162, 247, 0.28); }
+
+.ctx-back {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 40;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 41;
+  min-width: 188px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: #121722;
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 11px;
+  line-height: 26px;
+}
+.ctx-item:hover { background-color: #1c2433; color: var(--text); }
+.ctx-item:disabled { color: #5c677a; }
+@keyframes edit-blink { from { opacity: 1; } to { opacity: 0; } }
 .crow.line-add { background-color: rgba(63, 185, 80, 0.055); }
 .crow.line-del { background-color: rgba(248, 81, 73, 0.055); }
 .crow.line-mod { background-color: rgba(240, 183, 90, 0.055); }

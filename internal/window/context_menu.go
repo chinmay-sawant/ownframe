@@ -24,6 +24,12 @@ func (s *shell) openMenu(x, y int) {
 		return
 	}
 
+	if presenter, ok := s.app.(host.MenuPresenter); ok && presenter.PresentMenu(x, y, items) {
+		s.closeMenu()
+
+		return
+	}
+
 	s.menu = menuState{open: true, x: x, y: y, items: items}
 }
 

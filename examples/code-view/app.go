@@ -59,8 +59,10 @@ const (
 	branchPickerPad      = 96
 	branchPickerRowH     = 26
 	branchPickerMinRows  = 4
-	commitTipCellWidth   = 7
 	changesRailTop       = 62
+	paneScrollW          = 8
+	paneThumbMin         = 24
+	paneScrollLeft       = activityW + sideWidth - paneScrollW
 	thumbCellH           = 14
 	historyExpandedRows  = 3
 	historyAutoRows      = 8
@@ -134,6 +136,10 @@ type App struct {
 	dragSelect bool
 	selX       float64
 	selY       float64
+	menuOpen   bool
+	menuX      int
+	menuY      int
+	menuItems  []menuViewRow
 
 	searchOpen      bool
 	searchQuery     string
@@ -291,13 +297,15 @@ func NewWithLimit(root string, limit int) (*App, error) {
 	a.selectFirstDiff()
 
 	page, err := ownframe.New(ownframe.Config{
-		DevTools:  true,
-		Title:     "Code Review",
-		HTML:      buildHTML(),
-		Width:     defaultWidth,
-		Height:    defaultHeight,
-		MinWidth:  minWidth,
-		MinHeight: minHeight,
+		DevTools:         true,
+		Title:            "Code Review",
+		HTML:             buildHTML(),
+		Width:            defaultWidth,
+		Height:           defaultHeight,
+		MinWidth:         minWidth,
+		MinHeight:        minHeight,
+		DisableWheelZoom: true,
+		DisableKeyZoom:   true,
 	})
 	if err != nil {
 		return nil, err
@@ -333,6 +341,7 @@ func NewWithLimit(root string, limit int) (*App, error) {
 		Redo:           a.onRedo,
 		ContextMenuFor: a.contextMenuForPage,
 		MenuAction:     a.MenuAction,
+		PresentMenu:    a.presentMenu,
 	})
 	page.Scroll().SetWindowing(true)
 	page.SetScrollWindow(a.onScroll)
@@ -342,6 +351,27 @@ func NewWithLimit(root string, limit int) (*App, error) {
 	a.refresh()
 
 	return a, nil
+}
+
+// publishPreviewImages registers the diagram strips the current documents hold.
+func (a *App) publishPreviewImages() {
+	if a.page == nil {
+		return
+	}
+
+	for _, doc := range a.docs {
+		if doc == nil {
+			continue
+		}
+
+		for _, row := range doc.Preview {
+			if row.Image == "" || len(row.png) == 0 {
+				continue
+			}
+
+			a.page.SetImage(row.Image, row.png)
+		}
+	}
 }
 
 // Page returns the page Run opens.
@@ -378,6 +408,7 @@ func (a *App) openInitial() {
 // refresh publishes one snapshot.
 func (a *App) refresh() {
 	a.view = a.buildView()
+	a.publishPreviewImages()
 	a.page.SetData(&a.view)
 	a.persistSession()
 }
@@ -419,6 +450,7 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 	a.viewportCols = cols
 	a.inlineCard = inlineCard{}
 	a.view = a.buildView()
+	a.publishPreviewImages()
 	a.page.SetData(&a.view)
 
 	return true
@@ -431,6 +463,10 @@ func (a *App) buildView() View {
 		Filter:      a.filter,
 		Details:     a.details,
 		DevOn:       a.devOn,
+		MenuOpen:    a.menuOpen,
+		MenuX:       a.menuX,
+		MenuY:       a.menuY,
+		MenuRows:    append([]menuViewRow(nil), a.menuItems...),
 		Modal:       a.paletteOpen || a.branchOpen || a.searchOpen,
 		Workspace:   baseName(a.ws.Root),
 		Branch:      a.changes.Branch,
@@ -652,9 +688,11 @@ func (a *App) fillDiff(v *View) {
 
 	if d.Scroll {
 		track := a.changesTrackHeight()
-		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, treeThumbMin)
+		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, paneThumbMin)
 		d.ScrollTrack = track
-		d.RailThumbTop = changesRailTop + d.ScrollTop
+		d.RailLeft = paneScrollLeft
+		d.RailTop = chromeTop + changesRailTop
+		d.RailThumbTop = d.RailTop + d.ScrollTop
 		d.ThumbCells = max(1, d.ScrollHeight/thumbCellH)
 	}
 
@@ -795,12 +833,57 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
+		current := a.scrollY / rowH
+		if a.diffSource == "working" && a.changeNav.valid && a.changeNav.path == file.Path &&
+			a.changeNav.mode == a.mode && a.changeNav.scroll == a.scrollY {
+			current = a.changeNav.row
+		}
+		markCurrentDiffChange(rows, visible, start, current)
 		if !a.wrap {
 			for i := range visible {
 				visible[i].ScrollX = a.scrollX
 			}
 		}
 		d.Rows = visible
+	}
+}
+
+func diffChangedRow(row diffRow) bool {
+	return row.Kind == rowAdd || row.Kind == rowDel ||
+		row.Kind == "split" && (row.LeftKind == rowDel || row.RightKind == rowAdd)
+}
+
+func diffChangeStarts(rows []diffRow) []int {
+	var starts []int
+	inside := false
+	for i, row := range rows {
+		changed := diffChangedRow(row)
+		if changed && !inside {
+			starts = append(starts, i)
+		}
+		inside = changed
+	}
+	return starts
+}
+
+func markCurrentDiffChange(rows, visible []diffRow, start, current int) {
+	starts := diffChangeStarts(rows)
+	if len(starts) == 0 {
+		return
+	}
+	selected := starts[0]
+	for _, row := range starts {
+		if row > current {
+			break
+		}
+		selected = row
+	}
+	end := selected
+	for end < len(rows) && diffChangedRow(rows[end]) {
+		end++
+	}
+	for i := range visible {
+		visible[i].Current = start+i >= selected && start+i < end
 	}
 }
 
@@ -907,13 +990,13 @@ func (a *App) buildCommitTip(commit *gitCommit, rowTop int) commitFloatView {
 	meta := commit.Short + " · " + commit.Author + " · " + commit.Date
 	pageTop := a.historyPaneTop() + rowTop
 
-	lines := commitTipText(commit.Subject, body, meta, commitTipWidth/commitTipCellWidth)
+	lines := commitTipText(commit.Subject, body, meta, commitTipCols(commitTipWidth))
 	layout := layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
 	if !layout.Show {
 		return commitFloatView{}
 	}
 
-	lines = commitTipText(commit.Subject, body, meta, layout.Width/commitTipCellWidth)
+	lines = commitTipText(commit.Subject, body, meta, commitTipCols(layout.Width))
 	layout = layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
 
 	return commitFloatView{
@@ -1019,7 +1102,8 @@ func (a *App) fillHistory(v *View) {
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
 	h.Loading = v.Diff.Loading
-	h.RailTop = a.historyPaneTop() - chromeTop + histHeadH
+	h.RailLeft = paneScrollLeft
+	h.RailTop = a.historyPaneTop() + histHeadH
 
 	if a.branchOpen {
 		a.fillBranchList(&h)
@@ -1039,7 +1123,7 @@ func (a *App) fillHistory(v *View) {
 
 	if h.Scroll {
 		track := a.historyTrackHeight()
-		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, treeThumbMin)
+		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, paneThumbMin)
 		h.ScrollTrack = track
 		h.RailThumbTop = h.RailTop + h.ScrollTop
 		h.ThumbCells = max(1, h.ScrollHeight/thumbCellH)
@@ -1053,20 +1137,29 @@ func (a *App) fillHistory(v *View) {
 		commit := a.commits.Commits[i]
 		rowTop := tipTop
 		row := commitRow{
-			Hash:     commit.Hash,
-			Short:    commit.Short,
-			Subject:  commit.Subject,
-			Author:   commit.Author,
-			Date:     commit.Date,
-			Body:     commit.Body,
-			Add:      commit.Add,
-			Del:      commit.Del,
-			More:     commit.More,
-			Head:     commit.Hash == a.commits.Head,
-			Expanded: commit.Hash == a.commitOpen,
-			Selected: commit.Hash == a.commitOpen && a.diffSource == "commit",
-			Graph:    graph.Rows[commit.Hash],
-			Lanes:    graph.Lanes,
+			Hash:       commit.Hash,
+			Short:      commit.Short,
+			Subject:    commit.Subject,
+			Lines:      historySubjectLines(commit.Subject),
+			Author:     commit.Author,
+			Date:       commit.Date,
+			Body:       commit.Body,
+			Add:        commit.Add,
+			Del:        commit.Del,
+			More:       commit.More,
+			Head:       commit.Hash == a.commits.Head,
+			Expanded:   commit.Hash == a.commitOpen,
+			Selected:   commit.Hash == a.commitOpen && a.diffSource == "commit",
+			Graph:      graph.Rows[commit.Hash],
+			GraphEdges: graph.Edges[commit.Hash],
+			Lanes:      graph.Lanes,
+		}
+		for _, cell := range row.Graph {
+			if cell.Kind == graphNode {
+				row.GraphX = graphX(cell.Lane)
+				row.GraphColor = graphColor(cell.Lane)
+				break
+			}
 		}
 
 		h.Commits = append(h.Commits, row)
@@ -1169,7 +1262,8 @@ func (a *App) clampScroll(y int) int {
 	return y
 }
 
-// editorWidth is the live editor column after the details drawer.
+// editorWidth is the live editor column after the details drawer. The window
+// already sizes the page to the strip beside the devtools dock.
 func (a *App) editorWidth() int {
 	w := defaultWidth
 	if a.page != nil {
@@ -1178,6 +1272,10 @@ func (a *App) editorWidth() int {
 
 	if a.details {
 		w -= detailsWidth
+	}
+
+	if w < chromeLeft+paneMinWidth {
+		w = chromeLeft + paneMinWidth
 	}
 
 	return w - chromeLeft
@@ -1241,6 +1339,7 @@ func (a *App) scrollTo(y int) {
 // resetScroll returns to the top when a new file or mode opens.
 func (a *App) resetScroll() {
 	a.resetFind()
+	a.changeNav = changeNavigation{}
 	a.scrollY = 0
 	a.scrollGroup[0] = 0
 	a.scrollGroup[1] = 0
@@ -1446,6 +1545,7 @@ func (a *App) tabRowsFor(group int) []tabRow {
 			Status:      status,
 			StatusClass: "st-" + strings.ToLower(status),
 			Active:      i == active && a.mode == "explorer",
+			Dirty:       a.dirty[path],
 		})
 	}
 

@@ -19,9 +19,13 @@ func zoomModifier() bool {
 
 // zoomKey applies one Control+=, Control+-, or Control+0 press. It reports
 // whether the window consumed the key; the plain keys stay with the page.
+// A page that refuses key zoom still consumes the chord, and the scale stays.
 func (s *shell) zoomKey(key ebiten.Key, down bool, mods modifiers) bool {
 	if s.viewLocked() || !mods.command() || mods.Alt {
 		return false
+	}
+	if !s.keyZoomAllowed() {
+		return true
 	}
 
 	switch key {
@@ -56,8 +60,14 @@ func wheelZoomFactor(wheelY float64) float64 {
 
 // zoomWheel applies Control+wheel to the page zoom and reports whether the
 // wheel went to the zoom instead of the scroll.
+// wheelMayZoom reports that this notch is allowed to scale the page. The
+// modifier check stays in zoomWheel because it reads the live key state.
+func (s *shell) wheelMayZoom(wheelY float64) bool {
+	return !s.viewLocked() && wheelY != 0 && s.wheelZoomAllowed()
+}
+
 func (s *shell) zoomWheel(wheelY float64) bool {
-	if s.viewLocked() || wheelY == 0 || !zoomModifier() {
+	if !s.wheelMayZoom(wheelY) || !zoomModifier() {
 		return false
 	}
 

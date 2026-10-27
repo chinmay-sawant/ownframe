@@ -4,6 +4,8 @@ import (
 	"context"
 	"strconv"
 	"strings"
+
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // contextMenuRow mirrors the window's context-menu row. The host row type
@@ -16,15 +18,163 @@ type contextMenuRow struct {
 }
 
 const (
+	menuChromeWidth = 196
+	menuChromeRow   = 26
+	menuChromePad   = 8
+
 	contextMenuIDPrefix     = "code-view:"
 	contextMenuCloseID      = contextMenuIDPrefix + "tab-close:"
 	contextMenuCloseOtherID = contextMenuIDPrefix + "tab-close-others:"
 	contextMenuCloseAllID   = contextMenuIDPrefix + "tab-close-all:"
+	contextMenuCloseLeftID  = contextMenuIDPrefix + "tab-close-left:"
+	contextMenuCloseRightID = contextMenuIDPrefix + "tab-close-right:"
 )
 
-// ContextMenuFor returns the tab actions for the tab or close button under the
-// pointer. Every other element keeps the page's built-in menu.
+// presentMenu paints the right-click rows in the page instead of the shell menu.
+func (a *App) presentMenu(x, y int, items []ownframe.MenuItem) bool {
+	if a == nil || a.page == nil || len(items) == 0 {
+		return false
+	}
+
+	rows := make([]menuViewRow, 0, len(items))
+	for i, item := range items {
+		rows = append(rows, menuViewRow{
+			Index:   i,
+			ID:      item.ID,
+			Label:   item.Label,
+			Enabled: item.Enabled,
+		})
+	}
+
+	w, h := a.page.Size()
+	menuH := menuChromePad + len(rows)*menuChromeRow
+	if x+menuChromeWidth > w {
+		x = w - menuChromeWidth
+	}
+
+	if y+menuH > h {
+		y = h - menuH
+	}
+
+	if x < 0 {
+		x = 0
+	}
+
+	if y < 0 {
+		y = 0
+	}
+
+	a.menuOpen = true
+	a.menuX = x
+	a.menuY = y
+	a.menuItems = rows
+	a.refresh()
+
+	if err := a.page.Redraw(context.Background()); err != nil {
+		return false
+	}
+
+	return true
+}
+
+// closeMenu hides the page menu. The caller redraws.
+func (a *App) closeMenu() {
+	a.menuOpen = false
+	a.menuItems = nil
+}
+
+// dismissOpenMenu closes the menu when the pointer is outside its rows.
+// A row still runs. The caller redraws.
+func (a *App) dismissOpenMenu(id, action string) bool {
+	if a == nil || !a.menuOpen {
+		return false
+	}
+
+	if strings.HasPrefix(id, "ctx-") || strings.HasPrefix(action, "menu-item:") {
+		return false
+	}
+
+	a.closeMenu()
+	a.refresh()
+
+	return true
+}
+
+// runMenuItem closes the menu and runs one row. Built-in edit rows use the
+// same buffer methods the shell menu used.
+func (a *App) runMenuItem(ctx context.Context, id string) error {
+	a.closeMenu()
+
+	switch id {
+	case "cut":
+		text, ok, err := a.onCut(ctx)
+		if err != nil || !ok {
+			return err
+		}
+
+		ownframe.Write(text)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	case "copy":
+		text, ok, err := a.onCopy(ctx)
+		if err != nil || !ok {
+			return err
+		}
+
+		ownframe.Write(text)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	case "paste":
+		text, err := ownframe.Read()
+		if err != nil {
+			a.refresh()
+
+			return a.page.Redraw(ctx)
+		}
+
+		if err := a.onPaste(ctx, text); err != nil {
+			return err
+		}
+
+		return a.page.Redraw(ctx)
+	case "select-all":
+		if err := a.onSelectAll(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Redraw(ctx)
+	case "undo":
+		if err := a.onUndo(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Redraw(ctx)
+	case "redo":
+		if err := a.onRedo(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Redraw(ctx)
+	default:
+		return a.MenuAction(ctx, id)
+	}
+}
+
+// ContextMenuFor returns actions for the editor or the tab under the pointer.
 func (a *App) ContextMenuFor(id string) []contextMenuRow {
+	if id == "code-body" && a.editing && a.edit != nil {
+		selected := a.editCaret != a.editAnchor
+		return []contextMenuRow{
+			{ID: "cut", Label: "Cut", Enabled: selected},
+			{ID: "copy", Label: "Copy", Enabled: selected},
+			{ID: "paste", Label: "Paste", Enabled: true},
+			{ID: "select-all", Label: "Select All", Enabled: true},
+			{ID: "undo", Label: "Undo", Enabled: len(a.editUndo) > 0},
+			{ID: "redo", Label: "Redo", Enabled: len(a.editRedo) > 0},
+		}
+	}
 	group, index, ok := contextMenuTabID(id)
 	if !ok {
 		return nil
@@ -43,13 +193,26 @@ func (a *App) ContextMenuFor(id string) []contextMenuRow {
 		{ID: contextMenuCloseID + contextMenuTabTarget(group, index), Label: "Close", Enabled: true},
 		{ID: contextMenuCloseOtherID + contextMenuTabTarget(group, index), Label: "Close Others", Enabled: len(tabs) > 1},
 		{ID: contextMenuCloseAllID + strconv.Itoa(group), Label: "Close All", Enabled: len(tabs) > 0},
+		{ID: contextMenuCloseLeftID + contextMenuTabTarget(group, index), Label: "Close All to the Left", Enabled: index > 0},
+		{
+			ID:      contextMenuCloseRightID + contextMenuTabTarget(group, index),
+			Label:   "Close All to the Right",
+			Enabled: index < len(tabs)-1,
+		},
 	}
 }
 
-// MenuAction closes one tab, the other tabs, or every tab in the group that
-// supplied the row.
+// MenuAction handles tab-closing actions in the group that supplied the row.
 func (a *App) MenuAction(ctx context.Context, id string) error {
 	switch {
+	case strings.HasPrefix(id, contextMenuCloseLeftID):
+		if group, index, ok := contextMenuTarget(strings.TrimPrefix(id, contextMenuCloseLeftID)); ok {
+			return a.contextMenuCloseSide(ctx, group, index, true)
+		}
+	case strings.HasPrefix(id, contextMenuCloseRightID):
+		if group, index, ok := contextMenuTarget(strings.TrimPrefix(id, contextMenuCloseRightID)); ok {
+			return a.contextMenuCloseSide(ctx, group, index, false)
+		}
 	case strings.HasPrefix(id, contextMenuCloseOtherID):
 		if group, index, ok := contextMenuTarget(strings.TrimPrefix(id, contextMenuCloseOtherID)); ok {
 			return a.contextMenuCloseOtherTabs(ctx, group, index)
@@ -65,6 +228,25 @@ func (a *App) MenuAction(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (a *App) contextMenuCloseSide(ctx context.Context, group, index int, left bool) error {
+	tabs, active := &a.tabs, &a.active
+	if group == 1 {
+		tabs, active = &a.tabs2, &a.active2
+	}
+	if index < 0 || index >= len(*tabs) {
+		return nil
+	}
+	a.finishEdit()
+	if left {
+		*tabs = append([]string(nil), (*tabs)[index:]...)
+		*active = max(0, *active-index)
+	} else {
+		*tabs = append([]string(nil), (*tabs)[:index+1]...)
+		*active = min(*active, index)
+	}
+	return a.contextMenuFinish(ctx)
 }
 
 // contextMenuTabID reads tab-N, tab-close-N, tab2-N, or tab2-close-N. Other

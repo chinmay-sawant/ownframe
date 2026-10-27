@@ -4,11 +4,56 @@ package main
 // Each editor group maintains its own vertical scroll offset (a.scrollGroup[0] and a.scrollGroup[1]),
 // wheel accumulator, and clamping bounds.
 
+// The file navigator is a fixed pill (bottom 34px, height 34px) over the
+// editor. The status bar already ends the body; the pill sits 10px above it.
+const (
+	fileNavH   = 34
+	fileNavGap = 12
+)
+
+// fileNavCoversEditor reports that the changed-file pill is drawn over the editor.
+func (a *App) fileNavCoversEditor() bool {
+	return a.fileNav != nil && a.fileNav.Len() > 0
+}
+
+// editorPillReserve is the bottom of the code body the pill covers, plus a
+// small gap so the last row is not flush with the pill.
+func (a *App) editorPillReserve() int {
+	if !a.fileNavCoversEditor() {
+		return 0
+	}
+
+	return fileNavH + fileNavGap
+}
+
+// editorClearHeight is the body height in which a text row is fully visible.
+func (a *App) editorClearHeight() int {
+	h := a.diffBodyHeight() - a.editorPillReserve()
+	if h < rowH {
+		h = rowH
+	}
+
+	return h
+}
+
+// editorTailRows is blank scroll space under the real rows. The page scroll
+// stops at the status bar; this pad lets the last row move into the clear area.
+func (a *App) editorTailRows() int {
+	full := a.diffBodyHeight()
+	clear := (a.editorClearHeight() / rowH) * rowH
+	gap := full - clear
+	if gap <= 0 {
+		return 0
+	}
+
+	return (gap + rowH - 1) / rowH
+}
+
 // windowSliceForGroup returns the row range the fixed body shows and the track offset for group (0 or 1).
 func (a *App) windowSliceForGroup(group, total int) (int, int, int) {
-	bodyH := a.diffBodyHeight()
-	if bodyH < rowH {
-		bodyH = rowH
+	capacity := a.editorClearHeight() / rowH
+	if capacity < 1 {
+		capacity = 1
 	}
 
 	offset := a.scrollY
@@ -16,18 +61,42 @@ func (a *App) windowSliceForGroup(group, total int) (int, int, int) {
 		offset = a.scrollGroup[group]
 	}
 
-	first := offset / rowH
-	start := first
-	if start > total {
-		start = total
+	if offset < 0 {
+		offset = 0
 	}
 
-	end := start + bodyH/rowH + 1
+	first := offset / rowH
+	tail := 0
+	if total > capacity {
+		tail = total - capacity
+	}
+
+	if first > tail {
+		first = tail
+	}
+
+	// Diff rows do not go through paneRowCount, so their spacer stops at the
+	// status bar. At that limit, show the tail in the clear area.
+	if limit := a.pageScrollLimit(); limit > 0 && offset >= limit && first < tail {
+		first = tail
+	}
+
+	end := first + capacity
 	if end > total {
 		end = total
 	}
 
-	return start, end, 0
+	return first, end, 0
+}
+
+// pageScrollLimit is the furthest the page spacer can scroll.
+func (a *App) pageScrollLimit() int {
+	limit := a.contentHeight() - a.viewportH
+	if limit < 0 {
+		return 0
+	}
+
+	return limit
 }
 
 // maxGroupScroll returns the maximum vertical scroll offset in pixels for group (0 or 1).
@@ -142,7 +211,8 @@ func (a *App) scrollFocusedGroupToEnd() {
 	a.scrollGroupTo(group, a.maxGroupScroll(group))
 }
 
-// scrollEditorGroupByWheel applies a vertical mouse wheel delta (-dy) to editor group (0 or 1).
+// scrollEditorGroupByWheel applies a vertical mouse wheel delta to one editor
+// group. dy is the wheel sign: negative moves the text downward.
 func (a *App) scrollEditorGroupByWheel(group int, dy float64) {
 	if group != 0 && group != 1 {
 		return

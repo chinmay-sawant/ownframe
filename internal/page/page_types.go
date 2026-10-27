@@ -44,25 +44,27 @@ type Page struct {
 	// hoverPatch re-lays one element's subtree for a hover-only change.
 	// Production pages use the engine patch; tests swap it per page to
 	// observe which roots a hover change patches.
-	hoverPatch     hoverPatchFunc
-	cache          *render.Cache
-	stats          pageStats
-	devtools       bool
-	perf           bool
-	motion         *motion.Runtime
-	animationsOff  bool
-	transitionsOff bool
-	triggerPress   triggerPressState
-	allocAt        time.Time // last allocator sample; zero means the next Perf redraw is due
-	retainState    bool
-	restampRedraw  bool
-	layoutAdopting bool
-	lockView       bool
-	mobileViewport bool
-	allowTouchZoom bool
-	watch          *watchState
-	dirty          dirty.Tracker
-	lastPatch      DisplayPatch
+	hoverPatch       hoverPatchFunc
+	cache            *render.Cache
+	stats            pageStats
+	devtools         bool
+	perf             bool
+	motion           *motion.Runtime
+	animationsOff    bool
+	transitionsOff   bool
+	triggerPress     triggerPressState
+	allocAt          time.Time // last allocator sample; zero means the next Perf redraw is due
+	retainState      bool
+	restampRedraw    bool
+	layoutAdopting   bool
+	lockView         bool
+	mobileViewport   bool
+	allowTouchZoom   bool
+	disableWheelZoom bool
+	disableKeyZoom   bool
+	watch            *watchState
+	dirty            dirty.Tracker
+	lastPatch        DisplayPatch
 	// painted is the display the host last took damage for. A redraw that
 	// finds damage already marked full can diff this display against the new
 	// one, so a small change made after a full mark keeps its own region

@@ -17,7 +17,6 @@ const (
 	tabSpaces           = "    "
 	maxFileBytes        = 512 << 10
 	maxFileLines        = 20000
-	maxLineRunes        = 600
 	maxWorkspaceFiles   = 10000
 	maxIgnoredDirs      = 200
 	maxIgnoreCandidates = 5000
@@ -575,8 +574,8 @@ func skipExt(name string) bool {
 	return false
 }
 
-// readLines reads one file as display lines. Tabs become spaces, a trailing
-// CR is stripped, and an overlong line is clipped with an ellipsis.
+// readLines reads one file as display lines. Tabs become spaces and a trailing
+// CR is stripped.
 func (w *workspace) readLines(path string) ([]string, bool, error) {
 	meta := w.ByPath[path]
 	if meta == nil {
@@ -622,7 +621,7 @@ func (w *workspace) readLines(path string) ([]string, bool, error) {
 	}
 
 	for i, line := range lines {
-		lines[i] = clipLine(expandTabs(line))
+		lines[i] = expandTabs(line)
 	}
 
 	meta.Lines = len(lines)
@@ -696,20 +695,6 @@ func isBinary(raw []byte) bool {
 	}
 
 	return false
-}
-
-// clipLine caps one display line so a minified file cannot dominate layout.
-func clipLine(line string) string {
-	if len(line) <= maxLineRunes {
-		return line
-	}
-
-	r := []rune(line)
-	if len(r) <= maxLineRunes {
-		return line
-	}
-
-	return string(r[:maxLineRunes]) + "…"
 }
 
 // fileDoc is one opened file: its lines, tokens, and outline.

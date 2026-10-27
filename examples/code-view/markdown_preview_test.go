@@ -584,9 +584,9 @@ func TestPreviewMermaidFlowchart(t *testing.T) {
 	}
 
 	rows, anchors := previewRows(lines, 80)
-	all := previewText(rows)
 	diagrams := 0
 	marked := false
+	painted := false
 
 	for _, row := range rows {
 		if row.Kind == "diagram" {
@@ -597,19 +597,21 @@ func TestPreviewMermaidFlowchart(t *testing.T) {
 			marked = true
 		}
 
+		if row.Image != "" && len(row.png) > 0 && row.ImageW > 0 {
+			painted = true
+		}
+
 		if row.Kind == "code" {
 			t.Fatalf("mermaid source stayed code: %q", lineText(row.Segments))
 		}
 	}
 
-	for _, want := range []string{"Start", "Ready?", "Done", "yes", "▼", "┌", "│", "─"} {
-		if !strings.Contains(all, want) {
-			t.Errorf("flowchart missing %q: %q", want, all)
-		}
-	}
-
 	if diagrams == 0 {
 		t.Fatal("flowchart produced no diagram rows")
+	}
+
+	if !painted {
+		t.Fatal("flowchart produced no diagram image")
 	}
 
 	if !marked {
@@ -637,18 +639,20 @@ func TestPreviewMermaidSequence(t *testing.T) {
 	}
 
 	rows, anchors := previewRows(lines, 80)
-	all := previewText(rows)
-
-	for _, want := range []string{"Alice", "Bob", "hello", "hi", "▶", "◀", "╌"} {
-		if !strings.Contains(all, want) {
-			t.Errorf("sequence diagram missing %q: %q", want, all)
-		}
-	}
+	painted := false
 
 	for _, row := range rows {
 		if row.Kind != "diagram" {
 			t.Errorf("sequence row kind = %q", row.Kind)
 		}
+
+		if row.Image != "" && len(row.png) > 0 {
+			painted = true
+		}
+	}
+
+	if !painted {
+		t.Fatal("sequence diagram produced no image")
 	}
 
 	for i := 1; i <= 5; i++ {
@@ -708,7 +712,7 @@ func TestPreviewReflowWidth(t *testing.T) {
 	}
 }
 
-func TestPreviewMermaidUnsupported(t *testing.T) {
+func TestPreviewMermaidPie(t *testing.T) {
 	t.Parallel()
 
 	lines := []string{
@@ -720,27 +724,20 @@ func TestPreviewMermaidUnsupported(t *testing.T) {
 	}
 
 	rows, anchors := previewRows(lines, previewDefaultCols)
-	all := previewText(rows)
-	codes := 0
+	painted := false
 
 	for _, row := range rows {
+		if row.Image != "" && len(row.png) > 0 {
+			painted = true
+		}
+
 		if row.Kind == "code" {
-			codes++
+			t.Fatalf("pie source stayed code: %q", lineText(row.Segments))
 		}
 	}
 
-	if !strings.Contains(all, "not rendered") {
-		t.Errorf("unsupported note missing: %q", all)
-	}
-
-	for _, want := range []string{"Dogs", "Cats"} {
-		if !strings.Contains(all, want) {
-			t.Errorf("unsupported source missing %q: %q", want, all)
-		}
-	}
-
-	if codes != 3 {
-		t.Errorf("unsupported source code rows = %d, want 3", codes)
+	if !painted {
+		t.Fatal("pie diagram produced no image")
 	}
 
 	for i := 1; i <= 3; i++ {

@@ -1,10 +1,15 @@
-/* Scroll rails and the commit graph. */
+/* Scroll rails and the commit graph.
+   The working-tree and history thumbs sit on the sidebar's right edge, the
+   same 8px square as the window scrollbar, with no track. They are fixed so
+   the sidebar clip does not apply. The engine drops an empty thumb's
+   background, so the SVG rect is the paint. #c5c9d1 is that bar in the
+   dark palette. */
 
 .list-scroll,
 .hist-scroll {
-  position: absolute;
-  right: 0;
-  width: 9px;
+  position: fixed;
+  z-index: 28;
+  width: 8px;
   display: block;
   background-color: transparent;
 }
@@ -13,22 +18,21 @@
 .hist-thumb {
   position: absolute;
   top: 0;
-  left: 1px;
-  width: 7px;
-  min-height: 18px;
+  left: 0;
+  width: 8px;
+  min-height: 24px;
   display: block;
-  border-radius: 4px;
-  background-color: #5b6880;
+  border-radius: 0;
+  background-color: #c5c9d1;
+  color: #c5c9d1;
 }
 
 .list-scroll:hover .list-thumb,
-.list-thumb:hover {
-  background-color: #7d8aa3;
-}
-
+.list-thumb:hover,
 .hist-scroll:hover .hist-thumb,
 .hist-thumb:hover {
-  background-color: #7d8aa3;
+  background-color: #e7ebf2;
+  color: #e7ebf2;
 }
 
 .hist-graph {
@@ -38,56 +42,3 @@
   flex: 0 0 42px;
   overflow: hidden;
 }
-
-.glane {
-  position: absolute;
-  top: 0;
-  width: 2px;
-  height: 42px;
-  display: block;
-  background-color: #7aa2f7;
-}
-
-.gnode-bar {
-  position: absolute;
-  top: 20px;
-  width: 8px;
-  height: 2px;
-  display: block;
-  background-color: #7aa2f7;
-}
-
-.gnode-bar.g0 { background-color: #7aa2f7; left: -3px; }
-.gnode-bar.g1 { background-color: #3ddc84; left: 4px; }
-.gnode-bar.g2 { background-color: #f0b75a; left: 11px; }
-.gnode-bar.g3 { background-color: #c792ea; left: 18px; }
-.gnode-bar.g4 { background-color: #f0606a; left: 25px; }
-.gnode-bar.g5 { background-color: #89ddff; left: 32px; }
-
-.glane.g0, .gnode.g0 { background-color: #7aa2f7; }
-.glane.g1, .gnode.g1 { background-color: #3ddc84; }
-.glane.g2, .gnode.g2 { background-color: #f0b75a; }
-.glane.g3, .gnode.g3 { background-color: #c792ea; }
-.glane.g4, .gnode.g4 { background-color: #f0606a; }
-.glane.g5, .gnode.g5 { background-color: #89ddff; }
-
-.gmerge.g0 { border-color: #7aa2f7; }
-.gmerge.g1 { border-color: #3ddc84; }
-.gmerge.g2 { border-color: #f0b75a; }
-.gmerge.g3 { border-color: #c792ea; }
-.gmerge.g4 { border-color: #f0606a; }
-.gmerge.g5 { border-color: #89ddff; }
-
-.glane.g0 { left: 2px; }
-.glane.g1 { left: 9px; }
-.glane.g2 { left: 16px; }
-.glane.g3 { left: 23px; }
-.glane.g4 { left: 30px; }
-.glane.g5 { left: 37px; }
-
-.gnode.g0, .gmerge.g0 { left: 0; }
-.gnode.g1, .gmerge.g1 { left: 7px; }
-.gnode.g2, .gmerge.g2 { left: 14px; }
-.gnode.g3, .gmerge.g3 { left: 21px; }
-.gnode.g4, .gmerge.g4 { left: 28px; }
-.gnode.g5, .gmerge.g5 { left: 35px; }

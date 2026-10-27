@@ -6,8 +6,8 @@
   {{if .FileNav.Path}}<div class="file-nav-dir" title="{{.FileNav.Path}}">{{.FileNav.Path}}</div>{{end}}
   <div class="file-nav-fill"></div>
   <span class="file-nav-stats"><b class="add">+{{.FileNav.Add}}</b><b class="del">−{{.FileNav.Del}}</b></span>
-  <button class="file-nav-arrow file-nav-change" id="file-nav-change-prev" data-action="file-nav-change-prev" type="button" title="Previous change in this file" aria-label="Previous change in this file">↑</button>
-  <button class="file-nav-arrow file-nav-change" id="file-nav-change-next" data-action="file-nav-change-next" type="button" title="Next change in this file" aria-label="Next change in this file">↓</button>
+  <button class="file-nav-arrow file-nav-change{{if not .FileNav.CanPrevChange}} off{{end}}" id="file-nav-change-prev" data-action="file-nav-change-prev" type="button" title="Previous change in this file" aria-label="Previous change in this file"{{if not .FileNav.CanPrevChange}} disabled{{end}}>↑</button>
+  <button class="file-nav-arrow file-nav-change{{if not .FileNav.CanNextChange}} off{{end}}" id="file-nav-change-next" data-action="file-nav-change-next" type="button" title="Next change in this file" aria-label="Next change in this file"{{if not .FileNav.CanNextChange}} disabled{{end}}>↓</button>
   <button class="file-nav-arrow{{if $single}} off{{end}}" id="file-nav-next" data-action="file-nav-next" type="button" title="Next changed file" aria-label="Next changed file"{{if $single}} disabled{{end}}>›</button>
 </div>
 {{end}}

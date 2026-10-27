@@ -11,6 +11,10 @@ import (
 // onClick routes every control. State changes end in one refresh; the page
 // redraws after the handler returns.
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
+	if a.dismissOpenMenu(box.ID, box.Action) {
+		return nil
+	}
+
 	action := box.Action
 
 	switch {
@@ -153,6 +157,8 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.copyActive(false)
 	case action == "copy-file":
 		a.copyActive(true)
+	case strings.HasPrefix(action, "menu-item:"):
+		return a.runMenuItem(ctx, strings.TrimPrefix(action, "menu-item:"))
 	case action == "devtools":
 		a.showToast("info", "Developer tools", devMessage(!a.devOn))
 		a.SetDevTools(!a.devOn)
@@ -309,8 +315,10 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 	return ownframe.Box{}, false
 }
 
-// onWheel scrolls the explorer tree, the changed-file list, or the unwrapped
-// code/diff lines under the pointer.
+// onWheel scrolls the explorer tree, the changed-file list, the history list,
+// or the unwrapped editor under the pointer. A vertical wheel over the editor
+// returns false so the window can pan a long file. Ctrl+wheel does not zoom
+// this page.
 func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 	if a.paletteOpen || a.searchOpen || a.branchOpen {
 		return false, nil
@@ -325,6 +333,7 @@ func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 		if dx == 0 && a.shift && dy != 0 {
 			delta = -dy
 		}
+
 		step := int(delta * float64(hscrollWheelStep))
 		if step == 0 && delta != 0 {
 			if delta > 0 {
@@ -333,6 +342,7 @@ func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 				step = -1
 			}
 		}
+
 		a.scrollHorizontal(step)
 
 		return true, a.page.Redraw(ctx)
@@ -738,7 +748,9 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 // onDragMove resizes the panes or moves the explorer thumb.
 func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 	if a.dragSelect {
-		a.extendEditSelection(a.selX+dx, a.selY+dy)
+		a.selX += dx
+		a.selY += dy
+		a.extendEditSelection(a.selX, a.selY)
 		a.refresh()
 
 		return a.page.Redraw(ctx)
@@ -854,6 +866,13 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.shift = true
 
 		return nil
+	}
+
+	if a.menuOpen && key == "escape" {
+		a.closeMenu()
+		a.refresh()
+
+		return a.page.Redraw(ctx)
 	}
 
 	if !a.paletteOpen && (key == "enter" || key == "space") && a.page.Edit().FocusedField() == "" {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -11,9 +12,32 @@ const editTextLeft = 16 + 44
 
 // onPress records the selection anchor for a drag inside the edit view.
 func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool, error) {
-	if !a.editing || a.edit == nil || box.ID != "code-body" {
+	if a.dismissOpenMenu(box.ID, box.Action) {
+		if a.page == nil {
+			return true, nil
+		}
+
+		return true, a.page.Redraw(ctx)
+	}
+
+	if !a.editing && (box.ID == "edit-surface" || strings.HasPrefix(box.ID, "edit-line-")) {
+		oldScroll := a.scrollY
+		a.toggleEdit()
+		if a.editing {
+			a.scrollTo(oldScroll)
+		}
+	} else if box.ID != "code-body" {
 		return false, nil
 	}
+	if !a.editing || a.edit == nil {
+		return false, nil
+	}
+	if err := a.page.Form().Focus(ctx, ""); err != nil {
+		return false, err
+	}
+	pageX, pageY := a.page.Scroll().ScrollOffset()
+	x -= float64(pageX)
+	y -= float64(pageY)
 
 	line, col, ok := a.editPointAt(x, y)
 	if !ok {
@@ -28,12 +52,13 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 	a.dragSelect = true
 	a.refresh()
 
-	return false, a.page.Redraw(ctx)
+	return true, a.page.Redraw(ctx)
 }
 
 // onDragStart claims a drag in the edit body.
 func (a *App) onDragClaim(box ownframe.Box) bool {
-	return a.editing && box.ID == "code-body"
+	return a.editing && box.ID == "code-body" ||
+		!a.editing && a.view.CanEdit && (box.ID == "edit-surface" || strings.HasPrefix(box.ID, "edit-line-"))
 }
 
 // extendEditSelection extends the caret from the drag start to x,y.
@@ -65,16 +90,22 @@ func (a *App) editPointAt(x, y float64) (int, int, bool) {
 
 	cols := a.codeColsForGroup(0)
 	visual := visualRowAt(int(y), int(box.Y), a.scrollY, rowH)
-	line := sourceLineAt(doc, cols, visual)
-	plan := doc.wrapped(cols)
+	line := visual
 
 	rowStart := 0
-	if a.wrap && visual >= 0 && visual < len(plan.Rows) {
-		line = plan.Rows[visual].Line
-		rowStart = plan.Rows[visual].Start
+	if a.wrap {
+		plan := doc.wrapped(cols)
+		line = sourceLineAt(doc, cols, visual)
+		if visual >= 0 && visual < len(plan.Rows) {
+			line = plan.Rows[visual].Line
+			rowStart = plan.Rows[visual].Start
+		}
 	}
 
 	textLeft := box.X + editTextLeft
+	if !a.wrap {
+		x += float64(a.scrollX)
+	}
 	displayCol := rowStart + int((x-textLeft)/codeCellW+roundHalf)
 	length := 0
 	if line >= 0 && line < len(doc.Lines) {

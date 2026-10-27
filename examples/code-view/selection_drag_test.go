@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"math"
+	"slices"
 	"strings"
 	"testing"
 	"unicode/utf8"
@@ -107,6 +109,111 @@ func TestEditSelectionDrag(t *testing.T) {
 		utf8.RuneCountInString(all), utf8.RuneCountInString(copied))
 }
 
+func TestSelectionKeepsTextRunsAndCoversLineBreaks(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", "alpha beta\n\nlast line\n")
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.openFile("README.md")
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing editor body")
+	}
+	x, y := body.X+editTextLeft, body.Y+rowH/2
+	if err := app.Page().Edit().Press(ctx, x, y); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Edit().Release(ctx); err != nil {
+		t.Fatal(err)
+	}
+	before := cloneCodeRows(app.View().Rows)
+	claimed, err := app.Page().Testing().BeginDrag(ctx, x, y)
+	if err != nil || !claimed {
+		t.Fatalf("begin drag = %v, %v", claimed, err)
+	}
+	if err := app.Page().Testing().MoveDrag(ctx, x+2*codeCellW, y+2*rowH); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Testing().EndDrag(ctx); err != nil {
+		t.Fatal(err)
+	}
+	after := app.View().Rows
+	if len(before) != len(after) {
+		t.Fatalf("row count changed from %d to %d", len(before), len(after))
+	}
+	for i := range before {
+		if !slices.Equal(before[i].Segments, after[i].Segments) {
+			t.Fatalf("selection changed line %d text runs: before=%+v after=%+v", i, before[i].Segments, after[i].Segments)
+		}
+	}
+	if !after[0].Selection || float64(after[0].SelectionWidth) <= 10*codeCellW ||
+		!after[1].Selection || after[1].SelectionWidth < 7 ||
+		!after[2].Selection || after[2].SelectionWidth < 14 {
+		t.Fatalf("selection geometry = %+v", after[:3])
+	}
+}
+
+func TestPageDragSelectionAndPaste(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", "first line\nsecond line\nthird line\n")
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.openFile("README.md")
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Form().Focus(ctx, "filter"); err != nil {
+		t.Fatal(err)
+	}
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing editor body")
+	}
+	x := body.X + editTextLeft + 2*codeCellW
+	y := body.Y + rowH/2
+	claimed, err := app.Page().Testing().BeginDrag(ctx, x, y)
+	if err != nil || !claimed {
+		t.Fatalf("begin drag = %v, %v", claimed, err)
+	}
+	for _, point := range [][2]float64{
+		{x + 2*codeCellW, y + rowH},
+		{x + 3*codeCellW, y + 2*rowH},
+	} {
+		if err := app.Page().Testing().MoveDrag(ctx, point[0], point[1]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := app.Page().Testing().EndDrag(ctx); err != nil {
+		t.Fatal(err)
+	}
+	text, copied, err := app.Page().Edit().Copy(ctx)
+	if err != nil || !copied || text != "rst line\nsecond line\nthird" {
+		t.Fatalf("copy = %q, %v, %v", text, copied, err)
+	}
+	if !hasEditSel(app.View().Rows) {
+		t.Fatal("drag selection is not highlighted")
+	}
+	rows := app.contextMenuForPage("code-body")
+	if len(rows) < 3 || !rows[0].Enabled || !rows[1].Enabled || !rows[2].Enabled {
+		t.Fatalf("selection context menu = %+v", rows)
+	}
+	if err := app.Page().Edit().Paste(ctx, text); err != nil {
+		t.Fatal(err)
+	}
+	if got := app.edit.Text(); got != "first line\nsecond line\nthird line\n" {
+		t.Fatalf("paste over selection = %q", got)
+	}
+}
+
 // selDragEditor writes the fixture, opens it, and enters edit mode through the
 // edit surface the way a pointer click does.
 func selDragEditor(t *testing.T) (*App, ownframe.Box) {
@@ -176,16 +283,33 @@ func selDragPrefix(text string) string {
 	return text
 }
 
+// TestSelectionSpanCoversTheCell checks the highlight reaches the far edge of
+// the last selected cell. Rounding the cell width down leaves the last glyph
+// outside the box on some columns.
+func TestSelectionSpanCoversTheCell(t *testing.T) {
+	t.Parallel()
+
+	for col := 1; col <= 80; col++ {
+		left, width := selectionSpan(0, col, 0, false)
+		want := int(math.Ceil(float64(col) * codeCellW))
+		if left != 0 || left+width < want {
+			t.Fatalf("col %d span %d+%d, want the right edge at %d", col, left, width, want)
+		}
+	}
+
+	left, width := selectionSpan(3, 3, 0, true)
+	want := int(math.Ceil(4 * codeCellW))
+	if left+width < want {
+		t.Fatalf("newline span ends at %d, want %d", left+width, want)
+	}
+}
+
 // hasEditSel reports whether any visible row carries the selection class the
 // edit view paints.
 func hasEditSel(rows []codeRow) bool {
 	for _, row := range rows {
-		for _, seg := range row.Segments {
-			for _, class := range strings.Fields(seg.Class) {
-				if class == "edit-sel" {
-					return true
-				}
-			}
+		if row.Selection {
+			return true
 		}
 	}
 

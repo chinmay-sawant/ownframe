@@ -182,6 +182,23 @@ func TestCommitGraphBranchLane(t *testing.T) {
 	}
 }
 
+func TestCommitGraphEdgesFollowParents(t *testing.T) {
+	graph := buildCommitGraph([]gitCommit{
+		graphCommit(6, 5, 4), graphCommit(5, 2), graphCommit(4, 3),
+		graphCommit(3, 1), graphCommit(2, 1), graphCommit(1),
+	})
+	want := map[int][]graphEdge{
+		6: {graphLine(0, 21, 42), graphCurve(0, 1, false)},
+		5: {graphLine(0, 0, 21), graphLine(1, 0, 21), graphLine(0, 21, 42), graphLine(1, 21, 42)},
+		1: {graphLine(0, 0, 21), graphCurve(1, 0, true)},
+	}
+	for commit, edges := range want {
+		if got := graph.Edges[graphHash(commit)]; !slices.Equal(got, edges) {
+			t.Errorf("commit %d edges = %+v, want %+v", commit, got, edges)
+		}
+	}
+}
+
 func TestCommitGraphMaxLanes(t *testing.T) {
 	commits := []gitCommit{
 		graphCommit(100, 99),

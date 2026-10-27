@@ -2,7 +2,6 @@ package window
 
 import (
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -34,6 +33,9 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 
 		s.dev.resizing = false
 	}
+	if s.dev.forward && !pressed {
+		return s.devForwardDrag(px, py, down, released)
+	}
 
 	if !s.dev.mobile && pressed && devOnEdge(s.dev.panel, x, y) {
 		s.dev.resizing = true
@@ -57,18 +59,23 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		if released && s.dev.forward {
 			s.dev.forward = false
 
-			return s.ptr().Release(s.ctx)
+			return s.releaseAt()
 		}
 
 		return nil
 	}
 
-	if released && s.dev.forward {
-		s.dev.forward = false
+	return nil
+}
 
-		return s.ptr().Release(s.ctx)
+func (s *shell) devForwardDrag(x, y float64, down, released bool) error {
+	if down {
+		return s.dragAt(x, y)
 	}
-
+	if released {
+		s.dev.forward = false
+		return s.releaseAt()
+	}
 	return nil
 }
 
@@ -147,20 +154,7 @@ func devOpAt(display *layout.Display, box layout.Box, x, y float64) int {
 func (s *shell) devPick(px, py float64, alt bool) error {
 	if alt || !s.devPickerOn() {
 		s.dev.forward = true
-
-		return host.Batch(s.ctx, s.app, func() error {
-			if err := s.ptr().Press(s.ctx, px, py); err != nil {
-				return err
-			}
-
-			if sel, ok := s.app.(host.Selector); ok {
-				if err := sel.SelectAt(s.ctx, px, py); err != nil {
-					return err
-				}
-			}
-
-			return s.ptr().Click(s.ctx, px, py)
-		})
+		return s.pressAt(px, py)
 	}
 
 	box, ok := devBoxAt(s.app.Boxes(), px, py)

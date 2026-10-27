@@ -33,6 +33,16 @@ func (p *Page) ContextMenuFor(id string) []host.MenuItem {
 	return p.ContextMenu()
 }
 
+// PresentMenu lets the page paint the context menu. A page without a handler
+// leaves the window chrome in place.
+func (p *Page) PresentMenu(x, y int, items []host.MenuItem) bool {
+	if p == nil || p.handlers.PresentMenu == nil {
+		return false
+	}
+
+	return p.handlers.PresentMenu(x, y, items)
+}
+
 // MenuAction runs one custom row. A page without a handler ignores it.
 func (p *Page) MenuAction(ctx context.Context, id string) error {
 	if p == nil || p.handlers.MenuAction == nil {

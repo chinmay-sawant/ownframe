@@ -22,6 +22,8 @@ require (
 	modernc.org/sqlite v1.56.0
 )
 
+require github.com/bvolpato/mermaid-go-renderer v0.11.1
+
 require (
 	codeberg.org/go-pdf/fpdf v0.11.1 // indirect
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
@@ -46,6 +48,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/srwiley/scanx v0.0.0-20190309010443-e94503791388 // indirect
 	github.com/tdewolff/canvas v0.0.0-20260803134256-8e86b9abb917 // indirect

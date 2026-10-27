@@ -138,7 +138,7 @@ func (a *App) commitEditBuffer() {
 	lines := make([]string, len(a.edit.Lines))
 
 	for i, line := range a.edit.Lines {
-		lines[i] = clipLine(expandTabs(strings.TrimSuffix(line, "\r")))
+		lines[i] = expandTabs(strings.TrimSuffix(line, "\r"))
 	}
 
 	doc.Lines = lines

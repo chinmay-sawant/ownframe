@@ -1,10 +1,36 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"image"
+	"image/png"
 	"strings"
 	"testing"
 )
+
+func TestLongMarkdownLineKeepsItsEndInSourceAndPreview(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	line := strings.Repeat("ordinary markdown words ", 80) + "FINAL-CONTENT"
+	writeFile(t, dir, "README.md", line+"\n")
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.openFile("README.md")
+	doc := app.activeDoc()
+	if doc == nil || len(doc.Lines) != 1 || doc.Lines[0] != line {
+		t.Fatal("source line lost content")
+	}
+	app.togglePreview()
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := previewText(doc.Preview); !strings.Contains(got, "FINAL-CONTENT") {
+		t.Fatal("preview lost the end of the line")
+	}
+}
 
 // previewSpacingSource is a narrow-width document that mixes the three blocks
 // the preview reflows differently: a Markdown table with long cells, a prose
@@ -126,6 +152,218 @@ func TestPreviewSpacingNarrow(t *testing.T) {
 	}
 
 	t.Logf("app preview rows = %d at track %d", len(view.PreviewRows), view.TrackTop)
+}
+
+// TestLongLineLastRuneWrapsPastTheClip checks a line longer than the editor
+// wraps in source and in preview, and that no visual row is wider than the
+// column budget that fits in the pane.
+func TestLongLineLastRuneWrapsPastTheClip(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	const marker = "FINAL-CONTENT"
+	line := strings.Repeat("ordinary markdown words ", 80) + marker
+	writeFile(t, dir, "README.md", line+"\n")
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.openFile("README.md")
+	app.Page().SetSize(1160, 900)
+
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	doc := app.activeDoc()
+	cols := app.codeColsForGroup(0)
+	plan := doc.wrapped(cols)
+	assertWrappedMarker(t, "source", plan.Rows, cols, marker)
+	assertBodyInk(t, app, "source")
+
+	app.toggleEdit()
+
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	assertBodyInk(t, app, "edit")
+	app.toggleEdit()
+	app.togglePreview()
+
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	pcols := app.previewCols()
+	rows := doc.Preview
+	assertPreviewMarker(t, rows, pcols, marker)
+	assertBodyInk(t, app, "preview")
+}
+
+// assertBodyInk checks the first painted rows end a full glyph inside the
+// code body. A scrollbar or the line-number gutter is not the right edge.
+func assertBodyInk(t *testing.T, app *App, label string) {
+	t.Helper()
+
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing code body")
+	}
+
+	img := mustDecodePNG(t, app.Page().Probe().PNG())
+	right := int(body.X + body.W)
+
+	for row := 0; row < inkSampleRows; row++ {
+		y := int(body.Y) + row*rowH + rowH/2
+		ink := rightInk(img, int(body.X), right, y)
+		if ink < 0 {
+			continue
+		}
+
+		if gap := right - ink; gap < codeClipSlack {
+			t.Fatalf("%s row %d ink ends %d px from the body edge", label, row, gap)
+		}
+	}
+}
+
+// TestEditorRowsStopAboveTheFileNav checks the last line of a long file can
+// scroll fully above the changed-file pill.
+func TestEditorRowsStopAboveTheFileNav(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", strings.Repeat("editor line\n", 80))
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.openFile("README.md")
+	app.changes = changeSet{Files: []changedFile{{Path: "README.md", Status: "M", Add: 1}}}
+	app.fileNav = newModifiedNav(app.changes)
+	app.Page().SetSize(1160, 900)
+	app.scrollTo(app.contentHeight())
+
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	view := app.View()
+	if len(view.Rows) == 0 {
+		t.Fatal("no visible rows")
+	}
+
+	last := view.Rows[len(view.Rows)-1]
+	if last.No != 80 {
+		t.Fatalf("last visible row is line %d, want 80", last.No)
+	}
+
+	if used := len(view.Rows) * rowH; used > app.editorClearHeight() {
+		t.Fatalf("visible rows use %d px, clear height %d", used, app.editorClearHeight())
+	}
+
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing code body")
+	}
+
+	nav, ok := boxByID(app.Page().Boxes(), "file-nav")
+	if !ok {
+		t.Fatal("missing file navigator")
+	}
+
+	rowBottom := body.Y + float64(len(view.Rows)*rowH)
+	if rowBottom > nav.Y {
+		t.Fatalf("text ends at %.0f, pill starts at %.0f", rowBottom, nav.Y)
+	}
+}
+
+func assertWrappedMarker(t *testing.T, label string, rows []codeRow, cols int, marker string) {
+	t.Helper()
+
+	found := -1
+
+	for i, row := range rows {
+		text := lineText(row.Segments)
+		if n := len([]rune(text)); n > cols {
+			t.Fatalf("%s row %d is %d runes, budget %d: %q", label, i, n, cols, text)
+		}
+
+		if strings.Contains(text, marker) {
+			found = i
+		}
+	}
+
+	if found <= 0 {
+		t.Fatalf("%s marker %q is on row %d, want a later row", label, marker, found)
+	}
+}
+
+func assertPreviewMarker(t *testing.T, rows []previewRow, cols int, marker string) {
+	t.Helper()
+
+	found := -1
+
+	for i, row := range rows {
+		text := lineText(row.Segments)
+		if n := len([]rune(text)); n > cols {
+			t.Fatalf("preview row %d is %d runes, budget %d: %q", i, n, cols, text)
+		}
+
+		if strings.Contains(text, marker) {
+			found = i
+		}
+	}
+
+	if found <= 0 {
+		t.Fatalf("preview marker %q is on row %d, want a later row", marker, found)
+	}
+}
+
+func mustDecodePNG(t *testing.T, raw []byte) image.Image {
+	t.Helper()
+
+	img, err := png.Decode(bytes.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return img
+}
+
+// inkDarkR, inkDarkG, and inkDarkB are the code-body background (#0a0d13)
+// plus a little headroom. Pixels at or under this stay out of the ink scan.
+const (
+	inkSampleRows = 4
+	inkDarkR      = 30
+	inkDarkG      = 34
+	inkDarkB      = 40
+)
+
+func rightInk(img image.Image, left, right, y int) int {
+	b := img.Bounds()
+	if y < b.Min.Y || y >= b.Max.Y {
+		return -1
+	}
+
+	last := -1
+
+	for x := left; x < right && x < b.Max.X; x++ {
+		r, g, b, a := img.At(x, y).RGBA()
+		if a == 0 {
+			continue
+		}
+
+		if r>>8 < inkDarkR && g>>8 < inkDarkG && b>>8 < inkDarkB {
+			continue
+		}
+
+		last = x
+	}
+
+	return last
 }
 
 // previewTableSpans returns the row range of every table block. A gap row is

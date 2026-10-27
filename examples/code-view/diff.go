@@ -53,6 +53,7 @@ type diffLine struct {
 // diffRow is one rendered row of the diff, either unified or split.
 type diffRow struct {
 	Kind      string
+	Current   bool
 	Hunk      string
 	OldNo     string
 	NewNo     string

@@ -66,6 +66,36 @@ func (f *menuAtScreen) ContextMenuAt(_, _ float64) []host.MenuItem {
 	return []host.MenuItem{{ID: "close-all", Label: "Close All", Enabled: true}}
 }
 
+type menuPresentScreen struct {
+	*menuScreen
+	items []host.MenuItem
+}
+
+func (m *menuPresentScreen) PresentMenu(_, _ int, items []host.MenuItem) bool {
+	m.items = append([]host.MenuItem(nil), items...)
+
+	return true
+}
+
+func TestPresentedMenuSkipsShellChrome(t *testing.T) {
+	t.Parallel()
+
+	app := &menuPresentScreen{menuScreen: &menuScreen{
+		fakeScreen: &fakeScreen{width: 300, height: 300},
+		items:      []host.MenuItem{{ID: "close", Label: "Close", Enabled: true}},
+	}}
+	s := &shell{app: app, ctx: context.Background(), screenW: 300, screenH: 300}
+	s.openMenu(12, 18)
+
+	if s.menu.open {
+		t.Fatal("shell menu opened after the page claimed the rows")
+	}
+
+	if len(app.items) != 1 || app.items[0].ID != "close" {
+		t.Fatalf("presented rows = %+v", app.items)
+	}
+}
+
 func TestMenuUsesPageHitTesting(t *testing.T) {
 	app := &menuAtScreen{menuForScreen: &menuForScreen{menuScreen: &menuScreen{fakeScreen: &fakeScreen{width: 300, height: 300}}}}
 	s := &shell{app: app, screenW: 300, screenH: 300}
@@ -112,12 +142,25 @@ func TestMenuPasteFromRow(t *testing.T) {
 		t.Fatalf("click = %v, %v", handled, err)
 	}
 
-	if app.pasted != "hello" {
+	if app.pasted != "hello\n" {
 		t.Fatalf("pasted = %q", app.pasted)
 	}
 
 	if s.menu.open {
 		t.Fatal("menu stayed open")
+	}
+}
+
+func TestClipboardShortcutKeepsMultilineText(t *testing.T) {
+	clipboard.UseMemory(true)
+	clipboard.Write("first\nsecond\n")
+	app := &menuScreen{fakeScreen: &fakeScreen{}}
+	s := &shell{app: app, ctx: context.Background()}
+	if err := s.applyChord(chordPaste); err != nil {
+		t.Fatal(err)
+	}
+	if app.pasted != "first\nsecond\n" {
+		t.Fatalf("pasted = %q", app.pasted)
 	}
 }
 

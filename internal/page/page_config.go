@@ -36,8 +36,16 @@ type Config struct {
 	// Android and iOS. Visible and Hidden override that platform default.
 	Scrollbar host.ScrollbarMode
 	// DisableTouchZoom keeps two-finger touch gestures from zooming the page.
-	// Wheel and keyboard zoom remain available unless LockView is also set.
+	// Wheel and keyboard zoom remain available unless LockView,
+	// DisableWheelZoom, or DisableKeyZoom is also set.
 	DisableTouchZoom bool
+	// DisableWheelZoom keeps Ctrl+wheel and Command+wheel from scaling the
+	// page. The wheel scrolls. Keyboard zoom is unchanged.
+	DisableWheelZoom bool
+	// DisableKeyZoom keeps Ctrl+=, Ctrl++, Ctrl+-, and Ctrl+0 from scaling
+	// the page. The window still consumes those chords. Wheel zoom is
+	// unchanged.
+	DisableKeyZoom bool
 	// DeepLinkSchemes lists URL schemes accepted by DispatchDeepLink.
 	DeepLinkSchemes []string
 	Width           int

@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // Graph cell kinds. A row holds one cell per lane.
 const (
 	graphNode   = "node"
@@ -12,6 +14,13 @@ const (
 // maxCommitLanes bounds the history graph width so a wide merge cannot push the
 // commit list off the rail.
 const maxCommitLanes = 6
+
+const (
+	graphLaneInset = 4
+	graphLaneStep  = 6
+	graphRowMiddle = 21
+	graphRowHeight = 42
+)
 
 // graphCell is one lane of one history row.
 type graphCell struct {
@@ -33,6 +42,31 @@ type graphCell struct {
 type commitGraph struct {
 	Lanes int
 	Rows  map[string][]graphCell
+	Edges map[string][]graphEdge
+}
+
+type graphEdge struct {
+	Path  string
+	Color string
+}
+
+func graphColor(lane int) string {
+	return [...]string{"#7aa2f7", "#65c9a5", "#e8b86d", "#bd91e8", "#e77e92", "#74c7db"}[lane]
+}
+
+func graphX(lane int) int { return graphLaneInset + graphLaneStep*lane }
+
+func graphLine(lane, y1, y2 int) graphEdge {
+	x := graphX(lane)
+	return graphEdge{Path: fmt.Sprintf("M %d %d L %d %d", x, y1, x, y2), Color: graphColor(lane)}
+}
+
+func graphCurve(fromLane, toLane int, incoming bool) graphEdge {
+	from, to := graphX(fromLane), graphX(toLane)
+	if incoming {
+		return graphEdge{Path: fmt.Sprintf("M %d 0 C %d 13 %d 21 %d 21", from, from, to, to), Color: graphColor(fromLane)}
+	}
+	return graphEdge{Path: fmt.Sprintf("M %d 21 C %d 21 %d 29 %d 42", from, from, to, to), Color: graphColor(toLane)}
 }
 
 // buildCommitGraph lays commits out in lanes. Commits arrive newest first, as
@@ -41,7 +75,7 @@ type commitGraph struct {
 // instead of duplicated. The width stops at maxCommitLanes; once every lane is
 // busy, a new line shares the last lane.
 func buildCommitGraph(commits []gitCommit) commitGraph {
-	graph := commitGraph{Rows: make(map[string][]graphCell, len(commits))}
+	graph := commitGraph{Rows: make(map[string][]graphCell, len(commits)), Edges: make(map[string][]graphEdge, len(commits))}
 	if len(commits) == 0 {
 		return graph
 	}
@@ -52,6 +86,7 @@ func buildCommitGraph(commits []gitCommit) commitGraph {
 
 	for i := range commits {
 		commit := commits[i]
+		above := append([]string(nil), laneParent...)
 
 		lane := laneFor(laneParent, commit.Hash)
 		if lane < 0 {
@@ -60,6 +95,7 @@ func buildCommitGraph(commits []gitCommit) commitGraph {
 		}
 
 		cells := graphCells(nil, len(laneParent))
+		var curves []graphEdge
 
 		for other := range laneParent {
 			switch {
@@ -67,6 +103,7 @@ func buildCommitGraph(commits []gitCommit) commitGraph {
 			case laneParent[other] == commit.Hash:
 				// A child line ends here because the commit has two children.
 				cells[other] = graphCell{Lane: other, Kind: graphMerge}
+				curves = append(curves, graphCurve(other, lane, true))
 				laneParent[other] = ""
 			default:
 				cells[other] = graphCell{Lane: other, Kind: graphVert}
@@ -77,6 +114,9 @@ func buildCommitGraph(commits []gitCommit) commitGraph {
 			for _, parent := range commit.Parents[1:] {
 				if other := laneFor(laneParent, parent); other >= 0 {
 					cells[other] = graphCell{Lane: other, Kind: graphMerge}
+					if other != lane {
+						curves = append(curves, graphCurve(lane, other, false))
+					}
 
 					continue
 				}
@@ -85,6 +125,9 @@ func buildCommitGraph(commits []gitCommit) commitGraph {
 				laneParent[other] = parent
 				cells = graphCells(cells, len(laneParent))
 				cells[other] = graphCell{Lane: other, Kind: graphBranch}
+				if other != lane {
+					curves = append(curves, graphCurve(lane, other, false))
+				}
 			}
 		}
 
@@ -97,6 +140,23 @@ func buildCommitGraph(commits []gitCommit) commitGraph {
 		}
 
 		graph.Rows[commit.Hash] = cells
+		var edges []graphEdge
+		for other, waiting := range above {
+			if waiting != "" && (other == lane || waiting != commit.Hash) {
+				edges = append(edges, graphLine(other, 0, graphRowMiddle))
+			}
+		}
+		for other, waiting := range laneParent {
+			if waiting == "" {
+				continue
+			}
+			// New lanes start at the node's curve instead of the row centre.
+			if other != lane && (other >= len(above) || above[other] == "" || above[other] == commit.Hash) {
+				continue
+			}
+			edges = append(edges, graphLine(other, graphRowMiddle, graphRowHeight))
+		}
+		graph.Edges[commit.Hash] = append(edges, curves...)
 	}
 
 	graph.Lanes = len(laneParent)

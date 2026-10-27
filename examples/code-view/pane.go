@@ -1,8 +1,21 @@
 package main
 
-import "strings"
+import (
+	"strings"
+)
 
 const paneMinWidth = 220
+
+// codeClipSlack keeps the last glyph inside the row. The painted advance
+// matches codeCellW; without this slack a full row still enters the right padding.
+const codeClipSlack = 8
+
+// Preview rows do not use the source gutter. .prow pads both sides and .pmark
+// takes the left marker, so the column budget has to subtract those itself.
+const (
+	previewPadX  = 22
+	previewMarkW = 18
+)
 
 // activeGroup returns the group that receives file opens and shortcuts.
 func (a *App) activeGroup() int {
@@ -90,7 +103,7 @@ func (a *App) secondGeometry() (int, int) {
 
 // codeColsFor is the monospace cell count inside a pane width.
 func (a *App) codeColsFor(width int) int {
-	avail := width - codeGutter - codePadRight - editorBorderPad
+	avail := width - codeGutter - codePadRight - editorBorderPad - codeClipSlack
 	cols := int(float64(avail) / codeCellW)
 	if cols < wrapMinCols {
 		cols = wrapMinCols
@@ -99,8 +112,8 @@ func (a *App) codeColsFor(width int) int {
 	return cols
 }
 
-// codeColsForGroup returns the cell count for one editor group.
-func (a *App) codeColsForGroup(group int) int {
+// groupEditorWidth is the pane width for one editor group.
+func (a *App) groupEditorWidth(group int) int {
 	width := a.editorWidth()
 	if group == 1 {
 		_, width = a.secondGeometry()
@@ -108,12 +121,35 @@ func (a *App) codeColsForGroup(group int) int {
 		_, width = a.paneGeometry()
 	}
 
+	return width
+}
+
+// codeColsForGroup returns the cell count for one editor group. A group that
+// is showing Markdown preview uses the preview row's own padding and marker.
+func (a *App) codeColsForGroup(group int) int {
+	width := a.groupEditorWidth(group)
+	if a.preview && a.activeGroup() == group {
+		return a.previewColsFor(width)
+	}
+
 	return a.codeColsFor(width)
 }
 
 // previewCols is the column budget for rendered Markdown.
 func (a *App) previewCols() int {
-	return a.codeColsForGroup(a.activeGroup())
+	return a.previewColsFor(a.groupEditorWidth(a.activeGroup()))
+}
+
+// previewColsFor is the cell count inside a preview pane. The budget subtracts
+// the preview row's padding and marker, then one glyph of slack.
+func (a *App) previewColsFor(width int) int {
+	avail := width - previewPadX - previewPadX - previewMarkW - codeClipSlack
+	cols := int(float64(avail) / codeCellW)
+	if cols < wrapMinCols {
+		cols = wrapMinCols
+	}
+
+	return cols
 }
 
 // secondView builds the right-hand editor pane.
@@ -228,14 +264,25 @@ func (a *App) paneRowCount(group int, doc *fileDoc) int {
 	cols := a.codeColsForGroup(group)
 
 	if a.activeGroup() == group && a.preview && doc.Lang == langMarkdown {
-		doc.ensurePreview(cols)
+		doc.ensurePreview(a.previewColsFor(a.groupEditorWidth(group)))
+		n := len(doc.Preview)
+		if n == 0 {
+			return 0
+		}
 
-		return len(doc.Preview)
+		return n + a.editorTailRows()
 	}
 
+	n := len(doc.Lines)
 	if a.wrap {
-		return len(doc.wrapped(cols).Rows)
+		n = len(doc.wrapped(cols).Rows)
 	}
 
-	return len(doc.Lines)
+	if n == 0 {
+		return 0
+	}
+
+	// Blank rows under the file let the last real row scroll above the
+	// status bar and the file navigator. The slice never draws them.
+	return n + a.editorTailRows()
 }

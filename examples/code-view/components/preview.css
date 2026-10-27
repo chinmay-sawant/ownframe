@@ -19,7 +19,8 @@
   padding: 0 22px;
   overflow: hidden;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-family: var(--mono);
+  font-size: 12.2px;
   line-height: var(--row-h);
   color: #c4cddd;
 }
@@ -57,7 +58,7 @@
 
 .prow .ptext .t-plain { color: inherit; }
 .prow-quote { border-left: 2px solid var(--line); }
-.prow-h1 .ptext { color: #82aaff; font-weight: 700; font-size: 13.5px; }
+.prow-h1 .ptext { color: #82aaff; font-weight: 700; }
 .prow-h2 .ptext { color: #7fdbca; font-weight: 700; }
 .prow-h3 .ptext { color: #c792ea; font-weight: 700; }
 .prow-h4 .ptext { color: #ffcb6b; font-weight: 700; }
@@ -77,6 +78,7 @@
 .prow-table .ptext { color: #9aa5b8; font-family: var(--mono); font-size: 11px; }
 .prow-diagram .ptext { color: var(--accent); font-family: var(--mono); font-size: 11px; }
 .prow-diagram .pmark { color: var(--accent); }
+.pdiag { display: block; height: 20px; }
 .prow-li .pmark { color: var(--accent); }
 .prow-gap { height: var(--row-h); }
 

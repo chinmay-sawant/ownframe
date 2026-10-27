@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"math"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -176,9 +177,9 @@ func (a *App) editKey(ctx context.Context, key string) error {
 	case "arrowright":
 		caret = min(len(runes), caret+1)
 	case "arrowup":
-		caret = editMoveLine(runes, caret, -1)
+		caret = a.editMoveVertical(runes, caret, -1)
 	case "arrowdown":
-		caret = editMoveLine(runes, caret, 1)
+		caret = a.editMoveVertical(runes, caret, 1)
 	case "home":
 		caret = lineStart(runes, caret)
 	case "end":
@@ -365,6 +366,15 @@ func (a *App) decorateEditRows(rows []codeRow) {
 
 	text := a.edit.Text()
 	caretLine, caretCol := a.editDisplayLineCol()
+	caretStart := 0
+	if a.wrap {
+		if doc := a.groupDoc(0); doc != nil {
+			rows := doc.wrapped(a.codeColsForGroup(0)).Rows
+			if len(rows) > 0 {
+				caretStart = rows[caretVisualRow(rows, caretLine, caretCol)].Start
+			}
+		}
+	}
 	selStart, selEnd := a.editAnchor, a.editCaret
 	if selStart > selEnd {
 		selStart, selEnd = selEnd, selStart
@@ -382,7 +392,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 		row := &rows[i]
 		length := segmentRuneLen(row.Segments)
 
-		if row.Line == caretLine && caretCol >= row.Start && caretCol <= row.Start+length {
+		if row.Line == caretLine && row.Start == caretStart && caretCol >= row.Start && caretCol <= row.Start+length {
 			row.Caret = true
 			row.CaretLeft = int(float64(caretCol-row.Start) * codeCellW)
 			if !a.wrap && a.scrollX > 0 {
@@ -405,16 +415,47 @@ func (a *App) decorateEditRows(rows []codeRow) {
 
 		from = max(from, row.Start)
 		to = min(to, row.Start+length)
-		if from >= to {
+		lineLength := utf8.RuneCountInString(expandTabs(lineTextAt(text, row.Line)))
+		newline := row.Line < endLine && row.Start+length >= lineLength
+		if from >= to && !newline {
 			continue
 		}
 
-		row.Segments = markRange(row.Segments, from-row.Start, to-row.Start, "edit-sel")
+		left, width := selectionSpan(from, to, row.Start, newline)
+		row.Selection = true
+		row.SelectionLeft = left
+		row.SelectionWidth = width
+		if !a.wrap {
+			row.SelectionLeft -= a.scrollX
+		}
 	}
+}
+
+// selectionSpan is the highlight box for one visual row. The right edge is
+// the ceiling of the cell grid, so the last selected glyph stays inside the
+// box when the cell width is not a whole pixel.
+func selectionSpan(from, to, rowStart int, newline bool) (int, int) {
+	cols := to - rowStart
+	if newline {
+		cols++
+	}
+
+	if cols < 0 {
+		cols = 0
+	}
+
+	left := int(math.Floor(float64(from-rowStart) * codeCellW))
+	right := int(math.Ceil(float64(cols) * codeCellW))
+	if right < left {
+		right = left
+	}
+
+	return left, right - left
 }
 
 // caretVisualRow finds the wrapped visual row that owns a line and column.
 func caretVisualRow(rows []codeRow, line, col int) int {
+	match := -1
 	for i := range rows {
 		row := rows[i]
 		length := segmentRuneLen(row.Segments)
@@ -423,11 +464,14 @@ func caretVisualRow(rows []codeRow, line, col int) int {
 		}
 
 		if col >= row.Start && col <= row.Start+length {
-			return i
+			match = i
 		}
 	}
+	if match >= 0 {
+		return match
+	}
 
-	return max(0, line)
+	return max(0, min(line, len(rows)-1))
 }
 
 func segmentRuneLen(segs []segment) int {
@@ -478,17 +522,38 @@ func offsetLineCol(text string, offset int) (int, int) {
 	return line, col
 }
 
-// editMoveLine keeps the raw column while moving one line.
+// editMoveVertical follows visual rows when the editor wraps lines.
+func (a *App) editMoveVertical(runes []rune, caret, delta int) int {
+	if !a.wrap || a.groupDoc(0) == nil {
+		return editMoveLine(runes, caret, delta)
+	}
+	rows := a.groupDoc(0).wrapped(a.codeColsForGroup(0)).Rows
+	if len(rows) == 0 {
+		return caret
+	}
+	line, col := a.editDisplayLineCol()
+	current := caretVisualRow(rows, line, col)
+	next := current + delta
+	if next < 0 || next >= len(rows) {
+		return caret
+	}
+	row := rows[next]
+	display := min(row.Start+col-rows[current].Start, row.Start+segmentRuneLen(row.Segments))
+	text := string(runes)
+	rawCol := rawColumnAt(lineTextAt(text, row.Line), display)
+	return offsetAtPoint(selectionLines(text), row.Line, rawCol)
+}
+
+// editMoveLine keeps the raw column while moving one source line.
 func editMoveLine(runes []rune, caret, delta int) int {
 	line, col := offsetLineCol(string(runes), caret)
-	lines := strings.Split(string(runes), "\n")
+	lines := selectionLines(string(runes))
 	line += delta
 	if line < 0 || line >= len(lines) {
 		return caret
 	}
 
-	runesLine := []rune(lines[line])
-	return lineStart(runes, caret) + min(col, len(runesLine))
+	return offsetAtPoint(lines, line, col)
 }
 
 func editMoveLines(runes []rune, caret, delta int) int {

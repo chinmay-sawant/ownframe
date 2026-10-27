@@ -33,6 +33,7 @@ func buildHTML() string {
 	b.WriteString(file("components/commit_tip.html"))
 	b.WriteString(file("components/inline_card.html"))
 	b.WriteString(file("components/palette.html"))
+	b.WriteString(file("components/context_menu.html"))
 	b.WriteString(`</div></body></html>`)
 
 	return b.String()

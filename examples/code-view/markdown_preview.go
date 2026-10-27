@@ -26,6 +26,10 @@ type previewRow struct {
 	Kind     string
 	Marker   string
 	Segments []segment
+	Image    string
+	ImageW   int
+	Alt      string
+	png      []byte
 }
 
 // ensurePreview builds and caches the rendered rows at the default width.
@@ -694,6 +698,10 @@ func sanitizePreviewRows(rows []previewRow, cols int) ([]previewRow, []int) {
 // Table, diagram, rule, and code rows clip so their alignment survives; prose
 // rows wrap.
 func sanitizePreviewRow(row previewRow, cols int) []previewRow {
+	if row.Image != "" {
+		return []previewRow{row}
+	}
+
 	if row.Kind == "gap" {
 		return []previewRow{{Kind: row.Kind}}
 	}

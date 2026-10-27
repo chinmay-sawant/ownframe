@@ -3,11 +3,15 @@ package main
 // View is the data the code view template prints. Every field is a plain
 // value or a prebuilt row, so one SetData call publishes one frame.
 type View struct {
-	Mode    string
-	Filter  string
-	Details bool
-	DevOn   bool
-	Modal   bool
+	Mode     string
+	Filter   string
+	Details  bool
+	DevOn    bool
+	Modal    bool
+	MenuOpen bool
+	MenuX    int
+	MenuY    int
+	MenuRows []menuViewRow
 
 	Workspace   string
 	Branch      string
@@ -92,6 +96,14 @@ type View struct {
 	InlineCard   inlineCard
 }
 
+// menuViewRow is one right-click row the page paints itself.
+type menuViewRow struct {
+	Index   int
+	ID      string
+	Label   string
+	Enabled bool
+}
+
 // commitFloatView is the page-space commit message card that floats to the
 // right of the history rail.
 type commitFloatView struct {
@@ -104,16 +116,18 @@ type commitFloatView struct {
 
 // fileNavView is the bottom-center changed-file navigator.
 type fileNavView struct {
-	Open     bool
-	Label    string
-	Path     string
-	Name     string
-	Dir      string
-	Position int
-	Total    int
-	Add      int
-	Del      int
-	Multiple bool
+	Open          bool
+	Label         string
+	Path          string
+	Name          string
+	Dir           string
+	Position      int
+	Total         int
+	Add           int
+	Del           int
+	Multiple      bool
+	CanPrevChange bool
+	CanNextChange bool
 }
 
 // secondaryView is the right-hand editor group. It carries only the fields
@@ -204,23 +218,27 @@ type tabRow struct {
 	Status      string
 	StatusClass string
 	Active      bool
+	Dirty       bool
 }
 
 // codeRow is one visual source row with its prebuilt spans. No is zero on a
 // wrapped continuation row.
 type codeRow struct {
-	No          int
-	Line        int
-	Start       int
-	Segments    []segment
-	Mark        string
-	MarkClass   string
-	Hint        string
-	ChangeClass string
-	ChangeLine  int
-	Caret       bool
-	CaretLeft   int
-	ScrollX     int
+	No             int
+	Line           int
+	Start          int
+	Segments       []segment
+	Mark           string
+	MarkClass      string
+	Hint           string
+	ChangeClass    string
+	ChangeLine     int
+	Caret          bool
+	CaretLeft      int
+	Selection      bool
+	SelectionLeft  int
+	SelectionWidth int
+	ScrollX        int
 }
 
 // recentRow is one quick-open entry on the welcome panel.
@@ -260,6 +278,8 @@ type diffView struct {
 	ScrollTop     int
 	ScrollHeight  int
 	ScrollTrack   int
+	RailLeft      int
+	RailTop       int
 	RailThumbTop  int
 	ThumbCells    int
 	AtTop         bool
@@ -303,6 +323,7 @@ type historyView struct {
 	AtTop        bool
 	AtEnd        bool
 	LoadingMore  bool
+	RailLeft     int
 	RailTop      int
 	RailThumbTop int
 	ThumbCells   int
@@ -313,6 +334,7 @@ type commitRow struct {
 	Hash        string
 	Short       string
 	Subject     string
+	Lines       []string
 	Author      string
 	Date        string
 	Body        string
@@ -327,6 +349,9 @@ type commitRow struct {
 	PreviewPath string
 	PreviewErr  string
 	Graph       []graphCell
+	GraphEdges  []graphEdge
+	GraphX      int
+	GraphColor  string
 	Lanes       int
 }
 

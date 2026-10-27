@@ -9,6 +9,7 @@ import (
 
 var (
 	_ host.ContextMenuFor = (*Page)(nil)
+	_ host.MenuPresenter  = (*Page)(nil)
 	_ host.MenuActioner   = (*Page)(nil)
 )
 
@@ -161,5 +162,33 @@ func TestContextMenuAddHandlersMergesMenu(t *testing.T) {
 
 	if acted != "code-view:tab-close-all:1" {
 		t.Errorf("AddHandlers dropped MenuAction: id=%q, want code-view:tab-close-all:1", acted)
+	}
+}
+
+func TestPresentMenuForwardsRows(t *testing.T) {
+	t.Parallel()
+
+	p := bftPage(t, `<div id="tab-0">tab</div>`)
+	if p.PresentMenu(4, 8, []MenuItem{{ID: "close", Label: "Close", Enabled: true}}) {
+		t.Fatal("a page without PresentMenu claimed the menu")
+	}
+
+	var got []MenuItem
+	p.Handle(Handlers{
+		PresentMenu: func(x, y int, items []MenuItem) bool {
+			if x != 4 || y != 8 {
+				t.Fatalf("point = %d,%d", x, y)
+			}
+			got = items
+			return true
+		},
+	})
+
+	if !p.PresentMenu(4, 8, []MenuItem{{ID: "close", Label: "Close", Enabled: true}}) {
+		t.Fatal("PresentMenu did not claim the menu")
+	}
+
+	if len(got) != 1 || got[0].ID != "close" {
+		t.Fatalf("rows = %+v", got)
 	}
 }

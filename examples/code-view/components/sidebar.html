@@ -72,7 +72,7 @@
     {{if .Diff.HasChanges}}
     <div class="changes{{if .Diff.Scroll}} scroll-fade{{end}}{{if .Diff.AtTop}} at-top{{end}}{{if .Diff.AtEnd}} at-end{{end}}" id="changes-list">
       {{range .Diff.Files}}
-      <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
+      <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}"{{if .Selected}} aria-current="true"{{end}}{{if $.Modal}} tabindex="-1"{{end}}>
         <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
         <span class="change-text">
           <span class="change-name">{{.Name}}</span>
@@ -132,10 +132,13 @@
         <div class="hist-commit{{if $commit.Selected}} on{{end}}">
           <button class="hist-row" id="commit-{{$commit.Short}}" data-action="commit:{{$commit.Hash}}" type="button" title="{{$commit.Subject}}" aria-label="Commit {{$commit.Short}}: {{$commit.Subject}}"{{if $.Modal}} tabindex="-1"{{end}}>
             <span class="hist-graph">
-              {{range $cell := $commit.Graph}}{{if eq $cell.Kind "node"}}<span class="glane g{{$cell.Lane}}"></span><span class="gnode-bar g{{$cell.Lane}}"></span>{{else if eq $cell.Kind "vert"}}<span class="glane g{{$cell.Lane}}"></span>{{else if eq $cell.Kind "branch"}}<span class="glane g{{$cell.Lane}}"></span><span class="gnode-bar g{{$cell.Lane}}"></span>{{else if eq $cell.Kind "merge"}}<span class="glane g{{$cell.Lane}}"></span><span class="gnode-bar g{{$cell.Lane}}"></span>{{end}}{{end}}
+              <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+                {{range $edge := $commit.GraphEdges}}<path d="{{$edge.Path}}" stroke="{{$edge.Color}}" stroke-width="1.5" stroke-linecap="round"/>{{end}}
+                <circle cx="{{$commit.GraphX}}" cy="21" r="3.2" fill="{{if $commit.Head}}{{$commit.GraphColor}}{{else}}#0b0e14{{end}}" stroke="{{$commit.GraphColor}}" stroke-width="1.7"/>
+              </svg>
             </span>
             <span class="hist-hash mono">{{$commit.Short}}</span>
-            <span class="hist-subject">{{$commit.Subject}}</span>
+            <span class="hist-subject">{{range $line := $commit.Lines}}<span class="hist-line">{{$line}}</span>{{end}}</span>
             <span class="hist-when">{{$commit.Date}}</span>
             <span class="hist-stat"><b class="add">+{{$commit.Add}}</b><b class="del">−{{$commit.Del}}</b></span>
           </button>
@@ -151,15 +154,15 @@
       <span class="dim note-one">{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}</span>
     </div>
   {{end}}
-
-  {{if .Diff.Scroll}}
-  <button class="tree-scroll list-scroll" id="changes-scroll" type="button" title="Drag to scroll changed files" aria-label="Scroll changed files" tabindex="-1" style="top:62px;bottom:auto;height:{{.Diff.ScrollTrack}}px">
-    <span class="tree-thumb list-thumb" id="changes-thumb" style="top:{{.Diff.ScrollTop}}px;height:{{.Diff.ScrollHeight}}px"></span>
-  </button>
-  {{end}}
-  {{if and .History.Visible .History.Scroll}}
-  <button class="tree-scroll hist-scroll" id="history-scroll" type="button" title="Drag to scroll history" aria-label="Scroll history" tabindex="-1" style="top:{{.History.RailTop}}px;bottom:auto;height:{{.History.ScrollTrack}}px">
-    <span class="tree-thumb hist-thumb" id="history-thumb" style="top:{{.History.ScrollTop}}px;height:{{.History.ScrollHeight}}px"></span>
-  </button>
-  {{end}}
 </aside>
+
+{{if .Diff.Scroll}}
+<button class="list-scroll" id="changes-scroll" type="button" title="Drag to scroll changed files" aria-label="Scroll changed files" tabindex="-1" style="left:{{.Diff.RailLeft}}px;top:{{.Diff.RailTop}}px;height:{{.Diff.ScrollTrack}}px">
+  <span class="list-thumb" id="changes-thumb" style="top:{{.Diff.ScrollTop}}px;height:{{.Diff.ScrollHeight}}px"><svg width="8" height="{{.Diff.ScrollHeight}}" aria-hidden="true"><rect width="8" height="{{.Diff.ScrollHeight}}" fill="#c5c9d1"/></svg></span>
+</button>
+{{end}}
+{{if and .History.Visible .History.Scroll}}
+<button class="hist-scroll" id="history-scroll" type="button" title="Drag to scroll history" aria-label="Scroll history" tabindex="-1" style="left:{{.History.RailLeft}}px;top:{{.History.RailTop}}px;height:{{.History.ScrollTrack}}px">
+  <span class="hist-thumb" id="history-thumb" style="top:{{.History.ScrollTop}}px;height:{{.History.ScrollHeight}}px"><svg width="8" height="{{.History.ScrollHeight}}" aria-hidden="true"><rect width="8" height="{{.History.ScrollHeight}}" fill="#c5c9d1"/></svg></span>
+</button>
+{{end}}

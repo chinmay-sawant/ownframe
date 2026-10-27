@@ -1,10 +1,50 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"image/png"
+	"strings"
 	"testing"
+	"time"
 	"unicode/utf8"
 )
+
+func TestEditCaretBlinks(t *testing.T) {
+	ctx := context.Background()
+	app := editCaretEditor(t, ctx)
+	var id uint64
+	for _, box := range app.Page().Boxes() {
+		for _, animation := range box.Animations {
+			if animation.Name == "edit-blink" && len(box.OperationIDs) > 0 {
+				id = box.OperationIDs[0]
+			}
+		}
+	}
+	if id == 0 {
+		t.Fatal("missing animated caret")
+	}
+	visible, hidden := false, false
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) && (!visible || !hidden) {
+		if err := app.Page().Testing().Tick(ctx); err != nil {
+			t.Fatal(err)
+		}
+		for _, op := range app.Page().Probe().Display().Ops {
+			if op.ID == id {
+				visible = visible || op.Opacity() > 0.8
+				hidden = hidden || op.Opacity() < 0.2
+			}
+		}
+		if !visible || !hidden {
+			time.Sleep(50 * time.Millisecond)
+		}
+	}
+	if !visible || !hidden {
+		t.Fatalf("caret blink visible=%v hidden=%v", visible, hidden)
+	}
+}
 
 // editCaretCode keeps every line short enough for one visual row, so a source
 // line and a visual row are the same offset from the top of the code body.
@@ -16,6 +56,137 @@ const (
 	editCaretLine = 2
 	editCaretCol  = 6
 )
+
+func TestEditCaretFirstClickAndVerticalKeys(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", "# title\nshort\nabcdefghij\nlast line\n")
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.openFile("README.md")
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing code body")
+	}
+	x := body.X + editTextLeft + 4*codeCellW
+	y := body.Y + 2*rowH + rowH/2
+	if err := app.Page().Edit().Press(ctx, x, y); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Click(ctx, x, y); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Edit().Release(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if !app.editing {
+		t.Fatal("first click did not enter edit mode")
+	}
+	if line, col := offsetLineCol(app.edit.Text(), app.editCaret); line != 2 || col != 4 {
+		t.Fatalf("click caret = %d:%d, want 2:4", line, col)
+	}
+	row := editCaretRow(t, app.View().Rows, 2, 4)
+	img, err := png.Decode(bytes.NewReader(app.Page().Probe().PNG()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cx := int(body.X) + editTextLeft + row.CaretLeft
+	cy := int(body.Y) + 2*rowH + 5
+	r, g, b, _ := img.At(cx, cy).RGBA()
+	if r>>8 != 122 || g>>8 != 162 || b>>8 != 247 {
+		t.Fatalf("caret pixel at %d,%d = %d,%d,%d, want accent blue", cx, cy, r>>8, g>>8, b>>8)
+	}
+	for _, step := range []struct {
+		key  string
+		line int
+		col  int
+	}{{"arrowup", 1, 4}, {"arrowdown", 2, 4}, {"arrowdown", 3, 4}} {
+		if err := app.Page().Edit().KeyDown(ctx, step.key); err != nil {
+			t.Fatal(err)
+		}
+		if line, col := offsetLineCol(app.edit.Text(), app.editCaret); line != step.line || col != step.col {
+			t.Fatalf("%s caret = %d:%d, want %d:%d", step.key, line, col, step.line, step.col)
+		}
+		editCaretRow(t, app.View().Rows, step.line, step.col)
+	}
+	if err := app.Page().Edit().Type(ctx, "X"); err != nil {
+		t.Fatal(err)
+	}
+	if got := lineTextAt(app.edit.Text(), 3); got != "lastX line" {
+		t.Fatalf("typed line = %q, want lastX line", got)
+	}
+}
+
+func TestEditCaretClickAfterScroll(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	var text strings.Builder
+	for i := 0; i < 100; i++ {
+		fmt.Fprintf(&text, "line %03d text\n", i)
+	}
+	writeFile(t, dir, "README.md", text.String())
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.openFile("README.md")
+	app.wrap = false
+	app.Page().Scroll().SetScrollOffset(0, 200)
+	app.onScroll(200, app.viewportH)
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing code body")
+	}
+	if err := app.Page().Edit().Press(ctx, body.X+editTextLeft+3*codeCellW, body.Y+200+2*rowH+rowH/2); err != nil {
+		t.Fatal(err)
+	}
+	if line, col := offsetLineCol(app.edit.Text(), app.editCaret); line != 12 || col != 3 {
+		t.Fatalf("scrolled click caret = %d:%d, want 12:3", line, col)
+	}
+}
+
+func TestEditCaretWrappedClickAndVerticalKeys(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", strings.Repeat("x", 240)+"\nend\n")
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	app.Page().SetSize(700, 500)
+	app.openFile("README.md")
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing code body")
+	}
+	rows := app.activeDoc().wrapped(app.codeColsForGroup(0)).Rows
+	if len(rows) < 3 || rows[1].Line != 0 || rows[2].Line != 0 {
+		t.Fatalf("expected wrapped rows: %+v", rows)
+	}
+	if err := app.Page().Edit().Press(ctx, body.X+editTextLeft+4*codeCellW, body.Y+rowH+rowH/2); err != nil {
+		t.Fatal(err)
+	}
+	if line, col := offsetLineCol(app.edit.Text(), app.editCaret); line != 0 || col != rows[1].Start+4 {
+		t.Fatalf("wrapped click caret = %d:%d, want 0:%d", line, col, rows[1].Start+4)
+	}
+	if err := app.Page().Edit().KeyDown(ctx, "arrowdown"); err != nil {
+		t.Fatal(err)
+	}
+	if line, col := offsetLineCol(app.edit.Text(), app.editCaret); line != 0 || col != rows[2].Start+4 {
+		t.Fatalf("wrapped down caret = %d:%d, want 0:%d", line, col, rows[2].Start+4)
+	}
+}
 
 // TestEditCaretClickTypesAndMoves is the regression test for the custom
 // editor's caret: a press inside the code body places the caret on the clicked

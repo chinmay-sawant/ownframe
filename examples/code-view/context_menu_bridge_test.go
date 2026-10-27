@@ -30,8 +30,8 @@ func TestContextMenuBridgeTabRows(t *testing.T) {
 	}
 
 	rows := app.contextMenuForPage("tab-1")
-	if len(rows) != 3 {
-		t.Fatalf("handler rows = %d, want 3", len(rows))
+	if len(rows) != 5 {
+		t.Fatalf("handler rows = %d, want 5", len(rows))
 	}
 
 	if !strings.HasPrefix(rows[2].ID, "code-view:tab-close-all") {
@@ -44,8 +44,8 @@ func TestContextMenuBridgeTabRows(t *testing.T) {
 	}
 
 	rows = bridge.ContextMenuFor("tab-1")
-	if len(rows) != 3 {
-		t.Fatalf("page rows = %d, want 3", len(rows))
+	if len(rows) != 5 {
+		t.Fatalf("page rows = %d, want 5", len(rows))
 	}
 
 	if !strings.HasPrefix(rows[2].ID, "code-view:tab-close-all") {
@@ -73,8 +73,8 @@ func TestContextMenuBridgeCloseAllGroupOne(t *testing.T) {
 	}
 
 	rows := app.contextMenuForPage("tab2-0")
-	if len(rows) != 3 {
-		t.Fatalf("handler rows = %d, want 3", len(rows))
+	if len(rows) != 5 {
+		t.Fatalf("handler rows = %d, want 5", len(rows))
 	}
 
 	closeAll := rows[2]

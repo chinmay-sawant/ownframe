@@ -110,6 +110,29 @@ func (w Window) TouchZoomAllowed() bool {
 	return p.TouchZoomAllowed()
 }
 
+// WheelZoomAllowed reports whether Ctrl+wheel or Command+wheel may scale the
+// page. DisableWheelZoom on Config turns it off. The wheel then scrolls.
+func (w Window) WheelZoomAllowed() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.WheelZoomAllowed()
+}
+
+// KeyZoomAllowed reports whether Ctrl+=, Ctrl++, Ctrl+-, and Ctrl+0 may
+// scale the page. DisableKeyZoom on Config turns it off. The window still
+// consumes those chords.
+func (w Window) KeyZoomAllowed() bool {
+	p := innerPage(w.page)
+	if p == nil {
+		return false
+	}
+
+	return p.KeyZoomAllowed()
+}
+
 // SetTouchScrollOptions tunes finger sensitivity and inertial decay.
 func (w Window) SetTouchScrollOptions(options TouchScrollOptions) {
 	p := innerPage(w.page)

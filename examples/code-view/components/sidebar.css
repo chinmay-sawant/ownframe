@@ -274,13 +274,13 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 10px 4px 8px;
+  padding: 4px 16px 4px 8px;
   border-left: 2px solid transparent;
   color: var(--muted);
 }
 
 .change:hover { background-color: var(--panel-2); }
-.change.on { border-left-color: var(--accent); background-color: var(--panel-3); }
+.change.on, .change.on:hover { border-left-color: var(--accent); background-color: #20324b; }
 
 .change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .change-name { font-size: 10.5px; color: var(--text); overflow: hidden; white-space: nowrap; }

@@ -114,22 +114,28 @@
 .hist-hash {
   width: 52px;
   flex: 0 0 52px;
-  color: var(--dim);
-  font-size: 8.5px;
+  color: #8492a8;
+  font-size: 9px;
 }
 
-/* Two lines of the subject fit the fixed 42 px row, so a longer message
-   never grows the rail or shifts the commit below it. */
+/* Two lines of the subject fit the fixed 42 px row. Each line is already
+   wrapped on word boundaries, so the row does not break a word or grow. */
 .hist-subject {
   flex: 1;
   min-width: 0;
-  max-height: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   overflow: hidden;
   color: #c9d2e2;
   font-size: 10px;
-  line-height: 1.25;
-  white-space: normal;
-  overflow-wrap: anywhere;
+}
+
+.hist-line {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  line-height: 13px;
 }
 
 .hist-row:hover .hist-subject { color: #fff; }
@@ -300,21 +306,21 @@
 
 .commit-tip-float b {
   display: block;
+  overflow: hidden;
   color: var(--text);
   font-size: 10px;
   font-weight: 600;
   line-height: 14px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .commit-tip-float span {
   display: block;
+  overflow: hidden;
   color: var(--muted);
   font-size: 9.5px;
   line-height: 14px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .commit-tip-float span.tip-subject {

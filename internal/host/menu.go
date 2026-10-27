@@ -30,3 +30,9 @@ type ContextMenuFor interface {
 type MenuActioner interface {
 	MenuAction(ctx context.Context, id string) error
 }
+
+// MenuPresenter is a screen that paints the context menu itself. PresentMenu
+// reports whether the screen took the rows. The window then skips its chrome.
+type MenuPresenter interface {
+	PresentMenu(x, y int, items []MenuItem) bool
+}

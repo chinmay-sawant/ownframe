@@ -1,6 +1,10 @@
 package gesture
 
-import "github.com/chinmay-sawant/ownframe/internal/page/form"
+import (
+	"strings"
+
+	"github.com/chinmay-sawant/ownframe/internal/page/form"
+)
 
 // Op names one typing or clipboard edit of a focused field.
 type Op int
@@ -32,6 +36,9 @@ func Edit(field form.Control, text string, op Op, caret, anchor int) (form.Contr
 		return form.DeleteWordValue(field, caret, anchor)
 	case OpPaste:
 		text = ClampPaste(text)
+		if field.Tag != "textarea" {
+			text = strings.NewReplacer("\r", "", "\n", "").Replace(text)
+		}
 
 		return form.InsertValue(field, caret, anchor, text)
 	case OpInsert:

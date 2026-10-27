@@ -81,6 +81,9 @@ func (p *Page) AddHandlers(h Handlers) {
 	if h.MenuAction != nil {
 		p.handlers.MenuAction = h.MenuAction
 	}
+	if h.PresentMenu != nil {
+		p.handlers.PresentMenu = h.PresentMenu
+	}
 	if h.Drop != nil {
 		p.handlers.Drop = h.Drop
 	}

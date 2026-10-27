@@ -24,6 +24,16 @@ func (s *shell) touchZoomAllowed() bool {
 	return !ok || policy.TouchZoomAllowed()
 }
 
+func (s *shell) wheelZoomAllowed() bool {
+	policy, ok := s.app.(host.WheelZoomPolicy)
+	return !ok || policy.WheelZoomAllowed()
+}
+
+func (s *shell) keyZoomAllowed() bool {
+	policy, ok := s.app.(host.KeyZoomPolicy)
+	return !ok || policy.KeyZoomAllowed()
+}
+
 func (s *shell) holdTouchZoom() {
 	s.fingers.zoom = 1
 	s.fingers.span0 = 0

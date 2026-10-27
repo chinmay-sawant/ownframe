@@ -156,3 +156,54 @@ func TestCommitTipTextWraps(t *testing.T) {
 		}
 	}
 }
+
+func TestHistorySubjectKeepsWordsOnTwoLines(t *testing.T) {
+	t.Parallel()
+
+	subject := "Fix the history subject wrapping so a long commit message uses the full row width"
+	lines := historySubjectLines(subject)
+	if len(lines) != 2 {
+		t.Fatalf("lines = %#v, want two", lines)
+	}
+
+	words := strings.Fields(subject)
+	seen := 0
+	for i, line := range lines {
+		if n := len([]rune(line)); n > historySubjectCols+1 {
+			t.Fatalf("line %d = %q is %d runes", i, line, n)
+		}
+		for _, tok := range strings.Fields(strings.TrimSuffix(line, "…")) {
+			if seen >= len(words) || tok != words[seen] {
+				t.Fatalf("line %d token %q, want %q", i, tok, words[seen])
+			}
+			seen++
+		}
+	}
+	if seen < 8 {
+		t.Fatalf("only %d words wrapped from %q", seen, lines)
+	}
+}
+
+func TestCommitTipColsFillTheCard(t *testing.T) {
+	t.Parallel()
+
+	cols := commitTipCols(commitTipWidth)
+	if cols < 60 {
+		t.Fatalf("cols = %d, want the hover card filled", cols)
+	}
+
+	lines := commitTipText(
+		"Fix the history subject wrapping so a long commit message uses the full row width",
+		"The hover card should wrap on word boundaries and sit against the text instead of leaving a wide empty gutter.",
+		"abc1234 · Ada Lovelace · Tue Oct 27",
+		cols,
+	)
+	if len(lines) < 2 {
+		t.Fatalf("lines = %#v", lines)
+	}
+	for i, line := range lines {
+		if n := len([]rune(line)); n > cols {
+			t.Fatalf("line %d = %q is %d runes, want at most %d", i, line, n, cols)
+		}
+	}
+}

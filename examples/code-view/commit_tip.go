@@ -9,6 +9,7 @@ const (
 	commitTipLift         = 4
 	commitTipEdge         = 8
 	commitTipPadH         = 14
+	commitTipPadX         = 20
 	commitTipLineH        = 14
 	commitTipMinH         = 44
 	commitTipMaxH         = 160
@@ -16,7 +17,93 @@ const (
 	commitTipBodyLines    = 6
 	commitTipMetaLines    = 1
 	commitTipBodyMaxRunes = 280
+	// commitTipCell is the measured advance of the 10px hover font, in pixels.
+	commitTipCell = 4.45
+	// historySubjectCols is how many runes fit the subject next to the graph
+	// and the hash, in the 9.5px sidebar font, clear of the scrollbar.
+	historySubjectCols = 33
 )
+
+// commitTipCols is the rune budget of one hover line. cardWidth includes the
+// card's horizontal padding, which the text does not use.
+func commitTipCols(cardWidth int) int {
+	text := cardWidth - commitTipPadX
+	if text < 1 {
+		return 1
+	}
+
+	cols := int(float64(text) / commitTipCell)
+	if cols < 1 {
+		return 1
+	}
+
+	return cols
+}
+
+// historySubjectLines wraps a commit subject onto the two lines the rail
+// row can show. Breaks stay on word boundaries. A longer subject ends the
+// second line with an ellipsis after a whole word.
+func historySubjectLines(subject string) []string {
+	words := strings.Fields(strings.TrimSpace(subject))
+	if len(words) == 0 {
+		return nil
+	}
+
+	first, rest := packWords(words, historySubjectCols)
+	if first == "" {
+		return nil
+	}
+	if len(rest) == 0 {
+		return []string{first}
+	}
+
+	second, leftover := packWords(rest, historySubjectCols-1)
+	if second == "" {
+		return []string{first}
+	}
+	if len(leftover) > 0 {
+		second += "…"
+	}
+
+	return []string{first, second}
+}
+
+// packWords joins words that fit in width runes. An overlong first word is
+// cut so a single token cannot run past the column.
+func packWords(words []string, width int) (line string, rest []string) {
+	if width < 1 || len(words) == 0 {
+		return "", words
+	}
+
+	used := 0
+	taken := 0
+	var b strings.Builder
+
+	for _, word := range words {
+		runes := []rune(word)
+		need := len(runes)
+		if used > 0 {
+			need++
+		}
+		if used > 0 && used+need > width {
+			break
+		}
+		if used == 0 && len(runes) > width {
+			b.WriteString(string(runes[:width]))
+			rest = append([]string{string(runes[width:])}, words[1:]...)
+
+			return b.String(), rest
+		}
+		if used > 0 {
+			b.WriteByte(' ')
+		}
+		b.WriteString(word)
+		used += need
+		taken++
+	}
+
+	return b.String(), words[taken:]
+}
 
 // commitTipLayout is the page-pixel box of the commit hover card. Show is
 // false when there is no page area or no text to draw, so the caller can skip

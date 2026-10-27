@@ -298,6 +298,18 @@ func TestDevTools(t *testing.T) {
 	}
 }
 
+func TestWheelZoomStaysOff(t *testing.T) {
+	app := newTestApp(t)
+
+	if app.Page().Window().WheelZoomAllowed() {
+		t.Fatal("control+wheel still zooms the window")
+	}
+
+	if app.Page().Window().KeyZoomAllowed() {
+		t.Fatal("control plus and control minus still zoom the window")
+	}
+}
+
 func TestCopyPathAndFile(t *testing.T) {
 	ownframe.UseMemory(true)
 	defer ownframe.UseMemory(false)
@@ -442,7 +454,7 @@ func TestResponsiveLayout(t *testing.T) {
 		}
 
 		if editor.X+editor.W > float64(size[0])+1 {
-			t.Fatalf("%dx%d: editor escapes the window", size[0], size[1])
+			t.Fatalf("%dx%d: editor runs past the page", size[0], size[1])
 		}
 	}
 }

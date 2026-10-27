@@ -4,7 +4,7 @@ A page taller or wider than the window scrolls on the mouse wheel, a touch drag,
 
 ## Wheel
 
-`internal/window/fit.go` moves the offset 48 px per wheel notch. A positive wheel moves toward the start of the page, a negative wheel toward the end, and the horizontal wheel pans sideways. The offset is clamped to the content, so a wheel or a drag cannot pass an edge. Holding Ctrl (or Command) while turning the wheel zooms the page instead of scrolling it; [keys.md](keys.md) has the zoom keys and the range.
+`internal/window/fit.go` moves the offset 48 px per wheel notch. A positive wheel moves toward the start of the page, a negative wheel toward the end, and the horizontal wheel pans sideways. The offset is clamped to the content, so a wheel or a drag cannot pass an edge. Holding Ctrl (or Command) while turning the wheel zooms the page instead of scrolling it, unless the page sets `Config.DisableWheelZoom`, in which case that wheel scrolls. [keys.md](keys.md) has the zoom keys and the range.
 
 The window measures the canvas and grows it to cover every box that overflows it. A fixed-width child wider than the window scrolls too. The replay buffer uses the same measure, so scrolled content stays painted.
 

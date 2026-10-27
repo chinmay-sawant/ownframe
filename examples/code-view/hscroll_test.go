@@ -154,6 +154,28 @@ func TestHScrollWheelEvents(t *testing.T) {
 	}
 }
 
+// TestEditorVerticalWheelReachesTheWindow checks that a vertical wheel over
+// the editor is left for the window, which pans a long file.
+func TestEditorVerticalWheelReachesTheWindow(t *testing.T) {
+	app := newTestApp(t)
+	app.openFile("backend/probe.go")
+	ctx := context.Background()
+
+	body, ok := boxByID(app.Page().Boxes(), "code-body")
+	if !ok {
+		t.Fatal("missing code body")
+	}
+
+	handled, err := app.onWheel(ctx, body.X+body.W/2, body.Y+body.H/2, 0, -1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if handled {
+		t.Fatal("vertical wheel over the editor was consumed")
+	}
+}
+
 // TestHScrollKeyboardActions verifies that arrow keys scroll horizontally when
 // wrap is disabled and clamp properly.
 func TestHScrollKeyboardActions(t *testing.T) {

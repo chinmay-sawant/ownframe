@@ -527,6 +527,22 @@ func (p *Page) TouchZoomAllowed() bool {
 	return gesture.TouchZoom(p == nil, p != nil && p.allowTouchZoom)
 }
 
+// WheelZoomAllowed reports whether Ctrl+wheel or Command+wheel may scale the
+// page. A nil page keeps the default, which is on.
+func (p *Page) WheelZoomAllowed() bool {
+	return p == nil || !p.disableWheelZoom
+}
+
+var _ host.WheelZoomPolicy = (*Page)(nil)
+
+// KeyZoomAllowed reports whether Ctrl+=, Ctrl++, Ctrl+-, and Ctrl+0 may
+// scale the page. A nil page keeps the default, which is on.
+func (p *Page) KeyZoomAllowed() bool {
+	return p == nil || !p.disableKeyZoom
+}
+
+var _ host.KeyZoomPolicy = (*Page)(nil)
+
 // ContextMenu returns the context-menu rows for the current state. Cut and
 // copy need a selection, paste needs a focused editable field, select all
 // needs either, and undo and redo need their handler.

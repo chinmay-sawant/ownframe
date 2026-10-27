@@ -32,35 +32,11 @@ func (a *App) fileNavChangeStep(delta int) {
 	if len(rows) == 0 {
 		return
 	}
-	scroll := a.scrollY
-	if a.split && a.mode != "changes" {
-		scroll = a.scrollGroup[a.activeGroup()]
-	}
-	current := scroll / rowH
-	continuing := a.changeNav.valid && a.changeNav.path == path &&
-		a.changeNav.mode == a.mode && a.changeNav.group == a.activeGroup() && a.changeNav.scroll == scroll
-	if continuing {
-		current = a.changeNav.row
-	}
-	index := -1
-	if delta > 0 {
-		for i, row := range rows {
-			if row > current || !continuing && row == current {
-				index = i
-				break
-			}
-		}
-	} else {
-		for i := len(rows) - 1; i >= 0; i-- {
-			if rows[i] < current {
-				index = i
-				break
-			}
-		}
-	}
-	if index < 0 {
+	index := a.fileNavChangeIndex(path, rows) + delta
+	if index < 0 || index >= len(rows) {
 		return
 	}
+	var scroll int
 	if a.split && a.mode != "changes" {
 		a.scrollGroupTo(a.activeGroup(), rows[index]*rowH)
 		scroll = a.scrollGroup[a.activeGroup()]
@@ -69,23 +45,45 @@ func (a *App) fileNavChangeStep(delta int) {
 		scroll = a.scrollY
 	}
 	a.changeNav = changeNavigation{path: path, mode: a.mode, group: a.activeGroup(), row: rows[index], scroll: scroll, valid: true}
+	a.refresh()
+}
+
+func (a *App) fileNavChangeIndex(path string, rows []int) int {
+	scroll := a.scrollY
+	if a.split && a.mode != "changes" {
+		scroll = a.scrollGroup[a.activeGroup()]
+	}
+	current := scroll / rowH
+	if a.changeNav.valid && a.changeNav.path == path &&
+		a.changeNav.mode == a.mode && a.changeNav.group == a.activeGroup() && a.changeNav.scroll == scroll {
+		current = a.changeNav.row
+	}
+	index := -1
+	for i, row := range rows {
+		if row > current {
+			break
+		}
+		index = i
+	}
+	if index < 0 && len(rows) > 0 {
+		return 0
+	}
+	return index
 }
 
 func (a *App) fileNavChangeRows(path string) []int {
 	var rows []int
 	if a.mode == "changes" {
-		for i, row := range a.diffDisplayRows() {
-			if row.Kind == rowHunk {
-				rows = append(rows, i)
-			}
+		if a.diffPath != path || a.diffSource != "working" {
+			return nil
 		}
-		return rows
+		return diffChangeStarts(a.diffDisplayRows())
 	}
 	doc := a.activeDoc()
 	if doc == nil || doc.Path != path {
 		return nil
 	}
-	previous := -2
+	previous := -1
 	for _, line := range inlineChangeLines(a.changedLinesFor(path)) {
 		if line != previous+1 {
 			row := line - 1
@@ -132,7 +130,7 @@ func (a *App) fileNavViewState() fileNavView {
 		return nav
 	}
 
-	nav.Open = !a.paletteOpen && !a.searchOpen && !a.branchOpen && !a.editing
+	nav.Open = !a.paletteOpen && !a.searchOpen && !a.branchOpen
 	nav.Name = baseName(path)
 	nav.Dir = dirName(path)
 	nav.Label = nav.Name
@@ -142,6 +140,10 @@ func (a *App) fileNavViewState() fileNavView {
 	nav.Add = file.Add
 	nav.Del = file.Del
 	nav.Multiple = nav.Total > 1
+	rows := a.fileNavChangeRows(path)
+	index := a.fileNavChangeIndex(path, rows)
+	nav.CanPrevChange = index > 0
+	nav.CanNextChange = index+1 < len(rows)
 
 	return nav
 }

@@ -53,8 +53,11 @@
 .drow.add .dnum, .drow.add .dsign { background-color: rgba(63, 185, 80, 0.10); color: var(--green); }
 .drow.del { background-color: var(--red-bg); }
 .drow.del .dnum, .drow.del .dsign { background-color: rgba(248, 81, 73, 0.10); color: var(--red); }
+.drow.current.add { background-color: rgba(63, 185, 80, 0.23); }
+.drow.current.del { background-color: rgba(248, 81, 73, 0.22); }
 
 .drow.hunk { background-color: rgba(122, 162, 247, 0.075); }
+.drow.current .dnum:first-child { border-left: 2px solid var(--accent); }
 .dhunk { padding-left: 12px; color: #7d9bd6; font-size: 9.5px; overflow: hidden; }
 
 .drow.meta { background-color: rgba(240, 183, 90, 0.06); }
@@ -67,6 +70,8 @@
 .drow.split .dcell.ctx { background-color: transparent; }
 .drow.split .dcell.add { background-color: var(--green-bg); }
 .drow.split .dcell.del { background-color: var(--red-bg); }
+.drow.split.current .dcell.add { background-color: rgba(63, 185, 80, 0.23); }
+.drow.split.current .dcell.del { background-color: rgba(248, 81, 73, 0.22); }
 .drow.split .dnum.add { background-color: rgba(63, 185, 80, 0.10); color: var(--green); }
 .drow.split .dnum.del { background-color: rgba(248, 81, 73, 0.10); color: var(--red); }
 
