@@ -261,7 +261,7 @@ func layerOrderSafe(d *layout.Display, owned []int, firstRank, lastRank int, box
 			continue
 		}
 		op := &d.Ops[index]
-		if op.Group() != nil || op.HasProjective {
+		if _, hasProj := op.ProjectiveTransformValue(); op.Group() != nil || hasProj {
 			return false
 		}
 		b, ok := layerOpBox(op, layout.IdentityMatrix(), ppt)

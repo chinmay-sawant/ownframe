@@ -48,37 +48,37 @@ The root package is `ownframe`. The repository and module path already use the n
 package main
 
 import (
-	"context"
-	"log"
+    "context"
+    "log"
 
-	"github.com/chinmay-sawant/ownframe"
+    "github.com/chinmay-sawant/ownframe"
 )
 
 func main() {
-	page, err := ownframe.New(ownframe.Config{
-		Title:  "Hello",
-		HTML:   `<h1>{{.Title}}</h1><button data-action="ok">OK</button>`,
-		Width:  480,
-		Height: 640,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	view := struct{ Title string }{"Hello"}
-	page.SetData(view)
-	page.Handle(ownframe.Handlers{
-		Click: func(_ context.Context, box ownframe.Box) error {
-			if box.Action != "ok" {
-				return nil
-			}
-			view.Title = "OK"
-			page.SetData(view)
-			return nil
-		},
-	})
-	if err := ownframe.Run(context.Background(), page); err != nil {
-		log.Fatal(err)
-	}
+    page, err := ownframe.New(ownframe.Config{
+        Title:  "Hello",
+        HTML:   `<h1>{{.Title}}</h1><button data-action="ok">OK</button>`,
+        Width:  480,
+        Height: 640,
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    view := struct{ Title string }{"Hello"}
+    page.SetData(view)
+    page.Handle(ownframe.Handlers{
+        Click: func(_ context.Context, box ownframe.Box) error {
+            if box.Action != "ok" {
+                return nil
+            }
+            view.Title = "OK"
+            page.SetData(view)
+            return nil
+        },
+    })
+    if err := ownframe.Run(context.Background(), page); err != nil {
+        log.Fatal(err)
+    }
 }
 ```
 
