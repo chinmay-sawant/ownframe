@@ -1,7 +1,7 @@
 # PR: Code Review example and the hot-path perf pass
 
 Base: `master`. Head: `example/code-view-and-performance`.
-Range: `2d6df76e..2b76dade` before this record, 20 commits. `examples/code-view` is new on this branch.
+Range: `2d6df76e..160f14a7`, 36 commits. `examples/code-view` is new on this branch. The `example/code-view-file-browser` follow-up (folder browser drives level, scrolling list, clipped path) and its PR record were folded into this branch, plus a diff-arena race-alloc fix.
 
 ## Summary
 
@@ -62,6 +62,14 @@ Linux desktop `Run` can dial AT-SPI and report `Live() == true` after the name i
 
 The library `go.mod` is unchanged. The examples module adds `github.com/fsnotify/fsnotify v1.10.1` for the watcher.
 
+### File browser (folded in from `example/code-view-file-browser`)
+
+Up at a drive root steps out to a This PC level listing every available drive (`browseUpTarget` in `browse_project.go`, covered by `browse_drives_test.go`). The folder list windows ten rows and scrolls with the wheel (`browse_list_window.go`, `browseWheelAt`). Long browser paths clip with an ellipsis while the full path stays in the tooltip (`clipBrowsePath`, `browse_path_clip_test.go`, `.browse-head`/`.browse-path` CSS). 9 files, +540/-17.
+
+### Diff arena race-alloc fix
+
+`TestDiffArena_Allocs` failed under `make test-race`: `sync.Pool` bookkeeping allocates once per Get/Put pair under `-race` (verified: pool round-trip alone measured 1.0 allocs/run, `Diff` without race measured 0). The arena now reuses through a single `atomic.Pointer` slot instead of a pool: one Swap to take, one to return. Steady state is allocation-free race or not; concurrent diffs fall back to a fresh arena. `internal/page/dirty` passes with and without `-race`.
+
 ## Impact
 
 | Area | **Impact** |
@@ -98,10 +106,10 @@ Until `plans/v0.0.3/prod-ready-task/` wraps `Page`, reject the PR if it does any
 
 ## Test plan
 
-- [x] `make test` passed on `2b76dade` (`go test -p 1 ./... ./examples/...`). This record is Markdown only.
-- [ ] `make lint` / `go vet`. Not run for this pull request.
-- [ ] `make test-race` (library module; when shared mutable state changes). Not run. The tick flag and the syntax cache are shared mutable state, so this is still worth a race run.
-- [ ] `make build` (when binary output is part of the change). Not run. `go vet` of the whole tree was not repeated for this record.
+- [x] `make test` passed on `2b76dade` (`go test -p 1 ./... ./examples/...`). Full re-run on current HEAD not done; `internal/page/dirty` and `internal/page/patch` pass with and without `-race` on `160f14a7`.
+- [x] `make lint` / `go vet`. PASS on `160f14a7`: all 8 gates (Go library and examples v2.15.0, docs snippets, plan states, example inventory, internal imports, website ESLint). `make build` (`go vet -p 1 ./... ./examples/...`) clean on `160f14a7`.
+- [x] `make test-race` for the touched packages. `TestDiffArena_Allocs` failed first (1 alloc/run from `sync.Pool` under `-race`), fixed via the atomic arena slot, now PASS. Full `make test-race` not re-run on current HEAD.
+- [x] `make build` (`go vet -p 1 ./... ./examples/...`). Clean, exit 0 on `160f14a7`.
 - [ ] `make run` wall time vs baseline. That target belongs to the template's other repo. Not run here.
 - [ ] `make reference-metrics` / gopdfsuit hard metrics if detector surface changed. Not applicable.
 
@@ -127,7 +135,7 @@ No new window capture is attached. The bench tables in **Performance** are the s
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied (`enhancement`, `documentation`)
 - [x] Related issues filled with real ticket IDs
-- [x] Filled body committed under `plans/v0.0.3/examples/pr-code-view-and-performance.md`
+- [x] Filled body committed under `plans/v0.0.3/examples/pr-code-view-and-performance.md` (refreshed for `160f14a7`)
 
 ## Follow-ups (out of scope)
 
@@ -154,19 +162,20 @@ No new window capture is attached. The bench tables in **Performance** are the s
 
 ## Diff stat by extension
 
-Generated with `bash scripts/pr-diff-stat.sh master` on `2b76dade`, then this file added as one `.md`.
+Generated with `bash scripts/pr-diff-stat.sh master` on `160f14a7`:
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
-| `.css` | 16 | 3193 | 0 |
+| `.css` | 16 | 3572 | 0 |
 | `.diff` | 1 | 833 | 0 |
-| `.go` | 264 | 43025 | 476 |
-| `.html` | 13 | 866 | 0 |
-| `.json` | 2 | 20 | 0 |
-| `.md` | 45 | 2406 | 196 |
-| `.mod` | 1 | 4 | 0 |
+| `.go` | 296 | 49311 | 502 |
+| `.html` | 14 | 978 | 0 |
+| `.json` | 3 | 29 | 0 |
+| `.md` | 48 | 2928 | 196 |
+| `.mod` | 1 | 1 | 0 |
 | `.py` | 2 | 309 | 0 |
-| `.sum` | 1 | 4 | 10 |
+| `.sum` | 1 | 2 | 10 |
 | `.yaml` | 1 | 30 | 0 |
-| No extension | 1 | 15 | 0 |
-| **Total** | **347** | **50705** | **682** |
+| `.yml` | 1 | 16 | 0 |
+| No extension | 3 | 66 | 0 |
+| **Total** | **387** | **58075** | **708** |
