@@ -82,8 +82,8 @@ button:focus-visible, input:focus-visible {
   outline-offset: 2px;
 }
 
-#act-search:focus, #act-search:focus-visible { outline: 0; }
-#act-search:focus-visible { background-color: var(--panel-3); }
+#act-search:focus, #act-search:focus-visible, #act-settings:focus, #act-settings:focus-visible { outline: 0; }
+#act-search:focus-visible, #act-settings:focus-visible { background-color: var(--panel-3); }
 
 .void { display: block; height: 0; }
 .scroll-space { display: block; width: 1px; }

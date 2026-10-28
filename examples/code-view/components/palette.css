@@ -119,9 +119,11 @@
 
 .search-panel { top: 56px; }
 .search-meta {
-  min-height: 24px;
+  height: 24px;
+  line-height: 24px;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   padding: 0 12px;
   border-bottom: 1px solid var(--line-soft);
