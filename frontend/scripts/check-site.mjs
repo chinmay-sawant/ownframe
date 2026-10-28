@@ -56,7 +56,7 @@ try {
   try {
     targets = await (await ready('http://127.0.0.1:9232/json', 300)).json();
   } catch (error) {
-    throw new Error(`Chrome did not open remote debugging: ${error.message}${chrome.output ? `\nchrome output: ${chrome.output}` : ''}`);
+    throw new Error(`Chrome did not open remote debugging: ${error.message}${chrome.output ? `\nchrome output: ${chrome.output}` : ''}`, { cause: error });
   }
   socket = new WebSocket(targets.find((target) => target.type === 'page').webSocketDebuggerUrl);
   await new Promise((resolve) => socket.addEventListener('open', resolve, { once: true }));
