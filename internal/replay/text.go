@@ -9,7 +9,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-var asciiGlyphs [128]string
+var asciiGlyphs [128]string //nolint:gochecknoglobals // reason: immutable ASCII lookup keeping glyphAt alloc-free, covered by TestGlyphAt_ASCIIZeroAllocs.
 
 func init() {
 	for i := 0; i < 128; i++ {

@@ -10,6 +10,9 @@ import (
 const (
 	paletteDefaultRows = 5
 	paletteMaxRows     = 8
+	// paletteDiskSearchTimeout bounds the on-disk fallback search. The
+	// in-memory matches already paint, so disk only fills the remainder.
+	paletteDiskSearchTimeout = 750 * time.Millisecond
 )
 
 // paletteView is the quick-open overlay data.
@@ -168,7 +171,7 @@ func (a *App) paletteRows() []paletteRow {
 	}
 
 	if len(rows) < paletteMaxRows && a.ws != nil && (diskFileSearcher != nil || (!a.ws.Sample && a.ws.Root != "")) {
-		ctx, cancel := context.WithTimeout(context.Background(), 750*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), paletteDiskSearchTimeout)
 		defer cancel()
 
 		diskPaths, err := diskSearchFiles(ctx, a.ws.Root)

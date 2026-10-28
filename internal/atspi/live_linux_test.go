@@ -28,7 +28,6 @@ type mockDBusServer struct {
 	claims   []string
 	embeds   []string
 	signals  []dbusMsg
-	closed   bool
 	err      error
 
 	rejectAuth bool
@@ -40,7 +39,7 @@ func startMockDBusServer(t *testing.T, opts ...func(*mockDBusServer)) *mockDBusS
 	t.Helper()
 	dir := t.TempDir()
 	sockPath := filepath.Join(dir, "mock-atspi.sock")
-	l, err := net.Listen("unix", sockPath)
+	l, err := (&net.ListenConfig{}).Listen(t.Context(), "unix", sockPath)
 	if err != nil {
 		t.Fatalf("listen: %v", err)
 	}
@@ -68,7 +67,7 @@ func (s *mockDBusServer) serve() {
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	var nullByte [1]byte
 	if _, err := conn.Read(nullByte[:]); err != nil {
@@ -113,7 +112,8 @@ func (s *mockDBusServer) serve() {
 		}
 		switch msg.msgType {
 		case dbusTypeMethodCall:
-			if msg.iface == "org.freedesktop.DBus" && msg.member == "Hello" {
+			switch {
+			case msg.iface == "org.freedesktop.DBus" && msg.member == "Hello":
 				s.mu.Lock()
 				s.helloGot = true
 				s.mu.Unlock()
@@ -141,7 +141,7 @@ func (s *mockDBusServer) serve() {
 					body:        encodeStringBody(":1.42"),
 				}
 				_, _ = conn.Write(encodeMessage(reply))
-			} else if msg.iface == "org.freedesktop.DBus" && msg.member == "RequestName" {
+			case msg.iface == "org.freedesktop.DBus" && msg.member == "RequestName":
 				name, _, _ := decodeRequestNameBody(msg.body)
 				s.mu.Lock()
 				s.claims = append(s.claims, name)
@@ -157,7 +157,7 @@ func (s *mockDBusServer) serve() {
 					body:        encodeUint32Body(code),
 				}
 				_, _ = conn.Write(encodeMessage(reply))
-			} else if msg.iface == "org.a11y.atspi.Socket" && msg.member == "Embed" {
+			case msg.iface == "org.a11y.atspi.Socket" && msg.member == "Embed":
 				name, root, _ := decodeEmbedBody(msg.body)
 				s.mu.Lock()
 				s.embeds = append(s.embeds, name+":"+root)

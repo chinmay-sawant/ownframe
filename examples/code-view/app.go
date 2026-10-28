@@ -273,11 +273,12 @@ func NewWithLimit(root string, limit int) (*App, error) {
 		err error
 	)
 
-	if root == "" {
+	switch {
+	case root == "":
 		ws, err = loadSampleWorkspace()
-	} else if limit > 0 && limit != maxWorkspaceFiles {
+	case limit > 0 && limit != maxWorkspaceFiles:
 		ws, err = loadDiskWorkspaceWithLimit(root, limit)
-	} else {
+	default:
 		ws, err = loadDiskWorkspaceLazy(root)
 	}
 
@@ -550,11 +551,12 @@ func (a *App) reloadWindow(ctx context.Context) error {
 	var ws *workspace
 	var err error
 
-	if a.ws.Sample {
+	switch {
+	case a.ws.Sample:
 		ws, err = loadSampleWorkspace()
-	} else if a.scanLimit > 0 && a.scanLimit != maxWorkspaceFiles {
+	case a.scanLimit > 0 && a.scanLimit != maxWorkspaceFiles:
 		ws, err = loadDiskWorkspaceWithLimit(a.ws.Root, a.scanLimit)
-	} else {
+	default:
 		ws, err = loadDiskWorkspaceLazy(a.ws.Root)
 	}
 

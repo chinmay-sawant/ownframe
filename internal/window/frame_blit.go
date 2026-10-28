@@ -89,13 +89,10 @@ func unionRects(rects []image.Rectangle) image.Rectangle {
 	return box
 }
 
-// chromeRects moves the previous frame's chrome rects from screen space into
-// buffer space. The current scroll says which buffer pixels belong under the
-// screen rect now, so a restore repairs stale chrome even after a scroll.
-func chromeRects(screen []image.Rectangle, scroll image.Point) []image.Rectangle {
-	return chromeRectsBuf(nil, screen, scroll)
-}
-
+// chromeRectsBuf moves the previous frame's chrome rects from screen space
+// into buffer space, reusing buf. The current scroll says which buffer pixels
+// belong under the screen rect now, so a restore repairs stale chrome even
+// after a scroll.
 func chromeRectsBuf(buf []image.Rectangle, screen []image.Rectangle, scroll image.Point) []image.Rectangle {
 	if len(screen) == 0 {
 		return nil

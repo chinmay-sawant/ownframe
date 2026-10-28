@@ -140,6 +140,9 @@ func TestHScrollWheelEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("onWheel when wrapped: %v", err)
 	}
+	if handled {
+		t.Fatal("onWheel was handled for horizontal wheel when wrap is on")
+	}
 	if app.ScrollX() != 0 {
 		t.Fatalf("scrollX with wrap=true = %d, want 0", app.ScrollX())
 	}

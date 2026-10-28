@@ -449,11 +449,12 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 	case strings.HasPrefix(action, "diff-file:"):
 		path := strings.TrimPrefix(action, "diff-file:")
-		if a.diffSource == "commit" {
+		switch a.diffSource {
+		case "commit":
 			a.selectCommitFile(ctx, a.commitOpen, path)
-		} else if a.diffSource == "branch" {
+		case "branch":
 			a.selectBranchFile(path)
-		} else {
+		default:
 			a.selectDiff(path)
 		}
 	case strings.HasPrefix(action, "diff-expand-up:"):

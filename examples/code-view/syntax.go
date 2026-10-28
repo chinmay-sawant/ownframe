@@ -2,7 +2,6 @@ package main
 
 import (
 	"strings"
-	"sync"
 	"unicode"
 )
 
@@ -219,8 +218,13 @@ func (c *syntaxCache) tokenize(lines []string) [][]segment {
 
 		st := initialLineState(c.lang)
 		if firstDiff > 0 {
-			st = c.states[firstDiff-1]
-			_, st = scanLineWithState(c.lang, st, firstDiff-1, lines[firstDiff-1])
+			prev := firstDiff - 1
+			// firstDiff is the shared clean prefix length, so prev is a
+			// valid index into both slices; the guard makes it explicit.
+			if prev < len(lines) && prev < len(c.states) {
+				st = c.states[prev]
+				_, st = scanLineWithState(c.lang, st, prev, lines[prev])
+			}
 		}
 
 		for i := firstDiff; i < n; i++ {
@@ -307,23 +311,10 @@ func scanLineWithState(lang string, state lineState, li int, line string) ([]seg
 	}
 }
 
-var (
-	globalCacheMu sync.Mutex
-	globalCaches  = make(map[string]*syntaxCache)
-)
-
-// tokenize splits every line into highlighted segments using incremental line caching.
+// tokenize splits every line into highlighted segments. Each call tokenizes
+// from scratch with a fresh cache, so concurrent callers share no state.
 func tokenize(lang string, lines []string) [][]segment {
-	globalCacheMu.Lock()
-	defer globalCacheMu.Unlock()
-
-	c, ok := globalCaches[lang]
-	if !ok || c == nil {
-		c = newSyntaxCache(lang)
-		globalCaches[lang] = c
-	}
-
-	return c.tokenize(lines)
+	return newSyntaxCache(lang).tokenize(lines)
 }
 
 // highlightLine tokenizes one line on its own. Diff rows use it because a
@@ -336,17 +327,6 @@ func highlightLine(lang, text string) []segment {
 	segs, _ := scanLineWithState(lang, initialLineState(lang), 0, text)
 
 	return finishLine(segs)
-}
-
-// plainLines returns one plain segment per line.
-func plainLines(lines []string) [][]segment {
-	out := make([][]segment, len(lines))
-
-	for i, line := range lines {
-		out[i] = finishLine([]segment{{Text: line, Class: classPlain}})
-	}
-
-	return out
 }
 
 // addSeg appends text with a class, merging with the previous run when the
@@ -515,18 +495,6 @@ func scanLineC(spec cSpec, state lineState, line string) ([]segment, lineState) 
 	}
 
 	return segs, next
-}
-
-// tokenizeC is the shared lexer for Go, Python, and JavaScript.
-func tokenizeC(lines []string, spec cSpec) [][]segment {
-	out := make([][]segment, len(lines))
-	var st lineState
-
-	for li, line := range lines {
-		out[li], st = scanLineC(spec, st, line)
-	}
-
-	return out
 }
 
 // scanLine tokenizes one line and keeps block comments, multiline strings,

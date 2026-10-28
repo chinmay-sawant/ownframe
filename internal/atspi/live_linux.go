@@ -4,6 +4,7 @@ package atspi
 
 import (
 	"bufio"
+	"context"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -31,13 +32,19 @@ type liveBus struct {
 	app        Application
 }
 
+const (
+	liveDialTimeout = 2 * time.Second
+	liveCallTimeout = 2 * time.Second
+	liveEmitTimeout = 500 * time.Millisecond
+)
+
 func newLiveBus() Bus {
 	netw, addr, err := discoverATSPISocket()
 	if err != nil {
 		return &liveBus{reason: err.Error()}
 	}
 
-	conn, err := net.DialTimeout(netw, addr, 2*time.Second)
+	conn, err := (&net.Dialer{Timeout: liveDialTimeout}).DialContext(context.Background(), netw, addr)
 	if err != nil {
 		return &liveBus{reason: fmt.Sprintf("connect to %s failed: %v", addr, err)}
 	}
@@ -82,7 +89,7 @@ func discoverATSPISocket() (string, string, error) {
 		}
 	}
 	if addr == "" {
-		return "", "", errors.New("at-spi bus socket not found")
+		return "", "", errors.New(liveReason())
 	}
 	return parseDBusAddress(addr)
 }
@@ -112,7 +119,7 @@ func parseDBusAddress(addr string) (string, string, error) {
 }
 
 func (b *liveBus) handshake(conn net.Conn) error {
-	_ = conn.SetDeadline(time.Now().Add(2 * time.Second))
+	_ = conn.SetDeadline(time.Now().Add(liveCallTimeout))
 	defer func() { _ = conn.SetDeadline(time.Time{}) }()
 
 	if _, err := conn.Write([]byte{0}); err != nil {
@@ -155,7 +162,7 @@ func (b *liveBus) callHello() error {
 		member:  "Hello",
 	}
 	raw := encodeMessage(msg)
-	_ = b.conn.SetDeadline(time.Now().Add(2 * time.Second))
+	_ = b.conn.SetDeadline(time.Now().Add(liveCallTimeout))
 	defer func() { _ = b.conn.SetDeadline(time.Time{}) }()
 
 	if _, err := b.conn.Write(raw); err != nil {
@@ -190,7 +197,7 @@ func (b *liveBus) requestName(name string) error {
 		body:    encodeRequestNameBody(name, 0),
 	}
 	raw := encodeMessage(msg)
-	_ = b.conn.SetDeadline(time.Now().Add(2 * time.Second))
+	_ = b.conn.SetDeadline(time.Now().Add(liveCallTimeout))
 	defer func() { _ = b.conn.SetDeadline(time.Time{}) }()
 
 	if _, err := b.conn.Write(raw); err != nil {
@@ -288,7 +295,7 @@ func (b *liveBus) Publish(app Application) error {
 		body:    encodeEmbedBody(appName, rootPath),
 	}
 	raw := encodeMessage(msg)
-	_ = b.conn.SetDeadline(time.Now().Add(500 * time.Millisecond))
+	_ = b.conn.SetDeadline(time.Now().Add(liveEmitTimeout))
 	defer func() { _ = b.conn.SetDeadline(time.Time{}) }()
 	if _, err := b.conn.Write(raw); err != nil {
 		b.closed = true
@@ -327,7 +334,7 @@ func (b *liveBus) Emit(ev Event) error {
 		body:    encodeStringBody(ev.Kind),
 	}
 	raw := encodeMessage(msg)
-	_ = b.conn.SetDeadline(time.Now().Add(500 * time.Millisecond))
+	_ = b.conn.SetDeadline(time.Now().Add(liveEmitTimeout))
 	defer func() { _ = b.conn.SetDeadline(time.Time{}) }()
 	if _, err := b.conn.Write(raw); err != nil {
 		b.closed = true

@@ -14,6 +14,7 @@ type diffArena struct {
 	seen []bool
 }
 
+//nolint:gochecknoglobals // reason: process-wide pool reusing diff arenas across frames to avoid per-diff allocs, not shared mutable state.
 var diffArenaPool = sync.Pool{
 	New: func() any {
 		return &diffArena{}
@@ -22,8 +23,16 @@ var diffArenaPool = sync.Pool{
 
 const maxPooledArenaCap = 65536
 
+const (
+	minDiffBuckets   = 16
+	diffBucketGrowth = 2
+)
+
 func getDiffArena(numBuckets, numOps int) *diffArena {
-	a := diffArenaPool.Get().(*diffArena)
+	a, ok := diffArenaPool.Get().(*diffArena)
+	if !ok || a == nil {
+		return &diffArena{}
+	}
 	if cap(a.head) < numBuckets {
 		a.head = make([]int, numBuckets)
 	} else {
@@ -56,17 +65,11 @@ func putDiffArena(a *diffArena) {
 }
 
 func nextPowerOf2(n int) int {
-	if n <= 16 {
-		return 16
+	size := minDiffBuckets
+	for size < n {
+		size *= diffBucketGrowth
 	}
-	n--
-	n |= n >> 1
-	n |= n >> 2
-	n |= n >> 4
-	n |= n >> 8
-	n |= n >> 16
-	n++
-	return n
+	return size
 }
 
 func hashKey(k opKey) uint64 {
@@ -151,8 +154,8 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 	}
 
 	numOps := len(next.Ops)
-	numBuckets := nextPowerOf2(numOps * 2)
-	mask := uint64(numBuckets - 1)
+	numBuckets := nextPowerOf2(numOps * diffBucketGrowth)
+	mask := uint64(numBuckets - 1) //nolint:gosec // reason: numBuckets is a nextPowerOf2 result always >= 16, so numBuckets-1 is non-negative and fits uint64.
 
 	arena := getDiffArena(numBuckets, numOps)
 	defer putDiffArena(arena)

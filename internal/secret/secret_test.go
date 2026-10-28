@@ -46,7 +46,7 @@ func TestMarshalJSON(t *testing.T) {
 	type config struct {
 		Password Secret `json:"password"`
 	}
-	cb, err := json.Marshal(config{Password: s})
+	cb, err := json.Marshal(config{Password: s}) //nolint:gosec // reason: test intentionally marshals a Secret password field to verify it redacts, no real credential.
 	if err != nil {
 		t.Fatalf("json.Marshal struct failed: %v", err)
 	}

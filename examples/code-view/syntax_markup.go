@@ -7,14 +7,28 @@ import (
 
 const cssVarPrefix = 2
 
-var (
-	cssValueWords = keywordSet(
-		"auto", "inherit", "initial", "none", "normal", "revert", "unset",
+// cssIsValueWord reports whether word is a CSS value keyword.
+func cssIsValueWord(word string) bool {
+	switch word {
+	case "auto", "inherit", "initial", "none", "normal", "revert", "unset",
 		"absolute", "relative", "fixed", "sticky", "block", "inline", "flex",
-		"grid", "hidden", "visible", "center", "bold", "italic", "transparent",
-	)
-	cssRuleAtRules = keywordSet("@media", "@supports", "@keyframes", "@layer", "@container", "@scope", "@document")
-)
+		"grid", "hidden", "visible", "center", "bold", "italic", "transparent":
+		return true
+	}
+
+	return false
+}
+
+// cssIsRuleAtRule reports whether word is an at-rule whose block holds nested
+// rules rather than declarations.
+func cssIsRuleAtRule(word string) bool {
+	switch word {
+	case "@media", "@supports", "@keyframes", "@layer", "@container", "@scope", "@document":
+		return true
+	}
+
+	return false
+}
 
 // scanLineCSS highlights one line of CSS given the current scanner mode and comment state.
 func scanLineCSS(state lineState, line string) ([]segment, lineState) {
@@ -118,7 +132,7 @@ lineLoop:
 
 				if j < len(r) && r[j] == '(' {
 					class = classFn
-				} else if cssValueWords[word] {
+				} else if cssIsValueWord(word) {
 					class = classKw
 				}
 
@@ -172,7 +186,7 @@ lineLoop:
 
 				word := string(r[i:j])
 				segs = addSeg(segs, word, classKw)
-				container = cssRuleAtRules[word]
+				container = cssIsRuleAtRule(word)
 				i = j
 			case c == '{':
 				segs = addSeg(segs, "{", classPunc)
@@ -221,19 +235,6 @@ lineLoop:
 	}
 
 	return finishLine(segs), lineState{inComment: inComment, mode: mode, container: container}
-}
-
-// tokenizeCSS highlights selectors, declarations, and values. It tracks one
-// mode at a time rather than a full parser: selector, property, or value.
-func tokenizeCSS(lines []string) [][]segment {
-	out := make([][]segment, len(lines))
-	st := lineState{mode: "selector"}
-
-	for li, line := range lines {
-		out[li], st = scanLineCSS(st, line)
-	}
-
-	return out
 }
 
 // scanCSSVar returns the end of one custom property name.
@@ -465,18 +466,6 @@ htmlLoop:
 	}
 
 	return finishLine(segs), lineState{inComment: inComment, inTag: inTag}
-}
-
-// tokenizeHTML colours tags, attributes, and quoted values outside comments.
-func tokenizeHTML(lines []string) [][]segment {
-	out := make([][]segment, len(lines))
-	var st lineState
-
-	for li, line := range lines {
-		out[li], st = scanLineHTML(st, line)
-	}
-
-	return out
 }
 
 // tokenizeYAML colours mapping keys, comments, anchors, and scalars.

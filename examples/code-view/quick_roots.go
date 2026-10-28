@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+// quickRootMaxRows caps the locations card. The card stays user-dirs only,
+// so a long volume list cannot push the picker off the drawer.
+const quickRootMaxRows = 10
+
 // quickRootRows lists well-known OS locations for the File drawer picker.
 // The locations card stays user-dirs only: Home and Desktop on every OS,
 // plus mounted volumes on macOS. Drive roots and /mnt mounts live in the
@@ -19,7 +23,7 @@ func (a *App) quickRootRows() []recentRootRow {
 		if path == "" || name == "" || seen[path] {
 			return
 		}
-		if len(rows) >= 10 {
+		if len(rows) >= quickRootMaxRows {
 			return
 		}
 		seen[path] = true

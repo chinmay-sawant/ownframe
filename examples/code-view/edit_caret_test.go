@@ -351,7 +351,7 @@ func editCaretEditor(t *testing.T, ctx context.Context) *App {
 	dir := t.TempDir()
 	writeFile(t, dir, "main.go", editCaretCode)
 
-	app, err := New(dir) //nolint:contextcheck // New owns its bounded scan and git budget
+	app, err := New(dir)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}

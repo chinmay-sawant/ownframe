@@ -130,6 +130,9 @@ const (
 	crumbsRightNarrowPx = 310
 	crumbsNarrowPx      = 1120
 	crumbsMonoPx        = 6.0
+	// crumbSepAndEllipsis covers the "/" separator and the "…" marker when
+	// the directory is clipped but the name is kept whole.
+	crumbSepAndEllipsis = 2
 )
 
 // clipDiffPath keeps the diff header on one line within paneWidth. It returns
@@ -169,7 +172,7 @@ func clipCrumbPath(paneWidth, windowWidth int, name, dir string, rightWide, righ
 	}
 
 	if len(nr)+1 < budget {
-		take := budget - len(nr) - 2
+		take := budget - len(nr) - crumbSepAndEllipsis
 		if take < 1 {
 			take = 1
 		}
@@ -648,13 +651,14 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 	gapBetween := make(map[int]diffGap)
 
 	for _, g := range gaps {
-		if g.Before {
+		switch {
+		case g.Before:
 			copy := g
 			gapBefore = &copy
-		} else if g.After {
+		case g.After:
 			copy := g
 			gapAfter = &copy
-		} else {
+		default:
 			gapBetween[g.HunkIdx] = g
 		}
 	}
@@ -718,13 +722,14 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 	gapBetween := make(map[int]diffGap)
 
 	for _, g := range gaps {
-		if g.Before {
+		switch {
+		case g.Before:
 			copy := g
 			gapBefore = &copy
-		} else if g.After {
+		case g.After:
 			copy := g
 			gapAfter = &copy
-		} else {
+		default:
 			gapBetween[g.HunkIdx] = g
 		}
 	}

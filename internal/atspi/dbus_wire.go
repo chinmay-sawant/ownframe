@@ -30,6 +30,11 @@ const (
 
 	dbusProtoVersion byte = 1
 
+	dbusAlign8         = 8
+	dbusAlign4         = 4
+	dbusFixedHeaderLen = 16
+	dbusUint32Len      = 4
+
 	maxFieldsLen uint32 = 64 * 1024       // 64KB
 	maxBodyLen   uint32 = 4 * 1024 * 1024 // 4MB
 )
@@ -60,9 +65,9 @@ func pad(b *bytes.Buffer, alignment int) {
 }
 
 func writeHeaderField(buf *bytes.Buffer, code byte, sig string, writeVal func(*bytes.Buffer)) {
-	pad(buf, 8)
+	pad(buf, dbusAlign8)
 	buf.WriteByte(code)
-	buf.WriteByte(byte(len(sig)))
+	buf.WriteByte(byte(len(sig))) //nolint:gosec // reason: sig is a D-Bus type signature of a few chars, always fits a byte.
 	buf.WriteString(sig)
 	buf.WriteByte(0)
 	writeVal(buf)
@@ -73,9 +78,9 @@ func writeStringField(buf *bytes.Buffer, code byte, sig string, val string) {
 		return
 	}
 	writeHeaderField(buf, code, sig, func(b *bytes.Buffer) {
-		pad(b, 4)
+		pad(b, dbusAlign4)
 		var lenBuf [4]byte
-		binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(val)))
+		binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(val))) //nolint:gosec // reason: header strings are short bus names and paths, far below MaxUint32.
 		b.Write(lenBuf[:])
 		b.WriteString(val)
 		b.WriteByte(0)
@@ -84,7 +89,7 @@ func writeStringField(buf *bytes.Buffer, code byte, sig string, val string) {
 
 func writeUint32Field(buf *bytes.Buffer, code byte, val uint32) {
 	writeHeaderField(buf, code, "u", func(b *bytes.Buffer) {
-		pad(b, 4)
+		pad(b, dbusAlign4)
 		var valBuf [4]byte
 		binary.LittleEndian.PutUint32(valBuf[:], val)
 		b.Write(valBuf[:])
@@ -96,7 +101,7 @@ func writeSignatureField(buf *bytes.Buffer, code byte, sigVal string) {
 		return
 	}
 	writeHeaderField(buf, code, "g", func(b *bytes.Buffer) {
-		b.WriteByte(byte(len(sigVal)))
+		b.WriteByte(byte(len(sigVal))) //nolint:gosec // reason: sigVal is a D-Bus type signature of a few chars, always fits a byte.
 		b.WriteString(sigVal)
 		b.WriteByte(0)
 	})
@@ -116,8 +121,8 @@ func encodeMessage(msg *dbusMsg) []byte {
 	writeSignatureField(&headerFields, dbusHeaderSignature, msg.sig)
 
 	fieldsBytes := headerFields.Bytes()
-	fieldsLen := uint32(len(fieldsBytes))
-	bodyLen := uint32(len(msg.body))
+	fieldsLen := uint32(len(fieldsBytes)) //nolint:gosec // reason: header fields are bounded by maxFieldsLen, fits uint32.
+	bodyLen := uint32(len(msg.body))      //nolint:gosec // reason: message bodies are bounded by maxBodyLen, fits uint32.
 
 	var msgBuf bytes.Buffer
 	msgBuf.WriteByte(dbusEndianLittle)
@@ -136,7 +141,7 @@ func encodeMessage(msg *dbusMsg) []byte {
 	msgBuf.Write(u32[:])
 
 	msgBuf.Write(fieldsBytes)
-	pad(&msgBuf, 8)
+	pad(&msgBuf, dbusAlign8)
 
 	if len(msg.body) > 0 {
 		msgBuf.Write(msg.body)
@@ -175,8 +180,8 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 		}
 	}
 
-	totalHeader := 16 + fieldsLen
-	padLen := (8 - (totalHeader % 8)) % 8
+	totalHeader := dbusFixedHeaderLen + fieldsLen
+	padLen := (dbusAlign8 - (totalHeader % dbusAlign8)) % dbusAlign8
 	if padLen > 0 {
 		var padBuf [8]byte
 		if _, err := io.ReadFull(r, padBuf[:padLen]); err != nil {
@@ -193,7 +198,7 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 
 	offset := 0
 	for offset < len(fieldsBytes) {
-		pad := (8 - ((16 + offset) % 8)) % 8
+		pad := (dbusAlign8 - ((dbusFixedHeaderLen + offset) % dbusAlign8)) % dbusAlign8
 		offset += pad
 		if offset >= len(fieldsBytes) {
 			break
@@ -213,14 +218,14 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 
 		switch sig {
 		case "s", "o":
-			pad := (4 - ((16 + offset) % 4)) % 4
+			pad := (dbusAlign4 - ((dbusFixedHeaderLen + offset) % dbusAlign4)) % dbusAlign4
 			offset += pad
 			if offset+4 > len(fieldsBytes) {
 				break
 			}
 			uStrLen := binary.LittleEndian.Uint32(fieldsBytes[offset : offset+4])
 			offset += 4
-			if uStrLen > uint32(len(fieldsBytes)-offset) {
+			if uStrLen > uint32(len(fieldsBytes)-offset) { //nolint:gosec // reason: offset is bounds-checked above so the difference is non-negative and fits uint32.
 				break
 			}
 			strLen := int(uStrLen)
@@ -242,7 +247,7 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 				msg.sender = val
 			}
 		case "u":
-			pad := (4 - ((16 + offset) % 4)) % 4
+			pad := (dbusAlign4 - ((dbusFixedHeaderLen + offset) % dbusAlign4)) % dbusAlign4
 			offset += pad
 			if offset+4 > len(fieldsBytes) {
 				break
@@ -277,7 +282,7 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 func encodeStringBody(s string) []byte {
 	var b bytes.Buffer
 	var lenBuf [4]byte
-	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(s)))
+	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(s))) //nolint:gosec // reason: D-Bus strings are bounded by maxBodyLen, fits uint32.
 	b.Write(lenBuf[:])
 	b.WriteString(s)
 	b.WriteByte(0)
@@ -293,19 +298,19 @@ func encodeUint32Body(val uint32) []byte {
 func encodeRequestNameBody(name string, flags uint32) []byte {
 	var b bytes.Buffer
 	var lenBuf [4]byte
-	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(name)))
+	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(name))) //nolint:gosec // reason: bus names are short dotted names, far below MaxUint32.
 	b.Write(lenBuf[:])
 	b.WriteString(name)
 	b.WriteByte(0)
 
-	pad(&b, 4)
+	pad(&b, dbusAlign4)
 	binary.LittleEndian.PutUint32(lenBuf[:], flags)
 	b.Write(lenBuf[:])
 	return b.Bytes()
 }
 
 func decodeRequestNameBody(body []byte) (string, uint32, error) {
-	if len(body) < 4 {
+	if len(body) < dbusUint32Len {
 		return "", 0, errors.New("short body")
 	}
 	uLen := binary.LittleEndian.Uint32(body[0:4])
@@ -314,10 +319,10 @@ func decodeRequestNameBody(body []byte) (string, uint32, error) {
 	}
 	strLen := int(uLen)
 	name := string(body[4 : 4+strLen])
-	offset := 4 + strLen + 1
-	rem := offset % 4
+	offset := dbusUint32Len + strLen + 1
+	rem := offset % dbusAlign4
 	if rem != 0 {
-		offset += 4 - rem
+		offset += dbusAlign4 - rem
 	}
 	if len(body) < offset+4 {
 		return name, 0, nil
@@ -327,11 +332,11 @@ func decodeRequestNameBody(body []byte) (string, uint32, error) {
 }
 
 func decodeStringBody(body []byte) (string, error) {
-	if len(body) < 4 {
+	if len(body) < dbusUint32Len {
 		return "", errors.New("short string body")
 	}
 	uLen := binary.LittleEndian.Uint32(body[0:4])
-	if uLen > maxBodyLen || uLen > uint32(len(body)-4) {
+	if uLen > maxBodyLen || uLen > uint32(len(body)-dbusUint32Len) { //nolint:gosec // reason: len(body) is at least dbusUint32Len here so the difference is non-negative and fits uint32.
 		return "", errors.New("short string body data")
 	}
 	strLen := int(uLen)
@@ -339,7 +344,7 @@ func decodeStringBody(body []byte) (string, error) {
 }
 
 func decodeUint32Body(body []byte) (uint32, error) {
-	if len(body) < 4 {
+	if len(body) < dbusUint32Len {
 		return 0, errors.New("short uint32 body")
 	}
 	return binary.LittleEndian.Uint32(body[0:4]), nil
@@ -348,13 +353,13 @@ func decodeUint32Body(body []byte) (uint32, error) {
 func encodeEmbedBody(name, rootPath string) []byte {
 	var b bytes.Buffer
 	var lenBuf [4]byte
-	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(name)))
+	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(name))) //nolint:gosec // reason: bus names are short dotted names, far below MaxUint32.
 	b.Write(lenBuf[:])
 	b.WriteString(name)
 	b.WriteByte(0)
 
-	pad(&b, 4)
-	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(rootPath)))
+	pad(&b, dbusAlign4)
+	binary.LittleEndian.PutUint32(lenBuf[:], uint32(len(rootPath))) //nolint:gosec // reason: object paths are short slash-separated names, far below MaxUint32.
 	b.Write(lenBuf[:])
 	b.WriteString(rootPath)
 	b.WriteByte(0)
@@ -362,7 +367,7 @@ func encodeEmbedBody(name, rootPath string) []byte {
 }
 
 func decodeEmbedBody(body []byte) (string, string, error) {
-	if len(body) < 4 {
+	if len(body) < dbusUint32Len {
 		return "", "", errors.New("short embed body")
 	}
 	uNameLen := binary.LittleEndian.Uint32(body[0:4])
@@ -371,17 +376,17 @@ func decodeEmbedBody(body []byte) (string, string, error) {
 	}
 	nameLen := int(uNameLen)
 	name := string(body[4 : 4+nameLen])
-	offset := 4 + nameLen + 1
-	rem := offset % 4
+	offset := dbusUint32Len + nameLen + 1
+	rem := offset % dbusAlign4
 	if rem != 0 {
-		offset += 4 - rem
+		offset += dbusAlign4 - rem
 	}
 	if len(body) < offset+4 {
 		return name, "", errors.New("short embed path len")
 	}
 	uPathLen := binary.LittleEndian.Uint32(body[offset : offset+4])
 	offset += 4
-	if uPathLen > maxBodyLen || uPathLen > uint32(len(body)-offset) {
+	if uPathLen > maxBodyLen || uPathLen > uint32(len(body)-offset) { //nolint:gosec // reason: offset is bounds-checked above so the difference is non-negative and fits uint32.
 		return name, "", errors.New("short embed path data")
 	}
 	pathLen := int(uPathLen)

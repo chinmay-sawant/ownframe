@@ -14,20 +14,12 @@ type ctxFake struct{ host.Screen }
 
 func testListener(t *testing.T) net.Listener {
 	t.Helper()
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = ln.Close() })
 	return ln
-}
-
-func freeAddr(t *testing.T) string {
-	t.Helper()
-	ln := testListener(t)
-	a := ln.Addr().String()
-	_ = ln.Close()
-	return a
 }
 
 func waitUp(t *testing.T, addr string, done <-chan error) {

@@ -168,7 +168,6 @@ func identifyGapsWithTotal(file changedFile, totalLines int) []diffGap {
 				After:    true,
 				HunkIdx:  len(file.Hunks) - 1,
 			})
-			idx++
 		}
 	}
 

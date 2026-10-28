@@ -186,7 +186,7 @@ func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root str
 		update := watchUpdate{Git: gitChange}
 
 		if rescan {
-			next, delta, err := rescanDiskWorkspace(root, last, limit) //nolint:contextcheck // the rescan owns its bounded git timeout
+			next, delta, err := rescanDiskWorkspace(root, last, limit)
 			if err == nil {
 				update.Workspace = next
 				update.Delta = delta

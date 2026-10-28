@@ -42,19 +42,6 @@ func scanLineMarkdown(li int, state lineState, line string) ([]segment, lineStat
 	return finishLine(markdownLine(line)), lineState{inFence: inFence, inFront: inFront}
 }
 
-// tokenizeMarkdown highlights headings, fences, quotes, lists, tables, and
-// inline emphasis. The whole file goes through one pass so a code fence and a
-// front-matter block carry across lines.
-func tokenizeMarkdown(lines []string) [][]segment {
-	out := make([][]segment, len(lines))
-	var st lineState
-	for li, line := range lines {
-		out[li], st = scanLineMarkdown(li, st, line)
-	}
-
-	return out
-}
-
 // markdownLine highlights one line outside a fence.
 func markdownLine(line string) []segment {
 	var segs []segment

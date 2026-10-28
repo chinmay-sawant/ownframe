@@ -65,7 +65,11 @@ func (a *App) startBrowse() {
 	a.fileAlert = ""
 }
 
-// browseEntries lists up to 100 immediate subdirectories of the browser
+// browseMaxEntries caps the folder browser list. The browser shows immediate
+// subdirectories only, so a deep root cannot flood the picker.
+const browseMaxEntries = 100
+
+// browseEntries lists up to browseMaxEntries immediate subdirectories of the
 // root, sorted by name. Unreadable entries are skipped silently.
 func (a *App) browseEntries() []recentRootRow {
 	ents, err := os.ReadDir(a.browseRoot)
@@ -86,8 +90,8 @@ func (a *App) browseEntries() []recentRootRow {
 
 	sort.Slice(rows, func(i, j int) bool { return rows[i].Name < rows[j].Name })
 
-	if len(rows) > 100 {
-		rows = rows[:100]
+	if len(rows) > browseMaxEntries {
+		rows = rows[:browseMaxEntries]
 	}
 
 	return rows
