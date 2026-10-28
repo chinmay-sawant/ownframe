@@ -125,8 +125,17 @@
 .diff-path { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; display: flex; align-items: center; font-family: var(--mono); font-size: 9.5px; line-height: 20px; white-space: nowrap; }
 .diff-path b { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .diff-path b, .diff-dir { white-space: nowrap; }
-.diff-dir { flex: 0 0 auto; position: relative; background-color: var(--bg); color: var(--dim); margin-left: 5px; white-space: nowrap; }
+.diff-dir { flex: 0 0 auto; position: relative; background-color: var(--bg); color: var(--dim); white-space: nowrap; }
 .crumb-path b { color: var(--muted); font-weight: 500; white-space: nowrap; }
+/* The file-mode path mirrors the diff header: the directory and the name
+   are flex items in one row, so the engine cannot break them onto two
+   lines at the element boundary. Go clips both strings to fit (see
+   clipFileCrumbPath), and the spill-mask rules below keep the trailing
+   controls above any overrunning ink. */
+.file-path { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; display: flex; align-items: center; font-family: var(--mono); font-size: 9.5px; line-height: 20px; white-space: nowrap; }
+.file-path b { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.file-path b, .file-dir { white-space: nowrap; }
+.file-dir { flex: 0 0 auto; position: relative; background-color: var(--bg); color: var(--dim); white-space: nowrap; }
 .crumb-stats { display: flex; gap: 6px; font-family: var(--mono); font-size: 9px; font-weight: 700; }
 /* A long path paints past its measured box, so the trailing controls carry
    the crumbs background and paint above the text. The buttons stay visible

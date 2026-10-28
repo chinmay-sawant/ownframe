@@ -122,21 +122,40 @@ const (
 // the display name and directory; the directory is empty when it is hidden
 // or does not fit.
 func clipDiffPath(paneWidth, windowWidth int, name, dir string) (string, string) {
-	if windowWidth <= crumbsNarrowPx {
+	return clipCrumbPath(paneWidth, windowWidth, name, dir, crumbsRightWidePx, crumbsRightNarrowPx, true)
+}
+
+// clipCrumbPath keeps a directory/name pair on one line within paneWidth and
+// marks the cut with an ellipsis. rightWide and rightNarrow reserve the
+// controls beside the path above and below the crumbsNarrowPx breakpoint;
+// hideNarrowDir drops the directory below that breakpoint to mirror a CSS
+// rule that hides it, while file-mode headers keep their (clipped) directory
+// because no such rule hides it. Slashes render with breathing room
+// ("dir / name"), so the directory is spaced before clipping and the budget
+// counts the separator.
+func clipCrumbPath(paneWidth, windowWidth int, name, dir string, rightWide, rightNarrow int, hideNarrowDir bool) (string, string) {
+	if hideNarrowDir && windowWidth <= crumbsNarrowPx {
 		dir = ""
 	}
 
-	right := crumbsRightWidePx
+	dir = strings.ReplaceAll(dir, "/", " / ")
+
+	right := rightWide
 	if windowWidth <= crumbsNarrowPx {
-		right = crumbsRightNarrowPx
+		right = rightNarrow
 	}
 
 	budget := int(float64(paneWidth-crumbsPadPx-right) / crumbsMonoPx)
 
+	sep := 3
 	nr := []rune(name)
 	dr := []rune(dir)
 
-	if len(nr)+1+len(dr) <= budget {
+	if len(dr) == 0 {
+		sep = 0
+	}
+
+	if len(nr)+sep+len(dr) <= budget {
 		return name, dir
 	}
 
@@ -144,8 +163,8 @@ func clipDiffPath(paneWidth, windowWidth int, name, dir string) (string, string)
 		return "", ""
 	}
 
-	if len(nr)+1 < budget {
-		take := budget - len(nr) - 2
+	if len(nr)+sep < budget {
+		take := budget - len(nr) - sep - 1
 		if take < 1 {
 			take = 1
 		}
@@ -163,6 +182,83 @@ func clipDiffPath(paneWidth, windowWidth int, name, dir string) (string, string)
 	}
 
 	return string(nr[:take]) + "…", ""
+}
+
+// fileCrumbRightWidePx reserves the file-mode crumbs bar around the path:
+// the left pills (status mark and language, about 84 px) plus the right
+// control group (Wrap, Copy path, Copy file, the line count, and the Preview
+// toggle on Markdown, about 300 px with slack for the wider mono advance).
+// Below 1120 px the line count hides, so the narrow reserve shrinks.
+const (
+	fileCrumbRightWidePx   = 400
+	fileCrumbRightNarrowPx = 320
+
+	// secondCrumbRightWidePx reserves the second pane's crumbs bar. That
+	// pane has no buttons, only the line count, so its reserve is smaller;
+	// the narrow value drops the hidden line count too.
+	secondCrumbRightWidePx   = 190
+	secondCrumbRightNarrowPx = 120
+)
+
+// clipFileCrumbPath keeps the file-mode header (status, language, path, and
+// the Wrap/Copy controls) on one line within paneWidth. It returns the
+// display name and directory; the directory is empty when it does not fit.
+func clipFileCrumbPath(paneWidth, windowWidth int, name, dir string) (string, string) {
+	return clipCrumbPath(paneWidth, windowWidth, name, dir, fileCrumbRightWidePx, fileCrumbRightNarrowPx, false)
+}
+
+// clipSecondCrumbPath keeps the second pane's header on one line. That bar
+// carries no buttons, so it uses its own smaller reserve.
+func clipSecondCrumbPath(paneWidth, windowWidth int, name, dir string) (string, string) {
+	return clipCrumbPath(paneWidth, windowWidth, name, dir, secondCrumbRightWidePx, secondCrumbRightNarrowPx, false)
+}
+
+// The tree constants mirror components/sidebar.css: the 268 px sidebar keeps
+// 10 px right padding and a 2 px left border, each row adds its indent as
+// left padding, an 18 px icon (a 10 px chevron with an 8 px margin, or an
+// 18 px badge), 7 px gaps, a 16 px status mark on files, and a ~44 px
+// "ignored" pill when present. treeCellW covers the 11 px row face with
+// margin over the measured ~5.1 px advance so a clipped name cannot reach
+// the row edge even when the face resolves a little wide.
+const (
+	treeRowPadRight = 10
+	treeRowBorder   = 2
+	treeRowIconW    = 18
+	treeRowGap      = 7
+	treeRowStatusW  = 16
+	treeNoteW       = 44
+	treeCellW       = 6.0
+)
+
+// clipTreeName keeps one sidebar row on a single line within the fixed
+// sidebar width and marks the cut with an ellipsis. The budget subtracts
+// the row's indent and decorations; the full path stays in the row's title
+// attribute, so nothing is lost.
+func clipTreeName(indent int, isDir, hasNote bool, name string) string {
+	overhead := treeRowPadRight + treeRowBorder + treeRowIconW + treeRowGap
+	if !isDir {
+		overhead += treeRowGap + treeRowStatusW
+	}
+
+	if hasNote {
+		overhead += treeRowGap + treeNoteW
+	}
+
+	budget := int(float64(sideWidth-indent-overhead) / treeCellW)
+	if budget < 1 {
+		budget = 1
+	}
+
+	runes := []rune(name)
+	if len(runes) <= budget {
+		return name
+	}
+
+	if budget == 1 {
+		return "…"
+	}
+
+	return string(runes[:budget-1]) + "…"
 }
 
 // clipSegments keeps at most max runes and marks the cut with an ellipsis.

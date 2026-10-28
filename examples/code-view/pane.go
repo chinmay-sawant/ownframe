@@ -240,6 +240,8 @@ func (a *App) secondView() secondaryView {
 	s.Active = doc.Path
 	s.ActiveDir = dirName(doc.Path)
 	s.ActiveName = baseName(doc.Path)
+	winW, _ := a.page.Size()
+	s.ActiveNameShort, s.ActiveDirShort = clipSecondCrumbPath(s.Width, winW, s.ActiveName, s.ActiveDir)
 	s.Lang = doc.Lang
 	s.LangLabel = languageInfo(doc.Lang).Label
 	s.Badge = languageInfo(doc.Lang).Badge

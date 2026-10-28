@@ -34,21 +34,23 @@ type View struct {
 	TreeTrackH   int
 	Filtered     bool
 
-	Tabs        []tabRow
-	ActiveTab   int
-	Active      string
-	ActiveDir   string
-	ActiveName  string
-	Lang        string
-	LangLabel   string
-	Badge       string
-	LineCount   int
-	ByteSize    string
-	Encoding    string
-	Indent      string
-	Status      string
-	StatusClass string
-	Truncated   bool
+	Tabs            []tabRow
+	ActiveTab       int
+	Active          string
+	ActiveDir       string
+	ActiveName      string
+	ActiveDirShort  string
+	ActiveNameShort string
+	Lang            string
+	LangLabel       string
+	Badge           string
+	LineCount       int
+	ByteSize        string
+	Encoding        string
+	Indent          string
+	Status          string
+	StatusClass     string
+	Truncated       bool
 
 	Rows        []codeRow
 	TrackTop    int
@@ -157,23 +159,25 @@ type fileNavView struct {
 // secondaryView is the right-hand editor group. It carries only the fields
 // that pane draws; the left group keeps the top-level View fields.
 type secondaryView struct {
-	EditorScroll editorScrollView
-	Open         bool
-	Left         int
-	Width        int
-	Tabs         []tabRow
-	ActiveTab    int
-	Active       string
-	ActiveDir    string
-	ActiveName   string
-	Lang         string
-	LangLabel    string
-	Badge        string
-	LineCount    int
-	ByteSize     string
-	Status       string
-	StatusClass  string
-	Truncated    bool
+	EditorScroll    editorScrollView
+	Open            bool
+	Left            int
+	Width           int
+	Tabs            []tabRow
+	ActiveTab       int
+	Active          string
+	ActiveDir       string
+	ActiveName      string
+	ActiveDirShort  string
+	ActiveNameShort string
+	Lang            string
+	LangLabel       string
+	Badge           string
+	LineCount       int
+	ByteSize        string
+	Status          string
+	StatusClass     string
+	Truncated       bool
 
 	Rows        []codeRow
 	TrackTop    int
@@ -226,8 +230,13 @@ type searchRow struct {
 
 // treeRow is one file or folder in the explorer.
 type treeRow struct {
-	Path    string
-	Name    string
+	Path string
+	Name string
+	// Short is the clipped display name. The engine wraps a long name with
+	// spaces onto a second row instead of truncating it, so the row clips
+	// the name in Go and marks the cut with an ellipsis. The button title
+	// keeps the full path.
+	Short   string
 	Dir     bool
 	Open    bool
 	Ignored bool

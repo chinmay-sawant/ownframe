@@ -39,7 +39,7 @@
     {{if eq .Mode "changes"}}
       {{if .Diff.HasFiles}}
       {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>{{end}}
-      <span class="crumb-path diff-path" id="diff-path" title="{{.Diff.Path}}"><b>{{.Diff.NameShort}}</b>{{if .Diff.DirShort}}<span class="diff-dir">{{.Diff.DirShort}}</span>{{end}}</span>
+      <span class="crumb-path diff-path" id="diff-path" title="{{.Diff.Path}}">{{if .Diff.DirShort}}<span class="diff-dir">{{.Diff.DirShort}} / </span>{{end}}<b>{{.Diff.NameShort}}</b></span>
       <span class="tabs-fill"></span>
       <span id="diff-status" class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
       <span id="diff-stats" class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
@@ -60,7 +60,7 @@
     {{else if .Active}}
       <span class="cstat {{.StatusClass}}">{{.Status}}</span>
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
-      <span class="crumb-path">{{if .ActiveDir}}{{.ActiveDir}}/{{end}}<b>{{.ActiveName}}</b></span>
+      <span class="crumb-path file-path" id="crumb-path" title="{{.Active}}">{{if .ActiveDirShort}}<span class="file-dir">{{.ActiveDirShort}} / </span>{{end}}<b>{{.ActiveNameShort}}</b></span>
       {{if .Editing}}
       {{if .EditDirty}}<span class="edit-flag" id="edit-flag">Changes made</span>{{end}}
       <button class="crumb-btn on" id="edit-save" data-action="edit-save" type="button" title="Save (Ctrl+S)">Save</button>
@@ -249,7 +249,7 @@
     {{if .Second.Active}}
     <span class="cstat {{.Second.StatusClass}}">{{.Second.Status}}</span>
     <span class="lang-pill lang-{{.Second.Lang}}">{{.Second.LangLabel}}</span>
-    <span class="crumb-path">{{if .Second.ActiveDir}}{{.Second.ActiveDir}}/{{end}}<b>{{.Second.ActiveName}}</b></span>
+    <span class="crumb-path file-path" id="crumb-path-2" title="{{.Second.Active}}">{{if .Second.ActiveDirShort}}<span class="file-dir">{{.Second.ActiveDirShort}} / </span>{{end}}<b>{{.Second.ActiveNameShort}}</b></span>
     <span class="tabs-fill"></span>
     <span class="crumb-meta">{{.Second.LineCount}} lines · {{.Second.ByteSize}}</span>
     {{else}}

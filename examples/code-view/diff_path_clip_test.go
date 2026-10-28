@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"math"
 	"os/exec"
 	"strings"
 	"testing"
@@ -31,7 +32,7 @@ func TestClipDiffPath(t *testing.T) {
 		t.Fatalf("dir %q has no ellipsis", dshort)
 	}
 
-	if got, want := len([]rune(dshort)), 83-49-2+1; got != want {
+	if got, want := len([]rune(dshort)), 83-49-4+1; got != want {
 		t.Fatalf("dir is %d runes, want %d", got, want)
 	}
 
@@ -100,5 +101,46 @@ func TestDiffPathStaysOnOneLine(t *testing.T) {
 
 	if box.H > 20 {
 		t.Fatalf("diff-path is %.0f px tall, want one 20 px line", box.H)
+	}
+
+	display := app.Page().Probe().Display()
+	if display == nil {
+		t.Fatal("page fell back to a bitmap")
+	}
+
+	scale := display.PixelPerPoint
+	if scale == 0 {
+		scale = 96.0 / 72.0
+	}
+
+	var nameY, dirY, nameX, dirX float64
+	foundName, foundDir := false, false
+
+	for _, op := range display.Ops {
+		if op.Text == name {
+			nameX, nameY, foundName = op.X*scale, op.Y*scale, true
+		}
+
+		if op.Text == view.Diff.DirShort+" /" || op.Text == view.Diff.DirShort {
+			if !foundDir || op.X*scale < dirX {
+				dirX, dirY, foundDir = op.X*scale, op.Y*scale, true
+			}
+		}
+	}
+
+	if !foundName {
+		t.Fatalf("full name %q not painted in the header", name)
+	}
+
+	if !foundDir {
+		t.Fatalf("directory %q not painted in the header", view.Diff.DirShort)
+	}
+
+	if math.Abs(dirY-nameY) > 0.5 {
+		t.Fatalf("dir y=%.1f and name y=%.1f, want one line", dirY, nameY)
+	}
+
+	if dirX >= nameX {
+		t.Fatalf("dir x=%.1f is not left of name x=%.1f", dirX, nameX)
 	}
 }

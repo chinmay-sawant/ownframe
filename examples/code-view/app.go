@@ -851,6 +851,11 @@ func (a *App) buildView() View {
 		a.fillHistory(&v)
 	} else {
 		a.fillCode(&v)
+
+		if doc := a.groupDoc(0); doc != nil {
+			winW, _ := a.page.Size()
+			v.ActiveNameShort, v.ActiveDirShort = clipFileCrumbPath(v.PaneWidth, winW, v.ActiveName, v.ActiveDir)
+		}
 	}
 
 	if v.Split {
@@ -1798,6 +1803,7 @@ func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[
 				IgnoredNote: node.Ignored && !parentIgnored,
 				Indent:      treePad + depth*treeIndent,
 			}
+			row.Short = clipTreeName(row.Indent, row.Dir, row.IgnoredNote, row.Name)
 
 			if node.Dir {
 				row.Open = a.folders[node.Path]
@@ -1847,6 +1853,10 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 	a.clampTreeOffset(len(all), visible)
 	from := min(a.treeOffset, len(all))
 	to := min(from+visible, len(all))
+
+	for i := from; i < to; i++ {
+		all[i].Short = clipTreeName(all[i].Indent, false, all[i].IgnoredNote, all[i].Name)
+	}
 
 	return all[from:to], len(all), len(a.ws.Files), true
 }
