@@ -7,18 +7,33 @@ const frontend = fileURLToPath(new URL('..', import.meta.url));
 const output = fileURLToPath(new URL('../../temp/frontend-check/', import.meta.url));
 await mkdir(output, { recursive: true });
 const processes = [];
+const shutdown = { stopping: false };
 let socket;
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const errors = [];
 
-function start(command, args) {
-  const process = spawn(command, args, { cwd: frontend, stdio: 'ignore' });
-  process.on('error', (error) => errors.push(error.message));
-  processes.push(process);
+function start(command, args, capture = false) {
+  const child = spawn(command, args, { cwd: frontend, stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'ignore' });
+  const entry = { process: child, output: '' };
+  if (capture) {
+    const keep = (chunk) => {
+      entry.output = (entry.output + chunk.toString()).slice(-4000);
+    };
+    child.stdout.on('data', keep);
+    child.stderr.on('data', keep);
+  }
+  child.on('error', (error) => errors.push(`${command}: ${error.message}`));
+  child.on('exit', (code, signal) => {
+    if (shutdown.stopping || code === 0) return;
+    if (code === null) errors.push(`${command} stopped by signal ${signal}${entry.output ? `: ${entry.output}` : ''}`);
+    else errors.push(`${command} exited with code ${code}${entry.output ? `: ${entry.output}` : ''}`);
+  });
+  processes.push(child);
+  return entry;
 }
 
-async function ready(url) {
-  for (let attempt = 0; attempt < 100; attempt++) {
+async function ready(url, attempts = 100) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
     if (errors.length) throw new Error(errors.join('\n'));
     try {
       const response = await fetch(url);
@@ -32,11 +47,17 @@ async function ready(url) {
 }
 
 try {
-  start(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4175', '--strictPort']);
+  start(process.execPath, ['node_modules/vite/bin/vite.js', 'preview', '--host', '127.0.0.1', '--port', '4175', '--strictPort'], true);
   await ready('http://127.0.0.1:4175/ownframe/');
-  start(process.env.CHROME_PATH || 'google-chrome', ['--headless', '--no-sandbox', '--disable-dev-shm-usage',
-    '--remote-debugging-port=9232', `--user-data-dir=${output}chrome`, 'about:blank']);
-  const targets = await (await ready('http://127.0.0.1:9232/json')).json();
+  const chrome = start(process.env.CHROME_PATH || 'google-chrome', ['--headless', '--no-sandbox', '--disable-dev-shm-usage',
+    '--no-first-run', '--no-default-browser-check',
+    '--remote-debugging-port=9232', `--user-data-dir=${output}chrome`, 'about:blank'], true);
+  let targets;
+  try {
+    targets = await (await ready('http://127.0.0.1:9232/json', 300)).json();
+  } catch (error) {
+    throw new Error(`Chrome did not open remote debugging: ${error.message}${chrome.output ? `\nchrome output: ${chrome.output}` : ''}`);
+  }
   socket = new WebSocket(targets.find((target) => target.type === 'page').webSocketDebuggerUrl);
   await new Promise((resolve) => socket.addEventListener('open', resolve, { once: true }));
   let nextId = 0;
@@ -201,5 +222,6 @@ try {
   console.log(`PASS: ${metrics.length} layout checks, themes, mobile menu, anchors, showcase, keyboard focus, and images.`);
 } finally {
   socket?.close();
+  shutdown.stopping = true;
   for (const process of processes) process.kill();
 }

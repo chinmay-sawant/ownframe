@@ -20,8 +20,29 @@ env:
   GOFLAGS: -mod=readonly
   GOTOOLCHAIN: local
 
+# Cancel superseded runs on the same ref so a push does not wait behind a
+# pipeline for a commit it already replaced. Release tags run in the
+# release workflow, a different workflow name, so they are unaffected.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# One-gate validation: a push whose message contains "[ci only=<job>]"
+# runs just that job, where <job> is one of test, lint, graphics, module,
+# site, test-race, sec, cross, secrets, lint-actions, reproducible,
+# examples-race, native-package, performance, or android-bind. The gates
+# aggregator stays skipped on those runs and the single job reports for
+# itself. Example: git commit -m "[ci only=site] debug CDP startup".
+
 jobs:
-  gates:
+  # The old sequential `gates` job, split so test, lint, graphics, module,
+  # and site run in parallel. Wall time is now the slowest gate rather
+  # than the sum of all five.
+  test:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=test]')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -35,6 +56,25 @@ jobs:
       # GEN-1: fail the build when the module cache disagrees with go.sum.
       - run: go mod verify
       - run: cd examples && go mod verify
+      - name: Install graphics test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+      - run: xvfb-run -a make test
+
+  lint:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=lint]')
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); the trailing comment names the tag the
+      # SHA was resolved from so bumps stay reviewable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -46,16 +86,107 @@ jobs:
         working-directory: frontend
       - run: npm audit signatures
         working-directory: frontend
+      # scripts/lint.sh compiles golangci-lint from source into temp/tools
+      # on a cache miss; reuse the exact pinned binary across runs.
+      - name: Read pinned linter version
+        id: lint-version
+        run: echo "version=$(grep '^GOLANGCI_LINT_VERSION' Makefile | awk '{print $3}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: temp/tools
+          key: golangci-lint-${{ runner.os }}-${{ steps.lint-version.outputs.version }}
+      - run: make lint
+
+  graphics:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=graphics]')
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); the trailing comment names the tag the
+      # SHA was resolved from so bumps stay reviewable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
       - name: Install graphics test dependencies
         run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
-      - run: xvfb-run -a make test
-      - run: make lint
       - run: make graphics-check
+
+  module:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=module]')
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); the trailing comment names the tag the
+      # SHA was resolved from so bumps stay reviewable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
       - run: make module-check
+
+  site:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=site]')
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned by full SHA (GEN-9); the trailing comment names the tag the
+      # SHA was resolved from so bumps stay reviewable.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # GEN-5: --ignore-scripts blocks install-time code execution;
+      # lockfile-only installs (npm ci) plus signature audit below.
+      - run: npm ci --ignore-scripts
+        working-directory: frontend
+      - run: npm audit signatures
+        working-directory: frontend
+      # check:site drives a real browser over CDP; install an explicit
+      # Chrome instead of relying on the runner image version.
+      - id: setup-chrome
+        uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
       - run: make site-check
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+
+  # Keeps the single `gates` status check: green only when every split gate
+  # passes. Skipped on `[ci only=...]` runs, where the one job reports for
+  # itself.
+  gates:
+    if: always() && !contains(github.event.head_commit.message, '[ci only=')
+    runs-on: ubuntu-latest
+    needs: [test, lint, graphics, module, site]
+    steps:
+      - name: Require every gate to pass
+        run: |
+          fail=0
+          for result in "test:${{ needs.test.result }}" "lint:${{ needs.lint.result }}" "graphics:${{ needs.graphics.result }}" "module:${{ needs.module.result }}" "site:${{ needs.site.result }}"; do
+            echo "$result"
+            case "$result" in *:success) ;; *) fail=1 ;; esac
+          done
+          exit "$fail"
 
   # Library race detector; examples run in independent shards below.
   test-race:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=test-race]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -71,6 +202,10 @@ jobs:
   # GEN-21: the security regression suite (TestSec_*) is its own gate,
   # so a reverted fix fails CI even when the rest stays green.
   sec:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=sec]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -93,6 +228,10 @@ jobs:
   # GEN-25: 32-bit and ARM compile checks plus the checkptr
   # instrumented run catch overflow and unsafe misuse amd64 hides.
   cross:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=cross]')
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -111,6 +250,10 @@ jobs:
       - run: go test -gcflags=all=-d=checkptr=2 -count=1 -run Sec ./internal/... .
 
   secrets:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=secrets]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -124,6 +267,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lint-actions:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=lint-actions]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -142,6 +289,10 @@ jobs:
 
   # GEN-14: compare complete release archives across independent builds. See documentation/supply-chain.md.
   reproducible:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=reproducible]')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -158,6 +309,10 @@ jobs:
       - run: bash scripts/reproducible-check.sh
 
   examples-race:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=examples-race]')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -176,6 +331,10 @@ jobs:
         run: bash scripts/test-examples-race.sh "$RACE_SHARD" 4
 
   native-package:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=native-package]')
     strategy:
       fail-fast: false
       matrix:
@@ -217,6 +376,10 @@ jobs:
           if-no-files-found: error
 
   performance:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=performance]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -243,6 +406,10 @@ jobs:
           if-no-files-found: error
 
   android-bind:
+    if: >
+      github.event_name != 'push' ||
+      !contains(github.event.head_commit.message, '[ci only=') ||
+      contains(github.event.head_commit.message, '[ci only=android-bind]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
