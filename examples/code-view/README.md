@@ -16,7 +16,7 @@ go run ./examples/code-view
 The viewer opens the current directory and reads the working-tree diff at
 startup. The default window is 1500x900 and the minimum is 840x700. The
 developer dock is 340 px on wide windows and shrinks below 1180 px, so the page
-keeps usable width; F12 still closes it. The scan stops at 10,000 files by
+keeps usable width; F12 opens it. The scan stops at 10,000 files by
 default; `-files 25000` raises the budget and the status bar says when the limit
 was hit. The bundled `testdata/sample` is the deterministic fixture the test
 suite uses.
@@ -36,8 +36,9 @@ tabs stay put; tabs for deleted files close. A clean tree says so; a directory
 without a repository says that too. The viewer writes only when you edit a file
 and press Save.
 
-Other flags: `-dev=false` hides the developer dock, `-perf=false` stops pipeline
-sampling, `-addr` changes the `-web` address, and `-web` serves the interactive
+Other flags: `-dev` opens the developer dock (hidden by default), `-perf=false` stops pipeline
+sampling, `-chrome=false` keeps the native title bar instead of the drawn minimize, maximize,
+and close controls, `-addr` changes the `-web` address, and `-web` serves the interactive
 page (tick, keys, wheel, clicks, live frame updates).
 
 ## Screen
@@ -90,7 +91,7 @@ page (tick, keys, wheel, clicks, live frame updates).
   diff counts, the devtools state, the scan budget, rescan summaries, and
   unsaved files.
 
-The developer dock opens on start, so F12 closes it instead of opening it. The
+The developer dock stays hidden on start, so F12 opens it. The
 window lays the page out beside the dock, so the page controls stay clickable.
 The layout fits a 1280x720 window and a 1920x1080 one.
 

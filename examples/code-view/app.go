@@ -214,6 +214,7 @@ type App struct {
 
 	details bool
 	devOn   bool
+	chrome  bool
 
 	scrollY       int
 	viewportH     int
@@ -866,6 +867,11 @@ func (a *App) buildView() View {
 
 	if v.Split {
 		v.Second = a.secondView()
+	}
+
+	v.Chrome = a.chrome
+	if v.Chrome {
+		v.ChromeMax = a.page.Window().Maximized()
 	}
 
 	v.CmdTitle = "Search files"

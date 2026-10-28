@@ -94,6 +94,35 @@ requests a window above normal windows, and `FixedSize` disables resizing.
 OwnFrame disables VSync. Active drawing is uncapped; there is no VSync option.
 The desktop idle policy can still park a static page between scheduled frames.
 
+### Custom window chrome
+
+`CustomChrome` removes the OS title bar so the page can draw its own
+minimize, maximize, and close controls, in the style of VS Code. The window
+stays resizable and keeps keyboard focus.
+
+```go
+err := ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{
+    CustomChrome: true,
+    Draggable:    titlebarStrip,
+})
+```
+
+The page owns the buttons through the `Window` door: `Minimize`,
+`ToggleMaximize`, `Maximized` (to swap the maximize/restore icon), and
+`Close`, which ends `Run` with a nil error. Point `Draggable` at the
+titlebar strip so the window still moves; a press released without moving
+reaches the page as a normal click, so buttons in that strip keep working.
+Serve, web, and mobile builds ignore the missing decorations: the methods
+do nothing there, so shared button wiring is safe. After a maximized commit
+the loop re-asserts the configured window size, which travels the normal
+client-set presentation path; where the size already matches it is a no-op.
+Under WSL, ToggleMaximize never stays in the maximized window state:
+the first maximize learns the workarea with one window-manager maximize,
+then converts it to plain client geometry (and restores the saved windowed
+rect on toggle), because WSLg can present a maximized borderless window with
+an offset the client cannot see, which misaligns pointer input while the
+layout itself is correct.
+
 `MousePassthrough` passes every pointer event to the application underneath,
 including clicks on painted pixels. It starts the window unfocused and keeps
 its frame ticks running in the background. Provide a way to quit outside the

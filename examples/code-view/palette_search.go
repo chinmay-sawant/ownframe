@@ -32,6 +32,7 @@ func defaultDiskSearchFiles(ctx context.Context, root string) ([]string, error) 
 	if rgPath, err := exec.LookPath("rg"); err == nil {
 		cmd := exec.CommandContext(ctx, rgPath, "--files") //nolint:gosec // rg path from LookPath with a fixed --files flag, Dir pinned to the scanned root
 		cmd.Dir = root
+		hideConsoleWindow(cmd)
 		out, err := cmd.Output()
 		if err == nil {
 			return parseFileLines(out), nil
@@ -42,6 +43,7 @@ func defaultDiskSearchFiles(ctx context.Context, root string) ([]string, error) 
 	if gitPath, err := exec.LookPath("git"); err == nil {
 		cmd := exec.CommandContext(ctx, gitPath, "ls-files", "--cached", "--others", "--exclude-standard") //nolint:gosec // git path from LookPath with fixed ls-files flags, Dir pinned to the scanned root
 		cmd.Dir = root
+		hideConsoleWindow(cmd)
 		out, err := cmd.Output()
 		if err == nil {
 			return parseFileLines(out), nil

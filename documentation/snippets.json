@@ -299,5 +299,14 @@
       "github.com/chinmay-sawant/ownframe"
     ],
     "after": "return nil"
+  },
+  "documentation/window.md#2": {
+    "mode": "body",
+    "imports": [
+      "context",
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "before": "func titlebarStrip(x, y int) bool {\n\treturn y < 42\n}\n\nvar ctx = context.Background()\nvar page *ownframe.Page",
+    "after": "_ = err\nreturn nil"
   }
 }

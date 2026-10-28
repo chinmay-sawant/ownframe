@@ -1,6 +1,10 @@
 package ownframe
 
-import "context"
+import (
+	"context"
+
+	"github.com/chinmay-sawant/ownframe/internal/window"
+)
 
 // Window reads and sets reload, the animation and transition switches, perf,
 // devtools, and touch policy.
@@ -165,4 +169,31 @@ func (w Window) Watching() bool {
 func (w Window) DevTools() bool {
 	p := innerPage(w.page)
 	return p != nil && p.DevTools()
+}
+
+// Minimize minimizes the desktop window. It does nothing when no desktop
+// run loop is active, so pages shared with Serve or web can wire it
+// unconditionally.
+func (w Window) Minimize() {
+	window.Minimize()
+}
+
+// ToggleMaximize maximizes the desktop window, or restores it when it is
+// already maximized. It does nothing when no desktop run loop is active.
+func (w Window) ToggleMaximize() {
+	window.ToggleMaximize()
+}
+
+// Maximized reports whether the desktop window is maximized. It is false
+// when no desktop run loop is active.
+func (w Window) Maximized() bool {
+	return window.Maximized()
+}
+
+// Close asks the desktop run loop to exit on its next frame, ending Run
+// with a nil error. Borderless windows have no OS close button, so a page
+// that draws its own window controls calls this from its close control.
+// It does nothing when no desktop loop is running.
+func (w Window) Close() {
+	window.RequestClose()
 }

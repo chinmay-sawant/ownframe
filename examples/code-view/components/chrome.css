@@ -274,6 +274,30 @@
   white-space: nowrap;
 }
 
+/* Custom window chrome ----------------------------------------------------- */
+
+.win-controls {
+  margin-left: auto;
+  margin-right: -10px;
+  align-self: stretch;
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+}
+
+.win-btn {
+  width: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.win-btn:hover { background-color: var(--panel-3); color: var(--text); }
+.win-btn.win-close:hover { background-color: #e81123; color: #fff; }
+.win-btn:focus, .win-btn:focus-visible { outline: 0; }
+.win-btn:focus-visible { background-color: var(--panel-3); }
+
 .title-actions { margin-left: auto; display: flex; align-items: center; gap: 7px; }
 
 .branch-pill {

@@ -308,6 +308,19 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.refresh()
 	case action == "palette-open":
 		return a.openPalette(ctx)
+	case action == "win-min":
+		a.page.Window().Minimize()
+
+		return nil
+	case action == "win-max":
+		a.page.Window().ToggleMaximize()
+		a.refresh()
+
+		return nil
+	case action == "win-close":
+		a.page.Window().Close()
+
+		return nil
 	case action == "palette-close":
 		return a.closePalette(ctx)
 	case action == "diff-refresh":

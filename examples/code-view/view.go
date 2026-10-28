@@ -45,6 +45,8 @@ type View struct {
 	ActiveNameShort string
 	CmdText         string
 	CmdTitle        string
+	Chrome          bool
+	ChromeMax       bool
 	Lang            string
 	LangLabel       string
 	Badge           string

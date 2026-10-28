@@ -8,6 +8,15 @@ type Options struct {
 	Transparent bool
 	// Borderless removes the title bar and window borders.
 	Borderless bool
+	// CustomChrome removes the OS title bar so the page can draw its own
+	// minimize, maximize, and close controls, in the style of VS Code.
+	// The page owns those controls through Window.Minimize,
+	// Window.ToggleMaximize, Window.Maximized, and Window.Close, and drags
+	// the window with Draggable pointed at its titlebar. Unlike a plain
+	// Borderless overlay, the window stays resizable and keeps keyboard
+	// focus. Serve, web, and mobile builds ignore the missing decorations:
+	// the controls simply do nothing there.
+	CustomChrome bool
 	// Floating keeps the window above other normal windows.
 	Floating bool
 	// MousePassthrough passes all pointer input, including painted pixels,

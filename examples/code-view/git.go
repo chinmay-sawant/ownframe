@@ -144,6 +144,7 @@ func gitBytesCapped(ctx context.Context, root string, limit int, args ...string)
 	full := append([]string{"-C", root}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed binary, fixed subcommand, operator-selected -C
 	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
+	hideConsoleWindow(cmd)
 
 	buf := &cappedBuffer{limit: limit}
 	cmd.Stdout = buf
@@ -161,6 +162,7 @@ func gitBytes(ctx context.Context, root string, args ...string) ([]byte, error) 
 	full := append([]string{"-C", root}, args...)
 	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed binary, fixed subcommand, operator-selected -C
 	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
+	hideConsoleWindow(cmd)
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -177,6 +179,7 @@ func gitBytesStdin(ctx context.Context, root, input string, args ...string) ([]b
 	cmd := exec.CommandContext(ctx, "git", full...) //nolint:gosec // fixed binary, fixed subcommand, operator-selected -C
 	cmd.Env = append(os.Environ(), "GIT_PAGER=cat", "LC_ALL=C", "GIT_TERMINAL_PROMPT=0", "GIT_OPTIONAL_LOCKS=0")
 	cmd.Stdin = strings.NewReader(input)
+	hideConsoleWindow(cmd)
 
 	out, err := cmd.Output()
 	if err != nil {
