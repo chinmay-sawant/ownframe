@@ -26,13 +26,14 @@
   background-color: #0b0e14;
 }
 
-.tabs { display: flex; min-width: 0; overflow: hidden; }
+.tabs { display: flex; flex: 1 1 0; min-width: 0; max-width: 100%; overflow: hidden; }
 
 .tab {
   height: var(--tab-h);
-  flex: 1 1 110px;
+  flex: 1 1 0;
   min-width: 0;
   max-width: 208px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   border-top: 2px solid transparent;
@@ -45,15 +46,16 @@
 
 .tab-main {
   height: 100%;
-  flex: 1;
+  flex: 1 1 0;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 3px 0 9px;
 }
 
-.tab-name { flex: 1 1 auto; min-width: 0; max-width: 148px; max-height: 26px; overflow: hidden; white-space: normal; font-size: 9.5px; line-height: 1.15; }
+.tab-name { flex: 1 1 0; min-width: 0; max-width: 148px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 9.5px; line-height: 1.15; }
 
 .tab-status {
   width: 16px;
@@ -68,7 +70,7 @@
   font-size: 8px;
   font-weight: 800;
 }
-.tab-x { width: 21px; height: 21px; margin-right: 4px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: #4f5a6c; font-size: 13px; line-height: 1; }
+.tab-x { width: 21px; height: 21px; flex: 0 0 21px; margin-right: 4px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; color: #4f5a6c; font-size: 13px; line-height: 1; }
 .tab-x:hover { background-color: var(--panel-3); color: var(--text); }
 
 .tabs-fill { flex: 1; min-width: 4px; }
@@ -80,6 +82,7 @@
 .tab-tool {
   width: 26px;
   height: 26px;
+  flex: 0 0 26px;
   align-self: center;
   margin-right: 3px;
   display: inline-flex;
