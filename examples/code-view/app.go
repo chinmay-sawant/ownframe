@@ -868,6 +868,20 @@ func (a *App) buildView() View {
 		v.Second = a.secondView()
 	}
 
+	v.CmdTitle = "Search files"
+	if a.mode == "changes" {
+		if v.Diff.Selected != "" {
+			v.CmdTitle = v.Diff.Selected
+		} else {
+			v.CmdTitle = "Working tree"
+		}
+	} else if v.Active != "" {
+		v.CmdTitle = v.Active
+	}
+
+	winW, _ := a.page.Size()
+	v.CmdText = clipCmdbarText(winW, v.CmdTitle)
+
 	v.EditorScroll = a.editorScroll(0)
 	if a.split && a.mode == "explorer" {
 		v.Second.EditorScroll = a.editorScroll(1)

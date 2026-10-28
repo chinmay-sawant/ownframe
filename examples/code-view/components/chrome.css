@@ -255,9 +255,10 @@
 }
 
 .cmdbar:hover { border-color: #2a3140; background-color: var(--panel-3); color: var(--text); }
-.cmd-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.cmd-text { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 .cmd-key {
+  flex: 0 0 auto;
   height: 16px;
   min-width: 16px;
   display: inline-flex;
@@ -270,6 +271,7 @@
   color: var(--dim);
   font-family: var(--mono);
   font-size: 9px;
+  white-space: nowrap;
 }
 
 .title-actions { margin-left: auto; display: flex; align-items: center; gap: 7px; }

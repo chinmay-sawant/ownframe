@@ -43,6 +43,8 @@ type View struct {
 	ActiveName      string
 	ActiveDirShort  string
 	ActiveNameShort string
+	CmdText         string
+	CmdTitle        string
 	Lang            string
 	LangLabel       string
 	Badge           string

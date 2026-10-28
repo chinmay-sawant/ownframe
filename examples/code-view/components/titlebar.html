@@ -19,7 +19,7 @@
       <circle cx="6" cy="6" r="4.1"/>
       <path d="m9.2 9.2 3 3"/>
     </svg>
-    <span class="cmd-text">{{if eq .Mode "changes"}}{{if .Diff.Selected}}{{.Diff.Selected}}{{else}}Working tree{{end}}{{else if .Active}}{{.Active}}{{else}}Search files{{end}}</span>
+    <span class="cmd-text" title="{{.CmdTitle}}">{{.CmdText}}</span>
     <span class="cmd-key">Ctrl P</span>
   </button>
 

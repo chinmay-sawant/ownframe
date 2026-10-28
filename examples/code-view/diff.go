@@ -221,6 +221,50 @@ func clipSecondCrumbPath(paneWidth, windowWidth int, name, dir string) (string, 
 	return clipCrumbPath(paneWidth, windowWidth, name, dir, secondCrumbRightWidePx, secondCrumbRightNarrowPx, false)
 }
 
+// The cmdbar constants mirror components/chrome.css and
+// components/editor.css: the bar keeps 8 px side padding on each side, a
+// 12 px search icon, two 7 px gaps, and the "Ctrl P" pill (about 42 px
+// with its own padding and border). The flex basis is 430 px above the
+// 1300 px breakpoint and 300 px below it, so the text budget follows the
+// same breakpoint. cmdbarCellW covers the 10.5 px sans face with margin
+// over the measured advance so a clipped label cannot reach the pill even
+// when the face resolves a little wide.
+const (
+	cmdbarWidePx       = 430
+	cmdbarNarrowPx     = 300
+	cmdbarNarrowWindow = 1300
+	cmdbarOverheadPx   = 92
+	cmdbarCellW        = 6.0
+)
+
+// clipCmdbarText keeps the titlebar quick-open label inside the cmdbar. The
+// engine paints a long label past its measured box and over the "Ctrl P"
+// pill, so the label is clipped in Go and marked with an ellipsis. The full
+// path stays in the label's title attribute. Short placeholders pass
+// through unchanged.
+func clipCmdbarText(windowWidth int, text string) string {
+	width := cmdbarWidePx
+	if windowWidth <= cmdbarNarrowWindow {
+		width = cmdbarNarrowPx
+	}
+
+	budget := int(float64(width-cmdbarOverheadPx) / cmdbarCellW)
+	if budget < 1 {
+		budget = 1
+	}
+
+	runes := []rune(text)
+	if len(runes) <= budget {
+		return text
+	}
+
+	if budget == 1 {
+		return "…"
+	}
+
+	return string(runes[:budget-1]) + "…"
+}
+
 // The tree constants mirror components/sidebar.css: the 268 px sidebar keeps
 // 10 px right padding and a 2 px left border, each row adds its indent as
 // left padding, an 18 px icon (a 10 px chevron with an 8 px margin, or an
