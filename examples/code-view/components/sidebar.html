@@ -107,7 +107,8 @@
         <button class="hist-btn" id="history-refresh" data-action="diff-refresh" type="button" title="Refresh history" aria-label="Refresh history"{{if .Modal}} tabindex="-1"{{end}}>↻</button>
       </header>
       <button class="history-current{{if eq .Diff.Source "branch"}} on{{end}}" id="history-branch-changes" data-action="history-branch-changes" type="button" aria-pressed="{{if eq .Diff.Source "branch"}}true{{else}}false{{end}}" title="Show combined committed changes for this history branch"{{if .Modal}} tabindex="-1"{{end}}>
-        <span>Current branch changes</span>{{if eq .Diff.Source "branch"}}<span class="history-current-count mono">{{.Diff.Count}}</span>{{end}}
+        <svg class="history-current-icon" width="12" height="14" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
+        <span class="history-current-label">Current branch changes</span>{{if eq .Diff.Source "branch"}}<span class="history-current-count mono">{{.Diff.Count}}</span>{{end}}<span class="history-current-arrow" aria-hidden="true">›</span>
       </button>
       <div class="hist-list{{if .History.Scroll}} scroll-fade{{end}}{{if .History.AtTop}} at-top{{end}}{{if .History.AtEnd}} at-end{{end}}" id="history-list">
         {{if .History.BranchOpen}}
