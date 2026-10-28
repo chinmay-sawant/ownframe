@@ -232,6 +232,7 @@ type App struct {
 	recentRoots  []string
 	browseOpen   bool
 	browseRoot   string
+	browseList   browseListWindow
 	fileAlert    string
 	paletteOpen  bool
 	recent       []string
@@ -762,6 +763,7 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 
 // buildView assembles one frame from the current state.
 func (a *App) buildView() View {
+	winW, _ := a.page.Size()
 	v := View{
 		Mode:          a.mode,
 		Filter:        a.filter,
@@ -783,8 +785,8 @@ func (a *App) buildView() View {
 		QuickRoots:    a.quickRootRows(),
 		BrowseOpen:    a.browseOpen,
 		BrowseRoot:    a.browseRoot,
-		BrowseName:    a.browseDisplayName(),
-		BrowseEntries: a.browseEntries(),
+		BrowseName:    clipBrowsePath(winW, a.browseDisplayName()),
+		BrowseEntries: a.browseWindowedEntries(),
 		IsWSL:         isWSL(),
 		Alert:         a.fileAlert,
 		Themes:        a.themeRows(),
@@ -885,7 +887,7 @@ func (a *App) buildView() View {
 		v.CmdTitle = v.Active
 	}
 
-	winW, _ := a.page.Size()
+	winW, _ = a.page.Size()
 	v.CmdText = clipCmdbarText(winW, v.CmdTitle)
 
 	v.EditorScroll = a.editorScroll(0)

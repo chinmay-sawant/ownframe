@@ -41,6 +41,14 @@ sampling, `-chrome=false` keeps the native title bar instead of the drawn minimi
 and close controls, `-addr` changes the `-web` address, and `-web` serves the interactive
 page (tick, keys, wheel, clicks, live frame updates).
 
+On Windows, opening a workspace under a WSL network path (`\\wsl$\...`) hands the viewer off
+into WSL: the Windows build re-runs its Linux companion there via `wsl.exe` with the path
+translated, so scanning, git, and watching run on Linux. `-wsl=false` forces the native
+Windows build, and `-wsl-bin` overrides the companion location (by default it sits next to
+the `.exe`). The Open folder browser lists subdirectories; Up at a drive root steps out to
+This PC with every available drive, the list scrolls with the mouse wheel, and a long path
+clips with an ellipsis while the full path stays in the tooltip.
+
 ## Screen
 
 - The title bar holds the Code Review brand and the quick-open field.

@@ -183,8 +183,10 @@
 .browse-panel > * + * { margin-top: 6px; }
 
 /* Block layout does not stretch the input the way the drawer's flex picker
-   did, so the modal input takes the full panel width explicitly. */
-.browse-panel .project-input { width: 100%; }
+   did, so the modal input takes the full panel width explicitly. The border
+   box keeps its side padding and border inside that width so the field
+   cannot overlap its siblings; a long typed path scrolls inside the field. */
+.browse-panel .project-input { display: block; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }
 
 #browse-panel { left: calc(50% - 280px); margin-left: 0; }
 
@@ -192,13 +194,16 @@
   #browse-panel { left: 20px; }
 }
 
-.browse-head { display: flex; align-items: center; gap: 6px; }
+/* The head row clips to the panel so a long path cannot paint past it into
+   neighboring controls; the path itself keeps the .crumb-path ellipsis trio
+   below, with the full path in its title tooltip (see file_menu.html). */
+.browse-head { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; overflow: hidden; }
 
 .browse-head .file-item { width: auto; flex: 0 0 auto; }
 
-.browse-path { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 0 4px; }
+.browse-path { display: block; flex: 1; min-width: 0; max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 0 4px; }
 
-.browse-list { max-height: 180px; overflow: auto; }
+.browse-list { max-height: 180px; overflow: hidden; }
 
 /* The modal panel fits more rows than the old inline card did. */
 .browse-panel .browse-list { max-height: 320px; }

@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
+
+// onClick routes every control. State changes end in one refresh; the page
 
 // onClick routes every control. State changes end in one refresh; the page
 // redraws after the handler returns.
@@ -232,14 +233,12 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.refresh()
 		return nil
 	case action == "browse-up":
-		if a.browseRoot == "" || blockedProjectRoot(a.browseRoot) {
+		next, ok := browseUpTarget(a.browseRoot)
+		if !ok {
 			return nil
 		}
-		parent := filepath.Dir(a.browseRoot)
-		if parent == "" || parent == a.browseRoot {
-			return nil
-		}
-		a.browseRoot = parent
+		a.browseRoot = next
+		a.browseList.reset()
 		a.fileAlert = ""
 		a.refresh()
 		return nil
@@ -248,6 +247,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		if a.browseRoot == "" {
 			return nil
 		}
+		a.browseList.reset()
 		a.fileAlert = ""
 		a.refresh()
 		return nil
@@ -256,6 +256,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			candidate := "/mnt/" + string(c)
 			if isDir(candidate) {
 				a.browseRoot = candidate
+				a.browseList.reset()
 				a.fileAlert = ""
 				a.refresh()
 				return nil
@@ -263,6 +264,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 		if isDir("/mnt") {
 			a.browseRoot = "/mnt"
+			a.browseList.reset()
 			a.fileAlert = ""
 			a.refresh()
 			return nil
@@ -281,6 +283,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			return nil
 		}
 		a.browseRoot = path
+		a.browseList.reset()
 		a.fileAlert = ""
 		a.refresh()
 		return nil
@@ -593,6 +596,10 @@ func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 	scrollX, scrollY := a.page.Scroll().ScrollOffset()
 	x -= float64(scrollX)
 	y -= float64(scrollY)
+
+	if handled, err := a.browseWheelAt(ctx, x, y, dy); handled || err != nil {
+		return handled, err
+	}
 
 	if !a.wrap && ((dx != 0) || (a.shift && dy != 0)) && a.isOverEditor(x, y) {
 		delta := -dx
