@@ -28,7 +28,7 @@ func TestAccessibilityLabels(t *testing.T) {
 		"act-changes":  "Source control",
 		"act-search":   "Search workspace",
 		"act-details":  "Details closed",
-		"act-collapse": "Collapse all folders",
+		"act-settings": "Settings",
 		"act-devtools": "Developer tools on",
 		"tab-details":  "Details closed",
 		"wrap-toggle":  "Soft wrap on",

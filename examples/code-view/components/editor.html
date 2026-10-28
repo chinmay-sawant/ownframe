@@ -39,15 +39,15 @@
     {{if eq .Mode "changes"}}
       {{if .Diff.HasFiles}}
       {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>{{end}}
-      <span class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
-      <span class="crumb-path">{{if .Diff.Dir}}{{.Diff.Dir}}/{{end}}<b>{{.Diff.Name}}</b></span>
-      <span class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
+      <span class="crumb-path diff-path" id="diff-path" title="{{if .Diff.Dir}}{{.Diff.Dir}}/{{end}}{{.Diff.Name}}"><b>{{.Diff.Name}}</b>{{if .Diff.Dir}} <span class="diff-dir">{{.Diff.Dir}}</span>{{end}}</span>
+      <span id="diff-status" class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
+      <span id="diff-stats" class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
       <div class="seg">
         <button class="seg-btn{{if not .Diff.Split}} on{{end}}" id="seg-unified" data-action="diff-unified" type="button" aria-pressed="{{if .Diff.Split}}false{{else}}true{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Unified</button>
         <button class="seg-btn{{if .Diff.Split}} on{{end}}" id="seg-split" data-action="diff-split" type="button" aria-pressed="{{if .Diff.Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Split</button>
       </div>
-      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk" aria-label="Previous hunk"{{if .Modal}} tabindex="-1"{{end}}>↑</button>
-      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk" aria-label="Next hunk"{{if .Modal}} tabindex="-1"{{end}}>↓</button>
+      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk" aria-label="Previous hunk"{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button>
+      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk" aria-label="Next hunk"{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button>
       <button class="crumb-btn{{if .Wrap}} on{{end}}" id="diff-wrap-toggle" data-action="wrap-toggle" type="button" title="Wrap long diff lines (Z)" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
       <button class="crumb-btn" id="crumb-refresh" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Refresh</button>
       <span class="tabs-fill"></span>
@@ -166,11 +166,14 @@
           </div>
 
           <div class="keys">
-            <span><em>1</em> Explorer</span>
-            <span><em>2</em> Changes</span>
-            <span><em>3</em> Details</span>
-            <span><em>↑ ↓</em> Scroll</span>
-            <span><em>R</em> Refresh</span>
+            <span class="key-item"><em>1</em><span>Explorer</span></span>
+            <span class="key-item"><em>2</em><span>Changes</span></span>
+            <span class="key-item"><em>3</em><span>Details</span></span>
+            <span class="key-item"><em>↑ ↓</em><span>Scroll</span></span>
+            <span class="key-item"><em>R</em><span>Refresh</span></span>
+            <button class="key-item key-settings" id="welcome-settings" data-action="settings-open" type="button" aria-label="Open settings"{{if .Modal}} tabindex="-1"{{end}}>
+              <em><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 2h3.2l.5 2a6.3 6.3 0 0 1 1.4.6l1.8-1 2.2 2.2-1 1.8c.3.5.5.9.6 1.4l2 .5v3.2l-2 .5a6.3 6.3 0 0 1-.6 1.4l1 1.8-2.2 2.2-1.8-1a6.3 6.3 0 0 1-1.4.6l-.5 2H8.4l-.5-2a6.3 6.3 0 0 1-1.4-.6l-1.8 1-2.2-2.2 1-1.8a6.3 6.3 0 0 1-.6-1.4l-2-.5V8.4l2-.5a6.3 6.3 0 0 1 .6-1.4l-1-1.8 2.2-2.2 1.8 1a6.3 6.3 0 0 1 1.4-.6z"/><circle cx="10" cy="10" r="2.6"/></svg></em><span>Settings</span>
+            </button>
           </div>
 
           <div class="welcome-note">No script tag, no canvas. ownframe paints the page.</div>
@@ -217,6 +220,7 @@
       </div>
       {{if .CanEdit}}<button class="edit-surface" id="edit-surface" data-action="edit-begin" type="button" title="Click to edit" aria-label="Edit {{.Active}}"{{if .Modal}} tabindex="-1"{{end}}></button>{{end}}
     {{end}}
+    {{if .EditorScroll.Show}}<button class="editor-scroll-thumb" id="editor-scroll-thumb" type="button" aria-label="Scroll editor" tabindex="-1" style="top:{{.EditorScroll.Top}}px;height:{{.EditorScroll.Height}}px"><svg width="8" height="{{.EditorScroll.Height}}" aria-hidden="true"><rect width="8" height="{{.EditorScroll.Height}}" fill="#a6adba"/></svg></button>{{end}}
   </div>
 </section>
 
@@ -291,6 +295,7 @@
         {{end}}
       </div>
     {{end}}
+    {{if .Second.EditorScroll.Show}}<button class="editor-scroll-thumb" id="editor-scroll-thumb-2" type="button" aria-label="Scroll second editor" tabindex="-1" style="top:{{.Second.EditorScroll.Top}}px;height:{{.Second.EditorScroll.Height}}px"><svg width="8" height="{{.Second.EditorScroll.Height}}" aria-hidden="true"><rect width="8" height="{{.Second.EditorScroll.Height}}" fill="#a6adba"/></svg></button>{{end}}
   </div>
 </section>
 {{end}}

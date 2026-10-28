@@ -64,7 +64,7 @@
   color: var(--dim);
 }
 
-.filter:focus-within { border-color: var(--muted); background-color: #0d1018; }
+.filter:focus-within { border-color: var(--muted); background-color: var(--panel); }
 .filter-icon { color: var(--icon); pointer-events: none; }
 .filter-input {
   flex: 1;
@@ -97,20 +97,20 @@
 }
 
 .trow:hover { background-color: var(--panel-2); color: var(--text); }
-.trow.dir { color: #9aa4b7; }
-.chev { width: 10px; height: 10px; flex: 0 0 10px; margin-right: 8px; color: #aeb8c9; }
-.trow.dir .chev { color: #aeb8c9; }
+.trow.dir { color: var(--muted); }
+.chev { width: 10px; height: 10px; flex: 0 0 10px; margin-right: 8px; color: var(--muted); }
+.trow.dir .chev { color: var(--muted); }
 .trow.open { color: var(--text); }
-.trow.ignored { background-color: #141923; color: #7d8798; }
-.trow.ignored .tname { color: #8f9aab; }
-.trow.ignored .ficon, .trow.ignored .chev, .trow.ignored .fstat { color: #6f7a8b; }
-.trow.ignored:hover { background-color: #19202c; color: #9aa5b8; }
+.trow.ignored { background-color: var(--panel-2); color: var(--dim); }
+.trow.ignored .tname { color: var(--muted); }
+.trow.ignored .ficon, .trow.ignored .chev, .trow.ignored .fstat { color: var(--dim); }
+.trow.ignored:hover { background-color: var(--panel-3); color: var(--text); }
 .tree-note {
   flex: 0 0 auto;
   padding: 0 4px;
   border-radius: 3px;
   background-color: rgba(138, 147, 166, 0.10);
-  color: #6f7889;
+  color: var(--dim);
   font-family: var(--mono);
   font-size: 7px;
   line-height: 13px;
@@ -282,12 +282,12 @@
 }
 
 .change:hover { background-color: var(--panel-2); }
-.change.on, .change.on:hover { border-left-color: var(--accent); background-color: #20324b; }
+.change.on, .change.on:hover { border-left-color: var(--accent); background-color: var(--panel-3); }
 
 .change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; overflow: hidden; }
 .change-name { max-width: 100%; font-size: 10.5px; line-height: 13px; color: var(--text); overflow: hidden; white-space: nowrap; }
 .change-dir { max-width: 100%; font-size: 9px; line-height: 11px; color: var(--dim); overflow: hidden; white-space: nowrap; }
-.change.on .change-name { color: #fff; }
+.change.on .change-name { color: var(--text); }
 .change-num { width: 30px; flex: 0 0 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-family: var(--mono); font-size: 8.5px; font-weight: 700; }
 .change .cstat { flex: 0 0 auto; }
 

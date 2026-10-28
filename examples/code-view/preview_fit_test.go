@@ -129,6 +129,10 @@ func assertPreviewRowsFit(t *testing.T, app *App, width int) {
 	}
 
 	img := mustDecodePNG(t, app.Page().Probe().PNG())
+	paintRight := int(box.X+box.W) - paneScrollW
+	if thumb, ok := boxByID(app.Page().Boxes(), "editor-scroll-thumb"); ok {
+		paintRight = min(paintRight, int(thumb.X))
+	}
 
 	for i, row := range view.PreviewRows {
 		text := lineText(row.Segments)
@@ -137,7 +141,7 @@ func assertPreviewRowsFit(t *testing.T, app *App, width int) {
 		}
 
 		y := int(box.Y) + view.TrackTop + i*rowH + rowH/2
-		ink := rightInk(img, int(box.X), int(box.X+box.W)-paneScrollW, y)
+		ink := rightInk(img, int(box.X), paintRight, y)
 		if ink < 0 {
 			continue
 		}

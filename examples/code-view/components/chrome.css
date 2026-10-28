@@ -12,7 +12,7 @@
   gap: 8px;
   padding: 0 10px 0 14px;
   border-bottom: 1px solid var(--line-soft);
-  background-color: #0a0c12;
+  background-color: var(--panel);
 }
 
 .win-dots { display: flex; align-items: center; gap: 6px; padding-right: 10px; }
@@ -155,7 +155,7 @@
   color: var(--icon-strong);
 }
 
-.act:hover { color: #ffffff; background-color: var(--panel-3); }
+.act:hover { color: var(--text); background-color: var(--panel-3); }
 .act.on { color: var(--accent); background-color: var(--accent-soft); }
 
 .act.on::before {
@@ -201,7 +201,7 @@
   display: flex;
   align-items: stretch;
   border-top: 1px solid var(--line-soft);
-  background-color: #0a0c12;
+  background-color: var(--panel);
   color: var(--muted);
   font-size: 10px;
 }
@@ -265,7 +265,7 @@ button.sb-item:hover { background-color: var(--panel-3); color: var(--text); }
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent);
   border-radius: 8px;
-  background-color: #0e1118;
+  background-color: var(--panel);
   opacity: 0;
   transform: translateY(8px);
 }
@@ -296,3 +296,8 @@ button.sb-item:hover { background-color: var(--panel-3); color: var(--text); }
 .toast-text span { color: var(--muted); font-size: 10.5px; line-height: 1.35; }
 .toast-x { color: var(--icon); font-size: 14px; line-height: 1; padding: 0 2px; }
 .toast-x:hover { color: var(--text); }
+
+@media (max-width: 800px) {
+  .sb-extra { display: none; }
+  .sb-item { padding: 0 6px; }
+}

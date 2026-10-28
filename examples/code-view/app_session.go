@@ -9,10 +9,6 @@ import (
 // starts persisting later changes. The tests call New directly, so they never
 // read or write the user config directory.
 func (a *App) EnableSession() {
-	if a.ws.Sample {
-		return
-	}
-
 	path, err := defaultSessionPath(a.ws.Root)
 	if err != nil {
 		return
@@ -28,7 +24,7 @@ func (a *App) EnableSession() {
 	}
 
 	state = state.sanitize(a.ws.Root)
-	if state.Root == "" || !sameWorkspace(state.Root, a.ws.Root) || len(state.Tabs) == 0 {
+	if state.Root == "" || !sameWorkspace(state.Root, a.ws.Root) {
 		a.sessionReady = true
 		a.persistSession()
 
@@ -43,6 +39,8 @@ func (a *App) EnableSession() {
 
 // restoreState applies one saved snapshot.
 func (a *App) restoreState(state sessionState) {
+	a.theme = validTheme(state.Theme)
+	_ = a.page.SetTheme(themeCSS(a.theme))
 	a.mode = "explorer"
 	if state.Mode == "changes" {
 		a.mode = "changes"
@@ -148,7 +146,7 @@ func sameWorkspace(a, b string) bool {
 
 // persistSession writes the state when it differs from the last snapshot.
 func (a *App) persistSession() {
-	if !a.sessionReady || a.sessionPath == "" || a.ws.Sample {
+	if !a.sessionReady || a.sessionPath == "" {
 		return
 	}
 
@@ -174,6 +172,7 @@ func (a *App) sessionState() sessionState {
 	state := sessionState{
 		Root:          a.ws.Root,
 		Mode:          a.mode,
+		Theme:         a.theme,
 		Recents:       append([]string(nil), a.recent...),
 		Tabs:          append([]string(nil), a.tabs...),
 		Active:        a.active,

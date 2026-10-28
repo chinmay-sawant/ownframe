@@ -30,6 +30,7 @@ const (
 type sessionState struct {
 	Root          string               `json:"root"`
 	Mode          string               `json:"mode"`
+	Theme         string               `json:"theme,omitempty"`
 	Recents       []string             `json:"recents"`
 	Tabs          []string             `json:"tabs"`
 	Active        int                  `json:"active"`

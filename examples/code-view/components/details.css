@@ -47,13 +47,13 @@
 .orow { width: 100%; height: 26px; display: flex; align-items: center; gap: 8px; padding: 0 16px; color: var(--muted); }
 .orow:hover { background-color: var(--panel-2); }
 .okind { width: 26px; flex: 0 0 26px; font-family: var(--mono); font-size: 8px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; color: var(--dim); }
-.ok-fn { color: #82aaff; }
+.ok-fn { color: var(--syntax-function); }
 .ok-type { color: var(--amber); }
 .ok-class { color: var(--purple); }
-.ok-const, .ok-var { color: #ff9e64; }
+.ok-const, .ok-var { color: var(--syntax-number); }
 .ok-h1, .ok-h2, .ok-h3, .ok-h4, .ok-h5, .ok-h6 { color: var(--accent); }
 .ok-rule { color: var(--green); }
-.ok-at { color: #7fdbca; }
+.ok-at { color: var(--syntax-operator); }
 .oname { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-family: var(--mono); font-size: 9px; }
 .olno { color: var(--dim); font-size: 8.5px; }
 

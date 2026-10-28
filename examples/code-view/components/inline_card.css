@@ -9,7 +9,7 @@
   border: 1px solid var(--line);
   border-left: 2px solid var(--amber);
   border-radius: 8px;
-  background-color: #0d1018;
+  background-color: var(--panel);
   box-shadow: 0 12px 30px rgba(1, 4, 9, 0.6);
 }
 
@@ -99,7 +99,7 @@
 .inline-card-line code {
   flex: 1;
   min-width: 0;
-  color: #c4cddd;
+  color: var(--text);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

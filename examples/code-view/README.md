@@ -44,10 +44,11 @@ page (tick, keys, wheel, clicks, live frame updates).
 
 - The title bar holds the Code Review brand and the quick-open field.
 - The activity bar switches Explorer and Source Control, opens quick open,
-  opens Details, collapses the tree, and toggles the developer dock.
+  opens Details and Settings, and toggles the developer dock. Settings offers six
+  color themes, saved with the workspace session.
 - The explorer is a foldered tree with a file filter, language badges, and
   change letters. Folders show a right or down chevron. The header has a
-  collapse-all icon. When the tree is taller than the sidebar, use the mouse
+  collapse-all button. When the tree is taller than the sidebar, use the mouse
   wheel over the tree, drag the thin scrollbar, use the footer arrows, or move
   focus with the keyboard. Hover a clipped tree row or tab to read its full
   path in the status bar.

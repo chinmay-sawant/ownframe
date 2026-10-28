@@ -43,7 +43,7 @@ func TestPointerControls(t *testing.T) {
 		t.Fatalf("file click active=%q tabs=%d", app.View().Active, len(app.View().Tabs))
 	}
 
-	clickID(t, app, "act-collapse")
+	clickID(t, app, "side-collapse")
 
 	if len(app.folders) != 0 {
 		t.Fatalf("folders = %v", app.folders)

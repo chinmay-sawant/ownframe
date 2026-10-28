@@ -5,7 +5,7 @@
   right: 0;
   bottom: 0;
   overflow: hidden;
-  background-color: #0a0d13;
+  background-color: var(--bg);
 }
 
 .preview-track { position: absolute; left: 0; right: 0; }
@@ -22,7 +22,7 @@
   font-family: var(--mono);
   font-size: 12px;
   line-height: var(--row-h);
-  color: #c4cddd;
+  color: var(--text);
 }
 
 .pmark {
@@ -75,24 +75,24 @@
   padding-right: 0;
 }
 
-.prow-h1 .ptext { color: #f4f7fe; font-size: 14px; font-weight: 700; }
-.prow-h2 .ptext { color: #7fdbca; font-size: 13px; font-weight: 700; }
-.prow-h3 .ptext { color: #c792ea; font-size: 12px; font-weight: 700; }
-.prow-h4 .ptext { color: #ffcb6b; font-weight: 700; }
-.prow-h5 .ptext { color: #c3e88d; font-weight: 700; }
-.prow-h6 .ptext { color: #f78c6c; font-weight: 700; }
-.prow-summary .ptext { color: #c792ea; font-weight: 600; }
+.prow-h1 .ptext { color: var(--text); font-size: 14px; font-weight: 700; }
+.prow-h2 .ptext { color: var(--syntax-operator); font-size: 13px; font-weight: 700; }
+.prow-h3 .ptext { color: var(--syntax-keyword); font-size: 12px; font-weight: 700; }
+.prow-h4 .ptext { color: var(--syntax-type); font-weight: 700; }
+.prow-h5 .ptext { color: var(--syntax-string); font-weight: 700; }
+.prow-h6 .ptext { color: var(--syntax-number); font-weight: 700; }
+.prow-summary .ptext { color: var(--syntax-keyword); font-weight: 600; }
 .prow-summary .pmark { color: var(--accent); }
 
 .prow-code { background-color: rgba(255, 255, 255, 0.035); }
-.prow-code .ptext { color: #c3e88d; font-family: var(--mono); font-size: 11px; }
+.prow-code .ptext { color: var(--syntax-string); font-family: var(--mono); font-size: 11px; }
 .prow-code .pmark { background-color: rgba(255, 255, 255, 0.035); }
 
 .prow-quote .ptext { color: var(--muted); }
 .prow-quote .pmark { color: var(--accent); }
 
-.prow-rule .ptext { color: #3a4152; }
-.prow-table .ptext { color: #9aa5b8; font-family: var(--mono); font-size: 11px; }
+.prow-rule .ptext { color: var(--dim); }
+.prow-table .ptext { color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .prow-diagram .ptext { color: var(--accent); font-family: var(--mono); font-size: 11px; }
 .prow-diagram .pmark { color: var(--accent); }
 .pdiag { display: block; height: 20px; }

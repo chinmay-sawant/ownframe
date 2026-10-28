@@ -23,7 +23,7 @@ type editSnapshot struct {
 
 // onType inserts printable text at the edit caret.
 func (a *App) onType(ctx context.Context, text string) error {
-	if !a.editing || a.edit == nil || text == "" {
+	if a.settingsOpen || !a.editing || a.edit == nil || text == "" {
 		return nil
 	}
 
@@ -36,7 +36,7 @@ func (a *App) onType(ctx context.Context, text string) error {
 
 // onBackspace deletes the selection or the rune before the caret.
 func (a *App) onBackspace(ctx context.Context) error {
-	if !a.editing || a.edit == nil {
+	if a.settingsOpen || !a.editing || a.edit == nil {
 		return nil
 	}
 
@@ -50,7 +50,7 @@ func (a *App) onBackspace(ctx context.Context) error {
 
 // onDeleteWord deletes the word behind the caret.
 func (a *App) onDeleteWord(ctx context.Context) error {
-	if !a.editing || a.edit == nil {
+	if a.settingsOpen || !a.editing || a.edit == nil {
 		return nil
 	}
 
@@ -64,7 +64,7 @@ func (a *App) onDeleteWord(ctx context.Context) error {
 
 // onCopy returns the selected edit text.
 func (a *App) onCopy(context.Context) (string, bool, error) {
-	if !a.editing || a.edit == nil {
+	if a.settingsOpen || !a.editing || a.edit == nil {
 		return "", false, nil
 	}
 
@@ -78,7 +78,7 @@ func (a *App) onCopy(context.Context) (string, bool, error) {
 
 // onCut returns and removes the selected edit text.
 func (a *App) onCut(ctx context.Context) (string, bool, error) {
-	if !a.editing || a.edit == nil {
+	if a.settingsOpen || !a.editing || a.edit == nil {
 		return "", false, nil
 	}
 
@@ -98,7 +98,7 @@ func (a *App) onCut(ctx context.Context) (string, bool, error) {
 
 // onPaste inserts clipboard text at the caret.
 func (a *App) onPaste(ctx context.Context, text string) error {
-	if !a.editing || a.edit == nil || text == "" {
+	if a.settingsOpen || !a.editing || a.edit == nil || text == "" {
 		return nil
 	}
 
@@ -107,7 +107,7 @@ func (a *App) onPaste(ctx context.Context, text string) error {
 
 // onSelectAll selects the whole edit buffer.
 func (a *App) onSelectAll(ctx context.Context) error {
-	if !a.editing || a.edit == nil {
+	if a.settingsOpen || !a.editing || a.edit == nil {
 		return nil
 	}
 
@@ -151,7 +151,7 @@ func (a *App) onRedo(ctx context.Context) error {
 // editKey handles caret movement and edit-only keys. Printable text arrives in
 // onType, so an untouched key returns nil.
 func (a *App) editKey(ctx context.Context, key string) error {
-	if !a.editing || a.edit == nil {
+	if a.settingsOpen || !a.editing || a.edit == nil {
 		return nil
 	}
 

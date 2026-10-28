@@ -25,9 +25,9 @@
     </svg>
   </button>
   <span class="act-fill"></span>
-  <button class="act" id="act-collapse" data-action="collapse-all" type="button" title="Collapse all folders" aria-label="Collapse all folders"{{if .Modal}} tabindex="-1"{{end}}>
+  <button class="act" id="act-settings" data-action="settings-open" type="button" title="Settings" aria-label="Settings"{{if .Modal}} tabindex="-1"{{end}}>
     <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke-width="1.5" stroke-linecap="round">
-      <path d="M4 6.4h12M4 10h12M4 13.6h8"/>
+      <path d="M8.4 2h3.2l.5 2a6.3 6.3 0 0 1 1.4.6l1.8-1 2.2 2.2-1 1.8c.3.5.5.9.6 1.4l2 .5v3.2l-2 .5a6.3 6.3 0 0 1-.6 1.4l1 1.8-2.2 2.2-1.8-1a6.3 6.3 0 0 1-1.4.6l-.5 2H8.4l-.5-2a6.3 6.3 0 0 1-1.4-.6l-1.8 1-2.2-2.2 1-1.8a6.3 6.3 0 0 1-.6-1.4l-2-.5V8.4l2-.5a6.3 6.3 0 0 1 .6-1.4l-1-1.8 2.2-2.2 1.8 1a6.3 6.3 0 0 1 1.4-.6z"/><circle cx="10" cy="10" r="2.6"/>
     </svg>
   </button>
   <button class="act{{if .DevOn}} on{{end}}" id="act-devtools" data-action="devtools" type="button" title="Developer tools (F12)" aria-label="Developer tools {{if .DevOn}}on{{else}}off{{end}}" aria-pressed="{{if .DevOn}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>

@@ -8,15 +8,15 @@
   {{if .Dirty}}<span class="sb-item sb-dirty" id="sb-dirty">{{.Dirty}} unsaved</span>{{end}}
   {{if .ScanBudget}}<span class="sb-item sb-scan" id="sb-scan" title="{{.ScanBudget}}">{{.ScanBudget}}</span>{{end}}
   {{if eq .Mode "changes"}}
-  <span class="sb-item">{{.Diff.Add}} additions</span>
-  <span class="sb-item">{{.Diff.Del}} deletions</span>
+  <span class="sb-item sb-extra">{{.Diff.Add}} additions</span>
+  <span class="sb-item sb-extra">{{.Diff.Del}} deletions</span>
   {{else if .Active}}
-  <span class="sb-item">{{.LineCount}} lines</span>
-  <span class="sb-item">{{.LangLabel}}</span>
+  <span class="sb-item sb-extra">{{.LineCount}} lines</span>
+  <span class="sb-item sb-extra">{{.LangLabel}}</span>
   {{end}}
   {{if .Active}}
-  <span class="sb-item">{{.Encoding}}</span>
-  <span class="sb-item">{{.Indent}}</span>
+  <span class="sb-item sb-extra">{{.Encoding}}</span>
+  <span class="sb-item sb-extra">{{.Indent}}</span>
   {{end}}
   <button class="sb-item sb-dev{{if .DevOn}} on{{end}}" id="sb-devtools" data-action="devtools" type="button" title="Toggle developer tools" aria-pressed="{{if .DevOn}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
     <span class="sb-dot"></span>DevTools {{if .DevOn}}on{{else}}off{{end}}

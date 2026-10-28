@@ -8,7 +8,7 @@
   font-family: var(--mono);
   font-size: 12px;
   line-height: var(--row-h);
-  color: #c4cddd;
+  color: var(--text);
 }
 
 .dnum {
@@ -16,7 +16,7 @@
   flex: 0 0 46px;
   padding-right: 9px;
   text-align: right;
-  color: #394253;
+  color: var(--dim);
   font-size: 9.5px;
   line-height: var(--row-h);
 }
@@ -25,7 +25,7 @@
   width: 20px;
   flex: 0 0 20px;
   text-align: center;
-  color: #566072;
+  color: var(--dim);
   font-weight: 700;
 }
 
@@ -50,15 +50,15 @@
 .dlinetext span { font-family: var(--mono); }
 
 .drow.add { background-color: var(--green-bg); }
-.drow.add .dnum, .drow.add .dsign { background-color: rgba(63, 185, 80, 0.10); color: var(--green); }
+.drow.add .dnum, .drow.add .dsign { background-color: var(--green-gutter); color: var(--green); }
 .drow.del { background-color: var(--red-bg); }
-.drow.del .dnum, .drow.del .dsign { background-color: rgba(248, 81, 73, 0.10); color: var(--red); }
-.drow.current.add { background-color: rgba(63, 185, 80, 0.23); }
-.drow.current.del { background-color: rgba(248, 81, 73, 0.22); }
+.drow.del .dnum, .drow.del .dsign { background-color: var(--red-gutter); color: var(--red); }
+.drow.current.add { background-color: var(--green-active); }
+.drow.current.del { background-color: var(--red-active); }
 
 .drow.hunk { background-color: rgba(122, 162, 247, 0.075); }
 .drow.current .dnum:first-child { border-left: 2px solid var(--accent); }
-.dhunk { padding-left: 12px; color: #7d9bd6; font-size: 9.5px; overflow: hidden; }
+.dhunk { padding-left: 12px; color: var(--accent); font-size: 9.5px; overflow: hidden; }
 
 .drow.meta { background-color: rgba(240, 183, 90, 0.06); }
 .dmeta { padding-left: 12px; color: var(--amber); font-size: 9.5px; }
@@ -70,10 +70,10 @@
 .drow.split .dcell.ctx { background-color: transparent; }
 .drow.split .dcell.add { background-color: var(--green-bg); }
 .drow.split .dcell.del { background-color: var(--red-bg); }
-.drow.split.current .dcell.add { background-color: rgba(63, 185, 80, 0.23); }
-.drow.split.current .dcell.del { background-color: rgba(248, 81, 73, 0.22); }
-.drow.split .dnum.add { background-color: rgba(63, 185, 80, 0.10); color: var(--green); }
-.drow.split .dnum.del { background-color: rgba(248, 81, 73, 0.10); color: var(--red); }
+.drow.split.current .dcell.add { background-color: var(--green-active); }
+.drow.split.current .dcell.del { background-color: var(--red-active); }
+.drow.split .dnum.add { background-color: var(--green-gutter); color: var(--green); }
+.drow.split .dnum.del { background-color: var(--red-gutter); color: var(--red); }
 
 .em-a { background-color: var(--green-word); border-radius: 2px; }
 .em-d { background-color: var(--red-word); border-radius: 2px; }
@@ -91,7 +91,7 @@
 }
 
 .drow.expand .dnum-expand {
-  color: #566072;
+  color: var(--dim);
   font-size: 11px;
   letter-spacing: 1px;
 }

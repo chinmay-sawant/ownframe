@@ -1,0 +1,20 @@
+{{if .SettingsOpen}}
+<div class="palette-layer" id="settings-layer">
+  <div class="palette-back" id="settings-back" data-action="settings-close" aria-hidden="true"></div>
+  <div class="settings-panel" id="settings-panel" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="settings-header"><b>Settings</b><button class="palette-close" id="settings-close" data-action="settings-close" type="button" aria-label="Close settings">×</button></div>
+    <div class="settings-body">
+      <div class="settings-nav"><div class="settings-nav-active">Appearance</div></div>
+      <div class="settings-content">
+        <div class="settings-title">Color theme</div>
+        <div class="settings-caption">Choose the colors for the editor and interface.</div>
+        {{range .Themes}}
+        <button class="settings-theme{{if .Active}} selected{{end}}" id="theme-{{.ID}}" data-action="theme:{{.ID}}" type="button" aria-pressed="{{if .Active}}true{{else}}false{{end}}">
+          <span class="settings-theme-text"><b>{{.Name}}</b><span>{{.Description}}</span></span><span class="settings-check">{{if .Active}}✓{{end}}</span>
+        </button>
+        {{end}}
+      </div>
+    </div>
+  </div>
+</div>
+{{end}}

@@ -37,7 +37,9 @@ func main() {
 
 	ctx := context.Background()
 	app.reloadChanges(ctx, false)
-	if devSet || !app.sessionRestored {
+	// The flag default is on. A saved session must not hide the dock unless
+	// the launch passed -dev=false.
+	if devSet || !app.sessionRestored || *dev {
 		app.SetDevTools(*dev)
 	}
 

@@ -3,15 +3,16 @@ package main
 // View is the data the code view template prints. Every field is a plain
 // value or a prebuilt row, so one SetData call publishes one frame.
 type View struct {
-	Mode     string
-	Filter   string
-	Details  bool
-	DevOn    bool
-	Modal    bool
-	MenuOpen bool
-	MenuX    int
-	MenuY    int
-	MenuRows []menuViewRow
+	EditorScroll editorScrollView
+	Mode         string
+	Filter       string
+	Details      bool
+	DevOn        bool
+	Modal        bool
+	MenuOpen     bool
+	MenuX        int
+	MenuY        int
+	MenuRows     []menuViewRow
 
 	Workspace   string
 	Branch      string
@@ -86,6 +87,8 @@ type View struct {
 	History      historyView
 	Outline      []symbolRow
 	Toast        toastView
+	SettingsOpen bool
+	Themes       []themeRow
 	Palette      paletteView
 	PaletteQuery string
 	SearchQuery  string
@@ -133,22 +136,23 @@ type fileNavView struct {
 // secondaryView is the right-hand editor group. It carries only the fields
 // that pane draws; the left group keeps the top-level View fields.
 type secondaryView struct {
-	Open        bool
-	Left        int
-	Width       int
-	Tabs        []tabRow
-	ActiveTab   int
-	Active      string
-	ActiveDir   string
-	ActiveName  string
-	Lang        string
-	LangLabel   string
-	Badge       string
-	LineCount   int
-	ByteSize    string
-	Status      string
-	StatusClass string
-	Truncated   bool
+	EditorScroll editorScrollView
+	Open         bool
+	Left         int
+	Width        int
+	Tabs         []tabRow
+	ActiveTab    int
+	Active       string
+	ActiveDir    string
+	ActiveName   string
+	Lang         string
+	LangLabel    string
+	Badge        string
+	LineCount    int
+	ByteSize     string
+	Status       string
+	StatusClass  string
+	Truncated    bool
 
 	Rows        []codeRow
 	TrackTop    int

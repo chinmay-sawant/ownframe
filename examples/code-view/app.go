@@ -11,8 +11,8 @@ import (
 const (
 	defaultWidth  = 1500
 	defaultHeight = 900
-	minWidth      = 840
-	minHeight     = 700
+	minWidth      = 720
+	minHeight     = 540
 
 	activityW    = 46
 	sideWidth    = 268
@@ -95,8 +95,9 @@ const (
 // App owns the workspace, the open documents, and the page. Every handler
 // ends in one refresh; no timer and no background goroutine is involved.
 type App struct {
-	page *ownframe.Page
-	ws   *workspace
+	page       *ownframe.Page
+	ws         *workspace
+	editorDrag editorScrollDrag
 
 	changes            changeSet
 	branchChanges      changeSet
@@ -214,6 +215,8 @@ type App struct {
 	lastScroll    int
 	toast         toastView
 
+	settingsOpen bool
+	theme        string
 	paletteOpen  bool
 	recent       []string
 	paletteQuery string
@@ -311,6 +314,7 @@ func NewWithLimit(root string, limit int) (*App, error) {
 		Height:           defaultHeight,
 		MinWidth:         minWidth,
 		MinHeight:        minHeight,
+		Scrollbar:        ownframe.ScrollbarHidden,
 		DisableWheelZoom: true,
 		DisableKeyZoom:   true,
 	})
@@ -466,34 +470,36 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 // buildView assembles one frame from the current state.
 func (a *App) buildView() View {
 	v := View{
-		Mode:        a.mode,
-		Filter:      a.filter,
-		Details:     a.details,
-		DevOn:       a.devOn,
-		MenuOpen:    a.menuOpen,
-		MenuX:       a.menuX,
-		MenuY:       a.menuY,
-		MenuRows:    append([]menuViewRow(nil), a.menuItems...),
-		Modal:       a.paletteOpen || a.branchOpen || a.searchOpen,
-		Workspace:   baseName(a.ws.Root),
-		Branch:      a.changes.Branch,
-		Changed:     len(a.changes.Files),
-		DevNote:     a.changes.Note,
-		ScanBudget:  a.ws.ScanBudget(),
-		WatchNote:   a.watchNote,
-		HoverPath:   a.hoverPath,
-		Dirty:       a.dirtyCount(),
-		Toast:       a.toast,
-		Wrap:        a.wrap,
-		ScrollX:     0,
-		FindQuery:   a.findQuery,
-		FindOpen:    a.findOpen,
-		FindCase:    a.findCase,
-		FindCurrent: a.findCurrent(),
-		FindTotal:   len(a.findHits),
-		BranchQuery: a.branchQuery,
-		Split:       a.split && a.mode == "explorer",
-		FocusGroup:  a.focusGroup,
+		Mode:         a.mode,
+		Filter:       a.filter,
+		Details:      a.details,
+		DevOn:        a.devOn,
+		MenuOpen:     a.menuOpen,
+		MenuX:        a.menuX,
+		MenuY:        a.menuY,
+		MenuRows:     append([]menuViewRow(nil), a.menuItems...),
+		Modal:        a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen,
+		SettingsOpen: a.settingsOpen,
+		Themes:       a.themeRows(),
+		Workspace:    baseName(a.ws.Root),
+		Branch:       a.changes.Branch,
+		Changed:      len(a.changes.Files),
+		DevNote:      a.changes.Note,
+		ScanBudget:   a.ws.ScanBudget(),
+		WatchNote:    a.watchNote,
+		HoverPath:    a.hoverPath,
+		Dirty:        a.dirtyCount(),
+		Toast:        a.toast,
+		Wrap:         a.wrap,
+		ScrollX:      0,
+		FindQuery:    a.findQuery,
+		FindOpen:     a.findOpen,
+		FindCase:     a.findCase,
+		FindCurrent:  a.findCurrent(),
+		FindTotal:    len(a.findHits),
+		BranchQuery:  a.branchQuery,
+		Split:        a.split && a.mode == "explorer",
+		FocusGroup:   a.focusGroup,
 	}
 
 	if !a.wrap {
@@ -551,6 +557,10 @@ func (a *App) buildView() View {
 		v.Second = a.secondView()
 	}
 
+	v.EditorScroll = a.editorScroll(0)
+	if a.split && a.mode == "explorer" {
+		v.Second.EditorScroll = a.editorScroll(1)
+	}
 	v.CommitTip = a.commitTip
 	v.InlineCard = a.inlineCard
 	v.SpaceHeight = a.contentHeight()

@@ -96,6 +96,24 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.setMode(ctx, "changes")
 	case action == "tab-close-working":
 		a.closeWorkingTree(ctx)
+	case action == "settings-open":
+		a.settingsOpen = true
+		a.paletteOpen = false
+		a.searchOpen = false
+		a.branchOpen = false
+		a.refresh()
+		return a.page.Form().Focus(ctx, "")
+	case action == "settings-close":
+		a.settingsOpen = false
+		a.refresh()
+		return a.page.Form().Focus(ctx, "act-settings")
+	case strings.HasPrefix(action, "theme:"):
+		name := validTheme(strings.TrimPrefix(action, "theme:"))
+		if err := a.page.SetTheme(themeCSS(name)); err != nil {
+			return err
+		}
+		a.theme = name
+		a.refresh()
 	case action == "palette-open":
 		return a.openPalette(ctx)
 	case action == "palette-close":
@@ -341,6 +359,9 @@ func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 			}
 			return true, a.page.Redraw(ctx)
 		}
+		return true, nil
+	}
+	if a.settingsOpen {
 		return true, nil
 	}
 	if a.paletteOpen || a.branchOpen {
@@ -698,6 +719,13 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 
 // onDragStart claims the history divider or the explorer thumb.
 func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	if box.ID == "editor-scroll-thumb" || box.ID == "editor-scroll-thumb-2" {
+		group := 0
+		if box.ID == "editor-scroll-thumb-2" {
+			group = 1
+		}
+		return a.startEditorScrollDrag(group), nil
+	}
 	if box.ID == "search-thumb" && a.searchOpen && a.view.Search.Scroll {
 		track := searchWindowRows * searchRowHeight
 		thumb := a.view.Search.ScrollHeight
@@ -781,6 +809,10 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 
 // onDragMove resizes the panes or moves the explorer thumb.
 func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
+	if a.editorDrag.active {
+		a.moveEditorScrollDrag(dy)
+		return a.page.Redraw(ctx)
+	}
 	if a.searchDrag {
 		a.scrollSearchTo(a.searchDragAt + int(dy*a.searchDragScale+roundHalf))
 		return a.page.Redraw(ctx)
@@ -872,6 +904,7 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 
 // onDragEnd releases the history divider.
 func (a *App) onDragEnd(ctx context.Context) error {
+	a.editorDrag.active = false
 	wasSelect := a.dragSelect
 	wasSearch := a.searchDrag
 	a.dragSelect = false
@@ -912,6 +945,15 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return nil
 	}
 
+	if a.settingsOpen && key == "escape" {
+		a.settingsOpen = false
+		a.refresh()
+		if err := a.page.Redraw(ctx); err != nil {
+			return err
+		}
+		return a.page.Form().Focus(ctx, "act-settings")
+	}
+
 	if a.menuOpen && key == "escape" {
 		a.closeMenu()
 		a.refresh()
@@ -933,6 +975,10 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 				return a.page.Redraw(ctx)
 			}
 		}
+	}
+
+	if a.settingsOpen {
+		return nil
 	}
 
 	if a.editing {

@@ -23,8 +23,8 @@
   padding: 0 6px;
   border: 1px solid rgba(122, 162, 247, 0.22);
   border-radius: 10px;
-  background-color: rgba(13, 16, 24, 0.78);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45);
+  background-color: var(--panel);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
   pointer-events: auto;
 }
 
@@ -78,7 +78,7 @@
   text-overflow: ellipsis;
 }
 
-.file-nav-current:hover { background-color: var(--panel-3); color: #ffffff; }
+.file-nav-current:hover { background-color: var(--panel-3); color: var(--text); }
 
 .file-nav-dir {
   display: block;
