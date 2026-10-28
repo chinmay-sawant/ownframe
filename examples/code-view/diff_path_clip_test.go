@@ -32,7 +32,7 @@ func TestClipDiffPath(t *testing.T) {
 		t.Fatalf("dir %q has no ellipsis", dshort)
 	}
 
-	if got, want := len([]rune(dshort)), 83-49-4+1; got != want {
+	if got, want := len([]rune(dshort)), 83-49-2+1; got != want {
 		t.Fatalf("dir is %d runes, want %d", got, want)
 	}
 
@@ -121,7 +121,7 @@ func TestDiffPathStaysOnOneLine(t *testing.T) {
 			nameX, nameY, foundName = op.X*scale, op.Y*scale, true
 		}
 
-		if op.Text == view.Diff.DirShort+" /" || op.Text == view.Diff.DirShort {
+		if op.Text == view.Diff.DirShort+"/" || op.Text == view.Diff.DirShort {
 			if !foundDir || op.X*scale < dirX {
 				dirX, dirY, foundDir = op.X*scale, op.Y*scale, true
 			}

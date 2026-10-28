@@ -36,6 +36,14 @@ turns the watch off, and `-web` serves the same page in a browser. The
 behavior and the limits are in
 [../documentation/hot-reload.md](../documentation/hot-reload.md).
 
+For Go edits, restart the process with `air` (template reload cannot do that;
+the counter resets on rebuild):
+
+```sh
+make air reload
+make air reload ARGS="-web"
+```
+
 ## Original examples
 
 | Folder | Shows |

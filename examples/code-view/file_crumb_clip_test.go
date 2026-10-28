@@ -30,9 +30,8 @@ func TestClipFileCrumbPath(t *testing.T) {
 	}
 
 	// budget = (886 - 23 - 400) / 6 = 77; the 49-rune name fits, so the
-	// directory keeps 77 - 49 - 4 runes plus the ellipsis (3 for the
-	// " / " separator, 1 for the cut).
-	if got, want := len([]rune(dshort)), 77-49-4+1; got != want {
+	// directory keeps 77 - 49 - 2 runes plus the ellipsis.
+	if got, want := len([]rune(dshort)), 77-49-2+1; got != want {
 		t.Fatalf("dir is %d runes, want %d", got, want)
 	}
 
@@ -160,7 +159,7 @@ func TestFileCrumbPathStaysOnOneLine(t *testing.T) {
 					nameX, nameY, foundName = op.X*scale, op.Y*scale, true
 				}
 
-				if op.Text == view.ActiveDirShort+" /" || op.Text == view.ActiveDirShort {
+				if op.Text == view.ActiveDirShort+"/" || op.Text == view.ActiveDirShort {
 					if !foundDir || op.X*scale < dirX {
 						dirX, dirY, foundDir = op.X*scale, op.Y*scale, true
 					}
