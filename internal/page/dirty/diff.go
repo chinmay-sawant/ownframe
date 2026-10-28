@@ -2,7 +2,7 @@ package dirty
 
 import (
 	"math"
-	"sync"
+	"sync/atomic"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -14,12 +14,16 @@ type diffArena struct {
 	seen []bool
 }
 
-//nolint:gochecknoglobals // reason: process-wide pool reusing diff arenas across frames to avoid per-diff allocs, not shared mutable state.
-var diffArenaPool = sync.Pool{
-	New: func() any {
-		return &diffArena{}
-	},
-}
+// diffArenaCache is a single reusable arena slot. One Swap takes it, one
+// Swap returns it. A sync.Pool was here before, but under -race the pool
+// bookkeeping allocates once per Get/Put pair, which broke the zero-alloc
+// guarantee TestDiffArena_Allocs asserts. Plain atomics reuse the same
+// addresses and stay allocation-free in steady state, race or not.
+// Concurrent diffs may each fall back to a fresh arena; correctness never
+// depends on a cache hit.
+//
+//nolint:gochecknoglobals // reason: process-wide single reusable diff arena across frames, not shared mutable state beyond the atomic slot.
+var diffArenaCache atomic.Pointer[diffArena]
 
 const maxPooledArenaCap = 65536
 
@@ -29,9 +33,9 @@ const (
 )
 
 func getDiffArena(numBuckets, numOps int) *diffArena {
-	a, ok := diffArenaPool.Get().(*diffArena)
-	if !ok || a == nil {
-		return &diffArena{}
+	a := diffArenaCache.Swap(nil)
+	if a == nil {
+		a = &diffArena{}
 	}
 	if cap(a.head) < numBuckets {
 		a.head = make([]int, numBuckets)
@@ -61,7 +65,11 @@ func putDiffArena(a *diffArena) {
 	if cap(a.head) > maxPooledArenaCap || cap(a.next) > maxPooledArenaCap {
 		return
 	}
-	diffArenaPool.Put(a)
+	if old := diffArenaCache.Swap(a); old != nil {
+		// Slot was refilled by a concurrent diff while this arena was
+		// in flight; drop the evicted one so at most one stays cached.
+		_ = old
+	}
 }
 
 func nextPowerOf2(n int) int {
