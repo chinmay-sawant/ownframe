@@ -49,6 +49,7 @@ type fileNode struct {
 	Name     string
 	Dir      bool
 	Ignored  bool
+	Loaded   bool
 	Meta     *fileMeta
 	Children []*fileNode
 }
@@ -58,6 +59,7 @@ type fileNode struct {
 type workspace struct {
 	Root      string
 	Sample    bool
+	Lazy      bool
 	Files     []*fileMeta
 	ByPath    map[string]*fileMeta
 	Tree      []*fileNode
@@ -70,6 +72,8 @@ type workspace struct {
 	TruncatedNote string
 	// ScanMillis is how long the walk took, in milliseconds.
 	ScanMillis int64
+
+	ignored map[string]bool
 }
 
 // loadSampleWorkspace scans the embedded demo project.
@@ -122,6 +126,99 @@ func loadSampleWorkspace() (*workspace, error) {
 // loadDiskWorkspace scans a real directory for the -root flag.
 func loadDiskWorkspace(root string) (*workspace, error) {
 	return loadDiskWorkspaceWithLimit(root, maxWorkspaceFiles)
+}
+
+// loadDiskWorkspaceLazy reads only the immediate entries of root for on-demand expansion.
+func loadDiskWorkspaceLazy(root string) (*workspace, error) {
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("workspace path: %w", err)
+	}
+
+	info, err := os.Stat(abs)
+	if err != nil {
+		return nil, fmt.Errorf("workspace %s: %w", abs, err)
+	}
+
+	if !info.IsDir() {
+		return nil, fmt.Errorf("workspace %s is not a directory", abs)
+	}
+
+	w := &workspace{
+		Root:   abs,
+		Lazy:   true,
+		ByPath: map[string]*fileMeta{},
+	}
+	started := time.Now()
+
+	w.ignored = loadIgnoredPaths(abs)
+
+	entries, err := os.ReadDir(abs)
+	if err != nil {
+		return nil, fmt.Errorf("workspace %s: %w", abs, err)
+	}
+
+	dirs := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() {
+			if skipDir(name) {
+				continue
+			}
+			dirs = append(dirs, name)
+			node := &fileNode{
+				Path:    name,
+				Name:    name,
+				Dir:     true,
+				Loaded:  false,
+				Ignored: pathIgnored(w.ignored, name),
+			}
+			w.Tree = append(w.Tree, node)
+		} else {
+			if strings.HasPrefix(name, ".") && name != ".gitignore" && name != ".env.example" {
+				continue
+			}
+			if skipExt(name) {
+				continue
+			}
+			entryInfo, err := entry.Info()
+			if err != nil || entryInfo.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+			w.addFile(name, name, entryInfo.Size())
+			meta := w.ByPath[name]
+			if pathIgnored(w.ignored, name) {
+				meta.Ignored = true
+			}
+			node := &fileNode{
+				Path:    name,
+				Name:    name,
+				Dir:     false,
+				Loaded:  true,
+				Ignored: pathIgnored(w.ignored, name),
+				Meta:    meta,
+			}
+			w.Tree = append(w.Tree, node)
+		}
+	}
+
+	for path := range loadIgnoredDirs(abs, dirs) {
+		if w.ignored == nil {
+			w.ignored = map[string]bool{}
+		}
+		w.ignored[path] = true
+	}
+	if len(w.ignored) > 0 {
+		w.markIgnored(w.ignored)
+	}
+
+	sort.Slice(w.Files, func(i, j int) bool {
+		return strings.ToLower(w.Files[i].Path) < strings.ToLower(w.Files[j].Path)
+	})
+	sortTree(w.Tree)
+
+	w.ScanMillis = time.Since(started).Milliseconds()
+	return w, nil
 }
 
 // loadDiskWorkspaceWithLimit scans a real directory and stops before the file
@@ -636,6 +733,64 @@ func (w *workspace) addFile(path, name string, size int64) {
 	w.Bytes += size
 }
 
+// ensureFile registers a file into the workspace on demand using addFile if it
+// exists on disk or in the sample, adding it to ByPath and Files, and returns its metadata.
+func (w *workspace) ensureFile(path string) (*fileMeta, error) {
+	if w == nil {
+		return nil, errors.New("nil workspace")
+	}
+	if w.ByPath == nil {
+		w.ByPath = map[string]*fileMeta{}
+	}
+	if meta := w.ByPath[path]; meta != nil {
+		return meta, nil
+	}
+
+	clean := filepath.Clean(filepath.FromSlash(path))
+	if clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return nil, fmt.Errorf("path escapes workspace: %s", path)
+	}
+
+	name := filepath.Base(clean)
+	var size int64
+
+	if w.Sample {
+		sub, err := fs.Sub(sampleFiles, "testdata/sample")
+		if err != nil {
+			return nil, err
+		}
+		info, err := fs.Stat(sub, filepath.ToSlash(clean))
+		if err != nil {
+			return nil, err
+		}
+		if info.IsDir() {
+			return nil, fmt.Errorf("%s is a directory", path)
+		}
+		size = info.Size()
+	} else {
+		abs := filepath.Join(w.Root, clean)
+		info, err := os.Stat(abs)
+		if err != nil {
+			return nil, err
+		}
+		if info.IsDir() {
+			return nil, fmt.Errorf("%s is a directory", path)
+		}
+		size = info.Size()
+	}
+
+	normPath := filepath.ToSlash(clean)
+	w.addFile(normPath, name, size)
+	if normPath != path {
+		w.ByPath[path] = w.ByPath[normPath]
+	}
+	if !w.Lazy && len(w.Tree) > 0 {
+		w.finish()
+	}
+
+	return w.ByPath[normPath], nil
+}
+
 // finish sorts the files, builds the tree, and counts lines only for files
 // small enough to open.
 func (w *workspace) finish() {
@@ -643,7 +798,7 @@ func (w *workspace) finish() {
 		return strings.ToLower(w.Files[i].Path) < strings.ToLower(w.Files[j].Path)
 	})
 
-	root := &fileNode{Dir: true}
+	root := &fileNode{Dir: true, Loaded: true}
 
 	for _, meta := range w.Files {
 		parts := strings.Split(meta.Path, "/")
@@ -653,7 +808,7 @@ func (w *workspace) finish() {
 			child := findChild(cur.Children, part)
 			if child == nil {
 				path := strings.Join(parts[:i+1], "/")
-				child = &fileNode{Path: path, Name: part, Dir: i < len(parts)-1}
+				child = &fileNode{Path: path, Name: part, Dir: i < len(parts)-1, Loaded: true}
 				cur.Children = append(cur.Children, child)
 			}
 
@@ -667,6 +822,213 @@ func (w *workspace) finish() {
 
 	sortTree(root.Children)
 	w.Tree = root.Children
+}
+
+// loadChildren reads the immediate directory entries from disk for an unloaded folder.
+func (n *fileNode) loadChildren(root string) error {
+	if !n.Dir || n.Loaded {
+		return nil
+	}
+
+	dir := filepath.Join(root, filepath.FromSlash(n.Path))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		n.Loaded = true
+		return err
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		rel := childRelPath(n.Path, name)
+
+		if entry.IsDir() {
+			if !n.Ignored && skipDir(name) {
+				continue
+			}
+			if strings.Count(rel, "/") >= maxTreeDepth {
+				continue
+			}
+			child := findChild(n.Children, name)
+			if child == nil {
+				child = &fileNode{
+					Path:    rel,
+					Name:    name,
+					Dir:     true,
+					Loaded:  false,
+					Ignored: n.Ignored,
+				}
+				n.Children = append(n.Children, child)
+			}
+		} else {
+			if strings.HasPrefix(name, ".") && name != ".gitignore" && name != ".env.example" {
+				continue
+			}
+			if skipExt(name) {
+				continue
+			}
+			info, err := entry.Info()
+			if err != nil || info.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+			child := findChild(n.Children, name)
+			if child == nil {
+				child = &fileNode{
+					Path:    rel,
+					Name:    name,
+					Dir:     false,
+					Loaded:  true,
+					Ignored: n.Ignored,
+				}
+				n.Children = append(n.Children, child)
+			}
+		}
+	}
+
+	sortTree(n.Children)
+	n.Loaded = true
+	return nil
+}
+
+// LoadChildren loads the immediate directory entries from disk for an unloaded folder.
+func (n *fileNode) LoadChildren(root string) error {
+	return n.loadChildren(root)
+}
+
+// childRelPath joins a parent relative path with a child name.
+func childRelPath(parent, name string) string {
+	if parent == "" || parent == "." {
+		return name
+	}
+	return parent + "/" + name
+}
+
+// LoadDir loads the immediate entries for directory at path if not already loaded,
+// populating tree node children, w.Files, and w.ByPath.
+func (w *workspace) LoadDir(path string) error {
+	return w.loadDir(path)
+}
+
+func (w *workspace) loadDir(path string) error {
+	if w.Sample || w.Root == "" {
+		return nil
+	}
+
+	node := findTreeNode(w.Tree, path)
+	if node == nil {
+		parts := strings.Split(path, "/")
+		cur := ""
+		for _, part := range parts {
+			if cur == "" {
+				cur = part
+			} else {
+				cur = cur + "/" + part
+			}
+			n := findTreeNode(w.Tree, cur)
+			if n != nil && n.Dir && !n.Loaded {
+				if err := w.loadNode(n); err != nil {
+					return err
+				}
+			}
+		}
+		node = findTreeNode(w.Tree, path)
+	}
+
+	if node == nil || !node.Dir || node.Loaded {
+		return nil
+	}
+
+	return w.loadNode(node)
+}
+
+// loadNode reads the immediate entries of node from disk, populating its children
+// and adding new files to w.Files and w.ByPath.
+func (w *workspace) loadNode(node *fileNode) error {
+	if !node.Dir || node.Loaded {
+		return nil
+	}
+
+	node.Loaded = true
+	dir := filepath.Join(w.Root, filepath.FromSlash(node.Path))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		rel := childRelPath(node.Path, name)
+
+		if entry.IsDir() {
+			if !node.Ignored && skipDir(name) {
+				continue
+			}
+			if strings.Count(rel, "/") >= maxTreeDepth {
+				continue
+			}
+			child := findChild(node.Children, name)
+			if child == nil {
+				child = &fileNode{
+					Path:    rel,
+					Name:    name,
+					Dir:     true,
+					Loaded:  false,
+					Ignored: node.Ignored || pathIgnored(w.ignored, rel),
+				}
+				node.Children = append(node.Children, child)
+			}
+		} else {
+			if strings.HasPrefix(name, ".") && name != ".gitignore" && name != ".env.example" {
+				continue
+			}
+			if skipExt(name) {
+				continue
+			}
+			info, err := entry.Info()
+			if err != nil || info.Mode()&os.ModeSymlink != 0 {
+				continue
+			}
+			if w.ByPath[rel] == nil {
+				w.addFile(rel, name, info.Size())
+			}
+			meta := w.ByPath[rel]
+			if node.Ignored || pathIgnored(w.ignored, rel) {
+				meta.Ignored = true
+			}
+			child := findChild(node.Children, name)
+			if child == nil {
+				child = &fileNode{
+					Path:    rel,
+					Name:    name,
+					Dir:     false,
+					Loaded:  true,
+					Ignored: meta.Ignored,
+					Meta:    meta,
+				}
+				node.Children = append(node.Children, child)
+			} else {
+				child.Meta = meta
+				child.Ignored = meta.Ignored
+			}
+		}
+	}
+
+	sortTree(node.Children)
+	sort.Slice(w.Files, func(i, j int) bool {
+		return strings.ToLower(w.Files[i].Path) < strings.ToLower(w.Files[j].Path)
+	})
+
+	return nil
+}
+
+// ensureFileLoaded loads ancestor directories if needed so w.ByPath[path] is ready.
+func (w *workspace) ensureFileLoaded(path string) {
+	if w.Sample || w.Root == "" {
+		return
+	}
+	dir := dirName(path)
+	if dir != "" {
+		_ = w.loadDir(dir)
+	}
 }
 
 // findChild returns the child with a name.
@@ -874,6 +1236,9 @@ func (d *fileDoc) tokenizeLines(lines []string) [][]segment {
 
 // openDoc reads and tokenizes one file.
 func (w *workspace) openDoc(path string) *fileDoc {
+	if w.ByPath[path] == nil {
+		w.ensureFileLoaded(path)
+	}
 	meta := w.ByPath[path]
 	if meta == nil {
 		return &fileDoc{Path: path, Err: "This file is not in the workspace."}

@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 const (
@@ -46,6 +48,19 @@ func (a *App) paletteRows() []paletteRow {
 			}
 		}
 
+		if a.split {
+			for _, path := range a.tabs2 {
+				if seen[path] || len(rows) >= paletteDefaultRows {
+					continue
+				}
+
+				if file := a.ws.ByPath[path]; file != nil {
+					rows = append(rows, paletteRowOf(file))
+					seen[path] = true
+				}
+			}
+		}
+
 		for _, fresh := range a.recentRows() {
 			if len(rows) >= paletteDefaultRows {
 				break
@@ -61,41 +76,140 @@ func (a *App) paletteRows() []paletteRow {
 			}
 		}
 
-		for _, file := range a.ws.Files {
-			if len(rows) >= paletteDefaultRows {
-				break
-			}
+		if a.ws != nil {
+			for _, file := range a.ws.Files {
+				if len(rows) >= paletteDefaultRows {
+					break
+				}
 
-			if seen[file.Path] {
-				continue
-			}
+				if seen[file.Path] {
+					continue
+				}
 
-			rows = append(rows, paletteRowOf(file))
+				rows = append(rows, paletteRowOf(file))
+			}
 		}
 
 		return rows
 	}
 
-	prefix := make([]paletteRow, 0, paletteMaxRows)
-	contains := make([]paletteRow, 0, paletteMaxRows)
+	seen := map[string]bool{}
+	var inMemCandidates []*fileMeta
 
-	for _, file := range a.ws.Files {
-		path := strings.ToLower(file.Path)
-
-		switch {
-		case strings.HasPrefix(path, query):
-			prefix = append(prefix, paletteRowOf(file))
-		case strings.Contains(path, query):
-			contains = append(contains, paletteRowOf(file))
+	for _, path := range a.tabs {
+		if seen[path] {
+			continue
+		}
+		if file := a.ws.ByPath[path]; file != nil {
+			seen[path] = true
+			inMemCandidates = append(inMemCandidates, file)
 		}
 	}
 
-	rows := make([]paletteRow, 0, len(prefix)+len(contains))
-	rows = append(rows, prefix...)
-	rows = append(rows, contains...)
+	if a.split {
+		for _, path := range a.tabs2 {
+			if seen[path] {
+				continue
+			}
+			if file := a.ws.ByPath[path]; file != nil {
+				seen[path] = true
+				inMemCandidates = append(inMemCandidates, file)
+			}
+		}
+	}
 
-	if len(rows) > paletteMaxRows {
-		rows = rows[:paletteMaxRows]
+	for _, fresh := range a.recentRows() {
+		if seen[fresh.Path] {
+			continue
+		}
+		if file := a.ws.ByPath[fresh.Path]; file != nil {
+			seen[fresh.Path] = true
+			inMemCandidates = append(inMemCandidates, file)
+		}
+	}
+
+	if a.ws != nil {
+		for _, file := range a.ws.Files {
+			if seen[file.Path] {
+				continue
+			}
+			seen[file.Path] = true
+			inMemCandidates = append(inMemCandidates, file)
+		}
+	}
+
+	var inMemPrefix []paletteRow
+	var inMemContains []paletteRow
+
+	for _, file := range inMemCandidates {
+		p := strings.ToLower(file.Path)
+		name := strings.ToLower(file.Name)
+
+		switch {
+		case strings.HasPrefix(p, query) || strings.HasPrefix(name, query):
+			inMemPrefix = append(inMemPrefix, paletteRowOf(file))
+		case strings.Contains(p, query):
+			inMemContains = append(inMemContains, paletteRowOf(file))
+		}
+	}
+
+	rows := make([]paletteRow, 0, paletteMaxRows)
+	for _, row := range inMemPrefix {
+		if len(rows) >= paletteMaxRows {
+			break
+		}
+		rows = append(rows, row)
+	}
+	for _, row := range inMemContains {
+		if len(rows) >= paletteMaxRows {
+			break
+		}
+		rows = append(rows, row)
+	}
+
+	if len(rows) < paletteMaxRows && a.ws != nil && (diskFileSearcher != nil || (!a.ws.Sample && a.ws.Root != "")) {
+		ctx, cancel := context.WithTimeout(context.Background(), 750*time.Millisecond)
+		defer cancel()
+
+		diskPaths, err := diskSearchFiles(ctx, a.ws.Root)
+		if err == nil && len(diskPaths) > 0 {
+			var diskPrefix []paletteRow
+			var diskContains []paletteRow
+
+			for _, p := range diskPaths {
+				p = filepath.ToSlash(p)
+				if seen[p] || skipExt(p) {
+					continue
+				}
+				seen[p] = true
+
+				lowerPath := strings.ToLower(p)
+				lowerName := lowerPath
+				if idx := strings.LastIndexByte(lowerPath, '/'); idx >= 0 {
+					lowerName = lowerPath[idx+1:]
+				}
+
+				switch {
+				case strings.HasPrefix(lowerPath, query) || strings.HasPrefix(lowerName, query):
+					diskPrefix = append(diskPrefix, makePaletteRow(p))
+				case strings.Contains(lowerPath, query):
+					diskContains = append(diskContains, makePaletteRow(p))
+				}
+			}
+
+			for _, row := range diskPrefix {
+				if len(rows) >= paletteMaxRows {
+					break
+				}
+				rows = append(rows, row)
+			}
+			for _, row := range diskContains {
+				if len(rows) >= paletteMaxRows {
+					break
+				}
+				rows = append(rows, row)
+			}
+		}
 	}
 
 	return rows

@@ -396,7 +396,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "open:"):
 		a.openFile(strings.TrimPrefix(action, "open:"))
 	case strings.HasPrefix(action, "dir:"):
-		a.toggleFolder(strings.TrimPrefix(action, "dir:"))
+		a.onToggleDir(strings.TrimPrefix(action, "dir:"))
 	case strings.HasPrefix(action, "tab-close:"):
 		if index, ok := actionIndex(action, "tab-close:"); ok {
 			a.closeTab(index)
@@ -835,7 +835,7 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 		}
 
 		if a.view.Tree[index].Dir {
-			a.toggleFolder(path)
+			a.onToggleDir(path)
 			if err := a.page.Redraw(ctx); err != nil {
 				return true, err
 			}
@@ -844,7 +844,7 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 		return true, a.page.Form().Focus(ctx, focus)
 	case "arrowleft":
 		if a.folders[path] {
-			a.toggleFolder(path)
+			a.onToggleDir(path)
 			if err := a.page.Redraw(ctx); err != nil {
 				return true, err
 			}
@@ -1603,4 +1603,21 @@ func devMessage(on bool) string {
 	}
 
 	return "The dock is closed. F12 or Ctrl+Shift+I opens it."
+}
+
+// onToggleDir handles expanding or collapsing a directory in the tree.
+// When expanding an unloaded directory, its immediate children are loaded from disk.
+func (a *App) onToggleDir(path string) {
+	a.folders[path] = !a.folders[path]
+
+	if a.folders[path] {
+		if node := findTreeNode(a.ws.Tree, path); node != nil && node.Dir && !node.Loaded {
+			_ = a.ws.loadNode(node)
+		} else {
+			_ = a.ws.loadDir(path)
+		}
+		a.revealTreeFolder(path)
+	}
+
+	a.refresh()
 }

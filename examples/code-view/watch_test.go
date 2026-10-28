@@ -163,3 +163,161 @@ func TestApplyWatchChangesPreservesSelection(t *testing.T) {
 		t.Fatalf("diff source = %q", app.View().Diff.Source)
 	}
 }
+
+func TestWatcherPeriodicPollingDetectsChangesWithoutFSNotify(t *testing.T) {
+	dir, _ := historyRepo(t)
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.reloadChanges(context.Background(), false)
+	app.mode = "changes"
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := app.StartWatcher(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer app.StopWatcher()
+
+	// Disarm fsnotify by removing all watched paths from the watcher.
+	// This ensures no fsnotify events can fire, so any detected update
+	// must originate from background periodic git diff polling.
+	for _, path := range app.watch.WatchList() {
+		_ = app.watch.Remove(path)
+	}
+
+	// Verify optimization: clean repository does not push spurious updates across ticks.
+	time.Sleep(2100 * time.Millisecond)
+	select {
+	case u := <-app.watchUpdates:
+		t.Fatalf("unexpected spurious watch update during clean state: %+v", u)
+	default:
+	}
+
+	// Modify a file in the working tree without any fsnotify event.
+	writeFile(t, dir, "app.go", "package main\n\nfunc main() {\n\tprintln(\"polled change\")\n}\n")
+
+	waitWatch(t, app, func() bool {
+		return app.View().Changed == 2 && findFile(app.changes.Files, "app.go") != nil
+	})
+}
+
+func TestWatcherPeriodicPollingDetectsBranchChangeWithoutFSNotify(t *testing.T) {
+	dir, _ := historyRepo(t)
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.reloadChanges(context.Background(), false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := app.StartWatcher(ctx); err != nil {
+		t.Fatal(err)
+	}
+	defer app.StopWatcher()
+
+	// Disarm fsnotify completely.
+	for _, path := range app.watch.WatchList() {
+		_ = app.watch.Remove(path)
+	}
+
+	runGit(t, dir, "checkout", "-q", "-b", "polled-branch")
+
+	waitWatch(t, app, func() bool {
+		return app.View().Branch == "polled-branch" || app.headBranch == "polled-branch"
+	})
+}
+
+func TestChangeSetDelta(t *testing.T) {
+	base := changeSet{
+		Branch: "main",
+		Note:   "",
+		Files: []changedFile{
+			{
+				Path:   "main.go",
+				Status: "M",
+				Add:    1,
+				Del:    0,
+				Hunks: []hunk{
+					{
+						OldStart: 1, OldCount: 1, NewStart: 1, NewCount: 2,
+						Header: "@@ -1,1 +1,2 @@",
+						Lines: []diffLine{
+							{Kind: ' ', Text: "package main"},
+							{Kind: '+', Text: "func init() {}"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Identical change set has no delta.
+	if changeSetDelta(base, base) {
+		t.Fatal("expected no delta for identical changeSets")
+	}
+
+	// Different branch.
+	otherBranch := base
+	otherBranch.Branch = "dev"
+	if !changeSetDelta(base, otherBranch) {
+		t.Fatal("expected delta for different branch")
+	}
+
+	// Different note.
+	otherNote := base
+	otherNote.Note = "Working tree clean"
+	if !changeSetDelta(base, otherNote) {
+		t.Fatal("expected delta for different note")
+	}
+
+	// Different file count.
+	fewerFiles := base
+	fewerFiles.Files = nil
+	if !changeSetDelta(base, fewerFiles) {
+		t.Fatal("expected delta for fewer files")
+	}
+
+	// Different file status.
+	otherStatus := base
+	otherStatus.Files = []changedFile{{Path: "main.go", Status: "A", Add: 1, Del: 0}}
+	if !changeSetDelta(base, otherStatus) {
+		t.Fatal("expected delta for different status")
+	}
+
+	// Different hunk line content.
+	otherHunk := base
+	otherHunk.Files = []changedFile{
+		{
+			Path:   "main.go",
+			Status: "M",
+			Add:    1,
+			Del:    0,
+			Hunks: []hunk{
+				{
+					OldStart: 1, OldCount: 1, NewStart: 1, NewCount: 2,
+					Header: "@@ -1,1 +1,2 @@",
+					Lines: []diffLine{
+						{Kind: ' ', Text: "package main"},
+						{Kind: '+', Text: "func init() { panic(1) }"},
+					},
+				},
+			},
+		},
+	}
+	if !changeSetDelta(base, otherHunk) {
+		t.Fatal("expected delta for different hunk lines")
+	}
+}

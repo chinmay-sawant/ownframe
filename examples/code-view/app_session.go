@@ -62,6 +62,9 @@ func (a *App) restoreState(state sessionState) {
 
 	for _, path := range cleanSessionPaths(state.Tabs) {
 		if a.ws.ByPath[path] == nil {
+			a.ws.ensureFileLoaded(path)
+		}
+		if a.ws.ByPath[path] == nil {
 			continue
 		}
 
@@ -81,6 +84,9 @@ func (a *App) restoreState(state sessionState) {
 	}
 
 	for _, path := range cleanSessionPaths(state.Tabs2) {
+		if a.ws.ByPath[path] == nil {
+			a.ws.ensureFileLoaded(path)
+		}
 		if a.ws.ByPath[path] == nil {
 			continue
 		}

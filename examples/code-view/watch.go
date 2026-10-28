@@ -15,6 +15,7 @@ const (
 	watchDebounce   = 150 * time.Millisecond
 	maxWatchDirs    = 2000
 	rescanNoteParts = 3
+	gitPollInterval = 2 * time.Second
 )
 
 // watchUpdate is one debounced background result. Workspace is non-nil after a
@@ -56,7 +57,8 @@ func (a *App) StartWatcher(ctx context.Context) error {
 	root := a.ws.Root
 	limit := a.ws.Limit
 	start := a.ws
-	go a.watchLoop(watchCtx, watcher, root, limit, start)
+	startChanges := a.changes
+	go a.watchLoop(watchCtx, watcher, root, limit, start, startChanges)
 
 	return nil
 }
@@ -143,16 +145,40 @@ func (a *App) addGitWatches(watcher *fsnotify.Watcher, root string) {
 }
 
 // watchLoop debounces events and sends one update back to the UI loop.
-func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root string, limit int, start *workspace) {
+func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root string, limit int, start *workspace, startChanges changeSet) {
 	timer := time.NewTimer(time.Hour)
 	if !timer.Stop() {
 		<-timer.C
 	}
 
+	pollTicker := time.NewTicker(gitPollInterval)
+	defer pollTicker.Stop()
+
 	pending := false
 	rescan := false
 	gitChange := false
 	last := start
+	lastChanges := startChanges
+
+	pushUpdate := func(update watchUpdate) {
+		select {
+		case a.watchUpdates <- update:
+		default:
+			select {
+			case <-a.watchUpdates:
+			default:
+			}
+
+			select {
+			case a.watchUpdates <- update:
+			default:
+			}
+		}
+
+		if a.page != nil {
+			a.page.WantFrameIn(0)
+		}
+	}
 
 	flush := func() {
 		pending = false
@@ -172,6 +198,7 @@ func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root str
 		if err == nil {
 			update.Changes = changes
 			update.Branch = changes.Branch
+			lastChanges = changes
 		}
 
 		if branches, head, branchErr := loadBranches(ctx, root); branchErr == nil {
@@ -179,23 +206,10 @@ func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root str
 			update.Branch = head
 		}
 
-		select {
-		case a.watchUpdates <- update:
-		default:
-			select {
-			case <-a.watchUpdates:
-			default:
-			}
-
-			select {
-			case a.watchUpdates <- update:
-			default:
-			}
-		}
+		pushUpdate(update)
 
 		rescan = false
 		gitChange = false
-		a.page.WantFrameIn(0)
 	}
 
 	for {
@@ -236,6 +250,25 @@ func (a *App) watchLoop(ctx context.Context, watcher *fsnotify.Watcher, root str
 			}
 		case <-timer.C:
 			flush()
+		case <-pollTicker.C:
+			if pending {
+				continue
+			}
+
+			changes, err := loadLiveChanges(ctx, root)
+			if err != nil {
+				continue
+			}
+
+			if !changeSetDelta(lastChanges, changes) {
+				continue
+			}
+
+			lastChanges = changes
+			pushUpdate(watchUpdate{
+				Changes: changes,
+				Branch:  changes.Branch,
+			})
 		}
 	}
 }
@@ -360,6 +393,9 @@ func rescanNote(delta workspaceDelta) string {
 // applyWatchChanges updates the diff without moving the user's selection.
 func (a *App) applyWatchChanges(ctx context.Context, changes changeSet) {
 	a.changes = changes
+	if changes.Branch != "" {
+		a.headBranch = changes.Branch
+	}
 	a.statuses = statusMap(a.changes)
 	a.syncFileNav()
 
@@ -469,4 +505,53 @@ func isWatchIgnored(path string) bool {
 		strings.HasSuffix(slash, ".swx") ||
 		strings.HasSuffix(slash, "~") ||
 		strings.HasSuffix(slash, ".tmp")
+}
+
+// changeSetDelta reports whether next differs from prev in branch, note,
+// or list of files and their statuses/diffs.
+func changeSetDelta(prev, next changeSet) bool {
+	if prev.Branch != next.Branch || prev.Note != next.Note || len(prev.Files) != len(next.Files) {
+		return true
+	}
+
+	for i := range prev.Files {
+		p := &prev.Files[i]
+		n := &next.Files[i]
+
+		if p.Path != n.Path || p.Status != n.Status || p.OldPath != n.OldPath ||
+			p.Add != n.Add || p.Del != n.Del || p.Binary != n.Binary ||
+			!hunksEqual(p.Hunks, n.Hunks) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hunksEqual(a, b []hunk) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := range a {
+		ha := &a[i]
+		hb := &b[i]
+
+		if ha.OldStart != hb.OldStart || ha.OldCount != hb.OldCount ||
+			ha.NewStart != hb.NewStart || ha.NewCount != hb.NewCount ||
+			ha.Header != hb.Header || len(ha.Lines) != len(hb.Lines) {
+			return false
+		}
+
+		for j := range ha.Lines {
+			la := &ha.Lines[j]
+			lb := &hb.Lines[j]
+
+			if la.Kind != lb.Kind || la.OldNo != lb.OldNo || la.NewNo != lb.NewNo || la.Text != lb.Text {
+				return false
+			}
+		}
+	}
+
+	return true
 }

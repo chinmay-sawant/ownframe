@@ -84,6 +84,11 @@ func rescanDiskWorkspace(root string, old *workspace, limit int) (*workspace, wo
 	if err != nil {
 		return nil, workspaceDelta{}, err
 	}
+	if old != nil && old.Lazy {
+		next.Lazy = true
+		next.Truncated = false
+		next.TruncatedNote = ""
+	}
 
 	return next, diffWorkspace(old, next), nil
 }

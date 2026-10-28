@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -270,8 +271,10 @@ func NewWithLimit(root string, limit int) (*App, error) {
 
 	if root == "" {
 		ws, err = loadSampleWorkspace()
-	} else {
+	} else if limit > 0 && limit != maxWorkspaceFiles {
 		ws, err = loadDiskWorkspaceWithLimit(root, limit)
+	} else {
+		ws, err = loadDiskWorkspaceLazy(root)
 	}
 
 	if err != nil {
@@ -545,8 +548,10 @@ func (a *App) reloadWindow(ctx context.Context) error {
 
 	if a.ws.Sample {
 		ws, err = loadSampleWorkspace()
-	} else {
+	} else if a.scanLimit > 0 && a.scanLimit != maxWorkspaceFiles {
 		ws, err = loadDiskWorkspaceWithLimit(a.ws.Root, a.scanLimit)
+	} else {
+		ws, err = loadDiskWorkspaceLazy(a.ws.Root)
 	}
 
 	if err != nil {
@@ -639,8 +644,10 @@ func (a *App) switchProject(ctx context.Context, root string) error {
 
 	if trimmed := strings.TrimSpace(root); trimmed == "" || trimmed == "sample" {
 		ws, err = loadSampleWorkspace()
-	} else {
+	} else if a.scanLimit > 0 && a.scanLimit != maxWorkspaceFiles {
 		ws, err = loadDiskWorkspaceWithLimit(root, a.scanLimit)
+	} else {
+		ws, err = loadDiskWorkspaceLazy(root)
 	}
 	if err != nil {
 		a.showToast("error", "Project not opened", err.Error())
@@ -1724,6 +1731,8 @@ func (a *App) treeVisibleRows() int {
 // treeRows returns the visible explorer rows, the total row count, the file
 // count, and whether the filter is active.
 func (a *App) treeRows() ([]treeRow, int, int, bool) {
+	a.ensureOpenFoldersLoaded()
+
 	count := len(a.ws.Files)
 	if a.filter != "" {
 		return a.filteredRows()
@@ -1738,6 +1747,32 @@ func (a *App) treeRows() ([]treeRow, int, int, bool) {
 	a.walkTree(a.ws.Tree, 0, false, &rows, &index, a.treeOffset, a.treeOffset+visible)
 
 	return rows, total, count, false
+}
+
+func (a *App) ensureOpenFoldersLoaded() {
+	if a.ws == nil || a.ws.Sample || !a.ws.Lazy {
+		return
+	}
+
+	var paths []string
+	for path, open := range a.folders {
+		if open {
+			paths = append(paths, path)
+		}
+	}
+
+	sort.Slice(paths, func(i, j int) bool {
+		di := strings.Count(paths[i], "/")
+		dj := strings.Count(paths[j], "/")
+		if di != dj {
+			return di < dj
+		}
+		return paths[i] < paths[j]
+	})
+
+	for _, p := range paths {
+		_ = a.ws.loadDir(p)
+	}
 }
 
 // walkTree appends the visible nodes in the current offset window.
@@ -1775,6 +1810,9 @@ func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[
 		}
 
 		if node.Dir && a.folders[node.Path] {
+			if !node.Loaded {
+				_ = a.ws.loadNode(node)
+			}
 			a.walkTree(node.Children, depth+1, parentIgnored || node.Ignored, rows, index, start, end)
 		}
 	}
@@ -1957,11 +1995,24 @@ func (a *App) openFile(path string) { a.openFileIn(a.activeGroup(), path) }
 
 // openFileIn opens or focuses one file in a specific editor group.
 func (a *App) openFileIn(group int, path string) {
-	if a.ws.ByPath[path] == nil {
+	if a.ws == nil {
 		a.showToast("error", "Not in workspace", path+" is not part of this workspace.")
 		a.refresh()
 
 		return
+	}
+
+	if a.ws.ByPath[path] == nil {
+		a.ws.ensureFileLoaded(path)
+	}
+
+	if a.ws.ByPath[path] == nil {
+		if _, err := a.ws.ensureFile(path); err != nil {
+			a.showToast("error", "Not in workspace", path+" is not part of this workspace.")
+			a.refresh()
+
+			return
+		}
 	}
 
 	a.finishEdit()
@@ -2152,13 +2203,7 @@ func (a *App) closeWorkingTree(ctx context.Context) {
 
 // toggleFolder flips one directory and reveals its children when it opens.
 func (a *App) toggleFolder(path string) {
-	a.folders[path] = !a.folders[path]
-
-	if a.folders[path] {
-		a.revealTreeFolder(path)
-	}
-
-	a.refresh()
+	a.onToggleDir(path)
 }
 
 // revealTreeFolder puts a newly expanded folder at the top of the tree.
