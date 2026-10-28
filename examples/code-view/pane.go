@@ -228,8 +228,9 @@ func hasWideHeading(lines []string, cols int) bool {
 
 // secondView builds the right-hand editor pane.
 func (a *App) secondView() secondaryView {
-	s := secondaryView{Open: true, Tabs: a.tabRowsFor(1), ActiveTab: a.active2}
+	s := secondaryView{Open: true, ActiveTab: a.active2}
 	s.Left, s.Width = a.secondGeometry()
+	s.Tabs, s.TabsPrev, s.TabsNext = a.windowTabRows(1)
 	doc := a.groupDoc(1)
 	if doc == nil {
 		s.Welcome = true

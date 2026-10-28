@@ -125,6 +125,10 @@ type App struct {
 	active int
 	docs   map[string]*fileDoc
 
+	// tabStart is the first visible tab per editor group. The strip shows
+	// full-width tabs with scroll arrows instead of squeezing them.
+	tabStart [2]int
+
 	split           bool
 	focusGroup      int
 	tabs2           []string
@@ -810,7 +814,7 @@ func (a *App) buildView() View {
 	v.TreeStart = a.treeOffset
 	v.TreeVisible = a.treeVisibleRows()
 	a.fillTreeScroll(&v)
-	v.Tabs = a.tabRows()
+	v.Tabs, v.TabsPrev, v.TabsNext = a.windowTabRows(0)
 	v.Recent = a.recentRows()
 	v.ActiveTab = a.active
 	v.PaletteQuery = a.paletteQuery
@@ -1924,10 +1928,8 @@ func countTreeOpen(nodes []*fileNode, open map[string]bool) int {
 	return total
 }
 
-// tabRows returns the open tabs in the first group.
-func (a *App) tabRows() []tabRow { return a.tabRowsFor(0) }
-
-// tabRowsFor returns one group's open tabs.
+// tabRowsFor returns one group's open tabs in strip order. Index tracks
+// the full-list position for actions on a windowed strip.
 func (a *App) tabRowsFor(group int) []tabRow {
 	tabs := a.groupTabs(group)
 	active := a.groupActive(group)
@@ -1943,6 +1945,7 @@ func (a *App) tabRowsFor(group int) []tabRow {
 		status := a.statuses[path]
 
 		rows = append(rows, tabRow{
+			Index:       i,
 			Path:        path,
 			Name:        baseName(path),
 			Lang:        lang,
@@ -2067,6 +2070,7 @@ func (a *App) openFileIn(group int, path string) {
 	*active = found
 	a.focusGroup = group
 	a.mode = "explorer"
+	a.ensureTabVisible(group)
 	// Preview stays on across files; fillCode gates it to Markdown.
 	a.inlineCard = inlineCard{}
 	a.paletteOpen = false
@@ -2126,6 +2130,7 @@ func (a *App) selectTabIn(group, index int) {
 	} else {
 		a.resetScroll()
 	}
+	a.ensureTabVisible(group)
 	a.refresh()
 }
 
@@ -2181,6 +2186,7 @@ func (a *App) closeTabIn(group, index int) {
 
 	// Preview stays on across tabs; fillCode gates it to Markdown.
 	a.resetScroll()
+	a.ensureTabVisible(group)
 	a.refresh()
 }
 

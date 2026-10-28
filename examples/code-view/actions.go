@@ -333,6 +333,14 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.scrollHorizontal(-hscrollStep)
 	case action == "scroll-right":
 		a.scrollHorizontal(hscrollStep)
+	case action == "tabs-prev":
+		a.scrollTabs(0, -1)
+	case action == "tabs-next":
+		a.scrollTabs(0, 1)
+	case action == "tabs2-prev":
+		a.scrollTabs(1, -1)
+	case action == "tabs2-next":
+		a.scrollTabs(1, 1)
 	case action == "preview-toggle":
 		a.togglePreview()
 	case action == "wrap-toggle":

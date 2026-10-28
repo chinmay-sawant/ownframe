@@ -550,14 +550,25 @@ func TestTabsStayInsideStrip(t *testing.T) {
 		t.Fatal("no editor")
 	}
 
-	for i := 0; i < maxTabs; i++ {
-		box, ok := boxByID(app.Page().Boxes(), fmt.Sprintf("tab-%d", i))
+	// The strip windows full-width tabs: every rendered tab sits inside
+	// the editor, and the next arrow shows exactly when tabs overflow.
+	view := app.View()
+	for _, row := range view.Tabs {
+		box, ok := boxByID(app.Page().Boxes(), fmt.Sprintf("tab-%d", row.Index))
 		if !ok {
-			t.Fatalf("missing tab-%d", i)
+			t.Fatalf("missing tab-%d", row.Index)
 		}
 
 		if box.X < editor.X-1 || box.X+box.W > editor.X+editor.W+1 {
-			t.Fatalf("tab-%d at %.0f..%.0f outside %.0f..%.0f", i, box.X, box.X+box.W, editor.X, editor.X+editor.W)
+			t.Fatalf("tab-%d at %.0f..%.0f outside %.0f..%.0f", row.Index, box.X, box.X+box.W, editor.X, editor.X+editor.W)
 		}
+	}
+
+	if len(view.Tabs) < maxTabs && !view.TabsNext {
+		t.Fatal("tabs overflow but tabs-next is missing")
+	}
+
+	if len(view.Tabs) == maxTabs && view.TabsNext {
+		t.Fatal("all tabs render but tabs-next shows")
 	}
 }

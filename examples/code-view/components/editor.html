@@ -2,6 +2,9 @@
 
 <section class="editor{{if .Split}} split{{end}}{{if eq .FocusGroup 0}} focus{{end}}" id="editor-window" style="left:{{.PaneLeft}}px;width:{{.PaneWidth}}px">
   <div class="tabstrip" id="tabstrip">
+    {{if .TabsPrev}}<button class="tab-nav" id="tabs-prev" data-action="tabs-prev" type="button" title="Earlier tabs" aria-label="Earlier tabs"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+    </button>{{end}}
     <div class="tabs">
       {{if eq .Mode "changes"}}
       <div class="tab on diff-tab">
@@ -12,18 +15,22 @@
         <button class="tab-x" id="tab-close-working" data-action="tab-close-working" type="button" title="Close Working tree" aria-label="Close Working tree"{{if .Modal}} tabindex="-1"{{end}}>×</button>
       </div>
       {{end}}
-      {{range $i, $t := .Tabs}}
+      {{range $t := .Tabs}}
       <div class="tab{{if $t.Active}} on{{end}}">
-        <button class="tab-main" id="tab-{{$i}}" data-action="tab:{{$i}}" type="button" title="{{$t.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
+        <button class="tab-main" id="tab-{{$t.Index}}" data-action="tab:{{$t.Index}}" type="button" title="{{$t.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
           <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
           <span class="tab-name">{{$t.Name}}</span>
-          {{if $t.Dirty}}<span class="tab-dot" id="tab-dot-{{$i}}"></span>{{end}}
+          {{if $t.Dirty}}<span class="tab-dot" id="tab-dot-{{$t.Index}}"></span>{{end}}
           <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
         </button>
-        <button class="tab-x" id="tab-close-{{$i}}" data-action="tab-close:{{$i}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}"{{if $.Modal}} tabindex="-1"{{end}}>×</button>
+        <button class="tab-x" id="tab-close-{{$t.Index}}" data-action="tab-close:{{$t.Index}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}"{{if $.Modal}} tabindex="-1"{{end}}>×</button>
       </div>
       {{end}}
     </div>
+    <span class="tabs-fill"></span>
+    {{if .TabsNext}}<button class="tab-nav" id="tabs-next" data-action="tabs-next" type="button" title="Later tabs" aria-label="Later tabs"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </button>{{end}}
     <button class="tab-tool{{if .Split}} on{{end}}" id="split-toggle" data-action="split-toggle" type="button" title="Split editor (Ctrl+\)" aria-label="Split editor {{if .Split}}on{{else}}off{{end}}" aria-pressed="{{if .Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.4"><rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M8 2.4v11.2"/></svg>
     </button>
@@ -32,7 +39,6 @@
         <rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M10 2.4v11.2"/>
       </svg>
     </button>
-    <span class="tabs-fill"></span>
   </div>
 
   <div class="crumbs" id="crumbs">
@@ -230,22 +236,28 @@
 {{if .Split}}
 <section class="editor editor-second{{if eq .FocusGroup 1}} focus{{end}}" id="editor-window-2" style="left:{{.Second.Left}}px;width:{{.Second.Width}}px">
   <div class="tabstrip" id="tabstrip-2">
+    {{if .Second.TabsPrev}}<button class="tab-nav" id="tabs2-prev" data-action="tabs2-prev" type="button" title="Earlier tabs" aria-label="Earlier tabs">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+    </button>{{end}}
     <div class="tabs">
-      {{range $i, $t := .Second.Tabs}}
+      {{range $t := .Second.Tabs}}
       <div class="tab{{if $t.Active}} on{{end}}">
-        <button class="tab-main" id="tab2-{{$i}}" data-action="tab2:{{$i}}" type="button" title="{{$t.Path}}">
+        <button class="tab-main" id="tab2-{{$t.Index}}" data-action="tab2:{{$t.Index}}" type="button" title="{{$t.Path}}">
           <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
           <span class="tab-name">{{$t.Name}}</span>
-          {{if $t.Dirty}}<span class="tab-dot" id="tab2-dot-{{$i}}"></span>{{end}}
+          {{if $t.Dirty}}<span class="tab-dot" id="tab2-dot-{{$t.Index}}"></span>{{end}}
           <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
         </button>
-        <button class="tab-x" id="tab2-close-{{$i}}" data-action="tab2-close:{{$i}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}">×</button>
+        <button class="tab-x" id="tab2-close-{{$t.Index}}" data-action="tab2-close:{{$t.Index}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}">×</button>
       </div>
       {{end}}
     </div>
+    <span class="tabs-fill"></span>
+    {{if .Second.TabsNext}}<button class="tab-nav" id="tabs2-next" data-action="tabs2-next" type="button" title="Later tabs" aria-label="Later tabs">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </button>{{end}}
     <button class="tab-tool" id="pane-left" data-action="focus-group:0" type="button" title="Focus the left editor" aria-label="Focus the left editor">L</button>
     <button class="tab-tool on" id="split-close" data-action="split-toggle" type="button" title="Close the split editor" aria-label="Close the split editor">▥</button>
-    <span class="tabs-fill"></span>
   </div>
 
   <div class="crumbs" id="crumbs-2">

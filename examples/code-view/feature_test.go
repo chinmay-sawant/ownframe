@@ -391,8 +391,10 @@ func TestFeatureSessionRestoresLayout(t *testing.T) {
 	second.EnableSession()
 
 	view := second.View()
-	if len(view.Tabs) != 2 || view.Tabs[1].Path != "other.go" {
-		t.Fatalf("restored tabs = %+v", view.Tabs)
+	// The strip windows full-width tabs, so assert the restored tab state
+	// rather than the rendered window.
+	if len(second.tabs) != 2 || second.tabs[1] != "other.go" {
+		t.Fatalf("restored tabs = %+v", second.tabs)
 	}
 
 	if !view.Details || !view.Split || view.Second.Active != "main.go" {

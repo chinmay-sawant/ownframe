@@ -35,6 +35,8 @@ type View struct {
 	Filtered     bool
 
 	Tabs            []tabRow
+	TabsPrev        bool
+	TabsNext        bool
 	ActiveTab       int
 	Active          string
 	ActiveDir       string
@@ -164,6 +166,8 @@ type secondaryView struct {
 	Left            int
 	Width           int
 	Tabs            []tabRow
+	TabsPrev        bool
+	TabsNext        bool
 	ActiveTab       int
 	Active          string
 	ActiveDir       string
@@ -251,8 +255,10 @@ type treeRow struct {
 	StatusClass string
 }
 
-// tabRow is one open editor tab.
+// tabRow is one open editor tab. Index is the tab's position in the
+// group's full list, so a windowed strip keeps working actions and ids.
 type tabRow struct {
+	Index       int
 	Path        string
 	Name        string
 	Lang        string

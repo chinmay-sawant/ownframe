@@ -30,9 +30,8 @@
 .tab {
   position: relative;
   height: var(--tab-h);
-  flex: 0 1 auto;
-  min-width: 0;
-  max-width: 280px;
+  flex: 0 0 auto;
+  overflow: hidden;
   display: flex;
   align-items: center;
   border-top: 2px solid transparent;
@@ -45,19 +44,19 @@
 
 .tab-main {
   height: 100%;
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 auto;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 25px 0 9px;
 }
 
-.tab-name { flex: 1 1 auto; min-width: 0; overflow: hidden; font-family: var(--mono); font-size: 9.5px; line-height: 1.15; white-space: nowrap; text-overflow: ellipsis; }
-
-/* A long name paints past its measured box, so the trailing controls carry
-   the tab background and paint above the text. The close button stays
-   visible and clickable no matter how far the name overruns. */
+/* Each tab keeps its full measured width so the whole filename shows; the
+   strip clips at its edge instead of squeezing tabs. The close button is
+   absolutely positioned at the tab's right edge and stays clear of the
+   text through the tab-main right padding. */
+.tab-name { flex: 0 0 auto; overflow: hidden; font-family: var(--mono); font-size: 9.5px; line-height: 1.15; white-space: nowrap; }
 .tab-main .tab-dot, .tab-main .tab-status { position: relative; background-color: var(--panel-2); }
 .tab.on .tab-dot, .tab.on .tab-status { background-color: var(--bg); }
 
@@ -90,6 +89,7 @@
 .tab-tool {
   width: 26px;
   height: 26px;
+  flex: 0 0 26px;
   align-self: center;
   margin-right: 3px;
   display: inline-flex;
@@ -101,6 +101,24 @@
 }
 
 .tab-tool:hover, .tab-tool.on { background-color: var(--panel-3); color: var(--text); }
+
+/* Tab scroll arrows. They mirror .tab-tool and never shrink, so the
+   windowed tabs stop at the arrows instead of sliding behind the tools. */
+.tab-nav {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  align-self: center;
+  margin-right: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--icon);
+  font-size: 11px;
+}
+
+.tab-nav:hover { background-color: var(--panel-3); color: var(--text); }
 
 /* Breadcrumbs -------------------------------------------------------------- */
 

@@ -415,6 +415,8 @@ func (a *App) contextMenuFinish(ctx context.Context) error {
 	}
 
 	a.resetScroll()
+	a.ensureTabVisible(0)
+	a.ensureTabVisible(1)
 	a.refresh()
 
 	return a.page.Redraw(ctx)

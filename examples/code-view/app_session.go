@@ -132,6 +132,8 @@ func (a *App) restoreState(state sessionState) {
 		a.addRecent(path)
 	}
 
+	a.ensureTabVisible(0)
+	a.ensureTabVisible(1)
 	a.resetScroll()
 	a.refresh()
 }
