@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"context"
+	"strings"
+)
 
 type changeNavigation struct {
 	path   string
@@ -13,15 +16,19 @@ type changeNavigation struct {
 
 // fileNavChangeStep visits change blocks in the selected file.
 func (a *App) fileNavChangeStep(delta int) {
-	if a.fileNav == nil {
+	nav := a.currentFileNav()
+	if nav == nil {
 		return
 	}
-	path, ok := a.fileNav.Current()
+	path, ok := nav.Current()
 	if !ok {
 		return
 	}
 	if a.mode == "changes" {
-		if a.diffPath != path || a.diffSource != "working" {
+		if a.diffSource == "branch" && a.branchPath != path {
+			a.openChangedPath(path)
+		}
+		if (a.diffSource == "commit" && a.commitFile != path) || (a.diffSource == "working" && a.diffPath != path) {
 			a.openChangedPath(path)
 		}
 	} else if doc := a.activeDoc(); doc == nil || doc.Path != path {
@@ -74,7 +81,7 @@ func (a *App) fileNavChangeIndex(path string, rows []int) int {
 func (a *App) fileNavChangeRows(path string) []int {
 	var rows []int
 	if a.mode == "changes" {
-		if a.diffPath != path || a.diffSource != "working" {
+		if (a.diffSource == "commit" && a.commitFile != path) || (a.diffSource == "branch" && a.branchPath != path) || (a.diffSource == "working" && a.diffPath != path) {
 			return nil
 		}
 		return diffChangeStarts(a.diffDisplayRows())
@@ -97,6 +104,28 @@ func (a *App) fileNavChangeRows(path string) []int {
 	return rows
 }
 
+func (a *App) currentFileNav() *modifiedNav {
+	if a.mode == "changes" && a.diffSource == "branch" {
+		nav := newModifiedNav(a.branchChanges)
+		nav.Select(a.branchPath)
+		return nav
+	}
+	if a.mode != "changes" || a.diffSource != "commit" {
+		return a.fileNav
+	}
+	commit := a.findCommit(a.commitOpen)
+	if commit == nil {
+		return nil
+	}
+	changes := changeSet{}
+	for _, file := range commit.Files {
+		changes.Files = append(changes.Files, changedFile{Path: file.Path})
+	}
+	nav := newModifiedNav(changes)
+	nav.Select(a.commitFile)
+	return nav
+}
+
 // syncFileNav rebuilds the changed-file navigator and keeps the current path
 // selected when it still exists.
 func (a *App) syncFileNav() {
@@ -116,16 +145,31 @@ func (a *App) syncFileNav() {
 // fileNavViewState prepares the bottom-center widget.
 func (a *App) fileNavViewState() fileNavView {
 	nav := fileNavView{}
-	if a.fileNav == nil || a.fileNav.Len() == 0 {
+	files := a.currentFileNav()
+	if files == nil || files.Len() == 0 {
 		return nav
 	}
 
-	path, ok := a.fileNav.Current()
+	path, ok := files.Current()
 	if !ok {
 		return nav
 	}
 
 	file := findFile(a.changes.Files, path)
+	if a.mode == "changes" && a.diffSource == "branch" {
+		file = findFile(a.branchChanges.Files, path)
+	}
+	if a.mode == "changes" && a.diffSource == "commit" {
+		file = nil
+		if commit := a.findCommit(a.commitOpen); commit != nil {
+			for _, entry := range commit.Files {
+				if entry.Path == path {
+					file = &changedFile{Path: entry.Path, Add: entry.Add, Del: entry.Del}
+					break
+				}
+			}
+		}
+	}
 	if file == nil {
 		return nav
 	}
@@ -135,8 +179,8 @@ func (a *App) fileNavViewState() fileNavView {
 	nav.Dir = dirName(path)
 	nav.Label = nav.Name
 	nav.Path = nav.Dir
-	nav.Position = a.fileNav.Index + 1
-	nav.Total = a.fileNav.Len()
+	nav.Position = files.Index + 1
+	nav.Total = files.Len()
 	nav.Add = file.Add
 	nav.Del = file.Del
 	nav.Multiple = nav.Total > 1
@@ -150,7 +194,8 @@ func (a *App) fileNavViewState() fileNavView {
 
 // fileNavStep moves the changed-file cursor and opens the new file or diff.
 func (a *App) fileNavStep(delta int) {
-	if a.fileNav == nil || a.fileNav.Len() == 0 {
+	nav := a.currentFileNav()
+	if nav == nil || nav.Len() == 0 {
 		return
 	}
 
@@ -160,9 +205,9 @@ func (a *App) fileNavStep(delta int) {
 	)
 
 	if delta < 0 {
-		path, ok = a.fileNav.Prev()
+		path, ok = nav.Prev()
 	} else {
-		path, ok = a.fileNav.Next()
+		path, ok = nav.Next()
 	}
 
 	if !ok {
@@ -179,6 +224,14 @@ func (a *App) openChangedPath(path string) {
 	}
 
 	if a.mode == "changes" {
+		if a.diffSource == "branch" {
+			a.selectBranchFile(path)
+			return
+		}
+		if a.diffSource == "commit" {
+			a.selectCommitFile(context.Background(), a.commitOpen, path)
+			return
+		}
 		a.selectDiff(path)
 	} else {
 		a.openFile(path)
@@ -191,13 +244,35 @@ func (a *App) openChangedPath(path string) {
 	a.refresh()
 }
 
+// jumpToFirstChange selects the first change even when it is the only one.
+func (a *App) jumpToFirstChange(path string) bool {
+	rows := a.fileNavChangeRows(path)
+	if len(rows) == 0 {
+		return false
+	}
+	group := a.activeGroup()
+	if a.split && a.mode != "changes" {
+		a.scrollGroupTo(group, rows[0]*rowH)
+	} else {
+		a.scrollTo(rows[0] * rowH)
+	}
+	scroll := a.scrollY
+	if a.split && a.mode != "changes" {
+		scroll = a.scrollGroup[group]
+	}
+	a.changeNav = changeNavigation{path: path, mode: a.mode, group: group, row: rows[0], scroll: scroll, valid: true}
+	a.refresh()
+	return true
+}
+
 // fileNavOpen opens the current changed file.
 func (a *App) fileNavOpen() {
-	if a.fileNav == nil {
+	nav := a.currentFileNav()
+	if nav == nil {
 		return
 	}
 
-	path, ok := a.fileNav.Current()
+	path, ok := nav.Current()
 	if !ok {
 		return
 	}

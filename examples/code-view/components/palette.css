@@ -33,6 +33,15 @@
   overflow: hidden;
 }
 
+#palette-panel, #search-panel {
+  left: calc(50% - 300px);
+  margin-left: 0;
+}
+
+@media (max-width: 640px) {
+  #palette-panel, #search-panel { left: 20px; }
+}
+
 .palette-search {
   height: 44px;
   display: flex;
@@ -52,6 +61,19 @@
   background-color: transparent;
   color: var(--text);
   font-size: 12px;
+  outline: 0;
+}
+
+.palette-input[data-ownframe-field] {
+  height: 30px;
+  min-height: 0;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  line-height: 28px;
+}
+
+.palette-input[data-ownframe-field][data-ownframe-focus="1"] {
+  border: 1px solid var(--muted);
   outline: 0;
 }
 
@@ -83,6 +105,8 @@
 
 .palette-row:hover, .palette-row.on { background-color: var(--accent-soft); }
 .palette-row.on .palette-text b { color: #ffffff; }
+#palette-panel .palette-row:hover, #palette-panel .palette-row.on,
+#search-panel .palette-row:hover, #search-panel .palette-row.on { background-color: var(--panel-3); }
 
 .palette-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .palette-text b { color: var(--text); font-size: 10.5px; font-weight: 600; overflow: hidden; white-space: nowrap; }
@@ -107,7 +131,10 @@
 .search-busy { color: var(--accent); }
 .search-more { color: var(--amber); }
 .search-note { margin-left: auto; overflow: hidden; white-space: nowrap; }
-.search-list { max-height: 396px; overflow: hidden; }
+.search-results { display: flex; align-items: flex-start; }
+.search-list { flex: 1; min-width: 0; max-height: 362px; overflow: hidden; }
+.search-scroll-track { flex: 0 0 8px; width: 8px; height: 352px; margin: 5px 2px 5px 0; background-color: var(--panel-2); }
+.search-thumb { display: block; width: 8px; padding: 0; background-color: #c5c9d1; cursor: pointer; }
 .search-row { height: 44px; min-height: 44px; max-height: 44px; align-items: flex-start; padding-top: 5px; padding-bottom: 5px; overflow: hidden; }
 .search-loc { width: 48px; flex: 0 0 48px; padding-top: 2px; color: var(--dim); font-size: 8.5px; text-align: right; }
 .search-text { gap: 1px; max-height: 34px; overflow: hidden; }

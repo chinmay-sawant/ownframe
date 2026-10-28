@@ -194,6 +194,8 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.scrollTree(a.treeVisibleRows() - 1)
 	case action == "history-working":
 		a.showWorkingDiff()
+	case action == "history-branch-changes":
+		a.showBranchChanges(ctx)
 	case action == "history-prev":
 		a.scrollHistory(ctx, -1)
 	case action == "history-next":
@@ -228,7 +230,14 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			a.selectTab(index)
 		}
 	case strings.HasPrefix(action, "diff-file:"):
-		a.selectDiff(strings.TrimPrefix(action, "diff-file:"))
+		path := strings.TrimPrefix(action, "diff-file:")
+		if a.diffSource == "commit" {
+			a.selectCommitFile(ctx, a.commitOpen, path)
+		} else if a.diffSource == "branch" {
+			a.selectBranchFile(path)
+		} else {
+			a.selectDiff(path)
+		}
 	case strings.HasPrefix(action, "diff-expand-up:"):
 		if idx, ok := actionIndex(action, "diff-expand-up:"); ok {
 			a.diffExpandUp(idx)
@@ -320,7 +329,21 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 // returns false so the window can pan a long file. Ctrl+wheel does not zoom
 // this page.
 func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
-	if a.paletteOpen || a.searchOpen || a.branchOpen {
+	if a.searchOpen {
+		sx, sy := a.page.Scroll().ScrollOffset()
+		x -= float64(sx)
+		y -= float64(sy)
+		box, ok := findBoxID(a.page.Boxes(), "search-results")
+		if ok && dy != 0 && x >= box.X && x <= box.X+box.W && y >= box.Y && y <= box.Y+box.H {
+			rows := a.searchScroll.WheelRows(-dy * treeWheelRows)
+			if rows != 0 {
+				a.scrollSearchTo(a.searchScroll.Offset + rows)
+			}
+			return true, a.page.Redraw(ctx)
+		}
+		return true, nil
+	}
+	if a.paletteOpen || a.branchOpen {
 		return false, nil
 	}
 
@@ -675,6 +698,17 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 
 // onDragStart claims the history divider or the explorer thumb.
 func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	if box.ID == "search-thumb" && a.searchOpen && a.view.Search.Scroll {
+		track := searchWindowRows * searchRowHeight
+		thumb := a.view.Search.ScrollHeight
+		if track <= thumb {
+			return false, nil
+		}
+		a.searchDrag = true
+		a.searchDragAt = a.searchScroll.Offset
+		a.searchDragScale = float64(len(a.searchHits)-searchWindowRows) / float64(track-thumb)
+		return true, nil
+	}
 	if a.onDragClaim(box) {
 		return true, nil
 	}
@@ -699,7 +733,7 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 		visible := a.changeVisibleRows()
 		track := a.changesTrackHeight()
 		thumb := a.view.Diff.ScrollHeight
-		total := len(a.changes.Files)
+		total := len(a.sidebarChangeFiles())
 		if total <= visible || track <= thumb {
 			return false, nil
 		}
@@ -747,6 +781,10 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 
 // onDragMove resizes the panes or moves the explorer thumb.
 func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
+	if a.searchDrag {
+		a.scrollSearchTo(a.searchDragAt + int(dy*a.searchDragScale+roundHalf))
+		return a.page.Redraw(ctx)
+	}
 	if a.dragSelect {
 		a.selX += dx
 		a.selY += dy
@@ -769,7 +807,7 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 
 	if a.changesDrag {
 		offset := a.changesDragAt + int(dy*a.changesScale+roundHalf)
-		total := len(a.changes.Files)
+		total := len(a.sidebarChangeFiles())
 		visible := a.changeVisibleRows()
 		a.changesScroll.SetOffset(offset, total, visible)
 		a.refresh()
@@ -835,7 +873,10 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 // onDragEnd releases the history divider.
 func (a *App) onDragEnd(ctx context.Context) error {
 	wasSelect := a.dragSelect
+	wasSearch := a.searchDrag
 	a.dragSelect = false
+	a.searchDrag = false
+	a.searchDragScale = 0
 	a.historyDrag = false
 	a.historyDy = 0
 	a.treeDrag = false
@@ -844,6 +885,9 @@ func (a *App) onDragEnd(ctx context.Context) error {
 	a.changesScale = 0
 	a.historyListDrag = false
 	a.historyListScale = 0
+	if wasSearch && a.searchOpen {
+		return a.page.Form().Focus(ctx, "workspace-search")
+	}
 
 	if wasSelect {
 		a.refresh()

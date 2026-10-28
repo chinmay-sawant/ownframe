@@ -11,10 +11,11 @@
       <button class="palette-close" id="search-close" data-action="search-close" type="button" title="Close search" aria-label="Close search">×</button>
     </div>
     <div class="search-meta">
-      <span>{{.Search.Files}} files · {{len .Search.Rows}} shown</span>
+      <span>{{.Search.Files}} files · {{.Search.Total}} results</span>
       {{if .Search.Busy}}<span class="search-busy">searching…</span>{{else if .Search.Truncated}}<span class="search-more">more results hidden</span>{{end}}
       {{if .Search.Note}}<span class="search-note">{{.Search.Note}}</span>{{end}}
     </div>
+    <div class="search-results" id="search-results">
     <div class="palette-list search-list">
       {{range .Search.Rows}}
       <button class="palette-row search-row{{if .Selected}} on{{end}}" id="search-hit-{{.Index}}" data-action="search-hit:{{.Index}}" type="button" title="{{.Path}}:{{.Line}}">
@@ -27,6 +28,8 @@
       {{else}}
       <div class="palette-empty">{{if .Search.Busy}}Searching the workspace…{{else if .Search.Query}}No content matches this search.{{else}}Type to search every text file in the workspace.{{end}}</div>
       {{end}}
+    </div>
+    {{if .Search.Scroll}}<div class="search-scroll-track" id="search-scroll-track"><button class="search-thumb" id="search-thumb" type="button" tabindex="-1" title="Drag to scroll search results" aria-label="Scroll search results" style="margin-top:{{.Search.ScrollTop}}px;height:{{.Search.ScrollHeight}}px"><svg width="8" height="{{.Search.ScrollHeight}}" aria-hidden="true"><rect width="8" height="{{.Search.ScrollHeight}}" fill="#c5c9d1"/></svg></button></div>{{end}}
     </div>
     <div class="palette-foot"><span>↑↓ choose · Enter open · Esc close</span><span>Ctrl+Shift+F</span></div>
   </div>

@@ -189,6 +189,47 @@ func TestWorkspaceSearchCaseSensitive(t *testing.T) {
 	}
 }
 
+func TestWorkspaceSearchLongLines(t *testing.T) {
+	t.Parallel()
+
+	ws := searchWorkspaceDir(t, map[string]string{
+		"long.txt": "\t" + strings.Repeat("界", 235) + "Needle " + strings.Repeat("x", 100) + "needle\n",
+	})
+	result := searchWorkspace(context.Background(), ws, "needle", false, 0)
+	if len(result.Hits) != 2 || result.Truncated {
+		t.Fatalf("result = %+v", result)
+	}
+
+	for i, want := range []struct {
+		col   int
+		match string
+	}{{240, "Needle"}, {347, "needle"}} {
+		hit := result.Hits[i]
+		if hit.Line != 1 || hit.Col != want.col || hit.Match != want.match {
+			t.Errorf("hit %d = %+v, want column %d match %q", i, hit, want.col, want.match)
+		}
+		if hit.Before+hit.Match+hit.After != hit.Text || len([]rune(hit.Text)) > workspaceSearchTextRunes {
+			t.Errorf("invalid preview for hit %d: %+v", i, hit)
+		}
+	}
+}
+
+func TestWorkspaceSearchLongQueryPreview(t *testing.T) {
+	t.Parallel()
+
+	query := strings.Repeat("a", workspaceSearchTextRunes+10)
+	ws := searchWorkspaceDir(t, map[string]string{"long.txt": "prefix" + query + "suffix"})
+	result := searchWorkspace(context.Background(), ws, query, true, 0)
+	if len(result.Hits) != 1 {
+		t.Fatalf("hits = %d, want 1", len(result.Hits))
+	}
+
+	hit := result.Hits[0]
+	if hit.Col != 7 || hit.Before+hit.Match+hit.After != hit.Text || len([]rune(hit.Text)) != workspaceSearchTextRunes {
+		t.Fatalf("unexpected preview: %+v", hit)
+	}
+}
+
 func TestWorkspaceSearchLimit(t *testing.T) {
 	t.Parallel()
 

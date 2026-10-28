@@ -63,8 +63,8 @@
     </div>
   {{else}}
     <div class="changes-head">
-      <button class="changes-title" id="history-working" data-action="history-working" type="button" title="Show the working tree diff"{{if .Modal}} tabindex="-1"{{end}}>Working tree</button>
-      <span class="changes-count mono">{{.Changed}}</span>
+      <button class="changes-title" id="history-working" data-action="history-working" type="button" title="{{if eq .Diff.Source "branch"}}{{.Diff.Note}} Click to show the working tree.{{else}}Show the working tree diff{{end}}"{{if .Modal}} tabindex="-1"{{end}}>{{if eq .Diff.Source "commit"}}Commit {{.Diff.CommitShort}} ↩{{else if eq .Diff.Source "branch"}}Branch changes ↩{{else}}Working tree{{end}}</button>
+      <span class="changes-count mono">{{.Diff.Count}}</span>
       {{if .Diff.Sample}}<span class="side-tag">sample</span>{{end}}
       <span class="sc-stats"><b class="add">+{{.Diff.TotalAdd}}</b><b class="del">−{{.Diff.TotalDel}}</b></span>
     </div>
@@ -106,6 +106,9 @@
         <span class="tabs-fill"></span>
         <button class="hist-btn" id="history-refresh" data-action="diff-refresh" type="button" title="Refresh history" aria-label="Refresh history"{{if .Modal}} tabindex="-1"{{end}}>↻</button>
       </header>
+      <button class="history-current{{if eq .Diff.Source "branch"}} on{{end}}" id="history-branch-changes" data-action="history-branch-changes" type="button" aria-pressed="{{if eq .Diff.Source "branch"}}true{{else}}false{{end}}" title="Show combined committed changes for this history branch"{{if .Modal}} tabindex="-1"{{end}}>
+        <span>Current branch changes</span>{{if eq .Diff.Source "branch"}}<span class="history-current-count mono">{{.Diff.Count}}</span>{{end}}
+      </button>
       <div class="hist-list{{if .History.Scroll}} scroll-fade{{end}}{{if .History.AtTop}} at-top{{end}}{{if .History.AtEnd}} at-end{{end}}" id="history-list">
         {{if .History.BranchOpen}}
         <div class="branch-panel" role="dialog" aria-modal="true" aria-label="Choose a branch">
@@ -151,7 +154,7 @@
     {{end}}
 
     <div class="side-foot">
-      <span class="dim note-one">{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}</span>
+      <span class="dim note-one" title="{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}">{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}</span>
     </div>
   {{end}}
 </aside>

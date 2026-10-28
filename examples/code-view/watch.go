@@ -433,6 +433,9 @@ func (a *App) applyGitRefresh(ctx context.Context, update watchUpdate) {
 	a.historyLabel = history.Branch
 	a.historyScroll.Limit = len(history.Commits)
 	a.historyDone = len(history.Commits) < a.historyLimit || a.historyLimit >= maxHistoryCommits
+	if a.diffSource == "branch" {
+		a.refreshBranchChanges(ctx)
+	}
 
 	if a.commitOpen != "" && a.findCommit(a.commitOpen) == nil {
 		a.commitOpen = ""

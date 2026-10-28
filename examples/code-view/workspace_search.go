@@ -93,9 +93,6 @@ search:
 			}
 
 			line := []rune(expandTabs(rawLine))
-			if len(line) > workspaceSearchTextRunes {
-				line = line[:workspaceSearchTextRunes]
-			}
 
 			for start := 0; start+len(queryRunes) <= len(line); {
 				if !workspaceMatchAt(line[start:start+len(queryRunes)], queryRunes, caseSensitive) {
@@ -117,14 +114,18 @@ search:
 				}
 
 				end := start + len(queryRunes)
+				previewStart := max(0, start-(workspaceSearchTextRunes-min(len(queryRunes), workspaceSearchTextRunes))/2)
+				previewStart = min(previewStart, max(0, len(line)-workspaceSearchTextRunes))
+				previewEnd := min(len(line), previewStart+workspaceSearchTextRunes)
+				matchEnd := min(end, previewEnd)
 				result.Hits = append(result.Hits, workspaceHit{
 					Path:   meta.Path,
 					Line:   lineIndex + 1,
 					Col:    start + 1,
-					Text:   string(line),
-					Before: string(line[:start]),
-					Match:  string(line[start:end]),
-					After:  string(line[end:]),
+					Text:   string(line[previewStart:previewEnd]),
+					Before: string(line[previewStart:start]),
+					Match:  string(line[start:matchEnd]),
+					After:  string(line[matchEnd:previewEnd]),
 				})
 				fileHits++
 				start = end

@@ -64,7 +64,7 @@
   color: var(--dim);
 }
 
-.filter:focus-within { border-color: rgba(122, 162, 247, 0.55); background-color: #0d1018; }
+.filter:focus-within { border-color: var(--muted); background-color: #0d1018; }
 .filter-icon { color: var(--icon); pointer-events: none; }
 .filter-input {
   flex: 1;
@@ -76,6 +76,7 @@
   color: var(--text);
   font-size: 10.5px;
 }
+.filter-input[data-ownframe-field][data-ownframe-focus="1"] { border: 1px solid var(--muted); outline: 0; }
 
 .filter-x { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 3px; color: var(--dim); font-size: 13px; line-height: 1; }
 .filter-x:hover { background-color: var(--panel-3); color: var(--text); }
@@ -200,7 +201,7 @@
 .side-history { border-bottom: 0; border-top: 1px solid var(--line-soft); }
 .side-history .hist-head { gap: 4px; padding: 0 6px 0 10px; }
 .side-history .hist-hash { width: 42px; flex: 0 0 42px; }
-.side-history .hist-row { gap: 5px; padding: 0 6px 0 7px; }
+.side-history .hist-row { gap: 4px; padding: 0 6px 0 7px; }
 .side-history .hist-subject { font-size: 9.5px; }
 .side-history .hist-when, .side-history .hist-stat { display: none; }
 .side-history .hist-meta { padding-left: 17px; }
@@ -277,16 +278,18 @@
   padding: 4px 16px 4px 8px;
   border-left: 2px solid transparent;
   color: var(--muted);
+  text-align: left;
 }
 
 .change:hover { background-color: var(--panel-2); }
 .change.on, .change.on:hover { border-left-color: var(--accent); background-color: #20324b; }
 
-.change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.change-name { font-size: 10.5px; color: var(--text); overflow: hidden; white-space: nowrap; }
-.change-dir { font-size: 9px; color: var(--dim); overflow: hidden; white-space: nowrap; }
+.change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; overflow: hidden; }
+.change-name { max-width: 100%; font-size: 10.5px; line-height: 13px; color: var(--text); overflow: hidden; white-space: nowrap; }
+.change-dir { max-width: 100%; font-size: 9px; line-height: 11px; color: var(--dim); overflow: hidden; white-space: nowrap; }
 .change.on .change-name { color: #fff; }
 .change-num { width: 30px; flex: 0 0 30px; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-family: var(--mono); font-size: 8.5px; font-weight: 700; }
+.change .cstat { flex: 0 0 auto; }
 
 .clean {
   flex: 1;

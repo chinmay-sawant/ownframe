@@ -22,6 +22,7 @@ func TestFileNavChangeArrows(t *testing.T) {
 	if nav := app.View().FileNav; nav.CanPrevChange || !nav.CanNextChange {
 		t.Fatalf("initial arrow state = %+v", nav)
 	}
+	assertCurrentCodeChange(t, app.View().Rows, 3)
 	for _, step := range []struct {
 		action string
 		row    int
@@ -41,6 +42,7 @@ func TestFileNavChangeArrows(t *testing.T) {
 		if nav := app.View().FileNav; nav.CanPrevChange != step.prev || nav.CanNextChange != step.next {
 			t.Fatalf("%s: arrow state = %+v", step.action, nav)
 		}
+		assertCurrentCodeChange(t, app.View().Rows, step.row+1)
 	}
 	app.toggleSplit()
 	app.openFileIn(1, path)
@@ -50,6 +52,7 @@ func TestFileNavChangeArrows(t *testing.T) {
 	if app.changeNav.group != 1 || app.changeNav.row != 11 || app.scrollGroup[1] != app.changeNav.scroll {
 		t.Fatalf("split navigation = %+v, scroll = %v", app.changeNav, app.scrollGroup)
 	}
+	assertCurrentCodeChange(t, app.View().Second.Rows, 12)
 	app.selectDiff(path)
 	rows := app.fileNavChangeRows(path)
 	if len(rows) != 2 {
@@ -77,6 +80,22 @@ func TestFileNavChangeArrows(t *testing.T) {
 	}
 	if currentChanges != 1 {
 		t.Fatalf("current visible changed rows = %d", currentChanges)
+	}
+}
+
+func assertCurrentCodeChange(t *testing.T, rows []codeRow, line int) {
+	t.Helper()
+	found := false
+	for _, row := range rows {
+		if row.ChangeCurrent && row.Line+1 != line {
+			t.Fatalf("line %d highlighted, want line %d", row.Line+1, line)
+		}
+		if row.Line+1 == line && row.ChangeCurrent {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("line %d is not highlighted", line)
 	}
 }
 
@@ -148,6 +167,46 @@ func TestSingleChangeHasNoNextOrPrevious(t *testing.T) {
 			t.Fatalf("split=%v: single diff arrow state = %+v", split, nav)
 		}
 	}
+}
+
+func TestOpeningChangedFileRevealsItsOnlyChange(t *testing.T) {
+	app := newTestApp(t)
+	path := "backend/probe.go"
+	app.changes = changeSet{Files: []changedFile{{Path: path, Status: "M", Hunks: []hunk{{
+		NewStart: 120, Lines: []diffLine{{Kind: '+', NewNo: 120, Text: "change"}},
+	}}}}}
+	app.syncFileNav()
+	for _, wrap := range []bool{false, true} {
+		app.wrap = wrap
+		app.openFile(path)
+		if !app.changeNav.valid || app.scrollY == 0 {
+			t.Fatalf("wrap=%v: change not reached: scroll=%d navigation=%+v", wrap, app.scrollY, app.changeNav)
+		}
+		assertCurrentCodeChange(t, app.View().Rows, 120)
+		app.fileNavOpen()
+		assertCurrentCodeChange(t, app.View().Rows, 120)
+	}
+}
+
+func TestFileArrowsRevealFirstChange(t *testing.T) {
+	app := newTestApp(t)
+	app.wrap = false
+	app.changes = changeSet{Files: []changedFile{
+		{Path: "backend/probe.go", Hunks: []hunk{{NewStart: 120, Lines: []diffLine{{Kind: '+', NewNo: 120}}}}},
+		{Path: "backend/store.go", Hunks: []hunk{{NewStart: 60, Lines: []diffLine{{Kind: '+', NewNo: 60}}}}},
+	}}
+	app.syncFileNav()
+	app.openFile("backend/probe.go")
+	app.fileNavStep(1)
+	if app.activeDoc().Path != "backend/store.go" {
+		t.Fatalf("next file = %s", app.activeDoc().Path)
+	}
+	assertCurrentCodeChange(t, app.View().Rows, 60)
+	app.fileNavStep(-1)
+	if app.activeDoc().Path != "backend/probe.go" {
+		t.Fatalf("previous file = %s", app.activeDoc().Path)
+	}
+	assertCurrentCodeChange(t, app.View().Rows, 120)
 }
 
 func TestDiffChangeStartsGroupsContiguousRows(t *testing.T) {

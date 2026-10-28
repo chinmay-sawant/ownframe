@@ -42,7 +42,7 @@ const (
 	treeInnerPad = 5
 	treeThumbMin = 18
 
-	histHeadH    = 32
+	histHeadH    = 58
 	histRowH     = 42
 	histFileH    = 30
 	histPreviewH = 18
@@ -56,7 +56,7 @@ const (
 	historyDefaultRatio  = 0.55
 	defaultSplitRatio    = 0.5
 	branchLogLimit       = 16
-	branchPickerPad      = 96
+	branchPickerPad      = 122
 	branchPickerRowH     = 26
 	branchPickerMinRows  = 4
 	changesRailTop       = 62
@@ -98,12 +98,15 @@ type App struct {
 	page *ownframe.Page
 	ws   *workspace
 
-	changes   changeSet
-	statuses  map[string]string
-	view      View
-	fileNav   *modifiedNav
-	summary   changeSummary
-	changeNav changeNavigation
+	changes            changeSet
+	branchChanges      changeSet
+	branchPath         string
+	statuses           map[string]string
+	view               View
+	fileNav            *modifiedNav
+	summary            changeSummary
+	changeNav          changeNavigation
+	firstChangePending string
 
 	mode           string
 	filter         string
@@ -146,6 +149,10 @@ type App struct {
 	searchCase      bool
 	searchHits      []workspaceHit
 	searchIndex     int
+	searchScroll    historyScroll
+	searchDrag      bool
+	searchDragAt    int
+	searchDragScale float64
 	searchReturn    string
 	searchNote      string
 	searchTruncated bool
@@ -601,7 +608,7 @@ func (a *App) fillCode(v *View) {
 		start, end, track = a.windowSliceForGroup(0, len(plan.Rows))
 		v.TrackTop = track
 		v.Rows = a.copyFindRows(cloneCodeRows(plan.Rows[start:end]))
-		a.decorateCodeRows(doc, v.Rows)
+		a.decorateCodeRows(doc, v.Rows, 0)
 		a.decorateEditRows(v.Rows)
 
 		return
@@ -619,7 +626,7 @@ func (a *App) fillCode(v *View) {
 	}
 
 	v.Rows = a.copyFindRows(v.Rows)
-	a.decorateCodeRows(doc, v.Rows)
+	a.decorateCodeRows(doc, v.Rows, 0)
 	a.decorateEditRows(v.Rows)
 }
 
@@ -667,18 +674,37 @@ func (a *App) diffDisplayRows() []diffRow {
 
 // fillDiff fills the Source Control list and the selected diff rows.
 func (a *App) fillDiff(v *View) {
+	files := a.sidebarChangeFiles()
+	active := a.changes
+	if a.diffSource == "branch" {
+		active = a.branchChanges
+	}
 	d := diffView{
 		Split:      a.diffSplit,
-		Sample:     a.changes.Sample,
-		Note:       a.changes.Note,
-		EmptyTitle: a.changes.EmptyTitle,
-		HasChanges: len(a.changes.Files) > 0,
+		Sample:     active.Sample,
+		Note:       active.Note,
+		EmptyTitle: active.EmptyTitle,
+		HasChanges: len(files) > 0,
+		Count:      len(files),
 	}
 
-	add, del := a.changes.totals()
+	add, del := active.totals()
 	d.TotalAdd, d.TotalDel = add, del
+	selected := a.diffPath
+	if a.diffSource == "branch" {
+		selected = a.branchPath
+	}
+	if a.diffSource == "commit" {
+		selected = a.commitFile
+		d.Note = ""
+		d.EmptyTitle = "No files in this commit"
+		d.TotalAdd, d.TotalDel = 0, 0
+		if commit := a.findCommit(a.commitOpen); commit != nil {
+			d.TotalAdd, d.TotalDel = commit.Add, commit.Del
+		}
+	}
 
-	total := len(a.changes.Files)
+	total := len(files)
 	visible := a.changeVisibleRows()
 	from, to := a.changesScroll.Rows(total, visible)
 
@@ -696,7 +722,7 @@ func (a *App) fillDiff(v *View) {
 		d.ThumbCells = max(1, d.ScrollHeight/thumbCellH)
 	}
 
-	for _, file := range a.changes.Files[from:to] {
+	for _, file := range files[from:to] {
 		d.Files = append(d.Files, diffFileRow{
 			Path:        file.Path,
 			Name:        baseName(file.Path),
@@ -707,7 +733,7 @@ func (a *App) fillDiff(v *View) {
 			Badge:       languageInfo(languageOf(file.Path)).Badge,
 			Add:         file.Add,
 			Del:         file.Del,
-			Selected:    file.Path == a.diffPath && a.diffSource == "working",
+			Selected:    file.Path == selected,
 		})
 	}
 
@@ -718,8 +744,8 @@ func (a *App) fillDiff(v *View) {
 		return
 	}
 
-	d.Source = "working"
-	d.HasFiles = len(a.changes.Files) > 0
+	d.Source = a.diffSource
+	d.HasFiles = len(active.Files) > 0
 
 	if !d.HasFiles {
 		v.Diff = d
@@ -727,14 +753,35 @@ func (a *App) fillDiff(v *View) {
 		return
 	}
 
-	file := findFile(a.changes.Files, a.diffPath)
+	file := findFile(active.Files, selected)
 	if file == nil {
-		file = &a.changes.Files[0]
+		file = &active.Files[0]
 	}
 
 	a.fillDiffFile(v, &d, file, a.diffRows)
 	d.Selected = file.Path
 	v.Diff = d
+}
+
+func (a *App) sidebarChangeFiles() []changedFile {
+	if a.diffSource == "branch" {
+		return a.branchChanges.Files
+	}
+	if a.diffSource != "commit" {
+		return a.changes.Files
+	}
+	commit := a.findCommit(a.commitOpen)
+	if commit == nil {
+		return nil
+	}
+	files := make([]changedFile, 0, len(commit.Files))
+	for _, file := range commit.Files {
+		files = append(files, changedFile{
+			Path: file.Path, OldPath: file.OldPath, Status: file.Status,
+			Add: file.Add, Del: file.Del, Binary: file.Binary,
+		})
+	}
+	return files
 }
 
 // fillCommitDiff publishes the selected file from one commit.
@@ -812,7 +859,7 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 		v.Truncated = doc.Truncated
 		v.Outline = doc.Outline
 
-		if d.Source == "commit" {
+		if d.Source == "commit" || d.Source == "branch" {
 			v.Status = file.Status
 		} else {
 			v.Status = a.statuses[doc.Path]
@@ -834,7 +881,7 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
 		current := a.scrollY / rowH
-		if a.diffSource == "working" && a.changeNav.valid && a.changeNav.path == file.Path &&
+		if a.changeNav.valid && a.changeNav.path == file.Path &&
 			a.changeNav.mode == a.mode && a.changeNav.scroll == a.scrollY {
 			current = a.changeNav.row
 		}
@@ -1036,7 +1083,7 @@ func (a *App) changeVisibleRows() int {
 
 // revealChangeIndex scrolls the changed-file list so one row is visible.
 func (a *App) revealChangeIndex(index int) {
-	total := len(a.changes.Files)
+	total := len(a.sidebarChangeFiles())
 	visible := a.changeVisibleRows()
 	start, end := a.changesScroll.Rows(total, visible)
 
@@ -1050,7 +1097,7 @@ func (a *App) revealChangeIndex(index int) {
 
 // revealChangePath reveals one changed file by path.
 func (a *App) revealChangePath(path string) {
-	for i, file := range a.changes.Files {
+	for i, file := range a.sidebarChangeFiles() {
 		if file.Path == path {
 			a.revealChangeIndex(i)
 
@@ -1061,7 +1108,7 @@ func (a *App) revealChangePath(path string) {
 
 // scrollChanges moves the changed-file list by rows.
 func (a *App) scrollChanges(rows int) {
-	a.changesScroll.ScrollBy(rows, len(a.changes.Files), a.changeVisibleRows())
+	a.changesScroll.ScrollBy(rows, len(a.sidebarChangeFiles()), a.changeVisibleRows())
 	a.refresh()
 }
 
@@ -1611,6 +1658,7 @@ func (a *App) openFileIn(group int, path string) {
 	}
 
 	a.finishEdit()
+	a.firstChangePending = ""
 
 	if _, ok := a.docs[path]; !ok {
 		a.docs[path] = a.ws.openDoc(path)
@@ -1670,6 +1718,7 @@ func (a *App) openFileIn(group int, path string) {
 		a.resetScroll()
 	}
 	a.refresh()
+	a.jumpToFirstChange(path)
 }
 
 // selectTab focuses one tab in the first group.
@@ -1966,7 +2015,13 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 	a.historyScroll.SetOffset(0, len(a.commits.Commits), a.historyVisibleRows())
 	a.statuses = statusMap(a.changes)
 	a.syncFileNav()
-	a.changesScroll.SetOffset(0, len(a.changes.Files), a.changeVisibleRows())
+	a.changesScroll.SetOffset(0, len(a.sidebarChangeFiles()), a.changeVisibleRows())
+	if a.diffSource == "commit" {
+		a.revealChangePath(a.commitFile)
+	}
+	if a.diffSource == "branch" {
+		a.refreshBranchChanges(ctx)
+	}
 	a.selectFirstDiff()
 	a.rebuildDiffRows()
 	a.resetScroll()
@@ -2016,11 +2071,14 @@ func (a *App) rebuildDiffRows() {
 	a.diffRows = nil
 
 	file := findFile(a.changes.Files, a.diffPath)
+	if a.diffSource == "branch" {
+		file = findFile(a.branchChanges.Files, a.branchPath)
+	}
 	if file == nil {
 		return
 	}
 
-	if file.TotalLines == 0 {
+	if file.TotalLines == 0 && a.diffSource != "branch" {
 		file.TotalLines = a.fileTotalLines(file.Path)
 	}
 
@@ -2030,6 +2088,88 @@ func (a *App) rebuildDiffRows() {
 	} else {
 		a.diffRows = diffRowsUnified(*file, lang)
 	}
+	if a.diffSource == "branch" {
+		rows := a.diffRows[:0]
+		for _, row := range a.diffRows {
+			if row.Kind != rowExpand {
+				rows = append(rows, row)
+			}
+		}
+		a.diffRows = rows
+	}
+}
+
+func (a *App) readBranchChanges(ctx context.Context) (changeSet, error) {
+	var changes changeSet
+	if a.ws.Sample {
+		changes = sampleChangeSet()
+		changes.Note = "Bundled sample: combined changes from the sample branch commits."
+		return changes, nil
+	}
+	base, err := defaultBranchRef(ctx, a.ws.Root)
+	if err != nil {
+		return changes, err
+	}
+	ref := a.historyRef
+	if ref == "" {
+		ref = "HEAD"
+		for _, branch := range a.branches {
+			if branch.CheckedOut {
+				ref = branch.Ref
+				break
+			}
+		}
+	}
+	return loadBranchChanges(ctx, a.ws.Root, base, ref)
+}
+
+func (a *App) showBranchChanges(ctx context.Context) {
+	changes, err := a.readBranchChanges(ctx)
+	if err != nil {
+		a.showToast("error", "Branch changes unavailable", err.Error())
+		a.refresh()
+		return
+	}
+	a.branchChanges = changes
+	a.branchPath = ""
+	if len(changes.Files) > 0 {
+		a.branchPath = changes.Files[0].Path
+	}
+	a.diffSource = "branch"
+	a.firstChangePending = ""
+	a.changesScroll.SetOffset(0, len(changes.Files), a.changeVisibleRows())
+	a.resetScroll()
+	a.rebuildDiffRows()
+	a.refresh()
+	a.jumpToFirstChange(a.branchPath)
+}
+
+func (a *App) refreshBranchChanges(ctx context.Context) {
+	changes, err := a.readBranchChanges(ctx)
+	if err != nil {
+		a.showToast("error", "Branch changes unavailable", err.Error())
+		return
+	}
+	a.branchChanges = changes
+	if findFile(changes.Files, a.branchPath) == nil {
+		a.branchPath = ""
+		if len(changes.Files) > 0 {
+			a.branchPath = changes.Files[0].Path
+		}
+	}
+	a.rebuildDiffRows()
+}
+
+func (a *App) selectBranchFile(path string) {
+	if findFile(a.branchChanges.Files, path) == nil {
+		return
+	}
+	a.branchPath = path
+	a.revealChangePath(path)
+	a.resetScroll()
+	a.rebuildDiffRows()
+	a.refresh()
+	a.jumpToFirstChange(path)
 }
 
 // pickBranch loads history for a ref without changing the checkout.
@@ -2080,6 +2220,8 @@ func (a *App) selectDiff(path string) {
 	}
 
 	a.diffPath = path
+	a.firstChangePending = ""
+	a.changeNav = changeNavigation{}
 	a.diffSource = "working"
 	a.mode = "changes"
 	a.inlineCard = inlineCard{}
@@ -2090,11 +2232,15 @@ func (a *App) selectDiff(path string) {
 	a.rebuildDiffRows()
 	a.resetScroll()
 	a.refresh()
+	a.jumpToFirstChange(path)
 }
 
 // showWorkingDiff returns the lower pane to the working tree.
 func (a *App) showWorkingDiff() {
+	a.firstChangePending = ""
+	a.changeNav = changeNavigation{}
 	a.diffSource = "working"
+	a.revealChangePath(a.diffPath)
 	a.rebuildDiffRows()
 	a.resetScroll()
 	a.refresh()
@@ -2102,10 +2248,12 @@ func (a *App) showWorkingDiff() {
 
 // toggleCommit expands one commit in the history rail.
 func (a *App) toggleCommit(ctx context.Context, hash string) {
+	a.firstChangePending = ""
 	commit := a.findCommit(hash)
 	if commit == nil {
 		return
 	}
+	a.changeNav = changeNavigation{}
 
 	if a.commitOpen == hash {
 		if a.diffSource != "commit" && len(commit.Files) > 0 {
@@ -2122,6 +2270,7 @@ func (a *App) toggleCommit(ctx context.Context, hash string) {
 
 		if a.diffSource == "commit" {
 			a.diffSource = "working"
+			a.revealChangePath(a.diffPath)
 			a.rebuildDiffRows()
 		}
 
@@ -2141,25 +2290,36 @@ func (a *App) toggleCommit(ctx context.Context, hash string) {
 	}
 
 	a.diffSource = "commit"
+	a.changesScroll.SetOffset(0, len(commit.Files), a.changeVisibleRows())
+	a.revealChangePath(a.commitFile)
 	a.rebuildCommitRows()
 	a.resetScroll()
 	a.refresh()
+	if !a.jumpToFirstChange(a.commitFile) && a.commitDetails[commitDetailKey(hash, a.commitFile)] == nil && a.commitFile != "" {
+		a.firstChangePending = commitDetailKey(hash, a.commitFile)
+	}
 }
 
 // selectCommitFile selects one file inside an expanded commit.
 func (a *App) selectCommitFile(ctx context.Context, hash, path string) {
+	a.firstChangePending = ""
 	if a.findCommit(hash) == nil {
 		return
 	}
+	a.changeNav = changeNavigation{}
 
 	a.commitOpen = hash
 	a.commitFile = path
 	a.diffSource = "commit"
+	a.revealChangePath(path)
 	a.focusCommitPage(hash)
 	a.ensureCommitFile(ctx, hash, path)
 	a.rebuildCommitRows()
 	a.resetScroll()
 	a.refresh()
+	if !a.jumpToFirstChange(path) && a.commitDetails[commitDetailKey(hash, path)] == nil && path != "" {
+		a.firstChangePending = commitDetailKey(hash, path)
+	}
 }
 
 // openCommitDiff puts the selected commit file in the lower diff pane.
@@ -2219,6 +2379,9 @@ func (a *App) pollPatches(ctx context.Context) bool {
 		}
 
 		if result.Err != nil {
+			if result.Key == a.firstChangePending {
+				a.firstChangePending = ""
+			}
 			a.showToast("error", "Commit diff unavailable", result.Err.Error())
 			changed = true
 
@@ -2244,6 +2407,12 @@ func (a *App) pollPatches(ctx context.Context) bool {
 	if changed {
 		if a.diffSource == "commit" {
 			a.rebuildCommitRows()
+			if a.firstChangePending == commitDetailKey(a.commitOpen, a.commitFile) && a.commitDetails[a.firstChangePending] != nil {
+				if a.scrollY == 0 {
+					a.jumpToFirstChange(a.commitFile)
+				}
+				a.firstChangePending = ""
+			}
 			a.refresh()
 		}
 

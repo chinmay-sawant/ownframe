@@ -12,10 +12,22 @@ func collect(d *layout.Display, box layout.Box) []line {
 	pt := d.PointsPerPixel
 	left, right := box.X*pt, (box.X+box.W)*pt
 	top, bottom := box.Y*pt, (box.Y+box.H)*pt
+	owner := -1
+	if box.ID != "" && len(d.OpOwners) > 0 {
+		for i := range d.Boxes {
+			if d.Boxes[i].ID == box.ID {
+				owner = i
+				break
+			}
+		}
+	}
 
 	var lines []line
 	for i := range d.Ops {
 		op := &d.Ops[i]
+		if owner >= 0 && (i >= len(d.OpOwners) || !ownedBy(d, d.OpOwners[i], owner)) {
+			continue
+		}
 		if op.Kind != layout.DisplayOpText || op.Text == "" || op.Font == nil {
 			continue
 		}
@@ -42,6 +54,16 @@ func collect(d *layout.Display, box layout.Box) []line {
 	})
 
 	return lines
+}
+
+func ownedBy(d *layout.Display, child, ancestor int) bool {
+	for steps := 0; child >= 0 && child < len(d.Boxes) && steps < len(d.Boxes); steps++ {
+		if child == ancestor {
+			return true
+		}
+		child = d.Boxes[child].ParentIndex
+	}
+	return false
 }
 
 func addRun(lines []line, op *layout.DisplayOp) []line {

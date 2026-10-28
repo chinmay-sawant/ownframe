@@ -90,7 +90,7 @@ func TestOpenAndCloseTabs(t *testing.T) {
 		t.Fatalf("after open: active=%q tabs=%d", app.View().Active, len(app.View().Tabs))
 	}
 
-	if len(app.View().Rows) == 0 || app.View().Rows[0].No != 1 {
+	if len(app.View().Rows) == 0 {
 		t.Fatalf("rows = %d", len(app.View().Rows))
 	}
 
@@ -618,6 +618,10 @@ func TestScreenshot(t *testing.T) {
 
 	app := newTestApp(t)
 	writeShot(t, app, "explorer")
+	if err := app.Page().Form().Focus(context.Background(), "filter"); err != nil {
+		t.Fatal(err)
+	}
+	writeShot(t, app, "filter-focused")
 
 	app.togglePreview()
 
@@ -696,6 +700,10 @@ func TestScreenshot(t *testing.T) {
 	if err := app.openWorkspaceSearch(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	writeShot(t, app, "search-empty")
 
 	app.searchQuery = "Beacon"
 	app.runWorkspaceSearch(context.Background())
@@ -779,6 +787,16 @@ func TestScreenshot(t *testing.T) {
 	}
 
 	writeShot(t, app, "welcome")
+	if err := app.Page().Form().Focus(context.Background(), "filter"); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Edit().Type(context.Background(), "search"); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.Page().Edit().SelectAll(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	writeShot(t, app, "filter-selection")
 }
 
 func TestAppName(t *testing.T) {

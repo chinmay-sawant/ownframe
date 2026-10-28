@@ -166,6 +166,10 @@ func TestPageMenuClickOutsideClosesIt(t *testing.T) {
 	app := newTestApp(t)
 	app.openFile("backend/probe.go")
 	ctx := context.Background()
+	app.scrollTo(0)
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	rows := app.contextMenuForPage("tab-0")
 	if !app.presentMenu(40, 50, rows) || !app.View().MenuOpen {
@@ -194,6 +198,10 @@ func TestPageMenuPressOutsideLeavesTheEditor(t *testing.T) {
 	app := newTestApp(t)
 	app.openFile("backend/probe.go")
 	ctx := context.Background()
+	app.scrollTo(0)
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
 
 	rows := app.contextMenuForPage("tab-0")
 	if !app.presentMenu(40, 50, rows) {

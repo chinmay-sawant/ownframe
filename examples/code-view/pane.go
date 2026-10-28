@@ -292,7 +292,7 @@ func (a *App) secondView() secondaryView {
 		start, end, track := a.windowSliceForGroup(1, len(plan.Rows))
 		s.TrackTop = track
 		s.Rows = cloneCodeRows(plan.Rows[start:end])
-		a.decorateCodeRows(doc, s.Rows)
+		a.decorateCodeRows(doc, s.Rows, 1)
 
 		return s
 	}
@@ -311,7 +311,7 @@ func (a *App) secondView() secondaryView {
 		s.Rows = append(s.Rows, row)
 	}
 
-	a.decorateCodeRows(doc, s.Rows)
+	a.decorateCodeRows(doc, s.Rows, 1)
 
 	return s
 }

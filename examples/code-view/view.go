@@ -170,15 +170,19 @@ type secondaryView struct {
 
 // searchView is the workspace content search panel.
 type searchView struct {
-	Open      bool
-	Query     string
-	Case      bool
-	Index     int
-	Files     int
-	Note      string
-	Truncated bool
-	Busy      bool
-	Rows      []searchRow
+	Open         bool
+	Query        string
+	Case         bool
+	Index        int
+	Files        int
+	Total        int
+	Note         string
+	Truncated    bool
+	Busy         bool
+	Scroll       bool
+	ScrollTop    int
+	ScrollHeight int
+	Rows         []searchRow
 }
 
 // searchRow is one content-search match.
@@ -232,6 +236,7 @@ type codeRow struct {
 	MarkClass      string
 	Hint           string
 	ChangeClass    string
+	ChangeCurrent  bool
 	ChangeLine     int
 	Caret          bool
 	CaretLeft      int
@@ -266,6 +271,7 @@ type diffView struct {
 	Del           int
 	TotalAdd      int
 	TotalDel      int
+	Count         int
 	Hunks         int
 	Rows          []diffRow
 	TrackTop      int

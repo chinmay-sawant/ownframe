@@ -55,6 +55,23 @@
 
 .hist-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
 
+.history-current {
+  height: 26px;
+  flex: 0 0 26px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 9.5px;
+  text-align: left;
+}
+.history-current:hover { background-color: var(--panel-2); color: var(--text); }
+.history-current.on { color: var(--text); background-color: var(--panel-3); }
+.history-current-count { color: var(--dim); font-size: 8.5px; }
+
 .hist-list { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 4px 0; }
 
 .branch-panel { display: flex; flex-direction: column; padding: 4px 0; }
@@ -96,9 +113,12 @@
   padding: 0 10px 0 8px;
   overflow: hidden;
   color: var(--muted);
+  text-align: left;
 }
 
 .hist-row:hover { background-color: var(--panel-2); color: var(--text); }
+.hist-graph { display: block; }
+.hist-graph svg { display: block; }
 
 .hist-dot {
   width: 7px;
@@ -116,6 +136,7 @@
   flex: 0 0 52px;
   color: #8492a8;
   font-size: 9px;
+  white-space: nowrap;
 }
 
 /* Two lines of the subject fit the fixed 42 px row. Each line is already

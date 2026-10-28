@@ -7,7 +7,7 @@
       <div class="tab on diff-tab">
         <button class="tab-main" id="tab-working" data-action="history-working" type="button" title="{{if .Diff.CommitShort}}{{.Diff.CommitSubject}}{{else}}Working tree{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
           <svg width="12" height="13" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
-          <span class="tab-name">{{if .Diff.CommitShort}}{{.Diff.CommitShort}}{{else}}Working tree{{end}}</span>
+          <span class="tab-name">{{if .Diff.CommitShort}}{{.Diff.CommitShort}}{{else if eq .Diff.Source "branch"}}Branch changes{{else}}Working tree{{end}}</span>
         </button>
         <button class="tab-x" id="tab-close-working" data-action="tab-close-working" type="button" title="Close Working tree" aria-label="Close Working tree"{{if .Modal}} tabindex="-1"{{end}}>×</button>
       </div>
@@ -186,7 +186,7 @@
     {{else if .Editing}}
       <div class="track" style="top:{{.TrackTop}}px">
         {{range .Rows}}
-        <div class="crow {{.ChangeClass}}">
+        <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
           <span class="cline">{{if .Selection}}<span class="edit-selection" style="left:{{.SelectionLeft}}px;width:{{.SelectionWidth}}px"></span>{{end}}<span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{if .Caret}}<span class="edit-caret" style="left:{{.CaretLeft}}px"></span>{{end}}</span>
@@ -207,7 +207,7 @@
     {{else}}
       <div class="track" style="top:{{.TrackTop}}px">
         {{range .Rows}}
-        <div class="crow {{.ChangeClass}}">
+        <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
           <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
@@ -283,7 +283,7 @@
     {{else}}
       <div class="track" style="top:{{.Second.TrackTop}}px">
         {{range .Second.Rows}}
-        <div class="crow {{.ChangeClass}}">
+        <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           <span class="gutter-mark {{.MarkClass}}">{{.Mark}}</span>
           <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
           <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>

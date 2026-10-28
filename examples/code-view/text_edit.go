@@ -231,6 +231,7 @@ func (a *App) replaceEditRange(ctx context.Context, text string, start, end int,
 	}
 
 	a.pushUndo()
+	a.editRedo = nil
 
 	next := make([]rune, 0, len(runes)-(end-start)+len([]rune(insert)))
 	next = append(next, runes[:start]...)
@@ -284,8 +285,6 @@ func (a *App) pushUndo() {
 	if len(a.editUndo) > editUndoLimit {
 		a.editUndo = a.editUndo[1:]
 	}
-
-	a.editRedo = nil
 }
 
 // pushRedo records the current text before an undo.

@@ -101,6 +101,11 @@ func TestEditCaretFirstClickAndVerticalKeys(t *testing.T) {
 	if r>>8 != 122 || g>>8 != 162 || b>>8 != 247 {
 		t.Fatalf("caret pixel at %d,%d = %d,%d,%d, want accent blue", cx, cy, r>>8, g>>8, b>>8)
 	}
+	top := int(body.Y) + 2*rowH + 2
+	r, g, b, _ = img.At(cx, top).RGBA()
+	if r>>8 != 122 || g>>8 != 162 || b>>8 != 247 {
+		t.Fatalf("caret top pixel at %d,%d = %d,%d,%d, want accent blue", cx, top, r>>8, g>>8, b>>8)
+	}
 	for _, step := range []struct {
 		key  string
 		line int

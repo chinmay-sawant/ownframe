@@ -250,6 +250,124 @@ func TestHistoryPaneAndCommitExpand(t *testing.T) {
 	}
 }
 
+func TestHistoryFileNavigatorStaysWithinSelectedCommit(t *testing.T) {
+	app, hashes := newHistoryApp(t)
+	commit := app.findCommit(hashes[0])
+	commit.Files = []commitFile{{Path: "app.go", Add: 2}, {Path: "other.go", Add: 1}}
+	app.commitDetails[commitDetailKey(hashes[0], "app.go")] = &changedFile{Path: "app.go", Hunks: []hunk{
+		{NewStart: 1, Lines: []diffLine{{Kind: '+', NewNo: 1, Text: "commit first"}}},
+		{NewStart: 10, Lines: []diffLine{{Kind: '+', NewNo: 10, Text: "commit second"}}},
+	}}
+	app.commitDetails[commitDetailKey(hashes[0], "other.go")] = &changedFile{Path: "other.go", Hunks: []hunk{
+		{NewStart: 1, Lines: []diffLine{{Kind: '+', NewNo: 1, Text: "other commit file"}}},
+	}}
+	app.toggleCommit(context.Background(), hashes[0])
+	if nav := app.View().FileNav; nav.Total != 2 || nav.Name != "app.go" || nav.Add != 2 || !nav.CanNextChange {
+		t.Fatalf("commit navigator = %+v", nav)
+	}
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "file-nav-change-next"}); err != nil {
+		t.Fatal(err)
+	}
+	if app.diffSource != "commit" || app.commitFile != "app.go" || !app.changeNav.valid {
+		t.Fatalf("change navigation left commit: source=%q file=%q nav=%+v", app.diffSource, app.commitFile, app.changeNav)
+	}
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "file-nav-next"}); err != nil {
+		t.Fatal(err)
+	}
+	if view := app.View(); view.Diff.Source != "commit" || view.Diff.Path != "other.go" || view.FileNav.Total != 2 {
+		t.Fatalf("next commit file: diff=%+v nav=%+v", view.Diff, view.FileNav)
+	}
+	var text string
+	for _, row := range app.View().Diff.Rows {
+		text += lineText(row.Left) + lineText(row.Right)
+	}
+	if !strings.Contains(text, "other commit file") || strings.Contains(text, "working change") {
+		t.Fatalf("navigated patch = %q", text)
+	}
+	app.toggleCommit(context.Background(), hashes[1])
+	if nav := app.View().FileNav; nav.Total != 1 || nav.Name != "app.go" {
+		t.Fatalf("different commit navigator = %+v", nav)
+	}
+	app.showWorkingDiff()
+	if view := app.View(); view.Diff.Source != "working" || view.FileNav.Total != 1 || view.FileNav.Name != "README.md" {
+		t.Fatalf("working navigator: diff=%+v nav=%+v", view.Diff, view.FileNav)
+	}
+}
+
+func TestCommitPatchArrivalRevealsFirstChange(t *testing.T) {
+	app := newTestApp(t)
+	commit := &app.commits.Commits[0]
+	path := commit.Files[0].Path
+	key := commitDetailKey(commit.Hash, path)
+	delete(app.commitDetails, key)
+	app.patchLoader = &commitPatchLoader{results: make(chan commitPatchResult, 1)}
+	app.mode = "changes"
+	app.selectCommitFile(context.Background(), commit.Hash, path)
+	if app.firstChangePending != key {
+		t.Fatal("missing pending first change")
+	}
+	app.patchLoader.results <- commitPatchResult{Key: key, File: &changedFile{Path: path, Hunks: []hunk{{
+		NewStart: 80, Lines: []diffLine{{Kind: '+', NewNo: 80, Text: "change"}},
+	}}}}
+	app.pollPatches(context.Background())
+	if app.firstChangePending != "" || !app.changeNav.valid || app.changeNav.path != path {
+		t.Fatalf("patch arrival: pending=%q navigation=%+v", app.firstChangePending, app.changeNav)
+	}
+}
+
+func TestHistorySidebarUsesSelectedCommit(t *testing.T) {
+	app, hashes := newHistoryApp(t)
+	commit := app.findCommit(hashes[0])
+	commit.Files = nil
+	for i := 0; i < 20; i++ {
+		path := fmt.Sprintf("commit-%02d.go", i)
+		commit.Files = append(commit.Files, commitFile{Path: path, Status: "A", Add: i + 1})
+		app.commitDetails[commitDetailKey(commit.Hash, path)] = &changedFile{Path: path, Status: "A"}
+	}
+	commit.Add, commit.Del = 210, 0
+	app.toggleCommit(context.Background(), hashes[0])
+	view := app.View()
+	if view.Diff.Source != "commit" || view.Diff.Count != 20 || view.Diff.TotalAdd != 210 ||
+		len(view.Diff.Files) == 0 || view.Diff.Files[0].Path != "commit-00.go" || !view.Diff.Files[0].Selected {
+		t.Fatalf("commit sidebar = %+v", view.Diff)
+	}
+	if html := renderAppHTML(t, app); !strings.Contains(html, ">Commit "+commit.Short+" ↩</button>") {
+		t.Fatal("commit sidebar heading is missing")
+	}
+	claimed, err := app.onDragStart(context.Background(), ownframe.Box{ID: "changes-thumb"})
+	if err != nil || !claimed {
+		t.Fatalf("claim commit scrollbar: claimed=%v err=%v", claimed, err)
+	}
+	if err := app.onDragMove(context.Background(), 0, 100000); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.onDragEnd(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	view = app.View()
+	if !view.Diff.Scroll || !view.Diff.AtEnd || view.Diff.Files[len(view.Diff.Files)-1].Path != "commit-19.go" {
+		t.Fatalf("scrolled commit sidebar = %+v", view.Diff)
+	}
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "diff-file:commit-19.go"}); err != nil {
+		t.Fatal(err)
+	}
+	if view = app.View(); view.Diff.Source != "commit" || view.Diff.Path != "commit-19.go" ||
+		!view.Diff.Files[len(view.Diff.Files)-1].Selected {
+		t.Fatalf("selected commit sidebar file = %+v", view.Diff)
+	}
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	clickID(t, app, "history-working")
+	if view = app.View(); view.Diff.Source != "working" || view.Diff.Count != 1 ||
+		len(view.Diff.Files) != 1 || view.Diff.Files[0].Path != "README.md" {
+		t.Fatalf("restored working sidebar = %+v", view.Diff)
+	}
+	if html := renderAppHTML(t, app); !strings.Contains(html, ">Working tree</button>") {
+		t.Fatal("working tree sidebar heading is missing")
+	}
+}
+
 func TestHistoryRefreshAddsCommit(t *testing.T) {
 	app, _ := newHistoryApp(t)
 	dir := app.ws.Root

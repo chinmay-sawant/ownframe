@@ -14,7 +14,7 @@ func (a *App) changedLinesFor(path string) map[int]inlineLine {
 }
 
 // decorateCodeRows adds gutter marks and a subtle line tint to source rows.
-func (a *App) decorateCodeRows(doc *fileDoc, rows []codeRow) {
+func (a *App) decorateCodeRows(doc *fileDoc, rows []codeRow, group int) {
 	if doc == nil || len(rows) == 0 {
 		return
 	}
@@ -25,6 +25,39 @@ func (a *App) decorateCodeRows(doc *fileDoc, rows []codeRow) {
 	}
 
 	marks := gutterMarks(changes)
+	lines := inlineChangeLines(changes)
+	scroll := a.scrollY
+	if a.split {
+		scroll = a.scrollGroup[group]
+	}
+	current := scroll / rowH
+	if a.changeNav.valid && a.changeNav.path == doc.Path && a.changeNav.mode == a.mode &&
+		a.changeNav.group == group && a.changeNav.scroll == scroll {
+		current = a.changeNav.row
+	}
+	selected := lines[0]
+	for i, line := range lines {
+		if i > 0 && line == lines[i-1]+1 {
+			continue
+		}
+		visual := line - 1
+		if a.wrap {
+			visual = doc.wrapped(a.codeColsForGroup(group)).firstRow(visual)
+		}
+		if visual > current {
+			break
+		}
+		selected = line
+	}
+	selectedEnd := selected
+	for _, line := range lines {
+		if line > selectedEnd+1 {
+			break
+		}
+		if line == selectedEnd+1 {
+			selectedEnd = line
+		}
+	}
 
 	for i := range rows {
 		row := &rows[i]
@@ -37,6 +70,7 @@ func (a *App) decorateCodeRows(doc *fileDoc, rows []codeRow) {
 
 		row.ChangeLine = line
 		row.ChangeClass = inlineRowClass(change.Kind)
+		row.ChangeCurrent = line >= selected && line <= selectedEnd
 
 		if row.No == 0 {
 			continue

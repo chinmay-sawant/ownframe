@@ -7,6 +7,8 @@ import (
 
 const searchWindowRows = 8
 
+const searchRowHeight = 44
+
 const searchResultLimit = 200
 
 // searchReply carries one async workspace search back to the page loop.
@@ -23,6 +25,7 @@ func (a *App) searchViewState() searchView {
 		Case:      a.searchCase,
 		Index:     a.searchIndex,
 		Files:     countSearchFiles(a.searchHits),
+		Total:     len(a.searchHits),
 		Note:      a.searchNote,
 		Truncated: a.searchTruncated,
 		Busy:      a.searchBusy,
@@ -31,8 +34,10 @@ func (a *App) searchViewState() searchView {
 		return s
 	}
 
-	start := max(0, a.searchIndex-searchWindowRows/2)
-	end := min(start+searchWindowRows, len(a.searchHits))
+	start, end := a.searchScroll.Rows(len(a.searchHits), searchWindowRows)
+	s.ScrollTop, s.ScrollHeight, s.Scroll = a.searchScroll.Thumb(
+		searchWindowRows*searchRowHeight, len(a.searchHits), searchWindowRows, paneThumbMin,
+	)
 
 	for i := start; i < end; i++ {
 		hit := a.searchHits[i]
@@ -80,7 +85,10 @@ func (a *App) openWorkspaceSearch(ctx context.Context) error {
 		return err
 	}
 
-	return a.page.Edit().SelectAll(ctx)
+	if a.searchQuery != "" {
+		return a.page.Edit().SelectAll(ctx)
+	}
+	return nil
 }
 
 // closeWorkspaceSearch hides the panel and clears the query.
@@ -92,6 +100,8 @@ func (a *App) closeWorkspaceSearch(ctx context.Context) error {
 	a.searchCase = false
 	a.searchHits = nil
 	a.searchIndex = 0
+	a.searchScroll = historyScroll{}
+	a.searchDrag = false
 	a.searchNote = ""
 	a.searchTruncated = false
 	a.searchBusy = false
@@ -120,6 +130,7 @@ func (a *App) runWorkspaceSearch(ctx context.Context) {
 	if query == "" {
 		a.searchHits = nil
 		a.searchIndex = 0
+		a.searchScroll = historyScroll{}
 		a.searchNote = ""
 		a.searchTruncated = false
 		a.searchBusy = false
@@ -167,6 +178,7 @@ func (a *App) receiveSearch(ctx context.Context) bool {
 			a.searchTruncated = reply.Result.Truncated
 			a.searchBusy = false
 			a.searchIndex = 0
+			a.searchScroll = historyScroll{}
 			a.refresh()
 
 			if err := a.page.Redraw(ctx); err != nil {
@@ -213,6 +225,20 @@ func (a *App) searchStep(delta int) {
 	}
 
 	a.searchIndex = (a.searchIndex + delta + len(a.searchHits)) % len(a.searchHits)
+	if a.searchIndex < a.searchScroll.Offset {
+		a.searchScroll.SetOffset(a.searchIndex, len(a.searchHits), searchWindowRows)
+	} else if a.searchIndex >= a.searchScroll.Offset+searchWindowRows {
+		a.searchScroll.SetOffset(a.searchIndex-searchWindowRows+1, len(a.searchHits), searchWindowRows)
+	}
+	a.refresh()
+}
+
+func (a *App) scrollSearchTo(offset int) {
+	a.searchScroll.SetOffset(offset, len(a.searchHits), searchWindowRows)
+	start, end := a.searchScroll.Rows(len(a.searchHits), searchWindowRows)
+	if end > start {
+		a.searchIndex = max(start, min(a.searchIndex, end-1))
+	}
 	a.refresh()
 }
 
