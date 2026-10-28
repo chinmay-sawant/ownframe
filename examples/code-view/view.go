@@ -294,6 +294,8 @@ type diffView struct {
 	Path          string
 	Name          string
 	Dir           string
+	NameShort     string
+	DirShort      string
 	Lang          string
 	Badge         string
 	Add           int

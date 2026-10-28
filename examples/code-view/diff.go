@@ -102,6 +102,69 @@ func clipDiffRows(rows []diffRow, unified, split int) {
 	}
 }
 
+// clipDiffPath clips the diff header name and directory to the crumbs width.
+// The engine wraps the name and directory onto two lines instead of
+// truncating them, so the header clips the strings in Go and marks the cut
+// with an ellipsis. The budget mirrors components/editor.css: the crumbs bar
+// keeps 13 px left and 10 px right padding, and the right control group
+// (status, counts, Unified/Split, hunk arrows, Wrap, Refresh, hunks) takes
+// about 360 px. Below 1120 px the directory and hunks meta hide, so the
+// directory is dropped and the reserve shrinks.
+const (
+	crumbsPadPx         = 23
+	crumbsRightWidePx   = 360
+	crumbsRightNarrowPx = 310
+	crumbsNarrowPx      = 1120
+	crumbsMonoPx        = 6.0
+)
+
+// clipDiffPath keeps the diff header on one line within paneWidth. It returns
+// the display name and directory; the directory is empty when it is hidden
+// or does not fit.
+func clipDiffPath(paneWidth, windowWidth int, name, dir string) (string, string) {
+	if windowWidth <= crumbsNarrowPx {
+		dir = ""
+	}
+
+	right := crumbsRightWidePx
+	if windowWidth <= crumbsNarrowPx {
+		right = crumbsRightNarrowPx
+	}
+
+	budget := int(float64(paneWidth-crumbsPadPx-right) / crumbsMonoPx)
+
+	nr := []rune(name)
+	dr := []rune(dir)
+
+	if len(nr)+1+len(dr) <= budget {
+		return name, dir
+	}
+
+	if len(nr) == 0 {
+		return "", ""
+	}
+
+	if len(nr)+1 < budget {
+		take := budget - len(nr) - 2
+		if take < 1 {
+			take = 1
+		}
+
+		return name, string(dr[:take]) + "…"
+	}
+
+	take := budget - 1
+	if take < 1 {
+		take = 1
+	}
+
+	if take > len(nr) {
+		take = len(nr)
+	}
+
+	return string(nr[:take]) + "…", ""
+}
+
 // clipSegments keeps at most max runes and marks the cut with an ellipsis.
 func clipSegments(segs []segment, max int) []segment {
 	if max < 1 {

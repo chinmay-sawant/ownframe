@@ -1141,6 +1141,8 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 	d.Path = file.Path
 	d.Name = baseName(file.Path)
 	d.Dir = dirName(file.Path)
+	winW, _ := a.page.Size()
+	d.NameShort, d.DirShort = clipDiffPath(v.PaneWidth, winW, d.Name, d.Dir)
 	d.Lang = languageOf(file.Path)
 	d.Badge = languageInfo(languageOf(file.Path)).Badge
 	d.Status = file.Status

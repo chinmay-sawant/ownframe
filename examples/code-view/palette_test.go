@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"testing"
+
+	"github.com/chinmay-sawant/ownframe"
 )
 
 // TestPaletteInMemoryMatchesAppearFirst verifies that in-memory matches from
@@ -248,5 +251,78 @@ func TestPaletteMaxRowsCapsAtEight(t *testing.T) {
 
 	if len(rows) != paletteMaxRows {
 		t.Fatalf("expected exactly %d rows, got %d", paletteMaxRows, len(rows))
+	}
+}
+
+// TestPaletteLongDirTruncates verifies that a quick-open row with a long
+// subdirectory stays inside the palette panel: the row keeps its 38px height
+// and the directory text truncates with an ellipsis instead of painting past
+// the panel edge.
+func TestPaletteLongDirTruncates(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "README.md", "# Test\n")
+	writeFile(t, dir, "services/very-long-directory-name-here/subfolder/deeper-level/and-deeper-still/even-more-nesting-here/final-destination/with-one-more-extremely-long-segment-added/nested-deep-deploy-target.go", "package nested\n")
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+
+	if err := app.onClick(context.Background(), ownframe.Box{Action: "palette-open"}); err != nil {
+		t.Fatalf("palette-open: %v", err)
+	}
+
+	app.paletteQuery = "deploy"
+	app.refresh()
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatalf("redraw: %v", err)
+	}
+
+	boxes := app.Page().Boxes()
+	panel, ok := boxByID(boxes, "palette-panel")
+	if !ok {
+		t.Fatal("missing palette-panel box")
+	}
+
+	for _, b := range boxes {
+		if len(b.ID) <= 8 || b.ID[:8] != "palette-" {
+			continue
+		}
+		if id := b.ID; id == "palette-panel" || id == "palette-layer" || id == "palette-back" || id == "palette-close" {
+			continue
+		}
+		if b.H != 38 {
+			t.Errorf("row %s height = %.1f, want 38", b.ID, b.H)
+		}
+		if b.X+b.W > panel.X+panel.W+1 {
+			t.Errorf("row %s right edge %.1f escapes panel right %.1f", b.ID, b.X+b.W, panel.X+panel.W)
+		}
+	}
+
+	display := app.Page().Probe().Display()
+	if display == nil {
+		t.Fatal("page fell back to a bitmap")
+	}
+	scale := display.PixelPerPoint
+	if scale == 0 {
+		scale = 96.0 / 72.0
+	}
+
+	foundDir := false
+	for _, op := range display.Ops {
+		if op.Text == "" || !strings.Contains(op.Text, "very-long-directory") {
+			continue
+		}
+		foundDir = true
+		if right := (op.X + op.W) * scale; right > panel.X+panel.W+1 {
+			t.Errorf("dir text paints to %.1f, past panel right %.1f", right, panel.X+panel.W)
+		}
+		if !strings.HasSuffix(op.Text, "...") {
+			t.Errorf("dir text %q is not truncated with an ellipsis", op.Text)
+		}
+	}
+	if !foundDir {
+		t.Error("long dir text not found in palette rows")
 	}
 }
