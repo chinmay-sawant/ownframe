@@ -142,3 +142,102 @@ func hasClass(list, name string) bool {
 
 	return false
 }
+
+// TestIgnoredDirExpands builds a repository with an ignored dist/app.js and
+// checks the folder expands to a dimmed child row, and that a rescan keeps
+// the folder open.
+func TestIgnoredDirExpands(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+
+	dir := t.TempDir()
+	runGit(t, dir, "init", "-q")
+
+	writeFile(t, dir, ".gitignore", "dist/\n")
+	writeFile(t, dir, "main.go", "package main\n\nfunc main() {}\n")
+	writeFile(t, dir, "dist/app.js", "console.log(1)\n")
+
+	app, err := New(dir)
+	if err != nil {
+		t.Fatalf("New(%q): %v", dir, err)
+	}
+
+	if err := app.Page().Redraw(context.Background()); err != nil {
+		t.Fatalf("redraw: %v", err)
+	}
+
+	rows := treeRowsByPath(app)
+	if _, ok := rows["dist"]; !ok {
+		t.Fatal(`missing tree row "dist"`)
+	}
+
+	if !rows["dist"].Ignored {
+		t.Error(`tree row "dist" has Ignored=false, want true`)
+	}
+
+	if !rows["dist"].IgnoredNote {
+		t.Error(`tree row "dist" has IgnoredNote=false, want the label on the topmost ignored row`)
+	}
+
+	if _, ok := rows["dist/app.js"]; ok {
+		t.Error(`"dist/app.js" is visible before expanding "dist"`)
+	}
+
+	app.toggleFolder("dist")
+
+	rows = treeRowsByPath(app)
+	child, ok := rows["dist/app.js"]
+	if !ok {
+		t.Fatal(`expanding "dist" did not list "dist/app.js"`)
+	}
+
+	if child.Dir {
+		t.Error(`"dist/app.js" is a directory row, want a file row`)
+	}
+
+	if !child.Ignored {
+		t.Error(`"dist/app.js" has Ignored=false, want true`)
+	}
+
+	if child.IgnoredNote {
+		t.Error(`"dist/app.js" has IgnoredNote=true, want no repeated label under an ignored parent`)
+	}
+
+	if !rows["dist"].Ignored {
+		t.Error(`"dist" lost its ignored flag after expanding`)
+	}
+
+	meta := app.ws.ByPath["dist/app.js"]
+	if meta == nil {
+		t.Fatal(`"dist/app.js" missing from the file index`)
+	}
+
+	if !meta.Ignored {
+		t.Error(`file index "dist/app.js" has Ignored=false, want true`)
+	}
+
+	next, delta, err := rescanDiskWorkspace(dir, app.ws, app.ws.Limit)
+	if err != nil {
+		t.Fatalf("rescan: %v", err)
+	}
+
+	app.installRescan(next, delta)
+
+	if !app.folders["dist"] {
+		t.Fatal("rescan dropped the expanded ignored folder")
+	}
+
+	if _, ok := treeRowsByPath(app)["dist/app.js"]; !ok {
+		t.Fatal(`"dist/app.js" missing after rescan`)
+	}
+}
+
+func treeRowsByPath(app *App) map[string]treeRow {
+	rows := make(map[string]treeRow, len(app.View().Tree))
+	for _, row := range app.View().Tree {
+		rows[row.Path] = row
+	}
+
+	return rows
+}

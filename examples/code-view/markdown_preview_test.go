@@ -67,7 +67,7 @@ func TestPreviewRows(t *testing.T) {
 		}
 	}
 
-	if anchors[0] != 0 {
+	if anchors[0] != 1 {
 		t.Fatalf("heading anchor = %d", anchors[0])
 	}
 }
@@ -440,6 +440,8 @@ func TestPreviewLongParagraphUsesOneRowPerLine(t *testing.T) {
 	var rowsForParagraph []string
 
 	gaps := 0
+	seenPara := false
+	donePara := false
 
 	for i, row := range rows {
 		text := lineText(row.Segments)
@@ -449,10 +451,19 @@ func TestPreviewLongParagraphUsesOneRowPerLine(t *testing.T) {
 
 		switch row.Kind {
 		case "gap":
-			gaps++
+			// The breathing rows at the very top and bottom frame the
+			// content; only a gap between paragraphs separates them.
+			if seenPara && !donePara {
+				gaps++
+			}
 		case "p":
-			if gaps == 0 {
-				rowsForParagraph = append(rowsForParagraph, text)
+			seenPara = true
+			if !donePara {
+				if gaps == 0 {
+					rowsForParagraph = append(rowsForParagraph, text)
+				} else {
+					donePara = true
+				}
 			}
 		}
 	}
@@ -586,7 +597,6 @@ func TestPreviewMermaidFlowchart(t *testing.T) {
 	rows, anchors := previewRows(lines, 80)
 	diagrams := 0
 	marked := false
-	painted := false
 
 	for _, row := range rows {
 		if row.Kind == "diagram" {
@@ -597,10 +607,6 @@ func TestPreviewMermaidFlowchart(t *testing.T) {
 			marked = true
 		}
 
-		if row.Image != "" && len(row.png) > 0 && row.ImageW > 0 {
-			painted = true
-		}
-
 		if row.Kind == "code" {
 			t.Fatalf("mermaid source stayed code: %q", lineText(row.Segments))
 		}
@@ -608,10 +614,6 @@ func TestPreviewMermaidFlowchart(t *testing.T) {
 
 	if diagrams == 0 {
 		t.Fatal("flowchart produced no diagram rows")
-	}
-
-	if !painted {
-		t.Fatal("flowchart produced no diagram image")
 	}
 
 	if !marked {
@@ -639,20 +641,16 @@ func TestPreviewMermaidSequence(t *testing.T) {
 	}
 
 	rows, anchors := previewRows(lines, 80)
-	painted := false
 
-	for _, row := range rows {
+	// The first and last rows are the top/bottom breathing rows.
+	if len(rows) < 3 || rows[0].Kind != "gap" || rows[len(rows)-1].Kind != "gap" {
+		t.Fatal("sequence preview lost its breathing rows")
+	}
+
+	for _, row := range rows[1 : len(rows)-1] {
 		if row.Kind != "diagram" {
 			t.Errorf("sequence row kind = %q", row.Kind)
 		}
-
-		if row.Image != "" && len(row.png) > 0 {
-			painted = true
-		}
-	}
-
-	if !painted {
-		t.Fatal("sequence diagram produced no image")
 	}
 
 	for i := 1; i <= 5; i++ {
@@ -707,7 +705,8 @@ func TestPreviewReflowWidth(t *testing.T) {
 	short := &fileDoc{Lines: []string{"One short line."}}
 	short.ensurePreview()
 
-	if len(short.Preview) != 1 {
+	// One content row plus the top and bottom breathing rows.
+	if len(short.Preview) != 3 {
 		t.Errorf("default preview rows = %d", len(short.Preview))
 	}
 }
@@ -724,20 +723,16 @@ func TestPreviewMermaidPie(t *testing.T) {
 	}
 
 	rows, anchors := previewRows(lines, previewDefaultCols)
-	painted := false
+	noted := false
 
 	for _, row := range rows {
-		if row.Image != "" && len(row.png) > 0 {
-			painted = true
-		}
-
-		if row.Kind == "code" {
-			t.Fatalf("pie source stayed code: %q", lineText(row.Segments))
+		if row.Kind == "diagram" {
+			noted = true
 		}
 	}
 
-	if !painted {
-		t.Fatal("pie diagram produced no image")
+	if !noted {
+		t.Fatal("pie diagram produced no diagram note")
 	}
 
 	for i := 1; i <= 3; i++ {

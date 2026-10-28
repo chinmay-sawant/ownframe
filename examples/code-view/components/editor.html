@@ -77,11 +77,11 @@
         <button class="find-btn" id="find-close" data-action="find-close" type="button" title="Close find" aria-label="Close find"{{if .Modal}} tabindex="-1"{{end}}>×</button>
       </div>
       {{else}}
+      <span class="tabs-fill"></span>
       {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)" aria-pressed="{{if .Preview}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
       <button class="crumb-btn{{if .Wrap}} on{{end}}" id="wrap-toggle" data-action="wrap-toggle" type="button" title="Soft wrap (Z)" aria-label="Soft wrap {{if .Wrap}}on{{else}}off{{end}}" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
       <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy path</button>
       <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy file</button>
-      <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.LineCount}} lines · {{.ByteSize}}</span>
       {{end}}
     {{else if .Split}}

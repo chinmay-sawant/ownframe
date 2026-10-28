@@ -83,20 +83,41 @@ type View struct {
 	PaneWidth  int
 	Second     secondaryView
 
-	Diff         diffView
-	History      historyView
-	Outline      []symbolRow
-	Toast        toastView
-	SettingsOpen bool
-	Themes       []themeRow
-	Palette      paletteView
-	PaletteQuery string
-	SearchQuery  string
-	Search       searchView
-	FileNav      fileNavView
-	ChangeLabel  string
-	CommitTip    commitFloatView
-	InlineCard   inlineCard
+	Diff          diffView
+	History       historyView
+	Outline       []symbolRow
+	Toast         toastView
+	SettingsOpen  bool
+	Themes        []themeRow
+	Palette       paletteView
+	PaletteQuery  string
+	SearchQuery   string
+	Search        searchView
+	FileNav       fileNavView
+	ChangeLabel   string
+	CommitTip     commitFloatView
+	InlineCard    inlineCard
+	FileMenu      bool
+	ProjectOpen   bool
+	ProjectQuery  string
+	RecentOpen    bool
+	RecentFlyX    int
+	RecentFlyY    int
+	RecentRoots   []recentRootRow
+	QuickRoots    []recentRootRow
+	BrowseOpen    bool
+	BrowseRoot    string
+	BrowseName    string
+	BrowseEntries []recentRootRow
+	IsWSL         bool
+	Alert         string
+}
+
+// recentRootRow is one recently opened project root.
+type recentRootRow struct {
+	Path   string
+	Name   string
+	Active bool
 }
 
 // menuViewRow is one right-click row the page paints itself.
@@ -205,11 +226,15 @@ type searchRow struct {
 
 // treeRow is one file or folder in the explorer.
 type treeRow struct {
-	Path        string
-	Name        string
-	Dir         bool
-	Open        bool
-	Ignored     bool
+	Path    string
+	Name    string
+	Dir     bool
+	Open    bool
+	Ignored bool
+	// IgnoredNote renders the "ignored" pill. It is set only on the
+	// topmost ignored row; children of an ignored parent stay dim
+	// without repeating the label.
+	IgnoredNote bool
 	Indent      int
 	Lang        string
 	Badge       string

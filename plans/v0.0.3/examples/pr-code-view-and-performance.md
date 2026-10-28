@@ -21,7 +21,7 @@ This branch adds the Code Review example and the six-phase hot-path pass in `pla
 
 The default frame is 1500×900. The minimum is 720×540. The activity bar switches Explorer and Source Control and opens quick open, Details, Settings, and the devtools dock. Devtools start on. A saved session does not hide the dock unless the launch passes `-dev=false`. `-perf` defaults to on. The host scrollbar is `ScrollbarHidden`. Each editor pane paints its own thumb. Ctrl+wheel and the zoom chords do not scale the page.
 
-The editor has two groups with separate vertical offsets, in-place edit, soft wrap, horizontal scroll when wrap is off, gutter marks, and an in-page tab and edit menu. Source Control reads `git diff HEAD` plus untracked files. History shows up to 20 commits at first and grows on a worker. The branch picker loads another branch's log without changing the checkout. `Ctrl+P`, `Ctrl+F`, and `Ctrl+Shift+F` cover quick open, in-file find, and workspace search. Markdown preview renders fixed 20 px rows, including tables and a Mermaid image. Settings stores one of six themes on the workspace session: Midnight, Dracula Night, Light, Solarized Light, Nord, and High Contrast.
+The editor has two groups with separate vertical offsets, in-place edit, soft wrap, horizontal scroll when wrap is off, gutter marks, and an in-page tab and edit menu. Source Control reads `git diff HEAD` plus untracked files. History shows up to 20 commits at first and grows on a worker. The branch picker loads another branch's log without changing the checkout. `Ctrl+P`, `Ctrl+F`, and `Ctrl+Shift+F` cover quick open, in-file find, and workspace search. Markdown preview renders fixed 20 px rows, including tables and text flowcharts and sequence diagrams. Settings stores one of six themes on the workspace session: Midnight, Dracula Night, Light, Solarized Light, Nord, and High Contrast.
 
 The session file lives under the user config directory, mode `0700` for the directory and `0600` for the file. Paths stored in it are workspace-relative.
 
@@ -60,7 +60,7 @@ Linux desktop `Run` can dial AT-SPI and report `Live() == true` after the name i
 
 ### Dependencies
 
-The library `go.mod` is unchanged. The examples module adds `github.com/fsnotify/fsnotify v1.10.1` and `github.com/bvolpato/mermaid-go-renderer v0.11.1` for the watcher and the Mermaid preview.
+The library `go.mod` is unchanged. The examples module adds `github.com/fsnotify/fsnotify v1.10.1` for the watcher.
 
 ## Impact
 
@@ -70,7 +70,7 @@ The library `go.mod` is unchanged. The examples module adds `github.com/fsnotify
 | **Memory** | Diff arena, wrap plan, layer scratch, and draw options are reused. Syntax cache holds tokenized lines for the process. The viewport keeps one spare window-sized texture. |
 | **Behavior / correctness** | Code Review is a new example. Serve ticks and captures wheel and keys. Linux desktop startup may publish an AT-SPI tree. Textarea paste keeps newlines. Ctrl+Shift+V no longer pastes. |
 | **API / CLI** | New menu methods, two zoom flags, and `ServeOptions.Listener`. Existing `Page` method signatures that moved files did not change. |
-| **Dependencies** | Examples module only: fsnotify and mermaid-go-renderer. |
+| **Dependencies** | Examples module only: fsnotify. |
 | **Binary size / build time** | Not measured. |
 
 ## Breaking changes / migration

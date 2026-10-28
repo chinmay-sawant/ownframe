@@ -15,12 +15,12 @@ func TestEnginePauseDuringLoad(t *testing.T) {
 	engine.Pause()
 
 	waitVoice(t, engine)
-	if voice.playing {
+	if voice.Playing() {
 		t.Fatal("a paused engine started the voice")
 	}
 
 	engine.Toggle()
-	if !voice.playing {
+	if !voice.Playing() {
 		t.Fatal("toggle did not resume")
 	}
 }
@@ -32,8 +32,7 @@ func TestEngineEnded(t *testing.T) {
 	engine.Want(context.Background(), "jazz", 0)
 	waitVoice(t, engine)
 
-	voice.playing = false
-	voice.pos = voice.dur
+	voice.finish()
 
 	if !engine.Ended() {
 		t.Fatal("Ended = false at the end")
@@ -52,8 +51,8 @@ func TestEngineSeekFraction(t *testing.T) {
 	waitVoice(t, engine)
 
 	engine.SeekFraction(0.25)
-	if voice.pos != 15*time.Second {
-		t.Fatalf("pos = %v", voice.pos)
+	if voice.Position() != 15*time.Second {
+		t.Fatalf("pos = %v", voice.Position())
 	}
 }
 

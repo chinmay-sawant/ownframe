@@ -52,7 +52,7 @@
   padding: 0 3px 0 9px;
 }
 
-.tab-name { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; font-size: 9.5px; line-height: 1.15; }
+.tab-name { flex: 1 1 auto; min-width: 0; max-width: 100%; max-height: 22px; overflow: hidden; font-size: 9.5px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere; }
 
 .tab-status {
   width: 16px;
@@ -105,18 +105,21 @@
   color: var(--muted);
   font-size: 10px;
   white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.lang-pill { height: 16px; display: inline-flex; align-items: center; padding: 0 6px; border-radius: 4px; font-size: 8.5px; font-weight: 750; letter-spacing: 0.02em; }
-.crumb-path { min-width: 0; overflow: hidden; color: var(--dim); font-family: var(--mono); font-size: 9.5px; }
-.diff-path { flex: 0 1 auto; white-space: nowrap; }
-.diff-path b, .diff-dir { white-space: nowrap; }
+.lang-pill { flex: 0 0 auto; height: 16px; display: inline-flex; align-items: center; padding: 0 6px; border-radius: 4px; font-size: 8.5px; font-weight: 750; letter-spacing: 0.02em; }
+.crumb-path { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; color: var(--dim); font-family: var(--mono); font-size: 9.5px; line-height: 20px; white-space: nowrap; text-overflow: ellipsis; }
+.diff-path { flex: 0 1 auto; min-width: 0; max-width: 100%; max-height: 24px; overflow: hidden; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
+.diff-path b, .diff-dir { white-space: normal; overflow-wrap: anywhere; }
 .diff-dir { color: var(--dim); }
-.crumb-path b { color: var(--muted); font-weight: 500; }
+.crumb-path b { color: var(--muted); font-weight: 500; white-space: nowrap; }
 .crumb-stats { display: flex; gap: 6px; font-family: var(--mono); font-size: 9px; font-weight: 700; }
-.crumb-meta { color: var(--dim); font-size: 9.5px; }
+.crumb-meta { flex: 0 0 auto; color: var(--dim); font-size: 9.5px; white-space: nowrap; }
 
 .crumb-btn {
+  flex: 0 0 auto;
   height: 20px;
   display: inline-flex;
   align-items: center;
@@ -135,6 +138,8 @@
   width: 190px;
   min-width: 80px;
   height: 21px;
+  line-height: 21px;
+  text-align: left;
   padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 4px;

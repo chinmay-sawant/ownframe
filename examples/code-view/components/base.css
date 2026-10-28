@@ -85,6 +85,11 @@ button:focus-visible, input:focus-visible {
 #act-search:focus, #act-search:focus-visible, #act-settings:focus, #act-settings:focus-visible { outline: 0; }
 #act-search:focus-visible, #act-settings:focus-visible { background-color: var(--panel-3); }
 
+.file-item:focus, .file-item:focus-visible { outline: 0; }
+.file-item:focus-visible { background-color: var(--panel-3); }
+.file-item.on:focus-visible { background-color: var(--accent-soft); }
+.project-input:focus { outline: 0; }
+
 .void { display: block; height: 0; }
 .scroll-space { display: block; width: 1px; }
 

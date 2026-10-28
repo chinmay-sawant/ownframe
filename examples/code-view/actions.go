@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -20,12 +21,22 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	switch {
 	case action == "":
 		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" ||
-			box.ID == "workspace-search" || box.ID == "editor" || box.ID == "edit-surface" {
+			box.ID == "workspace-search" || box.ID == "editor" || box.ID == "edit-surface" || box.ID == "project-path" ||
+			box.ID == "drawer-path" {
 			return nil
 		}
 
 		if a.inlineCard.Show {
 			a.closeInlineCard()
+		}
+
+		if a.fileMenu && !strings.HasPrefix(box.ID, "file-") &&
+			!strings.HasPrefix(box.ID, "project-") && !strings.HasPrefix(box.ID, "recent-") &&
+			!strings.HasPrefix(box.ID, "browse-") && !strings.HasPrefix(box.ID, "quick-") {
+			a.fileMenu = false
+			a.projectOpen = false
+			a.recentOpen = false
+			a.refresh()
 		}
 
 		return a.page.Form().Focus(ctx, "")
@@ -107,6 +118,161 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.settingsOpen = false
 		a.refresh()
 		return a.page.Form().Focus(ctx, "act-settings")
+	case action == "file-menu-open":
+		a.fileMenu = !a.fileMenu
+		if !a.fileMenu {
+			a.projectOpen = false
+			a.recentOpen = false
+			a.browseOpen = false
+		}
+		a.paletteOpen = false
+		a.searchOpen = false
+		a.branchOpen = false
+		a.settingsOpen = false
+		a.refresh()
+
+		if a.fileMenu {
+			return a.page.Form().Focus(ctx, "drawer-path")
+		}
+
+		return a.page.Form().Focus(ctx, "")
+	case action == "file-menu-close":
+		a.fileMenu = false
+		a.projectOpen = false
+		a.recentOpen = false
+		a.browseOpen = false
+		a.fileAlert = ""
+		a.refresh()
+		return a.page.Form().Focus(ctx, "")
+	case action == "file-reset":
+		a.resetLayout()
+		return a.page.Form().Focus(ctx, "")
+	case action == "file-reload-window":
+		return a.reloadWindow(ctx)
+	case action == "file-new-window":
+		a.fileMenu = false
+		a.projectOpen = false
+		a.browseOpen = false
+		a.refresh()
+		return a.openNewWindow()
+	case action == "project-open":
+		a.projectOpen = !a.projectOpen
+		a.refresh()
+		return a.page.Form().Focus(ctx, "drawer-path")
+	case action == "project-close":
+		a.projectOpen = false
+		a.refresh()
+		return a.page.Form().Focus(ctx, "")
+	case action == "recent-toggle":
+		a.recentOpen = !a.recentOpen
+		a.refresh()
+		return nil
+	case action == "project-submit":
+		root := strings.TrimSpace(a.projectQuery)
+		if root == "" {
+			root = strings.TrimSpace(a.view.ProjectQuery)
+		}
+		if root == "" {
+			return nil
+		}
+		if blockedProjectRoot(root) {
+			a.fileAlert = "Drive roots can't be opened as projects. Pick a folder inside it."
+			a.refresh()
+			return nil
+		}
+		a.browseOpen = false
+		return a.switchProject(ctx, root)
+	case strings.HasPrefix(action, "project-open-path:"):
+		root := strings.TrimSpace(strings.TrimPrefix(action, "project-open-path:"))
+		if root == "" {
+			return nil
+		}
+		if blockedProjectRoot(root) {
+			a.fileAlert = "Drive roots can't be opened as projects. Pick a folder inside it."
+			a.refresh()
+			return nil
+		}
+		a.browseOpen = false
+		return a.switchProject(ctx, root)
+	case action == "browse-open":
+		a.fileMenu = false
+		a.projectOpen = false
+		a.recentOpen = false
+		a.startBrowse()
+		a.refresh()
+		return a.page.Form().Focus(ctx, "project-path")
+	case action == "browse-close", action == "browse-backdrop":
+		a.browseOpen = false
+		a.refresh()
+		return nil
+	case action == "browse-up":
+		if a.browseRoot == "" || blockedProjectRoot(a.browseRoot) {
+			return nil
+		}
+		parent := filepath.Dir(a.browseRoot)
+		if parent == "" || parent == a.browseRoot {
+			return nil
+		}
+		a.browseRoot = parent
+		a.fileAlert = ""
+		a.refresh()
+		return nil
+	case action == "browse-wsl":
+		a.browseRoot = a.browseStartRoot()
+		if a.browseRoot == "" {
+			return nil
+		}
+		a.fileAlert = ""
+		a.refresh()
+		return nil
+	case action == "browse-windows":
+		for c := 'c'; c <= 'z'; c++ {
+			candidate := "/mnt/" + string(c)
+			if isDir(candidate) {
+				a.browseRoot = candidate
+				a.fileAlert = ""
+				a.refresh()
+				return nil
+			}
+		}
+		if isDir("/mnt") {
+			a.browseRoot = "/mnt"
+			a.fileAlert = ""
+			a.refresh()
+			return nil
+		}
+		a.fileAlert = "No Windows drives found under /mnt."
+		a.refresh()
+		return nil
+	case strings.HasPrefix(action, "browse-enter:"):
+		path := strings.TrimSpace(strings.TrimPrefix(action, "browse-enter:"))
+		if path == "" {
+			return nil
+		}
+		if !isDir(path) {
+			a.fileAlert = "Folder not found: " + path
+			a.refresh()
+			return nil
+		}
+		a.browseRoot = path
+		a.fileAlert = ""
+		a.refresh()
+		return nil
+	case action == "browse-select":
+		if a.browseRoot == "" {
+			return nil
+		}
+		if blockedProjectRoot(a.browseRoot) {
+			a.fileAlert = "Drive roots can't be opened as projects. Pick a folder inside it."
+			a.refresh()
+			return nil
+		}
+		a.browseOpen = false
+		return a.switchProject(ctx, a.browseRoot)
+	case action == "file-alert-close":
+		a.fileAlert = ""
+		a.refresh()
+		return nil
 	case strings.HasPrefix(action, "theme:"):
 		name := validTheme(strings.TrimPrefix(action, "theme:"))
 		if err := a.page.SetTheme(themeCSS(name)); err != nil {
@@ -327,6 +493,14 @@ func (a *App) onChange(ctx context.Context, box ownframe.Box) error {
 		a.searchQuery = next
 		a.searchIndex = 0
 		a.runWorkspaceSearch(ctx)
+	case "project-path", "drawer-path":
+		next := a.view.ProjectQuery
+		if next == a.projectQuery {
+			return nil
+		}
+
+		a.projectQuery = next
+		a.refresh()
 	}
 
 	return nil
@@ -961,6 +1135,44 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return a.page.Redraw(ctx)
 	}
 
+	if a.browseOpen && key == "escape" {
+		if a.fileAlert != "" {
+			a.fileAlert = ""
+			a.refresh()
+
+			return a.page.Redraw(ctx)
+		}
+		a.browseOpen = false
+		a.refresh()
+		if err := a.page.Redraw(ctx); err != nil {
+			return err
+		}
+		return a.page.Form().Focus(ctx, "file-menu")
+	}
+
+	if a.fileMenu && key == "escape" {
+		if a.fileAlert != "" {
+			a.fileAlert = ""
+			a.refresh()
+
+			return a.page.Redraw(ctx)
+		}
+		if a.recentOpen || a.projectOpen {
+			a.recentOpen = false
+			a.projectOpen = false
+			a.refresh()
+
+			return a.page.Redraw(ctx)
+		}
+
+		a.fileMenu = false
+		a.projectOpen = false
+		a.recentOpen = false
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
 	if !a.paletteOpen && (key == "enter" || key == "space") && a.page.Edit().FocusedField() == "" {
 		if id := a.page.Form().FocusID(); id != "" {
 			if box, ok := findBoxID(a.page.Boxes(), id); ok {
@@ -1254,6 +1466,23 @@ func (a *App) onKeyUp(ctx context.Context, key string) error {
 func (a *App) onSubmit(ctx context.Context) error {
 	if a.editing {
 		return a.insertEditText(ctx, "\n")
+	}
+
+	if (a.fileMenu || a.browseOpen) && (a.page.Form().FocusID() == "project-path" ||
+		a.page.Form().FocusID() == "drawer-path") {
+		root := strings.TrimSpace(a.view.ProjectQuery)
+		if root == "" {
+			root = strings.TrimSpace(a.projectQuery)
+		}
+		if root == "" {
+			return nil
+		}
+		if blockedProjectRoot(root) {
+			a.fileAlert = "Drive roots can't be opened as projects. Pick a folder inside it."
+			a.refresh()
+			return nil
+		}
+		return a.switchProject(ctx, root)
 	}
 
 	if a.findOpen && a.page.Form().FocusID() == "find" {

@@ -319,12 +319,18 @@ func TestWorkspaceMarksGitIgnoredPaths(t *testing.T) {
 		t.Fatal("workspace metadata did not mark ignored files")
 	}
 
-	if ws.ByPath["node_modules/pkg/index.js"] != nil {
-		t.Fatal("scanner walked node_modules")
+	if ws.ByPath["node_modules/pkg/index.js"] == nil {
+		t.Fatal("scanner did not walk the ignored node_modules directory")
+	}
+
+	if !ws.ByPath["node_modules/pkg/index.js"].Ignored {
+		t.Fatal("node_modules file was not marked ignored")
 	}
 
 	if node := findTreeNode(ws.Tree, "node_modules"); node == nil || !node.Ignored {
-		t.Fatalf("skipped ignored directory placeholder = %+v", node)
+		t.Fatalf("ignored directory = %+v", node)
+	} else if len(node.Children) == 0 {
+		t.Fatalf("ignored directory has no children: %+v", node)
 	}
 
 	if node := findTreeNode(ws.Tree, "empty-ignored"); node == nil || !node.Ignored {

@@ -15,12 +15,203 @@
   background-color: var(--panel);
 }
 
-.win-dots { display: flex; align-items: center; gap: 6px; padding-right: 10px; }
+.file-btn {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
 
-.wd { width: 10px; height: 10px; border-radius: 50%; }
-.wd-r { background: #4a2228; }
-.wd-y { background: #4a3a1e; }
-.wd-g { background: #1e3a28; }
+.file-btn:hover { background-color: var(--panel-3); }
+
+.file-label { position: relative; line-height: 1; }
+
+.file-label::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -3px;
+  height: 1px;
+  background-color: var(--accent);
+  transition: right 160ms ease;
+}
+
+.file-btn:hover .file-label::after { right: 0; }
+
+.file-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.file-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.01);
+  pointer-events: auto;
+}
+
+.file-drawer {
+  position: absolute;
+  top: var(--titlebar-h);
+  left: 14px;
+  width: 280px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--panel);
+  pointer-events: auto;
+}
+
+.file-item {
+  width: 100%;
+  min-height: 30px;
+  height: 30px;
+  line-height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 10px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: left;
+}
+
+.file-item:hover { background-color: var(--panel-3); color: var(--text); }
+.file-item.on { color: var(--accent); }
+
+.project-picker { padding: 6px 2px; display: flex; flex-direction: column; gap: 6px; text-align: left; }
+
+.project-input {
+  height: 28px;
+  line-height: 28px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 11px;
+  padding: 0 8px;
+  outline: 0;
+}
+
+.project-input:focus { border-color: var(--muted); }
+
+.file-open { border: 1px solid var(--line); justify-content: center; }
+.file-close { color: var(--dim); }
+
+.locations { padding-top: 2px; }
+
+.locations-label {
+  display: block;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 10px;
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.locations-list { max-height: 180px; overflow: auto; }
+
+.recent-toggle { color: var(--muted); }
+
+.recent-flyout {
+  position: absolute;
+  width: 260px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--panel-2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  max-height: 220px;
+  overflow: auto;
+}
+
+.recent-empty { display: block; padding: 4px 10px; color: var(--dim); font-size: 10px; }
+
+/* Folder browser modal ------------------------------------------------------- */
+
+.browse-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 60;
+}
+
+.browse-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(3, 5, 9, 0.62);
+}
+
+.browse-panel {
+  position: absolute;
+  top: 70px;
+  left: 50%;
+  width: 560px;
+  margin-left: -280px;
+  max-width: calc(100vw - 40px);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: var(--panel);
+  overflow: hidden;
+  text-align: left;
+}
+
+.browse-panel > * + * { margin-top: 6px; }
+
+/* Block layout does not stretch the input the way the drawer's flex picker
+   did, so the modal input takes the full panel width explicitly. */
+.browse-panel .project-input { width: 100%; }
+
+#browse-panel { left: calc(50% - 280px); margin-left: 0; }
+
+@media (max-width: 640px) {
+  #browse-panel { left: 20px; }
+}
+
+.browse-head { display: flex; align-items: center; gap: 6px; }
+
+.browse-head .file-item { width: auto; flex: 0 0 auto; }
+
+.browse-path { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--mono); font-size: 10px; color: var(--muted); padding: 0 4px; }
+
+.browse-list { max-height: 180px; overflow: auto; }
+
+/* The modal panel fits more rows than the old inline card did. */
+.browse-panel .browse-list { max-height: 320px; }
+
+.os-choice { display: flex; gap: 6px; }
+
+.os-choice .file-item { flex: 1; justify-content: center; }
+
+.file-alert { position: fixed; right: 14px; bottom: 34px; width: 300px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--panel); color: var(--text); font-size: 11px; z-index: 65; }
+
+.file-alert span { flex: 1; min-width: 0; }
+
+.file-alert-x { width: auto; flex: 0 0 auto; min-height: 24px; height: 24px; line-height: 24px; font-size: 10px; }
 
 .brand {
   height: 28px;

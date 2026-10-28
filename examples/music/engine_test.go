@@ -23,7 +23,9 @@ func waitVoice(t *testing.T, engine *Engine) *fakeVoice {
 	for time.Now().Before(deadline) {
 		engine.Update()
 		if !engine.Loading() {
+			engine.mu.Lock()
 			voice, ok := engine.voice.(*fakeVoice)
+			engine.mu.Unlock()
 			if !ok {
 				t.Fatalf("no voice: %v", engine.Err())
 			}
@@ -50,12 +52,12 @@ func TestEngineStartsOnUpdate(t *testing.T) {
 		t.Fatal("wrong voice installed")
 	}
 
-	if !voice.playing {
+	if !voice.Playing() {
 		t.Fatal("the voice did not start")
 	}
 
-	if voice.volume != 0.5 {
-		t.Fatalf("volume = %v", voice.volume)
+	if voice.Volume() != 0.5 {
+		t.Fatalf("volume = %v", voice.Volume())
 	}
 
 	if engine.Credit().Title != "Free" {
@@ -118,11 +120,11 @@ func TestEngineNewerGenClosesVoice(t *testing.T) {
 
 	// Wait for first voice to be closed
 	deadline := time.Now().Add(2 * time.Second)
-	for !voice1.closed && time.Now().Before(deadline) {
+	for !voice1.Closed() && time.Now().Before(deadline) {
 		time.Sleep(time.Millisecond)
 	}
 
-	if !voice1.closed {
+	if !voice1.Closed() {
 		t.Fatal("superseded voice was not closed")
 	}
 

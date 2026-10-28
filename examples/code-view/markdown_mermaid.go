@@ -85,13 +85,9 @@ func mermaidTypeName(src []string) string {
 	return ""
 }
 
-// appendMermaid renders a supported diagram, or a note and code rows for an
-// unsupported one. It returns one row offset per source line.
+// appendMermaid renders a supported diagram as text rows, or a note and code
+// rows for an unsupported one. It returns one row offset per source line.
 func appendMermaid(rows []previewRow, src []string, cols int) ([]previewRow, []int) {
-	if pictured, lineRows, ok := appendMermaidImage(rows, src, cols); ok {
-		return pictured, lineRows
-	}
-
 	switch mermaidKind(src) {
 	case "flowchart":
 		return appendFlowchart(rows, src, cols)

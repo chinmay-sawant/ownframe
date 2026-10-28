@@ -256,6 +256,19 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 		}
 	}
 
+	// One blank grid row top and bottom so the first and last block never
+	// touch the pane edge. Gap rows are exactly rowH, so the window's
+	// row slicing and anchor math are unaffected.
+	rows = append([]previewRow{{Kind: "gap"}}, rows...)
+
+	for i, anchor := range anchors {
+		if anchor >= 0 {
+			anchors[i] = anchor + 1
+		}
+	}
+
+	rows = append(rows, previewRow{Kind: "gap"})
+
 	return rows, anchors
 }
 

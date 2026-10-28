@@ -191,8 +191,12 @@ func TestMarkdownPreview(t *testing.T) {
 	}
 
 	first := lineText(app.View().PreviewRows[0].Segments)
-	if first != "Beacon" {
-		t.Fatalf("first preview row = %q", first)
+	if first != "" {
+		t.Fatalf("first preview row = %q, want the top breathing row", first)
+	}
+
+	if second := lineText(app.View().PreviewRows[1].Segments); second != "Beacon" {
+		t.Fatalf("second preview row = %q, want %q", second, "Beacon")
 	}
 
 	app.togglePreview()

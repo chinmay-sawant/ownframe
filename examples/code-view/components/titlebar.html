@@ -1,5 +1,7 @@
 <header class="titlebar" id="titlebar">
-  <span class="win-dots" aria-hidden="true"><span class="wd wd-r"></span><span class="wd wd-y"></span><span class="wd wd-g"></span></span>
+  <button class="file-btn" id="file-menu" data-action="file-menu-open" type="button" title="File menu" aria-label="File menu" aria-expanded="{{if .FileMenu}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
+    <span class="file-label">File</span>
+  </button>
 
   <button class="brand" id="brand" data-action="mode-explorer" type="button" title="Code Review"{{if .Modal}} tabindex="-1"{{end}}>
     <span class="brand-mark">

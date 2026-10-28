@@ -229,10 +229,156 @@ func loadDiskWorkspaceWithLimit(root string, limit int) (*workspace, error) {
 	}
 
 	if len(ignored) > 0 {
+		w.scanIgnoredDirs(abs, ignored)
+		w.finish()
 		w.markIgnored(ignored)
 	}
 
 	return w, nil
+}
+
+// scanIgnoredDirs descends into ignored directories the main pass skipped
+// (such as dist or temp) and adds their files, so an ignored folder expands
+// like a normal one. Files follow the same rules as the main pass: dotfiles,
+// skipExt extensions, and symlinks stay out, and the walk stops at the file
+// budget. Version-control metadata (.git, .hg, .svn) is never descended into.
+// A directory with no scannable content adds nothing here, so addIgnoredDirs
+// still keeps one placeholder row for it.
+func (w *workspace) scanIgnoredDirs(root string, ignored map[string]bool) {
+	if len(ignored) == 0 {
+		return
+	}
+
+	if len(w.Files) >= w.Limit {
+		w.Truncated = true
+		w.TruncatedNote = truncatedNote(w.Limit)
+
+		return
+	}
+
+	existing := treeNodePaths(w.Tree)
+
+	paths := make([]string, 0, len(ignored))
+	for path := range ignored {
+		paths = append(paths, path)
+	}
+
+	sort.Slice(paths, func(i, j int) bool {
+		di := strings.Count(paths[i], "/")
+		dj := strings.Count(paths[j], "/")
+
+		if di != dj {
+			return di < dj
+		}
+
+		return paths[i] < paths[j]
+	})
+
+	var walked []string
+
+	for _, path := range paths {
+		if existing[path] {
+			continue
+		}
+
+		covered := false
+
+		for _, parent := range walked {
+			if path == parent || strings.HasPrefix(path, parent+"/") {
+				covered = true
+
+				break
+			}
+		}
+
+		if covered {
+			continue
+		}
+
+		info, err := os.Stat(filepath.Join(root, filepath.FromSlash(path)))
+		if err != nil || !info.IsDir() {
+			continue
+		}
+
+		w.walkIgnoredDir(root, path)
+		walked = append(walked, path)
+
+		if w.Truncated {
+			return
+		}
+	}
+}
+
+// walkIgnoredDir adds the scannable files under one ignored directory. The
+// whole subtree is git ignored, so every subdirectory is descended into; only
+// version-control metadata and the depth cap stop the descent.
+func (w *workspace) walkIgnoredDir(root, dir string) {
+	base := filepath.Join(root, filepath.FromSlash(dir))
+
+	_ = filepath.WalkDir(base, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			if entry != nil && entry.IsDir() {
+				return fs.SkipDir
+			}
+
+			return nil //nolint:nilerr // keep scanning around one unreadable entry
+		}
+
+		if path == base {
+			return nil
+		}
+
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return nil //nolint:nilerr // a path outside the root is not listed
+		}
+
+		rel = filepath.ToSlash(rel)
+		name := entry.Name()
+
+		if entry.IsDir() {
+			switch name {
+			case ".git", ".hg", ".svn":
+				return fs.SkipDir
+			}
+
+			if strings.Count(rel, "/") >= maxTreeDepth {
+				return fs.SkipDir
+			}
+
+			return nil
+		}
+
+		if strings.HasPrefix(name, ".") && name != ".gitignore" && name != ".env.example" {
+			return nil
+		}
+
+		if skipExt(name) {
+			return nil
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			return nil //nolint:nilerr // one unreadable entry must not hide the workspace
+		}
+
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil
+		}
+
+		// Stop before adding the file that trips the limit, so a scan that
+		// ends exactly at the limit is not reported as truncated.
+		if len(w.Files) >= w.Limit {
+			w.Truncated = true
+			w.TruncatedNote = truncatedNote(w.Limit)
+
+			return fs.SkipAll
+		}
+
+		w.addFile(rel, name, info.Size())
+
+		return nil
+	})
 }
 
 // loadIgnoredDirs asks git which scanned directories match .gitignore. One
@@ -308,9 +454,10 @@ func markTreeIgnored(nodes []*fileNode, ignored map[string]bool) {
 	}
 }
 
-// addIgnoredDirs adds an empty row for an ignored directory the scanner
-// skipped, such as node_modules. The row carries no children, so the scan
-// budget is not spent on a tree the person did not open.
+// addIgnoredDirs adds an empty row for an ignored directory with no scannable
+// content, such as an empty folder or one whose files are all filtered out.
+// Directories whose contents were scanned already have tree nodes and are left
+// alone, so they expand like normal folders.
 func (w *workspace) addIgnoredDirs(ignored map[string]bool) {
 	if w.Sample || len(ignored) == 0 {
 		return

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -217,6 +219,14 @@ type App struct {
 
 	settingsOpen bool
 	theme        string
+	fileMenu     bool
+	projectOpen  bool
+	projectQuery string
+	recentOpen   bool
+	recentRoots  []string
+	browseOpen   bool
+	browseRoot   string
+	fileAlert    string
 	paletteOpen  bool
 	recent       []string
 	paletteQuery string
@@ -305,6 +315,8 @@ func NewWithLimit(root string, limit int) (*App, error) {
 	a.statuses = statusMap(a.changes)
 	a.syncFileNav()
 	a.selectFirstDiff()
+	a.recentRoots = rememberRecentProject(loadRecentProjects(), ws.Root)
+	saveRecentProjects(a.recentRoots)
 
 	page, err := ownframe.New(ownframe.Config{
 		DevTools:         true,
@@ -416,6 +428,273 @@ func (a *App) openInitial() {
 	a.addRecent(target)
 }
 
+// File drawer geometry, kept next to chrome.css so the recent flyout lands
+// beside the toggle row the way a submenu does.
+const (
+	fileDrawerLeft = 14
+	fileDrawerW    = 280
+	fileFlyoutGap  = 8
+	fileFlyW       = 260
+	fileDrawerPad  = 6
+	fileItemH      = 30
+	filePickerH    = 76
+	locLabelH      = 22
+	locRowMax      = 6
+	locPad         = 8
+)
+
+// recentFlyoutX puts the recent flyout just right of the file drawer. The
+// flyout is absolutely positioned inside the drawer, so this is relative
+// to the drawer box.
+func (a *App) recentFlyoutX() int {
+	return fileDrawerW + fileFlyoutGap
+}
+
+// recentFlyoutY lines the flyout top up with the recents toggle row,
+// relative to the drawer box. It mirrors the picker's stacked heights:
+// four 30px rows, the open picker's input block, and the capped
+// locations list.
+func (a *App) recentFlyoutY() int {
+	y := fileDrawerPad + fileItemH*4 - fileDrawerPad
+	if a.projectOpen {
+		rows := len(a.quickRootRows())
+		if rows > locRowMax {
+			rows = locRowMax
+		}
+
+		y += filePickerH + locLabelH + rows*fileItemH + locPad
+	}
+
+	return y
+}
+
+// recentRootRows lists recently opened project roots with the active one marked.
+func (a *App) recentRootRows() []recentRootRow {
+	rows := make([]recentRootRow, 0, len(a.recentRoots))
+
+	for _, root := range a.recentRoots {
+		rows = append(rows, recentRootRow{
+			Path:   root,
+			Name:   baseName(root),
+			Active: root == a.ws.Root || (root == "sample" && a.ws.Sample),
+		})
+	}
+
+	return rows
+}
+
+// newWindowArgs builds the child process arguments for the current project.
+// Sample workspaces reopen as the sample; disk roots reopen by absolute path.
+func (a *App) newWindowArgs(exe string) []string {
+	if a.ws.Sample {
+		return []string{exe, "-root", ""}
+	}
+
+	root := a.ws.Root
+	if abs, err := filepath.Abs(root); err == nil {
+		root = abs
+	}
+
+	return []string{exe, "-root", root}
+}
+
+// openNewWindow launches a second Code Review process on the same project.
+// A new process keeps each window isolated: one crash or busy scan cannot
+// freeze the other, and each keeps its own session and watcher. It costs
+// more memory and a fresh scan on startup.
+func (a *App) openNewWindow() error {
+	exe, err := os.Executable()
+	if err != nil {
+		a.showToast("error", "New window failed", err.Error())
+		a.refresh()
+
+		return nil
+	}
+
+	args := a.newWindowArgs(exe)
+	proc, err := os.StartProcess(exe, args, &os.ProcAttr{
+		Files: []*os.File{os.Stdin, os.Stdout, os.Stderr},
+	})
+	if err != nil {
+		a.showToast("error", "New window failed", err.Error())
+		a.refresh()
+
+		return nil
+	}
+
+	_ = proc.Release()
+	a.showToast("success", "New window", "Opened "+a.ws.Root+" in a new process.")
+	a.refresh()
+
+	return nil
+}
+
+// reloadWindow rescans the current project and restores the saved layout.
+// The OS window keeps its size, so the page stays at the same resolution;
+// tabs that still exist stay open and the scroll offset is preserved.
+func (a *App) reloadWindow(ctx context.Context) error {
+	a.persistSession()
+	keepTabs := append([]string(nil), a.tabs...)
+	keepTabs2 := append([]string(nil), a.tabs2...)
+	keepActive, keepActive2 := a.active, a.active2
+	keepScroll, keepGroup := a.scrollY, a.scrollGroup
+	keepMode := a.mode
+
+	var ws *workspace
+	var err error
+
+	if a.ws.Sample {
+		ws, err = loadSampleWorkspace()
+	} else {
+		ws, err = loadDiskWorkspaceWithLimit(a.ws.Root, a.scanLimit)
+	}
+
+	if err != nil {
+		a.showToast("error", "Reload failed", err.Error())
+		a.refresh()
+
+		return nil
+	}
+
+	a.StopWatcher()
+	a.ws = ws
+	a.docs = map[string]*fileDoc{}
+	a.dirty = map[string]bool{}
+	a.fileMenu = false
+	a.projectOpen = false
+	a.tabs = keepExistingTabs(keepTabs, ws)
+	a.tabs2 = keepExistingTabs(keepTabs2, ws)
+	a.active = clampSessionIndex(keepActive, len(a.tabs))
+	a.active2 = clampSessionIndex(keepActive2, len(a.tabs2))
+	a.mode = keepMode
+	a.statuses = statusMap(a.changes)
+	a.syncFileNav()
+	a.selectFirstDiff()
+
+	if len(a.tabs) == 0 {
+		a.openInitial()
+	} else {
+		a.addRecent(a.tabs[a.active])
+	}
+
+	a.scrollY = keepScroll
+	a.scrollGroup = keepGroup
+	a.resetScroll()
+	a.Page().Scroll().SetScrollOffset(0, keepScroll)
+	a.refresh()
+
+	if err := a.StartWatcher(ctx); err != nil {
+		a.watchNote = "watcher unavailable"
+		a.refresh()
+	}
+
+	a.showToast("success", "Window reloaded", "Same size, same project, fresh scan.")
+	a.refresh()
+
+	return nil
+}
+
+// resetLayout closes secondary UI and restores the default explorer layout.
+func (a *App) resetLayout() {
+	a.tabs = nil
+	a.tabs2 = nil
+	a.active = 0
+	a.active2 = 0
+	a.split = false
+	a.focusGroup = 0
+	a.details = false
+	a.filter = ""
+	a.findOpen = false
+	a.paletteOpen = false
+	a.branchOpen = false
+	a.searchOpen = false
+	a.settingsOpen = false
+	a.projectOpen = false
+	a.recentOpen = false
+	a.fileMenu = false
+	a.browseOpen = false
+	a.browseRoot = ""
+	a.fileAlert = ""
+	a.scrollY = 0
+	a.scrollGroup = [2]int{}
+	a.openInitial()
+	a.resetScroll()
+	a.showToast("success", "Layout reset", "Tabs and panes are back to defaults.")
+	a.refresh()
+}
+
+// switchProject rescans a new root and reopens the default file.
+func (a *App) switchProject(ctx context.Context, root string) error {
+	if blockedProjectRoot(root) {
+		a.fileAlert = "Drive roots can't be opened as projects. Pick a folder inside it."
+		a.refresh()
+
+		return nil
+	}
+
+	var (
+		ws  *workspace
+		err error
+	)
+
+	if trimmed := strings.TrimSpace(root); trimmed == "" || trimmed == "sample" {
+		ws, err = loadSampleWorkspace()
+	} else {
+		ws, err = loadDiskWorkspaceWithLimit(root, a.scanLimit)
+	}
+	if err != nil {
+		a.showToast("error", "Project not opened", err.Error())
+		a.refresh()
+
+		return nil
+	}
+
+	a.StopWatcher()
+	a.ws = ws
+	a.docs = map[string]*fileDoc{}
+	a.dirty = map[string]bool{}
+	a.folders = map[string]bool{}
+	a.tabs = nil
+	a.tabs2 = nil
+	a.active = 0
+	a.active2 = 0
+	a.split = false
+	a.focusGroup = 0
+	a.details = false
+	a.filter = ""
+	a.fileMenu = false
+	a.projectOpen = false
+	a.recentOpen = false
+	a.projectQuery = ""
+	a.fileAlert = ""
+	a.recentRoots = rememberRecentProject(a.recentRoots, ws.Root)
+	saveRecentProjects(a.recentRoots)
+
+	if ws.Sample {
+		a.changes = sampleChangeSet()
+		a.useSampleHistory()
+	} else {
+		a.changes = changeSet{Note: "Open Source Control to read the working tree."}
+	}
+
+	a.statuses = statusMap(a.changes)
+	a.syncFileNav()
+	a.selectFirstDiff()
+	a.openInitial()
+	a.resetScroll()
+	a.sessionPath, _ = defaultSessionPath(ws.Root)
+	a.sessionReady = false
+	a.sessionLast = ""
+	a.refresh()
+
+	if err := a.StartWatcher(ctx); err != nil {
+		a.watchNote = "watcher unavailable"
+		a.refresh()
+	}
+
+	return nil
+}
+
 // refresh publishes one snapshot.
 func (a *App) refresh() {
 	a.view = a.buildView()
@@ -470,36 +749,50 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 // buildView assembles one frame from the current state.
 func (a *App) buildView() View {
 	v := View{
-		Mode:         a.mode,
-		Filter:       a.filter,
-		Details:      a.details,
-		DevOn:        a.devOn,
-		MenuOpen:     a.menuOpen,
-		MenuX:        a.menuX,
-		MenuY:        a.menuY,
-		MenuRows:     append([]menuViewRow(nil), a.menuItems...),
-		Modal:        a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen,
-		SettingsOpen: a.settingsOpen,
-		Themes:       a.themeRows(),
-		Workspace:    baseName(a.ws.Root),
-		Branch:       a.changes.Branch,
-		Changed:      len(a.changes.Files),
-		DevNote:      a.changes.Note,
-		ScanBudget:   a.ws.ScanBudget(),
-		WatchNote:    a.watchNote,
-		HoverPath:    a.hoverPath,
-		Dirty:        a.dirtyCount(),
-		Toast:        a.toast,
-		Wrap:         a.wrap,
-		ScrollX:      0,
-		FindQuery:    a.findQuery,
-		FindOpen:     a.findOpen,
-		FindCase:     a.findCase,
-		FindCurrent:  a.findCurrent(),
-		FindTotal:    len(a.findHits),
-		BranchQuery:  a.branchQuery,
-		Split:        a.split && a.mode == "explorer",
-		FocusGroup:   a.focusGroup,
+		Mode:          a.mode,
+		Filter:        a.filter,
+		Details:       a.details,
+		DevOn:         a.devOn,
+		MenuOpen:      a.menuOpen,
+		MenuX:         a.menuX,
+		MenuY:         a.menuY,
+		MenuRows:      append([]menuViewRow(nil), a.menuItems...),
+		Modal:         a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen,
+		SettingsOpen:  a.settingsOpen,
+		FileMenu:      a.fileMenu,
+		ProjectOpen:   a.projectOpen,
+		ProjectQuery:  a.projectQuery,
+		RecentOpen:    a.recentOpen,
+		RecentFlyX:    a.recentFlyoutX(),
+		RecentFlyY:    a.recentFlyoutY(),
+		RecentRoots:   a.recentRootRows(),
+		QuickRoots:    a.quickRootRows(),
+		BrowseOpen:    a.browseOpen,
+		BrowseRoot:    a.browseRoot,
+		BrowseName:    a.browseDisplayName(),
+		BrowseEntries: a.browseEntries(),
+		IsWSL:         isWSL(),
+		Alert:         a.fileAlert,
+		Themes:        a.themeRows(),
+		Workspace:     baseName(a.ws.Root),
+		Branch:        a.changes.Branch,
+		Changed:       len(a.changes.Files),
+		DevNote:       a.changes.Note,
+		ScanBudget:    a.ws.ScanBudget(),
+		WatchNote:     a.watchNote,
+		HoverPath:     a.hoverPath,
+		Dirty:         a.dirtyCount(),
+		Toast:         a.toast,
+		Wrap:          a.wrap,
+		ScrollX:       0,
+		FindQuery:     a.findQuery,
+		FindOpen:      a.findOpen,
+		FindCase:      a.findCase,
+		FindCurrent:   a.findCurrent(),
+		FindTotal:     len(a.findHits),
+		BranchQuery:   a.branchQuery,
+		Split:         a.split && a.mode == "explorer",
+		FocusGroup:    a.focusGroup,
 	}
 
 	if !a.wrap {
@@ -1442,13 +1735,15 @@ func (a *App) treeRows() ([]treeRow, int, int, bool) {
 
 	rows := make([]treeRow, 0, min(total, visible))
 	index := 0
-	a.walkTree(a.ws.Tree, 0, &rows, &index, a.treeOffset, a.treeOffset+visible)
+	a.walkTree(a.ws.Tree, 0, false, &rows, &index, a.treeOffset, a.treeOffset+visible)
 
 	return rows, total, count, false
 }
 
 // walkTree appends the visible nodes in the current offset window.
-func (a *App) walkTree(nodes []*fileNode, depth int, rows *[]treeRow, index *int, start, end int) {
+// parentIgnored tracks whether an ancestor already carries the ignored
+// label, so only the topmost ignored row gets the pill.
+func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[]treeRow, index *int, start, end int) {
 	for _, node := range nodes {
 		if *index >= end {
 			return
@@ -1459,11 +1754,12 @@ func (a *App) walkTree(nodes []*fileNode, depth int, rows *[]treeRow, index *int
 
 		if pos >= start {
 			row := treeRow{
-				Path:    node.Path,
-				Name:    node.Name,
-				Dir:     node.Dir,
-				Ignored: node.Ignored,
-				Indent:  treePad + depth*treeIndent,
+				Path:        node.Path,
+				Name:        node.Name,
+				Dir:         node.Dir,
+				Ignored:     node.Ignored,
+				IgnoredNote: node.Ignored && !parentIgnored,
+				Indent:      treePad + depth*treeIndent,
 			}
 
 			if node.Dir {
@@ -1479,7 +1775,7 @@ func (a *App) walkTree(nodes []*fileNode, depth int, rows *[]treeRow, index *int
 		}
 
 		if node.Dir && a.folders[node.Path] {
-			a.walkTree(node.Children, depth+1, rows, index, start, end)
+			a.walkTree(node.Children, depth+1, parentIgnored || node.Ignored, rows, index, start, end)
 		}
 	}
 }
@@ -1500,6 +1796,7 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 			Name:        file.Name,
 			Indent:      treePad,
 			Ignored:     file.Ignored,
+			IgnoredNote: file.Ignored,
 			Lang:        file.Lang,
 			Badge:       languageInfo(file.Lang).Badge,
 			Status:      a.statuses[file.Path],
@@ -1706,7 +2003,7 @@ func (a *App) openFileIn(group int, path string) {
 	*active = found
 	a.focusGroup = group
 	a.mode = "explorer"
-	a.preview = false
+	// Preview stays on across files; fillCode gates it to Markdown.
 	a.inlineCard = inlineCard{}
 	a.paletteOpen = false
 	a.paletteQuery = ""
@@ -1752,7 +2049,7 @@ func (a *App) selectTabIn(group, index int) {
 
 	a.focusGroup = group
 	a.mode = "explorer"
-	a.preview = false
+	// Preview stays on across tabs; fillCode gates it to Markdown.
 	if a.split {
 		a.scrollGroup[group] = 0
 		a.splitWheelAccum[group] = 0
@@ -1818,7 +2115,7 @@ func (a *App) closeTabIn(group, index int) {
 		a.focusGroup = 0
 	}
 
-	a.preview = false
+	// Preview stays on across tabs; fillCode gates it to Markdown.
 	a.resetScroll()
 	a.refresh()
 }
