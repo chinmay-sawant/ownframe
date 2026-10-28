@@ -1,0 +1,192 @@
+package window
+
+import (
+	"os"
+	"runtime"
+	"strings"
+	"sync/atomic"
+	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
+// closeRequested ends the desktop run loop with ebiten.Termination on the
+// next frame. It backs Window.Close for borderless windows that draw their
+// own close control and have no OS close button. RunGame maps Termination
+// back to a nil return, so closing this way is a clean exit with no crash
+// report.
+var closeRequested atomic.Bool
+
+// RequestClose asks the run loop to exit on its next frame. It does nothing
+// when no desktop loop is running, so Serve, web, and mobile callers can
+// share the same button wiring.
+func RequestClose() {
+	closeRequested.Store(true)
+}
+
+// takeCloseRequest consumes a pending close request.
+func takeCloseRequest() bool {
+	return closeRequested.Swap(false)
+}
+
+// Minimize minimizes the desktop window. It does nothing when no desktop
+// run loop is active or the platform is not a desktop.
+func Minimize() {
+	ebiten.MinimizeWindow()
+}
+
+// ToggleMaximize maximizes the desktop window, or restores it when it is
+// already maximized. Under WSL it uses the manual workarea maximize below;
+// everywhere else it uses the window manager. It does nothing when no
+// desktop run loop is active or the platform is not a desktop.
+func ToggleMaximize() {
+	if isWSL() {
+		toggleManualMaximize()
+		return
+	}
+
+	if ebiten.IsWindowMaximized() {
+		ebiten.RestoreWindow()
+	} else {
+		ebiten.MaximizeWindow()
+	}
+}
+
+// Maximized reports whether the desktop window is maximized, including a
+// manual workarea maximize on WSL. It is false when no desktop run loop is
+// active or the platform is not a desktop.
+func Maximized() bool {
+	return manualMax.active || ebiten.IsWindowMaximized()
+}
+
+// isWSLVersion reports whether a /proc/version string comes from Windows
+// Subsystem for Linux. WSL2 kernels carry "microsoft-standard-WSL2" and WSL1
+// carries "Microsoft".
+func isWSLVersion(version string) bool {
+	return strings.Contains(strings.ToLower(version), "microsoft")
+}
+
+// isWSL reports whether the process runs inside Windows Subsystem for
+// Linux. Only Linux can be WSL; anything else answers false without
+// touching the filesystem.
+func isWSL() bool {
+	if runtime.GOOS != "linux" {
+		return false
+	}
+
+	if _, ok := os.LookupEnv("WSL_DISTRO_NAME"); ok {
+		return true
+	}
+
+	if _, ok := os.LookupEnv("WSL_INTEROP"); ok {
+		return true
+	}
+
+	version, err := os.ReadFile("/proc/version")
+	if err != nil {
+		return false
+	}
+
+	return isWSLVersion(string(version))
+}
+
+// manualMaxLearnTimeout bounds a workarea probe. If the maximized configure
+// has not arrived by then, the window stays WM-maximized rather than strand
+// the dance halfway.
+const manualMaxLearnTimeout = 2 * time.Second
+
+// manualMax carries a hand-rolled maximize for WSL. WSLg can present a
+// WM-maximized borderless window with an offset the client cannot see,
+// which misaligns pointer input while the layout itself is correct. Manual
+// maximize never enters the maximized window state: it saves the windowed
+// rect and applies the workarea as plain client geometry, which WSLg
+// presents correctly, then restores the saved rect on toggle.
+var manualMax = struct {
+	active   bool // manually maximized: geometry is client-set workarea
+	known    bool // workarea learned
+	learning bool // a WM maximize is in flight to reveal the workarea
+	until    time.Time
+	sx, sy   int // saved windowed position
+	sw, sh   int // saved windowed size
+	wx, wy   int // learned workarea position
+	ww, wh   int // learned workarea size
+}{}
+
+// toggleManualMaximize flips between the saved windowed rect and the
+// learned workarea. The first maximize per process learns the workarea with
+// one window-manager maximize (see completeManualMaximize) and converts it
+// to client geometry on arrival.
+func toggleManualMaximize() {
+	if manualMax.learning {
+		// A workarea probe is in flight; swallowing the extra click keeps
+		// one maximize in the air instead of stacking two.
+		return
+	}
+
+	if manualMax.active {
+		if w, h := ebiten.WindowSize(); w != manualMax.ww || h != manualMax.wh {
+			// The user moved or resized out from under the manual
+			// maximize; drop it and start fresh below.
+			manualMax.active = false
+		} else {
+			ebiten.SetWindowSize(manualMax.sw, manualMax.sh)
+			ebiten.SetWindowPosition(manualMax.sx, manualMax.sy)
+			manualMax.active = false
+
+			return
+		}
+	}
+
+	manualMax.sx, manualMax.sy = ebiten.WindowPosition()
+	manualMax.sw, manualMax.sh = ebiten.WindowSize()
+
+	if manualMax.known {
+		ebiten.SetWindowPosition(manualMax.wx, manualMax.wy)
+		ebiten.SetWindowSize(manualMax.ww, manualMax.wh)
+		manualMax.active = true
+
+		return
+	}
+
+	manualMax.learning = true
+	manualMax.until = time.Now().Add(manualMaxLearnTimeout)
+	ebiten.MaximizeWindow()
+}
+
+// completeManualMaximize watches a workarea probe from the resize path. When
+// the maximized configure arrives it records the workarea, leaves the
+// maximized window state, and re-applies the learned rect as plain client
+// geometry. Call it with the latest Layout size every update.
+func completeManualMaximize(pendingW, pendingH int) {
+	if !manualMax.learning {
+		return
+	}
+
+	if time.Now().After(manualMax.until) {
+		// The configure never arrived; stay WM-maximized rather than
+		// strand the window halfway through the dance.
+		manualMax.learning = false
+
+		return
+	}
+
+	if !ebiten.IsWindowMaximized() {
+		return
+	}
+
+	if pendingW == manualMax.sw && pendingH == manualMax.sh {
+		return // still the windowed size; the configure is in flight
+	}
+
+	manualMax.ww, manualMax.wh = pendingW, pendingH
+	manualMax.wx, manualMax.wy = ebiten.WindowPosition()
+	manualMax.known = true
+	manualMax.learning = false
+	// RestoreWindow is guarded by the maximized check above, matching the
+	// ToggleMaximize pattern. The restores and resizes below converge
+	// through the normal configure path.
+	ebiten.RestoreWindow()
+	ebiten.SetWindowPosition(manualMax.wx, manualMax.wy)
+	ebiten.SetWindowSize(manualMax.ww, manualMax.wh)
+	manualMax.active = true
+}

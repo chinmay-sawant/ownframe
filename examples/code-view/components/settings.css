@@ -1,0 +1,16 @@
+.settings-panel { position: absolute; top: 50px; left: calc(50% - 360px); width: 720px; max-width: calc(100vw - 40px); border: 1px solid var(--line); border-radius: 10px; background-color: var(--panel); overflow: hidden; }
+.settings-header { height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); color: var(--text); font-size: 14px; }
+.settings-body { display: flex; }
+.settings-nav { width: 180px; flex: 0 0 180px; padding: 16px 10px; background-color: var(--panel-2); border-right: 1px solid var(--line); }
+.settings-nav-active { padding: 9px 10px; border-radius: 4px; color: var(--text); background-color: var(--panel-3); }
+.settings-content { flex: 1; min-width: 0; padding: 18px 20px 20px; }
+.settings-title { color: var(--text); font-size: 14px; font-weight: 700; }
+.settings-caption { color: var(--muted); margin: 5px 0 12px; }
+.settings-theme { width: 100%; height: 48px; padding: 0 10px; display: flex; align-items: center; border: 1px solid var(--line); border-radius: 4px; margin-bottom: 5px; color: var(--text); }
+.settings-theme:hover, .settings-theme.selected { background-color: var(--panel-3); border-color: var(--line); }
+.settings-theme-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.settings-theme-text span { color: var(--muted); font-size: 10px; }
+.settings-theme:focus { outline: 0; }
+.settings-theme:focus-visible { outline: 2px solid var(--muted); outline-offset: -2px; }
+.settings-check { color: var(--text); font-size: 16px; }
+@media (max-width: 760px) { .settings-panel { left: 20px; } .settings-nav { width: 130px; flex-basis: 130px; } }

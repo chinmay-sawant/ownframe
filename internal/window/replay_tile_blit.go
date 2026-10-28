@@ -105,18 +105,26 @@ func (s *shell) blitTile(dst *ebiten.Image, d *layout.Display, g *tileGrid, col,
 		s.paintTile(d, g, col, row, tile)
 	}
 
-	src, ok := g.at(col, row).SubImage(at.Add(offset).Sub(tile.Min)).(*ebiten.Image)
-	if !ok {
-		return
+	tileImg := g.at(col, row)
+	srcRect := at.Add(offset).Sub(tile.Min)
+	var src *ebiten.Image
+	if srcRect == tileImg.Bounds() {
+		src = tileImg
+	} else {
+		var ok bool
+		src, ok = tileImg.SubImage(srcRect).(*ebiten.Image)
+		if !ok {
+			return
+		}
 	}
 
 	s.partial.blits++
 	s.partial.blitPx += at.Dx() * at.Dy()
 
-	var op ebiten.DrawImageOptions
-	op.Blend = ebiten.BlendCopy
-	op.GeoM.Translate(float64(at.Min.X), float64(at.Min.Y))
-	dst.DrawImage(src, &op)
+	s.partial.blitOpts.Blend = ebiten.BlendCopy
+	s.partial.blitOpts.GeoM.Reset()
+	s.partial.blitOpts.GeoM.Translate(float64(at.Min.X), float64(at.Min.Y))
+	dst.DrawImage(src, &s.partial.blitOpts)
 }
 
 // blitFromTiles copies the frame from the tile grid. false means the
@@ -127,7 +135,8 @@ func (s *shell) blitFromTiles(dst *ebiten.Image, display *layout.Display, plans 
 		return s.showTilesWhole(dst, display)
 	}
 
-	full, rects := blitPlan(plans, chrome)
+	full, rects := blitPlanBuf(s.partial.blitRects[:0], plans, chrome)
+	s.partial.blitRects = rects
 	if full {
 		return s.showTilesWhole(dst, display)
 	}

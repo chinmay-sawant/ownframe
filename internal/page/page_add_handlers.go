@@ -36,6 +36,9 @@ func (p *Page) AddHandlers(h Handlers) {
 	if h.DragEnd != nil {
 		p.handlers.DragEnd = h.DragEnd
 	}
+	if h.Wheel != nil {
+		p.handlers.Wheel = h.Wheel
+	}
 	if h.BeforeEdit != nil {
 		p.handlers.BeforeEdit = h.BeforeEdit
 	}
@@ -71,6 +74,15 @@ func (p *Page) AddHandlers(h Handlers) {
 	}
 	if h.Redo != nil {
 		p.handlers.Redo = h.Redo
+	}
+	if h.ContextMenuFor != nil {
+		p.handlers.ContextMenuFor = h.ContextMenuFor
+	}
+	if h.MenuAction != nil {
+		p.handlers.MenuAction = h.MenuAction
+	}
+	if h.PresentMenu != nil {
+		p.handlers.PresentMenu = h.PresentMenu
 	}
 	if h.Drop != nil {
 		p.handlers.Drop = h.Drop

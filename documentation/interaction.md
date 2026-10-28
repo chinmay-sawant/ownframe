@@ -4,9 +4,9 @@ The window owns the focus keys, the pointer gestures, the context menu, the curs
 
 ## Focus
 
-Tab and Shift+Tab move focus in document order when the screen implements `host.Focuser` and a field takes the focus. The window calls `FocusNext` or `FocusPrev`, then reads `FocusID`. An empty id means no field moved, so the key reaches the page handler as before. When a field moves, the window consumes the press and its release, so `Handlers.KeyDown` does not see `"tab"`.
+Tab and Shift+Tab move focus in document order when the screen implements `host.Focuser` and a control takes the focus. The window calls `FocusNext` or `FocusPrev`, then reads `FocusID`. An empty id means no control moved, so the key reaches the page handler as before. When a control moves, the window consumes the press and its release, so `Handlers.KeyDown` does not see `"tab"`.
 
-The page sets the same `:focus-visible` host state a click sets, so the focus ring draws at each stop. Escape closes the context menu first. With the menu closed it calls `Focus(ctx, "")` and clears the ring. Escape itself still reaches the handler. `internal/window/focus_keys.go` holds the window side.
+The page sets the same `:focus-visible` host state a click sets, so the focus ring draws at each stop. Escape closes the context menu first. With the menu closed it calls `Focus(ctx, "")` and clears the ring. An Escape press that closed the menu is consumed; its release still reaches the handler, as does both edges when no menu was open. `internal/window/focus_keys.go` holds the window side.
 
 Buttons with an id join the focus order. Disabled buttons are skipped and ignore clicks. Focusing an offscreen button requests a scroll to reveal it. `FocusID` reports button focus. `page.Edit().FocusedField` reports fields only. The application's `KeyDown` handler can activate a focused button on Enter or Space by passing its box center to `Page.Click`. Enabled buttons keep their `data-action` routes.
 
@@ -20,9 +20,9 @@ A press held within 8 px for 450 ms calls the inner screen's `LongPress`. A text
 
 ## Context menu
 
-A right click asks the page for rows with `ContextMenu() []host.MenuItem` and draws them at the cursor. Row ids are `cut`, `copy`, `paste`, `select-all`, `undo`, and `redo`. An action calls the matching method on the inner screen. Tests use `page` for `Copy`, `Cut`, `Paste`, `SelectAll`, `Undo`, and `Redo`. Paste reads the clipboard the way the Ctrl+V chord does. A disabled row draws grey and does nothing.
+A right click asks the page for rows with `ContextMenu() []host.MenuItem`. The shell draws those rows at the cursor. A screen that implements `PresentMenu` and returns true paints the rows in its own template, and the window skips its chrome. The built-in row ids are `cut`, `copy`, `paste`, `select-all`, `undo`, and `redo`. On the shell menu, an action calls the matching method on the inner screen. A page that paints the rows itself runs the action from its own click handler, including those built-in ids. Tests use `page` for `Copy`, `Cut`, `Paste`, `SelectAll`, `Undo`, and `Redo`. Paste reads the clipboard the way the Ctrl+V chord does. A disabled row draws grey and does nothing.
 
-A left click on a row runs the action and closes the menu. A left click elsewhere or Escape closes it, and a new right click reopens it at the new point. The menu is chrome. `internal/window/menu_draw.go` paints it after the page, so it never enters `page.Probe().PNG`, the display list, or a `Redraw`. The page is only asked for its rows when the menu opens.
+A left click on a row runs the action and closes the menu. A left click elsewhere, or Escape, closes it, and a new right click reopens it at the new point. The shell menu is chrome. `internal/window/menu_draw.go` paints it after the page, so that chrome stays out of `page.Probe().PNG`, the display list, and a `Redraw`. Rows a page presents are part of the page picture. The page is asked for its rows when the menu opens.
 
 ## Hover
 
@@ -36,7 +36,7 @@ When the screen implements `host.CursorShape`, the window reads `CursorShape()` 
 
 `page.Probe().PressedID()` returns the control held by the current pointer gesture, or an empty string after `page.Edit().Release`. A frame callback can use it to stop application-specific hold repeats when the pointer releases.
 
-A finger that lifts without moving sends press, click, and release as a tap. A finger held within 8 px for 450 ms is a long press: a text field under the point selects its word and any other box reaches `Handlers.LongPress`, after which the finger drags the selection instead of the page and the lift is not a tap. A second finger cancels the hold. A finger that moves past 8 px drags the page instead: the content follows the finger, clamped to the content ends. Two fingers pinch a zoom that starts at the span of the first two fingers and stays between 0.25 and 4. `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, and Ctrl+wheel change the same zoom; the keyboard steps are in [keys.md](keys.md). The replay and bitmap paths draw through the zoom, and `contentPoint` divides it out, so a click under a pinch lands on the same box. A tap that the system also reports as a mouse click does not tap twice.
+A finger that lifts without moving sends press, click, and release as a tap. A finger held within 8 px for 450 ms is a long press: a text field under the point selects its word and any other box reaches `Handlers.LongPress`, after which the finger drags the selection instead of the page and the lift is not a tap. A second finger cancels the hold. A finger that moves past 8 px drags the page instead: the content follows the finger, clamped to the content ends. Two fingers pinch a zoom that starts at the span of the first two fingers and stays between 0.25 and 4. `Ctrl+=`, `Ctrl+-`, `Ctrl+0`, and Ctrl+wheel change the same zoom. `Config.DisableWheelZoom` keeps the wheel for scrolling. `Config.DisableKeyZoom` leaves those keyboard chords in place and does not scale the page. The keyboard steps are in [keys.md](keys.md). The replay and bitmap paths draw through the zoom, and `contentPoint` divides it out, so a click under a pinch lands on the same box. A tap that the system also reports as a mouse click does not tap twice.
 
 ## Captured pointer gestures
 
@@ -57,4 +57,4 @@ F11 toggles `ebiten.SetFullscreen` on desktop and the window consumes the key. w
 - Up and Down in a textarea, and selection beyond the visible scroll of a field, are out of scope. The value model is a single line.
 - IME uses Ebiten's experimental `exp/textinput` on Android, iOS, and desktop builds. A phone shows its soft keyboard. Desktop preedit is drawn as a temporary underlined run; it leaves the stored value alone until commit. Commits use `page.Edit().Type` or `page.Testing().IMEReplace`, and the window skips its own typing on ticks the IME consumed. The window calls the inner screen. The Android and iOS adapter still displays preedit through the field edit path. Native desktop composition needs verification with each supported OS input method. wasm uses browser key input.
 - The page exposes a semantic accessibility tree and actions for supported controls. The window has no native screen-reader bridge, and the tree does not filter content hidden only by CSS. See [accessibility.md](accessibility.md).
-- The context menu is not native. It is a shell rectangle drawn with the badge face.
+- The context menu is not a native OS menu. The shell draws a rectangle with the badge face, unless the page presents the rows in its own template.

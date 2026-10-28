@@ -2,6 +2,8 @@
 package secret
 
 import (
+	"encoding"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 )
@@ -12,6 +14,11 @@ const redacted = "[REDACTED]"
 // Secret wraps a password, token, or key. Format verbs, String,
 // GoString, and slog all render [REDACTED]. Call Reveal to use it.
 type Secret string
+
+var (
+	_ json.Marshaler         = Secret("")
+	_ encoding.TextMarshaler = Secret("")
+)
 
 // Reveal returns the wrapped value for actual use.
 func (s Secret) Reveal() string { return string(s) }
@@ -27,3 +34,9 @@ func (s Secret) Format(f fmt.State, _ rune) { _, _ = f.Write([]byte(redacted)) }
 
 // LogValue hides the value in slog records.
 func (s Secret) LogValue() slog.Value { return slog.StringValue(redacted) }
+
+// MarshalJSON hides the value in JSON output.
+func (s Secret) MarshalJSON() ([]byte, error) { return []byte(`"` + redacted + `"`), nil }
+
+// MarshalText hides the value in text output.
+func (s Secret) MarshalText() ([]byte, error) { return []byte(redacted), nil }

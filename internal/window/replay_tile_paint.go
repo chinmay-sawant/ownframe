@@ -45,9 +45,17 @@ func (s *shell) paintTile(d *layout.Display, g *tileGrid, col, row int, rect ima
 		return
 	}
 
-	sub, ok := g.at(col, row).SubImage(part.Sub(tile.Min)).(*ebiten.Image)
-	if !ok {
-		return
+	tileImg := g.at(col, row)
+	subRect := part.Sub(tile.Min)
+	var sub *ebiten.Image
+	if subRect == tileImg.Bounds() {
+		sub = tileImg
+	} else {
+		var ok bool
+		sub, ok = tileImg.SubImage(subRect).(*ebiten.Image)
+		if !ok {
+			return
+		}
 	}
 
 	s.partial.paints++

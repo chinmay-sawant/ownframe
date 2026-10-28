@@ -59,6 +59,60 @@ func TestZoomKey(t *testing.T) {
 	}
 }
 
+type noWheelZoomScreen struct{ fakeScreen }
+
+func (noWheelZoomScreen) WheelZoomAllowed() bool { return false }
+
+type noKeyZoomScreen struct{ fakeScreen }
+
+func (noKeyZoomScreen) KeyZoomAllowed() bool { return false }
+
+func TestDisabledWheelZoomStaysStill(t *testing.T) {
+	off := &shell{app: &noWheelZoomScreen{}, pageZoom: 1}
+	if off.wheelMayZoom(1) {
+		t.Fatal("a page that refuses wheel zoom still accepted a notch")
+	}
+
+	if off.zoom() != 1 {
+		t.Fatalf("zoom = %v", off.zoom())
+	}
+
+	on := &shell{app: &fakeScreen{}, pageZoom: 1}
+	if !on.wheelMayZoom(1) {
+		t.Fatal("the default page rejected wheel zoom")
+	}
+}
+
+func TestDisabledKeyZoomStaysStill(t *testing.T) {
+	off := &shell{app: &noKeyZoomScreen{}, pageZoom: 1}
+	mods := modifiers{Control: true}
+	keys := []ebiten.Key{
+		ebiten.KeyEqual,
+		ebiten.KeyKPAdd,
+		ebiten.KeyMinus,
+		ebiten.KeyKPSubtract,
+		ebiten.Key0,
+		ebiten.KeyKP0,
+	}
+
+	for _, key := range keys {
+		if !off.zoomKey(key, true, mods) {
+			t.Fatalf("Control+%v was not consumed", key)
+		}
+	}
+
+	if off.zoom() != 1 {
+		t.Fatalf("zoom = %v", off.zoom())
+	}
+
+	plain := &shell{pageZoom: 1}
+	plain.zoomKey(ebiten.KeyEqual, true, mods)
+
+	if plain.zoom() == 1 {
+		t.Fatal("a page without the policy rejected Control+=")
+	}
+}
+
 // TestWheelZoomFactor checks trackpad deltas scale by the same step.
 func TestWheelZoomFactor(t *testing.T) {
 	if got := wheelZoomFactor(0); got != 1 {

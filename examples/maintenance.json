@@ -12,6 +12,7 @@
     "animations",
     "bind-hooks",
     "clipboard",
+    "code-view",
     "controls",
     "crash",
     "css-masking",

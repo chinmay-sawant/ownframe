@@ -7,9 +7,10 @@ import (
 
 // Result is one resolved request waiting for the frame thread.
 type Result struct {
-	Gen  uint64
-	Clip Clip
-	Err  error
+	Gen   uint64
+	Clip  Clip
+	Voice Voice
+	Err   error
 }
 
 // Engine resolves one track off the frame thread and drives one Voice.
@@ -52,15 +53,19 @@ func NewEngine(res Resolver) *Engine {
 const defaultTimeout = 20 * time.Second
 
 // Update applies a resolved track. Call it from the page tick; it never
-// blocks. Decode runs unlocked; a newer Want discards this result.
+// blocks. A newer Want discards this result.
 func (e *Engine) Update() {
 	e.latestMu.Lock()
 	res := e.latest
+	e.latest.Voice = nil
 	e.latestMu.Unlock()
 
 	e.mu.Lock()
 	if !e.loading || res.Gen <= e.applied {
 		e.mu.Unlock()
+		if res.Voice != nil {
+			_ = res.Voice.Close()
+		}
 
 		return
 	}
@@ -70,30 +75,24 @@ func (e *Engine) Update() {
 	if res.Err != nil {
 		e.err = res.Err
 		e.mu.Unlock()
-
-		return
-	}
-	e.mu.Unlock()
-
-	voice, err := e.Open(res.Clip.Data)
-	if err != nil {
-		e.mu.Lock()
-		if e.gen == res.Gen {
-			e.err = err
+		if res.Voice != nil {
+			_ = res.Voice.Close()
 		}
-		e.mu.Unlock()
 
 		return
 	}
 
-	e.mu.Lock()
 	if e.gen != res.Gen {
 		e.mu.Unlock()
-		_ = voice.Close()
+		if res.Voice != nil {
+			_ = res.Voice.Close()
+		}
 
 		return
 	}
 	e.mu.Unlock()
 
-	e.replace(voice, res.Clip)
+	if res.Voice != nil {
+		e.replace(res.Voice, res.Clip)
+	}
 }

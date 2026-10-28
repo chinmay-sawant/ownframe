@@ -36,6 +36,14 @@ turns the watch off, and `-web` serves the same page in a browser. The
 behavior and the limits are in
 [../documentation/hot-reload.md](../documentation/hot-reload.md).
 
+For Go edits, restart the process with `air` (template reload cannot do that;
+the counter resets on rebuild):
+
+```sh
+make air reload
+make air reload ARGS="-web"
+```
+
 ## Original examples
 
 | Folder | Shows |
@@ -48,7 +56,7 @@ behavior and the limits are in
 | [input-lab](input-lab) | All nine form and input demos in one window: plain controls, two-way binding, a locked bound field, edit undo, OS clipboard, scroll list, sign-in, and CSS states. |
 | [accessibility](accessibility) | Labeled form, desktop IME composition, semantic tree snapshot and action, password redaction, and scrolling thumb cursor. |
 | [animations](animations) | CSS-only animation gallery: timing, direction, delay, fill, iteration, 2D, 3D, perspective, paint, path, and vendor alias. No tick callback or manual player. |
-| [motion-conformance](motion-conformance) | One CSS-only card per animation class that ships and the three shipped transition classes, with tests that sample the 2D matrix, 3D re-projection, paint-only colour writes, corner paths, the paused clock, and transition midpoints. |
+| [motion-conformance](motion-conformance) | One CSS-only card per animation class that ships and three transition cards (colour, opacity, transform), with tests that sample the 2D matrix, 3D re-projection, paint-only colour writes, corner paths, the paused clock, and transition midpoints. |
 
 ## Feature examples
 
@@ -77,6 +85,7 @@ behavior and the limits are in
 | [teams](teams) | Microsoft Teams-like app clone: dark theme by default with a light theme toggle, six rail menus (Activity, Chat, Teams and channels, Calendar, Calls, Files), a More apps flyout, a profile flyout with status, chat compose, live chat and search filtering, expandable channel threads with emoji reactions, a meeting card with date and time picks, a dial pad, and file details. The state persists in SQLite, the initial data comes from `examples/teams/store/seed/*.sql`, and `-db` selects the database file (`:memory:` keeps it in memory). Marvel-cast sample data. | 8118 |
 | [spotify-player](spotify-player) | Dark Spotify-like player: eight screens (home, search, library, liked, browse, radio, queue, profile), live iTunes data, local free-music playback, a CSS-animated now-bar equalizer, and CSS hover motion. | 8119 |
 | [trade](trade) | Meridian trading terminal: watchlist, candlestick chart, quote rail, order blotter, and six more screens over a seeded synthetic market. All motion is CSS; devtools open by default. | 8144 |
+| [code-view](code-view) | Code review viewer: folded explorer, tabs, Go, Python, JavaScript, Markdown and five more highlighters, a unified or split git diff with word emphasis, an outline drawer, and devtools open by default. `-root` browses a real repository. | 8145 |
 | [telegram](telegram) | Telegram-like chat demo sized for a phone: chat list with search, contacts, settings with a dark theme, and one open conversation with a composer. The Android project under `telegram/android` builds an installable APK. | 8129 |
 | [dino](dino) | Chrome-style dinosaur game: keyboard jump and duck, cacti and birds, running score, and a live frames-per-second readout. | 8120 |
 | [lg-remote](lg-remote) | LG webOS remote for a UP7750-class TV. Dark by default, with a light theme toggle. Desktop uses Wi-Fi. Android adds Bluetooth HID. | 8131 |

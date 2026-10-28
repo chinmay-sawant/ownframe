@@ -11,6 +11,11 @@ import (
 // opCap is the pooled buffer capacity for one display update.
 const opCap = 64
 
+// OpBuffer is a pooled holder for a display operation slice.
+type OpBuffer struct {
+	Ops []layout.DisplayOp
+}
+
 // Damage is one display comparison. N is the count of partial rects.
 // A full report ignores the rects; the page marks the whole frame.
 type Damage struct {
@@ -24,34 +29,42 @@ func EmptyOps() []layout.DisplayOp {
 	return make([]layout.DisplayOp, 0, opCap)
 }
 
+// NewOpBuffer returns a new OpBuffer initialized with capacity opCap.
+func NewOpBuffer() *OpBuffer {
+	return &OpBuffer{Ops: EmptyOps()}
+}
+
 // Rent takes an operation buffer of at least n slots from pool.
-func Rent(pool *sync.Pool, n int) []layout.DisplayOp {
-	bp, ok := pool.Get().(*[]layout.DisplayOp)
-	if !ok {
-		return make([]layout.DisplayOp, 0, n)
+func Rent(pool *sync.Pool, n int) *OpBuffer {
+	buf, ok := pool.Get().(*OpBuffer)
+	if !ok || buf == nil {
+		return &OpBuffer{Ops: make([]layout.DisplayOp, 0, n)}
 	}
 
-	buf := *bp
-	if cap(buf) < n {
-		buf = make([]layout.DisplayOp, 0, n)
+	if cap(buf.Ops) < n {
+		buf.Ops = make([]layout.DisplayOp, 0, n)
 	}
+	buf.Ops = buf.Ops[:0]
 
-	return buf[:0]
+	return buf
 }
 
 // Free returns buf to pool. The caller must not use buf after Free.
-func Free(pool *sync.Pool, buf []layout.DisplayOp) {
-	b := buf[:0]
-	pool.Put(&b)
+func Free(pool *sync.Pool, buf *OpBuffer) {
+	if buf == nil {
+		return
+	}
+	buf.Ops = buf.Ops[:0]
+	pool.Put(buf)
 }
 
 // Snapshot copies d's operations into a rented buffer.
 // The returned display shares every slice except Ops, which is the copy.
-func Snapshot(pool *sync.Pool, d *layout.Display) (layout.Display, []layout.DisplayOp) {
+func Snapshot(pool *sync.Pool, d *layout.Display) (layout.Display, *OpBuffer) {
 	buf := Rent(pool, len(d.Ops))
-	buf = append(buf, d.Ops...)
+	buf.Ops = append(buf.Ops, d.Ops...)
 	before := *d
-	before.Ops = buf
+	before.Ops = buf.Ops
 
 	return before, buf
 }
@@ -80,7 +93,7 @@ func Compare(before, next *layout.Display) Damage {
 
 // Update snapshots d, runs fn on it, and compares the two lists.
 // The caller frees the buffer after it has recorded the damage.
-func Update(pool *sync.Pool, d *layout.Display, fn func(*layout.Display)) (Damage, []layout.DisplayOp) {
+func Update(pool *sync.Pool, d *layout.Display, fn func(*layout.Display)) (Damage, *OpBuffer) {
 	before, buf := Snapshot(pool, d)
 	fn(d)
 

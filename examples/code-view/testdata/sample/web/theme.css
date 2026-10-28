@@ -1,0 +1,41 @@
+/* Beacon accent themes. The dashboard picks one with data-accent on <html>. */
+:root {
+  --grid-line: rgba(122, 162, 247, 0.08);
+}
+
+html[data-accent="mint"] {
+  --accent: #5eead4;
+  --accent-soft: rgba(94, 234, 212, 0.14);
+}
+
+html[data-accent="amber"] {
+  --accent: #f0b75a;
+  --accent-soft: rgba(240, 183, 90, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot,
+  .row {
+    animation: none;
+  }
+
+  .detail,
+  .chip,
+  .icon {
+    transition: none;
+  }
+}
+
+/* A faint grid behind the page keeps the dark background from going flat. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(600px 400px at 60% 0%, #000, transparent 75%);
+  pointer-events: none;
+}

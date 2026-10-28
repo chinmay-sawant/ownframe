@@ -1,0 +1,8 @@
+{{if .MenuOpen}}
+<button class="ctx-back" id="menu-dismiss" data-action="menu-dismiss" type="button" aria-label="Close menu"></button>
+<div class="ctx-menu" style="left:{{.MenuX}}px;top:{{.MenuY}}px">
+  {{range .MenuRows}}
+  <button class="ctx-item" id="ctx-{{.Index}}" type="button"{{if .Enabled}} data-action="menu-item:{{.ID}}"{{else}} disabled{{end}}>{{.Label}}</button>
+  {{end}}
+</div>
+{{end}}

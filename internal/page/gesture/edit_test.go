@@ -42,6 +42,20 @@ func TestEditInsertBackspaceDeleteAndPaste(t *testing.T) {
 	}
 }
 
+func TestPasteKeepsLinesInTextarea(t *testing.T) {
+	for _, tc := range []struct {
+		tag  string
+		want string
+	}{{"input", "onetwo"}, {"textarea", "one\r\ntwo"}} {
+		field := textField("")
+		field.Tag = tc.tag
+		got, _, _, _ := Edit(field, "one\r\ntwo", OpPaste, 0, 0)
+		if got.Value != tc.want {
+			t.Errorf("%s paste = %q, want %q", tc.tag, got.Value, tc.want)
+		}
+	}
+}
+
 func TestEditCutCopyAndSelectAll(t *testing.T) {
 	t.Parallel()
 

@@ -1,0 +1,316 @@
+<main class="void" id="void"><div class="scroll-space" style="height:{{.SpaceHeight}}px"></div></main>
+
+<section class="editor{{if .Split}} split{{end}}{{if eq .FocusGroup 0}} focus{{end}}" id="editor-window" style="left:{{.PaneLeft}}px;width:{{.PaneWidth}}px">
+  <div class="tabstrip" id="tabstrip">
+    {{if .TabsPrev}}<button class="tab-nav" id="tabs-prev" data-action="tabs-prev" type="button" title="Earlier tabs" aria-label="Earlier tabs"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+    </button>{{end}}
+    <div class="tabs">
+      {{if eq .Mode "changes"}}
+      <div class="tab on diff-tab">
+        <button class="tab-main" id="tab-working" data-action="history-working" type="button" title="{{if .Diff.CommitShort}}{{.Diff.CommitSubject}}{{else}}Working tree{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
+          <svg width="12" height="13" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
+          <span class="tab-name">{{if .Diff.CommitShort}}{{.Diff.CommitShort}}{{else if eq .Diff.Source "branch"}}Branch changes{{else}}Working tree{{end}}</span>
+        </button>
+        <button class="tab-x" id="tab-close-working" data-action="tab-close-working" type="button" title="Close Working tree" aria-label="Close Working tree"{{if .Modal}} tabindex="-1"{{end}}>×</button>
+      </div>
+      {{end}}
+      {{range $t := .Tabs}}
+      <div class="tab{{if $t.Active}} on{{end}}">
+        <button class="tab-main" id="tab-{{$t.Index}}" data-action="tab:{{$t.Index}}" type="button" title="{{$t.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>
+          <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
+          <span class="tab-name">{{$t.Name}}</span>
+          {{if $t.Dirty}}<span class="tab-dot" id="tab-dot-{{$t.Index}}"></span>{{end}}
+          <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
+        </button>
+        <button class="tab-x" id="tab-close-{{$t.Index}}" data-action="tab-close:{{$t.Index}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}"{{if $.Modal}} tabindex="-1"{{end}}>×</button>
+      </div>
+      {{end}}
+    </div>
+    <span class="tabs-fill"></span>
+    {{if .TabsNext}}<button class="tab-nav" id="tabs-next" data-action="tabs-next" type="button" title="Later tabs" aria-label="Later tabs"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </button>{{end}}
+    <button class="tab-tool{{if .Split}} on{{end}}" id="split-toggle" data-action="split-toggle" type="button" title="Split editor (Ctrl+\)" aria-label="Split editor {{if .Split}}on{{else}}off{{end}}" aria-pressed="{{if .Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.4"><rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M8 2.4v11.2"/></svg>
+    </button>
+    <button class="tab-tool{{if .Details}} on{{end}}" id="tab-details" data-action="details-toggle" type="button" title="Details" aria-label="Details {{if .Details}}open{{else}}closed{{end}}" aria-pressed="{{if .Details}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.4">
+        <rect x="1.6" y="2.4" width="12.8" height="11.2" rx="1.6"/><path d="M10 2.4v11.2"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="crumbs" id="crumbs">
+    {{if eq .Mode "changes"}}
+      {{if .Diff.HasFiles}}
+      {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>{{end}}
+      <span class="crumb-path diff-path" id="diff-path" title="{{.Diff.Path}}">{{if .Diff.DirShort}}<span class="diff-dir">{{.Diff.DirShort}}/</span>{{end}}<b>{{.Diff.NameShort}}</b></span>
+      <span class="tabs-fill"></span>
+      <span id="diff-status" class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
+      <span id="diff-stats" class="crumb-stats"><b class="add">+{{.Diff.Add}}</b><b class="del">−{{.Diff.Del}}</b></span>
+      <div class="seg">
+        <button class="seg-btn{{if not .Diff.Split}} on{{end}}" id="seg-unified" data-action="diff-unified" type="button" aria-pressed="{{if .Diff.Split}}false{{else}}true{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Unified</button>
+        <button class="seg-btn{{if .Diff.Split}} on{{end}}" id="seg-split" data-action="diff-split" type="button" aria-pressed="{{if .Diff.Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Split</button>
+      </div>
+      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk" aria-label="Previous hunk"{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button>
+      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk" aria-label="Next hunk"{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button>
+      <button class="crumb-btn{{if .Wrap}} on{{end}}" id="diff-wrap-toggle" data-action="wrap-toggle" type="button" title="Wrap long diff lines (Z)" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
+      {{if .Diff.CanEdit}}<button class="crumb-btn" id="diff-edit" data-action="diff-edit" type="button" title="Edit file (click a line or press Ctrl+S to save)"{{if .Modal}} tabindex="-1"{{end}}>Edit</button>{{end}}
+      <button class="crumb-btn" id="crumb-refresh" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Refresh</button>
+      <span class="crumb-meta">{{.Diff.Hunks}} hunks</span>
+      {{else}}
+      <span class="crumb-path">Source control</span>
+      <span class="tabs-fill"></span>
+      <button class="crumb-btn" id="empty-refresh" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Refresh</button>
+      {{end}}
+    {{else if .Active}}
+      <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+      <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
+      <span class="crumb-path file-path" id="crumb-path" title="{{.Active}}">{{if .ActiveDirShort}}<span class="file-dir">{{.ActiveDirShort}}/</span>{{end}}<b>{{.ActiveNameShort}}</b></span>
+      {{if .Editing}}
+      {{if .EditDirty}}<span class="edit-flag" id="edit-flag">Changes made</span>{{end}}
+      <button class="crumb-btn on" id="edit-save" data-action="edit-save" type="button" title="Save (Ctrl+S)">Save</button>
+      <button class="crumb-btn" id="edit-toggle" data-action="edit-toggle" type="button" title="Back to the source view (Esc)">Done</button>
+      <span class="tabs-fill"></span>
+      <span class="crumb-meta">{{.LineCount}} lines · Ctrl+S saves</span>
+      {{else if .FindOpen}}
+      <div class="findbar" id="findbar">
+        <input id="find" class="find-input" type="text" data-bind="FindQuery" placeholder="Find in file" autocomplete="off" spellcheck="false" aria-label="Find in file"{{if .Modal}} tabindex="-1"{{end}}>
+        <span class="find-count mono" id="find-count" aria-live="polite" aria-atomic="true">{{.FindCurrent}}/{{.FindTotal}}</span>
+        <button class="find-btn{{if .FindCase}} on{{end}}" id="find-case" data-action="find-case" type="button" title="Match case" aria-label="Match case" aria-pressed="{{if .FindCase}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Aa</button>
+        <button class="find-btn" id="find-prev" data-action="find-prev" type="button" title="Previous match" aria-label="Previous match"{{if .Modal}} tabindex="-1"{{end}}>↑</button>
+        <button class="find-btn" id="find-next" data-action="find-next" type="button" title="Next match" aria-label="Next match"{{if .Modal}} tabindex="-1"{{end}}>↓</button>
+        <button class="find-btn" id="find-close" data-action="find-close" type="button" title="Close find" aria-label="Close find"{{if .Modal}} tabindex="-1"{{end}}>×</button>
+      </div>
+      {{else}}
+      <span class="tabs-fill"></span>
+      {{if .Previewable}}<button class="crumb-btn{{if .Preview}} on{{end}}" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)" aria-pressed="{{if .Preview}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
+      <button class="crumb-btn{{if .Wrap}} on{{end}}" id="wrap-toggle" data-action="wrap-toggle" type="button" title="Soft wrap (Z)" aria-label="Soft wrap {{if .Wrap}}on{{else}}off{{end}}" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
+      <button class="crumb-btn" id="copy-path" data-action="copy-path" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy path</button>
+      <button class="crumb-btn" id="copy-file" data-action="copy-file" type="button"{{if .Modal}} tabindex="-1"{{end}}>Copy file</button>
+      <span class="crumb-meta">{{.LineCount}} lines · {{.ByteSize}}</span>
+      {{end}}
+    {{else if .Split}}
+      <span class="crumb-path">Second editor group</span>
+      <span class="tabs-fill"></span>
+    {{end}}
+  </div>
+
+  <div class="code-body{{if .Editing}} editing{{end}}" id="code-body">
+    {{if eq .Mode "changes"}}
+      {{if .Diff.HasFiles}}
+      <div class="track{{if .Diff.Split}} split-track{{end}}" style="top:{{.Diff.TrackTop}}px">
+        {{range .Diff.Rows}}
+          {{if eq .Kind "hunk"}}
+          <div class="drow hunk{{if .Current}} current{{end}}{{if .Cont}} cont{{end}}"><span class="dhunk">{{.Hunk}}</span></div>
+          {{else if eq .Kind "meta"}}
+          <div class="drow meta{{if .Cont}} cont{{end}}"><span class="dmeta">{{.Hunk}}</span></div>
+          {{else if eq .Kind "split"}}
+          <div class="drow split{{if .Current}} current{{end}}{{if or .LeftCont .RightCont}} cont{{end}}">
+            <span class="dnum {{.LeftKind}}">{{.LeftNo}}</span>
+            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="dnum {{.RightKind}}">{{.RightNo}}</span>
+            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            {{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}
+          </div>
+          {{else if eq .Kind "expand"}}
+          <div class="drow expand" id="diff-expand-row-{{.Expand.Index}}">
+            {{if $.Diff.Split}}
+            <span class="dnum dnum-expand">···</span>
+            {{else}}
+            <span class="dnum dnum-expand">···</span>
+            <span class="dnum dnum-expand">···</span>
+            <span class="dsign">↕</span>
+            {{end}}
+            <div class="dcell-expand">
+              {{if .Expand.CanDown}}
+              <button class="expand-btn expand-down" id="diff-expand-down-{{.Expand.Index}}" data-action="diff-expand-down:{{.Expand.Index}}" type="button" title="{{.Expand.DownText}}"{{if $.Modal}} tabindex="-1"{{end}}>{{.Expand.DownText}}</button>
+              {{end}}
+              <button class="expand-btn expand-all" id="diff-expand-all-{{.Expand.Index}}" data-action="diff-expand-all:{{.Expand.Index}}" type="button" title="{{.Expand.AllText}}"{{if $.Modal}} tabindex="-1"{{end}}>{{.Expand.AllText}}</button>
+              {{if .Expand.CanUp}}
+              <button class="expand-btn expand-up" id="diff-expand-up-{{.Expand.Index}}" data-action="diff-expand-up:{{.Expand.Index}}" type="button" title="{{.Expand.UpText}}"{{if $.Modal}} tabindex="-1"{{end}}>{{.Expand.UpText}}</button>
+              {{end}}
+            </div>
+          </div>
+          {{else}}
+          <div class="drow {{.Kind}}{{if .Current}} current{{end}}{{if .Cont}} cont{{end}}">
+            <span class="dnum">{{.OldNo}}</span>
+            <span class="dnum">{{.NewNo}}</span>
+            <span class="dsign">{{if .Cont}}{{else if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
+            <span class="dcell"><span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+            {{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}
+          </div>
+          {{end}}
+        {{end}}
+      </div>
+      {{else}}
+      <div class="empty">
+        <span class="empty-mark ok">✅</span>
+        <h2>{{if .Diff.EmptyTitle}}{{.Diff.EmptyTitle}}{{else}}Working tree clean{{end}}</h2>
+        <p>{{.Diff.Note}}</p>
+        <button class="button" id="empty-check" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Check again</button>
+      </div>
+      {{end}}
+    {{else if .Welcome}}
+      <div class="welcome">
+        <div class="welcome-card">
+          <span class="welcome-mark">
+            <svg width="52" height="52" viewBox="0 0 20 20" fill="none" stroke-linejoin="round">
+              <path d="M10 1.8 18 6v8l-8 4.2L2 14V6z" stroke-width=".8"/>
+              <path d="M10 1.8v16.4M2 6l8 4.3L18 6" stroke-width=".55" opacity=".55"/>
+            </svg>
+          </span>
+          <h1>Read the workspace</h1>
+          <p>One HTML template, one stylesheet, and Go data. Every row is highlighted before it reaches the page.</p>
+
+          <div class="quick">
+            {{range .Recent}}
+            <button class="quick-row" id="quick-{{.Path}}" data-action="open:{{.Path}}" type="button"{{if $.Modal}} tabindex="-1"{{end}}>
+              <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
+              <span class="quick-text"><b>{{.Name}}</b><span>{{.Dir}}</span></span>
+              <span class="quick-go">↵</span>
+            </button>
+            {{end}}
+          </div>
+
+          <div class="keys">
+            <span class="key-item"><em>1</em><span>Explorer</span></span>
+            <span class="key-item"><em>2</em><span>Changes</span></span>
+            <span class="key-item"><em>3</em><span>Details</span></span>
+            <span class="key-item"><em>↑ ↓</em><span>Scroll</span></span>
+            <span class="key-item"><em>R</em><span>Refresh</span></span>
+            <button class="key-item key-settings" id="welcome-settings" data-action="settings-open" type="button" aria-label="Open settings"{{if .Modal}} tabindex="-1"{{end}}>
+              <em><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 2h3.2l.5 2a6.3 6.3 0 0 1 1.4.6l1.8-1 2.2 2.2-1 1.8c.3.5.5.9.6 1.4l2 .5v3.2l-2 .5a6.3 6.3 0 0 1-.6 1.4l1 1.8-2.2 2.2-1.8-1a6.3 6.3 0 0 1-1.4.6l-.5 2H8.4l-.5-2a6.3 6.3 0 0 1-1.4-.6l-1.8 1-2.2-2.2 1-1.8a6.3 6.3 0 0 1-.6-1.4l-2-.5V8.4l2-.5a6.3 6.3 0 0 1 .6-1.4l-1-1.8 2.2-2.2 1.8 1a6.3 6.3 0 0 1 1.4-.6z"/><circle cx="10" cy="10" r="2.6"/></svg></em><span>Settings</span>
+            </button>
+          </div>
+
+          <div class="welcome-note">No script tag, no canvas. ownframe paints the page.</div>
+        </div>
+      </div>
+    {{else if .Empty}}
+      <div class="empty">
+        <span class="empty-mark{{if eq .EmptyKind "error"}} warn{{end}}">{{if eq .EmptyKind "error"}}⚠️{{else}}·{{end}}</span>
+        <h2>{{.EmptyTitle}}</h2>
+        <p>{{.EmptyBody}}</p>
+        <button class="button" id="empty-explorer" data-action="mode-explorer" type="button"{{if .Modal}} tabindex="-1"{{end}}>Back to the explorer</button>
+      </div>
+    {{else if .Editing}}
+      <div class="track" style="top:{{.TrackTop}}px">
+        {{range .Rows}}
+        <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
+          {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
+          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <span class="cline">{{if .Selection}}<span class="edit-selection" style="left:{{.SelectionLeft}}px;width:{{.SelectionWidth}}px"></span>{{end}}<span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{if .Caret}}<span class="edit-caret" style="left:{{.CaretLeft}}px"></span>{{end}}</span>
+        </div>
+        {{end}}
+      </div>
+    {{else if .Preview}}
+      <div class="preview" id="markdown-preview">
+        <div class="preview-track" style="top:{{.TrackTop}}px">
+          {{range .PreviewRows}}
+          <div class="prow prow-{{.Kind}}">
+            <span class="pmark">{{.Marker}}</span>
+            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px;height:20px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    {{else}}
+      <div class="track" style="top:{{.TrackTop}}px">
+        {{range .Rows}}
+        <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
+          {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
+          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+          <button class="edit-line-hit" id="edit-line-{{.Line}}" data-action="edit-begin-line:{{.Line}}" type="button" title="Edit line {{if .No}}{{.No}}{{end}}" aria-label="Edit line {{if .No}}{{.No}}{{end}}" tabindex="-1"></button>
+        </div>
+        {{end}}
+      </div>
+      {{if .CanEdit}}<button class="edit-surface" id="edit-surface" data-action="edit-begin" type="button" title="Click to edit" aria-label="Edit {{.Active}}"{{if .Modal}} tabindex="-1"{{end}}></button>{{end}}
+    {{end}}
+    {{if .EditorScroll.Show}}<button class="editor-scroll-thumb" id="editor-scroll-thumb" type="button" aria-label="Scroll editor" tabindex="-1" style="top:{{.EditorScroll.Top}}px;height:{{.EditorScroll.Height}}px"><svg width="8" height="{{.EditorScroll.Height}}" aria-hidden="true"><rect width="8" height="{{.EditorScroll.Height}}" fill="#a6adba"/></svg></button>{{end}}
+  </div>
+</section>
+
+{{if .Split}}
+<section class="editor editor-second{{if eq .FocusGroup 1}} focus{{end}}" id="editor-window-2" style="left:{{.Second.Left}}px;width:{{.Second.Width}}px">
+  <div class="tabstrip" id="tabstrip-2">
+    {{if .Second.TabsPrev}}<button class="tab-nav" id="tabs2-prev" data-action="tabs2-prev" type="button" title="Earlier tabs" aria-label="Earlier tabs">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+    </button>{{end}}
+    <div class="tabs">
+      {{range $t := .Second.Tabs}}
+      <div class="tab{{if $t.Active}} on{{end}}">
+        <button class="tab-main" id="tab2-{{$t.Index}}" data-action="tab2:{{$t.Index}}" type="button" title="{{$t.Path}}">
+          <span class="ficon sm lang-{{$t.Lang}}">{{$t.Badge}}</span>
+          <span class="tab-name">{{$t.Name}}</span>
+          {{if $t.Dirty}}<span class="tab-dot" id="tab2-dot-{{$t.Index}}"></span>{{end}}
+          <span class="tab-status {{$t.StatusClass}}">{{$t.Status}}</span>
+        </button>
+        <button class="tab-x" id="tab2-close-{{$t.Index}}" data-action="tab2-close:{{$t.Index}}" type="button" title="Close {{$t.Path}}" aria-label="Close {{$t.Name}}">×</button>
+      </div>
+      {{end}}
+    </div>
+    <span class="tabs-fill"></span>
+    {{if .Second.TabsNext}}<button class="tab-nav" id="tabs2-next" data-action="tabs2-next" type="button" title="Later tabs" aria-label="Later tabs">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </button>{{end}}
+    <button class="tab-tool" id="pane-left" data-action="focus-group:0" type="button" title="Focus the left editor" aria-label="Focus the left editor">L</button>
+    <button class="tab-tool on" id="split-close" data-action="split-toggle" type="button" title="Close the split editor" aria-label="Close the split editor">▥</button>
+  </div>
+
+  <div class="crumbs" id="crumbs-2">
+    {{if .Second.Active}}
+    <span class="cstat {{.Second.StatusClass}}">{{.Second.Status}}</span>
+    <span class="lang-pill lang-{{.Second.Lang}}">{{.Second.LangLabel}}</span>
+    <span class="crumb-path file-path" id="crumb-path-2" title="{{.Second.Active}}">{{if .Second.ActiveDirShort}}<span class="file-dir">{{.Second.ActiveDirShort}}/</span>{{end}}<b>{{.Second.ActiveNameShort}}</b></span>
+    <span class="tabs-fill"></span>
+    <span class="crumb-meta">{{.Second.LineCount}} lines · {{.Second.ByteSize}}</span>
+    {{else}}
+    <span class="crumb-path">Second editor group</span>
+    <span class="tabs-fill"></span>
+    <span class="crumb-meta">Open a file from the explorer</span>
+    {{end}}
+  </div>
+
+  <div class="code-body" id="code-body-2">
+    {{if .Second.Welcome}}
+      <div class="welcome">
+        <div class="welcome-card">
+          <h1>Second group</h1>
+          <p>Open a file from the explorer or click a tab in this pane.</p>
+        </div>
+      </div>
+    {{else if .Second.Empty}}
+      <div class="empty">
+        <span class="empty-mark{{if eq .Second.EmptyKind "error"}} warn{{end}}">{{if eq .Second.EmptyKind "error"}}⚠️{{else}}·{{end}}</span>
+        <h2>{{.Second.EmptyTitle}}</h2>
+        <p>{{.Second.EmptyBody}}</p>
+      </div>
+    {{else if .Second.Preview}}
+      <div class="preview" id="markdown-preview-2">
+        <div class="preview-track" style="top:{{.Second.TrackTop}}px">
+          {{range .Second.PreviewRows}}
+          <div class="prow prow-{{.Kind}}">
+            <span class="pmark">{{.Marker}}</span>
+            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px;height:20px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+          </div>
+          {{end}}
+        </div>
+      </div>
+    {{else}}
+      <div class="track" style="top:{{.Second.TrackTop}}px">
+        {{range .Second.Rows}}
+        <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
+          <span class="gutter-mark {{.MarkClass}}">{{.Mark}}</span>
+          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
+        </div>
+        {{end}}
+      </div>
+    {{end}}
+    {{if .Second.EditorScroll.Show}}<button class="editor-scroll-thumb" id="editor-scroll-thumb-2" type="button" aria-label="Scroll second editor" tabindex="-1" style="top:{{.Second.EditorScroll.Top}}px;height:{{.Second.EditorScroll.Height}}px"><svg width="8" height="{{.Second.EditorScroll.Height}}" aria-hidden="true"><rect width="8" height="{{.Second.EditorScroll.Height}}" fill="#a6adba"/></svg></button>{{end}}
+  </div>
+</section>
+{{end}}

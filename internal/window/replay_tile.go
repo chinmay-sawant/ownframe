@@ -101,6 +101,16 @@ func (s *shell) ensureTiles(width, height int) {
 
 	s.partial.tiles = newTileGrid(width, height)
 	s.partial.buf = s.partial.tiles.handle()
+	if cap(s.partial.plans) < maxRepaintRects+1 {
+		s.partial.plans = make([]repaintPlan, 0, maxRepaintRects+1)
+	}
+	if cap(s.partial.last) < maxRepaintRects+1 {
+		s.partial.last = make([]image.Rectangle, 0, maxRepaintRects+1)
+	}
+	if cap(s.partial.blitRects) < maxBlitRects+1 {
+		s.partial.blitRects = make([]image.Rectangle, 0, maxBlitRects+1)
+	}
+	s.partial.blitOpts.Blend = ebiten.BlendCopy
 }
 
 // dropTiles releases the grid and the retained-content handle that stands

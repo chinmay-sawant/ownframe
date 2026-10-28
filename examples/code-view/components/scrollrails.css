@@ -1,0 +1,44 @@
+/* Scroll rails and the commit graph.
+   The working-tree and history thumbs sit on the sidebar's right edge, the
+   same 8px square as the window scrollbar, with no track. They are fixed so
+   the sidebar clip does not apply. The engine drops an empty thumb's
+   background, so the SVG rect is the paint. #c5c9d1 is that bar in the
+   dark palette. */
+
+.list-scroll,
+.hist-scroll {
+  position: fixed;
+  z-index: 28;
+  width: 8px;
+  display: block;
+  background-color: transparent;
+}
+
+.list-thumb,
+.hist-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  min-height: 24px;
+  display: block;
+  border-radius: 0;
+  background-color: #c5c9d1;
+  color: #c5c9d1;
+}
+
+.list-scroll:hover .list-thumb,
+.list-thumb:hover,
+.hist-scroll:hover .hist-thumb,
+.hist-thumb:hover {
+  background-color: #e7ebf2;
+  color: #e7ebf2;
+}
+
+.hist-graph {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  overflow: hidden;
+}

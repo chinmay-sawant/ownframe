@@ -45,7 +45,7 @@ func (renderer *Renderer) cachedStroke(dst *ebiten.Image, op *layout.DisplayOp, 
 		options := &vector.DrawPathOptions{AntiAlias: true}
 		vector.StrokePath(img, &path, stroke, options)
 	})
-	blitRaster(dst, img, left, top, rgba(op))
+	renderer.blitRaster(dst, img, left, top, rgba(op))
 
 	return true
 }

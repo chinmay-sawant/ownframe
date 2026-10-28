@@ -1,11 +1,18 @@
 package web
 
-import "time"
+import (
+	"net"
+	"time"
+)
 
 // Options tunes ServeWithOptions. The zero value is safe: no developer
 // endpoints are registered and only loopback binds are accepted. Risky
 // opt-ins carry an InsecureAllow prefix so call sites read risky.
 type Options struct {
+	// Listener supplies a pre-bound network listener for Serve. When set,
+	// Serve uses Listener instead of opening a new TCP listener on addr.
+	// This avoids port races in tests and embeds into custom server setups.
+	Listener net.Listener
 	// Deprecated: use InsecureAllowPprof. Either field registers the
 	// GET /debug/pprof/* endpoints.
 	Perf bool

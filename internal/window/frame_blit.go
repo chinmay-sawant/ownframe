@@ -15,6 +15,11 @@ const maxBlitRects = 8
 // contributes nothing. Overlapping rects merge; past the cap one union covers
 // them all.
 func blitPlan(plans []repaintPlan, chrome []image.Rectangle) (full bool, rects []image.Rectangle) {
+	return blitPlanBuf(nil, plans, chrome)
+}
+
+func blitPlanBuf(buf []image.Rectangle, plans []repaintPlan, chrome []image.Rectangle) (full bool, rects []image.Rectangle) {
+	rects = buf[:0]
 	for _, plan := range plans {
 		if plan.mode == repaintBuffer {
 			return true, nil
@@ -33,6 +38,13 @@ func blitPlan(plans []repaintPlan, chrome []image.Rectangle) (full bool, rects [
 
 	rects = mergeBlitRects(rects)
 	if len(rects) > maxBlitRects {
+		if cap(rects) > 0 {
+			u := unionRects(rects)
+			rects = rects[:1]
+			rects[0] = u
+			return false, rects
+		}
+
 		return false, []image.Rectangle{unionRects(rects)}
 	}
 
@@ -77,15 +89,16 @@ func unionRects(rects []image.Rectangle) image.Rectangle {
 	return box
 }
 
-// chromeRects moves the previous frame's chrome rects from screen space into
-// buffer space. The current scroll says which buffer pixels belong under the
-// screen rect now, so a restore repairs stale chrome even after a scroll.
-func chromeRects(screen []image.Rectangle, scroll image.Point) []image.Rectangle {
+// chromeRectsBuf moves the previous frame's chrome rects from screen space
+// into buffer space, reusing buf. The current scroll says which buffer pixels
+// belong under the screen rect now, so a restore repairs stale chrome even
+// after a scroll.
+func chromeRectsBuf(buf []image.Rectangle, screen []image.Rectangle, scroll image.Point) []image.Rectangle {
 	if len(screen) == 0 {
 		return nil
 	}
 
-	out := make([]image.Rectangle, 0, len(screen))
+	out := buf[:0]
 	for _, rect := range screen {
 		out = append(out, rect.Add(scroll))
 	}

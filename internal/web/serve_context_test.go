@@ -12,20 +12,26 @@ import (
 
 type ctxFake struct{ host.Screen }
 
-func freeAddr(t *testing.T) string {
+func testListener(t *testing.T) net.Listener {
 	t.Helper()
 	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
 	}
-	a := ln.Addr().String()
-	_ = ln.Close()
-	return a
+	t.Cleanup(func() { _ = ln.Close() })
+	return ln
 }
 
-func waitUp(t *testing.T, addr string) {
+func waitUp(t *testing.T, addr string, done <-chan error) {
 	t.Helper()
 	for i := 0; i < 50; i++ {
+		if done != nil {
+			select {
+			case err := <-done:
+				t.Fatalf("serve exited unexpectedly: %v", err)
+			default:
+			}
+		}
 		c, err := (&net.Dialer{Timeout: 50 * time.Millisecond}).DialContext(t.Context(), "tcp", addr)
 		if err == nil {
 			_ = c.Close()
@@ -38,11 +44,12 @@ func waitUp(t *testing.T, addr string) {
 
 func TestCancelStopsListener(t *testing.T) {
 	t.Parallel()
-	addr := freeAddr(t)
+	ln := testListener(t)
+	addr := ln.Addr().String()
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
-	go func() { done <- ServeWithOptionsContext(ctx, &ctxFake{}, addr, Options{}) }()
-	waitUp(t, addr)
+	go func() { done <- ServeWithOptionsContext(ctx, &ctxFake{}, addr, Options{Listener: ln}) }()
+	waitUp(t, addr, done)
 	cancel()
 	select {
 	case err := <-done:

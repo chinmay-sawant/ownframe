@@ -13,29 +13,36 @@ import "image"
 // the dock hid.
 func planRepaints(contentW, contentH int, st partialState, gen uint64, rects []image.Rectangle, ok bool, clipX int) []repaintPlan {
 	full := image.Rect(0, 0, contentW, contentH)
-	rebuild := []repaintPlan{{mode: repaintBuffer, rect: full}}
+	plans := st.plans[:0]
+	needed := len(rects) + 1
+	if needed < 1 {
+		needed = 1
+	}
+	if cap(plans) < needed {
+		plans = make([]repaintPlan, 0, max(needed, maxRepaintRects+1))
+	}
+
 	if full.Empty() || !st.gridCurrent(contentW, contentH) {
-		return rebuild
+		return append(plans[:0], repaintPlan{mode: repaintBuffer, rect: full})
 	}
 
 	strip := st.dockStrip(clipX, contentH)
 	if !ok || len(rects) == 0 {
 		if st.gen != gen {
-			return rebuild
+			return append(plans[:0], repaintPlan{mode: repaintBuffer, rect: full})
 		}
 
 		if strip.Empty() {
-			return []repaintPlan{{mode: repaintBlit, rect: full}}
+			return append(plans[:0], repaintPlan{mode: repaintBlit, rect: full})
 		}
 
-		return []repaintPlan{{mode: repaintRect, rect: strip}}
+		return append(plans[:0], repaintPlan{mode: repaintRect, rect: strip})
 	}
 
-	plans := make([]repaintPlan, 0, len(rects)+1)
 	for _, rect := range rects {
 		inside := rect.Intersect(full)
 		if inside.Empty() {
-			return rebuild
+			return append(plans[:0], repaintPlan{mode: repaintBuffer, rect: full})
 		}
 
 		visible := clipDockX(inside, clipX)
@@ -44,7 +51,7 @@ func planRepaints(contentW, contentH int, st partialState, gen uint64, rects []i
 		}
 
 		if visible == full {
-			return rebuild
+			return append(plans[:0], repaintPlan{mode: repaintBuffer, rect: full})
 		}
 
 		plans = append(plans, repaintPlan{mode: repaintRect, rect: visible})
@@ -55,11 +62,11 @@ func planRepaints(contentW, contentH int, st partialState, gen uint64, rects []i
 	}
 
 	if len(plans) == 0 {
-		return []repaintPlan{{mode: repaintBlit, rect: full}}
+		return append(plans[:0], repaintPlan{mode: repaintBlit, rect: full})
 	}
 
 	if len(plans) > maxRepaintRects {
-		return rebuild
+		return append(plans[:0], repaintPlan{mode: repaintBuffer, rect: full})
 	}
 
 	return plans

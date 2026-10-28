@@ -25,11 +25,10 @@ func (s *shell) Draw(screen *ebiten.Image) {
 	}
 
 	tail := time.Now()
-	s.drawMenu(screen)
-
 	if s.dev.on {
 		s.drawDevTools(screen)
 	}
+	s.drawMenu(screen)
 	if s.perf {
 		s.dev.stages.present = time.Since(tail)
 	}

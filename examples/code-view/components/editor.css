@@ -1,0 +1,630 @@
+/* Editor window ------------------------------------------------------------ */
+
+.editor {
+  position: fixed;
+  top: var(--titlebar-h);
+  left: calc(var(--activity-w) + var(--side-w));
+  z-index: 10;
+  width: calc(100vw - var(--activity-w) - var(--side-w));
+  height: calc(100vh - var(--titlebar-h) - var(--status-h));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.editor.focus { box-shadow: inset 0 2px 0 rgba(122, 162, 247, 0.35); }
+.editor-second { border-left: 1px solid var(--line); }
+
+.tabstrip {
+  height: var(--tab-h);
+  flex: 0 0 var(--tab-h);
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+}
+
+.tabs { display: flex; min-width: 0; overflow: hidden; }
+
+.tab {
+  position: relative;
+  height: var(--tab-h);
+  flex: 0 0 auto;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  border-top: 2px solid transparent;
+  border-right: 1px solid var(--line-soft);
+  color: var(--muted);
+}
+
+.tab.on { border-top-color: var(--accent); background-color: var(--bg); color: var(--text); }
+.tab:hover { color: var(--text); }
+
+.tab-main {
+  height: 100%;
+  flex: 0 0 auto;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 25px 0 9px;
+}
+
+/* Each tab keeps its full measured width so the whole filename shows; the
+   strip clips at its edge instead of squeezing tabs. The close button is
+   absolutely positioned at the tab's right edge and stays clear of the
+   text through the tab-main right padding. */
+.tab-name { flex: 0 0 auto; overflow: hidden; font-family: var(--mono); font-size: 9.5px; line-height: 1.15; white-space: nowrap; }
+.tab-main .tab-dot, .tab-main .tab-status { position: relative; background-color: var(--panel-2); }
+.tab.on .tab-dot, .tab.on .tab-status { background-color: var(--bg); }
+
+.tab-status {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+}
+.tab-x { position: absolute; right: 4px; top: 8px; width: 21px; height: 21px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; background-color: var(--panel-2); color: var(--dim); font-size: 13px; line-height: 1; }
+.tab.on .tab-x { background-color: var(--bg); }
+.tab-x:hover { background-color: var(--panel-3); color: var(--text); }
+
+.tabs-fill { flex: 1; min-width: 4px; }
+
+.seg { display: flex; align-items: stretch; align-self: center; height: 22px; margin: 0 5px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; background-color: var(--panel-2); }
+/* The 9px control face sits 1px lower than the 9.5px mono path text when
+   both are centered, so the extra bottom padding lifts the label onto the
+   path baseline. */
+.seg-btn { height: 20px; display: inline-flex; align-items: center; justify-content: center; text-align: center; padding: 0 8px 2px; color: var(--dim); font-size: 9px; font-weight: 600; }
+.seg-btn.on { background-color: var(--panel-3); color: var(--text); }
+
+.tab-tool {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  align-self: center;
+  margin-right: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--icon);
+  font-size: 11px;
+}
+
+.tab-tool:hover, .tab-tool.on { background-color: var(--panel-3); color: var(--text); }
+
+/* Tab scroll arrows. They mirror .tab-tool and never shrink, so the
+   windowed tabs stop at the arrows instead of sliding behind the tools. */
+.tab-nav {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  align-self: center;
+  margin-right: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  color: var(--icon);
+  font-size: 11px;
+}
+
+.tab-nav:hover { background-color: var(--panel-3); color: var(--text); }
+
+/* Breadcrumbs -------------------------------------------------------------- */
+
+.crumbs {
+  height: var(--crumb-h);
+  flex: 0 0 var(--crumb-h);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 13px;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--bg);
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lang-pill { flex: 0 0 auto; height: 16px; display: inline-flex; align-items: center; padding: 0 6px; border-radius: 4px; font-size: 8.5px; font-weight: 750; letter-spacing: 0.02em; }
+.crumb-path { flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; color: var(--dim); font-family: var(--mono); font-size: 9.5px; line-height: 20px; white-space: nowrap; text-overflow: ellipsis; }
+.diff-path { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; display: flex; align-items: center; font-family: var(--mono); font-size: 9.5px; line-height: 20px; white-space: nowrap; }
+.diff-path b { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.diff-path b, .diff-dir { white-space: nowrap; }
+.diff-dir { flex: 0 0 auto; position: relative; background-color: var(--bg); color: var(--dim); margin-right: 5px; white-space: nowrap; }
+.crumb-path b { color: var(--muted); font-weight: 500; white-space: nowrap; }
+/* The file-mode path mirrors the diff header: the directory and the name
+   are flex items in one row, so the engine cannot break them onto two
+   lines at the element boundary. Go clips both strings to fit (see
+   clipFileCrumbPath), and the spill-mask rules below keep the trailing
+   controls above any overrunning ink. */
+.file-path { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; display: flex; align-items: center; font-family: var(--mono); font-size: 9.5px; line-height: 20px; white-space: nowrap; }
+.file-path b { flex: 1 1 0; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.file-path b, .file-dir { white-space: nowrap; }
+.file-dir { flex: 0 0 auto; position: relative; background-color: var(--bg); color: var(--dim); margin-right: 5px; white-space: nowrap; }
+.crumb-stats { display: flex; gap: 6px; font-family: var(--mono); font-size: 9px; font-weight: 700; }
+/* A long path paints past its measured box, so the trailing controls carry
+   the crumbs background and paint above the text. The buttons stay visible
+   and clickable no matter how far the path overruns. The engine flattens
+   z-index (a child z-index replaces its parent band instead of nesting), and
+   the editor paints in band 10, so the controls sit one band above it. */
+.crumbs .crumb-btn,
+.crumbs .crumb-meta,
+.crumbs .crumb-stats { position: relative; z-index: 11; background-color: var(--bg); }
+.crumbs .seg,
+.crumbs .cstat,
+.crumbs .edit-flag { position: relative; z-index: 11; }
+/* The pressed toggle washes the face with a translucent accent veil, which
+   lets overrunning path ink show through. The veil is re-applied as a
+   gradient layer over an opaque bar-colored base, so the wash composites
+   exactly as before and stays opaque to the ink. */
+.crumbs .crumb-btn.on {
+  background-color: var(--bg);
+  background-image: linear-gradient(rgba(122, 162, 247, 0.12), rgba(122, 162, 247, 0.12));
+  box-shadow: inset 0 0 18px 10px var(--bg);
+}
+/* Same 2px lift as .seg-btn: the meta line shares the row with the mono
+   path, so it carries the same bottom padding to hold the baseline. */
+.crumb-meta { flex: 0 0 auto; color: var(--dim); font-size: 9.5px; padding-bottom: 2px; white-space: nowrap; }
+
+/* The 2px bottom padding is the same optical lift as .seg-btn: the 9px
+   button face would otherwise sit 1px below the 9.5px mono path text. */
+.crumb-btn {
+  flex: 0 0 auto;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px 2px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.crumb-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
+.crumb-btn.on { border-color: rgba(122, 162, 247, 0.5); background-color: var(--accent-soft); color: var(--accent); }
+
+.findbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; }
+.find-input {
+  width: 190px;
+  min-width: 80px;
+  height: 21px;
+  line-height: 21px;
+  text-align: left;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: 0;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 9.5px;
+}
+.find-input:focus { border-color: rgba(122, 162, 247, 0.55); }
+.find-count { display: inline-flex; align-items: center; justify-content: flex-start; text-align: left; height: 21px; color: var(--dim); font-size: 8.5px; white-space: nowrap; }
+.find-btn {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.find-btn:hover, .find-btn.on { border-color: rgba(122, 162, 247, 0.5); background-color: var(--accent-soft); color: var(--accent); }
+
+.editor-scroll-thumb { position: absolute; right: 8px; width: 8px; z-index: 40; background-color: var(--muted); cursor: ns-resize; }
+
+/* Code body ---------------------------------------------------------------- */
+
+.code-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.edit-surface {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  left: 16px;
+  right: 0;
+  bottom: 0;
+  background-color: transparent;
+  cursor: text;
+}
+
+.edit-surface:focus { outline: 0; }
+
+.edit-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+
+.edit-area {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: var(--row-h);
+  white-space: pre;
+  overflow: hidden;
+}
+
+.edit-area[data-ownframe-focus="1"] { border: 0; outline: 0; }
+
+.edit-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 20px;
+  padding: 0 12px;
+  background-color: var(--bg);
+  color: var(--dim);
+  font-size: 9px;
+  line-height: 20px;
+}
+
+.edit-flag {
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 4px;
+  background-color: var(--amber-soft);
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+}
+
+.tab-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  display: inline-block;
+  border-radius: 3px;
+  background-color: var(--text);
+}
+
+.track { position: absolute; left: 0; right: 0; top: 0; }
+
+.crow { position: relative; height: var(--row-h); display: flex; align-items: stretch; overflow: hidden; }
+.edit-line-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 16px;
+  right: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: text;
+}
+.edit-line-hit:focus { outline: 0; }
+.code-body.editing { cursor: text; }
+.edit-caret {
+  position: absolute;
+  top: 2px;
+  width: 2px;
+  height: 13px;
+  background-color: var(--accent);
+  animation: edit-blink 500ms linear infinite alternate;
+}
+.edit-selection { position: absolute; top: 0; height: 20px; display: block; background-color: var(--selection); }
+
+.ctx-back {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 40;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ctx-menu {
+  position: fixed;
+  z-index: 41;
+  min-width: 188px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--panel-2);
+}
+.ctx-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 11px;
+  line-height: 26px;
+}
+.ctx-item:hover { background-color: var(--panel-3); color: var(--text); }
+.ctx-item:disabled { color: var(--dim); }
+@keyframes edit-blink { from { opacity: 1; } to { opacity: 0; } }
+.crow.line-add, .crow.line-mod { background-color: var(--green-bg); }
+.crow.line-del { background-color: var(--red-bg); }
+.crow.current.line-add, .crow.current.line-mod { background-color: var(--green-active); }
+.crow.current.line-del { background-color: var(--red-active); }
+.crow.current .gutter-mark { border-left: 2px solid var(--accent); }
+
+.gutter-mark {
+  position: relative;
+  z-index: 2;
+  width: 16px;
+  flex: 0 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: var(--row-h);
+}
+
+button.gutter-mark { padding: 0; border: 0; background: transparent; cursor: pointer; }
+button.gutter-mark:hover { color: var(--text); }
+.gutter-add { color: var(--green); }
+.gutter-mod { color: var(--amber); }
+.gutter-del { color: var(--red); }
+
+.ln {
+  width: 44px;
+  flex: 0 0 44px;
+  padding-right: 10px;
+  text-align: right;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: var(--row-h);
+}
+
+.ln.cont { color: var(--dim); font-size: 9px; }
+
+.cline {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding-right: 22px;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: var(--row-h);
+  color: var(--text);
+}
+
+.clinetext {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  white-space: pre;
+  font-family: var(--mono);
+}
+
+.clinetext span { font-family: var(--mono); }
+
+/* Welcome and empty states ------------------------------------------------- */
+
+.welcome {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background-color: var(--bg);
+}
+
+.welcome-card {
+  width: 548px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 30px 22px;
+  border: 1px solid var(--line-soft);
+  border-radius: 13px;
+  background-color: var(--panel-2);
+}
+
+.welcome-mark { color: var(--accent); margin-bottom: 9px; }
+.welcome-card h1 { margin: 0 0 5px; font-size: 21px; line-height: 1.2; letter-spacing: -0.02em; }
+.welcome-card p { margin: 0; max-width: 400px; color: var(--muted); font-size: 11px; line-height: 1.55; text-align: center; }
+
+.quick { width: 100%; margin-top: 19px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+.quick-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: 7px;
+  background-color: var(--panel-2);
+}
+
+.quick-row:hover { border-color: rgba(122, 162, 247, 0.35); background-color: var(--panel-3); }
+.quick-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.quick-text b { font-size: 10px; font-weight: 600; color: var(--text); overflow: hidden; white-space: nowrap; }
+.quick-text span { font-size: 8.5px; color: var(--dim); overflow: hidden; white-space: nowrap; }
+.quick-go { color: var(--dim); font-size: 10px; }
+
+.keys { width: 100%; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 18px; color: var(--dim); font-size: 9px; }
+.key-item { min-width: 45px; display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+.keys em { min-width: 24px; height: 22px; display: inline-flex; align-items: center; justify-content: center; padding: 0 4px; border: 1px solid var(--line); border-radius: 3px; background-color: var(--panel-2); color: var(--muted); font-family: var(--mono); font-size: 8.5px; font-style: normal; }
+.key-settings { color: var(--dim); font: inherit; }
+.key-settings:hover { color: var(--text); }
+.key-settings:hover em { border-color: var(--muted); color: var(--text); }
+
+.welcome-note { width: 100%; margin-top: 15px; padding-top: 10px; border-top: 1px solid var(--line-soft); color: var(--dim); font-size: 9px; text-align: center; }
+
+.empty {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+}
+
+.empty-mark {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  color: var(--dim);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.empty-mark.ok { border-color: rgba(63, 185, 80, 0.3); background-color: var(--green-bg); color: var(--green); }
+.empty-mark.warn { border-color: rgba(248, 81, 73, 0.3); background-color: var(--red-bg); color: var(--red); }
+.empty h2 { margin: 2px 0 0; font-size: 15px; font-weight: 650; }
+.empty p { margin: 0; max-width: 430px; color: var(--muted); font-size: 10.5px; line-height: 1.5; }
+
+.button {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.button:hover { border-color: #2b3240; background-color: var(--panel-3); }
+
+@media (max-width: 1300px) {
+  .brand-sub { display: none; }
+  .cmdbar { flex-basis: 300px; }
+  .quick { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1120px) {
+  .crumb-meta, .diff-dir { display: none; }
+}
+
+/* Diff expander accordion rows */
+.drow.expand {
+  background-color: rgba(122, 162, 247, 0.08);
+  border-top: 1px solid rgba(122, 162, 247, 0.15);
+  border-bottom: 1px solid rgba(122, 162, 247, 0.15);
+  height: var(--row-h);
+  line-height: var(--row-h);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.drow.expand .dnum-expand {
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.dcell-expand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  height: var(--row-h);
+  overflow: hidden;
+}
+
+.expand-btn {
+  background: rgba(122, 162, 247, 0.12);
+  border: 1px solid rgba(122, 162, 247, 0.25);
+  border-radius: 3px;
+  color: #7aa2f7;
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 14px;
+  height: 16px;
+  padding: 0 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.expand-btn:hover {
+  background: rgba(122, 162, 247, 0.22);
+  color: #9ab8ff;
+  border-color: rgba(122, 162, 247, 0.4);
+}
+
+.expand-btn.expand-all {
+  font-weight: 600;
+}
+
+@media (max-width: 800px) {
+  .crumbs { gap: 4px; padding-left: 7px; padding-right: 5px; }
+  .seg { margin: 0; }
+  .seg-btn { padding: 0 4px 2px; }
+  .crumb-btn { padding: 0 4px 2px; }
+  /* Narrow windows cannot squeeze every tab and still show its name: the
+     name text paints past a crushed card instead of clipping inside it.
+     Let each tab card size to its filename with no wrap, so the open files
+     stay readable. Extra tabs clip at the strip edge; the active tab moves
+     first so the file on screen keeps a visible tab. Above 800px the strip
+     keeps its shrinking tabs. */
+  .tab { flex: 0 0 auto; }
+  .tab.on { order: -1; }
+}

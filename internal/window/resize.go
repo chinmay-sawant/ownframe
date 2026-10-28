@@ -3,6 +3,8 @@ package window
 import (
 	"errors"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // relayoutEvery caps how often a drag relayouts the page. A size change
@@ -16,6 +18,8 @@ const relayoutEvery = 100 * time.Millisecond
 func (s *shell) resize() error {
 	moving := s.moving
 	s.moving = false
+
+	completeManualMaximize(s.pendingW, s.pendingH)
 
 	wantW, wantH := s.viewOf(s.pendingW, s.pendingH)
 	wantW, wantH = s.app.Clamp(wantW, wantH)
@@ -41,6 +45,16 @@ func (s *shell) resize() error {
 
 	if err := s.syncImage(); err != nil && !errors.Is(err, errNoImage) {
 		return err
+	}
+
+	// maximizeNudge re-asserts the configured window size while maximized.
+	// A client-set size travels the normal presentation path, so on systems
+	// whose compositor mispresents a maximized undecorated window the
+	// re-assert can snap it back. Where the size already matches it is a
+	// no-op: same-size sets change nothing. Position is left alone; only
+	// the size is ever re-asserted.
+	if ebiten.IsWindowMaximized() {
+		ebiten.SetWindowSize(s.pendingW, s.pendingH)
 	}
 
 	return s.refreshState()

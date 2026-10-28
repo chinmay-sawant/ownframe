@@ -120,6 +120,17 @@ linters:
       - linters: [contextcheck]
         path: "examples/"
         text: 'Function `[^`]*(PNG->PNG->PNG|Read->Read->readOS->wlRead->outWL|Write->Write->writeOS->wlWrite->runWL)` should pass the context parameter'
+      # View refresh and the palette/disk loaders are synchronous local work
+      # with no cancellation source. Every palette chain sinks at
+      # paletteRows, which owns a bounded 750ms timeout for the disk
+      # search, and every ignore scan sinks at loadIgnoredPaths, which
+      # owns a bounded gitTimeout for the local `git ls-files` scan. Both
+      # run from UI events, watchers, timers, and startup loads that have
+      # no cancellable ancestor to forward, so there is no context to
+      # inherit. Keep checks on every other call chain.
+      - linters: [contextcheck]
+        path: "examples/"
+        text: 'Function `[^`]*(paletteRows|loadIgnoredPaths)` should pass the context parameter'
       # errcheck flags `recover()` because it returns a value, but a bare
       # `recover()` in a deferred guard (internal/ipc/send.go) intentionally
       # discards it: the value never affects control flow. The code spells
@@ -188,6 +199,11 @@ linters:
       # hardened client (own timeouts, TLS 1.2 minimum), like fetch/scheme.go.
       - linters: [gochecknoglobals]
         path: "examples/desktop-cat/media_post\\.go"
+      # Intentional run-loop coordination: the custom window chrome close
+      # request is an atomic flag the desktop loop consumes on its next
+      # frame. One desktop window runs per process, so no registry is owed.
+      - linters: [gochecknoglobals]
+        path: "internal/window/chrome\\.go"
 
       # GEN-19 depguard: unsafe stays limited to the OS syscall shims
       # (darwin/windows clipboard and file dialog) and one test-only

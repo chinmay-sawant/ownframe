@@ -21,7 +21,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	}
 
 	ebiten.SetWindowResizingMode(mode)
-	ebiten.SetWindowDecorated(!options.Borderless)
+	ebiten.SetWindowDecorated(!options.Borderless && !options.CustomChrome)
 	ebiten.SetWindowFloating(options.Floating)
 	// Full click-through never accepts input: Interactive is honored
 	// only when MousePassthrough is off, so a click-through overlay

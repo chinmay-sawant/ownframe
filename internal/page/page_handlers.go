@@ -25,6 +25,8 @@ type Handlers struct {
 	// DragMove takes CSS deltas.
 	DragMove func(ctx context.Context, dx, dy float64) error
 	DragEnd  func(ctx context.Context) error
+	// Wheel offers a wheel event before the window pans the page.
+	Wheel func(ctx context.Context, x, y, dx, dy float64) (bool, error)
 	// BeforeEdit may reject an edit.
 	BeforeEdit func(ctx context.Context, box Box) error
 	// Change runs after edits; errors skip redraw.
@@ -39,6 +41,13 @@ type Handlers struct {
 	SelectAll  func(ctx context.Context) error
 	Undo       func(ctx context.Context) error
 	Redo       func(ctx context.Context) error
+	// ContextMenuFor returns custom rows for one hit-tested element.
+	ContextMenuFor func(id string) []MenuItem
+	// MenuAction runs a custom row the page reported.
+	MenuAction func(ctx context.Context, id string) error
+	// PresentMenu paints the context menu in the page. A true result tells the
+	// window to skip its chrome menu.
+	PresentMenu func(x, y int, items []MenuItem) bool
 	// Drop readers work in the callback.
 	Drop func(ctx context.Context, files []Drop) error
 	// OpenLink takes validated links.

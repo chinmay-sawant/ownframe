@@ -27,6 +27,9 @@ type Config = page.Config
 // Handlers contains optional callbacks for input and host-delivered links.
 type Handlers = page.Handlers
 
+// MenuItem is one row in the window's right-click menu.
+type MenuItem = page.MenuItem
+
 // Page is one HTML template and the last picture it produced.
 // The host page stays unexported so apps see only delegated methods.
 // Page belongs to one application loop. Call its methods and callbacks on that

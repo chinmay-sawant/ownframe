@@ -99,6 +99,9 @@ var _ draw.RedrawSurface = redrawSurface{}
 func (p *Page) execTemplate(track bool) (string, error) {
 	p.applyScrollWindow()
 
+	p.dataMu.RLock()
+	defer p.dataMu.RUnlock()
+
 	return draw.Execute(
 		track,
 		len(p.source),

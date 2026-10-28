@@ -100,9 +100,10 @@ Every example has a default port; [examples/readme.md](../examples/readme.md)
 lists them all. login defaults to 8091, web to 8110, and platform to 8115.
 [web.md](web.md) has the routes, the click map, and what the mode drops. A
 file-backed page is polled before `GET /` and `GET /frame.png`, and the shell
-page refreshes the image while a watch is active
-([hot-reload.md](hot-reload.md)). There is no tick, no audio, and no
-relayout when the browser tab resizes. A handler panic becomes HTTP 500.
+page refreshes the image while a watch or tick is active
+([hot-reload.md](hot-reload.md)). There is audio only in `Run`, no
+relayout when the browser tab resizes, and keys and wheel events arrive from
+the browser page. A handler panic becomes HTTP 500.
 `Serve` writes no crash-report file.
 
 ## iOS

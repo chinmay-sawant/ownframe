@@ -117,3 +117,43 @@ func TestViewportCompositesRetainedLayer(t *testing.T) {
 		t.Fatalf("promoted ids = %v, want [card]", app.promoted)
 	}
 }
+
+func TestViewportSpareRetainedAcrossScrollPause(t *testing.T) {
+	app := &dirtyScreen{fakeScreen: &fakeScreen{width: 80, height: 60}, gen: 1}
+	app.display = partialDisplay(80, 37000)
+	s := newDirtyShell(app)
+	taker := &viewportTaker{}
+	dst := partialBuf(80, 60)
+	s.drawViewport(dst, app.display, taker)
+
+	// Scroll crosses overscan, triggering moveViewport which allocates spare.
+	s.scrollY = 150
+	s.drawViewport(dst, app.display, taker)
+	if s.viewport.spare == nil {
+		t.Fatal("moveViewport did not allocate spare")
+	}
+	spare := s.viewport.spare
+
+	// Settle warmup and pause scrolling. Next frame is blitOnly.
+	s.viewport.warmup.next.Y = s.viewport.warmup.area.Max.Y
+	s.drawViewport(dst, app.display, taker)
+	if !s.viewport.blitOnly {
+		t.Fatal("stationary frame was not blitOnly")
+	}
+	if s.viewport.spare == nil || s.viewport.spare != spare {
+		t.Fatal("spare was deallocated or replaced on scroll pause")
+	}
+
+	// Resuming scroll uses the retained spare.
+	s.scrollY = 220
+	s.drawViewport(dst, app.display, taker)
+	if s.viewport.spare == nil {
+		t.Fatal("spare missing after resuming scroll")
+	}
+
+	// dropDisplayBuffers explicitly deallocates spare.
+	s.dropDisplayBuffers()
+	if s.viewport.spare != nil || s.viewport.buf != nil {
+		t.Fatal("dropDisplayBuffers did not release viewport buffers")
+	}
+}

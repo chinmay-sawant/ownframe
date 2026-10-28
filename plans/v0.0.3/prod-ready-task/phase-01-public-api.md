@@ -26,6 +26,7 @@ Go practice: defined types over aliases, small exported API, named packages for 
 |---|---|---|
 | Alias | `api.go` `type Page = page.Page` | every `internal/page` exported method |
 | Config / Handlers / Box | `api.go` type aliases | keep as aliases **or** defined types copied; prefer defined structs if `page.Config` must change freely |
+| MenuItem | `api.go` alias for `page.MenuItem` | stable row shape for custom right-click menus; keep the alias so `Handlers.ContextMenuFor` and `Page.ContextMenuFor` use one type |
 | Run / BindMobile | `run.go` | keep |
 | Serve | `serve.go` | keep, document as debugger in Phase 2 |
 | Fetch | `fetch.go` | freeze or `ownframe/fetch` |

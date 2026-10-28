@@ -1,18 +1,19 @@
 # blinkless - HTML/CSS compatibility matrix
 
-> **Parent:** [plans/v0.0.1/phase-wise-checklist.md](../plans/v0.0.1/phase-wise-checklist.md) and [plans/v0.0.1/html-css-json-compatibility-checklist.md](../plans/v0.0.1/html-css-json-compatibility-checklist.md)  
+> **Parent:** the blinkless planning records in the pinned engine module.  
+> **Scope:** this is a snapshot of the blinkless CSS catalogue. It describes the engine, not the ownframe host. Host features, limits, and platform support are in [features.md](features.md) and [platforms.md](platforms.md).  
 > **Status:** living contract - amendments go through plan review  
 > **Target:** authored HTML and CSS to a `layout.DisplayList` (the drawing list). **Not** a browser. **Not** a PDF writer. **Not** a page rasterizer.  
-> **Catalog:** `testdata/css/catalog/properties.json` (schema v2), measured 2026-10-20: 785 rows - 555 Implemented / 3 Partial / 219 Unsupported / 8 intentionally ignored. Motion rows with scope `blinkless+ownframe` include sampled behavior evidence from OwnFrame. Upstream pin: webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties). Fidelity guide: [fidelity.md](fidelity.md).
+> **Catalog:** the catalogue lives in the blinkless module. This module does not vendor `testdata/css/catalog/properties.json`, its generator, or a `make catalog-check` gate, so the tables here are a snapshot. Counts are the 2026-10-20 snapshot: 785 rows - 555 Implemented / 3 Partial / 219 Unsupported / 8 intentionally ignored. Motion rows with scope `blinkless+ownframe` include sampled behavior evidence from OwnFrame. Upstream pin: webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties).
 > **Limitations:** Implemented means a handler, a consumer outside the style layer, and a resolvable behavior test. Browser rendering parity, HTML parser conformance, and this property catalog are separate claims with separate evidence. Section 1 is a rendering allowlist for HTML tags, not a parser conformance claim.
 
 This document is the contract for the layout engine. Its output is a drawing
 list; the PDF writer, the page rasterizer, and the CLI from earlier revisions
-are not part of this tree. Property statuses come from
-`testdata/css/catalog/properties.json` and are reproduced in section 2.
+are not part of the engine tree. Property statuses come from the blinkless
+catalogue and are reproduced in section 2.
 Anything not in that catalog is unsupported; unsupported input must degrade
 gracefully (ignored declaration, skipped node, or documented error), never
-crash. Product framing: [fidelity.md](fidelity.md). **Still not full CSS.**
+crash. Product framing: **Still not full CSS.**
 
 ---
 
@@ -38,10 +39,12 @@ as its inline text (per the note column).
 | `pre`, `code` | `pre` honors `white-space: pre`; `code` follows the author’s `font-family` (generic `monospace` → bundled Liberation Mono; see [fonts.md](fonts.md)) |
 | `blockquote` | Block-level only, no indent margins (UA rule `style_values.go:1628-1630`) |
 | `header`, `footer`, `main`, `section`, `article`, `aside`, `nav` | Treated as `div` (semantic aliases) |
+| `input`, `textarea`, `select`, `button`, `label`, `form` | Form controls. OwnFrame stores values, focus, and checked state per [forms.md](forms.md); an `input` with `type=submit`, `button`, or `reset` rewrites to `button`. |
+| `svg` | Inline SVG rasterized through `internal/svg`; the `img` row above covers SVG images. |
 
 ## 2. Supported CSS properties
 
-The catalog in `testdata/css/catalog/properties.json` (schema v2) is the authoritative property record. Measured 2026-10-20: 785 rows - 555 implemented, 3 partial, 219 unsupported, 8 intentionally ignored. The pinned upstream inventory is webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties: 671 draft, 70 vendor, 52 svg, 28 browser-ui). Regenerate the tables below with `python3 scripts/css-catalog-map.py --matrix`; `make catalog-check` fails on drift between the catalog and the code. Rows scoped to `blinkless+ownframe` have sampled runtime evidence in OwnFrame; Blinkless supplies their CSS metadata.
+The catalog in the blinkless module (schema v2) is the authoritative property record. Snapshot counts: 785 rows - 555 implemented, 3 partial, 219 unsupported, 8 intentionally ignored. The pinned upstream inventory is webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties: 671 draft, 70 vendor, 52 svg, 28 browser-ui). The generator and drift check live with the catalogue, not in this module. Rows scoped to `blinkless+ownframe` have sampled runtime evidence in OwnFrame; Blinkless supplies their CSS metadata.
 
 Statuses describe the stated layout pipeline scope, not browsers:
 
@@ -50,7 +53,7 @@ Statuses describe the stated layout pipeline scope, not browsers:
 - **Unsupported** - no consumer and no observable behavior. The declaration may be parsed and stored or dropped entirely.
 - **Intentionally ignored** - deliberately ignored print-noop UI chrome.
 
-An implemented status is not a browser-parity or parser-conformance claim. Rendering comparisons and HTML parsing carry separate evidence in `plans/v0.0.1/html-css-json-compatibility-checklist.md`.
+An implemented status is not a browser-parity or parser-conformance claim. Rendering comparisons and HTML parsing carry separate evidence in the blinkless engine repository.
 
 ### 2.1 Implemented (555)
 
@@ -118,7 +121,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `background-blend-mode` | <'mix-blend-mode'># | `internal/layout/style_advanced_props.go` | `TestBehaviorBackgroundBlendModeMultiplyBlends` |
 | `background-clip` | <bg-clip># | `internal/layout/style_properties.go` | `TestBackgroundLonghands`, `TestBehaviorBackgroundClipClipsImage` |
 | `background-color` | <color> \| transparent \| inherit | `internal/layout/style_properties.go` | `TestBackgroundFill`, `TestBehaviorBackgroundColorPaintsFill` |
-| `background-image` | <uri> \| none \| inherit | `internal/layout/style_properties.go` | `TestBackgroundImageLayoutPaints`, `TestBackgroundLonghands` |
+| `background-image` | <uri> \| linear-gradient() \| radial-gradient() \| none \| inherit | `internal/layout/style_properties.go` | `TestBackgroundImageLayoutPaints`, `TestBackgroundLonghands` |
 | `background-origin` | <visual-box># | `internal/layout/style_properties.go` | `TestBackgroundLonghands`, `TestBehaviorBackgroundOriginInsetsImage` |
 | `background-position` | [ [ <percentage> \| <length> \| left \| center \| right ] [ <percentage> \| <length> \| top \| center \| bottom ]? ] \| [ [ left \| center \| right ] \|\| [ top \| center \| bottom ] ] \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBackgroundPositionMovesImage` |
 | `background-position-block` | [ center \| [ [ start \| end ]? <length-percentage>? ]! ]# | `internal/layout/style_properties.go` | `TestBehaviorBackgroundPositionBlockOffsetsImage` |
@@ -293,7 +296,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `counter-reset` | [ <identifier> <integer>? ]+ \| none \| inherit | `internal/layout/style_paint_props.go` | `TestCounterInBefore`, `TestCounterResetIncrementLayout`, `TestQuotes` |
 | `counter-set` | [ <counter-name> <integer>? ]+ \| none | `internal/layout/style_paint_props.go` | `TestCounterInBefore`, `TestCounterResetIncrementLayout`, `TestQuotes` |
 | `direction` | ltr \| rtl \| inherit | `internal/layout/style_properties.go` | `TestBehaviorDirectionRtlRightAlignsLine` |
-| `display` | inline \| block \| list-item \| inline-block \| table \| inline-table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-column-group \| table-column \| table-cell \| table-caption \| none \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestDisplayNone`, `TestTableLayout` |
+| `display` | inline \| block \| list-item \| inline-block \| flex \| inline-flex \| grid \| inline-grid \| table \| inline-table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-column-group \| table-column \| table-cell \| table-caption \| none \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestDisplayNone`, `TestTableLayout` |
 | `dominant-baseline` | auto \| <baseline-metric> | `internal/layout/style_paint_props.go` | `TestBehaviorDominantBaselineNoPaintEffect`, `TestPerspDominantBaselineBeyondHanging`, `TestPerspDominantBaselineInitialAndBogus`, `TestPerspDominantBaselineInherits` |
 | `dynamic-range-limit` | standard \| no-limit \| constrained \| <dynamic-range-limit-mix()> | `internal/layout/style_color_adjust_props.go` | `TestColorAdjustPropsAcceptLegalKeywords`, `TestColorAdjustPropsCSSWideKeywords`, `TestColorAdjustPropsReachRestPass`, `TestColorAdjustPropsRejectIllegalKeywords`, `TestBehaviorDynamicRangeLimitStandardNoClampEffect`, `TestBehaviorDynamicRangeLimitClampsBrightColors`, `TestBehaviorDynamicRangeLimitWireClamps`, `TestBehaviorDynamicRangeLimitPaintClampDiverges`, `TestBehaviorDynamicRangeLimitParserYieldsOnlyInGamut`, `TestBehaviorDynamicRangeLimitParserClampsRGB`, `TestBehaviorDynamicRangeLimitParserRejectsWideGamut`, `TestBehaviorDynamicRangeLimitParserClampsMixAndOklch`, `TestBehaviorDynamicRangeLimitParserClampsOklch`, `TestBehaviorWideGamutDynamicRangeDiverges`, `TestBehaviorWideGamutTextDiverges`, `TestBehaviorWideGamutInGamutAgrees`, `TestBehaviorWideGamutBridgeBoundary`, `TestBehaviorWideGamutCascadeEndToEnd`, `TestBehaviorWideGamutTextCascadeEndToEnd` |
 | `empty-cells` | show \| hide \| inherit | `internal/layout/style_advanced_props.go` | `TestBehaviorEmptyCellsHideOmitsBackground` |
@@ -440,7 +443,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `outline-offset` | <length> | `internal/layout/style_paint_props.go` | `TestOutlineParse`, `TestOutlinePaintsInflatedRect`, `TestBehaviorOutlineOffsetInflatesRect` |
 | `outline-style` | <border-style> \| inherit | `internal/layout/style_paint_props.go` | `TestOutlineParse`, `TestOutlinePaintsInflatedRect`, `TestBehaviorOutlineStyleDashedExpandsSegments` |
 | `outline-width` | <border-width> \| inherit | `internal/layout/style_paint_props.go` | `TestOutlineParse`, `TestOutlineOmittedWidthUsesMedium`, `TestOutlinePaintsInflatedRect`, `TestBehaviorOutlineWidthSetsStrokeWidth` |
-| `overflow` | visible \| hidden \| scroll \| auto \| inherit | `internal/layout/style_properties.go` | `TestBehaviorOverflowHiddenClipsTallChild`, `TestBehaviorOverflowVisibleKeepsTallChild` |
+| `overflow` | visible \| hidden \| clip \| scroll \| auto \| inherit | `internal/layout/style_properties.go` | `TestBehaviorOverflowHiddenClipsTallChild`, `TestBehaviorOverflowVisibleKeepsTallChild` |
 | `overflow-block` | visible \| hidden \| clip \| scroll \| auto | `internal/layout/style_overflow_logical.go` | `TestBehaviorOverflowBlockClipsTallChild` |
 | `overflow-clip-margin` | <visual-box> \|\| <length> | `internal/layout/style_advanced_props.go`, `internal/layout/style_paint_props.go` | `TestBehaviorOverflowClipMarginExpandsClip` |
 | `overflow-clip-margin-block` | <visual-box> \|\| <length> | `internal/layout/style_advanced_props.go` | `TestBehaviorOverflowClipMarginBlockKeepsBelowChild` |
@@ -950,7 +953,7 @@ The following 87 properties across three categories were grouped as hard-deferre
 | Category | Count | Status | Description and scope |
 |----------|-------|--------|-----------------------|
 | SVG presentation & geometry (`B_svg_presentation`) | 53 | Not implemented | Remaining SVG presentation and geometry properties. SVG-as-`<img>` is implemented via `internal/svg` rasterizer; 5 CSS properties (`fill`, `stroke`, `stroke-width`, `fill-opacity`, `stroke-opacity`) are parsed in style; remaining 53 SVG presentation properties are unsupported (`alignment-baseline`, `baseline-shift`, `color-interpolation`, `cx`, `cy`, `d`, `dominant-baseline`, `fill-break`, `fill-color`, `fill-image`, `fill-origin`, `fill-position`, `fill-repeat`, `fill-rule`, `fill-size`, `glyph-orientation-vertical`, `image-rendering`, `marker`, `marker-end`, `marker-mid`, `marker-side`, `marker-start`, `paint-order`, `path-length`, `r`, `rx`, `ry`, `shape-rendering`, `stop-color`, `stop-opacity`, `stroke-align`, `stroke-alignment`, `stroke-break`, `stroke-color`, `stroke-dash-corner`, `stroke-dash-justify`, `stroke-dashadjust`, `stroke-dasharray`, `stroke-dashcorner`, `stroke-dashoffset`, `stroke-image`, `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `stroke-origin`, `stroke-position`, `stroke-repeat`, `stroke-size`, `text-anchor`, `text-rendering`, `vector-effect`, `x`, `y`). |
-| Mask, clip, and filter effects (`B_mask_clip_filter_effects`) | 25 | Mixed | `clip-path` is implemented. The 10 standard mask properties are mostly implemented: `mask`, `mask-clip`, `mask-composite`, `mask-image`, `mask-mode`, `mask-origin`, `mask-position`, `mask-repeat`, and `mask-size`; `mask-type` stays Partial. They emit element-group mask data for a display-list consumer; this repository has no pixel replay backend. The 13 `mask-border*` properties are implemented: the descriptor rides the blend group, composes into a nine-slice frame raster at the element box, and the host applies it as a soft mask. The seven Unsupported names are `backdrop-filter`, `clip`, `clip-rule`, `color-interpolation-filters`, `flood-color`, `flood-opacity`, and `lighting-color`; the six `-webkit-mask-box-image*` aliases are implemented like their bases. |
+| Mask, clip, and filter effects (`B_mask_clip_filter_effects`) | 25 | Mixed | `clip-path` is implemented. The 10 standard mask properties are mostly implemented: `mask`, `mask-clip`, `mask-composite`, `mask-image`, `mask-mode`, `mask-origin`, `mask-position`, `mask-repeat`, and `mask-size`; `mask-type` stays Partial. They emit element-group mask data for a display-list consumer; OwnFrame replays that data through its display-list painter. The 13 `mask-border*` properties are implemented: the descriptor rides the blend group, composes into a nine-slice frame raster at the element box, and the host applies it as a soft mask. The four Unsupported names are `backdrop-filter`, `flood-color`, `flood-opacity`, and `lighting-color`; the six `-webkit-mask-box-image*` aliases are implemented like their bases. |
 | CSS Regions & Exclusions (`B_regions_exclusions`) | 9 | Implemented | The four one-canvas contracts are implemented: named flows (`flow-from`, `flow-into`, `region-fragment`), masonry tolerance (`flow-tolerance`), exclusions (`wrap-after`, `wrap-before`, `wrap-flow`, `wrap-inside`), and `wrap-through`. Paged fragmentation stays a non-goal; the engine returns one display list. |
 
 Total: 87 names across three Phase 83 categories. Current statuses are in section 2; in the wider mask family (31 catalog rows: the 18 first-wave mask rows plus the 13 mask-border rows), 29 are implemented and 2 are Partial (`mask-type` and `-webkit-mask-composite`). See section 2 for the authoritative per-row status.
@@ -963,7 +966,7 @@ and therefore appear as Partial in the catalog with unverified behavior:
 `stroke-linejoin`, `stroke-miterlimit`, and `text-anchor`. The 18 first-wave
 mask properties are mostly implemented, with `mask-type` and
 `-webkit-mask-composite` Partial because the display list leaves pixel replay
-to its consumer; the 13 mask-border rows are Partial because the descriptor
+to its consumer; the 13 mask-border rows are Implemented because the descriptor
 rides the blend group and the host applies the frame. `clip-path` is
 Implemented. The
 five SVG properties consumed by SVG-as-img (`fill`, `stroke`, `stroke-width`,
@@ -979,8 +982,7 @@ and value remaps in `remapWebkitValue` at `internal/layout/style_cascade.go:1000
 
 - **Total tracked:** 70 `-webkit-` alias names.
 - **Registered:** 36 aliases that map to an unprefixed base the engine consumes. The catalog records an alias as Partial when its base is Partial; see the reconciliation note below.
-- **Unsupported:** 34 aliases whose bases are not Implemented or are print-noop. These are
-  not Implemented and degrade gracefully (ignored declaration).
+- **Outside the registered set:** 34 aliases. Ten stay Unsupported, and 24 map onto implemented bases; the groups below name each case.
 
 Do not treat Unsupported aliases as Implemented. Tests for Implemented aliases live in
 `internal/layout/style_cascade_test.go:188` (`TestWebkitPrefixAliases`).
@@ -1030,13 +1032,13 @@ with a Partial base remain Partial in the catalog.
 | `-webkit-box-orient` | `flex-direction` | **New in Phase 82 slice A.** Value remap `horizontal`/`inline-axis`->`row`, `vertical`/`block-axis`->`column` via `remapWebkitValue` |
 | `-webkit-box-pack` | `justify-content` | **New in Phase 82 slice A.** Value remap `start`->`flex-start`, `end`->`flex-end`, `center`->`center`, `justify`->`space-between` via `remapWebkitValue` |
 | `-webkit-text-fill-color` | `color` | **New in Phase 82 slice A.** Alias to `color` |
-| `-webkit-mask` | `mask` | **CSS masking first wave.** Shorthand alias; Partial |
-| `-webkit-mask-image` | `mask-image` | **CSS masking first wave.** URL and `none` values; Partial |
-| `-webkit-mask-size` | `mask-size` | **CSS masking first wave.** Accepted size tokens; Partial |
-| `-webkit-mask-repeat` | `mask-repeat` | **CSS masking first wave.** Accepted repeat tokens; Partial |
-| `-webkit-mask-position` | `mask-position` | **CSS masking first wave.** Position keywords, lengths, and percentages; Partial |
-| `-webkit-mask-origin` | `mask-origin` | **CSS masking first wave.** Border, padding, or content box; Partial |
-| `-webkit-mask-clip` | `mask-clip` | **CSS masking first wave.** Box values or `no-clip`; Partial |
+| `-webkit-mask` | `mask` | **CSS masking first wave.** Shorthand alias; Implemented |
+| `-webkit-mask-image` | `mask-image` | **CSS masking first wave.** URL and `none` values; Implemented |
+| `-webkit-mask-size` | `mask-size` | **CSS masking first wave.** Accepted size tokens; Implemented |
+| `-webkit-mask-repeat` | `mask-repeat` | **CSS masking first wave.** Accepted repeat tokens; Implemented |
+| `-webkit-mask-position` | `mask-position` | **CSS masking first wave.** Position keywords, lengths, and percentages; Implemented |
+| `-webkit-mask-origin` | `mask-origin` | **CSS masking first wave.** Border, padding, or content box; Implemented |
+| `-webkit-mask-clip` | `mask-clip` | **CSS masking first wave.** Box values or `no-clip`; Implemented |
 | `-webkit-mask-composite` | `mask-composite` | **CSS masking first wave.** Remaps the four legacy operators; Partial |
 
 Display value aliases (also Phase 82 slice A, at `internal/layout/style_properties.go:81`):
@@ -1046,16 +1048,14 @@ Display value aliases (also Phase 82 slice A, at `internal/layout/style_properti
 | `display: -webkit-box` | `display: flex` |
 | `display: -webkit-inline-box` | `display: inline-flex` |
 
-#### 5.3.2 Still Unsupported vendor aliases (34)
+#### 5.3.2 Vendor aliases outside the registered set (34)
 
-34 aliases remain **Unsupported**. Each group notes the
-blocking base. Do not claim Implemented for any of these 34.
+This group holds 34 aliases that do not sit in the registered table. Ten stay
+**Unsupported** and 24 map onto implemented bases. Each group notes the base.
 
 **Group B - 3 background longhands:** bases `background-clip`,
-`background-origin`, and `background-size` are Partial in the catalog (parsed,
-behavior unverified). Their `-webkit-*` remaps are not registered, so the
-aliases stay Unsupported
-(`testdata/css/catalog/properties.json`).
+`background-origin`, and `background-size` are Implemented. Their `-webkit-*` remaps are not registered, so the
+aliases stay Unsupported in this engine.
 
 | Vendor alias | Base | Reason |
 |--------------|------|--------|
@@ -1066,18 +1066,18 @@ aliases stay Unsupported
 **Group C - 6 mask-border aliases:** the eight selected `-webkit-mask*`
 aliases are registered and mostly implemented (`mask-type` and
 `-webkit-mask-composite` stay Partial). These six `-webkit-mask-box-image*`
-aliases normalize onto the `mask-border*` bases, which are Partial: the
+aliases normalize onto the `mask-border*` bases, which are Implemented: the
 descriptor rides the element's blend group (`MaskBorder`) for the host to
 apply.
 
 | Vendor alias | Base | Reason |
 |--------------|------|--------|
-| `-webkit-mask-box-image` | `mask-border` | Partial: descriptor on the blend group, host applies the frame |
-| `-webkit-mask-box-image-source` | `mask-border-source` | Partial: source bytes on the blend group, host applies the frame |
-| `-webkit-mask-box-image-slice` | `mask-border-slice` | Partial: slice insets on the blend group, host applies the frame |
-| `-webkit-mask-box-image-width` | `mask-border-width` | Partial: frame thickness on the blend group, host applies the frame |
-| `-webkit-mask-box-image-outset` | `mask-border-outset` | Partial: outward offsets on the blend group, host applies the frame |
-| `-webkit-mask-box-image-repeat` | `mask-border-repeat` | Partial: repeat pair on the blend group, host applies the frame |
+| `-webkit-mask-box-image` | `mask-border` | Implemented: descriptor on the blend group, host applies the frame |
+| `-webkit-mask-box-image-source` | `mask-border-source` | Implemented: source bytes on the blend group, host applies the frame |
+| `-webkit-mask-box-image-slice` | `mask-border-slice` | Implemented: slice insets on the blend group, host applies the frame |
+| `-webkit-mask-box-image-width` | `mask-border-width` | Implemented: frame thickness on the blend group, host applies the frame |
+| `-webkit-mask-box-image-outset` | `mask-border-outset` | Implemented: outward offsets on the blend group, host applies the frame |
+| `-webkit-mask-box-image-repeat` | `mask-border-repeat` | Implemented: repeat pair on the blend group, host applies the frame |
 
 **Group D - 20 animation / transition / 3D / UI aliases:** 14 animation and
 transition aliases normalize to their base properties. A Page samples
@@ -1130,7 +1130,7 @@ This list has 114 names across five print-noop families. Their current catalog s
 |----------|-------|--------|-----------------------|
 | Event and timeline trigger runtime (`A_time_animation_transition`) | 16 | Not implemented | These properties describe event-trigger definitions and pointer-driven timelines; this engine has no runtime for them (`event-trigger`, `event-trigger-name`, `event-trigger-source`, `image-animation`, `pointer-timeline`, `pointer-timeline-axis`, `pointer-timeline-name`, `timeline-trigger`, `timeline-trigger-activation-range`, `timeline-trigger-activation-range-end`, `timeline-trigger-activation-range-start`, `timeline-trigger-active-range`, `timeline-trigger-active-range-end`, `timeline-trigger-active-range-start`, `timeline-trigger-name`, `timeline-trigger-source`). They are separate from `animation-trigger` and `trigger-scope`, which have sampled OwnFrame cases in section 2. |
 | Scroll snap, overscroll, and scrollbar (`A_scroll_snap_overscroll`) | 41 | Mixed: 36 Unsupported, 5 Implemented | This engine has no scroll viewport, scroll snapping, scroll timeline drivers, or scrollbar gutter/color/width chrome. The five `scroll-margin` properties are accepted but do not change static paint (`overscroll-behavior`, `overscroll-behavior-block`, `overscroll-behavior-inline`, `overscroll-behavior-x`, `overscroll-behavior-y`, `scroll-axis-lock`, `scroll-behavior`, `scroll-initial-target`, `scroll-margin`, `scroll-margin-block`, `scroll-margin-block-end`, `scroll-margin-block-start`, `scroll-margin-bottom`, `scroll-margin-inline`, `scroll-margin-inline-end`, `scroll-margin-inline-start`, `scroll-margin-left`, `scroll-margin-right`, `scroll-margin-top`, `scroll-marker-group`, `scroll-padding`, `scroll-padding-block`, `scroll-padding-block-end`, `scroll-padding-block-start`, `scroll-padding-bottom`, `scroll-padding-inline`, `scroll-padding-inline-end`, `scroll-padding-inline-start`, `scroll-padding-left`, `scroll-padding-right`, `scroll-padding-top`, `scroll-snap-align`, `scroll-snap-stop`, `scroll-snap-type`, `scroll-target-group`, `scroll-timeline`, `scroll-timeline-axis`, `scroll-timeline-name`, `scrollbar-color`, `scrollbar-gutter`, `scrollbar-width`). |
-| Pointer, caret, and form UI (`A_pointer_form_ui`) | 25 | Mixed: 18 Unsupported, 7 Intentionally ignored | This engine has no mouse pointer, cursor styling, caret animation/color/shape, spatial navigation, dynamic field sizing, input security masking, touch gestures, user text selection, or window dragging. The seven intentionally ignored properties keep their catalog status (`appearance`, `caret`, `caret-animation`, `caret-color`, `caret-shape`, `cursor`, `field-sizing`, `input-security`, `interactivity`, `interest-delay`, `interest-delay-end`, `interest-delay-start`, `nav-down`, `nav-left`, `nav-right`, `nav-up`, `pointer-events`, `resize`, `slider-orientation`, `spatial-navigation-action`, `spatial-navigation-contain`, `spatial-navigation-function`, `touch-action`, `user-select`, `window-drag`). |
+| Pointer, caret, and form UI (`A_pointer_form_ui`) | 25 | Mixed: 18 Unsupported, 7 Intentionally ignored | This engine has no mouse pointer, cursor styling, caret animation/color/shape, spatial navigation, dynamic field sizing, input security masking, touch gestures, user text selection, or window dragging. The seven Intentionally ignored are `appearance`, `caret-color`, `cursor`, `pointer-events`, `resize`, `touch-action`, and `user-select`; `caret`, `caret-animation`, and `caret-shape` are Unsupported. The remaining Unsupported names are `field-sizing`, `input-security`, `interactivity`, `interest-delay`, `interest-delay-end`, `interest-delay-start`, `nav-down`, `nav-left`, `nav-right`, `nav-up`, `slider-orientation`, `spatial-navigation-action`, `spatial-navigation-contain`, `spatial-navigation-function`, and `window-drag`. |
 | Motion path, offset and view timelines (`A_anchor_timeline_motion`) | 13 | Not implemented | Motion path offset rotations and distances, view timelines, scroll anchoring, and paint invalidation hints have no layout consumer (`offset`, `offset-anchor`, `offset-distance`, `offset-path`, `offset-position`, `offset-rotate`, `overflow-anchor`, `timeline-scope`, `view-timeline`, `view-timeline-axis`, `view-timeline-inset`, `view-timeline-name`, `will-change`). Anchor positioning (`anchor-name`, `anchor-scope`, `position-anchor`, `position-area`, `position-try`, `position-try-fallbacks`, `position-try-order`, `position-visibility`) is implemented in section 2 and excluded from this count. |
 | Speech and aural (`A_speech_aural`) | 19 | Not implemented | This engine has no aural speech synthesis, sound cues, pauses, rests, or speech voice properties (`cue`, `cue-after`, `cue-before`, `pause`, `pause-after`, `pause-before`, `rest`, `rest-after`, `rest-before`, `speak`, `speak-as`, `voice-balance`, `voice-duration`, `voice-family`, `voice-pitch`, `voice-range`, `voice-rate`, `voice-stress`, `voice-volume`). |
 | 3D transforms (`A_3d_transforms`) | 4 | Implemented in section 2 | The supported 3D-to-2D paint path applies perspective, preserve-3d composition, perspective origin, and backface culling (`backface-visibility`, `perspective`, `perspective-origin`, `transform-style`). This row is not part of the unsupported count. |

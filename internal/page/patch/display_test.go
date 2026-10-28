@@ -50,20 +50,41 @@ func TestPatchPropsShareBacking(t *testing.T) {
 func TestPatchOpsPool(t *testing.T) {
 	var pool sync.Pool
 	pool.New = func() any {
-		b := EmptyOps()
-		return &b
+		return NewOpBuffer()
 	}
 
 	buf := Rent(&pool, 1)
-	if cap(buf) < opCap {
-		t.Fatalf("cap = %d", cap(buf))
+	if cap(buf.Ops) < opCap {
+		t.Fatalf("cap = %d", cap(buf.Ops))
 	}
-	buf = append(buf, layout.DisplayOp{})
+	buf.Ops = append(buf.Ops, layout.DisplayOp{})
 	Free(&pool, buf)
 
 	again := Rent(&pool, 1)
-	if cap(again) < opCap || len(again) != 0 {
-		t.Fatalf("reused cap %d len %d", cap(again), len(again))
+	if cap(again.Ops) < opCap || len(again.Ops) != 0 {
+		t.Fatalf("reused cap %d len %d", cap(again.Ops), len(again.Ops))
+	}
+	Free(&pool, again)
+
+	allocs := testing.AllocsPerRun(100, func() {
+		b := Rent(&pool, 1)
+		Free(&pool, b)
+	})
+	if allocs > 0 {
+		t.Fatalf("Rent/Free allocated %v times", allocs)
+	}
+}
+
+func BenchmarkPatchOpsPoolRentFree(b *testing.B) {
+	var pool sync.Pool
+	pool.New = func() any {
+		return NewOpBuffer()
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		buf := Rent(&pool, 1)
+		Free(&pool, buf)
 	}
 }
 

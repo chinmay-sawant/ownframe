@@ -24,12 +24,12 @@ func TestDockCloseRepaintsHiddenStrip(t *testing.T) {
 	s.drawReplayPartial(dst)
 
 	if s.partial.mode != repaintRect || len(s.partial.last) != 1 ||
-		s.partial.last[0] != image.Rect(260, 0, 600, 300) {
+		s.partial.last[0] != image.Rect(380, 0, 600, 300) {
 		t.Fatalf("close = %v %v, want the strip the dock hid", s.partial.mode, s.partial.last)
 	}
 
-	if s.partial.paintPx != 340*300 || s.partial.paints != 4 {
-		t.Fatalf("close painted %d px in %d tiles, want the 340 px strip",
+	if s.partial.paintPx != 220*300 || s.partial.paints != 4 {
+		t.Fatalf("close painted %d px in %d tiles, want the 220 px strip",
 			s.partial.paintPx, s.partial.paints)
 	}
 }

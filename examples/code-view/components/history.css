@@ -1,0 +1,452 @@
+/* Commit history rail ------------------------------------------------------- */
+
+.history {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+}
+
+.hist-head {
+  height: 32px;
+  flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.hist-kicker {
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hist-branch {
+  min-width: 0;
+  max-height: 24px;
+  overflow: hidden;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hist-pages { color: var(--dim); font-size: 8.5px; }
+.hist-sample { color: var(--amber); font-family: var(--mono); font-size: 8px; }
+
+.hist-btn {
+  height: 19px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 8.5px;
+  white-space: nowrap;
+}
+
+.hist-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
+
+.history-current {
+  height: 26px;
+  flex: 0 0 26px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 8px;
+  border-left: 2px solid transparent;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 9.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.history-current:hover { background-color: var(--panel-2); color: var(--text); }
+.history-current.on { border-left-color: var(--accent); color: var(--text); background-color: var(--panel-3); }
+.history-current-icon { flex: 0 0 12px; color: var(--accent); }
+.history-current-label { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; }
+.history-current-count { color: var(--muted); font-size: 8.5px; }
+.history-current-arrow { color: var(--muted); font-size: 15px; line-height: 1; }
+
+.hist-list { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 4px 0; }
+
+.branch-panel { display: flex; flex-direction: column; padding: 4px 0; }
+.branch-filter { height: 26px; flex: 0 0 26px; display: flex; align-items: center; gap: 5px; padding: 0 10px 4px 12px; }
+.branch-input {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  outline: 0;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 9.5px;
+}
+.branch-input:focus { border-color: rgba(122, 162, 247, 0.55); }
+.branch-row { width: 100%; height: 26px; display: flex; align-items: center; gap: 7px; padding: 0 12px; color: var(--muted); }
+.branch-row:hover { background-color: var(--panel-2); color: var(--text); }
+.branch-row.current { color: var(--text); }
+.branch-mark { width: 9px; flex: 0 0 9px; color: var(--accent); font-size: 8px; }
+.branch-name {
+  flex: 1;
+  min-width: 0;
+  max-height: 24px;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.branch-tag { color: var(--dim); font-size: 7.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+.branch-track {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  max-height: 22px;
+  overflow: hidden;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 8px;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.branch-more { padding: 4px 12px 6px 28px; color: var(--dim); font-size: 8.5px; }
+
+.hist-commit { border-left: 2px solid transparent; }
+.hist-commit.open { border-left-color: rgba(122, 162, 247, 0.5); background-color: var(--panel-2); }
+.hist-commit.on { border-left-color: var(--accent); }
+
+.hist-row {
+  width: 100%;
+  height: 42px;
+  min-height: 42px;
+  max-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 8px;
+  overflow: hidden;
+  color: var(--muted);
+  text-align: left;
+}
+
+.hist-row:hover { background-color: var(--panel-2); color: var(--text); }
+.hist-graph { display: block; }
+.hist-graph svg { display: block; }
+
+.hist-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border: 1px solid #3a4152;
+  border-radius: 50%;
+  background-color: var(--panel-2);
+}
+
+.hist-dot.head { border-color: var(--accent); background-color: var(--accent); }
+
+.hist-hash {
+  width: 52px;
+  flex: 0 0 52px;
+  color: #8492a8;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+/* Two lines of the subject fit the fixed 42 px row. The lines wrap on word
+   boundaries and clip at two lines, so a long subject never runs past the
+   rail or grows the row. */
+.hist-subject {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  max-height: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+}
+
+.hist-line {
+  display: block;
+  max-width: 100%;
+  max-height: 26px;
+  overflow: hidden;
+  line-height: 13px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hist-row:hover .hist-subject { color: var(--text); }
+.hist-when { flex: 0 0 auto; color: var(--dim); font-family: var(--mono); font-size: 8.5px; }
+.hist-stat { flex: 0 0 auto; display: flex; gap: 5px; font-family: var(--mono); font-size: 8.5px; font-weight: 700; }
+.hist-chev { width: 10px; flex: 0 0 10px; color: var(--dim); font-size: 9px; text-align: center; }
+
+.hist-meta {
+  height: 22px;
+  padding: 0 12px 0 23px;
+  overflow: hidden;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  line-height: 22px;
+  white-space: nowrap;
+}
+
+.hist-file {
+  width: 100%;
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px 3px 23px;
+  color: var(--muted);
+}
+
+.hist-file:hover { background-color: var(--panel-2); color: var(--text); }
+.hist-file.on { background-color: var(--panel-3); color: var(--text); }
+
+.hist-file-name {
+  flex: 1;
+  min-width: 0;
+  max-height: 24px;
+  overflow: hidden;
+  font-size: 9.5px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* The directory shares two lines with the file name, inside the same
+   30 px minimum, so wrapping one does not move the file row. */
+.hist-file-dir {
+  flex: 1;
+  min-width: 0;
+  max-height: 22px;
+  overflow: hidden;
+  color: var(--dim);
+  font-size: 8.5px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.hist-file-stat { display: flex; gap: 5px; font-family: var(--mono); font-size: 8px; font-weight: 700; }
+
+.hist-more, .hist-error {
+  padding: 2px 12px 4px 23px;
+  color: var(--dim);
+  font-size: 8.5px;
+}
+
+.hist-error { color: var(--amber); }
+
+.hist-preview {
+  margin: 2px 8px 2px 23px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: var(--panel);
+}
+
+.hdrow {
+  height: 18px;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 18px;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.hdnum {
+  width: 28px;
+  flex: 0 0 28px;
+  padding-right: 5px;
+  text-align: right;
+  color: var(--dim);
+  font-size: 8px;
+}
+
+.hdsign { width: 14px; flex: 0 0 14px; text-align: center; color: var(--dim); font-weight: 700; }
+.hdcell { position: relative; flex: 1; min-width: 0; overflow: hidden; padding-right: 8px; }
+.hdtext { position: absolute; top: 0; left: 0; width: 100%; overflow: hidden; white-space: pre; font-family: var(--mono); }
+
+.hdrow.add { background-color: var(--green-bg); }
+.hdrow.add .hdnum, .hdrow.add .hdsign { color: var(--green); }
+.hdrow.del { background-color: var(--red-bg); }
+.hdrow.del .hdnum, .hdrow.del .hdsign { color: var(--red); }
+.hdrow.hunk { background-color: rgba(122, 162, 247, 0.075); }
+.hdhunk { padding-left: 8px; color: #7d9bd6; font-size: 8.5px; }
+.hdrow.meta { background-color: rgba(240, 183, 90, 0.06); }
+.hdmeta { padding-left: 8px; color: var(--amber); font-size: 8.5px; }
+
+.hist-open {
+  margin: 3px 8px 5px 23px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 8.5px;
+}
+
+.hist-open:hover { border-color: rgba(122, 162, 247, 0.4); color: var(--accent); }
+
+.hist-empty {
+  padding: 18px 16px;
+  color: var(--dim);
+  font-size: 9.5px;
+  line-height: 1.5;
+}
+
+.hist-tip {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 7px;
+  background-color: var(--panel);
+}
+
+.hist-tip b { width: 100%; color: var(--text); font-size: 10px; font-weight: 600; line-height: 1.3; white-space: normal; }
+.hist-tip span { width: 100%; max-height: 58px; overflow: hidden; color: var(--muted); font-size: 9px; line-height: 1.45; white-space: normal; }
+.hist-tip em { color: var(--dim); font-family: var(--mono); font-size: 8px; font-style: normal; }
+
+/* A hover card for one history row. It sits at the page root rather than
+   inside the rail, because the rail clips its children. The model sets left,
+   top, and width inline; the fixed position keeps it above the editor and the
+   row it describes. It takes no pointer events, so moving the pointer onto
+   the card leaves the row's hover intact. */
+.commit-tip-float {
+  position: fixed;
+  z-index: 45;
+  max-width: 340px;
+  max-height: 160px;
+  overflow: hidden;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent);
+  border-radius: 7px;
+  background-color: var(--panel);
+  box-shadow: 0 10px 26px rgba(1, 4, 9, 0.55);
+  pointer-events: none;
+}
+
+.commit-tip-float b {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.commit-tip-float span {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.commit-tip-float span.tip-subject {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 10px;
+}
+
+.commit-tip-float em {
+  display: block;
+  overflow: hidden;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 8px;
+  font-style: normal;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+/* Splitter ----------------------------------------------------------------- */
+
+.hsplit {
+  height: 9px;
+  flex: 0 0 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel);
+}
+
+.hsplit:hover { background-color: rgba(122, 162, 247, 0.08); }
+.hsplit-grip { width: 34px; height: 9px; display: flex; align-items: center; justify-content: center; color: #4a5466; font-size: 10px; line-height: 1; }
+.hsplit:hover .hsplit-grip { color: var(--accent); }
+
+.crumb-commit {
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 5px;
+  border-radius: 3px;
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  font-size: 8.5px;
+}
+
+.crumb-subject {
+  max-width: 280px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9.5px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1300px) {
+  .hist-when { display: none; }
+  .hist-tip span { max-height: 40px; }
+}
+
+@media (max-width: 1050px) {
+  .hist-kicker { display: none; }
+  #history-working { display: none; }
+  .hist-subject { font-size: 10px; }
+  .crumb-subject { max-width: 140px; }
+}
+
+@media (max-width: 900px) {
+  .hist-when, .hist-stat { display: none; }
+  .hist-btn { padding: 0 4px; }
+}

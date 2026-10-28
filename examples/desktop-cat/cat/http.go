@@ -48,7 +48,7 @@ func (i *Inbox) Handler() http.Handler {
 		}
 		reply(w, http.StatusAccepted, n)
 	})))
-	return withHeaders(mux)
+	return withHeaders(withHostCheck(mux))
 }
 
 func reply(w http.ResponseWriter, status int, value any) {

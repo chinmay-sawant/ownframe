@@ -21,7 +21,7 @@ The inner screen's `LongPress(ctx, x, y)` handles a held press. A text control u
 
 ## Window mapping
 
-The window sends hover every frame. Press and click both fire on the mouse-down edge; release fires on the mouse-up edge.
+The window sends one hover when the point moves, and again after a redraw that changed the built generation ([interaction.md](interaction.md)). Press and click both fire on the mouse-down edge; release fires on the mouse-up edge.
 
 A mouse press in a field calls the inner screen's `SelectAt` before it runs the click handler, so a handler that focuses or selects a field is not blurred by the caret placement. Each move with the button down calls `Drag`, so one press, move, release selects a span. Two rapid presses call `SelectWordAt` and a third calls `SelectLineAt`. A press held within 8 px for 450 ms calls the inner screen's `LongPress` once, on a mouse or a touch. The inner screen's `LongPress` selects the word under a text field or runs `Handlers.LongPress`, and a true answer claims the press. On a claimed press the moves until release call `Drag` instead of scrolling, and the lift is not a tap. A press that moves past the slop before the delay never fires. `internal/window/long_press.go` holds the watch and `internal/window/hold.go` the frame check. Dragging past the top or bottom edge scrolls while the button stays down. The web `/click` route calls `SelectAt` before `Click` on the inner screen too ([web.md](web.md)). The window calls the inner screen. [interaction.md](interaction.md) has the details.
 

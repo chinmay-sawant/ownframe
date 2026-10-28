@@ -8,11 +8,12 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// one mutating token per 100ms; burst 10. maxInflight caps handlers;
-// maxThrottleIP bounds the table.
+// one mutating token per 50ms; burst 40. maxInflight caps handlers;
+// maxThrottleIP bounds the table. The burst leaves room for typing and
+// wheel events while still bounding a scripted flood.
 const (
-	limitEvery    = 100 * time.Millisecond
-	limitBurst    = 10
+	limitEvery    = 50 * time.Millisecond
+	limitBurst    = 40
 	maxInflight   = 8
 	maxThrottleIP = 1024
 	throttleKeep  = 5 * time.Minute
@@ -32,24 +33,47 @@ func (s *server) allowAddr(addr string) bool {
 	now := time.Now()
 	s.limitMu.Lock()
 	defer s.limitMu.Unlock()
+	if s.throttleHits == nil {
+		s.throttleHits = map[string]*throttleSeen{}
+	}
 	seen, ok := s.throttleHits[ip]
 	if !ok {
+		if len(s.throttleHits) >= maxThrottleIP {
+			var oldestKey string
+			var oldestTime time.Time
+			first := true
+			for key, item := range s.throttleHits {
+				if now.Sub(item.last) > throttleKeep {
+					delete(s.throttleHits, key)
+					continue
+				}
+				if first || item.last.Before(oldestTime) {
+					oldestKey = key
+					oldestTime = item.last
+					first = false
+				}
+			}
+			if len(s.throttleHits) >= maxThrottleIP && !first {
+				delete(s.throttleHits, oldestKey)
+			}
+			if len(s.throttleHits) >= maxThrottleIP {
+				return false
+			}
+		}
 		s.throttleHits[ip] = &throttleSeen{limiter: rate.NewLimiter(rate.Every(limitEvery), limitBurst), last: now}
 		return true
 	}
 	seen.last = now
-	if len(s.throttleHits) > maxThrottleIP {
-		for key, item := range s.throttleHits {
-			if now.Sub(item.last) > throttleKeep {
-				delete(s.throttleHits, key)
-			}
-		}
-	}
 	return seen.limiter.Allow()
 }
 
 func mutatingPath(path string) bool {
-	return path == "/click" || path == "/type" || path == "/backspace"
+	switch path {
+	case "/click", "/type", "/backspace", "/key", "/wheel":
+		return true
+	}
+
+	return false
 }
 
 // limit caps mutating POSTs per IP with 429 and in-flight with 503.

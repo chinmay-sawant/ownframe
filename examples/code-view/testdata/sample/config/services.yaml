@@ -1,0 +1,30 @@
+# Beacon service catalog. Durations use Go syntax: 30s, 750ms, 4s.
+interval: 30s
+timeout: 4s
+budget: 750ms
+
+services:
+  - name: checkout-api
+    url: https://api.example.com/health
+    tags: [api, critical]
+  - name: catalog
+    url: https://api.example.com/catalog/health
+    tags: [api]
+  - name: search
+    url: https://api.example.com/search/health
+    tags: [api]
+  - name: dashboard
+    url: https://app.example.com/
+    tags: [web]
+  - name: docs
+    url: https://docs.example.com/
+    tags: [web]
+  - name: postgres
+    url: tcp://db.internal:5432
+    tags: [infra, critical]
+  - name: redis
+    url: tcp://cache.internal:6379
+    tags: [infra]
+  - name: mailer
+    url: http://mailer.internal:8081/healthz
+    tags: [internal]

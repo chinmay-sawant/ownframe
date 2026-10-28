@@ -1,9 +1,8 @@
 package window
 
 import (
-	"strings"
-
 	"github.com/chinmay-sawant/ownframe/internal/clipboard"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 const (
@@ -80,9 +79,6 @@ func (s *shell) menuAction(id string) error {
 			return nil
 		}
 
-		text = strings.ReplaceAll(text, "\r", "")
-		text = strings.ReplaceAll(text, "\n", "")
-
 		return s.clip().Paste(s.ctx, text)
 	case "select-all":
 		return s.clip().SelectAll(s.ctx)
@@ -90,6 +86,10 @@ func (s *shell) menuAction(id string) error {
 		return s.clip().Undo(s.ctx)
 	case "redo":
 		return s.clip().Redo(s.ctx)
+	}
+
+	if app, ok := s.app.(host.MenuActioner); ok {
+		return app.MenuAction(s.ctx, id)
 	}
 
 	return nil

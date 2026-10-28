@@ -12,6 +12,7 @@ accessibility.go:Accessible
 api.go:Box
 api.go:Config
 api.go:Handlers
+api.go:MenuItem
 display.go:Display
 display.go:DisplayOp
 display_patch.go:DisplayPatch

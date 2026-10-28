@@ -1,5 +1,9 @@
 package replay
 
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+)
+
 // Renderer owns the caches retained while drawing one page. Its zero value
 // is ready to draw. Use it only on the owning Ebiten loop, including Close.
 // Different renderers do not evict each other's images or display plans.
@@ -11,6 +15,7 @@ type Renderer struct {
 	chunks   chunkStore
 	plans    planCache
 	layers   layerStore
+	drawOpts ebiten.DrawImageOptions
 }
 
 // Close releases retained GPU images and forgets cached plans and fonts.
@@ -60,4 +65,7 @@ func (renderer *Renderer) Close() {
 	clear(renderer.fonts.faces)
 	clear(renderer.fonts.sources)
 	renderer.fonts.mu.Unlock()
+
+	renderer.drawOpts.GeoM.Reset()
+	renderer.drawOpts.ColorScale.Reset()
 }

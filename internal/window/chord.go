@@ -1,7 +1,5 @@
 package window
 
-import "strings"
-
 import "github.com/chinmay-sawant/ownframe/internal/clipboard"
 
 func (s *shell) applyChord(chord chord) error {
@@ -15,9 +13,6 @@ func (s *shell) applyChord(chord chord) error {
 		if err != nil {
 			return nil
 		}
-
-		text = strings.ReplaceAll(text, "\r", "")
-		text = strings.ReplaceAll(text, "\n", "")
 
 		return s.clip().Paste(s.ctx, text)
 	case chordSelectAll:

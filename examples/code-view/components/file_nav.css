@@ -1,0 +1,130 @@
+/* Changed-file navigator ---------------------------------------------------- */
+
+/* The pill is the only box the widget draws: no backdrop, no full-width
+   wrapper. The editor behind it stays visible and keeps receiving clicks
+   everywhere outside this 420 px strip. */
+
+/* Centring uses the layout offset, not a translate. The engine hit-tests the
+   layout box and paints the transform, so `left: 50%` with
+   `transform: translateX(-50%)` would paint centred while every control took
+   clicks 210 px to the right. Keep the half-width value in step with the
+   width rules below. */
+
+.file-nav {
+  position: fixed;
+  left: calc(50% - 210px);
+  bottom: 34px;
+  z-index: 30;
+  width: 420px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  border: 1px solid rgba(122, 162, 247, 0.22);
+  border-radius: 10px;
+  background-color: var(--panel);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.14);
+  pointer-events: auto;
+}
+
+.file-nav-arrow {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--icon-strong);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.file-nav-arrow:hover { background-color: var(--panel-3); color: var(--text); }
+
+.file-nav-change { width: 20px; flex-basis: 20px; font-size: 14px; }
+
+.file-nav-arrow.off { color: #3a4252; }
+.file-nav-arrow.off:hover { background-color: transparent; color: #3a4252; }
+
+.file-nav-pos {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+/* The label is a fixed-width button, so a long name ends in an ellipsis
+   instead of painting over the counts. The engine re-shapes a text run only
+   when its box has a definite width; a flex-shrunk or max-width box keeps the
+   natural run and spills it. Keep these widths in step with the media queries
+   below. The directory gets the same treatment in its own column. */
+
+.file-nav-current {
+  display: block;
+  width: 150px;
+  flex: 0 0 150px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-nav-current:hover { background-color: var(--panel-3); color: var(--text); }
+
+.file-nav-dir {
+  display: block;
+  width: 60px;
+  flex: 0 0 60px;
+  height: 18px;
+  padding: 0 4px;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 9px;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Holds the counts and the arrows against the right edge, whatever the label
+   length. */
+.file-nav-fill { flex: 1 1 0; width: 0; height: 1px; }
+
+.file-nav-stats {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 5px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+}
+
+/* The position and the counts are labels, not targets, so they never swallow
+   a click meant for the pill underneath. */
+.file-nav-pos, .file-nav-stats { pointer-events: none; }
+
+/* Narrow windows keep both arrows, the count, and the name; the directory
+   hint is the first thing to go. The offset is half of the new width. */
+@media (max-width: 900px) {
+  .file-nav { left: calc(50% - 160px); width: 320px; }
+  .file-nav-current { width: 110px; flex-basis: 110px; }
+  .file-nav-dir { display: none; }
+}
+
+/* Below 352 px the fixed widths no longer fit, so the pill takes the width it
+   has and sits on an even 16 px inset. */
+@media (max-width: 352px) {
+  .file-nav { left: 16px; width: calc(100vw - 32px); }
+  .file-nav-current { width: 60px; flex-basis: 60px; }
+}

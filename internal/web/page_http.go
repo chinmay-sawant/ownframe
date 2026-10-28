@@ -5,19 +5,20 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/chinmay-sawant/ownframe/internal/page"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
 func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.reload(r.Context())
-	front := page.SelectFront(s.app)
+	front := host.SelectFront(s.app)
 	data := shellData{
-		Areas:  areas(s.app),
-		Reload: s.watching(),
-		Width:  front.Width,
-		Height: front.Height,
+		Areas:      areas(s.app),
+		Reload:     s.watching(),
+		Width:      front.Width,
+		Height:     front.Height,
+		Generation: front.Generation,
 	}
 	var buf bytes.Buffer
 	if err := s.shell.Execute(&buf, data); err != nil {

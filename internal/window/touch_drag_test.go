@@ -46,3 +46,23 @@ func TestUnclaimedTouchRemainsScrollable(t *testing.T) {
 		t.Fatalf("unclaimed %v %v", handled, err)
 	}
 }
+
+func TestDevToolsForwardsDragUntilRelease(t *testing.T) {
+	app := &captureScreen{fakeScreen: fakeScreen{width: 200, height: 200}, claim: true}
+	s := &shell{app: app, ctx: context.Background(), screenW: 200, screenH: 200}
+	if err := s.devPick(40, 40, false); err != nil {
+		t.Fatal(err)
+	}
+	if !s.dev.forward || !s.gesture.active {
+		t.Fatal("content press did not start the captured drag")
+	}
+	if err := s.devForwardDrag(60, 50, true, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.devForwardDrag(60, 50, false, true); err != nil {
+		t.Fatal(err)
+	}
+	if app.moves != 1 || app.ends != 1 || s.dev.forward || s.gesture.active {
+		t.Fatalf("moves=%d ends=%d forward=%v active=%v", app.moves, app.ends, s.dev.forward, s.gesture.active)
+	}
+}

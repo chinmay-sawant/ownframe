@@ -1,11 +1,27 @@
 package window
 
+import "math"
+
 const (
-	// devDockWidth is the default width of the right-hand panel.
+	// devDockWidth is the widest the right-hand panel opens, on a roomy
+	// screen.
 	devDockWidth = 340.0
 
 	// devDockMin is the narrowest the panel may become while resizing.
 	devDockMin = 220.0
+
+	// devDockPageMin is the page strip the panel must leave beside it on a
+	// desktop screen with room for that strip.
+	devDockPageMin = 320.0
+
+	// devDockRoomyW is the window width at which the panel opens at its full
+	// devDockWidth. Narrower windows give the panel a share of the window
+	// instead, so the page keeps a usable strip.
+	devDockRoomyW = 1180
+
+	// devDockShare is the fraction of a window narrower than devDockRoomyW
+	// the panel takes, between devDockMin and devDockWidth.
+	devDockShare = 0.28
 
 	// devDockGrab is the half-width of the resize edge beside the panel.
 	devDockGrab = 4.0
@@ -13,6 +29,33 @@ const (
 	// devDockGrabWidth spans the resize edge on both sides.
 	devDockGrabWidth = 2 * devDockGrab
 )
+
+// devDockDefaultWidth is the panel width on a window with no stored drag
+// width: devDockWidth on a roomy screen, else devDockShare of the window
+// between devDockMin and devDockWidth, rounded down. It never exceeds the
+// window, so a narrow screen still shows the panel alone.
+func devDockDefaultWidth(screenW int) float64 {
+	if screenW >= devDockRoomyW {
+		return devDockWidth
+	}
+
+	w := float64(screenW) * devDockShare
+	if w > devDockWidth {
+		w = devDockWidth
+	}
+
+	if w < devDockMin {
+		w = devDockMin
+	}
+
+	w = math.Floor(w)
+
+	if maxW := float64(screenW); w > maxW {
+		w = maxW
+	}
+
+	return w
+}
 
 // devDockRect places the devtools panel on the right edge, full height. A
 // width larger than the window is clamped, so a phone shows the panel alone.
@@ -28,20 +71,31 @@ func devDockRect(screenW, screenH int, width float64) devRect {
 	return devRect{X: float64(screenW) - width, Y: 0, W: width, H: float64(screenH)}
 }
 
-// devDockWidth returns the dock width for this screen: the stored drag
-// width, else the default, never wider than the window and never under the
-// minimum on a screen that can hold it.
+// devDockWidth returns the dock width for this screen: the stored drag width
+// clamped so the page keeps devDockPageMin beside it, else the responsive
+// default. A screen narrower than devDockMin keeps the old clamp: the width
+// is capped at the screen, so the default fills it.
 func (s *shell) devDockWidth() float64 {
+	screenW := float64(s.screenW)
+
 	w := s.dev.dockW
 	if w <= 0 {
-		w = devDockWidth
+		w = devDockDefaultWidth(s.screenW)
 	}
 
-	if max := float64(s.screenW); w > max {
-		w = max
+	if screenW < devDockMin {
+		if w > screenW {
+			w = screenW
+		}
+
+		return w
 	}
 
-	if w < devDockMin && float64(s.screenW) > devDockMin {
+	if maxW := screenW - devDockPageMin; w > maxW {
+		w = maxW
+	}
+
+	if w < devDockMin {
 		w = devDockMin
 	}
 

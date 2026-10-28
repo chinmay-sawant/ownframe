@@ -2,7 +2,6 @@ package window
 
 import (
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -15,6 +14,12 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		return err
 	}
 	down := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
+	if handled, err := s.devMenuPointer(x, y,
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonRight),
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft)); handled || err != nil {
+		s.mouseDown = down
+		return err
+	}
 	released := inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft)
 	pressed := pressEdge(down, released, s.mouseDown)
 	s.mouseDown = down
@@ -27,6 +32,9 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		}
 
 		s.dev.resizing = false
+	}
+	if s.dev.forward && !pressed {
+		return s.devForwardDrag(px, py, down, released)
 	}
 
 	if !s.dev.mobile && pressed && devOnEdge(s.dev.panel, x, y) {
@@ -51,19 +59,38 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 		if released && s.dev.forward {
 			s.dev.forward = false
 
-			return s.ptr().Release(s.ctx)
+			return s.releaseAt()
 		}
 
 		return nil
 	}
 
-	if released && s.dev.forward {
-		s.dev.forward = false
-
-		return s.ptr().Release(s.ctx)
-	}
-
 	return nil
+}
+
+func (s *shell) devForwardDrag(x, y float64, down, released bool) error {
+	if down {
+		return s.dragAt(x, y)
+	}
+	if released {
+		s.dev.forward = false
+		return s.releaseAt()
+	}
+	return nil
+}
+
+// devMenuPointer gives the menu content clicks while keeping dock input local.
+func (s *shell) devMenuPointer(x, y int, right, left bool) (bool, error) {
+	if s.menu.open && left {
+		return s.menuClick(x, y)
+	}
+	if right && !s.dev.resizing &&
+		!devInRect(s.dev.panel, float64(x), float64(y)) &&
+		(s.dev.mobile || !devOnEdge(s.dev.panel, x, y)) {
+		s.openMenu(x, y)
+		return true, nil
+	}
+	return false, nil
 }
 
 // devPointerHover keeps normal page hover and cursor feedback unless the
@@ -127,20 +154,7 @@ func devOpAt(display *layout.Display, box layout.Box, x, y float64) int {
 func (s *shell) devPick(px, py float64, alt bool) error {
 	if alt || !s.devPickerOn() {
 		s.dev.forward = true
-
-		return host.Batch(s.ctx, s.app, func() error {
-			if err := s.ptr().Press(s.ctx, px, py); err != nil {
-				return err
-			}
-
-			if sel, ok := s.app.(host.Selector); ok {
-				if err := sel.SelectAt(s.ctx, px, py); err != nil {
-					return err
-				}
-			}
-
-			return s.ptr().Click(s.ctx, px, py)
-		})
+		return s.pressAt(px, py)
 	}
 
 	box, ok := devBoxAt(s.app.Boxes(), px, py)

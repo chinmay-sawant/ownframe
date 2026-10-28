@@ -31,7 +31,7 @@ func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.Displa
 		options := &vector.DrawPathOptions{AntiAlias: true}
 		vector.FillPath(img, &path, nil, options)
 	})
-	blitRaster(dst, img, left, top, rgba(op))
+	renderer.blitRaster(dst, img, left, top, rgba(op))
 
 	return true
 }

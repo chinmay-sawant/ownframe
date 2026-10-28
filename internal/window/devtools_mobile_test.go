@@ -68,10 +68,12 @@ func TestDesktopMetricsLayoutRemainsSideDock(t *testing.T) {
 	s.dev.on = true
 	s.dev.mobile = false
 	s.devLayout()
-	if s.dev.panel != (devRect{X: 80, W: 340, H: 934}) {
+	// 420 px narrows the default dock from 340 to the 220 px minimum, so
+	// the page still gets 200 px beside it.
+	if s.dev.panel != (devRect{X: 200, W: 220, H: 934}) {
 		t.Fatalf("desktop dock changed: %+v", s.dev.panel)
 	}
-	if width, height := s.viewOf(420, 934); width != 80 || height != 934 {
+	if width, height := s.viewOf(420, 934); width != 200 || height != 934 {
 		t.Fatalf("desktop viewport changed: %dx%d", width, height)
 	}
 	s.devRun(devHit{act: devActMobileExpand})

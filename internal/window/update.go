@@ -19,6 +19,12 @@ func void(f func(*shell)) func(*shell) error {
 
 var stages = []updateStage{
 	{"ctx", func(s *shell) error { return s.ctx.Err() }},
+	{"close", func(s *shell) error {
+		if takeCloseRequest() {
+			return ebiten.Termination
+		}
+		return nil
+	}},
 	{"devSync", func(s *shell) error { return s.devSync() }},
 	{"ime", func(s *shell) error { return s.imeUpdate() }},
 	{"keys", func(s *shell) error { return s.keys() }},
@@ -39,7 +45,7 @@ var stages = []updateStage{
 	}},
 	{"scrollReq", void((*shell).applyScrollRequest)},
 	{"devRefresh", void((*shell).devRefresh)},
-	{"wheel", void((*shell).wheel)},
+	{"wheel", (*shell).wheel},
 	{"scrollWin", func(s *shell) error { return s.syncScrollWindow() }},
 	{"bitmap", func(s *shell) error { return s.prepareBitmapViewport() }},
 }

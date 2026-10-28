@@ -12,6 +12,8 @@ import (
 // DisplayPatch reports how a retained display changed.
 type DisplayPatch = patch.DisplayPatch
 
+type opBuffer = patch.OpBuffer
+
 // ElementEdit is one change to an element in the retained tree: an attribute
 // to set, or the text to replace. A nil Text and an empty Attribute change
 // nothing.
@@ -49,6 +51,7 @@ func (p *Page) PatchDisplay(fn func(d *Display)) DisplayPatch {
 		return p.lastPatch
 	}
 
+	p.tickMutated.Store(true)
 	diff, buf := patch.Update(&displayOpPool, p.draw.Display, fn)
 	if diff.Patch.Full {
 		p.markFull()
@@ -67,6 +70,7 @@ func (p *Page) PatchDisplay(fn func(d *Display)) DisplayPatch {
 
 // PatchOp mutates one retained operation and dirties its old and new bounds.
 func (p *Page) PatchOp(i int, fn func(o *DisplayOp)) bool {
+	p.tickMutated.Store(true)
 	r, ok := patch.OpDamage(p.draw.Display, i, fn)
 	if !ok {
 		return false
@@ -78,11 +82,11 @@ func (p *Page) PatchOp(i int, fn func(o *DisplayOp)) bool {
 	return true
 }
 
-func (p *Page) rentOps(n int) []DisplayOp {
+func (p *Page) rentOps(n int) *opBuffer {
 	return patch.Rent(&displayOpPool, n)
 }
 
-func (p *Page) freeOps(buf []DisplayOp) {
+func (p *Page) freeOps(buf *opBuffer) {
 	patch.Free(&displayOpPool, buf)
 }
 
@@ -98,6 +102,7 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 		return ErrNilPage
 	}
 
+	p.tickMutated.Store(true)
 	err := patch.ApplyElement(ctx, patch.ElementIn{
 		Refused:  ErrPatchRefused,
 		ID:       id,
@@ -139,6 +144,7 @@ func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
 // moved sibling is outside the patched element's own box, so the display diff
 // is the damage source, not ElementPatch.Old and New alone.
 func (p *Page) adoptSpliced(d *Display) *Display {
+	p.tickMutated.Store(true)
 	prev := p.draw.SwapList(d)
 	p.setDisplayBoxes(d)
 	p.dirtyFromDisplay(prev, d)

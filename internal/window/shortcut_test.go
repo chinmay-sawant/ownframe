@@ -23,6 +23,8 @@ func TestShortcutChords(t *testing.T) {
 		{name: "cmd c", mods: cmd, key: ebiten.KeyC, want: chordCopy},
 		{name: "ctrl insert", mods: ctrl, key: ebiten.KeyInsert, want: chordCopy},
 		{name: "ctrl v", mods: ctrl, key: ebiten.KeyV, want: chordPaste},
+		{name: "ctrl shift v", mods: modifiers{Control: true, Shift: true}, key: ebiten.KeyV, want: chordNone},
+		{name: "cmd shift v", mods: modifiers{Meta: true, Shift: true}, key: ebiten.KeyV, want: chordNone},
 		{name: "shift insert", mods: modifiers{Shift: true}, key: ebiten.KeyInsert, want: chordPaste},
 		{name: "ctrl x", mods: ctrl, key: ebiten.KeyX, want: chordCut},
 		{name: "shift delete", mods: modifiers{Shift: true}, key: ebiten.KeyDelete, want: chordCut},

@@ -94,6 +94,10 @@ an earlier one.
 | border, outline, and rule colours | the element's own stroke and line operations |
 | `opacity` | the sampled opacity on each captured subtree operation |
 | `transform` with 2D functions | the operation's baked matrix |
+| `width`, `height`, `top`, `left` | the element's box through a one-element relayout |
+| `visibility`, `content-visibility` | presence, through a `transition-behavior: allow-discrete` rule |
+| `z-index` | stacking level, through a `transition-behavior: allow-discrete` rule |
+| `position` | the halfway X/Y flip, through a `transition-behavior: allow-discrete` rule |
 
 Colour selection uses the same nearest-owner rule as a keyframe colour, and a
 transition blends colour in sRGB. A colour with alpha writes the RGB channels
@@ -101,13 +105,14 @@ only; the alpha stays at the element's base paint. `transform` takes the 2D
 matrix path, so a 3D list, a perspective, or an element whose static transform
 already participates in 3D does not transition on this path.
 
-`width`, `height`, `top`, and `left` belong to the next phase. So do the
-discrete properties: `display`, `visibility`, `content-visibility`, `position`,
-`z-index`, `order`, and the grid-line integers. An appearing or disappearing
+`width`, `height`, `top`, and `left` transition through a one-element relayout. The
+discrete properties are split: `visibility`, `content-visibility`, `z-index`, and
+`position` have rules and need `transition-behavior: allow-discrete`; `display`,
+`order`, and the grid-line integers stay blocked. An appearing or disappearing
 `display` change cannot cross-fade in this phase: the outgoing element has no
 operations in the new display and the page keeps no outgoing layer, so the
 change snaps and `Probe().Motion().TransitionSkipReason` names it. Treat a
-property outside the table as unclaimed; do not promise its motion in an app
+property outside this set as unclaimed; do not promise its motion in an app
 until its phase lands.
 
 ### Reversal and precedence
@@ -136,8 +141,8 @@ A running transition asks for the next frame at once, a delayed run asks for the
 delay end, and a finished or released run asks for nothing. Each sample marks
 the union of the target operations' painted bounds before and after the write,
 and the page feeds that into its ordinary dirty set. A page with only
-transitions therefore parks like a static page once the run ends. `Serve` does
-not tick, so a served page shows its committed frame.
+transitions therefore parks like a static page once the run ends. `Serve` runs
+the same tick and redraws on damage, so a served page follows the transition.
 
 ### Switch
 
@@ -178,12 +183,19 @@ rather than painted as if the alpha moved (`internal/animation/compose.go`,
 A declaration the binder cannot place stays at the element's base paint and is
 reported once per element and reason in `Gaps`. That covers `filter`,
 `backdrop-filter`, `clip-path`, the mask position and size properties,
-`mix-blend-mode`, and `isolation`; SVG paint properties such as `fill`, `stroke`,
-and their width and dash properties; the individual `translate`, `rotate`, and
-`scale` properties; and layout properties such as `width`, `height`, insets,
-`font-size`, `line-height`, letter and word spacing, shadows, background
-position and size, outline geometry, and radii
-(`internal/cssanimation/keyframes.go`, `deferredPhase` and `layoutProperty`).
+`mix-blend-mode`, and `isolation`; the individual `translate`, `rotate`, and
+`scale` properties; and shadows, background position and size, outline
+geometry, and radii (`internal/cssanimation/keyframes.go`, `deferredPhase`).
+
+Layout properties such as `width`, `height`, insets, `font-size`, `line-height`,
+and letter and word spacing take the layout tier: the page relayouts one element
+per frame through `layout.RelayoutElementWithOverrides` and reports
+`LayoutBound`, `LayoutRelayouts`, `LayoutQueued`, and `LayoutBudgetHit`. Inline
+SVG paint properties such as `fill` and `stroke` restyle through
+`layout.RestyleInlineSVG`, one element per frame, and report through
+`SVGPaintRequests`, `SVGPaintRestyles`, `SVGPaintQueued`, and
+`SVGPaintBudgetHit`. A layout or SVG run needs retained state, which the page
+turns on by itself and pays with one redraw.
 
 ### Nearest owner
 

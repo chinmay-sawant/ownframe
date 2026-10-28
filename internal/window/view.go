@@ -1,6 +1,10 @@
 package window
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/chinmay-sawant/ownframe/internal/host"
+)
 
 // stretched reports that the painted page is being scaled to the viewport.
 // The scale is only for the gap while a window or dock drag waits on a
@@ -23,19 +27,37 @@ func (s *shell) stretched() bool {
 	return true
 }
 
-func (s *shell) wheel() {
+func (s *shell) wheel() error {
 	if s.devWheel() {
-		return
+		return nil
 	}
 
 	wheelX, wheelY := ebiten.Wheel()
+	if wheelX == 0 && wheelY == 0 {
+		return nil
+	}
 
 	if s.zoomWheel(wheelY) {
-		return
+		return nil
+	}
+
+	if handler, ok := s.app.(host.WheelHandler); ok {
+		x, y := ebiten.CursorPosition()
+		frameW, frameH := s.frameSize()
+		px, py := s.contentAt(x, y, frameW, frameH)
+
+		handled, err := handler.Wheel(s.ctx, px, py, wheelX, wheelY)
+		if err != nil {
+			return err
+		}
+
+		if handled {
+			return nil
+		}
 	}
 
 	if s.stretched() || !s.allowPageScroll() {
-		return
+		return nil
 	}
 
 	contentW, contentH := s.contentSize()
@@ -43,6 +65,8 @@ func (s *shell) wheel() {
 	s.scrollX, s.scrollY = panScroll(
 		s.scrollX, s.scrollY, wheelX, wheelY, contentW, contentH, viewW, viewH,
 	)
+
+	return nil
 }
 
 func (s *shell) frameSize() (int, int) {

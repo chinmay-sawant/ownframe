@@ -1,0 +1,15 @@
+{{if .InlineCard.Show}}
+<div class="inline-card" id="inline-card" style="left:{{.InlineCard.Left}}px;top:{{.InlineCard.Top}}px;width:{{.InlineCard.Width}}px" role="dialog" aria-label="{{.InlineCard.Title}} {{.InlineCard.Kind}}">
+  <header class="inline-card-head">
+    <b>{{.InlineCard.Title}}</b>
+    <span class="inline-card-kind kind-{{.InlineCard.Kind}}">{{.InlineCard.Kind}}</span>
+    <span class="inline-card-path">{{.InlineCard.Path}}</span>
+    <button class="inline-card-step" id="inline-card-prev" data-action="inline-card-prev" type="button" title="Previous change in this file" aria-label="Previous change in this file"{{if not .InlineCard.HasPrev}} disabled{{end}}>↑</button>
+    <button class="inline-card-step" id="inline-card-next" data-action="inline-card-next" type="button" title="Next change in this file" aria-label="Next change in this file"{{if not .InlineCard.HasNext}} disabled{{end}}>↓</button>
+    <button class="inline-card-x" id="inline-card-close" data-action="inline-card-close" type="button" aria-label="Close line details" title="Close">×</button>
+  </header>
+  {{if .InlineCard.OldText}}<div class="inline-card-line old"><span>old</span><code>{{.InlineCard.OldText}}</code></div>{{end}}
+  {{if .InlineCard.NewText}}<div class="inline-card-line new"><span>new</span><code>{{.InlineCard.NewText}}</code></div>{{end}}
+  <footer class="inline-card-foot">{{.InlineCard.Hint}} · click the edited line to edit</footer>
+</div>
+{{end}}

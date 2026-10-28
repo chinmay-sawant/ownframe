@@ -305,21 +305,15 @@ array instead of a full one.
 
 ### The fallback
 
-A refused patch leaves the cached tree edited and the retained display
-untouched, because every engine refusal happens before the splice. The app
-falls back to the path the click already used.
+A refused patch drops the cached tree and leaves the retained display untouched, because every engine refusal happens before the splice. The next redraw parses the source again, so the page shows the source's state rather than the refused edit. The app falls back to the path the click already used.
 
 - Keep the state the click set: the started map, the selected name, the
   readout, and the start time. The click means the same thing either way.
-- Redraw the whole page. The template prints the base class and the literal
-  `Ready`, so the started class and the state text are not template data and
-  the executed source does not change for them. The redraw lays the cached
-  tree out again, and the tree still carries the edit the refused patch left
-  in it, so the display shows the class the engine refused to splice. The
-  readout is template data, so when it changes the executed source changes,
-  the page drops the cache, and the tree is parsed again, which drops the
-  stale tree edit with the old tree. The after-redraw hook puts the state back
-  into the new tree. The redraw has to be one that lays the page out, not one
+- Redraw the whole page. The page dropped the cached tree, so the redraw parses
+  the template again and the edited class and state text are gone. Keep them in
+  app state and put them back through `page.Probe().SetAfterRedraw`. The readout
+  is template data, so when it changes the executed source changes and the
+  redraw parses anyway. The redraw has to be one that lays the page out, not one
   that can be skipped as unchanged.
 - Keep the sample's captured starting paint and its origin. The refused patch
   did not touch the display, so the capture is still the paint the transition

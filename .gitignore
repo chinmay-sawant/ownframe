@@ -1,6 +1,7 @@
 # Built binaries and WebAssembly output
 /ownframe
 /dist/
+/tmp/
 *.exe
 *.wasm
 *.aar

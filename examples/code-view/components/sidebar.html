@@ -1,0 +1,172 @@
+<aside class="sidebar" id="sidebar">
+  <header class="side-head">
+    <span class="side-title">{{if eq .Mode "changes"}}Source control{{else}}Explorer{{end}}</span>
+    <span class="side-tools">
+      {{if eq .Mode "explorer"}}
+      <span class="side-count mono">{{.TreeCount}}</span>
+      <button class="side-btn" id="side-collapse" data-action="collapse-all" type="button" title="Collapse all folders" aria-label="Collapse all folders"{{if .Modal}} tabindex="-1"{{end}}>
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 8 2.5l5 5M3 13.5l5-5 5 5"/></svg>
+      </button>
+      {{else}}
+      <span class="side-count mono">{{.Changed}}</span>
+      <button class="side-btn" id="side-refresh" data-action="diff-refresh" type="button" title="Refresh changes" aria-label="Refresh changes"{{if .Modal}} tabindex="-1"{{end}}>
+        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke-width="1.4" stroke-linecap="round"><path d="M2.2 7a4.8 4.8 0 0 1 8.2-3.4L13 6M11.8 7a4.8 4.8 0 0 1-8.2 3.4L1 8"/><path d="M13 2.4V6H9.4M1 11.6V8h3.6"/></svg>
+      </button>
+      {{end}}
+    </span>
+  </header>
+
+  {{if eq .Mode "explorer"}}
+    <div class="filter{{if .Filter}} filled{{end}}">
+      <svg class="filter-icon" width="12" height="12" viewBox="0 0 14 14" fill="none" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="6" cy="6" r="4.1"/><path d="m9.2 9.2 3 3"/>
+      </svg>
+      <input id="filter" class="filter-input" type="text" data-bind="Filter" placeholder="Filter by name or path" autocomplete="off" spellcheck="false"{{if .Modal}} tabindex="-1"{{end}}>
+      {{if .Filter}}<button class="filter-x" id="filter-clear" data-action="filter-clear" type="button" title="Clear filter" aria-label="Clear filter"{{if .Modal}} tabindex="-1"{{end}}>×</button>{{end}}
+    </div>
+
+    <div class="tree" id="tree-pane">
+      {{range .Tree}}
+      <button class="trow{{if .Dir}} dir{{end}}{{if .Open}} open{{end}}{{if .Ignored}} ignored{{end}}" id="tree-{{.Path}}" style="padding-left:{{.Indent}}px" data-action="{{if .Dir}}dir:{{else}}open:{{end}}{{.Path}}" type="button" title="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{end}}{{.Path}}{{if .IgnoredNote}} (git ignored){{end}}" aria-label="{{if .Dir}}{{if .Open}}Collapse{{else}}Expand{{end}} {{.Path}}{{else}}Open {{.Path}}{{end}}{{if .IgnoredNote}}, git ignored{{end}}"{{if $.Modal}} tabindex="-1"{{end}}>
+        {{if .Dir}}
+        {{if .Open}}<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m1.8 3.6 3.2 3.2 3.2-3.2"/></svg>{{else}}<svg class="chev" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3.6 1.8 3.2 3.2-3.2 3.2"/></svg>{{end}}
+        {{else}}
+        <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
+        {{end}}
+        <span class="tname">{{.Short}}</span>
+        {{if .IgnoredNote}}<span class="tree-note">ignored</span>{{end}}
+        <span class="fstat {{.StatusClass}}">{{.Status}}</span>
+      </button>
+      {{end}}
+
+      {{if not .Tree}}<div class="tree-more">No readable files in this workspace.</div>{{end}}
+      {{if .Filtered}}<div class="tree-tag">matching paths</div>{{end}}
+      {{if .TreeScroll}}
+      <button class="tree-scroll" id="tree-scroll" type="button" title="Drag to scroll files" aria-label="Scroll files" tabindex="-1" style="height:{{.TreeTrackH}}px">
+        <span class="tree-thumb" id="tree-thumb" style="top:{{.TreeThumbTop}}px;height:{{.TreeThumbH}}px"></span>
+      </button>
+      {{end}}
+    </div>
+
+    <div class="side-foot">
+      <span class="ws-mark"></span>
+      <span class="ws-name">{{.Workspace}}</span>
+      <span class="side-sep">·</span>
+      <span class="dim">{{.TreeCount}} files</span>
+      {{if .ScanBudget}}<span class="scan-badge" title="{{.ScanBudget}}">limited</span>{{end}}
+      {{if .TreeScroll}}
+      <span class="tree-nav">
+        <button class="side-btn" id="tree-up" data-action="tree-up" type="button" title="Scroll files up" aria-label="Scroll files up"{{if .Modal}} tabindex="-1"{{end}}>↑</button>
+        <button class="side-btn" id="tree-down" data-action="tree-down" type="button" title="Scroll files down" aria-label="Scroll files down"{{if .Modal}} tabindex="-1"{{end}}>↓</button>
+      </span>
+      {{end}}
+    </div>
+  {{else}}
+    <div class="changes-head">
+      <button class="changes-title" id="history-working" data-action="history-working" type="button" title="{{if eq .Diff.Source "branch"}}{{.Diff.Note}} Click to show the working tree.{{else}}Show the working tree diff{{end}}"{{if .Modal}} tabindex="-1"{{end}}>{{if eq .Diff.Source "commit"}}Commit {{.Diff.CommitShort}} ↩{{else if eq .Diff.Source "branch"}}Branch changes ↩{{else}}Working tree{{end}}</button>
+      <span class="changes-count mono">{{.Diff.Count}}</span>
+      {{if .Diff.Sample}}<span class="side-tag">sample</span>{{end}}
+      <span class="sc-stats"><b class="add">+{{.Diff.TotalAdd}}</b><b class="del">−{{.Diff.TotalDel}}</b></span>
+    </div>
+
+    {{if .Diff.HasChanges}}
+    <div class="changes{{if .Diff.Scroll}} scroll-fade{{end}}{{if .Diff.AtTop}} at-top{{end}}{{if .Diff.AtEnd}} at-end{{end}}" id="changes-list">
+      {{range .Diff.Files}}
+      <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}"{{if .Selected}} aria-current="true"{{end}}{{if $.Modal}} tabindex="-1"{{end}}>
+        <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
+        <span class="change-text">
+          <span class="change-name">{{.Name}}</span>
+          <span class="change-dir">{{.Dir}}</span>
+        </span>
+        <span class="change-num"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+        <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+      </button>
+      {{end}}
+    </div>
+    {{else}}
+    <div class="clean">
+      <span class="clean-mark">✅</span>
+      <b>{{if .Diff.EmptyTitle}}{{.Diff.EmptyTitle}}{{else}}No changes{{end}}</b>
+      <span class="clean-note">{{.Diff.Note}}</span>
+    </div>
+    {{end}}
+
+    {{if .History.Visible}}
+    <button class="hsplit side-hsplit" id="history-divider" type="button" title="Drag to resize History" aria-label="Drag or use Up and Down to resize History"{{if .Modal}} tabindex="-1"{{end}}><span class="hsplit-grip">⇕</span></button>
+    <section class="history side-history" id="history-pane" style="height:{{.History.Height}}px">
+      <header class="hist-head">
+        <span class="hist-kicker">History</span>
+        {{if .History.Sample}}
+        <span class="hist-sample">sample</span>
+        {{else}}
+        <button class="hist-branch" id="branch-picker" data-action="branch-picker" type="button" title="View commits for another branch" aria-label="Choose a branch for history"{{if .Modal}} tabindex="-1"{{end}}>{{.History.Branch}} ▾</button>
+        {{end}}
+        {{if not .History.BranchOpen}}<span class="hist-pages mono">{{len .History.Commits}}</span>{{end}}
+        {{if .History.LoadingMore}}<span class="hist-pages">loading…</span>{{end}}
+        <span class="tabs-fill"></span>
+        <button class="hist-btn" id="history-refresh" data-action="diff-refresh" type="button" title="Refresh history" aria-label="Refresh history"{{if .Modal}} tabindex="-1"{{end}}>↻</button>
+      </header>
+      <button class="history-current{{if eq .Diff.Source "branch"}} on{{end}}" id="history-branch-changes" data-action="history-branch-changes" type="button" aria-pressed="{{if eq .Diff.Source "branch"}}true{{else}}false{{end}}" title="Show combined committed changes for this history branch"{{if .Modal}} tabindex="-1"{{end}}>
+        <svg class="history-current-icon" width="12" height="14" viewBox="0 0 12 14" fill="none" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="2.6" cy="2.8" r="1.7"/><circle cx="2.6" cy="11.2" r="1.7"/><circle cx="9.4" cy="5" r="1.7"/><path d="M2.6 4.5v5M9.4 6.7c0 2.2-2.4 2.4-4.4 3"/></svg>
+        <span class="history-current-label">Current branch changes</span>{{if eq .Diff.Source "branch"}}<span class="history-current-count mono">{{.Diff.Count}}</span>{{end}}<span class="history-current-arrow" aria-hidden="true">›</span>
+      </button>
+      <div class="hist-list{{if .History.Scroll}} scroll-fade{{end}}{{if .History.AtTop}} at-top{{end}}{{if .History.AtEnd}} at-end{{end}}" id="history-list">
+        {{if .History.BranchOpen}}
+        <div class="branch-panel" role="dialog" aria-modal="true" aria-label="Choose a branch">
+          <div class="branch-filter">
+            <input id="branch-filter" class="branch-input" type="text" data-bind="BranchQuery" placeholder="Filter branches" autocomplete="off" spellcheck="false" aria-label="Filter branches">
+          </div>
+          <div class="branch-actions">
+            <button class="hist-btn" id="branch-head" data-action="branch-head" type="button">Follow HEAD</button>
+            <button class="hist-btn" id="branch-close" data-action="branch-close" type="button">Close</button>
+          </div>
+          {{range $i, $branch := .History.Branches}}
+          <button class="branch-row{{if $branch.CheckedOut}} current{{end}}" id="branch-{{$i}}" data-action="branch-pick:{{$i}}" type="button" title="{{if $branch.Track}}{{$branch.Track}}{{else}}{{$branch.Ref}}{{end}}" aria-label="{{$branch.Name}}{{if $branch.Remote}} (remote){{end}}">
+            <span class="branch-mark">{{if $branch.CheckedOut}}●{{else}}○{{end}}</span>
+            <span class="branch-name">{{$branch.Name}}</span>
+            {{if $branch.Remote}}<span class="branch-tag">remote</span>{{end}}
+            {{if $branch.Track}}<span class="branch-track">{{$branch.Track}}</span>{{end}}
+          </button>
+          {{end}}
+          {{if .History.BranchMore}}<div class="branch-more">+{{.History.BranchMore}} more branches. Filter by name.</div>{{end}}
+          {{if not .History.Branches}}<div class="hist-empty">No matching branches.</div>{{end}}
+        </div>
+        {{else}}
+        {{range $commit := .History.Commits}}
+        <div class="hist-commit{{if $commit.Selected}} on{{end}}">
+          <button class="hist-row" id="commit-{{$commit.Short}}" data-action="commit:{{$commit.Hash}}" type="button" title="{{$commit.Subject}}" aria-label="Commit {{$commit.Short}}: {{$commit.Subject}}"{{if $.Modal}} tabindex="-1"{{end}}>
+            <span class="hist-graph">
+              <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+                {{range $edge := $commit.GraphEdges}}<path d="{{$edge.Path}}" stroke="{{$edge.Color}}" stroke-width="1.5" stroke-linecap="round"/>{{end}}
+                <circle cx="{{$commit.GraphX}}" cy="21" r="3.2" fill="{{if $commit.Head}}{{$commit.GraphColor}}{{else}}#0b0e14{{end}}" stroke="{{$commit.GraphColor}}" stroke-width="1.7"/>
+              </svg>
+            </span>
+            <span class="hist-hash mono">{{$commit.Short}}</span>
+            <span class="hist-subject">{{range $line := $commit.Lines}}<span class="hist-line">{{$line}}</span>{{end}}</span>
+            <span class="hist-when">{{$commit.Date}}</span>
+            <span class="hist-stat"><b class="add">+{{$commit.Add}}</b><b class="del">−{{$commit.Del}}</b></span>
+          </button>
+        </div>
+        {{end}}
+        {{if not .History.Commits}}<div class="hist-empty">{{if .History.Loading}}Loading the commit patch…{{else if .History.Note}}{{.History.Note}}{{else}}No commits on this branch yet.{{end}}</div>{{end}}
+        {{end}}
+      </div>
+    </section>
+    {{end}}
+
+    <div class="side-foot">
+      <span class="dim note-one" title="{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}">{{if .WatchNote}}{{.WatchNote}}{{else}}{{.Diff.Note}}{{end}}</span>
+    </div>
+  {{end}}
+</aside>
+
+{{if .Diff.Scroll}}
+<button class="list-scroll" id="changes-scroll" type="button" title="Drag to scroll changed files" aria-label="Scroll changed files" tabindex="-1" style="left:{{.Diff.RailLeft}}px;top:{{.Diff.RailTop}}px;height:{{.Diff.ScrollTrack}}px">
+  <span class="list-thumb" id="changes-thumb" style="top:{{.Diff.ScrollTop}}px;height:{{.Diff.ScrollHeight}}px"><svg width="8" height="{{.Diff.ScrollHeight}}" aria-hidden="true"><rect width="8" height="{{.Diff.ScrollHeight}}" fill="#c5c9d1"/></svg></span>
+</button>
+{{end}}
+{{if and .History.Visible .History.Scroll}}
+<button class="hist-scroll" id="history-scroll" type="button" title="Drag to scroll history" aria-label="Scroll history" tabindex="-1" style="left:{{.History.RailLeft}}px;top:{{.History.RailTop}}px;height:{{.History.ScrollTrack}}px">
+  <span class="hist-thumb" id="history-thumb" style="top:{{.History.ScrollTop}}px;height:{{.History.ScrollHeight}}px"><svg width="8" height="{{.History.ScrollHeight}}" aria-hidden="true"><rect width="8" height="{{.History.ScrollHeight}}" fill="#c5c9d1"/></svg></span>
+</button>
+{{end}}

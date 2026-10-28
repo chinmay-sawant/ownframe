@@ -129,6 +129,7 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 		return nil
 	}
 
+	p.tickMutated.Store(true)
 	if reveal {
 		p.revealFocus(id)
 	}
@@ -231,6 +232,7 @@ func (p *Page) Drag(ctx context.Context, x, y float64) error {
 		return nil
 	}
 
+	p.tickMutated.Store(true)
 	return p.Redraw(ctx)
 }
 
@@ -258,6 +260,7 @@ func (p *Page) selectSpan(ctx context.Context, x, y float64, bounds func(string,
 	off := p.offsetAt(p.boxByID(id), c, x, y)
 	start, end := bounds(c.Value, off)
 	p.formState().SelectSpan(c.ID, start, end)
+	p.tickMutated.Store(true)
 
 	return p.Redraw(ctx)
 }
@@ -276,6 +279,7 @@ func (p *Page) focusCaret(ctx context.Context, c Control, off int) error {
 		return nil
 	}
 
+	p.tickMutated.Store(true)
 	return p.Redraw(ctx)
 }
 
@@ -298,6 +302,7 @@ func (p *Page) setCaret(pos int, extend bool) {
 		return
 	}
 
+	p.tickMutated.Store(true)
 	n := 0
 	if c, ok := p.focusedEditable(); ok {
 		n = runeLen(c.Value)
@@ -341,6 +346,7 @@ func (p *Page) caretKey(ctx context.Context, key string) error {
 	}
 
 	fs.SetCaret(pos, n, extend)
+	p.tickMutated.Store(true)
 
 	return p.Redraw(ctx)
 }
@@ -348,6 +354,7 @@ func (p *Page) caretKey(ctx context.Context, key string) error {
 // resetCaretBlink shows the caret and restarts the blink clock. Every caret
 // move and edit calls it, so the caret is solid while the person types.
 func (p *Page) resetCaretBlink() {
+	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {
 		return
@@ -376,6 +383,7 @@ func (p *Page) caretBlink(ctx context.Context) error {
 		return nil
 	}
 
+	p.tickMutated.Store(true)
 	return p.Redraw(ctx)
 }
 
@@ -531,6 +539,7 @@ func (p *Page) applyPicked(ctx context.Context, box Box, c Control) error {
 }
 
 func (p *Page) blurForm() {
+	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {
 		return
@@ -556,6 +565,7 @@ func (p *Page) formControl(id string) bool {
 }
 
 func (p *Page) activate(id string) bool {
+	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {
 		return false
@@ -680,6 +690,7 @@ func (p *Page) FormValue(id string) string {
 // A select marks each option whose value matches.
 // The focused control loses its selection.
 func (p *Page) SetFormValue(id, value string) {
+	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {
 		return
@@ -701,6 +712,7 @@ func (p *Page) FormChecked(id string) bool {
 // A radio set true clears other radios with the same non-empty name.
 // A radio set false clears only that radio.
 func (p *Page) SetFormChecked(id string, checked bool) {
+	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {
 		return

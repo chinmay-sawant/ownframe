@@ -1,11 +1,31 @@
 package replay
 
 import (
+	"unicode/utf8"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
+
+var asciiGlyphs [128]string //nolint:gochecknoglobals // reason: immutable ASCII lookup keeping glyphAt alloc-free, covered by TestGlyphAt_ASCIIZeroAllocs.
+
+func init() {
+	for i := 0; i < 128; i++ {
+		asciiGlyphs[i] = string(rune(i))
+	}
+}
+
+// glyphAt returns the single-rune substring at byte offset i, and its byte
+// length, avoiding per-rune heap allocation.
+func glyphAt(content string, i int) (string, int) {
+	if b := content[i]; b < utf8.RuneSelf {
+		return asciiGlyphs[b], 1
+	}
+	_, size := utf8.DecodeRuneInString(content[i:])
+	return content[i : i+size], size
+}
 
 // drawText draws one shaped run at its baseline through the run raster cache,
 // so a repaint that covers static text blits one baked image instead of
@@ -39,8 +59,9 @@ func (renderer *Renderer) drawTextRun(dst *ebiten.Image, face *text.GoTextFace, 
 		return
 	}
 
-	for _, r := range content {
-		glyph := string(r)
+	for i := 0; i < len(content); {
+		glyph, size := glyphAt(content, i)
+		i += size
 		renderer.drawRun(dst, glyph, face, x, y, op)
 		width, _ := text.Measure(glyph, face, 0)
 		x += width + op.LetterSpacing*pxPerPt

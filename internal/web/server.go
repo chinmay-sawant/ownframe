@@ -1,5 +1,5 @@
 // Package web shows a screen's PNG in a browser.
-// It is one way to deliver mouse and keyboard events to a host.Screen.
+// It is one way to deliver mouse, wheel, and keyboard events to a host.Screen.
 // The native window is internal/window.
 package web
 
@@ -20,10 +20,11 @@ type shellArea struct {
 }
 
 type shellData struct {
-	Width  int
-	Height int
-	Areas  []shellArea
-	Reload bool
+	Width      int
+	Height     int
+	Generation uint64
+	Areas      []shellArea
+	Reload     bool
 }
 
 type server struct {
@@ -33,13 +34,20 @@ type server struct {
 	lastNote     string
 	perf         bool
 	debugEnabled bool
+	// ticking is true while the frame loop runs. frameGen advances when a
+	// dirty tick changes the picture without a page redraw, so /state can
+	// tell the shell to fetch a new frame.
+	ticking  bool
+	frameGen uint64
 	// limitMu guards the mutating-route throttle table and semaphore.
 	limitMu      sync.Mutex
 	throttleHits map[string]*throttleSeen
 	inflight     chan struct{}
 }
 
-// Serve listens on addr and blocks. The page at / shows the latest PNG.
+// Serve listens on addr and blocks. The page at / shows the latest PNG and
+// forwards pointer, wheel, and key input to the screen. A screen that
+// implements host.Ticker is ticked at about 60 Hz while Serve runs.
 // Developer endpoints stay off; ServeWithOptions with Options.Perf turns
 // on /debug/pprof/*.
 func Serve(app host.Screen, addr string) error {

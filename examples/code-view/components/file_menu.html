@@ -1,0 +1,68 @@
+{{if .FileMenu}}
+<div class="file-layer" id="file-layer">
+  <button class="file-backdrop" id="file-backdrop" data-action="file-menu-close" type="button" aria-label="Close file menu"></button>
+  <div class="file-drawer" id="file-drawer" role="menu" aria-label="File">
+    <button class="file-item" id="file-reset" data-action="file-reset" type="button">Reset layout</button>
+    <button class="file-item" id="file-reload-window" data-action="file-reload-window" type="button">Reload window</button>
+    <button class="file-item" id="file-new-window" data-action="file-new-window" type="button">New window</button>
+    <button class="file-item" id="project-toggle" data-action="project-open" type="button" aria-expanded="{{if .ProjectOpen}}true{{else}}false{{end}}">Select project</button>
+    {{if .ProjectOpen}}
+    <div class="project-picker" id="project-picker">
+      <input id="drawer-path" class="project-input" type="text" data-bind="ProjectQuery" placeholder="Absolute path to project" autocomplete="off" spellcheck="false" aria-label="Project path">
+      <button class="file-item file-open" id="project-submit" data-action="project-submit" type="button">Open</button>
+      <button class="file-item file-open" id="project-browse" data-action="browse-open" type="button">Browse files</button>
+      <div class="locations" id="locations">
+        <span class="locations-label">Locations</span>
+        <div class="locations-list" id="locations-list">
+        {{range .QuickRoots}}
+        <button class="file-item location-item" id="quick-{{.Path}}" data-action="project-open-path:{{.Path}}" type="button" title="{{.Path}}">{{.Name}}</button>
+        {{else}}
+        <span class="recent-empty">No locations found</span>
+        {{end}}
+        </div>
+      </div>
+    </div>
+    {{end}}
+    <button class="file-item recent-toggle" id="recent-toggle" data-action="recent-toggle" type="button" aria-expanded="{{if .RecentOpen}}true{{else}}false{{end}}">Recently opened projects</button>
+    {{if .RecentOpen}}
+    <div class="recent-flyout" id="recent-flyout" role="menu" aria-label="Recently opened projects" style="left:{{.RecentFlyX}}px;top:{{.RecentFlyY}}px">
+      {{range .RecentRoots}}
+      <button class="file-item recent-item{{if .Active}} on{{end}}" id="recent-{{.Path}}" data-action="project-open-path:{{.Path}}" type="button" title="{{.Path}}">{{.Name}}</button>
+      {{else}}
+      <span class="recent-empty">No recent projects</span>
+      {{end}}
+    </div>
+    {{end}}
+    <button class="file-item file-close" id="file-close" data-action="file-menu-close" type="button">Close</button>
+  </div>
+</div>
+{{end}}
+{{if .BrowseOpen}}
+<div class="browse-layer" id="browse-layer">
+  <div class="browse-backdrop" id="browse-backdrop" data-action="browse-backdrop"></div>
+  <div class="browse-panel" id="browse-panel" role="dialog" aria-modal="true" aria-label="Browse folders">
+    <div class="browse-head">
+      <button class="file-item" id="browse-up" data-action="browse-up" type="button">Up</button>
+      <span class="browse-path" title="{{.BrowseRoot}}">{{.BrowseName}}</span>
+    </div>
+    {{if .IsWSL}}
+    <div class="os-choice">
+      <button class="file-item" id="browse-wsl" data-action="browse-wsl" type="button">Browse WSL files</button>
+      <button class="file-item" id="browse-windows" data-action="browse-windows" type="button">Browse Windows files</button>
+    </div>
+    {{end}}
+    <div class="browse-list" id="browse-list">
+    {{range .BrowseEntries}}
+    <button class="file-item browse-item" id="browse-{{.Path}}" data-action="browse-enter:{{.Path}}" type="button" title="{{.Path}}">{{.Name}}</button>
+    {{else}}
+    <span class="recent-empty">No subfolders</span>
+    {{end}}
+    </div>
+    <input id="project-path" class="project-input" type="text" data-bind="ProjectQuery" placeholder="Absolute path to project" autocomplete="off" spellcheck="false" aria-label="Project path">
+    <button class="file-item file-open" id="browse-submit" data-action="project-submit" type="button">Open typed path</button>
+    <button class="file-item file-open" id="browse-select" data-action="browse-select" type="button">Open this folder</button>
+    <button class="file-item" id="browse-close" data-action="browse-close" type="button">Close</button>
+  </div>
+</div>
+{{end}}
+{{if .Alert}}<div class="file-alert" id="file-alert" role="status"><span>{{.Alert}}</span><button class="file-item file-alert-x" id="file-alert-close" data-action="file-alert-close" type="button">Dismiss</button></div>{{end}}

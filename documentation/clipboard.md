@@ -13,9 +13,9 @@ The window still calls `Write` and `Read` for the text chords. `Read` returns `(
 | Linux, neither variable set | `clipboard_linux.go` | A write is a no-op and a read returns `ErrUnavailable`. Not the in-process memory copy. |
 | Windows | `clipboard_windows.go`, `clipboard_windows_read.go` | `user32` `OpenClipboard` / `SetClipboardData` / `GetClipboardData` and `kernel32` global memory. The format is `CF_UNICODETEXT`. |
 | macOS, cgo on | `clipboard_darwin.go` (`darwin && !ios && cgo`) | `NSPasteboard` `generalPasteboard`, type `NSPasteboardTypeString` |
-| macOS, cgo off | `clipboard_darwin_nocgo.go` | The memory copy |
-| wasm | `clipboard_other.go` | The memory copy |
-| Android | `clipboard_other.go` (`android` matches this stub) | The memory copy |
+| macOS, cgo off | `clipboard_darwin_nocgo.go` | No OS clipboard: `writeOS` is a no-op and `readOS` returns false, so outside memory-only mode `Write` does nothing and `Read` returns `ErrUnavailable` |
+| wasm | `clipboard_other.go` | No OS clipboard, same no-op and `ErrUnavailable` behavior outside memory-only mode |
+| Android | `clipboard_other.go` (`android` matches this stub) | No OS clipboard, same no-op and `ErrUnavailable` behavior outside memory-only mode |
 
 Paths are under `internal/clipboard/`. iOS would also hit `clipboard_other.go`; iOS is not a 1.0 target.
 

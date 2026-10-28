@@ -1,0 +1,121 @@
+.preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.preview-track { position: absolute; left: 0; right: 0; }
+
+.prow {
+  height: var(--row-h);
+  min-height: var(--row-h);
+  max-height: var(--row-h);
+  display: flex;
+  align-items: stretch;
+  padding: 0 22px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: var(--row-h);
+  color: var(--text);
+}
+
+.pmark {
+  width: 18px;
+  height: var(--row-h);
+  flex: 0 0 18px;
+  padding-right: 7px;
+  overflow: hidden;
+  text-align: right;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: var(--row-h);
+}
+
+.ptext {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  height: var(--row-h);
+  line-height: var(--row-h);
+  overflow: hidden;
+}
+
+.plinetext {
+  display: block;
+  width: 100%;
+  height: var(--row-h);
+  line-height: var(--row-h);
+  overflow: hidden;
+  white-space: pre;
+}
+
+.prow .ptext .t-plain { color: inherit; }
+.prow-quote { border-left: 2px solid var(--line); }
+
+/* Heading rows keep the 20 px row. The largest face is 14 px; the mono
+   fallbacks report an ascent plus descent of up to 1.32 em, so the tallest
+   line box is 18.5 px and the ink never meets the row edge. Heading rows also
+   drop the empty marker column the body rows use, so a title starts at the row
+   padding and gains the 18 px the marker would take. */
+.prow-h1 .pmark,
+.prow-h2 .pmark,
+.prow-h3 .pmark,
+.prow-h4 .pmark,
+.prow-h5 .pmark,
+.prow-h6 .pmark {
+  width: 0;
+  flex: 0 0 0;
+  padding-right: 0;
+}
+
+.prow-h1 .ptext { color: var(--text); font-size: 14px; font-weight: 700; }
+.prow-h2 .ptext { color: var(--syntax-operator); font-size: 13px; font-weight: 700; }
+.prow-h3 .ptext { color: var(--syntax-keyword); font-size: 12px; font-weight: 700; }
+.prow-h4 .ptext { color: var(--syntax-type); font-weight: 700; }
+.prow-h5 .ptext { color: var(--syntax-string); font-weight: 700; }
+.prow-h6 .ptext { color: var(--syntax-number); font-weight: 700; }
+.prow-summary .ptext { color: var(--syntax-keyword); font-weight: 600; }
+.prow-summary .pmark { color: var(--accent); }
+
+.prow-code { background-color: rgba(255, 255, 255, 0.035); }
+.prow-code .ptext { color: var(--syntax-string); font-family: var(--mono); font-size: 11px; }
+.prow-code .pmark { background-color: rgba(255, 255, 255, 0.035); }
+
+.prow-quote .ptext { color: var(--muted); }
+.prow-quote .pmark { color: var(--accent); }
+
+.prow-rule .ptext { color: var(--dim); }
+.prow-table .ptext { color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.prow-diagram .ptext { color: var(--accent); font-family: var(--mono); font-size: 11px; }
+.prow-diagram .pmark { color: var(--accent); }
+.pdiag { display: block; height: 20px; }
+.prow-li .pmark { color: var(--accent); }
+
+/* A blank line is one full grid row. The window slices preview rows by rowH
+   and positions the track from scrollY % rowH, so a shorter gap would desync
+   scrolling; test preview_style_test.go holds this. */
+.prow-gap { height: var(--row-h); }
+
+.prow-code,
+.prow-diagram,
+.prow-table,
+.prow-rule,
+.prow-gap {
+  height: var(--row-h);
+  min-height: var(--row-h);
+  max-height: var(--row-h);
+  line-height: var(--row-h);
+}
+
+.crumb-btn.on {
+  border-color: rgba(122, 162, 247, 0.4);
+  background-color: var(--accent-soft);
+  color: var(--accent);
+}

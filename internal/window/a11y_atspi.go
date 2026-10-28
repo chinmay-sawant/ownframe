@@ -4,8 +4,8 @@ package window
 
 import "github.com/chinmay-sawant/ownframe/internal/atspi"
 
-// a11yHost holds the Linux AT-SPI publisher. The live D-Bus client is
-// not implemented, so Live stays false and sync is a no-op until then.
+// a11yHost holds the Linux AT-SPI publisher. When an AT-SPI bus is connected,
+// sync publishes the accessible tree on redraw.
 type a11yHost struct {
 	pub *atspi.Publisher
 }
