@@ -67,6 +67,15 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return a.page.Redraw(ctx)
 	case strings.HasPrefix(action, "edit-begin-line:"):
 		if line, ok := actionIndex(action, "edit-begin-line:"); ok {
+			// Press already placed the caret with its column; a Click that
+			// follows must not reset it to the line start.
+			if a.editing && a.edit != nil {
+				if doc := a.groupDoc(0); doc != nil && a.edit.Path == doc.Path {
+					if curLine, _ := offsetLineCol(a.edit.Text(), a.editCaret); curLine == line {
+						return a.page.Redraw(ctx)
+					}
+				}
+			}
 			a.beginEditAtLine(line)
 		}
 
@@ -75,6 +84,23 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.toggleEdit()
 	case action == "edit-save":
 		a.saveEdit()
+	case action == "diff-edit":
+		a.editDiffFile(-1)
+
+		return a.page.Redraw(ctx)
+	case strings.HasPrefix(action, "diff-edit-line:"):
+		if line, ok := actionIndex(action, "diff-edit-line:"); ok && line > 0 {
+			// Press already opened the file with its column; a Click that
+			// follows must not reset it to the line start.
+			if a.editing && a.edit != nil && a.edit.Path == a.diffPath {
+				if curLine, _ := offsetLineCol(a.edit.Text(), a.editCaret); curLine == line-1 {
+					return a.page.Redraw(ctx)
+				}
+			}
+			a.editDiffFile(line - 1)
+		}
+
+		return a.page.Redraw(ctx)
 	case action == "search-open":
 		return a.openWorkspaceSearch(ctx)
 	case action == "file-nav-prev":
@@ -1210,7 +1236,9 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	}
 
 	if a.ctrl && key == "s" {
-		return nil
+		a.saveDirtyActive()
+
+		return a.page.Redraw(ctx)
 	}
 
 	if a.ctrl && key == "e" {

@@ -68,8 +68,22 @@ type diffRow struct {
 	Cont      bool
 	LeftCont  bool
 	RightCont bool
-	Expand    *diffExpandRow
-	ScrollX   int
+	// EditLine is the 1-based new-file line a click redirects to. Deleted
+	// rows carry the nearest new line so red rows stay clickable; zero
+	// means the row has no edit target (hunks, meta, expanders).
+	EditLine int
+	// EditID is the unique button id for the row. Deleted rows use a
+	// del- prefix with their old number, and wrapped continuation chunks
+	// append a chunk suffix, so ids never collide.
+	EditID string
+	// EditStart is the display-column offset where this visual chunk's
+	// new-side text begins. Wrapped tails record their start so a click
+	// lands on the right glyph instead of the line start.
+	EditStart int
+	// EditStartL is the same offset for the left cell of a split row.
+	EditStartL int
+	Expand     *diffExpandRow
+	ScrollX    int
 }
 
 // clipDiffRows trims long diff text so a cell cannot paint into its neighbour.
@@ -130,15 +144,11 @@ func clipDiffPath(paneWidth, windowWidth int, name, dir string) (string, string)
 // controls beside the path above and below the crumbsNarrowPx breakpoint;
 // hideNarrowDir drops the directory below that breakpoint to mirror a CSS
 // rule that hides it, while file-mode headers keep their (clipped) directory
-// because no such rule hides it. Slashes render with breathing room
-// ("dir / name"), so the directory is spaced before clipping and the budget
-// counts the separator.
+// because no such rule hides it.
 func clipCrumbPath(paneWidth, windowWidth int, name, dir string, rightWide, rightNarrow int, hideNarrowDir bool) (string, string) {
 	if hideNarrowDir && windowWidth <= crumbsNarrowPx {
 		dir = ""
 	}
-
-	dir = strings.ReplaceAll(dir, "/", " / ")
 
 	right := rightWide
 	if windowWidth <= crumbsNarrowPx {
@@ -147,15 +157,10 @@ func clipCrumbPath(paneWidth, windowWidth int, name, dir string, rightWide, righ
 
 	budget := int(float64(paneWidth-crumbsPadPx-right) / crumbsMonoPx)
 
-	sep := 3
 	nr := []rune(name)
 	dr := []rune(dir)
 
-	if len(dr) == 0 {
-		sep = 0
-	}
-
-	if len(nr)+sep+len(dr) <= budget {
+	if len(nr)+1+len(dr) <= budget {
 		return name, dir
 	}
 
@@ -163,8 +168,8 @@ func clipCrumbPath(paneWidth, windowWidth int, name, dir string, rightWide, righ
 		return "", ""
 	}
 
-	if len(nr)+sep < budget {
-		take := budget - len(nr) - sep - 1
+	if len(nr)+1 < budget {
+		take := budget - len(nr) - 2
 		if take < 1 {
 			take = 1
 		}
@@ -669,9 +674,12 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 			case '+':
 				row.Kind = rowAdd
 				row.OldNo = ""
+				row.EditLine = line.NewNo
 			case '-':
 				row.Kind = rowDel
 				row.NewNo = ""
+			default:
+				row.EditLine = line.NewNo
 			}
 
 			rows = append(rows, row)
@@ -685,6 +693,9 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 	if gapAfter != nil {
 		rows = append(rows, newDiffExpandRow(*gapAfter))
 	}
+
+	fillDelEditLines(rows)
+	assignDiffEditIDs(rows)
 
 	return rows
 }
@@ -733,6 +744,7 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 					Kind: "split", LeftNo: lineNo(line.OldNo), RightNo: lineNo(line.NewNo),
 					Left: diffSegments(line, lang), Right: diffSegments(line, lang),
 					LeftKind: rowCtx, RightKind: rowCtx,
+					EditLine: line.NewNo,
 				})
 				i++
 
@@ -767,6 +779,7 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 					line := h.Lines[adds+k]
 					row.RightNo = lineNo(line.NewNo)
 					row.Right = diffSegments(line, lang)
+					row.EditLine = line.NewNo
 				} else {
 					row.RightPad = true
 				}
@@ -784,7 +797,67 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 		rows = append(rows, newDiffExpandRow(*gapAfter))
 	}
 
+	fillDelEditLines(rows)
+	assignDiffEditIDs(rows)
+
 	return rows
+}
+
+// fillDelEditLines gives deleted-only rows an edit target: the nearest
+// new-file line, so a click on a red row still redirects. It prefers the
+// replacement line that follows the deletion and falls back to the previous
+// new line when the deletion runs to the end of the file.
+func fillDelEditLines(rows []diffRow) {
+	for i := range rows {
+		switch {
+		case rows[i].Kind == rowDel:
+		case rows[i].Kind == "split" && rows[i].EditLine == 0:
+		default:
+			continue
+		}
+
+		if n := nearestEditLine(rows, i); n > 0 {
+			rows[i].EditLine = n
+		}
+	}
+}
+
+// nearestEditLine finds the closest new-file line around one deleted-only
+// row, looking forward to the replacement line first.
+func nearestEditLine(rows []diffRow, at int) int {
+	for j := at + 1; j < len(rows); j++ {
+		if rows[j].EditLine > 0 {
+			return rows[j].EditLine
+		}
+	}
+
+	for j := at - 1; j >= 0; j-- {
+		if rows[j].EditLine > 0 {
+			return rows[j].EditLine
+		}
+	}
+
+	return 0
+}
+
+// assignDiffEditIDs gives every row with an edit target a unique button id.
+// Deleted rows use a del- prefix with their old number so they never collide
+// with the row they map to; other rows keep the plain new-file number.
+func assignDiffEditIDs(rows []diffRow) {
+	for i := range rows {
+		if rows[i].EditLine <= 0 {
+			continue
+		}
+
+		switch {
+		case rows[i].Kind == rowDel && rows[i].OldNo != "":
+			rows[i].EditID = "diff-edit-line-del-" + rows[i].OldNo
+		case rows[i].Kind == "split" && rows[i].RightNo == "" && rows[i].LeftNo != "":
+			rows[i].EditID = "diff-edit-line-del-" + rows[i].LeftNo
+		default:
+			rows[i].EditID = "diff-edit-line-" + strconv.Itoa(rows[i].EditLine)
+		}
+	}
 }
 
 // diffSegments highlights one diff line and applies the word emphasis.

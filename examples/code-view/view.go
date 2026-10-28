@@ -318,6 +318,7 @@ type diffView struct {
 	ScrollX       int
 	HasFiles      bool
 	HasChanges    bool
+	CanEdit       bool
 	Page          int
 	Pages         int
 	Scroll        bool

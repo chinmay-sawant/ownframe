@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 const (
 	diffWrapMinCols = 2
@@ -64,17 +67,26 @@ func wrapUnifiedDiffRow(row diffRow, cols int) []diffRow {
 
 	out := make([]diffRow, 0, len(chunks))
 
+	start := 0
 	for i, chunk := range chunks {
 		vis := row
 		vis.Left = chunk
 		vis.Right = nil
+		vis.EditStart = row.EditStart + start
 
 		if i > 0 {
 			vis.OldNo = ""
 			vis.NewNo = ""
 			vis.Cont = true
+			vis.EditLine = 0
+			vis.EditID = ""
+			if row.EditID != "" {
+				vis.EditLine = row.EditLine
+				vis.EditID = row.EditID + "-c" + strconv.Itoa(i)
+			}
 		}
 
+		start += segmentRuneLen(chunk)
 		out = append(out, vis)
 	}
 
@@ -125,6 +137,7 @@ func wrapSplitDiffRow(row diffRow, cols int) []diffRow {
 
 	out := make([]diffRow, 0, height)
 
+	leftStart, rightStart := 0, 0
 	for i := range height {
 		vis := row
 		vis.Left = nil
@@ -133,6 +146,17 @@ func wrapSplitDiffRow(row diffRow, cols int) []diffRow {
 		vis.RightPad = row.RightPad
 		vis.LeftCont = false
 		vis.RightCont = false
+		vis.EditStart = row.EditStart + rightStart
+		vis.EditStartL = row.EditStartL + leftStart
+
+		if i > 0 {
+			vis.EditLine = 0
+			vis.EditID = ""
+			if row.EditID != "" {
+				vis.EditLine = row.EditLine
+				vis.EditID = row.EditID + "-c" + strconv.Itoa(i)
+			}
+		}
 
 		if i < len(left) {
 			vis.Left = left[i]
@@ -158,6 +182,14 @@ func wrapSplitDiffRow(row diffRow, cols int) []diffRow {
 		} else if i > 0 {
 			vis.RightNo = ""
 			vis.RightPad = true
+		}
+
+		if i < len(left) {
+			leftStart += segmentRuneLen(left[i])
+		}
+
+		if i < len(right) {
+			rightStart += segmentRuneLen(right[i])
 		}
 
 		out = append(out, vis)

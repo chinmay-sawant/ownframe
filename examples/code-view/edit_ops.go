@@ -53,6 +53,14 @@ func (a *App) toggleEdit() {
 
 // beginEditAtLine enters edit mode with the caret on the clicked source line.
 func (a *App) beginEditAtLine(line int) {
+	a.beginEditAt(line, 0)
+}
+
+// beginEditAt enters edit mode with the caret at a line and display column.
+// The column is a display column with tabs expanded, matching the way the
+// code view paints. It is clamped to the line so a click past the end lands
+// on the last glyph.
+func (a *App) beginEditAt(line, displayCol int) {
 	a.inlineCard = inlineCard{}
 
 	if !a.editing {
@@ -78,6 +86,19 @@ func (a *App) beginEditAtLine(line int) {
 
 		offset = next + 1
 	}
+
+	rawLine := lineTextAt(a.edit.Text(), line)
+	rawCol := rawColumnAt(rawLine, max(0, displayCol))
+	if rawCol > len([]rune(rawLine)) {
+		rawCol = len([]rune(rawLine))
+	}
+
+	lineStart := offset
+	consumed := 0
+	for lineStart+consumed < len(runes) && consumed < rawCol && runes[lineStart+consumed] != '\n' {
+		consumed++
+	}
+	offset = lineStart + consumed
 
 	a.editCaret = offset
 	a.editAnchor = offset

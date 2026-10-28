@@ -1,6 +1,7 @@
 /* Diff rows. Every row is exactly 20 px; the window math depends on it. */
 
 .drow {
+  position: relative;
   height: var(--row-h);
   display: flex;
   align-items: stretch;
@@ -77,6 +78,20 @@
 
 .em-a { background-color: var(--green-word); border-radius: 2px; }
 .em-d { background-color: var(--red-word); border-radius: 2px; }
+
+.diff-edit-hit {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: text;
+}
+.diff-edit-hit:focus { outline: 0; }
 
 /* Diff expander accordion rows */
 .drow.expand {

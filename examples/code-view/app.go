@@ -1155,6 +1155,7 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 	d.Add = file.Add
 	d.Del = file.Del
 	d.Hunks = len(file.Hunks)
+	d.CanEdit = d.Source == "working" && !file.Binary && file.Status != "D"
 
 	doc := a.docs[file.Path]
 	if doc == nil {

@@ -20,6 +20,15 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 		return true, a.page.Redraw(ctx)
 	}
 
+	if strings.HasPrefix(box.ID, "diff-edit-line-") && a.mode == "changes" && a.diffSource == "working" {
+		if n, ok := actionIndex(box.Action, "diff-edit-line:"); ok && n > 0 {
+			displayCol := a.diffDisplayColForBox(box, x)
+			a.editDiffFileAt(n-1, displayCol)
+
+			return true, a.page.Redraw(ctx)
+		}
+	}
+
 	if !a.editing && (box.ID == "edit-surface" || strings.HasPrefix(box.ID, "edit-line-")) {
 		oldScroll := a.scrollY
 		a.toggleEdit()
