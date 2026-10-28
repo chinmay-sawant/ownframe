@@ -21,10 +21,19 @@ func (s *shell) resize() error {
 
 	completeManualMaximize(s.pendingW, s.pendingH)
 
+	if pendingStartMaximize {
+		// A remembered WM maximize from placement: the pre-loop call never
+		// takes effect, so maximize once the window exists.
+		pendingStartMaximize = false
+		ebiten.MaximizeWindow()
+	}
+
 	wantW, wantH := s.viewOf(s.pendingW, s.pendingH)
 	wantW, wantH = s.app.Clamp(wantW, wantH)
 	haveW, haveH := s.app.Size()
 	if wantW == haveW && wantH == haveH {
+		s.syncPlacement()
+
 		return nil
 	}
 
@@ -56,6 +65,8 @@ func (s *shell) resize() error {
 	if ebiten.IsWindowMaximized() {
 		ebiten.SetWindowSize(s.pendingW, s.pendingH)
 	}
+
+	s.syncPlacement()
 
 	return s.refreshState()
 }

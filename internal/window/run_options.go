@@ -54,14 +54,24 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	game.draggable = options.Draggable
 	game.perf = options.Perf || game.perf
 	game.wirePerf()
+	game.placementID = options.PlacementID
+	if game.placementID != "" {
+		// A remembered rect wins over the default size and BottomRight;
+		// a missing file or a gone monitor keeps this frame's geometry.
+		game.lastPlacement = applyPlacement(game.placementID, width, height, minW, minH, maxW, maxH)
+		game.lastPlacementValid = validPlacementRect(game.lastPlacement.W, game.lastPlacement.H)
+	}
 
 	setupScreenClear()
 
 	pace, stop := paceWindow(ctx, game, options)
 	defer stop()
 
-	return ebiten.RunGameWithOptions(pace, &ebiten.RunGameOptions{
+	err := ebiten.RunGameWithOptions(pace, &ebiten.RunGameOptions{
 		ScreenTransparent: options.Transparent,
 		InitUnfocused:     passthrough,
 	})
+	savePlacementNow(game.placementID)
+
+	return err
 }

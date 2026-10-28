@@ -92,8 +92,22 @@ func isWSL() bool {
 
 // manualMaxLearnTimeout bounds a workarea probe. If the maximized configure
 // has not arrived by then, the window stays WM-maximized rather than strand
-// the dance halfway.
+// the dance halfway. It also bounds the restore leg that follows learning:
+// SetWindowSize on a still-maximized window is ignored on WSLg, so the
+// learned rect is applied only after the restore configure lands.
 const manualMaxLearnTimeout = 2 * time.Second
+
+// workarea is one monitor's usable rect in device-independent pixels.
+type workarea struct {
+	x, y int
+	w, h int
+}
+
+// pendingStartMaximize defers a remembered WM maximize past window creation:
+// MaximizeWindow before the run loop never takes effect, so the resize path
+// applies it on the first update once the window exists. WSL never uses it;
+// the manual path installs client geometry up front instead.
+var pendingStartMaximize bool
 
 // manualMax carries a hand-rolled maximize for WSL. WSLg can present a
 // WM-maximized borderless window with an offset the client cannot see,
@@ -101,23 +115,30 @@ const manualMaxLearnTimeout = 2 * time.Second
 // maximize never enters the maximized window state: it saves the windowed
 // rect and applies the workarea as plain client geometry, which WSLg
 // presents correctly, then restores the saved rect on toggle.
+//
+// The workarea is cached per monitor: a 1920-wide panel and a 2560-wide
+// panel report different maximized rects, so a cache hit must come from the
+// monitor the window is on now, not from a previous probe elsewhere.
 var manualMax = struct {
-	active   bool // manually maximized: geometry is client-set workarea
-	known    bool // workarea learned
-	learning bool // a WM maximize is in flight to reveal the workarea
-	until    time.Time
-	sx, sy   int // saved windowed position
-	sw, sh   int // saved windowed size
-	wx, wy   int // learned workarea position
-	ww, wh   int // learned workarea size
+	active     bool // manually maximized: geometry is client-set workarea
+	known      bool // workarea learned for learnedMon
+	learning   bool // a WM maximize is in flight to reveal the workarea
+	restoring  bool // learned; waiting for the restore configure before applying
+	until      time.Time
+	sx, sy     int // saved windowed position
+	sw, sh     int // saved windowed size
+	wx, wy     int // learned workarea position
+	ww, wh     int // learned workarea size
+	learnedMon *ebiten.MonitorType
+	areas      map[*ebiten.MonitorType]workarea
 }{}
 
 // toggleManualMaximize flips between the saved windowed rect and the
-// learned workarea. The first maximize per process learns the workarea with
+// learned workarea. The first maximize per monitor learns the workarea with
 // one window-manager maximize (see completeManualMaximize) and converts it
-// to client geometry on arrival.
+// to client geometry once the restore configure lands.
 func toggleManualMaximize() {
-	if manualMax.learning {
+	if manualMax.learning || manualMax.restoring {
 		// A workarea probe is in flight; swallowing the extra click keeps
 		// one maximize in the air instead of stacking two.
 		return
@@ -139,11 +160,16 @@ func toggleManualMaximize() {
 
 	manualMax.sx, manualMax.sy = ebiten.WindowPosition()
 	manualMax.sw, manualMax.sh = ebiten.WindowSize()
+	current := ebiten.Monitor()
 
-	if manualMax.known {
-		ebiten.SetWindowPosition(manualMax.wx, manualMax.wy)
-		ebiten.SetWindowSize(manualMax.ww, manualMax.wh)
-		manualMax.active = true
+	if area, ok := manualMax.areas[current]; ok {
+		applyWorkarea(current, area)
+
+		return
+	}
+
+	if manualMax.known && manualMax.learnedMon == current {
+		applyWorkarea(current, workarea{x: manualMax.wx, y: manualMax.wy, w: manualMax.ww, h: manualMax.wh})
 
 		return
 	}
@@ -153,39 +179,91 @@ func toggleManualMaximize() {
 	ebiten.MaximizeWindow()
 }
 
+// applyWorkarea installs a learned rect as plain client geometry and marks
+// the manual maximize active. Callers must have saved the windowed rect.
+func applyWorkarea(mon *ebiten.MonitorType, area workarea) {
+	manualMax.wx, manualMax.wy = area.x, area.y
+	manualMax.ww, manualMax.wh = area.w, area.h
+	manualMax.learnedMon = mon
+	manualMax.known = true
+	if manualMax.areas == nil {
+		manualMax.areas = make(map[*ebiten.MonitorType]workarea)
+	}
+	manualMax.areas[mon] = area
+	ebiten.SetWindowPosition(area.x, area.y)
+	ebiten.SetWindowSize(area.w, area.h)
+	manualMax.active = true
+}
+
 // completeManualMaximize watches a workarea probe from the resize path. When
 // the maximized configure arrives it records the workarea, leaves the
 // maximized window state, and re-applies the learned rect as plain client
-// geometry. Call it with the latest Layout size every update.
+// geometry once the restore configure lands. A same-frame Restore followed
+// by SetWindowSize loses the resize on WSLg, which is the double-click the
+// probe reproduced, so the apply waits for the windowed size to return.
+// Call it with the latest Layout size every update.
 func completeManualMaximize(pendingW, pendingH int) {
-	if !manualMax.learning {
+	if manualMax.learning {
+		if time.Now().After(manualMax.until) {
+			// The configure never arrived; stay WM-maximized rather than
+			// strand the window halfway through the dance.
+			manualMax.learning = false
+
+			return
+		}
+
+		if !ebiten.IsWindowMaximized() {
+			return
+		}
+
+		if pendingW == manualMax.sw && pendingH == manualMax.sh {
+			return // still the windowed size; the configure is in flight
+		}
+
+		area := workarea{w: pendingW, h: pendingH}
+		area.x, area.y = ebiten.WindowPosition()
+		current := ebiten.Monitor()
+		manualMax.wx, manualMax.wy = area.x, area.y
+		manualMax.ww, manualMax.wh = area.w, area.h
+		manualMax.learnedMon = current
+		manualMax.known = true
+		if manualMax.areas == nil {
+			manualMax.areas = make(map[*ebiten.MonitorType]workarea)
+		}
+		manualMax.areas[current] = area
+		manualMax.learning = false
+		manualMax.restoring = true
+		manualMax.until = time.Now().Add(manualMaxLearnTimeout)
+		// RestoreWindow is guarded by the maximized check above, matching the
+		// ToggleMaximize pattern. The resize below waits for the restore
+		// configure; applying it in this frame would be ignored while the
+		// window still reports maximized.
+		ebiten.RestoreWindow()
+
+		return
+	}
+
+	if !manualMax.restoring {
 		return
 	}
 
 	if time.Now().After(manualMax.until) {
-		// The configure never arrived; stay WM-maximized rather than
-		// strand the window halfway through the dance.
-		manualMax.learning = false
+		// The restore configure never landed; keep the windowed rect and
+		// let the next toggle use the learned workarea directly.
+		manualMax.restoring = false
 
 		return
 	}
 
-	if !ebiten.IsWindowMaximized() {
-		return
+	if ebiten.IsWindowMaximized() {
+		return // the restore has not taken effect yet
 	}
 
-	if pendingW == manualMax.sw && pendingH == manualMax.sh {
-		return // still the windowed size; the configure is in flight
+	if pendingW != manualMax.sw || pendingH != manualMax.sh {
+		return // still the maximized size; the restore configure is in flight
 	}
 
-	manualMax.ww, manualMax.wh = pendingW, pendingH
-	manualMax.wx, manualMax.wy = ebiten.WindowPosition()
-	manualMax.known = true
-	manualMax.learning = false
-	// RestoreWindow is guarded by the maximized check above, matching the
-	// ToggleMaximize pattern. The restores and resizes below converge
-	// through the normal configure path.
-	ebiten.RestoreWindow()
+	manualMax.restoring = false
 	ebiten.SetWindowPosition(manualMax.wx, manualMax.wy)
 	ebiten.SetWindowSize(manualMax.ww, manualMax.wh)
 	manualMax.active = true

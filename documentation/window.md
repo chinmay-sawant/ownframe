@@ -117,11 +117,23 @@ do nothing there, so shared button wiring is safe. After a maximized commit
 the loop re-asserts the configured window size, which travels the normal
 client-set presentation path; where the size already matches it is a no-op.
 Under WSL, ToggleMaximize never stays in the maximized window state:
-the first maximize learns the workarea with one window-manager maximize,
-then converts it to plain client geometry (and restores the saved windowed
-rect on toggle), because WSLg can present a maximized borderless window with
-an offset the client cannot see, which misaligns pointer input while the
-layout itself is correct.
+the first maximize per monitor learns the workarea with one window-manager
+maximize, waits for the restore configure to land, then converts it to plain
+client geometry (and restores the saved windowed rect on toggle), because
+WSLg can present a maximized borderless window with an offset the client
+cannot see, which misaligns pointer input while the layout itself is correct.
+The workarea is cached per monitor, so a 1920-wide panel and a 2560-wide
+panel each learn their own rect; moving the window to another monitor
+re-probes once. A same-frame Restore followed by SetWindowSize loses the
+resize on WSLg, so the apply waits for the windowed size to return instead
+of stacking both calls.
+
+`PlacementID` remembers the window rect across launches under one id: the
+monitor name, the windowed position and size, and whether it closed
+maximized. Set it to something like `"code-view"`; empty disables it. A
+missing file, a corrupt file, or a gone monitor falls back to the app size
+at the window manager's position. Writes are best-effort and debounced off
+the update path, so a read-only config never breaks the window.
 
 `MousePassthrough` passes every pointer event to the application underneath,
 including clicks on painted pixels. It starts the window unfocused and keeps

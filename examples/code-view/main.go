@@ -71,7 +71,7 @@ func main() {
 	if err := app.StartWatcher(ctx); err != nil {
 		log.Printf("code-view: watcher unavailable: %v", err)
 	}
-	options := ownframe.WindowOptions{CustomChrome: app.chrome}
+	options := ownframe.WindowOptions{CustomChrome: app.chrome, PlacementID: "code-view"}
 	if app.chrome {
 		options.Draggable = chromeDrag
 	}

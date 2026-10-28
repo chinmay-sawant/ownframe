@@ -79,4 +79,9 @@ type shell struct {
 	a11y       a11yHost
 	commits    uint64
 	skipped    uint64
+	// placementID remembers the window rect across launches; empty disables.
+	placementID        string
+	lastPlacement      windowPlacement
+	lastPlacementValid bool
+	lastPlacementSave  time.Time
 }
