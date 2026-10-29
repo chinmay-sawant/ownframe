@@ -205,7 +205,7 @@
         {{range .Rows}}
         <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
-          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <button class="ln{{if not .No}} cont{{end}}" id="ln-{{.Line}}-{{.Start}}" data-action="inline-card-line:{{.Line}}" type="button" title="Show line details" aria-label="Show line details" tabindex="-1">{{if .No}}{{.No}}{{end}}</button>
           <span class="cline">{{if .Selection}}<span class="edit-selection" style="left:{{.SelectionLeft}}px;width:{{.SelectionWidth}}px"></span>{{end}}<span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{if .Caret}}<span class="edit-caret" style="left:{{.CaretLeft}}px"></span>{{end}}</span>
         </div>
         {{end}}
@@ -226,7 +226,7 @@
         {{range .Rows}}
         <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
-          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <button class="ln{{if not .No}} cont{{end}}" id="ln-{{.Line}}-{{.Start}}" data-action="inline-card-line:{{.Line}}" type="button" title="Show line details" aria-label="Show line details" tabindex="-1">{{if .No}}{{.No}}{{end}}</button>
           <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
           <button class="edit-line-hit" id="edit-line-{{.Line}}" data-action="edit-begin-line:{{.Line}}" type="button" title="Edit line {{if .No}}{{.No}}{{end}}" aria-label="Edit line {{if .No}}{{.No}}{{end}}" tabindex="-1"></button>
         </div>

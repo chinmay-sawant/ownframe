@@ -811,7 +811,7 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 	}
 	a.viewportH = viewH
 	a.viewportCols = cols
-	a.inlineCard = inlineCard{}
+	a.repositionInlineCard()
 	a.view = a.buildView()
 	a.publishPreviewImages()
 	a.page.SetData(&a.view)
@@ -1946,15 +1946,16 @@ func (a *App) toggleWrap() {
 	a.scrollTo(line * a.zx(rowH))
 }
 
-// scrollTo moves the page and rebuilds the visible slice.
+// scrollTo moves the page and rebuilds the visible slice, keeping an open
+// inline card on its line.
 func (a *App) scrollTo(y int) {
 	target := a.clampScroll(y)
-	a.inlineCard = inlineCard{}
 	a.scrollY = target
 	a.scrollGroup[0] = target
 	a.scrollTarget = target
 	a.scrollPending = true
 	a.page.ScrollTo(0, target)
+	a.repositionInlineCard()
 	a.refresh()
 }
 
@@ -1970,6 +1971,7 @@ func (a *App) resetScroll() {
 	a.scrollPending = true
 	a.scrollX = 0
 	a.page.ScrollTo(0, 0)
+	a.repositionInlineCard()
 }
 
 // resetFind clears the find bar without touching focus.

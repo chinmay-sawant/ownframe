@@ -242,7 +242,7 @@
   position: absolute;
   z-index: 0;
   top: 0;
-  left: 16px;
+  left: 60px;
   right: 0;
   bottom: 0;
   background-color: transparent;
@@ -321,7 +321,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 16px;
+  left: 60px;
   right: 0;
   z-index: 1;
   padding: 0;
@@ -408,6 +408,8 @@ button.gutter-mark:hover { color: var(--text); }
 .gutter-del { color: var(--red); }
 
 .ln {
+  position: relative;
+  z-index: 2;
   width: 44px;
   flex: 0 0 44px;
   padding-right: 10px;
@@ -417,6 +419,10 @@ button.gutter-mark:hover { color: var(--text); }
   font-size: 10px;
   line-height: var(--row-h);
 }
+
+button.ln { padding: 0 10px 0 0; border: 0; background: transparent; cursor: pointer; }
+button.ln:hover { color: var(--text); }
+button.ln:focus { outline: 0; }
 
 .ln.cont { color: var(--dim); font-size: 9px; }
 

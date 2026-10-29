@@ -46,7 +46,7 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 		if a.editing {
 			a.scrollTo(oldScroll)
 		}
-	} else if box.ID != "code-body" {
+	} else if box.ID != "code-body" && !(a.editing && strings.HasPrefix(box.ID, "ln-")) {
 		return false, nil
 	}
 	if !a.editing || a.edit == nil {
@@ -75,9 +75,13 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 	return true, a.page.Redraw(ctx)
 }
 
-// onDragStart claims a drag in the edit body.
+// onDragStart claims a drag in the edit body. A drag that starts on a line
+// number while editing still selects from the line start: the number button
+// shares its far edge with the text, and hit testing includes that edge, so
+// the press at the text start would otherwise hit the number instead of the
+// code body.
 func (a *App) onDragClaim(box ownframe.Box) bool {
-	return a.editing && box.ID == "code-body" ||
+	return a.editing && (box.ID == "code-body" || strings.HasPrefix(box.ID, "ln-")) ||
 		!a.editing && a.view.CanEdit && (box.ID == "edit-surface" || strings.HasPrefix(box.ID, "edit-line-"))
 }
 

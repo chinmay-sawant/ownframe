@@ -221,7 +221,7 @@ func (a *App) showSelectionCard(doc *fileDoc, start, end int) {
 // keeping the dragged position. It returns false when there is no selection
 // card to refresh.
 func (a *App) refreshInlineCardSelection() bool {
-	if !a.inlineCard.Show || len(a.inlineCard.SelLines) == 0 {
+	if !a.inlineCard.Show || a.inlineCard.Kind != cardKindSelected {
 		return false
 	}
 	doc := a.groupDoc(0)
@@ -233,6 +233,7 @@ func (a *App) refreshInlineCardSelection() bool {
 		return false
 	}
 	left, top := a.inlineCard.Left, a.inlineCard.Top
+	offX, offY := a.inlineCard.OffX, a.inlineCard.OffY
 	visual := start - 1
 	if a.wrap {
 		plan := doc.wrapped(a.codeColsForGroup(0))
@@ -244,6 +245,8 @@ func (a *App) refreshInlineCardSelection() bool {
 	card := inlineCardForSelection(rowTop, a.pageWidth(), a.viewportH, start, end, doc.Path, lines)
 	card.Left = left
 	card.Top = a.clampCardTop(top)
+	card.OffX = offX
+	card.OffY = offY
 	changes := a.changedLinesFor(doc.Path)
 	changed := inlineChangeLines(changes)
 	index := -1
@@ -256,6 +259,65 @@ func (a *App) refreshInlineCardSelection() bool {
 	card.HasPrev, card.HasNext = inlineCardBounds(changed, start, index)
 	a.inlineCard = card
 	return true
+}
+
+// cardAnchor recomputes the card's attached position from its line: the
+// editor's left edge plus the gap, and the clamped top above the line's row.
+// It reports false when the card has no line to attach to.
+func (a *App) cardAnchor() (int, int, bool) {
+	if !a.inlineCard.Show {
+		return 0, 0, false
+	}
+	doc := a.groupDoc(0)
+	if doc == nil || len(doc.Lines) == 0 {
+		return 0, 0, false
+	}
+	line := a.inlineCard.Line
+	if line < 1 || line > len(doc.Lines) {
+		return 0, 0, false
+	}
+	if a.inlineCard.Kind == cardKindSelected {
+		if a.inlineCard.EndLine < line {
+			return 0, 0, false
+		}
+	}
+	left := a.chromeLeftPx() + inlineCardLeft
+	visual := line - 1
+	if a.wrap {
+		plan := doc.wrapped(a.codeColsForGroup(0))
+		visual = plan.firstRow(line - 1)
+	}
+	rowTop := a.zx(editorBodyTop) + (visual-a.scrollY/a.zx(rowH))*a.zx(rowH)
+	return left, inlineCardTop(rowTop, a.viewportH), true
+}
+
+// repositionInlineCard keeps an open card on its line across scrolls, zoom,
+// and wrap changes, preserving the user's drag offset. The card only closes
+// when its file or line is gone.
+func (a *App) repositionInlineCard() {
+	if !a.inlineCard.Show {
+		return
+	}
+	left, top, ok := a.cardAnchor()
+	if !ok {
+		a.inlineCard = inlineCard{}
+		return
+	}
+	a.inlineCard.Left = a.clampCardLeft(left + a.inlineCard.OffX)
+	a.inlineCard.Top = a.clampCardTop(top + a.inlineCard.OffY)
+}
+
+// stampCardOffset records the drag offset between the card's current position
+// and its line anchor, so later scrolls keep the card where the user put it.
+func (a *App) stampCardOffset() {
+	left, top, ok := a.cardAnchor()
+	if !ok {
+		a.inlineCard.OffX = 0
+		a.inlineCard.OffY = 0
+		return
+	}
+	a.inlineCard.OffX = a.inlineCard.Left - left
+	a.inlineCard.OffY = a.inlineCard.Top - top
 }
 
 // clampCardLeft keeps a dragged card inside the page width.

@@ -1341,6 +1341,9 @@ func (a *App) onDragEnd(ctx context.Context) error {
 	a.historyListScale = 0
 	a.drawerDrag = false
 	a.drawerDx = 0
+	if a.cardDrag {
+		a.stampCardOffset()
+	}
 	a.cardDrag = false
 	a.cardDx = 0
 	a.cardDy = 0
