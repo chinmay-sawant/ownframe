@@ -28,6 +28,9 @@ const (
 	contextMenuCloseAllID   = contextMenuIDPrefix + "tab-close-all:"
 	contextMenuCloseLeftID  = contextMenuIDPrefix + "tab-close-left:"
 	contextMenuCloseRightID = contextMenuIDPrefix + "tab-close-right:"
+	contextMenuCopyPathID   = contextMenuIDPrefix + "copy-path:"
+	contextMenuCopyFileID   = contextMenuIDPrefix + "copy-file:"
+	contextMenuPasteID      = contextMenuIDPrefix + "paste:"
 )
 
 // presentMenu paints the right-click rows in the page instead of the shell menu.
@@ -175,6 +178,10 @@ func (a *App) ContextMenuFor(id string) []contextMenuRow {
 			{ID: "redo", Label: "Redo", Enabled: len(a.editRedo) > 0},
 		}
 	}
+	if rows, ok := a.contextMenuForExplorer(id); ok {
+		return rows
+	}
+
 	group, index, ok := contextMenuTabID(id)
 	if !ok {
 		return nil
@@ -202,9 +209,19 @@ func (a *App) ContextMenuFor(id string) []contextMenuRow {
 	}
 }
 
-// MenuAction handles tab-closing actions in the group that supplied the row.
+// MenuAction handles tab-closing, explorer copy, and explorer paste actions.
 func (a *App) MenuAction(ctx context.Context, id string) error {
 	switch {
+	case strings.HasPrefix(id, contextMenuCopyPathID):
+		a.copyTreePath(strings.TrimPrefix(id, contextMenuCopyPathID))
+
+		return a.redrawTreeMenu(ctx)
+	case strings.HasPrefix(id, contextMenuCopyFileID):
+		a.copyTreeFile(strings.TrimPrefix(id, contextMenuCopyFileID))
+
+		return a.redrawTreeMenu(ctx)
+	case strings.HasPrefix(id, contextMenuPasteID):
+		return a.pasteTreeCopy(ctx, strings.TrimPrefix(id, contextMenuPasteID))
 	case strings.HasPrefix(id, contextMenuCloseLeftID):
 		if group, index, ok := contextMenuTarget(strings.TrimPrefix(id, contextMenuCloseLeftID)); ok {
 			return a.contextMenuCloseSide(ctx, group, index, true)

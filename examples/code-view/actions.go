@@ -841,8 +841,44 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 		}
 	}
 
-	if index < 0 {
+	stickyIndex := -1
+
+	for i, row := range a.view.StickyTree {
+		if row.Path == path {
+			stickyIndex = i
+
+			break
+		}
+	}
+
+	if index < 0 && stickyIndex < 0 {
 		return false, nil
+	}
+
+	if key == "space" {
+		var isDir bool
+
+		if index >= 0 {
+			isDir = a.view.Tree[index].Dir
+		} else {
+			isDir = a.view.StickyTree[stickyIndex].Dir
+		}
+
+		if isDir {
+			a.onToggleDir(path)
+			if err := a.page.Redraw(ctx); err != nil {
+				return true, err
+			}
+
+			return true, a.page.Form().Focus(ctx, focus)
+		}
+
+		a.openFile(path)
+		if err := a.page.Redraw(ctx); err != nil {
+			return true, err
+		}
+
+		return true, a.page.Form().Focus(ctx, focus)
 	}
 
 	switch key {
@@ -1275,7 +1311,12 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 
 	if !a.paletteOpen && (key == "enter" || key == "space") && a.page.Edit().FocusedField() == "" {
 		if id := a.page.Form().FocusID(); id != "" {
-			if box, ok := findBoxID(a.page.Boxes(), id); ok {
+			if key == "space" && isTreeRowID(id) {
+				// Space on explorer rows belongs to treeKeyDown so a folder
+				// toggles with its lazy load and a file opens with focus
+				// kept on the same row. The filter input still types because
+				// its focus is "filter", not a tree row.
+			} else if box, ok := findBoxID(a.page.Boxes(), id); ok {
 				if err := a.onClick(ctx, box); err != nil {
 					return err
 				}
@@ -1331,6 +1372,15 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.togglePreview()
 
 		return a.page.Redraw(ctx)
+	}
+
+	// Plain Ctrl+V pastes into the explorer folder while the editor is
+	// closed. The editing branch above already returned, Ctrl+Shift+V
+	// preview keeps its own branch, and overlays and text fields keep the
+	// chord through pasteTargetReady. This sits before treeKeyDown so the
+	// chord pastes instead of moving focus.
+	if a.ctrl && !a.shift && key == "v" && a.pasteTargetReady() {
+		return a.pasteFromClipboard(ctx)
 	}
 
 	if a.searchOpen && key == "escape" {
@@ -1686,6 +1736,22 @@ func (a *App) reloadActive(_ context.Context) {
 	}
 
 	a.refresh()
+}
+
+// isTreeRowID reports whether a focus id is an explorer file or folder row.
+// Control ids like tree-up, tree-down, tree-scroll, and tree-pane stay with
+// the generic activator; only tree-<path> rows belong to treeKeyDown.
+func isTreeRowID(id string) bool {
+	if !strings.HasPrefix(id, "tree-") {
+		return false
+	}
+
+	switch id {
+	case "tree-up", "tree-down", "tree-scroll", "tree-pane", "tree-thumb", "tree-sticky":
+		return false
+	}
+
+	return true
 }
 
 // actionIndex parses the number after an action prefix.

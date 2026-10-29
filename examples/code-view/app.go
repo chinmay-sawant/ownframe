@@ -249,6 +249,11 @@ type App struct {
 	navAt        int
 	ctrl         bool
 	shift        bool
+	// pasteStaged is one in-app file copy staged for Ctrl+V. It is the
+	// Task 3 seam: the explorer Copy menu row stages here (see
+	// stageExplorerCopy), and the Ctrl+V/menu paste path consumes it
+	// before reading the OS clipboard.
+	pasteStaged  *pasteStagedCopy
 	preview      bool
 	wrap         bool
 	scrollX      int
@@ -835,6 +840,7 @@ func (a *App) buildView() View {
 
 	v.Tree, v.TreeTotal, v.TreeCount, v.Filtered = a.treeRows()
 	v.TreeStart = a.treeOffset
+	v.StickyTree = a.stickyTreeRows()
 	v.TreeVisible = a.treeVisibleRows()
 	a.fillTreeScroll(&v)
 	v.Tabs, v.TabsPrev, v.TabsNext = a.windowTabRows(0)
@@ -1803,8 +1809,8 @@ func (a *App) resetFind() {
 	a.findReturn = ""
 }
 
-// treeVisibleRows is the number of 26 px rows that fit in the sidebar.
-func (a *App) treeVisibleRows() int {
+// treeCapacity is the raw number of 26 px rows that fit in the sidebar.
+func (a *App) treeCapacity() int {
 	h := a.viewportH - a.zx(chromeTop) - a.zx(chromeBottom) - a.zx(treeHeadH) - a.zx(treeFilterH) - a.zx(treeFootH) - a.zx(treeInnerPad)
 	rows := h / a.zx(treeRowH)
 	if rows < 1 {
@@ -1812,6 +1818,95 @@ func (a *App) treeVisibleRows() int {
 	}
 
 	return rows
+}
+
+// treeVisibleRows is the scrollable row count after reserving the sticky
+// headers. The pinned block shows N ancestors, so the window below it shows
+// capacity minus N rows and the pane stays exactly full.
+func (a *App) treeVisibleRows() int {
+	capacity := a.treeCapacity()
+	reserved := len(a.stickyTreeRows())
+	visible := capacity - reserved
+	if visible < 1 {
+		visible = 1
+	}
+
+	return visible
+}
+
+// stickyTreeRows returns the open ancestor chain above treeOffset. The first
+// visible row's parents stay pinned while its children slide under them.
+// A filter lists matches flat, so there is no sticky chain then.
+func (a *App) stickyTreeRows() []treeRow {
+	if a.filter != "" {
+		return nil
+	}
+
+	if a.ws == nil || a.treeOffset <= 0 {
+		return nil
+	}
+
+	var (
+		stack         []*fileNode
+		stackDepths   []int
+		stackIgnored  []bool
+		index         int
+		captured      []treeRow
+		capturedFound bool
+	)
+
+	var walk func(nodes []*fileNode, depth int, parentIgnored bool) bool
+	walk = func(nodes []*fileNode, depth int, parentIgnored bool) bool {
+		for _, node := range nodes {
+			if index == a.treeOffset {
+				captured = make([]treeRow, 0, len(stack))
+				for i, ancestor := range stack {
+					depth := stackDepths[i]
+					ancestorParentIgnored := stackIgnored[i]
+					row := treeRow{
+						Path:        ancestor.Path,
+						Name:        ancestor.Name,
+						Dir:         true,
+						Open:        true,
+						Ignored:     ancestor.Ignored,
+						IgnoredNote: ancestor.Ignored && !ancestorParentIgnored,
+						Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
+					}
+					row.Short = clipTreeName(row.Indent, true, row.IgnoredNote, row.Name)
+					captured = append(captured, row)
+				}
+				capturedFound = true
+
+				return true
+			}
+
+			index++
+
+			if node.Dir && a.folders[node.Path] {
+				stack = append(stack, node)
+				stackDepths = append(stackDepths, depth)
+				stackIgnored = append(stackIgnored, parentIgnored)
+
+				if walk(node.Children, depth+1, parentIgnored || node.Ignored) {
+					return true
+				}
+
+				stack = stack[:len(stack)-1]
+				stackDepths = stackDepths[:len(stackDepths)-1]
+				stackIgnored = stackIgnored[:len(stackIgnored)-1]
+			}
+		}
+
+		return false
+	}
+
+	walk(a.ws.Tree, 0, false)
+
+	if !capturedFound {
+		return nil
+	}
+
+	return captured
 }
 
 // treeRows returns the visible explorer rows, the total row count, the file
@@ -1825,6 +1920,16 @@ func (a *App) treeRows() ([]treeRow, int, int, bool) {
 	}
 
 	total := countTreeOpen(a.ws.Tree, a.folders)
+	for range 3 {
+		visible := a.treeVisibleRows()
+		before := a.treeOffset
+		a.clampTreeOffset(total, visible)
+
+		if a.treeOffset == before {
+			break
+		}
+	}
+
 	visible := a.treeVisibleRows()
 	a.clampTreeOffset(total, visible)
 
