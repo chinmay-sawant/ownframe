@@ -109,6 +109,15 @@ type workarea struct {
 // the manual path installs client geometry up front instead.
 var pendingStartMaximize bool
 
+// pendingManualRestore repeats a remembered WSL maximize after the window
+// exists. The monitor list is empty before RunGame, and a size set that
+// early is ignored, so a saved 1920 workarea was dropped and the next
+// launch opened at the windowed size.
+var (
+	pendingManualRestore bool
+	pendingManualUntil   time.Time
+)
+
 // manualMax carries a hand-rolled maximize for WSL. WSLg can present a
 // WM-maximized borderless window with an offset the client cannot see,
 // which misaligns pointer input while the layout itself is correct. Manual

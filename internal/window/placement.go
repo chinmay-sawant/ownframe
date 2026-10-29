@@ -275,23 +275,17 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		return fallback
 	}
 
-	if !placementMonitorKnown(placement.Monitor) {
-		// The owning monitor is gone; keep the size, let the window
-		// manager choose the position on a live monitor.
-		w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
-		ebiten.SetWindowSize(w, h)
-		fallback.W, fallback.H = w, h
-
-		return fallback
-	}
-
 	if placement.Maximized && isWSL() {
-		// A maximized rect learned on one monitor must fit the monitor
-		// that owns the file. A 2560-wide workarea restored onto a
-		// 1920-wide panel overflows it and strands the window across
-		// monitors, so fall back to the windowed size and let the user
-		// re-maximize to re-learn the right workarea.
-		if !placementFits(placement.Monitor, placement.MaxW, placement.MaxH) {
+		known := placementMonitorKnown(placement.Monitor)
+		fits := placementFits(placement.Monitor, placement.MaxW, placement.MaxH)
+		applyNow, retry := wslMaximizePlan(known, fits)
+
+		if !applyNow && !retry {
+			// A maximized rect learned on one monitor must fit the monitor
+			// that owns the file. A 2560-wide workarea restored onto a
+			// 1920-wide panel overflows it and strands the window across
+			// monitors, so fall back to the windowed size and let the user
+			// re-maximize to re-learn the right workarea.
 			manualMax.active = false
 			manualMax.known = false
 			manualMax.learning = false
@@ -306,6 +300,22 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 
 			return fallback
 		}
+
+		rememberManualMaximize(placement)
+		if retry {
+			pendingManualRestore = true
+			pendingManualUntil = time.Now().Add(manualMaxLearnTimeout)
+		}
+		if !applyNow {
+			// The monitor list is still empty. Keep the windowed size for
+			// this frame; retryManualRestore installs the workarea once
+			// the saved monitor is visible.
+			w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+			ebiten.SetWindowSize(w, h)
+
+			return placement
+		}
+
 		if !placementFits(placement.Monitor, placement.W, placement.H) {
 			placement.X, placement.Y = 0, 0
 			placement.W = min(placement.W, defW)
@@ -316,24 +326,26 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 			}
 			placement.W = clampPlacement(placement.W, minW, maxW)
 			placement.H = clampPlacement(placement.H, minH, maxH)
+			manualMax.sx, manualMax.sy = placement.X, placement.Y
+			manualMax.sw, manualMax.sh = placement.W, placement.H
 		}
-		manualMax.sx, manualMax.sy = placement.X, placement.Y
-		manualMax.sw, manualMax.sh = placement.W, placement.H
-		manualMax.wx, manualMax.wy = placement.MaxX, placement.MaxY
-		manualMax.ww, manualMax.wh = placement.MaxW, placement.MaxH
-		manualMax.learnedMon = placement.Monitor
-		manualMax.known = true
-		if manualMax.areas == nil {
-			manualMax.areas = make(map[string]workarea)
-		}
-		if placement.Monitor != "" {
-			manualMax.areas[placement.Monitor] = workarea{x: placement.MaxX, y: placement.MaxY, w: placement.MaxW, h: placement.MaxH}
-		}
+
+		// A size set before RunGame is ignored. retryManualRestore repeats
+		// it once the window exists, until the presented size matches.
 		ebiten.SetWindowPosition(placement.MaxX, placement.MaxY)
 		ebiten.SetWindowSize(placement.MaxW, placement.MaxH)
-		manualMax.active = true
 
 		return placement
+	}
+
+	if !placementMonitorKnown(placement.Monitor) {
+		// The owning monitor is gone; keep the size, let the window
+		// manager choose the position on a live monitor.
+		w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+		ebiten.SetWindowSize(w, h)
+		fallback.W, fallback.H = w, h
+
+		return fallback
 	}
 
 	if placement.Maximized {
@@ -374,9 +386,97 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	return placement
 }
 
+// wslMaximizePlan decides how a saved WSL maximize is installed.
+// An unknown monitor waits: the list is empty before the window exists.
+// A rect that fits is applied now and again after RunGame, because the
+// early call does not stick. A rect that does not fit is refused.
+func wslMaximizePlan(monitorKnown, fits bool) (applyNow, retry bool) {
+	if !monitorKnown {
+		return false, true
+	}
+
+	if !fits {
+		return false, false
+	}
+
+	return true, true
+}
+
+// rememberManualMaximize copies a saved maximize into the manual state so
+// later syncs keep reporting it instead of the default 1500x900 frame.
+func rememberManualMaximize(placement windowPlacement) {
+	manualMax.sx, manualMax.sy = placement.X, placement.Y
+	manualMax.sw, manualMax.sh = placement.W, placement.H
+	manualMax.wx, manualMax.wy = placement.MaxX, placement.MaxY
+	manualMax.ww, manualMax.wh = placement.MaxW, placement.MaxH
+	manualMax.learnedMon = placement.Monitor
+	manualMax.known = true
+	manualMax.active = true
+	manualMax.learning = false
+	manualMax.restoring = false
+	if manualMax.areas == nil {
+		manualMax.areas = make(map[string]workarea)
+	}
+	if placement.Monitor != "" {
+		manualMax.areas[placement.Monitor] = workarea{
+			x: placement.MaxX,
+			y: placement.MaxY,
+			w: placement.MaxW,
+			h: placement.MaxH,
+		}
+	}
+}
+
+// retryManualRestore installs the saved workarea once the window and the
+// monitor list exist. It stops when the presented rect matches, the
+// monitor cannot hold it, the deadline passes, or a drag has started.
+func retryManualRestore(dragging bool) {
+	if !pendingManualRestore {
+		return
+	}
+
+	if dragging || time.Now().After(pendingManualUntil) {
+		pendingManualRestore = false
+
+		return
+	}
+
+	if !placementMonitorKnown(manualMax.learnedMon) {
+		return
+	}
+
+	if !placementFits(manualMax.learnedMon, manualMax.ww, manualMax.wh) {
+		pendingManualRestore = false
+		manualMax.active = false
+		manualMax.known = false
+
+		return
+	}
+
+	x, y := ebiten.WindowPosition()
+	w, h := ebiten.WindowSize()
+	landed := w == manualMax.ww && h == manualMax.wh &&
+		absDrag(x-manualMax.wx) <= dragApplySlack &&
+		absDrag(y-manualMax.wy) <= dragApplySlack
+	if landed {
+		pendingManualRestore = false
+		manualMax.active = true
+
+		return
+	}
+
+	ebiten.SetWindowPosition(manualMax.wx, manualMax.wy)
+	ebiten.SetWindowSize(manualMax.ww, manualMax.wh)
+	manualMax.active = true
+}
+
 // syncPlacement remembers the live rect at most once per interval while the
 // geometry keeps changing. Empty ids and headless sizes never touch the disk.
 func (s *shell) syncPlacement() {
+	if pendingManualRestore {
+		return
+	}
+
 	if s.placementID == "" {
 		return
 	}

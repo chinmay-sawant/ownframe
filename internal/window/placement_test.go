@@ -62,6 +62,25 @@ func TestPlacementRoundTrip(t *testing.T) {
 	}
 }
 
+func TestWSLMaximizePlan(t *testing.T) {
+	t.Parallel()
+
+	applyNow, retry := wslMaximizePlan(false, true)
+	if applyNow || !retry {
+		t.Fatalf("unknown monitor: apply=%v retry=%v, want deferred", applyNow, retry)
+	}
+
+	applyNow, retry = wslMaximizePlan(true, true)
+	if !applyNow || !retry {
+		t.Fatalf("fitting monitor: apply=%v retry=%v, want both", applyNow, retry)
+	}
+
+	applyNow, retry = wslMaximizePlan(true, false)
+	if applyNow || retry {
+		t.Fatalf("oversized rect: apply=%v retry=%v, want neither", applyNow, retry)
+	}
+}
+
 func TestPlacementLoadMissingFallsBack(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)

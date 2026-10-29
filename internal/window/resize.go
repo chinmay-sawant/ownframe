@@ -20,6 +20,7 @@ func (s *shell) resize() error {
 	s.moving = false
 
 	completeManualMaximize(s.pendingW, s.pendingH)
+	retryManualRestore(s.windowDrag.active)
 
 	if pendingStartMaximize {
 		// A remembered WM maximize from placement: the pre-loop call never
