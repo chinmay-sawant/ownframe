@@ -292,20 +292,164 @@
 
 .changes { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 3px 0; }
 
+.change-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  border-left: 2px solid transparent;
+}
+
+.change-wrap.on, .change-wrap.on:hover { border-left-color: var(--accent); background-color: var(--panel-3); }
+.change-wrap:hover { background-color: var(--panel-2); }
+
 .change {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 38px;
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 16px 4px 8px;
-  border-left: 2px solid transparent;
+  padding: 4px 8px 4px 8px;
+  border-left: 0;
   color: var(--muted);
   text-align: left;
 }
 
-.change:hover { background-color: var(--panel-2); }
-.change.on, .change.on:hover { border-left-color: var(--accent); background-color: var(--panel-3); }
+.change:hover { background-color: transparent; }
+.change.on, .change.on:hover { border-left-color: transparent; background-color: transparent; }
+
+.change-tools {
+  /* Hidden tools take no width. A flex item at opacity 0 still held a
+     column between the status badge and the editor. Shown tools sit in
+     the row's right padding, so they do not cover the badge. */
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 4px;
+  width: 0;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.change-wrap:hover .change,
+.change-wrap.on .change {
+  padding-right: 52px;
+}
+
+.change-wrap:hover .change-tools,
+.change-wrap.on .change-tools,
+.change-tools:focus-within {
+  width: 46px;
+  overflow: visible;
+  opacity: 1;
+}
+
+.change-tool {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--icon);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.change-tool:hover { background-color: var(--panel-3); color: var(--text); }
+.change-tool.danger:hover { color: var(--red); }
+
+.changes-tools-head { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+
+.changes-section-head {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.changes-section-head:first-child { border-top: 0; }
+.changes-section-title { flex: 0 0 auto; }
+
+.changes-selection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.changes-selection-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.change-wrap.multi { background-color: rgba(88, 120, 200, 0.12); }
+.change-wrap.multi.on { background-color: var(--panel-3); }
+.change-check {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Discard confirm dialog --------------------------------------------------- */
+
+.confirm-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(4, 6, 10, 0.55);
+}
+
+.confirm-panel {
+  position: relative;
+  width: 340px;
+  max-width: calc(100vw - 60px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background-color: var(--panel);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  padding: 14px;
+}
+
+.confirm-title { color: var(--text); font-size: 12px; font-weight: 700; }
+.confirm-msg { margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.confirm-files { margin: 8px 0 0; padding: 0; list-style: none; color: var(--dim); font-family: var(--mono); font-size: 9.5px; }
+.confirm-files li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.confirm-more { color: var(--dim); font-size: 9.5px; }
+.confirm-actions { margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px; }
+.confirm-btn {
+  min-width: 72px;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.confirm-btn:hover { border-color: #2b3240; color: var(--text); }
+.confirm-btn.danger { border-color: rgba(240, 90, 90, 0.5); background-color: rgba(240, 90, 90, 0.12); color: var(--red); }
+.confirm-btn.danger:hover { background-color: rgba(240, 90, 90, 0.2); color: var(--red); }
 
 .change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; overflow: hidden; }
 .change-name { max-width: 100%; max-height: 26px; font-size: 10.5px; line-height: 13px; color: var(--text); overflow: hidden; white-space: normal; overflow-wrap: anywhere; }

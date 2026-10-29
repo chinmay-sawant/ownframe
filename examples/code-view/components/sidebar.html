@@ -67,20 +67,101 @@
       <span class="changes-count mono">{{.Diff.Count}}</span>
       {{if .Diff.Sample}}<span class="side-tag">sample</span>{{end}}
       <span class="sc-stats"><b class="add">+{{.Diff.TotalAdd}}</b><b class="del">−{{.Diff.TotalDel}}</b></span>
+      {{if .Diff.HasChanges}}
+      <span class="changes-tools-head">
+        <button class="side-btn" id="changes-stage-all" data-action="stage-all" type="button" title="Stage all changes" aria-label="Stage all changes"{{if .Modal}} tabindex="-1"{{end}}>+</button>
+        {{if .Diff.HasStaged}}<button class="side-btn" id="changes-unstage-all" data-action="unstage-all" type="button" title="Unstage all changes" aria-label="Unstage all changes"{{if .Modal}} tabindex="-1"{{end}}>−</button>{{end}}
+        <button class="side-btn" id="changes-discard-all" data-action="discard-all" type="button" title="Discard all changes" aria-label="Discard all changes"{{if .Modal}} tabindex="-1"{{end}}>↩</button>
+      </span>
+      {{end}}
     </div>
+
+    {{if gt .Diff.SelectedCount 1}}
+    <div class="changes-selection" id="changes-selection">
+      <span class="changes-selection-label">{{.Diff.SelectedCount}} selected</span>
+      <button class="side-btn" id="changes-stage-selected" data-action="stage-selected" type="button" title="Stage selected files" aria-label="Stage selected files"{{if .Modal}} tabindex="-1"{{end}}>+</button>
+      <button class="side-btn" id="changes-unstage-selected" data-action="unstage-selected" type="button" title="Unstage selected files" aria-label="Unstage selected files"{{if .Modal}} tabindex="-1"{{end}}>−</button>
+      <button class="side-btn" id="changes-discard-selected" data-action="discard-selected" type="button" title="Discard selected files" aria-label="Discard selected files"{{if .Modal}} tabindex="-1"{{end}}>↩</button>
+      <button class="side-btn" id="changes-select-clear" data-action="select-clear" type="button" title="Clear selection" aria-label="Clear selection"{{if .Modal}} tabindex="-1"{{end}}>×</button>
+    </div>
+    {{end}}
 
     {{if .Diff.HasChanges}}
     <div class="changes{{if .Diff.Scroll}} scroll-fade{{end}}{{if .Diff.AtTop}} at-top{{end}}{{if .Diff.AtEnd}} at-end{{end}}" id="changes-list">
-      {{range .Diff.Files}}
-      <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}"{{if .Selected}} aria-current="true"{{end}}{{if $.Modal}} tabindex="-1"{{end}}>
-        <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
-        <span class="change-text">
-          <span class="change-name">{{.Name}}</span>
-          <span class="change-dir">{{.Dir}}</span>
+      {{if .Diff.HasStaged}}
+      <div class="changes-section-head" id="changes-staged-head">
+        <span class="changes-section-title">Staged Changes</span>
+        <span class="changes-count mono">{{.Diff.StagedCount}}</span>
+        <span class="changes-tools-head">
+          <button class="side-btn" id="changes-staged-unstage-all" data-action="unstage-all" type="button" title="Unstage all staged changes" aria-label="Unstage all staged changes"{{if $.Modal}} tabindex="-1"{{end}}>−</button>
         </span>
-        <span class="change-num"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
-        <span class="cstat {{.StatusClass}}">{{.Status}}</span>
-      </button>
+      </div>
+      {{range .Diff.Staged}}
+      <div class="change-wrap{{if .Selected}} on{{end}}{{if .Multi}} multi{{end}}">
+        <button class="change{{if .Selected}} on{{end}}" id="staged-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}} (staged){{if .Multi}} · selected{{end}}"{{if .Selected}} aria-current="true"{{end}}{{if $.Modal}} tabindex="-1"{{end}}>
+          <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
+          <span class="change-text">
+            <span class="change-name">{{.Name}}</span>
+            <span class="change-dir">{{.Dir}}</span>
+          </span>
+          {{if .Multi}}<span class="change-check" aria-hidden="true">✓</span>{{end}}
+          <span class="change-num"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+          <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+        </button>
+        <span class="change-tools">
+          <button class="change-tool" id="unstage-{{.Path}}" data-action="unstage-file:{{.Path}}" type="button" title="Unstage {{.Path}}" aria-label="Unstage {{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>−</button>
+          <button class="change-tool danger" id="discard-staged-{{.Path}}" data-action="discard-file:{{.Path}}" type="button" title="Discard changes to {{.Path}}" aria-label="Discard changes to {{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>↩</button>
+        </span>
+      </div>
+      {{end}}
+      {{end}}
+      {{if .Diff.HasUnstaged}}
+      <div class="changes-section-head" id="changes-unstaged-head">
+        <span class="changes-section-title">Changes</span>
+        <span class="changes-count mono">{{.Diff.UnstagedCount}}</span>
+        <span class="changes-tools-head">
+          <button class="side-btn" id="changes-unstaged-stage-all" data-action="stage-all" type="button" title="Stage all unstaged changes" aria-label="Stage all unstaged changes"{{if $.Modal}} tabindex="-1"{{end}}>+</button>
+          <button class="side-btn" id="changes-unstaged-discard-all" data-action="discard-all" type="button" title="Discard all changes" aria-label="Discard all changes"{{if $.Modal}} tabindex="-1"{{end}}>↩</button>
+        </span>
+      </div>
+      {{range .Diff.Unstaged}}
+      <div class="change-wrap{{if .Selected}} on{{end}}{{if .Multi}} multi{{end}}">
+        <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}{{if .Multi}} · selected{{end}}"{{if .Selected}} aria-current="true"{{end}}{{if $.Modal}} tabindex="-1"{{end}}>
+          <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
+          <span class="change-text">
+            <span class="change-name">{{.Name}}</span>
+            <span class="change-dir">{{.Dir}}</span>
+          </span>
+          {{if .Multi}}<span class="change-check" aria-hidden="true">✓</span>{{end}}
+          <span class="change-num"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+          <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+        </button>
+        <span class="change-tools">
+          <button class="change-tool" id="stage-{{.Path}}" data-action="stage-file:{{.Path}}" type="button" title="Stage {{.Path}}" aria-label="Stage {{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>+</button>
+          <button class="change-tool danger" id="discard-{{.Path}}" data-action="discard-file:{{.Path}}" type="button" title="Discard changes to {{.Path}}" aria-label="Discard changes to {{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>↩</button>
+        </span>
+      </div>
+      {{end}}
+      {{end}}
+      {{if and (not .Diff.HasStaged) (not .Diff.HasUnstaged)}}
+      {{range .Diff.Files}}
+      <div class="change-wrap{{if .Selected}} on{{end}}{{if .Multi}} multi{{end}}">
+        <button class="change{{if .Selected}} on{{end}}" id="change-{{.Path}}" data-action="diff-file:{{.Path}}" type="button" title="{{.Path}}{{if .Multi}} · selected{{end}}"{{if .Selected}} aria-current="true"{{end}}{{if $.Modal}} tabindex="-1"{{end}}>
+          <span class="ficon lang-{{.Lang}}">{{.Badge}}</span>
+          <span class="change-text">
+            <span class="change-name">{{.Name}}</span>
+            <span class="change-dir">{{.Dir}}</span>
+          </span>
+          {{if .Multi}}<span class="change-check" aria-hidden="true">✓</span>{{end}}
+          <span class="change-num"><b class="add">+{{.Add}}</b><b class="del">−{{.Del}}</b></span>
+          <span class="cstat {{.StatusClass}}">{{.Status}}</span>
+        </button>
+        <span class="change-tools">
+          <button class="change-tool" id="stage-{{.Path}}" data-action="stage-file:{{.Path}}" type="button" title="Stage {{.Path}}" aria-label="Stage {{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>+</button>
+          <button class="change-tool danger" id="discard-{{.Path}}" data-action="discard-file:{{.Path}}" type="button" title="Discard changes to {{.Path}}" aria-label="Discard changes to {{.Path}}"{{if $.Modal}} tabindex="-1"{{end}}>↩</button>
+        </span>
+      </div>
+      {{end}}
       {{end}}
     </div>
     {{else}}

@@ -44,7 +44,9 @@
   <div class="crumbs" id="crumbs">
     {{if eq .Mode "changes"}}
       {{if .Diff.HasFiles}}
-      {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>{{end}}
+      {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>
+      <button class="crumb-btn" id="commit-copy-message" data-action="copy-commit-message:{{.Diff.CommitHash}}" type="button" title="Copy commit message" aria-label="Copy commit message"{{if .Modal}} tabindex="-1"{{end}}>Copy message</button>
+      <button class="crumb-btn" id="commit-copy-id" data-action="copy-commit-id:{{.Diff.CommitHash}}" type="button" title="Copy commit ID" aria-label="Copy commit ID"{{if .Modal}} tabindex="-1"{{end}}>Copy ID</button>{{end}}
       <span class="crumb-path diff-path" id="diff-path" title="{{.Diff.Path}}">{{if .Diff.DirShort}}<span class="diff-dir">{{.Diff.DirShort}}/</span>{{end}}<b>{{.Diff.NameShort}}</b></span>
       <span class="tabs-fill"></span>
       <span id="diff-status" class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>

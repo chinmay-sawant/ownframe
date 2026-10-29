@@ -20,6 +20,10 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 		return true, a.page.Redraw(ctx)
 	}
 
+	if a.confirmOpen {
+		return true, nil
+	}
+
 	if strings.HasPrefix(box.ID, "diff-edit-line-") && a.mode == "changes" && a.diffSource == "working" {
 		if n, ok := actionIndex(box.Action, "diff-edit-line:"); ok && n > 0 {
 			displayCol := a.diffDisplayColForBox(box, x)

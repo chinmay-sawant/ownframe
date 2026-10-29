@@ -6,9 +6,15 @@ import (
 	"unicode"
 )
 
-// changeSet is the pending diff the Source Control view shows.
+// changeSet is the pending diff the Source Control view shows. Files is the
+// combined HEAD diff plus untracked files. Staged holds `git diff --cached`
+// rows and Unstaged holds `git diff` rows plus untracked files, so the panel
+// can show the two VS Code sections. A file with both staged and unstaged
+// edits appears in both lists with different hunks and once in Files merged.
 type changeSet struct {
 	Files      []changedFile
+	Staged     []changedFile
+	Unstaged   []changedFile
 	Branch     string
 	Sample     bool
 	Note       string

@@ -179,6 +179,13 @@ type App struct {
 	changesDragAt int
 	changesScale  float64
 	diffSource    string
+	selected      map[string]bool
+
+	confirmOpen  bool
+	confirmKind  string
+	confirmPaths []string
+	confirmTitle string
+	confirmMsg   string
 
 	commits          commitLog
 	branches         []branchRow
@@ -304,6 +311,7 @@ func NewWithLimit(root string, limit int) (*App, error) {
 		folders:       map[string]bool{},
 		statuses:      map[string]string{},
 		commitDetails: map[string]*changedFile{},
+		selected:      map[string]bool{},
 		mode:          "explorer",
 		diffSource:    "working",
 		historyRatio:  historyDefaultRatio,
@@ -791,7 +799,7 @@ func (a *App) buildView() View {
 		MenuX:         a.menuX,
 		MenuY:         a.menuY,
 		MenuRows:      append([]menuViewRow(nil), a.menuItems...),
-		Modal:         a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen,
+		Modal:         a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen || a.confirmOpen || a.fileMenu || a.browseOpen,
 		SettingsOpen:  a.settingsOpen,
 		FileMenu:      a.fileMenu,
 		ProjectOpen:   a.projectOpen,
@@ -846,6 +854,7 @@ func (a *App) buildView() View {
 	v.Search = a.searchViewState()
 	v.FileNav = a.fileNavViewState()
 	v.ChangeLabel = a.fileNavSummary()
+	v.Confirm = a.confirmViewState()
 
 	v.PaneLeft, v.PaneWidth = a.paneGeometry()
 
@@ -889,9 +898,9 @@ func (a *App) buildView() View {
 		v.Second = a.secondView()
 	}
 
-	v.Chrome = a.chrome
-	if v.Chrome {
-		v.ChromeMax = a.page.Window().Maximized()
+	v.TitleBar = a.chrome
+	if v.TitleBar {
+		v.TitleBarMax = a.page.Window().Maximized()
 	}
 
 	v.ZoomLabel = a.zoomLabel()
@@ -1069,11 +1078,25 @@ func (a *App) diffViewPath() string {
 
 // fillDiff fills the Source Control list and the selected diff rows.
 func (a *App) fillDiff(v *View) {
-	files := a.sidebarChangeFiles()
 	active := a.changes
 	if a.diffSource == "branch" {
 		active = a.branchChanges
 	}
+
+	// Working-tree sections keep staged rows above unstaged rows. Branch and
+	// commit diffs keep the single combined list.
+	stagedAll := active.Staged
+	unstagedAll := active.Unstaged
+	sectioned := a.diffSource != "branch" && a.diffSource != "commit"
+	if sectioned && len(stagedAll) == 0 && len(unstagedAll) == 0 {
+		unstagedAll = active.Files
+	}
+	if !sectioned {
+		stagedAll = nil
+		unstagedAll = nil
+	}
+
+	files := a.sidebarChangeFiles()
 	d := diffView{
 		Split:      a.diffSplit,
 		Sample:     active.Sample,
@@ -1099,37 +1122,100 @@ func (a *App) fillDiff(v *View) {
 		}
 	}
 
-	total := len(files)
-	visible := a.changeVisibleRows()
-	from, to := a.changesScroll.Rows(total, visible)
+	if sectioned {
+		d.StagedCount = len(stagedAll)
+		d.UnstagedCount = len(unstagedAll)
+		d.HasStaged = len(stagedAll) > 0
+		d.HasUnstaged = len(unstagedAll) > 0
+		d.HasChanges = len(stagedAll)+len(unstagedAll) > 0
+		d.Count = len(stagedAll) + len(unstagedAll)
+		d.SelectedCount = a.selectedCount()
 
-	d.Scroll = total > visible
-	d.AtTop = from == 0
-	d.AtEnd = to >= total
+		total := d.Count
+		visible := a.changeVisibleRows()
+		from, to := a.changesScroll.Rows(total, visible)
 
-	if d.Scroll {
-		track := a.changesTrackHeight()
-		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
-		d.ScrollTrack = track
-		d.RailLeft = a.zx(paneScrollLeft)
-		d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
-		d.RailThumbTop = d.RailTop + d.ScrollTop
-		d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
-	}
+		d.Scroll = total > visible
+		d.AtTop = from == 0
+		d.AtEnd = to >= total
 
-	for _, file := range files[from:to] {
-		d.Files = append(d.Files, diffFileRow{
-			Path:        file.Path,
-			Name:        baseName(file.Path),
-			Dir:         dirName(file.Path),
-			Status:      file.Status,
-			StatusClass: "st-" + strings.ToLower(file.Status),
-			Lang:        languageOf(file.Path),
-			Badge:       languageInfo(languageOf(file.Path)).Badge,
-			Add:         file.Add,
-			Del:         file.Del,
-			Selected:    file.Path == selected,
-		})
+		if d.Scroll {
+			track := a.changesTrackHeight()
+			d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
+			d.ScrollTrack = track
+			d.RailLeft = a.zx(paneScrollLeft)
+			d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
+			d.RailThumbTop = d.RailTop + d.ScrollTop
+			d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
+		}
+
+		combined := make([]changedFile, 0, total)
+		combined = append(combined, stagedAll...)
+		combined = append(combined, unstagedAll...)
+		if to > len(combined) {
+			to = len(combined)
+		}
+		if from > to {
+			from = to
+		}
+
+		for i, file := range combined[from:to] {
+			row := diffFileRow{
+				Path:        file.Path,
+				Name:        baseName(file.Path),
+				Dir:         dirName(file.Path),
+				Status:      file.Status,
+				StatusClass: "st-" + strings.ToLower(file.Status),
+				Lang:        languageOf(file.Path),
+				Badge:       languageInfo(languageOf(file.Path)).Badge,
+				Add:         file.Add,
+				Del:         file.Del,
+				Selected:    file.Path == selected,
+				Staged:      from+i < len(stagedAll),
+				Multi:       a.selected[file.Path],
+			}
+			d.Files = append(d.Files, row)
+
+			if row.Staged {
+				d.Staged = append(d.Staged, row)
+			} else {
+				d.Unstaged = append(d.Unstaged, row)
+			}
+		}
+	} else {
+		total := len(files)
+		visible := a.changeVisibleRows()
+		from, to := a.changesScroll.Rows(total, visible)
+
+		d.Scroll = total > visible
+		d.AtTop = from == 0
+		d.AtEnd = to >= total
+
+		if d.Scroll {
+			track := a.changesTrackHeight()
+			d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
+			d.ScrollTrack = track
+			d.RailLeft = a.zx(paneScrollLeft)
+			d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
+			d.RailThumbTop = d.RailTop + d.ScrollTop
+			d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
+		}
+
+		for _, file := range files[from:to] {
+			d.Files = append(d.Files, diffFileRow{
+				Path:        file.Path,
+				Name:        baseName(file.Path),
+				Dir:         dirName(file.Path),
+				Status:      file.Status,
+				StatusClass: "st-" + strings.ToLower(file.Status),
+				Lang:        languageOf(file.Path),
+				Badge:       languageInfo(languageOf(file.Path)).Badge,
+				Add:         file.Add,
+				Del:         file.Del,
+				Selected:    file.Path == selected,
+				Multi:       a.selected[file.Path],
+			})
+		}
 	}
 
 	if a.diffSource == "commit" {
@@ -1162,21 +1248,25 @@ func (a *App) sidebarChangeFiles() []changedFile {
 	if a.diffSource == "branch" {
 		return a.branchChanges.Files
 	}
-	if a.diffSource != "commit" {
+	if a.diffSource == "commit" {
+		commit := a.findCommit(a.commitOpen)
+		if commit == nil {
+			return nil
+		}
+		files := make([]changedFile, 0, len(commit.Files))
+		for _, file := range commit.Files {
+			files = append(files, changedFile{
+				Path: file.Path, OldPath: file.OldPath, Status: file.Status,
+				Add: file.Add, Del: file.Del, Binary: file.Binary,
+			})
+		}
+		return files
+	}
+	if len(a.changes.Staged) == 0 && len(a.changes.Unstaged) == 0 {
 		return a.changes.Files
 	}
-	commit := a.findCommit(a.commitOpen)
-	if commit == nil {
-		return nil
-	}
-	files := make([]changedFile, 0, len(commit.Files))
-	for _, file := range commit.Files {
-		files = append(files, changedFile{
-			Path: file.Path, OldPath: file.OldPath, Status: file.Status,
-			Add: file.Add, Del: file.Del, Binary: file.Binary,
-		})
-	}
-	return files
+
+	return a.workingAllFiles()
 }
 
 // fillCommitDiff publishes the selected file from one commit.
@@ -2501,6 +2591,8 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 
 // selectFirstDiff keeps the current file when it still exists.
 func (a *App) selectFirstDiff() {
+	a.pruneSelected()
+
 	if len(a.changes.Files) == 0 {
 		a.diffPath = ""
 		a.diffRows = nil
@@ -2510,6 +2602,10 @@ func (a *App) selectFirstDiff() {
 
 	if findFile(a.changes.Files, a.diffPath) == nil {
 		a.diffPath = a.changes.Files[0].Path
+	}
+
+	if len(a.selected) == 0 && a.diffPath != "" {
+		a.setSingleSelect(a.diffPath)
 	}
 
 	if a.fileNav != nil {
@@ -2675,10 +2771,39 @@ func (a *App) pickBranch(ctx context.Context, ref string) {
 
 // selectDiff shows one file's working-tree diff.
 func (a *App) selectDiff(path string) {
-	if findFile(a.changes.Files, path) == nil {
-		return
+	if _, ok := a.scmChangeFile(path); !ok {
+		if findFile(a.changes.Files, path) == nil {
+			return
+		}
 	}
 
+	a.diffPath = path
+	a.setSingleSelect(path)
+	a.firstChangePending = ""
+	a.changeNav = changeNavigation{}
+	a.diffSource = "working"
+	a.mode = "changes"
+	a.inlineCard = inlineCard{}
+	a.revealChangePath(path)
+	if a.fileNav != nil {
+		a.fileNav.Select(path)
+	}
+	a.rebuildDiffRows()
+	a.resetScroll()
+	a.refresh()
+	a.jumpToFirstChange(path)
+}
+
+// toggleDiff previews one file while flipping its multi-select state for
+// Ctrl-click.
+func (a *App) toggleDiff(path string) {
+	if _, ok := a.scmChangeFile(path); !ok {
+		if findFile(a.changes.Files, path) == nil {
+			return
+		}
+	}
+
+	a.toggleSelect(path)
 	a.diffPath = path
 	a.firstChangePending = ""
 	a.changeNav = changeNavigation{}

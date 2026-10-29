@@ -9,12 +9,27 @@ import _ "embed"
 //go:embed fixtures/sample.diff
 var sampleDiff []byte
 
-// sampleChangeSet parses the bundled diff.
+// sampleChangeSet parses the bundled diff. The first two files show as
+// staged so the sample demonstrates the staged and unstaged sections.
 func sampleChangeSet() changeSet {
+	files := parseDiff(string(sampleDiff))
+	staged := make([]changedFile, 0, len(files))
+	unstaged := make([]changedFile, 0, len(files))
+
+	for i, file := range files {
+		if i < 2 {
+			staged = append(staged, file)
+		} else {
+			unstaged = append(unstaged, file)
+		}
+	}
+
 	return changeSet{
-		Files:  parseDiff(string(sampleDiff)),
-		Branch: "feat/probe-retries",
-		Sample: true,
-		Note:   "Bundled sample. Run with -root to read a real repository.",
+		Files:    files,
+		Staged:   staged,
+		Unstaged: unstaged,
+		Branch:   "feat/probe-retries",
+		Sample:   true,
+		Note:     "Bundled sample. Run with -root to read a real repository.",
 	}
 }

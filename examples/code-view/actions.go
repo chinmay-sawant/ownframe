@@ -17,6 +17,16 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return nil
 	}
 
+	if a.confirmOpen {
+		switch box.Action {
+		case "confirm-ok", "confirm-cancel":
+		default:
+			if box.ID != "confirm-backdrop" {
+				return nil
+			}
+		}
+	}
+
 	action := box.Action
 
 	switch {
@@ -334,6 +344,59 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return a.closePalette(ctx)
 	case action == "diff-refresh":
 		a.reloadChanges(ctx, true)
+	case action == "stage-all":
+		if err := a.stageAll(ctx); err != nil {
+			return err
+		}
+	case action == "unstage-all":
+		if err := a.unstageAll(ctx); err != nil {
+			return err
+		}
+	case action == "discard-all":
+		a.openDiscardConfirm("discard-all", a.workingAllPaths())
+	case action == "stage-selected":
+		if err := a.stageSelected(ctx); err != nil {
+			return err
+		}
+	case action == "unstage-selected":
+		if err := a.unstageSelected(ctx); err != nil {
+			return err
+		}
+	case action == "discard-selected":
+		a.openDiscardConfirm("discard-selected", a.selectedList())
+	case action == "select-all-files":
+		a.selectAllFiles()
+		a.refresh()
+	case action == "select-clear":
+		if a.diffPath != "" {
+			a.setSingleSelect(a.diffPath)
+		} else {
+			a.ensureSelected()
+			for key := range a.selected {
+				delete(a.selected, key)
+			}
+		}
+		a.refresh()
+	case action == "confirm-ok":
+		if err := a.confirmDiscard(ctx); err != nil {
+			return err
+		}
+	case action == "confirm-cancel":
+		a.closeConfirm()
+	case strings.HasPrefix(action, "stage-file:"):
+		if err := a.stageFile(ctx, strings.TrimPrefix(action, "stage-file:")); err != nil {
+			return err
+		}
+	case strings.HasPrefix(action, "unstage-file:"):
+		if err := a.unstageFile(ctx, strings.TrimPrefix(action, "unstage-file:")); err != nil {
+			return err
+		}
+	case strings.HasPrefix(action, "discard-file:"):
+		a.openDiscardConfirm("discard-file", []string{strings.TrimPrefix(action, "discard-file:")})
+	case strings.HasPrefix(action, "copy-commit-message:"):
+		a.copyCommitMessage(strings.TrimPrefix(action, "copy-commit-message:"))
+	case strings.HasPrefix(action, "copy-commit-id:"):
+		a.copyCommitID(strings.TrimPrefix(action, "copy-commit-id:"))
 	case action == "diff-note":
 		a.showToast("info", "Sample changes", a.changes.Note)
 		a.refresh()
@@ -477,7 +540,11 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		case "branch":
 			a.selectBranchFile(path)
 		default:
-			a.selectDiff(path)
+			if a.ctrl {
+				a.toggleDiff(path)
+			} else {
+				a.selectDiff(path)
+			}
 		}
 	case strings.HasPrefix(action, "diff-expand-up:"):
 		if idx, ok := actionIndex(action, "diff-expand-up:"); ok {
@@ -578,6 +645,10 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 // returns false so the window can pan a long file. Ctrl+wheel does not zoom
 // this page.
 func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
+	if a.confirmOpen {
+		return true, nil
+	}
+
 	// Ctrl+wheel zooms the layout like the keyboard chords. The window
 	// leaves the wheel to the page because wheel zoom is off.
 	if a.ctrl && dy != 0 {
@@ -1219,6 +1290,24 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return a.page.Redraw(ctx)
 	}
 
+	if a.confirmOpen && key == "escape" {
+		a.closeConfirm()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen && key == "enter" {
+		if err := a.confirmDiscard(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen {
+		return nil
+	}
+
 	if a.settingsOpen && key == "escape" {
 		a.settingsOpen = false
 		a.refresh()
@@ -1295,6 +1384,21 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 
 	if a.editing {
 		return a.editKey(ctx, key)
+	}
+
+	if a.ctrl && key == "a" && !a.shift {
+		if a.mode == "changes" && a.confirmOpen == false {
+			switch a.page.Form().FocusID() {
+			case "filter", "palette", "find", "branch-filter", "workspace-search", "project-path", "drawer-path", "editor", "edit-surface":
+			default:
+				a.selectAllFiles()
+				a.refresh()
+
+				return a.page.Redraw(ctx)
+			}
+		}
+
+		return nil
 	}
 
 	if a.ctrl && key == "p" {
