@@ -14,7 +14,7 @@ const (
 // file over the budget. It runs before word emphasis so an oversized diff
 // does not pay for pairing that no row will use.
 func measureDiff(file *changedFile) {
-	bytes, lines := 0, 0
+	bytes, lines, longest := 0, 0, 0
 
 	for _, h := range file.Hunks {
 		bytes += len(h.Header) + 1
@@ -22,12 +22,16 @@ func measureDiff(file *changedFile) {
 		for _, line := range h.Lines {
 			bytes += len(line.Text) + 1
 			lines++
+			if len(line.Text) > longest {
+				longest = len(line.Text)
+			}
 		}
 	}
 
 	file.DiffBytes = bytes
 	file.DiffLines = lines
-	file.Oversized = bytes > maxDiffBytes || lines > maxDiffLines
+	file.DiffMaxLine = longest
+	file.Oversized = bytes > maxDiffBytes || lines > maxDiffLines || longest > maxLineBytes
 }
 
 // diffLimitNote is the row shown instead of a diff over the budget. The
@@ -37,6 +41,13 @@ func diffLimitNote(file changedFile) string {
 		return fmt.Sprintf(
 			"Diff skipped: the patch stopped at the %d KB read limit.",
 			maxCommitPatchBytes/byteKB,
+		)
+	}
+
+	if file.DiffMaxLine > maxLineBytes {
+		return fmt.Sprintf(
+			"Diff skipped: one line is %s, over the %d KB line diff limit.",
+			humanSize(int64(file.DiffMaxLine)), maxLineKB,
 		)
 	}
 

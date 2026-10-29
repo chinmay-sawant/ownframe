@@ -17,6 +17,8 @@ const (
 	tabSpaces           = "    "
 	maxFileBytes        = 512 << 10
 	maxFileLines        = 20000
+	maxLineKB           = 32
+	maxLineBytes        = maxLineKB * byteKB
 	maxWorkspaceFiles   = 10000
 	maxIgnoredDirs      = 200
 	maxIgnoreCandidates = 5000
@@ -1131,6 +1133,12 @@ func (w *workspace) readLines(path string) ([]string, bool, error) {
 
 	for i, line := range lines {
 		lines[i] = expandTabs(line)
+		if len(lines[i]) > maxLineBytes {
+			return nil, false, fmt.Errorf(
+				"line %d is %s, over the %d KB line limit",
+				i+1, humanSize(int64(len(lines[i]))), maxLineKB,
+			)
+		}
 	}
 
 	meta.Lines = len(lines)

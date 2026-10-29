@@ -31,6 +31,7 @@ type changedFile struct {
 	// DiffTruncated marks a commit patch that git stopped at the read cap.
 	DiffBytes     int
 	DiffLines     int
+	DiffMaxLine   int
 	Oversized     bool
 	DiffTruncated bool
 }
