@@ -297,11 +297,12 @@ const (
 	treeCellW       = 6.0
 )
 
-// clipTreeName keeps one sidebar row on a single line within the fixed
-// sidebar width and marks the cut with an ellipsis. The budget subtracts
-// the row's indent and decorations; the full path stays in the row's title
-// attribute, so nothing is lost.
-func clipTreeName(indent int, isDir, hasNote bool, name string) string {
+// clipTreeName keeps one sidebar row on a single line within the drawer
+// width and marks the cut with an ellipsis. The drawer widens from 268 px
+// to 348 px (about 30%), so a wider drawer fits more of the name before the
+// cut. The budget subtracts the row's indent and decorations; the full path
+// stays in the row's title attribute, so nothing is lost.
+func clipTreeName(width, indent int, isDir, hasNote bool, name string) string {
 	overhead := treeRowPadRight + treeRowBorder + treeRowIconW + treeRowGap
 	if !isDir {
 		overhead += treeRowGap + treeRowStatusW
@@ -311,7 +312,7 @@ func clipTreeName(indent int, isDir, hasNote bool, name string) string {
 		overhead += treeRowGap + treeNoteW
 	}
 
-	budget := int(float64(sideWidth-indent-overhead) / treeCellW)
+	budget := int(float64(width-indent-overhead) / treeCellW)
 	if budget < 1 {
 		budget = 1
 	}

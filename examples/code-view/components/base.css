@@ -91,7 +91,9 @@ button:focus-visible:not(.on) { background-color: var(--panel-3); }
 .tab.on .tab-main:focus-visible, .tab.on .tab-x:focus-visible { background-color: var(--bg); }
 .ctx-back:focus-visible, .file-backdrop:focus-visible, .edit-surface:focus-visible,
 .edit-line-hit:focus-visible, .diff-edit-hit:focus-visible, button.gutter-mark:focus-visible,
+button.ln:focus-visible,
 .tree-scroll:focus-visible, .list-scroll:focus-visible, .hist-scroll:focus-visible,
+.drawer-resize:focus-visible,
 .search-thumb:focus-visible, .editor-scroll-thumb:focus-visible, .hsplit:focus-visible { background-color: transparent; }
 
 #act-search:focus, #act-search:focus-visible, #act-settings:focus, #act-settings:focus-visible { outline: 0; }

@@ -98,17 +98,29 @@ func inlineRowClass(kind inlineKind) string {
 	}
 }
 
-// showInlineCard opens the line card for a changed line in the left editor.
+// showInlineCard opens the line card for one line in the left editor. Changed
+// lines show their old and new sides; any other line shows the current text
+// under the Line kind. When the line sits inside a multi-line edit selection,
+// the card shows the whole selection instead of just that line.
 func (a *App) showInlineCard(line int) {
 	doc := a.groupDoc(0)
 	if doc == nil || line < 1 {
 		return
 	}
 
+	if line > len(doc.Lines) {
+		return
+	}
+
+	if start, end, ok := a.selectionRange(doc); ok && line >= start && line <= end {
+		a.showSelectionCard(doc, start, end)
+		return
+	}
+
 	changes := a.changedLinesFor(doc.Path)
 	change, ok := inlineChangeAt(changes, line)
 	if !ok {
-		return
+		change = inlineLine{Kind: inlineNone}
 	}
 
 	lines := inlineChangeLines(changes)
@@ -120,6 +132,8 @@ func (a *App) showInlineCard(line int) {
 			break
 		}
 	}
+
+	hasPrev, hasNext := inlineCardBounds(lines, line, index)
 
 	visual := line - 1
 	if a.wrap {
@@ -135,16 +149,229 @@ func (a *App) showInlineCard(line int) {
 
 	card := inlineCardFor(rowTop, a.pageWidth(), a.viewportH, line, change, doc.Path, newText)
 	card.Line = line
-	card.Left = a.zx(chromeLeft) + inlineCardLeft
-	card.HasPrev = index > 0
-	card.HasNext = index >= 0 && index < len(lines)-1
+	card.Left = a.chromeLeftPx() + inlineCardLeft
+	card.HasPrev = hasPrev
+	card.HasNext = hasNext
 
 	a.inlineCard = card
 	a.refresh()
 }
 
+// selectionRange returns the 1-based inclusive source lines of the edit
+// selection when it spans more than one line. A collapsed caret reports false
+// so the caller keeps the single-line card.
+func (a *App) selectionRange(doc *fileDoc) (int, int, bool) {
+	if doc == nil || !a.editing || a.edit == nil || a.edit.Path != doc.Path {
+		return 0, 0, false
+	}
+	text, start, end := a.editSelection()
+	if start == end {
+		return 0, 0, false
+	}
+	startLine, _ := offsetLineCol(text, start)
+	endLine, _ := offsetLineCol(text, end)
+	startLine++
+	endLine++
+	if endLine <= startLine {
+		return 0, 0, false
+	}
+	if startLine < 1 {
+		startLine = 1
+	}
+	if endLine > len(doc.Lines) {
+		endLine = len(doc.Lines)
+	}
+	if endLine <= startLine {
+		return 0, 0, false
+	}
+	return startLine, endLine, true
+}
+
+// showSelectionCard opens the card for a multi-line selection, with one row
+// per selected source line. Prev/next still step through the file's changed
+// lines from the selection start.
+func (a *App) showSelectionCard(doc *fileDoc, start, end int) {
+	if doc == nil || start < 1 || end < start || end > len(doc.Lines) {
+		return
+	}
+	visual := start - 1
+	if a.wrap {
+		plan := doc.wrapped(a.codeColsForGroup(0))
+		visual = plan.firstRow(start - 1)
+	}
+	rowTop := a.zx(editorBodyTop) + (visual-a.scrollY/a.zx(rowH))*a.zx(rowH)
+	lines := append([]string(nil), doc.Lines[start-1:end]...)
+	card := inlineCardForSelection(rowTop, a.pageWidth(), a.viewportH, start, end, doc.Path, lines)
+	card.Left = a.chromeLeftPx() + inlineCardLeft
+	changes := a.changedLinesFor(doc.Path)
+	changed := inlineChangeLines(changes)
+	index := -1
+	for i, l := range changed {
+		if l == start {
+			index = i
+			break
+		}
+	}
+	card.HasPrev, card.HasNext = inlineCardBounds(changed, start, index)
+	a.inlineCard = card
+	a.refresh()
+}
+
+// refreshInlineCardSelection rebuilds an open card's selection rows in place,
+// keeping the dragged position. It returns false when there is no selection
+// card to refresh.
+func (a *App) refreshInlineCardSelection() bool {
+	if !a.inlineCard.Show || len(a.inlineCard.SelLines) == 0 {
+		return false
+	}
+	doc := a.groupDoc(0)
+	if doc == nil {
+		return false
+	}
+	start, end, ok := a.selectionRange(doc)
+	if !ok {
+		return false
+	}
+	left, top := a.inlineCard.Left, a.inlineCard.Top
+	visual := start - 1
+	if a.wrap {
+		plan := doc.wrapped(a.codeColsForGroup(0))
+		visual = plan.firstRow(start - 1)
+	}
+	_ = visual
+	rowTop := a.zx(editorBodyTop) + (visual-a.scrollY/a.zx(rowH))*a.zx(rowH)
+	lines := append([]string(nil), doc.Lines[start-1:end]...)
+	card := inlineCardForSelection(rowTop, a.pageWidth(), a.viewportH, start, end, doc.Path, lines)
+	card.Left = left
+	card.Top = a.clampCardTop(top)
+	changes := a.changedLinesFor(doc.Path)
+	changed := inlineChangeLines(changes)
+	index := -1
+	for i, l := range changed {
+		if l == start {
+			index = i
+			break
+		}
+	}
+	card.HasPrev, card.HasNext = inlineCardBounds(changed, start, index)
+	a.inlineCard = card
+	return true
+}
+
+// clampCardLeft keeps a dragged card inside the page width.
+func (a *App) clampCardLeft(left int) int {
+	width := a.inlineCard.Width
+	if width < 1 {
+		width = inlineCardWidth
+	}
+	maxLeft := a.pageWidth() - width
+	if maxLeft < 0 {
+		maxLeft = 0
+	}
+	if left < 0 {
+		return 0
+	}
+	if left > maxLeft {
+		return maxLeft
+	}
+	return left
+}
+
+// clampCardTop keeps a dragged card between the page top and a visible strip
+// above the status bar.
+func (a *App) clampCardTop(top int) int {
+	if top < inlineCardGap {
+		return inlineCardGap
+	}
+	maxTop := a.viewportH - 40
+	if maxTop < inlineCardGap {
+		maxTop = inlineCardGap
+	}
+	if top > maxTop {
+		return maxTop
+	}
+	return top
+}
+
+// inlineCardBounds reports whether a card at line can step to a previous or
+// next changed line. index is the position of line inside the sorted changed
+// lines, or -1 when line itself is unchanged.
+func inlineCardBounds(lines []int, line, index int) (bool, bool) {
+	if index >= 0 {
+		return index > 0, index < len(lines)-1
+	}
+
+	hasPrev := false
+	hasNext := false
+
+	for _, changed := range lines {
+		if changed < line {
+			hasPrev = true
+		} else if changed > line {
+			hasNext = true
+
+			break
+		}
+	}
+
+	return hasPrev, hasNext
+}
+
+// currentSourceLine is the 1-based source line Ctrl+I names in the left
+// editor. While editing it is the caret line; otherwise it is the top visible
+// source line, so line 100 on screen names line 100.
+func (a *App) currentSourceLine() int {
+	doc := a.groupDoc(0)
+	if doc == nil || len(doc.Lines) == 0 {
+		return 0
+	}
+
+	if a.editing && a.edit != nil && a.edit.Path == doc.Path {
+		line, _ := offsetLineCol(a.edit.Text(), a.editCaret)
+		line++
+
+		return min(max(line, 1), len(doc.Lines))
+	}
+
+	scroll := a.scrollY
+	if a.split {
+		scroll = a.scrollGroup[0]
+	}
+
+	visual := scroll / a.zx(rowH)
+
+	if a.wrap {
+		plan := doc.wrapped(a.codeColsForGroup(0))
+		if len(plan.Rows) == 0 {
+			return 0
+		}
+
+		if visual < 0 {
+			visual = 0
+		}
+
+		if visual >= len(plan.Rows) {
+			visual = len(plan.Rows) - 1
+		}
+
+		line := plan.Rows[visual].Line + 1
+
+		return min(max(line, 1), len(doc.Lines))
+	}
+
+	return min(max(visual+1, 1), len(doc.Lines))
+}
+
+// showInlineCardAtCurrent opens the line card at the current source line.
+func (a *App) showInlineCardAtCurrent() {
+	if line := a.currentSourceLine(); line > 0 {
+		a.showInlineCard(line)
+	}
+}
+
 // inlineCardStep moves the line card to the previous or next changed line in
-// the same file. It stops at the first and last change.
+// the same file. From an unchanged line it jumps to the nearest changed line
+// in that direction. It stops at the first and last change.
 func (a *App) inlineCardStep(delta int) {
 	doc := a.groupDoc(0)
 	if doc == nil || !a.inlineCard.Show {
@@ -167,6 +394,24 @@ func (a *App) inlineCardStep(delta int) {
 	}
 
 	if index < 0 {
+		if delta > 0 {
+			for _, changed := range lines {
+				if changed > line {
+					a.showInlineCard(changed)
+
+					return
+				}
+			}
+		} else {
+			for i := len(lines) - 1; i >= 0; i-- {
+				if lines[i] < line {
+					a.showInlineCard(lines[i])
+
+					return
+				}
+			}
+		}
+
 		return
 	}
 

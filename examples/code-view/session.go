@@ -46,6 +46,7 @@ type sessionState struct {
 	DiffSplit     bool                 `json:"diffSplit"`
 	HistoryRatio  float64              `json:"historyRatio"`
 	HistoryManual bool                 `json:"historyManual"`
+	DrawerExtra   int                  `json:"drawerExtra,omitempty"`
 	Zoom          float64              `json:"zoom,omitempty"`
 	BranchLogs    map[string]commitLog `json:"branchLogs,omitempty"`
 	Nav           []string             `json:"nav,omitempty"`
@@ -177,6 +178,7 @@ func (s sessionState) sanitize(root string) sessionState {
 	s.FocusGroup = clampSessionIndex(s.FocusGroup, sessionGroupCount)
 	s.SplitRatio = clampSessionRatio(s.SplitRatio, sessionSplitMin, sessionSplitMax)
 	s.HistoryRatio = clampSessionRatio(s.HistoryRatio, sessionHistoryMin, sessionHistoryMax)
+	s.DrawerExtra = clampDrawerExtra(s.DrawerExtra)
 	s.Zoom = clampSessionZoom(s.Zoom)
 	s.NavAt = clampHistoryIndex(s.NavAt, len(s.Nav))
 

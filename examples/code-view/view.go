@@ -35,6 +35,14 @@ type View struct {
 	TreeTrackH   int
 	Filtered     bool
 
+	// SideW is the drawer width in page pixels, resizable from 268 px up
+	// to 348 px (about 30% wider) via the drawer-resize handle.
+	// DrawerResizeLeft/Top/H position that handle on the drawer boundary.
+	SideW            int
+	DrawerResizeLeft int
+	DrawerResizeTop  int
+	DrawerResizeH    int
+
 	Tabs            []tabRow
 	TabsPrev        bool
 	TabsNext        bool

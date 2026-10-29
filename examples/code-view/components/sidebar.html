@@ -1,4 +1,4 @@
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" style="width:{{.SideW}}px">
   <header class="side-head">
     <span class="side-title">{{if eq .Mode "changes"}}Source control{{else}}Explorer{{end}}</span>
     <span class="side-tools">
@@ -260,3 +260,5 @@
   <span class="hist-thumb" id="history-thumb" style="top:{{.History.ScrollTop}}px;height:{{.History.ScrollHeight}}px"><svg width="8" height="{{.History.ScrollHeight}}" aria-hidden="true"><rect width="8" height="{{.History.ScrollHeight}}" fill="#c5c9d1"/></svg></span>
 </button>
 {{end}}
+
+<button class="drawer-resize" id="drawer-resize" type="button" title="Drag to resize the drawer (up to 30% wider)" aria-label="Resize the drawer" tabindex="-1" style="left:{{.DrawerResizeLeft}}px;top:{{.DrawerResizeTop}}px;height:{{.DrawerResizeH}}px"><svg width="6" height="{{.DrawerResizeH}}" aria-hidden="true"><rect x="2" y="0" width="2" height="{{.DrawerResizeH}}" fill="#3a4152"/></svg></button>

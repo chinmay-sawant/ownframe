@@ -37,6 +37,12 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			return nil
 		}
 
+		// A press on the card body is the start of a header drag, not a
+		// dismiss: the X button and Escape still close it.
+		if box.ID == "inline-card" {
+			return nil
+		}
+
 		if a.inlineCard.Show {
 			a.closeInlineCard()
 		}
@@ -60,6 +66,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "inline-card:"):
 		if line, ok := actionIndex(action, "inline-card:"); ok {
 			a.showInlineCard(line)
+		}
+	case strings.HasPrefix(action, "inline-card-line:"):
+		if line, ok := actionIndex(action, "inline-card-line:"); ok {
+			a.showInlineCard(line + 1)
 		}
 	case action == "toast-close":
 		a.clearToast()
@@ -1081,6 +1091,16 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 
 // onDragStart claims the history divider or the explorer thumb.
 func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	// The inline card roams by its header in every direction. Buttons inside
+	// carry their own ids, so they never reach this branch.
+	if box.ID == "inline-card" && a.inlineCard.Show {
+		a.cardDrag = true
+		a.cardDx = 0
+		a.cardDy = 0
+		a.cardStartLeft = a.inlineCard.Left
+		a.cardStartTop = a.inlineCard.Top
+		return true, nil
+	}
 	if box.ID == "editor-scroll-thumb" || box.ID == "editor-scroll-thumb-2" {
 		group := 0
 		if box.ID == "editor-scroll-thumb-2" {
@@ -1152,6 +1172,17 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 		return true, nil
 	}
 
+	if box.ID == "drawer-resize" {
+		a.drawerDrag = true
+		a.drawerDragExtra = a.drawerExtra
+		a.drawerDx = 0
+		if err := a.page.Form().Focus(ctx, "drawer-resize"); err != nil {
+			return false, err
+		}
+
+		return true, nil
+	}
+
 	if box.ID != "history-divider" || !a.historyVisible() {
 		return false, nil
 	}
@@ -1171,6 +1202,15 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 
 // onDragMove resizes the panes or moves the explorer thumb.
 func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
+	if a.cardDrag {
+		a.cardDx += dx
+		a.cardDy += dy
+		a.inlineCard.Left = a.clampCardLeft(a.cardStartLeft + int(a.cardDx+roundHalf))
+		a.inlineCard.Top = a.clampCardTop(a.cardStartTop + int(a.cardDy+roundHalf))
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
 	if a.editorDrag.active {
 		a.moveEditorScrollDrag(dy)
 		return a.page.Redraw(ctx)
@@ -1183,6 +1223,7 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 		a.selX += dx
 		a.selY += dy
 		a.extendEditSelection(a.selX, a.selY)
+		a.refreshInlineCardSelection()
 		a.refresh()
 
 		return a.page.Redraw(ctx)
@@ -1234,6 +1275,24 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 		return a.page.Redraw(ctx)
 	}
 
+	if a.drawerDrag {
+		a.drawerDx += dx
+		extra := a.drawerDragExtra + int(a.drawerDx+roundHalf)
+		if extra < 0 {
+			extra = 0
+		}
+		if extra > drawerMaxExtra {
+			extra = drawerMaxExtra
+		}
+		if extra == a.drawerExtra {
+			return nil
+		}
+		a.setDrawerExtra(extra)
+		a.persistSession()
+
+		return a.page.Redraw(ctx)
+	}
+
 	if !a.historyDrag {
 		return nil
 	}
@@ -1280,6 +1339,11 @@ func (a *App) onDragEnd(ctx context.Context) error {
 	a.changesScale = 0
 	a.historyListDrag = false
 	a.historyListScale = 0
+	a.drawerDrag = false
+	a.drawerDx = 0
+	a.cardDrag = false
+	a.cardDx = 0
+	a.cardDy = 0
 	if wasSearch && a.searchOpen {
 		return a.page.Form().Focus(ctx, "workspace-search")
 	}
@@ -1431,6 +1495,15 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 
 	if a.settingsOpen {
 		return nil
+	}
+
+	// Ctrl+I opens the line card at the current source line, whether the
+	// editor is in token view or mid-edit. It stays before the editing branch
+	// so the caret line names the card while typing.
+	if a.ctrl && !a.shift && key == "i" {
+		a.showInlineCardAtCurrent()
+
+		return a.page.Redraw(ctx)
 	}
 
 	if a.editing {

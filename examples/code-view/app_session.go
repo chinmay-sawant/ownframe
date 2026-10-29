@@ -121,6 +121,7 @@ func (a *App) restoreState(state sessionState) {
 	if state.HistoryRatio > 0 {
 		a.historyRatio = state.HistoryRatio
 	}
+	a.drawerExtra = clampDrawerExtra(state.DrawerExtra)
 
 	a.devOn = state.DevTools
 	a.page.Window().SetDevTools(state.DevTools)
@@ -208,6 +209,7 @@ func (a *App) sessionState() sessionState {
 		DiffSplit:     a.diffSplit,
 		HistoryRatio:  a.historyRatio,
 		HistoryManual: a.historyManual,
+		DrawerExtra:   a.drawerExtra,
 		Zoom:          a.uiZoom(),
 		Nav:           append([]string(nil), a.nav...),
 		NavAt:         a.navAt,

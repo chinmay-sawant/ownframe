@@ -184,6 +184,7 @@ no position:sticky is used inside this list. */
   top: 1px;
   right: 0;
   bottom: 4px;
+  z-index: 28;
   width: 8px;
   display: block;
 }
@@ -239,7 +240,7 @@ no position:sticky is used inside this list. */
 .side-history { border-bottom: 0; border-top: 1px solid var(--line-soft); }
 .side-history .hist-head { gap: 4px; padding: 0 6px 0 10px; }
 .side-history .hist-hash { width: 42px; flex: 0 0 42px; }
-.side-history .hist-row { gap: 4px; padding: 0 6px 0 7px; }
+.side-history .hist-row { gap: 8px; padding: 0 6px 0 7px; }
 .side-history .hist-subject { font-size: 9.5px; }
 .side-history .hist-when, .side-history .hist-stat { display: none; }
 .side-history .hist-meta { padding-left: 17px; }

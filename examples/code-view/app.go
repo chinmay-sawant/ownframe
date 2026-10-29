@@ -28,6 +28,12 @@ const (
 	chromeLeft    = activityW + sideWidth
 	editorBodyTop = chromeTop + tabStripH + crumbH
 
+	// drawerMaxExtra allows the file/source-control drawer to expand 30%
+	// beyond its 268 px base (268*0.3=80.4), like the VS Code sidebar resize.
+	// drawerMaxW is the widest drawer in 1x pixels.
+	drawerMaxExtra = 80
+	drawerMaxW     = sideWidth + drawerMaxExtra
+
 	rowH = 20
 
 	codeGutter   = 54
@@ -65,7 +71,6 @@ const (
 	changesRailTop       = 62
 	paneScrollW          = 8
 	paneThumbMin         = 24
-	paneScrollLeft       = activityW + sideWidth - paneScrollW
 	thumbCellH           = 14
 	historyExpandedRows  = 3
 	historyAutoRows      = 8
@@ -125,6 +130,14 @@ type App struct {
 	treeDragAt     int
 	treeScale      float64
 	treeWheelAccum float64
+
+	// drawerExtra widens the file/source-control drawer beyond sideWidth,
+	// up to drawerMaxExtra (about 30%), like the VS Code sidebar resize.
+	// drawerDrag resizes the drawer via the drawer-resize handle.
+	drawerExtra     int
+	drawerDrag      bool
+	drawerDragExtra int
+	drawerDx        float64
 
 	tabs   []string
 	active int
@@ -225,6 +238,15 @@ type App struct {
 	hoverPath     string
 	commitTip     commitFloatView
 	inlineCard    inlineCard
+
+	// cardDrag moves the inline card by its header. cardDx/cardDy accumulate
+	// the pointer delta and cardStartLeft/Top pin the drag origin so the card
+	// can roam left, right, up, and down inside the page.
+	cardDrag      bool
+	cardDx        float64
+	cardDy        float64
+	cardStartLeft int
+	cardStartTop  int
 
 	details bool
 	devOn   bool
@@ -941,6 +963,7 @@ func (a *App) buildView() View {
 	v.CommitTip = a.commitTip
 	v.InlineCard = a.inlineCard
 	v.SpaceHeight = a.contentHeight()
+	a.fillDrawer(&v)
 
 	return v
 }
@@ -1173,7 +1196,7 @@ func (a *App) fillDiff(v *View) {
 			track := a.changesTrackHeight()
 			d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
 			d.ScrollTrack = track
-			d.RailLeft = a.zx(paneScrollLeft)
+			d.RailLeft = a.paneRailLeftPx()
 			d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
 			d.RailThumbTop = d.RailTop + d.ScrollTop
 			d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
@@ -1225,7 +1248,7 @@ func (a *App) fillDiff(v *View) {
 			track := a.changesTrackHeight()
 			d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
 			d.ScrollTrack = track
-			d.RailLeft = a.zx(paneScrollLeft)
+			d.RailLeft = a.paneRailLeftPx()
 			d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
 			d.RailThumbTop = d.RailTop + d.ScrollTop
 			d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
@@ -1590,13 +1613,13 @@ func (a *App) buildCommitTip(commit *gitCommit, rowTop int) commitFloatView {
 	pageTop := a.historyPaneTop() + rowTop
 
 	lines := commitTipText(commit.Subject, body, meta, commitTipCols(a.zx(commitTipWidth), a.zf(commitTipCell), a.zx(commitTipPadX)))
-	layout := layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.zx(sideWidth), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
+	layout := layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.drawerVisiblePx(), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
 	if !layout.Show {
 		return commitFloatView{}
 	}
 
 	lines = commitTipText(commit.Subject, body, meta, commitTipCols(layout.Width, a.zf(commitTipCell), a.zx(commitTipPadX)))
-	layout = layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.zx(sideWidth), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
+	layout = layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.drawerVisiblePx(), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
 
 	return commitFloatView{
 		Show:  layout.Show,
@@ -1701,7 +1724,7 @@ func (a *App) fillHistory(v *View) {
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
 	h.Loading = v.Diff.Loading
-	h.RailLeft = a.zx(paneScrollLeft)
+	h.RailLeft = a.paneRailLeftPx()
 	h.RailTop = a.historyPaneTop() + a.zx(histHeadH)
 
 	if a.branchOpen {
@@ -1873,11 +1896,11 @@ func (a *App) editorWidth() int {
 		w -= a.zx(detailsWidth)
 	}
 
-	if w < a.zx(chromeLeft)+a.zx(paneMinWidth) {
-		w = a.zx(chromeLeft) + a.zx(paneMinWidth)
+	if w < a.chromeLeftPx()+a.zx(paneMinWidth) {
+		w = a.chromeLeftPx() + a.zx(paneMinWidth)
 	}
 
-	return w - a.zx(chromeLeft)
+	return w - a.chromeLeftPx()
 }
 
 // codeCols is the number of monospace cells that fit in the focused pane.
@@ -2022,7 +2045,7 @@ func (a *App) stickyTreeRows() []treeRow {
 						IgnoredNote: ancestor.Ignored && !ancestorParentIgnored,
 						Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
 					}
-					row.Short = clipTreeName(row.Indent, true, row.IgnoredNote, row.Name)
+					row.Short = clipTreeName(a.drawerWidth(), row.Indent, true, row.IgnoredNote, row.Name)
 					row.Selected = a.explSel[ancestor.Path]
 					captured = append(captured, row)
 				}
@@ -2138,7 +2161,7 @@ func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[
 				IgnoredNote: node.Ignored && !parentIgnored,
 				Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
 			}
-			row.Short = clipTreeName(row.Indent, row.Dir, row.IgnoredNote, row.Name)
+			row.Short = clipTreeName(a.drawerWidth(), row.Indent, row.Dir, row.IgnoredNote, row.Name)
 			row.Selected = a.explSel[node.Path]
 
 			if node.Dir {
@@ -2191,7 +2214,7 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 	to := min(from+visible, len(all))
 
 	for i := from; i < to; i++ {
-		all[i].Short = clipTreeName(all[i].Indent, false, all[i].IgnoredNote, all[i].Name)
+		all[i].Short = clipTreeName(a.drawerWidth(), all[i].Indent, false, all[i].IgnoredNote, all[i].Name)
 		all[i].Selected = a.explSel[all[i].Path]
 	}
 

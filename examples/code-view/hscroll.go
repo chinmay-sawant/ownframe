@@ -135,7 +135,7 @@ func (a *App) isOverEditor(x, y float64) bool {
 		}
 	}
 
-	left := float64(a.zx(chromeLeft))
+	left := float64(a.chromeLeftPx())
 
 	return x >= left && x <= w
 }
