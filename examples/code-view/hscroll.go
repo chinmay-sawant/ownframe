@@ -139,3 +139,19 @@ func (a *App) isOverEditor(x, y float64) bool {
 
 	return x >= left && x <= w
 }
+
+// hscrollWindow maps the pixel scrollX to a rune window and a sub-column
+// remainder. Unwrapped rows lay out segs[col:col+cols] at -rem px, so the
+// laid text always fits the cell and never trips the engine's overflow wrap.
+// Click and caret math keeps using the full scrollX and stays unchanged:
+// col*cellW+rem always equals scrollX.
+func (a *App) hscrollWindow(cellW float64, cols int) (col, rem int) {
+	if a.wrap || cellW <= 0 || cols <= 0 {
+		return 0, 0
+	}
+
+	col = int(float64(a.scrollX) / cellW)
+	rem = a.scrollX - int(float64(col)*cellW)
+
+	return col, rem
+}

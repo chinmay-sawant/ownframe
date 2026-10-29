@@ -289,7 +289,10 @@ func zoomOverrideCSS(z float64) string {
 	fmt.Fprintf(&b, ".hsplit { height:%s !important; flex-basis:%s !important; }", px(histSplitH), px(histSplitH))
 
 	for _, f := range zoomFontTable() {
-		fmt.Fprintf(&b, "%s { font-size:%.1fpx !important; }", f.sel, f.base*z)
+		// Integral sizes only: the replay shapes text on an integer ppem
+		// grid, so a fractional size would paint wider than the frame the
+		// layout measured and push each run into the next.
+		fmt.Fprintf(&b, "%s { font-size:%dpx !important; }", f.sel, max(1, int(math.Round(f.base*z))))
 	}
 
 	zoomChromeCSS(&b, px)

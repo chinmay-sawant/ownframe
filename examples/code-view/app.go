@@ -1015,6 +1015,25 @@ func (a *App) fillCode(v *View) {
 	v.Rows = a.copyFindRows(v.Rows)
 	a.decorateCodeRows(doc, v.Rows, 0)
 	a.decorateEditRows(v.Rows)
+
+	a.sliceUnwrappedCodeRows(v.Rows, cols)
+}
+
+// sliceUnwrappedCodeRows trims unwrapped rows to their visible rune window.
+// The laid text then fits its line box, so the engine never wraps it into
+// the rows below. EditStart, caret, selection, and click math keep using
+// full-line columns and the full scrollX, so only the painted slice moves.
+func (a *App) sliceUnwrappedCodeRows(rows []codeRow, cols int) {
+	if a.wrap {
+		return
+	}
+
+	col, rem := a.hscrollWindow(a.zf(codeCellW), cols)
+
+	for i := range rows {
+		rows[i].Segments = sliceSegments(rows[i].Segments, col, cols)
+		rows[i].ScrollX = rem
+	}
 }
 
 // diffColumns is the text cell count for the unified or split diff.
@@ -1383,12 +1402,48 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile) {
 			current = a.changeNav.row
 		}
 		markCurrentDiffChange(rows, visible, start, current)
-		if !a.wrap {
-			for i := range visible {
-				visible[i].ScrollX = a.scrollX
+		a.sliceUnwrappedDiffRows(visible)
+		d.Rows = visible
+	}
+}
+
+// sliceUnwrappedDiffRows trims unwrapped diff rows to their visible rune
+// window, with hunk labels clipped the way clipDiffRows clips them. The laid
+// text then fits its cell, so the engine never wraps it into the rows below.
+// EditStart keeps full-line columns and click math keeps the full scrollX.
+func (a *App) sliceUnwrappedDiffRows(visible []diffRow) {
+	if a.wrap {
+		for i := range visible {
+			visible[i].ScrollX = 0
+		}
+
+		return
+	}
+
+	unified, split := a.diffColumns()
+	col, rem := a.hscrollWindow(a.zf(diffCellW), unified)
+
+	for i := range visible {
+		row := &visible[i]
+		if row.Kind == rowExpand {
+			continue
+		}
+
+		if row.Kind == "split" {
+			row.Left = sliceSegments(row.Left, col, split)
+			row.Right = sliceSegments(row.Right, col, split)
+		} else {
+			row.Left = sliceSegments(row.Left, col, unified)
+			row.Right = sliceSegments(row.Right, col, unified)
+		}
+
+		if row.Hunk != "" {
+			if runes := []rune(row.Hunk); len(runes) > unified {
+				row.Hunk = string(runes[:unified]) + "…"
 			}
 		}
-		d.Rows = visible
+
+		row.ScrollX = rem
 	}
 }
 

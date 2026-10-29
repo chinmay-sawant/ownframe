@@ -315,6 +315,7 @@ func (a *App) secondView() secondaryView {
 	}
 
 	a.decorateCodeRows(doc, s.Rows, 1)
+	a.sliceUnwrappedCodeRows(s.Rows, cols)
 
 	return s
 }

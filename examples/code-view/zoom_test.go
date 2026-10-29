@@ -151,7 +151,9 @@ func TestZoomOverrideTracksLevel(t *testing.T) {
 		"--side-w:402px",
 		".trow",
 		".cline",
-		"font-size:18.0px",
+		// Font sizes stay integral: the replay shapes on an integer ppem
+		// grid, so a fractional size paints wider than the layout frame.
+		"font-size:18px",
 		// Percent and negative values must render literally, not as verbs.
 		"left:calc(50% - 420px)",
 		"margin-right:-15px",

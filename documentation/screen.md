@@ -48,6 +48,7 @@ These are blinkless holes, not ownframe bugs. 1.0 does not implement CSS sticky 
 - `position: absolute` on a flex child stays in flow, so `top` and `left` do nothing. Put a block container around the screen. Telegram's `app-thread` class sets `display: block` on the app div.
 - `position: sticky` stays in flow and has no `Fixed` ops. The window translates it with the page. `position: fixed` ops stay untranslated. `Page.Scroll().SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with. `Page.Scroll().SetWindowing(true)` plus `Page.SetScrollWindow` counter-moves each pinned element's `top` by the scroll offset, so the window's translation lands it back at the viewport edge. Telegram uses both.
 - An absolutely positioned element resolves against its containing block's content origin. Padding on the container shifts it. Subtract that padding in the computed `top`.
+- A single-line text box narrower than its content wraps the text anyway and drops spaces at the span boundaries, which reads as overlapped text. Size the box to its content or lay out only the visible runes: the code viewer slices unwrapped rows to their viewport window in Go and paints the slice at the sub-column remainder.
 
 `examples/telegram` is the worked example. Windowing is `Page.Scroll().SetWindowing(true)`, and the pin is `Page.Scroll().SetViewportPinZ(2)`. `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
 

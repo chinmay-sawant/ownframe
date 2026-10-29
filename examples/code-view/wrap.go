@@ -184,6 +184,47 @@ func cellsToSegments(cells []wrapCell) []segment {
 	return out
 }
 
+// sliceSegments returns the runs covering the rune window [start, start+length).
+// Unwrapped rows lay out only their visible window so overflowing text never
+// reaches the engine: blinkless wraps text that overflows its line box even
+// under white-space:pre, dropping spaces at the span boundaries, which reads
+// as overlapped text. The window keeps the full segments for hit testing;
+// only the painted slice is trimmed.
+func sliceSegments(segs []segment, start, length int) []segment {
+	if length <= 0 {
+		return nil
+	}
+
+	if start < 0 {
+		start = 0
+	}
+
+	var (
+		out []segment
+		pos int
+	)
+
+	for _, seg := range segs {
+		runes := []rune(seg.Text)
+		from, to := pos, pos+len(runes)
+		pos = to
+
+		if to <= start {
+			continue
+		}
+
+		if from >= start+length {
+			break
+		}
+
+		lo := max(from, start) - from
+		hi := min(to, start+length) - from
+		out = append(out, segment{Text: string(runes[lo:hi]), Class: seg.Class})
+	}
+
+	return out
+}
+
 // firstRow returns the visual row that starts one source line.
 func (p *wrapPlan) firstRow(line int) int {
 	if line < 0 {

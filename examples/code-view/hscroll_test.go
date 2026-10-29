@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"html/template"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -282,9 +283,23 @@ func TestHScrollHTMLTemplateStyling(t *testing.T) {
 		t.Fatalf("redraw: %v", err)
 	}
 
+	// Unwrapped rows paint only their visible window: the template offset
+	// carries the sub-column remainder, and the full scrollX stays in state.
+	cellW := app.zf(codeCellW)
+	col := int(float64(60) / cellW)
+	rem := 60 - int(float64(col)*cellW)
 	rendered := renderAppHTML(t, app)
-	if !strings.Contains(rendered, "left: -60px") {
-		t.Fatalf("Rendered HTML output does not contain 'left: -60px'")
+	if !strings.Contains(rendered, "left: -"+strconv.Itoa(rem)+"px") {
+		t.Fatalf("Rendered HTML output does not contain 'left: -%dpx'", rem)
+	}
+	if strings.Contains(rendered, "left: -60px") {
+		t.Fatal("Rendered HTML paints the full scroll offset; rows must slice to their window")
+	}
+	cols := app.codeColsForGroup(0)
+	for _, row := range app.View().Rows {
+		if got := segmentRuneLen(row.Segments); got > cols {
+			t.Fatalf("row %d lays %d runes, budget %d", row.Line, got, cols)
+		}
 	}
 
 	// Toggle wrap ON: horizontal translation style is removed.
@@ -327,8 +342,20 @@ func TestHScrollDiffRows(t *testing.T) {
 	}
 
 	rendered := renderAppHTML(t, app)
-	if len(app.View().Diff.Rows) > 0 && !strings.Contains(rendered, "left: -40px") {
-		t.Fatalf("Rendered HTML output for diff does not contain 'left: -40px'")
+	cellW := app.zf(diffCellW)
+	col := int(float64(40) / cellW)
+	rem := 40 - int(float64(col)*cellW)
+	if len(app.View().Diff.Rows) > 0 && !strings.Contains(rendered, "left: -"+strconv.Itoa(rem)+"px") {
+		t.Fatalf("Rendered HTML output for diff does not contain 'left: -%dpx'", rem)
+	}
+	unified, _ := app.diffColumns()
+	for _, row := range app.View().Diff.Rows {
+		if len(row.Left) == 0 {
+			continue
+		}
+		if got := segmentRuneLen(row.Left); got > unified {
+			t.Fatalf("diff row kind %s lays %d runes, budget %d", row.Kind, got, unified)
+		}
 	}
 
 	// Toggle wrap ON resets diff scroll.
