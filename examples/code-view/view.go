@@ -24,6 +24,7 @@ type View struct {
 	HoverPath   string
 
 	Tree         []treeRow
+	StickyTree   []treeRow
 	TreeCount    int
 	TreeTotal    int
 	TreeStart    int

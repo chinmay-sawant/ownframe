@@ -29,6 +29,42 @@ func (w *workspace) writable() bool {
 	return !w.Sample
 }
 
+// createFile writes a brand-new file under the root. It refuses the sample
+// workspace, paths outside the root, and paths the workspace or the disk
+// already holds. Registration (ByPath, tree) stays with the caller: paste
+// calls ensureFile and rescans the target dir, so lazy trees stay
+// incremental.
+func (w *workspace) createFile(path string, data []byte) error {
+	if !w.writable() {
+		return errSampleReadOnly()
+	}
+
+	clean := filepath.Clean(filepath.FromSlash(path))
+	if clean == "." || filepath.IsAbs(clean) || clean == ".." || strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+		return fmt.Errorf("path escapes workspace: %s", path)
+	}
+
+	rel := filepath.ToSlash(clean)
+	if w.ByPath[rel] != nil {
+		return fmt.Errorf("file exists %s", path)
+	}
+
+	target := filepath.Join(w.Root, clean)
+	if _, err := os.Stat(target); err == nil {
+		return fmt.Errorf("file exists %s", path)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(target), workspaceDirMode); err != nil {
+		return fmt.Errorf("create %s: %w", path, err)
+	}
+
+	if err := os.WriteFile(target, data, workspaceFileMode); err != nil {
+		return fmt.Errorf("create %s: %w", path, err)
+	}
+
+	return nil
+}
+
 // writeFile saves one scanned file under the root and refreshes its meta. It
 // refuses the sample, paths outside the root, and files the scan never
 // listed. It does not stage or commit anything in git.

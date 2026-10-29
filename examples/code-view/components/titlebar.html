@@ -30,14 +30,14 @@
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
     </button>
   </div>
-{{if .Chrome}}
+{{if .TitleBar}}
   <div class="win-controls" id="win-controls">
     <button class="win-btn" id="win-min" data-action="win-min" type="button" title="Minimize" aria-label="Minimize"{{if .Modal}} tabindex="-1"{{end}}>
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke-width="1.3" stroke-linecap="round">
         <path d="M2 6h8"/>
       </svg>
     </button>
-{{if .ChromeMax}}
+{{if .TitleBarMax}}
     <button class="win-btn" id="win-max" data-action="win-max" type="button" title="Restore" aria-label="Restore"{{if .Modal}} tabindex="-1"{{end}}>
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke-width="1.1">
         <rect x="3.4" y="1.8" width="6.8" height="6.8" rx="0.5"/>

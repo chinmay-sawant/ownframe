@@ -40,6 +40,9 @@ const (
 	contextMenuDiscardSelID  = contextMenuIDPrefix + "discard-selected"
 	contextMenuCopyMsgID     = contextMenuIDPrefix + "copy-message:"
 	contextMenuCopyIDID      = contextMenuIDPrefix + "copy-id:"
+	contextMenuCopyPathID    = contextMenuIDPrefix + "copy-path:"
+	contextMenuCopyFileID    = contextMenuIDPrefix + "copy-file:"
+	contextMenuPasteID       = contextMenuIDPrefix + "paste:"
 )
 
 // presentMenu paints the right-click rows in the page instead of the shell menu.
@@ -188,6 +191,9 @@ func (a *App) ContextMenuFor(id string) []contextMenuRow {
 			{ID: "redo", Label: "Redo", Enabled: len(a.editRedo) > 0},
 		}
 	}
+	if rows, ok := a.contextMenuForExplorer(id); ok {
+		return rows
+	}
 	if rows, ok := a.scmContextMenu(id); ok {
 		return rows
 	}
@@ -228,7 +234,7 @@ func (a *App) scmContextMenu(id string) ([]contextMenuRow, bool) {
 		return nil, false
 	}
 
-	for _, prefix := range []string{"discard-staged-", "change-", "staged-", "stage-", "discard-", "unstage-"} {
+	for _, prefix := range []string{"discard-staged-", "wrap-staged-", "change-", "staged-", "stage-", "discard-", "unstage-", "wrap-"} {
 		if strings.HasPrefix(id, prefix) {
 			path := strings.TrimPrefix(id, prefix)
 			if prefix == "discard-staged-" {
@@ -449,6 +455,16 @@ func (a *App) MenuAction(ctx context.Context, id string) error {
 		}
 
 		return a.page.Redraw(ctx)
+	case strings.HasPrefix(id, contextMenuCopyPathID):
+		a.copyTreePath(strings.TrimPrefix(id, contextMenuCopyPathID))
+
+		return a.redrawTreeMenu(ctx)
+	case strings.HasPrefix(id, contextMenuCopyFileID):
+		a.copyTreeFile(strings.TrimPrefix(id, contextMenuCopyFileID))
+
+		return a.redrawTreeMenu(ctx)
+	case strings.HasPrefix(id, contextMenuPasteID):
+		return a.pasteTreeCopy(ctx, strings.TrimPrefix(id, contextMenuPasteID))
 	case strings.HasPrefix(id, contextMenuCloseLeftID):
 		if group, index, ok := contextMenuTarget(strings.TrimPrefix(id, contextMenuCloseLeftID)); ok {
 			return a.contextMenuCloseSide(ctx, group, index, true)

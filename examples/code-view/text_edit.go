@@ -96,13 +96,29 @@ func (a *App) onCut(ctx context.Context) (string, bool, error) {
 	return out, true, nil
 }
 
-// onPaste inserts clipboard text at the caret.
+// onPaste inserts clipboard text at the caret. Outside the editor it pastes
+// files into the explorer through the shared Ctrl+V helper, so the chord and
+// the menu row behave the same way.
 func (a *App) onPaste(ctx context.Context, text string) error {
-	if a.settingsOpen || !a.editing || a.edit == nil || text == "" {
+	if a.settingsOpen || text == "" {
 		return nil
 	}
 
-	return a.onType(ctx, text)
+	if a.editing && a.edit != nil {
+		return a.onType(ctx, text)
+	}
+
+	if a.editing {
+		return nil
+	}
+
+	// Explorer paste shares the Ctrl+V helper. Overlays and text fields keep
+	// the event.
+	if !a.pasteTargetReady() {
+		return nil
+	}
+
+	return a.pasteClipboardText(ctx, text)
 }
 
 // onSelectAll selects the whole edit buffer.

@@ -60,7 +60,9 @@ clips with an ellipsis while the full path stays in the tooltip.
   collapse-all button. When the tree is taller than the sidebar, use the mouse
   wheel over the tree, drag the thin scrollbar, use the footer arrows, or move
   focus with the keyboard. Hover a clipped tree row or tab to read its full
-  path in the status bar.
+  path in the status bar. Open folders pin as sticky headers above the scroll
+  window; `Space` toggles the focused folder or opens the focused file.
+  Right-click a row for Copy Path, Copy File, and Paste.
 - Tabs keep up to eight files and shrink their names so all eight stay
   visible. Right-click a tab or its close button for Close, Close Others, and
   Close All; Close Others needs at least two tabs. The Working tree tab has
@@ -265,6 +267,7 @@ half of the rows already loaded.
 | `Ctrl+S` | Save while editing |
 | `Ctrl+A` | Select all in the edit buffer |
 | `Ctrl+C` | Copy the edit selection |
+| `Ctrl+V` | Paste a staged copy or clipboard file into the explorer folder |
 | `Ctrl+\` | Split or close the second editor |
 | `M` or `Ctrl+Shift+V` | Markdown preview |
 | `Z` | Toggle soft wrap in files and diffs |
@@ -288,6 +291,15 @@ branch picker is open, background controls get `tabindex="-1"`, so Tab stays
 inside the overlay. Ctrl+Shift+V now reaches the app; the window keeps plain
 Ctrl+V for paste.
 
+Paste in the explorer with `Ctrl+V` or the Paste menu row. A staged copy
+lands in the focused folder, or beside the open file, with ` (copy)`
+suffixes on collision; a `file://` URI list on the clipboard copies the
+first existing file, and plain text becomes a new `paste.txt` (non-UTF-8
+bytes become `paste.bin`). PNG, JPEG, and PDF bytes copy the same way. A
+`C:\…` clipboard path is translated to `/mnt/<drive>/…` on WSL. The sample
+workspace is read-only, and `-web` exposes no clipboard route, so paste
+there runs from the menu.
+
 ## Accessibility
 
 Icon-only buttons and rows carry accessible names, toggles expose `aria-pressed`,
@@ -309,7 +321,7 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `session.go` | Session file load, save, sanitize |
 | `app_session.go` | Restore and persist layout |
 | `actions.go` | Click, filter, search, and keyboard routing |
-| `context_menu.go` | Tab context-menu rows and close actions |
+| `context_menu.go` | Tab and explorer context-menu rows, close, copy, and paste actions |
 | `context_menu_bridge.go` | Public menu row conversion |
 | `palette.go` | Quick-open rows, selection, and focus |
 | `markdown_preview.go` | Rendered Markdown rows and source anchors |
@@ -321,6 +333,8 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `diff.go` | Unified diff parser, word emphasis, row builders |
 | `diff_wrap.go` | Unified and split diff wrapping |
 | `workspace.go` | Sample and disk scanning, file reads, limits |
+| `explorer_clipboard.go` | Explorer copy path/file, staged paste, and the shared pending-copy state |
+| `explorer_paste_wire.go` | Ctrl+V chord and menu paste into the explorer folder |
 | `workspace_write.go` | Save one file under the root |
 | `workspace_search.go` | Content-search engine |
 | `edit_buffer.go` | Text editing model |
@@ -417,7 +431,7 @@ live and sample commit history, branch filtering without checkout, commit
 expansion, the sidebar history divider, diff-cell clipping, soft-wrap rows,
 in-file find, explorer windowing, wheel and keyboard navigation, background
 file watching and rescan, external branch changes, scrolling after a long file
-opens, devtools, the clipboard, accessibility names and the modal focus trap,
+opens, devtools, the clipboard, explorer copy and paste with Ctrl+V, accessibility names and the modal focus trap,
 and keyboard routing and activation.
 
 Capture the review frames:
