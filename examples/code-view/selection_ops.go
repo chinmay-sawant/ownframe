@@ -21,7 +21,14 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 	}
 
 	if a.confirmOpen {
-		return true, nil
+		switch box.ID {
+		case "confirm-ok", "confirm-cancel", "confirm-backdrop":
+			// Dialog presses must reach Click: a consumed press on the
+			// same id makes Click redraw only, which would freeze the
+			// dialog shut.
+		default:
+			return true, nil
+		}
 	}
 
 	if strings.HasPrefix(box.ID, "diff-edit-line-") && a.mode == "changes" && a.diffSource == "working" {

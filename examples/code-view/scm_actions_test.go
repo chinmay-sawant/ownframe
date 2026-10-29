@@ -193,6 +193,31 @@ func TestDiscardConfirmFlow(t *testing.T) {
 	if !app.View().Confirm.Show {
 		t.Fatal("menu discard did not open confirm")
 	}
+
+	// A real press then click on Cancel must close the dialog. A consumed
+	// press on the same id makes Click redraw only, so the dialog buttons
+	// must not consume the press.
+	if err := app.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	cancel, ok := boxByID(app.Page().Boxes(), "confirm-cancel")
+	if !ok {
+		t.Fatal("missing confirm-cancel")
+	}
+
+	x, y := cancel.X+cancel.W/2, cancel.Y+cancel.H/2
+	if err := app.Page().Edit().Press(ctx, x, y); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := app.Page().Click(ctx, x, y); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.View().Confirm.Show {
+		t.Fatal("press and click on Cancel did not close confirm")
+	}
 }
 
 func TestHistoryContextMenuCopy(t *testing.T) {
