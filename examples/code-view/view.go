@@ -119,6 +119,7 @@ type View struct {
 	BrowseEntries []recentRootRow
 	IsWSL         bool
 	Alert         string
+	ZoomLabel     string
 }
 
 // recentRootRow is one recently opened project root.

@@ -36,7 +36,7 @@ func (a *App) searchViewState() searchView {
 
 	start, end := a.searchScroll.Rows(len(a.searchHits), searchWindowRows)
 	s.ScrollTop, s.ScrollHeight, s.Scroll = a.searchScroll.Thumb(
-		searchWindowRows*searchRowHeight, len(a.searchHits), searchWindowRows, paneThumbMin,
+		searchWindowRows*a.zx(searchRowHeight), len(a.searchHits), searchWindowRows, a.zx(paneThumbMin),
 	)
 
 	for i := start; i < end; i++ {

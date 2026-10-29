@@ -197,6 +197,7 @@ func TestSessionSanitizes(t *testing.T) {
 		DiffSplit:     true,
 		HistoryRatio:  sessionHistoryMin,
 		HistoryManual: true,
+		Zoom:          1,
 	}
 
 	if got := raw.sanitize("/work/repo"); !reflect.DeepEqual(got, want) {
@@ -218,6 +219,10 @@ func TestSessionSanitizes(t *testing.T) {
 
 	if low.SplitRatio != sessionSplitMin || low.HistoryRatio != sessionHistoryMax {
 		t.Fatalf("ratios = %v and %v", low.SplitRatio, low.HistoryRatio)
+	}
+
+	if low.Zoom != 1 {
+		t.Fatalf("zoom = %v, want 1", low.Zoom)
 	}
 
 	many := make([]string, sessionMaxPaths+3)

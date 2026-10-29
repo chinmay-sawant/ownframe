@@ -96,8 +96,8 @@ func TestDisabledKeyZoomStaysStill(t *testing.T) {
 	}
 
 	for _, key := range keys {
-		if !off.zoomKey(key, true, mods) {
-			t.Fatalf("Control+%v was not consumed", key)
+		if off.zoomKey(key, true, mods) {
+			t.Fatalf("Control+%v was consumed", key)
 		}
 	}
 

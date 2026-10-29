@@ -46,6 +46,7 @@ type sessionState struct {
 	DiffSplit     bool                 `json:"diffSplit"`
 	HistoryRatio  float64              `json:"historyRatio"`
 	HistoryManual bool                 `json:"historyManual"`
+	Zoom          float64              `json:"zoom,omitempty"`
 	BranchLogs    map[string]commitLog `json:"branchLogs,omitempty"`
 }
 
@@ -171,6 +172,7 @@ func (s sessionState) sanitize(root string) sessionState {
 	s.FocusGroup = clampSessionIndex(s.FocusGroup, sessionGroupCount)
 	s.SplitRatio = clampSessionRatio(s.SplitRatio, sessionSplitMin, sessionSplitMax)
 	s.HistoryRatio = clampSessionRatio(s.HistoryRatio, sessionHistoryMin, sessionHistoryMax)
+	s.Zoom = clampSessionZoom(s.Zoom)
 
 	return s
 }
@@ -268,6 +270,16 @@ func clampSessionRatio(value, low, high float64) float64 {
 
 	if value > high {
 		return high
+	}
+
+	return value
+}
+
+// clampSessionZoom keeps a restored layout zoom inside the usable range,
+// defaulting a missing or wild value to 100 percent.
+func clampSessionZoom(value float64) float64 {
+	if value < zoomMin || value > zoomMax {
+		return 1
 	}
 
 	return value

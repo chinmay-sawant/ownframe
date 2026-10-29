@@ -216,6 +216,11 @@ type App struct {
 	devOn   bool
 	chrome  bool
 
+	// zoom is the layout multiplier, 1 for 100 percent. It scales the row
+	// grid, the chrome, and the reader fonts together, and persists per
+	// workspace in the session.
+	zoom float64
+
 	scrollY       int
 	viewportH     int
 	scrollPending bool
@@ -457,7 +462,7 @@ const (
 // flyout is absolutely positioned inside the drawer, so this is relative
 // to the drawer box.
 func (a *App) recentFlyoutX() int {
-	return fileDrawerW + fileFlyoutGap
+	return a.zx(fileDrawerW) + a.zx(fileFlyoutGap)
 }
 
 // recentFlyoutY lines the flyout top up with the recents toggle row,
@@ -465,14 +470,14 @@ func (a *App) recentFlyoutX() int {
 // four 30px rows, the open picker's input block, and the capped
 // locations list.
 func (a *App) recentFlyoutY() int {
-	y := fileDrawerPad + fileItemH*4 - fileDrawerPad
+	y := a.zx(fileDrawerPad) + a.zx(fileItemH)*4 - a.zx(fileDrawerPad)
 	if a.projectOpen {
 		rows := len(a.quickRootRows())
 		if rows > locRowMax {
 			rows = locRowMax
 		}
 
-		y += filePickerH + locLabelH + rows*fileItemH + locPad
+		y += a.zx(filePickerH) + a.zx(locLabelH) + rows*a.zx(fileItemH) + a.zx(locPad)
 	}
 
 	return y
@@ -876,6 +881,8 @@ func (a *App) buildView() View {
 		v.ChromeMax = a.page.Window().Maximized()
 	}
 
+	v.ZoomLabel = a.zoomLabel()
+
 	v.CmdTitle = "Search files"
 	if a.mode == "changes" {
 		if v.Diff.Selected != "" {
@@ -977,8 +984,8 @@ func (a *App) fillCode(v *View) {
 func (a *App) diffColumns() (int, int) {
 	w := a.editorWidth()
 
-	unified := int(float64(w-diffUnifiedW) / diffCellW)
-	split := int(float64(w/2-diffSplitW) / diffCellW)
+	unified := int(float64(w-a.zx(diffUnifiedW)) / a.zf(diffCellW))
+	split := int(float64(w/2-a.zx(diffSplitW)) / a.zf(diffCellW))
 
 	if unified < wrapMinCols {
 		unified = wrapMinCols
@@ -1057,12 +1064,12 @@ func (a *App) fillDiff(v *View) {
 
 	if d.Scroll {
 		track := a.changesTrackHeight()
-		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, paneThumbMin)
+		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
 		d.ScrollTrack = track
-		d.RailLeft = paneScrollLeft
-		d.RailTop = chromeTop + changesRailTop
+		d.RailLeft = a.zx(paneScrollLeft)
+		d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
 		d.RailThumbTop = d.RailTop + d.ScrollTop
-		d.ThumbCells = max(1, d.ScrollHeight/thumbCellH)
+		d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
 	}
 
 	for _, file := range files[from:to] {
@@ -1226,7 +1233,7 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
-		current := a.scrollY / rowH
+		current := a.scrollY / a.zx(rowH)
 		if a.changeNav.valid && a.changeNav.path == file.Path &&
 			a.changeNav.mode == a.mode && a.changeNav.scroll == a.scrollY {
 			current = a.changeNav.row
@@ -1293,9 +1300,9 @@ func (a *App) findCommit(hash string) *gitCommit {
 
 // bodyHeight is the editor body below the tab strip and breadcrumbs.
 func (a *App) bodyHeight() int {
-	h := a.viewportH - editorBodyTop - chromeBottom
-	if h < rowH {
-		h = rowH
+	h := a.viewportH - a.zx(editorBodyTop) - a.zx(chromeBottom)
+	if h < a.zx(rowH) {
+		h = a.zx(rowH)
 	}
 
 	return h
@@ -1313,7 +1320,7 @@ func (a *App) historyHeight() int {
 	}
 
 	stack := a.drawerStackHeight()
-	maxH := stack - changesMinH
+	maxH := stack - a.zx(changesMinH)
 
 	h := 0
 	if !a.historyManual {
@@ -1322,15 +1329,15 @@ func (a *App) historyHeight() int {
 			rows = 1
 		}
 
-		h = histHeadH + historyPad + rows*histRowH + historyAutoPad
+		h = a.zx(histHeadH) + a.zx(historyPad) + rows*a.zx(histRowH) + a.zx(historyAutoPad)
 	} else {
 		h = int(float64(stack) * a.historyRatio)
 	}
-	if h < histMinH {
-		h = histMinH
+	if h < a.zx(histMinH) {
+		h = a.zx(histMinH)
 	}
 
-	if maxH < histMinH {
+	if maxH < a.zx(histMinH) {
 		return stack / halfDivisor
 	}
 
@@ -1343,13 +1350,13 @@ func (a *App) historyHeight() int {
 
 // historyPaneTop is the page y of the history rail's top edge.
 func (a *App) historyPaneTop() int {
-	return a.viewportH - chromeBottom - treeFootH - a.historyHeight()
+	return a.viewportH - a.zx(chromeBottom) - a.zx(treeFootH) - a.historyHeight()
 }
 
 // historyVisibleRows is how many 42 px commit rows fit in the rail.
 func (a *App) historyVisibleRows() int {
-	h := a.historyHeight() - histHeadH - historyPad
-	rows := h / histRowH
+	h := a.historyHeight() - a.zx(histHeadH) - a.zx(historyPad)
+	rows := h / a.zx(histRowH)
 	if rows < 1 {
 		rows = 1
 	}
@@ -1359,7 +1366,7 @@ func (a *App) historyVisibleRows() int {
 
 // historyTrackHeight is the rail's pixel height below its header.
 func (a *App) historyTrackHeight() int {
-	h := a.historyHeight() - histHeadH - historyPad
+	h := a.historyHeight() - a.zx(histHeadH) - a.zx(historyPad)
 	if h < 1 {
 		h = 1
 	}
@@ -1383,14 +1390,14 @@ func (a *App) buildCommitTip(commit *gitCommit, rowTop int) commitFloatView {
 	meta := commit.Short + " · " + commit.Author + " · " + commit.Date
 	pageTop := a.historyPaneTop() + rowTop
 
-	lines := commitTipText(commit.Subject, body, meta, commitTipCols(commitTipWidth))
-	layout := layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
+	lines := commitTipText(commit.Subject, body, meta, commitTipCols(a.zx(commitTipWidth), a.zf(commitTipCell), a.zx(commitTipPadX)))
+	layout := layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.zx(sideWidth), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
 	if !layout.Show {
 		return commitFloatView{}
 	}
 
-	lines = commitTipText(commit.Subject, body, meta, commitTipCols(layout.Width))
-	layout = layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
+	lines = commitTipText(commit.Subject, body, meta, commitTipCols(layout.Width, a.zf(commitTipCell), a.zx(commitTipPadX)))
+	layout = layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.zx(sideWidth), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
 
 	return commitFloatView{
 		Show:  layout.Show,
@@ -1407,7 +1414,7 @@ func (a *App) diffBodyHeight() int { return a.bodyHeight() }
 // drawerStackHeight is the Source Control space between the side header and
 // footer, after the changes header and divider.
 func (a *App) drawerStackHeight() int {
-	h := a.viewportH - chromeTop - chromeBottom - treeHeadH - treeFootH - changesHeadH - histSplitH
+	h := a.viewportH - a.zx(chromeTop) - a.zx(chromeBottom) - a.zx(treeHeadH) - a.zx(treeFootH) - a.zx(changesHeadH) - a.zx(histSplitH)
 	if h < 1 {
 		h = 1
 	}
@@ -1419,7 +1426,7 @@ func (a *App) drawerStackHeight() int {
 func (a *App) changeVisibleRows() int {
 	stack := a.drawerStackHeight()
 	body := stack - a.historyHeight()
-	rows := (body - changeListPad) / changeRowH
+	rows := (body - a.zx(changeListPad)) / a.zx(changeRowH)
 	if rows < 1 {
 		rows = 1
 	}
@@ -1460,7 +1467,7 @@ func (a *App) scrollChanges(rows int) {
 
 // changesTrackHeight is the pixel height of the changed-file rail.
 func (a *App) changesTrackHeight() int {
-	h := a.drawerStackHeight() - a.historyHeight() - changeListPad
+	h := a.drawerStackHeight() - a.historyHeight() - a.zx(changeListPad)
 	if h < 1 {
 		h = 1
 	}
@@ -1495,8 +1502,8 @@ func (a *App) fillHistory(v *View) {
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
 	h.Loading = v.Diff.Loading
-	h.RailLeft = paneScrollLeft
-	h.RailTop = a.historyPaneTop() + histHeadH
+	h.RailLeft = a.zx(paneScrollLeft)
+	h.RailTop = a.historyPaneTop() + a.zx(histHeadH)
 
 	if a.branchOpen {
 		a.fillBranchList(&h)
@@ -1516,14 +1523,14 @@ func (a *App) fillHistory(v *View) {
 
 	if h.Scroll {
 		track := a.historyTrackHeight()
-		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, paneThumbMin)
+		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
 		h.ScrollTrack = track
 		h.RailThumbTop = h.RailTop + h.ScrollTop
-		h.ThumbCells = max(1, h.ScrollHeight/thumbCellH)
+		h.ThumbCells = max(1, h.ScrollHeight/a.zx(thumbCellH))
 	}
 
 	graph := buildCommitGraph(a.commits.Commits)
-	tipTop := histHeadH + historyPad
+	tipTop := a.zx(histHeadH) + a.zx(historyPad)
 	tipRowTop := 0
 
 	for i := from; i < to; i++ {
@@ -1556,17 +1563,17 @@ func (a *App) fillHistory(v *View) {
 		}
 
 		h.Commits = append(h.Commits, row)
-		tipTop += histRowH
+		tipTop += a.zx(histRowH)
 
 		if a.hoverCommit == commit.Short {
 			tipRowTop = rowTop
-			tip := rowTop + histRowH + historyTipGap
-			if tip+historyTipFlipH > h.Height {
-				tip = rowTop - historyTipFlipH
+			tip := rowTop + a.zx(histRowH) + a.zx(historyTipGap)
+			if tip+a.zx(historyTipFlipH) > h.Height {
+				tip = rowTop - a.zx(historyTipFlipH)
 			}
 
-			if tip < histHeadH {
-				tip = histHeadH
+			if tip < a.zx(histHeadH) {
+				tip = a.zx(histHeadH)
 			}
 
 			h.Tip.Top = tip
@@ -1599,7 +1606,7 @@ func (a *App) fillHistory(v *View) {
 
 // fillBranchList builds the filtered branch picker rows.
 func (a *App) fillBranchList(h *historyView) {
-	limit := (h.Height - branchPickerPad) / branchPickerRowH
+	limit := (h.Height - a.zx(branchPickerPad)) / a.zx(branchPickerRowH)
 	if limit < branchPickerMinRows {
 		limit = branchPickerMinRows
 	}
@@ -1629,7 +1636,7 @@ func (a *App) contentHeight() int {
 		}
 	}
 
-	h := editorBodyTop + rows*rowH + chromeBottom
+	h := a.zx(editorBodyTop) + rows*a.zx(rowH) + a.zx(chromeBottom)
 	if h < a.viewportH {
 		h = a.viewportH
 	}
@@ -1664,14 +1671,14 @@ func (a *App) editorWidth() int {
 	}
 
 	if a.details {
-		w -= detailsWidth
+		w -= a.zx(detailsWidth)
 	}
 
-	if w < chromeLeft+paneMinWidth {
-		w = chromeLeft + paneMinWidth
+	if w < a.zx(chromeLeft)+a.zx(paneMinWidth) {
+		w = a.zx(chromeLeft) + a.zx(paneMinWidth)
 	}
 
-	return w - chromeLeft
+	return w - a.zx(chromeLeft)
 }
 
 // codeCols is the number of monospace cells that fit in the focused pane.
@@ -1682,10 +1689,10 @@ func (a *App) codeCols() int {
 // topSourceLine is the source line at the top of the code view.
 func (a *App) topSourceLine() int {
 	if doc := a.activeDoc(); a.wrap && doc != nil {
-		return doc.wrapped(a.codeCols()).lineAt(a.scrollY / rowH)
+		return doc.wrapped(a.codeCols()).lineAt(a.scrollY / a.zx(rowH))
 	}
 
-	return a.scrollY / rowH
+	return a.scrollY / a.zx(rowH)
 }
 
 // toggleWrap flips soft wrap and keeps the top source line in view.
@@ -1709,12 +1716,12 @@ func (a *App) toggleWrap() {
 	a.viewportCols = 0
 
 	if doc := a.activeDoc(); doc != nil && a.wrap {
-		a.scrollTo(doc.wrapped(a.codeCols()).firstRow(line) * rowH)
+		a.scrollTo(doc.wrapped(a.codeCols()).firstRow(line) * a.zx(rowH))
 
 		return
 	}
 
-	a.scrollTo(line * rowH)
+	a.scrollTo(line * a.zx(rowH))
 }
 
 // scrollTo moves the page and rebuilds the visible slice.
@@ -1755,8 +1762,8 @@ func (a *App) resetFind() {
 
 // treeVisibleRows is the number of 26 px rows that fit in the sidebar.
 func (a *App) treeVisibleRows() int {
-	h := a.viewportH - chromeTop - chromeBottom - treeHeadH - treeFilterH - treeFootH - treeInnerPad
-	rows := h / treeRowH
+	h := a.viewportH - a.zx(chromeTop) - a.zx(chromeBottom) - a.zx(treeHeadH) - a.zx(treeFilterH) - a.zx(treeFootH) - a.zx(treeInnerPad)
+	rows := h / a.zx(treeRowH)
 	if rows < 1 {
 		rows = 1
 	}
@@ -1830,7 +1837,7 @@ func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[
 				Dir:         node.Dir,
 				Ignored:     node.Ignored,
 				IgnoredNote: node.Ignored && !parentIgnored,
-				Indent:      treePad + depth*treeIndent,
+				Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
 			}
 			row.Short = clipTreeName(row.Indent, row.Dir, row.IgnoredNote, row.Name)
 
@@ -1869,7 +1876,7 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 		all = append(all, treeRow{
 			Path:        file.Path,
 			Name:        file.Name,
-			Indent:      treePad,
+			Indent:      a.zx(treePad),
 			Ignored:     file.Ignored,
 			IgnoredNote: file.Ignored,
 			Lang:        file.Lang,
@@ -1914,9 +1921,9 @@ func (a *App) fillTreeScroll(v *View) {
 		return
 	}
 
-	track := v.TreeVisible * treeRowH
+	track := v.TreeVisible * a.zx(treeRowH)
 	thumb := track * v.TreeVisible / v.TreeTotal
-	if thumb < treeThumbMin {
+	if thumb < a.zx(treeThumbMin) {
 		thumb = 18
 	}
 
@@ -2894,7 +2901,7 @@ func (a *App) jumpHunk(delta int) {
 		return
 	}
 
-	current := a.scrollY / rowH
+	current := a.scrollY / a.zx(rowH)
 	target := -1
 
 	for i, row := range rows {
@@ -2922,7 +2929,7 @@ func (a *App) jumpHunk(delta int) {
 		return
 	}
 
-	a.scrollTo(target * rowH)
+	a.scrollTo(target * a.zx(rowH))
 }
 
 // showToast publishes one message card.
@@ -2948,6 +2955,7 @@ func (a *App) togglePreview() {
 
 	a.preview = !a.preview
 	if a.preview {
+		a.finishEdit()
 		doc.ensurePreview(a.previewCols())
 	}
 
@@ -2986,7 +2994,7 @@ func (a *App) scrollToSourceLine(line int) {
 		target = doc.wrapped(a.codeCols()).firstRow(line)
 	}
 
-	a.scrollTo(target * rowH)
+	a.scrollTo(target * a.zx(rowH))
 }
 
 // toggleDetails opens or closes the details drawer.

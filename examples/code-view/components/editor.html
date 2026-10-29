@@ -69,10 +69,11 @@
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
       <span class="crumb-path file-path" id="crumb-path" title="{{.Active}}">{{if .ActiveDirShort}}<span class="file-dir">{{.ActiveDirShort}}/</span>{{end}}<b>{{.ActiveNameShort}}</b></span>
       {{if .Editing}}
+      <span class="tabs-fill"></span>
       {{if .EditDirty}}<span class="edit-flag" id="edit-flag">Changes made</span>{{end}}
+      {{if .Previewable}}<button class="crumb-btn" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)"{{if .Modal}} tabindex="-1"{{end}}>{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
       <button class="crumb-btn on" id="edit-save" data-action="edit-save" type="button" title="Save (Ctrl+S)">Save</button>
       <button class="crumb-btn" id="edit-toggle" data-action="edit-toggle" type="button" title="Back to the source view (Esc)">Done</button>
-      <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.LineCount}} lines · Ctrl+S saves</span>
       {{else if .FindOpen}}
       <div class="findbar" id="findbar">
@@ -211,7 +212,7 @@
           {{range .PreviewRows}}
           <div class="prow prow-{{.Kind}}">
             <span class="pmark">{{.Marker}}</span>
-            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px;height:20px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
           </div>
           {{end}}
         </div>
@@ -294,7 +295,7 @@
           {{range .Second.PreviewRows}}
           <div class="prow prow-{{.Kind}}">
             <span class="pmark">{{.Marker}}</span>
-            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px;height:20px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
           </div>
           {{end}}
         </div>

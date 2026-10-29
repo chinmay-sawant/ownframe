@@ -212,7 +212,7 @@
 
 .os-choice .file-item { flex: 1; justify-content: center; }
 
-.file-alert { position: fixed; right: 14px; bottom: 34px; width: 300px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--panel); color: var(--text); font-size: 11px; z-index: 65; }
+.file-alert { position: fixed; right: 14px; bottom: calc(var(--status-h) + 10px); width: 300px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--panel); color: var(--text); font-size: 11px; z-index: 65; }
 
 .file-alert span { flex: 1; min-width: 0; }
 
@@ -472,7 +472,7 @@ button.sb-item:hover { background-color: var(--panel-3); color: var(--text); }
 .toast-layer {
   position: fixed;
   left: 16px;
-  bottom: 34px;
+  bottom: calc(var(--status-h) + 10px);
   z-index: 40;
   pointer-events: none;
 }

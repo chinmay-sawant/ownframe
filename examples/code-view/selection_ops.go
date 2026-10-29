@@ -98,7 +98,7 @@ func (a *App) editPointAt(x, y float64) (int, int, bool) {
 	}
 
 	cols := a.codeColsForGroup(0)
-	visual := visualRowAt(int(y), int(box.Y), a.scrollY, rowH)
+	visual := visualRowAt(int(y), int(box.Y), a.scrollY, a.zx(rowH))
 	line := visual
 
 	rowStart := 0
@@ -111,11 +111,11 @@ func (a *App) editPointAt(x, y float64) (int, int, bool) {
 		}
 	}
 
-	textLeft := box.X + editTextLeft
+	textLeft := box.X + float64(a.zx(editTextLeft))
 	if !a.wrap {
 		x += float64(a.scrollX)
 	}
-	displayCol := rowStart + int((x-textLeft)/codeCellW+roundHalf)
+	displayCol := rowStart + int((x-textLeft)/a.zf(codeCellW)+roundHalf)
 	length := 0
 	if line >= 0 && line < len(doc.Lines) {
 		length = utf8.RuneCountInString(expandTabs(doc.Lines[line]))

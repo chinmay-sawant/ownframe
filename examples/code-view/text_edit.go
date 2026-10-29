@@ -330,17 +330,17 @@ func (a *App) ensureEditCaretVisible() {
 		row = caretVisualRow(doc.wrapped(a.codeColsForGroup(0)).Rows, line, col)
 	}
 
-	top := a.scrollY / rowH
-	visible := a.bodyHeight() / rowH
+	top := a.scrollY / a.zx(rowH)
+	visible := a.bodyHeight() / a.zx(rowH)
 	if visible < 1 {
 		visible = 1
 	}
 
 	switch {
 	case row < top:
-		a.scrollTo(row * rowH)
+		a.scrollTo(row * a.zx(rowH))
 	case row >= top+visible:
-		a.scrollTo((row - visible + 1) * rowH)
+		a.scrollTo((row - visible + 1) * a.zx(rowH))
 	}
 }
 
@@ -397,7 +397,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 
 		if row.Line == caretLine && row.Start == caretStart && caretCol >= row.Start && caretCol <= row.Start+length {
 			row.Caret = true
-			row.CaretLeft = int(float64(caretCol-row.Start) * codeCellW)
+			row.CaretLeft = int(float64(caretCol-row.Start) * a.zf(codeCellW))
 			if !a.wrap && a.scrollX > 0 {
 				row.CaretLeft -= a.scrollX
 			}
@@ -424,7 +424,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 			continue
 		}
 
-		left, width := selectionSpan(from, to, row.Start, newline)
+		left, width := selectionSpan(from, to, row.Start, newline, a.zf(codeCellW))
 		row.Selection = true
 		row.SelectionLeft = left
 		row.SelectionWidth = width
@@ -437,7 +437,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 // selectionSpan is the highlight box for one visual row. The right edge is
 // the ceiling of the cell grid, so the last selected glyph stays inside the
 // box when the cell width is not a whole pixel.
-func selectionSpan(from, to, rowStart int, newline bool) (int, int) {
+func selectionSpan(from, to, rowStart int, newline bool, cellW float64) (int, int) {
 	cols := to - rowStart
 	if newline {
 		cols++
@@ -447,8 +447,8 @@ func selectionSpan(from, to, rowStart int, newline bool) (int, int) {
 		cols = 0
 	}
 
-	left := int(math.Floor(float64(from-rowStart) * codeCellW))
-	right := int(math.Ceil(float64(cols) * codeCellW))
+	left := int(math.Floor(float64(from-rowStart) * cellW))
+	right := int(math.Ceil(float64(cols) * cellW))
 	if right < left {
 		right = left
 	}

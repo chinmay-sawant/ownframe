@@ -8,7 +8,7 @@ import (
 func TestCommitTipLayoutRightOfSidebar(t *testing.T) {
 	t.Parallel()
 
-	got := layoutCommitTip(1500, 900, 46, 268, 300, 42, 4)
+	got := layoutCommitTip(1500, 900, 46, 268, 300, 42, 4, 1)
 
 	if !got.Show {
 		t.Fatal("tip is hidden on a hovered row")
@@ -34,7 +34,7 @@ func TestCommitTipLayoutRightOfSidebar(t *testing.T) {
 		t.Fatalf("tip overflows the page: left %d width %d", got.Left, got.Width)
 	}
 
-	if got := layoutCommitTip(1500, 900, 46, 268, 0, 42, 1); got.Top != commitTipEdge {
+	if got := layoutCommitTip(1500, 900, 46, 268, 0, 42, 1, 1); got.Top != commitTipEdge {
 		t.Fatalf("top = %d, want the %d px floor", got.Top, commitTipEdge)
 	}
 }
@@ -44,7 +44,7 @@ func TestCommitTipClampsBottom(t *testing.T) {
 
 	const pageH = 320
 
-	got := layoutCommitTip(1500, pageH, 46, 268, 300, 42, 9)
+	got := layoutCommitTip(1500, pageH, 46, 268, 300, 42, 9, 1)
 	if want := commitTipPadH + 9*commitTipLineH; got.Height != want {
 		t.Fatalf("height = %d, want %d", got.Height, want)
 	}
@@ -57,7 +57,7 @@ func TestCommitTipClampsBottom(t *testing.T) {
 		t.Fatalf("tip bottom = %d, want at most %d", got.Top+got.Height, pageH-commitTipEdge)
 	}
 
-	if got := layoutCommitTip(1500, pageH, 46, 268, 10, 42, 40); got.Height != commitTipMaxH {
+	if got := layoutCommitTip(1500, pageH, 46, 268, 10, 42, 40, 1); got.Height != commitTipMaxH {
 		t.Fatalf("height = %d, want the %d px cap", got.Height, commitTipMaxH)
 	}
 }
@@ -71,7 +71,7 @@ func TestCommitTipFallsBackInsideWhenNarrow(t *testing.T) {
 		sideW    = 268
 	)
 
-	got := layoutCommitTip(pageW, 900, sideLeft, sideW, 300, 42, 3)
+	got := layoutCommitTip(pageW, 900, sideLeft, sideW, 300, 42, 3, 1)
 	if !got.Show {
 		t.Fatal("tip is hidden on a narrow page")
 	}
@@ -92,11 +92,11 @@ func TestCommitTipFallsBackInsideWhenNarrow(t *testing.T) {
 		t.Fatalf("top = %d, want the row band at %d", got.Top, want)
 	}
 
-	if got := layoutCommitTip(0, 900, sideLeft, sideW, 300, 42, 3); got.Show {
+	if got := layoutCommitTip(0, 900, sideLeft, sideW, 300, 42, 3, 1); got.Show {
 		t.Fatal("tip shows on an empty page")
 	}
 
-	if got := layoutCommitTip(pageW, 900, sideLeft, sideW, 300, 42, 0); got.Show {
+	if got := layoutCommitTip(pageW, 900, sideLeft, sideW, 300, 42, 0, 1); got.Show {
 		t.Fatal("tip shows without text")
 	}
 }
@@ -187,7 +187,7 @@ func TestHistorySubjectKeepsWordsOnTwoLines(t *testing.T) {
 func TestCommitTipColsFillTheCard(t *testing.T) {
 	t.Parallel()
 
-	cols := commitTipCols(commitTipWidth)
+	cols := commitTipCols(commitTipWidth, commitTipCell, commitTipPadX)
 	if cols < 60 {
 		t.Fatalf("cols = %d, want the hover card filled", cols)
 	}

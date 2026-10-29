@@ -73,7 +73,7 @@ func main() {
 	}
 	options := ownframe.WindowOptions{CustomChrome: app.chrome, PlacementID: "code-view"}
 	if app.chrome {
-		options.Draggable = chromeDrag
+		options.Draggable = app.chromeDrag
 	}
 	runErr := ownframe.RunWithOptions(ctx, app.Page(), options)
 	app.StopWatcher()
@@ -84,11 +84,11 @@ func main() {
 }
 
 // chromeDrag moves a borderless code-view window by its titlebar. Ebiten
-// hands the cursor in device pixels, so the 42 px strip scales with the
-// display. A press on a titlebar button still reaches the page as a click
-// when it is released without moving.
-func chromeDrag(x, y int) bool {
-	return float64(y) < float64(chromeTop)*chromeDragScale()
+// hands the cursor in device pixels, so the strip scales with the display
+// and the layout zoom. A press on a titlebar button still reaches the page
+// as a click when it is released without moving.
+func (a *App) chromeDrag(x, y int) bool {
+	return float64(y) < float64(a.zx(chromeTop))*chromeDragScale()
 }
 
 // chromeDragScale reads the monitor scale for the drag strip. Without a

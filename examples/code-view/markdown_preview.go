@@ -207,6 +207,10 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 		case strings.HasPrefix(trimmed, ">"):
 			text := strings.TrimSpace(strings.TrimLeft(trimmed, ">"))
 			start := len(rows)
+			if len(rows) > 0 && rows[len(rows)-1].Kind == "li" {
+				rows = append(rows, previewRow{Kind: "gap"})
+				start++
+			}
 			rows = appendPreviewWrapped(rows, "quote", "", text, cols)
 			anchors[i] = start
 			i++
@@ -230,6 +234,10 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 			}
 
 			startRow := len(rows)
+			if len(rows) > 0 && rows[len(rows)-1].Kind == "li" {
+				rows = append(rows, previewRow{Kind: "gap"})
+				startRow++
+			}
 			rows = appendPreviewWrapped(rows, "p", "", strings.Join(parts, " "), cols)
 			anchors[start] = startRow
 		}
@@ -310,10 +318,21 @@ func specialStart(line string) bool {
 	return marker != ""
 }
 
-// listMarker returns the rendered marker and the item text.
+// listMarker returns the rendered marker and the item text. Task list items
+// keep their checkbox state in the marker so "- [ ]" never prints literally.
 func listMarker(trimmed string) (string, string) {
 	if len(trimmed) > 1 && strings.ContainsRune("-*+", rune(trimmed[0])) && trimmed[1] == ' ' {
-		return "•", strings.TrimSpace(trimmed[2:])
+		item := strings.TrimSpace(trimmed[2:])
+		if rest, ok := strings.CutPrefix(item, "[ ] "); ok {
+			return "☐", strings.TrimSpace(rest)
+		}
+		if rest, ok := strings.CutPrefix(item, "[x] "); ok {
+			return "☑", strings.TrimSpace(rest)
+		}
+		if rest, ok := strings.CutPrefix(item, "[X] "); ok {
+			return "☑", strings.TrimSpace(rest)
+		}
+		return "•", item
 	}
 
 	j := 0

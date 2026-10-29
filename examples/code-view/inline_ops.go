@@ -30,7 +30,7 @@ func (a *App) decorateCodeRows(doc *fileDoc, rows []codeRow, group int) {
 	if a.split {
 		scroll = a.scrollGroup[group]
 	}
-	current := scroll / rowH
+	current := scroll / a.zx(rowH)
 	if a.changeNav.valid && a.changeNav.path == doc.Path && a.changeNav.mode == a.mode &&
 		a.changeNav.group == group && a.changeNav.scroll == scroll {
 		current = a.changeNav.row
@@ -127,7 +127,7 @@ func (a *App) showInlineCard(line int) {
 		visual = plan.firstRow(line - 1)
 	}
 
-	rowTop := editorBodyTop + (visual-a.scrollY/rowH)*rowH
+	rowTop := a.zx(editorBodyTop) + (visual-a.scrollY/a.zx(rowH))*a.zx(rowH)
 	newText := ""
 	if line-1 < len(doc.Lines) {
 		newText = doc.Lines[line-1]
@@ -135,7 +135,7 @@ func (a *App) showInlineCard(line int) {
 
 	card := inlineCardFor(rowTop, a.pageWidth(), a.viewportH, line, change, doc.Path, newText)
 	card.Line = line
-	card.Left = chromeLeft + inlineCardLeft
+	card.Left = a.zx(chromeLeft) + inlineCardLeft
 	card.HasPrev = index > 0
 	card.HasNext = index >= 0 && index < len(lines)-1
 

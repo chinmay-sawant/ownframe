@@ -122,12 +122,12 @@ func (a *App) centerCaretInView() {
 		}
 	}
 
-	capacity := a.editorClearHeight() / rowH
+	capacity := a.editorClearHeight() / a.zx(rowH)
 	if capacity < 1 {
 		capacity = 1
 	}
 
-	a.scrollTo(row*rowH - (capacity-1)*rowH/halfDivisor)
+	a.scrollTo(row*a.zx(rowH) - (capacity-1)*a.zx(rowH)/halfDivisor)
 }
 
 // diffDisplayColForBox maps a press x position over one diff edit button to
@@ -166,8 +166,8 @@ func (a *App) diffDisplayColForBox(box ownframe.Box, x float64) int {
 		if row != nil {
 			start = row.EditStart
 		}
-		textLeft := codeBody.X + diffUnifiedText
-		return max(0, int((x-textLeft+float64(scrollX))/diffCellW+roundHalf)+start)
+		textLeft := codeBody.X + float64(a.zx(diffUnifiedText))
+		return max(0, int((x-textLeft+float64(scrollX))/a.zf(diffCellW)+roundHalf)+start)
 	}
 
 	w := codeBody.W
@@ -190,16 +190,16 @@ func (a *App) diffDisplayColForBox(box ownframe.Box, x float64) int {
 		if row != nil {
 			start = row.EditStartL
 		}
-		textLeft := codeBody.X + diffSplitLeftText
-		return max(0, int((x-textLeft+float64(scrollX))/diffCellW+roundHalf)+start)
+		textLeft := codeBody.X + float64(a.zx(diffSplitLeftText))
+		return max(0, int((x-textLeft+float64(scrollX))/a.zf(diffCellW)+roundHalf)+start)
 	}
 
 	start := 0
 	if row != nil {
 		start = row.EditStart
 	}
-	textLeft := codeBody.X + w/halfDivisor + diffSplitRightText
-	return max(0, int((x-textLeft+float64(scrollX))/diffCellW+roundHalf)+start)
+	textLeft := codeBody.X + w/halfDivisor + float64(a.zx(diffSplitRightText))
+	return max(0, int((x-textLeft+float64(scrollX))/a.zf(diffCellW)+roundHalf)+start)
 }
 
 // saveDirtyActive writes the active dirty file when the editor has no live

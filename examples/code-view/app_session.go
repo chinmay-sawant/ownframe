@@ -40,7 +40,8 @@ func (a *App) EnableSession() {
 // restoreState applies one saved snapshot.
 func (a *App) restoreState(state sessionState) {
 	a.theme = validTheme(state.Theme)
-	_ = a.page.SetTheme(themeCSS(a.theme))
+	a.zoom = state.Zoom
+	_ = a.page.SetTheme(a.activeThemeCSS())
 	a.mode = "explorer"
 	if state.Mode == "changes" {
 		a.mode = "changes"
@@ -196,6 +197,7 @@ func (a *App) sessionState() sessionState {
 		DiffSplit:     a.diffSplit,
 		HistoryRatio:  a.historyRatio,
 		HistoryManual: a.historyManual,
+		Zoom:          a.uiZoom(),
 	}
 
 	branches := a.branchLogs.Snapshot()

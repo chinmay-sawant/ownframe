@@ -47,9 +47,9 @@ func (a *App) presentMenu(x, y int, items []ownframe.MenuItem) bool {
 	}
 
 	w, h := a.page.Size()
-	menuH := menuChromePad + len(rows)*menuChromeRow
-	if x+menuChromeWidth > w {
-		x = w - menuChromeWidth
+	menuH := a.zx(menuChromePad) + len(rows)*a.zx(menuChromeRow)
+	if x+a.zx(menuChromeWidth) > w {
+		x = w - a.zx(menuChromeWidth)
 	}
 
 	if y+menuH > h {

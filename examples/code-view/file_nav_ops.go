@@ -45,10 +45,10 @@ func (a *App) fileNavChangeStep(delta int) {
 	}
 	var scroll int
 	if a.split && a.mode != "changes" {
-		a.scrollGroupTo(a.activeGroup(), rows[index]*rowH)
+		a.scrollGroupTo(a.activeGroup(), rows[index]*a.zx(rowH))
 		scroll = a.scrollGroup[a.activeGroup()]
 	} else {
-		a.scrollTo(rows[index] * rowH)
+		a.scrollTo(rows[index] * a.zx(rowH))
 		scroll = a.scrollY
 	}
 	a.changeNav = changeNavigation{path: path, mode: a.mode, group: a.activeGroup(), row: rows[index], scroll: scroll, valid: true}
@@ -60,7 +60,7 @@ func (a *App) fileNavChangeIndex(path string, rows []int) int {
 	if a.split && a.mode != "changes" {
 		scroll = a.scrollGroup[a.activeGroup()]
 	}
-	current := scroll / rowH
+	current := scroll / a.zx(rowH)
 	if a.changeNav.valid && a.changeNav.path == path &&
 		a.changeNav.mode == a.mode && a.changeNav.group == a.activeGroup() && a.changeNav.scroll == scroll {
 		current = a.changeNav.row
@@ -252,9 +252,9 @@ func (a *App) jumpToFirstChange(path string) bool {
 	}
 	group := a.activeGroup()
 	if a.split && a.mode != "changes" {
-		a.scrollGroupTo(group, rows[0]*rowH)
+		a.scrollGroupTo(group, rows[0]*a.zx(rowH))
 	} else {
-		a.scrollTo(rows[0] * rowH)
+		a.scrollTo(rows[0] * a.zx(rowH))
 	}
 	scroll := a.scrollY
 	if a.split && a.mode != "changes" {

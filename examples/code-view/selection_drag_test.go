@@ -290,14 +290,14 @@ func TestSelectionSpanCoversTheCell(t *testing.T) {
 	t.Parallel()
 
 	for col := 1; col <= 80; col++ {
-		left, width := selectionSpan(0, col, 0, false)
+		left, width := selectionSpan(0, col, 0, false, codeCellW)
 		want := int(math.Ceil(float64(col) * codeCellW))
 		if left != 0 || left+width < want {
 			t.Fatalf("col %d span %d+%d, want the right edge at %d", col, left, width, want)
 		}
 	}
 
-	left, width := selectionSpan(3, 3, 0, true)
+	left, width := selectionSpan(3, 3, 0, true, codeCellW)
 	want := int(math.Ceil(4 * codeCellW))
 	if left+width < want {
 		t.Fatalf("newline span ends at %d, want %d", left+width, want)

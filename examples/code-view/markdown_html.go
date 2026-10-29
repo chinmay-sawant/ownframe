@@ -89,7 +89,7 @@ func stripHTMLHidden(text string) string {
 			continue
 		}
 
-		end, name, _, closing, ok := htmlTagAt(text, i)
+		end, name, rest, closing, ok := htmlTagAt(text, i)
 		if !ok {
 			b.WriteByte('<')
 			i++
@@ -97,10 +97,24 @@ func stripHTMLHidden(text string) string {
 			continue
 		}
 
-		if isHTMLHiddenTag(name) && !closing {
-			i = htmlSkipRawElement(text, i, name)
+		if !closing {
+			if isHTMLHiddenTag(name) {
+				i = htmlSkipRawElement(text, i, name)
 
-			continue
+				continue
+			}
+
+			if htmlIsHidden(rest) {
+				if htmlVoidTag(name) || strings.HasSuffix(strings.TrimSpace(rest), "/") {
+					i = end
+
+					continue
+				}
+
+				i = htmlSkipHiddenContent(text, end, name)
+
+				continue
+			}
 		}
 
 		b.WriteString(text[i:end])
@@ -133,6 +147,135 @@ func htmlSkipRawElement(text string, i int, name string) int {
 // isHTMLHiddenTag reports whether the text inside a tag must be dropped.
 func isHTMLHiddenTag(name string) bool {
 	return name == "script" || name == "style"
+}
+
+// htmlVoidTag reports whether name never wraps content, so a hidden opener
+// carries nothing to skip.
+func htmlVoidTag(name string) bool {
+	switch name {
+	case "br", "hr", "img", "input", "wbr", "meta", "link":
+		return true
+	}
+
+	return false
+}
+
+// htmlHasAttr reports whether the attribute list names want, with or without
+// a value. Quoted values are skipped whole, so a value containing the name
+// does not count.
+func htmlHasAttr(rest, want string) bool {
+	lower := strings.ToLower(rest)
+	i := 0
+
+	for i < len(lower) {
+		for i < len(lower) && (isHTMLSpace(lower[i]) || lower[i] == '/') {
+			i++
+		}
+
+		if i >= len(lower) {
+			return false
+		}
+
+		j := i
+		for j < len(lower) && lower[j] != '=' && !isHTMLSpace(lower[j]) && lower[j] != '/' && lower[j] != '>' && lower[j] != '"' && lower[j] != '\'' {
+			j++
+		}
+
+		if lower[i:j] == want {
+			return true
+		}
+
+		i = j
+
+		for i < len(lower) && isHTMLSpace(lower[i]) {
+			i++
+		}
+
+		if i < len(lower) && lower[i] == '=' {
+			i++
+			for i < len(lower) && isHTMLSpace(lower[i]) {
+				i++
+			}
+
+			if i < len(lower) && (lower[i] == '"' || lower[i] == '\'') {
+				q := lower[i]
+				i++
+				for i < len(lower) && lower[i] != q {
+					i++
+				}
+
+				if i < len(lower) {
+					i++
+				}
+			} else {
+				for i < len(lower) && !isHTMLSpace(lower[i]) && lower[i] != '/' && lower[i] != '>' {
+					i++
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// htmlIsHidden reports whether an opening tag hides its content: a bare
+// hidden attribute (any value hides) or an inline display:none.
+func htmlIsHidden(rest string) bool {
+	if htmlHasAttr(rest, "hidden") {
+		return true
+	}
+
+	style := strings.ReplaceAll(strings.ToLower(htmlAttr(rest, "style")), " ", "")
+
+	return strings.Contains(style, "display:none")
+}
+
+// htmlSkipHiddenContent returns the offset just past the matching close tag
+// of the element opened before i, counting nested same-name opens. Void and
+// self-closing tags never open a span; an unclosed element runs to the end.
+func htmlSkipHiddenContent(text string, i int, name string) int {
+	depth := 1
+
+	for i < len(text) {
+		if text[i] != '<' {
+			i++
+
+			continue
+		}
+
+		end, n, r, closing, ok := htmlTagAt(text, i)
+		if !ok {
+			i++
+
+			continue
+		}
+
+		if n != name {
+			i = end
+
+			continue
+		}
+
+		if closing {
+			depth--
+
+			if depth == 0 {
+				return end
+			}
+
+			i = end
+
+			continue
+		}
+
+		if !htmlVoidTag(n) && !strings.HasSuffix(strings.TrimSpace(r), "/") {
+			depth++
+		}
+
+		i = end
+	}
+
+	return len(text)
 }
 
 // htmlTagAt parses the tag beginning at text[i].
@@ -302,6 +445,18 @@ func htmlInlineRuns(text, base string) []segment {
 			continue
 		}
 
+		if !closing && htmlIsHidden(rest) {
+			if htmlVoidTag(name) || strings.HasSuffix(strings.TrimSpace(rest), "/") {
+				i = end
+
+				continue
+			}
+
+			i = htmlSkipHiddenContent(text, end, name)
+
+			continue
+		}
+
 		switch {
 		case name == "br":
 			out = append(out, segment{Text: "\n"})
@@ -385,6 +540,7 @@ type htmlPreviewParser struct {
 	blocks  []htmlPreviewBlock
 	current *htmlPreviewBlock
 	styles  []string
+	hidden  int
 	lists   []htmlPreviewList
 	table   *htmlPreviewTable
 	row     []string
@@ -444,6 +600,26 @@ func htmlPreviewBlocks(raw string) []htmlPreviewBlock {
 
 // tag applies one HTML tag to the parser state.
 func (p *htmlPreviewParser) tag(name, rest string, closing, selfClosing bool) {
+	if p.hidden > 0 {
+		if closing && !htmlVoidTag(name) && !selfClosing {
+			p.hidden--
+		} else if !closing && !htmlVoidTag(name) && !selfClosing {
+			p.hidden++
+		}
+
+		return
+	}
+
+	if !closing && htmlIsHidden(rest) {
+		if htmlVoidTag(name) || selfClosing {
+			return
+		}
+
+		p.hidden = 1
+
+		return
+	}
+
 	switch name {
 	case "br":
 		if p.table != nil {
@@ -514,7 +690,7 @@ func (p *htmlPreviewParser) tag(name, rest string, closing, selfClosing bool) {
 
 // text appends one text run to the current block or table cell.
 func (p *htmlPreviewParser) text(chunk string) {
-	if chunk == "" {
+	if chunk == "" || p.hidden > 0 {
 		return
 	}
 

@@ -95,7 +95,7 @@
 .prow-table .ptext { color: var(--muted); font-family: var(--mono); font-size: 11px; }
 .prow-diagram .ptext { color: var(--accent); font-family: var(--mono); font-size: 11px; }
 .prow-diagram .pmark { color: var(--accent); }
-.pdiag { display: block; height: 20px; }
+.pdiag { display: block; height: var(--row-h); }
 .prow-li .pmark { color: var(--accent); }
 
 /* A blank line is one full grid row. The window slices preview rows by rowH

@@ -7,7 +7,7 @@ import (
 const paneMinWidth = 220
 
 // codeClipSlack keeps the last glyph inside the row. The painted advance
-// matches codeCellW; without this slack a full row still enters the right padding.
+// matches a.zf(codeCellW); without this slack a full row still enters the right padding.
 const codeClipSlack = 8
 
 // Preview rows do not use the source gutter. .prow pads both sides, .pmark
@@ -80,7 +80,7 @@ func (a *App) groupPaths() []string {
 func (a *App) paneGeometry() (int, int) {
 	total := a.editorWidth()
 	if !a.split || a.mode != "explorer" {
-		return chromeLeft, total
+		return a.zx(chromeLeft), total
 	}
 
 	left := int(float64(total) * a.splitRatio)
@@ -96,7 +96,7 @@ func (a *App) paneGeometry() (int, int) {
 		left = total
 	}
 
-	return chromeLeft, left
+	return a.zx(chromeLeft), left
 }
 
 // secondGeometry returns the left edge and width of the second pane.
@@ -115,8 +115,8 @@ func (a *App) secondGeometry() (int, int) {
 
 // codeColsFor is the monospace cell count inside a pane width.
 func (a *App) codeColsFor(width int) int {
-	avail := width - codeGutter - codePadRight - editorBorderPad - codeClipSlack
-	cols := int(float64(avail) / codeCellW)
+	avail := width - a.zx(codeGutter) - a.zx(codePadRight) - a.zx(editorBorderPad) - a.zx(codeClipSlack)
+	cols := int(float64(avail) / a.zf(codeCellW))
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}
@@ -154,11 +154,11 @@ func (a *App) previewCols() int {
 
 // previewColsFor is the cell count inside a preview pane. The budget is
 // conservative: every subtracted length comes from the preview stylesheet and
-// previewCellW is wider than the painted advance, so a full row cannot reach
+// a.zf(previewCellW) is wider than the painted advance, so a full row cannot reach
 // the right padding even when the face resolves a little wide.
 func (a *App) previewColsFor(width int) int {
-	avail := width - previewPadX - previewPadX - previewMarkW - previewMarkPad - previewQuoteBorder - previewSlack
-	cols := int(float64(avail) / previewCellW)
+	avail := width - a.zx(previewPadX) - a.zx(previewPadX) - a.zx(previewMarkW) - a.zx(previewMarkPad) - a.zx(previewQuoteBorder) - a.zx(previewSlack)
+	cols := int(float64(avail) / a.zf(previewCellW))
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}
@@ -185,8 +185,8 @@ func (a *App) previewColsForDoc(width int, doc *fileDoc) int {
 // previewHeadingColsFor is the heading cell count inside a preview pane. A
 // heading row has no marker column, so only the row padding and slack apply.
 func (a *App) previewHeadingColsFor(width int) int {
-	avail := width - previewPadX - previewPadX - previewSlack
-	cols := int(float64(avail) / previewHeadingCellW)
+	avail := width - a.zx(previewPadX) - a.zx(previewPadX) - a.zx(previewSlack)
+	cols := int(float64(avail) / a.zf(previewHeadingCellW))
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}

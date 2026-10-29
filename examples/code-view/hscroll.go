@@ -93,7 +93,7 @@ func (a *App) maxLineWidth() int {
 			}
 		}
 
-		return int(math.Ceil(float64(maxRunes) * diffCellW))
+		return int(math.Ceil(float64(maxRunes) * a.zf(diffCellW)))
 	}
 
 	doc := a.activeDoc()
@@ -109,7 +109,7 @@ func (a *App) maxLineWidth() int {
 		}
 	}
 
-	return int(math.Ceil(float64(maxRunes) * codeCellW))
+	return int(math.Ceil(float64(maxRunes) * a.zf(codeCellW)))
 }
 
 // MaxLineWidth returns the maximum line width in pixels of the active document.
@@ -135,7 +135,7 @@ func (a *App) isOverEditor(x, y float64) bool {
 		}
 	}
 
-	left := float64(chromeLeft)
+	left := float64(a.zx(chromeLeft))
 
 	return x >= left && x <= w
 }

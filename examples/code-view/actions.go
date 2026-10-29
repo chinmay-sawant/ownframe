@@ -304,10 +304,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return nil
 	case strings.HasPrefix(action, "theme:"):
 		name := validTheme(strings.TrimPrefix(action, "theme:"))
-		if err := a.page.SetTheme(themeCSS(name)); err != nil {
+		a.theme = name
+		if err := a.page.SetTheme(a.activeThemeCSS()); err != nil {
 			return err
 		}
-		a.theme = name
 		a.refresh()
 	case action == "palette-open":
 		return a.openPalette(ctx)
@@ -320,6 +320,8 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.refresh()
 
 		return nil
+	case action == "zoom-reset":
+		return a.resetZoom(ctx)
 	case action == "win-close":
 		a.page.Window().Close()
 
@@ -346,9 +348,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "details-toggle":
 		a.toggleDetails()
 	case action == "scroll-left":
-		a.scrollHorizontal(-hscrollStep)
+		a.scrollHorizontal(-a.zx(hscrollStep))
 	case action == "scroll-right":
-		a.scrollHorizontal(hscrollStep)
+		a.scrollHorizontal(a.zx(hscrollStep))
 	case action == "tabs-prev":
 		a.scrollTabs(0, -1)
 	case action == "tabs-next":
@@ -572,6 +574,16 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 // returns false so the window can pan a long file. Ctrl+wheel does not zoom
 // this page.
 func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
+	// Ctrl+wheel zooms the layout like the keyboard chords. The window
+	// leaves the wheel to the page because wheel zoom is off.
+	if a.ctrl && dy != 0 {
+		if dy > 0 {
+			return true, a.zoomIn(ctx)
+		}
+
+		return true, a.zoomOut(ctx)
+	}
+
 	if a.searchOpen {
 		sx, sy := a.page.Scroll().ScrollOffset()
 		x -= float64(sx)
@@ -956,7 +968,7 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 		return a.startEditorScrollDrag(group), nil
 	}
 	if box.ID == "search-thumb" && a.searchOpen && a.view.Search.Scroll {
-		track := searchWindowRows * searchRowHeight
+		track := searchWindowRows * a.zx(searchRowHeight)
 		thumb := a.view.Search.ScrollHeight
 		if track <= thumb {
 			return false, nil
@@ -1004,7 +1016,7 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 
 	if box.ID == "tree-thumb" && a.mode == "explorer" && a.view.TreeScroll {
 		visible := a.treeVisibleRows()
-		track := visible * treeRowH
+		track := visible * a.zx(treeRowH)
 		thumb := a.view.TreeThumbH
 		total := a.view.TreeTotal
 
@@ -1172,6 +1184,21 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.shift = true
 
 		return nil
+	}
+
+	// Layout zoom owns Ctrl+=, Ctrl+-, and Ctrl+0 everywhere, including
+	// while editing: the window leaves these chords to the page because
+	// key zoom is off. Copy, cut, paste, and the other Ctrl chords keep
+	// their own branches below.
+	if a.ctrl {
+		switch key {
+		case "equal", "kpadd":
+			return a.zoomIn(ctx)
+		case "minus", "kpsubtract":
+			return a.zoomOut(ctx)
+		case "0", "kp0":
+			return a.resetZoom(ctx)
+		}
 	}
 
 	if a.settingsOpen && key == "escape" {
@@ -1425,25 +1452,25 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "3":
 		a.toggleDetails()
 	case "arrowdown":
-		a.scrollFocusedGroup(scrollStep)
+		a.scrollFocusedGroup(a.zx(scrollStep))
 	case "arrowup":
-		a.scrollFocusedGroup(-scrollStep)
+		a.scrollFocusedGroup(-a.zx(scrollStep))
 	case "arrowleft":
 		if !a.wrap {
-			a.scrollHorizontal(-hscrollStep)
+			a.scrollHorizontal(-a.zx(hscrollStep))
 
 			return a.page.Redraw(ctx)
 		}
 	case "arrowright":
 		if !a.wrap {
-			a.scrollHorizontal(hscrollStep)
+			a.scrollHorizontal(a.zx(hscrollStep))
 
 			return a.page.Redraw(ctx)
 		}
 	case "pagedown":
-		a.scrollFocusedGroup(pageScroll)
+		a.scrollFocusedGroup(a.zx(pageScroll))
 	case "pageup":
-		a.scrollFocusedGroup(-pageScroll)
+		a.scrollFocusedGroup(-a.zx(pageScroll))
 	case "home":
 		a.scrollFocusedGroupTo(0)
 	case "end":
