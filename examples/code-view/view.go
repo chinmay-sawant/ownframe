@@ -355,6 +355,15 @@ type diffView struct {
 	HasStaged     bool
 	HasUnstaged   bool
 	CanEdit       bool
+	// CanRevert gates the per-hunk revert arrow in the unified and split
+	// diff. It is working-tree only, skips binary and oversized files, and
+	// skips renames whose patch would also undo the rename.
+	CanRevert bool
+	// CanPrevChange and CanNextChange gate the crumbs up/down arrows. They
+	// track change blocks, not hunk headers, so they agree with the
+	// bottom-center navigator.
+	CanPrevChange bool
+	CanNextChange bool
 	Page          int
 	Pages         int
 	Scroll        bool

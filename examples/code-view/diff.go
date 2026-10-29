@@ -83,6 +83,13 @@ type diffRow struct {
 	Cont      bool
 	LeftCont  bool
 	RightCont bool
+	// HasRevert marks changed rows that offer the VS Code-style discard
+	// arrow on the row itself: changed unified rows (add/del) and changed
+	// split rows. Hunk headers carry none; the per-line button reverts
+	// the hunk. RevertHunk is the index into the file's Hunks slice.
+	// Wrapped continuations clear it so button ids stay unique.
+	HasRevert  bool
+	RevertHunk int
 	// EditLine is the 1-based new-file line a click redirects to. Deleted
 	// rows carry the nearest new line so red rows stay clickable; zero
 	// means the row has no edit target (hunks, meta, expanders).
@@ -746,9 +753,13 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 				row.Kind = rowAdd
 				row.OldNo = ""
 				row.EditLine = line.NewNo
+				row.HasRevert = true
+				row.RevertHunk = i
 			case '-':
 				row.Kind = rowDel
 				row.NewNo = ""
+				row.HasRevert = true
+				row.RevertHunk = i
 			default:
 				row.EditLine = line.NewNo
 			}
@@ -767,6 +778,7 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 
 	fillDelEditLines(rows)
 	assignDiffEditIDs(rows)
+	markFirstBlockReverts(rows)
 
 	return rows
 }
@@ -841,7 +853,7 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 			pairs := max(i-addStart, addStart-delStart)
 
 			for k := range pairs {
-				row := diffRow{Kind: "split", LeftKind: rowDel, RightKind: rowAdd}
+				row := diffRow{Kind: "split", LeftKind: rowDel, RightKind: rowAdd, HasRevert: true, RevertHunk: hunkIdx}
 
 				if dels+k < addStart {
 					line := h.Lines[dels+k]
@@ -875,8 +887,55 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 
 	fillDelEditLines(rows)
 	assignDiffEditIDs(rows)
+	markFirstBlockReverts(rows)
 
 	return rows
+}
+
+// markFirstBlockReverts keeps HasRevert on exactly one row per contiguous
+// changed block: the first row with green (added) content, or the first row
+// of the block when it has none (a deletion-only block). One control reverts
+// the whole hunk, so every further row in the block drops the marker. Block
+// boundaries match diffChangeStarts, so the button sits on the change the
+// bottom-center navigator highlights.
+func markFirstBlockReverts(rows []diffRow) {
+	for i := 0; i < len(rows); {
+		if !diffChangedRow(rows[i]) {
+			rows[i].HasRevert = false
+			i++
+
+			continue
+		}
+		j := i
+		for j < len(rows) && diffChangedRow(rows[j]) {
+			j++
+		}
+		chosen := -1
+		for k := i; k < j; k++ {
+			if isRevertGreen(rows[k]) {
+				chosen = k
+
+				break
+			}
+		}
+		if chosen < 0 {
+			chosen = i
+		}
+		for k := i; k < j; k++ {
+			rows[k].HasRevert = k == chosen
+		}
+		i = j
+	}
+}
+
+// isRevertGreen reports whether a changed row carries added (green) content:
+// a unified add row, or a split row with a real right cell.
+func isRevertGreen(row diffRow) bool {
+	if row.Kind == rowAdd {
+		return true
+	}
+
+	return row.Kind == "split" && row.RightKind == rowAdd && !row.RightPad
 }
 
 // fillDelEditLines gives deleted-only rows an edit target: the nearest

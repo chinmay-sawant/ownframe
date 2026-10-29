@@ -134,34 +134,61 @@ func (a *App) onSelectAll(ctx context.Context) error {
 	return a.page.Redraw(ctx)
 }
 
-// onUndo restores the previous snapshot.
+// onUndo restores the previous snapshot, or the last reverted hunk when the
+// editor is closed. Hunk undo lives on its own stack so text and hunk
+// histories never clobber each other.
 func (a *App) onUndo(ctx context.Context) error {
-	if !a.editing || len(a.editUndo) == 0 {
+	if a.editing {
+		if len(a.editUndo) == 0 {
+			return nil
+		}
+
+		a.pushRedo()
+		last := a.editUndo[len(a.editUndo)-1]
+		a.editUndo = a.editUndo[:len(a.editUndo)-1]
+		a.restoreEdit(last)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen || a.settingsOpen || a.paletteOpen || a.branchOpen || a.searchOpen {
 		return nil
 	}
 
-	a.pushRedo()
-	last := a.editUndo[len(a.editUndo)-1]
-	a.editUndo = a.editUndo[:len(a.editUndo)-1]
-	a.restoreEdit(last)
-	a.refresh()
+	if !a.canUndoRevert() {
+		return nil
+	}
 
-	return a.page.Redraw(ctx)
+	return a.undoRevertHunk(ctx)
 }
 
-// onRedo restores a snapshot taken by Undo.
+// onRedo restores a snapshot taken by Undo, or re-applies an undone hunk
+// revert when the editor is closed.
 func (a *App) onRedo(ctx context.Context) error {
-	if !a.editing || len(a.editRedo) == 0 {
+	if a.editing {
+		if len(a.editRedo) == 0 {
+			return nil
+		}
+
+		a.pushUndo()
+		next := a.editRedo[len(a.editRedo)-1]
+		a.editRedo = a.editRedo[:len(a.editRedo)-1]
+		a.restoreEdit(next)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen || a.settingsOpen || a.paletteOpen || a.branchOpen || a.searchOpen {
 		return nil
 	}
 
-	a.pushUndo()
-	next := a.editRedo[len(a.editRedo)-1]
-	a.editRedo = a.editRedo[:len(a.editRedo)-1]
-	a.restoreEdit(next)
-	a.refresh()
+	if !a.canRedoRevert() {
+		return nil
+	}
 
-	return a.page.Redraw(ctx)
+	return a.redoRevertHunk(ctx)
 }
 
 // editKey handles caret movement and edit-only keys. Printable text arrives in

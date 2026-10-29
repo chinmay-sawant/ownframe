@@ -162,6 +162,11 @@ type App struct {
 	editAnchor int
 	editUndo   []editSnapshot
 	editRedo   []editSnapshot
+	// revertUndo/revertRedo store forward hunk patches for Ctrl+Z restore
+	// after a mistaken discard. Separate from editUndo so text and hunk
+	// histories never clobber each other.
+	revertUndo []revertUndoEntry
+	revertRedo []revertUndoEntry
 	dragSelect bool
 	selX       float64
 	selY       float64
@@ -625,6 +630,8 @@ func (a *App) reloadWindow(ctx context.Context) error {
 	a.dirty = map[string]bool{}
 	a.fileMenu = false
 	a.projectOpen = false
+	a.revertUndo = nil
+	a.revertRedo = nil
 	a.tabs = keepExistingTabs(keepTabs, ws)
 	a.tabs2 = keepExistingTabs(keepTabs2, ws)
 	a.active = clampSessionIndex(keepActive, len(a.tabs))
@@ -740,6 +747,8 @@ func (a *App) switchProject(ctx context.Context, root string) error {
 	a.recentOpen = false
 	a.projectQuery = ""
 	a.fileAlert = ""
+	a.revertUndo = nil
+	a.revertRedo = nil
 	a.recentRoots = rememberRecentProject(a.recentRoots, ws.Root)
 	saveRecentProjects(a.recentRoots)
 
@@ -1016,6 +1025,20 @@ func (a *App) fillCode(v *View) {
 	if a.wrap {
 		plan := doc.wrapped(cols)
 		start, end, track = a.windowSliceForGroup(0, len(plan.Rows))
+		// Never start mid-line: a scroll offset landing inside a wrapped
+		// source line would fill the viewport with No==0 continuations and
+		// blank the gutter. Snap back to the line start and keep the same
+		// visible count.
+		if len(plan.Rows) > 0 && start > 0 && start < len(plan.Rows) {
+			if lineStart := plan.firstRow(plan.lineAt(start)); lineStart < start {
+				shift := start - lineStart
+				start = lineStart
+				end += shift
+				if end > len(plan.Rows) {
+					end = len(plan.Rows)
+				}
+			}
+		}
 		v.TrackTop = track
 		v.Rows = a.copyFindRows(cloneCodeRows(plan.Rows[start:end]))
 		a.decorateCodeRows(doc, v.Rows, 0)
@@ -1379,6 +1402,10 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile) {
 	d.Del = file.Del
 	d.Hunks = len(file.Hunks)
 	d.CanEdit = d.Source == "working" && !file.Binary && file.Status != "D" && !file.Oversized
+	// Deleted files revert by restoring the file, untracked and added files
+	// by deleting it; renames stay on file-level discard so a hunk revert
+	// cannot silently undo the rename.
+	d.CanRevert = d.Source == "working" && !file.Binary && !file.Oversized && file.Status != "R"
 
 	doc := a.docs[file.Path]
 	if doc == nil {
@@ -1416,6 +1443,11 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile) {
 
 	start, end, track := a.windowSlice(len(rows))
 	d.TrackTop = track
+
+	changeRows := a.fileNavChangeRows(file.Path)
+	changeIndex := a.fileNavChangeIndex(file.Path, changeRows)
+	d.CanPrevChange = changeIndex > 0
+	d.CanNextChange = changeIndex+1 < len(changeRows)
 
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
@@ -3271,42 +3303,14 @@ func (a *App) setSplit(split bool) {
 	a.refresh()
 }
 
-// jumpHunk moves to the previous or next hunk header.
+// jumpHunk moves to the previous or next change block in the current diff.
+// It shares fileNavChangeStep so the crumbs arrows and the bottom-center
+// navigator use one highlight and one enabled state. A lone addition, or an
+// adjacent addition and deletion, is one block, so both arrows stay off.
+// With several blocks the down arrow starts on and the up arrow turns on
+// after stepping down.
 func (a *App) jumpHunk(delta int) {
-	rows := a.diffDisplayRows()
-	if len(rows) == 0 {
-		return
-	}
-
-	current := a.scrollY / a.zx(rowH)
-	target := -1
-
-	for i, row := range rows {
-		if row.Kind != rowHunk {
-			continue
-		}
-
-		if delta > 0 && i > current {
-			target = i
-
-			break
-		}
-
-		if delta < 0 && i < current {
-			target = i
-
-			break
-		}
-	}
-
-	if target < 0 {
-		a.showToast("info", "No more hunks", "The selection is already at the edge of this diff.")
-		a.refresh()
-
-		return
-	}
-
-	a.scrollTo(target * a.zx(rowH))
+	a.fileNavChangeStep(delta)
 }
 
 // showToast publishes one message card.

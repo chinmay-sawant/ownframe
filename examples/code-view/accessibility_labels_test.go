@@ -107,6 +107,9 @@ func TestAccessibilityChangesMode(t *testing.T) {
 
 	app.setMode(ctx, "changes")
 	app.branchOpen = true
+	// Step to a middle change so both crumbs arrows are enabled and
+	// focusable. At the first change the previous arrow is disabled.
+	app.fileNavChangeStep(1)
 	app.refresh()
 
 	tree := accessibilityTree(t, app)
@@ -115,8 +118,8 @@ func TestAccessibilityChangesMode(t *testing.T) {
 
 	want := map[string]string{
 		"tab-details":   "Details closed",
-		"hunk-prev":     "Previous hunk",
-		"hunk-next":     "Next hunk",
+		"hunk-prev":     "Previous change",
+		"hunk-next":     "Next change",
 		"seg-split":     "Split",
 		"branch-filter": "Filter branches",
 		"branch-head":   "Follow HEAD",

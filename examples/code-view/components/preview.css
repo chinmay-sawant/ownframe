@@ -38,6 +38,25 @@
   line-height: var(--row-h);
 }
 
+.pln {
+  width: 44px;
+  height: var(--row-h);
+  flex: 0 0 44px;
+  padding-right: 10px;
+  overflow: hidden;
+  text-align: right;
+  color: var(--dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: var(--row-h);
+}
+
+.pln.cont { color: var(--dim); font-size: 9px; }
+
+button.pln { padding: 0 10px 0 0; border: 0; background: transparent; cursor: pointer; }
+button.pln:hover { color: var(--text); }
+button.pln:focus { outline: 0; }
+
 .ptext {
   display: block;
   flex: 1;

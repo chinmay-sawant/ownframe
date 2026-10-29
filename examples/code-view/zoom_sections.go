@@ -300,6 +300,7 @@ func zoomDetailsCSS(b *strings.Builder, px func(int) string) {
 func zoomPreviewCSS(b *strings.Builder, px func(int) string) {
 	writeZoomRules(b, px, []zoomRule{
 		{".prow", []string{" padding:0 ", " !important;"}, []int{22}},
+		{".pln", []string{" width:", " !important; flex-basis:", " !important; padding-right:", " !important;"}, []int{44, 44, 10}},
 		{".pmark", []string{" width:", " !important; flex-basis:", " !important; padding-right:", " !important;"}, []int{18, 18, 7}},
 		{".prow-quote", []string{" border-left-width:", " !important;"}, []int{2}},
 	})

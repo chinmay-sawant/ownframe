@@ -105,6 +105,10 @@ func wrapUnifiedDiffRow(row diffRow, cols int) []diffRow {
 				vis.EditLine = row.EditLine
 				vis.EditID = row.EditID + "-c" + strconv.Itoa(i)
 			}
+			// Only the first visual chunk keeps the discard arrow so button
+			// ids stay unique when a long changed line wraps.
+			vis.HasRevert = false
+			vis.RevertHunk = 0
 		}
 
 		start += segmentRuneLen(chunk)
@@ -136,6 +140,10 @@ func wrapHunkDiffRow(row diffRow, cols int) []diffRow {
 			vis.OldNo = ""
 			vis.NewNo = ""
 			vis.Cont = true
+			// Only the first visual chunk keeps the revert arrow so button
+			// ids stay unique when a long hunk label wraps.
+			vis.HasRevert = false
+			vis.RevertHunk = 0
 		}
 
 		out = append(out, vis)
@@ -177,6 +185,10 @@ func wrapSplitDiffRow(row diffRow, cols int) []diffRow {
 				vis.EditLine = row.EditLine
 				vis.EditID = row.EditID + "-c" + strconv.Itoa(i)
 			}
+			// Only the first visual chunk keeps the discard arrows so
+			// button ids stay unique when a split cell wraps.
+			vis.HasRevert = false
+			vis.RevertHunk = 0
 		}
 
 		if i < len(left) {

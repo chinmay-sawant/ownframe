@@ -195,6 +195,8 @@
 
 .crumb-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
 .crumb-btn.on { border-color: rgba(122, 162, 247, 0.5); background-color: var(--accent-soft); color: var(--accent); }
+.crumb-btn.off { color: #3a4252; }
+.crumb-btn.off:hover { background-color: transparent; border-color: var(--line); color: #3a4252; }
 
 .findbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; }
 .find-input {
@@ -388,7 +390,10 @@
 
 .gutter-mark {
   position: relative;
-  z-index: 2;
+  /* No z-index: the engine flattens an explicit z-index into a global band,
+     so z-index 2 painted this mark below the band-10 editor fills and the
+     row background covered it. Without one it keeps the editor band and the
+     fills paint first, still above the band-0/1 edit overlays. */
   width: 16px;
   flex: 0 0 16px;
   display: inline-flex;
@@ -409,7 +414,8 @@ button.gutter-mark:hover { color: var(--text); }
 
 .ln {
   position: relative;
-  z-index: 2;
+  /* No z-index, for the same flattened-band reason as .gutter-mark above:
+     an explicit z-index 2 dropped the line numbers below the editor fills. */
   width: 44px;
   flex: 0 0 44px;
   padding-right: 10px;

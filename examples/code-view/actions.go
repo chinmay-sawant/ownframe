@@ -403,6 +403,12 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 	case strings.HasPrefix(action, "discard-file:"):
 		a.openDiscardConfirm("discard-file", []string{strings.TrimPrefix(action, "discard-file:")})
+	case strings.HasPrefix(action, "revert-hunk:"):
+		if idx, ok := actionIndex(action, "revert-hunk:"); ok {
+			if err := a.revertHunk(ctx, idx); err != nil {
+				return err
+			}
+		}
 	case strings.HasPrefix(action, "copy-commit-message:"):
 		a.copyCommitMessage(strings.TrimPrefix(action, "copy-commit-message:"))
 	case strings.HasPrefix(action, "copy-commit-id:"):
@@ -1706,6 +1712,12 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.refresh()
 
 		return a.page.Redraw(ctx)
+	}
+
+	// Ctrl+Z / Ctrl+Y belong to the Undo/Redo chord (desktop) and must not
+	// fall through to the plain-key wrap toggle below.
+	if a.ctrl && (key == "z" || key == "y") {
+		return nil
 	}
 
 	switch key {
