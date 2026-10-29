@@ -360,6 +360,7 @@ no position:sticky is used inside this list. */
 .change-tool.danger:hover { color: var(--red); }
 
 .changes-tools-head { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.changes-head .changes-tools-head { margin-left: 0; }
 
 .changes-section-head {
   height: 24px;
