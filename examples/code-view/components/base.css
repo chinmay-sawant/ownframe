@@ -72,15 +72,27 @@ svg { display: block; flex: 0 0 auto; stroke: currentColor; }
 
 .app { width: 100vw; min-height: 100vh; }
 
-button:focus, input:focus {
+input:focus {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
-button:focus-visible, input:focus-visible {
+input:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Every button uses the settings-button treatment: no blue outline on
+   click, a subtle wash for keyboard focus. Selected (.on) controls keep
+   their accent wash; transparent hit areas stay transparent. */
+button:focus, button:focus-visible { outline: 0; }
+button:focus-visible:not(.on) { background-color: var(--panel-3); }
+.act.on:focus-visible { background-color: var(--accent-soft); }
+.tab.on .tab-main:focus-visible, .tab.on .tab-x:focus-visible { background-color: var(--bg); }
+.ctx-back:focus-visible, .file-backdrop:focus-visible, .edit-surface:focus-visible,
+.edit-line-hit:focus-visible, .diff-edit-hit:focus-visible, button.gutter-mark:focus-visible,
+.tree-scroll:focus-visible, .list-scroll:focus-visible, .hist-scroll:focus-visible,
+.search-thumb:focus-visible, .editor-scroll-thumb:focus-visible, .hsplit:focus-visible { background-color: transparent; }
 
 #act-search:focus, #act-search:focus-visible, #act-settings:focus, #act-settings:focus-visible { outline: 0; }
 #act-search:focus-visible, #act-settings:focus-visible { background-color: var(--panel-3); }
