@@ -178,8 +178,23 @@ keeps the explorer and reports that git is unavailable.
 
 The changed-file list is a vertical scroll with a draggable rail and the mouse
 wheel; it has no pager buttons. The diff has unified and split modes. Changed
-words carry a stronger tint than the line background. Hunk arrows walk the
-`@@` rows.
+words carry a stronger tint than the line background. The up and down arrows
+step through contiguous change blocks and highlight the selected block.
+
+A header such as `@@ -10,6 +10,8 @@` describes one Git hunk: six lines starting
+at line 10 in the old file and eight lines starting at line 10 in the new file.
+Counts include unchanged context lines as well as deletions on the old side
+and additions on the new side. A count of one omits `,1`; a count of zero marks
+an insertion or deletion boundary. On an empty side, the start number is the
+line before that boundary; zero means the beginning of the file. Unified and
+split modes show the same ranges, regardless of soft wrapping or which rows
+are visible.
+
+One hunk can contain several change blocks separated by unchanged lines.
+The revert arrow restores only its block. In unified mode it appears on the
+first added row, or the first deleted row for a deletion-only block. In split
+mode it sits beside the center divider. Reverting refreshes the open file and
+keeps the diff view open; Ctrl+Z restores the reverted block.
 
 The Source Control drawer holds the working-tree files at the top and a
 History pane below them. The History rail reads 20 recent commits at a time,
