@@ -140,6 +140,7 @@ type menuViewRow struct {
 	Index   int
 	ID      string
 	Label   string
+	Hint    string
 	Enabled bool
 }
 
@@ -264,6 +265,9 @@ type treeRow struct {
 	Badge       string
 	Status      string
 	StatusClass string
+	// Selected marks a multi-select explorer row. Ctrl+click toggles it and
+	// Shift+click extends the range; Copy and Cut stage every selected row.
+	Selected bool
 }
 
 // tabRow is one open editor tab. Index is the tab's position in the

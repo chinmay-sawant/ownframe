@@ -110,6 +110,7 @@ no position:sticky is used inside this list. */
 
 .tree-sticky .trow { background-color: transparent; }
 .tree-sticky .trow:hover { background-color: var(--panel-2); }
+.tree-sticky .trow.selected { background-color: var(--panel-3); }
 
 .trow {
   width: 100%;
@@ -123,6 +124,7 @@ no position:sticky is used inside this list. */
 }
 
 .trow:hover { background-color: var(--panel-2); color: var(--text); }
+.trow.selected { background-color: var(--panel-3); color: var(--text); border-left-color: var(--accent); }
 .trow.dir { color: var(--muted); }
 .chev { width: 10px; height: 10px; flex: 0 0 10px; margin-right: 8px; color: var(--muted); }
 .trow.dir .chev { color: var(--muted); }
@@ -308,12 +310,8 @@ no position:sticky is used inside this list. */
 .change-wrap {
   position: relative;
   display: flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 4px 10px 4px 8px;
+  align-items: stretch;
   border-left: 2px solid transparent;
-  color: var(--muted);
 }
 
 .change-wrap.on, .change-wrap.on:hover { border-left-color: var(--accent); background-color: var(--panel-3); }
@@ -322,24 +320,42 @@ no position:sticky is used inside this list. */
 .change {
   flex: 1;
   min-width: 0;
+  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 0;
-  border: 0;
+  padding: 4px 8px 4px 8px;
+  border-left: 0;
   color: var(--muted);
   text-align: left;
-  background-color: transparent;
 }
 
 .change:hover { background-color: transparent; }
 .change.on, .change.on:hover { border-left-color: transparent; background-color: transparent; }
 
 .change-tools {
-  flex: 0 0 auto;
-  display: flex;
+  /* Out of the row until the row is open or hovered. A flex item at
+     opacity 0 still held a column between the status badge and the editor. */
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
   align-items: center;
   gap: 2px;
+  padding-right: 4px;
+  width: 46px;
+}
+
+.change-wrap:hover .change,
+.change-wrap.on .change {
+  padding-right: 52px;
+}
+
+.change-wrap:hover .change-tools,
+.change-wrap.on .change-tools,
+.change-tools:focus-within {
+  display: flex;
 }
 
 .change-tool {
@@ -391,6 +407,12 @@ no position:sticky is used inside this list. */
 
 .change-wrap.multi { background-color: rgba(88, 120, 200, 0.12); }
 .change-wrap.multi.on { background-color: var(--panel-3); }
+.change-check {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 800;
+}
 
 /* Discard confirm dialog ---------------------------------------------------
    Placed and styled like the search card: a full-viewport layer with a

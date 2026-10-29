@@ -92,6 +92,35 @@ func isWSLSep(c byte) bool {
 	return c == '\\' || c == '/'
 }
 
+// wslMntToWindows maps a /mnt/<drive>/... path seen from Windows back to a
+// drive-letter path such as C:\.... Anything else reports false.
+func wslMntToWindows(p string) (string, bool) {
+	lowered := strings.ToLower(p)
+	if lowered != "/mnt" && !strings.HasPrefix(lowered, "/mnt/") {
+		return "", false
+	}
+
+	rest := p[len("/mnt"):]
+	rest = strings.TrimPrefix(rest, "/")
+	if rest == "" {
+		return "", false
+	}
+
+	drive := rest[0]
+	if !isDriveLetter(drive) || (len(rest) > 1 && rest[1] != '/') {
+		return "", false
+	}
+
+	tail := strings.TrimPrefix(rest[1:], "/")
+
+	out := string([]byte{drive, ':'}) + `\`
+	if tail != "" {
+		out += strings.ReplaceAll(tail, "/", `\`)
+	}
+
+	return strings.ToUpper(out[:1]) + out[1:], true
+}
+
 func indexWSLSep(s string) int {
 	for i := 0; i < len(s); i++ {
 		if s[i] == '\\' || s[i] == '/' {

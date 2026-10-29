@@ -112,10 +112,15 @@ type App struct {
 	changeNav          changeNavigation
 	firstChangePending string
 
-	mode           string
-	filter         string
-	folders        map[string]bool
-	treeOffset     int
+	mode       string
+	filter     string
+	folders    map[string]bool
+	treeOffset int
+	// explSel is the explorer multi-select: Ctrl+click toggles a row,
+	// Shift+click extends the range, and Copy/Cut stage every selected row.
+	// explAnchor is the range start.
+	explSel        map[string]bool
+	explAnchor     string
 	treeDrag       bool
 	treeDragAt     int
 	treeScale      float64
@@ -1963,6 +1968,7 @@ func (a *App) stickyTreeRows() []treeRow {
 						Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
 					}
 					row.Short = clipTreeName(row.Indent, true, row.IgnoredNote, row.Name)
+					row.Selected = a.explSel[ancestor.Path]
 					captured = append(captured, row)
 				}
 				capturedFound = true
@@ -2078,6 +2084,7 @@ func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[
 				Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
 			}
 			row.Short = clipTreeName(row.Indent, row.Dir, row.IgnoredNote, row.Name)
+			row.Selected = a.explSel[node.Path]
 
 			if node.Dir {
 				row.Open = a.folders[node.Path]
@@ -2130,6 +2137,7 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 
 	for i := from; i < to; i++ {
 		all[i].Short = clipTreeName(all[i].Indent, false, all[i].IgnoredNote, all[i].Name)
+		all[i].Selected = a.explSel[all[i].Path]
 	}
 
 	return all[from:to], len(all), len(a.ws.Files), true

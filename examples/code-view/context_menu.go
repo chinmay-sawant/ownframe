@@ -12,8 +12,10 @@ import (
 // lives in an internal package, so the page bridge converts this shape at the
 // boundary.
 type contextMenuRow struct {
-	ID      string
-	Label   string
+	ID    string
+	Label string
+	// Hint is a right-aligned shortcut label such as Ctrl+C.
+	Hint    string
 	Enabled bool
 }
 
@@ -41,7 +43,9 @@ const (
 	contextMenuCopyMsgID     = contextMenuIDPrefix + "copy-message:"
 	contextMenuCopyIDID      = contextMenuIDPrefix + "copy-id:"
 	contextMenuCopyPathID    = contextMenuIDPrefix + "copy-path:"
-	contextMenuCopyFileID    = contextMenuIDPrefix + "copy-file:"
+	contextMenuCopyAbsID     = contextMenuIDPrefix + "copy-abs:"
+	contextMenuCutID         = contextMenuIDPrefix + "cut:"
+	contextMenuCopyID        = contextMenuIDPrefix + "copy:"
 	contextMenuPasteID       = contextMenuIDPrefix + "paste:"
 )
 
@@ -57,6 +61,7 @@ func (a *App) presentMenu(x, y int, items []ownframe.MenuItem) bool {
 			Index:   i,
 			ID:      item.ID,
 			Label:   item.Label,
+			Hint:    item.Hint,
 			Enabled: item.Enabled,
 		})
 	}
@@ -459,8 +464,16 @@ func (a *App) MenuAction(ctx context.Context, id string) error {
 		a.copyTreePath(strings.TrimPrefix(id, contextMenuCopyPathID))
 
 		return a.redrawTreeMenu(ctx)
-	case strings.HasPrefix(id, contextMenuCopyFileID):
-		a.copyTreeFile(strings.TrimPrefix(id, contextMenuCopyFileID))
+	case strings.HasPrefix(id, contextMenuCopyAbsID):
+		a.copyTreeAbsPath(strings.TrimPrefix(id, contextMenuCopyAbsID))
+
+		return a.redrawTreeMenu(ctx)
+	case strings.HasPrefix(id, contextMenuCutID):
+		a.stageTreeCopy(a.copyTargets(strings.TrimPrefix(id, contextMenuCutID)), true)
+
+		return a.redrawTreeMenu(ctx)
+	case strings.HasPrefix(id, contextMenuCopyID):
+		a.stageTreeCopy(a.copyTargets(strings.TrimPrefix(id, contextMenuCopyID)), false)
 
 		return a.redrawTreeMenu(ctx)
 	case strings.HasPrefix(id, contextMenuPasteID):

@@ -151,40 +151,139 @@ func cleanPasteCandidate(path string) (string, bool) {
 // to their parent). The copy keeps its bytes verbatim: PNG, JPEG, PDF, and
 // any other binary land intact with no decode. A missing absolute source
 // pastes an empty file under the source name; any other read error aborts.
-// Errors name the problem for a toast; nothing here touches the UI, so tests
-// drive it directly.
+// A cut moves the source: after a successful copy the workspace-relative
+// source is removed and the tree rescanned. Errors name the problem for a
+// toast; nothing here touches the UI, so tests drive it directly.
 func (a *App) PastePendingCopy(dstDir string) (string, error) {
-	staged, ok := GetPendingCopy()
-	if !ok || staged.SrcPath == "" {
-		return "", fmt.Errorf("nothing to paste: copy a file first")
-	}
-
-	ws := a.ws
-	if ws == nil {
-		return "", fmt.Errorf("nothing to paste into: no workspace")
-	}
-
-	if !ws.writable() {
-		return "", errSampleReadOnly()
-	}
-
-	dir, valid := a.resolvePasteCandidate(dstDir)
-	if !valid {
-		return "", fmt.Errorf("paste target %q is not a folder in this workspace", dstDir)
-	}
-
-	data, err := a.readPasteSource(staged.SrcPath)
+	rels, err := a.PastePendingCopies(dstDir)
 	if err != nil {
 		return "", err
 	}
 
-	rel, err := uniquePasteCopyPath(ws, dir, pasteBaseName(staged.SrcPath))
+	if len(rels) == 0 {
+		return "", fmt.Errorf("nothing to paste: copy a file first")
+	}
+
+	return rels[0], nil
+}
+
+// PastePendingCopies pastes every staged source into dstDir and returns the
+// new workspace-relative slash paths in staged order. Sources stage through
+// stageCopies, so one call moves a whole multi-select.
+func (a *App) PastePendingCopies(dstDir string) ([]string, error) {
+	staged, ok := GetPendingCopy()
+	if !ok || len(staged.SrcPaths) == 0 {
+		if !ok || staged.SrcPath == "" {
+			return nil, fmt.Errorf("nothing to paste: copy a file first")
+		}
+
+		staged.SrcPaths = []string{staged.SrcPath}
+	}
+
+	ws := a.ws
+	if ws == nil {
+		return nil, fmt.Errorf("nothing to paste into: no workspace")
+	}
+
+	if !ws.writable() {
+		return nil, errSampleReadOnly()
+	}
+
+	dir, valid := a.resolvePasteCandidate(dstDir)
+	if !valid {
+		return nil, fmt.Errorf("paste target %q is not a folder in this workspace", dstDir)
+	}
+
+	var rels []string
+
+	var cut []string
+
+	for _, src := range staged.SrcPaths {
+		rel, err := a.pasteOneSource(dir, src)
+		if err != nil {
+			if len(rels) == 0 {
+				return nil, err
+			}
+
+			break
+		}
+
+		rels = append(rels, rel)
+
+		if staged.IsCut && !filepath.IsAbs(src) {
+			cut = append(cut, src)
+		}
+	}
+
+	if len(cut) > 0 {
+		a.removeCutSources(cut)
+	}
+
+	if staged.IsCut {
+		a.dropExplorerCopy()
+		a.clearExplorerSel()
+	}
+
+	return rels, nil
+}
+
+// pasteOneSource copies one staged source (file or folder) into dir and
+// registers it, returning the new workspace-relative slash path. Folders
+// copy recursively with os.CopyFS; files copy byte for byte.
+func (a *App) pasteOneSource(dir, src string) (string, error) {
+	ws := a.ws
+
+	if isPasteSourceDir(ws, src) {
+		rel, err := uniquePasteCopyPath(ws, dir, pasteBaseName(src))
+		if err != nil {
+			return "", err
+		}
+
+		if rel == "" {
+			return "", fmt.Errorf("cannot paste %q: no folder name", src)
+		}
+
+		dst := filepath.Join(ws.Root, filepath.FromSlash(rel))
+		from := src
+		if !filepath.IsAbs(from) {
+			from = filepath.Join(ws.Root, filepath.FromSlash(from))
+		}
+
+		if err := os.MkdirAll(dst, workspaceDirMode); err != nil {
+			return "", fmt.Errorf("paste %s: %w", src, err)
+		}
+
+		if err := os.CopyFS(dst, os.DirFS(from)); err != nil {
+			return "", fmt.Errorf("paste %s: %w", src, err)
+		}
+
+		// A folder brings its own tree: rescan rather than inserting nodes
+		// by hand, the same path refreshPastedFile takes for full scans.
+		if ws.Lazy {
+			if dir != "" {
+				_ = ws.loadDir(dir)
+			}
+
+			_ = ws.loadDir(rel)
+		} else {
+			ws.finish()
+		}
+
+		return rel, nil
+	}
+
+	data, err := a.readPasteSource(src)
+	if err != nil {
+		return "", err
+	}
+
+	rel, err := uniquePasteCopyPath(ws, dir, pasteBaseName(src))
 	if err != nil {
 		return "", err
 	}
 
 	if rel == "" {
-		return "", fmt.Errorf("cannot paste %q: no file name", staged.SrcPath)
+		return "", fmt.Errorf("cannot paste %q: no file name", src)
 	}
 
 	if err := ws.createFile(rel, data); err != nil {
@@ -209,11 +308,67 @@ func (a *App) PastePendingCopy(dstDir string) (string, error) {
 		ws.finish()
 	}
 
-	if staged.IsCut {
-		a.dropExplorerCopy()
+	return rel, nil
+}
+
+// isPasteSourceDir reports whether a staged source is a folder on disk.
+func isPasteSourceDir(ws *workspace, src string) bool {
+	path := src
+	if !filepath.IsAbs(path) {
+		if ws == nil {
+			return false
+		}
+
+		if node := findTreeNode(ws.Tree, src); node != nil {
+			return node.Dir
+		}
+
+		path = filepath.Join(ws.Root, filepath.FromSlash(src))
 	}
 
-	return rel, nil
+	info, err := os.Stat(path)
+
+	return err == nil && info.IsDir()
+}
+
+// removeCutSources deletes moved workspace sources and rescans their
+// parents. Absolute host sources are never cut, so only relative paths
+// arrive here.
+func (a *App) removeCutSources(srcs []string) {
+	ws := a.ws
+	if ws == nil {
+		return
+	}
+
+	parents := map[string]bool{}
+
+	for _, src := range srcs {
+		full := filepath.Join(ws.Root, filepath.FromSlash(src))
+		if info, err := os.Stat(full); err == nil && info.IsDir() {
+			_ = os.RemoveAll(full)
+		} else {
+			_ = os.Remove(full)
+		}
+
+		parents[dirName(src)] = true
+	}
+
+	if ws.Lazy {
+		for parent := range parents {
+			if parent != "" {
+				_ = ws.loadDir(parent)
+			}
+		}
+
+		return
+	}
+
+	next, delta, err := rescanDiskWorkspace(ws.Root, ws, a.scanLimit)
+	if err != nil {
+		return
+	}
+
+	a.installRescan(next, delta)
 }
 
 // readPasteSource reads a staged copy source. Absolute paths come from the
@@ -263,6 +418,13 @@ const (
 	// fails instead of looping.
 	maxPasteNameTries = 1000
 )
+
+// pastePathExists reports whether a slash-relative path exists on disk.
+func pastePathExists(root, rel string) bool {
+	_, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel)))
+
+	return err == nil
+}
 
 // uniquePasteCopyPath picks dir/base, then "stem (copy).ext", "stem (copy
 // 2).ext", and so on. Both the workspace map and the disk count as taken, so

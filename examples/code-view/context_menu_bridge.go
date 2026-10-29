@@ -16,6 +16,7 @@ func (a *App) contextMenuForPage(id string) []ownframe.MenuItem {
 		out = append(out, ownframe.MenuItem{
 			ID:      row.ID,
 			Label:   row.Label,
+			Hint:    row.Hint,
 			Enabled: row.Enabled,
 		})
 	}

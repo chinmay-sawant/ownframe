@@ -513,9 +513,19 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "commit:"):
 		a.toggleCommit(ctx, strings.TrimPrefix(action, "commit:"))
 	case strings.HasPrefix(action, "open:"):
-		a.openFile(strings.TrimPrefix(action, "open:"))
+		path := strings.TrimPrefix(action, "open:")
+		if (a.ctrl || a.shift) && !a.editing {
+			return a.clickTreeSelect(ctx, path)
+		}
+		a.clearExplorerSel()
+		a.openFile(path)
 	case strings.HasPrefix(action, "dir:"):
-		a.onToggleDir(strings.TrimPrefix(action, "dir:"))
+		path := strings.TrimPrefix(action, "dir:")
+		if (a.ctrl || a.shift) && !a.editing {
+			return a.clickTreeSelect(ctx, path)
+		}
+		a.clearExplorerSel()
+		a.onToggleDir(path)
 	case strings.HasPrefix(action, "tab-close:"):
 		if index, ok := actionIndex(action, "tab-close:"); ok {
 			a.closeTab(index)
@@ -1485,6 +1495,12 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	// chord pastes instead of moving focus.
 	if a.ctrl && !a.shift && key == "v" && a.pasteTargetReady() {
 		return a.pasteFromClipboard(ctx)
+	}
+
+	if a.ctrl && !a.shift && (key == "c" || key == "x") && !a.editing && a.explorerCopyReady() {
+		if done, err := a.copyExplorerSelection(ctx, key == "x"); done {
+			return err
+		}
 	}
 
 	if a.searchOpen && key == "escape" {

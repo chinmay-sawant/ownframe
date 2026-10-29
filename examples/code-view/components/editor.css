@@ -377,6 +377,8 @@
 }
 .ctx-item:hover { background-color: var(--panel-3); color: var(--text); }
 .ctx-item:disabled { color: var(--dim); }
+.ctx-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-hint { flex: 0 0 auto; margin-left: 24px; color: var(--dim); font-size: 10px; }
 @keyframes edit-blink { from { opacity: 1; } to { opacity: 0; } }
 .crow.line-add, .crow.line-mod { background-color: var(--green-bg); }
 .crow.line-del { background-color: var(--red-bg); }

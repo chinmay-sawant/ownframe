@@ -4,11 +4,13 @@ import "context"
 
 // MenuItem is one row of the window's context menu. ID names the action:
 // cut, copy, paste, select-all, undo, or redo, or a custom id the screen
-// handles through MenuActioner.
+// handles through MenuActioner. Hint is an optional shortcut label the page
+// paints right-aligned, such as Ctrl+C; the shell menu ignores it.
 type MenuItem struct {
 	ID      string
 	Label   string
 	Enabled bool
+	Hint    string
 }
 
 // ContextMenu is a screen that reports the context menu rows for its current

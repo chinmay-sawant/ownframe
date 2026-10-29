@@ -5,30 +5,50 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
 
-// PendingCopy is one file staged by Copy for a later Paste. Task 4's paste
-// backend consumes it; the explorer clipboard owns the definition so every
-// workstream shares one shape.
+// PendingCopy stages files for a later Paste. SrcPaths holds every staged
+// workspace path; SrcPath is the first one for single-file callers. A cut
+// clears after one paste; a copy stays staged for repeated pastes.
 type PendingCopy struct {
-	SrcPath string
-	IsCut   bool
+	SrcPath  string
+	SrcPaths []string
+	IsCut    bool
 }
 
 // pasteStagedCopy is the Task 3 name for a staged file copy. It aliases
 // PendingCopy so the App seam and this package share one shape.
 type pasteStagedCopy = PendingCopy
 
-// pendingCopy holds the file Copy staged. Copy keeps it for repeated pastes;
-// a cut clears it after one paste.
+// pendingCopy holds the files Copy staged. Copy keeps them for repeated
+// pastes; a cut clears after one paste.
 var pendingCopy *PendingCopy
 
-// stageCopy records src for a later Paste.
+// stageCopy records one source for a later Paste.
 func stageCopy(src string, isCut bool) {
-	pendingCopy = &PendingCopy{SrcPath: src, IsCut: isCut}
+	stageCopies([]string{src}, isCut)
+}
+
+// stageCopies records sources for a later Paste.
+func stageCopies(srcs []string, isCut bool) {
+	kept := make([]string, 0, len(srcs))
+	for _, src := range srcs {
+		if src != "" {
+			kept = append(kept, src)
+		}
+	}
+
+	first := ""
+	if len(kept) > 0 {
+		first = kept[0]
+	}
+
+	pendingCopy = &PendingCopy{SrcPath: first, SrcPaths: kept, IsCut: isCut}
 }
 
 // stagedCopy returns the file Copy staged, or nil when nothing is staged.
@@ -41,11 +61,15 @@ func clearStagedCopy() {
 	pendingCopy = nil
 }
 
-// stageExplorerCopy is the Task 3 seam: the explorer Copy menu row stages
-// here. It shares the package store so the menu, Ctrl+V, and Task 4's paste
-// backend all see one staged file.
+// stageExplorerCopy stages one workspace path for a later Paste.
 func (a *App) stageExplorerCopy(src string, isCut bool) {
-	stageCopy(src, isCut)
+	a.stageExplorerCopies([]string{src}, isCut)
+}
+
+// stageExplorerCopies stages workspace paths for a later Paste. A cut
+// clears after one paste; a copy stays staged for repeated pastes.
+func (a *App) stageExplorerCopies(srcs []string, isCut bool) {
+	stageCopies(srcs, isCut)
 	a.pasteStaged = pendingCopy
 }
 
@@ -55,15 +79,34 @@ func (a *App) dropExplorerCopy() {
 	a.pasteStaged = nil
 }
 
+// shortcutHint labels a menu row with its keyboard shortcut, using the
+// macOS symbol there and Ctrl elsewhere.
+func shortcutHint(win string) string {
+	if runtime.GOOS == "darwin" {
+		switch win {
+		case "Ctrl+X":
+			return "\u2318X"
+		case "Ctrl+C":
+			return "\u2318C"
+		case "Ctrl+V":
+			return "\u2318V"
+		}
+	}
+
+	return win
+}
+
 // contextMenuForExplorer returns the explorer rows for a tree id. The second
 // result reports whether the id belongs to the explorer, including empty
 // space and stale paths that yield no rows. Only visible rows have boxes, so
 // callers reach this through the id of the row under the pointer.
+// Right-clicking a row outside the multi-select replaces the selection with
+// that row, so Copy and Cut act on what the menu shows.
 func (a *App) contextMenuForExplorer(id string) ([]contextMenuRow, bool) {
 	switch id {
 	case "tree-pane", "sidebar", "":
 		return []contextMenuRow{
-			{ID: contextMenuPasteID, Label: "Paste", Enabled: stagedCopy() != nil},
+			{ID: contextMenuPasteID, Label: "Paste", Hint: shortcutHint("Ctrl+V"), Enabled: stagedCopy() != nil},
 		}, true
 	}
 
@@ -74,25 +117,27 @@ func (a *App) contextMenuForExplorer(id string) ([]contextMenuRow, bool) {
 	rel := strings.TrimPrefix(id, "tree-")
 
 	switch rel {
-	case "scroll", "thumb", "up", "down", "pane":
+	case "scroll", "thumb", "up", "down", "pane", "sticky":
 		return nil, true
 	}
 
-	isDir, ok := a.lookupTreePath(rel)
-	if !ok {
+	if _, ok := a.lookupTreePath(rel); !ok {
 		return nil, true
 	}
 
-	if isDir {
-		return []contextMenuRow{
-			{ID: contextMenuCopyPathID + rel, Label: "Copy Path", Enabled: true},
-			{ID: contextMenuPasteID + rel, Label: "Paste", Enabled: stagedCopy() != nil},
-		}, true
+	if len(a.explSel) == 0 || !a.explSel[rel] {
+		a.explSel = map[string]bool{rel: true}
+		a.explAnchor = rel
 	}
+
+	pasteEnabled := stagedCopy() != nil
 
 	return []contextMenuRow{
+		{ID: contextMenuCutID + rel, Label: "Cut", Hint: shortcutHint("Ctrl+X"), Enabled: true},
+		{ID: contextMenuCopyID + rel, Label: "Copy", Hint: shortcutHint("Ctrl+C"), Enabled: true},
 		{ID: contextMenuCopyPathID + rel, Label: "Copy Path", Enabled: true},
-		{ID: contextMenuCopyFileID + rel, Label: "Copy File", Enabled: true},
+		{ID: contextMenuCopyAbsID + rel, Label: "Copy Absolute Path", Enabled: true},
+		{ID: contextMenuPasteID + rel, Label: "Paste", Hint: shortcutHint("Ctrl+V"), Enabled: pasteEnabled},
 	}, true
 }
 
@@ -126,6 +171,57 @@ func (a *App) lookupTreePath(rel string) (bool, bool) {
 	return false, false
 }
 
+// copyTargets resolves what a Copy or Cut acts on: the multi-select when
+// the row belongs to it, else the row alone.
+func (a *App) copyTargets(rel string) []string {
+	if len(a.explSel) > 0 && a.explSel[rel] {
+		out := make([]string, 0, len(a.explSel))
+		for path := range a.explSel {
+			out = append(out, path)
+		}
+
+		sort.Strings(out)
+
+		return out
+	}
+
+	return []string{rel}
+}
+
+// stageTreeCopy validates paths and stages them for Paste, writing the paths
+// to the OS clipboard as text. Folders stage too: paste copies the whole
+// tree. It reports how many files and folders staged.
+func (a *App) stageTreeCopy(paths []string, isCut bool) {
+	kept := make([]string, 0, len(paths))
+	for _, path := range paths {
+		if _, ok := a.lookupTreePath(path); !ok {
+			continue
+		}
+
+		kept = append(kept, path)
+	}
+
+	if len(kept) == 0 {
+		return
+	}
+
+	a.stageExplorerCopies(kept, isCut)
+	ownframe.Write(strings.Join(kept, "\n"))
+
+	verb := "copied"
+	if isCut {
+		verb = "cut"
+	}
+
+	if len(kept) == 1 {
+		a.showToast("success", "File "+verb, kept[0])
+	} else {
+		a.showToast("success", fmt.Sprintf("%d files %s", len(kept), verb), strings.Join(kept, ", "))
+	}
+
+	a.refresh()
+}
+
 // copyTreePath writes one slash-relative tree path to the clipboard. It
 // mirrors copyActive(false).
 func (a *App) copyTreePath(path string) {
@@ -138,46 +234,217 @@ func (a *App) copyTreePath(path string) {
 	a.refresh()
 }
 
-// copyTreeFile writes one tree file to the clipboard and stages it for Paste.
-// Text files go over as text; a binary file cannot, so the clipboard keeps
-// the path as a fallback while the staged copy still pastes the bytes.
-func (a *App) copyTreeFile(path string) {
-	isDir, ok := a.lookupTreePath(path)
-	if !ok || isDir {
+// explorerAbsPath resolves a tree path to a native absolute host path. A WSL
+// checkout already roots under a Linux path such as /mnt/c or the guest
+// filesystem, so the join is the WSL path. A Windows checkout rooted at a
+// \\wsl$\ network share keeps the UNC form, which is the path Windows apps
+// need to reach the same files. Cross-convention roots translate: a Windows
+// drive path seen from WSL maps to /mnt/<drive>, and a /mnt/<drive> path
+// seen from Windows maps back to the drive letter.
+func (a *App) explorerAbsPath(rel string) string {
+	abs := rel
+	if !filepath.IsAbs(rel) {
+		root := a.ws.Root
+		if root == "" {
+			root = "."
+		}
+
+		abs = filepath.Join(root, filepath.FromSlash(rel))
+	}
+
+	if isWSL() {
+		if win, ok := windowsToWSLPath(abs); ok {
+			return win
+		}
+	} else if runtime.GOOS == "windows" {
+		if win, ok := wslMntToWindows(abs); ok {
+			return win
+		}
+	}
+
+	if out, err := filepath.Abs(abs); err == nil {
+		return out
+	}
+
+	return abs
+}
+
+// copyTreeAbsPath writes the machine-native absolute path of one tree row
+// to the clipboard.
+func (a *App) copyTreeAbsPath(path string) {
+	if _, ok := a.lookupTreePath(path); !ok {
 		return
 	}
 
-	raw, err := a.ws.readFile(path)
-	if err != nil {
-		a.showToast("error", "Cannot copy", err.Error())
-		a.refresh()
-
-		return
-	}
-
-	if isBinary(raw) {
-		a.stageExplorerCopy(path, false)
-		ownframe.Write(path)
-		a.showToast("success", "File copied", path+" (binary; path on clipboard)")
-		a.refresh()
-
-		return
-	}
-
-	a.stageExplorerCopy(path, false)
-	ownframe.Write(string(raw))
-	a.showToast("success", "File copied", path)
+	abs := a.explorerAbsPath(path)
+	ownframe.Write(abs)
+	a.showToast("success", "Absolute path copied", abs)
 	a.refresh()
 }
 
-// pasteTreeCopy duplicates the staged file into destDir, or the workspace
-// root when destDir is empty. Pasting onto a file id lands beside it. This is
-// the minimal disk backend Task 4 replaces: it resolves the destination,
-// picks a unique name, copies the bytes, refreshes the workspace, and
-// repaints.
+// toggleExplorerSel flips one row in the multi-select and anchors the range
+// there. Ctrl+click never expands or opens the row.
+func (a *App) toggleExplorerSel(path string) {
+	if a.explSel == nil {
+		a.explSel = map[string]bool{}
+	}
+
+	if a.explSel[path] {
+		delete(a.explSel, path)
+	} else {
+		a.explSel[path] = true
+	}
+
+	a.explAnchor = path
+}
+
+// extendExplorerSel replaces the multi-select with the visible range between
+// the anchor and the clicked row, like Shift+click in VS Code. A missing
+// anchor selects just the row.
+func (a *App) extendExplorerSel(path string) {
+	order := a.explorerOrder()
+
+	anchorIdx, pathIdx := -1, -1
+
+	for i, p := range order {
+		if p == a.explAnchor {
+			anchorIdx = i
+		}
+
+		if p == path {
+			pathIdx = i
+		}
+	}
+
+	if pathIdx < 0 {
+		return
+	}
+
+	if anchorIdx < 0 {
+		a.explSel = map[string]bool{path: true}
+		a.explAnchor = path
+
+		return
+	}
+
+	lo, hi := anchorIdx, pathIdx
+	if lo > hi {
+		lo, hi = hi, lo
+	}
+
+	sel := make(map[string]bool, hi-lo+1)
+	for _, p := range order[lo : hi+1] {
+		sel[p] = true
+	}
+
+	a.explSel = sel
+}
+
+// clearExplorerSel drops the multi-select and its anchor.
+func (a *App) clearExplorerSel() {
+	a.explSel = nil
+	a.explAnchor = ""
+}
+
+// explorerOrder lists the visible tree paths in display order for
+// Shift+click ranges. Filtered mode lists the visible window; otherwise the
+// full open-folders walk runs, which also warms lazy folders like a render.
+func (a *App) explorerOrder() []string {
+	if a.ws == nil {
+		return nil
+	}
+
+	if a.filter != "" {
+		out := make([]string, 0, len(a.view.Tree))
+		for _, row := range a.view.Tree {
+			out = append(out, row.Path)
+		}
+
+		return out
+	}
+
+	total := countTreeOpen(a.ws.Tree, a.folders)
+
+	var rows []treeRow
+
+	index := 0
+
+	a.walkTree(a.ws.Tree, 0, false, &rows, &index, 0, total+1)
+
+	out := make([]string, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, row.Path)
+	}
+
+	return out
+}
+
+// explorerCopyReady reports whether Ctrl+C/Ctrl+X should stage explorer
+// files: no overlay or text field owns the keys, and the focus is a tree row
+// or rows are already selected.
+func (a *App) explorerCopyReady() bool {
+	if !a.pasteTargetReady() {
+		return false
+	}
+
+	if len(a.explSel) > 0 {
+		return true
+	}
+
+	return isTreeRowID(a.page.Form().FocusID())
+}
+
+// copyExplorerSelection stages the multi-select, or the focused tree row
+// when nothing is selected. It reports false when the keys belong to
+// another control.
+func (a *App) copyExplorerSelection(ctx context.Context, isCut bool) (bool, error) {
+	var targets []string
+
+	if len(a.explSel) > 0 {
+		for path := range a.explSel {
+			targets = append(targets, path)
+		}
+
+		sort.Strings(targets)
+	} else if focus := a.page.Form().FocusID(); isTreeRowID(focus) {
+		targets = []string{strings.TrimPrefix(focus, "tree-")}
+	} else {
+		return false, nil
+	}
+
+	a.stageTreeCopy(targets, isCut)
+
+	return true, a.page.Redraw(ctx)
+}
+
+// clickTreeSelect handles Ctrl+click (toggle) and Shift+click (extend) on
+// an explorer row without opening or expanding it.
+func (a *App) clickTreeSelect(ctx context.Context, path string) error {
+	if _, ok := a.lookupTreePath(path); !ok {
+		return nil
+	}
+
+	if a.shift {
+		a.extendExplorerSel(path)
+	} else {
+		a.toggleExplorerSel(path)
+	}
+
+	a.refresh()
+
+	if err := a.page.Redraw(ctx); err != nil {
+		return err
+	}
+
+	return a.page.Form().Focus(ctx, "tree-"+path)
+}
+
+// pasteTreeCopy pastes the staged files into destDir, or the workspace
+// root when destDir is empty. Pasting onto a file id lands beside it. A cut
+// moves every source; a copy leaves staging in place for repeated pastes.
 func (a *App) pasteTreeCopy(ctx context.Context, destDir string) error {
 	staged := stagedCopy()
-	if staged == nil || staged.SrcPath == "" {
+	if staged == nil || (staged.SrcPath == "" && len(staged.SrcPaths) == 0) {
 		a.showToast("info", "Nothing to paste", "Copy a file first.")
 		a.refresh()
 
@@ -186,16 +453,6 @@ func (a *App) pasteTreeCopy(ctx context.Context, destDir string) error {
 
 	if a.ws.Sample {
 		a.showToast("error", "Cannot paste", sampleReadOnlyMessage)
-		a.refresh()
-
-		return a.redrawTreeMenu(ctx)
-	}
-
-	src := staged.SrcPath
-
-	raw, err := a.ws.readFile(src)
-	if err != nil {
-		a.showToast("error", "Cannot paste", err.Error())
 		a.refresh()
 
 		return a.redrawTreeMenu(ctx)
@@ -225,34 +482,24 @@ func (a *App) pasteTreeCopy(ctx context.Context, destDir string) error {
 		}
 	}
 
-	candidate := uniquePastePath(a.ws, dest, baseName(src))
-
-	target := filepath.Join(a.ws.Root, filepath.FromSlash(candidate))
-	if err := os.MkdirAll(filepath.Dir(target), workspaceDirMode); err != nil {
+	rels, err := a.PastePendingCopies(dest)
+	if err != nil {
 		a.showToast("error", "Cannot paste", err.Error())
 		a.refresh()
 
 		return a.redrawTreeMenu(ctx)
 	}
-
-	if err := os.WriteFile(target, raw, workspaceFileMode); err != nil {
-		a.showToast("error", "Cannot paste", err.Error())
-		a.refresh()
-
-		return a.redrawTreeMenu(ctx)
-	}
-
-	a.refreshPastedFile(dest, candidate)
 
 	if dest != "" {
 		a.folders[dest] = true
 	}
 
-	if staged.IsCut {
-		a.dropExplorerCopy()
+	if len(rels) == 1 {
+		a.showToast("success", "File pasted", rels[0])
+	} else {
+		a.showToast("success", fmt.Sprintf("%d files pasted", len(rels)), strings.Join(rels, ", "))
 	}
 
-	a.showToast("success", "File pasted", candidate)
 	a.refresh()
 
 	return a.redrawTreeMenu(ctx)
@@ -283,43 +530,6 @@ func (a *App) refreshPastedFile(dest, candidate string) {
 	}
 
 	a.installRescan(next, delta)
-}
-
-// uniquePastePath picks dest/base, or a " copy" suffixed name when it exists
-// in the workspace or on disk.
-func uniquePastePath(w *workspace, dest, base string) string {
-	join := func(name string) string {
-		if dest == "" {
-			return name
-		}
-
-		return dest + "/" + name
-	}
-
-	if w.ByPath[join(base)] == nil && !pastePathExists(w.Root, join(base)) {
-		return join(base)
-	}
-
-	ext := filepath.Ext(base)
-	stem := strings.TrimSuffix(base, ext)
-
-	for i := 1; ; i++ {
-		name := fmt.Sprintf("%s copy%s", stem, ext)
-		if i > 1 {
-			name = fmt.Sprintf("%s copy %d%s", stem, i, ext)
-		}
-
-		if w.ByPath[join(name)] == nil && !pastePathExists(w.Root, join(name)) {
-			return join(name)
-		}
-	}
-}
-
-// pastePathExists reports whether a slash-relative path exists on disk.
-func pastePathExists(root, rel string) bool {
-	_, err := os.Stat(filepath.Join(root, filepath.FromSlash(rel)))
-
-	return err == nil
 }
 
 // addDiskFile registers a file already written under the root: it adds the
