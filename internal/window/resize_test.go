@@ -64,3 +64,41 @@ func TestResizeClampsBeforeRedraw(t *testing.T) {
 		t.Fatalf("redraws = %d, want 1", app.redraws)
 	}
 }
+
+func TestResizeDefersCommitDuringTitlebarDrag(t *testing.T) {
+	t.Parallel()
+
+	app := &fakeScreen{
+		width: 480, height: 640,
+		minW: 320, minH: 400,
+		maxW: 2560, maxH: 2560,
+	}
+	shell := newShell(context.Background(), app)
+
+	shell.windowDrag.active = true
+	shell.Layout(600, 720)
+	if err := shell.resize(); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.redraws != 0 {
+		t.Fatalf("redraws during drag = %d, want 0", app.redraws)
+	}
+
+	if app.width != 480 || app.height != 640 {
+		t.Fatalf("size during drag = %d x %d, want unchanged", app.width, app.height)
+	}
+
+	shell.windowDrag.active = false
+	if err := shell.resize(); err != nil {
+		t.Fatal(err)
+	}
+
+	if app.redraws != 1 {
+		t.Fatalf("redraws after release = %d, want 1", app.redraws)
+	}
+
+	if app.width != 600 || app.height != 720 {
+		t.Fatalf("size after release = %d x %d, want 600 x 720", app.width, app.height)
+	}
+}

@@ -37,6 +37,15 @@ func (s *shell) resize() error {
 		return nil
 	}
 
+	if s.windowDrag.active {
+		// A titlebar drag moves the window; it does not resize it. A
+		// size report that lands mid-drag (monitor scale seam) must not
+		// trigger a full relayout storm under the hand. The commit lands
+		// on release, when the drag goes inactive and the sizes still
+		// differ. The in-between frames keep the previous frame scaled.
+		return nil
+	}
+
 	if moving && time.Since(s.lastRelayout) < relayoutEvery {
 		s.skipped++
 

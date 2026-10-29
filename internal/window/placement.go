@@ -321,13 +321,13 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		manualMax.sw, manualMax.sh = placement.W, placement.H
 		manualMax.wx, manualMax.wy = placement.MaxX, placement.MaxY
 		manualMax.ww, manualMax.wh = placement.MaxW, placement.MaxH
-		manualMax.learnedMon = ebiten.Monitor()
+		manualMax.learnedMon = placement.Monitor
 		manualMax.known = true
 		if manualMax.areas == nil {
-			manualMax.areas = make(map[*ebiten.MonitorType]workarea)
+			manualMax.areas = make(map[string]workarea)
 		}
-		if manualMax.learnedMon != nil {
-			manualMax.areas[manualMax.learnedMon] = workarea{x: placement.MaxX, y: placement.MaxY, w: placement.MaxW, h: placement.MaxH}
+		if placement.Monitor != "" {
+			manualMax.areas[placement.Monitor] = workarea{x: placement.MaxX, y: placement.MaxY, w: placement.MaxW, h: placement.MaxH}
 		}
 		ebiten.SetWindowPosition(placement.MaxX, placement.MaxY)
 		ebiten.SetWindowSize(placement.MaxW, placement.MaxH)

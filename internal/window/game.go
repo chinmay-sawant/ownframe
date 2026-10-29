@@ -2,6 +2,9 @@ package window
 
 import (
 	"context"
+	"os"
+
+	"github.com/chinmay-sawant/ownframe/internal/debugtag"
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -39,6 +42,9 @@ func newShell(ctx context.Context, app host.Screen) *shell {
 		screenW:  width,
 		screenH:  height,
 		perf:     perfEnabled(app),
+		// Drag tracing stays out of shipped builds: the build tag gates
+		// it like the pacing debug output, and the variable gates a run.
+		dragTrace: debugtag.Enabled && os.Getenv("OWNFRAME_DRAG_DEBUG") != "",
 	}
 	game.wirePerf()
 	game.imeInit()

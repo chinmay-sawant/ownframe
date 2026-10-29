@@ -116,9 +116,10 @@ var pendingStartMaximize bool
 // rect and applies the workarea as plain client geometry, which WSLg
 // presents correctly, then restores the saved rect on toggle.
 //
-// The workarea is cached per monitor: a 1920-wide panel and a 2560-wide
+// The workarea is cached per monitor name: a 1920-wide panel and a 2560-wide
 // panel report different maximized rects, so a cache hit must come from the
-// monitor the window is on now, not from a previous probe elsewhere.
+// monitor the window is on now, not from a previous probe elsewhere. Names
+// are stable across calls; Ebiten monitor pointers are not.
 var manualMax = struct {
 	active     bool // manually maximized: geometry is client-set workarea
 	known      bool // workarea learned for learnedMon
@@ -129,9 +130,41 @@ var manualMax = struct {
 	sw, sh     int // saved windowed size
 	wx, wy     int // learned workarea position
 	ww, wh     int // learned workarea size
-	learnedMon *ebiten.MonitorType
-	areas      map[*ebiten.MonitorType]workarea
+	learnedMon string
+	areas      map[string]workarea
 }{}
+
+// workareaGapMax bounds how far a learned workarea may fall short of its
+// monitor's fullscreen size. Taskbars and docks cost tens of pixels; a
+// rect hundreds short belongs to another monitor.
+const workareaGapMax = 256
+
+// workareaMatchesMonitor reports whether area plausibly is name's workarea:
+// it fits and it nearly fills the monitor. A 1920-wide rect fits a
+// 2560-wide monitor but leaves 640 pixels unexplained, so it must not
+// apply there. Unknown monitors keep the old behavior and report true so
+// a missing probe never discards a good rect.
+func workareaMatchesMonitor(name string, area workarea) bool {
+	if !placementFits(name, area.w, area.h) {
+		return false
+	}
+
+	monW, monH, ok := placementMonitorSize(name)
+	if !ok {
+		return true
+	}
+
+	return monW-area.w <= workareaGapMax && monH-area.h <= workareaGapMax
+}
+
+// currentMonitorName reports the live monitor's name, or "" when headless.
+func currentMonitorName() string {
+	if monitor := ebiten.Monitor(); monitor != nil {
+		return monitor.Name()
+	}
+
+	return ""
+}
 
 // toggleManualMaximize flips between the saved windowed rect and the
 // learned workarea. The first maximize per monitor learns the workarea with
@@ -160,18 +193,29 @@ func toggleManualMaximize() {
 
 	manualMax.sx, manualMax.sy = ebiten.WindowPosition()
 	manualMax.sw, manualMax.sh = ebiten.WindowSize()
-	current := ebiten.Monitor()
+	current := currentMonitorName()
 
 	if area, ok := manualMax.areas[current]; ok {
-		applyWorkarea(current, area)
+		// A stale entry from the other monitor teleports the window
+		// across screens. Drop the entry and re-probe instead.
+		if !workareaMatchesMonitor(current, area) {
+			delete(manualMax.areas, current)
+		} else {
+			applyWorkarea(current, area)
 
-		return
+			return
+		}
 	}
 
 	if manualMax.known && manualMax.learnedMon == current {
-		applyWorkarea(current, workarea{x: manualMax.wx, y: manualMax.wy, w: manualMax.ww, h: manualMax.wh})
+		learned := workarea{x: manualMax.wx, y: manualMax.wy, w: manualMax.ww, h: manualMax.wh}
+		// Same stale-entry guard as the cache above: a rect learned
+		// under a wrong monitor claim must re-probe, not teleport.
+		if workareaMatchesMonitor(current, learned) {
+			applyWorkarea(current, learned)
 
-		return
+			return
+		}
 	}
 
 	manualMax.learning = true
@@ -181,13 +225,13 @@ func toggleManualMaximize() {
 
 // applyWorkarea installs a learned rect as plain client geometry and marks
 // the manual maximize active. Callers must have saved the windowed rect.
-func applyWorkarea(mon *ebiten.MonitorType, area workarea) {
+func applyWorkarea(mon string, area workarea) {
 	manualMax.wx, manualMax.wy = area.x, area.y
 	manualMax.ww, manualMax.wh = area.w, area.h
 	manualMax.learnedMon = mon
 	manualMax.known = true
 	if manualMax.areas == nil {
-		manualMax.areas = make(map[*ebiten.MonitorType]workarea)
+		manualMax.areas = make(map[string]workarea)
 	}
 	manualMax.areas[mon] = area
 	ebiten.SetWindowPosition(area.x, area.y)
@@ -222,15 +266,22 @@ func completeManualMaximize(pendingW, pendingH int) {
 
 		area := workarea{w: pendingW, h: pendingH}
 		area.x, area.y = ebiten.WindowPosition()
-		current := ebiten.Monitor()
+		current := currentMonitorName()
 		manualMax.wx, manualMax.wy = area.x, area.y
 		manualMax.ww, manualMax.wh = area.w, area.h
 		manualMax.learnedMon = current
 		manualMax.known = true
-		if manualMax.areas == nil {
-			manualMax.areas = make(map[*ebiten.MonitorType]workarea)
+		// ebiten.Monitor is unreliable while a window straddles monitors,
+		// so a probe learned on one panel can claim a name from the other.
+		// Cache only a rect that plausibly fills its claimant; the dance
+		// below still applies the learned geometry, so the current
+		// maximize is fine and the next one simply re-probes.
+		if workareaMatchesMonitor(current, area) {
+			if manualMax.areas == nil {
+				manualMax.areas = make(map[string]workarea)
+			}
+			manualMax.areas[current] = area
 		}
-		manualMax.areas[current] = area
 		manualMax.learning = false
 		manualMax.restoring = true
 		manualMax.until = time.Now().Add(manualMaxLearnTimeout)
