@@ -55,7 +55,8 @@ def snippets():
         match = re.search(r'(?:export )?const ' + name + r' = `(.*?)`;', path.read_text(), re.S)
         if match is None:
             raise ValueError(f'{path}: missing {name}')
-        found[f'frontend/src/Home.jsx#{name}'] = (match.group(1), path, path.read_text()[:match.start(1)].count('\n') + 1)
+        body = match.group(1).replace('` + "`" + `', '`')
+        found[f'frontend/src/Home.jsx#{name}'] = (body, path, path.read_text()[:match.start(1)].count('\n') + 1)
     return found
 
 

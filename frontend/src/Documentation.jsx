@@ -56,7 +56,12 @@ function ShowcasePreview({ media, doc, onOpen }) {
           : `min(100%, ${media.width}px)` }} />
     </button>
     <button type="button" className="showcase-media-control" onClick={() => setPlaying(!playing)}>
-      {playing ? 'Pause preview' : 'Play preview'}
+      <svg className="media-control-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+        {playing
+          ? <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+          : <path d="M8 5v14l11-7z" />}
+      </svg>
+      <span>{playing ? 'Pause preview' : 'Play preview'}</span>
     </button>
   </>;
 }
@@ -161,7 +166,7 @@ export default function Documentation({ hash }) {
     }}>
       <button ref={menuButton} className="docs-menu-toggle" type="button" aria-expanded={menuOpen}
         aria-controls="documentation-topics" onClick={() => setMenuOpen(!menuOpen)}>
-        Browse documentation
+        <span>Browse documentation</span>
       </button>
       <nav id="documentation-topics" className="docs-nav" aria-label="Documentation topics"
         onClick={(event) => { if (event.target.closest('a')) setMenuOpen(false); }}>
@@ -190,7 +195,7 @@ export default function Documentation({ hash }) {
       </nav>}
       {doc ? isShowcase ? <>
         <h1>{doc.title}</h1>
-        <p>{showcaseIntro}</p>
+        <p className="docs-lead">{showcaseIntro}</p>
         <h2>{showcase.title}</h2>
         <Markdown {...markdownProps}>{showcase.before}</Markdown>
         <div className={`showcase-media-grid showcase-media-grid--${showcase.layout}`}>
@@ -232,7 +237,7 @@ export default function Documentation({ hash }) {
               ...box, index: (box.index - 1 + box.items.length) % box.items.length,
             })}>‹</button>}
           <p className="lightbox-caption">{lightboxItem.alt}
-            {lightbox.items.length > 1 && ` · ${lightbox.index + 1} / ${lightbox.items.length}`}</p>
+            {lightbox.items.length > 1 && `\u00a0·\u00a0${lightbox.index + 1} / ${lightbox.items.length}`}</p>
           {lightboxItem.resolution && <span className="lightbox-resolution">{lightboxItem.resolution}</span>}
           {lightbox.items.length > 1 && <button type="button" className="lightbox-next" aria-label="Show next media"
             onClick={() => setLightbox((box) => box && {

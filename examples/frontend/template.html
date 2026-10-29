@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+</head>
+<body class="{{if .Light}}light{{end}}">
+  <header class="top">
+    <span class="brand">STUDIO / WORKSPACE</span>
+    <button id="theme" class="theme" data-action="theme">{{if .Light}}Dark theme{{else}}Light theme{{end}}</button>
+  </header>
+  <div class="heading">
+    <div><h1>Launch board</h1><p class="subtitle">A small plan for your next big idea.</p></div>
+    <div class="live" aria-hidden="true"></div>
+  </div>
+  <div class="stats" aria-live="polite">
+    <div class="stat"><p class="number">{{len .Items}}</p><p class="caption">TOTAL TASKS</p></div>
+    <div class="stat"><p class="number">{{.Completed}}</p><p class="caption">COMPLETED</p></div>
+    <div class="stat status"><p class="number">{{if eq .Completed (len .Items)}}Ready{{else}}Building{{end}}</p><p class="caption">RELEASE STATUS</p></div>
+  </div>
+  <nav class="tabs" aria-label="Filter tasks">
+    <button id="all" data-action="all" class="tab{{if eq .Filter "all"}} selected{{end}}" aria-pressed="{{eq .Filter "all"}}">All tasks</button>
+    <button id="open" data-action="open" class="tab{{if eq .Filter "open"}} selected{{end}}" aria-pressed="{{eq .Filter "open"}}">Open</button>
+    <button id="done" data-action="done" class="tab{{if eq .Filter "done"}} selected{{end}}" aria-pressed="{{eq .Filter "done"}}">Done</button>
+  </nav>
+  {{range .Visible}}
+  <button id="{{.ID}}" data-action="{{.ID}}" class="task{{if .Done}} done{{end}}" aria-pressed="{{.Done}}">
+    <span class="check" aria-hidden="true">{{if .Done}}✓{{end}}</span>
+    <span class="label">{{.Title}}</span><span class="category">{{.Category}}</span>
+  </button>
+  {{else}}<p class="empty">No tasks here. Try another filter.</p>{{end}}
+  <p class="footer">Click tasks to complete them. Try the filters and theme switch.</p>
+</body>
+</html>

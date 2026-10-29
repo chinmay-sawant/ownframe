@@ -17,6 +17,7 @@ function App() {
 
   useLayoutEffect(() => {
     const header = document.querySelector('header');
+    if (!header) return;
     const measure = () => document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
     measure();
     const observer = new ResizeObserver(measure);
@@ -47,12 +48,20 @@ function App() {
       document.getElementById('main').focus();
     }}>Skip to content</a>
     <header>
-      <a className="brand" href="#home">ownframe</a>
+      <a className="brand" href="#home">
+        <svg className="brand-glyph" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18" />
+          <path d="M9 21V9" />
+        </svg>
+        <span className="brand-name">ownframe</span>
+      </a>
       <nav aria-label="Main navigation">
-        <a href="#team" aria-current={isTeam ? 'page' : undefined}>Team</a>
         <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
-        <a href="#docs/compare-rust-gpui" aria-current={hash.startsWith('#docs/compare') ? 'page' : undefined}>Comparison</a>
-        <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>About</a>
+        <a href="#engine">Architecture</a>
+        <a href="#compare">Benchmarks</a>
+        <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>Documentation</a>
+        <a href="#team" aria-current={isTeam ? 'page' : undefined}>Team</a>
         <a href="#start">Get started</a>
       </nav>
       <ThemeToggle />
@@ -67,9 +76,26 @@ function App() {
       {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : isTeam ? <Team /> : <Home />}
     </main>
     <footer>
-      <a href={repository}>Source on GitHub</a>
-      <a href="#docs/showcase/wispr-flow">Example apps</a>
-      <a href="#docs/compare-rust-gpui">Comparisons</a>
+      <div className="footer-content">
+        <div className="footer-brand-col">
+          <div className="footer-logo">
+            <span className="brand-name">ownframe</span>
+          </div>
+          <p className="footer-tagline">Native Go desktop and Android apps styled with HTML and CSS. Zero Chromium.</p>
+        </div>
+        <div className="footer-nav">
+          <a href={repository}>Source on GitHub</a>
+          <a href="#demos">Showcase</a>
+          <a href="#engine">Architecture</a>
+          <a href="#compare">Benchmarks</a>
+          <a href="#docs/why-ownframe">Documentation</a>
+          <a href="#team">Team</a>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>MIT Licensed pure Go open-source project.</span>
+        <span>Linux · macOS · Windows · Android</span>
+      </div>
     </footer>
   </div>;
 }
