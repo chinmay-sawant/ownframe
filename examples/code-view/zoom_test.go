@@ -155,7 +155,7 @@ func TestZoomOverrideTracksLevel(t *testing.T) {
 		// Percent and negative values must render literally, not as verbs.
 		"left:calc(50% - 420px)",
 		"margin-right:-15px",
-		"width:100%",
+		".hist-graph svg",
 		// Scaled chrome the reports flagged.
 		".changes-title",
 		".side-title",

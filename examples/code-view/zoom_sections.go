@@ -189,7 +189,7 @@ func zoomHistoryCSS(b *strings.Builder, px func(int) string) {
 		{".hist-meta", []string{" height:", " !important; line-height:", " !important; padding:0 ", " 0 ", " !important;"}, []int{22, 22, 12, 23}},
 		{".hist-file", []string{" min-height:", " !important; gap:", " !important; padding:", " ", " ", " ", " !important;"}, []int{30, 7, 3, 10, 3, 23}},
 		{".hist-graph", []string{" width:", " !important; height:", " !important; flex-basis:", " !important;"}, []int{42, 42, 42}},
-		{".hist-graph svg", []string{" width:100% !important; height:100% !important;"}, []int{}},
+		{".hist-graph svg", []string{" width:", " !important; height:", " !important; display:block !important;"}, []int{42, 42}},
 		{".hist-btn", []string{" height:", " !important; padding:0 ", " !important; border-radius:", " !important;"}, []int{19, 6, 4}},
 		// Branch picker.
 		{".branch-filter", []string{" height:", " !important; flex-basis:", " !important; gap:", " !important; padding:0 ", " ", " ", " !important;"}, []int{26, 26, 5, 10, 4, 12}},
