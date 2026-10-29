@@ -2,17 +2,24 @@
 <div class="confirm-layer" id="confirm-layer">
   <button class="confirm-backdrop" id="confirm-backdrop" data-action="confirm-cancel" type="button" aria-label="Cancel"></button>
   <div class="confirm-panel" id="confirm-panel" role="dialog" aria-modal="true" aria-label="{{.Confirm.Title}}">
-    <div class="confirm-title">{{.Confirm.Title}}</div>
-    <div class="confirm-msg">{{.Confirm.Message}}</div>
-    {{if .Confirm.Files}}
-    <ul class="confirm-files">
-      {{range .Confirm.Files}}<li>{{.}}</li>{{end}}
-    </ul>
-    {{if gt .Confirm.Count 6}}<div class="confirm-more">and {{.Confirm.Count}} files total</div>{{end}}
-    {{end}}
-    <div class="confirm-actions">
-      <button class="confirm-btn" id="confirm-cancel" data-action="confirm-cancel" type="button">Cancel</button>
-      <button class="confirm-btn danger" id="confirm-ok" data-action="confirm-ok" type="button">Discard</button>
+    <div class="confirm-head">
+      <div class="confirm-title">{{.Confirm.Title}}</div>
+    </div>
+    <div class="confirm-body">
+      <div class="confirm-msg">{{.Confirm.Message}}</div>
+      {{if .Confirm.Files}}
+      <ul class="confirm-files">
+        {{range .Confirm.Files}}<li>{{.}}</li>{{end}}
+      </ul>
+      {{end}}
+      <span class="confirm-actions">
+        <button class="confirm-btn" id="confirm-cancel" data-action="confirm-cancel" type="button">Cancel</button>
+        <button class="confirm-btn danger" id="confirm-ok" data-action="confirm-ok" type="button">Discard</button>
+      </span>
+    </div>
+    <div class="confirm-foot">
+      <span class="confirm-hint">Enter discard · Esc cancel</span>
+      {{if gt .Confirm.Count 0}}<span class="confirm-count">{{.Confirm.Count}} files</span>{{end}}
     </div>
   </div>
 </div>

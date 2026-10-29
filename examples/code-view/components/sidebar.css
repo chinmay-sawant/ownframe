@@ -319,20 +319,17 @@
 .change.on, .change.on:hover { border-left-color: transparent; background-color: transparent; }
 
 .change-tools {
-  /* Hidden tools take no width. A flex item at opacity 0 still held a
-     column between the status badge and the editor. Shown tools sit in
-     the row's right padding, so they do not cover the badge. */
+  /* Out of the row until the row is open or hovered. A flex item at
+     opacity 0 still held a column between the status badge and the editor. */
+  display: none;
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
-  display: flex;
   align-items: center;
   gap: 2px;
   padding-right: 4px;
-  width: 0;
-  overflow: hidden;
-  opacity: 0;
+  width: 46px;
 }
 
 .change-wrap:hover .change,
@@ -343,9 +340,7 @@
 .change-wrap:hover .change-tools,
 .change-wrap.on .change-tools,
 .change-tools:focus-within {
-  width: 46px;
-  overflow: visible;
-  opacity: 1;
+  display: flex;
 }
 
 .change-tool {
@@ -404,52 +399,95 @@
   font-weight: 800;
 }
 
-/* Discard confirm dialog --------------------------------------------------- */
+/* Discard confirm dialog ---------------------------------------------------
+   Placed and styled like the search card: a full-viewport layer with a
+   top-centered panel, so the dialog never centers on the page height. */
 
 .confirm-layer {
   position: fixed;
-  inset: 0;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  width: 100vw;
+  height: 100vh;
 }
 
 .confirm-backdrop {
   position: absolute;
-  inset: 0;
-  background-color: rgba(4, 6, 10, 0.55);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(3, 5, 9, 0.62);
 }
 
 .confirm-panel {
-  position: relative;
-  width: 340px;
-  max-width: calc(100vw - 60px);
+  position: absolute;
+  top: 70px;
+  left: calc(50% - 300px);
+  width: 600px;
+  margin-left: 0;
+  max-width: calc(100vw - 40px);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   background-color: var(--panel);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
-  padding: 14px;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .confirm-panel { left: 20px; margin-left: 0; }
+}
+
+.confirm-head {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .confirm-title { color: var(--text); font-size: 12px; font-weight: 700; }
-.confirm-msg { margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.confirm-body { padding: 10px 12px 12px; }
+.confirm-msg { color: var(--muted); font-size: 11px; line-height: 1.5; }
 .confirm-files { margin: 8px 0 0; padding: 0; list-style: none; color: var(--dim); font-family: var(--mono); font-size: 9.5px; }
 .confirm-files li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.confirm-more { color: var(--dim); font-size: 9.5px; }
 .confirm-actions { margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px; }
 .confirm-btn {
   min-width: 72px;
-  height: 26px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 5px;
-  color: var(--muted);
-  font-size: 11px;
+  border-radius: 6px;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
 }
-.confirm-btn:hover { border-color: #2b3240; color: var(--text); }
+.confirm-btn:hover { border-color: #2b3240; background-color: var(--panel-3); }
 .confirm-btn.danger { border-color: rgba(240, 90, 90, 0.5); background-color: rgba(240, 90, 90, 0.12); color: var(--red); }
-.confirm-btn.danger:hover { background-color: rgba(240, 90, 90, 0.2); color: var(--red); }
+.confirm-btn.danger:hover { border-color: rgba(240, 90, 90, 0.7); background-color: rgba(240, 90, 90, 0.2); color: var(--red); }
+.confirm-foot {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--dim);
+  font-size: 9px;
+}
+.confirm-hint { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.confirm-count { flex: 0 0 auto; }
 
 .change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; overflow: hidden; }
 .change-name { max-width: 100%; max-height: 26px; font-size: 10.5px; line-height: 13px; color: var(--text); overflow: hidden; white-space: normal; overflow-wrap: anywhere; }
