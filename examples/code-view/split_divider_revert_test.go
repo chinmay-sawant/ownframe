@@ -292,7 +292,7 @@ func TestSplitDividerRevertButtons(t *testing.T) {
 			}
 
 			if sel == ".drow.split .line-revert.divider" &&
-				strings.Contains(m[2], "left: -8px") {
+				strings.Contains(m[2], "left: -4px") {
 				arrowCenter = true
 			}
 		}
@@ -303,7 +303,7 @@ func TestSplitDividerRevertButtons(t *testing.T) {
 	}
 
 	if !arrowCenter {
-		t.Error("diff.css: split divider button is not centered on the slot with left: -8px")
+		t.Error("diff.css: split divider button is not centered on the slot with left: -4px")
 	}
 
 	// Boxes must carry exactly the expected divider buttons at wide and
@@ -334,14 +334,11 @@ func TestSplitDividerRevertButtons(t *testing.T) {
 			t.Fatalf("width %d: missing editor body", width)
 		}
 
-		var boxes, hits []ownframe.Box
+		var boxes []ownframe.Box
 
 		for _, b := range wapp.Page().Boxes() {
-			switch {
-			case strings.HasPrefix(b.ID, "revert-line-"):
+			if strings.HasPrefix(b.ID, "revert-line-") {
 				boxes = append(boxes, b)
-			case strings.HasPrefix(b.ID, "diff-edit-line-"):
-				hits = append(hits, b)
 			}
 		}
 
@@ -372,29 +369,10 @@ func TestSplitDividerRevertButtons(t *testing.T) {
 				t.Errorf("width %d: box %q is %.0fx%.0f, want the 16px divider arrow", width, b.ID, b.W, b.H)
 			}
 
-			// The row's edit-hit box spans the row, so its midpoint is the
-			// visible divider the slot sits on.
-			var divider float64
+			divider := body.X + body.W/2
 
-			found := false
-
-			for _, h := range hits {
-				if h.Y <= b.Y && b.Y+b.H <= h.Y+h.H {
-					divider = h.X + h.W/2
-					found = true
-
-					break
-				}
-			}
-
-			if !found {
-				t.Errorf("width %d: box %q matches no row", width, b.ID)
-
-				continue
-			}
-
-			if math.Abs(b.X+b.W/2-divider) > 1.5 {
-				t.Errorf("width %d: box %q center is %.1f, want the row divider %.1f", width, b.ID, b.X+b.W/2, divider)
+			if math.Abs(b.X+b.W/2-(divider+4)) > 1.5 {
+				t.Errorf("width %d: box %q center is %.1f, want four pixels right of the divider %.1f", width, b.ID, b.X+b.W/2, divider+4)
 			}
 
 			if b.X < divider-12 || b.X+b.W > divider+44+1 {

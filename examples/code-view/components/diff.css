@@ -109,22 +109,22 @@ keeps the 20px row grid intact. */
 .drow.del .line-revert { left: 2px; }
 /* The split cells share the row evenly, so the midpoint between them is the
 visible divider at every width. The zero-width slot sits exactly on that
-point without taking space, and the arrow centers on it with a fixed
-half-width offset: percentage offsets resolve against the viewport here, so
+point without taking space, and the arrow sits four pixels to its right
+with a fixed offset: percentage offsets resolve against the viewport here, so
 a 50% offset cannot track the row. The arrow overlaps the left cell's 12 px
 padding and the right gutter number column, clear of both cells' text, and
 absolute positioning keeps the 20px row grid intact. The slot stays in flow
-so the flex row keeps it on the divider; the overlay and the button win hits
-in document order, and the button template sits after the overlay. */
+so the flex row keeps it on the divider. Edit hit targets cover the text
+cells, leaving the divider and number gutters available to this button. */
 .drow.split .dmid { flex: 0 0 0; min-width: 0; position: relative; }
-.drow.split .line-revert.divider { left: -8px; }
+.drow.split .line-revert.divider { left: -4px; }
 
 .drow.meta { background-color: rgba(240, 183, 90, 0.06); }
 .dmeta { padding-left: 12px; color: var(--amber); font-size: 9.5px; }
 
 .drow.split { display: flex; }
 .drow.split .dnum { width: 44px; flex: 0 0 44px; }
-.drow.split .dcell { flex: 1 1 0; padding-right: 12px; }
+.drow.split .dcell { flex: 1 1 0; padding-right: 12px; position: relative; }
 .drow.split .dcell + .dnum { border-left: 1px solid var(--line-soft); }
 .drow.split .dcell.ctx { background-color: transparent; }
 .drow.split .dcell.add { background-color: var(--green-bg); }

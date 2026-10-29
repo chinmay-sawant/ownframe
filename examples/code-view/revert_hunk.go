@@ -24,12 +24,10 @@ type revertUndoEntry struct {
 	DeletedMode   os.FileMode
 }
 
-// revertHunk reverts one @@ hunk in the working-tree diff, VS Code-style.
-// The hunk header button in the unified and split views calls it with the
-// index into the file's Hunks slice. It reverses the matching raw git hunks
-// for the worktree and the index, so staged and unstaged edits in that block
-// both return to HEAD without touching other hunks.
-func (a *App) revertHunk(ctx context.Context, hunkIdx int) error {
+// revertHunk restores a hunk, or the selected block within it, to HEAD in
+// the worktree and index. Raw zero-context patches preserve file bytes and
+// isolate adjacent blocks that Git groups into one displayed hunk.
+func (a *App) revertHunk(ctx context.Context, hunkIdx int, selection ...hunk) error {
 	if a.scmGuard() {
 		return nil
 	}
@@ -82,6 +80,9 @@ func (a *App) revertHunk(ctx context.Context, hunkIdx int) error {
 	}
 
 	uiHunk := file.Hunks[hunkIdx]
+	if len(selection) > 0 {
+		uiHunk = selection[0]
+	}
 
 	// Added files stage the whole file, so the index must go last: unstaging
 	// first would turn the worktree file untracked, which `git diff HEAD`
@@ -95,7 +96,7 @@ func (a *App) revertHunk(ctx context.Context, hunkIdx int) error {
 	// the index first so a worktree failure stays retryable as unstaged.
 	stagedPatch, hasStaged := a.stagedHunkPatch(ctx, file.Path, uiHunk.OldStart, uiHunk.OldCount)
 	if hasStaged {
-		if _, err := gitBytesStdin(ctx, a.ws.Root, stagedPatch, "apply", "--cached", "--reverse", "--whitespace=nowarn"); err != nil {
+		if _, err := gitBytesStdin(ctx, a.ws.Root, stagedPatch, "apply", "--cached", "--reverse", "--whitespace=nowarn", "--unidiff-zero"); err != nil {
 			a.showToast("error", "Hunk revert failed", err.Error())
 			a.refresh()
 
@@ -111,7 +112,7 @@ func (a *App) revertHunk(ctx context.Context, hunkIdx int) error {
 		return nil
 	}
 
-	if _, err := gitBytesStdin(ctx, a.ws.Root, patch, "apply", "--reverse", "--whitespace=nowarn"); err != nil {
+	if _, err := gitBytesStdin(ctx, a.ws.Root, patch, "apply", "--reverse", "--whitespace=nowarn", "--unidiff-zero"); err != nil {
 		a.showToast("error", "Hunk revert failed", err.Error())
 		a.refreshAfterSCMMutation(ctx)
 		a.refresh()
@@ -120,6 +121,7 @@ func (a *App) revertHunk(ctx context.Context, hunkIdx int) error {
 	}
 
 	a.pushRevertUndo(revertUndoEntry{Path: file.Path, Status: file.Status, WorktreePatch: patch, StagedPatch: stagedPatch})
+	a.forgetSCMDoc(file.Path)
 	a.refreshAfterSCMMutation(ctx)
 	a.showToast("success", "Hunk reverted", file.Path+" (Ctrl+Z restores)")
 	a.refresh()
@@ -138,7 +140,7 @@ func (a *App) revertAddedHunk(ctx context.Context, file *changedFile, uiHunk hun
 		return nil
 	}
 
-	if _, err := gitBytesStdin(ctx, a.ws.Root, patch, "apply", "--reverse", "--whitespace=nowarn"); err != nil {
+	if _, err := gitBytesStdin(ctx, a.ws.Root, patch, "apply", "--reverse", "--whitespace=nowarn", "--unidiff-zero"); err != nil {
 		a.showToast("error", "Hunk revert failed", err.Error())
 		a.refresh()
 
@@ -147,7 +149,7 @@ func (a *App) revertAddedHunk(ctx context.Context, file *changedFile, uiHunk hun
 
 	staged, hasStaged := a.stagedHunkPatch(ctx, file.Path, uiHunk.OldStart, uiHunk.OldCount)
 	if hasStaged {
-		if _, err := gitBytesStdin(ctx, a.ws.Root, staged, "apply", "--cached", "--reverse", "--whitespace=nowarn"); err != nil {
+		if _, err := gitBytesStdin(ctx, a.ws.Root, staged, "apply", "--cached", "--reverse", "--whitespace=nowarn", "--unidiff-zero"); err != nil {
 			a.showToast("error", "Hunk revert failed", err.Error())
 			a.refreshAfterSCMMutation(ctx)
 			a.refresh()
@@ -157,6 +159,7 @@ func (a *App) revertAddedHunk(ctx context.Context, file *changedFile, uiHunk hun
 	}
 
 	a.pushRevertUndo(revertUndoEntry{Path: file.Path, Status: file.Status, WorktreePatch: patch, StagedPatch: staged})
+	a.forgetSCMDoc(file.Path)
 	a.refreshAfterSCMMutation(ctx)
 	a.showToast("success", "Hunk reverted", file.Path+" (Ctrl+Z restores)")
 	a.refresh()
@@ -168,7 +171,7 @@ func (a *App) revertAddedHunk(ctx context.Context, file *changedFile, uiHunk hun
 // HEAD range overlaps one combined hunk. It returns false when the index
 // has no overlapping hunk.
 func (a *App) stagedHunkPatch(ctx context.Context, path string, oldStart, oldCount int) (string, bool) {
-	raw, err := gitBytes(ctx, a.ws.Root, "diff", "--cached", "--no-color", "--no-ext-diff", "-U3", "--", path)
+	raw, err := gitBytes(ctx, a.ws.Root, "diff", "--cached", "--no-color", "--no-ext-diff", "-U0", "--", path)
 	if err != nil || len(raw) == 0 {
 		return "", false
 	}
@@ -185,7 +188,7 @@ func (a *App) stagedHunkPatch(ctx context.Context, path string, oldStart, oldCou
 // whose HEAD range overlaps one displayed hunk. Raw git text keeps tabs and
 // line endings intact, which the parsed view expands.
 func (a *App) worktreeHunkPatch(ctx context.Context, path string, oldStart, oldCount int) (string, bool) {
-	raw, err := gitBytes(ctx, a.ws.Root, "diff", "HEAD", "--no-color", "--no-ext-diff", "-U3", "--", path)
+	raw, err := gitBytes(ctx, a.ws.Root, "diff", "HEAD", "--no-color", "--no-ext-diff", "-U0", "--", path)
 	if err != nil || len(raw) == 0 {
 		return "", false
 	}
@@ -373,7 +376,7 @@ func (a *App) undoRevertHunk(ctx context.Context) error {
 	}
 
 	if entry.StagedPatch != "" {
-		if _, err := gitBytesStdin(ctx, a.ws.Root, entry.StagedPatch, "apply", "--cached", "--whitespace=nowarn"); err != nil {
+		if _, err := gitBytesStdin(ctx, a.ws.Root, entry.StagedPatch, "apply", "--cached", "--whitespace=nowarn", "--unidiff-zero"); err != nil {
 			a.showToast("error", "Restore failed", err.Error())
 			a.refresh()
 
@@ -382,7 +385,7 @@ func (a *App) undoRevertHunk(ctx context.Context) error {
 	}
 
 	if entry.WorktreePatch != "" {
-		if _, err := gitBytesStdin(ctx, a.ws.Root, entry.WorktreePatch, "apply", "--whitespace=nowarn"); err != nil {
+		if _, err := gitBytesStdin(ctx, a.ws.Root, entry.WorktreePatch, "apply", "--whitespace=nowarn", "--unidiff-zero"); err != nil {
 			a.showToast("error", "Restore failed", err.Error())
 			a.refreshAfterSCMMutation(ctx)
 			a.refresh()
@@ -415,9 +418,9 @@ func (a *App) redoRevertHunk(ctx context.Context) error {
 		if patch == "" {
 			return nil
 		}
-		args := []string{"apply", "--reverse", "--whitespace=nowarn"}
+		args := []string{"apply", "--reverse", "--whitespace=nowarn", "--unidiff-zero"}
 		if scope == "cached" {
-			args = []string{"apply", "--cached", "--reverse", "--whitespace=nowarn"}
+			args = []string{"apply", "--cached", "--reverse", "--whitespace=nowarn", "--unidiff-zero"}
 		}
 		_, err := gitBytesStdin(ctx, a.ws.Root, patch, args...)
 		return err

@@ -405,7 +405,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.openDiscardConfirm("discard-file", []string{strings.TrimPrefix(action, "discard-file:")})
 	case strings.HasPrefix(action, "revert-hunk:"):
 		if idx, ok := actionIndex(action, "revert-hunk:"); ok {
-			if err := a.revertHunk(ctx, idx); err != nil {
+			if err := a.revertClickedBlock(ctx, idx, box.ID); err != nil {
 				return err
 			}
 		}

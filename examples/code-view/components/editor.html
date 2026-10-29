@@ -112,11 +112,10 @@
           {{else if eq .Kind "split"}}
           <div class="drow split{{if .Current}} current{{end}}{{if or .LeftCont .RightCont}} cont{{end}}">
             <span class="dnum {{.LeftKind}}">{{.LeftNo}}</span>
-            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
-            {{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}
+            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}{{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}</span>
             {{if and $.Diff.CanRevert .HasRevert (or (eq .LeftKind "del") (eq .RightKind "add")) (or (not .LeftPad) (not .RightPad)) (not .LeftCont) (not .RightCont)}}<span class="dmid"><button class="line-revert divider" id="revert-line-{{.RevertHunk}}-{{.LeftNo}}-{{.RightNo}}" data-action="revert-hunk:{{.RevertHunk}}" type="button" title="Discard changes" aria-label="Discard changes"{{if $.Modal}} tabindex="-1"{{end}}>→</button></span>{{end}}
             <span class="dnum {{.RightKind}}">{{.RightNo}}</span>
-            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}{{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}-right" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}</span>
           </div>
           {{else if eq .Kind "expand"}}
           <div class="drow expand" id="diff-expand-row-{{.Expand.Index}}">

@@ -85,8 +85,8 @@ type diffRow struct {
 	RightCont bool
 	// HasRevert marks changed rows that offer the VS Code-style discard
 	// arrow on the row itself: changed unified rows (add/del) and changed
-	// split rows. Hunk headers carry none; the per-line button reverts
-	// the hunk. RevertHunk is the index into the file's Hunks slice.
+	// split rows. Hunk headers carry none; the button identifies a block by
+	// its source line numbers. RevertHunk indexes the file's Hunks slice.
 	// Wrapped continuations clear it so button ids stay unique.
 	HasRevert  bool
 	RevertHunk int
@@ -894,8 +894,8 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 
 // markFirstBlockReverts keeps HasRevert on exactly one row per contiguous
 // changed block: the first row with green (added) content, or the first row
-// of the block when it has none (a deletion-only block). One control reverts
-// the whole hunk, so every further row in the block drops the marker. Block
+// of the block when it has none (a deletion-only block). Every further row
+// in the block drops the marker. Block
 // boundaries match diffChangeStarts, so the button sits on the change the
 // bottom-center navigator highlights.
 func markFirstBlockReverts(rows []diffRow) {
