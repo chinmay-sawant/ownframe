@@ -46,7 +46,7 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 		if a.editing {
 			a.scrollTo(oldScroll)
 		}
-	} else if box.ID != "code-body" && !(a.editing && strings.HasPrefix(box.ID, "ln-")) {
+	} else if box.ID != "code-body" && (!a.editing || !strings.HasPrefix(box.ID, "ln-")) {
 		return false, nil
 	}
 	if !a.editing || a.edit == nil {

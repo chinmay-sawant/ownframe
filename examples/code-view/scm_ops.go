@@ -11,6 +11,9 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// confirmPreviewLimit caps the file names listed in the discard dialog.
+const confirmPreviewLimit = 6
+
 // scmGuard blocks git writes in the bundled sample workspace.
 func (a *App) scmGuard() bool {
 	if a.ws.Sample {
@@ -346,26 +349,6 @@ func (a *App) unstageFile(ctx context.Context, path string) error {
 	return nil
 }
 
-// discardAll reverts every working-tree file.
-func (a *App) discardAll(ctx context.Context) error {
-	if a.scmGuard() {
-		return nil
-	}
-
-	if len(a.changes.Files) == 0 {
-		return nil
-	}
-
-	if err := a.discardPaths(ctx, a.workingAllPaths()); err != nil {
-		return err
-	}
-
-	a.showToast("success", "All changes discarded", fmt.Sprintf("%d files", len(a.changes.Files)))
-	a.refresh()
-
-	return nil
-}
-
 // stageAll stages the whole working tree.
 func (a *App) stageAll(ctx context.Context) error {
 	if a.scmGuard() {
@@ -461,27 +444,6 @@ func (a *App) unstageSelected(ctx context.Context) error {
 
 	a.refreshAfterSCMMutation(ctx)
 	a.showToast("success", "Selected changes unstaged", fmt.Sprintf("%d files", len(paths)))
-	a.refresh()
-
-	return nil
-}
-
-// discardSelected reverts the multi-select set after confirm.
-func (a *App) discardSelected(ctx context.Context) error {
-	if a.scmGuard() {
-		return nil
-	}
-
-	paths := a.selectedList()
-	if len(paths) == 0 {
-		return nil
-	}
-
-	if err := a.discardPaths(ctx, paths); err != nil {
-		return err
-	}
-
-	a.showToast("success", "Selected changes discarded", fmt.Sprintf("%d files", len(paths)))
 	a.refresh()
 
 	return nil
@@ -583,8 +545,8 @@ func (a *App) confirmViewState() confirmView {
 	}
 
 	files := append([]string(nil), a.confirmPaths...)
-	if len(files) > 6 {
-		files = files[:6]
+	if len(files) > confirmPreviewLimit {
+		files = files[:confirmPreviewLimit]
 	}
 
 	return confirmView{

@@ -242,9 +242,6 @@ func (a *App) scmContextMenu(id string) ([]contextMenuRow, bool) {
 	for _, prefix := range []string{"discard-staged-", "wrap-staged-", "change-", "staged-", "stage-", "discard-", "unstage-", "wrap-"} {
 		if strings.HasPrefix(id, prefix) {
 			path := strings.TrimPrefix(id, prefix)
-			if prefix == "discard-staged-" {
-				// ID is discard-staged-<path>; path is already clean.
-			}
 			if path == "" {
 				return nil, false
 			}

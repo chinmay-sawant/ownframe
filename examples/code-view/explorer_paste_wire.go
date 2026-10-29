@@ -160,11 +160,12 @@ func (a *App) pasteClipboardText(ctx context.Context, text string) error {
 
 	if _, ok := GetPendingCopy(); ok {
 		rels, err := a.PastePendingCopies(dir)
-		if err != nil {
+		switch {
+		case err != nil:
 			a.showToast("error", "Paste failed", err.Error())
-		} else if len(rels) == 1 {
+		case len(rels) == 1:
 			a.showToast("success", "File pasted", rels[0])
-		} else {
+		default:
 			a.showToast("success", fmt.Sprintf("%d files pasted", len(rels)), strings.Join(rels, ", "))
 		}
 

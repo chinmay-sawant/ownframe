@@ -1520,7 +1520,7 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	}
 
 	if a.ctrl && key == "a" && !a.shift {
-		if a.mode == "changes" && a.confirmOpen == false {
+		if a.mode == "changes" && !a.confirmOpen {
 			switch a.page.Form().FocusID() {
 			case "filter", "palette", "find", "branch-filter", "workspace-search", "project-path", "drawer-path", "editor", "edit-surface":
 			default:

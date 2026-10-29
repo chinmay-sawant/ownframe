@@ -27,7 +27,7 @@ type pasteStagedCopy = PendingCopy
 
 // pendingCopy holds the files Copy staged. Copy keeps them for repeated
 // pastes; a cut clears after one paste.
-var pendingCopy *PendingCopy
+var pendingCopy *PendingCopy //nolint:gochecknoglobals // reason: single staged Ctrl+V copy shared by the clipboard staging helpers across explorer_clipboard.go and explorer_paste.go, mirrored onto App.pasteStaged
 
 // stageCopy records one source for a later Paste.
 func stageCopy(src string, isCut bool) {

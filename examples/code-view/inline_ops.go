@@ -2,6 +2,12 @@ package main
 
 import "sort"
 
+const (
+	// inlineCardBottomStrip is the visible strip clampCardTop keeps above
+	// the status bar, so a dragged card never slides under it.
+	inlineCardBottomStrip = 40
+)
+
 // changedLinesFor returns the working-tree line changes for one path. Sample
 // and live workspaces both use the parsed change set.
 func (a *App) changedLinesFor(path string) map[int]inlineLine {
@@ -345,7 +351,7 @@ func (a *App) clampCardTop(top int) int {
 	if top < inlineCardGap {
 		return inlineCardGap
 	}
-	maxTop := a.viewportH - 40
+	maxTop := a.viewportH - inlineCardBottomStrip
 	if maxTop < inlineCardGap {
 		maxTop = inlineCardGap
 	}

@@ -290,7 +290,7 @@ func TestDiscardFileLive(t *testing.T) {
 
 	path := app.changes.Files[0].Path
 	full := filepath.Join(dir, filepath.FromSlash(path))
-	before, err := os.ReadFile(full)
+	before, err := os.ReadFile(full) //nolint:gosec // path is a t.TempDir fixture joined with the change list path
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +303,7 @@ func TestDiscardFileLive(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	after, err := os.ReadFile(full)
+	after, err := os.ReadFile(full) //nolint:gosec // path is a t.TempDir fixture joined with the change list path
 	if err != nil {
 		t.Fatal(err)
 	}

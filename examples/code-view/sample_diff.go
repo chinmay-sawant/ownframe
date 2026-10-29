@@ -9,6 +9,10 @@ import _ "embed"
 //go:embed fixtures/sample.diff
 var sampleDiff []byte
 
+// sampleStagedCount is the number of bundled sample files shown as staged
+// so the fixture demonstrates both the staged and unstaged sections.
+const sampleStagedCount = 2
+
 // sampleChangeSet parses the bundled diff. The first two files show as
 // staged so the sample demonstrates the staged and unstaged sections.
 func sampleChangeSet() changeSet {
@@ -17,7 +21,7 @@ func sampleChangeSet() changeSet {
 	unstaged := make([]changedFile, 0, len(files))
 
 	for i, file := range files {
-		if i < 2 {
+		if i < sampleStagedCount {
 			staged = append(staged, file)
 		} else {
 			unstaged = append(unstaged, file)

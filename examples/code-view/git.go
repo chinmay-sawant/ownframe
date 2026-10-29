@@ -41,7 +41,6 @@ func loadLiveChanges(ctx context.Context, root string) (changeSet, error) {
 			return cs, err
 		}
 
-		raw = append(append([]byte(nil), work...), cached...)
 		cs.Staged = parseDiff(string(cached))
 		cs.Unstaged = parseDiff(string(work))
 	} else {

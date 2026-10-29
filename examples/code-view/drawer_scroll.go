@@ -1,5 +1,12 @@
 package main
 
+const (
+	// drawerResizeHalfW centers the 6 px drawer resize handle on the
+	// drawer boundary: the handle's left edge sits half its width left
+	// of the boundary.
+	drawerResizeHalfW = 3
+)
+
 // drawerWidth returns the file/source-control drawer width in 1x pixels:
 // sideWidth plus drawerExtra, clamped to [sideWidth, drawerMaxW] (268..348,
 // about 30% wider), like the VS Code sidebar resize.
@@ -73,7 +80,7 @@ func (a *App) setDrawerExtra(extra int) {
 func (a *App) fillDrawer(v *View) {
 	visible := a.drawerVisiblePx()
 	v.SideW = visible
-	v.DrawerResizeLeft = a.zx(activityW) + visible - a.zx(3)
+	v.DrawerResizeLeft = a.zx(activityW) + visible - a.zx(drawerResizeHalfW)
 	v.DrawerResizeTop = a.zx(chromeTop)
 	v.DrawerResizeH = a.viewportH - a.zx(chromeTop) - a.zx(chromeBottom)
 }

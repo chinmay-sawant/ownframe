@@ -71,10 +71,10 @@ func longMarkdownLine() string {
 func TestUnwrappedCodeRowsFitViewport(t *testing.T) {
 	dir := t.TempDir()
 	line := longMarkdownLine()
-	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte("# T\n\n"+line+"\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte("# T\n\n"+line+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "a.txt"), []byte("x\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "a.txt"), []byte("x\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	app, err := New(dir)
@@ -133,12 +133,12 @@ func TestUnwrappedDiffRowsFitViewport(t *testing.T) {
 	dir := t.TempDir()
 	oldLine := longMarkdownLine()
 	newLine := strings.Replace(oldLine, "450 ms", "about 450 ms", 1)
-	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte("# T\n\n"+oldLine+"\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte("# T\n\n"+oldLine+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	runGit := func(args ...string) {
 		t.Helper()
-		c := exec.Command("git", args...)
+		c := exec.CommandContext(context.Background(), "git", args...) //nolint:gosec // reason: test helper runs the fixed git binary with a fixed subcommand list on a temp repo
 		c.Dir = dir
 		c.Env = append(os.Environ(), "GIT_CONFIG_NOSYSTEM=1", "HOME="+dir)
 		if out, err := c.CombinedOutput(); err != nil {
@@ -150,7 +150,7 @@ func TestUnwrappedDiffRowsFitViewport(t *testing.T) {
 	runGit("config", "user.name", "t")
 	runGit("add", ".")
 	runGit("commit", "-qm", "init")
-	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte("# T\n\n"+newLine+"\n"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "doc.md"), []byte("# T\n\n"+newLine+"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	app, err := New(dir)
