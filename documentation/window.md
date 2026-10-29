@@ -131,9 +131,13 @@ of stacking both calls.
 `PlacementID` remembers the window rect across launches under one id: the
 monitor name, the windowed position and size, and whether it closed
 maximized. Set it to something like `"code-view"`; empty disables it. A
-missing file, a corrupt file, or a gone monitor falls back to the app size
-at the window manager's position. Writes are best-effort and debounced off
-the update path, so a read-only config never breaks the window.
+missing file, a corrupt file, a gone monitor, or a rect that no longer fits
+its monitor falls back to the app size at the window manager's position, so
+a workarea learned on a 2560-wide panel never reopens spanning a 1080p
+panel. A close mid-probe writes nothing. Writes are best-effort and
+debounced off the update path, so a read-only config never breaks the
+window. Dragging the titlebar of a maximized window restores it first, so
+an expanded frame stays movable.
 
 `MousePassthrough` passes every pointer event to the application underneath,
 including clicks on painted pixels. It starts the window unfocused and keeps

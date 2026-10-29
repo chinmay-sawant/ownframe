@@ -233,6 +233,36 @@ func placementMonitorKnown(name string) bool {
 	return false
 }
 
+// placementMonitorSize returns the size of the named monitor in
+// device-independent pixels. It reports false when the monitor is gone or
+// headless sizes are not available yet, so callers keep the old behavior.
+func placementMonitorSize(name string) (int, int, bool) {
+	for _, monitor := range ebiten.AppendMonitors(nil) {
+		if monitor.Name() == name {
+			w, h := monitor.Size()
+			if w > 0 && h > 0 {
+				return w, h, true
+			}
+
+			return 0, 0, false
+		}
+	}
+
+	return 0, 0, false
+}
+
+// placementFits reports whether a w by h rect fits in the named monitor.
+// An unknown monitor or unknown size keeps the old behavior and reports
+// true so a missing probe never discards a good rect.
+func placementFits(name string, w, h int) bool {
+	monW, monH, ok := placementMonitorSize(name)
+	if !ok {
+		return true
+	}
+
+	return w <= monW && h <= monH
+}
+
 // applyPlacement installs a remembered rect before the game loop starts.
 // defW and defH are the app's default size; minW, minH, maxW, and maxH clamp
 // the restored size the way runWindow clamps the first frame. It returns the
@@ -256,6 +286,37 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	}
 
 	if placement.Maximized && isWSL() {
+		// A maximized rect learned on one monitor must fit the monitor
+		// that owns the file. A 2560-wide workarea restored onto a
+		// 1920-wide panel overflows it and strands the window across
+		// monitors, so fall back to the windowed size and let the user
+		// re-maximize to re-learn the right workarea.
+		if !placementFits(placement.Monitor, placement.MaxW, placement.MaxH) {
+			manualMax.active = false
+			manualMax.known = false
+			manualMax.learning = false
+			manualMax.restoring = false
+			w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+			if monW, monH, ok := placementMonitorSize(placement.Monitor); ok {
+				w, h = min(w, monW), min(h, monH)
+				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
+			}
+			ebiten.SetWindowSize(w, h)
+			fallback.W, fallback.H = w, h
+
+			return fallback
+		}
+		if !placementFits(placement.Monitor, placement.W, placement.H) {
+			placement.X, placement.Y = 0, 0
+			placement.W = min(placement.W, defW)
+			placement.H = min(placement.H, defH)
+			if monW, monH, ok := placementMonitorSize(placement.Monitor); ok {
+				placement.W = min(placement.W, monW)
+				placement.H = min(placement.H, monH)
+			}
+			placement.W = clampPlacement(placement.W, minW, maxW)
+			placement.H = clampPlacement(placement.H, minH, maxH)
+		}
 		manualMax.sx, manualMax.sy = placement.X, placement.Y
 		manualMax.sw, manualMax.sh = placement.W, placement.H
 		manualMax.wx, manualMax.wy = placement.MaxX, placement.MaxY
@@ -276,7 +337,15 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	}
 
 	if placement.Maximized {
-		ebiten.SetWindowSize(clampPlacement(placement.MaxW, minW, maxW), clampPlacement(placement.MaxH, minH, maxH))
+		w, h := clampPlacement(placement.MaxW, minW, maxW), clampPlacement(placement.MaxH, minH, maxH)
+		if !placementFits(placement.Monitor, w, h) {
+			// The maximized rect belongs to a bigger monitor. Open at
+			// the default size and still maximize, so the window manager
+			// sizes to the live monitor instead of flashing an oversized
+			// frame that spans monitors.
+			w, h = defW, defH
+		}
+		ebiten.SetWindowSize(w, h)
 		// MaximizeWindow before the run loop never takes effect, so the
 		// resize path applies it on the first update once the window exists.
 		pendingStartMaximize = true
@@ -285,6 +354,19 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	}
 
 	w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+	if !placementFits(placement.Monitor, w, h) {
+		// The saved windowed size belongs to a bigger monitor. Clamp it
+		// to the owning monitor and let the window manager choose the
+		// position instead of replaying a rect that spans monitors.
+		if monW, monH, ok := placementMonitorSize(placement.Monitor); ok {
+			w, h = min(w, monW), min(h, monH)
+			w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
+		}
+		ebiten.SetWindowSize(w, h)
+		placement.W, placement.H = w, h
+
+		return placement
+	}
 	ebiten.SetWindowSize(w, h)
 	ebiten.SetWindowPosition(placement.X, placement.Y)
 	placement.W, placement.H = w, h
@@ -328,9 +410,15 @@ func (s *shell) syncPlacement() {
 }
 
 // savePlacementNow writes the live rect once, for window close. Invalid
-// sizes (the loop never ran) skip the write.
+// sizes (the loop never ran) skip the write. A workarea probe in flight
+// writes a transitional rect, so it skips the same dance syncPlacement
+// skips instead of persisting garbage over the good rect.
 func savePlacementNow(id string) {
 	if strings.TrimSpace(id) == "" {
+		return
+	}
+
+	if manualMax.learning || manualMax.restoring {
 		return
 	}
 
