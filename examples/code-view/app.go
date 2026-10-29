@@ -172,6 +172,8 @@ type App struct {
 	diffPath      string
 	diffSplit     bool
 	diffRows      []diffRow
+	diffRowsGen   uint64
+	diffWrap      diffWrapCache
 	changesScroll changesScroll
 	changesDrag   bool
 	changesDragAt int
@@ -243,6 +245,8 @@ type App struct {
 	recent       []string
 	paletteQuery string
 	paletteIndex int
+	nav          []string
+	navAt        int
 	ctrl         bool
 	shift        bool
 	preview      bool
@@ -441,6 +445,7 @@ func (a *App) openInitial() {
 	a.tabs = []string{target}
 	a.active = 0
 	a.addRecent(target)
+	a.resetNavHistory(target)
 }
 
 // File drawer geometry, kept next to chrome.css so the recent flyout lands
@@ -593,6 +598,14 @@ func (a *App) reloadWindow(ctx context.Context) error {
 		a.openInitial()
 	} else {
 		a.addRecent(a.tabs[a.active])
+		a.pruneNavHistory()
+		if current := a.activeDocPath(); current != "" {
+			if len(a.nav) == 0 {
+				a.resetNavHistory(current)
+			} else if a.navAt < 0 || a.navAt >= len(a.nav) || a.nav[a.navAt] != current {
+				a.pushNavHistory(current)
+			}
+		}
 	}
 
 	a.scrollY = keepScroll
@@ -896,6 +909,10 @@ func (a *App) buildView() View {
 
 	winW, _ = a.page.Size()
 	v.CmdText = clipCmdbarText(winW, v.CmdTitle)
+	v.NavBack = a.canNavBack()
+	v.NavForward = a.canNavForward()
+	v.NavBackTitle = a.navBackTitle()
+	v.NavForwardTitle = a.navForwardTitle()
 
 	v.EditorScroll = a.editorScroll(0)
 	if a.split && a.mode == "explorer" {
@@ -1014,12 +1031,40 @@ func (a *App) diffDisplayRows() []diffRow {
 		return nil
 	}
 
-	if a.wrap {
-		unified, split := a.diffColumns()
-		return wrapDiffRows(rows, unified, split, true)
+	if !a.wrap {
+		return rows
 	}
 
-	return rows
+	unified, split := a.diffColumns()
+	key := diffWrapKey{
+		generation: a.diffRowsGen,
+		source:     a.diffSource,
+		path:       a.diffViewPath(),
+		split:      a.diffSplit,
+		unified:    unified,
+		splitCols:  split,
+	}
+
+	if a.diffWrap.valid && a.diffWrap.key == key {
+		return a.diffWrap.rows
+	}
+
+	wrapped := wrapDiffRows(rows, unified, split, true)
+	a.diffWrap = diffWrapCache{key: key, rows: wrapped, valid: true}
+
+	return wrapped
+}
+
+// diffViewPath is the file whose rows currentDiffRows returns.
+func (a *App) diffViewPath() string {
+	switch a.diffSource {
+	case "commit":
+		return a.commitFile
+	case "branch":
+		return a.branchPath
+	default:
+		return a.diffPath
+	}
 }
 
 // fillDiff fills the Source Control list and the selected diff rows.
@@ -1108,7 +1153,7 @@ func (a *App) fillDiff(v *View) {
 		file = &active.Files[0]
 	}
 
-	a.fillDiffFile(v, &d, file, a.diffRows)
+	a.fillDiffFile(v, &d, file)
 	d.Selected = file.Path
 	v.Diff = d
 }
@@ -1173,11 +1218,11 @@ func (a *App) fillCommitDiff(v *View, d *diffView) {
 
 	d.HasFiles = true
 	d.Selected = file.Path
-	a.fillDiffFile(v, d, file, a.commitRows)
+	a.fillDiffFile(v, d, file)
 }
 
 // fillDiffFile fills the diff header, document metadata, and visible rows.
-func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffRow) {
+func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile) {
 	d.Path = file.Path
 	d.Name = baseName(file.Path)
 	d.Dir = dirName(file.Path)
@@ -1190,7 +1235,7 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 	d.Add = file.Add
 	d.Del = file.Del
 	d.Hunks = len(file.Hunks)
-	d.CanEdit = d.Source == "working" && !file.Binary && file.Status != "D"
+	d.CanEdit = d.Source == "working" && !file.Binary && file.Status != "D" && !file.Oversized
 
 	doc := a.docs[file.Path]
 	if doc == nil {
@@ -1221,10 +1266,8 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 		v.StatusClass = "st-" + strings.ToLower(v.Status)
 	}
 
-	if a.wrap {
-		unified, split := a.diffColumns()
-		rows = wrapDiffRows(rows, unified, split, true)
-	} else {
+	rows := a.diffDisplayRows()
+	if !a.wrap {
 		d.ScrollX = a.scrollX
 	}
 
@@ -2041,7 +2084,11 @@ func (a *App) activeDoc() *fileDoc {
 func (a *App) openFile(path string) { a.openFileIn(a.activeGroup(), path) }
 
 // openFileIn opens or focuses one file in a specific editor group.
-func (a *App) openFileIn(group int, path string) {
+func (a *App) openFileIn(group int, path string) { a.openFileAt(group, path, true) }
+
+// openFileAt is the shared file opener. Recorded opens push the file onto the
+// back/forward history; history jumps reuse the same layout without recording.
+func (a *App) openFileAt(group int, path string, record bool) {
 	if a.ws == nil {
 		a.showToast("error", "Not in workspace", path+" is not part of this workspace.")
 		a.refresh()
@@ -2111,6 +2158,9 @@ func (a *App) openFileIn(group int, path string) {
 		a.fileNav.Select(path)
 	}
 	a.addRecent(path)
+	if record {
+		a.pushNavHistory(path)
+	}
 	if a.split {
 		a.scrollGroup[group] = 0
 		a.splitWheelAccum[group] = 0
@@ -2131,7 +2181,11 @@ func (a *App) openFileIn(group int, path string) {
 func (a *App) selectTab(index int) { a.selectTabIn(0, index) }
 
 // selectTabIn focuses one tab in a specific group.
-func (a *App) selectTabIn(group, index int) {
+func (a *App) selectTabIn(group, index int) { a.selectTabAt(group, index, true) }
+
+// selectTabAt is the shared tab focuser. History jumps reuse the same layout
+// without recording a new entry.
+func (a *App) selectTabAt(group, index int, record bool) {
 	tabs := a.groupTabs(group)
 	if index < 0 || index >= len(tabs) {
 		return
@@ -2148,6 +2202,9 @@ func (a *App) selectTabIn(group, index int) {
 
 	a.focusGroup = group
 	a.mode = "explorer"
+	if record {
+		a.pushNavHistory(tabs[index])
+	}
 	// Preview stays on across tabs; fillCode gates it to Markdown.
 	if a.split {
 		a.scrollGroup[group] = 0
@@ -2470,6 +2527,7 @@ func (a *App) rebuildDiffRows() {
 		return
 	}
 
+	a.diffRowsGen++
 	a.diffRows = nil
 
 	file := findFile(a.changes.Files, a.diffPath)
@@ -2480,7 +2538,7 @@ func (a *App) rebuildDiffRows() {
 		return
 	}
 
-	if file.TotalLines == 0 && a.diffSource != "branch" {
+	if file.TotalLines == 0 && !file.Oversized && a.diffSource != "branch" {
 		file.TotalLines = a.fileTotalLines(file.Path)
 	}
 
@@ -2864,6 +2922,7 @@ func (a *App) maybeLoadMoreHistory(ctx context.Context) {
 
 // rebuildCommitRows renders the selected commit file's patch.
 func (a *App) rebuildCommitRows() {
+	a.diffRowsGen++
 	a.commitRows = nil
 	a.commitPreview = nil
 
@@ -2872,7 +2931,7 @@ func (a *App) rebuildCommitRows() {
 		return
 	}
 
-	if file.TotalLines == 0 {
+	if file.TotalLines == 0 && !file.Oversized {
 		file.TotalLines = a.fileTotalLines(file.Path)
 	}
 

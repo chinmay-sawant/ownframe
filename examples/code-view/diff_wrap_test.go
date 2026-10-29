@@ -5,6 +5,82 @@ import (
 	"testing"
 )
 
+func TestDiffDisplayRowsCache(t *testing.T) {
+	t.Parallel()
+
+	app, err := New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.mode = "changes"
+	app.diffSource = "working"
+	app.diffPath = "big.js"
+	app.wrap = true
+	app.diffRows = []diffRow{{
+		Kind:  rowAdd,
+		NewNo: "1",
+		Left:  []segment{{Text: strings.Repeat("word ", 80), Class: classPlain}},
+	}}
+	app.diffRowsGen = 1
+
+	first := app.diffDisplayRows()
+	if len(first) < 2 {
+		t.Fatalf("wrapped rows = %d, want a wrapped row set", len(first))
+	}
+
+	second := app.diffDisplayRows()
+	if &first[0] != &second[0] {
+		t.Fatal("second call rewrapped the same rows")
+	}
+
+	app.diffRowsGen++
+	third := app.diffDisplayRows()
+	if &first[0] == &third[0] {
+		t.Fatal("new row generation reused the old wrapped rows")
+	}
+
+	app.diffPath = "other.js"
+	fourth := app.diffDisplayRows()
+	if &third[0] == &fourth[0] {
+		t.Fatal("path change reused the old wrapped rows")
+	}
+}
+
+func TestOversizedDiffShowsLimitRow(t *testing.T) {
+	t.Parallel()
+
+	app, err := New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	app.mode = "changes"
+	app.wrap = true
+	app.changes = changeSet{Files: []changedFile{{
+		Path:      "big.js",
+		Status:    "M",
+		DiffBytes: maxDiffBytes + 1,
+		DiffLines: 12,
+		Oversized: true,
+	}}}
+	app.selectFirstDiff()
+	app.refresh()
+
+	rows := app.view.Diff.Rows
+	if len(rows) != 1 || rows[0].Kind != rowMeta {
+		t.Fatalf("rows = %+v, want one meta row", rows)
+	}
+
+	if !strings.Contains(rows[0].Hunk, "Diff skipped") {
+		t.Fatalf("limit row = %q", rows[0].Hunk)
+	}
+
+	if app.view.Diff.CanEdit {
+		t.Fatal("oversized diff still offers line editing")
+	}
+}
+
 func TestDiffWrapUnified(t *testing.T) {
 	t.Parallel()
 

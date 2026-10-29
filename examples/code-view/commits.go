@@ -340,7 +340,7 @@ func loadCommitFile(ctx context.Context, root, hash, path string) (*changedFile,
 		return nil, errors.New("empty commit path")
 	}
 
-	raw, _, err := gitBytesCapped(ctx, root, maxCommitPatchBytes,
+	raw, truncated, err := gitBytesCapped(ctx, root, maxCommitPatchBytes,
 		"show", "--format=", "--no-color", "--no-ext-diff", "--no-textconv",
 		"--no-show-signature", "--diff-merges=first-parent", "-M",
 		hash, "--", path,
@@ -353,6 +353,11 @@ func loadCommitFile(ctx context.Context, root, hash, path string) (*changedFile,
 
 	for i := range files {
 		if files[i].Path == path || files[i].OldPath == path {
+			if truncated {
+				files[i].DiffTruncated = true
+				files[i].Oversized = true
+			}
+
 			return &files[i], nil
 		}
 	}

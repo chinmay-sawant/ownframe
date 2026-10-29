@@ -10,6 +10,27 @@ const (
 	diffWrapTailDiv = 3
 )
 
+// diffWrapKey identifies one wrapped diff. The generation moves whenever the
+// source rows are rebuilt, so the cache survives scrolling and a resize only
+// rewraps when the column budget changes.
+type diffWrapKey struct {
+	generation uint64
+	source     string
+	path       string
+	split      bool
+	unified    int
+	splitCols  int
+}
+
+// diffWrapCache keeps the visual rows for the current diff. A view build
+// asks for them in contentHeight and fillDiffFile, and every scroll asks
+// again, so wrapping on each call would repeat the same work.
+type diffWrapCache struct {
+	key   diffWrapKey
+	rows  []diffRow
+	valid bool
+}
+
 // wrapDiffRows expands the diff into fixed-height visual rows when wrap is on.
 // With wrap off it returns a clipped copy, so the existing single-row layout
 // stays as it was.

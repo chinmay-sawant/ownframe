@@ -25,6 +25,14 @@ type changedFile struct {
 	Hunks      []hunk
 	Binary     bool
 	TotalLines int
+	// DiffBytes and DiffLines measure the text the diff pane would render.
+	// Oversized marks a file over the same budget the editor admits, so a
+	// deleted or rewritten bundle cannot turn into thousands of wrapped rows.
+	// DiffTruncated marks a commit patch that git stopped at the read cap.
+	DiffBytes     int
+	DiffLines     int
+	Oversized     bool
+	DiffTruncated bool
 }
 
 // hunk is one `@@` block from a unified diff.
@@ -431,7 +439,10 @@ func parseDiff(text string) []changedFile {
 
 	for i := range files {
 		countHunkLines(&files[i])
-		applyEmphasis(&files[i])
+		measureDiff(&files[i])
+		if !files[i].Oversized {
+			applyEmphasis(&files[i])
+		}
 	}
 
 	return files
@@ -685,6 +696,10 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 		return []diffRow{{Kind: rowMeta, Hunk: "Binary file. The viewer shows two lines of metadata instead of a diff."}}
 	}
 
+	if file.Oversized {
+		return []diffRow{{Kind: rowMeta, Hunk: diffLimitNote(file)}}
+	}
+
 	if len(file.Hunks) == 0 {
 		return []diffRow{{Kind: rowMeta, Hunk: "No textual changes in this file."}}
 	}
@@ -754,6 +769,10 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 
 	if file.Binary {
 		return []diffRow{{Kind: rowMeta, Hunk: "Binary file. The viewer shows two lines of metadata instead of a diff."}}
+	}
+
+	if file.Oversized {
+		return []diffRow{{Kind: rowMeta, Hunk: diffLimitNote(file)}}
 	}
 
 	if len(file.Hunks) == 0 {

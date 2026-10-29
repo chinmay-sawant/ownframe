@@ -279,6 +279,30 @@
   white-space: nowrap;
 }
 
+.nav-group {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.nav-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.nav-btn:hover { background-color: var(--panel-3); color: var(--text); }
+.nav-btn.off { color: var(--dim); }
+.nav-btn:disabled { color: var(--dim); }
+.nav-btn.off:hover { background-color: transparent; color: var(--dim); }
+
 /* Custom window chrome ----------------------------------------------------- */
 
 .win-controls {

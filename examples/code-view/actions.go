@@ -114,6 +114,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.fileNavChangeStep(1)
 	case action == "file-nav-open":
 		a.fileNavOpen()
+	case action == "nav-back":
+		a.goNavBack()
+	case action == "nav-forward":
+		a.goNavForward()
 	case action == "search-close":
 		return a.closeWorkspaceSearch(ctx)
 	case action == "search-case":
@@ -1199,6 +1203,20 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		case "0", "kp0":
 			return a.resetZoom(ctx)
 		}
+	}
+
+	// VS Code-style history: Alt+Left goes back, Alt+Right goes forward. The
+	// window sends these as single names, so they work while editing and win
+	// over the horizontal scroll below.
+	switch key {
+	case "alt+arrowleft":
+		a.goNavBack()
+
+		return a.page.Redraw(ctx)
+	case "alt+arrowright":
+		a.goNavForward()
+
+		return a.page.Redraw(ctx)
 	}
 
 	if a.settingsOpen && key == "escape" {

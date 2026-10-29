@@ -354,6 +354,10 @@ open D-Bus, so Orca and similar tools cannot attach yet.
   row offset.
 - Files over 512 KB and files with a NUL byte show a notice. A file over 20,000
   lines keeps the first 20,000.
+- A diff over 512 KB or 20,000 lines renders one notice row instead of the
+  changed lines, so a deleted or regenerated bundle cannot stall the pane. A
+  commit patch that hits its 512 KB read cap shows the same notice. The wrapped
+  rows are cached per file and column budget, and scrolling reuses them.
 - The tree windows its visible rows. The wheel scrolls it under the pointer;
   the scrollbar, footer arrows, and keyboard also work.
 - The scan skips `.git`, `node_modules`, `vendor`, build output, and binary

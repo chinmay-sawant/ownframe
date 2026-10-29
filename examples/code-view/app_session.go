@@ -127,6 +127,17 @@ func (a *App) restoreState(state sessionState) {
 
 	if len(a.tabs) == 0 {
 		a.openInitial()
+	} else {
+		a.nav = cleanNavPaths(state.Nav)
+		a.navAt = clampHistoryIndex(state.NavAt, len(a.nav))
+		if len(a.nav) == 0 {
+			a.resetNavHistory(a.activeDocPath())
+		} else {
+			a.pruneNavHistory()
+			if len(a.nav) == 0 {
+				a.resetNavHistory(a.activeDocPath())
+			}
+		}
 	}
 
 	if path := a.activeDocPath(); path != "" {
@@ -198,6 +209,8 @@ func (a *App) sessionState() sessionState {
 		HistoryRatio:  a.historyRatio,
 		HistoryManual: a.historyManual,
 		Zoom:          a.uiZoom(),
+		Nav:           append([]string(nil), a.nav...),
+		NavAt:         a.navAt,
 	}
 
 	branches := a.branchLogs.Snapshot()

@@ -22,6 +22,14 @@
     <span class="cmd-text" title="{{.CmdTitle}}">{{.CmdText}}</span>
     <span class="cmd-key">Ctrl P</span>
   </button>
+  <div class="nav-group" role="group" aria-label="File navigation">
+    <button class="nav-btn{{if not .NavBack}} off{{end}}" id="nav-back" data-action="nav-back" type="button" title="{{.NavBackTitle}}" aria-label="Go Back"{{if not .NavBack}} disabled{{end}}{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+    </button>
+    <button class="nav-btn{{if not .NavForward}} off{{end}}" id="nav-forward" data-action="nav-forward" type="button" title="{{.NavForwardTitle}}" aria-label="Go Forward"{{if not .NavForward}} disabled{{end}}{{if .Modal}} tabindex="-1"{{end}}>
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+    </button>
+  </div>
 {{if .Chrome}}
   <div class="win-controls" id="win-controls">
     <button class="win-btn" id="win-min" data-action="win-min" type="button" title="Minimize" aria-label="Minimize"{{if .Modal}} tabindex="-1"{{end}}>

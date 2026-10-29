@@ -103,6 +103,7 @@ func untrackedChange(root, path string) (changedFile, bool) {
 
 	file.Add = len(lines)
 	file.Hunks = []hunk{h}
+	measureDiff(&file)
 
 	return file, true
 }

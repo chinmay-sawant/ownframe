@@ -45,6 +45,10 @@ type View struct {
 	ActiveNameShort string
 	CmdText         string
 	CmdTitle        string
+	NavBack         bool
+	NavForward      bool
+	NavBackTitle    string
+	NavForwardTitle string
 	Chrome          bool
 	ChromeMax       bool
 	Lang            string
