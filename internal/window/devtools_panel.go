@@ -44,9 +44,9 @@ func (s *shell) drawDevHeader(screen *ebiten.Image) {
 	cls, px := devHeaderRight(r)
 	devTextAt(screen, label, px, top, ink)
 
-	fx := cls.X - devHeaderGap - devTextWidth("F12")
-	devTextAt(screen, "F12", fx, top, devDim)
-	devTextAt(screen, "X", cls.X+devClosePad, top, devDim)
+	devTextAt(screen, "F12", cls.X, top, devDim)
+	xX := r.X + r.W - devPanelPad - devTextWidth("X")
+	devTextAt(screen, "X", xX, top, devDim)
 }
 
 // drawDevFooter paints the hint line at the bottom of the dock.

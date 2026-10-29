@@ -366,8 +366,9 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 		s.windowDrag.fy = smoothCursor(s.windowDrag.fy, y)
 	}
 	sx, sy := int(math.Round(s.windowDrag.fx)), int(math.Round(s.windowDrag.fy))
+	allowed := s.draggable(x, y) && !s.devOwnsPoint(x, y)
 	handled, move, click, _, _ := s.windowDrag.step(sx, sy,
-		down, s.draggable(x, y))
+		down, allowed)
 	if !down {
 		s.windowDrag.tracked = false
 	}

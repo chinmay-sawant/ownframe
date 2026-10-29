@@ -215,10 +215,9 @@ func (s *shell) drawDevPick(screen *ebiten.Image) {
 }
 
 func (s *shell) devPickerHit() {
-	pw := devTextWidth("Picker")
-	_, px := devHeaderRight(s.dev.panel)
+	cls, px := devHeaderRight(s.dev.panel)
 	s.dev.hits = append(s.dev.hits, devHit{
-		rect: devRect{X: px, Y: s.dev.panel.Y, W: pw, H: devHeaderH},
+		rect: devRect{X: px, Y: s.dev.panel.Y, W: cls.X - px, H: devHeaderH},
 		act:  devActPicker,
 	})
 }

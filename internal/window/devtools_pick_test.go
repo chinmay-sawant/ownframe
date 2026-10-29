@@ -137,7 +137,8 @@ func TestDevToolsCloseDisarmsPicker(t *testing.T) {
 				}
 			}
 			close, _ := devHeaderRight(s.dev.panel)
-			s.devPanelPress(int(close.X+devClosePad+devTextWidth("X")/2), int(close.Y+close.H/2))
+			xX := s.dev.panel.X + s.dev.panel.W - devPanelPad - devTextWidth("X")
+			s.devPanelPress(int(xX+devTextWidth("X")/2), int(close.Y+close.H/2))
 			if d.on {
 				t.Fatal("the drawn X did not request close")
 			}
