@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect, useLayoutEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Home from './Home';
+import Team from './Team';
 import ThemeToggle from './ThemeToggle';
 import { loadStars } from './stars';
 import { repository } from './project';
@@ -12,6 +13,7 @@ function App() {
   const [hash, setHash] = useState(location.hash);
   const [stars, setStars] = useState(null);
   const isDocs = hash.startsWith('#docs');
+  const isTeam = hash === '#team';
 
   useLayoutEffect(() => {
     const header = document.querySelector('header');
@@ -35,9 +37,9 @@ function App() {
 
   useEffect(() => {
     if (isDocs) return;
-    if (!hash || hash === '#home') window.scrollTo(0, 0);
+    if (isTeam || !hash || hash === '#home') window.scrollTo(0, 0);
     else document.getElementById(hash.slice(1))?.scrollIntoView();
-  }, [hash, isDocs]);
+  }, [hash, isDocs, isTeam]);
 
   return <div className={isDocs ? 'docs-shell' : undefined}>
     <a className="skip" href="#main" onClick={(event) => {
@@ -47,6 +49,7 @@ function App() {
     <header>
       <a className="brand" href="#home">ownframe</a>
       <nav aria-label="Main navigation">
+        <a href="#team" aria-current={isTeam ? 'page' : undefined}>Team</a>
         <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
         <a href="#docs/compare-rust-gpui" aria-current={hash.startsWith('#docs/compare') ? 'page' : undefined}>Comparison</a>
         <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>About</a>
@@ -61,7 +64,7 @@ function App() {
       </a>
     </header>
     <main id="main" className={isDocs ? 'docs-main' : undefined} tabIndex="-1">
-      {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : <Home />}
+      {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : isTeam ? <Team /> : <Home />}
     </main>
     <footer>
       <a href={repository}>Source on GitHub</a>

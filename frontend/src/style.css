@@ -109,6 +109,14 @@ section { padding: 40px 0; border-bottom: 1px solid var(--border); scroll-margin
 .demo-media > video, .demo-media > .demo-image { display: block; width: 100%; height: 100%; max-width: 100%; }
 .demo-media > video { object-fit: cover; }
 .demo-media > .demo-image { object-fit: contain; }
+.team-section > p { max-width: none; }
+.team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin-top: 24px; }
+.team-card { min-width: 0; display: flex; flex-direction: column; padding: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; }
+.team-media { width: 100%; aspect-ratio: 4 / 3; overflow: hidden; background: var(--background); border: 1px solid var(--border); border-radius: 7px; margin: 0 0 16px; }
+.team-media-light { background: #fff; }
+.team-image { display: block; width: 100%; height: 100%; object-fit: contain; }
+.team-card-content h3 { margin: 0 0 8px; }
+.team-card-content p { margin: 0; font-size: 16px; }
 .mobile-guides { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 20px; }
 .mobile-guides a { display: inline-flex; align-items: center; min-height: calc(44px / var(--site-scale)); }
 .mobile-guides a:first-child { background: none; color: var(--accent); padding: 0; border-radius: 0; font-weight: 400; text-decoration: underline; }
@@ -214,6 +222,7 @@ aside .docs-nav .docs-nav-parent[aria-current="page"] { color: var(--accent); fo
   .engine-flow { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .engine-step { padding: 20px; }
   .demo-grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .team-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .demo-media { margin-bottom: 16px; }
   .demo-card-phone { grid-template-columns: 120px minmax(0, 1fr); gap: 20px; padding: 20px; }
   .demo-card-phone .demo-card-content h3 { font-size: 21px; }

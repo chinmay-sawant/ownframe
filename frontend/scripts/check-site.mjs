@@ -195,6 +195,16 @@ try {
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".github")).backgroundColor'), 'rgba(0, 0, 0, 0)', 'GitHub background is still visible');
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".github-count")).borderLeftWidth'), '0px', 'GitHub count divider is still visible');
   assert.equal(await evaluate('document.querySelector(".home > section:nth-child(2)").id'), 'demos');
+  await navigate('#team');
+  assert.equal(await evaluate('document.querySelector("#team-title").textContent'), 'This is our team');
+  assert.equal(await evaluate('document.querySelectorAll(".team-card").length'), 5);
+  await evaluate(`Promise.all(Array.from(document.querySelectorAll('.team-card img')).map(image => {
+    image.loading = 'eager';
+    return image.decode();
+  }))`);
+  assert.ok(await evaluate('Array.from(document.querySelectorAll(".team-card img")).every(image => image.naturalWidth > 0)'), 'Broken team image');
+  assert.equal(await evaluate('document.querySelectorAll(".home > section").length'), 1, 'Team page shows more than the team');
+  await navigate('#home');
   assert.ok(await evaluate('document.querySelector(".hero-mascot").naturalWidth > 0'), 'Gopher missing');
   assert.ok(await evaluate('!!document.querySelector(".core-example .language-go .hljs-keyword")'), 'Go highlighting missing');
   assert.equal(await evaluate('getComputedStyle(document.documentElement).scrollbarWidth'), 'none');
