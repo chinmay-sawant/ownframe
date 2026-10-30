@@ -2,6 +2,7 @@ package music
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -69,9 +70,12 @@ func TestEngineAsyncDecode(t *testing.T) {
 	t.Parallel()
 
 	opened := make(chan struct{})
+	var opens atomic.Int32
 	engine, voice := newFakeEngine()
 	engine.Open = func([]byte) (Voice, error) {
-		close(opened)
+		if opens.Add(1) == 1 {
+			close(opened)
+		}
 		return voice, nil
 	}
 	engine.Want(context.Background(), "jazz", 1)
@@ -83,10 +87,20 @@ func TestEngineAsyncDecode(t *testing.T) {
 		t.Fatal("e.Open was not called in background")
 	}
 
-	// Update applies the already-decoded voice without decoding on UI thread
-	engine.Update()
+	// The background goroutine publishes the decoded voice after Open
+	// returns, so poll Update until it lands instead of assuming one
+	// Update is enough. Update applies the already-decoded voice without
+	// decoding on the UI thread.
+	deadline := time.Now().Add(2 * time.Second)
+	for engine.Loading() && time.Now().Before(deadline) {
+		engine.Update()
+		time.Sleep(time.Millisecond)
+	}
 	if engine.Loading() {
 		t.Fatal("engine still loading after Update with decoded voice")
+	}
+	if got := opens.Load(); got != 1 {
+		t.Fatalf("Open called %d times, want 1 (decode must stay off the UI thread)", got)
 	}
 }
 
