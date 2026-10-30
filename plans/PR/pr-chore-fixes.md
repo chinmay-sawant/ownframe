@@ -1,6 +1,6 @@
 ## Summary
 
-Bundle on `chore/fixes` against `master` (32 commits, 232 files, +28383/-1096). The code viewer keeps the earlier drawer, inline card, zoom, multi-select, history, and staged SCM work, and adds block-scoped revert with undo and redo, change-block stepping, gutter and divider revert controls, preview line numbers, and Git hunk-range docs. The window host work from the earlier bundle is unchanged. The website gains separate engine and compare pages, a team section, runnable starter demos with live WASM builds, and a highlighting fix with copy buttons. Build output under `docs/` and `frontend/public/` grows with the new demos. CI gets a site toolchain pin, xvfb for race shards, and two test timing fixes.
+Bundle on `chore/fixes` against `master` (232 files, +28383/-1096). The code viewer keeps the earlier drawer, inline card, zoom, multi-select, history, and staged SCM work, and adds block-scoped revert with undo and redo, change-block stepping, gutter and divider revert controls, preview line numbers, and Git hunk-range docs. The window host work from the earlier bundle is unchanged. The website gains separate engine and compare pages, a team section, runnable starter demos with live WASM builds, and a highlighting fix with copy buttons. Build output under `docs/` and `frontend/public/` grows with the new demos. CI gets a site toolchain pin, xvfb for race shards, and two test timing fixes.
 
 ## Motivation / context
 
