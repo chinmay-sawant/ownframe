@@ -753,6 +753,12 @@ code {
 .team-media-light {
   background: #ffffff;
 }
+.team-media-dark {
+  background: #000000;
+}
+.team-image-dark {
+  filter: contrast(10);
+}
 .team-image {
   display: block;
   width: 100%;
@@ -1507,7 +1513,7 @@ aside .docs-nav .docs-nav-parent[aria-current="page"],
 }
 
 .core-example { border: 1px solid var(--code-border); border-radius: 8px; overflow: hidden; }
-.core-example .preview-code-pane { height: 520px; }
+.core-example .preview-code-pane { height: 680px; }
 .preview-live-body { padding: 0; overflow: hidden; }
 .preview-live-body iframe { display: block; width: 100%; height: 100%; border: 0; background: #f3f5fa; }
 
@@ -1549,4 +1555,20 @@ aside .docs-nav .docs-nav-parent[aria-current="page"],
   .starter-preview-heading { padding: 12px; font-size: 12px; }
   .starter-preview-heading span + span { font-size: 10px; }
   .start-run p { flex-basis: 100%; margin-left: 0; }
+}
+
+.core-example .preview-code-pane:has(.preview-live-body:not([hidden])) { height: 1000px; }
+@media (max-width: 768px) {
+  .core-example .preview-code-pane:has(.preview-live-body:not([hidden])) { height: 1100px; }
+}
+
+.starter-picker { display: flex; gap: 4px; padding: 8px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.starter-picker button { padding: 10px 14px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.starter-picker button[aria-pressed="true"] { background: var(--code-bg); color: var(--text); font-weight: 600; }
+.starter-picker button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.core-example.hello-example .preview-code-pane:has(.preview-live-body:not([hidden])) { height: 500px; }
+
+.detail-page h1 {
+  font-size: clamp(30px, 4vw, 46px);
+  margin-bottom: 16px;
 }

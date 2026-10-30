@@ -4,17 +4,18 @@ const base = import.meta.env.BASE_URL;
 
 const team = [
   {
-    title: 'Muse',
-    role: 'AI development tool',
-    description: 'Used during AI-assisted development. The maintainer reviews the resulting changes.',
+    title: 'Muse Spark 1.3',
+    role: 'via OpenCode',
+    description: 'Used during development. The maintainer reviews the resulting changes.',
     image: `${base}team/news.webp`,
     alt: 'Muse tool artwork.',
+    light: true,
   },
   {
     title: 'Codex',
     role: 'AI coding tool',
     description: 'Used for implementation, code exploration, and verification tasks.',
-    image: `${base}team/codex.webp`,
+    image: `${base}team/codex-white.png`,
     alt: 'Codex tool artwork.',
     light: true,
   },
@@ -31,6 +32,7 @@ const team = [
     description: 'A tool for working with coding agents during development.',
     image: `${base}team/opencode.png`,
     alt: 'OpenCode tool artwork.',
+    dark: true,
   },
   {
     title: 'Claude',
@@ -60,8 +62,8 @@ export default function Team() {
       <p>AI-assisted development is part of the experiment. These are tools, with generated code reviewed and tested before use.</p>
       <div className="team-grid">{team.map((member) => <article
         className="team-card" key={member.title}>
-        <div className={`team-media${member.light ? ' team-media-light' : ''}`}>
-          <img className="team-image" src={member.image} alt={member.alt} width="480" height="270" loading="lazy" decoding="async" />
+        <div className={`team-media${member.light ? ' team-media-light' : ''}${member.dark ? ' team-media-dark' : ''}`}>
+          <img className={`team-image${member.dark ? ' team-image-dark' : ''}`} src={member.image} alt={member.alt} width="480" height="270" loading="lazy" decoding="async" />
         </div>
         <div className="team-card-content">
           <div className="team-card-header">

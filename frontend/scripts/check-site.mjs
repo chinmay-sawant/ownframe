@@ -179,7 +179,7 @@ try {
   for (const [width, height] of viewports) {
     await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: width < 1000 });
     for (const theme of ['dark', 'light']) {
-      for (const hash of ['#home', '#docs/showcase/wispr-flow', '#docs/showcase/telegram', '#docs/showcase/pet-care', '#docs/examples-readme', '#docs/compare-rust-gpui', '#docs/compare-electron', '#docs/compare-wails', '#docs/compare-fyne', '#docs/compare-gio', '#docs/compare-webview', '#docs/compare-ebitengine']) {
+      for (const hash of ['#home', '#engine', '#compare', '#docs/showcase/wispr-flow', '#docs/showcase/telegram', '#docs/showcase/pet-care', '#docs/examples-readme', '#docs/compare-rust-gpui', '#docs/compare-electron', '#docs/compare-wails', '#docs/compare-fyne', '#docs/compare-gio', '#docs/compare-webview', '#docs/compare-ebitengine']) {
         await navigate(hash);
         if (hash === '#docs/showcase/wispr-flow') {
           assert.equal(await evaluate(`Array.from(document.querySelectorAll('.docs-nav a')).find(link => link.getAttribute('href') === '#docs/showcase/wispr-flow')?.textContent`), 'Example apps');
@@ -211,6 +211,11 @@ try {
           assert.ok(await evaluate('Math.abs(document.querySelector("header").getBoundingClientRect().top) < 1'), 'Header disappears above the example table');
           await screenshot(`example-tables-${width}-${theme}`);
         }
+        if (hash === '#engine' || hash === '#compare') {
+          assert.equal(await evaluate('document.querySelectorAll("main section").length'), 1, `${hash} displays another section`);
+          assert.ok(await evaluate(`!!document.querySelector('${hash}')`), `Missing ${hash} page`);
+          assert.equal(await evaluate(`document.querySelector('header a[href="${hash}"]').getAttribute('aria-current')`), 'page');
+        }
         if (hash === '#home' && [390, 1440].includes(width)) {
           let loaded = false;
           for (let attempt = 0; attempt < 300; attempt++) {
@@ -235,10 +240,12 @@ try {
           if (width === 1440) await screenshot(`home-full-${theme}`, true);
         }
         if (hash === '#home') {
-          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.core-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
+          assert.equal(await evaluate('!!document.querySelector("#engine, #compare")'), false, 'Home includes a separate page');
+          assert.ok(await evaluate('!!document.querySelector("#demos") && !!document.querySelector("#start")'), 'Home content is missing');
+          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.hello-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
           for (const index of [1, 2, 3, 0]) {
-            await evaluate(`document.querySelectorAll('.core-example [role="tab"]')[${index}].click()`);
-            assert.equal(await evaluate(`document.querySelector('.core-example [role="tab"][aria-selected="true"]').getAttribute('aria-controls')`), await evaluate(`document.querySelector('.core-example [role="tabpanel"]:not([hidden])').id`));
+            await evaluate(`document.querySelectorAll('.hello-example [role="tab"]')[${index}].click()`);
+            assert.equal(await evaluate(`document.querySelector('.hello-example [role="tab"][aria-selected="true"]').getAttribute('aria-controls')`), await evaluate(`document.querySelector('.hello-example [role="tabpanel"]:not([hidden])').id`));
           }
           assert.equal(await evaluate(`new Set(Array.from(document.querySelectorAll('[id]')).map(element => element.id)).size === document.querySelectorAll('[id]').length`), true, 'Duplicate IDs between code examples');
           assert.equal(await evaluate('document.querySelectorAll("iframe.launch-demo").length'), 1, 'Homepage is missing the playable WASM demo');
@@ -294,33 +301,24 @@ try {
     const filtered = (await send('Page.captureScreenshot', { format: 'png' })).data;
     assert.notEqual(filtered, completed, 'Embedded filter click did not change the rendered page');
     await screenshot(`home-demo-filtered-${width}`);
-    await evaluate('document.getElementById("start").scrollIntoView(); document.querySelector(".core-example [role=tab]").click()');
-    let starterLoaded = false;
-    for (let attempt = 0; attempt < 300; attempt++) {
-      await pause(100);
-      starterLoaded = await evaluate(`(() => {
-        const doc = document.querySelector('.core-example iframe').contentDocument;
-        return !!doc?.querySelector('canvas') && doc.querySelector('#loader')?.classList.contains('loaded');
-      })()`);
-      if (starterLoaded) break;
+    for (const selector of ['.hello-example', '.split-example']) {
+      await evaluate(`document.querySelectorAll('.starter-picker button')[${selector === '.hello-example' ? 0 : 1}].click()`);
+      await evaluate(`document.querySelector('${selector}').scrollIntoView()`);
+      let loaded = false;
+      for (let attempt = 0; attempt < 300; attempt++) {
+        await pause(100);
+        loaded = await evaluate(`(() => {
+          const doc = document.querySelector('${selector} iframe')?.contentDocument;
+          return !!doc?.querySelector('canvas') && doc.querySelector('#loader')?.classList.contains('loaded');
+        })()`);
+        if (loaded) break;
+      }
+      assert.ok(loaded, `${selector} WASM did not load`);
+      await screenshot(`${selector.slice(1)}-${width}`);
     }
-    assert.ok(starterLoaded, 'Workspace Inspector WASM did not load');
-    await pause(500);
-    await screenshot(`starter-layout-${width}`);
-    await evaluate('document.querySelector(".core-example").scrollIntoView()');
-    await pause(100);
-    await screenshot(`starter-ready-${width}`);
-    const starterFrame = await evaluate(`document.querySelector('.core-example iframe').getBoundingClientRect().toJSON()`);
-    const ready = (await send('Page.captureScreenshot', { format: 'png' })).data;
-    const point = { x: starterFrame.x + 100, y: starterFrame.y + 110 };
-    await send('Input.dispatchMouseEvent', { type: 'mousePressed', ...point, button: 'left', clickCount: 1 });
-    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...point, button: 'left', clickCount: 1 });
-    await pause(400);
-    await screenshot(`starter-updated-${width}`);
-    const updated = (await send('Page.captureScreenshot', { format: 'png' })).data;
-    assert.ok(updated !== ready, 'Rescan Workspace interaction did not repaint');
+    await evaluate(`document.querySelectorAll('.starter-picker button')[0].click()`);
     for (const index of [1, 2, 3]) {
-      await evaluate(`document.querySelectorAll('.core-example [role=tab]')[${index}].click()`);
+      await evaluate(`document.querySelectorAll('.hello-example [role=tab]')[${index}].click()`);
       await screenshot(`starter-source-${index}-${width}`);
     }
 

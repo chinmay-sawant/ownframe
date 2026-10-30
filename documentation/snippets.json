@@ -299,5 +299,12 @@
       "template.html",
       "style.css"
     ]
+  },
+  "examples/frontend/budget/main.go#starter": {
+    "mode": "file",
+    "assets": [
+      "template.html",
+      "style.css"
+    ]
   }
 }

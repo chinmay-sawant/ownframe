@@ -17,14 +17,14 @@ Open the `/ownframe/` address Vite prints. The site supports dark and light them
 ## Edit the site
 
 - `src/Home.jsx` contains the homepage copy, code sample, and demo cards.
-- `src/starter.js` loads the runnable starter from `examples/frontend/workspace/`. Its Live demo tab embeds the WASM app, followed by `main.go`, `template.html`, and `style.css` source tabs.
+- `src/starter.js` loads Hello World from `examples/frontend/hello/` and Split with friends from `examples/frontend/budget/`. Its Live demo tab embeds the WASM app, followed by `main.go`, `template.html`, and `style.css` source tabs.
 - `src/Documentation.jsx` renders the example and comparison pages and handles documentation navigation.
 - `src/showcase.js` defines the website's Example apps content and media dimensions.
 - `src/content.js` groups the example and comparison Markdown documents and resolves their links and images.
 - `src/main.jsx` contains the shared header, footer, mobile menu, and route selection.
 - `src/Team.jsx` introduces the human maintainer and lists AI tools separately.
 - `public/demo/` holds the standalone Launch board WASM demo and its dark and light preview images. The homepage embeds this page at the full width of its demo pane and keeps a separate standalone link.
-- `public/demos/workspace-inspector/` holds the starter WASM demo. `build:demo` rebuilds it from the same files displayed in the tabs.
+- `public/demos/hello/` and `public/demos/expense-tracker/` hold the starter WASM demos. `build:demo` rebuilds them from the same files displayed in the tabs.
 - `src/style.css` styles the homepage and documentation for desktop and mobile.
 
 The docs section shows About, Examples, and Comparisons. The About page is sourced from `../documentation/why-ownframe.md`. Guides use one page scroll. Scrollbar rails are hidden, while wheel, touch, and keyboard scrolling remain available.
@@ -61,7 +61,7 @@ The repository's `make lint` runs this same `npm run lint` after the Go linters,
 
 Reverify after any `npm install` or ESLint bump: `npm ls eslint` must resolve to one ESLint 10, `npm run lint` must pass, and no major version may move. The override stays invisible in `package-lock.json` (lockfileVersion 3 records no top-level overrides key), so re-check `package.json` itself. Remove the workaround only when `eslint-plugin-react` declares ESLint 10 support.
 
-`build:demo` rebuilds Launch board, Workspace Inspector, Telegram, and Spotify Player. Spotify includes bundled audio and exceeds GitHub's 100 MiB file limit as a raw WASM file. Its build strips debug symbols and writes `public/demos/spotify-player/ownframe.wasm.gz`; the browser loader unpacks that asset with `DecompressionStream` when the server does not already send `Content-Encoding: gzip`. Browsers decode that HTTP encoding automatically, so the loader uses the decoded response directly in that case. The raw Spotify WASM remains ignored. Browsers without gzip stream decompression get an explanatory message. Telegram and Workspace Inspector WASM files have explicit Git ignore exceptions so their public and generated copies ship.
+`build:demo` rebuilds Launch board, Hello World, Split with friends, Workspace Inspector, Telegram, and Spotify Player. Spotify includes bundled audio and exceeds GitHub's 100 MiB file limit as a raw WASM file. Its build strips debug symbols and writes `public/demos/spotify-player/ownframe.wasm.gz`; the browser loader unpacks that asset with `DecompressionStream` when the server does not already send `Content-Encoding: gzip`. Browsers decode that HTTP encoding automatically, so the loader uses the decoded response directly in that case. The raw Spotify WASM remains ignored. Browsers without gzip stream decompression get an explanatory message. Telegram and Workspace Inspector WASM files have explicit Git ignore exceptions so their public and generated copies ship.
 
 The build writes to the root `docs/` folder, including the public demo assets. It preserves `docs/go.mod` so the generated site stays outside the library module archive. `npm run preview` serves the generated site.
 
@@ -72,3 +72,5 @@ Build before publishing and include both `frontend/` changes and generated `docs
 The default asset base is `/ownframe/`. For a domain hosted at its root, use `npm run build -- --base=/`.
 
 Repository links default to `chinmay-sawant/ownframe`. `VITE_GITHUB_REPOSITORY` overrides that path. The optional GitHub star count uses the stable repository ID, caches successful responses for six hours, and backs off after failures. It retains the previous count when GitHub is unavailable.
+
+Run the examples locally from the repository root with `go run ./examples/frontend`, `go run ./examples/frontend/hello`, or `go run ./examples/frontend/budget`. Each directory contains the Go source and its HTML and CSS.

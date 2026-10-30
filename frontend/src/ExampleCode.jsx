@@ -73,8 +73,8 @@ export default function ExampleCode({ files = demoFiles, initialFile = 1, path =
       className={`preview-code-body${file.url ? ' preview-live-body' : ''}`}
     >
       {file.url
-        ? <iframe src={file.url} title="Interactive Workspace Inspector: click Rescan Workspace to update its status"
-          width="640" height="480" loading="lazy" />
+        ? <iframe src={file.url} title="Interactive starter example"
+          width="640" height="640" loading="lazy" />
         : <pre><code className={`hljs language-${file.language}`}
           dangerouslySetInnerHTML={{ __html: file.html }} /></pre>}
     </div>)}

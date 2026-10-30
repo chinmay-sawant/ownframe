@@ -2,6 +2,8 @@ import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } f
 import { createRoot } from 'react-dom/client';
 import Home from './Home';
 import Team from './Team';
+import Architecture from './Architecture';
+import Benchmarks from './Benchmarks';
 import ThemeToggle from './ThemeToggle';
 import { loadStars } from './stars';
 import { repository } from './project';
@@ -16,6 +18,8 @@ function App() {
   const menuButton = useRef(null);
   const isDocs = hash.startsWith('#docs');
   const isTeam = hash === '#team';
+  const isArchitecture = hash === '#engine';
+  const isBenchmarks = hash === '#compare';
 
   useLayoutEffect(() => {
     const header = document.querySelector('header');
@@ -43,9 +47,9 @@ function App() {
 
   useEffect(() => {
     if (isDocs) return;
-    if (isTeam || !hash || hash === '#home') window.scrollTo(0, 0);
+    if (isTeam || isArchitecture || isBenchmarks || !hash || hash === '#home') window.scrollTo(0, 0);
     else document.getElementById(hash.slice(1))?.scrollIntoView();
-  }, [hash, isDocs, isTeam]);
+  }, [hash, isDocs, isTeam, isArchitecture, isBenchmarks]);
 
   return <div className={isDocs ? 'docs-shell' : undefined}>
     <a className="skip" href="#main" onClick={(event) => {
@@ -72,8 +76,8 @@ function App() {
       <nav id="site-navigation" aria-label="Main navigation" data-open={menuOpen}
         onClick={(event) => { if (event.target.closest('a')) setMenuOpen(false); }}>
         <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
-        <a href="#engine">Architecture</a>
-        <a href="#compare">Benchmarks</a>
+        <a href="#engine" aria-current={isArchitecture ? 'page' : undefined}>Architecture</a>
+        <a href="#compare" aria-current={isBenchmarks ? 'page' : undefined}>Benchmarks</a>
         <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>Documentation</a>
         <a href="#team" aria-current={isTeam ? 'page' : undefined}>People & tools</a>
         <a href="#start">Get started</a>
@@ -87,7 +91,7 @@ function App() {
       </a>
     </header>
     <main id="main" className={isDocs ? 'docs-main' : undefined} tabIndex="-1">
-      {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : isTeam ? <Team /> : <Home />}
+      {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : isTeam ? <Team /> : isArchitecture ? <Architecture /> : isBenchmarks ? <Benchmarks /> : <Home />}
     </main>
     <footer>
       <div className="footer-content">

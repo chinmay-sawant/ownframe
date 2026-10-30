@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ExampleCode from './ExampleCode';
-import { starterFiles } from './starter';
+import { helloFiles, starterFiles } from './starter';
 import { repository } from './project';
 import gopher from '../../assets/brand/gopher.webp';
 import telegramPreview from '../../assets/screenshots/android/telegram/telegram-thread.webp';
@@ -55,6 +55,7 @@ const showcases = [
 
 export default function Home() {
   const [copyStatus, setCopyStatus] = useState('Copy');
+  const [starter, setStarter] = useState('hello');
   const [sourceOpen, setSourceOpen] = useState(() => !window.matchMedia('(max-width: 1024px)').matches);
   const copyTimer = useRef(null);
   const demoUrl = `${import.meta.env.BASE_URL}demo/index.html`;
@@ -76,7 +77,7 @@ export default function Home() {
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-copy">
         <p className="eyebrow">Go logic. HTML and CSS interfaces.</p>
-        <h1 id="hero-title">Build native Go apps<br className="hero-break" /> with HTML and CSS.</h1>
+        <h1 id="hero-title">Build native apps in Go<br className="hero-break" /> with HTML and CSS.</h1>
         <p>Create desktop and Android interfaces with Go handlers and an in-process renderer. No embedded browser.</p>
         <div className="hero-actions links">
           <a href="#start" className="button-primary">Get started <span aria-hidden="true">→</span></a>
@@ -142,66 +143,6 @@ export default function Home() {
       <p className="section-note"><a href="#docs/showcase/code-view">Browse all examples in documentation</a>. Product-inspired showcases are unofficial technical demonstrations.</p>
     </section>
 
-    {/* Architecture Section */}
-    <section id="engine" className="engine-section" aria-labelledby="engine-title">
-      <h2 id="engine-title">Your interface, inside your Go process</h2>
-      <p>Write the interface in HTML and CSS. Keep state and event handlers in Go. The layout engine and renderer run in the same application process.</p>
-      <div className="engine-flow" aria-label="How an ownframe screen reaches the window">
-        <div className="engine-step">
-          <div className="step-num">01</div>
-          <h3>Describe your screen</h3>
-          <p>Use Go HTML templates and the supported CSS subset. Pass your application state to the template with SetData.</p>
-        </div>
-        <div className="engine-step">
-          <div className="step-num">02</div>
-          <h3>Lay it out in Go</h3>
-          <p>Blinkless parses the template, applies CSS, and calculates layout. It returns a display list for ownframe to render.</p>
-        </div>
-        <div className="engine-step">
-          <div className="step-num">03</div>
-          <h3>Open a native window</h3>
-          <p>Ownframe connects rendering, input, and Go handlers through Ebitengine. Dirty regions and retained layers reduce repeated painting.</p>
-        </div>
-      </div>
-      <p className="section-note">Ownframe supports a subset of HTML and CSS. Website JavaScript does not run inside your app.</p>
-    </section>
-
-    <section id="compare" className="comparison-section" aria-labelledby="compare-title">
-      <p className="eyebrow">Measured, with context</p>
-      <h2 id="compare-title">Small updates should stay small.</h2>
-      <p>Retained operations let an animation update its paint without rebuilding the whole document. These historical measurements cover specific fixtures, not complete GPU presentation or every application.</p>
-      <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-number">176 ns</div>
-          <h3 className="metric-title">Animated card update</h3>
-          <p className="metric-detail">The recorded animated-card frame operation, after replacing a full redraw.</p>
-        </div>
-        <div className="metric-card">
-          <div className="metric-number">0 allocs</div>
-          <h3 className="metric-title">For that card update</h3>
-          <p className="metric-detail">Heap allocations per operation in the same animated-card measurement.</p>
-        </div>
-        <div className="metric-card">
-          <div className="metric-number">143 µs</div>
-          <h3 className="metric-title">Small-fixture warm redraw</h3>
-          <p className="metric-detail">The recorded RedrawWarm stage benchmark from the v0.0.2 baseline.</p>
-        </div>
-      </div>
-      <p className="section-note">Historical v0.0.2 results on the author&apos;s machine. Workload, commit, environment, and limits are recorded in the <a href={`${repository}/blob/master/documentation/performance-baseline.md`}>performance baseline</a>. See the <a href={`${repository}/blob/master/documentation/performance.md`}>measurement procedure</a> to reproduce the checks.</p>
-      <div className="comparison-scroll" role="region" aria-label="Runtime architecture comparison" tabIndex="0">
-        <table className="comparison-table">
-          <caption className="visually-hidden">Runtime architecture of ownframe and browser-based approaches</caption>
-          <thead><tr><th scope="col">Inside the app</th><th scope="col">Electron</th><th scope="col">Wails v2 / Tauri</th><th scope="col">ownframe</th></tr></thead>
-          <tbody>
-            <tr><th scope="row">Layout</th><td>Bundled Chromium</td><td>System WebView</td><td><strong>Blinkless, in Go</strong></td></tr>
-            <tr><th scope="row">UI event handlers</th><td>JavaScript</td><td>JavaScript and a native bridge</td><td><strong>Go functions</strong></td></tr>
-            <tr><th scope="row">Web compatibility</th><td>Chromium web platform</td><td>Host WebView web platform</td><td><strong>Supported HTML and CSS subset</strong></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p><a href="#docs/compare-electron">Read the Electron comparison</a> or explore <a href="#docs/why-ownframe">why we built ownframe</a>.</p>
-    </section>
-
     <section id="start" className="start-section" aria-labelledby="start-title">
       <div className="start-intro">
         <div className="start-copy">
@@ -231,15 +172,16 @@ export default function Home() {
           </li>
         </ol>
       </div>
-      <div className="core-example">
-        <div className="starter-preview-heading">
-          <span>Workspace Inspector</span><span>Interactive example</span>
+      <div className={`core-example ${starter === 'hello' ? 'hello-example' : 'split-example'}`}>
+        <div className="starter-picker" aria-label="Choose an example">
+          <button type="button" aria-pressed={starter === 'hello'} onClick={() => setStarter('hello')}>Hello World</button>
+          <button type="button" aria-pressed={starter === 'split'} onClick={() => setStarter('split')}>Split with friends</button>
         </div>
-        <ExampleCode files={starterFiles} initialFile={0} path="" />
+        <ExampleCode key={starter} files={starter === 'hello' ? helloFiles : starterFiles} initialFile={0} path="" />
       </div>
       <div className="start-run">
         <span>Open your native window</span><code>go run .</code>
-        <p>Click Rescan Workspace to see the Go handler update the page.</p>
+        <p>{starter === 'hello' ? 'Click the button to see a Go handler update the page.' : 'Choose friends, enter a bill, and calculate each share.'}</p>
       </div>
     </section>
 

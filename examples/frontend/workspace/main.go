@@ -10,7 +10,7 @@ import (
 
 const (
 	windowWidth      = 640
-	windowHeight     = 480
+	windowHeight     = 640
 	initialFileCount = 42
 )
 

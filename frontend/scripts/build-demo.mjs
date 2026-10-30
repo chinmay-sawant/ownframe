@@ -12,6 +12,8 @@ if (!runtime) throw new Error('Could not locate wasm_exec.js in GOROOT');
 for (const [example, folder, binary] of [
   ['frontend', 'demo', 'demo.wasm'],
   ['frontend/workspace', 'demos/workspace-inspector', 'demo.wasm'],
+  ['frontend/hello', 'demos/hello', 'demo.wasm'],
+  ['frontend/budget', 'demos/expense-tracker', 'demo.wasm'],
   ['telegram', 'demos/telegram', 'ownframe.wasm'],
   ['spotify-player', 'demos/spotify-player', 'ownframe.wasm'],
 ]) {

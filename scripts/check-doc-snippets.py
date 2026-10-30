@@ -52,6 +52,8 @@ def snippets():
             found[key] = (match.group(1), path, path.read_text()[:match.start(1)].count('\n') + 1)
     path = ROOT / 'examples/frontend/workspace/main.go'
     found['examples/frontend/workspace/main.go#starter'] = (path.read_text(), path, 1)
+    path = ROOT / 'examples/frontend/budget/main.go'
+    found['examples/frontend/budget/main.go#starter'] = (path.read_text(), path, 1)
     return found
 
 
