@@ -9,8 +9,23 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def snapshot(directory):
-    return {str(path.relative_to(directory)): hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in directory.rglob('*') if path.is_file()}
+    """Hash the files git would commit: tracked plus untracked non-ignored.
+
+    Build intermediates that git ignores (such as the unpacked Spotify
+    wasm, which stays under no circumstances in the repo past GitHub's
+    100 MB cap) must not fail the check; they differ per machine and can
+    never be checked in.
+    """
+    rel = str(directory.relative_to(ROOT))
+    tracked = subprocess.run(['git', 'ls-files', '-z', '--', rel],
+                             cwd=ROOT, check=True, capture_output=True,
+                             text=True).stdout.split('\0')
+    others = subprocess.run(['git', 'ls-files', '--others', '--exclude-standard',
+                             '-z', '--', rel],
+                            cwd=ROOT, check=True, capture_output=True,
+                            text=True).stdout.split('\0')
+    return {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
+            for name in tracked + others if name}
 
 
 def main():

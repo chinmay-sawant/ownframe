@@ -13,8 +13,8 @@
 .file-nav {
   position: fixed;
   left: calc(50% - 210px);
-  bottom: 34px;
-  z-index: 30;
+  bottom: calc(var(--status-h) + 10px);
+  z-index: 32;
   width: 420px;
   height: 34px;
   display: flex;

@@ -34,3 +34,15 @@ examples/*/android/artifacts/*-debug.apk
 
 # Python maintenance-check bytecode
 __pycache__/
+
+# Website starter demo distributed with the generated site.
+!frontend/public/demos/workspace-inspector/demo.wasm
+!docs/demos/workspace-inspector/demo.wasm
+!frontend/public/demos/telegram/ownframe.wasm
+!docs/demos/telegram/ownframe.wasm
+
+!frontend/public/demos/expense-tracker/demo.wasm
+!docs/demos/expense-tracker/demo.wasm
+
+!frontend/public/demos/hello/demo.wasm
+!docs/demos/hello/demo.wasm

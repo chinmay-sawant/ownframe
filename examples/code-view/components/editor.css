@@ -195,6 +195,8 @@
 
 .crumb-btn:hover { border-color: #2b3240; color: var(--text); background-color: var(--panel-2); }
 .crumb-btn.on { border-color: rgba(122, 162, 247, 0.5); background-color: var(--accent-soft); color: var(--accent); }
+.crumb-btn.off { color: #3a4252; }
+.crumb-btn.off:hover { background-color: transparent; border-color: var(--line); color: #3a4252; }
 
 .findbar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; }
 .find-input {
@@ -242,7 +244,7 @@
   position: absolute;
   z-index: 0;
   top: 0;
-  left: 16px;
+  left: 60px;
   right: 0;
   bottom: 0;
   background-color: transparent;
@@ -321,7 +323,7 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 16px;
+  left: 60px;
   right: 0;
   z-index: 1;
   padding: 0;
@@ -377,6 +379,8 @@
 }
 .ctx-item:hover { background-color: var(--panel-3); color: var(--text); }
 .ctx-item:disabled { color: var(--dim); }
+.ctx-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctx-hint { flex: 0 0 auto; margin-left: 24px; color: var(--dim); font-size: 10px; }
 @keyframes edit-blink { from { opacity: 1; } to { opacity: 0; } }
 .crow.line-add, .crow.line-mod { background-color: var(--green-bg); }
 .crow.line-del { background-color: var(--red-bg); }
@@ -386,7 +390,10 @@
 
 .gutter-mark {
   position: relative;
-  z-index: 2;
+  /* No z-index: the engine flattens an explicit z-index into a global band,
+     so z-index 2 painted this mark below the band-10 editor fills and the
+     row background covered it. Without one it keeps the editor band and the
+     fills paint first, still above the band-0/1 edit overlays. */
   width: 16px;
   flex: 0 0 16px;
   display: inline-flex;
@@ -406,6 +413,9 @@ button.gutter-mark:hover { color: var(--text); }
 .gutter-del { color: var(--red); }
 
 .ln {
+  position: relative;
+  /* No z-index, for the same flattened-band reason as .gutter-mark above:
+     an explicit z-index 2 dropped the line numbers below the editor fills. */
   width: 44px;
   flex: 0 0 44px;
   padding-right: 10px;
@@ -415,6 +425,10 @@ button.gutter-mark:hover { color: var(--text); }
   font-size: 10px;
   line-height: var(--row-h);
 }
+
+button.ln { padding: 0 10px 0 0; border: 0; background: transparent; cursor: pointer; }
+button.ln:hover { color: var(--text); }
+button.ln:focus { outline: 0; }
 
 .ln.cont { color: var(--dim); font-size: 9px; }
 

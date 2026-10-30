@@ -98,6 +98,20 @@
 
 .tree { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 1px 0 4px; }
 
+/* Sticky folders are a pinned block above the windowed rows. The list has no
+native scroll, so rows slide under the pinned block through manual windowing:
+no position:sticky is used inside this list. */
+.tree-sticky {
+  flex: 0 0 auto;
+  background-color: var(--panel-3);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
+}
+
+.tree-sticky .trow { background-color: transparent; }
+.tree-sticky .trow:hover { background-color: var(--panel-2); }
+.tree-sticky .trow.selected { background-color: var(--panel-3); }
+
 .trow {
   width: 100%;
   height: 26px;
@@ -110,6 +124,7 @@
 }
 
 .trow:hover { background-color: var(--panel-2); color: var(--text); }
+.trow.selected { background-color: var(--panel-3); color: var(--text); border-left-color: var(--accent); }
 .trow.dir { color: var(--muted); }
 .chev { width: 10px; height: 10px; flex: 0 0 10px; margin-right: 8px; color: var(--muted); }
 .trow.dir .chev { color: var(--muted); }
@@ -169,6 +184,7 @@
   top: 1px;
   right: 0;
   bottom: 4px;
+  z-index: 28;
   width: 8px;
   display: block;
 }
@@ -224,7 +240,7 @@
 .side-history { border-bottom: 0; border-top: 1px solid var(--line-soft); }
 .side-history .hist-head { gap: 4px; padding: 0 6px 0 10px; }
 .side-history .hist-hash { width: 42px; flex: 0 0 42px; }
-.side-history .hist-row { gap: 4px; padding: 0 6px 0 7px; }
+.side-history .hist-row { gap: 8px; padding: 0 6px 0 7px; }
 .side-history .hist-subject { font-size: 9.5px; }
 .side-history .hist-when, .side-history .hist-stat { display: none; }
 .side-history .hist-meta { padding-left: 17px; }
@@ -292,20 +308,183 @@
 
 .changes { position: relative; flex: 1; min-height: 0; overflow: hidden; padding: 3px 0; }
 
-.change {
-  width: 100%;
-  min-height: 38px;
+.change-wrap {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
-  padding: 4px 16px 4px 8px;
+  min-height: 38px;
+  padding: 4px 10px 4px 8px;
   border-left: 2px solid transparent;
   color: var(--muted);
-  text-align: left;
 }
 
-.change:hover { background-color: var(--panel-2); }
-.change.on, .change.on:hover { border-left-color: var(--accent); background-color: var(--panel-3); }
+.change-wrap.on, .change-wrap.on:hover { border-left-color: var(--accent); background-color: var(--panel-3); }
+.change-wrap:hover { background-color: var(--panel-2); }
+
+.change {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  color: var(--muted);
+  text-align: left;
+  background-color: transparent;
+}
+
+.change:hover { background-color: transparent; }
+.change.on, .change.on:hover { border-left-color: transparent; background-color: transparent; }
+
+.change-tools {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.change-tool {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--icon);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.change-tool:hover { background-color: var(--panel-3); color: var(--text); }
+.change-tool.danger:hover { color: var(--red); }
+
+.changes-tools-head { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.changes-head .changes-tools-head { margin-left: 0; }
+
+.changes-section-head {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.changes-section-head:first-child { border-top: 0; }
+.changes-section-title { flex: 0 0 auto; }
+
+.changes-selection {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background-color: var(--panel-2);
+  color: var(--muted);
+  font-size: 9.5px;
+}
+
+.changes-selection-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.change-wrap.multi { background-color: rgba(88, 120, 200, 0.12); }
+.change-wrap.multi.on { background-color: var(--panel-3); }
+
+/* Discard confirm dialog ---------------------------------------------------
+   Placed and styled like the search card: a full-viewport layer with a
+   top-centered panel, so the dialog never centers on the page height. */
+
+.confirm-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  width: 100vw;
+  height: 100vh;
+}
+
+.confirm-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(3, 5, 9, 0.62);
+}
+
+.confirm-panel {
+  position: absolute;
+  top: 70px;
+  left: calc(50% - 300px);
+  width: 600px;
+  margin-left: 0;
+  max-width: calc(100vw - 40px);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background-color: var(--panel);
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .confirm-panel { left: 20px; margin-left: 0; }
+}
+
+.confirm-head {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.confirm-title { color: var(--text); font-size: 12px; font-weight: 700; }
+.confirm-body { padding: 10px 12px 12px; }
+.confirm-msg { color: var(--muted); font-size: 11px; line-height: 1.5; }
+.confirm-files { margin: 8px 0 0; padding: 0; list-style: none; color: var(--dim); font-family: var(--mono); font-size: 9.5px; }
+.confirm-files li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.confirm-actions { margin-top: 12px; display: flex; justify-content: flex-end; gap: 8px; }
+.confirm-btn {
+  min-width: 72px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-color: var(--panel-2);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 600;
+}
+.confirm-btn:hover { border-color: #2b3240; background-color: var(--panel-3); }
+.confirm-btn.danger { border-color: rgba(240, 90, 90, 0.5); background-color: rgba(240, 90, 90, 0.12); color: var(--red); }
+.confirm-btn.danger:hover { border-color: rgba(240, 90, 90, 0.7); background-color: rgba(240, 90, 90, 0.2); color: var(--red); }
+.confirm-foot {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--dim);
+  font-size: 9px;
+}
+.confirm-hint { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.confirm-count { flex: 0 0 auto; }
 
 .change-text { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; overflow: hidden; }
 .change-name { max-width: 100%; max-height: 26px; font-size: 10.5px; line-height: 13px; color: var(--text); overflow: hidden; white-space: normal; overflow-wrap: anywhere; }

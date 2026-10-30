@@ -46,7 +46,11 @@ type sessionState struct {
 	DiffSplit     bool                 `json:"diffSplit"`
 	HistoryRatio  float64              `json:"historyRatio"`
 	HistoryManual bool                 `json:"historyManual"`
+	DrawerExtra   int                  `json:"drawerExtra,omitempty"`
+	Zoom          float64              `json:"zoom,omitempty"`
 	BranchLogs    map[string]commitLog `json:"branchLogs,omitempty"`
+	Nav           []string             `json:"nav,omitempty"`
+	NavAt         int                  `json:"navAt,omitempty"`
 }
 
 // defaultSessionPath returns the session file for root under the user config
@@ -96,6 +100,7 @@ func loadSession(path string) (sessionState, error) {
 	state.Recents = capSessionPaths(state.Recents)
 	state.Tabs = capSessionPaths(state.Tabs)
 	state.Tabs2 = capSessionPaths(state.Tabs2)
+	state.Nav = capNavPaths(state.Nav)
 
 	return state, nil
 }
@@ -111,6 +116,7 @@ func saveSession(path string, state sessionState) error {
 	state.Recents = capSessionPaths(state.Recents)
 	state.Tabs = capSessionPaths(state.Tabs)
 	state.Tabs2 = capSessionPaths(state.Tabs2)
+	state.Nav = capNavPaths(state.Nav)
 
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
@@ -165,12 +171,16 @@ func (s sessionState) sanitize(root string) sessionState {
 	s.Recents = cleanSessionPaths(s.Recents)
 	s.Tabs = cleanSessionPaths(s.Tabs)
 	s.Tabs2 = cleanSessionPaths(s.Tabs2)
+	s.Nav = cleanNavPaths(s.Nav)
 
 	s.Active = clampSessionIndex(s.Active, len(s.Tabs))
 	s.Active2 = clampSessionIndex(s.Active2, len(s.Tabs2))
 	s.FocusGroup = clampSessionIndex(s.FocusGroup, sessionGroupCount)
 	s.SplitRatio = clampSessionRatio(s.SplitRatio, sessionSplitMin, sessionSplitMax)
 	s.HistoryRatio = clampSessionRatio(s.HistoryRatio, sessionHistoryMin, sessionHistoryMax)
+	s.DrawerExtra = clampDrawerExtra(s.DrawerExtra)
+	s.Zoom = clampSessionZoom(s.Zoom)
+	s.NavAt = clampHistoryIndex(s.NavAt, len(s.Nav))
 
 	return s
 }
@@ -271,4 +281,76 @@ func clampSessionRatio(value, low, high float64) float64 {
 	}
 
 	return value
+}
+
+// clampSessionZoom keeps a restored layout zoom inside the usable range,
+// defaulting a missing or wild value to 100 percent.
+func clampSessionZoom(value float64) float64 {
+	if value < zoomMin || value > zoomMax {
+		return 1
+	}
+
+	return value
+}
+
+// capNavPaths keeps a navigation history inside its budget without touching
+// the caller's entries.
+func capNavPaths(paths []string) []string {
+	if len(paths) > navMaxEntries {
+		return paths[len(paths)-navMaxEntries:]
+	}
+
+	return paths
+}
+
+// cleanNavPaths trims and normalizes navigation entries, drops absolute or
+// escaping paths, collapses consecutive duplicates, and keeps the newest
+// entries inside the navigation budget.
+func cleanNavPaths(paths []string) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+
+	out := make([]string, 0, min(len(paths), navMaxEntries))
+
+	for _, raw := range paths {
+		path, ok := cleanSessionPath(raw)
+		if !ok {
+			continue
+		}
+
+		if len(out) > 0 && out[len(out)-1] == path {
+			continue
+		}
+
+		out = append(out, path)
+	}
+
+	if len(out) > navMaxEntries {
+		out = append([]string(nil), out[len(out)-navMaxEntries:]...)
+	}
+
+	if len(out) == 0 {
+		return nil
+	}
+
+	return out
+}
+
+// clampHistoryIndex keeps a navigation index inside its history, with zero
+// as the empty-history index.
+func clampHistoryIndex(index, length int) int {
+	if length <= 0 {
+		return 0
+	}
+
+	if index < 0 {
+		return 0
+	}
+
+	if index >= length {
+		return length - 1
+	}
+
+	return index
 }

@@ -21,6 +21,7 @@
   <button class="sb-item sb-dev{{if .DevOn}} on{{end}}" id="sb-devtools" data-action="devtools" type="button" title="Toggle developer tools" aria-pressed="{{if .DevOn}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>
     <span class="sb-dot"></span>DevTools {{if .DevOn}}on{{else}}off{{end}}
   </button>
+  <button class="sb-item sb-zoom" id="sb-zoom" data-action="zoom-reset" type="button" title="Reset zoom to 100 percent" aria-label="Reset zoom, currently {{.ZoomLabel}}"{{if .Modal}} tabindex="-1"{{end}}>{{.ZoomLabel}}</button>
 </footer>
 
 {{if .Toast.Show}}<div class="toast-layer" aria-live="polite" role="status">

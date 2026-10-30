@@ -23,14 +23,14 @@ func (a *App) editorPillReserve() int {
 		return 0
 	}
 
-	return fileNavH + fileNavGap
+	return a.zx(fileNavH) + a.zx(fileNavGap)
 }
 
 // editorClearHeight is the body height in which a text row is fully visible.
 func (a *App) editorClearHeight() int {
 	h := a.diffBodyHeight() - a.editorPillReserve()
-	if h < rowH {
-		h = rowH
+	if h < a.zx(rowH) {
+		h = a.zx(rowH)
 	}
 
 	return h
@@ -40,18 +40,18 @@ func (a *App) editorClearHeight() int {
 // stops at the status bar; this pad lets the last row move into the clear area.
 func (a *App) editorTailRows() int {
 	full := a.diffBodyHeight()
-	clear := (a.editorClearHeight() / rowH) * rowH
+	clear := (a.editorClearHeight() / a.zx(rowH)) * a.zx(rowH)
 	gap := full - clear
 	if gap <= 0 {
 		return 0
 	}
 
-	return (gap + rowH - 1) / rowH
+	return (gap + a.zx(rowH) - 1) / a.zx(rowH)
 }
 
 // windowSliceForGroup returns the row range the fixed body shows and the track offset for group (0 or 1).
 func (a *App) windowSliceForGroup(group, total int) (int, int, int) {
-	capacity := a.editorClearHeight() / rowH
+	capacity := a.editorClearHeight() / a.zx(rowH)
 	if capacity < 1 {
 		capacity = 1
 	}
@@ -65,7 +65,7 @@ func (a *App) windowSliceForGroup(group, total int) (int, int, int) {
 		offset = 0
 	}
 
-	first := offset / rowH
+	first := offset / a.zx(rowH)
 	tail := 0
 	if total > capacity {
 		tail = total - capacity
@@ -103,7 +103,7 @@ func (a *App) pageScrollLimit() int {
 func (a *App) maxGroupScroll(group int) int {
 	doc := a.groupDoc(group)
 	rows := a.paneRowCount(group, doc)
-	maxY := rows*rowH - a.bodyHeight()
+	maxY := rows*a.zx(rowH) - a.bodyHeight()
 	if maxY < 0 {
 		return 0
 	}
@@ -243,15 +243,15 @@ func (a *App) isOverPane(group int, x, y float64) bool {
 			return false
 		}
 		left, width := a.secondGeometry()
-		top := float64(chromeTop)
-		bottom := float64(a.viewportH - chromeBottom)
+		top := float64(a.zx(chromeTop))
+		bottom := float64(a.viewportH - a.zx(chromeBottom))
 
 		return x >= float64(left) && x <= float64(left+width) && y >= top && y <= bottom
 	}
 
 	left, width := a.paneGeometry()
-	top := float64(chromeTop)
-	bottom := float64(a.viewportH - chromeBottom)
+	top := float64(a.zx(chromeTop))
+	bottom := float64(a.viewportH - a.zx(chromeBottom))
 
 	return x >= float64(left) && x <= float64(left+width) && y >= top && y <= bottom
 }

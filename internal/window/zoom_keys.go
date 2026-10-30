@@ -19,13 +19,14 @@ func zoomModifier() bool {
 
 // zoomKey applies one Control+=, Control+-, or Control+0 press. It reports
 // whether the window consumed the key; the plain keys stay with the page.
-// A page that refuses key zoom still consumes the chord, and the scale stays.
+// A page that refuses key zoom keeps the chords, so the page can run its
+// own layout zoom (the code view does); the painted scale stays untouched.
 func (s *shell) zoomKey(key ebiten.Key, down bool, mods modifiers) bool {
 	if s.viewLocked() || !mods.command() || mods.Alt {
 		return false
 	}
 	if !s.keyZoomAllowed() {
-		return true
+		return false
 	}
 
 	switch key {

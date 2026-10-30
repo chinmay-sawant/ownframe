@@ -212,7 +212,7 @@
 
 .os-choice .file-item { flex: 1; justify-content: center; }
 
-.file-alert { position: fixed; right: 14px; bottom: 34px; width: 300px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--panel); color: var(--text); font-size: 11px; z-index: 65; }
+.file-alert { position: fixed; right: 14px; bottom: calc(var(--status-h) + 10px); width: 300px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px; border: 1px solid var(--line); border-radius: 8px; background-color: var(--panel); color: var(--text); font-size: 11px; z-index: 65; }
 
 .file-alert span { flex: 1; min-width: 0; }
 
@@ -278,6 +278,30 @@
   font-size: 9px;
   white-space: nowrap;
 }
+
+.nav-group {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 2px;
+}
+
+.nav-btn {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.nav-btn:hover { background-color: var(--panel-3); color: var(--text); }
+.nav-btn.off { color: var(--dim); }
+.nav-btn:disabled { color: var(--dim); }
+.nav-btn.off:hover { background-color: transparent; color: var(--dim); }
 
 /* Custom window chrome ----------------------------------------------------- */
 
@@ -472,7 +496,7 @@ button.sb-item:hover { background-color: var(--panel-3); color: var(--text); }
 .toast-layer {
   position: fixed;
   left: 16px;
-  bottom: 34px;
+  bottom: calc(var(--status-h) + 10px);
   z-index: 40;
   pointer-events: none;
 }

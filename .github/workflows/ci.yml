@@ -145,6 +145,9 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -325,10 +328,12 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      - name: Install graphics test dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
       - name: Run examples race shard
         env:
           RACE_SHARD: ${{ matrix.shard }}
-        run: bash scripts/test-examples-race.sh "$RACE_SHARD" 4
+        run: xvfb-run -a bash scripts/test-examples-race.sh "$RACE_SHARD" 4
 
   native-package:
     if: >

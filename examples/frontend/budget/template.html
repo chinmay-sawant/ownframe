@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Split with friends</title></head>
+<body>
+  <main class="app">
+    <p class="eyebrow">A LITTLE EVERYDAY TOOL</p>
+    <h1>Split with friends</h1>
+    <p class="intro">Share a bill fairly. Choose who's in and see what each person owes.</p>
+    <nav class="navigation" aria-label="Split app screens">
+      <button id="screen-split" data-action="screen-split" class="nav-button {{if eq .Screen "split"}}active{{end}}">Split</button>
+      <button id="screen-settle" data-action="screen-settle" class="nav-button {{if eq .Screen "settle"}}active{{end}}">Settle up</button>
+      <button id="screen-activity" data-action="screen-activity" class="nav-button {{if eq .Screen "activity"}}active{{end}}">Activity</button>
+    </nav>
+    {{if eq .Screen "split"}}
+    <div class="bill">
+      <label for="amount">BILL TOTAL ($)</label>
+      <div class="bill-row"><input id="amount" class="field amount" type="text" data-bind="Amount" aria-label="Bill total in dollars"><button id="split" data-action="split" class="primary">Split the bill</button></div>
+    </div>
+    <div class="section-heading"><h2>Who's sharing?</h2><span>{{.Selected}} selected</span></div>
+    <div class="friends">
+      {{range .Friends}}<button id="friend-{{.ID}}" data-action="friend-{{.ID}}" class="friend {{if .Selected}}selected{{end}}" aria-pressed="{{.Selected}}"><span class="friend-dot" style="background-color: {{.Color}}"></span><span class="friend-name">{{.Name}}</span><span class="friend-state">{{if .Selected}}✓{{else}}+{{end}}</span></button>{{end}}
+    </div>
+    <div class="add-row"><input id="friend-name" class="field" type="text" data-bind="NewFriend" placeholder="Friend's name" aria-label="Friend's name"><button id="add" data-action="add" class="secondary">Add friend</button></div>
+    {{if .Error}}<p class="error">{{.Error}}</p>{{end}}
+    {{if .HasSplit}}<div class="result"><div class="result-copy"><p class="label">THE SPLIT</p><h2>Here's what everyone owes</h2><div class="shares">{{range .Friends}}{{if .Selected}}<div class="share"><span class="share-name">{{.Name}}</span><strong>{{.Share}}</strong></div>{{end}}{{end}}</div><p class="note">Any extra cents go to the first people listed.</p><button id="save" data-action="save" class="secondary save">{{if .Saved}}Saved to activity{{else}}Save split{{end}}</button></div><svg class="pie" width="120" height="120" viewBox="0 0 120 120" aria-label="Equal shares">{{range .Segments}}<path d="{{.Path}}" fill="{{.Color}}" />{{end}}</svg></div>{{else}}<p class="note">Choose Split the bill to calculate the updated shares.</p>{{end}}
+    {{else if eq .Screen "settle"}}
+    <div class="screen-card">
+      <p class="label">SETTLE UP</p>
+      <h2>Who paid the bill?</h2>
+      <p class="screen-note">Choose the person who paid. Everyone else pays them their share.</p>
+      {{if .HasSplit}}
+      <div class="payer-list">{{range .Friends}}{{if .Selected}}<button id="payer-{{.ID}}" data-action="payer-{{.ID}}" class="payer"><span class="friend-dot" style="background-color: {{.Color}}"></span><span>{{.Name}}</span>{{if eq .ID $.PayerID}}<strong>Paid</strong>{{else}}<span>Choose</span>{{end}}</button>{{end}}{{end}}</div>
+      <div class="payments"><p class="label">PAYMENTS</p>{{range .Friends}}{{if and .Selected (ne .ID $.PayerID)}}<div class="payment"><span>{{.Name}} pays {{(index $.Friends $.PayerID).Name}}</span><strong>{{.Share}}</strong></div>{{end}}{{end}}</div>
+      {{else}}<p class="screen-note">Calculate a split first to see payments.</p><button id="back-split" data-action="screen-split" class="secondary">Go to split</button>{{end}}
+    </div>
+    {{else}}
+    <div class="screen-card">
+      <p class="label">ACTIVITY</p>
+      <h2>Saved splits</h2>
+      <p class="screen-note">Your last three saved splits stay here while this demo is open.</p>
+      {{range .History}}<div class="history-item"><div class="history-heading"><strong>{{.Total}}</strong><span>Paid by {{.Payer}}</span></div>{{range .Shares}}<div class="payment"><span>{{.Name}}</span><strong>{{.Share}}</strong></div>{{end}}</div>{{else}}<p class="empty">No saved splits yet. Calculate a bill and choose Save split.</p>{{end}}
+    </div>
+    {{end}}
+  </main>
+</body>
+</html>

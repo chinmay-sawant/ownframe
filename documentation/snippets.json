@@ -80,10 +80,6 @@
       "github.com/chinmay-sawant/ownframe"
     ]
   },
-  "documentation/compare-fyne.md#1": {
-    "mode": "illustration",
-    "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
-  },
   "documentation/compare-gio.md#1": {
     "mode": "illustration",
     "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
@@ -288,18 +284,6 @@
       "github.com/chinmay-sawant/ownframe"
     ]
   },
-  "frontend/src/Home.jsx#quickStart": {
-    "mode": "file"
-  },
-  "frontend/src/Home.jsx#coreExample": {
-    "mode": "body",
-    "imports": [
-      "context",
-      "log",
-      "github.com/chinmay-sawant/ownframe"
-    ],
-    "after": "return nil"
-  },
   "documentation/window.md#2": {
     "mode": "body",
     "imports": [
@@ -308,5 +292,19 @@
     ],
     "before": "func titlebarStrip(x, y int) bool {\n\treturn y < 42\n}\n\nvar ctx = context.Background()\nvar page *ownframe.Page",
     "after": "_ = err\nreturn nil"
+  },
+  "examples/frontend/workspace/main.go#starter": {
+    "mode": "file",
+    "assets": [
+      "template.html",
+      "style.css"
+    ]
+  },
+  "examples/frontend/budget/main.go#starter": {
+    "mode": "file",
+    "assets": [
+      "template.html",
+      "style.css"
+    ]
   }
 }

@@ -21,10 +21,16 @@ const (
 var previewWidths sync.Map //nolint:gochecknoglobals // per-document preview width cache, one entry per open file
 
 // previewRow is one rendered Markdown row. It is exactly one editor row high,
-// so the existing windowing math still applies.
+// so the existing windowing math still applies. No is the 1-based source
+// line number on the first visual row of a block and zero on continuation
+// and synthetic gap rows, mirroring codeRow. Line is the 0-based source
+// line index behind No, so a click can open the same line details the
+// editor gutter button shows.
 type previewRow struct {
 	Kind     string
 	Marker   string
+	No       int
+	Line     int
 	Segments []segment
 	Image    string
 	ImageW   int
@@ -207,6 +213,10 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 		case strings.HasPrefix(trimmed, ">"):
 			text := strings.TrimSpace(strings.TrimLeft(trimmed, ">"))
 			start := len(rows)
+			if len(rows) > 0 && rows[len(rows)-1].Kind == "li" {
+				rows = append(rows, previewRow{Kind: "gap"})
+				start++
+			}
 			rows = appendPreviewWrapped(rows, "quote", "", text, cols)
 			anchors[i] = start
 			i++
@@ -230,6 +240,10 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 			}
 
 			startRow := len(rows)
+			if len(rows) > 0 && rows[len(rows)-1].Kind == "li" {
+				rows = append(rows, previewRow{Kind: "gap"})
+				startRow++
+			}
 			rows = appendPreviewWrapped(rows, "p", "", strings.Join(parts, " "), cols)
 			anchors[start] = startRow
 		}
@@ -269,6 +283,8 @@ func previewRows(lines []string, cols int) ([]previewRow, []int) {
 
 	rows = append(rows, previewRow{Kind: "gap"})
 
+	assignPreviewLineNumbers(rows, anchors)
+
 	return rows, anchors
 }
 
@@ -279,6 +295,24 @@ func normalizePreviewCols(cols int) int {
 	}
 
 	return cols
+}
+
+// assignPreviewLineNumbers maps each preview row back to its 1-based source
+// line. The first visual row of a source line keeps the number; wrapped
+// continuation rows and synthetic gaps stay at zero and render blank, like
+// codeRow. When several source lines share one preview row, the first line
+// wins so the number never flickers between them.
+func assignPreviewLineNumbers(rows []previewRow, anchors []int) {
+	for i, anchor := range anchors {
+		if anchor < 0 || anchor >= len(rows) {
+			continue
+		}
+
+		if rows[anchor].No == 0 {
+			rows[anchor].No = i + 1
+			rows[anchor].Line = i
+		}
+	}
 }
 
 // headingStart reports whether a line can start an ATX heading.
@@ -310,10 +344,21 @@ func specialStart(line string) bool {
 	return marker != ""
 }
 
-// listMarker returns the rendered marker and the item text.
+// listMarker returns the rendered marker and the item text. Task list items
+// keep their checkbox state in the marker so "- [ ]" never prints literally.
 func listMarker(trimmed string) (string, string) {
 	if len(trimmed) > 1 && strings.ContainsRune("-*+", rune(trimmed[0])) && trimmed[1] == ' ' {
-		return "•", strings.TrimSpace(trimmed[2:])
+		item := strings.TrimSpace(trimmed[2:])
+		if rest, ok := strings.CutPrefix(item, "[ ] "); ok {
+			return "☐", strings.TrimSpace(rest)
+		}
+		if rest, ok := strings.CutPrefix(item, "[x] "); ok {
+			return "☑", strings.TrimSpace(rest)
+		}
+		if rest, ok := strings.CutPrefix(item, "[X] "); ok {
+			return "☑", strings.TrimSpace(rest)
+		}
+		return "•", item
 	}
 
 	j := 0

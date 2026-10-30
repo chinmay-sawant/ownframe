@@ -60,7 +60,9 @@ clips with an ellipsis while the full path stays in the tooltip.
   collapse-all button. When the tree is taller than the sidebar, use the mouse
   wheel over the tree, drag the thin scrollbar, use the footer arrows, or move
   focus with the keyboard. Hover a clipped tree row or tab to read its full
-  path in the status bar.
+  path in the status bar. Open folders pin as sticky headers above the scroll
+  window; `Space` toggles the focused folder or opens the focused file.
+  Right-click a row for Copy Path, Copy File, and Paste.
 - Tabs keep up to eight files and shrink their names so all eight stay
   visible. Right-click a tab or its close button for Close, Close Others, and
   Close All; Close Others needs at least two tabs. The Working tree tab has
@@ -176,8 +178,23 @@ keeps the explorer and reports that git is unavailable.
 
 The changed-file list is a vertical scroll with a draggable rail and the mouse
 wheel; it has no pager buttons. The diff has unified and split modes. Changed
-words carry a stronger tint than the line background. Hunk arrows walk the
-`@@` rows.
+words carry a stronger tint than the line background. The up and down arrows
+step through contiguous change blocks and highlight the selected block.
+
+A header such as `@@ -10,6 +10,8 @@` describes one Git hunk: six lines starting
+at line 10 in the old file and eight lines starting at line 10 in the new file.
+Counts include unchanged context lines as well as deletions on the old side
+and additions on the new side. A count of one omits `,1`; a count of zero marks
+an insertion or deletion boundary. On an empty side, the start number is the
+line before that boundary; zero means the beginning of the file. Unified and
+split modes show the same ranges, regardless of soft wrapping or which rows
+are visible.
+
+One hunk can contain several change blocks separated by unchanged lines.
+The revert arrow restores only its block. In unified mode it appears on the
+first added row, or the first deleted row for a deletion-only block. In split
+mode it sits beside the center divider. Reverting refreshes the open file and
+keeps the diff view open; Ctrl+Z restores the reverted block.
 
 The Source Control drawer holds the working-tree files at the top and a
 History pane below them. The History rail reads 20 recent commits at a time,
@@ -265,6 +282,7 @@ half of the rows already loaded.
 | `Ctrl+S` | Save while editing |
 | `Ctrl+A` | Select all in the edit buffer |
 | `Ctrl+C` | Copy the edit selection |
+| `Ctrl+V` | Paste a staged copy or clipboard file into the explorer folder |
 | `Ctrl+\` | Split or close the second editor |
 | `M` or `Ctrl+Shift+V` | Markdown preview |
 | `Z` | Toggle soft wrap in files and diffs |
@@ -288,6 +306,15 @@ branch picker is open, background controls get `tabindex="-1"`, so Tab stays
 inside the overlay. Ctrl+Shift+V now reaches the app; the window keeps plain
 Ctrl+V for paste.
 
+Paste in the explorer with `Ctrl+V` or the Paste menu row. A staged copy
+lands in the focused folder, or beside the open file, with ` (copy)`
+suffixes on collision; a `file://` URI list on the clipboard copies the
+first existing file, and plain text becomes a new `paste.txt` (non-UTF-8
+bytes become `paste.bin`). PNG, JPEG, and PDF bytes copy the same way. A
+`C:\…` clipboard path is translated to `/mnt/<drive>/…` on WSL. The sample
+workspace is read-only, and `-web` exposes no clipboard route, so paste
+there runs from the menu.
+
 ## Accessibility
 
 Icon-only buttons and rows carry accessible names, toggles expose `aria-pressed`,
@@ -309,7 +336,7 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `session.go` | Session file load, save, sanitize |
 | `app_session.go` | Restore and persist layout |
 | `actions.go` | Click, filter, search, and keyboard routing |
-| `context_menu.go` | Tab context-menu rows and close actions |
+| `context_menu.go` | Tab and explorer context-menu rows, close, copy, and paste actions |
 | `context_menu_bridge.go` | Public menu row conversion |
 | `palette.go` | Quick-open rows, selection, and focus |
 | `markdown_preview.go` | Rendered Markdown rows and source anchors |
@@ -321,6 +348,8 @@ open D-Bus, so Orca and similar tools cannot attach yet.
 | `diff.go` | Unified diff parser, word emphasis, row builders |
 | `diff_wrap.go` | Unified and split diff wrapping |
 | `workspace.go` | Sample and disk scanning, file reads, limits |
+| `explorer_clipboard.go` | Explorer copy path/file, staged paste, and the shared pending-copy state |
+| `explorer_paste_wire.go` | Ctrl+V chord and menu paste into the explorer folder |
 | `workspace_write.go` | Save one file under the root |
 | `workspace_search.go` | Content-search engine |
 | `edit_buffer.go` | Text editing model |
@@ -353,7 +382,13 @@ open D-Bus, so Orca and similar tools cannot attach yet.
   window and share one page scroll, so a split keeps both panes on the same
   row offset.
 - Files over 512 KB and files with a NUL byte show a notice. A file over 20,000
-  lines keeps the first 20,000.
+  lines keeps the first 20,000. A file with a line over 32 KB shows a notice
+  instead of opening.
+- A diff over 512 KB, 20,000 lines, or one line over 32 KB renders one notice
+  row instead of the changed lines, so a deleted or regenerated bundle cannot
+  stall the pane. A commit patch that hits its 512 KB read cap shows the same
+  notice. The wrapped rows are cached per file and column budget, and scrolling
+  reuses them.
 - The tree windows its visible rows. The wheel scrolls it under the pointer;
   the scrollbar, footer arrows, and keyboard also work.
 - The scan skips `.git`, `node_modules`, `vendor`, build output, and binary
@@ -411,7 +446,7 @@ live and sample commit history, branch filtering without checkout, commit
 expansion, the sidebar history divider, diff-cell clipping, soft-wrap rows,
 in-file find, explorer windowing, wheel and keyboard navigation, background
 file watching and rescan, external branch changes, scrolling after a long file
-opens, devtools, the clipboard, accessibility names and the modal focus trap,
+opens, devtools, the clipboard, explorer copy and paste with Ctrl+V, accessibility names and the modal focus trap,
 and keyboard routing and activation.
 
 Capture the review frames:

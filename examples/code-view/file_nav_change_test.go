@@ -302,3 +302,105 @@ func TestFileNavigatorRemainsAvailableWhileEditing(t *testing.T) {
 		t.Fatal("navigator did not move to the next file")
 	}
 }
+
+func TestHunkArrowsTrackChangeBlocks(t *testing.T) {
+	ctx := context.Background()
+	newDiffApp := func(files []changedFile) *App {
+		app := newTestApp(t)
+		app.changes = changeSet{Files: files}
+		app.syncFileNav()
+		return app
+	}
+	singleAdd := []changedFile{{Path: "a.go", Status: "M", Hunks: []hunk{{
+		NewStart: 1, Lines: []diffLine{{Kind: '+', NewNo: 1, Text: "one"}},
+	}}}}
+	addDel := []changedFile{{Path: "a.go", Status: "M", Hunks: []hunk{{
+		NewStart: 1, Lines: []diffLine{
+			{Kind: '-', OldNo: 1, Text: "old"},
+			{Kind: '+', NewNo: 1, Text: "new"},
+		},
+	}}}}
+	twoBlocks := []changedFile{{Path: "a.go", Status: "M", Hunks: []hunk{{
+		NewStart: 1, Lines: []diffLine{
+			{Kind: '+', NewNo: 1, Text: "first"},
+			{Kind: ' ', OldNo: 1, NewNo: 2, Text: "keep"},
+			{Kind: '-', OldNo: 2, Text: "old"},
+			{Kind: '-', OldNo: 3, Text: "older"},
+			{Kind: '+', NewNo: 3, Text: "new"},
+			{Kind: '+', NewNo: 4, Text: "newer"},
+		},
+	}}}}
+
+	for _, tc := range []struct {
+		name  string
+		files []changedFile
+	}{
+		{"single addition", singleAdd},
+		{"adjacent addition and deletion", addDel},
+	} {
+		for _, split := range []bool{false, true} {
+			app := newDiffApp(tc.files)
+			app.selectDiff("a.go")
+			app.setSplit(split)
+			if nav := app.View().FileNav; nav.CanPrevChange || nav.CanNextChange {
+				t.Fatalf("%s split=%v: file nav = %+v, want both off", tc.name, split, nav)
+			}
+			if diff := app.View().Diff; diff.CanPrevChange || diff.CanNextChange {
+				t.Fatalf("%s split=%v: crumbs = prev %v next %v, want both off",
+					tc.name, split, diff.CanPrevChange, diff.CanNextChange)
+			}
+			before := app.scrollY
+			app.jumpHunk(1)
+			app.jumpHunk(-1)
+			if app.scrollY != before {
+				t.Fatalf("%s split=%v: single block jump moved %d to %d", tc.name, split, before, app.scrollY)
+			}
+		}
+	}
+
+	for _, split := range []bool{false, true} {
+		app := newDiffApp(twoBlocks)
+		app.selectDiff("a.go")
+		app.setSplit(split)
+		if nav := app.View().FileNav; nav.CanPrevChange || !nav.CanNextChange {
+			t.Fatalf("split=%v: initial file nav = %+v, want prev off next on", split, nav)
+		}
+		if diff := app.View().Diff; diff.CanPrevChange || !diff.CanNextChange {
+			t.Fatalf("split=%v: initial crumbs = prev %v next %v, want prev off next on",
+				split, diff.CanPrevChange, diff.CanNextChange)
+		}
+		if err := app.onClick(ctx, ownframe.Box{Action: "hunk-next"}); err != nil {
+			t.Fatal(err)
+		}
+		if nav := app.View().FileNav; !nav.CanPrevChange || nav.CanNextChange {
+			t.Fatalf("split=%v: last file nav = %+v, want prev on next off", split, nav)
+		}
+		if diff := app.View().Diff; !diff.CanPrevChange || diff.CanNextChange {
+			t.Fatalf("split=%v: last crumbs = prev %v next %v, want prev on next off",
+				split, diff.CanPrevChange, diff.CanNextChange)
+		}
+		var current int
+		for _, row := range app.View().Diff.Rows {
+			if row.Current && !diffChangedRow(row) {
+				t.Fatalf("split=%v: non-change row is current: %+v", split, row)
+			}
+			if diffChangedRow(row) && row.Current {
+				current++
+			}
+		}
+		if current == 0 {
+			t.Fatalf("split=%v: no current rows after hunk-next", split)
+		}
+		starts := app.fileNavChangeRows("a.go")
+		if len(starts) != 2 || !app.changeNav.valid || app.changeNav.row != starts[1] {
+			t.Fatalf("split=%v: navigation = %+v, starts = %v, want row %d", split, app.changeNav, starts, starts[1])
+		}
+		if err := app.onClick(ctx, ownframe.Box{Action: "hunk-prev"}); err != nil {
+			t.Fatal(err)
+		}
+		if diff := app.View().Diff; diff.CanPrevChange || !diff.CanNextChange {
+			t.Fatalf("split=%v: back crumbs = prev %v next %v, want prev off next on",
+				split, diff.CanPrevChange, diff.CanNextChange)
+		}
+	}
+}

@@ -20,11 +20,30 @@ func (s *shell) resize() error {
 	s.moving = false
 
 	completeManualMaximize(s.pendingW, s.pendingH)
+	retryManualRestore(s.windowDrag.active)
+
+	if pendingStartMaximize {
+		// A remembered WM maximize from placement: the pre-loop call never
+		// takes effect, so maximize once the window exists.
+		pendingStartMaximize = false
+		ebiten.MaximizeWindow()
+	}
 
 	wantW, wantH := s.viewOf(s.pendingW, s.pendingH)
 	wantW, wantH = s.app.Clamp(wantW, wantH)
 	haveW, haveH := s.app.Size()
 	if wantW == haveW && wantH == haveH {
+		s.syncPlacement()
+
+		return nil
+	}
+
+	if s.windowDrag.active {
+		// A titlebar drag moves the window; it does not resize it. A
+		// size report that lands mid-drag (monitor scale seam) must not
+		// trigger a full relayout storm under the hand. The commit lands
+		// on release, when the drag goes inactive and the sizes still
+		// differ. The in-between frames keep the previous frame scaled.
 		return nil
 	}
 
@@ -56,6 +75,8 @@ func (s *shell) resize() error {
 	if ebiten.IsWindowMaximized() {
 		ebiten.SetWindowSize(s.pendingW, s.pendingH)
 	}
+
+	s.syncPlacement()
 
 	return s.refreshState()
 }

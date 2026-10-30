@@ -22,7 +22,7 @@ func (a *App) editorScroll(group int) editorScrollView {
 	if limit <= 0 || track <= 0 {
 		return editorScrollView{}
 	}
-	height := max(editorScrollMinThumb, track*track/(track+limit))
+	height := max(a.zx(editorScrollMinThumb), track*track/(track+limit))
 	height = min(height, track)
 	top := (track - height) * min(max(offset, 0), limit) / limit
 	return editorScrollView{Show: true, Top: top, Height: height}

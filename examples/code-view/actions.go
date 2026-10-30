@@ -17,6 +17,16 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return nil
 	}
 
+	if a.confirmOpen {
+		switch box.Action {
+		case "confirm-ok", "confirm-cancel":
+		default:
+			if box.ID != "confirm-backdrop" {
+				return nil
+			}
+		}
+	}
+
 	action := box.Action
 
 	switch {
@@ -24,6 +34,12 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		if box.ID == "filter" || box.ID == "palette" || box.ID == "find" || box.ID == "branch-filter" ||
 			box.ID == "workspace-search" || box.ID == "editor" || box.ID == "edit-surface" || box.ID == "project-path" ||
 			box.ID == "drawer-path" {
+			return nil
+		}
+
+		// A press on the card body is the start of a header drag, not a
+		// dismiss: the X button and Escape still close it.
+		if box.ID == "inline-card" {
 			return nil
 		}
 
@@ -50,6 +66,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "inline-card:"):
 		if line, ok := actionIndex(action, "inline-card:"); ok {
 			a.showInlineCard(line)
+		}
+	case strings.HasPrefix(action, "inline-card-line:"):
+		if line, ok := actionIndex(action, "inline-card-line:"); ok {
+			a.showInlineCard(line + 1)
 		}
 	case action == "toast-close":
 		a.clearToast()
@@ -114,6 +134,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.fileNavChangeStep(1)
 	case action == "file-nav-open":
 		a.fileNavOpen()
+	case action == "nav-back":
+		a.goNavBack()
+	case action == "nav-forward":
+		a.goNavForward()
 	case action == "search-close":
 		return a.closeWorkspaceSearch(ctx)
 	case action == "search-case":
@@ -304,10 +328,10 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return nil
 	case strings.HasPrefix(action, "theme:"):
 		name := validTheme(strings.TrimPrefix(action, "theme:"))
-		if err := a.page.SetTheme(themeCSS(name)); err != nil {
+		a.theme = name
+		if err := a.page.SetTheme(a.activeThemeCSS()); err != nil {
 			return err
 		}
-		a.theme = name
 		a.refresh()
 	case action == "palette-open":
 		return a.openPalette(ctx)
@@ -320,6 +344,8 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.refresh()
 
 		return nil
+	case action == "zoom-reset":
+		return a.resetZoom(ctx)
 	case action == "win-close":
 		a.page.Window().Close()
 
@@ -328,6 +354,65 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		return a.closePalette(ctx)
 	case action == "diff-refresh":
 		a.reloadChanges(ctx, true)
+	case action == "stage-all":
+		if err := a.stageAll(ctx); err != nil {
+			return err
+		}
+	case action == "unstage-all":
+		if err := a.unstageAll(ctx); err != nil {
+			return err
+		}
+	case action == "discard-all":
+		a.openDiscardConfirm("discard-all", a.workingAllPaths())
+	case action == "stage-selected":
+		if err := a.stageSelected(ctx); err != nil {
+			return err
+		}
+	case action == "unstage-selected":
+		if err := a.unstageSelected(ctx); err != nil {
+			return err
+		}
+	case action == "discard-selected":
+		a.openDiscardConfirm("discard-selected", a.selectedList())
+	case action == "select-all-files":
+		a.selectAllFiles()
+		a.refresh()
+	case action == "select-clear":
+		if a.diffPath != "" {
+			a.setSingleSelect(a.diffPath)
+		} else {
+			a.ensureSelected()
+			for key := range a.selected {
+				delete(a.selected, key)
+			}
+		}
+		a.refresh()
+	case action == "confirm-ok":
+		if err := a.confirmDiscard(ctx); err != nil {
+			return err
+		}
+	case action == "confirm-cancel":
+		a.closeConfirm()
+	case strings.HasPrefix(action, "stage-file:"):
+		if err := a.stageFile(ctx, strings.TrimPrefix(action, "stage-file:")); err != nil {
+			return err
+		}
+	case strings.HasPrefix(action, "unstage-file:"):
+		if err := a.unstageFile(ctx, strings.TrimPrefix(action, "unstage-file:")); err != nil {
+			return err
+		}
+	case strings.HasPrefix(action, "discard-file:"):
+		a.openDiscardConfirm("discard-file", []string{strings.TrimPrefix(action, "discard-file:")})
+	case strings.HasPrefix(action, "revert-hunk:"):
+		if idx, ok := actionIndex(action, "revert-hunk:"); ok {
+			if err := a.revertClickedBlock(ctx, idx, box.ID); err != nil {
+				return err
+			}
+		}
+	case strings.HasPrefix(action, "copy-commit-message:"):
+		a.copyCommitMessage(strings.TrimPrefix(action, "copy-commit-message:"))
+	case strings.HasPrefix(action, "copy-commit-id:"):
+		a.copyCommitID(strings.TrimPrefix(action, "copy-commit-id:"))
 	case action == "diff-note":
 		a.showToast("info", "Sample changes", a.changes.Note)
 		a.refresh()
@@ -346,9 +431,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case action == "details-toggle":
 		a.toggleDetails()
 	case action == "scroll-left":
-		a.scrollHorizontal(-hscrollStep)
+		a.scrollHorizontal(-a.zx(hscrollStep))
 	case action == "scroll-right":
-		a.scrollHorizontal(hscrollStep)
+		a.scrollHorizontal(a.zx(hscrollStep))
 	case action == "tabs-prev":
 		a.scrollTabs(0, -1)
 	case action == "tabs-next":
@@ -444,9 +529,19 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	case strings.HasPrefix(action, "commit:"):
 		a.toggleCommit(ctx, strings.TrimPrefix(action, "commit:"))
 	case strings.HasPrefix(action, "open:"):
-		a.openFile(strings.TrimPrefix(action, "open:"))
+		path := strings.TrimPrefix(action, "open:")
+		if (a.ctrl || a.shift) && !a.editing {
+			return a.clickTreeSelect(ctx, path)
+		}
+		a.clearExplorerSel()
+		a.openFile(path)
 	case strings.HasPrefix(action, "dir:"):
-		a.onToggleDir(strings.TrimPrefix(action, "dir:"))
+		path := strings.TrimPrefix(action, "dir:")
+		if (a.ctrl || a.shift) && !a.editing {
+			return a.clickTreeSelect(ctx, path)
+		}
+		a.clearExplorerSel()
+		a.onToggleDir(path)
 	case strings.HasPrefix(action, "tab-close:"):
 		if index, ok := actionIndex(action, "tab-close:"); ok {
 			a.closeTab(index)
@@ -471,7 +566,11 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		case "branch":
 			a.selectBranchFile(path)
 		default:
-			a.selectDiff(path)
+			if a.ctrl {
+				a.toggleDiff(path)
+			} else {
+				a.selectDiff(path)
+			}
 		}
 	case strings.HasPrefix(action, "diff-expand-up:"):
 		if idx, ok := actionIndex(action, "diff-expand-up:"); ok {
@@ -572,6 +671,20 @@ func findBoxID(boxes []ownframe.Box, id string) (ownframe.Box, bool) {
 // returns false so the window can pan a long file. Ctrl+wheel does not zoom
 // this page.
 func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
+	if a.confirmOpen {
+		return true, nil
+	}
+
+	// Ctrl+wheel zooms the layout like the keyboard chords. The window
+	// leaves the wheel to the page because wheel zoom is off.
+	if a.ctrl && dy != 0 {
+		if dy > 0 {
+			return true, a.zoomIn(ctx)
+		}
+
+		return true, a.zoomOut(ctx)
+	}
+
 	if a.searchOpen {
 		sx, sy := a.page.Scroll().ScrollOffset()
 		x -= float64(sx)
@@ -825,8 +938,44 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 		}
 	}
 
-	if index < 0 {
+	stickyIndex := -1
+
+	for i, row := range a.view.StickyTree {
+		if row.Path == path {
+			stickyIndex = i
+
+			break
+		}
+	}
+
+	if index < 0 && stickyIndex < 0 {
 		return false, nil
+	}
+
+	if key == "space" {
+		var isDir bool
+
+		if index >= 0 {
+			isDir = a.view.Tree[index].Dir
+		} else {
+			isDir = a.view.StickyTree[stickyIndex].Dir
+		}
+
+		if isDir {
+			a.onToggleDir(path)
+			if err := a.page.Redraw(ctx); err != nil {
+				return true, err
+			}
+
+			return true, a.page.Form().Focus(ctx, focus)
+		}
+
+		a.openFile(path)
+		if err := a.page.Redraw(ctx); err != nil {
+			return true, err
+		}
+
+		return true, a.page.Form().Focus(ctx, focus)
 	}
 
 	switch key {
@@ -948,6 +1097,16 @@ func (a *App) treeKeyDown(ctx context.Context, key string) (bool, error) {
 
 // onDragStart claims the history divider or the explorer thumb.
 func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
+	// The inline card roams by its header in every direction. Buttons inside
+	// carry their own ids, so they never reach this branch.
+	if box.ID == "inline-card" && a.inlineCard.Show {
+		a.cardDrag = true
+		a.cardDx = 0
+		a.cardDy = 0
+		a.cardStartLeft = a.inlineCard.Left
+		a.cardStartTop = a.inlineCard.Top
+		return true, nil
+	}
 	if box.ID == "editor-scroll-thumb" || box.ID == "editor-scroll-thumb-2" {
 		group := 0
 		if box.ID == "editor-scroll-thumb-2" {
@@ -956,7 +1115,7 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 		return a.startEditorScrollDrag(group), nil
 	}
 	if box.ID == "search-thumb" && a.searchOpen && a.view.Search.Scroll {
-		track := searchWindowRows * searchRowHeight
+		track := searchWindowRows * a.zx(searchRowHeight)
 		thumb := a.view.Search.ScrollHeight
 		if track <= thumb {
 			return false, nil
@@ -1004,7 +1163,7 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 
 	if box.ID == "tree-thumb" && a.mode == "explorer" && a.view.TreeScroll {
 		visible := a.treeVisibleRows()
-		track := visible * treeRowH
+		track := visible * a.zx(treeRowH)
 		thumb := a.view.TreeThumbH
 		total := a.view.TreeTotal
 
@@ -1015,6 +1174,17 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 		a.treeDrag = true
 		a.treeDragAt = a.treeOffset
 		a.treeScale = float64(total-visible) / float64(track-thumb)
+
+		return true, nil
+	}
+
+	if box.ID == "drawer-resize" {
+		a.drawerDrag = true
+		a.drawerDragExtra = a.drawerExtra
+		a.drawerDx = 0
+		if err := a.page.Form().Focus(ctx, "drawer-resize"); err != nil {
+			return false, err
+		}
 
 		return true, nil
 	}
@@ -1038,6 +1208,15 @@ func (a *App) onDragStart(ctx context.Context, box ownframe.Box) (bool, error) {
 
 // onDragMove resizes the panes or moves the explorer thumb.
 func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
+	if a.cardDrag {
+		a.cardDx += dx
+		a.cardDy += dy
+		a.inlineCard.Left = a.clampCardLeft(a.cardStartLeft + int(a.cardDx+roundHalf))
+		a.inlineCard.Top = a.clampCardTop(a.cardStartTop + int(a.cardDy+roundHalf))
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
 	if a.editorDrag.active {
 		a.moveEditorScrollDrag(dy)
 		return a.page.Redraw(ctx)
@@ -1050,6 +1229,7 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 		a.selX += dx
 		a.selY += dy
 		a.extendEditSelection(a.selX, a.selY)
+		a.refreshInlineCardSelection()
 		a.refresh()
 
 		return a.page.Redraw(ctx)
@@ -1101,6 +1281,24 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 		return a.page.Redraw(ctx)
 	}
 
+	if a.drawerDrag {
+		a.drawerDx += dx
+		extra := a.drawerDragExtra + int(a.drawerDx+roundHalf)
+		if extra < 0 {
+			extra = 0
+		}
+		if extra > drawerMaxExtra {
+			extra = drawerMaxExtra
+		}
+		if extra == a.drawerExtra {
+			return nil
+		}
+		a.setDrawerExtra(extra)
+		a.persistSession()
+
+		return a.page.Redraw(ctx)
+	}
+
 	if !a.historyDrag {
 		return nil
 	}
@@ -1147,6 +1345,14 @@ func (a *App) onDragEnd(ctx context.Context) error {
 	a.changesScale = 0
 	a.historyListDrag = false
 	a.historyListScale = 0
+	a.drawerDrag = false
+	a.drawerDx = 0
+	if a.cardDrag {
+		a.stampCardOffset()
+	}
+	a.cardDrag = false
+	a.cardDx = 0
+	a.cardDy = 0
 	if wasSearch && a.searchOpen {
 		return a.page.Form().Focus(ctx, "workspace-search")
 	}
@@ -1171,6 +1377,53 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "shift", "shiftleft", "shiftright":
 		a.shift = true
 
+		return nil
+	}
+
+	// Layout zoom owns Ctrl+=, Ctrl+-, and Ctrl+0 everywhere, including
+	// while editing: the window leaves these chords to the page because
+	// key zoom is off. Copy, cut, paste, and the other Ctrl chords keep
+	// their own branches below.
+	if a.ctrl {
+		switch key {
+		case "equal", "kpadd":
+			return a.zoomIn(ctx)
+		case "minus", "kpsubtract":
+			return a.zoomOut(ctx)
+		case "0", "kp0":
+			return a.resetZoom(ctx)
+		}
+	}
+
+	// VS Code-style history: Alt+Left goes back, Alt+Right goes forward. The
+	// window sends these as single names, so they work while editing and win
+	// over the horizontal scroll below.
+	switch key {
+	case "alt+arrowleft":
+		a.goNavBack()
+
+		return a.page.Redraw(ctx)
+	case "alt+arrowright":
+		a.goNavForward()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen && key == "escape" {
+		a.closeConfirm()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen && key == "enter" {
+		if err := a.confirmDiscard(ctx); err != nil {
+			return err
+		}
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen {
 		return nil
 	}
 
@@ -1230,7 +1483,12 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 
 	if !a.paletteOpen && (key == "enter" || key == "space") && a.page.Edit().FocusedField() == "" {
 		if id := a.page.Form().FocusID(); id != "" {
-			if box, ok := findBoxID(a.page.Boxes(), id); ok {
+			if key == "space" && isTreeRowID(id) {
+				// Space on explorer rows belongs to treeKeyDown so a folder
+				// toggles with its lazy load and a file opens with focus
+				// kept on the same row. The filter input still types because
+				// its focus is "filter", not a tree row.
+			} else if box, ok := findBoxID(a.page.Boxes(), id); ok {
 				if err := a.onClick(ctx, box); err != nil {
 					return err
 				}
@@ -1248,8 +1506,32 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return nil
 	}
 
+	// Ctrl+I opens the line card at the current source line, whether the
+	// editor is in token view or mid-edit. It stays before the editing branch
+	// so the caret line names the card while typing.
+	if a.ctrl && !a.shift && key == "i" {
+		a.showInlineCardAtCurrent()
+
+		return a.page.Redraw(ctx)
+	}
+
 	if a.editing {
 		return a.editKey(ctx, key)
+	}
+
+	if a.ctrl && key == "a" && !a.shift {
+		if a.mode == "changes" && !a.confirmOpen {
+			switch a.page.Form().FocusID() {
+			case "filter", "palette", "find", "branch-filter", "workspace-search", "project-path", "drawer-path", "editor", "edit-surface":
+			default:
+				a.selectAllFiles()
+				a.refresh()
+
+				return a.page.Redraw(ctx)
+			}
+		}
+
+		return nil
 	}
 
 	if a.ctrl && key == "p" {
@@ -1286,6 +1568,21 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		a.togglePreview()
 
 		return a.page.Redraw(ctx)
+	}
+
+	// Plain Ctrl+V pastes into the explorer folder while the editor is
+	// closed. The editing branch above already returned, Ctrl+Shift+V
+	// preview keeps its own branch, and overlays and text fields keep the
+	// chord through pasteTargetReady. This sits before treeKeyDown so the
+	// chord pastes instead of moving focus.
+	if a.ctrl && !a.shift && key == "v" && a.pasteTargetReady() {
+		return a.pasteFromClipboard(ctx)
+	}
+
+	if a.ctrl && !a.shift && (key == "c" || key == "x") && !a.editing && a.explorerCopyReady() {
+		if done, err := a.copyExplorerSelection(ctx, key == "x"); done {
+			return err
+		}
 	}
 
 	if a.searchOpen && key == "escape" {
@@ -1417,6 +1714,12 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 		return a.page.Redraw(ctx)
 	}
 
+	// Ctrl+Z / Ctrl+Y belong to the Undo/Redo chord (desktop) and must not
+	// fall through to the plain-key wrap toggle below.
+	if a.ctrl && (key == "z" || key == "y") {
+		return nil
+	}
+
 	switch key {
 	case "1":
 		a.setMode(ctx, "explorer")
@@ -1425,25 +1728,25 @@ func (a *App) onKeyDown(ctx context.Context, key string) error {
 	case "3":
 		a.toggleDetails()
 	case "arrowdown":
-		a.scrollFocusedGroup(scrollStep)
+		a.scrollFocusedGroup(a.zx(scrollStep))
 	case "arrowup":
-		a.scrollFocusedGroup(-scrollStep)
+		a.scrollFocusedGroup(-a.zx(scrollStep))
 	case "arrowleft":
 		if !a.wrap {
-			a.scrollHorizontal(-hscrollStep)
+			a.scrollHorizontal(-a.zx(hscrollStep))
 
 			return a.page.Redraw(ctx)
 		}
 	case "arrowright":
 		if !a.wrap {
-			a.scrollHorizontal(hscrollStep)
+			a.scrollHorizontal(a.zx(hscrollStep))
 
 			return a.page.Redraw(ctx)
 		}
 	case "pagedown":
-		a.scrollFocusedGroup(pageScroll)
+		a.scrollFocusedGroup(a.zx(pageScroll))
 	case "pageup":
-		a.scrollFocusedGroup(-pageScroll)
+		a.scrollFocusedGroup(-a.zx(pageScroll))
 	case "home":
 		a.scrollFocusedGroupTo(0)
 	case "end":
@@ -1641,6 +1944,22 @@ func (a *App) reloadActive(_ context.Context) {
 	}
 
 	a.refresh()
+}
+
+// isTreeRowID reports whether a focus id is an explorer file or folder row.
+// Control ids like tree-up, tree-down, tree-scroll, and tree-pane stay with
+// the generic activator; only tree-<path> rows belong to treeKeyDown.
+func isTreeRowID(id string) bool {
+	if !strings.HasPrefix(id, "tree-") {
+		return false
+	}
+
+	switch id {
+	case "tree-up", "tree-down", "tree-scroll", "tree-pane", "tree-thumb", "tree-sticky":
+		return false
+	}
+
+	return true
 }
 
 // actionIndex parses the number after an action prefix.

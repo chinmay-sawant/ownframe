@@ -6,9 +6,15 @@ import (
 	"unicode"
 )
 
-// changeSet is the pending diff the Source Control view shows.
+// changeSet is the pending diff the Source Control view shows. Files is the
+// combined HEAD diff plus untracked files. Staged holds `git diff --cached`
+// rows and Unstaged holds `git diff` rows plus untracked files, so the panel
+// can show the two VS Code sections. A file with both staged and unstaged
+// edits appears in both lists with different hunks and once in Files merged.
 type changeSet struct {
 	Files      []changedFile
+	Staged     []changedFile
+	Unstaged   []changedFile
 	Branch     string
 	Sample     bool
 	Note       string
@@ -25,6 +31,15 @@ type changedFile struct {
 	Hunks      []hunk
 	Binary     bool
 	TotalLines int
+	// DiffBytes and DiffLines measure the text the diff pane would render.
+	// Oversized marks a file over the same budget the editor admits, so a
+	// deleted or rewritten bundle cannot turn into thousands of wrapped rows.
+	// DiffTruncated marks a commit patch that git stopped at the read cap.
+	DiffBytes     int
+	DiffLines     int
+	DiffMaxLine   int
+	Oversized     bool
+	DiffTruncated bool
 }
 
 // hunk is one `@@` block from a unified diff.
@@ -68,6 +83,13 @@ type diffRow struct {
 	Cont      bool
 	LeftCont  bool
 	RightCont bool
+	// HasRevert marks changed rows that offer the VS Code-style discard
+	// arrow on the row itself: changed unified rows (add/del) and changed
+	// split rows. Hunk headers carry none; the button identifies a block by
+	// its source line numbers. RevertHunk indexes the file's Hunks slice.
+	// Wrapped continuations clear it so button ids stay unique.
+	HasRevert  bool
+	RevertHunk int
 	// EditLine is the 1-based new-file line a click redirects to. Deleted
 	// rows carry the nearest new line so red rows stay clickable; zero
 	// means the row has no edit target (hunks, meta, expanders).
@@ -282,11 +304,12 @@ const (
 	treeCellW       = 6.0
 )
 
-// clipTreeName keeps one sidebar row on a single line within the fixed
-// sidebar width and marks the cut with an ellipsis. The budget subtracts
-// the row's indent and decorations; the full path stays in the row's title
-// attribute, so nothing is lost.
-func clipTreeName(indent int, isDir, hasNote bool, name string) string {
+// clipTreeName keeps one sidebar row on a single line within the drawer
+// width and marks the cut with an ellipsis. The drawer widens from 268 px
+// to 348 px (about 30%), so a wider drawer fits more of the name before the
+// cut. The budget subtracts the row's indent and decorations; the full path
+// stays in the row's title attribute, so nothing is lost.
+func clipTreeName(width, indent int, isDir, hasNote bool, name string) string {
 	overhead := treeRowPadRight + treeRowBorder + treeRowIconW + treeRowGap
 	if !isDir {
 		overhead += treeRowGap + treeRowStatusW
@@ -296,7 +319,7 @@ func clipTreeName(indent int, isDir, hasNote bool, name string) string {
 		overhead += treeRowGap + treeNoteW
 	}
 
-	budget := int(float64(sideWidth-indent-overhead) / treeCellW)
+	budget := int(float64(width-indent-overhead) / treeCellW)
 	if budget < 1 {
 		budget = 1
 	}
@@ -431,7 +454,10 @@ func parseDiff(text string) []changedFile {
 
 	for i := range files {
 		countHunkLines(&files[i])
-		applyEmphasis(&files[i])
+		measureDiff(&files[i])
+		if !files[i].Oversized {
+			applyEmphasis(&files[i])
+		}
 	}
 
 	return files
@@ -685,6 +711,10 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 		return []diffRow{{Kind: rowMeta, Hunk: "Binary file. The viewer shows two lines of metadata instead of a diff."}}
 	}
 
+	if file.Oversized {
+		return []diffRow{{Kind: rowMeta, Hunk: diffLimitNote(file)}}
+	}
+
 	if len(file.Hunks) == 0 {
 		return []diffRow{{Kind: rowMeta, Hunk: "No textual changes in this file."}}
 	}
@@ -723,9 +753,13 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 				row.Kind = rowAdd
 				row.OldNo = ""
 				row.EditLine = line.NewNo
+				row.HasRevert = true
+				row.RevertHunk = i
 			case '-':
 				row.Kind = rowDel
 				row.NewNo = ""
+				row.HasRevert = true
+				row.RevertHunk = i
 			default:
 				row.EditLine = line.NewNo
 			}
@@ -744,6 +778,7 @@ func diffRowsUnified(file changedFile, lang string) []diffRow {
 
 	fillDelEditLines(rows)
 	assignDiffEditIDs(rows)
+	markFirstBlockReverts(rows)
 
 	return rows
 }
@@ -754,6 +789,10 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 
 	if file.Binary {
 		return []diffRow{{Kind: rowMeta, Hunk: "Binary file. The viewer shows two lines of metadata instead of a diff."}}
+	}
+
+	if file.Oversized {
+		return []diffRow{{Kind: rowMeta, Hunk: diffLimitNote(file)}}
 	}
 
 	if len(file.Hunks) == 0 {
@@ -814,7 +853,7 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 			pairs := max(i-addStart, addStart-delStart)
 
 			for k := range pairs {
-				row := diffRow{Kind: "split", LeftKind: rowDel, RightKind: rowAdd}
+				row := diffRow{Kind: "split", LeftKind: rowDel, RightKind: rowAdd, HasRevert: true, RevertHunk: hunkIdx}
 
 				if dels+k < addStart {
 					line := h.Lines[dels+k]
@@ -848,8 +887,55 @@ func diffRowsSplit(file changedFile, lang string) []diffRow {
 
 	fillDelEditLines(rows)
 	assignDiffEditIDs(rows)
+	markFirstBlockReverts(rows)
 
 	return rows
+}
+
+// markFirstBlockReverts keeps HasRevert on exactly one row per contiguous
+// changed block: the first row with green (added) content, or the first row
+// of the block when it has none (a deletion-only block). Every further row
+// in the block drops the marker. Block
+// boundaries match diffChangeStarts, so the button sits on the change the
+// bottom-center navigator highlights.
+func markFirstBlockReverts(rows []diffRow) {
+	for i := 0; i < len(rows); {
+		if !diffChangedRow(rows[i]) {
+			rows[i].HasRevert = false
+			i++
+
+			continue
+		}
+		j := i
+		for j < len(rows) && diffChangedRow(rows[j]) {
+			j++
+		}
+		chosen := -1
+		for k := i; k < j; k++ {
+			if isRevertGreen(rows[k]) {
+				chosen = k
+
+				break
+			}
+		}
+		if chosen < 0 {
+			chosen = i
+		}
+		for k := i; k < j; k++ {
+			rows[k].HasRevert = k == chosen
+		}
+		i = j
+	}
+}
+
+// isRevertGreen reports whether a changed row carries added (green) content:
+// a unified add row, or a split row with a real right cell.
+func isRevertGreen(row diffRow) bool {
+	if row.Kind == rowAdd {
+		return true
+	}
+
+	return row.Kind == "split" && row.RightKind == rowAdd && !row.RightPad
 }
 
 // fillDelEditLines gives deleted-only rows an edit target: the nearest

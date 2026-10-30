@@ -17,8 +17,10 @@ const (
 	untrackedLimit = 256 << 10
 )
 
-// loadLiveChanges reads the working tree diff for -root. Untracked files are
-// added as synthetic all-added hunks; the viewer never writes to the repo.
+// loadLiveChanges reads the working tree diff for -root. It keeps the
+// combined HEAD diff in Files and splits Staged (`git diff --cached`) from
+// Unstaged (`git diff` plus untracked files). Untracked files are added as
+// synthetic all-added hunks. Writes live in scm_ops.go.
 func loadLiveChanges(ctx context.Context, root string) (changeSet, error) {
 	ctx, cancel := context.WithTimeout(ctx, gitTimeout)
 	defer cancel()
@@ -39,10 +41,24 @@ func loadLiveChanges(ctx context.Context, root string) (changeSet, error) {
 			return cs, err
 		}
 
-		raw = append(append([]byte(nil), work...), cached...)
-	}
+		cs.Staged = parseDiff(string(cached))
+		cs.Unstaged = parseDiff(string(work))
+	} else {
+		cached, cachedErr := gitBytes(ctx, root, "diff", "--cached", "--no-color", "--no-ext-diff")
+		if cachedErr == nil {
+			cs.Staged = parseDiff(string(cached))
+		}
 
-	cs.Files = parseDiff(string(raw))
+		work, workErr := gitBytes(ctx, root, "diff", "--no-color", "--no-ext-diff")
+		if workErr == nil {
+			cs.Unstaged = parseDiff(string(work))
+		} else {
+			cs.Unstaged = parseDiff(string(raw))
+			cs.Staged = nil
+		}
+
+		cs.Files = parseDiff(string(raw))
+	}
 
 	untracked, err := gitBytes(ctx, root, "ls-files", "--others", "--exclude-standard", "-z")
 	if err == nil {
@@ -53,19 +69,27 @@ func loadLiveChanges(ctx context.Context, root string) (changeSet, error) {
 
 			if file, ok := untrackedChange(root, path); ok {
 				cs.Files = append(cs.Files, file)
+				cs.Unstaged = append(cs.Unstaged, file)
 			}
 		}
 	}
 
-	sort.Slice(cs.Files, func(i, j int) bool {
-		return strings.ToLower(cs.Files[i].Path) < strings.ToLower(cs.Files[j].Path)
-	})
+	sortChangeFiles(cs.Files)
+	sortChangeFiles(cs.Staged)
+	sortChangeFiles(cs.Unstaged)
 
 	if len(cs.Files) == 0 {
 		cs.Note = "The working tree is clean. Make a change and refresh."
 	}
 
 	return cs, nil
+}
+
+// sortChangeFiles orders files case-insensitively by path.
+func sortChangeFiles(files []changedFile) {
+	sort.Slice(files, func(i, j int) bool {
+		return strings.ToLower(files[i].Path) < strings.ToLower(files[j].Path)
+	})
 }
 
 // untrackedChange turns one untracked file into an all-added change.
@@ -103,6 +127,7 @@ func untrackedChange(root, path string) (changedFile, bool) {
 
 	file.Add = len(lines)
 	file.Hunks = []hunk{h}
+	measureDiff(&file)
 
 	return file, true
 }

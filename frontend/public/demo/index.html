@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Try the Launch board demo built with ownframe, Go, HTML, and CSS.">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<title>Launch board | ownframe demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d0e12;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  canvas {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    outline: none !important;
+  }
+  #loader {
+    position: fixed;
+    inset: 0;
+    background: #0d0e12;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    z-index: 10;
+    transition: opacity 0.25s ease;
+  }
+  #loader.loaded {
+    opacity: 0;
+    pointer-events: none;
+    display: none;
+  }
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loading-msg {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
+    #loader { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div id="loader" role="status">
+  <div class="spinner" aria-hidden="true"></div>
+  <div class="loading-msg">Initializing Go WebAssembly runtime...</div>
+</div>
+
+<script src="wasm_exec.js"></script>
+<script>
+  const loader = document.getElementById('loader');
+  const go = new Go();
+
+  async function start() {
+    try {
+      const resp = await fetch('demo.wasm');
+      let result;
+      if (WebAssembly.instantiateStreaming) {
+        try {
+          result = await WebAssembly.instantiateStreaming(resp, go.importObject);
+        } catch {
+          const fresh = await fetch('demo.wasm');
+          const buffer = await fresh.arrayBuffer();
+          result = await WebAssembly.instantiate(buffer, go.importObject);
+        }
+      } else {
+        const buffer = await resp.arrayBuffer();
+        result = await WebAssembly.instantiate(buffer, go.importObject);
+      }
+      setTimeout(() => {
+        loader.classList.add('loaded');
+      }, 100);
+      go.run(result.instance);
+    } catch (err) {
+      console.error('Failed to start wasm:', err);
+      loader.innerHTML = '<p class="loading-msg">The demo could not load. Check your connection and reload this page.</p><a href="../#home" style="color: #a7bfff;">Return to ownframe</a>';
+    }
+  }
+
+  start();
+</script>
+</body>
+</html>

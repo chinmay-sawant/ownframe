@@ -1,6 +1,9 @@
-import React, { Suspense, lazy, useEffect, useLayoutEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Home from './Home';
+import Team from './Team';
+import Architecture from './Architecture';
+import Benchmarks from './Benchmarks';
 import ThemeToggle from './ThemeToggle';
 import { loadStars } from './stars';
 import { repository } from './project';
@@ -11,10 +14,16 @@ const Documentation = lazy(() => import('./Documentation'));
 function App() {
   const [hash, setHash] = useState(location.hash);
   const [stars, setStars] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef(null);
   const isDocs = hash.startsWith('#docs');
+  const isTeam = hash === '#team';
+  const isArchitecture = hash === '#engine';
+  const isBenchmarks = hash === '#compare';
 
   useLayoutEffect(() => {
     const header = document.querySelector('header');
+    if (!header) return;
     const measure = () => document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
     measure();
     const observer = new ResizeObserver(measure);
@@ -25,7 +34,10 @@ function App() {
   useEffect(() => {
     let mounted = true;
     loadStars().then((value) => { if (mounted) setStars(value); });
-    const update = () => setHash(location.hash);
+    const update = () => {
+      setHash(location.hash);
+      setMenuOpen(false);
+    };
     window.addEventListener('hashchange', update);
     return () => {
       mounted = false;
@@ -35,21 +47,39 @@ function App() {
 
   useEffect(() => {
     if (isDocs) return;
-    if (!hash || hash === '#home') window.scrollTo(0, 0);
+    if (isTeam || isArchitecture || isBenchmarks || !hash || hash === '#home') window.scrollTo(0, 0);
     else document.getElementById(hash.slice(1))?.scrollIntoView();
-  }, [hash, isDocs]);
+  }, [hash, isDocs, isTeam, isArchitecture, isBenchmarks]);
 
   return <div className={isDocs ? 'docs-shell' : undefined}>
     <a className="skip" href="#main" onClick={(event) => {
       event.preventDefault();
       document.getElementById('main').focus();
     }}>Skip to content</a>
-    <header>
-      <a className="brand" href="#home">ownframe</a>
-      <nav aria-label="Main navigation">
+    <header onKeyDown={(event) => {
+      if (event.key === 'Escape' && menuOpen) {
+        setMenuOpen(false);
+        menuButton.current.focus();
+      }
+    }}>
+      <a className="brand" href="#home">
+        <svg className="brand-glyph" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <path d="M3 9h18" />
+          <path d="M9 21V9" />
+        </svg>
+        <span className="brand-name">ownframe</span>
+      </a>
+      <button className="site-menu-toggle" ref={menuButton} type="button"
+        aria-expanded={menuOpen} aria-controls="site-navigation"
+        onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? 'Close' : 'Menu'}</button>
+      <nav id="site-navigation" aria-label="Main navigation" data-open={menuOpen}
+        onClick={(event) => { if (event.target.closest('a')) setMenuOpen(false); }}>
         <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
-        <a href="#docs/compare-rust-gpui" aria-current={hash.startsWith('#docs/compare') ? 'page' : undefined}>Comparison</a>
-        <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>About</a>
+        <a href="#engine" aria-current={isArchitecture ? 'page' : undefined}>Architecture</a>
+        <a href="#compare" aria-current={isBenchmarks ? 'page' : undefined}>Benchmarks</a>
+        <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>Documentation</a>
+        <a href="#team" aria-current={isTeam ? 'page' : undefined}>People & tools</a>
         <a href="#start">Get started</a>
       </nav>
       <ThemeToggle />
@@ -61,12 +91,29 @@ function App() {
       </a>
     </header>
     <main id="main" className={isDocs ? 'docs-main' : undefined} tabIndex="-1">
-      {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : <Home />}
+      {isDocs ? <Suspense fallback={<p role="status">Loading documentation...</p>}><Documentation hash={hash} /></Suspense> : isTeam ? <Team /> : isArchitecture ? <Architecture /> : isBenchmarks ? <Benchmarks /> : <Home />}
     </main>
     <footer>
-      <a href={repository}>Source on GitHub</a>
-      <a href="#docs/showcase/wispr-flow">Example apps</a>
-      <a href="#docs/compare-rust-gpui">Comparisons</a>
+      <div className="footer-content">
+        <div className="footer-brand-col">
+          <div className="footer-logo">
+            <span className="brand-name">ownframe</span>
+          </div>
+          <p className="footer-tagline">Native Go desktop and Android apps styled with HTML and CSS.</p>
+        </div>
+        <div className="footer-nav">
+          <a href={repository}>Source on GitHub</a>
+          <a href="#demos">Showcase</a>
+          <a href="#engine">Architecture</a>
+          <a href="#compare">Benchmarks</a>
+          <a href="#docs/why-ownframe">Documentation</a>
+          <a href="#team">People & tools</a>
+        </div>
+      </div>
+      <div className="footer-bottom">
+        <span>MIT Licensed pure Go open-source project.</span>
+        <span>Linux · macOS · Windows · Android</span>
+      </div>
     </footer>
   </div>;
 }

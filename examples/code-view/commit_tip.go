@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"math"
+	"strings"
+)
 
 const (
 	commitTipWidth        = 340
@@ -26,13 +29,17 @@ const (
 
 // commitTipCols is the rune budget of one hover line. cardWidth includes the
 // card's horizontal padding, which the text does not use.
-func commitTipCols(cardWidth int) int {
-	text := cardWidth - commitTipPadX
+func commitTipCols(cardWidth int, cell float64, pad int) int {
+	text := cardWidth - pad
 	if text < 1 {
 		return 1
 	}
 
-	cols := int(float64(text) / commitTipCell)
+	if cell <= 0 {
+		cell = commitTipCell
+	}
+
+	cols := int(float64(text) / cell)
 	if cols < 1 {
 		return 1
 	}
@@ -122,27 +129,32 @@ type commitTipLayout struct {
 // falls back inside the sidebar's left edge and covers the row band. rowTop is
 // the hovered row's page top and rowH its height; the card rides the row's top
 // edge and clamps inside the page so it never runs off the window.
-func layoutCommitTip(pageW, pageH, sideLeft, sideW, rowTop, rowH, bodyLines int) commitTipLayout {
+func layoutCommitTip(pageW, pageH, sideLeft, sideW, rowTop, rowH, bodyLines int, z float64) commitTipLayout {
+	if z <= 0 {
+		z = 1
+	}
+
+	sc := func(v int) int { return max(1, int(math.Round(float64(v)*z))) }
 	if pageW < 1 || pageH < 1 || bodyLines < 1 {
 		return commitTipLayout{}
 	}
 
-	height := commitTipPadH + bodyLines*commitTipLineH
-	if height < commitTipMinH {
-		height = commitTipMinH
+	height := sc(commitTipPadH) + bodyLines*sc(commitTipLineH)
+	if minH := sc(commitTipMinH); height < minH {
+		height = minH
 	}
 
-	if height > commitTipMaxH {
-		height = commitTipMaxH
+	if maxH := sc(commitTipMaxH); height > maxH {
+		height = maxH
 	}
 
-	left := sideLeft + sideW + commitTipGap
-	if left+commitTipWidth+commitTipGap > pageW {
-		left = sideLeft + commitTipInset
+	left := sideLeft + sideW + sc(commitTipGap)
+	if left+sc(commitTipWidth)+sc(commitTipGap) > pageW {
+		left = sideLeft + sc(commitTipInset)
 	}
 
-	width := commitTipWidth
-	if room := pageW - left - commitTipGap; width > room {
+	width := sc(commitTipWidth)
+	if room := pageW - left - sc(commitTipGap); width > room {
 		width = room
 	}
 
@@ -150,17 +162,17 @@ func layoutCommitTip(pageW, pageH, sideLeft, sideW, rowTop, rowH, bodyLines int)
 		width = 1
 	}
 
-	top := rowTop - commitTipLift
-	if top < commitTipEdge {
-		top = commitTipEdge
+	top := rowTop - sc(commitTipLift)
+	if edge := sc(commitTipEdge); top < edge {
+		top = edge
 	}
 
-	if bottom := pageH - height - commitTipEdge; top > bottom {
+	if bottom := pageH - height - sc(commitTipEdge); top > bottom {
 		top = bottom
 	}
 
-	if top < commitTipEdge {
-		top = commitTipEdge
+	if edge := sc(commitTipEdge); top < edge {
+		top = edge
 	}
 
 	return commitTipLayout{

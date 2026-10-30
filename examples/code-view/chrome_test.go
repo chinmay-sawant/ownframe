@@ -11,7 +11,7 @@ func TestChromeControlsFollowFlag(t *testing.T) {
 	ids := []string{"win-min", "win-max", "win-close"}
 
 	if _, ok := boxByID(app.Page().Boxes(), "win-min"); ok {
-		t.Fatal("window controls painted without the chrome flag")
+		t.Fatal("window controls painted without the title bar flag")
 	}
 
 	app.chrome = true
@@ -22,18 +22,18 @@ func TestChromeControlsFollowFlag(t *testing.T) {
 	}
 
 	view := app.View()
-	if !view.Chrome {
-		t.Fatal("chrome flag did not reach the view")
+	if !view.TitleBar {
+		t.Fatal("title bar flag did not reach the view")
 	}
 
-	if view.ChromeMax {
+	if view.TitleBarMax {
 		t.Fatal("headless window reports maximized")
 	}
 
 	for _, id := range ids {
 		box, ok := boxByID(app.Page().Boxes(), id)
 		if !ok {
-			t.Fatalf("missing %s with chrome on", id)
+			t.Fatalf("missing %s with the title bar on", id)
 		}
 
 		if box.H <= 0 || box.W <= 0 {

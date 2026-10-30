@@ -64,44 +64,44 @@ func TestClipSecondCrumbPath(t *testing.T) {
 }
 
 func TestClipTreeName(t *testing.T) {
-	if got := clipTreeName(treePad, false, false, "probe.go"); got != "probe.go" {
+	if got := clipTreeName(drawerMaxW, treePad, false, false, "probe.go"); got != "probe.go" {
 		t.Fatalf("short name clipped to %q", got)
 	}
 
-	dir := "some very long directory name with spaces"
-	// overhead = 10 + 2 + 18 + 7, avail = 268 - 8 - 37, budget = 223 / 6.
-	short := clipTreeName(treePad, true, false, dir)
+	dir := "some very long directory name with spaces and extra words to force clipping"
+	// overhead = 10 + 2 + 18 + 7, avail = 348 - 8 - 37, budget = 303 / 6.
+	short := clipTreeName(drawerMaxW, treePad, true, false, dir)
 	if !strings.HasSuffix(short, "…") {
 		t.Fatalf("dir %q has no ellipsis", short)
 	}
 
-	if got, want := len([]rune(short)), 37; got != want {
+	if got, want := len([]rune(short)), 50; got != want {
 		t.Fatalf("dir is %d runes, want %d", got, want)
 	}
 
-	deeper := clipTreeName(treePad+treeIndent, true, false, dir)
+	deeper := clipTreeName(drawerMaxW, treePad+treeIndent, true, false, dir)
 	if len([]rune(deeper)) >= len([]rune(short)) {
 		t.Fatalf("deeper indent %q is not shorter than %q", deeper, short)
 	}
 
-	asFile := clipTreeName(treePad, false, false, dir)
+	asFile := clipTreeName(drawerMaxW, treePad, false, false, dir)
 	if len([]rune(asFile)) >= len([]rune(short)) {
 		t.Fatalf("file row %q is not shorter than dir row %q", asFile, short)
 	}
 
-	withNote := clipTreeName(treePad, true, true, dir)
+	withNote := clipTreeName(drawerMaxW, treePad, true, true, dir)
 	if len([]rune(withNote)) >= len([]rune(short)) {
 		t.Fatalf("noted row %q is not shorter than %q", withNote, short)
 	}
 
-	if got := clipTreeName(1000, false, false, dir); got != "…" {
+	if got := clipTreeName(drawerMaxW, 1000, false, false, dir); got != "…" {
 		t.Fatalf("hopeless indent clipped to %q, want ellipsis", got)
 	}
 }
 
 func TestFileCrumbPathStaysOnOneLine(t *testing.T) {
 	dir := t.TempDir()
-	longDir := "some very long directory name with spaces/nested dir part"
+	longDir := "some very long directory name with spaces and extra words to force clipping/nested dir part"
 	longName := "animation card play full test.lock"
 	rel := longDir + "/" + longName
 	writeFile(t, dir, rel, "hello\nworld\n")

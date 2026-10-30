@@ -56,6 +56,36 @@ func TestSampleHasNoJavaScript(t *testing.T) {
 	}
 }
 
+func TestOpenDocRejectsLongLine(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "bundle.js")
+	text := strings.Repeat("x", maxLineBytes+1) + "\n"
+
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	ws, err := loadDiskWorkspace(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	doc := ws.openDoc("bundle.js")
+	if doc.Err == "" {
+		t.Fatal("long-line file opened")
+	}
+
+	if doc.Binary {
+		t.Fatal("long-line file marked binary")
+	}
+
+	if len(doc.Lines) != 0 || len(doc.Tokens) != 0 {
+		t.Fatalf("long-line file kept %d lines and %d token rows", len(doc.Lines), len(doc.Tokens))
+	}
+}
+
 func TestOpenDoc(t *testing.T) {
 	t.Parallel()
 

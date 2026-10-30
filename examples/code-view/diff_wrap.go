@@ -10,6 +10,27 @@ const (
 	diffWrapTailDiv = 3
 )
 
+// diffWrapKey identifies one wrapped diff. The generation moves whenever the
+// source rows are rebuilt, so the cache survives scrolling and a resize only
+// rewraps when the column budget changes.
+type diffWrapKey struct {
+	generation uint64
+	source     string
+	path       string
+	split      bool
+	unified    int
+	splitCols  int
+}
+
+// diffWrapCache keeps the visual rows for the current diff. A view build
+// asks for them in contentHeight and fillDiffFile, and every scroll asks
+// again, so wrapping on each call would repeat the same work.
+type diffWrapCache struct {
+	key   diffWrapKey
+	rows  []diffRow
+	valid bool
+}
+
 // wrapDiffRows expands the diff into fixed-height visual rows when wrap is on.
 // With wrap off it returns a clipped copy, so the existing single-row layout
 // stays as it was.
@@ -84,6 +105,10 @@ func wrapUnifiedDiffRow(row diffRow, cols int) []diffRow {
 				vis.EditLine = row.EditLine
 				vis.EditID = row.EditID + "-c" + strconv.Itoa(i)
 			}
+			// Only the first visual chunk keeps the discard arrow so button
+			// ids stay unique when a long changed line wraps.
+			vis.HasRevert = false
+			vis.RevertHunk = 0
 		}
 
 		start += segmentRuneLen(chunk)
@@ -115,6 +140,10 @@ func wrapHunkDiffRow(row diffRow, cols int) []diffRow {
 			vis.OldNo = ""
 			vis.NewNo = ""
 			vis.Cont = true
+			// Only the first visual chunk keeps the revert arrow so button
+			// ids stay unique when a long hunk label wraps.
+			vis.HasRevert = false
+			vis.RevertHunk = 0
 		}
 
 		out = append(out, vis)
@@ -156,6 +185,10 @@ func wrapSplitDiffRow(row diffRow, cols int) []diffRow {
 				vis.EditLine = row.EditLine
 				vis.EditID = row.EditID + "-c" + strconv.Itoa(i)
 			}
+			// Only the first visual chunk keeps the discard arrows so
+			// button ids stay unique when a split cell wraps.
+			vis.HasRevert = false
+			vis.RevertHunk = 0
 		}
 
 		if i < len(left) {

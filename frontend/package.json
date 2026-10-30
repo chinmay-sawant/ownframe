@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
+    "prebuild": "npm run build:demo",
+    "build:demo": "node scripts/build-demo.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test": "node --test src/*.test.js",
     "check:site": "node scripts/check-site.mjs",
+    "capture:demo": "node scripts/check-site.mjs --capture-demo",
     "lint": "eslint ."
   },
   "dependencies": {

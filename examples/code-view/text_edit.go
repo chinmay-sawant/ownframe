@@ -96,13 +96,29 @@ func (a *App) onCut(ctx context.Context) (string, bool, error) {
 	return out, true, nil
 }
 
-// onPaste inserts clipboard text at the caret.
+// onPaste inserts clipboard text at the caret. Outside the editor it pastes
+// files into the explorer through the shared Ctrl+V helper, so the chord and
+// the menu row behave the same way.
 func (a *App) onPaste(ctx context.Context, text string) error {
-	if a.settingsOpen || !a.editing || a.edit == nil || text == "" {
+	if a.settingsOpen || text == "" {
 		return nil
 	}
 
-	return a.onType(ctx, text)
+	if a.editing && a.edit != nil {
+		return a.onType(ctx, text)
+	}
+
+	if a.editing {
+		return nil
+	}
+
+	// Explorer paste shares the Ctrl+V helper. Overlays and text fields keep
+	// the event.
+	if !a.pasteTargetReady() {
+		return nil
+	}
+
+	return a.pasteClipboardText(ctx, text)
 }
 
 // onSelectAll selects the whole edit buffer.
@@ -118,34 +134,61 @@ func (a *App) onSelectAll(ctx context.Context) error {
 	return a.page.Redraw(ctx)
 }
 
-// onUndo restores the previous snapshot.
+// onUndo restores the previous snapshot, or the last reverted hunk when the
+// editor is closed. Hunk undo lives on its own stack so text and hunk
+// histories never clobber each other.
 func (a *App) onUndo(ctx context.Context) error {
-	if !a.editing || len(a.editUndo) == 0 {
+	if a.editing {
+		if len(a.editUndo) == 0 {
+			return nil
+		}
+
+		a.pushRedo()
+		last := a.editUndo[len(a.editUndo)-1]
+		a.editUndo = a.editUndo[:len(a.editUndo)-1]
+		a.restoreEdit(last)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen || a.settingsOpen || a.paletteOpen || a.branchOpen || a.searchOpen {
 		return nil
 	}
 
-	a.pushRedo()
-	last := a.editUndo[len(a.editUndo)-1]
-	a.editUndo = a.editUndo[:len(a.editUndo)-1]
-	a.restoreEdit(last)
-	a.refresh()
+	if !a.canUndoRevert() {
+		return nil
+	}
 
-	return a.page.Redraw(ctx)
+	return a.undoRevertHunk(ctx)
 }
 
-// onRedo restores a snapshot taken by Undo.
+// onRedo restores a snapshot taken by Undo, or re-applies an undone hunk
+// revert when the editor is closed.
 func (a *App) onRedo(ctx context.Context) error {
-	if !a.editing || len(a.editRedo) == 0 {
+	if a.editing {
+		if len(a.editRedo) == 0 {
+			return nil
+		}
+
+		a.pushUndo()
+		next := a.editRedo[len(a.editRedo)-1]
+		a.editRedo = a.editRedo[:len(a.editRedo)-1]
+		a.restoreEdit(next)
+		a.refresh()
+
+		return a.page.Redraw(ctx)
+	}
+
+	if a.confirmOpen || a.settingsOpen || a.paletteOpen || a.branchOpen || a.searchOpen {
 		return nil
 	}
 
-	a.pushUndo()
-	next := a.editRedo[len(a.editRedo)-1]
-	a.editRedo = a.editRedo[:len(a.editRedo)-1]
-	a.restoreEdit(next)
-	a.refresh()
+	if !a.canRedoRevert() {
+		return nil
+	}
 
-	return a.page.Redraw(ctx)
+	return a.redoRevertHunk(ctx)
 }
 
 // editKey handles caret movement and edit-only keys. Printable text arrives in
@@ -330,17 +373,17 @@ func (a *App) ensureEditCaretVisible() {
 		row = caretVisualRow(doc.wrapped(a.codeColsForGroup(0)).Rows, line, col)
 	}
 
-	top := a.scrollY / rowH
-	visible := a.bodyHeight() / rowH
+	top := a.scrollY / a.zx(rowH)
+	visible := a.bodyHeight() / a.zx(rowH)
 	if visible < 1 {
 		visible = 1
 	}
 
 	switch {
 	case row < top:
-		a.scrollTo(row * rowH)
+		a.scrollTo(row * a.zx(rowH))
 	case row >= top+visible:
-		a.scrollTo((row - visible + 1) * rowH)
+		a.scrollTo((row - visible + 1) * a.zx(rowH))
 	}
 }
 
@@ -397,7 +440,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 
 		if row.Line == caretLine && row.Start == caretStart && caretCol >= row.Start && caretCol <= row.Start+length {
 			row.Caret = true
-			row.CaretLeft = int(float64(caretCol-row.Start) * codeCellW)
+			row.CaretLeft = int(float64(caretCol-row.Start) * a.zf(codeCellW))
 			if !a.wrap && a.scrollX > 0 {
 				row.CaretLeft -= a.scrollX
 			}
@@ -424,7 +467,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 			continue
 		}
 
-		left, width := selectionSpan(from, to, row.Start, newline)
+		left, width := selectionSpan(from, to, row.Start, newline, a.zf(codeCellW))
 		row.Selection = true
 		row.SelectionLeft = left
 		row.SelectionWidth = width
@@ -437,7 +480,7 @@ func (a *App) decorateEditRows(rows []codeRow) {
 // selectionSpan is the highlight box for one visual row. The right edge is
 // the ceiling of the cell grid, so the last selected glyph stays inside the
 // box when the cell width is not a whole pixel.
-func selectionSpan(from, to, rowStart int, newline bool) (int, int) {
+func selectionSpan(from, to, rowStart int, newline bool, cellW float64) (int, int) {
 	cols := to - rowStart
 	if newline {
 		cols++
@@ -447,8 +490,8 @@ func selectionSpan(from, to, rowStart int, newline bool) (int, int) {
 		cols = 0
 	}
 
-	left := int(math.Floor(float64(from-rowStart) * codeCellW))
-	right := int(math.Ceil(float64(cols) * codeCellW))
+	left := int(math.Floor(float64(from-rowStart) * cellW))
+	right := int(math.Ceil(float64(cols) * cellW))
 	if right < left {
 		right = left
 	}

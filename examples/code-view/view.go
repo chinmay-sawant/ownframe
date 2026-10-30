@@ -24,6 +24,7 @@ type View struct {
 	HoverPath   string
 
 	Tree         []treeRow
+	StickyTree   []treeRow
 	TreeCount    int
 	TreeTotal    int
 	TreeStart    int
@@ -33,6 +34,14 @@ type View struct {
 	TreeThumbH   int
 	TreeTrackH   int
 	Filtered     bool
+
+	// SideW is the drawer width in page pixels, resizable from 268 px up
+	// to 348 px (about 30% wider) via the drawer-resize handle.
+	// DrawerResizeLeft/Top/H position that handle on the drawer boundary.
+	SideW            int
+	DrawerResizeLeft int
+	DrawerResizeTop  int
+	DrawerResizeH    int
 
 	Tabs            []tabRow
 	TabsPrev        bool
@@ -45,8 +54,12 @@ type View struct {
 	ActiveNameShort string
 	CmdText         string
 	CmdTitle        string
-	Chrome          bool
-	ChromeMax       bool
+	NavBack         bool
+	NavForward      bool
+	NavBackTitle    string
+	NavForwardTitle string
+	TitleBar        bool
+	TitleBarMax     bool
 	Lang            string
 	LangLabel       string
 	Badge           string
@@ -95,6 +108,7 @@ type View struct {
 	History       historyView
 	Outline       []symbolRow
 	Toast         toastView
+	Confirm       confirmView
 	SettingsOpen  bool
 	Themes        []themeRow
 	Palette       paletteView
@@ -119,6 +133,7 @@ type View struct {
 	BrowseEntries []recentRootRow
 	IsWSL         bool
 	Alert         string
+	ZoomLabel     string
 }
 
 // recentRootRow is one recently opened project root.
@@ -133,6 +148,7 @@ type menuViewRow struct {
 	Index   int
 	ID      string
 	Label   string
+	Hint    string
 	Enabled bool
 }
 
@@ -257,6 +273,9 @@ type treeRow struct {
 	Badge       string
 	Status      string
 	StatusClass string
+	// Selected marks a multi-select explorer row. Ctrl+click toggles it and
+	// Shift+click extends the range; Copy and Cut stage every selected row.
+	Selected bool
 }
 
 // tabRow is one open editor tab. Index is the tab's position in the
@@ -306,7 +325,10 @@ type recentRow struct {
 // diffView is the Source Control panel and the diff header.
 type diffView struct {
 	Files         []diffFileRow
+	Staged        []diffFileRow
+	Unstaged      []diffFileRow
 	Selected      string
+	SelectedCount int
 	Split         bool
 	Status        string
 	StatusCls     string
@@ -322,13 +344,26 @@ type diffView struct {
 	TotalAdd      int
 	TotalDel      int
 	Count         int
+	StagedCount   int
+	UnstagedCount int
 	Hunks         int
 	Rows          []diffRow
 	TrackTop      int
 	ScrollX       int
 	HasFiles      bool
 	HasChanges    bool
+	HasStaged     bool
+	HasUnstaged   bool
 	CanEdit       bool
+	// CanRevert gates the per-hunk revert arrow in the unified and split
+	// diff. It is working-tree only, skips binary and oversized files, and
+	// skips renames whose patch would also undo the rename.
+	CanRevert bool
+	// CanPrevChange and CanNextChange gate the crumbs up/down arrows. They
+	// track change blocks, not hunk headers, so they agree with the
+	// bottom-center navigator.
+	CanPrevChange bool
+	CanNextChange bool
 	Page          int
 	Pages         int
 	Scroll        bool
@@ -435,7 +470,8 @@ type commitTipView struct {
 	Meta    string
 }
 
-// diffFileRow is one changed file in the source control list.
+// diffFileRow is one changed file in the source control list. Staged marks
+// the staged section and Multi marks the Ctrl-click and Ctrl+A set.
 type diffFileRow struct {
 	Path        string
 	Name        string
@@ -447,6 +483,8 @@ type diffFileRow struct {
 	Add         int
 	Del         int
 	Selected    bool
+	Staged      bool
+	Multi       bool
 }
 
 // symbolRow is one outline entry in the details panel.
@@ -464,4 +502,13 @@ type toastView struct {
 	Kind    string
 	Title   string
 	Message string
+}
+
+// confirmView is the destructive-action dialog, such as Discard.
+type confirmView struct {
+	Show    bool
+	Title   string
+	Message string
+	Files   []string
+	Count   int
 }

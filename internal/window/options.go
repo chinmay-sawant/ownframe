@@ -42,6 +42,13 @@ type Options struct {
 	// Margin is the inset in CSS pixels, clamped to zero. Placement uses
 	// monitor bounds, which include taskbars and docks.
 	Margin int
+	// PlacementID remembers the window rect across launches under this id:
+	// the monitor it was on, the windowed position and size, and whether it
+	// closed maximized. Letters, digits, hyphen, and underscore only; empty
+	// disables it. Best-effort: a missing or corrupt file falls back to the
+	// app size, and a gone monitor keeps the size at the window manager's
+	// position. The code-view example sets "code-view".
+	PlacementID string
 	// NoIdlePace keeps the window presenting continuously even
 	// while the page is idle. Pacing is on by default on the desktop: an
 	// idle page stops presenting and runs page ticks at a low keep-alive

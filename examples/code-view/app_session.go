@@ -40,7 +40,8 @@ func (a *App) EnableSession() {
 // restoreState applies one saved snapshot.
 func (a *App) restoreState(state sessionState) {
 	a.theme = validTheme(state.Theme)
-	_ = a.page.SetTheme(themeCSS(a.theme))
+	a.zoom = state.Zoom
+	_ = a.page.SetTheme(a.activeThemeCSS())
 	a.mode = "explorer"
 	if state.Mode == "changes" {
 		a.mode = "changes"
@@ -120,12 +121,24 @@ func (a *App) restoreState(state sessionState) {
 	if state.HistoryRatio > 0 {
 		a.historyRatio = state.HistoryRatio
 	}
+	a.drawerExtra = clampDrawerExtra(state.DrawerExtra)
 
 	a.devOn = state.DevTools
 	a.page.Window().SetDevTools(state.DevTools)
 
 	if len(a.tabs) == 0 {
 		a.openInitial()
+	} else {
+		a.nav = cleanNavPaths(state.Nav)
+		a.navAt = clampHistoryIndex(state.NavAt, len(a.nav))
+		if len(a.nav) == 0 {
+			a.resetNavHistory(a.activeDocPath())
+		} else {
+			a.pruneNavHistory()
+			if len(a.nav) == 0 {
+				a.resetNavHistory(a.activeDocPath())
+			}
+		}
 	}
 
 	if path := a.activeDocPath(); path != "" {
@@ -196,6 +209,10 @@ func (a *App) sessionState() sessionState {
 		DiffSplit:     a.diffSplit,
 		HistoryRatio:  a.historyRatio,
 		HistoryManual: a.historyManual,
+		DrawerExtra:   a.drawerExtra,
+		Zoom:          a.uiZoom(),
+		Nav:           append([]string(nil), a.nav...),
+		NavAt:         a.navAt,
 	}
 
 	branches := a.branchLogs.Snapshot()

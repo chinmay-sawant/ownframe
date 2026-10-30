@@ -18,11 +18,7 @@ const (
 	tabMonoPx      = 6.0
 	tabNavPx       = 26 // .tab-nav scroll arrow width
 	tabNavMarginPx = 3  // .tab-nav right margin
-	// tabToolsReservePx holds the two strip tools: split-toggle and
-	// details-toggle in the first pane, pane-left and split-close in the
-	// second. Each is 26 px wide with a 3 px right margin.
-	tabToolsReservePx = 58
-	tabFillMinPx      = 4 // .tabs-fill minimum
+	tabFillMinPx   = 4  // .tabs-fill minimum
 	// diffTabEstimatePx holds the Working tree tab that leads the strip in
 	// changes mode: padding, the 12 px icon, gaps, a 12-rune name, and the
 	// border, with slack for wider faces.
@@ -32,12 +28,12 @@ const (
 // tabWidthPx estimates one tab's strip width for a filename and its dirty
 // mark. Children are the badge, the name, the status, and the dot on dirty
 // tabs; the absolutely positioned close button lives in the right padding.
-func tabWidthPx(name string, dirty bool) int {
-	width := tabPadLeftPx + tabIconPx + tabGapPx +
-		int(float64(len([]rune(name)))*tabMonoPx) +
-		tabGapPx + tabStatusPx + tabPadRightPx + tabBorderPx
+func (a *App) tabWidthPx(name string, dirty bool) int {
+	width := a.zx(tabPadLeftPx) + a.zx(tabIconPx) + a.zx(tabGapPx) +
+		int(float64(len([]rune(name)))*a.zf(tabMonoPx)) +
+		a.zx(tabGapPx) + a.zx(tabStatusPx) + a.zx(tabPadRightPx) + a.zx(tabBorderPx)
 	if dirty {
-		width += tabDotPx + tabGapPx
+		width += a.zx(tabDotPx) + a.zx(tabGapPx)
 	}
 
 	return width
@@ -47,13 +43,13 @@ func tabWidthPx(name string, dirty bool) int {
 // the pane width minus the tool buttons, the fill slack, the scroll arrow
 // already showing, and the Working tree tab in changes mode.
 func (a *App) tabStripBudget(group int) int {
-	budget := a.groupEditorWidth(group) - tabToolsReservePx - tabFillMinPx
+	budget := a.groupEditorWidth(group) - 2*a.zx(tabNavPx) - 2*a.zx(tabNavMarginPx) - a.zx(tabFillMinPx)
 	if a.tabStart[group] > 0 {
-		budget -= tabNavPx + tabNavMarginPx
+		budget -= a.zx(tabNavPx) + a.zx(tabNavMarginPx)
 	}
 
 	if group == 0 && a.mode == "changes" {
-		budget -= diffTabEstimatePx
+		budget -= a.zx(diffTabEstimatePx)
 	}
 
 	return budget
@@ -62,16 +58,16 @@ func (a *App) tabStripBudget(group int) int {
 // tabWindowEnd lays tabs out from start inside budget and reports the first
 // index past the visible window. The start tab always renders, even past
 // the budget, so the strip never goes blank.
-func tabWindowEnd(rows []tabRow, start, budget int, reserveNext bool) int {
+func (a *App) tabWindowEnd(rows []tabRow, start, budget int, reserveNext bool) int {
 	avail := budget
 	if reserveNext {
-		avail -= tabNavPx + tabNavMarginPx
+		avail -= a.zx(tabNavPx) + a.zx(tabNavMarginPx)
 	}
 
 	end := start
 
 	for end < len(rows) {
-		width := tabWidthPx(rows[end].Name, rows[end].Dirty)
+		width := a.tabWidthPx(rows[end].Name, rows[end].Dirty)
 		if end > start && avail < width {
 			break
 		}
@@ -111,9 +107,9 @@ func (a *App) windowTabRows(group int) ([]tabRow, bool, bool) {
 
 	budget := a.tabStripBudget(group)
 
-	end := tabWindowEnd(rows, start, budget, false)
+	end := a.tabWindowEnd(rows, start, budget, false)
 	if end < len(rows) {
-		end = tabWindowEnd(rows, start, budget, true)
+		end = a.tabWindowEnd(rows, start, budget, true)
 	}
 
 	return rows[start:end], start > 0, end < len(rows)
@@ -161,9 +157,9 @@ func (a *App) ensureTabVisible(group int) {
 		start := a.tabStart[group]
 		budget := a.tabStripBudget(group)
 
-		end := tabWindowEnd(rows, start, budget, false)
+		end := a.tabWindowEnd(rows, start, budget, false)
 		if end < len(rows) {
-			end = tabWindowEnd(rows, start, budget, true)
+			end = a.tabWindowEnd(rows, start, budget, true)
 		}
 
 		if active < end {

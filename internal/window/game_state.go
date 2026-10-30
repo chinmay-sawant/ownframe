@@ -79,4 +79,12 @@ type shell struct {
 	a11y       a11yHost
 	commits    uint64
 	skipped    uint64
+	// placementID remembers the window rect across launches; empty disables.
+	placementID        string
+	lastPlacement      windowPlacement
+	lastPlacementValid bool
+	lastPlacementSave  time.Time
+	// dragTrace logs one drag line per applied move. Dev-only: set from
+	// OWNFRAME_DRAG_DEBUG with the ownframe_debug build tag.
+	dragTrace bool
 }

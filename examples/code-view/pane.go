@@ -7,17 +7,19 @@ import (
 const paneMinWidth = 220
 
 // codeClipSlack keeps the last glyph inside the row. The painted advance
-// matches codeCellW; without this slack a full row still enters the right padding.
+// matches a.zf(codeCellW); without this slack a full row still enters the right padding.
 const codeClipSlack = 8
 
-// Preview rows do not use the source gutter. .prow pads both sides, .pmark
-// takes an 18 px marker whose 7 px right padding is ink headroom, and a quote
-// row adds a 2 px left border. The budget subtracts the marker box, repeats
-// the marker padding on the right, and rounds the measured 7.321 px advance of
-// the 12.2 px body face up to 7.5 px, so a full row keeps at least one glyph
-// clear of the right padding.
+// Preview rows keep the source line-number gutter. .prow pads both sides,
+// .pln takes a 44 px line-number box mirroring the editor .ln, .pmark takes
+// an 18 px marker whose 7 px right padding is ink headroom, and a quote row
+// adds a 2 px left border. The budget subtracts the line-number box and the
+// marker box, repeats the marker padding on the right, and rounds the
+// measured 7.321 px advance of the 12.2 px body face up to 7.5 px, so a full
+// row keeps at least one glyph clear of the right padding.
 const (
 	previewPadX        = 22
+	previewLineW       = 44
 	previewMarkW       = 18
 	previewMarkPad     = 7
 	previewQuoteBorder = 2
@@ -25,7 +27,8 @@ const (
 	previewSlack       = 8
 
 	// previewHeadingCellW covers the 14 px heading face. A heading row drops
-	// the marker column, so its budget starts after the row padding only.
+	// the marker column but keeps the line-number gutter, so its budget
+	// starts after the row padding, the line numbers, and the slack.
 	previewHeadingCellW = 8.5
 )
 
@@ -80,7 +83,7 @@ func (a *App) groupPaths() []string {
 func (a *App) paneGeometry() (int, int) {
 	total := a.editorWidth()
 	if !a.split || a.mode != "explorer" {
-		return chromeLeft, total
+		return a.chromeLeftPx(), total
 	}
 
 	left := int(float64(total) * a.splitRatio)
@@ -96,7 +99,7 @@ func (a *App) paneGeometry() (int, int) {
 		left = total
 	}
 
-	return chromeLeft, left
+	return a.chromeLeftPx(), left
 }
 
 // secondGeometry returns the left edge and width of the second pane.
@@ -115,8 +118,8 @@ func (a *App) secondGeometry() (int, int) {
 
 // codeColsFor is the monospace cell count inside a pane width.
 func (a *App) codeColsFor(width int) int {
-	avail := width - codeGutter - codePadRight - editorBorderPad - codeClipSlack
-	cols := int(float64(avail) / codeCellW)
+	avail := width - a.zx(codeGutter) - a.zx(codePadRight) - a.zx(editorBorderPad) - a.zx(codeClipSlack)
+	cols := int(float64(avail) / a.zf(codeCellW))
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}
@@ -140,8 +143,8 @@ func (a *App) groupEditorWidth(group int) int {
 // is showing Markdown preview uses the preview row's own padding and marker.
 func (a *App) codeColsForGroup(group int) int {
 	width := a.groupEditorWidth(group)
-	if a.preview && a.activeGroup() == group {
-		return a.previewColsForDoc(width, a.groupDoc(group))
+	if doc := a.groupDoc(group); doc != nil && doc.Lang == langMarkdown && a.preview && a.activeGroup() == group {
+		return a.previewColsForDoc(width, doc)
 	}
 
 	return a.codeColsFor(width)
@@ -154,11 +157,11 @@ func (a *App) previewCols() int {
 
 // previewColsFor is the cell count inside a preview pane. The budget is
 // conservative: every subtracted length comes from the preview stylesheet and
-// previewCellW is wider than the painted advance, so a full row cannot reach
+// a.zf(previewCellW) is wider than the painted advance, so a full row cannot reach
 // the right padding even when the face resolves a little wide.
 func (a *App) previewColsFor(width int) int {
-	avail := width - previewPadX - previewPadX - previewMarkW - previewMarkPad - previewQuoteBorder - previewSlack
-	cols := int(float64(avail) / previewCellW)
+	avail := width - a.zx(previewPadX) - a.zx(previewPadX) - a.zx(previewLineW) - a.zx(previewMarkW) - a.zx(previewMarkPad) - a.zx(previewQuoteBorder) - a.zx(previewSlack)
+	cols := int(float64(avail) / a.zf(previewCellW))
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}
@@ -183,10 +186,11 @@ func (a *App) previewColsForDoc(width int, doc *fileDoc) int {
 }
 
 // previewHeadingColsFor is the heading cell count inside a preview pane. A
-// heading row has no marker column, so only the row padding and slack apply.
+// heading row has no marker column but keeps the line-number gutter, so only
+// the row padding, the line numbers, and the slack apply.
 func (a *App) previewHeadingColsFor(width int) int {
-	avail := width - previewPadX - previewPadX - previewSlack
-	cols := int(float64(avail) / previewHeadingCellW)
+	avail := width - a.zx(previewPadX) - a.zx(previewPadX) - a.zx(previewLineW) - a.zx(previewSlack)
+	cols := int(float64(avail) / a.zf(previewHeadingCellW))
 	if cols < wrapMinCols {
 		cols = wrapMinCols
 	}
@@ -293,6 +297,16 @@ func (a *App) secondView() secondaryView {
 	if a.wrap {
 		plan := doc.wrapped(cols)
 		start, end, track := a.windowSliceForGroup(1, len(plan.Rows))
+		if len(plan.Rows) > 0 && start > 0 && start < len(plan.Rows) {
+			if lineStart := plan.firstRow(plan.lineAt(start)); lineStart < start {
+				shift := start - lineStart
+				start = lineStart
+				end += shift
+				if end > len(plan.Rows) {
+					end = len(plan.Rows)
+				}
+			}
+		}
 		s.TrackTop = track
 		s.Rows = cloneCodeRows(plan.Rows[start:end])
 		a.decorateCodeRows(doc, s.Rows, 1)
@@ -315,6 +329,7 @@ func (a *App) secondView() secondaryView {
 	}
 
 	a.decorateCodeRows(doc, s.Rows, 1)
+	a.sliceUnwrappedCodeRows(s.Rows, cols)
 
 	return s
 }

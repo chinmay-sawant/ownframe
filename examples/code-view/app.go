@@ -28,6 +28,12 @@ const (
 	chromeLeft    = activityW + sideWidth
 	editorBodyTop = chromeTop + tabStripH + crumbH
 
+	// drawerMaxExtra allows the file/source-control drawer to expand 30%
+	// beyond its 268 px base (268*0.3=80.4), like the VS Code sidebar resize.
+	// drawerMaxW is the widest drawer in 1x pixels.
+	drawerMaxExtra = 80
+	drawerMaxW     = sideWidth + drawerMaxExtra
+
 	rowH = 20
 
 	codeGutter   = 54
@@ -65,7 +71,6 @@ const (
 	changesRailTop       = 62
 	paneScrollW          = 8
 	paneThumbMin         = 24
-	paneScrollLeft       = activityW + sideWidth - paneScrollW
 	thumbCellH           = 14
 	historyExpandedRows  = 3
 	historyAutoRows      = 8
@@ -112,14 +117,27 @@ type App struct {
 	changeNav          changeNavigation
 	firstChangePending string
 
-	mode           string
-	filter         string
-	folders        map[string]bool
-	treeOffset     int
+	mode       string
+	filter     string
+	folders    map[string]bool
+	treeOffset int
+	// explSel is the explorer multi-select: Ctrl+click toggles a row,
+	// Shift+click extends the range, and Copy/Cut stage every selected row.
+	// explAnchor is the range start.
+	explSel        map[string]bool
+	explAnchor     string
 	treeDrag       bool
 	treeDragAt     int
 	treeScale      float64
 	treeWheelAccum float64
+
+	// drawerExtra widens the file/source-control drawer beyond sideWidth,
+	// up to drawerMaxExtra (about 30%), like the VS Code sidebar resize.
+	// drawerDrag resizes the drawer via the drawer-resize handle.
+	drawerExtra     int
+	drawerDrag      bool
+	drawerDragExtra int
+	drawerDx        float64
 
 	tabs   []string
 	active int
@@ -144,6 +162,11 @@ type App struct {
 	editAnchor int
 	editUndo   []editSnapshot
 	editRedo   []editSnapshot
+	// revertUndo/revertRedo store forward hunk patches for Ctrl+Z restore
+	// after a mistaken discard. Separate from editUndo so text and hunk
+	// histories never clobber each other.
+	revertUndo []revertUndoEntry
+	revertRedo []revertUndoEntry
 	dragSelect bool
 	selX       float64
 	selY       float64
@@ -172,11 +195,20 @@ type App struct {
 	diffPath      string
 	diffSplit     bool
 	diffRows      []diffRow
+	diffRowsGen   uint64
+	diffWrap      diffWrapCache
 	changesScroll changesScroll
 	changesDrag   bool
 	changesDragAt int
 	changesScale  float64
 	diffSource    string
+	selected      map[string]bool
+
+	confirmOpen  bool
+	confirmKind  string
+	confirmPaths []string
+	confirmTitle string
+	confirmMsg   string
 
 	commits          commitLog
 	branches         []branchRow
@@ -212,9 +244,23 @@ type App struct {
 	commitTip     commitFloatView
 	inlineCard    inlineCard
 
+	// cardDrag moves the inline card by its header. cardDx/cardDy accumulate
+	// the pointer delta and cardStartLeft/Top pin the drag origin so the card
+	// can roam left, right, up, and down inside the page.
+	cardDrag      bool
+	cardDx        float64
+	cardDy        float64
+	cardStartLeft int
+	cardStartTop  int
+
 	details bool
 	devOn   bool
 	chrome  bool
+
+	// zoom is the layout multiplier, 1 for 100 percent. It scales the row
+	// grid, the chrome, and the reader fonts together, and persists per
+	// workspace in the session.
+	zoom float64
 
 	scrollY       int
 	viewportH     int
@@ -238,8 +284,15 @@ type App struct {
 	recent       []string
 	paletteQuery string
 	paletteIndex int
+	nav          []string
+	navAt        int
 	ctrl         bool
 	shift        bool
+	// pasteStaged is one in-app file copy staged for Ctrl+V. It is the
+	// Task 3 seam: the explorer Copy menu row stages here (see
+	// stageExplorerCopy), and the Ctrl+V/menu paste path consumes it
+	// before reading the OS clipboard.
+	pasteStaged  *pasteStagedCopy
 	preview      bool
 	wrap         bool
 	scrollX      int
@@ -295,6 +348,7 @@ func NewWithLimit(root string, limit int) (*App, error) {
 		folders:       map[string]bool{},
 		statuses:      map[string]string{},
 		commitDetails: map[string]*changedFile{},
+		selected:      map[string]bool{},
 		mode:          "explorer",
 		diffSource:    "working",
 		historyRatio:  historyDefaultRatio,
@@ -436,6 +490,7 @@ func (a *App) openInitial() {
 	a.tabs = []string{target}
 	a.active = 0
 	a.addRecent(target)
+	a.resetNavHistory(target)
 }
 
 // File drawer geometry, kept next to chrome.css so the recent flyout lands
@@ -457,7 +512,7 @@ const (
 // flyout is absolutely positioned inside the drawer, so this is relative
 // to the drawer box.
 func (a *App) recentFlyoutX() int {
-	return fileDrawerW + fileFlyoutGap
+	return a.zx(fileDrawerW) + a.zx(fileFlyoutGap)
 }
 
 // recentFlyoutY lines the flyout top up with the recents toggle row,
@@ -465,14 +520,14 @@ func (a *App) recentFlyoutX() int {
 // four 30px rows, the open picker's input block, and the capped
 // locations list.
 func (a *App) recentFlyoutY() int {
-	y := fileDrawerPad + fileItemH*4 - fileDrawerPad
+	y := a.zx(fileDrawerPad) + a.zx(fileItemH)*4 - a.zx(fileDrawerPad)
 	if a.projectOpen {
 		rows := len(a.quickRootRows())
 		if rows > locRowMax {
 			rows = locRowMax
 		}
 
-		y += filePickerH + locLabelH + rows*fileItemH + locPad
+		y += a.zx(filePickerH) + a.zx(locLabelH) + rows*a.zx(fileItemH) + a.zx(locPad)
 	}
 
 	return y
@@ -575,6 +630,8 @@ func (a *App) reloadWindow(ctx context.Context) error {
 	a.dirty = map[string]bool{}
 	a.fileMenu = false
 	a.projectOpen = false
+	a.revertUndo = nil
+	a.revertRedo = nil
 	a.tabs = keepExistingTabs(keepTabs, ws)
 	a.tabs2 = keepExistingTabs(keepTabs2, ws)
 	a.active = clampSessionIndex(keepActive, len(a.tabs))
@@ -588,6 +645,14 @@ func (a *App) reloadWindow(ctx context.Context) error {
 		a.openInitial()
 	} else {
 		a.addRecent(a.tabs[a.active])
+		a.pruneNavHistory()
+		if current := a.activeDocPath(); current != "" {
+			if len(a.nav) == 0 {
+				a.resetNavHistory(current)
+			} else if a.navAt < 0 || a.navAt >= len(a.nav) || a.nav[a.navAt] != current {
+				a.pushNavHistory(current)
+			}
+		}
 	}
 
 	a.scrollY = keepScroll
@@ -682,6 +747,8 @@ func (a *App) switchProject(ctx context.Context, root string) error {
 	a.recentOpen = false
 	a.projectQuery = ""
 	a.fileAlert = ""
+	a.revertUndo = nil
+	a.revertRedo = nil
 	a.recentRoots = rememberRecentProject(a.recentRoots, ws.Root)
 	saveRecentProjects(a.recentRoots)
 
@@ -753,7 +820,7 @@ func (a *App) onScroll(offsetY, viewH int) bool {
 	}
 	a.viewportH = viewH
 	a.viewportCols = cols
-	a.inlineCard = inlineCard{}
+	a.repositionInlineCard()
 	a.view = a.buildView()
 	a.publishPreviewImages()
 	a.page.SetData(&a.view)
@@ -773,7 +840,7 @@ func (a *App) buildView() View {
 		MenuX:         a.menuX,
 		MenuY:         a.menuY,
 		MenuRows:      append([]menuViewRow(nil), a.menuItems...),
-		Modal:         a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen,
+		Modal:         a.paletteOpen || a.branchOpen || a.searchOpen || a.settingsOpen || a.confirmOpen || a.fileMenu || a.browseOpen,
 		SettingsOpen:  a.settingsOpen,
 		FileMenu:      a.fileMenu,
 		ProjectOpen:   a.projectOpen,
@@ -817,6 +884,7 @@ func (a *App) buildView() View {
 
 	v.Tree, v.TreeTotal, v.TreeCount, v.Filtered = a.treeRows()
 	v.TreeStart = a.treeOffset
+	v.StickyTree = a.stickyTreeRows()
 	v.TreeVisible = a.treeVisibleRows()
 	a.fillTreeScroll(&v)
 	v.Tabs, v.TabsPrev, v.TabsNext = a.windowTabRows(0)
@@ -828,6 +896,7 @@ func (a *App) buildView() View {
 	v.Search = a.searchViewState()
 	v.FileNav = a.fileNavViewState()
 	v.ChangeLabel = a.fileNavSummary()
+	v.Confirm = a.confirmViewState()
 
 	v.PaneLeft, v.PaneWidth = a.paneGeometry()
 
@@ -871,10 +940,12 @@ func (a *App) buildView() View {
 		v.Second = a.secondView()
 	}
 
-	v.Chrome = a.chrome
-	if v.Chrome {
-		v.ChromeMax = a.page.Window().Maximized()
+	v.TitleBar = a.chrome
+	if v.TitleBar {
+		v.TitleBarMax = a.page.Window().Maximized()
 	}
+
+	v.ZoomLabel = a.zoomLabel()
 
 	v.CmdTitle = "Search files"
 	if a.mode == "changes" {
@@ -889,6 +960,10 @@ func (a *App) buildView() View {
 
 	winW, _ = a.page.Size()
 	v.CmdText = clipCmdbarText(winW, v.CmdTitle)
+	v.NavBack = a.canNavBack()
+	v.NavForward = a.canNavForward()
+	v.NavBackTitle = a.navBackTitle()
+	v.NavForwardTitle = a.navForwardTitle()
 
 	v.EditorScroll = a.editorScroll(0)
 	if a.split && a.mode == "explorer" {
@@ -897,6 +972,7 @@ func (a *App) buildView() View {
 	v.CommitTip = a.commitTip
 	v.InlineCard = a.inlineCard
 	v.SpaceHeight = a.contentHeight()
+	a.fillDrawer(&v)
 
 	return v
 }
@@ -949,6 +1025,20 @@ func (a *App) fillCode(v *View) {
 	if a.wrap {
 		plan := doc.wrapped(cols)
 		start, end, track = a.windowSliceForGroup(0, len(plan.Rows))
+		// Never start mid-line: a scroll offset landing inside a wrapped
+		// source line would fill the viewport with No==0 continuations and
+		// blank the gutter. Snap back to the line start and keep the same
+		// visible count.
+		if len(plan.Rows) > 0 && start > 0 && start < len(plan.Rows) {
+			if lineStart := plan.firstRow(plan.lineAt(start)); lineStart < start {
+				shift := start - lineStart
+				start = lineStart
+				end += shift
+				if end > len(plan.Rows) {
+					end = len(plan.Rows)
+				}
+			}
+		}
 		v.TrackTop = track
 		v.Rows = a.copyFindRows(cloneCodeRows(plan.Rows[start:end]))
 		a.decorateCodeRows(doc, v.Rows, 0)
@@ -971,14 +1061,33 @@ func (a *App) fillCode(v *View) {
 	v.Rows = a.copyFindRows(v.Rows)
 	a.decorateCodeRows(doc, v.Rows, 0)
 	a.decorateEditRows(v.Rows)
+
+	a.sliceUnwrappedCodeRows(v.Rows, cols)
+}
+
+// sliceUnwrappedCodeRows trims unwrapped rows to their visible rune window.
+// The laid text then fits its line box, so the engine never wraps it into
+// the rows below. EditStart, caret, selection, and click math keep using
+// full-line columns and the full scrollX, so only the painted slice moves.
+func (a *App) sliceUnwrappedCodeRows(rows []codeRow, cols int) {
+	if a.wrap {
+		return
+	}
+
+	col, rem := a.hscrollWindow(a.zf(codeCellW), cols)
+
+	for i := range rows {
+		rows[i].Segments = sliceSegments(rows[i].Segments, col, cols)
+		rows[i].ScrollX = rem
+	}
 }
 
 // diffColumns is the text cell count for the unified or split diff.
 func (a *App) diffColumns() (int, int) {
 	w := a.editorWidth()
 
-	unified := int(float64(w-diffUnifiedW) / diffCellW)
-	split := int(float64(w/2-diffSplitW) / diffCellW)
+	unified := int(float64(w-a.zx(diffUnifiedW)) / a.zf(diffCellW))
+	split := int(float64(w/2-a.zx(diffSplitW)) / a.zf(diffCellW))
 
 	if unified < wrapMinCols {
 		unified = wrapMinCols
@@ -1007,21 +1116,63 @@ func (a *App) diffDisplayRows() []diffRow {
 		return nil
 	}
 
-	if a.wrap {
-		unified, split := a.diffColumns()
-		return wrapDiffRows(rows, unified, split, true)
+	if !a.wrap {
+		return rows
 	}
 
-	return rows
+	unified, split := a.diffColumns()
+	key := diffWrapKey{
+		generation: a.diffRowsGen,
+		source:     a.diffSource,
+		path:       a.diffViewPath(),
+		split:      a.diffSplit,
+		unified:    unified,
+		splitCols:  split,
+	}
+
+	if a.diffWrap.valid && a.diffWrap.key == key {
+		return a.diffWrap.rows
+	}
+
+	wrapped := wrapDiffRows(rows, unified, split, true)
+	a.diffWrap = diffWrapCache{key: key, rows: wrapped, valid: true}
+
+	return wrapped
+}
+
+// diffViewPath is the file whose rows currentDiffRows returns.
+func (a *App) diffViewPath() string {
+	switch a.diffSource {
+	case "commit":
+		return a.commitFile
+	case "branch":
+		return a.branchPath
+	default:
+		return a.diffPath
+	}
 }
 
 // fillDiff fills the Source Control list and the selected diff rows.
 func (a *App) fillDiff(v *View) {
-	files := a.sidebarChangeFiles()
 	active := a.changes
 	if a.diffSource == "branch" {
 		active = a.branchChanges
 	}
+
+	// Working-tree sections keep staged rows above unstaged rows. Branch and
+	// commit diffs keep the single combined list.
+	stagedAll := active.Staged
+	unstagedAll := active.Unstaged
+	sectioned := a.diffSource != "branch" && a.diffSource != "commit"
+	if sectioned && len(stagedAll) == 0 && len(unstagedAll) == 0 {
+		unstagedAll = active.Files
+	}
+	if !sectioned {
+		stagedAll = nil
+		unstagedAll = nil
+	}
+
+	files := a.sidebarChangeFiles()
 	d := diffView{
 		Split:      a.diffSplit,
 		Sample:     active.Sample,
@@ -1047,37 +1198,100 @@ func (a *App) fillDiff(v *View) {
 		}
 	}
 
-	total := len(files)
-	visible := a.changeVisibleRows()
-	from, to := a.changesScroll.Rows(total, visible)
+	if sectioned {
+		d.StagedCount = len(stagedAll)
+		d.UnstagedCount = len(unstagedAll)
+		d.HasStaged = len(stagedAll) > 0
+		d.HasUnstaged = len(unstagedAll) > 0
+		d.HasChanges = len(stagedAll)+len(unstagedAll) > 0
+		d.Count = len(stagedAll) + len(unstagedAll)
+		d.SelectedCount = a.selectedCount()
 
-	d.Scroll = total > visible
-	d.AtTop = from == 0
-	d.AtEnd = to >= total
+		total := d.Count
+		visible := a.changeVisibleRows()
+		from, to := a.changesScroll.Rows(total, visible)
 
-	if d.Scroll {
-		track := a.changesTrackHeight()
-		d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, paneThumbMin)
-		d.ScrollTrack = track
-		d.RailLeft = paneScrollLeft
-		d.RailTop = chromeTop + changesRailTop
-		d.RailThumbTop = d.RailTop + d.ScrollTop
-		d.ThumbCells = max(1, d.ScrollHeight/thumbCellH)
-	}
+		d.Scroll = total > visible
+		d.AtTop = from == 0
+		d.AtEnd = to >= total
 
-	for _, file := range files[from:to] {
-		d.Files = append(d.Files, diffFileRow{
-			Path:        file.Path,
-			Name:        baseName(file.Path),
-			Dir:         dirName(file.Path),
-			Status:      file.Status,
-			StatusClass: "st-" + strings.ToLower(file.Status),
-			Lang:        languageOf(file.Path),
-			Badge:       languageInfo(languageOf(file.Path)).Badge,
-			Add:         file.Add,
-			Del:         file.Del,
-			Selected:    file.Path == selected,
-		})
+		if d.Scroll {
+			track := a.changesTrackHeight()
+			d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
+			d.ScrollTrack = track
+			d.RailLeft = a.paneRailLeftPx()
+			d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
+			d.RailThumbTop = d.RailTop + d.ScrollTop
+			d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
+		}
+
+		combined := make([]changedFile, 0, total)
+		combined = append(combined, stagedAll...)
+		combined = append(combined, unstagedAll...)
+		if to > len(combined) {
+			to = len(combined)
+		}
+		if from > to {
+			from = to
+		}
+
+		for i, file := range combined[from:to] {
+			row := diffFileRow{
+				Path:        file.Path,
+				Name:        baseName(file.Path),
+				Dir:         dirName(file.Path),
+				Status:      file.Status,
+				StatusClass: "st-" + strings.ToLower(file.Status),
+				Lang:        languageOf(file.Path),
+				Badge:       languageInfo(languageOf(file.Path)).Badge,
+				Add:         file.Add,
+				Del:         file.Del,
+				Selected:    file.Path == selected,
+				Staged:      from+i < len(stagedAll),
+				Multi:       a.selected[file.Path],
+			}
+			d.Files = append(d.Files, row)
+
+			if row.Staged {
+				d.Staged = append(d.Staged, row)
+			} else {
+				d.Unstaged = append(d.Unstaged, row)
+			}
+		}
+	} else {
+		total := len(files)
+		visible := a.changeVisibleRows()
+		from, to := a.changesScroll.Rows(total, visible)
+
+		d.Scroll = total > visible
+		d.AtTop = from == 0
+		d.AtEnd = to >= total
+
+		if d.Scroll {
+			track := a.changesTrackHeight()
+			d.ScrollTop, d.ScrollHeight, _ = a.changesScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
+			d.ScrollTrack = track
+			d.RailLeft = a.paneRailLeftPx()
+			d.RailTop = a.zx(chromeTop) + a.zx(changesRailTop)
+			d.RailThumbTop = d.RailTop + d.ScrollTop
+			d.ThumbCells = max(1, d.ScrollHeight/a.zx(thumbCellH))
+		}
+
+		for _, file := range files[from:to] {
+			d.Files = append(d.Files, diffFileRow{
+				Path:        file.Path,
+				Name:        baseName(file.Path),
+				Dir:         dirName(file.Path),
+				Status:      file.Status,
+				StatusClass: "st-" + strings.ToLower(file.Status),
+				Lang:        languageOf(file.Path),
+				Badge:       languageInfo(languageOf(file.Path)).Badge,
+				Add:         file.Add,
+				Del:         file.Del,
+				Selected:    file.Path == selected,
+				Multi:       a.selected[file.Path],
+			})
+		}
 	}
 
 	if a.diffSource == "commit" {
@@ -1101,7 +1315,7 @@ func (a *App) fillDiff(v *View) {
 		file = &active.Files[0]
 	}
 
-	a.fillDiffFile(v, &d, file, a.diffRows)
+	a.fillDiffFile(v, &d, file)
 	d.Selected = file.Path
 	v.Diff = d
 }
@@ -1110,21 +1324,25 @@ func (a *App) sidebarChangeFiles() []changedFile {
 	if a.diffSource == "branch" {
 		return a.branchChanges.Files
 	}
-	if a.diffSource != "commit" {
+	if a.diffSource == "commit" {
+		commit := a.findCommit(a.commitOpen)
+		if commit == nil {
+			return nil
+		}
+		files := make([]changedFile, 0, len(commit.Files))
+		for _, file := range commit.Files {
+			files = append(files, changedFile{
+				Path: file.Path, OldPath: file.OldPath, Status: file.Status,
+				Add: file.Add, Del: file.Del, Binary: file.Binary,
+			})
+		}
+		return files
+	}
+	if len(a.changes.Staged) == 0 && len(a.changes.Unstaged) == 0 {
 		return a.changes.Files
 	}
-	commit := a.findCommit(a.commitOpen)
-	if commit == nil {
-		return nil
-	}
-	files := make([]changedFile, 0, len(commit.Files))
-	for _, file := range commit.Files {
-		files = append(files, changedFile{
-			Path: file.Path, OldPath: file.OldPath, Status: file.Status,
-			Add: file.Add, Del: file.Del, Binary: file.Binary,
-		})
-	}
-	return files
+
+	return a.workingAllFiles()
 }
 
 // fillCommitDiff publishes the selected file from one commit.
@@ -1166,11 +1384,11 @@ func (a *App) fillCommitDiff(v *View, d *diffView) {
 
 	d.HasFiles = true
 	d.Selected = file.Path
-	a.fillDiffFile(v, d, file, a.commitRows)
+	a.fillDiffFile(v, d, file)
 }
 
 // fillDiffFile fills the diff header, document metadata, and visible rows.
-func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffRow) {
+func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile) {
 	d.Path = file.Path
 	d.Name = baseName(file.Path)
 	d.Dir = dirName(file.Path)
@@ -1183,7 +1401,11 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 	d.Add = file.Add
 	d.Del = file.Del
 	d.Hunks = len(file.Hunks)
-	d.CanEdit = d.Source == "working" && !file.Binary && file.Status != "D"
+	d.CanEdit = d.Source == "working" && !file.Binary && file.Status != "D" && !file.Oversized
+	// Deleted files revert by restoring the file, untracked and added files
+	// by deleting it; renames stay on file-level discard so a hunk revert
+	// cannot silently undo the rename.
+	d.CanRevert = d.Source == "working" && !file.Binary && !file.Oversized && file.Status != "R"
 
 	doc := a.docs[file.Path]
 	if doc == nil {
@@ -1214,30 +1436,69 @@ func (a *App) fillDiffFile(v *View, d *diffView, file *changedFile, rows []diffR
 		v.StatusClass = "st-" + strings.ToLower(v.Status)
 	}
 
-	if a.wrap {
-		unified, split := a.diffColumns()
-		rows = wrapDiffRows(rows, unified, split, true)
-	} else {
+	rows := a.diffDisplayRows()
+	if !a.wrap {
 		d.ScrollX = a.scrollX
 	}
 
 	start, end, track := a.windowSlice(len(rows))
 	d.TrackTop = track
 
+	changeRows := a.fileNavChangeRows(file.Path)
+	changeIndex := a.fileNavChangeIndex(file.Path, changeRows)
+	d.CanPrevChange = changeIndex > 0
+	d.CanNextChange = changeIndex+1 < len(changeRows)
+
 	if len(rows) > 0 {
 		visible := append([]diffRow(nil), rows[start:end]...)
-		current := a.scrollY / rowH
+		current := a.scrollY / a.zx(rowH)
 		if a.changeNav.valid && a.changeNav.path == file.Path &&
 			a.changeNav.mode == a.mode && a.changeNav.scroll == a.scrollY {
 			current = a.changeNav.row
 		}
 		markCurrentDiffChange(rows, visible, start, current)
-		if !a.wrap {
-			for i := range visible {
-				visible[i].ScrollX = a.scrollX
+		a.sliceUnwrappedDiffRows(visible)
+		d.Rows = visible
+	}
+}
+
+// sliceUnwrappedDiffRows trims unwrapped diff rows to their visible rune
+// window, with hunk labels clipped the way clipDiffRows clips them. The laid
+// text then fits its cell, so the engine never wraps it into the rows below.
+// EditStart keeps full-line columns and click math keeps the full scrollX.
+func (a *App) sliceUnwrappedDiffRows(visible []diffRow) {
+	if a.wrap {
+		for i := range visible {
+			visible[i].ScrollX = 0
+		}
+
+		return
+	}
+
+	unified, split := a.diffColumns()
+	col, rem := a.hscrollWindow(a.zf(diffCellW), unified)
+
+	for i := range visible {
+		row := &visible[i]
+		if row.Kind == rowExpand {
+			continue
+		}
+
+		if row.Kind == "split" {
+			row.Left = sliceSegments(row.Left, col, split)
+			row.Right = sliceSegments(row.Right, col, split)
+		} else {
+			row.Left = sliceSegments(row.Left, col, unified)
+			row.Right = sliceSegments(row.Right, col, unified)
+		}
+
+		if row.Hunk != "" {
+			if runes := []rune(row.Hunk); len(runes) > unified {
+				row.Hunk = string(runes[:unified]) + "…"
 			}
 		}
-		d.Rows = visible
+
+		row.ScrollX = rem
 	}
 }
 
@@ -1293,9 +1554,9 @@ func (a *App) findCommit(hash string) *gitCommit {
 
 // bodyHeight is the editor body below the tab strip and breadcrumbs.
 func (a *App) bodyHeight() int {
-	h := a.viewportH - editorBodyTop - chromeBottom
-	if h < rowH {
-		h = rowH
+	h := a.viewportH - a.zx(editorBodyTop) - a.zx(chromeBottom)
+	if h < a.zx(rowH) {
+		h = a.zx(rowH)
 	}
 
 	return h
@@ -1313,7 +1574,7 @@ func (a *App) historyHeight() int {
 	}
 
 	stack := a.drawerStackHeight()
-	maxH := stack - changesMinH
+	maxH := stack - a.zx(changesMinH)
 
 	h := 0
 	if !a.historyManual {
@@ -1322,15 +1583,15 @@ func (a *App) historyHeight() int {
 			rows = 1
 		}
 
-		h = histHeadH + historyPad + rows*histRowH + historyAutoPad
+		h = a.zx(histHeadH) + a.zx(historyPad) + rows*a.zx(histRowH) + a.zx(historyAutoPad)
 	} else {
 		h = int(float64(stack) * a.historyRatio)
 	}
-	if h < histMinH {
-		h = histMinH
+	if h < a.zx(histMinH) {
+		h = a.zx(histMinH)
 	}
 
-	if maxH < histMinH {
+	if maxH < a.zx(histMinH) {
 		return stack / halfDivisor
 	}
 
@@ -1343,13 +1604,13 @@ func (a *App) historyHeight() int {
 
 // historyPaneTop is the page y of the history rail's top edge.
 func (a *App) historyPaneTop() int {
-	return a.viewportH - chromeBottom - treeFootH - a.historyHeight()
+	return a.viewportH - a.zx(chromeBottom) - a.zx(treeFootH) - a.historyHeight()
 }
 
 // historyVisibleRows is how many 42 px commit rows fit in the rail.
 func (a *App) historyVisibleRows() int {
-	h := a.historyHeight() - histHeadH - historyPad
-	rows := h / histRowH
+	h := a.historyHeight() - a.zx(histHeadH) - a.zx(historyPad)
+	rows := h / a.zx(histRowH)
 	if rows < 1 {
 		rows = 1
 	}
@@ -1359,7 +1620,7 @@ func (a *App) historyVisibleRows() int {
 
 // historyTrackHeight is the rail's pixel height below its header.
 func (a *App) historyTrackHeight() int {
-	h := a.historyHeight() - histHeadH - historyPad
+	h := a.historyHeight() - a.zx(histHeadH) - a.zx(historyPad)
 	if h < 1 {
 		h = 1
 	}
@@ -1383,14 +1644,14 @@ func (a *App) buildCommitTip(commit *gitCommit, rowTop int) commitFloatView {
 	meta := commit.Short + " · " + commit.Author + " · " + commit.Date
 	pageTop := a.historyPaneTop() + rowTop
 
-	lines := commitTipText(commit.Subject, body, meta, commitTipCols(commitTipWidth))
-	layout := layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
+	lines := commitTipText(commit.Subject, body, meta, commitTipCols(a.zx(commitTipWidth), a.zf(commitTipCell), a.zx(commitTipPadX)))
+	layout := layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.drawerVisiblePx(), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
 	if !layout.Show {
 		return commitFloatView{}
 	}
 
-	lines = commitTipText(commit.Subject, body, meta, commitTipCols(layout.Width))
-	layout = layoutCommitTip(a.pageWidth(), a.viewportH, activityW, sideWidth, pageTop, histRowH, len(lines))
+	lines = commitTipText(commit.Subject, body, meta, commitTipCols(layout.Width, a.zf(commitTipCell), a.zx(commitTipPadX)))
+	layout = layoutCommitTip(a.pageWidth(), a.viewportH, a.zx(activityW), a.drawerVisiblePx(), pageTop, a.zx(histRowH), len(lines), a.uiZoom())
 
 	return commitFloatView{
 		Show:  layout.Show,
@@ -1407,7 +1668,7 @@ func (a *App) diffBodyHeight() int { return a.bodyHeight() }
 // drawerStackHeight is the Source Control space between the side header and
 // footer, after the changes header and divider.
 func (a *App) drawerStackHeight() int {
-	h := a.viewportH - chromeTop - chromeBottom - treeHeadH - treeFootH - changesHeadH - histSplitH
+	h := a.viewportH - a.zx(chromeTop) - a.zx(chromeBottom) - a.zx(treeHeadH) - a.zx(treeFootH) - a.zx(changesHeadH) - a.zx(histSplitH)
 	if h < 1 {
 		h = 1
 	}
@@ -1419,7 +1680,7 @@ func (a *App) drawerStackHeight() int {
 func (a *App) changeVisibleRows() int {
 	stack := a.drawerStackHeight()
 	body := stack - a.historyHeight()
-	rows := (body - changeListPad) / changeRowH
+	rows := (body - a.zx(changeListPad)) / a.zx(changeRowH)
 	if rows < 1 {
 		rows = 1
 	}
@@ -1460,7 +1721,7 @@ func (a *App) scrollChanges(rows int) {
 
 // changesTrackHeight is the pixel height of the changed-file rail.
 func (a *App) changesTrackHeight() int {
-	h := a.drawerStackHeight() - a.historyHeight() - changeListPad
+	h := a.drawerStackHeight() - a.historyHeight() - a.zx(changeListPad)
 	if h < 1 {
 		h = 1
 	}
@@ -1495,8 +1756,8 @@ func (a *App) fillHistory(v *View) {
 	h.Unborn = a.commits.Unborn
 	h.Height = a.historyHeight()
 	h.Loading = v.Diff.Loading
-	h.RailLeft = paneScrollLeft
-	h.RailTop = a.historyPaneTop() + histHeadH
+	h.RailLeft = a.paneRailLeftPx()
+	h.RailTop = a.historyPaneTop() + a.zx(histHeadH)
 
 	if a.branchOpen {
 		a.fillBranchList(&h)
@@ -1516,14 +1777,14 @@ func (a *App) fillHistory(v *View) {
 
 	if h.Scroll {
 		track := a.historyTrackHeight()
-		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, paneThumbMin)
+		h.ScrollTop, h.ScrollHeight, _ = a.historyScroll.Thumb(track, total, visible, a.zx(paneThumbMin))
 		h.ScrollTrack = track
 		h.RailThumbTop = h.RailTop + h.ScrollTop
-		h.ThumbCells = max(1, h.ScrollHeight/thumbCellH)
+		h.ThumbCells = max(1, h.ScrollHeight/a.zx(thumbCellH))
 	}
 
 	graph := buildCommitGraph(a.commits.Commits)
-	tipTop := histHeadH + historyPad
+	tipTop := a.zx(histHeadH) + a.zx(historyPad)
 	tipRowTop := 0
 
 	for i := from; i < to; i++ {
@@ -1556,17 +1817,17 @@ func (a *App) fillHistory(v *View) {
 		}
 
 		h.Commits = append(h.Commits, row)
-		tipTop += histRowH
+		tipTop += a.zx(histRowH)
 
 		if a.hoverCommit == commit.Short {
 			tipRowTop = rowTop
-			tip := rowTop + histRowH + historyTipGap
-			if tip+historyTipFlipH > h.Height {
-				tip = rowTop - historyTipFlipH
+			tip := rowTop + a.zx(histRowH) + a.zx(historyTipGap)
+			if tip+a.zx(historyTipFlipH) > h.Height {
+				tip = rowTop - a.zx(historyTipFlipH)
 			}
 
-			if tip < histHeadH {
-				tip = histHeadH
+			if tip < a.zx(histHeadH) {
+				tip = a.zx(histHeadH)
 			}
 
 			h.Tip.Top = tip
@@ -1599,7 +1860,7 @@ func (a *App) fillHistory(v *View) {
 
 // fillBranchList builds the filtered branch picker rows.
 func (a *App) fillBranchList(h *historyView) {
-	limit := (h.Height - branchPickerPad) / branchPickerRowH
+	limit := (h.Height - a.zx(branchPickerPad)) / a.zx(branchPickerRowH)
 	if limit < branchPickerMinRows {
 		limit = branchPickerMinRows
 	}
@@ -1629,7 +1890,7 @@ func (a *App) contentHeight() int {
 		}
 	}
 
-	h := editorBodyTop + rows*rowH + chromeBottom
+	h := a.zx(editorBodyTop) + rows*a.zx(rowH) + a.zx(chromeBottom)
 	if h < a.viewportH {
 		h = a.viewportH
 	}
@@ -1664,14 +1925,14 @@ func (a *App) editorWidth() int {
 	}
 
 	if a.details {
-		w -= detailsWidth
+		w -= a.zx(detailsWidth)
 	}
 
-	if w < chromeLeft+paneMinWidth {
-		w = chromeLeft + paneMinWidth
+	if w < a.chromeLeftPx()+a.zx(paneMinWidth) {
+		w = a.chromeLeftPx() + a.zx(paneMinWidth)
 	}
 
-	return w - chromeLeft
+	return w - a.chromeLeftPx()
 }
 
 // codeCols is the number of monospace cells that fit in the focused pane.
@@ -1682,10 +1943,10 @@ func (a *App) codeCols() int {
 // topSourceLine is the source line at the top of the code view.
 func (a *App) topSourceLine() int {
 	if doc := a.activeDoc(); a.wrap && doc != nil {
-		return doc.wrapped(a.codeCols()).lineAt(a.scrollY / rowH)
+		return doc.wrapped(a.codeCols()).lineAt(a.scrollY / a.zx(rowH))
 	}
 
-	return a.scrollY / rowH
+	return a.scrollY / a.zx(rowH)
 }
 
 // toggleWrap flips soft wrap and keeps the top source line in view.
@@ -1709,23 +1970,24 @@ func (a *App) toggleWrap() {
 	a.viewportCols = 0
 
 	if doc := a.activeDoc(); doc != nil && a.wrap {
-		a.scrollTo(doc.wrapped(a.codeCols()).firstRow(line) * rowH)
+		a.scrollTo(doc.wrapped(a.codeCols()).firstRow(line) * a.zx(rowH))
 
 		return
 	}
 
-	a.scrollTo(line * rowH)
+	a.scrollTo(line * a.zx(rowH))
 }
 
-// scrollTo moves the page and rebuilds the visible slice.
+// scrollTo moves the page and rebuilds the visible slice, keeping an open
+// inline card on its line.
 func (a *App) scrollTo(y int) {
 	target := a.clampScroll(y)
-	a.inlineCard = inlineCard{}
 	a.scrollY = target
 	a.scrollGroup[0] = target
 	a.scrollTarget = target
 	a.scrollPending = true
 	a.page.ScrollTo(0, target)
+	a.repositionInlineCard()
 	a.refresh()
 }
 
@@ -1741,6 +2003,7 @@ func (a *App) resetScroll() {
 	a.scrollPending = true
 	a.scrollX = 0
 	a.page.ScrollTo(0, 0)
+	a.repositionInlineCard()
 }
 
 // resetFind clears the find bar without touching focus.
@@ -1753,15 +2016,105 @@ func (a *App) resetFind() {
 	a.findReturn = ""
 }
 
-// treeVisibleRows is the number of 26 px rows that fit in the sidebar.
-func (a *App) treeVisibleRows() int {
-	h := a.viewportH - chromeTop - chromeBottom - treeHeadH - treeFilterH - treeFootH - treeInnerPad
-	rows := h / treeRowH
+// treeCapacity is the raw number of 26 px rows that fit in the sidebar.
+func (a *App) treeCapacity() int {
+	h := a.viewportH - a.zx(chromeTop) - a.zx(chromeBottom) - a.zx(treeHeadH) - a.zx(treeFilterH) - a.zx(treeFootH) - a.zx(treeInnerPad)
+	rows := h / a.zx(treeRowH)
 	if rows < 1 {
 		rows = 1
 	}
 
 	return rows
+}
+
+// treeVisibleRows is the scrollable row count after reserving the sticky
+// headers. The pinned block shows N ancestors, so the window below it shows
+// capacity minus N rows and the pane stays exactly full.
+func (a *App) treeVisibleRows() int {
+	capacity := a.treeCapacity()
+	reserved := len(a.stickyTreeRows())
+	visible := capacity - reserved
+	if visible < 1 {
+		visible = 1
+	}
+
+	return visible
+}
+
+// stickyTreeRows returns the open ancestor chain above treeOffset. The first
+// visible row's parents stay pinned while its children slide under them.
+// A filter lists matches flat, so there is no sticky chain then.
+func (a *App) stickyTreeRows() []treeRow {
+	if a.filter != "" {
+		return nil
+	}
+
+	if a.ws == nil || a.treeOffset <= 0 {
+		return nil
+	}
+
+	var (
+		stack         []*fileNode
+		stackDepths   []int
+		stackIgnored  []bool
+		index         int
+		captured      []treeRow
+		capturedFound bool
+	)
+
+	var walk func(nodes []*fileNode, depth int, parentIgnored bool) bool
+	walk = func(nodes []*fileNode, depth int, parentIgnored bool) bool {
+		for _, node := range nodes {
+			if index == a.treeOffset {
+				captured = make([]treeRow, 0, len(stack))
+				for i, ancestor := range stack {
+					depth := stackDepths[i]
+					ancestorParentIgnored := stackIgnored[i]
+					row := treeRow{
+						Path:        ancestor.Path,
+						Name:        ancestor.Name,
+						Dir:         true,
+						Open:        true,
+						Ignored:     ancestor.Ignored,
+						IgnoredNote: ancestor.Ignored && !ancestorParentIgnored,
+						Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
+					}
+					row.Short = clipTreeName(a.drawerWidth(), row.Indent, true, row.IgnoredNote, row.Name)
+					row.Selected = a.explSel[ancestor.Path]
+					captured = append(captured, row)
+				}
+				capturedFound = true
+
+				return true
+			}
+
+			index++
+
+			if node.Dir && a.folders[node.Path] {
+				stack = append(stack, node)
+				stackDepths = append(stackDepths, depth)
+				stackIgnored = append(stackIgnored, parentIgnored)
+
+				if walk(node.Children, depth+1, parentIgnored || node.Ignored) {
+					return true
+				}
+
+				stack = stack[:len(stack)-1]
+				stackDepths = stackDepths[:len(stackDepths)-1]
+				stackIgnored = stackIgnored[:len(stackIgnored)-1]
+			}
+		}
+
+		return false
+	}
+
+	walk(a.ws.Tree, 0, false)
+
+	if !capturedFound {
+		return nil
+	}
+
+	return captured
 }
 
 // treeRows returns the visible explorer rows, the total row count, the file
@@ -1775,6 +2128,16 @@ func (a *App) treeRows() ([]treeRow, int, int, bool) {
 	}
 
 	total := countTreeOpen(a.ws.Tree, a.folders)
+	for range 3 {
+		visible := a.treeVisibleRows()
+		before := a.treeOffset
+		a.clampTreeOffset(total, visible)
+
+		if a.treeOffset == before {
+			break
+		}
+	}
+
 	visible := a.treeVisibleRows()
 	a.clampTreeOffset(total, visible)
 
@@ -1830,9 +2193,10 @@ func (a *App) walkTree(nodes []*fileNode, depth int, parentIgnored bool, rows *[
 				Dir:         node.Dir,
 				Ignored:     node.Ignored,
 				IgnoredNote: node.Ignored && !parentIgnored,
-				Indent:      treePad + depth*treeIndent,
+				Indent:      a.zx(treePad) + depth*a.zx(treeIndent),
 			}
-			row.Short = clipTreeName(row.Indent, row.Dir, row.IgnoredNote, row.Name)
+			row.Short = clipTreeName(a.drawerWidth(), row.Indent, row.Dir, row.IgnoredNote, row.Name)
+			row.Selected = a.explSel[node.Path]
 
 			if node.Dir {
 				row.Open = a.folders[node.Path]
@@ -1869,7 +2233,7 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 		all = append(all, treeRow{
 			Path:        file.Path,
 			Name:        file.Name,
-			Indent:      treePad,
+			Indent:      a.zx(treePad),
 			Ignored:     file.Ignored,
 			IgnoredNote: file.Ignored,
 			Lang:        file.Lang,
@@ -1884,7 +2248,8 @@ func (a *App) filteredRows() ([]treeRow, int, int, bool) {
 	to := min(from+visible, len(all))
 
 	for i := from; i < to; i++ {
-		all[i].Short = clipTreeName(all[i].Indent, false, all[i].IgnoredNote, all[i].Name)
+		all[i].Short = clipTreeName(a.drawerWidth(), all[i].Indent, false, all[i].IgnoredNote, all[i].Name)
+		all[i].Selected = a.explSel[all[i].Path]
 	}
 
 	return all[from:to], len(all), len(a.ws.Files), true
@@ -1914,9 +2279,9 @@ func (a *App) fillTreeScroll(v *View) {
 		return
 	}
 
-	track := v.TreeVisible * treeRowH
+	track := v.TreeVisible * a.zx(treeRowH)
 	thumb := track * v.TreeVisible / v.TreeTotal
-	if thumb < treeThumbMin {
+	if thumb < a.zx(treeThumbMin) {
 		thumb = 18
 	}
 
@@ -2034,7 +2399,11 @@ func (a *App) activeDoc() *fileDoc {
 func (a *App) openFile(path string) { a.openFileIn(a.activeGroup(), path) }
 
 // openFileIn opens or focuses one file in a specific editor group.
-func (a *App) openFileIn(group int, path string) {
+func (a *App) openFileIn(group int, path string) { a.openFileAt(group, path, true) }
+
+// openFileAt is the shared file opener. Recorded opens push the file onto the
+// back/forward history; history jumps reuse the same layout without recording.
+func (a *App) openFileAt(group int, path string, record bool) {
 	if a.ws == nil {
 		a.showToast("error", "Not in workspace", path+" is not part of this workspace.")
 		a.refresh()
@@ -2104,6 +2473,9 @@ func (a *App) openFileIn(group int, path string) {
 		a.fileNav.Select(path)
 	}
 	a.addRecent(path)
+	if record {
+		a.pushNavHistory(path)
+	}
 	if a.split {
 		a.scrollGroup[group] = 0
 		a.splitWheelAccum[group] = 0
@@ -2124,7 +2496,11 @@ func (a *App) openFileIn(group int, path string) {
 func (a *App) selectTab(index int) { a.selectTabIn(0, index) }
 
 // selectTabIn focuses one tab in a specific group.
-func (a *App) selectTabIn(group, index int) {
+func (a *App) selectTabIn(group, index int) { a.selectTabAt(group, index, true) }
+
+// selectTabAt is the shared tab focuser. History jumps reuse the same layout
+// without recording a new entry.
+func (a *App) selectTabAt(group, index int, record bool) {
 	tabs := a.groupTabs(group)
 	if index < 0 || index >= len(tabs) {
 		return
@@ -2141,6 +2517,9 @@ func (a *App) selectTabIn(group, index int) {
 
 	a.focusGroup = group
 	a.mode = "explorer"
+	if record {
+		a.pushNavHistory(tabs[index])
+	}
 	// Preview stays on across tabs; fillCode gates it to Markdown.
 	if a.split {
 		a.scrollGroup[group] = 0
@@ -2437,6 +2816,8 @@ func (a *App) reloadChanges(ctx context.Context, announce bool) {
 
 // selectFirstDiff keeps the current file when it still exists.
 func (a *App) selectFirstDiff() {
+	a.pruneSelected()
+
 	if len(a.changes.Files) == 0 {
 		a.diffPath = ""
 		a.diffRows = nil
@@ -2446,6 +2827,10 @@ func (a *App) selectFirstDiff() {
 
 	if findFile(a.changes.Files, a.diffPath) == nil {
 		a.diffPath = a.changes.Files[0].Path
+	}
+
+	if len(a.selected) == 0 && a.diffPath != "" {
+		a.setSingleSelect(a.diffPath)
 	}
 
 	if a.fileNav != nil {
@@ -2463,6 +2848,7 @@ func (a *App) rebuildDiffRows() {
 		return
 	}
 
+	a.diffRowsGen++
 	a.diffRows = nil
 
 	file := findFile(a.changes.Files, a.diffPath)
@@ -2473,7 +2859,7 @@ func (a *App) rebuildDiffRows() {
 		return
 	}
 
-	if file.TotalLines == 0 && a.diffSource != "branch" {
+	if file.TotalLines == 0 && !file.Oversized && a.diffSource != "branch" {
 		file.TotalLines = a.fileTotalLines(file.Path)
 	}
 
@@ -2610,10 +2996,39 @@ func (a *App) pickBranch(ctx context.Context, ref string) {
 
 // selectDiff shows one file's working-tree diff.
 func (a *App) selectDiff(path string) {
-	if findFile(a.changes.Files, path) == nil {
-		return
+	if _, ok := a.scmChangeFile(path); !ok {
+		if findFile(a.changes.Files, path) == nil {
+			return
+		}
 	}
 
+	a.diffPath = path
+	a.setSingleSelect(path)
+	a.firstChangePending = ""
+	a.changeNav = changeNavigation{}
+	a.diffSource = "working"
+	a.mode = "changes"
+	a.inlineCard = inlineCard{}
+	a.revealChangePath(path)
+	if a.fileNav != nil {
+		a.fileNav.Select(path)
+	}
+	a.rebuildDiffRows()
+	a.resetScroll()
+	a.refresh()
+	a.jumpToFirstChange(path)
+}
+
+// toggleDiff previews one file while flipping its multi-select state for
+// Ctrl-click.
+func (a *App) toggleDiff(path string) {
+	if _, ok := a.scmChangeFile(path); !ok {
+		if findFile(a.changes.Files, path) == nil {
+			return
+		}
+	}
+
+	a.toggleSelect(path)
 	a.diffPath = path
 	a.firstChangePending = ""
 	a.changeNav = changeNavigation{}
@@ -2857,6 +3272,7 @@ func (a *App) maybeLoadMoreHistory(ctx context.Context) {
 
 // rebuildCommitRows renders the selected commit file's patch.
 func (a *App) rebuildCommitRows() {
+	a.diffRowsGen++
 	a.commitRows = nil
 	a.commitPreview = nil
 
@@ -2865,7 +3281,7 @@ func (a *App) rebuildCommitRows() {
 		return
 	}
 
-	if file.TotalLines == 0 {
+	if file.TotalLines == 0 && !file.Oversized {
 		file.TotalLines = a.fileTotalLines(file.Path)
 	}
 
@@ -2887,42 +3303,14 @@ func (a *App) setSplit(split bool) {
 	a.refresh()
 }
 
-// jumpHunk moves to the previous or next hunk header.
+// jumpHunk moves to the previous or next change block in the current diff.
+// It shares fileNavChangeStep so the crumbs arrows and the bottom-center
+// navigator use one highlight and one enabled state. A lone addition, or an
+// adjacent addition and deletion, is one block, so both arrows stay off.
+// With several blocks the down arrow starts on and the up arrow turns on
+// after stepping down.
 func (a *App) jumpHunk(delta int) {
-	rows := a.diffDisplayRows()
-	if len(rows) == 0 {
-		return
-	}
-
-	current := a.scrollY / rowH
-	target := -1
-
-	for i, row := range rows {
-		if row.Kind != rowHunk {
-			continue
-		}
-
-		if delta > 0 && i > current {
-			target = i
-
-			break
-		}
-
-		if delta < 0 && i < current {
-			target = i
-
-			break
-		}
-	}
-
-	if target < 0 {
-		a.showToast("info", "No more hunks", "The selection is already at the edge of this diff.")
-		a.refresh()
-
-		return
-	}
-
-	a.scrollTo(target * rowH)
+	a.fileNavChangeStep(delta)
 }
 
 // showToast publishes one message card.
@@ -2948,6 +3336,7 @@ func (a *App) togglePreview() {
 
 	a.preview = !a.preview
 	if a.preview {
+		a.finishEdit()
 		doc.ensurePreview(a.previewCols())
 	}
 
@@ -2986,7 +3375,7 @@ func (a *App) scrollToSourceLine(line int) {
 		target = doc.wrapped(a.codeCols()).firstRow(line)
 	}
 
-	a.scrollTo(target * rowH)
+	a.scrollTo(target * a.zx(rowH))
 }
 
 // toggleDetails opens or closes the details drawer.

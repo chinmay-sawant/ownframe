@@ -79,6 +79,7 @@ func TestIsWSLVersion(t *testing.T) {
 
 func TestManualMaximizeAbandonsStaleProbe(t *testing.T) {
 	manualMax.learning = true
+	manualMax.restoring = false
 	manualMax.until = time.Now().Add(-time.Second)
 
 	completeManualMaximize(1920, 1032)
@@ -94,12 +95,30 @@ func TestManualMaximizeAbandonsStaleProbe(t *testing.T) {
 
 func TestManualMaximizeIgnoresIdle(t *testing.T) {
 	manualMax.learning = false
+	manualMax.restoring = false
 	manualMax.active = false
 	manualMax.known = false
 
 	completeManualMaximize(1920, 1032)
 
-	if manualMax.learning || manualMax.active || manualMax.known {
+	if manualMax.learning || manualMax.restoring || manualMax.active || manualMax.known {
 		t.Fatal("idle complete changed maximize state")
+	}
+}
+
+func TestManualMaximizeAbandonsStaleRestore(t *testing.T) {
+	manualMax.learning = false
+	manualMax.restoring = true
+	manualMax.active = false
+	manualMax.until = time.Now().Add(-time.Second)
+
+	completeManualMaximize(800, 600)
+
+	if manualMax.restoring {
+		t.Fatal("stale restore still armed after the deadline")
+	}
+
+	if manualMax.active {
+		t.Fatal("stale restore activated the maximize")
 	}
 }

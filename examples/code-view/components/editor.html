@@ -44,7 +44,9 @@
   <div class="crumbs" id="crumbs">
     {{if eq .Mode "changes"}}
       {{if .Diff.HasFiles}}
-      {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>{{end}}
+      {{if .Diff.CommitShort}}<span class="crumb-commit mono" id="crumb-commit">{{.Diff.CommitShort}}</span><span class="crumb-subject">{{.Diff.CommitSubject}}</span>
+      <button class="crumb-btn" id="commit-copy-message" data-action="copy-commit-message:{{.Diff.CommitHash}}" type="button" title="Copy commit message" aria-label="Copy commit message"{{if .Modal}} tabindex="-1"{{end}}>Copy message</button>
+      <button class="crumb-btn" id="commit-copy-id" data-action="copy-commit-id:{{.Diff.CommitHash}}" type="button" title="Copy commit ID" aria-label="Copy commit ID"{{if .Modal}} tabindex="-1"{{end}}>Copy ID</button>{{end}}
       <span class="crumb-path diff-path" id="diff-path" title="{{.Diff.Path}}">{{if .Diff.DirShort}}<span class="diff-dir">{{.Diff.DirShort}}/</span>{{end}}<b>{{.Diff.NameShort}}</b></span>
       <span class="tabs-fill"></span>
       <span id="diff-status" class="cstat {{.Diff.StatusCls}}">{{.Diff.Status}}</span>
@@ -53,8 +55,8 @@
         <button class="seg-btn{{if not .Diff.Split}} on{{end}}" id="seg-unified" data-action="diff-unified" type="button" aria-pressed="{{if .Diff.Split}}false{{else}}true{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Unified</button>
         <button class="seg-btn{{if .Diff.Split}} on{{end}}" id="seg-split" data-action="diff-split" type="button" aria-pressed="{{if .Diff.Split}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Split</button>
       </div>
-      <button class="crumb-btn" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous hunk" aria-label="Previous hunk"{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button>
-      <button class="crumb-btn" id="hunk-next" data-action="hunk-next" type="button" title="Next hunk" aria-label="Next hunk"{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button>
+      <button class="crumb-btn{{if not .Diff.CanPrevChange}} off{{end}}" id="hunk-prev" data-action="hunk-prev" type="button" title="Previous change" aria-label="Previous change"{{if not .Diff.CanPrevChange}} disabled{{end}}{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button>
+      <button class="crumb-btn{{if not .Diff.CanNextChange}} off{{end}}" id="hunk-next" data-action="hunk-next" type="button" title="Next change" aria-label="Next change"{{if not .Diff.CanNextChange}} disabled{{end}}{{if .Modal}} tabindex="-1"{{end}}><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button>
       <button class="crumb-btn{{if .Wrap}} on{{end}}" id="diff-wrap-toggle" data-action="wrap-toggle" type="button" title="Wrap long diff lines (Z)" aria-pressed="{{if .Wrap}}true{{else}}false{{end}}"{{if .Modal}} tabindex="-1"{{end}}>Wrap</button>
       {{if .Diff.CanEdit}}<button class="crumb-btn" id="diff-edit" data-action="diff-edit" type="button" title="Edit file (click a line or press Ctrl+S to save)"{{if .Modal}} tabindex="-1"{{end}}>Edit</button>{{end}}
       <button class="crumb-btn" id="crumb-refresh" data-action="diff-refresh" type="button"{{if .Modal}} tabindex="-1"{{end}}>Refresh</button>
@@ -69,10 +71,11 @@
       <span class="lang-pill lang-{{.Lang}}">{{.LangLabel}}</span>
       <span class="crumb-path file-path" id="crumb-path" title="{{.Active}}">{{if .ActiveDirShort}}<span class="file-dir">{{.ActiveDirShort}}/</span>{{end}}<b>{{.ActiveNameShort}}</b></span>
       {{if .Editing}}
+      <span class="tabs-fill"></span>
       {{if .EditDirty}}<span class="edit-flag" id="edit-flag">Changes made</span>{{end}}
+      {{if .Previewable}}<button class="crumb-btn" id="preview-toggle" data-action="preview-toggle" type="button" title="Markdown preview (M or Ctrl+Shift+V)"{{if .Modal}} tabindex="-1"{{end}}>{{if .Preview}}Source{{else}}Preview{{end}}</button>{{end}}
       <button class="crumb-btn on" id="edit-save" data-action="edit-save" type="button" title="Save (Ctrl+S)">Save</button>
       <button class="crumb-btn" id="edit-toggle" data-action="edit-toggle" type="button" title="Back to the source view (Esc)">Done</button>
-      <span class="tabs-fill"></span>
       <span class="crumb-meta">{{.LineCount}} lines · Ctrl+S saves</span>
       {{else if .FindOpen}}
       <div class="findbar" id="findbar">
@@ -109,10 +112,10 @@
           {{else if eq .Kind "split"}}
           <div class="drow split{{if .Current}} current{{end}}{{if or .LeftCont .RightCont}} cont{{end}}">
             <span class="dnum {{.LeftKind}}">{{.LeftNo}}</span>
-            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="dcell {{.LeftKind}}">{{if not .LeftPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}{{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}</span>
+            {{if and $.Diff.CanRevert .HasRevert (or (eq .LeftKind "del") (eq .RightKind "add")) (or (not .LeftPad) (not .RightPad)) (not .LeftCont) (not .RightCont)}}<span class="dmid"><button class="line-revert divider" id="revert-line-{{.RevertHunk}}-{{.LeftNo}}-{{.RightNo}}" data-action="revert-hunk:{{.RevertHunk}}" type="button" title="Discard changes" aria-label="Discard changes"{{if $.Modal}} tabindex="-1"{{end}}>→</button></span>{{end}}
             <span class="dnum {{.RightKind}}">{{.RightNo}}</span>
-            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
-            {{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}
+            <span class="dcell {{.RightKind}}">{{if not .RightPad}}<span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Right}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}{{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}-right" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}</span>
           </div>
           {{else if eq .Kind "expand"}}
           <div class="drow expand" id="diff-expand-row-{{.Expand.Index}}">
@@ -140,6 +143,7 @@
             <span class="dsign">{{if .Cont}}{{else if eq .Kind "add"}}+{{else if eq .Kind "del"}}−{{else}} {{end}}</span>
             <span class="dcell"><span class="dlinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Left}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
             {{if and $.Diff.CanEdit .EditID}}<button class="diff-edit-hit" id="{{.EditID}}" data-action="diff-edit-line:{{.EditLine}}" type="button" title="Edit line {{.EditLine}}" aria-label="Edit line {{.EditLine}}" tabindex="-1"></button>{{end}}
+            {{if and $.Diff.CanRevert .HasRevert (or (eq .Kind "add") (eq .Kind "del")) (not .Cont)}}<button class="line-revert" id="revert-line-{{.RevertHunk}}-{{.OldNo}}-{{.NewNo}}" data-action="revert-hunk:{{.RevertHunk}}" type="button" title="Discard changes" aria-label="Discard changes"{{if $.Modal}} tabindex="-1"{{end}}>↩</button>{{end}}
           </div>
           {{end}}
         {{end}}
@@ -179,6 +183,8 @@
             <span class="key-item"><em>2</em><span>Changes</span></span>
             <span class="key-item"><em>3</em><span>Details</span></span>
             <span class="key-item"><em>↑ ↓</em><span>Scroll</span></span>
+            <span class="key-item"><em>Alt ←</em><span>Back</span></span>
+            <span class="key-item"><em>Alt →</em><span>Forward</span></span>
             <span class="key-item"><em>R</em><span>Refresh</span></span>
             <button class="key-item key-settings" id="welcome-settings" data-action="settings-open" type="button" aria-label="Open settings"{{if .Modal}} tabindex="-1"{{end}}>
               <em><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 2h3.2l.5 2a6.3 6.3 0 0 1 1.4.6l1.8-1 2.2 2.2-1 1.8c.3.5.5.9.6 1.4l2 .5v3.2l-2 .5a6.3 6.3 0 0 1-.6 1.4l1 1.8-2.2 2.2-1.8-1a6.3 6.3 0 0 1-1.4.6l-.5 2H8.4l-.5-2a6.3 6.3 0 0 1-1.4-.6l-1.8 1-2.2-2.2 1-1.8a6.3 6.3 0 0 1-.6-1.4l-2-.5V8.4l2-.5a6.3 6.3 0 0 1 .6-1.4l-1-1.8 2.2-2.2 1.8 1a6.3 6.3 0 0 1 1.4-.6z"/><circle cx="10" cy="10" r="2.6"/></svg></em><span>Settings</span>
@@ -200,7 +206,7 @@
         {{range .Rows}}
         <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
-          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <button class="ln{{if not .No}} cont{{end}}" id="ln-{{.Line}}-{{.Start}}" data-action="inline-card-line:{{.Line}}" type="button" title="Show line details" aria-label="Show line details" tabindex="-1">{{if .No}}{{.No}}{{end}}</button>
           <span class="cline">{{if .Selection}}<span class="edit-selection" style="left:{{.SelectionLeft}}px;width:{{.SelectionWidth}}px"></span>{{end}}<span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{if .Caret}}<span class="edit-caret" style="left:{{.CaretLeft}}px"></span>{{end}}</span>
         </div>
         {{end}}
@@ -210,8 +216,9 @@
         <div class="preview-track" style="top:{{.TrackTop}}px">
           {{range .PreviewRows}}
           <div class="prow prow-{{.Kind}}">
+            {{if .No}}<button class="pln" id="pln-{{.Line}}" data-action="inline-card-line:{{.Line}}" type="button" title="Show line details" aria-label="Show line details" tabindex="-1">{{.No}}</button>{{else}}<span class="pln cont"></span>{{end}}
             <span class="pmark">{{.Marker}}</span>
-            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px;height:20px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
           </div>
           {{end}}
         </div>
@@ -221,7 +228,7 @@
         {{range .Rows}}
         <div class="crow {{.ChangeClass}}{{if .ChangeCurrent}} current{{end}}">
           {{if .Mark}}<button class="gutter-mark {{.MarkClass}}" id="gutter-{{.ChangeLine}}" data-action="inline-card:{{.ChangeLine}}" type="button" title="{{.Hint}}" aria-label="{{.Hint}}" tabindex="-1">{{.Mark}}</button>{{else}}<span class="gutter-mark"></span>{{end}}
-          <span class="ln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
+          <button class="ln{{if not .No}} cont{{end}}" id="ln-{{.Line}}-{{.Start}}" data-action="inline-card-line:{{.Line}}" type="button" title="Show line details" aria-label="Show line details" tabindex="-1">{{if .No}}{{.No}}{{end}}</button>
           <span class="cline"><span class="clinetext"{{if not $.Wrap}} style="left: -{{.ScrollX}}px"{{end}}>{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span></span>
           <button class="edit-line-hit" id="edit-line-{{.Line}}" data-action="edit-begin-line:{{.Line}}" type="button" title="Edit line {{if .No}}{{.No}}{{end}}" aria-label="Edit line {{if .No}}{{.No}}{{end}}" tabindex="-1"></button>
         </div>
@@ -293,8 +300,9 @@
         <div class="preview-track" style="top:{{.Second.TrackTop}}px">
           {{range .Second.PreviewRows}}
           <div class="prow prow-{{.Kind}}">
+            <span class="pln{{if not .No}} cont{{end}}">{{if .No}}{{.No}}{{end}}</span>
             <span class="pmark">{{.Marker}}</span>
-            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px;height:20px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
+            <span class="ptext">{{if .Image}}<img class="pdiag" src="{{.Image}}" alt="{{.Alt}}" style="width:{{.ImageW}}px">{{else}}<span class="plinetext">{{range .Segments}}<span class="t-{{.Class}}">{{.Text}}</span>{{end}}</span>{{end}}</span>
           </div>
           {{end}}
         </div>

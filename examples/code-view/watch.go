@@ -393,6 +393,7 @@ func rescanNote(delta workspaceDelta) string {
 // applyWatchChanges updates the diff without moving the user's selection.
 func (a *App) applyWatchChanges(ctx context.Context, changes changeSet) {
 	a.changes = changes
+	a.pruneSelected()
 	if changes.Branch != "" {
 		a.headBranch = changes.Branch
 	}

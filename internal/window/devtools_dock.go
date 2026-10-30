@@ -118,3 +118,27 @@ func devOnEdge(panel devRect, x, y int) bool {
 
 	return devInRect(edge, float64(x), float64(y))
 }
+
+// devOwnsPoint reports whether the dock owns the pointer: inside the panel
+// or on its resize edge. A custom-chrome draggable strip must not start a
+// window drag there, or the header close key never receives the press.
+func (s *shell) devOwnsPoint(x, y int) bool {
+	if !s.dev.on {
+		return false
+	}
+
+	panel := s.dev.panel
+	if panel.W <= 0 || panel.H <= 0 {
+		if s.dev.mobile {
+			panel = devMobileRect(s.screenW, s.screenH, s.dev.mobileExpanded)
+		} else {
+			panel = devDockRect(s.screenW, s.screenH, s.devDockWidth())
+		}
+	}
+
+	if devInRect(panel, float64(x), float64(y)) {
+		return true
+	}
+
+	return !s.dev.mobile && devOnEdge(panel, x, y)
+}

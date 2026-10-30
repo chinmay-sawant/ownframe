@@ -1,0 +1,28 @@
+body {
+  margin: 0;
+  background-color: #f3f5fa;
+  color: #192339;
+  font-family: sans-serif;
+}
+
+.workspace {
+  padding: 24px;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 28px;
+}
+
+p {
+  margin-bottom: 20px;
+}
+
+button {
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 6px;
+  background-color: #2454b5;
+  color: #ffffff;
+  cursor: pointer;
+}

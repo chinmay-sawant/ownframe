@@ -61,12 +61,70 @@
 .drow.current .dnum:first-child { border-left: 2px solid var(--accent); }
 .dhunk { padding-left: 12px; color: var(--accent); font-size: 9.5px; overflow: hidden; }
 
+/* Per-line discard arrow, VS Code-style. It overlays the left edge of the
+gutter on changed rows so every add/del block offers a revert without
+scrolling back to the @@ header. In split rows the divider variant sits on
+the center divider between the two cells instead. Absolute positioning
+keeps the 20px row grid intact. */
+.line-revert {
+  position: absolute;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 14px;
+  cursor: pointer;
+  /* No z-index: blinkless flattens an explicit z-index into a global band
+     instead of nesting it, so band 2 would paint this glyph before the
+     band-10 row fills and bury it. Unset, it inherits band 10 with the
+     rows, where fills paint first. See editor.css .ln for the same trap. */
+  opacity: 1;
+}
+
+/* The button is always visible, VS Code-style. Hover only recolors it:
+   :hover matches only the caller-supplied hover id (see the :hover row in
+   documentation/compatibility-matrix.md), so a .drow:hover rule could never
+   fire for a hover on a row child. */
+.line-revert:hover {
+  background: rgba(240, 113, 120, 0.15);
+  border-color: rgba(240, 113, 120, 0.4);
+  color: #f07178;
+}
+
+.line-revert:hover {
+  background: rgba(240, 113, 120, 0.15);
+  border-color: rgba(240, 113, 120, 0.4);
+  color: #f07178;
+}
+
+.line-revert:focus { outline: 0; }
+.line-revert:focus-visible { outline: 1px solid #f07178; }
+
+.drow.add .line-revert,
+.drow.del .line-revert { left: 2px; }
+/* The split cells share the row evenly, so the midpoint between them is the
+visible divider at every width. The zero-width slot sits exactly on that
+point without taking space, and the arrow sits four pixels to its right
+with a fixed offset: percentage offsets resolve against the viewport here, so
+a 50% offset cannot track the row. The arrow overlaps the left cell's 12 px
+padding and the right gutter number column, clear of both cells' text, and
+absolute positioning keeps the 20px row grid intact. The slot stays in flow
+so the flex row keeps it on the divider. Edit hit targets cover the text
+cells, leaving the divider and number gutters available to this button. */
+.drow.split .dmid { flex: 0 0 0; min-width: 0; position: relative; }
+.drow.split .line-revert.divider { left: -4px; }
+
 .drow.meta { background-color: rgba(240, 183, 90, 0.06); }
 .dmeta { padding-left: 12px; color: var(--amber); font-size: 9.5px; }
 
 .drow.split { display: flex; }
 .drow.split .dnum { width: 44px; flex: 0 0 44px; }
-.drow.split .dcell { flex: 1 1 0; padding-right: 12px; }
+.drow.split .dcell { flex: 1 1 0; padding-right: 12px; position: relative; }
 .drow.split .dcell + .dnum { border-left: 1px solid var(--line-soft); }
 .drow.split .dcell.ctx { background-color: transparent; }
 .drow.split .dcell.add { background-color: var(--green-bg); }

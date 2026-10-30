@@ -20,6 +20,17 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 		return true, a.page.Redraw(ctx)
 	}
 
+	if a.confirmOpen {
+		switch box.ID {
+		case "confirm-ok", "confirm-cancel", "confirm-backdrop":
+			// Dialog presses must reach Click: a consumed press on the
+			// same id makes Click redraw only, which would freeze the
+			// dialog shut.
+		default:
+			return true, nil
+		}
+	}
+
 	if strings.HasPrefix(box.ID, "diff-edit-line-") && a.mode == "changes" && a.diffSource == "working" {
 		if n, ok := actionIndex(box.Action, "diff-edit-line:"); ok && n > 0 {
 			displayCol := a.diffDisplayColForBox(box, x)
@@ -35,7 +46,7 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 		if a.editing {
 			a.scrollTo(oldScroll)
 		}
-	} else if box.ID != "code-body" {
+	} else if box.ID != "code-body" && (!a.editing || !strings.HasPrefix(box.ID, "ln-")) {
 		return false, nil
 	}
 	if !a.editing || a.edit == nil {
@@ -64,9 +75,13 @@ func (a *App) onPress(ctx context.Context, box ownframe.Box, x, y float64) (bool
 	return true, a.page.Redraw(ctx)
 }
 
-// onDragStart claims a drag in the edit body.
+// onDragStart claims a drag in the edit body. A drag that starts on a line
+// number while editing still selects from the line start: the number button
+// shares its far edge with the text, and hit testing includes that edge, so
+// the press at the text start would otherwise hit the number instead of the
+// code body.
 func (a *App) onDragClaim(box ownframe.Box) bool {
-	return a.editing && box.ID == "code-body" ||
+	return a.editing && (box.ID == "code-body" || strings.HasPrefix(box.ID, "ln-")) ||
 		!a.editing && a.view.CanEdit && (box.ID == "edit-surface" || strings.HasPrefix(box.ID, "edit-line-"))
 }
 
@@ -98,7 +113,7 @@ func (a *App) editPointAt(x, y float64) (int, int, bool) {
 	}
 
 	cols := a.codeColsForGroup(0)
-	visual := visualRowAt(int(y), int(box.Y), a.scrollY, rowH)
+	visual := visualRowAt(int(y), int(box.Y), a.scrollY, a.zx(rowH))
 	line := visual
 
 	rowStart := 0
@@ -111,11 +126,11 @@ func (a *App) editPointAt(x, y float64) (int, int, bool) {
 		}
 	}
 
-	textLeft := box.X + editTextLeft
+	textLeft := box.X + float64(a.zx(editTextLeft))
 	if !a.wrap {
 		x += float64(a.scrollX)
 	}
-	displayCol := rowStart + int((x-textLeft)/codeCellW+roundHalf)
+	displayCol := rowStart + int((x-textLeft)/a.zf(codeCellW)+roundHalf)
 	length := 0
 	if line >= 0 && line < len(doc.Lines) {
 		length = utf8.RuneCountInString(expandTabs(doc.Lines[line]))
