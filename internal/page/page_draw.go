@@ -13,7 +13,7 @@ import (
 )
 
 func (p *Page) redraw(ctx context.Context, skipSame bool) error {
-	return draw.Run(ctx, redrawSurface{p}, skipSame)
+	return draw.Run(ctx, p.surf, skipSame)
 }
 
 // redrawSurface adapts Page to draw.RedrawSurface.
@@ -98,6 +98,11 @@ var _ draw.RedrawSurface = redrawSurface{}
 // execTemplate runs the trusted template, timing it when tracked.
 func (p *Page) execTemplate(track bool) (string, error) {
 	p.applyScrollWindow()
+	cur := p.nav.Current()
+	if !strings.Contains(cur, "{{") {
+		p.stats.lastTemplate = 0
+		return cur, nil
+	}
 
 	p.dataMu.RLock()
 	defer p.dataMu.RUnlock()

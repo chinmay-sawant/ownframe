@@ -10,6 +10,7 @@ type Tracker struct {
 	last    map[string]image.Rectangle
 	Rects   []image.Rectangle
 	Full    bool
+	takeBuf []image.Rectangle
 }
 
 // MarkRect queues one rect, merging neighbours within Gap. Past

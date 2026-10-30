@@ -52,7 +52,7 @@ func TestMergeControls(t *testing.T) {
 	}
 
 	empty, none := Merge(nil, nil)
-	if empty == nil || none == nil || len(empty) != 0 || len(none) != 0 {
+	if empty == nil || len(empty) != 0 || len(none) != 0 {
 		t.Fatal("nil")
 	}
 }

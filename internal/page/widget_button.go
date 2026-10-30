@@ -8,6 +8,9 @@ import (
 // rewriteButtons replaces a submit, button, or reset input with a button
 // element so the engine gives it a face and a hit box.
 func rewriteButtons(source string) string {
+	if !strings.Contains(source, "<input") && !strings.Contains(source, "<INPUT") {
+		return source
+	}
 	var b strings.Builder
 	i, prev := 0, 0
 	for i < len(source) {

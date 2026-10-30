@@ -3,16 +3,23 @@ package form
 // Merge keeps the user's values across a redraw. The caller clamps
 // the caret and the anchor after the merge.
 func Merge(prev map[string]Control, spans []Span) (map[string]Control, []string) {
-	out := map[string]Control{}
-	order := []string{}
-	seen := map[string]bool{}
+	if len(spans) == 0 {
+		if prev != nil && len(prev) == 0 {
+			return prev, nil
+		}
+		return map[string]Control{}, nil
+	}
+	out := make(map[string]Control, len(spans))
+	order := make([]string, 0, len(spans))
 	for _, sp := range spans {
 		id := sp.Control.ID
-		if id == "" || seen[id] {
+		if id == "" {
+			continue
+		}
+		if _, seen := out[id]; seen {
 			continue
 		}
 
-		seen[id] = true
 		order = append(order, id)
 		cur := sp.Control
 		if old, ok := prev[id]; ok {

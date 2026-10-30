@@ -10,6 +10,7 @@ func (p *Page) Handle(h Handlers) {
 func (p *Page) SetData(data any) {
 	p.dataMu.Lock()
 	p.data = data
+	p.formDirty = true
 	p.dataMu.Unlock()
 }
 

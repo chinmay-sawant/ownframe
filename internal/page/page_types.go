@@ -20,20 +20,33 @@ import (
 
 // Page is one template and its picture.
 type Page struct {
-	title       string
-	tpl         *template.Template
-	dataMu      sync.RWMutex
-	data        any
-	theme       *css.Sheet
-	themeSrc    string
-	handlers    Handlers
-	gesture     pageDrag
-	images      map[string][]byte
-	draw        draw.Frame
-	boxes       []layout.Box
-	source      string
-	pageGeom    // size: New inits, SetSize writes; lock: page loop
-	renderTrack // generation and last frame key; lock: page loop
+	title string
+	tpl   *template.Template
+	// dataMu guards data and the form-sync handoff below it. SetData
+	// takes it to publish new data; the redraw path takes it to run the
+	// template (shared) and to check, merge, and store the sync flags
+	// (exclusive), so a concurrent SetData never races a Redraw.
+	dataMu        sync.RWMutex
+	data          any
+	theme         *css.Sheet
+	themeSrc      string
+	handlers      Handlers
+	gesture       pageDrag
+	images        map[string][]byte
+	draw          draw.Frame
+	boxes         []layout.Box
+	source        string
+	surf          draw.RedrawSurface
+	imageResolver func(string) ([]byte, error)
+	// lastSyncBody is the template output syncForm last merged, and
+	// formDirty forces the next Redraw to merge again even when the
+	// output is unchanged (data binds may still have moved). Both are
+	// read and written only while holding dataMu; outside the redraw
+	// path use markFormDirty to set the flag.
+	lastSyncBody string
+	formDirty    bool
+	pageGeom     // size: New inits, SetSize writes; lock: page loop
+	renderTrack  // generation and last frame key; lock: page loop
 	// layerGen keys the compositor's retained element layers. It moves when a
 	// publish or an element patch changes display content, and stays put when
 	// a re-projection pass only rewrites operation matrices in place.

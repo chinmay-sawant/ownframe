@@ -12,5 +12,5 @@ func (p *Page) renderState() render.State {
 		focus = st.FocusID
 	}
 
-	return draw.RenderState(p.HoverID(), p.activeID(), focus, p.theme, p.imageBytes, p.retainState)
+	return draw.RenderState(p.HoverID(), p.activeID(), focus, p.theme, p.imageResolver, p.retainState)
 }
