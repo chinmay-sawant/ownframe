@@ -35,7 +35,7 @@ func (p *Page) Load(ctx context.Context, html string) error {
 	}
 	p.nav.Push(html)
 	p.tpl = tpl
-	p.formDirty = true
+	p.markFormDirty()
 	p.invalidateAccessibilityDocument()
 	p.invalidateCache()
 	p.markFull()
@@ -92,7 +92,7 @@ func (p *Page) drawAt(ctx context.Context, at int) error {
 	}
 	p.nav.GoTo(at)
 	p.tpl = tpl
-	p.formDirty = true
+	p.markFormDirty()
 	p.invalidateAccessibilityDocument()
 	p.invalidateCache()
 	p.markFull()

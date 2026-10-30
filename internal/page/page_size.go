@@ -10,8 +10,8 @@ func (p *Page) Handle(h Handlers) {
 func (p *Page) SetData(data any) {
 	p.dataMu.Lock()
 	p.data = data
-	p.dataMu.Unlock()
 	p.formDirty = true
+	p.dataMu.Unlock()
 }
 
 // Title returns the window title.

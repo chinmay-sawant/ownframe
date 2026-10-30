@@ -1,15 +1,13 @@
 package form
 
-var emptyOrder = []string{}
-
 // Merge keeps the user's values across a redraw. The caller clamps
 // the caret and the anchor after the merge.
 func Merge(prev map[string]Control, spans []Span) (map[string]Control, []string) {
 	if len(spans) == 0 {
 		if prev != nil && len(prev) == 0 {
-			return prev, emptyOrder
+			return prev, nil
 		}
-		return map[string]Control{}, emptyOrder
+		return map[string]Control{}, nil
 	}
 	out := make(map[string]Control, len(spans))
 	order := make([]string, 0, len(spans))

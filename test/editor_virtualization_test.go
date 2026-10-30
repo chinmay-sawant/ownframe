@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func toU32(v int) uint32 {
+	if v < 0 {
+		panic("offset out of range")
+	}
+	return uint32(v) //nolint:gosec // reason: offsets are loop indices below len(line), far below MaxUint32.
+}
+
 // ----------------------------------------------------------------------------
 // Category 4: Zero-Allocation Editor Virtualization & Syntax Highlighting
 // ----------------------------------------------------------------------------
@@ -168,16 +175,16 @@ func (ta *TokenArena) TokenizeLine(line string) []TokenSpan {
 		switch cls {
 		case classSpace:
 			if inWord {
-				ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(i), Kind: 1})
+				ta.spans = append(ta.spans, TokenSpan{Start: toU32(start), End: toU32(i), Kind: 1})
 				inWord = false
 			}
-			ta.spans = append(ta.spans, TokenSpan{Start: uint32(i), End: uint32(i + 1), Kind: 0})
+			ta.spans = append(ta.spans, TokenSpan{Start: toU32(i), End: toU32(i + 1), Kind: 0})
 		case classPunct:
 			if inWord {
-				ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(i), Kind: 1})
+				ta.spans = append(ta.spans, TokenSpan{Start: toU32(start), End: toU32(i), Kind: 1})
 				inWord = false
 			}
-			ta.spans = append(ta.spans, TokenSpan{Start: uint32(i), End: uint32(i + 1), Kind: 2})
+			ta.spans = append(ta.spans, TokenSpan{Start: toU32(i), End: toU32(i + 1), Kind: 2})
 		default:
 			if !inWord {
 				start = i
@@ -186,7 +193,7 @@ func (ta *TokenArena) TokenizeLine(line string) []TokenSpan {
 		}
 	}
 	if inWord {
-		ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(n), Kind: 1})
+		ta.spans = append(ta.spans, TokenSpan{Start: toU32(start), End: toU32(n), Kind: 1})
 	}
 	return ta.spans
 }

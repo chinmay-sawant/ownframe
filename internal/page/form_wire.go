@@ -402,7 +402,25 @@ func (p *Page) paintCaret(d *layout.Display) {
 	form.PaintCaret(d, v, ok, form.IsFileInput(c), fs.BlinkOn)
 }
 
+// markFormDirty forces the next Redraw to re-sync form controls even when
+// the template output is unchanged. It takes dataMu because syncForm reads
+// and clears the flag under the same lock; a plain write here would race a
+// concurrent Redraw.
+func (p *Page) markFormDirty() {
+	p.dataMu.Lock()
+	p.formDirty = true
+	p.dataMu.Unlock()
+}
+
 func (p *Page) syncForm(body string) string {
+	// The whole sync is one critical section against SetData: the
+	// fast-path check, the merge (whose binds read p.data), and the store
+	// of the merged body must not interleave with a data publish. Split
+	// locking could race the flags and miss a publish between the check
+	// and the store.
+	p.dataMu.Lock()
+	defer p.dataMu.Unlock()
+
 	doc := p.nav.Doc()
 	fs := p.formState()
 	if fs == nil || fs.Doc != doc {
@@ -447,7 +465,7 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 	}
 
 	if c.Type == "file" {
-		p.formDirty = true
+		p.markFormDirty()
 		return p.clickFile(ctx, box, c)
 	}
 
@@ -464,12 +482,12 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 	}
 
 	if p.currentFocus() != oldFocus {
-		p.formDirty = true
+		p.markFormDirty()
 		p.markPair(oldFocus, p.currentFocus())
 	}
 
 	if changed {
-		p.formDirty = true
+		p.markFormDirty()
 		if c.Type == "checkbox" || c.Type == "radio" {
 			p.markToggle(box.ID)
 		}
@@ -553,7 +571,7 @@ func (p *Page) applyPicked(ctx context.Context, box Box, c Control) error {
 }
 
 func (p *Page) blurForm() {
-	p.formDirty = true
+	p.markFormDirty()
 	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {

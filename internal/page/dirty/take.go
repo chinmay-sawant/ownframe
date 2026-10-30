@@ -23,7 +23,8 @@ func (d *Tracker) Take(content image.Rectangle) ([]image.Rectangle, bool) {
 	rects := d.takeBuf
 
 	if full {
-		d.takeBuf = append(rects[:0], content)
+		rects = append(rects[:0], content)
+		d.takeBuf = rects
 		return d.takeBuf, true
 	}
 
@@ -34,7 +35,9 @@ func (d *Tracker) Take(content image.Rectangle) ([]image.Rectangle, bool) {
 	}
 
 	if rectsArea(rects) > content.Dx()*content.Dy()/frameThird {
-		d.takeBuf = append(rects[:0], BoundingBox(rects))
+		box := BoundingBox(rects)
+		rects = append(rects[:0], box)
+		d.takeBuf = rects
 		return d.takeBuf, true
 	}
 	d.takeBuf = rects
