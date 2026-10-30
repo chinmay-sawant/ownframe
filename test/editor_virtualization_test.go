@@ -3,7 +3,6 @@ package test_test
 import (
 	"strings"
 	"testing"
-	"unicode"
 )
 
 // ----------------------------------------------------------------------------
@@ -132,6 +131,28 @@ type TokenArena struct {
 	spans []TokenSpan
 }
 
+var charClass [256]uint8
+
+const (
+	classSpace uint8 = 1
+	classPunct uint8 = 2
+	classWord  uint8 = 3
+)
+
+func init() {
+	for i := 0; i < 256; i++ {
+		c := byte(i)
+		switch {
+		case c == ' ' || c == '\t' || c == '\r' || c == '\n':
+			charClass[i] = classSpace
+		case strings.IndexByte("(){}[];:.,+-*/=<>!&|#`*_\t\"'", c) >= 0:
+			charClass[i] = classPunct
+		default:
+			charClass[i] = classWord
+		}
+	}
+}
+
 func newTokenArena(cap int) *TokenArena {
 	return &TokenArena{spans: make([]TokenSpan, 0, cap)}
 }
@@ -140,21 +161,24 @@ func (ta *TokenArena) TokenizeLine(line string) []TokenSpan {
 	ta.spans = ta.spans[:0]
 	start := 0
 	inWord := false
+	n := len(line)
 
-	for i, r := range line {
-		if unicode.IsSpace(r) {
+	for i := 0; i < n; i++ {
+		cls := charClass[line[i]]
+		switch cls {
+		case classSpace:
 			if inWord {
 				ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(i), Kind: 1})
 				inWord = false
 			}
 			ta.spans = append(ta.spans, TokenSpan{Start: uint32(i), End: uint32(i + 1), Kind: 0})
-		} else if strings.ContainsRune("(){}[];:.,+-*/=<>!&|#`*_\t\"'", r) {
+		case classPunct:
 			if inWord {
 				ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(i), Kind: 1})
 				inWord = false
 			}
 			ta.spans = append(ta.spans, TokenSpan{Start: uint32(i), End: uint32(i + 1), Kind: 2})
-		} else {
+		default:
 			if !inWord {
 				start = i
 				inWord = true
@@ -162,7 +186,7 @@ func (ta *TokenArena) TokenizeLine(line string) []TokenSpan {
 		}
 	}
 	if inWord {
-		ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(len(line)), Kind: 1})
+		ta.spans = append(ta.spans, TokenSpan{Start: uint32(start), End: uint32(n), Kind: 1})
 	}
 	return ta.spans
 }
@@ -199,8 +223,15 @@ func (vb *ViewportBuffer) Slice(lines []string, offsetY int, viewportHeight int,
 		endLine = len(lines)
 	}
 
-	for i := startLine; i < endLine; i++ {
-		vb.rows = append(vb.rows, visualRow{LineIndex: i, Text: lines[i]})
+	count := endLine - startLine
+	if cap(vb.rows) < count {
+		vb.rows = make([]visualRow, count)
+	} else {
+		vb.rows = vb.rows[:count]
+	}
+
+	for j := 0; j < count; j++ {
+		vb.rows[j] = visualRow{LineIndex: startLine + j, Text: lines[startLine+j]}
 	}
 	return vb.rows
 }
@@ -219,13 +250,15 @@ func newWrapPlan(cap int) *WrapPlan {
 
 func (wp *WrapPlan) Compute(line string, maxCols int) []int {
 	wp.breaks = wp.breaks[:0]
-	if len(line) <= maxCols || maxCols <= 0 {
+	n := len(line)
+	if n <= maxCols || maxCols <= 0 {
 		return wp.breaks
 	}
 	col := 0
-	for i, r := range line {
+	for i := 0; i < n; i++ {
 		col++
-		if col >= maxCols && unicode.IsSpace(r) {
+		c := line[i]
+		if col >= maxCols && (c == ' ' || c == '\t') {
 			wp.breaks = append(wp.breaks, i)
 			col = 0
 		}

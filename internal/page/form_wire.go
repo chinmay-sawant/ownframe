@@ -409,6 +409,14 @@ func (p *Page) syncForm(body string) string {
 		fresh := form.NewDoc(doc)
 		fs = &fresh
 		p.setFormState(fs)
+		p.formDirty = true
+	}
+
+	if p.source != "" && body == p.lastSyncBody && !p.formDirty {
+		c, hasFocus := fs.ByID[fs.FocusID]
+		if !hasFocus || !form.CanEdit(c) {
+			return p.source
+		}
 	}
 
 	body = rewriteButtons(body)
@@ -426,6 +434,9 @@ func (p *Page) syncForm(body string) string {
 
 	fs.ClampToFocus()
 
+	p.lastSyncBody = body
+	p.formDirty = false
+
 	return emojiPass(form.RewriteState(body, spans, byID, form.CaretOf(fs.View())))
 }
 
@@ -436,6 +447,7 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 	}
 
 	if c.Type == "file" {
+		p.formDirty = true
 		return p.clickFile(ctx, box, c)
 	}
 
@@ -452,10 +464,12 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 	}
 
 	if p.currentFocus() != oldFocus {
+		p.formDirty = true
 		p.markPair(oldFocus, p.currentFocus())
 	}
 
 	if changed {
+		p.formDirty = true
 		if c.Type == "checkbox" || c.Type == "radio" {
 			p.markToggle(box.ID)
 		}
@@ -539,6 +553,7 @@ func (p *Page) applyPicked(ctx context.Context, box Box, c Control) error {
 }
 
 func (p *Page) blurForm() {
+	p.formDirty = true
 	p.tickMutated.Store(true)
 	fs := p.formState()
 	if fs == nil {

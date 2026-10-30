@@ -11,6 +11,7 @@ func (p *Page) SetData(data any) {
 	p.dataMu.Lock()
 	p.data = data
 	p.dataMu.Unlock()
+	p.formDirty = true
 }
 
 // Title returns the window title.

@@ -30,9 +30,13 @@ type Page struct {
 	gesture     pageDrag
 	images      map[string][]byte
 	draw        draw.Frame
-	boxes       []layout.Box
-	source      string
-	pageGeom    // size: New inits, SetSize writes; lock: page loop
+	boxes         []layout.Box
+	source        string
+	surf          draw.RedrawSurface
+	imageResolver func(string) ([]byte, error)
+	lastSyncBody  string
+	formDirty     bool
+	pageGeom      // size: New inits, SetSize writes; lock: page loop
 	renderTrack // generation and last frame key; lock: page loop
 	// layerGen keys the compositor's retained element layers. It moves when a
 	// publish or an element patch changes display content, and stays put when

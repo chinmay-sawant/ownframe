@@ -5,7 +5,13 @@ import "strings"
 // Scan reads input, textarea, select, and button controls from source.
 // A control with an empty id is skipped. Script, style, and comments are not.
 func Scan(source string) []Span {
-	out := []Span{}
+	if !strings.Contains(source, "<input") && !strings.Contains(source, "<INPUT") &&
+		!strings.Contains(source, "<textarea") && !strings.Contains(source, "<TEXTAREA") &&
+		!strings.Contains(source, "<select") && !strings.Contains(source, "<SELECT") &&
+		!strings.Contains(source, "<button") && !strings.Contains(source, "<BUTTON") {
+		return nil
+	}
+	var out []Span
 	i := 0
 	for i < len(source) {
 		next := strings.IndexByte(source[i:], '<')

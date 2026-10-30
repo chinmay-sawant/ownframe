@@ -13,8 +13,9 @@ import (
 // Tick runs on the page loop, so the pointer is guarded. The callback itself
 // runs without the lock, so it may call SetTick.
 type tickSlot struct {
-	mu sync.Mutex
-	fn func(ctx context.Context) error
+	mu    sync.Mutex
+	fn    func(ctx context.Context) error
+	hasFn atomic.Bool
 }
 
 // SetTick registers fn to run once per frame before the window draws. fn can
@@ -25,6 +26,7 @@ type tickSlot struct {
 func (p *Page) SetTick(fn func(ctx context.Context) error) {
 	p.mu.Lock()
 	p.fn = fn
+	p.hasFn.Store(fn != nil)
 	p.mu.Unlock()
 }
 
@@ -33,9 +35,12 @@ func (p *Page) SetTick(fn func(ctx context.Context) error) {
 // field, and no animation it does nothing. A mutating tick sets FrameDirty and
 // TakeDirty; a no-op tick stays clean.
 func (p *Page) Tick(ctx context.Context) error {
-	p.mu.Lock()
-	fn := p.fn
-	p.mu.Unlock()
+	var fn func(context.Context) error
+	if p.hasFn.Load() {
+		p.mu.Lock()
+		fn = p.fn
+		p.mu.Unlock()
+	}
 
 	return p.runTick(ctx, fn)
 }

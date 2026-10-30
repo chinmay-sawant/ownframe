@@ -18,7 +18,7 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 	if title == "" {
 		title = "ownframe"
 	}
-	return &Page{
+	p := &Page{
 		title:    title,
 		tpl:      tpl,
 		theme:    theme,
@@ -43,5 +43,9 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 		scroll:           scroll.New(cfg.Scrollbar),
 		watch:            watchFor(cfg, []byte(source), htmlInfo, []byte(themeSrc), themeInfo),
 		elements:         element.NewRegistry(),
+		formDirty:        true,
 	}
+	p.surf = redrawSurface{p}
+	p.imageResolver = p.imageBytes
+	return p
 }
