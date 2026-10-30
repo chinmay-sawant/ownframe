@@ -24,8 +24,17 @@ def snapshot(directory):
                              '-z', '--', rel],
                             cwd=ROOT, check=True, capture_output=True,
                             text=True).stdout.split('\0')
-    return {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
-            for name in tracked + others if name}
+    # A rebuild can delete a tracked hashed asset and add its replacement.
+    # The deleted path is still listed by ls-files but no longer on disk;
+    # record it as missing so the comparison below reports it as changed
+    # instead of crashing on the read.
+    snapshot = {}
+    for name in tracked + others:
+        if not name:
+            continue
+        path = ROOT / name
+        snapshot[name] = hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+    return snapshot
 
 
 def main():
