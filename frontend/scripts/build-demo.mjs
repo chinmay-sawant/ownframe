@@ -19,7 +19,7 @@ for (const [example, folder, binary] of [
 ]) {
   const output = join(root, 'frontend/public', folder);
   mkdirSync(output, { recursive: true });
-  execFileSync('go', ['build', '-p', '1',
+  execFileSync('go', ['build', '-p', '1', '-trimpath',
     ...(example === 'spotify-player' ? ['-ldflags=-s -w'] : []),
     '-o', join(output, binary), `./examples/${example}`], {
     cwd: root,
