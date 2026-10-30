@@ -405,9 +405,18 @@ try {
   assert.ok(await evaluate('!!document.querySelector(".core-example .language-go .hljs-keyword")'), 'Go highlighting missing');
   assert.equal(await evaluate('getComputedStyle(document.documentElement).scrollbarWidth'), 'none');
   await evaluate('window.scrollTo(0, 0)');
-  await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 190, y: 600, deltaY: 400, deltaX: 0 });
-  await pause(200);
-  assert.ok(await evaluate('scrollY > 0'), 'Page cannot scroll with hidden scrollbar');
+  const wheelPoint = await evaluate(`(() => {
+    const header = document.querySelector('header').getBoundingClientRect();
+    return { x: Math.round(header.x + header.width / 2), y: Math.round(header.y + header.height / 2) };
+  })()`);
+  assert.ok(await evaluate(`(() => { const el = document.elementFromPoint(${wheelPoint.x}, ${wheelPoint.y}); return !!el && !el.closest('iframe'); })()`), 'Wheel test point landed inside an iframe');
+  await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: wheelPoint.x, y: wheelPoint.y, deltaY: 400, deltaX: 0 });
+  let scrolled = false;
+  for (let attempt = 0; attempt < 20 && !scrolled; attempt++) {
+    await pause(100);
+    scrolled = await evaluate('scrollY > 0');
+  }
+  assert.ok(scrolled, 'Page cannot scroll with hidden scrollbar');
   assert.ok(await evaluate('Math.abs(document.querySelector("header").getBoundingClientRect().top) < 1'), 'Header does not stay visible while scrolling');
   await evaluate(`document.querySelector('.site-menu-toggle').click(); document.querySelector('header a[href="#start"]').click()`);
   await pause(200);
