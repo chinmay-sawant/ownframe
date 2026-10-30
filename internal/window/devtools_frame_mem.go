@@ -49,8 +49,18 @@ func (s *shell) addMemoryRows(rs *[]devRow, w float64, h func(string), n func(st
 	}
 	n("Alloc/frame", devBytes(alloc))
 	n("Go heap", devBytes(heap))
-	n("RSS", devBytes(rss))
+	n("RSS", devRSS(rss))
 	n("Goroutines", gr)
+}
+
+// devRSS prints a resident byte count for the panel. Zero means the
+// platform reader reported nothing, since genuine RSS is never zero,
+// so the row reads "-" instead of "0B".
+func devRSS(b uint64) string {
+	if b == 0 {
+		return "-"
+	}
+	return devBytes(b)
 }
 
 // devBytes prints a byte count for the panel.

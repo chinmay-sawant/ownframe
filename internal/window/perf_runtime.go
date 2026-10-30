@@ -1,10 +1,7 @@
 package window
 
 import (
-	"os"
 	"runtime"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -65,27 +62,9 @@ func (s *shell) perfSampleRuntime() {
 	}
 }
 
-// perfRuntime returns the last published runtime numbers.
+// perfRuntime returns the last published runtime numbers. A zero RSS means
+// the platform did not report one; genuine resident memory is never zero,
+// so the devtools row renders that case as "-" rather than "0B".
 func (s *shell) perfRuntime() (heap, rss, alloc uint64, goroutines int) {
 	return s.dev.runHeap, s.dev.runRSS, s.dev.runAlloc, s.dev.runGoroutines
-}
-
-// perfRSS reads resident bytes on linux without cgo; 0 elsewhere.
-func perfRSS() uint64 {
-	if runtime.GOOS != "linux" {
-		return 0
-	}
-	b, err := os.ReadFile("/proc/self/statm")
-	if err != nil {
-		return 0
-	}
-	f := strings.Fields(string(b))
-	if len(f) < perfMinSamples {
-		return 0
-	}
-	pages, err := strconv.ParseUint(f[1], 10, 64)
-	if err != nil {
-		return 0
-	}
-	return pages * uint64(max(os.Getpagesize(), 0))
 }

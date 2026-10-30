@@ -101,7 +101,9 @@ Label widths are memoized and each value is a right-aligned span, so a frame
 does not rebuild a padding string per row.
 The PERFORMANCE, PIPELINE DETAIL, and MEMORY rows read `-` until the app
 opts into Perf with `Config.Perf`, `ownframe.WithPerf(true)`, or
-`WindowOptions.Perf`. The other rows always report.
+`WindowOptions.Perf`. The other rows always report. RSS reads live bytes
+on Linux and Windows; on a platform without a reader it stays `-` even
+with Perf on, and `GET /debug/state` omits `rss_bytes` there.
 
 ## Elements
 
