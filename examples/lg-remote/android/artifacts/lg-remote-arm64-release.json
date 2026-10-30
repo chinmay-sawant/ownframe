@@ -1,0 +1,7 @@
+{
+  "source_commit": "44728b2b8d8105c29d57f9774035efdb1000d4b9",
+  "source_dirty": false,
+  "engine": "v0.0.4-0.20261026120705-9d2ba1c7b728",
+  "go": "go version go1.26.10 linux/amd64",
+  "sha256": "5091693da99c195c421a6da506d84b9b57fd1f2a5e6f4b72694698204c4b5eee"
+}

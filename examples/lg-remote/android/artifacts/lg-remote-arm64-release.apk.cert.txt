@@ -1,0 +1,4 @@
+Signer #1 certificate DN: CN=ownframe Android Release, O=Ownframe
+Signer #1 certificate SHA-256 digest: 5779480c16bb8403f6bb58d454f3487623c4f7da5e498403859f85bd09b1816f
+Signer #1 certificate SHA-1 digest: 075d53de8fc053a283427eb0a007b837d836a4e2
+Signer #1 certificate MD5 digest: e30efface7e2d4fa74e68a943acd9d34
