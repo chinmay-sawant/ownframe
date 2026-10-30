@@ -1,12 +1,12 @@
 ## Summary
 
-Bundle on `chore/fixes` against `master` (32 commits, 232 files, +28382/-1096). The code viewer keeps the earlier drawer, inline card, zoom, multi-select, history, and staged SCM work, and adds block-scoped revert with undo and redo, change-block stepping, gutter and divider revert controls, preview line numbers, and Git hunk-range docs. The window host work from the earlier bundle is unchanged. The website gains separate engine and compare pages, a team section, runnable starter demos with live WASM builds, and a highlighting fix with copy buttons. Build output under `docs/` and `frontend/public/` grows with the new demos. CI gets a site toolchain pin, xvfb for race shards, and two test timing fixes.
+Bundle on `chore/fixes` against `master` (32 commits, 232 files, +28383/-1096). The code viewer keeps the earlier drawer, inline card, zoom, multi-select, history, and staged SCM work, and adds block-scoped revert with undo and redo, change-block stepping, gutter and divider revert controls, preview line numbers, and Git hunk-range docs. The window host work from the earlier bundle is unchanged. The website gains separate engine and compare pages, a team section, runnable starter demos with live WASM builds, and a highlighting fix with copy buttons. Build output under `docs/` and `frontend/public/` grows with the new demos. CI gets a site toolchain pin, xvfb for race shards, and two test timing fixes.
 
 ## Motivation / context
 
 - Plans: no separate plan; this is a fixes bundle.
 - Issues: no issue is linked to this work.
-- Baseline: `git diff --shortstat master...HEAD` is 232 files changed, 28382 insertions, 1096 deletions. The earlier record at `797cbee2` covered 128 files (+11385/-524). The commits since add the website series, revert-block work, and CI fixes.
+- Baseline: `git diff --shortstat master...HEAD` is 232 files changed, 28383 insertions, 1096 deletions. The earlier record at `797cbee2` covered 128 files (+11385/-524). The commits since add the website series, revert-block work, and CI fixes.
 
 ## Changes
 
@@ -167,7 +167,7 @@ None. No issue is linked to this work.
 | `.js` | 22 | 9324 | 111 |
 | `.json` | 3 | 18 | 16 |
 | `.jsx` | 7 | 480 | 159 |
-| `.md` | 8 | 267 | 19 |
+| `.md` | 8 | 268 | 19 |
 | `.mjs` | 2 | 254 | 10 |
 | `.png` | 14 | Binary | Binary |
 | `.py` | 1 | 6 | 6 |
@@ -175,4 +175,4 @@ None. No issue is linked to this work.
 | `.webp` | 6 | Binary | Binary |
 | `.yml` | 1 | 6 | 1 |
 | No extension | 1 | 12 | 0 |
-| **Total** | **232** | **28382** | **1096** |
+| **Total** | **232** | **28383** | **1096** |
