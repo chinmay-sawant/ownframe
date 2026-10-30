@@ -206,10 +206,11 @@ linters:
         path: "internal/window/chrome\\.go"
 
       # GEN-19 depguard: unsafe stays limited to the OS syscall shims
-      # (darwin/windows clipboard and file dialog) and one test-only
-      # reflection helper. Anything else importing unsafe fails the gate.
+      # (darwin/windows clipboard and file dialog, windows RSS) and one
+      # test-only reflection helper. Anything else importing unsafe fails
+      # the gate.
       - linters: [depguard]
-        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/image_test\\.go)"
+        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/image_test\\.go|window/perf_rss_windows\\.go|web/debug_runtime_windows\\.go)"
         text: "import 'unsafe' is not allowed"
       # GEN-19 depguard: math/rand/v2 is the sanctioned replacement
       # (seeded PCG, no global lock), so only v1 is banned outside the
