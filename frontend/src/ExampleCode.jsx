@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useId, useRef, useState } from 'react';
 import highlight from 'highlight.js/lib/core';
 import go from 'highlight.js/lib/languages/go';
 import xml from 'highlight.js/lib/languages/xml';
@@ -13,7 +13,7 @@ highlight.registerLanguage('go', go);
 highlight.registerLanguage('xml', xml);
 highlight.registerLanguage('css', css);
 
-const files = [
+const demoFiles = [
   { name: 'main.go', language: 'go', source: mainSource },
   { name: 'app.go', language: 'go', source: appSource },
   { name: 'tasks.go', language: 'go', source: tasksSource },
@@ -21,8 +21,9 @@ const files = [
   { name: 'style.css', language: 'css', source: styleSource },
 ].map(file => ({ ...file, html: highlight.highlight(file.source, { language: file.language }).value }));
 
-export default function ExampleCode() {
-  const [selected, setSelected] = useState(0);
+export default function ExampleCode({ files = demoFiles, initialFile = 1, path = 'examples/frontend/' }) {
+  const [selected, setSelected] = useState(initialFile);
+  const id = useId();
   const tabs = useRef([]);
 
   function select(index) {
@@ -50,30 +51,35 @@ export default function ExampleCode() {
         key={file.name}
         type="button"
         role="tab"
-        id={`example-tab-${index}`}
+        id={`${id}-tab-${index}`}
         aria-selected={selected === index}
-        aria-controls={`example-panel-${index}`}
+        aria-controls={`${id}-panel-${index}`}
         tabIndex={selected === index ? 0 : -1}
         ref={element => { tabs.current[index] = element; }}
         onClick={() => select(index)}
         onKeyDown={event => onKeyDown(event, index)}
       >
-        <span className={`example-file-icon ${file.language}`} aria-hidden="true">{file.language === 'go' ? 'Go' : file.language === 'css' ? '#' : '<>'}</span>
+        <span className={`example-file-icon ${file.language || 'demo'}`} aria-hidden="true">{file.url ? '▶' : file.language === 'go' ? 'Go' : file.language === 'css' ? '#' : '<>'}</span>
         {file.name}
       </button>)}
     </div>
     {files.map((file, index) => <div
       key={file.name}
-      id={`example-panel-${index}`}
+      id={`${id}-panel-${index}`}
       role="tabpanel"
-      aria-labelledby={`example-tab-${index}`}
+      aria-labelledby={`${id}-tab-${index}`}
       hidden={selected !== index}
       tabIndex={0}
-      className="preview-code-body"
+      className={`preview-code-body${file.url ? ' preview-live-body' : ''}`}
     >
-      <pre><code className={`hljs language-${file.language}`}
-        dangerouslySetInnerHTML={{ __html: file.html }} /></pre>
+      {file.url
+        ? <iframe src={file.url} title="Interactive Workspace Inspector: click Rescan Workspace to update its status"
+          width="640" height="480" loading="lazy" />
+        : <pre><code className={`hljs language-${file.language}`}
+          dangerouslySetInnerHTML={{ __html: file.html }} /></pre>}
     </div>)}
-    <div className="example-file-path">examples/frontend/{files[selected].name}</div>
+    <div className="example-file-path">{files[selected].url
+      ? <a href={files[selected].url}>Open demo in its own page ↗</a>
+      : <>{path}{files[selected].name}</>}</div>
   </div>;
 }

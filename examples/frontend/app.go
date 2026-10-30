@@ -7,6 +7,8 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+const initialWindowSize = 560
+
 //go:embed template.html
 var templateHTML string
 
@@ -16,8 +18,8 @@ var stylesheet string
 func newPage() (*ownframe.Page, error) {
 	page, err := ownframe.New(ownframe.Config{
 		Title:  "Launch board",
-		Width:  560,
-		Height: 560,
+		Width:  initialWindowSize,
+		Height: initialWindowSize,
 		HTML:   templateHTML,
 		Theme:  stylesheet,
 	})

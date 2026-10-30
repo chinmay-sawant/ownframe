@@ -3,7 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ownframe Live Demo</title>
+<meta name="description" content="Try the Launch board demo built with ownframe, Go, HTML, and CSS.">
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<title>Launch board | ownframe demo</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -57,11 +59,15 @@
     color: #94a3b8;
     font-weight: 500;
   }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
+    #loader { transition: none; }
+  }
 </style>
 </head>
 <body>
-<div id="loader">
-  <div class="spinner"></div>
+<div id="loader" role="status">
+  <div class="spinner" aria-hidden="true"></div>
   <div class="loading-msg">Initializing Go WebAssembly runtime...</div>
 </div>
 
@@ -92,7 +98,7 @@
       go.run(result.instance);
     } catch (err) {
       console.error('Failed to start wasm:', err);
-      loader.innerHTML = '<div style="color: #ef4444; font-size: 13px;">Failed to initialize WebAssembly demo</div>';
+      loader.innerHTML = '<p class="loading-msg">The demo could not load. Check your connection and reload this page.</p><a href="../#home" style="color: #a7bfff;">Return to ownframe</a>';
     }
   }
 

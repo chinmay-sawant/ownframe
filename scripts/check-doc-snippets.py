@@ -50,13 +50,8 @@ def snippets():
         for index, match in enumerate(re.finditer(r'^```go[^\n]*\n(.*?)^```', path.read_text(), re.M | re.S), 1):
             key = f'{path.relative_to(ROOT)}#{index}'
             found[key] = (match.group(1), path, path.read_text()[:match.start(1)].count('\n') + 1)
-    path = ROOT / 'frontend/src/Home.jsx'
-    for name in ['quickStart', 'coreExample']:
-        match = re.search(r'(?:export )?const ' + name + r' = `(.*?)`;', path.read_text(), re.S)
-        if match is None:
-            raise ValueError(f'{path}: missing {name}')
-        body = match.group(1).replace('` + "`" + `', '`')
-        found[f'frontend/src/Home.jsx#{name}'] = (body, path, path.read_text()[:match.start(1)].count('\n') + 1)
+    path = ROOT / 'examples/frontend/workspace/main.go'
+    found['examples/frontend/workspace/main.go#starter'] = (path.read_text(), path, 1)
     return found
 
 
@@ -102,6 +97,8 @@ def main():
             package = Path(scratch) / f'snippet{index:03d}'
             package.mkdir()
             (package / 'snippet.go').write_text(source)
+            for asset in spec.get('assets', []):
+                (package / asset).write_bytes((path.parent / asset).read_bytes())
             packages.append('./' + str(package.relative_to(ROOT)))
             checked += 1
         subprocess.run(['go', 'vet', '-p', '1', *packages], cwd=ROOT, check=True)

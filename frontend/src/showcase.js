@@ -18,7 +18,7 @@ export const showcaseSections = [
     title: 'Telegram',
     layout: 'grid-4',
     before: '`examples/telegram` is the phone-first example. These Pixel 7 screens use the same HTML template that `go run ./examples/telegram` opens on desktop, bound to Android with `ebitenmobile`. `sh scripts/android.sh install` binds it, builds a debug APK with Gradle, and installs it over `adb`. See the [Android setup guide](examples/telegram/android/README.md).',
-    after: 'Taps, tabs, opening a chat, drag-to-scroll, and the soft keyboard work on the phone. The system Back gesture returns from a chat. The top bar and composer stay pinned above the scrolling messages. The arm64 debug APK is 29 MB; binding all four ABIs puts one APK at 188 MB.\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/telegram)\u00a0·\u00a0Build the arm64 release APK with `scripts/android-release.sh telegram`.',
+    after: '[Try the live WebAssembly demo](frontend/public/demos/telegram/index.html) (51 MB download)\n\nTaps, tabs, opening a chat, drag-to-scroll, and the soft keyboard work on the phone. The system Back gesture returns from a chat. The top bar and composer stay pinned above the scrolling messages. The arm64 debug APK is 29 MB; binding all four ABIs puts one APK at 188 MB.\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/telegram)\u00a0·\u00a0Build the arm64 release APK with `scripts/android-release.sh telegram`.',
     media: [
       { src: 'assets/screenshots/android/telegram/telegram-chats.webp', alt: 'Chat list with search, unread badges, pinned and muted chats', caption: 'Chats', width: 540, height: 1095 },
       { src: 'assets/screenshots/android/telegram/telegram-thread.webp', alt: 'Conversation with bubbles, timestamps, read ticks, and a composer', caption: 'Conversation', width: 540, height: 1095 },
@@ -44,7 +44,7 @@ export const showcaseSections = [
     title: 'Spotify Player',
     layout: 'single',
     before: 'The Spotify Player is a Go desktop app. ownframe renders its HTML and CSS with Blinkless, and Ebitengine handles the native window and bundled audio. It uses no WebView. Phone apps use ownframe\'s Ebitengine Mobile binding; this example does not have a mobile wrapper. Its `-web` mode serves a picture of the page over HTTP.',
-    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/spotify-player)',
+    after: '[Try the live WebAssembly demo](frontend/public/demos/spotify-player/index.html) (compressed download, includes bundled audio)\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/spotify-player)',
     media: [
       { src: 'frontend/public/demos/videos/spotify.webp', alt: 'Animated Spotify Player demo showing its Home, Browse, Profile, and Library screens', caption: 'Spotify Player', width: 780, height: 520, nativeDisplay: true },
     ],

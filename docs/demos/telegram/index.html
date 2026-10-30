@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telegram | ownframe demo</title>
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<style>
+  html, body { margin: 0; height: 100%; }
+</style>
+</head>
+<body>
+<script src="wasm_exec.js"></script>
+<script>
+const go = new Go();
+WebAssembly.instantiateStreaming(fetch("ownframe.wasm"), go.importObject).then(function (result) {
+  go.run(result.instance);
+});
+</script>
+</body>
+</html>

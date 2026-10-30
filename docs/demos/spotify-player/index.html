@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spotify Player | ownframe demo</title>
+<link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<style>
+  html, body { margin: 0; height: 100%; }
+</style>
+</head>
+<body>
+<script src="wasm_exec.js"></script>
+<script>
+const status = document.createElement('p');
+status.setAttribute('role', 'status');
+status.textContent = 'Loading the Spotify Player demo and bundled audio...';
+document.body.prepend(status);
+async function start() {
+  const response = await fetch('ownframe.wasm.gz');
+  if (!response.ok) throw new Error(`Demo download failed: ${response.status}`);
+  const transportDecoded = response.headers.get('Content-Encoding')?.includes('gzip');
+  if (!transportDecoded && typeof DecompressionStream !== 'function') {
+    status.textContent = 'This demo needs a browser with gzip decompression support.';
+    return;
+  }
+  const unpacked = transportDecoded ? response.body : response.body.pipeThrough(new DecompressionStream('gzip'));
+  const wasm = new Response(unpacked, { headers: { 'Content-Type': 'application/wasm' } });
+  const go = new Go();
+  const result = await WebAssembly.instantiateStreaming(wasm, go.importObject);
+  status.remove();
+  await go.run(result.instance);
+}
+start().catch((error) => {
+  console.error(error);
+  status.textContent = 'The demo could not load. Check your connection and reload this page.';
+});
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useLayoutEffect, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Home from './Home';
 import Team from './Team';
@@ -12,6 +12,8 @@ const Documentation = lazy(() => import('./Documentation'));
 function App() {
   const [hash, setHash] = useState(location.hash);
   const [stars, setStars] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef(null);
   const isDocs = hash.startsWith('#docs');
   const isTeam = hash === '#team';
 
@@ -28,7 +30,10 @@ function App() {
   useEffect(() => {
     let mounted = true;
     loadStars().then((value) => { if (mounted) setStars(value); });
-    const update = () => setHash(location.hash);
+    const update = () => {
+      setHash(location.hash);
+      setMenuOpen(false);
+    };
     window.addEventListener('hashchange', update);
     return () => {
       mounted = false;
@@ -47,7 +52,12 @@ function App() {
       event.preventDefault();
       document.getElementById('main').focus();
     }}>Skip to content</a>
-    <header>
+    <header onKeyDown={(event) => {
+      if (event.key === 'Escape' && menuOpen) {
+        setMenuOpen(false);
+        menuButton.current.focus();
+      }
+    }}>
       <a className="brand" href="#home">
         <svg className="brand-glyph" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -56,12 +66,16 @@ function App() {
         </svg>
         <span className="brand-name">ownframe</span>
       </a>
-      <nav aria-label="Main navigation">
+      <button className="site-menu-toggle" ref={menuButton} type="button"
+        aria-expanded={menuOpen} aria-controls="site-navigation"
+        onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? 'Close' : 'Menu'}</button>
+      <nav id="site-navigation" aria-label="Main navigation" data-open={menuOpen}
+        onClick={(event) => { if (event.target.closest('a')) setMenuOpen(false); }}>
         <a href="#docs/showcase/wispr-flow" aria-current={hash.startsWith('#docs/showcase') ? 'page' : undefined}>Example apps</a>
         <a href="#engine">Architecture</a>
         <a href="#compare">Benchmarks</a>
         <a href="#docs/why-ownframe" aria-current={hash.startsWith('#docs/why-ownframe') ? 'page' : undefined}>Documentation</a>
-        <a href="#team" aria-current={isTeam ? 'page' : undefined}>Team</a>
+        <a href="#team" aria-current={isTeam ? 'page' : undefined}>People & tools</a>
         <a href="#start">Get started</a>
       </nav>
       <ThemeToggle />
@@ -81,7 +95,7 @@ function App() {
           <div className="footer-logo">
             <span className="brand-name">ownframe</span>
           </div>
-          <p className="footer-tagline">Native Go desktop and Android apps styled with HTML and CSS. Zero Chromium.</p>
+          <p className="footer-tagline">Native Go desktop and Android apps styled with HTML and CSS.</p>
         </div>
         <div className="footer-nav">
           <a href={repository}>Source on GitHub</a>
@@ -89,7 +103,7 @@ function App() {
           <a href="#engine">Architecture</a>
           <a href="#compare">Benchmarks</a>
           <a href="#docs/why-ownframe">Documentation</a>
-          <a href="#team">Team</a>
+          <a href="#team">People & tools</a>
         </div>
       </div>
       <div className="footer-bottom">
