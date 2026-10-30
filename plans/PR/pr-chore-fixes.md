@@ -1,12 +1,12 @@
 ## Summary
 
-Bundle on `chore/fixes` against `master` (232 files, +28383/-1096). The code viewer keeps the earlier drawer, inline card, zoom, multi-select, history, and staged SCM work, and adds block-scoped revert with undo and redo, change-block stepping, gutter and divider revert controls, preview line numbers, and Git hunk-range docs. The window host work from the earlier bundle is unchanged. The website gains separate engine and compare pages, a team section, runnable starter demos with live WASM builds, and a highlighting fix with copy buttons. Build output under `docs/` and `frontend/public/` grows with the new demos. CI gets a site toolchain pin, xvfb for race shards, and two test timing fixes.
+Bundle on `chore/fixes` against `master` (234 files, +28436/-1100). The code viewer keeps the earlier drawer, inline card, zoom, multi-select, history, and staged SCM work, and adds block-scoped revert with undo and redo, change-block stepping, gutter and divider revert controls, preview line numbers, and Git hunk-range docs. The window host work from the earlier bundle is unchanged. The website gains separate engine and compare pages, a team section, runnable starter demos with live WASM builds, and a highlighting fix with copy buttons. Build output under `docs/` and `frontend/public/` grows with the new demos. CI gets a site toolchain pin, xvfb for race shards, and two test timing fixes.
 
 ## Motivation / context
 
 - Plans: no separate plan; this is a fixes bundle.
 - Issues: no issue is linked to this work.
-- Baseline: `git diff --shortstat master...HEAD` is 232 files changed, 28383 insertions, 1096 deletions. The earlier record at `797cbee2` covered 128 files (+11385/-524). The commits since add the website series, revert-block work, and CI fixes.
+- Baseline: `git diff --shortstat master...HEAD` is 234 files changed, 28436 insertions, 1100 deletions. The earlier record at `797cbee2` covered 128 files (+11385/-524). The commits since add the website series, revert-block work, and CI fixes.
 
 ## Changes
 
@@ -104,7 +104,7 @@ Bundle on `chore/fixes` against `master` (232 files, +28383/-1096). The code vie
 - [x] `bash -n scripts/test-examples-race.sh` clean, `ci.yml` parses as YAML
 - [ ] Full `make test` was not run locally (final-shot image tests need one `RunGame` per process and a display; CI covers it).
 - [ ] `make lint` was not run locally; CI covers it.
-- [ ] Full `make site-check` was not run locally (needs Chrome and network; CI covers the `setup-go 1.26.10` fix).
+- [x] Full `make site-check` green locally (npm test, generated-output check, `check:site` with local Chrome).
 
 ### Commands
 
@@ -120,7 +120,7 @@ make docs-check plans-check examples-check
 
 ### CI failures fixed in this update (run `41011673307`)
 
-- `site`: added pinned `setup-go 1.26.10` to the `site` job. It was the only Go-using job without setup-go, and `GOTOOLCHAIN=local` blocked the `go.work` toolchain.
+- `site`: added pinned `setup-go 1.26.10` to the `site` job; demo wasms now build with `-trimpath` for identical bytes everywhere, and the generated-output check compares only files git would commit so the ignored 108 MB unpacked Spotify wasm cannot fail it. Rebuilt `docs/` and `frontend/public/` output is committed.
 - `test` and `examples-race (1)`: folded the four `final_shot_test.go` cases into one gated `TestFinalShots` with a single `RunGame` per process (second `RunGame` panics with `MarkGuest is called more than once`), gated on `OWNFRAME_CODE_VIEW_SCREENSHOT=1` with a display skip.
 - `examples-race (1)/(2)`: `examples-race` job now installs `xvfb xauth libgl1-mesa-dri` and runs shards under `xvfb-run -a`, matching the `test` job.
 - `examples-race (2)`: `TestEngineAsyncDecode` polls `Update()` up to 2s instead of assuming one `Update` lands the background-decoded voice.
@@ -170,9 +170,9 @@ None. No issue is linked to this work.
 | `.md` | 8 | 268 | 19 |
 | `.mjs` | 2 | 254 | 10 |
 | `.png` | 14 | Binary | Binary |
-| `.py` | 1 | 6 | 6 |
+| `.py` | 3 | 59 | 10 |
 | `.wasm` | 12 | Binary | Binary |
 | `.webp` | 6 | Binary | Binary |
 | `.yml` | 1 | 6 | 1 |
 | No extension | 1 | 12 | 0 |
-| **Total** | **232** | **28383** | **1096** |
+| **Total** | **234** | **28436** | **1100** |
