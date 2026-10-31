@@ -21,7 +21,7 @@ go run ./examples/jmap-mail -web -addr 127.0.0.1:8132
 
 ## What it demonstrates
 
-- A three-pane layout: mailboxes, messages, and a reading pane.
+- A three-pane layout: mailboxes, messages, and a reading pane, with visible\n  spacing between panes and a vertically aligned mail-search control.\n- A Settings button with a working light/dark theme toggle.\n- A draggable native custom-titlebar window with minimize, maximize, and\n  close controls. Browser preview does not move the OS window.
 - Eight seeded messages with JMAP-shaped IDs, mailbox membership, keyword
   flags (`$seen`, `$flagged`, `$draft`), addresses, and timestamps.
 - Clickable folder navigation, selected-message reading, unread status,
