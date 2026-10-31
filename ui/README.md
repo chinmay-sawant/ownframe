@@ -44,6 +44,11 @@ For custom HTML attributes use Attr, and for custom styles use CSS:
         CSS("grid-template-columns", "1fr 2fr").
         CSS("column-gap", "12px")
 
+## Public examples
+
+- [`examples/ui-builder`](../examples/ui-builder/main.go) contains the original card, toolbar, and file explorer samples.
+- [`examples/jmap-mail`](../examples/jmap-mail/README.md) is a three-pane JMAP-inspired mail demo with seeded mailboxes and working local selection/actions. It imports the public `ownframe` and `ownframe/ui` packages only, not private `internal` packages.
+
 ## Coverage of 555 implemented CSS properties
 
 The public builder method CSS(property, value) (also called Style) accepts
@@ -65,7 +70,7 @@ Refresh the generated registry when the matrix changes:
 
     go generate ./ui
 
-The test TestAllImplementedPropertiesMatchCompatibilityMatrix checks the
+The generator lives in `scripts/gen-ui-properties`, outside this public UI package. `go generate ./ui` invokes it. The test TestAllImplementedPropertiesMatchCompatibilityMatrix checks the
 generated set against the matrix, one-for-one. The generator and tests
 currently enforce the requested 555-property snapshot.
 
