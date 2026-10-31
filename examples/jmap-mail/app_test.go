@@ -128,3 +128,42 @@ func TestMailSearchAndEscaping(t *testing.T) {
 		t.Fatalf("unsafe search data in rendered source: %s", markup)
 	}
 }
+
+func TestMailSettingsThemeAndPaneSpacing(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := a.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	initial := a.Page().HTML()
+	if !strings.Contains(initial, "gap:14px;") ||
+		!strings.Contains(initial, "height:36px;") {
+		t.Fatal("mail panes or search field missing layout sizing")
+	}
+	if err := pagetest.ClickAction(ctx, a.Page(), "settings"); err != nil {
+		t.Fatal(err)
+	}
+	if !a.settings || !strings.Contains(a.Page().HTML(), "Switch to dark theme") {
+		t.Fatal("settings button should reveal theme control")
+	}
+	if err := pagetest.ClickAction(ctx, a.Page(), "toggle-theme"); err != nil {
+		t.Fatal(err)
+	}
+	if !a.dark {
+		t.Fatal("theme toggle did not change state")
+	}
+	darkHTML := a.Page().HTML()
+	if !strings.Contains(darkHTML, "#111827") ||
+		!strings.Contains(darkHTML, "Switch to light theme") {
+		t.Fatal("dark color palette not rendered")
+	}
+	if err := pagetest.ClickAction(ctx, a.Page(), "toggle-theme"); err != nil {
+		t.Fatal(err)
+	}
+	if a.dark || !strings.Contains(a.Page().HTML(), "#f5f7fb") {
+		t.Fatal("light theme not restored")
+	}
+}
