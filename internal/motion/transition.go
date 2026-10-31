@@ -267,8 +267,17 @@ func indexBoxes(boxes []layout.Box) map[entryKey]boxRef {
 	if len(boxes) == 0 {
 		return nil
 	}
-	out := make(map[entryKey]boxRef, len(boxes))
-	ordinals := make(map[string]int, len(boxes))
+	idCount := 0
+	for i := range boxes {
+		if boxes[i].ID != "" {
+			idCount++
+		}
+	}
+	if idCount == 0 {
+		return nil
+	}
+	out := make(map[entryKey]boxRef, idCount)
+	ordinals := make(map[string]int, idCount)
 	for i := range boxes {
 		box := boxes[i]
 		if box.ID == "" {
@@ -300,9 +309,28 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		return nil
 	}
 
+	hasTransitions := false
+	for i := range next.Boxes {
+		if len(next.Boxes[i].Transitions) != 0 {
+			hasTransitions = true
+			break
+		}
+	}
+	if !hasTransitions {
+		for i := range previous.Boxes {
+			if len(previous.Boxes[i].Transitions) != 0 {
+				hasTransitions = true
+				break
+			}
+		}
+	}
+	if !hasTransitions {
+		return nil
+	}
+
 	oldBoxes := indexBoxes(previous.Boxes)
 	var out []TransitionCapture
-	ordinals := make(map[string]int, len(next.Boxes))
+	ordinals := make(map[string]int, len(oldBoxes))
 	// Both displays are resolved through one shared index each, so the
 	// per-property selections below share two ownership scans instead of
 	// repeating them for every transitioning element. The indices are built

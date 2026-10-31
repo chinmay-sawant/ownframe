@@ -6,7 +6,11 @@ import "github.com/chinmay-sawant/blinkless/layout"
 // map and the boxes' storage. An empty id is indexed like any other.
 func Index(ix map[string]*layout.Box, boxes []layout.Box) map[string]*layout.Box {
 	if ix == nil {
-		ix = make(map[string]*layout.Box, len(boxes))
+		capHint := 16
+		if len(boxes) < 16 {
+			capHint = len(boxes)
+		}
+		ix = make(map[string]*layout.Box, capHint)
 	} else {
 		clear(ix)
 	}

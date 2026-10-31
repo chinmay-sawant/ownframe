@@ -16,16 +16,16 @@ type Item struct {
 // to land on the box the user sees on top.
 func List(out []Item, boxes, fixed []layout.Box) []Item {
 	if cap(out) < len(boxes) {
-		out = make([]Item, 0, len(boxes))
+		out = make([]Item, len(boxes))
 	} else {
 		if len(out) > len(boxes) {
 			clear(out[len(boxes):])
 		}
-		out = out[:0]
+		out = out[:len(boxes)]
 	}
 	if len(fixed) == 0 {
-		for _, b := range boxes {
-			out = append(out, Item{Box: b})
+		for i := range boxes {
+			out[i] = Item{Box: boxes[i]}
 		}
 
 		return out
@@ -35,8 +35,8 @@ func List(out []Item, boxes, fixed []layout.Box) []Item {
 	for _, b := range fixed {
 		roots[keyOf(b)] = true
 	}
-	for i, b := range boxes {
-		out = append(out, Item{Box: b, Fixed: inFixed(boxes, i, roots)})
+	for i := range boxes {
+		out[i] = Item{Box: boxes[i], Fixed: inFixed(boxes, i, roots)}
 	}
 
 	return out
