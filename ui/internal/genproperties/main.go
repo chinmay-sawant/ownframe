@@ -14,6 +14,7 @@ import (
 
 const matrix = "../documentation/compatibility-matrix.md"
 const output = "properties_generated.go"
+const expectedImplementedPropertyCount = 555
 
 func main() {
 	if err := generate(); err != nil {
@@ -60,7 +61,7 @@ func generate() error {
 	if err := scanner.Err(); err != nil {
 		return err
 	}
-	if len(props) != 555 {
+	if len(props) != expectedImplementedPropertyCount {
 		return fmt.Errorf("expected 555 implemented properties; found %d", len(props))
 	}
 	sort.Strings(props)
