@@ -15,6 +15,7 @@ import (
 const matrix = "../documentation/compatibility-matrix.md"
 const output = "properties_generated.go"
 const expectedImplementedPropertyCount = 555
+const propertiesPerCaseLine = 5
 
 func main() {
 	if err := generate(); err != nil {
@@ -81,7 +82,7 @@ func generate() error {
 	fmt.Fprint(&buf, "\tcase ")
 	for i, name := range props {
 		if i != 0 {
-			if i%5 == 0 {
+			if i%propertiesPerCaseLine == 0 {
 				fmt.Fprint(&buf, ",\n\t\t")
 			} else {
 				fmt.Fprint(&buf, ", ")
@@ -108,5 +109,5 @@ func generate() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(output, formatted, 0644)
+	return os.WriteFile(output, formatted, 0600)
 }
