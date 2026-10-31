@@ -37,6 +37,7 @@ Adds the live Linux AT-SPI bridge that issue #48 was opened to validate. A Linux
 - Document the live bridge and its limits in `documentation/atspi.md`.
 - Record the issue #48 validation matrix in `documentation/accessibility.md`.
 - Update the generated site assets from this branch's documentation sources.
+- Rebuild the six demo wasm bundles because `internal/window` changed.
 
 ## Impact
 
@@ -118,7 +119,9 @@ No screenshot. The live validation matrix and the libatspi listener snippets are
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
 | `.go` | 30 | 3125 | 268 |
+| `.gz` | 2 | Binary | Binary |
 | `.html` | 1 | 1 | 1 |
 | `.js` | 2 | 211 | 106 |
-| `.md` | 11 | 351 | 107 |
-| **Total** | **44** | **3688** | **482** |
+| `.md` | 11 | 354 | 107 |
+| `.wasm` | 10 | Binary | Binary |
+| **Total** | **56** | **3691** | **482** |
