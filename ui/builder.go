@@ -179,17 +179,19 @@ func newRenderer() *renderer {
 
 const maxDepth = 1024
 
-var allowedTags = map[string]bool{
-	"div": true, "span": true, "p": true, "br": true, "hr": true,
-	"h1": true, "h2": true, "h3": true, "h4": true, "h5": true, "h6": true,
-	"ul": true, "ol": true, "li": true, "table": true, "thead": true,
-	"tbody": true, "tfoot": true, "tr": true, "th": true, "td": true,
-	"caption": true, "img": true, "a": true, "strong": true, "em": true,
-	"b": true, "i": true, "u": true, "small": true, "pre": true,
-	"code": true, "blockquote": true, "header": true, "footer": true,
-	"main": true, "section": true, "article": true, "aside": true,
-	"nav": true, "input": true, "textarea": true, "select": true,
-	"button": true, "label": true, "form": true,
+func supportedTag(tag string) bool {
+	switch tag {
+	case "div", "span", "p", "br", "hr", "h1", "h2",
+		"h3", "h4", "h5", "h6", "ul", "ol", "li",
+		"table", "thead", "tbody", "tfoot", "tr", "th", "td",
+		"caption", "img", "a", "strong", "em", "b", "i",
+		"u", "small", "pre", "code", "blockquote", "header", "footer",
+		"main", "section", "article", "aside", "nav", "input", "textarea",
+		"select", "button", "label", "form":
+		return true
+	default:
+		return false
+	}
 }
 
 func (r *renderer) visit(e *Element, depth int) error {
@@ -202,7 +204,7 @@ func (r *renderer) visit(e *Element, depth int) error {
 	if depth >= maxDepth {
 		return fmt.Errorf("ui: element nesting exceeds %d", maxDepth)
 	}
-	if !allowedTags[e.tag] {
+	if !supportedTag(e.tag) {
 		return fmt.Errorf("ui: unsupported HTML tag %q", e.tag)
 	}
 	if r.active[e] {
