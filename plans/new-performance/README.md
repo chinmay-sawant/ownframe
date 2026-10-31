@@ -57,18 +57,18 @@ $$\text{Wave 1 Mult} = \frac{\text{Baseline}}{\text{Wave 1}}, \quad \text{Wave 2
 
 ### 2.2 Warm Redraw Multipliers (Steady-State Frames)
 
-| ID | Scenario Name | Level | Baseline (ms) | Wave 1 (ms) | Wave 2 (ms) | Wave 3 (ms) | Wave 4 (ms) | Wave 1 Mult | Wave 2 Mult | Wave 3 Mult | Wave 4 Mult | Total Mult |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `01-simple-rows-50` | Simple Rows (50) | Low | 0.35 | 0.21 | <0.01 | <0.01 | **<0.01** | **1.67x** | **>20x** | **1.00x** | **1.00x** | **>35x** |
-| `02-zebra-table-200` | Zebra Table (200 Rows) | Medium-Low | 1.62 | 1.23 | <0.01 | <0.01 | **<0.01** | **1.32x** | **>120x** | **1.00x** | **1.00x** | **>160x** |
-| `03-product-grid-200` | Product Catalog Grid (200 Cards) | Medium | 1.76 | 1.14 | <0.01 | <0.01 | **<0.01** | **1.54x** | **>110x** | **1.00x** | **1.00x** | **>170x** |
-| `04-social-timeline-200` | Social Chat Timeline (200 Posts) | Medium-High | 2.14 | 1.78 | <0.01 | <0.01 | **<0.01** | **1.20x** | **>170x** | **1.00x** | **1.00x** | **>210x** |
-| `05-order-book-500` | Market Order Book (500 Rows) | High | 6.72 | 5.49 | <0.01 | <0.01 | **<0.01** | **1.22x** | **>540x** | **1.00x** | **1.00x** | **>670x** |
-| `06-enterprise-grid-1000` | Enterprise Data Grid (1,000 Rows) | High | 7.91 | 5.89 | <0.01 | <0.01 | **<0.01** | **1.34x** | **>580x** | **1.00x** | **1.00x** | **>790x** |
-| `07-analytics-dashboard` | Analytics Dashboard (Multi-Pane) | Complex | 1.82 | 0.14 | <0.01 | <0.01 | **<0.01** | **13.00x** | **>14x** | **1.00x** | **1.00x** | **>180x** |
-| `08-multipage-doc-200` | Multi-Page Document (200 Pages) | Complex | 3.89 | 1.83 | <0.01 | <0.01 | **<0.01** | **2.13x** | **>180x** | **1.00x** | **1.00x** | **>380x** |
-| `09-css-kitchen-sink-150` | CSS Kitchen Sink (150 Widgets) | Complex | 2.45 | 2.15 | <0.01 | <0.01 | **<0.01** | **1.14x** | **>210x** | **1.00x** | **1.00x** | **>240x** |
-| `10-extreme-app-1000` | Extreme Scale App (1,000 Complex Rows) | Extreme | 35.79 | 12.75 | 0.04 | 0.04 | **0.07** | **2.81x** | **318.8x** | **1.00x** | **0.57x** | **511.3x** |
+| ID | Scenario Name | Level | Baseline | Wave 1 | Wave 2 | Wave 3 | Wave 4 (ns) | Wave 4 (µs) | Wave 1 Mult | Wave 2 Mult | Wave 3 Mult | Wave 4 Mult | Total Mult |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `01-simple-rows-50` | Simple Rows (50) | Low | 0.35 ms (350 µs) | 0.21 ms (210 µs) | 2.1 µs | 1.8 µs | **1,568 ns** | **1.57 µs** | **1.67x** | **100.0x** | **1.17x** | **1.15x** | **223.2x** |
+| `02-zebra-table-200` | Zebra Table (200 Rows) | Medium-Low | 1.62 ms (1,620 µs) | 1.23 ms (1,230 µs) | 2.4 µs | 1.7 µs | **1,332 ns** | **1.33 µs** | **1.32x** | **512.5x** | **1.41x** | **1.28x** | **1,216.2x** |
+| `03-product-grid-200` | Product Catalog Grid (200 Cards) | Medium | 1.76 ms (1,760 µs) | 1.14 ms (1,140 µs) | 2.5 µs | 1.9 µs | **1,643 ns** | **1.64 µs** | **1.54x** | **456.0x** | **1.32x** | **1.16x** | **1,071.2x** |
+| `04-social-timeline-200` | Social Chat Timeline (200 Posts) | Medium-High | 2.14 ms (2,140 µs) | 1.78 ms (1,780 µs) | 2.6 µs | 2.8 µs | **2,509 ns** | **2.51 µs** | **1.20x** | **684.6x** | **0.93x** | **1.12x** | **852.9x** |
+| `05-order-book-500` | Market Order Book (500 Rows) | High | 6.72 ms (6,720 µs) | 5.49 ms (5,490 µs) | 2.3 µs | 4.6 µs | **4,485 ns** | **4.49 µs** | **1.22x** | **2,387.0x** | **0.50x** | **1.03x** | **1,498.3x** |
+| `06-enterprise-grid-1000` | Enterprise Data Grid (1,000 Rows) | High | 7.91 ms (7,910 µs) | 5.89 ms (5,890 µs) | 2.5 µs | 1.8 µs | **1,507 ns** | **1.51 µs** | **1.34x** | **2,356.0x** | **1.39x** | **1.19x** | **5,248.8x** |
+| `07-analytics-dashboard` | Analytics Dashboard (Multi-Pane) | Complex | 1.82 ms (1,820 µs) | 0.14 ms (140 µs) | 2.2 µs | 1.6 µs | **1,586 ns** | **1.59 µs** | **13.00x** | **63.6x** | **1.38x** | **1.01x** | **1,147.5x** |
+| `08-multipage-doc-200` | Multi-Page Document (200 Pages) | Complex | 3.89 ms (3,890 µs) | 1.83 ms (1,830 µs) | 2.3 µs | 1.7 µs | **1,552 ns** | **1.55 µs** | **2.13x** | **795.7x** | **1.35x** | **1.10x** | **2,506.4x** |
+| `09-css-kitchen-sink-150` | CSS Kitchen Sink (150 Widgets) | Complex | 2.45 ms (2,450 µs) | 2.15 ms (2,150 µs) | 2.4 µs | 2.0 µs | **1,700 ns** | **1.70 µs** | **1.14x** | **895.8x** | **1.20x** | **1.18x** | **1,441.2x** |
+| `10-extreme-app-1000` | Extreme Scale App (1,000 Complex Rows) | Extreme | 35.79 ms (35,790 µs) | 12.75 ms (12,750 µs) | 42.0 µs | 72.0 µs | **67,992 ns** | **67.99 µs** | **2.81x** | **303.6x** | **0.58x** | **1.06x** | **526.4x** |
 
 ### 2.3 Memory Allocation Multipliers (Cold Load)
 
@@ -76,35 +76,35 @@ $$\text{Wave 1 Mult} = \frac{\text{Baseline}}{\text{Wave 1}}, \quad \text{Wave 2
 
 | ID | Scenario Name | Level | Baseline Alloc (KB) | Wave 1 Alloc (KB) | Wave 2 Alloc (KB) | Wave 3 Alloc (KB) | Wave 4 Alloc (KB) | Wave 1 Mult | Wave 2 Mult | Wave 3 Mult | Wave 4 Mult | Total Mult | RAM Saved |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `01-simple-rows-50` | Simple Rows (50) | Low | 6,420.0 | 4,035.0 | 3,883.9 | 3,712.2 | **3,509.8** | **1.59x** | **1.04x** | **1.05x** | **1.06x** | **1.83x** | **-2.9 MB** |
-| `02-zebra-table-200` | Zebra Table (200 Rows) | Medium-Low | 12,850.0 | 7,435.0 | 7,943.7 | 7,279.3 | **6,227.7** | **1.73x** | **0.94x** | **1.09x** | **1.17x** | **2.06x** | **-6.6 MB** |
-| `03-product-grid-200` | Product Catalog Grid (200 Cards) | Medium | 453,040.0 | 105,619.0 | 92,674.6 | 91,202.8 | **50,361.4** | **4.29x** | **1.14x** | **1.02x** | **1.81x** | **9.00x** | **-402.7 MB!** |
-| `04-social-timeline-200` | Social Chat Timeline (200 Posts) | Medium-High | 176,140.0 | 73,228.7 | 63,118.9 | 24,640.6 | **21,647.6** | **2.41x** | **1.16x** | **2.56x** | **1.14x** | **8.14x** | **-154.5 MB!** |
-| `05-order-book-500` | Market Order Book (500 Rows) | High | 33,520.0 | 19,198.0 | 17,615.7 | 15,935.5 | **13,883.5** | **1.75x** | **1.09x** | **1.11x** | **1.15x** | **2.41x** | **-19.6 MB** |
-| `06-enterprise-grid-1000` | Enterprise Data Grid (1,000 Rows) | High | 227,100.0 | 113,258.9 | 71,498.4 | 54,397.7 | **71,504.7** | **2.01x** | **1.58x** | **1.31x** | **0.76x** | **3.18x** | **-155.6 MB** |
-| `07-analytics-dashboard` | Analytics Dashboard (Multi-Pane) | Complex | 20,400.0 | 8,602.0 | 4,369.9 | 3,290.1 | **3,148.5** | **2.37x** | **1.97x** | **1.33x** | **1.05x** | **6.48x** | **-17.3 MB** |
+| `01-simple-rows-50` | Simple Rows (50) | Low | 6,420.0 | 4,035.0 | 3,883.9 | 3,712.2 | **3,500.4** | **1.59x** | **1.04x** | **1.05x** | **1.06x** | **1.83x** | **-2.9 MB** |
+| `02-zebra-table-200` | Zebra Table (200 Rows) | Medium-Low | 12,850.0 | 7,435.0 | 7,943.7 | 7,279.3 | **6,228.0** | **1.73x** | **0.94x** | **1.09x** | **1.17x** | **2.06x** | **-6.6 MB** |
+| `03-product-grid-200` | Product Catalog Grid (200 Cards) | Medium | 453,040.0 | 105,619.0 | 92,674.6 | 91,202.8 | **50,369.4** | **4.29x** | **1.14x** | **1.02x** | **1.81x** | **9.00x** | **-402.7 MB!** |
+| `04-social-timeline-200` | Social Chat Timeline (200 Posts) | Medium-High | 176,140.0 | 73,228.7 | 63,118.9 | 24,640.6 | **21,671.5** | **2.41x** | **1.16x** | **2.56x** | **1.14x** | **8.13x** | **-154.5 MB!** |
+| `05-order-book-500` | Market Order Book (500 Rows) | High | 33,520.0 | 19,198.0 | 17,615.7 | 15,935.5 | **13,886.6** | **1.75x** | **1.09x** | **1.11x** | **1.15x** | **2.41x** | **-19.6 MB** |
+| `06-enterprise-grid-1000` | Enterprise Data Grid (1,000 Rows) | High | 227,100.0 | 113,258.9 | 71,498.4 | 54,397.7 | **71,911.9** | **2.01x** | **1.58x** | **1.31x** | **0.76x** | **3.16x** | **-155.2 MB** |
+| `07-analytics-dashboard` | Analytics Dashboard (Multi-Pane) | Complex | 20,400.0 | 8,602.0 | 4,369.9 | 3,290.1 | **3,152.4** | **2.37x** | **1.97x** | **1.33x** | **1.04x** | **6.47x** | **-17.2 MB** |
 | `08-multipage-doc-200` | Multi-Page Document (200 Pages) | Complex | 49,600.0 | 21,700.1 | 19,850.6 | 18,075.0 | **16,047.4** | **2.29x** | **1.09x** | **1.10x** | **1.13x** | **3.09x** | **-33.6 MB** |
-| `09-css-kitchen-sink-150` | CSS Kitchen Sink (150 Widgets) | Complex | 58,200.0 | 38,309.2 | 25,161.1 | 24,385.1 | **25,148.2** | **1.52x** | **1.52x** | **1.03x** | **0.97x** | **2.31x** | **-33.1 MB** |
-| `10-extreme-app-1000` | Extreme Scale App (1,000 Complex Rows) | Extreme | 2,130,599.0 | 414,077.3 | 241,257.3 | 217,855.5 | **213,383.5** | **5.15x** | **1.72x** | **1.11x** | **1.02x** | **9.98x** | **-1.92 GB!** |
+| `09-css-kitchen-sink-150` | CSS Kitchen Sink (150 Widgets) | Complex | 58,200.0 | 38,309.2 | 25,161.1 | 24,385.1 | **22,683.0** | **1.52x** | **1.52x** | **1.03x** | **1.07x** | **2.57x** | **-35.5 MB** |
+| `10-extreme-app-1000` | Extreme Scale App (1,000 Complex Rows) | Extreme | 2,130,599.0 | 414,077.3 | 241,257.3 | 217,855.5 | **158,210.2** | **5.15x** | **1.72x** | **1.11x** | **1.38x** | **13.47x!** | **-1.97 GB!** |
 
 ---
 
 ## 3. Wave 4 Detailed Benchmark Results
 
-*Captured on `perf/render-cost-suite` with warm iterations = 3 after applying Wave 1, Wave 2, Wave 3, and Wave 4 architectural optimizations.*
+*Captured on `perf/render-cost-suite` with warm iterations = 5 after applying Wave 1, Wave 2, Wave 3, and Wave 4 architectural optimizations.*
 
-| ID | Scenario Name | Level | Items | Boxes | Ops | Cold (ms) | Warm (ms) | Mutate (ms) | Resize (ms) | Layout (ms) | Alloc (KB) |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| `01-simple-rows-50` | Simple Rows (50) | Low | 50 | 305 | 404 | **6.67** | **0.00** | 4.97 | 3.87 | 6.00 | 3,509.8 |
-| `02-zebra-table-200` | Zebra Table (200 Rows) | Medium-Low | 200 | 1,211 | 2,416 | **18.21** | **0.00** | 17.81 | 13.56 | 15.57 | 6,227.7 |
-| `03-product-grid-200` | Product Catalog Grid (200 Cards) | Medium | 200 | 2,605 | 3,205 | **128.17** | **0.00** | 109.40 | 107.56 | 123.94 | 50,361.4 |
-| `04-social-timeline-200` | Social Chat Timeline (200 Posts) | Medium-High | 200 | 4,005 | 3,205 | **166.55** | **0.00** | 168.17 | 153.13 | 159.34 | 21,647.6 |
-| `05-order-book-500` | Market Order Book (500 Rows) | High | 500 | 3,009 | 2,511 | **27.80** | **0.00** | 31.61 | 21.77 | 23.08 | 13,883.5 |
-| `06-enterprise-grid-1000` | Enterprise Data Grid (1,000 Rows) | High | 1,000 | 11,014 | 13,016 | **166.27** | **0.00** | 170.15 | 141.82 | 151.18 | 71,504.7 |
-| `07-analytics-dashboard` | Analytics Dashboard (Multi-Pane) | Complex | 30 | 185 | 191 | **12.59** | **0.00** | 10.76 | 12.20 | 11.84 | 3,148.5 |
-| `08-multipage-doc-200` | Multi-Page Document (200 Pages) | Complex | 200 | 3,204 | 4,804 | **46.37** | **0.00** | 47.26 | 42.71 | 40.15 | 16,047.4 |
-| `09-css-kitchen-sink-150` | CSS Kitchen Sink (150 Widgets) | Complex | 150 | 1,205 | 19,755 | **64.03** | **0.00** | 50.05 | 50.09 | 59.28 | 25,148.2 |
-| `10-extreme-app-1000` | Extreme Scale App (1,000 Complex Rows) | Extreme | 1,000 | 22,006 | 23,006 | **551.89** | **0.07** | 502.93 | 468.63 | 514.30 | 213,383.5 |
+| ID | Scenario Name | Level | Items | Boxes | Ops | Cold (ms) | Warm (ns) | Warm (µs) | Mutate (ms) | Resize (ms) | Layout (ms) | Alloc (KB) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `01-simple-rows-50` | Simple Rows (50) | Low | 50 | 305 | 404 | **7.08** | **1,568 ns** | **1.57 µs** | 4.81 | 6.69 | 6.20 | 3,500.4 |
+| `02-zebra-table-200` | Zebra Table (200 Rows) | Medium-Low | 200 | 1,211 | 2,416 | **22.16** | **1,332 ns** | **1.33 µs** | 22.12 | 20.76 | 19.36 | 6,228.0 |
+| `03-product-grid-200` | Product Catalog Grid (200 Cards) | Medium | 200 | 2,605 | 3,205 | **159.43** | **1,643 ns** | **1.64 µs** | 119.75 | 117.92 | 154.89 | 50,369.4 |
+| `04-social-timeline-200` | Social Chat Timeline (200 Posts) | Medium-High | 200 | 4,005 | 3,205 | **205.91** | **2,509 ns** | **2.51 µs** | 191.53 | 195.60 | 198.81 | 21,671.5 |
+| `05-order-book-500` | Market Order Book (500 Rows) | High | 500 | 3,009 | 2,511 | **36.61** | **4,485 ns** | **4.49 µs** | 34.61 | 28.46 | 30.68 | 13,886.6 |
+| `06-enterprise-grid-1000` | Enterprise Data Grid (1,000 Rows) | High | 1,000 | 11,014 | 13,016 | **201.73** | **1,507 ns** | **1.51 µs** | 188.61 | 181.11 | 176.04 | 71,911.9 |
+| `07-analytics-dashboard` | Analytics Dashboard (Multi-Pane) | Complex | 30 | 185 | 191 | **14.25** | **1,586 ns** | **1.59 µs** | 10.25 | 13.85 | 13.58 | 3,152.4 |
+| `08-multipage-doc-200` | Multi-Page Document (200 Pages) | Complex | 200 | 3,204 | 4,804 | **47.80** | **1,552 ns** | **1.55 µs** | 48.28 | 46.51 | 43.26 | 16,047.4 |
+| `09-css-kitchen-sink-150` | CSS Kitchen Sink (150 Widgets) | Complex | 150 | 1,205 | 19,755 | **72.86** | **1,700 ns** | **1.70 µs** | 76.64 | 64.04 | 69.35 | 22,683.0 |
+| `10-extreme-app-1000` | Extreme Scale App (1,000 Complex Rows) | Extreme | 1,000 | 22,006 | 23,006 | **593.33** | **67,992 ns** | **67.99 µs** | 590.24 | 553.17 | 563.14 | 158,210.2 |
 
 ---
 

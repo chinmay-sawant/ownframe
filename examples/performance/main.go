@@ -34,8 +34,8 @@ func main() {
 			fmt.Printf("FAILED: %v\n", err)
 			os.Exit(1)
 		}
-		fmt.Printf("Done (Cold: %.2fms | Warm: %.2fms | Boxes: %d | Ops: %d)\n",
-			ms(res.ColdRender), ms(res.WarmRedraw), res.Boxes, res.Ops)
+		fmt.Printf("Done (Cold: %.2fms | Warm: %dns (%.2fµs) | Boxes: %d | Ops: %d)\n",
+			ms(res.ColdRender), res.WarmRedraw.Nanoseconds(), float64(res.WarmRedraw.Nanoseconds())/1000.0, res.Boxes, res.Ops)
 		results = append(results, res)
 	}
 
@@ -61,11 +61,11 @@ func kb(bytes uint64) float64 {
 func printTerminalTable(results []Result) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
-	fmt.Fprintln(w, "ID\tSCENARIO\tLEVEL\tITEMS\tBOXES\tOPS\tCOLD (ms)\tWARM (ms)\tMUTATE (ms)\tRESIZE (ms)\tSTYLE (ms)\tLAYOUT (ms)\tALLOC (KB)")
-	fmt.Fprintln(w, "--\t--------\t-----\t-----\t-----\t---\t---------\t---------\t-----------\t-----------\t----------\t-----------\t----------")
+	fmt.Fprintln(w, "ID\tSCENARIO\tLEVEL\tITEMS\tBOXES\tOPS\tCOLD (ms)\tWARM (ns)\tWARM (µs)\tMUTATE (ms)\tRESIZE (ms)\tSTYLE (ms)\tLAYOUT (ms)\tALLOC (KB)")
+	fmt.Fprintln(w, "--\t--------\t-----\t-----\t-----\t---\t---------\t---------\t---------\t-----------\t-----------\t----------\t-----------\t----------")
 
 	for _, r := range results {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\t%.1f\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%.2f\t%d ns\t%.2f µs\t%.2f\t%.2f\t%.2f\t%.2f\t%.1f\n",
 			r.ID,
 			r.Name,
 			r.Level,
@@ -73,7 +73,8 @@ func printTerminalTable(results []Result) {
 			r.Boxes,
 			r.Ops,
 			ms(r.ColdRender),
-			ms(r.WarmRedraw),
+			r.WarmRedraw.Nanoseconds(),
+			float64(r.WarmRedraw.Nanoseconds())/1000.0,
 			ms(r.MutationRedraw),
 			ms(r.ResizeRelayout),
 			ms(r.StyleTime),
@@ -85,10 +86,10 @@ func printTerminalTable(results []Result) {
 }
 
 func printMarkdownTable(results []Result) {
-	fmt.Println("| ID | Scenario Name | Level | Items | Boxes | Ops | Cold (ms) | Warm (ms) | Mutate (ms) | Resize (ms) | Layout (ms) | Alloc (KB) |")
-	fmt.Println("|---|---|---|---|---|---|---|---|---|---|---|---|")
+	fmt.Println("| ID | Scenario Name | Level | Items | Boxes | Ops | Cold (ms) | Warm (ns) | Warm (µs) | Mutate (ms) | Resize (ms) | Layout (ms) | Alloc (KB) |")
+	fmt.Println("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 	for _, r := range results {
-		fmt.Printf("| %s | %s | %s | %d | %d | %d | %.2f | %.2f | %.2f | %.2f | %.2f | %.1f |\n",
+		fmt.Printf("| %s | %s | %s | %d | %d | %d | %.2f | %d ns | %.2f µs | %.2f | %.2f | %.2f | %.1f |\n",
 			r.ID,
 			r.Name,
 			r.Level,
@@ -96,7 +97,8 @@ func printMarkdownTable(results []Result) {
 			r.Boxes,
 			r.Ops,
 			ms(r.ColdRender),
-			ms(r.WarmRedraw),
+			r.WarmRedraw.Nanoseconds(),
+			float64(r.WarmRedraw.Nanoseconds())/1000.0,
 			ms(r.MutationRedraw),
 			ms(r.ResizeRelayout),
 			ms(r.LayoutTime),
@@ -106,9 +108,9 @@ func printMarkdownTable(results []Result) {
 }
 
 func printCSV(results []Result) {
-	fmt.Println("ID,Name,Level,Items,Boxes,Ops,ColdMs,WarmMs,MutateMs,ResizeMs,TemplateMs,StyleMs,LayoutMs,PaintMs,AllocKB")
+	fmt.Println("ID,Name,Level,Items,Boxes,Ops,ColdMs,WarmNs,WarmUs,MutateMs,ResizeMs,TemplateMs,StyleMs,LayoutMs,PaintMs,AllocKB")
 	for _, r := range results {
-		fmt.Printf("%s,\"%s\",%s,%d,%d,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f\n",
+		fmt.Printf("%s,\"%s\",%s,%d,%d,%d,%.3f,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f\n",
 			r.ID,
 			r.Name,
 			r.Level,
@@ -116,7 +118,8 @@ func printCSV(results []Result) {
 			r.Boxes,
 			r.Ops,
 			ms(r.ColdRender),
-			ms(r.WarmRedraw),
+			r.WarmRedraw.Nanoseconds(),
+			float64(r.WarmRedraw.Nanoseconds())/1000.0,
 			ms(r.MutationRedraw),
 			ms(r.ResizeRelayout),
 			ms(r.TemplateTime),
