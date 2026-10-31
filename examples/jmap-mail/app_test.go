@@ -10,6 +10,11 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+const (
+	expectedUnreadInbox = 2
+	expectedMessagesAfterDraft = 9
+)
+
 func TestMailExampleRendersThroughPublicBuilder(t *testing.T) {
 	t.Parallel()
 	a, err := newApp()
@@ -32,7 +37,7 @@ func TestMailExampleRendersThroughPublicBuilder(t *testing.T) {
 	if _, err := ui.Render(a.screen()); err != nil {
 		t.Fatalf("public UI builder should serialize mail example: %v", err)
 	}
-	if got := a.unreadCount(); got != 2 {
+	if got := a.unreadCount(); got != expectedUnreadInbox {
 		t.Fatalf("unread inbox: got %d, want 2", got)
 	}
 }
@@ -99,7 +104,7 @@ func TestMailFoldersStarArchiveAndDraftAreLocal(t *testing.T) {
 	if !a.findMessage(a.selectedID).Keywords["$draft"] {
 		t.Fatal("composed message should be a local draft")
 	}
-	if len(a.messages) != 9 {
+	if len(a.messages) != expectedMessagesAfterDraft {
 		t.Fatalf("messages after draft: got %d want 9", len(a.messages))
 	}
 }
@@ -115,9 +120,6 @@ func TestMailSearchAndEscaping(t *testing.T) {
 		t.Fatalf("search results: got %#v", got)
 	}
 	a.query = "{{.Private}} <tag>"
-	if _, err := ui.Render(a.screen()); err != nil {
-		t.Fatal(err)
-	}
 	markup, err := ui.Render(a.screen())
 	if err != nil {
 		t.Fatal(err)
