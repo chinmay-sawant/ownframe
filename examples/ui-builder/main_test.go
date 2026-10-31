@@ -11,6 +11,7 @@ import (
 )
 
 func TestBuilderDashboardRendersInteractiveSamples(t *testing.T) {
+	t.Parallel()
 	a, err := newMonitorApp()
 	if err != nil {
 		t.Fatal(err)
@@ -39,6 +40,7 @@ func TestBuilderDashboardRendersInteractiveSamples(t *testing.T) {
 }
 
 func TestBuilderDashboardActionRoutingAndRefresh(t *testing.T) {
+	t.Parallel()
 	a, err := newMonitorApp()
 	if err != nil {
 		t.Fatal(err)

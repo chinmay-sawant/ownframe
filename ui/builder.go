@@ -29,16 +29,16 @@ type Element struct {
 // Tag creates an element. Unsupported HTML tags are rejected by Render.
 func Tag(name string) *Element { return &Element{tag: strings.ToLower(strings.TrimSpace(name))} }
 
-func Div() *Element     { return Tag("div") }
-func Span() *Element    { return Tag("span") }
-func P() *Element       { return Tag("p") }
+func Div() *Element                { return Tag("div") }
+func Span() *Element               { return Tag("span") }
+func P() *Element                  { return Tag("p") }
 func Button(label string) *Element { return Tag("button").Text(label) }
-func Ul() *Element      { return Tag("ul") }
-func Li() *Element      { return Tag("li") }
-func Input() *Element   { return Tag("input") }
-func Section() *Element { return Tag("section") }
-func Nav() *Element     { return Tag("nav") }
-func Header() *Element  { return Tag("header") }
+func Ul() *Element                 { return Tag("ul") }
+func Li() *Element                 { return Tag("li") }
+func Input() *Element              { return Tag("input") }
+func Section() *Element            { return Tag("section") }
+func Nav() *Element                { return Tag("nav") }
+func Header() *Element             { return Tag("header") }
 
 // Text constructs a span with escaped text, suitable for use in Children.
 func Text(value string) *Element { return Span().Text(value) }
@@ -177,7 +177,12 @@ func newRenderer() *renderer {
 	}
 }
 
-const maxDepth = 1024
+const (
+	maxDepth = 1024
+	// attrExtraCapacity reserves room for synthesized data-action, id,
+	// and style entries when copying a node's attribute map.
+	attrExtraCapacity = 3
+)
 
 func supportedTag(tag string) bool {
 	switch tag {
@@ -218,7 +223,7 @@ func (r *renderer) visit(e *Element, depth int) error {
 		return fmt.Errorf("ui: void HTML element <%s> cannot have children or text", e.tag)
 	}
 
-	attrs := make(map[string]string, len(e.attrs)+3)
+	attrs := make(map[string]string, len(e.attrs)+attrExtraCapacity)
 	for name, value := range e.attrs {
 		attrs[name] = value
 	}

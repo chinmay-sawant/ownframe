@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	expectedUnreadInbox = 2
+	expectedUnreadInbox        = 2
 	expectedMessagesAfterDraft = 9
 )
 
@@ -38,7 +38,7 @@ func TestMailExampleRendersThroughPublicBuilder(t *testing.T) {
 		t.Fatalf("public UI builder should serialize mail example: %v", err)
 	}
 	if got := a.unreadCount(); got != expectedUnreadInbox {
-		t.Fatalf("unread inbox: got %d, want 2", got)
+		t.Fatalf("unread inbox: got %d, want %d", got, expectedUnreadInbox)
 	}
 }
 
@@ -105,7 +105,7 @@ func TestMailFoldersStarArchiveAndDraftAreLocal(t *testing.T) {
 		t.Fatal("composed message should be a local draft")
 	}
 	if len(a.messages) != expectedMessagesAfterDraft {
-		t.Fatalf("messages after draft: got %d want 9", len(a.messages))
+		t.Fatalf("messages after draft: got %d want %d", len(a.messages), expectedMessagesAfterDraft)
 	}
 }
 
@@ -130,6 +130,7 @@ func TestMailSearchAndEscaping(t *testing.T) {
 }
 
 func TestMailSettingsThemeAndPaneSpacing(t *testing.T) {
+	t.Parallel()
 	a, err := newApp()
 	if err != nil {
 		t.Fatal(err)
