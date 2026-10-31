@@ -49,6 +49,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	defer game.cancel()
 	defer game.renderer.Close()
 	defer game.imeShutdown()
+	defer game.closeA11y()
 	game.transparent = options.Transparent
 	game.interactive, game.passthrough = interactive, passthrough
 	game.draggable = options.Draggable

@@ -32,6 +32,7 @@ const (
 
 	dbusAlign8         = 8
 	dbusAlign4         = 4
+	dbusAlign2         = 2
 	dbusFixedHeaderLen = 16
 	dbusUint32Len      = 4
 

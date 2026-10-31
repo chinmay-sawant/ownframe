@@ -4,10 +4,11 @@ Goal: a keyboard and screen-reader path through the viewer, and a phone layout
 that reaches the same files.
 
 Status: partly landed. Accessible names, toggle states, dialog roles, the
-background focus trap, focus-visible rings, and reduced motion are in. Live
-screen-reader bridging is still a library limitation: `internal/atspi` maps the
-tree, but the production bus does not open D-Bus. Mobile and Android remain out
-of scope for this pass.
+background focus trap, focus-visible rings, and reduced motion are in. The
+Linux AT-SPI live bridge in `internal/atspi` registers the tree with the
+accessibility bus, serves the read side, and emits focus and structure events.
+Live Orca and Accerciser validation is tracked in issue #48. Mobile and Android
+remain out of scope for this pass.
 
 ## Design
 
@@ -34,8 +35,9 @@ of scope for this pass.
       `TestFeatureModalFocusTrap`, `components/base.css`.
 - [ ] Check token and diff contrast. The sign column already carries `+`/`-`.
 - [x] Add the reduced-motion path. Evidence: `components/base.css`.
-- [ ] Add live AT-SPI screen-reader bridging. This is library work in
-      `internal/atspi`; `NewLiveBus` still reports `Live() == false`.
+- [x] Add live AT-SPI screen-reader bridging. Evidence: `internal/atspi`
+      serves the tree over the accessibility bus; `documentation/atspi.md`
+      records the live validation. Orca and Accerciser sign-off is issue #48.
 - [ ] Add the phone explorer sheet.
 - [ ] Add the Android insets and back key.
 - [x] Add a keyboard-only walk test. Evidence: `TestKeyboard`,
@@ -50,8 +52,8 @@ the diff.
 
 ## Risks
 
-- The engine has a partial accessibility tree. The AT-SPI client is not live, so
-  the snapshot is the test surface, not a live screen reader.
+- The engine has a partial accessibility tree. The Linux AT-SPI client is
+  live for reading and focus events; AT-initiated actions are not wired yet.
 - A phone sheet changes the editor height. The windowing callback must rebuild
   for the new height.
 - Colour-only diff marks fail a colour-blind check. Keep the sign column.

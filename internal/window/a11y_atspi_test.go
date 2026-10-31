@@ -10,17 +10,10 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-func TestLinuxA11yDoesNotClaimLiveBus(t *testing.T) {
+func TestLinuxA11yHasPublisher(t *testing.T) {
 	s := newShell(context.Background(), &fakeScreen{width: 10, height: 10})
 	if s.a11y.pub == nil {
 		t.Fatal("publisher")
-	}
-	if s.a11y.pub.Live() {
-		t.Fatal("live AT-SPI client is not implemented")
-	}
-	s.syncA11y()
-	if s.a11y.pub.Status().Live {
-		t.Fatal("status")
 	}
 }
 
@@ -52,6 +45,7 @@ func TestLinuxA11yPublishesWhenLive(t *testing.T) {
 		},
 	}
 	s := newShell(context.Background(), scr)
+	s.a11yOrigin = func() (int, int) { return 0, 0 }
 	s.a11y.pub = atspi.NewPublisher(fakeBus)
 	if !s.a11y.pub.Live() {
 		t.Fatal("expected publisher to be live")
@@ -59,5 +53,23 @@ func TestLinuxA11yPublishesWhenLive(t *testing.T) {
 	s.syncA11y()
 	if len(fakeBus.Apps()) != 1 {
 		t.Fatalf("expected 1 published app, got %d", len(fakeBus.Apps()))
+	}
+	s.syncA11y()
+	if len(fakeBus.Apps()) != 1 {
+		t.Fatalf("unchanged generation republished: %d", len(fakeBus.Apps()))
+	}
+	scr.tree.Nodes[0].Name = "changed"
+	scr.redraws++
+	s.syncA11y()
+	if len(fakeBus.Apps()) != 2 {
+		t.Fatalf("changed generation did not publish: %d", len(fakeBus.Apps()))
+	}
+	s.closeA11y()
+	if s.a11y.pub.Live() {
+		t.Fatal("publisher stayed live after close")
+	}
+	s.syncA11y()
+	if len(fakeBus.Apps()) != 2 {
+		t.Fatalf("closed publisher published again: %d", len(fakeBus.Apps()))
 	}
 }

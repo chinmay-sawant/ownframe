@@ -26,18 +26,19 @@ func TestPublisherFakeBusReplacesTree(t *testing.T) {
 	if err := p.Publish(tree); err != nil {
 		t.Fatal(err)
 	}
-	if len(bus.Apps()) != 2 || len(bus.Events()) != 2 {
-		t.Fatal("replace")
+	if len(bus.Apps()) != 2 || len(bus.Events()) != 3 {
+		t.Fatalf("replace: apps=%d events=%d", len(bus.Apps()), len(bus.Events()))
 	}
-	if p.Mapped()[0].Role != RoleDocumentWeb {
+	if p.Mapped()[0].Role != RoleApplication {
 		t.Fatal("mapped")
 	}
 }
 
-func TestPublisherLiveBusDoesNotClaimSuccess(t *testing.T) {
+func TestPublisherLiveBusRetriesWithoutABus(t *testing.T) {
+	t.Setenv("AT_SPI_BUS_ADDRESS", "disabled")
 	p := NewPublisher(NewLiveBus())
 	if p.Live() {
-		t.Fatal("live client is not implemented")
+		t.Fatal("live client claimed a disabled bus")
 	}
 	err := p.Publish(sampleTree())
 	if !errors.Is(err, ErrLiveUnavailable) {
@@ -79,6 +80,50 @@ func (b *retryBus) Publish(app Application) error {
 		return ErrLiveUnavailable
 	}
 	return b.FakeBus.Publish(app)
+}
+
+func TestPublisherEmitsStateChanges(t *testing.T) {
+	bus := NewFakeBus()
+	p := NewPublisher(bus)
+	tree := sampleTree()
+	if err := p.Publish(tree); err != nil {
+		t.Fatal(err)
+	}
+	boxPath := ""
+	for _, obj := range p.Mapped() {
+		if obj.ID == "id:on" {
+			boxPath = obj.Path
+		}
+	}
+	if boxPath == "" {
+		t.Fatal("missing checkbox")
+	}
+	for i := range tree.Nodes {
+		if tree.Nodes[i].ID != "id:on" {
+			continue
+		}
+		tree.Nodes[i].Checked = false
+		tree.Nodes[i].Disabled = true
+	}
+	tree.Revision++
+	if err := p.Publish(tree); err != nil {
+		t.Fatal(err)
+	}
+	seen := map[string]bool{}
+	for _, ev := range bus.Events() {
+		if ev.Path == boxPath && ev.Kind == "state-changed" {
+			seen[ev.Detail] = ev.Enabled
+		}
+	}
+	if _, ok := seen["checked"]; !ok || seen["checked"] {
+		t.Fatalf("checked event %v", seen)
+	}
+	if _, ok := seen["enabled"]; !ok || seen["enabled"] {
+		t.Fatalf("enabled event %v", seen)
+	}
+	if _, ok := seen["sensitive"]; !ok || seen["sensitive"] {
+		t.Fatalf("sensitive event %v", seen)
+	}
 }
 
 func TestPublisherRetriesFailedPublication(t *testing.T) {

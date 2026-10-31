@@ -30,18 +30,19 @@ func newShell(ctx context.Context, app host.Screen) *shell {
 	}
 
 	game := &shell{
-		app:      app,
-		ctx:      runCtx,
-		cancel:   cancel,
-		chords:   newChordWatch(),
-		watched:  newKeyWatch(),
-		pageZoom: 1,
-		dev:      devState{watch: newKeyWatch(), mobile: mobileDevTools},
-		pendingW: width,
-		pendingH: height,
-		screenW:  width,
-		screenH:  height,
-		perf:     perfEnabled(app),
+		app:        app,
+		ctx:        runCtx,
+		cancel:     cancel,
+		chords:     newChordWatch(),
+		watched:    newKeyWatch(),
+		pageZoom:   1,
+		dev:        devState{watch: newKeyWatch(), mobile: mobileDevTools},
+		pendingW:   width,
+		pendingH:   height,
+		screenW:    width,
+		screenH:    height,
+		perf:       perfEnabled(app),
+		a11yOrigin: ebiten.WindowPosition,
 		// Drag tracing stays out of shipped builds: the build tag gates
 		// it like the pacing debug output, and the variable gates a run.
 		dragTrace: debugtag.Enabled && os.Getenv("OWNFRAME_DRAG_DEBUG") != "",

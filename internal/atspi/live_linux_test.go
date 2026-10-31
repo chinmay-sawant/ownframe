@@ -33,6 +33,9 @@ type mockDBusServer struct {
 	rejectAuth bool
 	helloErr   bool
 	claimCode  uint32
+	embedErr   bool
+	noEmbed    bool
+	injectAck  bool
 }
 
 func startMockDBusServer(t *testing.T, opts ...func(*mockDBusServer)) *mockDBusServer {
@@ -141,6 +144,19 @@ func (s *mockDBusServer) serve() {
 					body:        encodeStringBody(":1.42"),
 				}
 				_, _ = conn.Write(encodeMessage(reply))
+				if s.injectAck {
+					// The real bus queues NameAcquired after Hello.
+					ack := &dbusMsg{
+						msgType: dbusTypeSignal,
+						serial:  99,
+						path:    "/org/freedesktop/DBus",
+						iface:   "org.freedesktop.DBus",
+						member:  "NameAcquired",
+						sig:     "s",
+						body:    encodeStringValue(":1.42"),
+					}
+					_, _ = conn.Write(encodeMessage(ack))
+				}
 			case msg.iface == "org.freedesktop.DBus" && msg.member == "RequestName":
 				name, _, _ := decodeRequestNameBody(msg.body)
 				s.mu.Lock()
@@ -161,7 +177,43 @@ func (s *mockDBusServer) serve() {
 				name, root, _ := decodeEmbedBody(msg.body)
 				s.mu.Lock()
 				s.embeds = append(s.embeds, name+":"+root)
+				noEmbed, embedErr := s.noEmbed, s.embedErr
 				s.mu.Unlock()
+				if noEmbed {
+					continue
+				}
+				if embedErr {
+					reply := &dbusMsg{
+						msgType:     dbusTypeError,
+						replySerial: msg.serial,
+						serial:      102,
+						dest:        ":1.42",
+						errorName:   "org.freedesktop.DBus.Error.Failed",
+						sig:         "s",
+						body:        encodeStringBody("embed rejected"),
+					}
+					_, _ = conn.Write(encodeMessage(reply))
+					continue
+				}
+				reply := &dbusMsg{
+					msgType:     dbusTypeMethodReturn,
+					replySerial: msg.serial,
+					serial:      102,
+					dest:        ":1.42",
+					sig:         "(so)",
+					body:        encodeStructSO(":1.1", "/org/a11y/atspi/accessible/root"),
+				}
+				_, _ = conn.Write(encodeMessage(reply))
+			case msg.iface == "org.a11y.Bus" && msg.member == "GetAddress":
+				reply := &dbusMsg{
+					msgType:     dbusTypeMethodReturn,
+					replySerial: msg.serial,
+					serial:      103,
+					dest:        ":1.42",
+					sig:         "s",
+					body:        encodeStringValue(s.addr),
+				}
+				_, _ = conn.Write(encodeMessage(reply))
 			}
 		case dbusTypeSignal:
 			s.mu.Lock()
@@ -182,6 +234,9 @@ func TestMockDBusLifecycle(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
 	bus := NewLiveBus()
+	if err := bus.Claim(DefaultName); err != nil {
+		t.Fatalf("claim: %v", err)
+	}
 	if !bus.Live() {
 		t.Fatalf("expected bus to be live, status: %+v", bus.Status())
 	}
@@ -231,14 +286,14 @@ func TestMockDBusLifecycle(t *testing.T) {
 	}
 
 	// Emit signal
-	ev := Event{Path: "/org/a11y/atspi/accessible/n1", Kind: "children-changed"}
+	ev := Event{Path: "/org/a11y/atspi/accessible/n1", Kind: "children-changed", Detail: "add", Child: "/org/a11y/atspi/accessible/n1"}
 	if err := bus.Emit(ev); err != nil {
 		t.Fatalf("emit: %v", err)
 	}
 
 	// Publish app
 	app := Application{
-		Name:     DefaultName,
+		Name:     ApplicationName,
 		RootPath: "/org/a11y/atspi/accessible/nroot",
 	}
 	if err := bus.Publish(app); err != nil {
@@ -258,7 +313,11 @@ func TestMockDBusLifecycle(t *testing.T) {
 		srv.mu.Unlock()
 		t.Fatalf("unexpected signal: %+v", sig)
 	}
-	if len(srv.embeds) != 1 || srv.embeds[0] != DefaultName+":/org/a11y/atspi/accessible/nroot" {
+	if sig.sig != "siiva{sv}" {
+		srv.mu.Unlock()
+		t.Fatalf("unexpected signal signature: %s", sig.sig)
+	}
+	if len(srv.embeds) != 1 || srv.embeds[0] != ":1.42:/org/a11y/atspi/accessible/nroot" {
 		srv.mu.Unlock()
 		t.Fatalf("unexpected embeds: %v", srv.embeds)
 	}
@@ -288,14 +347,13 @@ func TestMockDBusPublisherIntegration(t *testing.T) {
 
 	bus := NewLiveBus()
 	p := NewPublisher(bus)
-	if !p.Live() {
-		t.Fatal("expected publisher to be live")
-	}
-
 	tree := sampleTree()
 
 	if err := p.Publish(tree); err != nil {
 		t.Fatalf("publish: %v", err)
+	}
+	if !p.Live() {
+		t.Fatal("expected publisher to be live")
 	}
 
 	time.Sleep(50 * time.Millisecond)
@@ -310,6 +368,37 @@ func TestMockDBusPublisherIntegration(t *testing.T) {
 	}
 }
 
+func TestMockDBusIgnoresQueuedNameAcquired(t *testing.T) {
+	srv := startMockDBusServer(t, func(s *mockDBusServer) {
+		s.injectAck = true
+	})
+	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
+
+	bus := NewLiveBus()
+	if err := bus.Claim(DefaultName); err != nil {
+		t.Fatalf("claim with queued signal: %v", err)
+	}
+	if !bus.Live() {
+		t.Fatalf("not live: %+v", bus.Status())
+	}
+}
+
+func TestMockDBusEmbedError(t *testing.T) {
+	srv := startMockDBusServer(t, func(s *mockDBusServer) {
+		s.embedErr = true
+	})
+	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
+
+	bus := NewLiveBus()
+	if err := bus.Claim(DefaultName); err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	err := bus.Publish(Application{Name: ApplicationName, RootPath: accessibleRootPath})
+	if err == nil || !strings.Contains(err.Error(), "embed") {
+		t.Fatalf("publish error: %v", err)
+	}
+}
+
 func TestMockDBusAuthRejected(t *testing.T) {
 	srv := startMockDBusServer(t, func(s *mockDBusServer) {
 		s.rejectAuth = true
@@ -317,8 +406,8 @@ func TestMockDBusAuthRejected(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
 	bus := NewLiveBus()
-	if bus.Live() {
-		t.Fatal("expected bus to not be live when auth is rejected")
+	if err := bus.Claim(DefaultName); err == nil {
+		t.Fatal("expected claim to fail when auth is rejected")
 	}
 	st := bus.Status()
 	if st.Live || !strings.Contains(st.Reason, "auth rejected") {
@@ -333,11 +422,11 @@ func TestMockDBusHelloError(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
 	bus := NewLiveBus()
-	if bus.Live() {
-		t.Fatal("expected bus to not be live when Hello fails")
+	if err := bus.Claim(DefaultName); err == nil {
+		t.Fatal("expected claim to fail when Hello fails")
 	}
 	st := bus.Status()
-	if st.Live || !strings.Contains(st.Reason, "hello error") {
+	if st.Live || !strings.Contains(st.Reason, "hello failed") {
 		t.Fatalf("unexpected status: %+v", st)
 	}
 }
@@ -349,8 +438,8 @@ func TestMockDBusClaimFailed(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
 	bus := NewLiveBus()
-	if bus.Live() {
-		t.Fatal("expected bus to not be live when Claim fails")
+	if err := bus.Claim(DefaultName); err == nil {
+		t.Fatal("expected claim to fail when the name exists")
 	}
 	st := bus.Status()
 	if st.Live || !strings.Contains(st.Reason, "claim failed") {
@@ -377,26 +466,36 @@ func TestDiscoverATSPISocketFormats(t *testing.T) {
 		t.Fatalf("got net=%s, addr=%s, err=%v", netw, addr, err)
 	}
 
-	// 4. disabled
+	// 4. explicit accessibility bus address
+	t.Setenv("AT_SPI_BUS_ADDRESS", "unix:path=/tmp/atspi.sock,guid=abc")
+	netw, addr, err = discoverATSPISocket()
+	if err != nil || netw != "unix" || addr != "/tmp/atspi.sock" {
+		t.Fatalf("got net=%s, addr=%s, err=%v", netw, addr, err)
+	}
+
+	// 5. disabled
 	t.Setenv("AT_SPI_BUS_ADDRESS", "disabled")
 	_, _, err = discoverATSPISocket()
 	if err == nil || !strings.Contains(err.Error(), "disabled") {
 		t.Fatalf("expected disabled error, got %v", err)
 	}
 
-	// 5. none
+	// 6. none
 	t.Setenv("AT_SPI_BUS_ADDRESS", "none")
 	_, _, err = discoverATSPISocket()
 	if err == nil || !strings.Contains(err.Error(), "disabled") {
 		t.Fatalf("expected disabled error, got %v", err)
 	}
 
-	// 6. DBUS_SESSION_BUS_ADDRESS fallback
+	// 7. no AT_SPI_BUS_ADDRESS: ask org.a11y.Bus on the session bus.
+	srv := startMockDBusServer(t)
 	t.Setenv("AT_SPI_BUS_ADDRESS", "")
-	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/tmp/session.sock")
+	t.Setenv("DBUS_SESSION_BUS_ADDRESS", srv.addr)
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 	netw, addr, err = discoverATSPISocket()
-	if err != nil || netw != "unix" || addr != "/tmp/session.sock" {
-		t.Fatalf("got net=%s, addr=%s, err=%v", netw, addr, err)
+	wantAddr := strings.TrimPrefix(srv.addr, "unix:path=")
+	if err != nil || netw != "unix" || addr != wantAddr {
+		t.Fatalf("got net=%s, addr=%s, err=%v; want %s", netw, addr, err, wantAddr)
 	}
 
 	// 7. invalid address

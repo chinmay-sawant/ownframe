@@ -77,6 +77,7 @@ type shell struct {
 	dev        devState
 	ime        imeState
 	a11y       a11yHost
+	a11yOrigin func() (int, int)
 	commits    uint64
 	skipped    uint64
 	// placementID remembers the window rect across launches; empty disables.
