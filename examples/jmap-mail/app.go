@@ -79,6 +79,10 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 	case action == "star":
 		if m := a.current(); m != nil {
 			m.Keywords["$flagged"] = !m.Keywords["$flagged"]
+			if !a.isVisible(m) {
+				a.selectedID = ""
+				a.ensureSelection()
+			}
 		}
 	case action == "toggle-read":
 		if m := a.current(); m != nil {
