@@ -1,3 +1,3 @@
 package ui
 
-//go:generate go run ./internal/genproperties
+//go:generate go run ../scripts/gen-ui-properties
