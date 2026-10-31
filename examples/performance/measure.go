@@ -34,7 +34,12 @@ func MeasureScenario(s Scenario, warmIterations int) (Result, error) {
 	coldDuration := time.Since(coldStart)
 
 	stats := page.Probe().Stats()
-	boxes := len(page.Boxes())
+	boxes := 0
+	if d := page.Probe().Display(); d != nil {
+		boxes = len(d.Boxes)
+	} else {
+		boxes = len(page.Boxes())
+	}
 	ops := stats.Ops
 
 	// 2. Warm Redraw: repeated Redraw on clean state.

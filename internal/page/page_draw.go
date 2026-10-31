@@ -107,6 +107,11 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	p.dataMu.RLock()
 	defer p.dataMu.RUnlock()
 
+	if !p.formDirty && p.lastSyncBody != "" {
+		p.stats.lastTemplate = 0
+		return p.lastSyncBody, nil
+	}
+
 	return draw.Execute(
 		track,
 		len(p.source),

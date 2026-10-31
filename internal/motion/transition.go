@@ -120,22 +120,24 @@ func (c *transitionCaptureCounts) block(reason string) {
 // stacking level. Display, order, and the grid-line integers are listed so an
 // all declaration reaches them and their blocked reason is reported; they do
 // not produce a renderer.
+var transitionProperties = []string{
+	"background-color", "accent-color",
+	"color", "text-decoration-color", "text-emphasis-color",
+	"border-color", "border-top-color", "border-right-color",
+	"border-bottom-color", "border-left-color", "border-block-color",
+	"border-block-start-color", "border-block-end-color", "border-inline-color",
+	"border-inline-start-color", "border-inline-end-color", "outline-color",
+	"column-rule-color", "row-rule-color", "rule-color",
+	"opacity", "transform",
+	"width", "height", "top", "left",
+	"position", "visibility", "content-visibility", "z-index",
+	"display", "order",
+	"grid-column-start", "grid-column-end",
+	"grid-row-start", "grid-row-end",
+}
+
 func transitionPropertyList() []string {
-	return []string{
-		"background-color", "accent-color",
-		"color", "text-decoration-color", "text-emphasis-color",
-		"border-color", "border-top-color", "border-right-color",
-		"border-bottom-color", "border-left-color", "border-block-color",
-		"border-block-start-color", "border-block-end-color", "border-inline-color",
-		"border-inline-start-color", "border-inline-end-color", "outline-color",
-		"column-rule-color", "row-rule-color", "rule-color",
-		"opacity", "transform",
-		"width", "height", "top", "left",
-		"position", "visibility", "content-visibility", "z-index",
-		"display", "order",
-		"grid-column-start", "grid-column-end",
-		"grid-row-start", "grid-row-end",
-	}
+	return transitionProperties
 }
 
 // transitionPaintTarget maps a property to the operations and paint fields a
