@@ -1,3 +1,4 @@
+//nolint:mnd // The benchmark fixtures are curated display content: viewport sizes, deterministic multipliers, and percentages are literal fixture values.
 package main
 
 import (
@@ -114,7 +115,10 @@ html, body { margin: 0; padding: 0; background-color: #f8fafc; font-family: sans
 		Width:  1024,
 		Height: 768,
 		Mutate: func(d any) any {
-			v := d.(SimpleRowsData)
+			v, ok := d.(SimpleRowsData)
+			if !ok {
+				return d
+			}
 			v.Rows[0].Status = "Modified"
 			return v
 		},
@@ -227,7 +231,10 @@ td { font-size: 13px; padding: 10px 14px; border-bottom: 1px solid #e2e8f0; }
 		Width:  1280,
 		Height: 800,
 		Mutate: func(d any) any {
-			v := d.(TableData)
+			v, ok := d.(TableData)
+			if !ok {
+				return d
+			}
 			v.Rows[0].Amount = "$9,999.99"
 			return v
 		},
@@ -372,7 +379,10 @@ html, body { margin: 0; padding: 0; background-color: #0f172a; font-family: sans
 		Width:  1280,
 		Height: 900,
 		Mutate: func(d any) any {
-			v := d.(ProductGridData)
+			v, ok := d.(ProductGridData)
+			if !ok {
+				return d
+			}
 			v.Cards[0].Price = "$999"
 			return v
 		},
@@ -513,7 +523,10 @@ html, body { margin: 0; padding: 0; background-color: #f8fafc; font-family: sans
 		Width:  1024,
 		Height: 800,
 		Mutate: func(d any) any {
-			v := d.(SocialFeedData)
+			v, ok := d.(SocialFeedData)
+			if !ok {
+				return d
+			}
 			v.Posts[0].Likes++
 			return v
 		},
@@ -630,7 +643,10 @@ html, body { margin: 0; padding: 0; background-color: #0b0e14; font-family: mono
 		Width:  1024,
 		Height: 800,
 		Mutate: func(d any) any {
-			v := d.(OrderBookData)
+			v, ok := d.(OrderBookData)
+			if !ok {
+				return d
+			}
 			v.Rows[0].Amount = "99.9999"
 			return v
 		},
@@ -763,7 +779,10 @@ html, body { margin: 0; padding: 0; background-color: #0f172a; font-family: sans
 		Width:  1280,
 		Height: 800,
 		Mutate: func(d any) any {
-			v := d.(EnterpriseGridData)
+			v, ok := d.(EnterpriseGridData)
+			if !ok {
+				return d
+			}
 			v.Rows[0].Severity = "RESOLVED"
 			return v
 		},
@@ -960,7 +979,10 @@ html, body { margin: 0; padding: 0; background-color: #090d16; font-family: sans
 		Width:  1280,
 		Height: 900,
 		Mutate: func(d any) any {
-			v := d.(DashboardData)
+			v, ok := d.(DashboardData)
+			if !ok {
+				return d
+			}
 			v.KPIs[0].Value = "$4,295,000"
 			return v
 		},
@@ -1106,7 +1128,10 @@ html, body { margin: 0; padding: 0; background-color: #cbd5e1; font-family: sans
 		Width:  1024,
 		Height: 800,
 		Mutate: func(d any) any {
-			v := d.(MultiPageData)
+			v, ok := d.(MultiPageData)
+			if !ok {
+				return d
+			}
 			v.Pages[0].Title = "Modified Verification of Pipeline"
 			return v
 		},
@@ -1256,7 +1281,10 @@ html, body { margin: 0; padding: 0; background-color: #030712; font-family: sans
 		Width:  1280,
 		Height: 900,
 		Mutate: func(d any) any {
-			v := d.(SinkData)
+			v, ok := d.(SinkData)
+			if !ok {
+				return d
+			}
 			v.Cards[0].Title = "MODIFIED PROPERTY"
 			return v
 		},
@@ -1441,7 +1469,10 @@ html, body { margin: 0; padding: 0; background-color: #0b0f19; font-family: sans
 		Width:  1280,
 		Height: 900,
 		Mutate: func(d any) any {
-			v := d.(ExtremeAppData)
+			v, ok := d.(ExtremeAppData)
+			if !ok {
+				return d
+			}
 			v.Rows[0].Amount = "$999,999.00"
 			return v
 		},

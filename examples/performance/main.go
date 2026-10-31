@@ -9,9 +9,17 @@ import (
 	"time"
 )
 
+const (
+	defaultWarmIterations = 5
+	nanosPerMicrosecond   = 1000.0
+	nanosPerMillisecond   = 1e6
+	bytesPerKilobyte      = 1024.0
+	tablePadding          = 2
+)
+
 func main() {
 	filterFlag := flag.String("filter", "", "Filter scenarios by substring in ID or Name")
-	warmCount := flag.Int("warm", 5, "Number of warm iterations to average")
+	warmCount := flag.Int("warm", defaultWarmIterations, "Number of warm iterations to average")
 	tableFormat := flag.String("format", "table", "Output format: table, markdown, or csv")
 	flag.Parse()
 
@@ -35,7 +43,7 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Done (Cold: %.2fms | Warm: %dns (%.2fµs) | Boxes: %d | Ops: %d)\n",
-			ms(res.ColdRender), res.WarmRedraw.Nanoseconds(), float64(res.WarmRedraw.Nanoseconds())/1000.0, res.Boxes, res.Ops)
+			ms(res.ColdRender), res.WarmRedraw.Nanoseconds(), float64(res.WarmRedraw.Nanoseconds())/nanosPerMicrosecond, res.Boxes, res.Ops)
 		results = append(results, res)
 	}
 
@@ -51,21 +59,21 @@ func main() {
 }
 
 func ms(d time.Duration) float64 {
-	return float64(d.Nanoseconds()) / 1e6
+	return float64(d.Nanoseconds()) / nanosPerMillisecond
 }
 
 func kb(bytes uint64) float64 {
-	return float64(bytes) / 1024.0
+	return float64(bytes) / bytesPerKilobyte
 }
 
 func printTerminalTable(results []Result) {
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, tablePadding, ' ', 0)
 
-	fmt.Fprintln(w, "ID\tSCENARIO\tLEVEL\tITEMS\tBOXES\tOPS\tCOLD (ms)\tWARM (ns)\tWARM (µs)\tMUTATE (ms)\tRESIZE (ms)\tSTYLE (ms)\tLAYOUT (ms)\tALLOC (KB)")
-	fmt.Fprintln(w, "--\t--------\t-----\t-----\t-----\t---\t---------\t---------\t---------\t-----------\t-----------\t----------\t-----------\t----------")
+	_, _ = fmt.Fprintln(w, "ID\tSCENARIO\tLEVEL\tITEMS\tBOXES\tOPS\tCOLD (ms)\tWARM (ns)\tWARM (µs)\tMUTATE (ms)\tRESIZE (ms)\tSTYLE (ms)\tLAYOUT (ms)\tALLOC (KB)")
+	_, _ = fmt.Fprintln(w, "--\t--------\t-----\t-----\t-----\t---\t---------\t---------\t---------\t-----------\t-----------\t----------\t-----------\t----------")
 
 	for _, r := range results {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%.2f\t%d ns\t%.2f µs\t%.2f\t%.2f\t%.2f\t%.2f\t%.1f\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%.2f\t%d ns\t%.2f µs\t%.2f\t%.2f\t%.2f\t%.2f\t%.1f\n",
 			r.ID,
 			r.Name,
 			r.Level,
@@ -74,7 +82,7 @@ func printTerminalTable(results []Result) {
 			r.Ops,
 			ms(r.ColdRender),
 			r.WarmRedraw.Nanoseconds(),
-			float64(r.WarmRedraw.Nanoseconds())/1000.0,
+			float64(r.WarmRedraw.Nanoseconds())/nanosPerMicrosecond,
 			ms(r.MutationRedraw),
 			ms(r.ResizeRelayout),
 			ms(r.StyleTime),
@@ -82,7 +90,7 @@ func printTerminalTable(results []Result) {
 			kb(r.AllocFrame),
 		)
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
 func printMarkdownTable(results []Result) {
@@ -98,7 +106,7 @@ func printMarkdownTable(results []Result) {
 			r.Ops,
 			ms(r.ColdRender),
 			r.WarmRedraw.Nanoseconds(),
-			float64(r.WarmRedraw.Nanoseconds())/1000.0,
+			float64(r.WarmRedraw.Nanoseconds())/nanosPerMicrosecond,
 			ms(r.MutationRedraw),
 			ms(r.ResizeRelayout),
 			ms(r.LayoutTime),
@@ -119,7 +127,7 @@ func printCSV(results []Result) {
 			r.Ops,
 			ms(r.ColdRender),
 			r.WarmRedraw.Nanoseconds(),
-			float64(r.WarmRedraw.Nanoseconds())/1000.0,
+			float64(r.WarmRedraw.Nanoseconds())/nanosPerMicrosecond,
 			ms(r.MutationRedraw),
 			ms(r.ResizeRelayout),
 			ms(r.TemplateTime),
