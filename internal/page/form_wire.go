@@ -505,6 +505,7 @@ func (p *Page) clickControl(ctx context.Context, box Box) error {
 		if err := p.handlers.Click(ctx, box); err != nil {
 			return err
 		}
+		p.markFormDirty()
 	}
 
 	painted, err := p.clickPainted(ctx, box)
@@ -539,6 +540,7 @@ func (p *Page) clickFile(ctx context.Context, box Box, c Control) error {
 		if err := p.handlers.Click(ctx, box); err != nil {
 			return err
 		}
+		p.markFormDirty()
 	}
 
 	return p.Redraw(ctx)
@@ -619,6 +621,9 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 		}
 
 		ran = true
+		// The handler can mutate the template data in place through the
+		// SetData pointer, so force the next Redraw to re-execute.
+		p.markFormDirty()
 	}
 
 	changed, err := p.applyEdit(ctx, edit)
@@ -698,7 +703,12 @@ func (p *Page) beforeEdit(ctx context.Context, id string) error {
 		return nil
 	}
 
-	return p.handlers.BeforeEdit(ctx, p.boxByID(id))
+	if err := p.handlers.BeforeEdit(ctx, p.boxByID(id)); err != nil {
+		return err
+	}
+	p.markFormDirty()
+
+	return nil
 }
 
 // change calls the Change handler for id.
@@ -708,7 +718,12 @@ func (p *Page) change(ctx context.Context, id string) error {
 		return nil
 	}
 
-	return p.handlers.Change(ctx, p.boxByID(id))
+	if err := p.handlers.Change(ctx, p.boxByID(id)); err != nil {
+		return err
+	}
+	p.markFormDirty()
+
+	return nil
 }
 
 // FormValue returns the current value of id, or "" when id is absent.
