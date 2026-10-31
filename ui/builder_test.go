@@ -15,7 +15,11 @@ func TestAllImplementedPropertiesMatchCompatibilityMatrix(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			t.Errorf("close compatibility matrix: %v", cerr)
+		}
+	}()
 
 	seen := make(map[string]bool)
 	inImplemented := false
