@@ -3,8 +3,10 @@
 1.0 native hosts are desktop `Run` (Linux, Windows, macOS) and Android
 `BindMobile`. That is a native window for an operator you control: one
 compiled Go process and an Ebiten window or Activity, no Chromium, no
-WebView. Orca, NVDA, VoiceOver, and TalkBack cannot inspect it. Native
-does not mean OS widgets or a screen-reader product for other people.
+WebView. On Linux, Orca and Accerciser can read the page tree over AT-SPI;
+AT-initiated actions are not wired. NVDA, VoiceOver, and TalkBack cannot
+inspect it. Native does not mean OS widgets or a complete screen-reader
+adapter.
 
 `scripts/browser.sh` is a wasm canvas preview. `-web` / `Serve` is a loopback
 PNG debugger. iOS has no Xcode project and is not a 1.0 target.
@@ -124,7 +126,7 @@ and App Store review. None of that is in this repo.
 | Clipboard | X11, Windows, macOS+cgo; Wayland prefers `wl-copy`/`wl-paste`; if missing, X11 CLIPBOARD when DISPLAY is set; otherwise no-op/`ErrUnavailable` ([clipboard.md](clipboard.md)) | process memory (`internal/clipboard/clipboard_other.go`) | memory copy | none |
 | Files | desktop dialog (`internal/filepick`) | typed name; no file dialog. Telegram camera/gallery is app Java | typed name | typed name |
 | IME | Composer path with preedit; native IM unverified ([interaction.md](interaction.md)) | `exp/textinput` | canvas text | `/type` only |
-| A11y | Go snapshot only. Experimental Linux AT-SPI mapping, `Live` is false; no UIA, no NSAccessibility. Orca and NVDA cannot inspect ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |
+| A11y | Go snapshot plus an experimental live Linux AT-SPI bridge; Orca and Accerciser can inspect the window. No UIA, NSAccessibility, or TalkBack adapters ([accessibility.md](accessibility.md), [atspi.md](atspi.md)) | Go snapshot; no TalkBack | Go snapshot | snapshot on the page object; no AT |
 | Packaging | unsigned `scripts/package.sh` ([packaging.md](packaging.md)) | `scripts/android-release.sh` sideload APK; Play is not 1.0 ([play-store.md](play-store.md), [APPS.md](../examples/android-host/APPS.md)) | wasm zip preview | not a ship target |
 | Idle | desktop park after clean frames (`idle_supported.go`) | off (`idle_supported_other.go`) | off | none |
 | Tick | yes ([frames.md](frames.md)) | yes | yes | no |

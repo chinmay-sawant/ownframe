@@ -1,52 +1,123 @@
-# Linux AT-SPI first slice
+# Linux AT-SPI live bridge
 
-This is experimental. `NewLiveBus` reports `Live: false`. Orca cannot inspect
-an ownframe window. 1.0 does not ship a screen-reader product.
+This is experimental. On a Linux desktop, `NewLiveBus` connects to the
+accessibility bus and registers the window with the AT-SPI registry. Accerciser
+and Orca can inspect the tree. Windows UI Automation, macOS VoiceOver /
+NSAccessibility, and Android TalkBack are not shipped, and iOS is not a 1.0
+target.
 
-It maps `host.AccessibilityTree` to AT-SPI roles, states, and actions. It
-does not register an accessible application on the session bus. Accerciser
-and other AT-SPI clients cannot inspect an ownframe window through this
-slice either.
+## What the bridge does
 
-Windows UI Automation, macOS VoiceOver / NSAccessibility, and Android
-TalkBack are not shipped. iOS is not a 1.0 target.
+`internal/atspi` exposes a page snapshot as a live AT-SPI application:
 
-## What landed
+- Bus discovery. `AT_SPI_BUS_ADDRESS` wins when set. Otherwise the client asks
+  `org.a11y.Bus.GetAddress` on the session bus, then falls back to
+  `$XDG_RUNTIME_DIR/at-spi/bus*` and `/run/user/<uid>/at-spi/bus*`.
+- Registration. The client claims `org.a11y.atspi.ownframe.app`, or that name
+  with a randomized per-process suffix when it is taken, uses the unique bus
+  name for object references, and calls `org.a11y.atspi.Socket.Embed` on the
+  registry root. The unique name lets the registry remove the application when
+  the connection closes. If the claim fails, publication stays unavailable and
+  the failure reason is reported.
+- Wire protocol. `dbus_wire.go` frames D-Bus messages.
+  `dbus_value.go` encodes and decodes the scalar, struct, array, variant,
+  and dictionary values the AT-SPI interfaces need. Replies are matched by
+  serial and sender, so a forged reply or a queued `NameAcquired` signal does
+  not confuse a call.
+- Interfaces. Every object serves `org.a11y.atspi.Accessible` and
+  `org.a11y.atspi.Component`. Text-bearing nodes add
+  `org.a11y.atspi.Text`; combo boxes add `org.a11y.atspi.Value`; nodes with
+  actions add `org.a11y.atspi.Action`; the root adds
+  `org.a11y.atspi.Application`. The application also serves
+  `org.a11y.atspi.Cache` at `/org/a11y/atspi/cache`, so libatspi queries the
+  tree in one call instead of one round trip per node.
+- Root shape. The application root is a synthetic `application` object marked
+  active, and the page document is its only child. This is the shape Orca
+  expects when it looks for the active window.
+- Events. Focus and state changes emit
+  `org.a11y.atspi.Event.Object.StateChanged`; added and removed nodes emit
+  `ChildrenChanged`. Both use the standard `siiva{sv}` signature.
+- Redaction. Password values are empty. Password nodes stay editable so a
+  screen reader reports a password field, but they do not advertise SetText
+  and their value is never published.
+- Bounds. Extents use CSS pixels from the page snapshot. Screen coordinates add
+  the Ebiten window position; root extents use that window position and size
+  when the document node has no placed box. A parent-relative request subtracts
+  the parent's origin. Ebiten reports the window position relative to the
+  current monitor, so screen extents can be offset on a secondary monitor and
+  on Wayland. The primary X11 monitor is the validated case.
 
-Package `internal/atspi` converts a page snapshot into AT-SPI objects:
+## Limits
 
-- Roles: document web, landmark, panel, heading, paragraph, static, image,
-  link, push button, entry, password text, check box, radio button, combo
-  box, list, list item.
-- Actions: `grab-focus`, `click`, `set-text`.
-- Password nodes keep an empty value. Default logs use `Summarize`, which
-  prints role and path only.
-- The well-known name this process may claim is
-  `org.a11y.atspi.ownframe.*`. `org.a11y.Bus` and the registry are rejected.
+The bridge is a read-mostly surface:
 
-`FakeBus` records claim, publish, and event calls for tests. It opens no
-socket. `NewLiveBus` always reports `Live: false`.
-
-Linux desktop `Run` constructs a publisher in `internal/window/a11y_atspi.go`
-and calls it from `syncImage`. Because the live bus is down, the window
-does not walk the page tree each frame.
-
-## What is blocked
-
-A D-Bus AT-SPI client: connect to the accessibility bus, own
-`org.a11y.atspi.ownframe.app`, export
-`/org/a11y/atspi/accessible/*`, and register with
-`org.a11y.atspi.Registry`. That client is not in this slice and is not a 1.0
-product. No new D-Bus dependency was added.
-
-Do not set an environment flag that claims the window is exposed to a
-screen reader.
+- `DoAction` and `GrabFocus` return false. AT-initiated edits do not reach the
+  page yet.
+- There is no `EditableText`, `Selection`, `Document`, `Table`, or `Hyperlink`
+  interface, so `SetTextContents` is not exposed. Text caret offset and
+  selection are reported as zero and empty.
+- Link activation is not supported.
+- Anonymous labels whose tag and text match more than one placed box have no
+  bounds. The snapshot still contains them.
+- Text ranges and character extents use the node box, not per-glyph geometry.
+- The page snapshot does not read computed `display:none` or
+  `visibility:hidden`, so a stylesheet-hidden node can remain in the tree.
+- Scrolling changes the page snapshot bounds; the bridge does not maintain a
+  separate scroll offset beyond what the snapshot reports.
 
 ## Validate
+
+Unit and mock-bus checks:
 
 ```sh
 go test -p 1 ./internal/atspi ./internal/page ./internal/window
 ```
 
-Those tests use the fake bus. They do not prove Orca can read the window.
-1.0 does not ship a screen-reader product.
+Live tree check with the Atspi 2.0 client library (the same library Accerciser
+and Orca use):
+
+```sh
+# Terminal 1: start a desktop app. The login example is small.
+go run ./examples/login
+
+# Terminal 2: read the desktop tree.
+/usr/bin/python3.10 - <<'PY'
+import gi
+gi.require_version("Atspi", "2.0")
+from gi.repository import Atspi
+Atspi.init()
+desktop = Atspi.get_desktop(0)
+for i in range(desktop.get_child_count()):
+    app = desktop.get_child_at_index(i)
+    print(app.get_name(), app.get_role_name(), app.get_child_count())
+PY
+```
+
+The app should appear with the page title (for the login example, `Sign in`),
+the `document web` role, and its controls as children. Focus the window, press
+Tab, and watch `object:state-changed:focused` with:
+
+```sh
+/usr/bin/python3.10 - <<'PY'
+import gi
+gi.require_version("Atspi", "2.0")
+from gi.repository import Atspi
+
+def cb(event):
+    print(event.type, event.source.get_name(), event.source.get_role_name(), event.detail1)
+
+Atspi.init()
+listener = Atspi.EventListener.new(cb)
+listener.register("object:state-changed:focused")
+Atspi.event_main()
+PY
+```
+
+The recorded live results, including the Accerciser workaround and the pending
+Orca per-control speech check, are in
+[accessibility.md](accessibility.md#live-validation). For your own manual
+screen-reader check, install `orca` and `accerciser`, run Orca with
+`orca --debug`, then tab through the window and confirm it announces the control
+names, roles, and the email value. In Accerciser, the application should show
+the page tree with roles, names, descriptions, states, bounds, and actions. Do
+not treat the unit tests alone as screen-reader evidence.

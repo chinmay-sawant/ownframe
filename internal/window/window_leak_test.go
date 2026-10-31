@@ -12,5 +12,7 @@ import (
 func TestMain(m *testing.M) {
 	// Desktop tile tests use retained surfaces; GPU sessions can select clearing explicitly.
 	ebiten.SetScreenClearedEveryFrame(false)
+	// Unit tests must not claim or query the developer's real accessibility bus.
+	_ = os.Setenv("AT_SPI_BUS_ADDRESS", "disabled")
 	os.Exit(leakcheck.Verify(m))
 }

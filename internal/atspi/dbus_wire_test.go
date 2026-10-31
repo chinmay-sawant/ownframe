@@ -15,9 +15,9 @@ func TestReadMessageOversizedFieldsLen(t *testing.T) {
 	hdr[1] = dbusTypeMethodCall
 	hdr[2] = 0 // flags
 	hdr[3] = dbusProtoVersion
-	binary.LittleEndian.PutUint32(hdr[4:8], 0)                   // bodyLen = 0
-	binary.LittleEndian.PutUint32(hdr[8:12], 1)                  // serial = 1
-	binary.LittleEndian.PutUint32(hdr[12:16], maxFieldsLen+1)    // fieldsLen > 64KB
+	binary.LittleEndian.PutUint32(hdr[4:8], 0)                // bodyLen = 0
+	binary.LittleEndian.PutUint32(hdr[8:12], 1)               // serial = 1
+	binary.LittleEndian.PutUint32(hdr[12:16], maxFieldsLen+1) // fieldsLen > 64KB
 
 	_, err := readMessage(bytes.NewReader(hdr[:]))
 	if err == nil {
@@ -36,9 +36,9 @@ func TestReadMessageOversizedBodyLen(t *testing.T) {
 	hdr[1] = dbusTypeMethodCall
 	hdr[2] = 0 // flags
 	hdr[3] = dbusProtoVersion
-	binary.LittleEndian.PutUint32(hdr[4:8], maxBodyLen+1)        // bodyLen > 4MB
-	binary.LittleEndian.PutUint32(hdr[8:12], 1)                  // serial = 1
-	binary.LittleEndian.PutUint32(hdr[12:16], 0)                 // fieldsLen = 0
+	binary.LittleEndian.PutUint32(hdr[4:8], maxBodyLen+1) // bodyLen > 4MB
+	binary.LittleEndian.PutUint32(hdr[8:12], 1)           // serial = 1
+	binary.LittleEndian.PutUint32(hdr[12:16], 0)          // fieldsLen = 0
 
 	_, err := readMessage(bytes.NewReader(hdr[:]))
 	if err == nil {
@@ -46,6 +46,57 @@ func TestReadMessageOversizedBodyLen(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "exceeds 4MB limit") {
 		t.Fatalf("unexpected error message: %v", err)
+	}
+}
+
+func TestReadMessageSkipsBigEndianFrame(t *testing.T) {
+	t.Parallel()
+
+	wire := encodeBigEndianMethodCall(
+		"/org/a11y/atspi/accessible/root",
+		"org.a11y.atspi.Accessible",
+		"GetName",
+		"s",
+		encodeBigEndianStringBody("hello"),
+	)
+	next := encodeMessage(&dbusMsg{
+		msgType: dbusTypeMethodCall,
+		serial:  9,
+		member:  "NameAcquired",
+	})
+	r := bytes.NewReader(append(wire, next...))
+
+	skipped, err := readMessage(r)
+	if err != nil {
+		t.Fatalf("big-endian frame: %v", err)
+	}
+	if skipped == nil || skipped.msgType != 0 || skipped.serial != 0 || len(skipped.body) != 0 {
+		t.Fatalf("big-endian frame = %+v, want empty message", skipped)
+	}
+
+	decoded, err := readMessage(r)
+	if err != nil {
+		t.Fatalf("frame after big-endian message: %v", err)
+	}
+	if decoded.serial != 9 || decoded.member != "NameAcquired" {
+		t.Fatalf("next message = %+v", decoded)
+	}
+}
+
+func TestReadMessageTruncatedBigEndianFrame(t *testing.T) {
+	t.Parallel()
+
+	wire := encodeBigEndianMethodCall(
+		"/org/a11y/atspi/accessible/root",
+		"org.a11y.atspi.Accessible",
+		"GetName",
+		"s",
+		encodeBigEndianStringBody("hello"),
+	)
+	truncated := wire[:len(wire)-1]
+
+	if _, err := readMessage(bytes.NewReader(truncated)); err == nil {
+		t.Fatal("expected error for truncated big-endian frame, got nil")
 	}
 }
 
@@ -206,4 +257,70 @@ func TestMessageRoundtrip(t *testing.T) {
 	if err != nil || bodyStr != "payload" {
 		t.Fatalf("body mismatch: got %q, err %v", bodyStr, err)
 	}
+}
+
+func encodeBigEndianMethodCall(path, iface, member, sig string, body []byte) []byte {
+	var fields bytes.Buffer
+	writeBigEndianStringField(&fields, dbusHeaderPath, "o", path)
+	writeBigEndianStringField(&fields, dbusHeaderInterface, "s", iface)
+	writeBigEndianStringField(&fields, dbusHeaderMember, "s", member)
+	if sig != "" {
+		writeBigEndianSignatureField(&fields, sig)
+	}
+	fieldsBytes := fields.Bytes()
+
+	var msg bytes.Buffer
+	msg.WriteByte(dbusEndianBig)
+	msg.WriteByte(dbusTypeMethodCall)
+	msg.WriteByte(0)
+	msg.WriteByte(dbusProtoVersion)
+
+	var u32 [4]byte
+	binary.BigEndian.PutUint32(u32[:], uint32(len(body))) //nolint:gosec // reason: test bodies are tiny.
+	msg.Write(u32[:])
+	binary.BigEndian.PutUint32(u32[:], 7)
+	msg.Write(u32[:])
+	binary.BigEndian.PutUint32(u32[:], uint32(len(fieldsBytes))) //nolint:gosec // reason: test headers are tiny.
+	msg.Write(u32[:])
+
+	msg.Write(fieldsBytes)
+	pad(&msg, dbusAlign8)
+	msg.Write(body)
+	return msg.Bytes()
+}
+
+func writeBigEndianStringField(fields *bytes.Buffer, code byte, sig, val string) {
+	pad(fields, dbusAlign8)
+	fields.WriteByte(code)
+	fields.WriteByte(byte(len(sig))) //nolint:gosec // reason: test signatures are one char.
+	fields.WriteString(sig)
+	fields.WriteByte(0)
+
+	pad(fields, dbusAlign4)
+	var lenBuf [4]byte
+	binary.BigEndian.PutUint32(lenBuf[:], uint32(len(val))) //nolint:gosec // reason: test values are tiny.
+	fields.Write(lenBuf[:])
+	fields.WriteString(val)
+	fields.WriteByte(0)
+}
+
+func writeBigEndianSignatureField(fields *bytes.Buffer, sig string) {
+	pad(fields, dbusAlign8)
+	fields.WriteByte(dbusHeaderSignature)
+	fields.WriteByte(1)
+	fields.WriteString("g")
+	fields.WriteByte(0)
+	fields.WriteByte(byte(len(sig))) //nolint:gosec // reason: test signatures are one char.
+	fields.WriteString(sig)
+	fields.WriteByte(0)
+}
+
+func encodeBigEndianStringBody(s string) []byte {
+	var body bytes.Buffer
+	var lenBuf [4]byte
+	binary.BigEndian.PutUint32(lenBuf[:], uint32(len(s))) //nolint:gosec // reason: test values are tiny.
+	body.Write(lenBuf[:])
+	body.WriteString(s)
+	body.WriteByte(0)
+	return body.Bytes()
 }

@@ -13,7 +13,7 @@ func TestMapDisabledClearsEnabled(t *testing.T) {
 			ID: "id:x", Role: host.AccessibilityButton, Disabled: true,
 		}},
 	}
-	obj := Map(tree).Objects[0]
+	obj := byID(t, Map(tree), "id:x")
 	if obj.State.Enabled || obj.State.Sensitive {
 		t.Fatalf("%+v", obj.State)
 	}

@@ -1,13 +1,16 @@
 # Accessibility tree
 
 1.0 ships a Go accessibility snapshot for the operator who runs the process.
-It does not ship a screen-reader product. `NewLiveBus` reports `Live: false`.
-Orca cannot inspect an ownframe window. NVDA, VoiceOver, and TalkBack cannot
-either.
+It does not ship a screen-reader product. On Linux, the window registers a live
+AT-SPI application, so Accerciser and Orca can inspect it
+([atspi.md](atspi.md)). NVDA, VoiceOver, and TalkBack cannot inspect an
+ownframe window because the Windows, macOS, and Android adapters are not
+shipped.
 
-Linux has an experimental AT-SPI mapping and a fake-bus test seam
-([atspi.md](atspi.md)). There is no live D-Bus AT-SPI client. UI Automation
-is not shipped.
+Linux has an experimental AT-SPI mapping, a live D-Bus client, and a fake-bus
+test seam. The client connects to the accessibility bus, registers with
+`org.a11y.atspi.Registry`, serves the mapped tree, and emits focus and
+structure events. See [atspi.md](atspi.md) for interfaces and limits.
 
 `Page.Access().AccessibilityTree` returns a detached semantic snapshot from the last
 successful redraw. The tree follows HTML document order and includes supported
@@ -56,11 +59,26 @@ coverage:
 go test ./examples/accessibility/...
 ```
 
-The demo is an API inspector. Linux maps the snapshot to AT-SPI objects in
-process; it does not register them on the accessibility bus. Windows UI
-Automation, macOS VoiceOver, and Android TalkBack are not shipped. See the
-[native accessibility status](accessibility-native.md) and
-[AT-SPI first slice](atspi.md).
+The demo is an API inspector. Linux also registers the same snapshot as a live
+AT-SPI application, so the demo can be inspected with Accerciser or Orca.
+Windows UI Automation, macOS VoiceOver, and Android TalkBack are not shipped.
+See the [native accessibility status](accessibility-native.md) and
+[AT-SPI live bridge](atspi.md).
+
+## Live validation
+
+Issue #48 tracks the end-to-end check against real AT-SPI clients. The run used
+Ubuntu 22.04 with at-spi2-core 2.44 under Xvfb/X11, and read the tree through
+libatspi 2.0 from Python 3.10. This matrix covers that X11 session; a Wayland
+session is not part of it.
+
+| Check | Result |
+| --- | --- |
+| Tree registration, roles, names, and bounds | **pass**. The application appears on the accessibility bus, and the page tree reports the mapped roles, names, and bounds. |
+| Password value redacted, editable, no SetText | **pass**. A password field reads as an empty value, reports the editable state, and advertises no SetText action. |
+| Focus events consumed by libatspi | **pass**. Tab focus emits `object:state-changed:focused`, and libatspi delivers the event to the listener. |
+| Accerciser 3.38 | **pass**. It shows the application and the full page tree. This Accerciser version needed a local workaround for its zero-child-application population bug before it listed the children. That workaround is on the Accerciser side and is not an ownframe change. |
+| Orca 42 | **partial**. Orca finds the active window and receives focus events, and Speech Dispatcher captured the startup utterance `Screen reader on.`. Per-control speech was not captured in this run; it is still pending a normal desktop run with Orca installed. |
 
 ## Node identity and updates
 
@@ -94,8 +112,9 @@ same tag and text get bounds in document order only if every matching element
 has a placed box.
 
 Form values and checked state come from live page controls. Password values
-are always empty in the snapshot. Supported controls advertise Focus,
-Activate, or SetValue in `Actions`:
+are always empty in the snapshot, and password nodes do not advertise SetValue.
+They still report the editable state so a screen reader recognizes a password
+field. Supported controls advertise Focus, Activate, or SetValue in `Actions`:
 
 | Action | Supported targets |
 | --- | --- |
@@ -115,16 +134,21 @@ nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
 
 ## Limits
 
-This API supplies semantic page data to a host. Linux maps that tree to
-AT-SPI objects in process. `Live` is false, so Orca cannot inspect the
-window. 1.0 does not ship a screen-reader product.
+This API supplies semantic page data to a host. Linux serves that tree over
+D-Bus and emits focus and structure events. AT-initiated actions are not wired
+to the page yet: the live bridge exposes action metadata, but `DoAction` and
+`GrabFocus` return false, link activation is not supported, and there is no
+`EditableText`, `Document`, `Table`, `Selection`, or `Hyperlink` interface. 1.0
+does not ship a screen-reader product.
 
 The snapshot filters the `hidden` attribute, `aria-hidden="true"`, and
 non-content tags. It does not read computed CSS visibility. A node hidden by a
 stylesheet with `display:none` or `visibility:hidden` can remain in the tree.
 The engine does not expose the computed style needed to filter those nodes.
 Anonymous nodes get bounds only when their tag and text match placed boxes
-without ambiguity. Text ranges, live-region events, complete ARIA name
+without ambiguity. Screen-coordinate extents add Ebiten's monitor-relative
+window position, so they can be offset on a secondary monitor or on Wayland.
+Text ranges, live-region events, complete ARIA name
 computation, virtualized offscreen rows, and custom widget actions are not
 covered. This tree is not PDF/UA output and does not claim browser
 accessibility parity.

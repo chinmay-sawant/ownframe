@@ -8,11 +8,15 @@ import (
 )
 
 // DefaultName is the only well-known name this process may claim.
-const DefaultName = "org.a11y.atspi.ownframe.app"
+const (
+	DefaultName        = "org.a11y.atspi.ownframe.app"
+	ApplicationName    = "ownframe"
+	accessibleRootPath = "/org/a11y/atspi/accessible/root"
+)
 
 const namePrefix = "org.a11y.atspi.ownframe."
 const accessiblePath = "/org/a11y/atspi/accessible/"
-const nameBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+const nameBytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
 
 // CheckName allows only org.a11y.atspi.ownframe.* with a simple suffix.
 // It rejects org.a11y.Bus, the registry, and any other D-Bus name.

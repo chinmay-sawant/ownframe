@@ -10,7 +10,7 @@ Formerly known as **go-gpui**.
 
 Write screens in HTML and CSS, and application logic in Go. ownframe renders with [blinkless](https://github.com/chinmay-sawant/blinkless) and opens a window with Ebiten. It ships no Chromium, WebKit, WebView, or JavaScript runtime.
 
-1.0 ships native Go apps on desktop (Linux, Windows, macOS) and Android, for an operator you control. Native means one compiled Go process and an Ebiten window or Activity. Orca, NVDA, VoiceOver, and TalkBack cannot inspect that window. The experimental AT-SPI mapping has no live bus.
+1.0 ships native Go apps on desktop (Linux, Windows, macOS) and Android, for an operator you control. Native means one compiled Go process and an Ebiten window or Activity. On Linux, the experimental AT-SPI bridge makes the window visible to Accerciser and Orca. NVDA, VoiceOver, and TalkBack cannot inspect the window because those adapters are not shipped.
 
 `scripts/browser.sh` builds a wasm canvas preview. `-web` is a loopback PNG debugger. The capability matrix is in [documentation/platforms.md](documentation/platforms.md).
 
@@ -115,7 +115,7 @@ Start with the [documentation index](documentation/README.md) or [feature list a
 - [Clipboard](documentation/clipboard.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. That snapshot is for the operator who runs the process, not for other people or screen-reader users. Linux has an experimental AT-SPI mapping and bus seam; there is no live D-Bus client, so `Live` is false. UI Automation, VoiceOver, and TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. Linux serves that snapshot over a live AT-SPI bridge, so Orca and Accerciser can read the tree. AT-initiated actions are not wired to the page yet. Windows UI Automation, macOS VoiceOver, and Android TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 
