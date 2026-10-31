@@ -66,15 +66,16 @@ func errResult(name, text string) callResult {
 }
 
 type serverView struct {
-	app     Application
-	objects map[string]Object
-	busName string
-	parent  dbusRef
-	originX int
-	originY int
-	width   int
-	height  int
-	appID   *int32
+	app        Application
+	objects    map[string]Object
+	childIndex map[string]int32
+	busName    string
+	parent     dbusRef
+	originX    int
+	originY    int
+	width      int
+	height     int
+	appID      *int32
 }
 
 func newServerView(app Application, busName string, parent dbusRef, originX, originY, width, height int, appID *int32) *serverView {
@@ -82,16 +83,33 @@ func newServerView(app Application, busName string, parent dbusRef, originX, ori
 	for _, obj := range app.Objects {
 		objects[obj.Path] = obj
 	}
+	// childIndex mirrors the index a child has in the Children list of
+	// the parent named by its Parent field, so GetItems and
+	// GetIndexInParent answer from one map instead of a scan per object.
+	childIndex := make(map[string]int32, len(objects))
+	for _, parent := range objects {
+		for i, childPath := range parent.Children {
+			child, ok := objects[childPath]
+			if !ok || child.Parent != parent.Path {
+				continue
+			}
+			if _, seen := childIndex[childPath]; seen {
+				continue
+			}
+			childIndex[childPath] = int32(i)
+		}
+	}
 	return &serverView{
-		app:     app,
-		objects: objects,
-		busName: busName,
-		parent:  parent,
-		originX: originX,
-		originY: originY,
-		width:   width,
-		height:  height,
-		appID:   appID,
+		app:        app,
+		objects:    objects,
+		childIndex: childIndex,
+		busName:    busName,
+		parent:     parent,
+		originX:    originX,
+		originY:    originY,
+		width:      width,
+		height:     height,
+		appID:      appID,
 	}
 }
 
@@ -131,14 +149,8 @@ func (v *serverView) indexInParent(obj Object) int32 {
 		// the parent's child array, so 0 would overwrite another app.
 		return -1
 	}
-	parent, ok := v.objects[obj.Parent]
-	if !ok {
-		return -1
-	}
-	for i, child := range parent.Children {
-		if child == obj.Path {
-			return int32(i)
-		}
+	if index, ok := v.childIndex[obj.Path]; ok {
+		return index
 	}
 	return -1
 }
@@ -246,7 +258,11 @@ func (v *serverView) handleCache(msg *dbusMsg) callResult {
 			})
 		}
 	})
-	return okResult("a((so)(so)(so)iiassusau)", e.bytes())
+	body := e.bytes()
+	if len(body) > int(maxBodyLen) {
+		return errResult("org.freedesktop.DBus.Error.LimitsExceeded", "cache items exceed the 4MB message limit")
+	}
+	return okResult("a((so)(so)(so)iiassusau)", body)
 }
 
 func (v *serverView) handleCacheProperties(msg *dbusMsg) callResult {
@@ -348,6 +364,12 @@ func (v *serverView) handleProperties(msg *dbusMsg) callResult {
 			return errResult("org.freedesktop.DBus.Error.UnknownProperty", "unknown property "+iface+"."+name)
 		}
 		if iface == atspiApplication && name == "Id" && obj.Path == v.app.RootPath {
+			// Only the registry that embedded this application may set
+			// the Id. Objects on the bus are reachable by any peer, so
+			// the identity of the caller is the authorization check.
+			if msg.sender == "" || msg.sender != v.parent.Name {
+				return errResult("org.freedesktop.DBus.Error.PropertyReadOnly", "property "+iface+"."+name+" is read-only")
+			}
 			if sig != "i" {
 				return errResult("org.freedesktop.DBus.Error.InvalidArgs", "Application.Id needs an int32")
 			}
@@ -409,7 +431,11 @@ func (v *serverView) properties(obj Object, iface string) map[string]propertyVal
 		}
 		props["version"] = propertyValue{"u", func(e *dbusEncoder) { e.uint32Val(1) }}
 		props["CharacterCount"] = propertyValue{"i", func(e *dbusEncoder) {
-			e.int32Val(int32(utf8.RuneCountInString(obj.Value))) //nolint:gosec // reason: a page value is far below MaxInt32.
+			value := obj.Value
+			if obj.Password {
+				value = ""
+			}
+			e.int32Val(int32(utf8.RuneCountInString(value))) //nolint:gosec // reason: a page value is far below MaxInt32.
 		}}
 		props["CaretOffset"] = propertyValue{"i", func(e *dbusEncoder) { e.int32Val(0) }}
 	case atspiValue:
@@ -730,7 +756,12 @@ func (v *serverView) handleText(msg *dbusMsg) callResult {
 	if !ok || !textCapable(obj) {
 		return errResult("org.freedesktop.DBus.Error.UnknownObject", "object has no text interface")
 	}
-	text := []rune(obj.Value)
+	// Redact at the serving boundary too: a caller that builds Objects
+	// without Map must not be able to read a password value either.
+	value := obj.Value
+	if obj.Password {
+		value = ""
+	}
 	argOffset := func() (int32, callResult) {
 		d := dbusDecoder{body: msg.body}
 		offset, err := d.int32Val()
@@ -739,8 +770,7 @@ func (v *serverView) handleText(msg *dbusMsg) callResult {
 		}
 		return offset, emptyResult()
 	}
-	switch msg.member {
-	case "GetText":
+	if msg.member == "GetText" {
 		d := dbusDecoder{body: msg.body}
 		start, err := d.int32Val()
 		if err != nil {
@@ -750,7 +780,10 @@ func (v *serverView) handleText(msg *dbusMsg) callResult {
 		if err != nil {
 			return errResult("org.freedesktop.DBus.Error.InvalidArgs", err.Error())
 		}
-		return okResult("s", encodeStringValue(sliceRunes(text, start, end)))
+		return okResult("s", encodeStringValue(textRange(value, start, end)))
+	}
+	text := []rune(value)
+	switch msg.member {
 	case "GetStringAtOffset", "GetTextAtOffset", "GetTextBeforeOffset", "GetTextAfterOffset":
 		offset, res := argOffset()
 		if res.errName != "" {
@@ -863,8 +896,13 @@ func (v *serverView) handleText(msg *dbusMsg) callResult {
 	return errResult("org.freedesktop.DBus.Error.UnknownMethod", "unknown method "+msg.member)
 }
 
-func sliceRunes(text []rune, start, end int32) string {
-	n := int32(len(text)) //nolint:gosec // reason: page text is far below MaxInt32.
+// textRange returns the runes in text from start to end. A negative start
+// means 0, an end past the rune count or below zero means the end of the
+// value, and a start past the end collapses to the end. It walks the string
+// once to find the two byte offsets, so a short read never allocates a rune
+// slice for the whole value.
+func textRange(text string, start, end int32) string {
+	n := int32(utf8.RuneCountInString(text)) //nolint:gosec // reason: page text is far below MaxInt32.
 	if end < 0 || end > n {
 		end = n
 	}
@@ -874,7 +912,23 @@ func sliceRunes(text []rune, start, end int32) string {
 	if start > end {
 		start = end
 	}
-	return string(text[start:end])
+	if start == 0 && end == n {
+		return text
+	}
+	startByte := len(text)
+	endByte := len(text)
+	runeIndex := int32(0)
+	for byteIndex := range text {
+		if runeIndex == start {
+			startByte = byteIndex
+		}
+		if runeIndex == end {
+			endByte = byteIndex
+			break
+		}
+		runeIndex++
+	}
+	return text[startByte:endByte]
 }
 
 func textBoundaryGranularity(boundary uint32) uint32 {

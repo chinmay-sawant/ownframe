@@ -13,15 +13,17 @@ target.
 - Bus discovery. `AT_SPI_BUS_ADDRESS` wins when set. Otherwise the client asks
   `org.a11y.Bus.GetAddress` on the session bus, then falls back to
   `$XDG_RUNTIME_DIR/at-spi/bus*` and `/run/user/<uid>/at-spi/bus*`.
-- Registration. The client claims `org.a11y.atspi.ownframe.app`, or a
-  `-<pid>` suffix when that name is taken, uses the unique bus name for object
-  references, and calls `org.a11y.atspi.Socket.Embed` on the registry root.
-  The unique name lets the registry remove the application when the connection
-  closes.
+- Registration. The client claims `org.a11y.atspi.ownframe.app`, or that name
+  with a randomized per-process suffix when it is taken, uses the unique bus
+  name for object references, and calls `org.a11y.atspi.Socket.Embed` on the
+  registry root. The unique name lets the registry remove the application when
+  the connection closes. If the claim fails, publication stays unavailable and
+  the failure reason is reported.
 - Wire protocol. `dbus_wire.go` frames D-Bus messages.
   `dbus_value.go` encodes and decodes the scalar, struct, array, variant,
   and dictionary values the AT-SPI interfaces need. Replies are matched by
-  serial, so queued `NameAcquired` and other signals do not confuse a call.
+  serial and sender, so a forged reply or a queued `NameAcquired` signal does
+  not confuse a call.
 - Interfaces. Every object serves `org.a11y.atspi.Accessible` and
   `org.a11y.atspi.Component`. Text-bearing nodes add
   `org.a11y.atspi.Text`; combo boxes add `org.a11y.atspi.Value`; nodes with

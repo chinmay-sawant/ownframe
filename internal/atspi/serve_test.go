@@ -28,12 +28,17 @@ func objectPathFor(t *testing.T, view *serverView, id host.AccessibilityNodeID) 
 }
 
 func callView(view *serverView, path, iface, member string, body []byte) callResult {
+	return callViewFrom(view, "", path, iface, member, body)
+}
+
+func callViewFrom(view *serverView, sender, path, iface, member string, body []byte) callResult {
 	return view.handle(&dbusMsg{
 		msgType: dbusTypeMethodCall,
 		path:    path,
 		iface:   iface,
 		member:  member,
 		sig:     "",
+		sender:  sender,
 		body:    body,
 	})
 }
@@ -94,7 +99,7 @@ func TestServeProperties(t *testing.T) {
 	set.stringVal(atspiApplication)
 	set.stringVal("Id")
 	set.variant("i", func(e *dbusEncoder) { e.int32Val(7) })
-	if res := callView(view, accessibleRootPath, dbusProperties, "Set", set.bytes()); res.errName != "" {
+	if res := callViewFrom(view, ":1.1", accessibleRootPath, dbusProperties, "Set", set.bytes()); res.errName != "" {
 		t.Fatalf("set id: %s", res.errText)
 	}
 	if *appID != 7 {
@@ -308,6 +313,46 @@ func TestServeRootIndexAndParent(t *testing.T) {
 	parentName, parentPath := decodeStructSOResult(t, callView(view, accessibleRootPath, atspiAccessible, "GetParent", nil))
 	if parentName != "" || parentPath != atspiNullPath {
 		t.Fatalf("unseeded parent = %q %q", parentName, parentPath)
+	}
+}
+
+func TestServeChildIndex(t *testing.T) {
+	view, _ := testServerView(t)
+	docPath := objectPathFor(t, view, "document")
+	pwPath := objectPathFor(t, view, "id:pw")
+
+	if got := decodeInt32Result(t, callView(view, docPath, atspiAccessible, "GetIndexInParent", nil)); got != 0 {
+		t.Fatalf("document index = %d", got)
+	}
+	if got := decodeInt32Result(t, callView(view, pwPath, atspiAccessible, "GetIndexInParent", nil)); got != 2 {
+		t.Fatalf("password index = %d", got)
+	}
+
+	orphan := Object{Path: objectPath("orphan"), Parent: docPath, Role: RoleStatic}
+	view.objects[orphan.Path] = orphan
+	if got := decodeInt32Result(t, callView(view, orphan.Path, atspiAccessible, "GetIndexInParent", nil)); got != -1 {
+		t.Fatalf("orphan index = %d", got)
+	}
+}
+
+func TestTextRangeClamps(t *testing.T) {
+	const value = "héllo 世界"
+	cases := []struct {
+		start, end int32
+		want       string
+	}{
+		{0, -1, value},
+		{1, 3, "él"},
+		{2, 2, ""},
+		{-5, 2, "hé"},
+		{5, 99, " 世界"},
+		{99, 99, ""},
+		{4, 1, ""},
+	}
+	for _, c := range cases {
+		if got := textRange(value, c.start, c.end); got != c.want {
+			t.Fatalf("textRange(%q, %d, %d) = %q, want %q", value, c.start, c.end, got, c.want)
+		}
 	}
 }
 

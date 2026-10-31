@@ -10,6 +10,7 @@ import (
 
 const (
 	dbusEndianLittle byte = 'l'
+	dbusEndianBig    byte = 'B'
 
 	dbusTypeMethodCall   byte = 1
 	dbusTypeMethodReturn byte = 2
@@ -157,21 +158,35 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 		return nil, err
 	}
 	endian := fixed[0]
-	if endian != dbusEndianLittle {
+	if endian != dbusEndianLittle && endian != dbusEndianBig {
 		return nil, fmt.Errorf("unsupported dbus endianness: %c", endian)
 	}
 	msg := &dbusMsg{
 		msgType: fixed[1],
 		flags:   fixed[2],
 	}
-	bodyLen := binary.LittleEndian.Uint32(fixed[4:8])
+	var bodyLen, serial, fieldsLen uint32
+	if endian == dbusEndianBig {
+		bodyLen = binary.BigEndian.Uint32(fixed[4:8])
+		serial = binary.BigEndian.Uint32(fixed[8:12])
+		fieldsLen = binary.BigEndian.Uint32(fixed[12:16])
+	} else {
+		bodyLen = binary.LittleEndian.Uint32(fixed[4:8])
+		serial = binary.LittleEndian.Uint32(fixed[8:12])
+		fieldsLen = binary.LittleEndian.Uint32(fixed[12:16])
+	}
 	if bodyLen > maxBodyLen {
 		return nil, fmt.Errorf("dbus body length %d exceeds 4MB limit", bodyLen)
 	}
-	msg.serial = binary.LittleEndian.Uint32(fixed[8:12])
-	fieldsLen := binary.LittleEndian.Uint32(fixed[12:16])
+	msg.serial = serial
 	if fieldsLen > maxFieldsLen {
 		return nil, fmt.Errorf("dbus fields length %d exceeds 64KB limit", fieldsLen)
+	}
+	if endian == dbusEndianBig {
+		if err := discardFrame(r, fieldsLen, bodyLen); err != nil {
+			return nil, err
+		}
+		return &dbusMsg{}, nil
 	}
 
 	fieldsBytes := make([]byte, fieldsLen)
@@ -278,6 +293,16 @@ func readMessage(r io.Reader) (*dbusMsg, error) {
 	}
 
 	return msg, nil
+}
+
+// discardFrame consumes a well-formed frame whose fields and body the client
+// does not decode, keeping the connection in sync for the next message.
+func discardFrame(r io.Reader, fieldsLen, bodyLen uint32) error {
+	totalHeader := uint64(dbusFixedHeaderLen) + uint64(fieldsLen)
+	padLen := (dbusAlign8 - (totalHeader % dbusAlign8)) % dbusAlign8
+	discard := uint64(fieldsLen) + padLen + uint64(bodyLen)
+	_, err := io.CopyN(io.Discard, r, int64(discard)) //nolint:gosec // reason: the length caps bound the frame to about 4.25MB, far below MaxInt64.
+	return err
 }
 
 func encodeStringBody(s string) []byte {

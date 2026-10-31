@@ -5,6 +5,7 @@ type Publisher struct {
 	bus       Bus
 	app       Application
 	doc       uint64
+	rev       uint64
 	published bool
 }
 
@@ -18,18 +19,16 @@ func (p *Publisher) Live() bool {
 }
 
 // Ready reports whether the next Publish should walk the tree and try
-// the bus. A live bus that dropped is retried at its own interval.
+// the bus. A bus that exposes its own backoff decides even while it is
+// live, so a failed Embed cannot be retried on every frame.
 func (p *Publisher) Ready() bool {
 	if p == nil || p.bus == nil {
 		return false
 	}
-	if p.Live() {
-		return true
-	}
 	if r, ok := p.bus.(interface{ Ready() bool }); ok {
 		return r.Ready()
 	}
-	return false
+	return p.Live()
 }
 
 // SetOrigin records the window content origin for screen coordinates.

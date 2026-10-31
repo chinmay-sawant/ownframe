@@ -3,8 +3,10 @@
 1.0 native hosts are desktop `Run` (Linux, Windows, macOS) and Android
 `BindMobile`. That is a native window for an operator you control: one
 compiled Go process and an Ebiten window or Activity, no Chromium, no
-WebView. Orca, NVDA, VoiceOver, and TalkBack cannot inspect it. Native
-does not mean OS widgets or a screen-reader product for other people.
+WebView. On Linux, Orca and Accerciser can read the page tree over AT-SPI;
+AT-initiated actions are not wired. NVDA, VoiceOver, and TalkBack cannot
+inspect it. Native does not mean OS widgets or a complete screen-reader
+adapter.
 
 `scripts/browser.sh` is a wasm canvas preview. `-web` / `Serve` is a loopback
 PNG debugger. iOS has no Xcode project and is not a 1.0 target.

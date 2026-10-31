@@ -115,7 +115,7 @@ Start with the [documentation index](documentation/README.md) or [feature list a
 - [Clipboard](documentation/clipboard.md)
 - [Comparisons with other UI libraries](documentation/compare-syntax.md)
 
-The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. That snapshot is for the operator who runs the process, not for other people or screen-reader users. Linux serves that snapshot over a live AT-SPI bridge, so Accerciser and Orca can inspect the window. AT-initiated actions are not wired to the page yet. UI Automation, VoiceOver, and TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
+The screen is a laid-out page, with no live DOM, JavaScript, video, canvas, or WebGL. 1.0 ships a Go accessibility snapshot. Linux serves that snapshot over a live AT-SPI bridge, so Orca and Accerciser can read the tree. AT-initiated actions are not wired to the page yet. Windows UI Automation, macOS VoiceOver, and Android TalkBack are not shipped. The [feature list](documentation/features.md) records the supported behavior and remaining limits.
 
 ## Development
 

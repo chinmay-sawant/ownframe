@@ -16,7 +16,7 @@ This is a proposed release note for review alongside the production-readiness PR
 
 The 1.0 native-host scope is desktop Linux, Windows, and macOS through `Run`, plus Android through `BindMobile`. Wasm is a canvas preview. `-web` is a loopback PNG debugger.
 
-OwnFrame does not ship a live screen-reader adapter. The AT-SPI mapping has no live D-Bus client. UI Automation, VoiceOver, and TalkBack are not shipped. Native Windows composing-input validation remains open, and macOS input validation remains deferred pending a host.
+On Linux, the AT-SPI bridge publishes the page tree to the accessibility bus, so Orca and Accerciser can read it; AT-initiated actions are not wired. Windows UI Automation, macOS VoiceOver, and Android TalkBack are not shipped. Native Windows composing-input validation remains open, and macOS input validation remains deferred pending a host.
 
 ## Validation record
 

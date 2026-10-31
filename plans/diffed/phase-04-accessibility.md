@@ -8,8 +8,8 @@
 
 ## Overview
 
-OwnFrame currently generates an abstract accessibility tree via `page.Access()` ([internal/page/a11y](file:///home/chinmay/ChinmayPersonalProjects/ownframe/internal/page/a11y)). However, native operating system assistive technologies cannot inspect or interact with the rendered window:
-- **Linux:** [internal/atspi](file:///home/chinmay/ChinmayPersonalProjects/ownframe/internal/atspi) defines role mappings, but runs against a `FakeBus` with `Live = false`. The live D-Bus client is not implemented, preventing Orca from reading the screen.
+OwnFrame generates an abstract accessibility tree via `page.Access()` ([internal/page/a11y](file:///home/chinmay/ChinmayPersonalProjects/ownframe/internal/page/a11y)). Native operating system assistive technology coverage remains incomplete:
+- **Linux:** [internal/atspi](file:///home/chinmay/ChinmayPersonalProjects/ownframe/internal/atspi) maps the snapshot to AT-SPI and serves it over the accessibility bus. Orca and Accerciser can read the tree; AT-initiated actions are not wired.
 - **Windows:** Windows UI Automation (UIA) provider interfaces (`IRawElementProviderSimple`, `IInvokeProvider`, `ITextProvider`) are not implemented, leaving NVDA, JAWS, and Windows Narrator blind to the canvas.
 - **macOS:** Cocoa `NSAccessibilityElement` protocols are not hooked up, preventing VoiceOver navigation.
 - **Android:** The custom `EbitenView` does not expose an `AccessibilityNodeProvider`, preventing TalkBack from focusing or announcing screen content.

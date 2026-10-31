@@ -13,7 +13,7 @@ Adds the live Linux AT-SPI bridge that issue #48 was opened to validate. A Linux
 ### Bus transport and registration
 
 - Discover `org.a11y.Bus` through `AT_SPI_BUS_ADDRESS`, `org.a11y.Bus.GetAddress`, or the runtime socket paths.
-- Authenticate with `EXTERNAL`, claim `org.a11y.atspi.ownframe.app` with a `-<pid>` fallback, embed with `org.a11y.atspi.Registry`, and reconnect after a dropped connection.
+- Authenticate with `EXTERNAL`, claim `org.a11y.atspi.ownframe.app` with a randomized per-process suffix when the name is taken, embed with `org.a11y.atspi.Registry`, and reconnect after a dropped connection.
 - Match replies by serial. Add the value codec and fix array lengths, variant alignment, and the `siiva{sv}` event shape.
 
 ### Served interfaces

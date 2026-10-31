@@ -22,6 +22,7 @@ func newShell(ctx context.Context, app host.Screen) *shell {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	ctxDone := ctx.Done()
 	runCtx, cancel := context.WithCancel(ctx)
 
 	width, height := 0, 0
@@ -32,6 +33,7 @@ func newShell(ctx context.Context, app host.Screen) *shell {
 	game := &shell{
 		app:        app,
 		ctx:        runCtx,
+		ctxDone:    ctxDone,
 		cancel:     cancel,
 		chords:     newChordWatch(),
 		watched:    newKeyWatch(),

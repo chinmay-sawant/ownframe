@@ -78,14 +78,27 @@ channel and applied on the game loop.
 - `SetCrashDir` and other path APIs are trusted; the crash directory is not
   sandboxed.
 - The AT-SPI mapping must not log accessible names, descriptions, or
-  values. `internal/atspi.Summarize` prints role and path only. The live bus
-  publishes the tree to the per-user accessibility bus, where any process on
-  that bus can read names, descriptions, and non-password values. Password
-  values are always empty; password nodes keep the editable state but do not
-  advertise SetText.
+  values. `internal/atspi.Summarize` prints role and path only. The
+  [AT-SPI bridge](#at-spi-bridge) section covers the bus boundary and the
+  password guarantee.
 - Environment debug flags (`OWNFRAME_FILEPICK_DEBUG`, `OWNFRAME_PACE_DEBUG`)
   are dev-only and off unless explicitly set. They write to stderr and may
   include paths or command failure details, so keep them off in shipped binaries.
+
+## AT-SPI bridge
+
+The Linux accessibility bus is a per-user trust boundary. Any process on that
+bus can read names, descriptions, and non-password values, and can call the
+served interfaces.
+
+- Discovery. The client accepts an `org.a11y.Bus.GetAddress` reply only from
+  the current owner of `org.a11y.Bus`, and rejects an accessibility address
+  equal to the session bus address.
+- Registration. A write to the `org.a11y.atspi.Application.Id` property is
+  accepted only from the registry sender. Other callers get an error.
+- Opt out. Setting `NO_AT_BRIDGE` to `1` or `true` disables publishing.
+- Passwords. Password values are always empty; password nodes keep the editable
+  state but do not advertise SetText.
 
 ## Boundary by API
 
