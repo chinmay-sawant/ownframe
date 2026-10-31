@@ -9,6 +9,11 @@ import (
 	"github.com/chinmay-sawant/ownframe/pagetest"
 )
 
+const (
+	testWidth = 480
+	testHeight = 320
+)
+
 func TestNewPageConnectsNativeClickHandler(t *testing.T) {
 	t.Parallel()
 	clicked := 0
@@ -21,7 +26,7 @@ func TestNewPageConnectsNativeClickHandler(t *testing.T) {
 
 	page, err := NewPage(ownframe.Config{
 		Title: "UI Builder",
-		Width: 480, Height: 320,
+		Width: testWidth, Height: testHeight,
 	}, root)
 	if err != nil {
 		t.Fatal(err)
@@ -61,7 +66,7 @@ func TestNewPageRejectsConflictingTemplate(t *testing.T) {
 func TestNewPageRejectsTemplateActionsInTitleAndText(t *testing.T) {
 	t.Parallel()
 	page, err := NewPage(ownframe.Config{
-		Title: "{{.Admin}}", Width: 480, Height: 320,
+		Title: "{{.Admin}}", Width: testWidth, Height: testHeight,
 	}, Div().Children(Text("{{.Password}}")))
 	if err != nil {
 		t.Fatal(err)
