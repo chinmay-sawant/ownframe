@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const expectedImplementedPropertyCount = 555
+
 func TestAllImplementedPropertiesMatchCompatibilityMatrix(t *testing.T) {
 	f, err := os.Open("../documentation/compatibility-matrix.md")
 	if err != nil {
@@ -47,11 +49,11 @@ func TestAllImplementedPropertiesMatchCompatibilityMatrix(t *testing.T) {
 	if err := scanner.Err(); err != nil {
 		t.Fatal(err)
 	}
-	if len(seen) != 555 {
+	if len(seen) != expectedImplementedPropertyCount {
 		t.Fatalf("compatibility matrix: got %d implemented properties; want 555", len(seen))
 	}
 	names := SupportedProperties()
-	if len(names) != 555 {
+	if len(names) != expectedImplementedPropertyCount {
 		t.Fatalf("builder: got %d implemented properties; want 555", len(names))
 	}
 	if !slices.IsSorted(names) {
