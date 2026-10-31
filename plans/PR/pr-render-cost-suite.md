@@ -162,9 +162,9 @@ Running 10 performance scenarios (warm iterations: 5)...
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
-| `.go` | 14 | 2056 | 41 |
-| `.md` | 3 | 470 | 0 |
+| `.go` | 17 | 2072 | 49 |
+| `.md` | 3 | 443 | 0 |
 | `.mod` | 1 | 1 | 1 |
 | `.sum` | 1 | 2 | 0 |
 | `.work` | 1 | 1 | 0 |
-| **Total** | **20** | **2530** | **42** |
+| **Total** | **23** | **2519** | **50** |
