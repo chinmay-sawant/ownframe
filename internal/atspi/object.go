@@ -21,7 +21,8 @@ type State struct {
 	Enabled, Sensitive bool
 	Focusable, Focused bool
 	Checkable, Checked bool
-	Editable           bool
+	Editable, ReadOnly bool
+	Active             bool
 }
 
 // Application is the published tree for one page snapshot.
@@ -32,7 +33,12 @@ type Application struct {
 	Objects            []Object
 }
 
-// Event is a bus notification. It holds no accessible text.
+// Event is a bus notification. It holds no accessible text beyond the
+// node reference an AT needs to query the tree.
 type Event struct {
 	Path, Kind string
+	Detail     string
+	Child      string
+	Index      int32
+	Enabled    bool
 }

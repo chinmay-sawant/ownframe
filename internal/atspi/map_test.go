@@ -8,14 +8,18 @@ import (
 
 func TestMapPreservesOrderAndRedactsPassword(t *testing.T) {
 	app := Map(sampleTree())
-	if app.Name != DefaultName || app.Document != testDoc || app.Revision != testRev {
+	if app.Name != ApplicationName || app.RootPath != accessibleRootPath || app.Document != testDoc || app.Revision != testRev {
 		t.Fatalf("app: %+v", app)
 	}
-	if len(app.Objects) != 5 {
+	if len(app.Objects) != 6 {
 		t.Fatalf("objects %d", len(app.Objects))
 	}
-	root := app.Objects[0]
-	if root.Role != RoleDocumentWeb || len(root.Children) != 4 {
+	appRoot := app.Objects[0]
+	if appRoot.Role != RoleApplication || appRoot.Path != accessibleRootPath || len(appRoot.Children) != 1 || !appRoot.State.Active {
+		t.Fatalf("app root: %+v", appRoot)
+	}
+	root := byID(t, app, "document")
+	if root.Role != RoleDocumentWeb || len(root.Children) != 4 || root.Parent != accessibleRootPath || !root.State.Active {
 		t.Fatalf("root: %+v", root)
 	}
 	name := byID(t, app, "id:name")
@@ -67,8 +71,14 @@ func TestMapPathsSurviveInsertion(t *testing.T) {
 		}
 	}
 	password := byID(t, after, "id:pw")
-	if password.State.Editable {
-		t.Fatal("password advertises editable state")
+	if password.State.Focused {
+		t.Fatal("password unexpectedly focused")
+	}
+	if !password.State.Editable {
+		t.Fatal("password should stay editable while hiding its value")
+	}
+	if password.Value != "" {
+		t.Fatal("password value leaked")
 	}
 	for _, action := range password.Actions {
 		if action == ActionSetText {

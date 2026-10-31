@@ -23,6 +23,9 @@ type shell struct {
 	// ctx is run-scoped, set once in NewGame and never per request.
 	// Ebiten Update/Draw take no ctx, so storage is forced.
 	ctx context.Context
+	// ctxDone is the caller's done channel. A background context has none,
+	// so no watcher is started for hosts that cannot observe cancellation.
+	ctxDone <-chan struct{}
 	// cancel releases ctx; set once with ctx, never replaced.
 	cancel       context.CancelFunc
 	img          *ebiten.Image
@@ -77,6 +80,7 @@ type shell struct {
 	dev        devState
 	ime        imeState
 	a11y       a11yHost
+	a11yOrigin func() (int, int)
 	commits    uint64
 	skipped    uint64
 	// placementID remembers the window rect across launches; empty disables.

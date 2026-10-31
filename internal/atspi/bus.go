@@ -1,7 +1,7 @@
 package atspi
 
 // Bus is the AT-SPI transport seam. FakeBus records calls for tests.
-// LiveBus never reports Live in this slice.
+// LiveBus connects to the Linux accessibility bus when it is available.
 type Bus interface {
 	Claim(name string) error
 	Publish(app Application) error

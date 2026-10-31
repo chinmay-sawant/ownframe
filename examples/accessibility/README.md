@@ -69,10 +69,9 @@ Run the full repository suite with `make test`.
 
 ## Know what this demo does not test
 
-The tree preview checks the page API. Linux maps that tree to AT-SPI objects
-in tests; it does not register them on the accessibility bus, so Orca cannot
-inspect this demo yet. UI Automation, VoiceOver, and TalkBack are not
-shipped. CSS-hidden elements may also remain in the tree because Blinkless
-does not expose computed visibility. See
-[atspi.md](../../documentation/atspi.md) and the
+The tree preview checks the page API. Linux also serves that tree over the
+AT-SPI accessibility bus, so Accerciser and Orca can inspect the demo. UI
+Automation, VoiceOver, and TalkBack are not shipped. CSS-hidden elements may
+also remain in the tree because Blinkless does not expose computed visibility.
+See [atspi.md](../../documentation/atspi.md) and the
 [native accessibility status](../../documentation/accessibility-native.md).
