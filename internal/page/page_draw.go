@@ -107,6 +107,16 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	p.dataMu.RLock()
 	defer p.dataMu.RUnlock()
 
+	// A Redraw with no new data, form input, size, or scroll change reuses
+	// the last merged template body. Every path that runs application code
+	// marks the form dirty first (handlers can mutate the data in place
+	// through the SetData pointer), so a clean flag means the body is
+	// still current.
+	if !p.formDirty && p.lastSyncBody != "" {
+		p.stats.lastTemplate = 0
+		return p.lastSyncBody, nil
+	}
+
 	return draw.Execute(
 		track,
 		len(p.source),

@@ -187,9 +187,10 @@ linters:
       - linters: [gochecknoglobals]
         path: "internal/(clipboard/(clipboard|x11_conn|x11_read)\\.go|crash/crash\\.go|ipc/ipc\\.go|render/engine\\.go|textrun/face\\.go)|report\\.go"
       # Immutable lookup tables: emoji data, blend modes, key chords, panel
-      # names, state pseudos, and the preview target lists.
+      # names, state pseudos, transition property list, and the preview
+      # target lists.
       - linters: [gochecknoglobals]
-        path: "internal/(emoji/emoji_(table|more)\\.go|masking/blend\\.go|window/(chord_watch|devtools_keys|devtools_ops_lines|devtools_tabs|update)\\.go|render/state_pseudos\\.go|(animation|transition)preview/targets\\.go)"
+        path: "internal/(emoji/emoji_(table|more)\\.go|masking/blend\\.go|motion/transition\\.go|window/(chord_watch|devtools_keys|devtools_ops_lines|devtools_tabs|update)\\.go|render/state_pseudos\\.go|(animation|transition)preview/targets\\.go)"
       # Intentional process caches: the fetch client, the file dialog list,
       # the page patch pool and source registry, the replay raster caches,
       # and the precomputed window palette and scrollbar art.
