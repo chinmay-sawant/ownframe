@@ -70,31 +70,38 @@ func generate() error {
 	fmt.Fprintln(&buf, "// DO NOT EDIT: run go generate ./ui after updating the matrix.")
 	fmt.Fprintln(&buf, "package ui")
 	fmt.Fprintln(&buf)
-	fmt.Fprintln(&buf, "import (")
-	fmt.Fprintln(&buf, "\t\"sort\"")
-	fmt.Fprintln(&buf, "\t\"strings\"")
-	fmt.Fprintln(&buf, ")")
+	fmt.Fprintln(&buf, "import \"strings\"")
 	fmt.Fprintln(&buf)
 	fmt.Fprintln(&buf, "// SupportsProperty reports whether a CSS property is marked Implemented in")
 	fmt.Fprintln(&buf, "// the pinned Blinkless compatibility snapshot. This is name coverage only;")
 	fmt.Fprintln(&buf, "// individual value and layout semantics are enforced by Blinkless.")
 	fmt.Fprintln(&buf, "func SupportsProperty(property string) bool {")
-	fmt.Fprintln(&buf, "\t_, ok := implementedCSS[strings.ToLower(strings.TrimSpace(property))]")
-	fmt.Fprintln(&buf, "\treturn ok")
+	fmt.Fprintln(&buf, "\tswitch strings.ToLower(strings.TrimSpace(property)) {")
+	fmt.Fprint(&buf, "\tcase ")
+	for i, name := range props {
+		if i != 0 {
+			if i%5 == 0 {
+				fmt.Fprint(&buf, ",\n\t\t")
+			} else {
+				fmt.Fprint(&buf, ", ")
+			}
+		}
+		fmt.Fprintf(&buf, "%q", name)
+	}
+	fmt.Fprintln(&buf, ":")
+	fmt.Fprintln(&buf, "\t\treturn true")
+	fmt.Fprintln(&buf, "\tdefault:")
+	fmt.Fprintln(&buf, "\t\treturn false")
+	fmt.Fprintln(&buf, "\t}")
 	fmt.Fprintln(&buf, "}")
 	fmt.Fprintln(&buf)
 	fmt.Fprintln(&buf, "// SupportedProperties lists all 555 implemented CSS property names, sorted.")
 	fmt.Fprintln(&buf, "func SupportedProperties() []string {")
-	fmt.Fprintln(&buf, "\tnames := make([]string, 0, len(implementedCSS))")
-	fmt.Fprintln(&buf, "\tfor name := range implementedCSS { names = append(names, name) }")
-	fmt.Fprintln(&buf, "\tsort.Strings(names)")
-	fmt.Fprintln(&buf, "\treturn names")
-	fmt.Fprintln(&buf, "}")
-	fmt.Fprintln(&buf)
-	fmt.Fprintln(&buf, "var implementedCSS = map[string]struct{}{")
+	fmt.Fprintln(&buf, "\treturn []string{")
 	for _, name := range props {
-		fmt.Fprintf(&buf, "\t%q: {},\n", name)
+		fmt.Fprintf(&buf, "\t\t%q,\n", name)
 	}
+	fmt.Fprintln(&buf, "\t}")
 	fmt.Fprintln(&buf, "}")
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
