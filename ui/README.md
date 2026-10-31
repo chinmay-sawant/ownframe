@@ -5,7 +5,7 @@ Blinkless a component framework. OwnFrame still owns application windows,
 input, and callbacks; Blinkless still parses HTML, cascades CSS, and lays out
 the generated document.
 
-## Run the three sample components
+## Run the interactive builder showcase
 
 From the repository root:
 
@@ -15,8 +15,14 @@ Or open the native window:
 
     go run ./examples/ui-builder
 
-The demo covers a styled card, a flexbox toolbar with native click handlers,
-and a file-explorer list. These correspond to the three use cases in issue #59.
+The demo includes the original styled branding card, a clickable flexbox toolbar,
+and a selectable file-explorer list. It also demonstrates a larger, dark-themed
+system dashboard with CPU/memory/disk cards, two native CSS bar charts,
+process rows, and a refresh button. **All performance figures are synthetic
+fixtures**, not live machine readings. Controls use OwnFrame's public
+\`data-action\`/\`Handlers.Click\` mechanism, so no JavaScript is required.
+The native desktop window has a draggable custom title bar and working
+minimize/maximize/close controls.
 
 ## Fluent API
 
@@ -46,7 +52,7 @@ For custom HTML attributes use Attr, and for custom styles use CSS:
 
 ## Public examples
 
-- [`examples/ui-builder`](../examples/ui-builder/main.go) contains the original card, toolbar, and file explorer samples.
+- [`examples/ui-builder`](../examples/ui-builder/main.go) contains the interactive dark system dashboard, chart examples, and working card, toolbar, and file explorer actions.
 - [`examples/jmap-mail`](../examples/jmap-mail/README.md) is a three-pane JMAP-inspired mail demo with seeded mailboxes and working local selection/actions. It imports the public `ownframe` and `ownframe/ui` packages only, not private `internal` packages.
 
 ## Coverage of 555 implemented CSS properties
