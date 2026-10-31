@@ -12,6 +12,11 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+const (
+	demoWidth = 920
+	demoHeight = 640
+)
+
 func main() {
 	web := flag.Bool("web", false, "serve the preview in a browser")
 	addr := flag.String("addr", "127.0.0.1:8131", "address for -web")
@@ -19,7 +24,7 @@ func main() {
 
 	page, err := ui.NewPage(ownframe.Config{
 		Title: "OwnFrame Builder Experiment",
-		Width: 920, Height: 640,
+		Width: demoWidth, Height: demoHeight,
 	}, screen())
 	if err != nil {
 		log.Fatal(err)
