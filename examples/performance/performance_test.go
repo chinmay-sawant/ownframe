@@ -39,9 +39,14 @@ func TestAllScenariosRender(t *testing.T) {
 				t.Errorf("[%s] expected > 0 ops, got %d", s.ID, stats.Ops)
 			}
 
-			boxes := page.Boxes()
-			if len(boxes) <= 0 {
-				t.Errorf("[%s] expected > 0 boxes, got %d", s.ID, len(boxes))
+			boxesCount := 0
+			if d := page.Probe().Display(); d != nil {
+				boxesCount = len(d.Boxes)
+			} else {
+				boxesCount = len(page.Boxes())
+			}
+			if boxesCount <= 0 {
+				t.Errorf("[%s] expected > 0 boxes, got %d", s.ID, boxesCount)
 			}
 
 			// Test warm redraw
