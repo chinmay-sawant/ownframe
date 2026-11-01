@@ -11,15 +11,17 @@ import (
 )
 
 type shell struct {
-	renderer    replay.Renderer
-	transparent bool
-	interactive func(int, int) bool
-	draggable   func(int, int) bool
-	perf        bool
-	perfHooks   perfHooks
-	windowDrag  windowDrag
-	passthrough bool
-	app         host.Screen
+	renderer     replay.Renderer
+	transparent  bool
+	interactive  func(int, int) bool
+	draggable    func(int, int) bool
+	perf         bool
+	perfOption   bool
+	perfHooks    perfHooks
+	windowDrag   windowDrag
+	nativeCursor nativeWindowDrag
+	passthrough  bool
+	app          host.Screen
 	// ctx is run-scoped, set once in NewGame and never per request.
 	// Ebiten Update/Draw take no ctx, so storage is forced.
 	ctx context.Context

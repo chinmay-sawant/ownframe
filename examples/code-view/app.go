@@ -474,6 +474,10 @@ func (a *App) SetDevTools(on bool) {
 	a.refresh()
 }
 
+// SessionRestored reports whether EnableSession restored a saved snapshot.
+// main keeps the remembered dock state when no explicit -dev flag passed.
+func (a *App) SessionRestored() bool { return a.sessionRestored }
+
 // openInitial opens the README, or the first file when there is none.
 func (a *App) openInitial() {
 	target := "README.md"

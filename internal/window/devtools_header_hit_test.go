@@ -2,9 +2,9 @@ package window
 
 import "testing"
 
-// TestDevHeaderHitsTouch checks the picker hit ends where the close hit
-// starts, so no dead gap sits between Picker and F12, and the F12 label
-// itself closes the dock.
+// TestDevHeaderHitsTouch checks only the X key closes the dock. The Picker
+// hit covers only its label, the F12 hint takes no hit, and dead space sits
+// between them so a press aimed at Picker or the hint cannot close.
 func TestDevHeaderHitsTouch(t *testing.T) {
 	t.Parallel()
 
@@ -28,24 +28,35 @@ func TestDevHeaderHitsTouch(t *testing.T) {
 		t.Fatalf("hits = %+v, want picker and close", s.dev.hits)
 	}
 
-	if picker.rect.X+picker.rect.W != closer.rect.X {
-		t.Fatalf("picker [%v %v] and close [%v %v] leave a gap",
+	if picker.rect.X+picker.rect.W >= closer.rect.X {
+		t.Fatalf("picker [%v %v] overlaps close [%v %v]",
 			picker.rect.X, picker.rect.X+picker.rect.W, closer.rect.X, closer.rect.X+closer.rect.W)
 	}
 
-	fx := closer.rect.X
-	f12w := devTextWidth("F12")
-	f12Center := fx + f12w/2
-	if !devInRect(closer.rect, f12Center, closer.rect.Y+closer.rect.H/2) {
-		t.Fatalf("F12 center %v not in close rect %+v", f12Center, closer.rect)
+	f12X := devHeaderF12X(s.dev.panel)
+	f12Center := f12X + devTextWidth("F12")/2
+	if devInRect(closer.rect, f12Center, closer.rect.Y+closer.rect.H/2) {
+		t.Fatalf("F12 center %v in close rect %+v", f12Center, closer.rect)
+	}
+	if devInRect(picker.rect, f12Center, closer.rect.Y+closer.rect.H/2) {
+		t.Fatalf("F12 center %v in picker rect %+v", f12Center, picker.rect)
 	}
 
 	s.devPanelPress(int(f12Center), int(closer.rect.Y+closer.rect.H/2))
 	if err := s.devSync(); err != nil {
 		t.Fatal(err)
 	}
+	if !s.dev.on || !d.on {
+		t.Fatal("pressing the F12 hint closed the dock")
+	}
+
+	xX := s.dev.panel.X + s.dev.panel.W - devPanelPad - devTextWidth("X")
+	s.devPanelPress(int(xX+devTextWidth("X")/2), int(closer.rect.Y+closer.rect.H/2))
+	if err := s.devSync(); err != nil {
+		t.Fatal(err)
+	}
 	if s.dev.on || d.on {
-		t.Fatal("pressing the F12 hint did not close the dock")
+		t.Fatal("pressing X did not close the dock")
 	}
 }
 

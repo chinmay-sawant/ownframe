@@ -76,3 +76,13 @@ func clampMin(v, min int) int {
 
 	return v
 }
+
+// SetViewport receives the host's actual CSS viewport. Desktop minimums
+// constrain the OS window, not responsive document layout inside that window.
+func (p *Page) SetViewport(width, height int) {
+	if p.lockView {
+		p.SetSize(width, height)
+		return
+	}
+	p.width, p.height = clampMin(width, 1), clampMin(height, 1)
+}

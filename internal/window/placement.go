@@ -190,12 +190,23 @@ func savePlacement(id string, placement windowPlacement) error {
 // or the saved windowed rect plus the workarea when manually maximized. A
 // WM-maximized window has no saved windowed rect, so the live rect doubles
 // as both. Zero sizes (no desktop loop) are left for the caller to reject.
+// The monitor is the one holding the window center from true origins, not
+// Ebiten's straddle-prone report, so the JSON names the panel the window is
+// actually on.
 func currentPlacement() windowPlacement {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
+	return currentPlacementLocked()
+}
+
+// currentPlacementLocked is currentPlacement for callers holding chromeMu.
+func currentPlacementLocked() windowPlacement {
 	placement := windowPlacement{
-		Maximized: Maximized(),
+		Maximized: manualMax.active || ebiten.IsWindowMaximized(),
 	}
 
-	x, y := ebiten.WindowPosition()
+	x, y := windowPosition()
 	w, h := ebiten.WindowSize()
 
 	if manualMax.active {
@@ -208,6 +219,16 @@ func currentPlacement() windowPlacement {
 		placement.W, placement.H = w, h
 		placement.MaxX, placement.MaxY = x, y
 		placement.MaxW, placement.MaxH = w, h
+	}
+
+	if layout := monitorLayout(); len(layout) != 0 {
+		if m, ok := monitorForWindow(placement.X, placement.Y, placement.W, placement.H, layout); ok {
+			placement.Monitor = m.name
+			return placement
+		}
+		// Center outside every panel: the frame is mostly off-screen (like a
+		// 160px strip). Keep the Ebiten name as a fallback below instead of
+		// naming a panel the window barely touches.
 	}
 
 	if monitor := ebiten.Monitor(); monitor != nil {
@@ -251,6 +272,146 @@ func placementMonitorSize(name string) (int, int, bool) {
 	return 0, 0, false
 }
 
+// liveMonitorResolution reports the size of the monitor Ebiten thinks owns
+// the window right now. It reports false when headless or before the window
+// exists, so callers keep the old behavior. Check this resolution before
+// maximizing: a rect learned on the 1920 panel must never expand onto the
+// 2560 panel, and a 2560 workarea must never land on the 1920 panel.
+func liveMonitorResolution() (int, int, bool) {
+	if isWSLg() {
+		if x, y, ok := nativeWindowPosition(); ok {
+			w, h := ebiten.WindowSize()
+			if m, ok := monitorForWindow(x, y, w, h, monitorLayout()); ok {
+				return m.w, m.h, true
+			}
+		}
+	}
+
+	monitor := ebiten.Monitor()
+	if monitor == nil {
+		return 0, 0, false
+	}
+	w, h := monitor.Size()
+	if w <= 0 || h <= 0 {
+		return 0, 0, false
+	}
+	return w, h, true
+}
+
+// placementPositionVisible reports whether an x,y window origin keeps a
+// grabbable strip inside the true union. Origins come from xrandr when
+// available, so inverted order (2560 at +1920, 1920 at +0) validates
+// against the panels the window actually overlaps. Unknown bounds keep the
+// old behavior and report true.
+func placementPositionVisible(x, y, w, h int) bool {
+	if layout := monitorLayout(); len(layout) != 0 {
+		if minX, minY, maxX, maxY, ok := virtualUnion(layout); ok {
+			nx, ny := clampDragTargetInUnion(x, y, w, h, minX, minY, maxX, maxY)
+			return nx == x && ny == y
+		}
+	}
+	bw, bh := dragOuterBound()
+	return positionVisibleInBound(x, y, w, h, bw, bh)
+}
+
+// placementSubstantiallyVisible reports whether at least half the window
+// area overlaps the true union. Dragging allows a 160px grabbable strip,
+// but closing on that strip must not overwrite a good rect: the next launch
+// would restore a nearly invisible frame.
+func placementSubstantiallyVisible(x, y, w, h int) bool {
+	return substantiallyVisibleInLayout(x, y, w, h, monitorLayout())
+}
+
+// placementOriginVisible reports whether the window origin (the custom
+// header with minimize, maximize, and close) sits inside the true union.
+// A 1120x760 frame at y=149 overlaps the 1920 panel by area, yet its top
+// 68px header sits in the dead zone above y=320 and no double-tap can
+// reach it. Saves and restores must reject that rect.
+func placementOriginVisible(x, y int) bool {
+	return originInLayout(x, y, monitorLayout())
+}
+
+// originInLayout is the pure rule behind placementOriginVisible.
+func originInLayout(x, y int, layout []monitorRect) bool {
+	if len(layout) == 0 {
+		return true
+	}
+	for _, m := range layout {
+		if x >= m.x && x < m.x+m.w && y >= m.y && y < m.y+m.h {
+			return true
+		}
+	}
+	return false
+}
+
+// placementTargetMonitor picks the panel a fresh or rejected rect belongs
+// on: the saved monitor when it fits, else the smallest panel that fits
+// the window, else the largest panel. Top-left of that panel is the
+// explicit position, so launches start at a monitor top-left instead of a
+// cascade in the dead zone.
+func placementTargetMonitor(saved string, w, h int) (monitorRect, bool) {
+	return targetMonitorInLayout(monitorLayout(), saved, w, h)
+}
+
+func targetMonitorInLayout(layout []monitorRect, saved string, w, h int) (monitorRect, bool) {
+	if len(layout) == 0 {
+		return monitorRect{}, false
+	}
+	for _, m := range layout {
+		if m.name == saved && w <= m.w && h <= m.h {
+			return m, true
+		}
+	}
+	best := monitorRect{}
+	bestArea := 0
+	found := false
+	for _, m := range layout {
+		if w <= m.w && h <= m.h {
+			area := m.w * m.h
+			if !found || area < bestArea {
+				best, bestArea, found = m, area, true
+			}
+		}
+	}
+	if found {
+		return best, true
+	}
+	for _, m := range layout {
+		area := m.w * m.h
+		if !found || area > bestArea {
+			best, bestArea, found = m, area, true
+		}
+	}
+	return best, found
+}
+
+// substantiallyVisibleInLayout is the pure rule behind the save guard.
+func substantiallyVisibleInLayout(x, y, w, h int, layout []monitorRect) bool {
+	if len(layout) == 0 {
+		return true
+	}
+	visible := 0
+	for _, m := range layout {
+		visible += overlapArea(x, y, w, h, m)
+	}
+	if w <= 0 || h <= 0 {
+		return false
+	}
+	return visible*2 >= w*h
+}
+
+// positionVisibleInBound is the pure rule behind placementPositionVisible:
+// the origin survives clampDragTarget in the given bound. Unknown bounds
+// keep the old behavior and report true so a missing probe never discards
+// a good rect. Split out for deterministic tests without a display.
+func positionVisibleInBound(x, y, w, h, bw, bh int) bool {
+	if bw <= 0 || bh <= 0 {
+		return true
+	}
+	nx, ny := clampDragTarget(x, y, w, h, bw, bh)
+	return nx == x && ny == y
+}
+
 // placementFits reports whether a w by h rect fits in the named monitor.
 // An unknown monitor or unknown size keeps the old behavior and reports
 // true so a missing probe never discards a good rect.
@@ -263,19 +424,62 @@ func placementFits(name string, w, h int) bool {
 	return w <= monW && h <= monH
 }
 
+// placeExplicit centers a w by h frame on its target panel, so a
+// fresh or rejected rect starts inside that panel instead of cascading
+// into the dead zone above the 1920 panel or off to the right. A size set
+// before RunGame is ignored on WSLg, so it also arms a post-map retry that
+// repeats the position until the presented rect lands.
+func placeExplicitLocked(saved string, w, h int) (int, int) {
+	if isWSLg() && saved == "" {
+		saved = "XWAYLAND0"
+	}
+	if target, ok := placementTargetMonitor(saved, w, h); ok {
+		ebiten.SetWindowSize(w, h)
+		x, y := target.x+max(0, (target.w-w)/monitorCenterDivisor), target.y+max(0, (target.h-h)/monitorCenterDivisor)
+		ebiten.SetWindowPosition(x, y)
+		rememberWindowedRestoreLocked(x, y, w, h)
+		return x, y
+	}
+	ebiten.SetWindowSize(w, h)
+	return 0, 0
+}
+
 // applyPlacement installs a remembered rect before the game loop starts.
 // defW and defH are the app's default size; minW, minH, maxW, and maxH clamp
 // the restored size the way runWindow clamps the first frame. It returns the
 // placement it installed so the periodic sync does not rewrite it.
 func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPlacement {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	fallback := windowPlacement{X: 0, Y: 0, W: defW, H: defH}
 
 	placement, ok := loadPlacement(id)
 	if !ok {
+		w, h := clampPlacement(defW, minW, maxW), clampPlacement(defH, minH, maxH)
+		x, y := placeExplicitLocked("", w, h)
+		fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 		return fallback
 	}
 
 	if placement.Maximized && isWSL() {
+		if isWSLg() {
+			for _, m := range monitorLayout() {
+				if m.name == placement.Monitor {
+					if area, ok := wslgHostWorkareaLocked(m); ok {
+						placement.MaxX, placement.MaxY, placement.MaxW, placement.MaxH = area.x, area.y, area.w, area.h
+					}
+				}
+				area := workarea{x: placement.MaxX, y: placement.MaxY, w: placement.MaxW, h: placement.MaxH}
+				if m.name == placement.Monitor && areaMatchesMonitorSize(m.w, m.h, area) {
+					placement.MaxX = m.x
+					if placement.MaxY < m.y || placement.MaxY > m.y+workareaGapMax {
+						placement.MaxY = m.y
+					}
+					break
+				}
+			}
+		}
 		known := placementMonitorKnown(placement.Monitor)
 		fits := placementFits(placement.Monitor, placement.MaxW, placement.MaxH)
 		applyNow, retry := wslMaximizePlan(known, fits)
@@ -284,8 +488,8 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 			// A maximized rect learned on one monitor must fit the monitor
 			// that owns the file. A 2560-wide workarea restored onto a
 			// 1920-wide panel overflows it and strands the window across
-			// monitors, so fall back to the windowed size and let the user
-			// re-maximize to re-learn the right workarea.
+			// monitors, so fall back to the windowed size at that panel
+			// top-left and let the user re-maximize to re-learn.
 			manualMax.active = false
 			manualMax.known = false
 			manualMax.learning = false
@@ -295,16 +499,55 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 				w, h = min(w, monW), min(h, monH)
 				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
 			}
-			ebiten.SetWindowSize(w, h)
-			fallback.W, fallback.H = w, h
+			x, y := placeExplicitLocked(placement.Monitor, w, h)
+			fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 
 			return fallback
 		}
 
-		rememberManualMaximize(placement)
+		// Check the resolution before expanding: the saved maximized rect
+		// must fill its claimed monitor. A small rect is not a workarea, it
+		// is a stale windowed size under a maximized flag.
+		if monW, monH, ok := placementMonitorSize(placement.Monitor); ok {
+			if !areaMatchesMonitorSize(monW, monH, workarea{w: placement.MaxW, h: placement.MaxH}) {
+				manualMax.active = false
+				manualMax.known = false
+				manualMax.learning = false
+				manualMax.restoring = false
+				w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+				w, h = min(w, monW), min(h, monH)
+				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
+				x, y := placeExplicitLocked(placement.Monitor, w, h)
+				fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
+
+				return fallback
+			}
+		}
+
+		// When the live monitor is already known, the expanded resolution
+		// must match it. A 1920 workarea applied on the 2560 panel (or the
+		// reverse) lands the window on the wrong screen and strands it to
+		// the right, so fall back and re-learn on the live monitor.
+		if liveW, liveH, ok := liveMonitorResolution(); ok && !isWSLg() {
+			if !areaMatchesMonitorSize(liveW, liveH, workarea{w: placement.MaxW, h: placement.MaxH}) {
+				manualMax.active = false
+				manualMax.known = false
+				manualMax.learning = false
+				manualMax.restoring = false
+				w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+				w, h = min(w, liveW), min(h, liveH)
+				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
+				x, y := placeExplicitLocked(placement.Monitor, w, h)
+				fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
+
+				return fallback
+			}
+		}
+
+		rememberManualMaximizeLocked(placement)
 		if retry {
 			pendingManualRestore = true
-			pendingManualUntil = time.Now().Add(manualMaxLearnTimeout)
+			pendingManualUntil = time.Time{}
 		}
 		if !applyNow {
 			// The monitor list is still empty. Keep the windowed size for
@@ -317,7 +560,11 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		}
 
 		if !placementFits(placement.Monitor, placement.W, placement.H) {
-			placement.X, placement.Y = 0, 0
+			if target, ok := placementTargetMonitor(placement.Monitor, min(placement.W, defW), min(placement.H, defH)); ok {
+				placement.X, placement.Y = target.x, target.y
+			} else {
+				placement.X, placement.Y = 0, 0
+			}
 			placement.W = min(placement.W, defW)
 			placement.H = min(placement.H, defH)
 			if monW, monH, ok := placementMonitorSize(placement.Monitor); ok {
@@ -339,11 +586,11 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	}
 
 	if !placementMonitorKnown(placement.Monitor) {
-		// The owning monitor is gone; keep the size, let the window
-		// manager choose the position on a live monitor.
+		// The owning monitor is gone; keep the size and start at a live
+		// panel top-left instead of cascading into the dead zone.
 		w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
-		ebiten.SetWindowSize(w, h)
-		fallback.W, fallback.H = w, h
+		x, y := placeExplicitLocked(placement.Monitor, w, h)
+		fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 
 		return fallback
 	}
@@ -366,21 +613,38 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	}
 
 	w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+
 	if !placementFits(placement.Monitor, w, h) {
 		// The saved windowed size belongs to a bigger monitor. Clamp it
-		// to the owning monitor and let the window manager choose the
-		// position instead of replaying a rect that spans monitors.
+		// to the owning monitor and start at that panel top-left instead
+		// of replaying a rect that spans monitors.
 		if monW, monH, ok := placementMonitorSize(placement.Monitor); ok {
 			w, h = min(w, monW), min(h, monH)
 			w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
 		}
+		x, y := placeExplicitLocked(placement.Monitor, w, h)
+		placement.X, placement.Y, placement.W, placement.H = x, y, w, h
 		ebiten.SetWindowSize(w, h)
-		placement.W, placement.H = w, h
+		ebiten.SetWindowPosition(x, y)
+
+		return placement
+	}
+	if !placementPositionVisible(placement.X, placement.Y, w, h) || !placementSubstantiallyVisible(placement.X, placement.Y, w, h) || !placementOriginVisible(placement.X, placement.Y) {
+		// The saved origin belongs to another layout, is a drag-clamp
+		// strip, or sits in the dead zone above the 1920 panel where the
+		// header is unreachable. Start at the target panel top-left.
+		x, y := placeExplicitLocked(placement.Monitor, w, h)
+		placement.X, placement.Y, placement.W, placement.H = x, y, w, h
+		ebiten.SetWindowSize(w, h)
+		ebiten.SetWindowPosition(x, y)
 
 		return placement
 	}
 	ebiten.SetWindowSize(w, h)
 	ebiten.SetWindowPosition(placement.X, placement.Y)
+	if isWSLg() {
+		rememberWindowedRestoreLocked(placement.X, placement.Y, w, h)
+	}
 	placement.W, placement.H = w, h
 
 	return placement
@@ -404,7 +668,7 @@ func wslMaximizePlan(monitorKnown, fits bool) (applyNow, retry bool) {
 
 // rememberManualMaximize copies a saved maximize into the manual state so
 // later syncs keep reporting it instead of the default 1500x900 frame.
-func rememberManualMaximize(placement windowPlacement) {
+func rememberManualMaximizeLocked(placement windowPlacement) {
 	manualMax.sx, manualMax.sy = placement.X, placement.Y
 	manualMax.sw, manualMax.sh = placement.W, placement.H
 	manualMax.wx, manualMax.wy = placement.MaxX, placement.MaxY
@@ -431,10 +695,16 @@ func rememberManualMaximize(placement windowPlacement) {
 // monitor list exist. It stops when the presented rect matches, the
 // monitor cannot hold it, the deadline passes, or a drag has started.
 func retryManualRestore(dragging bool) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if !pendingManualRestore {
 		return
 	}
 
+	if pendingManualUntil.IsZero() {
+		pendingManualUntil = time.Now().Add(manualMaxLearnTimeout)
+	}
 	if dragging || time.Now().After(pendingManualUntil) {
 		pendingManualRestore = false
 
@@ -453,11 +723,24 @@ func retryManualRestore(dragging bool) {
 		return
 	}
 
-	x, y := ebiten.WindowPosition()
+	// Check the live resolution before expanding: the window exists now,
+	// so the current monitor size is known. A workarea saved on the 1920
+	// panel must not expand onto the 2560 panel, and a 2560 workarea must
+	// not land on the 1920 panel. Drop the stale rect and let the user
+	// re-maximize to learn the right workarea for this monitor.
+	if liveW, liveH, ok := liveMonitorResolution(); ok && !isWSLg() {
+		if !areaMatchesMonitorSize(liveW, liveH, workarea{w: manualMax.ww, h: manualMax.wh}) {
+			pendingManualRestore = false
+			manualMax.active = false
+			manualMax.known = false
+
+			return
+		}
+	}
+
+	x, y := windowPosition()
 	w, h := ebiten.WindowSize()
-	landed := w == manualMax.ww && h == manualMax.wh &&
-		absDrag(x-manualMax.wx) <= dragApplySlack &&
-		absDrag(y-manualMax.wy) <= dragApplySlack
+	landed := restoreRectMatches(workarea{x: x, y: y, w: w, h: h}, workarea{x: manualMax.wx, y: manualMax.wy, w: manualMax.ww, h: manualMax.wh})
 	if landed {
 		pendingManualRestore = false
 		manualMax.active = true
@@ -465,19 +748,27 @@ func retryManualRestore(dragging bool) {
 		return
 	}
 
-	ebiten.SetWindowPosition(manualMax.wx, manualMax.wy)
-	ebiten.SetWindowSize(manualMax.ww, manualMax.wh)
+	setWindowRect(manualMax.wx, manualMax.wy, manualMax.ww, manualMax.wh)
 	manualMax.active = true
 }
 
 // syncPlacement remembers the live rect at most once per interval while the
 // geometry keeps changing. Empty ids and headless sizes never touch the disk.
+// A fullscreen frame is not a windowed rect, so it never overwrites the good
+// one behind it.
 func (s *shell) syncPlacement() {
-	if pendingManualRestore {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
+	if pendingManualRestore || pendingWindowedRestore {
 		return
 	}
 
 	if s.placementID == "" {
+		return
+	}
+
+	if s.fullscreenNow() {
 		return
 	}
 
@@ -487,12 +778,20 @@ func (s *shell) syncPlacement() {
 	}
 
 	now := time.Now()
-	if now.Sub(s.lastPlacementSave) < placementSaveInterval && s.lastPlacementValid {
+	if !s.lastPlacementSave.IsZero() && now.Sub(s.lastPlacementSave) < placementSaveInterval {
 		return
 	}
 
-	placement := currentPlacement()
+	s.lastPlacementSave = now
+	placement := currentPlacementLocked()
 	if !validPlacementRect(placement.W, placement.H) {
+		return
+	}
+
+	if !placementSubstantiallyVisible(placement.X, placement.Y, placement.W, placement.H) || !placementOriginVisible(placement.X, placement.Y) {
+		// The frame is a drag-clamp strip (like x=-960 keeping 160px on
+		// the 1920 panel) or sits in the dead zone above it (like y=149
+		// hiding the header). Do not overwrite the last good rect with it.
 		return
 	}
 
@@ -512,9 +811,18 @@ func (s *shell) syncPlacement() {
 // savePlacementNow writes the live rect once, for window close. Invalid
 // sizes (the loop never ran) skip the write. A workarea probe in flight
 // writes a transitional rect, so it skips the same dance syncPlacement
-// skips instead of persisting garbage over the good rect.
+// skips instead of persisting garbage over the good rect. A fullscreen close
+// keeps the windowed rect behind it instead of persisting the fullscreen
+// size as windowed.
 func savePlacementNow(id string) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if strings.TrimSpace(id) == "" {
+		return
+	}
+
+	if ebiten.IsFullscreen() {
 		return
 	}
 
@@ -522,8 +830,12 @@ func savePlacementNow(id string) {
 		return
 	}
 
-	placement := currentPlacement()
+	placement := currentPlacementLocked()
 	if !validPlacementRect(placement.W, placement.H) {
+		return
+	}
+
+	if !placementSubstantiallyVisible(placement.X, placement.Y, placement.W, placement.H) || !placementOriginVisible(placement.X, placement.Y) {
 		return
 	}
 

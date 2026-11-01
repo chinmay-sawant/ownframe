@@ -12,10 +12,18 @@ func (s *shell) pointer() error {
 	if handled, err := s.consumeTouchCancel(ebiten.AppendTouchIDs(nil)); handled || err != nil {
 		return err
 	}
-	x, y := ebiten.CursorPosition()
+	x, y := s.cursorPosition()
 	s.cursorX, s.cursorY = x, y
-	if handled, err := s.moveWindow(x, y); handled || err != nil {
+	claimed, err := s.menuClaim(x, y,
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft),
+		ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft))
+	if err != nil {
 		return err
+	}
+	if !claimed {
+		if handled, err := s.moveWindow(x, y); handled || err != nil {
+			return err
+		}
 	}
 
 	frameW, frameH := s.frameSize()

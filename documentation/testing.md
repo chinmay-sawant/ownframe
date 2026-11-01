@@ -38,7 +38,7 @@ make graphics-check
 - `TestDrawPaintsVerticalThumb` checks visible scrollbar pixels inside the running game.
 - `TestGPUVisibleParity` checks replay pixels, shape and text caches, transformed operations, composited groups, and translucent fills, images, and grids inside Ebiten's `Draw` loop. Replay fixtures live under `internal/replay/testdata`, so a library module zip contains them.
 
-All pixel readback occurs in the running game. Replay comparison targets use standalone textures so atlas placement does not introduce different interpolation rounding between the two targets. Pixel equality remains exact. Each process has a 90-second timeout and runs with software OpenGL for repeatability. Ubuntu needs `xvfb`, `xauth`, and `libgl1-mesa-dri`. The script fails when these prerequisites are missing. It leaves the user's `~/.Xauthority` untouched.
+All pixel readback occurs in the running game. Replay comparison targets use standalone textures so atlas placement does not introduce different interpolation rounding between the two targets. Pixel equality remains exact. Each process has a 90-second timeout and runs with software OpenGL for repeatability. Ubuntu needs `xvfb`, `xauth`, `libgl1-mesa-dri`, and `libx11-dev`. The script fails when these prerequisites are missing. It leaves the user's `~/.Xauthority` untouched.
 
 CI and release gates run the graphics target. Xvfb validates an X11 software graphics session; it does not establish native Wayland behavior, hardware GPU driver behavior, desktop IME correctness, or Android device behavior. Those require their own platform sessions.
 

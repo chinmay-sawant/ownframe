@@ -24,7 +24,9 @@ func (s *shell) devTouch(frameW, frameH int) error {
 
 // devPanelStep sorts panel fingers from content fingers. It returns the
 // content fingers, taps that lifted still, and upward scroll pixels.
-// A zero-size panel owns nothing.
+// A zero-size panel owns nothing. A tap fires at the release point, and any
+// move past the slop on either axis turns the finger into a scroll so a
+// slide off a button never acts on the landing point.
 func devPanelStep(all []touchPos, panel devRect, tr *panelTrack) (content, taps []touchPos, dy int) {
 	live := panel.W > 0 && panel.H > 0
 	next := make([]panelFinger, 0, len(tr.fingers)+1)
@@ -35,16 +37,17 @@ func devPanelStep(all []touchPos, panel devRect, tr *panelTrack) (content, taps 
 		}
 		i := panelFind(tr.fingers, p.id)
 		if i < 0 {
-			next = append(next, panelFinger{id: p.id, x: p.x, y: p.y, lastY: p.y})
+			next = append(next, panelFinger{id: p.id, x: p.x, y: p.y, lastX: p.x, lastY: p.y})
 			continue
 		}
 		f := tr.fingers[i]
-		if absInt(p.y-f.y) > touchSlop {
+		if absInt(p.x-f.x) > touchSlop || absInt(p.y-f.y) > touchSlop {
 			f.drag = true
 		}
 		if f.drag {
 			dy += f.lastY - p.y
 		}
+		f.lastX = p.x
 		f.lastY = p.y
 		next = append(next, f)
 	}
@@ -54,7 +57,7 @@ func devPanelStep(all []touchPos, panel devRect, tr *panelTrack) (content, taps 
 	}
 	for _, f := range tr.fingers {
 		if !hasTouch(ids, f.id) && !f.drag {
-			taps = append(taps, touchPos{id: f.id, x: f.x, y: f.y})
+			taps = append(taps, touchPos{id: f.id, x: f.lastX, y: f.lastY})
 		}
 	}
 	tr.fingers = next

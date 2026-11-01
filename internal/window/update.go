@@ -20,7 +20,7 @@ func void(f func(*shell)) func(*shell) error {
 var stages = []updateStage{
 	{"ctx", func(s *shell) error { return s.ctx.Err() }},
 	{"close", func(s *shell) error {
-		if takeCloseRequest() {
+		if takeCloseRequest(isWSLg() && ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)) {
 			return ebiten.Termination
 		}
 		return nil

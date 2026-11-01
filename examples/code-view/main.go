@@ -43,12 +43,13 @@ func main() {
 
 	ctx := context.Background()
 	app.reloadChanges(ctx, false)
-	// The dock stays hidden by default. A restored session that remembers an
-	// open dock must not reopen it unless the launch passed -dev=true;
-	// F12/Ctrl+Shift+I and SetDevTools still toggle it at runtime.
+	// The dock stays hidden by default for a fresh workspace. A restored
+	// session keeps its remembered dock state unless the launch passed an
+	// explicit -dev flag; F12/Ctrl+Shift+I and SetDevTools still toggle it
+	// at runtime.
 	if devSet {
 		app.SetDevTools(*dev)
-	} else {
+	} else if !app.SessionRestored() {
 		app.SetDevTools(false)
 	}
 

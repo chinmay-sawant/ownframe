@@ -72,6 +72,25 @@ func (s *shell) closeMenu() {
 	s.menu.items = nil
 }
 
+// menuClaim gives an open menu first refusal on a fresh left press. The
+// pointer runs the custom-chrome window drag before the menu, so without
+// this a press on a menu row inside a draggable strip starts a drag: the
+// row never acts, and the release lands a stray page click while the menu
+// stays open. Right presses still flow through so the menu can reopen at a
+// new point. It reports whether the press was consumed.
+func (s *shell) menuClaim(x, y int, left, down bool) (bool, error) {
+	if !s.menu.open || !left {
+		return false, nil
+	}
+
+	handled, err := s.menuClick(x, y)
+	if handled {
+		s.mouseDown = down
+	}
+
+	return handled, err
+}
+
 // menuPointer handles right and left presses over the menu. It reports
 // whether the event was consumed, so the page does not also see the click.
 func (s *shell) menuPointer(x, y int) (bool, error) {

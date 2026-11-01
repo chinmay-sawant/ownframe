@@ -72,6 +72,8 @@ func TestRestoreManualForDragClearsActive(t *testing.T) {
 }
 
 func TestApplyWorkareaKeysByMonitorName(t *testing.T) {
+	prevPending, prevUntil := pendingManualRestore, pendingManualUntil
+	t.Cleanup(func() { pendingManualRestore, pendingManualUntil = prevPending, prevUntil })
 	prevActive, prevKnown := manualMax.active, manualMax.known
 	prevMon := manualMax.learnedMon
 	prevAreas := manualMax.areas
@@ -86,6 +88,9 @@ func TestApplyWorkareaKeysByMonitorName(t *testing.T) {
 	manualMax.sw, manualMax.sh = 1500, 900
 
 	applyWorkarea("XWAYLAND1", workarea{x: 0, y: 320, w: 1920, h: 1040})
+	if !pendingManualRestore || !pendingManualUntil.IsZero() {
+		t.Fatal("workarea must await post-resize position acknowledgement")
+	}
 
 	if !manualMax.active || !manualMax.known {
 		t.Fatal("applyWorkarea did not mark the maximize active")

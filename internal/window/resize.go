@@ -20,17 +20,25 @@ func (s *shell) resize() error {
 	s.moving = false
 
 	completeManualMaximize(s.pendingW, s.pendingH)
+	adoptExternalMaximize()
 	retryManualRestore(s.windowDrag.active)
+	retryWindowedRestore(s.windowDrag.active)
 
+	takeStartMaximize := false
+	chromeMu.Lock()
 	if pendingStartMaximize {
 		// A remembered WM maximize from placement: the pre-loop call never
 		// takes effect, so maximize once the window exists.
 		pendingStartMaximize = false
+		takeStartMaximize = true
+	}
+	chromeMu.Unlock()
+	if takeStartMaximize {
 		ebiten.MaximizeWindow()
 	}
 
 	wantW, wantH := s.viewOf(s.pendingW, s.pendingH)
-	wantW, wantH = s.app.Clamp(wantW, wantH)
+	wantW, wantH = s.layoutSize(wantW, wantH)
 	haveW, haveH := s.app.Size()
 	if wantW == haveW && wantH == haveH {
 		s.syncPlacement()
@@ -53,7 +61,7 @@ func (s *shell) resize() error {
 		return nil
 	}
 
-	s.app.SetSize(wantW, wantH)
+	s.setLayoutSize(wantW, wantH)
 
 	if err := s.app.Redraw(s.ctx); err != nil {
 		return err
@@ -72,7 +80,7 @@ func (s *shell) resize() error {
 	// re-assert can snap it back. Where the size already matches it is a
 	// no-op: same-size sets change nothing. Position is left alone; only
 	// the size is ever re-asserted.
-	if ebiten.IsWindowMaximized() {
+	if ebiten.IsWindowMaximized() && !isWSLg() {
 		ebiten.SetWindowSize(s.pendingW, s.pendingH)
 	}
 

@@ -103,6 +103,9 @@ linters:
         - operation
         - return
         - assign
+      # Numeric unit constructors receive CSS design values, not logic constants.
+      ignored-functions:
+        - '^ui\.(Px|Rem|Percent|Number)$'
     nolintlint:
       require-explanation: true
       require-specific: true
@@ -174,6 +177,11 @@ linters:
         path: "internal/window/game\\.go"
         text: "Non-inherited new context"
 
+      # Window callbacks have no context parameter. Monitor probing owns a
+      # fixed timeout rather than extending every public window action.
+      - linters: [contextcheck]
+        text: "Function .*\\b(applyPlacement|savePlacementNow|ToggleMaximize|Minimize)\\b.*(xrandrLayout|wslgHostWorkarea|minimizeWSLg).*should pass the context parameter"
+
       # GEN-19 gochecknoglobals: test files hold fixture scratch, never
       # process singletons, so the linter only guards non-test files.
       - linters: [gochecknoglobals]
@@ -206,12 +214,16 @@ linters:
       - linters: [gochecknoglobals]
         path: "internal/window/chrome\\.go"
 
+      # Windows drag keeps immutable System32 procedure bindings for the run.
+      - linters: [gochecknoglobals]
+        path: "internal/window/window_drag_native_windows\\.go"
+
       # GEN-19 depguard: unsafe stays limited to the OS syscall shims
       # (darwin/windows clipboard and file dialog, windows RSS) and one
       # test-only reflection helper. Anything else importing unsafe fails
       # the gate.
       - linters: [depguard]
-        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/image_test\\.go|window/perf_rss_windows\\.go|web/debug_runtime_windows\\.go)"
+        path: "internal/(clipboard/clipboard_(darwin|windows)\\.go|filepick/pick_windows\\.go|replay/image_test\\.go|window/(perf_rss_windows|window_drag_native_windows|window_drag_native_linux)\\.go|web/debug_runtime_windows\\.go)"
         text: "import 'unsafe' is not allowed"
       # GEN-19 depguard: math/rand/v2 is the sanctioned replacement
       # (seeded PCG, no global lock), so only v1 is banned outside the

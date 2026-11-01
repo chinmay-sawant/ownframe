@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -40,9 +41,17 @@ const (
 	// raw sample, so single-frame spikes fade geometrically while a real
 	// hand trails by about one frame. Snap on press keeps clicks exact.
 	smoothDivisor = 2
+	// doubleClickMaxDelay is the beat between two header presses that
+	// counts as a maximize toggle, matching the platform convention.
+	// Wider gaps are two separate clicks.
+	doubleClickMaxDelay = 500 * time.Millisecond
+	// doubleClickMaxDistPx bounds how far the hand may wander between
+	// the two presses of a header double-click.
+	doubleClickMaxDistPx = 8
 )
 
 type windowDrag struct {
+	native              nativeWindowDrag
 	active, moved, down bool
 	x, y                int
 	// fx, fy is the low-passed cursor. The raw sample over WSLg jumps
@@ -85,6 +94,12 @@ type windowDrag struct {
 	rebased  bool
 	rebaseX  int
 	rebaseY  int
+	// lastPressAt, lastPressX, lastPressY remember the previous bare-chrome
+	// press for the header double-click maximize toggle. Only bare presses
+	// are recorded, so a click on a control breaks the pair.
+	lastPressAt time.Time
+	lastPressX  int
+	lastPressY  int
 }
 
 // step uses window-local coordinates; movement keeps the grab point fixed.
@@ -124,10 +139,105 @@ func recoverMotion(sx, sy, lsx, lsy, wx, wy, lwx, lwy int) (dx, dy int) {
 	return (sx - lsx) + (wx - lwx), (sy - lsy) + (wy - lwy)
 }
 
+// isDragControlTag reports whether an element consumes its own clicks:
+// pressing it starts a control gesture, never a header double-click
+// maximize.
+func isDragControlTag(tag string) bool {
+	switch tag {
+	case "input", "textarea", "select", "button":
+		return true
+	default:
+		return false
+	}
+}
+
+// dragPointControl reports whether a content point lands on a control.
+// It walks the ancestor chain from the innermost hit, so a nested icon or
+// label inside a button counts even when neither the child nor the button
+// carries an id. An action on any ancestor counts, as does a control tag.
+// Tag-only containers and bare text are chrome.
+func dragPointControl(boxes []layout.Box, x, y float64) bool {
+	idx := -1
+	for i, b := range boxes {
+		if x < b.X || y < b.Y || x > b.X+b.W || y > b.Y+b.H {
+			continue
+		}
+		idx = i
+	}
+	for steps := 0; idx >= 0 && idx < len(boxes) && steps <= len(boxes); steps++ {
+		if boxes[idx].Action != "" {
+			return true
+		}
+		if isDragControlTag(boxes[idx].Tag) {
+			return true
+		}
+		next := boxes[idx].ParentIndex
+		if next < 0 || next >= len(boxes) || next == idx {
+			break
+		}
+		idx = next
+	}
+	return false
+}
+
+// doubleClickPair reports whether a press completes a header double-click:
+// close enough in time and space to the previous bare-chrome press.
+func doubleClickPair(prevAt time.Time, prevX, prevY int, now time.Time, x, y int) bool {
+	if prevAt.IsZero() || now.Sub(prevAt) > doubleClickMaxDelay {
+		return false
+	}
+	dx, dy := x-prevX, y-prevY
+
+	return dx*dx+dy*dy <= doubleClickMaxDistPx*doubleClickMaxDistPx
+}
+
+// pressOnControl reports whether a window point lands on a control that
+// consumes its own clicks. Such presses never start a window drag or a native
+// move; they fall through to the normal click path so a titlebar button
+// (min, max, close, dev) fires even with pointer jitter.
+func (s *shell) pressOnControl(x, y int) bool {
+	if s.app == nil {
+		return false
+	}
+	px, py := s.contentPointAt(x, y)
+	return dragPointControl(s.app.Boxes(), px, py)
+}
+
+// headerDoubleClickPressed tracks bare-chrome presses for the maximize
+// toggle. A second bare press soon after the first toggles maximize instead
+// of starting a drag; anything else restarts the pair. It reports whether
+// the caller should toggle and swallow the press.
+func (s *shell) headerDoubleClickPressed(x, y int) bool {
+	d := &s.windowDrag
+	eligible := s.draggable != nil && s.draggable(x, y) && !s.devOwnsPoint(x, y)
+	if eligible {
+		px, py := s.contentPointAt(x, y)
+		eligible = !dragPointControl(s.app.Boxes(), px, py)
+	}
+	now := time.Now()
+	if eligible && doubleClickPair(d.lastPressAt, d.lastPressX, d.lastPressY, now, x, y) {
+		d.lastPressAt = now
+		d.lastPressX, d.lastPressY = x, y
+
+		return true
+	}
+	if eligible {
+		d.lastPressAt = now
+		d.lastPressX, d.lastPressY = x, y
+	} else {
+		d.lastPressAt = time.Time{}
+	}
+
+	return false
+}
+
 // restoreManualForDrag exits a manual maximize when a titlebar drag starts,
 // so a workarea-sized frame can move as a windowed one. It returns the
 // windowed size to install, clamped to the live monitor.
 func restoreManualForDrag() (int, int, bool) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if !manualMax.active {
 		return 0, 0, false
 	}
@@ -360,20 +470,44 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 	if down && !s.windowDrag.down {
 		// Fresh press: snap the filtered cursor so clicks stay exact.
 		s.windowDrag.fx, s.windowDrag.fy = float64(x), float64(y)
+		if s.headerDoubleClickPressed(x, y) {
+			ToggleMaximize()
+
+			return true, nil
+		}
+		if !s.pressOnControl(x, y) && s.draggable(x, y) && !s.devOwnsPoint(x, y) {
+			chromeMu.Lock()
+			pendingManualRestore = false
+			pendingWindowedRestore = false
+			chromeMu.Unlock()
+			s.windowDrag.native.begin()
+		}
 	}
 	if down {
 		s.windowDrag.fx = smoothCursor(s.windowDrag.fx, x)
 		s.windowDrag.fy = smoothCursor(s.windowDrag.fy, y)
 	}
 	sx, sy := int(math.Round(s.windowDrag.fx)), int(math.Round(s.windowDrag.fy))
-	allowed := s.draggable(x, y) && !s.devOwnsPoint(x, y)
+	allowed := s.draggable(x, y) && !s.devOwnsPoint(x, y) && !s.pressOnControl(x, y)
 	handled, move, click, _, _ := s.windowDrag.step(sx, sy,
 		down, allowed)
 	if !down {
+		s.windowDrag.native.end()
 		s.windowDrag.tracked = false
 	}
 	if move {
-		if manualMax.learning || manualMax.restoring {
+		if s.windowDrag.native.managed() {
+			if sw, sh, restored := restoreManualForDrag(); restored && validPlacementRect(sw, sh) {
+				wx, wy := windowPosition()
+				setWindowRect(wx, wy, sw, sh)
+				return true, nil
+			}
+			return s.windowDrag.native.move()
+		}
+		chromeMu.Lock()
+		probing := manualMax.learning || manualMax.restoring
+		chromeMu.Unlock()
+		if probing {
 			// A workarea probe is in flight; keep the anchor fresh and
 			// touch nothing so the drag cannot kill the dance.
 			s.windowDrag.x, s.windowDrag.y = sx, sy
@@ -398,7 +532,10 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 
 			return true, nil
 		}
-		wx, wy := ebiten.WindowPosition()
+		if handled, err := s.windowDrag.native.move(); handled || err != nil {
+			return handled, err
+		}
+		wx, wy := windowPosition()
 		mon := currentMonitorName()
 		dx, dy, ok := s.windowDrag.prepareDrag(dragSample{
 			rawX: x,
@@ -433,7 +570,13 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 		}
 		nx, ny := wx+dx, wy+dy
 		clamped := false
-		if bw, bh := dragOuterBound(); bw > 0 && bh > 0 {
+		if layout := monitorLayout(); len(layout) != 0 {
+			if minX, minY, maxX, maxY, ok := virtualUnion(layout); ok {
+				cx, cy := clampDragTargetInUnion(nx, ny, winW, winH, minX, minY, maxX, maxY)
+				clamped = cx != nx || cy != ny
+				nx, ny = cx, cy
+			}
+		} else if bw, bh := dragOuterBound(); bw > 0 && bh > 0 {
 			cx, cy := clampDragTarget(nx, ny, winW, winH, bw, bh)
 			clamped = cx != nx || cy != ny
 			nx, ny = cx, cy
@@ -442,8 +585,11 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 		ebiten.SetWindowPosition(nx, ny)
 		reqTook := time.Since(reqAt)
 		if s.dragTrace {
+			chromeMu.Lock()
+			mmActive := manualMax.active
+			chromeMu.Unlock()
 			_, _ = fmt.Fprintf(os.Stderr, "[drag] cursor=%d,%d phys=%d,%d win=%d,%d size=%dx%d target=%d,%d clamped=%v max=%v mon=%q took=%dus\n",
-				sx, sy, dx, dy, wx, wy, winW, winH, nx, ny, clamped, manualMax.active, mon, reqTook.Microseconds())
+				sx, sy, dx, dy, wx, wy, winW, winH, nx, ny, clamped, mmActive, mon, reqTook.Microseconds())
 		}
 		s.windowDrag.commitDrag(wx, wy, nx, ny, clamped)
 	}

@@ -2,17 +2,19 @@
 
 ## Opt in first
 
-Perf sampling is off by default. The DevTools PERFORMANCE, PIPELINE DETAIL,
-and MEMORY rows show "-" until enabled. `/debug/state` requires a debug build
-and `ServeOptions{InsecureAllowDebugState: true}`. Add `InsecureAllowPprof: true`
-to include server runtime memory and enable profiler endpoints. Page timing
-stats separately require `Config.Perf` or `WithPerf(true)`.
+Perf sampling is off by default while DevTools is closed. Opening DevTools
+enables page timing, frame sampling, and runtime memory sampling, so its
+PERFORMANCE, PIPELINE DETAIL, and MEMORY rows populate automatically. Closing
+the dock stops that automatic sampling unless the app also opts in. `/debug/state`
+requires a debug build and `ServeOptions{InsecureAllowDebugState: true}`. Add
+`InsecureAllowPprof: true` to include server runtime memory and enable profiler
+endpoints.
 
 ```go
 page, err := ownframe.NewWithOptions(ownframe.Config{HTML: html, Width: 720, Height: 560}, ownframe.WithPerf(true))
 ```
 
-That one call covers the common case. The pieces behind it are `Config.Perf` on the page, `WindowOptions.Perf` on the window, and `ServeOptions{InsecureAllowPprof: true}` for `ServeWithOptions` and its `/debug/pprof/*` endpoints. `Page.Window().SetPerf` and `Page.Window().Perf` flip and read the page flag at runtime. The window picks up a page with Perf on by itself, and `WindowOptions.Perf` turns on frame and runtime sampling even for a custom screen. The benchmark apps under `examples/perf-benchmarks` opt in already. With Perf on, the redraw alloc counter samples about twice a second and other stage timers still record every redraw.
+That one call covers the common case when DevTools is closed. The pieces behind it are `Config.Perf` on the page, `WindowOptions.Perf` on the window, and `ServeOptions{InsecureAllowPprof: true}` for `ServeWithOptions` and its `/debug/pprof/*` endpoints. `Page.Window().SetPerf` and `Page.Window().Perf` flip and read the page flag at runtime. `WindowOptions.Perf` turns on frame and runtime sampling even for a custom screen. The benchmark apps under `examples/perf-benchmarks` opt in already. With Perf on, the redraw alloc counter samples about twice a second and other stage timers still record every redraw.
 
 This page turns the release checklist into steps you can run. It assumes Perf is on and the DevTools Frame tab and `GET /debug/state` expose the counters named below. If a counter is missing, file it as a bug instead of guessing.
 

@@ -68,6 +68,7 @@ type Page struct {
 	stats            pageStats
 	devtools         bool
 	perf             bool
+	perfOptIn        bool
 	motion           *motion.Runtime
 	animationsOff    bool
 	transitionsOff   bool

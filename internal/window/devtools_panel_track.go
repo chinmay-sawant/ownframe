@@ -3,11 +3,13 @@ package window
 import "github.com/hajimehoshi/ebiten/v2"
 
 // panelFinger is one finger inside the devtools dock: its landing point,
-// latest y, and whether it dragged past the tap slop. A finger that lifts
-// without dragging taps; a dragged finger scrolls and never fires.
+// its latest position, and whether it dragged past the tap slop. A finger
+// that lifts without dragging taps at its release point; a dragged finger
+// scrolls and never fires.
 type panelFinger struct {
 	id    ebiten.TouchID
 	x, y  int
+	lastX int
 	lastY int
 	drag  bool
 }

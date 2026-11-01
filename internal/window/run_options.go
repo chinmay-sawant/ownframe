@@ -47,13 +47,16 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 
 	game := newShell(ctx, app)
 	defer game.cancel()
+	defer game.windowDrag.native.end()
+	defer game.nativeCursor.end()
 	defer game.renderer.Close()
 	defer game.imeShutdown()
 	defer game.closeA11y()
 	game.transparent = options.Transparent
 	game.interactive, game.passthrough = interactive, passthrough
 	game.draggable = options.Draggable
-	game.perf = options.Perf || game.perf
+	game.perfOption = options.Perf
+	game.perf = options.Perf || perfEnabled(app)
 	game.wirePerf()
 	game.placementID = options.PlacementID
 	if game.placementID != "" {

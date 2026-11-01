@@ -41,10 +41,10 @@ func (s *shell) drawDevHeader(screen *ebiten.Image) {
 	if s.devPickerOn() {
 		ink = devAccent
 	}
-	cls, px := devHeaderRight(r)
+	_, px := devHeaderRight(r)
 	devTextAt(screen, label, px, top, ink)
 
-	devTextAt(screen, "F12", cls.X, top, devDim)
+	devTextAt(screen, "F12", devHeaderF12X(r), top, devDim)
 	xX := r.X + r.W - devPanelPad - devTextWidth("X")
 	devTextAt(screen, "X", xX, top, devDim)
 }
