@@ -137,11 +137,29 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 	d := newSet(next.Width, next.Height)
 	changed := 0
 
-	if len(next.Ops) == 0 {
-		for i := range prev.Ops {
+	prefix := 0
+	for prefix < len(prev.Ops) && prefix < len(next.Ops) && SameOp(&prev.Ops[prefix], &next.Ops[prefix]) {
+		prefix++
+	}
+
+	suffix := 0
+	for suffix < len(prev.Ops)-prefix && suffix < len(next.Ops)-prefix &&
+		SameOp(&prev.Ops[len(prev.Ops)-1-suffix], &next.Ops[len(next.Ops)-1-suffix]) {
+		suffix++
+	}
+
+	prevSlice := prev.Ops[prefix : len(prev.Ops)-suffix]
+	nextSlice := next.Ops[prefix : len(next.Ops)-suffix]
+
+	if len(prevSlice) == 0 && len(nextSlice) == 0 {
+		return d, false, 0
+	}
+
+	if len(nextSlice) == 0 {
+		for i := range prevSlice {
 			changed++
 			d.Removed++
-			d.add(OpBounds(&prev.Ops[i], prev))
+			d.add(OpBounds(&prevSlice[i], prev))
 			if d.full {
 				return d, true, changed
 			}
@@ -149,11 +167,11 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 		return d, false, changed
 	}
 
-	if len(prev.Ops) == 0 {
-		for j := range next.Ops {
+	if len(prevSlice) == 0 {
+		for j := range nextSlice {
 			changed++
 			d.Added++
-			d.add(OpBounds(&next.Ops[j], next))
+			d.add(OpBounds(&nextSlice[j], next))
 			if d.full {
 				return d, true, changed
 			}
@@ -161,7 +179,7 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 		return d, false, changed
 	}
 
-	numOps := len(next.Ops)
+	numOps := len(nextSlice)
 	numBuckets := nextPowerOf2(numOps * diffBucketGrowth)
 	mask := uint64(numBuckets - 1) //nolint:gosec // reason: numBuckets is a nextPowerOf2 result always >= 16, so numBuckets-1 is non-negative and fits uint64.
 
@@ -171,20 +189,20 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 	// Build bucket chains in reverse order so arena.head[b] yields ops in
 	// FIFO index order.
 	for i := numOps - 1; i >= 0; i-- {
-		k := keyOf(&next.Ops[i])
+		k := keyOf(&nextSlice[i])
 		b := hashKey(k) & mask
 		arena.next[i] = arena.head[b]
 		arena.head[b] = i
 	}
 
-	for i := range prev.Ops {
-		k := keyOf(&prev.Ops[i])
+	for i := range prevSlice {
+		k := keyOf(&prevSlice[i])
 		b := hashKey(k) & mask
 
 		found := -1
 		prevIdx := -1
 		for curr := arena.head[b]; curr != -1; {
-			if keyOf(&next.Ops[curr]) == k {
+			if keyOf(&nextSlice[curr]) == k {
 				found = curr
 				if prevIdx == -1 {
 					arena.head[b] = arena.next[curr]
@@ -200,7 +218,7 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 		if found == -1 {
 			changed++
 			d.Removed++
-			d.add(OpBounds(&prev.Ops[i], prev))
+			d.add(OpBounds(&prevSlice[i], prev))
 			if d.full {
 				return d, true, changed
 			}
@@ -211,25 +229,25 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 		j := found
 		arena.seen[j] = true
 
-		if SameOp(&prev.Ops[i], &next.Ops[j]) {
+		if SameOp(&prevSlice[i], &nextSlice[j]) {
 			continue
 		}
 
 		changed++
-		d.add(OpBounds(&prev.Ops[i], prev).Union(OpBounds(&next.Ops[j], next)))
+		d.add(OpBounds(&prevSlice[i], prev).Union(OpBounds(&nextSlice[j], next)))
 		if d.full {
 			return d, true, changed
 		}
 	}
 
-	for j := range next.Ops {
+	for j := range nextSlice {
 		if arena.seen[j] {
 			continue
 		}
 
 		changed++
 		d.Added++
-		d.add(OpBounds(&next.Ops[j], next))
+		d.add(OpBounds(&nextSlice[j], next))
 		if d.full {
 			return d, true, changed
 		}

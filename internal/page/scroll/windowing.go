@@ -26,13 +26,13 @@ func (s *State) SetOffset(x, y int) { s.Windowing.X, s.Windowing.Y = x, y }
 func (s *State) SetFn(fn func(offsetY, viewH int) bool) { s.Windowing.Fn = fn }
 
 // Apply runs the row-window callback. A nil callback, or a page that
-// opted out, is a no-op.
-func (s *State) Apply(height int) {
+// opted out, is a no-op returning false.
+func (s *State) Apply(height int) bool {
 	w := s.Windowing
 	if !w.On || w.Fn == nil {
-		return
+		return false
 	}
-	w.Fn(w.Y, height)
+	return w.Fn(w.Y, height)
 }
 
 // Step prepares the visible rows and reports whether they changed. A

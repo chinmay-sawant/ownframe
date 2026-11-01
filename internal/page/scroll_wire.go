@@ -56,7 +56,10 @@ func (p *Page) ScrollOffset() (int, int) { return p.scroll.Offset() }
 
 // SetScrollOffset records the window offset. The window calls it when the
 // offset changes; tests call it to drive the row window headlessly.
-func (p *Page) SetScrollOffset(x, y int) { p.scroll.SetOffset(x, y) }
+func (p *Page) SetScrollOffset(x, y int) {
+	p.scroll.SetOffset(x, y)
+	p.formDirty = true
+}
 
 // SetScrollWindow installs a row-window callback. It returns true after
 // changing data, false when the existing overscan covers the viewport.
@@ -65,7 +68,11 @@ func (p *Page) SetScrollWindow(fn func(offsetY, viewH int) bool) { p.scroll.SetF
 
 // applyScrollWindow runs the row-window callback before the template
 // executes. A nil callback, or a page that opted out, draws unchanged.
-func (p *Page) applyScrollWindow() { p.scroll.Apply(p.height) }
+func (p *Page) applyScrollWindow() {
+	if p.scroll.Apply(p.height) {
+		p.formDirty = true
+	}
+}
 
 // SetViewportPinZ pins the page's top layers. Operations whose z-index is at
 // least z are drawn at the offset the display was built with, so they stay at

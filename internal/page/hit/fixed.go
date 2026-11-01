@@ -12,6 +12,17 @@ func FixedBoxes(d *layout.Display) []layout.Box {
 		return nil
 	}
 
+	hasFixed := false
+	for _, op := range d.Ops {
+		if op.Fixed {
+			hasFixed = true
+			break
+		}
+	}
+	if !hasFixed {
+		return nil
+	}
+
 	seen := map[int]bool{}
 	var out []layout.Box
 	owner := -1

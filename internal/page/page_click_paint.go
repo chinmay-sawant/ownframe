@@ -19,6 +19,9 @@ func (p *Page) clickPainted(ctx context.Context, box Box) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// The handler can mutate the template data in place through the
+	// SetData pointer, so force the next Redraw to re-execute.
+	p.markFormDirty()
 	if painted {
 		if !p.unchanged(p.renderState()) {
 			return false, nil

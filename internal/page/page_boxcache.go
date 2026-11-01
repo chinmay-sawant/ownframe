@@ -19,7 +19,12 @@ func (p *Page) setBoxes(boxes []Box) {
 func (p *Page) setDisplayBoxes(d *Display) {
 	hits := p.hits
 	p.setBoxes(d.Boxes)
-	p.hits = hit.List(hits, d.Boxes, fixedBoxes(d))
+	fixed := fixedBoxes(d)
+	if len(fixed) > 0 {
+		p.hits = hit.List(hits, d.Boxes, fixed)
+	} else {
+		p.hits = nil
+	}
 }
 
 // Boxes returns a copy of the last hit-test boxes, or nil when nothing has

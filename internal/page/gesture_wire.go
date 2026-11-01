@@ -32,6 +32,7 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		if err := p.handlers.KeyDown(ctx, key); err != nil {
 			return err
 		}
+		p.markFormDirty()
 	}
 
 	var field Control
@@ -67,7 +68,12 @@ func (p *Page) KeyUp(ctx context.Context, key string) error {
 		return nil
 	}
 
-	return p.handlers.KeyUp(ctx, key)
+	if err := p.handlers.KeyUp(ctx, key); err != nil {
+		return err
+	}
+	p.markFormDirty()
+
+	return nil
 }
 
 // Type calls the type handler and edits a focused text field.
@@ -268,6 +274,10 @@ func (p *Page) after(ctx context.Context, skip bool, fn func() error) error {
 		return err
 	}
 
+	// The handler can mutate the template data in place through the
+	// SetData pointer, so force the next Redraw to re-execute.
+	p.markFormDirty()
+
 	return p.Redraw(ctx)
 }
 
@@ -284,6 +294,7 @@ func (p *Page) BeginDrag(ctx context.Context, x, y float64) (bool, error) {
 	box := p.boxByID(p.boxIDAt(x, y))
 	claimed, err := p.handlers.DragStart(ctx, box)
 	if gesture.Claimed(err, claimed) {
+		p.markFormDirty()
 		p.gesture = p.gesture.Begin(x, y)
 		err = p.Press(ctx, x, y)
 	}
@@ -303,7 +314,12 @@ func (p *Page) MoveDrag(ctx context.Context, x, y float64) error {
 		return nil
 	}
 
-	return p.handlers.DragMove(ctx, dx, dy)
+	if err := p.handlers.DragMove(ctx, dx, dy); err != nil {
+		return err
+	}
+	p.markFormDirty()
+
+	return nil
 }
 
 // EndDrag releases the claimed gesture without synthesizing a click.
@@ -322,6 +338,7 @@ func (p *Page) EndDrag(ctx context.Context) error {
 		if err := p.handlers.DragEnd(ctx); err != nil {
 			return err
 		}
+		p.markFormDirty()
 	}
 
 	return p.Release(ctx)
@@ -340,7 +357,12 @@ func (p *Page) Swipe(ctx context.Context, dx, dy float64) error {
 		return nil
 	}
 
-	return p.handlers.Swipe(ctx, dx, dy)
+	if err := p.handlers.Swipe(ctx, dx, dy); err != nil {
+		return err
+	}
+	p.markFormDirty()
+
+	return nil
 }
 
 // LongPress handles a press held in place at a point. A text control under
@@ -372,6 +394,7 @@ func (p *Page) LongPress(ctx context.Context, x, y float64) (bool, error) {
 	if err := p.handlers.LongPress(ctx, box); err != nil {
 		return true, err
 	}
+	p.markFormDirty()
 
 	return true, p.Redraw(ctx)
 }
@@ -390,6 +413,7 @@ func (p *Page) Drop(ctx context.Context, files []Drop) error {
 		if err := p.handlers.Drop(ctx, files); err != nil {
 			return err
 		}
+		p.markFormDirty()
 	}
 
 	return p.Redraw(ctx)
@@ -433,6 +457,7 @@ func (p *Page) Press(ctx context.Context, x, y float64) error {
 		if err != nil {
 			return err
 		}
+		p.markFormDirty()
 
 		p.setPressUsed(used)
 	}
@@ -492,7 +517,15 @@ func (p *Page) paintHover(ctx context.Context, id string) (bool, error) {
 		return false, nil
 	}
 
-	return p.handlers.Hover(ctx, p.boxByID(p.HoverID()), p.boxByID(id))
+	handled, err := p.handlers.Hover(ctx, p.boxByID(p.HoverID()), p.boxByID(id))
+	if err != nil {
+		return false, err
+	}
+	// The handler ran and can mutate the template data in place, whether
+	// or not it claimed the hover.
+	p.markFormDirty()
+
+	return handled, nil
 }
 
 // boxIDAt returns the innermost box with an id that contains the point, or

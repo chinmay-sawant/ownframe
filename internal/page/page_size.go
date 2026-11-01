@@ -48,7 +48,11 @@ func (p *Page) Clamp(width, height int) (int, int) {
 // SetSize stores the frame size used by the next Redraw.
 // Clamp selects the minimum for the current host and canvas policy.
 func (p *Page) SetSize(width, height int) {
-	p.width, p.height = p.Clamp(width, height)
+	w, h := p.Clamp(width, height)
+	if w != p.width || h != p.height {
+		p.width, p.height = w, h
+		p.formDirty = true
+	}
 }
 
 // Generation increases by one on every successful Redraw.

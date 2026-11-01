@@ -174,6 +174,27 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 		r.stats.Rebinds++
 	}
 
+	hasAnims := false
+	for i := range next.Boxes {
+		if len(next.Boxes[i].Animations) > 0 {
+			hasAnims = true
+			break
+		}
+	}
+	if !hasAnims && len(r.entries) == 0 {
+		r.display = next
+		r.stats.Bound, r.stats.Active, r.stats.Sampled = 0, 0, 0
+		r.stats.NeedsRestamp = 0
+		r.stats.NeedsRetainedState = false
+		r.stats.LastError = ""
+		r.stats.Gaps = nil
+		r.stats.UnresolvedTimelines = 0
+		r.stats.InactiveTimelines = 0
+		r.stats.LayoutBound = 0
+		r.stats.SVGPaintRequests = 0
+		return nil
+	}
+
 	// A publish rebuilds the display from the declared styles, so the paint a
 	// previous tick restyled is gone. Clearing the applied signatures makes the
 	// next Step request it again. A page that just adopted an SVG patch calls

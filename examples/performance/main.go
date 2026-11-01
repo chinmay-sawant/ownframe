@@ -1,0 +1,140 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+	"strings"
+	"text/tabwriter"
+	"time"
+)
+
+const (
+	defaultWarmIterations = 5
+	nanosPerMicrosecond   = 1000.0
+	nanosPerMillisecond   = 1e6
+	bytesPerKilobyte      = 1024.0
+	tablePadding          = 2
+)
+
+func main() {
+	filterFlag := flag.String("filter", "", "Filter scenarios by substring in ID or Name")
+	warmCount := flag.Int("warm", defaultWarmIterations, "Number of warm iterations to average")
+	tableFormat := flag.String("format", "table", "Output format: table, markdown, or csv")
+	flag.Parse()
+
+	scenarios := AllScenarios()
+	var results []Result
+
+	fmt.Println("================================================================================")
+	fmt.Println("OwnFrame Application Performance Benchmark Suite (10 Real-World Scenarios)")
+	fmt.Println("================================================================================")
+	fmt.Printf("Running %d performance scenarios (warm iterations: %d)...\n\n", len(scenarios), *warmCount)
+
+	for i, s := range scenarios {
+		if *filterFlag != "" && !strings.Contains(s.ID, *filterFlag) && !strings.Contains(s.Name, *filterFlag) {
+			continue
+		}
+
+		fmt.Printf("[%02d/10] Measuring %-42s (%s)... ", i+1, s.Name, s.Level)
+		res, err := MeasureScenario(s, *warmCount)
+		if err != nil {
+			fmt.Printf("FAILED: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Done (Cold: %.2fms | Warm: %dns (%.2fµs) | Boxes: %d | Ops: %d)\n",
+			ms(res.ColdRender), res.WarmRedraw.Nanoseconds(), float64(res.WarmRedraw.Nanoseconds())/nanosPerMicrosecond, res.Boxes, res.Ops)
+		results = append(results, res)
+	}
+
+	fmt.Println()
+	switch *tableFormat {
+	case "markdown":
+		printMarkdownTable(results)
+	case "csv":
+		printCSV(results)
+	default:
+		printTerminalTable(results)
+	}
+}
+
+func ms(d time.Duration) float64 {
+	return float64(d.Nanoseconds()) / nanosPerMillisecond
+}
+
+func kb(bytes uint64) float64 {
+	return float64(bytes) / bytesPerKilobyte
+}
+
+func printTerminalTable(results []Result) {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, tablePadding, ' ', 0)
+
+	_, _ = fmt.Fprintln(w, "ID\tSCENARIO\tLEVEL\tITEMS\tBOXES\tOPS\tCOLD (ms)\tWARM (ns)\tWARM (µs)\tMUTATE (ms)\tRESIZE (ms)\tSTYLE (ms)\tLAYOUT (ms)\tALLOC (KB)")
+	_, _ = fmt.Fprintln(w, "--\t--------\t-----\t-----\t-----\t---\t---------\t---------\t---------\t-----------\t-----------\t----------\t-----------\t----------")
+
+	for _, r := range results {
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%d\t%.2f\t%d ns\t%.2f µs\t%.2f\t%.2f\t%.2f\t%.2f\t%.1f\n",
+			r.ID,
+			r.Name,
+			r.Level,
+			r.ItemCount,
+			r.Boxes,
+			r.Ops,
+			ms(r.ColdRender),
+			r.WarmRedraw.Nanoseconds(),
+			float64(r.WarmRedraw.Nanoseconds())/nanosPerMicrosecond,
+			ms(r.MutationRedraw),
+			ms(r.ResizeRelayout),
+			ms(r.StyleTime),
+			ms(r.LayoutTime),
+			kb(r.AllocFrame),
+		)
+	}
+	_ = w.Flush()
+}
+
+func printMarkdownTable(results []Result) {
+	fmt.Println("| ID | Scenario Name | Level | Items | Boxes | Ops | Cold (ms) | Warm (ns) | Warm (µs) | Mutate (ms) | Resize (ms) | Layout (ms) | Alloc (KB) |")
+	fmt.Println("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+	for _, r := range results {
+		fmt.Printf("| %s | %s | %s | %d | %d | %d | %.2f | %d ns | %.2f µs | %.2f | %.2f | %.2f | %.1f |\n",
+			r.ID,
+			r.Name,
+			r.Level,
+			r.ItemCount,
+			r.Boxes,
+			r.Ops,
+			ms(r.ColdRender),
+			r.WarmRedraw.Nanoseconds(),
+			float64(r.WarmRedraw.Nanoseconds())/nanosPerMicrosecond,
+			ms(r.MutationRedraw),
+			ms(r.ResizeRelayout),
+			ms(r.LayoutTime),
+			kb(r.AllocFrame),
+		)
+	}
+}
+
+func printCSV(results []Result) {
+	fmt.Println("ID,Name,Level,Items,Boxes,Ops,ColdMs,WarmNs,WarmUs,MutateMs,ResizeMs,TemplateMs,StyleMs,LayoutMs,PaintMs,AllocKB")
+	for _, r := range results {
+		fmt.Printf("%s,\"%s\",%s,%d,%d,%d,%.3f,%d,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.2f\n",
+			r.ID,
+			r.Name,
+			r.Level,
+			r.ItemCount,
+			r.Boxes,
+			r.Ops,
+			ms(r.ColdRender),
+			r.WarmRedraw.Nanoseconds(),
+			float64(r.WarmRedraw.Nanoseconds())/nanosPerMicrosecond,
+			ms(r.MutationRedraw),
+			ms(r.ResizeRelayout),
+			ms(r.TemplateTime),
+			ms(r.StyleTime),
+			ms(r.LayoutTime),
+			ms(r.PaintTime),
+			kb(r.AllocFrame),
+		)
+	}
+}

@@ -81,7 +81,12 @@ func (s clickSurface) HasClick() bool {
 }
 
 func (s clickSurface) HandlerClick(ctx context.Context, box Box) error {
-	return s.p.handlers.Click(ctx, box)
+	if err := s.p.handlers.Click(ctx, box); err != nil {
+		return err
+	}
+	s.p.markFormDirty()
+
+	return nil
 }
 
 func (s clickSurface) ClickPainted(ctx context.Context, box Box) (bool, error) {

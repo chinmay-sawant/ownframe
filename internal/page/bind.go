@@ -79,12 +79,14 @@ func bindWrite(p *Page, c Control) bool {
 			return false
 		}
 		f.SetBool(c.Checked)
+		p.formDirty = true
 	case 's':
 		if f.Kind() != reflect.String {
 			return false
 		}
 		if c.Type != "radio" || c.Checked {
 			f.SetString(c.Value)
+			p.formDirty = true
 		}
 	default:
 		return false
