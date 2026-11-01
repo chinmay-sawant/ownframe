@@ -6,8 +6,8 @@ import (
 )
 
 func TestNormalizeMaxFPS(t *testing.T) {
-	if got := NormalizeMaxFPS(0); got != DefaultMaxFPS {
-		t.Fatalf("zero = %d, want default %d", got, DefaultMaxFPS)
+	if got := NormalizeMaxFPS(0); got != 0 {
+		t.Fatalf("zero = %d, want uncapped 0", got)
 	}
 	if got := NormalizeMaxFPS(-1); got != 0 {
 		t.Fatalf("uncapped = %d, want 0", got)
@@ -17,11 +17,11 @@ func TestNormalizeMaxFPS(t *testing.T) {
 			t.Fatalf("fps %d = %d", fps, got)
 		}
 	}
-	if got := NormalizeMaxFPS(10); got != DefaultMaxFPS {
-		t.Fatalf("invalid low = %d, want default", got)
+	if got := NormalizeMaxFPS(10); got != 0 {
+		t.Fatalf("invalid low = %d, want uncapped", got)
 	}
-	if got := NormalizeMaxFPS(5000); got != DefaultMaxFPS {
-		t.Fatalf("invalid high = %d, want default", got)
+	if got := NormalizeMaxFPS(5000); got != 0 {
+		t.Fatalf("invalid high = %d, want uncapped", got)
 	}
 }
 

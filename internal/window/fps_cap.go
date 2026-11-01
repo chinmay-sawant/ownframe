@@ -16,29 +16,28 @@ import "time"
 // Idle parking is untouched: keep-alive wakes (125 ms) are far below the
 // limiter intervals, so idle windows park efficiently with no extra sleep.
 const (
-	// DefaultMaxFPS is the desktop present cap when Options.MaxFPS is zero.
+	// DefaultMaxFPS is the suggested present cap (Settings/CLI choice).
+	// The default runtime is uncapped: Options.MaxFPS zero means no limiter.
 	DefaultMaxFPS = 60
-	// FPSHeadroom is how much faster the loop runs than presents. A 60 FPS
-	// cap shows 60 on the FE while the app runs at 80.
+	// FPSHeadroom is how much faster Updates run than presents when capped.
+	// A 60 FPS cap shows 60 on the FE while the app ticks at 80.
 	FPSHeadroom = 20
-	// MinFPS and MaxAllowedFPS bound explicit caps; outside falls back to DefaultMaxFPS.
+	// MinFPS and MaxAllowedFPS bound explicit caps; outside falls back to
+	// uncapped (the default).
 	MinFPS         = 30
 	MaxAllowedFPS  = 1000
 )
 
 // NormalizeMaxFPS maps an Options.MaxFPS value to its effective cap.
-// 0 means the default (60). Negative means uncapped (0). Positive values in
-// [MinFPS, MaxAllowedFPS] are kept; anything else falls back to the default.
-// The return is 0 for uncapped, else the present cap.
+// 0 (the default) means uncapped. Negative means explicit uncapped (0).
+// Positive values in [MinFPS, MaxAllowedFPS] are kept; anything else falls
+// back to uncapped. The return is 0 for uncapped, else the present cap.
 func NormalizeMaxFPS(v int) int {
-	if v == 0 {
-		return DefaultMaxFPS
-	}
-	if v < 0 {
+	if v <= 0 {
 		return 0
 	}
 	if v < MinFPS || v > MaxAllowedFPS {
-		return DefaultMaxFPS
+		return 0
 	}
 	return v
 }
