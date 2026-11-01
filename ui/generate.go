@@ -1,3 +1,3 @@
 package ui
 
-//go:generate go run ../scripts/gen-ui-properties
+//go:generate env GOWORK=off go -C ../scripts run ./gen-ui-properties

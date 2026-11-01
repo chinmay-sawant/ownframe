@@ -3,12 +3,11 @@ package ui
 import (
 	"bufio"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
 )
-
-const expectedImplementedPropertyCount = 555
 
 func TestAllImplementedPropertiesMatchCompatibilityMatrix(t *testing.T) {
 	f, err := os.Open("../documentation/compatibility-matrix.md")
@@ -53,12 +52,12 @@ func TestAllImplementedPropertiesMatchCompatibilityMatrix(t *testing.T) {
 	if err := scanner.Err(); err != nil {
 		t.Fatal(err)
 	}
-	if len(seen) != expectedImplementedPropertyCount {
-		t.Fatalf("compatibility matrix: got %d implemented properties; want 555", len(seen))
+	if len(seen) == 0 {
+		t.Fatal("no implemented properties read from matrix")
 	}
 	names := SupportedProperties()
-	if len(names) != expectedImplementedPropertyCount {
-		t.Fatalf("builder: got %d implemented properties; want 555", len(names))
+	if len(names) != len(seen) {
+		t.Fatalf("builder: got %d implemented properties; want %d", len(names), len(seen))
 	}
 	if !slices.IsSorted(names) {
 		t.Fatal("SupportedProperties must be sorted")
@@ -73,7 +72,11 @@ func TestAllImplementedPropertiesMatchCompatibilityMatrix(t *testing.T) {
 func TestBuilderCanExpressEveryImplementedProperty(t *testing.T) {
 	root := Div()
 	for _, property := range SupportedProperties() {
-		root.CSS(property, "inherit")
+		method := reflect.ValueOf(root).MethodByName(propertyMethodName(property))
+		if !method.IsValid() {
+			t.Fatalf("missing generated method for %s", property)
+		}
+		method.Call([]reflect.Value{reflect.ValueOf(Inherit)})
 	}
 	html, err := Render(root)
 	if err != nil {
@@ -88,9 +91,9 @@ func TestBuilderCanExpressEveryImplementedProperty(t *testing.T) {
 
 func TestStyledCardAndEscapedMarkup(t *testing.T) {
 	root := Div().
-		BackgroundColor("#20242b").
-		Padding("16px").
-		BorderRadius("8px").
+		BackgroundColor(Hex("#20242b")).
+		Padding(Px(16)).
+		BorderRadius(Px(8)).
 		Attr("title", "A & \"B\" {{.Private}}").
 		Children(Text("<OwnFrame> {{.Secret}} & Go"))
 	markup, err := Render(root)
@@ -114,8 +117,8 @@ func TestStyledCardAndEscapedMarkup(t *testing.T) {
 }
 
 func TestFlexToolbarAndList(t *testing.T) {
-	toolbar := Div().Display("flex").FlexDirection("row").
-		AlignItems("center").Gap("8px").
+	toolbar := Div().Display(DisplayFlex).FlexDirection(FlexDirectionRow).
+		AlignItems(AlignItemsCenter).Gap(Px(8)).
 		Children(Button("Save"), Button("Cancel"))
 	markup, err := Render(toolbar)
 	if err != nil {
@@ -144,14 +147,14 @@ func TestFlexToolbarAndList(t *testing.T) {
 
 func TestRejectUnsupportedStylesAndUnsafeAttrs(t *testing.T) {
 	for _, root := range []*Element{
-		Div().CSS("does-not-exist", "1px"),
+		Div().CSSRaw("does-not-exist", "1px"),
 		Div().Attr("style", "color:red"),
 		Div().Attr("onclick", "javascript:alert(1)"),
 		Div().Attr("bad name", "value"),
 		Tag("script").Text("alert(1)"),
 		Input().Children(Span()),
 		Input().Text("not allowed"),
-		Div().CSS("color", ""),
+		Div().CSSRaw("color", ""),
 	} {
 		if _, err := Render(root); err == nil {
 			t.Errorf("expected validation failure for %#v", root)
@@ -176,4 +179,12 @@ func TestRepeatedChildAllowed(t *testing.T) {
 	if got != "<div><span>repeat</span><span>repeat</span></div>" {
 		t.Fatalf("unexpected markup: %s", got)
 	}
+}
+
+func propertyMethodName(property string) string {
+	parts := strings.Split(strings.TrimPrefix(property, "-"), "-")
+	for i, part := range parts {
+		parts[i] = strings.ToUpper(part[:1]) + part[1:]
+	}
+	return strings.Join(parts, "")
 }

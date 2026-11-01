@@ -10,14 +10,14 @@ import (
 )
 
 const (
-	testWidth = 480
+	testWidth  = 480
 	testHeight = 320
 )
 
 func TestNewPageConnectsNativeClickHandler(t *testing.T) {
 	t.Parallel()
 	clicked := 0
-	root := Div().Padding("10px").Children(
+	root := Div().Padding(Px(10)).Children(
 		Button("Save").ID("save").OnClick(func(context.Context) error {
 			clicked++
 			return nil
@@ -73,5 +73,43 @@ func TestNewPageRejectsTemplateActionsInTitleAndText(t *testing.T) {
 	}
 	if strings.Contains(page.HTML(), "{{") {
 		t.Fatalf("raw template actions in builder page: %s", page.HTML())
+	}
+}
+
+func TestCustomPropertiesReachEngineLayout(t *testing.T) {
+	t.Parallel()
+	const variableWidth = 137
+	const fallbackWidth = 83
+	root := Div().CustomProperty("--CardWidth", "137px").Children(
+		Div().ID("inherited").Width(Var("--CardWidth")).Height(Px(20)),
+		Div().ID("fallback").Width(Var("--missing", "83px")).Height(Px(20)),
+	)
+	page, err := NewPage(ownframe.Config{Width: testWidth, Height: testHeight}, root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := page.Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	seen := make(map[string]bool)
+	for _, box := range page.Boxes() {
+		want := 0
+		switch box.ID {
+		case "inherited":
+			want = variableWidth
+		case "fallback":
+			want = fallbackWidth
+		default:
+			continue
+		}
+		seen[box.ID] = true
+		if box.W != float64(want) {
+			t.Errorf("%s width = %v, want %d", box.ID, box.W, want)
+		}
+	}
+	for _, id := range []string{"inherited", "fallback"} {
+		if !seen[id] {
+			t.Errorf("missing rendered box %s", id)
+		}
 	}
 }

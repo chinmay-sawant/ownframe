@@ -1,5 +1,5 @@
 // Command gen-ui-properties refreshes the public ui builder's CSS registry
-// from the OwnFrame compatibility matrix. Invoked from ui via go generate.
+// from the OwnFrame compatibility matrix. Run through go generate ./ui.
 package main
 
 import (
@@ -13,9 +13,9 @@ import (
 )
 
 const matrix = "../documentation/compatibility-matrix.md"
-const output = "properties_generated.go"
-const expectedImplementedPropertyCount = 555
+const output = "../ui/properties_generated.go"
 const propertiesPerCaseLine = 5
+const generatedFileMode = 0o600
 
 func main() {
 	if err := generate(); err != nil {
@@ -25,16 +25,15 @@ func main() {
 }
 
 func generate() error {
-	f, err := os.Open(matrix)
+	source, err := os.ReadFile(matrix)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	var props []string
+	props := []string{}
 	seen := make(map[string]bool)
 	inSection := false
-	scanner := bufio.NewScanner(f)
+	scanner := bufio.NewScanner(bytes.NewReader(source))
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "### 2.1 Implemented") {
@@ -62,17 +61,17 @@ func generate() error {
 	if err := scanner.Err(); err != nil {
 		return err
 	}
-	if len(props) != expectedImplementedPropertyCount {
-		return fmt.Errorf("expected 555 implemented properties; found %d", len(props))
+	if len(props) == 0 {
+		return fmt.Errorf("no implemented properties in compatibility matrix")
 	}
 	sort.Strings(props)
 
 	var buf bytes.Buffer
-	fmt.Fprintln(&buf, "// Code generated from documentation/compatibility-matrix.md (2026-10-20 snapshot).")
+	fmt.Fprintln(&buf, "// Code generated from documentation/compatibility-matrix.md.")
 	fmt.Fprintln(&buf, "// DO NOT EDIT: run go generate ./ui after updating the matrix.")
 	fmt.Fprintln(&buf, "package ui")
 	fmt.Fprintln(&buf)
-	fmt.Fprintln(&buf, "import \"strings\"")
+	fmt.Fprintln(&buf, `import ("strings"; "fmt")`)
 	fmt.Fprintln(&buf)
 	fmt.Fprintln(&buf, "// SupportsProperty reports whether a CSS property is marked Implemented in")
 	fmt.Fprintln(&buf, "// the pinned Blinkless compatibility snapshot. This is name coverage only;")
@@ -97,7 +96,7 @@ func generate() error {
 	fmt.Fprintln(&buf, "\t}")
 	fmt.Fprintln(&buf, "}")
 	fmt.Fprintln(&buf)
-	fmt.Fprintln(&buf, "// SupportedProperties lists all 555 implemented CSS property names, sorted.")
+	fmt.Fprintln(&buf, "// SupportedProperties lists the implemented CSS property names, sorted.")
 	fmt.Fprintln(&buf, "func SupportedProperties() []string {")
 	fmt.Fprintln(&buf, "\treturn []string{")
 	for _, name := range props {
@@ -105,9 +104,12 @@ func generate() error {
 	}
 	fmt.Fprintln(&buf, "\t}")
 	fmt.Fprintln(&buf, "}")
+	if err := generateStyles(&buf, props); err != nil {
+		return err
+	}
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(output, formatted, 0600)
+	return os.WriteFile(output, formatted, generatedFileMode)
 }

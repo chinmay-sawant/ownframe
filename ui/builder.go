@@ -63,7 +63,7 @@ func (e *Element) Children(children ...*Element) *Element {
 	return e
 }
 
-// Attr adds or replaces an HTML attribute. Inline styles must use CSS().
+// Attr adds or replaces an HTML attribute. Inline styles must use generated style methods or CSSRaw.
 func (e *Element) Attr(name, value string) *Element {
 	if e == nil {
 		return e
@@ -82,60 +82,6 @@ func (e *Element) Attr(name, value string) *Element {
 
 func (e *Element) ID(id string) *Element       { return e.Attr("id", id) }
 func (e *Element) Class(class string) *Element { return e.Attr("class", class) }
-
-// CSS adds a CSS property by its standard, vendor-prefixed, or matrix name.
-// All 555 properties marked Implemented in the compatibility matrix are
-// accepted here. Values are passed to Blinkless, which decides their semantics.
-func (e *Element) CSS(property, value string) *Element {
-	if e == nil {
-		return e
-	}
-	property = strings.ToLower(strings.TrimSpace(property))
-	if !SupportsProperty(property) {
-		e.recordError(fmt.Errorf("ui: CSS property %q is not implemented by the pinned compatibility matrix", property))
-		return e
-	}
-	if strings.TrimSpace(value) == "" || strings.IndexByte(value, 0) >= 0 {
-		e.recordError(fmt.Errorf("ui: invalid value for CSS property %q", property))
-		return e
-	}
-	if e.styles == nil {
-		e.styles = make(map[string]string)
-	}
-	e.styles[property] = value
-	return e
-}
-
-// Style is an alias for CSS, useful for unfamiliar and vendor-prefixed names.
-func (e *Element) Style(property, value string) *Element { return e.CSS(property, value) }
-
-// Styles applies a map of CSS properties in deterministic key order.
-func (e *Element) Styles(values map[string]string) *Element {
-	keys := make([]string, 0, len(values))
-	for key := range values {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		e.CSS(key, values[key])
-	}
-	return e
-}
-
-// Common fluent helpers all use the same matrix-backed CSS path.
-func (e *Element) BackgroundColor(value string) *Element { return e.CSS("background-color", value) }
-func (e *Element) Padding(value string) *Element         { return e.CSS("padding", value) }
-func (e *Element) BorderRadius(value string) *Element    { return e.CSS("border-radius", value) }
-func (e *Element) Display(value string) *Element         { return e.CSS("display", value) }
-func (e *Element) FlexDirection(value string) *Element   { return e.CSS("flex-direction", value) }
-func (e *Element) AlignItems(value string) *Element      { return e.CSS("align-items", value) }
-func (e *Element) Gap(value string) *Element             { return e.CSS("gap", value) }
-func (e *Element) Color(value string) *Element           { return e.CSS("color", value) }
-func (e *Element) FontSize(value string) *Element        { return e.CSS("font-size", value) }
-func (e *Element) FontWeight(value string) *Element      { return e.CSS("font-weight", value) }
-func (e *Element) Margin(value string) *Element          { return e.CSS("margin", value) }
-func (e *Element) Width(value string) *Element           { return e.CSS("width", value) }
-func (e *Element) Height(value string) *Element          { return e.CSS("height", value) }
 
 // OnClick registers an OwnFrame callback. NewPage connects it to the host's
 // existing data-action / Handlers.Click path; Render alone only emits markup.
