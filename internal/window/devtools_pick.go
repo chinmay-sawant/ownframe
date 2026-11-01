@@ -33,6 +33,13 @@ func (s *shell) devPointer(x, y int, px, py float64) error {
 
 		s.dev.resizing = false
 	}
+	// The vertical thumb overlaps the dock resize strip by 4 px. The thumb
+	// wins there, so a scrollbar grab never resizes the dock for no reason.
+	// An active resize keeps its gesture; a started thumb drag continues
+	// here because the dock path bypasses pointerMouse.
+	if s.pointerScrollbar(x, y, down, pressed) {
+		return nil
+	}
 	if s.dev.forward && !pressed {
 		return s.devForwardDrag(px, py, down, released)
 	}
@@ -97,6 +104,12 @@ func (s *shell) devMenuPointer(x, y int, right, left bool) (bool, error) {
 // pointer belongs to dock chrome or the explicitly enabled picker.
 func (s *shell) devPointerHover(x, y int, px, py float64) error {
 	if s.dev.resizing || !s.dev.mobile && devOnEdge(s.dev.panel, x, y) {
+		// The thumb overlaps the edge strip. Show the thumb cursor there
+		// to match the click, which scrolls instead of resizing.
+		if axis, _, ok := s.scrollbarGrab(x, y); ok {
+			s.applyThumbCursor(axis)
+			return nil
+		}
 		s.setCursorShape(ebiten.CursorShapeEWResize)
 		return nil
 	}
@@ -215,9 +228,9 @@ func (s *shell) drawDevPick(screen *ebiten.Image) {
 }
 
 func (s *shell) devPickerHit() {
-	cls, px := devHeaderRight(s.dev.panel)
+	_, px := devHeaderRight(s.dev.panel)
 	s.dev.hits = append(s.dev.hits, devHit{
-		rect: devRect{X: px, Y: s.dev.panel.Y, W: cls.X - px, H: devHeaderH},
+		rect: devPickerRect(px, s.dev.panel.Y),
 		act:  devActPicker,
 	})
 }

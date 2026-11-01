@@ -36,6 +36,12 @@ func run(webMode bool, addr string) error {
 	if err := client.Page().Redraw(ctx); err != nil {
 		return fmt.Errorf("redraw mail view: %w", err)
 	}
+	// Reload through the themed document shell so the first paint has the
+	// margin reset, the live scroll cache, and the sliced row window.
+	client.updateScrollCache()
+	if err := client.refresh(ctx); err != nil {
+		return fmt.Errorf("reload mail view: %w", err)
+	}
 
 	if webMode {
 		if err := ownframe.Serve(ctx, client.Page(), addr); err != nil {

@@ -2,23 +2,25 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
 func (a *app) screen() *ui.Element {
-	return ui.Div().Width("100%").Height(mailCanvasHeight).
+	// The canvas fills the window height, so the status strip stays at the
+	// window bottom in fullscreen and the panes scroll inside it.
+	return ui.Div().Width("100%").Height("100vh").
 		Display("flex").FlexDirection("column").
 		BackgroundColor(a.palette("#f5f7fb", "#111827")).Color(a.palette("#172b4d", "#e4ecf8")).
 		CSS("font-family", "sans-serif").FontSize("14px").
 		Children(
 			a.toolbar(),
-			a.settingsPanel(),
 			ui.Div().Display("flex").CSS("flex", "1").
 				Gap("14px").Padding("12px").
-				CSS("min-height", "0px").
-				Children(a.sidebar(), a.messageList(), a.reader()),
+				CSS("min-height", "0px").CSS("position", "relative").
+				Children(a.sidebar(), a.messageList(), a.reader(), a.settingsCard(), a.toastCard()),
 			ui.Div().Padding("9px 18px").FontSize("11px").Color(a.palette("#73829c", "#9aabc3")).
 				CSS("border-top", a.palette("1px solid #dce4f0", "1px solid #39465a")).
 				Children(ui.Text("JMAP-inspired demo  ·  Local sample data  ·  No account, network connection, or sent messages")),
@@ -82,14 +84,19 @@ func (a *app) sidebar() *ui.Element {
 	}
 	return ui.Nav().Width(mailSidebarWidth).CSS("flex-shrink", "0").
 		BackgroundColor(a.palette("#ffffff", "#1c2738")).Padding("19px 12px").
-		BorderRadius("10px").
+		BorderRadius("10px").Display("flex").FlexDirection("column").
+		CSS("min-height", "0px").
 		Children(
 			a.actionButton("+  Compose", "compose", true).
-				Width("100%").CSS("text-align", "center").Padding("13px 12px"),
+				Width("100%").CSS("text-align", "center").Padding("13px 12px").
+				CSS("flex-shrink", "0"),
 			ui.P().Text("MAILBOXES").Margin("25px 10px 12px").
-				FontSize("11px").FontWeight("bold").Color(a.palette("#96a3b6", "#a4b3c6")),
-			ui.Div().Children(folders...),
+				FontSize("11px").FontWeight("bold").Color(a.palette("#96a3b6", "#a4b3c6")).
+				CSS("flex-shrink", "0"),
+			ui.Div().CSS("flex", "1").CSS("min-height", "0px").
+				CSS("overflow-y", "auto").Children(folders...),
 			ui.Div().Margin("30px 10px 0").Padding("13px").
+				CSS("flex-shrink", "0").
 				BackgroundColor(a.palette("#f3f6fc", "#27354a")).BorderRadius("9px").
 				Children(
 					ui.Text("Mailbox status").FontWeight("bold").Color(a.palette("#415372", "#c7d4e8")),
@@ -100,8 +107,12 @@ func (a *app) sidebar() *ui.Element {
 }
 
 func (a *app) messageList() *ui.Element {
+	visible := a.visibleMessages()
+	total := len(visible)
+	count := a.listVisibleCount()
+	start, end := a.listWindow(total, count)
 	rows := []*ui.Element{}
-	for _, message := range a.visibleMessages() {
+	for _, message := range visible[start:end] {
 		rows = append(rows, a.messageRow(message))
 	}
 	if len(rows) == 0 {
@@ -115,11 +126,19 @@ func (a *app) messageList() *ui.Element {
 			break
 		}
 	}
+	viewport := ui.Div().ID("mail-list-viewport").CSS("flex", "1").
+		CSS("min-height", "0px").CSS("position", "relative").
+		CSS("overflow", "hidden").
+		Children(rows...)
+	if top, height, show := a.listThumb(total, count); show {
+		viewport.Children(a.scrollThumb("mail-list-thumb", top, height))
+	}
 	return ui.Div().Width(mailListWidth).CSS("flex-shrink", "0").
 		BackgroundColor(a.palette("#fbfcff", "#202c3d")).BorderRadius("10px").
-		Display("flex").FlexDirection("column").
+		Display("flex").FlexDirection("column").CSS("min-height", "0px").
 		Children(
 			ui.Div().Padding("20px 19px 14px").
+				CSS("flex-shrink", "0").
 				CSS("border-bottom", a.palette("1px solid #e9edf4", "1px solid #39465a")).
 				Children(
 					ui.Text(label).FontSize("23px").FontWeight("bold"),
@@ -129,9 +148,17 @@ func (a *app) messageList() *ui.Element {
 						a.actionButton("Clear search", "clear-search", false),
 					),
 				),
-			ui.Div().CSS("flex", "1").CSS("overflow-y", "auto").
-				Children(rows...),
+			viewport,
 		)
+}
+
+// scrollThumb is the overlay thumb for a scrollable pane. It renders only
+// when the caller measured overflow, so a fitting list shows no track.
+func (a *app) scrollThumb(id string, top, height int) *ui.Element {
+	return ui.Div().ID(id).
+		CSS("position", "absolute").CSS("top", fmt.Sprintf("%dpx", top)).
+		CSS("right", "2px").Height(fmt.Sprintf("%dpx", height)).Width("8px").
+		BorderRadius("4px").BackgroundColor(a.palette("#c3cedd", "#5b6b82"))
 }
 
 func (a *app) messageRow(m *mail) *ui.Element {
@@ -148,6 +175,8 @@ func (a *app) messageRow(m *mail) *ui.Element {
 		star = "  ★"
 	}
 	return ui.Div().ID("row-"+m.ID).Attr("data-action", "message:"+m.ID).
+		Height(fmt.Sprintf("%dpx", mailRowH)).CSS("box-sizing", "border-box").
+		CSS("overflow", "hidden").
 		Padding("16px 17px").BackgroundColor(bg).
 		CSS("border-bottom", a.palette("1px solid #e7ecf4", "1px solid #39465a")).
 		Children(
@@ -182,46 +211,78 @@ func (a *app) reader() *ui.Element {
 	if m.Keywords["$flagged"] {
 		star = "★ Starred"
 	}
-	return ui.Div().CSS("flex", "1").CSS("min-width", "0px").
+	actions := []*ui.Element{
+		a.actionButton(star, "star", false),
+		a.actionButton(status, "toggle-read", false),
+		a.actionButton("Archive", "archive", false),
+		a.actionButton("Delete", "delete", false),
+	}
+	if m.Keywords["$draft"] {
+		actions = append([]*ui.Element{a.actionButton("Send", "send", true)}, actions...)
+	}
+	body := ui.Div().ID("mail-reader-content").Padding("30px 35px").
+		Children(
+			ui.Text(m.Subject).FontSize("26px").FontWeight("bold").
+				Color(a.palette("#162944", "#f1f5ff")),
+			ui.Div().Margin("23px 0").Padding("0 0 18px").
+				CSS("border-bottom", a.palette("1px solid #e8edf5", "1px solid #39465a")).
+				Children(
+					ui.Text(m.From.Name).FontWeight("bold").
+						FontSize("15px").Color(a.palette("#314560", "#d5e2f4")),
+					ui.P().Text(m.From.Email+"  →  "+m.To.Email).
+						Margin("7px 0 0").FontSize("12px").Color(a.palette("#7e91a8", "#a1b3cb")),
+					ui.P().Text(displayDate(m.ReceivedAt)).
+						Margin("5px 0 0").FontSize("12px").Color(a.palette("#7e91a8", "#a1b3cb")),
+				),
+			ui.Div().Display("flex").FlexDirection("column").Gap("14px").
+				Margin("0").Children(a.bodyParagraphs(m)...),
+		)
+	if a.readerScroll > 0 {
+		body.CSS("transform", fmt.Sprintf("translateY(-%dpx)", a.readerScroll))
+	}
+	viewport := ui.Div().ID("mail-reader-viewport").
+		CSS("flex", "1").CSS("min-height", "0px").
+		CSS("position", "relative").CSS("overflow", "hidden").
+		Children(body)
+	if top, height, show := a.readerThumb(); show {
+		viewport.Children(a.scrollThumb("mail-reader-thumb", top, height))
+	}
+	return ui.Div().CSS("flex", "1").CSS("min-width", "0px").CSS("min-height", "0px").
 		BackgroundColor(a.palette("#ffffff", "#1c2738")).BorderRadius("10px").
 		Display("flex").FlexDirection("column").
 		Children(
 			ui.Div().Padding("15px 22px").
+				CSS("flex-shrink", "0").
 				CSS("border-bottom", a.palette("1px solid #e9edf4", "1px solid #39465a")).
 				Display("flex").Gap("9px").
+				Children(actions...),
+			viewport,
+			ui.Div().Padding("15px 35px").
+				CSS("flex-shrink", "0").
+				CSS("border-top", a.palette("1px solid #e8edf5", "1px solid #39465a")).
+				BackgroundColor(a.palette("#f4f7fe", "#27354a")).
 				Children(
-					a.actionButton(star, "star", false),
-					a.actionButton(status, "toggle-read", false),
-					a.actionButton("Archive", "archive", false),
-					a.actionButton("Delete", "delete", false),
-				),
-			ui.Div().Padding("30px 35px").CSS("overflow-y", "auto").
-				CSS("flex", "1").
-				Children(
-					ui.Text(m.Subject).FontSize("26px").FontWeight("bold").
-						Color(a.palette("#162944", "#f1f5ff")),
-					ui.Div().Margin("23px 0").Padding("0 0 18px").
-						CSS("border-bottom", a.palette("1px solid #e8edf5", "1px solid #39465a")).
-						Children(
-							ui.Text(m.From.Name).FontWeight("bold").
-								FontSize("15px").Color(a.palette("#314560", "#d5e2f4")),
-							ui.P().Text(m.From.Email+"  →  "+m.To.Email).
-								Margin("7px 0 0").FontSize("12px").Color(a.palette("#7e91a8", "#a1b3cb")),
-							ui.P().Text(displayDate(m.ReceivedAt)).
-								Margin("5px 0 0").FontSize("12px").Color(a.palette("#7e91a8", "#a1b3cb")),
-						),
-					ui.P().Text(m.Body).FontSize("15px").Color(a.palette("#40526e", "#d1def0")).
-						CSS("white-space", "pre-wrap").CSS("line-height", "1.7"),
-					ui.Div().Margin("36px 0 0").Padding("15px").
-						BackgroundColor(a.palette("#f4f7fe", "#27354a")).BorderRadius("9px").
-						Children(
-							ui.Text("Local JMAP preview").FontWeight("bold").
-								Color(a.palette("#4a6496", "#b6ceff")),
-							ui.P().Text("Mailbox membership and $seen/$flagged keywords update in memory only. No messages are sent or deleted on a server.").
-								FontSize("12px").Color(a.palette("#7b8fa8", "#a4b6cf")),
-						),
+					ui.Text("Local JMAP preview").FontWeight("bold").
+						Color(a.palette("#4a6496", "#b6ceff")),
+					ui.P().Text("Mailbox membership and $seen/$flagged keywords update in memory only. No messages are sent or deleted on a server.").
+						FontSize("12px").Color(a.palette("#7b8fa8", "#a4b6cf")).Margin("6px 0 0"),
 				),
 		)
+}
+
+func (a *app) bodyParagraphs(m *mail) []*ui.Element {
+	parts := strings.Split(m.Body, "\n\n")
+	paras := make([]*ui.Element, 0, len(parts))
+	for _, part := range parts {
+		text := strings.TrimSpace(strings.ReplaceAll(part, "\n", " "))
+		if text == "" {
+			continue
+		}
+		paras = append(paras, ui.P().Text(text).Margin("0").
+			FontSize("15px").Color(a.palette("#40526e", "#d1def0")).
+			CSS("line-height", "1.7"))
+	}
+	return paras
 }
 
 func (a *app) palette(light, dark string) string {
@@ -231,22 +292,91 @@ func (a *app) palette(light, dark string) string {
 	return light
 }
 
-func (a *app) settingsPanel() *ui.Element {
+func (a *app) settingsCard() *ui.Element {
 	if !a.settings {
 		return nil
 	}
-	mode := "Switch to dark theme"
-	if a.dark {
-		mode = "Switch to light theme"
-	}
-	return ui.Div().Display("flex").AlignItems("center").Gap("14px").
-		Padding("10px 22px").BackgroundColor(a.palette("#ffffff", "#1c2738")).
-		CSS("border-bottom", a.palette("1px solid #dce4f0", "1px solid #39465a")).
+	return ui.Div().ID("settings-card").Attr("data-action", "settings").
+		CSS("position", "absolute").CSS("top", "0").CSS("left", "0").
+		CSS("right", "0").CSS("bottom", "0").CSS("z-index", "50").
+		Display("flex").CSS("align-items", "center").CSS("justify-content", "center").
+		BackgroundColor(a.palette("rgba(23, 43, 77, 0.35)", "rgba(0, 0, 0, 0.55)")).
 		Children(
-			ui.Text("Appearance").FontWeight("bold"),
-			a.actionButton(mode, "toggle-theme", false),
-			ui.Text("Your preference applies to this local preview.").FontSize("12px").
-				Color(a.palette("#73829c", "#9aabc3")),
+			ui.Div().ID("settings-panel").
+				Width("520px").
+				BackgroundColor(a.palette("#ffffff", "#1c2738")).
+				CSS("border", a.palette("1px solid #dce4f0", "1px solid #39465a")).
+				BorderRadius("12px").CSS("overflow", "hidden").
+				Children(
+					ui.Div().Display("flex").CSS("justify-content", "space-between").
+						AlignItems("center").Padding("16px 20px").
+						CSS("border-bottom", a.palette("1px solid #dce4f0", "1px solid #39465a")).
+						Children(
+							ui.Text("Settings").FontSize("16px").FontWeight("bold"),
+							a.actionButton("×", "settings", false).ID("settings-close"),
+						),
+					ui.Div().Padding("18px 20px 20px").
+						Children(
+							ui.Text("Appearance").FontWeight("bold"),
+							ui.P().Text("Choose how the mail preview looks.").Margin("5px 0 12px").
+								FontSize("12px").Color(a.palette("#7b8fa5", "#9cacc2")),
+							ui.Div().Display("flex").FlexDirection("column").Gap("8px").
+								Children(
+									a.themeOption("theme-light", "Light", "Bright panels for daytime reading.", "theme:light", !a.dark),
+									a.themeOption("theme-dark", "Dark", "Dim panels for low light.", "theme:dark", a.dark),
+								),
+							ui.P().Text("Your preference applies to this local preview only.").Margin("12px 0 0").
+								FontSize("12px").Color(a.palette("#73829c", "#9aabc3")),
+						),
+				),
+		)
+}
+
+func (a *app) toastCard() *ui.Element {
+	if a.toast == "" {
+		return nil
+	}
+	return ui.Div().ID("mail-toast").
+		CSS("position", "absolute").CSS("left", "16px").CSS("bottom", "16px").
+		CSS("z-index", "60").Display("flex").AlignItems("center").Gap("12px").
+		Width("330px").CSS("box-sizing", "border-box").
+		Padding("13px 14px").BorderRadius("10px").
+		BackgroundColor(a.palette("#162944", "#e5edff")).
+		Color(a.palette("#eaf1ff", "#162944")).
+		CSS("border", a.palette("1px solid #3366d6", "1px solid #4e7ff0")).
+		Children(
+			ui.Text("✓").FontWeight("bold"),
+			ui.Div().CSS("flex", "1").CSS("min-width", "0px").
+				Children(ui.Text(a.toast).FontSize("13px")),
+			a.actionButton("×", "toast-close", false).ID("toast-close"),
+		)
+}
+
+func (a *app) themeOption(id, title, caption, action string, selected bool) *ui.Element {
+	bg := a.palette("#f6f8fc", "#27354a")
+	border := a.palette("1px solid #dce4f0", "1px solid #39465a")
+	check := ""
+	if selected {
+		bg = a.palette("#e5edff", "#2a4164")
+		border = a.palette("1px solid #3366d6", "1px solid #4e7ff0")
+		check = "✓"
+	}
+	return ui.Button("").ID(id).Attr("data-action", action).
+		Width("100%").CSS("text-align", "left").
+		BackgroundColor(bg).Color(a.palette("#172b4d", "#e4ecf8")).
+		CSS("border", border).CSS("box-sizing", "border-box").
+		Padding("12px 14px").BorderRadius("9px").
+		Children(
+			ui.Div().Display("flex").CSS("justify-content", "space-between").
+				AlignItems("center").
+				Children(
+					ui.Div().Children(
+						ui.Text(title).FontWeight("bold").FontSize("14px"),
+						ui.P().Text(caption).Margin("4px 0 0").
+							FontSize("12px").Color(a.palette("#73829c", "#9aabc3")),
+					),
+					ui.Text(check).FontWeight("bold").Color(a.palette("#3366d6", "#4e7ff0")),
+				),
 		)
 }
 
@@ -262,6 +392,7 @@ func (a *app) actionButton(label, action string, prominent bool) *ui.Element {
 	return ui.Button(label).Attr("data-action", action).
 		BackgroundColor(background).Color(foreground).
 		CSS("border", border).Padding("9px 13px").
+		CSS("box-sizing", "border-box").
 		BorderRadius("8px").FontSize("12px").FontWeight("bold")
 }
 

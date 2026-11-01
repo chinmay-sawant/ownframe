@@ -18,7 +18,7 @@ func (s *shell) stretched() bool {
 		return false
 	}
 
-	wantW, wantH := s.app.Clamp(viewW, viewH)
+	wantW, wantH := s.layoutSize(viewW, viewH)
 	haveW, haveH := s.app.Size()
 	if haveW == wantW && haveH == wantH {
 		return false

@@ -15,12 +15,14 @@ Or open the native window:
 
     go run ./examples/ui-builder
 
-The demo includes the original styled branding card, a clickable flexbox toolbar,
-and a selectable file-explorer list. It also demonstrates a larger, dark-themed
-system dashboard with CPU/memory/disk cards, two native CSS bar charts,
-process rows, and a refresh button. **All performance figures are synthetic
-fixtures**, not live machine readings. Controls use OwnFrame's public
-\`data-action\`/\`Handlers.Click\` mechanism, so no JavaScript is required.
+The demo is a single window with seven tabs, each one `screen_*.go` file
+using only the Go builder: widgets (buttons, badges, toggles, cards),
+settings (form state with validation), layout (flex/gap/padding playground),
+todo and counter (slice and integer state), file list (rows from
+`Children(rows...)`), theme (accent/radius/spacing tokens), builder-vs-HTML
+(the same card as Go source and live output), and a backdrop dialog (a
+mail-style overlay with a centered panel that dismisses on backdrop click). Controls use OwnFrame's public
+`data-action`/`Handlers.Click` mechanism, so no JavaScript is required.
 The native desktop window has a draggable custom title bar and working
 minimize/maximize/close controls.
 
@@ -52,7 +54,7 @@ For custom HTML attributes use Attr, and for custom styles use CSS:
 
 ## Public examples
 
-- [`examples/ui-builder`](../examples/ui-builder/main.go) contains the interactive dark system dashboard, chart examples, and working card, toolbar, and file explorer actions.
+- [`examples/ui-builder`](../examples/ui-builder/main.go) contains the eight-tab gallery (widgets, settings, layout, todo, list, theme, compare, dialog), each tab built purely with the Go builder.
 - [`examples/jmap-mail`](../examples/jmap-mail/README.md) is a three-pane JMAP-inspired mail demo with seeded mailboxes and working local selection/actions. It imports the public `ownframe` and `ownframe/ui` packages only, not private `internal` packages.
 
 ## Coverage of 555 implemented CSS properties

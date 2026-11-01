@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -15,138 +17,177 @@ const (
 	demoMinWidth      = 900
 	demoMinHeight     = 610
 	builderDragLimitY = 68
-	barBaseHeight     = 18
 	builderPlacement  = "ui-builder"
 )
 
-type monitorApp struct {
-	page    *ownframe.Page
-	tab     string
-	file    string
-	metric  string
-	sample  int
-	notice  string
-	cpuData []int
-	memData []int
+// builderApp is the single tabbed ui-builder host. Each tab lives in its
+// own screen_*.go file and owns a small state struct below.
+type builderApp struct {
+	page     *ownframe.Page
+	logger   *log.Logger
+	tab      string
+	notice   string
+	widgets  widgetsState
+	settings settingsState
+	layout   layoutState
+	todos    todoState
+	files    listState
+	theme    themeState
+	compare  compareState
+	dialog   dialogState
 }
 
-func newMonitorApp() (*monitorApp, error) {
-	a := &monitorApp{
-		tab:    "overview",
-		file:   "main.go",
-		metric: "CPU",
-		notice: "Choose a metric, chart, section, or file to explore the builder.",
-		cpuData: []int{
-			31, 44, 38, 58, 67, 49, 73, 62, 54, 71, 65, 47,
-		},
-		memData: []int{
-			51, 53, 56, 54, 59, 61, 58, 63, 65, 62, 66, 64,
-		},
+// setLogger installs the diagnostic logger. A nil logger disables logging.
+func (a *builderApp) setLogger(logger *log.Logger) {
+	a.logger = logger
+}
+
+func (a *builderApp) logf(format string, args ...any) {
+	if a.logger == nil {
+		return
+	}
+	a.logger.Printf(format, args...)
+}
+
+func newBuilderApp() (*builderApp, error) {
+	a := &builderApp{
+		tab:      "widgets",
+		notice:   "Pick a tab on the left — every control below is built in Go.",
+		widgets:  defaultWidgetsState(),
+		settings: defaultSettingsState(),
+		layout:   defaultLayoutState(),
+		todos:    defaultTodoState(),
+		files:    defaultListState(),
+		theme:    defaultThemeState(),
+		compare:  defaultCompareState(),
+		dialog:   defaultDialogState(),
 	}
 	p, err := ui.NewPage(ownframe.Config{
-		Title:     "OwnFrame · Builder Dashboard",
+		Title:     "OwnFrame · Builder Gallery",
 		Width:     demoWidth,
 		Height:    demoHeight,
 		MinWidth:  demoMinWidth,
 		MinHeight: demoMinHeight,
+		DevTools:  true,
 	}, a.screen())
 	if err != nil {
-		return nil, fmt.Errorf("new monitor app: %w", err)
+		return nil, fmt.Errorf("new builder app: %w", err)
 	}
 	a.page = p
-	// Stateful demo actions use the same public data-action click route as
-	// normal OwnFrame apps. A re-render uses the public Page.Load API.
 	p.Handle(ownframe.Handlers{Click: a.handleClick})
 	return a, nil
 }
 
-func (a *monitorApp) handleClick(ctx context.Context, box ownframe.Box) error {
-	if name, ok := strings.CutPrefix(box.Action, "view:"); ok {
-		a.selectView(name)
-	} else if name, ok := strings.CutPrefix(box.Action, "file:"); ok {
-		a.selectFile(name)
-	} else if name, ok := strings.CutPrefix(box.Action, "metric:"); ok {
-		a.selectMetric(name)
-	} else {
-		switch box.Action {
-		case "refresh":
-			a.sample++
-			a.notice = "Sample refreshed. No device telemetry was read."
-		case "save":
-			a.notice = "Save clicked — no file was written (demo action)."
-		case "cancel":
-			a.tab, a.metric, a.file = "overview", "CPU", "main.go"
-			a.notice = "Selection reset to the overview."
-		case "win-min":
-			a.page.Window().Minimize()
-			return nil
-		case "win-max":
-			a.page.Window().ToggleMaximize()
-			return nil
-		case "win-close":
-			a.page.Window().Close()
-			return nil
-		default:
-			return nil
+func (a *builderApp) handleClick(ctx context.Context, box ownframe.Box) error {
+	action := box.Action
+	start := time.Now()
+	a.logf("click action=%q tab=%s", action, a.tab)
+	if name, ok := strings.CutPrefix(action, "tab:"); ok {
+		a.selectTab(name)
+		if err := a.refresh(ctx); err != nil {
+			a.logf("click action=%q tab=%s err=%v dur=%s", action, a.tab, err, time.Since(start))
+			return err
 		}
+		a.logf("click action=%q tab=%s ok dur=%s", action, a.tab, time.Since(start))
+		return nil
 	}
-	return a.refresh(ctx)
+	switch action {
+	case "win-min":
+		a.logf("window minimize")
+		a.page.Window().Minimize()
+		return nil
+	case "win-dev":
+		dev := !a.page.Window().DevTools()
+		a.logf("window devtools on=%v", dev)
+		a.page.Window().SetDevTools(dev)
+		return nil
+	case "win-max":
+		a.logf("window toggle-maximize")
+		a.page.Window().ToggleMaximize()
+		return nil
+	case "win-close":
+		a.logf("window close requested")
+		a.page.Window().Close()
+		return nil
+	}
+	if a.handleWidgets(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleSettings(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleLayout(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleTodo(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleList(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleTheme(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleCompare(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	if a.handleDialog(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
+	a.logf("click action=%q tab=%s ignored dur=%s", action, a.tab, time.Since(start))
+	return nil
 }
 
-func (a *monitorApp) selectView(name string) {
+// refreshLogged re-renders after a handled action and logs the outcome with
+// the handling duration, so a stuck re-render shows up as a click without a
+// matching ok line.
+func (a *builderApp) refreshLogged(ctx context.Context, action string, start time.Time) error {
+	if err := a.refresh(ctx); err != nil {
+		a.logf("click action=%q tab=%s err=%v dur=%s", action, a.tab, err, time.Since(start))
+		return err
+	}
+	a.logf("click action=%q tab=%s ok dur=%s", action, a.tab, time.Since(start))
+	return nil
+}
+
+func (a *builderApp) selectTab(name string) {
 	switch name {
-	case "overview", "processes", "charts":
+	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog":
 		a.tab = name
 		a.notice = map[string]string{
-			"overview":  "Overview: sample CPU, memory, and disk metrics.",
-			"processes": "Processes: illustrative application rows.",
-			"charts":    "Charts: twelve synthetic data points per series.",
+			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
+			"settings": "Settings: form state, inline validation, and save in Go.",
+			"layout":   "Layout playground: direction, gap, padding, and box count.",
+			"todo":     "Todo and counter: slice and integer state with re-render.",
+			"list":     "File list: rows built with Children(rows...) in Go.",
+			"theme":    "Theme: accent, radius, and spacing restyle the preview.",
+			"compare":  "Builder vs HTML: the same card as Go code and live output.",
+			"dialog":   "Dialog: a backdrop overlay with a centered panel.",
 		}[name]
 	}
 }
 
-func (a *monitorApp) selectFile(name string) {
-	switch name {
-	case "main.go", "go.mod", "README.md":
-		a.file = name
-		a.notice = "Selected " + a.file + " in the example explorer."
-	}
-}
-
-func (a *monitorApp) selectMetric(name string) {
-	switch name {
-	case "cpu":
-		a.metric = "CPU"
-		a.notice = "CPU graph selected (demo data)."
-	case "memory":
-		a.metric = "Memory"
-		a.notice = "Memory graph selected (demo data)."
-	case "disk":
-		a.metric = "Disk"
-		a.notice = "Disk metric selected (demo data)."
-	}
-}
-
-func (a *monitorApp) refresh(ctx context.Context) error {
+func (a *builderApp) refresh(ctx context.Context) error {
+	start := time.Now()
 	fragment, err := ui.Render(a.screen())
 	if err != nil {
-		return fmt.Errorf("render builder dashboard: %w", err)
+		a.logf("refresh render err=%v dur=%s", err, time.Since(start))
+		return fmt.Errorf("render builder gallery: %w", err)
 	}
 	if err := a.page.Load(ctx, renderBuilderDocument(fragment)); err != nil {
-		return fmt.Errorf("reload builder dashboard: %w", err)
+		a.logf("refresh load err=%v dur=%s", err, time.Since(start))
+		return fmt.Errorf("reload builder gallery: %w", err)
 	}
+	a.logf("refresh ok bytes=%d dur=%s", len(fragment), time.Since(start))
 	return nil
 }
 
 func renderBuilderDocument(fragment string) string {
-	return "<!doctype html><html><head><meta charset=\"utf-8\"></head><body>" +
-		fragment + "</body></html>"
-}
-
-func (a *monitorApp) cpuAt(offset int) int {
-	return a.cpuData[offset%len(a.cpuData)]
-}
-
-func (a *monitorApp) memAt(offset int) int {
-	return a.memData[offset%len(a.memData)]
+	return "<!doctype html><html><head><meta charset=\"utf-8\"><style>" +
+		"html,body{margin:0;padding:0;background-color:#111827}" +
+		"@keyframes todo-done-pop{0%{transform:scale(0.92);opacity:0;}" +
+		"60%{transform:scale(1.03);opacity:1;}}" +
+		"100%{transform:scale(1);opacity:1;}}" +
+		".todo-row:hover,.todo-toggle:hover{transform:translateY(-1px);}" +
+		"</style></head><body>" + fragment + "</body></html>"
 }

@@ -31,8 +31,11 @@ func NewPage(cfg ownframe.Config, root *Element) (*ownframe.Page, error) {
 	}
 	// The built tree is a template *source*. escape() also escapes template
 	// braces so text nodes cannot become Go template expressions.
+	// Reset the default body margin so the first paint has no white border
+	// on any side; per-app Load documents may also set html/body background
+	// to match their theme (see examples/ui-builder, examples/jmap-mail).
 	cfg.HTML = "<!doctype html><html><head><meta charset=\"utf-8\"><title>" +
-		escape(cfg.Title) + "</title></head><body>" + r.output.String() + "</body></html>"
+		escape(cfg.Title) + "</title><style>html,body{margin:0;padding:0}</style></head><body>" + r.output.String() + "</body></html>"
 
 	page, err := ownframe.New(cfg)
 	if err != nil {

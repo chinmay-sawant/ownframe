@@ -53,8 +53,9 @@ badge shifts left when the dock is on, so it stays visible.
 | Elements | The picked element as pretty JSON. Click a node opener to fold it to `{...}`. |
 | Ops | The outline toggle, the count per kind with a colour chip, and every operation in paint order. Click a row to outline that operation and copy its line to the clipboard. |
 
-The dock opens on the Frame tab. The title bar holds the `Picker` toggle and
-the `F12` close hint, and the footer holds a hint for the active tab. `o`
+The dock opens on the Frame tab. The title bar holds the `Picker` toggle, the
+`F12` hint, and the `X` close key. Only `X` closes the dock. The footer holds
+a hint for the active tab. `o`
 toggles the operation outlines and selects the Ops tab, and it does not type
 while the overlay is on.
 
@@ -205,7 +206,7 @@ The `ops` map counts each kind and a `total`. The route is in
 There are no computed styles to show. The engine styles a document internally
 and publishes no per-element reader, so the panel shows geometry and
 attributes, not `font-size` or `margin`. Suppressing pointer input freezes
-the page's hover and press state at their last value. A page that cannot
-shrink to the dock-free strip, because of its own minimum size, scrolls
-instead of scaling. F12 is a browser key in a wasm build, and
+the page's hover and press state at their last value. Responsive pages lay out at the dock-free width, even below the native window
+minimum, so CSS media queries can adapt the layout. Locked canvases retain
+their configured size and fit the available view. F12 is a browser key in a wasm build, and
 `Config.DevTools` or `Page.Window().SetDevTools` is the cross-platform way in.

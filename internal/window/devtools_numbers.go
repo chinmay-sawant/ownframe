@@ -8,9 +8,9 @@ import "image/color"
 const (
 	// devTabPad is the horizontal pad around a tab name.
 	devTabPad = 20.0
-	// devHeaderGap is the gap between header buttons. The picker hit keeps
-	// the trailing gap and the close hit starts at the F12 label, so no
-	// dead space sits between them.
+	// devHeaderGap is the gap between header buttons. The Picker hit covers
+	// only its own label and the X hit covers only its key; the F12 hint
+	// between them takes no hit, so dead space sits on both sides of it.
 	devHeaderGap = 8.0
 	// devLabelInset is the label text inset and outline gap.
 	devLabelInset = 4.0
