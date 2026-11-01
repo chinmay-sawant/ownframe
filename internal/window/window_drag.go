@@ -473,6 +473,8 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 			return true, nil
 		}
 		if !s.pressOnControl(x, y) && s.draggable(x, y) && !s.devOwnsPoint(x, y) {
+			pendingManualRestore = false
+			pendingWindowedRestore = false
 			s.windowDrag.native.begin()
 		}
 	}

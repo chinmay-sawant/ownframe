@@ -48,6 +48,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	game := newShell(ctx, app)
 	defer game.cancel()
 	defer game.windowDrag.native.end()
+	defer game.nativeCursor.end()
 	defer game.renderer.Close()
 	defer game.imeShutdown()
 	defer game.closeA11y()

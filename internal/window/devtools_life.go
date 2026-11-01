@@ -1,8 +1,6 @@
 package window
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
-
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
@@ -48,7 +46,7 @@ func (s *shell) devClose() error {
 	s.devSetPicker(false)
 	s.dev.panelTrack = panelTrack{}
 
-	x, y := ebiten.CursorPosition()
+	x, y := s.cursorPosition()
 	frameW, frameH := s.frameSize()
 	viewW, viewH := s.viewSize()
 	px, py := contentPoint(x, y, s.scrollX, s.scrollY, s.stretched(), frameW, frameH, viewW, viewH)

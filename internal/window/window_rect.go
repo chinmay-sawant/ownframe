@@ -16,3 +16,13 @@ func windowPosition() (int, int) {
 	}
 	return ebiten.WindowPosition()
 }
+
+// Restore accuracy is independent of the drag loop tolerances.
+func restoreRectMatches(actual, want workarea) bool { return actual == want }
+
+func (s *shell) cursorPosition() (int, int) {
+	if x, y, ok := s.nativeCursor.cursor(); ok {
+		return x, y
+	}
+	return ebiten.CursorPosition()
+}

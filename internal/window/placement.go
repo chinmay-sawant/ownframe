@@ -270,6 +270,15 @@ func placementMonitorSize(name string) (int, int, bool) {
 // maximizing: a rect learned on the 1920 panel must never expand onto the
 // 2560 panel, and a 2560 workarea must never land on the 1920 panel.
 func liveMonitorResolution() (int, int, bool) {
+	if isWSLg() {
+		if x, y, ok := nativeWindowPosition(); ok {
+			w, h := ebiten.WindowSize()
+			if m, ok := monitorForWindow(x, y, w, h, monitorLayout()); ok {
+				return m.w, m.h, true
+			}
+		}
+	}
+
 	monitor := ebiten.Monitor()
 	if monitor == nil {
 		return 0, 0, false
@@ -445,6 +454,11 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	if placement.Maximized && isWSL() {
 		if isWSLg() {
 			for _, m := range monitorLayout() {
+				if m.name == placement.Monitor {
+					if area, ok := wslgHostWorkarea(m); ok {
+						placement.MaxX, placement.MaxY, placement.MaxW, placement.MaxH = area.x, area.y, area.w, area.h
+					}
+				}
 				area := workarea{x: placement.MaxX, y: placement.MaxY, w: placement.MaxW, h: placement.MaxH}
 				if m.name == placement.Monitor && areaMatchesMonitorSize(m.w, m.h, area) {
 					placement.MaxX = m.x
@@ -503,7 +517,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		// must match it. A 1920 workarea applied on the 2560 panel (or the
 		// reverse) lands the window on the wrong screen and strands it to
 		// the right, so fall back and re-learn on the live monitor.
-		if liveW, liveH, ok := liveMonitorResolution(); ok {
+		if liveW, liveH, ok := liveMonitorResolution(); ok && !isWSLg() {
 			if !areaMatchesMonitorSize(liveW, liveH, workarea{w: placement.MaxW, h: placement.MaxH}) {
 				manualMax.active = false
 				manualMax.known = false
@@ -522,7 +536,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		rememberManualMaximize(placement)
 		if retry {
 			pendingManualRestore = true
-			pendingManualUntil = time.Now().Add(manualMaxLearnTimeout)
+			pendingManualUntil = time.Time{}
 		}
 		if !applyNow {
 			// The monitor list is still empty. Keep the windowed size for
@@ -588,6 +602,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	}
 
 	w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
+
 	if !placementFits(placement.Monitor, w, h) {
 		// The saved windowed size belongs to a bigger monitor. Clamp it
 		// to the owning monitor and start at that panel top-left instead
@@ -673,6 +688,9 @@ func retryManualRestore(dragging bool) {
 		return
 	}
 
+	if pendingManualUntil.IsZero() {
+		pendingManualUntil = time.Now().Add(manualMaxLearnTimeout)
+	}
 	if dragging || time.Now().After(pendingManualUntil) {
 		pendingManualRestore = false
 
@@ -696,7 +714,7 @@ func retryManualRestore(dragging bool) {
 	// panel must not expand onto the 2560 panel, and a 2560 workarea must
 	// not land on the 1920 panel. Drop the stale rect and let the user
 	// re-maximize to learn the right workarea for this monitor.
-	if liveW, liveH, ok := liveMonitorResolution(); ok {
+	if liveW, liveH, ok := liveMonitorResolution(); ok && !isWSLg() {
 		if !areaMatchesMonitorSize(liveW, liveH, workarea{w: manualMax.ww, h: manualMax.wh}) {
 			pendingManualRestore = false
 			manualMax.active = false
@@ -708,9 +726,7 @@ func retryManualRestore(dragging bool) {
 
 	x, y := windowPosition()
 	w, h := ebiten.WindowSize()
-	landed := w == manualMax.ww && h == manualMax.wh &&
-		absDrag(x-manualMax.wx) <= dragApplySlack &&
-		absDrag(y-manualMax.wy) <= dragApplySlack
+	landed := restoreRectMatches(workarea{x: x, y: y, w: w, h: h}, workarea{x: manualMax.wx, y: manualMax.wy, w: manualMax.ww, h: manualMax.wh})
 	if landed {
 		pendingManualRestore = false
 		manualMax.active = true
@@ -724,12 +740,18 @@ func retryManualRestore(dragging bool) {
 
 // syncPlacement remembers the live rect at most once per interval while the
 // geometry keeps changing. Empty ids and headless sizes never touch the disk.
+// A fullscreen frame is not a windowed rect, so it never overwrites the good
+// one behind it.
 func (s *shell) syncPlacement() {
 	if pendingManualRestore || pendingWindowedRestore {
 		return
 	}
 
 	if s.placementID == "" {
+		return
+	}
+
+	if s.fullscreenNow() {
 		return
 	}
 
@@ -772,9 +794,15 @@ func (s *shell) syncPlacement() {
 // savePlacementNow writes the live rect once, for window close. Invalid
 // sizes (the loop never ran) skip the write. A workarea probe in flight
 // writes a transitional rect, so it skips the same dance syncPlacement
-// skips instead of persisting garbage over the good rect.
+// skips instead of persisting garbage over the good rect. A fullscreen close
+// keeps the windowed rect behind it instead of persisting the fullscreen
+// size as windowed.
 func savePlacementNow(id string) {
 	if strings.TrimSpace(id) == "" {
+		return
+	}
+
+	if ebiten.IsFullscreen() {
 		return
 	}
 

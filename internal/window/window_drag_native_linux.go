@@ -28,7 +28,29 @@ static Window ownframe_find_window(Display *d, Window w, Atom pid_atom, int dept
 static Window ownframe_client(Display *d, Window root) {
  return ownframe_find_window(d,root,XInternAtom(d,"_NET_WM_PID",False),2);
 }
+static int ownframe_geometry(Display *d, Window w, Window root, int *x, int *y, int *width, int *height) {
+ Window child; XWindowAttributes attrs;
+ if (!XTranslateCoordinates(d,w,root,0,0,x,y,&child) || !XGetWindowAttributes(d,w,&attrs)) return 0;
+ *width=attrs.width; *height=attrs.height;
+ return 1;
+}
+static char *ownframe_title(Display *d,Window w) {
+ Atom actual;int format;unsigned long count,after;unsigned char *data=NULL;
+ Atom name=XInternAtom(d,"_NET_WM_NAME",False);
+ Atom utf8=XInternAtom(d,"UTF8_STRING",False);
+ if(XGetWindowProperty(d,w,name,0,4096,False,utf8,&actual,&format,&count,&after,&data)==Success && format==8 && count>0) return (char*)data;
+ if(data) XFree(data);
+ return NULL;
+}
+static void ownframe_free_name(char *name) {XFree(name);}
+static int ownframe_frame_geometry(Display *d,Window w,Window root,int *x,int *y,int *width,int *height) {
+ Window parent,r,*children=NULL;unsigned int n;
+ if(!XQueryTree(d,w,&r,&parent,&children,&n)) return 0;
+ if(children) XFree(children);
+ return ownframe_geometry(d,parent==root?w:parent,root,x,y,width,height);
+}
 static Window ownframe_root(Display *d) { return DefaultRootWindow(d); }
+
 static int ownframe_move(Display *d, Window root, Window w) {
  Window rr,child; int rx,ry,wx,wy; unsigned int mask;
  if (!XQueryPointer(d,root,&rr,&child,&rx,&ry,&wx,&wy,&mask)) return 0;
@@ -111,7 +133,8 @@ func setNativeWindowRect(x, y, w, h int) bool {
 	}
 	for _, m := range layout {
 		if m.name == "XWAYLAND0" {
-			C.XMoveResizeWindow(d.display, d.window, C.int(x+m.x), C.int(y+m.y), C.uint(w), C.uint(h))
+			C.XResizeWindow(d.display, d.window, C.uint(w), C.uint(h))
+			C.XMoveWindow(d.display, d.window, C.int(x+m.x), C.int(y+m.y))
 			C.XSync(d.display, C.False)
 			return true
 		}
@@ -119,29 +142,68 @@ func setNativeWindowRect(x, y, w, h int) bool {
 	return false
 }
 
-func nativeWindowPosition() (int, int, bool) {
+func nativeWindowGeometry() (workarea, bool) {
 	if !isWSLg() {
-		return 0, 0, false
+		return workarea{}, false
 	}
 	var d nativeWindowDrag
 	d.begin()
 	defer d.end()
 	if d.display == nil {
-		return 0, 0, false
+		return workarea{}, false
 	}
-	var x, y C.int
-	var child C.Window
-	if C.XTranslateCoordinates(d.display, d.window, d.root, 0, 0, &x, &y, &child) == 0 {
-		return 0, 0, false
+	var x, y, width, height C.int
+	if C.ownframe_geometry(d.display, d.window, d.root, &x, &y, &width, &height) == 0 {
+		return workarea{}, false
 	}
 	layout, ok := xrandrLayout()
 	if !ok {
-		return 0, 0, false
+		return workarea{}, false
 	}
 	for _, m := range layout {
 		if m.name == "XWAYLAND0" {
-			return int(x) - m.x, int(y) - m.y, true
+			return workarea{x: int(x) - m.x, y: int(y) - m.y, w: int(width), h: int(height)}, true
 		}
 	}
-	return 0, 0, false
+	return workarea{}, false
+}
+
+func nativeWindowPosition() (int, int, bool) { r, ok := nativeWindowGeometry(); return r.x, r.y, ok }
+
+func (d *nativeWindowDrag) cursor() (int, int, bool) {
+	if d.display == nil {
+		d.begin()
+	}
+	if d.display == nil {
+		return 0, 0, false
+	}
+	var root, child C.Window
+	var rx, ry, x, y C.int
+	var mask C.uint
+	ok := C.XQueryPointer(d.display, d.window, &root, &child, &rx, &ry, &x, &y, &mask)
+	return int(x), int(y), ok != 0
+}
+
+func nativeWindowTarget() (hostWindowTarget, bool) {
+	var d nativeWindowDrag
+	d.begin()
+	defer d.end()
+	if d.display == nil {
+		return hostWindowTarget{}, false
+	}
+	client, ok := nativeWindowGeometry()
+	if !ok {
+		return hostWindowTarget{}, false
+	}
+	name := C.ownframe_title(d.display, d.window)
+	if name == nil {
+		return hostWindowTarget{}, false
+	}
+	title := C.GoString(name)
+	C.ownframe_free_name(name)
+	var x, y, w, h, cx, cy, cw, ch C.int
+	if C.ownframe_frame_geometry(d.display, d.window, d.root, &x, &y, &w, &h) == 0 || C.ownframe_geometry(d.display, d.window, d.root, &cx, &cy, &cw, &ch) == 0 {
+		return hostWindowTarget{}, false
+	}
+	return hostWindowTarget{Title: title, Client: desktopRect{X: client.x, Y: client.y, W: client.w, H: client.h}, Frame: desktopRect{X: client.x + int(x-cx), Y: client.y + int(y-cy), W: int(w), H: int(h)}}, true
 }

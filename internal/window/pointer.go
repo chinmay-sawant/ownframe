@@ -12,7 +12,7 @@ func (s *shell) pointer() error {
 	if handled, err := s.consumeTouchCancel(ebiten.AppendTouchIDs(nil)); handled || err != nil {
 		return err
 	}
-	x, y := ebiten.CursorPosition()
+	x, y := s.cursorPosition()
 	s.cursorX, s.cursorY = x, y
 	claimed, err := s.menuClaim(x, y,
 		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft),

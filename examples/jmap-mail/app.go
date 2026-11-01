@@ -73,7 +73,6 @@ func newApp() (*app, error) {
 	}
 	p, err := ui.NewPage(ownframe.Config{
 		Title: mailDemoTitle, Width: mailWindowWidth, Height: mailWindowHeight,
-		DevTools: true,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new mail app: %w", err)

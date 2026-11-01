@@ -25,17 +25,17 @@ func closeStage(t *testing.T) func(*shell) error {
 }
 
 func TestCloseRequestRoundTrip(t *testing.T) {
-	if takeCloseRequest() {
+	if takeCloseRequest(false) {
 		t.Fatal("stale close request leaked into the test")
 	}
 
 	RequestClose()
 
-	if !takeCloseRequest() {
+	if !takeCloseRequest(false) {
 		t.Fatal("RequestClose did not arm a close")
 	}
 
-	if takeCloseRequest() {
+	if takeCloseRequest(false) {
 		t.Fatal("close request was not consumed")
 	}
 }
@@ -54,7 +54,7 @@ func TestCloseStageEndsLoop(t *testing.T) {
 		t.Fatalf("armed close stage = %v, want ebiten.Termination", err)
 	}
 
-	if takeCloseRequest() {
+	if takeCloseRequest(false) {
 		t.Fatal("close request survived the stage")
 	}
 }
@@ -120,5 +120,19 @@ func TestManualMaximizeAbandonsStaleRestore(t *testing.T) {
 
 	if manualMax.active {
 		t.Fatal("stale restore activated the maximize")
+	}
+}
+
+func TestCloseWaitsForMouseRelease(t *testing.T) {
+	RequestClose()
+	t.Cleanup(func() { takeCloseRequest(false) })
+	if takeCloseRequest(true) {
+		t.Fatal("destroyed the window before WSLg could deliver mouse release")
+	}
+	if !takeCloseRequest(false) {
+		t.Fatal("lost close request while waiting for release")
+	}
+	if takeCloseRequest(false) {
+		t.Fatal("close request was consumed more than once")
 	}
 }

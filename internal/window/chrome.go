@@ -1,6 +1,7 @@
 package window
 
 import (
+	"log"
 	"os"
 	"runtime"
 	"strings"
@@ -17,9 +18,10 @@ import (
 // report.
 var closeRequested atomic.Bool
 
-// RequestClose asks the run loop to exit on its next frame. It does nothing
-// when no desktop loop is running, so Serve, web, and mobile callers can
-// share the same button wiring. It also wakes a parked idle loop, so a close
+// RequestClose asks the run loop to exit on its next frame. On WSLg it
+// waits for the left mouse button to be released before destroying the window.
+// It does nothing when no desktop loop is running, so Serve, web, and mobile
+// callers can share the same button wiring. It also wakes a parked idle loop, so a close
 // pressed while the window is clean exits on the next frame instead of
 // waiting for the keep-alive tick or a page deadline.
 func RequestClose() {
@@ -28,14 +30,24 @@ func RequestClose() {
 	ebiten.ScheduleFrame()
 }
 
-// takeCloseRequest consumes a pending close request.
-func takeCloseRequest() bool {
+// takeCloseRequest retains the request while WSLg still owes the window a
+// mouse release. Destroying it on press leaves X11 button state stuck down.
+func takeCloseRequest(waitForRelease bool) bool {
+	if waitForRelease {
+		return false
+	}
 	return closeRequested.Swap(false)
 }
 
 // Minimize minimizes the desktop window. It does nothing when no desktop
 // run loop is active or the platform is not a desktop.
 func Minimize() {
+	if isWSLg() {
+		if !minimizeWSLg() {
+			log.Print("ownframe: Windows host did not accept the WSLg minimize request")
+		}
+		return
+	}
 	ebiten.MinimizeWindow()
 }
 
@@ -156,14 +168,11 @@ func retryWindowedRestore(dragging bool) {
 	}
 	x, y := windowPosition()
 	w, h := ebiten.WindowSize()
-	if w == pendingWindowedW && h == pendingWindowedH &&
-		absDrag(x-pendingWindowedX) <= dragApplySlack &&
-		absDrag(y-pendingWindowedY) <= dragApplySlack {
+	if restoreRectMatches(workarea{x: x, y: y, w: w, h: h}, workarea{x: pendingWindowedX, y: pendingWindowedY, w: pendingWindowedW, h: pendingWindowedH}) {
 		pendingWindowedRestore = false
 		return
 	}
-	ebiten.SetWindowPosition(pendingWindowedX, pendingWindowedY)
-	ebiten.SetWindowSize(pendingWindowedW, pendingWindowedH)
+	setWindowRect(pendingWindowedX, pendingWindowedY, pendingWindowedW, pendingWindowedH)
 }
 
 // manualMax carries a hand-rolled maximize for WSL. WSLg can present a
@@ -191,6 +200,9 @@ var manualMax = struct {
 	areas            map[string]workarea
 	observedWindowed workarea
 	observedKnown    bool
+	probe            workareaProbe
+	hostAreas        []hostWorkarea
+	hostAreasAt      time.Time
 }{}
 
 // workareaGapMax bounds how far a learned workarea may fall short of its
@@ -330,6 +342,7 @@ func adoptExternalMaximize() {
 	// Already maximized: MaximizeWindow would be redundant, so start the
 	// learn dance directly and let completeManualMaximize pick up the
 	// configure the manager is presenting.
+	manualMax.probe = workareaProbe{}
 	manualMax.learning = true
 	manualMax.until = time.Now().Add(manualMaxLearnTimeout)
 }
@@ -364,6 +377,7 @@ func toggleManualMaximize() {
 		} else {
 			setWindowRect(manualMax.sx, manualMax.sy, manualMax.sw, manualMax.sh)
 			manualMax.active = false
+			rememberWindowedRestore(manualMax.sx, manualMax.sy, manualMax.sw, manualMax.sh)
 
 			return
 		}
@@ -372,6 +386,17 @@ func toggleManualMaximize() {
 	manualMax.sx, manualMax.sy = windowPosition()
 	manualMax.sw, manualMax.sh = ebiten.WindowSize()
 	current := currentMonitorName()
+	if isWSLg() {
+		for _, m := range monitorLayout() {
+			if m.name == current {
+				if area, ok := wslgHostWorkarea(m); ok {
+					applyWorkarea(current, area)
+					return
+				}
+				break
+			}
+		}
+	}
 
 	// Check the resolution first: the cached workarea must fill the live
 	// monitor, not just the named one. ebiten.Monitor is unreliable while
@@ -410,6 +435,7 @@ func toggleManualMaximize() {
 		}
 	}
 
+	manualMax.probe = workareaProbe{}
 	manualMax.learning = true
 	manualMax.until = time.Now().Add(manualMaxLearnTimeout)
 	ebiten.MaximizeWindow()
@@ -428,6 +454,8 @@ func applyWorkarea(mon string, area workarea) {
 	manualMax.areas[mon] = area
 	setWindowRect(area.x, area.y, area.w, area.h)
 	manualMax.active = true
+	pendingManualRestore = true
+	pendingManualUntil = time.Time{}
 }
 
 // completeManualMaximize watches a workarea probe from the resize path. When
@@ -451,12 +479,22 @@ func completeManualMaximize(pendingW, pendingH int) {
 			return
 		}
 
-		if pendingW == manualMax.sw && pendingH == manualMax.sh {
+		if !isWSLg() && pendingW == manualMax.sw && pendingH == manualMax.sh {
 			return // still the windowed size; the configure is in flight
 		}
 
 		area := workarea{w: pendingW, h: pendingH}
 		area.x, area.y = windowPosition()
+		if isWSLg() {
+			if actual, ok := nativeWindowGeometry(); ok {
+				area = actual
+				if !manualMax.probe.observe(area, time.Now()) {
+					return
+				}
+			} else {
+				return
+			}
+		}
 		// Attribute by position first: the double-tap header is on one
 		// monitor, and xrandr gives its true origin. Size-only matching
 		// misattributes when Ebiten straddles or misreports, teleporting a
@@ -532,4 +570,6 @@ func completeManualMaximize(pendingW, pendingH int) {
 	manualMax.restoring = false
 	setWindowRect(manualMax.wx, manualMax.wy, manualMax.ww, manualMax.wh)
 	manualMax.active = true
+	pendingManualRestore = true
+	pendingManualUntil = time.Time{}
 }

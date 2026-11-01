@@ -42,7 +42,7 @@ func (s *shell) wheel() error {
 	}
 
 	if handler, ok := s.app.(host.WheelHandler); ok {
-		x, y := ebiten.CursorPosition()
+		x, y := s.cursorPosition()
 		frameW, frameH := s.frameSize()
 		px, py := s.contentAt(x, y, frameW, frameH)
 

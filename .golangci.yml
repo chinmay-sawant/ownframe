@@ -177,7 +177,7 @@ linters:
       # Window callbacks have no context parameter. Monitor probing owns a
       # fixed timeout rather than extending every public window action.
       - linters: [contextcheck]
-        text: "Function .*\\b(applyPlacement|savePlacementNow|ToggleMaximize)\\b.*xrandrLayout.*should pass the context parameter"
+        text: "Function .*\\b(applyPlacement|savePlacementNow|ToggleMaximize|Minimize)\\b.*(xrandrLayout|wslgHostWorkarea|minimizeWSLg).*should pass the context parameter"
 
       # GEN-19 gochecknoglobals: test files hold fixture scratch, never
       # process singletons, so the linter only guards non-test files.

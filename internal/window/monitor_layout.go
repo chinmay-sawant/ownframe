@@ -156,26 +156,21 @@ func monitorLayout() []monitorRect {
 	return ebitenLayoutFallback()
 }
 
-// monitorForWindow names the monitor holding the window center, falling back
-// to the largest overlap. It answers which monitor the header is on when the
-// user double-taps it, even while Ebiten straddles or misreports.
+// monitorForWindow chooses the largest visible area. The window center
+// breaks a tie when it spans two monitors equally.
 func monitorForWindow(wx, wy, ww, wh int, layout []monitorRect) (monitorRect, bool) {
 	if len(layout) == 0 || ww <= 0 || wh <= 0 {
 		return monitorRect{}, false
 	}
 	cx := wx + ww/monitorCenterDivisor
 	cy := wy + wh/monitorCenterDivisor
-	for _, m := range layout {
-		if cx >= m.x && cx < m.x+m.w && cy >= m.y && cy < m.y+m.h {
-			return m, true
-		}
-	}
 	best := monitorRect{}
 	bestArea := 0
 	found := false
 	for _, m := range layout {
 		overlap := overlapArea(wx, wy, ww, wh, m)
-		if overlap > bestArea {
+		containsCenter := cx >= m.x && cx < m.x+m.w && cy >= m.y && cy < m.y+m.h
+		if overlap > bestArea || (overlap == bestArea && overlap > 0 && containsCenter) {
 			bestArea = overlap
 			best = m
 			found = true
