@@ -16,10 +16,11 @@ import (
 // where SetFPSMode and SetTPS are safe; the keep-alive timer runs on its
 // own goroutine and only calls the concurrent-safe ScheduleFrame.
 //
-// Present capping (no VSync): heavy presents are capped to maxFPS while the
-// loop runs at maxFPS+FPSHeadroom, so the FE shows maxFPS but the app ticks
-// faster. Skipped presents do no heavy work; the retained screen keeps the
-// last frame. maxFPS==0 is uncapped (legacy uncapped drawing).
+// Present capping (no VSync): heavy presents are capped to maxFPS by pacing
+// every loop iteration to the present interval with a monotonic sleep, so
+// the FE shows maxFPS while the app ticks faster via TPS headroom. Every
+// iteration presents once; the retained screen keeps the last frame between
+// keep-alive wakes. maxFPS==0 is uncapped (legacy uncapped drawing).
 type paceGame struct {
 	shell  *shell
 	policy pacing.Policy
@@ -71,9 +72,10 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 	}
 	// Capped active path ticks at the loop rate (present cap + headroom) so
 	// the app runs hotter than the FE presents. Uncapped keeps legacy TPS.
+	// g.base stays the app's original TPS for the uncapped restore path;
+	// the capped path always re-applies LoopFPS in applyFast.
 	if loop := LoopFPS(maxFPS); loop > 0 {
 		ebiten.SetTPS(loop)
-		pace.base = loop
 	}
 	pace.kick = make(chan struct{}, 1)
 	pace.debug, pace.debugAt = paceDebugWriter(), time.Now()
@@ -139,12 +141,17 @@ func (g *paceGame) notePresent(now time.Time) {
 	g.presents++
 	n := now.UnixNano()
 	g.presentHist = append(g.presentHist, n)
-	const keep = 1200
+	const (
+		keep = 1200
+		// minPresentSamples is the minimum history entries needed for a
+		// present rate: one sample has no span to divide by.
+		minPresentSamples = 2
+	)
 	if len(g.presentHist) > keep {
 		copy(g.presentHist, g.presentHist[len(g.presentHist)-keep:])
 		g.presentHist = g.presentHist[:keep]
 	}
-	if len(g.presentHist) < 2 {
+	if len(g.presentHist) < minPresentSamples {
 		return
 	}
 	cutoff := n - int64(time.Second)
@@ -159,7 +166,7 @@ func (g *paceGame) notePresent(now time.Time) {
 		}
 	}
 	count := len(g.presentHist) - idx
-	if count < 2 {
+	if count < minPresentSamples {
 		return
 	}
 	if span := time.Duration(n - g.presentHist[idx]); span > 0 {

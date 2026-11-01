@@ -3,6 +3,8 @@ package window
 import (
 	"context"
 	"testing"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func TestPaceWindowOption(t *testing.T) {
@@ -25,6 +27,11 @@ func TestPaceWindowOption(t *testing.T) {
 
 func TestPaceWindowCappedNoIdleStillWraps(t *testing.T) {
 	sh := &shell{ctx: context.Background()}
+
+	// paceWindow with a cap mutates the global TPS; restore it so later
+	// tests in this package see the TPS they started with.
+	saved := ebiten.TPS()
+	defer ebiten.SetTPS(saved)
 
 	out, stop := paceWindow(context.Background(), sh, Options{NoIdlePace: true, MaxFPS: 60})
 	defer stop()

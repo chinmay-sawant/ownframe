@@ -5,13 +5,14 @@ import "time"
 // Desktop present cap without VSync.
 //
 // The active drawing loop stays on VSync-off maximum and paces itself with a
-// monotonic limiter, so arbitrary caps (60/120/144/240) work on any monitor
+// monotonic sleep, so arbitrary caps (60/120/144/240) work on any monitor
 // refresh without busy-spinning. Presents (heavy Draw work) are capped to
-// MaxFPS while the loop (Update + Draw calls) runs faster at
-// MaxFPS+FPSHeadroom, so the FE shows MaxFPS but the app ticks at the loop
-// rate for input smoothness. Skipped presents do no heavy work: the screen
-// is retained (SetScreenClearedEveryFrame(false)), so a skip is cheap and
-// cuts allocation rate, which is the RSS lever.
+// MaxFPS by pacing every loop iteration to the present interval: each
+// iteration presents once, and the sleep holds the rate. The screen is
+// retained (SetScreenClearedEveryFrame(false)), so idle keep-alive frames
+// stay cheap. Updates run hotter via TPS headroom (MaxFPS+FPSHeadroom), so
+// the FE shows MaxFPS but the app ticks at the loop rate for input
+// smoothness.
 //
 // Idle parking is untouched: keep-alive wakes (125 ms) are far below the
 // limiter intervals, so idle windows park efficiently with no extra sleep.
@@ -24,8 +25,8 @@ const (
 	FPSHeadroom = 20
 	// MinFPS and MaxAllowedFPS bound explicit caps; outside falls back to
 	// uncapped (the default).
-	MinFPS         = 30
-	MaxAllowedFPS  = 1000
+	MinFPS        = 30
+	MaxAllowedFPS = 1000
 )
 
 // NormalizeMaxFPS maps an Options.MaxFPS value to its effective cap.
@@ -43,9 +44,9 @@ func NormalizeMaxFPS(v int) int {
 }
 
 // LoopFPS is the internal update (TPS) rate for a present cap: MaxFPS +
-// headroom. The loop (presents) runs at MaxFPS while Updates average the
-// loop rate, so the FE shows MaxFPS FPS but the app ticks hotter for input
-// smoothness. It returns 0 for uncapped.
+// headroom. Presents run at MaxFPS while Updates average the loop rate, so
+// the FE shows MaxFPS FPS but the app ticks hotter for input smoothness.
+// It returns 0 for uncapped.
 func LoopFPS(maxFPS int) int {
 	if maxFPS <= 0 {
 		return 0

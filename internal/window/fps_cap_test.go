@@ -20,6 +20,17 @@ func TestNormalizeMaxFPS(t *testing.T) {
 	if got := NormalizeMaxFPS(10); got != 0 {
 		t.Fatalf("invalid low = %d, want uncapped", got)
 	}
+	if got := NormalizeMaxFPS(29); got != 0 {
+		t.Fatalf("below min = %d, want uncapped", got)
+	}
+	for _, fps := range []int{30, 31, 999, 1000} {
+		if got := NormalizeMaxFPS(fps); got != fps {
+			t.Fatalf("boundary fps %d = %d", fps, got)
+		}
+	}
+	if got := NormalizeMaxFPS(1001); got != 0 {
+		t.Fatalf("above max = %d, want uncapped", got)
+	}
 	if got := NormalizeMaxFPS(5000); got != 0 {
 		t.Fatalf("invalid high = %d, want uncapped", got)
 	}
@@ -45,15 +56,15 @@ func TestCapHoldsUnderSustainedLoad(t *testing.T) {
 	lastLoop := base
 	presents := 0
 	at := base
-	// Simulate 2s of sustained load paced to the cap: 160 loop iterations
+	// Simulate 2s of sustained load paced to the cap: 120 loop iterations
 	// at 16.6ms, each presenting once.
-	for i := 0; i < 160; i++ {
+	for i := 0; i < 120; i++ {
 		at = at.Add(LoopInterval(maxFPS))
 		lastLoop = at
 		presents++
 	}
-	if presents != 160 {
-		t.Fatalf("2s at 60 cap presented %d, want 160", presents)
+	if presents != 120 {
+		t.Fatalf("2s at 60 cap presented %d, want 120", presents)
 	}
 	_ = lastLoop
 	// The hotter app rate is carried by TPS headroom, not extra presents:
