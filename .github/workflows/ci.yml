@@ -57,7 +57,7 @@ jobs:
       - run: go mod verify
       - run: cd examples && go mod verify
       - name: Install graphics test dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - run: xvfb-run -a make test
 
   lint:
@@ -95,6 +95,10 @@ jobs:
         with:
           path: temp/tools
           key: golangci-lint-${{ runner.os }}-${{ steps.lint-version.outputs.version }}
+      # golangci-lint type-checks internal/window, whose linux cgo file
+      # needs X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - run: make lint
 
   graphics:
@@ -113,7 +117,7 @@ jobs:
         with:
           go-version: "1.26.10"
       - name: Install graphics test dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - run: make graphics-check
 
   module:
@@ -131,6 +135,10 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      # module-check compiles a public-API consumer against the library,
+      # which pulls in internal/window and its linux cgo X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - run: make module-check
 
   site:
@@ -198,6 +206,10 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      # test-race and the soak check build internal/window, whose linux
+      # cgo file needs X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - run: make test-race
       - run: go test -p 1 -tags ownframe_debug ./internal/web
       - run: make soak-check SOAK_SECONDS=60
@@ -217,6 +229,10 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      # The Sec suite builds every package including internal/window,
+      # whose linux cgo file needs X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - run: go test -p 1 -count=1 -run Sec ./... ./examples/...
       # GEN-24: short fuzz smoke per target; sustained runs belong to
       # continuous fuzzing, not to this gate.
@@ -246,6 +262,10 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      # The checkptr run builds internal/window natively, whose linux
+      # cgo file needs X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - run: GOARCH=${{ matrix.goarch }} go vet -p 1 ./internal/... .
       - run: GOOS=js GOARCH=wasm go vet -p 1 ./internal/... .
       - run: GOOS=windows go vet -p 1 ./internal/... .
@@ -329,7 +349,7 @@ jobs:
         with:
           go-version: "1.26.10"
       - name: Install graphics test dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgl1-mesa-dri
+        run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - name: Run examples race shard
         env:
           RACE_SHARD: ${{ matrix.shard }}
@@ -394,6 +414,10 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      # perf-baseline.sh builds and runs benchmarks, which compile
+      # internal/window and need its linux cgo X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - name: Compare parent and candidate on the same runner
         run: |
           set -eu
@@ -423,6 +447,10 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.10"
+      # ebitenmobile/gobind host tools build against the desktop ebiten
+      # backend, which needs X11 headers on Linux.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       - name: Install pinned Android binding tools and NDK
         run: |

@@ -1,4 +1,4 @@
-//go:build !windows && (!linux || !cgo)
+//go:build !windows && (!linux || !cgo || android || ios || js)
 
 package window
 

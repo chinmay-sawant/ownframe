@@ -1,4 +1,4 @@
-//go:build linux && cgo
+//go:build linux && !android && !ios && !js && cgo
 
 package window
 

@@ -33,6 +33,10 @@ jobs:
       # High-severity CVEs: govulncheck built from the pinned tool
       # directive in go.mod. govulncheck has no workspace mode, so both
       # modules are scanned explicitly.
+      # govulncheck loads internal/window, whose linux cgo file needs
+      # X11 headers.
+      - name: Install native compile dependencies
+        run: sudo apt-get update && sudo apt-get install -y libx11-dev
       - name: Scan Go vulnerabilities in both modules
         run: |
           go build -o "${RUNNER_TEMP}/govulncheck" golang.org/x/vuln/cmd/govulncheck
