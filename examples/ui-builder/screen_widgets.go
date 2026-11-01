@@ -8,6 +8,21 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+const (
+	// Defaults for the widgets gallery state.
+	widgetsDefaultBadges   = 3
+	widgetsDefaultSteps    = 4
+	widgetsDefaultProgress = 62
+	widgetsDefaultPageIdx  = 2
+
+	// Bounds for the stepper, progress bar, pagination, and table demos.
+	widgetsStepsMax     = 10
+	widgetsProgressMax  = 100
+	widgetsProgressStep = 10
+	widgetsPageCount    = 4
+	widgetsTableMaxRow  = 2
+)
+
 // widgetsState holds the small interactive state for the widgets gallery tab.
 type widgetsState struct {
 	variant      string // selected button variant showcase
@@ -33,7 +48,7 @@ type widgetsState struct {
 func defaultWidgetsState() widgetsState {
 	return widgetsState{
 		variant:      "primary",
-		badges:       3,
+		badges:       widgetsDefaultBadges,
 		toggled:      true,
 		picked:       "home",
 		inputVal:     "Hello widgets",
@@ -42,10 +57,10 @@ func defaultWidgetsState() widgetsState {
 		checkCompact: false,
 		radio:        "medium",
 		selectOpt:    "pro",
-		steps:        4,
-		progress:     62,
+		steps:        widgetsDefaultSteps,
+		progress:     widgetsDefaultProgress,
 		tabSel:       "overview",
-		pageIdx:      2,
+		pageIdx:      widgetsDefaultPageIdx,
 		crumb:        "widgets",
 		alertOff:     false,
 		avatar:       "AK",
@@ -349,11 +364,11 @@ func (a *builderApp) tabPill(label, value string) *ui.Element {
 
 func (a *builderApp) paginationCard() *ui.Element {
 	pages := []*ui.Element{widgetsBtn("‹ Prev", "widgets:page:prev", false)}
-	for i := 1; i <= 4; i++ {
+	for i := 1; i <= widgetsPageCount; i++ {
 		pages = append(pages, a.pageButton(i))
 	}
 	pages = append(pages, widgetsBtn("Next ›", "widgets:page:next", false))
-	return widgetShell("Pagination", fmt.Sprintf("Page %d of 4.", a.widgets.pageIdx),
+	return widgetShell("Pagination", fmt.Sprintf("Page %d of %d.", a.widgets.pageIdx, widgetsPageCount),
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(pages...),
 	)
 }
@@ -563,7 +578,7 @@ func (a *builderApp) handleWidgets(action string) bool {
 		a.notice = fmt.Sprintf("Compact mode checkbox %s.", toggledWord(a.widgets.checkCompact))
 		return true
 	case "steps:inc":
-		if a.widgets.steps < 10 {
+		if a.widgets.steps < widgetsStepsMax {
 			a.widgets.steps++
 		}
 		a.notice = fmt.Sprintf("Stepper raised to %d.", a.widgets.steps)
@@ -579,18 +594,18 @@ func (a *builderApp) handleWidgets(action string) bool {
 		a.notice = "Stepper reset to its default."
 		return true
 	case "progress:inc":
-		if a.widgets.progress > 90 {
-			a.widgets.progress = 100
+		if a.widgets.progress > widgetsProgressMax-widgetsProgressStep {
+			a.widgets.progress = widgetsProgressMax
 		} else {
-			a.widgets.progress += 10
+			a.widgets.progress += widgetsProgressStep
 		}
 		a.notice = fmt.Sprintf("Progress raised to %d%%.", a.widgets.progress)
 		return true
 	case "progress:dec":
-		if a.widgets.progress < 10 {
+		if a.widgets.progress < widgetsProgressStep {
 			a.widgets.progress = 0
 		} else {
-			a.widgets.progress -= 10
+			a.widgets.progress -= widgetsProgressStep
 		}
 		a.notice = fmt.Sprintf("Progress lowered to %d%%.", a.widgets.progress)
 		return true
@@ -647,18 +662,18 @@ func (a *builderApp) handleWidgets(action string) bool {
 			if a.widgets.pageIdx > 1 {
 				a.widgets.pageIdx--
 			}
-			a.notice = fmt.Sprintf("Page %d of 4.", a.widgets.pageIdx)
+			a.notice = fmt.Sprintf("Page %d of %d.", a.widgets.pageIdx, widgetsPageCount)
 			return true
 		case "next":
-			if a.widgets.pageIdx < 4 {
+			if a.widgets.pageIdx < widgetsPageCount {
 				a.widgets.pageIdx++
 			}
-			a.notice = fmt.Sprintf("Page %d of 4.", a.widgets.pageIdx)
+			a.notice = fmt.Sprintf("Page %d of %d.", a.widgets.pageIdx, widgetsPageCount)
 			return true
 		}
-		if n, err := strconv.Atoi(rest); err == nil && n >= 1 && n <= 4 {
+		if n, err := strconv.Atoi(rest); err == nil && n >= 1 && n <= widgetsPageCount {
 			a.widgets.pageIdx = n
-			a.notice = fmt.Sprintf("Page %d of 4.", n)
+			a.notice = fmt.Sprintf("Page %d of %d.", n, widgetsPageCount)
 			return true
 		}
 		return false
@@ -682,7 +697,7 @@ func (a *builderApp) handleWidgets(action string) bool {
 		return false
 	}
 	if rest, ok := strings.CutPrefix(name, "table:"); ok {
-		if n, err := strconv.Atoi(rest); err == nil && n >= 0 && n <= 2 {
+		if n, err := strconv.Atoi(rest); err == nil && n >= 0 && n <= widgetsTableMaxRow {
 			a.widgets.tableRow = n
 			a.notice = fmt.Sprintf("Table row %d selected.", n+1)
 			return true

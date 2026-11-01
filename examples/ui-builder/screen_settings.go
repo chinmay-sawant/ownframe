@@ -29,8 +29,13 @@ func defaultSettingsState() settingsState {
 	}
 }
 
+// settingsMaxNickRunes bounds the optional nickname field.
+const settingsMaxNickRunes = 12
+
 // settingsRoles lists the roles offered by the role select row.
-var settingsRoles = []string{"viewer", "editor", "admin"}
+func settingsRoles() []string {
+	return []string{"viewer", "editor", "admin"}
+}
 
 func (a *builderApp) settingsPanel() *ui.Element {
 	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
@@ -77,8 +82,9 @@ func (a *builderApp) settingsField(label, id, name, inputType, value, placeholde
 }
 
 func (a *builderApp) settingsRoleRow() *ui.Element {
-	buttons := make([]*ui.Element, 0, len(settingsRoles))
-	for _, role := range settingsRoles {
+	roles := settingsRoles()
+	buttons := make([]*ui.Element, 0, len(roles))
+	for _, role := range roles {
 		selected := a.settings.Role == role
 		buttons = append(buttons, a.settingsRoleButton(role, selected))
 	}
@@ -158,7 +164,7 @@ func (a *builderApp) handleSettings(action string) bool {
 		if !strings.Contains(a.settings.Email, "@") {
 			a.settings.Errors["settings-email"] = "Email must contain @."
 		}
-		if len([]rune(a.settings.Nick)) > 12 {
+		if len([]rune(a.settings.Nick)) > settingsMaxNickRunes {
 			a.settings.Errors["settings-nick"] = "Nickname must be 12 characters or fewer."
 		}
 		if len(a.settings.Errors) > 0 {
@@ -187,7 +193,7 @@ func (a *builderApp) handleSettings(action string) bool {
 		return true
 	}
 	if role, ok := strings.CutPrefix(action, "settings:role:"); ok {
-		for _, valid := range settingsRoles {
+		for _, valid := range settingsRoles() {
 			if role == valid {
 				a.settings.Role = role
 				a.settings.Saved = false

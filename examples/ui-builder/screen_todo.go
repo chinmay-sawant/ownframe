@@ -22,9 +22,13 @@ func defaultTodoState() todoState {
 		Items:   []string{"Wire the counter buttons", "Add a todo row", "Clear completed tasks"},
 		Done:    map[int]bool{},
 		Counter: 0,
-		Next:    4,
+		Next:    todoInitialNext,
 	}
 }
+
+// todoInitialNext is one past the three seeded items, so the first task
+// added with "+ Add task" is numbered 4.
+const todoInitialNext = 4
 
 // todoTransition lists only the shipped transition fields from
 // documentation/css-motion.md, so a toggle cross-fades instead of snapping.

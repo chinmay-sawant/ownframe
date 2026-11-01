@@ -16,7 +16,7 @@ func TestDevThumbWinsOverDockEdge(t *testing.T) {
 	t.Parallel()
 
 	d := newDevScreen()
-	d.fakeScreen.boxes = []layout.Box{
+	d.boxes = []layout.Box{
 		{ID: "known", Tag: "div", X: 10, Y: 10, W: 100, H: 40},
 		{ID: "tall", Tag: "div", X: 0, Y: 0, W: 100, H: 2000},
 	}

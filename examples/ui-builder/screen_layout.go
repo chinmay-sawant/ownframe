@@ -9,12 +9,15 @@ import (
 )
 
 const (
-	layoutMinBoxes = 3
-	layoutMaxBoxes = 6
+	layoutMinBoxes     = 3
+	layoutMaxBoxes     = 6
+	layoutDefaultBoxes = 4
 )
 
 // layoutPalette is the box fill cycle for the preview and the snippet.
-var layoutPalette = []string{"#4677ed", "#59d4b8", "#e5a54b", "#e56b6f", "#9b7ede", "#4cc38a"}
+func layoutPalette() []string {
+	return []string{"#4677ed", "#59d4b8", "#e5a54b", "#e56b6f", "#9b7ede", "#4cc38a"}
+}
 
 type layoutState struct {
 	Direction string
@@ -24,7 +27,7 @@ type layoutState struct {
 }
 
 func defaultLayoutState() layoutState {
-	return layoutState{Direction: "row", Gap: "16px", Padding: "16px", Boxes: 4}
+	return layoutState{Direction: "row", Gap: "16px", Padding: "16px", Boxes: layoutDefaultBoxes}
 }
 
 func (s layoutState) normalized() layoutState {
@@ -54,6 +57,7 @@ func (s layoutState) normalized() layoutState {
 // the container call plus one line per box with its palette color.
 func (a *builderApp) layoutSnippet() string {
 	st := a.layout.normalized()
+	palette := layoutPalette()
 	direction := "Column"
 	if st.Direction == "row" {
 		direction = "Row"
@@ -70,7 +74,7 @@ func (a *builderApp) layoutSnippet() string {
 		fmt.Fprintf(
 			&sb,
 			"    ui.Div().BackgroundColor(ui.Hex(%q)).Children(ui.Text(\"Box %d\")),\n",
-			layoutPalette[i%len(layoutPalette)],
+			palette[i%len(palette)],
 			i+1,
 		)
 	}
@@ -92,6 +96,7 @@ func layoutToggleButton(label, action string, active bool) *ui.Element {
 
 func (a *builderApp) layoutPanel() *ui.Element {
 	st := a.layout.normalized()
+	palette := layoutPalette()
 
 	controls := ui.Div().Display(ui.DisplayFlex).FlexWrap(ui.RawValue("wrap")).
 		AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
@@ -115,7 +120,7 @@ func (a *builderApp) layoutPanel() *ui.Element {
 
 	boxes := make([]*ui.Element, 0, st.Boxes)
 	for i := 0; i < st.Boxes; i++ {
-		color := layoutPalette[i%len(layoutPalette)]
+		color := palette[i%len(palette)]
 		boxes = append(boxes, ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
 			Padding(ui.Edges(ui.Px(24), ui.Px(12))).BorderRadius(ui.Px(8)).
 			BackgroundColor(ui.RawValue(color)).Color(ui.Hex("#ffffff")).
