@@ -235,6 +235,9 @@ func (s *shell) headerDoubleClickPressed(x, y int) bool {
 // so a workarea-sized frame can move as a windowed one. It returns the
 // windowed size to install, clamped to the live monitor.
 func restoreManualForDrag() (int, int, bool) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if !manualMax.active {
 		return 0, 0, false
 	}
@@ -473,8 +476,10 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 			return true, nil
 		}
 		if !s.pressOnControl(x, y) && s.draggable(x, y) && !s.devOwnsPoint(x, y) {
+			chromeMu.Lock()
 			pendingManualRestore = false
 			pendingWindowedRestore = false
+			chromeMu.Unlock()
 			s.windowDrag.native.begin()
 		}
 	}
@@ -499,7 +504,10 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 			}
 			return s.windowDrag.native.move()
 		}
-		if manualMax.learning || manualMax.restoring {
+		chromeMu.Lock()
+		probing := manualMax.learning || manualMax.restoring
+		chromeMu.Unlock()
+		if probing {
 			// A workarea probe is in flight; keep the anchor fresh and
 			// touch nothing so the drag cannot kill the dance.
 			s.windowDrag.x, s.windowDrag.y = sx, sy
@@ -577,8 +585,11 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 		ebiten.SetWindowPosition(nx, ny)
 		reqTook := time.Since(reqAt)
 		if s.dragTrace {
+			chromeMu.Lock()
+			mmActive := manualMax.active
+			chromeMu.Unlock()
 			_, _ = fmt.Fprintf(os.Stderr, "[drag] cursor=%d,%d phys=%d,%d win=%d,%d size=%dx%d target=%d,%d clamped=%v max=%v mon=%q took=%dus\n",
-				sx, sy, dx, dy, wx, wy, winW, winH, nx, ny, clamped, manualMax.active, mon, reqTook.Microseconds())
+				sx, sy, dx, dy, wx, wy, winW, winH, nx, ny, clamped, mmActive, mon, reqTook.Microseconds())
 		}
 		s.windowDrag.commitDrag(wx, wy, nx, ny, clamped)
 	}

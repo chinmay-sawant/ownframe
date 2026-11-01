@@ -5,6 +5,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -72,7 +73,11 @@ func ToggleMaximize() {
 // manual workarea maximize on WSL. It is false when no desktop run loop is
 // active or the platform is not a desktop.
 func Maximized() bool {
-	return manualMax.active || ebiten.IsWindowMaximized()
+	chromeMu.Lock()
+	active := manualMax.active
+	chromeMu.Unlock()
+
+	return active || ebiten.IsWindowMaximized()
 }
 
 // isWSLVersion reports whether a /proc/version string comes from Windows
@@ -119,6 +124,15 @@ type workarea struct {
 	w, h int
 }
 
+// chromeMu guards the process-wide window-manager state below: manualMax,
+// wasExternalMaximized, pendingStartMaximize, pendingManualRestore, and the
+// pending windowed restore. The desktop run loop is single-goroutine, but
+// unit tests drive separate shells in parallel and every resize funnels
+// through these globals, so every accessor holds the mutex. A helper that
+// runs under an already-held chromeMu carries a Locked suffix and never
+// locks on its own.
+var chromeMu sync.Mutex
+
 // pendingStartMaximize defers a remembered WM maximize past window creation:
 // MaximizeWindow before the run loop never takes effect, so the resize path
 // applies it on the first update once the window exists. WSL never uses it;
@@ -146,7 +160,7 @@ var (
 	pendingWindowedUntil               time.Time
 )
 
-func rememberWindowedRestore(x, y, w, h int) {
+func rememberWindowedRestoreLocked(x, y, w, h int) {
 	pendingWindowedRestore = true
 	pendingWindowedX, pendingWindowedY = x, y
 	pendingWindowedW, pendingWindowedH = w, h
@@ -156,6 +170,9 @@ func rememberWindowedRestore(x, y, w, h int) {
 // retryWindowedRestore installs the requested windowed rect once the window
 // exists. It yields to the manual workarea restore and to an active drag.
 func retryWindowedRestore(dragging bool) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if !pendingWindowedRestore || pendingManualRestore {
 		return
 	}
@@ -309,6 +326,9 @@ var wasExternalMaximized bool
 // convert restores the rect the snap replaced. Call it every update, next
 // to completeManualMaximize.
 func adoptExternalMaximize() {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	maxed := ebiten.IsWindowMaximized()
 	defer func() { wasExternalMaximized = maxed }()
 
@@ -352,6 +372,9 @@ func adoptExternalMaximize() {
 // one window-manager maximize (see completeManualMaximize) and converts it
 // to client geometry once the restore configure lands.
 func toggleManualMaximize() {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if manualMax.learning || manualMax.restoring {
 		// A workarea probe is in flight; swallowing the extra click keeps
 		// one maximize in the air instead of stacking two.
@@ -377,7 +400,7 @@ func toggleManualMaximize() {
 		} else {
 			setWindowRect(manualMax.sx, manualMax.sy, manualMax.sw, manualMax.sh)
 			manualMax.active = false
-			rememberWindowedRestore(manualMax.sx, manualMax.sy, manualMax.sw, manualMax.sh)
+			rememberWindowedRestoreLocked(manualMax.sx, manualMax.sy, manualMax.sw, manualMax.sh)
 
 			return
 		}
@@ -389,8 +412,8 @@ func toggleManualMaximize() {
 	if isWSLg() {
 		for _, m := range monitorLayout() {
 			if m.name == current {
-				if area, ok := wslgHostWorkarea(m); ok {
-					applyWorkarea(current, area)
+				if area, ok := wslgHostWorkareaLocked(m); ok {
+					applyWorkareaLocked(current, area)
 					return
 				}
 				break
@@ -418,7 +441,7 @@ func toggleManualMaximize() {
 		if !workareaMatchesMonitor(current, area) || !matchesLive(area) {
 			delete(manualMax.areas, current)
 		} else {
-			applyWorkarea(current, area)
+			applyWorkareaLocked(current, area)
 
 			return
 		}
@@ -429,7 +452,7 @@ func toggleManualMaximize() {
 		// Same stale-entry guard as the cache above: a rect learned
 		// under a wrong monitor claim must re-probe, not teleport.
 		if workareaMatchesMonitor(current, learned) && matchesLive(learned) {
-			applyWorkarea(current, learned)
+			applyWorkareaLocked(current, learned)
 
 			return
 		}
@@ -444,6 +467,13 @@ func toggleManualMaximize() {
 // applyWorkarea installs a learned rect as plain client geometry and marks
 // the manual maximize active. Callers must have saved the windowed rect.
 func applyWorkarea(mon string, area workarea) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+	applyWorkareaLocked(mon, area)
+}
+
+// applyWorkareaLocked is applyWorkarea for callers holding chromeMu.
+func applyWorkareaLocked(mon string, area workarea) {
 	manualMax.wx, manualMax.wy = area.x, area.y
 	manualMax.ww, manualMax.wh = area.w, area.h
 	manualMax.learnedMon = mon
@@ -466,6 +496,9 @@ func applyWorkarea(mon string, area workarea) {
 // probe reproduced, so the apply waits for the windowed size to return.
 // Call it with the latest Layout size every update.
 func completeManualMaximize(pendingW, pendingH int) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if manualMax.learning {
 		if time.Now().After(manualMax.until) {
 			// The configure never arrived; stay WM-maximized rather than

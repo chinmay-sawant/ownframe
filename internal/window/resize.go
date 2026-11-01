@@ -24,10 +24,16 @@ func (s *shell) resize() error {
 	retryManualRestore(s.windowDrag.active)
 	retryWindowedRestore(s.windowDrag.active)
 
+	takeStartMaximize := false
+	chromeMu.Lock()
 	if pendingStartMaximize {
 		// A remembered WM maximize from placement: the pre-loop call never
 		// takes effect, so maximize once the window exists.
 		pendingStartMaximize = false
+		takeStartMaximize = true
+	}
+	chromeMu.Unlock()
+	if takeStartMaximize {
 		ebiten.MaximizeWindow()
 	}
 

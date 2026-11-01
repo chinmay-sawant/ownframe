@@ -48,7 +48,7 @@ func matchHostWorkarea(target monitorRect, screens []hostWorkarea) (workarea, bo
 	return workarea{}, false
 }
 
-func wslgHostWorkarea(target monitorRect) (workarea, bool) {
+func wslgHostWorkareaLocked(target monitorRect) (workarea, bool) {
 	if !isWSLg() {
 		return workarea{}, false
 	}

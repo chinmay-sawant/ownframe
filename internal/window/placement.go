@@ -194,8 +194,16 @@ func savePlacement(id string, placement windowPlacement) error {
 // Ebiten's straddle-prone report, so the JSON names the panel the window is
 // actually on.
 func currentPlacement() windowPlacement {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
+	return currentPlacementLocked()
+}
+
+// currentPlacementLocked is currentPlacement for callers holding chromeMu.
+func currentPlacementLocked() windowPlacement {
 	placement := windowPlacement{
-		Maximized: Maximized(),
+		Maximized: manualMax.active || ebiten.IsWindowMaximized(),
 	}
 
 	x, y := windowPosition()
@@ -421,7 +429,7 @@ func placementFits(name string, w, h int) bool {
 // into the dead zone above the 1920 panel or off to the right. A size set
 // before RunGame is ignored on WSLg, so it also arms a post-map retry that
 // repeats the position until the presented rect lands.
-func placeExplicit(saved string, w, h int) (int, int) {
+func placeExplicitLocked(saved string, w, h int) (int, int) {
 	if isWSLg() && saved == "" {
 		saved = "XWAYLAND0"
 	}
@@ -429,7 +437,7 @@ func placeExplicit(saved string, w, h int) (int, int) {
 		ebiten.SetWindowSize(w, h)
 		x, y := target.x+max(0, (target.w-w)/monitorCenterDivisor), target.y+max(0, (target.h-h)/monitorCenterDivisor)
 		ebiten.SetWindowPosition(x, y)
-		rememberWindowedRestore(x, y, w, h)
+		rememberWindowedRestoreLocked(x, y, w, h)
 		return x, y
 	}
 	ebiten.SetWindowSize(w, h)
@@ -441,12 +449,15 @@ func placeExplicit(saved string, w, h int) (int, int) {
 // the restored size the way runWindow clamps the first frame. It returns the
 // placement it installed so the periodic sync does not rewrite it.
 func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPlacement {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	fallback := windowPlacement{X: 0, Y: 0, W: defW, H: defH}
 
 	placement, ok := loadPlacement(id)
 	if !ok {
 		w, h := clampPlacement(defW, minW, maxW), clampPlacement(defH, minH, maxH)
-		x, y := placeExplicit("", w, h)
+		x, y := placeExplicitLocked("", w, h)
 		fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 		return fallback
 	}
@@ -455,7 +466,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		if isWSLg() {
 			for _, m := range monitorLayout() {
 				if m.name == placement.Monitor {
-					if area, ok := wslgHostWorkarea(m); ok {
+					if area, ok := wslgHostWorkareaLocked(m); ok {
 						placement.MaxX, placement.MaxY, placement.MaxW, placement.MaxH = area.x, area.y, area.w, area.h
 					}
 				}
@@ -488,7 +499,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 				w, h = min(w, monW), min(h, monH)
 				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
 			}
-			x, y := placeExplicit(placement.Monitor, w, h)
+			x, y := placeExplicitLocked(placement.Monitor, w, h)
 			fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 
 			return fallback
@@ -506,7 +517,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 				w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
 				w, h = min(w, monW), min(h, monH)
 				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
-				x, y := placeExplicit(placement.Monitor, w, h)
+				x, y := placeExplicitLocked(placement.Monitor, w, h)
 				fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 
 				return fallback
@@ -526,14 +537,14 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 				w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
 				w, h = min(w, liveW), min(h, liveH)
 				w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
-				x, y := placeExplicit(placement.Monitor, w, h)
+				x, y := placeExplicitLocked(placement.Monitor, w, h)
 				fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 
 				return fallback
 			}
 		}
 
-		rememberManualMaximize(placement)
+		rememberManualMaximizeLocked(placement)
 		if retry {
 			pendingManualRestore = true
 			pendingManualUntil = time.Time{}
@@ -578,7 +589,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		// The owning monitor is gone; keep the size and start at a live
 		// panel top-left instead of cascading into the dead zone.
 		w, h := clampPlacement(placement.W, minW, maxW), clampPlacement(placement.H, minH, maxH)
-		x, y := placeExplicit(placement.Monitor, w, h)
+		x, y := placeExplicitLocked(placement.Monitor, w, h)
 		fallback.X, fallback.Y, fallback.W, fallback.H = x, y, w, h
 
 		return fallback
@@ -611,7 +622,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 			w, h = min(w, monW), min(h, monH)
 			w, h = clampPlacement(w, minW, maxW), clampPlacement(h, minH, maxH)
 		}
-		x, y := placeExplicit(placement.Monitor, w, h)
+		x, y := placeExplicitLocked(placement.Monitor, w, h)
 		placement.X, placement.Y, placement.W, placement.H = x, y, w, h
 		ebiten.SetWindowSize(w, h)
 		ebiten.SetWindowPosition(x, y)
@@ -622,7 +633,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 		// The saved origin belongs to another layout, is a drag-clamp
 		// strip, or sits in the dead zone above the 1920 panel where the
 		// header is unreachable. Start at the target panel top-left.
-		x, y := placeExplicit(placement.Monitor, w, h)
+		x, y := placeExplicitLocked(placement.Monitor, w, h)
 		placement.X, placement.Y, placement.W, placement.H = x, y, w, h
 		ebiten.SetWindowSize(w, h)
 		ebiten.SetWindowPosition(x, y)
@@ -632,7 +643,7 @@ func applyPlacement(id string, defW, defH, minW, minH, maxW, maxH int) windowPla
 	ebiten.SetWindowSize(w, h)
 	ebiten.SetWindowPosition(placement.X, placement.Y)
 	if isWSLg() {
-		rememberWindowedRestore(placement.X, placement.Y, w, h)
+		rememberWindowedRestoreLocked(placement.X, placement.Y, w, h)
 	}
 	placement.W, placement.H = w, h
 
@@ -657,7 +668,7 @@ func wslMaximizePlan(monitorKnown, fits bool) (applyNow, retry bool) {
 
 // rememberManualMaximize copies a saved maximize into the manual state so
 // later syncs keep reporting it instead of the default 1500x900 frame.
-func rememberManualMaximize(placement windowPlacement) {
+func rememberManualMaximizeLocked(placement windowPlacement) {
 	manualMax.sx, manualMax.sy = placement.X, placement.Y
 	manualMax.sw, manualMax.sh = placement.W, placement.H
 	manualMax.wx, manualMax.wy = placement.MaxX, placement.MaxY
@@ -684,6 +695,9 @@ func rememberManualMaximize(placement windowPlacement) {
 // monitor list exist. It stops when the presented rect matches, the
 // monitor cannot hold it, the deadline passes, or a drag has started.
 func retryManualRestore(dragging bool) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if !pendingManualRestore {
 		return
 	}
@@ -743,6 +757,9 @@ func retryManualRestore(dragging bool) {
 // A fullscreen frame is not a windowed rect, so it never overwrites the good
 // one behind it.
 func (s *shell) syncPlacement() {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if pendingManualRestore || pendingWindowedRestore {
 		return
 	}
@@ -766,7 +783,7 @@ func (s *shell) syncPlacement() {
 	}
 
 	s.lastPlacementSave = now
-	placement := currentPlacement()
+	placement := currentPlacementLocked()
 	if !validPlacementRect(placement.W, placement.H) {
 		return
 	}
@@ -798,6 +815,9 @@ func (s *shell) syncPlacement() {
 // keeps the windowed rect behind it instead of persisting the fullscreen
 // size as windowed.
 func savePlacementNow(id string) {
+	chromeMu.Lock()
+	defer chromeMu.Unlock()
+
 	if strings.TrimSpace(id) == "" {
 		return
 	}
@@ -810,7 +830,7 @@ func savePlacementNow(id string) {
 		return
 	}
 
-	placement := currentPlacement()
+	placement := currentPlacementLocked()
 	if !validPlacementRect(placement.W, placement.H) {
 		return
 	}
