@@ -23,7 +23,7 @@ func (a *builderApp) dialogPanel() *ui.Element {
 				Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 				Children(
 					ui.Div().Children(
-						ui.Text("Backdrop dialog").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+						a.panelHeading("Backdrop dialog"),
 						ui.P().Text("An overlay with a translucent backdrop over the app, like the mail settings card. Open it, confirm, cancel, or click the backdrop to dismiss.").
 							Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 					),

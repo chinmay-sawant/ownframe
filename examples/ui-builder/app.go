@@ -35,6 +35,17 @@ type builderApp struct {
 	theme    themeState
 	compare  compareState
 	dialog   dialogState
+
+	centerScroll         int
+	centerWheelRemainder float64
+	centerViewH          int
+	centerContentH       int
+	centerThumbH         int
+	centerDragging       bool
+	centerDragRemainder  float64
+	centerMeasurePending bool
+	layoutWidth          int
+	layoutHeight         int
 }
 
 // setLogger installs the diagnostic logger. A nil logger disables logging.
@@ -43,10 +54,7 @@ func (a *builderApp) setLogger(logger *log.Logger) {
 }
 
 func (a *builderApp) logf(format string, args ...any) {
-	if a.logger == nil {
-		return
-	}
-	a.logger.Printf(format, args...)
+	builderLogf(a.logger, format, args...)
 }
 
 func newBuilderApp() (*builderApp, error) {
@@ -69,12 +77,22 @@ func newBuilderApp() (*builderApp, error) {
 		MinWidth:  demoMinWidth,
 		MinHeight: demoMinHeight,
 		DevTools:  true,
+		Scrollbar: ownframe.ScrollbarHidden,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new builder app: %w", err)
 	}
 	a.page = p
-	p.Handle(ownframe.Handlers{Click: a.handleClick})
+	p.Scroll().SetAllowScroll(false)
+	p.Handle(ownframe.Handlers{
+		Click:     a.handleClick,
+		Wheel:     a.handleWheel,
+		DragStart: a.startCenterScrollDrag,
+		DragMove:  a.moveCenterScrollDrag,
+		DragEnd:   a.endCenterScrollDrag,
+	})
+	a.layoutWidth, a.layoutHeight = p.Size()
+	p.SetTick(a.refreshOnResize)
 	return a, nil
 }
 
@@ -100,7 +118,7 @@ func (a *builderApp) handleClick(ctx context.Context, box ownframe.Box) error {
 		dev := !a.page.Window().DevTools()
 		a.logf("window devtools on=%v", dev)
 		a.page.Window().SetDevTools(dev)
-		return nil
+		return a.refresh(ctx)
 	case "win-max":
 		a.logf("window toggle-maximize")
 		a.page.Window().ToggleMaximize()
@@ -154,6 +172,8 @@ func (a *builderApp) selectTab(name string) {
 	switch name {
 	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog":
 		a.tab = name
+		a.centerScroll, a.centerWheelRemainder = 0, 0
+		a.centerContentH, a.centerThumbH = 0, 0
 		a.notice = map[string]string{
 			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
 			"settings": "Settings: form state, inline validation, and save in Go.",
@@ -178,6 +198,7 @@ func (a *builderApp) refresh(ctx context.Context) error {
 		a.logf("refresh load err=%v dur=%s", err, time.Since(start))
 		return fmt.Errorf("reload builder gallery: %w", err)
 	}
+	a.centerMeasurePending = true
 	a.logf("refresh ok bytes=%d dur=%s", len(fragment), time.Since(start))
 	return nil
 }

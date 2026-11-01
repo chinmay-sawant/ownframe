@@ -16,6 +16,7 @@ type shell struct {
 	interactive  func(int, int) bool
 	draggable    func(int, int) bool
 	perf         bool
+	perfOption   bool
 	perfHooks    perfHooks
 	windowDrag   windowDrag
 	nativeCursor nativeWindowDrag

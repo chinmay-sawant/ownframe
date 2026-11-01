@@ -65,7 +65,7 @@ func (a *builderApp) comparePanel() *ui.Element {
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Builder vs HTML").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				a.panelHeading("Builder vs HTML"),
 				ui.P().Text("The same three-field card, built with Go and shown as escaped source.").
 					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),

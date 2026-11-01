@@ -67,7 +67,8 @@ func (w Window) Transitions() bool {
 	return p.Transitions()
 }
 
-// SetPerf turns pipeline timing, dirty counters, and alloc tracking on or off.
+// SetPerf turns pipeline timing, dirty counters, and alloc tracking on or off
+// independently of DevTools. Sampling stays on while DevTools is open.
 func (w Window) SetPerf(on bool) {
 	p := innerPage(w.page)
 	if p == nil {
@@ -86,7 +87,9 @@ func (w Window) Perf() bool {
 	return p.Perf()
 }
 
-// SetDevTools turns the window devtools overlay on or off.
+// SetDevTools turns the window devtools overlay on or off. Opening it enables
+// page, frame, and runtime performance sampling until it closes, unless Perf
+// was separately enabled.
 func (w Window) SetDevTools(on bool) {
 	p := innerPage(w.page)
 	if p == nil {

@@ -56,11 +56,19 @@ func (a *app) toolbar() *ui.Element {
 					a.actionButton("Search", "search", false),
 					ui.Text("Alex Morgan").FontWeight(ui.FontWeightBold).Color(ui.RawValue(a.palette("#485a77", "#d1deef"))),
 					a.actionButton("⚙ Settings", "settings", false),
+					a.actionButton(a.devToolsLabel(), "win-dev", false),
 					a.actionButton("−", "win-min", false),
 					a.actionButton("□", "win-max", false),
 					a.actionButton("×", "win-close", false),
 				),
 		)
+}
+
+func (a *app) devToolsLabel() string {
+	if a.page != nil && a.page.Window().DevTools() {
+		return "Dev tools on"
+	}
+	return "Dev tools off"
 }
 
 func (a *app) sidebar() *ui.Element {

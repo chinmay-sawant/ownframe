@@ -14,6 +14,7 @@ func (p *Page) DevTools() bool {
 // SetDevTools turns the window devtools overlay on or off.
 func (p *Page) SetDevTools(on bool) {
 	p.devtools = on
+	p.setPerfEnabled(on || p.perfOptIn)
 }
 
 // SetDrawTime records how long the window spent drawing the last frame, so

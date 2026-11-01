@@ -81,7 +81,7 @@ func (a *builderApp) themePanel() *ui.Element {
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Theme").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				a.panelHeading("Theme"),
 				ui.P().Text("Pick an accent, corner radius, and spacing. The preview below restyles live from the same state.").
 					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),

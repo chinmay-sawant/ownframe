@@ -25,10 +25,11 @@ type Config struct {
 	// off by default, so a page that never patches pays nothing. With it on,
 	// Page.PatchElement can re-lay out one element.
 	RetainState bool
-	// DevTools starts the window overlay on.
+	// DevTools starts the window overlay on and enables performance sampling
+	// while it is open.
 	DevTools bool
 	// Perf records pipeline timing, dirty counts, and allocs in Stats. It
-	// is off by default, so end users pay nothing; SetPerf opts in.
+	// is off by default unless DevTools is enabled; SetPerf opts in separately.
 	Perf bool
 	// LockView scales the page to the window and turns off scroll and zoom.
 	LockView bool

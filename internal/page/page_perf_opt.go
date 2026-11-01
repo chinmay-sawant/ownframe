@@ -7,11 +7,15 @@ import "time"
 const allocSampleGap = 500 * time.Millisecond
 
 // SetPerf turns pipeline timing, dirty counters, and alloc tracking on or
-// off. It is off by default, so a shipped app pays nothing; a developer
-// opts in to fill the DevTools performance rows and the matching Stats.
+// off independently of DevTools. Sampling stays on while DevTools is open.
 // Each call clears the allocator sample clock, so the next tracked redraw
 // samples immediately.
 func (p *Page) SetPerf(on bool) {
+	p.perfOptIn = on
+	p.setPerfEnabled(on || p.devtools)
+}
+
+func (p *Page) setPerfEnabled(on bool) {
 	p.perf = on
 	p.allocAt = time.Time{}
 }

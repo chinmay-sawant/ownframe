@@ -126,6 +126,8 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 			a.toastUntil = time.Time{}
 		case "settings":
 			a.settings = !a.settings
+		case "win-dev":
+			a.page.Window().SetDevTools(!a.page.Window().DevTools())
 		case "win-min":
 			a.page.Window().Minimize()
 			return nil

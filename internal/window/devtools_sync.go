@@ -8,11 +8,13 @@ func (s *shell) devSync() error {
 	insp := s.devInspector()
 	if insp == nil {
 		s.dev.on = false
+		s.perf = s.perfOption || perfEnabled(s.app)
 
 		return nil
 	}
 
 	on := insp.DevTools()
+	s.perf = s.perfOption || perfEnabled(s.app) || on
 	if on {
 		// A page that opened the overlay once keeps F12 available after it
 		// closes, including a close before the first frame.

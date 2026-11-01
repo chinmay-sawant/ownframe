@@ -133,7 +133,7 @@ func (a *builderApp) layoutPanel() *ui.Element {
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Layout playground").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				a.panelHeading("Layout playground"),
 				ui.P().Text("Toggle the options to update the preview and its typed Go source.").
 					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),

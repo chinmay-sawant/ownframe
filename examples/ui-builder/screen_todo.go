@@ -35,7 +35,7 @@ func (a *builderApp) todoPanel() *ui.Element {
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Todo & counter").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				a.panelHeading("Todo & counter"),
 				ui.P().Text("A stateful panel: the counter mutates an integer and the list mutates a slice.").
 					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),

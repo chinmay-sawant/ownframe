@@ -10,22 +10,22 @@ import (
 )
 
 // perfSource is a screen that reports its own opt-in. The page implements
-// it; a custom screen without it simply never opts in by itself.
+// it; a custom screen without it relies on DevTools or Options.Perf.
 type perfSource interface{ Perf() bool }
 
-// perfEnabled reports whether the screen opted into sampling. Window
-// Options.Perf can still turn it on in runWindow.
+// perfEnabled reports whether the screen opted into sampling.
 func perfEnabled(app host.Screen) bool {
 	src, ok := app.(perfSource)
 
 	return ok && src.Perf()
 }
 
-// NewGameWithOptions returns the screen loop with perf sampling on or off.
+// NewGameWithOptions returns the screen loop with perf sampling configured.
 // It keeps the NewGame behavior for every other setting.
 func NewGameWithOptions(ctx context.Context, app host.Screen, options Options) ebiten.Game {
 	game := newShell(ctx, app)
-	game.perf = options.Perf || game.perf
+	game.perfOption = options.Perf
+	game.perf = options.Perf || perfEnabled(app)
 	game.wirePerf()
 
 	return game

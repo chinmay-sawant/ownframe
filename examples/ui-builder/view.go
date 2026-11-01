@@ -31,9 +31,10 @@ func (a *builderApp) screen() *ui.Element {
 		Children(
 			a.titlebar(),
 			ui.Div().Display(ui.DisplayFlex).Flex(ui.RawValue("1")).
-				MinHeight(ui.Px(0)).MinWidth(ui.Px(0)).Gap(ui.Px(16)).Padding(ui.Px(16)).
-				Children(a.sidebar(), center),
-			ui.Div().Padding(ui.Edges(ui.Px(9), ui.Px(18))).BackgroundColor(ui.Hex("#182336")).
+				MinHeight(ui.Px(0)).MinWidth(ui.Px(0)).Gap(ui.Px(builderContentGap)).Padding(ui.Px(builderPanePadding)).
+				Children(a.sidebar(), a.scrollViewport(center)),
+			ui.Div().Height(ui.Px(builderFooterHeight)).FlexShrink(ui.Number(0)).
+				Padding(ui.Edges(ui.Px(9), ui.Px(18))).BackgroundColor(ui.Hex("#182336")).
 				Color(ui.Hex("#a4b5ca")).FontSize(ui.Px(12)).
 				Children(ui.Text(a.notice)),
 			a.dialogOverlay(),
@@ -41,8 +42,14 @@ func (a *builderApp) screen() *ui.Element {
 		)
 }
 
+func (a *builderApp) panelHeading(title string) *ui.Element {
+	return ui.Div().ID(builderActivePanelPrefix + a.tab).
+		FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")).
+		Children(ui.Text(title))
+}
+
 func (a *builderApp) titlebar() *ui.Element {
-	return ui.Header().Height(ui.Px(68)).Display(ui.DisplayFlex).
+	return ui.Header().Height(ui.Px(builderHeaderHeight)).Display(ui.DisplayFlex).
 		AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentSpaceBetween).
 		Padding(ui.RawValue("0 18px")).BackgroundColor(ui.Hex("#202d42")).
 		BorderBottom(ui.RawValue("1px solid #34445c")).
@@ -87,7 +94,7 @@ func (a *builderApp) action(label, command string, primary bool) *ui.Element {
 }
 
 func (a *builderApp) sidebar() *ui.Element {
-	return ui.Nav().Width(ui.Px(205)).FlexShrink(ui.Number(0)).
+	return ui.Nav().Width(ui.Px(builderSidebarWidth)).FlexShrink(ui.Number(0)).
 		BackgroundColor(ui.Hex("#202d42")).BorderRadius(ui.Px(11)).
 		Padding(ui.Px(16)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).
 		Gap(ui.Px(9)).Children(

@@ -121,7 +121,7 @@ func (a *builderApp) listPanel() *ui.Element {
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)).
 		Children(
 			ui.Div().Children(
-				ui.Text("File list").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				a.panelHeading("File list"),
 				ui.P().Text("Rows are built in Go with Children(rows...) — no template range.").
 					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),

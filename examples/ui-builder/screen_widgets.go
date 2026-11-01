@@ -106,7 +106,7 @@ func widgetDivider() *ui.Element {
 
 func (a *builderApp) widgetsHeader() *ui.Element {
 	return ui.Div().Children(
-		ui.Text("Widgets gallery").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+		a.panelHeading("Widgets gallery"),
 		ui.P().Text("Buttons, inputs, toggles, tabs, tables, and cards from the Go builder. Every control below is wired to Go.").
 			Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 	)

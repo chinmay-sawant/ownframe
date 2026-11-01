@@ -33,9 +33,8 @@ type Options struct {
 	Draggable func(x, y int) bool
 	// FixedSize disables resizing by the user.
 	FixedSize bool
-	// Perf samples frame times, stage timings, and runtime numbers for the
-	// DevTools performance rows. It is off by default; end users pay
-	// nothing unless a developer opts in.
+	// Perf samples frame times and runtime numbers even while DevTools is
+	// closed. Opening DevTools enables sampling automatically.
 	Perf bool
 	// BottomRight places the window in the current monitor's bottom right.
 	BottomRight bool

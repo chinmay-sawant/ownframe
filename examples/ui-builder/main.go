@@ -18,16 +18,22 @@ func main() {
 	web := flag.Bool("web", false, "serve the preview in a browser")
 	addr := flag.String("addr", "127.0.0.1:8131", "address for -web")
 	dev := flag.Bool("dev", true, "open the developer tools dock at startup")
-	logPath := flag.String("log", "", "diagnostic log file (default os.UserCacheDir()/ownframe/ui-builder/ui-builder.log)")
+	logEnabled := flag.Bool("log-enabled", false, "enable diagnostic logging to stderr and file")
+	logPath := flag.String(
+		"log",
+		"",
+		"diagnostic log file for -log-enabled (default os.UserCacheDir()/ownframe/ui-builder/ui-builder.log)",
+	)
 	flag.Parse()
 
-	if err := run(*web, *addr, *dev, *logPath); err != nil {
+	logging := builderLogOptions{enabled: *logEnabled, path: *logPath}
+	if err := run(*web, *addr, *dev, logging); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(webMode bool, addr string, dev bool, logPath string) error {
-	logger, file, actualPath := openBuilderLog(logPath)
+func run(webMode bool, addr string, dev bool, logging builderLogOptions) error {
+	logger, file, actualPath := openBuilderLog(logging)
 	if file != nil {
 		defer func() { _ = file.Close() }()
 	}
@@ -36,33 +42,33 @@ func run(webMode bool, addr string, dev bool, logPath string) error {
 		mode = "web"
 	}
 	logStartup(logger, actualPath, mode, addr)
-	logger.Printf("startup gallery dev=%v placement=%q", dev, builderPlacement)
+	builderLogf(logger, "startup gallery dev=%v placement=%q", dev, builderPlacement)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	app, err := newBuilderApp()
 	if err != nil {
-		logger.Printf("startup new app err=%v", err)
+		builderLogf(logger, "startup new app err=%v", err)
 		return err
 	}
 	app.setLogger(logger)
+	app.page.Window().SetDevTools(dev)
 	if err := app.page.Redraw(ctx); err != nil {
-		logger.Printf("startup redraw err=%v", err)
+		builderLogf(logger, "startup redraw err=%v", err)
 		return fmt.Errorf("redraw builder gallery: %w", err)
 	}
 	if err := app.refresh(ctx); err != nil {
-		logger.Printf("startup refresh err=%v", err)
+		builderLogf(logger, "startup refresh err=%v", err)
 		return fmt.Errorf("reload builder gallery: %w", err)
 	}
-	app.page.Window().SetDevTools(dev)
 	if webMode {
-		logger.Printf("serve addr=%s", addr)
+		builderLogf(logger, "serve addr=%s", addr)
 		if err := ownframe.Serve(ctx, app.page, addr); err != nil {
-			logger.Printf("serve exit err=%v", err)
+			builderLogf(logger, "serve exit err=%v", err)
 			return fmt.Errorf("serve builder preview: %w", err)
 		}
-		logger.Printf("serve exit ok")
+		builderLogf(logger, "serve exit ok")
 		return nil
 	}
 	// Native drag is handled by OwnFrame, not by injected JS or Chromium.
@@ -74,9 +80,9 @@ func run(webMode bool, addr string, dev bool, logPath string) error {
 		},
 	}
 	if err := ownframe.RunWithOptions(ctx, app.page, options); err != nil {
-		logger.Printf("run exit err=%v", err)
+		builderLogf(logger, "run exit err=%v", err)
 		return fmt.Errorf("run builder window: %w", err)
 	}
-	logger.Printf("run exit ok")
+	builderLogf(logger, "run exit ok")
 	return nil
 }

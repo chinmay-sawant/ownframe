@@ -88,7 +88,7 @@ func TestMobileMetricsCloseTouchRestoresViewport(t *testing.T) {
 		s := newDevShell(d)
 		s.screenW, s.screenH = 420, 934
 		s.dev.mobile, s.dev.mobileExpanded = true, expanded
-		s.perf = true
+		s.perfOption = true
 		s.devLayout()
 		close := s.dev.hits[0]
 		if close.act != devActClose || close.rect.W != 48 || close.rect.H != 48 {
