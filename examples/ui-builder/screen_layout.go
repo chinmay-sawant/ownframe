@@ -54,12 +54,25 @@ func (s layoutState) normalized() layoutState {
 // the container call plus one line per box with its palette color.
 func (a *builderApp) layoutSnippet() string {
 	st := a.layout.normalized()
+	direction := "Column"
+	if st.Direction == "row" {
+		direction = "Row"
+	}
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "ui.Div().Display(\"flex\").FlexDirection(%q).Gap(%q).Padding(%q).Children(\n",
-		st.Direction, st.Gap, st.Padding)
+	fmt.Fprintf(
+		&sb,
+		"ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirection%s).Gap(ui.Px(%s)).Padding(ui.Px(%s)).Children(\n",
+		direction,
+		strings.TrimSuffix(st.Gap, "px"),
+		strings.TrimSuffix(st.Padding, "px"),
+	)
 	for i := 0; i < st.Boxes; i++ {
-		fmt.Fprintf(&sb, "    ui.Div().BackgroundColor(%q).Children(ui.Text(\"Box %d\")),\n",
-			layoutPalette[i%len(layoutPalette)], i+1)
+		fmt.Fprintf(
+			&sb,
+			"    ui.Div().BackgroundColor(ui.Hex(%q)).Children(ui.Text(\"Box %d\")),\n",
+			layoutPalette[i%len(layoutPalette)],
+			i+1,
+		)
 	}
 	sb.WriteString(")")
 	return sb.String()
@@ -71,70 +84,70 @@ func layoutToggleButton(label, action string, active bool) *ui.Element {
 		bg = "#355596"
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(bg).Color("#f1f5fd").
-		CSS("border", "1px solid #40546f").
-		Padding("9px 12px").BorderRadius("8px").
-		FontSize("12px").FontWeight("bold")
+		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
+		Border(ui.RawValue("1px solid #40546f")).
+		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
+		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
 
 func (a *builderApp) layoutPanel() *ui.Element {
 	st := a.layout.normalized()
 
-	controls := ui.Div().Display("flex").CSS("flex-wrap", "wrap").
-		AlignItems("center").Gap("8px").
+	controls := ui.Div().Display(ui.DisplayFlex).FlexWrap(ui.RawValue("wrap")).
+		AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 		Children(
-			ui.Text("Direction:").FontSize("12px").Color("#9aacbf"),
+			ui.Text("Direction:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
 			layoutToggleButton("Row", "layout:dir:row", st.Direction == "row"),
 			layoutToggleButton("Column", "layout:dir:column", st.Direction == "column"),
-			ui.Text("Gap:").FontSize("12px").Color("#9aacbf"),
+			ui.Text("Gap:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
 			layoutToggleButton("8px", "layout:gap:8px", st.Gap == "8px"),
 			layoutToggleButton("16px", "layout:gap:16px", st.Gap == "16px"),
 			layoutToggleButton("24px", "layout:gap:24px", st.Gap == "24px"),
-			ui.Text("Padding:").FontSize("12px").Color("#9aacbf"),
+			ui.Text("Padding:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
 			layoutToggleButton("8px", "layout:pad:8px", st.Padding == "8px"),
 			layoutToggleButton("16px", "layout:pad:16px", st.Padding == "16px"),
 			layoutToggleButton("24px", "layout:pad:24px", st.Padding == "24px"),
-			ui.Text("Boxes:").FontSize("12px").Color("#9aacbf"),
+			ui.Text("Boxes:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
 			layoutToggleButton("− Fewer", "layout:fewer", false),
-			ui.Text(fmt.Sprintf("%d", st.Boxes)).FontWeight("bold").Color("#f4f7ff"),
+			ui.Text(fmt.Sprintf("%d", st.Boxes)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
 			layoutToggleButton("+ More", "layout:more", false),
 		)
 
 	boxes := make([]*ui.Element, 0, st.Boxes)
 	for i := 0; i < st.Boxes; i++ {
 		color := layoutPalette[i%len(layoutPalette)]
-		boxes = append(boxes, ui.Div().CSS("flex", "1").CSS("min-width", "0px").
-			Padding("24px 12px").BorderRadius("8px").
-			BackgroundColor(color).Color("#ffffff").
-			CSS("text-align", "center").FontWeight("bold").
+		boxes = append(boxes, ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
+			Padding(ui.Edges(ui.Px(24), ui.Px(12))).BorderRadius(ui.Px(8)).
+			BackgroundColor(ui.RawValue(color)).Color(ui.Hex("#ffffff")).
+			TextAlign(ui.TextAlignCenter).FontWeight(ui.FontWeightBold).
 			Children(ui.Text(fmt.Sprintf("Box %d", i+1))))
 	}
 
-	preview := ui.Div().Display("flex").FlexDirection(st.Direction).
-		Gap(st.Gap).Padding(st.Padding).
-		BackgroundColor("#182336").BorderRadius("10px").
-		CSS("border", "1px solid #34445c").
+	preview := ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.RawValue(st.Direction)).
+		Gap(ui.RawValue(st.Gap)).Padding(ui.RawValue(st.Padding)).
+		BackgroundColor(ui.Hex("#182336")).BorderRadius(ui.Px(10)).
+		Border(ui.RawValue("1px solid #34445c")).
 		Children(boxes...)
 
-	return ui.Section().CSS("flex", "1").CSS("min-width", "0px").CSS("min-height", "0px").
-		Display("flex").FlexDirection("column").Gap("14px").
+	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Layout playground").FontSize("24px").FontWeight("bold").Color("#f4f7ff"),
-				ui.P().Text("Toggle direction, gap, padding, and box count; the preview below is built with the chained call shown.").
-					Margin("7px 0 0").Color("#a9bbd1").FontSize("12px"),
+				ui.Text("Layout playground").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				ui.P().Text("Toggle the options to update the preview and its typed Go source.").
+					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),
 			controls,
 			preview,
-			ui.Div().Display("flex").AlignItems("center").Gap("8px").
+			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 				Children(
 					layoutToggleButton("Copy code", "layout:copy", false),
-					ui.Text("Go code for the preview above — updates with every toggle.").FontSize("12px").Color("#9aacbf"),
+					ui.Text("Go code for the preview above — updates with every toggle.").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
 				),
-			ui.P().Text(a.layoutSnippet()).Margin("0").FontSize("12px").Color("#9fe8c9").
-				CSS("font-family", "monospace").CSS("overflow-wrap", "break-word").
-				CSS("white-space", "pre-wrap").
-				BackgroundColor("#182336").Padding("10px 12px").BorderRadius("8px"),
+			ui.P().Text(a.layoutSnippet()).Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#9fe8c9")).
+				FontFamily(ui.RawValue("monospace")).OverflowWrap(ui.OverflowWrapBreakWord).
+				WhiteSpace(ui.WhiteSpacePreWrap).
+				BackgroundColor(ui.Hex("#182336")).Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)),
 		)
 }
 

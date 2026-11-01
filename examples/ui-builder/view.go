@@ -24,17 +24,17 @@ func (a *builderApp) screen() *ui.Element {
 	default:
 		center = a.widgetsPanel()
 	}
-	return ui.Div().Width("100%").CSS("min-height", "100vh").
-		Display("flex").FlexDirection("column").
-		BackgroundColor("#111827").Color("#e9f0fa").
-		CSS("font-family", "sans-serif").FontSize("14px").
+	return ui.Div().Width(ui.Percent(100)).MinHeight(ui.RawValue("100vh")).
+		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).
+		BackgroundColor(ui.Hex("#111827")).Color(ui.Hex("#e9f0fa")).
+		FontFamily(ui.RawValue("sans-serif")).FontSize(ui.Px(14)).
 		Children(
 			a.titlebar(),
-			ui.Div().Display("flex").CSS("flex", "1").
-				CSS("min-height", "0px").CSS("min-width", "0px").Gap("16px").Padding("16px").
+			ui.Div().Display(ui.DisplayFlex).Flex(ui.RawValue("1")).
+				MinHeight(ui.Px(0)).MinWidth(ui.Px(0)).Gap(ui.Px(16)).Padding(ui.Px(16)).
 				Children(a.sidebar(), center),
-			ui.Div().Padding("9px 18px").BackgroundColor("#182336").
-				Color("#a4b5ca").FontSize("12px").
+			ui.Div().Padding(ui.Edges(ui.Px(9), ui.Px(18))).BackgroundColor(ui.Hex("#182336")).
+				Color(ui.Hex("#a4b5ca")).FontSize(ui.Px(12)).
 				Children(ui.Text(a.notice)),
 			a.dialogOverlay(),
 			a.comparePreviewOverlay(),
@@ -42,23 +42,23 @@ func (a *builderApp) screen() *ui.Element {
 }
 
 func (a *builderApp) titlebar() *ui.Element {
-	return ui.Header().Height("68px").Display("flex").
-		AlignItems("center").CSS("justify-content", "space-between").
-		Padding("0 18px").BackgroundColor("#202d42").
-		CSS("border-bottom", "1px solid #34445c").
+	return ui.Header().Height(ui.Px(68)).Display(ui.DisplayFlex).
+		AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentSpaceBetween).
+		Padding(ui.RawValue("0 18px")).BackgroundColor(ui.Hex("#202d42")).
+		BorderBottom(ui.RawValue("1px solid #34445c")).
 		Children(
-			ui.Div().Display("flex").AlignItems("center").Gap("10px").
+			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).
 				Children(
-					ui.Div().Padding("8px 11px").BorderRadius("9px").
-						BackgroundColor("#4677ed").FontWeight("bold").
+					ui.Div().Padding(ui.Edges(ui.Px(8), ui.Px(11))).BorderRadius(ui.Px(9)).
+						BackgroundColor(ui.Hex("#4677ed")).FontWeight(ui.FontWeightBold).
 						Children(ui.Text("O")),
 					ui.Div().Children(
-						ui.Text("OwnFrame Builder").FontWeight("bold").FontSize("17px"),
-						ui.P().Text("Seven Go-built tabs · No HTML file").Margin("3px 0 0").
-							Color("#a3b5cc").FontSize("11px"),
+						ui.Text("OwnFrame Builder").FontWeight(ui.FontWeightBold).FontSize(ui.Px(17)),
+						ui.P().Text("Seven Go-built tabs · No HTML file").Margin(ui.RawValue("3px 0 0")).
+							Color(ui.Hex("#a3b5cc")).FontSize(ui.Px(11)),
 					),
 				),
-			ui.Div().Display("flex").AlignItems("center").Gap("8px").
+			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 				Children(
 					a.action(a.devLabel(), "win-dev", false),
 					a.action("−", "win-min", false),
@@ -81,17 +81,17 @@ func (a *builderApp) action(label, command string, primary bool) *ui.Element {
 		bg, fg, border = "#4677ed", "#ffffff", "1px solid #4677ed"
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", command).
-		BackgroundColor(bg).Color(fg).CSS("border", border).
-		Padding("9px 12px").BorderRadius("8px").
-		FontSize("12px").FontWeight("bold")
+		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
+		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
+		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
 
 func (a *builderApp) sidebar() *ui.Element {
-	return ui.Nav().Width("205px").CSS("flex-shrink", "0").
-		BackgroundColor("#202d42").BorderRadius("11px").
-		Padding("16px").Display("flex").FlexDirection("column").
-		Gap("9px").Children(
-		ui.Text("GALLERY").FontWeight("bold").FontSize("11px").Color("#9aacbf"),
+	return ui.Nav().Width(ui.Px(205)).FlexShrink(ui.Number(0)).
+		BackgroundColor(ui.Hex("#202d42")).BorderRadius(ui.Px(11)).
+		Padding(ui.Px(16)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).
+		Gap(ui.Px(9)).Children(
+		ui.Text("GALLERY").FontWeight(ui.FontWeightBold).FontSize(ui.Px(11)).Color(ui.Hex("#9aacbf")),
 		a.navButton("◧ Widgets", "widgets"),
 		a.navButton("⚙ Settings", "settings"),
 		a.navButton("⊞ Layout", "layout"),
@@ -100,12 +100,12 @@ func (a *builderApp) sidebar() *ui.Element {
 		a.navButton("◐ Theme", "theme"),
 		a.navButton("⧉ Compare", "compare"),
 		a.navButton("◈ Dialog", "dialog"),
-		ui.Div().Margin("25px 0 0").Padding("12px").
-			BackgroundColor("#2b3950").BorderRadius("8px").
+		ui.Div().Margin(ui.RawValue("25px 0 0")).Padding(ui.Px(12)).
+			BackgroundColor(ui.Hex("#2b3950")).BorderRadius(ui.Px(8)).
 			Children(
-				ui.Text("Pure Go UI").FontWeight("bold"),
+				ui.Text("Pure Go UI").FontWeight(ui.FontWeightBold),
 				ui.P().Text("Every tab is one screen_*.go file using ui.Div chaining.").
-					Margin("7px 0 0").FontSize("11px").Color("#b2c1d5"),
+					Margin(ui.RawValue("7px 0 0")).FontSize(ui.Px(11)).Color(ui.Hex("#b2c1d5")),
 			),
 	)
 }
@@ -116,8 +116,8 @@ func (a *builderApp) navButton(label, tab string) *ui.Element {
 		bg = "#355596"
 	}
 	return ui.Button(label).Attr("data-action", "tab:"+tab).
-		CSS("align-self", "stretch").CSS("text-align", "left").
-		BackgroundColor(bg).Color("#f1f5fd").
-		CSS("border", "1px solid #40546f").
-		Padding("11px").BorderRadius("8px").FontWeight("bold")
+		AlignSelf(ui.RawValue("stretch")).TextAlign(ui.TextAlignLeft).
+		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
+		Border(ui.RawValue("1px solid #40546f")).
+		Padding(ui.Px(11)).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold)
 }

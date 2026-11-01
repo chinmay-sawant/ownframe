@@ -30,8 +30,11 @@ go run ./examples/jmap-mail -web -addr 127.0.0.1:8132
 - A search field that filters by sender, subject, preview, and body.
 - A large UI authored exclusively with the **public**
   `ownframe`, `ownframe/ui` APIs, no import of `internal/`.
-- CSS expressed through the fluent builder. Property names are validated by
-  the registry generated from the matrix's 555 implemented properties.
+- CSS expressed with generated methods for every implemented property.
+  Go completion offers property names such as `JustifyContent`; typed helpers
+  offer values such as `ui.JustifyContentCenter` and `ui.Px(12)`. Use
+  `ui.RawValue` for complex CSS values and `CSSRaw` for runtime property names.
+  `CustomProperty` and `Var` support CSS custom properties.
 
 ## Scope and security
 

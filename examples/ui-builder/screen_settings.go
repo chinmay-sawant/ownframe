@@ -33,25 +33,25 @@ func defaultSettingsState() settingsState {
 var settingsRoles = []string{"viewer", "editor", "admin"}
 
 func (a *builderApp) settingsPanel() *ui.Element {
-	return ui.Section().CSS("flex", "1").CSS("min-width", "0px").CSS("min-height", "0px").
-		Display("flex").FlexDirection("column").Gap("14px").
+	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Settings").FontSize("24px").FontWeight("bold").Color("#f4f7ff"),
+				ui.Text("Settings").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
 				ui.P().Text("A form built purely with the ui builder.").
-					Margin("7px 0 0").Color("#a9bbd1").FontSize("12px"),
+					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 				ui.P().Text("Click a field and type — Save reads the live control values.").
-					Margin("4px 0 0").Color("#a9bbd1").FontSize("12px"),
+					Margin(ui.RawValue("4px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),
-			ui.Div().Padding("16px").BorderRadius("11px").BackgroundColor("#202d42").
-				Display("flex").FlexDirection("column").Gap("12px").
+			ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+				Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)).
 				Children(
 					a.settingsField("Name", "settings-name", "name", "text", a.settings.Name, "Ada Lovelace"),
 					a.settingsField("Email", "settings-email", "email", "text", a.settings.Email, "ada@example.com"),
 					a.settingsField("Nickname (optional, max 12 chars)", "settings-nick", "nick", "text", a.settings.Nick, "ada"),
 					a.settingsRoleRow(),
 					a.settingsNotifyRow(),
-					ui.Div().Display("flex").Gap("8px").Children(
+					ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(
 						a.settingsFormButton("Save", "settings:save", true),
 						a.settingsFormButton("Reset", "settings:reset", false),
 					),
@@ -62,18 +62,18 @@ func (a *builderApp) settingsPanel() *ui.Element {
 
 func (a *builderApp) settingsField(label, id, name, inputType, value, placeholder string) *ui.Element {
 	row := []*ui.Element{
-		ui.Text(label).FontSize("13px").FontWeight("bold").Color("#b5c7df"),
+		ui.Text(label).FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
 		ui.Tag("input").ID(id).Attr("type", inputType).Attr("name", name).
 			Attr("value", value).Attr("placeholder", placeholder).
-			Width("100%").CSS("box-sizing", "border-box").
-			Padding("9px 12px").BorderRadius("8px").
-			BackgroundColor("#26364e").Color("#ecf2fb").
-			CSS("border", "1px solid #3e526e").FontSize("13px"),
+			Width(ui.Percent(100)).BoxSizing(ui.BoxSizingBorderBox).
+			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
+			BackgroundColor(ui.Hex("#26364e")).Color(ui.Hex("#ecf2fb")).
+			Border(ui.RawValue("1px solid #3e526e")).FontSize(ui.Px(13)),
 	}
 	if msg := a.settings.Errors[id]; msg != "" {
-		row = append(row, ui.Text(msg).FontSize("12px").Color("#ff8a8a"))
+		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(ui.Hex("#ff8a8a")))
 	}
-	return ui.Div().Display("flex").FlexDirection("column").Gap("6px").Children(row...)
+	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(row...)
 }
 
 func (a *builderApp) settingsRoleRow() *ui.Element {
@@ -83,13 +83,13 @@ func (a *builderApp) settingsRoleRow() *ui.Element {
 		buttons = append(buttons, a.settingsRoleButton(role, selected))
 	}
 	row := []*ui.Element{
-		ui.Text("Role").FontSize("13px").FontWeight("bold").Color("#b5c7df"),
-		ui.Div().Display("flex").Gap("8px").Children(buttons...),
+		ui.Text("Role").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
+		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(buttons...),
 	}
 	if msg := a.settings.Errors["role"]; msg != "" {
-		row = append(row, ui.Text(msg).FontSize("12px").Color("#ff8a8a"))
+		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(ui.Hex("#ff8a8a")))
 	}
-	return ui.Div().Display("flex").FlexDirection("column").Gap("6px").Children(row...)
+	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(row...)
 }
 
 func (a *builderApp) settingsRoleButton(role string, selected bool) *ui.Element {
@@ -100,9 +100,9 @@ func (a *builderApp) settingsRoleButton(role string, selected bool) *ui.Element 
 		label = "● " + role
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", "settings:role:"+role).
-		BackgroundColor(bg).Color(fg).CSS("border", border).
-		Padding("9px 12px").BorderRadius("8px").
-		FontSize("12px").FontWeight("bold")
+		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
+		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
+		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
 
 func (a *builderApp) settingsNotifyRow() *ui.Element {
@@ -114,13 +114,13 @@ func (a *builderApp) settingsNotifyRow() *ui.Element {
 	if a.settings.Notify {
 		bg = "#355596"
 	}
-	return ui.Div().Display("flex").FlexDirection("column").Gap("6px").Children(
-		ui.Text("Notifications").FontSize("13px").FontWeight("bold").Color("#b5c7df"),
+	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(
+		ui.Text("Notifications").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
 		ui.Button(label).Attr("type", "button").Attr("data-action", "settings:notify").
-			CSS("align-self", "flex-start").
-			BackgroundColor(bg).Color("#f1f5fd").
-			CSS("border", "1px solid #40546f").
-			Padding("9px 12px").BorderRadius("8px").FontWeight("bold"),
+			AlignSelf(ui.RawValue("flex-start")).
+			BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
+			Border(ui.RawValue("1px solid #40546f")).
+			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold),
 	)
 }
 
@@ -130,17 +130,17 @@ func (a *builderApp) settingsFormButton(label, action string, primary bool) *ui.
 		bg, fg, border = "#4677ed", "#ffffff", "1px solid #4677ed"
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(bg).Color(fg).CSS("border", border).
-		Padding("9px 12px").BorderRadius("8px").
-		FontSize("12px").FontWeight("bold")
+		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
+		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
+		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
 
 func (a *builderApp) settingsNotice() *ui.Element {
 	if a.settings.Saved {
-		return ui.Text("Settings saved (demo — nothing was written).").FontSize("12px").Color("#7ee2a8")
+		return ui.Text("Settings saved (demo — nothing was written).").FontSize(ui.Px(12)).Color(ui.Hex("#7ee2a8"))
 	}
 	return ui.Text("Type in the fields above, then Save — validation runs on the live control values.").
-		FontSize("11px").Color("#a0b6d0")
+		FontSize(ui.Px(11)).Color(ui.Hex("#a0b6d0"))
 }
 
 // handleSettings handles settings:* actions, updating a.settings and a.notice.

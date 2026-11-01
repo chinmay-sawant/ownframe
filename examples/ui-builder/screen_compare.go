@@ -16,12 +16,21 @@ func defaultCompareState() compareState {
 }
 
 func builderCardSnippet() string {
-	return `ui.Div().Display("flex").FlexDirection("column").Gap("10px").Padding("16px").BackgroundColor("#202d42").BorderRadius("11px").Children(
-    ui.Text("Deploy preview").FontSize("13px").Color("#b5c7df"),
-    ui.P().Text("1,248 rows").Margin("0").FontSize("29px").FontWeight("bold"),
-    ui.Button("Open preview").Attr("data-action", "compare:open").CSS("align-self", "flex-start").
-        BackgroundColor("#4677ed").Color("#ffffff").Padding("9px 12px").BorderRadius("8px"),
-)`
+	return `ui.Div().
+    Display(ui.DisplayFlex).
+    FlexDirection(ui.FlexDirectionColumn).
+    Gap(ui.Px(10)).
+    Padding(ui.Px(16)).
+    BackgroundColor(ui.Hex("#202d42")).
+    BorderRadius(ui.Px(11)).
+    Children(
+        ui.Text("Deploy preview").FontSize(ui.Px(13)).Color(ui.Hex("#b5c7df")),
+        ui.P().Text("1,248 rows").Margin(ui.Px(0)).FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold),
+        ui.Button("Open preview").Attr("data-action", "compare:open").
+            AlignSelf(ui.RawValue("flex-start")).
+            BackgroundColor(ui.Hex("#4677ed")).Color(ui.Hex("#ffffff")).
+            Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)),
+    )`
 }
 
 func (a *builderApp) comparePanel() *ui.Element {
@@ -39,11 +48,11 @@ func (a *builderApp) comparePanel() *ui.Element {
 			bg = "#355596"
 		}
 		toggles = append(toggles, ui.Button(m).Attr("data-action", "compare:mode:"+m).
-			BackgroundColor(bg).Color("#f1f5fd").
-			CSS("border", "1px solid #40546f").
-			Padding("9px 12px").BorderRadius("8px").FontWeight("bold"))
+			BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
+			Border(ui.RawValue("1px solid #40546f")).
+			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold))
 	}
-	content := ui.Div().Display("flex").CSS("min-width", "0px").Gap("12px")
+	content := ui.Div().Display(ui.DisplayFlex).MinWidth(ui.Px(0)).Gap(ui.Px(12))
 	switch mode {
 	case "builder":
 		content.Children(a.compareLivePane())
@@ -52,41 +61,41 @@ func (a *builderApp) comparePanel() *ui.Element {
 	default:
 		content.Children(a.compareLivePane(), a.compareCodePane())
 	}
-	return ui.Section().CSS("flex", "1").CSS("min-width", "0px").CSS("min-height", "0px").
-		Display("flex").FlexDirection("column").Gap("14px").
+	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
-				ui.Text("Builder vs HTML").FontSize("24px").FontWeight("bold").Color("#f4f7ff"),
+				ui.Text("Builder vs HTML").FontSize(ui.Px(24)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
 				ui.P().Text("The same three-field card, built with Go and shown as escaped source.").
-					Margin("7px 0 0").Color("#a9bbd1").FontSize("12px"),
+					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),
-			ui.Div().Display("flex").Gap("8px").Children(toggles...),
+			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(toggles...),
 			content,
 			ui.P().Text("Render emits plain HTML to Blinkless, no JS/DOM.").
-				Margin("0").FontSize("12px").Color("#abbcd2"),
+				Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#abbcd2")),
 		)
 }
 
 func (a *builderApp) compareLivePane() *ui.Element {
-	return ui.Div().CSS("flex", "1").CSS("min-width", "0px").
-		Padding("16px").BorderRadius("11px").BackgroundColor("#202d42").
+	return ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
+		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
 		Children(
-			ui.Text("Live builder card").FontWeight("bold").Color("#f4f7ff"),
-			ui.Div().CSS("margin-top", "10px").Children(a.compareCard()),
+			ui.Text("Live builder card").FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+			ui.Div().MarginTop(ui.Px(10)).Children(a.compareCard()),
 		)
 }
 
 func (a *builderApp) compareCodePane() *ui.Element {
-	return ui.Div().CSS("flex", "1").CSS("min-width", "0px").
-		Padding("16px").BorderRadius("11px").BackgroundColor("#202d42").
+	return ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
+		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
 		Children(
-			ui.Text("Same card as HTML source").FontWeight("bold").Color("#f4f7ff"),
-			ui.Tag("pre").CSS("margin-top", "10px").
-				Padding("12px").BorderRadius("8px").
-				BackgroundColor("#111827").Color("#cbd8eb").FontSize("12px").
-				CSS("font-family", "monospace").
-				CSS("white-space", "pre-wrap").CSS("overflow-wrap", "break-word").
-				CSS("border", "1px solid #3a4b62").
+			ui.Text("Same card as HTML source").FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+			ui.Tag("pre").MarginTop(ui.Px(10)).
+				Padding(ui.Px(12)).BorderRadius(ui.Px(8)).
+				BackgroundColor(ui.Hex("#111827")).Color(ui.Hex("#cbd8eb")).FontSize(ui.Px(12)).
+				FontFamily(ui.RawValue("monospace")).
+				WhiteSpace(ui.WhiteSpacePreWrap).OverflowWrap(ui.OverflowWrapBreakWord).
+				Border(ui.RawValue("1px solid #3a4b62")).
 				Children(
 					ui.Tag("code").Text(builderCardSnippet()),
 				),
@@ -94,17 +103,17 @@ func (a *builderApp) compareCodePane() *ui.Element {
 }
 
 func (a *builderApp) compareCard() *ui.Element {
-	return ui.Div().Padding("16px").BackgroundColor("#202d42").BorderRadius("11px").
-		CSS("border", "1px solid #3e526e").
-		Display("flex").FlexDirection("column").Gap("10px").
+	return ui.Div().Padding(ui.Px(16)).BackgroundColor(ui.Hex("#202d42")).BorderRadius(ui.Px(11)).
+		Border(ui.RawValue("1px solid #3e526e")).
+		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10)).
 		Children(
-			ui.Text("Deploy preview").FontSize("13px").Color("#b5c7df"),
-			ui.P().Text("1,248 rows").Margin("0").
-				FontSize("29px").FontWeight("bold").Color("#f4f7ff"),
+			ui.Text("Deploy preview").FontSize(ui.Px(13)).Color(ui.Hex("#b5c7df")),
+			ui.P().Text("1,248 rows").Margin(ui.Px(0)).
+				FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
 			ui.Button("Open preview").ID("compare-open").Attr("data-action", "compare:open").
-				CSS("align-self", "flex-start").
-				BackgroundColor("#4677ed").Color("#ffffff").
-				Padding("9px 12px").BorderRadius("8px").FontWeight("bold"),
+				AlignSelf(ui.RawValue("flex-start")).
+				BackgroundColor(ui.Hex("#4677ed")).Color(ui.Hex("#ffffff")).
+				Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold),
 		)
 }
 
@@ -115,31 +124,31 @@ func (a *builderApp) comparePreviewOverlay() *ui.Element {
 		return nil
 	}
 	return ui.Div().ID("compare-preview-backdrop").Attr("data-action", "compare:preview-close").
-		CSS("position", "absolute").CSS("top", "0").CSS("left", "0").
-		CSS("right", "0").CSS("bottom", "0").CSS("z-index", "50").
-		Display("flex").CSS("align-items", "center").CSS("justify-content", "center").
-		BackgroundColor("rgba(0, 0, 0, 0.55)").
+		Position(ui.PositionAbsolute).Top(ui.Px(0)).Left(ui.Px(0)).
+		Right(ui.Px(0)).Bottom(ui.Px(0)).ZIndex(ui.Number(50)).
+		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentCenter).
+		BackgroundColor(ui.RawValue("rgba(0, 0, 0, 0.55)")).
 		Children(
 			ui.Div().ID("compare-preview-panel").
-				Width("480px").
-				BackgroundColor("#1c2738").
-				CSS("border", "1px solid #39465a").
-				BorderRadius("12px").CSS("overflow", "hidden").
+				Width(ui.Px(480)).
+				BackgroundColor(ui.Hex("#1c2738")).
+				Border(ui.RawValue("1px solid #39465a")).
+				BorderRadius(ui.Px(12)).Overflow(ui.OverflowHidden).
 				Children(
-					ui.Div().Display("flex").CSS("justify-content", "space-between").
-						AlignItems("center").Padding("16px 20px").
-						CSS("border-bottom", "1px solid #39465a").
+					ui.Div().Display(ui.DisplayFlex).JustifyContent(ui.JustifyContentSpaceBetween).
+						AlignItems(ui.AlignItemsCenter).Padding(ui.Edges(ui.Px(16), ui.Px(20))).
+						BorderBottom(ui.RawValue("1px solid #39465a")).
 						Children(
-							ui.Text("Card preview").FontSize("16px").FontWeight("bold").Color("#f4f7ff"),
+							ui.Text("Card preview").FontSize(ui.Px(16)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
 							ui.Button("×").ID("compare-preview-x").Attr("type", "button").Attr("data-action", "compare:preview-close").
-								BackgroundColor("#2b3950").Color("#dce6f6").CSS("border", "1px solid #42536b").
-								Padding("6px 12px").BorderRadius("8px").FontWeight("bold"),
+								BackgroundColor(ui.Hex("#2b3950")).Color(ui.Hex("#dce6f6")).Border(ui.RawValue("1px solid #42536b")).
+								Padding(ui.Edges(ui.Px(6), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold),
 						),
-					ui.Div().Padding("18px 20px 20px").
+					ui.Div().Padding(ui.Edges(ui.Px(18), ui.Px(20), ui.Px(20))).
 						Children(
 							a.compareCard(),
 							ui.P().Text("The live card, floating above the tab. Backdrop click or × closes it.").
-								Margin("12px 0 0").FontSize("12px").Color("#abbcd2"),
+								Margin(ui.RawValue("12px 0 0")).FontSize(ui.Px(12)).Color(ui.Hex("#abbcd2")),
 						),
 				),
 		)

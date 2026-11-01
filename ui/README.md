@@ -39,7 +39,8 @@ connecting callbacks.
 Every implemented property in the
 [compatibility matrix](../documentation/compatibility-matrix.md) has a generated
 method with its CSS name converted to Go spelling. For example,
-`justify-content` becomes `JustifyContent`. The current registry has 555 names.
+`justify-content` becomes `JustifyContent`. The generated registry follows the
+compatibility matrix.
 An unknown method fails compilation. Go completion can list the methods and
 show their property-specific argument types.
 
@@ -123,12 +124,18 @@ against the added methods. Methods cannot be added at runtime.
 
 ## Migration and limits
 
-This experimental API replaces `CSS`, `Style`, `Styles`, and string-valued
-styling helpers. Use named methods with typed values, named methods with
-`RawValue`, or `CSSRaw` for runtime property names. The
-[`examples/ui-builder`](../examples/ui-builder) and
-[`examples/jmap-mail`](../examples/jmap-mail) callers still use the earlier API
-and require migration before they compile against this change.
+This API uses generated named methods with typed values. Use `RawValue` with a
+named method for complex values, and use `CSSRaw` only when runtime input
+chooses the property name. The examples use both forms and demonstrate CSS
+custom properties.
+
+To rerun the migration for the two examples, run this command from the
+repository root:
+
+    env GOWORK=off go -C scripts run ./cmd/migrate-ui-builder
+
+The command migrates literal property names and the earlier convenience
+methods. It reports runtime property names for manual migration to `CSSRaw`.
 
 Nodes are mutable and must not be edited concurrently. `NewPage` installs its
 click callbacks; replacing the page click handler later requires composing
