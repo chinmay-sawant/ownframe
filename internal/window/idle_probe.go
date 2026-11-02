@@ -27,6 +27,9 @@ func (s *shell) idleCleanFrame() bool {
 	if _, canTake := s.damageTaker(); !canTake {
 		return false
 	}
+	if s.renderer.HasBackdropFilter(s.display) {
+		return s.partial.mode == repaintBlit && s.partial.live && !s.partial.whole && s.partial.backdropClean
+	}
 
 	// A retained layer is composited after the background blit, so the frame
 	// is not clean even when the page reports no damage: the layer may move.

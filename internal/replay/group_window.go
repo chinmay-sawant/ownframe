@@ -12,12 +12,20 @@ import (
 func groupWindow(dst *ebiten.Image, d *layout.Display, n *groupNode,
 	pick opPicker) (image.Rectangle, [2]float64, bool) {
 	base, ok := firstPick(n, pick)
+	if !ok && n.backdropMark != nil {
+		if dx, dy, picked := pick(n.backdropMark); picked {
+			base, ok = [2]float64{dx, dy}, true
+		}
+	}
 	if !ok {
 		return image.Rectangle{}, [2]float64{}, false
 	}
 	box, bounded := nodeBox(n, d.PointsPerPixel)
 	if n.group != nil && n.group.Mask != nil && n.hasMask {
 		box, bounded = n.maskBox, true
+	}
+	if bounded && box.Empty() && n.hasBackdropBox {
+		box, bounded = n.backdropBox, true
 	}
 	if !bounded {
 		box = dst.Bounds()

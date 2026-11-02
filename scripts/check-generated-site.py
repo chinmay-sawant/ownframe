@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fail when rebuilding the website changes the checked-in output."""
 from pathlib import Path
+import argparse
 import hashlib
 import subprocess
 import sys
@@ -37,7 +38,22 @@ def snapshot(directory):
     return snapshot
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--build-only', action='store_true',
+                        help='Rebuild the site and exit without comparing the '
+                             'result against the checked-in output. Pull-request '
+                             'CI uses this: feature branches must not commit '
+                             'regenerated site output (see '
+                             'documentation/testing.md), because two branches '
+                             'rebuilding the same binaries can never merge '
+                             'cleanly. The freshness comparison runs on pushes '
+                             'to master instead.')
+    args = parser.parse_args(argv)
+    if args.build_only:
+        subprocess.run(['npm', 'run', 'build'], cwd=ROOT / 'frontend', check=True)
+        print('site-check: site builds cleanly (output not compared)')
+        return
     before = snapshot(ROOT / 'docs')
     subprocess.run(['npm', 'run', 'build'], cwd=ROOT / 'frontend', check=True)
     after = snapshot(ROOT / 'docs')

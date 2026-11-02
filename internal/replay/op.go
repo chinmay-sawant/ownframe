@@ -16,6 +16,17 @@ func (renderer *Renderer) drawOp(dst *ebiten.Image, op *layout.DisplayOp, dx, dy
 	if op.Fixed {
 		dx, dy = 0, 0
 	}
+	renderer.drawOpAt(dst, op, dx, dy)
+}
+
+// drawOpInLayer keeps the layer-local translation for fixed ops. The
+// enclosing group already removed the page scroll and restores its origin
+// when it composites this layer.
+func (renderer *Renderer) drawOpInLayer(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
+	renderer.drawOpAt(dst, op, dx, dy)
+}
+
+func (renderer *Renderer) drawOpAt(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 	if _, ok := textProjection(op); ok {
 		renderer.drawXformText(dst, op, dx, dy)
 		return

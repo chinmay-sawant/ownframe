@@ -12,6 +12,9 @@ func (renderer *Renderer) paintGroup(dst *ebiten.Image, d *layout.Display, n *gr
 	if !ok {
 		return
 	}
+	if n.hasBackdrop && n.hasBackdropBox {
+		renderer.applyBackdropFilter(dst, d, n, base)
+	}
 
 	layer := ebiten.NewImage(rect.Dx(), rect.Dy())
 	defer layer.Deallocate()
@@ -22,7 +25,7 @@ func (renderer *Renderer) paintGroup(dst *ebiten.Image, d *layout.Display, n *gr
 		return dx - float64(rect.Min.X), dy - float64(rect.Min.Y), ok
 	}
 
-	renderer.paintItems(layer, d, n, inner)
+	renderer.paintItems(layer, d, n, inner, true)
 	if n.group.Mask != nil {
 		mask := groupMaskTexture(n)
 		if mask == nil {

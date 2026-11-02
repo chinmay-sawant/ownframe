@@ -10,7 +10,7 @@ import (
 // current run when it lands in the same element box and the caps still hold;
 // anything else flushes the run first.
 func flattenNode(d *layout.Display, n *groupNode, p *chunkPlan, next *int) {
-	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil) {
+	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil || n.group.BackdropFilter != "") {
 		p.items = append(p.items, chunkPaint{group: n})
 
 		return

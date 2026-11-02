@@ -19,10 +19,21 @@ func buildPlan(d *layout.Display) *groupNode {
 
 		op := &d.Ops[i]
 		if op.GroupBoundary() != 0 {
-			if op.IsGroupBegin() && op.Group() != nil && op.Group().Mask != nil {
-				node := attachNode(root, nodes, op.Group())
-				node.maskBox = masking.GroupBounds(op, d)
-				node.hasMask = true
+			if op.IsGroupBegin() && op.Group() != nil {
+				group := op.Group()
+				if group.Mask != nil || group.BackdropFilter != "" {
+					node := attachNode(root, nodes, group)
+					if group.Mask != nil {
+						node.maskBox = masking.GroupBounds(op, d)
+						node.hasMask = true
+					}
+					if group.BackdropFilter != "" {
+						node.backdropBox = masking.GroupBounds(op, d)
+						node.backdropMark = op
+						node.hasBackdropBox = true
+						node.backdrop, node.hasBackdrop = parseBackdropFilter(group.BackdropFilter)
+					}
+				}
 			}
 			continue
 		}
@@ -30,8 +41,33 @@ func buildPlan(d *layout.Display) *groupNode {
 		node := attachNode(root, nodes, op.Group())
 		node.items = append(node.items, paintItem{op: op})
 	}
+	setBackdropRadii(root, d.PixelPerPoint)
 
 	return root
+}
+
+func setBackdropRadii(node *groupNode, pixelsPerPoint float64) {
+	if node.group != nil && node.hasBackdrop {
+		for i := range node.items {
+			item := &node.items[i]
+			if item.op == nil || item.op.Kind != layout.DisplayOpFillRect {
+				continue
+			}
+
+			op := item.op
+			radius := max(op.Radius, op.RadiusTopLeft, op.RadiusTopRight,
+				op.RadiusBottomRight, op.RadiusBottomLeft, op.RadiusTopLeftY,
+				op.RadiusTopRightY, op.RadiusBottomRightY, op.RadiusBottomLeftY)
+			node.backdropRadius = radius * pixelsPerPoint
+			break
+		}
+	}
+
+	for i := range node.items {
+		if child := node.items[i].child; child != nil {
+			setBackdropRadii(child, pixelsPerPoint)
+		}
+	}
 }
 
 // attachNode finds or creates the node for g and attaches it, with any

@@ -1,0 +1,125 @@
+//kage:unit pixels
+package main
+
+var Radius float
+var Axis float
+var Saturation float
+var Refraction float
+var BoxX float
+var BoxY float
+var BoxW float
+var BoxH float
+var CornerRadius float
+
+func sampleAt(pos vec2, step float) vec4 {
+	shift := vec2(step*Radius, 0)
+	if Axis > 0.5 {
+		shift = vec2(0, step*Radius)
+	}
+	return imageSrc0At(pos + shift)
+}
+
+func insideBox(pos vec2) bool {
+	local := pos - vec2(BoxX, BoxY)
+	if local.x < 0 || local.y < 0 || local.x >= BoxW || local.y >= BoxH {
+		return false
+	}
+	radius := min(CornerRadius, min(BoxW, BoxH)*0.5)
+	if radius <= 0 {
+		return true
+	}
+	if local.x < radius && local.y < radius {
+		delta := local - vec2(radius, radius)
+		return dot(delta, delta) <= radius*radius
+	}
+	if local.x >= BoxW-radius && local.y < radius {
+		delta := local - vec2(BoxW-radius, radius)
+		return dot(delta, delta) <= radius*radius
+	}
+	if local.x >= BoxW-radius && local.y >= BoxH-radius {
+		delta := local - vec2(BoxW-radius, BoxH-radius)
+		return dot(delta, delta) <= radius*radius
+	}
+	if local.x < radius && local.y >= BoxH-radius {
+		delta := local - vec2(radius, BoxH-radius)
+		return dot(delta, delta) <= radius*radius
+	}
+	return true
+}
+
+func signNotZero(value float) float {
+	if value < 0 {
+		return -1
+	}
+	return 1
+}
+
+// lensData returns a subtle inward sampling offset and the edge direction for
+// a rounded glass surface. The offset tapers to zero away from the perimeter.
+func lensData(pos vec2) vec4 {
+	if Refraction <= 0 || !insideBox(pos) {
+		return vec4(0)
+	}
+	local := pos - vec2(BoxX, BoxY)
+	half := vec2(BoxW, BoxH) * 0.5
+	radius := min(CornerRadius, min(BoxW, BoxH)*0.5)
+	centered := local - half
+	q := abs(centered) - (half - vec2(radius))
+	outside := max(q, vec2(0))
+	outsideLength := length(outside)
+	edgeDistance := outsideLength + min(max(q.x, q.y), 0) - radius
+	edge := clamp(1 + edgeDistance/max(Refraction*2, 1), 0, 1)
+	var normal vec2
+	if outsideLength > 0 {
+		normal = vec2(signNotZero(centered.x)*outside.x, signNotZero(centered.y)*outside.y) / outsideLength
+	} else if q.x > q.y {
+		normal = vec2(signNotZero(centered.x), 0)
+	} else {
+		normal = vec2(0, signNotZero(centered.y))
+	}
+	offset := -normal * Refraction * 0.72 * edge * edge
+	return vec4(offset, normal*edge)
+}
+
+func Fragment(dstPos vec4, src0Pos vec2, color vec4) vec4 {
+	localPos := src0Pos - imageSrc0Origin()
+	if Axis > 0.5 && !insideBox(localPos) {
+		return imageSrc1At(src0Pos)
+	}
+	lens := lensData(localPos)
+	samplePos := src0Pos + lens.xy
+	// The wide seven-tap kernel left visible copies of text and panel edges at
+	// large radii. This denser Gaussian blends them into a continuous backdrop.
+	filtered := sampleAt(samplePos, 0) * 0.09990836
+	filtered += sampleAt(samplePos, -0.083333336) * 0.0968345
+	filtered += sampleAt(samplePos, 0.083333336) * 0.0968345
+	filtered += sampleAt(samplePos, -0.16666667) * 0.08816882
+	filtered += sampleAt(samplePos, 0.16666667) * 0.08816882
+	filtered += sampleAt(samplePos, -0.25) * 0.07541479
+	filtered += sampleAt(samplePos, 0.25) * 0.07541479
+	filtered += sampleAt(samplePos, -0.33333334) * 0.06059748
+	filtered += sampleAt(samplePos, 0.33333334) * 0.06059748
+	filtered += sampleAt(samplePos, -0.41666666) * 0.04574138
+	filtered += sampleAt(samplePos, 0.41666666) * 0.04574138
+	filtered += sampleAt(samplePos, -0.5) * 0.03243549
+	filtered += sampleAt(samplePos, 0.5) * 0.03243549
+	filtered += sampleAt(samplePos, -0.5833333) * 0.0216067
+	filtered += sampleAt(samplePos, 0.5833333) * 0.0216067
+	filtered += sampleAt(samplePos, -0.6666667) * 0.01352113
+	filtered += sampleAt(samplePos, 0.6666667) * 0.01352113
+	filtered += sampleAt(samplePos, -0.75) * 0.00794866
+	filtered += sampleAt(samplePos, 0.75) * 0.00794866
+	filtered += sampleAt(samplePos, -0.8333333) * 0.004389667
+	filtered += sampleAt(samplePos, 0.8333333) * 0.004389667
+	filtered += sampleAt(samplePos, -0.9166667) * 0.002277329
+	filtered += sampleAt(samplePos, 0.9166667) * 0.002277329
+	filtered += sampleAt(samplePos, -1) * 0.001109882
+	filtered += sampleAt(samplePos, 1) * 0.001109882
+	if filtered.a > 0 {
+		unpremultiplied := filtered.rgb / filtered.a
+		luma := dot(unpremultiplied, vec3(0.2126, 0.7152, 0.0722))
+		unpremultiplied = vec3(luma) + (unpremultiplied-vec3(luma))*Saturation
+		filtered.rgb = unpremultiplied * filtered.a
+	}
+	return filtered
+}

@@ -28,7 +28,7 @@ class GeneratedSiteTests(unittest.TestCase):
             with patch.object(MODULE, 'ROOT', root), \
                     patch.object(MODULE.subprocess, 'run',
                                  side_effect=lambda *a, **k: _listing(a[0])):
-                MODULE.main()
+                MODULE.main([])
             def rebuilding(*args, **kwargs):
                 if args[0][0] == 'npm':
                     page.write_text('rebuilt')
@@ -37,7 +37,7 @@ class GeneratedSiteTests(unittest.TestCase):
             with patch.object(MODULE, 'ROOT', root), \
                     patch.object(MODULE.subprocess, 'run', side_effect=rebuilding):
                 with self.assertRaisesRegex(ValueError, 'stale'):
-                    MODULE.main()
+                    MODULE.main([])
 
     def test_ignored_files_are_not_compared(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -54,4 +54,22 @@ class GeneratedSiteTests(unittest.TestCase):
                 return _listing(args[0])
             with patch.object(MODULE, 'ROOT', root), \
                     patch.object(MODULE.subprocess, 'run', side_effect=rebuilding):
-                MODULE.main()
+                MODULE.main([])
+
+    def test_build_only_skips_comparison(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'docs').mkdir()
+            page = root / 'docs/index.html'
+            page.write_text('current')
+            calls = []
+            def rebuilding(*args, **kwargs):
+                calls.append(args[0])
+                if args[0][0] == 'npm':
+                    page.write_text('rebuilt')
+                    return types.SimpleNamespace(stdout='')
+                return _listing(args[0])
+            with patch.object(MODULE, 'ROOT', root), \
+                    patch.object(MODULE.subprocess, 'run', side_effect=rebuilding):
+                MODULE.main(['--build-only'])
+            assert ['npm', 'run', 'build'] in calls

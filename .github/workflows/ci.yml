@@ -171,7 +171,22 @@ jobs:
       # Chrome instead of relying on the runner image version.
       - id: setup-chrome
         uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
-      - run: make site-check
+      # Feature branches must not commit regenerated site output: two
+      # branches rebuilding the same binaries can never merge cleanly, so
+      # every concurrent pair of PRs conflicts. Pull requests therefore
+      # validate that the site builds and behaves; the committed-output
+      # freshness gate runs only on pushes, and the published output is
+      # refreshed once on master after the merge. See
+      # documentation/testing.md.
+      - if: github.event_name == 'pull_request'
+        run: |
+          npm --prefix frontend test
+          python3 scripts/check-generated-site.py --build-only
+          npm --prefix frontend run check:site
+        env:
+          CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
+      - if: github.event_name != 'pull_request'
+        run: make site-check
         env:
           CHROME_PATH: ${{ steps.setup-chrome.outputs.chrome-path }}
 
