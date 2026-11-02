@@ -1,0 +1,51 @@
+/* Slider: a horizontal track with a filled range and a thumb. */
+
+.of-slider {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  box-sizing: border-box;
+  transition: opacity 0.15s;
+}
+
+.of-slider:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
+.of-slider-track {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 20px;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+.of-slider-rail {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--of-control, #f4f4f5);
+}
+
+.of-slider-range {
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  background: var(--of-primary, #171717);
+}
+
+.of-slider-thumb {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-left: -8px;
+  border: 2px solid var(--of-ring, #a1a1aa);
+  border-radius: 8px;
+  background: var(--of-slider-thumb, #ffffff);
+  box-sizing: border-box;
+}

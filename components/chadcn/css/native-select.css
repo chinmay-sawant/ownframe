@@ -1,0 +1,54 @@
+/* Native select. The wrapper keeps the trigger at its content width and holds
+   the chevron, which is drawn from borders instead of a font glyph. */
+
+.of-native-select-wrap {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.of-native-select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 36px 7px 12px;
+  color: var(--of-text, #0a0a0a);
+  background-color: var(--of-surface, #ffffff);
+  border: 1px solid var(--of-input, #e5e5e5);
+  border-radius: var(--of-radius-sm, 6px);
+  box-shadow: 0 1px 2px var(--of-shadow, #0000000d);
+  font-size: 14px;
+  line-height: 20px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.of-native-select:focus,
+.of-native-select:focus-visible {
+  border-color: var(--of-ring, #a1a1aa);
+}
+
+/* The page marks the focused select with a data attribute rather than :focus. */
+
+.of-native-select[data-ownframe-focus="1"] {
+  border-color: var(--of-ring, #a1a1aa);
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-native-select[disabled] {
+  color: var(--of-muted, #737373);
+  background-color: var(--of-control, #f4f4f5);
+}
+
+.of-native-select-icon {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  margin-top: -4px;
+  border-right: 1.5px solid var(--of-muted, #737373);
+  border-bottom: 1.5px solid var(--of-muted, #737373);
+  transform: rotate(45deg);
+}

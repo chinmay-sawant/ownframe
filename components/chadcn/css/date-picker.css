@@ -1,0 +1,84 @@
+/* Date picker: trigger button and calendar panel. */
+
+.of-date-picker {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: var(--of-date-picker-width, 240px);
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+}
+
+.of-date-picker-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--of-input, #e5e5e5);
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: var(--of-surface, #ffffff);
+  box-shadow: 0 1px 2px var(--of-shadow, #0000000d);
+  color: var(--of-text, #0a0a0a);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.of-date-picker-trigger:hover {
+  background-color: var(--of-accent, #f5f5f5);
+}
+
+.of-date-picker-trigger:focus-visible {
+  border-color: var(--of-ring, #a1a1aa);
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-date-picker-trigger[aria-expanded="true"] {
+  border-color: var(--of-ring, #a1a1aa);
+}
+
+.of-date-picker-label {
+  flex-grow: 1;
+}
+
+.of-date-picker-placeholder {
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-date-picker-value {
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-date-picker-chevron {
+  flex-shrink: 0;
+  color: var(--of-muted-foreground, #737373);
+  font-size: 14px;
+  line-height: 1;
+  transform: rotate(0deg);
+  transition: transform 0.15s;
+}
+
+.of-date-picker-trigger[aria-expanded="true"] .of-date-picker-chevron {
+  transform: rotate(180deg);
+}
+
+.of-date-picker-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  box-sizing: border-box;
+  width: var(--of-date-picker-panel-width, 280px);
+}
+
+.of-date-picker-panel .of-calendar {
+  width: 100%;
+}

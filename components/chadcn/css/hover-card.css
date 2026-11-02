@@ -1,0 +1,81 @@
+/* Hover card ------------------------------------------------------------- */
+
+.of-hover-card {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.of-hover-card-trigger {
+  display: block;
+}
+
+/* The engine resolves percentage insets against the viewport, so the card is
+   attached to a zero-height in-flow box instead of the trigger's edges. */
+.of-hover-card-anchor {
+  position: relative;
+  display: block;
+  height: 0;
+}
+
+.of-hover-card--left > .of-hover-card-anchor {
+  width: 0;
+}
+
+.of-hover-card--right > .of-hover-card-anchor {
+  width: 0;
+  margin-left: auto;
+}
+
+/* Top cards need a positive containing-block height, because the engine
+   resolves a bottom offset against the block's own height. One pixel with a
+   matching negative margin keeps the flow size at zero. */
+.of-hover-card--top > .of-hover-card-anchor {
+  height: 1px;
+  margin-top: -1px;
+}
+
+.of-hover-card-content {
+  position: absolute;
+  z-index: 50;
+  box-sizing: border-box;
+  width: var(--of-hover-card-width, 320px);
+  padding: var(--of-hover-card-padding, 16px);
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-popover, var(--of-surface, #ffffff));
+  color: var(--of-text, #0a0a0a);
+  box-shadow: 0 10px 30px var(--of-shadow, #00000026);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Cards above and below centre on the trigger. The zero-width anchor with two
+   auto margins holds the wrapper midpoint, and the negative right offset pulls
+   half the card width, so links inside keep their hit boxes on the card. */
+.of-hover-card--bottom > .of-hover-card-anchor,
+.of-hover-card--top > .of-hover-card-anchor {
+  width: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.of-hover-card--bottom > .of-hover-card-anchor > .of-hover-card-content {
+  top: 8px;
+  right: calc(0px - var(--of-hover-card-width, 320px) / 2);
+}
+
+.of-hover-card--top > .of-hover-card-anchor > .of-hover-card-content {
+  bottom: 8px;
+  right: calc(0px - var(--of-hover-card-width, 320px) / 2);
+}
+
+.of-hover-card--right > .of-hover-card-anchor > .of-hover-card-content {
+  left: 8px;
+  top: 0;
+}
+
+.of-hover-card--left > .of-hover-card-anchor > .of-hover-card-content {
+  right: 8px;
+  top: 0;
+}

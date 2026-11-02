@@ -1,0 +1,12 @@
+/* ToggleGroup: spaced toggles that share one selection. */
+
+.of-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.of-toggle-group--vertical {
+  flex-direction: column;
+  align-items: stretch;
+}

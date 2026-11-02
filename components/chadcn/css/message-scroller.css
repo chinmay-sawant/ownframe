@@ -1,0 +1,33 @@
+/* Message scroller: a bordered chat viewport with a soft top fade. */
+
+.of-message-scroller {
+  position: relative;
+  display: block;
+  background-color: var(--of-message-scroller-background, var(--of-card, #ffffff));
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius-lg, 14px);
+  overflow: hidden;
+}
+
+.of-message-scroller-viewport {
+  display: flex;
+  flex-direction: column;
+  gap: var(--of-message-scroller-gap, 18px);
+  height: var(--of-message-scroller-height, 360px);
+  padding: var(--of-message-scroller-padding, 20px 16px);
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.of-message-scroller-fade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--of-message-scroller-fade-height, 36px);
+  background-image: linear-gradient(to bottom,
+    var(--of-message-scroller-fade, var(--of-card, #ffffff)),
+    transparent);
+  pointer-events: none;
+  z-index: 1;
+}

@@ -1,0 +1,62 @@
+/* Inline status message. */
+
+.of-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-alert-icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--of-primary, #171717);
+  font-size: 18px;
+  line-height: 20px;
+}
+
+.of-alert-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.of-alert-title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.of-alert-description {
+  margin: 0;
+  color: var(--of-muted, #737373);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.of-alert-action {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding-top: 2px;
+}
+
+.of-alert--success .of-alert-icon {
+  color: var(--of-success, #16a34a);
+}
+
+.of-alert--warning .of-alert-icon {
+  color: var(--of-warning, #d97706);
+}
+
+.of-alert--danger .of-alert-icon {
+  color: var(--of-danger, #dc2626);
+}

@@ -1,22 +1,22 @@
 package main
 
 import (
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 )
 
 func (a *app) actionButton(label, action string, prominent bool) *ui.Element {
-	variant := components.ButtonTonal
+	variant := chadcn.ButtonTonal
 	if prominent {
-		variant = components.ButtonFilled
+		variant = chadcn.ButtonFilled
 	}
-	options := components.ButtonOptions{Variant: variant}
+	options := chadcn.ButtonOptions{Variant: variant}
 	if action == "compose" {
 		options.Overrides = composeProperties()
 	}
-	return components.Button(label, options).Attr("data-action", action)
+	return chadcn.Button(label, options).Attr("data-action", action)
 }
 
 func settingsButton() *ui.Element {
-	return components.Button("Settings", components.ButtonOptions{Icon: settingsIcon()}).ID("settings-open").Attr("data-action", "settings")
+	return chadcn.Button("Settings", chadcn.ButtonOptions{Icon: settingsIcon()}).ID("settings-open").Attr("data-action", "settings")
 }

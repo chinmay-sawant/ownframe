@@ -1,6 +1,9 @@
 package main
 
-import "github.com/chinmay-sawant/ownframe/ui/theme"
+import (
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
+)
 
 type galleryAppearance string
 
@@ -20,16 +23,16 @@ type themeState struct {
 func defaultThemeState() themeState { return themeState{Appearance: galleryDark} }
 
 func (s themeState) stylesheet() (string, error) {
-	base := theme.Dark
+	base := chadcn.Dark
 	switch s.Appearance {
 	case galleryLight:
-		base = theme.Light
+		base = chadcn.Light
 	case galleryStudio:
 		custom, err := studioProperties().Stylesheet()
 		if err != nil {
 			return "", err
 		}
-		base = theme.Light + custom
+		base = chadcn.Light + custom
 	}
 	overrides := theme.Overrides{}
 	for name, value := range map[string]string{"--of-primary": s.Accent, "--of-radius": s.Radius, "--of-spacing": s.Spacing} {
@@ -49,7 +52,7 @@ func (s themeState) stylesheet() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return base + extra + builderMotionCSS, nil
+	return base + extra + chadcn.Stylesheet + builderMotionCSS, nil
 }
 
 func studioProperties() theme.Overrides {

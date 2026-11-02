@@ -1,0 +1,31 @@
+/* Bubble: rounded chat surface in three variants. */
+
+.of-bubble {
+  display: block;
+  max-width: 100%;
+  padding: var(--of-bubble-padding, 10px 14px);
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--of-text, #0a0a0a);
+  background-color: var(--of-bubble-background, var(--of-control, #f4f4f5));
+  border: 1px solid transparent;
+  border-radius: var(--of-bubble-radius, 18px);
+  box-sizing: border-box;
+}
+
+.of-bubble--default {
+  background-color: var(--of-bubble-background, var(--of-control, #f4f4f5));
+  color: var(--of-bubble-text, var(--of-text, #0a0a0a));
+}
+
+.of-bubble--primary {
+  background-color: var(--of-bubble-primary, var(--of-primary, #171717));
+  color: var(--of-bubble-primary-text, var(--of-on-primary, #fafafa));
+  border-color: var(--of-bubble-primary, var(--of-primary, #171717));
+}
+
+.of-bubble--muted {
+  background-color: var(--of-bubble-muted, transparent);
+  color: var(--of-bubble-muted-text, var(--of-muted-foreground, #737373));
+  border-color: var(--of-border, #e5e5e5);
+}

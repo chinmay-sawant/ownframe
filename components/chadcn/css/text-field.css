@@ -1,0 +1,6 @@
+/* TextField is the legacy labeled input. Field owns the layout; this hook keeps
+   the compact spacing the earlier control used in the gallery and mail demos. */
+
+.of-text-field {
+  gap: 4px;
+}

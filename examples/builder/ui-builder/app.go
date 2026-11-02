@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
-	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 const (
@@ -25,7 +24,7 @@ const (
 // builderApp is the single tabbed ui-builder host. Each tab lives in its
 // own screen_*.go file and owns a small state struct below.
 type builderApp struct {
-	modalFocus components.DialogFocus
+	modalFocus chadcn.DialogFocus
 	view       *ui.View
 	themeDirty bool
 	page       *ownframe.Page
@@ -42,7 +41,7 @@ type builderApp struct {
 	dialog     dialogState
 	custom     customState
 
-	center               components.ScrollState
+	center               chadcn.ScrollState
 	centerMeasurePending bool
 	layoutWidth          int
 	layoutHeight         int
@@ -71,7 +70,7 @@ func newBuilderApp() (*builderApp, error) {
 		dialog:   defaultDialogState(),
 	}
 	view, err := ui.Mount(ownframe.Config{
-		Theme:     theme.Dark + builderMotionCSS,
+		Theme:     chadcn.Dark + chadcn.Stylesheet + builderMotionCSS,
 		Title:     "OwnFrame Components",
 		Width:     demoWidth,
 		Height:    demoHeight,
@@ -177,7 +176,7 @@ func (a *builderApp) selectTab(name string) {
 	switch name {
 	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom":
 		a.tab = name
-		a.center = components.ScrollState{}
+		a.center = chadcn.ScrollState{}
 		a.notice = map[string]string{
 			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
 			"settings": "Settings: form state, inline validation, and save in Go.",

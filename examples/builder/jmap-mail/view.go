@@ -5,15 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 func (a *app) screen() *ui.Element {
 	// The canvas fills the window height, so the status strip stays at the
 	// window bottom in fullscreen and the panes scroll inside it.
-	return components.Screen(
+	return chadcn.Screen(
 		a.toolbar(),
 		ui.Div().Display(ui.DisplayFlex).Flex(ui.Number(1)).
 			Gap(ui.Px(14)).Padding(ui.Px(12)).
@@ -45,7 +45,7 @@ func (a *app) toolbar() *ui.Element {
 			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).
 				Height(ui.Px(40)).
 				Children(
-					components.SearchField("mail-search", "Search mail…", a.query).Width(ui.Px(240)).Height(ui.Px(36)),
+					chadcn.SearchField("mail-search", "Search mail…", a.query).Width(ui.Px(240)).Height(ui.Px(36)),
 					a.actionButton("Search", "search", false),
 					ui.Text("Alex Morgan").FontWeight(ui.FontWeightBold).Color(theme.Text()),
 					settingsButton(),
@@ -235,7 +235,7 @@ func (a *app) reader() *ui.Element {
 		Position(ui.PositionRelative).Overflow(ui.OverflowHidden).
 		Children(body)
 	viewport.Children(a.paneScrollbar("mail-reader-scrollbar", "mail-reader-thumb", "mail-reader-viewport", "Message body", &a.readerScroll, a.readerScroll.Metrics().Viewport))
-	return components.Panel().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return chadcn.Panel().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).
 		Children(
 			ui.Div().Padding(ui.Edges(ui.Px(15), ui.Px(22))).
@@ -276,7 +276,7 @@ func (a *app) settingsCard() *ui.Element {
 	if !a.settings {
 		return nil
 	}
-	return components.Dialog(components.DialogOptions{
+	return chadcn.Dialog(chadcn.DialogOptions{
 		BackdropID: "settings-card", PanelID: "settings-panel", Label: "Settings", CloseAction: "settings", Width: ui.Px(520),
 	},
 		ui.Div().Display(ui.DisplayFlex).JustifyContent(ui.JustifyContentSpaceBetween).
@@ -324,7 +324,7 @@ func (a *app) toastCard() *ui.Element {
 }
 
 func (a *app) themeOption(id, title, caption, action string, selected bool) *ui.Element {
-	return components.Choice(title, caption, selected).ID(id).Attr("data-action", action)
+	return chadcn.Choice(title, caption, selected).ID(id).Attr("data-action", action)
 }
 
 func shortDate(value time.Time) string {

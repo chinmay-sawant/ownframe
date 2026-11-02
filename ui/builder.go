@@ -138,7 +138,7 @@ func supportedTag(tag string) bool {
 		"caption", "img", "a", "strong", "em", "b", "i",
 		"u", "small", "pre", "code", "blockquote", "header", "footer",
 		"main", "section", "article", "aside", "nav", "input", "textarea",
-		"select", "button", "label", "form":
+		"select", "option", "optgroup", "button", "label", "form":
 		return true
 	default:
 		return false

@@ -1,0 +1,17 @@
+/* ScrollArea: a clipped viewport with an overlaid scrollbar. */
+
+.of-scroll-area {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: var(--of-scroll-area-height, 240px);
+  border: 1px solid var(--of-scroll-area-border, var(--of-border, #e5e5e5));
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-card, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  overflow: hidden;
+}
+
+.of-scroll-area-viewport {
+  overflow: hidden;
+}

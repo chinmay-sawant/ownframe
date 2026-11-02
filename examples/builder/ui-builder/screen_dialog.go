@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -32,7 +32,7 @@ func (a *builderApp) dialogPanel() *ui.Element {
 					ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(theme.Surface()).
 						Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).
 						Children(
-							components.Button("Open dialog", components.ButtonOptions{Variant: components.ButtonFilled}).ID("dialog-open").Attr("data-action", "dialog:open"),
+							chadcn.Button("Open dialog", chadcn.ButtonOptions{Variant: chadcn.ButtonFilled}).ID("dialog-open").Attr("data-action", "dialog:open"),
 							ui.Text(a.dialog.status()).FontSize(ui.Px(12)).Color(theme.Muted()),
 						),
 					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(theme.Surface()).BorderRadius(ui.Px(10)).
@@ -62,7 +62,7 @@ func (a *builderApp) dialogOverlay() *ui.Element {
 	if a.tab != "dialog" || !a.dialog.open {
 		return nil
 	}
-	return components.Dialog(components.DialogOptions{
+	return chadcn.Dialog(chadcn.DialogOptions{
 		BackdropID: "dialog-backdrop", PanelID: "dialog-panel", Label: "Confirm action", CloseAction: "dialog:close", Width: ui.Px(420),
 	},
 		ui.Div().Display(ui.DisplayFlex).JustifyContent(ui.JustifyContentSpaceBetween).
@@ -70,7 +70,7 @@ func (a *builderApp) dialogOverlay() *ui.Element {
 			BorderBottom(theme.Border()).
 			Children(
 				ui.Text("Confirm action").FontSize(ui.Px(16)).FontWeight(ui.FontWeightBold).Color(theme.Text()),
-				components.Button("×", components.ButtonOptions{Variant: components.ButtonTonal}).ID("dialog-x").Attr("data-action", "dialog:close"),
+				chadcn.Button("×", chadcn.ButtonOptions{Variant: chadcn.ButtonTonal}).ID("dialog-x").Attr("data-action", "dialog:close"),
 			),
 		ui.Div().Padding(ui.Edges(ui.Px(18), ui.Px(20), ui.Px(20))).
 			Children(
@@ -78,8 +78,8 @@ func (a *builderApp) dialogOverlay() *ui.Element {
 					Margin(ui.Px(0)).FontSize(ui.Px(13)).Color(theme.Muted()),
 				ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).MarginTop(ui.Px(16)).
 					Children(
-						components.Button("Confirm", components.ButtonOptions{Variant: components.ButtonFilled}).ID("dialog-confirm").Attr("data-action", "dialog:confirm"),
-						components.Button("Cancel", components.ButtonOptions{Variant: components.ButtonTonal}).ID("dialog-cancel").Attr("data-action", "dialog:close"),
+						chadcn.Button("Confirm", chadcn.ButtonOptions{Variant: chadcn.ButtonFilled}).ID("dialog-confirm").Attr("data-action", "dialog:confirm"),
+						chadcn.Button("Cancel", chadcn.ButtonOptions{Variant: chadcn.ButtonTonal}).ID("dialog-cancel").Attr("data-action", "dialog:close"),
 					),
 			),
 	)

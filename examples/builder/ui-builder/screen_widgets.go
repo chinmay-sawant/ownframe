@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -28,7 +28,7 @@ const (
 // widgetsState holds the small interactive state for the widgets gallery tab.
 type widgetsState struct {
 	variant      string
-	size         components.ButtonSize
+	size         chadcn.ButtonSize
 	badges       int    // badge counter value
 	toggled      bool   // toggle switch state
 	picked       string // selected nav item
@@ -98,15 +98,15 @@ func widgetShell(title, desc string, body ...*ui.Element) *ui.Element {
 		ui.Text(title).FontWeight(ui.FontWeightBold).Color(theme.Text()),
 		ui.P().Text(desc).Margin(ui.Edges(ui.Px(6), ui.Px(0), ui.Px(0))).FontSize(ui.Px(12)).Color(theme.Muted()),
 	}
-	return components.Card(append(head, body...)...).Flex(ui.Number(1)).MinWidth(ui.Px(0))
+	return chadcn.Card(append(head, body...)...).Flex(ui.Number(1)).MinWidth(ui.Px(0))
 }
 
 func widgetsBtn(label, action string, primary bool) *ui.Element {
-	variant := components.ButtonTonal
+	variant := chadcn.ButtonTonal
 	if primary {
-		variant = components.ButtonFilled
+		variant = chadcn.ButtonFilled
 	}
-	return components.Button(label, components.ButtonOptions{Variant: variant}).Attr("data-action", action)
+	return chadcn.Button(label, chadcn.ButtonOptions{Variant: variant}).Attr("data-action", action)
 }
 
 func widgetLabel(text string) *ui.Element {
@@ -135,34 +135,34 @@ func (a *builderApp) buttonsCard() *ui.Element {
 			a.variantButton("Outlined", "outlined"),
 		),
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).FlexWrap(ui.FlexWrapWrap).MarginTop(ui.Px(12)).Children(
-			components.Button("Small", components.ButtonOptions{Size: components.ButtonSmall}).Attr("data-action", "widgets:size:small"),
-			components.Button("Medium", components.ButtonOptions{}).Attr("data-action", "widgets:size:medium"),
-			components.Button("Large", components.ButtonOptions{Size: components.ButtonLarge}).Attr("data-action", "widgets:size:large"),
-			components.Button("Disabled", components.ButtonOptions{Disabled: true}),
+			chadcn.Button("Small", chadcn.ButtonOptions{Size: chadcn.ButtonSmall}).Attr("data-action", "widgets:size:small"),
+			chadcn.Button("Medium", chadcn.ButtonOptions{}).Attr("data-action", "widgets:size:medium"),
+			chadcn.Button("Large", chadcn.ButtonOptions{Size: chadcn.ButtonLarge}).Attr("data-action", "widgets:size:large"),
+			chadcn.Button("Disabled", chadcn.ButtonOptions{Disabled: true}),
 		),
 	)
 }
 
 func (a *builderApp) variantButton(label, variant string) *ui.Element {
-	style := components.ButtonTonal
+	style := chadcn.ButtonTonal
 	switch variant {
 	case "primary":
-		style = components.ButtonFilled
+		style = chadcn.ButtonFilled
 	case "danger":
-		style = components.ButtonDanger
+		style = chadcn.ButtonDanger
 	case "ghost":
-		style = components.ButtonText
+		style = chadcn.ButtonText
 	case "outlined":
-		style = components.ButtonOutlined
+		style = chadcn.ButtonOutlined
 	}
-	return components.Button(label, components.ButtonOptions{Variant: style, Size: a.widgets.size}).
+	return chadcn.Button(label, chadcn.ButtonOptions{Variant: style, Size: a.widgets.size}).
 		Attr("data-action", "widgets:variant:"+variant).Attr("aria-pressed", strconv.FormatBool(a.widgets.variant == variant))
 }
 
 func (a *builderApp) badgesCard() *ui.Element {
 	return widgetShell("Badges and counters", "A pill badge bound to Go state, with increment, decrement, and reset actions.",
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(
-			components.Badge(strconv.Itoa(a.widgets.badges)),
+			chadcn.Badge(strconv.Itoa(a.widgets.badges)),
 			widgetsBtn("+ Add", "widgets:badges:inc", false),
 			widgetsBtn("- Remove", "widgets:badges:dec", false),
 			widgetsBtn("Reset", "widgets:badges:reset", false),
@@ -172,7 +172,7 @@ func (a *builderApp) badgesCard() *ui.Element {
 
 func (a *builderApp) toggleCard() *ui.Element {
 	return widgetShell("Switch", "A controlled, keyboard-accessible switch.",
-		components.Switch("Notifications", a.widgets.toggled).ID("widgets-switch").Attr("data-action", "widgets:toggle"),
+		chadcn.Switch("Notifications", a.widgets.toggled).ID("widgets-switch").Attr("data-action", "widgets:toggle"),
 		ui.Text("State: "+toggledWord(a.widgets.toggled)).FontSize(ui.Px(12)).Color(theme.Muted()),
 	)
 }
@@ -201,7 +201,7 @@ func (a *builderApp) navPill(label, name string) *ui.Element {
 func (a *builderApp) inputCard() *ui.Element {
 	return widgetShell("Text input", fmt.Sprintf("Editable field with id widgets-input (%d chars).", len(a.widgets.inputVal)),
 		ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10)).Children(
-			components.TextField("widgets-input", "Message", a.widgets.inputVal),
+			chadcn.TextField("widgets-input", "Message", a.widgets.inputVal),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).Children(
 				widgetsBtn("Fill sample", "widgets:input:fill", true),
 				widgetsBtn("Clear", "widgets:input:clear", false),
@@ -236,7 +236,7 @@ func (a *builderApp) checkboxCard() *ui.Element {
 }
 
 func (a *builderApp) checkRow(label string, checked bool, action string) *ui.Element {
-	return components.Checkbox(label, checked).Attr("data-action", action).Width(ui.Percent(100))
+	return chadcn.Checkbox(label, checked).Attr("data-action", action).Width(ui.Percent(100))
 }
 
 func (a *builderApp) radioCard() *ui.Element {
@@ -301,7 +301,7 @@ func (a *builderApp) stepperCard() *ui.Element {
 
 func (a *builderApp) progressCard() *ui.Element {
 	return widgetShell("Progress", "A bounded percentage with progressbar semantics.",
-		components.Progress("Upload progress", a.widgets.progress).ID("widgets-progress").MarginTop(ui.Px(12)),
+		chadcn.Progress("Upload progress", a.widgets.progress).ID("widgets-progress").MarginTop(ui.Px(12)),
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(10)).Children(
 			widgetsBtn("−10", "widgets:progress:dec", false),
 			ui.Text(fmt.Sprintf("%d%%", a.widgets.progress)).Color(theme.Muted()),
@@ -354,7 +354,7 @@ func (a *builderApp) breadcrumbCard() *ui.Element {
 }
 
 func (a *builderApp) crumbLink(label, value string) *ui.Element {
-	return components.Button(label, components.ButtonOptions{Variant: components.ButtonText, Size: components.ButtonSmall}).
+	return chadcn.Button(label, chadcn.ButtonOptions{Variant: chadcn.ButtonText, Size: chadcn.ButtonSmall}).
 		Attr("data-action", "widgets:crumb:"+value).Attr("aria-current", strconv.FormatBool(a.widgets.crumb == value))
 }
 
@@ -366,7 +366,7 @@ func (a *builderApp) alertCard() *ui.Element {
 		button = "Restore notice"
 	}
 	return widgetShell("Notices", "Inline feedback composed from the shared Notice control.",
-		components.Notice(title, body).MarginTop(ui.Px(12)), widgetsBtn(button, action, false),
+		chadcn.Notice(title, body).MarginTop(ui.Px(12)), widgetsBtn(button, action, false),
 	)
 }
 
@@ -475,11 +475,11 @@ func (a *builderApp) handleWidgets(action string) bool {
 	case "size:small", "size:medium", "size:large":
 		switch name {
 		case "size:small":
-			a.widgets.size = components.ButtonSmall
+			a.widgets.size = chadcn.ButtonSmall
 		case "size:large":
-			a.widgets.size = components.ButtonLarge
+			a.widgets.size = chadcn.ButtonLarge
 		default:
-			a.widgets.size = components.ButtonMedium
+			a.widgets.size = chadcn.ButtonMedium
 		}
 		a.notice = "Button size updated."
 		return true

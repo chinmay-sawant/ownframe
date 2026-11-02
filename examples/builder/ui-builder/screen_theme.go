@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -12,8 +12,8 @@ func (a *builderApp) themePanel() *ui.Element {
 	colors := []string{"#315fca", "#21694e", "#6241b5", "#a34c20"}
 	accentButtons := make([]*ui.Element, 0, len(colors))
 	for _, color := range colors {
-		accentButtons = append(accentButtons, components.Button(color, components.ButtonOptions{
-			Variant: components.ButtonFilled, Overrides: theme.Overrides{"--of-primary": color, "--of-on-primary": "#ffffff"},
+		accentButtons = append(accentButtons, chadcn.Button(color, chadcn.ButtonOptions{
+			Variant: chadcn.ButtonFilled, Overrides: theme.Overrides{"--of-primary": color, "--of-on-primary": "#ffffff"},
 		}).Attr("aria-label", "Use accent "+color).Attr("data-action", "theme:accent:"+strings.TrimPrefix(color, "#")))
 	}
 	radii := []*ui.Element{}
@@ -29,7 +29,7 @@ func (a *builderApp) themePanel() *ui.Element {
 		a.panelHeading("Theme studio"),
 		ui.P().Text("Choose a global palette, then adjust its design tokens. Every library control inherits the result.").
 			Margin(ui.Px(0)).Color(theme.Muted()).FontSize(ui.Px(13)),
-		components.Card(
+		chadcn.Card(
 			ui.Text("Global palette").FontWeight(ui.FontWeightBold),
 			a.themeSwitcher().MarginTop(ui.Px(12)),
 			ui.Text("Accent").MarginTop(ui.Px(16)).FontWeight(ui.FontWeightBold),
@@ -39,27 +39,27 @@ func (a *builderApp) themePanel() *ui.Element {
 			ui.Text("Card padding").MarginTop(ui.Px(16)).FontWeight(ui.FontWeightBold),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).MarginTop(ui.Px(8)).Children(spacings...),
 		),
-		components.Card(
-			components.Badge("Live preview"),
+		chadcn.Card(
+			chadcn.Badge("Live preview"),
 			ui.P().Text("One global theme, shared across your controls.").FontSize(ui.Px(18)).FontWeight(ui.FontWeightBold),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).Children(
-				components.Button("Filled", components.ButtonOptions{Variant: components.ButtonFilled}),
-				components.Button("Outlined", components.ButtonOptions{Variant: components.ButtonOutlined}),
-				components.Button("Disabled", components.ButtonOptions{Disabled: true}),
+				chadcn.Button("Filled", chadcn.ButtonOptions{Variant: chadcn.ButtonFilled}),
+				chadcn.Button("Outlined", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined}),
+				chadcn.Button("Disabled", chadcn.ButtonOptions{Disabled: true}),
 			),
-			components.Progress("Theme preview", previewProgress).MarginTop(ui.Px(18)),
+			chadcn.Progress("Theme preview", previewProgress).MarginTop(ui.Px(18)),
 		),
-		components.Notice("Component overrides stay local", "Visit Custom component to compare inherited properties with instance-specific values."),
-		components.Button("Reset token overrides", components.ButtonOptions{Variant: components.ButtonText}).Attr("data-action", "theme:reset"),
+		chadcn.Notice("Component overrides stay local", "Visit Custom component to compare inherited properties with instance-specific values."),
+		chadcn.Button("Reset token overrides", chadcn.ButtonOptions{Variant: chadcn.ButtonText}).Attr("data-action", "theme:reset"),
 	)
 }
 
 func themeValueButton(label, action string, selected bool) *ui.Element {
-	variant := components.ButtonTonal
+	variant := chadcn.ButtonTonal
 	if selected {
-		variant = components.ButtonFilled
+		variant = chadcn.ButtonFilled
 	}
-	return components.Button(label, components.ButtonOptions{Variant: variant}).Attr("data-action", action)
+	return chadcn.Button(label, chadcn.ButtonOptions{Variant: variant}).Attr("data-action", action)
 }
 
 func (a *builderApp) themeSwitcher() *ui.Element {

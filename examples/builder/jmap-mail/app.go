@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -37,7 +37,7 @@ const (
 )
 
 type app struct {
-	modalFocus components.DialogFocus
+	modalFocus chadcn.DialogFocus
 	view       *ui.View
 	themeDirty bool
 	page       *ownframe.Page
@@ -50,8 +50,8 @@ type app struct {
 	appearance mailTheme
 	settings   bool
 	// The list scrolls in whole rows; the reader scrolls in CSS pixels.
-	listScroll           components.ScrollState
-	readerScroll         components.ScrollState
+	listScroll           chadcn.ScrollState
+	readerScroll         chadcn.ScrollState
 	listViewH            int
 	scrollMeasurePending bool
 	toast                string
@@ -69,7 +69,7 @@ func newApp() (*app, error) {
 		selectedID: "m-101",
 	}
 	view, err := ui.Mount(ownframe.Config{
-		Theme: theme.Light,
+		Theme: theme.Light + chadcn.Stylesheet,
 		Title: mailDemoTitle, Width: mailWindowWidth, Height: mailWindowHeight,
 	}, a.screen())
 	if err != nil {

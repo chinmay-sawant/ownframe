@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -25,10 +25,12 @@ func (a *builderApp) screen() *ui.Element {
 		center = a.customPanel()
 	case "dialog":
 		center = a.dialogPanel()
+	case "catalog":
+		center = a.catalogPanel()
 	default:
 		center = a.widgetsPanel()
 	}
-	return components.Screen(
+	return chadcn.Screen(
 		a.titlebar(),
 		ui.Div().Display(ui.DisplayFlex).Flex(ui.Number(1)).
 			MinHeight(ui.Px(0)).MinWidth(ui.Px(0)).Gap(ui.Px(builderContentGap)).Padding(ui.Px(builderPanePadding)).
@@ -84,11 +86,11 @@ func (a *builderApp) devLabel() string {
 }
 
 func (a *builderApp) action(label, command string, primary bool) *ui.Element {
-	variant := components.ButtonTonal
+	variant := chadcn.ButtonTonal
 	if primary {
-		variant = components.ButtonFilled
+		variant = chadcn.ButtonFilled
 	}
-	return components.Button(label, components.ButtonOptions{Variant: variant}).Attr("data-action", command)
+	return chadcn.Button(label, chadcn.ButtonOptions{Variant: variant}).Attr("data-action", command)
 }
 
 func (a *builderApp) sidebar() *ui.Element {
@@ -105,6 +107,7 @@ func (a *builderApp) sidebar() *ui.Element {
 		a.navButton("Theme studio", "theme"),
 		a.navButton("Source & preview", "compare"),
 		a.navButton("Dialogs", "dialog"),
+		a.navButton("ChadCN catalog", "catalog"),
 		a.navButton("Custom component", "custom"),
 		ui.Div().Margin(ui.Edges(ui.Px(25), ui.Px(0), ui.Px(0))).Padding(ui.Px(12)).
 			BackgroundColor(theme.Control()).BorderRadius(ui.Px(8)).
@@ -117,7 +120,7 @@ func (a *builderApp) sidebar() *ui.Element {
 }
 
 func (a *builderApp) navButton(label, tab string) *ui.Element {
-	button := components.Button(label, components.ButtonOptions{Size: components.ButtonSmall}).
+	button := chadcn.Button(label, chadcn.ButtonOptions{Size: chadcn.ButtonSmall}).
 		Attr("data-action", "tab:"+tab).TextAlign(ui.TextAlignLeft).Padding(ui.Px(9))
 	if a.tab == tab {
 		button.BackgroundColor(theme.Selected()).Attr("aria-current", "page")

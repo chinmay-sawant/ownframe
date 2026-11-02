@@ -1,0 +1,32 @@
+/* Indeterminate spinner ring. */
+
+.of-spinner {
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--of-text, #0a0a0a);
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: of-spinner-rotate 0.8s linear infinite;
+}
+
+.of-spinner--small {
+  width: 12px;
+  height: 12px;
+}
+
+.of-spinner--large {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+@keyframes of-spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

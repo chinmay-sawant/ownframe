@@ -1,0 +1,17 @@
+/* Horizontal and vertical hairline separators. */
+
+.of-separator {
+  flex: none;
+  background-color: var(--of-border, #e5e5e5);
+}
+
+.of-separator--horizontal {
+  width: 100%;
+  height: 1px;
+}
+
+.of-separator--vertical {
+  width: 1px;
+  min-height: var(--of-separator-length, 24px);
+  align-self: stretch;
+}

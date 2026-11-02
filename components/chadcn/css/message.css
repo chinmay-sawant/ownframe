@@ -1,0 +1,80 @@
+/* Message: avatar, meta line, and a content column for bubbles. */
+
+.of-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-message--start {
+  flex-direction: row;
+}
+
+.of-message--end {
+  flex-direction: row-reverse;
+}
+
+.of-message-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: var(--of-message-avatar, var(--of-control, #f4f4f5));
+  color: var(--of-message-avatar-text, var(--of-muted-foreground, #737373));
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.of-message-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 78%;
+  min-width: 0;
+}
+
+.of-message--end .of-message-body {
+  align-items: flex-end;
+}
+
+.of-message-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-message--end .of-message-meta {
+  flex-direction: row-reverse;
+}
+
+.of-message-name {
+  font-weight: 600;
+  color: var(--of-message-name, var(--of-text, #0a0a0a));
+}
+
+.of-message-time {
+  color: var(--of-message-time, var(--of-muted-foreground, #737373));
+}
+
+.of-message-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.of-message--end .of-message-content {
+  align-items: flex-end;
+}

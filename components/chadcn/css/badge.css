@@ -1,0 +1,35 @@
+/* Badge tones. */
+
+.of-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.of-badge--default {
+  background-color: var(--of-primary, #171717);
+  color: var(--of-on-primary, #fafafa);
+}
+
+.of-badge--secondary {
+  background-color: var(--of-control, #f4f4f5);
+  color: var(--of-text, #171717);
+}
+
+.of-badge--outline {
+  border-color: var(--of-border, #e5e5e5);
+  background-color: transparent;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-badge--danger {
+  background-color: var(--of-danger-soft, rgba(220, 38, 38, 0.16));
+  color: var(--of-danger, #dc2626);
+}

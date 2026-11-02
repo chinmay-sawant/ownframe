@@ -306,5 +306,32 @@
       "template.html",
       "style.css"
     ]
+  },
+  "documentation/chadcn.md#1": {
+    "mode": "body",
+    "after": "return nil",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "github.com/chinmay-sawant/ownframe/components/chadcn",
+      "github.com/chinmay-sawant/ownframe/ui"
+    ]
+  },
+  "documentation/chadcn.md#2": {
+    "mode": "body",
+    "after": "return nil",
+    "before": "var fruitOpen bool\nvar fruit string",
+    "imports": [
+      "context",
+      "github.com/chinmay-sawant/ownframe/components/chadcn"
+    ]
+  },
+  "documentation/chadcn.md#3": {
+    "mode": "body",
+    "after": "return nil",
+    "params": "page *ownframe.Page",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "github.com/chinmay-sawant/ownframe/components/chadcn"
+    ]
   }
 }

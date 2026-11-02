@@ -6,8 +6,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -40,19 +40,19 @@ func ProjectCard(options ProjectOptions) *ui.Element {
 		label = "Unpin project"
 	}
 	accent := ui.ColorVar("--project-accent", theme.Primary())
-	return options.Overrides.Apply(components.Card().ID(options.ID).
+	return options.Overrides.Apply(chadcn.Card().ID(options.ID).
 		BorderLeft(ui.SolidBorder(ui.Px(3), accent)).Display(ui.DisplayFlex).
 		FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).Children(
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentSpaceBetween).Children(
 			ui.Text(options.Name).FontSize(ui.Px(20)).FontWeight(ui.FontWeightBold),
-			components.Badge("Custom control").Color(theme.Text()),
+			chadcn.Badge("Custom control").Color(theme.Text()),
 		),
 		ui.P().Text(options.Description).Margin(ui.Px(0)).Color(theme.Muted()).FontSize(ui.Px(13)),
-		components.Progress(options.Name+" completion", percent),
+		chadcn.Progress(options.Name+" completion", percent),
 		ui.Text(fmt.Sprintf("%d of %d tasks complete", done, total)).Color(theme.Muted()).FontSize(ui.Px(12)),
 		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).Children(
-			components.Button("Open project", components.ButtonOptions{Variant: components.ButtonFilled, Disabled: options.OnOpen == nil}).ID(options.ID+"-open").OnClick(options.OnOpen),
-			components.Button(label, components.ButtonOptions{Variant: components.ButtonOutlined, Disabled: options.OnPin == nil}).ID(options.ID+"-pin").OnClick(options.OnPin),
+			chadcn.Button("Open project", chadcn.ButtonOptions{Variant: chadcn.ButtonFilled, Disabled: options.OnOpen == nil}).ID(options.ID+"-open").OnClick(options.OnOpen),
+			chadcn.Button(label, chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined, Disabled: options.OnPin == nil}).ID(options.ID+"-pin").OnClick(options.OnPin),
 		),
 	))
 }

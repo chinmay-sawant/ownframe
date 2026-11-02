@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -16,11 +16,11 @@ type compareState struct {
 func defaultCompareState() compareState { return compareState{Mode: "split"} }
 
 func builderCardSnippet() string {
-	return `components.Card(
+	return `chadcn.Card(
     ui.Text("Deploy preview").Color(theme.Muted()),
     ui.P().Text("1,248 rows").FontSize(ui.Px(29)),
-    components.Button("Open preview", components.ButtonOptions{
-        Variant: components.ButtonFilled,
+    chadcn.Button("Open preview", chadcn.ButtonOptions{
+        Variant: chadcn.ButtonFilled,
     }).ID("compare-open").Attr("data-action", "compare:open"),
 )`
 }
@@ -47,7 +47,7 @@ func (a *builderApp) comparePanel() *ui.Element {
 }
 
 func (a *builderApp) compareLivePane() *ui.Element {
-	return components.Card(ui.Text("Live component").FontWeight(ui.FontWeightBold), a.compareCard("compare-open").MarginTop(ui.Px(12))).
+	return chadcn.Card(ui.Text("Live component").FontWeight(ui.FontWeightBold), a.compareCard("compare-open").MarginTop(ui.Px(12))).
 		Flex(ui.Number(1)).MinWidth(ui.Px(0))
 }
 
@@ -56,21 +56,21 @@ func (a *builderApp) compareCodePane() *ui.Element {
 	if a.compare.Mode == "html" {
 		generated, err := ui.Render(a.compareCard("compare-source"))
 		if err != nil {
-			return components.Notice("Source error", err.Error())
+			return chadcn.Notice("Source error", err.Error())
 		}
 		source, title = generated, "Generated HTML"
 	}
-	return components.Card(ui.Text(title).FontWeight(ui.FontWeightBold),
+	return chadcn.Card(ui.Text(title).FontWeight(ui.FontWeightBold),
 		ui.Tag("pre").Text(source).FontFamily(ui.FontFamilyMonospace).FontSize(ui.Px(12)).
 			WhiteSpace(ui.WhiteSpacePreWrap).OverflowWrap(ui.OverflowWrapBreakWord).MarginTop(ui.Px(12)).Color(theme.Text()),
 	).Flex(ui.Number(1)).MinWidth(ui.Px(0))
 }
 
 func (a *builderApp) compareCard(id string) *ui.Element {
-	return components.Card(
+	return chadcn.Card(
 		ui.Text("Deploy preview").FontSize(ui.Px(13)).Color(theme.Muted()),
 		ui.P().Text("1,248 rows").Margin(ui.Px(0)).FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold),
-		components.Button("Open preview", components.ButtonOptions{Variant: components.ButtonFilled}).
+		chadcn.Button("Open preview", chadcn.ButtonOptions{Variant: chadcn.ButtonFilled}).
 			ID(id).Attr("data-action", "compare:open").AlignSelf(ui.AlignSelfFlexStart),
 	).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10))
 }
@@ -79,12 +79,12 @@ func (a *builderApp) comparePreviewOverlay() *ui.Element {
 	if a.tab != "compare" || !a.compare.Preview {
 		return nil
 	}
-	return components.Dialog(components.DialogOptions{
+	return chadcn.Dialog(chadcn.DialogOptions{
 		BackdropID: "compare-preview-backdrop", PanelID: "compare-preview-panel", Label: "Card preview", CloseAction: "compare:preview-close", Width: ui.Px(480),
 	},
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentSpaceBetween).
 			Padding(theme.Spacing()).BorderBottom(theme.Border()).Children(ui.Text("Card preview").FontWeight(ui.FontWeightBold),
-			components.Button("×", components.ButtonOptions{}).ID("compare-preview-x").Attr("aria-label", "Close card preview").Attr("data-action", "compare:preview-close")),
+			chadcn.Button("×", chadcn.ButtonOptions{}).ID("compare-preview-x").Attr("aria-label", "Close card preview").Attr("data-action", "compare:preview-close")),
 		a.compareCard("compare-preview-open").Margin(theme.Spacing()),
 	)
 }

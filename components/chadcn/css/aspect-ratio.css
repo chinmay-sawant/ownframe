@@ -1,0 +1,20 @@
+/* Ratio box with an absolutely positioned content layer. */
+
+.of-aspect-ratio {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--of-radius, 10px);
+}
+
+.of-aspect-ratio-content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

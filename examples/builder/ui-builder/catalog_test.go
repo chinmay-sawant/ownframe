@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/pagetest"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 )
 
 func TestCustomComponentsKeepIndependentState(t *testing.T) {
@@ -93,7 +93,7 @@ func TestCustomAndThemePanelsFitSupportedViewports(t *testing.T) {
 	}
 	for _, width := range []int{900, 1120} {
 		a.page.SetSize(width, 610)
-		for _, tab := range []string{"widgets", "theme", "custom", "compare"} {
+		for _, tab := range []string{"widgets", "theme", "custom", "compare", "catalog"} {
 			a.tab = tab
 			if err := a.refresh(ctx); err != nil {
 				t.Fatal(err)
@@ -122,7 +122,33 @@ func TestButtonVariantAndSizeControls(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if a.widgets.variant != "outlined" || a.widgets.size != components.ButtonLarge {
+	if a.widgets.variant != "outlined" || a.widgets.size != chadcn.ButtonLarge {
 		t.Fatal("catalog controls did not update options")
+	}
+}
+
+func TestCatalogRendersEveryEntry(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newBuilderApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.tab = "catalog"
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, box := range a.page.Boxes() {
+		if box.Text == "ChadCN catalog" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("catalog heading missing")
+	}
+	if got := len(catalogEntries()); got != 66 {
+		t.Fatalf("catalog entries=%d want 66", got)
 	}
 }

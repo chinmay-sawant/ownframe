@@ -3,8 +3,8 @@ package main
 import (
 	"strings"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -101,11 +101,11 @@ func (a *builderApp) settingsRoleRow() *ui.Element {
 }
 
 func (a *builderApp) settingsRoleButton(role string, selected bool) *ui.Element {
-	return components.Choice(role, "", selected).Attr("data-action", "settings:role:"+role)
+	return chadcn.Choice(role, "", selected).Attr("data-action", "settings:role:"+role)
 }
 
 func (a *builderApp) settingsNotifyRow() *ui.Element {
-	return components.Switch("Notifications", a.settings.Notify).Attr("data-action", "settings:notify")
+	return chadcn.Switch("Notifications", a.settings.Notify).Attr("data-action", "settings:notify")
 }
 
 func (a *builderApp) settingsFormButton(label, action string, primary bool) *ui.Element {

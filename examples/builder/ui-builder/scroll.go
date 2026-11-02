@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 func (a *builderApp) scrollViewport(content *ui.Element) *ui.Element {
 	inner := ui.Div().ID(builderScrollContentID).Position(ui.PositionRelative).Top(ui.Px(-float64(a.center.Offset()))).
 		Padding(ui.Edges(ui.Px(0), ui.Px(builderScrollGutter), ui.Px(0), ui.Px(0))).BoxSizing(ui.BoxSizingBorderBox).Children(content)
-	bar := components.Scrollbar(components.ScrollbarOptions{
+	bar := chadcn.Scrollbar(chadcn.ScrollbarOptions{
 		ID: builderScrollTrackID, ThumbID: builderScrollThumbID, ControlsID: builderScrollViewportID, Label: "Component catalog",
 		State: &a.center, TrackPixels: a.center.Metrics().Viewport,
 		OnChange: func(ctx context.Context) error {

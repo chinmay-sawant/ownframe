@@ -1,0 +1,115 @@
+/* DataTable: bordered table with header, rows, selection, and empty state. */
+
+.of-data-table {
+  width: 100%;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-card, #ffffff);
+  overflow: hidden;
+}
+
+.of-data-table-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+}
+
+.of-data-table-caption {
+  padding: 12px 16px;
+  color: var(--of-muted-foreground, #737373);
+  font-size: 13px;
+  text-align: left;
+}
+
+.of-data-table-head {
+  background-color: var(--of-card, #ffffff);
+}
+
+.of-data-table-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.of-data-table-cell {
+  padding: 16px;
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+  color: var(--of-text, #0a0a0a);
+  vertical-align: middle;
+}
+
+.of-data-table-row:last-child .of-data-table-cell {
+  border-bottom: 0;
+}
+
+.of-data-table-body .of-data-table-row:hover {
+  background-color: var(--of-accent, #f5f5f5);
+}
+
+.of-data-table-row--selected {
+  background-color: var(--of-selected, #f5f5f5);
+}
+
+.of-data-table-select-cell {
+  width: 56px;
+  padding-right: 0;
+}
+
+.of-data-table-select {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--of-input, #e5e5e5);
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--of-on-primary, #fafafa);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.of-data-table-select:hover {
+  border-color: var(--of-ring, #a1a1aa);
+}
+
+.of-data-table-select:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-data-table-select--checked {
+  border-color: var(--of-primary, #171717);
+  background-color: var(--of-primary, #171717);
+}
+
+.of-data-table-check {
+  opacity: 0;
+}
+
+.of-data-table-select--checked .of-data-table-check {
+  opacity: 1;
+}
+
+.of-data-table-empty {
+  padding: 32px 16px;
+  color: var(--of-muted-foreground, #737373);
+  text-align: center;
+}
+
+.of-data-table--align-center {
+  text-align: center;
+}
+
+.of-data-table--align-right {
+  text-align: right;
+}

@@ -1,0 +1,64 @@
+/* Resizable: two panes and a focusable divider. Ratio is inline. */
+
+.of-resizable {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-card, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  overflow: hidden;
+}
+
+.of-resizable--vertical {
+  flex-direction: column;
+}
+
+.of-resizable-pane {
+  flex-basis: 0;
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.of-resizable-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 0;
+  flex-shrink: 0;
+  flex-basis: 9px;
+  background-color: transparent;
+  background-image: linear-gradient(to right,
+    transparent 4px,
+    var(--of-border, #e5e5e5) 4px,
+    var(--of-border, #e5e5e5) 5px,
+    transparent 5px);
+}
+
+.of-resizable-divider:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: -2px;
+}
+
+.of-resizable-grip {
+  flex-shrink: 0;
+  width: 4px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: var(--of-border, #e5e5e5);
+}
+
+.of-resizable--vertical .of-resizable-divider {
+  background-image: linear-gradient(to bottom,
+    transparent 4px,
+    var(--of-border, #e5e5e5) 4px,
+    var(--of-border, #e5e5e5) 5px,
+    transparent 5px);
+}
+
+.of-resizable--vertical .of-resizable-grip {
+  width: 32px;
+  height: 4px;
+}

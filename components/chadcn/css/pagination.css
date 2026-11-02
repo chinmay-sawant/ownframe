@@ -1,0 +1,72 @@
+/* Page selector. */
+
+.of-pagination {
+  display: flex;
+  justify-content: center;
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+}
+
+.of-pagination-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-pagination-item {
+  display: flex;
+  align-items: center;
+}
+
+.of-pagination-previous,
+.of-pagination-next,
+.of-pagination-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: transparent;
+  color: var(--of-text, #0a0a0a);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.of-pagination-previous:hover,
+.of-pagination-next:hover,
+.of-pagination-link:hover {
+  background-color: var(--of-control, #f4f4f5);
+}
+
+.of-pagination-previous:focus-visible,
+.of-pagination-next:focus-visible,
+.of-pagination-link:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-pagination-link[aria-current="page"] {
+  border: 1px solid var(--of-border, #e5e5e5);
+  background-color: var(--of-surface, #ffffff);
+}
+
+.of-pagination-chevron {
+  color: var(--of-muted, #737373);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.of-pagination-ellipsis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 6px;
+  color: var(--of-muted, #737373);
+  letter-spacing: 2px;
+}

@@ -1,0 +1,61 @@
+/* Input group: a bordered row with inline slots around one text input. */
+
+.of-input-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--of-input, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.of-input-group:focus-within {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-input-group-prefix,
+.of-input-group-suffix,
+.of-input-group-addon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--of-muted, #737373);
+}
+
+.of-input-group-addon {
+  align-self: stretch;
+  padding-left: 8px;
+  border-left: 1px solid var(--of-border, #e5e5e5);
+}
+
+.of-input-group-input,
+.of-input-group-input[data-ownframe-field] {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+  padding: 9px 0;
+  box-sizing: border-box;
+}
+
+.of-input-group-input[data-ownframe-field][data-ownframe-focus="1"] {
+  border: 0;
+  background: transparent;
+  padding: 9px 0;
+  outline: 1px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-input-group-input[data-ownframe-field][data-ownframe-placeholder="1"] {
+  color: var(--of-muted, #737373);
+}

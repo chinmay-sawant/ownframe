@@ -1,6 +1,9 @@
 package main
 
-import "github.com/chinmay-sawant/ownframe/ui/theme"
+import (
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
+)
 
 type mailTheme string
 
@@ -13,15 +16,15 @@ const (
 func (name mailTheme) stylesheet() (string, error) {
 	switch name {
 	case mailThemeDark:
-		return theme.Dark, nil
+		return theme.Dark + chadcn.Stylesheet, nil
 	case mailThemeCustom:
 		overrides, err := sageProperties().Stylesheet()
 		if err != nil {
 			return "", err
 		}
-		return theme.Light + overrides, nil
+		return theme.Light + overrides + chadcn.Stylesheet, nil
 	default:
-		return theme.Light, nil
+		return theme.Light + chadcn.Stylesheet, nil
 	}
 }
 

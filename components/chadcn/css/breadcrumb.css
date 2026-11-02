@@ -1,0 +1,54 @@
+/* Navigational trail. */
+
+.of-breadcrumb {
+  color: var(--of-muted, #737373);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.of-breadcrumb-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.of-breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.of-breadcrumb-link {
+  padding: 0;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.of-breadcrumb-link:hover {
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-breadcrumb-link:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-breadcrumb-label {
+  color: var(--of-muted, #737373);
+}
+
+.of-breadcrumb-separator {
+  color: var(--of-muted, #a3a3a3);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.of-breadcrumb-page {
+  color: var(--of-text, #0a0a0a);
+}

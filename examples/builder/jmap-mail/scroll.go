@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 )
 
-func (a *app) paneScrollbar(id, thumb, viewport, label string, state *components.ScrollState, track int) *ui.Element {
-	return components.Scrollbar(components.ScrollbarOptions{
+func (a *app) paneScrollbar(id, thumb, viewport, label string, state *chadcn.ScrollState, track int) *ui.Element {
+	return chadcn.Scrollbar(chadcn.ScrollbarOptions{
 		ID: id, ThumbID: thumb, ControlsID: viewport, Label: label, State: state, TrackPixels: track,
 		OnChange: func(ctx context.Context) error { a.page.Form().RequestFocus(thumb); return a.refresh(ctx) },
 	})

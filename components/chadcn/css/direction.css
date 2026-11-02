@@ -1,0 +1,5 @@
+/* Direction wrapper. The dir attribute does the work. */
+
+.of-direction {
+  display: block;
+}

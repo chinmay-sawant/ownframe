@@ -1,0 +1,26 @@
+/* Pulsing loading placeholder. */
+
+.of-skeleton {
+  display: block;
+  width: 100%;
+  height: 12px;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: var(--of-control, #f4f4f5);
+  animation: of-skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+.of-skeleton--rounded {
+  border-radius: 999px;
+}
+
+@keyframes of-skeleton-pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}

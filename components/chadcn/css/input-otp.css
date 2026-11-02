@@ -1,0 +1,60 @@
+/* Input OTP: one input per digit in a shared bordered row. */
+
+.of-input-otp {
+  display: flex;
+  align-items: center;
+}
+
+.of-input-otp-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--of-input, #e5e5e5);
+  background: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  font-size: 16px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.of-input-otp-slot:first-child {
+  border-top-left-radius: var(--of-radius-sm, 6px);
+  border-bottom-left-radius: var(--of-radius-sm, 6px);
+}
+
+.of-input-otp-slot:last-child {
+  border-top-right-radius: var(--of-radius-sm, 6px);
+  border-bottom-right-radius: var(--of-radius-sm, 6px);
+}
+
+.of-input-otp-slot:not(:first-child) {
+  border-left-width: 0;
+}
+
+.of-input-otp-slot[data-ownframe-field] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0;
+  border-color: var(--of-input, #e5e5e5);
+}
+
+.of-input-otp-slot[data-ownframe-field][data-ownframe-focus="1"] {
+  border-color: var(--of-input, #e5e5e5);
+  padding: 0;
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: -2px;
+}
+
+.of-input-otp-slot[data-ownframe-field][data-ownframe-focus="1"]:not(:first-child) {
+  border-left-width: 0;
+}
+
+.of-input-otp-slot[data-ownframe-field][data-ownframe-placeholder="1"] {
+  color: var(--of-muted, #737373);
+}

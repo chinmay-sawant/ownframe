@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/examples/builder/ui-builder/custom"
 	"github.com/chinmay-sawant/ownframe/ui"
-	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -24,8 +24,8 @@ func (a *builderApp) customPanel() *ui.Element {
 			a.projectExample(0, "Workspace", "Inherits the global application palette.", nil).Flex(ui.Number(1)).MinWidth(ui.Px(0)),
 			a.projectExample(1, "Release kit", "Keeps its app-owned accent and local action color.", projectProperties()).Flex(ui.Number(1)).MinWidth(ui.Px(0)),
 		),
-		components.Notice("Override order", "OwnFrame defaults → application theme → component properties. Switch the global palette above; the second card keeps its local values."),
-		components.Card(
+		chadcn.Notice("Override order", "OwnFrame defaults → application theme → component properties. Switch the global palette above; the second card keeps its local values."),
+		chadcn.Card(
 			ui.Text("custom.ProjectCard(options)").FontFamily(ui.FontFamilyMonospace).FontWeight(ui.FontWeightBold),
 			ui.P().Text("ProjectOptions supplies Name, Description, Done, Total, Pinned, OnPin, OnOpen, and Overrides.").
 				Color(theme.Muted()).FontSize(ui.Px(12)),

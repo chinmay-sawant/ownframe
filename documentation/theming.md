@@ -76,7 +76,7 @@ smaller than property coverage. For each property and its evidence, see the
 
 ## Builder components
 
-The optional [`ui/components`](../ui/components/README.md) package uses semantic
+The optional [`components/chadcn`](../components/chadcn/README.md) package uses semantic
 `--of-*` variables. Set them in `Config.Theme` or `Page.SetTheme`, including when
 the page was created through `ui.Mount`. A component reads each variable with
 a fallback; it does not declare theme variables inline on its own node.

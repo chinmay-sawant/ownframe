@@ -1,0 +1,49 @@
+/* ButtonGroup: joined buttons share borders and keep only outer corners. */
+
+.of-button-group {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.of-button-group--vertical {
+  flex-direction: column;
+}
+
+.of-button-group > .of-button {
+  border-radius: 0;
+}
+
+.of-button-group > .of-button:first-child {
+  border-top-left-radius: var(--of-button-radius, 8px);
+  border-bottom-left-radius: var(--of-button-radius, 8px);
+}
+
+.of-button-group > .of-button:last-child {
+  border-top-right-radius: var(--of-button-radius, 8px);
+  border-bottom-right-radius: var(--of-button-radius, 8px);
+}
+
+.of-button-group > .of-button + .of-button {
+  margin-left: -1px;
+}
+
+.of-button-group > .of-button:hover,
+.of-button-group > .of-button:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
+.of-button-group--vertical > .of-button:first-child {
+  border-top-right-radius: var(--of-button-radius, 8px);
+  border-bottom-left-radius: 0;
+}
+
+.of-button-group--vertical > .of-button:last-child {
+  border-top-right-radius: 0;
+  border-bottom-left-radius: var(--of-button-radius, 8px);
+}
+
+.of-button-group--vertical > .of-button + .of-button {
+  margin-left: 0;
+  margin-top: -1px;
+}

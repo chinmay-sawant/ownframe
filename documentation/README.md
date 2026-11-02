@@ -9,6 +9,7 @@ Build your screen with HTML and CSS. Handle data and actions in Go. 1.0 hosts ar
 - [Connect controls to Go data](binding.md)
 - [Handle forms and edits](forms.md)
 - [Change the page theme](theming.md)
+- [Build with ChadCN components](chadcn.md)
 - [Run CSS animations and transitions](css-motion.md)
 
 ## Run your app

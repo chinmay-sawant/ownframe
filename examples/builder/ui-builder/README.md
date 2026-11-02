@@ -1,6 +1,6 @@
 # OwnFrame component gallery
 
-This example is an interactive catalog for `ownframe/ui/components`.
+This example is an interactive catalog for `ownframe/components/chadcn`.
 The shared package owns reusable controls. The neutral `ui` package builds
 HTML and layout. App-owned components live in `custom/`.
 
@@ -13,7 +13,7 @@ go run ./examples/builder/ui-builder
 Use `-web` for the PNG browser preview or `-dev` to open DevTools. The desktop
 gallery supports windows from 900 by 610 pixels. The header and navigation
 stay visible while the content pane scrolls. The pane uses the shared
-`components.Scrollbar` and `components.ScrollState`. `scroll.go` measures its
+`chadcn.Scrollbar` and `chadcn.ScrollState`. `scroll.go` measures its
 content after layout and routes wheel, native thumb drag, and focused keyboard
 input to that state. Clicking above or below the thumb pages the content.
 
@@ -29,6 +29,8 @@ input to that state. Clicking above or below the thumb pages the content.
 - Theme studio changes the global palette and token overrides.
 - Source & preview shows a shared card, its Go composition, and generated HTML.
 - Dialogs demonstrates a controlled modal with keyboard focus management.
+- ChadCN catalog renders every constructor in the set, including inline open
+  menus and selection panels.
 - Custom component composes two independent `custom.ProjectCard` instances.
 
 This is an OwnFrame component library example. It does not import Material UI
@@ -36,9 +38,9 @@ or claim its complete control set or behavior.
 
 ## Change a theme
 
-The header switches between OwnFrame's Light and Dark themes and the app-owned
-Studio palette. `theme.go` contains Studio and the custom card's local
-properties. Theme studio can override the global accent, radius, and card
+The header switches between ChadCN's Light and Dark palettes and the app-owned
+Studio palette. `theme.go` chains `chadcn.Stylesheet` after the palette and
+contains Studio and the custom card's local properties. Theme studio can override the global accent, radius, and card
 padding; Reset removes those overrides while retaining the selected palette.
 
 The order is OwnFrame defaults, application properties, then component
@@ -63,5 +65,5 @@ The gallery uses `ui.Mount` and `View.Update` to replace the current view and
 its callbacks without adding navigation history. Controls with stable IDs
 keep live state. Explicit reset actions also update the live form values.
 
-See the [shared component API](../../../ui/components/README.md) for public options,
+See the [shared component API](../../../components/chadcn/README.md) for public options,
 file-loaded properties, icon slots, and controlled interaction contracts.
