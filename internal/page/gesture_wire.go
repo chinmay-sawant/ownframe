@@ -46,6 +46,11 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		if err != nil {
 			return err
 		}
+		if key == "space" {
+			if handled, err := p.activateKeyboardButton(ctx); handled || err != nil {
+				return err
+			}
+		}
 	}
 
 	switch gesture.KeyDown(field, field.Value, key) {
@@ -258,12 +263,43 @@ func (p *Page) Redo(ctx context.Context) error {
 	})
 }
 
-// Submit calls the submit handler and draws the page again.
-// It does nothing when no submit handler is registered.
+// Submit activates a focused button. Otherwise it calls the submit handler
+// and draws the page again, or does nothing when no handler is registered.
 func (p *Page) Submit(ctx context.Context) error {
+	if err := useContext(ctx); err != nil {
+		return err
+	}
+	if handled, err := p.activateKeyboardButton(ctx); handled || err != nil {
+		return err
+	}
 	return p.after(ctx, p.handlers.Submit == nil, func() error {
 		return p.handlers.Submit(ctx)
 	})
+}
+
+// activateKeyboardButton uses the focused control rather than pointer hit
+// testing, so a child icon or an overlapping element cannot redirect the key.
+func (p *Page) activateKeyboardButton(ctx context.Context) (bool, error) {
+	field, ok := p.control(p.FocusID())
+	if !ok || field.Tag != "button" {
+		return false, nil
+	}
+	if field.Disabled {
+		return true, nil
+	}
+	box := p.boxByID(field.ID)
+	if box.ID == "" {
+		return false, nil
+	}
+	if box.Action != "" {
+		if source, ok := p.nav.Lookup(box.Action); ok {
+			return true, p.Load(ctx, source)
+		}
+	}
+	if field.Type == "submit" && box.Action == "" {
+		return true, p.after(ctx, p.handlers.Submit == nil, func() error { return p.handlers.Submit(ctx) })
+	}
+	return true, p.clickControl(ctx, box)
 }
 
 func (p *Page) after(ctx context.Context, skip bool, fn func() error) error {

@@ -6,7 +6,11 @@ import (
 )
 
 func (a *app) actionButton(label, action string, prominent bool) *ui.Element {
-	options := components.ButtonOptions{Primary: prominent}
+	variant := components.ButtonTonal
+	if prominent {
+		variant = components.ButtonFilled
+	}
+	options := components.ButtonOptions{Variant: variant}
 	if action == "compose" {
 		options.Overrides = composeProperties()
 	}

@@ -6,7 +6,11 @@ classes, attributes, callbacks, children, and CSS using the existing builder.
 
 | Constructor | Contract |
 |---|---|
-| `Button(label, ButtonOptions)` | **Primary or secondary button**, with optional disabled state |
+| `Button(label, ButtonOptions)` | **Filled, tonal, outlined, text, or danger button**, with sizes and disabled state |
+| `Switch(label, checked)`, `Checkbox(label, checked)` | **Controlled selection controls** |
+| `Scrollbar(ScrollbarOptions)` | **Vertical pane scrollbar** with shared range, paging, wheel, keyboard, and drag state |
+| `Progress(label, percent)` | **Bounded progress indicator** |
+| `Notice(title, body)` | **Inline status message** |
 | `Card(children...)` | **Surface container** with border, padding, and text color |
 | `TextField(id, label, value)` | **Labeled text input**; value initializes the control |
 | `Badge(label)` | **Non-interactive label** |
@@ -34,7 +38,7 @@ This example assumes imports for `ownframe`, `ui`, `ui/components`, and `ui/them
         Title: "Custom theme", Width: 640, Height: 480, Theme: stylesheet,
     }, components.Card(
         components.TextField("name", "Name", ""),
-        components.Button("Save", components.ButtonOptions{Primary: true}),
+        components.Button("Save", components.ButtonOptions{Variant: components.ButtonFilled}),
     ))
     if err != nil {
         return err
@@ -102,7 +106,7 @@ resolve against the current scope. They do not copy colors into a component.
 For a local override:
 
     save := components.Button("Save", components.ButtonOptions{
-        Primary: true,
+        Variant: components.ButtonFilled,
         Overrides: theme.Overrides{
             "--of-primary": "#21694e",
             "--of-radius": "18px",
@@ -137,3 +141,87 @@ Decorative icon descendants should have no IDs or actions: OwnFrame routes a
 click through the nearest ID-bearing ancestor, which is the action button.
 The builder supplies an ID for a `data-action` control that lacks one.
 The mail example keeps its settings icon in `icons.go`, outside its layout.
+
+
+## Button variants and sizes
+
+`ButtonOptions.Variant` selects `ButtonTonal`, `ButtonFilled`, `ButtonOutlined`,
+`ButtonText`, or `ButtonDanger`. The zero value is tonal. `Size` selects
+`ButtonSmall`, `ButtonMedium`, or `ButtonLarge`; medium is the zero value.
+The earlier experimental `Primary` boolean has been replaced by
+`Variant: components.ButtonFilled`.
+
+All variants consume semantic theme properties. Destructive actions read
+`--of-danger` and `--of-on-danger`. Sizes choose padding fallbacks and font
+sizes; application or component padding overrides still take precedence.
+
+## Controlled state and feedback
+
+`Switch` and `Checkbox` render HTML buttons with the appropriate role and
+`aria-checked` state. Give them an ID and an `OnClick` callback or `data-action`.
+The host updates its Go state and rebuilds the view after activation. These
+are controlled components, rather than form inputs that store a checked value
+on `Page.Form`. Keyboard activation follows the normal button input path.
+
+`Progress` clamps its percentage to 0 through 100 and exposes a labeled
+`progressbar` with an accessible value. `Notice` supplies a themed heading and
+body for inline feedback. Both can be composed within custom controls.
+
+The [component gallery](../../examples/ui-builder/README.md) exercises these
+APIs, light/dark/Studio palettes, and a separately packaged custom project card.
+
+## Scroll a pane
+
+`ScrollState` owns a vertical scroll position. Its zero value is empty. Keep
+one state per pane on the page loop. `SetRange(content, viewport)` uses the
+same logical unit for both sizes, such as pixels for a document or rows for
+a windowed list. `Metrics()` returns a snapshot with the clamped offset and
+`MaxOffset()`. A smaller range clamps the position and cancels an active drag.
+
+`Scrollbar` draws the track and thumb inside a positioned viewport. It returns
+nil when content fits or no measurements exist. `TrackPixels` is the actual
+viewport height in CSS pixels, even when the state uses rows. IDs must be
+unique across the page. The thumb defaults to `ID + "-thumb"`.
+
+```go
+var scroll components.ScrollState // retain this in the host app
+scroll.SetRange(contentHeight, viewportHeight)
+bar := components.Scrollbar(components.ScrollbarOptions{
+    ID: "reader-scroll", ControlsID: "reader", Label: "Message",
+    State: &scroll, TrackPixels: viewportHeight,
+    OnChange: func(ctx context.Context) error {
+        page.Form().RequestFocus("reader-scroll-thumb")
+        return redraw(ctx)
+    },
+})
+```
+
+The host measures content and viewport after layout and translates or windows
+its content using `scroll.Offset()`. Put the bar beside that content inside a
+`PositionRelative` viewport with `OverflowHidden`. Reserve a right gutter so
+content cannot overlap the thumb. Measurement must use intrinsic content
+height, independent of its translated top.
+
+Track clicks page by one viewport and call `OnChange` after a change. The host
+routes `Handlers.Wheel` to `scroll.Wheel(dy, unitsPerNotch)` when the pointer is
+over that pane. Positive wheel deltas move toward the start. Fractional input
+accumulates. Redraw when these methods return true.
+
+Claim a native `DragStart` on the thumb with `scroll.BeginDrag(trackPixels)`.
+Forward `DragMove`'s vertical pixel delta to `scroll.DragBy(dy, trackPixels)`
+and finish with `scroll.EndDrag()`. While the thumb has focus, forward
+`KeyDown` to `scroll.Key(key, step)`. It handles arrows, Page Up/Down, Home,
+and End; `step` uses the state's logical units. Block these handlers while a
+modal covers the pane. The PNG web preview supports wheel, track clicks, and
+keyboard input; thumb dragging uses the native host gesture handlers.
+
+The thumb inherits `--of-scrollbar`. Override `--of-scrollbar-width`,
+`--of-scrollbar-inset`, or `--of-scrollbar-radius` with CSS lengths to change
+its geometry. These default to `8px`, `2px`, and `4px`. Use
+`ScrollbarOptions.Overrides` for one instance or global theme properties for
+all instances. OwnFrame's Light and Dark themes also provide a focus outline.
+
+See [JMAP mail](../../examples/jmap-mail/scroll.go) for independent row and
+pixel ranges and [the gallery](../../examples/ui-builder/scroll.go) for a
+measured scrolling catalog. The host owns content layout and event routing;
+the shared component owns thumb geometry and scroll state.

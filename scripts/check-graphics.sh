@@ -51,3 +51,4 @@ run_test ./internal/window TestViewportDirectAnimationReturnPixels
 run_test ./internal/window TestWindowIdleDeadline
 run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity
+run_test ./examples/jmap-mail TestScrollbarThumbStaysOnePiece

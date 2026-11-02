@@ -154,14 +154,14 @@ func TestMailListWheelScrollsAndShowsScrollbar(t *testing.T) {
 	if !handled {
 		t.Fatal("wheel over the list should be consumed")
 	}
-	if a.listOffset == 0 {
+	if a.listScroll.Offset() == 0 {
 		t.Fatal("wheel down did not advance the list")
 	}
-	before := a.listOffset
+	before := a.listScroll.Offset()
 	if _, err := a.handleWheel(ctx, cx, cy, 0, 2); err != nil {
 		t.Fatal(err)
 	}
-	if a.listOffset >= before {
+	if a.listScroll.Offset() >= before {
 		t.Fatal("wheel up did not move the list back")
 	}
 }
@@ -197,7 +197,7 @@ func TestMailReaderWheelScrollsWhenOverflowing(t *testing.T) {
 	if !handled {
 		t.Fatal("wheel over the reader should be consumed")
 	}
-	if a.readerScroll == 0 {
+	if a.readerScroll.Offset() == 0 {
 		t.Fatal("wheel down did not scroll the reader")
 	}
 }

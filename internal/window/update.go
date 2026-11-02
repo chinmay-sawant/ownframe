@@ -51,6 +51,12 @@ var stages = []updateStage{
 }
 
 func (s *shell) Update() error {
+	if s.drawSyncErr != nil {
+		err := s.drawSyncErr
+		s.drawSyncErr = nil
+		return err
+	}
+
 	if s.perf {
 		start := time.Now()
 		defer func() {

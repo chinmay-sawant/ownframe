@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 // settingsState holds the settings tab's form values, inline validation
@@ -38,17 +40,17 @@ func settingsRoles() []string {
 }
 
 func (a *builderApp) settingsPanel() *ui.Element {
-	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return ui.Section().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
 				a.panelHeading("Settings"),
 				ui.P().Text("A form built purely with the ui builder.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
+					Margin(ui.Edges(ui.Px(7), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 				ui.P().Text("Click a field and type — Save reads the live control values.").
-					Margin(ui.RawValue("4px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
+					Margin(ui.Edges(ui.Px(4), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 			),
-			ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.RawValue("var(--of-surface,#202d42)")).
+			ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(theme.Surface()).
 				Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)).
 				Children(
 					a.settingsField("Name", "settings-name", "name", "text", a.settings.Name, "Ada Lovelace"),
@@ -67,16 +69,16 @@ func (a *builderApp) settingsPanel() *ui.Element {
 
 func (a *builderApp) settingsField(label, id, name, inputType, value, placeholder string) *ui.Element {
 	row := []*ui.Element{
-		ui.Text(label).FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
+		ui.Tag("label").Attr("for", id).Text(label).FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(theme.Muted()),
 		ui.Tag("input").ID(id).Attr("type", inputType).Attr("name", name).
 			Attr("value", value).Attr("placeholder", placeholder).
 			Width(ui.Percent(100)).BoxSizing(ui.BoxSizingBorderBox).
 			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
-			BackgroundColor(ui.RawValue("var(--of-control,#26364e)")).Color(ui.RawValue("var(--of-text,#ecf2fb)")).
-			Border(ui.RawValue("1px solid var(--of-border,#3e526e)")).FontSize(ui.Px(13)),
+			BackgroundColor(theme.Control()).Color(theme.Text()).
+			Border(theme.Border()).FontSize(ui.Px(13)),
 	}
 	if msg := a.settings.Errors[id]; msg != "" {
-		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(ui.Hex("#ff8a8a")))
+		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(theme.Danger()))
 	}
 	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(row...)
 }
@@ -89,64 +91,33 @@ func (a *builderApp) settingsRoleRow() *ui.Element {
 		buttons = append(buttons, a.settingsRoleButton(role, selected))
 	}
 	row := []*ui.Element{
-		ui.Text("Role").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
+		ui.Text("Role").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(theme.Muted()),
 		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(buttons...),
 	}
 	if msg := a.settings.Errors["role"]; msg != "" {
-		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(ui.Hex("#ff8a8a")))
+		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(theme.Danger()))
 	}
 	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(row...)
 }
 
 func (a *builderApp) settingsRoleButton(role string, selected bool) *ui.Element {
-	bg, fg, border := "#2b3950", "#dce6f6", "1px solid #42536b"
-	label := "○ " + role
-	if selected {
-		bg, fg, border = "#355596", "#ffffff", "1px solid #5b7cc4"
-		label = "● " + role
-	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", "settings:role:"+role).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
-		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
-		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
+	return components.Choice(role, "", selected).Attr("data-action", "settings:role:"+role)
 }
 
 func (a *builderApp) settingsNotifyRow() *ui.Element {
-	label := "☐ Notifications off"
-	if a.settings.Notify {
-		label = "☑ Notifications on"
-	}
-	bg := "#2b3950"
-	if a.settings.Notify {
-		bg = "#355596"
-	}
-	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(
-		ui.Text("Notifications").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
-		ui.Button(label).Attr("type", "button").Attr("data-action", "settings:notify").
-			AlignSelf(ui.RawValue("flex-start")).
-			BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue("var(--of-text,#f1f5fd)")).
-			Border(ui.RawValue("1px solid var(--of-border,#40546f)")).
-			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold),
-	)
+	return components.Switch("Notifications", a.settings.Notify).Attr("data-action", "settings:notify")
 }
 
 func (a *builderApp) settingsFormButton(label, action string, primary bool) *ui.Element {
-	bg, fg, border := "#2b3950", "#dce6f6", "1px solid #42536b"
-	if primary {
-		bg, fg, border = "#4677ed", "#ffffff", "1px solid #4677ed"
-	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
-		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
-		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
+	return widgetsBtn(label, action, primary)
 }
 
 func (a *builderApp) settingsNotice() *ui.Element {
 	if a.settings.Saved {
-		return ui.Text("Settings saved (demo — nothing was written).").FontSize(ui.Px(12)).Color(ui.Hex("#7ee2a8"))
+		return ui.Text("Settings saved (demo — nothing was written).").FontSize(ui.Px(12)).Color(theme.Primary())
 	}
 	return ui.Text("Type in the fields above, then Save — validation runs on the live control values.").
-		FontSize(ui.Px(11)).Color(ui.RawValue("var(--of-muted,#a0b6d0)"))
+		FontSize(ui.Px(11)).Color(theme.Muted())
 }
 
 // handleSettings handles settings:* actions, updating a.settings and a.notice.

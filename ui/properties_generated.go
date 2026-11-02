@@ -2111,6 +2111,27 @@ func (e *Element) BorderCollapse(v BorderCollapseValue) *Element {
 func (expression) isBorderCollapse()  {}
 func (wideKeyword) isBorderCollapse() {}
 
+type borderCollapseKeyword uint16
+
+const (
+	// BorderCollapseCollapse sets border-collapse to collapse.
+	BorderCollapseCollapse borderCollapseKeyword = 1
+	// BorderCollapseSeparate sets border-collapse to separate.
+	BorderCollapseSeparate borderCollapseKeyword = 2
+)
+
+func (borderCollapseKeyword) isBorderCollapse() {}
+func (v borderCollapseKeyword) cssText() (string, error) {
+	switch v {
+	case BorderCollapseCollapse:
+		return "collapse", nil
+	case BorderCollapseSeparate:
+		return "separate", nil
+	default:
+		return "", fmt.Errorf("ui: invalid border-collapse keyword %d", v)
+	}
+}
+
 // BorderColorValue is a value for the CSS border-color property.
 type BorderColorValue interface {
 	cssValue
@@ -7490,6 +7511,31 @@ func (e *Element) TextDecoration(v TextDecorationValue) *Element {
 }
 func (expression) isTextDecoration()  {}
 func (wideKeyword) isTextDecoration() {}
+
+type textDecorationKeyword uint16
+
+const (
+	// TextDecorationNone sets text-decoration to none.
+	TextDecorationNone textDecorationKeyword = 1
+	// TextDecorationUnderline sets text-decoration to underline.
+	TextDecorationUnderline textDecorationKeyword = 2
+	// TextDecorationLineThrough sets text-decoration to line-through.
+	TextDecorationLineThrough textDecorationKeyword = 3
+)
+
+func (textDecorationKeyword) isTextDecoration() {}
+func (v textDecorationKeyword) cssText() (string, error) {
+	switch v {
+	case TextDecorationNone:
+		return "none", nil
+	case TextDecorationUnderline:
+		return "underline", nil
+	case TextDecorationLineThrough:
+		return "line-through", nil
+	default:
+		return "", fmt.Errorf("ui: invalid text-decoration keyword %d", v)
+	}
+}
 
 // TextDecorationColorValue is a value for the CSS text-decoration-color property.
 type TextDecorationColorValue interface {

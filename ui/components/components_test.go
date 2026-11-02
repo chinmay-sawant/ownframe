@@ -60,7 +60,7 @@ func TestDialogFocusAndDisabledButton(t *testing.T) {
 		if open {
 			tree.Children(components.Dialog(components.DialogOptions{
 				BackdropID: "backdrop", PanelID: "modal", Label: "Confirm", CloseAction: "close", Width: ui.Px(240),
-			}, components.Button("Confirm", components.ButtonOptions{Primary: true}).ID("confirm"), components.Button("Cancel", components.ButtonOptions{}).ID("cancel")))
+			}, components.Button("Confirm", components.ButtonOptions{Variant: components.ButtonFilled}).ID("confirm"), components.Button("Cancel", components.ButtonOptions{}).ID("cancel")))
 		}
 		return tree
 	}
@@ -146,10 +146,10 @@ func TestOverridePriorityAcrossGlobalThemes(t *testing.T) {
 	scoped := theme.Overrides{"--of-primary": "#345678"}
 	local := theme.Overrides{"--of-primary": "#56789a"}
 	root := ui.Div().Children(
-		components.Button("Global", components.ButtonOptions{Primary: true}).ID("global"),
+		components.Button("Global", components.ButtonOptions{Variant: components.ButtonFilled}).ID("global"),
 		scoped.Apply(components.Panel(
-			components.Button("Scoped", components.ButtonOptions{Primary: true}).ID("scoped"),
-			components.Button("Local", components.ButtonOptions{Primary: true, Overrides: local}).ID("local"),
+			components.Button("Scoped", components.ButtonOptions{Variant: components.ButtonFilled}).ID("scoped"),
+			components.Button("Local", components.ButtonOptions{Variant: components.ButtonFilled, Overrides: local}).ID("local"),
 		)),
 	)
 	p, err := ui.NewPage(ownframe.Config{Width: 480, Height: 320}, root)

@@ -1,6 +1,4 @@
-// Command ui-builder showcases the Go ui builder across eight small tabs:
-// widgets, settings, layout, todo, list, theme, builder-vs-HTML, and a
-// backdrop dialog.
+// Command ui-builder is the interactive OwnFrame component-library gallery.
 package main
 
 import (
@@ -17,7 +15,7 @@ import (
 func main() {
 	web := flag.Bool("web", false, "serve the preview in a browser")
 	addr := flag.String("addr", "127.0.0.1:8131", "address for -web")
-	dev := flag.Bool("dev", true, "open the developer tools dock at startup")
+	dev := flag.Bool("dev", false, "open the developer tools dock at startup")
 	logEnabled := flag.Bool("log-enabled", false, "enable diagnostic logging to stderr and file")
 	logPath := flag.String(
 		"log",

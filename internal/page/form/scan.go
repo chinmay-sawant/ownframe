@@ -61,6 +61,9 @@ func Scan(source string) []Span {
 			if a.id != "" {
 				c := controlFrom(low, a)
 				c.Type = "button"
+				if a.kind == "submit" || a.kind == "reset" {
+					c.Type = a.kind
+				}
 				out = append(out, Span{Control: c, Start: i, End: at})
 			}
 			i = at

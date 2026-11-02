@@ -39,3 +39,10 @@ A control may carry `data-bind="Field"` to tie it to a field on the struct passe
 `Load`, `Back`, and `Forward` reset form state, because the document changed. `SetFormValue` and `SetFormChecked` do not redraw. Call `Redraw` after them. `SetFormValue` does nothing before that control has been drawn. For a select it marks each option whose value matches, and it clears the selection when that control is the focused one. `SetFormChecked` changes a checkbox or a radio and does nothing for any other control or a missing id; setting a radio true clears the other radios with the same name, and setting a radio false clears only that radio.
 
 There is no native file dialog on wasm, on mobile, or on the `-web` page. Those keep the typed name.
+
+
+Focused buttons activate through Space or through the Enter/Submit path.
+Activation uses the focused ID, so a decorative icon or an overlapping box
+cannot redirect the key. Buttons with an action use the normal action or route
+path. An explicit `type="submit"` button without an action uses the registered
+submit handler. A disabled button consumes activation without submitting.

@@ -15,10 +15,10 @@ func Control() ui.Color { return ui.ColorVar("--of-control", ui.Hex("#eef2f8")) 
 func Text() ui.Color { return ui.ColorVar("--of-text", ui.Hex("#172b4d")) }
 
 // Muted is the secondary foreground color.
-func Muted() ui.Color { return ui.ColorVar("--of-muted", ui.Hex("#73829c")) }
+func Muted() ui.Color { return ui.ColorVar("--of-muted", ui.Hex("#5c6d85")) }
 
 // Primary is the accent color for primary actions.
-func Primary() ui.Color { return ui.ColorVar("--of-primary", ui.Hex("#4677ed")) }
+func Primary() ui.Color { return ui.ColorVar("--of-primary", ui.Hex("#315fca")) }
 
 // OnPrimary is the foreground color on the primary accent.
 func OnPrimary() ui.Color { return ui.ColorVar("--of-on-primary", ui.Hex("#ffffff")) }
@@ -49,3 +49,9 @@ func ButtonPaddingY() ui.Length { return ui.LengthVar("--of-button-padding-y", u
 
 // Backdrop is the translucent overlay behind a dialog.
 func Backdrop() ui.Color { return ui.ColorVar("--of-backdrop", ui.Hex("#0000008c")) }
+
+// Danger is the fill for destructive actions.
+func Danger() ui.Color { return ui.ColorVar("--of-danger", ui.Hex("#b3363f")) }
+
+// OnDanger is the foreground on a destructive action.
+func OnDanger() ui.Color { return ui.ColorVar("--of-on-danger", ui.Hex("#ffffff")) }

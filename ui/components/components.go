@@ -8,33 +8,65 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
-// ButtonOptions describes a button's semantic state. The zero value is a
-// secondary button. Add an ID and OnClick or data-action with builder methods.
+// ButtonVariant selects a shared appearance. The zero value is tonal.
+type ButtonVariant uint8
+
+const (
+	ButtonTonal ButtonVariant = iota
+	ButtonFilled
+	ButtonOutlined
+	ButtonText
+	ButtonDanger
+)
+
+// ButtonSize selects control padding and typography. The zero value is medium.
+type ButtonSize uint8
+
+const (
+	ButtonMedium ButtonSize = iota
+	ButtonSmall
+	ButtonLarge
+)
+
+// ButtonOptions describes appearance, state, and local theme properties.
 type ButtonOptions struct {
 	Overrides theme.Overrides
 	Icon      *ui.Element
-	Primary   bool
+	Variant   ButtonVariant
+	Size      ButtonSize
 	Disabled  bool
 }
 
-// Button builds an HTML button with theme-aware paint.
+// Button builds an HTML button. Filled, outlined, tonal, text and danger
+// variants share the global theme; local overrides take precedence.
 func Button(label string, options ButtonOptions) *ui.Element {
 	bg, fg, border := theme.Control(), theme.Text(), theme.BorderColor()
-	if options.Primary {
+	switch options.Variant {
+	case ButtonFilled:
 		bg, fg, border = theme.Primary(), theme.OnPrimary(), theme.Primary()
+	case ButtonOutlined:
+		bg, fg, border = ui.Transparent(), theme.Primary(), theme.Primary()
+	case ButtonText:
+		bg, fg, border = ui.Transparent(), theme.Primary(), ui.Transparent()
+	case ButtonDanger:
+		bg, fg, border = theme.Danger(), theme.OnDanger(), theme.Danger()
+	}
+	x, y, font := 12.0, 9.0, 12.0
+	switch options.Size {
+	case ButtonSmall:
+		x, y, font = 9, 6, 11
+	case ButtonLarge:
+		x, y, font = 18, 12, 14
 	}
 	button := ui.Button(label).Attr("type", "button").BoxSizing(ui.BoxSizingBorderBox).
-		BackgroundColor(bg).Color(fg).
-		Border(ui.SolidBorder(ui.Px(1), border)).
-		PaddingTop(theme.ButtonPaddingY()).
-		PaddingBottom(theme.ButtonPaddingY()).
-		PaddingLeft(theme.ButtonPaddingX()).
-		PaddingRight(theme.ButtonPaddingX()).
-		BorderRadius(theme.Radius()).
-		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
+		BackgroundColor(bg).Color(fg).Border(ui.SolidBorder(ui.Px(1), border)).
+		PaddingTop(ui.LengthVar("--of-button-padding-y", ui.Px(y))).
+		PaddingBottom(ui.LengthVar("--of-button-padding-y", ui.Px(y))).
+		PaddingLeft(ui.LengthVar("--of-button-padding-x", ui.Px(x))).
+		PaddingRight(ui.LengthVar("--of-button-padding-x", ui.Px(x))).
+		BorderRadius(theme.Radius()).FontSize(ui.Px(font)).FontWeight(ui.FontWeightBold)
 	if options.Icon != nil {
-		button.Text("").Display(ui.DisplayInlineFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(6)).
-			Children(options.Icon, ui.Text(label))
+		button.Text("").Display(ui.DisplayInlineFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(6)).Children(options.Icon, ui.Text(label))
 	}
 	if options.Disabled {
 		button.Attr("disabled", "disabled").Opacity(ui.Number(disabledOpacity))

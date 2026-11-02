@@ -131,9 +131,7 @@ func (a *app) messageList() *ui.Element {
 		MinHeight(ui.Px(0)).Position(ui.PositionRelative).
 		Overflow(ui.OverflowHidden).
 		Children(rows...)
-	if top, height, show := a.listThumb(total, count); show {
-		viewport.Children(a.scrollThumb("mail-list-thumb", top, height))
-	}
+	viewport.Children(a.paneScrollbar("mail-list-scrollbar", "mail-list-thumb", "mail-list-viewport", "Messages", &a.listScroll, a.listViewH))
 	return ui.Div().Width(ui.Px(mailListWidth)).FlexShrink(ui.Number(0)).
 		BackgroundColor(theme.Control()).BorderRadius(ui.Px(10)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).MinHeight(ui.Px(0)).
@@ -151,15 +149,6 @@ func (a *app) messageList() *ui.Element {
 				),
 			viewport,
 		)
-}
-
-// scrollThumb is the overlay thumb for a scrollable pane. It renders only
-// when the caller measured overflow, so a fitting list shows no track.
-func (a *app) scrollThumb(id string, top, height int) *ui.Element {
-	return ui.Div().ID(id).
-		Position(ui.PositionAbsolute).Top(ui.Px(float64(top))).
-		Right(ui.Px(2)).Height(ui.Px(float64(height))).Width(ui.Px(8)).
-		BorderRadius(ui.Px(4)).BackgroundColor(theme.Scrollbar())
 }
 
 func (a *app) messageRow(m *mail) *ui.Element {
@@ -238,16 +227,14 @@ func (a *app) reader() *ui.Element {
 			ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 				Margin(ui.Px(0)).Children(a.bodyParagraphs(m)...),
 		)
-	if a.readerScroll > 0 {
-		body.Transform(ui.TranslateY(ui.Px(float64(-a.readerScroll))))
+	if a.readerScroll.Offset() > 0 {
+		body.Transform(ui.TranslateY(ui.Px(float64(-a.readerScroll.Offset()))))
 	}
 	viewport := ui.Div().ID("mail-reader-viewport").
 		Flex(ui.Number(1)).MinHeight(ui.Px(0)).
 		Position(ui.PositionRelative).Overflow(ui.OverflowHidden).
 		Children(body)
-	if top, height, show := a.readerThumb(); show {
-		viewport.Children(a.scrollThumb("mail-reader-thumb", top, height))
-	}
+	viewport.Children(a.paneScrollbar("mail-reader-scrollbar", "mail-reader-thumb", "mail-reader-viewport", "Message body", &a.readerScroll, a.readerScroll.Metrics().Viewport))
 	return components.Panel().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).
 		Children(

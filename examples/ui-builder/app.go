@@ -40,14 +40,9 @@ type builderApp struct {
 	theme      themeState
 	compare    compareState
 	dialog     dialogState
+	custom     customState
 
-	centerScroll         int
-	centerWheelRemainder float64
-	centerViewH          int
-	centerContentH       int
-	centerThumbH         int
-	centerDragging       bool
-	centerDragRemainder  float64
+	center               components.ScrollState
 	centerMeasurePending bool
 	layoutWidth          int
 	layoutHeight         int
@@ -77,12 +72,12 @@ func newBuilderApp() (*builderApp, error) {
 	}
 	view, err := ui.Mount(ownframe.Config{
 		Theme:     theme.Dark + builderMotionCSS,
-		Title:     "OwnFrame · Builder Gallery",
+		Title:     "OwnFrame Components",
 		Width:     demoWidth,
 		Height:    demoHeight,
 		MinWidth:  demoMinWidth,
 		MinHeight: demoMinHeight,
-		DevTools:  true,
+		DevTools:  false,
 		Scrollbar: ownframe.ScrollbarHidden,
 	}, a.screen())
 	if err != nil {
@@ -180,17 +175,17 @@ func (a *builderApp) refreshLogged(ctx context.Context, action string, start tim
 
 func (a *builderApp) selectTab(name string) {
 	switch name {
-	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog":
+	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom":
 		a.tab = name
-		a.centerScroll, a.centerWheelRemainder = 0, 0
-		a.centerContentH, a.centerThumbH = 0, 0
+		a.center = components.ScrollState{}
 		a.notice = map[string]string{
 			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
 			"settings": "Settings: form state, inline validation, and save in Go.",
 			"layout":   "Layout playground: direction, gap, padding, and box count.",
 			"todo":     "Todo and counter: slice and integer state with re-render.",
 			"list":     "File list: rows built with Children(rows...) in Go.",
-			"theme":    "Theme: accent, radius, and spacing restyle the preview.",
+			"theme":    "Global palettes and design tokens, shared by every control.",
+			"custom":   "Custom components inherit the app theme and accept local properties.",
 			"compare":  "Builder vs HTML: the same card as Go code and live output.",
 			"dialog":   "Dialog: a backdrop overlay with a centered panel.",
 		}[name]
@@ -198,17 +193,22 @@ func (a *builderApp) selectTab(name string) {
 }
 
 func (a *builderApp) refresh(ctx context.Context) error {
-	if a.tab == "dialog" && a.dialog.open {
+	switch {
+	case a.tab == "compare" && a.compare.Preview:
+		a.modalFocus.Activate(a.page, "compare-preview-x", "compare-preview-open")
+	case a.tab == "dialog" && a.dialog.open:
 		a.modalFocus.Activate(a.page, "dialog-x", "dialog-confirm", "dialog-cancel")
-	} else {
+	default:
 		a.modalFocus.Deactivate(a.page)
 	}
 
 	start := time.Now()
 	if a.themeDirty {
-		sheet := theme.Dark + fmt.Sprintf(":root{--of-primary:%s;--of-radius:%s;--of-spacing:%s}",
-			a.theme.Accent, a.theme.Radius, a.theme.Spacing)
-		if err := a.page.SetTheme(sheet + builderMotionCSS); err != nil {
+		sheet, err := a.theme.stylesheet()
+		if err != nil {
+			return err
+		}
+		if err := a.page.SetTheme(sheet); err != nil {
 			return err
 		}
 		a.themeDirty = false
@@ -227,6 +227,13 @@ const builderMotionCSS = `
 `
 
 func (a *builderApp) handleKey(ctx context.Context, key string) error {
+	if !a.scrollInputBlocked() && a.page.Form().FocusID() == builderScrollThumbID && a.center.Key(key, int(builderScrollStep)) {
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.compare.Preview {
+		a.handleCompare("compare:preview-close")
+		return a.refresh(ctx)
+	}
 	if key == "escape" && a.dialog.open {
 		a.handleDialog("dialog:close")
 		return a.refresh(ctx)

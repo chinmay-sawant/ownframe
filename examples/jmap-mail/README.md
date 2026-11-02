@@ -24,6 +24,10 @@ go run ./examples/jmap-mail -web -addr 127.0.0.1:8132
 - A three-pane layout: mailboxes, messages, and a reading pane, with visible
   spacing between panes and a vertically aligned mail-search control.
 - A Settings button with a working Light, Dark, and Custom theme selector.
+- Independent list and reader panes using shared `components.Scrollbar` and
+  `components.ScrollState`. The list measures rows; the reader measures pixels.
+  Both support wheel input, track paging, native thumb dragging, and arrow,
+  Page Up/Down, Home, and End keys while the thumb has focus.
 - A draggable native custom-titlebar window with a developer-tools toggle,
   minimize, maximize, and close controls. Browser preview does not move the OS
   window.

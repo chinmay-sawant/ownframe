@@ -21,7 +21,7 @@ func TestBuilderGalleryRendersAllTabs(t *testing.T) {
 	}
 	html := a.page.HTML()
 	for _, word := range []string{
-		"Widgets gallery", "Buttons", "data-action=\"tab:widgets\"",
+		"Component library", "Buttons", "data-action=\"tab:widgets\"",
 		"data-action=\"tab:settings\"", "data-action=\"tab:layout\"",
 		"data-action=\"tab:todo\"", "data-action=\"tab:list\"",
 		"data-action=\"tab:theme\"", "data-action=\"tab:compare\"",
@@ -112,14 +112,14 @@ func TestBuilderGalleryTabRouting(t *testing.T) {
 	if err := a.handleClick(ctx, ownframe.Box{Action: "win-dev"}); err != nil {
 		t.Fatal(err)
 	}
-	if a.page.Window().DevTools() {
-		t.Fatal("win-dev should toggle the dock off")
+	if !a.page.Window().DevTools() {
+		t.Fatal("win-dev should toggle the dock on")
 	}
 	if err := a.handleClick(ctx, ownframe.Box{Action: "win-dev"}); err != nil {
 		t.Fatal(err)
 	}
-	if !a.page.Window().DevTools() {
-		t.Fatal("win-dev should toggle the dock back on")
+	if a.page.Window().DevTools() {
+		t.Fatal("win-dev should toggle the dock back off")
 	}
 }
 
