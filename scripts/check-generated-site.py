@@ -38,7 +38,7 @@ def snapshot(directory):
     return snapshot
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build-only', action='store_true',
                         help='Rebuild the site and exit without comparing the '
@@ -49,7 +49,7 @@ def main():
                              'rebuilding the same binaries can never merge '
                              'cleanly. The freshness comparison runs on pushes '
                              'to master instead.')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if args.build_only:
         subprocess.run(['npm', 'run', 'build'], cwd=ROOT / 'frontend', check=True)
         print('site-check: site builds cleanly (output not compared)')
