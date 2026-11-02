@@ -92,7 +92,10 @@ func TestPaintBackdropBlurMixesAdjacentColors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := color.NRGBAModel.Convert(painted.At(49, 50)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(painted.At(49, 50)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got.B < 35 {
 		t.Fatalf("filtered boundary pixel = %v, want blue from the adjacent backdrop", got)
 	}
@@ -113,11 +116,17 @@ func TestPaintEmptyBackdropFilterSaturatesItsBackdrop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := color.NRGBAModel.Convert(painted.At(50, 50)).(color.NRGBA)
+	got, ok := color.NRGBAModel.Convert(painted.At(50, 50)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if got.A < 250 || max(got.R, got.G, got.B)-min(got.R, got.G, got.B) > 2 || got.R < 70 || got.R > 80 {
 		t.Fatalf("saturated empty-filter pixel = %v, want opaque grayscale near luma 75", got)
 	}
-	outside := color.NRGBAModel.Convert(painted.At(10, 10)).(color.NRGBA)
+	outside, ok := color.NRGBAModel.Convert(painted.At(10, 10)).(color.NRGBA)
+	if !ok {
+		t.Fatal("pixel model changed")
+	}
 	if outside != (color.NRGBA{R: 128, G: 64, B: 32, A: 255}) {
 		t.Fatalf("pixel outside empty filter = %v, want original backdrop color", outside)
 	}

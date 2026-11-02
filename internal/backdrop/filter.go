@@ -13,6 +13,14 @@ type Filter struct {
 	RefractionPx float64
 }
 
+// Painted bounds for the backdrop-filter subset.
+const (
+	maxBlurPx       = 64
+	maxSaturation   = 3
+	maxRefractionPx = 16
+	percentDivisor  = 100
+)
+
 // Parse accepts one each of blur, saturation, and the host refract extension.
 func Parse(value string) (Filter, bool) {
 	filter := Filter{Saturation: 1}
@@ -46,7 +54,7 @@ func Parse(value string) (Filter, bool) {
 			if !ok {
 				return Filter{}, false
 			}
-			filter.BlurPx = math.Min(radius, 64)
+			filter.BlurPx = math.Min(radius, maxBlurPx)
 			seenBlur = true
 			seen = true
 		case "saturate":
@@ -57,7 +65,7 @@ func Parse(value string) (Filter, bool) {
 			if !ok {
 				return Filter{}, false
 			}
-			filter.Saturation = math.Min(saturation, 3)
+			filter.Saturation = math.Min(saturation, maxSaturation)
 			seenSaturation = true
 			seen = true
 		case "refract":
@@ -68,7 +76,7 @@ func Parse(value string) (Filter, bool) {
 			if !ok {
 				return Filter{}, false
 			}
-			filter.RefractionPx = math.Min(strength, 16)
+			filter.RefractionPx = math.Min(strength, maxRefractionPx)
 			seenRefraction = true
 			seen = true
 		default:
@@ -94,7 +102,7 @@ func parseLength(value string) (float64, bool) {
 func parseAmount(value string) (float64, bool) {
 	if strings.HasSuffix(value, "%") {
 		amount, ok := parseNumber(strings.TrimSpace(strings.TrimSuffix(value, "%")))
-		return amount / 100, ok
+		return amount / percentDivisor, ok
 	}
 	return parseNumber(value)
 }

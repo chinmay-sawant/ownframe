@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"image"
 	"math"
-	"sync"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/backdrop"
@@ -16,22 +15,20 @@ var backdropBlurSource string
 
 type backdropFilter = backdrop.Filter
 
-var backdropShader struct {
-	once sync.Once
-	sh   *ebiten.Shader
-	err  error
-}
-
 func parseBackdropFilter(value string) (backdropFilter, bool) {
 	return backdrop.Parse(value)
 }
 
-func backdropFilterShader() (*ebiten.Shader, error) {
-	backdropShader.once.Do(func() {
+func (renderer *Renderer) backdropFilterShader() (*ebiten.Shader, error) {
+	renderer.backdropOnce.Do(func() {
 		shader, err := ebiten.NewShader([]byte(backdropBlurSource))
-		backdropShader.sh, backdropShader.err = shader, err
+		renderer.backdropShader, renderer.backdropErr = shader, err
 	})
-	return backdropShader.sh, backdropShader.err
+	return renderer.backdropShader, renderer.backdropErr
+}
+
+func backdropFilterShader() (*ebiten.Shader, error) {
+	return defaultRenderer.backdropFilterShader()
 }
 
 func (renderer *Renderer) applyBackdropFilter(
@@ -44,7 +41,7 @@ func (renderer *Renderer) applyBackdropFilter(
 		return
 	}
 
-	shader, err := backdropFilterShader()
+	shader, err := renderer.backdropFilterShader()
 	if err != nil || shader == nil {
 		return
 	}

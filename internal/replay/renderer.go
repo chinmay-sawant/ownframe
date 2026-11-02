@@ -1,6 +1,8 @@
 package replay
 
 import (
+	"sync"
+
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -16,6 +18,12 @@ type Renderer struct {
 	plans    planCache
 	layers   layerStore
 	drawOpts ebiten.DrawImageOptions
+	// backdropOnce guards the compiled backdrop blur program, which lives
+	// with the renderer so pages without backdrop-filter never pay the
+	// compile cost and no process-wide mutable state is needed.
+	backdropOnce   sync.Once
+	backdropShader *ebiten.Shader
+	backdropErr    error
 }
 
 // Close releases retained GPU images and forgets cached plans and fonts.

@@ -201,7 +201,11 @@ func checkBackdropSourceOrigin() error {
 	source := ebiten.NewImage(128, 128)
 	defer source.Deallocate()
 	source.Fill(color.RGBA{R: 255, A: 255})
-	region := source.SubImage(image.Rect(20, 20, 80, 80)).(*ebiten.Image)
+	sub := source.SubImage(image.Rect(20, 20, 80, 80))
+	region, ok := sub.(*ebiten.Image)
+	if !ok {
+		return fmt.Errorf("backdrop subimage has unexpected type %T", sub)
+	}
 	output := newParityImage(60, 60)
 	defer output.Deallocate()
 	op := &ebiten.DrawRectShaderOptions{Blend: ebiten.BlendCopy}

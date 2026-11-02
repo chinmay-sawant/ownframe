@@ -7,6 +7,22 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/backdrop"
 )
 
+// CPU backdrop-filter tuning.
+const (
+	// blurWindowPad extends the sliding blur window past the exclusive end
+	// by one step, so the next column starts with the window covered.
+	blurWindowPad = 2
+	// pixelCenter is the half-texel offset from a pixel corner to its center.
+	pixelCenter = 0.5
+	// refractionSpan scales the lens falloff distance from the strength.
+	refractionSpan = 2
+	// lumaRedWeight, lumaGreenWeight and lumaBlueWeight are the luma
+	// coefficients used for the saturate pass.
+	lumaRedWeight   = 0.213
+	lumaGreenWeight = 0.715
+	lumaBlueWeight  = 0.072
+)
+
 func applyBackdropFilter(dst *image.NRGBA, area image.Rectangle, radius float64, filter backdrop.Filter) {
 	shape := area
 	area = area.Intersect(dst.Bounds())
@@ -32,10 +48,11 @@ func applyBackdropFilter(dst *image.NRGBA, area image.Rectangle, radius float64,
 			count := hi - lo
 			index := (y-rows.Min.Y)*width + x - area.Min.X
 			for channel := range 4 {
-				horizontal[index][channel] = uint16((sum[channel] + count/2) / count)
+				average := (sum[channel] + count/2) / count
+				horizontal[index][channel] = uint16(min(max(average, 0), math.MaxUint16))
 			}
 			nextLo := max(dst.Bounds().Min.X, x+1-blurRadius)
-			nextHi := min(dst.Bounds().Max.X, x+blurRadius+2)
+			nextHi := min(dst.Bounds().Max.X, x+blurRadius+blurWindowPad)
 			if nextLo > lo {
 				removePixel(&sum, dst.Pix[dst.PixOffset(lo, y):])
 			}
@@ -59,22 +76,22 @@ func applyBackdropFilter(dst *image.NRGBA, area image.Rectangle, radius float64,
 				alpha := (sum[3] + count/2) / count
 				var red, green, blue float64
 				if alpha > 0 {
-					red = float64(sum[0]) * 255 / float64(count*alpha)
-					green = float64(sum[1]) * 255 / float64(count*alpha)
-					blue = float64(sum[2]) * 255 / float64(count*alpha)
+					red = float64(sum[0]) * channelMax / float64(count*alpha)
+					green = float64(sum[1]) * channelMax / float64(count*alpha)
+					blue = float64(sum[2]) * channelMax / float64(count*alpha)
 				}
-				luma := 0.213*red + 0.715*green + 0.072*blue
+				luma := lumaRedWeight*red + lumaGreenWeight*green + lumaBlueWeight*blue
 				index := (y-area.Min.Y)*width + x - area.Min.X
 				filtered[index] = [4]byte{
 					clampByte(luma + (red-luma)*filter.Saturation),
 					clampByte(luma + (green-luma)*filter.Saturation),
 					clampByte(luma + (blue-luma)*filter.Saturation),
-					byte(alpha),
+					byte(max(0, min(channelMax, alpha))),
 				}
 			}
 
 			nextLo := max(rows.Min.Y, y+1-blurRadius)
-			nextHi := min(rows.Max.Y, y+blurRadius+2)
+			nextHi := min(rows.Max.Y, y+blurRadius+blurWindowPad)
 			if nextLo > lo {
 				removeSample(&sum, horizontal[(lo-rows.Min.Y)*width+x-area.Min.X])
 			}
@@ -90,7 +107,7 @@ func applyBackdropFilter(dst *image.NRGBA, area image.Rectangle, radius float64,
 			if !insideRoundedRect(x, y, shape, radius) {
 				continue
 			}
-			dx, dy := backdropLensOffset(float64(x)+0.5, float64(y)+0.5, shape, radius, filter.RefractionPx)
+			dx, dy := backdropLensOffset(float64(x)+pixelCenter, float64(y)+pixelCenter, shape, radius, filter.RefractionPx)
 			pixel := sampleBackdropPixels(filtered, width, height,
 				float64(x-area.Min.X)+dx, float64(y-area.Min.Y)+dy)
 			copy(dst.Pix[dst.PixOffset(x, y):], pixel[:])
@@ -102,7 +119,7 @@ func backdropLensOffset(x, y float64, shape image.Rectangle, radius, strength fl
 	if strength <= 0 {
 		return 0, 0
 	}
-	halfWidth, halfHeight := float64(shape.Dx())*0.5, float64(shape.Dy())*0.5
+	halfWidth, halfHeight := float64(shape.Dx())*pixelCenter, float64(shape.Dy())*pixelCenter
 	radius = min(radius, halfWidth, halfHeight)
 	centerX := x - (float64(shape.Min.X) + halfWidth)
 	centerY := y - (float64(shape.Min.Y) + halfHeight)
@@ -111,14 +128,15 @@ func backdropLensOffset(x, y float64, shape image.Rectangle, radius, strength fl
 	outX, outY := max(qx, 0), max(qy, 0)
 	outLength := math.Hypot(outX, outY)
 	distance := outLength + min(max(qx, qy), 0) - radius
-	edge := min(max(1+distance/max(strength*2, 1), 0), 1)
+	edge := min(max(1+distance/max(strength*refractionSpan, 1), 0), 1)
 	var normalX, normalY float64
-	if outLength > 0 {
+	switch {
+	case outLength > 0:
 		normalX = math.Copysign(outX/outLength, centerX)
 		normalY = math.Copysign(outY/outLength, centerY)
-	} else if qx > qy {
+	case qx > qy:
 		normalX = math.Copysign(1, centerX)
-	} else {
+	default:
 		normalY = math.Copysign(1, centerY)
 	}
 	amount := strength * 0.72 * edge * edge
@@ -143,7 +161,7 @@ func sampleBackdropPixels(pixels [][4]byte, width, height int, x, y float64) [4]
 func addPixel(sum *[4]int, pixel []byte) {
 	alpha := int(pixel[3])
 	for channel := range 3 {
-		sum[channel] += (int(pixel[channel])*alpha + 127) / 255
+		sum[channel] += (int(pixel[channel])*alpha + channelMax/2) / channelMax
 	}
 	sum[3] += alpha
 }
@@ -151,7 +169,7 @@ func addPixel(sum *[4]int, pixel []byte) {
 func removePixel(sum *[4]int, pixel []byte) {
 	alpha := int(pixel[3])
 	for channel := range 3 {
-		sum[channel] -= (int(pixel[channel])*alpha + 127) / 255
+		sum[channel] -= (int(pixel[channel])*alpha + channelMax/2) / channelMax
 	}
 	sum[3] -= alpha
 }
@@ -169,12 +187,12 @@ func removeSample(sum *[4]int, sample [4]uint16) {
 }
 
 func insideRoundedRect(x, y int, area image.Rectangle, radius float64) bool {
-	radius = min(radius, float64(area.Dx())/2, float64(area.Dy())/2)
+	radius = min(radius, float64(area.Dx())/halfDivisor, float64(area.Dy())/halfDivisor)
 	if radius <= 0 {
 		return true
 	}
-	px, py := float64(x)+0.5, float64(y)+0.5
-	cx, cy := px, py
+	px, py := float64(x)+pixelCenter, float64(y)+pixelCenter
+	var cx, cy float64
 	switch {
 	case px < float64(area.Min.X)+radius && py < float64(area.Min.Y)+radius:
 		cx, cy = float64(area.Min.X)+radius, float64(area.Min.Y)+radius
@@ -192,5 +210,5 @@ func insideRoundedRect(x, y int, area image.Rectangle, radius float64) bool {
 }
 
 func clampByte(value float64) byte {
-	return byte(max(0, min(255, int(math.Round(value)))))
+	return byte(max(0, min(channelMax, int(math.Round(value)))))
 }
