@@ -34,7 +34,13 @@ func (renderer *Renderer) DrawVisiblePinned(dst *ebiten.Image, display *layout.D
 		}
 
 		if op.Fixed {
+			// A fixed op ignores the page scroll, including when a chunk
+			// run batches several fixed ops into one blit. The per-op
+			// drawOp path resets the translation itself, but a run blits
+			// at the translation the picker returned, so return zero here
+			// as well or the chrome jumps by the scroll offset.
 			r = dst.Bounds()
+			odx, ody = 0, 0
 		}
 
 		if !opTouches(op, ppt, r) {
