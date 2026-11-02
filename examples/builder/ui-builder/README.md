@@ -7,7 +7,7 @@ HTML and layout. App-owned components live in `custom/`.
 Run from the repository root:
 
 ```sh
-go run ./examples/ui-builder
+go run ./examples/builder/ui-builder
 ```
 
 Use `-web` for the PNG browser preview or `-dev` to open DevTools. The desktop
@@ -63,5 +63,5 @@ The gallery uses `ui.Mount` and `View.Update` to replace the current view and
 its callbacks without adding navigation history. Controls with stable IDs
 keep live state. Explicit reset actions also update the live form values.
 
-See the [shared component API](../../ui/components/README.md) for public options,
+See the [shared component API](../../../ui/components/README.md) for public options,
 file-loaded properties, icon slots, and controlled interaction contracts.

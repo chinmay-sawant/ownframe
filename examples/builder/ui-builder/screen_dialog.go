@@ -7,7 +7,7 @@ import (
 )
 
 // dialogState owns the backdrop dialog demo. builderApp carries one as
-// a.dialog; the overlay mirrors examples/jmap-mail settingsCard.
+// a.dialog; the overlay mirrors examples/builder/jmap-mail settingsCard.
 type dialogState struct {
 	open      bool
 	confirmed bool

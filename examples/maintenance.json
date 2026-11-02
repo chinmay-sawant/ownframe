@@ -12,6 +12,7 @@
     "accessibility",
     "animations",
     "bind-hooks",
+    "builder",
     "clipboard",
     "code-view",
     "controls",
@@ -35,7 +36,6 @@
     "input",
     "input-lab",
     "ipc",
-    "jmap-mail",
     "layout",
     "lg-remote",
     "live-log-viewer",
@@ -64,7 +64,6 @@
     "theme",
     "theme-studio",
     "trade",
-    "ui-builder",
     "web",
     "wispr-flow-dashboard"
   ]

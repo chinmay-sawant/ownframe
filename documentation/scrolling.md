@@ -37,7 +37,7 @@ track paging, focused keyboard input, and native thumb dragging. The host
 measures the pane, clips and translates or windows its content, and routes
 its events. These inner scrollbars inherit theme properties independently of
 the window-owned page scrollbar. See the [component guide](../ui/components/README.md#scroll-a-pane)
-and `examples/jmap-mail` for two independent scroll panes.
+and `examples/builder/jmap-mail` for two independent scroll panes.
 
 ## Page requests
 

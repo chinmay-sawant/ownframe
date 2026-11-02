@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chinmay-sawant/ownframe/examples/ui-builder/custom"
+	"github.com/chinmay-sawant/ownframe/examples/builder/ui-builder/custom"
 	"github.com/chinmay-sawant/ownframe/ui"
 	"github.com/chinmay-sawant/ownframe/ui/components"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
@@ -29,7 +29,7 @@ func (a *builderApp) customPanel() *ui.Element {
 			ui.Text("custom.ProjectCard(options)").FontFamily(ui.FontFamilyMonospace).FontWeight(ui.FontWeightBold),
 			ui.P().Text("ProjectOptions supplies Name, Description, Done, Total, Pinned, OnPin, OnOpen, and Overrides.").
 				Color(theme.Muted()).FontSize(ui.Px(12)),
-			ui.Text("examples/ui-builder/custom/project.go").FontFamily(ui.FontFamilyMonospace).FontSize(ui.Px(12)),
+			ui.Text("examples/builder/ui-builder/custom/project.go").FontFamily(ui.FontFamilyMonospace).FontSize(ui.Px(12)),
 		),
 	)
 }

@@ -167,7 +167,7 @@ on `Page.Form`. Keyboard activation follows the normal button input path.
 `progressbar` with an accessible value. `Notice` supplies a themed heading and
 body for inline feedback. Both can be composed within custom controls.
 
-The [component gallery](../../examples/ui-builder/README.md) exercises these
+The [component gallery](../../examples/builder/ui-builder/README.md) exercises these
 APIs, light/dark/Studio palettes, and a separately packaged custom project card.
 
 ## Scroll a pane
@@ -221,7 +221,7 @@ its geometry. These default to `8px`, `2px`, and `4px`. Use
 `ScrollbarOptions.Overrides` for one instance or global theme properties for
 all instances. OwnFrame's Light and Dark themes also provide a focus outline.
 
-See [JMAP mail](../../examples/jmap-mail/scroll.go) for independent row and
-pixel ranges and [the gallery](../../examples/ui-builder/scroll.go) for a
+See [JMAP mail](../../examples/builder/jmap-mail/scroll.go) for independent row and
+pixel ranges and [the gallery](../../examples/builder/ui-builder/scroll.go) for a
 measured scrolling catalog. The host owns content layout and event routing;
 the shared component owns thumb geometry and scroll state.

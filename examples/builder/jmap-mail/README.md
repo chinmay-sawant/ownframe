@@ -10,13 +10,13 @@ the builder added in OwnFrame PR #60.
 From the repository checkout root:
 
 ```bash
-go run ./examples/jmap-mail
+go run ./examples/builder/jmap-mail
 ```
 
 Or open the existing OwnFrame browser preview:
 
 ```bash
-go run ./examples/jmap-mail -web -addr 127.0.0.1:8132
+go run ./examples/builder/jmap-mail -web -addr 127.0.0.1:8132
 ```
 
 ## What it demonstrates
@@ -100,4 +100,4 @@ To supply a file, call `theme.LoadOverrides(files, "custom.json")` with an
 `fs.FS`, such as `os.DirFS("themes")` or an `embed.FS`. The JSON object maps
 custom property names to declaration values. The same loader supports both
 global properties and local component overrides. No renderer changes are
-needed. See the [component reference](../../ui/components/README.md).
+needed. See the [component reference](../../../ui/components/README.md).
