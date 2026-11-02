@@ -8,8 +8,10 @@ import (
 	"image/color"
 	"os"
 
+	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/bitmap"
 	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // checkGroupClip requires a partial DrawRect over a group to match the full
@@ -46,6 +48,223 @@ func checkGroupClip() error {
 		if !bytes.Equal(a[x0:x1], b[x0:x1]) {
 			return fmt.Errorf("clipped group differs on row %d in %d channels", y, countDiff(a[x0:x1], b[x0:x1]))
 		}
+	}
+
+	return nil
+}
+
+func checkBackdropFilter() error {
+	if err := checkBackdropSourceOrigin(); err != nil {
+		return err
+	}
+	source := `<body style="margin:0;height:100px;background:#ffffff">` +
+		`<div style="position:absolute;left:0;top:0;width:100px;height:100px;background:#ff0000"></div>` +
+		`<div style="position:absolute;left:100px;top:0;width:100px;height:100px;background:#0000ff"></div>` +
+		`<div style="position:absolute;left:80px;top:0;width:40px;height:100px;` +
+		`backdrop-filter:%s;background:rgba(255,255,255,0.1)"></div></body>`
+	plain, err := render.DisplayList(context.Background(), fmt.Sprintf(source, "none"), 200, 100)
+	if err != nil {
+		return err
+	}
+	filtered, err := render.DisplayList(context.Background(), fmt.Sprintf(source, "blur(10px)"), 200, 100)
+	if err != nil {
+		return err
+	}
+	groupFound := false
+	for i := range filtered.Ops {
+		if group := filtered.Ops[i].Group(); group != nil && group.BackdropFilter == "blur(10px)" {
+			groupFound = true
+			break
+		}
+	}
+	if !groupFound {
+		return fmt.Errorf("display list did not preserve backdrop-filter")
+	}
+	if _, err := backdropFilterShader(); err != nil {
+		return fmt.Errorf("compile backdrop-filter shader: %w", err)
+	}
+
+	plainImage, filteredImage := newParityImage(200, 100), newParityImage(200, 100)
+	defer plainImage.Deallocate()
+	defer filteredImage.Deallocate()
+	DrawVisible(plainImage, plain, 0, 0)
+	DrawVisible(filteredImage, filtered, 0, 0)
+
+	plainPixels, filteredPixels := make([]byte, 200*100*4), make([]byte, 200*100*4)
+	plainImage.ReadPixels(plainPixels)
+	filteredImage.ReadPixels(filteredPixels)
+	at := (40*200 + 99) * 4
+	if int(filteredPixels[at+2])-int(plainPixels[at+2]) < 30 {
+		return fmt.Errorf("blurred backdrop pixel %v did not mix the blue backdrop into plain pixel %v",
+			filteredPixels[at:at+4], plainPixels[at:at+4])
+	}
+	for _, x := range []int{70, 79, 120, 130} {
+		outside := (40*200 + x) * 4
+		if !bytes.Equal(plainPixels[outside:outside+4], filteredPixels[outside:outside+4]) {
+			return fmt.Errorf("backdrop filter changed neighboring pixel x=%d from %v to %v",
+				x, plainPixels[outside:outside+4], filteredPixels[outside:outside+4])
+		}
+	}
+
+	refracted, err := render.DisplayList(context.Background(), `<body style="margin:0;height:60px;background:#ffffff">`+
+		`<div style="position:absolute;left:0;top:0;width:42px;height:60px;background:#ff0000"></div>`+
+		`<div style="position:absolute;left:42px;top:0;width:58px;height:60px;background:#0000ff"></div>`+
+		`<div style="position:absolute;left:40px;top:0;width:40px;height:60px;`+
+		`backdrop-filter:refract(5px);background:transparent"></div></body>`, 100, 60)
+	if err != nil {
+		return err
+	}
+	refractedImage := newParityImage(100, 60)
+	defer refractedImage.Deallocate()
+	DrawVisible(refractedImage, refracted, 0, 0)
+	refractedPixels := make([]byte, 100*60*4)
+	refractedImage.ReadPixels(refractedPixels)
+	refractedAt := (30*100 + 40) * 4
+	if refractedPixels[refractedAt+2] < 240 || refractedPixels[refractedAt] > 20 {
+		return fmt.Errorf("refracted edge pixel %v did not bend the blue backdrop inward", refractedPixels[refractedAt:refractedAt+4])
+	}
+
+	empty, err := render.DisplayList(context.Background(), `<body style="margin:0">`+
+		`<div style="position:absolute;left:0;top:0;width:100px;height:100px;background:#804020"></div>`+
+		`<div style="position:absolute;left:20px;top:20px;width:60px;height:60px;`+
+		`backdrop-filter:saturate(0);background:transparent"></div></body>`, 100, 100)
+	if err != nil {
+		return err
+	}
+	emptyFiltered := newParityImage(100, 100)
+	defer emptyFiltered.Deallocate()
+	DrawVisible(emptyFiltered, empty, 0, 0)
+	emptyPixels := make([]byte, 100*100*4)
+	emptyFiltered.ReadPixels(emptyPixels)
+	emptyAt := (50*100 + 50) * 4
+	if emptyPixels[emptyAt+3] < 250 ||
+		max(emptyPixels[emptyAt], emptyPixels[emptyAt+1], emptyPixels[emptyAt+2])-
+			min(emptyPixels[emptyAt], emptyPixels[emptyAt+1], emptyPixels[emptyAt+2]) > 2 ||
+		emptyPixels[emptyAt] < 70 || emptyPixels[emptyAt] > 80 {
+		return fmt.Errorf("empty saturated filter pixel %v is not opaque grayscale near luma 75", emptyPixels[emptyAt:emptyAt+4])
+	}
+	emptyOutsideAt := (10*100 + 10) * 4
+	if emptyPixels[emptyOutsideAt] != 128 || emptyPixels[emptyOutsideAt+1] != 64 ||
+		emptyPixels[emptyOutsideAt+2] != 32 || emptyPixels[emptyOutsideAt+3] < 250 {
+		return fmt.Errorf("pixel outside empty filter is %v, want original backdrop color", emptyPixels[emptyOutsideAt:emptyOutsideAt+4])
+	}
+
+	translucentSource := `<body style="margin:0">` +
+		`<div style="position:absolute;left:0;top:0;width:100px;height:100px;background:rgba(255,0,0,.5)"></div>%s</body>`
+	plainTranslucent, err := render.DisplayList(context.Background(), fmt.Sprintf(translucentSource, ""), 100, 100)
+	if err != nil {
+		return err
+	}
+	filteredTranslucent, err := render.DisplayList(context.Background(), fmt.Sprintf(translucentSource,
+		`<div style="position:absolute;left:20px;top:20px;width:60px;height:60px;`+
+			`backdrop-filter:saturate(0);background:transparent"></div>`), 100, 100)
+	if err != nil {
+		return err
+	}
+	plainAlphaImage, filteredAlphaImage := newParityImage(100, 100), newParityImage(100, 100)
+	defer plainAlphaImage.Deallocate()
+	defer filteredAlphaImage.Deallocate()
+	DrawVisible(plainAlphaImage, plainTranslucent, 0, 0)
+	DrawVisible(filteredAlphaImage, filteredTranslucent, 0, 0)
+	plainAlphaPixels, filteredAlphaPixels := make([]byte, 100*100*4), make([]byte, 100*100*4)
+	plainAlphaImage.ReadPixels(plainAlphaPixels)
+	filteredAlphaImage.ReadPixels(filteredAlphaPixels)
+	alphaAt := (50*100 + 50) * 4
+	filteredAlpha := filteredAlphaPixels[alphaAt : alphaAt+4]
+	if int(filteredAlpha[3])-int(plainAlphaPixels[alphaAt+3]) > 2 ||
+		int(plainAlphaPixels[alphaAt+3])-int(filteredAlpha[3]) > 2 ||
+		max(filteredAlpha[0], filteredAlpha[1], filteredAlpha[2])-min(filteredAlpha[0], filteredAlpha[1], filteredAlpha[2]) > 2 ||
+		max(filteredAlpha[0], filteredAlpha[1], filteredAlpha[2]) < 20 {
+		return fmt.Errorf("translucent saturated pixel %v differs in alpha or is not visible grayscale from plain pixel %v",
+			filteredAlpha, plainAlphaPixels[alphaAt:alphaAt+4])
+	}
+	translucentOutsideAt := (10*100 + 10) * 4
+	if !bytes.Equal(plainAlphaPixels[translucentOutsideAt:translucentOutsideAt+4],
+		filteredAlphaPixels[translucentOutsideAt:translucentOutsideAt+4]) {
+		return fmt.Errorf("pixel outside translucent filter changed from %v to %v",
+			plainAlphaPixels[translucentOutsideAt:translucentOutsideAt+4],
+			filteredAlphaPixels[translucentOutsideAt:translucentOutsideAt+4])
+	}
+
+	if err := checkFixedBackdropGroupOffset(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func checkBackdropSourceOrigin() error {
+	shader, err := backdropFilterShader()
+	if err != nil {
+		return err
+	}
+	source := ebiten.NewImage(128, 128)
+	defer source.Deallocate()
+	source.Fill(color.RGBA{R: 255, A: 255})
+	region := source.SubImage(image.Rect(20, 20, 80, 80)).(*ebiten.Image)
+	output := newParityImage(60, 60)
+	defer output.Deallocate()
+	op := &ebiten.DrawRectShaderOptions{Blend: ebiten.BlendCopy}
+	op.Images[0], op.Images[1] = region, region
+	op.Uniforms = map[string]any{
+		"Radius": float32(0), "Axis": float32(1), "Saturation": float32(0),
+		"Refraction": float32(0), "BoxX": float32(0), "BoxY": float32(0),
+		"BoxW": float32(60), "BoxH": float32(60), "CornerRadius": float32(0),
+	}
+	output.DrawRectShader(60, 60, shader, op)
+	pixels := make([]byte, 60*60*4)
+	output.ReadPixels(pixels)
+	at := (50*60 + 50) * 4
+	pixel := pixels[at : at+4]
+	if pixel[0] < 50 || pixel[0] > 58 || pixel[1] != pixel[0] || pixel[2] != pixel[0] || pixel[3] != 255 {
+		return fmt.Errorf("offset backdrop source left the far corner unfiltered: %v", pixel)
+	}
+	return nil
+}
+
+// A fixed element inside a filtered group still needs the group's local
+// offset while it paints into the offscreen layer. The composite restores the
+// group's page position afterward.
+func checkFixedBackdropGroupOffset() error {
+	const source = `<body style="margin:0;width:200px;height:120px;background:#182030">` +
+		`<div style="position:fixed;left:40px;top:20px;width:120px;height:80px;` +
+		`backdrop-filter:blur(10px);background:rgba(255,255,255,.1)">` +
+		`<div style="position:absolute;left:0;top:0;width:30px;height:30px;background:#ff0000"></div>` +
+		`</div></body>`
+	display, err := render.DisplayList(context.Background(), source, 200, 120)
+	if err != nil {
+		return err
+	}
+	var fixedMember bool
+	for i := range display.Ops {
+		op := &display.Ops[i]
+		group := op.Group()
+		if op.Fixed && op.Kind == layout.DisplayOpFillRect && group != nil &&
+			group.BackdropFilter == "blur(10px)" && op.R > 0.9 && op.G < 0.1 && op.B < 0.1 {
+			fixedMember = true
+			break
+		}
+	}
+	if !fixedMember {
+		return fmt.Errorf("filtered panel did not retain its fixed red child")
+	}
+
+	image := newParityImage(200, 120)
+	defer image.Deallocate()
+	DrawVisible(image, display, 0, 0)
+	pixels := make([]byte, 200*120*4)
+	image.ReadPixels(pixels)
+	pixel := func(x, y int) []byte {
+		at := (y*200 + x) * 4
+		return pixels[at : at+4]
+	}
+	inside := pixel(55, 35)
+	if inside[0] < 220 || inside[1] > 35 || inside[2] > 35 {
+		return fmt.Errorf("fixed child painted at %v, want red near its page position", inside)
+	}
+	shifted := pixel(95, 55)
+	if shifted[0] > 220 && shifted[1] < 35 && shifted[2] < 35 {
+		return fmt.Errorf("fixed child was painted at its doubled group offset: %v", shifted)
 	}
 
 	return nil

@@ -51,6 +51,100 @@ func TestWindowRepaintPixels(t *testing.T) {
 	}
 }
 
+func TestWindowBackdropFilterReplaysFullFrame(t *testing.T) {
+	if os.Getenv("OWNFRAME_FRAME_GPU_TEST") != "1" {
+		t.Skip("run make graphics-check for an isolated graphics session")
+	}
+
+	ctx := context.Background()
+	const width, height = 180, 120
+	p, err := page.New(page.Config{
+		Width: width, Height: height,
+		HTML: `<body style="margin:0"><div style="position:absolute;left:0;top:0;width:180px;height:120px;background:{{.Color}}"></div>` +
+			`<div style="position:absolute;left:28px;top:20px;width:124px;height:80px;z-index:1;` +
+			`backdrop-filter:blur(12px) saturate(1.25);background:rgba(255,255,255,.2)"></div></body>`,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := struct{ Color string }{Color: "#e03020"}
+	p.SetData(view)
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	g := &backdropReplayGame{page: p, shell: newShell(ctx, p), view: view}
+	defer g.shell.cancel()
+	ebiten.SetWindowSize(width, height)
+	ebiten.SetScreenClearedEveryFrame(false)
+	if err := ebiten.RunGame(g); err != nil {
+		t.Fatal(err)
+	}
+	if g.err != nil {
+		t.Fatal(g.err)
+	}
+	if g.step != 2 {
+		t.Fatalf("completed %d frames, want 2", g.step)
+	}
+}
+
+type backdropReplayGame struct {
+	page  *page.Page
+	shell *shell
+	view  struct{ Color string }
+	step  int
+	err   error
+}
+
+func (g *backdropReplayGame) Layout(int, int) (int, int) { return 180, 120 }
+func (g *backdropReplayGame) Update() error {
+	if g.err != nil || g.step == 2 {
+		return ebiten.Termination
+	}
+	return nil
+}
+
+func (g *backdropReplayGame) Draw(dst *ebiten.Image) {
+	if g.err != nil || g.step == 2 {
+		return
+	}
+	if err := g.shell.syncImage(); err != nil {
+		g.err = err
+		return
+	}
+	g.shell.Draw(dst)
+	if g.shell.partial.tiles != nil {
+		g.err = fmt.Errorf("filtered frame %d allocated a tile grid", g.step)
+		return
+	}
+	if g.shell.partial.mode != repaintBlit || g.shell.partial.whole || !g.shell.partial.live {
+		g.err = fmt.Errorf("filtered frame %d state = mode %v whole %t live %t", g.step,
+			g.shell.partial.mode, g.shell.partial.whole, g.shell.partial.live)
+		return
+	}
+
+	expected := ebiten.NewImage(180, 120)
+	defer expected.Deallocate()
+	g.shell.paintFullReplay(expected, g.shell.display)
+	actualPixels, expectedPixels := make([]byte, 180*120*4), make([]byte, 180*120*4)
+	dst.ReadPixels(actualPixels)
+	expected.ReadPixels(expectedPixels)
+	if !bytes.Equal(actualPixels, expectedPixels) {
+		g.err = fmt.Errorf("filtered frame %d differs from full replay", g.step)
+		return
+	}
+
+	if g.step == 0 {
+		g.view.Color = "#2050d0"
+		g.page.SetData(g.view)
+		if err := g.page.Redraw(context.Background()); err != nil {
+			g.err = err
+			return
+		}
+	}
+	g.step++
+}
+
 type repaintView struct {
 	Color   string
 	Visible bool
@@ -109,6 +203,15 @@ func (g *repaintPixelGame) Draw(dst *ebiten.Image) {
 	dst.ReadPixels(actual)
 	g.expected.ReadPixels(expected)
 	if !bytes.Equal(actual, expected) {
+		for i := range actual {
+			if actual[i] != expected[i] {
+				pixel := i / 4
+				x, y := pixel%repaintWidth, pixel/repaintWidth
+				g.err = fmt.Errorf("%s: retained window differs at (%d,%d), channel %d: got %d want %d",
+					repaintStageName(g.step), x, y, i%4, actual[i], expected[i])
+				return
+			}
+		}
 		g.err = fmt.Errorf("%s: retained window differs from full replay", repaintStageName(g.step))
 		return
 	}

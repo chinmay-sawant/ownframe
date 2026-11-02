@@ -31,33 +31,46 @@ func (renderer *Renderer) paintDisplay(dst *ebiten.Image, d *layout.Display, pic
 		return
 	}
 
-	renderer.paintNode(dst, d, renderer.planFor(d), pick)
+	groupPick := func(op *layout.DisplayOp) (float64, float64, bool) {
+		dx, dy, ok := pick(op)
+		if ok && op.Fixed {
+			// Fixed ops keep their viewport position. Group layers apply a
+			// second, local offset when they draw into the offscreen image.
+			dx, dy = 0, 0
+		}
+		return dx, dy, ok
+	}
+	renderer.paintNode(dst, d, renderer.planFor(d), groupPick, false)
 }
 
 // paintNode paints one node: a non-normal group buffers its members into a
 // layer and composites once; every other node paints item by item.
-func (renderer *Renderer) paintNode(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) {
-	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil) {
+func (renderer *Renderer) paintNode(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker, local bool) {
+	if n.group != nil && (!normalMode(n.group.Mode) || n.group.Mask != nil || n.group.BackdropFilter != "") {
 		renderer.paintGroup(dst, d, n, pick)
 
 		return
 	}
 
-	renderer.paintItems(dst, d, n, pick)
+	renderer.paintItems(dst, d, n, pick, local)
 }
 
 // paintItems paints a node's ops in order, recursing into child groups.
-func (renderer *Renderer) paintItems(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker) {
+func (renderer *Renderer) paintItems(dst *ebiten.Image, d *layout.Display, n *groupNode, pick opPicker, local bool) {
 	for i := range n.items {
 		it := &n.items[i]
 		if it.child != nil {
-			renderer.paintNode(dst, d, it.child, pick)
+			renderer.paintNode(dst, d, it.child, pick, local)
 
 			continue
 		}
 
 		if dx, dy, ok := pick(it.op); ok {
-			renderer.drawOp(dst, it.op, dx, dy)
+			if local {
+				renderer.drawOpInLayer(dst, it.op, dx, dy)
+			} else {
+				renderer.drawOp(dst, it.op, dx, dy)
+			}
 		}
 	}
 }

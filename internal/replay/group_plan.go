@@ -16,15 +16,21 @@ type paintItem struct {
 
 // groupNode buffers one blend or isolation group. The root has a nil group.
 type groupNode struct {
-	group     *layout.DisplayGroup
-	items     []paintItem
-	box       image.Rectangle
-	maskBox   image.Rectangle
-	maskTex   *ebiten.Image
-	maskMu    sync.Mutex
-	known     bool
-	hasMask   bool
-	unbounded bool
+	group          *layout.DisplayGroup
+	items          []paintItem
+	box            image.Rectangle
+	maskBox        image.Rectangle
+	backdropBox    image.Rectangle
+	backdropMark   *layout.DisplayOp
+	backdrop       backdropFilter
+	backdropRadius float64
+	maskTex        *ebiten.Image
+	maskMu         sync.Mutex
+	known          bool
+	hasMask        bool
+	hasBackdropBox bool
+	hasBackdrop    bool
+	unbounded      bool
 }
 
 // planEntry keeps one display's plan. A frame that repaints several rects

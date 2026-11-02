@@ -111,6 +111,10 @@ func (g *parityGame) Draw(dst *ebiten.Image) {
 			g.err = err
 			return
 		}
+		if err := checkBackdropFilter(); err != nil {
+			g.err = err
+			return
+		}
 		if err := checkChunkParity(); err != nil {
 			g.err = err
 			return

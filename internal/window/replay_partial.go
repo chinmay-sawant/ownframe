@@ -17,9 +17,42 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 	if display == nil {
 		return true
 	}
-	s.dropRetainedTiles()
 	s.partial.paints, s.partial.paintPx, s.partial.pins = 0, 0, 0
 	s.partial.blits, s.partial.blitPx = 0, 0
+	if s.renderer.HasBackdropFilter(display) {
+		generation := s.app.Generation()
+		scroll := image.Pt(s.scrollX, s.scrollY)
+		backdropClean := s.partial.live && s.partial.mode == repaintBlit &&
+			!s.partial.whole && s.partial.gen == generation && s.partial.scroll == scroll && !s.frameOptIn
+		// Filtered output depends on pixels outside the element's own dirty
+		// rect. Replay the whole display until the damage path tracks those
+		// backdrop dependencies.
+		s.dropTiles()
+		s.disposeViewport()
+		// Backdrop shaders read the scene painted so far. Build it in a
+		// texture, then present once, rather than sampling the window buffer.
+		bounds := dst.Bounds()
+		frame := s.ensureScaleBuf(bounds.Dx(), bounds.Dy())
+		s.paintFullReplay(frame, display)
+		op := &ebiten.DrawImageOptions{Blend: ebiten.BlendCopy}
+		op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
+		dst.DrawImage(frame, op)
+		if taker, ok := s.damageTaker(); ok {
+			rects, available := taker.TakeDirtyRects()
+			if available && len(rects) > 0 {
+				backdropClean = false
+			}
+		}
+		s.partial.gen = generation
+		s.partial.scroll = scroll
+		s.partial.mode = repaintBlit
+		s.partial.whole = false
+		s.partial.live = true
+		s.partial.backdropClean = backdropClean
+
+		return true
+	}
+	s.dropRetainedTiles()
 
 	scroll := image.Pt(s.scrollX, s.scrollY)
 	whole := scroll != s.partial.scroll

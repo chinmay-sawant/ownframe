@@ -60,6 +60,11 @@ func clipRect(display *layout.Display, rect image.Rectangle) image.Rectangle {
 // opTouches reports whether an op's painted box meets rect. An op whose ink
 // cannot be bounded, such as a rotated run, always touches.
 func opTouches(op *layout.DisplayOp, ppt float64, rect image.Rectangle) bool {
+	if op.IsGroupBegin() && op.Group() != nil && op.Group().BackdropFilter != "" {
+		box := boxBounds(op.X, op.Y, op.W, op.H, 0, ppt)
+		return !box.Intersect(rect).Empty()
+	}
+
 	box, ok := opBounds(op, ppt)
 	if !ok {
 		return true
