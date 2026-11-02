@@ -72,3 +72,26 @@ transition values also need runtime input from the caller; see
 [CSS motion](css-motion.md). Selector, at-rule, function, and unit coverage is
 smaller than property coverage. For each property and its evidence, see the
 [Blinkless compatibility matrix](https://github.com/chinmay-sawant/blinkless/blob/master/documentation/compatibility-matrix.md).
+
+
+## Builder components
+
+The optional [`ui/components`](../ui/components/README.md) package uses semantic
+`--of-*` variables. Set them in `Config.Theme` or `Page.SetTheme`, including when
+the page was created through `ui.Mount`. A component reads each variable with
+a fallback; it does not declare theme variables inline on its own node.
+The same stylesheet can style the gallery, the mail example, and your own
+components. App-specific illustrations and status colors can remain literal.
+
+
+OwnFrame's generic palettes are `theme.Light` and `theme.Dark` in `ui/theme`.
+`theme.Overrides` adds application properties through `Stylesheet()`, or local
+properties through `Apply(element)`. Component properties take precedence over
+inherited application properties and remain in effect when the global palette
+changes. A descendant's own properties take precedence over its parent's.
+The JMAP mail example defines a third palette locally in `theme.go`.
+
+`theme.LoadOverrides(fs.FS, path)` accepts JSON properties from a filesystem or
+embedded assets. A property set can include application-owned custom names as
+well as OwnFrame's standard tokens. Shared controls accept application-owned
+icons as builder nodes; theme properties and icon content are separate inputs.

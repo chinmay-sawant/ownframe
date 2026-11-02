@@ -41,7 +41,7 @@ func (a *builderApp) todoPanel() *ui.Element {
 			ui.Div().Children(
 				a.panelHeading("Todo & counter"),
 				ui.P().Text("A stateful panel: the counter mutates an integer and the list mutates a slice.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.RawValue("7px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
 			),
 			ui.Div().Display(ui.DisplayFlex).MinWidth(ui.Px(0)).Gap(ui.Px(12)).
 				Children(a.todoCounterCard(), a.todoListCard()),
@@ -50,13 +50,13 @@ func (a *builderApp) todoPanel() *ui.Element {
 
 func (a *builderApp) todoCounterCard() *ui.Element {
 	return ui.Div().Width(ui.Px(200)).FlexShrink(ui.Number(0)).
-		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.RawValue("var(--of-surface,#202d42)")).
 		Children(
-			ui.Text("Counter").FontSize(ui.Px(13)).Color(ui.Hex("#b5c7df")),
+			ui.Text("Counter").FontSize(ui.Px(13)).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
 			ui.P().Text(fmt.Sprintf("%d", a.todos.Counter)).Margin(ui.RawValue("10px 0 5px")).
-				FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+				FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-text,#f4f7ff)")),
 			ui.P().Text("Increment, decrement, or reset the value.").Margin(ui.RawValue("0 0 12px")).
-				FontSize(ui.Px(11)).Color(ui.Hex("#a0b6d0")),
+				FontSize(ui.Px(11)).Color(ui.RawValue("var(--of-muted,#a0b6d0)")),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(
 				a.todoButton("−", "todo:dec", false),
 				a.todoButton("+", "todo:inc", true),
@@ -72,13 +72,13 @@ func (a *builderApp) todoListCard() *ui.Element {
 	}
 	if len(rows) == 0 {
 		rows = append(rows, ui.P().Text("No tasks — add one below.").
-			Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#a0b6d0")))
+			Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#a0b6d0)")))
 	}
 	card := ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
-		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.RawValue("var(--of-surface,#202d42)")).
 		Children(
 			ui.Text(fmt.Sprintf("Tasks (%d)", len(a.todos.Items))).
-				FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
+				FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
 			a.todoProgress(),
 			ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).
 				MarginTop(ui.Px(12)).Children(rows...),
@@ -104,7 +104,7 @@ func (a *builderApp) todoProgress() *ui.Element {
 		}
 	}
 	return ui.P().Text(fmt.Sprintf("%d of %d done", done, len(a.todos.Items))).
-		Margin(ui.RawValue("6px 0 0")).FontSize(ui.Px(11)).Color(ui.Hex("#8fa3bb"))
+		Margin(ui.RawValue("6px 0 0")).FontSize(ui.Px(11)).Color(ui.RawValue("var(--of-muted,#8fa3bb)"))
 }
 
 // allTodoDone reports whether the list is non-empty and every row is done.
@@ -129,8 +129,8 @@ func (a *builderApp) todoDoneBanner() *ui.Element {
 		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 		MarginTop(ui.Px(12)).
 		Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)).
-		BackgroundColor(ui.Hex("#17452e")).Color(ui.Hex("#c9f2d8")).
-		Border(ui.RawValue("1px solid #2b7a4b")).
+		BackgroundColor(ui.RawValue("var(--of-control,#17452e)")).Color(ui.RawValue("var(--of-text,#c9f2d8)")).
+		Border(ui.RawValue("1px solid var(--of-border,#2b7a4b)")).
 		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold).
 		AnimationName(ui.RawValue("todo-done-pop")).
 		AnimationDuration(ui.RawValue("450ms")).

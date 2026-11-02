@@ -88,8 +88,8 @@ func layoutToggleButton(label, action string, active bool) *ui.Element {
 		bg = "#355596"
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
-		Border(ui.RawValue("1px solid #40546f")).
+		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue("var(--of-text,#f1f5fd)")).
+		Border(ui.RawValue("1px solid var(--of-border,#40546f)")).
 		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
 		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
@@ -101,20 +101,20 @@ func (a *builderApp) layoutPanel() *ui.Element {
 	controls := ui.Div().Display(ui.DisplayFlex).FlexWrap(ui.RawValue("wrap")).
 		AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 		Children(
-			ui.Text("Direction:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Direction:").FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#9aacbf)")),
 			layoutToggleButton("Row", "layout:dir:row", st.Direction == "row"),
 			layoutToggleButton("Column", "layout:dir:column", st.Direction == "column"),
-			ui.Text("Gap:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Gap:").FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#9aacbf)")),
 			layoutToggleButton("8px", "layout:gap:8px", st.Gap == "8px"),
 			layoutToggleButton("16px", "layout:gap:16px", st.Gap == "16px"),
 			layoutToggleButton("24px", "layout:gap:24px", st.Gap == "24px"),
-			ui.Text("Padding:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Padding:").FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#9aacbf)")),
 			layoutToggleButton("8px", "layout:pad:8px", st.Padding == "8px"),
 			layoutToggleButton("16px", "layout:pad:16px", st.Padding == "16px"),
 			layoutToggleButton("24px", "layout:pad:24px", st.Padding == "24px"),
-			ui.Text("Boxes:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Boxes:").FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#9aacbf)")),
 			layoutToggleButton("− Fewer", "layout:fewer", false),
-			ui.Text(fmt.Sprintf("%d", st.Boxes)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+			ui.Text(fmt.Sprintf("%d", st.Boxes)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-text,#f4f7ff)")),
 			layoutToggleButton("+ More", "layout:more", false),
 		)
 
@@ -123,15 +123,15 @@ func (a *builderApp) layoutPanel() *ui.Element {
 		color := palette[i%len(palette)]
 		boxes = append(boxes, ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
 			Padding(ui.Edges(ui.Px(24), ui.Px(12))).BorderRadius(ui.Px(8)).
-			BackgroundColor(ui.RawValue(color)).Color(ui.Hex("#ffffff")).
+			BackgroundColor(ui.RawValue(color)).Color(ui.RawValue("var(--of-on-primary,#ffffff)")).
 			TextAlign(ui.TextAlignCenter).FontWeight(ui.FontWeightBold).
 			Children(ui.Text(fmt.Sprintf("Box %d", i+1))))
 	}
 
 	preview := ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.RawValue(st.Direction)).
 		Gap(ui.RawValue(st.Gap)).Padding(ui.RawValue(st.Padding)).
-		BackgroundColor(ui.Hex("#182336")).BorderRadius(ui.Px(10)).
-		Border(ui.RawValue("1px solid #34445c")).
+		BackgroundColor(ui.RawValue("var(--of-control,#182336)")).BorderRadius(ui.Px(10)).
+		Border(ui.RawValue("1px solid var(--of-border,#34445c)")).
 		Children(boxes...)
 
 	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
@@ -140,19 +140,19 @@ func (a *builderApp) layoutPanel() *ui.Element {
 			ui.Div().Children(
 				a.panelHeading("Layout playground"),
 				ui.P().Text("Toggle the options to update the preview and its typed Go source.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.RawValue("7px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
 			),
 			controls,
 			preview,
 			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 				Children(
 					layoutToggleButton("Copy code", "layout:copy", false),
-					ui.Text("Go code for the preview above — updates with every toggle.").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+					ui.Text("Go code for the preview above — updates with every toggle.").FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#9aacbf)")),
 				),
-			ui.P().Text(a.layoutSnippet()).Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#9fe8c9")).
+			ui.P().Text(a.layoutSnippet()).Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#9fe8c9)")).
 				FontFamily(ui.RawValue("monospace")).OverflowWrap(ui.OverflowWrapBreakWord).
 				WhiteSpace(ui.WhiteSpacePreWrap).
-				BackgroundColor(ui.Hex("#182336")).Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)),
+				BackgroundColor(ui.RawValue("var(--of-control,#182336)")).Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)),
 		)
 }
 

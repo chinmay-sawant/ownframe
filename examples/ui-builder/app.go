@@ -9,6 +9,8 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 const (
@@ -23,18 +25,21 @@ const (
 // builderApp is the single tabbed ui-builder host. Each tab lives in its
 // own screen_*.go file and owns a small state struct below.
 type builderApp struct {
-	page     *ownframe.Page
-	logger   *log.Logger
-	tab      string
-	notice   string
-	widgets  widgetsState
-	settings settingsState
-	layout   layoutState
-	todos    todoState
-	files    listState
-	theme    themeState
-	compare  compareState
-	dialog   dialogState
+	modalFocus components.DialogFocus
+	view       *ui.View
+	themeDirty bool
+	page       *ownframe.Page
+	logger     *log.Logger
+	tab        string
+	notice     string
+	widgets    widgetsState
+	settings   settingsState
+	layout     layoutState
+	todos      todoState
+	files      listState
+	theme      themeState
+	compare    compareState
+	dialog     dialogState
 
 	centerScroll         int
 	centerWheelRemainder float64
@@ -70,7 +75,8 @@ func newBuilderApp() (*builderApp, error) {
 		compare:  defaultCompareState(),
 		dialog:   defaultDialogState(),
 	}
-	p, err := ui.NewPage(ownframe.Config{
+	view, err := ui.Mount(ownframe.Config{
+		Theme:     theme.Dark + builderMotionCSS,
 		Title:     "OwnFrame · Builder Gallery",
 		Width:     demoWidth,
 		Height:    demoHeight,
@@ -82,10 +88,13 @@ func newBuilderApp() (*builderApp, error) {
 	if err != nil {
 		return nil, fmt.Errorf("new builder app: %w", err)
 	}
+	a.view = view
+	p := view.Page
 	a.page = p
 	p.Scroll().SetAllowScroll(false)
-	p.Handle(ownframe.Handlers{
+	view.Handle(ownframe.Handlers{
 		Click:     a.handleClick,
+		KeyDown:   a.handleKey,
 		Wheel:     a.handleWheel,
 		DragStart: a.startCenterScrollDrag,
 		DragMove:  a.moveCenterScrollDrag,
@@ -144,6 +153,7 @@ func (a *builderApp) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.refreshLogged(ctx, action, start)
 	}
 	if a.handleTheme(action) {
+		a.themeDirty = true
 		return a.refreshLogged(ctx, action, start)
 	}
 	if a.handleCompare(action) {
@@ -188,27 +198,38 @@ func (a *builderApp) selectTab(name string) {
 }
 
 func (a *builderApp) refresh(ctx context.Context) error {
-	start := time.Now()
-	fragment, err := ui.Render(a.screen())
-	if err != nil {
-		a.logf("refresh render err=%v dur=%s", err, time.Since(start))
-		return fmt.Errorf("render builder gallery: %w", err)
+	if a.tab == "dialog" && a.dialog.open {
+		a.modalFocus.Activate(a.page, "dialog-x", "dialog-confirm", "dialog-cancel")
+	} else {
+		a.modalFocus.Deactivate(a.page)
 	}
-	if err := a.page.Load(ctx, renderBuilderDocument(fragment)); err != nil {
-		a.logf("refresh load err=%v dur=%s", err, time.Since(start))
-		return fmt.Errorf("reload builder gallery: %w", err)
+
+	start := time.Now()
+	if a.themeDirty {
+		sheet := theme.Dark + fmt.Sprintf(":root{--of-primary:%s;--of-radius:%s;--of-spacing:%s}",
+			a.theme.Accent, a.theme.Radius, a.theme.Spacing)
+		if err := a.page.SetTheme(sheet + builderMotionCSS); err != nil {
+			return err
+		}
+		a.themeDirty = false
+	}
+	if err := a.view.Update(ctx, a.screen()); err != nil {
+		return fmt.Errorf("update builder gallery: %w", err)
 	}
 	a.centerMeasurePending = true
-	a.logf("refresh ok bytes=%d dur=%s", len(fragment), time.Since(start))
+	a.logf("refresh ok dur=%s", time.Since(start))
 	return nil
 }
 
-func renderBuilderDocument(fragment string) string {
-	return "<!doctype html><html><head><meta charset=\"utf-8\"><style>" +
-		"html,body{margin:0;padding:0;background-color:#111827}" +
-		"@keyframes todo-done-pop{0%{transform:scale(0.92);opacity:0;}" +
-		"60%{transform:scale(1.03);opacity:1;}}" +
-		"100%{transform:scale(1);opacity:1;}}" +
-		".todo-row:hover,.todo-toggle:hover{transform:translateY(-1px);}" +
-		"</style></head><body>" + fragment + "</body></html>"
+const builderMotionCSS = `
+@keyframes todo-done-pop{0%{transform:scale(0.92);opacity:0;}60%{transform:scale(1.03);opacity:1;}100%{transform:scale(1);opacity:1;}}
+.todo-row:hover,.todo-toggle:hover{transform:translateY(-1px);}
+`
+
+func (a *builderApp) handleKey(ctx context.Context, key string) error {
+	if key == "escape" && a.dialog.open {
+		a.handleDialog("dialog:close")
+		return a.refresh(ctx)
+	}
+	return nil
 }

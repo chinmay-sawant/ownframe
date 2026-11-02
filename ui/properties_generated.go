@@ -1820,6 +1820,7 @@ type BorderValue interface {
 func (e *Element) Border(v BorderValue) *Element { return e.setValue("border", v) }
 func (expression) isBorder()                     {}
 func (wideKeyword) isBorder()                    {}
+func (BorderStroke) isBorder()                   {}
 
 // BorderBlockValue is a value for the CSS border-block property.
 type BorderBlockValue interface {
@@ -2011,6 +2012,7 @@ type BorderBottomValue interface {
 func (e *Element) BorderBottom(v BorderBottomValue) *Element { return e.setValue("border-bottom", v) }
 func (expression) isBorderBottom()                           {}
 func (wideKeyword) isBorderBottom()                          {}
+func (BorderStroke) isBorderBottom()                         {}
 
 // BorderBottomColorValue is a value for the CSS border-bottom-color property.
 type BorderBottomColorValue interface {
@@ -2413,6 +2415,7 @@ type BorderLeftValue interface {
 func (e *Element) BorderLeft(v BorderLeftValue) *Element { return e.setValue("border-left", v) }
 func (expression) isBorderLeft()                         {}
 func (wideKeyword) isBorderLeft()                        {}
+func (BorderStroke) isBorderLeft()                       {}
 
 // BorderLeftColorValue is a value for the CSS border-left-color property.
 type BorderLeftColorValue interface {
@@ -2492,6 +2495,7 @@ type BorderRightValue interface {
 func (e *Element) BorderRight(v BorderRightValue) *Element { return e.setValue("border-right", v) }
 func (expression) isBorderRight()                          {}
 func (wideKeyword) isBorderRight()                         {}
+func (BorderStroke) isBorderRight()                        {}
 
 // BorderRightColorValue is a value for the CSS border-right-color property.
 type BorderRightColorValue interface {
@@ -2607,6 +2611,7 @@ type BorderTopValue interface {
 func (e *Element) BorderTop(v BorderTopValue) *Element { return e.setValue("border-top", v) }
 func (expression) isBorderTop()                        {}
 func (wideKeyword) isBorderTop()                       {}
+func (BorderStroke) isBorderTop()                      {}
 
 // BorderTopColorValue is a value for the CSS border-top-color property.
 type BorderTopColorValue interface {
@@ -4023,6 +4028,7 @@ type FlexValue interface {
 func (e *Element) Flex(v FlexValue) *Element { return e.setValue("flex", v) }
 func (expression) isFlex()                   {}
 func (wideKeyword) isFlex()                  {}
+func (Numeric) isFlex()                      {}
 
 // FlexBasisValue is a value for the CSS flex-basis property.
 type FlexBasisValue interface {
@@ -4241,6 +4247,31 @@ type FontFamilyValue interface {
 func (e *Element) FontFamily(v FontFamilyValue) *Element { return e.setValue("font-family", v) }
 func (expression) isFontFamily()                         {}
 func (wideKeyword) isFontFamily()                        {}
+
+type fontFamilyKeyword uint16
+
+const (
+	// FontFamilySerif sets font-family to serif.
+	FontFamilySerif fontFamilyKeyword = 1
+	// FontFamilySansSerif sets font-family to sans-serif.
+	FontFamilySansSerif fontFamilyKeyword = 2
+	// FontFamilyMonospace sets font-family to monospace.
+	FontFamilyMonospace fontFamilyKeyword = 3
+)
+
+func (fontFamilyKeyword) isFontFamily() {}
+func (v fontFamilyKeyword) cssText() (string, error) {
+	switch v {
+	case FontFamilySerif:
+		return "serif", nil
+	case FontFamilySansSerif:
+		return "sans-serif", nil
+	case FontFamilyMonospace:
+		return "monospace", nil
+	default:
+		return "", fmt.Errorf("ui: invalid font-family keyword %d", v)
+	}
+}
 
 // FontFeatureSettingsValue is a value for the CSS font-feature-settings property.
 type FontFeatureSettingsValue interface {
@@ -5268,8 +5299,8 @@ func (e *Element) LineHeight(v LineHeightValue) *Element { return e.setValue("li
 func (expression) isLineHeight()                         {}
 func (wideKeyword) isLineHeight()                        {}
 func (Length) isLineHeight()                             {}
-func (Percentage) isLineHeight()                         {}
 func (Numeric) isLineHeight()                            {}
+func (Percentage) isLineHeight()                         {}
 
 // ListStyleValue is a value for the CSS list-style property.
 type ListStyleValue interface {
@@ -7869,6 +7900,7 @@ type TransformValue interface {
 func (e *Element) Transform(v TransformValue) *Element { return e.setValue("transform", v) }
 func (expression) isTransform()                        {}
 func (wideKeyword) isTransform()                       {}
+func (Transform) isTransform()                         {}
 
 // TransformBoxValue is a value for the CSS transform-box property.
 type TransformBoxValue interface {

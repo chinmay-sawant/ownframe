@@ -44,11 +44,11 @@ func (a *builderApp) settingsPanel() *ui.Element {
 			ui.Div().Children(
 				a.panelHeading("Settings"),
 				ui.P().Text("A form built purely with the ui builder.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.RawValue("7px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
 				ui.P().Text("Click a field and type — Save reads the live control values.").
-					Margin(ui.RawValue("4px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.RawValue("4px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
 			),
-			ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+			ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.RawValue("var(--of-surface,#202d42)")).
 				Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)).
 				Children(
 					a.settingsField("Name", "settings-name", "name", "text", a.settings.Name, "Ada Lovelace"),
@@ -67,13 +67,13 @@ func (a *builderApp) settingsPanel() *ui.Element {
 
 func (a *builderApp) settingsField(label, id, name, inputType, value, placeholder string) *ui.Element {
 	row := []*ui.Element{
-		ui.Text(label).FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
+		ui.Text(label).FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
 		ui.Tag("input").ID(id).Attr("type", inputType).Attr("name", name).
 			Attr("value", value).Attr("placeholder", placeholder).
 			Width(ui.Percent(100)).BoxSizing(ui.BoxSizingBorderBox).
 			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
-			BackgroundColor(ui.Hex("#26364e")).Color(ui.Hex("#ecf2fb")).
-			Border(ui.RawValue("1px solid #3e526e")).FontSize(ui.Px(13)),
+			BackgroundColor(ui.RawValue("var(--of-control,#26364e)")).Color(ui.RawValue("var(--of-text,#ecf2fb)")).
+			Border(ui.RawValue("1px solid var(--of-border,#3e526e)")).FontSize(ui.Px(13)),
 	}
 	if msg := a.settings.Errors[id]; msg != "" {
 		row = append(row, ui.Text(msg).FontSize(ui.Px(12)).Color(ui.Hex("#ff8a8a")))
@@ -89,7 +89,7 @@ func (a *builderApp) settingsRoleRow() *ui.Element {
 		buttons = append(buttons, a.settingsRoleButton(role, selected))
 	}
 	row := []*ui.Element{
-		ui.Text("Role").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
+		ui.Text("Role").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
 		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(buttons...),
 	}
 	if msg := a.settings.Errors["role"]; msg != "" {
@@ -121,11 +121,11 @@ func (a *builderApp) settingsNotifyRow() *ui.Element {
 		bg = "#355596"
 	}
 	return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(6)).Children(
-		ui.Text("Notifications").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
+		ui.Text("Notifications").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.RawValue("var(--of-muted,#b5c7df)")),
 		ui.Button(label).Attr("type", "button").Attr("data-action", "settings:notify").
 			AlignSelf(ui.RawValue("flex-start")).
-			BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
-			Border(ui.RawValue("1px solid #40546f")).
+			BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue("var(--of-text,#f1f5fd)")).
+			Border(ui.RawValue("1px solid var(--of-border,#40546f)")).
 			Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold),
 	)
 }
@@ -146,7 +146,7 @@ func (a *builderApp) settingsNotice() *ui.Element {
 		return ui.Text("Settings saved (demo — nothing was written).").FontSize(ui.Px(12)).Color(ui.Hex("#7ee2a8"))
 	}
 	return ui.Text("Type in the fields above, then Save — validation runs on the live control values.").
-		FontSize(ui.Px(11)).Color(ui.Hex("#a0b6d0"))
+		FontSize(ui.Px(11)).Color(ui.RawValue("var(--of-muted,#a0b6d0)"))
 }
 
 // handleSettings handles settings:* actions, updating a.settings and a.notice.

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
 )
 
 type themeState struct {
@@ -82,7 +83,7 @@ func (a *builderApp) themePanel() *ui.Element {
 		Children(
 			ui.Div().Children(
 				a.panelHeading("Theme"),
-				ui.P().Text("Pick an accent, corner radius, and spacing. The preview below restyles live from the same state.").
+				ui.P().Text("Pick an accent, corner radius, and spacing. Shared controls throughout the gallery restyle from the same theme.").
 					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
 			),
 			ui.Div().Padding(ui.Px(16)).BackgroundColor(ui.Hex("#202d42")).BorderRadius(ui.Px(11)).
@@ -98,25 +99,18 @@ func (a *builderApp) themePanel() *ui.Element {
 					ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 						Children(spacingSwatches...),
 				),
-			ui.Div().Padding(ui.RawValue(spacing)).BackgroundColor(ui.Hex("#26364e")).BorderRadius(ui.RawValue(radius)).
+			components.Card().
 				Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.RawValue(spacing)).
 				Children(
 					ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 						Children(
 							ui.Text("Preview card").FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
-							ui.Text("New").FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold).
-								BackgroundColor(ui.RawValue(accent)).Color(ui.Hex("#ffffff")).
-								Padding(ui.Edges(ui.Px(4), ui.Px(8))).BorderRadius(ui.RawValue(radius)),
+							components.Badge("New"),
 						),
 					ui.P().Text("Accent "+accent+" · Radius "+radius+" · Spacing "+spacing).
 						Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#b5c7df")),
-					ui.Button("Themed action").Attr("type", "button").
-						Attr("data-action", "theme:accent:"+strings.TrimPrefix(accent, "#")).
-						CustomProperty("--builder-accent", accent).
-						BackgroundColor(ui.Var("--builder-accent")).Color(ui.Hex("#ffffff")).
-						Border(ui.RawValue("1px solid "+accent)).
-						Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.RawValue(radius)).
-						FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
+					components.Button("Themed action", components.ButtonOptions{Primary: true}).
+						Attr("data-action", "theme:accent:"+strings.TrimPrefix(accent, "#")),
 				),
 			ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(ui.Hex("#202d42")).BorderRadius(ui.Px(10)).
 				Children(

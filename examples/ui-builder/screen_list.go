@@ -82,8 +82,8 @@ func listFilterButton(label, value, active string) *ui.Element {
 		bg = "#355596"
 	}
 	return ui.Button(label).Attr("data-action", "list:filter:"+value).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
-		Border(ui.RawValue("1px solid #40546f")).
+		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue("var(--of-text,#f1f5fd)")).
+		Border(ui.RawValue("1px solid var(--of-border,#40546f)")).
 		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold).FontSize(ui.Px(12))
 }
 
@@ -96,13 +96,13 @@ func (a *builderApp) listPanel() *ui.Element {
 			bg = "#355596"
 		}
 		rows = append(rows, ui.Button("").Attr("data-action", "list:select:"+f.Name).
-			TextAlign(ui.TextAlignLeft).BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#ecf2fb")).
-			Border(ui.RawValue("1px solid #3e526e")).
+			TextAlign(ui.TextAlignLeft).BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue("var(--of-text,#ecf2fb)")).
+			Border(ui.RawValue("1px solid var(--of-border,#3e526e)")).
 			Padding(ui.Edges(ui.Px(12), ui.Px(14))).BorderRadius(ui.Px(8)).
 			Children(
 				ui.Text(f.Name).FontWeight(ui.FontWeightBold),
 				ui.P().Text(f.Kind+"  ·  "+f.Size).Margin(ui.RawValue("4px 0 0")).
-					FontSize(ui.Px(11)).Color(ui.Hex("#a0b6d0")),
+					FontSize(ui.Px(11)).Color(ui.RawValue("var(--of-muted,#a0b6d0)")),
 			))
 	}
 
@@ -123,7 +123,7 @@ func (a *builderApp) listPanel() *ui.Element {
 			ui.Div().Children(
 				a.panelHeading("File list"),
 				ui.P().Text("Rows are built in Go with Children(rows...) — no template range.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.RawValue("7px 0 0")).Color(ui.RawValue("var(--of-muted,#a9bbd1)")).FontSize(ui.Px(12)),
 			),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).
 				Children(
@@ -135,12 +135,12 @@ func (a *builderApp) listPanel() *ui.Element {
 				Children(
 					ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).
 						Children(rows...),
-					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(ui.Hex("#202d42")).
+					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(ui.RawValue("var(--of-surface,#202d42)")).
 						BorderRadius(ui.Px(10)).MarginTop(ui.Px(12)).
 						Children(
 							ui.Text(detail).FontWeight(ui.FontWeightBold),
 							ui.P().Text("Showing "+strconv.Itoa(len(files))+" of "+strconv.Itoa(len(a.files.Files))+" files. Click a row to select it.").
-								Margin(ui.RawValue("8px 0 0")).FontSize(ui.Px(12)).Color(ui.Hex("#abbcd2")),
+								Margin(ui.RawValue("8px 0 0")).FontSize(ui.Px(12)).Color(ui.RawValue("var(--of-muted,#abbcd2)")),
 						),
 				),
 		)

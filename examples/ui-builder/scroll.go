@@ -48,7 +48,7 @@ func (a *builderApp) centerScrollThumb() *ui.Element {
 	return ui.Div().ID(builderScrollThumbID).Position(ui.PositionAbsolute).
 		Top(ui.Px(float64(top))).Left(ui.Px(0)).Width(ui.Percent(100)).
 		Height(ui.Px(float64(height))).ZIndex(ui.Number(2)).
-		BorderRadius(ui.Px(4)).BackgroundColor(ui.Hex("#8394ac"))
+		BorderRadius(ui.Px(4)).BackgroundColor(ui.RawValue("var(--of-scrollbar,#8394ac)"))
 }
 
 func (a *builderApp) handleWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
@@ -174,12 +174,8 @@ func (a *builderApp) refreshOnResize(ctx context.Context) error {
 	a.layoutWidth, a.layoutHeight = width, height
 	beforeTop, beforeHeight, beforeVisible := a.centerThumb()
 	if resized {
-		fragment, err := ui.Render(a.screen())
-		if err != nil {
-			return fmt.Errorf("render builder gallery after resize: %w", err)
-		}
-		if err := a.page.Load(ctx, renderBuilderDocument(fragment)); err != nil {
-			return fmt.Errorf("reload builder gallery after resize: %w", err)
+		if err := a.view.Update(ctx, a.screen()); err != nil {
+			return fmt.Errorf("update builder after resize: %w", err)
 		}
 	}
 	a.updateCenterScrollMetrics()
@@ -188,12 +184,8 @@ func (a *builderApp) refreshOnResize(ctx context.Context) error {
 	if beforeTop == afterTop && beforeHeight == afterHeight && beforeVisible == afterVisible {
 		return nil
 	}
-	fragment, err := ui.Render(a.screen())
-	if err != nil {
-		return fmt.Errorf("render builder gallery scrollbar: %w", err)
-	}
-	if err := a.page.Load(ctx, renderBuilderDocument(fragment)); err != nil {
-		return fmt.Errorf("reload builder gallery scrollbar: %w", err)
+	if err := a.view.Update(ctx, a.screen()); err != nil {
+		return fmt.Errorf("update builder scrollbar: %w", err)
 	}
 	return nil
 }

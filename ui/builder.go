@@ -185,6 +185,10 @@ func (r *renderer) visit(e *Element, depth int) error {
 		}
 		r.actions[action] = e.onClick
 	}
+	if attrs["data-action"] != "" && attrs["id"] == "" {
+		r.nextID++
+		attrs["id"] = fmt.Sprintf("ownframe-ui-action-%d", r.nextID)
+	}
 	if len(e.styles) != 0 {
 		keys := make([]string, 0, len(e.styles))
 		for name := range e.styles {

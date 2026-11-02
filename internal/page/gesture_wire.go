@@ -28,6 +28,7 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 		return err
 	}
 
+	scoped := len(p.ff.scope) != 0
 	if p.handlers.KeyDown != nil {
 		if err := p.handlers.KeyDown(ctx, key); err != nil {
 			return err
@@ -49,6 +50,10 @@ func (p *Page) KeyDown(ctx context.Context, key string) error {
 
 	switch gesture.KeyDown(field, field.Value, key) {
 	case gesture.EffectBlur:
+		// A closing modal owns focus restoration, including a queued request.
+		if scoped && len(p.ff.scope) == 0 {
+			return nil
+		}
 		return p.Focus(ctx, "")
 	case gesture.EffectCaret:
 		return p.caretKey(ctx, key)

@@ -120,7 +120,7 @@ func (p *Page) Focus(ctx context.Context, id string) error {
 	}
 
 	c, ok := p.control(id)
-	if !ok || c.Disabled {
+	if !ok || c.Disabled || !p.inFocusScope(id) {
 		return nil
 	}
 
@@ -175,7 +175,9 @@ func (p *Page) focusStep(ctx context.Context, step int) error {
 func (p *Page) focusOrder() []string {
 	ids := make([]string, 0, len(p.boxes))
 	for _, b := range p.boxes {
-		ids = append(ids, b.ID)
+		if p.inFocusScope(b.ID) {
+			ids = append(ids, b.ID)
+		}
 	}
 
 	return form.Order(ids, p.control)
@@ -450,6 +452,7 @@ func (p *Page) syncForm(body string) string {
 		fs.ClearRange()
 	}
 
+	p.applyFocusRequest()
 	fs.ClampToFocus()
 
 	p.lastSyncBody = body

@@ -8,13 +8,15 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 const (
 	mailWindowWidth  = 1380
 	mailWindowHeight = 810
-	mailSidebarWidth = "226px"
-	mailListWidth    = "394px"
+	mailSidebarWidth = 226
+	mailListWidth    = 394
 	mailDemoTitle    = "Postmark · JMAP Mail Preview"
 	mailDragLimitY   = 78
 	mailPlacement    = "jmap-mail"
@@ -36,6 +38,9 @@ const (
 )
 
 type app struct {
+	modalFocus components.DialogFocus
+	view       *ui.View
+	themeDirty bool
 	page       *ownframe.Page
 	mailboxes  []mailbox
 	messages   []mail
@@ -43,7 +48,7 @@ type app struct {
 	selectedID string
 	query      string
 	drafts     int
-	dark       bool
+	appearance mailTheme
 	settings   bool
 	// listOffset is the first visible message row. Rows are fixed height,
 	// so the visible count derives from the viewport box and the thumb
@@ -69,19 +74,23 @@ func newApp() (*app, error) {
 		mailboxes:  sampleMailboxes(),
 		messages:   sampleMessages(),
 		folder:     "inbox",
+		appearance: mailThemeLight,
 		selectedID: "m-101",
 	}
-	p, err := ui.NewPage(ownframe.Config{
+	view, err := ui.Mount(ownframe.Config{
+		Theme: theme.Light,
 		Title: mailDemoTitle, Width: mailWindowWidth, Height: mailWindowHeight,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new mail app: %w", err)
 	}
+	a.view = view
+	p := view.Page
 	a.page = p
 	a.lastW, a.lastH = p.Size()
 	// This example intentionally uses only OwnFrame's exported Page,
 	// Handlers, and ui builder APIs. No internal packages are imported.
-	p.Handle(ownframe.Handlers{Click: a.handleClick, Wheel: a.handleWheel})
+	view.Handle(ownframe.Handlers{Click: a.handleClick, Wheel: a.handleWheel, KeyDown: a.handleKey})
 	p.SetTick(a.tick)
 	return a, nil
 }
@@ -105,6 +114,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 			a.ensureSelection()
 		case "clear-search":
 			a.query = ""
+			a.page.Form().SetFormValue("mail-search", "")
 			a.selectedID = ""
 			a.listOffset, a.listAccum = 0, 0
 			a.readerScroll, a.readerAccum = 0, 0
@@ -146,19 +156,30 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 }
 
 func (a *app) refresh(ctx context.Context) error {
+	if a.settings {
+		a.modalFocus.Activate(a.page, "settings-close", "theme-light", "theme-dark", "theme-custom")
+	} else {
+		a.modalFocus.Deactivate(a.page)
+	}
+
+	if a.themeDirty {
+		sheet, err := a.appearance.stylesheet()
+		if err != nil {
+			return err
+		}
+		if err := a.page.SetTheme(sheet); err != nil {
+			return err
+		}
+		a.themeDirty = false
+	}
+
 	// Render twice at most: the scroll cache (viewport and content boxes)
 	// is measured after each Load, so a second pass paints the thumbs the
 	// fresh measurements call for. Heights are layout-stable, so it
 	// converges immediately.
 	for i := 0; i < mailRefreshPasses; i++ {
-		fragment, err := ui.Render(a.screen())
-		if err != nil {
-			return fmt.Errorf("render mail view: %w", err)
-		}
-		// The builder emits a normal HTML fragment, and the public Load API
-		// gives it back to OwnFrame's established Blinkless pipeline.
-		if err := a.page.Load(ctx, a.renderMailDocument(fragment)); err != nil {
-			return fmt.Errorf("reload mail view: %w", err)
+		if err := a.view.Update(ctx, a.screen()); err != nil {
+			return fmt.Errorf("update mail view: %w", err)
 		}
 		before := a.scrollCacheKey()
 		a.updateScrollCache()
@@ -177,15 +198,6 @@ func (a *app) refresh(ctx context.Context) error {
 
 func (a *app) scrollCacheKey() [4]int {
 	return [4]int{a.listViewH, a.listOffset, a.readerViewH, a.readerContentH}
-}
-
-func (a *app) renderMailDocument(fragment string) string {
-	// Mirror ui-builder: reset the default 8px body margin or it shows as a
-	// white border on all four sides, and paint html/body with the active
-	// theme so the edge matches the app instead of flashing white.
-	return "<!doctype html><html><head><meta charset=\"utf-8\"><style>html,body{margin:0;padding:0;background-color:" +
-		a.palette("#f5f7fb", "#111827") + "}</style></head><body>" +
-		fragment + "</body></html>"
 }
 
 func (a *app) selectFolder(id string) {
@@ -211,11 +223,10 @@ func (a *app) selectMessage(id string) {
 }
 
 func (a *app) selectTheme(name string) {
-	switch name {
-	case "light":
-		a.dark = false
-	case "dark":
-		a.dark = true
+	switch mailTheme(name) {
+	case mailThemeLight, mailThemeDark, mailThemeCustom:
+		a.appearance = mailTheme(name)
+		a.themeDirty = true
 	}
 }
 
@@ -577,4 +588,12 @@ func (a *app) updateScrollCache() {
 	a.listOffset = clampListOffset(a.listOffset, len(a.visibleMessages()), a.listVisibleCount())
 	maxReader := max(a.readerContentH-a.readerViewH, 0)
 	a.readerScroll = min(max(a.readerScroll, 0), maxReader)
+}
+
+func (a *app) handleKey(ctx context.Context, key string) error {
+	if key == "escape" && a.settings {
+		a.settings = false
+		return a.refresh(ctx)
+	}
+	return nil
 }
