@@ -16,7 +16,7 @@ func TestBuilderViewportFitsWindow(t *testing.T) {
 		name   string
 		marker string
 	}{
-		{"widgets", "Widgets gallery"},
+		{"widgets", "Component library"},
 		{"settings", "Settings"},
 		{"layout", "Layout playground"},
 		{"todo", "Tasks ("},

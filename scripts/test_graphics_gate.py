@@ -18,6 +18,7 @@ REQUIRED_TESTS = {
     "TestWindowIdleDeadline",
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",
+    "TestScrollbarThumbStaysOnePiece",
 }
 
 

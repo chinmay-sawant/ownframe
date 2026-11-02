@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 const (
@@ -25,7 +27,8 @@ const (
 
 // widgetsState holds the small interactive state for the widgets gallery tab.
 type widgetsState struct {
-	variant      string // selected button variant showcase
+	variant      string
+	size         components.ButtonSize
 	badges       int    // badge counter value
 	toggled      bool   // toggle switch state
 	picked       string // selected nav item
@@ -69,9 +72,9 @@ func defaultWidgetsState() widgetsState {
 }
 
 func (a *builderApp) widgetsPanel() *ui.Element {
-	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return ui.Section().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)).
-		BackgroundColor(ui.Hex("#111827")).
+		BackgroundColor(theme.Background()).
 		Children(
 			a.widgetsHeader(),
 			widgetsRow(a.buttonsCard(), a.badgesCard()),
@@ -92,78 +95,74 @@ func widgetsRow(cards ...*ui.Element) *ui.Element {
 
 func widgetShell(title, desc string, body ...*ui.Element) *ui.Element {
 	head := []*ui.Element{
-		ui.Text(title).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
-		ui.P().Text(desc).Margin(ui.RawValue("6px 0 0")).FontSize(ui.Px(12)).Color(ui.Hex("#a9bbd1")),
+		ui.Text(title).FontWeight(ui.FontWeightBold).Color(theme.Text()),
+		ui.P().Text(desc).Margin(ui.Edges(ui.Px(6), ui.Px(0), ui.Px(0))).FontSize(ui.Px(12)).Color(theme.Muted()),
 	}
-	return ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
-		Padding(ui.Px(14)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
-		Children(append(head, body...)...)
+	return components.Card(append(head, body...)...).Flex(ui.Number(1)).MinWidth(ui.Px(0))
 }
 
 func widgetsBtn(label, action string, primary bool) *ui.Element {
-	bg, fg, border := "#2b3950", "#dce6f6", "1px solid #42536b"
+	variant := components.ButtonTonal
 	if primary {
-		bg, fg, border = "#4677ed", "#ffffff", "1px solid #4677ed"
+		variant = components.ButtonFilled
 	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
-		FlexShrink(ui.Number(0)).
-		Padding(ui.Edges(ui.Px(8), ui.Px(12))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
+	return components.Button(label, components.ButtonOptions{Variant: variant}).Attr("data-action", action)
 }
 
 func widgetLabel(text string) *ui.Element {
-	return ui.Text(strings.ToUpper(text)).FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#8fa3bd"))
+	return ui.Text(strings.ToUpper(text)).FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold).Color(theme.Muted())
 }
 
 func widgetDivider() *ui.Element {
-	return ui.Div().Height(ui.Px(1)).Margin(ui.RawValue("10px 0")).BackgroundColor(ui.Hex("#34445c"))
+	return ui.Div().Height(ui.Px(1)).Margin(ui.Edges(ui.Px(10), ui.Px(0))).BackgroundColor(theme.Control())
 }
 
 func (a *builderApp) widgetsHeader() *ui.Element {
 	return ui.Div().Children(
-		a.panelHeading("Widgets gallery"),
-		ui.P().Text("Buttons, inputs, toggles, tabs, tables, and cards from the Go builder. Every control below is wired to Go.").
-			Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+		a.panelHeading("Component library"),
+		ui.P().Text("Reusable controls, consistent states, and themes. Select a component to try its behavior.").
+			Margin(ui.Edges(ui.Px(7), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 	)
 }
 
 func (a *builderApp) buttonsCard() *ui.Element {
 	return widgetShell("Buttons", fmt.Sprintf("Selected variant: %s. Click a variant to preview it.", a.widgets.variant),
-		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(
+		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(
 			a.variantButton("Primary", "primary"),
 			a.variantButton("Secondary", "secondary"),
 			a.variantButton("Danger", "danger"),
-			a.variantButton("Ghost", "ghost"),
+			a.variantButton("Text", "ghost"),
+			a.variantButton("Outlined", "outlined"),
+		),
+		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).FlexWrap(ui.FlexWrapWrap).MarginTop(ui.Px(12)).Children(
+			components.Button("Small", components.ButtonOptions{Size: components.ButtonSmall}).Attr("data-action", "widgets:size:small"),
+			components.Button("Medium", components.ButtonOptions{}).Attr("data-action", "widgets:size:medium"),
+			components.Button("Large", components.ButtonOptions{Size: components.ButtonLarge}).Attr("data-action", "widgets:size:large"),
+			components.Button("Disabled", components.ButtonOptions{Disabled: true}),
 		),
 	)
 }
 
 func (a *builderApp) variantButton(label, variant string) *ui.Element {
-	bg, fg, border := "#2b3950", "#dce6f6", "1px solid #42536b"
+	style := components.ButtonTonal
 	switch variant {
 	case "primary":
-		bg, fg, border = "#4677ed", "#ffffff", "1px solid #4677ed"
+		style = components.ButtonFilled
 	case "danger":
-		bg, fg, border = "#b3363f", "#ffffff", "1px solid #b3363f"
+		style = components.ButtonDanger
 	case "ghost":
-		bg, fg, border = "#202d42", "#dce6f6", "1px solid #42536b"
+		style = components.ButtonText
+	case "outlined":
+		style = components.ButtonOutlined
 	}
-	if a.widgets.variant == variant {
-		border = "2px solid #9db9f5"
-	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", "widgets:variant:"+variant).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
-		Padding(ui.Edges(ui.Px(9), ui.Px(14))).BorderRadius(ui.Px(8)).
-		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
+	return components.Button(label, components.ButtonOptions{Variant: style, Size: a.widgets.size}).
+		Attr("data-action", "widgets:variant:"+variant).Attr("aria-pressed", strconv.FormatBool(a.widgets.variant == variant))
 }
 
 func (a *builderApp) badgesCard() *ui.Element {
 	return widgetShell("Badges and counters", "A pill badge bound to Go state, with increment, decrement, and reset actions.",
-		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(
-			ui.Span().Text(strconv.Itoa(a.widgets.badges)).
-				BackgroundColor(ui.Hex("#4677ed")).Color(ui.Hex("#ffffff")).
-				Padding(ui.Edges(ui.Px(5), ui.Px(12))).BorderRadius(ui.Px(12)).
-				FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
+		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(
+			components.Badge(strconv.Itoa(a.widgets.badges)),
 			widgetsBtn("+ Add", "widgets:badges:inc", false),
 			widgetsBtn("- Remove", "widgets:badges:dec", false),
 			widgetsBtn("Reset", "widgets:badges:reset", false),
@@ -172,17 +171,9 @@ func (a *builderApp) badgesCard() *ui.Element {
 }
 
 func (a *builderApp) toggleCard() *ui.Element {
-	label, bg := "Off", "#2b3950"
-	if a.widgets.toggled {
-		label, bg = "On", "#4677ed"
-	}
-	return widgetShell("Toggle", "A single on/off switch held in Go state.",
-		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(12)).Children(
-			ui.Button(label).Attr("type", "button").Attr("data-action", "widgets:toggle").
-				BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#ffffff")).Border(ui.RawValue("1px solid #42536b")).
-				Padding(ui.Edges(ui.Px(8), ui.Px(18))).BorderRadius(ui.Px(14)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
-			ui.Text(fmt.Sprintf("State: %s", label)).FontSize(ui.Px(12)).Color(ui.Hex("#b5c7df")),
-		),
+	return widgetShell("Switch", "A controlled, keyboard-accessible switch.",
+		components.Switch("Notifications", a.widgets.toggled).ID("widgets-switch").Attr("data-action", "widgets:toggle"),
+		ui.Text("State: "+toggledWord(a.widgets.toggled)).FontSize(ui.Px(12)).Color(theme.Muted()),
 	)
 }
 
@@ -197,24 +188,20 @@ func (a *builderApp) widgetsNavCard() *ui.Element {
 }
 
 func (a *builderApp) navPill(label, name string) *ui.Element {
-	bg := "#2b3950"
+	bg := theme.Control()
 	if a.widgets.picked == name {
-		bg = "#355596"
+		bg = theme.Selected()
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", "widgets:nav:"+name).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
-		Border(ui.RawValue("1px solid #40546f")).
+		BackgroundColor(bg).Color(theme.Text()).
+		Border(theme.Border()).
 		Padding(ui.Edges(ui.Px(9), ui.Px(14))).BorderRadius(ui.Px(14)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
 
 func (a *builderApp) inputCard() *ui.Element {
 	return widgetShell("Text input", fmt.Sprintf("Editable field with id widgets-input (%d chars).", len(a.widgets.inputVal)),
 		ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10)).Children(
-			ui.Input().Attr("type", "text").Attr("id", "widgets-input").
-				Attr("value", a.widgets.inputVal).Attr("placeholder", "Type here…").Attr("name", "widgets-input").
-				BackgroundColor(ui.Hex("#111827")).Color(ui.Hex("#f1f5fd")).Border(ui.RawValue("1px solid #42536b")).
-				BoxSizing(ui.BoxSizingBorderBox).
-				Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).Width(ui.Percent(100)),
+			components.TextField("widgets-input", "Message", a.widgets.inputVal),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).Children(
 				widgetsBtn("Fill sample", "widgets:input:fill", true),
 				widgetsBtn("Clear", "widgets:input:clear", false),
@@ -228,7 +215,7 @@ func (a *builderApp) searchCard() *ui.Element {
 		ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10)).Children(
 			ui.Input().Attr("type", "search").Attr("id", "widgets-search").
 				Attr("value", a.widgets.search).Attr("placeholder", "Search widgets…").Attr("name", "widgets-search").
-				BackgroundColor(ui.Hex("#111827")).Color(ui.Hex("#f1f5fd")).Border(ui.RawValue("1px solid #42536b")).
+				BackgroundColor(theme.Background()).Color(theme.Text()).Border(theme.Border()).
 				BoxSizing(ui.BoxSizingBorderBox).
 				Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).Width(ui.Percent(100)),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).Children(
@@ -249,28 +236,12 @@ func (a *builderApp) checkboxCard() *ui.Element {
 }
 
 func (a *builderApp) checkRow(label string, checked bool, action string) *ui.Element {
-	boxBg, mark := "#111827", ""
-	if checked {
-		boxBg, mark = "#4677ed", "✓"
-	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).
-		BackgroundColor(ui.Hex("#111827")).Color(ui.Hex("#dce6f6")).Border(ui.RawValue("1px solid #42536b")).
-		BoxSizing(ui.BoxSizingBorderBox).
-		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).TextAlign(ui.TextAlignLeft).Width(ui.Percent(100)).
-		Children(
-			ui.Span().Text(mark).Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).
-				JustifyContent(ui.JustifyContentCenter).
-				BackgroundColor(ui.RawValue(boxBg)).Color(ui.Hex("#ffffff")).
-				Width(ui.Px(18)).Height(ui.Px(18)).Border(ui.RawValue("1px solid #5b6f8c")).BorderRadius(ui.Px(5)).
-				FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
-			ui.Text(label).Color(ui.Hex("#dce6f6")),
-		)
+	return components.Checkbox(label, checked).Attr("data-action", action).Width(ui.Percent(100))
 }
 
 func (a *builderApp) radioCard() *ui.Element {
 	return widgetShell("Radio row", fmt.Sprintf("Single choice held in Go: %s.", a.widgets.radio),
-		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(
+		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(
 			a.radioPill("Small", "small"),
 			a.radioPill("Medium", "medium"),
 			a.radioPill("Large", "large"),
@@ -284,20 +255,20 @@ func (a *builderApp) radioPill(label, value string) *ui.Element {
 	if selected {
 		dot = "●"
 	}
-	bg := "#2b3950"
+	bg := theme.Control()
 	if selected {
-		bg = "#355596"
+		bg = theme.Selected()
 	}
 	return ui.Button(label).Attr("type", "button").Attr("data-action", "widgets:radio:"+value).
 		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).Border(ui.RawValue("1px solid #40546f")).
+		BackgroundColor(bg).Color(theme.Text()).Border(theme.Border()).
 		Padding(ui.Edges(ui.Px(9), ui.Px(14))).BorderRadius(ui.Px(14)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold).
-		Children(ui.Span().Text(dot).Color(ui.Hex("#9db9f5")).FontSize(ui.Px(11)))
+		Children(ui.Span().Text(dot).Color(theme.Muted()).FontSize(ui.Px(11)))
 }
 
 func (a *builderApp) selectCard() *ui.Element {
 	return widgetShell("Select options", fmt.Sprintf("Plan %q picked from a select-style row.", a.widgets.selectOpt),
-		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(
+		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(
 			a.selectPill("Starter", "starter"),
 			a.selectPill("Pro", "pro"),
 			a.selectPill("Team", "team"),
@@ -319,8 +290,8 @@ func (a *builderApp) stepperCard() *ui.Element {
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(12)).Children(
 			widgetsBtn("−", "widgets:steps:dec", false),
 			ui.Span().Text(strconv.Itoa(a.widgets.steps)).
-				BackgroundColor(ui.Hex("#111827")).Color(ui.Hex("#f4f7ff")).
-				Border(ui.RawValue("1px solid #42536b")).
+				BackgroundColor(theme.Background()).Color(theme.Text()).
+				Border(theme.Border()).
 				Padding(ui.Edges(ui.Px(8), ui.Px(16))).BorderRadius(ui.Px(8)).FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold),
 			widgetsBtn("+", "widgets:steps:inc", false),
 			widgetsBtn("Reset", "widgets:steps:reset", false),
@@ -329,19 +300,12 @@ func (a *builderApp) stepperCard() *ui.Element {
 }
 
 func (a *builderApp) progressCard() *ui.Element {
-	width := fmt.Sprintf("%d%%", a.widgets.progress)
-	return widgetShell("Progress bar", fmt.Sprintf("Static width %s from Go state — no animation.", width),
-		ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10)).Children(
-			ui.Div().Width(ui.Percent(100)).BoxSizing(ui.BoxSizingBorderBox).BackgroundColor(ui.Hex("#2b3950")).BorderRadius(ui.Px(6)).
-				Padding(ui.Px(3)).Children(
-				ui.Div().Width(ui.RawValue(width)).Height(ui.Px(8)).
-					BackgroundColor(ui.Hex("#4677ed")).BorderRadius(ui.Px(6)),
-			),
-			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).Children(
-				widgetsBtn("−10", "widgets:progress:dec", false),
-				ui.Text(width).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
-				widgetsBtn("+10", "widgets:progress:inc", false),
-			),
+	return widgetShell("Progress", "A bounded percentage with progressbar semantics.",
+		components.Progress("Upload progress", a.widgets.progress).ID("widgets-progress").MarginTop(ui.Px(12)),
+		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(10)).Children(
+			widgetsBtn("−10", "widgets:progress:dec", false),
+			ui.Text(fmt.Sprintf("%d%%", a.widgets.progress)).Color(theme.Muted()),
+			widgetsBtn("+10", "widgets:progress:inc", false),
 		),
 	)
 }
@@ -349,7 +313,7 @@ func (a *builderApp) progressCard() *ui.Element {
 func (a *builderApp) tabsCard() *ui.Element {
 	return widgetShell("Tabs row", fmt.Sprintf("Active tab: %s.", a.widgets.tabSel),
 		ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).MarginTop(ui.Px(12)).
-			BorderBottom(ui.RawValue("1px solid #34445c")).Padding(ui.RawValue("0 0 10px")).
+			BorderBottom(theme.Border()).Padding(ui.Edges(ui.Px(0), ui.Px(0), ui.Px(10))).
 			Children(
 				a.tabPill("Overview", "overview"),
 				a.tabPill("Activity", "activity"),
@@ -369,7 +333,7 @@ func (a *builderApp) paginationCard() *ui.Element {
 	}
 	pages = append(pages, widgetsBtn("Next ›", "widgets:page:next", false))
 	return widgetShell("Pagination", fmt.Sprintf("Page %d of %d.", a.widgets.pageIdx, widgetsPageCount),
-		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(pages...),
+		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(pages...),
 	)
 }
 
@@ -379,76 +343,53 @@ func (a *builderApp) pageButton(n int) *ui.Element {
 
 func (a *builderApp) breadcrumbCard() *ui.Element {
 	return widgetShell("Breadcrumb", fmt.Sprintf("Current trail leaf: %s.", a.widgets.crumb),
-		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).MarginTop(ui.Px(12)).FlexWrap(ui.RawValue("wrap")).Children(
+		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).MarginTop(ui.Px(12)).FlexWrap(ui.FlexWrapWrap).Children(
 			a.crumbLink("Home", "home"),
-			ui.Text("/").Color(ui.Hex("#5b6f8c")),
+			ui.Text("/").Color(theme.Text()),
 			a.crumbLink("Gallery", "gallery"),
-			ui.Text("/").Color(ui.Hex("#5b6f8c")),
+			ui.Text("/").Color(theme.Text()),
 			a.crumbLink("Widgets", "widgets"),
 		),
 	)
 }
 
 func (a *builderApp) crumbLink(label, value string) *ui.Element {
-	color, weight := "#8fa3bd", "normal"
-	if a.widgets.crumb == value {
-		color, weight = "#ffffff", "bold"
-	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", "widgets:crumb:"+value).
-		BackgroundColor(ui.Hex("#111827")).Color(ui.RawValue(color)).Border(ui.RawValue("1px solid #34445c")).
-		Padding(ui.Edges(ui.Px(7), ui.Px(12))).BorderRadius(ui.Px(7)).FontSize(ui.Px(12)).FontWeight(ui.RawValue(weight))
+	return components.Button(label, components.ButtonOptions{Variant: components.ButtonText, Size: components.ButtonSmall}).
+		Attr("data-action", "widgets:crumb:"+value).Attr("aria-current", strconv.FormatBool(a.widgets.crumb == value))
 }
 
 func (a *builderApp) alertCard() *ui.Element {
-	banners := []*ui.Element{
-		a.alertBanner("Info", "Gallery state lives in Go.", "#1e3a5f", "#4677ed"),
-		a.alertBanner("Success", "Last action saved.", "#1d3b2a", "#3fa66a"),
-		a.alertBanner("Warning", "Tab now scrolls past 760px.", "#3d2f1a", "#d9a13b"),
-	}
-	body := ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).Children(banners...)
+	title, body, action := "Component updated", "A shared notice follows the current theme.", "widgets:alert:hide"
+	button := "Dismiss notice"
 	if a.widgets.alertOff {
-		return widgetShell("Alerts and banners", "Demo banner dismissed — restore it below.",
-			body,
-			ui.Div().MarginTop(ui.Px(10)).Children(widgetsBtn("Show demo banner", "widgets:alert:show", true)),
-		)
+		title, body, action = "Notice dismissed", "Restore it to try the interaction again.", "widgets:alert:show"
+		button = "Restore notice"
 	}
-	return widgetShell("Alerts and banners", "Info, success, and warning variants plus one dismissible banner.",
-		body,
-		ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).MarginTop(ui.Px(8)).Children(
-			a.alertBanner("Heads up (dismissible)", "Click hide to flip Go state.", "#1e3a5f", "#4677ed"),
-			ui.Div().Children(widgetsBtn("Hide demo banner", "widgets:alert:hide", false)),
-		),
-	)
-}
-
-func (a *builderApp) alertBanner(title, body, bg, edge string) *ui.Element {
-	return ui.Div().BorderLeft(ui.RawValue("3px solid "+edge)).
-		BackgroundColor(ui.RawValue(bg)).Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(7)).Children(
-		ui.Text(title).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
-		ui.P().Text(body).Margin(ui.RawValue("3px 0 0")).FontSize(ui.Px(11)).Color(ui.Hex("#c6d4e8")),
+	return widgetShell("Notices", "Inline feedback composed from the shared Notice control.",
+		components.Notice(title, body).MarginTop(ui.Px(12)), widgetsBtn(button, action, false),
 	)
 }
 
 func (a *builderApp) avatarCard() *ui.Element {
 	return widgetShell("Avatar stack", fmt.Sprintf("Selected avatar: %s. Click a circle to select it.", a.widgets.avatar),
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).MarginTop(ui.Px(12)).Children(
-			a.avatarCircle("AK", "#4677ed", false),
-			a.avatarCircle("JM", "#6b4fd0", true),
-			a.avatarCircle("RS", "#2f7d5b", true),
-			a.avatarCircle("+5", "#2b3950", true),
+			a.avatarCircle("AK", theme.Primary(), false),
+			a.avatarCircle("JM", ui.Hex("#6b4fd0"), true),
+			a.avatarCircle("RS", ui.Hex("#2f7d5b"), true),
+			a.avatarCircle("+5", theme.Control(), true),
 		),
 	)
 }
 
-func (a *builderApp) avatarCircle(initials, bg string, overlap bool) *ui.Element {
+func (a *builderApp) avatarCircle(initials string, bg ui.Color, overlap bool) *ui.Element {
 	el := ui.Button(initials).Attr("type", "button").Attr("data-action", "widgets:avatar:"+initials).
 		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentCenter).
 		Width(ui.Px(34)).Height(ui.Px(34)).BorderRadius(ui.Px(17)).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#ffffff")).FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold)
+		BackgroundColor(bg).Color(theme.OnPrimary()).FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold)
 	if a.widgets.avatar == initials {
-		el.Border(ui.RawValue("2px solid #9db9f5"))
+		el.Border(ui.SolidBorder(ui.Px(2), theme.Primary()))
 	} else {
-		el.Border(ui.RawValue("2px solid #111827"))
+		el.Border(ui.SolidBorder(ui.Px(2), theme.Background()))
 	}
 	if overlap {
 		el.MarginLeft(ui.Px(-10))
@@ -468,7 +409,7 @@ func (a *builderApp) tableCard() *ui.Element {
 	}
 	return widgetShell("Data table", fmt.Sprintf("Mini 3×3 table — row %d selected.", a.widgets.tableRow+1),
 		ui.Div().MarginTop(ui.Px(12)).Children(
-			ui.Tag("table").Width(ui.Percent(100)).BorderCollapse(ui.RawValue("collapse")).Children(
+			ui.Tag("table").Width(ui.Percent(100)).BorderCollapse(ui.BorderCollapseCollapse).Children(
 				ui.Tag("tbody").Children(trs...),
 			),
 		),
@@ -477,25 +418,25 @@ func (a *builderApp) tableCard() *ui.Element {
 
 func (a *builderApp) tableHead() *ui.Element {
 	cell := func(text string) *ui.Element {
-		return ui.Tag("th").Text(text).Color(ui.Hex("#8fa3bd")).FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold).
-			TextAlign(ui.TextAlignLeft).Padding(ui.Edges(ui.Px(6), ui.Px(8))).BorderBottom(ui.RawValue("1px solid #34445c"))
+		return ui.Tag("th").Text(text).Color(theme.Muted()).FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold).
+			TextAlign(ui.TextAlignLeft).Padding(ui.Edges(ui.Px(6), ui.Px(8))).BorderBottom(theme.Border())
 	}
 	return ui.Tag("tr").Children(cell("Widget"), cell("State"), cell("Action"))
 }
 
 func (a *builderApp) tableRow(idx int, cols []string) *ui.Element {
-	bg := "#111827"
+	bg := theme.Background()
 	if a.widgets.tableRow == idx {
-		bg = "#355596"
+		bg = theme.Selected()
 	}
 	td := func(text string) *ui.Element {
-		return ui.Tag("td").Text(text).Color(ui.Hex("#dce6f6")).FontSize(ui.Px(12)).Padding(ui.Edges(ui.Px(7), ui.Px(8))).
-			BorderBottom(ui.RawValue("1px solid #2c3a52"))
+		return ui.Tag("td").Text(text).Color(theme.Text()).FontSize(ui.Px(12)).Padding(ui.Edges(ui.Px(7), ui.Px(8))).
+			BorderBottom(theme.Border())
 	}
-	return ui.Tag("tr").BackgroundColor(ui.RawValue(bg)).Children(
+	return ui.Tag("tr").BackgroundColor(bg).Children(
 		td(cols[0]),
 		td(cols[1]),
-		ui.Tag("td").Padding(ui.Edges(ui.Px(4), ui.Px(8))).BorderBottom(ui.RawValue("1px solid #2c3a52")).Children(
+		ui.Tag("td").Padding(ui.Edges(ui.Px(4), ui.Px(8))).BorderBottom(theme.Border()).Children(
 			widgetsBtn(cols[2], "widgets:table:"+strconv.Itoa(idx), false),
 		),
 	)
@@ -512,12 +453,12 @@ func (a *builderApp) spotlightCard() *ui.Element {
 	return widgetShell("Composed cards", "Cards compose text and one action without extra state.",
 		ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).Children(
 			widgetLabel("Featured"),
-			ui.Text("Spotlight card").FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+			ui.Text("Spotlight card").FontWeight(ui.FontWeightBold).Color(theme.Text()),
 			ui.P().Text(fmt.Sprintf("The badge counter reads %d here too.", a.widgets.badges)).
-				Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#abbcd2")),
+				Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(theme.Muted()),
 			widgetDivider(),
 			widgetLabel("Actions"),
-			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).FlexWrap(ui.RawValue("wrap")).Children(
+			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).FlexWrap(ui.FlexWrapWrap).Children(
 				widgetsBtn("Open", "widgets:card:spotlight", true),
 				widgetsBtn("Inspect", "widgets:card:compact", false),
 			),
@@ -531,7 +472,18 @@ func (a *builderApp) handleWidgets(action string) bool {
 		return false
 	}
 	switch name {
-	case "variant:primary", "variant:secondary", "variant:danger", "variant:ghost":
+	case "size:small", "size:medium", "size:large":
+		switch name {
+		case "size:small":
+			a.widgets.size = components.ButtonSmall
+		case "size:large":
+			a.widgets.size = components.ButtonLarge
+		default:
+			a.widgets.size = components.ButtonMedium
+		}
+		a.notice = "Button size updated."
+		return true
+	case "variant:primary", "variant:secondary", "variant:danger", "variant:ghost", "variant:outlined":
 		a.widgets.variant = strings.TrimPrefix(name, "variant:")
 		a.notice = fmt.Sprintf("Button variant %q selected.", a.widgets.variant)
 		return true
@@ -556,18 +508,22 @@ func (a *builderApp) handleWidgets(action string) bool {
 	case "input:fill":
 		a.widgets.inputVal = defaultWidgetsState().inputVal
 		a.notice = "Text input filled with the sample value."
+		a.page.Form().SetFormValue("widgets-input", a.widgets.inputVal)
 		return true
 	case "input:clear":
 		a.widgets.inputVal = ""
 		a.notice = "Text input cleared."
+		a.page.Form().SetFormValue("widgets-input", a.widgets.inputVal)
 		return true
 	case "search:sample":
 		a.widgets.search = defaultWidgetsState().search
 		a.notice = fmt.Sprintf("Search filled with %q.", a.widgets.search)
+		a.page.Form().SetFormValue("widgets-search", a.widgets.search)
 		return true
 	case "search:clear":
 		a.widgets.search = ""
 		a.notice = "Search cleared."
+		a.page.Form().SetFormValue("widgets-search", a.widgets.search)
 		return true
 	case "check:notify":
 		a.widgets.checkNotify = !a.widgets.checkNotify

@@ -42,6 +42,56 @@ func (p *Page) Load(ctx context.Context, html string) error {
 	return p.Redraw(ctx)
 }
 
+// ReplaceHTML updates a document without adding or dropping history entries.
+// Like file reload, stable control IDs keep live values and focus.
+func ReplaceHTML(ctx context.Context, p *Page, source string) error {
+	if err := useContext(ctx); err != nil {
+		return err
+	}
+	if len(source) > MaxSourceSize {
+		return sourceTooLarge("html", int64(len(source)))
+	}
+	if strings.TrimSpace(source) == "" {
+		return ErrEmptyHTML
+	}
+	if err := checkDOMLimits(source); err != nil {
+		return err
+	}
+	tpl, err := template.New("page").Parse(source)
+	if err != nil {
+		return err
+	}
+	previous, previousSource := p.tpl, p.nav.Current()
+	previousFrame, previousBoxes := p.draw, p.boxes
+	previousBody, previousSynced := p.source, p.lastSyncBody
+	previousForm := p.formState()
+	previousRequest, previousHasRequest := p.ff.requestFocus, p.ff.hasFocusRequest
+	if previousForm != nil {
+		next := *previousForm
+		p.setFormState(&next)
+	}
+	p.tpl = tpl
+	p.nav.Retarget(source)
+	p.invalidateAccessibilityDocument()
+	p.markFormDirty()
+	p.invalidateCache()
+	if err := p.Redraw(ctx); err != nil {
+		p.tpl = previous
+		p.draw, p.boxes = previousFrame, previousBoxes
+		p.source, p.lastSyncBody = previousBody, previousSynced
+		p.nav.Retarget(previousSource)
+		p.setFormState(previousForm)
+		p.ff.requestFocus, p.ff.hasFocusRequest = previousRequest, previousHasRequest
+		p.markFormDirty()
+		p.invalidateCache()
+		return err
+	}
+	if p.redrawBatch == 0 {
+		p.resolveStates()
+	}
+	return nil
+}
+
 // Back draws the previous template source.
 func (p *Page) Back(ctx context.Context) error {
 	if err := useContext(ctx); err != nil {

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 // listFile is one row in the list teaching panel.
@@ -77,32 +78,25 @@ func (s *listState) visible() []listFile {
 }
 
 func listFilterButton(label, value, active string) *ui.Element {
-	bg := "#2b3950"
-	if active == value || (active == "" && value == "all") {
-		bg = "#355596"
-	}
-	return ui.Button(label).Attr("data-action", "list:filter:"+value).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
-		Border(ui.RawValue("1px solid #40546f")).
-		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold).FontSize(ui.Px(12))
+	return widgetsBtn(label, "list:filter:"+value, value == active)
 }
 
 func (a *builderApp) listPanel() *ui.Element {
 	files := a.files.visible()
 	rows := make([]*ui.Element, 0, len(files))
 	for _, f := range files {
-		bg := "#26364e"
+		bg := theme.Control()
 		if f.Name == a.files.Selected {
-			bg = "#355596"
+			bg = theme.Selected()
 		}
 		rows = append(rows, ui.Button("").Attr("data-action", "list:select:"+f.Name).
-			TextAlign(ui.TextAlignLeft).BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#ecf2fb")).
-			Border(ui.RawValue("1px solid #3e526e")).
+			TextAlign(ui.TextAlignLeft).BackgroundColor(bg).Color(theme.Text()).
+			Border(theme.Border()).
 			Padding(ui.Edges(ui.Px(12), ui.Px(14))).BorderRadius(ui.Px(8)).
 			Children(
 				ui.Text(f.Name).FontWeight(ui.FontWeightBold),
-				ui.P().Text(f.Kind+"  ·  "+f.Size).Margin(ui.RawValue("4px 0 0")).
-					FontSize(ui.Px(11)).Color(ui.Hex("#a0b6d0")),
+				ui.P().Text(f.Kind+"  ·  "+f.Size).Margin(ui.Edges(ui.Px(4), ui.Px(0), ui.Px(0))).
+					FontSize(ui.Px(11)).Color(theme.Muted()),
 			))
 	}
 
@@ -117,13 +111,13 @@ func (a *builderApp) listPanel() *ui.Element {
 		detail = "Selected " + a.files.Selected + " is hidden by the current filter."
 	}
 
-	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return ui.Section().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)).
 		Children(
 			ui.Div().Children(
 				a.panelHeading("File list"),
 				ui.P().Text("Rows are built in Go with Children(rows...) — no template range.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.Edges(ui.Px(7), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 			),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).
 				Children(
@@ -135,12 +129,12 @@ func (a *builderApp) listPanel() *ui.Element {
 				Children(
 					ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).
 						Children(rows...),
-					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(ui.Hex("#202d42")).
+					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(theme.Surface()).
 						BorderRadius(ui.Px(10)).MarginTop(ui.Px(12)).
 						Children(
 							ui.Text(detail).FontWeight(ui.FontWeightBold),
 							ui.P().Text("Showing "+strconv.Itoa(len(files))+" of "+strconv.Itoa(len(a.files.Files))+" files. Click a row to select it.").
-								Margin(ui.RawValue("8px 0 0")).FontSize(ui.Px(12)).Color(ui.Hex("#abbcd2")),
+								Margin(ui.Edges(ui.Px(8), ui.Px(0), ui.Px(0))).FontSize(ui.Px(12)).Color(theme.Muted()),
 						),
 				),
 		)

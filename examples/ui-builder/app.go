@@ -9,6 +9,8 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 const (
@@ -23,26 +25,24 @@ const (
 // builderApp is the single tabbed ui-builder host. Each tab lives in its
 // own screen_*.go file and owns a small state struct below.
 type builderApp struct {
-	page     *ownframe.Page
-	logger   *log.Logger
-	tab      string
-	notice   string
-	widgets  widgetsState
-	settings settingsState
-	layout   layoutState
-	todos    todoState
-	files    listState
-	theme    themeState
-	compare  compareState
-	dialog   dialogState
+	modalFocus components.DialogFocus
+	view       *ui.View
+	themeDirty bool
+	page       *ownframe.Page
+	logger     *log.Logger
+	tab        string
+	notice     string
+	widgets    widgetsState
+	settings   settingsState
+	layout     layoutState
+	todos      todoState
+	files      listState
+	theme      themeState
+	compare    compareState
+	dialog     dialogState
+	custom     customState
 
-	centerScroll         int
-	centerWheelRemainder float64
-	centerViewH          int
-	centerContentH       int
-	centerThumbH         int
-	centerDragging       bool
-	centerDragRemainder  float64
+	center               components.ScrollState
 	centerMeasurePending bool
 	layoutWidth          int
 	layoutHeight         int
@@ -70,22 +70,26 @@ func newBuilderApp() (*builderApp, error) {
 		compare:  defaultCompareState(),
 		dialog:   defaultDialogState(),
 	}
-	p, err := ui.NewPage(ownframe.Config{
-		Title:     "OwnFrame · Builder Gallery",
+	view, err := ui.Mount(ownframe.Config{
+		Theme:     theme.Dark + builderMotionCSS,
+		Title:     "OwnFrame Components",
 		Width:     demoWidth,
 		Height:    demoHeight,
 		MinWidth:  demoMinWidth,
 		MinHeight: demoMinHeight,
-		DevTools:  true,
+		DevTools:  false,
 		Scrollbar: ownframe.ScrollbarHidden,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new builder app: %w", err)
 	}
+	a.view = view
+	p := view.Page
 	a.page = p
 	p.Scroll().SetAllowScroll(false)
-	p.Handle(ownframe.Handlers{
+	view.Handle(ownframe.Handlers{
 		Click:     a.handleClick,
+		KeyDown:   a.handleKey,
 		Wheel:     a.handleWheel,
 		DragStart: a.startCenterScrollDrag,
 		DragMove:  a.moveCenterScrollDrag,
@@ -144,6 +148,7 @@ func (a *builderApp) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.refreshLogged(ctx, action, start)
 	}
 	if a.handleTheme(action) {
+		a.themeDirty = true
 		return a.refreshLogged(ctx, action, start)
 	}
 	if a.handleCompare(action) {
@@ -170,17 +175,17 @@ func (a *builderApp) refreshLogged(ctx context.Context, action string, start tim
 
 func (a *builderApp) selectTab(name string) {
 	switch name {
-	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog":
+	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom":
 		a.tab = name
-		a.centerScroll, a.centerWheelRemainder = 0, 0
-		a.centerContentH, a.centerThumbH = 0, 0
+		a.center = components.ScrollState{}
 		a.notice = map[string]string{
 			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
 			"settings": "Settings: form state, inline validation, and save in Go.",
 			"layout":   "Layout playground: direction, gap, padding, and box count.",
 			"todo":     "Todo and counter: slice and integer state with re-render.",
 			"list":     "File list: rows built with Children(rows...) in Go.",
-			"theme":    "Theme: accent, radius, and spacing restyle the preview.",
+			"theme":    "Global palettes and design tokens, shared by every control.",
+			"custom":   "Custom components inherit the app theme and accept local properties.",
 			"compare":  "Builder vs HTML: the same card as Go code and live output.",
 			"dialog":   "Dialog: a backdrop overlay with a centered panel.",
 		}[name]
@@ -188,27 +193,50 @@ func (a *builderApp) selectTab(name string) {
 }
 
 func (a *builderApp) refresh(ctx context.Context) error {
-	start := time.Now()
-	fragment, err := ui.Render(a.screen())
-	if err != nil {
-		a.logf("refresh render err=%v dur=%s", err, time.Since(start))
-		return fmt.Errorf("render builder gallery: %w", err)
+	switch {
+	case a.tab == "compare" && a.compare.Preview:
+		a.modalFocus.Activate(a.page, "compare-preview-x", "compare-preview-open")
+	case a.tab == "dialog" && a.dialog.open:
+		a.modalFocus.Activate(a.page, "dialog-x", "dialog-confirm", "dialog-cancel")
+	default:
+		a.modalFocus.Deactivate(a.page)
 	}
-	if err := a.page.Load(ctx, renderBuilderDocument(fragment)); err != nil {
-		a.logf("refresh load err=%v dur=%s", err, time.Since(start))
-		return fmt.Errorf("reload builder gallery: %w", err)
+
+	start := time.Now()
+	if a.themeDirty {
+		sheet, err := a.theme.stylesheet()
+		if err != nil {
+			return err
+		}
+		if err := a.page.SetTheme(sheet); err != nil {
+			return err
+		}
+		a.themeDirty = false
+	}
+	if err := a.view.Update(ctx, a.screen()); err != nil {
+		return fmt.Errorf("update builder gallery: %w", err)
 	}
 	a.centerMeasurePending = true
-	a.logf("refresh ok bytes=%d dur=%s", len(fragment), time.Since(start))
+	a.logf("refresh ok dur=%s", time.Since(start))
 	return nil
 }
 
-func renderBuilderDocument(fragment string) string {
-	return "<!doctype html><html><head><meta charset=\"utf-8\"><style>" +
-		"html,body{margin:0;padding:0;background-color:#111827}" +
-		"@keyframes todo-done-pop{0%{transform:scale(0.92);opacity:0;}" +
-		"60%{transform:scale(1.03);opacity:1;}}" +
-		"100%{transform:scale(1);opacity:1;}}" +
-		".todo-row:hover,.todo-toggle:hover{transform:translateY(-1px);}" +
-		"</style></head><body>" + fragment + "</body></html>"
+const builderMotionCSS = `
+@keyframes todo-done-pop{0%{transform:scale(0.92);opacity:0;}60%{transform:scale(1.03);opacity:1;}100%{transform:scale(1);opacity:1;}}
+.todo-row:hover,.todo-toggle:hover{transform:translateY(-1px);}
+`
+
+func (a *builderApp) handleKey(ctx context.Context, key string) error {
+	if !a.scrollInputBlocked() && a.page.Form().FocusID() == builderScrollThumbID && a.center.Key(key, int(builderScrollStep)) {
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.compare.Preview {
+		a.handleCompare("compare:preview-close")
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.dialog.open {
+		a.handleDialog("dialog:close")
+		return a.refresh(ctx)
+	}
+	return nil
 }

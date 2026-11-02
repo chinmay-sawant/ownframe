@@ -31,6 +31,14 @@ consume the event; return false to let the window scroll the page. The handler
 owns any redraw. The code-view explorer uses this to scroll its file tree while
 the editor keeps the page offset.
 
+For builder-authored inner panes, `ui/components` provides `ScrollState` and
+`Scrollbar`. The state supports pixel or row ranges, fractional wheel input,
+track paging, focused keyboard input, and native thumb dragging. The host
+measures the pane, clips and translates or windows its content, and routes
+its events. These inner scrollbars inherit theme properties independently of
+the window-owned page scrollbar. See the [component guide](../ui/components/README.md#scroll-a-pane)
+and `examples/jmap-mail` for two independent scroll panes.
+
 ## Page requests
 
 `Page.ScrollTo(x, y)` and `Page.ScrollBy(dx, dy)` store one request. The window consumes it through `host.ScrollRequester`, clamps it to the content, and clears it. The offset stays owned by the shell, so a request, the wheel, and a touch drag all move the same value. [interaction.md](interaction.md) has the calls.

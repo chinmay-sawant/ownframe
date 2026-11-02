@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 const (
@@ -83,76 +84,83 @@ func (a *builderApp) layoutSnippet() string {
 }
 
 func layoutToggleButton(label, action string, active bool) *ui.Element {
-	bg := "#2b3950"
-	if active {
-		bg = "#355596"
+	return widgetsBtn(label, action, active)
+}
+
+func layoutPixels(value string) ui.Length {
+	switch value {
+	case "8px":
+		return ui.Px(8)
+	case "24px":
+		return ui.Px(24)
+	default:
+		return ui.Px(16)
 	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.Hex("#f1f5fd")).
-		Border(ui.RawValue("1px solid #40546f")).
-		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
-		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
 }
 
 func (a *builderApp) layoutPanel() *ui.Element {
 	st := a.layout.normalized()
 	palette := layoutPalette()
 
-	controls := ui.Div().Display(ui.DisplayFlex).FlexWrap(ui.RawValue("wrap")).
+	controls := ui.Div().Display(ui.DisplayFlex).FlexWrap(ui.FlexWrapWrap).
 		AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 		Children(
-			ui.Text("Direction:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Direction:").FontSize(ui.Px(12)).Color(theme.Muted()),
 			layoutToggleButton("Row", "layout:dir:row", st.Direction == "row"),
 			layoutToggleButton("Column", "layout:dir:column", st.Direction == "column"),
-			ui.Text("Gap:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Gap:").FontSize(ui.Px(12)).Color(theme.Muted()),
 			layoutToggleButton("8px", "layout:gap:8px", st.Gap == "8px"),
 			layoutToggleButton("16px", "layout:gap:16px", st.Gap == "16px"),
 			layoutToggleButton("24px", "layout:gap:24px", st.Gap == "24px"),
-			ui.Text("Padding:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Padding:").FontSize(ui.Px(12)).Color(theme.Muted()),
 			layoutToggleButton("8px", "layout:pad:8px", st.Padding == "8px"),
 			layoutToggleButton("16px", "layout:pad:16px", st.Padding == "16px"),
 			layoutToggleButton("24px", "layout:pad:24px", st.Padding == "24px"),
-			ui.Text("Boxes:").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+			ui.Text("Boxes:").FontSize(ui.Px(12)).Color(theme.Muted()),
 			layoutToggleButton("− Fewer", "layout:fewer", false),
-			ui.Text(fmt.Sprintf("%d", st.Boxes)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
+			ui.Text(fmt.Sprintf("%d", st.Boxes)).FontWeight(ui.FontWeightBold).Color(theme.Text()),
 			layoutToggleButton("+ More", "layout:more", false),
 		)
 
 	boxes := make([]*ui.Element, 0, st.Boxes)
 	for i := 0; i < st.Boxes; i++ {
 		color := palette[i%len(palette)]
-		boxes = append(boxes, ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
+		boxes = append(boxes, ui.Div().Flex(ui.Number(1)).MinWidth(ui.Px(0)).
 			Padding(ui.Edges(ui.Px(24), ui.Px(12))).BorderRadius(ui.Px(8)).
-			BackgroundColor(ui.RawValue(color)).Color(ui.Hex("#ffffff")).
+			BackgroundColor(ui.Hex(color)).Color(theme.OnPrimary()).
 			TextAlign(ui.TextAlignCenter).FontWeight(ui.FontWeightBold).
 			Children(ui.Text(fmt.Sprintf("Box %d", i+1))))
 	}
 
-	preview := ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.RawValue(st.Direction)).
-		Gap(ui.RawValue(st.Gap)).Padding(ui.RawValue(st.Padding)).
-		BackgroundColor(ui.Hex("#182336")).BorderRadius(ui.Px(10)).
-		Border(ui.RawValue("1px solid #34445c")).
+	direction := ui.FlexDirectionRow
+	if st.Direction == "column" {
+		direction = ui.FlexDirectionColumn
+	}
+	preview := ui.Div().Display(ui.DisplayFlex).FlexDirection(direction).
+		Gap(layoutPixels(st.Gap)).Padding(layoutPixels(st.Padding)).
+		BackgroundColor(theme.Control()).BorderRadius(ui.Px(10)).
+		Border(theme.Border()).
 		Children(boxes...)
 
-	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return ui.Section().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
 				a.panelHeading("Layout playground"),
 				ui.P().Text("Toggle the options to update the preview and its typed Go source.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.Edges(ui.Px(7), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 			),
 			controls,
 			preview,
 			ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 				Children(
 					layoutToggleButton("Copy code", "layout:copy", false),
-					ui.Text("Go code for the preview above — updates with every toggle.").FontSize(ui.Px(12)).Color(ui.Hex("#9aacbf")),
+					ui.Text("Go code for the preview above — updates with every toggle.").FontSize(ui.Px(12)).Color(theme.Muted()),
 				),
-			ui.P().Text(a.layoutSnippet()).Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#9fe8c9")).
-				FontFamily(ui.RawValue("monospace")).OverflowWrap(ui.OverflowWrapBreakWord).
+			ui.P().Text(a.layoutSnippet()).Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(theme.Muted()).
+				FontFamily(ui.FontFamilyMonospace).OverflowWrap(ui.OverflowWrapBreakWord).
 				WhiteSpace(ui.WhiteSpacePreWrap).
-				BackgroundColor(ui.Hex("#182336")).Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)),
+				BackgroundColor(theme.Control()).Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)),
 		)
 }
 

@@ -1,6 +1,10 @@
 package ownframe
 
-import "context"
+import (
+	"context"
+
+	"github.com/chinmay-sawant/ownframe/internal/page"
+)
 
 // Form reads and writes control values and focus.
 type Form struct{ page *Page }
@@ -42,3 +46,11 @@ func (f Form) FocusNext(ctx context.Context) error {
 func (f Form) FocusPrev(ctx context.Context) error {
 	return innerPage(f.page).FocusPrev(ctx)
 }
+
+// SetFocusScope limits Tab traversal to the given controls in document order.
+// No IDs removes the scope. Call on the page loop and clear it when closing a modal.
+func (f Form) SetFocusScope(ids ...string) { page.SetFocusScope(innerPage(f.page), ids) }
+
+// RequestFocus applies focus during the next redraw, after new controls exist.
+// An empty, missing, or disabled ID clears focus. This method does not draw.
+func (f Form) RequestFocus(id string) { page.RequestFocus(innerPage(f.page), id) }

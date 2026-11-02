@@ -2,6 +2,8 @@ package main
 
 import (
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/components"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 // dialogState owns the backdrop dialog demo. builderApp carries one as
@@ -16,7 +18,7 @@ func defaultDialogState() dialogState {
 }
 
 func (a *builderApp) dialogPanel() *ui.Element {
-	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return ui.Section().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().MaxWidth(ui.Px(600)).Width(ui.Percent(100)).
@@ -25,21 +27,19 @@ func (a *builderApp) dialogPanel() *ui.Element {
 					ui.Div().Children(
 						a.panelHeading("Backdrop dialog"),
 						ui.P().Text("An overlay with a translucent backdrop over the app, like the mail settings card. Open it, confirm, cancel, or click the backdrop to dismiss.").
-							Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+							Margin(ui.Edges(ui.Px(7), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 					),
-					ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+					ui.Div().Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(theme.Surface()).
 						Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).
 						Children(
-							ui.Button("Open dialog").ID("dialog-open").Attr("type", "button").Attr("data-action", "dialog:open").
-								BackgroundColor(ui.Hex("#4677ed")).Color(ui.Hex("#ffffff")).Border(ui.RawValue("1px solid #4677ed")).
-								Padding(ui.Edges(ui.Px(9), ui.Px(14))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
-							ui.Text(a.dialog.status()).FontSize(ui.Px(12)).Color(ui.Hex("#b5c7df")),
+							components.Button("Open dialog", components.ButtonOptions{Variant: components.ButtonFilled}).ID("dialog-open").Attr("data-action", "dialog:open"),
+							ui.Text(a.dialog.status()).FontSize(ui.Px(12)).Color(theme.Muted()),
 						),
-					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(ui.Hex("#202d42")).BorderRadius(ui.Px(10)).
+					ui.Div().Padding(ui.Edges(ui.Px(12), ui.Px(15))).BackgroundColor(theme.Surface()).BorderRadius(ui.Px(10)).
 						Children(
 							ui.Text("How it works").FontWeight(ui.FontWeightBold),
 							ui.P().Text("The overlay is position:absolute inset 0 with z-index 50 and a translucent background, holding a centered 420px panel (id dialog-panel, no action) so interior clicks land harmlessly while backdrop clicks carry dialog:close. Same shape as jmap-mail settings-card.").
-								Margin(ui.RawValue("8px 0 0")).FontSize(ui.Px(12)).Color(ui.Hex("#abbcd2")),
+								Margin(ui.Edges(ui.Px(8), ui.Px(0), ui.Px(0))).FontSize(ui.Px(12)).Color(theme.Muted()),
 						),
 				),
 		)
@@ -62,43 +62,27 @@ func (a *builderApp) dialogOverlay() *ui.Element {
 	if a.tab != "dialog" || !a.dialog.open {
 		return nil
 	}
-	return ui.Div().ID("dialog-backdrop").Attr("data-action", "dialog:close").
-		Position(ui.PositionAbsolute).Top(ui.Px(0)).Left(ui.Px(0)).
-		Right(ui.Px(0)).Bottom(ui.Px(0)).ZIndex(ui.Number(50)).
-		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentCenter).
-		BackgroundColor(ui.RawValue("rgba(0, 0, 0, 0.55)")).
-		Children(
-			ui.Div().ID("dialog-panel").
-				Width(ui.Px(420)).
-				BackgroundColor(ui.Hex("#1c2738")).
-				Border(ui.RawValue("1px solid #39465a")).
-				BorderRadius(ui.Px(12)).Overflow(ui.OverflowHidden).
-				Children(
-					ui.Div().Display(ui.DisplayFlex).JustifyContent(ui.JustifyContentSpaceBetween).
-						AlignItems(ui.AlignItemsCenter).Padding(ui.Edges(ui.Px(16), ui.Px(20))).
-						BorderBottom(ui.RawValue("1px solid #39465a")).
-						Children(
-							ui.Text("Confirm action").FontSize(ui.Px(16)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
-							ui.Button("×").ID("dialog-x").Attr("type", "button").Attr("data-action", "dialog:close").
-								BackgroundColor(ui.Hex("#2b3950")).Color(ui.Hex("#dce6f6")).Border(ui.RawValue("1px solid #42536b")).
-								Padding(ui.Edges(ui.Px(6), ui.Px(12))).BorderRadius(ui.Px(8)).FontWeight(ui.FontWeightBold),
-						),
-					ui.Div().Padding(ui.Edges(ui.Px(18), ui.Px(20), ui.Px(20))).
-						Children(
-							ui.P().Text("This dialog floats above the gallery on a backdrop. Confirming records the choice in Go state; clicking the dimmed backdrop dismisses without choosing.").
-								Margin(ui.Px(0)).FontSize(ui.Px(13)).Color(ui.Hex("#b5c7df")),
-							ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).MarginTop(ui.Px(16)).
-								Children(
-									ui.Button("Confirm").ID("dialog-confirm").Attr("type", "button").Attr("data-action", "dialog:confirm").
-										BackgroundColor(ui.Hex("#4677ed")).Color(ui.Hex("#ffffff")).Border(ui.RawValue("1px solid #4677ed")).
-										Padding(ui.Edges(ui.Px(9), ui.Px(14))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
-									ui.Button("Cancel").ID("dialog-cancel").Attr("type", "button").Attr("data-action", "dialog:close").
-										BackgroundColor(ui.Hex("#2b3950")).Color(ui.Hex("#dce6f6")).Border(ui.RawValue("1px solid #42536b")).
-										Padding(ui.Edges(ui.Px(9), ui.Px(14))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold),
-								),
-						),
-				),
-		)
+	return components.Dialog(components.DialogOptions{
+		BackdropID: "dialog-backdrop", PanelID: "dialog-panel", Label: "Confirm action", CloseAction: "dialog:close", Width: ui.Px(420),
+	},
+		ui.Div().Display(ui.DisplayFlex).JustifyContent(ui.JustifyContentSpaceBetween).
+			AlignItems(ui.AlignItemsCenter).Padding(ui.Edges(ui.Px(16), ui.Px(20))).
+			BorderBottom(theme.Border()).
+			Children(
+				ui.Text("Confirm action").FontSize(ui.Px(16)).FontWeight(ui.FontWeightBold).Color(theme.Text()),
+				components.Button("×", components.ButtonOptions{Variant: components.ButtonTonal}).ID("dialog-x").Attr("data-action", "dialog:close"),
+			),
+		ui.Div().Padding(ui.Edges(ui.Px(18), ui.Px(20), ui.Px(20))).
+			Children(
+				ui.P().Text("This dialog floats above the gallery on a backdrop. Confirming records the choice in Go state; clicking the dimmed backdrop dismisses without choosing.").
+					Margin(ui.Px(0)).FontSize(ui.Px(13)).Color(theme.Muted()),
+				ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).MarginTop(ui.Px(16)).
+					Children(
+						components.Button("Confirm", components.ButtonOptions{Variant: components.ButtonFilled}).ID("dialog-confirm").Attr("data-action", "dialog:confirm"),
+						components.Button("Cancel", components.ButtonOptions{Variant: components.ButtonTonal}).ID("dialog-cancel").Attr("data-action", "dialog:close"),
+					),
+			),
+	)
 }
 
 func (a *builderApp) handleDialog(action string) bool {

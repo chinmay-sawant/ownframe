@@ -25,13 +25,15 @@ func (v valueData) cssText() (string, error) {
 	return v.text, nil
 }
 
-// Length is a CSS length constructed with Px or Rem. Its zero value is invalid.
+// Length is a CSS length constructed with Px, Rem, Vh, or LengthVar.
+// Its zero value is invalid.
 type Length struct{ valueData }
 
 // Percentage is a CSS percentage. Its zero value is invalid.
 type Percentage struct{ valueData }
 
-// Color is a CSS color constructed with Hex. Its zero value is invalid.
+// Color is a CSS color constructed with Hex, Transparent, or ColorVar.
+// Its zero value is invalid.
 type Color struct{ valueData }
 
 // Numeric is a unitless CSS number constructed with Number. Its zero value is invalid.
@@ -42,6 +44,9 @@ type Spacing struct{ valueData }
 
 // Px returns a length in CSS pixels. Non-finite inputs fail at Render or NewPage.
 func Px(n float64) Length { return Length{valueData: scalar(n, "px")} }
+
+// Vh returns a length as a percentage of the viewport height.
+func Vh(n float64) Length { return Length{valueData: scalar(n, "vh")} }
 
 // Rem returns a length relative to the root font size.
 func Rem(n float64) Length { return Length{valueData: scalar(n, "rem")} }
@@ -95,6 +100,56 @@ func Hex(text string) Color {
 		return Color{valueData: valueData{err: fmt.Errorf("ui: invalid CSS hex color %q", text)}}
 	}
 	return Color{valueData: valueData{text: text}}
+}
+
+// Transparent returns a fully transparent CSS color.
+func Transparent() Color { return Color{valueData: valueData{text: "transparent"}} }
+
+// ColorVar references a theme color with a validated color fallback.
+// The theme stylesheet supplies the variable's runtime value.
+func ColorVar(name string, fallback Color) Color {
+	return Color{valueData: variableValue(name, fallback)}
+}
+
+// LengthVar references a theme length with a validated length fallback.
+func LengthVar(name string, fallback Length) Length {
+	return Length{valueData: variableValue(name, fallback)}
+}
+
+func variableValue(name string, fallback cssValue) valueData {
+	text, err := fallback.cssText()
+	if err != nil {
+		return valueData{err: err}
+	}
+	return Var(name, text).valueData
+}
+
+// BorderStroke is a solid border constructed by SolidBorder.
+type BorderStroke struct{ valueData }
+
+// SolidBorder combines a width and color without raw CSS syntax.
+func SolidBorder(width Length, color Color) BorderStroke {
+	w, err := width.cssText()
+	if err != nil {
+		return BorderStroke{valueData: valueData{err: err}}
+	}
+	c, err := color.cssText()
+	if err != nil {
+		return BorderStroke{valueData: valueData{err: err}}
+	}
+	return BorderStroke{valueData: valueData{text: w + " solid " + c}}
+}
+
+// Transform is a typed transform constructed by TranslateY.
+type Transform struct{ valueData }
+
+// TranslateY moves an element vertically by a CSS length.
+func TranslateY(distance Length) Transform {
+	text, err := distance.cssText()
+	if err != nil {
+		return Transform{valueData: valueData{err: err}}
+	}
+	return Transform{valueData: valueData{text: "translateY(" + text + ")"}}
 }
 
 type expression struct{ valueData }

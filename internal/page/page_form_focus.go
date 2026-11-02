@@ -6,12 +6,15 @@ import "github.com/chinmay-sawant/ownframe/internal/page/form"
 // accessibility snapshot. Only this file and page_form_focus_hit.go write
 // its fields; Page delegates below. No lock: the page loop serializes it.
 type formFocusState struct {
-	form           *form.State
-	hover          string
-	hoverX, hoverY float64
-	active         string
-	pressUsed      bool
-	accessibility  *accessibilityState
+	scope           []string
+	requestFocus    string
+	hasFocusRequest bool
+	form            *form.State
+	hover           string
+	hoverX, hoverY  float64
+	active          string
+	pressUsed       bool
+	accessibility   *accessibilityState
 }
 
 // formState returns the owned form document, or nil before first sync.

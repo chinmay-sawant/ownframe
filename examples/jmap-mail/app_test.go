@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image/color"
+	"image/png"
 	"strings"
 	"testing"
 	"time"
@@ -151,14 +154,14 @@ func TestMailListWheelScrollsAndShowsScrollbar(t *testing.T) {
 	if !handled {
 		t.Fatal("wheel over the list should be consumed")
 	}
-	if a.listOffset == 0 {
+	if a.listScroll.Offset() == 0 {
 		t.Fatal("wheel down did not advance the list")
 	}
-	before := a.listOffset
+	before := a.listScroll.Offset()
 	if _, err := a.handleWheel(ctx, cx, cy, 0, 2); err != nil {
 		t.Fatal(err)
 	}
-	if a.listOffset >= before {
+	if a.listScroll.Offset() >= before {
 		t.Fatal("wheel up did not move the list back")
 	}
 }
@@ -194,7 +197,7 @@ func TestMailReaderWheelScrollsWhenOverflowing(t *testing.T) {
 	if !handled {
 		t.Fatal("wheel over the reader should be consumed")
 	}
-	if a.readerScroll == 0 {
+	if a.readerScroll.Offset() == 0 {
 		t.Fatal("wheel down did not scroll the reader")
 	}
 }
@@ -310,17 +313,16 @@ func TestMailSettingsThemeAndPaneSpacing(t *testing.T) {
 	if err := pagetest.ClickAction(ctx, a.Page(), "theme:dark"); err != nil {
 		t.Fatal(err)
 	}
-	if !a.dark {
+	if a.appearance != mailThemeDark {
 		t.Fatal("theme option did not change state")
 	}
-	darkHTML := a.Page().HTML()
-	if !strings.Contains(darkHTML, "#111827") {
-		t.Fatal("dark color palette not rendered")
+	if got := mailToolbarPixel(t, ctx, a.Page()); got != (color.RGBA{R: 28, G: 39, B: 56, A: 255}) {
+		t.Fatalf("dark toolbar surface = %v", got)
 	}
 	if err := pagetest.ClickAction(ctx, a.Page(), "theme:light"); err != nil {
 		t.Fatal(err)
 	}
-	if a.dark || !strings.Contains(a.Page().HTML(), "#f5f7fb") {
+	if a.appearance != mailThemeLight || mailToolbarPixel(t, ctx, a.Page()) != (color.RGBA{R: 255, G: 255, B: 255, A: 255}) {
 		t.Fatal("light theme not restored")
 	}
 	if err := pagetest.Click(ctx, a.Page(), "settings-close"); err != nil {
@@ -340,5 +342,103 @@ func TestMailSettingsThemeAndPaneSpacing(t *testing.T) {
 	}
 	if a.settings || strings.Contains(a.Page().HTML(), "settings-card") {
 		t.Fatal("backdrop click did not close the settings card")
+	}
+}
+
+func mailToolbarPixel(t *testing.T, ctx context.Context, page *ownframe.Page) color.Color {
+	t.Helper()
+	img, err := png.Decode(bytes.NewReader(page.Testing().PNGWithContext(ctx)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return color.RGBAModel.Convert(img.At(1, 1))
+}
+
+func TestMailCustomThemeAndModalLifecycle(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.page.SetTheme(`:root{--of-surface:#123456;--of-text:#ffffff;--of-background:#102030}`); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := mailToolbarPixel(t, ctx, a.page); got != (color.RGBA{R: 18, G: 52, B: 86, A: 255}) {
+		t.Fatalf("custom surface=%v", got)
+	}
+	a.page.Form().SetFormValue("mail-search", "Old query")
+	if err := pagetest.ClickAction(ctx, a.page, "clear-search"); err != nil {
+		t.Fatal(err)
+	}
+	if got := a.page.Form().FormValue("mail-search"); got != "" {
+		t.Fatalf("search was not cleared: %q", got)
+	}
+	if err := pagetest.ClickAction(ctx, a.page, "settings"); err != nil {
+		t.Fatal(err)
+	}
+	if got := a.page.Form().FocusID(); got != "settings-close" {
+		t.Fatalf("modal focus=%q", got)
+	}
+	for _, want := range []string{"theme-light", "theme-dark", "theme-custom", "settings-close"} {
+		if err := a.page.Form().FocusNext(ctx); err != nil {
+			t.Fatal(err)
+		}
+		if got := a.page.Form().FocusID(); got != want {
+			t.Fatalf("modal Tab=%q want %q", got, want)
+		}
+	}
+	if err := a.page.Edit().KeyDown(ctx, "escape"); err != nil {
+		t.Fatal(err)
+	}
+	if a.settings {
+		t.Fatal("Escape did not close settings")
+	}
+	if got := mailToolbarPixel(t, ctx, a.page); got != (color.RGBA{R: 18, G: 52, B: 86, A: 255}) {
+		t.Fatalf("updates lost custom theme: %v", got)
+	}
+}
+
+func TestMailBuiltInAndCustomThemeSelection(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.Click(ctx, a.page, "settings-open"); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name string
+		want color.RGBA
+	}{
+		{"custom", color.RGBA{R: 255, G: 253, B: 246, A: 255}},
+		{"dark", color.RGBA{R: 28, G: 39, B: 56, A: 255}},
+		{"light", color.RGBA{R: 255, G: 255, B: 255, A: 255}},
+	} {
+		if err := pagetest.Click(ctx, a.page, "theme-"+tt.name); err != nil {
+			t.Fatal(err)
+		}
+		if a.appearance != mailTheme(tt.name) {
+			t.Fatalf("appearance=%s", a.appearance)
+		}
+		if got := mailToolbarPixel(t, ctx, a.page); got != tt.want {
+			t.Fatalf("%s surface=%v", tt.name, got)
+		}
+		if !strings.Contains(a.page.HTML(), "--of-radius:18px;") {
+			t.Fatal("theme switch lost Compose override")
+		}
+	}
+	before := a.appearance
+	a.selectTheme("unknown")
+	if a.appearance != before {
+		t.Fatal("invalid theme changed state")
 	}
 }

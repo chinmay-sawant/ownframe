@@ -98,7 +98,7 @@ func (e Edit) DeleteWord(ctx context.Context) error {
 	return p.DeleteWord(ctx)
 }
 
-// Submit calls the submit handler and draws.
+// Submit activates a focused button, or calls the submit handler and draws.
 func (e Edit) Submit(ctx context.Context) error {
 	p := innerPage(e.page)
 	if p == nil {

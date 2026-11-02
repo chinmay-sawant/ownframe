@@ -1,12 +1,22 @@
 package window
 
 import (
+	"errors"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func (s *shell) Draw(screen *ebiten.Image) {
+	// Update syncs before the wheel handler, and that handler can redraw.
+	// Paint the display it produced. Replaying the previous one into the new
+	// damage leaves the tail of a moved thumb on the retained screen.
+	if !s.built() {
+		if err := s.syncImage(); err != nil && !errors.Is(err, errNoImage) {
+			s.drawSyncErr = err
+		}
+	}
+
 	s.devFrameTime()
 	defer s.perfFrameSample()
 	s.frameBegin()

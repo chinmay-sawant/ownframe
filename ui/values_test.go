@@ -116,6 +116,10 @@ func TestPublicStyleAPITypeChecking(t *testing.T) {
 	}
 	config.Importer = styleImporter{pkg: pkg, fallback: importer.Default()}
 	for _, test := range []struct{ name, code, want string }{
+		{name: "typed theme color", code: `ui.Div().Color(ui.ColorVar("--text", ui.Hex("#fff")))`},
+		{name: "typed border", code: `ui.Div().Border(ui.SolidBorder(ui.Px(1), ui.Hex("#fff")))`},
+		{name: "color cannot be length", code: `ui.Div().Width(ui.ColorVar("--text", ui.Hex("#fff")))`, want: "does not implement"},
+		{name: "length cannot be color", code: `ui.Div().Color(ui.LengthVar("--gap", ui.Px(8)))`, want: "does not implement"},
 		{name: "typed", code: `ui.Div().Width(ui.Px(10)).Display(ui.DisplayFlex).Color(ui.Hex("#fff"))`},
 		{name: "raw", code: `ui.Div().Width(ui.RawValue("calc(100% - 2px)"))`},
 		{name: "variable", code: `ui.Div().Color(ui.Var("--accent"))`},
@@ -159,4 +163,31 @@ func (i styleImporter) Import(path string) (*types.Package, error) {
 		return i.pkg, nil
 	}
 	return i.fallback.Import(path)
+}
+
+func TestTypedThemeAndLayoutValues(t *testing.T) {
+	root := Div().Height(Vh(100)).Flex(Number(1)).FontFamily(FontFamilySansSerif).
+		Color(ColorVar("--text", Hex("#123456"))).
+		Border(SolidBorder(Px(1), ColorVar("--border", Hex("#abcdef")))).
+		Padding(LengthVar("--spacing", Px(12))).Transform(TranslateY(Px(-20)))
+	source, err := Render(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"height:100vh;", "flex:1;", "font-family:sans-serif;", "color:var(--text, #123456);", "translateY(-20px)"} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("missing %q in %s", want, source)
+		}
+	}
+	for name, root := range map[string]*Element{
+		"bad color fallback":  Div().Color(ColorVar("--color", Hex("no"))),
+		"bad color name":      Div().Color(ColorVar("color", Hex("#fff"))),
+		"bad length fallback": Div().Padding(LengthVar("--spacing", Length{})),
+		"bad border":          Div().Border(SolidBorder(Length{}, Hex("#fff"))),
+		"bad transform":       Div().Transform(TranslateY(Px(math.NaN()))),
+	} {
+		if _, err := Render(root); err == nil {
+			t.Errorf("accepted %s", name)
+		}
+	}
 }

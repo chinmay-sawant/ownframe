@@ -1,12 +1,31 @@
 package ownframe
 
-import "context"
+import (
+	"context"
+	"fmt"
+
+	"github.com/chinmay-sawant/ownframe/internal/page"
+)
 
 // HTML returns the template source at the current history index.
 func (p *Page) HTML() string { return innerPage(p).HTML() }
 
-// Load parses html, drops later history, and draws that page.
-func (p *Page) Load(ctx context.Context, html string) error {
+// LoadOptions controls whether Load navigates or updates the current document.
+type LoadOptions struct {
+	// ReplaceCurrent keeps the current history index and forward entries.
+	// Controls with unchanged IDs and types keep user values and focus.
+	ReplaceCurrent bool
+}
+
+// Load parses html and draws it. By default it adds a navigation entry.
+// Supply one LoadOptions value to replace the current document instead.
+func (p *Page) Load(ctx context.Context, html string, options ...LoadOptions) error {
+	if len(options) > 1 {
+		return fmt.Errorf("ownframe: Load accepts at most one options value")
+	}
+	if len(options) == 1 && options[0].ReplaceCurrent {
+		return page.ReplaceHTML(ctx, innerPage(p), html)
+	}
 	return innerPage(p).Load(ctx, html)
 }
 

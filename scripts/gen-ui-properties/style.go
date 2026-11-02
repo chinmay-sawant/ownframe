@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 )
 
@@ -39,9 +41,11 @@ func valueFamilies() map[string][]string {
 			border-left-color outline-color text-decoration-color text-emphasis-color fill stroke
 		`),
 		"Numeric": strings.Fields(`
-			opacity flex-grow flex-shrink order z-index font-weight line-height column-count orphans widows
+			opacity flex flex-grow flex-shrink order z-index font-weight line-height column-count orphans widows
 			fill-opacity stroke-opacity
 		`),
+		"BorderStroke": strings.Fields("border border-top border-right border-bottom border-left"),
+		"Transform":    strings.Fields("transform"),
 		"Spacing": strings.Fields(`
 			padding margin gap border-radius padding-block padding-inline margin-block margin-inline
 		`),
@@ -66,21 +70,24 @@ func keywordSpecs() map[string][]string {
 			normal start end flex-start flex-end center baseline stretch space-between space-around
 			space-evenly
 		`),
-		"flex-wrap":     strings.Fields("nowrap wrap wrap-reverse"),
-		"position":      strings.Fields("static relative absolute fixed sticky"),
-		"overflow":      strings.Fields("visible hidden clip scroll auto"),
-		"overflow-x":    strings.Fields("visible hidden clip scroll auto"),
-		"overflow-y":    strings.Fields("visible hidden clip scroll auto"),
-		"box-sizing":    strings.Fields("border-box content-box"),
-		"text-align":    strings.Fields("start end left right center justify"),
-		"white-space":   strings.Fields("normal nowrap pre pre-wrap pre-line break-spaces"),
-		"overflow-wrap": strings.Fields("normal break-word anywhere"),
-		"font-weight":   strings.Fields("normal bold bolder lighter"),
-		"font-style":    strings.Fields("normal italic oblique"),
-		"visibility":    strings.Fields("visible hidden collapse"),
-		"text-overflow": strings.Fields("clip ellipsis"),
-		"width":         strings.Fields("auto min-content max-content fit-content"),
-		"height":        strings.Fields("auto min-content max-content fit-content"),
+		"flex-wrap":       strings.Fields("nowrap wrap wrap-reverse"),
+		"position":        strings.Fields("static relative absolute fixed sticky"),
+		"overflow":        strings.Fields("visible hidden clip scroll auto"),
+		"overflow-x":      strings.Fields("visible hidden clip scroll auto"),
+		"overflow-y":      strings.Fields("visible hidden clip scroll auto"),
+		"box-sizing":      strings.Fields("border-box content-box"),
+		"border-collapse": strings.Fields("collapse separate"),
+		"text-decoration": strings.Fields("none underline line-through"),
+		"text-align":      strings.Fields("start end left right center justify"),
+		"white-space":     strings.Fields("normal nowrap pre pre-wrap pre-line break-spaces"),
+		"overflow-wrap":   strings.Fields("normal break-word anywhere"),
+		"font-weight":     strings.Fields("normal bold bolder lighter"),
+		"font-family":     strings.Fields("serif sans-serif monospace"),
+		"font-style":      strings.Fields("normal italic oblique"),
+		"visibility":      strings.Fields("visible hidden collapse"),
+		"text-overflow":   strings.Fields("clip ellipsis"),
+		"width":           strings.Fields("auto min-content max-content fit-content"),
+		"height":          strings.Fields("auto min-content max-content fit-content"),
 	}
 }
 
@@ -143,7 +150,7 @@ func generateStyles(buf *bytes.Buffer, props []string) error {
 				name,
 			)
 		}
-		for _, family := range []string{"Length", "Percentage", "Color", "Numeric", "Spacing"} {
+		for _, family := range slices.Sorted(maps.Keys(families)) {
 			for _, p := range families[family] {
 				if p == prop {
 					fmt.Fprintf(buf, "func (%s) is%s() {}\n",

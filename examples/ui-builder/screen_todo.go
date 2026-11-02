@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
+	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
 // todoState holds the todo tab's counter and task list.
@@ -35,13 +36,13 @@ const todoInitialNext = 4
 const todoTransition = "background-color 180ms ease, color 180ms ease, border-color 180ms ease, opacity 180ms ease, transform 180ms ease"
 
 func (a *builderApp) todoPanel() *ui.Element {
-	return ui.Section().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
+	return ui.Section().Flex(ui.Number(1)).MinWidth(ui.Px(0)).MinHeight(ui.Px(0)).
 		Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(14)).
 		Children(
 			ui.Div().Children(
 				a.panelHeading("Todo & counter"),
 				ui.P().Text("A stateful panel: the counter mutates an integer and the list mutates a slice.").
-					Margin(ui.RawValue("7px 0 0")).Color(ui.Hex("#a9bbd1")).FontSize(ui.Px(12)),
+					Margin(ui.Edges(ui.Px(7), ui.Px(0), ui.Px(0))).Color(theme.Muted()).FontSize(ui.Px(12)),
 			),
 			ui.Div().Display(ui.DisplayFlex).MinWidth(ui.Px(0)).Gap(ui.Px(12)).
 				Children(a.todoCounterCard(), a.todoListCard()),
@@ -50,13 +51,13 @@ func (a *builderApp) todoPanel() *ui.Element {
 
 func (a *builderApp) todoCounterCard() *ui.Element {
 	return ui.Div().Width(ui.Px(200)).FlexShrink(ui.Number(0)).
-		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(theme.Surface()).
 		Children(
-			ui.Text("Counter").FontSize(ui.Px(13)).Color(ui.Hex("#b5c7df")),
-			ui.P().Text(fmt.Sprintf("%d", a.todos.Counter)).Margin(ui.RawValue("10px 0 5px")).
-				FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#f4f7ff")),
-			ui.P().Text("Increment, decrement, or reset the value.").Margin(ui.RawValue("0 0 12px")).
-				FontSize(ui.Px(11)).Color(ui.Hex("#a0b6d0")),
+			ui.Text("Counter").FontSize(ui.Px(13)).Color(theme.Muted()),
+			ui.P().Text(fmt.Sprintf("%d", a.todos.Counter)).Margin(ui.Edges(ui.Px(10), ui.Px(0), ui.Px(5))).
+				FontSize(ui.Px(29)).FontWeight(ui.FontWeightBold).Color(theme.Text()),
+			ui.P().Text("Increment, decrement, or reset the value.").Margin(ui.Edges(ui.Px(0), ui.Px(0), ui.Px(12))).
+				FontSize(ui.Px(11)).Color(theme.Muted()),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(8)).Children(
 				a.todoButton("−", "todo:dec", false),
 				a.todoButton("+", "todo:inc", true),
@@ -72,13 +73,13 @@ func (a *builderApp) todoListCard() *ui.Element {
 	}
 	if len(rows) == 0 {
 		rows = append(rows, ui.P().Text("No tasks — add one below.").
-			Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(ui.Hex("#a0b6d0")))
+			Margin(ui.Px(0)).FontSize(ui.Px(12)).Color(theme.Muted()))
 	}
-	card := ui.Div().Flex(ui.RawValue("1")).MinWidth(ui.Px(0)).
-		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(ui.Hex("#202d42")).
+	card := ui.Div().Flex(ui.Number(1)).MinWidth(ui.Px(0)).
+		Padding(ui.Px(16)).BorderRadius(ui.Px(11)).BackgroundColor(theme.Surface()).
 		Children(
 			ui.Text(fmt.Sprintf("Tasks (%d)", len(a.todos.Items))).
-				FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(ui.Hex("#b5c7df")),
+				FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).Color(theme.Muted()),
 			a.todoProgress(),
 			ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).
 				MarginTop(ui.Px(12)).Children(rows...),
@@ -104,7 +105,7 @@ func (a *builderApp) todoProgress() *ui.Element {
 		}
 	}
 	return ui.P().Text(fmt.Sprintf("%d of %d done", done, len(a.todos.Items))).
-		Margin(ui.RawValue("6px 0 0")).FontSize(ui.Px(11)).Color(ui.Hex("#8fa3bb"))
+		Margin(ui.Edges(ui.Px(6), ui.Px(0), ui.Px(0))).FontSize(ui.Px(11)).Color(theme.Muted())
 }
 
 // allTodoDone reports whether the list is non-empty and every row is done.
@@ -129,8 +130,8 @@ func (a *builderApp) todoDoneBanner() *ui.Element {
 		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).
 		MarginTop(ui.Px(12)).
 		Padding(ui.Edges(ui.Px(10), ui.Px(12))).BorderRadius(ui.Px(8)).
-		BackgroundColor(ui.Hex("#17452e")).Color(ui.Hex("#c9f2d8")).
-		Border(ui.RawValue("1px solid #2b7a4b")).
+		BackgroundColor(theme.Control()).Color(theme.Text()).
+		Border(theme.Border()).
 		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold).
 		AnimationName(ui.RawValue("todo-done-pop")).
 		AnimationDuration(ui.RawValue("450ms")).
@@ -142,50 +143,43 @@ func (a *builderApp) todoDoneBanner() *ui.Element {
 
 func (a *builderApp) todoRow(index int, item string) *ui.Element {
 	label := "○ " + item
-	decoration := "none"
-	itemColor := "#ecf2fb"
-	rowBG := "#26364e"
-	btnBG := "#26364e"
-	btnBorder := "1px solid #3a4b62"
-	rowOpacity := "1"
+	decoration := ui.TextDecorationNone
+	itemColor := theme.Text()
+	rowBG := theme.Control()
+	btnBG := theme.Control()
+	btnBorder := theme.Border()
+	rowOpacity := 1.0
 	if a.todos.Done[index] {
 		label = "● " + item
-		decoration = "line-through"
-		itemColor = "#8fa3bb"
-		rowBG = "#1f2f47"
-		btnBG = "#1e2c44"
-		btnBorder = "1px solid #2e3f58"
-		rowOpacity = "0.85"
+		decoration = ui.TextDecorationLineThrough
+		itemColor = theme.Muted()
+		rowBG = theme.Selected()
+		btnBG = theme.Selected()
+		btnBorder = theme.Border()
+		rowOpacity = 0.85
 	}
 	// The row and toggle ids let the automatic transition driver match the
 	// old and new boxes across the re-render. The transition lists only
 	// shipped fields; text-decoration snaps while colour and opacity fade.
 	return ui.Div().ID(fmt.Sprintf("todo-row-%d", index)).Class("todo-row").
 		Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).
-		Padding(ui.Edges(ui.Px(10), ui.Px(12))).BackgroundColor(ui.RawValue(rowBG)).BorderRadius(ui.Px(8)).
-		Opacity(ui.RawValue(rowOpacity)).
+		Padding(ui.Edges(ui.Px(10), ui.Px(12))).BackgroundColor(rowBG).BorderRadius(ui.Px(8)).
+		Opacity(ui.Number(rowOpacity)).
 		Transition(ui.RawValue(todoTransition)).
 		Children(
 			ui.Button(label).ID(fmt.Sprintf("todo-toggle-%d", index)).Class("todo-toggle").
 				Attr("data-action", "todo:toggle:"+strconv.Itoa(index)).
-				Flex(ui.RawValue("1")).TextAlign(ui.TextAlignLeft).
-				BackgroundColor(ui.RawValue(btnBG)).Color(ui.RawValue(itemColor)).
-				Border(ui.RawValue(btnBorder)).
+				Flex(ui.Number(1)).TextAlign(ui.TextAlignLeft).
+				BackgroundColor(btnBG).Color(itemColor).
+				Border(btnBorder).
 				Padding(ui.Edges(ui.Px(6), ui.Px(8))).BorderRadius(ui.Px(6)).
-				TextDecoration(ui.RawValue(decoration)).
+				TextDecoration(decoration).
 				Transition(ui.RawValue(todoTransition)),
 		)
 }
 
 func (a *builderApp) todoButton(label, action string, primary bool) *ui.Element {
-	bg, fg, border := "#2b3950", "#dce6f6", "1px solid #42536b"
-	if primary {
-		bg, fg, border = "#4677ed", "#ffffff", "1px solid #4677ed"
-	}
-	return ui.Button(label).Attr("type", "button").Attr("data-action", action).
-		BackgroundColor(ui.RawValue(bg)).Color(ui.RawValue(fg)).Border(ui.RawValue(border)).
-		Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).
-		FontSize(ui.Px(12)).FontWeight(ui.FontWeightBold)
+	return widgetsBtn(label, action, primary)
 }
 
 // handleTodo handles todo:* actions, updating a.todos and a.notice.

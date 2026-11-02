@@ -101,3 +101,13 @@ owns; never parse untrusted input as a template. Keep template files on
 owner-only permissions, and turn the watch off in production
 (`Config.DisableHotReload`, `-reload=false` in the reload example) so a
 changed file cannot swap the running page.
+
+
+## Replace the current document
+
+`Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true})` updates the
+current history entry and keeps forward entries. Stable control IDs and types
+retain their live values and focus. Plain `Load(ctx, html)` continues to add a
+navigation entry and start a new form document. Both forms follow normal page
+redraw batching. The builder's `View.Update` uses replacement and also replaces
+its registered click callbacks.
