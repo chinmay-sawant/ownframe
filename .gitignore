@@ -61,3 +61,6 @@ frontend/public/demos/telegram/ownframe.wasm
 frontend/public/demos/telegram/wasm_exec.js
 frontend/public/demos/workspace-inspector/demo.wasm
 frontend/public/demos/workspace-inspector/wasm_exec.js
+
+# Local AI component reference screenshots
+/examples/AI/
