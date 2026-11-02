@@ -53,4 +53,12 @@ type Options struct {
 	// idle page stops presenting and runs page ticks at a low keep-alive
 	// rate, and input or damage returns the window to uncapped drawing.
 	NoIdlePace bool
+	// MaxFPS caps heavy presents (Draw work) per second without VSync.
+	// The loop runs faster at MaxFPS+20, so a 60 cap shows 60 on the FE
+	// while the app ticks at 80 for input smoothness. 0 (the default) is
+	// uncapped legacy drawing; negative is also uncapped. Positive
+	// 30..1000 is a cap (validated choices 60/120/144/240); anything else
+	// falls back to uncapped. Idle parking is untouched: keep-alive wakes
+	// are far slower than the limiter.
+	MaxFPS int
 }
