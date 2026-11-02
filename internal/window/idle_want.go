@@ -38,6 +38,7 @@ func (g *paceGame) publish(now time.Time) {
 	g.mu.Unlock()
 
 	g.shell.pace.next, g.shell.pace.skipped, g.shell.pace.idle = state.Next, state.Skipped, state.Idle
+	g.shell.pace.maxFPS, g.shell.pace.presentFPS, g.shell.pace.presents = g.maxFPS, g.presentFPS, g.presents
 	g.debugLine(now, state.Presents, state.Skipped, state.Idle)
 }
 

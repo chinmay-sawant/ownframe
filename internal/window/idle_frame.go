@@ -25,7 +25,9 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 
 	switch act {
 	case pacing.ToIdle:
-		g.applyIdle()
+		if !g.noIdle {
+			g.applyIdle()
+		}
 	case pacing.ToFast:
 		g.applyFast()
 	case pacing.Burst:
@@ -56,9 +58,11 @@ func (g *paceGame) applyIdle() {
 	ebiten.SetTPS(ebiten.SyncWithFPS)
 }
 
-// applyFast restores uncapped drawing and the TPS the app started with. The
-// pixel-cache containers are pre-sized first, so the first post-wake paints
-// do not regrow them under the draw lock.
+// applyFast restores the active drawing loop (still VSync-off maximum at the
+// Ebiten level; the present cap is enforced by the Draw limiter, not VSync)
+// and the loop TPS: the capped loop rate when a cap is set, else the TPS the
+// app started with. The pixel-cache containers are pre-sized first, so the
+// first post-wake paints do not regrow them under the draw lock.
 func (g *paceGame) applyFast() {
 	if !g.idle {
 		return
@@ -69,5 +73,9 @@ func (g *paceGame) applyFast() {
 		g.shell.renderer.Wake()
 	}
 	ebiten.SetVsyncEnabled(false)
+	if loop := LoopFPS(g.maxFPS); loop > 0 {
+		ebiten.SetTPS(loop)
+		return
+	}
 	ebiten.SetTPS(g.base)
 }
