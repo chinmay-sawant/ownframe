@@ -378,6 +378,8 @@ The component counts add to 66. The open states add to 15.
 
 - [x] `examples/builder/ui-builder` shows all 66 components in the ChadCN
       catalog.
+- [x] Add `examples/builder/loglens`, a log dashboard that uses all 66
+      constructors and wires the 15 open states through host state.
 - [ ] The gallery shows all 15 open states interactively. Render tests cover
       them today.
 - [x] Add `documentation/chadcn.md`: import path, stylesheet, theme, state,

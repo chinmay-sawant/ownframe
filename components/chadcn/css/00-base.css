@@ -23,6 +23,8 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+  font-size: 0;
+  line-height: 0;
 }
 
 .of-transition {

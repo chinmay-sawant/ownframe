@@ -212,7 +212,9 @@ Each component has a focused render test in `components/chadcn`. The tests
 check classes, roles, ARIA state, text, and IDs. Pixel tests cover the theme and
 button geometry.
 
-The gallery is `examples/builder/ui-builder`. Run it from the repository root:
+The gallery is `examples/builder/ui-builder`; `examples/builder/loglens` is a
+production-style log dashboard that uses every constructor and open state.
+Run either from the repository root:
 
 ```sh
 go run ./examples/builder/ui-builder
