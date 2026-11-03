@@ -10,6 +10,7 @@ type perfStage struct {
 	draw          time.Duration
 	present       time.Duration
 	pendingUpdate time.Duration
+	work          time.Duration
 }
 
 // perfTimed times f into d.
@@ -34,7 +35,9 @@ func (s *shell) perfFrameSample() {
 	if !s.perf {
 		return
 	}
+	s.dev.sampler.frames++
 	d := s.dev.stages.pendingUpdate + s.dev.stages.draw + s.dev.stages.present
+	s.dev.stages.work = d
 	s.dev.stages.pendingUpdate = 0
 	if d > 0 {
 		s.dev.ring.record(d)

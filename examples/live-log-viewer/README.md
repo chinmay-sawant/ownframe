@@ -30,6 +30,7 @@ Flags:
 | `-file` | log file to follow; repeatable, and any file switches to real mode |
 | `-from-end` | start `-file` sources at their current end (default true) |
 | `-perf` | measure redraw time and coalesced requests in the footer |
+| `-debug-addr` | serve window profiling on this loopback address (off by default; needs `-tags ownframe_debug`) |
 
 Dummy mode seeds three generated sources (`api`, `worker`, `database`) and
 keeps streaming about 30 entries a second. Seeding is idempotent: restarting

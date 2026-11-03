@@ -34,6 +34,7 @@ func (p *Page) SetHotReload(on bool) {
 		return
 	}
 	p.watch.SetHot(on)
+	p.notifyFrame()
 }
 
 // Watching reports whether a poll can reread a source file.

@@ -18,6 +18,8 @@ type devState struct {
 	mobile         bool
 	mobileExpanded bool
 	on             bool
+	paused         bool
+	refreshGap     time.Duration
 	available      bool
 	picker         bool
 	ops            bool
@@ -27,6 +29,7 @@ type devState struct {
 	collapsed      map[string]bool
 	rows           []devRow
 	opsCache       devOpsCache
+	panelCache     devPanelCache
 	content        devRect
 	hovered        layout.Box
 	haveHov        bool

@@ -16,7 +16,8 @@ go run ./examples/spreadsheet
 |---|---|
 | `-data <dir>` | Data directory override. Default is `os.UserConfigDir()/ownframe/spreadsheet`. |
 | `-workbook <name>` | Open a seeded workbook by name. Default is the first one. |
-| `-perf` | Record pipeline timing for the devtools Frame tab. |
+| `-perf` | Record pipeline timing for the devtools Frame tab and `-debug-addr`. |
+| `-debug-addr <addr>` | Serve window profiling on this loopback address (off by default; needs `-tags ownframe_debug`). |
 
 ## Dummy mode and real data
 

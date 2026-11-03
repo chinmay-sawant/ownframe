@@ -1,0 +1,15 @@
+/* SearchField reuses the input shape and sits on a muted toolbar surface. It
+   takes the regular surface while focused so the text reads against the page. */
+
+.of-search-field {
+  background-color: var(--of-control, #f4f4f5);
+}
+
+.of-search-field:focus,
+.of-search-field:focus-visible {
+  background-color: var(--of-surface, #ffffff);
+}
+
+.of-search-field[data-ownframe-focus="1"] {
+  background-color: var(--of-surface, #ffffff);
+}

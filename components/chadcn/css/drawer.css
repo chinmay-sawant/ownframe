@@ -1,0 +1,117 @@
+/* Drawer: bottom modal panel with a grab handle and a stacked action footer. */
+
+/* The modal band matches the dialog: above the app topbar and sidebar (30 to
+   40), below the toast (60) and the command palette (90). */
+.of-drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--of-modal-z, 55);
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  background-color: var(--of-overlay, var(--of-backdrop, #00000080));
+}
+
+/* The panel hugs its grab handle, header, body, and footer, and the body
+   carries the height cap. A max-height on this flex panel would be used as its
+   height, which paints an empty strip under the footer. The panel anchors to
+   the bottom edge of the backdrop; only the body scrolls, so the handle,
+   header, and footer stay put. */
+.of-drawer-panel {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--of-popover, var(--of-surface, #ffffff));
+  color: var(--of-text, #0a0a0a);
+  border-top: 1px solid var(--of-border, #e5e5e5);
+  border-top-left-radius: var(--of-radius-lg, var(--of-radius, 14px));
+  border-top-right-radius: var(--of-radius-lg, var(--of-radius, 14px));
+  box-shadow: 0 -18px 48px var(--of-shadow, #0000001f);
+}
+
+.of-drawer-panel:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-drawer-grab {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+  padding: 10px 0 2px 0;
+}
+
+.of-drawer-handle {
+  display: block;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background-color: var(--of-border, #d4d4d4);
+}
+
+.of-drawer-header {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 20px 0 20px;
+}
+
+.of-drawer-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.of-drawer-title {
+  margin: 0;
+  color: var(--of-text, #0a0a0a);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.of-drawer-description {
+  margin: 0;
+  color: var(--of-muted-foreground, var(--of-muted, #737373));
+  font-size: 14px;
+}
+
+/* The body is the height cap and the scroll region. It stays a block so the
+   cap clamps to the content height; on a flex container the engine uses
+   max-height as the height, which leaves empty panel under a short body. The
+   sibling margins below keep the old flex gap between rows. min-height 0 lets
+   it shrink, and its own overflow scrolls above the footer. */
+.of-drawer-body {
+  display: block;
+  flex-grow: 1;
+  flex-shrink: 1;
+  min-height: 0;
+  max-height: 60vh;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.of-drawer-body > * + * {
+  margin-top: 12px;
+}
+
+.of-drawer-footer {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 20px 20px 20px;
+}
+
+.of-drawer-footer-slot {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}

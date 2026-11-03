@@ -2,7 +2,7 @@
 
 `Serve` is a developer picture preview. It binds to loopback by default, has
 no audio, and mutates page state without authentication. It ticks a page that
-registers a tick callback, forwards browser keys, wheel events, and clicks, and
+registers a tick callback, forwards browser keys, hover, wheel events, and clicks, and
 refreshes the image when the page reports damage. It is not a 1.0 ship target.
 Native hosts are in [platforms.md](platforms.md).
 
@@ -36,7 +36,8 @@ field, and a reset button on one page.
 | `POST /type` | Reads the urlencoded form field `text`. Requires a matching `Origin`. 400 `bad form` when the body does not parse, 303 to `/`, or generic 500. |
 | `POST /backspace` | Deletes one character in the focused text control. Requires a matching `Origin`. 303 to `/`, or generic 500. |
 | `POST /key` | Reads `key` and `down` (`1` or `0`), plus optional `shift=1` for Tab. Special names only: arrows, page keys, Home, End, Enter, Escape, Space, Tab, Backspace, Delete, and modifiers. Tab calls `host.Focuser`; other names reach `KeyDown`/`KeyUp`. 400 `bad key` or `bad down`, 403 on origin mismatch, 204 on success. |
-| `POST /wheel` | Reads finite `x`, `y`, `dx`, `dy` floats and calls `host.WheelHandler.Wheel`. 400 `bad wheel`, 403 on origin mismatch, 204 on success. |
+| `POST /hover` | Reads finite viewport `x` and `y`, maps the point through the scroll offset, and forwards hover. Requires a matching Origin. |
+| `POST /wheel` | Reads finite `x`, `y`, `dx`, `dy` floats and calls `host.WheelHandler.Wheel`. Unhandled events pan the viewport through overflowing content. 400 `bad wheel`, 403 on origin mismatch, 204 on success. |
 
 One mutex serializes the handlers and the tick loop, so two requests never
 touch the page at once.
@@ -56,7 +57,7 @@ click anywhere can still focus a control or reach a click handler.
 ## The frame
 
 `Serve` draws the page first when it has not been drawn yet. `GET /` reads the
-current boxes and size, and `GET /frame.png` returns the latest PNG. A page
+current boxes and viewport size. `GET /frame.png` paints the viewport at its current scroll offset, preserving fixed layers. Scrolled clicks and hover use the same offset. A page
 kept as a display list has no bitmap, so `page.Probe().PNG` paints once from the
 stored template source and caches the bytes until the next `Redraw`
 ([screen.md](screen.md)). The shell page states that the screen is the image,

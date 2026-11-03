@@ -1,0 +1,52 @@
+/* Card, header, title, description, content, and footer. */
+
+.of-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 16px;
+  padding: var(--of-spacing, 24px);
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius-lg, 14px);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  box-shadow: var(--of-card-shadow, 0 1px 2px rgba(0, 0, 0, 0.05));
+}
+
+.of-card-header {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+
+.of-card-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-card-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--of-muted, #737373);
+}
+
+.of-card-content {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--of-border, #e5e5e5);
+}

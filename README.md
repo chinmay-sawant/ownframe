@@ -91,6 +91,7 @@ From this checkout:
 ```sh
 go run ./examples/login              # desktop native
 go run ./examples/ops-console        # five-screen yard ops
+go run ./examples/builder/ui-builder # component gallery
 sh scripts/android-release.sh login  # Android native APK
 sh scripts/android-eyes.sh           # Android native (eyes)
 go run ./examples/login -web         # PNG debugger preview
@@ -98,7 +99,7 @@ sh scripts/browser.sh                # wasm canvas preview
 go run ./examples/desktop-cat        # desktop native overlay
 ```
 
-Start with login and ops-console. The login demo accepts `secret` for both fields. Clones are unofficial skins later in [showcase.md](showcase.md). [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](documentation/android-app-creation.md) have the details.
+Start with login and ops-console, and try ui-builder for the component set. The login demo accepts `secret` for both fields. Clones are unofficial skins later in [showcase.md](showcase.md). [All examples](examples/readme.md), [desktop cat setup](examples/desktop-cat/readme.md), and [Android setup](documentation/android-app-creation.md) have the details.
 
 Nested module markers keep the website, generated site, screenshots, and development folders out of the library module archive. The examples remain in their own module.
 

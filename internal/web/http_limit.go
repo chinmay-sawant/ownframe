@@ -69,7 +69,7 @@ func (s *server) allowAddr(addr string) bool {
 
 func mutatingPath(path string) bool {
 	switch path {
-	case "/click", "/type", "/backspace", "/key", "/wheel":
+	case "/hover", "/click", "/type", "/backspace", "/key", "/wheel":
 		return true
 	}
 

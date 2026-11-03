@@ -14,7 +14,9 @@ CSS_PREVIEW_WALK=1 CSS_PREVIEW_DEVTOOLS=1 \
   go run ./examples/css-preview -perf -width 1908 -height 999
 ```
 
-- `-perf` turns on perf sampling and opens the devtools dock.
+- `-perf` turns on perf sampling and opens the devtools dock. The sampling also
+  feeds `-debug-addr`, which serves the Frame tab counters and Go profiles
+  beside the window (needs `-tags ownframe_debug`).
 - `CSS_PREVIEW_WALK=1` enables the walk hook. It serves `127.0.0.1:6971` with
   `/goto`, `/aim`, `/cursor`, `/state`, `/reset`, and `/quit`.
 - `CSS_PREVIEW_DEVTOOLS=1` keeps the dock open while the walk runs. Without it

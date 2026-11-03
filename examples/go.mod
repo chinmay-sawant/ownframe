@@ -6,15 +6,15 @@ go 1.26.10
 // exists on the proxy. The replace below points at the parent so
 // GOWORK=off in this checkout builds local code. Keep the blinkless
 // version equal to the root go.mod. A tagged examples module cannot keep
-// a relative replace; drop it when tagging examples/vX.Y.Z after the
+// this relative replace; drop it when tagging examples/vX.Y.Z after the
 // library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
-	github.com/chinmay-sawant/blinkless v0.1.1-0.20261102064352-5dea7a1f2019
+	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/hajimehoshi/ebiten/v2 v2.10.4
-	golang.org/x/image v0.45.0
+	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
+	golang.org/x/image v0.47.0
 	golang.org/x/sys v0.49.0
 	// Examples-only TCB: modernc.org/sqlite plus libc, memory, mathutil,
 	// uuid, go-mp3, and pprof stay out of the shipped library. Pure Go
@@ -35,8 +35,8 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/oto/v3 v3.5.0 // indirect
-	github.com/ebitengine/purego v0.11.0 // indirect
+	github.com/ebitengine/oto/v3 v3.5.1 // indirect
+	github.com/ebitengine/purego v0.11.3-0.20261101135610-3fc0c5fee75d // indirect
 	github.com/go-fonts/latin-modern v0.3.3 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect

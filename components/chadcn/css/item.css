@@ -1,0 +1,51 @@
+/* List row with media, content, and actions slots. */
+
+.of-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: var(--of-spacing, 16px);
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-item-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  color: var(--of-muted, #737373);
+}
+
+.of-item-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.of-item-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-item-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--of-muted, #737373);
+}
+
+.of-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  color: var(--of-muted, #737373);
+}

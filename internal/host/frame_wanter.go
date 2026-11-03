@@ -13,3 +13,12 @@ import "time"
 type FrameWanter interface {
 	NextFrameAt() time.Time
 }
+
+// FrameScheduler adds event-driven idle to a screen. Notifications wake a
+// parked host; FramePolling retains the compatibility tick for callbacks or
+// reload sources that cannot yet supply their own notifications.
+type FrameScheduler interface {
+	FrameWanter
+	FrameEvents() <-chan struct{}
+	FramePolling() bool
+}

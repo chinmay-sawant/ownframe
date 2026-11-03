@@ -37,7 +37,7 @@ func (p *Page) layoutStaged(
 	styled *css.Document,
 	state render.State,
 ) (*Display, error) {
-	if roots, ok := p.hoverPatchRoots(state); ok {
+	if roots, ok := p.hoverPatchRoots(styled, state); ok {
 		if patched, err := p.listHoverPatched(ctx, styled, state, roots); err == nil {
 			return patched, nil
 		}
@@ -49,8 +49,11 @@ func (p *Page) layoutStaged(
 // hoverPatchRoots returns the subtree roots a hover-only change must
 // re-lay out. ok is false when the frame changed more than the hover, the
 // page cannot patch, or the sheets can style outside the hovered subtrees.
-func (p *Page) hoverPatchRoots(state render.State) ([]string, bool) {
-	if !p.hoverPatchEligible(state) {
+// maxHoverScopes caps the hover scope cache before it is cleared.
+const maxHoverScopes = 256
+
+func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]string, bool) {
+	if !p.hoverPatchEligible(state) || p.last.Hover == state.Hover {
 		return nil, false
 	}
 
@@ -63,6 +66,36 @@ func (p *Page) hoverPatchRoots(state render.State) ([]string, bool) {
 		return nil, false
 	}
 
+	key := p.keyFor(state)
+	key.Hover = ""
+	if p.hoverScopes == nil || p.hoverScopeKey != key {
+		p.hoverScopeKey = key
+		p.hoverScopes = make(map[hoverScopePair]hoverScopeResult)
+	}
+	pair := hoverScopePair{p.last.Hover, state.Hover}
+	if cached, found := p.hoverScopes[pair]; found {
+		return cached.roots, cached.ok
+	}
+	roots, ok := p.findHoverScopes(styled, state)
+	if len(p.hoverScopes) >= maxHoverScopes {
+		clear(p.hoverScopes)
+	}
+	p.hoverScopes[pair] = hoverScopeResult{roots: roots, ok: ok}
+	return roots, ok
+}
+
+type hoverScopePair struct{ previous, current string }
+type hoverScopeResult struct {
+	roots []string
+	ok    bool
+}
+
+func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]string, bool) {
+	// The cascade knows which selectors changed. Prefer those scopes over
+	// the common ancestor of two controls, which can include a whole toolbar.
+	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok && draw.HoverScopesFit(p.boxes, roots) {
+		return roots, true
+	}
 	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
 }
 

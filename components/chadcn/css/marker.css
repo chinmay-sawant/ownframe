@@ -1,0 +1,52 @@
+/* Marker: a ring icon with a label and optional detail. */
+
+.of-marker {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--of-marker-foreground, var(--of-muted-foreground, #737373));
+}
+
+.of-marker-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  box-sizing: border-box;
+  border: 2px solid var(--of-marker-color, var(--of-muted-foreground, #737373));
+  border-radius: 999px;
+}
+
+.of-marker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.of-marker-label {
+  color: var(--of-marker-color, var(--of-muted-foreground, #737373));
+}
+
+.of-marker-detail {
+  font-size: 12px;
+  color: var(--of-marker-detail, var(--of-muted-foreground, #737373));
+}
+
+.of-marker--default {
+  --of-marker-color: var(--of-muted-foreground, #737373);
+}
+
+.of-marker--success {
+  --of-marker-color: var(--of-success, #16a34a);
+}
+
+.of-marker--warning {
+  --of-marker-color: var(--of-warning, #d97706);
+}
+
+.of-marker--danger {
+  --of-marker-color: var(--of-danger, #dc2626);
+}

@@ -83,21 +83,40 @@ reaches the page.
 
 ## Frame
 
+The Frame tab refreshes once per second by default. Click **Pause auto refresh**
+to stop timed refreshes. Click **Refresh interval** to cycle through 5 seconds,
+250 ms, and 1 second. Input still updates the controls while refresh is paused.
+Elements and Ops refresh when their page or selection changes; neither tab
+schedules periodic frames. These controls affect the panel, not an application
+callback or an explicitly enabled background profiler.
+
+**Sample age** identifies the runtime sample used by the panel. **Present FPS**
+counts OwnFrame draws, not GPU swaps. **Repaints/sec** counts page repaints, and **Alloc/sec** reports
+process allocation throughput. The **Last redraw detail** section describes the
+last page redraw; its dirty counters are not ongoing work.
+
 The Frame tab groups counters under section headers and right-aligns each
 value:
 
 | Section | Rows |
 |---|---|
 | WINDOW | window and page size, scroll offset, stretched, fallback, sequence |
-| RENDERING | fps, tps, frame time, draw time |
+| RENDERING | fps, tps, frame gap, frame work, draw time |
 | PERFORMANCE | frame average, p95, p99, and the long-frame count |
 | PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
-| PIPELINE DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
-| PACING | idle, next deadline in ms, presents skipped while parked |
+| LAST REDRAW DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
+| PACING | idle, host presents, present rate, page repaints/sec, allocations/sec, next deadline, skipped frames |
 | MEMORY | alloc per frame, Go heap, RSS, goroutine count |
 | RELOAD | reloads and the last reload error |
 
 A zero duration reads as `0.0ms`, and an empty reload error reads as `-`.
+`Frame gap` is the time between Draw calls, including idle waits. `Frame work`
+measures Update and Draw work with Perf enabled and excludes idle waits;
+the PERFORMANCE averages and percentiles use that same work duration. A low
+FPS and a gap near 250 ms are expected while an unchanged window is parked.
+The panel caches its rows and pixels, refreshing metrics at 4 Hz. Input,
+selection, and size changes refresh it immediately. An open dock allows idle
+pacing and schedules its next metrics refresh alongside the page's deadline.
 Label widths are memoized and each value is a right-aligned span, so a frame
 does not rebuild a padding string per row.
 Opening DevTools enables the PERFORMANCE, PIPELINE DETAIL, and MEMORY
@@ -201,6 +220,31 @@ with `ServeOptions{InsecureAllowDebugState: true}`: `width` and
 when the screen has no inspector, and `ops` when there is no display list.
 The `ops` map counts each kind and a `total`. The route is in
 [web.md](web.md).
+
+## Window debug listener
+
+A desktop window can serve the same data without `-web`. Set
+`WindowOptions.DebugAddr` to a loopback address, or pass `-debug-addr` to an
+example that takes it, and build with `-tags ownframe_debug`. The window
+serves `GET /debug/state` with the page counters plus the native frame ring
+(`frame` with average, p95, p99, and long-frame count), and
+`GET /debug/pprof/*` with the live process profiles. The address defaults to
+empty, which serves nothing and costs one bool check per frame. Sampling
+still follows the Perf opt-in: without `-perf` or an open dock the state
+carries boxes, stats, and op counts but no runtime or frame numbers.
+Non-loopback addresses are rejected.
+
+For a heap investigation on the Loglens dashboard, run the command from the
+repository root and leave the window open while pprof reads it:
+
+```sh
+go run -tags ownframe_debug ./examples/builder/loglens -perf -debug-addr 127.0.0.1:8129
+go tool pprof -top http://127.0.0.1:8129/debug/pprof/heap
+```
+
+The tag is required. Without it the flag still parses but the listener is not
+registered; the window only logs that the debug endpoints need
+`-tags ownframe_debug`.
 
 ## Limits
 

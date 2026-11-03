@@ -243,6 +243,7 @@ try {
           assert.equal(await evaluate('!!document.querySelector("#engine, #compare")'), false, 'Home includes a separate page');
           assert.ok(await evaluate('!!document.querySelector("#demos") && !!document.querySelector("#start")'), 'Home content is missing');
           assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.hello-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
+          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.starter-picker button')).map(button => button.textContent.trim())`), ['Hello World', 'Split with friends', 'Builder basics']);
           for (const index of [1, 2, 3, 0]) {
             await evaluate(`document.querySelectorAll('.hello-example [role="tab"]')[${index}].click()`);
             assert.equal(await evaluate(`document.querySelector('.hello-example [role="tab"][aria-selected="true"]').getAttribute('aria-controls')`), await evaluate(`document.querySelector('.hello-example [role="tabpanel"]:not([hidden])').id`));
@@ -301,8 +302,8 @@ try {
     const filtered = (await send('Page.captureScreenshot', { format: 'png' })).data;
     assert.notEqual(filtered, completed, 'Embedded filter click did not change the rendered page');
     await screenshot(`home-demo-filtered-${width}`);
-    for (const selector of ['.hello-example', '.split-example']) {
-      await evaluate(`document.querySelectorAll('.starter-picker button')[${selector === '.hello-example' ? 0 : 1}].click()`);
+    for (const selector of ['.hello-example', '.split-example', '.builder-example']) {
+      await evaluate(`document.querySelectorAll('.starter-picker button')[${selector === '.hello-example' ? 0 : selector === '.split-example' ? 1 : 2}].click()`);
       await evaluate(`document.querySelector('${selector}').scrollIntoView()`);
       let loaded = false;
       for (let attempt = 0; attempt < 300; attempt++) {
@@ -314,6 +315,9 @@ try {
         if (loaded) break;
       }
       assert.ok(loaded, `${selector} WASM did not load`);
+      if (selector === '.builder-example') {
+        assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.builder-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
+      }
       await screenshot(`${selector.slice(1)}-${width}`);
     }
     await evaluate(`document.querySelectorAll('.starter-picker button')[0].click()`);

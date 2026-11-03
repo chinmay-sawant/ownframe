@@ -1,0 +1,92 @@
+/* Trace: timed step rows with a status ring and a timing bar. */
+
+.of-trace {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--of-text, #0a0a0a);
+  font-size: 13px;
+}
+
+.of-trace-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.of-trace-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  box-sizing: border-box;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--of-trace-color, var(--of-muted-foreground, #737373));
+  border: 2px solid var(--of-trace-color, var(--of-muted-foreground, #737373));
+  border-radius: 999px;
+}
+
+.of-trace-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.of-trace-row-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.of-trace-row-label {
+  color: var(--of-trace-label, var(--of-text, #0a0a0a));
+}
+
+.of-trace-row-detail {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-trace-track {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background-color: var(--of-trace-track, var(--of-control, #f4f4f5));
+}
+
+.of-trace-bar {
+  height: 100%;
+  border-radius: 3px;
+  background-color: var(--of-trace-color, var(--of-primary, #171717));
+}
+
+.of-trace-row--default {
+  --of-trace-color: var(--of-muted-foreground, #737373);
+}
+
+.of-trace-row--success {
+  --of-trace-color: var(--of-success, #16a34a);
+}
+
+.of-trace-row--warning {
+  --of-trace-color: var(--of-warning, #d97706);
+}
+
+.of-trace-row--danger {
+  --of-trace-color: var(--of-danger, #dc2626);
+}
+
+.of-trace-row--danger .of-trace-row-label {
+  color: var(--of-danger, #dc2626);
+}

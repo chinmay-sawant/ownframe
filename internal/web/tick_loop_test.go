@@ -86,7 +86,7 @@ func (p *panicTickScreen) Tick(context.Context) error {
 	panic("tick failure test")
 }
 
-func (p *panicTickScreen) Generation() uint64 { return 0 }
+func (p *panicTickScreen) Generation() uint64           { return 0 }
 func (p *panicTickScreen) Redraw(context.Context) error { return nil }
 
 func TestTickLoopPanicRecovery(t *testing.T) {

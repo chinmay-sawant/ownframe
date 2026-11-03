@@ -33,6 +33,8 @@ const (
 	devActPicker              // toggle element picker mode
 	devActClose               // close the dock
 	devActMobileExpand        // expand or collapse the mobile metrics sheet
+	devActPause
+	devActRefresh
 )
 
 // devRow is one content line plus the click action it carries. w is the line

@@ -1,0 +1,70 @@
+/* Single-line control. The same classes paint the <input> and the field span
+   the page writes while the control is editable, so both keep one shape. */
+
+.of-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 12px;
+  color: var(--of-text, #0a0a0a);
+  background-color: var(--of-surface, #ffffff);
+  border: 1px solid var(--of-input, #e5e5e5);
+  border-radius: var(--of-radius-sm, 6px);
+  box-shadow: 0 1px 2px var(--of-shadow, #0000000d);
+  font-size: 14px;
+  line-height: 20px;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.of-input:focus,
+.of-input:focus-visible {
+  border-color: var(--of-ring, #a1a1aa);
+}
+
+/* The page paints an editable input as a field span and marks focus with the
+   data attribute, so the ring has to cover that path too. */
+
+.of-input[data-ownframe-focus="1"] {
+  border-color: var(--of-ring, #a1a1aa);
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-input[data-ownframe-placeholder="1"] {
+  color: var(--of-muted, #737373);
+}
+
+.of-input[aria-invalid="true"] {
+  border-color: var(--of-destructive, #dc2626);
+}
+
+.of-input[aria-invalid="true"]:focus,
+.of-input[aria-invalid="true"]:focus-visible {
+  outline: 2px solid var(--of-destructive, #dc2626);
+  outline-offset: 2px;
+}
+
+.of-input[aria-invalid="true"][data-ownframe-focus="1"] {
+  border-color: var(--of-destructive, #dc2626);
+  outline: 2px solid var(--of-destructive, #dc2626);
+  outline-offset: 2px;
+}
+
+.of-input[disabled] {
+  color: var(--of-muted, #737373);
+  background-color: var(--of-control, #f4f4f5);
+}
+
+.of-input--sm {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.of-input--lg {
+  min-height: 40px;
+  padding: 9px 14px;
+  font-size: 15px;
+}

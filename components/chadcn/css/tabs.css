@@ -1,0 +1,69 @@
+/* Segmented tab list and its panel. */
+
+.of-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-tabs-list {
+  display: flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 3px;
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-control, #f4f4f5);
+}
+
+.of-tabs-trigger {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: transparent;
+  color: var(--of-muted, #737373);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.of-tabs-trigger:hover {
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-tabs-trigger:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-tabs-trigger[aria-selected="true"] {
+  border: 1px solid var(--of-border, #e5e5e5);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  box-shadow: 0 1px 2px var(--of-shadow, #0000001a);
+}
+
+.of-tabs-panel {
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.of-tabs-panel:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+/* A lazy panel whose Render returned nil keeps the box it will fill, so the
+   surrounding chrome does not jump while the body loads. */
+.of-tabs-panel--empty {
+  min-height: 72px;
+}

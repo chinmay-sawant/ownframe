@@ -1,0 +1,83 @@
+/* Attachment: a file tile with an icon slot, metadata, and progress. */
+
+.of-attachment {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: var(--of-attachment-max-width, 420px);
+  padding: var(--of-attachment-padding, 10px 14px);
+  box-sizing: border-box;
+  color: var(--of-text, #0a0a0a);
+  background-color: var(--of-attachment-background, var(--of-card, #ffffff));
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-attachment-radius, 14px);
+}
+
+.of-attachment--action {
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.of-attachment--action:hover {
+  background-color: var(--of-attachment-hover, var(--of-accent, #f5f5f5));
+  border-color: var(--of-muted-foreground, #737373);
+}
+
+.of-attachment-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--of-attachment-icon-radius, 12px);
+  background-color: var(--of-attachment-icon, var(--of-control, #f4f4f5));
+  color: var(--of-attachment-icon-text, var(--of-muted-foreground, #737373));
+  font-size: 11px;
+  font-weight: 600;
+  overflow: hidden;
+}
+
+.of-attachment-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.of-attachment-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--of-attachment-name, var(--of-text, #0a0a0a));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.of-attachment-meta {
+  font-size: 12px;
+  color: var(--of-attachment-meta, var(--of-muted-foreground, #737373));
+}
+
+.of-attachment-progress {
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background-color: var(--of-attachment-progress-track, var(--of-control, #f4f4f5));
+}
+
+.of-attachment-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--of-attachment-progress, var(--of-primary, #171717));
+}
+
+.of-attachment-remove {
+  flex-shrink: 0;
+  padding: 6px;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--of-muted-foreground, #737373);
+}

@@ -211,6 +211,7 @@ func (p *Page) noteCommit(drawStart time.Time) {
 }
 
 func (p *Page) finishRedraw(track, memOK bool, m0 runtime.MemStats, start time.Time) {
+	defer p.notifyFrame()
 	p.stats.lastRedraw = time.Since(start)
 	if track {
 		p.stats.otherTime = max(0, p.stats.lastRedraw-p.stats.lastTemplate-

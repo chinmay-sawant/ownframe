@@ -1,0 +1,11 @@
+/* Form control label. */
+
+.of-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--of-text, #0a0a0a);
+}

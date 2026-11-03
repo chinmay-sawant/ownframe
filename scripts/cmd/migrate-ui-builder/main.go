@@ -33,7 +33,7 @@ func main() {
 }
 
 func migrate(root string) error {
-	for _, example := range []string{"examples/ui-builder", "examples/jmap-mail"} {
+	for _, example := range []string{"examples/builder/ui-builder", "examples/builder/jmap-mail"} {
 		base := filepath.Join(root, example)
 		entries, err := os.ReadDir(base)
 		if err != nil {

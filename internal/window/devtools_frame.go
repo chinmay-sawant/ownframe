@@ -3,6 +3,7 @@ package window
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -15,6 +16,20 @@ func (s *shell) devFrameRows(width float64) []devRow {
 	h := func(s string) { rs = append(rs, devRow{}, devRow{line: devText(strings.ToUpper(s), devDim)}) }
 	n := func(l string, v any) { rs = append(rs, devFrameRow(width, l, fmt.Sprint(v), devNumInk)) }
 	b := func(l string, v bool) { rs = append(rs, devFrameRow(width, l, fmt.Sprint(v), devBoolInk)) }
+	h("Sampling")
+	label := "Pause auto refresh"
+	if s.dev.paused {
+		label = "Resume auto refresh"
+	}
+	rs = append(rs, devRow{line: devPlain(label), act: devActPause})
+	gap := s.dev.refreshGap
+	if gap == 0 {
+		gap = devPanelRefreshGap
+	}
+	rs = append(rs, devRow{line: devPlain(fmt.Sprintf("Refresh interval: %s", gap)), act: devActRefresh})
+	if !s.dev.sampler.last.IsZero() {
+		n("Sample age", time.Since(s.dev.sampler.last).Round(time.Millisecond))
+	}
 
 	h("Window")
 	n("Window", fmt.Sprintf("%dx%d", s.screenW, s.screenH))
@@ -26,7 +41,12 @@ func (s *shell) devFrameRows(width float64) []devRow {
 	h("Rendering")
 	n("FPS", fmt.Sprintf("%.1f", ebiten.ActualFPS()))
 	n("TPS", fmt.Sprintf("%.1f", ebiten.ActualTPS()))
-	n("Frame", devMS(s.dev.frame))
+	n("Frame gap", devMS(s.dev.frame))
+	if s.perf {
+		n("Frame work", devMS(s.dev.stages.work))
+	} else {
+		n("Frame work", "-")
+	}
 	n("Draw", devMS(s.dev.draw))
 	s.addPerfRows(&rs, width, h, n)
 	h("Pipeline")
@@ -47,6 +67,8 @@ func (s *shell) devFrameRows(width float64) []devRow {
 	n("MaxFPS", s.pace.maxFPS)
 	n("Present FPS", fmt.Sprintf("%.1f", s.pace.presentFPS))
 	n("Presents", s.pace.presents)
+	n("Repaints/sec", fmt.Sprintf("%.1f", s.dev.sampler.repaintsPerSec))
+	n("Alloc/sec", devBytes(s.dev.sampler.allocPerSec))
 	n("Next", devPaceNext(s.pace.next))
 	n("Pace skip", s.pace.skipped)
 	s.addMemoryRows(&rs, width, h, n)

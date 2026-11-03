@@ -38,13 +38,16 @@ func (s *server) wheel(w http.ResponseWriter, r *http.Request) {
 
 	handler, ok := s.app.(host.WheelHandler)
 	if !ok {
+		s.scrollPage(dy)
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	if _, err := handler.Wheel(r.Context(), x, y, dx, dy); err != nil {
+	if handled, err := handler.Wheel(r.Context(), x, y+float64(s.scrollY), dx, dy); err != nil {
 		log.Printf("wheel: %s", sanitizeLine(err.Error()))
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
+	} else if !handled {
+		s.scrollPage(dy)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -15,6 +15,7 @@ from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 STAT_FIELDS = ('Redraws', 'Parses', 'Cascades', 'Layouts', 'Repaints')
+OPTIONAL_RUNTIME_FIELDS = ('heap_sys', 'total_alloc', 'num_gc')
 
 
 def number(mapping, key):
@@ -29,7 +30,8 @@ def metrics(body):
     if not isinstance(stats, dict) or not isinstance(runtime, dict):
         raise ValueError('debug endpoint needs stats and runtime; enable the debug build and perf options')
     rss = number(runtime, 'rss_bytes') if 'rss_bytes' in runtime else None
-    return [number(stats, key) for key in STAT_FIELDS] + [number(runtime, 'heap_alloc'), number(runtime, 'goroutines'), rss]
+    optional = [number(runtime, key) if key in runtime else None for key in OPTIONAL_RUNTIME_FIELDS]
+    return [number(stats, key) for key in STAT_FIELDS] + [number(runtime, 'heap_alloc'), number(runtime, 'goroutines'), rss] + optional
 
 
 def check_growth(first, current, heap_limit, goroutine_limit):
@@ -91,6 +93,7 @@ def main():
     args.out.parent.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
     first, rss_samples, count = None, [], 0
+    first_elapsed = 0
     report = {**source_info(), 'status': 'running', 'started_at': datetime.now(timezone.utc).isoformat(),
               'platform': platform.platform(), 'url': args.url, 'samples': 0,
               'heap_growth_limit_mib': args.max_heap_growth_mib,
@@ -103,16 +106,23 @@ def main():
     try:
         with args.out.open('w', newline='') as stream:
             writer = csv.writer(stream)
-            writer.writerow(['utc', 'elapsed_seconds', *STAT_FIELDS, 'heap_alloc', 'goroutines', 'rss_bytes'])
+            writer.writerow(['utc', 'elapsed_seconds', *STAT_FIELDS, 'heap_alloc', 'goroutines', 'rss_bytes', *OPTIONAL_RUNTIME_FIELDS])
             while True:
                 with urlopen(args.url, timeout=5) as response:
                     sample = metrics(json.load(response))
-                if first is None:
-                    first = sample
                 elapsed = time.monotonic() - start
+                if first is None:
+                    first, first_elapsed = sample, elapsed
                 writer.writerow([datetime.now(timezone.utc).isoformat(), round(elapsed, 3), *sample])
                 stream.flush()
                 count += 1
+                if sample[7] is not None:
+                    report['peak_rss_bytes'] = max(report.get('peak_rss_bytes', 0), sample[7])
+                if first[9] is not None and sample[9] is not None and elapsed > first_elapsed:
+                    allocated = sample[9] - first[9]
+                    if allocated < 0:
+                        raise ValueError('allocation counter reset during the sample')
+                    report['allocation_bytes_per_second'] = allocated / (elapsed - first_elapsed)
                 check_growth(first, sample, args.max_heap_growth_mib * 1024 * 1024, args.max_goroutine_growth)
                 if sample[7] is None and args.max_rss_growth_mib_hour > 0:
                     raise ValueError('RSS unavailable; use --max-rss-growth-mib-hour 0 to disable its limit explicitly')

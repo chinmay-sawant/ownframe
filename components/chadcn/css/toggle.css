@@ -1,0 +1,78 @@
+/* Toggle: a two-state button whose pressed face follows aria-pressed. */
+
+.of-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-button-radius, 8px);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s,
+    opacity 0.15s;
+}
+
+.of-toggle:hover {
+  background-color: var(--of-accent, #f5f5f5);
+}
+
+.of-toggle:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-toggle[aria-pressed="true"] {
+  background-color: var(--of-accent, #f5f5f5);
+  color: var(--of-on-accent, #171717);
+}
+
+.of-toggle[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.of-toggle--small {
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.of-toggle--medium {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.of-toggle--large {
+  height: 36px;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+/* Icon-only toggles keep their horizontal padding, so they are a little wider
+   than they are tall; min-width guards a narrow glyph. */
+.of-toggle--icon {
+  min-width: 32px;
+}
+
+.of-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.of-toggle-label {
+  display: block;
+}

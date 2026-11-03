@@ -1,0 +1,56 @@
+/* Stacked disclosure items. */
+
+.of-accordion {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-accordion-item {
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+}
+
+.of-accordion-item:last-child {
+  border-bottom: 1px solid transparent;
+}
+
+.of-accordion-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px 0;
+  border: 1px solid transparent;
+  background-color: transparent;
+  color: var(--of-text, #0a0a0a);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.of-accordion-trigger:hover .of-accordion-title {
+  text-decoration: underline;
+}
+
+.of-accordion-trigger:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-accordion-chevron {
+  flex-shrink: 0;
+  color: var(--of-muted, #737373);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.of-accordion-content {
+  padding-bottom: 16px;
+  color: var(--of-muted, #737373);
+  font-size: 14px;
+  line-height: 20px;
+}

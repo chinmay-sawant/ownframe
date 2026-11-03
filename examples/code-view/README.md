@@ -36,8 +36,10 @@ tabs stay put; tabs for deleted files close. A clean tree says so; a directory
 without a repository says that too. The viewer writes only when you edit a file
 and press Save.
 
-Other flags: `-dev` opens the developer dock (hidden by default), `-perf=false` stops pipeline
-sampling, `-chrome=false` keeps the native title bar instead of the drawn minimize, maximize,
+Other flags: `-dev` opens the developer dock (hidden by default; dock sampling also
+feeds `-debug-addr`), `-perf=false` stops pipeline sampling, `-debug-addr` serves
+window profiling on a loopback address (off by default, needs `-tags ownframe_debug`),
+`-chrome=false` keeps the native title bar instead of the drawn minimize, maximize,
 and close controls, `-addr` changes the `-web` address, and `-web` serves the interactive
 page (tick, keys, wheel, clicks, live frame updates).
 

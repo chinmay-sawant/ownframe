@@ -10,12 +10,13 @@ import (
 // window is parked. The wrapper writes it on the game goroutine after each
 // frame; the tab reads it there. It is a snapshot for inspection rather than a scheduling policy.
 type paceState struct {
-	next       time.Time
-	skipped    uint64
-	idle       bool
-	maxFPS     int
-	presentFPS float64
-	presents   uint64
+	next        time.Time
+	skipped     uint64
+	idle        bool
+	eventDriven bool
+	maxFPS      int
+	presentFPS  float64
+	presents    uint64
 }
 
 // devPaceNext renders the time until the next scheduled idle wake, or "-"

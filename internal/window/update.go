@@ -74,6 +74,7 @@ func (s *shell) Update() error {
 			return err
 		}
 	}
+	s.maybePublishDebug()
 	return nil
 }
 

@@ -1,0 +1,76 @@
+/* Avatar image, initials fallback, and presence dot. */
+
+.of-avatar {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.of-avatar-frame {
+  display: block;
+  overflow: hidden;
+  border-radius: 999px;
+  background-color: var(--of-control, #f4f4f5);
+  color: var(--of-muted, #737373);
+}
+
+.of-avatar--small .of-avatar-frame {
+  width: 32px;
+  height: 32px;
+}
+
+.of-avatar--medium .of-avatar-frame {
+  width: 40px;
+  height: 40px;
+}
+
+.of-avatar--large .of-avatar-frame {
+  width: 56px;
+  height: 56px;
+}
+
+.of-avatar-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.of-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--of-muted, #737373);
+}
+
+.of-avatar-status {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--of-background, #ffffff);
+  border-radius: 999px;
+  background-color: var(--of-muted, #a3a3a3);
+}
+
+.of-avatar-status--online {
+  background-color: var(--of-success, #22c55e);
+}
+
+.of-avatar-status--away {
+  background-color: var(--of-warning, #f59e0b);
+}
+
+.of-avatar-status--busy {
+  background-color: var(--of-danger, #dc2626);
+}
+
+.of-avatar-status--offline {
+  background-color: var(--of-muted, #a3a3a3);
+}

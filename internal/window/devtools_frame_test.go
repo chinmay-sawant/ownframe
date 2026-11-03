@@ -3,6 +3,7 @@ package window
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // devFrameText joins the rows' plain text.
@@ -12,6 +13,17 @@ func devFrameText(rows []devRow) string {
 		lines = append(lines, row.line.plain())
 	}
 	return strings.Join(lines, "\n")
+}
+
+func TestDevFrameSeparatesIdleGapFromWork(t *testing.T) {
+	s := newDevShell(newDevScreen())
+	s.perf = true
+	s.dev.frame = 250 * time.Millisecond
+	s.dev.stages.work = 2 * time.Millisecond
+	rows := s.devFrameRows(320)
+	if devFrameValue(rows, "Frame gap") != "250.0ms" || devFrameValue(rows, "Frame work") != "2.0ms" {
+		t.Fatal("frame rows conflate parked time with rendering work")
+	}
 }
 
 // TestDevFrameSections checks the tab's four sections.

@@ -183,7 +183,7 @@ newly opened dialog can focus a control that was absent in the previous view.
 
 ## Styled controls and custom themes
 
-The optional [`components`](components/README.md) package supplies buttons,
+The optional [`chadcn`](../components/chadcn/README.md) package supplies buttons,
 cards, labeled text fields, badges, and controlled dialogs. The raw `ui`
 builder keeps its neutral HTML/CSS API. The gallery and JMAP mail examples
 share these controls and semantic theme variables.

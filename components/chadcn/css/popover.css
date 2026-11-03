@@ -1,0 +1,83 @@
+/* Popover ---------------------------------------------------------------- */
+
+.of-popover {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.of-popover-trigger {
+  display: block;
+}
+
+/* The engine resolves percentage insets against the viewport, so a panel is
+   attached to this zero-height in-flow box instead of the trigger's edges. A
+   bottom panel follows the trigger; every other side puts the box first. */
+.of-popover-anchor {
+  position: relative;
+  display: block;
+  height: 0;
+}
+
+.of-popover--left > .of-popover-anchor {
+  width: 0;
+}
+
+.of-popover--right > .of-popover-anchor {
+  width: 0;
+  margin-left: auto;
+}
+
+/* Top panels need a positive containing-block height, because the engine
+   resolves a bottom offset against the block's own height. One pixel with a
+   matching negative margin keeps the flow size at zero. */
+.of-popover--top > .of-popover-anchor {
+  height: 1px;
+  margin-top: -1px;
+}
+
+.of-popover-content {
+  position: absolute;
+  z-index: 50;
+  box-sizing: border-box;
+  width: var(--of-popover-width, 288px);
+  padding: var(--of-popover-padding, 16px);
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-popover, var(--of-surface, #ffffff));
+  color: var(--of-text, #0a0a0a);
+  box-shadow: 0 10px 30px var(--of-shadow, #00000026);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* Main axis: the gap between trigger and panel. */
+.of-popover--bottom > .of-popover-anchor > .of-popover-content { top: 8px; }
+.of-popover--top > .of-popover-anchor > .of-popover-content { bottom: 8px; }
+.of-popover--left > .of-popover-anchor > .of-popover-content { right: 8px; top: 0; }
+.of-popover--right > .of-popover-anchor > .of-popover-content { left: 8px; top: 0; }
+
+/* Cross axis for a panel above or below the trigger. */
+.of-popover--bottom.of-popover--align-start > .of-popover-anchor > .of-popover-content,
+.of-popover--top.of-popover--align-start > .of-popover-anchor > .of-popover-content {
+  left: 0;
+}
+
+.of-popover--bottom.of-popover--align-end > .of-popover-anchor > .of-popover-content,
+.of-popover--top.of-popover--align-end > .of-popover-anchor > .of-popover-content {
+  right: 0;
+}
+
+/* A centred panel anchors on the wrapper midpoint: a zero-width block with
+   two auto margins. The negative right offset pulls half the panel width. */
+.of-popover--bottom.of-popover--align-center > .of-popover-anchor,
+.of-popover--top.of-popover--align-center > .of-popover-anchor {
+  width: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.of-popover--bottom.of-popover--align-center > .of-popover-anchor > .of-popover-content,
+.of-popover--top.of-popover--align-center > .of-popover-anchor > .of-popover-content {
+  right: calc(0px - var(--of-popover-width, 288px) / 2);
+}

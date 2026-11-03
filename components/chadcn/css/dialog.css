@@ -1,0 +1,127 @@
+/* Dialog: centered modal surface, backdrop, header, body, and action footer. */
+
+/* The modal band clears the app topbar and sidebar (30 to 40 in the dashboard
+   shell) and stays below the toast (60) and the command palette (90). Override
+   --of-modal-z on :root to move every modal surface together. */
+.of-dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: var(--of-modal-z, 55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  padding: 24px 16px;
+  background-color: var(--of-overlay, var(--of-backdrop, #00000080));
+}
+
+/* The panel hugs its header, body, and footer, and the body carries the height
+   cap. A max-height on this flex panel would be used as its height, so a short
+   dialog would paint empty panel below the actions. */
+.of-dialog-panel {
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  width: 100%;
+  max-width: 512px;
+  overflow: hidden;
+  background-color: var(--of-popover, var(--of-surface, #ffffff));
+  color: var(--of-text, #0a0a0a);
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius-lg, var(--of-radius, 14px));
+  box-shadow: 0 18px 48px var(--of-shadow, #0000001f);
+}
+
+.of-dialog-panel:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-dialog-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px 24px 0 24px;
+}
+
+.of-dialog-heading {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.of-dialog-title {
+  margin: 0;
+  color: var(--of-text, #0a0a0a);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.of-dialog-description {
+  margin: 0;
+  color: var(--of-muted-foreground, var(--of-muted, #737373));
+  font-size: 14px;
+}
+
+/* The body is the height cap and the scroll region. It stays a block so the
+   cap clamps to the content height; on a flex container the engine uses
+   max-height as the height, which leaves empty panel under a short body. The
+   sibling margins below keep the old flex gap between rows. min-height 0 lets
+   it shrink, and its own overflow scrolls under the fixed footer. */
+.of-dialog-body {
+  display: block;
+  flex-shrink: 1;
+  min-height: 0;
+  max-height: 60vh;
+  padding: 20px 24px 24px 24px;
+  overflow-y: auto;
+}
+
+.of-dialog-body > * + * {
+  margin-top: 16px;
+}
+
+.of-dialog-footer {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  background-color: var(--of-control, #f4f4f5);
+  border-top: 1px solid var(--of-border, #e5e5e5);
+}
+
+.of-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background-color: transparent;
+  color: var(--of-muted-foreground, var(--of-muted, #737373));
+  border: 0;
+  border-radius: var(--of-radius-sm, var(--of-radius, 6px));
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.of-dialog-close:hover {
+  background-color: var(--of-accent, var(--of-control, #f5f5f5));
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-dialog-close:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}

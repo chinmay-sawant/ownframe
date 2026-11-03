@@ -26,6 +26,8 @@ type renderTrack struct {
 	// hovered subtrees, which disables the scoped hover patch.
 	hoverGuardHash  uint64
 	hoverGuardRisky bool
+	hoverScopeKey   draw.Key
+	hoverScopes     map[hoverScopePair]hoverScopeResult
 	// redrawBatch defers draws across a pointer sequence. Any Redraw in the
 	// batch sets pending; a Redraw (not RedrawIfChanged) also sets force.
 	redrawBatch   int

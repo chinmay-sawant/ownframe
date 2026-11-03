@@ -1,0 +1,175 @@
+/* Menubar: a horizontal trigger bar with one host-owned open menu. */
+
+.of-menubar {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+}
+
+.of-menubar-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-sizing: border-box;
+  padding: 4px;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+}
+
+/* Flat: a menubar that sits in a host toolbar. Drop the box that otherwise
+   reads as a text field and keep a compact trigger row. The trigger height
+   matches the boxed bar so a toolbar does not shift when the menus change. */
+.of-menubar--flat .of-menubar-bar {
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+}
+
+.of-menubar--flat .of-menubar-trigger {
+  height: 28px;
+  padding: 0 8px;
+}
+
+.of-menubar-slot {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+}
+
+.of-menubar-trigger {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: transparent;
+  color: var(--of-text, #0a0a0a);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.of-menubar-trigger:hover,
+.of-menubar-trigger:focus-visible,
+.of-menubar-trigger[aria-expanded="true"] {
+  background-color: var(--of-accent, #f5f5f5);
+  color: var(--of-on-accent, #171717);
+}
+
+.of-menubar-menu {
+  position: absolute;
+  top: 32px;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-sizing: border-box;
+  min-width: 224px;
+  margin-top: 4px;
+  padding: 4px;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-popover, #ffffff);
+  color: var(--of-text, #0a0a0a);
+  box-shadow: 0 4px 14px var(--of-shadow, #00000026);
+  font-size: 13px;
+}
+
+.of-menubar-menu-row {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+}
+
+.of-menubar-menu-submenu {
+  top: -5px;
+  left: 100%;
+  display: none;
+}
+
+.of-menubar-menu-row:hover .of-menubar-menu-submenu {
+  display: flex;
+}
+
+.of-menubar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: transparent;
+  color: var(--of-text, #0a0a0a);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  text-align: left;
+}
+
+.of-menubar-menu-item:hover,
+.of-menubar-menu-item:focus-visible {
+  background-color: var(--of-accent, #f5f5f5);
+  color: var(--of-on-accent, #171717);
+}
+
+.of-menubar-menu-item--danger,
+.of-menubar-menu-item--danger:hover,
+.of-menubar-menu-item--danger:focus-visible {
+  color: var(--of-danger, #dc2626);
+}
+
+.of-menubar-menu-item--danger:hover,
+.of-menubar-menu-item--danger:focus-visible {
+  background-color: var(--of-danger-soft, rgba(220, 38, 38, 0.12));
+}
+
+.of-menubar-menu-item[disabled]:hover {
+  background-color: transparent;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-menubar-menu-item--danger[disabled]:hover {
+  color: var(--of-danger, #dc2626);
+}
+
+.of-menubar-menu-shortcut {
+  display: block;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--of-muted, #737373);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.of-menubar-menu-chevron {
+  display: block;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--of-muted, #737373);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.of-menubar-menu-label {
+  padding: 4px 8px;
+  color: var(--of-muted, #737373);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.of-menubar-menu-separator {
+  height: 1px;
+  margin: 4px -4px;
+  background-color: var(--of-border, #e5e5e5);
+}

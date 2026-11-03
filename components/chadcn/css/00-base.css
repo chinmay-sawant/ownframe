@@ -1,0 +1,33 @@
+/* Base rules shared by every ChadCN component. */
+
+.of-scope,
+.of-scope * {
+  box-sizing: border-box;
+}
+
+.of-focus:focus,
+.of-focus:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
+}
+
+.of-disabled,
+[disabled] {
+  opacity: 0.5;
+}
+
+.of-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  font-size: 0;
+  line-height: 0;
+}
+
+.of-transition {
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s,
+    opacity 0.15s, transform 0.15s;
+}

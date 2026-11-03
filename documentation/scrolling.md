@@ -31,13 +31,13 @@ consume the event; return false to let the window scroll the page. The handler
 owns any redraw. The code-view explorer uses this to scroll its file tree while
 the editor keeps the page offset.
 
-For builder-authored inner panes, `ui/components` provides `ScrollState` and
+For builder-authored inner panes, `components/chadcn` provides `ScrollState` and
 `Scrollbar`. The state supports pixel or row ranges, fractional wheel input,
 track paging, focused keyboard input, and native thumb dragging. The host
 measures the pane, clips and translates or windows its content, and routes
 its events. These inner scrollbars inherit theme properties independently of
-the window-owned page scrollbar. See the [component guide](../ui/components/README.md#scroll-a-pane)
-and `examples/jmap-mail` for two independent scroll panes.
+the window-owned page scrollbar. See the [component guide](../components/chadcn/README.md#scroll-a-pane)
+and `examples/builder/jmap-mail` for two independent scroll panes.
 
 ## Page requests
 

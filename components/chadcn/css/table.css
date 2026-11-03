@@ -1,0 +1,42 @@
+/* Data table, headings, cells, footer, and caption. */
+
+.of-table {
+  width: 100%;
+  border-collapse: collapse;
+  caption-side: bottom;
+  font-size: 14px;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-table-head {
+  padding: 12px;
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+  text-align: left;
+  vertical-align: middle;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-table-cell {
+  padding: 12px;
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+  text-align: left;
+  vertical-align: middle;
+  line-height: 1.4;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-table-footer .of-table-cell {
+  border-top: 1px solid var(--of-border, #e5e5e5);
+  border-bottom: 0;
+  background-color: var(--of-control, #f4f4f5);
+  font-weight: 500;
+}
+
+.of-table-caption {
+  padding-top: 12px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--of-muted, #737373);
+}

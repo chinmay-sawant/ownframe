@@ -1,6 +1,9 @@
 package page
 
-import "sync/atomic"
+import (
+	"sync"
+	"sync/atomic"
+)
 
 // frameState is the page's per-frame opt-ins: the dirty-rect opt-in the
 // window reads, and the next-frame deadline a page sets to pace an idle
@@ -13,6 +16,9 @@ import "sync/atomic"
 // frame deadline can be handed off between the tick, handlers, and the game
 // loop without a lock.
 type frameState struct {
-	frameDirty atomic.Bool
-	frameAt    int64 // atomic: Unix nanoseconds
+	frameDirty  atomic.Bool
+	frameAt     int64 // atomic: Unix nanoseconds
+	frameOnce   sync.Once
+	frameEvents chan struct{}
+	tickRunning atomic.Bool
 }

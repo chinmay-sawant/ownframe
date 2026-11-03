@@ -16,7 +16,9 @@ SPEC.loader.exec_module(MODULE)
 class PerfSampleTests(unittest.TestCase):
     def test_metrics_required(self):
         valid = {'stats': dict.fromkeys(MODULE.STAT_FIELDS, 1), 'runtime': {'heap_alloc': 10, 'goroutines': 2, 'rss_bytes': 100}}
-        self.assertEqual(MODULE.metrics(valid), [1] * 5 + [10, 2, 100])
+        self.assertEqual(MODULE.metrics(valid), [1] * 5 + [10, 2, 100, None, None, None])
+        valid['runtime'].update(heap_sys=20, total_alloc=30, num_gc=4)
+        self.assertEqual(MODULE.metrics(valid)[8:], [20, 30, 4])
         for body in ({}, {'stats': {}}, {'stats': valid['stats'], 'runtime': {}}, {'stats': valid['stats'], 'runtime': {'heap_alloc': True, 'goroutines': 2}}):
             with self.subTest(body=body), self.assertRaises(ValueError):
                 MODULE.metrics(body)
@@ -67,6 +69,7 @@ class PerfSampleTests(unittest.TestCase):
             report = json.loads(output.with_suffix('.json').read_text())
             self.assertEqual(report['status'], 'failed')
             self.assertEqual(report['samples'], 2)
+            self.assertEqual(report['peak_rss_bytes'], 100)
             self.assertEqual(len(output.read_text().splitlines()), 3)
 
     def test_interruption_finalizes_metadata(self):

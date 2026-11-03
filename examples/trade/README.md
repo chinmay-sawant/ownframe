@@ -28,8 +28,10 @@ go run ./examples/trade -dev=false
 ```
 
 Resize the window at any time; the shell and panels follow the new size. `-perf`
-is on by default and feeds the pipeline sampling used by the Frame tab; the
-CSS motion runs either way. Pass `-perf=false` for a still page profile.
+is on by default and feeds the pipeline sampling used by the Frame tab and the
+`-debug-addr` profiling endpoints; the CSS motion runs either way. Pass
+`-perf=false` for a still page profile. Pair `-debug-addr 127.0.0.1:8144` with
+`-tags ownframe_debug` to serve that profiling beside the window.
 
 Serve the current frame in a browser:
 

@@ -45,9 +45,10 @@ func TestIdleCleanFrameProbe(t *testing.T) {
 	s.drawReplayPartial(dst)
 	s.frameCommit()
 	s.dev.on = true
+	screen.width, screen.height = s.viewSize()
 
-	if s.idleCleanFrame() {
-		t.Fatal("open devtools must read dirty")
+	if !s.idleCleanFrame() {
+		t.Fatal("a stable page with open devtools must still idle")
 	}
 
 	s.dev.on = false

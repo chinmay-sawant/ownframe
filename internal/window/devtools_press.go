@@ -1,6 +1,8 @@
 package window
 
-import "github.com/chinmay-sawant/ownframe/internal/clipboard"
+import (
+	"github.com/chinmay-sawant/ownframe/internal/clipboard"
+)
 
 // devPanelPress runs the action of the hit under the pointer. A click on
 // empty panel space does nothing, so a pinned box stays pinned.
@@ -30,7 +32,19 @@ func (s *shell) devOpHitText(arg int) string {
 // is no setting to turn it off, so keep the dock closed for sensitive
 // output. See documentation/devtools.md and security.md.
 func (s *shell) devRun(hit devHit) {
+	s.dev.panelCache.valid = false
 	switch hit.act {
+	case devActPause:
+		s.dev.paused = !s.dev.paused
+	case devActRefresh:
+		switch s.dev.refreshGap {
+		case devPanelFastGap:
+			s.dev.refreshGap = devPanelRefreshGap
+		case devPanelSlowGap:
+			s.dev.refreshGap = devPanelFastGap
+		default:
+			s.dev.refreshGap = devPanelSlowGap
+		}
 	case devActMobileExpand:
 		if s.dev.mobile {
 			s.dev.mobileExpanded = !s.dev.mobileExpanded

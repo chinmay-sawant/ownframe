@@ -113,3 +113,38 @@ func TestCustomPropertiesReachEngineLayout(t *testing.T) {
 		}
 	}
 }
+
+func TestConditionalSiblingPreservesGeneratedControlID(t *testing.T) {
+	ctx := context.Background()
+	tree := func(open bool) *Element {
+		root := Div().ID("toolbar")
+		if open {
+			root.Children(Button("Transient").OnClick(func(context.Context) error { return nil }))
+		}
+		return root.Children(Button("Export").OnClick(func(context.Context) error { return nil }))
+	}
+	view, err := Mount(ownframe.Config{Width: 480, Height: 320}, tree(false))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = view.Page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	id := ""
+	for _, b := range view.Page.Boxes() {
+		if b.Tag == "button" && b.Text == "Export" {
+			id = b.ID
+		}
+	}
+	if id == "" {
+		t.Fatal("missing Export")
+	}
+	if err = view.Update(ctx, tree(true)); err != nil {
+		t.Fatal(err)
+	}
+	for _, b := range view.Page.Boxes() {
+		if b.Tag == "button" && b.Text == "Export" && b.ID != id {
+			t.Fatalf("Export id changed %s -> %s", id, b.ID)
+		}
+	}
+}

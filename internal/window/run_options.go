@@ -50,6 +50,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	defer game.windowDrag.native.end()
 	defer game.nativeCursor.end()
 	defer game.renderer.Close()
+	defer game.dev.panelCache.close()
 	defer game.imeShutdown()
 	defer game.closeA11y()
 	game.transparent = options.Transparent
@@ -67,6 +68,16 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	}
 
 	setupScreenClear()
+
+	stopDebug := func() {}
+	if options.DebugAddr != "" {
+		var err error
+		_, stopDebug, err = startDebugServer(ctx, game, options.DebugAddr)
+		if err != nil {
+			return err
+		}
+	}
+	defer stopDebug()
 
 	pace, stop := paceWindow(ctx, game, options)
 	defer stop()

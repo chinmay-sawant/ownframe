@@ -23,6 +23,7 @@ type inputWatch struct {
 	cursor image.Point
 	touch  int
 	ready  bool
+	mouse  [3]bool
 }
 
 func (w *inputWatch) changed() bool {
@@ -32,15 +33,25 @@ func (w *inputWatch) changed() bool {
 	tap := len(inpututil.AppendJustPressedKeys(w.tap[:0])) > 0 ||
 		len(inpututil.AppendJustReleasedKeys(w.tap[:0])) > 0
 	touch := len(ebiten.AppendTouchIDs(nil))
+	mouse := [3]bool{
+		ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft),
+		ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight),
+		ebiten.IsMouseButtonPressed(ebiten.MouseButtonMiddle),
+	}
 	changed := !w.ready || x != w.cursor.X || y != w.cursor.Y ||
 		!slices.Equal(keys, w.keys) || !slices.Equal(chars, w.chars) ||
-		tap || touch != w.touch || justPressedMouse() || wheelMoved()
+		tap || touch != w.touch || mouse != w.mouse || justPressedMouse() || wheelMoved()
 
 	w.next, w.keys = w.keys, keys
 	w.runes, w.chars = w.chars, chars
 	w.cursor, w.touch, w.ready = image.Pt(x, y), touch, true
+	w.mouse = mouse
 
 	return changed
+}
+
+func (w *inputWatch) held() bool {
+	return len(w.keys) > 0 || w.mouse != [3]bool{} || w.touch > 0
 }
 
 func justPressedMouse() bool {

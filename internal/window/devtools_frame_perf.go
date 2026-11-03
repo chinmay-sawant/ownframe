@@ -35,7 +35,7 @@ func (s *shell) addPerfRows(rs *[]devRow, w float64, h func(string), n func(stri
 }
 
 func (s *shell) addPipelinePerfRows(rs *[]devRow, w float64, h func(string), n func(string, any), st host.Stats) {
-	h("Pipeline detail")
+	h("Last redraw detail")
 	if s.perfHooks.devPipelinePerf == nil {
 		for _, l := range []string{"Template", "Style", "Layout", "Paint", "Dirty ops", "Dirty regions", "Changed ops"} {
 			n(l, "-")

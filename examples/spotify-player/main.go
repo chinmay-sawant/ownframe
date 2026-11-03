@@ -22,7 +22,8 @@ func main() {
 func run() error {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8119", "listen address for -web")
-	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab")
+	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab and the -debug-addr endpoints")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 
 	app, err := player.New()
@@ -45,5 +46,5 @@ func run() error {
 		return nil
 	}
 
-	return ownframe.Run(ctx, app.Page())
+	return ownframe.RunWithOptions(ctx, app.Page(), ownframe.WindowOptions{DebugAddr: *debugAddr})
 }

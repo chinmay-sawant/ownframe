@@ -31,6 +31,10 @@ BUILD_P ?= 1
 build:
 	$(GO) vet -p $(BUILD_P) ./... ./examples/...
 
+.PHONY: debug
+debug:
+	$(GO) run -tags ownframe_debug ./examples/builder/loglens -dev -perf -debug-addr 127.0.0.1:8129
+
 # Use exactly the declared runner version, including when PATH has another version.
 .PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check
 lint-version:

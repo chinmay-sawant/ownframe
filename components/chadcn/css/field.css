@@ -1,0 +1,37 @@
+/* Field stacks a label, one control, and its messages in a column. */
+
+.of-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.of-field-label {
+  color: var(--of-text, #0a0a0a);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.of-field-required {
+  color: var(--of-destructive, #dc2626);
+  margin-left: 2px;
+}
+
+.of-field--invalid .of-field-label {
+  color: var(--of-destructive, #dc2626);
+}
+
+.of-field-description {
+  margin: 0;
+  color: var(--of-muted, #737373);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.of-field-error {
+  margin: 0;
+  color: var(--of-destructive, #dc2626);
+  font-size: 14px;
+  line-height: 20px;
+}

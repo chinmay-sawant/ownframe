@@ -1,0 +1,93 @@
+/* Tooltip ---------------------------------------------------------------- */
+
+.of-tooltip {
+  position: relative;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
+.of-tooltip-trigger {
+  display: block;
+}
+
+/* The engine resolves percentage insets against the viewport, so the label is
+   attached to a zero-height in-flow box instead of the trigger's edges. */
+.of-tooltip-anchor {
+  position: relative;
+  display: block;
+  height: 0;
+}
+
+.of-tooltip--bottom > .of-tooltip-anchor,
+.of-tooltip--top > .of-tooltip-anchor {
+  width: 0;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* The engine resolves bottom against the anchor's own height, so a top label
+   needs one pixel of height. The negative margin keeps the flow size at zero. */
+.of-tooltip--top > .of-tooltip-anchor {
+  height: 1px;
+  margin-top: -1px;
+}
+
+.of-tooltip--left > .of-tooltip-anchor {
+  width: 0;
+}
+
+.of-tooltip--right > .of-tooltip-anchor {
+  width: 0;
+  margin-left: auto;
+}
+
+.of-tooltip-content {
+  position: absolute;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: var(--of-tooltip-max-width, 240px);
+  padding: 6px 12px;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: var(--of-primary, #171717);
+  color: var(--of-on-primary, #fafafa);
+  box-shadow: none;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.of-tooltip--css-hover.of-tooltip--hovered > .of-tooltip-anchor > .of-tooltip-content {
+  display: flex;
+}
+
+.of-tooltip--css-hover:not(.of-tooltip--hovered) > .of-tooltip-anchor > .of-tooltip-content {
+  display: none;
+}
+
+/* The label is text only, so paint-time centring is safe: the hit box never
+   carries an action. The anchor sits at the trigger midpoint. */
+.of-tooltip--bottom > .of-tooltip-anchor > .of-tooltip-content {
+  top: 6px;
+  left: 0;
+  transform: translateX(-50%);
+}
+
+.of-tooltip--top > .of-tooltip-anchor > .of-tooltip-content {
+  bottom: 6px;
+  left: 0;
+  transform: translateX(-50%);
+}
+
+.of-tooltip--right > .of-tooltip-anchor > .of-tooltip-content {
+  left: 8px;
+  top: 0;
+}
+
+.of-tooltip--left > .of-tooltip-anchor > .of-tooltip-content {
+  right: 8px;
+  top: 0;
+}

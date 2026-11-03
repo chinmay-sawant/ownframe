@@ -8,10 +8,15 @@ import (
 )
 
 func TestPaceWindowOption(t *testing.T) {
+	saved := ebiten.TPS()
+	defer ebiten.SetTPS(saved)
 	sh := &shell{ctx: context.Background()}
 
 	out, stop := paceWindow(context.Background(), sh, Options{NoIdlePace: true, MaxFPS: -1})
 	stop()
+	if ebiten.TPS() != ebiten.SyncWithFPS {
+		t.Fatal("uncapped input updates must follow rendered frames")
+	}
 
 	if out != sh {
 		t.Fatal("NoIdlePace uncapped must not wrap the game")

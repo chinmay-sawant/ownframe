@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ExampleCode from './ExampleCode';
-import { helloFiles, starterFiles } from './starter';
+import { builderFiles, helloFiles, starterFiles } from './starter';
 import { repository } from './project';
 import gopher from '../../assets/brand/gopher.webp';
 import telegramPreview from '../../assets/screenshots/android/telegram/telegram-thread.webp';
@@ -172,16 +172,17 @@ export default function Home() {
           </li>
         </ol>
       </div>
-      <div className={`core-example ${starter === 'hello' ? 'hello-example' : 'split-example'}`}>
+      <div className={`core-example ${starter === 'hello' ? 'hello-example' : starter === 'split' ? 'split-example' : 'builder-example'}`}>
         <div className="starter-picker" aria-label="Choose an example">
           <button type="button" aria-pressed={starter === 'hello'} onClick={() => setStarter('hello')}>Hello World</button>
           <button type="button" aria-pressed={starter === 'split'} onClick={() => setStarter('split')}>Split with friends</button>
+          <button type="button" aria-pressed={starter === 'builder'} onClick={() => setStarter('builder')}>Builder basics</button>
         </div>
-        <ExampleCode key={starter} files={starter === 'hello' ? helloFiles : starterFiles} initialFile={0} path="" />
+        <ExampleCode key={starter} files={starter === 'hello' ? helloFiles : starter === 'split' ? starterFiles : builderFiles} initialFile={0} path="" />
       </div>
       <div className="start-run">
         <span>Open your native window</span><code>go run .</code>
-        <p>{starter === 'hello' ? 'Click the button to see a Go handler update the page.' : 'Choose friends, enter a bill, and calculate each share.'}</p>
+        <p>{starter === 'hello' ? 'Click the button to see a Go handler update the page.' : starter === 'split' ? 'Choose friends, enter a bill, and calculate each share.' : 'Flip the toggle and switch to see host-owned component state re-render the card.'}</p>
       </div>
     </section>
 

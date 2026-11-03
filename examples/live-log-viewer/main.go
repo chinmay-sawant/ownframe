@@ -31,6 +31,7 @@ func main() {
 	dir := flag.String("dir", "", "data directory; empty uses the user config directory")
 	temp := flag.Bool("temp", false, "use a fresh temporary data directory")
 	perf := flag.Bool("perf", false, "show redraw timings in the status bar")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	fromEnd := flag.Bool("from-end", true, "start -file sources at their current end")
 	var list files
 	flag.Var(&list, "file", "log file to follow; repeatable, default is dummy mode")
@@ -63,7 +64,7 @@ func main() {
 		}
 	}()
 
-	if err := ownframe.Run(context.Background(), app.Page()); err != nil {
+	if err := ownframe.RunWithOptions(context.Background(), app.Page(), ownframe.WindowOptions{DebugAddr: *debugAddr}); err != nil {
 		log.Print(err)
 	}
 }

@@ -4,6 +4,9 @@ import helloCSS from '../../examples/frontend/hello/style.css?raw';
 import budgetGo from '../../examples/frontend/budget/main.go?raw';
 import budgetHTML from '../../examples/frontend/budget/template.html?raw';
 import budgetCSS from '../../examples/frontend/budget/style.css?raw';
+import builderGo from '../../examples/frontend/builder/main.go?raw';
+import builderHTML from '../../examples/frontend/builder/template.html?raw';
+import builderCSS from '../../examples/frontend/builder/style.css?raw';
 import { highlightSource } from './highlight';
 
 function files(demo, main, template, style) {
@@ -20,3 +23,5 @@ function files(demo, main, template, style) {
 export const starterFiles = files('expense-tracker', budgetGo, budgetHTML, budgetCSS);
 
 export const helloFiles = files('hello', helloGo, helloHTML, helloCSS);
+
+export const builderFiles = files('builder', builderGo, builderHTML, builderCSS);

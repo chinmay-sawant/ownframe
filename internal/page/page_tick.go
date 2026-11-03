@@ -28,6 +28,7 @@ func (p *Page) SetTick(fn func(ctx context.Context) error) {
 	p.fn = fn
 	p.hasFn.Store(fn != nil)
 	p.mu.Unlock()
+	p.notifyFrame()
 }
 
 // Tick steps the automatic CSS motion driver, runs the frame callback
@@ -35,6 +36,8 @@ func (p *Page) SetTick(fn func(ctx context.Context) error) {
 // field, and no animation it does nothing. A mutating tick sets FrameDirty and
 // TakeDirty; a no-op tick stays clean.
 func (p *Page) Tick(ctx context.Context) error {
+	p.tickRunning.Store(true)
+	defer p.tickRunning.Store(false)
 	var fn func(context.Context) error
 	if p.hasFn.Load() {
 		p.mu.Lock()
@@ -176,6 +179,7 @@ func (p *Page) MarkRect(r image.Rectangle) { p.markRect(r) }
 // rects remain. An explicit call still sets it, including a no-op tick that
 // wants the buffer path without damage.
 func (p *Page) UseFrameDirty() {
+	defer p.notifyFrame()
 	p.tickMutated.Store(true)
 	p.frameDirty.Store(true)
 }
@@ -192,10 +196,12 @@ var _ host.FrameWanter = (*Page)(nil)
 // once and keeps a per-frame animation on the active drawing loop. The window clears the
 // request when it reads it, like the FrameDirty opt-in, so a tick that wants
 // another frame must ask again on every frame. The zero time means the page
-// does not ask: the window falls back to its keep-alive pacing. Serve and the
+// does not ask: a static page waits for events, while a callback or file watch
+// retains compatibility polling. Serve and the
 // mobile views do not read it. WantFrameAt may be called from the tick or from
 // an event handler.
 func (p *Page) WantFrameAt(at time.Time) {
+	defer p.notifyFrame()
 	if at.IsZero() {
 		atomic.StoreInt64(&p.frameAt, 0)
 		return
@@ -212,8 +218,12 @@ func (p *Page) WantFrameIn(d time.Duration) { p.WantFrameAt(time.Now().Add(d)) }
 // calls it once per frame; the page does not.
 func (p *Page) NextFrameAt() time.Time {
 	n := atomic.SwapInt64(&p.frameAt, 0)
-	if n == 0 {
-		return time.Time{}
+	var at time.Time
+	if n != 0 {
+		at = time.Unix(0, n)
 	}
-	return time.Unix(0, n)
+	if blink := p.caretDeadline(); !blink.IsZero() && (at.IsZero() || blink.Before(at)) {
+		at = blink
+	}
+	return at
 }

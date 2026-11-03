@@ -101,6 +101,8 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 	if p == nil {
 		return ErrNilPage
 	}
+	defer p.notifyFrame()
+	clear(p.hoverScopes)
 
 	p.tickMutated.Store(true)
 	err := patch.ApplyElement(ctx, patch.ElementIn{
