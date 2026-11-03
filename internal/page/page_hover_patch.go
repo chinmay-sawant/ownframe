@@ -49,6 +49,9 @@ func (p *Page) layoutStaged(
 // hoverPatchRoots returns the subtree roots a hover-only change must
 // re-lay out. ok is false when the frame changed more than the hover, the
 // page cannot patch, or the sheets can style outside the hovered subtrees.
+// maxHoverScopes caps the hover scope cache before it is cleared.
+const maxHoverScopes = 256
+
 func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]string, bool) {
 	if !p.hoverPatchEligible(state) || p.last.Hover == state.Hover {
 		return nil, false
@@ -74,7 +77,7 @@ func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]stri
 		return cached.roots, cached.ok
 	}
 	roots, ok := p.findHoverScopes(styled, state)
-	if len(p.hoverScopes) >= 256 {
+	if len(p.hoverScopes) >= maxHoverScopes {
 		clear(p.hoverScopes)
 	}
 	p.hoverScopes[pair] = hoverScopeResult{roots: roots, ok: ok}

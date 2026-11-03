@@ -13,6 +13,11 @@ import (
 
 const (
 	overviewRegionRatio = 3.4
+
+	overviewErrorAlertThreshold = 4
+	overviewRecentMax           = 4
+	overviewRegionLowMax        = 25
+	overviewRegionHighMin       = 70
 )
 
 // overviewPanel is the landing tab: SLO burn, headline KPIs, traffic, service
@@ -32,7 +37,7 @@ func (a *app) overviewPanel() *ui.Element {
 func (a *app) overviewSLOAlert() *ui.Element {
 	metrics := a.telemetryMetrics()
 	variant := chadcn.AlertWarning
-	if metrics.Errors > 4 {
+	if metrics.Errors > overviewErrorAlertThreshold {
 		variant = chadcn.AlertDanger
 	}
 	return chadcn.Alert(chadcn.AlertOptions{
@@ -53,7 +58,7 @@ func (a *app) overviewKPIs() *ui.Element {
 	const progressScale = 100
 	metrics := a.telemetryMetrics()
 	errorRate := fmt.Sprintf("%.1f%%", metrics.ErrorRate)
-	availability := fmt.Sprintf("%.1f%%", 100-metrics.ErrorRate)
+	availability := fmt.Sprintf("%.1f%%", progressScale-metrics.ErrorRate)
 	latency := metrics.P95Latency.String()
 	if metrics.P95Latency == 0 {
 		latency = "—"
@@ -68,7 +73,7 @@ func (a *app) overviewKPIs() *ui.Element {
 		{"Events captured", fmt.Sprintf("%d", metrics.Total), overviewLatestDelta(a.lastRefreshCount), chadcn.BadgeSecondary, overviewProgress("Retained generated events", min(metrics.Total, progressScale), fmt.Sprintf("%d retained", metrics.Total), "max 500")},
 		{"Error rate", errorRate, fmt.Sprintf("%d errors", metrics.Errors), chadcn.BadgeDanger, overviewProgress("Errors in generated events", int(metrics.ErrorRate), fmt.Sprintf("%d warnings", metrics.Warnings), "sample feed")},
 		{"p95 latency", latency, "sampled", chadcn.BadgeOutline, overviewLatencyDetail()},
-		{"Non-error share", availability, "sampled", chadcn.BadgeSecondary, overviewProgress("Events without errors", int(100-metrics.ErrorRate), "from current feed", "sample feed")},
+		{"Non-error share", availability, "sampled", chadcn.BadgeSecondary, overviewProgress("Events without errors", int(progressScale-metrics.ErrorRate), "from current feed", "sample feed")},
 	}
 	cards := make([]*ui.Element, 0, len(kpis))
 	for _, kpi := range kpis {
@@ -200,7 +205,7 @@ func (a *app) overviewRecentEventsCard() *ui.Element {
 	if a.feed != nil {
 		entries = a.feed.logs
 	}
-	for index, entry := range entries[:min(4, len(entries))] {
+	for index, entry := range entries[:min(overviewRecentMax, len(entries))] {
 		body.Children(chadcn.Item(chadcn.ItemOptions{
 			Media:       chadcn.Badge(strings.ToUpper(entry.Level), chadcn.BadgeOptions{Variant: logLevelVariant(entry.Level)}),
 			Title:       entry.Service + " · " + statusLabel(entry.Status),
@@ -280,10 +285,10 @@ func overviewRegionErrors() []float64 {
 }
 
 func overviewErrorColor(value float64) string {
-	if value <= 25 {
+	if value <= overviewRegionLowMax {
 		return "#34d399"
 	}
-	if value < 70 {
+	if value < overviewRegionHighMin {
 		return "#fbbf24"
 	}
 	return "#f87171"

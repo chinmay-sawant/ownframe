@@ -48,12 +48,12 @@ func (s *server) frame(w http.ResponseWriter, r *http.Request) {
 		} else {
 			img, err := bitmap.Viewport(s.app.Display(), image.Rect(0, s.scrollY, viewW, s.scrollY+h), 1)
 			if err != nil {
-				http.Error(w, "render failed", 500)
+				http.Error(w, "render failed", http.StatusInternalServerError)
 				return
 			}
 			var buf bytes.Buffer
 			if err = png.Encode(&buf, img); err != nil {
-				http.Error(w, "encode failed", 500)
+				http.Error(w, "encode failed", http.StatusInternalServerError)
 				return
 			}
 			pngBytes = buf.Bytes()

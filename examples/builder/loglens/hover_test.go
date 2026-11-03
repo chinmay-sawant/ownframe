@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -147,19 +148,28 @@ func TestLiveTooltipShowsCurrentUpdateAge(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.lastUpdatedAt = time.Now().Add(-13 * time.Second)
 	ctx := context.Background()
 	if err := a.page.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
+	// Stamp the update age after the redraw: under -race the redraw above
+	// can take over a second, which used to push the hover label into the
+	// next second bucket and flake the exact-match assertion below.
+	a.lastUpdatedAt = time.Now().Add(-13 * time.Second)
 	trigger := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "tooltip-trigger" })
 	before := a.page.Probe().Stats()
 	if err := a.page.Edit().Hover(ctx, trigger.X+trigger.W/2, trigger.Y+trigger.H/2); err != nil {
 		t.Fatal(err)
 	}
 	tip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "live-tooltip-content" })
-	if tip.Text != "Updated 13 seconds ago" {
-		t.Fatalf("live tooltip says %q, want current age", tip.Text)
+	// The hover handler labels the tooltip with its own time.Now(), so a
+	// second boundary between the hover and this assertion can age the
+	// label by one second. Accept either side of that boundary.
+	age := int(time.Since(a.lastUpdatedAt).Seconds())
+	want := "Updated " + strconv.Itoa(age) + " seconds ago"
+	fallback := "Updated " + strconv.Itoa(age-1) + " seconds ago"
+	if tip.Text != want && tip.Text != fallback {
+		t.Fatalf("live tooltip says %q, want %q (or %q across a second boundary)", tip.Text, want, fallback)
 	}
 	after := a.page.Probe().Stats()
 	if after.Parses != before.Parses || after.Cascades != before.Cascades {

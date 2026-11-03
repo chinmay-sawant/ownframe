@@ -25,6 +25,8 @@ const (
 	defaultThreshold   = 85
 	defaultSliderValue = 30
 	dataRefreshSeconds = 1
+
+	secondsPerMinute = 60
 )
 
 // app owns the dashboard state. Panels are pure functions of this state and
@@ -344,10 +346,10 @@ func (a *app) liveUpdatedLabel(now time.Time) string {
 	if seconds == 1 {
 		return "Updated 1 second ago"
 	}
-	if seconds < 60 {
+	if seconds < secondsPerMinute {
 		return "Updated " + strconv.Itoa(seconds) + " seconds ago"
 	}
-	minutes := seconds / 60
+	minutes := seconds / secondsPerMinute
 	if minutes == 1 {
 		return "Updated 1 minute ago"
 	}

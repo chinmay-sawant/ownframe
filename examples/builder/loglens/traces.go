@@ -14,6 +14,10 @@ const (
 	traceRowHeight   = 34
 	traceCardGap     = 8
 	traceCardPadding = 12
+
+	traceSelectorMax = 3
+
+	traceBudgetWindow = 2 * time.Second
 )
 
 func traceBudgetPercent(duration string) int {
@@ -21,7 +25,7 @@ func traceBudgetPercent(duration string) int {
 	if err != nil {
 		return 0
 	}
-	return max(0, min(100, int(value*100/(2*time.Second))))
+	return max(0, min(telemetryPercentScale, int(value*telemetryPercentScale/traceBudgetWindow)))
 }
 
 func traceStatusVariant(status string) chadcn.BadgeVariant {
@@ -43,8 +47,8 @@ func (a *app) tracesPanel() *ui.Element {
 	active := max(0, min(a.traceIndex, len(traces)-1))
 	track := traces[active]
 
-	selectors := make([]*ui.Element, 0, min(3, len(traces)))
-	for i, candidate := range traces[:min(3, len(traces))] {
+	selectors := make([]*ui.Element, 0, min(traceSelectorMax, len(traces)))
+	for i, candidate := range traces[:min(traceSelectorMax, len(traces))] {
 		variant := chadcn.ButtonOutlined
 		if i == active {
 			variant = chadcn.ButtonFilled

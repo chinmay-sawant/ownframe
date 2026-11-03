@@ -7,7 +7,10 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/host"
 )
 
-func (s *server) scrollPage(dy float64) { s.setScrollY(s.scrollY - int(dy*48)) }
+// scrollStep is the CSS pixels scrolled per wheel delta unit.
+const scrollStep = 48
+
+func (s *server) scrollPage(dy float64) { s.setScrollY(s.scrollY - int(dy*scrollStep)) }
 
 func (s *server) setScrollY(next int) {
 	_, height := s.app.Size()
@@ -35,13 +38,13 @@ func (s *server) hover(w http.ResponseWriter, r *http.Request) {
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxFormBytes)
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "bad form", 400)
+		http.Error(w, "bad form", http.StatusBadRequest)
 		return
 	}
 	x, okX := wheelFloat(r.PostFormValue("x"))
 	y, okY := wheelFloat(r.PostFormValue("y"))
 	if !okX || !okY {
-		http.Error(w, "bad coordinates", 400)
+		http.Error(w, "bad coordinates", http.StatusBadRequest)
 		return
 	}
 	s.mu.Lock()
@@ -56,7 +59,7 @@ func (s *server) hover(w http.ResponseWriter, r *http.Request) {
 		previousID = hoverer.HoverID()
 	}
 	if err := s.app.Hover(r.Context(), x, y); err != nil {
-		http.Error(w, "hover failed", 500)
+		http.Error(w, "hover failed", http.StatusInternalServerError)
 		return
 	}
 	if !hasHover || previousID != hoverer.HoverID() || before != s.app.Generation() {

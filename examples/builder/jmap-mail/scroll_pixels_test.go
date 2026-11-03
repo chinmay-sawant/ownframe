@@ -158,11 +158,20 @@ func (g *scrollbarPixelGame) checkThumb(screen *ebiten.Image) {
 		g.err = fmt.Errorf("frame %d: scrollbar thumb is missing", g.step)
 		return
 	}
+	track, ok := boxByID(g.app.page, "mail-list-viewport")
+	if !ok {
+		g.err = fmt.Errorf("frame %d: message list viewport is missing", g.step)
+		return
+	}
 	bounds := screen.Bounds()
 	pixels := make([]byte, scrollbarRGBABytes*bounds.Dx()*bounds.Dy())
 	screen.ReadPixels(pixels)
 	x0, x1 := int(box.X), int(box.X+box.W)
-	runs := tallRuns(pixels, bounds.Dx(), bounds.Dy(), x0, x1, scrollbarMinRun)
+	// Only rows inside the list track can hold the thumb. The toolbar
+	// search field sits in the same x column, and its muted placeholder
+	// ink falls inside the sage thumb tolerance.
+	y0, y1 := int(track.Y), int(track.Y+track.H)
+	runs := tallRuns(pixels, bounds.Dx(), bounds.Dy(), x0, x1, y0, y1, scrollbarMinRun)
 	if len(runs) <= 1 {
 		return
 	}
@@ -182,25 +191,31 @@ func (g *scrollbarPixelGame) checkThumb(screen *ebiten.Image) {
 	)
 }
 
-// tallRuns are the vertical sage runs inside [x0, x1) that are at least min
-// pixels tall. A run is kept when any column in the span sees it, so a
-// rounded cap that leaves the center still counts.
-func tallRuns(pixels []byte, width, height, x0, x1, min int) [][2]int {
+// tallRuns are the vertical sage runs inside [x0, x1) and [yLo, yHi) that are
+// at least min pixels tall. A run is kept when any column in the span sees
+// it, so a rounded cap that leaves the center still counts.
+func tallRuns(pixels []byte, width, height, x0, x1, yLo, yHi, min int) [][2]int {
 	if x0 < 0 {
 		x0 = 0
 	}
 	if x1 > width {
 		x1 = width
 	}
+	if yLo < 0 {
+		yLo = 0
+	}
+	if yHi > height {
+		yHi = height
+	}
 	var runs [][2]int
-	y := 0
-	for y < height {
+	y := yLo
+	for y < yHi {
 		if !spanThumb(pixels, width, x0, x1, y) {
 			y++
 			continue
 		}
 		start := y
-		for y < height && spanThumb(pixels, width, x0, x1, y) {
+		for y < yHi && spanThumb(pixels, width, x0, x1, y) {
 			y++
 		}
 		if y-start >= min {

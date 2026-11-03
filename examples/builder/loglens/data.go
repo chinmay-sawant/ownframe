@@ -55,6 +55,16 @@ type telemetryMetrics struct {
 	P95Latency time.Duration
 }
 
+// telemetryPercentScale converts a ratio to a percentage, and the error-rate
+// bands below decide the service health tone in the overview.
+const (
+	telemetryPercentScale = 100
+	telemetryP95Percent   = 95
+	telemetryP95Round     = 99
+	telemetryDegradedRate = 40
+	telemetryWarningRate  = 20
+)
+
 //nolint:gochecknoglobals // static dashboard fixture
 var sampleLogs = []logEntry{
 	{"14:32:08.412", "error", "api-gateway", "upstream timeout after 30s", "7f3a9c21", "30.0s", 504},
@@ -234,11 +244,11 @@ func (a *app) telemetryMetrics() telemetryMetrics {
 		}
 	}
 	if metrics.Total > 0 {
-		metrics.ErrorRate = 100 * float64(metrics.Errors) / float64(metrics.Total)
+		metrics.ErrorRate = telemetryPercentScale * float64(metrics.Errors) / float64(metrics.Total)
 	}
 	if len(durations) > 0 {
 		sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
-		index := (95*len(durations)+99)/100 - 1
+		index := (telemetryP95Percent*len(durations)+telemetryP95Round)/telemetryPercentScale - 1
 		metrics.P95Latency = durations[max(0, min(index, len(durations)-1))]
 	}
 	return metrics
@@ -266,18 +276,18 @@ func (a *app) liveServices() []serviceHealth {
 		if count == 0 {
 			continue
 		}
-		rate := 100 * float64(errors[sample.Name]) / float64(count)
+		rate := telemetryPercentScale * float64(errors[sample.Name]) / float64(count)
 		status := "healthy"
-		if rate >= 40 {
+		if rate >= telemetryDegradedRate {
 			status = "degraded"
-		} else if rate >= 20 {
+		} else if rate >= telemetryWarningRate {
 			status = "warning"
 		}
 		values := durations[sample.Name]
 		latency := time.Duration(0)
 		if len(values) > 0 {
 			sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
-			index := (95*len(values)+99)/100 - 1
+			index := (telemetryP95Percent*len(values)+telemetryP95Round)/telemetryPercentScale - 1
 			latency = values[max(0, min(index, len(values)-1))]
 		}
 		services = append(services, serviceHealth{

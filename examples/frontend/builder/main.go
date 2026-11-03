@@ -4,8 +4,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"html/template"
 	"log"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
@@ -24,16 +24,21 @@ var templateHTML string
 var stylesheet string
 
 type view struct {
-	// Body holds only ui.Render output from the fixed chadcn
-	// constructors in renderBody, so it is safe to skip escaping.
-	Body    template.HTML
 	Pressed bool
 	Notify  bool
 	Clicks  int
 	Status  string
 }
 
-func renderBody(state *view) (template.HTML, error) {
+func statusText(state *view) string {
+	return fmt.Sprintf("Button ran %d times. Toggle %v. Switch %v.", state.Clicks, state.Pressed, state.Notify)
+}
+
+// renderBody returns plain ui.Render output. Every string reaches the
+// renderer as text or an attribute value, so ui escapes it; the caller
+// splices the fragment into the trusted template shell below instead of
+// passing typed HTML through template data.
+func renderBody(state *view) (string, error) {
 	count := "Run action"
 	if state.Clicks > 0 {
 		count = fmt.Sprintf("Ran %d time", state.Clicks)
@@ -60,36 +65,49 @@ func renderBody(state *view) (template.HTML, error) {
 	if err != nil {
 		return "", err
 	}
-	return template.HTML(out), nil
+	return out, nil
 }
 
-func refresh(page *ownframe.Page, state *view) error {
-	state.Status = fmt.Sprintf("Button ran %d times. Toggle %v. Switch %v.", state.Clicks, state.Pressed, state.Notify)
+// pageHTML splices a ui.Render fragment into the trusted template shell.
+// The shell is author-controlled with one {{.Body}} placeholder; the
+// fragment holds only fixed chadcn constructors with state-derived counts
+// and booleans, never user markup, so the splice cannot smuggle HTML
+// through template data.
+func pageHTML(state *view) (string, error) {
 	body, err := renderBody(state)
+	if err != nil {
+		return "", err
+	}
+	return strings.Replace(templateHTML, "{{.Body}}", body, 1), nil
+}
+
+func refresh(ctx context.Context, page *ownframe.Page, state *view) error {
+	state.Status = statusText(state)
+	html, err := pageHTML(state)
 	if err != nil {
 		return err
 	}
-	state.Body = body
-	page.SetData(state)
-	return nil
+	return page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true})
 }
 
 func newPage() (*ownframe.Page, *view, error) {
+	state := &view{}
+	state.Status = statusText(state)
+	html, err := pageHTML(state)
+	if err != nil {
+		return nil, nil, err
+	}
 	page, err := ownframe.New(ownframe.Config{
 		Title:  "Builder basics",
 		Width:  windowWidth,
 		Height: windowHeight,
-		HTML:   templateHTML,
+		HTML:   html,
 		Theme:  chadcn.Dark + chadcn.Stylesheet + stylesheet,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	state := &view{}
-	if err := refresh(page, state); err != nil {
-		return nil, nil, err
-	}
-	page.Handle(ownframe.Handlers{Click: func(_ context.Context, box ownframe.Box) error {
+	page.Handle(ownframe.Handlers{Click: func(ctx context.Context, box ownframe.Box) error {
 		switch box.Action {
 		case "press":
 			state.Clicks++
@@ -100,7 +118,7 @@ func newPage() (*ownframe.Page, *view, error) {
 		default:
 			return nil
 		}
-		return refresh(page, state)
+		return refresh(ctx, page, state)
 	}})
 	return page, state, nil
 }

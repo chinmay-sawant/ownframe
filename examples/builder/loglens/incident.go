@@ -273,9 +273,9 @@ func incidentSnapshotSlides(a *app) []*ui.Element {
 		Variant  chadcn.BadgeVariant
 		Progress int
 	}{
-		{"Feed errors", fmt.Sprintf("%d", metrics.Errors), "sampled", fmt.Sprintf("%.1f%% of %d events", metrics.ErrorRate, metrics.Total), chadcn.BadgeDanger, min(100, int(metrics.ErrorRate))},
+		{"Feed errors", fmt.Sprintf("%d", metrics.Errors), "sampled", fmt.Sprintf("%.1f%% of %d events", metrics.ErrorRate, metrics.Total), chadcn.BadgeDanger, min(telemetryPercentScale, int(metrics.ErrorRate))},
 		{"p95 latency", latency, "sampled", "Derived from retained generated log events", chadcn.BadgeOutline, traceBudgetPercent(latency)},
-		{"Warnings", fmt.Sprintf("%d", metrics.Warnings), "sampled", "Warning-level entries in the local feed", chadcn.BadgeSecondary, min(100, metrics.Warnings)},
+		{"Warnings", fmt.Sprintf("%d", metrics.Warnings), "sampled", "Warning-level entries in the local feed", chadcn.BadgeSecondary, min(telemetryPercentScale, metrics.Warnings)},
 	}
 	slides := make([]*ui.Element, 0, len(snapshots))
 	for _, snapshot := range snapshots {

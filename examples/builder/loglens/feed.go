@@ -2,13 +2,19 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 )
 
 const (
-	demoFeedPageSize = 10
-	demoFeedLimit    = 500
+	demoFeedPageSize     = 10
+	demoFeedLimit        = 500
+	feedMaxNewRecords    = 3
+	feedPercentCap       = 100
+	feedRegionJitterSpan = 11
+	feedRegionJitterMid  = 5
+	feedDurationSpanMS   = 1800
+	feedDurationBaseMS   = 12
 )
 
 // telemetryTrace is one generated trace and its waterfall. It is local demo
@@ -42,7 +48,7 @@ func newTelemetryFeed(now func() time.Time, seed int64) *telemetryFeed {
 	}
 	feed := &telemetryFeed{
 		now:     now,
-		random:  rand.New(rand.NewSource(seed)),
+		random:  rand.New(rand.NewPCG(uint64(seed), uint64(seed)>>1)), //nolint:gosec // reason: deterministic demo feed shuffle, not security-sensitive.
 		logs:    make([]logEntry, 0, demoFeedLimit),
 		traces:  make([]telemetryTrace, 0, demoFeedLimit),
 		regions: overviewRegionErrors(),
@@ -61,15 +67,15 @@ func newTelemetryFeed(now func() time.Time, seed int64) *telemetryFeed {
 // stream and returns the number added. The deterministic seed keeps showcase
 // runs reproducible while each refresh evolves the data.
 func (feed *telemetryFeed) refresh() int {
-	count := feed.random.Intn(3) + 1
+	count := feed.random.IntN(feedMaxNewRecords) + 1
 	refreshedAt := feed.now()
 	for index := count - 1; index >= 0; index-- {
 		feed.sequence++
 		entry, trace := feed.generatedRecord(refreshedAt.Add(-time.Duration(index) * time.Millisecond))
 		feed.logs = append([]logEntry{entry}, feed.logs...)
 		feed.traces = append([]telemetryTrace{trace}, feed.traces...)
-		point := feed.random.Intn(len(feed.regions))
-		feed.regions[point] = float64(max(0, min(100, int(feed.regions[point])+feed.random.Intn(11)-5)))
+		point := feed.random.IntN(len(feed.regions))
+		feed.regions[point] = float64(max(0, min(feedPercentCap, int(feed.regions[point])+feed.random.IntN(feedRegionJitterSpan)-feedRegionJitterMid)))
 	}
 	feed.logs = keepNewestLogs(feed.logs, demoFeedLimit)
 	feed.traces = keepNewestTraces(feed.traces, demoFeedLimit)
@@ -107,10 +113,10 @@ func (feed *telemetryFeed) generatedRecord(at time.Time) (logEntry, telemetryTra
 		{"error", "upstream request timed out", 504},
 		{"error", "connection reset while reading response", 502},
 	}
-	service := services[feed.random.Intn(len(services))]
-	event := events[feed.random.Intn(len(events))]
-	id := fmt.Sprintf("%08x", uint32(feed.sequence))
-	durationMS := feed.random.Intn(1800) + 12
+	service := services[feed.random.IntN(len(services))]
+	event := events[feed.random.IntN(len(events))]
+	id := fmt.Sprintf("%08x", feed.sequence)
+	durationMS := feed.random.IntN(feedDurationSpanMS) + feedDurationBaseMS
 	duration := fmt.Sprintf("%dms", durationMS)
 	entry := logEntry{
 		Time:     at.Format("15:04:05.000"),
@@ -121,8 +127,8 @@ func (feed *telemetryFeed) generatedRecord(at time.Time) (logEntry, telemetryTra
 		Duration: duration,
 		Status:   event.status,
 	}
-	trace := demoTraceFromLog(entry, at, feed.random.Intn(len(owners)))
-	trace.Owner = owners[feed.random.Intn(len(owners))]
+	trace := demoTraceFromLog(entry, at, feed.random.IntN(len(owners)))
+	trace.Owner = owners[feed.random.IntN(len(owners))]
 	trace.Duration = duration
 	return entry, trace
 }
@@ -135,9 +141,10 @@ func demoTraceFromLog(entry logEntry, at time.Time, variant int) telemetryTrace 
 		spans[index].Duration = entry.Duration
 	}
 	status := "success"
-	if entry.Level == "warn" {
+	switch entry.Level {
+	case "warn":
 		status = "warning"
-	} else if entry.Level == "error" {
+	case "error":
 		status = "error"
 	}
 	if len(spans) > 0 && status != "success" {
