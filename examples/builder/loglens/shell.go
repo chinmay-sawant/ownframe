@@ -7,38 +7,97 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+const (
+	// topbarHeight matches the .app-topbar height in appCSS and the native
+	// window drag region.
+	topbarHeight = 60
+	// topbarPadding is the inline horizontal padding on the top bar.
+	topbarPadding = 16
+	// topbarGap keeps the chrome groups close without crowding the controls.
+	topbarGap = 8
+	// navLeft aligns the product navigation with the main content edge, past
+	// the sidebar's fixed hit box.
+	navLeft = 232
+	// brandWidth is the mark plus the Loglens wordmark.
+	brandWidth = 98
+	// navOffset is the slot margin that puts the nav at navLeft after the
+	// brand and the top bar's leading gap.
+	navOffset = navLeft - topbarPadding - brandWidth - topbarGap
+	// navWidth is the Platform/Resources/Settings trigger row width.
+	navWidth = 280
+	// menubarWidth is the three-trigger File/View/Help row. The flat menubar
+	// otherwise reports extra width past its last trigger.
+	menubarWidth = 80
+	// fullViewport is the percentage that fills the window.
+	fullViewport = 100
+)
+
 func (a *app) screen() *ui.Element {
-	root := chadcn.Screen(
-		ui.Div().Children(a.topbar()),
-		ui.Div().Class("app-body").Children(a.sidebar(), a.main()),
-		a.settingsSheet(),
-		a.globalDialogs(),
-		a.logsDetailDrawer(),
-		a.commandOverlay(),
-	)
+	root := ui.Div().Class("app-shell").
+		Width(ui.Percent(fullViewport)).
+		MinHeight(ui.Vh(fullViewport)).
+		BackgroundColor(ui.ColorVar("--of-background", ui.Hex("#0a0a0a"))).
+		Children(
+			// The fixed sidebar starts below the top bar and comes first so
+			// it never wins the hit test for the top-left chrome.
+			a.sidebar(),
+			ui.Div().Children(a.topbar()),
+			ui.Div().Class("app-body").Children(a.main()),
+			a.settingsSheet(),
+			a.globalDialogs(),
+			a.logsDetailDrawer(),
+			a.commandOverlay(),
+		)
 	if a.sidebarCollapsed {
 		return root.Class("app-shell app-shell--collapsed")
 	}
 	return root.Class("app-shell")
 }
 
+// topbar is the custom window chrome: the brand, the application menus, the
+// status tools, and the window controls share one row that never wraps.
 func (a *app) topbar() *ui.Element {
-	return ui.Header().Class("app-topbar").Children(
-		ui.Div().Class("app-brand").Children(
-			ui.Div().Class("app-brand-mark").Text("L"),
-			ui.Div().Class("app-brand-text").Children(
-				ui.Text("Loglens").FontWeight(ui.FontWeightBold).FontSize(ui.Px(16)),
-				ui.Text("acme / production").FontSize(ui.Px(11)).Color(ui.ColorVar("--of-muted", ui.Hex("#737373"))),
-			),
-		),
-		a.topMenus(),
-		ui.Div().Class("app-topbar-spacer"),
-		a.topPopovers(),
+	return ui.Header().Class("app-topbar").
+		Padding(ui.Edges(ui.Px(0), ui.Px(topbarPadding))).
+		Gap(ui.Px(topbarGap)).
+		Children(
+			a.brand(),
+			a.topMenus(),
+			ui.Div().Class("app-topbar-spacer"),
+			a.topPopovers(),
+			a.windowControls(),
+		)
+}
+
+// brand keeps the wordmark to one line; the project name already sits in the
+// sidebar header, so repeating it here only widened the bar.
+func (a *app) brand() *ui.Element {
+	return ui.Div().Class("app-brand").FlexShrink(ui.Number(0)).Children(
+		ui.Div().Class("app-brand-mark").Text("L"),
+		ui.Text("Loglens").FontWeight(ui.FontWeightBold).FontSize(ui.Px(16)),
 	)
 }
 
+func (a *app) windowControls() *ui.Element {
+	return ui.Div().Class("app-window-controls").FlexShrink(ui.Number(0)).Children(
+		windowButton("Minimize", "−", func() { a.page.Window().Minimize() }),
+		windowButton("Maximize", "□", func() { a.page.Window().ToggleMaximize() }),
+		windowButton("Close", "×", func() { a.page.Window().Close() }),
+	)
+}
+
+func windowButton(label, glyph string, action func()) *ui.Element {
+	return chadcn.Button(glyph, chadcn.ButtonOptions{Variant: chadcn.ButtonText, Size: chadcn.ButtonSmall}).
+		Attr("aria-label", label).
+		Attr("title", label).
+		OnClick(func(context.Context) error {
+			action()
+			return nil
+		})
+}
+
 func (a *app) sidebar() *ui.Element {
-	return chadcn.Sidebar(chadcn.SidebarOptions{
+	side := chadcn.Sidebar(chadcn.SidebarOptions{
 		ID:        "app-sidebar",
 		Label:     "Project navigation",
 		Open:      true,
@@ -81,6 +140,12 @@ func (a *app) sidebar() *ui.Element {
 				}),
 		),
 	})
+	// The top bar owns the strip above the sidebar. Starting the fixed rail
+	// below it keeps the sidebar's full box out of the chrome hit test.
+	side.Top(ui.Px(topbarHeight)).
+		PaddingTop(ui.Px(0)).
+		CSSRaw("height", "calc(100vh - 60px)")
+	return side
 }
 
 func (a *app) navItem(icon, label, tab, badge string) *ui.Element {
@@ -116,9 +181,7 @@ func (a *app) pageHeader() *ui.Element {
 		ui.Div().Class("app-page-title").Children(
 			chadcn.H1(title),
 			ui.Div().Class("app-page-badges").Children(
-				chadcn.Badge("Live", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
 				chadcn.Badge("EU", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
-				chadcn.Kbd("⌘K"),
 			),
 		),
 		ui.P().Class("app-page-sub").Text(a.tabSubtitle()),
@@ -147,11 +210,24 @@ func (a *app) panelTabs() *ui.Element {
 			a.tab = tab
 			return a.refresh(ctx)
 		},
+		Render: func(id string) *ui.Element {
+			switch id {
+			case "overview":
+				return a.overviewPanel()
+			case "logs":
+				return a.logsPanel()
+			case "traces":
+				return a.tracesPanel()
+			case "incident":
+				return a.incidentPanel()
+			}
+			return nil
+		},
 		Items: []chadcn.TabItem{
-			{ID: "overview", Label: "Overview", Content: a.overviewPanel()},
-			{ID: "logs", Label: "Logs", Content: a.logsPanel()},
-			{ID: "traces", Label: "Traces", Content: a.tracesPanel()},
-			{ID: "incident", Label: "Incident room", Content: a.incidentPanel()},
+			{ID: "overview", Label: "Overview"},
+			{ID: "logs", Label: "Logs"},
+			{ID: "traces", Label: "Traces"},
+			{ID: "incident", Label: "Incident room"},
 		},
 	})
 }

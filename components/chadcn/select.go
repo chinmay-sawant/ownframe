@@ -33,6 +33,7 @@ type SelectOptions struct {
 // Select renders a trigger button and, when Open, its listbox panel. The
 // trigger shows the selected label or the placeholder when Value is empty.
 func Select(options SelectOptions) *ui.Element {
+	panelID := partID(options.ID, "-panel")
 	label, selected := selectItemLabel(options.Items, options.Value)
 	triggerLabel := "Select an option"
 	labelClass := "of-select-placeholder"
@@ -56,7 +57,6 @@ func Select(options SelectOptions) *ui.Element {
 	if triggerID != "" {
 		trigger.ID(triggerID)
 	}
-	panelID := partID(options.ID, "-panel")
 	if options.Open && panelID != "" {
 		trigger.Attr("aria-controls", panelID)
 	}
@@ -66,7 +66,13 @@ func Select(options SelectOptions) *ui.Element {
 			return options.OnOpenChange(ctx, !open)
 		})
 	}
-	root := ui.Div().Class(classes("of-scope", "of-select")).Children(trigger)
+	// The open root is a stacking context. The panel keeps its absolute
+	// placement, so it overlays later siblings without reflowing the row.
+	openClass := ""
+	if options.Open {
+		openClass = "of-select--open"
+	}
+	root := ui.Div().Class(classes("of-scope", "of-select", openClass)).Children(trigger)
 	if options.ID != "" {
 		root.ID(options.ID)
 	}

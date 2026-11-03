@@ -40,6 +40,7 @@ type ComboboxOptions struct {
 // page form and passes it back as Query. OnQuery stays available for hosts
 // that dispatch their own input callbacks.
 func Combobox(options ComboboxOptions) *ui.Element {
+	panelID := partID(options.ID, "-panel")
 	placeholder := options.Placeholder
 	if placeholder == "" {
 		placeholder = "Select an option"
@@ -60,7 +61,6 @@ func Combobox(options ComboboxOptions) *ui.Element {
 	if inputID := partID(options.ID, "-input"); inputID != "" {
 		input.ID(inputID)
 	}
-	panelID := partID(options.ID, "-panel")
 	if options.Open && panelID != "" {
 		input.Attr("aria-controls", panelID)
 	}
@@ -84,7 +84,11 @@ func Combobox(options ComboboxOptions) *ui.Element {
 			return options.OnOpenChange(ctx, !open)
 		})
 	}
-	root := ui.Div().Class(classes("of-scope", "of-combobox")).Children(
+	openClass := ""
+	if options.Open {
+		openClass = "of-combobox--open"
+	}
+	root := ui.Div().Class(classes("of-scope", "of-combobox", openClass)).Children(
 		ui.Div().Class("of-combobox-control").Children(input, toggle),
 	)
 	if options.ID != "" {

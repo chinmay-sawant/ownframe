@@ -99,7 +99,7 @@ constructors: `AlertDialog`, `Combobox`, `ContextMenu`, `DatePicker`, `Dialog`,
 | **Toast** | `Toast` | open | Absolute bottom-right surface; returns nil while closed. |
 | **Accordion** | `Accordion` | open set | Multiple open IDs, `aria-expanded`, labelled region. |
 | **Collapsible** | `Collapsible` | open | Trigger plus content. |
-| **Tabs** | `Tabs` | active | Tablist, tab, and panel roles; one active panel. |
+| **Tabs** | `Tabs` | active | Tablist, tab, and panel roles; one active panel. `Render` builds only the active panel for lazy hosts. |
 | **Breadcrumb** | `Breadcrumb` | static | Separators and `aria-current="page"`. |
 | **Pagination** | `Pagination` | active | Bounds, current page, ellipsis window. |
 
@@ -109,25 +109,25 @@ constructors: `AlertDialog`, `Combobox`, `ContextMenu`, `DatePicker`, `Dialog`,
 |---|---|---|---|
 | **Dialog** | `Dialog` | open | Backdrop, panel, header, footer, close control. |
 | **Alert Dialog** | `AlertDialog` | open | Confirmation surface with cancel and confirm. |
-| **Sheet** | `Sheet` | open | Side panel, left/right/top/bottom. |
+| **Sheet** | `Sheet` | open | Side panel, left/right/top/bottom; 400px sides, scroll body, pinned footer. |
 | **Drawer** | `Drawer` | open | Bottom panel with grab handle. |
 | **Popover** | `Popover` | open | Trigger plus anchored panel. |
 | **Tooltip** | `Tooltip` | open | `role=tooltip`; host drives hover. |
 | **Hover Card** | `HoverCard` | open | Rich preview card; host drives hover. |
 | **Dropdown Menu** | `DropdownMenu` | open | Trigger plus menu, groups, shortcuts, submenus. |
 | **Context Menu** | `ContextMenu` | open | Positioned at host X/Y coordinates. |
-| **Menubar** | `Menubar` | open | One open top-level menu. |
-| **Navigation Menu** | `NavigationMenu` | open | Trigger row plus one open panel. |
+| **Menubar** | `Menubar` | open | One open top-level menu. `Flat` drops the boxed bar for app chrome. |
+| **Navigation Menu** | `NavigationMenu` | open | Trigger row plus one absolute panel; child rows accept `Action` or `OnSelect`. |
 | **Command** | `Command` | query | Search field, groups, active row, empty state. |
 
 ### Selection
 
 | Component | Constructor | State | Notes |
 |---|---|---|---|
-| **Select** | `Select` | open | Trigger, listbox, selected marker. |
-| **Combobox** | `Combobox` | open + query | Filtered list, empty state. |
+| **Select** | `Select` | open | Trigger, listbox, selected marker; open root lifts the panel over later siblings. |
+| **Combobox** | `Combobox` | open + query | Filtered list, empty state; open panel overlays without reflow. |
 | **Calendar** | `Calendar` | month + selected | 6x7 grid, outside days, leap-year safe. |
-| **Date Picker** | `DatePicker` | open | Trigger plus calendar panel. |
+| **Date Picker** | `DatePicker` | open | Trigger plus calendar panel; open panel overlays without reflow. |
 
 ### Host-owned composites
 

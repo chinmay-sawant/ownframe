@@ -53,18 +53,22 @@ func (a *app) incidentPanel() *ui.Element {
 }
 
 func incidentHeader(a *app) *ui.Element {
+	// The identity block grows and the actions keep their width, so the row
+	// stays on one line: a growing spacer between them stole the space the
+	// buttons needed and wrapped them under the title.
 	return chadcn.Card(
-		ui.Div().Class("app-row").Children(
-			chadcn.Avatar(chadcn.AvatarOptions{Initials: "AK", Alt: "Ada Kim, incident commander", Status: chadcn.AvatarStatusOnline}),
-			ui.Div().Class("app-col").Flex(ui.Number(1)).MinWidth(ui.Px(0)).Children(
-				ui.Div().Class("app-row").Children(
-					chadcn.H3("Elevated 504s on api-gateway"),
-					chadcn.Badge("SEV-2", chadcn.BadgeOptions{Variant: chadcn.BadgeDanger}),
-					chadcn.Badge("investigating", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+		ui.Div().Class("app-row app-row--between").Children(
+			ui.Div().Class("app-row").Flex(ui.Number(1)).MinWidth(ui.Px(0)).Children(
+				chadcn.Avatar(chadcn.AvatarOptions{Initials: "AK", Alt: "Ada Kim, incident commander", Status: chadcn.AvatarStatusOnline}),
+				ui.Div().Class("app-col").Gap(ui.Px(4)).Children(
+					ui.Div().Class("app-row").Children(
+						chadcn.H3("Elevated 504s on api-gateway"),
+						chadcn.Badge("SEV-2", chadcn.BadgeOptions{Variant: chadcn.BadgeDanger}),
+						chadcn.Badge("investigating", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+					),
+					ui.Text("Opened 14:27 · Ada Kim on call · 6 responders on the bridge").Class("app-muted"),
 				),
-				ui.Text("Opened 14:27 · Ada Kim on call · 6 responders on the bridge").Class("app-muted"),
 			),
-			ui.Div().Class("app-spacer"),
 			chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Incident actions"},
 				chadcn.Button("Acknowledge", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined}).OnClick(func(ctx context.Context) error {
 					return a.showToast(ctx, "Acknowledged", "Ada Kim was paged again at 14:33. The next update is yours.")

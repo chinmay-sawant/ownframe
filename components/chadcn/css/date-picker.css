@@ -9,6 +9,20 @@
   font-size: 14px;
 }
 
+/* An open date picker lifts its panel into the same band as the other picker
+   panels. The panel stays absolute, so opening it never changes the row
+   height. */
+.of-date-picker.of-date-picker--open {
+  z-index: 50;
+}
+
+.of-date-picker.of-date-picker--open .of-date-picker-panel {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  width: var(--of-date-picker-panel-width, 280px);
+}
+
 .of-date-picker-trigger {
   display: flex;
   align-items: center;
@@ -77,8 +91,18 @@
   z-index: 50;
   box-sizing: border-box;
   width: var(--of-date-picker-panel-width, 280px);
+  border-radius: var(--of-radius, 10px);
+  /* The calendar paints the inner surface. The panel still carries an opaque
+     fill as a backstop and the ring that separates the popover from a card of
+     the same colour underneath. */
+  background-color: var(--of-popover, #ffffff);
+  box-shadow:
+    0 0 0 1px var(--of-ring, #a1a1aa),
+    0 2px 4px var(--of-shadow, #00000026),
+    0 12px 32px var(--of-shadow, #00000026);
 }
 
 .of-date-picker-panel .of-calendar {
   width: 100%;
+  box-shadow: none;
 }

@@ -7,8 +7,9 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
-// topMenus renders the product navigation, the application menubar, and the
-// account menu that sit between the brand and the top bar tools.
+// topMenus renders the product navigation and the application menubar that
+// sit between the brand and the top bar tools. The account menu lives in
+// topPopovers.
 func (a *app) topMenus() *ui.Element {
 	nav := chadcn.NavigationMenu(chadcn.NavigationMenuOptions{
 		ID:    "top-nav",
@@ -19,9 +20,9 @@ func (a *app) topMenus() *ui.Element {
 				ID:    "product-platform",
 				Label: "Platform",
 				Children: []chadcn.NavigationItem{
-					{Label: "Logs", Description: "Search and filter the request stream"},
-					{Label: "Traces", Description: "Follow one request across services"},
-					{Label: "Incident room", Description: "Coordinate a live response"},
+					{Label: "Logs", Description: "Search and filter the request stream", Action: "nav:logs"},
+					{Label: "Traces", Description: "Follow one request across services", Action: "nav:traces"},
+					{Label: "Incident room", Description: "Coordinate a live response", Action: "nav:incident"},
 				},
 			},
 			{
@@ -51,13 +52,23 @@ func (a *app) topMenus() *ui.Element {
 			return a.refresh(ctx)
 		},
 	})
+	// The panel is absolute, so the nav keeps a fixed width and never shifts
+	// the triggers when it opens. It starts at the sidebar edge so the panel
+	// clears the sidebar's fixed hit box.
 	nav.Position(ui.PositionRelative).
 		ZIndex(ui.Number(60)).
-		CustomProperty("--of-navigation-menu-width", "320px")
+		Width(ui.Px(navWidth)).
+		CustomProperty("--of-navigation-menu-width", "300px")
 
-	// The open navigation panel flows below its trigger. A fixed-height slot
-	// keeps it from resizing the 60px top bar as the panel opens.
-	navSlot := ui.Div().Height(ui.Px(36)).Overflow(ui.OverflowVisible).Children(nav)
+	// A real slot holds the nav in the flex row and keeps the open panel
+	// from resizing either the row or the top bar.
+	navSlot := ui.Div().
+		Width(ui.Px(navWidth)).
+		Height(ui.Px(36)).
+		FlexShrink(ui.Number(0)).
+		MarginLeft(ui.Px(navOffset)).
+		Overflow(ui.OverflowVisible).
+		Children(nav)
 
 	viewItem := func(label, tab string) chadcn.MenuItem {
 		return chadcn.MenuItem{
@@ -73,6 +84,7 @@ func (a *app) topMenus() *ui.Element {
 	menubar := chadcn.Menubar(chadcn.MenubarOptions{
 		ID:    "top-menubar",
 		Label: "Application",
+		Flat:  true,
 		Open:  a.menubarOpen,
 		Menus: []chadcn.MenubarMenu{
 			{
@@ -143,73 +155,13 @@ func (a *app) topMenus() *ui.Element {
 			return a.refresh(ctx)
 		},
 	})
+	// The flat menubar reports a wider box than its three triggers draw, so
+	// pin it to the trigger row and let the spacer take the slack.
+	menubar.Width(ui.Px(menubarWidth)).FlexShrink(ui.Number(0))
 
-	account := chadcn.Button("", chadcn.ButtonOptions{Variant: chadcn.ButtonText}).
-		Attr("aria-label", "Account").
-		Height(ui.Px(36))
-	account.Children(
-		chadcn.Avatar(chadcn.AvatarOptions{
-			Initials: "AK",
-			Size:     chadcn.AvatarSmall,
-			Status:   chadcn.AvatarStatusOnline,
-		}),
-		ui.Text("Account").FontSize(ui.Px(13)).FontWeight(ui.Number(500)),
-		ui.Text("▾").Class("app-muted").Attr("aria-hidden", "true"),
-	)
-
-	user := chadcn.DropdownMenu(chadcn.DropdownMenuOptions{
-		ID:      "user-menu",
-		Label:   "Account",
-		Open:    a.userMenuOpen,
-		Trigger: account,
-		Items: []chadcn.MenuItem{
-			{
-				Label: "Profile",
-				OnSelect: func(ctx context.Context) error {
-					a.userMenuOpen = false
-					return a.showToast(ctx, "Profile", "Ada Kim · ada@acme.dev · staff SRE, on call this week.")
-				},
-			},
-		},
-		Groups: []chadcn.MenuGroup{
-			{
-				Label: "Project",
-				Items: []chadcn.MenuItem{
-					{
-						Label: "Project settings",
-						OnSelect: func(ctx context.Context) error {
-							a.userMenuOpen = false
-							a.settingsOpen = true
-							return a.refresh(ctx)
-						},
-					},
-				},
-			},
-			{
-				Label: "Session",
-				Items: []chadcn.MenuItem{
-					{
-						Label:  "Sign out",
-						Danger: true,
-						OnSelect: func(ctx context.Context) error {
-							a.userMenuOpen = false
-							return a.showToast(ctx, "Signed out", "This preview keeps the session open. Reload to sign in again.")
-						},
-					},
-				},
-			},
-		},
-		OnOpenChange: func(ctx context.Context, open bool) error {
-			a.userMenuOpen = open
-			return a.refresh(ctx)
-		},
-	})
-
-	return ui.Div().Class("app-row").Children(
-		navSlot,
-		menubar,
-		ui.Text("synced 14:32").Class("app-muted"),
-		chadcn.Badge("on-call", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
-		user,
-	)
+	return ui.Div().Class("app-row").
+		Gap(ui.Px(2*topbarGap)).
+		FlexWrap(ui.FlexWrapNowrap).
+		FlexShrink(ui.Number(0)).
+		Children(navSlot, menubar)
 }

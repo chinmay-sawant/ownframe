@@ -22,8 +22,9 @@ type BubbleOptions struct {
 	Variant BubbleVariant
 }
 
-// Bubble builds a rounded message bubble around its children. Paint and radius
-// live in the shared stylesheet; the host supplies the text.
+// Bubble builds a rounded message bubble around its children. Paint, padding,
+// line height, and radius live in the shared stylesheet; the host supplies the
+// text.
 func Bubble(options BubbleOptions, children ...*ui.Element) *ui.Element {
 	return ui.Div().Class(classes("of-bubble", bubbleVariantClass(options.Variant))).
 		Children(children...)

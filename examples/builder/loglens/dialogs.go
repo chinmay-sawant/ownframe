@@ -9,8 +9,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
-const alertNotesRows = 2
-
 // Alert-rule bounds. The dialog asks for a six-digit code and keeps the
 // threshold inside a band the pager tolerates.
 const (
@@ -40,6 +38,9 @@ func (a *app) globalDialogs() *ui.Element {
 // dialogCreateAlert builds the rule editor from the page and dialog state. The
 // page header opens it through a.dialogOpen.
 func (a *app) dialogCreateAlert() *ui.Element {
+	if !a.dialogOpen {
+		return nil
+	}
 	return chadcn.Dialog(chadcn.DialogOptions{
 		ID:           "create-alert-dialog",
 		Open:         a.dialogOpen,
@@ -56,9 +57,8 @@ func (a *app) dialogCreateAlert() *ui.Element {
 				OnClick(a.dialogSaveAlert),
 		},
 	},
-		ui.Div().Class("app-stack").Children(
+		ui.Div().Class("app-stack").Gap(ui.Px(8)).Children(
 			a.dialogIdentityRow(),
-			a.dialogNotesField(),
 		),
 		chadcn.Separator(chadcn.SeparatorOptions{}),
 		a.dialogDeliveryRow(),
@@ -81,26 +81,13 @@ func (a *app) dialogSetOpen(ctx context.Context, open bool) error {
 func (a *app) dialogIdentityRow() *ui.Element {
 	return ui.Div().Class("app-row").AlignItems(ui.AlignItemsFlexStart).Children(
 		chadcn.Field(chadcn.FieldOptions{
-			Label:   "Notify email",
-			For:     "alert-email",
-			Control: chadcn.InputWithOptions("alert-email", a.email, chadcn.InputOptions{Type: "email", Placeholder: "oncall@acme.dev"}),
-			Description: "Pages, escalations, and the daily digest for this rule go here. " +
-				"Leave it blank to use the team alias.",
+			Label:       "Notify email",
+			For:         "alert-email",
+			Control:     chadcn.InputWithOptions("alert-email", a.email, chadcn.InputOptions{Type: "email", Placeholder: "oncall@acme.dev"}),
+			Description: "Pages and digests. Blank uses the team alias.",
 		}).Width(ui.Percent(48)),
 		a.dialogSeverityField().Width(ui.Percent(48)),
 	)
-}
-
-// dialogNotesField keeps the free-text intent query next to the rule.
-func (a *app) dialogNotesField() *ui.Element {
-	return chadcn.Field(chadcn.FieldOptions{
-		Label: "Condition notes",
-		For:   "alert-notes",
-		Control: chadcn.TextareaWithOptions("alert-notes", a.notes, chadcn.TextareaOptions{
-			Rows:        alertNotesRows,
-			Placeholder: "service:api-gateway level:error status:504",
-		}),
-	})
 }
 
 // dialogDeliveryRow pairs the threshold with the verification code.
@@ -116,7 +103,7 @@ func (a *app) dialogDeliveryRow() *ui.Element {
 func (a *app) dialogThresholdField() *ui.Element {
 	return chadcn.Field(chadcn.FieldOptions{
 		Label:       "Error-rate threshold",
-		Description: fmt.Sprintf("Page when errors stay above %d per 1,000 requests for five minutes.", a.threshold),
+		Description: fmt.Sprintf("Five minutes above %d per 1,000 requests.", a.threshold),
 		Control: ui.Div().Class("app-col").Children(
 			chadcn.Slider(chadcn.SliderOptions{
 				Label: "Error-rate threshold",
@@ -145,24 +132,29 @@ func (a *app) dialogNudge(delta int) *ui.Element {
 		})
 }
 
-// dialogTogglesRow holds the on/off switch and the on-call escalation box.
+// dialogTogglesRow holds the on/off switch and the on-call escalation box in
+// two fixed halves, so the checkbox cannot wrap below the dialog body.
 func (a *app) dialogTogglesRow() *ui.Element {
-	return ui.Div().Class("app-row app-row--between").Children(
-		ui.Div().Class("app-col").Children(
-			chadcn.Switch("Alerts enabled", a.alertsEnabled).ID("alert-enabled").
+	return ui.Div().Class("app-row").Gap(ui.Px(12)).Children(
+		ui.Div().Width(ui.Percent(48)).Children(
+			ui.Div().Class("app-col").Children(
+				chadcn.Switch("Alerts enabled", a.alertsEnabled).ID("alert-enabled").
+					OnClick(func(ctx context.Context) error {
+						a.alertsEnabled = !a.alertsEnabled
+						return a.refresh(ctx)
+					}),
+				ui.Text("Off keeps the rule saved without sending anything.").Class("app-muted"),
+			),
+		),
+		ui.Div().Width(ui.Percent(48)).Children(
+			chadcn.CheckboxWithOptions("Page the on-call engineer", a.checkValue, chadcn.CheckboxOptions{
+				Description: "Escalate to PagerDuty when the rule repeats twice.",
+			}).ID("alert-page").
 				OnClick(func(ctx context.Context) error {
-					a.alertsEnabled = !a.alertsEnabled
+					a.checkValue = !a.checkValue
 					return a.refresh(ctx)
 				}),
-			ui.Text("Off keeps the rule saved without sending anything.").Class("app-muted"),
 		),
-		chadcn.CheckboxWithOptions("Page the on-call engineer", a.checkValue, chadcn.CheckboxOptions{
-			Description: "Escalate to PagerDuty when the rule repeats twice.",
-		}).ID("alert-page").
-			OnClick(func(ctx context.Context) error {
-				a.checkValue = !a.checkValue
-				return a.refresh(ctx)
-			}),
 	)
 }
 
@@ -175,9 +167,9 @@ func (a *app) dialogSeverityField() *ui.Element {
 			Label: "Severity",
 			Value: a.severityValue,
 			Items: []chadcn.RadioItem{
-				{Value: "info", Label: "Info", Description: "Daily digest only"},
-				{Value: "warning", Label: "Warning", Description: "Slack #alerts"},
-				{Value: "critical", Label: "Critical", Description: "Page on-call"},
+				{Value: "info", Label: "Info"},
+				{Value: "warning", Label: "Warning"},
+				{Value: "critical", Label: "Critical"},
 			},
 			OnSelect: func(ctx context.Context, value string) error {
 				a.severityValue = value
@@ -200,7 +192,7 @@ func (a *app) dialogOTPField() *ui.Element {
 			Length: dialogOTPSlots,
 			Value:  a.otp,
 		}),
-		ui.Text("Six digits from the authenticator enrolled for this workspace.").Class("app-muted"),
+		ui.Text("Six digits from the enrolled authenticator.").Class("app-muted"),
 	)
 }
 
@@ -212,7 +204,6 @@ func (a *app) dialogSaveAlert(ctx context.Context) error {
 		email = "oncall@acme.dev"
 	}
 	a.email = email
-	a.notes = strings.TrimSpace(a.formValue("alert-notes"))
 	a.otp = a.dialogOTPDigits()
 	a.dialogOpen = false
 	route := "Slack"
@@ -238,6 +229,9 @@ func (a *app) dialogOTPDigits() string {
 
 // dialogDeleteView confirms removal of the saved EU latency view.
 func (a *app) dialogDeleteView() *ui.Element {
+	if !a.alertOpen {
+		return nil
+	}
 	return chadcn.AlertDialog(chadcn.AlertDialogOptions{
 		ID:           "delete-view-dialog",
 		Open:         a.alertOpen,

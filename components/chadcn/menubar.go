@@ -30,13 +30,16 @@ type MenubarMenu struct {
 
 // MenubarOptions describes a controlled menubar. Open holds the ID of the one
 // open menu, or the empty string when every menu is closed. Menus render left
-// to right. OnOpenChange receives the next open ID, or the empty string when
-// the open trigger is clicked again. OnSelect receives the activated item
+// to right. Flat drops the bar box so the menubar can sit in a host toolbar:
+// the trigger row keeps its height but loses the bar border, background, and
+// outer padding. OnOpenChange receives the next open ID, or the empty string
+// when the open trigger is clicked again. OnSelect receives the activated item
 // label.
 type MenubarOptions struct {
 	ID           string
 	Label        string
 	Open         string
+	Flat         bool
 	Menus        []MenubarMenu
 	OnOpenChange func(ctx context.Context, id string) error
 	OnSelect     func(ctx context.Context, label string) error
@@ -45,9 +48,14 @@ type MenubarOptions struct {
 // Menubar renders a horizontal bar of menu triggers and, when Open matches a
 // menu ID, that menu below its trigger. The bar carries role="menubar" and
 // each trigger role="menuitem" with aria-haspopup and aria-expanded. Menus
-// need an ID to open. The host owns Escape handling and click-away.
+// need an ID to open. Flat renders the same triggers in an unboxed row for a
+// host toolbar. The host owns Escape handling and click-away.
 func Menubar(options MenubarOptions) *ui.Element {
-	root := ui.Div().Class("of-menubar")
+	rootClass := "of-menubar"
+	if options.Flat {
+		rootClass = "of-menubar of-menubar--flat"
+	}
+	root := ui.Div().Class(rootClass)
 	if options.ID != "" {
 		root.ID(options.ID)
 	}

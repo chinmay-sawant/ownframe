@@ -17,7 +17,6 @@
   flex-direction: column;
   width: 100%;
   max-width: 460px;
-  max-height: 85vh;
   overflow: hidden;
   background-color: var(--of-popover, var(--of-surface, #ffffff));
   color: var(--of-text, #0a0a0a);

@@ -40,8 +40,10 @@ type CommandOptions struct {
 }
 
 // Command builds a command palette with a search field, labeled groups, one
-// active row, and a "No results" state when every group is empty. Disabled
-// rows keep their place in the list but dispatch no action.
+// active row, and a "No results" state when every group is empty. The list is
+// a bounded, vertically scrolling listbox that takes focus, so every group
+// stays reachable when the palette is taller than its panel. Disabled rows
+// keep their place in the list but dispatch no action.
 func Command(options CommandOptions) *ui.Element {
 	root := ui.Div().Class("of-command")
 	if options.ID != "" {
@@ -59,7 +61,10 @@ func Command(options CommandOptions) *ui.Element {
 			Attr("aria-expanded", "true").Attr("aria-autocomplete", "list")
 	}
 
-	list := ui.Div().Class("of-command-list").Attr("role", "listbox").Attr("aria-label", "Commands")
+	// The list owns the bounded scroll region, so it takes focus for keyboard
+	// scrolling while the input keeps the combobox role.
+	list := ui.Div().Class("of-command-list").Attr("role", "listbox").Attr("aria-label", "Commands").
+		Attr("aria-orientation", "vertical").Attr("tabindex", "0")
 	if id := partID(options.ID, "-list"); id != "" {
 		list.ID(id)
 	}

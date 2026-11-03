@@ -35,9 +35,9 @@ type ChartOptions struct {
 }
 
 // Chart builds a bar-chart frame: a title and description, per-series totals, a
-// CSS bar plot with axis labels, and a legend. Bars are plain div geometry, so
-// the page needs no canvas or SVG. The host owns the data and rebuilds the tree
-// when it changes.
+// CSS bar plot with axis labels, and a legend under the plot. Bars are plain div
+// geometry, so the page needs no canvas or SVG. The host owns the data and
+// rebuilds the tree when it changes.
 func Chart(options ChartOptions) *ui.Element {
 	root := ui.Section().Class("of-chart").Attr("role", "group").Attr("aria-label", chartLabel(options))
 	if header := chartHeader(options); header != nil {
@@ -45,9 +45,6 @@ func Chart(options ChartOptions) *ui.Element {
 	}
 	if body := chartBody(options); body != nil {
 		root.Children(body)
-	}
-	if legend := chartLegend(options.Series); legend != nil {
-		root.Children(legend)
 	}
 	return root
 }
@@ -93,33 +90,46 @@ func chartStat(label string, value float64) *ui.Element {
 	)
 }
 
+// chartBody groups the plot, its axis labels, and the legend in one padded
+// container, so the three share the same horizontal inset.
 func chartBody(options ChartOptions) *ui.Element {
 	groups := chartGroups(options.Series)
-	if groups == 0 {
+	legend := chartLegend(options.Series)
+	if groups == 0 && legend == nil {
 		return nil
 	}
+	body := ui.Div().Class("of-chart-body")
+	if groups > 0 {
+		body.Children(chartPlot(options.Series, groups))
+		if len(options.Labels) > 0 {
+			body.Children(chartLabels(options.Labels, groups))
+		}
+	}
+	if legend != nil {
+		body.Children(legend)
+	}
+	return body
+}
+
+func chartPlot(series []ChartSeries, groups int) *ui.Element {
 	plot := ui.Div().Class("of-chart-plot").Attr("aria-hidden", "true")
-	maximum := chartMaximum(options.Series)
+	maximum := chartMaximum(series)
 	for index := 0; index < groups; index++ {
 		group := ui.Div().Class("of-chart-group")
-		for seriesIndex, series := range options.Series {
-			if index >= len(series.Values) {
+		for seriesIndex, item := range series {
+			if index >= len(item.Values) {
 				continue
 			}
 			bar := ui.Div().Class("of-chart-bar").Attr("data-series", chartSeriesSlot(seriesIndex)).
-				Height(ui.Percent(chartHeight(series.Values[index], maximum)))
-			if series.Color != "" {
-				bar.CustomProperty("--of-chart-bar", series.Color)
+				Height(ui.Percent(chartHeight(item.Values[index], maximum)))
+			if item.Color != "" {
+				bar.CustomProperty("--of-chart-bar", item.Color)
 			}
 			group.Children(bar)
 		}
 		plot.Children(group)
 	}
-	body := ui.Div().Class("of-chart-body").Children(plot)
-	if len(options.Labels) > 0 {
-		body.Children(chartLabels(options.Labels, groups))
-	}
-	return body
+	return plot
 }
 
 func chartLabels(labels []string, groups int) *ui.Element {

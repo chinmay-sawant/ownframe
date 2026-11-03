@@ -19,9 +19,11 @@ const (
 
 // SheetOptions describes a controlled side panel. The host owns Open and focus.
 // ID is the stable host ID; the panel derives ID+"-panel" and the backdrop
-// derives ID+"-backdrop". Children fill the body, and Footer holds the stacked
-// action buttons the reference sheet shows. When OnOpenChange is set the
-// component binds the trigger, so pass a trigger without its own action.
+// derives ID+"-backdrop". Children fill the scrolling body, and Footer holds
+// the stacked action buttons pinned under that body. A left or right panel is
+// 400px wide on desktop and 90% of the window at 520px and below; top and
+// bottom sheets stay full width. When OnOpenChange is set the component binds
+// the trigger, so pass a trigger without its own action.
 type SheetOptions struct {
 	ID           string
 	Open         bool
@@ -57,8 +59,7 @@ func Sheet(options SheetOptions, children ...*ui.Element) *ui.Element {
 		overlayStackedFooter("sheet", options.Footer),
 	)
 
-	backdrop := ui.Div().Class("of-sheet-backdrop").
-		ZIndex(ui.Number(50)).Children(options.Overrides.Apply(panel))
+	backdrop := ui.Div().Class("of-sheet-backdrop").Children(options.Overrides.Apply(panel))
 	if id := partID(options.ID, "-backdrop"); id != "" {
 		backdrop.ID(id)
 	}
@@ -85,8 +86,10 @@ func (s SheetSide) className() string {
 	}
 }
 
-// sheetGeometry places the absolute panel against its edge. The size comes from
-// CSS so a narrow window keeps the panel inside the viewport.
+// sheetGeometry places the absolute panel against its edge. A side width comes
+// from sheet.css and never from an inline style: the stylesheet sets 400px on
+// desktop and a 90% fallback at 520px and below, and an inline width would win
+// over that media query.
 func sheetGeometry(panel *ui.Element, side SheetSide) {
 	panel.Position(ui.PositionAbsolute)
 	switch side {

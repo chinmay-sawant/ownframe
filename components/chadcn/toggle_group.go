@@ -30,7 +30,8 @@ type ToggleGroupOptions struct {
 
 // ToggleGroup builds a set of toggle buttons that share a selection. The host
 // sets Selected after OnSelect, then rebuilds the view; the pressed face comes
-// from each item's aria-pressed state.
+// from each item's aria-pressed state. A horizontal group wraps its chips when
+// the container is narrow, so a long filter bar never overlaps its neighbours.
 func ToggleGroup(options ToggleGroupOptions) *ui.Element {
 	selected := make(map[string]struct{}, len(options.Selected))
 	for _, value := range options.Selected {
@@ -39,6 +40,8 @@ func ToggleGroup(options ToggleGroupOptions) *ui.Element {
 	groupClass := "of-toggle-group"
 	if options.Vertical {
 		groupClass += " of-toggle-group--vertical"
+	} else {
+		groupClass += " of-toggle-group--wrap"
 	}
 	group := ui.Div().Class(groupClass).Attr("role", "group").Attr("data-multiple", ariaBool(options.Multiple))
 	if options.Label != "" {

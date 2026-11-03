@@ -42,7 +42,7 @@ func TestSelectOpenRendersListbox(t *testing.T) {
 		},
 	}))
 	requireSelectionMarkup(t, rendered,
-		`class="of-scope of-select"`,
+		`class="of-scope of-select of-select--open"`,
 		`id="fruit"`,
 		`class="of-select-trigger of-transition"`,
 		`id="fruit-trigger"`,
@@ -100,7 +100,7 @@ func TestComboboxOpenFiltersItems(t *testing.T) {
 		},
 	}))
 	requireSelectionMarkup(t, rendered,
-		`class="of-scope of-combobox"`,
+		`class="of-scope of-combobox of-combobox--open"`,
 		`id="framework"`,
 		`class="of-combobox-input of-transition"`,
 		`id="framework-input"`,
@@ -218,7 +218,7 @@ func TestDatePickerOpenShowsCalendar(t *testing.T) {
 		Selected: selected,
 	}))
 	requireSelectionMarkup(t, rendered,
-		`class="of-scope of-date-picker"`,
+		`class="of-scope of-date-picker of-date-picker--open"`,
 		`id="due"`,
 		`class="of-date-picker-trigger of-transition"`,
 		`id="due-trigger"`,

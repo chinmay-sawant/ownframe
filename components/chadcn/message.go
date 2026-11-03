@@ -33,7 +33,8 @@ type MessageOptions struct {
 
 // Message builds one chat row: an avatar, a name and time line, and the
 // content column. The host owns the messages and rebuilds the row when it
-// changes.
+// changes. Avatar, meta, and content spacing come from the shared stylesheet,
+// so a host tunes the row with CSS rather than extra wrappers.
 func Message(options MessageOptions) *ui.Element {
 	row := ui.Tag("article").Class(classes("of-message", messageAlignClass(options.Align)))
 	if options.Name != "" {

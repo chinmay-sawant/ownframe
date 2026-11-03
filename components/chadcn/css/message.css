@@ -3,7 +3,7 @@
 .of-message {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   box-sizing: border-box;
   color: var(--of-text, #0a0a0a);
@@ -35,7 +35,7 @@
 .of-message-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   max-width: 78%;
   min-width: 0;
 }
@@ -47,9 +47,10 @@
 .of-message-meta {
   display: flex;
   align-items: baseline;
-  gap: 6px;
-  padding: 0 4px;
+  gap: 8px;
+  padding: 0 6px;
   font-size: 11px;
+  line-height: 1.4;
   color: var(--of-muted-foreground, #737373);
 }
 

@@ -9,6 +9,12 @@
   font-size: 14px;
 }
 
+/* Open root: positioned with a z-index, so it establishes a stacking context
+   and the absolute panel paints over later siblings without joining their flow. */
+.of-select--open {
+  z-index: 50;
+}
+
 .of-select-trigger {
   display: flex;
   align-items: center;
@@ -70,6 +76,8 @@
   transform: rotate(180deg);
 }
 
+/* Absolute inside the root, so the panel matches the trigger width and never
+   pushes the siblings below it. */
 .of-select-panel {
   position: absolute;
   top: 40px;
@@ -84,7 +92,12 @@
   border: 1px solid var(--of-border, #e5e5e5);
   border-radius: var(--of-radius, 10px);
   background-color: var(--of-popover, #ffffff);
-  box-shadow: 0 4px 14px var(--of-shadow, #00000026);
+  /* A popover often opens over a card of the same colour, so the surface needs
+     its own ring and a deeper drop to read as a layer above that card. */
+  box-shadow:
+    0 0 0 1px var(--of-ring, #a1a1aa),
+    0 2px 4px var(--of-shadow, #00000026),
+    0 12px 32px var(--of-shadow, #00000026);
   color: var(--of-text, #0a0a0a);
 }
 

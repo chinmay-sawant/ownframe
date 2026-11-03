@@ -16,8 +16,15 @@ type TabItem struct {
 // TabsOptions describes a controlled tab set. Active is the selected item ID;
 // when it is empty the first item is active. OnSelect receives the clicked tab
 // ID, and keyboard traversal stays with the host.
+//
+// Render builds one panel body on demand. When it is set, Tabs calls Render
+// only for the active item and ignores TabItem.Content, so a host that changes
+// tabs does not build every panel on each refresh. A nil result leaves the
+// active panel empty. Callers that do not set Render keep the eager
+// TabItem.Content behavior.
 type TabsOptions struct {
 	OnSelect func(ctx context.Context, id string) error
+	Render   func(id string) *ui.Element
 	Active   string
 	Items    []TabItem
 }
@@ -25,14 +32,11 @@ type TabsOptions struct {
 // Tabs builds a tab list and the active panel. Tab and panel part IDs derive
 // from each item ID, and the active tab is the only tab in the focus order.
 func Tabs(options TabsOptions) *ui.Element {
-	active := options.Active
+	active := activeTabIndex(options)
 	list := ui.Div().Class("of-tabs-list").Attr("role", "tablist")
 	tabs := ui.Div().Class("of-tabs").Children(list)
 	for index, item := range options.Items {
-		selected := item.ID == active
-		if active == "" {
-			selected = index == 0
-		}
+		selected := index == active
 		tabID, panelID := partID(item.ID, "-tab"), partID(item.ID, "-panel")
 		tab := ui.Button("").Attr("type", "button").Class("of-tabs-trigger").
 			Attr("role", "tab").Attr("aria-selected", ariaBool(selected))
@@ -56,7 +60,16 @@ func Tabs(options TabsOptions) *ui.Element {
 		if !selected {
 			continue
 		}
-		panel := ui.Div().Class("of-tabs-panel").Attr("role", "tabpanel").Attr("tabindex", "0")
+		content := item.Content
+		if options.Render != nil {
+			content = options.Render(item.ID)
+		}
+		empty := ""
+		if content == nil {
+			empty = "of-tabs-panel--empty"
+		}
+		panel := ui.Div().Class(classes("of-tabs-panel", empty)).
+			Attr("role", "tabpanel").Attr("tabindex", "0")
 		if panelID != "" {
 			panel.ID(panelID)
 		}
@@ -65,7 +78,24 @@ func Tabs(options TabsOptions) *ui.Element {
 		} else if item.Label != "" {
 			panel.Attr("aria-label", item.Label)
 		}
-		tabs.Children(panel.Children(item.Content))
+		tabs.Children(panel.Children(content))
 	}
 	return tabs
+}
+
+// activeTabIndex resolves which item is selected. An empty Active selects the
+// first item; an Active that names no item selects nothing.
+func activeTabIndex(options TabsOptions) int {
+	if options.Active == "" {
+		if len(options.Items) == 0 {
+			return -1
+		}
+		return 0
+	}
+	for index, item := range options.Items {
+		if item.ID == options.Active {
+			return index
+		}
+	}
+	return -1
 }

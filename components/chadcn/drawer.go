@@ -10,8 +10,13 @@ import (
 // DrawerOptions describes a controlled bottom drawer. The host owns Open and
 // focus. ID is the stable host ID; the panel derives ID+"-panel" and the
 // backdrop derives ID+"-backdrop". Children fill the body, and Footer holds the
-// stacked action buttons below the grab handle. When OnOpenChange is set the
+// stacked action buttons below the grab handle. The body carries the height cap
+// and scrolls, so the footer stays on screen. When OnOpenChange is set the
 // component binds the trigger, so pass a trigger without its own action.
+//
+// Mount the drawer at the screen root, as a sibling of the page content. The
+// backdrop is fixed, so a drawer mounted inside the page panel lets its
+// background compete with the page instead of covering it as one modal layer.
 type DrawerOptions struct {
 	ID           string
 	Open         bool
@@ -27,6 +32,9 @@ type DrawerOptions struct {
 // and a stacked action footer. When Open is false it returns the trigger, or
 // nil when no trigger was supplied. A backdrop click calls OnOpenChange;
 // Escape handling and focus scope stay with the host.
+//
+// The backdrop paints at the modal layer: above the app topbar and sidebar,
+// below the toast and command surfaces.
 func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
 	panelID := partID(options.ID, "-panel")
 	trigger := overlayTrigger(options.Trigger, options.Open, panelID, options.OnOpenChange)
@@ -39,7 +47,6 @@ func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
 		panel.ID(panelID)
 	}
 	overlayPanelAttrs(panel, "dialog", "Drawer", titleID, descriptionID)
-	panel.Position(ui.PositionAbsolute).Left(ui.Px(0)).Right(ui.Px(0)).Bottom(ui.Px(0))
 	panel.Children(
 		ui.Div().Class("of-drawer-grab").Attr("aria-hidden", "true").Children(ui.Span().Class("of-drawer-handle")),
 		overlayHeader("drawer", overlayHeading("drawer", options.Title, options.Description, titleID, descriptionID), nil),
@@ -47,8 +54,7 @@ func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
 		overlayStackedFooter("drawer", options.Footer),
 	)
 
-	backdrop := ui.Div().Class("of-drawer-backdrop").
-		ZIndex(ui.Number(50)).Children(options.Overrides.Apply(panel))
+	backdrop := ui.Div().Class("of-drawer-backdrop").Children(options.Overrides.Apply(panel))
 	if id := partID(options.ID, "-backdrop"); id != "" {
 		backdrop.ID(id)
 	}

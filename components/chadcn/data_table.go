@@ -9,11 +9,13 @@ import (
 )
 
 // DataColumn describes one table column. Align accepts left, center, or right
-// and defaults to left. Width sizes the header and its cells when set.
+// and defaults to left. Width sizes the header and its cells when set. Wrap lets
+// a long cell break onto more lines; cells stay on one line by default.
 type DataColumn struct {
 	Label string
 	Align string
 	Width ui.Length
+	Wrap  bool
 }
 
 // DataTableOptions describes a themed, read-only table. Sorting, filtering, and
@@ -53,8 +55,8 @@ func dataTableHead(options DataTableOptions, selectable bool) *ui.Element {
 			Attr("scope", "col").Attr("aria-hidden", "true"))
 	}
 	for _, column := range options.Columns {
-		cell := ui.Tag("th").Class(classes("of-data-table-header", dataTableAlignClass(column.Align))).
-			Attr("scope", "col").Text(column.Label)
+		cellClass := classes("of-data-table-header", dataTableAlignClass(column.Align), dataTableWrapClass(column.Wrap))
+		cell := ui.Tag("th").Class(cellClass).Attr("scope", "col").Text(column.Label)
 		if column.Width != (ui.Length{}) {
 			cell.Width(column.Width)
 		}
@@ -79,7 +81,8 @@ func dataTableBody(options DataTableOptions, selectable bool) *ui.Element {
 			if columnIndex < len(row) {
 				value = row[columnIndex]
 			}
-			cells = append(cells, ui.Tag("td").Class(classes("of-data-table-cell", dataTableAlignClass(column.Align))).Text(value))
+			cellClass := classes("of-data-table-cell", dataTableAlignClass(column.Align), dataTableWrapClass(column.Wrap))
+			cells = append(cells, ui.Tag("td").Class(cellClass).Text(value))
 		}
 		body.Children(ui.Tag("tr").Class(classes("of-data-table-row", dataTableSelectedClass(selected))).Children(cells...))
 	}
@@ -125,6 +128,13 @@ func dataTableAlignClass(align string) string {
 	default:
 		return ""
 	}
+}
+
+func dataTableWrapClass(wrap bool) string {
+	if wrap {
+		return "of-data-table--wrap"
+	}
+	return ""
 }
 
 func dataTableSelectedClass(selected bool) string {

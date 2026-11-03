@@ -9,121 +9,191 @@ import (
 )
 
 // topPopovers is the topbar cluster: live status, the on-call card, the
-// notification inbox, the command trigger, and the theme switch. Hover state
-// for the tooltip and the hover card arrives from handleHover, which matches
-// the "tooltip-trigger" and "hover-trigger" IDs.
+// notification inbox, the account menu, the command trigger, and the theme
+// switch. Hover state for the tooltip and the hover card arrives from
+// handleHover, which matches the "tooltip-trigger" and "hover-trigger" IDs.
 func (a *app) topPopovers() *ui.Element {
 	themeLabel := "Dark"
 	if a.dark {
 		themeLabel = "Light"
 	}
 
-	unreadDot := chadcn.Badge("", chadcn.BadgeOptions{Variant: chadcn.BadgeDanger}).
+	unreadDot := ui.Text("●").
 		Attr("aria-hidden", "true").
-		Width(ui.Px(7)).Height(ui.Px(7)).
-		Padding(ui.Edges(ui.Px(0))).
-		BackgroundColor(ui.Var("--of-danger", "#dc2626"))
+		FontSize(ui.Px(8)).
+		Color(ui.ColorVar("--of-danger", ui.Hex("#dc2626")))
 
-	notifications := chadcn.Button("Notifications", chadcn.ButtonOptions{
+	notifications := chadcn.Button("Inbox", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Children(unreadDot)
 
-	return ui.Div().Class("app-row").Children(
-		chadcn.Tooltip(chadcn.TooltipOptions{
-			ID:      "live-tooltip",
-			Open:    a.tooltipOpen,
-			Content: "Updated 12 seconds ago",
-			Side:    chadcn.PopupBottom,
-		}, chadcn.Button("Live", chadcn.ButtonOptions{
-			Variant: chadcn.ButtonOutlined,
-			Size:    chadcn.ButtonSmall,
-			Icon:    ui.Text("●").Color(ui.Hex("#22c55e")),
-		}).ID("tooltip-trigger")),
+	return ui.Div().Class("app-row").
+		Gap(ui.Px(topbarGap)).
+		FlexWrap(ui.FlexWrapNowrap).
+		FlexShrink(ui.Number(0)).
+		Children(
+			chadcn.Tooltip(chadcn.TooltipOptions{
+				ID:      "live-tooltip",
+				Open:    a.tooltipOpen,
+				Content: "Updated 12 seconds ago",
+				Side:    chadcn.PopupBottom,
+			}, chadcn.Button("Live", chadcn.ButtonOptions{
+				Variant: chadcn.ButtonOutlined,
+				Size:    chadcn.ButtonSmall,
+				Icon:    ui.Text("●").Color(ui.Hex("#22c55e")),
+			}).ID("tooltip-trigger")),
 
-		chadcn.HoverCard(chadcn.HoverCardOptions{
-			ID:   "oncall-hover",
-			Open: a.hoverOpen,
-			Side: chadcn.PopupBottom,
-		}, chadcn.Button("On call: Ada", chadcn.ButtonOptions{
-			Variant: chadcn.ButtonText,
-			Size:    chadcn.ButtonSmall,
-		}).ID("hover-trigger"),
-			ui.Div().Class("app-col").Children(
-				ui.Div().Class("app-row").Children(
-					chadcn.Avatar(chadcn.AvatarOptions{
-						Initials: "AK",
-						Size:     chadcn.AvatarSmall,
-						Status:   chadcn.AvatarStatusOnline,
-					}),
-					ui.Div().Class("app-col").Gap(ui.Px(2)).Children(
-						ui.Div().Class("app-row").Children(
-							ui.Text("Ada Kim").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold),
-							chadcn.Badge("On call", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+			chadcn.HoverCard(chadcn.HoverCardOptions{
+				ID:   "oncall-hover",
+				Open: a.hoverOpen,
+				Side: chadcn.PopupBottom,
+			}, chadcn.Button("On call", chadcn.ButtonOptions{
+				Variant: chadcn.ButtonText,
+				Size:    chadcn.ButtonSmall,
+			}).ID("hover-trigger"),
+				ui.Div().Class("app-col").Children(
+					ui.Div().Class("app-row").Children(
+						chadcn.Avatar(chadcn.AvatarOptions{
+							Initials: "AK",
+							Size:     chadcn.AvatarSmall,
+							Status:   chadcn.AvatarStatusOnline,
+						}),
+						ui.Div().Class("app-col").Gap(ui.Px(2)).Children(
+							ui.Div().Class("app-row").Children(
+								ui.Text("Ada Kim").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold),
+								chadcn.Badge("On call", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+							),
+							ui.Text("Platform lead · Identity").Class("app-muted"),
 						),
-						ui.Text("Platform lead · Identity").Class("app-muted"),
+					),
+					chadcn.Separator(chadcn.SeparatorOptions{}),
+					ui.Text("Responding to INC-2481 since 14:12").Class("app-muted"),
+					ui.Div().Class("app-row app-row--between").Children(
+						ui.Text("Ask Ada to join the room").Class("app-muted"),
+						chadcn.Kbd("⌘⇧A"),
 					),
 				),
-				chadcn.Separator(chadcn.SeparatorOptions{}),
-				ui.Text("Responding to INC-2481 since 14:12").Class("app-muted"),
+			),
+
+			chadcn.Popover(chadcn.PopoverOptions{
+				ID:      "notifications-popover",
+				Open:    a.notifOpen,
+				Side:    chadcn.PopupBottom,
+				Align:   chadcn.PopoverAlignEnd,
+				Trigger: notifications,
+				OnOpenChange: func(ctx context.Context, open bool) error {
+					a.notifOpen = open
+					return a.refresh(ctx)
+				},
+			},
 				ui.Div().Class("app-row app-row--between").Children(
-					ui.Text("Ask Ada to join the room").Class("app-muted"),
-					chadcn.Kbd("⌘⇧A"),
+					ui.Text("Notifications").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold),
+					chadcn.Badge("3 new", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
+				),
+				chadcn.Separator(chadcn.SeparatorOptions{}),
+				topNotifRow("AK", "Ada assigned INC-2481", "api-gateway · 2m ago", "error"),
+				topNotifRow("W", "Worker queue at 1.8k", "autoscale paused · 6m ago", "warn"),
+				topNotifRow("D", "Deploy web@2.14.0", "eu-west rolled out · 12m ago", "info"),
+				chadcn.Separator(chadcn.SeparatorOptions{}),
+				ui.Div().Class("app-row app-row--between").Children(
+					ui.Text("Retention 30 days").Class("app-muted"),
+					chadcn.Button("Open inbox", chadcn.ButtonOptions{
+						Variant: chadcn.ButtonText,
+						Size:    chadcn.ButtonSmall,
+					}).OnClick(func(ctx context.Context) error {
+						a.notifOpen = false
+						return a.showToast(ctx, "Inbox", "Every unread alert is waiting in the incident room.")
+					}),
 				),
 			),
-		),
 
-		chadcn.Popover(chadcn.PopoverOptions{
-			ID:      "notifications-popover",
-			Open:    a.notifOpen,
-			Side:    chadcn.PopupBottom,
-			Align:   chadcn.PopoverAlignEnd,
-			Trigger: notifications,
-			OnOpenChange: func(ctx context.Context, open bool) error {
-				a.notifOpen = open
+			a.accountMenu(),
+
+			chadcn.Separator(chadcn.SeparatorOptions{Orientation: chadcn.SeparatorVertical}),
+
+			chadcn.Button("⌘K", chadcn.ButtonOptions{
+				Variant: chadcn.ButtonOutlined,
+				Size:    chadcn.ButtonSmall,
+			}).OnClick(func(ctx context.Context) error {
+				a.commandOpen = true
+				if a.commandActive == "" {
+					a.commandActive = "overview"
+				}
 				return a.refresh(ctx)
+			}),
+
+			chadcn.Button(themeLabel, chadcn.ButtonOptions{
+				Variant: chadcn.ButtonText,
+				Size:    chadcn.ButtonSmall,
+			}).Width(ui.Px(54)).OnClick(a.toggleTheme),
+		)
+}
+
+// accountMenu is the avatar trigger for the session menu. The initials and
+// status ring carry the identity, so the top bar does not spend width on the
+// word "Account".
+func (a *app) accountMenu() *ui.Element {
+	trigger := chadcn.Button("", chadcn.ButtonOptions{
+		Variant: chadcn.ButtonText,
+		Icon: chadcn.Avatar(chadcn.AvatarOptions{
+			Initials: "AK",
+			Size:     chadcn.AvatarSmall,
+			Status:   chadcn.AvatarStatusOnline,
+		}),
+	}).Attr("aria-label", "Account").Attr("title", "Account").
+		Width(ui.Px(48)).Height(ui.Px(36))
+
+	menu := chadcn.DropdownMenu(chadcn.DropdownMenuOptions{
+		ID:      "user-menu",
+		Label:   "Account",
+		Open:    a.userMenuOpen,
+		Trigger: trigger,
+		Items: []chadcn.MenuItem{
+			{
+				Label: "Profile",
+				OnSelect: func(ctx context.Context) error {
+					a.userMenuOpen = false
+					return a.showToast(ctx, "Profile", "Ada Kim · ada@acme.dev · staff SRE, on call this week.")
+				},
 			},
 		},
-			ui.Div().Class("app-row app-row--between").Children(
-				ui.Text("Notifications").FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold),
-				chadcn.Badge("3 new", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
-			),
-			chadcn.Separator(chadcn.SeparatorOptions{}),
-			topNotifRow("AK", "Ada assigned INC-2481", "api-gateway · 2m ago", "error"),
-			topNotifRow("W", "Worker queue at 1.8k", "autoscale paused · 6m ago", "warn"),
-			topNotifRow("D", "Deploy web@2.14.0", "eu-west rolled out · 12m ago", "info"),
-			chadcn.Separator(chadcn.SeparatorOptions{}),
-			ui.Div().Class("app-row app-row--between").Children(
-				ui.Text("Retention 30 days").Class("app-muted"),
-				chadcn.Button("Open inbox", chadcn.ButtonOptions{
-					Variant: chadcn.ButtonText,
-					Size:    chadcn.ButtonSmall,
-				}).OnClick(func(ctx context.Context) error {
-					a.notifOpen = false
-					return a.showToast(ctx, "Inbox", "Every unread alert is waiting in the incident room.")
-				}),
-			),
-		),
-
-		chadcn.Separator(chadcn.SeparatorOptions{Orientation: chadcn.SeparatorVertical}),
-
-		chadcn.Button("⌘K", chadcn.ButtonOptions{
-			Variant: chadcn.ButtonOutlined,
-			Size:    chadcn.ButtonSmall,
-		}).OnClick(func(ctx context.Context) error {
-			a.commandOpen = true
-			if a.commandActive == "" {
-				a.commandActive = "overview"
-			}
+		Groups: []chadcn.MenuGroup{
+			{
+				Label: "Project",
+				Items: []chadcn.MenuItem{
+					{
+						Label: "Project settings",
+						OnSelect: func(ctx context.Context) error {
+							a.userMenuOpen = false
+							a.settingsOpen = true
+							return a.refresh(ctx)
+						},
+					},
+				},
+			},
+			{
+				Label: "Session",
+				Items: []chadcn.MenuItem{
+					{
+						Label:  "Sign out",
+						Danger: true,
+						OnSelect: func(ctx context.Context) error {
+							a.userMenuOpen = false
+							return a.showToast(ctx, "Signed out", "This preview keeps the session open. Reload to sign in again.")
+						},
+					},
+				},
+			},
+		},
+		OnOpenChange: func(ctx context.Context, open bool) error {
+			a.userMenuOpen = open
 			return a.refresh(ctx)
-		}),
-
-		chadcn.Button(themeLabel, chadcn.ButtonOptions{
-			Variant: chadcn.ButtonText,
-			Size:    chadcn.ButtonSmall,
-			Icon:    ui.Text("◐"),
-		}).OnClick(a.toggleTheme),
-	)
+		},
+	})
+	// The avatar overflows the icon slot, so reserve the full button width.
+	menu.Width(ui.Px(48)).FlexShrink(ui.Number(0))
+	return menu
 }
 
 // topNotifRow is one inbox row: the actor, the event and its age, and the

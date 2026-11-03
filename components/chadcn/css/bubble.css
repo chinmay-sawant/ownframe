@@ -3,9 +3,9 @@
 .of-bubble {
   display: block;
   max-width: 100%;
-  padding: var(--of-bubble-padding, 10px 14px);
+  padding: var(--of-bubble-padding, 11px 15px);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: var(--of-text, #0a0a0a);
   background-color: var(--of-bubble-background, var(--of-control, #f4f4f5));
   border: 1px solid transparent;

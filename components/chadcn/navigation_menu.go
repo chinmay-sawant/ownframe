@@ -7,11 +7,15 @@ import (
 )
 
 // NavigationItem is one entry in a navigation menu. Children render inside the
-// open panel as titled rows with optional descriptions.
+// open panel as titled rows with optional descriptions. A child row with
+// OnSelect or Action becomes a button; a row with neither keeps the static
+// appearance. OnSelect wins when both are set.
 type NavigationItem struct {
 	ID          string
 	Label       string
 	Description string
+	Action      string
+	OnSelect    func(ctx context.Context) error
 	Children    []NavigationItem
 }
 
@@ -27,7 +31,9 @@ type NavigationMenuOptions struct {
 }
 
 // NavigationMenu builds a horizontal row of navigation triggers with one open
-// content panel beneath it. Open holds the item ID whose panel is shown.
+// content panel beneath it. Open holds the item ID whose panel is shown. The
+// panel is positioned out of flow below the trigger row, so opening it never
+// changes the row width or the menu height.
 //
 // Each trigger uses ID+"-trigger" and its panel uses ID+"-content". A trigger
 // with children reports its ID through OnOpenChange and carries aria-expanded;
@@ -108,13 +114,35 @@ func navigationContent(item NavigationItem) *ui.Element {
 	}
 	entries := ui.Ul().Class("of-navigation-menu-entries")
 	for _, child := range item.Children {
-		entry := ui.Li().Class("of-navigation-menu-entry").Children(
-			ui.Span().Class("of-navigation-menu-entry-title").Text(child.Label),
-		)
-		if child.Description != "" {
-			entry.Children(ui.Span().Class("of-navigation-menu-entry-description").Text(child.Description))
-		}
-		entries.Children(entry)
+		entries.Children(navigationEntry(child))
 	}
 	return content.Children(entries)
+}
+
+// navigationEntry builds one child row. A row with a callback or an action is a
+// button that fills the row; a plain row keeps the static title and description.
+func navigationEntry(child NavigationItem) *ui.Element {
+	if child.OnSelect == nil && child.Action == "" {
+		entry := ui.Li().Class("of-navigation-menu-entry")
+		appendNavigationEntryText(entry, child)
+		return entry
+	}
+	button := ui.Button("").Attr("type", "button").Class("of-navigation-menu-entry-button")
+	switch {
+	case child.OnSelect != nil:
+		button.OnClick(child.OnSelect)
+	case child.Action != "":
+		button.Attr("data-action", child.Action)
+	}
+	appendNavigationEntryText(button, child)
+	return ui.Li().Class("of-navigation-menu-entry of-navigation-menu-entry--interactive").Children(button)
+}
+
+// appendNavigationEntryText writes the title and optional description of a
+// child row into the given container.
+func appendNavigationEntryText(entry *ui.Element, child NavigationItem) {
+	entry.Children(ui.Span().Class("of-navigation-menu-entry-title").Text(child.Label))
+	if child.Description != "" {
+		entry.Children(ui.Span().Class("of-navigation-menu-entry-description").Text(child.Description))
+	}
 }

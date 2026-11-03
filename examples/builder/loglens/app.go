@@ -64,6 +64,7 @@ type app struct {
 	contextY      int
 	drawerOpen    bool
 	drawerIndex   int
+	drawerTab     string
 	liveTail      bool
 	autoRefresh   bool
 	sampleRate    int
@@ -85,6 +86,7 @@ type app struct {
 
 	// Settings sheet.
 	settingsOpen  bool
+	settingsTab   string
 	email         string
 	webhook       string
 	notes         string
@@ -126,6 +128,8 @@ func newApp() (*app, error) {
 		selectedRows:  map[int]bool{},
 		sampleRate:    defaultSampleRate,
 		density:       "comfortable",
+		settingsTab:   "routing",
+		drawerTab:     "payload",
 		splitRatio:    defaultSplitRatio,
 		threshold:     defaultThreshold,
 		sliderValue:   defaultSliderValue,
@@ -217,6 +221,7 @@ func (a *app) closeOverlays(ctx context.Context) error {
 func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 	switch {
 	case strings.HasPrefix(box.Action, "nav:"):
+		a.navOpen = ""
 		return a.setTab(ctx, strings.TrimPrefix(box.Action, "nav:"))
 	case box.Action == "theme:toggle":
 		return a.toggleTheme(ctx)

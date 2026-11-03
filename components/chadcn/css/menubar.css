@@ -18,6 +18,21 @@
   color: var(--of-text, #0a0a0a);
 }
 
+/* Flat: a menubar that sits in a host toolbar. Drop the box that otherwise
+   reads as a text field and keep a compact trigger row. The trigger height
+   matches the boxed bar so a toolbar does not shift when the menus change. */
+.of-menubar--flat .of-menubar-bar {
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+}
+
+.of-menubar--flat .of-menubar-trigger {
+  height: 28px;
+  padding: 0 8px;
+}
+
 .of-menubar-slot {
   position: relative;
   display: block;

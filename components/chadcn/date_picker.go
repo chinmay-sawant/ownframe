@@ -26,6 +26,7 @@ type DatePickerOptions struct {
 // and, when Open, a calendar panel. The picker does not close itself; the
 // host closes it from OnSelect when that is the wanted behavior.
 func DatePicker(options DatePickerOptions) *ui.Element {
+	panelID := partID(options.ID, "-panel")
 	label := "Pick a date"
 	labelClass := "of-date-picker-placeholder"
 	if !options.Selected.IsZero() {
@@ -45,7 +46,6 @@ func DatePicker(options DatePickerOptions) *ui.Element {
 	if triggerID != "" {
 		trigger.ID(triggerID)
 	}
-	panelID := partID(options.ID, "-panel")
 	if options.Open && panelID != "" {
 		trigger.Attr("aria-controls", panelID)
 	}
@@ -55,25 +55,33 @@ func DatePicker(options DatePickerOptions) *ui.Element {
 			return options.OnOpenChange(ctx, !open)
 		})
 	}
-	root := ui.Div().Class(classes("of-scope", "of-date-picker")).Children(trigger)
+	openClass := ""
+	if options.Open {
+		openClass = "of-date-picker--open"
+	}
+	root := ui.Div().Class(classes("of-scope", "of-date-picker", openClass)).Children(trigger)
 	if options.ID != "" {
 		root.ID(options.ID)
 	}
 	if options.Open {
-		panel := ui.Div().
-			Class("of-date-picker-panel").
-			Attr("role", "dialog").
-			Attr("aria-label", "Choose a date").
-			Children(Calendar(CalendarOptions{
-				Month:         options.Month,
-				Selected:      options.Selected,
-				OnSelect:      options.OnSelect,
-				OnMonthChange: options.OnMonthChange,
-			}))
-		if panelID != "" {
-			panel.ID(panelID)
-		}
-		root.Children(panel)
+		root.Children(datePickerPanel(options, panelID))
 	}
 	return root
+}
+
+func datePickerPanel(options DatePickerOptions, panelID string) *ui.Element {
+	panel := ui.Div().
+		Class("of-date-picker-panel").
+		Attr("role", "dialog").
+		Attr("aria-label", "Choose a date").
+		Children(Calendar(CalendarOptions{
+			Month:         options.Month,
+			Selected:      options.Selected,
+			OnSelect:      options.OnSelect,
+			OnMonthChange: options.OnMonthChange,
+		}))
+	if panelID != "" {
+		panel.ID(panelID)
+	}
+	return panel
 }

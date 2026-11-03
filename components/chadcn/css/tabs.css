@@ -61,3 +61,9 @@
   outline: 2px solid var(--of-ring, #a1a1aa);
   outline-offset: 2px;
 }
+
+/* A lazy panel whose Render returned nil keeps the box it will fill, so the
+   surrounding chrome does not jump while the body loads. */
+.of-tabs-panel--empty {
+  min-height: 72px;
+}

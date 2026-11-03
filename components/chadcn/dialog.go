@@ -17,10 +17,11 @@ import (
 // inside the panel from reaching the backdrop action.
 //
 // Title and Description build the standard header. Children fill the body and
-// Footer holds the action row. Without Title, Description, or Footer, children
-// fill the panel directly, which keeps the pre-Open call shape working. When
-// OnOpenChange is set the component binds the trigger, so pass a trigger
-// without its own action.
+// Footer holds the action row. The body carries the height cap and scrolls, so
+// a long body never pushes the footer off the panel. Without Title,
+// Description, or Footer, children fill the panel directly, which keeps the
+// pre-Open call shape working. When OnOpenChange is set the component binds the
+// trigger, so pass a trigger without its own action.
 type DialogOptions struct {
 	ID           string
 	BackdropID   string
@@ -41,6 +42,11 @@ type DialogOptions struct {
 // trigger, or nil when no trigger was supplied. A backdrop click and the header
 // close control dispatch CloseAction, or call OnOpenChange when no action is
 // set. Click-away, Escape handling, and focus scope stay with the host.
+//
+// The backdrop is fixed to the viewport at the modal layer: above the app
+// topbar and sidebar, below the toast and command surfaces. Mount the dialog as
+// a sibling of the page content, because an ancestor that creates a stacking
+// context traps the backdrop under that ancestor.
 //
 // The trigger-based shape mounts the backdrop fixed to the viewport. The
 // pre-Open shape, which had no trigger, returns the backdrop itself and fills
@@ -104,9 +110,7 @@ func (o DialogOptions) backdropID() string {
 }
 
 func dialogBackdrop(options DialogOptions, panel *ui.Element, contained bool) *ui.Element {
-	backdrop := ui.Div().Class("of-dialog-backdrop").
-		ZIndex(ui.Number(50)).Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).
-		JustifyContent(ui.JustifyContentCenter).Children(panel)
+	backdrop := ui.Div().Class("of-dialog-backdrop").Children(panel)
 	if contained {
 		backdrop.Position(ui.PositionAbsolute).Top(ui.Px(0)).Left(ui.Px(0)).Right(ui.Px(0)).Bottom(ui.Px(0)).
 			Width(ui.WidthAuto).Height(ui.HeightAuto)

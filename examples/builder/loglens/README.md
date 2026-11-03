@@ -23,17 +23,20 @@ From the repository root:
 ```sh
 go run ./examples/builder/loglens
 go run ./examples/builder/loglens -web
+go run ./examples/builder/loglens -headless
 go run ./examples/builder/loglens -dev
 ```
 
 | Flag | Default | Effect |
 |---|---|---|
 | `-web` | `false` | Serve the dashboard through `ownframe.Serve` instead of opening a desktop window. |
+| `-headless` | `false` | Alias for `-web`; serve the dashboard without a native window. |
 | `-addr` | `127.0.0.1:8132` | Listen address for `-web`. |
 | `-dev` | `false` | Open the developer tools dock at startup through `Page.Window().SetDevTools`. |
 
 The window opens at 1440 × 960 with a minimum of 1100 × 720. It starts in the
-dark palette with a hidden scrollbar.
+dark palette with a hidden scrollbar. Native runs use custom window chrome: the
+top bar is the drag region and draws minimize, maximize, and close controls.
 
 ## Architecture
 
@@ -68,11 +71,11 @@ here too.
 | `shell.go` | Screen root, top bar, sidebar, page header, tab set, tab titles and subtitles. |
 | `data.go` | Fixtures, option lists, log filtering, paging, and selection. |
 | `overview.go` | Landing tab: SLO alert, KPI cards, traffic chart, service table, deployments, on-call calendar, regions, toolkit. |
-| `logs.go` | Request stream: filter bar, error alert, toolbar, row menu, data table, detail drawer. |
+| `logs.go` | Request stream: filter bar, error alert, toolbar, row menu, data table, and a payload/trace detail drawer. |
 | `filters.go` | Filter bar: time-range select, service combobox, date picker, query and search inputs, sort, severity, live tail, auto refresh, context, sample rate, apply and reset. |
 | `traces.go` | Waterfall and payload split, recent-trace scroll area, RTL cards, topology, span index, owner row. |
 | `incident.go` | Incident header, chat, decisions, action items, playbook, snapshots, customer note, impact map, timeline, postmortem. |
-| `settings.go` | Project settings sheet: routing, noise control, verification. |
+| `settings.go` | Project settings sheet: tabbed routing, noise control, and verification sections. |
 | `dialogs.go` | Create-alert dialog, delete-view alert dialog, page-level toast mount. |
 | `menus.go` | Product navigation menu, application menubar, account dropdown menu. |
 | `popovers.go` | Live tooltip, on-call hover card, notifications popover, command palette. |
@@ -153,7 +156,7 @@ called; a second location is shown when the same component is reused.
 | **Toggle Group** | overview.go | Traffic range 24h/7d/30d; severity selection in filters.go. |
 | **Field** | filters.go | Query field; alert fields and settings fields in dialogs.go and settings.go. |
 | **Input** | filters.go | Query box; alert email, settings email, and the incident reply. |
-| **Textarea** | settings.go | Handover notes; alert condition notes in dialogs.go. |
+| **Textarea** | settings.go | Handover notes. |
 | **Native Select** | filters.go | Sort order; notification channel in settings.go. |
 | **Checkbox** | filters.go | Show context; mute resolved incidents and page the on-call. |
 | **Radio Group** | settings.go | Minimum severity; alert severity in dialogs.go. |
@@ -181,7 +184,7 @@ called; a second location is shown when the same component is reused.
 | **Dialog** | dialogs.go | Create-alert rule editor. |
 | **Alert Dialog** | dialogs.go | Delete-saved-view confirmation. |
 | **Sheet** | settings.go | Right-side project settings panel. |
-| **Drawer** | logs.go | Log-detail drawer with payload, trace, and attachment. |
+| **Drawer** | logs.go | Log-detail drawer with Payload and Trace tabs. |
 | **Popover** | popovers.go | Notification inbox under the top-bar Notifications button. |
 | **Tooltip** | popovers.go | Live freshness hint on the Live button. |
 | **Hover Card** | popovers.go | On-call card for Ada Kim. |

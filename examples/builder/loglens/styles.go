@@ -2,6 +2,15 @@ package main
 
 // appCSS is dashboard layout only. ChadCN owns component paint and state.
 const appCSS = `
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--of-background, #0a0a0a);
+  color: var(--of-text, #fafafa);
+  font-family: sans-serif;
+  font-size: 14px;
+}
 .app-body {
   display: flex;
   flex: 1;
@@ -41,6 +50,7 @@ const appCSS = `
 }
 .app-brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .app-topbar-spacer { flex: 1; }
+.app-window-controls { display: flex; align-items: center; gap: 1px; }
 .app-sidebar-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding-bottom: 12px; border-bottom: 1px solid var(--of-border, #262626);
@@ -53,14 +63,15 @@ const appCSS = `
 }
 .app-sidebar-user { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.25; }
 .app-main {
-  display: flex; flex-direction: column; flex: 1;
-  min-width: 0; padding: 22px 28px 40px; overflow: hidden;
+  display: flex; flex-direction: column; flex: 1; gap: 14px;
+  min-width: 0; padding: 22px 28px 40px;
 }
+.app-page-head { flex-shrink: 0; }
 .app-page-head { display: flex; flex-direction: column; gap: 6px; }
 .app-page-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .app-page-badges { display: flex; align-items: center; gap: 7px; }
 .app-page-sub { margin: 0; color: var(--of-muted, #a3a3a3); font-size: 13px; }
-.app-page-actions { display: flex; align-items: center; gap: 9px; padding: 12px 0 2px; }
+.app-page-actions { display: flex; align-items: center; gap: 9px; padding: 8px 0 0; }
 .app-stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .app-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .app-row--between { justify-content: space-between; }
@@ -86,16 +97,10 @@ const appCSS = `
   border-radius: var(--of-radius, 10px); background: var(--of-surface, #171717);
 }
 .app-filter { display: block; min-width: 120px; }
+.app-filter > .of-label { display: block; }
 .app-filter > * + * { margin-top: 4px; }
-.app-filter .of-select-panel,
-.app-filter .of-combobox-panel,
-.app-filter .of-date-picker-panel {
-  position: static;
-  width: 100%;
-  margin-top: 4px;
-  box-shadow: none;
-}
 .app-filter--wide { min-width: 240px; flex: 1; }
+.app-filter--severity { min-width: 230px; }
 .app-table-wrap { width: 100%; overflow: hidden; }
 .app-log-message { max-width: 420px; overflow: hidden; white-space: nowrap; }
 .app-level {
@@ -107,11 +112,9 @@ const appCSS = `
 .app-level--warn { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
 .app-level--info { background: rgba(59, 130, 246, 0.14); color: #93c5fd; }
 .app-level--debug { background: rgba(163, 163, 163, 0.14); color: #a3a3a3; }
-.of-sheet-panel { width: 400px; max-width: 90vw; }
-.of-sheet-body { min-height: 0; }
-.of-sheet-footer { flex-shrink: 0; }
 .app-overlay {
-  position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100vh; box-sizing: border-box;
   z-index: 90; display: flex; align-items: flex-start; justify-content: center;
   padding-top: 96px; background-color: #000000b3;
 }

@@ -21,6 +21,9 @@ const settingsOTPLength = 6
 // the sidebar gear sets settingsOpen. Every control writes its value straight
 // to the app state, and Save reads the text fields back from Page.Form.
 func (a *app) settingsSheet() *ui.Element {
+	if !a.settingsOpen {
+		return nil
+	}
 	plan := "Scale"
 	if value, ok := a.extra["settings-plan"].(string); ok && strings.TrimSpace(value) != "" {
 		plan = strings.TrimSpace(value)
@@ -37,6 +40,21 @@ func (a *app) settingsSheet() *ui.Element {
 			code.WriteString(strings.TrimSpace(a.formValue("settings-otp-" + strconv.Itoa(index))))
 		}
 		return code.String()
+	}
+
+	tabs := []chadcn.ToggleItem{
+		{ID: "settings-tab-routing", Value: "routing", Label: "Routing"},
+		{ID: "settings-tab-noise", Value: "noise", Label: "Noise"},
+		{ID: "settings-tab-verification", Value: "verification", Label: "Verify"},
+	}
+	section := func(id string, body *ui.Element) *ui.Element {
+		root := ui.Div().Class("app-stack").Children(body)
+		if a.settingsTab != id {
+			// Keep the inactive controls mounted so Page.Form still carries
+			// their values when Save reads the whole sheet.
+			root.Display(ui.DisplayNone)
+		}
+		return root
 	}
 
 	return chadcn.Sheet(chadcn.SheetOptions{
@@ -72,11 +90,22 @@ func (a *app) settingsSheet() *ui.Element {
 		},
 	},
 		ui.Div().Class("app-stack").Children(
-			a.settingsRoutingSection(plan, channels),
-			chadcn.Separator(chadcn.SeparatorOptions{Orientation: chadcn.SeparatorHorizontal}),
-			a.settingsNoiseSection(),
-			chadcn.Separator(chadcn.SeparatorOptions{Orientation: chadcn.SeparatorHorizontal}),
-			a.settingsVerificationSection(),
+			ui.Div().Class("app-col").Gap(ui.Px(6)).Children(
+				chadcn.Label("Section"),
+				chadcn.ToggleGroup(chadcn.ToggleGroupOptions{
+					Label:    "Settings section",
+					Size:     chadcn.ButtonSmall,
+					Selected: []string{a.settingsTab},
+					Items:    tabs,
+					OnSelect: func(ctx context.Context, value string) error {
+						a.settingsTab = value
+						return a.refresh(ctx)
+					},
+				}),
+			),
+			section("routing", a.settingsRoutingSection(plan, channels)),
+			section("noise", a.settingsNoiseSection()),
+			section("verification", a.settingsVerificationSection()),
 		),
 	)
 }

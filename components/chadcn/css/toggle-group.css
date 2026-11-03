@@ -1,12 +1,22 @@
 /* ToggleGroup: spaced toggles that share one selection. */
 
 .of-toggle-group {
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--of-toggle-group-gap, 8px);
+  max-width: 100%;
 }
 
+/* Horizontal groups wrap so a long filter bar cannot collide with the controls
+   beside it. Both axes use the same gap for an even two-row rhythm. */
+.of-toggle-group--wrap {
+  flex-wrap: wrap;
+}
+
+/* A vertical group stacks in one column and never wraps. */
 .of-toggle-group--vertical {
   flex-direction: column;
   align-items: stretch;
+  flex-wrap: nowrap;
 }

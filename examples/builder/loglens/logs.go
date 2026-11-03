@@ -127,6 +127,7 @@ func (a *app) logsToolbar(logs []logEntry, detailIndex int) *ui.Element {
 			switch label {
 			case "Open detail":
 				a.drawerIndex = detailIndex
+				a.drawerTab = "payload"
 				a.drawerOpen = true
 				return a.refresh(ctx)
 			case "Copy trace":
@@ -137,24 +138,36 @@ func (a *app) logsToolbar(logs []logEntry, detailIndex int) *ui.Element {
 			return a.refresh(ctx)
 		},
 	})
-	rowActions := ui.Div().Position(ui.PositionRelative).Children(
-		chadcn.Button("Row actions", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined, Size: chadcn.ButtonSmall}).
-			ID("logs-row-actions").
-			Attr("aria-haspopup", "menu").
-			Attr("aria-expanded", fmt.Sprintf("%t", a.contextOpen)).
-			OnClick(func(ctx context.Context) error {
-				const menuX, menuY = -150, 34
-				a.contextOpen = !a.contextOpen
-				// The menu is absolutely positioned inside this wrapper, so
-				// anchor it below the trigger and open it to the left.
-				a.contextX, a.contextY = menuX, menuY
-				return a.refresh(ctx)
-			}),
-		menu,
-	)
-	return ui.Div().Class("app-row app-row--between").Children(
-		ui.Div().Class("app-row").Children(stats...),
-		ui.Div().Class("app-toolbar").Children(
+	// The wrapper is a flex box so the trigger keeps the height of the other
+	// toolbar controls instead of an inline line box, and the absolutely
+	// positioned menu stays anchored to the trigger.
+	rowActions := ui.Div().
+		Position(ui.PositionRelative).
+		Display(ui.DisplayFlex).
+		AlignItems(ui.AlignItemsCenter).
+		Children(
+			chadcn.Button("Row actions", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined, Size: chadcn.ButtonSmall}).
+				ID("logs-row-actions").
+				Attr("aria-haspopup", "menu").
+				Attr("aria-expanded", fmt.Sprintf("%t", a.contextOpen)).
+				OnClick(func(ctx context.Context) error {
+					const menuX, menuY = -150, 34
+					a.contextOpen = !a.contextOpen
+					// The menu is absolutely positioned inside this wrapper, so
+					// anchor it below the trigger and open it to the left.
+					a.contextX, a.contextY = menuX, menuY
+					return a.refresh(ctx)
+				}),
+			menu,
+		)
+	// Three clusters keep the output actions, the runtime controls, and the page
+	// selector apart. The cluster keeps its intrinsic width and moves under the
+	// counts as a unit when the panel is too narrow for both.
+	toolbar := ui.Div().Class("app-toolbar").
+		FlexWrap(ui.FlexWrapNowrap).
+		FlexShrink(ui.Number(0)).
+		Gap(ui.Px(12)).
+		Children(
 			chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Log actions"},
 				chadcn.Button("Export", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined, Size: chadcn.ButtonSmall}).
 					OnClick(func(ctx context.Context) error {
@@ -165,15 +178,19 @@ func (a *app) logsToolbar(logs []logEntry, detailIndex int) *ui.Element {
 						return a.showToast(ctx, "View link copied", "Anyone on the team can open this filtered stream.")
 					}),
 			),
-			chadcn.Toggle("Live tail", a.liveTail, chadcn.ToggleOptions{Size: chadcn.ButtonSmall}).
-				OnClick(func(ctx context.Context) error {
-					a.liveTail = !a.liveTail
-					if a.liveTail {
-						return a.showToast(ctx, "Live tail on", "New entries appear as they are written.")
-					}
-					return a.refresh(ctx)
-				}),
-			rowActions,
+			logsToolbarDivider(),
+			ui.Div().Class("app-row").Gap(ui.Px(8)).Children(
+				chadcn.Toggle("Live tail", a.liveTail, chadcn.ToggleOptions{Size: chadcn.ButtonSmall}).
+					OnClick(func(ctx context.Context) error {
+						a.liveTail = !a.liveTail
+						if a.liveTail {
+							return a.showToast(ctx, "Live tail on", "New entries appear as they are written.")
+						}
+						return a.refresh(ctx)
+					}),
+				rowActions,
+			),
+			logsToolbarDivider(),
 			chadcn.Pagination(chadcn.PaginationOptions{
 				Page:       a.pageIndex + 1,
 				TotalPages: a.logPageCount(),
@@ -183,8 +200,19 @@ func (a *app) logsToolbar(logs []logEntry, detailIndex int) *ui.Element {
 					return a.refresh(ctx)
 				},
 			}),
-		),
+		)
+	return ui.Div().Class("app-row app-row--between").Children(
+		ui.Div().Class("app-row").Children(stats...),
+		toolbar,
 	)
+}
+
+// logsToolbarDivider separates two toolbar clusters without a second border on
+// the controls. The separator's own minimum height keeps the rule as tall as
+// the small controls beside it.
+func logsToolbarDivider() *ui.Element {
+	return chadcn.Separator(chadcn.SeparatorOptions{Orientation: chadcn.SeparatorVertical}).
+		AlignSelf(ui.AlignSelfCenter)
 }
 
 // logsTable renders the page rows, a skeleton while loading, or an empty state
@@ -234,8 +262,11 @@ func (a *app) logsTable(rows []logEntry) *ui.Element {
 
 	return ui.Div().Class("app-table-wrap").Children(
 		chadcn.DataTable(chadcn.DataTableOptions{
-			ID:       "logs-table",
-			Caption:  "Request log entries",
+			ID: "logs-table",
+			// The caption names the table for assistive technology and carries
+			// the page, so the band under the toolbar is a caption and not a
+			// second title.
+			Caption:  fmt.Sprintf("Request log entries · page %d of %d", a.pageIndex+1, a.logPageCount()),
 			Selected: a.selectedRows,
 			OnSelect: func(ctx context.Context, row int) error {
 				if a.selectedRows == nil {
@@ -265,6 +296,9 @@ func (a *app) logsTable(rows []logEntry) *ui.Element {
 // logsDetailDrawer shows the payload, export tile, and trace for the row the
 // menu opened. The backdrop and Escape path both clear drawerOpen.
 func (a *app) logsDetailDrawer() *ui.Element {
+	if !a.drawerOpen {
+		return nil
+	}
 	entry, ok := a.selectedLog()
 	title := "Log detail"
 	description := "No row is selected."
@@ -273,7 +307,7 @@ func (a *app) logsDetailDrawer() *ui.Element {
 		description = entry.Service + " · " + entry.Time + " · status " + statusLabel(entry.Status)
 	}
 
-	body := ui.Div().Class("app-drawer-body app-stack")
+	body := ui.Div().Class("app-stack")
 	if ok {
 		body.Children(a.logsDetailBody(entry))
 	} else {
@@ -301,7 +335,8 @@ func (a *app) logsDetailDrawer() *ui.Element {
 	}, body)
 }
 
-// logsDetailBody is the drawer payload for one entry.
+// logsDetailBody is the drawer payload for one entry. Payload and trace live
+// in tabs, so the drawer body stays inside its height cap on a 720px window.
 func (a *app) logsDetailBody(entry logEntry) *ui.Element {
 	payload := fmt.Sprintf(`{
   "timestamp": "%s",
@@ -330,22 +365,29 @@ func (a *app) logsDetailBody(entry logEntry) *ui.Element {
 			ui.Text(entry.Duration+" · "+entry.Service).Class("app-muted"),
 		),
 		ui.Text(entry.Message).Class("app-log-message"),
-		chadcn.Separator(chadcn.SeparatorOptions{Orientation: chadcn.SeparatorHorizontal}),
-		chadcn.CodeBlock(chadcn.CodeBlockOptions{
-			Filename: entry.Trace + ".json",
-			Language: "json",
-			Code:     payload,
-		}),
-		chadcn.Card(
-			chadcn.CardHeader(
-				chadcn.CardTitle("Trace timeline"),
-				chadcn.CardDescription("Five spans from the gateway through to the response write."),
-			),
-			chadcn.CardContent(chadcn.Trace(chadcn.TraceOptions{Rows: spans})),
-		),
-		chadcn.Attachment(chadcn.AttachmentOptions{
-			Name: entry.Trace + "-trace.json",
-			Meta: "Trace export · 5 spans · 1.24s",
+		chadcn.Tabs(chadcn.TabsOptions{
+			Active: a.drawerTab,
+			OnSelect: func(ctx context.Context, tab string) error {
+				a.drawerTab = tab
+				return a.refresh(ctx)
+			},
+			Render: func(id string) *ui.Element {
+				if id == "trace" {
+					return ui.Div().Class("app-col").Gap(ui.Px(6)).Children(
+						ui.Text("Trace timeline").Class("app-section-label"),
+						chadcn.Trace(chadcn.TraceOptions{Rows: spans}),
+					)
+				}
+				return chadcn.CodeBlock(chadcn.CodeBlockOptions{
+					Filename: entry.Trace + ".json",
+					Language: "json",
+					Code:     payload,
+				})
+			},
+			Items: []chadcn.TabItem{
+				{ID: "payload", Label: "Payload"},
+				{ID: "trace", Label: "Trace"},
+			},
 		}),
 		ui.Text("Retained for 30 days. Tokens and passwords are redacted in exports.").Class("app-muted"),
 	)
