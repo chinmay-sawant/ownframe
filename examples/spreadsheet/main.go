@@ -15,6 +15,7 @@ func main() {
 	data := flag.String("data", "", "data directory override (default os.UserConfigDir()/ownframe/spreadsheet)")
 	book := flag.String("workbook", "", "workbook name to open (default the first seeded workbook)")
 	perf := flag.Bool("perf", false, "record pipeline timing for the devtools Frame tab")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -34,7 +35,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = ownframe.Run(ctx, app.Page())
+	err = ownframe.RunWithOptions(ctx, app.Page(), ownframe.WindowOptions{DebugAddr: *debugAddr})
 	if cerr := app.Close(); cerr != nil && err == nil {
 		err = cerr
 	}

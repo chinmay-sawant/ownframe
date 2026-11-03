@@ -65,7 +65,10 @@ channel and applied on the game loop.
   `GET /debug/state` only with `ServeOptions` debug opt-ins. Treat it as privileged: it exposes layout
   boxes with field text, stats, and runtime snapshot on loopback only.
   Reduce or gate it before exposing a preview. `ServeOptions` pprof opt-ins
-  are the only ones that add `GET /debug/pprof/*`.
+  are the only ones that add `GET /debug/pprof/*` in web mode. A desktop
+  window adds the same two routes on loopback only when `WindowOptions.DebugAddr`
+  names an address and the build uses `-tags ownframe_debug`; empty (the
+  default) serves nothing. Non-loopback debug addresses are rejected outright.
   Both registrations additionally need `-tags ownframe_debug`: in a
   default build the routes answer 404 and `net/http/pprof` is not
   linked. See `supply-chain.md` ("Compiling out debug surfaces").

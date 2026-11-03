@@ -6,7 +6,7 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
-func run(perf bool, width, height int) error {
+func run(perf bool, debugAddr string, width, height int) error {
 	ctx := context.Background()
 	v := newView()
 	p, err := openCatalog(ctx, catalogOpen{
@@ -44,5 +44,5 @@ func run(perf bool, width, height int) error {
 		}
 	}
 	startWalk(p, d, v, metrics)
-	return ownframe.Run(ctx, p)
+	return ownframe.RunWithOptions(ctx, p, ownframe.WindowOptions{DebugAddr: debugAddr})
 }

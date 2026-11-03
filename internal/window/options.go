@@ -36,6 +36,18 @@ type Options struct {
 	// Perf samples frame times and runtime numbers even while DevTools is
 	// closed. Opening DevTools enables sampling automatically.
 	Perf bool
+	// DebugAddr exposes the window's profiling data on a loopback HTTP
+	// address while the window runs, for agents that cannot read the
+	// devtools dock. Empty disables the listener, the default, so a
+	// shipped app pays nothing. Set it to a loopback address such as
+	// "127.0.0.1:0" to serve GET /debug/state with the Frame tab
+	// counters and GET /debug/pprof/* with CPU, heap, goroutine, and
+	// trace profiles. Non-loopback addresses are rejected. The endpoints
+	// need a debug build (-tags ownframe_debug); without the tag the
+	// window logs once and serves nothing. Pair it with Perf or an open
+	// dock for runtime and frame numbers, otherwise the state carries
+	// boxes, stats, and op counts only.
+	DebugAddr string
 	// BottomRight places the window in the current monitor's bottom right.
 	BottomRight bool
 	// Margin is the inset in CSS pixels, clamped to zero. Placement uses

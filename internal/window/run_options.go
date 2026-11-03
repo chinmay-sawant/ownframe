@@ -68,6 +68,16 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 
 	setupScreenClear()
 
+	stopDebug := func() {}
+	if options.DebugAddr != "" {
+		var err error
+		_, stopDebug, err = startDebugServer(ctx, game, options.DebugAddr)
+		if err != nil {
+			return err
+		}
+	}
+	defer stopDebug()
+
 	pace, stop := paceWindow(ctx, game, options)
 	defer stop()
 

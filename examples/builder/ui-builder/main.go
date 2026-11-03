@@ -16,6 +16,7 @@ func main() {
 	web := flag.Bool("web", false, "serve the preview in a browser")
 	addr := flag.String("addr", "127.0.0.1:8131", "address for -web")
 	dev := flag.Bool("dev", false, "open the developer tools dock at startup")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	logEnabled := flag.Bool("log-enabled", false, "enable diagnostic logging to stderr and file")
 	logPath := flag.String(
 		"log",
@@ -25,12 +26,12 @@ func main() {
 	flag.Parse()
 
 	logging := builderLogOptions{enabled: *logEnabled, path: *logPath}
-	if err := run(*web, *addr, *dev, logging); err != nil {
+	if err := run(*web, *addr, *dev, *debugAddr, logging); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(webMode bool, addr string, dev bool, logging builderLogOptions) error {
+func run(webMode bool, addr string, dev bool, debugAddr string, logging builderLogOptions) error {
 	logger, file, actualPath := openBuilderLog(logging)
 	if file != nil {
 		defer func() { _ = file.Close() }()
@@ -73,6 +74,7 @@ func run(webMode bool, addr string, dev bool, logging builderLogOptions) error {
 	options := ownframe.WindowOptions{
 		CustomChrome: true,
 		PlacementID:  builderPlacement,
+		DebugAddr:    debugAddr,
 		Draggable: func(x, y int) bool {
 			return x >= 0 && y >= 0 && y < builderDragLimitY
 		},

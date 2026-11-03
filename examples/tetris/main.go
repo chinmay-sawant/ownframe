@@ -20,6 +20,7 @@ func main() {
 	dir := flag.String("data", "", "score database directory override")
 	seed := flag.Uint64("seed", 0, "piece seed; 0 uses the clock")
 	perf := flag.Bool("perf", false, "record pipeline timing and window sampling")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 
 	if *seed == 0 {
@@ -55,9 +56,9 @@ func main() {
 	ctx := context.Background()
 
 	run := ownframe.Run
-	if *perf {
+	if *perf || *debugAddr != "" {
 		run = func(ctx context.Context, page *ownframe.Page) error {
-			return ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{Perf: true})
+			return ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{Perf: *perf, DebugAddr: *debugAddr})
 		}
 	}
 

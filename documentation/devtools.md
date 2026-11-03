@@ -202,6 +202,19 @@ when the screen has no inspector, and `ops` when there is no display list.
 The `ops` map counts each kind and a `total`. The route is in
 [web.md](web.md).
 
+## Window debug listener
+
+A desktop window can serve the same data without `-web`. Set
+`WindowOptions.DebugAddr` to a loopback address, or pass `-debug-addr` to an
+example that takes it, and build with `-tags ownframe_debug`. The window
+serves `GET /debug/state` with the page counters plus the native frame ring
+(`frame` with average, p95, p99, and long-frame count), and
+`GET /debug/pprof/*` with the live process profiles. The address defaults to
+empty, which serves nothing and costs one bool check per frame. Sampling
+still follows the Perf opt-in: without `-perf` or an open dock the state
+carries boxes, stats, and op counts but no runtime or frame numbers.
+Non-loopback addresses are rejected.
+
 ## Limits
 
 There are no computed styles to show. The engine styles a document internally

@@ -2,22 +2,33 @@ package window
 
 import (
 	"context"
-	"github.com/chinmay-sawant/ownframe/internal/replay"
+	"sync/atomic"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/replay"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type shell struct {
-	renderer     replay.Renderer
-	transparent  bool
-	interactive  func(int, int) bool
-	draggable    func(int, int) bool
-	perf         bool
-	perfOption   bool
-	perfHooks    perfHooks
+	renderer    replay.Renderer
+	transparent bool
+	interactive func(int, int) bool
+	draggable   func(int, int) bool
+	perf        bool
+	perfOption  bool
+	perfHooks   perfHooks
+	// debugEnabled serves the profiling snapshot on DebugAddr. Set once
+	// before the loop when a debug build starts its listener; the game
+	// thread reads it, the HTTP thread only loads debugSnapshot.
+	debugEnabled bool
+	// debugSnapshot is the last published profiling copy. The game thread
+	// stores fresh immutable copies, the HTTP thread loads them, so no
+	// mutex guards the frame path.
+	debugSnapshot atomic.Pointer[windowDebugState]
+	// debugLast throttles snapshot publishes. Game thread only.
+	debugLast    time.Time
 	windowDrag   windowDrag
 	nativeCursor nativeWindowDrag
 	passthrough  bool

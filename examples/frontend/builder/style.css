@@ -1,0 +1,33 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.wrap {
+  padding: 24px 28px;
+}
+
+.eyebrow {
+  color: #a3a3a3;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+h1 {
+  font-size: 28px;
+  margin: 8px 0 6px;
+}
+
+.intro {
+  font-size: 13px;
+  margin: 0 0 18px;
+}
+
+.card-host {
+  max-width: 440px;
+}

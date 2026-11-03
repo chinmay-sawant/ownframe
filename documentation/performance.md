@@ -137,6 +137,14 @@ Use normal for the idle baseline and the soak default. Use large to find layout 
 
 The bigger demos take `-perf` too. `examples/departure-board`, `examples/spotify-player`, and `examples/wispr-flow-dashboard` each turn on the same sampling with `go run ./examples/<name> -perf`, so the Frame tab reports averages, percentiles, pipeline stages, and memory on a real app. With `-web` the same flag serves `/debug/pprof/*` from the page.
 
+A running window can serve its own profiling without `-web`. Pass `-debug-addr` with a loopback address and a debug build, plus `-perf` for runtime and frame numbers:
+
+```sh
+go run -tags ownframe_debug ./examples/spotify-player -perf -debug-addr 127.0.0.1:8129
+```
+
+The window serves `GET /debug/state` with the Frame tab counters and `GET /debug/pprof/*` with CPU, heap, goroutine, and trace profiles from the live process. The flag defaults to empty, which serves nothing. Non-loopback addresses are rejected.
+
 ## 7 Baseline table per release
 
 Fill [performance-baseline.md](performance-baseline.md) once per release, on the same machine when possible. Automated rows come from this script.
@@ -167,7 +175,7 @@ No optimization lands without a number that asks for it.
 
 The flow is short. Reproduce the slow case in a benchmark app. Read the PERFORMANCE and PIPELINE DETAIL groups to name the stage. Take a profile, change one thing, then remeasure with the same script and app.
 
-CPU and heap profiles come from the profiler endpoint in web mode, served only when the app opted into Perf with `ServeOptions{InsecureAllowPprof: true}`.
+CPU and heap profiles come from a profiler endpoint. In web mode it is served only when the app opted into Perf with `ServeOptions{InsecureAllowPprof: true}`. In a window it is the `-debug-addr` listener, which needs `-tags ownframe_debug` and serves the live process, so no second `-web` run is owed.
 
 ```sh
 go tool pprof -top http://127.0.0.1:8091/debug/pprof/heap

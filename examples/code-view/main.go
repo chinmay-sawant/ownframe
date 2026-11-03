@@ -20,6 +20,7 @@ func main() {
 	files := flag.Int("files", maxWorkspaceFiles, "maximum files to scan; raise it for a large repository")
 	dev := flag.Bool("dev", false, "open the developer tools dock at startup")
 	perf := flag.Bool("perf", true, "enable pipeline sampling for the devtools Frame tab")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	chrome := flag.Bool("chrome", true, "draw custom minimize, maximize, and close controls in the titlebar")
 	addWSLFlags(flag.CommandLine)
 	flag.Parse()
@@ -72,7 +73,7 @@ func main() {
 	if err := app.StartWatcher(ctx); err != nil {
 		log.Printf("code-view: watcher unavailable: %v", err)
 	}
-	options := ownframe.WindowOptions{CustomChrome: app.chrome, PlacementID: "code-view"}
+	options := ownframe.WindowOptions{CustomChrome: app.chrome, PlacementID: "code-view", DebugAddr: *debugAddr}
 	if app.chrome {
 		options.Draggable = app.chromeDrag
 	}

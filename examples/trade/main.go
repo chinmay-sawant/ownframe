@@ -17,6 +17,7 @@ func main() {
 	addr := flag.String("addr", "127.0.0.1:8144", "listen address for -web")
 	perf := flag.Bool("perf", true, "enable pipeline sampling for the devtools Frame tab")
 	dev := flag.Bool("dev", true, "open the developer tools dock at startup")
+	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 
 	app, err := New()
@@ -40,7 +41,7 @@ func main() {
 		return
 	}
 
-	if err := ownframe.Run(ctx, app.Page()); err != nil {
+	if err := ownframe.RunWithOptions(ctx, app.Page(), ownframe.WindowOptions{DebugAddr: *debugAddr}); err != nil {
 		log.Fatal(err)
 	}
 }
