@@ -89,7 +89,7 @@ value:
 | Section | Rows |
 |---|---|
 | WINDOW | window and page size, scroll offset, stretched, fallback, sequence |
-| RENDERING | fps, tps, frame time, draw time |
+| RENDERING | fps, tps, frame gap, frame work, draw time |
 | PERFORMANCE | frame average, p95, p99, and the long-frame count |
 | PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
 | PIPELINE DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
@@ -98,6 +98,13 @@ value:
 | RELOAD | reloads and the last reload error |
 
 A zero duration reads as `0.0ms`, and an empty reload error reads as `-`.
+`Frame gap` is the time between Draw calls, including idle waits. `Frame work`
+measures Update and Draw work with Perf enabled and excludes idle waits;
+the PERFORMANCE averages and percentiles use that same work duration. A low
+FPS and a gap near 250 ms are expected while an unchanged window is parked.
+The panel caches its rows and pixels, refreshing metrics at 4 Hz. Input,
+selection, and size changes refresh it immediately. An open dock allows idle
+pacing and schedules its next metrics refresh alongside the page's deadline.
 Label widths are memoized and each value is a right-aligned span, so a frame
 does not rebuild a padding string per row.
 Opening DevTools enables the PERFORMANCE, PIPELINE DETAIL, and MEMORY
@@ -214,6 +221,18 @@ empty, which serves nothing and costs one bool check per frame. Sampling
 still follows the Perf opt-in: without `-perf` or an open dock the state
 carries boxes, stats, and op counts but no runtime or frame numbers.
 Non-loopback addresses are rejected.
+
+For a heap investigation on the Loglens dashboard, run the command from the
+repository root and leave the window open while pprof reads it:
+
+```sh
+go run -tags ownframe_debug ./examples/builder/loglens -perf -debug-addr 127.0.0.1:8129
+go tool pprof -top http://127.0.0.1:8129/debug/pprof/heap
+```
+
+The tag is required. Without it the flag still parses but the listener is not
+registered; the window only logs that the debug endpoints need
+`-tags ownframe_debug`.
 
 ## Limits
 

@@ -1,6 +1,7 @@
 package window
 
 import (
+	"image"
 	"runtime"
 	"strings"
 	"time"
@@ -19,19 +20,22 @@ const debugPublishGap = 500 * time.Millisecond
 // debug listener. It mirrors the web endpoint's names so one sampler reads
 // both, and adds the native frame ring the web snapshot lacks.
 type windowDebugState struct {
-	Width      int            `json:"width"`
-	Height     int            `json:"height"`
-	Generation uint64         `json:"generation"`
-	Fallback   bool           `json:"fallback"`
-	Boxes      []layout.Box   `json:"boxes"`
-	Stats      *host.Stats    `json:"stats,omitempty"`
-	Ops        map[string]int `json:"ops,omitempty"`
-	Runtime    map[string]any `json:"runtime,omitempty"`
-	Frame      map[string]any `json:"frame,omitempty"`
+	Width        int            `json:"width"`
+	Height       int            `json:"height"`
+	WindowWidth  int            `json:"window_width"`
+	WindowHeight int            `json:"window_height"`
+	Cursor       image.Point    `json:"cursor"`
+	Generation   uint64         `json:"generation"`
+	Fallback     bool           `json:"fallback"`
+	Boxes        []layout.Box   `json:"boxes"`
+	Stats        *host.Stats    `json:"stats,omitempty"`
+	Ops          map[string]int `json:"ops,omitempty"`
+	Runtime      map[string]any `json:"runtime,omitempty"`
+	Frame        map[string]any `json:"frame,omitempty"`
 }
 
 // maybePublishDebug copies one profiling snapshot for the debug listener.
-// It runs on the game thread at the end of Draw. With no listener it is one
+// It runs on the game thread at the end of Update. With no listener it is one
 // bool check and no clock call, so a shipped window pays nothing.
 func (s *shell) maybePublishDebug() {
 	if !s.debugEnabled {
@@ -46,19 +50,27 @@ func (s *shell) maybePublishDebug() {
 }
 
 // publishDebug builds a fresh immutable snapshot and stores it for the HTTP
-// thread. Every map and slice is newly allocated: once stored, the game
-// thread never mutates it, so the handler loads without a mutex.
+// thread. Unchanged geometry shares the previous immutable copy; runtime
+// counters are fresh. The handler loads without a mutex.
 func (s *shell) publishDebug() {
 	snap := &windowDebugState{}
 	front := host.SelectFront(s.app)
 	snap.Width = front.Width
 	snap.Height = front.Height
+	snap.WindowWidth, snap.WindowHeight = s.screenW, s.screenH
+	snap.Cursor = image.Pt(s.cursorX, s.cursorY)
 	snap.Generation = front.Generation
 	snap.Fallback = front.Fallback
-	snap.Boxes = s.app.Boxes()
-	if front.Display != nil {
-		snap.Ops = debugOpCountsMap(front.Display)
+	previous := s.debugSnapshot.Load()
+	if s.debugGeometryUnchanged(previous, front) {
+		snap.Boxes, snap.Ops = previous.Boxes, previous.Ops
+	} else {
+		snap.Boxes = s.app.Boxes()
+		if front.Display != nil {
+			snap.Ops = debugOpCountsMap(front.Display)
+		}
 	}
+	s.debugDisplay = front.Display
 	if insp, ok := s.app.(host.Inspector); ok {
 		stats := insp.Stats()
 		stats.LastReloadError = sanitizeDebugLine(stats.LastReloadError)
@@ -68,6 +80,9 @@ func (s *shell) publishDebug() {
 		snap.Runtime = debugRuntimeSnapshot()
 		avg, p95, p99, long := s.perfSummary()
 		snap.Frame = map[string]any{
+			"work_ns":     int64(s.dev.stages.work),
+			"gap_ns":      int64(s.dev.frame),
+			"idle":        s.pace.idle,
 			"avg_ns":      int64(avg),
 			"p95_ns":      int64(p95),
 			"p99_ns":      int64(p99),
@@ -75,6 +90,14 @@ func (s *shell) publishDebug() {
 		}
 	}
 	s.debugSnapshot.Store(snap)
+}
+
+func (s *shell) debugGeometryUnchanged(previous *windowDebugState, front host.Front) bool {
+	if previous == nil || front.Generation == 0 {
+		return false
+	}
+	return previous.Generation == front.Generation && s.debugDisplay == front.Display &&
+		previous.Width == front.Width && previous.Height == front.Height && previous.Fallback == front.Fallback
 }
 
 // debugOpCountsMap counts the operations that paint, keyed by the web

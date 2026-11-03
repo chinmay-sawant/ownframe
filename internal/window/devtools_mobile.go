@@ -70,5 +70,4 @@ func (s *shell) drawDevMobile(screen *ebiten.Image) {
 		s.drawDevContent(screen)
 		s.drawDevScrollbar(screen)
 	}
-	s.frameNote(frameRect(r.X, r.Y, r.W, r.H))
 }

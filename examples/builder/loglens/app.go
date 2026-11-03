@@ -139,14 +139,15 @@ func newApp() (*app, error) {
 		extra:         map[string]any{},
 	}
 	view, err := ui.Mount(ownframe.Config{
-		Title:     "Loglens · Production",
-		Width:     windowWidth,
-		Height:    windowHeight,
-		MinWidth:  minWidth,
-		MinHeight: minHeight,
-		Theme:     a.themeSheet(),
-		DevTools:  false,
-		Scrollbar: ownframe.ScrollbarHidden,
+		Title:       "Loglens · Production",
+		Width:       windowWidth,
+		Height:      windowHeight,
+		MinWidth:    minWidth,
+		MinHeight:   minHeight,
+		Theme:       a.themeSheet(),
+		DevTools:    false,
+		RetainState: true,
+		Scrollbar:   ownframe.ScrollbarHidden,
 	}, a.screen())
 	if err != nil {
 		return nil, err

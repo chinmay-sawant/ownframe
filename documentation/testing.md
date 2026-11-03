@@ -28,7 +28,7 @@ make graphics-check
 
 `TestPagePictureMatchesRedraw` compares software PNGs after interactions with a fresh redraw and requires the interaction to change the picture. It protects retained page state and software-paint consistency. It does not capture the window's tile cache or prove browser parity. `TestRetainedPaintInvalidatesEncodedPNG` checks decoded pixels after operation patches, display patches, tick mutations, and explicit invalidation, without requiring a redraw. A separate no-op test verifies cache reuse.
 
-`make graphics-check` runs ten tests in separate processes and separate Xvfb sessions:
+`make graphics-check` runs twelve tests in separate processes and separate Xvfb sessions:
 
 - `TestPartialFrameLeavesTheScreen` checks damage-only blits, full rebuilds, scroll copies, and hiding then restoring content under the devtools dock.
 - `TestWindowRepaintPixels` uses a real page and compares the retained window framebuffer with a fresh full replay across a color change crossing tile boundaries, element removal, scrolling with a fixed header, a clean frame, and an edit while scrolled. It requires the color change to take the partial repaint path.
@@ -36,6 +36,8 @@ make graphics-check
 - `TestViewportScrollPixels` compares the viewport cache with a fresh replay across vertical and diagonal scrolling, edits during a buffer move, and jumps with no overlap. It also requires an overlapping scroll to repaint less than a full viewport.
 - `TestViewportAnimatedReturnPixels` and `TestViewportDirectAnimationReturnPixels` check that a card moving while offscreen leaves no old pose when scrolled back into view, with and without retained layers.
 - `TestWindowIdleDeadline` runs the actual pacing wrapper and timer. It requires the blocking idle FPS mode, a quiet interval with a declared deadline, a deadline-driven tick that paints blue, and restoration of the original tick rate. A watchdog wakes a stuck loop only to fail the test. Keep the test window free of input during this check.
+- `TestWindowDevToolsIdle` compares cached dock pixels with direct rendering, requires the open dock to allow idle pacing, and checks scheduled metric refreshes without continuous drawing.
+- `TestSidebarHoverPixels` moves hover between Loglens sidebar controls, the header, and the content panel with a scrolled page and an open dock, then checks the sidebar text remains painted on the native framebuffer.
 - `TestDrawPaintsVerticalThumb` checks visible scrollbar pixels inside the running game.
 - `TestGPUVisibleParity` checks replay pixels, shape and text caches, transformed operations, composited groups, and translucent fills, images, and grids inside Ebiten's `Draw` loop. Replay fixtures live under `internal/replay/testdata`, so a library module zip contains them.
 - `TestScrollbarThumbStaysOnePiece` scrolls the jmap-mail drafts list up and down and requires the list thumb to stay one run on the retained framebuffer. The wheel handler runs after the frame sync, so the check scrolls after `Update` and reads pixels in `Draw`.

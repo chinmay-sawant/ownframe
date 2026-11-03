@@ -41,7 +41,7 @@ func (a *app) screen() *ui.Element {
 			// The fixed sidebar starts below the top bar and comes first so
 			// it never wins the hit test for the top-left chrome.
 			a.sidebar(),
-			ui.Div().Children(a.topbar()),
+			ui.Div().ID("app-topbar-scope").Children(a.topbar()),
 			ui.Div().Class("app-body").Children(a.main()),
 			a.settingsSheet(),
 			a.globalDialogs(),

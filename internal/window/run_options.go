@@ -50,6 +50,7 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	defer game.windowDrag.native.end()
 	defer game.nativeCursor.end()
 	defer game.renderer.Close()
+	defer game.dev.panelCache.close()
 	defer game.imeShutdown()
 	defer game.closeA11y()
 	game.transparent = options.Transparent

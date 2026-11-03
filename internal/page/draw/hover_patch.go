@@ -14,6 +14,29 @@ const hoverPatchShare = 2
 // losing the hover and one gaining it.
 const hoverPatchSides = 2
 
+// HoverScopesFit applies the geometric budget to CSS-selected subtree IDs.
+// Empty scopes mean no selector changed and need no layout.
+func HoverScopesFit(boxes []layout.Box, ids []string) bool {
+	if len(ids) == 0 {
+		return true
+	}
+	roots := make([]int, 0, len(ids))
+	for _, id := range ids {
+		found := false
+		for i := range boxes {
+			if id != "" && boxes[i].ID == id {
+				roots = append(roots, i)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return hoverPatchFits(boxes, roots)
+}
+
 // HoverPatchRoots returns the ids whose subtrees a hover-only change must
 // re-lay out: on each side of the change, the child of the lowest common
 // ancestor that contains the hovered element. Patching those subtrees covers

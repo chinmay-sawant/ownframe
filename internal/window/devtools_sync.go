@@ -25,6 +25,7 @@ func (s *shell) devSync() error {
 	}
 
 	s.dev.on = on
+	s.dev.panelCache.close()
 	if !on {
 		return s.devClose()
 	}

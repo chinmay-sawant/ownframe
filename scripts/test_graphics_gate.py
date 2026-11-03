@@ -16,6 +16,8 @@ REQUIRED_TESTS = {
     "TestViewportAnimatedReturnPixels",
     "TestViewportDirectAnimationReturnPixels",
     "TestWindowIdleDeadline",
+    "TestWindowDevToolsIdle",
+    "TestSidebarHoverPixels",
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",
     "TestScrollbarThumbStaysOnePiece",

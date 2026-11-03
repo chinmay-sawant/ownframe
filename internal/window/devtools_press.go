@@ -30,6 +30,7 @@ func (s *shell) devOpHitText(arg int) string {
 // is no setting to turn it off, so keep the dock closed for sensitive
 // output. See documentation/devtools.md and security.md.
 func (s *shell) devRun(hit devHit) {
+	s.dev.panelCache.valid = false
 	switch hit.act {
 	case devActMobileExpand:
 		if s.dev.mobile {

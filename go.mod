@@ -3,9 +3,9 @@ module github.com/chinmay-sawant/ownframe
 go 1.26.10
 
 require (
-	github.com/chinmay-sawant/blinkless v0.1.1-0.20261102064352-5dea7a1f2019
-	github.com/hajimehoshi/ebiten/v2 v2.10.4
-	golang.org/x/image v0.45.0
+	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
+	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261102143707-423d73317f45
+	golang.org/x/image v0.47.0
 	golang.org/x/text v0.43.0
 	golang.org/x/time v0.14.0
 )
@@ -33,8 +33,8 @@ require (
 	github.com/benoitkugler/textprocessing v0.0.6 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
-	github.com/ebitengine/oto/v3 v3.5.0 // indirect
-	github.com/ebitengine/purego v0.11.0 // indirect
+	github.com/ebitengine/oto/v3 v3.5.1 // indirect
+	github.com/ebitengine/purego v0.11.3-0.20261101135610-3fc0c5fee75d // indirect
 	github.com/go-fonts/latin-modern v0.3.3 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect

@@ -1,8 +1,10 @@
 package page
 
 import (
+	"bytes"
 	"context"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/css"
@@ -11,6 +13,38 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
+
+func TestHoverPatchLeavingUnstyledPanel(t *testing.T) {
+	source := `<style>#panel{width:180px;height:100px}button:hover{background:red}</style>` +
+		`<div id="panel">` + strings.Repeat(`<div>row</div>`, 80) + `</div>` +
+		`<nav id="side" style="position:fixed;left:220px;top:0"><button id="button">Go</button></nav>`
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	calls := stubHoverPatch(p, true)
+	if err := p.Hover(t.Context(), 10, 10); err != nil {
+		t.Fatal(err)
+	}
+	hoverAt(t, p, "button")
+	if len(*calls) != 1 || (*calls)[0][0] != "button" {
+		t.Fatalf("leaving an unstyled panel patched %v; want only button", *calls)
+	}
+	full, err := New(Config{HTML: source, Width: 320, Height: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := full.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	hoverAt(t, full, "button")
+	if !bytes.Equal(p.PNG(), full.PNG()) {
+		t.Fatal("scoped hover differs from a full render")
+	}
+}
 
 const hoverPatchFixture = `<html><head><style>` +
 	`.row{width:200px;height:30px}` +

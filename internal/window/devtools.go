@@ -27,6 +27,7 @@ type devState struct {
 	collapsed      map[string]bool
 	rows           []devRow
 	opsCache       devOpsCache
+	panelCache     devPanelCache
 	content        devRect
 	hovered        layout.Box
 	haveHov        bool

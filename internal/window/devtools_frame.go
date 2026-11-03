@@ -26,7 +26,12 @@ func (s *shell) devFrameRows(width float64) []devRow {
 	h("Rendering")
 	n("FPS", fmt.Sprintf("%.1f", ebiten.ActualFPS()))
 	n("TPS", fmt.Sprintf("%.1f", ebiten.ActualTPS()))
-	n("Frame", devMS(s.dev.frame))
+	n("Frame gap", devMS(s.dev.frame))
+	if s.perf {
+		n("Frame work", devMS(s.dev.stages.work))
+	} else {
+		n("Frame work", "-")
+	}
 	n("Draw", devMS(s.dev.draw))
 	s.addPerfRows(&rs, width, h, n)
 	h("Pipeline")

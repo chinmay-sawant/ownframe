@@ -78,6 +78,39 @@ func TestDebugPublishThrottles(t *testing.T) {
 	}
 }
 
+func TestDebugPublishReusesGeometry(t *testing.T) {
+	d := newDevScreen()
+	d.redraws = 1
+	s := newDevShell(d)
+	s.publishDebug()
+	first := s.debugSnapshot.Load()
+	s.publishDebug()
+	second := s.debugSnapshot.Load()
+	if first == second || d.boxReads != 1 || &first.Boxes[0] != &second.Boxes[0] {
+		t.Fatal("unchanged geometry was copied or counters were not refreshed")
+	}
+	d.redraws++
+	d.boxes = []layout.Box{{ID: "new"}}
+	s.publishDebug()
+	if got := s.debugSnapshot.Load().Boxes[0].ID; got != "new" || d.boxReads != 2 {
+		t.Fatal("new generation did not refresh geometry")
+	}
+	if first.Boxes[0].ID != "known" {
+		t.Fatal("publishing a new generation mutated an older snapshot")
+	}
+	d.width++
+	s.publishDebug()
+	if d.boxReads != 3 {
+		t.Fatal("changed dimensions did not refresh geometry")
+	}
+	d.redraws = 0
+	s.publishDebug()
+	s.publishDebug()
+	if d.boxReads != 5 {
+		t.Fatal("generation zero must stay uncached")
+	}
+}
+
 func TestDebugOpCountsMapNames(t *testing.T) {
 	display := &layout.Display{
 		Ops: []layout.DisplayOp{

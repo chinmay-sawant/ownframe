@@ -12,7 +12,7 @@ package window
 // A ticker keeps the viewport path on the frame clock. The tile path may
 // still idle when that ticker reported no damage.
 func (s *shell) idleCleanFrame() bool {
-	if s.fallback || s.dev.on || s.display == nil {
+	if s.fallback || s.display == nil {
 		return false
 	}
 

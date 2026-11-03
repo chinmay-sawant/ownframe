@@ -20,7 +20,7 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	g.input = false
 
 	g.mu.Lock()
-	act := g.policy.Step(now, dirty, input, g.want)
+	act := g.policy.Step(now, dirty, input, g.frameDeadline())
 	g.mu.Unlock()
 
 	switch act {
@@ -39,18 +39,28 @@ func (g *paceGame) frame(screen *ebiten.Image, now time.Time) {
 	g.publish(now)
 }
 
+// frameDeadline keeps metrics live even when the page asks for a later frame.
+func (g *paceGame) frameDeadline() time.Time {
+	want := g.want
+	cache := &g.shell.dev.panelCache
+	if g.shell.dev.on && cache.valid && (want.IsZero() || cache.next.Before(want)) {
+		want = cache.next
+	}
+	return want
+}
+
 // applyIdle leaves the active drawing loop: the backend blocks in WaitEvents, and a
 // scheduled post or an input event wakes it. TPS syncs with the frame rate
-// there, so one wake-up runs one Update. The replay pixel caches are released
-// first: parked keep-alive frames only blit the tile buffers, so the bakes
-// would sit resident until the next dirty paint.
+// there, so one wake-up runs one Update. A plain page only blits its tiles
+// while parked. DevTools still draws outlines and metrics, so it keeps the
+// bounded replay caches and avoids forcing GC on every short input pause.
 func (g *paceGame) applyIdle() {
 	if g.idle {
 		return
 	}
 
 	g.idle = true
-	if g.shell != nil {
+	if g.shell != nil && !g.shell.dev.on {
 		g.shell.renderer.SetIdle()
 	}
 	//nolint:staticcheck // reason: needs FPSModeVsyncOffMinimum event-wait; SetVsyncEnabled(false) selects Maximum busy loop and would pin CPU.

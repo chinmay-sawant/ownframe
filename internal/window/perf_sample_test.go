@@ -63,6 +63,9 @@ func TestPerfFrameCostExcludesParkedGap(t *testing.T) {
 	s.dev.stages.draw = 3 * time.Millisecond
 	s.dev.stages.present = time.Millisecond
 	s.perfFrameSample()
+	if s.dev.stages.work != 6*time.Millisecond {
+		t.Fatalf("last frame work = %s, want 6ms", s.dev.stages.work)
+	}
 	avg, _, p99, long := s.perfSummary()
 	if avg != 6*time.Millisecond || p99 != 6*time.Millisecond || long != 0 {
 		t.Fatalf("work avg=%s p99=%s long=%d", avg, p99, long)

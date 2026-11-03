@@ -37,7 +37,7 @@ func (p *Page) layoutStaged(
 	styled *css.Document,
 	state render.State,
 ) (*Display, error) {
-	if roots, ok := p.hoverPatchRoots(state); ok {
+	if roots, ok := p.hoverPatchRoots(styled, state); ok {
 		if patched, err := p.listHoverPatched(ctx, styled, state, roots); err == nil {
 			return patched, nil
 		}
@@ -49,8 +49,8 @@ func (p *Page) layoutStaged(
 // hoverPatchRoots returns the subtree roots a hover-only change must
 // re-lay out. ok is false when the frame changed more than the hover, the
 // page cannot patch, or the sheets can style outside the hovered subtrees.
-func (p *Page) hoverPatchRoots(state render.State) ([]string, bool) {
-	if !p.hoverPatchEligible(state) {
+func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]string, bool) {
+	if !p.hoverPatchEligible(state) || p.last.Hover == state.Hover {
 		return nil, false
 	}
 
@@ -63,7 +63,15 @@ func (p *Page) hoverPatchRoots(state render.State) ([]string, bool) {
 		return nil, false
 	}
 
-	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+	if roots, ok := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); ok {
+		return roots, true
+	}
+
+	// Crossing a large layout shell can exceed the geometric patch budget
+	// even when only one button's CSS changes. Ask the cascade which selector
+	// matches changed before paying for a full page layout.
+	roots, ok := styled.HoverChangedScopes(p.last.Hover)
+	return roots, ok && draw.HoverScopesFit(p.boxes, roots)
 }
 
 // hoverPatchEligible reports whether this redraw changed only the hover:

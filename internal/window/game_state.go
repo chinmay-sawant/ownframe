@@ -27,6 +27,7 @@ type shell struct {
 	// stores fresh immutable copies, the HTTP thread loads them, so no
 	// mutex guards the frame path.
 	debugSnapshot atomic.Pointer[windowDebugState]
+	debugDisplay  *layout.Display
 	// debugLast throttles snapshot publishes. Game thread only.
 	debugLast    time.Time
 	windowDrag   windowDrag
