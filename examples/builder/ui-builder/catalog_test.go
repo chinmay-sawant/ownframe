@@ -148,7 +148,34 @@ func TestCatalogRendersEveryEntry(t *testing.T) {
 	if !found {
 		t.Fatal("catalog heading missing")
 	}
-	if got := len(catalogEntries()); got != 66 {
-		t.Fatalf("catalog entries=%d want 66", got)
+	if got := len(catalogEntries()); got != 77 {
+		t.Fatalf("catalog entries=%d want 77", got)
+	}
+}
+
+func TestCatalogOpensFromSidebarClick(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newBuilderApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.ClickAction(ctx, a.page, "tab:catalog"); err != nil {
+		t.Fatal(err)
+	}
+	if a.tab != "catalog" {
+		t.Fatalf("tab=%q, want catalog", a.tab)
+	}
+	found := map[string]bool{}
+	for _, box := range a.page.Boxes() {
+		found[box.Text] = true
+	}
+	for _, want := range []string{"Area Chart", "Filter Bar", "Stat Card", "Status Segments", "Hex Grid"} {
+		if !found[want] {
+			t.Fatalf("catalog heading %q missing after sidebar click", want)
+		}
 	}
 }

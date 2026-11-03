@@ -1,0 +1,53 @@
+/* Stat card: one KPI cell in a dashboard header strip. */
+
+.of-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.of-stat-card-label {
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-stat-card-value {
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-stat-card-delta {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.of-stat-card-delta--neutral {
+  background-color: var(--of-control, #f4f4f5);
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-stat-card-delta--up {
+  background-color: var(--of-success-soft, rgba(22, 163, 74, 0.16));
+  color: var(--of-success, #16a34a);
+}
+
+.of-stat-card-delta--down {
+  background-color: var(--of-danger-soft, rgba(220, 38, 38, 0.16));
+  color: var(--of-danger, #dc2626);
+}
+
+.of-stat-card-delta--warn {
+  background-color: var(--of-warning-soft, rgba(217, 119, 6, 0.18));
+  color: var(--of-warning, #d97706);
+}

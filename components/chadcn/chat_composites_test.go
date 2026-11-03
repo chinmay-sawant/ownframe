@@ -329,13 +329,12 @@ func TestChatTraceRows(t *testing.T) {
 		"Ran pnpm --version",
 		"Failed to run pnpm install",
 		"120 ms",
-		"margin-left:0%",
-		"width:40%",
-		"margin-left:40%",
-		"width:60%",
+		`class="of-trace-gap"`,
+		`style="flex-grow:40;"`,
+		`style="flex-grow:60;"`,
 	)
 	// The warning row starts at 70%, so its bar clamps to the remaining track.
-	assertChatMarkup(t, markup, "margin-left:70%", "width:30%")
+	assertChatMarkup(t, markup, `style="flex-grow:70;"`, `style="flex-grow:30;"`)
 }
 
 func TestChatCompositesZeroValue(t *testing.T) {

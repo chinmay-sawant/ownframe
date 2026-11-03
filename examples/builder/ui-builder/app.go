@@ -174,7 +174,7 @@ func (a *builderApp) refreshLogged(ctx context.Context, action string, start tim
 
 func (a *builderApp) selectTab(name string) {
 	switch name {
-	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom":
+	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom", "catalog":
 		a.tab = name
 		a.center = chadcn.ScrollState{}
 		a.notice = map[string]string{
@@ -187,6 +187,7 @@ func (a *builderApp) selectTab(name string) {
 			"custom":   "Custom components inherit the app theme and accept local properties.",
 			"compare":  "Builder vs HTML: the same card as Go code and live output.",
 			"dialog":   "Dialog: a backdrop overlay with a centered panel.",
+			"catalog":  "ChadCN catalog: every constructor in a representative state.",
 		}[name]
 	}
 }

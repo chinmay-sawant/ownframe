@@ -135,10 +135,15 @@ constructors: `AlertDialog`, `Combobox`, `ContextMenu`, `DatePicker`, `Dialog`,
 |---|---|---|---|
 | **Scroll Area** | `ScrollArea` | scroll | Reuses `ScrollState` and `Scrollbar`. |
 | **Resizable** | `Resizable` | ratio | Two panes and a focusable divider. |
-| **Sidebar** | `Sidebar`, `SidebarNavItem` | open + collapsed | Navigation surface, active rows, badges. |
+| **Sidebar** | `Sidebar`, `SidebarNavItem`, `SidebarSection` | open + collapsed | Navigation surface, grouped sections, active rows, badges. |
 | **Carousel** | `Carousel` | index | One visible slide, controls, dots. |
 | **Data Table** | `DataTable` | host | Header, rows, empty state, optional selection. |
 | **Chart** | `Chart` | host | Bar frame, legend, totals; no canvas. |
+| **Area Chart** | `AreaChart` | host | Two-series trend, hatched gap band, dots; no canvas. |
+| **Hex Grid** | `HexGrid`, `HexCellElement` | host | Honeycomb status map, tone slots; no canvas. |
+| **Status Segments** | `StatusSegments` | host | Proportional status bars with count legend; no canvas. |
+| **Stat Card** | `StatCard` | static | KPI cell with label, value, and delta pill. |
+| **Filter Bar** | `FilterBar` | host | Legend plus pill options; tab bar without panels. |
 | **Code Block** | `CodeBlock` | static | Header and `<pre><code>` body. |
 | **Message** | `Message` | static | Chat row with avatar and meta. |
 | **Bubble** | `Bubble` | static | Default, primary, and muted bubbles. |

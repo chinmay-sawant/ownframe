@@ -77,6 +77,17 @@ func catalogEntries() []catalogEntry {
 		{"Alert Dialog", func() *ui.Element {
 			return chadcn.AlertDialog(chadcn.AlertDialogOptions{Title: "Delete file?", Description: "This cannot be undone.", Trigger: chadcn.Button("Open alert dialog", chadcn.ButtonOptions{})})
 		}},
+		{"Area Chart", func() *ui.Element {
+			return chadcn.AreaChart(chadcn.AreaChartOptions{
+				Title:       "Requests trend",
+				Description: "Opened versus resolved across the week.",
+				Series: []chadcn.ChartSeries{
+					{Label: "Opened", Values: []float64{12, 18, 15, 22, 26, 19, 24}},
+					{Label: "Resolved", Values: []float64{8, 12, 11, 16, 18, 15, 21}},
+				},
+				Labels: []string{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"},
+			})
+		}},
 		{"Aspect Ratio", func() *ui.Element {
 			return chadcn.AspectRatio(chadcn.AspectRatioOptions{}, ui.Text("16:9")).Width(ui.Percent(100)).BackgroundColor(theme.Control())
 		}},
@@ -111,6 +122,9 @@ func catalogEntries() []catalogEntry {
 			})
 		}},
 		{"Checkbox", func() *ui.Element { return chadcn.Checkbox("Checkbox", true) }},
+		{"Choice", func() *ui.Element {
+			return chadcn.Choice("Nightly backups", "Keeps 14 days of snapshots.", true)
+		}},
 		{"Code Block", func() *ui.Element {
 			return chadcn.CodeBlock(chadcn.CodeBlockOptions{Filename: "main.go", Code: "package main"})
 		}},
@@ -149,6 +163,29 @@ func catalogEntries() []catalogEntry {
 		{"Field", func() *ui.Element {
 			return chadcn.Field(chadcn.FieldOptions{Label: "Email", Control: chadcn.Input("catalog-email", "")})
 		}},
+		{"Filter Bar", func() *ui.Element {
+			return chadcn.FilterBar(chadcn.FilterBarOptions{
+				Label:  "Trend filters",
+				Legend: []chadcn.FilterBarLegend{{Label: "Opened", Tone: 1}, {Label: "Resolved", Tone: 2}, {Label: "Backlog gap", Tone: 3}},
+				Options: []chadcn.FilterBarOption{
+					{Label: "Daily"},
+					{Label: "Weekly", Active: true},
+					{Label: "Monthly"},
+				},
+			})
+		}},
+		{"Hex Grid", func() *ui.Element {
+			return chadcn.HexGrid(chadcn.HexGridOptions{
+				Label:   "Portfolio health",
+				Columns: 8,
+				Cells: []chadcn.HexCell{
+					{Tone: 1}, {Tone: 1}, {Tone: 2}, {Tone: 2}, {Tone: 2}, {Tone: 0}, {Tone: 0}, {Tone: 1},
+					{Tone: 1}, {Tone: 3}, {Tone: 3}, {Tone: 2}, {Tone: 4}, {Tone: 4}, {Tone: 0}, {Tone: 1},
+					{Tone: 3}, {Tone: 3}, {Tone: 4}, {Tone: 4}, {Tone: 2}, {Tone: 1}, {Tone: 0}, {Tone: 0},
+					{Tone: 0}, {Tone: 4}, {Tone: 4}, {Tone: 3}, {Tone: 3}, {Tone: 2}, {Tone: 0}, {Tone: 0},
+				},
+			})
+		}},
 		{"Hover Card", func() *ui.Element {
 			return chadcn.HoverCard(chadcn.HoverCardOptions{Open: true}, chadcn.Button("Hover", chadcn.ButtonOptions{}), ui.Text("Preview"))
 		}},
@@ -176,6 +213,9 @@ func catalogEntries() []catalogEntry {
 		{"Navigation Menu", func() *ui.Element {
 			return chadcn.NavigationMenu(chadcn.NavigationMenuOptions{Open: "docs", Items: []chadcn.NavigationItem{{ID: "docs", Label: "Docs"}}})
 		}},
+		{"Notice", func() *ui.Element {
+			return chadcn.Notice("Trial ends in 3 days", "Add a payment method to keep syncing.")
+		}},
 		{"Pagination", func() *ui.Element {
 			return chadcn.Pagination(chadcn.PaginationOptions{Page: 1, TotalPages: catalogPageCount})
 		}},
@@ -198,6 +238,17 @@ func catalogEntries() []catalogEntry {
 		{"Scroll Area", func() *ui.Element {
 			return chadcn.ScrollArea(chadcn.ScrollAreaOptions{ID: "catalog-scroll", Height: ui.Px(120), Children: []*ui.Element{ui.Text("Row one"), ui.Text("Row two"), ui.Text("Row three")}})
 		}},
+		{"Scrollbar", func() *ui.Element {
+			state := &chadcn.ScrollState{}
+			state.SetRange(400, 120)
+			return ui.Div().Position(ui.PositionRelative).Height(ui.Px(140)).Overflow(ui.OverflowHidden).Children(
+				ui.P().Text("Scrollable region with an overlaid scrollbar.").Margin(ui.Px(0)).FontSize(ui.Px(12)),
+				chadcn.Scrollbar(chadcn.ScrollbarOptions{ID: "catalog-scrollbar", ControlsID: "catalog-scroll", State: state, TrackPixels: 120}),
+			)
+		}},
+		{"Search Field", func() *ui.Element {
+			return chadcn.SearchField("catalog-search", "Search orders", "")
+		}},
 		{"Select", func() *ui.Element {
 			return chadcn.Select(chadcn.SelectOptions{Open: true, Items: []chadcn.SelectItem{{Value: "a", Label: "Apple"}}})
 		}},
@@ -208,9 +259,31 @@ func catalogEntries() []catalogEntry {
 		{"Sidebar", func() *ui.Element {
 			return chadcn.Sidebar(chadcn.SidebarOptions{Open: true, Header: chadcn.Button("Acme", chadcn.ButtonOptions{}), Content: ui.Text("Workspace"), Footer: ui.Text("shadcn@example.com")})
 		}},
+		{"Sidebar Section", func() *ui.Element {
+			return chadcn.SidebarSection("Operations",
+				chadcn.SidebarNavItem(chadcn.SidebarItem{Label: "Dashboard", Active: true}),
+				chadcn.SidebarNavItem(chadcn.SidebarItem{Label: "Work orders", Badge: "137"}),
+				chadcn.SidebarNavItem(chadcn.SidebarItem{Label: "Maintenance"}),
+			)
+		}},
 		{"Skeleton", func() *ui.Element { return chadcn.Skeleton(chadcn.SkeletonOptions{}) }},
 		{"Slider", func() *ui.Element { return chadcn.Slider(chadcn.SliderOptions{Value: catalogSliderValue}) }},
 		{"Spinner", func() *ui.Element { return chadcn.Spinner(chadcn.SpinnerOptions{}) }},
+		{"Stat Card", func() *ui.Element {
+			return chadcn.StatCard(chadcn.StatCardOptions{Label: "Open work orders", Value: "137", Delta: "23 urgent", Tone: chadcn.StatDeltaWarn})
+		}},
+		{"Status Segments", func() *ui.Element {
+			return chadcn.StatusSegments(chadcn.StatusSegmentsOptions{
+				Label:   "Work order status",
+				Overdue: "Overdue work orders: 7",
+				Segments: []chadcn.StatusSegment{
+					{Label: "New", Value: 24, Count: "24", Tone: 1},
+					{Label: "In progress", Value: 61, Count: "61", Tone: 3},
+					{Label: "Scheduled", Value: 38, Count: "38", Tone: 2},
+					{Label: "Completed", Value: 112, Count: "112", Tone: 4},
+				},
+			})
+		}},
 		{"Switch", func() *ui.Element { return chadcn.Switch("Switch", true) }},
 		{"Table", func() *ui.Element {
 			return chadcn.Table(chadcn.TableHeader(chadcn.TableRow(chadcn.TableHead("Name"))), chadcn.TableBody(chadcn.TableRow(chadcn.TableCell("Ada"))))
@@ -219,6 +292,9 @@ func catalogEntries() []catalogEntry {
 			return chadcn.Tabs(chadcn.TabsOptions{Items: []chadcn.TabItem{{ID: "account", Label: "Account", Content: ui.Text("Account settings")}, {ID: "password", Label: "Password", Content: ui.Text("Password settings")}}})
 		}},
 		{"Textarea", func() *ui.Element { return chadcn.Textarea("catalog-textarea", "Text") }},
+		{"Text Field", func() *ui.Element {
+			return chadcn.TextField("catalog-text-field", "Company", "Acme")
+		}},
 		{"Toast", func() *ui.Element { return chadcn.Toast(chadcn.ToastOptions{Title: "Saved"}) }},
 		{"Toggle", func() *ui.Element { return chadcn.Toggle("Toggle", true) }},
 		{"Toggle Group", func() *ui.Element { return chadcn.ToggleGroup(chadcn.ToggleGroupOptions{}) }},
