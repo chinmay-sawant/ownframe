@@ -10,7 +10,9 @@ Run from the repository root:
 go run ./examples/builder/ui-builder
 ```
 
-Use `-web` for the PNG browser preview or `-dev` to open DevTools. The desktop
+Use `-web` for the PNG browser preview, `-dev` to open DevTools, `-perf` to sample
+for the Frame tab, or `-debug-addr 127.0.0.1:8131` (with `-tags ownframe_debug`)
+to serve the profiling endpoints beside the window. The desktop
 gallery supports windows from 900 by 610 pixels. The header and navigation
 stay visible while the content pane scrolls. The pane uses the shared
 `chadcn.Scrollbar` and `chadcn.ScrollState`. `scroll.go` measures its

@@ -18,8 +18,8 @@ import (
 func main() {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8142", "listen address for -web")
-	devtools := flag.Bool("dev", true, "open the developer tools dock (default true; use -dev=false to close)")
-	performance := flag.Bool("performance", true, "record pipeline and frame timings for the DevTools Frame tab (default true; use -performance=false to measure without them)")
+	devtools := flag.Bool("dev", true, "open the developer tools dock (default true; use -dev=false to close; dock sampling also feeds -debug-addr)")
+	performance := flag.Bool("performance", true, "record pipeline and frame timings for the DevTools Frame tab and -debug-addr (default true; use -performance=false to measure without them)")
 	profileSeconds := flag.Int("profile-seconds", 0, "log a performance summary after this many seconds of measurement, plus a 2s warmup, and close (0 runs until closed; desktop only)")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	width := flag.Int("width", 0, "window width (0 uses the example default)")

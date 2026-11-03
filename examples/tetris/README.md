@@ -15,7 +15,8 @@ Flags:
 
 - `-data DIR` overrides the database directory.
 - `-seed N` fixes the piece sequence. `0` uses the clock.
-- `-perf` records pipeline timing and turns on the window's frame sampling.
+- `-perf` records pipeline timing and turns on the window's frame sampling for the Frame tab and `-debug-addr`.
+- `-debug-addr ADDR` serves window profiling on a loopback address (off by default; needs `-tags ownframe_debug`).
 
 ## Controls
 

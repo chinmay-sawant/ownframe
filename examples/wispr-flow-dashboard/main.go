@@ -16,7 +16,7 @@ import (
 func main() {
 	webMode := flag.Bool("web", false, "serve the picture in a browser on -addr")
 	addr := flag.String("addr", "127.0.0.1:8117", "listen address for -web")
-	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab")
+	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab and the -debug-addr endpoints")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 

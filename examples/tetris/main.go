@@ -19,7 +19,7 @@ import (
 func main() {
 	dir := flag.String("data", "", "score database directory override")
 	seed := flag.Uint64("seed", 0, "piece seed; 0 uses the clock")
-	perf := flag.Bool("perf", false, "record pipeline timing and window sampling")
+	perf := flag.Bool("perf", false, "record pipeline timing and window sampling for the Frame tab and -debug-addr")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 

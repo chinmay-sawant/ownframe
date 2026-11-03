@@ -59,7 +59,9 @@ The developer tools dock is open by default. It starts on the Frame tab, and
 the Elements and Ops tabs are available beside it. The Frame tab records the
 pipeline and frame timings by default, so the PERFORMANCE, PIPELINE DETAIL, and
 MEMORY rows report numbers instead of `-`. Pass `-performance=false` to measure
-the gallery without that tracking. Close the dock with:
+the gallery without that tracking. The same sampling feeds `-debug-addr`:
+with `-tags ownframe_debug`, `-debug-addr 127.0.0.1:8142` serves the Frame
+tab counters and Go profiles beside the window. Close the dock with:
 
 ```sh
 go run ./examples/animations -dev=false

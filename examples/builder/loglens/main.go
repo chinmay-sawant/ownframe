@@ -14,15 +14,16 @@ func main() {
 	web := flag.Bool("web", false, "serve the dashboard in a browser preview")
 	headless := flag.Bool("headless", false, "serve without opening a window (same as -web)")
 	addr := flag.String("addr", "127.0.0.1:8132", "address for -web or -headless")
-	dev := flag.Bool("dev", false, "open the developer tools dock at startup")
+	dev := flag.Bool("dev", false, "open the developer tools dock at startup (dock sampling also feeds -debug-addr)")
+	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab and the -debug-addr endpoints")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
-	if err := run(*web || *headless, *addr, *dev, *debugAddr); err != nil {
+	if err := run(*web || *headless, *addr, *dev, *perf, *debugAddr); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(web bool, addr string, dev bool, debugAddr string) error {
+func run(web bool, addr string, dev bool, perf bool, debugAddr string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -31,6 +32,7 @@ func run(web bool, addr string, dev bool, debugAddr string) error {
 		return err
 	}
 	a.page.Window().SetDevTools(dev)
+	a.page.Window().SetPerf(perf)
 	if err := a.page.Redraw(ctx); err != nil {
 		return err
 	}

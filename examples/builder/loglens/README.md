@@ -32,7 +32,9 @@ go run ./examples/builder/loglens -dev
 | `-web` | `false` | Serve the dashboard through `ownframe.Serve` instead of opening a desktop window. |
 | `-headless` | `false` | Alias for `-web`; serve the dashboard without a native window. |
 | `-addr` | `127.0.0.1:8132` | Listen address for `-web`. |
-| `-dev` | `false` | Open the developer tools dock at startup through `Page.Window().SetDevTools`. |
+| `-dev` | `false` | Open the developer tools dock at startup through `Page.Window().SetDevTools`; dock sampling also feeds `-debug-addr`. |
+| `-perf` | `false` | Enable perf sampling for the devtools Frame tab and the `-debug-addr` endpoints. |
+| `-debug-addr` | `""` | Serve window profiling (`/debug/state`, `/debug/pprof/*`) on this loopback address; off by default, needs `-tags ownframe_debug`. |
 
 The window opens at 1440 × 960 with a minimum of 1100 × 720. It starts in the
 dark palette with a hidden scrollbar. Native runs use custom window chrome: the

@@ -25,7 +25,7 @@ func main() {
 	out := flag.String("out", "temp/board-dump", "dump output directory")
 	cpu := flag.String("cpu", "", "CPU profile path for -dump")
 	pace := flag.Duration("pace", 0, "sleep between -dump ticks to mimic the frame cadence, for example 16ms")
-	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab")
+	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab and the -debug-addr endpoints")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 

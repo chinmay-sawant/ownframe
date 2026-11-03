@@ -14,7 +14,7 @@ import (
 func main() {
 	data := flag.String("data", "", "data directory override (default os.UserConfigDir()/ownframe/spreadsheet)")
 	book := flag.String("workbook", "", "workbook name to open (default the first seeded workbook)")
-	perf := flag.Bool("perf", false, "record pipeline timing for the devtools Frame tab")
+	perf := flag.Bool("perf", false, "record pipeline timing for the devtools Frame tab and -debug-addr")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	flag.Parse()
 

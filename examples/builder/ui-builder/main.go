@@ -15,7 +15,8 @@ import (
 func main() {
 	web := flag.Bool("web", false, "serve the preview in a browser")
 	addr := flag.String("addr", "127.0.0.1:8131", "address for -web")
-	dev := flag.Bool("dev", false, "open the developer tools dock at startup")
+	dev := flag.Bool("dev", false, "open the developer tools dock at startup (dock sampling also feeds -debug-addr)")
+	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab and the -debug-addr endpoints")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	logEnabled := flag.Bool("log-enabled", false, "enable diagnostic logging to stderr and file")
 	logPath := flag.String(
@@ -26,12 +27,12 @@ func main() {
 	flag.Parse()
 
 	logging := builderLogOptions{enabled: *logEnabled, path: *logPath}
-	if err := run(*web, *addr, *dev, *debugAddr, logging); err != nil {
+	if err := run(*web, *addr, *dev, *perf, *debugAddr, logging); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(webMode bool, addr string, dev bool, debugAddr string, logging builderLogOptions) error {
+func run(webMode bool, addr string, dev bool, perf bool, debugAddr string, logging builderLogOptions) error {
 	logger, file, actualPath := openBuilderLog(logging)
 	if file != nil {
 		defer func() { _ = file.Close() }()
@@ -53,6 +54,7 @@ func run(webMode bool, addr string, dev bool, debugAddr string, logging builderL
 	}
 	app.setLogger(logger)
 	app.page.Window().SetDevTools(dev)
+	app.page.Window().SetPerf(perf)
 	if err := app.page.Redraw(ctx); err != nil {
 		builderLogf(logger, "startup redraw err=%v", err)
 		return fmt.Errorf("redraw builder gallery: %w", err)

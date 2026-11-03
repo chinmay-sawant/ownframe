@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	perf := flag.Bool("perf", false, "enable perf sampling and open the devtools dock")
+	perf := flag.Bool("perf", false, "enable perf sampling and open the devtools dock (sampling feeds -debug-addr)")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
 	width := flag.Int("width", defaultWidth, "window width in CSS pixels")
 	height := flag.Int("height", defaultHeight, "window height in CSS pixels")
