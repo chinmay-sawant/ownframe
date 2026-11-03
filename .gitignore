@@ -68,3 +68,4 @@ frontend/public/demos/workspace-inspector/wasm_exec.js
 
 # Local AI component reference screenshots
 /examples/AI/
+examples/builder/loglens-rust
