@@ -65,6 +65,7 @@ func (a *app) logFilters() *ui.Element {
 		a.severity = []string{"error", "warn"}
 		a.liveTail = false
 		a.autoRefresh = false
+		a.nextDataRefresh = time.Time{}
 		a.showContext = false
 		a.sampleRate = 100
 		a.fromDate = time.Now()
@@ -209,6 +210,11 @@ func (a *app) logFilters() *ui.Element {
 				ID("log-auto-refresh").
 				OnClick(func(ctx context.Context) error {
 					a.autoRefresh = !a.autoRefresh
+					if a.autoRefresh {
+						a.nextDataRefresh = time.Now().Add(time.Duration(dataRefreshSeconds) * time.Second)
+					} else {
+						a.nextDataRefresh = time.Time{}
+					}
 					return a.refresh(ctx)
 				}),
 			chadcn.Checkbox("Show context", a.showContext).

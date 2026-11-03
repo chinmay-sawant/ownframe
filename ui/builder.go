@@ -7,6 +7,7 @@ package ui
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
 	"html"
 	"sort"
 	"strings"
@@ -110,16 +111,19 @@ func Render(root *Element) (string, error) {
 }
 
 type renderer struct {
-	output  strings.Builder
-	actions map[string]func(context.Context) error
-	active  map[*Element]bool
-	nextID  int
+	output     strings.Builder
+	actions    map[string]func(context.Context) error
+	active     map[*Element]bool
+	nextID     int
+	scope      string
+	identities map[string]int
 }
 
 func newRenderer() *renderer {
 	return &renderer{
-		actions: make(map[string]func(context.Context) error),
-		active:  make(map[*Element]bool),
+		actions:    make(map[string]func(context.Context) error),
+		active:     make(map[*Element]bool),
+		identities: make(map[string]int),
 	}
 }
 
@@ -181,14 +185,19 @@ func (r *renderer) visit(e *Element, depth int) error {
 		action := fmt.Sprintf("ownframe-ui-%d", r.nextID)
 		attrs["data-action"] = action
 		if attrs["id"] == "" {
-			attrs["id"] = action
+			attrs["id"] = r.controlID(e)
 		}
 		r.actions[action] = e.onClick
 	}
 	if attrs["data-action"] != "" && attrs["id"] == "" {
 		r.nextID++
-		attrs["id"] = fmt.Sprintf("ownframe-ui-action-%d", r.nextID)
+		attrs["id"] = r.controlID(e)
 	}
+	previousScope := r.scope
+	if attrs["id"] != "" {
+		r.scope = attrs["id"]
+	}
+	defer func() { r.scope = previousScope }()
 	if len(e.styles) != 0 {
 		keys := make([]string, 0, len(e.styles))
 		for name := range e.styles {
@@ -253,4 +262,27 @@ func validAttribute(name string) bool {
 		}
 	}
 	return true
+}
+
+// controlID keeps transient pointer and transition state attached to the same
+// control when a conditional sibling adds callbacks earlier in the document.
+func (r *renderer) controlID(e *Element) string {
+	h := fnv.New64a()
+	_, _ = fmt.Fprintln(h, r.scope, e.tag, e.attrs["data-action"], e.attrs["name"], e.attrs["aria-label"])
+	seen := map[*Element]bool{}
+	var text func(*Element)
+	text = func(node *Element) {
+		if node == nil || seen[node] {
+			return
+		}
+		seen[node] = true
+		_, _ = fmt.Fprintln(h, node.tag, node.text)
+		for _, child := range node.children {
+			text(child)
+		}
+	}
+	text(e)
+	base := fmt.Sprintf("ownframe-ui-control-%x", h.Sum64())
+	r.identities[base]++
+	return fmt.Sprintf("%s-%d", base, r.identities[base])
 }

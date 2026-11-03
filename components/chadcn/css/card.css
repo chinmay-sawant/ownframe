@@ -3,6 +3,7 @@
 .of-card {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 16px;
   padding: var(--of-spacing, 24px);
   border: 1px solid var(--of-border, #e5e5e5);
@@ -15,6 +16,7 @@
 .of-card-header {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 6px;
 }
 
@@ -34,6 +36,8 @@
 }
 
 .of-card-content {
+  min-width: 0;
+  max-width: 100%;
   font-size: 14px;
   line-height: 1.5;
   color: var(--of-text, #0a0a0a);

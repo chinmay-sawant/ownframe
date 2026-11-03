@@ -2,7 +2,9 @@
 
 .of-calendar {
   box-sizing: border-box;
-  width: var(--of-calendar-width, 280px);
+  width: var(--of-calendar-width, 100%);
+  max-width: 100%;
+  min-width: 0;
   padding: 12px;
   border: 1px solid var(--of-border, #e5e5e5);
   border-radius: var(--of-radius, 10px);
@@ -64,7 +66,7 @@
 
 .of-calendar-weekdays {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
   margin-bottom: 4px;
 }
@@ -79,7 +81,7 @@
 
 .of-calendar-week {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 2px;
   margin-top: 2px;
 }
@@ -108,8 +110,7 @@
 }
 
 .of-calendar-day:focus-visible {
-  outline: 2px solid var(--of-ring, #a1a1aa);
-  outline-offset: 0;
+  outline: none;
 }
 
 .of-calendar-day--outside {

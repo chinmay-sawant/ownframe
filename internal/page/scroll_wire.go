@@ -28,12 +28,12 @@ func (p *Page) AllowScroll() bool {
 
 // ScrollTo queues an absolute scroll move for the window. The window clamps
 // the target to the content size and owns the offset.
-func (p *Page) ScrollTo(x, y int) { p.scroll.To(x, y) }
+func (p *Page) ScrollTo(x, y int) { p.scroll.To(x, y); p.notifyFrame() }
 
 // ScrollBy queues a scroll delta for the window. A second delta before the
 // window consumes it adds to the first, and a delta after ScrollTo moves the
 // pending target.
-func (p *Page) ScrollBy(dx, dy int) { p.scroll.By(dx, dy) }
+func (p *Page) ScrollBy(dx, dy int) { p.scroll.By(dx, dy); p.notifyFrame() }
 
 // TakeScroll returns the queued request and clears it.
 func (p *Page) TakeScroll() (host.Scroll, bool) { return p.scroll.Take() }

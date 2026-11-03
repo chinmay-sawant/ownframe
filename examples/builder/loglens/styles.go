@@ -3,6 +3,7 @@ package main
 // appCSS is dashboard layout only. ChadCN owns component paint and state.
 const appCSS = `
 .app-shell {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -13,11 +14,11 @@ const appCSS = `
 }
 .app-body {
   display: flex;
-  flex: 1;
+  flex: 1 0 auto;
   min-height: 0;
   min-width: 0;
   padding-top: 60px;
-  padding-left: 232px;
+  padding-left: 264px;
   background: var(--of-background, #0a0a0a);
 }
 .app-shell--collapsed .app-body { padding-left: 64px; }
@@ -34,10 +35,10 @@ const appCSS = `
   position: fixed; top: 0; left: 0; right: 0; z-index: 40;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 6px;
   height: 60px;
   flex-shrink: 0;
-  padding: 0 20px;
+  padding: 0 16px;
   border-bottom: 1px solid var(--of-border, #262626);
   background: var(--of-surface, #171717);
 }
@@ -50,12 +51,48 @@ const appCSS = `
 }
 .app-brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .app-topbar-spacer { flex: 1; }
+.app-top-popovers { flex-wrap: nowrap; flex-shrink: 0; }
+.app-top-popovers .of-tooltip-trigger .of-button,
+.app-top-popovers .of-hover-card-trigger .of-button,
+.app-top-popovers .of-popover-trigger .of-button {
+  height: 33px;
+  padding: 6px 8px;
+  border-color: transparent;
+  border-radius: var(--of-radius-sm, 6px);
+  background: transparent;
+  color: var(--of-text, #fafafa);
+  font-size: 13px;
+  font-weight: 500;
+}
+.app-topbar #top-nav .of-navigation-menu-trigger,
+.app-topbar #top-nav .of-navigation-menu-link,
+.app-topbar #top-menubar .of-navigation-menu-trigger,
+.app-topbar #top-menubar .of-navigation-menu-link {
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.app-top-popovers .of-tooltip-trigger .of-button:hover,
+.app-top-popovers .of-hover-card-trigger .of-button:hover,
+.app-top-popovers .of-popover-trigger .of-button:hover {
+  background: var(--of-accent, #262626);
+  color: var(--of-on-accent, #fafafa);
+}
+.app-topbar #user-menu { align-self: center; }
+.app-topbar .of-tooltip-content { width: 180px; }
+.app-topbar .of-tooltip--bottom > .of-tooltip-anchor > .of-tooltip-content { top: 0; }
+.app-topbar .of-hover-card--bottom > .of-hover-card-anchor > .of-hover-card-content { top: 0; }
 .app-window-controls { display: flex; align-items: center; gap: 1px; }
 .app-sidebar-head {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding-bottom: 12px; border-bottom: 1px solid var(--of-border, #262626);
+  min-width: 0; padding-bottom: 12px; border-bottom: 1px solid var(--of-border, #262626);
 }
-.app-sidebar-project { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.app-sidebar-project { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.app-sidebar-project-name { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.app-sidebar-project-name > span,
+.app-sidebar-project > span {
+  max-width: 100%; white-space: normal; overflow-wrap: anywhere;
+}
+.app-sidebar-head > .of-button { flex-shrink: 0; }
 .app-sidebar-nav { display: flex; flex-direction: column; gap: 3px; padding-top: 8px; }
 .app-sidebar-foot {
   display: flex; align-items: center; gap: 9px;
@@ -63,6 +100,7 @@ const appCSS = `
 }
 .app-sidebar-user { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.25; }
 .app-main {
+  background: var(--of-background, #0a0a0a);
   display: flex; flex-direction: column; flex: 1; gap: 14px;
   min-width: 0; padding: 22px 28px 40px;
 }
@@ -116,7 +154,7 @@ const appCSS = `
   position: fixed; top: 0; left: 0;
   width: 100%; height: 100vh; box-sizing: border-box;
   z-index: 90; display: flex; align-items: flex-start; justify-content: center;
-  padding-top: 96px; background-color: #000000b3;
+  padding-top: 96px; background-color: rgba(0, 0, 0, 0.38);
 }
 .app-command { width: 620px; max-width: 90vw; }
 .app-drawer-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 24px; }
@@ -137,6 +175,19 @@ const appCSS = `
 .app-empty { padding: 28px 16px; }
 .app-spacer { flex: 1; }
 .app-kpi-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.app-heat { display: flex; align-items: flex-end; gap: 2px; height: 34px; }
-.app-heat span { flex: 1; background: var(--of-primary, #fafafa); border-radius: 2px; opacity: 0.8; }
+.app-region-cells { display: grid; width: 216px; height: 56px; grid-template-columns: repeat(7, 24px); gap: 8px; }
+.app-region-cell { position: relative; width: 24px; height: 24px; border-radius: 5px; }
+.app-region-legend { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.app-region-key { display: flex; align-items: center; gap: 5px; font-size: 11px; }
+.app-region-swatch { width: 8px; height: 8px; border-radius: 2px; }
+.app-region-cell:hover .app-heat-tooltip { display: block; }
+.app-heat { display: flex; align-items: flex-end; gap: 3px; height: 48px; }
+.app-heat-bar { position: relative; flex: 1; min-width: 0; background: var(--of-muted, #a3a3a3); border-radius: 2px 2px 0 0; }
+.app-heat-tooltip {
+  display: none; position: absolute; left: -44px; top: -26px;
+  z-index: 10; width: 124px; padding: 4px 6px; border-radius: 5px;
+  background: var(--of-primary, #171717); color: var(--of-on-primary, #fafafa);
+  font-size: 10px; line-height: 14px; text-align: center; white-space: nowrap;
+}
+.app-heat-bar:hover .app-heat-tooltip { display: block; }
 `

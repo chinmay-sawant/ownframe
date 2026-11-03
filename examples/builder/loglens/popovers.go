@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -24,30 +25,32 @@ func (a *app) topPopovers() *ui.Element {
 		Color(ui.ColorVar("--of-danger", ui.Hex("#dc2626")))
 
 	notifications := chadcn.Button("Inbox", chadcn.ButtonOptions{
-		Variant: chadcn.ButtonOutlined,
+		Variant: chadcn.ButtonText,
 		Size:    chadcn.ButtonSmall,
 	}).Children(unreadDot)
 
-	return ui.Div().Class("app-row").
-		Gap(ui.Px(topbarGap)).
+	return ui.Div().Class("app-row app-top-popovers").
+		Gap(ui.Px(3)).
 		FlexWrap(ui.FlexWrapNowrap).
 		FlexShrink(ui.Number(0)).
 		Children(
 			chadcn.Tooltip(chadcn.TooltipOptions{
-				ID:      "live-tooltip",
-				Open:    a.tooltipOpen,
-				Content: "Updated 12 seconds ago",
-				Side:    chadcn.PopupBottom,
+				ID:       "live-tooltip",
+				Open:     a.tooltipOpen,
+				CSSHover: true,
+				Content:  a.liveUpdatedLabel(time.Now()),
+				Side:     chadcn.PopupBottom,
 			}, chadcn.Button("Live", chadcn.ButtonOptions{
-				Variant: chadcn.ButtonOutlined,
+				Variant: chadcn.ButtonText,
 				Size:    chadcn.ButtonSmall,
 				Icon:    ui.Text("●").Color(ui.Hex("#22c55e")),
-			}).ID("tooltip-trigger")),
+			}).ID("tooltip-trigger")).Width(ui.Px(72)).FlexShrink(ui.Number(0)),
 
 			chadcn.HoverCard(chadcn.HoverCardOptions{
-				ID:   "oncall-hover",
-				Open: a.hoverOpen,
-				Side: chadcn.PopupBottom,
+				ID:       "oncall-hover",
+				Open:     a.hoverOpen,
+				CSSHover: true,
+				Side:     chadcn.PopupBottom,
 			}, chadcn.Button("On call", chadcn.ButtonOptions{
 				Variant: chadcn.ButtonText,
 				Size:    chadcn.ButtonSmall,
@@ -74,7 +77,7 @@ func (a *app) topPopovers() *ui.Element {
 						chadcn.Kbd("⌘⇧A"),
 					),
 				),
-			),
+			).Width(ui.Px(68)).FlexShrink(ui.Number(0)),
 
 			chadcn.Popover(chadcn.PopoverOptions{
 				ID:      "notifications-popover",
@@ -83,6 +86,12 @@ func (a *app) topPopovers() *ui.Element {
 				Align:   chadcn.PopoverAlignEnd,
 				Trigger: notifications,
 				OnOpenChange: func(ctx context.Context, open bool) error {
+					if open {
+						a.closeHeaderPopovers()
+						a.navOpen = ""
+						a.menubarOpen = ""
+						a.userMenuOpen = false
+					}
 					a.notifOpen = open
 					return a.refresh(ctx)
 				},
@@ -106,7 +115,7 @@ func (a *app) topPopovers() *ui.Element {
 						return a.showToast(ctx, "Inbox", "Every unread alert is waiting in the incident room.")
 					}),
 				),
-			),
+			).Width(ui.Px(64)).FlexShrink(ui.Number(0)),
 
 			a.accountMenu(),
 
@@ -117,6 +126,8 @@ func (a *app) topPopovers() *ui.Element {
 				Size:    chadcn.ButtonSmall,
 			}).OnClick(func(ctx context.Context) error {
 				a.commandOpen = true
+				a.navOpen = ""
+				a.menubarOpen = ""
 				if a.commandActive == "" {
 					a.commandActive = "overview"
 				}
@@ -136,19 +147,18 @@ func (a *app) topPopovers() *ui.Element {
 func (a *app) accountMenu() *ui.Element {
 	trigger := chadcn.Button("", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonText,
-		Icon: chadcn.Avatar(chadcn.AvatarOptions{
-			Initials: "AK",
-			Size:     chadcn.AvatarSmall,
-			Status:   chadcn.AvatarStatusOnline,
-		}),
-	}).Attr("aria-label", "Account").Attr("title", "Account").
-		Width(ui.Px(48)).Height(ui.Px(36))
+	}).ID("profile-trigger").Attr("aria-label", "Account").Attr("title", "Account").
+		Width(ui.Px(48)).Height(ui.Px(36)).
+		Children(chadcn.Avatar(chadcn.AvatarOptions{
+			Initials: "AK", Size: chadcn.AvatarSmall, Status: chadcn.AvatarStatusOnline,
+		}))
 
 	menu := chadcn.DropdownMenu(chadcn.DropdownMenuOptions{
-		ID:      "user-menu",
-		Label:   "Account",
-		Open:    a.userMenuOpen,
-		Trigger: trigger,
+		ID:       "user-menu",
+		AlignEnd: true,
+		Label:    "Account",
+		Open:     a.userMenuOpen,
+		Trigger:  trigger,
 		Items: []chadcn.MenuItem{
 			{
 				Label: "Profile",
@@ -187,12 +197,18 @@ func (a *app) accountMenu() *ui.Element {
 			},
 		},
 		OnOpenChange: func(ctx context.Context, open bool) error {
+			if open {
+				a.closeHeaderPopovers()
+				a.navOpen = ""
+				a.menubarOpen = ""
+				a.notifOpen = false
+			}
 			a.userMenuOpen = open
 			return a.refresh(ctx)
 		},
 	})
-	// The avatar overflows the icon slot, so reserve the full button width.
-	menu.Width(ui.Px(48)).FlexShrink(ui.Number(0))
+	// Keep the account slot fixed while its menu opens.
+	menu.Width(ui.Px(48)).Height(ui.Px(36)).FlexShrink(ui.Number(0))
 	return menu
 }
 
@@ -269,7 +285,7 @@ func (a *app) commandOverlay() *ui.Element {
 					case "refresh":
 						a.commandOpen = false
 						a.commandActive = ""
-						return a.showToast(ctx, "Refreshed", "Dashboard data is up to date.")
+						return a.refreshTelemetry(ctx)
 					}
 					if service, ok := strings.CutPrefix(value, "service:"); ok {
 						a.service = service

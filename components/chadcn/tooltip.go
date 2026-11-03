@@ -4,37 +4,45 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
-// TooltipOptions describes a controlled tooltip. Open comes from the host
-// after it reads Handlers.Hover for the trigger. Content is plain text. ID
-// names the root and derives the content ID. Side places the label; its zero
-// value is PopupBottom. Give the trigger a stable ID so the host can match the
-// hover report.
+// TooltipOptions describes a controlled tooltip. Open comes from the host.
+// CSSHover keeps closed content mounted so the host can toggle the
+// of-tooltip--hovered class with a local element patch. Content is plain text.
+// ID names the root and derives the content ID. Side places the label; its
+// zero value is PopupBottom.
 type TooltipOptions struct {
-	ID      string
-	Open    bool
-	Content string
-	Side    PopupSide
+	ID       string
+	Open     bool
+	CSSHover bool
+	Content  string
+	Side     PopupSide
 }
 
 // Tooltip renders a trigger and, when Open is true, a label above, below, or
 // beside it. The label carries role="tooltip", and the trigger points at it
-// with aria-describedby. The host owns hover and focus timing: read
-// Handlers.Hover, set Open, and rebuild the view. A nil trigger returns nil.
+// with aria-describedby. The host owns hover and focus timing. A nil trigger
+// returns nil.
 func Tooltip(options TooltipOptions, trigger *ui.Element) *ui.Element {
 	if trigger == nil {
 		return nil
 	}
 	contentID := partID(options.ID, "-content")
-	if options.Open && contentID != "" {
+	if (options.Open || options.CSSHover) && contentID != "" {
 		trigger.Attr("aria-describedby", contentID)
 	}
 	side := normalizePopupSide(options.Side)
-	root := ui.Span().Class(classes("of-tooltip", popupSideClass("tooltip", side)))
+	mode := ""
+	if options.CSSHover && !options.Open {
+		mode = "of-tooltip--css-hover"
+	}
+	if options.CSSHover && options.Open {
+		mode = "of-tooltip--css-hover of-tooltip--hovered"
+	}
+	root := ui.Span().Class(classes("of-tooltip", popupSideClass("tooltip", side), mode))
 	if options.ID != "" {
 		root.ID(options.ID)
 	}
 	triggerBox := ui.Span().Class("of-tooltip-trigger").Children(trigger)
-	if !options.Open {
+	if !options.Open && !options.CSSHover {
 		return root.Children(triggerBox)
 	}
 	content := ui.Span().Class("of-tooltip-content").Attr("role", "tooltip").Text(options.Content)

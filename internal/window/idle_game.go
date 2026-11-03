@@ -4,6 +4,7 @@ import (
 	"context"
 	"image"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/chinmay-sawant/ownframe/internal/safego"
@@ -22,17 +23,22 @@ import (
 // iteration presents once; the retained screen keeps the last frame between
 // keep-alive wakes. maxFPS==0 is uncapped (legacy uncapped drawing).
 type paceGame struct {
-	shell  *shell
-	policy pacing.Policy
-	watch  inputWatch
-	input  bool
-	base   int
-	maxFPS int
-	noIdle bool
-	idle   bool
-	focus  bool
-	size   image.Point
-	seen   bool
+	shell       *shell
+	policy      pacing.Policy
+	watch       inputWatch
+	input       bool
+	base        int
+	maxFPS      int
+	noIdle      bool
+	idle        bool
+	idleSince   time.Time
+	trimmed     bool
+	eventDriven bool
+	wake        atomic.Bool
+	skipFrame   bool
+	focus       bool
+	size        image.Point
+	seen        bool
 	// chrome and chromeNext hold the previous and current frame's chrome
 	// rects, so an unchanged overlay reads as no work.
 	chrome     []image.Rectangle
@@ -55,6 +61,9 @@ type paceGame struct {
 // the keep-alive goroutine after the game loop ends.
 func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game, func()) {
 	maxFPS := NormalizeMaxFPS(options.MaxFPS)
+	if maxFPS == 0 {
+		ebiten.SetTPS(ebiten.SyncWithFPS)
+	}
 	// Uncapped + idle pacing off stays legacy: no wrapper. Capped always
 	// wraps so the present cap holds even with NoIdlePace (which then means
 	// "present continuously at the cap", never parking).
@@ -71,8 +80,8 @@ func paceWindow(ctx context.Context, game *shell, options Options) (ebiten.Game,
 		stop:   make(chan struct{}),
 	}
 	// Capped active path ticks at the loop rate (present cap + headroom) so
-	// the app runs hotter than the FE presents. Uncapped keeps legacy TPS.
-	// g.base stays the app's original TPS for the uncapped restore path;
+	// the app runs hotter than the FE presents. Uncapped updates follow each rendered frame.
+	// g.base keeps SyncWithFPS for the uncapped restore path;
 	// the capped path always re-applies LoopFPS in applyFast.
 	if loop := LoopFPS(maxFPS); loop > 0 {
 		ebiten.SetTPS(loop)
@@ -89,15 +98,26 @@ func (g *paceGame) close() {
 }
 
 func (g *paceGame) Update() error {
+	if err := g.shell.ctx.Err(); err != nil {
+		return err
+	}
+	input := g.watch.changed()
+	g.input = g.input || input
+	notified := g.wake.Swap(false) || closeRequested.Load()
+	// The desktop backend can wake without page work, even in minimum FPS
+	// mode. Keep its retained screen and skip our update and replay stages.
+	unchanged := g.shell.built() && g.shell.drawSyncErr == nil && ebiten.IsFocused() == g.focus
+	sameSize := g.shell.pendingW == g.shell.screenW && g.shell.pendingH == g.shell.screenH
+	g.skipFrame = g.idle && g.eventDriven && !input && !notified &&
+		unchanged && sameSize
+	if g.skipFrame {
+		return nil
+	}
 	if err := g.shell.Update(); err != nil {
 		return err
 	}
 
 	g.captureFrameWant()
-
-	if g.watch.changed() {
-		g.input = true
-	}
 
 	g.publish(time.Now())
 
@@ -105,7 +125,11 @@ func (g *paceGame) Update() error {
 }
 
 func (g *paceGame) Draw(screen *ebiten.Image) {
+	if g.skipFrame {
+		return
+	}
 	if g.maxFPS <= 0 {
+		g.notePresent(time.Now())
 		g.shell.Draw(screen)
 		g.frame(screen, time.Now())
 		return
@@ -166,7 +190,12 @@ func (g *paceGame) notePresent(now time.Time) {
 		}
 	}
 	count := len(g.presentHist) - idx
+	if count < minPresentSamples && idx > 0 {
+		idx--
+		count++
+	}
 	if count < minPresentSamples {
+		g.presentFPS = 0
 		return
 	}
 	if span := time.Duration(n - g.presentHist[idx]); span > 0 {

@@ -13,21 +13,21 @@ const (
 	topbarHeight = 60
 	// topbarPadding is the inline horizontal padding on the top bar.
 	topbarPadding = 16
-	// topbarGap keeps the chrome groups close without crowding the controls.
-	topbarGap = 8
-	// navLeft aligns the product navigation with the main content edge, past
-	// the sidebar's fixed hit box.
-	navLeft = 232
+	// topbarGap keeps the chrome groups distinct without crowding the controls.
+	topbarGap = 4
+	// sidebarWidth gives the workspace title room beside the collapse control.
+	sidebarWidth = 264
+	// navLeft aligns the product navigation with the sidebar edge.
+	navLeft = sidebarWidth - 3
 	// brandWidth is the mark plus the Loglens wordmark.
 	brandWidth = 98
 	// navOffset is the slot margin that puts the nav at navLeft after the
 	// brand and the top bar's leading gap.
 	navOffset = navLeft - topbarPadding - brandWidth - topbarGap
 	// navWidth is the Platform/Resources/Settings trigger row width.
-	navWidth = 280
-	// menubarWidth is the three-trigger File/View/Help row. The flat menubar
-	// otherwise reports extra width past its last trigger.
-	menubarWidth = 80
+	navWidth = 228
+	// applicationMenuWidth holds File, View, and Help in the shared menu style.
+	applicationMenuWidth = 152
 	// fullViewport is the percentage that fills the window.
 	fullViewport = 100
 )
@@ -43,6 +43,7 @@ func (a *app) screen() *ui.Element {
 			a.sidebar(),
 			ui.Div().ID("app-topbar-scope").Children(a.topbar()),
 			ui.Div().Class("app-body").Children(a.main()),
+			a.topMenuDismissLayer(),
 			a.settingsSheet(),
 			a.globalDialogs(),
 			a.logsDetailDrawer(),
@@ -52,6 +53,25 @@ func (a *app) screen() *ui.Element {
 		return root.Class("app-shell app-shell--collapsed")
 	}
 	return root.Class("app-shell")
+}
+
+func (a *app) topMenuDismissLayer() *ui.Element {
+	if a.navOpen == "" && a.menubarOpen == "" {
+		return nil
+	}
+	return ui.Div().ID("top-menu-dismiss").
+		Position(ui.PositionAbsolute).
+		Top(ui.Px(0)).
+		Left(ui.Px(0)).
+		Width(ui.Percent(fullViewport)).
+		Height(ui.Percent(fullViewport)).
+		ZIndex(ui.Number(39)).
+		BackgroundColor(ui.Hex("#00000000")).
+		OnClick(func(ctx context.Context) error {
+			a.navOpen = ""
+			a.menubarOpen = ""
+			return a.refresh(ctx)
+		})
 }
 
 // topbar is the custom window chrome: the brand, the application menus, the
@@ -102,10 +122,13 @@ func (a *app) sidebar() *ui.Element {
 		Label:     "Project navigation",
 		Open:      true,
 		Collapsed: a.sidebarCollapsed,
-		Width:     ui.Px(232),
+		Width:     ui.Px(sidebarWidth),
 		Header: ui.Div().Class("app-sidebar-head").Children(
 			ui.Div().Class("app-sidebar-project").Children(
-				ui.Text("Acme observability").FontWeight(ui.FontWeightBold).FontSize(ui.Px(12)),
+				ui.Div().Class("app-sidebar-project-name").Children(
+					ui.Text("ACME"),
+					ui.Text("Observability"),
+				).FontWeight(ui.FontWeightBold).FontSize(ui.Px(12)),
 				ui.Text("Production").FontSize(ui.Px(11)).Color(ui.ColorVar("--of-muted", ui.Hex("#737373"))),
 			),
 			chadcn.Button("‹", chadcn.ButtonOptions{Size: chadcn.ButtonSmall, Variant: chadcn.ButtonText}).
@@ -188,8 +211,7 @@ func (a *app) pageHeader() *ui.Element {
 		ui.Div().Class("app-page-actions").Children(
 			chadcn.ButtonGroup(chadcn.ButtonGroupOptions{},
 				chadcn.Button("Refresh", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined}).OnClick(func(ctx context.Context) error {
-					a.loading = true
-					return a.showToast(ctx, "Refreshed", "Dashboard data is up to date.")
+					return a.refreshTelemetry(ctx)
 				}),
 				chadcn.Button("Export", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined}).OnClick(func(ctx context.Context) error {
 					return a.showToast(ctx, "Export queued", "A CSV will land in your inbox.")

@@ -35,6 +35,7 @@ make graphics-check
 - `TestWindowBackdropFilterReplaysFullFrame` checks that a backdrop-filter blur matches a full replay and does not allocate the tile grid.
 - `TestViewportScrollPixels` compares the viewport cache with a fresh replay across vertical and diagonal scrolling, edits during a buffer move, and jumps with no overlap. It also requires an overlapping scroll to repaint less than a full viewport.
 - `TestViewportAnimatedReturnPixels` and `TestViewportDirectAnimationReturnPixels` check that a card moving while offscreen leaves no old pose when scrolled back into view, with and without retained layers.
+- `TestWindowStaticEvents` requires zero OwnFrame draws during a quiet interval, then wakes the real window through a background frame request and checks its changed pixels.
 - `TestWindowIdleDeadline` runs the actual pacing wrapper and timer. It requires the blocking idle FPS mode, a quiet interval with a declared deadline, a deadline-driven tick that paints blue, and restoration of the original tick rate. A watchdog wakes a stuck loop only to fail the test. Keep the test window free of input during this check.
 - `TestWindowDevToolsIdle` compares cached dock pixels with direct rendering, requires the open dock to allow idle pacing, and checks scheduled metric refreshes without continuous drawing.
 - `TestSidebarHoverPixels` moves hover between Loglens sidebar controls, the header, and the content panel with a scrolled page and an open dock, then checks the sidebar text remains painted on the native framebuffer.

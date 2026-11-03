@@ -9,8 +9,6 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
-const logRowPlaceholderHeight = 46
-
 // logsPanel is the request stream. The filter bar comes from logFilters; the
 // count row, live tail, row menu, paged table, and detail drawer live here.
 func (a *app) logsPanel() *ui.Element {
@@ -100,15 +98,13 @@ func (a *app) logsToolbar(logs []logEntry, detailIndex int) *ui.Element {
 	stats := []*ui.Element{
 		ui.Text("Request stream").FontWeight(ui.FontWeightBold).FontSize(ui.Px(14)),
 		chadcn.Badge(fmt.Sprintf("%d entries", len(logs)), chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
+		chadcn.Badge("Generated demo feed", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
 	}
 	if selected > 0 {
 		stats = append(stats, chadcn.Badge(fmt.Sprintf("%d selected", selected), chadcn.BadgeOptions{}))
 	}
 	if len(a.severity) > 0 {
 		stats = append(stats, chadcn.Badge(strings.Join(a.severity, " + "), chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}))
-	}
-	if a.loading {
-		stats = append(stats, chadcn.Spinner(chadcn.SpinnerOptions{Size: chadcn.SpinnerSmall, Label: "Loading logs"}))
 	}
 	menu := chadcn.ContextMenu(chadcn.ContextMenuOptions{
 		ID:    "logs-row-menu",
@@ -184,6 +180,9 @@ func (a *app) logsToolbar(logs []logEntry, detailIndex int) *ui.Element {
 					OnClick(func(ctx context.Context) error {
 						a.liveTail = !a.liveTail
 						if a.liveTail {
+							a.pageIndex = 0
+						}
+						if a.liveTail {
 							return a.showToast(ctx, "Live tail on", "New entries appear as they are written.")
 						}
 						return a.refresh(ctx)
@@ -215,21 +214,9 @@ func logsToolbarDivider() *ui.Element {
 		AlignSelf(ui.AlignSelfCenter)
 }
 
-// logsTable renders the page rows, a skeleton while loading, or an empty state
-// when the filters match nothing.
+// logsTable renders the current page rows or an empty state when filters match
+// nothing.
 func (a *app) logsTable(rows []logEntry) *ui.Element {
-	if a.loading {
-		placeholder := ui.Div().Class("app-stack").Children(
-			ui.Div().Class("app-row").Children(
-				chadcn.Spinner(chadcn.SpinnerOptions{Size: chadcn.SpinnerSmall, Label: "Loading logs"}),
-				ui.Text("Loading the last 24 hours…").Class("app-muted"),
-			),
-		)
-		for range 6 {
-			placeholder.Children(chadcn.Skeleton(chadcn.SkeletonOptions{Height: logRowPlaceholderHeight, Rounded: true}))
-		}
-		return placeholder
-	}
 	if len(rows) == 0 {
 		return chadcn.Empty(chadcn.EmptyOptions{
 			Icon:        ui.Text("≡"),

@@ -2,23 +2,25 @@ package web
 
 import (
 	"bytes"
+	"image"
+	"image/png"
 	"log"
 	"net/http"
 
-	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/bitmap"
 )
 
 func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.reload(r.Context())
-	front := host.SelectFront(s.app)
+	viewW, viewH := s.app.Size()
 	data := shellData{
 		Areas:      areas(s.app),
 		Reload:     s.watching(),
-		Width:      front.Width,
-		Height:     front.Height,
-		Generation: front.Generation,
+		Width:      viewW,
+		Height:     viewH,
+		Generation: s.app.Generation() + s.frameGen,
 	}
 	var buf bytes.Buffer
 	if err := s.shell.Execute(&buf, data); err != nil {
@@ -37,7 +39,32 @@ func (s *server) frame(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.reload(r.Context())
-	pngBytes := s.app.PNG()
+	var pngBytes []byte
+	if s.app.Display() != nil {
+		viewW, h := s.app.Size()
+		gen := s.app.Generation() + s.frameGen
+		if s.viewportPNG != nil && s.viewportGen == gen && s.viewportWidth == viewW && s.viewportHeight == h {
+			pngBytes = s.viewportPNG
+		} else {
+			img, err := bitmap.Viewport(s.app.Display(), image.Rect(0, s.scrollY, viewW, s.scrollY+h), 1)
+			if err != nil {
+				http.Error(w, "render failed", 500)
+				return
+			}
+			var buf bytes.Buffer
+			if err = png.Encode(&buf, img); err != nil {
+				http.Error(w, "encode failed", 500)
+				return
+			}
+			pngBytes = buf.Bytes()
+			s.viewportPNG = pngBytes
+			s.viewportGen = gen
+			s.viewportWidth = viewW
+			s.viewportHeight = h
+		}
+	} else {
+		pngBytes = s.app.PNG()
+	}
 	if len(pngBytes) == 0 {
 		http.Error(w, "no frame", http.StatusNotFound)
 		return

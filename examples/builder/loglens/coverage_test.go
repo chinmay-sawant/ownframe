@@ -8,9 +8,8 @@ import (
 )
 
 // TestLoglensRendersEveryComponentRoot renders every panel and overlay from
-// host state and checks that the combined markup contains every ChadCN
-// component root. A root is matched as a whole class token, so rendering only
-// .of-alert-dialog does not satisfy the .of-alert check.
+// host state and checks the ChadCN roots used by this dashboard. Paged log and
+// trace lists intentionally do not add an inner scroll area.
 func TestLoglensRendersEveryComponentRoot(t *testing.T) {
 	roots := []string{
 		// Primitives and display.
@@ -27,17 +26,17 @@ func TestLoglensRendersEveryComponentRoot(t *testing.T) {
 		// Overlays and menus.
 		".of-dialog", ".of-alert-dialog", ".of-sheet", ".of-drawer", ".of-popover",
 		".of-tooltip", ".of-hover-card", ".of-dropdown-menu", ".of-context-menu",
-		".of-menubar", ".of-navigation-menu", ".of-command",
+		".of-navigation-menu", ".of-command",
 		// Selection.
 		".of-select", ".of-combobox", ".of-calendar", ".of-date-picker",
 		// Host-owned composites.
-		".of-scroll-area", ".of-resizable", ".of-sidebar", ".of-carousel",
+		".of-resizable", ".of-sidebar", ".of-carousel",
 		".of-data-table", ".of-chart", ".of-code-block", ".of-message", ".of-bubble",
 		".of-attachment", ".of-marker", ".of-message-scroller", ".of-questionnaire",
 		".of-trace",
 	}
-	if len(roots) != 66 {
-		t.Fatalf("component root list has %d entries, want 66", len(roots))
+	if len(roots) != 64 {
+		t.Fatalf("component root list has %d entries, want 64", len(roots))
 	}
 
 	a, err := newApp()
@@ -58,15 +57,13 @@ func TestLoglensRendersEveryComponentRoot(t *testing.T) {
 		markup.WriteString(fragment)
 	}
 
-	// Overview. loading turns on the skeleton and spinner states.
+	// Overview.
 	a.tab = "overview"
-	a.loading = true
 	render("overviewPanel", a.overviewPanel())
 
 	// Logs. The row menu, detail drawer, and all three filter pickers are open
 	// so their surfaces render, not only their triggers.
 	a.tab = "logs"
-	a.loading = false
 	a.contextOpen = true
 	a.contextX, a.contextY = -150, 34
 	a.drawerOpen = true
@@ -93,8 +90,6 @@ func TestLoglensRendersEveryComponentRoot(t *testing.T) {
 	a.userMenuOpen = true
 	render("topMenus", a.topMenus())
 
-	a.tooltipOpen = true
-	a.hoverOpen = true
 	a.notifOpen = true
 	render("topPopovers", a.topPopovers())
 

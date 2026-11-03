@@ -29,8 +29,14 @@ func (a *app) topMenus() *ui.Element {
 				ID:    "product-resources",
 				Label: "Resources",
 				Children: []chadcn.NavigationItem{
-					{Label: "Documentation", Description: "Query syntax, guides, and API reference"},
-					{Label: "Status page", Description: "Current availability for every region"},
+					{Label: "Documentation", Description: "Query syntax, guides, and API reference", OnSelect: func(ctx context.Context) error {
+						a.navOpen = ""
+						return a.showToast(ctx, "Documentation", "Query syntax, guides, and API reference.")
+					}},
+					{Label: "Status page", Description: "Current availability for every region", OnSelect: func(ctx context.Context) error {
+						a.navOpen = ""
+						return a.showToast(ctx, "Status page", "All regions are operational.")
+					}},
 				},
 			},
 			{
@@ -39,12 +45,15 @@ func (a *app) topMenus() *ui.Element {
 			},
 		},
 		OnOpenChange: func(ctx context.Context, id string) error {
+			wasOpen := a.navOpen == id
+			a.closeHeaderPopovers()
+			a.menubarOpen = ""
 			if id == "product-settings" {
 				a.navOpen = ""
 				a.settingsOpen = true
 				return a.refresh(ctx)
 			}
-			if a.navOpen == id {
+			if wasOpen {
 				a.navOpen = ""
 			} else {
 				a.navOpen = id
@@ -52,9 +61,8 @@ func (a *app) topMenus() *ui.Element {
 			return a.refresh(ctx)
 		},
 	})
-	// The panel is absolute, so the nav keeps a fixed width and never shifts
-	// the triggers when it opens. It starts at the sidebar edge so the panel
-	// clears the sidebar's fixed hit box.
+	// Keep the product links in the same column as the main content and reserve
+	// a stable slot for the menu so opening its panel cannot move the header.
 	nav.Position(ui.PositionRelative).
 		ZIndex(ui.Number(60)).
 		Width(ui.Px(navWidth)).
@@ -70,98 +78,63 @@ func (a *app) topMenus() *ui.Element {
 		Overflow(ui.OverflowVisible).
 		Children(nav)
 
-	viewItem := func(label, tab string) chadcn.MenuItem {
-		return chadcn.MenuItem{
-			Label: label,
-			OnSelect: func(ctx context.Context) error {
-				a.tab = tab
-				a.menubarOpen = ""
-				return a.refresh(ctx)
-			},
-		}
+	selectTab := func(ctx context.Context, tab string) error {
+		a.menubarOpen = ""
+		return a.setTab(ctx, tab)
 	}
-
-	menubar := chadcn.Menubar(chadcn.MenubarOptions{
+	toastItem := func(label, title, body string) chadcn.NavigationItem {
+		return chadcn.NavigationItem{Label: label, OnSelect: func(ctx context.Context) error {
+			a.menubarOpen = ""
+			return a.showToast(ctx, title, body)
+		}}
+	}
+	menu := chadcn.NavigationMenu(chadcn.NavigationMenuOptions{
 		ID:    "top-menubar",
 		Label: "Application",
-		Flat:  true,
 		Open:  a.menubarOpen,
-		Menus: []chadcn.MenubarMenu{
-			{
-				ID:    "menu-file",
-				Label: "File",
-				Items: []chadcn.MenuItem{
-					{
-						Label:    "Refresh",
-						Shortcut: "⌘R",
-						OnSelect: func(ctx context.Context) error {
-							a.menubarOpen = ""
-							return a.showToast(ctx, "Refreshed", "All six services report within budget.")
-						},
-					},
-					{
-						Label:    "Export",
-						Shortcut: "⇧⌘E",
-						OnSelect: func(ctx context.Context) error {
-							a.menubarOpen = ""
-							return a.showToast(ctx, "Export queued", "A CSV of the last 24 hours will land in your inbox.")
-						},
-					},
-					{Separator: true},
-					{
-						Label:    "New alert",
-						Shortcut: "⌘N",
-						OnSelect: func(ctx context.Context) error {
-							a.menubarOpen = ""
-							a.dialogOpen = true
-							return a.refresh(ctx)
-						},
-					},
-				},
-			},
-			{
-				ID:    "menu-view",
-				Label: "View",
-				Items: []chadcn.MenuItem{
-					viewItem("Overview", "overview"),
-					viewItem("Logs", "logs"),
-					viewItem("Traces", "traces"),
-					viewItem("Incident room", "incident"),
-				},
-			},
-			{
-				ID:    "menu-help",
-				Label: "Help",
-				Items: []chadcn.MenuItem{
-					{
-						Label: "Documentation",
-						OnSelect: func(ctx context.Context) error {
-							a.menubarOpen = ""
-							return a.showToast(ctx, "Documentation", "The Loglens handbook lives at docs.acme.dev/loglens.")
-						},
-					},
-					{
-						Label: "About Loglens",
-						OnSelect: func(ctx context.Context) error {
-							a.menubarOpen = ""
-							return a.showToast(ctx, "Loglens 2.4.1", "Ownframe dashboard build · commit 9c4f7a0.")
-						},
-					},
-				},
-			},
+		Items: []chadcn.NavigationItem{
+			{ID: "menu-file", Label: "File", Children: []chadcn.NavigationItem{
+				{Label: "Refresh", OnSelect: func(ctx context.Context) error {
+					a.menubarOpen = ""
+					return a.refreshTelemetry(ctx)
+				}},
+				toastItem("Export", "Export queued", "A CSV of the last 24 hours will land in your inbox."),
+				{Label: "New alert", OnSelect: func(ctx context.Context) error {
+					a.menubarOpen = ""
+					a.dialogOpen = true
+					return a.refresh(ctx)
+				}},
+			}},
+			{ID: "menu-view", Label: "View", Children: []chadcn.NavigationItem{
+				{Label: "Overview", OnSelect: func(ctx context.Context) error { return selectTab(ctx, "overview") }},
+				{Label: "Logs", OnSelect: func(ctx context.Context) error { return selectTab(ctx, "logs") }},
+				{Label: "Traces", OnSelect: func(ctx context.Context) error { return selectTab(ctx, "traces") }},
+				{Label: "Incident room", OnSelect: func(ctx context.Context) error { return selectTab(ctx, "incident") }},
+			}},
+			{ID: "menu-help", Label: "Help", Children: []chadcn.NavigationItem{
+				toastItem("Documentation", "Documentation", "The Loglens handbook lives at docs.acme.dev/loglens."),
+				toastItem("About Loglens", "Loglens 2.4.1", "Ownframe dashboard build · commit 9c4f7a0."),
+			}},
 		},
 		OnOpenChange: func(ctx context.Context, id string) error {
-			a.menubarOpen = id
+			a.closeHeaderPopovers()
+			a.navOpen = ""
+			if a.menubarOpen == id {
+				a.menubarOpen = ""
+			} else {
+				a.menubarOpen = id
+			}
 			return a.refresh(ctx)
 		},
 	})
-	// The flat menubar reports a wider box than its three triggers draw, so
-	// pin it to the trigger row and let the spacer take the slack.
-	menubar.Width(ui.Px(menubarWidth)).FlexShrink(ui.Number(0))
+	menu.Position(ui.PositionRelative).ZIndex(ui.Number(60)).
+		Width(ui.Px(applicationMenuWidth)).FlexShrink(ui.Number(0)).
+		CustomProperty("--of-navigation-menu-width", "152px")
 
 	return ui.Div().Class("app-row").
-		Gap(ui.Px(2*topbarGap)).
+		AlignItems(ui.AlignItemsFlexStart).
+		Gap(ui.Px(topbarGap)).
 		FlexWrap(ui.FlexWrapNowrap).
 		FlexShrink(ui.Number(0)).
-		Children(navSlot, menubar)
+		Children(navSlot, menu)
 }

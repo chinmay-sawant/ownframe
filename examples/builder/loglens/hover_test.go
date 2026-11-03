@@ -5,7 +5,11 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestSidebarHoverPreservesPaintContext(t *testing.T) {
@@ -55,6 +59,169 @@ func TestSidebarHoverPreservesPaintContext(t *testing.T) {
 			t.Fatalf("missing sidebar text: patched=%v full=%v", patched, full)
 		}
 	}
+}
+
+func TestHoverSurfacesStayOpenAcrossTheirContent(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	initialHeader := hoverHeaderPositions(a.page)
+	before := a.page.Probe().Stats()
+	for _, target := range []struct {
+		triggerID string
+		contentID string
+	}{
+		{triggerID: "tooltip-trigger", contentID: "live-tooltip-content"},
+		{triggerID: "hover-trigger", contentID: "oncall-hover-content"},
+	} {
+		trigger, found := findHoverTestBox(a.page, func(box ownframe.Box) bool { return box.ID == target.triggerID })
+		if !found {
+			t.Fatalf("trigger %q missing from boxes: %+v", target.triggerID, a.page.Boxes())
+		}
+		if err := a.page.Edit().Hover(ctx, trigger.X+trigger.W/2, trigger.Y+trigger.H/2); err != nil {
+			t.Fatal(err)
+		}
+		if positions := hoverHeaderPositions(a.page); !slices.EqualFunc(initialHeader, positions, func(left, right hoverHeaderBox) bool {
+			return left.ID == right.ID && left.X == right.X && left.Y == right.Y && left.W == right.W && left.H == right.H
+		}) {
+			t.Fatalf("header controls shifted when %s opened: before=%+v after=%+v", target.triggerID, initialHeader, positions)
+		}
+		content, found := findHoverTestBox(a.page, func(box ownframe.Box) bool { return box.ID == target.contentID })
+		if !found {
+			t.Fatalf("content %q missing from boxes", target.contentID)
+		}
+		if content.W <= 0 || content.H <= 0 {
+			t.Fatalf("content %q has no visible bounds: %+v", target.contentID, content)
+		}
+		if err := a.page.Edit().Hover(ctx, content.X+content.W/2, content.Y+content.H/2); err != nil {
+			t.Fatal(err)
+		}
+		if _, found := findHoverTestBox(a.page, func(box ownframe.Box) bool { return box.ID == target.contentID }); !found {
+			t.Fatalf("content %q closed while the pointer was over its popup", target.contentID)
+		}
+		if err := a.page.Edit().Hover(ctx, 900, 500); err != nil {
+			t.Fatal(err)
+		}
+		if _, found := findHoverTestBox(a.page, func(box ownframe.Box) bool { return box.ID == target.contentID }); found {
+			t.Fatalf("content %q stayed open after the pointer left its popup", target.contentID)
+		}
+	}
+	after := a.page.Probe().Stats()
+	if after.Parses != before.Parses || after.Cascades != before.Cascades {
+		t.Fatalf("hover rebuilt the page: parses %d -> %d, cascades %d -> %d", before.Parses, after.Parses, before.Cascades, after.Cascades)
+	}
+}
+
+func TestTopbarMenusAlignAndAnchorPanels(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	platform := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "product-platform-trigger" })
+	file := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "menu-file-trigger" })
+	if platform.Y != file.Y {
+		t.Fatalf("menu rows do not align vertically: Platform y=%v File y=%v", platform.Y, file.Y)
+	}
+	resources := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "product-resources-trigger" })
+	if err := a.page.Click(ctx, resources.X+resources.W/2, resources.Y+resources.H/2); err != nil {
+		t.Fatal(err)
+	}
+	panel := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "product-resources-content" })
+	nav := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "top-nav" })
+	if panel.X != nav.X {
+		t.Fatalf("Resources panel left=%v, want its menu left=%v", panel.X, nav.X)
+	}
+}
+
+func TestLiveTooltipShowsCurrentUpdateAge(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.lastUpdatedAt = time.Now().Add(-13 * time.Second)
+	ctx := context.Background()
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	trigger := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "tooltip-trigger" })
+	before := a.page.Probe().Stats()
+	if err := a.page.Edit().Hover(ctx, trigger.X+trigger.W/2, trigger.Y+trigger.H/2); err != nil {
+		t.Fatal(err)
+	}
+	tip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "live-tooltip-content" })
+	if tip.Text != "Updated 13 seconds ago" {
+		t.Fatalf("live tooltip says %q, want current age", tip.Text)
+	}
+	after := a.page.Probe().Stats()
+	if after.Parses != before.Parses || after.Cascades != before.Cascades {
+		t.Fatalf("updating the tooltip rebuilt the page: parses %d -> %d, cascades %d -> %d", before.Parses, after.Parses, before.Cascades, after.Cascades)
+	}
+}
+
+func TestInboxPopoverDoesNotMoveRightHeaderControls(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	before := hoverHeaderPositions(a.page)
+	trigger := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "notifications-popover" })
+	if err := a.page.Click(ctx, trigger.X+trigger.W/2, trigger.Y+trigger.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if !a.notifOpen {
+		t.Fatal("inbox popover did not open")
+	}
+	after := hoverHeaderPositions(a.page)
+	if !slices.EqualFunc(before, after, func(left, right hoverHeaderBox) bool {
+		return left.ID == right.ID && left.X == right.X && left.Y == right.Y && left.W == right.W && left.H == right.H
+	}) {
+		t.Fatalf("header controls shifted when inbox opened: before=%+v after=%+v", before, after)
+	}
+}
+
+type hoverHeaderBox struct {
+	ID   string
+	X, Y float64
+	W, H float64
+}
+
+func hoverHeaderPositions(page *ownframe.Page) []hoverHeaderBox {
+	wanted := map[string]bool{
+		"tooltip-trigger": true, "hover-trigger": true, "notifications-popover": true,
+		"user-menu": true,
+	}
+	positions := make([]hoverHeaderBox, 0, len(wanted))
+	for _, box := range page.Boxes() {
+		if wanted[box.ID] {
+			positions = append(positions, hoverHeaderBox{ID: box.ID, X: box.X, Y: box.Y, W: box.W, H: box.H})
+		}
+	}
+	slices.SortFunc(positions, func(a, b hoverHeaderBox) int {
+		return strings.Compare(a.ID, b.ID)
+	})
+	return positions
+}
+
+func findHoverTestBox(page *ownframe.Page, match func(ownframe.Box) bool) (ownframe.Box, bool) {
+	for _, box := range page.Boxes() {
+		if match(box) {
+			return box, true
+		}
+	}
+	return ownframe.Box{}, false
 }
 
 func sidebarPaintOrder(a *app) []string {

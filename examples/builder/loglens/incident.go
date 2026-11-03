@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -53,6 +54,11 @@ func (a *app) incidentPanel() *ui.Element {
 }
 
 func incidentHeader(a *app) *ui.Element {
+	metrics := a.telemetryMetrics()
+	updated := "seed data"
+	if len(a.feed.logs) > 0 {
+		updated = a.feed.traces[0].Timestamp.Format("15:04:05")
+	}
 	// The identity block grows and the actions keep their width, so the row
 	// stays on one line: a growing spacer between them stole the space the
 	// buttons needed and wrapped them under the title.
@@ -62,11 +68,11 @@ func incidentHeader(a *app) *ui.Element {
 				chadcn.Avatar(chadcn.AvatarOptions{Initials: "AK", Alt: "Ada Kim, incident commander", Status: chadcn.AvatarStatusOnline}),
 				ui.Div().Class("app-col").Gap(ui.Px(4)).Children(
 					ui.Div().Class("app-row").Children(
-						chadcn.H3("Elevated 504s on api-gateway"),
-						chadcn.Badge("SEV-2", chadcn.BadgeOptions{Variant: chadcn.BadgeDanger}),
-						chadcn.Badge("investigating", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+						chadcn.H3(fmt.Sprintf("Sample incident · %d feed errors", metrics.Errors)),
+						chadcn.Badge("DEMO", chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+						chadcn.Badge("generated", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
 					),
-					ui.Text("Opened 14:27 · Ada Kim on call · 6 responders on the bridge").Class("app-muted"),
+					ui.Text(fmt.Sprintf("Local sample feed · %d events · updated %s", metrics.Total, updated)).Class("app-muted"),
 				),
 			),
 			chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Incident actions"},
@@ -111,8 +117,8 @@ func incidentChatCard() *ui.Element {
 	rows = append(rows, chadcn.Marker(chadcn.MarkerOptions{Label: "Status page updated", Detail: "14:32 · EU tenants see an investigating banner", State: chadcn.MarkerSuccess}))
 	return chadcn.Card(
 		ui.Div().Class("app-row").Children(
-			chadcn.CardTitle("Incident channel"),
-			chadcn.Badge("#inc-eu-gateway", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
+			chadcn.CardTitle("Sample incident channel"),
+			chadcn.Badge("#demo-gateway", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
 			ui.Div().Class("app-spacer"),
 			chadcn.Muted("6 responders · bridge open"),
 		),
@@ -231,12 +237,12 @@ func incidentPlaybookCard(a *app) *ui.Element {
 
 func incidentSnapshotCard(a *app) *ui.Element {
 	return chadcn.Card(
-		chadcn.CardTitle("Live snapshots"),
+		chadcn.CardTitle("Generated feed snapshots"),
 		chadcn.Carousel(chadcn.CarouselOptions{
 			ID:     "incident-snapshots",
 			Label:  "Incident snapshots",
 			Index:  a.carouselIndex,
-			Slides: incidentSnapshotSlides(),
+			Slides: incidentSnapshotSlides(a),
 			OnPrev: func(ctx context.Context) error {
 				if a.carouselIndex > 0 {
 					a.carouselIndex--
@@ -253,7 +259,12 @@ func incidentSnapshotCard(a *app) *ui.Element {
 	)
 }
 
-func incidentSnapshotSlides() []*ui.Element {
+func incidentSnapshotSlides(a *app) []*ui.Element {
+	metrics := a.telemetryMetrics()
+	latency := metrics.P95Latency.String()
+	if metrics.P95Latency == 0 {
+		latency = "—"
+	}
 	snapshots := []struct {
 		Title    string
 		Value    string
@@ -262,9 +273,9 @@ func incidentSnapshotSlides() []*ui.Element {
 		Variant  chadcn.BadgeVariant
 		Progress int
 	}{
-		{"Gateway errors", "4.8%", "critical", "58K of 1.2M requests · SLO 0.5%", chadcn.BadgeDanger, 96},
-		{"p99 latency", "1.42s", "watching", "EU p99 · SLO 800ms", chadcn.BadgeOutline, 71},
-		{"Worker queue", "1,842", "draining", "pending jobs · was 2,410 at 14:28", chadcn.BadgeSecondary, 46},
+		{"Feed errors", fmt.Sprintf("%d", metrics.Errors), "sampled", fmt.Sprintf("%.1f%% of %d events", metrics.ErrorRate, metrics.Total), chadcn.BadgeDanger, min(100, int(metrics.ErrorRate))},
+		{"p95 latency", latency, "sampled", "Derived from retained generated log events", chadcn.BadgeOutline, traceBudgetPercent(latency)},
+		{"Warnings", fmt.Sprintf("%d", metrics.Warnings), "sampled", "Warning-level entries in the local feed", chadcn.BadgeSecondary, min(100, metrics.Warnings)},
 	}
 	slides := make([]*ui.Element, 0, len(snapshots))
 	for _, snapshot := range snapshots {

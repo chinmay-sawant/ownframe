@@ -55,6 +55,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	y += float64(s.scrollY)
 	err := host.Batch(r.Context(), s.app, func() error {
 		if sel, ok := s.app.(host.Selector); ok {
 			if err := sel.SelectAt(r.Context(), x, y); err != nil {
@@ -68,5 +69,6 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	s.syncScroll()
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

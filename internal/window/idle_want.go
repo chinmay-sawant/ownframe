@@ -24,11 +24,24 @@ type pacePage struct {
 // its keep-alive fallback.
 func (g *paceGame) captureFrameWant() {
 	g.want = time.Time{}
+	polling := false
+	if scheduler, ok := g.shell.app.(host.FrameScheduler); ok {
+		polling = scheduler.FramePolling()
+		g.eventDriven = !polling
+		g.mu.Lock()
+		g.policy.SetEventDriven(g.eventDriven)
+		g.mu.Unlock()
+	}
 
 	if wanter, ok := g.shell.app.(host.FrameWanter); ok {
 		g.want = wanter.NextFrameAt()
 	}
+	if polling && g.want.IsZero() {
+		g.want = time.Now().Add(compatibilityFrameGap)
+	}
 }
+
+const compatibilityFrameGap = 125 * time.Millisecond
 
 // publish copies the pacer's state to the shell for the devtools Frame tab.
 // The game goroutine writes it; the timer goroutine owns the policy lock.
@@ -39,6 +52,7 @@ func (g *paceGame) publish(now time.Time) {
 
 	g.shell.pace.next, g.shell.pace.skipped, g.shell.pace.idle = state.Next, state.Skipped, state.Idle
 	g.shell.pace.maxFPS, g.shell.pace.presentFPS, g.shell.pace.presents = g.maxFPS, g.presentFPS, g.presents
+	g.shell.pace.eventDriven = g.eventDriven
 	g.debugLine(now, state.Presents, state.Skipped, state.Idle)
 }
 

@@ -31,9 +31,9 @@ type NavigationMenuOptions struct {
 }
 
 // NavigationMenu builds a horizontal row of navigation triggers with one open
-// content panel beneath it. Open holds the item ID whose panel is shown. The
-// panel is positioned out of flow below the trigger row, so opening it never
-// changes the row width or the menu height.
+// content panel beneath its trigger. Open holds the item ID whose panel is
+// shown. The panel is positioned out of flow, so opening it never changes the
+// row width or the menu height.
 //
 // Each trigger uses ID+"-trigger" and its panel uses ID+"-content". A trigger
 // with children reports its ID through OnOpenChange and carries aria-expanded;
@@ -77,31 +77,24 @@ func NavigationMenu(options NavigationMenuOptions) *ui.Element {
 		}
 		trigger.Children(ui.Span().Class("of-navigation-menu-label").Text(item.Label))
 		if hasPanel {
+			chevron := "▾"
+			if open {
+				chevron = "▴"
+			}
 			trigger.Children(ui.Span().Class("of-navigation-menu-chevron").
-				Attr("aria-hidden", "true").Text("▾"))
+				Attr("aria-hidden", "true").Text(chevron))
 		}
 		list.Children(trigger)
 	}
 	root.Children(list)
-
-	if item, ok := openNavigationItem(options.Items, options.Open); ok {
-		root.Children(navigationContent(item))
-	}
-	return root
-}
-
-// openNavigationItem finds the item whose panel is open. Items without
-// children never open a panel.
-func openNavigationItem(items []NavigationItem, open string) (NavigationItem, bool) {
-	if open == "" {
-		return NavigationItem{}, false
-	}
-	for _, item := range items {
-		if item.ID == open && len(item.Children) > 0 {
-			return item, true
+	for _, item := range options.Items {
+		if item.ID == options.Open && len(item.Children) > 0 {
+			root.Children(navigationContent(item))
+			break
 		}
 	}
-	return NavigationItem{}, false
+
+	return root
 }
 
 // navigationContent builds the panel for one open item.

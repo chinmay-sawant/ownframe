@@ -18,6 +18,8 @@ type devState struct {
 	mobile         bool
 	mobileExpanded bool
 	on             bool
+	paused         bool
+	refreshGap     time.Duration
 	available      bool
 	picker         bool
 	ops            bool

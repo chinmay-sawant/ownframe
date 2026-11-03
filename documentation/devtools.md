@@ -83,6 +83,18 @@ reaches the page.
 
 ## Frame
 
+The Frame tab refreshes once per second by default. Click **Pause auto refresh**
+to stop timed refreshes. Click **Refresh interval** to cycle through 5 seconds,
+250 ms, and 1 second. Input still updates the controls while refresh is paused.
+Elements and Ops refresh when their page or selection changes; neither tab
+schedules periodic frames. These controls affect the panel, not an application
+callback or an explicitly enabled background profiler.
+
+**Sample age** identifies the runtime sample used by the panel. **Present FPS**
+counts OwnFrame draws, not GPU swaps. **Repaints/sec** counts page repaints, and **Alloc/sec** reports
+process allocation throughput. The **Last redraw detail** section describes the
+last page redraw; its dirty counters are not ongoing work.
+
 The Frame tab groups counters under section headers and right-aligns each
 value:
 
@@ -92,8 +104,8 @@ value:
 | RENDERING | fps, tps, frame gap, frame work, draw time |
 | PERFORMANCE | frame average, p95, p99, and the long-frame count |
 | PIPELINE | redraws, parses, cascades, layouts, repaints, relayouts, skipped, boxes, ops, last redraw, last draw |
-| PIPELINE DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
-| PACING | idle, next deadline in ms, presents skipped while parked |
+| LAST REDRAW DETAIL | stage times for template, layout, display list, and paint, then dirty ops, dirty regions, and changed ops |
+| PACING | idle, host presents, present rate, page repaints/sec, allocations/sec, next deadline, skipped frames |
 | MEMORY | alloc per frame, Go heap, RSS, goroutine count |
 | RELOAD | reloads and the last reload error |
 

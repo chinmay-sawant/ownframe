@@ -13,7 +13,7 @@ func TestDevPerfZeroState(t *testing.T) {
 	s := newDevShell(newDevScreen())
 	got := devFrameText(s.devFrameRows(320))
 
-	for _, want := range []string{"PERFORMANCE", "Frame avg", "Frame p95", "Frame p99", "PIPELINE DETAIL", "Template", "MEMORY", "Go heap", "Goroutines"} {
+	for _, want := range []string{"PERFORMANCE", "Frame avg", "Frame p95", "Frame p99", "LAST REDRAW DETAIL", "Template", "MEMORY", "Go heap", "Goroutines"} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("frame rows = %q, want %q", got, want)
 		}

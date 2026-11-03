@@ -165,6 +165,25 @@ func TestTooltipClosedRendersTriggerOnly(t *testing.T) {
 	}
 }
 
+func TestTooltipCSSHoverKeepsContentMounted(t *testing.T) {
+	t.Parallel()
+	source := renderPopupTree(t, chadcn.Tooltip(chadcn.TooltipOptions{
+		ID:       "live-tip",
+		CSSHover: true,
+		Content:  "Updated just now",
+	}, ui.Button("Live").ID("live")))
+	for _, want := range []string{
+		`class="of-tooltip of-tooltip--bottom of-tooltip--css-hover"`,
+		`id="live-tip-content"`,
+		`aria-describedby="live-tip-content"`,
+		"Updated just now",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("CSS-hover tooltip missing %q\n%s", want, source)
+		}
+	}
+}
+
 func TestHoverCardOpenRendersContent(t *testing.T) {
 	t.Parallel()
 	source := renderPopupTree(t, chadcn.HoverCard(chadcn.HoverCardOptions{
@@ -205,6 +224,23 @@ func TestHoverCardClosedRendersTriggerOnly(t *testing.T) {
 	for _, unwanted := range []string{"of-hover-card-content", "of-hover-card-anchor", `role="dialog"`, "Card body"} {
 		if strings.Contains(source, unwanted) {
 			t.Fatalf("closed hover card rendered %q\n%s", unwanted, source)
+		}
+	}
+}
+
+func TestHoverCardCSSHoverKeepsContentMounted(t *testing.T) {
+	t.Parallel()
+	source := renderPopupTree(t, chadcn.HoverCard(chadcn.HoverCardOptions{
+		ID:       "invite-card",
+		CSSHover: true,
+	}, ui.Button("Invite"), ui.Text("Invite a teammate")))
+	for _, want := range []string{
+		`class="of-hover-card of-hover-card--bottom of-hover-card--css-hover"`,
+		`id="invite-card-content"`,
+		"Invite a teammate",
+	} {
+		if !strings.Contains(source, want) {
+			t.Fatalf("CSS-hover card missing %q\n%s", want, source)
 		}
 	}
 }

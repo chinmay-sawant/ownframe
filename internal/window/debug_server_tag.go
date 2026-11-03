@@ -89,7 +89,11 @@ func serveWindowDebugState(game *shell, w http.ResponseWriter) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
-	if err := json.NewEncoder(w).Encode(snap); err != nil {
+	response := struct {
+		*windowDebugState
+		SampleAgeMS int64 `json:"sample_age_ms"`
+	}{snap, time.Since(snap.SampledAt).Milliseconds()}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Printf("window: write debug state: %s", sanitizeDebugLine(err.Error()))
 	}
 }

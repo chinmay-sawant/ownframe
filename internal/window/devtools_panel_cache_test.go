@@ -113,3 +113,34 @@ func BenchmarkDevPanelUnchanged(b *testing.B) {
 		s.refreshDevPanel(now)
 	}
 }
+
+func TestStaticDevToolsTabsAndPauseHaveNoTimer(t *testing.T) {
+	s := newDevShell(newDevScreen())
+	now := time.Now()
+	for _, tab := range []devTab{devTabElements, devTabOps} {
+		s.dev.tab = tab
+		s.refreshDevPanel(now)
+		if !s.dev.panelCache.next.IsZero() {
+			t.Fatal("static inspector tab scheduled a refresh")
+		}
+		if s.refreshDevPanel(now.Add(time.Hour)) {
+			t.Fatal("unchanged inspector tab expired")
+		}
+	}
+	s.dev.tab = devTabFrame
+	s.devRun(devHit{act: devActPause})
+	s.refreshDevPanel(now)
+	if !s.dev.panelCache.next.IsZero() || s.refreshDevPanel(now.Add(time.Hour)) {
+		t.Fatal("paused metrics still refresh")
+	}
+	s.devRun(devHit{act: devActPause})
+	s.refreshDevPanel(now)
+	if !s.dev.panelCache.next.Equal(now.Add(devPanelRefreshGap)) {
+		t.Fatal("resume lost refresh deadline")
+	}
+	s.devRun(devHit{act: devActRefresh})
+	s.refreshDevPanel(now)
+	if !s.dev.panelCache.next.Equal(now.Add(5 * time.Second)) {
+		t.Fatal("slow refresh deadline not applied")
+	}
+}

@@ -112,8 +112,8 @@ constructors: `AlertDialog`, `Combobox`, `ContextMenu`, `DatePicker`, `Dialog`,
 | **Sheet** | `Sheet` | open | Side panel, left/right/top/bottom; 400px sides, scroll body, pinned footer. |
 | **Drawer** | `Drawer` | open | Bottom panel with grab handle. |
 | **Popover** | `Popover` | open | Trigger plus anchored panel. |
-| **Tooltip** | `Tooltip` | open | `role=tooltip`; host drives hover. |
-| **Hover Card** | `HoverCard` | open | Rich preview card; host drives hover. |
+| **Tooltip** | `Tooltip` | open | `role=tooltip`; `CSSHover` keeps content mounted for local patches. |
+| **Hover Card** | `HoverCard` | open | Rich preview; `CSSHover` avoids rebuilding the host view on hover. |
 | **Dropdown Menu** | `DropdownMenu` | open | Trigger plus menu, groups, shortcuts, submenus. |
 | **Context Menu** | `ContextMenu` | open | Positioned at host X/Y coordinates. |
 | **Menubar** | `Menubar` | open | One open top-level menu. `Flat` drops the boxed bar for app chrome. |
@@ -187,8 +187,10 @@ Text inputs stay on `Page.Form`. Checkbox, radio, switch, toggle, select,
 combobox, tabs, accordion, and pagination state is passed back into the
 constructor.
 
-Tooltip and HoverCard need host hover state. Read `Handlers.Hover`, compare the
-next box ID, set `Open`, and rebuild.
+Tooltip and HoverCard default to controlled `Open` state. Set `CSSHover` when a
+popup should keep its content mounted. The host can toggle the component's
+`--hovered` class with a local page patch, avoiding a full view rebuild. Keep
+`Open` for popups that need programmatic state.
 
 Overlay focus, Escape handling, and click-away stay with the host. Use
 `DialogFocus` to scope Tab traversal and restore focus when the panel closes.

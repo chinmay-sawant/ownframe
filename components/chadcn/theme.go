@@ -12,7 +12,7 @@ const Light = `html,body{background-color:var(--of-background,#ffffff);color:var
  --of-secondary-foreground:#171717; --of-accent:#f5f5f5; --of-on-accent:#171717;
  --of-danger:#dc2626; --of-on-danger:#ffffff; --of-destructive:#dc2626;
  --of-on-destructive:#ffffff; --of-border:#e5e5e5; --of-input:#e5e5e5;
- --of-selected:#f5f5f5; --of-ring:#a1a1aa; --of-overlay:#00000080;
+ --of-selected:#f5f5f5; --of-ring:#a1a1aa; --of-overlay:#00000052; --of-shadow:#00000018;
  --of-radius:10px; --of-radius-sm:6px; --of-radius-lg:14px;
  --of-spacing:16px; --of-scrollbar:#a1a1aa;
 }`
@@ -27,7 +27,7 @@ const Dark = `html,body{background-color:var(--of-background,#0a0a0a);color:var(
  --of-secondary-foreground:#fafafa; --of-accent:#262626; --of-on-accent:#fafafa;
  --of-danger:#ef4444; --of-on-danger:#ffffff; --of-destructive:#ef4444;
  --of-on-destructive:#ffffff; --of-border:#262626; --of-input:#262626;
- --of-selected:#262626; --of-ring:#525252; --of-overlay:#000000b3;
+ --of-selected:#262626; --of-ring:#525252; --of-overlay:#000000b3; --of-shadow:#00000038;
  --of-radius:10px; --of-radius-sm:6px; --of-radius-lg:14px;
  --of-spacing:16px; --of-scrollbar:#525252;
 }`

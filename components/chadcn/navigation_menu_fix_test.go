@@ -209,3 +209,13 @@ func TestNavigationMenuFixChildEntriesAreClickable(t *testing.T) {
 		}
 	}
 }
+
+func TestNavigationMenuPanelAnchorsToMenu(t *testing.T) {
+	t.Parallel()
+	view := navigationFixPage(t, "resources")
+	trigger := navigationFixBox(t, view.Page, "primary")
+	panel := navigationFixBox(t, view.Page, "resources-content")
+	if math.Abs(panel.X-trigger.X) > 0.5 {
+		t.Fatalf("panel left=%v want menu left=%v", panel.X, trigger.X)
+	}
+}

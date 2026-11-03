@@ -13,6 +13,7 @@ func (p *Page) DevTools() bool {
 
 // SetDevTools turns the window devtools overlay on or off.
 func (p *Page) SetDevTools(on bool) {
+	defer p.notifyFrame()
 	p.devtools = on
 	p.setPerfEnabled(on || p.perfOptIn)
 }

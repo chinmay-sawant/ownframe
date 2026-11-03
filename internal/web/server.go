@@ -37,8 +37,12 @@ type server struct {
 	// ticking is true while the frame loop runs. frameGen advances when a
 	// dirty tick changes the picture without a page redraw, so /state can
 	// tell the shell to fetch a new frame.
-	ticking  bool
-	frameGen uint64
+	ticking                       bool
+	frameGen                      uint64
+	scrollY                       int
+	viewportPNG                   []byte
+	viewportGen                   uint64
+	viewportWidth, viewportHeight int
 	// limitMu guards the mutating-route throttle table and semaphore.
 	limitMu      sync.Mutex
 	throttleHits map[string]*throttleSeen

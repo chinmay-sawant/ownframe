@@ -55,6 +55,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	if effectivePprof(opts) {
 		registerPprof(mux)
 	}
+	mux.Handle("POST /hover", srv.limit(http.HandlerFunc(srv.hover)))
 	mux.Handle("POST /click", srv.limit(http.HandlerFunc(srv.click)))
 	mux.Handle("POST /type", srv.limit(http.HandlerFunc(srv.typeText)))
 	mux.Handle("POST /backspace", srv.limit(http.HandlerFunc(srv.backspace)))

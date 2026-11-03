@@ -63,15 +63,37 @@ func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]stri
 		return nil, false
 	}
 
-	if roots, ok := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); ok {
+	key := p.keyFor(state)
+	key.Hover = ""
+	if p.hoverScopes == nil || p.hoverScopeKey != key {
+		p.hoverScopeKey = key
+		p.hoverScopes = make(map[hoverScopePair]hoverScopeResult)
+	}
+	pair := hoverScopePair{p.last.Hover, state.Hover}
+	if cached, found := p.hoverScopes[pair]; found {
+		return cached.roots, cached.ok
+	}
+	roots, ok := p.findHoverScopes(styled, state)
+	if len(p.hoverScopes) >= 256 {
+		clear(p.hoverScopes)
+	}
+	p.hoverScopes[pair] = hoverScopeResult{roots: roots, ok: ok}
+	return roots, ok
+}
+
+type hoverScopePair struct{ previous, current string }
+type hoverScopeResult struct {
+	roots []string
+	ok    bool
+}
+
+func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]string, bool) {
+	// The cascade knows which selectors changed. Prefer those scopes over
+	// the common ancestor of two controls, which can include a whole toolbar.
+	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok && draw.HoverScopesFit(p.boxes, roots) {
 		return roots, true
 	}
-
-	// Crossing a large layout shell can exceed the geometric patch budget
-	// even when only one button's CSS changes. Ask the cascade which selector
-	// matches changed before paying for a full page layout.
-	roots, ok := styled.HoverChangedScopes(p.last.Hover)
-	return roots, ok && draw.HoverScopesFit(p.boxes, roots)
+	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
 }
 
 // hoverPatchEligible reports whether this redraw changed only the hover:

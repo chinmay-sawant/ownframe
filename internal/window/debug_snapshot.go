@@ -2,7 +2,6 @@ package window
 
 import (
 	"image"
-	"runtime"
 	"strings"
 	"time"
 
@@ -32,6 +31,7 @@ type windowDebugState struct {
 	Ops          map[string]int `json:"ops,omitempty"`
 	Runtime      map[string]any `json:"runtime,omitempty"`
 	Frame        map[string]any `json:"frame,omitempty"`
+	SampledAt    time.Time      `json:"sampled_at"`
 }
 
 // maybePublishDebug copies one profiling snapshot for the debug listener.
@@ -54,6 +54,7 @@ func (s *shell) maybePublishDebug() {
 // counters are fresh. The handler loads without a mutex.
 func (s *shell) publishDebug() {
 	snap := &windowDebugState{}
+	snap.SampledAt = time.Now()
 	front := host.SelectFront(s.app)
 	snap.Width = front.Width
 	snap.Height = front.Height
@@ -77,16 +78,22 @@ func (s *shell) publishDebug() {
 		snap.Stats = &stats
 	}
 	if s.perf {
-		snap.Runtime = debugRuntimeSnapshot()
+		snap.Runtime = s.runtimeSnapshot()
 		avg, p95, p99, long := s.perfSummary()
 		snap.Frame = map[string]any{
-			"work_ns":     int64(s.dev.stages.work),
-			"gap_ns":      int64(s.dev.frame),
-			"idle":        s.pace.idle,
-			"avg_ns":      int64(avg),
-			"p95_ns":      int64(p95),
-			"p99_ns":      int64(p99),
-			"long_frames": long,
+			"work_ns":          int64(s.dev.stages.work),
+			"gap_ns":           int64(s.dev.frame),
+			"idle":             s.pace.idle,
+			"event_driven":     s.pace.eventDriven,
+			"next_at":          s.pace.next,
+			"devtools":         s.dev.on,
+			"avg_ns":           int64(avg),
+			"p95_ns":           int64(p95),
+			"p99_ns":           int64(p99),
+			"long_frames":      long,
+			"presents":         s.pace.presents,
+			"present_fps":      s.pace.presentFPS,
+			"repaints_per_sec": s.dev.sampler.repaintsPerSec,
 		}
 	}
 	s.debugSnapshot.Store(snap)
@@ -140,25 +147,6 @@ func debugOpKindName(kind layout.DisplayKind) string {
 		return "path"
 	}
 	return ""
-}
-
-// debugRuntimeSnapshot samples this process like the web endpoint: heap,
-// system bytes, total allocations, collection count, goroutines, and
-// resident bytes when the platform reports them.
-func debugRuntimeSnapshot() map[string]any {
-	var memory runtime.MemStats
-	runtime.ReadMemStats(&memory)
-	snapshot := map[string]any{
-		"heap_alloc":  memory.HeapAlloc,
-		"heap_sys":    memory.HeapSys,
-		"total_alloc": memory.TotalAlloc,
-		"goroutines":  runtime.NumGoroutine(),
-		"num_gc":      memory.NumGC,
-	}
-	if rss := perfRSS(); rss != 0 {
-		snapshot["rss_bytes"] = rss
-	}
-	return snapshot
 }
 
 // sanitizeDebugLine strips CR/LF so error text cannot forge log or JSON

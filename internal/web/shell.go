@@ -33,7 +33,7 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
   var frame = document.getElementById("frame");
   if (!frame) { return; }
 
-  var pollMs = 120;
+  var pollMs = 50;
   var generation = parseInt(frame.getAttribute("data-generation") || "0", 10) || 0;
 
   function post(path, body) {
@@ -116,6 +116,24 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
     frame.focus({ preventScroll: true });
     var point = framePoint(ev);
     post("/click", "x=" + encodeURIComponent(point[0]) + "&y=" + encodeURIComponent(point[1]));
+  });
+
+  var hoverPoint = null;
+  var hoverPending = false;
+  function flushHover() {
+    if (!hoverPoint) { hoverPending = false; return; }
+    var p = hoverPoint;
+    hoverPoint = null;
+    post("/hover", "x=" + encodeURIComponent(p[0]) + "&y=" + encodeURIComponent(p[1]))
+      .then(function () { setTimeout(flushHover, 50); });
+  }
+  frame.addEventListener("mousemove", function (ev) {
+    hoverPoint = framePoint(ev);
+    if (!hoverPending) { hoverPending = true; flushHover(); }
+  });
+  frame.addEventListener("mouseleave", function () {
+    hoverPoint = [-1, -1];
+    if (!hoverPending) { hoverPending = true; flushHover(); }
   });
 
   frame.addEventListener("wheel", function (ev) {

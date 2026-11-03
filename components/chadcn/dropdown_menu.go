@@ -65,6 +65,8 @@ func dropdownMenuSkin() menuSkin {
 // OnOpenChange receives the next state when the trigger is clicked. OnSelect
 // receives the label of the activated item.
 type DropdownMenuOptions struct {
+	// AlignEnd aligns the panel and trigger right edges.
+	AlignEnd     bool
 	ID           string
 	Label        string
 	Open         bool
@@ -97,6 +99,9 @@ func DropdownMenu(options DropdownMenuOptions) *ui.Element {
 		}
 	}
 	root := ui.Div().Class("of-dropdown-menu")
+	if options.AlignEnd {
+		root.Class("of-dropdown-menu of-dropdown-menu--align-end")
+	}
 	if options.ID != "" {
 		root.ID(options.ID)
 	}

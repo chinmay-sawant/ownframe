@@ -11,6 +11,7 @@ const allocSampleGap = 500 * time.Millisecond
 // Each call clears the allocator sample clock, so the next tracked redraw
 // samples immediately.
 func (p *Page) SetPerf(on bool) {
+	defer p.notifyFrame()
 	p.perfOptIn = on
 	p.setPerfEnabled(on || p.devtools)
 }

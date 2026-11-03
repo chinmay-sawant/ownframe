@@ -56,3 +56,31 @@ func BenchmarkLoglensSidebarHover(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkLoglensPointerHover(b *testing.B) {
+	a, err := newApp()
+	if err != nil {
+		b.Fatal(err)
+	}
+	ctx := context.Background()
+	if err = a.page.Redraw(ctx); err != nil {
+		b.Fatal(err)
+	}
+	var targets []ownframe.Box
+	for _, box := range a.page.Boxes() {
+		if box.Action == "nav:overview" || box.Action == "nav:logs" || box.ID == "menu-file-trigger" {
+			targets = append(targets, box)
+		}
+	}
+	if len(targets) != 3 {
+		b.Fatalf("hover targets=%d", len(targets))
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		box := targets[i%len(targets)]
+		if err = a.page.Edit().Hover(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+			b.Fatal(err)
+		}
+	}
+}

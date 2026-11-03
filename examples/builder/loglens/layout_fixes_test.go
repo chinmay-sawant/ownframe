@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -17,6 +18,96 @@ func loglensLayoutBox(t *testing.T, p *ownframe.Page, match func(ownframe.Box) b
 	}
 	t.Fatal("expected box is missing from the frame")
 	return ownframe.Box{}
+}
+
+// TestOverviewRegionCardsFit checks the lower overview row stays in two
+// separate columns and the on-call calendar receives usable width.
+func TestOverviewRegionCardsFit(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var onCall, regions ownframe.Box
+	var calendar ownframe.Box
+	var regionMap ownframe.Box
+	for _, box := range a.page.Boxes() {
+		if box.Tag == "section" && strings.HasPrefix(box.Text, "On-call rotation") {
+			onCall = box
+		}
+		if box.Tag == "section" && strings.HasPrefix(box.Text, "Edge regions") {
+			regions = box
+		}
+		if box.Text == "November 2026" {
+			calendar = box
+		}
+		if box.ID == "overview-region-map" {
+			regionMap = box
+		}
+	}
+	if onCall.W <= 0 || regions.W <= 0 {
+		t.Fatalf("overview cards have no layout width: on-call=%+v regions=%+v", onCall, regions)
+	}
+	if onCall.X+onCall.W > regions.X {
+		t.Fatalf("overview cards overlap: on-call=%+v regions=%+v", onCall, regions)
+	}
+	if calendar.W <= 0 || calendar.X < onCall.X || calendar.X+calendar.W > onCall.X+onCall.W {
+		t.Fatalf("calendar does not fit inside the on-call card: calendar=%+v card=%+v", calendar, onCall)
+	}
+	if regionMap.W <= 0 || regionMap.H <= 0 || regionMap.W/regionMap.H < 3.2 || regionMap.W/regionMap.H > 3.6 {
+		t.Fatalf("region map does not keep its wide ratio: %+v", regionMap)
+	}
+}
+
+func TestSidebarBrandFitsHeader(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.page.SetSize(minWidth, minHeight)
+	if err := a.page.Redraw(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	sidebar := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "app-sidebar" })
+	if sidebar.W < 260 {
+		t.Fatalf("sidebar width was not increased for the project label: %+v", sidebar)
+	}
+	for _, label := range []string{"ACME", "Observability", "Production"} {
+		if !strings.Contains(a.page.HTML(), label) {
+			t.Fatalf("sidebar project label %q is missing from the page", label)
+		}
+	}
+	if !strings.Contains(appCSS, ".app-sidebar-project-name { display: flex; flex-direction: column;") {
+		t.Fatal("sidebar project name no longer uses explicit stacked lines")
+	}
+}
+
+func TestRegionErrorsShowPointDetailsOnHover(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	bar := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-heat-13" })
+	before := a.page.Probe().Stats()
+	if err := a.page.Edit().Hover(ctx, bar.X+bar.W/2, bar.Y+bar.H/2); err != nil {
+		t.Fatal(err)
+	}
+	tip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-heat-13-tooltip" })
+	if tip.W <= 0 || !strings.Contains(tip.Text, "us-east-1") || !strings.Contains(tip.Text, "92 errors") {
+		t.Fatalf("hover detail is missing point data: %+v", tip)
+	}
+	after := a.page.Probe().Stats()
+	if after.Parses != before.Parses || after.Cascades != before.Cascades {
+		t.Fatalf("hover rebuilt the page: parses %d -> %d, cascades %d -> %d", before.Parses, after.Parses, before.Cascades, after.Cascades)
+	}
 }
 
 // TestSettingsTabsKeepHiddenValues moves through the settings sections and

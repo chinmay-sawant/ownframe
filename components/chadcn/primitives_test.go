@@ -106,14 +106,14 @@ func TestAspectRatioRatioBox(t *testing.T) {
 	defaultRatio := renderPrimitive(t, chadcn.AspectRatio(chadcn.AspectRatioOptions{}, ui.Text("Preview")))
 	wantPrimitiveHTML(t, defaultRatio,
 		`class="of-aspect-ratio"`,
-		`padding-top:56.25%`,
+		`aspect-ratio:1.7777777777777777`,
 		`class="of-aspect-ratio-content"`,
 		`Preview`,
 	)
 	fallback := renderPrimitive(t, chadcn.AspectRatio(chadcn.AspectRatioOptions{Ratio: -1}))
-	wantPrimitiveHTML(t, fallback, `padding-top:56.25%`)
+	wantPrimitiveHTML(t, fallback, `aspect-ratio:1.7777777777777777`)
 	wide := renderPrimitive(t, chadcn.AspectRatio(chadcn.AspectRatioOptions{Ratio: 4.0 / 3.0}))
-	wantPrimitiveHTML(t, wide, `padding-top:75%`)
+	wantPrimitiveHTML(t, wide, `aspect-ratio:1.3333333333333333`)
 }
 
 func TestAvatarImageInitialsAndStatus(t *testing.T) {

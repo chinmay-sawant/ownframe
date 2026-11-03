@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 )
@@ -43,6 +45,14 @@ type chatMessage struct {
 	Side       string
 	Initials   string
 	Attachment string
+}
+
+type telemetryMetrics struct {
+	Total      int
+	Errors     int
+	Warnings   int
+	ErrorRate  float64
+	P95Latency time.Duration
 }
 
 //nolint:gochecknoglobals // static dashboard fixture
@@ -115,9 +125,13 @@ var (
 )
 
 func (a *app) visibleLogs() []logEntry {
-	out := make([]logEntry, 0, len(sampleLogs))
+	records := sampleLogs
+	if a.feed != nil {
+		records = a.feed.logs
+	}
+	out := make([]logEntry, 0, len(records))
 	query := strings.ToLower(strings.TrimSpace(a.query))
-	for _, entry := range sampleLogs {
+	for _, entry := range records {
 		if a.service != "" && a.service != "All services" && entry.Service != a.service {
 			continue
 		}
@@ -128,6 +142,22 @@ func (a *app) visibleLogs() []logEntry {
 			continue
 		}
 		out = append(out, entry)
+	}
+	switch a.sortValue {
+	case "Oldest first":
+		for left, right := 0, len(out)-1; left < right; left, right = left+1, right-1 {
+			out[left], out[right] = out[right], out[left]
+		}
+	case "Slowest first":
+		sort.SliceStable(out, func(i, j int) bool {
+			left, _ := time.ParseDuration(out[i].Duration)
+			right, _ := time.ParseDuration(out[j].Duration)
+			return left > right
+		})
+	case "Status code":
+		sort.SliceStable(out, func(i, j int) bool {
+			return out[i].Status > out[j].Status
+		})
 	}
 	return out
 }
@@ -185,4 +215,100 @@ func containsString(values []string, want string) bool {
 
 func statusLabel(status int) string {
 	return fmt.Sprintf("%d", status)
+}
+
+func (a *app) telemetryMetrics() telemetryMetrics {
+	if a.feed == nil {
+		return telemetryMetrics{}
+	}
+	metrics := telemetryMetrics{Total: len(a.feed.logs)}
+	durations := make([]time.Duration, 0, metrics.Total)
+	for _, entry := range a.feed.logs {
+		if entry.Level == "error" || entry.Status >= 500 {
+			metrics.Errors++
+		} else if entry.Level == "warn" {
+			metrics.Warnings++
+		}
+		if duration, err := time.ParseDuration(entry.Duration); err == nil {
+			durations = append(durations, duration)
+		}
+	}
+	if metrics.Total > 0 {
+		metrics.ErrorRate = 100 * float64(metrics.Errors) / float64(metrics.Total)
+	}
+	if len(durations) > 0 {
+		sort.Slice(durations, func(i, j int) bool { return durations[i] < durations[j] })
+		index := (95*len(durations)+99)/100 - 1
+		metrics.P95Latency = durations[max(0, min(index, len(durations)-1))]
+	}
+	return metrics
+}
+
+func (a *app) liveServices() []serviceHealth {
+	if a.feed == nil {
+		return sampleServices
+	}
+	counts := make(map[string]int, len(serviceOptions))
+	errors := make(map[string]int, len(serviceOptions))
+	durations := make(map[string][]time.Duration, len(serviceOptions))
+	for _, entry := range a.feed.logs {
+		counts[entry.Service]++
+		if entry.Level == "error" || entry.Status >= 500 {
+			errors[entry.Service]++
+		}
+		if duration, err := time.ParseDuration(entry.Duration); err == nil {
+			durations[entry.Service] = append(durations[entry.Service], duration)
+		}
+	}
+	services := make([]serviceHealth, 0, len(sampleServices))
+	for _, sample := range sampleServices {
+		count := counts[sample.Name]
+		if count == 0 {
+			continue
+		}
+		rate := 100 * float64(errors[sample.Name]) / float64(count)
+		status := "healthy"
+		if rate >= 40 {
+			status = "degraded"
+		} else if rate >= 20 {
+			status = "warning"
+		}
+		values := durations[sample.Name]
+		latency := time.Duration(0)
+		if len(values) > 0 {
+			sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
+			index := (95*len(values)+99)/100 - 1
+			latency = values[max(0, min(index, len(values)-1))]
+		}
+		services = append(services, serviceHealth{
+			Name: sample.Name, Status: status,
+			Requests: fmt.Sprintf("%d events", count),
+			Errors:   fmt.Sprintf("%.1f%%", rate),
+			Latency:  latency.String(), Owner: sample.Owner,
+		})
+	}
+	return services
+}
+
+func (a *app) eventSeries() ([]string, []float64, []float64) {
+	services := []string{"api-gateway", "auth", "billing", "worker", "search", "web"}
+	current := make([]float64, len(services))
+	previous := make([]float64, len(services))
+	if a.feed == nil {
+		return services, current, previous
+	}
+	split := min(demoFeedPageSize, len(a.feed.logs))
+	for index, entry := range a.feed.logs {
+		for serviceIndex, service := range services {
+			if entry.Service == service {
+				if index < split {
+					current[serviceIndex]++
+				} else if index < split*2 {
+					previous[serviceIndex]++
+				}
+				break
+			}
+		}
+	}
+	return services, current, previous
 }

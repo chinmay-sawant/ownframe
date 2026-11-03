@@ -11,7 +11,8 @@ row and has seen no input for 250 ms stops presenting every frame: it waits in
 the event loop and wakes on input, or at the next deadline the page declared.
 `Page.WantFrameAt(t)` and `Page.WantFrameIn(d)` set that deadline, and
 the window consumes and clears it through its inner screen. A page with no request falls back to
-a keep-alive frame every 125 ms, so a tick that never asks still runs. A tick
+a compatibility frame every 125 ms while a tick callback or file watch is registered.
+A static page without those sources waits for input or a declared deadline. A tick
 that animates must leave damage. The inner screen's `Tick` diffs patched ops and sets the
 frame-dirty flag itself. The window calls that tick on the inner screen. `page.Probe().MarkRect` and `page.Probe().Invalidate` still name extra regions.
 A page that damages every frame is never paced.

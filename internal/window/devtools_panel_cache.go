@@ -7,9 +7,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-const devPanelRefreshGap = 250 * time.Millisecond
+const (
+	devPanelRefreshGap = time.Second
+	devPanelFastGap    = 250 * time.Millisecond
+	devPanelSlowGap    = 5 * time.Second
+)
 
-// The panel owns one texture. Metrics refresh at 4 Hz; input and geometry
+// The panel owns one texture. Metrics refresh at 1 Hz by default; input and geometry
 // changes invalidate it immediately. Page outlines are drawn separately.
 type devPanelCache struct {
 	img   *ebiten.Image
@@ -31,10 +35,13 @@ type devPanelKey struct {
 	gen              uint64
 	display          *layout.Display
 	selection        devElementJSON
+	paused           bool
+	refreshGap       time.Duration
 }
 
 func (s *shell) devPanelKey() devPanelKey {
 	key := devPanelKey{
+		paused: s.dev.paused, refreshGap: s.dev.refreshGap,
 		width: s.screenW, height: s.screenH, dockWidth: s.devDockWidth(),
 		tab: s.dev.tab, scroll: s.dev.scroll,
 		mobile: s.dev.mobile, expanded: s.dev.mobileExpanded,
@@ -59,12 +66,19 @@ func (s *shell) devPanelKey() devPanelKey {
 func (s *shell) refreshDevPanel(now time.Time) bool {
 	c := &s.dev.panelCache
 	key := s.devPanelKey()
-	if c.valid && c.key == key && now.Before(c.next) {
+	if c.valid && c.key == key && (c.next.IsZero() || now.Before(c.next)) {
 		return false
 	}
 	s.devLayout()
 	c.key = s.devPanelKey()
-	c.next = now.Add(devPanelRefreshGap)
+	c.next = time.Time{}
+	if (s.dev.mobile || s.dev.tab == devTabFrame) && !s.dev.paused {
+		gap := s.dev.refreshGap
+		if gap == 0 {
+			gap = devPanelRefreshGap
+		}
+		c.next = now.Add(gap)
+	}
 	c.valid = true
 	return true
 }

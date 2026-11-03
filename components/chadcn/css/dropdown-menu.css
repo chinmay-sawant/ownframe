@@ -25,6 +25,11 @@
   font-size: 13px;
 }
 
+.of-dropdown-menu--align-end > .of-dropdown-menu-content {
+  left: auto;
+  right: 0;
+}
+
 .of-dropdown-menu-row {
   position: relative;
   display: block;

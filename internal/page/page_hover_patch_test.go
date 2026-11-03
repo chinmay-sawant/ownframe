@@ -109,8 +109,19 @@ func stubHoverPatch(p *Page, delegate bool) (calls *[][]string) {
 func assertSameDisplay(t *testing.T, a, b *Page) {
 	t.Helper()
 
-	if !reflect.DeepEqual(a.boxes, b.boxes) {
-		t.Fatal("patched boxes differ from the full layout")
+	if len(a.boxes) != len(b.boxes) {
+		t.Fatalf("box counts patched=%d full=%d", len(a.boxes), len(b.boxes))
+	}
+	for i := range a.boxes {
+		left, right := a.boxes[i], b.boxes[i]
+		// A splice assigns fresh operation IDs; geometry and semantics must match.
+		left.OperationIDs, right.OperationIDs = nil, nil
+		if !reflect.DeepEqual(left, right) {
+			t.Fatalf("box %d differs from full layout: patched=%+v full=%+v", i, left, right)
+		}
+	}
+	if !bytes.Equal(a.PNG(), b.PNG()) {
+		t.Fatal("patched pixels differ from full layout")
 	}
 
 	da, db := a.draw.Display, b.draw.Display
@@ -131,6 +142,9 @@ func assertSameDisplay(t *testing.T, a, b *Page) {
 
 func TestHoverPatchTakenAndMatchesFull(t *testing.T) {
 	full := newHoverPatchPage(t, true)
+	full.hoverPatch = func(context.Context, *css.Document, *layout.Display, string, layout.Options) (*layout.ElementPatch, error) {
+		return nil, errHoverPatchEmpty
+	}
 	hoverAt(t, full, "row-a")
 	hoverAt(t, full, "row-b")
 
@@ -138,18 +152,15 @@ func TestHoverPatchTakenAndMatchesFull(t *testing.T) {
 	calls := stubHoverPatch(patched, true)
 	hoverAt(t, patched, "row-a")
 
-	// Entering from no hover patches the parent list: the row has no child
-	// boxes of its own, so the leaf scope walks up to the list. The list
-	// itself has no :hover paint, so the patch still matches the full
-	// layout below.
-	if len(*calls) != 1 || (*calls)[0][0] != "list" {
-		t.Fatalf("entering hover patched %v, want [[list]]", *calls)
+	// The cascade identifies the row directly instead of relaying the list.
+	if len(*calls) != 1 || (*calls)[0][0] != "row-a" {
+		t.Fatalf("entering hover patched %v, want [[row-a]]", *calls)
 	}
 
 	hoverAt(t, patched, "row-b")
 
 	if len(*calls) != 3 || (*calls)[1][0] != "row-a" || (*calls)[2][0] != "row-b" {
-		t.Fatalf("patch calls = %v, want [[list] [row-a] [row-b]]", *calls)
+		t.Fatalf("patch calls = %v, want [[row-a] [row-a] [row-b]]", *calls)
 	}
 
 	assertSameDisplay(t, patched, full)
@@ -186,8 +197,8 @@ func TestHoverPatchGeometryFallsBack(t *testing.T) {
 	hoverAt(t, patched, "f")
 	hoverAt(t, patched, "e")
 
-	if len(*calls) != 2 {
-		t.Fatalf("geometry hover attempted %d patches, want 2 with the width change refused", len(*calls))
+	if len(*calls) != 1 {
+		t.Fatalf("geometry hover attempted %d patches, want 1 with the width change refused", len(*calls))
 	}
 
 	assertSameDisplay(t, patched, full)
@@ -224,5 +235,36 @@ func TestHoverPatchRiskySkips(t *testing.T) {
 	// The risky page still redraws correctly through the full layout.
 	if p.Stats().Layouts != 3 {
 		t.Fatalf("layouts = %d, want 3", p.Stats().Layouts)
+	}
+}
+
+func TestHoverScopeCacheFollowsElementEdits(t *testing.T) {
+	source := `<style>#target{width:100px;height:30px}.enabled:hover{background:red}</style><div id="target">Target</div><div id="spacer"><p>a</p><p>b</p><p>c</p></div>`
+	p, err := New(Config{HTML: source, Width: 320, Height: 240, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err = p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	hoverAt(t, p, "target")
+	if err = p.Hover(ctx, 310, 230); err != nil {
+		t.Fatal(err)
+	}
+	if err = p.PatchElement(ctx, "target", ElementEdit{Attribute: "class", Value: "enabled"}); err != nil {
+		t.Fatal(err)
+	}
+	hoverAt(t, p, "target")
+	full, err := New(Config{HTML: strings.Replace(source, `id="target"`, `id="target" class="enabled"`, 1), Width: 320, Height: 240})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = full.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	hoverAt(t, full, "target")
+	if !bytes.Equal(p.PNG(), full.PNG()) {
+		t.Fatal("cached hover scopes ignored the new hover class")
 	}
 }

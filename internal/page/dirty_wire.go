@@ -42,6 +42,7 @@ func boxRect(b Box) image.Rectangle {
 // markRect queues one dirty rect on the page tracker and drops a cached
 // picture when the rect paints something.
 func (p *Page) markRect(r image.Rectangle) {
+	defer p.notifyFrame()
 	p.tickMutated.Store(true)
 	if !r.Empty() {
 		p.draw.DropPNG()

@@ -113,7 +113,7 @@ func (g *devIdleSessionGame) Draw(screen *ebiten.Image) {
 		g.err = fmt.Errorf("metrics refresh returned the idle window to continuous drawing")
 		return
 	}
-	if time.Since(g.idleSince) < 650*time.Millisecond {
+	if time.Since(g.idleSince) < 2*devPanelRefreshGap {
 		return
 	}
 	if g.frames > 6 || !sh.dev.panelCache.next.After(g.firstNext) {

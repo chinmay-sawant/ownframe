@@ -42,18 +42,27 @@ const (
 // mode returns to uncapped drawing at once on input, on an immediate page request, and
 // after idleBurst dirty frames that came without a declared deadline. A page
 // deadline still ahead schedules the next idle wake; with no deadline the
-// keep-alive fallback does.
+// keep-alive fallback does, unless SetEventDriven disabled it.
 type Policy struct {
-	fast      bool
-	lastInput time.Time
-	pending   time.Time
-	cleanRun  int
-	dirtyRun  int
-	want      time.Time
-	last      time.Time
-	skipped   uint64
-	presents  uint64
+	eventDriven bool
+	fast        bool
+	lastInput   time.Time
+	pending     time.Time
+	cleanRun    int
+	dirtyRun    int
+	want        time.Time
+	last        time.Time
+	skipped     uint64
+	presents    uint64
 }
+
+// SetEventDriven disables the compatibility keep-alive for a screen that
+// supplies notifications and deadlines for its work.
+func (p *Policy) SetEventDriven(on bool) { p.eventDriven = on }
+
+// SetDeadline updates the next wake after entering idle without counting
+// another frame. The adapter uses it for its one delayed cache trim.
+func (p *Policy) SetDeadline(at time.Time) { p.want = at }
 
 // New starts a fast policy with a 250 ms input grace and 125 ms idle keep-alive.
 func New(now time.Time) Policy {
@@ -167,6 +176,9 @@ func (p *Policy) Due(now time.Time) bool {
 	if now.Sub(p.pending) < paceKeepAlive {
 		return false
 	}
+	if p.eventDriven {
+		return false
+	}
 
 	p.pending = now
 
@@ -188,7 +200,7 @@ func (p *Policy) next() time.Time {
 		return p.want
 	}
 
-	if p.fast {
+	if p.fast || p.eventDriven {
 		return time.Time{}
 	}
 
@@ -196,10 +208,13 @@ func (p *Policy) next() time.Time {
 }
 
 // Wait reports how long the timer may sleep before its next check.
-// The host must serialize it with Step and Due.
+// Zero disables the timer. The host must serialize it with Step and Due.
 func (p *Policy) Wait(now time.Time) time.Duration {
 	if p.fast {
 		return paceKeepAlive / keepAliveHalfDiv
+	}
+	if p.next().IsZero() {
+		return 0
 	}
 
 	if d := p.next().Sub(now); d > time.Millisecond {

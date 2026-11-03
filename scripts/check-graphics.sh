@@ -48,6 +48,7 @@ run_test ./internal/window TestWindowBackdropFilterReplaysFullFrame
 run_test ./internal/window TestViewportScrollPixels
 run_test ./internal/window TestViewportAnimatedReturnPixels
 run_test ./internal/window TestViewportDirectAnimationReturnPixels
+run_test ./internal/window TestWindowStaticEvents
 run_test ./internal/window TestWindowIdleDeadline
 run_test ./internal/window TestWindowDevToolsIdle
 run_test ./examples/builder/loglens TestSidebarHoverPixels

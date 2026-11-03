@@ -1,10 +1,17 @@
 # Performance
 
+The native desktop default is uncapped for both rendering and input updates.
+Updates follow the rendering cadence rather than a separate 60 TPS schedule.
+An explicit `WindowOptions.MaxFPS` still selects a cap. Clean pages retain
+their pixels and park until input or a declared frame deadline. Uncapped
+rendering does not guarantee a minimum frame rate; hover layout, GPU work,
+and the display environment must still fit the frame budget.
+
 ## Opt in first
 
 Perf sampling is off by default while DevTools is closed. Opening DevTools
 enables page timing, frame sampling, and runtime memory sampling, so its
-PERFORMANCE, PIPELINE DETAIL, and MEMORY rows populate automatically. Closing
+PERFORMANCE, LAST REDRAW DETAIL, and MEMORY rows populate automatically. Closing
 the dock stops that automatic sampling unless the app also opts in. `/debug/state`
 requires a debug build and `ServeOptions{InsecureAllowDebugState: true}`. Add
 `InsecureAllowPprof: true` to include server runtime memory and enable profiler
@@ -63,7 +70,7 @@ It has no native window frame ring. Native percentiles are read from DevTools.
 
 A small change should do small work. One click edits one box, and the window repaints only the rects the page reports.
 
-The PIPELINE DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `page.Probe().TakeDirtyRects` and the window paints them through `drawReplayPartial`, either into a content-sized tile grid or into one window-sized viewport buffer (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the 24-rect cap, the one-third area collapse, pinned chrome painted after the tile blit, and the cases that still repaint in full, such as bitmap fallback pages. Tick callbacks automatically report operation damage; a clean ticking page can remain idle.
+The LAST REDRAW DETAIL group of the Frame tab proves it. With Perf on, it reports dirty ops, dirty regions, and changed ops. The page reports the changed regions with `page.Probe().TakeDirtyRects` and the window paints them through `drawReplayPartial`, either into a content-sized tile grid or into one window-sized viewport buffer (`replay.DrawVisibleUnfixedZ`). A frame with no dirty rect blits the buffer it already has. `replay.DrawRect` is a test helper, not the window path. [repaint.md](repaint.md) has the list rules, the coalescing gap, the 24-rect cap, the one-third area collapse, pinned chrome painted after the tile blit, and the cases that still repaint in full, such as bitmap fallback pages. Tick callbacks automatically report operation damage; a clean ticking page can remain idle.
 
 For a single control change, expect one dirty rect, a small repainted count, and a large skipped count. Two far-apart display changes report two diff regions and their summed CSS-pixel
 area. Dirty ops count each operation meeting any region once. These counters
@@ -118,7 +125,7 @@ reports its own process memory; it does not expose the window frame ring.
 | Section | Rows |
 |---|---|
 | PERFORMANCE | Frame average, p95, p99, long frame count |
-| PIPELINE DETAIL | Template, style, layout, paint and other work; dirty ops, regions, area and changed ops |
+| LAST REDRAW DETAIL | Template, style, layout, paint and other work; dirty ops, regions, area and changed ops |
 | MEMORY | Alloc per frame, Go heap, RSS, goroutine count |
 
 WINDOW, RENDERING, PIPELINE, and RELOAD rows stay as documented in [devtools.md](devtools.md). Perf sections add timing and memory on top of those counters, they do not replace them.
@@ -173,7 +180,7 @@ of narrowing the mutex.
 
 No optimization lands without a number that asks for it.
 
-The flow is short. Reproduce the slow case in a benchmark app. Read the PERFORMANCE and PIPELINE DETAIL groups to name the stage. Take a profile, change one thing, then remeasure with the same script and app.
+The flow is short. Reproduce the slow case in a benchmark app. Read the PERFORMANCE and LAST REDRAW DETAIL groups to name the stage. Take a profile, change one thing, then remeasure with the same script and app.
 
 CPU and heap profiles come from a profiler endpoint. In web mode it is served only when the app opted into Perf with `ServeOptions{InsecureAllowPprof: true}`. In a window it is the `-debug-addr` listener, which needs `-tags ownframe_debug` and serves the live process, so no second `-web` run is owed.
 
@@ -183,3 +190,43 @@ go tool pprof -top http://127.0.0.1:8091/debug/pprof/profile?seconds=30
 ```
 
 Use the port the app actually serves. Keep the profile files next to the baseline entry when the change lands, and quote before and after numbers in the commit message.
+
+## Static desktop idle
+
+A static page without a tick callback or file watch parks until input, a page
+notification, or a declared deadline arrives. Caret blinking and CSS motion
+supply their own deadlines. `WantFrameAt`, redraws, element patches, and queued
+scroll requests notify a parked host. Callbacks and file watches retain the
+125 ms compatibility tick when they do not declare a deadline.
+
+After five seconds of clean idle frames, the host releases renderer caches
+and returns freed Go pages to the OS once. This also applies with DevTools
+open. A static page can wake once for that trim, then stop requesting frames. Ebiten can still wake at roughly 1 Hz in the
+validated X11 session. Those unsolicited wakes skip OwnFrame updates and
+replay when input, focus, size, and the page are unchanged. The backend may
+still copy and swap its retained screen.
+The document, fonts, retained screen buffers, and Ebiten command buffers
+remain resident as needed. The host does not modify Ebiten's internal buffer
+capacities; a heap profile is needed before proposing a dependency change.
+Short pauses do not force a collection.
+
+To measure a running native window on Linux, use its compiled process PID:
+
+```sh
+python3 scripts/profile-idle.py --pid 12345 --seconds 30 --assert-static \
+  --output temp/idle-profile/measurement.json
+```
+
+Close or pause DevTools and leave the window untouched. The script waits ten
+seconds for settling, then records process CPU, RSS, OwnFrame draws, and page
+generation changes. `--assert-static` rejects any observed OwnFrame draw or
+generation change. An HTTP snapshot includes `sampled_at` and `sample_age_ms`;
+its age grows while the window is parked, because reading it does not wake
+the game loop. Runtime counters use the same cached sample as DevTools,
+limited to one sample per two seconds while idle. Sampling does not create
+a frame deadline. Xvfb provides repeatability with software rendering, but
+its CPU and memory figures do not establish hardware GPU or power savings.
+
+The native `presents` counter counts calls that draw OwnFrame content. It is
+not a GPU swap counter. A zero delta proves that OwnFrame skipped rendering;
+it does not prove that the window backend submitted no buffers.

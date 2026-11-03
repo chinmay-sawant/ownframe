@@ -15,6 +15,7 @@ REQUIRED_TESTS = {
     "TestViewportScrollPixels",
     "TestViewportAnimatedReturnPixels",
     "TestViewportDirectAnimationReturnPixels",
+    "TestWindowStaticEvents",
     "TestWindowIdleDeadline",
     "TestWindowDevToolsIdle",
     "TestSidebarHoverPixels",

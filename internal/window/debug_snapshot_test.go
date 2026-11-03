@@ -170,3 +170,16 @@ func TestDebugSnapshotRace(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestDebugSharesRuntimeSample(t *testing.T) {
+	s := newDevShell(newDevScreen())
+	s.perf = true
+	s.perfSampleRuntime()
+	at := s.dev.sampler.last
+	total := s.dev.sampler.total
+	s.publishDebug()
+	snap := s.debugSnapshot.Load()
+	if s.dev.sampler.last != at || snap.Runtime["total_alloc"] != total || snap.Runtime["sampled_at"] != at {
+		t.Fatal("debug publisher took a second runtime sample")
+	}
+}

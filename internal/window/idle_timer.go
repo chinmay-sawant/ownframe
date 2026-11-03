@@ -2,6 +2,7 @@ package window
 
 import (
 	"context"
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -16,15 +17,26 @@ import (
 // kicks the timer after every step, so a policy change never waits out a
 // stale sleep.
 func (g *paceGame) timer(ctx context.Context) {
-	t := time.NewTimer(g.sleep())
+	t := time.NewTimer(time.Hour)
 	defer t.Stop()
+	resetTimer(t, g.sleep())
+	var events <-chan struct{}
+	if scheduler, ok := g.shell.app.(host.FrameScheduler); ok {
+		events = scheduler.FrameEvents()
+	}
 
 	for {
 		select {
 		case <-ctx.Done():
+			//nolint:staticcheck // reason: cancellation must release an indefinitely parked desktop loop.
+			ebiten.ScheduleFrame()
 			return
 		case <-g.stop:
 			return
+		case <-events:
+			g.wake.Store(true)
+			//nolint:staticcheck // reason: a page notification must wake the desktop event wait.
+			ebiten.ScheduleFrame()
 		case <-g.kick:
 			resetTimer(t, g.sleep())
 		case now := <-t.C:
@@ -33,6 +45,7 @@ func (g *paceGame) timer(ctx context.Context) {
 			g.mu.Unlock()
 
 			if due {
+				g.wake.Store(true)
 				//nolint:staticcheck // reason: timer wake needs ScheduleFrame to post the empty event; SetScreenClearedEveryFrame(false) cannot wake event-wait.
 				ebiten.ScheduleFrame()
 			}
@@ -60,5 +73,7 @@ func resetTimer(t *time.Timer, d time.Duration) {
 		}
 	}
 
-	t.Reset(d)
+	if d > 0 {
+		t.Reset(d)
+	}
 }

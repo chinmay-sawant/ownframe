@@ -3,50 +3,53 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
-const (
-	tracePercentPrimary = 62
-	tracePercentSecond  = 41
-	tracePercentThird   = 18
-	traceTopologyRatio  = 4.2
-	traceSkeletonHeight = 10
-)
-
 // Traces panel measurements, kept together so the layout reads as one block.
 const (
-	traceScrollHeight = 190
-	traceRecentRows   = 10
-	traceRowHeight    = 34
-	traceCardGap      = 8
-	traceCardPadding  = 12
+	traceRowHeight   = 34
+	traceCardGap     = 8
+	traceCardPadding = 12
 )
 
-func (a *app) tracesPanel() *ui.Element {
-	tracks := []struct {
-		id       string
-		owner    string
-		name     string
-		duration string
-		percent  int
-	}{
-		{id: "7f3a9c21", owner: "AK", name: "Ada Kim", duration: "1.24s", percent: tracePercentPrimary},
-		{id: "5d21b8e0", owner: "RB", name: "Ravi Bose", duration: "820ms", percent: tracePercentSecond},
-		{id: "a10e77c9", owner: "LT", name: "Linus Tan", duration: "360ms", percent: tracePercentThird},
+func traceBudgetPercent(duration string) int {
+	value, err := time.ParseDuration(duration)
+	if err != nil {
+		return 0
 	}
-	active := max(a.traceIndex, 0) % len(tracks)
-	track := tracks[active]
+	return max(0, min(100, int(value*100/(2*time.Second))))
+}
 
-	selectors := make([]*ui.Element, 0, len(tracks))
-	for i, candidate := range tracks {
+func traceStatusVariant(status string) chadcn.BadgeVariant {
+	switch status {
+	case "error":
+		return chadcn.BadgeDanger
+	case "warning":
+		return chadcn.BadgeOutline
+	default:
+		return chadcn.BadgeSecondary
+	}
+}
+
+func (a *app) tracesPanel() *ui.Element {
+	traces, traceCount, tracePages := a.feed.tracePage(a.tracePageIndex)
+	if len(traces) == 0 {
+		traces, traceCount, tracePages = a.feed.tracePage(0)
+	}
+	active := max(0, min(a.traceIndex, len(traces)-1))
+	track := traces[active]
+
+	selectors := make([]*ui.Element, 0, min(3, len(traces)))
+	for i, candidate := range traces[:min(3, len(traces))] {
 		variant := chadcn.ButtonOutlined
 		if i == active {
 			variant = chadcn.ButtonFilled
 		}
-		selectors = append(selectors, chadcn.Button(candidate.id, chadcn.ButtonOptions{
+		selectors = append(selectors, chadcn.Button(candidate.ID, chadcn.ButtonOptions{
 			Size:    chadcn.ButtonSmall,
 			Variant: variant,
 		}).OnClick(func(ctx context.Context) error {
@@ -58,25 +61,25 @@ func (a *app) tracesPanel() *ui.Element {
 
 	header := ui.Div().Class("app-row app-row--between").Children(
 		ui.Div().Class("app-row").Children(
-			chadcn.Badge("trace", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
-			chadcn.Badge(track.id, chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
+			chadcn.Badge("generated trace", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
+			chadcn.Badge(track.ID, chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
 			ui.Div().Class("app-col").Gap(ui.Px(3)).Children(
-				chadcn.Progress(fmt.Sprintf("Latency budget for trace %s", track.id), track.percent).
+				chadcn.Progress(fmt.Sprintf("Latency budget for trace %s", track.ID), traceBudgetPercent(track.Duration)).
 					Width(ui.Px(168)),
-				ui.Text(track.duration+" of a 2.0s budget").Class("app-muted"),
+				ui.Text(track.Duration+" sampled").Class("app-muted"),
 			),
-			chadcn.Avatar(chadcn.AvatarOptions{Initials: track.owner, Status: chadcn.AvatarStatusOnline, Size: chadcn.AvatarSmall}),
-			ui.Text(track.name+" · owner").Class("app-muted"),
+			chadcn.Avatar(chadcn.AvatarOptions{Initials: track.Owner, Status: chadcn.AvatarStatusOnline, Size: chadcn.AvatarSmall}),
+			ui.Text(track.Owner+" · generated trace").Class("app-muted"),
 			chadcn.Kbd("⌘T"),
 		),
 		chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Trace selector"}, selectors...),
 	)
 
 	rootName, focusName := "span pending", "span pending"
-	if len(sampleSpans) > 0 {
-		rootName = sampleSpans[0].Name
+	if len(track.Spans) > 0 {
+		rootName = track.Spans[0].Name
 		focusName = rootName
-		for _, span := range sampleSpans {
+		for _, span := range track.Spans {
 			if span.Status == "warning" {
 				focusName = span.Name
 				break
@@ -84,8 +87,8 @@ func (a *app) tracesPanel() *ui.Element {
 		}
 	}
 
-	traceRows := make([]chadcn.TraceRow, 0, len(sampleSpans))
-	for _, span := range sampleSpans {
+	traceRows := make([]chadcn.TraceRow, 0, len(track.Spans))
+	for _, span := range track.Spans {
 		traceRows = append(traceRows, chadcn.TraceRow{
 			Label:  span.Name,
 			Detail: span.Service + " · " + span.Duration,
@@ -96,7 +99,7 @@ func (a *app) tracesPanel() *ui.Element {
 	}
 
 	waterfall := chadcn.Trace(chadcn.TraceOptions{Rows: traceRows})
-	if len(sampleSpans) == 0 {
+	if len(track.Spans) == 0 {
 		waterfall = chadcn.Empty(chadcn.EmptyOptions{
 			Icon:        ui.Text("⌁"),
 			Title:       "No spans for this trace",
@@ -105,17 +108,17 @@ func (a *app) tracesPanel() *ui.Element {
 	}
 
 	attributeRows := []*ui.Element{
-		chadcn.TableRow(chadcn.TableCell("trace.id"), chadcn.TableCell(track.id)),
+		chadcn.TableRow(chadcn.TableCell("trace.id"), chadcn.TableCell(track.ID)),
 		chadcn.TableRow(chadcn.TableCell("span.name"), chadcn.TableCell(focusName)),
 		chadcn.TableRow(chadcn.TableCell("db.system"), chadcn.TableCell("postgresql")),
 		chadcn.TableRow(chadcn.TableCell("latency"),
-			chadcn.TableCell(fmt.Sprintf("%s · %d%% of budget", track.duration, track.percent))),
+			chadcn.TableCell(track.Duration+" · "+track.Status)),
 	}
 
 	waterfallCard := chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.H2("Span waterfall").FontSize(ui.Px(16)),
-			chadcn.CardDescription(fmt.Sprintf("%d spans · %s end to end", len(sampleSpans), track.duration)),
+			chadcn.CardDescription(fmt.Sprintf("%d spans · %s end to end", len(track.Spans), track.Duration)),
 		),
 		chadcn.CardContent(
 			ui.Div().Class("app-col").Gap(ui.Px(12)).Children(
@@ -143,13 +146,13 @@ func (a *app) tracesPanel() *ui.Element {
   "duration": "%s",
   "spanCount": %d,
   "sampled": true,
-  "status": "ok"
-}`, track.id, rootName, track.duration, len(sampleSpans))
+  "status": "%s"
+}`, track.ID, rootName, track.Duration, len(track.Spans), track.Status)
 
 	payloadCard := chadcn.Card(
 		chadcn.CardContent(
 			chadcn.CodeBlock(chadcn.CodeBlockOptions{
-				Filename: "trace-" + track.id + ".json",
+				Filename: "trace-" + track.ID + ".json",
 				Language: "json",
 				Code:     payload,
 			}),
@@ -168,36 +171,44 @@ func (a *app) tracesPanel() *ui.Element {
 		),
 	).Gap(ui.Px(traceCardGap)).Padding(ui.Px(traceCardPadding))
 
-	recentCount := min(len(sampleLogs), traceRecentRows)
-	recentRows := make([]*ui.Element, 0, recentCount)
-	for i := 0; i < recentCount; i++ {
-		entry := sampleLogs[i]
-		recentRows = append(recentRows, ui.Div().Class("app-row").
+	recentRows := make([]*ui.Element, 0, len(traces))
+	for i, entry := range traces {
+		row := ui.Div().ID("recent-trace-"+entry.ID).Class("app-row app-trace-row").
+			Attr("role", "button").Attr("tabindex", "0").
 			Height(ui.Px(traceRowHeight)).
 			Padding(ui.Edges(ui.Px(0), ui.Px(10))).
 			Children(
 				ui.Text("⌁").Color(ui.ColorVar("--of-muted", ui.Hex("#737373"))),
-				ui.Text(entry.Trace).FontSize(ui.Px(12)).FontFamily(ui.FontFamilyMonospace),
+				ui.Text(entry.ID).FontSize(ui.Px(12)).FontFamily(ui.FontFamilyMonospace),
+				ui.Text(entry.Name).FontSize(ui.Px(12)),
 				chadcn.Badge(entry.Service, chadcn.BadgeOptions{Variant: chadcn.BadgeOutline}),
 				ui.Div().Class("app-spacer"),
 				chadcn.Badge(entry.Duration, chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
-				ui.Text(entry.Time).Class("app-muted"),
-			))
+				chadcn.Badge(entry.Status, chadcn.BadgeOptions{Variant: traceStatusVariant(entry.Status)}),
+				ui.Text(entry.Timestamp.Format("15:04:05")).Class("app-muted"),
+			)
+		row.OnClick(func(ctx context.Context) error {
+			a.traceIndex = i
+			a.traceSpan = ""
+			return a.refresh(ctx)
+		})
+		recentRows = append(recentRows, row)
 	}
-	a.traceScroll.SetRange(recentCount*traceRowHeight, traceScrollHeight)
 
 	recentCard := ui.Div().Class("app-col").Children(
 		ui.Div().Class("app-row app-row--between").Children(
-			ui.Text("Recent traces").Class("app-section-label"),
-			chadcn.Muted(fmt.Sprintf("%d of 128 · last 15 minutes", recentCount)),
+			ui.Text("Recent traces · generated demo feed").Class("app-section-label"),
+			chadcn.Muted(fmt.Sprintf("page %d of %d · %d total", a.tracePageIndex+1, tracePages, traceCount)),
 		),
-		chadcn.ScrollArea(chadcn.ScrollAreaOptions{
-			ID:          "trace-scroll",
-			Label:       "Recent traces",
-			State:       &a.traceScroll,
-			TrackPixels: traceScrollHeight,
-			Height:      ui.Px(traceScrollHeight),
-			Children:    recentRows,
+		ui.Div().Class("app-col").Children(recentRows...),
+		chadcn.Pagination(chadcn.PaginationOptions{
+			Page: a.tracePageIndex + 1, TotalPages: tracePages,
+			OnSelect: func(ctx context.Context, page int) error {
+				a.tracePageIndex = page - 1
+				a.traceIndex = 0
+				a.traceSpan = ""
+				return a.refresh(ctx)
+			},
 		}),
 	)
 
@@ -228,103 +239,37 @@ func (a *app) tracesPanel() *ui.Element {
 		),
 	).Gap(ui.Px(traceCardGap)).Padding(ui.Px(traceCardPadding))
 
-	ltrCard := chadcn.Card(
-		chadcn.CardHeader(
-			chadcn.CardTitle("Arabic · forced LTR"),
-			chadcn.CardDescription("For a log line that ignores the reader's script."),
-		),
-		chadcn.CardContent(
-			chadcn.Direction(chadcn.DirectionOptions{Mode: chadcn.DirectionLTR},
-				chadcn.P(arabic).FontSize(ui.Px(13)).LineHeight(ui.Number(1.7)),
-				chadcn.Muted("billing.charge · 640ms · declined"),
-			),
-		),
-		chadcn.CardFooter(
-			chadcn.Label("dir=ltr"),
-			ui.Div().Class("app-spacer"),
-			chadcn.Kbd("⌘L"),
-		),
-	).Gap(ui.Px(traceCardGap)).Padding(ui.Px(traceCardPadding))
-
-	topologyCard := chadcn.Card(
-		chadcn.CardTitle("Span topology"),
-		chadcn.CardContent(
-			chadcn.AspectRatio(chadcn.AspectRatioOptions{Ratio: traceTopologyRatio},
-				ui.Div().Class("app-canvas").Children(
-					ui.Text("web → api-gateway → postgres · 1.24s · 5 spans").FontSize(ui.Px(13)),
-				),
-			),
-		),
-	).Gap(ui.Px(traceCardGap)).Padding(ui.Px(traceCardPadding))
-
-	indexed, _ := a.extra["traces.indexed"].(bool)
-	var indexBody *ui.Element
-	if indexed {
-		indexBody = ui.Div().Class("app-row").Children(
-			chadcn.Badge("ready", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
-			ui.Text("1,284 spans · 42ms").Class("app-muted"),
-			ui.Div().Class("app-spacer"),
-			chadcn.Kbd("⌘I"),
-		)
-	} else {
-		indexBody = ui.Div().Class("app-col").Gap(ui.Px(9)).Children(
-			ui.Div().Class("app-row").Children(
-				chadcn.Spinner(chadcn.SpinnerOptions{Size: chadcn.SpinnerSmall, Label: "Indexing spans"}),
-				chadcn.Label("Indexing span attributes"),
-				ui.Div().Class("app-spacer"),
-				chadcn.Badge("streaming", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
-			),
-			chadcn.Skeleton(chadcn.SkeletonOptions{Height: traceSkeletonHeight, Rounded: true}),
-			chadcn.Skeleton(chadcn.SkeletonOptions{Height: traceSkeletonHeight, Rounded: true}).Width(ui.Percent(72)),
-			chadcn.Skeleton(chadcn.SkeletonOptions{Height: traceSkeletonHeight, Rounded: true}).Width(ui.Percent(44)),
-		)
-	}
-	indexCard := chadcn.Card(
-		chadcn.CardTitle("Span index"),
-		chadcn.CardContent(indexBody),
-		chadcn.CardFooter(
-			chadcn.Switch("Warm index", indexed).ID("trace-index-switch").
-				OnClick(func(ctx context.Context) error {
-					a.extra["traces.indexed"] = !indexed
-					return a.refresh(ctx)
-				}),
-			ui.Div().Class("app-spacer"),
-			chadcn.Label("Updated 14:32"),
-		),
-	).Gap(ui.Px(traceCardGap)).Padding(ui.Px(traceCardPadding))
-
 	action := chadcn.Item(chadcn.ItemOptions{
-		Media: chadcn.Avatar(chadcn.AvatarOptions{Initials: track.owner, Status: chadcn.AvatarStatusOnline, Size: chadcn.AvatarSmall}),
-		Title: "Own trace " + track.id,
-		Description: fmt.Sprintf("%s · %s · %d spans · last touched 6 minutes ago",
-			track.name, track.duration, len(sampleSpans)),
+		Media: chadcn.Avatar(chadcn.AvatarOptions{Initials: track.Owner, Status: chadcn.AvatarStatusOnline, Size: chadcn.AvatarSmall}),
+		Title: "Own trace " + track.ID,
+		Description: fmt.Sprintf("%s · %s · %d spans · sampled %s",
+			track.Name, track.Duration, len(track.Spans), track.Timestamp.Format("15:04:05")),
 		Actions: chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Trace actions"},
 			chadcn.Button("Assign to me", chadcn.ButtonOptions{
 				Size:    chadcn.ButtonSmall,
 				Variant: chadcn.ButtonOutlined,
 			}).OnClick(func(ctx context.Context) error {
-				return a.showToast(ctx, "Assigned", "Trace "+track.id+" is now owned by you.")
+				return a.showToast(ctx, "Assigned", "Trace "+track.ID+" is now owned by you.")
 			}),
 			chadcn.Button("Share", chadcn.ButtonOptions{
 				Size:    chadcn.ButtonSmall,
 				Variant: chadcn.ButtonOutlined,
 			}).OnClick(func(ctx context.Context) error {
-				return a.showToast(ctx, "Link copied", "trace-"+track.id+" was copied to the clipboard.")
+				return a.showToast(ctx, "Link copied", "trace-"+track.ID+" was copied to the clipboard.")
 			}),
 		),
 	}).Padding(ui.Px(traceCardPadding))
 
 	return ui.Section().Class("app-stack").Children(
 		header,
-		chadcn.Lead("One request, five spans, and the payload the collector kept."),
+		chadcn.Lead("Generated request spans, their timing, and the sampled payload."),
 		ui.Div().Class("app-split").Children(
 			chadcn.Resizable(chadcn.ResizableOptions{
 				ID: "trace-split", Ratio: a.splitRatio, First: waterfallCard, Second: payloadCard,
 			}),
 		),
 		recentCard,
-		ui.Div().Class("app-card-grid").Children(directionCard, ltrCard),
-		ui.Div().Class("app-grid-2").Children(topologyCard, indexCard),
+		directionCard,
 		chadcn.Separator(chadcn.SeparatorOptions{}),
 		action,
 	)

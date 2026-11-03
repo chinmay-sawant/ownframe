@@ -4,6 +4,8 @@
 
 .of-chart {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   background-color: var(--of-chart-background, var(--of-card, #ffffff));
   color: var(--of-text, #0a0a0a);
   border: 1px solid var(--of-border, #e5e5e5);
@@ -15,6 +17,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
   padding: var(--of-chart-header-padding, 14px 20px 12px);
   border-bottom: 1px solid var(--of-border, #e5e5e5);
@@ -45,6 +48,7 @@
 .of-chart-summary {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 18px;
   flex-shrink: 0;
 }
@@ -80,6 +84,7 @@
   justify-content: space-between;
   gap: var(--of-chart-group-gap, 10px);
   height: var(--of-chart-plot-height, 160px);
+  min-width: 0;
   padding: 0;
   border-bottom: 1px solid var(--of-border, #e5e5e5);
 }

@@ -54,10 +54,18 @@
   border-radius: var(--of-radius-sm, 6px);
   background-color: var(--of-primary, #171717);
   color: var(--of-on-primary, #fafafa);
-  box-shadow: 0 6px 16px var(--of-shadow, #00000026);
+  box-shadow: none;
   font-size: 12px;
   line-height: 16px;
   text-align: center;
+}
+
+.of-tooltip--css-hover.of-tooltip--hovered > .of-tooltip-anchor > .of-tooltip-content {
+  display: flex;
+}
+
+.of-tooltip--css-hover:not(.of-tooltip--hovered) > .of-tooltip-anchor > .of-tooltip-content {
+  display: none;
 }
 
 /* The label is text only, so paint-time centring is safe: the hit box never
