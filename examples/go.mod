@@ -13,7 +13,7 @@ require (
 	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261102143707-423d73317f45
+	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
 	golang.org/x/image v0.47.0
 	golang.org/x/sys v0.49.0
 	// Examples-only TCB: modernc.org/sqlite plus libc, memory, mathutil,

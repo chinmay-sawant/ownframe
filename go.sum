@@ -64,6 +64,8 @@ github.com/hajimehoshi/ebiten/v2 v2.10.4 h1:9O8C98SB605F7gs8MHQQZIHTVpgIvatgdd19
 github.com/hajimehoshi/ebiten/v2 v2.10.4/go.mod h1:47QNgyS/y2ZRkjVUvlGLx8a+F7MSjcn8/GsjcCZ9Rc8=
 github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261102143707-423d73317f45 h1:D1YQv6VaTI7vS38UCXtIARLvkSPj1q/BOmL2e7XJqFw=
 github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261102143707-423d73317f45/go.mod h1:0NxTCB9bA6V/Lxeq9NwBGNiiqkfEE2ifu3MoYzGmO6w=
+github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532 h1:sT/tQ1nOerjNBKISdhRAt2zf5VOiRqgG7HJIXpTuZCA=
+github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532/go.mod h1:NXzIA+46w9eJlhAjZgo2gnFaXX8/3K6Kb/41gDfvsiM=
 github.com/jfreymuth/pulse v0.1.3 h1:bc5TdxiB8E+2INnFjFWWgyfgXtz2IyNNNCX+Wt/ZD14=
 github.com/jfreymuth/pulse v0.1.3/go.mod h1:cpYspI6YljhkUf1WLXLLDmeaaPFc3CnGLjDZf9dZ4no=
 github.com/pierrec/lz4/v4 v4.1.29 h1:CDQY6qZOLI4DW0Nx6R1vRrifrCeQHnNXkMb0hZWXFjg=

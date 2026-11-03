@@ -4,7 +4,7 @@ go 1.26.10
 
 require (
 	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
-	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261102143707-423d73317f45
+	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
 	golang.org/x/image v0.47.0
 	golang.org/x/text v0.43.0
 	golang.org/x/time v0.14.0
