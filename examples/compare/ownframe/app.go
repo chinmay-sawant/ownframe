@@ -83,9 +83,10 @@ func newListApp() (*listApp, error) {
 	view.Handle(ownframe.Handlers{Click: a.handleClick})
 	a.page.Scroll().SetWindowing(true)
 	a.page.SetScrollWindow(a.slice)
-	// No tick at rest: a registered tick keeps the tall viewport path on
-	// the frame clock even when it reports nothing. slice installs the tick
-	// only while a reslice is pending and the tick uninstalls itself after.
+	// The tick stays registered: since the quiet-tick fix, a tick that
+	// reports no damage idles on the viewport path like on the tile path.
+	// slice arms it through windowPending and the tick rebuilds once.
+	a.page.SetTick(a.tick)
 	return a, nil
 }
 
@@ -122,17 +123,14 @@ func (a *listApp) slice(offsetY, viewH int) bool {
 	}
 	a.winStart, a.winCount, a.topPad, a.botPad = w.Start, w.Count, w.Top, w.Bottom
 	a.windowPending = true
-	a.page.SetTick(a.tick)
 	return true
 }
 
 func (a *listApp) tick(ctx context.Context) error {
 	if !a.windowPending {
-		a.page.SetTick(nil)
 		return nil
 	}
 	a.windowPending = false
-	a.page.SetTick(nil)
 	return a.refresh(ctx)
 }
 
