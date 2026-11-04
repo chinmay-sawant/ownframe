@@ -147,6 +147,9 @@ func (a *builderApp) catalogOnScroll(offsetY, viewH int) bool {
 	if a.tab != "catalog" {
 		return false
 	}
+	if a.catalogOverlayOpen() {
+		return false
+	}
 	headerPx, pitchPx, _, ok := a.catalogWindowGeometry()
 	if !ok {
 		return false

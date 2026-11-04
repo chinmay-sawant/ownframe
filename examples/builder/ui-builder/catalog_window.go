@@ -207,12 +207,18 @@ func (a *builderApp) catalogWindowGeometry() (headerPx, pitchPx, rowsH int, ok b
 
 // catalogWindowPlan derives the current row window from live state. The
 // offset comes from the center ScrollState, the viewport from the laid-out
-// boxes, and the pitch from the last frame's measurement.
+// boxes, and the pitch from the last frame's measurement. While an overlay
+// panel is open the plan falls back to a full render so the open card cannot
+// be sliced out of the window between the toggle and the next scroll.
 func (a *builderApp) catalogWindowPlan() catalogWindowPlan {
 	totalRows := catalogRowCount(len(catalogEntries()))
 	plan := catalogWindowPlan{endRow: totalRows, totalRows: totalRows}
 	headerPx, pitchPx, rowsH, ok := a.catalogWindowGeometry()
 	if !ok {
+		return plan
+	}
+	if a.catalogOverlayOpen() {
+		plan.pitchPx, plan.rowsH, plan.headerPx = pitchPx, rowsH, headerPx
 		return plan
 	}
 	viewport := a.centerViewport()
@@ -234,6 +240,27 @@ func catalogWindowSpacer(id string, heightPx int) *ui.Element {
 		return nil
 	}
 	return ui.Div().ID(id).Height(ui.Px(float64(heightPx)))
+}
+
+// catalogOverlayOpen reports whether any absolutely positioned catalog panel
+// is open. Windowed slicing drops offscreen cards, so an open card toggled
+// outside the visible band would vanish on the toggle re-render; falling back
+// to a full render while an overlay is open keeps the open card mounted.
+func (a *builderApp) catalogOverlayOpen() bool {
+	return a.catalogComboboxOpen ||
+		a.catalogSelectOpen ||
+		a.catalogDateOpen ||
+		a.catalogDialogOpen ||
+		a.catalogDrawerOpen ||
+		a.catalogDropdownOpen ||
+		a.catalogPopoverOpen ||
+		a.catalogAlertDialogOpen ||
+		a.catalogSheetOpen ||
+		a.catalogContextOpen ||
+		a.catalogMenubarOpen != "" ||
+		a.catalogNavOpen != "" ||
+		a.catalogHoverOpen ||
+		a.catalogTooltipOpen
 }
 
 // catalogWindowedRows builds only the visible card rows plus spacer stubs,

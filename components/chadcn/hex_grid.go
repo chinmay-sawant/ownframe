@@ -6,6 +6,8 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+const maxHexColumns = 24
+
 // HexCell is one honeycomb cell. Tone selects the palette slot, 1-based; zero
 // or out-of-range tones render the muted empty cell. Label names the cell for
 // assistive technology.
@@ -73,7 +75,7 @@ func hexColumns(columns int) string {
 	if columns <= 0 {
 		return "12"
 	}
-	if columns > 24 {
+	if columns > maxHexColumns {
 		return "24"
 	}
 	return strconv.Itoa(columns)
