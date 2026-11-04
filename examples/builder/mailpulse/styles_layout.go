@@ -28,8 +28,48 @@ const layoutFixCSS = `
 .mp-funnel-count { min-width: 64px; text-align: right; }
 .mp-funnel-pct { min-width: 56px; text-align: right; }
 .mp-funnel-row > .mp-dots { width: 100%; max-width: 100%; overflow: hidden; padding-right: 2px; box-sizing: border-box; }
+.mp-card.mp-ov > .mp-pagehead,
+.mp-card.mp-stack > .mp-pagehead {
+  position: fixed;
+  top: 95px;
+  left: 301px;
+  right: 53px;
+  z-index: 30;
+  box-sizing: border-box;
+}
+.mp-card.mp-camp > .mp-pagehead,
+.mp-card.mp-cont > .mp-pagehead {
+  position: fixed;
+  top: 72px;
+  left: 277px;
+  right: 29px;
+  z-index: 30;
+  background: #fff;
+  border: 1px solid #e8e8e6;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-sizing: border-box;
+}
+.mp-card.mp-ov,
+.mp-card.mp-stack {
+  padding-top: 145px;
+}
+.mp-card.mp-camp,
+.mp-card.mp-cont {
+  padding-top: 122px;
+}
 @media (max-width: 1100px) {
-  .mp-content { padding: 0 16px 24px; }
+  .mp-content { padding: 71px 16px 24px; }
+  .mp-card.mp-ov > .mp-pagehead,
+  .mp-card.mp-stack > .mp-pagehead {
+    left: 289px;
+    right: 41px;
+  }
+  .mp-card.mp-camp > .mp-pagehead,
+  .mp-card.mp-cont > .mp-pagehead {
+    left: 265px;
+    right: 17px;
+  }
   .mp-grid-mid { grid-template-columns: 1fr; }
   .mp-grid-bot { grid-template-columns: 1fr; }
   .mp-card.mp-stack > .mp-grid-mid > *,
