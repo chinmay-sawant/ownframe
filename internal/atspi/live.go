@@ -4,4 +4,3 @@ package atspi
 func NewLiveBus() Bus {
 	return newLiveBus()
 }
-
