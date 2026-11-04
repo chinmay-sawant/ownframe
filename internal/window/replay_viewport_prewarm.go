@@ -23,7 +23,7 @@ type viewportWarmup struct {
 	scratch    *ebiten.Image
 }
 
-func (w *viewportWarmup) take(content, view, scroll image.Point, generation uint64) image.Rectangle {
+func (w *viewportWarmup) take(content, view, scroll image.Point, generation uint64, windowing bool) image.Rectangle {
 	if content.X <= 0 || content.Y <= view.Y || view.X <= 0 || view.Y <= 0 {
 		return image.Rectangle{}
 	}
@@ -31,7 +31,14 @@ func (w *viewportWarmup) take(content, view, scroll image.Point, generation uint
 	if reset || scroll.Y < w.area.Min.Y || scroll.Y+view.Y > w.area.Max.Y {
 		top := 0
 		height := content.Y
-		if int64(content.X)*int64(content.Y) > prewarmMaxPixels {
+		if windowing {
+			// A windowed page renders only the viewport slice between
+			// full-height spacers, so sweep the viewport plus overscan
+			// instead of the full spacer height.
+			gap := min(viewportOverscan, view.Y)
+			top = max(0, scroll.Y-gap)
+			height = min(content.Y-top, view.Y+viewportSides*gap)
+		} else if int64(content.X)*int64(content.Y) > prewarmMaxPixels {
 			top = max(0, scroll.Y-view.Y)
 			height = max(view.Y, prewarmMaxPixels/content.X)
 		}
@@ -69,6 +76,7 @@ func (s *shell) prewarmViewport(d *layout.Display, bounds image.Rectangle) bool 
 		bounds.Size(),
 		image.Pt(s.scrollX, s.scrollY),
 		s.layerGeneration(),
+		s.windowing(),
 	)
 	if r.Empty() {
 		if w.scratch != nil {

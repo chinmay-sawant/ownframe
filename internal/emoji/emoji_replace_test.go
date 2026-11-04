@@ -72,3 +72,29 @@ func TestReplaceVariationAndUnknown(t *testing.T) {
 		t.Fatalf("plain text changed: %q", got)
 	}
 }
+
+// TestReplaceGateSkipsNonEmoji proves the fast pre-check keeps color-emoji
+// treatment for supported sequences while an emoji-free page skips the
+// heavy pass without allocating.
+func TestReplaceGateSkipsNonEmoji(t *testing.T) {
+	got, changed := Replace(`<p>Hi 😂!</p>`)
+	if !changed || !strings.Contains(got, `src="emoji/1f602"`) {
+		t.Fatalf("emoji lost color treatment: %q changed=%v", got, changed)
+	}
+
+	for _, e := range all() {
+		if !maybeHasEmoji(e.seq) {
+			t.Fatalf("gate misses supported %q", e.seq)
+		}
+	}
+
+	for _, src := range []string{`<p>plain ascii</p>`, `<p>ownframe · builder → HTML — café</p>`} {
+		src := src
+		if out, changed := Replace(src); changed || out != src {
+			t.Fatalf("non-emoji changed: %q -> %q changed=%v", src, out, changed)
+		}
+		if allocs := testing.AllocsPerRun(100, func() { Replace(src) }); allocs != 0 {
+			t.Fatalf("non-emoji %q allocated %v per run, want 0", src, allocs)
+		}
+	}
+}

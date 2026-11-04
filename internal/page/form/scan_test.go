@@ -5,6 +5,37 @@ import (
 	"testing"
 )
 
+func TestHasControls(t *testing.T) {
+	t.Parallel()
+
+	for _, src := range []string{
+		`<input id="t">`,
+		`<INPUT ID="p" TYPE="password">`,
+		`<textarea id="m">x</textarea>`,
+		`<TEXTAREA ID="m">x</TEXTAREA>`,
+		`<select id="s"><option>A</option></select>`,
+		`<SELECT ID="s"><option>A</option></SELECT>`,
+		`<button id="b">Go</button>`,
+		`<BUTTON ID="b">Go</BUTTON>`,
+		`<!-- <input id="z"> -->`,
+	} {
+		if !HasControls(src) {
+			t.Fatalf("HasControls(%q) = false, want true", src)
+		}
+	}
+
+	for _, src := range []string{
+		``,
+		`plain text`,
+		`<div id="a">hi</div>`,
+		`<inpu id="t">`,
+	} {
+		if HasControls(src) {
+			t.Fatalf("HasControls(%q) = true, want false", src)
+		}
+	}
+}
+
 func TestScanControls(t *testing.T) {
 	t.Parallel()
 

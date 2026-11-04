@@ -42,7 +42,7 @@ func (a *app) toastBar() *ui.Element {
 		Right(ui.Px(16)).
 		Bottom(ui.Px(16)).
 		ZIndex(ui.Number(200)).
-		MaxWidth(ui.Px(345)).
+		Width(ui.Px(520)).
 		Children(
 			ui.Span().Class("mp-toast-msg").Text(msg).
 				FlexGrow(ui.Number(1)).

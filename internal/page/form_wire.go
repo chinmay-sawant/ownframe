@@ -439,6 +439,26 @@ func (p *Page) syncForm(body string) string {
 		}
 	}
 
+	// Pages without form controls skip the button rewrite, the scan, the
+	// merge, the binds, and the control rewrite. The live set cached from
+	// the last sync is empty and the new body carries no control tags, so
+	// every one of those steps is a no-op; only the focus handoff, the
+	// bookkeeping, and the emoji pass below can change anything.
+	if len(fs.ByID) == 0 && len(fs.Order) == 0 && !form.HasControls(body) {
+		if _, ok := fs.ByID[fs.FocusID]; !ok {
+			fs.FocusID = ""
+			fs.ClearRange()
+		}
+
+		p.applyFocusRequest()
+		fs.ClampToFocus()
+
+		p.lastSyncBody = body
+		p.formDirty = false
+
+		return emojiPass(body)
+	}
+
 	body = rewriteButtons(body)
 	spans := form.Scan(body)
 	byID, order := form.Merge(fs.ByID, spans)

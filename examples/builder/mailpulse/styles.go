@@ -224,14 +224,14 @@ const appCSS = `
 .mp-engage-open { font-size: 13px; }
 .mp-toast {
   display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-  max-width: 345px; width: auto; margin: 0; padding: 10px 12px;
+  box-sizing: border-box; width: 520px; max-width: calc(100vw - 32px); margin: 0; padding: 10px 12px;
   border: 1px solid #e8e8e6; border-radius: 12px; background: #1a1a1a; color: #fff;
   font-size: 12px; line-height: 1.5;
   z-index: 200;
 }
 .mp-toast-msg {
   flex: 1 1 auto; min-width: 0;
-  white-space: normal; overflow-wrap: break-word; word-break: break-word;
+  white-space: normal; overflow-wrap: break-word;
 }
 .mp-toast .of-button { flex-shrink: 0; }
 .mp-insight {

@@ -69,10 +69,13 @@ func (s *shell) drawReplayPartial(dst *ebiten.Image) bool {
 		return true
 	}
 
-	if oversized(contentW, contentH) || s.gridTooBig(contentW, contentH) {
+	if oversized(contentW, contentH) || s.gridTooBig(contentW, contentH) || s.windowing() {
 		// The viewport path drops the tile grid. A later stable blit may
-		// idle. A scroll, a generation change, a dirty region, a focus or
-		// size stale frame, or a ticker keeps the frame clock.
+		// idle, including with a quiet tick. A scroll, a generation change,
+		// a dirty region, a focus or size stale frame, or a tick that
+		// reported damage keeps the frame clock. A windowing page always
+		// takes this path, so its working set stays viewport-sized no
+		// matter how tall its spacers make the content.
 		focus, size, held := s.partial.focus, s.partial.screen, s.partial.scroll
 		s.drawViewport(dst, display, taker)
 		s.partial.focus, s.partial.screen, s.partial.scroll = focus, size, held
