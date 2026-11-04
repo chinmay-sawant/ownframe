@@ -17,7 +17,7 @@ func (a *app) linksCard() *ui.Element {
 	links := topLinksFor(days)
 	rows := make([]*ui.Element, 0, len(links))
 	for _, link := range links {
-		rows = append(rows, ui.Div().Class("mp-linkrow").Children(
+		rows = append(rows, ui.Div().Class("mp-linkrow mp-enter").Children(
 			ui.Span().Class("mp-linkicon").Text("↗"),
 			ui.Div().Class("mp-linkmain").Children(
 				ui.Text(link.url).FontWeight(ui.FontWeightBold).FontSize(ui.Px(13)),

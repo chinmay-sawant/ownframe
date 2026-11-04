@@ -228,7 +228,7 @@ func audienceDots(filledCount int) *ui.Element {
 		if i < filledCount {
 			class += " mp-dot--on"
 		}
-		dots = append(dots, ui.Span().Class(class))
+		dots = append(dots, ui.Span().ID("mp-src-dot-"+strconv.Itoa(i)).Class(class))
 	}
 	return ui.Div().Class("mp-dots").Children(dots...)
 }

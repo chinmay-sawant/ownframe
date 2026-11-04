@@ -1,9 +1,7 @@
 // Package main is the ownframe compare table built with the UI builder.
 //
-// Best-practice form: the builder renders only the viewport window of rows
-// (the 1.0 list recipe: SetWindowing plus SetScrollWindow from
-// examples/list), selection skips no-op clicks, and retained state stays on
-// so repaint reuses caches.
+// Naive form: the builder renders all 1000 rows every time, so this measures
+// the default full-rebuild path against the mygo naive table.
 package main
 
 import (
@@ -13,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
-	"github.com/chinmay-sawant/ownframe/examples/list"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
@@ -23,11 +20,7 @@ const (
 	listWidth    = 800
 	listHeight   = 600
 	listRows     = 1000
-	// rowH is the fixed row height every windowing computation assumes.
-	// Row content is one line and fits: 14 px type plus 16 px padding.
-	rowH     = 40
-	overscan = 10
-	listBody = "Lorem ipsum dolor sit amet."
+	listBody     = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
 )
 
 // listRow is one styled table row.
@@ -37,20 +30,14 @@ type listRow struct {
 	body  string
 }
 
-// listApp owns the full row data in Go and renders only the viewport window:
-// rows winStart:winStart+winCount between topPad and botPad spacers, which
-// keep the document at full height. A scroll move records a pending window
-// and the tick rebuilds once.
+// listApp is the thousand-row styled table: a header, a dark column header
+// row, and one alternating-color row per item. Clicking a row selects it and
+// rebuilds the whole view with the new data.
 type listApp struct {
-	view          *ui.View
-	page          *ownframe.Page
-	rows          []listRow
-	selected      int
-	winStart      int
-	winCount      int
-	topPad        int
-	botPad        int
-	windowPending bool
+	view     *ui.View
+	page     *ownframe.Page
+	rows     []listRow
+	selected int
 }
 
 func makeListRows(n int) []listRow {
@@ -67,13 +54,10 @@ func makeListRows(n int) []listRow {
 
 func newListApp() (*listApp, error) {
 	a := &listApp{selected: -1, rows: makeListRows(listRows)}
-	w := list.Window(0, listHeight, 0, rowH, len(a.rows), overscan)
-	a.winStart, a.winCount, a.topPad, a.botPad = w.Start, w.Count, w.Top, w.Bottom
 	view, err := ui.Mount(ownframe.Config{
-		Title:       listTitle,
-		Width:       listWidth,
-		Height:      listHeight,
-		RetainState: true,
+		Title:  listTitle,
+		Width:  listWidth,
+		Height: listHeight,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new compare table app: %w", err)
@@ -81,12 +65,6 @@ func newListApp() (*listApp, error) {
 	a.view = view
 	a.page = view.Page
 	view.Handle(ownframe.Handlers{Click: a.handleClick})
-	a.page.Scroll().SetWindowing(true)
-	a.page.SetScrollWindow(a.slice)
-	// The tick stays registered: since the quiet-tick fix, a tick that
-	// reports no damage idles on the viewport path like on the tile path.
-	// slice arms it through windowPending and the tick rebuilds once.
-	a.page.SetTick(a.tick)
 	return a, nil
 }
 
@@ -104,34 +82,6 @@ func (a *listApp) headerCell(text string, width float64) *ui.Element {
 	return ui.Text(text).Width(ui.Px(width)).
 		FontSize(ui.Px(13)).FontWeight(ui.FontWeightBold).
 		Color(ui.Hex("#ffffff"))
-}
-
-// slice moves the rendered window to the viewport. It records a pending
-// rebuild and reports the move so the host repaints; the tick rebuilds once
-// instead, because the scroll callback carries no context for View.Update.
-func (a *listApp) slice(offsetY, viewH int) bool {
-	gridY := 0
-	for _, b := range a.page.Boxes() {
-		if b.ID == "compare-grid" {
-			gridY = int(b.Y)
-			break
-		}
-	}
-	w := list.Window(offsetY, viewH, gridY, rowH, len(a.rows), overscan)
-	if w.Start == a.winStart && w.Count == a.winCount {
-		return false
-	}
-	a.winStart, a.winCount, a.topPad, a.botPad = w.Start, w.Count, w.Top, w.Bottom
-	a.windowPending = true
-	return true
-}
-
-func (a *listApp) tick(ctx context.Context) error {
-	if !a.windowPending {
-		return nil
-	}
-	a.windowPending = false
-	return a.refresh(ctx)
 }
 
 func (a *listApp) screen() *ui.Element {
@@ -154,20 +104,8 @@ func (a *listApp) screen() *ui.Element {
 			ui.Text("Description").FontSize(ui.Px(13)).
 				FontWeight(ui.FontWeightBold).Color(ui.Hex("#ffffff")),
 		)
-	var top, bottom *ui.Element
-	if a.topPad > 0 {
-		top = ui.Div().ID("compare-top-pad").Height(ui.Px(float64(a.topPad)))
-	}
-	if a.botPad > 0 {
-		bottom = ui.Div().ID("compare-bot-pad").Height(ui.Px(float64(a.botPad)))
-	}
-	end := min(a.winStart+a.winCount, len(a.rows))
-	rows := make([]*ui.Element, 0, end-a.winStart+2)
-	if top != nil {
-		rows = append(rows, top)
-	}
-	for i := a.winStart; i < end; i++ {
-		r := a.rows[i]
+	rows := make([]*ui.Element, 0, len(a.rows))
+	for i, r := range a.rows {
 		bg := ui.Hex("#ffffff")
 		if i%2 == 1 {
 			bg = ui.Hex("#f3f4f6")
@@ -178,10 +116,8 @@ func (a *listApp) screen() *ui.Element {
 		row := ui.Div().ID("compare-row-"+strconv.Itoa(i)).
 			Attr("data-action", "row:"+strconv.Itoa(i)).
 			Display(ui.DisplayFlex).
-			AlignItems(ui.AlignItemsCenter).
 			Gap(ui.Px(12)).
 			Padding(ui.Px(8)).
-			Height(ui.Px(rowH)).
 			BackgroundColor(bg).
 			Children(
 				ui.Text(r.num).Width(ui.Px(64)).
@@ -191,9 +127,6 @@ func (a *listApp) screen() *ui.Element {
 				ui.Text(r.body).FontSize(ui.Px(13)).Color(ui.Hex("#4a463c")),
 			)
 		rows = append(rows, row)
-	}
-	if bottom != nil {
-		rows = append(rows, bottom)
 	}
 	return ui.Div().Display(ui.DisplayFlex).
 		FlexDirection(ui.FlexDirectionColumn).
@@ -208,9 +141,6 @@ func (a *listApp) handleClick(ctx context.Context, box ownframe.Box) error {
 	}
 	i, err := strconv.Atoi(n)
 	if err != nil || i < 0 || i >= len(a.rows) {
-		return nil
-	}
-	if i == a.selected {
 		return nil
 	}
 	a.selected = i

@@ -169,6 +169,11 @@ func barHeightsFor(days int) []float64 {
 	return heights
 }
 
+// scaleStr formats a 0-90 track height as a scaleY factor.
+func scaleStr(height float64) string {
+	return strconv.FormatFloat(height/100, 'f', 3, 64)
+}
+
 // growthBarID names one List growth bar so the hover handler can map it
 // back to its week index.
 func growthBarID(i int) string {
@@ -256,8 +261,22 @@ func (a *app) overviewGrowthCard() *ui.Element {
 		if i == peakIdx {
 			color = "#7c3aed"
 		}
-		bars = append(bars, ui.Div().ID(growthBarID(i)).Class("mp-bar").
-			Height(ui.Percent(height)).
+		// The fill spans the full track and scales from the baseline, so
+		// a range switch moves on the transform path (one composited
+		// matrix per bar) instead of the height path (one relayout per
+		// bar per frame). At rest scaleY(h/100) of a full-height fill
+		// paints the same pixels as a height:h% bar.
+		scale := height
+		if a.enterBars {
+			scale = 0
+		}
+		class := "mp-bar"
+		if a.enterSlow {
+			class += " mp-bar-slow"
+		}
+		bars = append(bars, ui.Div().ID(growthBarID(i)).Class(class).
+			Height(ui.Percent(100)).
+			Transform(ui.RawValue("scaleY("+scaleStr(scale)+")")).
 			Flex(ui.Number(1)).
 			MinWidth(ui.Px(0)).
 			MaxWidth(ui.Px(40)).
@@ -337,7 +356,7 @@ func overviewSegmentRow(segment overviewSegment) *ui.Element {
 		}
 		dots = append(dots, ui.Span().Class(class))
 	}
-	return ui.Div().Class("mp-linkrow").Children(
+	return ui.Div().Class("mp-linkrow mp-enter").Children(
 		ui.Div().Class("mp-link-meta").Children(
 			ui.Span().Class("mp-engage-label").Text(segment.label),
 			ui.Div().Class("mp-dots").Children(dots...),
@@ -415,7 +434,7 @@ func (a *app) overviewSendsCard() *ui.Element {
 	sends := overviewSendsFor(a.rangeDays())
 	rows := make([]*ui.Element, 0, len(sends))
 	for _, send := range sends {
-		rows = append(rows, ui.Div().Class("mp-linkrow mp-selectable").
+		rows = append(rows, ui.Div().Class("mp-linkrow mp-selectable mp-enter").
 			Attr("data-action", "select:send:"+send.id+":"+send.name).
 			Children(
 				ui.Div().Class("mp-linkmain").Children(

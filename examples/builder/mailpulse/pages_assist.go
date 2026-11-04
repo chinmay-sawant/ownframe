@@ -120,7 +120,7 @@ func (a *app) settingsPage() *ui.Element {
 				Type:        "email",
 				Placeholder: "Email",
 			}),
-		),
+		).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(12)),
 	)
 	sending := chadcn.Card(
 		chadcn.CardHeader(

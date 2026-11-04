@@ -15,7 +15,7 @@ func (a *app) funnelCard() *ui.Element {
 	rows := funnelRowsFor(a.rangeDays())
 	items := make([]*ui.Element, 0, len(rows)+1)
 	for _, row := range rows {
-		items = append(items, ui.Div().Class("mp-funnel-row").Children(
+		items = append(items, ui.Div().Class("mp-funnel-row mp-enter").Children(
 			ui.Div().Class("mp-funnel-top").Children(
 				ui.Span().Class("mp-funnel-label").Text(row.label),
 				ui.Div().Class("mp-funnel-stats").Children(

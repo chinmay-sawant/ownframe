@@ -3,8 +3,7 @@ package main
 // appCSS is MailPulse layout only. ChadCN owns component paint and state.
 const appCSS = `
 .mp-shell {
-  display: flex;
-  align-items: flex-start;
+  display: block;
   min-width: 960px;
   min-height: 100vh;
   background: #f6f6f5;
@@ -13,10 +12,12 @@ const appCSS = `
   font-size: 14px;
 }
 .mp-shell #mp-sidebar {
-  position: sticky;
+  position: fixed;
+  left: 0;
   top: 0;
   height: 100vh;
   flex-shrink: 0;
+  z-index: 50;
 }
 .mp-shell #mp-sidebar .of-sidebar-content {
   overflow-y: auto;
@@ -37,8 +38,15 @@ const appCSS = `
   flex: 1;
   flex-direction: column;
   min-width: 0;
+  margin-left: 248px;
 }
 .mp-topbar {
+  position: fixed;
+  top: 0;
+  left: 248px;
+  right: 0;
+  z-index: 40;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -58,7 +66,7 @@ const appCSS = `
   width: 100%;
 }
 .mp-search .of-input:focus { outline: none; box-shadow: none; }
-.mp-content { min-width: 0; padding: 0 28px 32px; }
+.mp-content { min-width: 0; padding: 71px 28px 32px; }
 .mp-card {
   min-width: 0;
   overflow: hidden;
@@ -186,7 +194,7 @@ const appCSS = `
 .mp-heat-legend { display: flex; align-items: center; gap: 6px; margin-top: 12px; color: #6b7280; font-size: 11px; }
 .mp-heat-legend-label { white-space: nowrap; }
 .mp-dots { display: flex; align-items: center; gap: 4px; }
-.mp-dot { width: 14px; height: 8px; border-radius: 4px; background: #ececec; flex-shrink: 0; transition: background-color 0.35s ease; }
+.mp-dot { width: 14px; height: 8px; border-radius: 4px; background: #ececec; flex-shrink: 0; transition: background-color 0.35s ease; animation: mp-fade-in 0.5s ease both; }
 .mp-dot--on { background: #8b5cf6; }
 .mp-dot--off { background: #ececec; }
 .mp-linkrow {
@@ -199,7 +207,8 @@ const appCSS = `
 .mp-linkrow:first-of-type { border-top: none; }
 .mp-bars { display: flex; align-items: flex-end; gap: 6px; min-height: 200px; min-width: 0; overflow: hidden; }
 .mp-bar-col { display: flex; flex: 1 1 0; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-.mp-bar { width: 100%; max-width: 40px; border-radius: 4px 4px 0 0; background: #8b5cf6; transition: height 0.45s ease, background-color 0.45s ease; }
+.mp-bar { width: 100%; max-width: 40px; border-radius: 4px 4px 0 0; background: #8b5cf6; transform-origin: 50% 100%; transition: transform 0.9s ease, background-color 0.45s ease; }
+.mp-bar.mp-bar-slow { transition: transform 3s ease, background-color 0.45s ease; }
 .mp-report-row { padding: 16px 8px; gap: 20px; }
 .mp-report-row + .mp-report-row { border-top: 1px solid #f0f0ee; }
 .mp-link-meta {
@@ -243,4 +252,7 @@ const appCSS = `
   font-size: 12px;
   line-height: 1.5;
 }
+@keyframes mp-fade-in { from { opacity: 0; } }
+.mp-enter { animation: mp-rise-in 0.6s ease both; }
+@keyframes mp-rise-in { from { opacity: 0; transform: translateY(8px); } }
 `

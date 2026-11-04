@@ -6,17 +6,13 @@ import (
 	"github.com/egoist/mygo/ui"
 )
 
-func TestListShowsWindow(t *testing.T) {
+func TestListShowsRows(t *testing.T) {
 	s := &listApp{selected: -1}
 	tt := ui.NewTester(s.view, listWidth, listHeight)
-	for _, want := range []string{"Compare Table · 1000 rows", listSubtitle, "Item 1", "Num", "Description"} {
+	for _, want := range []string{"Compare Table · 1000 rows", listSubtitle, "Item 1", "Item 1000", "Num", "Description"} {
 		if !tt.HasText(want) {
 			t.Errorf("missing %q, got %q", want, tt.Texts())
 		}
-	}
-	// The virtualized list builds only rows in view.
-	if tt.HasText("Item 1000") {
-		t.Errorf("list should not build Item 1000 outside the view")
 	}
 }
 
@@ -35,32 +31,30 @@ func TestListSelectRow(t *testing.T) {
 }
 
 // BenchmarkListClick measures the full data-update path: each click on a
-// visible row selects it and reframes the virtualized list.
+// visible row selects it and rebuilds the whole table view with new data.
 func BenchmarkListClick(b *testing.B) {
 	s := &listApp{selected: -1}
 	tt := ui.NewTester(s.view, listWidth, listHeight)
-	labels := []string{"Item 5", "Item 6"}
-	want := []int{4, 5}
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		if err := tt.Click(labels[i%len(labels)]); err != nil {
+		if err := tt.Click("Item 5"); err != nil {
 			b.Fatal(err)
 		}
 	}
-	if s.selected != want[(b.N-1)%len(want)] {
-		b.Fatalf("selected = %d", s.selected)
+	if s.selected != 4 {
+		b.Fatalf("selected = %d, want 4", s.selected)
 	}
 }
 
-// BenchmarkListTester measures building the virtualized table view in memory
-// without a window: one tester per iteration, then a text lookup.
+// BenchmarkListTester measures building the whole thousand-row view in
+// memory without a window: one tester per iteration, then a text lookup.
 func BenchmarkListTester(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
-		s := &listApp{selected: 4}
+		s := &listApp{selected: 500}
 		tt := ui.NewTester(s.view, listWidth, listHeight)
-		if !tt.HasText("Item 1") {
+		if !tt.HasText("Item 1000") {
 			b.Fatal("missing row text")
 		}
 	}

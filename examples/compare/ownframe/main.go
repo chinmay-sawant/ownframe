@@ -5,9 +5,14 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
+	"os"
+	"runtime"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
+	"github.com/chinmay-sawant/ownframe/pagetest"
 )
 
 func main() {
@@ -16,7 +21,16 @@ func main() {
 	dev := flag.Bool("dev", false, "open the developer tools dock at startup")
 	perf := flag.Bool("perf", false, "enable perf sampling for the devtools Frame tab")
 	debugAddr := flag.String("debug-addr", "", "serve window profiling on this loopback address (off by default; needs -tags ownframe_debug)")
+	bench := flag.Bool("bench", false, "run headless benchmarks instead of opening a window")
+	benchFile := flag.String("bench-file", "", "write benchmark results to this file as well as stdout")
 	flag.Parse()
+
+	if *bench {
+		if err := runBench(*benchFile); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	app, err := newListApp()
 	if err != nil {
@@ -47,4 +61,82 @@ func main() {
 	if err := ownframe.Run(ctx, app.Page()); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// benchResult is one headless measurement row.
+type benchResult struct {
+	name       string
+	ops        int
+	nsPerOp    float64
+	bytesPerOp uint64
+	allocsOp   uint64
+}
+
+// measure runs fn n times and reports time plus MemStats deltas.
+func measure(name string, n int, fn func() error) (benchResult, error) {
+	runtime.GC()
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	start := time.Now()
+	for i := 0; i < n; i++ {
+		if err := fn(); err != nil {
+			return benchResult{}, err
+		}
+	}
+	elapsed := time.Since(start)
+	runtime.ReadMemStats(&after)
+	return benchResult{
+		name:       name,
+		ops:        n,
+		nsPerOp:    float64(elapsed.Nanoseconds()) / float64(n),
+		bytesPerOp: (after.TotalAlloc - before.TotalAlloc) / uint64(n),
+		allocsOp:   (after.Mallocs - before.Mallocs) / uint64(n),
+	}, nil
+}
+
+// runBench executes the headless benchmark set without opening a window and
+// prints one line per row, also writing benchFile when set.
+func runBench(benchFile string) error {
+	ctx := context.Background()
+	app, err := newListApp()
+	if err != nil {
+		return err
+	}
+	if err := app.Page().Redraw(ctx); err != nil {
+		return err
+	}
+	rows := make([]benchResult, 0, 3)
+	redraw, err := measure("redraw-same-data", 200, func() error {
+		return app.Page().Redraw(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, redraw)
+	update, err := measure("rebuild-same-data", 100, func() error {
+		return app.refresh(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, update)
+	click, err := measure("click-select-rebuild", 30, func() error {
+		return pagetest.ClickAction(ctx, app.Page(), "row:500")
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, click)
+	out := ""
+	for _, r := range rows {
+		out += fmt.Sprintf("%-20s ops=%-4d ns/op=%-12.1f B/op=%-10d allocs/op=%d\n",
+			r.name, r.ops, r.nsPerOp, r.bytesPerOp, r.allocsOp)
+	}
+	fmt.Print(out)
+	if benchFile != "" {
+		if err := os.WriteFile(benchFile, []byte(out), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
 }

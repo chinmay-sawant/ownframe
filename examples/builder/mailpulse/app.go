@@ -32,6 +32,15 @@ type app struct {
 	heatDay      int
 	heatCol      int
 	growthHover  int
+	// enterBars renders the List growth bars at scaleY(0) for the load
+	// entrance; enterSlow carries the mp-bar-slow class for the 3s run.
+	// enterSeen marks that the zero-scale bars committed on their own frame,
+	// so the flip lands in a later frame (the window batches one frame's
+	// pointer-to-tick refreshes into a single commit, which would otherwise
+	// swallow the zero state and leave the run with no start paint).
+	enterBars bool
+	enterSlow bool
+	enterSeen bool
 }
 
 func newApp() (*app, error) {
@@ -42,6 +51,8 @@ func newApp() (*app, error) {
 		heatCol:     -1,
 		growthHover: -1,
 		notifs:      defaultNotifs(),
+		enterBars:   true,
+		enterSlow:   true,
 	}
 	view, err := ui.Mount(ownframe.Config{
 		Title:       "MailPulse · Engagement",
@@ -66,6 +77,7 @@ func newApp() (*app, error) {
 		Submit:  a.handleSubmit,
 		KeyDown: a.handleKey,
 	})
+	a.escortEnter()
 	return a, nil
 }
 
@@ -98,6 +110,12 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		if a.page != nil {
 			a.page.ScrollTo(0, 0)
 		}
+		if tab == "overview" {
+			a.enterBars = true
+			a.enterSlow = true
+			a.enterSeen = false
+			a.escortEnter()
+		}
 		return a.refresh(ctx)
 	case box.Action == "range:cycle":
 		switch a.rangeLabel {
@@ -108,6 +126,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		default:
 			a.rangeLabel = "Last 7 Days"
 		}
+		a.escortMotion(1500 * time.Millisecond)
 		return a.refresh(ctx)
 	case box.Action == "export":
 		a.toast = "Export queued — CSV will land in your inbox."

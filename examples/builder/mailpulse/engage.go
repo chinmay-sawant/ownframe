@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
@@ -34,7 +36,7 @@ func engageRowCard(icon string, row engageRow) *ui.Element {
 		if i < row.filled {
 			class += " mp-dot--on"
 		}
-		dots = append(dots, ui.Span().Class(class))
+		dots = append(dots, ui.Span().ID("mp-eng-dot-"+strconv.Itoa(i)).Class(class))
 	}
 	return ui.Div().Class("mp-linkrow").Children(
 		ui.Span().Class("mp-engage-icon").Text(icon),

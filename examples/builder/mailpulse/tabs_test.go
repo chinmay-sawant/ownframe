@@ -356,6 +356,9 @@ func TestMailpulseOverviewRangeRedraws(t *testing.T) {
 	if strings.Contains(overview7, "mp-growth-7") {
 		t.Fatalf("overview 7d renders an 8th bar, want 7 daily bars")
 	}
+	if !strings.Contains(overview7, "scaleY(") {
+		t.Fatalf("overview 7d bars missing scaleY transform")
+	}
 	if got := heatValueFor(1, 3, 7); got != 4 {
 		t.Fatalf("heatValueFor(Tue 9a, 7d) = %d, want pinned peak 4", got)
 	}
@@ -388,4 +391,280 @@ func sumInts(values []int) int {
 		total += v
 	}
 	return total
+}
+
+// TestMailpulseRangeSwitchUpdatesDataHandsFree clicks the range pill twice
+// and asserts every range-driven readout follows with no hover and no ticks:
+// the committed display must already carry the new window. Motion sampling
+// (the 3s entrance rise and the 0.9s toggle glide) is covered by
+// TestMailpulseEntranceGrowsFromZero and live-window observation; this test
+// pins the hands-free data contract behind the animation.
+func TestMailpulseRangeSwitchUpdatesDataHandsFree(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	ctx := context.Background()
+	a.tab = "overview"
+	if err := a.refresh(ctx); err != nil {
+		t.Fatalf("refresh overview: %v", err)
+	}
+	barScaleY := func(id string) float64 {
+		t.Helper()
+		var box ownframe.Box
+		for _, b := range a.page.Boxes() {
+			if b.ID == id {
+				box = b
+				break
+			}
+		}
+		if box.ID == "" {
+			t.Fatalf("element %q has no hit-test box", id)
+		}
+		owned := make(map[uint64]struct{}, len(box.OperationIDs))
+		for _, oid := range box.OperationIDs {
+			owned[oid] = struct{}{}
+		}
+		for i := range a.page.Probe().Display().Ops {
+			op := &a.page.Probe().Display().Ops[i]
+			if _, ok := owned[op.ID]; ok && op.Kind == ownframe.DisplayOpFillRect {
+				return op.Transform().D
+			}
+		}
+		t.Fatalf("element %q has no fill operation", id)
+		return 0
+	}
+	var rangeBtn ownframe.Box
+	for _, b := range a.page.Boxes() {
+		if b.Action == "range:cycle" {
+			rangeBtn = b
+			break
+		}
+	}
+	if rangeBtn.Action == "" {
+		t.Fatalf("range:cycle control has no hit-test box")
+	}
+
+	from := barScaleY("mp-growth-0")
+	clickRange := func() {
+		t.Helper()
+		if err := a.page.Click(ctx, rangeBtn.X+rangeBtn.W/2, rangeBtn.Y+rangeBtn.H/2); err != nil {
+			t.Fatalf("click range:cycle: %v", err)
+		}
+	}
+	clickRange()
+	clickRange()
+	if a.rangeLabel != "Last 7 Days" {
+		t.Fatalf("rangeLabel = %q, want Last 7 Days", a.rangeLabel)
+	}
+	to := barScaleY("mp-growth-0")
+	if from == to {
+		t.Fatalf("bar scale did not change: %v", from)
+	}
+	if want := barHeightsFor(7)[0] / 100; to != want {
+		t.Fatalf("7d bar scale = %v, want %v", to, want)
+	}
+	if got := a.growthReadout(); got != "+96 net new subscribers over the last 7 days." {
+		t.Fatalf("7d growth readout = %q", got)
+	}
+	overview7, err := ui.Render(a.overviewPage())
+	if err != nil {
+		t.Fatalf("render overview 7d: %v", err)
+	}
+	if !strings.Contains(overview7, "per day, last 7 days") {
+		t.Fatalf("7d overview missing daily growth description")
+	}
+	if stats := a.page.Probe().Motion(); stats.TransitionError != "" {
+		t.Fatalf("transition bind failed: %s", stats.TransitionError)
+	}
+}
+
+// TestMailpulseEntranceGrowsFromZero pins the transition-based entrance:
+// fresh mounts commit bars at scaleY(0) under the mp-bar-slow 3s transition,
+// the escort tick flips them to their real values, and the 3s run then eases
+// them up hands-free with the base 0.9s transition reserved for toggles. All
+// three assertions read committed or sampled paint deterministically with
+// zero sleeps.
+func TestMailpulseEntranceGrowsFromZero(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	ctx := context.Background()
+	a.tab = "overview"
+	if err := a.refresh(ctx); err != nil {
+		t.Fatalf("refresh overview: %v", err)
+	}
+	barScaleY := func(id string) float64 {
+		t.Helper()
+		var box ownframe.Box
+		for _, b := range a.page.Boxes() {
+			if b.ID == id {
+				box = b
+				break
+			}
+		}
+		if box.ID == "" {
+			t.Fatalf("element %q has no hit-test box", id)
+		}
+		owned := make(map[uint64]struct{}, len(box.OperationIDs))
+		for _, oid := range box.OperationIDs {
+			owned[oid] = struct{}{}
+		}
+		for i := range a.page.Probe().Display().Ops {
+			op := &a.page.Probe().Display().Ops[i]
+			if _, ok := owned[op.ID]; ok && op.Kind == ownframe.DisplayOpFillRect {
+				return op.Transform().D
+			}
+		}
+		t.Fatalf("element %q has no fill operation", id)
+		return 0
+	}
+
+	target := overviewBarHeights[0] / 100
+	if got := barScaleY("mp-growth-0"); got != 0 {
+		t.Fatalf("fresh mount bar scale = %v, want 0 (zeros committed)", got)
+	}
+
+	// First tick only arms the flip (lets the zero commit present on its own
+	// frame; the window batches one frame's refreshes into a single commit).
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("escort arm tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); got != 0 {
+		t.Fatalf("pre-flip bar scale = %v, want 0 (still zeros)", got)
+	}
+
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("escort flip tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); got != target {
+		t.Fatalf("flipped bar scale = %v, want committed target %v", got, target)
+	}
+
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("entrance sample tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); !(got >= 0 && got < target) {
+		t.Fatalf("entrance scale = %v, want 0 <= D < target %v", got, target)
+	}
+}
+
+// TestMailpulseDotBarsHaveStableIDs checks that the dot share bars carry
+// stable per-dot element ids so transform transitions and keyframes can
+// target them instead of snapping (TransitionsNoID).
+func TestMailpulseDotBarsHaveStableIDs(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	audience, err := ui.Render(a.audiencePage())
+	if err != nil {
+		t.Fatalf("render audiencePage: %v", err)
+	}
+	if !strings.Contains(audience, "mp-src-dot-0") {
+		t.Fatalf("audiencePage missing mp-src-dot-0")
+	}
+	if got := strings.Count(audience, "mp-src-dot-"); got < audienceDotTotal {
+		t.Fatalf("audiencePage has %d dot ids, want at least %d", got, audienceDotTotal)
+	}
+	engage, err := ui.Render(a.engageCard())
+	if err != nil {
+		t.Fatalf("render engageCard: %v", err)
+	}
+	if !strings.Contains(engage, "mp-eng-dot-0") {
+		t.Fatalf("engageCard missing mp-eng-dot-0")
+	}
+	if got := strings.Count(engage, "mp-eng-dot-"); got < engageDotCount {
+		t.Fatalf("engageCard has %d dot ids, want at least %d", got, engageDotCount)
+	}
+}
+
+// TestMailpulseEntranceReplaysOnRevisit proves the Overview entrance replays
+// on every visit hands-free: each nav:overview re-arms the zero-scale mount
+// and the escort flip, so leaving and returning replays the 0 -> target rise
+// instead of playing once. All assertions drive explicit ticks with zero
+// sleeps.
+func TestMailpulseEntranceReplaysOnRevisit(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	ctx := context.Background()
+	barScaleY := func(id string) float64 {
+		t.Helper()
+		var box ownframe.Box
+		for _, b := range a.page.Boxes() {
+			if b.ID == id {
+				box = b
+				break
+			}
+		}
+		if box.ID == "" {
+			t.Fatalf("element %q has no hit-test box", id)
+		}
+		owned := make(map[uint64]struct{}, len(box.OperationIDs))
+		for _, oid := range box.OperationIDs {
+			owned[oid] = struct{}{}
+		}
+		for i := range a.page.Probe().Display().Ops {
+			op := &a.page.Probe().Display().Ops[i]
+			if _, ok := owned[op.ID]; ok && op.Kind == ownframe.DisplayOpFillRect {
+				return op.Transform().D
+			}
+		}
+		t.Fatalf("element %q has no fill operation", id)
+		return 0
+	}
+
+	if err := a.handleClick(ctx, clickBox("nav:overview")); err != nil {
+		t.Fatalf("nav overview: %v", err)
+	}
+	if !a.enterBars {
+		t.Fatalf("enterBars = false after nav:overview, want true")
+	}
+	if _, err := ui.Render(a.overviewPage()); err != nil {
+		t.Fatalf("render overviewPage: %v", err)
+	}
+	target := overviewBarHeights[0] / 100
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("seen tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); got != 0 {
+		t.Fatalf("seen tick bar scale = %v, want 0", got)
+	}
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("flip tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); got != target {
+		t.Fatalf("flipped bar scale = %v, want committed target %v", got, target)
+	}
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("glide tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); !(got > 0 && got < target) {
+		t.Fatalf("glide bar scale = %v, want 0 < D < %v", got, target)
+	}
+
+	if err := a.handleClick(ctx, clickBox("nav:audience")); err != nil {
+		t.Fatalf("nav audience: %v", err)
+	}
+	if err := a.handleClick(ctx, clickBox("nav:overview")); err != nil {
+		t.Fatalf("revisit nav overview: %v", err)
+	}
+	if !a.enterBars {
+		t.Fatalf("enterBars = false after revisit nav:overview, want true (re-armed)")
+	}
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("revisit seen tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); got != 0 {
+		t.Fatalf("revisit seen tick bar scale = %v, want 0", got)
+	}
+	if err := a.page.Testing().Tick(ctx); err != nil {
+		t.Fatalf("revisit flip tick failed: %v", err)
+	}
+	if got := barScaleY("mp-growth-0"); got != target {
+		t.Fatalf("revisit flipped bar scale = %v, want committed target %v", got, target)
+	}
 }

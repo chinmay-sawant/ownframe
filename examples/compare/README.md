@@ -7,12 +7,12 @@ Both show a header, a dark column header row (Num, Title, Description),
 and 1000 rows with alternating white and gray backgrounds. Clicking a row
 selects it, tints it blue, and reports it in the header readout.
 
-Best-practice form on both sides: the ownframe app renders only the
-viewport window of rows (the 1.0 list recipe: `SetWindowing` plus
-`SetScrollWindow` from `examples/list`, with a tick bridge because the
-scroll callback carries no context for `View.Update`), skips no-op clicks,
-and keeps retained state on. The mygo app holds its rows in a virtualized
-`ui.List` that builds only rows in view, with the choice in `ListState`.
+Apples-to-apples form on both sides: each app renders all 1000 rows and
+rebuilds the whole view on every click, so this measures the default
+full-rebuild path of each toolkit with the generic library fixes in place.
+(A best-practice round with ownframe row windowing and the mygo
+virtualized `List` was measured earlier; the numbers are in the session
+notes, not in this file.)
 
 - `ownframe/` is a normal example in this module. It uses `ui.Mount` and
   `View.Update`, the same builder pattern as `builder/ui-builder`.
