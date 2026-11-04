@@ -24,27 +24,41 @@ const (
 // builderApp is the single tabbed ui-builder host. Each tab lives in its
 // own screen_*.go file and owns a small state struct below.
 type builderApp struct {
-	modalFocus chadcn.DialogFocus
-	view       *ui.View
-	themeDirty bool
-	page       *ownframe.Page
-	logger     *log.Logger
-	tab        string
-	notice     string
-	widgets    widgetsState
-	settings   settingsState
-	layout     layoutState
-	todos      todoState
-	files      listState
-	theme      themeState
-	compare    compareState
-	dialog     dialogState
-	custom     customState
+	modalFocus        chadcn.DialogFocus
+	view              *ui.View
+	themeDirty        bool
+	page              *ownframe.Page
+	logger            *log.Logger
+	tab               string
+	notice            string
+	widgets           widgetsState
+	settings          settingsState
+	layout            layoutState
+	todos             todoState
+	files             listState
+	theme             themeState
+	compare           compareState
+	dialog            dialogState
+	custom            customState
+	catalogTabSel     string
+	catalogSlider     float64
+	catalogCheck      bool
+	catalogSwitch     bool
+	catalogSelect     string
+	catalogSelectOpen bool
 
 	center               chadcn.ScrollState
 	centerMeasurePending bool
-	layoutWidth          int
-	layoutHeight         int
+	scrollDirty          bool
+	// catalogGeo pins the last full-render catalog geometry. Windowed
+	// renders reuse it instead of re-measuring estimates off spacers,
+	// which would compound the pitch error frame over frame.
+	catalogGeoMeasured bool
+	catalogGeoHeaderPx int
+	catalogGeoPitchPx  int
+	catalogGeoRowsH    int
+	layoutWidth        int
+	layoutHeight       int
 }
 
 // setLogger installs the diagnostic logger. A nil logger disables logging.
@@ -70,14 +84,15 @@ func newBuilderApp() (*builderApp, error) {
 		dialog:   defaultDialogState(),
 	}
 	view, err := ui.Mount(ownframe.Config{
-		Theme:     chadcn.Dark + chadcn.Stylesheet + builderMotionCSS,
-		Title:     "OwnFrame Components",
-		Width:     demoWidth,
-		Height:    demoHeight,
-		MinWidth:  demoMinWidth,
-		MinHeight: demoMinHeight,
-		DevTools:  false,
-		Scrollbar: ownframe.ScrollbarHidden,
+		Theme:       chadcn.Dark + chadcn.Stylesheet + builderMotionCSS,
+		Title:       "OwnFrame Components",
+		Width:       demoWidth,
+		Height:      demoHeight,
+		MinWidth:    demoMinWidth,
+		MinHeight:   demoMinHeight,
+		DevTools:    false,
+		RetainState: true,
+		Scrollbar:   ownframe.ScrollbarHidden,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new builder app: %w", err)
@@ -156,6 +171,9 @@ func (a *builderApp) handleClick(ctx context.Context, box ownframe.Box) error {
 	if a.handleDialog(action) {
 		return a.refreshLogged(ctx, action, start)
 	}
+	if a.handleCatalog(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
 	a.logf("click action=%q tab=%s ignored dur=%s", action, a.tab, time.Since(start))
 	return nil
 }
@@ -177,6 +195,7 @@ func (a *builderApp) selectTab(name string) {
 	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom", "catalog":
 		a.tab = name
 		a.center = chadcn.ScrollState{}
+		a.catalogGeoMeasured = false
 		a.notice = map[string]string{
 			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
 			"settings": "Settings: form state, inline validation, and save in Go.",
@@ -217,6 +236,7 @@ func (a *builderApp) refresh(ctx context.Context) error {
 		return fmt.Errorf("update builder gallery: %w", err)
 	}
 	a.centerMeasurePending = true
+	a.scrollDirty = false
 	a.logf("refresh ok dur=%s", time.Since(start))
 	return nil
 }
@@ -227,8 +247,8 @@ const builderMotionCSS = `
 `
 
 func (a *builderApp) handleKey(ctx context.Context, key string) error {
-	if !a.scrollInputBlocked() && a.page.Form().FocusID() == builderScrollThumbID && a.center.Key(key, int(builderScrollStep)) {
-		return a.refresh(ctx)
+	if a.scrollCenterKey(key) {
+		return nil
 	}
 	if key == "escape" && a.compare.Preview {
 		a.handleCompare("compare:preview-close")

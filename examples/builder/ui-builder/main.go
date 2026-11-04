@@ -77,6 +77,7 @@ func run(webMode bool, addr string, dev bool, perf bool, debugAddr string, loggi
 		CustomChrome: true,
 		PlacementID:  builderPlacement,
 		DebugAddr:    debugAddr,
+		MaxFPS:       60,
 		Draggable: func(x, y int) bool {
 			return x >= 0 && y >= 0 && y < builderDragLimitY
 		},

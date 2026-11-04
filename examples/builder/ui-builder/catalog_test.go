@@ -6,6 +6,7 @@ import (
 	"errors"
 	"image/color"
 	"image/png"
+	"strings"
 	"testing"
 
 	"github.com/chinmay-sawant/ownframe"
@@ -177,5 +178,103 @@ func TestCatalogOpensFromSidebarClick(t *testing.T) {
 		if !found[want] {
 			t.Fatalf("catalog heading %q missing after sidebar click", want)
 		}
+	}
+}
+
+func TestCatalogFilterPillClickUpdatesNotice(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newBuilderApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.tab = "catalog"
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.ClickAction(ctx, a.page, "catalog:filter:weekly"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.ToLower(a.notice), "weekly") {
+		t.Fatalf("notice=%q, want it to mention weekly", a.notice)
+	}
+	if a.tab != "catalog" {
+		t.Fatalf("tab=%q, want catalog", a.tab)
+	}
+}
+
+func TestCatalogNavRowClickUpdatesNotice(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newBuilderApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.tab = "catalog"
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.ClickAction(ctx, a.page, "catalog:nav:work-orders"); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.ToLower(a.notice), "work-orders") {
+		t.Fatalf("notice=%q, want it to mention work-orders", a.notice)
+	}
+}
+
+func TestCatalogWheelDefersRebuild(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	a, err := newBuilderApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.page.SetSize(900, 610)
+	a.tab = "catalog"
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.refreshOnResize(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if a.center.Metrics().MaxOffset() == 0 {
+		t.Fatal("compact catalog should overflow")
+	}
+	viewport := a.centerViewport()
+	x, y := viewport.X+viewport.W/2, viewport.Y+20
+	gen := a.page.Probe().Generation()
+	before := a.center.Offset()
+	thumbBefore, ok := pagetest.BoxByID(a.page, builderScrollThumbID)
+	if !ok {
+		t.Fatal("missing reusable thumb")
+	}
+	for range 3 {
+		if _, err := a.handleWheel(ctx, x, y, 0, -1); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := a.page.Probe().Generation(); got != gen {
+		t.Fatalf("handleWheel rebuilt synchronously: generation %d -> %d", gen, got)
+	}
+	if a.center.Offset() <= before {
+		t.Fatal("wheel did not advance catalog")
+	}
+	if want := before + 3*int(builderScrollStep); a.center.Metrics().MaxOffset() >= want {
+		if got := a.center.Offset(); got != want {
+			t.Fatalf("offset=%d want %d after 3 wheel notches", got, want)
+		}
+	}
+	if err := a.refreshOnResize(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if got := a.page.Probe().Generation(); got <= gen {
+		t.Fatalf("refreshOnResize did not rebuild: generation %d -> %d", gen, got)
+	}
+	thumbAfter, ok := pagetest.BoxByID(a.page, builderScrollThumbID)
+	if !ok {
+		t.Fatal("missing reusable thumb after refresh")
+	}
+	if thumbAfter.Y == thumbBefore.Y {
+		t.Fatalf("thumb did not move after refresh: before=%+v after=%+v offset=%d", thumbBefore, thumbAfter, a.center.Offset())
 	}
 }
