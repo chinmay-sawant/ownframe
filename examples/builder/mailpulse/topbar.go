@@ -10,9 +10,11 @@ import (
 // topbar renders the MailPulse top bar: a breadcrumb trail on the left and
 // the search box, notification bell, and user avatar on the right. The
 // search input reads its initial value from a.query; live keystrokes stay
-// on the page form, so the demo needs no change handler.
+// on the page form and the change handler mirrors them into filter state,
+// so the results dropdown filters as you type. The bell and avatar toggle
+// their popover panels; panel rows report data-action clicks to handleClick.
 func (a *app) topbar() *ui.Element {
-	search := ui.Div().Class("mp-search").
+	searchBox := ui.Div().Class("mp-search").
 		Display(ui.DisplayFlex).
 		AlignItems(ui.AlignItemsCenter).
 		Gap(ui.Px(8)).
@@ -22,28 +24,23 @@ func (a *app) topbar() *ui.Element {
 		Border(ui.SolidBorder(ui.Px(1), ui.Hex("#e8e8e6"))).
 		BackgroundColor(ui.Hex("#ffffff")).
 		Children(
-			ui.Text("○").Color(ui.Hex("#6b7280")),
+			ui.Span().Class("mp-search-icon").Children(
+				ui.Span().Class("mp-search-mag").Attr("aria-hidden", "true"),
+				ui.Span().Class("mp-search-handle").Attr("aria-hidden", "true"),
+			),
 			chadcn.InputWithOptions("mp-search", a.query, chadcn.InputOptions{
 				Placeholder: "Search",
 				Type:        "search",
 				Size:        chadcn.InputSmall,
 			}),
+			a.searchClear(),
 		)
-	bell := chadcn.Button("○", chadcn.ButtonOptions{
+	searchWrap := ui.Div().Class("mp-search-wrap").Children(
+		searchBox,
+		ui.Div().Class("mp-search-anchor").Children(a.searchDrop()),
+	)
+	devtoolsBtn := chadcn.Button("Dev", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
-		Size:    chadcn.ButtonSmall,
-	}).Attr("aria-label", "Notifications").OnClick(func(ctx context.Context) error {
-		a.toast = "No new notifications"
-		a.toastOpen = true
-		return a.refresh(ctx)
-	})
-	devOpen := a.page != nil && a.page.Window().DevTools()
-	devVariant := chadcn.ButtonOutlined
-	if devOpen {
-		devVariant = chadcn.ButtonFilled
-	}
-	devtools := chadcn.Button("Dev", chadcn.ButtonOptions{
-		Variant: devVariant,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("aria-label", "Toggle developer tools").
 		Attr("title", "Developer tools").
@@ -54,17 +51,24 @@ func (a *app) topbar() *ui.Element {
 			a.toastOpen = true
 			return a.refresh(ctx)
 		})
+	devtools := ui.Span().Class("mp-dev-wrap").Children(devtoolsBtn)
+	if a.page != nil && a.page.Window().DevTools() {
+		devtools.Children(ui.Span().Class("mp-dev-dot").Attr("aria-hidden", "true"))
+	}
+	right := ui.Div().Class("mp-topbar-right").Children(
+		searchWrap,
+		a.notifTrigger(),
+		a.userTrigger(),
+		devtools,
+		a.windowControls(),
+	)
 	return ui.Header().Class("mp-topbar").Children(
 		chadcn.Breadcrumb([]chadcn.BreadcrumbItem{
 			{Label: "Workspace", Action: "nav:overview"},
 			{Label: a.pageTitleOr("Engagement"), Current: true},
 		}),
 		ui.Div().Class("mp-topbar-spacer"),
-		search,
-		bell,
-		chadcn.Avatar(chadcn.AvatarOptions{Initials: "JD"}),
-		devtools,
-		a.windowControls(),
+		right,
 	)
 }
 

@@ -92,6 +92,18 @@ func (a *app) heatReadout() string {
 	return heatCellLabel(1, 3)
 }
 
+// heatValueFor returns the heatmap intensity for a range window. The 30-
+// and 90-day windows share the full sample; the 7-day window dampens
+// non-peak cells by one step so the smaller sample reads cooler while the
+// pinned Tue/Thu 9a peaks stay lit.
+func heatValueFor(day, col, days int) int {
+	base := heatValue(day, col)
+	if days == 7 && base > 0 && base < 4 {
+		return base - 1
+	}
+	return base
+}
+
 func (a *app) heatmapCard() *ui.Element {
 	const cols = 18
 	days := heatDays()
@@ -123,13 +135,7 @@ func (a *app) heatmapCard() *ui.Element {
 	for day, label := range days {
 		gridCells = append(gridCells, ui.Span().Class("mp-heat-day").Text(label))
 		for col := 0; col < cols; col++ {
-			id := heatCellID(day, col)
-			cell := components.HeatCellID(id, heatValue(day, col)).
-				Attr("data-action", "select:heat:"+strconv.Itoa(day)+"-"+strconv.Itoa(col)+":"+days[day]+" "+heatHours()[col])
-			if a.isSelected("heat", strconv.Itoa(day)+"-"+strconv.Itoa(col)) {
-				cell.Class("mp-heat-cell mp-heat-cell--l" + heatDigit(heatValue(day, col)) + " mp-selected")
-			}
-			gridCells = append(gridCells, cell)
+			gridCells = append(gridCells, components.HeatCellID(heatCellID(day, col), heatValueFor(day, col, a.rangeDays())))
 		}
 	}
 	gridCells = append(gridCells, ui.Span().Class("mp-heat-day").Text(""))
@@ -139,7 +145,7 @@ func (a *app) heatmapCard() *ui.Element {
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("Best time to send"),
-			chadcn.CardDescription("Open rate by weekday and hour, last 90 days. Hover or tap a cell."),
+			chadcn.CardDescription("Open rate by weekday and hour, "+a.rangeWindow()+". Hover or tap a cell."),
 		),
 		chadcn.CardContent(
 			ui.Div().Class("mp-heat-badges").Children(
@@ -161,14 +167,4 @@ func (a *app) heatmapCard() *ui.Element {
 			),
 		),
 	)
-}
-
-func heatDigit(level int) string {
-	if level < 0 {
-		level = 0
-	}
-	if level > 4 {
-		level = 4
-	}
-	return string([]byte{byte('0' + level)})
 }

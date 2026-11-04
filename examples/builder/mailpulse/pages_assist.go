@@ -39,18 +39,22 @@ func (a *app) learnPage() *ui.Element {
 	guides := assistGuides()
 	rows := make([]*ui.Element, 0, len(guides))
 	for _, guide := range guides {
-		rows = append(rows, ui.Div().Class("mp-linkrow").Children(
-			ui.Div().Class("mp-linkmain").Children(
-				ui.Text(guide.title).FontWeight(ui.FontWeightBold).FontSize(ui.Px(13)),
-				ui.Text(guide.duration+" · Guide").FontSize(ui.Px(12)).Color(ui.Hex("#6b7280")),
-			),
+		rows = append(rows, ui.Div().Class("mp-linkrow mp-learn-row").Children(
+			ui.Div().Class("mp-linkmain").
+				FlexGrow(ui.Number(1)).
+				MinWidth(ui.Px(0)).
+				Children(
+					ui.Text(guide.title).FontWeight(ui.FontWeightBold).FontSize(ui.Px(13)),
+					ui.Text(guide.duration+" · Guide").FontSize(ui.Px(12)).Color(ui.Hex("#6b7280")),
+				),
 			chadcn.Button("Start", chadcn.ButtonOptions{
 				Variant: chadcn.ButtonOutlined,
 				Size:    chadcn.ButtonSmall,
-			}).Attr("data-action", "select:guide:"+guide.id+":"+guide.title),
+			}).Attr("data-action", "select:guide:"+guide.id+":"+guide.title).
+				FlexShrink(ui.Number(0)),
 		))
 	}
-	return ui.Div().Class("mp-page").Children(
+	return ui.Div().Class("mp-card mp-page mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Learn"),
@@ -83,7 +87,7 @@ func (a *app) helpPage() *ui.Element {
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "export")
-	return ui.Div().Class("mp-page").Children(
+	return ui.Div().Class("mp-card mp-page mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Help Center"),
@@ -150,7 +154,7 @@ func (a *app) settingsPage() *ui.Element {
 			),
 		),
 	)
-	return ui.Div().Class("mp-page").Children(
+	return ui.Div().Class("mp-card mp-page mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("System Settings"),

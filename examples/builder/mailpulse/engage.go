@@ -8,7 +8,7 @@ import (
 const engageDotCount = 10
 
 func (a *app) engageCard() *ui.Element {
-	rows := engageRows()
+	rows := engageRowsFor(a.rangeDays())
 	icons := []string{"▲", "●", "◆", "■", "★"}
 	cards := make([]*ui.Element, 0, len(rows))
 	for i, row := range rows {
@@ -21,7 +21,7 @@ func (a *app) engageCard() *ui.Element {
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("What readers engage with"),
-			chadcn.CardDescription("Average open and click rate by issue type."),
+			chadcn.CardDescription("Average open and click rate by issue type, "+a.rangeWindow()+"."),
 		),
 		chadcn.CardContent(cards...),
 	)

@@ -6,7 +6,15 @@ import (
 )
 
 func (a *app) linksCard() *ui.Element {
-	links := topLinks()
+	days := a.rangeDays()
+	quarterWord := "month"
+	switch days {
+	case 7:
+		quarterWord = "week"
+	case 90:
+		quarterWord = "quarter"
+	}
+	links := topLinksFor(days)
 	rows := make([]*ui.Element, 0, len(links))
 	for _, link := range links {
 		rows = append(rows, ui.Div().Class("mp-linkrow").Children(
@@ -23,7 +31,7 @@ func (a *app) linksCard() *ui.Element {
 	}
 	return chadcn.Card(
 		chadcn.CardHeader(
-			chadcn.CardTitle("Top links this month"),
+			chadcn.CardTitle("Top links this "+quarterWord),
 			chadcn.CardDescription("Unique clicks across all sends."),
 		),
 		chadcn.CardContent(rows...),

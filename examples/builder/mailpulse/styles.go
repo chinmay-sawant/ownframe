@@ -110,6 +110,7 @@ const appCSS = `
   flex-shrink: 0;
   font-size: 13px;
   line-height: 1;
+  overflow: hidden;
 }
 .mp-kpi-dot--orange { background: #fff1de; color: #ff8a00; }
 .mp-kpi-dot--blue { background: #e3edff; color: #2f7bff; }
@@ -185,7 +186,7 @@ const appCSS = `
 .mp-heat-legend { display: flex; align-items: center; gap: 6px; margin-top: 12px; color: #6b7280; font-size: 11px; }
 .mp-heat-legend-label { white-space: nowrap; }
 .mp-dots { display: flex; align-items: center; gap: 4px; }
-.mp-dot { width: 14px; height: 8px; border-radius: 4px; background: #ececec; flex-shrink: 0; }
+.mp-dot { width: 14px; height: 8px; border-radius: 4px; background: #ececec; flex-shrink: 0; transition: background-color 0.35s ease; }
 .mp-dot--on { background: #8b5cf6; }
 .mp-dot--off { background: #ececec; }
 .mp-linkrow {
@@ -196,11 +197,14 @@ const appCSS = `
   border-top: 1px solid #f0f0ee;
 }
 .mp-linkrow:first-of-type { border-top: none; }
-.mp-bars { display: flex; align-items: flex-end; gap: 6px; min-height: 120px; min-width: 0; overflow: hidden; }
+.mp-bars { display: flex; align-items: flex-end; gap: 6px; min-height: 200px; min-width: 0; overflow: hidden; }
 .mp-bar-col { display: flex; flex: 1 1 0; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
-.mp-bar { width: 100%; max-width: 28px; border-radius: 4px 4px 0 0; background: #8b5cf6; }
-.mp-report-row { padding: 14px 4px; gap: 14px; }
+.mp-bar { width: 100%; max-width: 40px; border-radius: 4px 4px 0 0; background: #8b5cf6; transition: height 0.45s ease, background-color 0.45s ease; }
+.mp-report-row { padding: 16px 8px; gap: 20px; }
 .mp-report-row + .mp-report-row { border-top: 1px solid #f0f0ee; }
+.mp-link-meta {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1;
+}
 .mp-linkicon {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
@@ -219,11 +223,17 @@ const appCSS = `
 .mp-engage-stats { display: flex; align-items: baseline; gap: 8px; flex-shrink: 0; margin-left: auto; }
 .mp-engage-open { font-size: 13px; }
 .mp-toast {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin: 0 28px 16px; padding: 12px 16px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  max-width: 345px; width: auto; margin: 0; padding: 10px 12px;
   border: 1px solid #e8e8e6; border-radius: 12px; background: #1a1a1a; color: #fff;
-  font-size: 13px;
+  font-size: 12px; line-height: 1.5;
+  z-index: 200;
 }
+.mp-toast-msg {
+  flex: 1 1 auto; min-width: 0;
+  white-space: normal; overflow-wrap: break-word; word-break: break-word;
+}
+.mp-toast .of-button { flex-shrink: 0; }
 .mp-insight {
   margin-top: 12px;
   padding: 10px 12px;

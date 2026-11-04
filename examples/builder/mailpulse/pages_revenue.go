@@ -113,10 +113,10 @@ func (a *app) revenuePage() *ui.Element {
 			ui.Div().Class("mp-insight").Text("Sponsor posts drive 38% of upgrades despite 9% clicks."),
 		),
 	)
-	return ui.Div().Class("mp-card").Children(
+	return ui.Div().Class("mp-card mp-stack").Children(
 		head,
 		kpis,
 		ui.Div().Class("mp-grid-mid").Children(byType, upgrades),
-		ui.Div().Padding(ui.Edges(ui.Px(20), ui.Px(24))).Children(payout),
+		payout,
 	)
 }

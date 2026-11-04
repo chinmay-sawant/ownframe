@@ -18,13 +18,32 @@ type audienceSource struct {
 	filled int
 }
 
-func audienceSources() []audienceSource {
-	return []audienceSource{
-		{label: "Referrals", count: "6,204", share: "33.6%", filled: 3},
-		{label: "Organic", count: "5,120", share: "27.8%", filled: 3},
-		{label: "Import", count: "3,908", share: "21.2%", filled: 2},
-		{label: "API", count: "2,010", share: "10.9%", filled: 1},
-		{label: "Other", count: "1,200", share: "6.5%", filled: 1},
+func (a *app) audienceSources() []audienceSource {
+	switch a.rangeDays() {
+	case 7:
+		return []audienceSource{
+			{label: "Referrals", count: "95", share: "33.5%", filled: 3},
+			{label: "Organic", count: "79", share: "27.8%", filled: 3},
+			{label: "Import", count: "60", share: "21.1%", filled: 2},
+			{label: "API", count: "31", share: "10.9%", filled: 1},
+			{label: "Other", count: "19", share: "6.7%", filled: 1},
+		}
+	case 90:
+		return []audienceSource{
+			{label: "Referrals", count: "1,149", share: "33.6%", filled: 3},
+			{label: "Organic", count: "951", share: "27.8%", filled: 3},
+			{label: "Import", count: "725", share: "21.2%", filled: 2},
+			{label: "API", count: "373", share: "10.9%", filled: 1},
+			{label: "Other", count: "222", share: "6.5%", filled: 1},
+		}
+	default:
+		return []audienceSource{
+			{label: "Referrals", count: "405", share: "33.6%", filled: 3},
+			{label: "Organic", count: "335", share: "27.8%", filled: 3},
+			{label: "Import", count: "255", share: "21.2%", filled: 2},
+			{label: "API", count: "131", share: "10.9%", filled: 1},
+			{label: "Other", count: "78", share: "6.5%", filled: 1},
+		}
 	}
 }
 
@@ -78,11 +97,11 @@ func subscriberStatusVariant(status string) chadcn.BadgeVariant {
 // audiencePage renders the Audience tab: list size, engagement, recent
 // growth, and churn, plus growth-by-source and top-location cards.
 func (a *app) audiencePage() *ui.Element {
-	rangeBtn := chadcn.Button("📅 "+a.rangeLabel+" ▾", chadcn.ButtonOptions{
+	rangeBtn := chadcn.Button(a.rangeLabel+" ▾", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "range:cycle")
-	exportBtn := chadcn.Button("⤓ Export", chadcn.ButtonOptions{
+	exportBtn := chadcn.Button("↓ Export", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "export")
@@ -93,9 +112,9 @@ func (a *app) audiencePage() *ui.Element {
 		),
 		ui.Div().Class("mp-pagehead-actions").Children(rangeBtn, exportBtn),
 	)
-	return ui.Div().Children(
+	return ui.Div().Class("mp-card mp-stack").Children(
 		head,
-		audienceKPIs(),
+		a.audienceKPIs(),
 		ui.Div().Class("mp-grid-bot").Children(
 			a.audienceGrowthCard(),
 			a.audienceLocationsCard(),
@@ -103,13 +122,30 @@ func (a *app) audiencePage() *ui.Element {
 	)
 }
 
-func audienceKPIs() *ui.Element {
-	return ui.Div().Class("mp-kpis").Children(
-		audienceKPI("Total subscribers", "18,442", "Across every channel", ""),
-		audienceKPI("Engaged", "12,908", "Opened in the last 30 days", "70%"),
-		audienceKPI("New (30d)", "1,204", "Joined in the last 30 days", ""),
-		audienceKPI("Unsubscribed", "96", "0.5% of the list", ""),
-	)
+func (a *app) audienceKPIs() *ui.Element {
+	switch a.rangeDays() {
+	case 7:
+		return ui.Div().Class("mp-kpis").Children(
+			audienceKPI("Total subscribers", "18,442", "Across every channel", ""),
+			audienceKPI("Engaged", "4,210", "Opened in the last 7 days", "23%"),
+			audienceKPI(a.rangeNewLabel(), "284", "Joined in the last 7 days", ""),
+			audienceKPI("Unsubscribed", "22", "0.1% of the list", ""),
+		)
+	case 90:
+		return ui.Div().Class("mp-kpis").Children(
+			audienceKPI("Total subscribers", "18,442", "Across every channel", ""),
+			audienceKPI("Engaged", "15,480", "Opened in the last 90 days", "84%"),
+			audienceKPI(a.rangeNewLabel(), "3,420", "Joined in the last 90 days", ""),
+			audienceKPI("Unsubscribed", "310", "1.7% of the list", ""),
+		)
+	default:
+		return ui.Div().Class("mp-kpis").Children(
+			audienceKPI("Total subscribers", "18,442", "Across every channel", ""),
+			audienceKPI("Engaged", "12,908", "Opened in the last 30 days", "70%"),
+			audienceKPI(a.rangeNewLabel(), "1,204", "Joined in the last 30 days", ""),
+			audienceKPI("Unsubscribed", "96", "0.5% of the list", ""),
+		)
+	}
 }
 
 func audienceKPI(label, value, foot, badge string) *ui.Element {
@@ -129,7 +165,7 @@ func audienceKPI(label, value, foot, badge string) *ui.Element {
 }
 
 func (a *app) audienceGrowthCard() *ui.Element {
-	sources := audienceSources()
+	sources := a.audienceSources()
 	rows := make([]*ui.Element, 0, len(sources))
 	for _, source := range sources {
 		rows = append(rows, chadcn.TableRow(
@@ -142,7 +178,7 @@ func (a *app) audienceGrowthCard() *ui.Element {
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("Growth by source"),
-			chadcn.CardDescription("New subscribers by channel, last 30 days."),
+			chadcn.CardDescription("New subscribers by channel, "+a.rangeWindow()+"."),
 		),
 		chadcn.CardContent(
 			chadcn.Table(
@@ -202,7 +238,7 @@ func audienceDots(filledCount int) *ui.Element {
 // itself is owned by core. Typing in the search filters the table through
 // the host's subQuery state, mirrored from the page form on every change.
 func (a *app) subscribersPage() *ui.Element {
-	exportBtn := chadcn.Button("⤓ Export", chadcn.ButtonOptions{
+	exportBtn := chadcn.Button("↓ Export", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "export")
@@ -232,7 +268,7 @@ func (a *app) subscribersPage() *ui.Element {
 		),
 		ui.Div().Class("mp-pagehead-actions").Children(exportBtn),
 	)
-	return ui.Div().Children(
+	return ui.Div().Class("mp-card mp-stack").Children(
 		head,
 		chadcn.Card(
 			chadcn.CardHeader(

@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"math"
+	"strconv"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -11,7 +14,7 @@ import (
 // performance at a glance. It mirrors the engagement tab structure so the
 // shell can swap it in without layout changes.
 func (a *app) overviewPage() *ui.Element {
-	return ui.Div().Class("mp-card").Children(
+	return ui.Div().Class("mp-card mp-ov").Children(
 		a.overviewHead(),
 		a.overviewKPIRow(),
 		ui.Div().Class("mp-grid-mid").Children(
@@ -28,16 +31,20 @@ func (a *app) overviewPage() *ui.Element {
 // overviewHead renders the Overview header. It is separate from pageHead so
 // the engagement tab keeps its own copy.
 func (a *app) overviewHead() *ui.Element {
-	exportBtn := chadcn.Button("⤓ Export", chadcn.ButtonOptions{
+	exportBtn := chadcn.Button("↓ Export", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "export")
+	rangeBtn := chadcn.Button(a.rangeLabel+" ▾", chadcn.ButtonOptions{
+		Variant: chadcn.ButtonOutlined,
+		Size:    chadcn.ButtonSmall,
+	}).Attr("data-action", "range:cycle")
 	left := ui.Div().Class("mp-pagehead-text").Children(
 		chadcn.H1("Overview"),
 		chadcn.Muted("List health, growth and send performance at a glance."),
 	)
 	actions := ui.Div().Class("mp-pagehead-actions").Children(
-		chadcn.Badge("📅 "+a.rangeLabel),
+		rangeBtn,
 		exportBtn,
 	)
 	return ui.Div().Class("mp-pagehead").Children(left, actions)
@@ -53,11 +60,34 @@ type overviewStat struct {
 }
 
 func overviewStats() []overviewStat {
-	return []overviewStat{
-		{label: "Total subscribers", value: "18,442", delta: "+2.4%", footnote: "+428 this month", tint: "purple", glyph: "◉"},
-		{label: "Avg. open rate", value: "47.8%", delta: "+3.1%", footnote: "Unique opens ÷ delivered", tint: "orange", glyph: "✉"},
-		{label: "Avg. click rate", value: "18.6%", delta: "+1.9%", footnote: "Unique clicks ÷ delivered", tint: "blue", glyph: "➤"},
-		{label: "Revenue/Mo", value: "$12,480", delta: "+8.2%", footnote: "Paid conversions this month", tint: "green", glyph: "↩"},
+	return overviewStatsFor(30)
+}
+
+// overviewStatsFor returns the Overview KPI tiles for a range window.
+// Unknown day counts fall back to the default 30-day window.
+func overviewStatsFor(days int) []overviewStat {
+	switch days {
+	case 7:
+		return []overviewStat{
+			{label: "Total subscribers", value: "18,442", delta: "+2.1%", footnote: "+96 this week", tint: "purple", glyph: "◉"},
+			{label: "Avg. open rate", value: "48.9%", delta: "+2.4%", footnote: "Unique opens ÷ delivered", tint: "orange", glyph: "✉"},
+			{label: "Avg. click rate", value: "19.1%", delta: "+1.2%", footnote: "Unique clicks ÷ delivered", tint: "blue", glyph: "➤"},
+			{label: "Revenue/Mo", value: "$2,940", delta: "+6.4%", footnote: "+$178 this week", tint: "green", glyph: "↩"},
+		}
+	case 90:
+		return []overviewStat{
+			{label: "Total subscribers", value: "18,442", delta: "+7.1%", footnote: "+1,204 this quarter", tint: "purple", glyph: "◉"},
+			{label: "Avg. open rate", value: "46.8%", delta: "+2.8%", footnote: "Unique opens ÷ delivered", tint: "orange", glyph: "✉"},
+			{label: "Avg. click rate", value: "17.7%", delta: "+1.5%", footnote: "Unique clicks ÷ delivered", tint: "blue", glyph: "➤"},
+			{label: "Revenue/Mo", value: "$36,900", delta: "+9.6%", footnote: "+$3,240 this quarter", tint: "green", glyph: "↩"},
+		}
+	default:
+		return []overviewStat{
+			{label: "Total subscribers", value: "18,442", delta: "+2.4%", footnote: "+428 this month", tint: "purple", glyph: "◉"},
+			{label: "Avg. open rate", value: "47.8%", delta: "+3.1%", footnote: "Unique opens ÷ delivered", tint: "orange", glyph: "✉"},
+			{label: "Avg. click rate", value: "18.6%", delta: "+1.9%", footnote: "Unique clicks ÷ delivered", tint: "blue", glyph: "➤"},
+			{label: "Revenue/Mo", value: "$12,480", delta: "+8.2%", footnote: "Paid conversions this month", tint: "green", glyph: "↩"},
+		}
 	}
 }
 
@@ -82,7 +112,7 @@ func overviewKPICard(stat overviewStat) *ui.Element {
 }
 
 func (a *app) overviewKPIRow() *ui.Element {
-	stats := overviewStats()
+	stats := overviewStatsFor(a.rangeDays())
 	cards := make([]*ui.Element, 0, len(stats))
 	for _, stat := range stats {
 		cards = append(cards, overviewKPICard(stat))
@@ -92,34 +122,169 @@ func (a *app) overviewKPIRow() *ui.Element {
 
 var overviewBarHeights = []float64{34, 48, 42, 55, 61, 58, 90, 66, 72, 64, 78, 84}
 
+// overviewBarValues holds the net new subscribers per week behind each bar.
+// The 12 values sum to the +428 total in the card footnote.
+var overviewBarValues = []int{20, 27, 24, 31, 35, 33, 51, 38, 41, 36, 44, 48}
+
+// overviewDailyValues holds net new subscribers per day for the 7-day
+// window. The 7 values sum to the +96 weekly total in the KPI footnote.
+var overviewDailyValues = []int{11, 14, 12, 16, 15, 13, 15}
+
+// overviewQuarterValues holds net new subscribers per week for the 90-day
+// window. The 12 values sum to the +1,204 quarterly total.
+var overviewQuarterValues = []int{56, 76, 68, 87, 98, 93, 143, 107, 115, 101, 124, 136}
+
+// barValues returns the List growth values for a range window: 7 daily
+// bars for 7 days, 12 weekly bars otherwise. Unknown day counts fall back
+// to the default 30-day window.
+func barValues(days int) []int {
+	switch days {
+	case 7:
+		return overviewDailyValues
+	case 90:
+		return overviewQuarterValues
+	default:
+		return overviewBarValues
+	}
+}
+
+// barHeightsFor scales the window's values onto a 0-90 percent track so
+// the tallest bar fills the track in every window. The 30-day window keeps
+// its hand-tuned heights; other windows scale from their peak.
+func barHeightsFor(days int) []float64 {
+	if days != 7 && days != 90 {
+		return overviewBarHeights
+	}
+	values := barValues(days)
+	peak := 1
+	for _, v := range values {
+		if v > peak {
+			peak = v
+		}
+	}
+	heights := make([]float64, len(values))
+	for i, v := range values {
+		heights[i] = math.Round(float64(v) / float64(peak) * 90)
+	}
+	return heights
+}
+
+// growthBarID names one List growth bar so the hover handler can map it
+// back to its week index.
+func growthBarID(i int) string {
+	return "mp-growth-" + strconv.Itoa(i)
+}
+
+// parseGrowthBarID recovers the week index from a List growth bar id.
+func parseGrowthBarID(id string) (int, bool) {
+	rest, ok := strings.CutPrefix(id, "mp-growth-")
+	if !ok {
+		return 0, false
+	}
+	i, err := strconv.Atoi(rest)
+	if err != nil || i < 0 || i >= len(overviewBarHeights) {
+		return 0, false
+	}
+	return i, true
+}
+
+// growthBarLabel builds the readout line for one bar in the default 30-day
+// window, e.g. "W7 · +51 net new".
+func growthBarLabel(i int) string {
+	if i < 0 || i >= len(overviewBarHeights) || i >= len(overviewBarValues) {
+		return ""
+	}
+	return "W" + strconv.Itoa(i+1) + " · +" + strconv.Itoa(overviewBarValues[i]) + " net new"
+}
+
+// growthBarLabelFor builds the readout line for the active range window:
+// "D4 · +16 net new" for the 7-day window, "W7 · +51 net new" otherwise.
+func (a *app) growthBarLabelFor(i int) string {
+	values := barValues(a.rangeDays())
+	if i < 0 || i >= len(values) {
+		return ""
+	}
+	prefix := "W"
+	if a.rangeDays() == 7 {
+		prefix = "D"
+	}
+	return prefix + strconv.Itoa(i+1) + " · +" + strconv.Itoa(values[i]) + " net new"
+}
+
+func growthReadoutDefault() string {
+	return "+428 net new subscribers over the last 12 weeks."
+}
+
+// growthReadoutDefaultFor returns the growth total line for the active
+// range window. Bar values in each window sum to its total.
+func (a *app) growthReadoutDefaultFor() string {
+	switch a.rangeDays() {
+	case 7:
+		return "+96 net new subscribers over the last 7 days."
+	case 90:
+		return "+1,204 net new subscribers over the last 90 days."
+	default:
+		return growthReadoutDefault()
+	}
+}
+
+func (a *app) growthReadout() string {
+	if i := a.growthHover; i >= 0 && i < len(barValues(a.rangeDays())) {
+		if label := a.growthBarLabelFor(i); label != "" {
+			return label
+		}
+	}
+	return a.growthReadoutDefaultFor()
+}
+
 func (a *app) overviewGrowthCard() *ui.Element {
-	bars := make([]*ui.Element, 0, len(overviewBarHeights))
-	for i, height := range overviewBarHeights {
+	values := barValues(a.rangeDays())
+	heights := barHeightsFor(a.rangeDays())
+	peakIdx := 0
+	for i, v := range values {
+		if v > values[peakIdx] {
+			peakIdx = i
+		}
+	}
+	desc := "Net new subscribers per week, " + a.rangeWindow() + "."
+	if a.rangeDays() == 7 {
+		desc = "Net new subscribers per day, last 7 days."
+	}
+	bars := make([]*ui.Element, 0, len(values))
+	for i, height := range heights {
 		color := "#c9bcfb"
-		if i == 6 {
+		if i == peakIdx {
 			color = "#7c3aed"
 		}
-		bars = append(bars, ui.Div().Class("mp-bar").
+		bars = append(bars, ui.Div().ID(growthBarID(i)).Class("mp-bar").
 			Height(ui.Percent(height)).
-			Width(ui.Px(14)).
+			Flex(ui.Number(1)).
+			MinWidth(ui.Px(0)).
+			MaxWidth(ui.Px(40)).
 			BackgroundColor(ui.Hex(color)).
-			BorderRadius(ui.Px(4)))
+			BorderRadius(ui.Px(4)).
+			Attr("title", a.growthBarLabelFor(i)))
 	}
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("List growth"),
-			chadcn.CardDescription("Net new subscribers per week, last 12 weeks."),
+			chadcn.CardDescription(desc),
 		),
 		chadcn.CardContent(
 			ui.Div().Class("mp-bars").
 				Display(ui.DisplayFlex).
 				AlignItems(ui.AlignItemsEnd).
-				Gap(ui.Px(6)).
-				Height(ui.Px(120)).
+				Gap(ui.Px(8)).
+				MinHeight(ui.Px(200)).
+				FlexGrow(ui.Number(1)).
+				Width(ui.Percent(100)).
 				Children(bars...),
-			ui.Div().Class("mp-muted").Text("+428 net new subscribers over the last 12 weeks."),
-		),
-	)
+			ui.Div().ID("mp-growth-readout").Class("mp-muted").Text(a.growthReadout()),
+		).Display(ui.DisplayFlex).
+			FlexDirection(ui.FlexDirectionColumn).
+			Flex(ui.Number(1)).
+			Gap(ui.Px(12)),
+	).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn)
 }
 
 type overviewSegment struct {
@@ -129,12 +294,37 @@ type overviewSegment struct {
 }
 
 func overviewSegments() []overviewSegment {
-	return []overviewSegment{
-		{label: "Power readers", share: "32%", filled: 8},
-		{label: "New subscribers", share: "24%", filled: 7},
-		{label: "Paid members", share: "15%", filled: 6},
-		{label: "Dormant win-back", share: "18%", filled: 5},
-		{label: "Referral friends", share: "11%", filled: 4},
+	return overviewSegmentsFor(30)
+}
+
+// overviewSegmentsFor returns the segment shares for a range window.
+// Unknown day counts fall back to the default 30-day window.
+func overviewSegmentsFor(days int) []overviewSegment {
+	switch days {
+	case 7:
+		return []overviewSegment{
+			{label: "Power readers", share: "34%", filled: 8},
+			{label: "New subscribers", share: "26%", filled: 7},
+			{label: "Paid members", share: "14%", filled: 6},
+			{label: "Dormant win-back", share: "15%", filled: 5},
+			{label: "Referral friends", share: "11%", filled: 4},
+		}
+	case 90:
+		return []overviewSegment{
+			{label: "Power readers", share: "30%", filled: 8},
+			{label: "New subscribers", share: "28%", filled: 7},
+			{label: "Paid members", share: "16%", filled: 6},
+			{label: "Dormant win-back", share: "15%", filled: 5},
+			{label: "Referral friends", share: "11%", filled: 4},
+		}
+	default:
+		return []overviewSegment{
+			{label: "Power readers", share: "32%", filled: 8},
+			{label: "New subscribers", share: "24%", filled: 7},
+			{label: "Paid members", share: "15%", filled: 6},
+			{label: "Dormant win-back", share: "18%", filled: 5},
+			{label: "Referral friends", share: "11%", filled: 4},
+		}
 	}
 }
 
@@ -159,7 +349,7 @@ func overviewSegmentRow(segment overviewSegment) *ui.Element {
 }
 
 func (a *app) overviewSegmentsCard() *ui.Element {
-	segments := overviewSegments()
+	segments := overviewSegmentsFor(a.rangeDays())
 	rows := make([]*ui.Element, 0, len(segments))
 	for _, segment := range segments {
 		rows = append(rows, overviewSegmentRow(segment))
@@ -167,7 +357,7 @@ func (a *app) overviewSegmentsCard() *ui.Element {
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("Top segments"),
-			chadcn.CardDescription("Share of engaged readers by segment."),
+			chadcn.CardDescription("Share of engaged readers by segment, "+a.rangeWindow()+"."),
 		),
 		chadcn.CardContent(rows...),
 	)
@@ -182,16 +372,47 @@ type overviewSend struct {
 }
 
 func overviewSends() []overviewSend {
-	return []overviewSend{
-		{id: "send-1", name: "Weekly Creator Brief #52", date: "Mar 12", open: "52% opens", click: "21% clicks"},
-		{id: "send-2", name: "AI Tools Worth Trying", date: "Mar 5", open: "49% opens", click: "19% clicks"},
-		{id: "send-3", name: "The Creator Economy Report", date: "Feb 26", open: "47% opens", click: "17% clicks"},
-		{id: "send-4", name: "Sponsor Spotlight: Notion", date: "Feb 19", open: "38% opens", click: "9% clicks"},
+	return overviewSendsFor(30)
+}
+
+// overviewSendsFor returns the Recent sends rows for a range window: the
+// last 2 sends for 7 days, the last 4 for 30 days, and those 4 plus 2
+// extra historical rows for 90 days. Unknown day counts fall back to the
+// default 30-day window.
+func overviewSendsFor(days int) []overviewSend {
+	switch days {
+	case 7:
+		return overviewSendsFor(30)[:2]
+	case 90:
+		return append(overviewSendsFor(30),
+			overviewSend{id: "send-5", name: "Weekly Creator Brief #51", date: "Feb 12", open: "45.3% opens", click: "16.1% clicks"},
+			overviewSend{id: "send-6", name: "Sponsor Spotlight: Acme", date: "Feb 5", open: "37.2% opens", click: "8.4% clicks"},
+		)
+	default:
+		return []overviewSend{
+			{id: "send-1", name: "Weekly Creator Brief #52", date: "Mar 12", open: "52% opens", click: "21% clicks"},
+			{id: "send-2", name: "AI Tools Worth Trying", date: "Mar 5", open: "49% opens", click: "19% clicks"},
+			{id: "send-3", name: "The Creator Economy Report", date: "Feb 26", open: "47% opens", click: "17% clicks"},
+			{id: "send-4", name: "Sponsor Spotlight: Notion", date: "Feb 19", open: "38% opens", click: "9% clicks"},
+		}
+	}
+}
+
+// recentSendsDesc names the send count behind the Recent sends card for
+// the active range window.
+func (a *app) recentSendsDesc() string {
+	switch a.rangeDays() {
+	case 7:
+		return "Last 2 campaigns and their results."
+	case 90:
+		return "Last 6 campaigns and their results."
+	default:
+		return "Last 4 campaigns and their results."
 	}
 }
 
 func (a *app) overviewSendsCard() *ui.Element {
-	sends := overviewSends()
+	sends := overviewSendsFor(a.rangeDays())
 	rows := make([]*ui.Element, 0, len(sends))
 	for _, send := range sends {
 		rows = append(rows, ui.Div().Class("mp-linkrow mp-selectable").
@@ -210,7 +431,7 @@ func (a *app) overviewSendsCard() *ui.Element {
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("Recent sends"),
-			chadcn.CardDescription("Last 4 campaigns and their results."),
+			chadcn.CardDescription(a.recentSendsDesc()),
 		),
 		chadcn.CardContent(rows...),
 	)

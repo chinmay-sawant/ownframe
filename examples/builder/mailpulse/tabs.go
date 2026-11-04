@@ -99,9 +99,10 @@ func (a *app) pageTitle() (string, string) {
 }
 
 // engagementPage is the existing dashboard stack, extracted so contentBody
-// can return it without shell.go changes.
+// can return it without shell.go changes. It keeps its own .mp-card wrapper
+// so the tab renders exactly as before; other tabs own their card structure.
 func (a *app) engagementPage() *ui.Element {
-	return ui.Div().Children(
+	return ui.Div().Class("mp-card mp-stack").Children(
 		a.pageHead(),
 		a.kpiRow(),
 		ui.Div().Class("mp-grid-mid").Children(
@@ -120,11 +121,11 @@ func (a *app) engagementPage() *ui.Element {
 // the body.
 func (a *app) tabHead() *ui.Element {
 	title, sub := a.pageTitle()
-	rangeBtn := chadcn.Button("📅 "+a.rangeLabel+" ▾", chadcn.ButtonOptions{
+	rangeBtn := chadcn.Button(a.rangeLabel+" ▾", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "range:cycle")
-	exportBtn := chadcn.Button("⤓ Export", chadcn.ButtonOptions{
+	exportBtn := chadcn.Button("↓ Export", chadcn.ButtonOptions{
 		Variant: chadcn.ButtonOutlined,
 		Size:    chadcn.ButtonSmall,
 	}).Attr("data-action", "export")

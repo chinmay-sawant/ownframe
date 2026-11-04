@@ -20,17 +20,15 @@ func (a *app) screen() *ui.Element {
 			ui.Div().Class("mp-right").Children(
 				a.topbar(),
 				ui.Div().Class("mp-content").Children(
-					ui.Div().Class("mp-card").Children(
-						a.contentBody(),
-					),
+					a.contentBody(),
 				),
 				a.toastBar(),
 			),
 		)
 }
 
-// toastBar renders the fixed bottom dismissal bar while a toast is open.
-// It returns nil when closed; ui.Children ignores nil children.
+// toastBar renders a compact bottom-right dismissal toast while a toast is
+// open. It returns nil when closed; ui.Children ignores nil children.
 func (a *app) toastBar() *ui.Element {
 	if !a.toastOpen {
 		return nil
@@ -41,16 +39,18 @@ func (a *app) toastBar() *ui.Element {
 	}
 	return ui.Div().Class("mp-toast").
 		Position(ui.PositionFixed).
-		Left(ui.Px(0)).
-		Right(ui.Px(0)).
-		Bottom(ui.Px(0)).
-		ZIndex(ui.Number(60)).
+		Right(ui.Px(16)).
+		Bottom(ui.Px(16)).
+		ZIndex(ui.Number(200)).
+		MaxWidth(ui.Px(345)).
 		Children(
-			ui.Text(msg),
+			ui.Span().Class("mp-toast-msg").Text(msg).
+				FlexGrow(ui.Number(1)).
+				MinWidth(ui.Px(0)),
 			chadcn.Button("Dismiss", chadcn.ButtonOptions{
 				Variant: chadcn.ButtonOutlined,
 				Size:    chadcn.ButtonSmall,
-			}).OnClick(func(ctx context.Context) error {
+			}).FlexShrink(ui.Number(0)).OnClick(func(ctx context.Context) error {
 				a.toastOpen = false
 				return a.refresh(ctx)
 			}),

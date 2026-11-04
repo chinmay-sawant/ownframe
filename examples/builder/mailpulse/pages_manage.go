@@ -60,7 +60,7 @@ func (a *app) automationsPage() *ui.Element {
 			}).Attr("data-action", "select:auto:"+autoFlowID(flow.label)+":"+flow.label),
 		))
 	}
-	return ui.Div().Class("mp-manage").Children(
+	return ui.Div().Class("mp-card mp-manage mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Automations"),
@@ -118,7 +118,7 @@ func (a *app) segmentsPage() *ui.Element {
 			),
 		))
 	}
-	return ui.Div().Class("mp-manage").Children(
+	return ui.Div().Class("mp-card mp-manage mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Segments"),
@@ -165,7 +165,7 @@ func (a *app) integrationsPage() *ui.Element {
 			}).Attr("data-action", "select:integration:"+tool.id+":"+tool.label),
 		))
 	}
-	return ui.Div().Class("mp-manage").Children(
+	return ui.Div().Class("mp-card mp-manage mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Integrations"),

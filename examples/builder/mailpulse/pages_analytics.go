@@ -112,10 +112,18 @@ func (a *app) analyticsPage() *ui.Element {
 	bars := make([]*ui.Element, 0, len(weeks))
 	for _, w := range weeks {
 		h := float64(w.height)
-		bars = append(bars, ui.Div().Class("mp-bar-col").Children(
-			ui.Div().Class("mp-bar").Height(ui.Px(h)),
-			ui.Span().Class("mp-muted").Text(w.week),
-		))
+		bars = append(bars, ui.Div().Class("mp-bar-col").
+			Flex(ui.Number(1)).
+			MinWidth(ui.Px(0)).
+			Children(
+				ui.Div().Class("mp-bar").
+					Height(ui.Px(h)).
+					MinHeight(ui.Px(0)).
+					MaxWidth(ui.Px(24)),
+				ui.Span().Class("mp-muted").Text(w.week).
+					FontSize(ui.Px(11)).
+					WhiteSpace(ui.WhiteSpaceNowrap),
+			))
 	}
 	opensCard := chadcn.Card(
 		chadcn.CardHeader(
@@ -126,7 +134,9 @@ func (a *app) analyticsPage() *ui.Element {
 			ui.Div().Class("mp-bars").
 				Display(ui.DisplayFlex).
 				AlignItems(ui.AlignItemsEnd).
-				Gap(ui.Px(8)).
+				Gap(ui.Px(4)).
+				Overflow(ui.OverflowHidden).
+				MinWidth(ui.Px(0)).
 				Children(bars...),
 		),
 	)
@@ -152,7 +162,7 @@ func (a *app) analyticsPage() *ui.Element {
 		chadcn.CardContent(rows...),
 	)
 
-	return ui.Div().Class("mp-card").Children(
+	return ui.Div().Class("mp-card mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Analytics"),
@@ -191,18 +201,23 @@ func (a *app) reportsPage() *ui.Element {
 		download := chadcn.Button("Download", chadcn.ButtonOptions{
 			Variant: chadcn.ButtonOutlined,
 			Size:    chadcn.ButtonSmall,
-		}).Attr("data-action", "export")
+		}).Attr("data-action", "export").FlexShrink(ui.Number(0))
 		rows = append(rows, ui.Div().Class("mp-linkrow mp-report-row "+selectableRow(false)).
 			Attr("data-action", "select:report:"+item.id+":"+item.label).
 			Children(
-				ui.Div().Class("mp-link-meta").Children(
-					ui.Span().Class("mp-engage-label").Text(item.label),
-					ui.Span().Class("mp-muted").Text(item.format+" · "+item.cadence),
-				),
+				ui.Div().Class("mp-link-meta").
+					FlexGrow(ui.Number(1)).
+					MinWidth(ui.Px(0)).
+					Children(
+						ui.Span().Class("mp-engage-label").Text(item.label).
+							FontSize(ui.Px(13)).
+							FontWeight(ui.Number(600)),
+						ui.Span().Class("mp-muted").Text(item.format+" · "+item.cadence),
+					),
 				ui.Div().Class("mp-engage-stats").Children(download),
 			))
 	}
-	return ui.Div().Class("mp-card").Children(
+	return ui.Div().Class("mp-card mp-stack").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Reports"),

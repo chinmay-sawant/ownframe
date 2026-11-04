@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"errors"
-	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
@@ -23,26 +23,33 @@ type app struct {
 	rangeLabel   string
 	toast        string
 	toastOpen    bool
+	toastUntil   time.Time
+	notifOpen    bool
+	userOpen     bool
+	notifs       []notifItem
 	selectedKind string
 	selectedID   string
 	heatDay      int
 	heatCol      int
+	growthHover  int
 }
 
 func newApp() (*app, error) {
 	a := &app{
-		tab:        "engagement",
-		rangeLabel: "Last 30 Days",
-		heatDay:    -1,
-		heatCol:    -1,
+		tab:         "engagement",
+		rangeLabel:  "Last 30 Days",
+		heatDay:     -1,
+		heatCol:     -1,
+		growthHover: -1,
+		notifs:      defaultNotifs(),
 	}
 	view, err := ui.Mount(ownframe.Config{
 		Title:       "MailPulse · Engagement",
 		Width:       1440,
 		Height:      960,
-		MinWidth:    1180,
+		MinWidth:    1000,
 		MinHeight:   800,
-		Theme:       chadcn.Light + chadcn.Stylesheet + appCSS + hoverCSS,
+		Theme:       chadcn.Light + chadcn.Stylesheet + appCSS + hoverCSS + topbarFixCSS + cardsFixCSS + layoutFixCSS + dataFixCSS,
 		DevTools:    false,
 		RetainState: true,
 		Scrollbar:   ownframe.ScrollbarHidden,
@@ -53,18 +60,32 @@ func newApp() (*app, error) {
 	a.view = view
 	a.page = view.Page
 	view.Handle(ownframe.Handlers{
-		Click:  a.handleClick,
-		Change: a.handleChange,
-		Hover:  a.handleHover,
+		Click:   a.handleClick,
+		Change:  a.handleChange,
+		Hover:   a.handleHover,
+		Submit:  a.handleSubmit,
+		KeyDown: a.handleKey,
 	})
 	return a, nil
 }
 
 func (a *app) refresh(ctx context.Context) error {
-	return a.view.Update(ctx, a.screen())
+	if err := a.view.Update(ctx, a.screen()); err != nil {
+		return err
+	}
+	a.ensureToastTick()
+	return nil
 }
 
 func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
+	panelsChanged := false
+	if a.notifOpen || a.userOpen {
+		if !strings.HasPrefix(box.Action, "notif:") && !strings.HasPrefix(box.Action, "user:") {
+			a.notifOpen = false
+			a.userOpen = false
+			panelsChanged = true
+		}
+	}
 	switch {
 	case strings.HasPrefix(box.Action, "nav:") || strings.HasPrefix(box.Action, "nav-"):
 		tab := tabFromAction(box.Action)
@@ -94,9 +115,28 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.refresh(ctx)
 	case box.Action == "toast:close":
 		a.toastOpen = false
+		a.toastUntil = time.Time{}
+		if a.page != nil {
+			a.page.SetTick(nil)
+		}
 		return a.refresh(ctx)
 	case box.Action == "search:clear":
 		a.query = ""
+		return a.refresh(ctx)
+	case strings.HasPrefix(box.Action, "notif:"):
+		if strings.HasPrefix(box.Action, "notif:dismiss:") {
+			a.dismissNotif(strings.TrimPrefix(box.Action, "notif:dismiss:"))
+		}
+		return a.refresh(ctx)
+	case box.Action == "user:profile":
+		a.userOpen = false
+		a.toast = "Profile opening soon"
+		a.toastOpen = true
+		return a.refresh(ctx)
+	case box.Action == "user:signout":
+		a.userOpen = false
+		a.toast = "Signed out (demo)"
+		a.toastOpen = true
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "select:"):
 		rest := strings.TrimPrefix(box.Action, "select:")
@@ -106,6 +146,9 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		}
 		return a.selectToggle(ctx, parts[0], parts[1], parts[2])
 	default:
+		if panelsChanged {
+			return a.refresh(ctx)
+		}
 		return nil
 	}
 }
@@ -115,12 +158,6 @@ func (a *app) isSelected(kind, id string) bool {
 }
 
 func (a *app) selectToggle(ctx context.Context, kind, id, label string) error {
-	if kind == "heat" {
-		if day, col, ok := parseHeatKey(id); ok {
-			a.heatDay = day
-			a.heatCol = col
-		}
-	}
 	if a.isSelected(kind, id) {
 		a.selectedKind = ""
 		a.selectedID = ""
@@ -133,26 +170,6 @@ func (a *app) selectToggle(ctx context.Context, kind, id, label string) error {
 	a.toast = "Selected " + label
 	a.toastOpen = true
 	return a.refresh(ctx)
-}
-
-// parseHeatKey recovers the weekday and column from a "day-col" key.
-func parseHeatKey(key string) (int, int, bool) {
-	day, col, ok := strings.Cut(key, "-")
-	if !ok {
-		return 0, 0, false
-	}
-	d, err := strconv.Atoi(day)
-	if err != nil {
-		return 0, 0, false
-	}
-	c, err := strconv.Atoi(col)
-	if err != nil {
-		return 0, 0, false
-	}
-	if d < 0 || d > 6 || c < 0 || c > 17 {
-		return 0, 0, false
-	}
-	return d, c, true
 }
 
 // handleChange keeps the topbar and subscriber search fields live. The page
@@ -171,9 +188,27 @@ func (a *app) handleChange(ctx context.Context, box ownframe.Box) error {
 	}
 }
 
-// handleHover updates the heatmap readout without a full re-render. Other
-// elements use CSS :hover only, so they report no change.
+// handleHover updates the heatmap and List growth readouts without a full
+// re-render. Other elements use CSS :hover only, so they report no change.
 func (a *app) handleHover(ctx context.Context, previous, next ownframe.Box) (bool, error) {
+	if i, ok := parseGrowthBarID(next.ID); ok {
+		a.growthHover = i
+		if err := a.patchElementText(ctx, "mp-growth-readout", a.growthBarLabelFor(i)); err != nil {
+			return false, err
+		}
+		if _, _, wasHeat := parseHeatCellID(previous.ID); wasHeat {
+			if err := a.patchReadout(ctx, a.heatReadout()); err != nil {
+				return false, err
+			}
+		}
+		return false, nil
+	}
+	if _, ok := parseGrowthBarID(previous.ID); ok {
+		a.growthHover = -1
+		if err := a.patchElementText(ctx, "mp-growth-readout", a.growthReadoutDefaultFor()); err != nil {
+			return false, err
+		}
+	}
 	day, col, ok := parseHeatCellID(next.ID)
 	if !ok {
 		if _, _, was := parseHeatCellID(previous.ID); was {
@@ -194,7 +229,11 @@ func (a *app) handleHover(ctx context.Context, previous, next ownframe.Box) (boo
 }
 
 func (a *app) patchReadout(ctx context.Context, label string) error {
-	err := a.page.PatchElement(ctx, "mp-heat-readout", ownframe.ElementEdit{Text: &label})
+	return a.patchElementText(ctx, "mp-heat-readout", label)
+}
+
+func (a *app) patchElementText(ctx context.Context, id, label string) error {
+	err := a.page.PatchElement(ctx, id, ownframe.ElementEdit{Text: &label})
 	if errors.Is(err, ownframe.ErrPatchRefused) {
 		return a.refresh(ctx)
 	}
@@ -202,5 +241,5 @@ func (a *app) patchReadout(ctx context.Context, label string) error {
 }
 
 func (a *app) themeSheet() string {
-	return chadcn.Light + chadcn.Stylesheet + appCSS + hoverCSS
+	return chadcn.Light + chadcn.Stylesheet + appCSS + hoverCSS + topbarFixCSS + cardsFixCSS + layoutFixCSS + dataFixCSS
 }

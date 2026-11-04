@@ -77,6 +77,36 @@ func TestMailpulseNavAndSelect(t *testing.T) {
 	}
 }
 
+func TestMailpulseNotifDismissFlow(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	if len(a.notifs) == 0 {
+		t.Fatalf("expected seeded notifications")
+	}
+	ctx := context.Background()
+	a.notifOpen = true
+	if _, err := ui.Render(a.notifTrigger()); err != nil {
+		t.Fatalf("render bell trigger: %v", err)
+	}
+	for _, n := range append([]notifItem(nil), a.notifs...) {
+		if err := a.handleClick(ctx, clickBox("notif:dismiss:"+n.id)); err != nil {
+			t.Fatalf("dismiss %s: %v", n.id, err)
+		}
+	}
+	if len(a.notifs) != 0 {
+		t.Fatalf("notifs = %d, want 0", len(a.notifs))
+	}
+	out, err := ui.Render(a.screen())
+	if err != nil {
+		t.Fatalf("render screen: %v", err)
+	}
+	if !strings.Contains(out, "No new notifications") {
+		t.Fatalf("empty state missing")
+	}
+}
+
 func TestMailpulseHoverCSSWired(t *testing.T) {
 	if !strings.Contains(hoverCSS, ".mp-selectable") {
 		t.Fatalf("hoverCSS missing mp-selectable")
@@ -123,8 +153,42 @@ func TestMailpulseHeatCellLabels(t *testing.T) {
 	if _, _, ok := parseHeatCellID("mp-sidebar"); ok {
 		t.Fatalf("non-cell id parsed as cell")
 	}
-	if _, _, ok := parseHeatKey("1-3"); !ok {
-		t.Fatalf("parseHeatKey failed")
+}
+
+func TestMailpulseGrowthBarLabels(t *testing.T) {
+	if len(overviewBarHeights) != 12 || len(overviewBarValues) != 12 {
+		t.Fatalf("growth bars = %d heights %d values, want 12 and 12", len(overviewBarHeights), len(overviewBarValues))
+	}
+	total := 0
+	for _, v := range overviewBarValues {
+		total += v
+	}
+	if total != 428 {
+		t.Fatalf("growth values total = %d, want 428", total)
+	}
+	if got := growthBarLabel(6); !strings.Contains(got, "W7") || !strings.Contains(got, "+51") {
+		t.Fatalf("peak bar label = %q, want W7 +51", got)
+	}
+	if i, ok := parseGrowthBarID("mp-growth-6"); !ok || i != 6 {
+		t.Fatalf("parseGrowthBarID failed: %d %v", i, ok)
+	}
+	if _, ok := parseGrowthBarID("mp-heat-2-5"); ok {
+		t.Fatalf("heat id parsed as growth bar")
+	}
+	if _, ok := parseGrowthBarID("mp-growth-12"); ok {
+		t.Fatalf("out of range bar parsed")
+	}
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	a.tab = "overview"
+	html, err := ui.Render(a.overviewGrowthCard())
+	if err != nil {
+		t.Fatalf("render growth card: %v", err)
+	}
+	if !strings.Contains(html, "mp-growth-6") || !strings.Contains(html, "mp-growth-readout") {
+		t.Fatalf("growth card missing bar ids or readout")
 	}
 }
 
@@ -145,23 +209,183 @@ func TestMailpulseSubscriberSearch(t *testing.T) {
 	}
 }
 
-func TestMailpulseHeatSelectAndChange(t *testing.T) {
+func TestMailpulseHeatHoverOnly(t *testing.T) {
 	a, err := newApp()
 	if err != nil {
 		t.Fatalf("newApp: %v", err)
 	}
-	ctx := context.Background()
-	if err := a.handleClick(ctx, clickBox("select:heat:1-3:Tue 9a")); err != nil {
-		t.Fatalf("heat select: %v", err)
+	html, err := ui.Render(a.heatmapCard())
+	if err != nil {
+		t.Fatalf("render heatmap: %v", err)
 	}
-	if a.heatDay != 1 || a.heatCol != 3 {
-		t.Fatalf("heat cell not pinned: %d %d", a.heatDay, a.heatCol)
+	if strings.Contains(html, "select:heat") {
+		t.Fatalf("heat cells must not carry a select action")
 	}
-	if !a.isSelected("heat", "1-3") {
-		t.Fatalf("heat selection not set")
+	if !strings.Contains(html, "mp-heat-readout") {
+		t.Fatalf("heatmap missing hover readout")
 	}
 	a.subQuery = "emma"
 	if _, err := ui.Render(a.subscribersPage()); err != nil {
 		t.Fatalf("render filtered subscribers: %v", err)
 	}
+}
+
+// TestMailpulseRangeUpdatesData checks that the Overview, Engagement, and
+// Audience tabs all respond to the range pill. Overview assertions cover
+// overviewStatsFor/overviewSendsFor and the growth description; engagement
+// and audience assertions only read the other owners' range-aware cards
+// (kpisFor footnotes, rangeNewLabel, rangeWindow) without touching them.
+func TestMailpulseRangeUpdatesData(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	render := func(el *ui.Element) string {
+		html, err := ui.Render(el)
+		if err != nil {
+			t.Fatalf("ui.Render: %v", err)
+		}
+		return html
+	}
+
+	if got := len(overviewSendsFor(7)); got != 2 {
+		t.Fatalf("overviewSendsFor(7) = %d rows, want 2", got)
+	}
+	if got := len(overviewSendsFor(30)); got != 4 {
+		t.Fatalf("overviewSendsFor(30) = %d rows, want 4", got)
+	}
+	if got := len(overviewSendsFor(90)); got != 6 {
+		t.Fatalf("overviewSendsFor(90) = %d rows, want 6", got)
+	}
+
+	overview30 := render(a.overviewPage())
+	if !strings.Contains(overview30, "+428 this month") {
+		t.Fatalf("overview 30d missing +428 this month stat")
+	}
+	if !strings.Contains(overview30, "$12,480") {
+		t.Fatalf("overview 30d missing $12,480 revenue stat")
+	}
+	if !strings.Contains(overview30, "last 30 days") {
+		t.Fatalf("overview 30d missing last 30 days window")
+	}
+
+	a.rangeLabel = "Last 7 Days"
+	overview7 := render(a.overviewPage())
+	for _, want := range []string{"+96 this week", "$2,940", "last 7 days"} {
+		if !strings.Contains(overview7, want) {
+			t.Fatalf("overview 7d missing %q", want)
+		}
+	}
+	for _, stale := range []string{"last 30 days", "+428 this month"} {
+		if strings.Contains(overview7, stale) {
+			t.Fatalf("overview 7d still contains %q", stale)
+		}
+	}
+	if got := render(a.overviewSendsCard()); strings.Count(got, "select:send:") != 2 {
+		t.Fatalf("overview 7d sends card = %d rows, want 2", strings.Count(got, "select:send:"))
+	}
+	if engagement7 := render(a.engagementPage()); !strings.Contains(engagement7, "102 replies this week") {
+		t.Fatalf("engagement 7d missing weekly replies footnote")
+	}
+	audience7 := render(a.audiencePage())
+	for _, want := range []string{"last 7 days", "New (7d)"} {
+		if !strings.Contains(audience7, want) {
+			t.Fatalf("audience 7d missing %q", want)
+		}
+	}
+	if strings.Contains(audience7, "last 30 days") {
+		t.Fatalf("audience 7d still contains last 30 days")
+	}
+
+	a.rangeLabel = "Last 90 Days"
+	overview90 := render(a.overviewPage())
+	for _, want := range []string{"$36,900", "+1,204 this quarter", "+$3,240 this quarter", "last 90 days"} {
+		if !strings.Contains(overview90, want) {
+			t.Fatalf("overview 90d missing %q", want)
+		}
+	}
+	if strings.Contains(overview90, "last 30 days") {
+		t.Fatalf("overview 90d still contains last 30 days")
+	}
+	if got := render(a.overviewSendsCard()); strings.Count(got, "select:send:") != 6 {
+		t.Fatalf("overview 90d sends card = %d rows, want 6", strings.Count(got, "select:send:"))
+	}
+	if engagement90 := render(a.engagementPage()); !strings.Contains(engagement90, "1,180 replies this quarter") {
+		t.Fatalf("engagement 90d missing quarterly replies footnote")
+	}
+	audience90 := render(a.audiencePage())
+	for _, want := range []string{"last 90 days", "New (90d)"} {
+		if !strings.Contains(audience90, want) {
+			t.Fatalf("audience 90d missing %q", want)
+		}
+	}
+}
+
+func TestMailpulseOverviewRangeRedraws(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatalf("newApp: %v", err)
+	}
+	render := func(el *ui.Element) string {
+		html, err := ui.Render(el)
+		if err != nil {
+			t.Fatalf("ui.Render: %v", err)
+		}
+		return html
+	}
+
+	// Bar values in each window sum to the window total in the readout.
+	if total := sumInts(barValues(7)); total != 96 {
+		t.Fatalf("barValues(7) total = %d, want 96", total)
+	}
+	if total := sumInts(barValues(90)); total != 1204 {
+		t.Fatalf("barValues(90) total = %d, want 1204", total)
+	}
+	if total := sumInts(barValues(30)); total != 428 {
+		t.Fatalf("barValues(30) total = %d, want 428", total)
+	}
+
+	// 7-day window: 7 daily bars, daily description, cooled heatmap.
+	a.rangeLabel = "Last 7 Days"
+	overview7 := render(a.overviewPage())
+	for _, want := range []string{"per day, last 7 days", "+96 net new", "26%", "Last 2 campaigns"} {
+		if !strings.Contains(overview7, want) {
+			t.Fatalf("overview 7d missing %q", want)
+		}
+	}
+	if strings.Contains(overview7, "mp-growth-7") {
+		t.Fatalf("overview 7d renders an 8th bar, want 7 daily bars")
+	}
+	if got := heatValueFor(1, 3, 7); got != 4 {
+		t.Fatalf("heatValueFor(Tue 9a, 7d) = %d, want pinned peak 4", got)
+	}
+	if got := heatValueFor(0, 2, 7); got != heatValue(0, 2)-1 {
+		t.Fatalf("heatValueFor(Mon 8a, 7d) = %d, want dampened %d", got, heatValue(0, 2)-1)
+	}
+
+	// 90-day window: 12 weekly bars, quarterly totals, full heat.
+	a.rangeLabel = "Last 90 Days"
+	overview90 := render(a.overviewPage())
+	for _, want := range []string{"per week, last 90 days", "+1,204 net new", "28%", "Last 6 campaigns"} {
+		if !strings.Contains(overview90, want) {
+			t.Fatalf("overview 90d missing %q", want)
+		}
+	}
+	if !strings.Contains(overview90, "mp-growth-11") {
+		t.Fatalf("overview 90d missing 12th bar")
+	}
+
+	// Default window keeps the hand-tuned 30-day track.
+	a.rangeLabel = "Last 30 Days"
+	if heights := barHeightsFor(30); len(heights) != len(overviewBarHeights) || heights[0] != overviewBarHeights[0] {
+		t.Fatalf("barHeightsFor(30) changed the 30-day track")
+	}
+}
+
+func sumInts(values []int) int {
+	total := 0
+	for _, v := range values {
+		total += v
+	}
+	return total
 }

@@ -9,8 +9,10 @@ import (
 const funnelDotTotal = 20
 
 func (a *app) funnelCard() *ui.Element {
-	_ = a
-	rows := funnelRows()
+	// funnelRows arrives in descending pct order
+	// (100.0 > 47.8 > 18.6 > 2.4 > 0.2); keep that order so the
+	// pct column reads top-to-bottom in sequence.
+	rows := funnelRowsFor(a.rangeDays())
 	items := make([]*ui.Element, 0, len(rows)+1)
 	for _, row := range rows {
 		items = append(items, ui.Div().Class("mp-funnel-row").Children(
@@ -28,7 +30,7 @@ func (a *app) funnelCard() *ui.Element {
 	return chadcn.Card(
 		chadcn.CardHeader(
 			chadcn.CardTitle("Engagement funnel"),
-			chadcn.CardDescription("Average per issue, last 30 days."),
+			chadcn.CardDescription("Average per issue, "+a.rangeWindow()+"."),
 		),
 		chadcn.CardContent(items...),
 	)

@@ -53,7 +53,7 @@ func (a *app) campaignsPage() *ui.Element {
 				),
 			))
 	}
-	return ui.Div().Class("mp-card").Children(
+	return ui.Div().Class("mp-card mp-camp").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Campaigns"),
@@ -143,7 +143,7 @@ func (a *app) contentPage() *ui.Element {
 			use,
 		))
 	}
-	return ui.Div().Class("mp-card").Children(
+	return ui.Div().Class("mp-card mp-cont").Children(
 		ui.Div().Class("mp-pagehead").Children(
 			ui.Div().Class("mp-pagehead-text").Children(
 				chadcn.H1("Content"),
