@@ -135,7 +135,7 @@ None. No issue is linked to this work.
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied
 - [x] Related issues filled with real ticket IDs
-- [x] Filled body committed under `plans/v0.0.3/css-optimization/pr-css-preview-optimization.md`
+- [x] Filled body committed under `plans/v0.0.3/pr/38/pr-css-preview-optimization.md`
 
 ## Follow-ups (out of scope)
 

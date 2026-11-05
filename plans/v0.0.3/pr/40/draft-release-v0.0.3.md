@@ -1,5 +1,7 @@
 # Draft release note for v0.0.3
 
+This file is the draft that shipped with pull request #40. The release body for the tag is `plans/v0.0.3/pr/72/release-v0.0.3.md`.
+
 This is a proposed release note for review alongside the production-readiness PR. OwnFrame remains in the v0.0.3 development cycle. This note does not announce a published release.
 
 ## What changed

@@ -9,7 +9,7 @@ The Open folder browser gains a This PC drives level, a ten-row scrolling list, 
 
 ## Motivation / context
 
-- Plans: `plans/v0.0.3/examples/code-view/`, `plans/v0.0.3/performance/`, `plans/v0.0.3/examples/pr-code-view-and-performance.md` (parent PR #49 description)
+- Plans: `plans/v0.0.3/examples/code-view/`, `plans/v0.0.3/performance/`, `plans/v0.0.3/pr/49/pr-code-view-and-performance.md` (parent PR #49 description)
 - Issues: see **Related issues**
 - The browser could not step above a drive root, the folder list had no window, and long paths painted past the panel. This is the small stacked fix on top of PR #49.
 
@@ -107,7 +107,7 @@ PASS website ESLint
 - [ ] Self-assigned (`--assignee @me`)
 - [ ] Labels applied
 - [ ] Related issues filled with real ticket IDs
-- [x] Filled body committed under `plans/PR/pr-code-view-file-browser.md`
+- [x] Filled body committed under `plans/v0.0.3/pr/49/pr-code-view-file-browser.md`
 
 ## Follow-ups (out of scope)
 

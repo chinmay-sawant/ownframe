@@ -1,6 +1,6 @@
 # feat(examples): add ChadCN set and LogLens dashboard
 
-Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md).
+Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../../../skills/PR/PR_TEMPLATE.md).
 
 - Base: `origin/master` (`2d2cb57e`)
 - Head: `chore/new-examples`
@@ -159,7 +159,7 @@ First run rebuilt hashed JS and WASM output, which this branch commits as `chore
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied
 - [x] Related issues filled: there is no tracker issue
-- [x] Filled body committed under `plans/PR/pr-chadcn-loglens-dashboard.md`
+- [x] Filled body committed under `plans/v0.0.3/pr/66/pr-chadcn-loglens-dashboard.md`
 
 ---
 

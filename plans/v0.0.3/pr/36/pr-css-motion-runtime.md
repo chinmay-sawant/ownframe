@@ -80,7 +80,7 @@ None. No issue is linked to this work.
 - [x] Self-assigned with `--assignee "@me"`.
 - [x] `enhancement` label applied.
 - [x] Related issues checked; none are linked.
-- [x] This PR record is committed under `plans/PR/pr-css-motion-runtime.md`.
+- [x] This PR record is committed under `plans/v0.0.3/pr/36/pr-css-motion-runtime.md`.
 
 ## Follow-ups (out of scope)
 
