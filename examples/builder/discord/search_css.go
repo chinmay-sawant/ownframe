@@ -48,7 +48,6 @@ const searchCSS = `
   background: #2b2d31;
   border: 1px solid #1e1f22;
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 #dc-search-panel .of-card {
