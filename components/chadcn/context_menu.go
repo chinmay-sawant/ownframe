@@ -17,6 +17,7 @@ func contextMenuSkin() menuSkin {
 		chevron:   "of-context-menu-chevron",
 		row:       "of-context-menu-row",
 		submenu:   "of-context-menu-submenu",
+		anchor:    "of-context-menu-anchor",
 	}
 }
 

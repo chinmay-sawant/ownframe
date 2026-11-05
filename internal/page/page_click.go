@@ -101,6 +101,24 @@ func (s clickSurface) RedrawIfChanged(ctx context.Context) error {
 	return s.p.RedrawIfChanged(ctx)
 }
 
+func (s clickSurface) LabelControl(box Box) string {
+	id := click.LabelControl(s.p.source, s.p.boxes, box)
+	if id == "" {
+		return ""
+	}
+
+	c, ok := s.p.control(id)
+	if !ok || c.Disabled || !s.p.inFocusScope(id) {
+		return ""
+	}
+
+	return id
+}
+
+func (s clickSurface) FocusControl(ctx context.Context, id string) error {
+	return s.p.Focus(ctx, id)
+}
+
 var _ host.Screen = (*Page)(nil)
 
 var _ click.Surface = clickSurface{}

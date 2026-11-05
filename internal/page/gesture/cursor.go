@@ -7,6 +7,8 @@ type Cursor struct {
 	HoverID  string
 	Control  bool
 	Editable bool
+	// Disabled is the hovered control's disabled attribute.
+	Disabled bool
 	Tag      string
 	Action   string
 	Link     bool
@@ -14,10 +16,14 @@ type Cursor struct {
 
 // CursorShape returns the shape for the hovered box: an I-beam over a text
 // control, a hand over a link, a button, or another control, and the default
-// arrow everywhere else.
+// arrow everywhere else. A disabled control keeps the default arrow.
 func CursorShape(in Cursor) host.Shape {
 	if in.HoverID != "" {
 		if in.Control {
+			if in.Disabled {
+				return host.ShapeDefault
+			}
+
 			if in.Editable {
 				return host.ShapeText
 			}

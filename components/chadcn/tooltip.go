@@ -5,10 +5,11 @@ import (
 )
 
 // TooltipOptions describes a controlled tooltip. Open comes from the host.
-// CSSHover keeps closed content mounted so the host can toggle the
-// of-tooltip--hovered class with a local element patch. Content is plain text.
-// ID names the root and derives the content ID. Side places the label; its
-// zero value is PopupBottom.
+// CSSHover keeps the label mounted while Open is false and shows it from the
+// trigger :hover rule, so the host does not set Open for that path. The host
+// can still toggle of-tooltip--hovered with a local element patch. Content is
+// plain text. ID names the root and derives the content ID. Side places the
+// label; its zero value is PopupBottom.
 type TooltipOptions struct {
 	ID       string
 	Open     bool
@@ -42,6 +43,11 @@ func Tooltip(options TooltipOptions, trigger *ui.Element) *ui.Element {
 		root.ID(options.ID)
 	}
 	triggerBox := ui.Span().Class("of-tooltip-trigger").Children(trigger)
+	if options.CSSHover {
+		// :hover matches only the element with the hover id. The id has to sit
+		// on the trigger, not only on the root.
+		triggerBox.ID(cssHoverTriggerID(options.ID, "tooltip"))
+	}
 	if !options.Open && !options.CSSHover {
 		return root.Children(triggerBox)
 	}
@@ -54,4 +60,13 @@ func Tooltip(options TooltipOptions, trigger *ui.Element) *ui.Element {
 		return root.Children(triggerBox, anchor)
 	}
 	return root.Children(anchor, triggerBox)
+}
+
+// cssHoverTriggerID is the id the pointer hits. An empty host id still gets a
+// stable trigger id, because an element without an id never matches :hover.
+func cssHoverTriggerID(id, component string) string {
+	if part := partID(id, "-trigger"); part != "" {
+		return part
+	}
+	return "of-" + component + "-trigger"
 }

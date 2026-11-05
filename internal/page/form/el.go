@@ -11,6 +11,7 @@ func controlFrom(tag string, a fieldAttr) Control {
 		Disabled:  a.disabled,
 		TabIndex:  a.tabindex,
 		MaxLength: a.maxlen,
+		InputMode: a.inputMode,
 	}
 }
 

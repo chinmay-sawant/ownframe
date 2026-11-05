@@ -1,0 +1,19 @@
+.of-nivo { display: block; }
+.of-nivo-heading { display: block; }
+.of-nivo-title { margin: 0; font-size: 16px; }
+.of-nivo-description, .of-nivo-empty { margin: 4px 0 0; font-size: 12px; }
+.of-nivo-body, .of-nivo-rows { display: flex; flex-direction: column; gap: 8px; }
+.of-nivo-plot { display: flex; align-items: flex-end; height: 140px; gap: 6px; }
+.of-nivo-column { display: flex; align-items: flex-end; flex: 1; height: 100%; gap: 2px; }
+.of-nivo-bar, .of-nivo-stem, .of-nivo-fill, .of-nivo-slice { background: var(--of-nivo-color, #2563eb); min-height: 2px; }
+.of-nivo-bar, .of-nivo-stem { width: 100%; }
+.of-nivo-track { display: flex; height: 14px; width: 100%; }
+.of-nivo-slice, .of-nivo-fill { height: 100%; }
+.of-nivo-row, .of-nivo-labels, .of-nivo-legend, .of-nivo-grid { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.of-nivo-dot, .of-nivo-swatch, .of-nivo-swarm-dot { width: 8px; height: 8px; background: var(--of-nivo-color, #2563eb); }
+.of-nivo-cell, .of-nivo-day, .of-nivo-region, .of-nivo-heat-cell, .of-nivo-waffle-on, .of-nivo-waffle-off {
+  min-width: 28px;
+  min-height: 20px;
+}
+.of-nivo-waffle-on, .of-nivo-region, .of-nivo-heat-cell { background: var(--of-nivo-color, #2563eb); }
+.of-nivo-waffle-off { background: #e5e7eb; }

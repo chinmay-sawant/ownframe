@@ -38,9 +38,11 @@ type SheetOptions struct {
 
 // Sheet builds a modal panel anchored to one window edge over a backdrop. When
 // Open is false it returns the trigger, or nil when no trigger was supplied.
-// A backdrop click and the header close control call OnOpenChange.
+// The panel always has an id, and the backdrop id is different, so a click in
+// the body hits the panel and does not dismiss. A backdrop click and the
+// header close control call OnOpenChange when that callback is set.
 func Sheet(options SheetOptions, children ...*ui.Element) *ui.Element {
-	panelID := partID(options.ID, "-panel")
+	panelID := stablePartID(options.ID, "-panel", "of-sheet-panel")
 	trigger := overlayTrigger(options.Trigger, options.Open, panelID, options.OnOpenChange)
 	if !options.Open {
 		return trigger
@@ -52,17 +54,18 @@ func Sheet(options SheetOptions, children ...*ui.Element) *ui.Element {
 	}
 	overlayPanelAttrs(panel, "dialog", "Sheet", titleID, descriptionID)
 	sheetGeometry(panel, options.Side)
+	closeControl := overlayClose("sheet", "", options.OnOpenChange)
+	if closeControl != nil {
+		closeControl.ID(partID(panelID, "-close"))
+	}
 	panel.Children(
-		overlayHeader("sheet", overlayHeading("sheet", options.Title, options.Description, titleID, descriptionID),
-			overlayClose("sheet", "", options.OnOpenChange)),
+		overlayHeader("sheet", overlayHeading("sheet", options.Title, options.Description, titleID, descriptionID), closeControl),
 		overlayBody("sheet", children),
 		overlayStackedFooter("sheet", options.Footer),
 	)
 
 	backdrop := ui.Div().Class("of-sheet-backdrop").Children(options.Overrides.Apply(panel))
-	if id := partID(options.ID, "-backdrop"); id != "" {
-		backdrop.ID(id)
-	}
+	backdrop.ID(stablePartID(options.ID, "-backdrop", "of-sheet-backdrop"))
 	if options.OnOpenChange != nil {
 		backdrop.OnClick(func(ctx context.Context) error { return options.OnOpenChange(ctx, false) })
 	}

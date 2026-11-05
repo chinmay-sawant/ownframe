@@ -84,6 +84,66 @@ func TestChartFixRenderKeepsPlotBarsAndLegend(t *testing.T) {
 	}
 }
 
+// TestChartFixBarIDsFollowChartID gives each bar an id from the chart id and
+// its index in plot order, so the bar opacity hover can match. A chart with
+// no id does not invent one. A missing series value is skipped, and only
+// the bars that render are numbered.
+func TestChartFixBarIDsFollowChartID(t *testing.T) {
+	t.Parallel()
+	source := feedbackHTML(t, chadcn.Chart(chadcn.ChartOptions{
+		ID:    "visitors",
+		Title: "Visitors",
+		Series: []chadcn.ChartSeries{
+			{Label: "Desktop", Values: []float64{100, 50}},
+			{Label: "Mobile", Values: []float64{80, 40}},
+		},
+		Labels: []string{"Mon", "Tue"},
+	}))
+	wants := []string{
+		`id="visitors"`,
+		`id="visitors-bar-0"`,
+		`id="visitors-bar-1"`,
+		`id="visitors-bar-2"`,
+		`id="visitors-bar-3"`,
+		`class="of-chart-bar"`,
+	}
+	for _, want := range wants {
+		if !strings.Contains(source, want) {
+			t.Fatalf("chart missing %q in\n%s", want, source)
+		}
+	}
+	if got := strings.Count(source, `class="of-chart-bar"`); got != 4 {
+		t.Fatalf("bars=%d, want 4 in\n%s", got, source)
+	}
+	if strings.Contains(source, `id="visitors-bar-4"`) {
+		t.Fatalf("chart invented an extra bar id:\n%s", source)
+	}
+
+	gapped := feedbackHTML(t, chadcn.Chart(chadcn.ChartOptions{
+		ID: "visitors",
+		Series: []chadcn.ChartSeries{
+			{Label: "Desktop", Values: []float64{100, 50}},
+			{Label: "Mobile", Values: []float64{80}},
+		},
+	}))
+	for _, want := range []string{`id="visitors-bar-0"`, `id="visitors-bar-1"`, `id="visitors-bar-2"`} {
+		if !strings.Contains(gapped, want) {
+			t.Fatalf("gapped chart missing %q in\n%s", want, gapped)
+		}
+	}
+	if strings.Contains(gapped, `id="visitors-bar-3"`) {
+		t.Fatalf("skipped value still took a bar id:\n%s", gapped)
+	}
+
+	plain := feedbackHTML(t, chadcn.Chart(chadcn.ChartOptions{
+		Title:  "Visitors",
+		Series: []chadcn.ChartSeries{{Label: "Desktop", Values: []float64{100, 50}}},
+	}))
+	if strings.Contains(plain, `id=`) {
+		t.Fatalf("chart without an id invented a bar id: %s", plain)
+	}
+}
+
 // TestChartFixStylesheetTightensSpacing pins the plot height, bar widths, and
 // the reduced padding around the labels and legend.
 func TestChartFixStylesheetTightensSpacing(t *testing.T) {

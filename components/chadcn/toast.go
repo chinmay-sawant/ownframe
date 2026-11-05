@@ -4,7 +4,8 @@ import "github.com/chinmay-sawant/ownframe/ui"
 
 // ToastOptions describes one transient notification. Open false renders
 // nothing, so the host can drop a closed toast from the view. CloseAction is
-// dispatched by the close button when it is not empty.
+// the only dismiss hook. When it is empty the close button is omitted, so
+// the toast does not paint a control that does nothing.
 type ToastOptions struct {
 	Action      *ui.Element
 	Title       string
@@ -35,10 +36,11 @@ func Toast(options ToastOptions) *ui.Element {
 	if options.Action != nil {
 		toast.Children(ui.Div().Class("of-toast-action").Children(options.Action))
 	}
-	closeButton := ui.Button("×").Attr("type", "button").Class("of-toast-close").
-		Attr("aria-label", "Close").Width(ui.Px(24)).Height(ui.Px(24))
-	if options.CloseAction != "" {
-		closeButton.Attr("data-action", options.CloseAction)
+	if options.CloseAction == "" {
+		return toast
 	}
+	closeButton := ui.Button("×").Attr("type", "button").Class("of-toast-close").
+		Attr("aria-label", "Close").Width(ui.Px(24)).Height(ui.Px(24)).
+		Attr("data-action", options.CloseAction)
 	return toast.Children(closeButton)
 }

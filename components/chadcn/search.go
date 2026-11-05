@@ -77,31 +77,30 @@ func Search(options SearchOptions) *ui.Element {
 	if options.ID != "" {
 		root.ID(options.ID)
 	}
-	root.Children(input)
 	if !options.Open {
-		return root
+		return root.Children(input)
 	}
-	if backdropID := partID(options.ID, "-backdrop"); backdropID != "" {
-		backdrop := ui.Div().Class("of-search-backdrop").ID(backdropID)
-		if options.OnOpenChange != nil {
-			backdrop.OnClick(func(ctx context.Context) error {
-				return options.OnOpenChange(ctx, false)
-			})
-		}
-		root.Children(backdrop)
-	} else if options.OnOpenChange != nil {
-		backdrop := ui.Div().Class("of-search-backdrop")
-		backdrop.OnClick(func(ctx context.Context) error {
-			return options.OnOpenChange(ctx, false)
-		})
-		root.Children(backdrop)
-	}
-	root.Children(searchPanel(options))
-	return root
+	// Hit testing keeps the later box, and a fixed backdrop is painted after
+	// in-flow content. The field and the panel follow the backdrop, so a
+	// click on the field hits the field and a click on a row hits the panel.
+	return root.Children(searchBackdrop(options), input, searchPanel(options))
 }
 
-func searchPanel(options SearchOptions, panelExtras ...string) *ui.Element {
-	_ = panelExtras
+func searchBackdrop(options SearchOptions) *ui.Element {
+	backdrop := ui.Div().Class("of-search-backdrop")
+	if backdropID := partID(options.ID, "-backdrop"); backdropID != "" {
+		backdrop.ID(backdropID)
+	}
+	if options.OnOpenChange == nil {
+		return backdrop
+	}
+	backdrop.OnClick(func(ctx context.Context) error {
+		return options.OnOpenChange(ctx, false)
+	})
+	return backdrop
+}
+
+func searchPanel(options SearchOptions) *ui.Element {
 	panel := ui.Div().Class("of-search-panel").Attr("role", "listbox").Attr("aria-label", "Search results")
 	if panelID := partID(options.ID, "-panel"); panelID != "" {
 		panel.ID(panelID)

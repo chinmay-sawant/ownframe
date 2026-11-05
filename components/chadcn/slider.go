@@ -29,8 +29,10 @@ const (
 	sliderPercentMax  = 100
 )
 
-// Slider renders a range track, the filled portion, and a thumb. The host
-// handles pointer drags and rebuilds with the new Value.
+// Slider renders a range track, the filled portion, and a thumb. The thumb
+// follows Value. A click on the element carries no point, so there is no
+// OnChange callback; the host maps the pointer with SliderValueAt and rebuilds.
+// A disabled slider does not move.
 func Slider(options SliderOptions) *ui.Element {
 	minimum, maximum, step := sliderRange(options)
 	value := clampSliderValue(options.Value, minimum, maximum, step)
@@ -72,6 +74,25 @@ func sliderRange(options SliderOptions) (float64, float64, float64) {
 		step = defaultSliderStep
 	}
 	return minimum, maximum, step
+}
+
+// SliderValueAt maps localX, measured from the left edge of a track
+// trackWidth wide, onto the clamped step grid Slider paints. Min, Max, and
+// Step are read from options; Value and Disabled are not. A non-finite
+// input or a non-positive width returns the clamped minimum.
+func SliderValueAt(localX, trackWidth float64, options SliderOptions) float64 {
+	minimum, maximum, step := sliderRange(options)
+	if !finite(localX) || !finite(trackWidth) || trackWidth <= 0 {
+		return clampSliderValue(minimum, minimum, maximum, step)
+	}
+	if localX < 0 {
+		localX = 0
+	}
+	if localX > trackWidth {
+		localX = trackWidth
+	}
+	value := minimum + (localX/trackWidth)*(maximum-minimum)
+	return clampSliderValue(value, minimum, maximum, step)
 }
 
 // clampSliderValue keeps value inside the range and on a step boundary.

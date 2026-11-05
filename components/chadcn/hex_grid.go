@@ -53,15 +53,15 @@ func HexCellElement(cell HexCell) *ui.Element {
 	if cell.Tone >= 1 && cell.Tone <= chartPaletteSize+1 {
 		slot = cell.Tone
 	}
-	element := ui.Div().Class("of-hex").Attr("data-tone", hexToneSlot(slot)).Attr("aria-hidden", "true").Children(
+	element := ui.Div().Class("of-hex").Attr("data-tone", hexToneSlot(slot)).Children(
 		ui.Div().Class("of-hex-top").Attr("aria-hidden", "true"),
 		ui.Div().Class("of-hex-mid").Attr("aria-hidden", "true"),
 		ui.Div().Class("of-hex-bottom").Attr("aria-hidden", "true"),
 	)
-	if cell.Label != "" {
-		element.Attr("title", cell.Label)
+	if cell.Label == "" {
+		return element.Attr("aria-hidden", "true")
 	}
-	return element
+	return element.Attr("role", "img").Attr("aria-label", cell.Label).Attr("title", cell.Label)
 }
 
 func hexToneSlot(slot int) string {

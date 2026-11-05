@@ -12,11 +12,15 @@ type renderTrack struct {
 	imagesRev  uint64
 	last       draw.Key
 	hasLast    bool
-	// lastRetain and lastBlink are the layout-mode and caret inputs the key
-	// does not carry: retained layout state changes the placement the engine
-	// produces, and a blink phase change repaints the caret.
+	// lastRetain, lastBlink, lastCaret, and lastAnchor are inputs the layout
+	// key does not carry. Retained state changes the placement the engine
+	// produces. A blink phase change repaints the caret, and so does a move
+	// of the caret offset or the anchor. Those offsets stay off the layout
+	// key: a collapsed caret does not change the source the key covers.
 	lastRetain bool
 	lastBlink  bool
+	lastCaret  int
+	lastAnchor int
 	// statePseudos records the interactive pseudo-classes the sheets use. All
 	// true means unknown, which keeps the old redraw behavior.
 	statePseudos render.StatePseudos
@@ -50,8 +54,9 @@ func (p *Page) unchanged(state render.State) bool {
 	// A retained-state debt, or a retained flag the last commit did not lay
 	// out with, needs a fresh placement. So does a running animation or an
 	// in-flight transition, whose pose lives in the operations a publish
-	// would replace, and a blink phase change, which repaints the caret.
-	// Everything else the display shows is in the key.
+	// would replace. A blink phase change repaints the caret, and a caret
+	// or anchor move does too, without a new layout key. Everything else
+	// the display shows is in the key.
 	if p.restampRedraw || p.retainState != p.lastRetain {
 		return false
 	}
@@ -59,10 +64,17 @@ func (p *Page) unchanged(state render.State) bool {
 		return false
 	}
 	blink := false
+	caret := 0
+	anchor := 0
 	if fs := p.formState(); fs != nil {
 		blink = fs.BlinkOn
+		caret = fs.Caret
+		anchor = fs.Anchor
 	}
 	if blink != p.lastBlink {
+		return false
+	}
+	if caret != p.lastCaret || anchor != p.lastAnchor {
 		return false
 	}
 	return draw.Unchanged(p.hasLast, p.last, p.keyFor(state))
@@ -73,7 +85,11 @@ func (p *Page) remember(state render.State) {
 	p.hasLast = true
 	p.lastRetain = p.retainState
 	p.lastBlink = false
+	p.lastCaret = 0
+	p.lastAnchor = 0
 	if fs := p.formState(); fs != nil {
 		p.lastBlink = fs.BlinkOn
+		p.lastCaret = fs.Caret
+		p.lastAnchor = fs.Anchor
 	}
 }

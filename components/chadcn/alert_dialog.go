@@ -35,8 +35,11 @@ const (
 
 // AlertDialog builds a modal confirmation surface with role "alertdialog" and
 // its own cancel and confirm controls. It returns the trigger when closed, or
-// nil when no trigger was supplied. Escape handling and focus scope stay with
-// the host.
+// nil when no trigger was supplied. A cancel or confirm control is omitted
+// when its callback is nil and OnOpenChange is nil. A nil callback calls
+// OnOpenChange(false) when that hook is set, so the button is not dead. An
+// empty title keeps the aria-label. Escape handling and focus scope stay with
+// the host. The backdrop does not dismiss.
 func AlertDialog(options AlertDialogOptions) *ui.Element {
 	panelID := partID(options.ID, "-panel")
 	trigger := overlayTrigger(options.Trigger, options.Open, panelID, options.OnOpenChange)
@@ -51,10 +54,7 @@ func AlertDialog(options AlertDialogOptions) *ui.Element {
 	overlayPanelAttrs(panel, "alertdialog", "Alert dialog", titleID, descriptionID)
 	panel.Children(
 		overlayHeader("alert-dialog", overlayHeading("alert-dialog", options.Title, options.Description, titleID, descriptionID), nil),
-		ui.Tag("footer").Class("of-alert-dialog-footer").Children(
-			alertDialogCancel(options),
-			alertDialogConfirm(options),
-		),
+		alertDialogFooter(options),
 	)
 
 	backdrop := ui.Div().Class("of-alert-dialog-backdrop").
@@ -70,31 +70,66 @@ func AlertDialog(options AlertDialogOptions) *ui.Element {
 	return root.Children(trigger, backdrop)
 }
 
-func alertDialogCancel(options AlertDialogOptions) *ui.Element {
-	label := options.CancelLabel
-	if label == "" {
-		label = defaultAlertCancel
+func alertDialogFooter(options AlertDialogOptions) *ui.Element {
+	cancel := alertDialogCancel(options)
+	confirm := alertDialogConfirm(options)
+	if cancel == nil && confirm == nil {
+		return nil
 	}
-	cancel := Button(label, ButtonOptions{Variant: ButtonOutlined})
-	if options.OnCancel != nil {
-		cancel.OnClick(options.OnCancel)
+	return ui.Tag("footer").Class("of-alert-dialog-footer").Children(cancel, confirm)
+}
+
+func alertDialogCancel(options AlertDialogOptions) *ui.Element {
+	button := alertDialogButton(
+		options.CancelLabel,
+		defaultAlertCancel,
+		ButtonOutlined,
+		options.OnCancel,
+		options.OnOpenChange,
+	)
+	if button == nil {
+		return nil
 	}
 	// A wrapper keeps the hook class without replacing the button's own classes.
-	return ui.Div().Class("of-alert-dialog-cancel").Children(cancel)
+	return ui.Div().Class("of-alert-dialog-cancel").Children(button)
 }
 
 func alertDialogConfirm(options AlertDialogOptions) *ui.Element {
-	label := options.ConfirmLabel
-	if label == "" {
-		label = defaultAlertConfirm
-	}
 	variant := ButtonFilled
 	if options.Destructive {
 		variant = ButtonDanger
 	}
-	confirm := Button(label, ButtonOptions{Variant: variant})
-	if options.OnConfirm != nil {
-		confirm.OnClick(options.OnConfirm)
+	button := alertDialogButton(
+		options.ConfirmLabel,
+		defaultAlertConfirm,
+		variant,
+		options.OnConfirm,
+		options.OnOpenChange,
+	)
+	if button == nil {
+		return nil
 	}
-	return ui.Div().Class("of-alert-dialog-confirm").Children(confirm)
+	return ui.Div().Class("of-alert-dialog-confirm").Children(button)
+}
+
+// alertDialogButton omits a control whose callback is nil. When the host only
+// supplied OnOpenChange, that callback closes the dialog instead of painting
+// a button that does nothing.
+func alertDialogButton(
+	label, fallback string,
+	variant ButtonVariant,
+	direct func(context.Context) error,
+	onOpenChange func(context.Context, bool) error,
+) *ui.Element {
+	if direct == nil && onOpenChange == nil {
+		return nil
+	}
+	if label == "" {
+		label = fallback
+	}
+	button := Button(label, ButtonOptions{Variant: variant})
+	if direct != nil {
+		return button.OnClick(direct)
+	}
+	return button.OnClick(func(ctx context.Context) error { return onOpenChange(ctx, false) })
 }

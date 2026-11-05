@@ -38,6 +38,7 @@ type Surface interface {
 // point, so a click on a child icon reaches its control.
 // A field is activated. An enabled button can follow a route.
 // A disabled control is not toggled and does not blur.
+// A label with a for attribute focuses that control.
 // Any other hit blurs the form. A routed data-action then loads that HTML
 // and skips the handler. Run draws the page again.
 func Run(ctx context.Context, s Surface, x, y float64) error {
@@ -46,6 +47,7 @@ func Run(ctx context.Context, s Surface, x, y float64) error {
 	}
 
 	box, ok := s.HitBox(x, y)
+	hit := box
 	if ok && box.ID == "" {
 		if id := s.BoxIDAt(x, y); id != "" {
 			box = s.BoxByID(id)
@@ -53,6 +55,12 @@ func Run(ctx context.Context, s Surface, x, y float64) error {
 	}
 	if ok && s.ConsumePress(box.ID) {
 		return s.Redraw(ctx)
+	}
+
+	if ok {
+		if done, err := focusFromLabel(ctx, s, hit); done {
+			return err
+		}
 	}
 
 	if ok && s.FormControl(box.ID) {

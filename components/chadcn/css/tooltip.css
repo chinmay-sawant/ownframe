@@ -68,6 +68,13 @@
   display: none;
 }
 
+/* :hover matches only the element with the hover id, so a rule on the root
+   does not see the trigger. :has opens the label while that id is the trigger
+   or a control inside it, and also while the pointer is on the label. */
+.of-tooltip--css-hover:has(:hover) > .of-tooltip-anchor > .of-tooltip-content {
+  display: flex;
+}
+
 /* The label is text only, so paint-time centring is safe: the hit box never
    carries an action. The anchor sits at the trigger midpoint. */
 .of-tooltip--bottom > .of-tooltip-anchor > .of-tooltip-content {

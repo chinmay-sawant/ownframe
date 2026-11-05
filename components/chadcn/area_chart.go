@@ -69,9 +69,9 @@ func areaChartBody(options AreaChartOptions) *ui.Element {
 	}
 	body := ui.Div().Class("of-area-chart-body")
 	plot := ui.Div().Class("of-area-chart-plot").Attr("aria-hidden", "true")
-	maximum := chartMaximum(options.Series)
+	scaleLow, scaleHigh := areaPlotScale(options.Series)
 	for index := 0; index < columns; index++ {
-		plot.Children(areaChartColumn(options.Series, index, maximum))
+		plot.Children(areaChartColumn(options.Series, index, scaleLow, scaleHigh))
 	}
 	body.Children(plot)
 	if len(options.Labels) > 0 {
@@ -88,7 +88,7 @@ func areaChartBody(options AreaChartOptions) *ui.Element {
 	return body
 }
 
-func areaChartColumn(series []ChartSeries, index int, maximum float64) *ui.Element {
+func areaChartColumn(series []ChartSeries, index int, scaleLow, scaleHigh float64) *ui.Element {
 	column := ui.Div().Class("of-area-chart-column")
 	low, high := areaColumnRange(series, index)
 	for seriesIndex, item := range series {
@@ -102,14 +102,15 @@ func areaChartColumn(series []ChartSeries, index int, maximum float64) *ui.Eleme
 			dot.CustomProperty("--of-area-dot", item.Color)
 		}
 		spacer := ui.Div().Class("of-area-chart-spacer").Attr("aria-hidden", "true").
-			Height(ui.Percent(chartHeight(item.Values[index], maximum)))
+			Height(ui.Percent(areaOffset(item.Values[index], scaleLow, scaleHigh)))
 		column.Children(track.Children(dot, spacer))
 		if seriesIndex == 0 && high > low && len(series) > 1 {
 			bandTrack := ui.Div().Class("of-area-chart-track of-area-chart-track--band")
+			bandHeight := areaOffset(high, scaleLow, scaleHigh) - areaOffset(low, scaleLow, scaleHigh)
 			band := ui.Div().Class("of-area-chart-band").Attr("aria-hidden", "true").
-				Height(ui.Percent(chartHeight(high-low, maximum)))
+				Height(ui.Percent(bandHeight))
 			lowSpacer := ui.Div().Class("of-area-chart-spacer").Attr("aria-hidden", "true").
-				Height(ui.Percent(chartHeight(low, maximum)))
+				Height(ui.Percent(areaOffset(low, scaleLow, scaleHigh)))
 			column.Children(bandTrack.Children(band, lowSpacer))
 		}
 	}
@@ -124,25 +125,73 @@ func areaChartColumns(series []ChartSeries) int {
 	return columns
 }
 
+// areaColumnRange returns the lowest and highest finite sample in one column.
+// Negatives count. An empty column returns 0, 0 so no band is drawn.
 func areaColumnRange(series []ChartSeries, index int) (float64, float64) {
-	low := -1.0
-	high := 0.0
+	var low, high float64
+	seen := false
 	for _, item := range series {
 		if index >= len(item.Values) || !finite(item.Values[index]) {
 			continue
 		}
 		value := item.Values[index]
-		if low < 0 || value < low {
+		if !seen || value < low {
 			low = value
 		}
-		if value > high {
+		if !seen || value > high {
 			high = value
 		}
+		seen = true
 	}
-	if low < 0 {
+	if !seen {
 		return 0, 0
 	}
 	return low, high
+}
+
+// areaPlotScale is the shared vertical range. Positive series keep a zero
+// baseline. A negative sample extends the floor so the band can sit between
+// the highest and lowest value instead of collapsing.
+func areaPlotScale(series []ChartSeries) (float64, float64) {
+	var low, high float64
+	seen := false
+	for _, item := range series {
+		for _, value := range item.Values {
+			if !finite(value) {
+				continue
+			}
+			if !seen || value < low {
+				low = value
+			}
+			if !seen || value > high {
+				high = value
+			}
+			seen = true
+		}
+	}
+	if !seen {
+		return 0, 0
+	}
+	if low > 0 {
+		low = 0
+	}
+	return low, high
+}
+
+// areaOffset maps value into the plot as a percentage of the scale.
+func areaOffset(value, low, high float64) float64 {
+	span := high - low
+	if span <= 0 || !finite(value) {
+		return 0
+	}
+	portion := (value - low) / span * chartPercent
+	if portion < 0 {
+		return 0
+	}
+	if portion > chartPercent {
+		return chartPercent
+	}
+	return portion
 }
 
 func areaChartLabel(options AreaChartOptions) string {

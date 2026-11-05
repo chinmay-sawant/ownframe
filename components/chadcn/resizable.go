@@ -1,6 +1,7 @@
 package chadcn
 
 import (
+	"context"
 	"math"
 	"strconv"
 
@@ -9,6 +10,8 @@ import (
 
 const (
 	defaultResizableRatio = 0.5
+	resizableMinRatio     = 0.1
+	resizableMaxRatio     = 0.9
 	resizablePercent      = 100
 )
 
@@ -24,19 +27,22 @@ const (
 )
 
 // ResizableOptions describes a two-pane split. Ratio is the first pane's share
-// of the space; zero, negative, or one and above fall back to one half. The host
-// owns the drag: it reads the divider ID, moves the ratio, and rebuilds.
+// of the space; zero, negative, or one and above fall back to one half. The
+// divider id is ID+"-divider". The host maps the pointer with ResizableRatioAt
+// and calls OnChange with that ratio, then rebuilds.
 type ResizableOptions struct {
 	ID          string
 	Ratio       float64
 	First       *ui.Element
 	Second      *ui.Element
 	Orientation ResizableOrientation
+	OnChange    func(context.Context, float64) error
 }
 
 // Resizable builds a flex split with a focusable, labeled divider. The host
-// sets the root size, routes pointer drag and arrow keys on the divider, and
-// passes the new ratio back in on the next build.
+// sets the root size, routes pointer drag and arrow keys on the divider id,
+// and passes the new ratio back in on the next build. A click on the divider
+// carries no pointer, so Resizable does not call OnChange itself.
 func Resizable(options ResizableOptions) *ui.Element {
 	ratio := options.Ratio
 	if !(ratio > 0 && ratio < 1) {
@@ -72,4 +78,24 @@ func Resizable(options ResizableOptions) *ui.Element {
 		second.ID(secondID)
 	}
 	return root.Children(first, divider, second)
+}
+
+// ResizableRatioAt maps pointerX onto the first pane's share of a split whose
+// drag axis starts at origin and runs span CSS pixels. A row passes the
+// pointer's X, the root's left, and its width. A column passes the pointer's
+// Y, the root's top, and its height in those same positions. The result is
+// clamped to [0.1, 0.9]. A non-finite input or a non-positive span returns
+// one half.
+func ResizableRatioAt(pointerX, origin, span float64) float64 {
+	if !finite(pointerX) || !finite(origin) || !finite(span) || span <= 0 {
+		return defaultResizableRatio
+	}
+	ratio := (pointerX - origin) / span
+	if !finite(ratio) || ratio < resizableMinRatio {
+		return resizableMinRatio
+	}
+	if ratio > resizableMaxRatio {
+		return resizableMaxRatio
+	}
+	return ratio
 }

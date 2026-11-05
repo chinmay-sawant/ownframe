@@ -39,9 +39,12 @@ type DialogOptions struct {
 }
 
 // Dialog builds a centered modal surface. When Open is false it returns the
-// trigger, or nil when no trigger was supplied. A backdrop click and the header
-// close control dispatch CloseAction, or call OnOpenChange when no action is
-// set. Click-away, Escape handling, and focus scope stay with the host.
+// trigger, or nil when no trigger was supplied. It does not mount a hidden
+// backdrop. A backdrop click and the header close control dispatch CloseAction,
+// or call OnOpenChange when no action is set. The panel always has an id, and
+// the backdrop id is different, so a click on the title or body hits the panel
+// and does not dismiss. Click-away, Escape handling, and focus scope stay with
+// the host. Dialog does not call DialogFocus; the host does.
 //
 // The backdrop is fixed to the viewport at the modal layer: above the app
 // topbar and sidebar, below the toast and command surfaces. Mount the dialog as
@@ -72,7 +75,11 @@ func Dialog(options DialogOptions, children ...*ui.Element) *ui.Element {
 	structured := options.Title != "" || options.Description != "" || len(options.Footer) > 0
 	if structured {
 		heading := overlayHeading("dialog", options.Title, options.Description, titleID, descriptionID)
-		panel.Children(overlayHeader("dialog", heading, overlayClose("dialog", options.CloseAction, options.OnOpenChange)),
+		closeControl := overlayClose("dialog", options.CloseAction, options.OnOpenChange)
+		if closeControl != nil {
+			closeControl.ID(partID(panelID, "-close"))
+		}
+		panel.Children(overlayHeader("dialog", heading, closeControl),
 			overlayBody("dialog", children), overlayFooter("dialog", options.Footer))
 	} else {
 		panel.Children(children...)
@@ -99,14 +106,24 @@ func (o DialogOptions) panelID() string {
 	if o.PanelID != "" {
 		return o.PanelID
 	}
-	return partID(o.ID, "-panel")
+	return stablePartID(o.ID, "-panel", "of-dialog-panel")
 }
 
 func (o DialogOptions) backdropID() string {
 	if o.BackdropID != "" {
 		return o.BackdropID
 	}
-	return partID(o.ID, "-backdrop")
+	return stablePartID(o.ID, "-backdrop", "of-dialog-backdrop")
+}
+
+// stablePartID derives a part id from the host id. When the host omitted the
+// id, it returns fallback so the part still has a stable hit target. The
+// fallback must differ for each part of one overlay.
+func stablePartID(id, suffix, fallback string) string {
+	if part := partID(id, suffix); part != "" {
+		return part
+	}
+	return fallback
 }
 
 func dialogBackdrop(options DialogOptions, panel *ui.Element, contained bool) *ui.Element {

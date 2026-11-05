@@ -2,6 +2,7 @@ package chadcn
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/chinmay-sawant/ownframe/ui"
 )
@@ -23,13 +24,20 @@ type CommandGroup struct {
 }
 
 // CommandOptions describes an inline command palette. The host owns Query,
-// Active, and the filtered Groups.
+// Active, and the filtered Groups. Command draws Groups as given and does
+// not filter them again.
 //
-// OnSelect receives the chosen value. OnQuery is available for hosts that
-// dispatch their own input callbacks: live typing arrives through the host's
-// change handler and Page.Form().Value(ID+"-input"), so pass the resulting
-// query back as Query. The list carries role="listbox", each row role="option",
-// and the active row aria-selected.
+// ID names the root. The field uses ID+"-input", the list uses ID+"-list",
+// and each enabled row uses ID+"-item-<index>" counting enabled rows in
+// source order. A disabled row keeps its place, is never aria-selected, and
+// has no id.
+//
+// OnSelect receives the chosen value. OnQuery is the host callback for a
+// typed query. The element builder has no change hook, so the component does
+// not call it: live typing arrives through the host's change handler and
+// Page.Form().FormValue(ID+"-input"), and the host passes that string back
+// as Query. The list carries role="listbox", each row role="option", and the
+// active enabled row aria-selected.
 type CommandOptions struct {
 	ID       string
 	Query    string
@@ -70,6 +78,7 @@ func Command(options CommandOptions) *ui.Element {
 	}
 
 	items := 0
+	choice := 0
 	for _, group := range options.Groups {
 		if len(group.Items) == 0 {
 			continue
@@ -83,8 +92,11 @@ func Command(options CommandOptions) *ui.Element {
 			section.Children(ui.Div().Class("of-command-group-label").Text(group.Label))
 		}
 		for _, item := range group.Items {
-			section.Children(commandItem(options, item))
+			section.Children(commandItem(options, choice, item))
 			items++
+			if !item.Disabled {
+				choice++
+			}
 		}
 		list.Children(section)
 	}
@@ -101,10 +113,16 @@ func Command(options CommandOptions) *ui.Element {
 	)
 }
 
-// commandItem builds one option row.
-func commandItem(options CommandOptions, item CommandItem) *ui.Element {
+// commandItem builds one option row. index counts enabled rows only.
+func commandItem(options CommandOptions, index int, item CommandItem) *ui.Element {
+	selected := !item.Disabled && item.Value == options.Active
 	row := ui.Button("").Attr("type", "button").Attr("role", "option").
-		Class("of-command-item").Attr("aria-selected", ariaBool(item.Value == options.Active))
+		Class("of-command-item").Attr("aria-selected", ariaBool(selected))
+	if !item.Disabled {
+		if id := partID(options.ID, "-item-"+strconv.Itoa(index)); id != "" {
+			row.ID(id)
+		}
+	}
 	if item.Icon != nil {
 		row.Children(ui.Span().Class("of-command-icon").Attr("aria-hidden", "true").Children(item.Icon))
 	}

@@ -164,6 +164,8 @@ func TestOverlayAlertDialog(t *testing.T) {
 	custom := chadcn.AlertDialog(chadcn.AlertDialogOptions{
 		ID: "remove", Open: true, Title: "Remove file?", Destructive: true,
 		ConfirmLabel: "Delete", CancelLabel: "Keep",
+		OnConfirm: func(context.Context) error { return nil },
+		OnCancel:  func(context.Context) error { return nil },
 	})
 	customMarkup := overlayMarkup(t, custom)
 	overlayWant(t, customMarkup, "Delete", "Keep")

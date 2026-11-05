@@ -58,7 +58,7 @@ func questionnaireHeader(options QuestionnaireOptions) *ui.Element {
 	if len(options.Questions) > 0 {
 		answered := 0
 		for _, question := range options.Questions {
-			if question.Selected != "" {
+			if questionMatchesChoice(question) {
 				answered++
 			}
 		}
@@ -120,6 +120,17 @@ func questionnaireChoice(options QuestionnaireOptions, question Question, choice
 		})
 	}
 	return button
+}
+
+// questionMatchesChoice reports whether Selected is one of the question's
+// choice values. A non-empty value that matches nothing is unanswered.
+func questionMatchesChoice(question Question) bool {
+	for _, choice := range question.Choices {
+		if question.Selected == choice.Value {
+			return true
+		}
+	}
+	return false
 }
 
 func questionnaireChoiceKey(index int) string {

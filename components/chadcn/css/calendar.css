@@ -108,8 +108,10 @@
   background-color: var(--of-accent, #f5f5f5);
 }
 
+.of-calendar-day:focus,
 .of-calendar-day:focus-visible {
-  outline: none;
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
 }
 
 .of-calendar-day--outside {

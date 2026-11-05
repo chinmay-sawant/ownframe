@@ -2,6 +2,7 @@ package chadcn
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/chinmay-sawant/ownframe/ui"
 )
@@ -43,6 +44,7 @@ type menuSkin struct {
 	chevron   string
 	row       string
 	submenu   string
+	anchor    string
 }
 
 func dropdownMenuSkin() menuSkin {
@@ -56,6 +58,7 @@ func dropdownMenuSkin() menuSkin {
 		chevron:   "of-dropdown-menu-chevron",
 		row:       "of-dropdown-menu-row",
 		submenu:   "of-dropdown-menu-submenu",
+		anchor:    "of-dropdown-menu-anchor",
 	}
 }
 
@@ -122,14 +125,30 @@ func menuPane(skin *menuSkin, id, label string, items []MenuItem, groups []MenuG
 	if label != "" {
 		pane.Attr("aria-label", label)
 	}
-	appendMenuSections(pane, skin, items, groups, onSelect)
+	appendMenuSections(pane, skin, items, groups, onSelect, &menuIDSeq{prefix: id})
 	return pane
+}
+
+// menuIDSeq names rows from the pane id. An empty prefix leaves them unnamed,
+// the same way every other part stays unnamed when the host gave no id.
+type menuIDSeq struct {
+	prefix string
+	n      int
+}
+
+func (s *menuIDSeq) next() string {
+	if s == nil || s.prefix == "" {
+		return ""
+	}
+	id := s.prefix + "-item-" + strconv.Itoa(s.n)
+	s.n++
+	return id
 }
 
 // appendMenuSections writes the flat items then the labeled groups, with a
 // separator between every written section.
-func appendMenuSections(pane *ui.Element, skin *menuSkin, items []MenuItem, groups []MenuGroup, onSelect func(context.Context, string) error) {
-	wrote := appendMenuItems(pane, skin, items, onSelect)
+func appendMenuSections(pane *ui.Element, skin *menuSkin, items []MenuItem, groups []MenuGroup, onSelect func(context.Context, string) error, seq *menuIDSeq) {
+	wrote := appendMenuItems(pane, skin, items, onSelect, seq)
 	for _, group := range groups {
 		if wrote {
 			pane.Children(menuSeparator(skin))
@@ -138,14 +157,14 @@ func appendMenuSections(pane *ui.Element, skin *menuSkin, items []MenuItem, grou
 			pane.Children(ui.Div().Class(skin.label).Text(group.Label))
 			wrote = true
 		}
-		if appendMenuItems(pane, skin, group.Items, onSelect) {
+		if appendMenuItems(pane, skin, group.Items, onSelect, seq) {
 			wrote = true
 		}
 	}
 }
 
 // appendMenuItems writes rows in order and reports whether it wrote anything.
-func appendMenuItems(pane *ui.Element, skin *menuSkin, items []MenuItem, onSelect func(context.Context, string) error) bool {
+func appendMenuItems(pane *ui.Element, skin *menuSkin, items []MenuItem, onSelect func(context.Context, string) error, seq *menuIDSeq) bool {
 	wrote := false
 	for _, item := range items {
 		if item.Separator {
@@ -153,28 +172,47 @@ func appendMenuItems(pane *ui.Element, skin *menuSkin, items []MenuItem, onSelec
 			wrote = true
 			continue
 		}
-		pane.Children(menuItemNode(skin, item, onSelect))
+		pane.Children(menuItemNode(skin, item, onSelect, seq.next()))
 		wrote = true
 	}
 	return wrote
 }
 
-// menuItemNode builds a row, wrapping it in a positioned slot when the item
-// owns a submenu.
-func menuItemNode(skin *menuSkin, item MenuItem, onSelect func(context.Context, string) error) *ui.Element {
-	button := menuItemButton(skin, item, onSelect)
+// menuItemNode builds a row. A submenu hangs off the row, and the row owns
+// the id the :hover rule names. The engine matches :hover only on the current
+// hover id, so the button stays unnamed: an id on it would win the hit and
+// the row rule would never open. The select action moves to the row, and a
+// click on the unnamed button resolves to that row. A disabled item keeps
+// the id on the button so the disabled hover rule can refuse the fill, and
+// its submenu stays shut.
+func menuItemNode(skin *menuSkin, item MenuItem, onSelect func(context.Context, string) error, id string) *ui.Element {
+	rowOwnsID := len(item.Children) > 0 && !item.Disabled
+	button := menuItemButton(skin, item, onSelect, !rowOwnsID)
+	if !rowOwnsID && id != "" {
+		button.ID(id)
+	}
 	if len(item.Children) == 0 {
 		return button
 	}
 	row := ui.Div().Class(skin.row).Children(button)
+	if rowOwnsID {
+		if id != "" {
+			row.ID(id)
+		}
+		wireMenuSelect(row, item, onSelect)
+	}
 	submenu := ui.Div().Class(classes(skin.surface, skin.submenu)).Attr("role", "menu")
-	appendMenuItems(submenu, skin, item.Children, onSelect)
-	return row.Children(submenu)
+	if id != "" {
+		submenu.ID(id + "-sub")
+	}
+	appendMenuItems(submenu, skin, item.Children, onSelect, &menuIDSeq{prefix: id})
+	anchor := ui.Div().Class(skin.anchor).Children(submenu)
+	return row.Children(anchor)
 }
 
 // menuItemButton builds the interactive row. A disabled row keeps its markup
 // but carries disabled and aria-disabled so it cannot dispatch.
-func menuItemButton(skin *menuSkin, item MenuItem, onSelect func(context.Context, string) error) *ui.Element {
+func menuItemButton(skin *menuSkin, item MenuItem, onSelect func(context.Context, string) error, wire bool) *ui.Element {
 	class := skin.item
 	if item.Danger {
 		class = classes(class, skin.danger)
@@ -184,7 +222,7 @@ func menuItemButton(skin *menuSkin, item MenuItem, onSelect func(context.Context
 	if item.Disabled {
 		setDisabled(button, true)
 		button.Attr("aria-disabled", "true")
-	} else {
+	} else if wire {
 		wireMenuSelect(button, item, onSelect)
 	}
 	if len(item.Children) > 0 {

@@ -42,7 +42,9 @@
   margin-left: auto;
   flex-shrink: 0;
   padding: 2px 8px;
+  font-family: inherit;
   font-size: 12px;
+  line-height: 1.4;
   color: var(--of-muted-foreground, #737373);
   background-color: var(--of-code-block-copy, var(--of-card, #ffffff));
   border: 1px solid var(--of-border, #e5e5e5);
@@ -52,6 +54,11 @@
 .of-code-block-copy:hover {
   color: var(--of-text, #0a0a0a);
   border-color: var(--of-muted-foreground, #737373);
+}
+
+.of-code-block-copy:focus-visible {
+  outline: 2px solid var(--of-ring, #a1a1aa);
+  outline-offset: 2px;
 }
 
 .of-code-block-body {

@@ -25,8 +25,10 @@ type ChartSeries struct {
 }
 
 // ChartOptions describes a chart frame. Every series shares Labels. Total is an
-// optional headline figure, and zero hides it.
+// optional headline figure, and zero hides it. When ID is set, each bar id is
+// that value plus the bar index, in plot order.
 type ChartOptions struct {
+	ID          string
 	Title       string
 	Description string
 	Series      []ChartSeries
@@ -40,6 +42,9 @@ type ChartOptions struct {
 // rebuilds the tree when it changes.
 func Chart(options ChartOptions) *ui.Element {
 	root := ui.Section().Class("of-chart").Attr("role", "group").Attr("aria-label", chartLabel(options))
+	if options.ID != "" {
+		root.ID(options.ID)
+	}
 	if header := chartHeader(options); header != nil {
 		root.Children(header)
 	}
@@ -100,7 +105,7 @@ func chartBody(options ChartOptions) *ui.Element {
 	}
 	body := ui.Div().Class("of-chart-body")
 	if groups > 0 {
-		body.Children(chartPlot(options.Series, groups))
+		body.Children(chartPlot(options.ID, options.Series, groups))
 		if len(options.Labels) > 0 {
 			body.Children(chartLabels(options.Labels, groups))
 		}
@@ -111,9 +116,10 @@ func chartBody(options ChartOptions) *ui.Element {
 	return body
 }
 
-func chartPlot(series []ChartSeries, groups int) *ui.Element {
+func chartPlot(chartID string, series []ChartSeries, groups int) *ui.Element {
 	plot := ui.Div().Class("of-chart-plot").Attr("aria-hidden", "true")
 	maximum := chartMaximum(series)
+	barIndex := 0
 	for index := 0; index < groups; index++ {
 		group := ui.Div().Class("of-chart-group")
 		for seriesIndex, item := range series {
@@ -125,6 +131,10 @@ func chartPlot(series []ChartSeries, groups int) *ui.Element {
 			if item.Color != "" {
 				bar.CustomProperty("--of-chart-bar", item.Color)
 			}
+			if id := partID(chartID, "-bar-"+strconv.Itoa(barIndex)); id != "" {
+				bar.ID(id)
+			}
+			barIndex++
 			group.Children(bar)
 		}
 		plot.Children(group)

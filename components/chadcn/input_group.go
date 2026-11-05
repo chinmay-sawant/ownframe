@@ -43,7 +43,12 @@ func InputGroup(options InputGroupOptions) *ui.Element {
 		input.Attr("placeholder", options.Placeholder)
 	}
 	input = setDisabled(input, options.Disabled)
-	group := ui.Div().Class(classes("of-input-group")).Children(
+	groupClass := "of-input-group"
+	if options.Suffix == nil && options.Addon == nil {
+		// No trailing slot, so the field itself carries the row's right inset.
+		groupClass = classes(groupClass, "of-input-group--bare")
+	}
+	group := ui.Div().Class(groupClass).Children(
 		inputGroupSlot("of-input-group-prefix", options.Prefix),
 		input,
 		inputGroupSlot("of-input-group-suffix", options.Suffix),

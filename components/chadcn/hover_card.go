@@ -5,10 +5,11 @@ import (
 )
 
 // HoverCardOptions describes a controlled hover card. Open comes from the
-// host. CSSHover keeps closed content mounted so the host can toggle the
-// of-hover-card--hovered class with a local element patch. ID names the root
-// and derives the content ID. Side places the card; its zero value is
-// PopupBottom.
+// host. CSSHover keeps the card mounted while Open is false and shows it
+// from the trigger :hover rule, so the host does not set Open for that path.
+// The host can still toggle of-hover-card--hovered with a local element
+// patch. ID names the root and derives the content ID. Side places the card;
+// its zero value is PopupBottom.
 type HoverCardOptions struct {
 	ID       string
 	Open     bool
@@ -35,6 +36,11 @@ func HoverCard(options HoverCardOptions, trigger *ui.Element, content ...*ui.Ele
 		root.ID(options.ID)
 	}
 	triggerBox := ui.Span().Class("of-hover-card-trigger").Children(trigger)
+	if options.CSSHover {
+		// :hover matches only the element with the hover id. The id has to sit
+		// on the trigger, not only on the root.
+		triggerBox.ID(cssHoverTriggerID(options.ID, "hover-card"))
+	}
 	if !options.Open && !options.CSSHover {
 		return root.Children(triggerBox)
 	}

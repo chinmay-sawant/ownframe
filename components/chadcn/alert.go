@@ -28,8 +28,12 @@ type AlertOptions struct {
 
 // Alert builds a bordered status panel with role="alert". It is static: the
 // caller shows or removes it as part of the view, and there is no dismiss
-// state to keep.
+// state to keep. An empty title and description returns nil, so a blank
+// call does not mount a live region.
 func Alert(options AlertOptions) *ui.Element {
+	if options.Title == "" && options.Description == "" {
+		return nil
+	}
 	alert := ui.Div().Attr("role", "alert").
 		Class(classes("of-alert", "of-alert--"+options.Variant.className()))
 	if options.Icon != nil {

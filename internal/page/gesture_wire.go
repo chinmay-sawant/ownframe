@@ -664,9 +664,10 @@ func (p *Page) ContextMenu() []host.MenuItem {
 
 // CursorShape returns the shape for the hovered box: an I-beam over a text
 // control, a hand over a link, a button, or another control, and the default
-// arrow everywhere else. The link scan runs only when the hovered box leaves
-// the default arrow: a hovered box that already names the I-beam or the hand
-// decides the shape without walking the display operations.
+// arrow everywhere else. A disabled control keeps the default arrow. The link
+// scan runs only when the hovered box leaves the default arrow: a hovered box
+// that already names the I-beam or the hand decides the shape without walking
+// the display operations.
 func (p *Page) CursorShape() host.Shape {
 	in := gesture.Cursor{}
 	if id := p.HoverID(); id != "" {
@@ -674,6 +675,7 @@ func (p *Page) CursorShape() host.Shape {
 		if c, ok := p.control(id); ok {
 			in.Control = true
 			in.Editable = canEdit(c)
+			in.Disabled = c.Disabled
 		} else {
 			b := p.boxByID(id)
 			in.Tag = b.Tag

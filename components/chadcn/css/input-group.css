@@ -39,6 +39,9 @@
 .of-input-group-input[data-ownframe-field] {
   display: block;
   flex: 1;
+  align-self: stretch;
+  /* 40px row minus the 1px border on each side, so the field fills the row. */
+  min-height: 38px;
   min-width: 0;
   border: 0;
   background: transparent;
@@ -48,12 +51,27 @@
   box-sizing: border-box;
 }
 
+/* A bare row has no suffix or addon. The field keeps the trailing inset so
+   the editable box reaches the border without sliding under a later button. */
+.of-input-group--bare {
+  padding-right: 0;
+}
+
+.of-input-group--bare .of-input-group-input,
+.of-input-group--bare .of-input-group-input[data-ownframe-field] {
+  padding-right: 12px;
+}
+
 .of-input-group-input[data-ownframe-field][data-ownframe-focus="1"] {
   border: 0;
   background: transparent;
   padding: 9px 0;
   outline: 1px solid var(--of-ring, #a1a1aa);
   outline-offset: 2px;
+}
+
+.of-input-group--bare .of-input-group-input[data-ownframe-field][data-ownframe-focus="1"] {
+  padding-right: 12px;
 }
 
 .of-input-group-input[data-ownframe-field][data-ownframe-placeholder="1"] {

@@ -698,10 +698,10 @@ func catalogEntries() []catalogEntry {
 			return ui.Div().Children(chadcn.Skeleton(chadcn.SkeletonOptions{})).ID("catalog-skeleton").Attr("data-action", "catalog:skeleton:tap")
 		}},
 		{"Slider", func(a *builderApp) *ui.Element {
-			// Slider reports only its value, so the host owns the value and two
-			// nudge buttons move it; the window has no slider drag gesture.
+			// The host owns Value. Nudge buttons step it, and a horizontal
+			// drag maps the pointer through SliderValueAt.
 			return ui.Div().Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(8)).Children(
-				chadcn.Slider(chadcn.SliderOptions{Label: "Volume", Value: a.catalogSlider}).ID("catalog-slider"),
+				chadcn.Slider(a.catalogSliderOptions()).ID(catalogSliderID),
 				ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(8)).Children(
 					chadcn.Button("−", chadcn.ButtonOptions{Size: chadcn.ButtonSmall}).Attr("data-action", "catalog:slider:dec"),
 					ui.Text(fmt.Sprintf("%.0f", a.catalogSlider)).FontSize(ui.Px(12)).Color(theme.Muted()),

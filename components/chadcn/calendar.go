@@ -99,7 +99,8 @@ func calendarDay(day, month time.Time, options CalendarOptions) *ui.Element {
 		Attr("aria-selected", ariaBool(selected)).
 		Attr("aria-label", day.Format("January 2, 2006")).
 		Class(classes("of-calendar-day", "of-transition", cellClass, selectedClass))
-	if options.OnSelect != nil {
+	// Days from the adjacent month stay visible, but they are not choices.
+	if options.OnSelect != nil && !outside {
 		chosen := day
 		cell.OnClick(func(ctx context.Context) error {
 			return options.OnSelect(ctx, chosen)

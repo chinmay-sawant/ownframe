@@ -21,14 +21,34 @@
   box-sizing: border-box;
 }
 
+/* Percentage left resolves against the viewport, so the submenu hangs off a
+   zero-size anchor at the row's right edge. */
+.of-context-menu-anchor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+}
+
 .of-context-menu-submenu {
+  position: absolute;
   top: -5px;
-  left: 100%;
+  left: 0;
   display: none;
 }
 
-.of-context-menu-row:hover .of-context-menu-submenu {
+.of-context-menu-row:hover .of-context-menu-submenu,
+.of-context-menu-row:has(:hover) .of-context-menu-submenu {
   display: flex;
+}
+
+.of-context-menu-row:has(> .of-context-menu-item[disabled]) .of-context-menu-submenu {
+  display: none;
+}
+
+.of-context-menu-row > .of-context-menu-item {
+  width: 100%;
 }
 
 .of-context-menu-item {
@@ -49,7 +69,9 @@
 }
 
 .of-context-menu-item:hover,
-.of-context-menu-item:focus-visible {
+.of-context-menu-item:focus-visible,
+.of-context-menu-row:hover > .of-context-menu-item:not([disabled]),
+.of-context-menu-row:has(:hover) > .of-context-menu-item:not([disabled]) {
   background-color: var(--of-accent, #f5f5f5);
   color: var(--of-on-accent, #171717);
 }
@@ -61,8 +83,11 @@
 }
 
 .of-context-menu-item--danger:hover,
-.of-context-menu-item--danger:focus-visible {
+.of-context-menu-item--danger:focus-visible,
+.of-context-menu-row:hover > .of-context-menu-item--danger:not([disabled]),
+.of-context-menu-row:has(:hover) > .of-context-menu-item--danger:not([disabled]) {
   background-color: var(--of-danger-soft, rgba(220, 38, 38, 0.12));
+  color: var(--of-danger, #dc2626);
 }
 
 .of-context-menu-item[disabled]:hover {

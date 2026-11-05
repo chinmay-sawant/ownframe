@@ -22,6 +22,8 @@ type DataColumn struct {
 // paging stay in the host. OnSelect adds a leading selection column and reports
 // the row index; Selected marks rows and may be nil. Empty replaces the default
 // "No results." row, and Caption names the table for assistive technology.
+// When ID is set, each body row id is that value plus the row index. The
+// select control keeps its own id.
 type DataTableOptions struct {
 	ID       string
 	Columns  []DataColumn
@@ -84,7 +86,7 @@ func dataTableBody(options DataTableOptions, selectable bool) *ui.Element {
 			cellClass := classes("of-data-table-cell", dataTableAlignClass(column.Align), dataTableWrapClass(column.Wrap))
 			cells = append(cells, ui.Tag("td").Class(cellClass).Text(value))
 		}
-		body.Children(ui.Tag("tr").Class(classes("of-data-table-row", dataTableSelectedClass(selected))).Children(cells...))
+		body.Children(dataTableBodyRow(options.ID, index, dataTableSelectedClass(selected), cells...))
 	}
 	if len(options.Rows) == 0 {
 		empty := options.Empty
@@ -95,12 +97,23 @@ func dataTableBody(options DataTableOptions, selectable bool) *ui.Element {
 		if selectable {
 			span++
 		}
-		body.Children(ui.Tag("tr").Class("of-data-table-row").Children(
+		body.Children(dataTableBodyRow(options.ID, 0, "",
 			ui.Tag("td").Class(classes("of-data-table-cell", "of-data-table-empty")).
 				Attr("colspan", strconv.Itoa(max(span, 1))).Text(empty),
 		))
 	}
 	return body
+}
+
+// dataTableBodyRow builds one body row. Its id is the table id plus the row
+// index, so a hover on the row can match. The header is not built here, and
+// the select control keeps the id assigned in dataTableSelect.
+func dataTableBodyRow(tableID string, index int, selectedClass string, cells ...*ui.Element) *ui.Element {
+	row := ui.Tag("tr").Class(classes("of-data-table-row", selectedClass))
+	if id := partID(tableID, "-row-"+strconv.Itoa(index)); id != "" {
+		row.ID(id)
+	}
+	return row.Children(cells...)
 }
 
 func dataTableSelect(options DataTableOptions, row int, selected bool) *ui.Element {

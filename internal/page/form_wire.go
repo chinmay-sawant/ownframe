@@ -649,41 +649,56 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 		p.markFormDirty()
 	}
 
-	changed, err := p.applyEdit(ctx, edit)
+	changed, step, err := p.applyEdit(ctx, edit)
 	if err != nil {
 		return err
 	}
 
-	if !changed && !ran {
+	if !changed && step == 0 && !ran {
 		return nil
 	}
 
+	edited := ""
+	if fs := p.formState(); fs != nil {
+		edited = fs.FocusID
+	}
+
 	if changed {
-		p.markPending(p.formState().FocusID)
-		if err := p.change(ctx, p.formState().FocusID); err != nil {
+		p.markPending(edited)
+		if err := p.change(ctx, edited); err != nil {
 			return err
 		}
+	}
+
+	if step != 0 {
+		p.focusSlotStep(edited, step)
 	}
 
 	return p.Redraw(ctx)
 }
 
-func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
+func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, int, error) {
 	c, ok := p.typingTarget()
 	if !ok {
-		return false, nil
+		return false, 0, nil
 	}
 
 	fs := p.formState()
 	next, caret, anchor, changed := edit(c, fs.Caret, fs.Anchor)
+	step := next.SlotStep
+	next.SlotStep = 0
+	if !changed && step == 0 {
+		return false, 0, nil
+	}
+
 	if !changed {
-		return false, nil
+		return false, step, nil
 	}
 
 	// GEN-28: every edit funnels here, so clamp once for all writers.
 	next, caret, anchor = form.ClampEdited(next, caret, anchor)
 	if err := p.beforeEdit(ctx, fs.FocusID); err != nil {
-		return false, err
+		return false, 0, err
 	}
 
 	fs = p.formState()
@@ -693,7 +708,33 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
 	p.resetCaretBlink()
 	bindWrite(p, next)
 
-	return true, nil
+	return true, step, nil
+}
+
+// focusSlotStep moves focus from a one-digit slot by step. A missing
+// neighbor leaves the focus where it is.
+func (p *Page) focusSlotStep(from string, step int) {
+	fs := p.formState()
+	if fs == nil || step == 0 {
+		return
+	}
+
+	id := form.SlotNeighbor(fs.ByID, from, step)
+	if id == "" || !p.inFocusScope(id) {
+		return
+	}
+
+	c, ok := fs.Lookup(id)
+	moved, reveal := fs.TakeFocus(id, c, ok)
+	if !moved {
+		return
+	}
+
+	p.tickMutated.Store(true)
+	p.markPair(from, id)
+	if reveal {
+		p.revealFocus(id)
+	}
 }
 
 func (p *Page) typingTarget() (Control, bool) {

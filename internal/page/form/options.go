@@ -58,7 +58,7 @@ func oneOption(body string, openEnd int, a fieldAttr) (Option, int) {
 		val = a.val
 	}
 
-	return Option{Value: val, Label: label, Selected: a.selected}, end
+	return Option{Value: val, Label: label, Selected: a.selected, Disabled: a.disabled}, end
 }
 
 func optionClose(s string, i int) bool {

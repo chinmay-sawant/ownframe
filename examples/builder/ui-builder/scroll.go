@@ -83,7 +83,10 @@ func (a *builderApp) overCenterViewport(x, y float64) bool {
 	return x >= viewport.X && x <= viewport.X+viewport.W && y >= viewport.Y && y <= viewport.Y+viewport.H
 }
 
-func (a *builderApp) startCenterScrollDrag(_ context.Context, box ownframe.Box) (bool, error) {
+func (a *builderApp) startCenterScrollDrag(ctx context.Context, box ownframe.Box) (bool, error) {
+	if a.sliderDragBox(box) {
+		return a.claimSliderDrag(ctx, box)
+	}
 	if a.scrollInputBlocked() || box.ID != builderScrollThumbID {
 		return false, nil
 	}

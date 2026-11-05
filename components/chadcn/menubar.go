@@ -17,6 +17,7 @@ func menubarMenuSkin() menuSkin {
 		chevron:   "of-menubar-menu-chevron",
 		row:       "of-menubar-menu-row",
 		submenu:   "of-menubar-menu-submenu",
+		anchor:    "of-menubar-menu-anchor",
 	}
 }
 

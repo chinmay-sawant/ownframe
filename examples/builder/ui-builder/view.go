@@ -27,6 +27,20 @@ func (a *builderApp) screen() *ui.Element {
 		center = a.dialogPanel()
 	case "catalog":
 		center = a.catalogPanel()
+	case "chartjs":
+		center = a.chartjsPanel()
+	case "shadcnchart":
+		center = a.shadcnchartPanel()
+	case "recharts":
+		center = a.rechartsPanel()
+	case "tremor":
+		center = a.tremorPanel()
+	case "echarts":
+		center = a.echartsPanel()
+	case "apexcharts":
+		center = a.apexchartsPanel()
+	case "nivo":
+		center = a.nivoPanel()
 	default:
 		center = a.widgetsPanel()
 	}
@@ -95,6 +109,7 @@ func (a *builderApp) action(label, command string, primary bool) *ui.Element {
 
 func (a *builderApp) sidebar() *ui.Element {
 	return ui.Nav().Width(ui.Px(builderSidebarWidth)).FlexShrink(ui.Number(0)).
+		MinHeight(ui.Px(0)).Overflow(ui.OverflowAuto).
 		BackgroundColor(theme.Surface()).BorderRadius(ui.Px(11)).
 		Padding(ui.Px(16)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).
 		Gap(ui.Px(6)).Children(
@@ -109,6 +124,15 @@ func (a *builderApp) sidebar() *ui.Element {
 		a.navButton("Dialogs", "dialog"),
 		a.navButton("ChadCN catalog", "catalog"),
 		a.navButton("Custom component", "custom"),
+		ui.Text("CHART SETS").FontWeight(ui.FontWeightBold).FontSize(ui.Px(11)).Color(theme.Muted()).
+			MarginTop(ui.Px(18)),
+		a.navButton("Chart.js", "chartjs"),
+		a.navButton("shadcn charts", "shadcnchart"),
+		a.navButton("Recharts", "recharts"),
+		a.navButton("Tremor", "tremor"),
+		a.navButton("ECharts", "echarts"),
+		a.navButton("ApexCharts", "apexcharts"),
+		a.navButton("Nivo", "nivo"),
 		ui.Div().Margin(ui.Edges(ui.Px(25), ui.Px(0), ui.Px(0))).Padding(ui.Px(12)).
 			BackgroundColor(theme.Control()).BorderRadius(ui.Px(8)).
 			Children(
