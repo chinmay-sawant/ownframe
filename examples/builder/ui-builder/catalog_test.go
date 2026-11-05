@@ -149,8 +149,8 @@ func TestCatalogRendersEveryEntry(t *testing.T) {
 	if !found {
 		t.Fatal("catalog heading missing")
 	}
-	if got := len(catalogEntries()); got != 77 {
-		t.Fatalf("catalog entries=%d want 77", got)
+	if got := len(catalogEntries()); got != 78 {
+		t.Fatalf("catalog entries=%d want 78", got)
 	}
 }
 

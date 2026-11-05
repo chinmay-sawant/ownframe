@@ -1,7 +1,7 @@
 package main
 
 // catalog_window.go slices the ChadCN catalog into a visible row window so a
-// scroll frame stops laying out all 77 cards.
+// scroll frame stops laying out all 78 cards.
 //
 // Precedent: examples/code-view owns the same trick via Page.SetScrollWindow
 // plus Page.Scroll().SetWindowing(true). Its onScroll callback slices fixed
@@ -249,6 +249,7 @@ func catalogWindowSpacer(id string, heightPx int) *ui.Element {
 func (a *builderApp) catalogOverlayOpen() bool {
 	return a.catalogComboboxOpen ||
 		a.catalogSelectOpen ||
+		a.catalogSearchOpen ||
 		a.catalogDateOpen ||
 		a.catalogDialogOpen ||
 		a.catalogDrawerOpen ||

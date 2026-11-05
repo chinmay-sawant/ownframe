@@ -110,17 +110,17 @@ func TestCatalogWindowEntryMapping(t *testing.T) {
 	if got := catalogRowCount(1); got != 1 {
 		t.Fatalf("rows(1) = %d, want 1", got)
 	}
-	if got := catalogRowCount(77); got != 39 {
-		t.Fatalf("rows(77) = %d, want 39", got)
+	if got := catalogRowCount(78); got != 39 {
+		t.Fatalf("rows(78) = %d, want 39", got)
 	}
 	for _, tc := range []struct {
 		name                string
 		total, start, end   int
 		wantFirst, wantLast int
 	}{
-		{"full catalog", 77, 0, 39, 0, 77},
+		{"full catalog", 78, 0, 39, 0, 78},
 		{"odd tail", 5, 2, 3, 4, 5},
-		{"clamped past end", 77, 40, 50, 77, 77},
+		{"clamped past end", 78, 40, 50, 78, 78},
 		{"empty", 0, 0, 0, 0, 0},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -161,8 +161,8 @@ func TestCatalogWindowedRowsSlice(t *testing.T) {
 		t.Fatal(err)
 	}
 	entries := catalogEntries()
-	if len(entries) != 77 {
-		t.Fatalf("entries=%d, want 77", len(entries))
+	if len(entries) != 78 {
+		t.Fatalf("entries=%d, want 78", len(entries))
 	}
 
 	t.Run("top window", func(t *testing.T) {

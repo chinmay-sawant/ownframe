@@ -608,8 +608,38 @@ func catalogEntries() []catalogEntry {
 				chadcn.Button("Nudge", chadcn.ButtonOptions{Size: chadcn.ButtonSmall}).Attr("data-action", "catalog:scrollbar:nudge"),
 			)
 		}},
+		{"Search", func(a *builderApp) *ui.Element {
+			return chadcn.Search(chadcn.SearchOptions{
+				ID:          "catalog-search",
+				Query:       a.catalogSearchQuery,
+				Placeholder: "Search orders",
+				Open:        a.catalogSearchOpen,
+				Items:       catalogSearchItems(),
+				Value:       a.catalogSearchValue,
+				OnOpenChange: func(ctx context.Context, open bool) error {
+					a.catalogSearchOpen = open
+					if open {
+						a.notice = "Catalog search opened over its backdrop."
+						return a.refresh(ctx)
+					}
+					a.notice = "Catalog search dismissed."
+					return a.refreshBlur(ctx)
+				},
+				OnQuery: func(ctx context.Context, query string) error {
+					a.catalogSearchQuery = query
+					a.catalogSearchOpen = true
+					return a.refresh(ctx)
+				},
+				OnSelect: func(ctx context.Context, value string) error {
+					a.catalogSearchValue = value
+					a.catalogSearchOpen = false
+					a.notice = "Catalog search picked " + value + "."
+					return a.refreshBlur(ctx)
+				},
+			})
+		}},
 		{"Search Field", func(*builderApp) *ui.Element {
-			return chadcn.SearchField("catalog-search", "Search orders", "")
+			return chadcn.SearchField("catalog-search-field", "Search orders", "")
 		}},
 		{"Select", func(a *builderApp) *ui.Element {
 			return chadcn.Select(chadcn.SelectOptions{
@@ -771,6 +801,22 @@ func catalogEntries() []catalogEntry {
 		{"Typography", func(*builderApp) *ui.Element {
 			return ui.Div().Children(chadcn.H1("Heading")).ID("catalog-type").Attr("data-action", "catalog:type:tap")
 		}},
+	}
+}
+
+// catalogSearchItems is the prefilled card data for the catalog Search demo.
+// Typing filters these rows locally; a query with no match is the signal for
+// a background fetch of remote rows.
+func catalogSearchItems() []chadcn.SearchItem {
+	return []chadcn.SearchItem{
+		{Value: "order-1001", Label: "Order #1001", Description: "Ada · pending"},
+		{Value: "order-1002", Label: "Order #1002", Description: "Linus · shipped"},
+		{Value: "order-1003", Label: "Order #1003", Description: "Grace · pending"},
+		{Value: "order-1004", Label: "Order #1004", Description: "Alan · delivered"},
+		{Value: "order-1005", Label: "Order #1005", Description: "Katherine · pending"},
+		{Value: "order-1006", Label: "Order #1006", Description: "Margaret · shipped"},
+		{Value: "refund-2001", Label: "Refund #2001", Description: "Ada · review"},
+		{Value: "invoice-3001", Label: "Invoice #3001", Description: "Acme · paid"},
 	}
 }
 

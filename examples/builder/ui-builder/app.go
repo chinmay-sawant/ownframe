@@ -81,6 +81,9 @@ type builderApp struct {
 	catalogFilter              string
 	catalogSidebarOpen         bool
 	catalogChoiceSelected      bool
+	catalogSearchOpen          bool
+	catalogSearchQuery         string
+	catalogSearchValue         string
 
 	center               chadcn.ScrollState
 	centerMeasurePending bool
@@ -251,8 +254,10 @@ func (a *builderApp) refreshBlur(ctx context.Context) error {
 }
 
 // handleChange carries live input text into host-owned query state for the
-// catalog Command and Combobox palettes, then re-renders so the lists filter.
-// Unlike refreshLogged it preserves focus so typing can continue.
+// catalog Command, Combobox, and Search palettes plus the widgets Search
+// card, then re-renders so the lists filter. Unlike refreshLogged it preserves
+// focus so typing can continue. When a Search query matches no prefilled row,
+// the notice names the background fetch the host would run for remote rows.
 func (a *builderApp) handleChange(ctx context.Context, box ownframe.Box) error {
 	switch box.ID {
 	case "catalog-command-input":
@@ -261,6 +266,24 @@ func (a *builderApp) handleChange(ctx context.Context, box ownframe.Box) error {
 		return a.refresh(ctx)
 	case "catalog-combobox-input":
 		a.catalogComboboxQuery = a.page.Form().FormValue(box.ID)
+		return a.refresh(ctx)
+	case "catalog-search-input":
+		a.catalogSearchQuery = a.page.Form().FormValue(box.ID)
+		a.catalogSearchOpen = true
+		if len(chadcn.FilterSearchItems(catalogSearchItems(), a.catalogSearchQuery)) == 0 && a.catalogSearchQuery != "" {
+			a.notice = "Catalog search: no local match for \"" + a.catalogSearchQuery + "\" — background fetch would run."
+		} else {
+			a.notice = "Catalog search query: " + a.catalogSearchQuery + "."
+		}
+		return a.refresh(ctx)
+	case "widgets-search-input":
+		a.widgets.search = a.page.Form().FormValue(box.ID)
+		a.widgets.searchOpen = true
+		if len(chadcn.FilterSearchItems(widgetSearchItems(), a.widgets.search)) == 0 && a.widgets.search != "" {
+			a.notice = "Search: no local match for \"" + a.widgets.search + "\" — background fetch would run."
+		} else {
+			a.notice = "Search query: " + a.widgets.search + "."
+		}
 		return a.refresh(ctx)
 	default:
 		return nil
@@ -333,6 +356,16 @@ func (a *builderApp) handleKey(ctx context.Context, key string) error {
 	}
 	if key == "escape" && a.dialog.open {
 		a.handleDialog("dialog:close")
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.widgets.searchOpen {
+		a.widgets.searchOpen = false
+		a.notice = "Search dismissed."
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.catalogSearchOpen {
+		a.catalogSearchOpen = false
+		a.notice = "Catalog search dismissed."
 		return a.refresh(ctx)
 	}
 	return nil

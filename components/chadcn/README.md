@@ -119,6 +119,7 @@ constructors: `AlertDialog`, `Combobox`, `ContextMenu`, `DatePicker`, `Dialog`,
 | **Menubar** | `Menubar` | open | One open top-level menu. `Flat` drops the boxed bar for app chrome. |
 | **Navigation Menu** | `NavigationMenu` | open | Trigger row plus one absolute panel; child rows accept `Action` or `OnSelect`. |
 | **Command** | `Command` | query | Search field, groups, active row, empty state. |
+| **Search** | `Search` | open + query | Field with transparent backdrop card; click opens, typing filters prefilled rows live, no shadow, absolute panel never moves siblings. |
 
 ### Selection
 
