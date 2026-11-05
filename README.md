@@ -103,6 +103,10 @@ Start with login and ops-console, and try ui-builder for the component set. The 
 
 Nested module markers keep the website, generated site, screenshots, and development folders out of the library module archive. The examples remain in their own module.
 
+## Experimental renderer architecture (PR #68)
+
+The [Native Rendering Experiment decision record](RENDERER_EXPERIMENT_README.md) documents the Blinkless → OwnFrame → Ebiten architecture, the MyGo comparison, WSL2/Mesa hypotheses, display-list and shadow handling, **seven Mermaid diagrams**, implementation phases, benchmarks, risks, and links to [issue #67](https://github.com/chinmay-sawant/ownframe/issues/67) and [issue #69](https://github.com/chinmay-sawant/ownframe/issues/69). **This work remains experimental; Ebiten is still the default, and PR #68 stays draft.**
+
 ## Documentation
 
 Start with the [documentation index](documentation/README.md) or [feature list and limits](documentation/features.md).
