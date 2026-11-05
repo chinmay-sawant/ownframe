@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ExampleCode from './ExampleCode';
-import { builderFiles, helloFiles, starterFiles } from './starter';
+import { builderFiles, builderMountFiles, helloBuilderFiles, helloFiles, starterFiles } from './starter';
 import { repository } from './project';
 import gopher from '../../assets/brand/gopher.webp';
 import telegramPreview from '../../assets/screenshots/android/telegram/telegram-thread.webp';
@@ -53,10 +53,24 @@ const showcases = [
 
 ];
 
+function exampleFiles(pattern, starter) {
+  if (pattern === 'builder' && starter === 'hello') return helloBuilderFiles;
+  if (pattern === 'builder' && starter === 'builder') return builderMountFiles;
+  if (starter === 'hello') return helloFiles;
+  if (starter === 'split') return starterFiles;
+  return builderFiles;
+}
+
+function exampleCommand(pattern, starter) {
+  if (pattern === 'builder' && starter === 'hello') return 'go run ./examples/frontend/hello-builder';
+  if (pattern === 'builder' && starter === 'builder') return 'go run ./examples/frontend/builder-mount';
+  return 'go run .';
+}
+
 export default function Home() {
   const [copyStatus, setCopyStatus] = useState('Copy');
   const [starter, setStarter] = useState('hello');
-  const [sourceOpen, setSourceOpen] = useState(() => !window.matchMedia('(max-width: 1024px)').matches);
+  const [pattern, setPattern] = useState('template');
   const copyTimer = useRef(null);
   const demoUrl = `${import.meta.env.BASE_URL}demo/index.html`;
 
@@ -79,6 +93,7 @@ export default function Home() {
         <p className="eyebrow">Go logic. HTML and CSS interfaces.</p>
         <h1 id="hero-title">Build native apps in Go<br className="hero-break" /> with HTML and CSS.</h1>
         <p>Create desktop and Android interfaces with Go handlers and an in-process renderer. No embedded browser.</p>
+        <p>You can write that page as an HTML template, or build the tree in Go.</p>
         <div className="hero-actions links">
           <a href="#start" className="button-primary">Get started <span aria-hidden="true">→</span></a>
           <a href="#live-demo" className="button-secondary">Try the demo <span aria-hidden="true">↓</span></a>
@@ -94,11 +109,20 @@ export default function Home() {
         alt="The blue ownframe mascot waving hello" />
 
       <div id="live-demo" className="hero-preview-card">
-        <details className="source-disclosure" open={sourceOpen}
-          onToggle={(event) => setSourceOpen(event.currentTarget.open)}>
-          <summary>Explore the Go, HTML, and CSS source</summary>
-          <ExampleCode />
-        </details>
+        <div className="source-disclosure">
+          <p className="source-title">Explore the Go, HTML, and CSS source</p>
+          <div className="pattern-picker" aria-label="Choose a pattern">
+            <button type="button" aria-pressed={pattern === 'template'} onClick={() => setPattern('template')}>HTML template</button>
+            <button type="button" aria-pressed={pattern === 'builder'} onClick={() => setPattern('builder')}>Builder</button>
+          </div>
+          <div className="starter-picker" aria-label="Choose an example">
+            <button type="button" aria-pressed={starter === 'hello'} onClick={() => setStarter('hello')}>Hello World</button>
+            <button type="button" aria-pressed={starter === 'split'} onClick={() => setStarter('split')}>Split with friends</button>
+            <button type="button" aria-pressed={starter === 'builder'} onClick={() => setStarter('builder')}>Builder basics</button>
+          </div>
+          {pattern === 'builder' && starter === 'split' && <p className="pattern-note">Split with friends stays an HTML template. Its share chart is SVG, and the builder does not emit svg or path.</p>}
+          <ExampleCode key={`${starter}-${pattern}`} files={exampleFiles(pattern, starter)} initialFile={0} path="" />
+        </div>
         <div className="preview-pane preview-window-pane">
           <div className="preview-header preview-header-app">
             <span className="app-window-title">Launch board</span>
@@ -148,9 +172,13 @@ export default function Home() {
         <div className="start-copy">
           <p className="eyebrow">Your first native window</p>
           <h2 id="start-title">Start with a page<br /> and a Go handler.</h2>
-          <p>Try the running example. Then explore the Go, HTML, and CSS that make it work.</p>
-          <div className="start-file-labels" aria-label="Three source files">
-            <span>Go logic</span><span>HTML template</span><span>CSS styles</span>
+          <p>{pattern === 'template'
+            ? 'Try the running example. Then explore the Go, HTML, and CSS that make it work.'
+            : 'The page is a Go tree. ui.Mount renders it, the host holds the state, and View.Update rebuilds the tree after a click.'}</p>
+          <div className="start-file-labels" aria-label={pattern === 'template' ? 'Three source files' : 'Builder page'}>
+            {pattern === 'template'
+              ? <><span>Go logic</span><span>HTML template</span><span>CSS styles</span></>
+              : <><span>Go tree</span><span>ui.Mount</span><span>Host state</span></>}
           </div>
         </div>
         <ol className="start-steps">
@@ -166,22 +194,29 @@ export default function Home() {
           </li>
           <li>
             <div className="start-step-content">
-              <h3>Keep the three files together</h3>
-              <p>Save <code>main.go</code>, <code>template.html</code>, and <code>style.css</code> in one directory. Go embeds the HTML and CSS into your app.</p>
+              <h3>{pattern === 'template' ? 'Keep the three files together' : 'Build the tree in Go'}</h3>
+              <p>{pattern === 'template'
+                ? <>Save <code>main.go</code>, <code>template.html</code>, and <code>style.css</code> in one directory. Go embeds the HTML and CSS into your app.</>
+                : <><code>main.go</code> is the whole page, with no template file.</>}</p>
             </div>
           </li>
         </ol>
       </div>
       <div className={`core-example ${starter === 'hello' ? 'hello-example' : starter === 'split' ? 'split-example' : 'builder-example'}`}>
+        <div className="pattern-picker" aria-label="Choose a pattern">
+          <button type="button" aria-pressed={pattern === 'template'} onClick={() => setPattern('template')}>HTML template</button>
+          <button type="button" aria-pressed={pattern === 'builder'} onClick={() => setPattern('builder')}>Builder</button>
+        </div>
         <div className="starter-picker" aria-label="Choose an example">
           <button type="button" aria-pressed={starter === 'hello'} onClick={() => setStarter('hello')}>Hello World</button>
           <button type="button" aria-pressed={starter === 'split'} onClick={() => setStarter('split')}>Split with friends</button>
           <button type="button" aria-pressed={starter === 'builder'} onClick={() => setStarter('builder')}>Builder basics</button>
         </div>
-        <ExampleCode key={starter} files={starter === 'hello' ? helloFiles : starter === 'split' ? starterFiles : builderFiles} initialFile={0} path="" />
+        {pattern === 'builder' && starter === 'split' && <p className="pattern-note">Split with friends stays an HTML template. Its share chart is SVG, and the builder does not emit svg or path.</p>}
+        <ExampleCode key={`${starter}-${pattern}`} files={exampleFiles(pattern, starter)} initialFile={0} path="" />
       </div>
       <div className="start-run">
-        <span>Open your native window</span><code>go run .</code>
+        <span>Open your native window</span><code>{exampleCommand(pattern, starter)}</code>
         <p>{starter === 'hello' ? 'Click the button to see a Go handler update the page.' : starter === 'split' ? 'Choose friends, enter a bill, and calculate each share.' : 'Flip the toggle and switch to see host-owned component state re-render the card.'}</p>
       </div>
     </section>

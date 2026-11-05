@@ -25,6 +25,7 @@ const labels = {
 
 const keptSlugs = new Set([
   'showcase', 'examples-readme', 'why-ownframe',
+  'starters', 'builder', 'components',
   'compare-rust-gpui', 'compare-electron',
   'compare-wails', 'compare-fyne', 'compare-gio', 'compare-webview',
   'compare-ebitengine',
@@ -53,6 +54,10 @@ const navigation = [
   {
     title: 'About',
     slugs: ['why-ownframe'],
+  },
+  {
+    title: 'Builder',
+    slugs: ['starters', 'builder', 'components'],
   },
   {
     title: 'Examples',

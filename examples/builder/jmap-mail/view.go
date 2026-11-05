@@ -90,7 +90,8 @@ func (a *app) sidebar() *ui.Element {
 		Children(
 			a.actionButton("+  Compose", "compose", true).
 				Width(ui.Percent(100)).TextAlign(ui.TextAlignCenter).Padding(ui.Edges(ui.Px(13), ui.Px(12))).
-				FlexShrink(ui.Number(0)),
+				Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentCenter).
+				Height(ui.HeightAuto).FlexShrink(ui.Number(0)),
 			ui.P().Text("MAILBOXES").Margin(ui.Edges(ui.Px(25), ui.Px(10), ui.Px(12))).
 				FontSize(ui.Px(11)).FontWeight(ui.FontWeightBold).Color(theme.Muted()).
 				FlexShrink(ui.Number(0)),

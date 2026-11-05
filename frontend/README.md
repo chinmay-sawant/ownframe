@@ -17,7 +17,7 @@ Open the `/ownframe/` address Vite prints. The site supports dark and light them
 ## Edit the site
 
 - `src/Home.jsx` contains the homepage copy, code sample, and demo cards.
-- `src/starter.js` loads Hello World from `examples/frontend/hello/`, Split with friends from `examples/frontend/budget/`, and Builder basics from `examples/frontend/builder/`. Its Live demo tab embeds the WASM app, followed by `main.go`, `template.html`, and `style.css` source tabs.
+- `src/starter.js` loads Hello World from `examples/frontend/hello/`, Split with friends from `examples/frontend/budget/`, and Builder basics from `examples/frontend/builder/`. The start section has an HTML template / Builder toggle. In template mode, its Live demo tab embeds the WASM app, followed by `main.go`, `template.html`, and `style.css` source tabs. Builder mode shows Hello World from `examples/frontend/hello-builder/main.go` and Builder basics from `examples/frontend/builder-mount/main.go`. Split with friends stays a template.
 - `src/Documentation.jsx` renders the example and comparison pages and handles documentation navigation.
 - `src/showcase.js` defines the website's Example apps content and media dimensions.
 - `src/content.js` groups the example and comparison Markdown documents and resolves their links and images.

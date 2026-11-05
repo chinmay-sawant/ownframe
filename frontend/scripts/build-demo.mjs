@@ -26,6 +26,7 @@ for (const [example, folder, binary] of [
   ['frontend/hello', 'demos/hello', 'demo.wasm'],
   ['frontend/budget', 'demos/expense-tracker', 'demo.wasm'],
   ['frontend/builder', 'demos/builder', 'demo.wasm'],
+  ['builder/ui-builder', 'demos/ui-builder', 'demo.wasm'],
   ['telegram', 'demos/telegram', 'ownframe.wasm'],
   ['spotify-player', 'demos/spotify-player', 'ownframe.wasm'],
 ]) {

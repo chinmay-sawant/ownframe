@@ -122,6 +122,66 @@ export const showcaseSections = [
     ],
   },
   {
+    id: 'login',
+    title: 'Login',
+    layout: 'single',
+    before: '`examples/login` is the sign-in starter and the first maintained teaching example: real inputs, clipboard, and an app-level undo stack. `go run ./examples/login` opens it on desktop. Both fields accept `secret`.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/login)',
+    media: [
+      { src: 'assets/screenshots/demos/login.png', alt: 'Login sign-in screen with email and password fields', caption: 'Login', width: 480, height: 640, nativeDisplay: true },
+    ],
+  },
+  {
+    id: 'trade',
+    title: 'Trade',
+    layout: 'single',
+    before: '`examples/trade` is the Meridian dark trading terminal: watchlist, candlestick chart, quote rail, order blotter, and more screens over a seeded synthetic market. All motion is CSS; devtools open by default. `go run ./examples/trade` opens it on desktop.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/trade)',
+    media: [
+      { src: 'assets/screenshots/demos/trade.png', alt: 'Meridian trading terminal with watchlist, candlestick chart, and order blotter', caption: 'Trade', width: 1600, height: 900, nativeDisplay: true },
+    ],
+  },
+  {
+    id: 'loglens',
+    title: 'Loglens',
+    layout: 'single',
+    before: '`examples/builder/loglens` is the observability dashboard exercising the component set: overview, logs, traces, and incident room. `go run ./examples/builder/loglens` opens it on desktop.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/loglens)',
+    media: [
+      { src: 'assets/screenshots/demos/loglens.png', alt: 'Loglens observability dashboard overview with events and service health', caption: 'Loglens', width: 1440, height: 960, nativeDisplay: true },
+    ],
+  },
+  {
+    id: 'inventory',
+    title: 'Inventory',
+    layout: 'single',
+    before: '`examples/builder/inventory` is a light-theme inventory-health dashboard (Northwind Goods) built with the Go builder (`ui` + `components/chadcn`): KPI strip, stock-health table, bin-utilization heat grid, inbound purchase orders, and value by category. `go run ./examples/builder/inventory` opens it on desktop.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/inventory)',
+    media: [
+      { src: 'assets/screenshots/demos/inventory.png', alt: 'Northwind Goods inventory health dashboard with KPIs, stock table, and bin utilization heat grid', caption: 'Inventory', width: 1440, height: 960, nativeDisplay: true },
+    ],
+  },
+  {
+    id: 'jmap-mail',
+    title: 'JMAP Mail',
+    layout: 'single',
+    before: '`examples/builder/jmap-mail` is a three-pane desktop mail client mockup (Postmark) built with the public Go `ui` API. `go run ./examples/builder/jmap-mail` opens it on desktop.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/jmap-mail)',
+    media: [
+      { src: 'assets/screenshots/demos/jmap-mail.png', alt: 'Postmark three-pane mail client with mailboxes, inbox list, and message view', caption: 'JMAP Mail', width: 1380, height: 810, nativeDisplay: true },
+    ],
+  },
+  {
+    id: 'mailpulse',
+    title: 'MailPulse',
+    layout: 'single',
+    before: '`examples/builder/mailpulse` is an email engagement dashboard built with the `ui` builder and `components/chadcn`: KPI tiles with delta pills, an open-rate heatmap, and an engagement funnel. `go run ./examples/builder/mailpulse` opens it on desktop.',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/mailpulse)',
+    media: [
+      { src: 'assets/screenshots/demos/mailpulse.png', alt: 'MailPulse engagement dashboard with open and click rates, send-time heatmap, and funnel', caption: 'MailPulse', width: 1440, height: 960, nativeDisplay: true },
+    ],
+  },
+  {
     id: 'depth-alert',
     title: 'Depth Alert',
     layout: 'portrait',
@@ -130,6 +190,16 @@ export const showcaseSections = [
     media: [
       { src: 'assets/screenshots/android/depth-alert/depth-alert-pixel7.webp', alt: 'Depth Alert running on a Pixel 7 with its live camera preview, current signal, distance, and depth coverage', caption: 'Depth Alert on Pixel 7', width: 1080, height: 2400 },
     ],
+  },
+  {
+    id: 'ui-builder',
+    title: 'UI builder',
+    layout: 'single',
+    before: '`examples/builder/ui-builder` is the component gallery. It is built with package `ui` and `components/chadcn`. The host owns open and selected state. The set has 110 constructors. Desktop command: `go run ./examples/builder/ui-builder`.',
+    media: [
+      { src: 'assets/screenshots/demos/ui-builder.png', alt: 'UI builder gallery of chadcn components in a desktop window', caption: 'UI builder', width: 1120, height: 760, nativeDisplay: true },
+    ],
+    after: '[Try the live WebAssembly preview](frontend/public/demos/ui-builder/index.html). This preview is not a 1.0 host. Desktop `Run` and Android `BindMobile` are the 1.0 hosts.\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/ui-builder)\n\nSupported components are listed on the [components page](documentation/components.md).',
   },
 ].sort((left, right) => {
   const leftOrder = leadingShowcaseIds.indexOf(left.id);

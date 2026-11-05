@@ -29,6 +29,14 @@
     ],
     "params": "profileHTML string"
   },
+  "documentation/builder.md#1": {
+    "mode": "illustration",
+    "reason": "Call shape for ui.Mount. Not a standalone program."
+  },
+  "documentation/builder.md#2": {
+    "mode": "illustration",
+    "reason": "Call shape for a typed CSS value. Not a standalone program."
+  },
   "documentation/compare-electron.md#1": {
     "mode": "expression",
     "after": "return nil",
@@ -112,6 +120,10 @@
   "documentation/compare-syntax.md#4": {
     "mode": "illustration",
     "reason": "Third-party API comparison or optional keyring integration; not an ownframe API example."
+  },
+  "documentation/components.md#1": {
+    "mode": "illustration",
+    "reason": "Call shape for the ChadCN quick start. Not a standalone program."
   },
   "documentation/crash.md#1": {
     "mode": "body",
