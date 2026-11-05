@@ -33,7 +33,6 @@
   border-top: 1px solid var(--of-border, #e5e5e5);
   border-top-left-radius: var(--of-radius-lg, var(--of-radius, 14px));
   border-top-right-radius: var(--of-radius-lg, var(--of-radius, 14px));
-  box-shadow: 0 -18px 48px var(--of-shadow, #0000001f);
 }
 
 .of-drawer-panel:focus-visible {

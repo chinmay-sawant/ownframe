@@ -140,7 +140,6 @@
   flex-shrink: 0;
   border-radius: 999px;
   background-color: var(--of-area-dot, var(--of-chart-1, #3b82f6));
-  box-shadow: 0 0 0 2px var(--of-area-background, var(--of-card, #ffffff));
 }
 
 .of-area-chart-point[data-series="2"] {

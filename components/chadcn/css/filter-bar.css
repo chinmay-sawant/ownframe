@@ -78,5 +78,4 @@
   border-color: var(--of-border, #e5e5e5);
   background-color: var(--of-surface, #ffffff);
   color: var(--of-text, #0a0a0a);
-  box-shadow: 0 1px 2px var(--of-shadow, #0000001a);
 }

@@ -35,7 +35,6 @@
   border: 1px solid var(--of-input, #e5e5e5);
   border-radius: var(--of-radius-sm, 6px);
   background-color: var(--of-surface, #ffffff);
-  box-shadow: 0 1px 2px var(--of-shadow, #0000000d);
   color: var(--of-text, #0a0a0a);
   font-family: inherit;
   font-size: 14px;
@@ -93,13 +92,8 @@
   width: var(--of-date-picker-panel-width, 280px);
   border-radius: var(--of-radius, 10px);
   /* The calendar paints the inner surface. The panel still carries an opaque
-     fill as a backstop and the ring that separates the popover from a card of
-     the same colour underneath. */
+     fill as a backstop. */
   background-color: var(--of-popover, #ffffff);
-  box-shadow:
-    0 0 0 1px var(--of-ring, #a1a1aa),
-    0 2px 4px var(--of-shadow, #00000026),
-    0 12px 32px var(--of-shadow, #00000026);
 }
 
 .of-date-picker-panel .of-calendar {
