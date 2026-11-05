@@ -9,7 +9,6 @@
   border: 1px solid var(--of-border, #e5e5e5);
   border-radius: var(--of-radius, 10px);
   background-color: var(--of-popover, #ffffff);
-  box-shadow: 0 4px 14px var(--of-shadow, #00000026);
   color: var(--of-text, #0a0a0a);
   font-size: 13px;
 }

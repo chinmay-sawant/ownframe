@@ -24,27 +24,79 @@ const (
 // builderApp is the single tabbed ui-builder host. Each tab lives in its
 // own screen_*.go file and owns a small state struct below.
 type builderApp struct {
-	modalFocus chadcn.DialogFocus
-	view       *ui.View
-	themeDirty bool
-	page       *ownframe.Page
-	logger     *log.Logger
-	tab        string
-	notice     string
-	widgets    widgetsState
-	settings   settingsState
-	layout     layoutState
-	todos      todoState
-	files      listState
-	theme      themeState
-	compare    compareState
-	dialog     dialogState
-	custom     customState
+	modalFocus                 chadcn.DialogFocus
+	view                       *ui.View
+	themeDirty                 bool
+	page                       *ownframe.Page
+	logger                     *log.Logger
+	tab                        string
+	notice                     string
+	widgets                    widgetsState
+	settings                   settingsState
+	layout                     layoutState
+	todos                      todoState
+	files                      listState
+	theme                      themeState
+	compare                    compareState
+	dialog                     dialogState
+	custom                     customState
+	catalogTabSel              string
+	catalogSlider              float64
+	catalogCheck               bool
+	catalogSwitch              bool
+	catalogSelect              string
+	catalogSelectOpen          bool
+	catalogAccordion           []string
+	catalogAlertDialogOpen     bool
+	catalogCalendarMonth       time.Time
+	catalogCalendarSelected    time.Time
+	catalogCarouselIndex       int
+	catalogCollapsibleOpen     bool
+	catalogComboboxOpen        bool
+	catalogComboboxValue       string
+	catalogComboboxQuery       string
+	catalogCommandActive       string
+	catalogCommandQuery        string
+	catalogContextOpen         bool
+	catalogDataSelected        map[int]bool
+	catalogDateOpen            bool
+	catalogDateSelected        time.Time
+	catalogDateMonth           time.Time
+	catalogDialogOpen          bool
+	catalogDrawerOpen          bool
+	catalogDropdownOpen        bool
+	catalogHoverOpen           bool
+	catalogMenubarOpen         string
+	catalogNavOpen             string
+	catalogPopoverOpen         bool
+	catalogTooltipOpen         bool
+	catalogSheetOpen           bool
+	catalogPage                int
+	catalogQuestionAnswer      string
+	catalogRadioValue          string
+	catalogTogglePressed       bool
+	catalogToggleGroupSelected []string
+	catalogToastOpen           bool
+	catalogProgress            int
+	catalogFilter              string
+	catalogSidebarOpen         bool
+	catalogChoiceSelected      bool
+	catalogSearchOpen          bool
+	catalogSearchQuery         string
+	catalogSearchValue         string
 
 	center               chadcn.ScrollState
 	centerMeasurePending bool
-	layoutWidth          int
-	layoutHeight         int
+	scrollDirty          bool
+	// catalogGeo pins the last full-render catalog geometry. Windowed
+	// renders reuse it instead of re-measuring estimates off spacers,
+	// which would compound the pitch error frame over frame.
+	catalogGeoMeasured bool
+	catalogGeoHeaderPx int
+	catalogGeoPitchPx  int
+	catalogGeoRowsH    int
+	layoutWidth        int
+	layoutHeight       int
 }
 
 // setLogger installs the diagnostic logger. A nil logger disables logging.
@@ -58,26 +110,39 @@ func (a *builderApp) logf(format string, args ...any) {
 
 func newBuilderApp() (*builderApp, error) {
 	a := &builderApp{
-		tab:      "widgets",
-		notice:   "Pick a tab on the left — every control below is built in Go.",
-		widgets:  defaultWidgetsState(),
-		settings: defaultSettingsState(),
-		layout:   defaultLayoutState(),
-		todos:    defaultTodoState(),
-		files:    defaultListState(),
-		theme:    defaultThemeState(),
-		compare:  defaultCompareState(),
-		dialog:   defaultDialogState(),
+		tab:                    "widgets",
+		notice:                 "Pick a tab on the left — every control below is built in Go.",
+		widgets:                defaultWidgetsState(),
+		settings:               defaultSettingsState(),
+		layout:                 defaultLayoutState(),
+		todos:                  defaultTodoState(),
+		files:                  defaultListState(),
+		theme:                  defaultThemeState(),
+		compare:                defaultCompareState(),
+		dialog:                 defaultDialogState(),
+		catalogAccordion:       []string{"one"},
+		catalogCollapsibleOpen: true,
+		catalogCommandActive:   "calendar",
+		catalogDataSelected:    map[int]bool{},
+		catalogPage:            1,
+		catalogRadioValue:      "medium",
+		catalogTogglePressed:   true,
+		catalogToastOpen:       true,
+		catalogProgress:        catalogProgress,
+		catalogFilter:          "weekly",
+		catalogSidebarOpen:     true,
+		catalogChoiceSelected:  true,
 	}
 	view, err := ui.Mount(ownframe.Config{
-		Theme:     chadcn.Dark + chadcn.Stylesheet + builderMotionCSS,
-		Title:     "OwnFrame Components",
-		Width:     demoWidth,
-		Height:    demoHeight,
-		MinWidth:  demoMinWidth,
-		MinHeight: demoMinHeight,
-		DevTools:  false,
-		Scrollbar: ownframe.ScrollbarHidden,
+		Theme:       chadcn.Dark + chadcn.Stylesheet + builderMotionCSS,
+		Title:       "OwnFrame Components",
+		Width:       demoWidth,
+		Height:      demoHeight,
+		MinWidth:    demoMinWidth,
+		MinHeight:   demoMinHeight,
+		DevTools:    false,
+		RetainState: true,
+		Scrollbar:   ownframe.ScrollbarHidden,
 	}, a.screen())
 	if err != nil {
 		return nil, fmt.Errorf("new builder app: %w", err)
@@ -88,6 +153,7 @@ func newBuilderApp() (*builderApp, error) {
 	p.Scroll().SetAllowScroll(false)
 	view.Handle(ownframe.Handlers{
 		Click:     a.handleClick,
+		Change:    a.handleChange,
 		KeyDown:   a.handleKey,
 		Wheel:     a.handleWheel,
 		DragStart: a.startCenterScrollDrag,
@@ -156,14 +222,21 @@ func (a *builderApp) handleClick(ctx context.Context, box ownframe.Box) error {
 	if a.handleDialog(action) {
 		return a.refreshLogged(ctx, action, start)
 	}
+	if a.handleCatalog(action) {
+		return a.refreshLogged(ctx, action, start)
+	}
 	a.logf("click action=%q tab=%s ignored dur=%s", action, a.tab, time.Since(start))
 	return nil
 }
 
 // refreshLogged re-renders after a handled action and logs the outcome with
 // the handling duration, so a stuck re-render shows up as a click without a
-// matching ok line.
+// matching ok line. Pointer clicks leave focus on the button, which keeps the
+// :focus-visible ring painted forever, so the focus is cleared before the
+// re-render. Text inputs never reach this path (they have no data-action and
+// type through handleChange, which preserves focus), so typing is unaffected.
 func (a *builderApp) refreshLogged(ctx context.Context, action string, start time.Time) error {
+	a.page.Form().RequestFocus("")
 	if err := a.refresh(ctx); err != nil {
 		a.logf("click action=%q tab=%s err=%v dur=%s", action, a.tab, err, time.Since(start))
 		return err
@@ -172,11 +245,57 @@ func (a *builderApp) refreshLogged(ctx context.Context, action string, start tim
 	return nil
 }
 
+// refreshBlur clears pointer focus before re-rendering so clicked buttons do
+// not keep the :focus-visible outline. Typing paths must call refresh, not
+// this, so text inputs keep their caret.
+func (a *builderApp) refreshBlur(ctx context.Context) error {
+	a.page.Form().RequestFocus("")
+	return a.refresh(ctx)
+}
+
+// handleChange carries live input text into host-owned query state for the
+// catalog Command, Combobox, and Search palettes plus the widgets Search
+// card, then re-renders so the lists filter. Unlike refreshLogged it preserves
+// focus so typing can continue. When a Search query matches no prefilled row,
+// the notice names the background fetch the host would run for remote rows.
+func (a *builderApp) handleChange(ctx context.Context, box ownframe.Box) error {
+	switch box.ID {
+	case "catalog-command-input":
+		a.catalogCommandQuery = a.page.Form().FormValue(box.ID)
+		a.notice = "Catalog command query: " + a.catalogCommandQuery + "."
+		return a.refresh(ctx)
+	case "catalog-combobox-input":
+		a.catalogComboboxQuery = a.page.Form().FormValue(box.ID)
+		return a.refresh(ctx)
+	case "catalog-search-input":
+		a.catalogSearchQuery = a.page.Form().FormValue(box.ID)
+		a.catalogSearchOpen = true
+		if len(chadcn.FilterSearchItems(catalogSearchItems(), a.catalogSearchQuery)) == 0 && a.catalogSearchQuery != "" {
+			a.notice = "Catalog search: no local match for \"" + a.catalogSearchQuery + "\" — background fetch would run."
+		} else {
+			a.notice = "Catalog search query: " + a.catalogSearchQuery + "."
+		}
+		return a.refresh(ctx)
+	case "widgets-search-input":
+		a.widgets.search = a.page.Form().FormValue(box.ID)
+		a.widgets.searchOpen = true
+		if len(chadcn.FilterSearchItems(widgetSearchItems(), a.widgets.search)) == 0 && a.widgets.search != "" {
+			a.notice = "Search: no local match for \"" + a.widgets.search + "\" — background fetch would run."
+		} else {
+			a.notice = "Search query: " + a.widgets.search + "."
+		}
+		return a.refresh(ctx)
+	default:
+		return nil
+	}
+}
+
 func (a *builderApp) selectTab(name string) {
 	switch name {
-	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom":
+	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom", "catalog":
 		a.tab = name
 		a.center = chadcn.ScrollState{}
+		a.catalogGeoMeasured = false
 		a.notice = map[string]string{
 			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
 			"settings": "Settings: form state, inline validation, and save in Go.",
@@ -187,6 +306,7 @@ func (a *builderApp) selectTab(name string) {
 			"custom":   "Custom components inherit the app theme and accept local properties.",
 			"compare":  "Builder vs HTML: the same card as Go code and live output.",
 			"dialog":   "Dialog: a backdrop overlay with a centered panel.",
+			"catalog":  "ChadCN catalog: every constructor in a representative state.",
 		}[name]
 	}
 }
@@ -216,6 +336,7 @@ func (a *builderApp) refresh(ctx context.Context) error {
 		return fmt.Errorf("update builder gallery: %w", err)
 	}
 	a.centerMeasurePending = true
+	a.scrollDirty = false
 	a.logf("refresh ok dur=%s", time.Since(start))
 	return nil
 }
@@ -226,8 +347,8 @@ const builderMotionCSS = `
 `
 
 func (a *builderApp) handleKey(ctx context.Context, key string) error {
-	if !a.scrollInputBlocked() && a.page.Form().FocusID() == builderScrollThumbID && a.center.Key(key, int(builderScrollStep)) {
-		return a.refresh(ctx)
+	if a.scrollCenterKey(key) {
+		return nil
 	}
 	if key == "escape" && a.compare.Preview {
 		a.handleCompare("compare:preview-close")
@@ -235,6 +356,16 @@ func (a *builderApp) handleKey(ctx context.Context, key string) error {
 	}
 	if key == "escape" && a.dialog.open {
 		a.handleDialog("dialog:close")
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.widgets.searchOpen {
+		a.widgets.searchOpen = false
+		a.notice = "Search dismissed."
+		return a.refresh(ctx)
+	}
+	if key == "escape" && a.catalogSearchOpen {
+		a.catalogSearchOpen = false
+		a.notice = "Catalog search dismissed."
 		return a.refresh(ctx)
 	}
 	return nil

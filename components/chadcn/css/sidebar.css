@@ -116,3 +116,21 @@
 .of-sidebar--collapsed .of-sidebar-item-badge {
   display: none;
 }
+
+.of-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0 2px;
+}
+
+.of-sidebar-section-label {
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-sidebar--collapsed .of-sidebar-section-label {
+  display: none;
+}

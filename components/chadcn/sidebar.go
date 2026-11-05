@@ -90,6 +90,16 @@ func SidebarNavItem(item SidebarItem) *ui.Element {
 	return row
 }
 
+// SidebarSection groups navigation rows under a label, such as the Operations
+// and Analytics groups in a dashboard sidebar. It composes SidebarNavItem rows.
+func SidebarSection(label string, items ...*ui.Element) *ui.Element {
+	section := ui.Div().Class("of-sidebar-section")
+	if label != "" {
+		section.Children(ui.Span().Class("of-sidebar-section-label").Text(label))
+	}
+	return section.Children(items...)
+}
+
 func sidebarActiveClass(active bool) string {
 	if active {
 		return "of-sidebar-item--active"

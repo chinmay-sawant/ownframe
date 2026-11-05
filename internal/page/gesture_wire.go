@@ -462,6 +462,8 @@ func (p *Page) Drop(ctx context.Context, files []Drop) error {
 
 // Hover sets the hovered element from a point and draws when it changed.
 // The innermost box with an id under the point wins; an empty point clears it.
+// The id scan runs innermost-first and stops at the first id-bearing box,
+// so a hover over a deep leaf skips the prefix Press and Click still walk.
 func (p *Page) Hover(ctx context.Context, x, y float64) error {
 	if err := useContext(ctx); err != nil {
 		return err
@@ -469,7 +471,7 @@ func (p *Page) Hover(ctx context.Context, x, y float64) error {
 
 	p.setHoverPoint(x, y)
 
-	return p.setHover(ctx, p.boxIDAt(x, y))
+	return p.setHover(ctx, p.hoverIDAt(x, y))
 }
 
 // Press sets the pressed element from a point and draws when it changed.
@@ -576,6 +578,34 @@ func (p *Page) boxIDAt(x, y float64) string {
 	return p.boxAt(x, y).id
 }
 
+// hoverIDAt answers the Hover point query only: the innermost id-bearing
+// box under the point, or "". Press and Click keep the shared boxAt scan,
+// so their overlapping-box winner never changes. Without a fixed layer the
+// innermost id wins, which is the first id-bearing box walking innermost
+// first; the walk stops there instead of scanning the whole prefix. With a
+// fixed layer the pinned layer wins exactly like boxAt, so Hover delegates
+// to the shared scan. The reject form below is the hit rule: a NaN
+// comparison is false, so NaN is not thrown out.
+func (p *Page) hoverIDAt(x, y float64) string {
+	if len(p.hits) != 0 {
+		return p.boxIDAt(x, y)
+	}
+
+	for i := len(p.boxes) - 1; i >= 0; i-- {
+		b := p.boxes[i]
+		if b.ID == "" {
+			continue
+		}
+		if x < b.X || y < b.Y || x > b.X+b.W || y > b.Y+b.H {
+			continue
+		}
+
+		return b.ID
+	}
+
+	return ""
+}
+
 // PressedID is the control held by the current pointer gesture.
 // It is empty after Release.
 func (p *Page) PressedID() string { return p.activeID() }
@@ -634,7 +664,9 @@ func (p *Page) ContextMenu() []host.MenuItem {
 
 // CursorShape returns the shape for the hovered box: an I-beam over a text
 // control, a hand over a link, a button, or another control, and the default
-// arrow everywhere else.
+// arrow everywhere else. The link scan runs only when the hovered box leaves
+// the default arrow: a hovered box that already names the I-beam or the hand
+// decides the shape without walking the display operations.
 func (p *Page) CursorShape() host.Shape {
 	in := gesture.Cursor{}
 	if id := p.HoverID(); id != "" {
@@ -647,6 +679,10 @@ func (p *Page) CursorShape() host.Shape {
 			in.Tag = b.Tag
 			in.Action = b.Action
 		}
+	}
+
+	if gesture.CursorShape(in) != host.ShapeDefault {
+		return gesture.CursorShape(in)
 	}
 
 	x, y := p.hoverPoint()

@@ -32,7 +32,6 @@
   border: 1px solid var(--of-input, #e5e5e5);
   border-radius: var(--of-radius-sm, 6px);
   background-color: var(--of-surface, #ffffff);
-  box-shadow: 0 1px 2px var(--of-shadow, #0000000d);
   transition: border-color 0.15s, background-color 0.15s;
 }
 
@@ -109,12 +108,6 @@
   border: 1px solid var(--of-border, #e5e5e5);
   border-radius: var(--of-radius, 10px);
   background-color: var(--of-popover, #ffffff);
-  /* A popover often opens over a card of the same colour, so the surface needs
-     its own ring and a deeper drop to read as a layer above that card. */
-  box-shadow:
-    0 0 0 1px var(--of-ring, #a1a1aa),
-    0 2px 4px var(--of-shadow, #00000026),
-    0 12px 32px var(--of-shadow, #00000026);
   color: var(--of-text, #0a0a0a);
 }
 

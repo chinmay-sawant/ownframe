@@ -22,7 +22,6 @@
   background-color: var(--of-popover, var(--of-surface, #ffffff));
   color: var(--of-text, #0a0a0a);
   border: 1px solid var(--of-border, #e5e5e5);
-  box-shadow: 0 18px 48px var(--of-shadow, #0000001f);
 }
 
 .of-sheet--top,

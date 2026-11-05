@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -33,7 +34,9 @@ type widgetsState struct {
 	toggled      bool   // toggle switch state
 	picked       string // selected nav item
 	inputVal     string // text input value
-	search       string // search field value
+	search       string // search field query
+	searchOpen   bool   // search backdrop card open
+	searchValue  string // selected search row value
 	checkNotify  bool   // checkbox row: notifications
 	checkCompact bool   // checkbox row: compact mode
 	radio        string // radio row selection
@@ -55,7 +58,7 @@ func defaultWidgetsState() widgetsState {
 		toggled:      true,
 		picked:       "home",
 		inputVal:     "Hello widgets",
-		search:       "ownframe",
+		search:       "",
 		checkNotify:  true,
 		checkCompact: false,
 		radio:        "medium",
@@ -211,19 +214,79 @@ func (a *builderApp) inputCard() *ui.Element {
 }
 
 func (a *builderApp) searchCard() *ui.Element {
-	return widgetShell("Search field", fmt.Sprintf("Query %q filters nothing yet — it only proves state round-trips.", a.widgets.search),
+	matches := chadcn.FilterSearchItems(widgetSearchItems(), a.widgets.search)
+	picked := a.widgets.searchValue
+	if picked == "" {
+		picked = "nothing yet"
+	}
+	desc := "Click the field to open the backdrop card; typing filters the prefilled rows live."
+	if a.widgets.search != "" {
+		if len(matches) == 0 {
+			desc = "No local match — a background fetch would run for " + a.widgets.search + "."
+		} else {
+			desc = "Query filters the prefilled rows live; picked " + picked + "."
+		}
+	}
+	return widgetShell("Search", desc,
 		ui.Div().MarginTop(ui.Px(12)).Display(ui.DisplayFlex).FlexDirection(ui.FlexDirectionColumn).Gap(ui.Px(10)).Children(
-			ui.Input().Attr("type", "search").Attr("id", "widgets-search").
-				Attr("value", a.widgets.search).Attr("placeholder", "Search widgets…").Attr("name", "widgets-search").
-				BackgroundColor(theme.Background()).Color(theme.Text()).Border(theme.Border()).
-				BoxSizing(ui.BoxSizingBorderBox).
-				Padding(ui.Edges(ui.Px(9), ui.Px(12))).BorderRadius(ui.Px(8)).FontSize(ui.Px(12)).Width(ui.Percent(100)),
+			chadcn.Search(chadcn.SearchOptions{
+				ID:          "widgets-search",
+				Query:       a.widgets.search,
+				Placeholder: "Search widgets…",
+				Open:        a.widgets.searchOpen,
+				Items:       widgetSearchItems(),
+				Value:       a.widgets.searchValue,
+				OnOpenChange: func(ctx context.Context, open bool) error {
+					a.widgets.searchOpen = open
+					if open {
+						a.notice = "Search opened over its backdrop."
+						return a.refresh(ctx)
+					}
+					a.notice = "Search dismissed."
+					return a.refreshBlur(ctx)
+				},
+				OnQuery: func(ctx context.Context, query string) error {
+					a.widgets.search = query
+					a.widgets.searchOpen = true
+					return a.refresh(ctx)
+				},
+				OnSelect: func(ctx context.Context, value string) error {
+					a.widgets.searchValue = value
+					a.widgets.searchOpen = false
+					a.notice = "Search picked " + value + "."
+					return a.refreshBlur(ctx)
+				},
+			}),
 			ui.Div().Display(ui.DisplayFlex).Gap(ui.Px(10)).Children(
 				widgetsBtn("Sample", "widgets:search:sample", true),
 				widgetsBtn("Clear", "widgets:search:clear", false),
 			),
 		),
 	)
+}
+
+// widgetSearchItems is the prefilled card data for the widgets Search demo.
+// Typing filters these rows locally; a query with no match is the signal for
+// a background fetch of remote rows.
+func widgetSearchItems() []chadcn.SearchItem {
+	return []chadcn.SearchItem{
+		{Value: "buttons", Label: "Buttons", Description: "Variants and sizes"},
+		{Value: "badges", Label: "Badges", Description: "Counters"},
+		{Value: "switch", Label: "Switch", Description: "Controlled toggle"},
+		{Value: "navigation", Label: "Navigation", Description: "Row destinations"},
+		{Value: "input", Label: "Text input", Description: "Editable field"},
+		{Value: "checkbox", Label: "Checkboxes", Description: "Two bools"},
+		{Value: "radio", Label: "Radio row", Description: "Single choice"},
+		{Value: "select", Label: "Select options", Description: "Plan picker"},
+		{Value: "stepper", Label: "Stepper", Description: "Minus plus value"},
+		{Value: "progress", Label: "Progress", Description: "Bounded percent"},
+		{Value: "tabs", Label: "Tabs row", Description: "Active tab"},
+		{Value: "pagination", Label: "Pagination", Description: "Page window"},
+		{Value: "breadcrumb", Label: "Breadcrumb", Description: "Trail leaf"},
+		{Value: "notice", Label: "Notices", Description: "Inline feedback"},
+		{Value: "avatar", Label: "Avatar stack", Description: "Initials"},
+		{Value: "table", Label: "Data table", Description: "Mini grid"},
+	}
 }
 
 func (a *builderApp) checkboxCard() *ui.Element {
@@ -516,14 +579,18 @@ func (a *builderApp) handleWidgets(action string) bool {
 		a.page.Form().SetFormValue("widgets-input", a.widgets.inputVal)
 		return true
 	case "search:sample":
-		a.widgets.search = defaultWidgetsState().search
+		a.widgets.search = "buttons"
+		a.widgets.searchOpen = true
+		a.widgets.searchValue = ""
 		a.notice = fmt.Sprintf("Search filled with %q.", a.widgets.search)
-		a.page.Form().SetFormValue("widgets-search", a.widgets.search)
+		a.page.Form().SetFormValue("widgets-search-input", a.widgets.search)
 		return true
 	case "search:clear":
 		a.widgets.search = ""
+		a.widgets.searchOpen = false
+		a.widgets.searchValue = ""
 		a.notice = "Search cleared."
-		a.page.Form().SetFormValue("widgets-search", a.widgets.search)
+		a.page.Form().SetFormValue("widgets-search-input", a.widgets.search)
 		return true
 	case "check:notify":
 		a.widgets.checkNotify = !a.widgets.checkNotify

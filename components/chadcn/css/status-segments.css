@@ -1,0 +1,94 @@
+/* Status segments: proportional bars with a count legend. */
+
+.of-status-segments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.of-status-segments-overdue {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-control, #f4f4f5);
+  font-size: 13px;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-status-segments-track {
+  display: flex;
+  gap: 6px;
+  height: var(--of-status-track-height, 64px);
+  min-width: 0;
+}
+
+.of-status-segments-bar {
+  flex-basis: 0;
+  min-width: 12px;
+  border-radius: 10px;
+  background-color: var(--of-status-bar, var(--of-chart-1, #3b82f6));
+}
+
+.of-status-segments-bar[data-tone="2"] {
+  background-color: var(--of-status-bar, var(--of-chart-2, #8b5cf6));
+}
+
+.of-status-segments-bar[data-tone="3"] {
+  background-color: var(--of-status-bar, var(--of-chart-3, #f59e0b));
+}
+
+.of-status-segments-bar[data-tone="4"] {
+  background-color: var(--of-status-bar, var(--of-chart-4, #10b981));
+}
+
+.of-status-segments-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 16px;
+}
+
+.of-status-segments-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.of-status-segments-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--of-status-bar, var(--of-chart-1, #3b82f6));
+}
+
+.of-status-segments-dot[data-tone="2"] {
+  background-color: var(--of-status-bar, var(--of-chart-2, #8b5cf6));
+}
+
+.of-status-segments-dot[data-tone="3"] {
+  background-color: var(--of-status-bar, var(--of-chart-3, #f59e0b));
+}
+
+.of-status-segments-dot[data-tone="4"] {
+  background-color: var(--of-status-bar, var(--of-chart-4, #10b981));
+}
+
+.of-status-segments-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-status-segments-count {
+  font-weight: 600;
+  color: var(--of-text, #0a0a0a);
+}

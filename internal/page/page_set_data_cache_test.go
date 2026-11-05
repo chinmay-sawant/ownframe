@@ -49,4 +49,3 @@ func TestSetDataConcurrentWithRedraw(t *testing.T) {
 		}
 	}
 }
-

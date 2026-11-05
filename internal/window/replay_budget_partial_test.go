@@ -56,8 +56,8 @@ func TestPartialBudgetTakesViewportPath(t *testing.T) {
 }
 
 // TestPartialBudgetViewportIdles checks that a stationary viewport blit can
-// park. A scroll inside the overscan, a generation change, a ticker, or a
-// dirty rect keeps the frame clock.
+// park. A scroll inside the overscan, a generation change, a damaging tick,
+// or a dirty rect keeps the frame clock; a quiet tick idles.
 func TestPartialBudgetViewportIdles(t *testing.T) {
 	t.Parallel()
 
@@ -113,12 +113,21 @@ func TestPartialBudgetViewportIdles(t *testing.T) {
 	}
 
 	screen.ticking = true
+	s.frameOptIn = false
+	s.drawReplayPartial(dst)
+	s.frameCommit()
+	if !s.idleCleanFrame() {
+		t.Fatal("a quiet ticking viewport must read clean")
+	}
+
+	s.frameOptIn = true
 	s.drawReplayPartial(dst)
 	s.frameCommit()
 	if s.idleCleanFrame() {
-		t.Fatal("a ticking viewport must read dirty")
+		t.Fatal("a ticking viewport that set FrameDirty must read dirty")
 	}
 
+	s.frameOptIn = false
 	screen.ticking = false
 	s.drawReplayPartial(dst)
 	s.frameCommit()

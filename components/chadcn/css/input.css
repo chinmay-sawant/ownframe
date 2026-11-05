@@ -11,7 +11,6 @@
   background-color: var(--of-surface, #ffffff);
   border: 1px solid var(--of-input, #e5e5e5);
   border-radius: var(--of-radius-sm, 6px);
-  box-shadow: 0 1px 2px var(--of-shadow, #0000000d);
   font-size: 14px;
   line-height: 20px;
   transition: border-color 0.15s, background-color 0.15s;

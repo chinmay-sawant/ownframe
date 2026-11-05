@@ -16,7 +16,7 @@ const (
 // script and style content pass through untouched, so attribute values
 // such as value="😂" are never rewritten.
 func Replace(html string) (string, bool) {
-	if !hasNonASCII(html) {
+	if !maybeHasEmoji(html) {
 		return html, false
 	}
 

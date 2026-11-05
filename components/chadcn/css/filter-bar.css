@@ -1,0 +1,81 @@
+/* Filter bar: legend plus pill options above a dashboard plot. */
+
+.of-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+}
+
+.of-filter-bar-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.of-filter-bar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.of-filter-bar-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--of-filter-dot, var(--of-chart-1, #3b82f6));
+}
+
+.of-filter-bar-dot[data-tone="2"] {
+  background-color: var(--of-filter-dot, var(--of-chart-2, #8b5cf6));
+}
+
+.of-filter-bar-dot[data-tone="3"] {
+  background-color: var(--of-filter-dot, var(--of-chart-3, #f59e0b));
+}
+
+.of-filter-bar-dot[data-tone="4"] {
+  background-color: var(--of-filter-dot, var(--of-chart-4, #10b981));
+}
+
+.of-filter-bar-legend-label {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-filter-bar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--of-radius, 10px);
+  background-color: var(--of-control, #f4f4f5);
+}
+
+.of-filter-bar-pill {
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--of-radius-sm, 6px);
+  background-color: transparent;
+  color: var(--of-muted, #737373);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.of-filter-bar-pill:hover {
+  color: var(--of-text, #0a0a0a);
+}
+
+.of-filter-bar-pill--active {
+  border-color: var(--of-border, #e5e5e5);
+  background-color: var(--of-surface, #ffffff);
+  color: var(--of-text, #0a0a0a);
+}
