@@ -3,10 +3,12 @@ package main
 const appCSS = `
 .inv-shell {
   position: relative;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   height: 100vh;
   min-height: 100vh;
+  padding-top: 60px;
   overflow: hidden;
   background: #f6f6f3;
   color: #1c1c1a;
@@ -14,7 +16,7 @@ const appCSS = `
   font-size: 14px;
 }
 .inv-topbar {
-  position: relative; flex-shrink: 0; z-index: 40;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -55,7 +57,7 @@ const appCSS = `
 }
 .inv-search-backdrop {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50;
-  background: transparent;
+  background: rgba(28, 27, 23, 0.14);
 }
 .inv-search-picked { color: #8a8780; font-size: 11px; padding: 2px 12px 0; }
 .inv-search-more { color: #8a8780; font-size: 11px; padding: 4px 8px 2px; }
@@ -77,7 +79,7 @@ const appCSS = `
 .inv-body-content {
   position: relative;
   display: flex; flex-direction: column; gap: 10px;
-  padding: 12px 16px 12px;
+  padding: 12px 28px 12px;
   min-width: 0;
 }
 .inv-page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }

@@ -52,8 +52,10 @@ func (a *app) searchBox() *ui.Element {
 				ID:     "inv-search",
 				Query:  a.searchQuery,
 				Groups: a.searchGroups(),
-				OnSelect: func(ctx context.Context, _ string) error {
+				OnSelect: func(ctx context.Context, value string) error {
+					a.searchPicked = strings.TrimPrefix(value, "search:pick:")
 					a.searchOpen = false
+					a.searchOffset = 0
 					return a.refresh(ctx)
 				},
 			}),

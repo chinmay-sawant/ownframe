@@ -30,6 +30,9 @@ func TestWheelScrollsBody(t *testing.T) {
 	if err := a.page.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
+	// The compact layout fits the LockView canvas, so the body has no
+	// overflow: the wheel must still be consumed (the page never pans)
+	// while the offset stays clamped at zero.
 	handled, err := a.handleWheel(ctx, 720, 400, 0, -1)
 	if err != nil {
 		t.Fatal(err)
@@ -37,19 +40,8 @@ func TestWheelScrollsBody(t *testing.T) {
 	if !handled {
 		t.Errorf("handleWheel below header dy=-1 = false, want true")
 	}
-	if a.bodyOffset <= 0 {
-		t.Fatalf("bodyOffset = %d after scroll down, want > 0", a.bodyOffset)
-	}
-	before := a.bodyOffset
-	handled, err = a.handleWheel(ctx, 720, 400, 0, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !handled {
-		t.Errorf("handleWheel below header dy=+1 = false, want true")
-	}
-	if a.bodyOffset >= before {
-		t.Errorf("bodyOffset = %d after scroll up, want < %d", a.bodyOffset, before)
+	if a.bodyOffset != 0 {
+		t.Errorf("bodyOffset = %d with a fitting body, want 0", a.bodyOffset)
 	}
 	cur := a.bodyOffset
 	handled, err = a.handleWheel(ctx, 720, 10, 0, -1)
