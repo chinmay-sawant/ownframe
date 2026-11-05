@@ -63,6 +63,18 @@ func main() {
 	}
 }
 
+// benchCounts are the headless benchmark sizes: rows collects one result
+// per measurement, and each ops count balances stable timing against the
+// headless run staying quick. benchFilePerm restricts a written results
+// file to owner read/write.
+const (
+	benchRowCap     = 3
+	benchRedrawOps  = 200
+	benchRebuildOps = 100
+	benchClickOps   = 30
+	benchFilePerm   = 0o600
+)
+
 // benchResult is one headless measurement row.
 type benchResult struct {
 	name       string
@@ -74,6 +86,9 @@ type benchResult struct {
 
 // measure runs fn n times and reports time plus MemStats deltas.
 func measure(name string, n int, fn func() error) (benchResult, error) {
+	if n <= 0 {
+		return benchResult{}, fmt.Errorf("measure %s: ops must be positive, got %d", name, n)
+	}
 	runtime.GC()
 	var before, after runtime.MemStats
 	runtime.ReadMemStats(&before)
@@ -85,12 +100,13 @@ func measure(name string, n int, fn func() error) (benchResult, error) {
 	}
 	elapsed := time.Since(start)
 	runtime.ReadMemStats(&after)
+	count := uint64(n)
 	return benchResult{
 		name:       name,
 		ops:        n,
 		nsPerOp:    float64(elapsed.Nanoseconds()) / float64(n),
-		bytesPerOp: (after.TotalAlloc - before.TotalAlloc) / uint64(n),
-		allocsOp:   (after.Mallocs - before.Mallocs) / uint64(n),
+		bytesPerOp: (after.TotalAlloc - before.TotalAlloc) / count,
+		allocsOp:   (after.Mallocs - before.Mallocs) / count,
 	}, nil
 }
 
@@ -105,22 +121,22 @@ func runBench(benchFile string) error {
 	if err := app.Page().Redraw(ctx); err != nil {
 		return err
 	}
-	rows := make([]benchResult, 0, 3)
-	redraw, err := measure("redraw-same-data", 200, func() error {
+	rows := make([]benchResult, 0, benchRowCap)
+	redraw, err := measure("redraw-same-data", benchRedrawOps, func() error {
 		return app.Page().Redraw(ctx)
 	})
 	if err != nil {
 		return err
 	}
 	rows = append(rows, redraw)
-	update, err := measure("rebuild-same-data", 100, func() error {
+	update, err := measure("rebuild-same-data", benchRebuildOps, func() error {
 		return app.refresh(ctx)
 	})
 	if err != nil {
 		return err
 	}
 	rows = append(rows, update)
-	click, err := measure("click-select-rebuild", 30, func() error {
+	click, err := measure("click-select-rebuild", benchClickOps, func() error {
 		return pagetest.ClickAction(ctx, app.Page(), "row:500")
 	})
 	if err != nil {
@@ -134,7 +150,7 @@ func runBench(benchFile string) error {
 	}
 	fmt.Print(out)
 	if benchFile != "" {
-		if err := os.WriteFile(benchFile, []byte(out), 0o600); err != nil {
+		if err := os.WriteFile(benchFile, []byte(out), benchFilePerm); err != nil {
 			return err
 		}
 	}

@@ -11,6 +11,19 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+// selectActionParts is the kind:id:label triple in a select: action, and
+// rangeSwitchEscort keeps the frame loop hot after a range switch so CSS
+// motion samples to completion.
+const (
+	rangeSwitchEscort = 1500 * time.Millisecond
+	selectActionParts = 3
+
+	mailpulseWindowWidth     = 1440
+	mailpulseWindowHeight    = 960
+	mailpulseWindowMinWidth  = 1000
+	mailpulseWindowMinHeight = 800
+)
+
 // app owns the MailPulse engagement dashboard state. Panels are pure
 // functions of this state and are rebuilt through View.Update after every
 // action.
@@ -56,10 +69,10 @@ func newApp() (*app, error) {
 	}
 	view, err := ui.Mount(ownframe.Config{
 		Title:       "MailPulse · Engagement",
-		Width:       1440,
-		Height:      960,
-		MinWidth:    1000,
-		MinHeight:   800,
+		Width:       mailpulseWindowWidth,
+		Height:      mailpulseWindowHeight,
+		MinWidth:    mailpulseWindowMinWidth,
+		MinHeight:   mailpulseWindowMinHeight,
 		Theme:       chadcn.Light + chadcn.Stylesheet + appCSS + hoverCSS + topbarFixCSS + cardsFixCSS + layoutFixCSS + dataFixCSS,
 		DevTools:    false,
 		RetainState: true,
@@ -126,7 +139,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		default:
 			a.rangeLabel = "Last 7 Days"
 		}
-		a.escortMotion(1500 * time.Millisecond)
+		a.escortMotion(rangeSwitchEscort)
 		return a.refresh(ctx)
 	case box.Action == "export":
 		a.toast = "Export queued — CSV will land in your inbox."
@@ -159,8 +172,8 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "select:"):
 		rest := strings.TrimPrefix(box.Action, "select:")
-		parts := strings.SplitN(rest, ":", 3)
-		if len(parts) != 3 {
+		parts := strings.SplitN(rest, ":", selectActionParts)
+		if len(parts) != selectActionParts {
 			return nil
 		}
 		return a.selectToggle(ctx, parts[0], parts[1], parts[2])

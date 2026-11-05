@@ -9,6 +9,36 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+// Heat intensity levels behind the Best time to send grid, from quiet (0)
+// to peak (4).
+const (
+	heatLevelQuiet    = 0
+	heatLevelLow      = 1
+	heatLevelModerate = 2
+	heatLevelHigh     = 3
+	heatLevelPeak     = 4
+)
+
+// heatPinnedDay and heatPinnedCol mark the pinned best send slot (Tue 9a)
+// the readout falls back to until the reader picks a cell.
+const (
+	heatPinnedDay = 1
+	heatPinnedCol = 3
+)
+
+// heatCol* name the labeled hour columns of the 18-column grid.
+const (
+	heatCol6a  = 0
+	heatCol8a  = 2
+	heatCol10a = 4
+	heatCol12p = 6
+	heatCol2p  = 8
+	heatCol4p  = 10
+	heatCol6p  = 12
+	heatCol8p  = 14
+	heatCol10p = 16
+)
+
 // heatCellID names one heatmap cell so hover and click handlers can map it
 // back to a weekday and hour column.
 func heatCellID(day, col int) string {
@@ -42,13 +72,13 @@ func parseHeatCellID(id string) (int, int, bool) {
 // heatLevelRate maps an intensity level to a representative open rate.
 func heatLevelRate(level int) string {
 	switch level {
-	case 4:
+	case heatLevelPeak:
 		return "68%"
-	case 3:
+	case heatLevelHigh:
 		return "54%"
-	case 2:
+	case heatLevelModerate:
 		return "38%"
-	case 1:
+	case heatLevelLow:
 		return "22%"
 	default:
 		return "8%"
@@ -58,13 +88,13 @@ func heatLevelRate(level int) string {
 // heatLevelWord names an intensity level for the readout line.
 func heatLevelWord(level int) string {
 	switch level {
-	case 4:
+	case heatLevelPeak:
 		return "peak"
-	case 3:
+	case heatLevelHigh:
 		return "high"
-	case 2:
+	case heatLevelModerate:
 		return "moderate"
-	case 1:
+	case heatLevelLow:
 		return "low"
 	default:
 		return "quiet"
@@ -89,7 +119,7 @@ func (a *app) heatReadout() string {
 		return heatCellLabel(a.heatDay, a.heatCol)
 	}
 	// Default to the pinned best slot until the reader picks a cell.
-	return heatCellLabel(1, 3)
+	return heatCellLabel(heatPinnedDay, heatPinnedCol)
 }
 
 // heatValueFor returns the heatmap intensity for a range window. The 30-
@@ -109,23 +139,23 @@ func (a *app) heatmapCard() *ui.Element {
 	days := heatDays()
 	hourAt := func(col int) string {
 		switch col {
-		case 0:
+		case heatCol6a:
 			return "6a"
-		case 2:
+		case heatCol8a:
 			return "8a"
-		case 4:
+		case heatCol10a:
 			return "10a"
-		case 6:
+		case heatCol12p:
 			return "12p"
-		case 8:
+		case heatCol2p:
 			return "2p"
-		case 10:
+		case heatCol4p:
 			return "4p"
-		case 12:
+		case heatCol6p:
 			return "6p"
-		case 14:
+		case heatCol8p:
 			return "8p"
-		case 16:
+		case heatCol10p:
 			return "10p"
 		default:
 			return ""
@@ -157,11 +187,11 @@ func (a *app) heatmapCard() *ui.Element {
 			ui.Div().Class("mp-heat-legend").Children(
 				ui.Span().Class("mp-heat-legend-label").Text("Lower"),
 				ui.Div().Class("mp-heat-swatches").Children(
-					components.HeatCell(0),
-					components.HeatCell(1),
-					components.HeatCell(2),
-					components.HeatCell(3),
-					components.HeatCell(4),
+					components.HeatCell(heatLevelQuiet),
+					components.HeatCell(heatLevelLow),
+					components.HeatCell(heatLevelModerate),
+					components.HeatCell(heatLevelHigh),
+					components.HeatCell(heatLevelPeak),
 				),
 				ui.Span().Class("mp-heat-legend-label").Text("Higher open rate"),
 			),

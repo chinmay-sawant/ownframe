@@ -12,6 +12,11 @@ import (
 const (
 	inventoryViewportID = "inv-body-viewport"
 	inventoryContentID  = "inv-body-content"
+
+	inventoryWindowWidth     = 1440
+	inventoryWindowHeight    = 960
+	inventoryWindowMinWidth  = 900
+	inventoryWindowMinHeight = 600
 )
 
 type app struct {
@@ -45,10 +50,10 @@ func newApp() (*app, error) {
 	}
 	view, err := ui.Mount(ownframe.Config{
 		Title:       "Northwind Goods · Inventory health",
-		Width:       1440,
-		Height:      960,
-		MinWidth:    900,
-		MinHeight:   600,
+		Width:       inventoryWindowWidth,
+		Height:      inventoryWindowHeight,
+		MinWidth:    inventoryWindowMinWidth,
+		MinHeight:   inventoryWindowMinHeight,
 		LockView:    true,
 		Theme:       chadcn.Light + chadcn.Stylesheet + appCSS,
 		DevTools:    false,

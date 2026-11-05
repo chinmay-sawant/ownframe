@@ -111,11 +111,14 @@ func (a *app) contentPage() *ui.Element {
 	issues := contentIssues()
 	issueRows := make([]*ui.Element, 0, len(issues))
 	for i, issue := range issues {
-		badge := chadcn.Badge(issue.kind, chadcn.BadgeOptions{Variant: chadcn.BadgeOutline})
-		if i == 0 {
+		var badge *ui.Element
+		switch i {
+		case 0:
 			badge = chadcn.Badge(issue.kind)
-		} else if i == 1 {
+		case 1:
 			badge = chadcn.Badge(issue.kind, chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary})
+		default:
+			badge = chadcn.Badge(issue.kind, chadcn.BadgeOptions{Variant: chadcn.BadgeOutline})
 		}
 		issueRows = append(issueRows, ui.Div().Class("mp-linkrow").Children(
 			ui.Div().Class("mp-linkmain").Children(

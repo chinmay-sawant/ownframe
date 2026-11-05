@@ -200,8 +200,8 @@ func (a *app) invPeriodSegment() *ui.Element {
 // invPeriodActive reports whether value is the selected period. An empty
 // period defaults to the 30-day view.
 func (a *app) invPeriodActive(value string) bool {
-	if string(a.period) == "" {
+	if a.period == "" {
 		return value == "30 days"
 	}
-	return string(a.period) == value
+	return a.period == value
 }

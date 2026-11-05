@@ -1,3 +1,4 @@
+//nolint:mnd // Sample analytics fixtures are literal display content: chart values and dot counts are fixed demo values.
 package main
 
 import (

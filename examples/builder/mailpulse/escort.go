@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+// escortEnterSlowStripAfter is the delay after the load-entrance flip before
+// the slow 3s bar class is stripped, restoring the 0.9s toggle duration.
+const escortEnterSlowStripAfter = 3200 * time.Millisecond
+
 // escortMotion keeps the frame loop hot for dur after a range switch so CSS
 // transitions and keyframes sample to completion without pointer input. A
 // mutating tick marks every frame dirty (the idle policy needs five clean
@@ -86,7 +90,7 @@ func (a *app) escortEnter() {
 			flippedAt = time.Now()
 			return a.refresh(ctx)
 		}
-		if !flippedAt.IsZero() && time.Now().After(flippedAt.Add(3200*time.Millisecond)) {
+		if !flippedAt.IsZero() && time.Now().After(flippedAt.Add(escortEnterSlowStripAfter)) {
 			a.enterSlow = false
 			if err := a.refresh(ctx); err != nil {
 				return err

@@ -81,6 +81,15 @@ type binStop struct {
 	Range string
 }
 
+// Bin utilization thresholds shared by binColors and binStatus.
+const (
+	binPctMax      = 100
+	binPctOverfull = 95
+	binPctFull     = 85
+	binPctHigh     = 70
+	binPctHealthy  = 55
+)
+
 //nolint:gochecknoglobals // static bin heat scale
 var binStops = []binStop{
 	{Bg: "#b91c1c", Fg: "#ffffff", Label: "Overfull", Range: "95–100"},
@@ -94,17 +103,17 @@ func binColors(v int) (bg, fg string) {
 	if v < 0 {
 		v = 0
 	}
-	if v > 100 {
-		v = 100
+	if v > binPctMax {
+		v = binPctMax
 	}
 	switch {
-	case v >= 95:
+	case v >= binPctOverfull:
 		return binStops[0].Bg, binStops[0].Fg
-	case v >= 85:
+	case v >= binPctFull:
 		return binStops[1].Bg, binStops[1].Fg
-	case v >= 70:
+	case v >= binPctHigh:
 		return binStops[2].Bg, binStops[2].Fg
-	case v >= 55:
+	case v >= binPctHealthy:
 		return binStops[3].Bg, binStops[3].Fg
 	default:
 		return binStops[4].Bg, binStops[4].Fg
@@ -115,17 +124,17 @@ func binStatus(v int) string {
 	if v < 0 {
 		v = 0
 	}
-	if v > 100 {
-		v = 100
+	if v > binPctMax {
+		v = binPctMax
 	}
 	switch {
-	case v >= 95:
+	case v >= binPctOverfull:
 		return binStops[0].Label
-	case v >= 85:
+	case v >= binPctFull:
 		return binStops[1].Label
-	case v >= 70:
+	case v >= binPctHigh:
 		return binStops[2].Label
-	case v >= 55:
+	case v >= binPctHealthy:
 		return binStops[3].Label
 	default:
 		return binStops[4].Label

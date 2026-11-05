@@ -8,6 +8,10 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+// stockLowDaysThreshold marks a SKU as running low (amber days-left)
+// when it has this many or fewer days of cover left.
+const stockLowDaysThreshold = 9
+
 func (a *app) stockPanel() *ui.Element {
 	rows := make([]*ui.Element, 0, len(sampleSKUs))
 	for _, sku := range sampleSKUs {
@@ -73,7 +77,7 @@ func stockRow(sku sku) *ui.Element {
 	switch {
 	case sku.DaysLeft == 0:
 		days.Color(ui.Hex("#dc2626")).FontWeight(ui.FontWeightBold)
-	case sku.DaysLeft <= 9:
+	case sku.DaysLeft <= stockLowDaysThreshold:
 		days.Color(ui.Hex("#d97706"))
 	}
 	return chadcn.TableRow(

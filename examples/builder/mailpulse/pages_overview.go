@@ -1,3 +1,4 @@
+//nolint:mnd // Sample overview fixtures are literal display content: KPI tiles and segment shares are fixed demo values.
 package main
 
 import (
@@ -59,10 +60,6 @@ type overviewStat struct {
 	glyph    string
 }
 
-func overviewStats() []overviewStat {
-	return overviewStatsFor(30)
-}
-
 // overviewStatsFor returns the Overview KPI tiles for a range window.
 // Unknown day counts fall back to the default 30-day window.
 func overviewStatsFor(days int) []overviewStat {
@@ -120,19 +117,44 @@ func (a *app) overviewKPIRow() *ui.Element {
 	return ui.Div().Class("mp-kpis").Children(cards...)
 }
 
-var overviewBarHeights = []float64{34, 48, 42, 55, 61, 58, 90, 66, 72, 64, 78, 84}
+const (
+	// overviewBarTrackHeight is the 0-90 percent track the tallest List
+	// growth bar fills; every other bar scales against it.
+	overviewBarTrackHeight = 90
+	// overviewWeekWindowDays selects the 7-day List growth and send windows.
+	overviewWeekWindowDays = 7
+	// overviewDefaultWindowDays is the default 30-day window the range
+	// helpers fall back to.
+	overviewDefaultWindowDays = 30
+)
+
+// overviewBarHeights returns the hand-tuned 30-day List growth track: bar
+// fill heights as percentages of the track. It returns a fresh slice per
+// call so callers never share backing state.
+func overviewBarHeights() []float64 {
+	return []float64{34, 48, 42, 55, 61, 58, 90, 66, 72, 64, 78, 84}
+}
 
 // overviewBarValues holds the net new subscribers per week behind each bar.
-// The 12 values sum to the +428 total in the card footnote.
-var overviewBarValues = []int{20, 27, 24, 31, 35, 33, 51, 38, 41, 36, 44, 48}
+// The 12 values sum to the +428 total in the card footnote. It returns a
+// fresh slice per call so callers never share backing state.
+func overviewBarValues() []int {
+	return []int{20, 27, 24, 31, 35, 33, 51, 38, 41, 36, 44, 48}
+}
 
 // overviewDailyValues holds net new subscribers per day for the 7-day
-// window. The 7 values sum to the +96 weekly total in the KPI footnote.
-var overviewDailyValues = []int{11, 14, 12, 16, 15, 13, 15}
+// window. The 7 values sum to the +96 weekly total in the KPI footnote. It
+// returns a fresh slice per call so callers never share backing state.
+func overviewDailyValues() []int {
+	return []int{11, 14, 12, 16, 15, 13, 15}
+}
 
 // overviewQuarterValues holds net new subscribers per week for the 90-day
-// window. The 12 values sum to the +1,204 quarterly total.
-var overviewQuarterValues = []int{56, 76, 68, 87, 98, 93, 143, 107, 115, 101, 124, 136}
+// window. The 12 values sum to the +1,204 quarterly total. It returns a
+// fresh slice per call so callers never share backing state.
+func overviewQuarterValues() []int {
+	return []int{56, 76, 68, 87, 98, 93, 143, 107, 115, 101, 124, 136}
+}
 
 // barValues returns the List growth values for a range window: 7 daily
 // bars for 7 days, 12 weekly bars otherwise. Unknown day counts fall back
@@ -140,11 +162,11 @@ var overviewQuarterValues = []int{56, 76, 68, 87, 98, 93, 143, 107, 115, 101, 12
 func barValues(days int) []int {
 	switch days {
 	case 7:
-		return overviewDailyValues
+		return overviewDailyValues()
 	case 90:
-		return overviewQuarterValues
+		return overviewQuarterValues()
 	default:
-		return overviewBarValues
+		return overviewBarValues()
 	}
 }
 
@@ -153,7 +175,7 @@ func barValues(days int) []int {
 // its hand-tuned heights; other windows scale from their peak.
 func barHeightsFor(days int) []float64 {
 	if days != 7 && days != 90 {
-		return overviewBarHeights
+		return overviewBarHeights()
 	}
 	values := barValues(days)
 	peak := 1
@@ -164,7 +186,7 @@ func barHeightsFor(days int) []float64 {
 	}
 	heights := make([]float64, len(values))
 	for i, v := range values {
-		heights[i] = math.Round(float64(v) / float64(peak) * 90)
+		heights[i] = math.Round(float64(v) / float64(peak) * overviewBarTrackHeight)
 	}
 	return heights
 }
@@ -187,7 +209,7 @@ func parseGrowthBarID(id string) (int, bool) {
 		return 0, false
 	}
 	i, err := strconv.Atoi(rest)
-	if err != nil || i < 0 || i >= len(overviewBarHeights) {
+	if err != nil || i < 0 || i >= len(overviewBarHeights()) {
 		return 0, false
 	}
 	return i, true
@@ -196,10 +218,12 @@ func parseGrowthBarID(id string) (int, bool) {
 // growthBarLabel builds the readout line for one bar in the default 30-day
 // window, e.g. "W7 · +51 net new".
 func growthBarLabel(i int) string {
-	if i < 0 || i >= len(overviewBarHeights) || i >= len(overviewBarValues) {
+	heights := overviewBarHeights()
+	values := overviewBarValues()
+	if i < 0 || i >= len(heights) || i >= len(values) {
 		return ""
 	}
-	return "W" + strconv.Itoa(i+1) + " · +" + strconv.Itoa(overviewBarValues[i]) + " net new"
+	return "W" + strconv.Itoa(i+1) + " · +" + strconv.Itoa(values[i]) + " net new"
 }
 
 // growthBarLabelFor builds the readout line for the active range window:
@@ -210,7 +234,7 @@ func (a *app) growthBarLabelFor(i int) string {
 		return ""
 	}
 	prefix := "W"
-	if a.rangeDays() == 7 {
+	if a.rangeDays() == overviewWeekWindowDays {
 		prefix = "D"
 	}
 	return prefix + strconv.Itoa(i+1) + " · +" + strconv.Itoa(values[i]) + " net new"
@@ -252,7 +276,7 @@ func (a *app) overviewGrowthCard() *ui.Element {
 		}
 	}
 	desc := "Net new subscribers per week, " + a.rangeWindow() + "."
-	if a.rangeDays() == 7 {
+	if a.rangeDays() == overviewWeekWindowDays {
 		desc = "Net new subscribers per day, last 7 days."
 	}
 	bars := make([]*ui.Element, 0, len(values))
@@ -312,10 +336,6 @@ type overviewSegment struct {
 	filled int
 }
 
-func overviewSegments() []overviewSegment {
-	return overviewSegmentsFor(30)
-}
-
 // overviewSegmentsFor returns the segment shares for a range window.
 // Unknown day counts fall back to the default 30-day window.
 func overviewSegmentsFor(days int) []overviewSegment {
@@ -347,9 +367,12 @@ func overviewSegmentsFor(days int) []overviewSegment {
 	}
 }
 
+// overviewSegmentDotTotal sizes the dot share bars on the Top segments card.
+const overviewSegmentDotTotal = 10
+
 func overviewSegmentRow(segment overviewSegment) *ui.Element {
-	dots := make([]*ui.Element, 0, 10)
-	for i := 0; i < 10; i++ {
+	dots := make([]*ui.Element, 0, overviewSegmentDotTotal)
+	for i := 0; i < overviewSegmentDotTotal; i++ {
 		class := "mp-dot"
 		if i < segment.filled {
 			class += " mp-dot--on"
@@ -390,10 +413,6 @@ type overviewSend struct {
 	click string
 }
 
-func overviewSends() []overviewSend {
-	return overviewSendsFor(30)
-}
-
 // overviewSendsFor returns the Recent sends rows for a range window: the
 // last 2 sends for 7 days, the last 4 for 30 days, and those 4 plus 2
 // extra historical rows for 90 days. Unknown day counts fall back to the
@@ -401,9 +420,9 @@ func overviewSends() []overviewSend {
 func overviewSendsFor(days int) []overviewSend {
 	switch days {
 	case 7:
-		return overviewSendsFor(30)[:2]
+		return overviewSendsFor(overviewDefaultWindowDays)[:2]
 	case 90:
-		return append(overviewSendsFor(30),
+		return append(overviewSendsFor(overviewDefaultWindowDays),
 			overviewSend{id: "send-5", name: "Weekly Creator Brief #51", date: "Feb 12", open: "45.3% opens", click: "16.1% clicks"},
 			overviewSend{id: "send-6", name: "Sponsor Spotlight: Acme", date: "Feb 5", open: "37.2% opens", click: "8.4% clicks"},
 		)

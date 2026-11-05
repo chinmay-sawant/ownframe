@@ -7,13 +7,16 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+// shellFullHeightVh is the full viewport height for the mailpulse shell.
+const shellFullHeightVh = 100
+
 // screen composes the full Mailpulse page. The section builders (sidebar,
 // topbar, contentBody) and appCSS live in other files; this file only wires
 // them together.
 func (a *app) screen() *ui.Element {
 	return ui.Div().Class("mp-shell").
 		Width(ui.Percent(100)).
-		MinHeight(ui.Vh(100)).
+		MinHeight(ui.Vh(shellFullHeightVh)).
 		BackgroundColor(ui.Hex("#f6f6f5")).
 		Children(
 			a.sidebar(),

@@ -15,12 +15,14 @@ import (
 )
 
 const (
-	listTitle    = "Compare Table"
-	listSubtitle = "ownframe · builder → HTML → blinkless → Ebiten"
-	listWidth    = 800
-	listHeight   = 600
-	listRows     = 1000
-	listBody     = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+	listTitle         = "Compare Table"
+	listSubtitle      = "ownframe · builder → HTML → blinkless → Ebiten"
+	listWidth         = 800
+	listHeight        = 600
+	listRows          = 1000
+	listBody          = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+	listNumColWidth   = 64
+	listTitleColWidth = 200
 )
 
 // listRow is one styled table row.
@@ -99,8 +101,8 @@ func (a *listApp) screen() *ui.Element {
 		Padding(ui.Px(8)).
 		BackgroundColor(ui.Hex("#1c1915")).
 		Children(
-			a.headerCell("Num", 64),
-			a.headerCell("Title", 200),
+			a.headerCell("Num", listNumColWidth),
+			a.headerCell("Title", listTitleColWidth),
 			ui.Text("Description").FontSize(ui.Px(13)).
 				FontWeight(ui.FontWeightBold).Color(ui.Hex("#ffffff")),
 		)
@@ -120,9 +122,9 @@ func (a *listApp) screen() *ui.Element {
 			Padding(ui.Px(8)).
 			BackgroundColor(bg).
 			Children(
-				ui.Text(r.num).Width(ui.Px(64)).
+				ui.Text(r.num).Width(ui.Px(listNumColWidth)).
 					FontSize(ui.Px(13)).Color(ui.Hex("#8a8578")),
-				ui.Text(r.title).Width(ui.Px(200)).
+				ui.Text(r.title).Width(ui.Px(listTitleColWidth)).
 					FontSize(ui.Px(14)).FontWeight(ui.FontWeightBold),
 				ui.Text(r.body).FontSize(ui.Px(13)).Color(ui.Hex("#4a463c")),
 			)

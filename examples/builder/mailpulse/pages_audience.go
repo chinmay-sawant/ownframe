@@ -1,3 +1,4 @@
+//nolint:mnd // Sample audience fixtures are literal display content: channel shares and range windows are fixed demo values.
 package main
 
 import (

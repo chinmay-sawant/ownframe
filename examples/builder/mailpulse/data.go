@@ -1,3 +1,4 @@
+//nolint:mnd // Sample engagement fixtures are literal display content: counts, heights, and heat levels are fixed demo values.
 package main
 
 type navItem struct {
@@ -62,20 +63,33 @@ type kpi struct {
 	tint     string
 }
 
-func kpis() []kpi {
-	return kpisFor(30)
-}
+const (
+	rangeWeekDays    = 7
+	rangeMonthDays   = 30
+	rangeQuarterDays = 90
+
+	heatMid  = 2
+	heatHigh = 3
+	heatPeak = 4
+
+	heatParityMod = 2
+
+	daySaturday = 5
+	daySunday   = 6
+
+	heatLateMorningCol = 4
+)
 
 func kpisFor(days int) []kpi {
 	switch days {
-	case 7:
+	case rangeWeekDays:
 		return []kpi{
 			{label: "Open rate", value: "48.9%", delta: "+2.4%", up: true, footnote: "Unique opens ÷ delivered", tint: "orange"},
 			{label: "Click rate", value: "19.1%", delta: "+1.2%", up: true, footnote: "Unique clicks ÷ delivered", tint: "blue"},
 			{label: "Click-to-open", value: "39.0%", delta: "+0.5%", up: true, footnote: "Clicks ÷ opens", tint: "purple"},
 			{label: "Reply rate", value: "2.5%", delta: "+0.1%", up: true, footnote: "102 replies this week", tint: "green"},
 		}
-	case 90:
+	case rangeQuarterDays:
 		return []kpi{
 			{label: "Open rate", value: "46.8%", delta: "+2.8%", up: true, footnote: "Unique opens ÷ delivered", tint: "orange"},
 			{label: "Click rate", value: "17.7%", delta: "+1.5%", up: true, footnote: "Unique clicks ÷ delivered", tint: "blue"},
@@ -99,13 +113,9 @@ type funnelRow struct {
 	filled int
 }
 
-func funnelRows() []funnelRow {
-	return funnelRowsFor(30)
-}
-
 func funnelRowsFor(days int) []funnelRow {
 	switch days {
-	case 7:
+	case rangeWeekDays:
 		return []funnelRow{
 			{label: "Delivered", count: "4,120", pct: "100.0%", filled: 20},
 			{label: "Opened", count: "2,015", pct: "48.9%", filled: 10},
@@ -113,7 +123,7 @@ func funnelRowsFor(days int) []funnelRow {
 			{label: "Replied", count: "102", pct: "2.5%", filled: 1},
 			{label: "Upgraded to paid", count: "9", pct: "0.2%", filled: 1},
 		}
-	case 90:
+	case rangeQuarterDays:
 		return []funnelRow{
 			{label: "Delivered", count: "52,310", pct: "100.0%", filled: 20},
 			{label: "Opened", count: "24,480", pct: "46.8%", filled: 9},
@@ -140,19 +150,15 @@ type topLink struct {
 	clicksText string
 }
 
-func topLinks() []topLink {
-	return topLinksFor(30)
-}
-
 func topLinksFor(days int) []topLink {
 	switch days {
-	case 7:
+	case rangeWeekDays:
 		return []topLink{
 			{url: "notion.so/creator-templates", context: "Weekly Creator Brief #52", clicks: 284, share: "6.9%", clicksText: "284"},
 			{url: "mailpulse.co/referrals", context: "AI Tools Worth Trying", clicks: 198, share: "4.8%", clicksText: "198"},
 			{url: "youtube.com/@creatorbrief", context: "Creator Economy Report", clicks: 121, share: "2.9%", clicksText: "121"},
 		}
-	case 90:
+	case rangeQuarterDays:
 		return []topLink{
 			{url: "notion.so/creator-templates", context: "Weekly Creator Brief #52", clicks: 3420, share: "6.5%", clicksText: "3,420"},
 			{url: "mailpulse.co/referrals", context: "AI Tools Worth Trying", clicks: 2410, share: "4.6%", clicksText: "2,410"},
@@ -174,13 +180,9 @@ type engageRow struct {
 	filled   int
 }
 
-func engageRows() []engageRow {
-	return engageRowsFor(30)
-}
-
 func engageRowsFor(days int) []engageRow {
 	switch days {
-	case 7:
+	case rangeWeekDays:
 		return []engageRow{
 			{label: "Paid deep dives", openPct: "69%", clickPct: "32% clicks", filled: 7},
 			{label: "Tool roundups", openPct: "53%", clickPct: "22% clicks", filled: 5},
@@ -188,7 +190,7 @@ func engageRowsFor(days int) []engageRow {
 			{label: "Essays", openPct: "45%", clickPct: "13% clicks", filled: 4},
 			{label: "Sponsor posts", openPct: "39%", clickPct: "10% clicks", filled: 4},
 		}
-	case 90:
+	case rangeQuarterDays:
 		return []engageRow{
 			{label: "Paid deep dives", openPct: "66%", clickPct: "29% clicks", filled: 7},
 			{label: "Tool roundups", openPct: "50%", clickPct: "20% clicks", filled: 5},
@@ -221,30 +223,30 @@ func heatValue(day, col int) int {
 	}
 	// Pinned peaks: Tue and Thu at 9a.
 	if (day == 1 || day == 3) && col == 3 {
-		return 4
+		return heatPeak
 	}
 	// Pinned highs: Mon and Wed at 9-10a.
 	if (day == 0 || day == 2) && (col == 3 || col == 4) {
-		return 3
+		return heatHigh
 	}
 	// Pinned evening peak: Sun at 6-7p.
 	if day == 6 && (col == 12 || col == 13) {
-		return 3
+		return heatHigh
 	}
 	// Saturday stays quiet.
-	if day == 5 {
+	if day == daySaturday {
 		if col == 3 || col == 4 {
 			return 1
 		}
 		return 0
 	}
 	// Sunday mornings are soft, afternoons build to the evening peak.
-	if day == 6 {
+	if day == daySunday {
 		switch {
 		case col == 3 || col == 4:
-			return 2
+			return heatMid
 		case col >= 5 && col <= 11:
-			return 1 + (col+day)%2
+			return 1 + (col+day)%heatParityMod
 		case col == 14 || col == 15:
 			return 1
 		default:
@@ -256,18 +258,18 @@ func heatValue(day, col int) int {
 	switch {
 	case col == 2 || col == 5:
 		base = 2
-	case col == 4:
-		base = 2 + (day % 2)
+	case col == heatLateMorningCol:
+		base = heatMid + (day % heatParityMod)
 	case col >= 6 && col <= 10:
-		base = 1 + ((day + col) % 2)
+		base = 1 + ((day + col) % heatParityMod)
 	case col == 11 || col == 12:
 		base = 1
 	case col == 0 || col == 1 || col == 13:
-		base = (day + col) % 2
+		base = (day + col) % heatParityMod
 	default:
 		base = 0
 	}
-	if base > 3 {
+	if base > heatHigh {
 		base = 3
 	}
 	return base

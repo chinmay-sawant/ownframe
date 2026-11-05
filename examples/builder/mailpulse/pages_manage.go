@@ -1,3 +1,4 @@
+//nolint:mnd // Sample management fixtures are literal display content: segment slices and dot counts are fixed demo values.
 package main
 
 import (
@@ -6,7 +7,6 @@ import (
 )
 
 type autoFlow struct {
-	id     string
 	label  string
 	status string
 	detail string
@@ -87,6 +87,9 @@ func segmentSlices() []segmentSlice {
 	}
 }
 
+// manageDotTotal sizes the 10-dot share bars on the Segments rows.
+const manageDotTotal = 10
+
 func manageDots(filled, total int) *ui.Element {
 	dots := make([]*ui.Element, 0, total)
 	for i := 0; i < total; i++ {
@@ -107,7 +110,7 @@ func (a *app) segmentsPage() *ui.Element {
 		rows = append(rows, ui.Div().Class("mp-linkrow mp-selectable").Children(
 			ui.Div().Class("mp-linkmain").Children(
 				ui.Text(slice.label).FontWeight(ui.FontWeightBold).FontSize(ui.Px(13)),
-				manageDots(slice.filled, 10),
+				manageDots(slice.filled, manageDotTotal),
 			),
 			ui.Div().Class("mp-linkstats").Children(
 				ui.Text(slice.count).FontWeight(ui.FontWeightBold),

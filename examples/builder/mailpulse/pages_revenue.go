@@ -1,3 +1,4 @@
+//nolint:mnd // Sample revenue fixtures are literal display content: product rows and amounts are fixed demo values.
 package main
 
 import (

@@ -156,11 +156,11 @@ func TestMailpulseHeatCellLabels(t *testing.T) {
 }
 
 func TestMailpulseGrowthBarLabels(t *testing.T) {
-	if len(overviewBarHeights) != 12 || len(overviewBarValues) != 12 {
-		t.Fatalf("growth bars = %d heights %d values, want 12 and 12", len(overviewBarHeights), len(overviewBarValues))
+	if len(overviewBarHeights()) != 12 || len(overviewBarValues()) != 12 {
+		t.Fatalf("growth bars = %d heights %d values, want 12 and 12", len(overviewBarHeights()), len(overviewBarValues()))
 	}
 	total := 0
-	for _, v := range overviewBarValues {
+	for _, v := range overviewBarValues() {
 		total += v
 	}
 	if total != 428 {
@@ -380,7 +380,7 @@ func TestMailpulseOverviewRangeRedraws(t *testing.T) {
 
 	// Default window keeps the hand-tuned 30-day track.
 	a.rangeLabel = "Last 30 Days"
-	if heights := barHeightsFor(30); len(heights) != len(overviewBarHeights) || heights[0] != overviewBarHeights[0] {
+	if heights := barHeightsFor(30); len(heights) != len(overviewBarHeights()) || heights[0] != overviewBarHeights()[0] {
 		t.Fatalf("barHeightsFor(30) changed the 30-day track")
 	}
 }
@@ -521,7 +521,7 @@ func TestMailpulseEntranceGrowsFromZero(t *testing.T) {
 		return 0
 	}
 
-	target := overviewBarHeights[0] / 100
+	target := overviewBarHeights()[0] / 100
 	if got := barScaleY("mp-growth-0"); got != 0 {
 		t.Fatalf("fresh mount bar scale = %v, want 0 (zeros committed)", got)
 	}
@@ -626,7 +626,7 @@ func TestMailpulseEntranceReplaysOnRevisit(t *testing.T) {
 	if _, err := ui.Render(a.overviewPage()); err != nil {
 		t.Fatalf("render overviewPage: %v", err)
 	}
-	target := overviewBarHeights[0] / 100
+	target := overviewBarHeights()[0] / 100
 	if err := a.page.Testing().Tick(ctx); err != nil {
 		t.Fatalf("seen tick failed: %v", err)
 	}

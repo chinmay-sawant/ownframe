@@ -21,6 +21,9 @@ const (
 	// inventorySearchVisible is the number of flattened rows the panel
 	// shows at once; the wheel moves the window over the capped matches.
 	inventorySearchVisible = 6
+	// inventorySearchGroupCount is the number of palette sections (SKUs
+	// and purchase orders) a query groups into.
+	inventorySearchGroupCount = 2
 )
 
 // searchHit is one flattened palette row with its section, so the wheel
@@ -154,7 +157,7 @@ func (a *app) searchGroups() []chadcn.CommandGroup {
 	start, _ := a.searchWindow()
 	window := a.searchHits()[start:min(start+inventorySearchVisible, len(a.searchHits()))]
 
-	groups := make([]chadcn.CommandGroup, 0, 2)
+	groups := make([]chadcn.CommandGroup, 0, inventorySearchGroupCount)
 	for _, name := range []string{"SKUs", "Purchase orders"} {
 		items := make([]chadcn.CommandItem, 0)
 		for _, hit := range window {

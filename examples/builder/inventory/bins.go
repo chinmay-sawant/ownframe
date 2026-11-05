@@ -28,13 +28,28 @@ func (a *app) binsPanel() *ui.Element {
 	).Padding(ui.Px(16)).Gap(ui.Px(10)))
 }
 
+// aisleMax is the largest aisle index aisleLetter accepts (aisle Z).
+const aisleMax = 25
+
+// aisleLetter returns the A–Z label for an aisle index. Out-of-range
+// indexes clamp so the int-to-rune conversion cannot overflow.
+func aisleLetter(aisle int) string {
+	if aisle < 0 {
+		aisle = 0
+	}
+	if aisle > aisleMax {
+		aisle = aisleMax
+	}
+	return string(rune('A' + aisle))
+}
+
 func (a *app) binsGrid() *ui.Element {
 	grid := ui.Div().Class("inv-bins-grid").
 		GridTemplateColumns(ui.RawValue("32px repeat(10, minmax(0, 1fr))")).
 		Gap(ui.Px(4))
 	header := []*ui.Element{ui.Div().Class("inv-bin-head")}
 	for aisle := 0; aisle < 10; aisle++ {
-		header = append(header, ui.Div().Class("inv-bin-head").Text(string(rune('A'+aisle))))
+		header = append(header, ui.Div().Class("inv-bin-head").Text(aisleLetter(aisle)))
 	}
 	grid.Children(header...)
 	for _, row := range sampleBins {
@@ -49,8 +64,8 @@ func (a *app) binsGrid() *ui.Element {
 
 func (a *app) binCell(aisle int, level string, value int) *ui.Element {
 	bg, fg := binColors(value)
-	label := "Aisle " + string(rune('A'+aisle)) + " · level " + level + " · " + strconv.Itoa(value) + "% full"
-	return ui.Div().ID("bin-"+string(rune('A'+aisle))+"-"+level).Class("inv-bin").
+	label := "Aisle " + aisleLetter(aisle) + " · level " + level + " · " + strconv.Itoa(value) + "% full"
+	return ui.Div().ID("bin-"+aisleLetter(aisle)+"-"+level).Class("inv-bin").
 		BackgroundColor(ui.Hex(bg)).
 		Color(ui.Hex(fg)).
 		Attr("aria-label", label).

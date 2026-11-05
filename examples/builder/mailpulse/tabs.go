@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
@@ -112,48 +111,6 @@ func (a *app) engagementPage() *ui.Element {
 		ui.Div().Class("mp-grid-bot").Children(
 			a.linksCard(),
 			a.engageCard(),
-		),
-	)
-}
-
-// tabHead mirrors pageHead with the per-tab title from pageTitle, so every
-// placeholder tab keeps the range/export controls until its owner replaces
-// the body.
-func (a *app) tabHead() *ui.Element {
-	title, sub := a.pageTitle()
-	rangeBtn := chadcn.Button(a.rangeLabel+" ▾", chadcn.ButtonOptions{
-		Variant: chadcn.ButtonOutlined,
-		Size:    chadcn.ButtonSmall,
-	}).Attr("data-action", "range:cycle")
-	exportBtn := chadcn.Button("↓ Export", chadcn.ButtonOptions{
-		Variant: chadcn.ButtonOutlined,
-		Size:    chadcn.ButtonSmall,
-	}).Attr("data-action", "export")
-	left := ui.Div().Class("mp-pagehead-text").Children(
-		chadcn.H1(title),
-		chadcn.Muted(sub),
-	)
-	actions := ui.Div().Class("mp-pagehead-actions").Children(rangeBtn, exportBtn)
-	return ui.Div().Class("mp-pagehead").Children(left, actions)
-}
-
-// placeholderPage renders the tab head plus a stub card. Per-tab owners
-// replace the stub body with real content.
-func (a *app) placeholderPage(note string) *ui.Element {
-	if note == "" {
-		title, _ := a.pageTitle()
-		note = title + " content lands here."
-	}
-	return ui.Div().Children(
-		a.tabHead(),
-		chadcn.Card(
-			chadcn.CardHeader(
-				chadcn.CardTitle("Coming soon"),
-				chadcn.CardDescription(note),
-			),
-			chadcn.CardContent(
-				chadcn.Muted("This tab is owned by another workstream."),
-			),
 		),
 	)
 }

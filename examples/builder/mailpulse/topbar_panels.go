@@ -39,11 +39,14 @@ type searchMatch struct {
 }
 
 // topbarTabOrder lists canonical tabs in sidebar order so title matching
-// stays deterministic.
-var topbarTabOrder = []string{
-	"overview", "audience", "campaigns", "content", "engagement",
-	"revenue", "subscribers", "automations", "segments",
-	"integrations", "analytics", "reports", "learn", "help", "settings",
+// stays deterministic. It returns a fresh slice per call so callers never
+// share backing state.
+func topbarTabOrder() []string {
+	return []string{
+		"overview", "audience", "campaigns", "content", "engagement",
+		"revenue", "subscribers", "automations", "segments",
+		"integrations", "analytics", "reports", "learn", "help", "settings",
+	}
 }
 
 // searchMatches returns the sections matching the current query, matched
@@ -72,7 +75,7 @@ func (a *app) searchMatches() []searchMatch {
 		}
 	}
 	current := a.tab
-	for _, tab := range topbarTabOrder {
+	for _, tab := range topbarTabOrder() {
 		a.tab = tab
 		title, _ := a.pageTitle()
 		if strings.Contains(strings.ToLower(title), q) {
@@ -275,7 +278,10 @@ func (a *app) handleKey(ctx context.Context, key string) error {
 	return a.refresh(ctx)
 }
 
-// ensureToastTick arms the 5s toast expiry after every refresh. It runs at
+// toastTTL is how long a toast stays visible before tickToast closes it.
+const toastTTL = 5 * time.Second
+
+// ensureToastTick arms the toast expiry after every refresh. It runs at
 // the end of refresh so every toast path is covered; a closed toast clears
 // a stale tick instead.
 func (a *app) ensureToastTick() {
@@ -292,7 +298,7 @@ func (a *app) ensureToastTick() {
 	if !a.toastUntil.IsZero() {
 		return
 	}
-	a.toastUntil = time.Now().Add(5 * time.Second)
+	a.toastUntil = time.Now().Add(toastTTL)
 	a.page.SetTick(a.tickToast)
 	a.page.WantFrameAt(a.toastUntil)
 }

@@ -1,3 +1,4 @@
+//nolint:mnd // Sample engagement fixtures are literal display content: link rows and range labels are fixed demo values.
 package main
 
 import (

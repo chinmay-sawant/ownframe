@@ -7,11 +7,11 @@ import "strings"
 func (a *app) rangeDays() int {
 	switch strings.TrimSpace(a.rangeLabel) {
 	case "Last 7 Days":
-		return 7
+		return rangeWeekDays
 	case "Last 90 Days":
-		return 90
+		return rangeQuarterDays
 	default:
-		return 30
+		return rangeMonthDays
 	}
 }
 
@@ -19,9 +19,9 @@ func (a *app) rangeDays() int {
 // e.g. "last 7 days".
 func (a *app) rangeWindow() string {
 	switch a.rangeDays() {
-	case 7:
+	case rangeWeekDays:
 		return "last 7 days"
-	case 90:
+	case rangeQuarterDays:
 		return "last 90 days"
 	default:
 		return "last 30 days"
@@ -31,9 +31,9 @@ func (a *app) rangeWindow() string {
 // rangeNewLabel returns the short "New (7d)/(30d)/(90d)" KPI label.
 func (a *app) rangeNewLabel() string {
 	switch a.rangeDays() {
-	case 7:
+	case rangeWeekDays:
 		return "New (7d)"
-	case 90:
+	case rangeQuarterDays:
 		return "New (90d)"
 	default:
 		return "New (30d)"
