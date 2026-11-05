@@ -74,7 +74,7 @@ func TestToastClosedAndOpenRendering(t *testing.T) {
 		`class="of-toast-description"`, `Sunday, December 3 at 9:00 AM`,
 		`class="of-toast-action"`, `>Undo<`,
 		`class="of-toast-close"`, `aria-label="Close"`, `data-action="toast:close"`,
-		`position:absolute`, `width:356px`,
+		`position:fixed`, `width:356px`,
 	} {
 		if !strings.Contains(source, want) {
 			t.Fatalf("toast missing %q in %s", want, source)
