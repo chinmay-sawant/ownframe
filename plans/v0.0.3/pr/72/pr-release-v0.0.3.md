@@ -1,10 +1,10 @@
 ## Summary
 
-Record what landed from tag `v0.0.2` through `3ff7fd4f`, and move the pull request records from that cycle into `plans/v0.0.3/pr/<number>/`. The release body is `plans/v0.0.3/pr/release-v0.0.3.md`. This pull request does not create a tag or a GitHub Release.
+Record what landed from tag `v0.0.2` through `3ff7fd4f`, and move the pull request records from that cycle into `plans/v0.0.3/pr/<number>/`. The release body is `plans/v0.0.3/pr/72/release-v0.0.3.md`. This pull request does not create a tag or a GitHub Release.
 
 ## Motivation / context
 
-- Plans: `plans/v0.0.3/pr/release-v0.0.3.md`, indexed from `plans/v0.0.3/README.md` and `plans/README.md`.
+- Plans: `plans/v0.0.3/pr/72/release-v0.0.3.md`, indexed from `plans/v0.0.3/README.md` and `plans/README.md`.
 - The records were split across `plans/PR/`, `plans/v0.0.3/pr/`, `plans/v0.0.3/examples/`, `plans/v0.0.3/css-optimization/`, and `plans/v0.0.3/prod-ready-task/PR/`. v0.0.1 and v0.0.2 records stay where they are.
 - No issue is fully completed here.
 
@@ -64,7 +64,7 @@ make plans-check
 
 ## Screenshots / sample output
 
-None. The release body is `plans/v0.0.3/pr/release-v0.0.3.md`.
+None. The release body is `plans/v0.0.3/pr/72/release-v0.0.3.md`.
 
 ## Related issues
 
@@ -75,7 +75,7 @@ None. Open issues #44, #45, and #48 stay open. This pull request does not close 
 - [x] Self-assigned with `--assignee "@me"` when opened.
 - [x] Labels: `documentation`
 - [x] Related issues checked; none are closed by this work.
-- [ ] Filled body committed under `plans/v0.0.3/pr/<number>/` after the pull request number exists.
+- [x] Filled body committed under `plans/v0.0.3/pr/72/pr-release-v0.0.3.md`.
 
 ## Follow-ups (out of scope)
 
