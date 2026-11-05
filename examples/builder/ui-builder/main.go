@@ -12,6 +12,8 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+const builderMaxFPS = 60
+
 func main() {
 	web := flag.Bool("web", false, "serve the preview in a browser")
 	addr := flag.String("addr", "127.0.0.1:8131", "address for -web")
@@ -77,6 +79,7 @@ func run(webMode bool, addr string, dev bool, perf bool, debugAddr string, loggi
 		CustomChrome: true,
 		PlacementID:  builderPlacement,
 		DebugAddr:    debugAddr,
+		MaxFPS:       builderMaxFPS,
 		Draggable: func(x, y int) bool {
 			return x >= 0 && y >= 0 && y < builderDragLimitY
 		},

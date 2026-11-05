@@ -58,15 +58,24 @@
 }
 
 .of-trace-track {
-  display: block;
+  display: flex;
+  align-items: stretch;
   height: 6px;
   overflow: hidden;
   border-radius: 3px;
   background-color: var(--of-trace-track, var(--of-control, #f4f4f5));
 }
 
+.of-trace-gap {
+  flex-basis: 0;
+  min-width: 0;
+  min-height: 0;
+}
+
 .of-trace-bar {
-  height: 100%;
+  flex-basis: 0;
+  min-width: 0;
+  min-height: 0;
   border-radius: 3px;
   background-color: var(--of-trace-color, var(--of-primary, #171717));
 }

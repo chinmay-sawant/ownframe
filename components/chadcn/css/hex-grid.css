@@ -1,0 +1,54 @@
+/* Hex grid: honeycomb status map. Each hexagon is three solid parts, a top
+   triangle, a middle band, and a bottom triangle, using only borders and
+   fills. Cells are fixed 24px wide so the border triangles line up. */
+
+.of-hex-grid {
+  --of-hex-columns: 12;
+  display: grid;
+  grid-template-columns: repeat(var(--of-hex-columns), 24px);
+  gap: 3px;
+  min-width: 0;
+}
+
+.of-hex {
+  --of-hex-c: var(--of-hex-empty, var(--of-control, #f4f4f5));
+  width: 24px;
+}
+
+.of-hex[data-tone="1"] {
+  --of-hex-c: var(--of-hex-1, var(--of-chart-1, #3b82f6));
+}
+
+.of-hex[data-tone="2"] {
+  --of-hex-c: var(--of-hex-2, var(--of-chart-2, #8b5cf6));
+}
+
+.of-hex[data-tone="3"] {
+  --of-hex-c: var(--of-hex-3, var(--of-chart-3, #f59e0b));
+}
+
+.of-hex[data-tone="4"] {
+  --of-hex-c: var(--of-hex-4, var(--of-chart-4, #10b981));
+}
+
+.of-hex-top {
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-bottom: 7px solid var(--of-hex-c);
+}
+
+.of-hex-mid {
+  width: 24px;
+  height: 12px;
+  background-color: var(--of-hex-c);
+}
+
+.of-hex-bottom {
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 7px solid var(--of-hex-c);
+}

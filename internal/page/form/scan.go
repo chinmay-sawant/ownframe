@@ -2,13 +2,20 @@ package form
 
 import "strings"
 
+// HasControls reports whether source may hold form controls. It is the
+// same tag probe Scan filters on, so a false means Scan finds nothing:
+// the caller can skip the merge and the rewrite without parsing.
+func HasControls(source string) bool {
+	return strings.Contains(source, "<input") || strings.Contains(source, "<INPUT") ||
+		strings.Contains(source, "<textarea") || strings.Contains(source, "<TEXTAREA") ||
+		strings.Contains(source, "<select") || strings.Contains(source, "<SELECT") ||
+		strings.Contains(source, "<button") || strings.Contains(source, "<BUTTON")
+}
+
 // Scan reads input, textarea, select, and button controls from source.
 // A control with an empty id is skipped. Script, style, and comments are not.
 func Scan(source string) []Span {
-	if !strings.Contains(source, "<input") && !strings.Contains(source, "<INPUT") &&
-		!strings.Contains(source, "<textarea") && !strings.Contains(source, "<TEXTAREA") &&
-		!strings.Contains(source, "<select") && !strings.Contains(source, "<SELECT") &&
-		!strings.Contains(source, "<button") && !strings.Contains(source, "<BUTTON") {
+	if !HasControls(source) {
 		return nil
 	}
 	var out []Span

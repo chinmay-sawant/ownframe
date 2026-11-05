@@ -41,6 +41,18 @@ func (s *shell) gridTooBig(contentW, contentH int) bool {
 	return int64(contentW)*int64(contentH) > int64(maxGridViewports)*int64(winW)*int64(winH)
 }
 
+// windowing reports that the page opted into row windowing: it renders only
+// the viewport slice between full-height spacers, so the repaint working set
+// sizes from the viewport (plus overscan) instead of the full content
+// height. Scroll range, spacer layout, and painted output are unchanged;
+// only the tile grid, viewport buffers, and warmup sweep shrink. A page
+// without the opt-in keeps exactly the old path.
+func (s *shell) windowing() bool {
+	observer, ok := s.app.(host.ScrollObserver)
+
+	return ok && observer.Windowing()
+}
+
 // isTicking reports a screen with a frame callback. A Page marks mutated
 // ops itself and stays on the buffer path; a ticker without FrameDirty
 // still replays in full.

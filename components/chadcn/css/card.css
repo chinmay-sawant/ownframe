@@ -10,7 +10,6 @@
   border-radius: var(--of-radius-lg, 14px);
   background-color: var(--of-surface, #ffffff);
   color: var(--of-text, #0a0a0a);
-  box-shadow: var(--of-card-shadow, 0 1px 2px rgba(0, 0, 0, 0.05));
 }
 
 .of-card-header {

@@ -1,0 +1,169 @@
+/* Area chart: div-geometry trend with a hatched gap band. Dots sit on
+   percentage bottom offsets inside fixed-height columns, and the band fills
+   the space between the column extremes. */
+
+.of-area-chart {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  background-color: var(--of-area-background, var(--of-card, #ffffff));
+  color: var(--of-text, #0a0a0a);
+  border: 1px solid var(--of-border, #e5e5e5);
+  border-radius: var(--of-radius-lg, 14px);
+  overflow: hidden;
+}
+
+.of-area-chart-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: var(--of-area-header-padding, 14px 20px 12px);
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+}
+
+.of-area-chart-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.of-area-chart-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--of-area-title, var(--of-text, #0a0a0a));
+}
+
+.of-area-chart-description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--of-muted-foreground, #737373);
+}
+
+.of-area-chart-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.of-area-chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.of-area-chart-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--of-area-dot, var(--of-chart-1, #3b82f6));
+}
+
+.of-area-chart-dot[data-series="2"] {
+  background-color: var(--of-area-dot, var(--of-chart-2, #8b5cf6));
+}
+
+.of-area-chart-dot[data-series="3"] {
+  background-color: var(--of-area-dot, var(--of-chart-3, #f59e0b));
+}
+
+.of-area-chart-dot[data-series="4"] {
+  background-color: var(--of-area-dot, var(--of-chart-4, #10b981));
+}
+
+.of-area-chart-body {
+  padding: var(--of-area-body-padding, 14px 20px 4px);
+}
+
+.of-area-chart-plot {
+  display: flex;
+  align-items: stretch;
+  gap: var(--of-area-column-gap, 8px);
+  height: var(--of-area-plot-height, 180px);
+  min-width: 0;
+  border-bottom: 1px solid var(--of-border, #e5e5e5);
+}
+
+/* Columns are in-flow flex rows: one narrow track per series plus a hatched
+   band track between the first two series. Spacers below each element set its
+   height with percentage heights, which resolve against the fixed plot height.
+   Nothing here uses positioned percentage offsets. */
+.of-area-chart-column {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.of-area-chart-track {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.of-area-chart-track--band {
+  flex: 1.4;
+}
+
+.of-area-chart-band {
+  width: 100%;
+  min-height: 0;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background-color: var(--of-area-band-fill, rgba(161, 161, 170, 0.28));
+}
+
+.of-area-chart-spacer {
+  width: 100%;
+  min-height: 0;
+  flex-shrink: 0;
+}
+
+.of-area-chart-point {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background-color: var(--of-area-dot, var(--of-chart-1, #3b82f6));
+}
+
+.of-area-chart-point[data-series="2"] {
+  background-color: var(--of-area-dot, var(--of-chart-2, #8b5cf6));
+}
+
+.of-area-chart-point[data-series="3"] {
+  background-color: var(--of-area-dot, var(--of-chart-3, #f59e0b));
+}
+
+.of-area-chart-point[data-series="4"] {
+  background-color: var(--of-area-dot, var(--of-chart-4, #10b981));
+}
+
+.of-area-chart-labels {
+  display: flex;
+  gap: var(--of-area-column-gap, 8px);
+  padding-top: 6px;
+}
+
+.of-area-chart-label {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--of-muted-foreground, #737373);
+}

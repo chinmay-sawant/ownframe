@@ -45,8 +45,15 @@ func Trace(options TraceOptions) *ui.Element {
 
 		start, width := traceSpan(row.Start, row.Width)
 		if width > 0 {
-			bar := ui.Div().Class("of-trace-bar").Width(ui.Percent(width)).MarginLeft(ui.Percent(start))
-			body.Children(ui.Div().Class("of-trace-track").Attr("aria-hidden", "true").Children(bar))
+			track := ui.Div().Class("of-trace-track").Attr("aria-hidden", "true")
+			if start > 0 {
+				track.Children(ui.Div().Class("of-trace-gap").FlexGrow(ui.Number(start)))
+			}
+			track.Children(ui.Div().Class("of-trace-bar").FlexGrow(ui.Number(width)))
+			if rest := tracePercent - start - width; rest > 0 {
+				track.Children(ui.Div().Class("of-trace-gap").FlexGrow(ui.Number(rest)))
+			}
+			body.Children(track)
 		}
 		item.Children(body)
 		root.Children(item)

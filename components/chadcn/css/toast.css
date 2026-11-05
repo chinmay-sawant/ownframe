@@ -10,7 +10,6 @@
   border-radius: var(--of-radius, 10px);
   background-color: var(--of-surface, #ffffff);
   color: var(--of-text, #0a0a0a);
-  box-shadow: 0 10px 30px var(--of-shadow, #00000026);
 }
 
 .of-toast-body {

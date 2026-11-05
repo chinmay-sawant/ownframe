@@ -9,8 +9,9 @@ package window
 // Pinned chrome stays on the tile path; a later WantFrameAt still wakes an
 // animating bar. Overlay chrome is the wrapper's call: an unchanged set of
 // chrome rects paints the same pixels and does not need the active drawing loop.
-// A ticker keeps the viewport path on the frame clock. The tile path may
-// still idle when that ticker reported no damage.
+// A quiet ticker idles on either path: the tile path already does, and the
+// viewport path does when the damage taker stayed clean and the tick set no
+// FrameDirty. A ticker that cannot report damage stays on the frame clock.
 func (s *shell) idleCleanFrame() bool {
 	if s.fallback || s.display == nil {
 		return false
@@ -38,7 +39,19 @@ func (s *shell) idleCleanFrame() bool {
 	}
 
 	if s.viewport.valid && s.viewport.buf != nil {
-		return s.viewport.blitOnly && !s.isTicking()
+		// blitOnly means the damage taker reported nothing this frame;
+		// frameOptIn means the tick set FrameDirty (a mutating tick or
+		// UseFrameDirty). Both clean idles. A ticker without FrameDirty
+		// cannot report quiet, so it stays dirty.
+		if s.isTicking() {
+			if _, ok := s.app.(frameMarker); !ok {
+				return false
+			}
+
+			return s.viewport.blitOnly && !s.frameOptIn
+		}
+
+		return s.viewport.blitOnly
 	}
 
 	if s.partial.mode != repaintBlit || !s.partial.live || s.partial.whole {
