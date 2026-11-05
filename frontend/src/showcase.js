@@ -10,7 +10,8 @@ export const showcaseSections = [
     before: '`examples/code-view` is the flagship desktop application of ownframe. It is a native multi-pane code viewer with syntax highlighting in pure Go, a visual git commit graph, and word-level diff pairing with 26 ns idle ticks and zero webview overhead.',
     after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/code-view)',
     media: [
-      { src: 'frontend/public/demos/code-view.png', alt: 'Code Review dark multi-pane editor with pure Go syntax highlighting, git graph, and diffs', caption: 'Code Review', width: 1500, height: 900, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/code-view.webp', video: 'demos/code-view.mp4', autoplayPreview: true, alt: 'Animated preview of the Code Review app with the appearance settings and Liquid Glass themes open', caption: 'Code Review', width: 1280, height: 688, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/vskode-demo.webp', alt: 'Code Review dark editor showing Markdown documentation with the file explorer and commit status bar', caption: 'Editing Markdown', width: 800, height: 428, nativeDisplay: true },
     ],
   },
   {
@@ -156,7 +157,7 @@ export const showcaseSections = [
     title: 'Inventory',
     layout: 'single',
     before: '`examples/builder/inventory` is a light-theme inventory-health dashboard (Northwind Goods) built with the Go builder (`ui` + `components/chadcn`): KPI strip, stock-health table, bin-utilization heat grid, inbound purchase orders, and value by category. `go run ./examples/builder/inventory` opens it on desktop.',
-    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/inventory)',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/inventory)\n\n[Reference image](https://x.com/glideapps/status/2118001243641835997)',
     media: [
       { src: 'assets/screenshots/demos/inventory.png', alt: 'Northwind Goods inventory health dashboard with KPIs, stock table, and bin utilization heat grid', caption: 'Inventory', width: 1440, height: 960, nativeDisplay: true },
     ],
@@ -168,7 +169,7 @@ export const showcaseSections = [
     before: '`examples/builder/jmap-mail` is a three-pane desktop mail client mockup (Postmark) built with the public Go `ui` API. `go run ./examples/builder/jmap-mail` opens it on desktop.',
     after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/jmap-mail)',
     media: [
-      { src: 'assets/screenshots/demos/jmap-mail.png', alt: 'Postmark three-pane mail client with mailboxes, inbox list, and message view', caption: 'JMAP Mail', width: 1380, height: 810, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/jmap-mail.webp', video: 'demos/jmap-mail.mp4', autoplayPreview: true, alt: 'Animated preview of the Postmark three-pane mail client with mailboxes, inbox list, and message view', caption: 'JMAP Mail', width: 1280, height: 688, nativeDisplay: true },
     ],
   },
   {
@@ -176,7 +177,7 @@ export const showcaseSections = [
     title: 'MailPulse',
     layout: 'single',
     before: '`examples/builder/mailpulse` is an email engagement dashboard built with the `ui` builder and `components/chadcn`: KPI tiles with delta pills, an open-rate heatmap, and an engagement funnel. `go run ./examples/builder/mailpulse` opens it on desktop.',
-    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/mailpulse)',
+    after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/mailpulse)\n\n[Reference image](https://x.com/jubayer6910/status/2116970231793058125)',
     media: [
       { src: 'assets/screenshots/demos/mailpulse.png', alt: 'MailPulse engagement dashboard with open and click rates, send-time heatmap, and funnel', caption: 'MailPulse', width: 1440, height: 960, nativeDisplay: true },
     ],

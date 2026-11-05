@@ -2,6 +2,8 @@
 
 Light-theme inventory-health dashboard built with the Go builder (`ui` + `components/chadcn`), modelled on the warehouse screenshot: KPI strip, stock-health table, bin-utilization heat grid, inbound POs, and value-by-category bar.
 
+Reference image: https://x.com/glideapps/status/2118001243641835997 (Glide control-center post, Nov 4 2026).
+
 ## Run
 
 ```sh
