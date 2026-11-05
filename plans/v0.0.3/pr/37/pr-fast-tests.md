@@ -80,7 +80,7 @@ None. No issue is linked to this work.
 - [x] Self-assigned with `--assignee "@me"` when opened.
 - [x] `enhancement` label applied when opened.
 - [x] Related issues checked; none are linked.
-- [x] This PR record is committed under `plans/PR/pr-fast-tests.md`.
+- [x] This PR record is committed under `plans/v0.0.3/pr/37/pr-fast-tests.md`.
 
 ## Follow-ups (out of scope)
 

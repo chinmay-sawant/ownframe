@@ -208,7 +208,7 @@ No current issue tracks this v0.0.3 production-readiness integration. The only r
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied: `enhancement`, `documentation`
 - [x] Related issues reviewed; no applicable issue ID exists
-- [x] Filled body committed under `plans/v0.0.3/prod-ready-task/PR/pr-production-readiness.md`
+- [x] Filled body committed under `plans/v0.0.3/pr/40/pr-production-readiness.md`
 
 ## Follow-ups (out of scope)
 

@@ -1,6 +1,6 @@
 # Current maintenance ledger
 
-This is the current status record. Historical release plans, `PHASES.md`, and `RENDERING-FINDINGS.md` preserve rationale, not present support. Public behavior belongs in [features](../documentation/features.md) and [platforms](../documentation/platforms.md). Earlier pass-by-pass results remain in Git history through `b32ea940`.
+This is the current status record. Historical release plans, `PHASES.md`, and `RENDERING-FINDINGS.md` preserve rationale, not present support. The v0.0.3 release body, covering `v0.0.2` (`4bbd832`) through `3ff7fd4f`, is [release-v0.0.3.md](v0.0.3/pr/release-v0.0.3.md). That file does not create the tag. Public behavior belongs in [features](../documentation/features.md) and [platforms](../documentation/platforms.md). Earlier pass-by-pass results remain in Git history through `b32ea940`.
 
 Use one state per row: implemented `[x]` with evidence, open `[ ]` awaiting work or validation, deferred `[-]` with a reconsideration condition, or superseded `[s]` with a replacement. A passing compile is not device evidence. Keep evidence beside its claim instead of appending duplicate closure sections.
 

@@ -134,7 +134,7 @@ Running 10 performance scenarios (warm iterations: 5)...
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied (`enhancement`, `documentation`)
 - [x] Related issues filled with real ticket IDs
-- [x] Filled body committed under `plans/PR/pr-render-cost-suite.md`
+- [x] Filled body committed under `plans/v0.0.3/pr/61/pr-render-cost-suite.md`
 
 ---
 

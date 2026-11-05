@@ -149,7 +149,7 @@ None. No issue is linked to this work.
 - [x] Self-assigned with `--assignee "@me"`.
 - [x] `enhancement` and `documentation` labels applied.
 - [x] Related issues checked; none are linked.
-- [x] Filled body committed under `plans/PR/pr-animations-and-transitions.md`.
+- [x] Filled body committed under `plans/v0.0.3/pr/42/pr-animations-and-transitions.md`.
 
 ## Follow-ups (out of scope)
 

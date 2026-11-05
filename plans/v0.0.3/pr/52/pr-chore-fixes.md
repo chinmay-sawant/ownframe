@@ -138,7 +138,7 @@ None. No issue is linked to this work.
 - [x] Self-assigned with `--assignee "@me"` when opened.
 - [x] `bug` and `enhancement` labels applied when opened.
 - [x] Related issues checked; none are linked.
-- [x] This PR record is committed under `plans/PR/pr-chore-fixes.md`.
+- [x] This PR record is committed under `plans/v0.0.3/pr/52/pr-chore-fixes.md`.
 
 ## Follow-ups (out of scope)
 

@@ -1,6 +1,6 @@
 # feat(components): add Search, dashboard primitives, MailPulse/Inventory builders and compare harness
 
-Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../../skills/PR/PR_TEMPLATE.md).
+Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../../../skills/PR/PR_TEMPLATE.md).
 
 - Base: `origin/master` (`f88fa52c`)
 - Head: `feat/new-components` (`cea71f84`)
@@ -175,7 +175,7 @@ ok  github.com/chinmay-sawant/ownframe/internal/window  0.021s
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied
 - [ ] Related issues filled: there is no tracker issue
-- [x] Filled body committed under `plans/v0.0.3/pr/pr-new-components.md`
+- [x] Filled body committed under `plans/v0.0.3/pr/70/pr-new-components.md`
 
 ---
 

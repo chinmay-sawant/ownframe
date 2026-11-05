@@ -135,7 +135,7 @@ No new window capture is attached. The bench tables in **Performance** are the s
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied (`enhancement`, `documentation`)
 - [x] Related issues filled with real ticket IDs
-- [x] Filled body committed under `plans/v0.0.3/examples/pr-code-view-and-performance.md` (refreshed for `160f14a7`)
+- [x] Filled body committed under `plans/v0.0.3/pr/49/pr-code-view-and-performance.md` (refreshed for `160f14a7`)
 
 ## Follow-ups (out of scope)
 

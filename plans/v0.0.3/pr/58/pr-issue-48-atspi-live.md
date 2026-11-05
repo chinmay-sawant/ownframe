@@ -103,7 +103,7 @@ No screenshot. The live validation matrix and the libatspi listener snippets are
 - [x] Self-assigned (`--assignee @me`).
 - [x] Labels applied.
 - [x] Related issue uses `Relates to`, not `Closes`.
-- [x] Filled body committed under `plans/PR/pr-issue-48-atspi-live.md`.
+- [x] Filled body committed under `plans/v0.0.3/pr/58/pr-issue-48-atspi-live.md`.
 
 ## Reviewer checklist
 
