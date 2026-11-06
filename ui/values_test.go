@@ -7,9 +7,144 @@ import (
 	"go/token"
 	"go/types"
 	"math"
+	"strconv"
 	"strings"
 	"testing"
 )
+
+// TestScalarValueFormattingParity pins the exact CSS text of every
+// single-number constructor and of the composite values that embed one. The
+// element stores lengths as numbers now, so a formatting drift would show up
+// only at render time.
+func TestScalarValueFormattingParity(t *testing.T) {
+	// Negating a runtime zero keeps the sign bit, which Px must preserve.
+	var zero float64
+	negativeZero := -zero
+	cases := []struct {
+		name string
+		root *Element
+		want string
+	}{
+		{"zero length", Div().Width(Px(0)), `<div style="width:0px;"></div>`},
+		{"negative zero length", Div().Width(Px(negativeZero)), `<div style="width:-0px;"></div>`},
+		{"fractional length", Div().Width(Px(0.1)), `<div style="width:0.1px;"></div>`},
+		{"large length", Div().Width(Px(1e6)), `<div style="width:1000000px;"></div>`},
+		{"percentage", Div().Width(Percent(12.5)), `<div style="width:12.5%;"></div>`},
+		{"viewport height", Div().Height(Vh(100)), `<div style="height:100vh;"></div>`},
+		{"rem", Div().Width(Rem(1.5)), `<div style="width:1.5rem;"></div>`},
+		{"unitless", Div().Opacity(Number(0.5)), `<div style="opacity:0.5;"></div>`},
+		{"edges", Div().Padding(Edges(Px(1), Px(2), Px(3), Px(4))), `<div style="padding:1px 2px 3px 4px;"></div>`},
+		{"variable", Div().Color(Var("--accent", "#fff")), `<div style="color:var(--accent, #fff);"></div>`},
+		{"variable without fallback", Div().Color(Var("--accent")), `<div style="color:var(--accent);"></div>`},
+		{"solid border", Div().Border(SolidBorder(Px(1), Hex("#abcdef"))), `<div style="border:1px solid #abcdef;"></div>`},
+		{"translate", Div().Transform(TranslateY(Px(-20))), `<div style="transform:translateY(-20px);"></div>`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := Render(tc.root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != tc.want {
+				t.Fatalf("Render = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestScalarAppendMatchesFormatFloat checks the numeric fast path against
+// the formatting the old string-based constructor used, including negative
+// zero and values whose fixed-point spelling is long.
+func TestScalarAppendMatchesFormatFloat(t *testing.T) {
+	const (
+		tenth        = 0.1
+		third        = 1.0 / 3.0
+		million      = 1e6
+		millionth    = 1e-6
+		longFraction = 123456789.125
+	)
+	var zero float64
+	values := []float64{
+		zero, -zero, tenth, third, million, millionth,
+		longFraction, math.MaxFloat64, math.SmallestNonzeroFloat64,
+	}
+	units := []unitKind{unitNone, unitPx, unitPercent, unitVh, unitRem}
+	for _, n := range values {
+		for _, unit := range units {
+			want := strconv.FormatFloat(n, 'f', -1, 64) + unit.suffix()
+			if got := string(appendScalar(nil, n, unit)); got != want {
+				t.Errorf("appendScalar(%v, %v) = %q, want %q", n, unit, got, want)
+			}
+			if got := formatScalar(n, unit); got != want {
+				t.Errorf("formatScalar(%v, %v) = %q, want %q", n, unit, got, want)
+			}
+		}
+		want := strconv.FormatFloat(n, 'f', -1, 64) + "px"
+		if got, err := (Length{valueData: scalar(n, unitPx)}).cssText(); err != nil || got != want {
+			t.Errorf("Length cssText(%v) = %q, %v; want %q", n, got, err, want)
+		}
+	}
+}
+
+// TestStyleEntriesOverflowInlineCapacity exercises the spill from the inline
+// declarations into the element's overflow slice and the sorted output both
+// paths share.
+func TestStyleEntriesOverflowInlineCapacity(t *testing.T) {
+	e := Div().Width(Px(1)).Height(Px(2)).Padding(Px(3)).Margin(Px(4)).
+		Gap(Px(5)).FontSize(Px(6)).Color(Hex("#fff"))
+	if got, want := e.styles.len(), inlineStyleEntries+3; got != want {
+		t.Fatalf("styles len = %d, want %d", got, want)
+	}
+	e.Width(Px(9)).FontSize(Px(11))
+	if got, want := e.styles.len(), 7; got != want {
+		t.Fatalf("styles len after replace = %d, want %d", got, want)
+	}
+	got, err := Render(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `<div style="color:#fff;font-size:11px;gap:5px;height:2px;margin:4px;padding:3px;width:9px;"></div>`
+	if got != want {
+		t.Fatalf("Render = %q, want %q", got, want)
+	}
+}
+
+// TestStyleSetEqualityIgnoresOrder checks the patch comparison: declarations
+// set in a different order still match, a changed overflow entry does not, and
+// a numeric value spelled like raw text still matches.
+func TestStyleSetEqualityIgnoresOrder(t *testing.T) {
+	build := func(fontSize float64) *Element {
+		return Div().Width(Px(1)).Height(Px(2)).Padding(Px(3)).Margin(Px(4)).
+			Gap(Px(5)).FontSize(Px(fontSize)).Color(Hex("#fff"))
+	}
+	first, second := build(10), build(10)
+	if !first.styles.equal(&second.styles) {
+		t.Fatal("same declarations in insertion order compare unequal")
+	}
+	reordered := Div().Color(Hex("#fff")).FontSize(Px(10)).Gap(Px(5)).
+		Margin(Px(4)).Padding(Px(3)).Height(Px(2)).Width(Px(1))
+	if !first.styles.equal(&reordered.styles) {
+		t.Fatal("same declarations in a different order compare unequal")
+	}
+	if first.styles.equal(&build(12).styles) {
+		t.Fatal("a changed overflow declaration compares equal")
+	}
+	var empty Element
+	if first.styles.equal(&empty.styles) {
+		t.Fatal("declarations compare equal to an empty set")
+	}
+	numeric := Div().Width(Px(10))
+	raw := Div().Width(RawValue("10px"))
+	if !numeric.styles.equal(&raw.styles) {
+		t.Fatal("Px(10) and RawValue(\"10px\") compare unequal")
+	}
+	var zero float64
+	negativeZero := Div().Width(Px(-zero))
+	zeroWidth := Div().Width(Px(0))
+	if negativeZero.styles.equal(&zeroWidth.styles) {
+		t.Fatal("Px(-0) and Px(0) compare equal")
+	}
+}
 
 func TestTypedStylesAndCustomProperties(t *testing.T) {
 	root := Div().Display(DisplayFlex).FlexDirection(FlexDirectionColumn).

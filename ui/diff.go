@@ -4,7 +4,6 @@ import (
 	"context"
 	"slices"
 	"sort"
-	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -74,7 +73,7 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 		d.ok = false
 		return
 	}
-	lastID, rootID := last.attrs["id"], root.attrs["id"]
+	lastID, rootID := last.attrs.value("id"), root.attrs.value("id")
 	// A rename cannot be patched safely: the batch locates the element by
 	// its old id and the relayout resolves it again after the edit.
 	if lastID != rootID {
@@ -89,7 +88,7 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 		return
 	}
 	if root.onClick != nil {
-		if _, custom := root.attrs["data-action"]; custom {
+		if _, custom := root.attrs.get("data-action"); custom {
 			// renderDocument reports this combination as an error.
 			d.ok = false
 			return
@@ -112,8 +111,8 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 		return
 	}
 	textChanged := last.text != root.text
-	stylesChanged := !sameMap(last.styles, root.styles)
-	if stylesChanged && len(root.styles) == 0 {
+	stylesChanged := !last.styles.equal(&root.styles)
+	if stylesChanged && root.styles.len() == 0 {
 		// Removing the last declaration would leave style="" in the tree
 		// while the rebuilt source omits the attribute, so rebuild.
 		d.ok = false
@@ -163,36 +162,24 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 // changedAttributes returns one edit for every attribute that was added or
 // whose value changed. ok is false when an attribute disappeared: the patch
 // API sets values but cannot remove an attribute, so the caller rebuilds.
-func changedAttributes(last, root map[string]string) ([]ownframe.ElementEdit, bool) {
-	if sameMap(last, root) {
+func changedAttributes(last, root *attrSet) ([]ownframe.ElementEdit, bool) {
+	if last.equal(root) {
 		return nil, true
 	}
-	edits := make([]ownframe.ElementEdit, 0, len(root))
-	for name, value := range root {
-		if oldValue, exists := last[name]; exists && oldValue == value {
+	edits := make([]ownframe.ElementEdit, 0, root.len())
+	for i := 0; i < root.len(); i++ {
+		entry := root.at(i)
+		if oldValue, exists := last.get(entry.name); exists && oldValue == entry.value {
 			continue
 		}
-		edits = append(edits, ownframe.ElementEdit{Attribute: name, Value: value})
+		edits = append(edits, ownframe.ElementEdit{Attribute: entry.name, Value: entry.value})
 	}
-	for name := range last {
-		if _, exists := root[name]; !exists {
+	for i := 0; i < last.len(); i++ {
+		if _, exists := root.get(last.at(i).name); !exists {
 			return nil, false
 		}
 	}
 	return edits, true
-}
-
-// sameMap reports whether two string maps hold the same keys and values.
-func sameMap(last, root map[string]string) bool {
-	if len(last) != len(root) {
-		return false
-	}
-	for name, value := range root {
-		if last[name] != value {
-			return false
-		}
-	}
-	return true
 }
 
 // inlineStyle serializes an element's declarations the way visit writes the
@@ -200,20 +187,26 @@ func sameMap(last, root map[string]string) bool {
 // result when it writes HTML; this value lands in the parsed tree, which
 // already holds decoded text, so it is not escaped a second time.
 func inlineStyle(e *Element) string {
-	if len(e.styles) == 0 {
+	count := e.styles.len()
+	if count == 0 {
 		return ""
 	}
-	names := make([]string, 0, len(e.styles))
-	for name := range e.styles {
-		names = append(names, name)
+	names := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		names = append(names, e.styles.at(i).name)
 	}
 	sort.Strings(names)
-	var style strings.Builder
+	style := make([]byte, 0, count*styleEntryEstimate)
 	for _, name := range names {
-		style.WriteString(name)
-		style.WriteByte(':')
-		style.WriteString(e.styles[name])
-		style.WriteByte(';')
+		entry, _ := e.styles.get(name)
+		style = append(style, name...)
+		style = append(style, ':')
+		style = entry.appendValue(style)
+		style = append(style, ';')
 	}
-	return style.String()
+	return string(style)
 }
+
+// styleEntryEstimate budgets one serialized declaration: a short name, the
+// separators, and a typical value. inlineStyle grows past it when needed.
+const styleEntryEstimate = 16

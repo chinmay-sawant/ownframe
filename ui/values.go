@@ -10,8 +10,44 @@ import (
 
 type cssValue interface{ cssText() (string, error) }
 
+// unitKind identifies the unit of a single-number CSS value. unitText marks a
+// value that is already spelled as text, so the zero valueData stays invalid.
+type unitKind uint8
+
+const (
+	unitText unitKind = iota
+	unitNone
+	unitPx
+	unitPercent
+	unitVh
+	unitRem
+)
+
+// suffix returns the unit suffix appended to a numeric value.
+func (u unitKind) suffix() string {
+	switch u {
+	case unitNone:
+		return ""
+	case unitPx:
+		return "px"
+	case unitPercent:
+		return "%"
+	case unitVh:
+		return "vh"
+	case unitRem:
+		return "rem"
+	default:
+		return ""
+	}
+}
+
+// valueData is the value behind every typed CSS constructor. A single-number
+// value keeps its number and unit so the element stores it unformatted; text
+// values (colors, keywords, composites) keep their CSS spelling.
 type valueData struct {
 	text string
+	num  float64
+	unit unitKind
 	err  error
 }
 
@@ -19,10 +55,33 @@ func (v valueData) cssText() (string, error) {
 	if v.err != nil {
 		return "", v.err
 	}
+	if v.unit != unitText {
+		return formatScalar(v.num, v.unit), nil
+	}
 	if v.text == "" {
 		return "", fmt.Errorf("ui: uninitialized CSS value")
 	}
 	return v.text, nil
+}
+
+// cssData exposes the value without formatting it. It is promoted to every
+// typed value, so setValue can store a single-number value numerically and
+// leave the conversion to text for the renderer.
+func (v valueData) cssData() valueData { return v }
+
+// appendScalar appends the CSS text of one numeric value. The bytes match
+// strconv.FormatFloat(n, 'f', -1, 64) followed by the unit suffix, which is
+// how Px, Percent, Vh, Rem, and Number have always rendered.
+func appendScalar(dst []byte, n float64, unit unitKind) []byte {
+	dst = strconv.AppendFloat(dst, n, 'f', -1, 64)
+	return append(dst, unit.suffix()...)
+}
+
+// formatScalar returns one numeric value as a string. Composite constructors
+// use it; rendering appends into a reused buffer instead.
+func formatScalar(n float64, unit unitKind) string {
+	var buf [32]byte
+	return string(appendScalar(buf[:0], n, unit))
 }
 
 // Length is a CSS length constructed with Px, Rem, Vh, or LengthVar.
@@ -43,25 +102,25 @@ type Numeric struct{ valueData }
 type Spacing struct{ valueData }
 
 // Px returns a length in CSS pixels. Non-finite inputs fail at Render or NewPage.
-func Px(n float64) Length { return Length{valueData: scalar(n, "px")} }
+func Px(n float64) Length { return Length{valueData: scalar(n, unitPx)} }
 
 // Vh returns a length as a percentage of the viewport height.
-func Vh(n float64) Length { return Length{valueData: scalar(n, "vh")} }
+func Vh(n float64) Length { return Length{valueData: scalar(n, unitVh)} }
 
 // Rem returns a length relative to the root font size.
-func Rem(n float64) Length { return Length{valueData: scalar(n, "rem")} }
+func Rem(n float64) Length { return Length{valueData: scalar(n, unitRem)} }
 
 // Percent returns a percentage, where Percent(100) means 100%.
-func Percent(n float64) Percentage { return Percentage{valueData: scalar(n, "%")} }
+func Percent(n float64) Percentage { return Percentage{valueData: scalar(n, unitPercent)} }
 
 // Number returns a unitless number. The engine checks property-specific ranges.
-func Number(n float64) Numeric { return Numeric{valueData: scalar(n, "")} }
+func Number(n float64) Numeric { return Numeric{valueData: scalar(n, unitNone)} }
 
-func scalar(n float64, unit string) valueData {
+func scalar(n float64, unit unitKind) valueData {
 	if math.IsNaN(n) || math.IsInf(n, 0) {
 		return valueData{err: fmt.Errorf("ui: CSS number must be finite")}
 	}
-	return valueData{text: strconv.FormatFloat(n, 'f', -1, 64) + unit}
+	return valueData{num: n, unit: unit}
 }
 
 // Edges returns a spacing shorthand in CSS order: top, right, bottom, left.
@@ -213,6 +272,119 @@ func (v wideKeyword) cssText() (string, error) {
 	}
 }
 
+// inlineStyleEntries is the number of declarations an element keeps without a
+// separate allocation. Most elements in a generated tree set two to four.
+const inlineStyleEntries = 4
+
+// styleEntry is one CSS declaration. A single-number value keeps its number
+// and unit so the renderer formats it straight into the output buffer; a
+// composite or raw value keeps its text.
+type styleEntry struct {
+	name string
+	text string
+	num  float64
+	unit unitKind
+}
+
+// appendValue appends the declaration's CSS value to dst.
+func (e styleEntry) appendValue(dst []byte) []byte {
+	if e.unit == unitText {
+		return append(dst, e.text...)
+	}
+	return appendScalar(dst, e.num, e.unit)
+}
+
+// cssTextValue returns the declaration's CSS value as a string. Composite
+// constructors and patch comparisons use it; rendering appends instead.
+func (e styleEntry) cssTextValue() string {
+	if e.unit == unitText {
+		return e.text
+	}
+	return formatScalar(e.num, e.unit)
+}
+
+// equal reports whether two entries name the same declaration with the same
+// value. Numeric values compare bit-for-bit so Px(-0) and Px(0) stay distinct,
+// and a numeric value spelled like a raw one, such as Px(10) and
+// RawValue("10px"), compares equal, matching the string maps this replaced.
+func (e styleEntry) equal(other styleEntry) bool {
+	if e.name != other.name {
+		return false
+	}
+	if e.unit == other.unit {
+		if e.unit == unitText {
+			return e.text == other.text
+		}
+		return math.Float64bits(e.num) == math.Float64bits(other.num)
+	}
+	return e.cssTextValue() == other.cssTextValue()
+}
+
+// styleSet stores an element's declarations in insertion order. The first
+// inlineStyleEntries live in the element itself, so an ordinary element
+// allocates nothing; later entries spill into a slice.
+type styleSet struct {
+	inline [inlineStyleEntries]styleEntry
+	extra  []styleEntry
+	n      int
+}
+
+func (s *styleSet) len() int { return s.n }
+
+// at returns the entry at index i, which must be within len.
+func (s *styleSet) at(i int) styleEntry {
+	if i < len(s.inline) {
+		return s.inline[i]
+	}
+	return s.extra[i-len(s.inline)]
+}
+
+// get returns the entry named name.
+func (s *styleSet) get(name string) (styleEntry, bool) {
+	for i := 0; i < s.n; i++ {
+		if entry := s.at(i); entry.name == name {
+			return entry, true
+		}
+	}
+	return styleEntry{}, false
+}
+
+// set adds entry, replacing a declaration with the same name.
+func (s *styleSet) set(entry styleEntry) {
+	for i := 0; i < s.n; i++ {
+		if s.at(i).name != entry.name {
+			continue
+		}
+		if i < len(s.inline) {
+			s.inline[i] = entry
+		} else {
+			s.extra[i-len(s.inline)] = entry
+		}
+		return
+	}
+	if s.n < len(s.inline) {
+		s.inline[s.n] = entry
+	} else {
+		s.extra = append(s.extra, entry)
+	}
+	s.n++
+}
+
+// equal reports whether two sets hold the same declarations in any order.
+func (s *styleSet) equal(other *styleSet) bool {
+	if s.n != other.n {
+		return false
+	}
+	for i := 0; i < s.n; i++ {
+		entry := s.at(i)
+		otherEntry, ok := other.get(entry.name)
+		if !ok || !entry.equal(otherEntry) {
+			return false
+		}
+	}
+	return true
+}
+
 func (e *Element) setValue(property string, v cssValue) *Element {
 	if e == nil {
 		return e
@@ -220,6 +392,12 @@ func (e *Element) setValue(property string, v cssValue) *Element {
 	if v == nil || isNilCSSValue(v) {
 		e.recordError(fmt.Errorf("ui: nil value for CSS property %q", property))
 		return e
+	}
+	// A single-number value stays numeric until the renderer writes it.
+	if carrier, ok := v.(interface{ cssData() valueData }); ok {
+		if data := carrier.cssData(); data.err == nil && data.unit != unitText {
+			return e.setScalarStyle(property, data.num, data.unit)
+		}
 	}
 	text, err := v.cssText()
 	if err != nil {
@@ -244,10 +422,18 @@ func (e *Element) setCSS(property, value string) *Element {
 		e.recordError(fmt.Errorf("ui: CSS property %q: %w", property, err))
 		return e
 	}
-	if e.styles == nil {
-		e.styles = make(map[string]string)
+	e.styles.set(styleEntry{name: property, text: value})
+	return e
+}
+
+// setScalarStyle stores a single-number declaration without formatting it.
+// The constructor already rejected non-finite numbers, so no validation is
+// needed here; the renderer writes the number on demand.
+func (e *Element) setScalarStyle(property string, number float64, unit unitKind) *Element {
+	if e == nil {
+		return e
 	}
-	e.styles[property] = value
+	e.styles.set(styleEntry{name: property, num: number, unit: unit})
 	return e
 }
 

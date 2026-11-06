@@ -112,6 +112,26 @@ func TestDiffTreeCollectsKeyedPatches(t *testing.T) {
 	}
 }
 
+func TestDiffTreePatchesOverflowStyles(t *testing.T) {
+	t.Parallel()
+	build := func(fontSize float64) *Element {
+		return Div().ID("root").Width(Px(1)).Height(Px(2)).Padding(Px(3)).
+			Margin(Px(4)).Gap(Px(5)).FontSize(Px(fontSize)).Color(Hex("#fff"))
+	}
+	d := diffTree(build(10), build(12))
+	if !d.ok || len(d.patches) != 1 {
+		t.Fatalf("ok = %v patches = %d, want one patch", d.ok, len(d.patches))
+	}
+	edits := d.patches[0].Edits
+	if len(edits) != 1 || edits[0].Attribute != "style" {
+		t.Fatalf("edits = %+v", edits)
+	}
+	const want = "color:#fff;font-size:12px;gap:5px;height:2px;margin:4px;padding:3px;width:1px;"
+	if edits[0].Value != want {
+		t.Fatalf("style = %q, want %q", edits[0].Value, want)
+	}
+}
+
 func TestDiffTreeRejectsUnpatchableTrees(t *testing.T) {
 	t.Parallel()
 	cases := []struct {

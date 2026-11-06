@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"html"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -19,6 +20,17 @@ const (
 	allocDepthChain   = 12
 	allocRenderRuns   = 50
 	allocIDWindow     = 400
+
+	allocInvoiceRows        = 1000
+	allocInvoiceRuns        = 10
+	allocInvoiceNumWidth    = 56
+	allocInvoiceIDWidth     = 120
+	allocInvoiceClientWidth = 160
+	allocInvoiceDateWidth   = 96
+	allocInvoiceItemWidth   = 180
+	allocInvoiceQtyWidth    = 48
+	allocInvoiceTotalWidth  = 80
+	allocInvoiceStatusWidth = 70
 )
 
 // allocBenchTree builds a deterministic multi-hundred-element document that
@@ -115,6 +127,81 @@ func allocBenchTree() *Element {
 	return root
 }
 
+// invoiceRowTree builds the shape the invoice benchmark renders: one flex row
+// per record, each holding eight styled cells. Row labels are formatted at
+// build time, as an application would format them.
+func invoiceRowTree(records int) *Element {
+	rows := make([]*Element, 0, records)
+	for i := 0; i < records; i++ {
+		index := strconv.Itoa(i)
+		row := Div().ID("invoice-row-"+index).
+			Attr("data-action", "row:"+index).
+			Class("inv-row").
+			Display(DisplayFlex).
+			Gap(Px(12)).
+			Padding(Px(8))
+		row.Children(
+			invoiceCell("N", allocInvoiceNumWidth),
+			invoiceCell("INV-0000", allocInvoiceIDWidth),
+			invoiceCell("Client", allocInvoiceClientWidth),
+			invoiceCell("2026-11-06", allocInvoiceDateWidth),
+			invoiceCell("Item", allocInvoiceItemWidth),
+			invoiceCell("1", allocInvoiceQtyWidth),
+			invoiceCell("$0.00", allocInvoiceTotalWidth),
+			Tag("span").Text("paid").Width(Px(allocInvoiceStatusWidth)).FontSize(Px(13)).
+				Color(Hex("#15803d")),
+		)
+		rows = append(rows, row)
+	}
+	return Div().Display(DisplayFlex).FlexDirection(FlexDirectionColumn).
+		Width(Percent(100)).Children(rows...)
+}
+
+func invoiceCell(text string, width float64) *Element {
+	return Text(text).Width(Px(width)).FontSize(Px(13))
+}
+
+// TestAllocBuildThousandRowTree budgets the tree construction the invoice
+// benchmark measures. Every row is nine elements with three attributes and
+// several numeric styles. The remaining per-style allocation is the interface
+// conversion in the generated fluent methods, not the element storage: a
+// per-element style map or a formatted length string would add roughly one
+// allocation for every element and every length on top of this.
+func TestAllocBuildThousandRowTree(t *testing.T) {
+	const records = allocInvoiceRows
+	var sink *Element
+	allocs := testing.AllocsPerRun(allocInvoiceRuns, func() {
+		sink = invoiceRowTree(records)
+	})
+	if sink == nil || len(sink.children) != records {
+		t.Fatal("tree construction lost rows")
+	}
+	t.Logf("build %d-row tree allocs/op: %v", records, allocs)
+	if allocs > allocInvoiceTreeBudget {
+		t.Fatalf("build %d-row tree allocs/op = %v, budget %v", records, allocs, allocInvoiceTreeBudget)
+	}
+}
+
+// allocInvoiceTreeBudget covers one element allocation per node, the per-row
+// label strings and child slices, and the generated methods' interface
+// conversions, while failing if style or attribute storage regresses to maps.
+const allocInvoiceTreeBudget = 34000
+
+// TestEstimateSizeCoversThousandRowTree checks the render size hint is not
+// capped below a page-sized document, so Render can grow its output buffer
+// once instead of doubling it partway through.
+func TestEstimateSizeCoversThousandRowTree(t *testing.T) {
+	tree := invoiceRowTree(allocInvoiceRows)
+	estimate := estimateSize(tree)
+	fragment, err := Render(tree)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if estimate < len(fragment) {
+		t.Fatalf("estimateSize = %d, fragment = %d: the hint would grow the buffer mid-render", estimate, len(fragment))
+	}
+}
+
 // naiveRenderer mirrors the pre-optimization builder output byte for byte: a
 // per-node attribute map copy, html.EscapeString plus brace replacement, and
 // fmt-based action and control ID synthesis. It is the frozen oracle for the
@@ -134,7 +221,7 @@ func naiveEscape(value string) string {
 
 func (r *naiveRenderer) naiveControlID(e *Element) string {
 	h := fnv.New64a()
-	_, _ = fmt.Fprintln(h, r.scope, e.tag, e.attrs["data-action"], e.attrs["name"], e.attrs["aria-label"])
+	_, _ = fmt.Fprintln(h, r.scope, e.tag, e.attrs.value("data-action"), e.attrs.value("name"), e.attrs.value("aria-label"))
 	seen := map[*Element]bool{}
 	var text func(*Element)
 	text = func(node *Element) {
@@ -177,9 +264,10 @@ func (r *naiveRenderer) naiveVisit(e *Element, depth int) error {
 		return fmt.Errorf("ui: void HTML element <%s> cannot have children or text", e.tag)
 	}
 
-	attrs := make(map[string]string, len(e.attrs)+3)
-	for name, value := range e.attrs {
-		attrs[name] = value
+	attrs := make(map[string]string, e.attrs.len()+3)
+	for i := 0; i < e.attrs.len(); i++ {
+		entry := e.attrs.at(i)
+		attrs[entry.name] = entry.value
 	}
 	if e.onClick != nil {
 		if _, exists := attrs["data-action"]; exists {
@@ -202,17 +290,18 @@ func (r *naiveRenderer) naiveVisit(e *Element, depth int) error {
 		r.scope = attrs["id"]
 	}
 	defer func() { r.scope = previousScope }()
-	if len(e.styles) != 0 {
-		keys := make([]string, 0, len(e.styles))
-		for name := range e.styles {
-			keys = append(keys, name)
+	if e.styles.len() != 0 {
+		keys := make([]string, 0, e.styles.len())
+		for i := 0; i < e.styles.len(); i++ {
+			keys = append(keys, e.styles.at(i).name)
 		}
 		sort.Strings(keys)
 		var style strings.Builder
 		for _, name := range keys {
+			entry, _ := e.styles.get(name)
 			style.WriteString(name)
 			style.WriteByte(':')
-			style.WriteString(e.styles[name])
+			style.WriteString(entry.cssTextValue())
 			style.WriteByte(';')
 		}
 		attrs["style"] = style.String()

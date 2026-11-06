@@ -20,8 +20,8 @@ import (
 // while editing or rendering it.
 type Element struct {
 	tag      string
-	attrs    map[string]string
-	styles   map[string]string
+	attrs    *attrSet
+	styles   styleSet
 	text     string
 	children []*Element
 	onClick  func(context.Context) error
@@ -56,6 +56,9 @@ func (e *Element) Text(value string) *Element {
 // Children appends the given nodes in order. Nil children are ignored.
 func (e *Element) Children(children ...*Element) *Element {
 	if e != nil {
+		// Grow once for the whole call instead of letting append double the
+		// backing array from cap 1 through 2, 4, and 8.
+		e.children = slices.Grow(e.children, len(children))
 		for _, child := range children {
 			if child != nil {
 				e.children = append(e.children, child)
@@ -63,6 +66,96 @@ func (e *Element) Children(children ...*Element) *Element {
 		}
 	}
 	return e
+}
+
+// inlineAttrEntries is the number of attributes an element keeps without
+// another allocation. Elements with no attributes carry no set at all.
+const inlineAttrEntries = 4
+
+// attrEntry is one HTML attribute.
+type attrEntry struct {
+	name  string
+	value string
+}
+
+// attrSet stores an element's attributes in insertion order. It is allocated
+// on the first Attr call, and the first inlineAttrEntries fit in that one
+// allocation. Reads are nil-safe so an element with no attributes needs no
+// empty set.
+type attrSet struct {
+	inline [inlineAttrEntries]attrEntry
+	extra  []attrEntry
+	n      int
+}
+
+func (s *attrSet) len() int {
+	if s == nil {
+		return 0
+	}
+	return s.n
+}
+
+// at returns the entry at index i, which must be within len.
+func (s *attrSet) at(i int) attrEntry {
+	if i < len(s.inline) {
+		return s.inline[i]
+	}
+	return s.extra[i-len(s.inline)]
+}
+
+// get returns the value of the named attribute.
+func (s *attrSet) get(name string) (string, bool) {
+	if s == nil {
+		return "", false
+	}
+	for i := 0; i < s.n; i++ {
+		if entry := s.at(i); entry.name == name {
+			return entry.value, true
+		}
+	}
+	return "", false
+}
+
+// value returns the named attribute, or "" when it is absent.
+func (s *attrSet) value(name string) string {
+	value, _ := s.get(name)
+	return value
+}
+
+// set adds an attribute, replacing one with the same name.
+func (s *attrSet) set(name, value string) {
+	for i := 0; i < s.n; i++ {
+		if s.at(i).name != name {
+			continue
+		}
+		if i < len(s.inline) {
+			s.inline[i].value = value
+		} else {
+			s.extra[i-len(s.inline)].value = value
+		}
+		return
+	}
+	entry := attrEntry{name: name, value: value}
+	if s.n < len(s.inline) {
+		s.inline[s.n] = entry
+	} else {
+		s.extra = append(s.extra, entry)
+	}
+	s.n++
+}
+
+// equal reports whether two sets hold the same attributes in any order.
+func (s *attrSet) equal(other *attrSet) bool {
+	if s.len() != other.len() {
+		return false
+	}
+	for i := 0; i < s.len(); i++ {
+		entry := s.at(i)
+		if value, ok := other.get(entry.name); !ok || value != entry.value {
+			return false
+		}
+	}
+	return true
 }
 
 // Attr adds or replaces an HTML attribute. Inline styles must use generated style methods or CSSRaw.
@@ -76,9 +169,9 @@ func (e *Element) Attr(name, value string) *Element {
 		return e
 	}
 	if e.attrs == nil {
-		e.attrs = make(map[string]string)
+		e.attrs = &attrSet{}
 	}
-	e.attrs[name] = value
+	e.attrs.set(name, value)
 	return e
 }
 
@@ -123,7 +216,10 @@ type renderer struct {
 	// keys is scratch for sorted key emission, shared by the style and
 	// attribute phases of one node. A parent finishes emitting before it
 	// recurses, so children reusing the scratch never disturb it.
-	keys       []string
+	keys []string
+	// scratch holds one formatted numeric style value at a time. The
+	// element stores lengths as numbers; they become text only here.
+	scratch    []byte
 	nextID     int
 	scope      string
 	identities map[string]int
@@ -156,6 +252,7 @@ func (r *renderer) reset() {
 	}
 	r.stack = r.stack[:0]
 	r.keys = r.keys[:0]
+	r.scratch = r.scratch[:0]
 	r.nextID = 0
 	r.scope = ""
 	clear(r.identities)
@@ -188,7 +285,9 @@ const (
 	estimateAttrOverhead = 8
 	// maxEstimateNodes caps the render size pre-walk so a cyclic tree
 	// still terminates quickly; the walk stops counting, it never fails.
-	maxEstimateNodes = 4096
+	// The cap covers a 9k-node document, so a page-sized tree grows the
+	// output buffer once instead of doubling it partway through.
+	maxEstimateNodes = 16384
 )
 
 // estimateSize bounds the fragment length with one cheap pointer walk, so
@@ -202,6 +301,7 @@ func estimateSize(root *Element) int {
 	total := 0
 	counted := 0
 	stack := []*Element{root}
+	var scratch []byte
 	for len(stack) > 0 && counted < maxEstimateNodes {
 		e := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
@@ -210,11 +310,19 @@ func estimateSize(root *Element) int {
 		}
 		counted++
 		total += estimateNodeOverhead + len(e.tag)*2 + len(e.text)
-		for name, value := range e.attrs {
-			total += len(name) + len(value) + estimateAttrOverhead
+		for i := 0; i < e.attrs.len(); i++ {
+			entry := e.attrs.at(i)
+			total += len(entry.name) + len(entry.value) + estimateAttrOverhead
 		}
-		for name, value := range e.styles {
-			total += len(name) + len(value) + estimateAttrOverhead
+		for i := 0; i < e.styles.len(); i++ {
+			entry := e.styles.at(i)
+			total += len(entry.name) + estimateAttrOverhead
+			if entry.unit == unitText {
+				total += len(entry.text)
+				continue
+			}
+			scratch = appendScalar(scratch[:0], entry.num, entry.unit)
+			total += len(scratch)
 		}
 		stack = append(stack, e.children...)
 	}
@@ -279,7 +387,7 @@ func (r *renderer) visit(e *Element, depth int) error {
 	action, id := "", ""
 	hasAction := false
 	if e.onClick != nil {
-		if _, exists := e.attrs["data-action"]; exists {
+		if _, exists := e.attrs.get("data-action"); exists {
 			r.stack = r.stack[:len(r.stack)-1]
 			return fmt.Errorf("ui: cannot combine OnClick with a custom data-action")
 		}
@@ -287,11 +395,11 @@ func (r *renderer) visit(e *Element, depth int) error {
 		action = actionName(r.nextID)
 		hasAction = true
 		r.actions[action] = e.onClick
-	} else if dataAction := e.attrs["data-action"]; dataAction != "" {
+	} else if dataAction := e.attrs.value("data-action"); dataAction != "" {
 		action = dataAction
 		hasAction = true
 	}
-	if userID := e.attrs["id"]; userID != "" {
+	if userID := e.attrs.value("id"); userID != "" {
 		id = userID
 	} else if hasAction {
 		id = r.controlID(e)
@@ -306,37 +414,31 @@ func (r *renderer) visit(e *Element, depth int) error {
 	// serialized directly in sorted order; attribute names follow and are
 	// sorted as their own region. Single-key regions skip the sort.
 	r.keys = r.keys[:0]
-	styleCount := 0
-	if len(e.styles) == 1 {
-		for name := range e.styles {
-			r.keys = append(r.keys, name)
-		}
-		styleCount = 1
-	} else if len(e.styles) > 1 {
-		for name := range e.styles {
-			r.keys = append(r.keys, name)
-		}
+	styleCount := e.styles.len()
+	for i := 0; i < styleCount; i++ {
+		r.keys = append(r.keys, e.styles.at(i).name)
+	}
+	if styleCount > 1 {
 		sort.Strings(r.keys)
-		styleCount = len(e.styles)
 	}
 	attrStart := len(r.keys)
-	for name := range e.attrs {
-		r.keys = append(r.keys, name)
+	for i := 0; i < e.attrs.len(); i++ {
+		r.keys = append(r.keys, e.attrs.at(i).name)
 	}
 	// Synthesized attributes read back the matching value below, so they
 	// sort with the author's attributes instead of living in a copied map.
 	if hasAction {
-		if _, ok := e.attrs["data-action"]; !ok {
+		if _, ok := e.attrs.get("data-action"); !ok {
 			r.keys = append(r.keys, "data-action")
 		}
 	}
 	if id != "" {
-		if _, ok := e.attrs["id"]; !ok {
+		if _, ok := e.attrs.get("id"); !ok {
 			r.keys = append(r.keys, "id")
 		}
 	}
-	if len(e.styles) != 0 {
-		if _, ok := e.attrs["style"]; !ok {
+	if styleCount != 0 {
+		if _, ok := e.attrs.get("style"); !ok {
 			r.keys = append(r.keys, "style")
 		}
 	}
@@ -357,13 +459,19 @@ func (r *renderer) visit(e *Element, depth int) error {
 			writeEscaped(&r.output, id)
 		case "style":
 			for _, sname := range r.keys[:styleCount] {
+				entry, _ := e.styles.get(sname)
 				writeEscaped(&r.output, sname)
 				r.output.WriteByte(':')
-				writeEscaped(&r.output, e.styles[sname])
+				if entry.unit == unitText {
+					writeEscaped(&r.output, entry.text)
+				} else {
+					r.scratch = entry.appendValue(r.scratch[:0])
+					_, _ = r.output.Write(r.scratch)
+				}
 				r.output.WriteByte(';')
 			}
 		default:
-			writeEscaped(&r.output, e.attrs[name])
+			writeEscaped(&r.output, e.attrs.value(name))
 		}
 		r.output.WriteByte('"')
 	}
@@ -458,11 +566,11 @@ func (r *renderer) controlID(e *Element) string {
 	h = hashString(h, " ")
 	h = hashString(h, e.tag)
 	h = hashString(h, " ")
-	h = hashString(h, e.attrs["data-action"])
+	h = hashString(h, e.attrs.value("data-action"))
 	h = hashString(h, " ")
-	h = hashString(h, e.attrs["name"])
+	h = hashString(h, e.attrs.value("name"))
 	h = hashString(h, " ")
-	h = hashString(h, e.attrs["aria-label"])
+	h = hashString(h, e.attrs.value("aria-label"))
 	h = hashString(h, "\n")
 	seen := map[*Element]bool{}
 	var text func(*Element)
