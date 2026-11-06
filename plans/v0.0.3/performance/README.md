@@ -51,6 +51,7 @@ The optimization plan is divided into 6 distinct, self-contained implementation 
 4. **[Phase 04: Code Editor Syntax Highlighting](phase-04-code-editor-syntax-highlighting.md)** - Completed
 5. **[Phase 05: Window Resizing with Soft-Wrap](phase-05-window-resizing-with-soft-wrap.md)** - Completed
 6. **[Phase 06: Full Tile Repaint & Blitting](phase-06-tile-repaint-and-blitting.md)** - Completed
+7. **[Phase 07: Full Rebuild, Single Patch, and Batched Patch Paths](phase-07-rebuild-and-patch-paths.md)** - Proposed
 
 ---
 
@@ -88,3 +89,12 @@ The optimization plan is divided into 6 distinct, self-contained implementation 
 - [x] `OPT-06-01` Add persistent `blitOpts` to `partialState` in [`internal/window/replay_partial_state.go`](file:///home/chinmay/ChinmayPersonalProjects/ownframe/internal/window/replay_partial_state.go).
 - [x] `OPT-06-02` Reuse tile repaint candidate slices in `planRepaints` to avoid allocating 56 slices on damaged frames.
 - [x] `OPT-06-03` Verify `BenchmarkTilePaintFull` and `BenchmarkTileDrawReplayPartialDamaged`.
+
+### Phase 07: Full Rebuild, Single Patch, and Batched Patch Paths
+- [ ] `OPT-07-01` Route few-element updates through `PatchElement` with refresh fallback.
+- [ ] `OPT-07-02` Add batched multi-element patch (one style re-resolve, per-element relayouts, single draw).
+- [ ] `OPT-07-03` Window large homogeneous collections (visible window + spacers).
+- [ ] `OPT-07-04` Keep a per-element-loop regression benchmark proving full-surface patching stays forbidden.
+- [ ] `OPT-07-05` Stylesheet-swap path for global restyles with one cascade + layout + paint.
+- [ ] `OPT-07-06` Upstream layout-profile issue filed with the 257 ms / 9k-box baseline.
+- [ ] `OPT-07-07` Run the data-change benchmark set plus `make test`, `go vet`, and `gofmt` clean.
