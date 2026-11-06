@@ -32,6 +32,17 @@ const (
 	invoiceStatusWidth   = 90
 )
 
+// invoiceWindowSize is the windowed row count: screen renders at most this
+// many rows plus top/bottom spacers. invoiceRowH estimates one row's height
+// in CSS pixels (8px padding top and bottom around a ~16px text line); the
+// spacers multiply it by the hidden row counts to keep the scroll range at
+// the full-table value. Recalibrate against laid-out boxes when scroll
+// wiring lands.
+const (
+	invoiceWindowSize = 100
+	invoiceRowH       = 32
+)
+
 // Invoice themes: gray is the zebra stripe (white/gray), light is plain white.
 const (
 	invoiceThemeGray  = "gray"
@@ -113,13 +124,27 @@ func invoiceStatusColor(status string) ui.Color {
 // patch switches the click and theme paths from full rebuilds to element
 // patches: two class edits plus a text edit for selection, one class edit
 // per row for the theme, each falling back to a full refresh on refusal.
+// patch is on by default; the rebuild path and refresh stay as the fallback
+// and regression baseline.
+//
+// windowed renders only the windowStart slice of rows plus top/bottom
+// spacers that keep the scroll range at the full-table value. Off by
+// default: non-windowed output is byte-identical to the full table.
 type invoiceApp struct {
-	view     *ui.View
-	page     *ownframe.Page
-	rows     []invoiceRow
-	selected int
-	theme    string
-	patch    bool
+	view        *ui.View
+	page        *ownframe.Page
+	rows        []invoiceRow
+	selected    int
+	theme       string
+	patch       bool
+	windowed    bool
+	windowStart int
+	// version bumps on every memory-state mutation; renderedVersion records
+	// the version whose screen() output refresh() last committed. refresh()
+	// skips the rebuild when they match. Patch paths that bypass refresh
+	// still bump version so a later refresh is not wrongly skipped.
+	version         uint64
+	renderedVersion uint64
 }
 
 func newInvoiceApp() (*invoiceApp, error) {
@@ -129,7 +154,7 @@ func newInvoiceApp() (*invoiceApp, error) {
 // newInvoiceAppWithCount builds the table with n rows. Tests use a small
 // count for batch paths; benchmarks use the full thousand.
 func newInvoiceAppWithCount(n int) (*invoiceApp, error) {
-	a := &invoiceApp{selected: -1, theme: invoiceThemeGray, rows: makeInvoiceRows(n)}
+	a := &invoiceApp{selected: -1, theme: invoiceThemeGray, rows: makeInvoiceRows(n), patch: true}
 	view, err := ui.Mount(ownframe.Config{
 		Title:       invoiceTitle,
 		Width:       invoiceWidth,
@@ -236,8 +261,13 @@ func (a *invoiceApp) screen() *ui.Element {
 			a.headerCell("Total", invoiceTotalColWidth),
 			a.headerCell("Status", invoiceStatusWidth),
 		)
-	rows := make([]*ui.Element, 0, len(a.rows))
-	for i, r := range a.rows {
+	start, end := 0, len(a.rows)
+	if a.windowed {
+		start, end = a.windowRange()
+	}
+	rows := make([]*ui.Element, 0, end-start)
+	for i := start; i < end; i++ {
+		r := a.rows[i]
 		row := ui.Div().ID("invoice-row-"+strconv.Itoa(i)).
 			Attr("data-action", "row:"+strconv.Itoa(i)).
 			Class(a.rowClass(i)).
@@ -256,10 +286,55 @@ func (a *invoiceApp) screen() *ui.Element {
 			)
 		rows = append(rows, row)
 	}
+	grid := rows
+	if a.windowed {
+		padded := make([]*ui.Element, 0, len(rows)+2)
+		padded = append(padded, ui.Div().ID("invoice-pad-top").Height(ui.Px(float64(start*invoiceRowH))))
+		padded = append(padded, rows...)
+		padded = append(padded, ui.Div().ID("invoice-pad-bot").Height(ui.Px(float64((len(a.rows)-end)*invoiceRowH))))
+		grid = padded
+	}
 	return ui.Div().Display(ui.DisplayFlex).
 		FlexDirection(ui.FlexDirectionColumn).
 		Width(ui.Percent(100)).
-		Children(header, columns, ui.Div().ID("invoice-grid").Children(rows...))
+		Children(header, columns, ui.Div().ID("invoice-grid").Children(grid...))
+}
+
+// windowRange clamps the visible slice to [start, start+invoiceWindowSize)
+// inside the rows. Short tables show every row from zero.
+func (a *invoiceApp) windowRange() (int, int) {
+	total := len(a.rows)
+	if total <= invoiceWindowSize {
+		return 0, total
+	}
+	start := a.windowStart
+	if start < 0 {
+		start = 0
+	}
+	if start > total-invoiceWindowSize {
+		start = total - invoiceWindowSize
+	}
+	return start, start + invoiceWindowSize
+}
+
+// setWindowed enables windowing and moves the window to start, clamped into
+// range so the window always covers a full invoiceWindowSize slice (or the
+// whole table when it is shorter).
+func (a *invoiceApp) setWindowed(start int) {
+	a.windowed = true
+	a.version++
+	total := len(a.rows)
+	if total <= invoiceWindowSize {
+		a.windowStart = 0
+		return
+	}
+	if start < 0 {
+		start = 0
+	}
+	if start > total-invoiceWindowSize {
+		start = total - invoiceWindowSize
+	}
+	a.windowStart = start
 }
 
 func (a *invoiceApp) handleClick(ctx context.Context, box ownframe.Box) error {
@@ -272,6 +347,7 @@ func (a *invoiceApp) handleClick(ctx context.Context, box ownframe.Box) error {
 		} else {
 			a.theme = invoiceThemeGray
 		}
+		a.version++
 		return a.refresh(ctx)
 	}
 	n, ok := strings.CutPrefix(box.Action, "row:")
@@ -283,43 +359,50 @@ func (a *invoiceApp) handleClick(ctx context.Context, box ownframe.Box) error {
 		return nil
 	}
 	if a.patch {
-		return a.patchSelect(ctx, i)
+		return a.patchSelectBatched(ctx, i)
 	}
 	a.selected = i
+	a.version++
 	return a.refresh(ctx)
 }
 
 func (a *invoiceApp) refresh(ctx context.Context) error {
+	if a.version == a.renderedVersion {
+		return nil
+	}
 	if err := a.view.Update(ctx, a.screen()); err != nil {
 		return fmt.Errorf("update invoice table view: %w", err)
 	}
+	a.renderedVersion = a.version
 	return nil
 }
 
-// patchClass swaps one row's theme class. Any failure falls back to a full
-// refresh from memory state, so the page never goes stale.
-func (a *invoiceApp) patchClass(ctx context.Context, id, class string) error {
-	if err := a.page.PatchElement(ctx, id, ownframe.ElementEdit{Attribute: "class", Value: class}); err != nil {
-		return a.refresh(ctx)
-	}
-	return nil
-}
-
-// patchSelect moves the selection with two class edits and a readout text
-// edit instead of rebuilding the table.
-func (a *invoiceApp) patchSelect(ctx context.Context, i int) error {
+// patchSelectBatched moves the selection with two class edits and a readout
+// text edit instead of rebuilding the table, committed through PatchElements
+// in ONE call: all edits share a single style re-resolve, relayout, and
+// draw. Any failure falls back to a full refresh from memory state, so the
+// page never goes stale.
+func (a *invoiceApp) patchSelectBatched(ctx context.Context, i int) error {
 	old := a.selected
 	a.selected = i
+	a.version++
+	patches := make([]ownframe.ElementPatch, 0, 3)
 	if old >= 0 && old < len(a.rows) && old != i {
-		if err := a.patchClass(ctx, "invoice-row-"+strconv.Itoa(old), a.rowClass(old)); err != nil {
-			return err
-		}
+		patches = append(patches, ownframe.ElementPatch{
+			ID:    "invoice-row-" + strconv.Itoa(old),
+			Edits: []ownframe.ElementEdit{{Attribute: "class", Value: a.rowClass(old)}},
+		})
 	}
-	if err := a.patchClass(ctx, "invoice-row-"+strconv.Itoa(i), a.rowClass(i)); err != nil {
-		return err
-	}
+	patches = append(patches, ownframe.ElementPatch{
+		ID:    "invoice-row-" + strconv.Itoa(i),
+		Edits: []ownframe.ElementEdit{{Attribute: "class", Value: a.rowClass(i)}},
+	})
 	text := a.selectedText()
-	if err := a.page.PatchElement(ctx, "invoice-selected", ownframe.ElementEdit{Text: &text}); err != nil {
+	patches = append(patches, ownframe.ElementPatch{
+		ID:    "invoice-selected",
+		Edits: []ownframe.ElementEdit{{Text: &text}},
+	})
+	if err := a.page.PatchElements(ctx, patches); err != nil {
 		return a.refresh(ctx)
 	}
 	return nil
@@ -346,6 +429,7 @@ func (a *invoiceApp) styleThemeSwap(ctx context.Context) error {
 	} else {
 		a.theme = invoiceThemeGray
 	}
+	a.version++
 	if err := a.page.SetTheme(themeCSSFor(a.theme)); err != nil {
 		return err
 	}
@@ -360,6 +444,7 @@ func (a *invoiceApp) patchTheme(ctx context.Context) error {
 	} else {
 		a.theme = invoiceThemeGray
 	}
+	a.version++
 	a.page.Probe().BeginRedrawBatch()
 	var firstErr error
 	for i := range a.rows {

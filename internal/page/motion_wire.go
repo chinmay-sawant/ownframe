@@ -16,6 +16,80 @@ import (
 // block instead of logging on the hot path.
 type MotionStats = motion.Stats
 
+// motionCommitIdle reports whether the runtime needs nothing from this
+// commit: no player or renderer is live or bound, no layout or paint work is
+// queued, and every counter a no-declaration commit would zero already reads
+// zero. Skipping the box walks then leaves every counter exactly where the
+// commit would have left it: the no-declaration paths below only zero
+// counters that already read zero and install the display.
+//
+// Bound reads zero exactly when no entries are bound: every bind assigns it
+// from the entry list it installed, and only a bind changes either one, so a
+// zero Bound means RequeueLayout would loop over nothing and the queue it
+// would report is the empty one the gate also requires.
+func (p *Page) motionCommitIdle() bool {
+	if p.motion == nil {
+		return true
+	}
+	if p.motion.Active() {
+		return false
+	}
+	st := p.motion.Stats()
+	return st.Bound == 0 &&
+		st.Active == 0 &&
+		st.Sampled == 0 &&
+		st.NeedsRestamp == 0 &&
+		!st.NeedsRetainedState &&
+		st.LastError == "" &&
+		len(st.Gaps) == 0 &&
+		st.UnresolvedTimelines == 0 &&
+		st.InactiveTimelines == 0 &&
+		st.LayoutBound == 0 &&
+		st.LayoutQueued == 0 &&
+		st.SVGPaintRequests == 0 &&
+		st.TransitionsBound == 0 &&
+		st.TransitionsStarted == 0 &&
+		st.TransitionsCancelled == 0 &&
+		st.TransitionsSkipped == 0 &&
+		st.TransitionsBlocked == 0 &&
+		st.TransitionSkipReason == "" &&
+		st.TransitionsNoID == 0 &&
+		st.TransitionsNoOld == 0 &&
+		st.TransitionsActive == 0 &&
+		st.TransitionsSampled == 0 &&
+		st.TransitionError == ""
+}
+
+// displayDeclaresAnimations reports whether any box in d declares a CSS
+// animation. The predicate matches the bind's own scan, so a false answer
+// means the bind would take its no-animation fast path.
+func displayDeclaresAnimations(d *Display) bool {
+	if d == nil {
+		return false
+	}
+	for i := range d.Boxes {
+		if len(d.Boxes[i].Animations) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// displayDeclaresTransitions reports whether any box in d declares a CSS
+// transition. The predicate matches the capture's own scan, so a false
+// answer means the capture would walk both displays and return nothing.
+func displayDeclaresTransitions(d *Display) bool {
+	if d == nil {
+		return false
+	}
+	for i := range d.Boxes {
+		if len(d.Boxes[i].Transitions) != 0 {
+			return true
+		}
+	}
+	return false
+}
+
 // bindMotion resolves the CSS animations of the display the page just
 // published. Every publish path calls it after the display is installed and
 // the generation bumped, so the runtime never samples an operation list the
@@ -46,6 +120,19 @@ func (p *Page) bindMotion(previous, display *Display) {
 	// the box tree the re-projection pass patches.
 	retained := p.retainState
 
+	if display != nil && p.motionCommitIdle() && !displayDeclaresAnimations(display) {
+		// No box declares an animation and the runtime holds nothing: the
+		// bind would only zero counters that already read zero, so installing
+		// the display is the whole bind. The retained-state debt below is
+		// still paid, the way the full bind would pay it.
+		p.motion.AdoptDisplay(display)
+		if retained {
+			p.restampRedraw = false
+		}
+
+		return
+	}
+
 	_ = p.motion.BindAfter(previous, display)
 	if display == nil {
 		return
@@ -75,9 +162,22 @@ func (p *Page) bindMotion(previous, display *Display) {
 // and the one it is about to install. It must run before the commit swaps the
 // old list away, because the old operations hold the paint currently on
 // screen. A page with the transition driver off captures nothing.
+//
+// A skipped capture returns an empty non-nil slice: it proved there is
+// nothing to capture without walking either display, so bindTransitions can
+// skip without rescanning. A nil slice means the runtime ran the capture (or
+// the driver is off) and the bind must run to publish its counters. Callers
+// pass the result straight through; the two nil literals at the fallback and
+// restamp sites deliberately take the slow path, which is always correct.
 func (p *Page) captureTransitions(previous, next *Display) []motion.TransitionCapture {
 	if p.motion == nil || p.transitionsOff {
 		return nil
+	}
+	if next != nil && p.motionCommitIdle() && !displayDeclaresTransitions(next) {
+		// No box declares a transition and the runtime holds no live run a
+		// capture could cancel or reverse, so the capture would walk both
+		// displays and return nothing with zeroed counters.
+		return []motion.TransitionCapture{}
 	}
 	return p.motion.CaptureTransitions(previous, next)
 }
@@ -86,6 +186,11 @@ func (p *Page) captureTransitions(previous, next *Display) []motion.TransitionCa
 // committed. The commit time is the transition start. When the page has no
 // patchable display, or the switch is off, any live renderer is released and
 // the committed paint stays as it is.
+//
+// An empty non-nil capture set from a skipped capture installs nothing: the
+// registries already read empty, so the bind would only rewrite zeroes and
+// ask the clock for a start time no renderer needs. Anything else runs the
+// bind, which publishes the capture's diagnostic counters.
 func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
 	if p.motion == nil {
 		return
@@ -93,6 +198,9 @@ func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
 	if p.transitionsOff {
 		p.motion.ReleaseTransitions()
 
+		return
+	}
+	if captures != nil && len(captures) == 0 && p.motionCommitIdle() {
 		return
 	}
 	p.motion.BindTransitions(p.draw.Display, captures, time.Now())

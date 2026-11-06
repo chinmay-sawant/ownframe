@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -414,15 +415,59 @@ func (p *Page) markFormDirty() {
 	p.dataMu.Unlock()
 }
 
-func (p *Page) syncForm(body string) string {
-	// The whole sync is one critical section against SetData: the
-	// fast-path check, the merge (whose binds read p.data), and the store
-	// of the merged body must not interleave with a data publish. Split
-	// locking could race the flags and miss a publish between the check
-	// and the store.
-	p.dataMu.Lock()
-	defer p.dataMu.Unlock()
+// its pass counter. Tests read the counter to prove the rewrite is skipped
+// for span-free bodies. Phase 2 and the publish path are the only callers,
+// so the count is exact.
+//
+//nolint:gochecknoglobals // Single process-wide call counter for tests
+var rewriteButtonCalls atomic.Uint64
 
+// formSnap pins the sync inputs snapshot under the phase-1 lock. The dirty
+// flag, the last synced body, and the published source are shared with
+// SetData; the live map, the order, and the caret scalars are owned by the
+// page loop and only retained, never mutated, after the unlock.
+type formSnap struct {
+	dirty        bool
+	source       string
+	lastSync     string
+	focusID      string
+	caret        int
+	anchor       int
+	all          bool
+	preeditID    string
+	preedit      string
+	preeditStart int
+	preeditEnd   int
+	live         map[string]Control
+	order        []string
+}
+
+// formMerge carries one lock-free merge from the scan to the publish. body
+// is the post-rewrite source stored as lastSyncBody; out is the published
+// source (built marks it ready, so the skip path can leave it empty and let
+// the emoji pass run after the publish unlocks); bound is the phase-2 bind
+// snapshot the publish re-checks.
+type formMerge struct {
+	body  string
+	hash  uint64
+	spans []controlSpan
+	byID  map[string]Control
+	order []string
+	st    form.Caret
+	bound map[string]Control
+	out   string
+	built bool
+}
+
+func (p *Page) syncForm(body string) string {
+	p.syncClean = false
+	// Phase 1: snapshot the shared state under one short exclusive lock.
+	// SetData publishes data and the dirty flag under this lock, so the
+	// snapshot and the publish below cannot interleave with it. The live
+	// control map and the caret scalars are owned by the page loop (no
+	// other goroutine writes them), so retaining them lock-free is safe;
+	// every SetData-shared field is copied here.
+	p.dataMu.Lock()
 	doc := p.nav.Doc()
 	fs := p.formState()
 	if fs == nil || fs.Doc != doc {
@@ -431,43 +476,120 @@ func (p *Page) syncForm(body string) string {
 		p.setFormState(fs)
 		p.formDirty = true
 	}
+	snap := formSnap{
+		dirty:        p.formDirty,
+		source:       p.source,
+		lastSync:     p.lastSyncBody,
+		focusID:      fs.FocusID,
+		caret:        fs.Caret,
+		anchor:       fs.Anchor,
+		all:          fs.All,
+		preeditID:    fs.PreeditID,
+		preedit:      fs.Preedit,
+		preeditStart: fs.PreeditStart,
+		preeditEnd:   fs.PreeditEnd,
+		live:         fs.ByID,
+		order:        fs.Order,
+	}
+	p.dataMu.Unlock()
 
-	if p.source != "" && body == p.lastSyncBody && !p.formDirty {
-		c, hasFocus := fs.ByID[fs.FocusID]
+	// Fast path: the template output is unchanged and nothing is dirty.
+	if snap.source != "" && body == snap.lastSync && !snap.dirty {
+		c, hasFocus := snap.live[snap.focusID]
 		if !hasFocus || !form.CanEdit(c) {
-			return p.source
+			p.syncClean = true
+			return snap.source
 		}
 	}
 
-	// Pages without form controls skip the button rewrite, the scan, the
-	// merge, the binds, and the control rewrite. The live set cached from
-	// the last sync is empty and the new body carries no control tags, so
-	// every one of those steps is a no-op; only the focus handoff, the
-	// bookkeeping, and the emoji pass below can change anything.
-	if len(fs.ByID) == 0 && len(fs.Order) == 0 && !form.HasControls(body) {
-		if _, ok := fs.ByID[fs.FocusID]; !ok {
-			fs.FocusID = ""
-			fs.ClearRange()
-		}
+	// One fused pass: the control probe, the control scan, and the
+	// button-input flag, memoized per source hash. A repeat body reuses
+	// the cached spans and head offsets without walking the source.
+	hash := form.HashSource(body)
+	hasControls, spans, hasButtons := form.ScanCached(body, hash)
 
-		p.applyFocusRequest()
-		fs.ClampToFocus()
-
-		p.lastSyncBody = body
-		p.formDirty = false
-
-		return emojiPass(body)
+	// Pages without form controls skip the button rewrite, the merge, the
+	// binds, and the control rewrite. The live set cached from the last
+	// sync is empty and the new body carries no control tags, so every one
+	// of those steps is a no-op; only the focus handoff, the bookkeeping,
+	// and the emoji pass below can change anything.
+	if len(snap.live) == 0 && len(snap.order) == 0 && !hasControls {
+		return p.publishForm(formMerge{body: body}, snap)
 	}
 
-	body = rewriteButtons(body)
-	spans := form.Scan(body)
-	byID, order := form.Merge(fs.ByID, spans)
+	// The fused scan flags exactly the inputs the button rewrite replaces
+	// (same open-tag read, same type attribute read, same comment and
+	// script skipping), so a false skips the rewrite knowing it is the
+	// identity. A true rewrite moves spans, hence the rescan.
+	if hasButtons {
+		rewriteButtonCalls.Add(1)
+		body = rewriteButtons(body)
+		hash = form.HashSource(body)
+		_, spans, _ = form.ScanCached(body, hash)
+	}
+
+	byID, order := form.Merge(snap.live, spans)
+
+	// Phase 2: snapshot the bound fields under a short read lock. The scan
+	// and the rewrites above and below run lock-free; bindRead still reads
+	// p.data, so it stays under the lock.
+	p.dataMu.RLock()
+	bound := make(map[string]Control, len(byID))
+	for id, c := range byID {
+		if c.Bind == "" {
+			continue
+		}
+		if next, ok := bindRead(p, c); ok {
+			bound[id] = next
+		}
+	}
+	p.dataMu.RUnlock()
 	form.ApplyBinds(byID, func(c Control) (Control, bool) {
-		return bindRead(p, c)
+		next, ok := bound[c.ID]
+		return next, ok
 	})
-	fs.ByID = byID
-	fs.Order = order
-	if _, ok := byID[fs.FocusID]; !ok {
+
+	merge := formMerge{
+		body:  body,
+		hash:  hash,
+		spans: spans,
+		byID:  byID,
+		order: order,
+		st:    caretOfSnap(snap, byID),
+		bound: bound,
+	}
+
+	// A span-free body (and a body with only plain buttons) needs no
+	// control rewrite: RewriteCached returns the source unchanged for it.
+	// The span count comes from the single scan above, not a rescan.
+	if len(spans) > 0 && form.HasFieldSpans(spans) {
+		merge.out = emojiPass(form.RewriteCached(body, hash, spans, byID, merge.st))
+		merge.built = true
+	}
+
+	return p.publishForm(merge, snap)
+}
+
+// publishForm installs the merged controls under a short exclusive lock,
+// re-checks the bound fields against a concurrent SetData, and stores the
+// sync flags. The re-read is cheap (one reflected field per bound control,
+// no source pass): when nothing moved, the lock-free merge publishes as is.
+// When a publish landed after the phase-2 snapshot, the binds refresh and
+// the output rebuilds under this lock from the cached spans and head
+// offsets (no scan repeats), and the page stays dirty so the next redraw
+// re-verifies against re-executed template output.
+func (p *Page) publishForm(merge formMerge, snap formSnap) string {
+	p.dataMu.Lock()
+	fs := p.formState()
+	dirty := false
+	if merge.byID != nil {
+		if refreshBindsLocked(p, &merge, snap) {
+			dirty = true
+		}
+		fs.ByID = merge.byID
+		fs.Order = merge.order
+	}
+	if _, ok := fs.ByID[fs.FocusID]; !ok {
 		fs.FocusID = ""
 		fs.ClearRange()
 	}
@@ -475,10 +597,95 @@ func (p *Page) syncForm(body string) string {
 	p.applyFocusRequest()
 	fs.ClampToFocus()
 
-	p.lastSyncBody = body
-	p.formDirty = false
+	p.lastSyncBody = merge.body
+	p.formDirty = dirty
+	out, built := merge.out, merge.built
+	p.dataMu.Unlock()
 
-	return emojiPass(form.RewriteState(body, spans, byID, form.CaretOf(fs.View())))
+	if !built {
+		out = emojiPass(merge.body)
+	}
+
+	return out
+}
+
+// refreshBindsLocked re-reads every bound control under the publish lock
+// and reports whether any bound value moved under a concurrent publish. A
+// move refreshes the merge and rebuilds the output; a control whose binding
+// vanished (its data no longer binds) also counts as a move so the next
+// redraw re-merges against the new data. bindRead keeps reading p.data, so
+// it stays correct: it runs only under dataMu here and in phase 2.
+func refreshBindsLocked(p *Page, merge *formMerge, snap formSnap) bool {
+	moved := false
+	for id, c := range merge.byID {
+		if c.Bind == "" {
+			continue
+		}
+		next, ok := bindRead(p, c)
+		if !ok {
+			if _, was := merge.bound[id]; was {
+				moved = true
+			}
+
+			continue
+		}
+		if bindValueChanged(c, next) {
+			merge.byID[id] = next
+			moved = true
+		}
+	}
+	if !moved {
+		return false
+	}
+
+	merge.st = caretOfSnap(snap, merge.byID)
+	merge.out = merge.body
+	merge.built = false
+	if len(merge.spans) > 0 && form.HasFieldSpans(merge.spans) {
+		merge.out = form.RewriteCached(merge.body, merge.hash, merge.spans, merge.byID, merge.st)
+		merge.built = true
+	}
+	merge.out = emojiPass(merge.out)
+	merge.built = true
+
+	return true
+}
+
+// bindValueChanged reports whether a refreshed bind differs from the merge
+// in exactly the fields bindRead sets: the check for a checkbox, the check
+// for a radio, and the value for every other bound control.
+func bindValueChanged(old, next Control) bool {
+	switch bindKind(old) {
+	case 'b':
+		return old.Checked != next.Checked
+	case 's':
+		if old.Type == "radio" {
+			return old.Checked != next.Checked
+		}
+
+		return old.Value != next.Value
+	default:
+		return false
+	}
+}
+
+// caretOfSnap builds the rewrite caret from the merged controls and the
+// snapshotted caret range, mirroring State.View after a merge.
+func caretOfSnap(snap formSnap, byID map[string]Control) form.Caret {
+	c, ok := byID[snap.focusID]
+
+	return form.CaretOf(form.FocusView{
+		FocusID:      snap.focusID,
+		Caret:        snap.caret,
+		Anchor:       snap.anchor,
+		All:          snap.all,
+		Control:      c,
+		Present:      ok,
+		PreeditID:    snap.preeditID,
+		Preedit:      snap.preedit,
+		PreeditStart: snap.preeditStart,
+		PreeditEnd:   snap.preeditEnd,
+	})
 }
 
 func (p *Page) clickControl(ctx context.Context, box Box) error {

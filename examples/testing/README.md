@@ -68,6 +68,19 @@ stylesheet (`SetTheme` + `Redraw`): one cascade, layout, and paint, no
 builder HTML render. MyGo has no patch path to add: its immediate-mode
 reframe already is the fine-grained path, so it is the comparison target.
 
+Framework paths, without invoice detail. Few element updates use the
+default patch path with refresh fallback. A batched patch applies N edits
+with one shared style re-resolve and one draw. Windowing lays out the
+visible viewport plus spacers, so build cost scales with viewport, not
+collection size. Global restyles use a stylesheet swap with one cascade,
+layout, and paint. Per element loops over full surfaces stay forbidden;
+the 1000 patch row below is the regression tripwire for that rule.
+Batched and windowed rows in Results are measured by collation.
+
+A refresh with no data change skips the render. The harness calls refresh
+twice with nothing changed between the calls, so the second call has no
+rebuild work. Its row in Results is TBD pending the benchmark run.
+
 ## Results (i7-13700HX, headless, `go test -bench`)
 
 | Path | ownframe | MyGo | Gap |
@@ -79,6 +92,9 @@ reframe already is the fine-grained path, so it is the comparison target.
 | Theme toggle + rebuild | 265.1 ms/op · 3.8 fps | n/a | Baseline for global changes |
 | Theme toggle + 1000 patches | 19650 ms/op · 0.05 fps · 12.9 GB/op · 13M allocs/op | n/a | Patching loses 74x: never patch row by row |
 | Theme toggle + stylesheet swap | 264.8 ms/op · 3.8 fps | n/a | Same as rebuild minus the HTML render |
+| Batched patch, few edits | TBD, measured by collation | n/a | One shared re-resolve, one draw |
+| Windowed build, visible viewport | TBD, measured by collation | n/a | Cost scales with viewport, not collection size |
+| Clean refresh, no change | TBD pending benchmark run | n/a | Second of two back-to-back refresh calls skips the render |
 | Idle re-render | 0.014 ms/op · 0 allocs | 12.3 ms/op (always reframes) | ownframe ~850x cheaper |
 
 Stage split inside a full ownframe rebuild (`-bench` harness, Perf on):

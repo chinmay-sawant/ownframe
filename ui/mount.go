@@ -35,12 +35,15 @@ func Mount(cfg ownframe.Config, root *Element) (*View, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg.HTML = document(cfg.Title, r.output.String())
+	cfg.HTML = Document(cfg.Title, r.output.String())
 	p, err := ownframe.New(cfg)
 	if err != nil {
+		putRenderer(r)
 		return nil, err
 	}
 	view := &View{Page: p, title: cfg.Title, actions: r.actions}
+	r.actions = make(map[string]func(context.Context) error)
+	putRenderer(r)
 	view.Handle(ownframe.Handlers{})
 	return view, nil
 }
@@ -66,17 +69,27 @@ func (v *View) Handle(handlers ownframe.Handlers) {
 // removed controls lose that state. To change a live value, use Page.Form.
 // Validation failures keep the previous source and callback registry. Draws
 // obey Page redraw batching: a batch flush can report a later rendering error.
+//
+// The view keeps one callback map for its lifetime: the pooled renderer
+// arrives with a cleared map, the view adopts the fresh callbacks on success,
+// and the previous map rides back into the pool for the next render, so
+// repeated updates reuse both the output buffer and the map capacity.
 func (v *View) Update(ctx context.Context, root *Element) error {
 	r, err := renderTree(root)
 	if err != nil {
 		return err
 	}
+	html := Document(v.title, r.output.String())
+	fresh := r.actions
 	previous := v.actions
-	v.actions = r.actions
-	if err := v.Page.Load(ctx, document(v.title, r.output.String()), ownframe.LoadOptions{ReplaceCurrent: true}); err != nil {
+	v.actions = fresh
+	if err := v.Page.Load(ctx, html, ownframe.LoadOptions{ReplaceCurrent: true}); err != nil {
 		v.actions = previous
+		putRenderer(r)
 		return err
 	}
+	r.actions = previous
+	putRenderer(r)
 	return nil
 }
 
@@ -84,14 +97,10 @@ func renderTree(root *Element) (*renderer, error) {
 	if root == nil {
 		return nil, fmt.Errorf("ui: a non-nil component tree is required")
 	}
-	r := newRenderer()
+	r := getRenderer()
 	if err := r.visit(root, 0); err != nil {
+		putRenderer(r)
 		return nil, err
 	}
 	return r, nil
-}
-
-func document(title, fragment string) string {
-	return "<!doctype html><html><head><meta charset=\"utf-8\"><title>" +
-		escape(title) + "</title><style>html,body{margin:0;padding:0}</style></head><body>" + fragment + "</body></html>"
 }

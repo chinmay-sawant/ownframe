@@ -91,10 +91,10 @@ The optimization plan is divided into 6 distinct, self-contained implementation 
 - [x] `OPT-06-03` Verify `BenchmarkTilePaintFull` and `BenchmarkTileDrawReplayPartialDamaged`.
 
 ### Phase 07: Full Rebuild, Single Patch, and Batched Patch Paths
-- [ ] `OPT-07-01` Route few-element updates through `PatchElement` with refresh fallback.
-- [ ] `OPT-07-02` Add batched multi-element patch (one style re-resolve, per-element relayouts, single draw).
-- [ ] `OPT-07-03` Window large homogeneous collections (visible window + spacers).
+- [x] `OPT-07-01` Route few-element updates through `PatchElement` with refresh fallback.
+- [x] `OPT-07-02` Add batched multi-element patch (one style re-resolve, per-element relayouts, single draw).
+- [x] `OPT-07-03` Window large homogeneous collections (visible window + spacers).
 - [ ] `OPT-07-04` Keep a per-element-loop regression benchmark proving full-surface patching stays forbidden.
-- [ ] `OPT-07-05` Stylesheet-swap path for global restyles with one cascade + layout + paint.
+- [x] `OPT-07-05` Stylesheet-swap path for global restyles with one cascade + layout + paint.
 - [ ] `OPT-07-06` Upstream layout-profile issue filed with the 257 ms / 9k-box baseline.
 - [ ] `OPT-07-07` Run the data-change benchmark set plus `make test`, `go vet`, and `gofmt` clean.

@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"io"
 	"runtime"
 	"strings"
 	"time"
@@ -59,9 +60,16 @@ func (s redrawSurface) ExecTemplate(track bool) (string, error) {
 }
 
 func (s redrawSurface) SyncForm(executed string) string {
-	s.p.source = s.p.syncForm(executed)
+	out := s.p.syncForm(executed)
+	s.p.source = out
+	// A clean fast-path sync leaves the source byte-identical, so the
+	// memoized hash, length, and revision from the last real sync are
+	// still valid and the rehash is pure overhead on the skip path.
+	if !s.p.syncClean {
+		s.p.noteSource(out)
+	}
 
-	return s.p.source
+	return out
 }
 
 func (s redrawSurface) RenderState() render.State { return s.p.renderState() }
@@ -96,12 +104,24 @@ func (s redrawSurface) AfterRedrawDraw(ctx context.Context) error {
 var _ draw.RedrawSurface = redrawSurface{}
 
 // execTemplate runs the trusted template, timing it when tracked.
+//
+// The "{{" probe is memoized to template-write time: the scan runs once
+// when p.tpl changes and the verdict is reused, so repeat frames pay no
+// scan. A clean form reuses the last merged body with no Execute. A dirty
+// frame executes into a pooled buffer and keeps one copy, recording the
+// body hash beside it.
 func (p *Page) execTemplate(track bool) (string, error) {
 	p.applyScrollWindow()
-	cur := p.nav.Current()
-	if !strings.Contains(cur, "{{") {
+	if p.tplProbeTpl != p.tpl {
+		p.tplProbeHas = strings.Contains(p.nav.Current(), "{{")
+		p.tplProbeTpl = p.tpl
+	}
+
+	if !p.tplProbeHas {
 		p.stats.lastTemplate = 0
-		return cur, nil
+		p.execSkipped = true
+
+		return p.nav.Current(), nil
 	}
 
 	p.dataMu.RLock()
@@ -114,26 +134,56 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	// still current.
 	if !p.formDirty && p.lastSyncBody != "" {
 		p.stats.lastTemplate = 0
+		p.execSkipped = true
+
 		return p.lastSyncBody, nil
 	}
 
-	return draw.Execute(
+	p.execSkipped = false
+
+	out, err := draw.ExecuteWriter(
 		track,
 		len(p.source),
 		&p.stats.lastTemplate,
-		func(b *strings.Builder) error {
-			return p.tpl.Execute(b, p.data)
+		func(w io.Writer) error {
+			return p.tpl.Execute(w, p.data)
 		},
 	)
+	if err != nil {
+		return "", err
+	}
+
+	body := string(out)
+	p.bodyHash = draw.HashString(body)
+	p.bodyLen = len(body)
+
+	return body, nil
 }
 
 // styleStaged styles the source, timing it when tracked.
+//
+// When the style cache already reflects the current source memo, the page
+// relayouts directly: the revision, hash, and length compare with no
+// cache lock, and the relayout takes one. Only a new source (or a dropped
+// cache) pays the Source memcmp and the fresh parse inside StyleDocument.
 func (p *Page) styleStaged(
 	ctx context.Context,
 	track bool,
 	source string,
 	state render.State,
 ) (*css.Document, error) {
+	if p.cacheFresh() {
+		ds := draw.Clock(track)
+
+		doc, err := p.cache.Relayout(ctx, p.width, p.height, state)
+		draw.Note(track, &p.stats.styleTime, ds)
+		if err != nil {
+			return nil, err
+		}
+
+		return doc, nil
+	}
+
 	styled, err := draw.StyleDocument(
 		ctx,
 		track,
@@ -153,6 +203,8 @@ func (p *Page) styleStaged(
 		p.stats.parses++
 		p.stats.cascades++
 	}
+
+	p.noteCacheSource()
 
 	return styled.Doc, nil
 }

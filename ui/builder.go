@@ -7,10 +7,11 @@ package ui
 import (
 	"context"
 	"fmt"
-	"hash/fnv"
-	"html"
+	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"sync"
 )
 
 // Element is one node in an experimental declarative UI tree.
@@ -103,7 +104,9 @@ func (e *Element) recordError(err error) {
 // can use the fragment alongside existing HTML/CSS templates. Use NewPage
 // instead when the tree has OnClick callbacks that must be connected.
 func Render(root *Element) (string, error) {
-	r := newRenderer()
+	r := getRenderer()
+	defer putRenderer(r)
+	r.output.Grow(estimateSize(root))
 	if err := r.visit(root, 0); err != nil {
 		return "", err
 	}
@@ -111,9 +114,16 @@ func Render(root *Element) (string, error) {
 }
 
 type renderer struct {
-	output     strings.Builder
-	actions    map[string]func(context.Context) error
-	active     map[*Element]bool
+	output  strings.Builder
+	actions map[string]func(context.Context) error
+	// stack is the current visit path. It replaces the old active map:
+	// membership is a linear scan, which stays cheap because depth is
+	// capped, and it needs no per-node map operations or defers.
+	stack []*Element
+	// keys is scratch for sorted key emission, shared by the style and
+	// attribute phases of one node. A parent finishes emitting before it
+	// recurses, so children reusing the scratch never disturb it.
+	keys       []string
 	nextID     int
 	scope      string
 	identities map[string]int
@@ -122,17 +132,87 @@ type renderer struct {
 func newRenderer() *renderer {
 	return &renderer{
 		actions:    make(map[string]func(context.Context) error),
-		active:     make(map[*Element]bool),
 		identities: make(map[string]int),
 	}
 }
 
+// rendererPool reuses builders across renders. The output buffer keeps its
+// capacity (one 600KB backing instead of regrowing per render); maps are
+// cleared on checkout so no state leaks between documents.
+var rendererPool = sync.Pool{New: func() any { return newRenderer() }}
+
+// reset prepares a pooled renderer for a new document. Callers that keep
+// r.actions (Mount, Update) must detach it first; reset clears whatever map
+// the renderer currently holds.
+func (r *renderer) reset() {
+	r.output.Reset()
+	clear(r.actions)
+	r.stack = r.stack[:0]
+	r.keys = r.keys[:0]
+	r.nextID = 0
+	r.scope = ""
+	clear(r.identities)
+}
+
+// getRenderer checks out a reset renderer. Put it back with putRenderer
+// after detaching anything the caller keeps (the actions map on success).
+func getRenderer() *renderer {
+	r := rendererPool.Get().(*renderer) //nolint:forcetypeassert // pool holds only *renderer
+	r.reset()
+	return r
+}
+
+// putRenderer returns a renderer whose maps the caller has detached or
+// cleared. The output buffer and key scratch keep their capacity.
+func putRenderer(r *renderer) {
+	if r == nil {
+		return
+	}
+	rendererPool.Put(r)
+}
+
 const (
 	maxDepth = 1024
-	// attrExtraCapacity reserves room for synthesized data-action, id,
-	// and style entries when copying a node's attribute map.
-	attrExtraCapacity = 3
+	// estimateNodeOverhead budgets the markup around one node: the open
+	// and close tags, quotes, separators, and synthesized attributes.
+	estimateNodeOverhead = 64
+	// estimateAttrOverhead budgets the `="..."` separators around one
+	// attribute or style declaration value.
+	estimateAttrOverhead = 8
+	// maxEstimateNodes caps the render size pre-walk so a cyclic tree
+	// still terminates quickly; the walk stops counting, it never fails.
+	maxEstimateNodes = 4096
 )
+
+// estimateSize bounds the fragment length with one cheap pointer walk, so
+// Render can Grow the output builder once instead of regrowing it per node.
+// Shared subtrees may be counted twice and cyclic trees stop at the cap;
+// both only make the hint larger, never wrong.
+func estimateSize(root *Element) int {
+	if root == nil {
+		return 0
+	}
+	total := 0
+	counted := 0
+	stack := []*Element{root}
+	for len(stack) > 0 && counted < maxEstimateNodes {
+		e := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if e == nil {
+			continue
+		}
+		counted++
+		total += estimateNodeOverhead + len(e.tag)*2 + len(e.text)
+		for name, value := range e.attrs {
+			total += len(name) + len(value) + estimateAttrOverhead
+		}
+		for name, value := range e.styles {
+			total += len(name) + len(value) + estimateAttrOverhead
+		}
+		stack = append(stack, e.children...)
+	}
+	return total
+}
 
 func supportedTag(tag string) bool {
 	switch tag {
@@ -162,93 +242,247 @@ func (r *renderer) visit(e *Element, depth int) error {
 	if !supportedTag(e.tag) {
 		return fmt.Errorf("ui: unsupported HTML tag %q", e.tag)
 	}
-	if r.active[e] {
+	if slices.Contains(r.stack, e) {
 		return fmt.Errorf("ui: cycle in component tree at <%s>", e.tag)
 	}
-	r.active[e] = true
-	defer delete(r.active, e)
-
 	void := e.tag == "input" || e.tag == "img" || e.tag == "br" || e.tag == "hr"
 	if void && (e.text != "" || len(e.children) != 0) {
 		return fmt.Errorf("ui: void HTML element <%s> cannot have children or text", e.tag)
 	}
 
-	attrs := make(map[string]string, len(e.attrs)+attrExtraCapacity)
-	for name, value := range e.attrs {
-		attrs[name] = value
-	}
+	r.stack = append(r.stack, e)
+
+	action, id := "", ""
+	hasAction := false
 	if e.onClick != nil {
-		if _, exists := attrs["data-action"]; exists {
+		if _, exists := e.attrs["data-action"]; exists {
+			r.stack = r.stack[:len(r.stack)-1]
 			return fmt.Errorf("ui: cannot combine OnClick with a custom data-action")
 		}
 		r.nextID++
-		action := fmt.Sprintf("ownframe-ui-%d", r.nextID)
-		attrs["data-action"] = action
-		if attrs["id"] == "" {
-			attrs["id"] = r.controlID(e)
-		}
+		action = "ownframe-ui-" + strconv.Itoa(r.nextID)
+		hasAction = true
 		r.actions[action] = e.onClick
+	} else if dataAction := e.attrs["data-action"]; dataAction != "" {
+		action = dataAction
+		hasAction = true
 	}
-	if attrs["data-action"] != "" && attrs["id"] == "" {
-		r.nextID++
-		attrs["id"] = r.controlID(e)
+	if userID := e.attrs["id"]; userID != "" {
+		id = userID
+	} else if hasAction {
+		id = r.controlID(e)
 	}
+
 	previousScope := r.scope
-	if attrs["id"] != "" {
-		r.scope = attrs["id"]
+	if id != "" {
+		r.scope = id
 	}
-	defer func() { r.scope = previousScope }()
-	if len(e.styles) != 0 {
-		keys := make([]string, 0, len(e.styles))
+
+	// Style keys occupy the head of the scratch so the style value can be
+	// serialized directly in sorted order; attribute names follow and are
+	// sorted as their own region. Single-key regions skip the sort.
+	r.keys = r.keys[:0]
+	styleCount := 0
+	if len(e.styles) == 1 {
 		for name := range e.styles {
-			keys = append(keys, name)
+			r.keys = append(r.keys, name)
 		}
-		sort.Strings(keys)
-		var style strings.Builder
-		for _, name := range keys {
-			style.WriteString(name)
-			style.WriteByte(':')
-			style.WriteString(e.styles[name])
-			style.WriteByte(';')
+		styleCount = 1
+	} else if len(e.styles) > 1 {
+		for name := range e.styles {
+			r.keys = append(r.keys, name)
 		}
-		attrs["style"] = style.String()
+		sort.Strings(r.keys)
+		styleCount = len(e.styles)
+	}
+	attrStart := len(r.keys)
+	for name := range e.attrs {
+		r.keys = append(r.keys, name)
+	}
+	// Synthesized attributes read back the matching value below, so they
+	// sort with the author's attributes instead of living in a copied map.
+	if hasAction {
+		if _, ok := e.attrs["data-action"]; !ok {
+			r.keys = append(r.keys, "data-action")
+		}
+	}
+	if id != "" {
+		if _, ok := e.attrs["id"]; !ok {
+			r.keys = append(r.keys, "id")
+		}
+	}
+	if len(e.styles) != 0 {
+		if _, ok := e.attrs["style"]; !ok {
+			r.keys = append(r.keys, "style")
+		}
+	}
+	if len(r.keys)-attrStart > 1 {
+		sort.Strings(r.keys[attrStart:])
 	}
 
 	r.output.WriteByte('<')
 	r.output.WriteString(e.tag)
-	names := make([]string, 0, len(attrs))
-	for name := range attrs {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	for _, name := range names {
+	for _, name := range r.keys[attrStart:] {
 		r.output.WriteByte(' ')
 		r.output.WriteString(name)
-		r.output.WriteString("=\"")
-		r.output.WriteString(escape(attrs[name]))
+		r.output.WriteString(`="`)
+		switch name {
+		case "data-action":
+			writeEscaped(&r.output, action)
+		case "id":
+			writeEscaped(&r.output, id)
+		case "style":
+			for _, sname := range r.keys[:styleCount] {
+				writeEscaped(&r.output, sname)
+				r.output.WriteByte(':')
+				writeEscaped(&r.output, e.styles[sname])
+				r.output.WriteByte(';')
+			}
+		default:
+			writeEscaped(&r.output, e.attrs[name])
+		}
 		r.output.WriteByte('"')
 	}
 	r.output.WriteByte('>')
-	if void {
-		return nil
-	}
-	r.output.WriteString(escape(e.text))
-	for _, child := range e.children {
-		if err := r.visit(child, depth+1); err != nil {
-			return err
+	if !void {
+		writeEscaped(&r.output, e.text)
+		for _, child := range e.children {
+			if err := r.visit(child, depth+1); err != nil {
+				r.scope = previousScope
+				r.stack = r.stack[:len(r.stack)-1]
+				return err
+			}
 		}
+		r.output.WriteString("</")
+		r.output.WriteString(e.tag)
+		r.output.WriteByte('>')
 	}
-	r.output.WriteString("</")
-	r.output.WriteString(e.tag)
-	r.output.WriteByte('>')
+	r.scope = previousScope
+	r.stack = r.stack[:len(r.stack)-1]
 	return nil
+}
+
+// writeEscaped streams s into sb in one pass, escaping the HTML metacharacters
+// and the template brace. Byte-identical to applying html.EscapeString and then
+// replacing "{": every replacement target is ASCII, so a byte loop never
+// splits a multi-byte rune, and replacements contain no escapable bytes.
+func writeEscaped(sb *strings.Builder, s string) {
+	start := 0
+	for i := 0; i < len(s); i++ {
+		var replacement string
+		switch s[i] {
+		case '&':
+			replacement = "&amp;"
+		case '<':
+			replacement = "&lt;"
+		case '>':
+			replacement = "&gt;"
+		case '"':
+			replacement = "&#34;"
+		case '\'':
+			replacement = "&#39;"
+		case '{':
+			replacement = "&#123;"
+		default:
+			continue
+		}
+		sb.WriteString(s[start:i])
+		sb.WriteString(replacement)
+		start = i + 1
+	}
+	sb.WriteString(s[start:])
 }
 
 // Escape template braces as character references too. The serialized HTML is
 // given to html/template as a template *source*, so raw "{{" text must never
 // turn into an executable Go template action.
 func escape(value string) string {
-	return strings.ReplaceAll(html.EscapeString(value), "{", "&#123;")
+	var sb strings.Builder
+	sb.Grow(len(value))
+	writeEscaped(&sb, value)
+	return sb.String()
+}
+
+const (
+	// fnvOffset64 and fnvPrime64 are the FNV-1a 64-bit parameters, matching
+	// hash/fnv New64a. controlID folds bytes manually so it never allocates
+	// hash state, format buffers, or string conversions.
+	fnvOffset64 = 14695981039346656037
+	fnvPrime64  = 1099511628211
+)
+
+// hashString folds s into an FNV-1a 64-bit hash.
+func hashString(h uint64, s string) uint64 {
+	for i := 0; i < len(s); i++ {
+		h ^= uint64(s[i])
+		h *= fnvPrime64
+	}
+	return h
+}
+
+// controlID derives the generated id for a control.
+//
+// Stability contract: the id hashes the enclosing scope, the tag, the
+// action-ish attributes, and the element's own subtree text, so inserting or
+// removing a conditional sibling earlier in the document does not renumber
+// the surviving controls; genuine duplicates share a base and are numbered in
+// document order. The full subtree walk is required for that stability: two
+// same-labeled buttons in different cards must hash differently even when
+// their own attributes match, which hashing only the node itself would miss.
+func (r *renderer) controlID(e *Element) string {
+	h := hashString(fnvOffset64, r.scope)
+	h = hashString(h, " ")
+	h = hashString(h, e.tag)
+	h = hashString(h, " ")
+	h = hashString(h, e.attrs["data-action"])
+	h = hashString(h, " ")
+	h = hashString(h, e.attrs["name"])
+	h = hashString(h, " ")
+	h = hashString(h, e.attrs["aria-label"])
+	h = hashString(h, "\n")
+	seen := map[*Element]bool{}
+	var text func(*Element)
+	text = func(node *Element) {
+		if node == nil || seen[node] {
+			return
+		}
+		seen[node] = true
+		h = hashString(h, node.tag)
+		h = hashString(h, " ")
+		h = hashString(h, node.text)
+		h = hashString(h, "\n")
+		for _, child := range node.children {
+			text(child)
+		}
+	}
+	text(e)
+	base := "ownframe-ui-control-" + strconv.FormatUint(h, 16)
+	r.identities[base]++
+	return base + "-" + strconv.Itoa(r.identities[base])
+}
+
+// Document assembly pieces for a complete builder page. Mount and
+// View.Update should adopt Document; the older document helper in mount.go
+// concatenates the same pieces with intermediate strings.
+const (
+	docHead = "<!doctype html><html><head><meta charset=\"utf-8\"><title>"
+	docMid  = "</title><style>html,body{margin:0;padding:0}</style></head><body>"
+	docTail = "</body></html>"
+)
+
+// Document assembles a complete builder page in a single write sequence:
+// one Grow for the known pieces, the title escaped straight into the buffer,
+// then the fragment. It emits byte-identical output to the mount.go document
+// helper while copying the payload once instead of two to three times.
+func Document(title, fragment string) string {
+	var sb strings.Builder
+	sb.Grow(len(docHead) + len(title) + len(docMid) + len(fragment) + len(docTail))
+	sb.WriteString(docHead)
+	writeEscaped(&sb, title)
+	sb.WriteString(docMid)
+	sb.WriteString(fragment)
+	sb.WriteString(docTail)
+	return sb.String()
 }
 
 func validAttribute(name string) bool {
@@ -262,27 +496,4 @@ func validAttribute(name string) bool {
 		}
 	}
 	return true
-}
-
-// controlID keeps transient pointer and transition state attached to the same
-// control when a conditional sibling adds callbacks earlier in the document.
-func (r *renderer) controlID(e *Element) string {
-	h := fnv.New64a()
-	_, _ = fmt.Fprintln(h, r.scope, e.tag, e.attrs["data-action"], e.attrs["name"], e.attrs["aria-label"])
-	seen := map[*Element]bool{}
-	var text func(*Element)
-	text = func(node *Element) {
-		if node == nil || seen[node] {
-			return
-		}
-		seen[node] = true
-		_, _ = fmt.Fprintln(h, node.tag, node.text)
-		for _, child := range node.children {
-			text(child)
-		}
-	}
-	text(e)
-	base := fmt.Sprintf("ownframe-ui-control-%x", h.Sum64())
-	r.identities[base]++
-	return fmt.Sprintf("%s-%d", base, r.identities[base])
 }

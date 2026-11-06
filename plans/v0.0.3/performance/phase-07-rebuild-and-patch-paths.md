@@ -72,10 +72,10 @@ Two structural facts drive the plan:
 
 ## 4. Acceptance Checklist & Verification
 
-- [ ] `OPT-07-01` Route few-element updates through `PatchElement` with refresh fallback; click-path benchmark reads <=152 ms/op.
-- [ ] `OPT-07-02` Add batched multi-element patch (one style re-resolve, per-element relayouts, single draw); few-edit benchmark reads <=28 ms/op.
-- [ ] `OPT-07-03` Window large homogeneous collections (visible window + spacers); full-build benchmark scales with viewport and reads <=152 ms/op.
+- [x] `OPT-07-01` Route few-element updates through `PatchElement` with refresh fallback; click-path benchmark reads <=152 ms/op.
+- [x] `OPT-07-02` Add batched multi-element patch (one style re-resolve, per-element relayouts, single draw); few-edit benchmark reads <=28 ms/op.
+- [x] `OPT-07-03` Window large homogeneous collections (visible window + spacers); full-build benchmark scales with viewport and reads <=152 ms/op.
 - [ ] `OPT-07-04` Keep a per-element-loop regression benchmark proving full-surface patching stays forbidden (must remain orders of magnitude slower than swap/rebuild).
-- [ ] `OPT-07-05` Stylesheet-swap path for global restyles with one cascade + layout + paint; benchmark at or under rebuild cost.
+- [x] `OPT-07-05` Stylesheet-swap path for global restyles with one cascade + layout + paint; benchmark at or under rebuild cost.
 - [ ] `OPT-07-06` Upstream layout-profile issue filed with the 257 ms / 9k-box baseline; pin bump consumed when the engine halves it.
 - [ ] `OPT-07-07` Run the data-change benchmark set plus `make test`, `go vet`, and `gofmt` clean.

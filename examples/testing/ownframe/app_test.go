@@ -32,6 +32,7 @@ func TestInvoiceSelectRow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.patch = false
 	ctx := context.Background()
 	if err := a.Page().Redraw(ctx); err != nil {
 		t.Fatal(err)
@@ -48,6 +49,28 @@ func TestInvoiceSelectRow(t *testing.T) {
 	} else if !strings.Contains(html, "inv-sel") {
 		t.Errorf("invoice HTML missing selected-row class")
 	}
+	// A clean refresh after the committed selection must skip the rebuild,
+	// and a real change after that skip must still rebuild.
+	committed := a.Page().Probe().Stats()
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	skipped := a.Page().Probe().Stats()
+	if skipped.Parses != committed.Parses || skipped.Cascades != committed.Cascades || skipped.Layouts != committed.Layouts {
+		t.Errorf("clean refresh after select rebuilt: parses %d->%d cascades %d->%d layouts %d->%d, want flat",
+			committed.Parses, skipped.Parses, committed.Cascades, skipped.Cascades, committed.Layouts, skipped.Layouts)
+	}
+	if err := pagetest.ClickAction(ctx, a.Page(), "row:501"); err != nil {
+		t.Fatal(err)
+	}
+	if a.selected != 501 {
+		t.Fatalf("selected = %d, want 501", a.selected)
+	}
+	rebuilt := a.Page().Probe().Stats()
+	if rebuilt.Layouts <= skipped.Layouts {
+		t.Errorf("select after skipped refresh laid nothing out: layouts %d->%d, want a rebuild",
+			skipped.Layouts, rebuilt.Layouts)
+	}
 }
 
 func TestInvoiceThemeToggle(t *testing.T) {
@@ -56,6 +79,7 @@ func TestInvoiceThemeToggle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.patch = false
 	ctx := context.Background()
 	if err := a.Page().Redraw(ctx); err != nil {
 		t.Fatal(err)
@@ -75,6 +99,19 @@ func TestInvoiceThemeToggle(t *testing.T) {
 	}
 	if strings.Contains(html, "inv-alt") {
 		t.Errorf("light theme should have no inv-alt rows")
+	}
+}
+
+// TestInvoicePatchDefault checks the patch path is on by default: a fresh
+// app patches instead of rebuilding, so clicks never rewrite HTML source.
+func TestInvoicePatchDefault(t *testing.T) {
+	t.Parallel()
+	a, err := newInvoiceApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !a.patch {
+		t.Errorf("patch = false, want true by default")
 	}
 }
 
@@ -231,6 +268,57 @@ func TestInvoiceThemeStyle(t *testing.T) {
 	}
 	r, g, b := rowFill(t, a, "row:7")
 	wantFill(t, "row 7 light theme", r, g, b, fillWhite)
+}
+
+// TestInvoiceRefreshSkipsCleanState checks the render-skip: refresh() no-ops
+// when the state version matches the last committed render, leaving
+// parse/cascade/layout counters flat, and a real change after that skip
+// still rebuilds.
+func TestInvoiceRefreshSkipsCleanState(t *testing.T) {
+	t.Parallel()
+	a, err := newInvoiceAppWithCount(20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.patch = false
+	ctx := context.Background()
+	if err := a.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	// Commit a real change so the skip has a rendered version to match.
+	a.selected = 3
+	a.version++
+	preCommit := a.Page().Probe().Stats()
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	committed := a.Page().Probe().Stats()
+	if committed.Layouts <= preCommit.Layouts {
+		t.Fatalf("committing refresh laid nothing out: layouts %d->%d", preCommit.Layouts, committed.Layouts)
+	}
+	// Second refresh with no mutation must skip the rebuild.
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	skipped := a.Page().Probe().Stats()
+	if skipped.Parses != committed.Parses || skipped.Cascades != committed.Cascades || skipped.Layouts != committed.Layouts {
+		t.Errorf("clean refresh rebuilt: parses %d->%d cascades %d->%d layouts %d->%d, want flat",
+			committed.Parses, skipped.Parses, committed.Cascades, skipped.Cascades, committed.Layouts, skipped.Layouts)
+	}
+	// A real change after the skip must still rebuild.
+	a.selected = 5
+	a.version++
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	rebuilt := a.Page().Probe().Stats()
+	if rebuilt.Layouts <= skipped.Layouts {
+		t.Errorf("change after skipped refresh laid nothing out: layouts %d->%d, want a rebuild",
+			skipped.Layouts, rebuilt.Layouts)
+	}
+	if want := a.selectedText(); !strings.Contains(a.Page().HTML(), want) {
+		t.Errorf("rebuilt HTML missing selection readout %q", want)
+	}
 }
 
 // BenchmarkInvoiceRedraw measures a warm Redraw with unchanged data. The page

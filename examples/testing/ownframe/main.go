@@ -67,7 +67,7 @@ func main() {
 // benchCounts balances stable timing against a quick headless run.
 // benchFilePerm restricts a written results file to owner read/write.
 const (
-	benchRowCap     = 8
+	benchRowCap     = 10
 	benchRedrawOps  = 200
 	benchRebuildOps = 50
 	benchClickOps   = 30
@@ -127,6 +127,7 @@ func runBench(benchFile string) error {
 	if err != nil {
 		return err
 	}
+	app.patch = false
 	app.Page().Window().SetPerf(true)
 	if err := app.Page().Redraw(ctx); err != nil {
 		return err
@@ -203,6 +204,37 @@ func runBench(benchFile string) error {
 		return err
 	}
 	rows = append(rows, styleSwap)
+	windowApp, err := newInvoiceApp()
+	if err != nil {
+		return err
+	}
+	windowApp.setWindowed(0)
+	if err := windowApp.Page().Redraw(ctx); err != nil {
+		return err
+	}
+	if err := windowApp.refresh(ctx); err != nil {
+		return err
+	}
+	windowed, err := measure("windowed-rebuild", benchRebuildOps, func() error {
+		return windowApp.refresh(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, windowed)
+	// skipClean runs two refresh calls back to back with no mutation between
+	// them. The second call is a no-change refresh, so it covers the
+	// render-skip path once app.go provides it.
+	skipClean, err := measure("skip-clean-refresh", benchRebuildOps, func() error {
+		if err := app.refresh(ctx); err != nil {
+			return err
+		}
+		return app.refresh(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, skipClean)
 	st := app.Page().Probe().Stats()
 	htmlBytes := len(app.Page().HTML())
 	var mem runtime.MemStats

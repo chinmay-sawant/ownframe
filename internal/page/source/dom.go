@@ -1,11 +1,8 @@
 package source
 
-import "strings"
-
-// quotePair is the opening plus closing quote a skip jumps over.
-const quotePair = 2
-
 // CheckDOM rejects nesting past maxDepth and element counts past maxNodes.
+// It never allocates: tag names compare case-insensitively without
+// lowercasing, so a guard run on adversarial input costs no heap.
 func CheckDOM(s string, maxDepth, maxNodes int) error {
 	depth, nodes := 0, 0
 	i := 0
@@ -18,9 +15,9 @@ func CheckDOM(s string, maxDepth, maxNodes int) error {
 			i = end
 			continue
 		}
-		name, close, self, end := tag(s, i)
+		from, to, close, self, end := scanTag(s, i)
 		i = end
-		if name == "" {
+		if from == to {
 			continue
 		}
 		if close {
@@ -33,7 +30,7 @@ func CheckDOM(s string, maxDepth, maxNodes int) error {
 		if nodes > maxNodes {
 			return ErrTooManyNodes
 		}
-		if self || Void(name) {
+		if self || isVoidFold(s, from, to) {
 			continue
 		}
 		depth++
@@ -45,52 +42,107 @@ func CheckDOM(s string, maxDepth, maxNodes int) error {
 }
 
 // SkipMeta skips a comment or a <! / <? declaration at s[i] == '<'.
+// It scans by hand so the guard path allocates nothing.
 func SkipMeta(s string, i int) (int, bool) {
-	if s[i+1] == '!' || s[i+1] == '?' {
-		if strings.HasPrefix(s[i:], "<!--") {
-			if end := strings.Index(s[i:], "-->"); end >= 0 {
-				return i + end + len("-->"), true
+	if i+1 >= len(s) {
+		return 0, false
+	}
+	c := s[i+1]
+	if c != '!' && c != '?' {
+		return 0, false
+	}
+	if c == '!' && i+3 < len(s) && s[i+2] == '-' && s[i+3] == '-' {
+		for k := i; k+2 < len(s); k++ {
+			if s[k] == '-' && s[k+1] == '-' && s[k+2] == '>' {
+				return k + 3, true
 			}
-			return len(s), true
-		}
-		if end := strings.IndexByte(s[i:], '>'); end >= 0 {
-			return i + end + 1, true
 		}
 		return len(s), true
 	}
-	return 0, false
+	for k := i; k < len(s); k++ {
+		if s[k] == '>' {
+			return k + 1, true
+		}
+	}
+	return len(s), true
 }
 
-// tag parses one open or close tag at s[i] == '<'. It returns the
-// lowercase name, whether it closes, whether it self-closes, and the
-// index after '>'. A missing '>' consumes the rest.
-func tag(s string, i int) (string, bool, bool, int) {
+// scanTag parses one open or close tag at s[i] == '<'. It returns the
+// name slice bounds, whether it closes, whether it self-closes, and the
+// index after '>'. A missing '>' or an unterminated quote consumes the
+// rest as self-closing, matching the previous tag parser verdicts.
+func scanTag(s string, i int) (from, to int, close, self bool, end int) {
 	j := i + 1
-	close := false
 	if j < len(s) && s[j] == '/' {
 		close = true
 		j++
 	}
-	from := j
+	from = j
 	for j < len(s) && NameByte(s[j]) {
 		j++
 	}
-	name := strings.ToLower(s[from:j])
+	to = j
 	for j < len(s) && s[j] != '>' {
-		if s[j] == '"' || s[j] == '\'' {
-			if end := strings.IndexByte(s[j+1:], s[j]); end >= 0 {
-				j += end + quotePair
-				continue
+		q := s[j]
+		if q == '"' || q == '\'' {
+			k := j + 1
+			for k < len(s) && s[k] != q {
+				k++
 			}
-			return name, close, true, len(s)
+			if k >= len(s) {
+				return from, to, close, true, len(s)
+			}
+			j = k + 1
+			continue
 		}
 		j++
 	}
-	self := j > i+1 && s[j-1] == '/'
+	if j > i+1 && j <= len(s) && j > 0 && s[j-1] == '/' {
+		self = true
+	}
 	if j < len(s) {
 		j++
 	}
-	return name, close, self, j
+	return from, to, close, self, j
+}
+
+// foldEqual reports s[from:to] equal to want ignoring ASCII case.
+// Tag names are NameByte bytes, so ASCII folding matches ToLower.
+func foldEqual(s string, from, to int, want string) bool {
+	if to-from != len(want) {
+		return false
+	}
+	for k := 0; k < len(want); k++ {
+		c := s[from+k]
+		w := want[k]
+		if c == w {
+			continue
+		}
+		if c >= 'A' && c <= 'Z' {
+			c += 'a' - 'A'
+		}
+		if c != w {
+			return false
+		}
+	}
+	return true
+}
+
+// isVoidFold reports void elements without allocating a lowercase copy.
+func isVoidFold(s string, from, to int) bool {
+	return foldEqual(s, from, to, "area") ||
+		foldEqual(s, from, to, "base") ||
+		foldEqual(s, from, to, "br") ||
+		foldEqual(s, from, to, "col") ||
+		foldEqual(s, from, to, "embed") ||
+		foldEqual(s, from, to, "hr") ||
+		foldEqual(s, from, to, "img") ||
+		foldEqual(s, from, to, "input") ||
+		foldEqual(s, from, to, "link") ||
+		foldEqual(s, from, to, "meta") ||
+		foldEqual(s, from, to, "source") ||
+		foldEqual(s, from, to, "track") ||
+		foldEqual(s, from, to, "wbr")
 }
 
 // NameByte reports a byte that can appear in a tag name.

@@ -45,8 +45,15 @@ type Page struct {
 	// path use markFormDirty to set the flag.
 	lastSyncBody string
 	formDirty    bool
-	pageGeom     // size: New inits, SetSize writes; lock: page loop
-	renderTrack  // generation and last frame key; lock: page loop
+	// syncClean reports that the last syncForm call took the fast path:
+	// same template output, nothing dirty, source byte-identical to the
+	// last committed sync. The redraw wrapper then skips the source
+	// rehash, since the memoized hash, length, and revision are still
+	// valid. Any slow-path merge clears it. Page-loop only, like the
+	// sync flags above.
+	syncClean   bool
+	pageGeom    // size: New inits, SetSize writes; lock: page loop
+	renderTrack // generation and last frame key; lock: page loop
 	// layerGen keys the compositor's retained element layers. It moves when a
 	// publish or an element patch changes display content, and stays put when
 	// a re-projection pass only rewrites operation matrices in place.
