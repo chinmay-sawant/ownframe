@@ -28,19 +28,24 @@ func AdoptPatchedSource(p *Page, source string) error {
 		return ErrAdoptSource
 	}
 
-	p.nav.Retarget(source)
+	// One FNV-1a fold serves every consumer: nav stores this hash instead
+	// of rescanning the source, the source memo reuses it instead of
+	// rehashing, and the sync memo pins it with the body so a later clean
+	// redraw never folds the same bytes again.
+	hash := draw.HashString(source)
+
+	p.nav.RetargetHashed(source, hash)
 	p.dataMu.Lock()
 	p.source = source
 	p.lastSyncBody = source
+	p.lastBody = hashedBody{source: source, hash: hash}
 	p.syncClean = true
 	p.formDirty = false
 	p.dataMu.Unlock()
-	p.bodyHash = draw.HashString(source)
-	p.bodyLen = len(source)
 	p.staticSource = true
 	p.tpl = nil
 	p.tplProbeTpl, p.tplProbeHas = nil, false
-	p.noteSource(source)
+	p.noteSourceHashed(source, hash)
 	p.noteCacheSource()
 	p.remember(p.renderState())
 	p.invalidateAccessibilityDocument()

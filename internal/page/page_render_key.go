@@ -7,6 +7,17 @@ import (
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
 
+// hashedBody pairs one template body with the FNV-1a hash taken from it.
+// The publish and adopt paths write the pair under dataMu; the sync path
+// reuses hash when the body about to be synced has the same length and
+// backing array as source, so a clean redraw skips folding the bytes. The
+// pair is self-consistent even when a failed ReplaceHTML rolls lastSyncBody
+// back to an older value: the next body simply misses and is hashed again.
+type hashedBody struct {
+	source string
+	hash   uint64
+}
+
 // renderTrack remembers the last committed frame so a Redraw that changes
 // none of its inputs can return without laying the page out again.
 type renderTrack struct {
@@ -49,11 +60,12 @@ type renderTrack struct {
 	sourceHash uint64
 	sourceLen  int
 	sourceRev  uint64
-	// bodyHash and bodyLen memoize the last executed template body for the
-	// same reason: the adapter records them when Execute runs, and the
-	// clean-form skip reuses the body with no rescan.
-	bodyHash uint64
-	bodyLen  int
+	// lastBody pins the last template body the sync path hashed together
+	// with that hash. publishForm and AdoptPatchedSource write it under
+	// dataMu, and syncForm copies it into formSnap under the same lock, so
+	// a clean redraw that reuses the cached body proves byte identity by
+	// backing pointer and skips the FNV fold.
+	lastBody hashedBody
 	// cacheRev, cacheHash, and cacheLen record the source the style cache
 	// was built or relayed for. styleStaged relayouts directly when they
 	// match the current source memo, so a same-source restyle takes one
@@ -135,18 +147,10 @@ func (p *Page) remember(state render.State) {
 	}
 }
 
-// noteSource records a newly synced source. Equal hash and length keep the
-// revision, so an unchanged frame compares u64s with no memcmp; a change
-// bumps the revision the key carries.
+// noteSource records a newly synced source with a fresh hash. noteSourceHashed
+// carries the store so a caller that already hashed the bytes skips the fold.
 func (p *Page) noteSource(next string) {
-	hash := draw.HashString(next)
-	if p.sourceRev != 0 && hash == p.sourceHash && len(next) == p.sourceLen {
-		return
-	}
-
-	p.sourceHash = hash
-	p.sourceLen = len(next)
-	p.sourceRev++
+	p.noteSourceHashed(next, draw.HashString(next))
 }
 
 // noteCacheSource records the source the style cache now reflects.

@@ -2,9 +2,10 @@
 // page. It does not import page.
 package nav
 
-// FNV-1a 64-bit parameters, matching hash/fnv New64a. Scan folds them by
-// hand so one pass reports the hash and the template delimiter together
-// with no heap state.
+import "strings"
+
+// FNV-1a 64-bit parameters, matching hash/fnv New64a. Hash folds them by
+// hand so one pass reports the hash with no heap state.
 const (
 	fnvOffset64 = 14695981039346656037
 	fnvPrime64  = 1099511628211
@@ -15,24 +16,25 @@ const (
 // compares stored hashes instead of rehashing both sides and the template
 // probe reuses the stored verdict instead of rescanning.
 func Scan(s string) (uint64, bool) {
-	hash := uint64(fnvOffset64)
-	delim := false
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c == '{' && i+1 < len(s) && s[i+1] == '{' {
-			delim = true
-		}
-		hash ^= uint64(c)
-		hash *= fnvPrime64
-	}
-	return hash, delim
+	return Hash(s), HasDelim(s)
 }
 
 // Hash returns the FNV-1a hash of s: the same value Scan reports. Prefer
 // Scan when the delimiter verdict is also needed.
 func Hash(s string) uint64 {
-	hash, _ := Scan(s)
+	hash := uint64(fnvOffset64)
+	for i := 0; i < len(s); i++ {
+		hash ^= uint64(s[i])
+		hash *= fnvPrime64
+	}
 	return hash
+}
+
+// HasDelim reports whether s holds a Go template delimiter. The probe is a
+// vectorised substring search, so a caller that already hashed s can store
+// the verdict with no second byte-at-a-time fold.
+func HasDelim(s string) bool {
+	return strings.Contains(s, "{{")
 }
 
 // History owns template history and routes behind narrow methods.
@@ -84,10 +86,17 @@ func (h *History) GoTo(at int) { h.at = at }
 // Retarget replaces the current source without moving the index, storing
 // the fresh Scan verdicts with it.
 func (h *History) Retarget(src string) {
-	hash, delim := Scan(src)
+	h.RetargetHashed(src, Hash(src))
+}
+
+// RetargetHashed replaces the current source without moving the index and
+// stores hash as its Scan hash. Use it when the caller already hashed src:
+// the byte-at-a-time fold is skipped and only the vectorised delimiter probe
+// runs, so the stored verdicts match Retarget exactly.
+func (h *History) RetargetHashed(src string, hash uint64) {
 	h.past[h.at] = src
 	h.hashes[h.at] = hash
-	h.delims[h.at] = delim
+	h.delims[h.at] = HasDelim(src)
 }
 
 // SourceAt returns the source at at.

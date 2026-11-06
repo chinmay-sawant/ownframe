@@ -108,8 +108,8 @@ var _ draw.RedrawSurface = redrawSurface{}
 // The "{{" probe is memoized to template-write time: the scan runs once
 // when p.tpl changes and the verdict is reused, so repeat frames pay no
 // scan. A clean form reuses the last merged body with no Execute. A dirty
-// frame executes into a pooled buffer and keeps one copy, recording the
-// body hash beside it.
+// frame executes into a pooled buffer and keeps one copy; its hash is taken
+// once in the sync path, which pairs it with the body for the next reuse.
 func (p *Page) execTemplate(track bool) (string, error) {
 	p.applyScrollWindow()
 	if p.tplProbeTpl != p.tpl {
@@ -154,8 +154,6 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	}
 
 	body := string(out)
-	p.bodyHash = draw.HashString(body)
-	p.bodyLen = len(body)
 
 	return body, nil
 }

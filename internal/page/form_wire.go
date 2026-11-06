@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"sync/atomic"
 	"time"
 
@@ -440,6 +441,18 @@ func syncHash(source string) uint64 {
 	return form.HashSource(source)
 }
 
+// sameSourceBytes reports whether a and b are byte-identical without
+// scanning either: an equal non-zero length and one backing array make them
+// the same bytes. reflect exposes a string's data pointer without an unsafe
+// import, which the lint policy keeps to the reviewed syscall shims.
+func sameSourceBytes(a, b string) bool {
+	if len(a) == 0 || len(a) != len(b) {
+		return false
+	}
+
+	return reflect.ValueOf(a).UnsafePointer() == reflect.ValueOf(b).UnsafePointer()
+}
+
 // formSnap pins the sync inputs snapshot under the phase-1 lock. The dirty
 // flag, the last synced body, and the published source are shared with
 // SetData; the live map, the order, and the caret scalars are owned by the
@@ -448,6 +461,7 @@ type formSnap struct {
 	dirty        bool
 	source       string
 	lastSync     string
+	lastBody     hashedBody
 	focusID      string
 	caret        int
 	anchor       int
@@ -482,12 +496,11 @@ type formMerge struct {
 }
 
 // noteSourceHashed records a newly synced source with a caller-computed hash.
-// It mirrors noteSource exactly (equal hash and length keep the revision, so
-// an unchanged frame compares u64s with no memcmp; a change bumps the
-// revision the key carries), letting the sync path thread one hash through
-// the emoji pass into the source memo instead of hashing the same body in
-// the emoji pass and in noteSource. Callers set syncClean after noting, so
-// the draw adapter skips its own rehash.
+// Equal hash and length keep the revision, so an unchanged frame compares u64s
+// with no memcmp; a change bumps the revision the key carries. It is the store
+// behind noteSource, and it lets the sync path and the adopt path thread one
+// hash through instead of hashing the same body again. Callers set syncClean
+// after noting, so the draw adapter skips its own rehash.
 func (p *Page) noteSourceHashed(next string, hash uint64) {
 	if p.sourceRev != 0 && hash == p.sourceHash && len(next) == p.sourceLen {
 		return
@@ -519,6 +532,7 @@ func (p *Page) syncForm(body string) string {
 		dirty:        p.formDirty,
 		source:       p.source,
 		lastSync:     p.lastSyncBody,
+		lastBody:     p.lastBody,
 		focusID:      fs.FocusID,
 		caret:        fs.Caret,
 		anchor:       fs.Anchor,
@@ -550,9 +564,15 @@ func (p *Page) syncForm(body string) string {
 	// One fused pass: the control probe, the control scan, and the
 	// button-input flag, memoized per source hash. A repeat body reuses
 	// the cached spans and head offsets without walking the source. The hash
-	// is computed once here and threaded through the rewrite, the emoji
-	// pass, and the source memo, so the same body is never hashed twice.
-	hash := syncHash(body)
+	// is threaded through the rewrite, the emoji pass, and the source memo,
+	// so the same body is never hashed twice. A body that still shares the
+	// memoized body's backing array is byte-identical by construction, so it
+	// reuses that hash instead of folding the bytes again on every clean
+	// focused redraw.
+	hash := snap.lastBody.hash
+	if !sameSourceBytes(body, snap.lastBody.source) {
+		hash = syncHash(body)
+	}
 	hasControls, spans, hasButtons := form.ScanCached(body, hash)
 
 	// Pages without form controls skip the button rewrite, the merge, the
@@ -652,6 +672,7 @@ func (p *Page) publishForm(merge formMerge, snap formSnap) string {
 	fs.ClampToFocus()
 
 	p.lastSyncBody = merge.body
+	p.lastBody = hashedBody{source: merge.body, hash: merge.hash}
 	p.formDirty = dirty
 	out, outHash, built := merge.out, merge.outHash, merge.built
 	body, bodyHash := merge.body, merge.hash
