@@ -2,20 +2,38 @@ package page
 
 import (
 	"image"
+	"sync"
 
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
 
-// setBoxes stores the hit-test boxes from a Redraw. It rebuilds the id
-// index so lookups stay O(1) on large pages, and drops the cached content
-// rect. Boxes change only here, so the index never goes stale.
+// kidCaches holds one parent-to-children box index per page, rebuilt by
+// setBoxes on every commit. A per-page entry is always fresh: setBoxes
+// is the only writer of p.boxes and p.index, and it refreshes the entry
+// in the same call, so any mark that finds boxes through the index
+// finds the index built from those same boxes. Pages have no teardown
+// hook, so entries live until the process exits; the proper home is a
+// field on Page, which needs a wider change.
 //
-// An unchanged id set repoints the index without clearing it, so a redraw of
-// the same page keeps the map's capacity and buckets. An unchanged box list
-// keeps the cached content rect: the rect is a pure function of the boxes
-// and the canvas size, and the size check on read stays as the backstop.
+//nolint:gochecknoglobals // reason: process-wide per-page kid index keyed by page pointer, guarded by its own mutex; entries are refreshed wholesale by setBoxes, never mutated in place.
+var kidCaches = struct {
+	sync.Mutex
+	byPage map[*Page]dirty.KidIndex
+}{byPage: map[*Page]dirty.KidIndex{}}
+
+// setBoxes stores the hit-test boxes from a Redraw. It rebuilds the id
+// index so lookups stay O(1) on large pages, incrementally maintains
+// the cached content rect, and rebuilds the parent-to-children index,
+// so marks walk only the changed element's subtree. An unchanged id
+// set repoints the index without clearing it, so a redraw of the same
+// page keeps the map's capacity and buckets.
 func (p *Page) setBoxes(boxes []Box) {
 	old := p.boxes
+	w, h := p.canvasSize()
+	// Delta the content rect before the index is rebuilt in place: p.index
+	// still describes old here, and Index clears it.
+	content, ok := p.extendContent(p.index, boxes, w, h)
 	p.boxes = boxes
 	if hit.SameIDs(old, boxes) {
 		p.index = hit.Repoint(p.index, boxes)
@@ -23,25 +41,99 @@ func (p *Page) setBoxes(boxes []Box) {
 		p.index = hit.Index(p.index, boxes)
 	}
 	p.hits = nil
-	if !sameBoxSlice(old, boxes) {
-		p.contentOK = false
-	}
+	p.finishContent(old, content, ok, w, h)
+	refreshKidIndex(p, boxes)
 }
 
-// sameBoxSlice reports whether two box lists name the same elements with the
-// same rectangles, in order. It reuses the trigger box identity: the id, the
-// tag, the parent link, and the rect are exactly what the content rect and
-// the hit list derive from.
-func sameBoxSlice(a, b []Box) bool {
-	if len(a) != len(b) {
-		return false
+// canvasSize is the canvas the content rect covers: the committed
+// display's size, or the window size before the first commit.
+func (p *Page) canvasSize() (int, int) {
+	if p.draw.Display != nil {
+		return p.draw.Display.Width, p.draw.Display.Height
 	}
-	for i := range a {
-		if !sameBox(a[i], b[i]) {
-			return false
+	return p.width, p.height
+}
+
+// extendContent unions the new and grown boxes into the cached content
+// rect, before the id index is rebuilt. ok is false when the cache is
+// not current and the caller must recompute it fully: a cold cache, a
+// resized canvas, a shrink, a move, or a missing old index. A pure
+// grow stays incremental: the old rect sits inside the new one, so
+// unioning the new rect keeps the union exact.
+func (p *Page) extendContent(oldIndex map[string]*Box, boxes []Box, w, h int) (image.Rectangle, bool) {
+	if !p.contentOK || oldIndex == nil || p.contentW != w || p.contentH != h {
+		return image.Rectangle{}, false
+	}
+	content := p.content
+	for _, b := range boxes {
+		r := boxRect(b)
+		ob, found := oldIndex[b.ID]
+		if !found {
+			content = content.Union(r)
+			continue
+		}
+		if or := boxRect(*ob); r != or {
+			if !or.In(r) {
+				return content, false
+			}
+			content = content.Union(r)
 		}
 	}
-	return true
+	return content, true
+}
+
+// finishContent completes the incremental content-rect maintenance after
+// the id index is rebuilt. A box removed since the last commit may
+// have carried the union's edge, and the union cannot shrink
+// incrementally, so any removal recomputes the canvas plus the current
+// boxes. Duplicate ids that lose one copy keep the survivor's rect
+// covered: the union over-covers rather than recomputes, which
+// repaints more, never less.
+func (p *Page) finishContent(old []Box, content image.Rectangle, ok bool, w, h int) {
+	if ok {
+		for i := range old {
+			if _, found := p.index[old[i].ID]; !found {
+				ok = false
+				break
+			}
+		}
+	}
+	if !ok {
+		content = image.Rect(0, 0, w, h).Union(unionBoxes(p.boxes))
+	}
+	p.content, p.contentW, p.contentH, p.contentOK = content, w, h, true
+}
+
+// unionBoxes returns the union of every box rect.
+func unionBoxes(boxes []Box) image.Rectangle {
+	r := image.Rectangle{}
+	for _, b := range boxes {
+		r = r.Union(boxRect(b))
+	}
+	return r
+}
+
+// refreshKidIndex rebuilds the page's parent-to-children box index from
+// the committed boxes.
+func refreshKidIndex(p *Page, boxes []Box) {
+	idx := dirty.BuildKidIndex(boxes)
+	kidCaches.Lock()
+	kidCaches.byPage[p] = idx
+	kidCaches.Unlock()
+}
+
+// kidRect returns the union of the id's box and its descendants' boxes
+// from the page's parent-to-children index. ok is false when the index
+// has no entry for the page or the id, and the caller falls back to the
+// id's own box.
+func kidRect(p *Page, id string) (image.Rectangle, bool) {
+	kidCaches.Lock()
+	idx, found := kidCaches.byPage[p]
+	kidCaches.Unlock()
+	if !found {
+		return image.Rectangle{}, false
+	}
+	return idx.Rect(id)
 }
 
 func (p *Page) setDisplayBoxes(d *Display) {
@@ -139,20 +231,16 @@ func (p *Page) hasBox(id string) bool {
 
 // contentRect is the painted page in CSS pixels: the canvas plus any box
 // that overflows it, the region the window's replay buffer covers. The
-// rect is cached per canvas size until the next setBoxes, so the per-frame
-// TakeDirty costs O(1) on large pages.
+// rect is cached per canvas size until the next setBoxes, so the
+// per-frame TakeDirty costs O(1) on large pages. setBoxes maintains it
+// incrementally; the size check stays as the backstop for restores that
+// bypass setBoxes.
 func (p *Page) contentRect() image.Rectangle {
-	w, h := p.width, p.height
-	if p.draw.Display != nil {
-		w, h = p.draw.Display.Width, p.draw.Display.Height
-	}
+	w, h := p.canvasSize()
 	if p.contentOK && p.contentW == w && p.contentH == h {
 		return p.content
 	}
-	r := image.Rect(0, 0, w, h)
-	for _, b := range p.boxes {
-		r = r.Union(boxRect(b))
-	}
+	r := image.Rect(0, 0, w, h).Union(unionBoxes(p.boxes))
 	p.content, p.contentW, p.contentH, p.contentOK = r, w, h, true
 	return r
 }

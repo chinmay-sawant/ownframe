@@ -21,16 +21,19 @@ type EmojiTelemetry struct {
 // its pass counters. The entry keys on the source hash with an exact source
 // compare, so a collision degrades to a rescan instead of a stale page. The
 // probe counter is the only way for tests to observe the skipped probe.
+// outHash is the hash of out, so a caller that threads the input hash can
+// reuse the output hash for the source memo without rehashing.
 //
 //nolint:gochecknoglobals // Single-entry memo (one source plus its output)
 var emojiMemo = struct {
 	sync.Mutex
-	hash   uint64
-	source string
-	out    string
-	valid  bool
-	probes uint64
-	hits   uint64
+	hash    uint64
+	source  string
+	out     string
+	outHash uint64
+	valid   bool
+	probes  uint64
+	hits    uint64
 }{}
 
 // EmojiStats returns the emoji pass counters.
@@ -49,26 +52,37 @@ func EmojiStats() EmojiTelemetry {
 // output without running the emoji scan again. The gate keys on the source
 // hash and validates with an exact source compare.
 func EmojiPass(source string) string {
-	hash := form.HashSource(source)
+	out, _ := EmojiPassWithHash(source, form.HashSource(source))
 
+	return out
+}
+
+// EmojiPassWithHash is EmojiPass when the caller already hashed source (the
+// page sync threads one hash through the scan, the rewrite, and the emoji
+// pass). Output is byte-identical to EmojiPass for the same source. It also
+// returns the hash of the output: the input hash when the source carries no
+// emoji, otherwise a single hash of the final output, so the caller can note
+// the source without rehashing. The memo stays hash-keyed with an exact
+// source compare.
+func EmojiPassWithHash(source string, hash uint64) (string, uint64) {
 	emojiMemo.Lock()
 	if emojiMemo.valid && emojiMemo.hash == hash && emojiMemo.source == source {
-		out := emojiMemo.out
+		out, outHash := emojiMemo.out, emojiMemo.outHash
 		emojiMemo.hits++
 		emojiMemo.Unlock()
 
-		return out
+		return out, outHash
 	}
 	emojiMemo.Unlock()
 
 	out, changed := emoji.Replace(source)
 	if !changed {
 		emojiMemo.Lock()
-		emojiMemo.hash, emojiMemo.source, emojiMemo.out, emojiMemo.valid = hash, source, out, true
+		emojiMemo.hash, emojiMemo.source, emojiMemo.out, emojiMemo.outHash, emojiMemo.valid = hash, source, out, hash, true
 		emojiMemo.probes++
 		emojiMemo.Unlock()
 
-		return out
+		return out, hash
 	}
 
 	at := form.HeadOpen(out)
@@ -81,10 +95,12 @@ func EmojiPass(source string) string {
 		out = out[:at] + emojiCSS + out[at:]
 	}
 
+	outHash := form.HashSource(out)
+
 	emojiMemo.Lock()
-	emojiMemo.hash, emojiMemo.source, emojiMemo.out, emojiMemo.valid = hash, source, out, true
+	emojiMemo.hash, emojiMemo.source, emojiMemo.out, emojiMemo.outHash, emojiMemo.valid = hash, source, out, outHash, true
 	emojiMemo.probes++
 	emojiMemo.Unlock()
 
-	return out
+	return out, outHash
 }

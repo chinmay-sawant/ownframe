@@ -3,6 +3,7 @@ package dirty
 import (
 	"image"
 	"math"
+	"sync/atomic"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -117,4 +118,90 @@ func CountOps(d *layout.Display, r image.Rectangle) int {
 	}
 
 	return n
+}
+
+// BoundsMemo carries the next-side rounded op bounds one display diff
+// already computed, so the perf accounting pass reuses them instead of
+// recomputing every bound a second time. A zero rectangle means unknown:
+// OpBounds never returns an empty rectangle for finite inputs, so an
+// empty slot unambiguously falls back to a fresh computation. The memo
+// is single-diff scoped: retained operations are patched in place
+// between frames, so no entry survives past the diff that filled it.
+type BoundsMemo struct {
+	rects []image.Rectangle
+}
+
+// boundsMemoCache is a single reusable memo slot. One DiffWithBounds takes
+// it, one Free returns it. Plain atomics keep reuse allocation-free in
+// steady state, the same reason the diff arena avoids sync.Pool. A
+// concurrent diff that misses the slot allocates a private memo; the
+// result stays correct either way.
+//
+//nolint:gochecknoglobals // reason: process-wide single reusable bounds memo across frames, not shared mutable state beyond the atomic slot.
+var boundsMemoCache atomic.Pointer[BoundsMemo]
+
+// maxMemoRects caps the pooled memo slab, matching the arena cap policy:
+// larger frames allocate a private memo instead of pinning the slot.
+const maxMemoRects = 65536
+
+// rentBoundsMemo takes a memo for n next-side operations, reusing the
+// cached slab when it fits. The slab is cleared, so every slot reads
+// unknown until the diff fills it.
+func rentBoundsMemo(n int) *BoundsMemo {
+	if m := boundsMemoCache.Swap(nil); m != nil {
+		if cap(m.rects) >= n && n <= maxMemoRects {
+			m.rects = m.rects[:n]
+			clear(m.rects)
+			return m
+		}
+	}
+	return &BoundsMemo{rects: make([]image.Rectangle, n)}
+}
+
+// Free returns the memo slab for reuse. A nil memo is a no-op, so full
+// diffs that never fill one free unconditionally. The caller must not
+// use the memo after Free.
+func (m *BoundsMemo) Free() {
+	if m == nil {
+		return
+	}
+	if cap(m.rects) > maxMemoRects {
+		return
+	}
+	if old := boundsMemoCache.Swap(m); old != nil {
+		// Slot was refilled while this memo was in flight; drop the
+		// evicted one so at most one stays cached.
+		_ = old
+	}
+}
+
+// Len reports how many next-side operations the memo covers.
+func (m *BoundsMemo) Len() int {
+	if m == nil {
+		return 0
+	}
+	return len(m.rects)
+}
+
+// Set records the next-side bound of operation i.
+func (m *BoundsMemo) Set(i int, r image.Rectangle) {
+	if m == nil || i < 0 || i >= len(m.rects) {
+		return
+	}
+	m.rects[i] = r
+}
+
+// Get returns the stored bound of operation i. ok is false when the diff
+// never computed that index, and the caller falls back to OpBounds.
+func (m *BoundsMemo) Get(i int) (r image.Rectangle, ok bool) {
+	if m == nil || i < 0 || i >= len(m.rects) {
+		return image.Rectangle{}, false
+	}
+	r = m.rects[i]
+	if r.Empty() {
+		boundsMemoMiss.Add(1)
+		return image.Rectangle{}, false
+	}
+	boundsMemoHits.Add(1)
+	return r, true
 }

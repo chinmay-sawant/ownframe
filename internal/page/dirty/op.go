@@ -10,7 +10,10 @@ import (
 const paintFields = 22
 
 // SameOp reports whether two operations paint the same pixels.
-// The element id is not paint, so it is ignored.
+// The element id is not paint, so it is ignored. Numeric paint fields
+// compare one by one with an early-out, so a position or color mismatch
+// returns before the remaining fields are read; the comparison set is
+// exactly numOf plus samePayload, only reordered.
 func SameOp(a, b *layout.DisplayOp) bool {
 	sameOpCalls.Add(1)
 	if a.Kind != b.Kind || a.Text != b.Text || a.Font != b.Font ||
@@ -24,7 +27,23 @@ func SameOp(a, b *layout.DisplayOp) bool {
 		return false
 	}
 
-	return numOf(a) == numOf(b) && samePayload(a, b)
+	if a.X != b.X || a.Y != b.Y || a.W != b.W || a.H != b.H ||
+		a.R != b.R || a.G != b.G || a.B != b.B || a.Alpha != b.Alpha ||
+		a.Width != b.Width || a.Size != b.Size ||
+		a.LetterSpacing != b.LetterSpacing || a.InkDescent != b.InkDescent ||
+		a.Radius != b.Radius || a.RadiusY != b.RadiusY ||
+		a.RadiusTopLeft != b.RadiusTopLeft ||
+		a.RadiusTopRight != b.RadiusTopRight ||
+		a.RadiusBottomRight != b.RadiusBottomRight ||
+		a.RadiusBottomLeft != b.RadiusBottomLeft ||
+		a.RadiusTopLeftY != b.RadiusTopLeftY ||
+		a.RadiusTopRightY != b.RadiusTopRightY ||
+		a.RadiusBottomRightY != b.RadiusBottomRightY ||
+		a.RadiusBottomLeftY != b.RadiusBottomLeftY {
+		return false
+	}
+
+	return samePayload(a, b)
 }
 
 // numOf collects the numeric paint fields so one array comparison covers

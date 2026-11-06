@@ -79,6 +79,32 @@ func sigXform(h uint64, op *layout.DisplayOp) uint64 {
 	return h
 }
 
+// sigXformWrite folds only the transform identity for the write generation:
+// whether a matrix is present and its six coefficients. Colour, geometry,
+// and opacity live in runWriteGen; the matrix is the remaining tick-writable
+// field.
+func sigXformWrite(h uint64, op *layout.DisplayOp) uint64 {
+	if !op.XformSet {
+		m, projected := textProjection(op)
+		if !projected {
+			return mix64(h, 0)
+		}
+
+		for _, v := range [6]float64{m.A, m.B, m.C, m.D, m.E, m.F} {
+			h = mixF(h, v)
+		}
+
+		return h
+	}
+
+	m := op.Transform()
+	for _, v := range [6]float64{m.A, m.B, m.C, m.D, m.E, m.F} {
+		h = mixF(h, v)
+	}
+
+	return h
+}
+
 // ptrBits is the address behind an interface holding a pointer, or zero.
 func ptrBits(v any) uint64 {
 	if v == nil {

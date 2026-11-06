@@ -9,6 +9,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/filepick"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
 )
 
@@ -422,6 +423,23 @@ func (p *Page) markFormDirty() {
 //nolint:gochecknoglobals // Single process-wide call counter for tests
 var rewriteButtonCalls atomic.Uint64
 
+// syncHashCalls counts HashSource calls made by the sync path, so tests can
+// prove the executed body is hashed once per changed frame and never on a
+// clean frame, without timing. The memo caches stay hash-keyed; the single
+// hash is threaded through the scan, the rewrite, the emoji pass, and the
+// source memo instead of hashing the same body up to three times.
+//
+//nolint:gochecknoglobals // Single process-wide call counter for tests
+var syncHashCalls atomic.Uint64
+
+// syncHash hashes source for the sync path and counts the call for tests.
+// HashSource allocates nothing, so the counted path stays alloc-free.
+func syncHash(source string) uint64 {
+	syncHashCalls.Add(1)
+
+	return form.HashSource(source)
+}
+
 // formSnap pins the sync inputs snapshot under the phase-1 lock. The dirty
 // flag, the last synced body, and the published source are shared with
 // SetData; the live map, the order, and the caret scalars are owned by the
@@ -445,18 +463,39 @@ type formSnap struct {
 // formMerge carries one lock-free merge from the scan to the publish. body
 // is the post-rewrite source stored as lastSyncBody; out is the published
 // source (built marks it ready, so the skip path can leave it empty and let
-// the emoji pass run after the publish unlocks); bound is the phase-2 bind
-// snapshot the publish re-checks.
+// the emoji pass run after the publish unlocks); outHash is the hash of out
+// (the input hash when the emoji pass leaves the source unchanged, otherwise
+// a single hash of the final output), so the publish can note the source
+// without rehashing; bound is the phase-2 bind snapshot the publish
+// re-checks.
 type formMerge struct {
-	body  string
-	hash  uint64
-	spans []controlSpan
-	byID  map[string]Control
-	order []string
-	st    form.Caret
-	bound map[string]Control
-	out   string
-	built bool
+	body    string
+	hash    uint64
+	spans   []controlSpan
+	byID    map[string]Control
+	order   []string
+	st      form.Caret
+	bound   map[string]Control
+	out     string
+	outHash uint64
+	built   bool
+}
+
+// noteSourceHashed records a newly synced source with a caller-computed hash.
+// It mirrors noteSource exactly (equal hash and length keep the revision, so
+// an unchanged frame compares u64s with no memcmp; a change bumps the
+// revision the key carries), letting the sync path thread one hash through
+// the emoji pass into the source memo instead of hashing the same body in
+// the emoji pass and in noteSource. Callers set syncClean after noting, so
+// the draw adapter skips its own rehash.
+func (p *Page) noteSourceHashed(next string, hash uint64) {
+	if p.sourceRev != 0 && hash == p.sourceHash && len(next) == p.sourceLen {
+		return
+	}
+
+	p.sourceHash = hash
+	p.sourceLen = len(next)
+	p.sourceRev++
 }
 
 func (p *Page) syncForm(body string) string {
@@ -493,8 +532,14 @@ func (p *Page) syncForm(body string) string {
 	}
 	p.dataMu.Unlock()
 
-	// Fast path: the template output is unchanged and nothing is dirty.
-	if snap.source != "" && body == snap.lastSync && !snap.dirty {
+	// Fast path: the template output is unchanged and nothing is dirty. When
+	// execTemplate reused the cached body, body IS lastSyncBody by
+	// construction, so skip the memcmp: Go short-circuits ||, so the string
+	// compare runs only when the frame is not already known clean. Reordering
+	// !dirty before the compare also skips the memcmp on dirty frames, where
+	// the fast path is impossible anyway.
+	cleanExec := p.tplProbeHas && p.execSkipped
+	if snap.source != "" && !snap.dirty && (cleanExec || body == snap.lastSync) {
 		c, hasFocus := snap.live[snap.focusID]
 		if !hasFocus || !form.CanEdit(c) {
 			p.syncClean = true
@@ -504,8 +549,10 @@ func (p *Page) syncForm(body string) string {
 
 	// One fused pass: the control probe, the control scan, and the
 	// button-input flag, memoized per source hash. A repeat body reuses
-	// the cached spans and head offsets without walking the source.
-	hash := form.HashSource(body)
+	// the cached spans and head offsets without walking the source. The hash
+	// is computed once here and threaded through the rewrite, the emoji
+	// pass, and the source memo, so the same body is never hashed twice.
+	hash := syncHash(body)
 	hasControls, spans, hasButtons := form.ScanCached(body, hash)
 
 	// Pages without form controls skip the button rewrite, the merge, the
@@ -514,7 +561,7 @@ func (p *Page) syncForm(body string) string {
 	// of those steps is a no-op; only the focus handoff, the bookkeeping,
 	// and the emoji pass below can change anything.
 	if len(snap.live) == 0 && len(snap.order) == 0 && !hasControls {
-		return p.publishForm(formMerge{body: body}, snap)
+		return p.publishForm(formMerge{body: body, hash: hash}, snap)
 	}
 
 	// The fused scan flags exactly the inputs the button rewrite replaces
@@ -524,7 +571,7 @@ func (p *Page) syncForm(body string) string {
 	if hasButtons {
 		rewriteButtonCalls.Add(1)
 		body = rewriteButtons(body)
-		hash = form.HashSource(body)
+		hash = syncHash(body)
 		_, spans, _ = form.ScanCached(body, hash)
 	}
 
@@ -561,9 +608,14 @@ func (p *Page) syncForm(body string) string {
 
 	// A span-free body (and a body with only plain buttons) needs no
 	// control rewrite: RewriteCached returns the source unchanged for it.
-	// The span count comes from the single scan above, not a rescan.
+	// The span count comes from the single scan above, not a rescan. The
+	// rewrite output is hashed once for the emoji gate, so the emoji pass
+	// never rehashes its input.
 	if len(spans) > 0 && form.HasFieldSpans(spans) {
-		merge.out = emojiPass(form.RewriteCached(body, hash, spans, byID, merge.st))
+		rewritten := form.RewriteCached(body, hash, spans, byID, merge.st)
+		rewriteHash := syncHash(rewritten)
+		out, outHash := draw.EmojiPassWithHash(rewritten, rewriteHash)
+		merge.out, merge.outHash = out, outHash
 		merge.built = true
 	}
 
@@ -577,7 +629,9 @@ func (p *Page) syncForm(body string) string {
 // When a publish landed after the phase-2 snapshot, the binds refresh and
 // the output rebuilds under this lock from the cached spans and head
 // offsets (no scan repeats), and the page stays dirty so the next redraw
-// re-verifies against re-executed template output.
+// re-verifies against re-executed template output. The final source is noted
+// with its threaded hash and syncClean is set, so the draw adapter skips its
+// own rehash; the memo update mirrors noteSource exactly.
 func (p *Page) publishForm(merge formMerge, snap formSnap) string {
 	p.dataMu.Lock()
 	fs := p.formState()
@@ -599,12 +653,18 @@ func (p *Page) publishForm(merge formMerge, snap formSnap) string {
 
 	p.lastSyncBody = merge.body
 	p.formDirty = dirty
-	out, built := merge.out, merge.built
+	out, outHash, built := merge.out, merge.outHash, merge.built
+	body, bodyHash := merge.body, merge.hash
 	p.dataMu.Unlock()
 
 	if !built {
-		out = emojiPass(merge.body)
+		var oh uint64
+		out, oh = draw.EmojiPassWithHash(body, bodyHash)
+		outHash = oh
 	}
+
+	p.noteSourceHashed(out, outHash)
+	p.syncClean = true
 
 	return out
 }
@@ -640,12 +700,16 @@ func refreshBindsLocked(p *Page, merge *formMerge, snap formSnap) bool {
 
 	merge.st = caretOfSnap(snap, merge.byID)
 	merge.out = merge.body
+	merge.outHash = merge.hash
 	merge.built = false
 	if len(merge.spans) > 0 && form.HasFieldSpans(merge.spans) {
-		merge.out = form.RewriteCached(merge.body, merge.hash, merge.spans, merge.byID, merge.st)
+		rewritten := form.RewriteCached(merge.body, merge.hash, merge.spans, merge.byID, merge.st)
+		merge.out = rewritten
+		merge.outHash = syncHash(rewritten)
 		merge.built = true
 	}
-	merge.out = emojiPass(merge.out)
+	out, outHash := draw.EmojiPassWithHash(merge.out, merge.outHash)
+	merge.out, merge.outHash = out, outHash
 	merge.built = true
 
 	return true

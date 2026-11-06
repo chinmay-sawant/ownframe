@@ -162,8 +162,13 @@ func (p *Page) execTemplate(track bool) (string, error) {
 
 // styleStaged styles the source, timing it when tracked.
 //
-// When the style cache already reflects the current source memo, the page
-// relayouts directly: the revision, hash, and length compare with no
+// A theme swap forces a fresh Apply: css.Relayout keeps the cached
+// document's extra sheets, so the cacheFresh relayout would keep painting
+// the old theme. A state-only move the sheets cannot match reuses the cached
+// document with no relayout at all.
+//
+// Otherwise, when the style cache already reflects the current source memo,
+// the page relayouts directly: the revision, hash, and length compare with no
 // cache lock, and the relayout takes one. Only a new source (or a dropped
 // cache) pays the Source memcmp and the fresh parse inside StyleDocument.
 func (p *Page) styleStaged(
@@ -172,7 +177,12 @@ func (p *Page) styleStaged(
 	source string,
 	state render.State,
 ) (*css.Document, error) {
-	if p.cacheFresh() {
+	if doc, ok := p.styleNoop(state); ok {
+		return doc, nil
+	}
+
+	changed := p.themeChanged(state)
+	if !changed && p.cacheFresh() {
 		ds := draw.Clock(track)
 
 		doc, err := p.cache.Relayout(ctx, p.width, p.height, state)
@@ -188,7 +198,7 @@ func (p *Page) styleStaged(
 		ctx,
 		track,
 		&p.stats.styleTime,
-		p.cache,
+		styleCache(p.cache, changed),
 		source,
 		p.viewport(),
 		state,
@@ -202,11 +212,63 @@ func (p *Page) styleStaged(
 		p.statePseudos = styled.Pseudos
 		p.stats.parses++
 		p.stats.cascades++
+	} else if changed {
+		// A relayout keeps the old extra sheet, so refresh what the new
+		// document can match even without a fresh cascade.
+		p.statePseudos = p.cache.StatePseudos()
 	}
 
 	p.noteCacheSource()
 
 	return styled.Doc, nil
+}
+
+// styleCache selects the cache a style call starts from. A theme change
+// passes nil so the call takes the fresh Apply: css.Relayout keeps the
+// cached document's extra sheets and would keep the old theme.
+func styleCache(cache *render.Cache, themeChanged bool) *render.Cache {
+	if themeChanged {
+		return nil
+	}
+
+	return cache
+}
+
+// themeChanged reports that the theme sheet differs from the one the last
+// committed frame was styled with. The cache still reflects the old sheet,
+// so the caller must not take the cacheFresh relayout for it.
+func (p *Page) themeChanged(state render.State) bool {
+	return p.cache != nil && p.last.Theme != state.Theme
+}
+
+// styleNoop returns the cached styled document when a redraw changed only
+// pointer or focus state the sheets cannot match, so a relayout would
+// reproduce the same styles. ok is false when the frame changed anything
+// else, or when a changed state can match, and the caller restyles.
+func (p *Page) styleNoop(state render.State) (doc *css.Document, ok bool) {
+	if p.cache == nil || !p.hasLast {
+		return nil, false
+	}
+
+	prev := render.State{Hover: p.last.Hover, Active: p.last.Active, Focus: p.last.Focus}
+	if !state.SameStyleState(prev, p.statePseudos) {
+		return nil, false
+	}
+
+	next, last := p.keyFor(state), p.last
+	next.Focus, next.Hover, next.Active = "", "", ""
+	last.Focus, last.Hover, last.Active = "", "", ""
+
+	if next != last {
+		return nil, false
+	}
+
+	doc = p.cache.Styled()
+	if doc == nil {
+		return nil, false
+	}
+
+	return doc, true
 }
 
 // drawStaged builds the list and commits either path.

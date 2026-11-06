@@ -31,11 +31,11 @@ func Mount(cfg ownframe.Config, root *Element) (*View, error) {
 	if cfg.File != "" || cfg.HTML != "" {
 		return nil, fmt.Errorf("ui: Mount requires empty Config.HTML and Config.File")
 	}
-	r, err := renderTree(root)
+	r, html, err := renderDocument(cfg.Title, root)
 	if err != nil {
 		return nil, err
 	}
-	cfg.HTML = Document(cfg.Title, r.output.String())
+	cfg.HTML = html
 	p, err := ownframe.New(cfg)
 	if err != nil {
 		putRenderer(r)
@@ -75,11 +75,10 @@ func (v *View) Handle(handlers ownframe.Handlers) {
 // and the previous map rides back into the pool for the next render, so
 // repeated updates reuse both the output buffer and the map capacity.
 func (v *View) Update(ctx context.Context, root *Element) error {
-	r, err := renderTree(root)
+	r, html, err := renderDocument(v.title, root)
 	if err != nil {
 		return err
 	}
-	html := Document(v.title, r.output.String())
 	fresh := r.actions
 	previous := v.actions
 	v.actions = fresh
@@ -91,6 +90,28 @@ func (v *View) Update(ctx context.Context, root *Element) error {
 	r.actions = previous
 	putRenderer(r)
 	return nil
+}
+
+// renderDocument renders root straight into a complete builder page: the
+// envelope, the escaped title, the tree, and the tail share one buffer, so
+// the final String copies the payload once instead of copying the fragment
+// and then the document. Output is byte-identical to Document of the title
+// and the rendered fragment.
+func renderDocument(title string, root *Element) (*renderer, string, error) {
+	if root == nil {
+		return nil, "", fmt.Errorf("ui: a non-nil component tree is required")
+	}
+	r := getRenderer()
+	r.output.Grow(len(docHead) + len(title) + len(docMid) + estimateSize(root) + len(docTail))
+	r.output.WriteString(docHead)
+	writeEscaped(&r.output, title)
+	r.output.WriteString(docMid)
+	if err := r.visit(root, 0); err != nil {
+		putRenderer(r)
+		return nil, "", err
+	}
+	r.output.WriteString(docTail)
+	return r, r.output.String(), nil
 }
 
 func renderTree(root *Element) (*renderer, error) {

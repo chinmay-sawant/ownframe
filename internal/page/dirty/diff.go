@@ -59,7 +59,52 @@ var (
 	// sameImageIdentity counts SameOp image matches decided by shared
 	// backing array instead of a byte scan.
 	sameImageIdentity atomic.Uint64
+	// regionHashedOps counts operations folded into region stamps. Stamps
+	// are computed fresh per diff: retained operations are patched in
+	// place between frames, so no hash survives past the diff that
+	// computed it.
+	regionHashedOps atomic.Uint64
+	// boundsMemoHits counts BoundsMemo.Get calls served from the diff's
+	// stored bounds instead of a fresh OpBounds computation.
+	boundsMemoHits atomic.Uint64
+	// boundsMemoMiss counts BoundsMemo.Get calls that fell back to
+	// OpBounds because the diff never computed that index.
+	boundsMemoMiss atomic.Uint64
 )
+
+// Counters is the diff observability snapshot: SameOp calls, region
+// stamp skips, stamped operations, and memo hits and misses. Tests use
+// it to prove a one-operation change stays near one region without
+// timing the diff.
+type Counters struct {
+	SameOp    uint64
+	Skipped   uint64
+	HashedOps uint64
+	MemoHits  uint64
+	MemoMiss  uint64
+}
+
+// DiffCounters reports the diff counters accumulated so far.
+func DiffCounters() Counters {
+	return Counters{
+		SameOp:    sameOpCalls.Load(),
+		Skipped:   diffSkippedOps.Load(),
+		HashedOps: regionHashedOps.Load(),
+		MemoHits:  boundsMemoHits.Load(),
+		MemoMiss:  boundsMemoMiss.Load(),
+	}
+}
+
+// ResetDiffCounters zeroes the diff counters. Tests reset them per case;
+// production code never calls it.
+func ResetDiffCounters() {
+	sameOpCalls.Store(0)
+	diffSkippedOps.Store(0)
+	sameImageIdentity.Store(0)
+	regionHashedOps.Store(0)
+	boundsMemoHits.Store(0)
+	boundsMemoMiss.Store(0)
+}
 
 func getDiffArena(numBuckets, numOps int) *diffArena {
 	a := diffArenaCache.Swap(nil)
@@ -146,12 +191,35 @@ func floatBits(v float64) uint64 {
 // partial while its bounding box is under a third of the frame and its
 // merged rectangle list fits MaxRects.
 func Diff(prev, next *layout.Display) (Set, bool, int) {
+	set, full, changed := diffInner(prev, next, nil)
+	return set, full, changed
+}
+
+// DiffWithBounds diffs like Diff and also returns the next-side rounded
+// op bounds the diff already computed, so the perf accounting pass
+// reuses them instead of recomputing every bound a second time. The
+// caller frees the memo after use; a nil memo means the diff took the
+// size-mismatch early path and computed no bounds.
+func DiffWithBounds(prev, next *layout.Display) (Set, bool, int, *BoundsMemo) {
+	if prev.Width != next.Width || prev.Height != next.Height {
+		return Set{}, true, len(next.Ops), nil
+	}
+
+	memo := rentBoundsMemo(len(next.Ops))
+	set, full, changed := diffInner(prev, next, memo)
+	return set, full, changed, memo
+}
+
+// diffInner is the shared equal-length and by-position diff. A non-nil
+// memo collects every next-side bound the scan computes; a nil memo
+// skips the stores, so Diff pays nothing for bounds it never reuses.
+func diffInner(prev, next *layout.Display, memo *BoundsMemo) (Set, bool, int) {
 	if prev.Width != next.Width || prev.Height != next.Height {
 		return Set{}, true, len(next.Ops)
 	}
 
 	if len(prev.Ops) != len(next.Ops) {
-		return diffByPosition(prev, next)
+		return diffByPosition(prev, next, memo)
 	}
 
 	// Same generation: one backing store cannot differ from itself.
@@ -187,7 +255,12 @@ func Diff(prev, next *layout.Display) (Set, bool, int) {
 			}
 
 			changed++
-			d.add(OpBounds(&prev.Ops[i], prev).Union(OpBounds(&next.Ops[i], next)))
+			pb := OpBounds(&prev.Ops[i], prev)
+			nb := OpBounds(&next.Ops[i], next)
+			if memo != nil {
+				memo.Set(i, nb)
+			}
+			d.add(pb.Union(nb))
 			if d.full {
 				return d, true, changed
 			}
@@ -199,8 +272,10 @@ func Diff(prev, next *layout.Display) (Set, bool, int) {
 
 // diffByPosition pairs operations by kind and geometry when the two lists
 // differ in length. An operation with no partner dirties its bounds, and
-// changed counts every unpaired or repainted operation.
-func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
+// changed counts every unpaired or repainted operation. A non-nil memo
+// collects every next-side bound the scan computes, keyed by absolute
+// index into next.Ops.
+func diffByPosition(prev, next *layout.Display, memo *BoundsMemo) (Set, bool, int) {
 	d := newSet(next.Width, next.Height)
 	changed := 0
 
@@ -238,7 +313,11 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 		for j := range nextSlice {
 			changed++
 			d.Added++
-			d.add(OpBounds(&nextSlice[j], next))
+			nb := OpBounds(&nextSlice[j], next)
+			if memo != nil {
+				memo.Set(prefix+j, nb)
+			}
+			d.add(nb)
 			if d.full {
 				return d, true, changed
 			}
@@ -307,7 +386,12 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 		}
 
 		changed++
-		d.add(OpBounds(&prevSlice[i], prev).Union(OpBounds(&nextSlice[j], next)))
+		pb := OpBounds(&prevSlice[i], prev)
+		nb := OpBounds(&nextSlice[j], next)
+		if memo != nil {
+			memo.Set(prefix+j, nb)
+		}
+		d.add(pb.Union(nb))
 		if d.full {
 			return d, true, changed
 		}
@@ -320,7 +404,11 @@ func diffByPosition(prev, next *layout.Display) (Set, bool, int) {
 
 		changed++
 		d.Added++
-		d.add(OpBounds(&nextSlice[j], next))
+		nb := OpBounds(&nextSlice[j], next)
+		if memo != nil {
+			memo.Set(prefix+j, nb)
+		}
+		d.add(nb)
 		if d.full {
 			return d, true, changed
 		}
@@ -345,12 +433,15 @@ func keyOf(op *layout.DisplayOp) opKey {
 // per-index path so results stay identical to a full scan.
 func stampRegionOps(ops []layout.DisplayOp) (uint64, bool) {
 	h := stampOffsetBasis
+	hashed := 0
 	for i := range ops {
 		var ok bool
 		if h, ok = mixOpStamp(h, &ops[i]); !ok {
 			return h, false
 		}
+		hashed++
 	}
+	regionHashedOps.Add(uint64(hashed)) //nolint:gosec // reason: hashed counts stamped ops and is non-negative.
 	return h, true
 }
 
