@@ -5,17 +5,25 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/click"
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
 
-// Click hit-tests the last picture and applies the click.
+// Click hit-tests the last picture and applies the click. One box scan answers
+// the animation-trigger pass and the click sequence.
 func (p *Page) Click(ctx context.Context, x, y float64) error {
-	if box, ok := p.activationBox(x, y); ok && !p.triggerActivated(box) {
+	spot := p.boxAt(x, y)
+	if box, ok := p.activationSpot(spot); ok && !p.triggerActivated(box) {
 		if _, err := p.fireTriggers(ctx, box, true); err != nil {
 			return err
 		}
 	}
 
-	return click.Run(ctx, clickSurface{p}, x, y)
+	return click.Run(ctx, clickSurface{p}, click.Point{X: x, Y: y, Spot: spot.hitSpot()})
+}
+
+// hitSpot converts the page's point query to the hit package's spot.
+func (s boxSpot) hitSpot() hit.Spot {
+	return hit.Spot{Box: s.box, OK: s.ok, ID: s.id}
 }
 
 // triggerActivated reports whether the press that started this gesture already
@@ -27,14 +35,6 @@ func (p *Page) triggerActivated(box Box) bool {
 // clickSurface adapts Page to click.Surface.
 // Each method delegates to the page method the sequence already used.
 type clickSurface struct{ p *Page }
-
-func (s clickSurface) HitBox(x, y float64) (Box, bool) {
-	return s.p.hitBox(x, y)
-}
-
-func (s clickSurface) BoxIDAt(x, y float64) string {
-	return s.p.boxIDAt(x, y)
-}
 
 func (s clickSurface) BoxByID(id string) Box {
 	return s.p.boxByID(id)

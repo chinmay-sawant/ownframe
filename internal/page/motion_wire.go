@@ -62,32 +62,22 @@ func (p *Page) motionCommitIdle() bool {
 
 // displayDeclaresAnimations reports whether any box in d declares a CSS
 // animation. The predicate matches the bind's own scan, so a false answer
-// means the bind would take its no-animation fast path.
-func displayDeclaresAnimations(d *Display) bool {
-	if d == nil {
-		return false
-	}
-	for i := range d.Boxes {
-		if len(d.Boxes[i].Animations) > 0 {
-			return true
-		}
-	}
-	return false
+// means the bind would take its no-animation fast path. The verdict is cached
+// per display and shares one box walk with the transitions verdict, so a
+// publish scans the page's boxes once instead of once per predicate.
+func (p *Page) displayDeclaresAnimations(d *Display) bool {
+	animations, _ := p.displayDeclarations(d)
+
+	return animations
 }
 
 // displayDeclaresTransitions reports whether any box in d declares a CSS
 // transition. The predicate matches the capture's own scan, so a false
 // answer means the capture would walk both displays and return nothing.
-func displayDeclaresTransitions(d *Display) bool {
-	if d == nil {
-		return false
-	}
-	for i := range d.Boxes {
-		if len(d.Boxes[i].Transitions) != 0 {
-			return true
-		}
-	}
-	return false
+func (p *Page) displayDeclaresTransitions(d *Display) bool {
+	_, transitions := p.displayDeclarations(d)
+
+	return transitions
 }
 
 // bindMotion resolves the CSS animations of the display the page just
@@ -120,7 +110,7 @@ func (p *Page) bindMotion(previous, display *Display) {
 	// the box tree the re-projection pass patches.
 	retained := p.retainState
 
-	if display != nil && p.motionCommitIdle() && !displayDeclaresAnimations(display) {
+	if display != nil && p.motionCommitIdle() && !p.displayDeclaresAnimations(display) {
 		// No box declares an animation and the runtime holds nothing: the
 		// bind would only zero counters that already read zero, so installing
 		// the display is the whole bind. The retained-state debt below is
@@ -173,7 +163,7 @@ func (p *Page) captureTransitions(previous, next *Display) []motion.TransitionCa
 	if p.motion == nil || p.transitionsOff {
 		return nil
 	}
-	if next != nil && p.motionCommitIdle() && !displayDeclaresTransitions(next) {
+	if next != nil && p.motionCommitIdle() && !p.displayDeclaresTransitions(next) {
 		// No box declares a transition and the runtime holds no live run a
 		// capture could cancel or reverse, so the capture would walk both
 		// displays and return nothing with zeroed counters.
@@ -567,20 +557,26 @@ type triggerPressState struct {
 	box   Box
 }
 
-// activationBox resolves the innermost box under a point the way the click
-// sequence does: the box the point hit, or its innermost id-bearing ancestor.
-func (p *Page) activationBox(x, y float64) (Box, bool) {
-	box, ok := p.hitBox(x, y)
+// activationSpot resolves the innermost box from a box scan the caller already
+// made: the box the point hit, or its innermost id-bearing ancestor. Click
+// passes the one spot it scanned into the sequence, so the trigger pass and
+// the click never disagree and never scan twice.
+func (p *Page) activationSpot(spot boxSpot) (Box, bool) {
+	box, ok := spot.box, spot.ok
 	if !ok {
 		return Box{}, false
 	}
-	if box.ID == "" {
-		if id := p.boxIDAt(x, y); id != "" {
-			box = p.boxByID(id)
-		}
+	if box.ID == "" && spot.id != "" {
+		box = p.boxByID(spot.id)
 	}
 
 	return box, true
+}
+
+// activationBox resolves the innermost box under a point the way the click
+// sequence does: the box the point hit, or its innermost id-bearing ancestor.
+func (p *Page) activationBox(x, y float64) (Box, bool) {
+	return p.activationSpot(p.boxAt(x, y))
 }
 
 // pressTriggers fires the activated element's animation-trigger entry actions

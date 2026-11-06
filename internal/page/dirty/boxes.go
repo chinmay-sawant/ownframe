@@ -72,13 +72,45 @@ func BuildKidIndex(boxes []layout.Box) KidIndex {
 	}
 	for i := range boxes {
 		pi := boxes[i].ParentIndex
-		if pi < 0 || pi >= len(boxes) {
+		if pi < 0 || pi >= len(boxes) || pi == i {
+			// A missing, out-of-range, or self parent is a root. The self
+			// case would otherwise link the box to itself and make the
+			// subtree walk cycle forever.
 			continue
 		}
 		k.link[i] = k.head[pi]
 		k.head[pi] = i
 	}
 	return k
+}
+
+// SameParents reports whether a and b carry the same parent links in the same
+// order. Paired with an unchanged id sequence it proves the child lists a
+// KidIndex built from a still describe b, so a commit only needs to rewrite
+// the rects snapshot.
+func SameParents(a, b []layout.Box) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].ParentIndex != b[i].ParentIndex {
+			return false
+		}
+	}
+	return true
+}
+
+// UpdateRects rewrites the rects snapshot from boxes for an index whose id
+// sequence and parent links still describe boxes. The map and the child links
+// stay as they are. A length mismatch leaves the index untouched; the caller
+// proves the match with SameIDs and SameParents.
+func (k KidIndex) UpdateRects(boxes []layout.Box) {
+	if len(k.rects) != len(boxes) {
+		return
+	}
+	for i := range boxes {
+		k.rects[i] = BoxRect(boxes[i])
+	}
 }
 
 // Rect returns the union of the id's box and every descendant's box, so
@@ -96,9 +128,15 @@ func (k KidIndex) Rect(id string) (r image.Rectangle, ok bool) {
 	}
 	r = k.rects[root]
 	stack := []int{root}
+	visited := 0
 	for len(stack) > 0 {
 		n := stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
+		visited++
+		if visited > len(k.rects) {
+			// A malformed parent cycle would otherwise walk forever.
+			return r, true
+		}
 		for c := k.head[n]; c != -1; c = k.link[c] {
 			r = r.Union(k.rects[c])
 			stack = append(stack, c)

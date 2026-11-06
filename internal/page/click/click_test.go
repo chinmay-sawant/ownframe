@@ -9,6 +9,7 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/fetch"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
 
 var (
@@ -32,7 +33,7 @@ func TestClickSequenceOrder(t *testing.T) {
 	}{
 		{
 			name: "miss redraws when changed",
-			want: "HitBox HasOpenLink RedrawIfChanged",
+			want: "HasOpenLink RedrawIfChanged",
 		},
 		{
 			name: "consumed press redraws and stops",
@@ -41,7 +42,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				hit:   layout.Box{ID: "a"},
 				press: true,
 			},
-			want: "HitBox ConsumePress:a Redraw",
+			want: "ConsumePress:a Redraw",
 		},
 		{
 			name: "blank id uses the inner id before the route",
@@ -54,7 +55,7 @@ func TestClickSequenceOrder(t *testing.T) {
 					"go": "<b>n</b>",
 				},
 			},
-			want: "HitBox BoxIDAt BoxByID:icon ConsumePress:icon FormControl:icon BlurForm Lookup:go Load:<b>n</b>",
+			want: "BoxByID:icon ConsumePress:icon FormControl:icon BlurForm Lookup:go Load:<b>n</b>",
 		},
 		{
 			name: "blank id with no inner id stays blank",
@@ -62,7 +63,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				hitOK: true,
 				hit:   layout.Box{},
 			},
-			want: "HitBox BoxIDAt ConsumePress: FormControl: BlurForm HasOpenLink HasClick ClickPainted: RedrawIfChanged",
+			want: "ConsumePress: FormControl: BlurForm HasOpenLink HasClick ClickPainted: RedrawIfChanged",
 		},
 		{
 			name: "enabled button loads its route",
@@ -75,7 +76,7 @@ func TestClickSequenceOrder(t *testing.T) {
 					"next": "<p>x</p>",
 				},
 			},
-			want: "HitBox ConsumePress:b FormControl:b Control:b Lookup:next Load:<p>x</p>",
+			want: "ConsumePress:b FormControl:b Control:b Lookup:next Load:<p>x</p>",
 		},
 		{
 			name: "disabled button does not route or blur",
@@ -88,7 +89,7 @@ func TestClickSequenceOrder(t *testing.T) {
 					"next": "<p>x</p>",
 				},
 			},
-			want: "HitBox ConsumePress:b FormControl:b Control:b ClickControl:b",
+			want: "ConsumePress:b FormControl:b Control:b ClickControl:b",
 		},
 		{
 			name: "button without a route activates the control",
@@ -98,7 +99,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				form:  true,
 				ctrl:  form.Control{Tag: "button"},
 			},
-			want: "HitBox ConsumePress:b FormControl:b Control:b Lookup:next ClickControl:b",
+			want: "ConsumePress:b FormControl:b Control:b Lookup:next ClickControl:b",
 		},
 		{
 			name: "button without an action activates the control",
@@ -108,7 +109,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				form:  true,
 				ctrl:  form.Control{Tag: "button"},
 			},
-			want: "HitBox ConsumePress:b FormControl:b Control:b ClickControl:b",
+			want: "ConsumePress:b FormControl:b Control:b ClickControl:b",
 		},
 		{
 			name: "text control activates and does not blur",
@@ -118,7 +119,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				form:  true,
 				ctrl:  form.Control{Tag: "input", Type: "text"},
 			},
-			want: "HitBox ConsumePress:t FormControl:t Control:t ClickControl:t",
+			want: "ConsumePress:t FormControl:t Control:t ClickControl:t",
 		},
 		{
 			name: "other hit blurs and loads the route",
@@ -129,7 +130,7 @@ func TestClickSequenceOrder(t *testing.T) {
 					"go": "html",
 				},
 			},
-			want: "HitBox ConsumePress:n FormControl:n BlurForm Lookup:go Load:html",
+			want: "ConsumePress:n FormControl:n BlurForm Lookup:go Load:html",
 		},
 		{
 			name: "route miss still skips the link and returns the handler error",
@@ -140,7 +141,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				click:    true,
 				clickErr: errClick,
 			},
-			want:    "HitBox ConsumePress:n FormControl:n BlurForm Lookup:go HasOpenLink HasClick HandlerClick:n",
+			want:    "ConsumePress:n FormControl:n BlurForm Lookup:go HasOpenLink HasClick HandlerClick:n",
 			wantErr: errClick,
 		},
 		{
@@ -150,7 +151,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				hit:     layout.Box{ID: "n"},
 				painted: true,
 			},
-			want: "HitBox ConsumePress:n FormControl:n BlurForm HasOpenLink HasClick ClickPainted:n",
+			want: "ConsumePress:n FormControl:n BlurForm HasOpenLink HasClick ClickPainted:n",
 		},
 		{
 			name: "paint error skips the changed redraw",
@@ -159,7 +160,7 @@ func TestClickSequenceOrder(t *testing.T) {
 				hit:      layout.Box{ID: "n"},
 				paintErr: errPaint,
 			},
-			want:    "HitBox ConsumePress:n FormControl:n BlurForm HasOpenLink HasClick ClickPainted:n",
+			want:    "ConsumePress:n FormControl:n BlurForm HasOpenLink HasClick ClickPainted:n",
 			wantErr: errPaint,
 		},
 		{
@@ -169,13 +170,13 @@ func TestClickSequenceOrder(t *testing.T) {
 				handled: true,
 				openErr: errOpen,
 			},
-			want:    "HitBox HasOpenLink OpenLinkAt",
+			want:    "HasOpenLink OpenLinkAt",
 			wantErr: errOpen,
 		},
 		{
 			name: "declined link still redraws when changed",
 			f:    fake{open: true},
-			want: "HitBox HasOpenLink OpenLinkAt RedrawIfChanged",
+			want: "HasOpenLink OpenLinkAt RedrawIfChanged",
 		},
 		{
 			name: "load error is returned",
@@ -187,13 +188,13 @@ func TestClickSequenceOrder(t *testing.T) {
 				},
 				loadErr: errLoad,
 			},
-			want:    "HitBox ConsumePress:n FormControl:n BlurForm Lookup:go Load:html",
+			want:    "ConsumePress:n FormControl:n BlurForm Lookup:go Load:html",
 			wantErr: errLoad,
 		},
 		{
 			name:    "changed redraw error is returned",
 			f:       fake{changedErr: errDraw},
-			want:    "HitBox HasOpenLink RedrawIfChanged",
+			want:    "HasOpenLink RedrawIfChanged",
 			wantErr: errDraw,
 		},
 	}
@@ -203,7 +204,11 @@ func TestClickSequenceOrder(t *testing.T) {
 			t.Parallel()
 
 			f := tc.f
-			err := Run(context.Background(), &f, 1, 1)
+			err := Run(context.Background(), &f, Point{
+				X:    1,
+				Y:    1,
+				Spot: hit.Spot{Box: f.hit, OK: f.hitOK, ID: f.idAt},
+			})
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("err = %v, want %v", err, tc.wantErr)
 			}
@@ -211,10 +216,6 @@ func TestClickSequenceOrder(t *testing.T) {
 			got := strings.Join(f.calls, " ")
 			if got != tc.want {
 				t.Fatalf("calls = %s", got)
-			}
-
-			if f.hitX != 1 || f.hitY != 1 {
-				t.Fatalf("hit at %v,%v", f.hitX, f.hitY)
 			}
 
 			if strings.Contains(tc.want, "OpenLinkAt") && (f.openX != 1 || f.openY != 1) {
@@ -229,7 +230,7 @@ func TestClickRejectsNilContext(t *testing.T) {
 
 	f := &fake{}
 	//nolint:staticcheck // reason: intentionally passes nil to verify ErrNilContext.
-	err := Run(nil, f, 1, 1)
+	err := Run(nil, f, Point{})
 	if !errors.Is(err, fetch.ErrNilContext) {
 		t.Fatalf("err = %v", err)
 	}
@@ -246,7 +247,7 @@ func TestClickStopsOnCanceledContext(t *testing.T) {
 	cancel()
 
 	f := &fake{}
-	err := Run(ctx, f, 1, 1)
+	err := Run(ctx, f, Point{})
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v", err)
 	}
@@ -276,27 +277,12 @@ type fake struct {
 	redrawErr  error
 	changedErr error
 	calls      []string
-	hitX       float64
-	hitY       float64
 	openX      float64
 	openY      float64
 }
 
 func (f *fake) note(step string) {
 	f.calls = append(f.calls, step)
-}
-
-func (f *fake) HitBox(x, y float64) (layout.Box, bool) {
-	f.note("HitBox")
-	f.hitX, f.hitY = x, y
-
-	return f.hit, f.hitOK
-}
-
-func (f *fake) BoxIDAt(float64, float64) string {
-	f.note("BoxIDAt")
-
-	return f.idAt
 }
 
 func (f *fake) BoxByID(id string) layout.Box {

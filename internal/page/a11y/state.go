@@ -40,6 +40,11 @@ func (s *State) Invalidate() {
 // Source is the last committed document source.
 func (s *State) Source() string { return s.source }
 
+// Attached reports whether a parsed document root is held. A patch mutates
+// that root; without one the edits have nowhere to land, so the page skips
+// the whole refresh instead of rebuilding the edit slice for a no-op.
+func (s *State) Attached() bool { return s != nil && s.root != nil }
+
 // Edit is one change applied to the cached markup root.
 // A nil Text leaves the children. An empty Attribute leaves attributes.
 // An empty ID uses the id argument.
