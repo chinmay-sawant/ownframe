@@ -21,3 +21,18 @@ func RelayoutElement(
 
 	return layout.RelayoutElement(ctx, doc, prev, elementID, options)
 }
+
+// RelayoutElements lays several retained elements out in one engine pass and
+// builds the patched display once.
+func RelayoutElements(
+	ctx context.Context,
+	doc *css.Document,
+	prev *layout.Display,
+	elementIDs []string,
+	options layout.Options,
+) (*layout.Display, error) {
+	engineMu.Lock()
+	defer engineMu.Unlock()
+
+	return layout.RelayoutElements(ctx, doc, prev, elementIDs, options)
+}

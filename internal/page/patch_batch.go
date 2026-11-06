@@ -69,20 +69,18 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 		return p.failBatch(err)
 	}
 
-	current := p.draw.Display
+	ids := make([]string, 0, len(patches))
 	for i := range patches {
-		if !touched[i] {
-			continue
+		if touched[i] {
+			ids = append(ids, patches[i].ID)
 		}
-		ep, err := render.RelayoutElement(ctx, styled, current, patches[i].ID, layout.Options{Images: state.Images})
-		if err != nil {
-			return p.failBatch(err)
-		}
-		next, ok := patch.AdoptedDisplay(ep)
-		if !ok {
-			return p.failBatch(nil)
-		}
-		current = next
+	}
+
+	current, err := render.RelayoutElements(
+		ctx, styled, p.draw.Display, ids, layout.Options{Images: state.Images},
+	)
+	if err != nil {
+		return p.failBatch(err)
 	}
 
 	captures := p.captureTransitions(p.draw.Display, current)
