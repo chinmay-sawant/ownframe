@@ -63,7 +63,9 @@ type renderTrack struct {
 	cacheLen  int
 	// tplProbeTpl and tplProbeHas memoize the template probe. The probe
 	// moves to template-write time: execTemplate rescans nav.Current for
-	// "{{" only when p.tpl changed, and reuses the verdict otherwise.
+	// "{{" only when p.tpl changed, and reuses the verdict otherwise. A
+	// builder document keeps both at zero (staticSource), so execTemplate
+	// returns nav.Current with no scan and no Execute.
 	tplProbeTpl *template.Template
 	tplProbeHas bool
 	// execSkipped reports that execTemplate returned without executing:

@@ -31,6 +31,29 @@ func BenchmarkInvoiceClickBatch(b *testing.B) {
 	}
 }
 
+// BenchmarkInvoiceViewUpdate measures the builder's keyed update path with
+// patch disabled at the app level: View.Update diffs the rebuilt tree and
+// commits the changed elements instead of rendering the whole document.
+func BenchmarkInvoiceViewUpdate(b *testing.B) {
+	ctx := context.Background()
+	a, err := newInvoiceApp()
+	if err != nil {
+		b.Fatal(err)
+	}
+	a.patch = false
+	if err := a.Page().Redraw(ctx); err != nil {
+		b.Fatal(err)
+	}
+	targets := []string{"row:500", "row:501"}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; b.Loop(); i++ {
+		if err := pagetest.ClickAction(ctx, a.Page(), targets[i%len(targets)]); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // BenchmarkInvoiceWindowedRebuild measures a windowed-app refresh: only the
 // viewport slice rebuilds, so build cost scales with viewport, not table.
 func BenchmarkInvoiceWindowedRebuild(b *testing.B) {

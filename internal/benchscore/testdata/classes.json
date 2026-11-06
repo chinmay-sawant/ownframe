@@ -1,0 +1,4 @@
+{
+  "BenchmarkInvoiceColdBuild": "rebuild",
+  "BenchmarkResizeWindow": "resize"
+}

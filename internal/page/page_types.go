@@ -22,6 +22,11 @@ import (
 type Page struct {
 	title string
 	tpl   *template.Template
+	// staticSource marks the current nav entry as a builder document, whose
+	// envelope proves it carries no template action. Such a page keeps tpl
+	// nil: the redraw path returns nav.Current instead of parsing or
+	// executing it, and a Load of any other source parses again.
+	staticSource bool
 	// dataMu guards data and the form-sync handoff below it. SetData
 	// takes it to publish new data; the redraw path takes it to run the
 	// template (shared) and to check, merge, and store the sync flags

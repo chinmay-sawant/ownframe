@@ -214,6 +214,23 @@ func estimateSize(root *Element) int {
 	return total
 }
 
+// isVoidTag reports whether tag is written without a closing tag.
+func isVoidTag(tag string) bool {
+	switch tag {
+	case "input", "img", "br", "hr":
+		return true
+	default:
+		return false
+	}
+}
+
+// actionName is the data-action value for the n-th OnClick node in document
+// order. The incremental diff reuses it to rebuild the callback registry
+// without emitting HTML.
+func actionName(n int) string {
+	return "ownframe-ui-" + strconv.Itoa(n)
+}
+
 func supportedTag(tag string) bool {
 	switch tag {
 	case "div", "span", "p", "br", "hr", "h1", "h2",
@@ -245,7 +262,7 @@ func (r *renderer) visit(e *Element, depth int) error {
 	if slices.Contains(r.stack, e) {
 		return fmt.Errorf("ui: cycle in component tree at <%s>", e.tag)
 	}
-	void := e.tag == "input" || e.tag == "img" || e.tag == "br" || e.tag == "hr"
+	void := isVoidTag(e.tag)
 	if void && (e.text != "" || len(e.children) != 0) {
 		return fmt.Errorf("ui: void HTML element <%s> cannot have children or text", e.tag)
 	}
@@ -260,7 +277,7 @@ func (r *renderer) visit(e *Element, depth int) error {
 			return fmt.Errorf("ui: cannot combine OnClick with a custom data-action")
 		}
 		r.nextID++
-		action = "ownframe-ui-" + strconv.Itoa(r.nextID)
+		action = actionName(r.nextID)
 		hasAction = true
 		r.actions[action] = e.onClick
 	} else if dataAction := e.attrs["data-action"]; dataAction != "" {

@@ -3,14 +3,16 @@ module github.com/chinmay-sawant/ownframe
 go 1.26.10
 
 require (
-	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
+	github.com/chinmay-sawant/blinkless v0.1.1-0.20261106142256-2656c80a62e9
 	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
 	golang.org/x/image v0.47.0
+	golang.org/x/perf v0.0.0-20260908200009-22c9c6c9d4da
 	golang.org/x/text v0.43.0
 	golang.org/x/time v0.14.0
 )
 
 require (
+	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/telemetry v0.0.0-20261010193011-f71dc92da45e // indirect
 	golang.org/x/tools v0.52.0 // indirect

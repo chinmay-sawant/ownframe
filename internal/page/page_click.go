@@ -81,12 +81,12 @@ func (s clickSurface) HasClick() bool {
 }
 
 func (s clickSurface) HandlerClick(ctx context.Context, box Box) error {
-	if err := s.p.handlers.Click(ctx, box); err != nil {
-		return err
-	}
+	// Mark before the handler runs: an incremental update that adopts its
+	// patched source clears the flag, while a handler that only mutates data
+	// leaves it set for the next redraw's form sync.
 	s.p.markFormDirty()
 
-	return nil
+	return s.p.handlers.Click(ctx, box)
 }
 
 func (s clickSurface) ClickPainted(ctx context.Context, box Box) (bool, error) {

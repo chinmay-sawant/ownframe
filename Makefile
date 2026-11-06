@@ -21,6 +21,22 @@ test:
 test-race:
 	$(GO) test -race -p 1 ./...
 
+# Compare two `go test -bench` outputs against the shared class budgets. This
+# gate is explicit: it is not part of `test` or `lint`.
+#   make bench-gate BENCH_REF=bench/ref.txt BENCH_CAND=bench/cand.txt
+# BENCH_MANIFEST is an optional JSON map from benchmark name to class.
+BENCH_REF ?=
+BENCH_CAND ?=
+BENCH_MANIFEST ?=
+
+.PHONY: bench-gate
+bench-gate:
+	@if [ -z "$(BENCH_REF)" ] || [ -z "$(BENCH_CAND)" ]; then \
+		echo "usage: make bench-gate BENCH_REF=<reference.txt> BENCH_CAND=<candidate.txt> [BENCH_MANIFEST=<classes.json>]"; \
+		exit 1; \
+	fi
+	$(GO) run ./cmd/benchscore -ref "$(BENCH_REF)" -cand "$(BENCH_CAND)" $(if $(BENCH_MANIFEST),-manifest "$(BENCH_MANIFEST)")
+
 # `go build ./...` links an executable for every example on each run, takes
 # about a minute, and leaves the binaries in this directory. `go vet` compiles
 # every package, including every example, without linking. Raise the limit for
