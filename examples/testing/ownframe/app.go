@@ -139,6 +139,7 @@ type invoiceApp struct {
 	patch       bool
 	windowed    bool
 	windowStart int
+	query       string
 	// version bumps on every memory-state mutation; renderedVersion records
 	// the version whose screen() output refresh() last committed. refresh()
 	// skips the rebuild when they match. Patch paths that bypass refresh
@@ -167,7 +168,7 @@ func newInvoiceAppWithCount(n int) (*invoiceApp, error) {
 	}
 	a.view = view
 	a.page = view.Page
-	view.Handle(ownframe.Handlers{Click: a.handleClick})
+	view.Handle(ownframe.Handlers{Click: a.handleClick, Change: a.handleChange})
 	return a, nil
 }
 
@@ -234,6 +235,30 @@ func (a *invoiceApp) dimCell(text string, width float64) *ui.Element {
 	return ui.Text(text).Width(ui.Px(width)).FontSize(ui.Px(13)).Color(ui.Hex("#6b7280"))
 }
 
+// matchedRows returns the original indexes of rows whose client matches the
+// filter query, or every index when the query is empty.
+func (a *invoiceApp) matchedRows() []int {
+	if a.query == "" {
+		order := make([]int, len(a.rows))
+		for i := range order {
+			order[i] = i
+		}
+		return order
+	}
+	q := strings.ToLower(a.query)
+	var order []int
+	for i, r := range a.rows {
+		if strings.Contains(strings.ToLower(r.client), q) {
+			order = append(order, i)
+		}
+	}
+	return order
+}
+
+func (a *invoiceApp) showingText() string {
+	return "Showing " + strconv.Itoa(len(a.matchedRows())) + " of " + strconv.Itoa(len(a.rows))
+}
+
 func (a *invoiceApp) screen() *ui.Element {
 	header := ui.Div().Display(ui.DisplayFlex).
 		FlexDirection(ui.FlexDirectionColumn).
@@ -242,6 +267,9 @@ func (a *invoiceApp) screen() *ui.Element {
 		Children(
 			ui.Text("Invoice Table · 1000 rows").FontSize(ui.Px(18)).FontWeight(ui.FontWeightBold),
 			ui.Text(invoiceSubtitle).FontSize(ui.Px(12)).Color(ui.Hex("#6b7280")),
+			ui.Input().ID("invoice-filter").Attr("type", "text").
+				Attr("placeholder", "Filter by client...").Attr("value", a.query),
+			ui.Text(a.showingText()).ID("invoice-showing").FontSize(ui.Px(13)).Color(ui.Hex("#6b7280")),
 			ui.Text(a.selectedText()).ID("invoice-selected").FontSize(ui.Px(14)),
 			ui.Text(a.themeText()).ID("invoice-theme-label").FontSize(ui.Px(13)).Color(ui.Hex("#6b7280")),
 			ui.Text("Grand total: "+formatCents(a.grandTotal())).ID("invoice-total").FontSize(ui.Px(14)).FontWeight(ui.FontWeightBold),
@@ -261,12 +289,13 @@ func (a *invoiceApp) screen() *ui.Element {
 			a.headerCell("Total", invoiceTotalColWidth),
 			a.headerCell("Status", invoiceStatusWidth),
 		)
-	start, end := 0, len(a.rows)
+	order := a.matchedRows()
+	start, end := 0, len(order)
 	if a.windowed {
-		start, end = a.windowRange()
+		start, end = windowRangeN(len(order), a.windowStart)
 	}
 	rows := make([]*ui.Element, 0, end-start)
-	for i := start; i < end; i++ {
+	for _, i := range order[start:end] {
 		r := a.rows[i]
 		row := ui.Div().ID("invoice-row-"+strconv.Itoa(i)).
 			Attr("data-action", "row:"+strconv.Itoa(i)).
@@ -291,7 +320,7 @@ func (a *invoiceApp) screen() *ui.Element {
 		padded := make([]*ui.Element, 0, len(rows)+2)
 		padded = append(padded, ui.Div().ID("invoice-pad-top").Height(ui.Px(float64(start*invoiceRowH))))
 		padded = append(padded, rows...)
-		padded = append(padded, ui.Div().ID("invoice-pad-bot").Height(ui.Px(float64((len(a.rows)-end)*invoiceRowH))))
+		padded = append(padded, ui.Div().ID("invoice-pad-bot").Height(ui.Px(float64((len(order)-end)*invoiceRowH))))
 		grid = padded
 	}
 	return ui.Div().Display(ui.DisplayFlex).
@@ -301,13 +330,17 @@ func (a *invoiceApp) screen() *ui.Element {
 }
 
 // windowRange clamps the visible slice to [start, start+invoiceWindowSize)
-// inside the rows. Short tables show every row from zero.
+// inside rows. Short tables show every row from zero.
 func (a *invoiceApp) windowRange() (int, int) {
-	total := len(a.rows)
+	return windowRangeN(len(a.rows), a.windowStart)
+}
+
+// windowRangeN clamps the visible slice to [start, start+invoiceWindowSize)
+// inside a list of total rows.
+func windowRangeN(total, start int) (int, int) {
 	if total <= invoiceWindowSize {
 		return 0, total
 	}
-	start := a.windowStart
 	if start < 0 {
 		start = 0
 	}
@@ -362,6 +395,18 @@ func (a *invoiceApp) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.patchSelectBatched(ctx, i)
 	}
 	a.selected = i
+	a.version++
+	return a.refresh(ctx)
+}
+
+// handleChange applies the filter box value: typing filters the grid by
+// client name, so each keystroke commits a full rebuild of the smaller view.
+// Structural row changes do not go through patches.
+func (a *invoiceApp) handleChange(ctx context.Context, box ownframe.Box) error {
+	if box.ID != "invoice-filter" {
+		return nil
+	}
+	a.query = a.page.Form().FormValue("invoice-filter")
 	a.version++
 	return a.refresh(ctx)
 }

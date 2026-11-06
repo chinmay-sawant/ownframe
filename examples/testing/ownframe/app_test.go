@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -242,6 +243,57 @@ func TestInvoiceThemePatch(t *testing.T) {
 	r, g, b = rowFill(t, a, "row:7")
 	wantFill(t, "row 7 gray theme back", r, g, b, fillGray)
 }
+
+// TestInvoiceFilter types into the filter box and checks the grid narrows
+// to matching clients with a correct showing readout, and that clearing
+// restores the full table.
+func TestInvoiceFilter(t *testing.T) {
+	t.Parallel()
+	a, err := newInvoiceApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := a.Page().Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.Click(ctx, a.Page(), "invoice-filter"); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.Type(ctx, a.Page(), "acme"); err != nil {
+		t.Fatal(err)
+	}
+	want := 0
+	for _, r := range makeInvoiceRows(invoiceRows) {
+		if strings.Contains(strings.ToLower(r.client), "acme") {
+			want++
+		}
+	}
+	if a.query != "acme" {
+		t.Fatalf("query = %q, want acme", a.query)
+	}
+	html := a.Page().HTML()
+	if wantText := "Showing " + itoa(want) + " of " + itoa(invoiceRows); !strings.Contains(html, wantText) {
+		t.Errorf("invoice HTML missing readout %q", wantText)
+	}
+	if want > 0 && !strings.Contains(html, "Acme Corp") {
+		t.Errorf("filtered HTML missing matching client")
+	}
+	// Clearing the filter restores every row.
+	for range len("acme") {
+		if err := a.Page().Edit().Backspace(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if a.query != "" {
+		t.Fatalf("query = %q, want empty after clearing", a.query)
+	}
+	if html := a.Page().HTML(); !strings.Contains(html, "Showing "+itoa(invoiceRows)+" of "+itoa(invoiceRows)) {
+		t.Errorf("cleared filter should show all rows")
+	}
+}
+
+func itoa(n int) string { return strconv.Itoa(n) }
 
 // TestInvoiceThemeStyle checks the stylesheet-swap path: flipping the theme
 // restyles every row with no reparse, and the paint follows.

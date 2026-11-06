@@ -79,23 +79,35 @@ Batched and windowed rows in Results are measured by collation.
 
 A refresh with no data change skips the render. The harness calls refresh
 twice with nothing changed between the calls, so the second call has no
-rebuild work. Its row in Results is TBD pending the benchmark run.
+rebuild work.
+
+Four more paths round out the comparison. Cold build is a fresh app plus
+its first headless frame, the proxy for first paint (toolkit-level caches
+persist in-process, so treat it as a cold page on a warm engine). Resize
+alternates two window sizes with a redraw each. Typing is one keystroke
+into the filter box plus the rebuild it triggers, alternating a typed char
+with backspace so every iteration does constant work. Heap growth runs ten
+full rebuilds, collects, and reports retained bytes plus the growth delta.
 
 ## Results (i7-13700HX, headless, `go test -bench`)
 
 | Path | ownframe | MyGo | Gap |
 | --- | --- | --- | --- |
-| Full build, changed data | 304.1 ms/op · 3.3 fps · 45.9 MB/op · 316k allocs/op | 31.6 ms/op · 31.7 fps · 40.6 MB/op · 25k allocs/op | MyGo ~9.7x faster |
-| Interactive click + rebuild | 304.1 ms/op · 3.3 fps | 31.0 ms/op · 32.3 fps · 56 KB/op · 6k allocs/op | MyGo ~10x faster |
-| Interactive click + patch | 55.7 ms/op · 18 fps · 42.5 MB/op · 34k allocs/op | (same as above) 31.0 ms/op · 32 fps | Patch 5.5x better than rebuild, MyGo still ~1.8x ahead |
-| Rebuild, same data | 15.5 ms/op · 64 fps | 12.3 ms/op · 81 fps | Tie (different work) |
-| Theme toggle + rebuild | 265.1 ms/op · 3.8 fps | n/a | Baseline for global changes |
-| Theme toggle + 1000 patches | 19650 ms/op · 0.05 fps · 12.9 GB/op · 13M allocs/op | n/a | Patching loses 74x: never patch row by row |
-| Theme toggle + stylesheet swap | 264.8 ms/op · 3.8 fps | n/a | Same as rebuild minus the HTML render |
-| Batched patch, few edits | TBD, measured by collation | n/a | One shared re-resolve, one draw |
-| Windowed build, visible viewport | TBD, measured by collation | n/a | Cost scales with viewport, not collection size |
-| Clean refresh, no change | TBD pending benchmark run | n/a | Second of two back-to-back refresh calls skips the render |
-| Idle re-render | 0.014 ms/op · 0 allocs | 12.3 ms/op (always reframes) | ownframe ~850x cheaper |
+| Full build, changed data | 225.8 ms/op · 4.4 fps · 96.4 MB/op · 292k allocs/op | 28.9 ms/op · 34.6 fps · 40.9 MB/op · 32.7k allocs/op | MyGo ~7.8x faster |
+| Interactive click + rebuild | 225.8 ms/op · 4.4 fps | 16.6 ms/op · 60 fps · 0.1 MB/op · 6.1k allocs/op | MyGo ~14x faster |
+| Interactive click + batch | 30.3 ms/op · 33 fps · 41.7 MB/op · 34k allocs/op | (same as above) 16.6 ms/op · 60 fps | Batch 7.5x better than rebuild, MyGo ~1.8x ahead |
+| Rebuild, same data | skip floor, 0 allocs | 6.9 ms/op · 145 fps | ownframe skips, MyGo reframes |
+| Cold build, first paint | 243.8 ms/op · 4.1 fps · 91.5 MB/op · 297k allocs/op | 25.5 ms/op · 39 fps · 41.3 MB/op · 39k allocs/op | MyGo ~9.6x faster |
+| Resize + redraw | 247.6 ms/op · 2 resizes | 8.4 ms/op · 59.8 fps · 74 KB/op · 4.1k allocs/op | MyGo ~30x faster |
+| Typing, one keystroke | 180.8 ms/op · 5.5 fps · 69.5 MB/op · 223k allocs/op | 16.5 ms/op · 60.6 fps · 8.6 MB/op · 10k allocs/op | MyGo ~11x faster |
+| Heap, 10 full rebuilds | retained 1.41 GB · growth +5.8 MB · +38k objects | retained 4.5 MB · growth +6.4 KB · +17 objects | ownframe retains ~3000x, grows ~900x per rebuild |
+| Theme toggle + rebuild | 224.1 ms/op · 4.5 fps | n/a | Baseline for global changes |
+| Theme toggle + 1000 patches | 14432 ms/op · 0.1 fps · 13.0 GB/op · 13M allocs/op | n/a | Patching loses 64x: never patch row by row |
+| Theme toggle + stylesheet swap | 214.3 ms/op · 4.7 fps | n/a | Same as rebuild minus the HTML render |
+| Batched patch, few edits | 30.3 ms/op · 33 fps · 41.7 MB/op · 34k allocs/op | n/a | One shared re-resolve, one draw |
+| Windowed build, visible viewport | skip floor after first windowed build, 0 allocs | n/a | Cost scales with viewport, not collection size |
+| Clean refresh, no change | 0.2 ms/op · 1.6 KB/op · 1.6k allocs/op | n/a | Second of two back-to-back refresh calls skips the render |
+| Idle re-render | 0.0009 ms/op · 0 allocs | 6.9 ms/op (always reframes) | ownframe ~7400x cheaper |
 
 Stage split inside a full ownframe rebuild (`-bench` harness, Perf on):
 template 0 ms, style 7.9 ms, layout 256.7 ms, paint 0 ms (headless). The
@@ -103,13 +115,16 @@ layout and display-list build over 9021 boxes is the cost, not the HTML
 render (~9 ms, ~4%) and not the parse.
 
 Takeaway: patch touches, don't rebuild them. A selection is two class
-edits plus a text edit and runs 5.5x faster than a rebuild. But each
+edits plus a text edit and runs 7.5x faster than a rebuild. But each
 `PatchElement` re-resolves styles for the whole document, so a thousand
 patches cost a thousand re-resolves: global changes (theme, and later
 charts or material swatches) belong in a stylesheet swap or a rebuild,
 never in a per-row patch loop. That is the rule to carry into new
 components: fine-grained edits for small touches, one restyle for
-full-surface changes.
+full-surface changes. The new cold, resize, typing, and heap rows show
+where the next round goes: first paint and resize are full builds, typing
+costs a full rebuild per keystroke until the filter path learns patches,
+and retained heap grows ~0.6 MB per rebuild against MyGo's near zero.
 
 Data parity is checked by construction (same seed-1 generator in both
 modules) and both harnesses print `grand-total=$1420529.43`.

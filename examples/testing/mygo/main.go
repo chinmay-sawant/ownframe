@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/egoist/mygo"
@@ -97,6 +98,7 @@ type invoiceApp struct {
 	rows     []invoiceRow
 	selected int
 	theme    string
+	query    string
 }
 
 func newInvoiceApp() *invoiceApp {
@@ -138,6 +140,28 @@ func (s *invoiceApp) grandTotal() int {
 	return sum
 }
 
+func (s *invoiceApp) matchedRows() []int {
+	if s.query == "" {
+		order := make([]int, len(s.rows))
+		for i := range order {
+			order[i] = i
+		}
+		return order
+	}
+	q := strings.ToLower(s.query)
+	var order []int
+	for i := range s.rows {
+		if strings.Contains(strings.ToLower(s.rows[i].client), q) {
+			order = append(order, i)
+		}
+	}
+	return order
+}
+
+func (s *invoiceApp) showingText() string {
+	return "Showing " + fmt.Sprint(len(s.matchedRows())) + " of " + fmt.Sprint(len(s.rows))
+}
+
 // view builds the interface from the state, on the main thread, whenever the
 // window needs a frame.
 func (s *invoiceApp) view(c *ui.Context) {
@@ -148,6 +172,8 @@ func (s *invoiceApp) view(c *ui.Context) {
 		ui.Column(c).Gap(4).Padding(12).Children(func() {
 			ui.Text(c, "Invoice Table · 1000 rows").FontSize(18).Bold()
 			ui.Text(c, invoiceSubtitle).FontSize(12).TextColor(muted)
+			ui.TextInput(c, &s.query).Label("Filter by client...")
+			ui.Text(c, s.showingText()).FontSize(13).TextColor(muted)
 			ui.Text(c, s.selectedText()).FontSize(14)
 			ui.Text(c, s.themeText()).FontSize(13).TextColor(muted)
 			ui.Text(c, "Grand total: "+formatCents(s.grandTotal())).FontSize(14).Bold()
@@ -170,7 +196,7 @@ func (s *invoiceApp) view(c *ui.Context) {
 			ui.Text(c, "Status").FontSize(13).Bold().Width(90).TextColor(white)
 		})
 		ui.Scroll(c).Fill().Children(func() {
-			for i := range s.rows {
+			for _, i := range s.matchedRows() {
 				r := s.rows[i]
 				row := ui.Row(c).Gap(12).Padding(8).Background(s.rowBackground(i))
 				row.Children(func() {
@@ -265,7 +291,7 @@ func measure(name string, n int, fn func() error) (benchResult, error) {
 // runBench executes the headless benchmark set without opening a window and
 // prints one line per row, also writing benchFile when set.
 func runBench(benchFile string) error {
-	rows := make([]benchResult, 0, 3)
+	rows := make([]benchResult, 0, 6)
 	build, err := measure("build-full-view", 20, func() error {
 		s := newInvoiceApp()
 		s.selected = 500
@@ -303,6 +329,58 @@ func runBench(benchFile string) error {
 		return err
 	}
 	rows = append(rows, frame)
+	cold, err := measure("cold-build", 10, func() error {
+		s := newInvoiceApp()
+		tt := ui.NewTester(s.view, invoiceWidth, invoiceHeight)
+		if !tt.HasText("INV-2000") {
+			return fmt.Errorf("missing row text")
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, cold)
+	resize, err := measure("resize", 50, func() error {
+		tt.SetSize(1200, 800)
+		tt.SetSize(invoiceWidth, invoiceHeight)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, resize)
+	if err := tt.Click("Filter by client..."); err != nil {
+		return err
+	}
+	typed := false
+	typing, err := measure("typing", 50, func() error {
+		if !typed {
+			typed = true
+			tt.Type("a")
+			return nil
+		}
+		typed = false
+		tt.Key(0, ui.KeyBackspace)
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, typing)
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+	for i := 0; i < 10; i++ {
+		s := newInvoiceApp()
+		tt := ui.NewTester(s.view, invoiceWidth, invoiceHeight)
+		if !tt.HasText("INV-2000") {
+			return fmt.Errorf("missing row text")
+		}
+	}
+	runtime.GC()
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	out := ""
@@ -312,6 +390,9 @@ func runBench(benchFile string) error {
 	}
 	out += fmt.Sprintf("sizes rows=%d grand-total=%s heap-alloc=%d heap-sys=%d\n",
 		invoiceRows, formatCents(newInvoiceApp().grandTotal()), mem.HeapAlloc, mem.HeapSys)
+	out += fmt.Sprintf("heap views=10-builds heap-retained=%d heap-objects=%d heap-growth=%d growth-objects=%d\n",
+		after.HeapAlloc, after.HeapObjects,
+		int64(after.HeapAlloc)-int64(before.HeapAlloc), int64(after.HeapObjects)-int64(before.HeapObjects))
 	fmt.Print(out)
 	if benchFile != "" {
 		if err := os.WriteFile(benchFile, []byte(out), 0o600); err != nil {

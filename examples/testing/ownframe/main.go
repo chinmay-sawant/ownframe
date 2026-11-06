@@ -67,7 +67,7 @@ func main() {
 // benchCounts balances stable timing against a quick headless run.
 // benchFilePerm restricts a written results file to owner read/write.
 const (
-	benchRowCap     = 10
+	benchRowCap     = 14
 	benchRedrawOps  = 200
 	benchRebuildOps = 50
 	benchClickOps   = 30
@@ -235,6 +235,59 @@ func runBench(benchFile string) error {
 		return err
 	}
 	rows = append(rows, skipClean)
+	cold, err := measure("cold-build", 10, func() error {
+		coldApp, err := newInvoiceApp()
+		if err != nil {
+			return err
+		}
+		return coldApp.Page().Redraw(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, cold)
+	resize, err := measure("resize", 10, func() error {
+		app.Page().SetSize(1200, 800)
+		if err := app.Page().Redraw(ctx); err != nil {
+			return err
+		}
+		app.Page().SetSize(invoiceWidth, invoiceHeight)
+		return app.Page().Redraw(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, resize)
+	if err := pagetest.Click(ctx, app.Page(), "invoice-filter"); err != nil {
+		return err
+	}
+	typed := false
+	typing, err := measure("typing", 20, func() error {
+		if !typed {
+			typed = true
+			return pagetest.Type(ctx, app.Page(), "a")
+		}
+		typed = false
+		return app.Page().Edit().Backspace(ctx)
+	})
+	if err != nil {
+		return err
+	}
+	rows = append(rows, typing)
+	runtime.GC()
+	var before runtime.MemStats
+	runtime.ReadMemStats(&before)
+	for i := 0; i < 10; i++ {
+		if err := pagetest.ClickAction(ctx, app.Page(), "row:500"); err != nil {
+			return err
+		}
+		if err := pagetest.ClickAction(ctx, app.Page(), "row:501"); err != nil {
+			return err
+		}
+	}
+	runtime.GC()
+	var after runtime.MemStats
+	runtime.ReadMemStats(&after)
 	st := app.Page().Probe().Stats()
 	htmlBytes := len(app.Page().HTML())
 	var mem runtime.MemStats
@@ -248,6 +301,9 @@ func runBench(benchFile string) error {
 		st.LastTemplate, st.StyleTime, st.LayoutTime, st.PaintTime, st.OtherTime, st.LastRedraw)
 	out += fmt.Sprintf("sizes rows=%d grand-total=%s html-bytes=%d boxes=%d ops=%d heap-alloc=%d heap-sys=%d\n",
 		invoiceRows, formatCents(app.grandTotal()), htmlBytes, st.Boxes, st.Ops, mem.HeapAlloc, mem.HeapSys)
+	out += fmt.Sprintf("heap rows=10-rebuilds heap-retained=%d heap-objects=%d heap-growth=%d growth-objects=%d\n",
+		after.HeapAlloc, after.HeapObjects,
+		int64(after.HeapAlloc)-int64(before.HeapAlloc), int64(after.HeapObjects)-int64(before.HeapObjects))
 	fmt.Print(out)
 	if benchFile != "" {
 		if err := os.WriteFile(benchFile, []byte(out), benchFilePerm); err != nil {
