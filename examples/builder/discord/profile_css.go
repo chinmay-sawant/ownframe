@@ -10,8 +10,6 @@ package main
 const profileCSS = `
 .dc-profile {
   position: fixed;
-  right: 252px;
-  top: 64px;
   width: 300px;
   z-index: 150;
   border-radius: 8px;

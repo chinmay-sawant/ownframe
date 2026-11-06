@@ -2,8 +2,18 @@ package main
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe"
 )
+
+// typingTextID names the text span inside the typing bar that patchTyping
+// writes. Sibling-owned markup (messages.go) exposes ID("dc-typing") on the
+// bar and ID("dc-typing-text") on the span; until that markup lands, the
+// patch misses and patchTyping falls back to a full refresh.
+const typingTextID = "dc-typing-text"
 
 // Typing simulation cadence: a teammate types for typingVisibleFor, the
 // indicator clears for typingHiddenFor, then someone else types. The first
@@ -82,15 +92,57 @@ func (a *app) rotateTyping(now time.Time) bool {
 	return true
 }
 
-// tickTyping re-arms the next wakeup and refreshes only when the state
-// machine changed something. It never touches drafts or forms.
+// typingText flattens the indicator exactly the way mainCol renders it:
+// the names joined with ", " plus the " is typing"/" are typing" verb.
+// Empty when nobody is typing; the caller patches the span to "" so the
+// bar keeps its 22px box with no layout shift. It builds the string with
+// strings.Join plus one concatenation: no fmt, no new maps or slices, and
+// no appends on the ticking path.
+func (a *app) typingText() string {
+	if len(a.typing) == 0 {
+		return ""
+	}
+	verb := " is typing"
+	if len(a.typing) > 1 {
+		verb = " are typing"
+	}
+	return strings.Join(a.typing, ", ") + verb
+}
+
+// patchTyping writes the new indicator text into the retained typing bar
+// instead of rebuilding the whole view. A refused patch drops the cached
+// tree, so any failure falls back to a full refresh and the bar never
+// goes stale.
+func (a *app) patchTyping(ctx context.Context) error {
+	text := a.typingText()
+	err := a.page.PatchElement(ctx, typingTextID, ownframe.ElementEdit{Text: &text})
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, ownframe.ErrPatchRefused) {
+		return a.refresh(ctx)
+	}
+	return a.refresh(ctx)
+}
+
+// tickTyping re-arms the next wakeup and patches only when the state
+// machine changed something. It never touches drafts or forms. An expired
+// toast clears here, since this tick already wakes every second.
 func (a *app) tickTyping(ctx context.Context) error {
 	if a.page == nil {
 		return nil
 	}
-	a.page.WantFrameAt(time.Now().Add(typingTickEvery))
-	if a.rotateTyping(time.Now()) {
+	now := time.Now()
+	a.page.WantFrameAt(now.Add(typingTickEvery))
+	if a.toastOpen && !a.toastUntil.IsZero() && !now.Before(a.toastUntil) {
+		a.toastOpen = false
+		a.toastTitle = ""
+		a.toastBody = ""
+		a.toastUntil = time.Time{}
 		return a.refresh(ctx)
+	}
+	if a.rotateTyping(now) {
+		return a.patchTyping(ctx)
 	}
 	return nil
 }

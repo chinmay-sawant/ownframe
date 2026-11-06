@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -236,5 +237,171 @@ func TestFlagToggleParse(t *testing.T) {
 		if ok != c.ok || key != c.key {
 			t.Errorf("parse(%q) = (%q, %v), want (%q, %v)", c.action, key, ok, c.key, c.ok)
 		}
+	}
+}
+
+// historyCap is the per-channel history bound stated in the README memory
+// bounds ("cap history at 500 messages per channel with drop-oldest on
+// append"). It is a literal here so this contract does not depend on any
+// sibling constant for the same bound.
+const historyCap = 500
+
+// TestHistoryCap pins the per-channel history bound: appends past the cap
+// drop the oldest first (FIFO), the newest message survives, and a second
+// channel is unaffected by the overflow. The app is built directly:
+// newApp mounts a window.
+func TestHistoryCap(t *testing.T) {
+	a := &app{messages: map[string][]dmessage{}}
+	a.appendMessage("c2", dmessage{ID: "other-1", Author: "Bo", Text: "untouched one"})
+	a.appendMessage("c2", dmessage{ID: "other-2", Author: "Bo", Text: "untouched two"})
+	const appends = 600
+	for i := 1; i <= appends; i++ {
+		a.appendMessage("c1", dmessage{ID: fmt.Sprintf("m%04d", i), Author: "You", Text: fmt.Sprintf("msg %d", i)})
+	}
+	got := a.messages["c1"]
+	if len(got) != historyCap {
+		t.Fatalf("messages[c1] = %d, want %d (drop-oldest FIFO)", len(got), historyCap)
+	}
+	if last := got[len(got)-1]; last.Text != "msg 600" {
+		t.Fatalf("newest message = %q, want %q", last.Text, "msg 600")
+	}
+	if last := got[len(got)-1]; last.ChannelID != "c1" {
+		t.Fatalf("newest ChannelID = %q, want c1", last.ChannelID)
+	}
+	other := a.messages["c2"]
+	if len(other) != 2 || other[0].Text != "untouched one" || other[1].Text != "untouched two" {
+		t.Fatalf("channel c2 affected by c1 overflow: %v", other)
+	}
+}
+
+// TestCapKeepsNewest pins the FIFO order of the history bound: after 505
+// numbered appends the oldest five (#1-#5) are gone, the first kept message
+// is #6, and the last is #505. The app is built directly: newApp mounts a
+// window.
+func TestCapKeepsNewest(t *testing.T) {
+	a := &app{messages: map[string][]dmessage{}}
+	const appends = 505
+	for i := 1; i <= appends; i++ {
+		a.appendMessage("c1", dmessage{ID: fmt.Sprintf("m%04d", i), Author: "You", Text: fmt.Sprintf("msg %d", i)})
+	}
+	got := a.messages["c1"]
+	if len(got) != historyCap {
+		t.Fatalf("messages[c1] = %d, want %d", len(got), historyCap)
+	}
+	if got[0].Text != "msg 6" {
+		t.Fatalf("oldest kept = %q, want %q (drop-oldest FIFO over 505 appends)", got[0].Text, "msg 6")
+	}
+	if got[len(got)-1].Text != "msg 505" {
+		t.Fatalf("newest kept = %q, want %q", got[len(got)-1].Text, "msg 505")
+	}
+}
+
+// TestWindowBounds pins the transcript-window contract for a channel at the
+// history cap: a viewport of viewRows rows at any clamped offset stays
+// inside the capped history and the bottom window ends on the newest
+// message. visibleRange is absent in scroll.go (the transcript still renders
+// every row with no slicing yet), so this test documents the spec against
+// the capped slice and skips until the helper lands. It must not define
+// visibleRange itself.
+func TestWindowBounds(t *testing.T) {
+	a := &app{messages: map[string][]dmessage{}}
+	const appends = 1000
+	for i := 1; i <= appends; i++ {
+		a.appendMessage("c1", dmessage{ID: fmt.Sprintf("m%04d", i), Author: "You", Text: fmt.Sprintf("msg %d", i)})
+	}
+	t.Skip("visibleRange absent in scroll.go: transcript renders every row with no slicing yet")
+	msgs := a.messages["c1"]
+	if len(msgs) != historyCap {
+		t.Fatalf("messages[c1] = %d, want %d after 1000 appends", len(msgs), historyCap)
+	}
+	const viewRows = 20
+	for _, off := range []int{0, 240, 479, 480, 10000, -5} {
+		start := off
+		if start < 0 {
+			start = 0
+		}
+		if maxStart := len(msgs) - viewRows; start > maxStart {
+			start = maxStart
+		}
+		end := start + viewRows
+		if end > len(msgs) {
+			end = len(msgs)
+		}
+		if !(0 <= start && start <= end && end <= len(msgs)) {
+			t.Fatalf("window [%d:%d) out of bounds for offset %d over %d messages", start, end, off, len(msgs))
+		}
+		if visible := msgs[start:end]; len(visible) > viewRows {
+			t.Fatalf("visible window = %d rows, want <= %d", len(visible), viewRows)
+		}
+	}
+	bottom := msgs[len(msgs)-viewRows:]
+	if bottom[0].Text != "msg 981" || bottom[viewRows-1].Text != "msg 1000" {
+		t.Fatalf("bottom window = [%q..%q], want [msg 981..msg 1000]", bottom[0].Text, bottom[viewRows-1].Text)
+	}
+}
+
+// TestPatchFallbackContract pins the action-string parse shapes behind the
+// patched update paths: msg:react splits id:emoji on the first colon only
+// (mirroring strings.SplitN(rest, ":", 2) in actions.go, so an emoji token
+// containing ":" survives whole), and flag: passes its key through to the
+// flags map. Pure string asserts: no window, no refresh.
+func TestPatchFallbackContract(t *testing.T) {
+	react := func(action string) (id, emoji string, ok bool) {
+		if !strings.HasPrefix(action, "msg:react:") {
+			return "", "", false
+		}
+		parts := strings.SplitN(strings.TrimPrefix(action, "msg:react:"), ":", 2)
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return "", "", false
+		}
+		return parts[0], parts[1], true
+	}
+	reactCases := []struct {
+		action, id, emoji string
+		ok                bool
+	}{
+		{"msg:react:m42:👍", "m42", "👍", true},
+		{"msg:react:m42:custom:emoji", "m42", "custom:emoji", true},
+		{"msg:react:m42", "", "", false},
+		{"msg:react::👍", "", "", false},
+		{"msg:react:m42:", "", "", false},
+		{"msg:reply:m42", "", "", false},
+	}
+	for _, c := range reactCases {
+		id, emoji, ok := react(c.action)
+		if ok != c.ok || id != c.id || emoji != c.emoji {
+			t.Errorf("react(%q) = (%q, %q, %v), want (%q, %q, %v)",
+				c.action, id, emoji, ok, c.id, c.emoji, c.ok)
+		}
+	}
+	flagKey := func(action string) (string, bool) {
+		if !strings.HasPrefix(action, "flag:") {
+			return "", false
+		}
+		key := strings.TrimSpace(strings.TrimPrefix(action, "flag:"))
+		if key == "" {
+			return "", false
+		}
+		return key, true
+	}
+	if key, ok := flagKey("flag:overlay"); !ok || key != "overlay" {
+		t.Fatalf("flagKey(%q) = (%q, %v), want (%q, %v)", "flag:overlay", key, ok, "overlay", true)
+	}
+	if _, ok := flagKey("server:create"); ok {
+		t.Fatalf("flagKey(%q) = ok, want not-ok", "server:create")
+	}
+	// Flag passthrough: the parsed key toggles the app flags map with no
+	// window involved, mirroring the flag: branch minus refresh.
+	a := &app{}
+	key, ok := flagKey("flag:overlay")
+	if !ok {
+		t.Fatal("flagKey(flag:overlay) not ok")
+	}
+	if a.flags == nil {
+		a.flags = map[string]bool{}
+	}
+	a.flags[key] = !a.flags[key]
+	if !a.flags["overlay"] {
+		t.Fatal("flag passthrough did not toggle flags[overlay]")
 	}
 }

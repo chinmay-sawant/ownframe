@@ -10,10 +10,13 @@ import (
 // this file only wires them together with the custom drag-strip topbar, the
 // popup dismiss layer, and the toast.
 func (a *app) screen() *ui.Element {
-	return ui.Div().ID("dc-shell").Class("discord-shell").
+	shellClass := "discord-shell"
+	if a != nil && a.appearance == dcLight {
+		shellClass += " of-scope--light"
+	}
+	return ui.Div().ID("dc-shell").Class(shellClass).
 		Width(ui.Percent(100)).
 		MinHeight(ui.Vh(100)).
-		BackgroundColor(ui.Hex("#313338")).
 		Children(
 			a.topbar(),
 			ui.Div().Class("dc-body").Children(
@@ -50,7 +53,6 @@ func (a *app) topbar() *ui.Element {
 		chadcn.Tooltip(
 			chadcn.TooltipOptions{ID: "dc-search-tip", CSSHover: true, Content: "Search (Ctrl+K)"},
 			chadcn.Button("Search", chadcn.ButtonOptions{
-				Icon:    ui.Text("⌕"),
 				Variant: chadcn.ButtonOutlined,
 				Size:    chadcn.ButtonSmall,
 			}).ID("dc-top-search").
@@ -89,6 +91,10 @@ func dcWindowButton(label, glyph, action string) *ui.Element {
 // dismissLayer catches clicks outside open popups (search palette, profile
 // popover, message menu, create dialog) and reports overlay:dismiss. It
 // returns nil when nothing is open; ui.Children ignores nil children.
+//
+// The layer uses viewport units (100%/100vh like chadcn's search backdrop):
+// the #dc-float parent is height:0, so a percent height would collapse to
+// zero and click-away would fall through to the rows underneath.
 func (a *app) dismissLayer() *ui.Element {
 	if !a.searchOpen && a.profileOpen == "" && a.msgMenu == "" && !a.createOpen {
 		return nil
@@ -98,7 +104,7 @@ func (a *app) dismissLayer() *ui.Element {
 		Top(ui.Px(0)).
 		Left(ui.Px(0)).
 		Width(ui.Percent(100)).
-		Height(ui.Percent(100)).
+		Height(ui.Vh(100)).
 		ZIndex(ui.Number(90)).
 		BackgroundColor(ui.Hex("#00000000")).
 		Attr("data-action", "overlay:dismiss")

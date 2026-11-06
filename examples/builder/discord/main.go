@@ -42,6 +42,11 @@ func run(web bool, addr string, dev bool, perf bool, debugAddr string) error {
 	if err := a.page.Redraw(ctx); err != nil {
 		return err
 	}
+	// Measure the transcript and pin it to the latest message before the
+	// first frame, so the window opens at the bottom instead of the top.
+	if err := a.refresh(ctx); err != nil {
+		return err
+	}
 	if web {
 		return ownframe.Serve(ctx, a.page, addr)
 	}

@@ -44,6 +44,15 @@ type dmember struct {
 	Bot                                     bool
 }
 
+// dcAppearance is the settings Appearance choice. Dark matches the shipped
+// Discord paint; light reuses the existing .of-scope--light overrides.
+type dcAppearance string
+
+const (
+	dcDark  dcAppearance = "dark"
+	dcLight dcAppearance = "light"
+)
+
 type app struct {
 	view *ui.View
 	page *ownframe.Page
@@ -63,13 +72,26 @@ type app struct {
 	settingsOpen bool
 	settingsTab  string
 
-	profileOpen string
-	createOpen  bool
+	appearance  dcAppearance
+	themeDirty  bool
+	chatScroll  chadcn.ScrollState
+	chatViewH   int
+	scrollStale bool
+
+	profileOpen     string
+	profileX        float64
+	profileY        float64
+	profileAnchored bool
+	createOpen      bool
 
 	toastOpen     bool
 	toastTitle    string
 	toastBody     string
+	toastUntil    time.Time
 	msgMenu       string
+	msgX          int
+	msgY          int
+	msgAnchored   bool
 	replyTo       string
 	voiceID       string
 	voiceMuted    bool
@@ -86,12 +108,14 @@ type app struct {
 
 func newApp() (*app, error) {
 	a := &app{
-		channels:  make(map[string][]dchannel),
-		messages:  make(map[string][]dmessage),
-		members:   make(map[string][]dmember),
-		drafts:    make(map[string]string),
-		collapsed: make(map[string]bool),
-		unread:    make(map[string]int),
+		channels:    make(map[string][]dchannel),
+		messages:    make(map[string][]dmessage),
+		members:     make(map[string][]dmember),
+		drafts:      make(map[string]string),
+		collapsed:   make(map[string]bool),
+		unread:      make(map[string]int),
+		appearance:  dcDark,
+		scrollStale: true,
 		flags: map[string]bool{
 			"overlay": true,
 		},
@@ -106,27 +130,93 @@ func newApp() (*app, error) {
 		Theme:       a.themeSheet(),
 		RetainState: true,
 		Scrollbar:   ownframe.ScrollbarHidden,
+		// Fixed-pixel transcript windowing measures unscaled boxes, so
+		// painted zoom would desync it. Ctrl+wheel falls through to the
+		// chat scroll instead.
+		DisableWheelZoom: true,
+		DisableKeyZoom:   true,
+		DisableTouchZoom: true,
 	}, a.screen())
 	if err != nil {
 		return nil, err
 	}
 	a.view = view
 	a.page = view.Page
+	a.registerIcons()
 	view.Handle(ownframe.Handlers{
-		Click:   a.handleClick,
-		Change:  a.handleChange,
-		KeyDown: a.handleKey,
-		Hover:   a.handleHover,
+		Click:     a.handleClick,
+		Change:    a.handleChange,
+		KeyDown:   a.handleKey,
+		Hover:     a.handleHover,
+		Wheel:     a.handleWheel,
+		DragStart: a.startScrollDrag,
+		DragMove:  a.moveScrollDrag,
+		DragEnd:   a.endScrollDrag,
 	})
 	a.startTyping()
 	return a, nil
 }
 
 func (a *app) refresh(ctx context.Context) error {
-	return a.view.Update(ctx, a.screen())
+	if a.themeDirty && a.page != nil {
+		if err := a.page.SetTheme(a.themeSheet()); err != nil {
+			return err
+		}
+		a.themeDirty = false
+	}
+	if err := a.view.Update(ctx, a.screen()); err != nil {
+		return err
+	}
+	clamped := a.updateScrollCache(a.currentMessages())
+	if a.scrollStale {
+		a.scrollStale = false
+		a.chatScroll.ScrollTo(a.chatScroll.Metrics().MaxOffset())
+		if err := a.view.Update(ctx, a.screen()); err != nil {
+			return err
+		}
+		a.updateScrollCache(a.currentMessages())
+		return nil
+	}
+	if clamped {
+		if err := a.view.Update(ctx, a.screen()); err != nil {
+			return err
+		}
+		a.updateScrollCache(a.currentMessages())
+	}
+	return nil
 }
 
 func (a *app) themeSheet() string {
-	return chadcn.Dark + chadcn.Stylesheet + appCSS +
-		searchCSS + profileCSS + railCSS + composerCSS + msghoverCSS + settingsCSS
+	base := chadcn.Dark
+	if a != nil && a.appearance == dcLight {
+		base = chadcn.Light
+	}
+	return base + chadcn.Stylesheet + appCSS +
+		searchCSS + profileCSS + railCSS + composerCSS + msghoverCSS + settingsCSS +
+		scrollwinCSS
+}
+
+// selectTheme validates the Appearance choice and marks the sheet dirty.
+func (a *app) selectTheme(name string) {
+	switch dcAppearance(name) {
+	case dcLight, dcDark:
+		if a.appearance != dcAppearance(name) {
+			a.appearance = dcAppearance(name)
+			a.themeDirty = true
+		}
+	}
+}
+
+// windowSize returns the current viewport in CSS pixels. Tests build app
+// without a page, so fall back to the default window size.
+func (a *app) windowSize() (int, int) {
+	const fallbackW, fallbackH = 1440, 900
+	if a == nil || a.page == nil {
+		return fallbackW, fallbackH
+	}
+	w, h := a.page.Size()
+	if w <= 0 || h <= 0 {
+		return fallbackW, fallbackH
+	}
+	return w, h
 }

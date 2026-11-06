@@ -7,10 +7,10 @@ package main
 //
 //	chadcn.Dark + chadcn.Stylesheet + appCSS + settingsCSS
 //
-// #dc-float is a plain block wrapper holding the dismiss layer, overlays, and
-// profile card. It is position:fixed over the viewport so the absolutely
-// positioned children resolve against the window instead of collapsing at
-// the end of flow (which left the dismiss layer at zero height).
+// #dc-float is a plain block wrapper holding the dismiss layer and the
+// profile card. It stays position:static with height:0 so it never moves
+// layout; fixed children (the viewport-unit dismiss layer, the profile
+// popover) resolve against the viewport.
 const settingsCSS = `
 #dc-float {
   position: static;
@@ -19,8 +19,18 @@ const settingsCSS = `
   overflow: visible;
 }
 #dc-settings {
+  top: 48px;
+  height: calc(100vh - 48px);
   overflow-y: auto;
+  background: #313338;
 }
+.of-scope--light #dc-settings { background: #e3e5e8; }
+.of-scope--light .dc-st-title { color: #060607; }
+.of-scope--light .dc-st-navsection { color: #5c5e66; }
+.of-scope--light .dc-st-navitem { color: #5c5e66; }
+.of-scope--light .dc-st-navitem:hover { background: #d7d9dc; color: #060607; }
+.of-scope--light .dc-st-navitem--active { background: #d7d9dc; color: #060607; }
+.of-scope--light .dc-st-card { background: #f2f3f5; }
 .dc-st {
   display: flex;
   flex-direction: row;
@@ -32,7 +42,7 @@ const settingsCSS = `
 .dc-st-nav {
   width: 218px;
   flex-shrink: 0;
-  padding: 60px 20px 60px 0;
+  padding: 24px 20px 60px 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -63,7 +73,7 @@ const settingsCSS = `
 .dc-st-main {
   flex: 0 1 740px;
   min-width: 0;
-  padding: 60px 40px 80px 0;
+  padding: 24px 40px 80px 0;
 }
 .dc-st-title {
   color: #fff;
@@ -120,7 +130,7 @@ const settingsCSS = `
 }
 .dc-st-escwrap {
   position: fixed;
-  top: 60px;
+  top: 108px;
   right: 60px;
   display: flex;
   flex-direction: column;

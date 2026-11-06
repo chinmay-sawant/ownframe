@@ -14,6 +14,17 @@ var tableMore = []entry{
 	{seq: "❓", file: "2753"},
 	{seq: "❗", file: "2757"},
 	{seq: "💡", file: "1f4a1"},
+	{seq: "👀", file: "1f440"},
+	{seq: "🧠", file: "1f9e0"},
+	{seq: "📌", file: "1f4cc"},
+	{seq: "🔋", file: "1f50b"},
+	{seq: "🌮", file: "1f32e"},
+	{seq: "🍜", file: "1f35c"},
+	{seq: "🧈", file: "1f9c8"},
+	{seq: "🦀", file: "1f980"},
+	{seq: "🎨", file: "1f3a8"},
+	{seq: "🎧", file: "1f3a7"},
+	{seq: "👥", file: "1f465"},
 }
 
 // all returns every entry across the tables.

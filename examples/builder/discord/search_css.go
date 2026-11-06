@@ -41,10 +41,13 @@ const searchCSS = `
   overflow: visible;
 }
 #dc-search-panel {
-  /* The inline recipe centers with left:50% plus a -280px margin-left,
-     which the layout engine drops, leaving the panel's left edge glued to
-     the viewport center. This shift finishes the centering in paint. */
-  transform: translateX(-50%);
+  /* Center in layout, not in paint: left:50% plus a -280px margin-left is
+     dropped by the layout engine, and a paint-only translateX(-50%) moves
+     the pixels without moving the hit boxes, so row clicks fell through to
+     the dismiss layer. calc(50% - 280px) keeps geometry and paint together. */
+  left: calc(50% - 280px) !important;
+  transform: none;
+  margin-left: 0;
   background: #2b2d31;
   border: 1px solid #1e1f22;
   border-radius: 8px;

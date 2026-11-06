@@ -1,4 +1,8 @@
-// Chat column: channel header, transcript, typing bar, composer, voice slot.
+// Chat column: channel header, transcript, typing bar, and composer.
+//
+// Voice state lives in the sidebar voice panel and the user bar; joining
+// or leaving reports a transient toast instead of a persistent strip, so
+// the composer keeps its spacing.
 //
 // Actions emitted:
 //   - members:toggle — show or hide the member list.
@@ -12,7 +16,7 @@
 // Host surface (app.go, data.go): dmessage with ID, ChannelID, Author,
 // AuthorColor, Time ("Today at 08:02"), Text, ReplyTo, Reactions ([]reaction
 // with Emoji, Count, Reacted), and Edited, Pinned, Mention flags; dchannel
-// with Name and Topic; a.currentChannel, a.currentMessages, a.voiceBar.
+// with Name and Topic; a.currentChannel, a.currentMessages.
 //
 // The transcript uses chadcn.Message for rows and chadcn.Bubble for text,
 // wrapped in .dc-msg divs for the Discord hover and mention paint. Rows sit
@@ -31,8 +35,7 @@ import (
 )
 
 // mainCol renders the center chat column: the channel header, the scroll
-// message list, the typing bar, the composer, and the voice slot when a
-// voice channel is joined.
+// message list, the typing bar, and the composer.
 func (a *app) mainCol() *ui.Element {
 	channel := a.currentChannel()
 	msgs := a.currentMessages()
@@ -54,39 +57,53 @@ func (a *app) mainCol() *ui.Element {
 		),
 	)
 
-	rows := make([]*ui.Element, 0, len(msgs)*2)
+	offset := a.chatScroll.Offset()
+	viewH := a.chatViewH
+	if viewH <= 0 {
+		viewH = 552
+	}
+	lo, hi, _, _ := visibleRange(msgs, offset, viewH)
+	rows := make([]*ui.Element, 0, (hi-lo)*2)
 	prevDay := ""
-	for _, m := range msgs {
-		if day := messageDay(m.Time); day != "" && day != prevDay {
-			rows = append(rows, dcDateDivider(day))
+	for i := range msgs {
+		day := messageDay(msgs[i].Time)
+		needDiv := day != "" && day != prevDay
+		if needDiv {
 			prevDay = day
 		}
-		rows = append(rows, a.messageRow(m))
+		if i < lo || i >= hi {
+			continue
+		}
+		if needDiv {
+			rows = append(rows, dcDateDivider(day))
+		}
+		rows = append(rows, a.messageRow(msgs[i]))
 	}
 	if len(rows) == 0 {
 		rows = append(rows, ui.Div().Class("dc-empty").Text("No messages yet. Say hello!"))
 	}
-	scroll := ui.Div().Class("dc-scroll").Attr("role", "log").
-		Attr("aria-live", "polite").Attr("aria-label", "Messages").Children(rows...)
+	content := ui.Div().ID("dc-scroll-content").Children(rows...)
+	scroll := ui.Div().ID("dc-scroll-viewport").Class("dc-scroll").Attr("role", "log").
+		Attr("aria-live", "polite").Attr("aria-label", "Messages").
+		Position(ui.PositionRelative).Overflow(ui.OverflowHidden).
+		Children(content)
+	scroll.Children(a.paneScrollbar())
 
-	typing := ui.Div().Class("dc-typing")
+	typing := ui.Div().Class("dc-typing").ID("dc-typing")
 	if len(a.typing) > 0 {
 		verb := " is typing"
 		if len(a.typing) > 1 {
 			verb = " are typing"
 		}
 		typing.Children(
-			ui.Tag("strong").Text(strings.Join(a.typing, ", ")),
-			ui.Text(verb),
+			ui.Span().ID("dc-typing-text").Children(
+				ui.Tag("strong").Text(strings.Join(a.typing, ", ")),
+				ui.Text(verb),
+			),
 			ui.Span().Class("dc-typing-dots").Children(
 				ui.Span(), ui.Span(), ui.Span(),
 			),
 		)
-	}
-
-	var voice *ui.Element
-	if a.voiceID != "" {
-		voice = a.voiceBar()
 	}
 
 	return ui.Div().Class("dc-main").Children(
@@ -94,7 +111,6 @@ func (a *app) mainCol() *ui.Element {
 		scroll,
 		typing,
 		a.composer(),
-		voice,
 	)
 }
 

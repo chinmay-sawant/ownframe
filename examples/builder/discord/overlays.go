@@ -55,12 +55,12 @@ const (
 	overlayRowSnippetLen    = 72
 )
 
-// overlayMsgMenuX/Y place the message menu while app carries no pointer
-// coordinates. Roughly the center of the message column at 1440x900; thread
-// the click position through app if per-row anchoring is ever needed.
+// overlayMsgMenuFallbackX/Y is the menu spot when no click anchor exists,
+// such as in tests that open the menu without geometry. Live clicks always
+// carry the hovered row box, so this path stays out of the way.
 const (
-	overlayMsgMenuX = 660
-	overlayMsgMenuY = 300
+	overlayMsgMenuFallbackX = 660
+	overlayMsgMenuFallbackY = 300
 )
 
 // overlaySettingsTabs orders the settings tabs. The suffix of
@@ -256,6 +256,10 @@ func overlayCappedNote(shown, total int) *ui.Element {
 //	dc-st-row             - one label/control line inside a card.
 //	dc-st-esc             - top-right close control (dispatches settings:close).
 //	dc-st-key             - keycap chip for static shortcut text (ESC, SHIFT).
+//
+// settingsSheet is the fullscreen user-settings page. It docks below the
+// 48px custom topbar so the brand, search, settings, and window controls
+// stay visible and clickable while settings is open.
 func (a *app) settingsSheet() *ui.Element {
 	if !a.settingsOpen {
 		return nil
@@ -318,12 +322,11 @@ func (a *app) settingsSheet() *ui.Element {
 		Attr("role", "dialog").
 		Attr("aria-label", "User Settings").
 		Position(ui.PositionFixed).
-		Top(ui.Px(0)).
+		Top(ui.Px(48)).
 		Left(ui.Px(0)).
 		Width(ui.Percent(100)).
-		Height(ui.Vh(100)).
+		Height(ui.RawValue("calc(100vh - 48px)")).
 		ZIndex(ui.Number(200)).
-		BackgroundColor(ui.Hex("#313338")).
 		Children(
 			ui.Div().Class("dc-st").Children(nav, main, esc),
 		)
@@ -427,21 +430,26 @@ func (a *app) settingsVoiceButtons(disabled bool) *ui.Element {
 	)
 }
 
-// settingsAppearanceSection notes the shipped theme. The demo is dark-only;
-// there is no theme switch to wire. The member rail note mirrors the Profile
-// toggle state so the page reads consistently.
+// settingsAppearanceSection offers the Dark/Light choice like the mail
+// settings card. The choice swaps the chadcn base sheet; the Discord shell
+// follows through the .of-scope--light overrides. The member rail note
+// mirrors the Profile toggle state so the page reads consistently.
 func (a *app) settingsAppearanceSection() *ui.Element {
 	members := "The member rail is currently shown."
 	if a.memberHidden {
 		members = "The member rail is currently hidden (see Profile)."
 	}
 	return ui.Div().Class("dc-st-card").Children(
-		ui.Div().Class("dc-st-row").Children(
-			ui.Text("Dark"),
-			ui.Text("The demo ships the dark Discord theme; appearance follows the app theme."),
-		),
+		a.themeOption("dc-appearance-dark", "Dark", "Dim panels for low light.", "theme:dark", a.appearance != dcLight),
+		a.themeOption("dc-appearance-light", "Light", "Bright panels for daytime reading.", "theme:light", a.appearance == dcLight),
 		ui.Div().Class("dc-st-row").Children(ui.Text(members)),
 	)
+}
+
+// themeOption is one Appearance row: a chadcn Choice that dispatches the
+// theme action, mirroring the mail preview pattern.
+func (a *app) themeOption(id, title, caption, action string, selected bool) *ui.Element {
+	return chadcn.Choice(title, caption, selected).ID(id).Attr("data-action", action)
 }
 
 // settingsOverlaySection mirrors the real Discord Game Overlay page: the
@@ -538,6 +546,9 @@ func (a *app) toast() *ui.Element {
 // a field and a method sharing one name). Nil while no menu is open. Items
 // dispatch the msg:* actions handled in actions.go; the Copy row needs a
 // msg:copy: case there (see the package note).
+//
+// Position follows Discord: the menu opens at the hovered row action and
+// clamps to the viewport, flipping up near the bottom edge.
 func (a *app) messageMenu() *ui.Element {
 	if a.msgMenu == "" {
 		return nil
@@ -553,12 +564,13 @@ func (a *app) messageMenu() *ui.Element {
 		}
 	}
 	id := a.msgMenu
+	x, y := a.msgMenuPos()
 	return chadcn.ContextMenu(chadcn.ContextMenuOptions{
 		ID:    "dc-msg-menu",
 		Label: label,
 		Open:  true,
-		X:     overlayMsgMenuX,
-		Y:     overlayMsgMenuY,
+		X:     x,
+		Y:     y,
 		Items: []chadcn.MenuItem{
 			{Label: "Reply", Action: "msg:reply:" + id},
 			{Label: "React 👍", Action: "msg:react:" + id + ":👍"},
@@ -568,6 +580,38 @@ func (a *app) messageMenu() *ui.Element {
 			{Label: "Delete", Action: "msg:delete:" + id, Danger: true},
 		},
 	})
+}
+
+// msgMenuPos anchors the message menu like Discord: at the hovered row
+// action when the click carried geometry, otherwise the fallback spot.
+// The point clamps to the viewport and flips above the row near the
+// bottom edge so the menu never clips.
+func (a *app) msgMenuPos() (int, int) {
+	const menuW, menuH = 240, 230
+	const margin = 8
+	winW, winH := a.windowSize()
+	x, y := overlayMsgMenuFallbackX, overlayMsgMenuFallbackY
+	if a != nil && a.msgAnchored {
+		x, y = a.msgX, a.msgY
+	}
+	if x < margin {
+		x = margin
+	}
+	if maxX := winW - menuW - margin; maxX > margin && x > maxX {
+		x = maxX
+	}
+	if y < margin {
+		y = margin
+	}
+	if y+menuH > winH-margin {
+		flipped := y - menuH - 24
+		if flipped >= margin {
+			y = flipped
+		} else if maxY := winH - menuH - margin; maxY >= margin {
+			y = maxY
+		}
+	}
+	return x, y
 }
 
 // overlayFindMessage locates a message by id across every server, returning

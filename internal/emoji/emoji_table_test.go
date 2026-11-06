@@ -10,8 +10,8 @@ func TestTableHasTwentyImages(t *testing.T) {
 	t.Parallel()
 
 	files := Files()
-	if len(files) != 31 {
-		t.Fatalf("files = %d, want 31", len(files))
+	if len(files) != 42 {
+		t.Fatalf("files = %d, want 42", len(files))
 	}
 
 	for _, name := range files {

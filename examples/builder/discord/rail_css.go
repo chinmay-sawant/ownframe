@@ -28,7 +28,7 @@ const railCSS = `
 }
 .dc-vc-ava {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
@@ -40,6 +40,7 @@ const railCSS = `
   font-size: 9px;
   font-weight: 700;
   line-height: 1;
+  text-align: center;
 }
 .dc-vc-users > .dc-vc-user:first-child .dc-vc-ava::after {
   content: "";

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -10,6 +12,20 @@ import (
 
 // msgReactParts is the id:emoji pair in a msg:react: action.
 const msgReactParts = 2
+
+// channelHistCap bounds per-channel history. scroll.go owns no history
+// constant, so this lives here for the append path; the integrator should
+// unify the two if a shared cap appears.
+const channelHistCap = 500
+
+// actionScrollPage is the chat transcript page step in CSS pixels for
+// PageUp/PageDown in handleKey. scroll.go owns only chatWheelStep, so this
+// stays local to the key path.
+const actionScrollPage = 552
+
+// toastLifetime is how long a toast alert stays up before the typing tick
+// clears it.
+const toastLifetime = 5 * time.Second
 
 // handleClick dispatches every data-action in the discord demo. Panels only
 // emit action strings; all state lives on app and every change goes through
@@ -59,7 +75,12 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 			}
 		}
 		a.msgMenu = ""
+		a.msgAnchored = false
 		a.replyTo = ""
+		a.profileOpen = ""
+		a.profileAnchored = false
+		// Pin to the latest message once measured; never the top.
+		a.scrollStale = true
 		a.page.ScrollTo(0, 0)
 		return a.refresh(ctx)
 	}
@@ -84,7 +105,15 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		a.channelID = id
 		delete(a.unread, id)
 		a.msgMenu = ""
+		a.msgAnchored = false
 		a.replyTo = ""
+		a.profileOpen = ""
+		a.profileAnchored = false
+		a.searchOpen = false
+		a.searchQuery = ""
+		a.page.Form().SetFormValue("dc-search", "")
+		// Pin to the latest message once measured; never the top.
+		a.scrollStale = true
 		if a.drafts == nil {
 			a.drafts = map[string]string{}
 		}
@@ -116,6 +145,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 			delete(a.drafts, a.channelID)
 		}
 		a.replyTo = ""
+		a.scrollStale = true
 		return a.refresh(ctx)
 	}
 	// confirmCreateServer builds a server from the dc-new-server form. An
@@ -171,7 +201,12 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		a.channelID = general
 		a.createOpen = false
 		a.msgMenu = ""
+		a.msgAnchored = false
 		a.replyTo = ""
+		a.profileOpen = ""
+		a.profileAnchored = false
+		// Pin to the latest message once measured; never the top.
+		a.scrollStale = true
 		a.page.Form().SetFormValue("dc-new-server", "")
 		a.page.ScrollTo(0, 0)
 		return a.showToast(ctx, "Server created", name+" is ready. Start chatting in #general.")
@@ -206,6 +241,8 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.refresh(ctx)
 	case box.Action == "search:open":
 		a.searchOpen = true
+		a.profileOpen = ""
+		a.profileAnchored = false
 		a.page.Form().RequestFocus("dc-search")
 		return a.refresh(ctx)
 	case box.Action == "search:close":
@@ -215,12 +252,20 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		return a.refresh(ctx)
 	case box.Action == "settings:open":
 		a.settingsOpen = true
+		a.profileOpen = ""
+		a.profileAnchored = false
 		return a.refresh(ctx)
 	case box.Action == "settings:close":
 		a.settingsOpen = false
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "settings:tab:"):
 		a.settingsTab = strings.TrimPrefix(box.Action, "settings:tab:")
+		return a.refresh(ctx)
+	case box.Action == "theme:light":
+		a.selectTheme(string(dcLight))
+		return a.refresh(ctx)
+	case box.Action == "theme:dark":
+		a.selectTheme(string(dcDark))
 		return a.refresh(ctx)
 	case box.Action == "settings:save":
 		return a.showToast(ctx, "Settings saved", "Your preferences apply to this demo session.")
@@ -230,6 +275,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		a.toastOpen = false
 		a.toastTitle = ""
 		a.toastBody = ""
+		a.toastUntil = time.Time{}
 		return a.refresh(ctx)
 	case box.Action == "overlay:dismiss":
 		if a.closeOverlays() {
@@ -248,9 +294,9 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		if idx < 0 {
 			return nil
 		}
+		msgID := parts[0]
 		emoji := parts[1]
 		reactions := &a.messages[channelID][idx].Reactions
-		toggled := false
 		for i := range *reactions {
 			if (*reactions)[i].Emoji != emoji {
 				continue
@@ -260,17 +306,30 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 				(*reactions)[i].Count--
 				if (*reactions)[i].Count <= 0 {
 					*reactions = append((*reactions)[:i], (*reactions)[i+1:]...)
+					return a.refresh(ctx)
 				}
 			} else {
 				(*reactions)[i].Reacted = true
 				(*reactions)[i].Count++
 			}
-			toggled = true
-			break
+			pillID := "dc-pill-" + msgID + "-" + strconv.Itoa(i)
+			text := emoji + " " + strconv.Itoa((*reactions)[i].Count)
+			class := "dc-pill"
+			if (*reactions)[i].Reacted {
+				class += " dc-pill--me"
+			}
+			if err := a.page.PatchElement(ctx, pillID,
+				ownframe.ElementEdit{Text: &text},
+				ownframe.ElementEdit{Attribute: "class", Value: class},
+			); err != nil {
+				if errors.Is(err, ownframe.ErrPatchRefused) {
+					return a.refresh(ctx)
+				}
+				return err
+			}
+			return nil
 		}
-		if !toggled {
-			*reactions = append(*reactions, reaction{Emoji: emoji, Count: 1, Reacted: true})
-		}
+		*reactions = append(*reactions, reaction{Emoji: emoji, Count: 1, Reacted: true})
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "msg:reply:"):
 		id := strings.TrimPrefix(box.Action, "msg:reply:")
@@ -279,6 +338,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		}
 		a.replyTo = id
 		a.msgMenu = ""
+		a.msgAnchored = false
 		a.page.Form().RequestFocus("dc-composer")
 		return a.refresh(ctx)
 	case box.Action == "msg:reply-clear":
@@ -298,6 +358,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 			return nil
 		}
 		a.msgMenu = ""
+		a.msgAnchored = false
 		return a.showToast(ctx, "Copied", "Message text copied to the demo clipboard.")
 	case strings.HasPrefix(box.Action, "msg:delete:"):
 		id := strings.TrimPrefix(box.Action, "msg:delete:")
@@ -312,6 +373,7 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		}
 		if a.msgMenu == id {
 			a.msgMenu = ""
+			a.msgAnchored = false
 		}
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "msg:jump:"):
@@ -329,7 +391,14 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		}
 		a.channelID = channelID
 		a.searchOpen = false
+		a.searchQuery = ""
+		a.page.Form().SetFormValue("dc-search", "")
 		a.msgMenu = ""
+		a.msgAnchored = false
+		a.profileOpen = ""
+		a.profileAnchored = false
+		// Pin to the latest message once measured; never the top.
+		a.scrollStale = true
 		a.page.ScrollTo(0, 0)
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "msg:menu:"):
@@ -339,15 +408,23 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		}
 		if a.msgMenu == id {
 			a.msgMenu = ""
+			a.msgAnchored = false
 		} else {
 			a.msgMenu = id
+			a.msgX = int(box.X)
+			a.msgY = int(box.Y + box.H)
+			a.msgAnchored = true
 		}
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "member:open:"):
 		a.profileOpen = strings.TrimPrefix(box.Action, "member:open:")
+		a.profileX = box.X
+		a.profileY = box.Y
+		a.profileAnchored = true
 		return a.refresh(ctx)
 	case box.Action == "member:close":
 		a.profileOpen = ""
+		a.profileAnchored = false
 		return a.refresh(ctx)
 	case strings.HasPrefix(box.Action, "member:msg:"):
 		id := strings.TrimPrefix(box.Action, "member:msg:")
@@ -375,12 +452,12 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 		a.voiceID = id
 		a.voiceMuted = false
 		a.voiceDeafened = false
-		return a.refresh(ctx)
+		return a.showToast(ctx, "Voice connected", a.overlayChannelName(id))
 	case box.Action == "voice:leave":
 		a.voiceID = ""
 		a.voiceMuted = false
 		a.voiceDeafened = false
-		return a.refresh(ctx)
+		return a.showToast(ctx, "Voice disconnected", "You left the voice channel.")
 	case box.Action == "voice:mute":
 		a.voiceMuted = !a.voiceMuted
 		if !a.voiceMuted {
@@ -447,8 +524,9 @@ func (a *app) handleChange(ctx context.Context, box ownframe.Box) error {
 	}
 }
 
-// handleKey closes overlays on escape and sends the composer on enter. Other
-// keys use engine behavior only.
+// handleKey closes overlays on escape, opens search on ctrl+k, sends the
+// composer on enter, and pages the chat transcript on
+// pageup/pagedown/home/end. Other keys use engine behavior only.
 func (a *app) handleKey(ctx context.Context, key string) error {
 	if a.page == nil {
 		return nil
@@ -459,9 +537,35 @@ func (a *app) handleKey(ctx context.Context, key string) error {
 			return a.refresh(ctx)
 		}
 		return nil
+	case "ctrl+k":
+		a.searchOpen = true
+		a.profileOpen = ""
+		a.profileAnchored = false
+		a.page.Form().RequestFocus("dc-search")
+		return a.refresh(ctx)
 	case "enter":
 		if a.page.Form().FocusID() == "dc-composer" {
 			return a.handleClick(ctx, ownframe.Box{Action: "msg:send"})
+		}
+		return nil
+	case "pageup":
+		if a.chatScroll.ScrollBy(-actionScrollPage) {
+			return a.refresh(ctx)
+		}
+		return nil
+	case "pagedown":
+		if a.chatScroll.ScrollBy(actionScrollPage) {
+			return a.refresh(ctx)
+		}
+		return nil
+	case "home":
+		if a.chatScroll.ScrollTo(0) {
+			return a.refresh(ctx)
+		}
+		return nil
+	case "end":
+		if a.chatScroll.ScrollTo(a.chatScroll.Metrics().MaxOffset()) {
+			return a.refresh(ctx)
 		}
 		return nil
 	default:
@@ -474,16 +578,19 @@ func (a *app) handleHover(_ context.Context, _, _ ownframe.Box) (bool, error) {
 	return false, nil
 }
 
-// showToast opens the transient notification. It closes through toast:close
-// or overlay:dismiss.
+// showToast opens the transient notification for toastLifetime. It closes
+// through toast:close, overlay:dismiss, or the typing tick once expired.
 func (a *app) showToast(ctx context.Context, title, body string) error {
 	a.toastOpen = true
 	a.toastTitle = title
 	a.toastBody = body
+	a.toastUntil = time.Now().Add(toastLifetime)
 	return a.refresh(ctx)
 }
 
 // appendMessage posts msg to a channel. An empty channel ID posts nowhere.
+// History is capped at channelHistCap per channel with a zero-alloc steady
+// state: once full, older messages shift down in place.
 func (a *app) appendMessage(channelID string, msg dmessage) {
 	if channelID == "" {
 		return
@@ -493,6 +600,10 @@ func (a *app) appendMessage(channelID string, msg dmessage) {
 	}
 	msg.ChannelID = channelID
 	a.messages[channelID] = append(a.messages[channelID], msg)
+	if msgs := a.messages[channelID]; len(msgs) > channelHistCap {
+		copy(msgs, msgs[len(msgs)-channelHistCap:])
+		a.messages[channelID] = msgs[:channelHistCap]
+	}
 }
 
 // closeOverlays clears every popup: search, profile, message menu, create
@@ -503,12 +614,15 @@ func (a *app) closeOverlays() bool {
 	a.searchOpen = false
 	a.searchQuery = ""
 	a.profileOpen = ""
+	a.profileAnchored = false
 	a.msgMenu = ""
+	a.msgAnchored = false
 	a.createOpen = false
 	a.settingsOpen = false
 	a.toastOpen = false
 	a.toastTitle = ""
 	a.toastBody = ""
+	a.toastUntil = time.Time{}
 	if a.page != nil {
 		a.page.Form().SetFormValue("dc-search", "")
 	}

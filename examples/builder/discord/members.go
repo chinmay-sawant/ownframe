@@ -84,7 +84,7 @@ func (a *app) membersPanel() *ui.Element {
 		rows := make([]*ui.Element, 0, 4)
 		for _, m := range members {
 			if dcMemberGroup(m) == group {
-				rows = append(rows, dcMemberRow(m))
+				rows = append(rows, a.dcMemberRow(m))
 			}
 		}
 		if len(rows) == 0 {
@@ -104,13 +104,22 @@ func (a *app) membersPanel() *ui.Element {
 }
 
 // dcMemberRow is one avatar-plus-name row that opens the profile popover.
-// Bots carry a BOT tag via chadcn.Badge.
-func dcMemberRow(m dmember) *ui.Element {
+// Bots carry a BOT tag via chadcn.Badge. In light mode the name stays dark
+// text with a role-color dot, since pale role colors don't read on light
+// backgrounds; in dark mode the name itself carries the role color.
+func (a *app) dcMemberRow(m dmember) *ui.Element {
 	name := ui.Text(m.Name).Class("dc-member-name")
-	if strings.TrimSpace(m.Color) != "" {
+	rowName := ui.Div().Class("dc-member-namerow")
+	if a != nil && a.appearance == dcLight {
+		if strings.TrimSpace(m.Color) != "" {
+			dot := ui.Span().Class("dc-member-dot")
+			dot.BackgroundColor(ui.Hex(m.Color))
+			rowName.Children(dot)
+		}
+	} else if strings.TrimSpace(m.Color) != "" {
 		name.Color(ui.Hex(m.Color))
 	}
-	rowName := ui.Div().Class("dc-member-namerow").Children(name)
+	rowName.Children(name)
 	if m.Bot {
 		rowName.Children(chadcn.Badge("BOT", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}))
 	}
@@ -163,6 +172,10 @@ func (a *app) dcProfileMember() *dmember {
 // actions. It returns nil while no profile is open. The message action opens
 // a DM note via toast; both dismiss controls dispatch member:close. All are
 // handled by the host click dispatcher.
+//
+// Position follows Discord: the card sits left of the member rail,
+// vertically anchored to the clicked row and clamped to the viewport so a
+// row near the bottom shifts the card up instead of clipping.
 func (a *app) profileCard() *ui.Element {
 	if a.profileOpen == "" {
 		return nil
@@ -191,9 +204,14 @@ func (a *app) profileCard() *ui.Element {
 	if m.Bot {
 		roles = append(roles, chadcn.Badge("BOT", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}))
 	}
-	return ui.Div().Class("dc-profile").
+	left, top := a.profileCardPos()
+	return ui.Div().ID("dc-profile").Class("dc-profile").
 		Attr("role", "dialog").
 		Attr("aria-label", "Profile for "+m.Name).
+		Position(ui.PositionFixed).
+		Left(ui.Px(float64(left))).
+		Top(ui.Px(float64(top))).
+		ZIndex(ui.Number(150)).
 		Children(
 			banner,
 			ui.Div().Class("dc-profile-ava").Children(
@@ -230,6 +248,35 @@ func (a *app) profileCard() *ui.Element {
 				),
 			),
 		)
+}
+
+// profileCardPos anchors the profile popover like Discord: left of the
+// member rail, top aligned to the clicked row, clamped so the card stays
+// inside the viewport. Without an anchor it falls back to the old static
+// spot so tests without click geometry still render.
+func (a *app) profileCardPos() (int, int) {
+	const cardW, cardH = 300, 480
+	const membersW, gap = 240, 12
+	const topMin, margin = 56, 12
+	winW, winH := a.windowSize()
+	left := winW - membersW - gap - cardW
+	if left < 8 {
+		left = 8
+	}
+	if maxLeft := winW - cardW - 8; left > maxLeft && maxLeft > 8 {
+		left = maxLeft
+	}
+	top := 64
+	if a != nil && a.profileAnchored {
+		top = int(a.profileY)
+	}
+	if top < topMin {
+		top = topMin
+	}
+	if maxTop := winH - cardH - margin; maxTop > topMin && top > maxTop {
+		top = maxTop
+	}
+	return left, top
 }
 
 // dcProfileHandle renders the username handle: @ plus the lowercase name

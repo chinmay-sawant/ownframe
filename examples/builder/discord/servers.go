@@ -216,17 +216,28 @@ func (a *app) categoryBlock(cat string, chans []dchannel) *ui.Element {
 
 // textRow is one #name (or announce) row. The mention count wins the badge
 // slot; unread state is the .dc-chan--unread treatment.
+func chanRowClass(ch dchannel, active bool) string {
+	class := "dc-chan"
+	if active {
+		class += " dc-chan--active"
+	}
+	if ch.Unread {
+		class += " dc-chan--unread"
+	}
+	return class
+}
+
 func (a *app) textRow(ch dchannel) *ui.Element {
 	hash := "#"
 	if ch.Kind == "announce" {
 		hash = "»"
 	}
-	class := "dc-chan"
-	if a.channelID == ch.ID {
-		class += " dc-chan--active"
-	}
-	if ch.Unread {
-		class += " dc-chan--unread"
+	class := chanRowClass(ch, a.channelID == ch.ID)
+	var badge *ui.Element
+	if ch.Mentions > 0 {
+		badge = ui.Span().ID("dc-chanbadge-" + ch.ID).Class("dc-chan-badge").Text(strconv.Itoa(ch.Mentions))
+	} else {
+		badge = ui.Span().ID("dc-chanbadge-" + ch.ID).Class("dc-chan-badge dc-chanbadge--hidden")
 	}
 	row := ui.Button("").ID("dc-chan-"+ch.ID).Class(class).
 		Attr("data-action", "chan:select:"+ch.ID).
@@ -234,12 +245,10 @@ func (a *app) textRow(ch dchannel) *ui.Element {
 		Children(
 			ui.Span().Class("dc-chan-hash").Attr("aria-hidden", "true").Text(hash),
 			ui.Span().Class("dc-chan-label").Text(ch.Name),
+			badge,
 		)
 	if a.channelID == ch.ID {
 		row.Attr("aria-current", "page")
-	}
-	if ch.Mentions > 0 {
-		row.Children(ui.Span().Class("dc-chan-badge").Text(strconv.Itoa(ch.Mentions)))
 	}
 	return row
 }
@@ -269,7 +278,7 @@ func (a *app) voiceBlock(ch dchannel) *ui.Element {
 		Attr("data-action", "voice:join:"+ch.ID).
 		Attr("aria-label", "Join voice channel "+ch.Name).
 		Children(
-			ui.Span().Class("dc-chan-hash").Attr("aria-hidden", "true").Text("♪"),
+			ui.Span().Class("dc-chan-hash").Attr("aria-hidden", "true").Children(dcIconImg("dc-speaker")),
 			ui.Span().Class("dc-chan-label").Text(ch.Name),
 		)
 	block := ui.Div().Children(row)
@@ -280,20 +289,20 @@ func (a *app) voiceBlock(ch dchannel) *ui.Element {
 }
 
 // voicePanel is the joined-channel strip: connection state plus the mute,
-// deafen, and leave buttons, with the occupant rows below. Icons match the
-// voice.go strip. The first occupant row is always the local demo user
+// deafen, and leave buttons, with the occupant rows below. Icons come from
+// the dc-* set registered in icons.go. The first occupant row is always the local demo user
 // (dcMeName, green presence dot via railCSS); up to two non-bot roster
 // members from a.currentMembers() follow. Rows are display-only: no
 // data-action. Paint lives in railCSS (examples/builder/discord/rail_css.go;
 // the integrator appends railCSS to the theme sheet in app.go).
 func (a *app) voicePanel(ch dchannel) *ui.Element {
-	muteIcon, muteLabel := "◉", "Mute"
+	muteIcon, muteLabel := "dc-mic", "Mute"
 	if a.voiceMuted {
-		muteIcon, muteLabel = "⊘", "Unmute"
+		muteIcon, muteLabel = "dc-mic-off", "Unmute"
 	}
-	deafenIcon, deafenLabel := "♪", "Deafen"
+	deafenIcon, deafenLabel := "dc-headphones", "Deafen"
 	if a.voiceDeafened {
-		deafenIcon, deafenLabel = "⊘", "Undeafen"
+		deafenIcon, deafenLabel = "dc-headphones-off", "Undeafen"
 	}
 	strip := ui.Div().Class("dc-voice").
 		Attr("aria-label", "Voice connected to "+ch.Name).
@@ -303,20 +312,23 @@ func (a *app) voicePanel(ch dchannel) *ui.Element {
 				ui.Div().Class("dc-voice-name").Text(ch.Name),
 			),
 			ui.Div().Class("dc-voice-btns").Children(
-				ui.Button(muteIcon).ID("dc-voice-mute").Class("dc-iconbtn").
+				ui.Button("").ID("dc-voice-mute").Class("dc-iconbtn").
 					Attr("data-action", "voice:mute").
 					Attr("aria-label", muteLabel).
 					Attr("title", muteLabel).
-					Attr("aria-pressed", strconv.FormatBool(a.voiceMuted)),
-				ui.Button(deafenIcon).ID("dc-voice-deafen").Class("dc-iconbtn").
+					Attr("aria-pressed", strconv.FormatBool(a.voiceMuted)).
+					Children(dcIconImg(muteIcon)),
+				ui.Button("").ID("dc-voice-deafen").Class("dc-iconbtn").
 					Attr("data-action", "voice:deafen").
 					Attr("aria-label", deafenLabel).
 					Attr("title", deafenLabel).
-					Attr("aria-pressed", strconv.FormatBool(a.voiceDeafened)),
-				ui.Button("\u23FB").ID("dc-voice-leave").Class("dc-iconbtn").
+					Attr("aria-pressed", strconv.FormatBool(a.voiceDeafened)).
+					Children(dcIconImg(deafenIcon)),
+				ui.Button("").ID("dc-voice-leave").Class("dc-iconbtn").
 					Attr("data-action", "voice:leave").
 					Attr("aria-label", "Leave voice channel").
-					Attr("title", "Leave voice channel"),
+					Attr("title", "Leave voice channel").
+					Children(dcIconImg("dc-phone-down")),
 			),
 		)
 	row := func(name, initials string) *ui.Element {
@@ -343,22 +355,30 @@ func (a *app) voicePanel(ch dchannel) *ui.Element {
 }
 
 // userBar is the sidebar footer: avatar with presence, name, voice status,
-// and the self mute/deafen/settings controls.
+// and the self mute/deafen/settings controls. The avatar and names open the
+// self profile popover.
 func (a *app) userBar() *ui.Element {
 	status := "Online"
 	if a.voiceID != "" {
 		status = "Voice connected"
 	}
 	return ui.Div().Class("dc-userbar").Children(
-		chadcn.Avatar(chadcn.AvatarOptions{
-			Initials: dcMeInitials,
-			Size:     chadcn.AvatarSmall,
-			Status:   chadcn.AvatarStatusOnline,
-		}),
-		ui.Div().Class("dc-userbar-names").Children(
-			ui.Div().Class("dc-userbar-name").Text(dcMeName),
-			ui.Div().Class("dc-userbar-sub").Text(status),
-		),
+		ui.Button("").ID("dc-user-profile").Class("dc-userbar-profile").
+			Attr("data-action", "member:open:u-ada").
+			Attr("aria-label", "Open profile for "+dcMeName).
+			Attr("aria-haspopup", "dialog").
+			Attr("title", "Open profile").
+			Children(
+				chadcn.Avatar(chadcn.AvatarOptions{
+					Initials: dcMeInitials,
+					Size:     chadcn.AvatarSmall,
+					Status:   chadcn.AvatarStatusOnline,
+				}),
+				ui.Div().Class("dc-userbar-names").Children(
+					ui.Div().Class("dc-userbar-name").Text(dcMeName),
+					ui.Div().Class("dc-userbar-sub").Text(status),
+				),
+			),
 		a.userToggle("dc-user-mute", "Mute microphone", "Unmute microphone", "voice:mute", a.voiceMuted),
 		a.userToggle("dc-user-deafen", "Deafen audio", "Undeafen audio", "voice:deafen", a.voiceDeafened),
 		ui.Button("\u2699").ID("dc-user-settings").Class("dc-iconbtn").
@@ -369,23 +389,24 @@ func (a *app) userBar() *ui.Element {
 }
 
 // userToggle is one footer mute/deafen toggle with pressed state. Icons
-// match the voice.go strip.
+// come from the dc-* set registered in icons.go.
 func (a *app) userToggle(id, offLabel, onLabel, action string, on bool) *ui.Element {
-	icon, label := "◉", offLabel
+	icon, label := "dc-mic", offLabel
 	if id == "dc-user-deafen" {
-		icon = "♪"
+		icon = "dc-headphones"
 	}
 	if on {
 		label = onLabel
 		if id == "dc-user-mute" {
-			icon = "⊘"
+			icon = "dc-mic-off"
 		} else {
-			icon = "⊘"
+			icon = "dc-headphones-off"
 		}
 	}
-	return ui.Button(icon).ID(id).Class("dc-iconbtn").
+	return ui.Button("").ID(id).Class("dc-iconbtn").
 		Attr("data-action", action).
 		Attr("aria-label", label).
 		Attr("title", label).
-		Attr("aria-pressed", strconv.FormatBool(on))
+		Attr("aria-pressed", strconv.FormatBool(on)).
+		Children(dcIconImg(icon))
 }
