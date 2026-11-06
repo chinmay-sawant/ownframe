@@ -278,7 +278,7 @@ func (a *app) voiceBlock(ch dchannel) *ui.Element {
 		Attr("data-action", "voice:join:"+ch.ID).
 		Attr("aria-label", "Join voice channel "+ch.Name).
 		Children(
-			ui.Span().Class("dc-chan-hash").Attr("aria-hidden", "true").Children(dcIconImg("dc-speaker")),
+			ui.Span().Class("dc-chan-hash").Attr("aria-hidden", "true").Children(a.dcVoiceIcon("speaker", false)),
 			ui.Span().Class("dc-chan-label").Text(ch.Name),
 		)
 	block := ui.Div().Children(row)
@@ -296,13 +296,13 @@ func (a *app) voiceBlock(ch dchannel) *ui.Element {
 // data-action. Paint lives in railCSS (examples/builder/discord/rail_css.go;
 // the integrator appends railCSS to the theme sheet in app.go).
 func (a *app) voicePanel(ch dchannel) *ui.Element {
-	muteIcon, muteLabel := "dc-mic", "Mute"
+	muteIcon, muteLabel := "mic", "Mute"
 	if a.voiceMuted {
-		muteIcon, muteLabel = "dc-mic-off", "Unmute"
+		muteIcon, muteLabel = "mic-off", "Unmute"
 	}
-	deafenIcon, deafenLabel := "dc-headphones", "Deafen"
+	deafenIcon, deafenLabel := "headphones", "Deafen"
 	if a.voiceDeafened {
-		deafenIcon, deafenLabel = "dc-headphones-off", "Undeafen"
+		deafenIcon, deafenLabel = "headphones-off", "Undeafen"
 	}
 	strip := ui.Div().Class("dc-voice").
 		Attr("aria-label", "Voice connected to "+ch.Name).
@@ -317,18 +317,18 @@ func (a *app) voicePanel(ch dchannel) *ui.Element {
 					Attr("aria-label", muteLabel).
 					Attr("title", muteLabel).
 					Attr("aria-pressed", strconv.FormatBool(a.voiceMuted)).
-					Children(dcIconImg(muteIcon)),
+					Children(a.dcVoiceIcon(muteIcon, a.voiceMuted)),
 				ui.Button("").ID("dc-voice-deafen").Class("dc-iconbtn").
 					Attr("data-action", "voice:deafen").
 					Attr("aria-label", deafenLabel).
 					Attr("title", deafenLabel).
 					Attr("aria-pressed", strconv.FormatBool(a.voiceDeafened)).
-					Children(dcIconImg(deafenIcon)),
+					Children(a.dcVoiceIcon(deafenIcon, a.voiceDeafened)),
 				ui.Button("").ID("dc-voice-leave").Class("dc-iconbtn").
 					Attr("data-action", "voice:leave").
 					Attr("aria-label", "Leave voice channel").
 					Attr("title", "Leave voice channel").
-					Children(dcIconImg("dc-phone-down")),
+					Children(a.dcVoiceIcon("phone-down", false)),
 			),
 		)
 	row := func(name, initials string) *ui.Element {
@@ -391,16 +391,16 @@ func (a *app) userBar() *ui.Element {
 // userToggle is one footer mute/deafen toggle with pressed state. Icons
 // come from the dc-* set registered in icons.go.
 func (a *app) userToggle(id, offLabel, onLabel, action string, on bool) *ui.Element {
-	icon, label := "dc-mic", offLabel
+	icon, label := "mic", offLabel
 	if id == "dc-user-deafen" {
-		icon = "dc-headphones"
+		icon = "headphones"
 	}
 	if on {
 		label = onLabel
 		if id == "dc-user-mute" {
-			icon = "dc-mic-off"
+			icon = "mic-off"
 		} else {
-			icon = "dc-headphones-off"
+			icon = "headphones-off"
 		}
 	}
 	return ui.Button("").ID(id).Class("dc-iconbtn").
@@ -408,5 +408,5 @@ func (a *app) userToggle(id, offLabel, onLabel, action string, on bool) *ui.Elem
 		Attr("aria-label", label).
 		Attr("title", label).
 		Attr("aria-pressed", strconv.FormatBool(on)).
-		Children(dcIconImg(icon))
+		Children(a.dcVoiceIcon(icon, on))
 }

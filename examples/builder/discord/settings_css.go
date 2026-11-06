@@ -31,6 +31,11 @@ const settingsCSS = `
 .of-scope--light .dc-st-navitem:hover { background: #d7d9dc; color: #060607; }
 .of-scope--light .dc-st-navitem--active { background: #d7d9dc; color: #060607; }
 .of-scope--light .dc-st-card { background: #f2f3f5; }
+.of-scope--light .dc-st-card .dc-st-row div span:first-child { color: #060607; }
+.of-scope--light .dc-st-card .dc-st-row div span:last-child { color: #5c5e66; }
+.of-scope--light .dc-st-esc { border-color: #5c5e66; color: #5c5e66; }
+.of-scope--light .dc-st-esc:hover { border-color: #060607; color: #060607; }
+.of-scope--light .dc-st-key { color: #5c5e66; }
 .dc-st {
   display: flex;
   flex-direction: row;

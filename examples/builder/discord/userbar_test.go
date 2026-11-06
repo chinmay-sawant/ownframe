@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/pagetest"
 )
 
@@ -30,6 +31,36 @@ func TestUserBarOpensSelfProfile(t *testing.T) {
 	}
 }
 
+// Voice icons use explicit strokes per theme: light on dark backgrounds,
+// dark on light ones, red while pressed. Standalone img rasterization
+// drops currentColor to black, so inheriting is not an option.
+func TestVoiceIconsMatchTheme(t *testing.T) {
+	ctx := context.Background()
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if html := a.page.HTML(); !strings.Contains(html, `src="dc-mic-light"`) {
+		t.Fatal("dark mode user bar misses the light-stroke mic")
+	}
+	a.appearance = dcLight
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if html := a.page.HTML(); !strings.Contains(html, `src="dc-mic-dark"`) {
+		t.Fatal("light mode user bar misses the dark-stroke mic")
+	}
+	if err := a.handleClick(ctx, ownframe.Box{Action: "voice:mute"}); err != nil {
+		t.Fatal(err)
+	}
+	if html := a.page.HTML(); !strings.Contains(html, `src="dc-mic-off-red"`) {
+		t.Fatal("muted mic misses the red-stroke icon")
+	}
+}
+
 // Light paint pins the mention pill and badge rules the theme switch owns.
 func TestLightPaintPinsBadgeAndMention(t *testing.T) {
 	a := &app{appearance: dcLight}
@@ -46,6 +77,8 @@ func TestLightPaintPinsBadgeAndMention(t *testing.T) {
 		".of-scope--light .dc-voice-name",
 		".of-scope--light .dc-vc-name",
 		".of-scope--light .dc-rail .of-tooltip-content",
+		".of-scope--light .dc-st-card .dc-st-row div span:first-child",
+		".of-scope--light .dc-st-card .dc-st-row div span:last-child",
 	} {
 		if !strings.Contains(sheet, rule) {
 			t.Fatalf("theme sheet misses %q", rule)
