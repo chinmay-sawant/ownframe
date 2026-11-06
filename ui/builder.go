@@ -146,7 +146,14 @@ var rendererPool = sync.Pool{New: func() any { return newRenderer() }}
 // the renderer currently holds.
 func (r *renderer) reset() {
 	r.output.Reset()
-	clear(r.actions)
+	// A view with no OnClick handlers can pool a renderer whose actions map
+	// was detached as nil. Recreate it on checkout so visit can always store
+	// a callback.
+	if r.actions == nil {
+		r.actions = make(map[string]func(context.Context) error)
+	} else {
+		clear(r.actions)
+	}
 	r.stack = r.stack[:0]
 	r.keys = r.keys[:0]
 	r.nextID = 0

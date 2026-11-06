@@ -304,6 +304,48 @@ func TestViewUpdatePatchesSelectionCase(t *testing.T) {
 	}
 }
 
+// TestViewUpdateAfterNilActionMap pins the pooled-renderer case that panicked
+// on a nil actions map: a no-change update with no OnClick handlers clears the
+// view registry, a later structural update pools that nil map, and the next
+// tree with a handler must still render and dispatch.
+func TestViewUpdateAfterNilActionMap(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	tree := func(children ...*Element) *Element {
+		return Div().ID("root").Children(children...)
+	}
+	view := mountView(t, ownframe.Config{}, tree(Span().ID("label").Text("one")))
+	if err := view.Update(ctx, tree(Span().ID("label").Text("one"))); err != nil {
+		t.Fatal(err)
+	}
+	if view.actions != nil {
+		t.Fatal("no-handler update kept a non-nil action registry")
+	}
+	if err := view.Update(ctx, tree(
+		Span().ID("label").Text("one"),
+		Span().ID("extra").Text("two"),
+	)); err != nil {
+		t.Fatal(err)
+	}
+
+	clicks := 0
+	button := Button("Run").ID("run").OnClick(func(context.Context) error {
+		clicks++
+
+		return nil
+	})
+	if err := view.Update(ctx, tree(button)); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.Click(ctx, view.Page, "run"); err != nil {
+		t.Fatal(err)
+	}
+	if clicks != 1 {
+		t.Fatalf("clicks = %d, want 1", clicks)
+	}
+}
+
 func TestViewUpdateKeepsNewHandlerAfterPatch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
