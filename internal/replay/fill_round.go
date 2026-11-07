@@ -9,9 +9,11 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-var roundedFillPathPool = sync.Pool{
+var vectorPathPool = sync.Pool{
 	New: func() any { return new(vector.Path) },
 }
+
+var roundedFillPathPool = &vectorPathPool
 
 // fillRounded draws a fill with circular corners as one vector path. The
 // engine's painter keeps the real corners when the canvas clips the box, so
@@ -23,7 +25,7 @@ func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, 
 	h := float32(op.H * pxPerPt)
 	r := radius4(radii)
 
-	path := roundedFillPathPool.Get().(*vector.Path)
+	path := vectorPathPool.Get().(*vector.Path)
 	path.Reset()
 	populateRoundedFillPath(path, x, y, w, h, r)
 
@@ -35,7 +37,7 @@ func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, 
 
 	vector.FillPath(dst, path, nil, &options)
 	path.Reset()
-	roundedFillPathPool.Put(path)
+	vectorPathPool.Put(path)
 }
 
 // populateRoundedFillPath traces a fill's corners as circular arcs from its origin into path.

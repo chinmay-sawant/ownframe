@@ -38,10 +38,17 @@ func TestProbePatchFix2Pagination(t *testing.T) {
 	// reports ok=false and Update reparses.
 	t.Run("SameWindowPageMoveFull", func(t *testing.T) {
 		t.Parallel()
-		v, ctx := mountProbeView(t, build(2))
+		buildRemoval := func(page int) *ui.Element {
+			el := build(page)
+			if page == 2 {
+				el.Attr("data-removed", "yes")
+			}
+			return el
+		}
+		v, ctx := mountProbeView(t, buildRemoval(2))
 		gen0 := v.Page.Probe().Generation()
 		s0 := v.Page.Probe().Stats()
-		if err := v.Update(ctx, build(3)); err != nil {
+		if err := v.Update(ctx, buildRemoval(3)); err != nil {
 			t.Fatal(err)
 		}
 		s1 := v.Page.Probe().Stats()

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -223,5 +224,31 @@ func TestPathStrokeWidthScalesWithTheMatrix(t *testing.T) {
 	op = pathStrokeOp(t, scaled)
 	if want := float32(op.Width * pxPerPt * 2); math.Abs(float64(pathStrokeWidth(op)-want)) > 0.01 {
 		t.Fatalf("scaled width %v, want %v", pathStrokeWidth(op), want)
+	}
+}
+
+func TestPopulateCornerPathZeroAllocs(t *testing.T) {
+	path := vectorPathPool.Get().(*vector.Path)
+	defer vectorPathPool.Put(path)
+
+	cmds := []layout.PathCmd{
+		{Verb: layout.PathMoveTo, Pts: [3]layout.DisplayPoint{{X: 10, Y: 10}}},
+		{Verb: layout.PathLineTo, Pts: [3]layout.DisplayPoint{{X: 50, Y: 10}}},
+		{Verb: layout.PathQuadTo, Pts: [3]layout.DisplayPoint{{X: 60, Y: 10}, {X: 60, Y: 20}}},
+		{Verb: layout.PathCubicTo, Pts: [3]layout.DisplayPoint{{X: 60, Y: 30}, {X: 50, Y: 40}, {X: 40, Y: 40}}},
+		{Verb: layout.PathClose},
+	}
+
+	// Warm path internal slices
+	path.Reset()
+	populateCornerPath(path, cmds)
+
+	allocs := testing.AllocsPerRun(100, func() {
+		path.Reset()
+		populateCornerPath(path, cmds)
+	})
+
+	if allocs != 0 {
+		t.Fatalf("populateCornerPath allocated %v objects per run, want 0", allocs)
 	}
 }

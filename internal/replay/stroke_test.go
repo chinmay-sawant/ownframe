@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func TestStrokeGeometryZeroRadiiBounds(t *testing.T) {
@@ -47,5 +49,104 @@ func TestStrokeGeometryCircularRadiusPath(t *testing.T) {
 	want := image.Rect(13, 6, 54, 27)
 	if bounds != want {
 		t.Fatalf("bounds = %v, want %v", bounds, want)
+	}
+}
+
+func TestPopulateRoundedPathZeroAllocs(t *testing.T) {
+	path := vectorPathPool.Get().(*vector.Path)
+	defer vectorPathPool.Put(path)
+
+	rx := [4]float32{6, 6, 6, 6}
+	ry := [4]float32{6, 6, 6, 6}
+
+	// Warm path internal slices
+	path.Reset()
+	populateRoundedPath(path, 10, 5, 40, 20, rx, ry)
+
+	allocs := testing.AllocsPerRun(100, func() {
+		path.Reset()
+		populateRoundedPath(path, 10, 5, 40, 20, rx, ry)
+	})
+
+	if allocs != 0 {
+		t.Fatalf("populateRoundedPath allocated %v objects per run, want 0", allocs)
+	}
+}
+
+func TestPopulateMaskPathZeroAllocs(t *testing.T) {
+	path := vectorPathPool.Get().(*vector.Path)
+	defer vectorPathPool.Put(path)
+
+	// Warm path internal slices
+	path.Reset()
+	populateMaskPath(path, 10, 5, 40, 20, 15)
+
+	allocs := testing.AllocsPerRun(100, func() {
+		path.Reset()
+		populateMaskPath(path, 10, 5, 40, 20, 15)
+	})
+
+	if allocs != 0 {
+		t.Fatalf("populateMaskPath allocated %v objects per run, want 0", allocs)
+	}
+}
+
+func TestPopulateStrokeGeometryZeroAllocs(t *testing.T) {
+	path := vectorPathPool.Get().(*vector.Path)
+	defer vectorPathPool.Put(path)
+
+	op := &layout.DisplayOp{
+		Kind: layout.DisplayOpStrokeRect,
+		X:    10, Y: 5, W: 30, H: 15, Width: 1, Radius: 6,
+	}
+
+	// Warm path internal slices
+	path.Reset()
+	populateStrokeGeometry(path, op, 0, 0)
+
+	allocs := testing.AllocsPerRun(100, func() {
+		path.Reset()
+		populateStrokeGeometry(path, op, 0, 0)
+	})
+
+	if allocs != 0 {
+		t.Fatalf("populateStrokeGeometry allocated %v objects per run, want 0", allocs)
+	}
+}
+
+func TestStrokeDirectPoolReusesPath(t *testing.T) {
+	dst := ebiten.NewImage(100, 100)
+	op := &layout.DisplayOp{
+		Kind: layout.DisplayOpStrokeRect,
+		X:    10, Y: 5, W: 30, H: 15, Width: 1, Radius: 6,
+		R: 1, G: 0, B: 0, Alpha: 1,
+	}
+
+	// Calling strokeDirect must succeed and leave the pool ready for reuse.
+	strokeDirect(dst, op, 0, 0)
+	strokeDirect(dst, op, 0, 0)
+
+	borrowed := vectorPathPool.Get().(*vector.Path)
+	defer vectorPathPool.Put(borrowed)
+	if borrowed == nil {
+		t.Fatal("expected non-nil path from pool")
+	}
+}
+
+func TestDrawSegmentPoolReusesPath(t *testing.T) {
+	dst := ebiten.NewImage(100, 100)
+	op := &layout.DisplayOp{
+		Kind: layout.DisplayOpLine,
+		R:    1, G: 0, B: 0, Alpha: 1,
+	}
+
+	// Calling drawSegment must succeed and leave the pool ready for reuse.
+	drawSegment(dst, op, 10, 10, 50, 50, 2, 0, 0)
+	drawSegment(dst, op, 10, 10, 50, 50, 2, 0, 0)
+
+	borrowed := vectorPathPool.Get().(*vector.Path)
+	defer vectorPathPool.Put(borrowed)
+	if borrowed == nil {
+		t.Fatal("expected non-nil path from pool")
 	}
 }

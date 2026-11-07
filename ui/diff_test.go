@@ -505,7 +505,7 @@ func TestViewUpdateFallsBackWhenPatchRefused(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	tree := func(width float64) *Element {
-		return Div().ID("root").Children(
+		return Div().ID("root").Opacity(Number(0.5)).Children(
 			Div().ID("box").Width(Px(width)).Height(Px(20)),
 		)
 	}

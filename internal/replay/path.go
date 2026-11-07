@@ -34,34 +34,48 @@ func drawPath(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		return
 	}
 
-	local := cornerPathAt(corner.Cmds)
-	var path vector.Path
-	path.AddPath(&local, &vector.AddPathOptions{GeoM: pathGeoM(op, corner, dx, dy)})
+	local := vectorPathPool.Get().(*vector.Path)
+	local.Reset()
+	populateCornerPath(local, corner.Cmds)
 
-	options := &vector.DrawPathOptions{AntiAlias: true}
-	options.ColorScale.ScaleWithColor(rgba(op))
+	path := vectorPathPool.Get().(*vector.Path)
+	path.Reset()
+
+	var addOpts vector.AddPathOptions
+	addOpts.GeoM = pathGeoM(op, corner, dx, dy)
+	path.AddPath(local, &addOpts)
+
+	local.Reset()
+	vectorPathPool.Put(local)
+
+	var options vector.DrawPathOptions
+	options.AntiAlias = true
+	clr := rgba(op)
+	cr, cg, cb, ca := clr.RGBA()
+	options.ColorScale.Scale(float32(cr)/0xffff, float32(cg)/0xffff, float32(cb)/0xffff, float32(ca)/0xffff)
 
 	if corner.Stroke {
 		// Round joins keep a sharp bevel or notch corner inside the bounds; a
 		// miter would spike past them. The engine closes every outline, so line
 		// caps never show.
-		stroke := &vector.StrokeOptions{Width: pathStrokeWidth(op), LineJoin: vector.LineJoinRound}
-		vector.StrokePath(dst, &path, stroke, options)
-
-		return
+		var stroke vector.StrokeOptions
+		stroke.Width = pathStrokeWidth(op)
+		stroke.LineJoin = vector.LineJoinRound
+		vector.StrokePath(dst, path, &stroke, &options)
+	} else {
+		vector.FillPath(dst, path, nil, &options)
 	}
 
-	vector.FillPath(dst, &path, nil, options)
+	path.Reset()
+	vectorPathPool.Put(path)
 }
 
-// cornerPathAt converts the engine's command list to a vector path in canvas
-// points. Every defined verb is covered: move, line, quad, cubic, and close.
+// populateCornerPath converts the engine's command list to a vector path in canvas
+// points into path. Every defined verb is covered: move, line, quad, cubic, and close.
 // An unknown verb paints nothing for that command rather than guessing a line,
 // and a path that never issues a move still draws from the origin, as the
 // vector package does.
-func cornerPathAt(cmds []layout.PathCmd) vector.Path {
-	var path vector.Path
-
+func populateCornerPath(path *vector.Path, cmds []layout.PathCmd) {
 	for i := range cmds {
 		cmd := &cmds[i]
 
@@ -85,7 +99,13 @@ func cornerPathAt(cmds []layout.PathCmd) vector.Path {
 			path.Close()
 		}
 	}
+}
 
+// cornerPathAt converts the engine's command list to a vector path in canvas
+// points.
+func cornerPathAt(cmds []layout.PathCmd) vector.Path {
+	var path vector.Path
+	populateCornerPath(&path, cmds)
 	return path
 }
 
