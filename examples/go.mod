@@ -10,7 +10,7 @@ go 1.26.10
 // library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
-	github.com/chinmay-sawant/blinkless v0.1.1-0.20261107052012-bd419c6c035a
+	github.com/chinmay-sawant/blinkless v0.1.1-0.20261107055456-e45a24d4295c
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
@@ -66,3 +66,6 @@ require (
 )
 
 replace github.com/chinmay-sawant/ownframe => ../
+
+// Local-only: use the sibling blinkless checkout. Drop before tagging.
+replace github.com/chinmay-sawant/blinkless => ../../blinkless
