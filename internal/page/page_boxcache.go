@@ -4,6 +4,7 @@ import (
 	"image"
 	"sync"
 
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
 	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
@@ -356,6 +357,28 @@ func sameFixedRoots(hits []hitItem, fixed []Box) bool {
 func (p *Page) Boxes() []Box {
 	return append([]Box(nil), p.boxes...)
 }
+
+// BoxesSlice returns the last hit-test boxes directly without copying, or nil
+// when nothing has been drawn. The returned slice is read-only.
+func (p *Page) BoxesSlice() []Box {
+	if p == nil {
+		return nil
+	}
+
+	return p.boxes
+}
+
+// BoxAt returns the innermost box containing x, y, or (Box{}, false) when no
+// box contains the point.
+func (p *Page) BoxAt(x, y float64) (Box, bool) {
+	if p == nil {
+		return Box{}, false
+	}
+
+	return hit.Hit(p.boxes, x, y)
+}
+
+var _ host.BoxSlicer = (*Page)(nil)
 
 // boxByID returns the last box laid out with that id, or Box{ID: id}. The
 // lookup is one map read, never a walk over p.boxes.

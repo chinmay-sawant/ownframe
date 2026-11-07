@@ -16,7 +16,7 @@ func (s *shell) contentSize() (int, int) {
 	w, h := s.canvasSize()
 
 	viewport := s.viewportOperations()
-	for _, b := range s.app.Boxes() {
+	for _, b := range s.boxes() {
 		if viewportBox(b, viewport) {
 			continue
 		}

@@ -7,3 +7,9 @@ import "github.com/chinmay-sawant/blinkless/layout"
 type Boxer interface {
 	Boxes() []layout.Box
 }
+
+// BoxSlicer provides a read-only view of clickable boxes without allocating
+// a defensive copy.
+type BoxSlicer interface {
+	BoxesSlice() []layout.Box
+}

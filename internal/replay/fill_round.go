@@ -1,11 +1,17 @@
 package replay
 
 import (
+	"sync"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
+
+var roundedFillPathPool = sync.Pool{
+	New: func() any { return new(vector.Path) },
+}
 
 // fillRounded draws a fill with circular corners as one vector path. The
 // engine's painter keeps the real corners when the canvas clips the box, so
@@ -13,30 +19,43 @@ import (
 func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, dy float64) {
 	x := float32(op.X*pxPerPt + dx)
 	y := float32(op.Y*pxPerPt + dy)
-	path := roundedFillPath(x, y, float32(op.W*pxPerPt), float32(op.H*pxPerPt), radius4(radii))
+	w := float32(op.W * pxPerPt)
+	h := float32(op.H * pxPerPt)
+	r := radius4(radii)
 
-	options := &vector.DrawPathOptions{}
+	path := roundedFillPathPool.Get().(*vector.Path)
+	path.Reset()
+	populateRoundedFillPath(path, x, y, w, h, r)
+
+	var options vector.DrawPathOptions
 	options.AntiAlias = true
-	options.ColorScale.ScaleWithColor(rgba(op))
+	clr := rgba(op)
+	cr, cg, cb, ca := clr.RGBA()
+	options.ColorScale.Scale(float32(cr)/0xffff, float32(cg)/0xffff, float32(cb)/0xffff, float32(ca)/0xffff)
 
-	vector.FillPath(dst, &path, nil, options)
+	vector.FillPath(dst, path, nil, &options)
+	path.Reset()
+	roundedFillPathPool.Put(path)
+}
+
+// populateRoundedFillPath traces a fill's corners as circular arcs from its origin into path.
+func populateRoundedFillPath(path *vector.Path, x, y, w, h float32, r [4]float32) {
+	path.MoveTo(x+r[0], y)
+	path.LineTo(x+w-r[1], y)
+	arcTo(path, x+w, y, x+w, y+r[1], r[1])
+	path.LineTo(x+w, y+h-r[2])
+	arcTo(path, x+w, y+h, x+w-r[2], y+h, r[2])
+	path.LineTo(x+r[3], y+h)
+	arcTo(path, x, y+h, x, y+h-r[3], r[3])
+	path.LineTo(x, y+r[0])
+	arcTo(path, x, y, x+r[0], y, r[0])
+	path.Close()
 }
 
 // roundedFillPath traces a fill's corners as circular arcs from its origin.
 func roundedFillPath(x, y, w, h float32, r [4]float32) vector.Path {
 	var path vector.Path
-
-	path.MoveTo(x+r[0], y)
-	path.LineTo(x+w-r[1], y)
-	arcTo(&path, x+w, y, x+w, y+r[1], r[1])
-	path.LineTo(x+w, y+h-r[2])
-	arcTo(&path, x+w, y+h, x+w-r[2], y+h, r[2])
-	path.LineTo(x+r[3], y+h)
-	arcTo(&path, x, y+h, x, y+h-r[3], r[3])
-	path.LineTo(x, y+r[0])
-	arcTo(&path, x, y, x+r[0], y, r[0])
-	path.Close()
-
+	populateRoundedFillPath(&path, x, y, w, h, r)
 	return path
 }
 

@@ -262,16 +262,22 @@ type boxRef struct {
 	index int
 }
 
-// indexBoxes maps every id-bearing box to its position. The ordinal counts
-// repeated ids in source order, the same rule Bind uses for animation entries.
-// An anonymous box has no key because a transition cannot be matched to it.
-func indexBoxes(boxes []layout.Box) map[entryKey]boxRef {
+// indexBoxes maps every id-bearing box to its position, optionally filtered by
+// the given ID set. The ordinal counts repeated ids in source order, the same
+// rule Bind uses for animation entries. An anonymous box has no key because a
+// transition cannot be matched to it.
+func indexBoxes(boxes []layout.Box, filter map[string]struct{}) map[entryKey]boxRef {
 	if len(boxes) == 0 {
 		return nil
 	}
 	idCount := 0
 	for i := range boxes {
 		if boxes[i].ID != "" {
+			if filter != nil {
+				if _, ok := filter[boxes[i].ID]; !ok {
+					continue
+				}
+			}
 			idCount++
 		}
 	}
@@ -284,6 +290,11 @@ func indexBoxes(boxes []layout.Box) map[entryKey]boxRef {
 		box := boxes[i]
 		if box.ID == "" {
 			continue
+		}
+		if filter != nil {
+			if _, ok := filter[box.ID]; !ok {
+				continue
+			}
 		}
 		ordinal := ordinals[box.ID]
 		ordinals[box.ID] = ordinal + 1
@@ -311,26 +322,36 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		return nil
 	}
 
-	hasTransitions := false
+	var transitionIDs map[string]struct{}
+	hasNextTransitions := false
 	for i := range next.Boxes {
-		if len(next.Boxes[i].Transitions) != 0 {
-			hasTransitions = true
-			break
-		}
-	}
-	if !hasTransitions {
-		for i := range previous.Boxes {
-			if len(previous.Boxes[i].Transitions) != 0 {
-				hasTransitions = true
-				break
+		box := &next.Boxes[i]
+		if len(box.Transitions) != 0 {
+			hasNextTransitions = true
+			if box.ID != "" {
+				if transitionIDs == nil {
+					transitionIDs = make(map[string]struct{})
+				}
+				transitionIDs[box.ID] = struct{}{}
+			} else {
+				r.transitionCapture.noID++
 			}
 		}
 	}
-	if !hasTransitions {
+	for i := range previous.Boxes {
+		box := &previous.Boxes[i]
+		if len(box.Transitions) != 0 && box.ID != "" {
+			if transitionIDs == nil {
+				transitionIDs = make(map[string]struct{})
+			}
+			transitionIDs[box.ID] = struct{}{}
+		}
+	}
+	if len(transitionIDs) == 0 {
 		return nil
 	}
 
-	oldBoxes := indexBoxes(previous.Boxes)
+	oldBoxes := indexBoxes(previous.Boxes, transitionIDs)
 	var out []TransitionCapture
 	ordinals := make(map[string]int, len(oldBoxes))
 	// Both displays are resolved through one shared index each, so the
@@ -339,19 +360,16 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 	// only when some box declares a transition, so a transition-free publish
 	// pays no scan.
 	var prevIndex, nextIndex *cssmotion.Index
-	for i := range next.Boxes {
-		if len(next.Boxes[i].Transitions) != 0 {
-			prevIndex = cssmotion.NewIndex(previous)
-			nextIndex = cssmotion.NewIndex(next)
-			break
-		}
+	if hasNextTransitions {
+		prevIndex = cssmotion.NewIndex(previous)
+		nextIndex = cssmotion.NewIndex(next)
 	}
 	for i := range next.Boxes {
 		box := next.Boxes[i]
 		if box.ID == "" {
-			if len(box.Transitions) != 0 {
-				r.transitionCapture.noID++
-			}
+			continue
+		}
+		if _, ok := transitionIDs[box.ID]; !ok {
 			continue
 		}
 		ordinal := ordinals[box.ID]
@@ -482,7 +500,7 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 		}
 	}
 
-	r.noteDisplayExits(previous, next)
+	r.noteDisplayExits(previous, next, transitionIDs)
 	return out
 }
 
@@ -788,7 +806,7 @@ func (r *Runtime) BindTransitions(next *Display, captures []TransitionCapture, n
 		return
 	}
 
-	elements := indexBoxes(next.Boxes)
+	elements := indexBoxes(next.Boxes, nil)
 	records := make(map[entryKey]map[string]layout.Transition, len(elements))
 	for key, ref := range elements {
 		if len(ref.box.Transitions) != 0 {
@@ -974,7 +992,7 @@ func (r *Runtime) AdoptTransitions(next *Display) {
 	if r == nil || next == nil {
 		return
 	}
-	r.keepTransitions(next, indexBoxes(next.Boxes), nil, nil)
+	r.keepTransitions(next, indexBoxes(next.Boxes, nil), nil, nil)
 	r.stats.TransitionsBound = len(r.transitions) + len(r.geometry) + len(r.discrete)
 	if r.stats.TransitionsBound == 0 {
 		r.stats.TransitionsActive = 0

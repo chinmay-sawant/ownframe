@@ -66,7 +66,7 @@ func (s *shell) publishDebug() {
 	if s.debugGeometryUnchanged(previous, front) {
 		snap.Boxes, snap.Ops = previous.Boxes, previous.Ops
 	} else {
-		snap.Boxes = s.app.Boxes()
+		snap.Boxes = s.boxes()
 		if front.Display != nil {
 			snap.Ops = debugOpCountsMap(front.Display)
 		}

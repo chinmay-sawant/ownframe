@@ -253,13 +253,13 @@ func (r *Runtime) noteReportChange(previous *Display, old boxRef, next *Display,
 // noteDisplayExits reports an element the new display dropped while it declared
 // a display transition. The committed display no longer holds its operations,
 // so keeping its pixels is the phase 04 layer's job.
-func (r *Runtime) noteDisplayExits(previous, next *Display) {
+func (r *Runtime) noteDisplayExits(previous, next *Display, filter map[string]struct{}) {
 	if previous == nil || next == nil {
 		return
 	}
 
-	nextBoxes := indexBoxes(next.Boxes)
-	for key, ref := range indexBoxes(previous.Boxes) {
+	nextBoxes := indexBoxes(next.Boxes, filter)
+	for key, ref := range indexBoxes(previous.Boxes, filter) {
 		if _, ok := nextBoxes[key]; ok {
 			continue
 		}
