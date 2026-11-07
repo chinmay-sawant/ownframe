@@ -361,8 +361,8 @@ func (r *Runtime) CaptureTransitions(previous, next *Display) []TransitionCaptur
 	// pays no scan.
 	var prevIndex, nextIndex *cssmotion.Index
 	if hasNextTransitions {
-		prevIndex = cssmotion.NewIndex(previous)
-		nextIndex = cssmotion.NewIndex(next)
+		prevIndex = r.indexFor(previous)
+		nextIndex = r.indexFor(next)
 	}
 	for i := range next.Boxes {
 		box := next.Boxes[i]
@@ -1010,7 +1010,7 @@ func (r *Runtime) keepTransitions(next *Display, elements map[entryKey]boxRef,
 	if len(r.transitions) == 0 && len(r.geometry) == 0 && len(r.discrete) == 0 {
 		return
 	}
-	index := cssmotion.NewIndex(next)
+	index := r.indexFor(next)
 	kept := r.transitions[:0]
 	for i := range r.transitions {
 		entry := r.transitions[i]

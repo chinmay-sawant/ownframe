@@ -92,7 +92,11 @@ func (p *Page) markFull() {
 // page only supplies its content rect. See dirty.Tracker.Take.
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
+	oldPainted := p.painted
 	p.painted = p.draw.Display
+	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
+		oldPainted.Release()
+	}
 	p.maybeReleasePainted()
 
 	return rects, ok
@@ -104,7 +108,11 @@ func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 // changed since the previous call.
 func (p *Page) TakeDirty() (image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
+	oldPainted := p.painted
 	p.painted = p.draw.Display
+	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
+		oldPainted.Release()
+	}
 	p.maybeReleasePainted()
 	if !ok {
 		return image.Rectangle{}, false
@@ -147,6 +155,9 @@ func (p *Page) maybeReleasePainted() {
 	}
 	if p.fullGen > p.generation {
 		return
+	}
+	if p.painted != p.draw.Display {
+		p.painted.Release()
 	}
 	p.painted = nil
 }

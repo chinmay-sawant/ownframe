@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/blinkless/layout"
 
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -310,6 +312,7 @@ func (p *Page) drawStaged(
 // commitDisplay installs a replayable list and its dirty region.
 func (p *Page) commitDisplay(display *Display, executed string, drawStart time.Time, state render.State) {
 	previous := p.draw.Display
+	p.updateMotionIndex(previous, display)
 	captures := p.captureTransitions(previous, display)
 	p.dirtyFromDisplay(previous, display)
 	p.noteCommit(drawStart)
@@ -319,6 +322,9 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.layerGen++
 	p.bindMotion(previous, display)
 	p.bindTransitions(captures)
+	if previous != nil && previous != display && previous != p.painted {
+		previous.Release()
+	}
 	p.remember(state)
 	p.commitAccessibility(executed)
 	p.applyPending()
@@ -352,6 +358,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	}
 
 	previous := p.draw.Display
+	p.updateMotionIndex(previous, nil)
 	p.captureTransitions(previous, display)
 	p.noteCommit(drawStart)
 	p.draw.CommitBitmap(display, bitmap.Image)
@@ -360,6 +367,9 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	p.layerGen++
 	p.bindMotion(previous, nil)
 	p.bindTransitions(nil)
+	if previous != nil && previous != display && previous != p.painted {
+		previous.Release()
+	}
 	p.remember(state)
 	p.markFull()
 	p.lastPatch = DisplayPatch{
@@ -375,4 +385,35 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	p.runAfterRedraw()
 
 	return nil
+}
+
+// updateMotionIndex updates the cached *cssmotion.Index for display.
+// If display.Keyframes matches the previous display's keyframes (pointer equality
+// or length == 0), it reuses the previous *cssmotion.Index instead of calling
+// NewIndex on every commit.
+func (p *Page) updateMotionIndex(previous, display *Display) *cssmotion.Index {
+	if display == nil || len(display.Keyframes) == 0 {
+		p.motionIndex = cssmotion.EmptyIndex()
+		return p.motionIndex
+	}
+	if previous != nil && sameKeyframes(display.Keyframes, previous.Keyframes) && p.motionIndex != nil && p.motionIndex != cssmotion.EmptyIndex() {
+		if p.motionIndex.Display() == display || len(display.Ops) == p.motionIndex.NumOps() {
+			p.motionIndex.Repoint(display)
+			return p.motionIndex
+		}
+	}
+	p.motionIndex = cssmotion.NewIndex(display)
+	return p.motionIndex
+}
+
+// sameKeyframes reports whether two keyframe rule slices share the same rules
+// by length or pointer equality.
+func sameKeyframes(a, b []layout.KeyframesRule) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	return &a[0] == &b[0]
 }

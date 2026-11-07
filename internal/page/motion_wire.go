@@ -123,7 +123,8 @@ func (p *Page) bindMotion(previous, display *Display) {
 		return
 	}
 
-	_ = p.motion.BindAfter(previous, display)
+	idx := p.updateMotionIndex(previous, display)
+	_ = p.motion.BindAfterWithIndex(previous, display, idx)
 	if display == nil {
 		return
 	}

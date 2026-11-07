@@ -13,6 +13,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/animation"
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 )
 
 // Display is the retained display list a runtime samples. It is the same
@@ -26,6 +27,9 @@ type Runtime struct {
 	// installs a new list pointer, so a mismatch in Step means the page
 	// replaced the list without rebinding.
 	display *Display
+
+	// index is the cached operation lookup for display.
+	index *cssmotion.Index
 
 	entries []entry
 	stats   Stats
