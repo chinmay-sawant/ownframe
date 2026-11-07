@@ -25,6 +25,7 @@ type CarouselOptions struct {
 // Carousel builds a labeled region with previous and next controls, one visible
 // slide, and one button per slide. Both controls disable at the ends of the
 // list and drop their callbacks there, so the host does not need to loop.
+// The controls use ID+"-prev" and ID+"-next" when the host supplies an ID.
 func Carousel(options CarouselOptions) *ui.Element {
 	count := len(options.Slides)
 	index := options.Index
@@ -42,12 +43,18 @@ func Carousel(options CarouselOptions) *ui.Element {
 	nextDisabled := index < 0 || index >= count-1
 	prev := ui.Button("‹").Attr("type", "button").
 		Class(classes("of-carousel-control", "of-carousel-prev")).Attr("aria-label", "Previous slide")
+	if prevID := partID(options.ID, "-prev"); prevID != "" {
+		prev.ID(prevID)
+	}
 	prev = setDisabled(prev, prevDisabled)
 	if options.OnPrev != nil && !prevDisabled {
 		prev.OnClick(options.OnPrev)
 	}
 	next := ui.Button("›").Attr("type", "button").
 		Class(classes("of-carousel-control", "of-carousel-next")).Attr("aria-label", "Next slide")
+	if nextID := partID(options.ID, "-next"); nextID != "" {
+		next.ID(nextID)
+	}
 	next = setDisabled(next, nextDisabled)
 	if options.OnNext != nil && !nextDisabled {
 		next.OnClick(options.OnNext)

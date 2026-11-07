@@ -83,6 +83,7 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 		return p.failBatch(err)
 	}
 
+	p.commitRoots = append([]string{}, ids...)
 	captures := p.captureTransitions(p.draw.Display, current)
 	prev := p.adoptSpliced(current)
 	p.bindMotion(prev, current)
@@ -94,6 +95,7 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	}
 	p.cache.SetStyled(styled)
 	p.statePseudos = p.cache.StatePseudos()
+	p.noteRelayed(state)
 	// The patched display is now the committed frame. Record its key so the
 	// redraw a click dispatches after its handler sees the frame as unchanged
 	// instead of laying the whole page out again.

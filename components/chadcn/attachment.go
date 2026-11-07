@@ -14,8 +14,11 @@ const (
 
 // AttachmentOptions describes a file tile. Progress is a percentage from 0 to
 // 100, and zero hides the bar. Action becomes the tile's data-action when set.
-// Icon replaces the derived extension label.
+// Icon replaces the derived extension label. ID is an optional stable host id;
+// the name, meta, and progress parts derive their ids from it so a same-shape
+// meta edit patches instead of reparsing.
 type AttachmentOptions struct {
+	ID       string
 	Name     string
 	Meta     string
 	Progress int
@@ -31,11 +34,17 @@ func Attachment(options AttachmentOptions) *ui.Element {
 		actionClass = "of-attachment--action"
 	}
 	tile := ui.Div().Class(classes("of-attachment", actionClass))
+	if options.ID != "" {
+		tile.ID(options.ID)
+	}
 	if options.Action != "" {
 		tile.Attr("data-action", options.Action)
 	}
 
 	icon := ui.Div().Class("of-attachment-icon")
+	if id := partID(options.ID, "-icon"); id != "" {
+		icon.ID(id)
+	}
 	if options.Icon != nil {
 		icon.Children(options.Icon)
 	} else {
@@ -45,16 +54,31 @@ func Attachment(options AttachmentOptions) *ui.Element {
 
 	body := ui.Div().Class("of-attachment-body")
 	if options.Name != "" {
-		body.Children(ui.Span().Class("of-attachment-name").Text(options.Name))
+		name := ui.Span().Class("of-attachment-name").Text(options.Name)
+		if id := partID(options.ID, "-name"); id != "" {
+			name.ID(id)
+		}
+		body.Children(name)
 	}
 	if options.Meta != "" {
-		body.Children(ui.Span().Class("of-attachment-meta").Text(options.Meta))
+		meta := ui.Span().Class("of-attachment-meta").Text(options.Meta)
+		if id := partID(options.ID, "-meta"); id != "" {
+			meta.ID(id)
+		}
+		body.Children(meta)
 	}
 	if progress := min(max(options.Progress, 0), attachmentMaxProgress); progress > 0 {
-		body.Children(ui.Div().Class("of-attachment-progress").Attr("role", "progressbar").
+		bar := ui.Div().Class("of-attachment-progress").Attr("role", "progressbar").
 			Attr("aria-label", options.Name).Attr("aria-valuemin", "0").
-			Attr("aria-valuemax", "100").Attr("aria-valuenow", strconv.Itoa(progress)).
-			Children(ui.Div().Class("of-attachment-progress-fill").Width(ui.Percent(float64(progress)))))
+			Attr("aria-valuemax", "100").Attr("aria-valuenow", strconv.Itoa(progress))
+		if id := partID(options.ID, "-progress"); id != "" {
+			bar.ID(id)
+		}
+		fill := ui.Div().Class("of-attachment-progress-fill").Width(ui.Percent(float64(progress)))
+		if id := partID(options.ID, "-progress-fill"); id != "" {
+			fill.ID(id)
+		}
+		body.Children(bar.Children(fill))
 	}
 	tile.Children(body)
 

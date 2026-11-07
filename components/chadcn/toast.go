@@ -31,10 +31,18 @@ func Toast(options ToastOptions) *ui.Element {
 	}
 	body := ui.Div().Class("of-toast-body")
 	if options.Title != "" {
-		body.Children(ui.Div().Class("of-toast-title").Text(options.Title))
+		title := ui.Div().Class("of-toast-title").Text(options.Title)
+		if id := partID(options.ID, "-title"); id != "" {
+			title.ID(id)
+		}
+		body.Children(title)
 	}
 	if options.Description != "" {
-		body.Children(ui.P().Class("of-toast-description").Text(options.Description))
+		description := ui.P().Class("of-toast-description").Text(options.Description)
+		if id := partID(options.ID, "-description"); id != "" {
+			description.ID(id)
+		}
+		body.Children(description)
 	}
 	toast.Children(body)
 	if options.Action != nil {

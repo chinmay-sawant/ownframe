@@ -21,7 +21,7 @@ func TestTextValidationFieldMarksControl(t *testing.T) {
 		Control:     chadcn.Input("card-name", ""),
 	}))
 	for _, want := range []string{
-		`<label class="of-field-label" for="card-name">`,
+		`<label class="of-field-label" for="card-name" id="card-name-label">`,
 		`required="required"`,
 		`aria-required="true"`,
 		`aria-invalid="true"`,

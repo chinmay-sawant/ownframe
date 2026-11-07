@@ -54,7 +54,7 @@ func AlertDialog(options AlertDialogOptions) *ui.Element {
 	overlayPanelAttrs(panel, "alertdialog", "Alert dialog", titleID, descriptionID)
 	panel.Children(
 		overlayHeader("alert-dialog", overlayHeading("alert-dialog", options.Title, options.Description, titleID, descriptionID), nil),
-		alertDialogFooter(options),
+		alertDialogFooter(options, panelID),
 	)
 
 	backdrop := ui.Div().Class("of-alert-dialog-backdrop").
@@ -70,16 +70,20 @@ func AlertDialog(options AlertDialogOptions) *ui.Element {
 	return root.Children(trigger, backdrop)
 }
 
-func alertDialogFooter(options AlertDialogOptions) *ui.Element {
-	cancel := alertDialogCancel(options)
-	confirm := alertDialogConfirm(options)
+func alertDialogFooter(options AlertDialogOptions, panelID string) *ui.Element {
+	cancel := alertDialogCancel(options, panelID)
+	confirm := alertDialogConfirm(options, panelID)
 	if cancel == nil && confirm == nil {
 		return nil
 	}
-	return ui.Tag("footer").Class("of-alert-dialog-footer").Children(cancel, confirm)
+	footer := ui.Tag("footer").Class("of-alert-dialog-footer")
+	if id := partID(panelID, "-footer"); id != "" {
+		footer.ID(id)
+	}
+	return footer.Children(cancel, confirm)
 }
 
-func alertDialogCancel(options AlertDialogOptions) *ui.Element {
+func alertDialogCancel(options AlertDialogOptions, panelID string) *ui.Element {
 	button := alertDialogButton(
 		options.CancelLabel,
 		defaultAlertCancel,
@@ -91,10 +95,14 @@ func alertDialogCancel(options AlertDialogOptions) *ui.Element {
 		return nil
 	}
 	// A wrapper keeps the hook class without replacing the button's own classes.
-	return ui.Div().Class("of-alert-dialog-cancel").Children(button)
+	wrapper := ui.Div().Class("of-alert-dialog-cancel").Children(button)
+	if id := partID(panelID, "-cancel"); id != "" {
+		wrapper.ID(id)
+	}
+	return wrapper
 }
 
-func alertDialogConfirm(options AlertDialogOptions) *ui.Element {
+func alertDialogConfirm(options AlertDialogOptions, panelID string) *ui.Element {
 	variant := ButtonFilled
 	if options.Destructive {
 		variant = ButtonDanger
@@ -109,7 +117,11 @@ func alertDialogConfirm(options AlertDialogOptions) *ui.Element {
 	if button == nil {
 		return nil
 	}
-	return ui.Div().Class("of-alert-dialog-confirm").Children(button)
+	wrapper := ui.Div().Class("of-alert-dialog-confirm").Children(button)
+	if id := partID(panelID, "-confirm"); id != "" {
+		wrapper.ID(id)
+	}
+	return wrapper
 }
 
 // alertDialogButton omits a control whose callback is nil. When the host only

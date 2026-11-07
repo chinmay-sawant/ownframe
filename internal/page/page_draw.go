@@ -181,6 +181,11 @@ func (p *Page) styleStaged(
 
 	changed := p.themeChanged(state)
 	if !changed && p.cacheFresh() {
+		// An element patch the hover handler just committed already
+		// relayed the cache for this state, so reuse its document.
+		if doc, ok := p.relayedDoc(state); ok {
+			return doc, nil
+		}
 		ds := draw.Clock(track)
 
 		doc, err := p.cache.Relayout(ctx, p.width, p.height, state)
@@ -189,6 +194,7 @@ func (p *Page) styleStaged(
 			return nil, err
 		}
 
+		p.noteRelayed(state)
 		return doc, nil
 	}
 
@@ -217,6 +223,7 @@ func (p *Page) styleStaged(
 	}
 
 	p.noteCacheSource()
+	p.noteRelayed(state)
 
 	return styled.Doc, nil
 }

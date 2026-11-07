@@ -163,13 +163,57 @@ func (p *Page) captureTransitions(previous, next *Display) []motion.TransitionCa
 	if p.motion == nil || p.transitionsOff {
 		return nil
 	}
-	if next != nil && p.motionCommitIdle() && !p.displayDeclaresTransitions(next) {
+	roots := p.commitRoots
+	p.commitRoots = nil
+	if next == nil || !p.motionCommitIdle() {
+		return p.motion.CaptureTransitions(previous, next)
+	}
+	if !p.displayDeclaresTransitions(next) {
 		// No box declares a transition and the runtime holds no live run a
 		// capture could cancel or reverse, so the capture would walk both
 		// displays and return nothing with zeroed counters.
 		return []motion.TransitionCapture{}
 	}
+	if roots != nil && !scopeDeclaresTransitions(next, roots) {
+		// A scoped commit outside every transitioning element cannot start,
+		// cancel, or retarget a transition: no transitioning box is the
+		// scope root or inside it, and the idle gate above proves no live
+		// run needs cancelling. Skip the index builds and the per-property
+		// walk; the bind still runs to publish its (unchanged) counters.
+		return []motion.TransitionCapture{}
+	}
 	return p.motion.CaptureTransitions(previous, next)
+}
+
+// scopeDeclaresTransitions reports whether the patched scope can affect a
+// transition: a transitioning box is a scope root, lies inside one, or (for
+// an id-less box) hangs under one. Roots are the commit's scope ids: hover
+// patch roots, one patched element id, or a batch id list. A nil roots means
+// a full layout, which keeps the whole-display capture. Id-less boxes match
+// by ancestor because the cascade anchors hover scopes at id-bearing boxes,
+// so an id-less box outside every scope subtree had no match change.
+func scopeDeclaresTransitions(next *Display, roots []string) bool {
+	inScope := make(map[string]struct{}, len(roots))
+	for _, id := range roots {
+		if id != "" {
+			inScope[id] = struct{}{}
+		}
+	}
+	for i := range next.Boxes {
+		if len(next.Boxes[i].Transitions) == 0 {
+			continue
+		}
+		box := &next.Boxes[i]
+		if _, ok := inScope[box.ID]; ok {
+			return true
+		}
+		for parent := box.ParentIndex; parent >= 0 && parent < len(next.Boxes); parent = next.Boxes[parent].ParentIndex {
+			if _, ok := inScope[next.Boxes[parent].ID]; ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // bindTransitions installs the captures against the display the page just

@@ -26,7 +26,10 @@ type ChartSeries struct {
 
 // ChartOptions describes a chart frame. Every series shares Labels. Total is an
 // optional headline figure, and zero hides it. When ID is set, each bar id is
-// that value plus the bar index, in plot order.
+// that value plus the bar index, in plot order, and the legend labels, axis
+// labels, and summary values take stable suffixed ids, so a same-shape data
+// change (same series, labels, and counts, only values) patches instead of
+// taking the full-render path. Structural changes stay FULL by design.
 type ChartOptions struct {
 	ID          string
 	Title       string
@@ -64,10 +67,18 @@ func chartHeader(options ChartOptions) *ui.Element {
 	if hasHeading {
 		heading := ui.Div().Class("of-chart-heading")
 		if options.Title != "" {
-			heading.Children(ui.Tag("h2").Class("of-chart-title").Text(options.Title))
+			title := ui.Tag("h2").Class("of-chart-title").Text(options.Title)
+			if id := partID(options.ID, "-title"); id != "" {
+				title.ID(id)
+			}
+			heading.Children(title)
 		}
 		if options.Description != "" {
-			heading.Children(ui.P().Class("of-chart-description").Text(options.Description))
+			description := ui.P().Class("of-chart-description").Text(options.Description)
+			if id := partID(options.ID, "-description"); id != "" {
+				description.ID(id)
+			}
+			heading.Children(description)
 		}
 		header.Children(heading)
 	}
@@ -80,26 +91,31 @@ func chartHeader(options ChartOptions) *ui.Element {
 func chartSummary(options ChartOptions) *ui.Element {
 	summary := ui.Div().Class("of-chart-summary")
 	if options.Total > 0 {
-		summary.Children(chartStat("Total", options.Total))
+		summary.Children(chartStat(options.ID, "-total", "Total", options.Total))
 	}
-	for _, series := range options.Series {
-		summary.Children(chartStat(series.Label, chartSum(series.Values)))
+	for index, series := range options.Series {
+		summary.Children(chartStat(options.ID, "-stat-"+strconv.Itoa(index), series.Label, chartSum(series.Values)))
 	}
 	return summary
 }
 
-func chartStat(label string, value float64) *ui.Element {
-	return ui.Div().Class("of-chart-stat").Children(
-		ui.Span().Class("of-chart-stat-label").Text(label),
-		ui.Span().Class("of-chart-stat-value").Text(chartNumber(value)),
-	)
+func chartStat(chartID, suffix, label string, value float64) *ui.Element {
+	labelSpan := ui.Span().Class("of-chart-stat-label").Text(label)
+	valueSpan := ui.Span().Class("of-chart-stat-value").Text(chartNumber(value))
+	if id := partID(chartID, suffix+"-label"); id != "" {
+		labelSpan.ID(id)
+	}
+	if id := partID(chartID, suffix+"-value"); id != "" {
+		valueSpan.ID(id)
+	}
+	return ui.Div().Class("of-chart-stat").Children(labelSpan, valueSpan)
 }
 
 // chartBody groups the plot, its axis labels, and the legend in one padded
 // container, so the three share the same horizontal inset.
 func chartBody(options ChartOptions) *ui.Element {
 	groups := chartGroups(options.Series)
-	legend := chartLegend(options.Series)
+	legend := chartLegend(options.ID, options.Series)
 	if groups == 0 && legend == nil {
 		return nil
 	}
@@ -107,7 +123,7 @@ func chartBody(options ChartOptions) *ui.Element {
 	if groups > 0 {
 		body.Children(chartPlot(options.ID, options.Series, groups))
 		if len(options.Labels) > 0 {
-			body.Children(chartLabels(options.Labels, groups))
+			body.Children(chartLabels(options.ID, options.Labels, groups))
 		}
 	}
 	if legend != nil {
@@ -142,19 +158,23 @@ func chartPlot(chartID string, series []ChartSeries, groups int) *ui.Element {
 	return plot
 }
 
-func chartLabels(labels []string, groups int) *ui.Element {
+func chartLabels(chartID string, labels []string, groups int) *ui.Element {
 	row := ui.Div().Class("of-chart-labels")
 	for index := 0; index < groups; index++ {
 		label := ""
 		if index < len(labels) {
 			label = labels[index]
 		}
-		row.Children(ui.Span().Class("of-chart-label").Text(label))
+		span := ui.Span().Class("of-chart-label").Text(label)
+		if id := partID(chartID, "-label-"+strconv.Itoa(index)); id != "" {
+			span.ID(id)
+		}
+		row.Children(span)
 	}
 	return row
 }
 
-func chartLegend(series []ChartSeries) *ui.Element {
+func chartLegend(chartID string, series []ChartSeries) *ui.Element {
 	if len(series) == 0 {
 		return nil
 	}
@@ -165,10 +185,14 @@ func chartLegend(series []ChartSeries) *ui.Element {
 		if item.Color != "" {
 			swatch.CustomProperty("--of-chart-bar", item.Color)
 		}
-		legend.Children(ui.Div().Class("of-chart-legend-item").Children(
-			swatch,
-			ui.Span().Class("of-chart-legend-label").Text(item.Label),
-		))
+		if id := partID(chartID, "-legend-"+strconv.Itoa(index)+"-swatch"); id != "" {
+			swatch.ID(id)
+		}
+		label := ui.Span().Class("of-chart-legend-label").Text(item.Label)
+		if id := partID(chartID, "-legend-"+strconv.Itoa(index)+"-label"); id != "" {
+			label.ID(id)
+		}
+		legend.Children(ui.Div().Class("of-chart-legend-item").Children(swatch, label))
 	}
 	return legend
 }

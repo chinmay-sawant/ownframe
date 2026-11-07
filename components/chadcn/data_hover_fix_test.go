@@ -56,15 +56,16 @@ func TestCodeBlockCopyButtonWiresOnCopy(t *testing.T) {
 		`class="of-code-block-copy"`,
 		`data-action=`,
 		`>Copy</button>`,
-		`<code class="of-code-block-code">a &lt; b</code>`,
+		`<code class="of-code-block-code"`,
+		`a &lt; b</code>`,
 	)
 	button := compositeTag(t, markup, `id="snippet-copy"`)
 	if !strings.Contains(button, "<button") || strings.Contains(button, "aria-hidden") {
 		t.Fatalf("copy control is not an exposed button: %s", button)
 	}
 	code := compositeTag(t, markup, `class="of-code-block-code"`)
-	if strings.Contains(code, "id=") {
-		t.Fatalf("code body took an id: %s", code)
+	if strings.Contains(code, "id=") && !strings.Contains(code, `id="snippet-code"`) {
+		t.Fatalf("code body took an unexpected id: %s", code)
 	}
 	compositeDeny(t, markup, "<input", "<textarea", "contenteditable", "<span aria-hidden=\"true\" class=\"of-code-block-copy\">")
 }

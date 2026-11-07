@@ -38,19 +38,34 @@ func Field(options FieldOptions) *ui.Element {
 	if seen {
 		markFieldControl(options.Control, targetID, options.Required, options.Error != "")
 	}
+	// Stable part ids let View.Update patch a label, description, or error
+	// text edit instead of taking the full render. They derive from the
+	// control id, so a field without one renders exactly as before.
+	partBase := options.For
+	if seen {
+		partBase = targetID
+	}
 	if options.Label != "" {
-		field.Children(fieldLabel(options.For, options.Label, options.Required))
+		label := fieldLabel(options.For, options.Label, options.Required)
+		if id := partID(partBase, "-label"); id != "" {
+			label.ID(id)
+		}
+		field.Children(label)
 	}
 	if options.Control != nil {
 		field.Children(options.Control)
 	}
 	if options.Description != "" {
-		field.Children(FieldDescription(options.Description))
+		description := FieldDescription(options.Description)
+		if id := partID(partBase, "-description"); id != "" {
+			description.ID(id)
+		}
+		field.Children(description)
 	}
 	if options.Error != "" {
 		message := FieldError(options.Error)
-		if seen && targetID != "" {
-			message.ID(partID(targetID, "-error"))
+		if id := partID(partBase, "-error"); id != "" {
+			message.ID(id)
 		}
 		field.Children(message)
 	}

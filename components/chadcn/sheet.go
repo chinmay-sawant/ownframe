@@ -60,8 +60,8 @@ func Sheet(options SheetOptions, children ...*ui.Element) *ui.Element {
 	}
 	panel.Children(
 		overlayHeader("sheet", overlayHeading("sheet", options.Title, options.Description, titleID, descriptionID), closeControl),
-		overlayBody("sheet", children),
-		overlayStackedFooter("sheet", options.Footer),
+		overlayBody("sheet", panelID, children),
+		overlayStackedFooter("sheet", panelID, options.Footer),
 	)
 
 	backdrop := ui.Div().Class("of-sheet-backdrop").Children(options.Overrides.Apply(panel))

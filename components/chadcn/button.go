@@ -27,9 +27,13 @@ const (
 
 // ButtonOptions describes appearance, state, and local theme properties.
 // Loading replaces the icon with a spinner and disables the button.
+// ID is the stable host ID: it becomes the button id and the label span
+// derives id+"-label" from it, so a label change patches instead of taking
+// the full render. Leave it empty when the host does not need patches.
 type ButtonOptions struct {
 	Overrides theme.Overrides
 	Icon      *ui.Element
+	ID        string
 	Variant   ButtonVariant
 	Size      ButtonSize
 	Disabled  bool
@@ -38,11 +42,15 @@ type ButtonOptions struct {
 
 // Button builds an HTML button with a label, an optional leading icon, and a
 // loading state. Paint and interactive states live in Stylesheet; the host
-// adds ID, OnClick, or data-action on the returned element.
+// adds OnClick or data-action on the returned element, or sets Options.ID
+// for a stable button id with a patchable label span.
 func Button(label string, options ButtonOptions) *ui.Element {
 	iconOnly := options.Icon != nil && label == ""
 	button := ui.Button("").Attr("type", "button").
 		Class(classes("of-button", buttonVariantClass(options.Variant), buttonSizeClass(options.Size), buttonIconClass(iconOnly)))
+	if options.ID != "" {
+		button.ID(options.ID)
+	}
 	if options.Loading {
 		button.Attr("aria-busy", "true")
 	}
@@ -53,7 +61,11 @@ func Button(label string, options ButtonOptions) *ui.Element {
 		button.Children(ui.Span().Class("of-button-spinner").Attr("aria-hidden", "true"))
 	}
 	if label != "" {
-		button.Children(ui.Span().Class("of-button-label").Text(label))
+		labelSpan := ui.Span().Class("of-button-label").Text(label)
+		if id := partID(options.ID, "-label"); id != "" {
+			labelSpan.ID(id)
+		}
+		button.Children(labelSpan)
 	}
 	setDisabled(button, options.Disabled || options.Loading)
 	return options.Overrides.Apply(button)

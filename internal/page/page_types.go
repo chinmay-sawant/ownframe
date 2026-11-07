@@ -102,6 +102,12 @@ type Page struct {
 	// one, so a small change made after a full mark keeps its own region
 	// instead of repainting the page.
 	painted *Display
+	// commitRoots scopes the current commit to the patched element ids: the
+	// hover patch roots, one PatchElement id, or a PatchElements id list. A
+	// nil slice means a full layout, whose change can reach any box.
+	// captureTransitions consumes and clears it, so a scoped skip only ever
+	// applies to the commit that produced the scope.
+	commitRoots []string
 	// fullGen is the generation whose commit last marked the whole frame
 	// dirty. A mark from an earlier generation is covered by the display
 	// diff against painted; one from the current generation may describe an

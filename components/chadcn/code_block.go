@@ -21,7 +21,8 @@ type CodeBlockOptions struct {
 // CodeBlock builds a code frame with a filename header and a copy label above a
 // preformatted body. The copy label stays decorative until the host passes
 // Action or OnCopy; that control is then a button whose id is derived from ID.
-// The code body stays plain text. Syntax highlighting is not part of this
+// The code body stays plain text and takes its own derived id when ID is set.
+// Syntax highlighting is not part of this
 // component.
 func CodeBlock(options CodeBlockOptions) *ui.Element {
 	header := ui.Header().Class("of-code-block-header")
@@ -34,13 +35,25 @@ func CodeBlock(options CodeBlockOptions) *ui.Element {
 	header.Children(codeBlockCopy(options))
 
 	body := ui.Tag("pre").Class("of-code-block-body").Children(
-		ui.Tag("code").Class("of-code-block-code").Text(options.Code),
+		codeBlockCode(options),
 	)
 	root := ui.Div().Class("of-code-block").Children(header, body)
 	if options.ID != "" {
 		root.ID(options.ID)
 	}
 	return root
+}
+
+// codeBlockCode is the plain-text code body. It takes a stable id derived
+// from ID so a code-text edit can patch, plus display:block so it owns a
+// block box: the engine only patches an element that owns one. Without an
+// ID it stays id-free with no inline style.
+func codeBlockCode(options CodeBlockOptions) *ui.Element {
+	code := ui.Tag("code").Class("of-code-block-code").Text(options.Code)
+	if id := partID(options.ID, "-code"); id != "" {
+		code.Display(ui.DisplayBlock).ID(id)
+	}
+	return code
 }
 
 // codeBlockCopy is a decorative label until the host passes Action or OnCopy.

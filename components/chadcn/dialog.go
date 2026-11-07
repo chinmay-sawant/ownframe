@@ -2,6 +2,7 @@ package chadcn
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -80,7 +81,7 @@ func Dialog(options DialogOptions, children ...*ui.Element) *ui.Element {
 			closeControl.ID(partID(panelID, "-close"))
 		}
 		panel.Children(overlayHeader("dialog", heading, closeControl),
-			overlayBody("dialog", children), overlayFooter("dialog", options.Footer))
+			overlayBody("dialog", panelID, children), overlayFooter("dialog", panelID, options.Footer))
 	} else {
 		panel.Children(children...)
 	}
@@ -235,34 +236,52 @@ func overlayClose(component, closeAction string, onOpenChange func(context.Conte
 	return closeButton.OnClick(func(ctx context.Context) error { return onOpenChange(ctx, false) })
 }
 
-func overlayBody(component string, children []*ui.Element) *ui.Element {
+func overlayBody(component, panelID string, children []*ui.Element) *ui.Element {
 	if len(children) == 0 {
 		return nil
 	}
-	return ui.Div().Class("of-" + component + "-body").Children(children...)
+	body := ui.Div().Class("of-" + component + "-body")
+	if id := partID(panelID, "-body"); id != "" {
+		body.ID(id)
+	}
+	return body.Children(children...)
 }
 
-func overlayFooter(component string, children []*ui.Element) *ui.Element {
+func overlayFooter(component, panelID string, children []*ui.Element) *ui.Element {
 	if len(children) == 0 {
 		return nil
 	}
-	return ui.Tag("footer").Class("of-" + component + "-footer").Children(children...)
+	footer := ui.Tag("footer").Class("of-" + component + "-footer")
+	if id := partID(panelID, "-footer"); id != "" {
+		footer.ID(id)
+	}
+	return footer.Children(children...)
 }
 
 // overlayStackedFooter pins one full-width row per child, which is the action
 // layout the sheet and drawer references use.
-func overlayStackedFooter(component string, children []*ui.Element) *ui.Element {
+func overlayStackedFooter(component, panelID string, children []*ui.Element) *ui.Element {
 	slots := make([]*ui.Element, 0, len(children))
+	slotIndex := 0
 	for _, child := range children {
 		if child == nil {
 			continue
 		}
-		slots = append(slots, ui.Div().Class("of-"+component+"-footer-slot").Children(child))
+		slot := ui.Div().Class("of-" + component + "-footer-slot").Children(child)
+		if id := partID(panelID, "-footer-slot-"+strconv.Itoa(slotIndex)); id != "" {
+			slot.ID(id)
+		}
+		slots = append(slots, slot)
+		slotIndex++
 	}
 	if len(slots) == 0 {
 		return nil
 	}
-	return ui.Tag("footer").Class("of-" + component + "-footer").Children(slots...)
+	footer := ui.Tag("footer").Class("of-" + component + "-footer")
+	if id := partID(panelID, "-footer"); id != "" {
+		footer.ID(id)
+	}
+	return footer.Children(slots...)
 }
 
 // DialogFocus saves focus for one modal. Nested modals are not supported.

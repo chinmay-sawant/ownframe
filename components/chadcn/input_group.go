@@ -54,6 +54,13 @@ func InputGroup(options InputGroupOptions) *ui.Element {
 		inputGroupSlot("of-input-group-suffix", options.Suffix),
 		inputGroupSlot("of-input-group-addon", options.Addon),
 	)
+	if options.ID != "" {
+		// The wrapper carries the row-level state (aria-disabled), so it
+		// takes a derived id from the input id: a disabled toggle then
+		// patches the two changed nodes instead of taking the full render.
+		// An empty ID leaves the wrapper id-less.
+		group.ID(partID(options.ID, "-group"))
+	}
 	if options.Disabled {
 		group.Attr("aria-disabled", ariaBool(true))
 	}

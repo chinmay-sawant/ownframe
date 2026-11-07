@@ -115,6 +115,12 @@ func searchPanel(options SearchOptions) *ui.Element {
 	}
 	if matched == 0 {
 		empty := ui.Div().Class("of-search-empty")
+		// A stable id turns an empty-query rewrite ("No results" vs
+		// `No results for "q"`) into a text edit. Without it the changed
+		// node has no id and the update falls back to a full render.
+		if emptyID := partID(options.ID, "-empty"); emptyID != "" {
+			empty.ID(emptyID)
+		}
 		query := strings.TrimSpace(options.Query)
 		if query == "" {
 			empty.Text("No results")
@@ -133,7 +139,8 @@ func searchOption(options SearchOptions, index int, item SearchItem) *ui.Element
 		Attr("role", "option").
 		Attr("aria-selected", ariaBool(selected)).
 		Class(classes("of-search-item", "of-transition"))
-	if optionID := partID(options.ID, "-option-"+strconv.Itoa(index)); optionID != "" {
+	optionID := partID(options.ID, "-option-"+strconv.Itoa(index))
+	if optionID != "" {
 		option.ID(optionID)
 	}
 	label := item.Label
@@ -144,9 +151,18 @@ func searchOption(options SearchOptions, index int, item SearchItem) *ui.Element
 	if item.Description != "" {
 		option.Children(ui.Span().Class("of-search-item-description").Text(item.Description))
 	}
-	if selected {
-		option.Children(ui.Span().Class("of-search-check").Attr("aria-hidden", "true").Text("✓"))
+	// The check indicator stays mounted so a selection change is an
+	// aria-selected edit plus a text edit on stable ids. Mounting it only
+	// when selected would change the row's child count and force a full
+	// render. An empty option id leaves it unnamed, as before.
+	check := ui.Span().Class("of-search-check").Attr("aria-hidden", "true")
+	if checkID := partID(optionID, "-check"); checkID != "" {
+		check.ID(checkID)
 	}
+	if selected {
+		check.Text("✓")
+	}
+	option.Children(check)
 	if options.OnSelect != nil {
 		value := item.Value
 		option.OnClick(func(ctx context.Context) error {

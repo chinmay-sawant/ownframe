@@ -51,6 +51,7 @@ func ToggleGroup(options ToggleGroupOptions) *ui.Element {
 		_, pressed := selected[item.Value]
 		toggle := Toggle(item.Label, pressed, ToggleOptions{
 			Icon:     item.Icon,
+			ID:       item.ID,
 			Size:     options.Size,
 			Disabled: item.Disabled,
 		}).Attr("data-value", item.Value)

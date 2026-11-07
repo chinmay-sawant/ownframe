@@ -24,8 +24,11 @@ type Question struct {
 }
 
 // QuestionnaireOptions describes a question list. OnSelect receives the
-// Question.Label and the chosen ChoiceItem.Value.
+// Question.Label and the chosen ChoiceItem.Value. ID is an optional stable
+// host id; the progress line and the choice controls derive their ids from it
+// so an answer change patches instead of reparsing.
 type QuestionnaireOptions struct {
+	ID          string
 	Title       string
 	Description string
 	Questions   []Question
@@ -37,6 +40,9 @@ type QuestionnaireOptions struct {
 // rebuilds the tree after OnSelect returns.
 func Questionnaire(options QuestionnaireOptions) *ui.Element {
 	root := ui.Div().Class("of-questionnaire")
+	if options.ID != "" {
+		root.ID(options.ID)
+	}
 	if header := questionnaireHeader(options); header != nil {
 		root.Children(header)
 	}
@@ -62,8 +68,12 @@ func questionnaireHeader(options QuestionnaireOptions) *ui.Element {
 				answered++
 			}
 		}
-		header.Children(ui.Span().Class("of-questionnaire-progress").
-			Text(strconv.Itoa(answered) + " of " + strconv.Itoa(len(options.Questions)) + " answered"))
+		progress := ui.Span().Class("of-questionnaire-progress").
+			Text(strconv.Itoa(answered) + " of " + strconv.Itoa(len(options.Questions)) + " answered")
+		if id := partID(options.ID, "-progress"); id != "" {
+			progress.ID(id)
+		}
+		header.Children(progress)
 	}
 	if options.Title != "" {
 		header.Children(ui.Tag("h2").Class("of-questionnaire-title").Text(options.Title))
@@ -87,12 +97,12 @@ func questionnaireQuestion(options QuestionnaireOptions, question Question, inde
 	choices := ui.Div().Class("of-questionnaire-choices").Attr("role", "radiogroup").
 		Attr("aria-label", question.Label)
 	for choiceIndex, choice := range question.Choices {
-		choices.Children(questionnaireChoice(options, question, choice, choiceIndex))
+		choices.Children(questionnaireChoice(options, question, choice, index, choiceIndex))
 	}
 	return item.Children(choices)
 }
 
-func questionnaireChoice(options QuestionnaireOptions, question Question, choice ChoiceItem, index int) *ui.Element {
+func questionnaireChoice(options QuestionnaireOptions, question Question, choice ChoiceItem, questionIndex, index int) *ui.Element {
 	selected := question.Selected != "" && question.Selected == choice.Value
 	modifier := ""
 	if selected {
@@ -100,6 +110,9 @@ func questionnaireChoice(options QuestionnaireOptions, question Question, choice
 	}
 	button := ui.Button("").Class(classes("of-questionnaire-choice", modifier, "of-focus")).
 		Attr("type", "button").Attr("role", "radio").Attr("aria-checked", ariaBool(selected))
+	if id := partID(options.ID, "-q"+strconv.Itoa(questionIndex)+"-choice-"+strconv.Itoa(index)); id != "" {
+		button.ID(id)
+	}
 	body := ui.Div().Class("of-questionnaire-choice-body")
 	if choice.Label != "" {
 		body.Children(ui.Span().Class("of-questionnaire-choice-label").Text(choice.Label))

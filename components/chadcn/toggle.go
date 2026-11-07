@@ -6,10 +6,13 @@ import (
 )
 
 // ToggleOptions describes the styling of one toggle. The zero value is a
-// medium, enabled toggle with no icon.
+// medium, enabled toggle with no icon. ID is the stable host ID: it becomes
+// the toggle id and the label span derives id+"-label" from it, so a label
+// change patches instead of taking the full render.
 type ToggleOptions struct {
 	Overrides theme.Overrides
 	Icon      *ui.Element
+	ID        string
 	Size      ButtonSize
 	Disabled  bool
 }
@@ -25,11 +28,18 @@ func Toggle(label string, pressed bool, options ...ToggleOptions) *ui.Element {
 	iconOnly := settings.Icon != nil && label == ""
 	toggle := ui.Button("").Attr("type", "button").Attr("aria-pressed", ariaBool(pressed)).
 		Class(classes("of-toggle", toggleSizeClass(settings.Size), toggleIconClass(iconOnly)))
+	if settings.ID != "" {
+		toggle.ID(settings.ID)
+	}
 	if settings.Icon != nil {
 		toggle.Children(ui.Span().Class("of-toggle-icon").Attr("aria-hidden", "true").Children(settings.Icon))
 	}
 	if label != "" {
-		toggle.Children(ui.Span().Class("of-toggle-label").Text(label))
+		labelSpan := ui.Span().Class("of-toggle-label").Text(label)
+		if id := partID(settings.ID, "-label"); id != "" {
+			labelSpan.ID(id)
+		}
+		toggle.Children(labelSpan)
 	}
 	setDisabled(toggle, settings.Disabled)
 	return settings.Overrides.Apply(toggle)

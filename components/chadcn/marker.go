@@ -18,8 +18,11 @@ const (
 	MarkerDanger
 )
 
-// MarkerOptions describes a timeline or status marker.
+// MarkerOptions describes a timeline or status marker. ID is an optional
+// stable host id; the label and detail parts derive their ids from it so a
+// detail text edit patches instead of reparsing.
 type MarkerOptions struct {
+	ID     string
 	Label  string
 	Detail string
 	State  MarkerState
@@ -29,13 +32,24 @@ type MarkerOptions struct {
 // detail text.
 func Marker(options MarkerOptions) *ui.Element {
 	marker := ui.Div().Class(classes("of-marker", markerStateClass(options.State)))
+	if options.ID != "" {
+		marker.ID(options.ID)
+	}
 	marker.Children(ui.Span().Class("of-marker-icon").Attr("aria-hidden", "true"))
 	body := ui.Div().Class("of-marker-body")
 	if options.Label != "" {
-		body.Children(ui.Span().Class("of-marker-label").Text(options.Label))
+		label := ui.Span().Class("of-marker-label").Text(options.Label)
+		if id := partID(options.ID, "-label"); id != "" {
+			label.ID(id)
+		}
+		body.Children(label)
 	}
 	if options.Detail != "" {
-		body.Children(ui.Span().Class("of-marker-detail").Text(options.Detail))
+		detail := ui.Span().Class("of-marker-detail").Text(options.Detail)
+		if id := partID(options.ID, "-detail"); id != "" {
+			detail.ID(id)
+		}
+		body.Children(detail)
 	}
 	return marker.Children(body)
 }

@@ -53,8 +53,8 @@ func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
 	panel.Children(
 		drawerGrab(panelID, options.OnOpenChange),
 		overlayHeader("drawer", overlayHeading("drawer", options.Title, options.Description, titleID, descriptionID), nil),
-		overlayBody("drawer", children),
-		overlayStackedFooter("drawer", options.Footer),
+		overlayBody("drawer", panelID, children),
+		overlayStackedFooter("drawer", panelID, options.Footer),
 	)
 
 	backdrop := ui.Div().Class("of-drawer-backdrop").Children(options.Overrides.Apply(panel))

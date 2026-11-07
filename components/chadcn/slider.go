@@ -9,6 +9,9 @@ import (
 
 // SliderOptions describes a controlled horizontal slider.
 type SliderOptions struct {
+	// ID is the stable host ID. The filled range derives its own ID from
+	// it, so a value rebuild patches instead of reparsing.
+	ID string
 	// Label is the control's accessible name.
 	Label string
 	// Value is the current value. The host updates it as the thumb moves.
@@ -37,9 +40,13 @@ func Slider(options SliderOptions) *ui.Element {
 	minimum, maximum, step := sliderRange(options)
 	value := clampSliderValue(options.Value, minimum, maximum, step)
 	fill := (value - minimum) / (maximum - minimum) * sliderPercentMax
+	fillBar := ui.Div().Class("of-slider-range").Width(ui.Percent(fill))
+	if fillID := partID(options.ID, "-range"); fillID != "" {
+		fillBar.ID(fillID)
+	}
 	track := ui.Div().Class("of-slider-track").Children(
 		ui.Div().Class("of-slider-rail").Children(
-			ui.Div().Class("of-slider-range").Width(ui.Percent(fill)),
+			fillBar,
 			ui.Div().Class("of-slider-thumb").Attr("aria-hidden", "true"),
 		),
 	)
@@ -49,6 +56,9 @@ func Slider(options SliderOptions) *ui.Element {
 		Attr("aria-valuenow", sliderValueText(value)).
 		Attr("aria-orientation", "horizontal").
 		Children(track)
+	if options.ID != "" {
+		slider.ID(options.ID)
+	}
 	if options.Label != "" {
 		slider.Attr("aria-label", options.Label)
 	}

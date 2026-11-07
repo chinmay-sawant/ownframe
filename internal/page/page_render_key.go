@@ -3,6 +3,7 @@ package page
 import (
 	"html/template"
 
+	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -73,6 +74,19 @@ type renderTrack struct {
 	cacheRev  uint64
 	cacheHash uint64
 	cacheLen  int
+	// relayed records the pointer/focus state, viewport, theme, and image
+	// revision the style cache was last relayed for, by an element patch or
+	// a committed relayout. A Redraw asking for the same state reuses the
+	// cached styled document instead of cascading again. A hover handler
+	// patch followed by the hover's own Redraw is the hot path: one cascade
+	// serves both commits instead of one per commit.
+	relayedOK          bool
+	relayedW, relayedH int
+	relayedHover       string
+	relayedActive      string
+	relayedFocus       string
+	relayedTheme       *css.Sheet
+	relayedImages      uint64
 	// tplProbeTpl and tplProbeHas memoize the template probe. The probe
 	// moves to template-write time: execTemplate rescans nav.Current for
 	// "{{" only when p.tpl changed, and reuses the verdict otherwise. A
@@ -165,4 +179,40 @@ func (p *Page) noteCacheSource() {
 func (p *Page) cacheFresh() bool {
 	return p.cache != nil && p.sourceRev != 0 && p.cacheRev == p.sourceRev &&
 		p.cacheHash == p.sourceHash && p.cacheLen == p.sourceLen
+}
+
+// noteRelayed records the state the style cache now reflects. Call it after
+// every path that (re)cascades the cache: an element patch relay and a
+// committed styleStaged relayout alike, so a later Redraw for the same state
+// reuses the document instead of cascading again.
+func (p *Page) noteRelayed(state render.State) {
+	p.relayedOK = true
+	p.relayedW, p.relayedH = p.width, p.height
+	p.relayedHover, p.relayedActive, p.relayedFocus = state.Hover, state.Active, state.Focus
+	p.relayedTheme = state.Theme
+	p.relayedImages = p.imagesRev
+}
+
+// relayedDoc returns the cached styled document when the cache already
+// reflects state: same viewport, pointer/focus ids, theme, and image
+// revision as the last relay. The caller must have checked cacheFresh, so
+// the tree is also the current source's. A hit skips one css.Relayout.
+func (p *Page) relayedDoc(state render.State) (*css.Document, bool) {
+	if !p.relayedOK || p.cache == nil {
+		return nil, false
+	}
+	if p.relayedW != p.width || p.relayedH != p.height {
+		return nil, false
+	}
+	if p.relayedHover != state.Hover || p.relayedActive != state.Active || p.relayedFocus != state.Focus {
+		return nil, false
+	}
+	if p.relayedTheme != state.Theme || p.relayedImages != p.imagesRev {
+		return nil, false
+	}
+	doc := p.cache.Styled()
+	if doc == nil {
+		return nil, false
+	}
+	return doc, true
 }

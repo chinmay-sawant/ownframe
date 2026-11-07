@@ -131,6 +131,11 @@ func menuPane(skin *menuSkin, id, label string, items []MenuItem, groups []MenuG
 
 // menuIDSeq names rows from the pane id. An empty prefix leaves them unnamed,
 // the same way every other part stays unnamed when the host gave no id.
+//
+// Row ids are positional (pane id + index): they stay put while the host
+// keeps item order, so a relabel is a text edit on the id-bearing row. A
+// reorder or insert shifts them; keep the item list order stable across
+// updates.
 type menuIDSeq struct {
 	prefix string
 	n      int
@@ -212,6 +217,13 @@ func menuItemNode(skin *menuSkin, item MenuItem, onSelect func(context.Context, 
 
 // menuItemButton builds the interactive row. A disabled row keeps its markup
 // but carries disabled and aria-disabled so it cannot dispatch.
+//
+// A simple row (label only: no shortcut, no submenu) carries the label as the
+// button's own text. The button box is stable (the menu min-width binds it),
+// so a relabel is a text edit on the id-bearing button and takes the patch
+// path. A label span would resize with its text and the engine refuses a
+// patch whose element changed size, so rows that need more children keep the
+// span and their relabels take the full render.
 func menuItemButton(skin *menuSkin, item MenuItem, onSelect func(context.Context, string) error, wire bool) *ui.Element {
 	class := skin.item
 	if item.Danger {
@@ -228,7 +240,11 @@ func menuItemButton(skin *menuSkin, item MenuItem, onSelect func(context.Context
 	if len(item.Children) > 0 {
 		button.Attr("aria-haspopup", "menu")
 	}
-	button.Children(ui.Span().Text(item.Label))
+	if item.Label != "" && item.Shortcut == "" && len(item.Children) == 0 {
+		button.Text(item.Label)
+	} else {
+		button.Children(ui.Span().Text(item.Label))
+	}
 	if item.Shortcut != "" {
 		button.Children(ui.Span().Class(skin.shortcut).Text(item.Shortcut))
 	}

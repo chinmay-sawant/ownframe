@@ -19,8 +19,9 @@ type ComboboxItem struct {
 // Open, Query, and Value, updates them in the callbacks, and rebuilds the view.
 //
 // ID names the root. The text input uses ID+"-input", the chevron button uses
-// ID+"-trigger", the listbox uses ID+"-panel", and each option uses
-// ID+"-option-<index>".
+// ID+"-trigger", the listbox uses ID+"-panel", each option uses
+// ID+"-option-<index>", and each option's selection marker uses
+// ID+"-option-<index>-check".
 type ComboboxOptions struct {
 	ID           string
 	Open         bool
@@ -145,9 +146,17 @@ func comboboxOption(options ComboboxOptions, index int, item ComboboxItem) *ui.E
 		label = item.Value
 	}
 	option.Children(ui.Span().Class("of-combobox-item-label").Text(label))
-	if selected {
-		option.Children(ui.Span().Class("of-combobox-check").Attr("aria-hidden", "true").Text("✓"))
+	// The marker always renders so a same-list selection move keeps every
+	// option's child count stable and patches instead of rebuilding. An
+	// unselected marker is an empty hidden span, so no visible text changes.
+	check := ui.Span().Class("of-combobox-check").Attr("aria-hidden", "true")
+	if checkID := partID(options.ID, "-option-"+strconv.Itoa(index)+"-check"); checkID != "" {
+		check.ID(checkID)
 	}
+	if selected {
+		check.Text("✓")
+	}
+	option.Children(check)
 	if options.OnSelect != nil {
 		value := item.Value
 		option.OnClick(func(ctx context.Context) error {
