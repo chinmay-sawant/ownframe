@@ -10,9 +10,12 @@ import (
 
 // boxCaches holds one pageBoxes per page, keyed by page pointer and guarded
 // by its own mutex. setBoxes publishes into the entry; kidRect and
-// displayDeclarations read it. Pages have no teardown hook, so entries
-// live until the process exits; the proper home is a field on Page, which
-// needs a wider change.
+// displayDeclarations read it; forgetBoxes evicts it. There is no page
+// close/teardown path in this file, so nothing calls forgetBoxes yet: a
+// future Page Close/teardown, and any test or bench helper that churns
+// pages, should call it when a page is discarded. Until that wiring lands,
+// entries live until the process exits; the proper home is a field on Page,
+// which needs a wider change.
 //
 //nolint:gochecknoglobals // reason: process-wide per-page box cache keyed by page pointer, guarded by its own mutex; entries are replaced wholesale by setBoxes, never mutated from another page.
 var boxCaches = struct {
@@ -156,6 +159,28 @@ func noteBoxes(p *Page, old, boxes []Box, sameIDs bool) {
 	}
 	e.kid.note(old, boxes, sameIDs)
 	boxCaches.Unlock()
+}
+
+// forgetBoxes drops the page's box-cache entry, if any. It is a no-op on a
+// nil page or a page with no entry, and it takes the same boxCaches mutex
+// as noteBoxes, kidRect, and displayDeclarations, so it is safe to call
+// alongside a concurrent lookup. There is no close/teardown path in this
+// file, so nothing calls it yet: wire it into a future Page Close/teardown,
+// and into test or bench helpers that churn pages, to stop pinning each
+// discarded page (its pageBoxes, box list, and display verdict) until the
+// process exits. Lookup behavior is unchanged: a missing entry answers
+// like a page with no committed boxes (kidRect misses and the caller falls
+// back; displayDeclarations and the next noteBoxes rebuild the entry).
+// It is a method on *Page to sit beside setBoxes and displayDeclarations;
+// it is unexported, so ownframe.Page gains no new API until an explicit
+// delegation is added.
+func (p *Page) forgetBoxes() {
+	if p == nil {
+		return
+	}
+	boxCaches.Lock()
+	defer boxCaches.Unlock()
+	delete(boxCaches.byPage, p)
 }
 
 // note records a commit. The built index survives when the id sequence and

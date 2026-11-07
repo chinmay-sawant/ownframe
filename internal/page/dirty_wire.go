@@ -93,6 +93,7 @@ func (p *Page) markFull() {
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
 	p.painted = p.draw.Display
+	p.maybeReleasePainted()
 
 	return rects, ok
 }
@@ -104,11 +105,50 @@ func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 func (p *Page) TakeDirty() (image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
 	p.painted = p.draw.Display
+	p.maybeReleasePainted()
 	if !ok {
 		return image.Rectangle{}, false
 	}
 
 	return dirty.BoundingBox(rects), true
+}
+
+// maybeReleasePainted drops the painted baseline after the host takes the
+// damage, so a quiet page keeps one display instead of two: the current
+// list. The next commit then lets the old list go instead of holding it
+// alive through painted. The Take just drained every mark, so no pending
+// frame can still need the baseline; a later whole-frame mark rebinds
+// fullGen to its own generation before any later commit can recover.
+//
+// The release runs only when no later commit can need the baseline for a
+// narrow recovery, and never when the baseline may still describe debt:
+//   - restampRedraw or retainState: the page owes a retained-state redraw
+//     or carries the retained box tree, so a re-projection or override
+//     pass can advance the generation outside the commit path. Only the
+//     painted display can then still recover a pending whole frame.
+//   - a busy motion runtime: live players and renderers sample the
+//     committed operations in place, so the painted list is still the pose
+//     those samples build on.
+//   - fullGen past the current generation: the outstanding whole-frame
+//     mark covers an in-place tick change no display diff can see, so only
+//     a full diff from the next commit stays recoverable.
+//
+// A stale fullGen below the current generation is fine: the Take drained
+// the mark it belonged to, and any future mark refreshes the binding.
+func (p *Page) maybeReleasePainted() {
+	if p.painted == nil {
+		return
+	}
+	if p.restampRedraw || p.retainState {
+		return
+	}
+	if !p.motionCommitIdle() {
+		return
+	}
+	if p.fullGen > p.generation {
+		return
+	}
+	p.painted = nil
 }
 
 // Invalidate marks the region the element id changed since the previous

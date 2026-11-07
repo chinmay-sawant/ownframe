@@ -13,6 +13,14 @@ import (
 // with more changed elements than this takes the full-render path instead.
 const maxPatches = 64
 
+// maxTextPatches bounds text-only edits separately. A text-only patch
+// re-places one leaf span without touching attributes or styles, so a burst
+// of label changes (selection readouts, filter counts, totals) stays
+// incremental well past the point where style and attribute relayouts would
+// cost more than a rebuild. Any patch carrying an attribute or style edit
+// still counts toward maxPatches.
+const maxTextPatches = 256
+
 // treeDiff is the outcome of comparing the retained tree with a rebuilt one.
 //
 // ok reports that the two trees have the same structure and that every changed
@@ -132,7 +140,12 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 			d.ok = false
 			return
 		}
-		if len(d.patches) >= maxPatches {
+		if textChanged && len(attrEdits) == 0 && !stylesChanged {
+			if len(d.patches) >= maxTextPatches {
+				d.ok = false
+				return
+			}
+		} else if len(d.patches) >= maxPatches {
 			d.ok = false
 			return
 		}

@@ -393,9 +393,10 @@ func BenchmarkInvoiceRedraw(b *testing.B) {
 	}
 }
 
-// BenchmarkInvoiceRebuild measures rebuilding the whole thousand-row builder
-// tree with unchanged state: HTML render plus parse, cascade, and layout.
-func BenchmarkInvoiceRebuild(b *testing.B) {
+// BenchmarkInvoiceSkipClean measures a refresh with unchanged data. The
+// version guard returns before View.Update, so this is the no-change skip
+// floor: no HTML render, no parse, no cascade, no layout.
+func BenchmarkInvoiceSkipClean(b *testing.B) {
 	ctx := context.Background()
 	a, err := newInvoiceApp()
 	if err != nil {
@@ -413,9 +414,12 @@ func BenchmarkInvoiceRebuild(b *testing.B) {
 	}
 }
 
-// BenchmarkInvoiceClickUpdate measures the full data-update path: alternating
-// clicks on two rows through the page dispatcher, forcing a rebuild each time.
-func BenchmarkInvoiceClickUpdate(b *testing.B) {
+// BenchmarkInvoiceClickDefault measures the default click path: alternating
+// clicks on two rows through the page dispatcher. The app default is
+// patch:true, so clicks route to patchSelectBatched (two class edits plus a
+// text edit in one PatchElements call), the same path as ClickBatch and
+// ClickPatch. It does not force a rebuild.
+func BenchmarkInvoiceClickDefault(b *testing.B) {
 	ctx := context.Background()
 	a, err := newInvoiceApp()
 	if err != nil {
@@ -498,9 +502,10 @@ func BenchmarkInvoiceThemeStyle(b *testing.B) {
 	}
 }
 
-// BenchmarkInvoiceFrameThroughput converts rebuild cost into FPS so the report
-// can compare frames per second directly with mygo.
-func BenchmarkInvoiceFrameThroughput(b *testing.B) {
+// BenchmarkInvoiceSkipThroughput converts the no-change skip floor into FPS
+// so the report can compare idle cost directly with mygo. It loops refresh
+// with no state mutation, so every iteration takes the version-guard skip.
+func BenchmarkInvoiceSkipThroughput(b *testing.B) {
 	ctx := context.Background()
 	a, err := newInvoiceApp()
 	if err != nil {

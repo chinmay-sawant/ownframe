@@ -7,10 +7,11 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// imageCacheLimit bounds entries kept. maxImageCachePixels bounds total
-// pixels, so many large images evict oldest first.
-const imageCacheLimit = 64
-const maxImageCachePixels = 64 << 20
+// imageCacheLimit bounds entries kept to 32 decoded images.
+// maxImageCachePixels bounds total pixels to 16M (64 MB of GPU bytes), so
+// many large images evict oldest first.
+const imageCacheLimit = 32
+const maxImageCachePixels = 16 << 20
 
 // imageCache keeps decoded images by payload key, least recently used first.
 // Hits take the write lock to refresh recency; decode runs lock-free and only

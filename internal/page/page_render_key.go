@@ -24,8 +24,11 @@ type hashedBody struct {
 type renderTrack struct {
 	generation uint64
 	imagesRev  uint64
-	last       draw.Key
-	hasLast    bool
+	// last is the committed frame key. Once the source memo carries a
+	// nonzero revision the key drops the source string (see
+	// draw.KeyForHashed), so last pins hash, length, and revision only.
+	last    draw.Key
+	hasLast bool
 	// lastRetain, lastBlink, lastCaret, and lastAnchor are inputs the layout
 	// key does not carry. Retained state changes the placement the engine
 	// produces. A blink phase change repaints the caret, and so does a move
@@ -44,8 +47,10 @@ type renderTrack struct {
 	// hovered subtrees, which disables the scoped hover patch.
 	hoverGuardHash  uint64
 	hoverGuardRisky bool
-	hoverScopeKey   draw.Key
-	hoverScopes     map[hoverScopePair]hoverScopeResult
+	// hoverScopeKey is built by keyFor like last, so it pins no source
+	// copy once the source memo carries a nonzero revision.
+	hoverScopeKey draw.Key
+	hoverScopes   map[hoverScopePair]hoverScopeResult
 	// redrawBatch defers draws across a pointer sequence. Any Redraw in the
 	// batch sets pending; a Redraw (not RedrawIfChanged) also sets force.
 	redrawBatch   int
@@ -105,6 +110,10 @@ func (p *Page) viewport() draw.Viewport {
 }
 
 func (p *Page) keyFor(state render.State) draw.Key {
+	// The hash, length, and revision memoized beside p.source travel in
+	// the key, and the hashed constructor drops the source string once
+	// the revision is nonzero, so neither the transient key nor the
+	// committed last pins an extra copy of the page.
 	return draw.KeyForHashed(
 		p.source,
 		p.sourceHash,
@@ -149,6 +158,13 @@ func (p *Page) unchanged(state render.State) bool {
 
 func (p *Page) remember(state render.State) {
 	p.last = p.keyFor(state)
+	// The committed key keeps identity, not bytes: with a nonzero
+	// revision Unchanged never reads Source, so drop the second copy of
+	// the page. A zero revision (no noteSourceHashed yet) keeps the string
+	// for the memcmp fallback.
+	if p.last.SourceRev != 0 {
+		p.last.Source = ""
+	}
 	p.hasLast = true
 	p.lastRetain = p.retainState
 	p.lastBlink = false

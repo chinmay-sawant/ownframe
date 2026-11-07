@@ -11,6 +11,12 @@ import (
 // opCap is the pooled buffer capacity for one display update.
 const opCap = 64
 
+// maxPooledOpCap bounds the pooled Ops backing array. A full invoice-size
+// display holds tens of thousands of ops, so pooling one giant backing pins
+// megabytes between collections. Buffers over this cap allocate privately and
+// are dropped instead of pooled; steady-state frames keep reusing the pool.
+const maxPooledOpCap = 4096
+
 // OpBuffer is a pooled holder for a display operation slice.
 type OpBuffer struct {
 	Ops []layout.DisplayOp
@@ -34,8 +40,13 @@ func NewOpBuffer() *OpBuffer {
 	return &OpBuffer{Ops: EmptyOps()}
 }
 
-// Rent takes an operation buffer of at least n slots from pool.
+// Rent takes an operation buffer of at least n slots from pool. Requests over
+// maxPooledOpCap allocate privately without touching the pool, so one giant
+// frame cannot evict the slab steady-state frames reuse.
 func Rent(pool *sync.Pool, n int) *OpBuffer {
+	if n > maxPooledOpCap {
+		return &OpBuffer{Ops: make([]layout.DisplayOp, 0, n)}
+	}
 	buf, ok := pool.Get().(*OpBuffer)
 	if !ok || buf == nil {
 		return &OpBuffer{Ops: make([]layout.DisplayOp, 0, n)}
@@ -49,9 +60,14 @@ func Rent(pool *sync.Pool, n int) *OpBuffer {
 	return buf
 }
 
-// Free returns buf to pool. The caller must not use buf after Free.
+// Free returns buf to pool. Buffers over maxPooledOpCap are dropped instead
+// of pooled so a giant frame never pins a megabyte backing array. The caller
+// must not use buf after Free.
 func Free(pool *sync.Pool, buf *OpBuffer) {
 	if buf == nil {
+		return
+	}
+	if cap(buf.Ops) > maxPooledOpCap {
 		return
 	}
 	buf.Ops = buf.Ops[:0]

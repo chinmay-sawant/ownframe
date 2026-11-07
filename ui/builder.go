@@ -28,8 +28,57 @@ type Element struct {
 	err      error
 }
 
+// normalizeTagName trims and lowercases a tag name, returning the input
+// unchanged when it is already a known lowercase tag or otherwise needs
+// no normalization. Skipping the TrimSpace/ToLower call for the constant
+// "div"/"span" calls that dominate a cold build avoids ~9k calls/build
+// with byte-identical output.
+func normalizeTagName(name string) string {
+	switch name {
+	case "div", "span", "p", "br", "hr", "h1", "h2",
+		"h3", "h4", "h5", "h6", "ul", "ol", "li",
+		"table", "thead", "tbody", "tfoot", "tr", "th", "td",
+		"caption", "img", "a", "strong", "em", "b", "i",
+		"u", "small", "pre", "code", "blockquote", "header", "footer",
+		"main", "section", "article", "aside", "nav", "input", "textarea",
+		"select", "option", "optgroup", "button", "label", "form":
+		return name
+	default:
+	}
+	trimmed := strings.TrimSpace(name)
+	for i := 0; i < len(trimmed); i++ {
+		if c := trimmed[i]; c >= 'A' && c <= 'Z' || c >= 0x80 {
+			return strings.ToLower(trimmed)
+		}
+	}
+	return trimmed
+}
+
+// normalizeAttrName trims and lowercases an attribute name, returning the
+// input unchanged when it is already a known lowercase attribute or
+// otherwise needs no normalization. Same rationale as normalizeTagName:
+// the constant id/class/data-action/type/value/placeholder names skip
+// the TrimSpace/ToLower call.
+func normalizeAttrName(name string) string {
+	switch name {
+	case "id", "class", "data-action", "type", "value", "placeholder",
+		"name", "href", "title", "action", "for", "aria-label",
+		"data-index", "alt", "src", "role", "checked", "disabled",
+		"selected", "data-value", "data-id", "aria-hidden":
+		return name
+	default:
+	}
+	trimmed := strings.TrimSpace(name)
+	for i := 0; i < len(trimmed); i++ {
+		if c := trimmed[i]; c >= 'A' && c <= 'Z' || c >= 0x80 {
+			return strings.ToLower(trimmed)
+		}
+	}
+	return trimmed
+}
+
 // Tag creates an element. Unsupported HTML tags are rejected by Render.
-func Tag(name string) *Element { return &Element{tag: strings.ToLower(strings.TrimSpace(name))} }
+func Tag(name string) *Element { return &Element{tag: normalizeTagName(name)} }
 
 func Div() *Element                { return Tag("div") }
 func Span() *Element               { return Tag("span") }
@@ -163,7 +212,7 @@ func (e *Element) Attr(name, value string) *Element {
 	if e == nil {
 		return e
 	}
-	name = strings.ToLower(strings.TrimSpace(name))
+	name = normalizeAttrName(name)
 	if !validAttribute(name) || name == "style" || strings.HasPrefix(name, "on") {
 		e.recordError(fmt.Errorf("ui: disallowed HTML attribute %q", name))
 		return e

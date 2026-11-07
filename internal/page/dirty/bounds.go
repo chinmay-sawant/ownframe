@@ -144,16 +144,34 @@ var boundsMemoCache atomic.Pointer[BoundsMemo]
 // larger frames allocate a private memo instead of pinning the slot.
 const maxMemoRects = 65536
 
+// memoReuseMultiple bounds how oversized a reused memo slab may be: a
+// cached slab more than this multiple of the request is dropped instead
+// of pinning a giant backing array across small steady-state frames.
+const memoReuseMultiple = 4
+
+// minMemoRetainCap floors the shrink check: slabs at or under this many
+// rects are always reused when they fit, so tiny frames never churn.
+const minMemoRetainCap = 4096
+
 // rentBoundsMemo takes a memo for n next-side operations, reusing the
 // cached slab when it fits. The slab is cleared, so every slot reads
 // unknown until the diff fills it.
 func rentBoundsMemo(n int) *BoundsMemo {
+	// Oversized frames bypass the cache with a private memo, leaving the
+	// hot slab cached: taking it would only fail the fit check and drop
+	// it, evicting the slab steady-state frames reuse.
+	if n > maxMemoRects {
+		return &BoundsMemo{rects: make([]image.Rectangle, n)}
+	}
 	if m := boundsMemoCache.Swap(nil); m != nil {
-		if cap(m.rects) >= n && n <= maxMemoRects {
+		if c := cap(m.rects); c >= n && (c <= minMemoRetainCap || c <= memoReuseMultiple*n) {
 			m.rects = m.rects[:n]
 			clear(m.rects)
 			return m
 		}
+		// Too small or dwarfing the frame: drop it so neither a stale
+		// slab nor a giant one pins the slot. The fresh memo this frame
+		// caches on Free sets the new size class.
 	}
 	return &BoundsMemo{rects: make([]image.Rectangle, n)}
 }

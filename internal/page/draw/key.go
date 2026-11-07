@@ -19,6 +19,12 @@ type Viewport struct {
 // those u64s first and only memcmps Source on a hash hit. SourceRev is
 // the page's synced-source revision; when both sides carry a nonzero
 // revision, equal revisions prove equal sources with zero memcmp.
+//
+// Source pins the full page bytes only while the key carries no revision
+// (the KeyFor path). KeyForHashed drops the string once the revision is
+// nonzero, so a committed key keeps identity (hash, length, revision)
+// without pinning a second copy of the page; the zero-revision fallback
+// keeps the string because it has no revision to compare.
 type Key struct {
 	Source               string
 	SourceHash           uint64
@@ -62,7 +68,9 @@ func KeyFor(source string, view Viewport, state render.State, pseudos render.Sta
 // key costs no source scan. source must be the string the hash, length,
 // and revision were taken from. It builds the Key directly instead of
 // delegating to KeyFor, which would hash the source first and throw the
-// result away.
+// result away. A nonzero revision drops the source string: Unchanged never
+// reads Source on that path, so the key pins no page bytes. A zero
+// revision keeps the string for the memcmp fallback.
 func KeyForHashed(
 	source string,
 	hash uint64,
@@ -83,8 +91,7 @@ func KeyForHashed(
 		state.Focus = ""
 	}
 
-	return Key{
-		Source:     source,
+	key := Key{
 		SourceHash: hash,
 		SourceLen:  length,
 		SourceRev:  rev,
@@ -96,6 +103,14 @@ func KeyForHashed(
 		Theme:      state.Theme,
 		Images:     images,
 	}
+	// A nonzero revision identifies the source without its bytes, so the
+	// key drops the string and pins no page copy. A zero revision has no
+	// such proof and keeps the string for the memcmp fallback.
+	if rev == 0 {
+		key.Source = source
+	}
+
+	return key
 }
 
 // Unchanged reports that this frame was already committed. Cheap fields go
@@ -128,6 +143,8 @@ func Unchanged(hasLast bool, last, next Key) bool {
 			return false
 		}
 
+		// Equal revisions prove equal sources, so this path never reads
+		// Source and committed keys may leave it empty.
 		return true
 	}
 

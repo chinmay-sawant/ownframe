@@ -14,15 +14,32 @@ import (
 // A process-wide pool is intended: templates execute on the page loop
 // and the pool only recycles scratch memory, never page state.
 //
+// Retention is capped (see maxPooledScratchBytes): oversized builders
+// are dropped instead of pooled, so one large template cannot pin its
+// high-water backing array for the life of the process.
+//
 //nolint:gochecknoglobals // reason: intentional process scratch pool, Reset on release.
 var builderPool sync.Pool
 
 // bufferPool is the bytes.Buffer twin of builderPool, backing ExecuteWriter.
 // It lets a template execution return bytes with one copy: the pooled
-// buffer is cloned once for the caller, then reused.
+// buffer is cloned once for the caller, then reused. Oversized buffers
+// are dropped on release under the same cap as builderPool.
 //
 //nolint:gochecknoglobals // reason: intentional process scratch pool, Reset on release.
 var bufferPool sync.Pool
+
+// maxPooledScratchBytes caps how much backing memory a released scratch
+// buffer may retain. Rationale: the pools are process-wide, so without a
+// cap one large execution (template bodies reach ~600KB in the golden and
+// bench fixtures) grows the pooled backing array to that high-water mark
+// and sync.Pool keeps it alive for the rest of the process, multiplied by
+// GOMAXPROCS shards. 64 KiB covers the common small-frame reuse case with
+// one pooled allocation while letting rare large frames allocate fresh and
+// be collected, bounding retained heap to ~cap * GOMAXPROCS. Scratch only:
+// the cap never changes rendered output, only whether the next frame
+// reuses or reallocates.
+const maxPooledScratchBytes = 64 * 1024
 
 func acquireBuilder(hint int) *strings.Builder {
 	if v, ok := builderPool.Get().(*strings.Builder); ok && v != nil {
@@ -48,6 +65,9 @@ func releaseBuilder(b *strings.Builder) {
 	}
 
 	b.Reset()
+	if b.Cap() > maxPooledScratchBytes {
+		return
+	}
 	builderPool.Put(b)
 }
 
@@ -75,6 +95,9 @@ func releaseBuffer(buf *bytes.Buffer) {
 	}
 
 	buf.Reset()
+	if buf.Cap() > maxPooledScratchBytes {
+		return
+	}
 	bufferPool.Put(buf)
 }
 

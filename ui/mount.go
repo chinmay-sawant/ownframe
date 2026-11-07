@@ -89,7 +89,8 @@ func (v *View) Handle(handlers ownframe.Handlers) {
 // parsing, cascading, and laying out the whole document again. Mount turns on
 // Config.RetainState for the retained layout state PatchElements reads. A
 // structural change, a changed node without a stable id, an attribute that
-// disappeared, more than maxPatches changed elements, or a refused batch still
+// disappeared, more than maxPatches changed elements (text-only edits get a
+// larger maxTextPatches budget), or a refused batch still
 // take the full render, so the page is never left showing stale content.
 //
 // Update retains the tree it is given until the next call. Build a new tree
@@ -130,7 +131,9 @@ func (v *View) Update(ctx context.Context, root *Element) error {
 // the same snapshot goes through the ordinary ReplaceCurrent load, which
 // reparses the whole document, so the page still ends on the new tree.
 func (v *View) patch(ctx context.Context, root *Element, patches []ownframe.ElementPatch) error {
-	r, html, err := renderDocument(v.title, root)
+	// The previous source is close in size, so grow from it instead of
+	// walking the tree to estimate: one fewer full walk per update.
+	r, html, err := renderDocumentHinted(v.title, root, len(v.html))
 	if err != nil {
 		return err
 	}
@@ -167,7 +170,9 @@ func (v *View) patch(ctx context.Context, root *Element, patches []ownframe.Elem
 // the fallback for structural changes and for updates the patch path cannot
 // express.
 func (v *View) renderFull(ctx context.Context, root *Element) error {
-	r, html, err := renderDocument(v.title, root)
+	// Same size hint as patch: the estimate walk is skipped on every
+	// keystroke-sized refresh, and the output bytes are unchanged.
+	r, html, err := renderDocumentHinted(v.title, root, len(v.html))
 	if err != nil {
 		return err
 	}
@@ -191,11 +196,23 @@ func (v *View) renderFull(ctx context.Context, root *Element) error {
 // and then the document. Output is byte-identical to Document of the title
 // and the rendered fragment.
 func renderDocument(title string, root *Element) (*renderer, string, error) {
+	return renderDocumentHinted(title, root, estimateSize(root))
+}
+
+// renderDocumentHinted renders like renderDocument but grows the output
+// buffer from hint instead of estimating the size with a tree walk. Grow
+// only sets capacity, so the output bytes are identical either way; Update
+// passes len(v.html) because the previous document is close in size and the
+// buffer still grows once while the estimate walk is skipped.
+func renderDocumentHinted(title string, root *Element, hint int) (*renderer, string, error) {
 	if root == nil {
 		return nil, "", fmt.Errorf("ui: a non-nil component tree is required")
 	}
+	if hint < 0 {
+		hint = 0
+	}
 	r := getRenderer()
-	r.output.Grow(len(docHead) + len(title) + len(docMid) + estimateSize(root) + len(docTail))
+	r.output.Grow(len(docHead) + len(title) + len(docMid) + hint + len(docTail))
 	r.output.WriteString(docHead)
 	writeEscaped(&r.output, title)
 	r.output.WriteString(docMid)

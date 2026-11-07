@@ -107,9 +107,18 @@ func ResetDiffCounters() {
 }
 
 func getDiffArena(numBuckets, numOps int) *diffArena {
-	a := diffArenaCache.Swap(nil)
-	if a == nil {
+	var a *diffArena
+	if numBuckets > maxPooledArenaCap || numOps > maxPooledArenaCap {
+		// An oversized frame uses a private arena and leaves the cached
+		// slab alone: taking it would grow it past the pool cap, and
+		// putDiffArena would drop it, evicting the hot slab
+		// steady-state frames reuse. The private arena is dropped below.
 		a = &diffArena{}
+	} else {
+		a = diffArenaCache.Swap(nil)
+		if a == nil {
+			a = &diffArena{}
+		}
 	}
 	if cap(a.head) < numBuckets {
 		a.head = make([]int, numBuckets)
@@ -149,7 +158,11 @@ func getDiffArena(numBuckets, numOps int) *diffArena {
 }
 
 func putDiffArena(a *diffArena) {
-	if cap(a.head) > maxPooledArenaCap || cap(a.next) > maxPooledArenaCap {
+	// Drop arenas that outgrew the pool instead of caching them. Every
+	// slab (head, next, seen, keys) grows with the frame, so keeping one
+	// giant frame cached would pin all four backing arrays process-wide.
+	if cap(a.head) > maxPooledArenaCap || cap(a.next) > maxPooledArenaCap ||
+		cap(a.seen) > maxPooledArenaCap || cap(a.keys) > maxPooledArenaCap {
 		return
 	}
 	if old := diffArenaCache.Swap(a); old != nil {

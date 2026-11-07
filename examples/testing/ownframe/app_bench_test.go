@@ -54,9 +54,11 @@ func BenchmarkInvoiceViewUpdate(b *testing.B) {
 	}
 }
 
-// BenchmarkInvoiceWindowedRebuild measures a windowed-app refresh: only the
-// viewport slice rebuilds, so build cost scales with viewport, not table.
-func BenchmarkInvoiceWindowedRebuild(b *testing.B) {
+// BenchmarkInvoiceWindowedSkip measures a windowed-app refresh after the
+// first windowed build: only the viewport slice was rebuilt once, and the
+// looped refresh calls hit the version-guard skip, so steady state is the
+// skip floor at windowed scale.
+func BenchmarkInvoiceWindowedSkip(b *testing.B) {
 	ctx := context.Background()
 	a, err := newInvoiceApp()
 	if err != nil {
