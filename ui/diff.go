@@ -152,7 +152,67 @@ func (d *treeDiff) walk(path []*Element, last, root *Element, depth int) {
 
 	path = append(path, last, root)
 	for i := range root.children {
+		if shared := root.children[i]; shared != nil && shared == last.children[i] {
+			// Pointer-identity fast path: the caller reused this child
+			// element, so it is trivially equal to itself and no patch can
+			// come from its subtree. Only the action accounting still runs.
+			d.walkShared(path, shared, depth+1)
+			if !d.ok {
+				return
+			}
+			continue
+		}
 		d.walk(path, last.children[i], root.children[i], depth+1)
+		if !d.ok {
+			return
+		}
+	}
+}
+
+// walkShared mirrors walk for a subtree the caller reused verbatim: shared
+// is the same pointer in both trees at every node below, so tag, ids,
+// attributes, styles, and text are trivially equal and no patch arises. The
+// document-order action counter still advances past its OnClick nodes, and
+// the error, cycle, depth, and void fallbacks still apply, so a shared
+// subtree reports exactly what a full walk of the node against itself would.
+func (d *treeDiff) walkShared(path []*Element, shared *Element, depth int) {
+	if !d.ok {
+		return
+	}
+	if shared == nil || depth >= maxDepth {
+		d.ok = false
+		return
+	}
+	if slices.Contains(path, shared) {
+		d.ok = false
+		return
+	}
+	// The renderer owns validation. Any error it would report falls back to
+	// the full render, which returns the canonical error unchanged.
+	if shared.err != nil {
+		d.ok = false
+		return
+	}
+	if shared.onClick != nil {
+		if _, custom := shared.attrs.get("data-action"); custom {
+			// renderDocument reports this combination as an error.
+			d.ok = false
+			return
+		}
+		d.nextID++
+		if d.actions == nil {
+			d.actions = make(map[string]func(context.Context) error)
+		}
+		d.actions[actionName(d.nextID)] = shared.onClick
+	}
+	// A void element cannot hold text or children; renderDocument refuses it.
+	if isVoidTag(shared.tag) && (shared.text != "" || len(shared.children) != 0) {
+		d.ok = false
+		return
+	}
+	path = append(path, shared)
+	for _, child := range shared.children {
+		d.walkShared(path, child, depth+1)
 		if !d.ok {
 			return
 		}

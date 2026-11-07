@@ -76,7 +76,7 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 		}
 	}
 
-	current, err := render.RelayoutElements(
+	current, err := render.RelayoutElementsInPlace(
 		ctx, styled, p.draw.Display, ids, layout.Options{Images: state.Images},
 	)
 	if err != nil {

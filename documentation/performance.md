@@ -76,6 +76,19 @@ For a single control change, expect one dirty rect, a small repainted count, and
 area. Dirty ops count each operation meeting any region once. These counters
 precede host padding, coalescing, and tile replay, so they do not count GPU work. Many small changes inside one region stay partial, so a whole frame rect on an edit now means the change really covered more than a third of the frame or the page could not place it; a list longer than 24 rects, or a rect the size of the whole content, makes the window rebuild its buffer once. A rebuild still only tessellates each repeated rounded shape once, because the replay bakes repeated fills and borders into a raster cache ([repaint.md](repaint.md)).
 
+### Window long lists
+
+A thousand-row list must not mount a thousand rows. Render the visible window
+plus overscan only: about one viewport of rows with a few extra rows above and
+below, roughly 30 rows at typical heights instead of 1000. `WindowedList` in
+`components/chadcn/windowed.go` derives the half-open window from scroll
+offset, viewport height, row height, and overscan, pads it with symmetric
+spacer blocks that preserve the full scroll height, and gives each row a stable
+`<id>-row-<index>` ID. Stable row IDs keep value edits inside a settled window
+on the `ui.View.Update` patch path; a scroll that shifts the window changes the
+structure and takes the full render by design, so rebuild on scroll rest or
+selection change only, not per frame.
+
 ## 4 Soak matrix
 
 For a display-free page workload, run `make soak-check`. It runs three scenarios for 600 seconds: interaction and conditional content;

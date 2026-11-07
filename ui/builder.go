@@ -29,7 +29,7 @@ type Element struct {
 }
 
 // Tag creates an element. Unsupported HTML tags are rejected by Render.
-func Tag(name string) *Element { return &Element{tag: strings.ToLower(strings.TrimSpace(name))} }
+func Tag(name string) *Element { return &Element{tag: internTag(name)} }
 
 func Div() *Element                { return Tag("div") }
 func Span() *Element               { return Tag("span") }
