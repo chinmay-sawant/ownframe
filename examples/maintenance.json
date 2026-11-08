@@ -12,6 +12,7 @@
     "accessibility",
     "animations",
     "bind-hooks",
+    "blackhole",
     "builder",
     "clipboard",
     "code-view",
