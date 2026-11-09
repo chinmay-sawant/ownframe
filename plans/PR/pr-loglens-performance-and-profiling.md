@@ -2,7 +2,7 @@
 
 ## Summary
 
-Loglens hover and control updates were doing full-page work, and replaced displays, fallback lists, and replay plans could stay alive through caches. This PR uses the cascade's precise hover scopes, makes the geometric fallback conservative when escaping selectors exist, releases displaced render state, and adds reproducible profiling and capture tooling. It depends on blinkless PR #36 for the engine lifetime fixes and pins that PR's head in both modules.
+Loglens hover and control updates were doing full-page work, and replaced displays, fallback lists, and replay plans could stay alive through caches. This PR uses the cascade's precise hover scopes, makes the geometric fallback conservative when escaping selectors exist, releases displaced render state, and adds reproducible profiling and capture tooling. It depends on blinkless PR #36 for the engine lifetime fixes and pins the merged master revision in both modules.
 
 ---
 
@@ -12,7 +12,7 @@ Loglens hover and control updates were doing full-page work, and replaced displa
 - Plans: no plan file is dedicated to this branch. The work follows the Loglens dashboard plan in `plans/v0.0.3/pr/66/pr-chadcn-loglens-dashboard.md` and the patch-path goals in `plans/v0.0.3/performance/phase-07-rebuild-and-patch-paths.md`.
 - Issues: none. No open or closed issue tracks this work. Prior context: #66 added the Loglens dashboard.
 - The trigger was visible in Loglens: a button hover could take the full-layout path because an unrelated `:has()` or sibling-after-`:hover` rule existed somewhere in the stylesheet. Control toggles also rebuilt the dashboard instead of patching the control that changed.
-- The navigation lifetime test fails against blinkless `d805508` and passes against blinkless PR #36. Both module pins are advanced to the PR head, and `go.work` stays limited to this repository's two modules.
+- The navigation lifetime test fails against blinkless `d805508` and passes against blinkless PR #36, merged as master commit `3e3a8b7`. Both module pins are advanced to that merge commit, and `go.work` stays limited to this repository's two modules.
 
 ---
 
@@ -63,8 +63,8 @@ Loglens hover and control updates were doing full-page work, and replaced displa
 
 ### Dependency and CI
 
-- Advance `go.mod` and `examples/go.mod` to `github.com/chinmay-sawant/blinkless v0.1.1-0.20261109184240-7bbdaa490068`, the head of blinkless PR #36. Both `go.sum` files move with it.
-- Remove `../blinkless` from `go.work`. The committed workspace lists only `.` and `./examples`, so a clean checkout and CI resolve the same engine from the module proxy. The dependency change is in the first commit, so the performance job's `HEAD^` baseline also has a valid workspace and the same engine pin.
+- Advance `go.mod` and `examples/go.mod` to `github.com/chinmay-sawant/blinkless v0.1.1-0.20261109191653-3e3a8b7c840a`, the merge commit of blinkless PR #36. Both `go.sum` files move with it.
+- Remove `../blinkless` from `go.work`. The committed workspace lists only `.` and `./examples`, so a clean checkout and CI resolve the same engine from the module proxy. The workspace removal is in the first commit, so the performance job's `HEAD^` baseline also has a valid workspace; the final module pin is the merged master revision.
 - Make `scripts/check-graphics.sh` tolerate non-JSON lines in the `go test -json` stream. `xvfb-run` redirects the command's stderr into stdout, so a fresh runner's `go: downloading ...` line used to fail the gate before the first test ran. Non-JSON lines now go to stderr, and the named test still must emit a pass event.
 
 ---
@@ -77,7 +77,7 @@ Loglens hover and control updates were doing full-page work, and replaced displa
 | **Memory** | Superseded displays, fallback lists, replay plans, and raster entries are released or evicted instead of being retained by commit history and caches. The hover failure map is bounded at 256 keys. Navigation tests require obsolete displays to be collectible and post-GC growth to stay within 8 MiB. No hardcoded Go memory limit or idle `debug.FreeOSMemory` call is added. Native Windows and graphics memory were not measured. |
 | **Behavior / correctness** | Hover output stays equal to full layout for sibling selectors, scoped `:has()`, functional pseudos, id-less `:has` ancestors, hidden popups, and refused patches. Global `:has()` rules still force full layout. Relayout panics surface as errors and take the fallback path. Loglens gains date-based on-call coverage, a responder dialog, adjacent-month calendar selection, stable avatar IDs, independent region rows, a stable closed-tooltip label, and a patched threshold description. |
 | **API / CLI** | Additive component options: `chadcn.AvatarOptions.ID`, `chadcn.CalendarOptions.AllowOutsideSelection`, and `chadcn.DatePickerOptions.AllowOutsideSelection`. No new page API or Go CLI flags. The new capture script takes its own parameters (`-Repeats`, `-SecondsPerPhase`, `-TopologyLabel`, `-DevTools`), and the report script takes `--out`. `host.Stats` gains fields for the devtools inspector, and `/debug/state` gains `scroll_x` and `scroll_y`. |
-| **Dependencies** | Blinkless moves to the head of PR #36 in both modules. No new third-party Go modules. The Python report uses the standard library only. The branch no longer requires a sibling blinkless checkout. |
+| **Dependencies** | Blinkless moves to the merged master revision `3e3a8b7` in both modules. No new third-party Go modules. The Python report uses the standard library only. The branch no longer requires a sibling blinkless checkout. |
 | **Binary size / build time** | Not measured. Apart from the Blinkless pin, the change adds Go code and tests but no new third-party module. |
 
 ---
@@ -89,7 +89,7 @@ Loglens hover and control updates were doing full-page work, and replaced displa
 | Public library API | None. The new component options are additive and existing call sites keep their behavior. |
 | Hover patch selection | A page with a scoped `:has()` or sibling-after-`:hover` rule can still take a scoped patch when the cascade scopes fit. When they do not fit, any escaping selector in the sheets now forces a full layout. No caller change. |
 | Diagnostics schema | `host.Stats` and `/debug/state` gain fields. JSON decoders that ignore unknown keys need no change; consumers with a closed schema must add the fields. |
-| Dependency pin | Both modules pin blinkless PR #36 while it is open. After #36 merges, advance both requirements to the merged `master` revision and drop the temporary pin. |
+| Dependency revision | Both modules require blinkless master commit `3e3a8b7`, the merge of PR #36. No migration for normal builds; advance the pin together with the engine. |
 | Windows capture workflow | The capture script prompts for manual input and does not send synthetic mouse or keyboard events. An automated pipeline that expected input injection must drive the app itself. |
 
 ---
@@ -146,7 +146,7 @@ cd examples && go test -race -count=3 ./builder/loglens -run '^TestFineGrainedSt
 
 ## Screenshots / sample output
 
-Local Linux resize workload, median allocation over three runs with the blinkless PR #36 engine:
+Local Linux resize workload, median allocation over three runs with the merged blinkless master engine:
 
 ```text
 before  71,715,266 B/op
@@ -186,7 +186,7 @@ limit or idle debug.FreeOSMemory call is added.
 
 ## Follow-ups (out of scope)
 
-- Advance both module requirements from the blinkless PR #36 head to the merged `master` revision, then drop the temporary pin note from this body.
+- Keep both module requirements on blinkless master and do not reintroduce the local sibling workspace.
 - Run the live Windows capture after the antivirus block is resolved, including GPU memory counters. Compare single-monitor and dual-monitor runs only with matched window size, viewport, and workload.
 - Use the `HoverPatchFailures` counters to find remaining full-layout hovers in Loglens and decide whether they are expected fallbacks or new patch gaps.
 - Add native Windows graphics memory attribution when a tool is available. The current GPU counters report process and adapter totals, not individual D3D objects or driver allocations.
@@ -208,14 +208,14 @@ limit or idle debug.FreeOSMemory call is added.
 - [ ] Related issues use correct Closes/Relates keywords
 - [ ] No secrets or generated artifacts committed
 - [ ] Diff-stat-by-extension table pasted at the bottom
-- [ ] The temporary blinkless PR #36 pin is acceptable until it merges
+- [ ] Both modules resolve the same merged blinkless master revision
 - [ ] The conservative hover fallback is acceptable for pages with escaping selectors
 
 ---
 
 ## Diff stat by extension
 
-Branch `fix/loglens-performance-and-profiling`, base `master` (`442d164a`), 7 commits.
+Branch `fix/loglens-performance-and-profiling`, base `master` (`442d164a`), 9 commits.
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
