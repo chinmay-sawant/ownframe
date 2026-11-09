@@ -314,16 +314,18 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      # GEN-9: actionlint (pinned tarball, SHA checked) plus zizmor
-      # (pinned PyPI version) keep new workflow edits honest.
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version: "1.26.10"
+      # GEN-9: actionlint from the pinned Go module (checksum-db verified) plus
+      # zizmor (pinned PyPI version) keep new workflow edits honest. The
+      # release tarball download moved to the Go proxy because the GitHub
+      # release CDN has been returning 504 to hosted runners.
       - name: Lint workflows with actionlint and zizmor
         run: |
-          # A 5xx from the release CDN used to be saved as the tarball and fail
-          # only at the checksum. Fail on HTTP errors and retry transient ones.
-          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.9/actionlint_1.7.9_linux_amd64.tar.gz
-          echo "233b280d05e100837f4af1433c7b40a5dcb306e3aa68fb4f17f8a7f45a7df7b4  actionlint.tar.gz" | sha256sum -c -
-          tar xzf actionlint.tar.gz actionlint
-          ./actionlint .github/workflows/*.yml
+          mkdir -p "$RUNNER_TEMP/bin"
+          GOBIN="$RUNNER_TEMP/bin" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.9
+          "$RUNNER_TEMP/bin/actionlint" .github/workflows/*.yml
           python3 -m pip install --quiet "zizmor==1.31.1"
           zizmor .github/workflows
 
