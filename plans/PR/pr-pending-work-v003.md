@@ -1,8 +1,8 @@
 # chore(v0.0.3): land pending perf, component, and example work
 
-Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Base: `origin/master` (`68d5252d`). Code head: `chore/pending-work-v003` (`5bda7e6b`). Diff at the code-fix head: 32 commits, 471 files, +44,521 / -1,229.
+Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Base: `origin/master` (`68d5252d`). Code head: `chore/pending-work-v003` (`0039f1d7`). Diff at the code head: 35 commits, 474 files, +44,533 / -1,236.
 
-> **CI repair landed on this branch.** The local-only Blinkless replaces are gone, both modules resolve `dc1d518` from the proxy, the examples pin matches the library, and brotli moved to `v1.2.7` for GO-2026-6888. Lint, tests, race, build, graphics, security, reproducible, fuzz, website, docs, and the performance comparison pass locally. The Windows, macOS, and Android CI jobs are the remaining checks.
+> **CI is green on this branch.** The local-only Blinkless replaces are gone, both modules resolve `dc1d518` from the proxy, the examples pin matches the library, and brotli moved to `v1.2.7` for GO-2026-6888. The test, lint, race, build, graphics, security, reproducible, fuzz, website, browser-site, dependency, cross, examples-race, Android, Windows, macOS, and performance jobs all pass. `native-package` uses `macos-latest` because the previous `macos-14` label resolved to an unsupported ARM configuration.
 
 ---
 
@@ -151,10 +151,12 @@ The `Page` wrap has landed; the checklist is kept for reviewer confirmation.
 - [x] `make examples-check` (7 teaching roots, 61 experimental/support roots).
 - [x] `make internal-import-check` (clean, 16 allowlisted pairs).
 - [x] `npm --prefix frontend test` (13 tests).
+- [x] `python3 scripts/check-generated-site.py --build-only`.
+- [x] `npm --prefix frontend run check:site` (140 layout checks).
 - [x] `bash scripts/reproducible-check.sh` (archive checksums match).
 - [x] `scripts/perf-baseline.sh` parent/candidate comparison (`--max-ratio 1.5`).
-- [ ] `native-package` on Windows and macOS (CI only).
-- [ ] `android-bind` (CI only).
+- [x] `native-package` on Windows and macOS (CI).
+- [x] `android-bind` (CI).
 - [ ] `make bench-gate` (manual, needs a reference/candidate pair).
 
 Dependency-side validation: `go test -count=1 ./...` passes in the blinkless checkout at `dc1d518`.
@@ -240,15 +242,15 @@ bash scripts/reproducible-check.sh
 | Extension | Files | Insertions | Deletions |
 |-----------|------:|-----------:|----------:|
 | `.css` | 24 | 370 | 39 |
-| `.go` | 367 | 41,203 | 1,121 |
+| `.go` | 368 | 41,206 | 1,122 |
 | `.html` | 1 | 108 | 0 |
 | `.jpg` | 1 | Binary | Binary |
 | `.js` | 3 | 88 | 1 |
 | `.json` | 3 | 18 | 0 |
 | `.jsx` | 1 | 49 | 14 |
 | `.kage` | 6 | 501 | 0 |
-| `.md` | 23 | 1,074 | 17 |
-| `.mjs` | 1 | 1 | 0 |
+| `.md` | 23 | 1,078 | 17 |
+| `.mjs` | 2 | 5 | 5 |
 | `.mod` | 3 | 19 | 4 |
 | `.mp4` | 2 | Binary | Binary |
 | `.png` | 18 | Binary | Binary |
@@ -257,6 +259,6 @@ bash scripts/reproducible-check.sh
 | `.sum` | 4 | 60 | 32 |
 | `.txt` | 2 | 24 | 0 |
 | `.webp` | 3 | Binary | Binary |
-| `.yml` | 1 | 1 | 1 |
+| `.yml` | 2 | 2 | 2 |
 | No extension | 3 | 19 | 0 |
-| **Total** | **471** | **44,521** | **1,229** |
+| **Total** | **474** | **44,533** | **1,236** |
