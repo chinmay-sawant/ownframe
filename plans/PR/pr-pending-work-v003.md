@@ -1,8 +1,8 @@
 # chore(v0.0.3): land pending perf, component, and example work
 
-Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Base: `origin/master` (`68d5252d`). Head: `chore/pending-work-v003` (`48116406`). Diff before this plan file: 29 commits, 469 files, +44,230 / -1,210.
+Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Base: `origin/master` (`68d5252d`). Code head: `chore/pending-work-v003` (`5bda7e6b`). Diff at the code-fix head: 32 commits, 471 files, +44,521 / -1,229.
 
-> **Do not merge yet.** `go.mod` and `examples/go.mod` end with local-only `replace github.com/chinmay-sawant/blinkless => ../blinkless` / `../../blinkless`, and `go.sum` has no blinkless sums. CI run `42518655971` on this branch fails `go mod verify` on a clean checkout with `reading ../blinkless/go.mod: no such file or directory`. `make docs-check` also fails because the library and examples Blinkless requirements disagree (`dc1d518` vs `ee07764`). Drop both replaces, run `go mod tidy` in both modules, align the examples pin, and commit the checksums before merge. The branch is also red on lint, graphics, sec, cross, examples-race, site, test-race, reproducible, native-package, and performance; this PR is raised for review of the pending work, not as a merge-ready branch.
+> **CI repair landed on this branch.** The local-only Blinkless replaces are gone, both modules resolve `dc1d518` from the proxy, the examples pin matches the library, and brotli moved to `v1.2.7` for GO-2026-6888. Lint, tests, race, build, graphics, security, reproducible, fuzz, website, docs, and the performance comparison pass locally. The Windows, macOS, and Android CI jobs are the remaining checks.
 
 ---
 
@@ -56,7 +56,7 @@ Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Bas
 ### Replay, window, and motion
 
 - `internal/replay/chunk_plan.go` keys plan reuse on display pointer plus fingerprint, seals cached chunk signatures from tick-writable fields, and buckets plan items into 256 px tiles. `plan_cache_test.go` proves reuse and rebuild through build counters rather than timing.
-- `DrawRects`/`paintViewportPlan` add per-rect and union-based paint paths. **They are test-covered but not wired into the window yet:** `internal/window` still paints through `paintChunked`, which never reads the tile buckets. Plan builds currently pay the tile-index cost without the window benefit.
+- `DrawRects` adds a per-rect paint path. The union viewport path was removed during CI cleanup because nothing called it. **The tile path is still not wired into the window:** `internal/window` paints through `paintChunked`, which never reads the tile buckets, so plan builds pay the tile-index cost without the window benefit.
 - Vector fills, strokes, segments, and corner paths share a `sync.Pool` of `*vector.Path`; `DrawPathOptions`/`StrokeOptions` are stack values and colours go through `ColorScale.Scale(...)` without interface boxing. GPU cache caps drop to 8 MB chunk, 8 MB raster, 8 MB text, and 64 MB decoded images per renderer.
 - `internal/motion/transition.go` filters transition capture to ids that declare a transition in either display; the cssmotion index is cached in `motion.Runtime` and reused through `BindAfterWithIndex`, with `Repoint` on op-count matches. `internal/cssmotion/index.go` splits the `Index` type out of `ownership.go`.
 - `internal/window/boxes.go` adds a zero-allocation `boxes()` path that prefers `display.Boxes`, then `host.BoxSlicer.BoxesSlice()`, then the page boxes; devtools hover/pick, context menu, drag-on-control, and content size all use it.
@@ -100,7 +100,7 @@ Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Bas
 | **Memory** | Pooled builders, chunk plans, vector paths, and display chunks are bounded; GPU caches halve to 8/8/8/64 MB; inline attr/style sets avoid per-element maps; `Display.Release` returns engine chunks. The fingerprint map is capped at 1,024 entries; tab/replay caches remain bounded by their existing caps. |
 | **Behavior / correctness** | Patch updates require stable ids and unchanged structure and fall back to full renders; disabled controls drop hover paint; chart marks are divs, not polylines/arcs; table-internal text relayout and scroll-offset patches still skip; `Display.Release` makes patched displays safe after the previous display is released. |
 | **API / CLI** | Adds `Page.PatchElements`, `ownframe.ElementPatch`, `LoadOptions.AdoptTree`, internal `host.BoxSlicer`, and `ui.Document`; keeps `Page.PatchElement`; adds seven component packages, `perfcheck`/`benchscore`/`benchscore` CLI, and `make bench-gate`; changes `pagetest.BoxByAction("")` to false. Additive fields on many option structs. No removals. |
-| **Dependencies** | blinkless `1b8814741a85` → `dc1d518bff32`; adds direct `golang.org/x/perf` and indirect `go-moremath`; `go.work.sum` grows for x/perf's test graph. `examples/go.mod` still pins blinkless `ee07764`, not `dc1d518`; align it per the comment. |
+| **Dependencies** | blinkless `1b8814741a85` → `dc1d518bff32`; adds direct `golang.org/x/perf` and indirect `go-moremath`; `go.work.sum` grows for x/perf's test graph. The examples module now pins the same `dc1d518` commit. Bumps `github.com/andybalholm/brotli` to `v1.2.7` for GO-2026-6888. |
 | **Binary size / build time** | New demos and chart packages grow example compile/test time. `blackhole` links Ebiten graphics; `ui-builder` pulls seven chart sets; the WASM demo builds ~56 MB (ignored). No library binary-size claim is made. |
 
 ---
@@ -109,7 +109,7 @@ Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../skills/PR/PR_TEMPLATE.md). Bas
 
 | Item | Migration |
 |------|-----------|
-| **Local-only blinkless replaces** in `go.mod` and `examples/go.mod`; no blinkless sums in `go.sum`. | **Merge blocker.** Drop both replaces, run `go mod tidy` in both modules, commit the checksums, and align `examples/go.mod` to the root pin (`dc1d518`) before merge. |
+| **Blinkless resolution changed from a local checkout to the module proxy** at `dc1d518`. | Nothing to do for normal builds or CI; `go mod download` fetches the pinned pseudo-version. A developer who relied on editing the sibling Blinkless checkout should add a temporary local replace rather than commit it. |
 | Additive fields on exported ChadCN option structs break unkeyed literals. | Use keyed literals. v0 allows this. |
 | A patch whose edits do not change layout (for example a `title` edit) can adopt the previous display; `PatchElements` still refuses a batch where no edit applies. | Treat a successful call as a commit, not a guarantee that layout moved; read the display for damage instead of assuming payload fields are populated. |
 | `LoadOptions.AdoptTree` wins silently over `ReplaceCurrent` and rejects non-builder source with `page.ErrAdoptSource`, which is not re-exported at the root. | Use it only from the builder path; tests can match the internal sentinel or the error text. |
@@ -139,33 +139,37 @@ The `Page` wrap has landed; the checklist is kept for reviewer confirmation.
 
 ## Test plan
 
-The branch's CI is currently red; see the merge blocker above. The checks below are the gates the branch must pass before merge.
-
+- [x] `make test` (library and examples).
+- [x] `make lint` (library, examples, docs, plans, import policy, website ESLint).
+- [x] `make test-race` (library, including the transition sampling tests).
+- [x] `make build` (`go vet -p 1 ./... ./examples/...`).
+- [x] `xvfb-run -a make graphics-check`.
+- [x] `go test -p 1 -count=1 -run Sec ./... ./examples/...`.
+- [x] Fuzz smoke for `FuzzReplace`, `FuzzSanitizeLine`, `FuzzBlockedIP`, `FuzzMethodHeader`, `FuzzDOMLimits`, `FuzzImageSrc`, and `FuzzSetCrashDir`.
+- [x] `make docs-check` (39 snippets compiled, 12 illustrations).
 - [x] `make plans-check` (24 rows with distinct states).
 - [x] `make examples-check` (7 teaching roots, 61 experimental/support roots).
 - [x] `make internal-import-check` (clean, 16 allowlisted pairs).
-- [ ] `make docs-check` — fails: library and examples Go/Blinkless requirements disagree.
-- [ ] `make test`
-- [ ] `make lint`
-- [ ] `make test-race`
-- [ ] `make build`
-- [ ] `make graphics-check` (paint/window changes)
-- [ ] `make bench-gate` (manual, needs a reference/candidate pair)
+- [x] `npm --prefix frontend test` (13 tests).
+- [x] `bash scripts/reproducible-check.sh` (archive checksums match).
+- [x] `scripts/perf-baseline.sh` parent/candidate comparison (`--max-ratio 1.5`).
+- [ ] `native-package` on Windows and macOS (CI only).
+- [ ] `android-bind` (CI only).
+- [ ] `make bench-gate` (manual, needs a reference/candidate pair).
 
 Dependency-side validation: `go test -count=1 ./...` passes in the blinkless checkout at `dc1d518`.
 
 ### Commands
 
 ```sh
-make plans-check
-make examples-check
-make internal-import-check
-make docs-check
 make test
 make lint
 make test-race
 make build
-make graphics-check
+xvfb-run -a make graphics-check
+go test -p 1 -count=1 -run Sec ./... ./examples/...
+npm --prefix frontend test
+bash scripts/reproducible-check.sh
 ```
 
 ---
@@ -175,7 +179,7 @@ make graphics-check
 - Demo assets: `assets/screenshots/demos/{code-view.webp,jmap-mail.webp,vskode-demo.webp,inventory.png,login.png,loglens.png,mailpulse.png,trade.png,ui-builder.png}` and `frontend/public/demos/{code-view.mp4,jmap-mail.mp4}`.
 - UI-builder WASM preview: `frontend/public/demos/ui-builder/index.html`.
 - Black-hole fallback: `examples/blackhole/scene_fallback.jpg`.
-- Invoice parity checkpoint in `examples/testing/README.md`: `grand-total=$1420529.43` for the shared seed. That table predates the later allocation commits; treat it as historical.
+- Invoice parity checkpoint in `examples/testing/README.md`: `grand-total=$1408316.22` for the shared PCG seed. That table predates the later allocation commits; treat it as historical.
 
 ---
 
@@ -207,7 +211,7 @@ make graphics-check
 - Delete the 0-byte `Händen` file.
 - Fix or remove `examples/compare/run.sh`; its flags are undefined.
 - Refresh `examples/testing/README.md` for the MyGo black-hole default and the newer benchmark runs.
-- Wire the tile/viewport replay paint into `internal/window`, or drop the build-time tile index; `paintViewportPlan` also mutates its input slice in place.
+- Wire the tile-bucket replay paint into `internal/window`, or drop the build-time tile index.
 - Give `internal/perfcheck` a production caller or fold it into the manual bench gate; add a committed reference baseline for `make bench-gate`.
 - Unskip `TestWindowBounds` and refresh the Discord scroll comments.
 - Reduce the five copied chart engines and remove the unused exported `Range*`/`Tracker*`/`Calendar*` types.
@@ -236,23 +240,23 @@ make graphics-check
 | Extension | Files | Insertions | Deletions |
 |-----------|------:|-----------:|----------:|
 | `.css` | 24 | 370 | 39 |
-| `.go` | 366 | 41,166 | 1,108 |
+| `.go` | 367 | 41,203 | 1,121 |
 | `.html` | 1 | 108 | 0 |
 | `.jpg` | 1 | Binary | Binary |
 | `.js` | 3 | 88 | 1 |
 | `.json` | 3 | 18 | 0 |
 | `.jsx` | 1 | 49 | 14 |
 | `.kage` | 6 | 501 | 0 |
-| `.md` | 22 | 816 | 17 |
+| `.md` | 23 | 1,074 | 17 |
 | `.mjs` | 1 | 1 | 0 |
-| `.mod` | 3 | 23 | 2 |
+| `.mod` | 3 | 19 | 4 |
 | `.mp4` | 2 | Binary | Binary |
 | `.png` | 18 | Binary | Binary |
 | `.py` | 3 | 848 | 0 |
 | `.sh` | 2 | 138 | 0 |
-| `.sum` | 4 | 60 | 28 |
+| `.sum` | 4 | 60 | 32 |
 | `.txt` | 2 | 24 | 0 |
 | `.webp` | 3 | Binary | Binary |
 | `.yml` | 1 | 1 | 1 |
 | No extension | 3 | 19 | 0 |
-| **Total** | **469** | **44,230** | **1,210** |
+| **Total** | **471** | **44,521** | **1,229** |
