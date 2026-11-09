@@ -318,7 +318,9 @@ jobs:
       # (pinned PyPI version) keep new workflow edits honest.
       - name: Lint workflows with actionlint and zizmor
         run: |
-          curl -sSL -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.9/actionlint_1.7.9_linux_amd64.tar.gz
+          # A 5xx from the release CDN used to be saved as the tarball and fail
+          # only at the checksum. Fail on HTTP errors and retry transient ones.
+          curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 -o actionlint.tar.gz https://github.com/rhysd/actionlint/releases/download/v1.7.9/actionlint_1.7.9_linux_amd64.tar.gz
           echo "233b280d05e100837f4af1433c7b40a5dcb306e3aa68fb4f17f8a7f45a7df7b4  actionlint.tar.gz" | sha256sum -c -
           tar xzf actionlint.tar.gz actionlint
           ./actionlint .github/workflows/*.yml
