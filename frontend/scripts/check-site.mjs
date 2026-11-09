@@ -243,7 +243,7 @@ try {
           assert.equal(await evaluate('!!document.querySelector("#engine, #compare")'), false, 'Home includes a separate page');
           assert.ok(await evaluate('!!document.querySelector("#demos") && !!document.querySelector("#start")'), 'Home content is missing');
           assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.hello-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
-          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.starter-picker button')).map(button => button.textContent.trim())`), ['Hello World', 'Split with friends', 'Builder basics']);
+          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.source-disclosure .starter-picker button')).map(button => button.textContent.trim())`), ['Hello World', 'Split with friends', 'Builder basics']);
           for (const index of [1, 2, 3, 0]) {
             await evaluate(`document.querySelectorAll('.hello-example [role="tab"]')[${index}].click()`);
             assert.equal(await evaluate(`document.querySelector('.hello-example [role="tab"][aria-selected="true"]').getAttribute('aria-controls')`), await evaluate(`document.querySelector('.hello-example [role="tabpanel"]:not([hidden])').id`));
@@ -260,7 +260,8 @@ try {
           assert.ok(!navigation.visible || navigation.bottom <= navigation.headerBottom + 1, 'Navigation escapes its header');
           if (width <= 1024) {
             assert.ok(await evaluate('document.querySelector(".preview-window-pane").getBoundingClientRect().top < document.querySelector(".source-disclosure").getBoundingClientRect().top'), 'Mobile source appears before the demo');
-            assert.equal(await evaluate('document.querySelector(".source-disclosure").open'), false, 'Mobile source should start collapsed');
+            // The pattern picker made the source disclosure a plain block,
+            // so it stays expanded on mobile.
           }
         }
         if (hash === '#docs/compare-rust-gpui') {
@@ -349,9 +350,7 @@ try {
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
   assert.equal(await evaluate('document.querySelector(".site-menu-toggle").getAttribute("aria-expanded")'), 'false');
   assert.equal(await evaluate('document.activeElement.className'), 'site-menu-toggle');
-  await evaluate('document.querySelector(".source-disclosure summary").click()');
-  await pause(50);
-  assert.equal(await evaluate('document.querySelector(".source-disclosure").open'), true);
+  assert.ok(await evaluate('document.querySelector(".source-disclosure").getBoundingClientRect().height > 0'), 'Source block is hidden');
   await evaluate('document.querySelector(".example-file-tabs [role=tab]").focus()');
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
   assert.equal(await evaluate('document.activeElement.getAttribute("aria-selected")'), 'true');
