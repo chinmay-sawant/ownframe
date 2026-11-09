@@ -123,10 +123,11 @@ func (a *app) logFilters() *ui.Element {
 			ui.Div().Class("app-filter").Children(
 				chadcn.Label("From date", chadcn.LabelOptions{For: "log-date-trigger"}),
 				chadcn.DatePicker(chadcn.DatePickerOptions{
-					ID:       "log-date",
-					Open:     a.dateOpen,
-					Month:    a.calendarMonth,
-					Selected: a.fromDate,
+					ID:                    "log-date",
+					Open:                  a.dateOpen,
+					Month:                 a.calendarMonth,
+					Selected:              a.fromDate,
+					AllowOutsideSelection: true,
 					OnOpenChange: func(ctx context.Context, open bool) error {
 						a.dateOpen = open
 						return a.refresh(ctx)
@@ -200,48 +201,50 @@ func (a *app) logFilters() *ui.Element {
 					},
 				}),
 			),
-			chadcn.Toggle("Live tail", a.liveTail, chadcn.ToggleOptions{Size: chadcn.ButtonSmall}).
-				ID("log-live-tail").
+			chadcn.Toggle("Live tail", a.liveTail, chadcn.ToggleOptions{
+				Size: chadcn.ButtonSmall,
+			}).ID("log-live-tail").
 				OnClick(func(ctx context.Context) error {
 					a.liveTail = !a.liveTail
-					return a.refresh(ctx)
+					return a.patchToggle(ctx, "log-live-tail", a.liveTail)
 				}),
-			chadcn.Switch("Auto refresh", a.autoRefresh).
-				ID("log-auto-refresh").
-				OnClick(func(ctx context.Context) error {
-					a.autoRefresh = !a.autoRefresh
-					if a.autoRefresh {
-						a.nextDataRefresh = time.Now().Add(time.Duration(dataRefreshSeconds) * time.Second)
-					} else {
-						a.nextDataRefresh = time.Time{}
-					}
-					return a.refresh(ctx)
-				}),
-			chadcn.Checkbox("Show context", a.showContext).
-				ID("log-context").
-				OnClick(func(ctx context.Context) error {
-					a.showContext = !a.showContext
-					return a.refresh(ctx)
-				}),
+			chadcn.SwitchWithOptions("Auto refresh", a.autoRefresh, chadcn.SwitchOptions{
+				ID: "log-auto-refresh",
+			}).OnClick(func(ctx context.Context) error {
+				a.autoRefresh = !a.autoRefresh
+				if a.autoRefresh {
+					a.nextDataRefresh = time.Now().Add(time.Duration(dataRefreshSeconds) * time.Second)
+				} else {
+					a.nextDataRefresh = time.Time{}
+				}
+				a.configureLiveTick()
+				return a.patchSwitch(ctx, "log-auto-refresh", a.autoRefresh)
+			}),
+			chadcn.CheckboxWithOptions("Show context", a.showContext, chadcn.CheckboxOptions{
+				ID: "log-context",
+			}).OnClick(func(ctx context.Context) error {
+				a.showContext = !a.showContext
+				return a.patchCheckbox(ctx, "log-context", a.showContext)
+			}),
 			ui.Div().Class("app-filter").Width(ui.Px(140)).Children(
 				ui.Div().Class("app-row app-row--between").Children(
 					chadcn.Label("Sample rate"),
-					ui.Text(strconv.Itoa(a.sampleRate)+"%").Class("app-muted"),
+					ui.Text(strconv.Itoa(a.sampleRate)+"%").Class("app-muted").ID("log-sample-rate-text"),
 				),
 				chadcn.Slider(chadcn.SliderOptions{
+					ID:    "log-sample-rate",
 					Label: "Sample rate",
 					Value: float64(a.sampleRate),
 					Min:   sampleRateMin,
 					Max:   sampleRateMax,
 					Step:  sampleRateStep,
-				}).ID("log-sample-rate").
-					Attr("title", "Click to cycle the sample rate").
+				}).Attr("title", "Click to cycle the sample rate").
 					OnClick(func(ctx context.Context) error {
 						a.sampleRate += 10
 						if a.sampleRate > sampleRateMax {
 							a.sampleRate = 10
 						}
-						return a.refresh(ctx)
+						return a.patchSlider(ctx, "log-sample-rate", float64(a.sampleRate), sampleRateMin, sampleRateMax, strconv.Itoa(a.sampleRate)+"%")
 					}),
 			),
 			chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Filter actions"},

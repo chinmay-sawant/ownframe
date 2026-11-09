@@ -160,7 +160,8 @@ const appCSS = `
 .app-drawer-body { display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 24px; }
 .app-canvas {
   display: flex; align-items: center; justify-content: center;
-  min-height: 100%; background: var(--of-control, #262626);
+  min-height: 100%; padding: 14px 18px; box-sizing: border-box;
+  background: var(--of-control, #262626);
   color: var(--of-muted, #a3a3a3); font-size: 12px;
 }
 .app-rtl { direction: rtl; text-align: right; }
@@ -175,19 +176,37 @@ const appCSS = `
 .app-empty { padding: 28px 16px; }
 .app-spacer { flex: 1; }
 .app-kpi-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.app-region-cells { display: grid; width: 216px; height: 56px; grid-template-columns: repeat(7, 24px); gap: 8px; }
-.app-region-cell { position: relative; width: 24px; height: 24px; border-radius: 5px; }
-.app-region-legend { display: flex; align-items: center; justify-content: center; gap: 14px; }
+.app-region-cells, .app-region-rows { display: flex; flex-direction: column; width: 100%; gap: 8px; }
+.app-region-row { display: flex; width: 100%; gap: 8px; }
+.app-region-cell { position: relative; flex: 1 1 0; min-width: 0; height: 26px; border-radius: 5px; cursor: pointer; }
+.app-region-cell--bottom .app-heat-tooltip { top: 32px; }
+.app-region-legend { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
 .app-region-key { display: flex; align-items: center; gap: 5px; font-size: 11px; }
 .app-region-swatch { width: 8px; height: 8px; border-radius: 2px; }
 .app-region-cell:hover .app-heat-tooltip { display: block; }
-.app-heat { display: flex; align-items: flex-end; gap: 3px; height: 48px; }
-.app-heat-bar { position: relative; flex: 1; min-width: 0; background: var(--of-muted, #a3a3a3); border-radius: 2px 2px 0 0; }
+.app-heat { display: flex; align-items: stretch; gap: 4px; height: 56px; width: 100%; }
+.app-heat-bar {
+  position: relative; flex: 1 1 0; min-width: 0; height: 100%;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  background: var(--of-control, #1c1c1c); border: 1px solid var(--of-border, #262626);
+  border-radius: 4px; cursor: pointer;
+}
+.app-heat-bar:hover {
+  background: var(--of-accent, #2a2a2a);
+  border-color: var(--of-muted, #525252);
+}
+.app-heat-fill {
+  width: 100%; min-height: 4px; border-radius: 2px 2px 0 0;
+}
 .app-heat-tooltip {
-  display: none; position: absolute; left: -44px; top: -26px;
-  z-index: 10; width: 124px; padding: 4px 6px; border-radius: 5px;
+  display: none; position: absolute; left: -22px; top: -28px;
+  z-index: 100; width: 130px; padding: 4px 6px; border-radius: 5px;
   background: var(--of-primary, #171717); color: var(--of-on-primary, #fafafa);
   font-size: 10px; line-height: 14px; text-align: center; white-space: nowrap;
+  pointer-events: none;
 }
+.app-heat-bar .app-heat-tooltip { left: -38px; top: -30px; }
+.app-heat-bar .app-heat-tooltip--left { left: 0; }
+.app-heat-bar .app-heat-tooltip--right { left: -76px; }
 .app-heat-bar:hover .app-heat-tooltip { display: block; }
 `

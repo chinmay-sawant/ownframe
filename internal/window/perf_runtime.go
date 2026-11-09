@@ -23,6 +23,12 @@ type perfSampler struct {
 	goroutines     int
 	gap            time.Duration
 	heapSys        uint64
+	heapInuse      uint64
+	heapIdle       uint64
+	heapReleased   uint64
+	sys            uint64
+	stackSys       uint64
+	pauseTotal     uint64
 	numGC          uint32
 	allocPerSec    uint64
 	repaints       uint64
@@ -57,6 +63,12 @@ func (p *perfSampler) maybe(now time.Time) bool {
 	p.total = m.TotalAlloc
 	p.heap = m.HeapAlloc
 	p.heapSys = m.HeapSys
+	p.heapInuse = m.HeapInuse
+	p.heapIdle = m.HeapIdle
+	p.heapReleased = m.HeapReleased
+	p.sys = m.Sys
+	p.stackSys = m.StackSys
+	p.pauseTotal = m.PauseTotalNs
 	p.numGC = m.NumGC
 	p.goroutines = runtime.NumGoroutine()
 	p.rss = perfRSS()
@@ -97,6 +109,9 @@ func (s *shell) runtimeSnapshot() map[string]any {
 		"heap_alloc": p.heap, "heap_sys": p.heapSys, "total_alloc": p.total,
 		"num_gc": p.numGC, "goroutines": p.goroutines, "rss_bytes": p.rss,
 		"sampled_at": p.last, "alloc_per_sec": p.allocPerSec,
+		"heap_inuse": p.heapInuse, "heap_idle": p.heapIdle,
+		"heap_released": p.heapReleased, "sys": p.sys,
+		"stack_sys": p.stackSys, "gc_pause_total_ns": p.pauseTotal,
 	}
 }
 

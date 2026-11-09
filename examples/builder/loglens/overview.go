@@ -12,7 +12,9 @@ import (
 )
 
 const (
-	overviewRegionRatio = 3.4
+	overviewRegionRatio       = 3.4
+	overviewMeshRowSize       = 7
+	overviewTooltipEdgePoints = 2
 
 	overviewErrorAlertThreshold = 4
 	overviewRecentMax           = 4
@@ -228,26 +230,50 @@ func (a *app) overviewRecentEventsCard() *ui.Element {
 }
 
 func (a *app) overviewOnCallCard() *ui.Element {
+	currentDay := a.onCallDate
+	if currentDay.IsZero() {
+		currentDay = time.Now()
+	}
+	responder := a.onCallFor(currentDay)
+	_, week := currentDay.ISOWeek()
+	weekBadge := fmt.Sprintf("Week %d", week)
+
 	return overviewCard(
 		overviewCardHeader("On-call rotation", "Primary responder by day. Pick a date to swap coverage.",
-			chadcn.Badge("Week 45", chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary})),
+			chadcn.Badge(weekBadge, chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}).ID("on-call-week-badge")),
 		chadcn.CardContent(ui.Div().Class("app-col").Children(
 			ui.Div().Class("app-row app-row--between").Children(
-				ui.Div().Class("app-row").Children(
-					chadcn.Avatar(chadcn.AvatarOptions{Initials: "AK", Size: chadcn.AvatarSmall, Status: chadcn.AvatarStatusOnline}),
-					ui.Div().Class("app-col").Children(
-						ui.Text("Ada Kim").FontWeight(ui.FontWeightBold).FontSize(ui.Px(12)),
-						ui.Text("Primary · Europe").Class("app-muted"),
+				ui.Div().Class("app-row").Gap(ui.Px(8)).Children(
+					chadcn.Avatar(chadcn.AvatarOptions{
+						ID:       "on-call-avatar",
+						Initials: responder.Initials,
+						Size:     chadcn.AvatarSmall,
+						Status:   chadcn.AvatarStatusOnline,
+					}),
+					ui.Div().Class("app-col").Gap(ui.Px(1)).Children(
+						ui.Text(responder.Name).FontWeight(ui.FontWeightBold).FontSize(ui.Px(12)).ID("on-call-name"),
+						ui.Text(responder.Role+" · "+responder.Region).Class("app-muted").ID("on-call-role"),
 					),
 				),
-				chadcn.Kbd("⌘⇧C"),
+				ui.Div().Class("app-row").Gap(ui.Px(6)).Children(
+					chadcn.Button("Swap", chadcn.ButtonOptions{
+						Variant: chadcn.ButtonOutlined,
+						Size:    chadcn.ButtonSmall,
+					}).ID("on-call-swap-btn").OnClick(func(ctx context.Context) error {
+						a.onCallDialogDate = currentDay
+						a.onCallDialogOpen = true
+						return a.refresh(ctx)
+					}),
+					chadcn.Kbd("⌘⇧C"),
+				),
 			),
 			chadcn.Calendar(chadcn.CalendarOptions{
-				Month:    a.calendarMonth,
-				Selected: a.fromDate,
+				ID:                    "on-call-calendar",
+				Month:                 a.calendarMonth,
+				Selected:              currentDay,
+				AllowOutsideSelection: true,
 				OnSelect: func(ctx context.Context, day time.Time) error {
-					a.fromDate = day
-					return a.showToast(ctx, "Coverage updated", "Primary responder moved to "+day.Format("Jan 2")+".")
+					return a.selectOnCallDay(ctx, day)
 				},
 				OnMonthChange: func(ctx context.Context, month time.Time) error {
 					a.calendarMonth = month
@@ -256,6 +282,13 @@ func (a *app) overviewOnCallCard() *ui.Element {
 			}).CustomProperty("--of-calendar-width", "100%"),
 		)),
 	)
+}
+
+func (a *app) selectOnCallDay(ctx context.Context, day time.Time) error {
+	a.onCallDate = day
+	a.fromDate = day
+	a.calendarMonth = day
+	return a.refresh(ctx)
 }
 
 func (a *app) overviewRegionsCard() *ui.Element {
@@ -272,9 +305,14 @@ func (a *app) overviewRegionsCard() *ui.Element {
 			ui.Div().Class("app-col").Gap(ui.Px(6)).Children(
 				ui.Div().Class("app-row app-row--between").Children(
 					ui.Div().Class("app-section-label").Text("Errors per PoP · last 60 min"),
-					ui.Text("us-east-1 hottest").Class("app-muted"),
+					ui.Text("us-east-1 hottest · 14 global points of presence").Class("app-muted"),
 				),
 				ui.Div().Class("app-heat").Children(overviewHeatBars(values)...),
+				ui.Div().Class("app-row app-row--between").Children(
+					ui.Text("us-west-1").Class("app-muted").FontSize(ui.Px(10)),
+					ui.Text("PoP error distribution").Class("app-muted").FontSize(ui.Px(10)),
+					ui.Text("ap-northeast-1").Class("app-muted").FontSize(ui.Px(10)),
+				),
 			),
 		)),
 	)
@@ -295,20 +333,31 @@ func overviewErrorColor(value float64) string {
 }
 
 func overviewMesh(values []float64) *ui.Element {
-	dots := make([]*ui.Element, 0, len(values))
+	row1 := make([]*ui.Element, 0, overviewMeshRowSize)
+	row2 := make([]*ui.Element, 0, overviewMeshRowSize)
 	for index, value := range values {
 		label := overviewPointName(index) + " · " + strconv.FormatFloat(value, 'f', 0, 64) + " errors"
-		dots = append(dots, ui.Div().ID("region-map-"+strconv.Itoa(index+1)).Class("app-region-cell").
+		dotID := "region-map-" + strconv.Itoa(index+1)
+		cell := ui.Div().ID(dotID).Class("app-region-cell").
 			Attr("aria-label", label).BackgroundColor(ui.Hex(overviewErrorColor(value))).
-			Children(ui.Span().Class("app-heat-tooltip").Text(label)))
+			Children(ui.Span().Class("app-heat-tooltip").Text(label))
+		if index < overviewMeshRowSize {
+			row1 = append(row1, cell)
+		} else {
+			cell.Class("app-region-cell app-region-cell--bottom")
+			row2 = append(row2, cell)
+		}
 	}
 	legend := ui.Div().Class("app-region-legend")
 	for _, item := range []struct{ label, color string }{{"Low ≤25", "#34d399"}, {"Elevated 26–69", "#fbbf24"}, {"High ≥70", "#f87171"}} {
 		legend.Children(ui.Div().Class("app-region-key").Children(
 			ui.Span().Class("app-region-swatch").BackgroundColor(ui.Hex(item.color)), ui.Text(item.label)))
 	}
-	return ui.Div().Class("app-col").AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).Children(
-		ui.Div().Class("app-region-cells").Children(dots...),
+	return ui.Div().Class("app-col").AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).Width(ui.Percent(100)).Children(
+		ui.Div().Class("app-region-rows").Children(
+			ui.Div().Class("app-region-row").Children(row1...),
+			ui.Div().Class("app-region-row").Children(row2...),
+		),
 		ui.Text("6 regions · 14 points of presence · 99.96% edge availability").Class("app-muted"),
 		legend,
 	)
@@ -318,14 +367,27 @@ func overviewHeatBars(values []float64) []*ui.Element {
 	bars := make([]*ui.Element, 0, len(values))
 	for index, value := range values {
 		label := overviewPointName(index)
-		bars = append(bars, ui.Div().ID("region-heat-"+strconv.Itoa(index+1)).
-			Class("app-heat-bar").
+		barID := "region-heat-" + strconv.Itoa(index+1)
+
+		tooltipClass := "app-heat-tooltip"
+		if index < overviewTooltipEdgePoints {
+			tooltipClass += " app-heat-tooltip--left"
+		} else if index >= len(values)-overviewTooltipEdgePoints {
+			tooltipClass += " app-heat-tooltip--right"
+		}
+
+		fill := ui.Div().Class("app-heat-fill").
 			BackgroundColor(ui.Hex(overviewErrorColor(value))).
+			Height(ui.Percent(value))
+
+		col := ui.Div().ID(barID).
+			Class("app-heat-bar").
 			Attr("aria-label", label+" · "+strconv.FormatFloat(value, 'f', 0, 64)+" errors").
-			Height(ui.Percent(value)).
-			Children(ui.Span().ID("region-heat-"+strconv.Itoa(index+1)+"-tooltip").
-				Class("app-heat-tooltip").
-				Text(label+" · "+strconv.FormatFloat(value, 'f', 0, 64)+" errors")))
+			Children(
+				fill,
+				ui.Span().Class(tooltipClass).Text(label+" · "+strconv.FormatFloat(value, 'f', 0, 64)+" errors"),
+			)
+		bars = append(bars, col)
 	}
 	return bars
 }

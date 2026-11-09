@@ -322,7 +322,7 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.layerGen++
 	p.bindMotion(previous, display)
 	p.bindTransitions(captures)
-	if previous != nil && previous != display && previous != p.painted {
+	if previous != nil && previous != display {
 		previous.Release()
 	}
 	p.remember(state)
@@ -367,7 +367,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	p.layerGen++
 	p.bindMotion(previous, nil)
 	p.bindTransitions(nil)
-	if previous != nil && previous != display && previous != p.painted {
+	if previous != nil && previous != display {
 		previous.Release()
 	}
 	p.remember(state)

@@ -136,8 +136,12 @@ func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
 	p.commitRoots = []string{id}
 	captures := p.captureTransitions(p.draw.Display, d)
 	prev := p.adoptSpliced(d)
+	p.updateMotionIndex(prev, d)
 	p.bindMotion(prev, d)
 	p.bindTransitions(captures)
+	if prev != nil && prev != d {
+		prev.Release()
+	}
 	p.refreshAccessibility(id, edits)
 }
 

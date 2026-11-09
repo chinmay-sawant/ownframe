@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"strings"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -37,12 +38,30 @@ func (p *Page) layoutStaged(
 	styled *css.Document,
 	state render.State,
 ) (*Display, error) {
+	hoverChanged := p.hoverPatchEligible(state) && p.last.Hover != state.Hover
 	if roots, ok := p.hoverPatchRoots(styled, state); ok {
 		if patched, err := p.listHoverPatched(ctx, styled, state, roots); err == nil {
+			p.stats.hoverPatches++
 			return patched, nil
+		}
+		p.stats.hoverPatchErrors++
+		// If the cascade roots failed (e.g. an element transitioned to display:none
+		// and placed no box), fall back to geometric roots if safe.
+		if !p.hoverIsRisky(p.last.Hover, state.Hover) {
+			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
+				if patched, err := p.listHoverPatched(ctx, styled, state, geoRoots); err == nil {
+					p.stats.hoverPatches++
+					return patched, nil
+				}
+				p.stats.hoverPatchErrors++
+			}
 		}
 	}
 
+	if hoverChanged {
+		p.stats.hoverFallbacks++
+	}
+	p.stats.fullLayouts++
 	return draw.List(ctx, styled, state)
 }
 
@@ -59,7 +78,8 @@ func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]stri
 
 	if key := hoverGuardHash(p.source, p.themeSrc); key != p.hoverGuardHash {
 		p.hoverGuardHash = key
-		p.hoverGuardRisky = draw.HoverPatchRisky(p.source, p.themeSrc)
+		p.hoverRiskGlobal, p.hoverRiskScopes = draw.HoverPatchRiskyScopes(p.source, p.themeSrc)
+		p.hoverGuardRisky = p.hoverRiskGlobal || len(p.hoverRiskScopes) > 0
 	}
 
 	key := p.keyFor(state)
@@ -94,20 +114,120 @@ func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]stri
 	// patterns. Only the geometric fallback needs the page-wide risky guard:
 	// it assumes the change stays inside the hovered subtrees, which :has and
 	// sibling-after-:hover break.
+	risky := p.hoverIsRisky(p.last.Hover, state.Hover)
 	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok {
 		if draw.HoverScopesFit(p.boxes, roots) {
 			return roots, true
 		}
-		// The precise change is too wide for a scoped patch. A narrower
-		// geometric guess would miss the nodes the cascade already found,
-		// so take the full layout when the sheets can reach outside.
-		if p.hoverGuardRisky {
+		// The precise change is too wide for a scoped patch or one of the
+		// changed elements is display:none. If the sheets can reach outside
+		// for this hover, take the full layout.
+		if risky {
 			return nil, false
 		}
-	} else if p.hoverGuardRisky {
+	} else if risky {
 		return nil, false
 	}
 	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+}
+
+// hoverIsRisky reports whether an escaping rule (:has or sibling-after-:hover)
+// can match when hover moves between oldID and newID.
+func (p *Page) hoverIsRisky(oldID, newID string) bool {
+	if p.hoverRiskGlobal {
+		return true
+	}
+	if len(p.hoverRiskScopes) == 0 {
+		return false
+	}
+
+	// Filter down to scopes that actually appear in the HTML source.
+	// An unused component stylesheet cannot affect any node in the page.
+	var activeScopes []string
+	for _, scope := range p.hoverRiskScopes {
+		if scope != "" && strings.Contains(p.source, scope) {
+			activeScopes = append(activeScopes, scope)
+		}
+	}
+	if len(activeScopes) == 0 {
+		return false
+	}
+
+	return p.elementOrAncestorsMatchScopes(oldID, activeScopes) ||
+		p.elementOrAncestorsMatchScopes(newID, activeScopes)
+}
+
+func (p *Page) elementOrAncestorsMatchScopes(id string, scopes []string) bool {
+	if id == "" || len(p.boxes) == 0 {
+		return false
+	}
+
+	start := -1
+	for i := range p.boxes {
+		if p.boxes[i].ID == id {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return p.sourceElementMatchesScopes(id, scopes)
+	}
+
+	for idx := start; idx >= 0 && idx < len(p.boxes); {
+		boxID := p.boxes[idx].ID
+		if boxID != "" {
+			for _, scope := range scopes {
+				if boxID == scope {
+					return true
+				}
+			}
+			if p.sourceElementMatchesScopes(boxID, scopes) {
+				return true
+			}
+		}
+		parent := p.boxes[idx].ParentIndex
+		if parent < 0 || parent >= len(p.boxes) || parent == idx {
+			break
+		}
+		idx = parent
+	}
+
+	return false
+}
+
+// sourceElementMatchesScopes checks if the tag declaring id in p.source carries
+// any of the scope classes or attributes.
+func (p *Page) sourceElementMatchesScopes(id string, scopes []string) bool {
+	if id == "" || p.source == "" {
+		return false
+	}
+	needle := `id="` + id + `"`
+	pos := strings.Index(p.source, needle)
+	if pos < 0 {
+		needle = `id='` + id + `'`
+		pos = strings.Index(p.source, needle)
+	}
+	if pos < 0 {
+		return false
+	}
+
+	tagStart := strings.LastIndexByte(p.source[:pos], '<')
+	if tagStart < 0 {
+		return false
+	}
+	tagRelEnd := strings.IndexByte(p.source[pos:], '>')
+	if tagRelEnd < 0 {
+		return false
+	}
+	tagText := p.source[tagStart : pos+tagRelEnd+1]
+
+	for _, scope := range scopes {
+		if scope != "" && strings.Contains(tagText, scope) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // hoverPatchEligible reports whether this redraw changed only the hover:
@@ -156,15 +276,24 @@ func (p *Page) listHoverPatched(
 	for _, root := range roots {
 		patch, err := p.hoverPatch(ctx, styled, current, root, options)
 		if err != nil {
+			if current != nil && current != p.draw.Display {
+				current.Release()
+			}
 			p.commitRoots = nil
 			return nil, err
 		}
 
 		if patch == nil || patch.Display == nil {
+			if current != nil && current != p.draw.Display {
+				current.Release()
+			}
 			p.commitRoots = nil
 			return nil, errHoverPatchEmpty
 		}
 
+		if current != nil && current != p.draw.Display && current != patch.Display {
+			current.Release()
+		}
 		current = patch.Display
 	}
 

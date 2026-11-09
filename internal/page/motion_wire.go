@@ -544,6 +544,9 @@ func (p *Page) adoptRestamp(patch *layout.ElementPatch) bool {
 		p.bindMotion(previous, d)
 	}
 	p.bindTransitions(nil)
+	if previous != nil && previous != d {
+		previous.Release()
+	}
 	p.stats.repaints++
 
 	regions := 1

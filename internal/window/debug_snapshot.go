@@ -23,6 +23,8 @@ type windowDebugState struct {
 	Height       int            `json:"height"`
 	WindowWidth  int            `json:"window_width"`
 	WindowHeight int            `json:"window_height"`
+	ScrollX      int            `json:"scroll_x"`
+	ScrollY      int            `json:"scroll_y"`
 	Cursor       image.Point    `json:"cursor"`
 	Generation   uint64         `json:"generation"`
 	Fallback     bool           `json:"fallback"`
@@ -59,6 +61,7 @@ func (s *shell) publishDebug() {
 	snap.Width = front.Width
 	snap.Height = front.Height
 	snap.WindowWidth, snap.WindowHeight = s.screenW, s.screenH
+	snap.ScrollX, snap.ScrollY = s.scrollX, s.scrollY
 	snap.Cursor = image.Pt(s.cursorX, s.cursorY)
 	snap.Generation = front.Generation
 	snap.Fallback = front.Fallback

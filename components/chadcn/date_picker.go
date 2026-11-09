@@ -14,13 +14,14 @@ import (
 // ID+"-label", and the calendar panel uses ID+"-panel". An empty Selected
 // shows the placeholder in the trigger.
 type DatePickerOptions struct {
-	ID            string
-	Open          bool
-	Month         time.Time
-	Selected      time.Time
-	OnOpenChange  func(ctx context.Context, open bool) error
-	OnSelect      func(ctx context.Context, day time.Time) error
-	OnMonthChange func(ctx context.Context, month time.Time) error
+	ID                    string
+	Open                  bool
+	Month                 time.Time
+	Selected              time.Time
+	AllowOutsideSelection bool
+	OnOpenChange          func(ctx context.Context, open bool) error
+	OnSelect              func(ctx context.Context, day time.Time) error
+	OnMonthChange         func(ctx context.Context, month time.Time) error
 }
 
 // DatePicker renders a trigger that shows the selected date or a placeholder,
@@ -86,11 +87,12 @@ func datePickerPanel(options DatePickerOptions, panelID string) *ui.Element {
 		Attr("role", "dialog").
 		Attr("aria-label", "Choose a date").
 		Children(Calendar(CalendarOptions{
-			ID:            partID(options.ID, "-calendar"),
-			Month:         options.Month,
-			Selected:      options.Selected,
-			OnSelect:      options.OnSelect,
-			OnMonthChange: options.OnMonthChange,
+			ID:                    partID(options.ID, "-calendar"),
+			Month:                 options.Month,
+			Selected:              options.Selected,
+			AllowOutsideSelection: options.AllowOutsideSelection,
+			OnSelect:              options.OnSelect,
+			OnMonthChange:         options.OnMonthChange,
 		}))
 	if panelID != "" {
 		panel.ID(panelID)

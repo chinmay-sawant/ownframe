@@ -93,6 +93,26 @@ func (renderer *Renderer) planFor(d *layout.Display) *groupNode {
 	return root
 }
 
+// EvictDisplay clears the cached group and chunk plans for d.
+func (renderer *Renderer) EvictDisplay(d *layout.Display) {
+	if renderer == nil || d == nil {
+		return
+	}
+	renderer.plans.evictDisplay(d)
+}
+
+func (c *planCache) evictDisplay(d *layout.Display) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for i := range c.entries {
+		if c.entries[i].d == d {
+			disposePlan(c.entries[i].root)
+			c.entries[i] = planEntry{}
+		}
+	}
+}
+
 // hasGroups reports a display with ops inside a blend or isolation group.
 func hasGroups(d *layout.Display) bool {
 	for i := range d.Ops {

@@ -179,3 +179,85 @@ func TestHoverPatchRisky(t *testing.T) {
 		t.Error("risky theme did not flag")
 	}
 }
+
+func TestHoverPatchRiskyScopes(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name       string
+		sources    []string
+		wantGlobal bool
+		wantScopes []string
+	}{
+		{
+			name:       "global body has",
+			sources:    []string{`body:has(> :hover){background:#fff}`},
+			wantGlobal: true,
+			wantScopes: nil,
+		},
+		{
+			name:       "global root has",
+			sources:    []string{`:has(.badge:hover){color:blue}`},
+			wantGlobal: true,
+			wantScopes: nil,
+		},
+		{
+			name:       "global star has",
+			sources:    []string{`*:has(:hover){opacity:0.5}`},
+			wantGlobal: true,
+			wantScopes: nil,
+		},
+		{
+			name:       "scoped class has",
+			sources:    []string{`.of-dropdown-menu-row:has(:hover) .of-dropdown-menu-submenu{display:block}`},
+			wantGlobal: false,
+			wantScopes: []string{"of-dropdown-menu-row"},
+		},
+		{
+			name:       "scoped id has",
+			sources:    []string{`#sidebar:has(:hover) .panel{display:block}`},
+			wantGlobal: false,
+			wantScopes: []string{"sidebar"},
+		},
+		{
+			name:       "scoped sibling combinator",
+			sources:    []string{`.of-tooltip--css-hover:hover + .of-tooltip-content{opacity:1}`},
+			wantGlobal: false,
+			wantScopes: []string{"of-tooltip--css-hover"},
+		},
+		{
+			name: "multiple sources with mixed scopes",
+			sources: []string{
+				`.of-menubar-menu-row:has(:hover){background:red}`,
+				`.of-tooltip--css-hover:has(:hover){display:flex}`,
+			},
+			wantGlobal: false,
+			wantScopes: []string{"of-menubar-menu-row", "of-tooltip--css-hover"},
+		},
+		{
+			name: "safe source returns no scopes",
+			sources: []string{
+				`.btn:hover{background:blue}`,
+				`.item:hover .child{color:green}`,
+			},
+			wantGlobal: false,
+			wantScopes: nil,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			gotGlobal, gotScopes := HoverPatchRiskyScopes(tc.sources...)
+			if gotGlobal != tc.wantGlobal {
+				t.Errorf("global = %v, want %v", gotGlobal, tc.wantGlobal)
+			}
+			if len(gotScopes) != len(tc.wantScopes) {
+				t.Fatalf("scopes = %v, want %v", gotScopes, tc.wantScopes)
+			}
+			for i := range gotScopes {
+				if gotScopes[i] != tc.wantScopes[i] {
+					t.Errorf("scopes[%d] = %q, want %q", i, gotScopes[i], tc.wantScopes[i])
+				}
+			}
+		})
+	}
+}

@@ -39,6 +39,11 @@ func (p *Page) Stats() host.Stats {
 	}
 
 	counts := draw.Counts{
+		FullLayouts:      p.stats.fullLayouts,
+		HoverPatches:     p.stats.hoverPatches,
+		HoverFallbacks:   p.stats.hoverFallbacks,
+		HoverPatchErrors: p.stats.hoverPatchErrors,
+
 		Redraws:         p.stats.redraws,
 		Parses:          p.stats.parses,
 		Cascades:        p.stats.cascades,

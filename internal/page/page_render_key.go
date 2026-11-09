@@ -47,6 +47,8 @@ type renderTrack struct {
 	// hovered subtrees, which disables the scoped hover patch.
 	hoverGuardHash  uint64
 	hoverGuardRisky bool
+	hoverRiskGlobal bool
+	hoverRiskScopes []string
 	// hoverScopeKey is built by keyFor like last, so it pins no source
 	// copy once the source memo carries a nonzero revision.
 	hoverScopeKey draw.Key

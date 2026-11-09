@@ -86,8 +86,12 @@ func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error 
 	p.commitRoots = append([]string{}, ids...)
 	captures := p.captureTransitions(p.draw.Display, current)
 	prev := p.adoptSpliced(current)
+	p.updateMotionIndex(prev, current)
 	p.bindMotion(prev, current)
 	p.bindTransitions(captures)
+	if prev != nil && prev != current {
+		prev.Release()
+	}
 	for i := range patches {
 		if touched[i] {
 			p.refreshAccessibility(patches[i].ID, patches[i].Edits)

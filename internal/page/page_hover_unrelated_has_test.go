@@ -63,3 +63,69 @@ func TestHoverPatchWithUnrelatedHas(t *testing.T) {
 		t.Fatalf("layouts delta = %d, want 4 scoped patches", got)
 	}
 }
+
+func TestHoverPatchGlobalHasFallsBack(t *testing.T) {
+	source := `<html><head><style>` +
+		`body:has(:hover) { background: #fff }` +
+		`.btn { width: 40px; height: 20px }` +
+		`.btn:hover { background: red }` +
+		`</style></head><body>` +
+		`<div id="btn-1" class="btn">Click</div>` +
+		`</body></html>`
+
+	p, err := New(Config{HTML: source, Width: 400, Height: 300, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	calls := stubHoverPatch(p, true)
+	hoverAt(t, p, "btn-1")
+
+	// Global :has rules must prevent partial subtree patching because hovering
+	// can affect any part of the body. Full layout must run.
+	if len(*calls) != 0 {
+		t.Fatalf("global :has allowed scoped patches: %v; want full layout fallback", *calls)
+	}
+}
+
+func TestHoverPatchScopedHasInsideScopeFallsBack(t *testing.T) {
+	source := `<html><head><style>` +
+		`.of-dropdown:has(:hover) .submenu { display: block }` +
+		`.menu-item { width: 60px; height: 20px }` +
+		`.btn { width: 40px; height: 20px }` +
+		`.btn:hover { color: red }` +
+		`</style></head><body>` +
+		`<div id="dd" class="of-dropdown"><div id="item-1" class="menu-item">Item</div></div>` +
+		`<div id="btn-1" class="btn">Btn</div>` +
+		`</body></html>`
+
+	p, err := New(Config{HTML: source, Width: 400, Height: 300, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Hovering outside the scope (on btn-1) should be eligible for scoped patch.
+	calls := stubHoverPatch(p, true)
+	hoverAt(t, p, "btn-1")
+	if len(*calls) == 0 {
+		t.Fatalf("hover on btn-1 outside risky scope was rejected; want scoped patch")
+	}
+
+	// Hovering inside the risky scope (on item-1 inside .of-dropdown) should be flagged as risky.
+	// If blinkless HoverChangedScopes doesn't fit or is display:none, it must fall back to full layout
+	// instead of using geometric roots that assume no escaping.
+	if !p.hoverIsRisky("", "item-1") {
+		t.Fatalf("item-1 inside .of-dropdown should be flagged as hoverIsRisky")
+	}
+	if p.hoverIsRisky("", "btn-1") {
+		t.Fatalf("btn-1 outside .of-dropdown should NOT be hoverIsRisky")
+	}
+}

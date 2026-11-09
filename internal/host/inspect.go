@@ -5,6 +5,15 @@ import "time"
 // Stats is one snapshot of the page counters an inspector shows. The zero
 // value is a page that has drawn nothing.
 type Stats struct {
+	// FullLayouts counts full placement attempts; HoverPatches counts successful
+	// scoped hover paths. HoverFallbacks counts eligible retained hover changes
+	// that required full placement.
+	// HoverPatchErrors counts refused or failed scoped attempts, including retries.
+	FullLayouts      uint64
+	HoverPatches     uint64
+	HoverFallbacks   uint64
+	HoverPatchErrors uint64
+
 	Redraws    uint64
 	Parses     uint64
 	Cascades   uint64
