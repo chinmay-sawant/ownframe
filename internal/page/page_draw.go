@@ -312,6 +312,7 @@ func (p *Page) drawStaged(
 // commitDisplay installs a replayable list and its dirty region.
 func (p *Page) commitDisplay(display *Display, executed string, drawStart time.Time, state render.State) {
 	previous := p.draw.Display
+	previousFallback := p.draw.FallbackDisplay
 	p.updateMotionIndex(previous, display)
 	captures := p.captureTransitions(previous, display)
 	p.dirtyFromDisplay(previous, display)
@@ -324,6 +325,9 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.bindTransitions(captures)
 	if previous != nil && previous != display {
 		previous.Release()
+	}
+	if previousFallback != nil && previousFallback != display && previousFallback != previous {
+		previousFallback.Release()
 	}
 	p.remember(state)
 	p.commitAccessibility(executed)
@@ -358,6 +362,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	}
 
 	previous := p.draw.Display
+	previousFallback := p.draw.FallbackDisplay
 	p.updateMotionIndex(previous, nil)
 	p.captureTransitions(previous, display)
 	p.noteCommit(drawStart)
@@ -369,6 +374,9 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	p.bindTransitions(nil)
 	if previous != nil && previous != display {
 		previous.Release()
+	}
+	if previousFallback != nil && previousFallback != display && previousFallback != previous {
+		previousFallback.Release()
 	}
 	p.remember(state)
 	p.markFull()

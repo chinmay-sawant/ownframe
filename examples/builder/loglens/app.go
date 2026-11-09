@@ -574,6 +574,15 @@ func (a *app) patchSlider(ctx context.Context, id string, value, min, max float6
 			},
 		})
 	}
+	if id == "alert-threshold-slider" {
+		description := fmt.Sprintf("Five minutes above %d per 1,000 requests.", int(value))
+		patches = append(patches, ownframe.ElementPatch{
+			ID: "alert-threshold-slider-description",
+			Edits: []ownframe.ElementEdit{
+				{Text: &description},
+			},
+		})
+	}
 	return a.patchElements(ctx, patches)
 }
 

@@ -43,10 +43,7 @@ type renderTrack struct {
 	statePseudos render.StatePseudos
 	// hoverGuardHash keys the hover risk scan input: the committed source
 	// plus the theme. A hash keeps no extra copy of either string alive.
-	// hoverGuardRisky records whether those sheets can style outside the
-	// hovered subtrees, which disables the scoped hover patch.
 	hoverGuardHash  uint64
-	hoverGuardRisky bool
 	hoverRiskGlobal bool
 	hoverRiskScopes []string
 	// hoverScopeKey is built by keyFor like last, so it pins no source

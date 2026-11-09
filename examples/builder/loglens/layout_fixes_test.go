@@ -28,6 +28,8 @@ func TestOverviewRegionCardsFit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.calendarMonth = time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+	a.onCallDate = time.Date(2026, time.November, 10, 0, 0, 0, 0, time.UTC)
 	a.page.SetSize(windowWidth, 2400)
 	if err := a.page.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
@@ -184,6 +186,8 @@ func TestOnCallCalendarSequentialClicks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.calendarMonth = time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+	a.onCallDate = time.Date(2026, time.November, 10, 0, 0, 0, 0, time.UTC)
 	ctx := context.Background()
 	a.page.SetSize(windowWidth, 2400)
 	if err := a.page.Redraw(ctx); err != nil {

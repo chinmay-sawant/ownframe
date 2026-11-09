@@ -384,6 +384,9 @@ func (p *Page) adoptLayout(patch *layout.ElementPatch) bool {
 	p.bindMotion(previous, d)
 	p.layoutAdopting = false
 	p.adoptTransitions(d)
+	if previous != nil && previous != d {
+		previous.Release()
+	}
 
 	return true
 }

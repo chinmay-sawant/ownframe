@@ -48,6 +48,46 @@ func TestDisplayReleaseOnCommit(t *testing.T) {
 	first.Release()
 }
 
+func TestFallbackDisplayReleaseOnCommit(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	p, err := New(Config{
+		HTML: `<style>div{width:60px;height:40px;background:#123456;border-radius:50% / 20%;mix-blend-mode:hue}</style>` +
+			`<div id="box">{{.V}}</div>`,
+		Width:       320,
+		Height:      400,
+		RetainState: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetData(struct{ V string }{V: "a"})
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	first := p.FallbackDisplay()
+	if first == nil {
+		t.Fatal("no fallback display after the first redraw")
+	}
+	if _, err := layout.RelayoutElement(ctx, p.cache.Styled(), first, "box", layout.Options{RetainState: true}); err != nil {
+		t.Fatalf("first fallback is not patchable before release: %v", err)
+	}
+
+	p.TakeDirty()
+	p.SetData(struct{ V string }{V: "b"})
+	if err := p.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	second := p.FallbackDisplay()
+	if second == nil || second == first {
+		t.Fatal("expected a new fallback display after the second redraw")
+	}
+	if _, err := layout.RelayoutElement(ctx, p.cache.Styled(), first, "box", layout.Options{RetainState: true}); !errors.Is(err, layout.ErrNoRetainedState) {
+		t.Fatalf("replaced fallback is still patchable: %v", err)
+	}
+}
+
 func TestDisplayReleaseOnCommitWithRetainedState(t *testing.T) {
 	t.Parallel()
 

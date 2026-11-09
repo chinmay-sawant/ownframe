@@ -112,6 +112,9 @@ func hoverSourceRiskyScopes(source string) (global bool, scopes []string) {
 					prefix = source[selStart:i]
 				}
 				g, scope := classifyRiskyPrefix(prefix)
+				if hasSiblingRelativeArgument(source, i+1+len("has(")) {
+					g = true
+				}
 				if g {
 					global = true
 				} else if scope != "" {
@@ -157,6 +160,13 @@ func classifyRiskyPrefix(prefix string) (global bool, scope string) {
 		return true, ""
 	}
 
+	// A functional pseudo before :hover can hide the real subject, as in
+	// :not(.disabled) or :is(.a, .b). Treat it as global; a scoped answer
+	// here would be a false negative.
+	if strings.Contains(trimmed, "(") {
+		return true, ""
+	}
+
 	// Look for the last class (.name) or ID (#name) in the prefix.
 	lastDot := strings.LastIndex(trimmed, ".")
 	lastHash := strings.LastIndex(trimmed, "#")
@@ -189,16 +199,74 @@ func extractIdentifier(s string) string {
 // hoverSelectorEscapes reports whether the selector after a :hover match
 // reaches a sibling before the selector ends. The selector ends at an opening
 // brace or a comma; a + or ~ first means the rule can style an element the
-// hovered subtrees do not contain.
+// hovered subtrees do not contain. Comments, quoted strings, and attribute
+// selectors are skipped, so punctuation inside them cannot end the scan early.
 func hoverSelectorEscapes(source string, i int) bool {
 	for i < len(source) {
-		switch source[i] {
-		case '{', ',', '}':
+		switch {
+		case source[i] == '/' && i+1 < len(source) && source[i+1] == '*':
+			i += 2
+			for i+1 < len(source) && (source[i] != '*' || source[i+1] != '/') {
+				i++
+			}
+			i += 2
+		case source[i] == '\'' || source[i] == '"':
+			i = skipQuoted(source, i)
+		case source[i] == '[':
+			i++
+			for i < len(source) && source[i] != ']' {
+				if source[i] == '\\' {
+					i += 2
+					continue
+				}
+				if source[i] == '\'' || source[i] == '"' {
+					i = skipQuoted(source, i)
+					continue
+				}
+				i++
+			}
+			if i < len(source) {
+				i++
+			}
+		case source[i] == '{' || source[i] == ',' || source[i] == '}':
 			return false
-		case '+', '~':
+		case source[i] == '+' || source[i] == '~':
 			return true
 		default:
 			i++
+		}
+	}
+
+	return false
+}
+
+// skipQuoted returns the index just past the quoted string starting at i.
+func skipQuoted(source string, i int) int {
+	quote := source[i]
+	i++
+	for i < len(source) {
+		switch source[i] {
+		case '\\':
+			i += 2
+		case quote:
+			return i + 1
+		default:
+			i++
+		}
+	}
+
+	return i
+}
+
+// hasSiblingRelativeArgument reports whether a :has() argument starts with a
+// sibling combinator after optional whitespace.
+func hasSiblingRelativeArgument(source string, i int) bool {
+	for i < len(source) {
+		switch source[i] {
+		case ' ', '\t', '\n', '\r', '\f':
+			i++
+		default:
+			return source[i] == '+' || source[i] == '~'
 		}
 	}
 

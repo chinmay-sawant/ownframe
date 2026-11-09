@@ -66,8 +66,10 @@ func (p *Page) layoutStaged(
 		p.stats.hoverPatchErrors++
 		p.noteHoverPatchFailure("selector", classifyHoverPatchError(err), hoverFailureTarget(err, roots))
 		// If the cascade roots failed (e.g. an element transitioned to display:none
-		// and placed no box), fall back to geometric roots if safe.
-		if !p.hoverIsRisky(p.last.Hover, state.Hover) {
+		// and placed no box), fall back to geometric roots only when the sheets
+		// contain no escaping selector at all. The geometric roots cannot prove
+		// which scope a :has or sibling-after-:hover rule belongs to.
+		if !p.hoverRiskAny() {
 			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
 				patched, retryErr := p.listHoverPatched(ctx, styled, state, geoRoots)
 				if retryErr == nil {
@@ -126,9 +128,6 @@ func hoverFailureTarget(err error, roots []string) []string {
 }
 
 func (p *Page) noteHoverPatchFailure(stage, reason string, targets []string) {
-	if !p.perf {
-		return
-	}
 	if p.hoverFailureCounts == nil {
 		p.hoverFailureCounts = make(map[hoverFailureKey]uint64)
 	}
@@ -137,7 +136,7 @@ func (p *Page) noteHoverPatchFailure(stage, reason string, targets []string) {
 	}
 	for _, target := range targets {
 		key := hoverFailureKey{stage: stage, reason: reason, target: target}
-		if _, exists := p.hoverFailureCounts[key]; !exists && len(p.hoverFailureCounts) >= maxHoverFailureKeys {
+		if _, exists := p.hoverFailureCounts[key]; !exists && len(p.hoverFailureCounts) >= maxHoverFailureKeys-1 {
 			key.target = "<other>"
 		}
 		p.hoverFailureCounts[key]++
@@ -180,7 +179,6 @@ func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]stri
 	if key := hoverGuardHash(p.source, p.themeSrc); key != p.hoverGuardHash {
 		p.hoverGuardHash = key
 		p.hoverRiskGlobal, p.hoverRiskScopes = draw.HoverPatchRiskyScopes(p.source, p.themeSrc)
-		p.hoverGuardRisky = p.hoverRiskGlobal || len(p.hoverRiskScopes) > 0
 	}
 
 	key := p.keyFor(state)
@@ -212,24 +210,27 @@ func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]stri
 	// the common ancestor of two controls, which can include a whole toolbar.
 	// The cascade evaluates the full selector per node (including :has and
 	// sibling combinators), so its scopes stay safe when the sheets use those
-	// patterns. Only the geometric fallback needs the page-wide risky guard:
-	// it assumes the change stays inside the hovered subtrees, which :has and
-	// sibling-after-:hover break.
-	risky := p.hoverIsRisky(p.last.Hover, state.Hover)
+	// patterns. The geometric fallback cannot prove which element a risky
+	// selector belongs to, so any escaping selector in the sheets forces a
+	// full layout once the cascade scopes do not fit.
 	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok {
 		if draw.HoverScopesFit(p.boxes, roots) {
 			return roots, true
 		}
-		// The precise change is too wide for a scoped patch or one of the
-		// changed elements is display:none. If the sheets can reach outside
-		// for this hover, take the full layout.
-		if risky {
+		if p.hoverRiskAny() {
 			return nil, false
 		}
-	} else if risky {
+	} else if p.hoverRiskAny() {
 		return nil, false
 	}
 	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+}
+
+// hoverRiskAny reports whether the sheets contain any selector that can style
+// outside the hovered subtrees. The geometric fallback uses this page-wide
+// answer because it cannot map a selector scope to the nodes it affects.
+func (p *Page) hoverRiskAny() bool {
+	return p.hoverRiskGlobal || len(p.hoverRiskScopes) > 0
 }
 
 // hoverIsRisky reports whether an escaping rule (:has or sibling-after-:hover)
@@ -244,6 +245,8 @@ func (p *Page) hoverIsRisky(oldID, newID string) bool {
 
 	// Filter down to scopes that actually appear in the HTML source.
 	// An unused component stylesheet cannot affect any node in the page.
+	// This scoping is advisory: the patch fallback uses hoverRiskAny, which
+	// stays page-wide so a missed scope can never accept a narrower patch.
 	var activeScopes []string
 	for _, scope := range p.hoverRiskScopes {
 		if scope != "" && strings.Contains(p.source, scope) {
