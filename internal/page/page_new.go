@@ -27,17 +27,23 @@ func New(cfg Config) (*Page, error) {
 	if strings.TrimSpace(source) == "" {
 		return nil, ErrEmptyHTML
 	}
-	if err := checkDOMLimits(source); err != nil {
-		return nil, err
+	static := isBuilderDocument(source)
+	if !static {
+		if err := checkDOMLimits(source); err != nil {
+			return nil, err
+		}
 	}
 	schemes, err := acceptedDeepLinkSchemes(cfg.DeepLinkSchemes)
 	if err != nil {
 		return nil, err
 	}
 	minW, minH := cfg.mins()
-	tpl, err := template.New("page").Parse(source)
-	if err != nil {
-		return nil, err
+	var tpl *template.Template
+	if !static {
+		tpl, err = template.New("page").Parse(source)
+		if err != nil {
+			return nil, err
+		}
 	}
 	themeSrc, themeInfo, err := sourceTheme(cfg)
 	if err != nil {
@@ -48,6 +54,10 @@ func New(cfg Config) (*Page, error) {
 		return nil, err
 	}
 	page := assemblePage(cfg, tpl, theme, themeSrc, source, htmlInfo, themeInfo, minW, minH, schemes)
+	if static {
+		page.staticSource = true
+		page.tplProbeTpl, page.tplProbeHas = nil, false
+	}
 	page.width, page.height = page.Clamp(cfg.Width, cfg.Height)
 	return page, nil
 }

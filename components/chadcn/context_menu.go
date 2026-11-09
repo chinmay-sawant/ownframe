@@ -17,6 +17,7 @@ func contextMenuSkin() menuSkin {
 		chevron:   "of-context-menu-chevron",
 		row:       "of-context-menu-row",
 		submenu:   "of-context-menu-submenu",
+		anchor:    "of-context-menu-anchor",
 	}
 }
 
@@ -37,15 +38,16 @@ type ContextMenuOptions struct {
 
 // ContextMenu renders a menu at the host pointer coordinates. It returns nil
 // while closed; the host opens it from a right-click handler and closes it on
-// Escape, click-away, or selection. The menu is absolutely positioned, so
-// mount it inside the block container that owns the clickable area.
+// Escape, click-away, or selection. The menu is viewport-fixed, so it
+// positions from anywhere in the tree. Give it a high z-index sibling.
 func ContextMenu(options ContextMenuOptions) *ui.Element {
 	if !options.Open {
 		return nil
 	}
 	skin := contextMenuSkin()
 	pane := menuPane(&skin, options.ID, options.Label, options.Items, options.Groups, options.OnSelect)
-	return pane.Position(ui.PositionAbsolute).
+	return pane.Position(ui.PositionFixed).
 		Left(ui.Px(float64(options.X))).
-		Top(ui.Px(float64(options.Y)))
+		Top(ui.Px(float64(options.Y))).
+		ZIndex(ui.Number(150))
 }

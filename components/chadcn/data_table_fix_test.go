@@ -41,6 +41,63 @@ func TestDataTableFixCaptionHeaderCellClasses(t *testing.T) {
 	}
 }
 
+// TestDataTableFixBodyRowIDs pins the hover id on each body row. The id is
+// the table id plus the row index. The select control keeps its own id, and
+// the header row stays a plain heading so sort stays with the host.
+func TestDataTableFixBodyRowIDs(t *testing.T) {
+	t.Parallel()
+	markup := renderCompositeTree(t, chadcn.DataTable(chadcn.DataTableOptions{
+		ID:      "logs",
+		Columns: []chadcn.DataColumn{{Label: "Time"}, {Label: "Status"}},
+		Rows: [][]string{
+			{"14:32", "504"},
+			{"14:33", "200"},
+		},
+		Selected: map[int]bool{1: true},
+		OnSelect: func(_ context.Context, _ int) error { return nil },
+	}))
+	compositeWant(t, markup,
+		`id="logs-row-0"`,
+		`id="logs-row-1"`,
+		`id="logs-select-0"`,
+		`id="logs-select-1"`,
+		`class="of-data-table-row of-data-table-row--selected"`,
+	)
+	row := compositeTag(t, markup, `id="logs-row-0"`)
+	if !strings.Contains(row, "<tr") || strings.Contains(row, "of-data-table-select") {
+		t.Fatalf("body row id is not on the row: %s", row)
+	}
+	control := compositeTag(t, markup, `id="logs-select-0"`)
+	if !strings.Contains(control, "<button") {
+		t.Fatalf("select id left the control: %s", control)
+	}
+	head := compositeTag(t, markup, "of-data-table-row--head")
+	if strings.Contains(head, "id=") {
+		t.Fatalf("header row took a hover id: %s", head)
+	}
+	headStart := strings.Index(markup, "<thead")
+	headEnd := strings.Index(markup, "</thead>")
+	if headStart < 0 || headEnd < headStart || strings.Contains(markup[headStart:headEnd], "<button") {
+		t.Fatalf("header gained a sort button:\n%s", markup)
+	}
+
+	empty := renderCompositeTree(t, chadcn.DataTable(chadcn.DataTableOptions{
+		ID:      "logs",
+		Columns: []chadcn.DataColumn{{Label: "Time"}},
+		Empty:   "No results.",
+	}))
+	compositeWant(t, empty, `id="logs-row-0"`, "No results.")
+	compositeDeny(t, empty, `id="logs-row-1"`, "<button")
+
+	plain := renderCompositeTree(t, chadcn.DataTable(chadcn.DataTableOptions{
+		Columns: []chadcn.DataColumn{{Label: "Time"}},
+		Rows:    [][]string{{"14:32"}},
+	}))
+	if strings.Contains(plain, `id=`) {
+		t.Fatalf("table without an id invented a row id: %s", plain)
+	}
+}
+
 // TestDataTableFixSpacingAndWrapRules holds the caption rule, the shared
 // header and cell rhythm, and the opt-in wrap rule in the stylesheet.
 func TestDataTableFixSpacingAndWrapRules(t *testing.T) {

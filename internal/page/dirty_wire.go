@@ -12,6 +12,11 @@ type dirtySet struct {
 	rects          [dirty.MaxRects]image.Rectangle
 	n              int
 	added, removed int
+	// memo carries the next-side op bounds the diff already computed, so
+	// the perf accounting pass reuses them. It is nil when the diff took
+	// a path that computed no bounds, or when the caller never asked for
+	// one. Whoever consumes a non-nil memo frees it.
+	memo *dirty.BoundsMemo
 }
 
 // diffDisplay returns the regions covering the operations that differ
@@ -25,6 +30,29 @@ func diffDisplay(prev, next *Display) (dirtySet, bool, int) {
 		added:   set.Added,
 		removed: set.Removed,
 	}, full, changed
+}
+
+// diffDisplayMemo diffs like diffDisplay and also keeps the next-side
+// bounds the scan computed. See dirty.DiffWithBounds. The caller frees
+// d.memo after use, on every path.
+func diffDisplayMemo(prev, next *Display) (dirtySet, bool, int) {
+	set, full, changed, memo := dirty.DiffWithBounds(prev, next)
+
+	return dirtySet{
+		rects:   set.Rects,
+		n:       set.N,
+		added:   set.Added,
+		removed: set.Removed,
+		memo:    memo,
+	}, full, changed
+}
+
+// freeMemo returns the diff's bounds memo for reuse. A nil memo is a
+// no-op.
+func (d dirtySet) freeMemo() {
+	if d.memo != nil {
+		d.memo.Free()
+	}
 }
 
 func opBounds(op *DisplayOp, d *Display) image.Rectangle {
@@ -64,7 +92,12 @@ func (p *Page) markFull() {
 // page only supplies its content rect. See dirty.Tracker.Take.
 func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
+	oldPainted := p.painted
 	p.painted = p.draw.Display
+	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
+		oldPainted.Release()
+	}
+	p.maybeReleasePainted()
 
 	return rects, ok
 }
@@ -75,12 +108,58 @@ func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
 // changed since the previous call.
 func (p *Page) TakeDirty() (image.Rectangle, bool) {
 	rects, ok := p.dirty.Take(p.contentRect())
+	oldPainted := p.painted
 	p.painted = p.draw.Display
+	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
+		oldPainted.Release()
+	}
+	p.maybeReleasePainted()
 	if !ok {
 		return image.Rectangle{}, false
 	}
 
 	return dirty.BoundingBox(rects), true
+}
+
+// maybeReleasePainted drops the painted baseline after the host takes the
+// damage, so a quiet page keeps one display instead of two: the current
+// list. The next commit then lets the old list go instead of holding it
+// alive through painted. The Take just drained every mark, so no pending
+// frame can still need the baseline; a later whole-frame mark rebinds
+// fullGen to its own generation before any later commit can recover.
+//
+// The release runs only when no later commit can need the baseline for a
+// narrow recovery, and never when the baseline may still describe debt:
+//   - restampRedraw or retainState: the page owes a retained-state redraw
+//     or carries the retained box tree, so a re-projection or override
+//     pass can advance the generation outside the commit path. Only the
+//     painted display can then still recover a pending whole frame.
+//   - a busy motion runtime: live players and renderers sample the
+//     committed operations in place, so the painted list is still the pose
+//     those samples build on.
+//   - fullGen past the current generation: the outstanding whole-frame
+//     mark covers an in-place tick change no display diff can see, so only
+//     a full diff from the next commit stays recoverable.
+//
+// A stale fullGen below the current generation is fine: the Take drained
+// the mark it belonged to, and any future mark refreshes the binding.
+func (p *Page) maybeReleasePainted() {
+	if p.painted == nil {
+		return
+	}
+	if p.restampRedraw || p.retainState {
+		return
+	}
+	if !p.motionCommitIdle() {
+		return
+	}
+	if p.fullGen > p.generation {
+		return
+	}
+	if p.painted != p.draw.Display {
+		p.painted.Release()
+	}
+	p.painted = nil
 }
 
 // Invalidate marks the region the element id changed since the previous
@@ -132,13 +211,27 @@ func (p *Page) markID(id string) {
 	p.markElement(id)
 }
 
-// markElement marks the id's box, the boxes inside it, and the previous
-// rect for the same id, so an element that moved repaints the space it left.
+// markElement marks the id's box, the boxes inside its element subtree,
+// and the previous rect for the same id, so an element that moved
+// repaints the space it left. The subtree walk replaces the legacy full
+// box scan: a box geometrically inside the id's rect adds nothing to
+// the union, so only descendants outside it change the region, and
+// those repaint with the parent rather than being missed.
 func (p *Page) markElement(id string) {
-	r := dirty.GrowBox(dirty.BoxRect(p.boxByID(id)), p.boxes)
+	r := p.subtreeRect(id)
 	p.markRect(r)
 	p.markRect(p.dirty.Prev(id))
 	p.dirty.Note(id, r)
+}
+
+// subtreeRect returns the union of the id's box and its descendants'
+// boxes from the parent-to-children index, falling back to the id's own
+// box when the index has no entry for it.
+func (p *Page) subtreeRect(id string) image.Rectangle {
+	if r, ok := kidRect(p, id); ok {
+		return r
+	}
+	return dirty.BoxRect(p.boxByID(id))
 }
 
 // markToggle marks a checkbox or radio, its label box when the layout has
@@ -185,12 +278,36 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 	// that first marked full.
 	if p.dirty.Full {
 		if p.painted != nil && p.fullGen < p.generation {
-			if d, full, changed := diffDisplay(p.painted, display); !full {
+			d, full, changed := diffDisplayMemo(p.painted, display)
+			if !full {
 				p.dirty.Full = false
 				p.markDisplayPartial(d, display, changed)
 
 				return
 			}
+			// The recovery diff is still full, so the frame stays full.
+			// Its counts already describe everything the host has not
+			// seen, so no second diff runs: one diff carries the area
+			// budget that decides full, and its result is the report.
+			d.freeMemo()
+			p.markFull()
+			// This commit carries a mark that was already pending, so a later
+			// diff from painted cannot recover what the mark covered (an
+			// in-place tick, for example). Bind the mark to the new generation;
+			// only a full diff from this commit stays recoverable.
+			p.fullGen = p.generation + 1
+			if p.perf {
+				p.recordFullChanged(changed, len(display.Ops))
+			}
+			p.lastPatch = DisplayPatch{
+				Changed: changed,
+				Added:   d.added,
+				Removed: d.removed,
+				Regions: 1,
+				Full:    true,
+			}
+
+			return
 		}
 
 		d, _, changed := diffDisplay(prev, display)
@@ -214,8 +331,9 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 		return
 	}
 
-	d, full, changed := diffDisplay(prev, display)
+	d, full, changed := diffDisplayMemo(prev, display)
 	if full {
+		d.freeMemo()
 		p.markFull()
 		if p.perf {
 			p.recordFullChanged(changed, len(display.Ops))
@@ -235,14 +353,20 @@ func (p *Page) dirtyFromDisplay(prev, display *Display) {
 }
 
 // markDisplayPartial queues the regions one partial display diff found and
-// records the counters and report that describe it.
+// records the counters and report that describe it. It frees the diff's
+// bounds memo on every path.
 func (p *Page) markDisplayPartial(d dirtySet, display *Display, changed int) {
+	defer d.freeMemo()
 	for i := range d.n {
 		p.markRect(d.rects[i])
 	}
 
 	if p.perf {
-		p.recordPartial(changed, d.rects[:d.n], display)
+		if d.memo != nil && d.memo.Len() == len(display.Ops) {
+			p.recordPartialBounds(changed, d.rects[:d.n], d.memo, display)
+		} else {
+			p.recordPartial(changed, d.rects[:d.n], display)
+		}
 	}
 
 	p.lastPatch = DisplayPatch{
@@ -294,6 +418,32 @@ func (p *Page) recordPartial(changed int, rects []image.Rectangle, d *Display) {
 	}
 	for i := range d.Ops {
 		bounds := dirty.OpBounds(&d.Ops[i], d)
+		for _, r := range rects {
+			if bounds.Overlaps(r) {
+				p.stats.dirtyOps++
+				break
+			}
+		}
+	}
+}
+
+// recordPartialBounds counts like recordPartial, but reuses the bounds
+// the display diff already computed instead of running a second bounds
+// pass over every operation. An index the diff never computed falls
+// back to OpBounds, so the counts always equal recordPartial's.
+func (p *Page) recordPartialBounds(changed int, rects []image.Rectangle, memo *dirty.BoundsMemo, d *Display) {
+	p.stats.changedOps = changed
+	p.stats.dirtyOps = 0
+	p.stats.dirtyRegions = len(rects)
+	p.stats.dirtyArea = 0
+	for _, r := range rects {
+		p.stats.dirtyArea += r.Dx() * r.Dy()
+	}
+	for i := range d.Ops {
+		bounds, ok := memo.Get(i)
+		if !ok {
+			bounds = dirty.OpBounds(&d.Ops[i], d)
+		}
 		for _, r := range rects {
 			if bounds.Overlaps(r) {
 				p.stats.dirtyOps++

@@ -140,9 +140,9 @@ func TestFieldStructure(t *testing.T) {
 	}))
 	wantFormMarkup(t, source,
 		`class="of-scope of-field"`,
-		`<label class="of-field-label" for="card-name">Name on card<span aria-hidden="true" class="of-field-required">*</span></label>`,
-		`<p class="of-field-description">As printed on the card</p>`,
-		`<input class="of-scope of-input of-focus" id="card-name" type="text" value="">`,
+		`<label class="of-field-label" for="card-name" id="card-name-label">Name on card<span aria-hidden="true" class="of-field-required">*</span></label>`,
+		`<p class="of-field-description" id="card-name-description">As printed on the card</p>`,
+		`<input aria-required="true" class="of-scope of-input of-focus" id="card-name" required="required" type="text" value="">`,
 	)
 	wantNoFormMarkup(t, source, `of-field--invalid`)
 }
@@ -157,8 +157,10 @@ func TestFieldErrorKeepsDescription(t *testing.T) {
 	}))
 	wantFormMarkup(t, source,
 		`class="of-scope of-field of-field--invalid"`,
-		`<p class="of-field-description">16 digits</p>`,
-		`<p class="of-field-error" role="alert">Enter all 16 digits</p>`,
+		`<p class="of-field-description" id="card-number-description">16 digits</p>`,
+		`<p class="of-field-error" id="card-number-error" role="alert">Enter all 16 digits</p>`,
+		`aria-invalid="true"`,
+		`aria-describedby="card-number-error"`,
 	)
 }
 
@@ -213,7 +215,7 @@ func TestTextFieldCompatibility(t *testing.T) {
 	source := renderFormTree(t, chadcn.TextField("message", "Message", "hello"))
 	wantFormMarkup(t, source,
 		`<div class="of-scope of-field of-text-field">`,
-		`<label class="of-field-label" for="message">Message</label>`,
+		`<label class="of-field-label" for="message" id="message-label">Message</label>`,
 		`<input class="of-scope of-input of-focus" id="message" type="text" value="hello">`,
 	)
 }

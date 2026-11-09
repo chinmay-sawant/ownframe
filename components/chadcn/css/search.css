@@ -7,6 +7,7 @@
   display: block;
   box-sizing: border-box;
   width: 100%;
+  min-height: 36px;
   color: var(--of-text, #0a0a0a);
   font-size: 14px;
 }
@@ -17,22 +18,31 @@
   z-index: 50;
 }
 
+/* Absolute, after the backdrop in the tree, so the field wins its own box
+   including the right edge. The root's min-height keeps the 36px slot. */
 .of-search-input {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 36px;
+  box-sizing: border-box;
   box-shadow: none;
 }
 
-/* Click-away layer behind the open card. Transparent with no shadow, so the
-   page chrome stays visible while clicks outside the card dismiss it. */
+/* Click-away layer behind the open card. Width and height are set outright:
+   the engine does not stretch a fixed box from right and bottom. Transparent
+   with no shadow, so the page chrome stays visible while clicks outside the
+   field and the card dismiss it. */
 .of-search-backdrop {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
   z-index: 40;
   display: block;
   box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
   margin: 0;
   padding: 0;
   border: 0;

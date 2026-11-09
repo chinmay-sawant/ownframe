@@ -3,6 +3,7 @@ package page
 import (
 	"html/template"
 	"os"
+	"runtime"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/ownframe/internal/element"
@@ -48,5 +49,11 @@ func assemblePage(cfg Config, tpl *template.Template, theme *css.Sheet, themeSrc
 	}
 	p.surf = redrawSurface{p}
 	p.imageResolver = p.imageBytes
+	// Evict the per-page box-cache entry when the page is collected. Benches
+	// and apps that churn pages (e.g. a fresh page per cold build) otherwise
+	// pin every discarded page through the boxCaches map key until the
+	// process exits. The finalizer only deletes the map entry; lookup
+	// callers already treat a missing entry as a page with no boxes.
+	runtime.SetFinalizer(p, func(q *Page) { q.forgetBoxes() })
 	return p
 }

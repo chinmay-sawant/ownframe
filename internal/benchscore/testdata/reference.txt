@@ -1,0 +1,13 @@
+goos: linux
+goarch: amd64
+pkg: example.com/scorecard
+cpu: test
+
+BenchmarkIdleFrame-8            1200    100000 ns/op       0 B/op       0 allocs/op
+BenchmarkIdleFrame-8            1200    110000 ns/op       0 B/op       0 allocs/op
+BenchmarkIdleFrame-8            1200    105000 ns/op       0 B/op       0 allocs/op
+BenchmarkClickOpen-8             600    200000 ns/op    1024 B/op      12 allocs/op
+BenchmarkInvoiceColdBuild-8      300    400000 ns/op   16384 B/op      80 allocs/op
+BenchmarkResizeWindow-8          800    150000 ns/op    2048 B/op      20 allocs/op
+BenchmarkTypingRune-8           1000     50000 ns/op     512 B/op       6 allocs/op
+BenchmarkHeapRetained-8           50   2000000 ns/op  524288 B/op       9 allocs/op   2097152 heap-B/op

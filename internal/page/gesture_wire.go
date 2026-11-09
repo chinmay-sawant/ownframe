@@ -541,13 +541,20 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 		return nil
 	}
 
-	handled, err := p.paintHover(ctx, id)
+	// The hover id moves before the handler runs, so a handler patch
+	// cascades with the new hover state. The Redraw below then reuses that
+	// styled document instead of cascading a second time for the same
+	// state. On a handler error the previous id is restored, so a failed
+	// hover changes neither the id nor the generation.
+	prev := p.HoverID()
+	p.setHoverID(id)
+	handled, err := p.paintHover(ctx, prev, id)
 	if err != nil {
+		p.setHoverID(prev)
 		return err
 	}
 
-	p.markPair(p.HoverID(), id)
-	p.setHoverID(id)
+	p.markPair(prev, id)
 	if gesture.SkipHoverRedraw(handled, p.statePseudos.Hover) {
 		return nil
 	}
@@ -555,12 +562,12 @@ func (p *Page) setHover(ctx context.Context, id string) error {
 	return p.Redraw(ctx)
 }
 
-func (p *Page) paintHover(ctx context.Context, id string) (bool, error) {
+func (p *Page) paintHover(ctx context.Context, prev, id string) (bool, error) {
 	if !gesture.CanPaintHover(p.handlers.Hover != nil, p.draw.Display != nil) {
 		return false, nil
 	}
 
-	handled, err := p.handlers.Hover(ctx, p.boxByID(p.HoverID()), p.boxByID(id))
+	handled, err := p.handlers.Hover(ctx, p.boxByID(prev), p.boxByID(id))
 	if err != nil {
 		return false, err
 	}
@@ -664,9 +671,10 @@ func (p *Page) ContextMenu() []host.MenuItem {
 
 // CursorShape returns the shape for the hovered box: an I-beam over a text
 // control, a hand over a link, a button, or another control, and the default
-// arrow everywhere else. The link scan runs only when the hovered box leaves
-// the default arrow: a hovered box that already names the I-beam or the hand
-// decides the shape without walking the display operations.
+// arrow everywhere else. A disabled control keeps the default arrow. The link
+// scan runs only when the hovered box leaves the default arrow: a hovered box
+// that already names the I-beam or the hand decides the shape without walking
+// the display operations.
 func (p *Page) CursorShape() host.Shape {
 	in := gesture.Cursor{}
 	if id := p.HoverID(); id != "" {
@@ -674,6 +682,7 @@ func (p *Page) CursorShape() host.Shape {
 		if c, ok := p.control(id); ok {
 			in.Control = true
 			in.Editable = canEdit(c)
+			in.Disabled = c.Disabled
 		} else {
 			b := p.boxByID(id)
 			in.Tag = b.Tag

@@ -18,29 +18,54 @@ import (
 // page background fill, for one) is clipped to the rect instead of painting
 // over the rest of the buffer. A blend or isolation group composites inside
 // that sub-image too, so a partial repaint matches a full one.
+//
+// The plan comes from the generation-keyed tile cache: candidates come from
+// the tile buckets built once at plan build instead of scanning the whole
+// plan per tile, and the rect paints once across the tiles it covers.
 func (renderer *Renderer) DrawRect(dst *ebiten.Image, display *layout.Display, rect image.Rectangle, dx, dy float64) {
-	if display == nil || dst == nil {
+	renderer.DrawRects(dst, display, []image.Rectangle{rect}, dx, dy)
+}
+
+// DrawRects replays the operations meeting any of rects, painting each dirty
+// rect once across the tiles it covers. Rects are in CSS pixels in the
+// page's space; dx and dy move the paint. Each rect paints into its own
+// sub-image, so a large op is clipped per rect and a partial repaint matches
+// a full one. Candidates come from the tile broadphase built once at plan
+// build; the precise ink check still uses opTouches per rect.
+func (renderer *Renderer) DrawRects(dst *ebiten.Image, display *layout.Display, rects []image.Rectangle, dx, dy float64) {
+	if display == nil || dst == nil || len(rects) == 0 {
 		return
 	}
 
-	rect = clipRect(display, rect).Intersect(dst.Bounds())
-	if rect.Empty() {
-		return
-	}
+	p := renderer.tilePlanFor(display)
+	if p == nil {
+		// The plan cache evicted between the group build and the chunk
+		// fold; keep the direct walk so damage still paints.
+		for _, rect := range rects {
+			rect = clipRect(display, rect).Intersect(dst.Bounds())
+			if rect.Empty() {
+				continue
+			}
 
-	clip, ok := dst.SubImage(rect).(*ebiten.Image)
-	if !ok {
-		return
-	}
+			clip, ok := dst.SubImage(rect).(*ebiten.Image)
+			if !ok {
+				continue
+			}
 
-	ppt := display.PointsPerPixel
-	renderer.paintChunked(clip, display, func(op *layout.DisplayOp) (float64, float64, bool) {
-		if op.Fixed || !opTouches(op, ppt, rect) {
-			return 0, 0, false
+			ppt := display.PointsPerPixel
+			renderer.paintChunked(clip, display, func(op *layout.DisplayOp) (float64, float64, bool) {
+				if op.Fixed || !opTouches(op, ppt, rect) {
+					return 0, 0, false
+				}
+
+				return dx, dy, true
+			})
 		}
 
-		return dx, dy, true
-	})
+		return
+	}
+
+	renderer.paintTileRects(dst, display, p, rects, dx, dy, false)
 }
 
 // canvasRect is the page canvas in CSS pixels.

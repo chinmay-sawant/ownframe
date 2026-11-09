@@ -418,3 +418,41 @@ func TestReleaseTransitionsFreezesAtThePresentedPaint(t *testing.T) {
 		t.Fatalf("released paint = %v, want the presented %v", got, presented)
 	}
 }
+
+// TestCaptureTransitionsFiltersUntransitionedBoxes verifies that indexBoxes only
+// indexes boxes whose IDs declare transitions in either previous or next display.
+func TestCaptureTransitionsFiltersUntransitionedBoxes(t *testing.T) {
+	record := linearTransition("background-color")
+	old := transitionChip(0, 1, 0, record)
+	next := transitionChip(1, 1, 0, record)
+
+	for i := 0; i < 50; i++ {
+		id := "unrelated-" + string(rune('a'+i))
+		old.Boxes = append(old.Boxes, layout.Box{ID: id, Tag: "div"})
+		next.Boxes = append(next.Boxes, layout.Box{ID: id, Tag: "div"})
+	}
+
+	r := New()
+	captures := r.CaptureTransitions(old, next)
+	if len(captures) != 1 {
+		t.Fatalf("captures = %d, want 1", len(captures))
+	}
+	if captures[0].key.element.id != transitionChipID {
+		t.Fatalf("captured element = %s, want %s", captures[0].key.element.id, transitionChipID)
+	}
+}
+
+// TestCaptureTransitionsNoTransitionsReturnsNil checks that CaptureTransitions
+// returns nil immediately without allocating box maps when no transitions are declared.
+func TestCaptureTransitionsNoTransitionsReturnsNil(t *testing.T) {
+	old := &layout.Display{
+		Boxes: []layout.Box{{ID: "b1", Tag: "div"}, {ID: "b2", Tag: "div"}},
+	}
+	next := &layout.Display{
+		Boxes: []layout.Box{{ID: "b1", Tag: "div"}, {ID: "b2", Tag: "div"}},
+	}
+	r := New()
+	if captures := r.CaptureTransitions(old, next); captures != nil {
+		t.Fatalf("captures = %v, want nil", captures)
+	}
+}

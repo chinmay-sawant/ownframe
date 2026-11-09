@@ -7,6 +7,9 @@ import (
 
 // SwitchOptions configures a switch beyond its label and checked state.
 type SwitchOptions struct {
+	// ID is the stable host ID. The track and thumb derive their own IDs
+	// from it, so an off->on rebuild patches instead of reparsing.
+	ID string
 	// Disabled marks the control as non-interactive.
 	Disabled bool
 }
@@ -27,13 +30,23 @@ func SwitchWithOptions(label string, checked bool, options SwitchOptions) *ui.El
 	}
 	track := ui.Div().Class("of-switch-track").Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).
 		Width(ui.Px(switchTrackWidth)).Height(ui.Px(switchTrackHeight)).FlexShrink(ui.Number(0)).
-		BorderRadius(ui.Px(switchTrackHeight / 2)).BackgroundColor(trackColor).
-		Children(ui.Div().Class("of-switch-thumb").Width(ui.Px(switchThumbSize)).Height(ui.Px(switchThumbSize)).
-			FlexShrink(ui.Number(0)).BorderRadius(ui.Px(switchThumbSize / 2)).
-			MarginLeft(ui.Px(offset)).BackgroundColor(thumbColor))
+		BorderRadius(ui.Px(switchTrackHeight / 2)).BackgroundColor(trackColor)
+	thumb := ui.Div().Class("of-switch-thumb").Width(ui.Px(switchThumbSize)).Height(ui.Px(switchThumbSize)).
+		FlexShrink(ui.Number(0)).BorderRadius(ui.Px(switchThumbSize / 2)).
+		MarginLeft(ui.Px(offset)).BackgroundColor(thumbColor)
+	if trackID := partID(options.ID, "-track"); trackID != "" {
+		track.ID(trackID)
+	}
+	if thumbID := partID(options.ID, "-thumb"); thumbID != "" {
+		thumb.ID(thumbID)
+	}
+	track.Children(thumb)
 	button := ui.Button("").Attr("type", "button").Class(classes("of-switch")).
 		Attr("role", "switch").Attr("aria-checked", ariaBool(checked)).
 		Children(track, ui.Span().Class("of-switch-label").Text(label))
+	if options.ID != "" {
+		button.ID(options.ID)
+	}
 	return setDisabled(button, options.Disabled)
 }
 

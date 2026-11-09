@@ -30,13 +30,16 @@ type DrawerOptions struct {
 
 // Drawer builds a modal panel anchored to the bottom edge, with a grab handle
 // and a stacked action footer. When Open is false it returns the trigger, or
-// nil when no trigger was supplied. A backdrop click calls OnOpenChange;
-// Escape handling and focus scope stay with the host.
+// nil when no trigger was supplied. The panel always has an id, and the
+// backdrop id is different, so a click in the body hits the panel and does
+// not dismiss. A backdrop click calls OnOpenChange. When that callback is
+// set, a click on the grab handle calls it with false. Escape handling and
+// focus scope stay with the host.
 //
 // The backdrop paints at the modal layer: above the app topbar and sidebar,
 // below the toast and command surfaces.
 func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
-	panelID := partID(options.ID, "-panel")
+	panelID := stablePartID(options.ID, "-panel", "of-drawer-panel")
 	trigger := overlayTrigger(options.Trigger, options.Open, panelID, options.OnOpenChange)
 	if !options.Open {
 		return trigger
@@ -48,16 +51,14 @@ func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
 	}
 	overlayPanelAttrs(panel, "dialog", "Drawer", titleID, descriptionID)
 	panel.Children(
-		ui.Div().Class("of-drawer-grab").Attr("aria-hidden", "true").Children(ui.Span().Class("of-drawer-handle")),
+		drawerGrab(panelID, options.OnOpenChange),
 		overlayHeader("drawer", overlayHeading("drawer", options.Title, options.Description, titleID, descriptionID), nil),
-		overlayBody("drawer", children),
-		overlayStackedFooter("drawer", options.Footer),
+		overlayBody("drawer", panelID, children),
+		overlayStackedFooter("drawer", panelID, options.Footer),
 	)
 
 	backdrop := ui.Div().Class("of-drawer-backdrop").Children(options.Overrides.Apply(panel))
-	if id := partID(options.ID, "-backdrop"); id != "" {
-		backdrop.ID(id)
-	}
+	backdrop.ID(stablePartID(options.ID, "-backdrop", "of-drawer-backdrop"))
 	if options.OnOpenChange != nil {
 		backdrop.OnClick(func(ctx context.Context) error { return options.OnOpenChange(ctx, false) })
 	}
@@ -66,4 +67,18 @@ func Drawer(options DrawerOptions, children ...*ui.Element) *ui.Element {
 		root.ID(options.ID)
 	}
 	return root.Children(trigger, backdrop)
+}
+
+// drawerGrab is the painted handle. A click dismisses when the host supplied
+// OnOpenChange. The bar itself stays decorative.
+func drawerGrab(panelID string, onOpenChange func(context.Context, bool) error) *ui.Element {
+	grab := ui.Div().Class("of-drawer-grab").Children(
+		ui.Span().Class("of-drawer-handle").Attr("aria-hidden", "true"),
+	)
+	if onOpenChange == nil {
+		return grab
+	}
+	return grab.ID(partID(panelID, "-handle")).Attr("aria-label", "Close").OnClick(func(ctx context.Context) error {
+		return onOpenChange(ctx, false)
+	})
 }

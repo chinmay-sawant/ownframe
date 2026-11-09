@@ -181,6 +181,25 @@ func TestRepeatedChildAllowed(t *testing.T) {
 	}
 }
 
+// TestAttributeEntriesOverflowInlineCapacity exercises the spill from the
+// inline attributes into the element's overflow slice, replacement of an
+// existing name, and sorted output.
+func TestAttributeEntriesOverflowInlineCapacity(t *testing.T) {
+	e := Div().Attr("a", "1").Attr("b", "2").Attr("c", "3").Attr("d", "4").
+		Attr("e", "5").Attr("a", "9")
+	if got, want := e.attrs.len(), inlineAttrEntries+1; got != want {
+		t.Fatalf("attrs len = %d, want %d", got, want)
+	}
+	markup, err := Render(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const want = `<div a="9" b="2" c="3" d="4" e="5"></div>`
+	if markup != want {
+		t.Fatalf("Render = %q, want %q", markup, want)
+	}
+}
+
 func propertyMethodName(property string) string {
 	parts := strings.Split(strings.TrimPrefix(property, "-"), "-")
 	for i, part := range parts {

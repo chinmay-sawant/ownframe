@@ -1,0 +1,38 @@
+.of-ech { display: block; }
+.of-ech-header { display: block; }
+.of-ech-title { margin: 0; font-size: 16px; }
+.of-ech-description, .of-ech-empty { margin: 4px 0 0; font-size: 12px; }
+.of-ech-body { display: flex; flex-direction: column; gap: 8px; }
+.of-ech-plot, .of-ech-custom-plot, .of-ech-scatter-plot, .of-ech-pictorial-plot, .of-ech-bar-plot, .of-ech-line-plot, .of-ech-radar-plot, .of-ech-candle-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  min-height: 140px;
+}
+.of-ech-custom-col, .of-ech-scatter-col, .of-ech-pictorial-col, .of-ech-bar-col, .of-ech-line-col, .of-ech-radar-col, .of-ech-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 140px;
+  flex: 1;
+}
+.of-ech-custom, .of-ech-bar, .of-ech-stem, .of-ech-pictorial, .of-ech-up, .of-ech-down {
+  width: 100%;
+  min-height: 2px;
+  background: var(--of-ech-color, #2563eb);
+}
+.of-ech-up { background: #16a34a; }
+.of-ech-down { background: #dc2626; }
+.of-ech-dot, .of-ech-swatch { width: 8px; height: 8px; background: var(--of-ech-color, #2563eb); }
+.of-ech-track, .of-ech-link-track, .of-ech-river-track { display: flex; height: 14px; width: 100%; }
+.of-ech-slice, .of-ech-fill, .of-ech-river-seg, .of-ech-parallel-bar {
+  height: 100%;
+  background: var(--of-ech-color, #2563eb);
+}
+.of-ech-legend, .of-ech-links, .of-ech-tree-list, .of-ech-sun-list, .of-ech-map-grid, .of-ech-treemap-row, .of-ech-graph-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.of-ech-map-cell, .of-ech-tile, .of-ech-node, .of-ech-heat-cell { min-height: 28px; min-width: 48px; }
+.of-ech-row, .of-ech-tree-row, .of-ech-sun-row, .of-ech-river-row, .of-ech-parallel-row { display: flex; align-items: center; gap: 8px; }

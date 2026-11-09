@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"sync/atomic"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/filepick"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
 )
 
@@ -414,15 +417,109 @@ func (p *Page) markFormDirty() {
 	p.dataMu.Unlock()
 }
 
-func (p *Page) syncForm(body string) string {
-	// The whole sync is one critical section against SetData: the
-	// fast-path check, the merge (whose binds read p.data), and the store
-	// of the merged body must not interleave with a data publish. Split
-	// locking could race the flags and miss a publish between the check
-	// and the store.
-	p.dataMu.Lock()
-	defer p.dataMu.Unlock()
+// its pass counter. Tests read the counter to prove the rewrite is skipped
+// for span-free bodies. Phase 2 and the publish path are the only callers,
+// so the count is exact.
+//
+//nolint:gochecknoglobals // Single process-wide call counter for tests
+var rewriteButtonCalls atomic.Uint64
 
+// syncHashCalls counts HashSource calls made by the sync path, so tests can
+// prove the executed body is hashed once per changed frame and never on a
+// clean frame, without timing. The memo caches stay hash-keyed; the single
+// hash is threaded through the scan, the rewrite, the emoji pass, and the
+// source memo instead of hashing the same body up to three times.
+//
+//nolint:gochecknoglobals // Single process-wide call counter for tests
+var syncHashCalls atomic.Uint64
+
+// syncHash hashes source for the sync path and counts the call for tests.
+// HashSource allocates nothing, so the counted path stays alloc-free.
+func syncHash(source string) uint64 {
+	syncHashCalls.Add(1)
+
+	return form.HashSource(source)
+}
+
+// sameSourceBytes reports whether a and b are byte-identical without
+// scanning either: an equal non-zero length and one backing array make them
+// the same bytes. reflect exposes a string's data pointer without an unsafe
+// import, which the lint policy keeps to the reviewed syscall shims.
+func sameSourceBytes(a, b string) bool {
+	if len(a) == 0 || len(a) != len(b) {
+		return false
+	}
+
+	return reflect.ValueOf(a).UnsafePointer() == reflect.ValueOf(b).UnsafePointer()
+}
+
+// formSnap pins the sync inputs snapshot under the phase-1 lock. The dirty
+// flag, the last synced body, and the published source are shared with
+// SetData; the live map, the order, and the caret scalars are owned by the
+// page loop and only retained, never mutated, after the unlock.
+type formSnap struct {
+	dirty        bool
+	source       string
+	lastSync     string
+	lastBody     hashedBody
+	focusID      string
+	caret        int
+	anchor       int
+	all          bool
+	preeditID    string
+	preedit      string
+	preeditStart int
+	preeditEnd   int
+	live         map[string]Control
+	order        []string
+}
+
+// formMerge carries one lock-free merge from the scan to the publish. body
+// is the post-rewrite source stored as lastSyncBody; out is the published
+// source (built marks it ready, so the skip path can leave it empty and let
+// the emoji pass run after the publish unlocks); outHash is the hash of out
+// (the input hash when the emoji pass leaves the source unchanged, otherwise
+// a single hash of the final output), so the publish can note the source
+// without rehashing; bound is the phase-2 bind snapshot the publish
+// re-checks.
+type formMerge struct {
+	body    string
+	hash    uint64
+	spans   []controlSpan
+	byID    map[string]Control
+	order   []string
+	st      form.Caret
+	bound   map[string]Control
+	out     string
+	outHash uint64
+	built   bool
+}
+
+// noteSourceHashed records a newly synced source with a caller-computed hash.
+// Equal hash and length keep the revision, so an unchanged frame compares u64s
+// with no memcmp; a change bumps the revision the key carries. It is the store
+// behind noteSource, and it lets the sync path and the adopt path thread one
+// hash through instead of hashing the same body again. Callers set syncClean
+// after noting, so the draw adapter skips its own rehash.
+func (p *Page) noteSourceHashed(next string, hash uint64) {
+	if p.sourceRev != 0 && hash == p.sourceHash && len(next) == p.sourceLen {
+		return
+	}
+
+	p.sourceHash = hash
+	p.sourceLen = len(next)
+	p.sourceRev++
+}
+
+func (p *Page) syncForm(body string) string {
+	p.syncClean = false
+	// Phase 1: snapshot the shared state under one short exclusive lock.
+	// SetData publishes data and the dirty flag under this lock, so the
+	// snapshot and the publish below cannot interleave with it. The live
+	// control map and the caret scalars are owned by the page loop (no
+	// other goroutine writes them), so retaining them lock-free is safe;
+	// every SetData-shared field is copied here.
+	p.dataMu.Lock()
 	doc := p.nav.Doc()
 	fs := p.formState()
 	if fs == nil || fs.Doc != doc {
@@ -431,43 +528,142 @@ func (p *Page) syncForm(body string) string {
 		p.setFormState(fs)
 		p.formDirty = true
 	}
+	snap := formSnap{
+		dirty:        p.formDirty,
+		source:       p.source,
+		lastSync:     p.lastSyncBody,
+		lastBody:     p.lastBody,
+		focusID:      fs.FocusID,
+		caret:        fs.Caret,
+		anchor:       fs.Anchor,
+		all:          fs.All,
+		preeditID:    fs.PreeditID,
+		preedit:      fs.Preedit,
+		preeditStart: fs.PreeditStart,
+		preeditEnd:   fs.PreeditEnd,
+		live:         fs.ByID,
+		order:        fs.Order,
+	}
+	p.dataMu.Unlock()
 
-	if p.source != "" && body == p.lastSyncBody && !p.formDirty {
-		c, hasFocus := fs.ByID[fs.FocusID]
+	// Fast path: the template output is unchanged and nothing is dirty. When
+	// execTemplate reused the cached body, body IS lastSyncBody by
+	// construction, so skip the memcmp: Go short-circuits ||, so the string
+	// compare runs only when the frame is not already known clean. Reordering
+	// !dirty before the compare also skips the memcmp on dirty frames, where
+	// the fast path is impossible anyway.
+	cleanExec := p.tplProbeHas && p.execSkipped
+	if snap.source != "" && !snap.dirty && (cleanExec || body == snap.lastSync) {
+		c, hasFocus := snap.live[snap.focusID]
 		if !hasFocus || !form.CanEdit(c) {
-			return p.source
+			p.syncClean = true
+			return snap.source
 		}
 	}
 
-	// Pages without form controls skip the button rewrite, the scan, the
-	// merge, the binds, and the control rewrite. The live set cached from
-	// the last sync is empty and the new body carries no control tags, so
-	// every one of those steps is a no-op; only the focus handoff, the
-	// bookkeeping, and the emoji pass below can change anything.
-	if len(fs.ByID) == 0 && len(fs.Order) == 0 && !form.HasControls(body) {
-		if _, ok := fs.ByID[fs.FocusID]; !ok {
-			fs.FocusID = ""
-			fs.ClearRange()
-		}
+	// One fused pass: the control probe, the control scan, and the
+	// button-input flag, memoized per source hash. A repeat body reuses
+	// the cached spans and head offsets without walking the source. The hash
+	// is threaded through the rewrite, the emoji pass, and the source memo,
+	// so the same body is never hashed twice. A body that still shares the
+	// memoized body's backing array is byte-identical by construction, so it
+	// reuses that hash instead of folding the bytes again on every clean
+	// focused redraw.
+	hash := snap.lastBody.hash
+	if !sameSourceBytes(body, snap.lastBody.source) {
+		hash = syncHash(body)
+	}
+	hasControls, spans, hasButtons := form.ScanCached(body, hash)
 
-		p.applyFocusRequest()
-		fs.ClampToFocus()
-
-		p.lastSyncBody = body
-		p.formDirty = false
-
-		return emojiPass(body)
+	// Pages without form controls skip the button rewrite, the merge, the
+	// binds, and the control rewrite. The live set cached from the last
+	// sync is empty and the new body carries no control tags, so every one
+	// of those steps is a no-op; only the focus handoff, the bookkeeping,
+	// and the emoji pass below can change anything.
+	if len(snap.live) == 0 && len(snap.order) == 0 && !hasControls {
+		return p.publishForm(formMerge{body: body, hash: hash}, snap)
 	}
 
-	body = rewriteButtons(body)
-	spans := form.Scan(body)
-	byID, order := form.Merge(fs.ByID, spans)
+	// The fused scan flags exactly the inputs the button rewrite replaces
+	// (same open-tag read, same type attribute read, same comment and
+	// script skipping), so a false skips the rewrite knowing it is the
+	// identity. A true rewrite moves spans, hence the rescan.
+	if hasButtons {
+		rewriteButtonCalls.Add(1)
+		body = rewriteButtons(body)
+		hash = syncHash(body)
+		_, spans, _ = form.ScanCached(body, hash)
+	}
+
+	byID, order := form.Merge(snap.live, spans)
+
+	// Phase 2: snapshot the bound fields under a short read lock. The scan
+	// and the rewrites above and below run lock-free; bindRead still reads
+	// p.data, so it stays under the lock.
+	p.dataMu.RLock()
+	bound := make(map[string]Control, len(byID))
+	for id, c := range byID {
+		if c.Bind == "" {
+			continue
+		}
+		if next, ok := bindRead(p, c); ok {
+			bound[id] = next
+		}
+	}
+	p.dataMu.RUnlock()
 	form.ApplyBinds(byID, func(c Control) (Control, bool) {
-		return bindRead(p, c)
+		next, ok := bound[c.ID]
+		return next, ok
 	})
-	fs.ByID = byID
-	fs.Order = order
-	if _, ok := byID[fs.FocusID]; !ok {
+
+	merge := formMerge{
+		body:  body,
+		hash:  hash,
+		spans: spans,
+		byID:  byID,
+		order: order,
+		st:    caretOfSnap(snap, byID),
+		bound: bound,
+	}
+
+	// A span-free body (and a body with only plain buttons) needs no
+	// control rewrite: RewriteCached returns the source unchanged for it.
+	// The span count comes from the single scan above, not a rescan. The
+	// rewrite output is hashed once for the emoji gate, so the emoji pass
+	// never rehashes its input.
+	if len(spans) > 0 && form.HasFieldSpans(spans) {
+		rewritten := form.RewriteCached(body, hash, spans, byID, merge.st)
+		rewriteHash := syncHash(rewritten)
+		out, outHash := draw.EmojiPassWithHash(rewritten, rewriteHash)
+		merge.out, merge.outHash = out, outHash
+		merge.built = true
+	}
+
+	return p.publishForm(merge, snap)
+}
+
+// publishForm installs the merged controls under a short exclusive lock,
+// re-checks the bound fields against a concurrent SetData, and stores the
+// sync flags. The re-read is cheap (one reflected field per bound control,
+// no source pass): when nothing moved, the lock-free merge publishes as is.
+// When a publish landed after the phase-2 snapshot, the binds refresh and
+// the output rebuilds under this lock from the cached spans and head
+// offsets (no scan repeats), and the page stays dirty so the next redraw
+// re-verifies against re-executed template output. The final source is noted
+// with its threaded hash and syncClean is set, so the draw adapter skips its
+// own rehash; the memo update mirrors noteSource exactly.
+func (p *Page) publishForm(merge formMerge, snap formSnap) string {
+	p.dataMu.Lock()
+	fs := p.formState()
+	dirty := false
+	if merge.byID != nil {
+		if refreshBindsLocked(p, &merge, snap) {
+			dirty = true
+		}
+		fs.ByID = merge.byID
+		fs.Order = merge.order
+	}
+	if _, ok := fs.ByID[fs.FocusID]; !ok {
 		fs.FocusID = ""
 		fs.ClearRange()
 	}
@@ -475,10 +671,106 @@ func (p *Page) syncForm(body string) string {
 	p.applyFocusRequest()
 	fs.ClampToFocus()
 
-	p.lastSyncBody = body
-	p.formDirty = false
+	p.lastSyncBody = merge.body
+	p.lastBody = hashedBody{source: merge.body, hash: merge.hash}
+	p.formDirty = dirty
+	out, outHash, built := merge.out, merge.outHash, merge.built
+	body, bodyHash := merge.body, merge.hash
+	p.dataMu.Unlock()
 
-	return emojiPass(form.RewriteState(body, spans, byID, form.CaretOf(fs.View())))
+	if !built {
+		var oh uint64
+		out, oh = draw.EmojiPassWithHash(body, bodyHash)
+		outHash = oh
+	}
+
+	p.noteSourceHashed(out, outHash)
+	p.syncClean = true
+
+	return out
+}
+
+// refreshBindsLocked re-reads every bound control under the publish lock
+// and reports whether any bound value moved under a concurrent publish. A
+// move refreshes the merge and rebuilds the output; a control whose binding
+// vanished (its data no longer binds) also counts as a move so the next
+// redraw re-merges against the new data. bindRead keeps reading p.data, so
+// it stays correct: it runs only under dataMu here and in phase 2.
+func refreshBindsLocked(p *Page, merge *formMerge, snap formSnap) bool {
+	moved := false
+	for id, c := range merge.byID {
+		if c.Bind == "" {
+			continue
+		}
+		next, ok := bindRead(p, c)
+		if !ok {
+			if _, was := merge.bound[id]; was {
+				moved = true
+			}
+
+			continue
+		}
+		if bindValueChanged(c, next) {
+			merge.byID[id] = next
+			moved = true
+		}
+	}
+	if !moved {
+		return false
+	}
+
+	merge.st = caretOfSnap(snap, merge.byID)
+	merge.out = merge.body
+	merge.outHash = merge.hash
+	merge.built = false
+	if len(merge.spans) > 0 && form.HasFieldSpans(merge.spans) {
+		rewritten := form.RewriteCached(merge.body, merge.hash, merge.spans, merge.byID, merge.st)
+		merge.out = rewritten
+		merge.outHash = syncHash(rewritten)
+		merge.built = true
+	}
+	out, outHash := draw.EmojiPassWithHash(merge.out, merge.outHash)
+	merge.out, merge.outHash = out, outHash
+	merge.built = true
+
+	return true
+}
+
+// bindValueChanged reports whether a refreshed bind differs from the merge
+// in exactly the fields bindRead sets: the check for a checkbox, the check
+// for a radio, and the value for every other bound control.
+func bindValueChanged(old, next Control) bool {
+	switch bindKind(old) {
+	case 'b':
+		return old.Checked != next.Checked
+	case 's':
+		if old.Type == "radio" {
+			return old.Checked != next.Checked
+		}
+
+		return old.Value != next.Value
+	default:
+		return false
+	}
+}
+
+// caretOfSnap builds the rewrite caret from the merged controls and the
+// snapshotted caret range, mirroring State.View after a merge.
+func caretOfSnap(snap formSnap, byID map[string]Control) form.Caret {
+	c, ok := byID[snap.focusID]
+
+	return form.CaretOf(form.FocusView{
+		FocusID:      snap.focusID,
+		Caret:        snap.caret,
+		Anchor:       snap.anchor,
+		All:          snap.all,
+		Control:      c,
+		Present:      ok,
+		PreeditID:    snap.preeditID,
+		Preedit:      snap.preedit,
+		PreeditStart: snap.preeditStart,
+		PreeditEnd:   snap.preeditEnd,
+	})
 }
 
 func (p *Page) clickControl(ctx context.Context, box Box) error {
@@ -649,41 +941,56 @@ func (p *Page) editField(ctx context.Context, fn func() error, edit valueEdit) e
 		p.markFormDirty()
 	}
 
-	changed, err := p.applyEdit(ctx, edit)
+	changed, step, err := p.applyEdit(ctx, edit)
 	if err != nil {
 		return err
 	}
 
-	if !changed && !ran {
+	if !changed && step == 0 && !ran {
 		return nil
 	}
 
+	edited := ""
+	if fs := p.formState(); fs != nil {
+		edited = fs.FocusID
+	}
+
 	if changed {
-		p.markPending(p.formState().FocusID)
-		if err := p.change(ctx, p.formState().FocusID); err != nil {
+		p.markPending(edited)
+		if err := p.change(ctx, edited); err != nil {
 			return err
 		}
+	}
+
+	if step != 0 {
+		p.focusSlotStep(edited, step)
 	}
 
 	return p.Redraw(ctx)
 }
 
-func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
+func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, int, error) {
 	c, ok := p.typingTarget()
 	if !ok {
-		return false, nil
+		return false, 0, nil
 	}
 
 	fs := p.formState()
 	next, caret, anchor, changed := edit(c, fs.Caret, fs.Anchor)
+	step := next.SlotStep
+	next.SlotStep = 0
+	if !changed && step == 0 {
+		return false, 0, nil
+	}
+
 	if !changed {
-		return false, nil
+		return false, step, nil
 	}
 
 	// GEN-28: every edit funnels here, so clamp once for all writers.
 	next, caret, anchor = form.ClampEdited(next, caret, anchor)
 	if err := p.beforeEdit(ctx, fs.FocusID); err != nil {
-		return false, err
+		return false, 0, err
 	}
 
 	fs = p.formState()
@@ -693,7 +1000,33 @@ func (p *Page) applyEdit(ctx context.Context, edit valueEdit) (bool, error) {
 	p.resetCaretBlink()
 	bindWrite(p, next)
 
-	return true, nil
+	return true, step, nil
+}
+
+// focusSlotStep moves focus from a one-digit slot by step. A missing
+// neighbor leaves the focus where it is.
+func (p *Page) focusSlotStep(from string, step int) {
+	fs := p.formState()
+	if fs == nil || step == 0 {
+		return
+	}
+
+	id := form.SlotNeighbor(fs.ByID, from, step)
+	if id == "" || !p.inFocusScope(id) {
+		return
+	}
+
+	c, ok := fs.Lookup(id)
+	moved, reveal := fs.TakeFocus(id, c, ok)
+	if !moved {
+		return
+	}
+
+	p.tickMutated.Store(true)
+	p.markPair(from, id)
+	if reveal {
+		p.revealFocus(id)
+	}
 }
 
 func (p *Page) typingTarget() (Control, bool) {

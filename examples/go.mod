@@ -10,7 +10,7 @@ go 1.26.10
 // library tag.
 require (
 	github.com/brianvoe/gofakeit/v7 v7.18.0
-	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
+	github.com/chinmay-sawant/blinkless v0.1.1-0.20261108141109-dc1d518bff32
 	github.com/chinmay-sawant/ownframe v0.0.2
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
@@ -29,7 +29,7 @@ require (
 	github.com/BurntSushi/xgb v0.0.0-20210121224620-deaf085860bc // indirect
 	github.com/BurntSushi/xgbutil v0.0.0-20190907113008-ad855c713046 // indirect
 	github.com/ByteArena/poly2tri-go v0.0.0-20170716161910-d102ad91854f // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/benoitkugler/textlayout v0.3.2 // indirect
 	github.com/benoitkugler/textprocessing v0.0.6 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect

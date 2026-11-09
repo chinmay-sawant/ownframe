@@ -126,6 +126,9 @@ func (r *Runtime) AdoptDisplay(next *Display) {
 	}
 
 	r.display = next
+	if r.index != nil {
+		r.index.Repoint(next)
+	}
 }
 
 // BindAfter resolves the animations of next, handing each player the clock and
@@ -136,12 +139,18 @@ func (r *Runtime) AdoptDisplay(next *Display) {
 //
 // BindAfter(_, nil) releases every player.
 func (r *Runtime) BindAfter(previous, next *Display) error {
+	return r.BindAfterWithIndex(previous, next, nil)
+}
+
+// BindAfterWithIndex resolves the animations of next using the provided index.
+func (r *Runtime) BindAfterWithIndex(previous, next *Display, index *cssmotion.Index) error {
 	if r == nil {
 		return nil
 	}
 
 	if next == nil {
 		r.display = nil
+		r.index = nil
 		r.entries = r.entries[:0]
 		r.restamp = r.restamp[:0]
 		r.stats.Bound, r.stats.Active, r.stats.Sampled = 0, 0, 0
@@ -224,7 +233,13 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 	// resolves against, so a bind with dozens of animated boxes shares one
 	// ownership scan instead of repeating it per box per paint class. It is
 	// built lazily: a page with no animations pays no scan.
-	var index *cssmotion.Index
+	if index != nil && index != cssmotion.EmptyIndex() && index.Display() != next {
+		if index.NumOps() == len(next.Ops) {
+			index.Repoint(next)
+		} else {
+			index = nil
+		}
+	}
 
 	// The old entries are no longer read: snapshotCarry and starts copied what
 	// the replacement needs before the first append.
@@ -256,8 +271,8 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 			start = now
 		}
 
-		if index == nil {
-			index = cssmotion.NewIndex(next)
+		if index == nil || (index == cssmotion.EmptyIndex() && len(next.Keyframes) > 0) {
+			index = r.indexFor(next)
 		}
 		bounds, boxGaps, err := cssanimation.BindBoxWithIndex(next, box, boxIndex, start, index)
 		if err != nil {
@@ -353,6 +368,7 @@ func (r *Runtime) BindAfter(previous, next *Display) error {
 
 	r.entries = entries
 	r.display = next
+	r.index = index
 	stampTransformClips(next, entries)
 	r.restamp = r.restamp[:0]
 	r.stats.Bound = len(entries)
@@ -743,4 +759,32 @@ func hasTrigger(items []layout.Animation) bool {
 	}
 
 	return false
+}
+
+// indexFor returns a cached or newly built *cssmotion.Index for d.
+func (r *Runtime) indexFor(d *Display) *cssmotion.Index {
+	if d == nil || len(d.Ops) == 0 {
+		return cssmotion.EmptyIndex()
+	}
+	if r.index != nil && r.index != cssmotion.EmptyIndex() {
+		if r.index.Display() == d {
+			return r.index
+		}
+		if r.display == d || (len(d.Ops) == r.index.NumOps() && r.display != nil && sameKeyframes(d.Keyframes, r.display.Keyframes)) {
+			r.index.Repoint(d)
+			return r.index
+		}
+	}
+	r.index = cssmotion.NewIndex(d)
+	return r.index
+}
+
+func sameKeyframes(a, b []layout.KeyframesRule) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	return &a[0] == &b[0]
 }

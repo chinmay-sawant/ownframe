@@ -37,7 +37,7 @@
   transition: background-color 0.15s, border-color 0.15s;
 }
 
-.of-checkbox:hover .of-checkbox-box {
+.of-checkbox:not([disabled]):not([aria-disabled="true"]):hover .of-checkbox-box {
   border-color: var(--of-ring, #a1a1aa);
 }
 
@@ -46,7 +46,7 @@
   background: var(--of-primary, #171717);
 }
 
-.of-checkbox--checked:hover .of-checkbox-box {
+.of-checkbox--checked:not([disabled]):not([aria-disabled="true"]):hover .of-checkbox-box {
   border-color: var(--of-primary, #171717);
 }
 

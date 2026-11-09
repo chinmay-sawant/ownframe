@@ -1,7 +1,14 @@
 package main
 
 import (
+	"github.com/chinmay-sawant/ownframe/components/apexcharts"
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
+	"github.com/chinmay-sawant/ownframe/components/chartjs"
+	"github.com/chinmay-sawant/ownframe/components/echarts"
+	"github.com/chinmay-sawant/ownframe/components/nivo"
+	"github.com/chinmay-sawant/ownframe/components/recharts"
+	"github.com/chinmay-sawant/ownframe/components/shadcnchart"
+	"github.com/chinmay-sawant/ownframe/components/tremor"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
@@ -52,7 +59,10 @@ func (s themeState) stylesheet() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return base + extra + chadcn.Stylesheet + builderMotionCSS, nil
+	return base + extra + chadcn.Stylesheet +
+		chartjs.Stylesheet + shadcnchart.Stylesheet + recharts.Stylesheet +
+		tremor.Stylesheet + echarts.Stylesheet + apexcharts.Stylesheet +
+		nivo.Stylesheet + builderMotionCSS, nil
 }
 
 func studioProperties() theme.Overrides {

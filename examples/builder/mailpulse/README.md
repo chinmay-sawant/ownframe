@@ -12,6 +12,8 @@ sidebar, top bar controls, KPI cards, funnel bars, and link rows; the
 page. App-specific tiles that ChadCN does not ship (heatmap cells,
 engagement dots, delta pills) live in the local `components/` package.
 
+Reference image: https://x.com/jubayer6910/status/2116970231793058125 (engagement screen post, Nov 1 2026).
+
 ## Run
 
 From the repository root:

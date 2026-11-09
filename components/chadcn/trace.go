@@ -1,6 +1,7 @@
 package chadcn
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -19,8 +20,11 @@ type TraceRow struct {
 	Status string
 }
 
-// TraceOptions describes a trace list.
+// TraceOptions describes a trace list. ID is an optional stable host id;
+// each row and its label and detail parts derive their ids from it so a
+// same-row detail edit patches instead of reparsing.
 type TraceOptions struct {
+	ID   string
 	Rows []TraceRow
 }
 
@@ -28,18 +32,33 @@ type TraceOptions struct {
 // The host owns the rows and the clock.
 func Trace(options TraceOptions) *ui.Element {
 	root := ui.Div().Class("of-trace").Attr("role", "list")
-	for _, row := range options.Rows {
+	if options.ID != "" {
+		root.ID(options.ID)
+	}
+	for index, row := range options.Rows {
 		state := traceState(row.Status)
+		rowID := partID(options.ID, "-row-"+strconv.Itoa(index))
 		item := ui.Div().Class(classes("of-trace-row", "of-trace-row--"+state)).Attr("role", "listitem")
+		if rowID != "" {
+			item.ID(rowID)
+		}
 		item.Children(ui.Span().Class("of-trace-row-icon").Attr("aria-hidden", "true").Text(traceGlyph(state)))
 
 		body := ui.Div().Class("of-trace-row-body")
 		header := ui.Div().Class("of-trace-row-header")
 		if row.Label != "" {
-			header.Children(ui.Span().Class("of-trace-row-label").Text(row.Label))
+			label := ui.Span().Class("of-trace-row-label").Text(row.Label)
+			if id := partID(rowID, "-label"); id != "" {
+				label.ID(id)
+			}
+			header.Children(label)
 		}
 		if row.Detail != "" {
-			header.Children(ui.Span().Class("of-trace-row-detail").Text(row.Detail))
+			detail := ui.Span().Class("of-trace-row-detail").Text(row.Detail)
+			if id := partID(rowID, "-detail"); id != "" {
+				detail.ID(id)
+			}
+			header.Children(detail)
 		}
 		body.Children(header)
 

@@ -49,7 +49,7 @@ func (s *shell) menuRows(x, y int) []host.MenuItem {
 	}); ok {
 		return menu.ContextMenuAt(px, py)
 	}
-	if box, ok := devBoxAt(s.app.Boxes(), px, py); ok {
+	if box, ok := s.boxAt(px, py); ok {
 		id = box.ID
 	}
 

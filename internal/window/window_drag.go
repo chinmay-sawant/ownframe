@@ -200,7 +200,7 @@ func (s *shell) pressOnControl(x, y int) bool {
 		return false
 	}
 	px, py := s.contentPointAt(x, y)
-	return dragPointControl(s.app.Boxes(), px, py)
+	return dragPointControl(s.boxes(), px, py)
 }
 
 // headerDoubleClickPressed tracks bare-chrome presses for the maximize
@@ -212,7 +212,7 @@ func (s *shell) headerDoubleClickPressed(x, y int) bool {
 	eligible := s.draggable != nil && s.draggable(x, y) && !s.devOwnsPoint(x, y)
 	if eligible {
 		px, py := s.contentPointAt(x, y)
-		eligible = !dragPointControl(s.app.Boxes(), px, py)
+		eligible = !dragPointControl(s.boxes(), px, py)
 	}
 	now := time.Now()
 	if eligible && doubleClickPair(d.lastPressAt, d.lastPressX, d.lastPressY, now, x, y) {

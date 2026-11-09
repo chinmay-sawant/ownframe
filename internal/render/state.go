@@ -43,3 +43,25 @@ func (s State) extra() []*css.Sheet {
 
 	return []*css.Sheet{s.Theme}
 }
+
+// SameStyleState reports that moving from prev to s cannot change which
+// rules match: every pointer or focus id that differs names a pseudo-class
+// the sheets do not use. The caller may reuse the styled document built for
+// prev instead of re-cascading. Only the stateful pseudo-classes are
+// compared here; the viewport, the source, the theme, and the image inputs
+// are the caller's to check.
+func (s State) SameStyleState(prev State, pseudos StatePseudos) bool {
+	if pseudos.Hover && s.Hover != prev.Hover {
+		return false
+	}
+
+	if pseudos.Active && s.Active != prev.Active {
+		return false
+	}
+
+	if pseudos.Focus && s.Focus != prev.Focus {
+		return false
+	}
+
+	return true
+}

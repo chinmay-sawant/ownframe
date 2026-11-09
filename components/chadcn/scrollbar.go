@@ -9,7 +9,11 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 
-const minimumScrollThumb = 24
+const (
+	minimumScrollThumb = 24
+	// thumbHalves splits a thumb so a track point sits on its center.
+	thumbHalves = 2
+)
 
 // ScrollMetrics describes a vertical range in consistent logical units, such as
 // rows or CSS pixels. Track and thumb geometry are always in CSS pixels.
@@ -135,6 +139,51 @@ func (s *ScrollState) DragBy(delta float64, track int) bool {
 // EndDrag releases a thumb drag.
 func (s *ScrollState) EndDrag() { s.dragging = false; s.dragFraction = 0 }
 
+// OffsetAt maps localY, measured in CSS pixels from the top of a track
+// `track` pixels tall, to the logical offset that centers the thumb on that
+// point. The result is clamped. A non-finite localY, a non-positive track, or
+// a range that cannot move returns 0. Element clicks do not carry this point.
+func (m ScrollMetrics) OffsetAt(localY float64, track int) int {
+	maximum := m.MaxOffset()
+	if track <= 0 || maximum == 0 || !finite(localY) {
+		return 0
+	}
+	_, height, visible := m.Thumb(track)
+	if !visible || track <= height {
+		return 0
+	}
+	if localY < 0 {
+		localY = 0
+	}
+	limit := float64(track)
+	if localY > limit {
+		localY = limit
+	}
+	travel := float64(track - height)
+	top := localY - float64(height)/thumbHalves
+	if top < 0 {
+		top = 0
+	}
+	if top > travel {
+		top = travel
+	}
+	offset := int(math.Round(top / travel * float64(maximum)))
+	if offset < 0 {
+		return 0
+	}
+	if offset > maximum {
+		return maximum
+	}
+	return offset
+}
+
+// Track places the thumb under localY on a track of the given height. The
+// element click callback has no pointer, so the host calls Track from the
+// pointer handler that measured localY.
+func (s *ScrollState) Track(localY float64, track int) bool {
+	return s.ScrollTo(s.metrics.OffsetAt(localY, track))
+}
+
 // Page moves by one viewport toward direction. Zero leaves the range alone.
 func (s *ScrollState) Page(direction int) bool {
 	if direction < 0 {
@@ -207,7 +256,9 @@ type ScrollbarOptions struct {
 
 // Scrollbar overlays a vertical scrollbar on a positioned, clipped viewport.
 // It disappears when content fits. Track regions page the state, and the thumb
-// is the keyboard focus target. The host routes native drag and wheel events.
+// is the keyboard focus target. A click cannot place the thumb, because it
+// carries no pointer; the host calls State.Track for that. The host also
+// routes native drag and wheel events.
 func Scrollbar(options ScrollbarOptions) *ui.Element {
 	if options.State == nil {
 		return nil

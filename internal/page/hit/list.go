@@ -10,6 +10,11 @@ type Item struct {
 	Fixed bool
 }
 
+// maxLinearFixed caps the indexed fixed-root path below. At most that many
+// pinned boxes resolve by linear scan; more fall back to the keyed map, so a
+// page that pins everything never pays a quadratic scan.
+const maxLinearFixed = 32
+
 // List rebuilds the hit list in out's storage in document order, so the
 // innermost box under a point still wins inside one layer. A viewport-pinned
 // box is marked because the window paints that layer last and a click has
@@ -30,7 +35,76 @@ func List(out []Item, boxes, fixed []layout.Box) []Item {
 
 		return out
 	}
+	if len(fixed) > maxLinearFixed {
+		return listKeyed(out, boxes, fixed)
+	}
 
+	roots := fixedRootSet(boxes, fixed)
+	for i := range boxes {
+		out[i] = Item{Box: boxes[i], Fixed: inFixedSet(boxes, i, roots)}
+	}
+
+	return out
+}
+
+// fixedRootSet resolves the pinned boxes to their indices in boxes. A fixed
+// box is always an element of the box list it was derived from, so a miss
+// only means a stale caller and is skipped the way a dead map key is.
+func fixedRootSet(boxes, fixed []layout.Box) []int {
+	roots := make([]int, 0, len(fixed))
+	for _, fb := range fixed {
+		if idx := indexOfBox(boxes, fb); idx >= 0 {
+			roots = append(roots, idx)
+		}
+	}
+	return roots
+}
+
+// indexOfBox returns the first index whose box names the same element with
+// the same rectangle as want: the id, the tag, the parent link, and the
+// rect. Those are exactly the fields the keyed path hashes on, so both
+// paths resolve the same roots.
+func indexOfBox(boxes []layout.Box, want layout.Box) int {
+	for i := range boxes {
+		if sameHitBox(boxes[i], want) {
+			return i
+		}
+	}
+	return -1
+}
+
+// sameHitBox compares the fields a hit-test box keeps across the hit list
+// and the display: the id, the tag, the parent link, and the rectangle.
+func sameHitBox(a, b layout.Box) bool {
+	return a.ID == b.ID && a.Tag == b.Tag && a.ParentIndex == b.ParentIndex &&
+		a.X == b.X && a.Y == b.Y && a.W == b.W && a.H == b.H
+}
+
+// inFixedSet reports whether the box is pinned with the fixed layer, the
+// way inFixed does: it is a fixed root itself, or it sits inside one. The
+// walk and its guards match inFixed, with index membership instead of a
+// keyed lookup per ancestor.
+func inFixedSet(boxes []layout.Box, index int, roots []int) bool {
+	for i := index; i >= 0 && i < len(boxes); {
+		for _, r := range roots {
+			if i == r {
+				return true
+			}
+		}
+		next := boxes[i].ParentIndex
+		if next >= i {
+			return false
+		}
+		i = next
+	}
+
+	return false
+}
+
+// listKeyed is the keyed fixed-marking path for many pinned boxes: one map
+// of fixed keys, then one ancestor climb per box. The indexed path above
+// wins while the pinned set is small because it hashes nothing.
+func listKeyed(out []Item, boxes, fixed []layout.Box) []Item {
 	roots := make(map[key]bool, len(fixed))
 	for _, b := range fixed {
 		roots[keyOf(b)] = true

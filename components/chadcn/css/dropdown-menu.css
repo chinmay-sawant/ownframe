@@ -35,14 +35,34 @@
   box-sizing: border-box;
 }
 
+/* Percentage left resolves against the viewport, so the submenu hangs off a
+   zero-size anchor at the row's right edge. */
+.of-dropdown-menu-anchor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+}
+
 .of-dropdown-menu-submenu {
+  position: absolute;
   top: -5px;
-  left: 100%;
+  left: 0;
   display: none;
 }
 
-.of-dropdown-menu-row:hover .of-dropdown-menu-submenu {
+.of-dropdown-menu-row:hover .of-dropdown-menu-submenu,
+.of-dropdown-menu-row:has(:hover) .of-dropdown-menu-submenu {
   display: flex;
+}
+
+.of-dropdown-menu-row:has(> .of-dropdown-menu-item[disabled]) .of-dropdown-menu-submenu {
+  display: none;
+}
+
+.of-dropdown-menu-row > .of-dropdown-menu-item {
+  width: 100%;
 }
 
 .of-dropdown-menu-item {
@@ -63,7 +83,9 @@
 }
 
 .of-dropdown-menu-item:hover,
-.of-dropdown-menu-item:focus-visible {
+.of-dropdown-menu-item:focus-visible,
+.of-dropdown-menu-row:hover > .of-dropdown-menu-item:not([disabled]),
+.of-dropdown-menu-row:has(:hover) > .of-dropdown-menu-item:not([disabled]) {
   background-color: var(--of-accent, #f5f5f5);
   color: var(--of-on-accent, #171717);
 }
@@ -75,8 +97,11 @@
 }
 
 .of-dropdown-menu-item--danger:hover,
-.of-dropdown-menu-item--danger:focus-visible {
+.of-dropdown-menu-item--danger:focus-visible,
+.of-dropdown-menu-row:hover > .of-dropdown-menu-item--danger:not([disabled]),
+.of-dropdown-menu-row:has(:hover) > .of-dropdown-menu-item--danger:not([disabled]) {
   background-color: var(--of-danger-soft, rgba(220, 38, 38, 0.12));
+  color: var(--of-danger, #dc2626);
 }
 
 .of-dropdown-menu-item[disabled]:hover {

@@ -22,6 +22,12 @@ type DataColumn struct {
 // paging stay in the host. OnSelect adds a leading selection column and reports
 // the row index; Selected marks rows and may be nil. Empty replaces the default
 // "No results." row, and Caption names the table for assistive technology.
+// When ID is set, each body row id is that value plus the row index, each body
+// cell id adds the row and column indexes, and each header cell takes the
+// column index, so a same-shape cell-text edit (same rows and columns, only
+// values) patches instead of taking the full-render path. Added or removed
+// rows, cells, or columns change the structure and stay FULL by design. The
+// select control keeps its own id. The caption keeps no id.
 type DataTableOptions struct {
 	ID       string
 	Columns  []DataColumn
@@ -54,11 +60,14 @@ func dataTableHead(options DataTableOptions, selectable bool) *ui.Element {
 		cells = append(cells, ui.Tag("th").Class(classes("of-data-table-header", "of-data-table-select-cell")).
 			Attr("scope", "col").Attr("aria-hidden", "true"))
 	}
-	for _, column := range options.Columns {
+	for columnIndex, column := range options.Columns {
 		cellClass := classes("of-data-table-header", dataTableAlignClass(column.Align), dataTableWrapClass(column.Wrap))
 		cell := ui.Tag("th").Class(cellClass).Attr("scope", "col").Text(column.Label)
 		if column.Width != (ui.Length{}) {
 			cell.Width(column.Width)
+		}
+		if id := partID(options.ID, "-header-"+strconv.Itoa(columnIndex)); id != "" {
+			cell.ID(id)
 		}
 		cells = append(cells, cell)
 	}
@@ -82,9 +91,13 @@ func dataTableBody(options DataTableOptions, selectable bool) *ui.Element {
 				value = row[columnIndex]
 			}
 			cellClass := classes("of-data-table-cell", dataTableAlignClass(column.Align), dataTableWrapClass(column.Wrap))
-			cells = append(cells, ui.Tag("td").Class(cellClass).Text(value))
+			cell := ui.Tag("td").Class(cellClass).Text(value)
+			if id := partID(options.ID, "-cell-"+strconv.Itoa(index)+"-"+strconv.Itoa(columnIndex)); id != "" {
+				cell.ID(id)
+			}
+			cells = append(cells, cell)
 		}
-		body.Children(ui.Tag("tr").Class(classes("of-data-table-row", dataTableSelectedClass(selected))).Children(cells...))
+		body.Children(dataTableBodyRow(options.ID, index, dataTableSelectedClass(selected), cells...))
 	}
 	if len(options.Rows) == 0 {
 		empty := options.Empty
@@ -95,12 +108,25 @@ func dataTableBody(options DataTableOptions, selectable bool) *ui.Element {
 		if selectable {
 			span++
 		}
-		body.Children(ui.Tag("tr").Class("of-data-table-row").Children(
-			ui.Tag("td").Class(classes("of-data-table-cell", "of-data-table-empty")).
-				Attr("colspan", strconv.Itoa(max(span, 1))).Text(empty),
-		))
+		emptyCell := ui.Tag("td").Class(classes("of-data-table-cell", "of-data-table-empty")).
+			Attr("colspan", strconv.Itoa(max(span, 1))).Text(empty)
+		if id := partID(options.ID, "-empty-cell"); id != "" {
+			emptyCell.ID(id)
+		}
+		body.Children(dataTableBodyRow(options.ID, 0, "", emptyCell))
 	}
 	return body
+}
+
+// dataTableBodyRow builds one body row. Its id is the table id plus the row
+// index, so a hover on the row can match. The header is not built here, and
+// the select control keeps the id assigned in dataTableSelect.
+func dataTableBodyRow(tableID string, index int, selectedClass string, cells ...*ui.Element) *ui.Element {
+	row := ui.Tag("tr").Class(classes("of-data-table-row", selectedClass))
+	if id := partID(tableID, "-row-"+strconv.Itoa(index)); id != "" {
+		row.ID(id)
+	}
+	return row.Children(cells...)
 }
 
 func dataTableSelect(options DataTableOptions, row int, selected bool) *ui.Element {

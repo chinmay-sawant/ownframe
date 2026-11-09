@@ -19,8 +19,9 @@ type ComboboxItem struct {
 // Open, Query, and Value, updates them in the callbacks, and rebuilds the view.
 //
 // ID names the root. The text input uses ID+"-input", the chevron button uses
-// ID+"-trigger", the listbox uses ID+"-panel", and each option uses
-// ID+"-option-<index>".
+// ID+"-trigger", the listbox uses ID+"-panel", each option uses
+// ID+"-option-<index>", and each option's selection marker uses
+// ID+"-option-<index>-check".
 type ComboboxOptions struct {
 	ID           string
 	Open         bool
@@ -36,27 +37,38 @@ type ComboboxOptions struct {
 // Combobox renders a text input with a chevron button and, when Open, a
 // filtered listbox. The query matches labels case-insensitively.
 //
-// The input is a plain text field, so the host reads its live value from the
-// page form and passes it back as Query. OnQuery stays available for hosts
-// that dispatch their own input callbacks.
+// One rebuild uses the same string for the open field and the list filter:
+// both are Query. A closed field shows the host Value, the item's label when
+// it has one, and never a leftover query.
+//
+// The page keeps a text control's value across a rebuild when its type stays
+// the same. The open field is type search and the closed field is type text,
+// so that rebuild can replace the query with the value and the other way
+// around. The host still reads the live value from the page form and passes
+// it back as Query. OnQuery stays available for hosts that dispatch their own
+// input callbacks. The element builder has no change hook, so the component
+// does not call OnQuery.
 func Combobox(options ComboboxOptions) *ui.Element {
 	panelID := partID(options.ID, "-panel")
 	placeholder := options.Placeholder
 	if placeholder == "" {
 		placeholder = "Select an option"
 	}
-	display := options.Query
-	if label, ok := comboboxLabel(options.Items, options.Value); ok && !options.Open && display == "" {
-		display = label
+	query := options.Query
+	shown := query
+	kind := "search"
+	if !options.Open {
+		shown = comboboxClosedText(options)
+		kind = "text"
 	}
 	input := ui.Input().
-		Attr("type", "text").
+		Attr("type", kind).
 		Attr("role", "combobox").
 		Attr("aria-autocomplete", "list").
 		Attr("aria-expanded", ariaBool(options.Open)).
 		Attr("aria-label", placeholder).
 		Attr("placeholder", placeholder).
-		Attr("value", display).
+		Attr("value", shown).
 		Class(classes("of-combobox-input", "of-transition"))
 	if inputID := partID(options.ID, "-input"); inputID != "" {
 		input.ID(inputID)
@@ -95,19 +107,19 @@ func Combobox(options ComboboxOptions) *ui.Element {
 		root.ID(options.ID)
 	}
 	if options.Open {
-		root.Children(comboboxPanel(options, panelID))
+		root.Children(comboboxPanel(options, panelID, query))
 	}
 	return root
 }
 
-func comboboxPanel(options ComboboxOptions, panelID string) *ui.Element {
+func comboboxPanel(options ComboboxOptions, panelID, query string) *ui.Element {
 	panel := ui.Div().Class("of-combobox-panel").Attr("role", "listbox")
 	if panelID != "" {
 		panel.ID(panelID)
 	}
 	matches := 0
 	for index, item := range options.Items {
-		if !comboboxMatches(item, options.Query) {
+		if !comboboxMatches(item, query) {
 			continue
 		}
 		matches++
@@ -134,9 +146,17 @@ func comboboxOption(options ComboboxOptions, index int, item ComboboxItem) *ui.E
 		label = item.Value
 	}
 	option.Children(ui.Span().Class("of-combobox-item-label").Text(label))
-	if selected {
-		option.Children(ui.Span().Class("of-combobox-check").Attr("aria-hidden", "true").Text("✓"))
+	// The marker always renders so a same-list selection move keeps every
+	// option's child count stable and patches instead of rebuilding. An
+	// unselected marker is an empty hidden span, so no visible text changes.
+	check := ui.Span().Class("of-combobox-check").Attr("aria-hidden", "true")
+	if checkID := partID(options.ID, "-option-"+strconv.Itoa(index)+"-check"); checkID != "" {
+		check.ID(checkID)
 	}
+	if selected {
+		check.Text("✓")
+	}
+	option.Children(check)
 	if options.OnSelect != nil {
 		value := item.Value
 		option.OnClick(func(ctx context.Context) error {
@@ -156,6 +176,15 @@ func comboboxMatches(item ComboboxItem, query string) bool {
 		label = item.Value
 	}
 	return strings.Contains(strings.ToLower(label), strings.ToLower(query))
+}
+
+// comboboxClosedText is the closed field. It is the host Value: the matching
+// item's label, or the value itself when the items have no label for it.
+func comboboxClosedText(options ComboboxOptions) string {
+	if label, ok := comboboxLabel(options.Items, options.Value); ok {
+		return label
+	}
+	return options.Value
 }
 
 // comboboxLabel resolves the visible label for value. An empty value is the

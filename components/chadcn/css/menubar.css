@@ -88,14 +88,34 @@
   box-sizing: border-box;
 }
 
+/* Percentage left resolves against the viewport, so the submenu hangs off a
+   zero-size anchor at the row's right edge. */
+.of-menubar-menu-anchor {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+}
+
 .of-menubar-menu-submenu {
+  position: absolute;
   top: -5px;
-  left: 100%;
+  left: 0;
   display: none;
 }
 
-.of-menubar-menu-row:hover .of-menubar-menu-submenu {
+.of-menubar-menu-row:hover .of-menubar-menu-submenu,
+.of-menubar-menu-row:has(:hover) .of-menubar-menu-submenu {
   display: flex;
+}
+
+.of-menubar-menu-row:has(> .of-menubar-menu-item[disabled]) .of-menubar-menu-submenu {
+  display: none;
+}
+
+.of-menubar-menu-row > .of-menubar-menu-item {
+  width: 100%;
 }
 
 .of-menubar-menu-item {
@@ -116,7 +136,9 @@
 }
 
 .of-menubar-menu-item:hover,
-.of-menubar-menu-item:focus-visible {
+.of-menubar-menu-item:focus-visible,
+.of-menubar-menu-row:hover > .of-menubar-menu-item:not([disabled]),
+.of-menubar-menu-row:has(:hover) > .of-menubar-menu-item:not([disabled]) {
   background-color: var(--of-accent, #f5f5f5);
   color: var(--of-on-accent, #171717);
 }
@@ -128,8 +150,11 @@
 }
 
 .of-menubar-menu-item--danger:hover,
-.of-menubar-menu-item--danger:focus-visible {
+.of-menubar-menu-item--danger:focus-visible,
+.of-menubar-menu-row:hover > .of-menubar-menu-item--danger:not([disabled]),
+.of-menubar-menu-row:has(:hover) > .of-menubar-menu-item--danger:not([disabled]) {
   background-color: var(--of-danger-soft, rgba(220, 38, 38, 0.12));
+  color: var(--of-danger, #dc2626);
 }
 
 .of-menubar-menu-item[disabled]:hover {

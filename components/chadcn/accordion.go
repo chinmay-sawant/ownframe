@@ -24,7 +24,7 @@ type AccordionOptions struct {
 
 // Accordion builds a stack of disclosure items. Each trigger is a button with
 // aria-expanded and aria-controls, and each open panel is a labelled region.
-// Item IDs derive the trigger and panel part IDs.
+// Item IDs derive the trigger, title, and panel part IDs.
 func Accordion(options AccordionOptions) *ui.Element {
 	accordion := ui.Div().Class("of-accordion")
 	for _, item := range options.Items {
@@ -48,8 +48,14 @@ func Accordion(options AccordionOptions) *ui.Element {
 		if open {
 			chevron = "▴"
 		}
+		// The title is the mutable node on a title edit. Its stable part id
+		// lets that change land as one text edit instead of a full render.
+		title := ui.Span().Class("of-accordion-title").Text(item.Title)
+		if titleID := partID(item.ID, "-title"); titleID != "" {
+			title.ID(titleID)
+		}
 		trigger.Children(
-			ui.Span().Class("of-accordion-title").Text(item.Title),
+			title,
 			ui.Span().Class("of-accordion-chevron").Attr("aria-hidden", "true").Text(chevron),
 		)
 		if options.OnToggle != nil {

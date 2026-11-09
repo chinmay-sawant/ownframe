@@ -8,13 +8,20 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/chinmay-sawant/ownframe/internal/fetch"
 	"github.com/chinmay-sawant/ownframe/internal/page/form"
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
+
+// Point is one pointer position and the box scan it produced. The page
+// resolves the spot once, so the trigger pass and this sequence share it and
+// one click scans the boxes once.
+type Point struct {
+	X, Y float64
+	Spot hit.Spot
+}
 
 // Surface is the page state one click reads and the actions it takes.
 // The page adapter delegates each method. This package does not import page.
 type Surface interface {
-	HitBox(x, y float64) (layout.Box, bool)
-	BoxIDAt(x, y float64) string
 	BoxByID(id string) layout.Box
 	ConsumePress(id string) bool
 	FormControl(id string) bool
@@ -32,27 +39,33 @@ type Surface interface {
 	RedrawIfChanged(ctx context.Context) error
 }
 
-// Run hit-tests the last picture.
+// Run applies one click from a point the page has already hit-tested.
 // The innermost box is the last one in document order that contains the point.
 // A box without an id falls back to the innermost id-bearing element under the
 // point, so a click on a child icon reaches its control.
 // A field is activated. An enabled button can follow a route.
 // A disabled control is not toggled and does not blur.
+// A label with a for attribute focuses that control.
 // Any other hit blurs the form. A routed data-action then loads that HTML
 // and skips the handler. Run draws the page again.
-func Run(ctx context.Context, s Surface, x, y float64) error {
+func Run(ctx context.Context, s Surface, pt Point) error {
 	if err := useContext(ctx); err != nil {
 		return err
 	}
 
-	box, ok := s.HitBox(x, y)
-	if ok && box.ID == "" {
-		if id := s.BoxIDAt(x, y); id != "" {
-			box = s.BoxByID(id)
-		}
+	box, ok := pt.Spot.Box, pt.Spot.OK
+	inner := box
+	if ok && box.ID == "" && pt.Spot.ID != "" {
+		box = s.BoxByID(pt.Spot.ID)
 	}
 	if ok && s.ConsumePress(box.ID) {
 		return s.Redraw(ctx)
+	}
+
+	if ok {
+		if done, err := focusFromLabel(ctx, s, inner); done {
+			return err
+		}
 	}
 
 	if ok && s.FormControl(box.ID) {
@@ -76,7 +89,7 @@ func Run(ctx context.Context, s Surface, x, y float64) error {
 	}
 
 	if s.HasOpenLink() && (!ok || box.Action == "") {
-		if handled, err := s.OpenLinkAt(ctx, x, y); handled {
+		if handled, err := s.OpenLinkAt(ctx, pt.X, pt.Y); handled {
 			return err
 		}
 	}

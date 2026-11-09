@@ -2,6 +2,7 @@ package chadcn
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -39,9 +40,12 @@ type DialogOptions struct {
 }
 
 // Dialog builds a centered modal surface. When Open is false it returns the
-// trigger, or nil when no trigger was supplied. A backdrop click and the header
-// close control dispatch CloseAction, or call OnOpenChange when no action is
-// set. Click-away, Escape handling, and focus scope stay with the host.
+// trigger, or nil when no trigger was supplied. It does not mount a hidden
+// backdrop. A backdrop click and the header close control dispatch CloseAction,
+// or call OnOpenChange when no action is set. The panel always has an id, and
+// the backdrop id is different, so a click on the title or body hits the panel
+// and does not dismiss. Click-away, Escape handling, and focus scope stay with
+// the host. Dialog does not call DialogFocus; the host does.
 //
 // The backdrop is fixed to the viewport at the modal layer: above the app
 // topbar and sidebar, below the toast and command surfaces. Mount the dialog as
@@ -72,8 +76,12 @@ func Dialog(options DialogOptions, children ...*ui.Element) *ui.Element {
 	structured := options.Title != "" || options.Description != "" || len(options.Footer) > 0
 	if structured {
 		heading := overlayHeading("dialog", options.Title, options.Description, titleID, descriptionID)
-		panel.Children(overlayHeader("dialog", heading, overlayClose("dialog", options.CloseAction, options.OnOpenChange)),
-			overlayBody("dialog", children), overlayFooter("dialog", options.Footer))
+		closeControl := overlayClose("dialog", options.CloseAction, options.OnOpenChange)
+		if closeControl != nil {
+			closeControl.ID(partID(panelID, "-close"))
+		}
+		panel.Children(overlayHeader("dialog", heading, closeControl),
+			overlayBody("dialog", panelID, children), overlayFooter("dialog", panelID, options.Footer))
 	} else {
 		panel.Children(children...)
 	}
@@ -99,14 +107,24 @@ func (o DialogOptions) panelID() string {
 	if o.PanelID != "" {
 		return o.PanelID
 	}
-	return partID(o.ID, "-panel")
+	return stablePartID(o.ID, "-panel", "of-dialog-panel")
 }
 
 func (o DialogOptions) backdropID() string {
 	if o.BackdropID != "" {
 		return o.BackdropID
 	}
-	return partID(o.ID, "-backdrop")
+	return stablePartID(o.ID, "-backdrop", "of-dialog-backdrop")
+}
+
+// stablePartID derives a part id from the host id. When the host omitted the
+// id, it returns fallback so the part still has a stable hit target. The
+// fallback must differ for each part of one overlay.
+func stablePartID(id, suffix, fallback string) string {
+	if part := partID(id, suffix); part != "" {
+		return part
+	}
+	return fallback
 }
 
 func dialogBackdrop(options DialogOptions, panel *ui.Element, contained bool) *ui.Element {
@@ -218,34 +236,52 @@ func overlayClose(component, closeAction string, onOpenChange func(context.Conte
 	return closeButton.OnClick(func(ctx context.Context) error { return onOpenChange(ctx, false) })
 }
 
-func overlayBody(component string, children []*ui.Element) *ui.Element {
+func overlayBody(component, panelID string, children []*ui.Element) *ui.Element {
 	if len(children) == 0 {
 		return nil
 	}
-	return ui.Div().Class("of-" + component + "-body").Children(children...)
+	body := ui.Div().Class("of-" + component + "-body")
+	if id := partID(panelID, "-body"); id != "" {
+		body.ID(id)
+	}
+	return body.Children(children...)
 }
 
-func overlayFooter(component string, children []*ui.Element) *ui.Element {
+func overlayFooter(component, panelID string, children []*ui.Element) *ui.Element {
 	if len(children) == 0 {
 		return nil
 	}
-	return ui.Tag("footer").Class("of-" + component + "-footer").Children(children...)
+	footer := ui.Tag("footer").Class("of-" + component + "-footer")
+	if id := partID(panelID, "-footer"); id != "" {
+		footer.ID(id)
+	}
+	return footer.Children(children...)
 }
 
 // overlayStackedFooter pins one full-width row per child, which is the action
 // layout the sheet and drawer references use.
-func overlayStackedFooter(component string, children []*ui.Element) *ui.Element {
+func overlayStackedFooter(component, panelID string, children []*ui.Element) *ui.Element {
 	slots := make([]*ui.Element, 0, len(children))
+	slotIndex := 0
 	for _, child := range children {
 		if child == nil {
 			continue
 		}
-		slots = append(slots, ui.Div().Class("of-"+component+"-footer-slot").Children(child))
+		slot := ui.Div().Class("of-" + component + "-footer-slot").Children(child)
+		if id := partID(panelID, "-footer-slot-"+strconv.Itoa(slotIndex)); id != "" {
+			slot.ID(id)
+		}
+		slots = append(slots, slot)
+		slotIndex++
 	}
 	if len(slots) == 0 {
 		return nil
 	}
-	return ui.Tag("footer").Class("of-" + component + "-footer").Children(slots...)
+	footer := ui.Tag("footer").Class("of-" + component + "-footer")
+	if id := partID(panelID, "-footer"); id != "" {
+		footer.ID(id)
+	}
+	return footer.Children(slots...)
 }
 
 // DialogFocus saves focus for one modal. Nested modals are not supported.

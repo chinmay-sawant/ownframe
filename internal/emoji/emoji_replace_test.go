@@ -71,6 +71,12 @@ func TestReplaceVariationAndUnknown(t *testing.T) {
 	if changed || got != `plain text` {
 		t.Fatalf("plain text changed: %q", got)
 	}
+
+	got, changed = Replace(`Lunch 🌮 vs 🍜? 👀`)
+	want := `Lunch <img data-ownframe-emoji="1" src="emoji/1f32e" alt="🌮"> vs <img data-ownframe-emoji="1" src="emoji/1f35c" alt="🍜">? <img data-ownframe-emoji="1" src="emoji/1f440" alt="👀">`
+	if !changed || got != want {
+		t.Fatalf("got %q changed=%v", got, changed)
+	}
 }
 
 // TestReplaceGateSkipsNonEmoji proves the fast pre-check keeps color-emoji

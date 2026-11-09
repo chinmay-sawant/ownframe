@@ -17,9 +17,10 @@ type SelectItem struct {
 // SelectOptions describes a controlled single-select. The host owns Open and
 // Value, updates them in the callbacks, and rebuilds the view.
 //
-// ID names the root. The trigger uses ID+"-trigger", the listbox uses
-// ID+"-panel", and each option uses ID+"-option-<index>". An empty ID leaves
-// the parts unnamed.
+// ID names the root. The trigger uses ID+"-trigger", the trigger label uses
+// ID+"-label", the listbox uses ID+"-panel", each option uses
+// ID+"-option-<index>", and each option's selection marker uses
+// ID+"-option-<index>-check". An empty ID leaves the parts unnamed.
 type SelectOptions struct {
 	ID           string
 	Open         bool
@@ -43,6 +44,12 @@ func Select(options SelectOptions) *ui.Element {
 	} else if options.Placeholder != "" {
 		triggerLabel = options.Placeholder
 	}
+	// The label is the mutable node on a closed value change. Its stable part
+	// id lets that change land as one text edit instead of a full render.
+	labelNode := ui.Span().Class(classes("of-select-label", labelClass)).Text(triggerLabel)
+	if labelID := partID(options.ID, "-label"); labelID != "" {
+		labelNode.ID(labelID)
+	}
 	trigger := ui.Button("").
 		Attr("type", "button").
 		Attr("role", "combobox").
@@ -50,7 +57,7 @@ func Select(options SelectOptions) *ui.Element {
 		Attr("aria-expanded", ariaBool(options.Open)).
 		Class(classes("of-select-trigger", "of-transition")).
 		Children(
-			ui.Span().Class(classes("of-select-label", labelClass)).Text(triggerLabel),
+			labelNode,
 			ui.Span().Class("of-select-chevron").Attr("aria-hidden", "true").Text("⌄"),
 		)
 	triggerID := partID(options.ID, "-trigger")
@@ -111,9 +118,17 @@ func selectOption(options SelectOptions, index int, item SelectItem) *ui.Element
 		label = item.Value
 	}
 	option.Children(ui.Span().Class("of-select-item-label").Text(label))
-	if selected {
-		option.Children(ui.Span().Class("of-select-check").Attr("aria-hidden", "true").Text("✓"))
+	// The marker always renders so a same-list selection move keeps every
+	// option's child count stable and patches instead of rebuilding. An
+	// unselected marker is an empty span, so no visible text changes.
+	check := ui.Span().Class("of-select-check").Attr("aria-hidden", "true")
+	if checkID := partID(options.ID, "-option-"+strconv.Itoa(index)+"-check"); checkID != "" {
+		check.ID(checkID)
 	}
+	if selected {
+		check.Text("✓")
+	}
+	option.Children(check)
 	setDisabled(option, item.Disabled)
 	if options.OnSelect != nil && !item.Disabled {
 		value := item.Value

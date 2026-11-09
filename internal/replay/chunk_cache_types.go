@@ -8,12 +8,13 @@ import (
 )
 
 // chunkMaxEntries and chunkMaxPixels bound the chunk images one renderer
-// keeps. Least-recently used evicts first, and its image is disposed. A paint
+// keeps: at most 128 chunks holding 2M pixels (8 MB of GPU bytes).
+// Least-recently used evicts first, and its image is disposed. A paint
 // only needs the chunks of the region it draws, so the cap covers the
 // visible rows rather than the whole page.
 const (
-	chunkMaxEntries = 256
-	chunkMaxPixels  = 4 << 20
+	chunkMaxEntries = 128
+	chunkMaxPixels  = 2 << 20
 )
 
 // chunkKey names one chunk's cache slot: the sequence of the run in a

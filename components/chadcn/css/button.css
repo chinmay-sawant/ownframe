@@ -24,7 +24,7 @@
   color: var(--of-text, #0a0a0a);
 }
 
-.of-button--tonal:hover {
+.of-button--tonal:not([disabled]):hover {
   background-color: var(--of-accent, #f5f5f5);
 }
 
@@ -34,7 +34,7 @@
   color: var(--of-on-primary, #fafafa);
 }
 
-.of-button--filled:hover {
+.of-button--filled:not([disabled]):hover {
   background-color: var(--of-primary-hover, #262626);
   border-color: var(--of-primary-hover, #262626);
 }
@@ -45,7 +45,7 @@
   color: var(--of-text, #0a0a0a);
 }
 
-.of-button--outlined:hover {
+.of-button--outlined:not([disabled]):hover {
   background-color: var(--of-accent, #f5f5f5);
 }
 
@@ -55,7 +55,7 @@
   color: var(--of-text, #0a0a0a);
 }
 
-.of-button--text:hover {
+.of-button--text:not([disabled]):hover {
   background-color: var(--of-accent, #f5f5f5);
 }
 
@@ -65,7 +65,7 @@
   color: var(--of-on-danger, #ffffff);
 }
 
-.of-button--danger:hover {
+.of-button--danger:not([disabled]):hover {
   background-color: var(--of-danger-hover, #b91c1c);
   border-color: var(--of-danger-hover, #b91c1c);
 }
@@ -80,8 +80,9 @@
   cursor: default;
 }
 
+/* Loading also sets disabled. Keep that fade; opacity 1 painted a busy button as enabled. */
 .of-button[aria-busy="true"] {
-  opacity: 1;
+  opacity: 0.5;
   cursor: default;
 }
 

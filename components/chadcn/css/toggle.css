@@ -21,7 +21,7 @@
     opacity 0.15s;
 }
 
-.of-toggle:hover {
+.of-toggle:not([disabled]):not([aria-disabled="true"]):hover {
   background-color: var(--of-accent, #f5f5f5);
 }
 

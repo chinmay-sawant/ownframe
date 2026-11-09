@@ -148,7 +148,7 @@ func TestContextMenuOpenUsesHostCoordinates(t *testing.T) {
 		`id="canvas-menu"`,
 		`role="menu"`,
 		`aria-label="Canvas actions"`,
-		`position:absolute`,
+		`position:fixed`,
 		`left:24px`,
 		`top:40px`,
 		`class="of-context-menu-item of-focus of-transition"`,

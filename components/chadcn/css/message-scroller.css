@@ -10,13 +10,17 @@
 }
 
 .of-message-scroller-viewport {
+  height: var(--of-message-scroller-height, 360px);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.of-message-scroller-content {
   display: flex;
   flex-direction: column;
   gap: var(--of-message-scroller-gap, 18px);
-  height: var(--of-message-scroller-height, 360px);
   padding: var(--of-message-scroller-padding, 20px 16px);
   box-sizing: border-box;
-  overflow-y: auto;
 }
 
 .of-message-scroller-fade {

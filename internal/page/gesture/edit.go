@@ -31,7 +31,7 @@ func ClampPaste(text string) string {
 func Edit(field form.Control, text string, op Op, caret, anchor int) (form.Control, int, int, bool) {
 	switch op {
 	case OpBackspace:
-		return form.BackspaceValue(field, caret, anchor)
+		return form.BackspaceSlot(field, caret, anchor)
 	case OpDeleteWord:
 		return form.DeleteWordValue(field, caret, anchor)
 	case OpPaste:
@@ -40,9 +40,9 @@ func Edit(field form.Control, text string, op Op, caret, anchor int) (form.Contr
 			text = strings.NewReplacer("\r", "", "\n", "").Replace(text)
 		}
 
-		return form.InsertValue(field, caret, anchor, text)
+		return form.InsertSlot(field, caret, anchor, text)
 	case OpInsert:
-		return form.InsertValue(field, caret, anchor, text)
+		return form.InsertSlot(field, caret, anchor, text)
 	default:
 		return field, caret, anchor, false
 	}

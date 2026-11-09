@@ -24,6 +24,7 @@ elements.go:ElementLayout
 elements.go:ElementRegistry
 fetch.go:FetchResponse
 hover.go:HoverHandler
+page_patch_el.go:ElementPatch
 page_probe.go:MotionStats
 scrollbar.go:ScrollbarMode
 secret.go:Secret

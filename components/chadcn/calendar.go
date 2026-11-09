@@ -16,7 +16,15 @@ const (
 // CalendarOptions describes a controlled month grid. Month selects the visible
 // month and Selected marks the chosen day. A zero Month uses Selected's month,
 // then the current month. A zero Selected renders no selection.
+//
+// ID names the grid. Each day button uses ID+"-day-<cell>", where <cell> is
+// the zero-based position in the fixed six-by-seven grid (0..41), so the ids
+// stay stable across selection and month changes and those changes land as
+// text and attribute edits instead of a rebuild. The title uses ID+"-title"
+// and the grid uses ID+"-grid" for the same reason. An empty ID leaves the
+// grid, title, and days unnamed.
 type CalendarOptions struct {
+	ID            string
 	Month         time.Time
 	Selected      time.Time
 	OnSelect      func(ctx context.Context, day time.Time) error
@@ -47,23 +55,35 @@ func Calendar(options CalendarOptions) *ui.Element {
 		})
 	}
 	label := calendarMonthLabel(month)
+	title := ui.Div().Class("of-calendar-title").Attr("aria-live", "polite").Text(label)
+	if titleID := partID(options.ID, "-title"); titleID != "" {
+		title.ID(titleID)
+	}
 	header := ui.Div().Class("of-calendar-header").Children(
 		prev,
-		ui.Div().Class("of-calendar-title").Attr("aria-live", "polite").Text(label),
+		title,
 		next,
 	)
 
 	grid := ui.Div().Class("of-calendar-grid").Attr("role", "grid").Attr("aria-label", label)
+	if gridID := partID(options.ID, "-grid"); gridID != "" {
+		grid.ID(gridID)
+	}
 	grid.Children(calendarWeekdays())
 	for week := 0; week < calendarWeekCount; week++ {
 		row := ui.Div().Class("of-calendar-week").Attr("role", "row")
 		for dayIndex := 0; dayIndex < calendarDaysPerWeek; dayIndex++ {
-			day := start.AddDate(0, 0, week*calendarDaysPerWeek+dayIndex)
-			row.Children(calendarDay(day, month, options))
+			cell := week*calendarDaysPerWeek + dayIndex
+			day := start.AddDate(0, 0, cell)
+			row.Children(calendarDay(cell, day, month, options))
 		}
 		grid.Children(row)
 	}
-	return ui.Div().Class(classes("of-scope", "of-calendar")).Children(header, grid)
+	root := ui.Div().Class(classes("of-scope", "of-calendar")).Children(header, grid)
+	if options.ID != "" {
+		root.ID(options.ID)
+	}
+	return root
 }
 
 func calendarWeekdays() *ui.Element {
@@ -82,7 +102,7 @@ func calendarWeekdays() *ui.Element {
 	return row
 }
 
-func calendarDay(day, month time.Time, options CalendarOptions) *ui.Element {
+func calendarDay(cell int, day, month time.Time, options CalendarOptions) *ui.Element {
 	selected := calendarSameDay(day, options.Selected)
 	outside := day.Year() != month.Year() || day.Month() != month.Month()
 	cellClass := ""
@@ -93,19 +113,27 @@ func calendarDay(day, month time.Time, options CalendarOptions) *ui.Element {
 	if selected {
 		selectedClass = "of-calendar-day--selected"
 	}
-	cell := ui.Button(strconv.Itoa(day.Day())).
+	button := ui.Button(strconv.Itoa(day.Day())).
 		Attr("type", "button").
 		Attr("role", "gridcell").
 		Attr("aria-selected", ariaBool(selected)).
 		Attr("aria-label", day.Format("January 2, 2006")).
 		Class(classes("of-calendar-day", "of-transition", cellClass, selectedClass))
-	if options.OnSelect != nil {
+	// The cell position keeps the id stable across selection and month
+	// changes, so those changes land as text and attribute edits instead of
+	// a rebuild. The click handler still closes over the cell's date, so the
+	// callback receives the day shown at that position.
+	if dayID := partID(options.ID, "-day-"+strconv.Itoa(cell)); dayID != "" {
+		button.ID(dayID)
+	}
+	// Days from the adjacent month stay visible, but they are not choices.
+	if options.OnSelect != nil && !outside {
 		chosen := day
-		cell.OnClick(func(ctx context.Context) error {
+		button.OnClick(func(ctx context.Context) error {
 			return options.OnSelect(ctx, chosen)
 		})
 	}
-	return cell
+	return button
 }
 
 // calendarMonth normalizes Month to the first day of its month. A zero Month

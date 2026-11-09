@@ -6,12 +6,13 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// textRunMaxEntries and textRunMaxPixels bound what one page caches. A page
-// with more runs than this keeps the most-recently-used; the
-// least-recently-used rasters are disposed.
+// textRunMaxEntries and textRunMaxPixels bound what one page caches: at most
+// 256 baked runs holding 2M pixels (8 MB of GPU bytes). A page with more
+// runs than this keeps the most-recently-used; the least-recently-used
+// rasters are disposed.
 const (
-	textRunMaxEntries = 512
-	textRunMaxPixels  = 4 << 20
+	textRunMaxEntries = 256
+	textRunMaxPixels  = 2 << 20
 )
 
 // textRasterEntry is one baked run, offset from the integer origin the key

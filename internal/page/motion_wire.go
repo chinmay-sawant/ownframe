@@ -16,6 +16,70 @@ import (
 // block instead of logging on the hot path.
 type MotionStats = motion.Stats
 
+// motionCommitIdle reports whether the runtime needs nothing from this
+// commit: no player or renderer is live or bound, no layout or paint work is
+// queued, and every counter a no-declaration commit would zero already reads
+// zero. Skipping the box walks then leaves every counter exactly where the
+// commit would have left it: the no-declaration paths below only zero
+// counters that already read zero and install the display.
+//
+// Bound reads zero exactly when no entries are bound: every bind assigns it
+// from the entry list it installed, and only a bind changes either one, so a
+// zero Bound means RequeueLayout would loop over nothing and the queue it
+// would report is the empty one the gate also requires.
+func (p *Page) motionCommitIdle() bool {
+	if p.motion == nil {
+		return true
+	}
+	if p.motion.Active() {
+		return false
+	}
+	st := p.motion.Stats()
+	return st.Bound == 0 &&
+		st.Active == 0 &&
+		st.Sampled == 0 &&
+		st.NeedsRestamp == 0 &&
+		!st.NeedsRetainedState &&
+		st.LastError == "" &&
+		len(st.Gaps) == 0 &&
+		st.UnresolvedTimelines == 0 &&
+		st.InactiveTimelines == 0 &&
+		st.LayoutBound == 0 &&
+		st.LayoutQueued == 0 &&
+		st.SVGPaintRequests == 0 &&
+		st.TransitionsBound == 0 &&
+		st.TransitionsStarted == 0 &&
+		st.TransitionsCancelled == 0 &&
+		st.TransitionsSkipped == 0 &&
+		st.TransitionsBlocked == 0 &&
+		st.TransitionSkipReason == "" &&
+		st.TransitionsNoID == 0 &&
+		st.TransitionsNoOld == 0 &&
+		st.TransitionsActive == 0 &&
+		st.TransitionsSampled == 0 &&
+		st.TransitionError == ""
+}
+
+// displayDeclaresAnimations reports whether any box in d declares a CSS
+// animation. The predicate matches the bind's own scan, so a false answer
+// means the bind would take its no-animation fast path. The verdict is cached
+// per display and shares one box walk with the transitions verdict, so a
+// publish scans the page's boxes once instead of once per predicate.
+func (p *Page) displayDeclaresAnimations(d *Display) bool {
+	animations, _ := p.displayDeclarations(d)
+
+	return animations
+}
+
+// displayDeclaresTransitions reports whether any box in d declares a CSS
+// transition. The predicate matches the capture's own scan, so a false
+// answer means the capture would walk both displays and return nothing.
+func (p *Page) displayDeclaresTransitions(d *Display) bool {
+	_, transitions := p.displayDeclarations(d)
+
+	return transitions
+}
+
 // bindMotion resolves the CSS animations of the display the page just
 // published. Every publish path calls it after the display is installed and
 // the generation bumped, so the runtime never samples an operation list the
@@ -46,7 +110,21 @@ func (p *Page) bindMotion(previous, display *Display) {
 	// the box tree the re-projection pass patches.
 	retained := p.retainState
 
-	_ = p.motion.BindAfter(previous, display)
+	if display != nil && p.motionCommitIdle() && !p.displayDeclaresAnimations(display) {
+		// No box declares an animation and the runtime holds nothing: the
+		// bind would only zero counters that already read zero, so installing
+		// the display is the whole bind. The retained-state debt below is
+		// still paid, the way the full bind would pay it.
+		p.motion.AdoptDisplay(display)
+		if retained {
+			p.restampRedraw = false
+		}
+
+		return
+	}
+
+	idx := p.updateMotionIndex(previous, display)
+	_ = p.motion.BindAfterWithIndex(previous, display, idx)
 	if display == nil {
 		return
 	}
@@ -75,17 +153,79 @@ func (p *Page) bindMotion(previous, display *Display) {
 // and the one it is about to install. It must run before the commit swaps the
 // old list away, because the old operations hold the paint currently on
 // screen. A page with the transition driver off captures nothing.
+//
+// A skipped capture returns an empty non-nil slice: it proved there is
+// nothing to capture without walking either display, so bindTransitions can
+// skip without rescanning. A nil slice means the runtime ran the capture (or
+// the driver is off) and the bind must run to publish its counters. Callers
+// pass the result straight through; the two nil literals at the fallback and
+// restamp sites deliberately take the slow path, which is always correct.
 func (p *Page) captureTransitions(previous, next *Display) []motion.TransitionCapture {
 	if p.motion == nil || p.transitionsOff {
 		return nil
 	}
+	roots := p.commitRoots
+	p.commitRoots = nil
+	if next == nil || !p.motionCommitIdle() {
+		return p.motion.CaptureTransitions(previous, next)
+	}
+	if !p.displayDeclaresTransitions(next) {
+		// No box declares a transition and the runtime holds no live run a
+		// capture could cancel or reverse, so the capture would walk both
+		// displays and return nothing with zeroed counters.
+		return []motion.TransitionCapture{}
+	}
+	if roots != nil && !scopeDeclaresTransitions(next, roots) {
+		// A scoped commit outside every transitioning element cannot start,
+		// cancel, or retarget a transition: no transitioning box is the
+		// scope root or inside it, and the idle gate above proves no live
+		// run needs cancelling. Skip the index builds and the per-property
+		// walk; the bind still runs to publish its (unchanged) counters.
+		return []motion.TransitionCapture{}
+	}
 	return p.motion.CaptureTransitions(previous, next)
+}
+
+// scopeDeclaresTransitions reports whether the patched scope can affect a
+// transition: a transitioning box is a scope root, lies inside one, or (for
+// an id-less box) hangs under one. Roots are the commit's scope ids: hover
+// patch roots, one patched element id, or a batch id list. A nil roots means
+// a full layout, which keeps the whole-display capture. Id-less boxes match
+// by ancestor because the cascade anchors hover scopes at id-bearing boxes,
+// so an id-less box outside every scope subtree had no match change.
+func scopeDeclaresTransitions(next *Display, roots []string) bool {
+	inScope := make(map[string]struct{}, len(roots))
+	for _, id := range roots {
+		if id != "" {
+			inScope[id] = struct{}{}
+		}
+	}
+	for i := range next.Boxes {
+		if len(next.Boxes[i].Transitions) == 0 {
+			continue
+		}
+		box := &next.Boxes[i]
+		if _, ok := inScope[box.ID]; ok {
+			return true
+		}
+		for parent := box.ParentIndex; parent >= 0 && parent < len(next.Boxes); parent = next.Boxes[parent].ParentIndex {
+			if _, ok := inScope[next.Boxes[parent].ID]; ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // bindTransitions installs the captures against the display the page just
 // committed. The commit time is the transition start. When the page has no
 // patchable display, or the switch is off, any live renderer is released and
 // the committed paint stays as it is.
+//
+// An empty non-nil capture set from a skipped capture installs nothing: the
+// registries already read empty, so the bind would only rewrite zeroes and
+// ask the clock for a start time no renderer needs. Anything else runs the
+// bind, which publishes the capture's diagnostic counters.
 func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
 	if p.motion == nil {
 		return
@@ -93,6 +233,9 @@ func (p *Page) bindTransitions(captures []motion.TransitionCapture) {
 	if p.transitionsOff {
 		p.motion.ReleaseTransitions()
 
+		return
+	}
+	if captures != nil && len(captures) == 0 && p.motionCommitIdle() {
 		return
 	}
 	p.motion.BindTransitions(p.draw.Display, captures, time.Now())
@@ -459,20 +602,26 @@ type triggerPressState struct {
 	box   Box
 }
 
-// activationBox resolves the innermost box under a point the way the click
-// sequence does: the box the point hit, or its innermost id-bearing ancestor.
-func (p *Page) activationBox(x, y float64) (Box, bool) {
-	box, ok := p.hitBox(x, y)
+// activationSpot resolves the innermost box from a box scan the caller already
+// made: the box the point hit, or its innermost id-bearing ancestor. Click
+// passes the one spot it scanned into the sequence, so the trigger pass and
+// the click never disagree and never scan twice.
+func (p *Page) activationSpot(spot boxSpot) (Box, bool) {
+	box, ok := spot.box, spot.ok
 	if !ok {
 		return Box{}, false
 	}
-	if box.ID == "" {
-		if id := p.boxIDAt(x, y); id != "" {
-			box = p.boxByID(id)
-		}
+	if box.ID == "" && spot.id != "" {
+		box = p.boxByID(spot.id)
 	}
 
 	return box, true
+}
+
+// activationBox resolves the innermost box under a point the way the click
+// sequence does: the box the point hit, or its innermost id-bearing ancestor.
+func (p *Page) activationBox(x, y float64) (Box, bool) {
+	return p.activationSpot(p.boxAt(x, y))
 }
 
 // pressTriggers fires the activated element's animation-trigger entry actions

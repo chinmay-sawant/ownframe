@@ -3,6 +3,7 @@ package form
 // fieldAttr is the attribute set read from one open tag.
 type fieldAttr struct {
 	id, kind, name, val, bind   string
+	inputMode                   string
 	tabindex                    int
 	maxlen                      int
 	hasVal                      bool

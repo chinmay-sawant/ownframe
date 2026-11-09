@@ -1,0 +1,57 @@
+package shadcnchart_test
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/chinmay-sawant/ownframe/components/shadcnchart"
+	"github.com/chinmay-sawant/ownframe/ui"
+)
+
+const sampleValue = 10.0
+
+func render(t *testing.T, element *ui.Element) string {
+	t.Helper()
+	source, err := ui.Render(element)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return source
+}
+
+func TestChartsRender(t *testing.T) {
+	t.Parallel()
+	series := shadcnchart.Options{
+		Title: "Week", Labels: []string{"Mon"},
+		Series: []shadcnchart.Series{{Name: "Opened", Values: []float64{sampleValue}}},
+	}
+	parts := shadcnchart.PartOptions{
+		Title:  "Share",
+		Slices: []shadcnchart.Slice{{Name: "Desktop", Value: sampleValue}},
+	}
+	cases := []struct {
+		name, want string
+		element    *ui.Element
+	}{
+		{name: "Area", want: "Week", element: shadcnchart.Area(series)},
+		{name: "Bar", want: "Week", element: shadcnchart.Bar(series)},
+		{name: "Line", want: "Week", element: shadcnchart.Line(series)},
+		{name: "Pie", want: "Share", element: shadcnchart.Pie(parts)},
+		{name: "Radar", want: "Week", element: shadcnchart.Radar(series)},
+		{name: "Radial", want: "Share", element: shadcnchart.Radial(parts)},
+	}
+	for _, tc := range cases {
+		source := render(t, tc.element)
+		if !strings.Contains(source, tc.want) {
+			t.Fatalf("%s missing %q in %s", tc.name, tc.want, source)
+		}
+	}
+}
+
+func TestEmptySeriesSaysNoData(t *testing.T) {
+	t.Parallel()
+	source := render(t, shadcnchart.Area(shadcnchart.Options{}))
+	if !strings.Contains(source, "No data") {
+		t.Fatalf("empty chart: %s", source)
+	}
+}

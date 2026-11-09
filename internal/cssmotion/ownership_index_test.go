@@ -112,3 +112,51 @@ func TestIndexImageMatchesTiers(t *testing.T) {
 		t.Fatalf("imageless image = %v, want empty", got)
 	}
 }
+
+// TestIndexEmptyAllocZero checks that NewIndex, NewKeyframesIndex, and EmptyIndex
+// return the shared empty index with 0 allocations.
+func TestIndexEmptyAllocZero(t *testing.T) {
+	if EmptyIndex() != emptyIndex {
+		t.Fatal("EmptyIndex() != emptyIndex")
+	}
+	if got := NewIndex(nil); got != emptyIndex {
+		t.Fatalf("NewIndex(nil) = %p, want emptyIndex %p", got, emptyIndex)
+	}
+	emptyDisplay := &layout.Display{}
+	if got := NewIndex(emptyDisplay); got != emptyIndex {
+		t.Fatalf("NewIndex(empty) = %p, want emptyIndex %p", got, emptyIndex)
+	}
+	if got := NewKeyframesIndex(nil, emptyDisplay); got != emptyIndex {
+		t.Fatalf("NewKeyframesIndex(nil) = %p, want emptyIndex %p", got, emptyIndex)
+	}
+
+	allocsNil := testing.AllocsPerRun(100, func() {
+		idx := NewIndex(nil)
+		if idx == nil {
+			t.Fatal("unexpected nil")
+		}
+	})
+	if allocsNil != 0 {
+		t.Fatalf("NewIndex(nil) allocs = %v, want 0", allocsNil)
+	}
+
+	allocsEmpty := testing.AllocsPerRun(100, func() {
+		idx := NewIndex(emptyDisplay)
+		if idx == nil {
+			t.Fatal("unexpected nil")
+		}
+	})
+	if allocsEmpty != 0 {
+		t.Fatalf("NewIndex(empty) allocs = %v, want 0", allocsEmpty)
+	}
+
+	allocsKeyframes := testing.AllocsPerRun(100, func() {
+		idx := NewKeyframesIndex(nil, emptyDisplay)
+		if idx == nil {
+			t.Fatal("unexpected nil")
+		}
+	})
+	if allocsKeyframes != 0 {
+		t.Fatalf("NewKeyframesIndex(nil) allocs = %v, want 0", allocsKeyframes)
+	}
+}

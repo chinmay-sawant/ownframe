@@ -10,8 +10,9 @@ import (
 // DatePickerOptions describes a controlled date picker. The host owns Open,
 // Month, and Selected, updates them in the callbacks, and rebuilds the view.
 //
-// ID names the root. The trigger uses ID+"-trigger" and the calendar panel
-// uses ID+"-panel". An empty Selected shows the placeholder in the trigger.
+// ID names the root. The trigger uses ID+"-trigger", the trigger label uses
+// ID+"-label", and the calendar panel uses ID+"-panel". An empty Selected
+// shows the placeholder in the trigger.
 type DatePickerOptions struct {
 	ID            string
 	Open          bool
@@ -39,7 +40,7 @@ func DatePicker(options DatePickerOptions) *ui.Element {
 		Attr("aria-expanded", ariaBool(options.Open)).
 		Class(classes("of-date-picker-trigger", "of-transition")).
 		Children(
-			ui.Span().Class(classes("of-date-picker-label", labelClass)).Text(label),
+			datePickerLabel(options, label, labelClass),
 			ui.Span().Class("of-date-picker-chevron").Attr("aria-hidden", "true").Text("⌄"),
 		)
 	triggerID := partID(options.ID, "-trigger")
@@ -69,12 +70,23 @@ func DatePicker(options DatePickerOptions) *ui.Element {
 	return root
 }
 
+// datePickerLabel is the mutable node on a closed date change. Its stable
+// part id lets that change land as a text edit instead of a full render.
+func datePickerLabel(options DatePickerOptions, label, labelClass string) *ui.Element {
+	element := ui.Span().Class(classes("of-date-picker-label", labelClass)).Text(label)
+	if labelID := partID(options.ID, "-label"); labelID != "" {
+		element.ID(labelID)
+	}
+	return element
+}
+
 func datePickerPanel(options DatePickerOptions, panelID string) *ui.Element {
 	panel := ui.Div().
 		Class("of-date-picker-panel").
 		Attr("role", "dialog").
 		Attr("aria-label", "Choose a date").
 		Children(Calendar(CalendarOptions{
+			ID:            partID(options.ID, "-calendar"),
 			Month:         options.Month,
 			Selected:      options.Selected,
 			OnSelect:      options.OnSelect,

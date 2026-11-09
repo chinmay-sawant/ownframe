@@ -42,7 +42,7 @@
   transition: border-color 0.15s;
 }
 
-.of-radio-group-item:hover .of-radio-group-indicator {
+.of-radio-group-item:not([disabled]):not([aria-disabled="true"]):hover .of-radio-group-indicator {
   border-color: var(--of-ring, #a1a1aa);
 }
 
@@ -50,7 +50,7 @@
   border: 2px solid var(--of-primary, #171717);
 }
 
-.of-radio-group-item--checked:hover .of-radio-group-indicator {
+.of-radio-group-item--checked:not([disabled]):not([aria-disabled="true"]):hover .of-radio-group-indicator {
   border-color: var(--of-primary, #171717);
 }
 

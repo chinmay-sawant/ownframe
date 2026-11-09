@@ -62,10 +62,6 @@ func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]stri
 		p.hoverGuardRisky = draw.HoverPatchRisky(p.source, p.themeSrc)
 	}
 
-	if p.hoverGuardRisky {
-		return nil, false
-	}
-
 	key := p.keyFor(state)
 	key.Hover = ""
 	if p.hoverScopes == nil || p.hoverScopeKey != key {
@@ -93,8 +89,23 @@ type hoverScopeResult struct {
 func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]string, bool) {
 	// The cascade knows which selectors changed. Prefer those scopes over
 	// the common ancestor of two controls, which can include a whole toolbar.
-	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok && draw.HoverScopesFit(p.boxes, roots) {
-		return roots, true
+	// The cascade evaluates the full selector per node (including :has and
+	// sibling combinators), so its scopes stay safe when the sheets use those
+	// patterns. Only the geometric fallback needs the page-wide risky guard:
+	// it assumes the change stays inside the hovered subtrees, which :has and
+	// sibling-after-:hover break.
+	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok {
+		if draw.HoverScopesFit(p.boxes, roots) {
+			return roots, true
+		}
+		// The precise change is too wide for a scoped patch. A narrower
+		// geometric guess would miss the nodes the cascade already found,
+		// so take the full layout when the sheets can reach outside.
+		if p.hoverGuardRisky {
+			return nil, false
+		}
+	} else if p.hoverGuardRisky {
+		return nil, false
 	}
 	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
 }
@@ -145,15 +156,22 @@ func (p *Page) listHoverPatched(
 	for _, root := range roots {
 		patch, err := p.hoverPatch(ctx, styled, current, root, options)
 		if err != nil {
+			p.commitRoots = nil
 			return nil, err
 		}
 
 		if patch == nil || patch.Display == nil {
+			p.commitRoots = nil
 			return nil, errHoverPatchEmpty
 		}
 
 		current = patch.Display
 	}
+
+	// The commit this display produces is scoped to these roots. An empty
+	// non-nil scope means the hover changed no selector: still scoped, so
+	// the transition capture can skip when no transitioning box is inside.
+	p.commitRoots = append([]string{}, roots...)
 
 	return current, nil
 }

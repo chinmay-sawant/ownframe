@@ -4,6 +4,8 @@ import (
 	"html"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 const formCSS = `<style>[data-ownframe-field]{display:inline-block;border:1px solid #c8c2b4;padding:4px 6px;min-width:10em;min-height:1.6em;white-space:pre-wrap}[data-ownframe-field][data-ownframe-focus="1"]{border:1px solid #1a56db;outline:1px solid #1a56db}[data-ownframe-selection]{background:#d6e2ff}[data-ownframe-composition]{text-decoration:underline}[data-ownframe-field][data-ownframe-placeholder="1"]{color:#6b7280}</style>`
@@ -356,27 +358,35 @@ func markedPreedit(value, preedit string, start, end, selStart, selEnd int) stri
 // RewriteState copies source, swapping each kept control for
 // paintable HTML and adding the default form styles.
 func RewriteState(source string, spans []Span, live map[string]Control, st Caret) string {
+	return RewriteCached(source, HashSource(source), spans, live, st)
+}
+
+// RewriteCached is RewriteState with the source hash threaded through, so a
+// caller that already hashed the source (the page sync) pays no second hash
+// and reuses the cached head offsets instead of scanning for them again.
+// Output is identical to RewriteState for the same inputs.
+func RewriteCached(source string, hash uint64, spans []Span, live map[string]Control, st Caret) string {
 	if !hasFieldSpans(spans) {
 		return source
 	}
 
-	css := formCSS
+	scanMemo.rewrites.Add(1)
+
+	var b strings.Builder
+	b.Grow(len(source) + len(formCSS))
+
+	cssAt := cachedHead(source, hash)
 	kept := keepSpans(source, spans)
-	cssAt := HeadOpen(source)
-	if cssAt < 0 {
-		cssAt = FindHead(source)
-	}
 	if cssAt >= 0 && spanCovers(kept, cssAt) {
 		cssAt = -1
 	}
 
-	var b strings.Builder
 	prev := 0
 	placed := false
 	write := func(end int) {
 		if !placed && cssAt >= prev && cssAt <= end {
 			b.WriteString(source[prev:cssAt])
-			b.WriteString(css)
+			b.WriteString(formCSS)
 			b.WriteString(source[cssAt:end])
 			placed = true
 
@@ -393,10 +403,54 @@ func RewriteState(source string, spans []Span, live map[string]Control, st Caret
 	}
 	write(len(source))
 	if !placed {
-		return css + b.String()
+		return formCSS + b.String()
 	}
 
 	return b.String()
+}
+
+// cachedHead returns the form-style insertion offset for source: HeadOpen,
+// or FindHead when there is no head open tag. The offset is memoized per
+// source hash; a miss scans once and stores the offset for the next redraw
+// of the same body.
+func cachedHead(source string, hash uint64) int {
+	scanMemo.Lock()
+	for i := range scanMemo.entries {
+		if e := &scanMemo.entries[i]; e.hash == hash && e.source == source && e.headValid {
+			at := e.head
+			scanMemo.Unlock()
+
+			return at
+		}
+	}
+	scanMemo.Unlock()
+
+	at := headScan(source)
+
+	scanMemo.Lock()
+	for i := range scanMemo.entries {
+		if e := &scanMemo.entries[i]; e.hash == hash && e.source == source {
+			e.head, e.headValid = at, true
+
+			break
+		}
+	}
+	scanMemo.Unlock()
+
+	return at
+}
+
+// headScan evaluates the style insertion offset without the cache. It backs
+// the head part of the telemetry: every evaluation is one HeadOpen scan
+// plus a FindHead scan only when there is no head open tag.
+func headScan(source string) int {
+	at := HeadOpen(source)
+	scanMemo.heads.Add(1)
+	if at < 0 {
+		at = FindHead(source)
+	}
+
+	return at
 }
 
 func replaceControlState(raw string, ctrl Control, st Caret) string {
@@ -497,3 +551,195 @@ const (
 	selectedAttr    = `data-ownframe-selected="1"`
 	placeholderAttr = `data-ownframe-placeholder="1"`
 )
+
+const (
+	// fnvOffset64 and fnvPrime64 are the FNV-1a 64-bit parameters used by
+	// HashSource. Named so the lint gate does not read them as magic numbers.
+	fnvOffset64 = 14695981039346656037
+	fnvPrime64  = 1099511628211
+
+	// probeCacheSize bounds the per-source scan memo. Four entries cover a
+	// page alternating between a few bodies without retaining a history.
+	probeCacheSize = 4
+)
+
+// HashSource hashes source with FNV-1a. The page sync hashes each executed
+// body once and threads the hash through the cached scan and rewrite, so no
+// pass hashes the source twice. It allocates nothing.
+func HashSource(source string) uint64 {
+	h := uint64(fnvOffset64)
+	for i := 0; i < len(source); i++ {
+		h ^= uint64(source[i])
+		h *= fnvPrime64
+	}
+
+	return h
+}
+
+// probeResult memoizes one executed body: the control probe, the control
+// spans, and the form-style insertion offset. Spans are a pure function of
+// the source, so a repeat body reuses them without walking the source. The
+// cached spans are shared read-only; callers must not mutate them.
+type probeResult struct {
+	hash        uint64
+	source      string
+	hasControls bool
+	hasButtons  bool
+	spans       []Span
+	head        int
+	headValid   bool
+}
+
+// ScanTelemetry counts source passes so tests can prove skipped passes are
+// skipped: a repeat body must not move Probes, Scans, or HeadScans, and a
+// span-free body must not move Rewrites.
+type ScanTelemetry struct {
+	Probes   uint64
+	Scans    uint64
+	Heads    uint64
+	Rewrites uint64
+}
+
+// its pass counters. The entries key on the source hash with an exact source
+// compare, so a collision degrades to a rescan instead of a wrong page. The
+// counters are the only way for tests to observe skipped passes.
+//
+//nolint:gochecknoglobals // Bounded single-process memo (four entries) plus
+var scanMemo = struct {
+	sync.Mutex
+	entries  [probeCacheSize]probeResult
+	next     int
+	probes   atomic.Uint64
+	scans    atomic.Uint64
+	heads    atomic.Uint64
+	rewrites atomic.Uint64
+}{}
+
+// Telemetry returns the source-pass counters.
+func Telemetry() ScanTelemetry {
+	return ScanTelemetry{
+		Probes:   scanMemo.probes.Load(),
+		Scans:    scanMemo.scans.Load(),
+		Heads:    scanMemo.heads.Load(),
+		Rewrites: scanMemo.rewrites.Load(),
+	}
+}
+
+// HasFieldSpans reports whether any span needs paintable field markup.
+// Plain buttons stay in the source, so the page skips the rewrite for them.
+func HasFieldSpans(spans []Span) bool { return hasFieldSpans(spans) }
+
+// ScanSingle reads input, textarea, select, and button controls from source
+// in one walk, mirroring Scan exactly, and also reports whether source holds
+// a submit, button, or reset input that the button rewrite would replace.
+// The button predicate matches rewriteButtons tag for tag (same open-tag
+// read, same type attribute read, same comment and script skipping), so a
+// false lets the caller skip that rewrite knowing it is the identity.
+// Unlike Scan it performs no HasControls pre-probe: the walk is the probe.
+func ScanSingle(source string) (spans []Span, buttons bool) {
+	var out []Span
+	i := 0
+	for i < len(source) {
+		next := strings.IndexByte(source[i:], '<')
+		if next < 0 {
+			break
+		}
+		i += next
+		if strings.HasPrefix(source[i:], "<!--") {
+			end := strings.Index(source[i+CommentOpenLen:], "-->")
+			if end < 0 {
+				break
+			}
+			i += end + CommentTotalLen
+
+			continue
+		}
+
+		name, raw, end, ok := ReadOpen(source, i)
+		if !ok {
+			i++
+
+			continue
+		}
+
+		low := strings.ToLower(name)
+		switch low {
+		case "script", "style":
+			_, i = CloseSpan(source, end, low)
+		case "input":
+			switch strings.ToLower(AttrValue(raw, "type")) {
+			case "submit", "button", "reset":
+				buttons = true
+			}
+			if sp, add := makeInput(i, end, readAttrs(raw)); add {
+				out = append(out, sp)
+			}
+			i = end
+		case "textarea":
+			sp, at := makeArea(source, i, end, readAttrs(raw))
+			if sp.Control.ID != "" {
+				out = append(out, sp)
+			}
+			i = at
+		case "select":
+			sp, at := makeSelect(source, i, end, readAttrs(raw))
+			if sp.Control.ID != "" {
+				out = append(out, sp)
+			}
+			i = at
+		case "button":
+			_, at := CloseSpan(source, end, low)
+			a := readAttrs(raw)
+			if a.id != "" {
+				c := controlFrom(low, a)
+				c.Type = "button"
+				if a.kind == "submit" || a.kind == "reset" {
+					c.Type = a.kind
+				}
+				out = append(out, Span{Control: c, Start: i, End: at})
+			}
+			i = at
+		default:
+			i = end
+		}
+	}
+
+	return out, buttons
+}
+
+// ScanCached returns the control probe, the control spans, and the
+// button-input flag for source, memoized per source hash. The first redraw
+// of a body pays one probe plus one scan walk; repeats reuse the entry
+// without touching the source. Entries key on the hash and validate with an
+// exact source compare, so a hash collision only costs a rescan.
+func ScanCached(source string, hash uint64) (bool, []Span, bool) {
+	scanMemo.Lock()
+	for i := range scanMemo.entries {
+		if e := &scanMemo.entries[i]; e.hash == hash && e.source == source {
+			has, spans, buttons := e.hasControls, e.spans, e.hasButtons
+			scanMemo.Unlock()
+
+			return has, spans, buttons
+		}
+	}
+	scanMemo.Unlock()
+
+	has := HasControls(source)
+	scanMemo.probes.Add(1)
+	spans, buttons := ScanSingle(source)
+	scanMemo.scans.Add(1)
+
+	scanMemo.Lock()
+	scanMemo.entries[scanMemo.next] = probeResult{
+		hash:        hash,
+		source:      source,
+		hasControls: has,
+		hasButtons:  buttons,
+		spans:       spans,
+		head:        -1,
+	}
+	scanMemo.next = (scanMemo.next + 1) % probeCacheSize
+	scanMemo.Unlock()
+
+	return has, spans, buttons
+}

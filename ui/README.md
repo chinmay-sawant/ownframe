@@ -166,13 +166,19 @@ click callback replace that dispatch, so use `View.Handle` for mounted views.
 `Render` still emits markup only and does not connect callbacks.
 
 `Update` replaces the current source and callback registry without pushing
-navigation history or deleting forward history. It performs a full document
-render through Blinkless, subject to normal redraw batching. Tree validation
-and canceled-context errors leave the previous source and callbacks in place.
+navigation history or deleting forward history. When the rebuilt tree keeps
+the same structure, it patches the changed text, attributes, and inline styles
+through `Page.PatchElements` and adopts the new source without reparsing it. A
+structural change, a changed node without an id, a removed attribute, more than
+64 changed elements, or a refused batch takes the full document render instead.
+`Mount` enables `Config.RetainState` because the patch path needs the retained
+layout state; `NewPage` leaves the caller's value alone. Tree validation and
+canceled-context errors leave the previous source and callbacks in place.
 Inside a redraw batch, rendering errors can arrive later from the batch flush;
 the accepted source and callbacks remain the current state for the retry.
-Updates must run on the page loop and must not be called from an after-redraw
-callback. They do not reconcile subtrees or promise a rendering speedup.
+`Update` retains the tree it is given until the next call, so build a new tree
+for each update instead of editing the retained one in place. Updates must run
+on the page loop and must not be called from an after-redraw callback.
 
 Controls with stable IDs and types retain live values, caret, selection, and
 focus. Removed controls lose their state. Changing an input's initial `value`

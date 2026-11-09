@@ -57,6 +57,13 @@
   display: block;
 }
 
+/* :hover matches only the element with the hover id, so a rule on the root
+   does not see the trigger. :has opens the card while that id is the trigger
+   or a control inside it, and also while the pointer is on the card. */
+.of-hover-card--css-hover:has(:hover) > .of-hover-card-anchor > .of-hover-card-content {
+  display: block;
+}
+
 /* Cards above and below centre on the trigger. The zero-width anchor with two
    auto margins holds the wrapper midpoint, and the negative right offset pulls
    half the card width, so links inside keep their hit boxes on the card. */

@@ -3,14 +3,16 @@ module github.com/chinmay-sawant/ownframe
 go 1.26.10
 
 require (
-	github.com/chinmay-sawant/blinkless v0.1.1-0.20261103124301-1b8814741a85
+	github.com/chinmay-sawant/blinkless v0.1.1-0.20261108141109-dc1d518bff32
 	github.com/hajimehoshi/ebiten/v2 v2.11.0-alpha.0.20261103125056-58976b602532
 	golang.org/x/image v0.47.0
+	golang.org/x/perf v0.0.0-20260908200009-22c9c6c9d4da
 	golang.org/x/text v0.43.0
 	golang.org/x/time v0.14.0
 )
 
 require (
+	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/telemetry v0.0.0-20261010193011-f71dc92da45e // indirect
 	golang.org/x/tools v0.52.0 // indirect
@@ -28,7 +30,7 @@ require (
 	github.com/BurntSushi/xgb v0.0.0-20210121224620-deaf085860bc // indirect
 	github.com/BurntSushi/xgbutil v0.0.0-20190907113008-ad855c713046 // indirect
 	github.com/ByteArena/poly2tri-go v0.0.0-20170716161910-d102ad91854f // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.7 // indirect
 	github.com/benoitkugler/textlayout v0.3.2 // indirect
 	github.com/benoitkugler/textprocessing v0.0.6 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 // indirect

@@ -75,3 +75,45 @@ func TestBoxAtUnifiesPointerWinners(t *testing.T) {
 		t.Fatalf("clicked = %+v, want inner", clicked)
 	}
 }
+
+func TestBoxesSliceAndBoxAt(t *testing.T) {
+	p := overlapPage(t)
+	fixture := overlapFixture()
+	p.setBoxes(fixture)
+
+	slice := p.BoxesSlice()
+	if len(slice) != len(fixture) {
+		t.Fatalf("len(BoxesSlice) = %d, want %d", len(slice), len(fixture))
+	}
+	if len(slice) > 0 && &slice[0] != &p.boxes[0] {
+		t.Fatal("BoxesSlice did not return direct slice")
+	}
+
+	copied := p.Boxes()
+	if len(copied) > 0 && &copied[0] == &p.boxes[0] {
+		t.Fatal("Boxes() must return a copy, not the direct slice")
+	}
+
+	box, ok := p.BoxAt(13, 13)
+	if !ok || box.ID != "" {
+		t.Fatalf("BoxAt(13, 13) = %+v, %v, want the innermost anonymous box", box, ok)
+	}
+
+	box, ok = p.BoxAt(5, 5)
+	if !ok || box.ID != "outer" {
+		t.Fatalf("BoxAt(5, 5) = %+v, %v, want outer", box, ok)
+	}
+
+	_, ok = p.BoxAt(500, 500)
+	if ok {
+		t.Fatal("BoxAt(500, 500) want false")
+	}
+
+	allocs := testing.AllocsPerRun(10, func() {
+		_ = p.BoxesSlice()
+		_, _ = p.BoxAt(13, 13)
+	})
+	if allocs != 0 {
+		t.Fatalf("BoxesSlice + BoxAt allocated %f times, want 0", allocs)
+	}
+}

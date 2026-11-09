@@ -1,6 +1,6 @@
 # Emoji
 
-Thirty-one emoji paint in full color in the window and in every picture it
+Forty-two emoji paint in full color in the window and in every picture it
 produces. The bundled text faces draw a few smileys in
 monochrome and tofu for the rest, so the page replaces supported
 sequences in text with inline images backed by the bundled Twemoji 72px
@@ -9,7 +9,7 @@ PNGs (CC-BY 4.0, Twitter Inc; attribution lives in
 
 Supported sequences, in display order: ❤️ (bare `❤` too) ⚠️ (bare
 `⚠` too) 😂 😮 😢 😍 😊 😀 🎉 👍 🔥 🚀 ⭐ 👏 🎂 💯 ✅ ❌ 👋 🙏 🤍
-😱 😭 🤔 💀 🫡 🥲 😴 ❓ ❗ 💡.
+😱 😭 🤔 💀 🫡 🥲 😴 ❓ ❗ 💡 👀 🧠 📌 🔋 🌮 🍜 🧈 🦀 🎨 🎧 👥.
 Everything else keeps the font's own paint: ZWJ families, skin-tone
 modifiers, and flags stay monochrome or tofu.
 

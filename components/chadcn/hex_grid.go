@@ -17,7 +17,9 @@ type HexCell struct {
 }
 
 // HexGridOptions describes a honeycomb status map. Columns sets the row width;
-// zero keeps the CSS default. Cells render in order.
+// zero keeps the CSS default. Cells render in order. When ID is set, each cell
+// id is that value plus the cell index, so a tone change patches instead of
+// taking the full-render path. Added or removed cells stay FULL by design.
 type HexGridOptions struct {
 	ID      string
 	Label   string
@@ -41,8 +43,12 @@ func HexGrid(options HexGridOptions) *ui.Element {
 	if options.Columns > 0 {
 		root.CustomProperty("--of-hex-columns", hexColumns(options.Columns))
 	}
-	for _, cell := range options.Cells {
-		root.Children(HexCellElement(cell))
+	for index, cell := range options.Cells {
+		element := HexCellElement(cell)
+		if id := partID(options.ID, "-cell-"+strconv.Itoa(index)); id != "" {
+			element.ID(id)
+		}
+		root.Children(element)
 	}
 	return root
 }
@@ -53,15 +59,15 @@ func HexCellElement(cell HexCell) *ui.Element {
 	if cell.Tone >= 1 && cell.Tone <= chartPaletteSize+1 {
 		slot = cell.Tone
 	}
-	element := ui.Div().Class("of-hex").Attr("data-tone", hexToneSlot(slot)).Attr("aria-hidden", "true").Children(
+	element := ui.Div().Class("of-hex").Attr("data-tone", hexToneSlot(slot)).Children(
 		ui.Div().Class("of-hex-top").Attr("aria-hidden", "true"),
 		ui.Div().Class("of-hex-mid").Attr("aria-hidden", "true"),
 		ui.Div().Class("of-hex-bottom").Attr("aria-hidden", "true"),
 	)
-	if cell.Label != "" {
-		element.Attr("title", cell.Label)
+	if cell.Label == "" {
+		return element.Attr("aria-hidden", "true")
 	}
-	return element
+	return element.Attr("role", "img").Attr("aria-label", cell.Label).Attr("title", cell.Label)
 }
 
 func hexToneSlot(slot int) string {

@@ -2,12 +2,15 @@ package page
 
 import (
 	"context"
+	"io"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/blinkless/layout"
 
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -59,9 +62,16 @@ func (s redrawSurface) ExecTemplate(track bool) (string, error) {
 }
 
 func (s redrawSurface) SyncForm(executed string) string {
-	s.p.source = s.p.syncForm(executed)
+	out := s.p.syncForm(executed)
+	s.p.source = out
+	// A clean fast-path sync leaves the source byte-identical, so the
+	// memoized hash, length, and revision from the last real sync are
+	// still valid and the rehash is pure overhead on the skip path.
+	if !s.p.syncClean {
+		s.p.noteSource(out)
+	}
 
-	return s.p.source
+	return out
 }
 
 func (s redrawSurface) RenderState() render.State { return s.p.renderState() }
@@ -96,12 +106,24 @@ func (s redrawSurface) AfterRedrawDraw(ctx context.Context) error {
 var _ draw.RedrawSurface = redrawSurface{}
 
 // execTemplate runs the trusted template, timing it when tracked.
+//
+// The "{{" probe is memoized to template-write time: the scan runs once
+// when p.tpl changes and the verdict is reused, so repeat frames pay no
+// scan. A clean form reuses the last merged body with no Execute. A dirty
+// frame executes into a pooled buffer and keeps one copy; its hash is taken
+// once in the sync path, which pairs it with the body for the next reuse.
 func (p *Page) execTemplate(track bool) (string, error) {
 	p.applyScrollWindow()
-	cur := p.nav.Current()
-	if !strings.Contains(cur, "{{") {
+	if p.tplProbeTpl != p.tpl {
+		p.tplProbeHas = strings.Contains(p.nav.Current(), "{{")
+		p.tplProbeTpl = p.tpl
+	}
+
+	if !p.tplProbeHas {
 		p.stats.lastTemplate = 0
-		return cur, nil
+		p.execSkipped = true
+
+		return p.nav.Current(), nil
 	}
 
 	p.dataMu.RLock()
@@ -114,31 +136,75 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	// still current.
 	if !p.formDirty && p.lastSyncBody != "" {
 		p.stats.lastTemplate = 0
+		p.execSkipped = true
+
 		return p.lastSyncBody, nil
 	}
 
-	return draw.Execute(
+	p.execSkipped = false
+
+	out, err := draw.ExecuteWriter(
 		track,
 		len(p.source),
 		&p.stats.lastTemplate,
-		func(b *strings.Builder) error {
-			return p.tpl.Execute(b, p.data)
+		func(w io.Writer) error {
+			return p.tpl.Execute(w, p.data)
 		},
 	)
+	if err != nil {
+		return "", err
+	}
+
+	body := string(out)
+
+	return body, nil
 }
 
 // styleStaged styles the source, timing it when tracked.
+//
+// A theme swap forces a fresh Apply: css.Relayout keeps the cached
+// document's extra sheets, so the cacheFresh relayout would keep painting
+// the old theme. A state-only move the sheets cannot match reuses the cached
+// document with no relayout at all.
+//
+// Otherwise, when the style cache already reflects the current source memo,
+// the page relayouts directly: the revision, hash, and length compare with no
+// cache lock, and the relayout takes one. Only a new source (or a dropped
+// cache) pays the Source memcmp and the fresh parse inside StyleDocument.
 func (p *Page) styleStaged(
 	ctx context.Context,
 	track bool,
 	source string,
 	state render.State,
 ) (*css.Document, error) {
+	if doc, ok := p.styleNoop(state); ok {
+		return doc, nil
+	}
+
+	changed := p.themeChanged(state)
+	if !changed && p.cacheFresh() {
+		// An element patch the hover handler just committed already
+		// relayed the cache for this state, so reuse its document.
+		if doc, ok := p.relayedDoc(state); ok {
+			return doc, nil
+		}
+		ds := draw.Clock(track)
+
+		doc, err := p.cache.Relayout(ctx, p.width, p.height, state)
+		draw.Note(track, &p.stats.styleTime, ds)
+		if err != nil {
+			return nil, err
+		}
+
+		p.noteRelayed(state)
+		return doc, nil
+	}
+
 	styled, err := draw.StyleDocument(
 		ctx,
 		track,
 		&p.stats.styleTime,
-		p.cache,
+		styleCache(p.cache, changed),
 		source,
 		p.viewport(),
 		state,
@@ -152,9 +218,64 @@ func (p *Page) styleStaged(
 		p.statePseudos = styled.Pseudos
 		p.stats.parses++
 		p.stats.cascades++
+	} else if changed {
+		// A relayout keeps the old extra sheet, so refresh what the new
+		// document can match even without a fresh cascade.
+		p.statePseudos = p.cache.StatePseudos()
 	}
 
+	p.noteCacheSource()
+	p.noteRelayed(state)
+
 	return styled.Doc, nil
+}
+
+// styleCache selects the cache a style call starts from. A theme change
+// passes nil so the call takes the fresh Apply: css.Relayout keeps the
+// cached document's extra sheets and would keep the old theme.
+func styleCache(cache *render.Cache, themeChanged bool) *render.Cache {
+	if themeChanged {
+		return nil
+	}
+
+	return cache
+}
+
+// themeChanged reports that the theme sheet differs from the one the last
+// committed frame was styled with. The cache still reflects the old sheet,
+// so the caller must not take the cacheFresh relayout for it.
+func (p *Page) themeChanged(state render.State) bool {
+	return p.cache != nil && p.last.Theme != state.Theme
+}
+
+// styleNoop returns the cached styled document when a redraw changed only
+// pointer or focus state the sheets cannot match, so a relayout would
+// reproduce the same styles. ok is false when the frame changed anything
+// else, or when a changed state can match, and the caller restyles.
+func (p *Page) styleNoop(state render.State) (doc *css.Document, ok bool) {
+	if p.cache == nil || !p.hasLast {
+		return nil, false
+	}
+
+	prev := render.State{Hover: p.last.Hover, Active: p.last.Active, Focus: p.last.Focus}
+	if !state.SameStyleState(prev, p.statePseudos) {
+		return nil, false
+	}
+
+	next, last := p.keyFor(state), p.last
+	next.Focus, next.Hover, next.Active = "", "", ""
+	last.Focus, last.Hover, last.Active = "", "", ""
+
+	if next != last {
+		return nil, false
+	}
+
+	doc = p.cache.Styled()
+	if doc == nil {
+		return nil, false
+	}
+
+	return doc, true
 }
 
 // drawStaged builds the list and commits either path.
@@ -191,6 +312,7 @@ func (p *Page) drawStaged(
 // commitDisplay installs a replayable list and its dirty region.
 func (p *Page) commitDisplay(display *Display, executed string, drawStart time.Time, state render.State) {
 	previous := p.draw.Display
+	p.updateMotionIndex(previous, display)
 	captures := p.captureTransitions(previous, display)
 	p.dirtyFromDisplay(previous, display)
 	p.noteCommit(drawStart)
@@ -200,6 +322,9 @@ func (p *Page) commitDisplay(display *Display, executed string, drawStart time.T
 	p.layerGen++
 	p.bindMotion(previous, display)
 	p.bindTransitions(captures)
+	if previous != nil && previous != display && previous != p.painted {
+		previous.Release()
+	}
 	p.remember(state)
 	p.commitAccessibility(executed)
 	p.applyPending()
@@ -233,6 +358,7 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	}
 
 	previous := p.draw.Display
+	p.updateMotionIndex(previous, nil)
 	p.captureTransitions(previous, display)
 	p.noteCommit(drawStart)
 	p.draw.CommitBitmap(display, bitmap.Image)
@@ -241,6 +367,9 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	p.layerGen++
 	p.bindMotion(previous, nil)
 	p.bindTransitions(nil)
+	if previous != nil && previous != display && previous != p.painted {
+		previous.Release()
+	}
 	p.remember(state)
 	p.markFull()
 	p.lastPatch = DisplayPatch{
@@ -256,4 +385,35 @@ func (p *Page) paintFallback(display *Display, drawStart time.Time, track bool, 
 	p.runAfterRedraw()
 
 	return nil
+}
+
+// updateMotionIndex updates the cached *cssmotion.Index for display.
+// If display.Keyframes matches the previous display's keyframes (pointer equality
+// or length == 0), it reuses the previous *cssmotion.Index instead of calling
+// NewIndex on every commit.
+func (p *Page) updateMotionIndex(previous, display *Display) *cssmotion.Index {
+	if display == nil || len(display.Keyframes) == 0 {
+		p.motionIndex = cssmotion.EmptyIndex()
+		return p.motionIndex
+	}
+	if previous != nil && sameKeyframes(display.Keyframes, previous.Keyframes) && p.motionIndex != nil && p.motionIndex != cssmotion.EmptyIndex() {
+		if p.motionIndex.Display() == display || len(display.Ops) == p.motionIndex.NumOps() {
+			p.motionIndex.Repoint(display)
+			return p.motionIndex
+		}
+	}
+	p.motionIndex = cssmotion.NewIndex(display)
+	return p.motionIndex
+}
+
+// sameKeyframes reports whether two keyframe rule slices share the same rules
+// by length or pointer equality.
+func sameKeyframes(a, b []layout.KeyframesRule) bool {
+	if len(a) == 0 && len(b) == 0 {
+		return true
+	}
+	if len(a) != len(b) {
+		return false
+	}
+	return &a[0] == &b[0]
 }

@@ -119,10 +119,12 @@ func (p *Page) invalidateAccessibilityDocument() {
 
 // refreshAccessibility puts the patch's edits into the accessibility tree and
 // retires the document, so an old tree is not served as current. A tree no
-// client asked for yet is built from the source when one does.
+// client asked for yet has no parsed root to edit, so the patch is skipped and
+// the next client parses the committed source. A tree that is attached walks
+// only the edited root.
 func (p *Page) refreshAccessibility(id string, edits []ElementEdit) {
 	s := p.a11yState()
-	if s == nil {
+	if s == nil || !s.Attached() {
 		return
 	}
 	s.Apply(id, accessibilityEdits(edits))

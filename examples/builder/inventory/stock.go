@@ -49,15 +49,15 @@ func (a *app) stockPanel() *ui.Element {
 // shows only that status; the active pill carries the dark-green fill,
 // mirroring the mygo reference highlight.
 func (a *app) statusPills() *ui.Element {
-	pills := []struct{ label, filter string }{
-		{"All SKUs 4,200", ""},
-		{"Stockout 7", "Stockout"},
-		{"Reorder 16", "Reorder"},
-		{"Overstock 31", "Overstock"},
+	pills := []struct{ label, filter, id string }{
+		{"All SKUs 4,200", "", "all"},
+		{"Stockout 7", "Stockout", "stockout"},
+		{"Reorder 16", "Reorder", "reorder"},
+		{"Overstock 31", "Overstock", "overstock"},
 	}
 	items := make([]*ui.Element, 0, len(pills))
 	for _, pill := range pills {
-		el := ui.Span().Class("inv-pill").
+		el := ui.Span().ID("inv-pill-"+pill.id).Class("inv-pill").
 			Attr("data-action", "status:"+pill.filter).
 			Text(pill.label)
 		if a.statusFilter == pill.filter {
@@ -94,7 +94,7 @@ func stockRow(sku sku) *ui.Element {
 		chadcn.TableCell("", days),
 		chadcn.TableCell(inbound),
 		chadcn.TableCell("", ui.Span().Class(stockPillClass(sku.Status)).Text(sku.Status)),
-	)
+	).ID("stock-row-" + sku.Code)
 }
 
 func stockPillClass(status string) string {

@@ -80,6 +80,8 @@ func applyAttr(a *fieldAttr, key, val string, has bool) {
 	switch key {
 	case "id":
 		a.id = val
+	case "inputmode":
+		a.inputMode = strings.ToLower(val)
 	case "type":
 		a.kind = strings.ToLower(val)
 	case "name":

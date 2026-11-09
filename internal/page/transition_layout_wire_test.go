@@ -58,8 +58,8 @@ body { margin: 0 }
 </style><div id="row"><div id="a" class="{{.Class}}"></div><div id="b"></div></div>`
 	data := &transitionClassData{}
 	p := newTransitionLayoutPage(t, source, data)
-	start := time.Now()
 	redrawClass(t, p, data, "on")
+	start := time.Now()
 
 	if got := p.Motion().TransitionsBound; got != 1 {
 		t.Fatalf("bound transitions = %d, want the width run", got)
@@ -121,8 +121,8 @@ body { margin: 0 }
 </style><div id="row"><div id="a" class="{{.Class}}"></div></div>`
 	data := &transitionClassData{}
 	p := newTransitionLayoutPage(t, source, data)
-	start := time.Now()
 	redrawClass(t, p, data, "on")
+	start := time.Now()
 
 	p.stepLayoutMotion(context.Background(), start.Add(200*time.Millisecond))
 	if got := p.boxByID("a").H; got <= 20 || got >= 80 {
@@ -154,8 +154,8 @@ body { margin: 0 }
 </style><div id="stage"><div id="a" class="{{.Class}}"></div></div>`
 	data := &transitionClassData{}
 	p := newTransitionLayoutPage(t, source, data)
-	start := time.Now()
 	redrawClass(t, p, data, "on")
+	start := time.Now()
 
 	if got := p.Motion().TransitionsBound; got != 2 {
 		t.Fatalf("bound transitions = %d, want left and top", got)
@@ -194,8 +194,8 @@ body { margin: 0 }
 </style><div id="target" class="{{.Class}}">hidden words</div>`
 	data := &transitionClassData{}
 	p := newTransitionLayoutPage(t, source, data)
-	start := time.Now()
 	redrawClass(t, p, data, "on")
+	start := time.Now()
 
 	box := p.boxByID("target")
 	if len(box.OperationIDs) == 0 {

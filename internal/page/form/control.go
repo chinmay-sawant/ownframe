@@ -17,7 +17,13 @@ type Control struct {
 	// MaxLength is the author's maxlength, or zero when absent. Edits clamp
 	// to it (or the default cap), so pastes cannot grow state unbounded.
 	MaxLength int
-	Options   []Option
+	// InputMode is the author's inputmode, compared case-insensitively.
+	// A numeric mode marks a one-character slot together with MaxLength.
+	InputMode string
+	// SlotStep is a one-edit focus hint. 1 moves to the next OTP slot,
+	// -1 to the previous, and 0 stays. The page clears it before storing.
+	SlotStep int
+	Options  []Option
 }
 
 // Option is one choice inside a select.
@@ -25,6 +31,8 @@ type Option struct {
 	Value    string
 	Label    string
 	Selected bool
+	// Disabled keeps the option visible but out of the click cycle.
+	Disabled bool
 }
 
 // TextLike reports whether typing edits this control.

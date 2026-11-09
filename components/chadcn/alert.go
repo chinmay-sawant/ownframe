@@ -17,8 +17,11 @@ const (
 )
 
 // AlertOptions describes an inline status message. Icon, Action, Description,
-// and Title are optional; a nil node or an empty string omits that slot.
+// and Title are optional; a nil node or an empty string omits that slot. ID
+// is an optional stable host id; the title and description parts derive their
+// ids from it so a same-shape text edit patches instead of reparsing.
 type AlertOptions struct {
+	ID          string
 	Icon        *ui.Element
 	Action      *ui.Element
 	Title       string
@@ -28,19 +31,34 @@ type AlertOptions struct {
 
 // Alert builds a bordered status panel with role="alert". It is static: the
 // caller shows or removes it as part of the view, and there is no dismiss
-// state to keep.
+// state to keep. An empty title and description returns nil, so a blank
+// call does not mount a live region.
 func Alert(options AlertOptions) *ui.Element {
+	if options.Title == "" && options.Description == "" {
+		return nil
+	}
 	alert := ui.Div().Attr("role", "alert").
 		Class(classes("of-alert", "of-alert--"+options.Variant.className()))
+	if options.ID != "" {
+		alert.ID(options.ID)
+	}
 	if options.Icon != nil {
 		alert.Children(ui.Div().Class("of-alert-icon").Attr("aria-hidden", "true").Children(options.Icon))
 	}
 	body := ui.Div().Class("of-alert-body")
 	if options.Title != "" {
-		body.Children(ui.Div().Class("of-alert-title").Text(options.Title))
+		title := ui.Div().Class("of-alert-title").Text(options.Title)
+		if id := partID(options.ID, "-title"); id != "" {
+			title.ID(id)
+		}
+		body.Children(title)
 	}
 	if options.Description != "" {
-		body.Children(ui.P().Class("of-alert-description").Text(options.Description))
+		description := ui.P().Class("of-alert-description").Text(options.Description)
+		if id := partID(options.ID, "-description"); id != "" {
+			description.ID(id)
+		}
+		body.Children(description)
 	}
 	alert.Children(body)
 	if options.Action != nil {

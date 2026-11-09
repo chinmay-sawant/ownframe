@@ -5,17 +5,25 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/click"
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
 )
 
-// Click hit-tests the last picture and applies the click.
+// Click hit-tests the last picture and applies the click. One box scan answers
+// the animation-trigger pass and the click sequence.
 func (p *Page) Click(ctx context.Context, x, y float64) error {
-	if box, ok := p.activationBox(x, y); ok && !p.triggerActivated(box) {
+	spot := p.boxAt(x, y)
+	if box, ok := p.activationSpot(spot); ok && !p.triggerActivated(box) {
 		if _, err := p.fireTriggers(ctx, box, true); err != nil {
 			return err
 		}
 	}
 
-	return click.Run(ctx, clickSurface{p}, x, y)
+	return click.Run(ctx, clickSurface{p}, click.Point{X: x, Y: y, Spot: spot.hitSpot()})
+}
+
+// hitSpot converts the page's point query to the hit package's spot.
+func (s boxSpot) hitSpot() hit.Spot {
+	return hit.Spot{Box: s.box, OK: s.ok, ID: s.id}
 }
 
 // triggerActivated reports whether the press that started this gesture already
@@ -27,14 +35,6 @@ func (p *Page) triggerActivated(box Box) bool {
 // clickSurface adapts Page to click.Surface.
 // Each method delegates to the page method the sequence already used.
 type clickSurface struct{ p *Page }
-
-func (s clickSurface) HitBox(x, y float64) (Box, bool) {
-	return s.p.hitBox(x, y)
-}
-
-func (s clickSurface) BoxIDAt(x, y float64) string {
-	return s.p.boxIDAt(x, y)
-}
 
 func (s clickSurface) BoxByID(id string) Box {
 	return s.p.boxByID(id)
@@ -81,12 +81,12 @@ func (s clickSurface) HasClick() bool {
 }
 
 func (s clickSurface) HandlerClick(ctx context.Context, box Box) error {
-	if err := s.p.handlers.Click(ctx, box); err != nil {
-		return err
-	}
+	// Mark before the handler runs: an incremental update that adopts its
+	// patched source clears the flag, while a handler that only mutates data
+	// leaves it set for the next redraw's form sync.
 	s.p.markFormDirty()
 
-	return nil
+	return s.p.handlers.Click(ctx, box)
 }
 
 func (s clickSurface) ClickPainted(ctx context.Context, box Box) (bool, error) {
@@ -99,6 +99,24 @@ func (s clickSurface) Redraw(ctx context.Context) error {
 
 func (s clickSurface) RedrawIfChanged(ctx context.Context) error {
 	return s.p.RedrawIfChanged(ctx)
+}
+
+func (s clickSurface) LabelControl(box Box) string {
+	id := click.LabelControl(s.p.source, s.p.boxes, box)
+	if id == "" {
+		return ""
+	}
+
+	c, ok := s.p.control(id)
+	if !ok || c.Disabled || !s.p.inFocusScope(id) {
+		return ""
+	}
+
+	return id
+}
+
+func (s clickSurface) FocusControl(ctx context.Context, id string) error {
+	return s.p.Focus(ctx, id)
 }
 
 var _ host.Screen = (*Page)(nil)

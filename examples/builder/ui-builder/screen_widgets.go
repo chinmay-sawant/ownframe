@@ -49,6 +49,8 @@ type widgetsState struct {
 	alertOff     bool   // dismissible demo banner hidden
 	avatar       string // selected avatar initials
 	tableRow     int    // selected data-table row 0..2
+	// gesture is the in-progress catalog or widgets slider drag.
+	gesture sliderGesture
 }
 
 func defaultWidgetsState() widgetsState {
@@ -365,6 +367,7 @@ func (a *builderApp) stepperCard() *ui.Element {
 func (a *builderApp) progressCard() *ui.Element {
 	return widgetShell("Progress", "A bounded percentage with progressbar semantics.",
 		chadcn.Progress("Upload progress", a.widgets.progress).ID("widgets-progress").MarginTop(ui.Px(12)),
+		chadcn.Slider(a.widgetsSliderOptions()).ID(widgetsSliderID).MarginTop(ui.Px(12)),
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).Gap(ui.Px(10)).MarginTop(ui.Px(10)).Children(
 			widgetsBtn("−10", "widgets:progress:dec", false),
 			ui.Text(fmt.Sprintf("%d%%", a.widgets.progress)).Color(theme.Muted()),

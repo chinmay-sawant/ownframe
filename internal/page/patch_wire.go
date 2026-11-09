@@ -123,6 +123,7 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 	}
 
 	p.statePseudos = p.cache.StatePseudos()
+	p.noteRelayed(p.renderState())
 
 	return nil
 }
@@ -132,6 +133,7 @@ func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit
 // operation index. The page rebuilds its box index, marks the changed
 // operations dirty, drops the picture, and refreshes the a11y tree.
 func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
+	p.commitRoots = []string{id}
 	captures := p.captureTransitions(p.draw.Display, d)
 	prev := p.adoptSpliced(d)
 	p.bindMotion(prev, d)

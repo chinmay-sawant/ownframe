@@ -170,7 +170,7 @@ func (s *shell) devPick(px, py float64, alt bool) error {
 		return s.pressAt(px, py)
 	}
 
-	box, ok := devBoxAt(s.app.Boxes(), px, py)
+	box, ok := s.boxAt(px, py)
 	if !ok {
 		s.devDropPin()
 

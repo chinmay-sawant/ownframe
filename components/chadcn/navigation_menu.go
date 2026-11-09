@@ -2,6 +2,7 @@ package chadcn
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/chinmay-sawant/ownframe/ui"
 )
@@ -106,21 +107,39 @@ func navigationContent(item NavigationItem) *ui.Element {
 		content.Attr("aria-label", item.Label)
 	}
 	entries := ui.Ul().Class("of-navigation-menu-entries")
-	for _, child := range item.Children {
-		entries.Children(navigationEntry(child))
+	for index, child := range item.Children {
+		entries.Children(navigationEntry(child, navigationEntryID(item.ID, index, child)))
 	}
 	return content.Children(entries)
 }
 
+// navigationEntryID names the element the row's hover rule paints. A host id
+// wins. Otherwise the id hangs off the parent item, and an item with no id
+// leaves the row unnamed.
+func navigationEntryID(parentID string, index int, child NavigationItem) string {
+	if child.ID != "" {
+		return child.ID
+	}
+	return partID(parentID, "-entry-"+strconv.Itoa(index))
+}
+
 // navigationEntry builds one child row. A row with a callback or an action is a
 // button that fills the row; a plain row keeps the static title and description.
-func navigationEntry(child NavigationItem) *ui.Element {
+// :hover matches only the element with the hover id, so the static list item
+// carries the id and an interactive row puts it on the button.
+func navigationEntry(child NavigationItem, id string) *ui.Element {
 	if child.OnSelect == nil && child.Action == "" {
 		entry := ui.Li().Class("of-navigation-menu-entry")
+		if id != "" {
+			entry.ID(id)
+		}
 		appendNavigationEntryText(entry, child)
 		return entry
 	}
 	button := ui.Button("").Attr("type", "button").Class("of-navigation-menu-entry-button")
+	if id != "" {
+		button.ID(id)
+	}
 	switch {
 	case child.OnSelect != nil:
 		button.OnClick(child.OnSelect)

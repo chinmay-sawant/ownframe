@@ -105,7 +105,7 @@ linters:
         - assign
       # Numeric unit constructors receive CSS design values, not logic constants.
       ignored-functions:
-        - '^ui\.(Px|Rem|Percent|Number)$'
+        - '^ui\.(Px|Rem|Percent|Number|Vh)$'
     nolintlint:
       require-explanation: true
       require-specific: true

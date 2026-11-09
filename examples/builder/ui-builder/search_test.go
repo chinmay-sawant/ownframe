@@ -9,6 +9,70 @@ import (
 	"github.com/chinmay-sawant/ownframe/pagetest"
 )
 
+func TestWidgetsSearchHitsFieldPanelAndBackdrop(t *testing.T) {
+	ctx := context.Background()
+	a, err := newBuilderApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if err := pagetest.Click(ctx, a.page, "widgets-search-input"); err != nil {
+		t.Fatal(err)
+	}
+	if !a.widgets.searchOpen {
+		t.Fatal("click did not open the search card")
+	}
+	field, ok := pagetest.BoxByID(a.page, "widgets-search-input")
+	if !ok {
+		t.Fatal("missing search field")
+	}
+	if field.W < 80 {
+		t.Fatalf("field width %.0f does not cover the control", field.W)
+	}
+	for _, pt := range []struct {
+		name string
+		x, y float64
+	}{
+		{"left", field.X + 4, field.Y + field.H/2},
+		{"middle", field.X + field.W/2, field.Y + field.H/2},
+		{"right", field.X + field.W - 2, field.Y + field.H/2},
+	} {
+		if err := a.page.Click(ctx, pt.x, pt.y); err != nil {
+			t.Fatal(err)
+		}
+		if !a.widgets.searchOpen {
+			t.Fatalf("click on the %s of the field closed the card", pt.name)
+		}
+	}
+	if a.widgets.searchValue != "" {
+		t.Fatalf("field click selected %q", a.widgets.searchValue)
+	}
+	if err := a.page.Click(ctx, 8, 8); err != nil {
+		t.Fatal(err)
+	}
+	if a.widgets.searchOpen {
+		t.Fatal("click outside the field and the panel did not close the card")
+	}
+	if a.widgets.searchValue != "" {
+		t.Fatalf("backdrop click selected %q", a.widgets.searchValue)
+	}
+	if err := pagetest.Click(ctx, a.page, "widgets-search-input"); err != nil {
+		t.Fatal(err)
+	}
+	option, ok := pagetest.BoxByID(a.page, "widgets-search-option-0")
+	if !ok {
+		t.Fatal("missing search option")
+	}
+	if err := a.page.Click(ctx, option.X+option.W/2, option.Y+option.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if a.widgets.searchValue != "buttons" {
+		t.Fatalf("panel click selected %q, want buttons", a.widgets.searchValue)
+	}
+}
+
 func TestWidgetsSearchOpensFiltersAndCloses(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

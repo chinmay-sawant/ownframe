@@ -4,7 +4,7 @@ import "github.com/chinmay-sawant/blinkless/layout"
 
 // devHover records the box under the cursor without calling the page.
 func (s *shell) devHover(px, py float64) {
-	box, ok := devBoxAt(s.app.Boxes(), px, py)
+	box, ok := s.boxAt(px, py)
 	s.dev.hovered, s.dev.haveHov = box, ok
 }
 

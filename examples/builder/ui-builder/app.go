@@ -133,8 +133,12 @@ func newBuilderApp() (*builderApp, error) {
 		catalogSidebarOpen:     true,
 		catalogChoiceSelected:  true,
 	}
+	sheet, err := defaultThemeState().stylesheet()
+	if err != nil {
+		return nil, err
+	}
 	view, err := ui.Mount(ownframe.Config{
-		Theme:       chadcn.Dark + chadcn.Stylesheet + builderMotionCSS,
+		Theme:       sheet,
 		Title:       "OwnFrame Components",
 		Width:       demoWidth,
 		Height:      demoHeight,
@@ -292,21 +296,30 @@ func (a *builderApp) handleChange(ctx context.Context, box ownframe.Box) error {
 
 func (a *builderApp) selectTab(name string) {
 	switch name {
-	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom", "catalog":
+	case "widgets", "settings", "layout", "todo", "list", "theme", "compare", "dialog", "custom", "catalog",
+		"chartjs", "shadcnchart", "recharts", "tremor", "echarts", "apexcharts", "nivo":
 		a.tab = name
 		a.center = chadcn.ScrollState{}
 		a.catalogGeoMeasured = false
 		a.notice = map[string]string{
-			"widgets":  "Widgets: buttons, badges, toggles, and cards from the Go builder.",
-			"settings": "Settings: form state, inline validation, and save in Go.",
-			"layout":   "Layout playground: direction, gap, padding, and box count.",
-			"todo":     "Todo and counter: slice and integer state with re-render.",
-			"list":     "File list: rows built with Children(rows...) in Go.",
-			"theme":    "Global palettes and design tokens, shared by every control.",
-			"custom":   "Custom components inherit the app theme and accept local properties.",
-			"compare":  "Builder vs HTML: the same card as Go code and live output.",
-			"dialog":   "Dialog: a backdrop overlay with a centered panel.",
-			"catalog":  "ChadCN catalog: every constructor in a representative state.",
+			"widgets":     "Widgets: buttons, badges, toggles, and cards from the Go builder.",
+			"settings":    "Settings: form state, inline validation, and save in Go.",
+			"layout":      "Layout playground: direction, gap, padding, and box count.",
+			"todo":        "Todo and counter: slice and integer state with re-render.",
+			"list":        "File list: rows built with Children(rows...) in Go.",
+			"theme":       "Global palettes and design tokens, shared by every control.",
+			"custom":      "Custom components inherit the app theme and accept local properties.",
+			"compare":     "Builder vs HTML: the same card as Go code and live output.",
+			"dialog":      "Dialog: a backdrop overlay with a centered panel.",
+			"catalog":     "ChadCN catalog: every constructor in a representative state.",
+			"chartjs":     "Chart.js: bar, line, pie, doughnut, radar, polar area, bubble, and scatter.",
+			"shadcnchart": "shadcn charts: area, bar, line, pie, radar, and radial.",
+			"recharts": "Recharts: area, bar, line, composed, pie, radar, radial bar, " +
+				"scatter, funnel, sankey, sunburst, and treemap.",
+			"tremor":     "Tremor: area, bar, line, combo, donut, sparks, lists, tracker, and progress.",
+			"echarts":    "ECharts: cartesian, statistical, map, tree, graph, and gauge charts.",
+			"apexcharts": "ApexCharts: line, bar, range, pie, and hierarchical charts.",
+			"nivo":       "Nivo: bar, line, pie, calendar, hierarchy, and flow charts.",
 		}[name]
 	}
 }

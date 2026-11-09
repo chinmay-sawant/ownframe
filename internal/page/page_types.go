@@ -8,6 +8,7 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/cssmotion"
 	"github.com/chinmay-sawant/ownframe/internal/element"
 	"github.com/chinmay-sawant/ownframe/internal/motion"
 	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
@@ -22,6 +23,11 @@ import (
 type Page struct {
 	title string
 	tpl   *template.Template
+	// staticSource marks the current nav entry as a builder document, whose
+	// envelope proves it carries no template action. Such a page keeps tpl
+	// nil: the redraw path returns nav.Current instead of parsing or
+	// executing it, and a Load of any other source parses again.
+	staticSource bool
 	// dataMu guards data and the form-sync handoff below it. SetData
 	// takes it to publish new data; the redraw path takes it to run the
 	// template (shared) and to check, merge, and store the sync flags
@@ -45,8 +51,15 @@ type Page struct {
 	// path use markFormDirty to set the flag.
 	lastSyncBody string
 	formDirty    bool
-	pageGeom     // size: New inits, SetSize writes; lock: page loop
-	renderTrack  // generation and last frame key; lock: page loop
+	// syncClean reports that the last syncForm call took the fast path:
+	// same template output, nothing dirty, source byte-identical to the
+	// last committed sync. The redraw wrapper then skips the source
+	// rehash, since the memoized hash, length, and revision are still
+	// valid. Any slow-path merge clears it. Page-loop only, like the
+	// sync flags above.
+	syncClean   bool
+	pageGeom    // size: New inits, SetSize writes; lock: page loop
+	renderTrack // generation and last frame key; lock: page loop
 	// layerGen keys the compositor's retained element layers. It moves when a
 	// publish or an element patch changes display content, and stays put when
 	// a re-projection pass only rewrites operation matrices in place.
@@ -70,6 +83,7 @@ type Page struct {
 	perf             bool
 	perfOptIn        bool
 	motion           *motion.Runtime
+	motionIndex      *cssmotion.Index
 	animationsOff    bool
 	transitionsOff   bool
 	triggerPress     triggerPressState
@@ -90,6 +104,12 @@ type Page struct {
 	// one, so a small change made after a full mark keeps its own region
 	// instead of repainting the page.
 	painted *Display
+	// commitRoots scopes the current commit to the patched element ids: the
+	// hover patch roots, one PatchElement id, or a PatchElements id list. A
+	// nil slice means a full layout, whose change can reach any box.
+	// captureTransitions consumes and clears it, so a scoped skip only ever
+	// applies to the commit that produced the scope.
+	commitRoots []string
 	// fullGen is the generation whose commit last marked the whole frame
 	// dirty. A mark from an earlier generation is covered by the display
 	// diff against painted; one from the current generation may describe an

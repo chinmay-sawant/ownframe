@@ -16,7 +16,16 @@ func TestCursorShapes(t *testing.T) {
 	}{
 		{name: "plain", in: Cursor{}, want: host.ShapeDefault},
 		{name: "text", in: Cursor{HoverID: "t", Control: true, Editable: true}, want: host.ShapeText},
+		{name: "disabled text", in: Cursor{
+			HoverID: "t", Control: true, Editable: true, Disabled: true,
+		}, want: host.ShapeDefault},
+		{name: "disabled text over link", in: Cursor{
+			HoverID: "t", Control: true, Editable: true, Disabled: true, Link: true,
+		}, want: host.ShapeDefault},
 		{name: "button control", in: Cursor{HoverID: "b", Control: true}, want: host.ShapePointer},
+		{name: "disabled button", in: Cursor{
+			HoverID: "b", Control: true, Disabled: true,
+		}, want: host.ShapeDefault},
 		{name: "anchor", in: Cursor{HoverID: "a", Tag: "a"}, want: host.ShapePointer},
 		{name: "button tag", in: Cursor{HoverID: "b", Tag: "button"}, want: host.ShapePointer},
 		{name: "action", in: Cursor{HoverID: "x", Action: "go"}, want: host.ShapePointer},

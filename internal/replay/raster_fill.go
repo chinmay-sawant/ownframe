@@ -27,9 +27,14 @@ func (renderer *Renderer) cachedRoundedFill(dst *ebiten.Image, op *layout.Displa
 		fy: y - float32(top),
 	}
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
-		path := roundedFillPath(key.fx, key.fy, w, h, r)
-		options := &vector.DrawPathOptions{AntiAlias: true}
-		vector.FillPath(img, &path, nil, options)
+		path := acquireVectorPath()
+		populateRoundedFillPath(path, key.fx, key.fy, w, h, r)
+
+		var options vector.DrawPathOptions
+		options.AntiAlias = true
+
+		vector.FillPath(img, path, nil, &options)
+		releaseVectorPath(path)
 	})
 	renderer.blitRaster(dst, img, left, top, rgba(op))
 

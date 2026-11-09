@@ -1,4 +1,4 @@
-// Package emoji paints thirty-one color emoji as inline images. The bundled
+// Package emoji paints forty-two color emoji as inline images. The bundled
 // text faces draw a few smileys in monochrome and tofu for the rest, so
 // supported sequences are replaced with <img> tags that resolve to the
 // bundled Twemoji 72px PNGs through the page image lookup. Form values
@@ -7,7 +7,7 @@
 // The graphics are Twemoji by Twitter, Inc and other contributors,
 // licensed CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
 // The set is fixed: six channel reactions, fifteen common faces,
-// gestures, and symbols, plus ten message faces and marks. ZWJ families
+// gestures, and symbols, plus twenty-one message faces and marks. ZWJ families
 // and skin-tone modifiers are out of scope and keep the font's own paint.
 package emoji
 

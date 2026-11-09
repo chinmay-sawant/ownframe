@@ -1,6 +1,7 @@
 package chadcn_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -121,6 +122,95 @@ func TestCommandFixStylesheetBoundsList(t *testing.T) {
 	search := commandFixRule(t, chadcn.Stylesheet, ".of-command-search")
 	if !strings.Contains(search, "padding: 8px 10px;") {
 		t.Fatalf("command search rule is not tightened:\n%s", search)
+	}
+}
+
+func TestCommandDisabledRowIsNeverSelected(t *testing.T) {
+	t.Parallel()
+	html, err := ui.Render(chadcn.Command(chadcn.CommandOptions{
+		ID:     "palette",
+		Active: "calculator",
+		Groups: []chadcn.CommandGroup{
+			{Label: "Suggestions", Items: []chadcn.CommandItem{
+				{Value: "calendar", Label: "Calendar"},
+				{Value: "calculator", Label: "Calculator", Disabled: true},
+				{Value: "profile", Label: "Profile"},
+			}},
+			{Label: "Settings", Items: []chadcn.CommandItem{
+				{Value: "billing", Label: "Billing"},
+			}},
+		},
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(html, `aria-selected="true"`) {
+		t.Fatalf("disabled active row was aria-selected:\n%s", html)
+	}
+	disabled := commandFixButton(t, html, `disabled="disabled"`)
+	if strings.Contains(disabled, `aria-selected="true"`) || strings.Contains(disabled, "id=") {
+		t.Fatalf("disabled row = %s", disabled)
+	}
+	if !strings.Contains(disabled, `aria-selected="false"`) {
+		t.Fatalf("disabled row is missing aria-selected=false: %s", disabled)
+	}
+	for _, id := range []string{"palette-item-0", "palette-item-1", "palette-item-2"} {
+		if !strings.Contains(html, `id="`+id+`"`) {
+			t.Fatalf("enabled row id %s missing:\n%s", id, html)
+		}
+	}
+	if strings.Contains(html, `id="palette-item-3"`) {
+		t.Fatalf("disabled row consumed an id:\n%s", html)
+	}
+}
+
+func TestCommandKeepsHostFilteredGroups(t *testing.T) {
+	t.Parallel()
+	queried := false
+	html, err := ui.Render(chadcn.Command(chadcn.CommandOptions{
+		ID:    "palette",
+		Query: "zzz",
+		Groups: []chadcn.CommandGroup{{
+			Label: "Suggestions",
+			Items: []chadcn.CommandItem{{Value: "calendar", Label: "Calendar"}},
+		}},
+		OnQuery: func(context.Context, string) error {
+			queried = true
+			return nil
+		},
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if queried {
+		t.Fatal("Command called OnQuery")
+	}
+	if !strings.Contains(html, "Calendar") || strings.Contains(html, "No results") {
+		t.Fatalf("host group was filtered again:\n%s", html)
+	}
+	if got := strings.Count(html, `role="option"`); got != 1 {
+		t.Fatalf("options=%d want the host row", got)
+	}
+}
+
+func commandFixButton(t *testing.T, html, fragment string) string {
+	t.Helper()
+	rest := html
+	for {
+		start := strings.Index(rest, "<button")
+		if start < 0 {
+			t.Fatalf("no button contains %q in %s", fragment, html)
+		}
+		rest = rest[start:]
+		end := strings.Index(rest, ">")
+		if end < 0 {
+			t.Fatalf("button tag is unterminated")
+		}
+		tag := rest[:end+1]
+		if strings.Contains(tag, fragment) {
+			return tag
+		}
+		rest = rest[end+1:]
 	}
 }
 

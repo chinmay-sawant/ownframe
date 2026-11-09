@@ -4,8 +4,10 @@ import "github.com/chinmay-sawant/ownframe/ui"
 
 // ToastOptions describes one transient notification. Open false renders
 // nothing, so the host can drop a closed toast from the view. CloseAction is
-// dispatched by the close button when it is not empty.
+// the only dismiss hook. When it is empty the close button is omitted, so
+// the toast does not paint a control that does nothing.
 type ToastOptions struct {
+	ID          string
 	Action      *ui.Element
 	Title       string
 	Description string
@@ -21,24 +23,39 @@ func Toast(options ToastOptions) *ui.Element {
 		return nil
 	}
 	toast := ui.Div().Class("of-toast").Attr("role", "status").Attr("aria-live", "polite").
-		Attr("aria-atomic", "true").Position(ui.PositionAbsolute).
+		Attr("aria-atomic", "true").Position(ui.PositionFixed).
 		Right(ui.Px(16)).Bottom(ui.Px(16)).Width(ui.Px(356)).
-		BoxSizing(ui.BoxSizingBorderBox).ZIndex(ui.Number(60))
+		BoxSizing(ui.BoxSizingBorderBox).ZIndex(ui.Number(160))
+	if options.ID != "" {
+		toast.ID(options.ID)
+	}
 	body := ui.Div().Class("of-toast-body")
 	if options.Title != "" {
-		body.Children(ui.Div().Class("of-toast-title").Text(options.Title))
+		title := ui.Div().Class("of-toast-title").Text(options.Title)
+		if id := partID(options.ID, "-title"); id != "" {
+			title.ID(id)
+		}
+		body.Children(title)
 	}
 	if options.Description != "" {
-		body.Children(ui.P().Class("of-toast-description").Text(options.Description))
+		description := ui.P().Class("of-toast-description").Text(options.Description)
+		if id := partID(options.ID, "-description"); id != "" {
+			description.ID(id)
+		}
+		body.Children(description)
 	}
 	toast.Children(body)
 	if options.Action != nil {
 		toast.Children(ui.Div().Class("of-toast-action").Children(options.Action))
 	}
+	if options.CloseAction == "" {
+		return toast
+	}
 	closeButton := ui.Button("×").Attr("type", "button").Class("of-toast-close").
-		Attr("aria-label", "Close").Width(ui.Px(24)).Height(ui.Px(24))
-	if options.CloseAction != "" {
-		closeButton.Attr("data-action", options.CloseAction)
+		Attr("aria-label", "Close").Width(ui.Px(24)).Height(ui.Px(24)).
+		Attr("data-action", options.CloseAction)
+	if options.ID != "" {
+		closeButton.ID(options.ID + "-close")
 	}
 	return toast.Children(closeButton)
 }

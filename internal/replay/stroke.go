@@ -21,14 +21,23 @@ func (renderer *Renderer) drawStrokeRect(dst *ebiten.Image, op *layout.DisplayOp
 // strokeDirect strokes the outline without the raster cache. An unknown mask
 // bit paints nothing.
 func strokeDirect(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
-	path, width, ok := strokeGeometry(op, dx, dy)
+	path := acquireVectorPath()
+	width, ok := populateStrokeGeometry(path, op, dx, dy)
 	if !ok {
+		releaseVectorPath(path)
 		return
 	}
 
-	stroke := &vector.StrokeOptions{Width: width, LineJoin: vector.LineJoinRound}
-	options := &vector.DrawPathOptions{AntiAlias: true}
-	options.ColorScale.ScaleWithColor(rgba(op))
+	var stroke vector.StrokeOptions
+	stroke.Width = width
+	stroke.LineJoin = vector.LineJoinRound
 
-	vector.StrokePath(dst, &path, stroke, options)
+	var options vector.DrawPathOptions
+	options.AntiAlias = true
+	clr := rgba(op)
+	cr, cg, cb, ca := clr.RGBA()
+	options.ColorScale.Scale(float32(cr)/colorChannelMax, float32(cg)/colorChannelMax, float32(cb)/colorChannelMax, float32(ca)/colorChannelMax)
+
+	vector.StrokePath(dst, path, &stroke, &options)
+	releaseVectorPath(path)
 }
