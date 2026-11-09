@@ -110,6 +110,31 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(result['gpu_memory']['counters']['gpu-process/dedicated'], {
             'peak_bytes': 30, 'final_bytes': 30})
 
+    def test_missing_hover_failures_are_empty(self):
+        first, last = sample(1, 100, 1000), sample(11, 200, 2000)
+        first['state']['stats']['HoverPatchFailures'] = None
+        last['state']['stats']['HoverPatchFailures'] = None
+        result = REPORT.summarize([first, last])
+        self.assertEqual(result['hover_patch_failure_delta'], {})
+
+    def test_gpu_memory_keeps_adapter_instances(self):
+        first, last = sample(1, 100, 1000), sample(11, 200, 2000)
+        first['gpu_memory'] = {'available': True, 'counters': [
+            {'path': 'gpu-process/dedicated', 'instance': 'pid_1_0', 'value_bytes': 10},
+            {'path': 'gpu-process/dedicated', 'instance': 'pid_1_1', 'value_bytes': 5},
+            {'path': 'gpu-adapter/shared', 'instance': '_total', 'value_bytes': 20}]}
+        last['gpu_memory'] = {'available': True, 'counters': [
+            {'path': 'gpu-process/dedicated', 'instance': 'pid_1_0', 'value_bytes': 30},
+            {'path': 'gpu-process/dedicated', 'instance': 'pid_1_1', 'value_bytes': 7},
+            {'path': 'gpu-adapter/shared', 'instance': '_total', 'value_bytes': 25}]}
+        counters = REPORT.summarize([first, last])['gpu_memory']['counters']
+        self.assertEqual(counters['gpu-process/dedicated [pid_1_0]'], {
+            'peak_bytes': 30, 'final_bytes': 30})
+        self.assertEqual(counters['gpu-process/dedicated [pid_1_1]'], {
+            'peak_bytes': 7, 'final_bytes': 7})
+        self.assertEqual(counters['gpu-adapter/shared [_total]'], {
+            'peak_bytes': 25, 'final_bytes': 25})
+
 
 if __name__ == '__main__':
     unittest.main()

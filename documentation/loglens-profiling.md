@@ -51,7 +51,7 @@ The collector never sets a Go memory limit or calls `FreeOSMemory`.
 Analyze the timestamped folder in WSL:
 
 ```sh
-python3 scripts/loglens-report.py /mnt/c/Users/Acer/Downloads/loglens-dumps/TIMESTAMP \
+python3 scripts/loglens-report.py /mnt/c/Users/<you>/Downloads/loglens-dumps/TIMESTAMP \
   --out temp/loglens-report.json
 ```
 
@@ -71,7 +71,7 @@ go tool pprof -inuse_space -top CAPTURE/run-1/navigation/heap-after.pb.gz
 go tool pprof -alloc_space -top \
   -base CAPTURE/run-1/navigation/allocs-before.pb.gz \
   CAPTURE/run-1/navigation/allocs-after.pb.gz
-scripts/loglens-phase-allocs.sh CAPTURE
+bash scripts/loglens-phase-allocs.sh CAPTURE
 ```
 
 The phase command prints separate allocation diffs for hover and resize. It

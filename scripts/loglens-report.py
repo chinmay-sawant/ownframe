@@ -96,7 +96,7 @@ def summarize(samples):
 
 def failure_counts(stats):
     counts = {}
-    for entry in stats.get('HoverPatchFailures', []):
+    for entry in stats.get('HoverPatchFailures') or []:
         key = '/'.join((entry['stage'], entry['reason'], entry['target']))
         value = entry['count']
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
@@ -114,7 +114,9 @@ def gpu_memory_summary(samples):
             continue
         available = True
         for counter in gpu.get('counters', []):
-            key = counter['path']
+            path = counter['path']
+            instance = counter.get('instance') or ''
+            key = f'{path} [{instance}]' if instance else path
             value = counter['value_bytes']
             entry = totals.setdefault(key, {'peak_bytes': 0, 'final_bytes': 0})
             entry['peak_bytes'] = max(entry['peak_bytes'], value)
