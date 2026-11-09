@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"slices"
 	"strings"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -24,9 +26,25 @@ type hoverPatchFunc func(
 	options layout.Options,
 ) (*layout.ElementPatch, error)
 
+type hoverPatchAttemptError struct {
+	target string
+	err    error
+}
+
+type hoverFailureKey struct {
+	stage  string
+	reason string
+	target string
+}
+
+func (e *hoverPatchAttemptError) Error() string { return e.err.Error() }
+func (e *hoverPatchAttemptError) Unwrap() error { return e.err }
+
 // errHoverPatchEmpty reports a patch that returned no display. The caller
 // falls back to the full layout, so the page draws what it drew before.
 var errHoverPatchEmpty = errors.New("page: hover patch returned no display")
+
+const maxHoverFailureKeys = 256
 
 // layoutStaged lays out the styled document for one redraw. A change that
 // only moves the hover re-places the subtrees the new hover state can reach
@@ -40,29 +58,112 @@ func (p *Page) layoutStaged(
 ) (*Display, error) {
 	hoverChanged := p.hoverPatchEligible(state) && p.last.Hover != state.Hover
 	if roots, ok := p.hoverPatchRoots(styled, state); ok {
-		if patched, err := p.listHoverPatched(ctx, styled, state, roots); err == nil {
+		patched, err := p.listHoverPatched(ctx, styled, state, roots)
+		if err == nil {
 			p.stats.hoverPatches++
 			return patched, nil
 		}
 		p.stats.hoverPatchErrors++
+		p.noteHoverPatchFailure("selector", classifyHoverPatchError(err), hoverFailureTarget(err, roots))
 		// If the cascade roots failed (e.g. an element transitioned to display:none
 		// and placed no box), fall back to geometric roots if safe.
 		if !p.hoverIsRisky(p.last.Hover, state.Hover) {
 			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
-				if patched, err := p.listHoverPatched(ctx, styled, state, geoRoots); err == nil {
+				patched, retryErr := p.listHoverPatched(ctx, styled, state, geoRoots)
+				if retryErr == nil {
 					p.stats.hoverPatches++
 					return patched, nil
 				}
 				p.stats.hoverPatchErrors++
+				p.noteHoverPatchFailure("geometry", classifyHoverPatchError(retryErr), hoverFailureTarget(retryErr, geoRoots))
 			}
 		}
 	}
 
 	if hoverChanged {
 		p.stats.hoverFallbacks++
+		if _, ok := p.hoverPatchRoots(styled, state); !ok {
+			reason := "no-patch-roots"
+			if p.hoverIsRisky(p.last.Hover, state.Hover) {
+				reason = "escaping-hover-selector"
+			}
+			p.noteHoverPatchFailure("selection", reason, []string{p.last.Hover, state.Hover})
+		}
 	}
 	p.stats.fullLayouts++
 	return draw.List(ctx, styled, state)
+}
+
+func classifyHoverPatchError(err error) string {
+	switch {
+	case errors.Is(err, errHoverPatchEmpty):
+		return "empty-display"
+	case errors.Is(err, layout.ErrNoElement):
+		return "target-missing"
+	case errors.Is(err, layout.ErrNoRetainedState):
+		return "retained-state-missing"
+	case errors.Is(err, layout.ErrOverrideReflow):
+		return "reflow-escapes-patch"
+	case errors.Is(err, layout.ErrInvalidOverrideValue):
+		return "invalid-override"
+	case errors.Is(err, layout.ErrUnknownOverrideProperty):
+		return "unsupported-override"
+	case errors.Is(err, context.Canceled):
+		return "context-canceled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "context-deadline"
+	default:
+		return "patch-error"
+	}
+}
+
+func hoverFailureTarget(err error, roots []string) []string {
+	var attempt *hoverPatchAttemptError
+	if errors.As(err, &attempt) {
+		return []string{attempt.target}
+	}
+	return roots
+}
+
+func (p *Page) noteHoverPatchFailure(stage, reason string, targets []string) {
+	if !p.perf {
+		return
+	}
+	if p.hoverFailureCounts == nil {
+		p.hoverFailureCounts = make(map[hoverFailureKey]uint64)
+	}
+	if len(targets) == 0 {
+		targets = []string{"<none>"}
+	}
+	for _, target := range targets {
+		key := hoverFailureKey{stage: stage, reason: reason, target: target}
+		if _, exists := p.hoverFailureCounts[key]; !exists && len(p.hoverFailureCounts) >= maxHoverFailureKeys {
+			key.target = "<other>"
+		}
+		p.hoverFailureCounts[key]++
+	}
+}
+
+func (p *Page) hoverPatchFailureSnapshot() []host.HoverPatchFailureCount {
+	if len(p.hoverFailureCounts) == 0 {
+		return nil
+	}
+	items := make([]host.HoverPatchFailureCount, 0, len(p.hoverFailureCounts))
+	for key, count := range p.hoverFailureCounts {
+		items = append(items, host.HoverPatchFailureCount{
+			Stage: key.stage, Reason: key.reason, Target: key.target, Count: count,
+		})
+	}
+	slices.SortFunc(items, func(a, b host.HoverPatchFailureCount) int {
+		if c := strings.Compare(a.Stage, b.Stage); c != 0 {
+			return c
+		}
+		if c := strings.Compare(a.Reason, b.Reason); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Target, b.Target)
+	})
+	return items
 }
 
 // hoverPatchRoots returns the subtree roots a hover-only change must
@@ -280,7 +381,7 @@ func (p *Page) listHoverPatched(
 				current.Release()
 			}
 			p.commitRoots = nil
-			return nil, err
+			return nil, &hoverPatchAttemptError{target: root, err: err}
 		}
 
 		if patch == nil || patch.Display == nil {
@@ -288,7 +389,7 @@ func (p *Page) listHoverPatched(
 				current.Release()
 			}
 			p.commitRoots = nil
-			return nil, errHoverPatchEmpty
+			return nil, &hoverPatchAttemptError{target: root, err: errHoverPatchEmpty}
 		}
 
 		if current != nil && current != p.draw.Display && current != patch.Display {

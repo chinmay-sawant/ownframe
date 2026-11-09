@@ -2,6 +2,15 @@ package host
 
 import "time"
 
+// HoverPatchFailureCount summarizes failed scoped attempts for one stage,
+// reason, and target. Counts are cumulative for the page lifetime.
+type HoverPatchFailureCount struct {
+	Stage  string `json:"stage"`
+	Reason string `json:"reason"`
+	Target string `json:"target"`
+	Count  uint64 `json:"count"`
+}
+
 // Stats is one snapshot of the page counters an inspector shows. The zero
 // value is a page that has drawn nothing.
 type Stats struct {
@@ -13,6 +22,9 @@ type Stats struct {
 	HoverPatches     uint64
 	HoverFallbacks   uint64
 	HoverPatchErrors uint64
+	// HoverPatchFailures counts failed scoped attempts by phase, reason, and
+	// target ID. It is populated only in an inspector snapshot.
+	HoverPatchFailures []HoverPatchFailureCount
 
 	Redraws    uint64
 	Parses     uint64

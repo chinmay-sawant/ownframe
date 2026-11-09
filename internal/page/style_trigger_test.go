@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/css"
@@ -47,7 +48,7 @@ func TestStyleTriggerHoverSkipsCascade(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got := p.Stats(); got != before {
+	if got := p.Stats(); !reflect.DeepEqual(got, before) {
 		t.Fatalf("hover restyled a hoverless sheet: %+v -> %+v", before, got)
 	}
 

@@ -209,6 +209,42 @@ func TestHoverPatchGeometryFallsBack(t *testing.T) {
 	}
 }
 
+func TestHoverPatchFailureStatsIncludeStageReasonAndTarget(t *testing.T) {
+	p, err := New(Config{
+		HTML:  `<style>#e{width:100px;height:20px}#e:hover{color:red}#f{width:100px;height:20px}</style><div id="e">a</div><div id="f">b</div>`,
+		Width: 320, Height: 200, RetainState: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	p.SetPerf(true)
+	hoverAt(t, p, "f")
+	p.hoverPatch = func(context.Context, *css.Document, *layout.Display, string, layout.Options) (*layout.ElementPatch, error) {
+		return nil, layout.ErrNoElement
+	}
+	hoverAt(t, p, "e")
+
+	got := p.Stats().HoverPatchFailures
+	want := map[string]bool{
+		"selector/target-missing/e": false,
+		"geometry/target-missing/f": false,
+	}
+	for _, item := range got {
+		key := item.Stage + "/" + item.Reason + "/" + item.Target
+		if _, ok := want[key]; ok && item.Count == 1 {
+			want[key] = true
+		}
+	}
+	for key, seen := range want {
+		if !seen {
+			t.Errorf("missing failure count %q in %+v", key, got)
+		}
+	}
+}
+
 func TestHoverPatchRiskySkips(t *testing.T) {
 	source := `<html><head><style>` +
 		`#e{width:100px;height:20px}` +

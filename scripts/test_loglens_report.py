@@ -18,7 +18,8 @@ def sample(second, presents, allocated):
         'state': {
             'sampled_at': timestamp, 'generation': second,
             'window_width': 1440, 'scroll_y': second,
-            'stats': {**dict.fromkeys(REPORT.COUNTERS, second), 'AllocFrame': 42, 'LastRedraw': 100},
+            'stats': {**dict.fromkeys(REPORT.COUNTERS, second), 'AllocFrame': 42, 'LastRedraw': 100,
+                      'HoverPatchFailures': []},
             'frame': {'presents': presents, 'p99_ns': 20},
             'runtime': {'sampled_at': timestamp, 'total_alloc': allocated,
                         'num_gc': second, 'gc_pause_total_ns': second * 100,
@@ -92,6 +93,22 @@ class ReportTests(unittest.TestCase):
             (run / 'capture.json').write_text(json.dumps({'status': 'failed', 'error': 'lost focus'}))
             with self.assertRaisesRegex(ValueError, 'lost focus'):
                 REPORT.report(root)
+
+    def test_phase_failure_counts_and_gpu_memory(self):
+        first, last = sample(1, 100, 1000), sample(11, 200, 2000)
+        first['state']['stats']['HoverPatchFailures'] = [
+            {'stage': 'selector', 'reason': 'target-missing', 'target': 'menu', 'count': 2}]
+        last['state']['stats']['HoverPatchFailures'] = [
+            {'stage': 'selector', 'reason': 'target-missing', 'target': 'menu', 'count': 5}]
+        first['gpu_memory'] = {'available': True, 'counters': [
+            {'path': 'gpu-process/dedicated', 'value_bytes': 10}]}
+        last['gpu_memory'] = {'available': True, 'counters': [
+            {'path': 'gpu-process/dedicated', 'value_bytes': 30}]}
+        result = REPORT.summarize([first, last])
+        self.assertEqual(result['hover_patch_failure_delta'], {
+            'selector/target-missing/menu': 3})
+        self.assertEqual(result['gpu_memory']['counters']['gpu-process/dedicated'], {
+            'peak_bytes': 30, 'final_bytes': 30})
 
 
 if __name__ == '__main__':

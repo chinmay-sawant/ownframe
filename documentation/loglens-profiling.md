@@ -5,10 +5,11 @@ phase durations, warmup, and DevTools setting in the capture metadata. The
 capture script records the executable's SHA-256 hash and launch arguments.
 Keep the source revision and any uncommitted patches beside the binary.
 
-The script controls the mouse and resizes the window. Run it in an approved
-Windows desktop session and leave that session alone until capture finishes.
-It stops if Loglens loses foreground focus. It does not attach to, stop, rename,
-or replace an existing Loglens process. Review the script before running it.
+The script launches a fresh Loglens process and prompts before each phase. You
+perform the named action during the following sampling interval. Keep the
+desktop session available until capture finishes. The script does not send
+mouse or keyboard input and does not resize the window for you. It closes only
+the process it launched.
 
 From the OwnFrame checkout, build the named example in WSL:
 
@@ -30,15 +31,16 @@ In Windows PowerShell, pass the Windows paths to the script and executable:
 .\scripts\windows-loglens-dump.ps1 -Exe C:\path\to\loglens.exe -DevTools
 ```
 
-Each command defaults to three repetitions with ten seconds per phase and three
-seconds of warmup. The phases are idle, sidebar hover, scroll, resize, navigation,
-and idle after navigation. The script launches a new process for each repetition
-and closes only that process. It saves partial-run failure metadata on error.
+Each command defaults to one repetition with ten seconds per phase and three
+seconds of warmup. Use `-Repeats 3` for three manually driven repetitions. The
+script prompts for idle, hover, scroll, resize, navigation, and idle-after phases.
+Perform each action when prompted. Restore the initial viewport and Overview
+before the final idle-after phase. It saves partial-run failure metadata on error.
 
-The content viewport defaults to 1440 by 900 CSS pixels. The DevTools run adds
-340 pixels to the window width so the application keeps the same content width.
-A viewport mismatch at startup fails capture. Resize alternates the width by
-160 pixels; the other phases restore the initial dimensions and Overview screen.
+The content viewport defaults to 1440 by 900 CSS pixels. Set the window to that
+content size before the capture warmup. With DevTools open, resize the window to
+leave the same content width visible. A viewport mismatch at startup fails the
+capture. The resize phase is manual; other phases use the starting dimensions.
 
 Each phase saves process samples and debug state, a CPU profile, cumulative
 allocation profiles before and after, and heap profiles before and after with
@@ -55,8 +57,12 @@ python3 scripts/loglens-report.py /mnt/c/Users/Acer/Downloads/loglens-dumps/TIME
 
 The report rejects failed captures, reset counters, mixed configurations, and
 phases with no evidence of their intended action. It reports each repetition
-and medians across repetitions. Compare the same phases and settings across
-binaries. Compare DevTools settings separately, keeping the content viewport fixed.
+and medians across repetitions. Each half-second Windows sample also queries per-process
+GPU memory and adapter-wide GPU memory counters when those counter sets are
+available. The report keeps each counter path and adapter instance. Pass
+`-TopologyLabel single` or `-TopologyLabel dual` to record the monitor setup.
+Compare the same phases and settings across binaries. Compare DevTools settings
+separately, keeping the content viewport fixed.
 
 Inspect live heap ownership and allocations over one phase:
 
@@ -65,7 +71,12 @@ go tool pprof -inuse_space -top CAPTURE/run-1/navigation/heap-after.pb.gz
 go tool pprof -alloc_space -top \
   -base CAPTURE/run-1/navigation/allocs-before.pb.gz \
   CAPTURE/run-1/navigation/allocs-after.pb.gz
+scripts/loglens-phase-allocs.sh CAPTURE
 ```
+
+The phase command prints separate allocation diffs for hover and resize. It
+uses each phase's cumulative allocation profile from before and after the
+interaction, so allocation sites are attributed to that interval.
 
 `go tool pprof` reports allocation sites. It does not identify the pointer that
 keeps an object alive. Collection tests and cache ownership checks establish
@@ -87,11 +98,17 @@ that separately.
 scoped hover paths, including changes that matched no selector. `HoverFallbacks`
 counts eligible retained hover changes that used full placement.
 `HoverPatchErrors` counts refused or failed scoped attempts, including retries.
-Parses and cascades alone do not establish whether a hover used scoped placement.
+`HoverPatchFailures` groups failed attempts by stage, stable reason, and target
+ID. Its counts are cumulative; the report computes each phase's count deltas
+from its first and last samples. Parses and cascades alone do not establish
+whether a hover used scoped placement.
 
 Keep profiler overhead in mind. State requests and CPU profiling consume resources.
 A high FPS reading does not exclude a slow interaction between snapshots. Windows
 process totals cannot establish a graphics-driver or native-stack breakdown.
+Windows GPU Process Memory and GPU Adapter Memory counters add process and
+adapter allocation measurements, but do not identify individual D3D objects
+or the driver's internal allocation owners.
 
 ## Local regression checks
 

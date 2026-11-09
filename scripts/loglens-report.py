@@ -51,6 +51,16 @@ def summarize(samples):
     runtime_elapsed = seconds(a['runtime']['sampled_at'], b['runtime']['sampled_at'])
     alloc = delta(a['runtime'], b['runtime'], 'total_alloc')
     presents = delta(a['frame'], b['frame'], 'presents')
+    first_failures = failure_counts(a['stats'])
+    last_failures = failure_counts(b['stats'])
+    failure_deltas = {}
+    for key in first_failures.keys() | last_failures.keys():
+        change = last_failures.get(key, 0) - first_failures.get(key, 0)
+        if change < 0:
+            raise ValueError(f'counter reset: hover failure {key}')
+        if change:
+            failure_deltas[key] = change
+    gpu_memory = gpu_memory_summary(samples)
     result = {
         'elapsed_seconds': elapsed,
         'frame_sample_seconds': frame_elapsed,
@@ -67,6 +77,8 @@ def summarize(samples):
         'private_final_bytes': number(last, 'private_bytes'),
         'private_peak_bytes': max(number(s, 'private_bytes') for s in samples),
         'pipeline_delta': {key: delta(a['stats'], b['stats'], key) for key in COUNTERS},
+        'hover_patch_failure_delta': failure_deltas,
+        'gpu_memory': gpu_memory,
         'gc_cycles': delta(a['runtime'], b['runtime'], 'num_gc'),
         'gc_pause_ns': delta(a['runtime'], b['runtime'], 'gc_pause_total_ns'),
         'runtime_managed_final_bytes': number(b['runtime'], 'sys') - number(b['runtime'], 'heap_released'),
@@ -80,6 +92,34 @@ def summarize(samples):
     if result['runtime_managed_final_bytes'] < 0:
         raise ValueError('released heap exceeds runtime memory')
     return result
+
+
+def failure_counts(stats):
+    counts = {}
+    for entry in stats.get('HoverPatchFailures', []):
+        key = '/'.join((entry['stage'], entry['reason'], entry['target']))
+        value = entry['count']
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f'invalid hover failure count: {value!r}')
+        counts[key] = value
+    return counts
+
+
+def gpu_memory_summary(samples):
+    totals = {}
+    available = False
+    for sample in samples:
+        gpu = sample.get('gpu_memory')
+        if not gpu or not gpu.get('available'):
+            continue
+        available = True
+        for counter in gpu.get('counters', []):
+            key = counter['path']
+            value = counter['value_bytes']
+            entry = totals.setdefault(key, {'peak_bytes': 0, 'final_bytes': 0})
+            entry['peak_bytes'] = max(entry['peak_bytes'], value)
+            entry['final_bytes'] = value
+    return {'available': available, 'counters': totals}
 
 
 def report(directory):
@@ -108,7 +148,9 @@ def report(directory):
         raise ValueError(f'no run-*/capture.json in {directory}')
     configurations = {(r['metadata']['sha256'], r['metadata']['devtools'],
                        r['metadata']['content_width'], r['metadata']['height'],
-                       r['metadata']['seconds_per_phase'], r['metadata']['warmup_seconds']) for r in runs}
+                       r['metadata']['seconds_per_phase'], r['metadata']['warmup_seconds'],
+                       r['metadata'].get('window_width'), r['metadata'].get('window_height'),
+                       r['metadata'].get('topology_label', 'unknown')) for r in runs}
     if len(configurations) != 1:
         raise ValueError('capture mixes binaries or configurations')
     return {

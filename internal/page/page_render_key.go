@@ -51,8 +51,9 @@ type renderTrack struct {
 	hoverRiskScopes []string
 	// hoverScopeKey is built by keyFor like last, so it pins no source
 	// copy once the source memo carries a nonzero revision.
-	hoverScopeKey draw.Key
-	hoverScopes   map[hoverScopePair]hoverScopeResult
+	hoverScopeKey      draw.Key
+	hoverScopes        map[hoverScopePair]hoverScopeResult
+	hoverFailureCounts map[hoverFailureKey]uint64
 	// redrawBatch defers draws across a pointer sequence. Any Redraw in the
 	// batch sets pending; a Redraw (not RedrawIfChanged) also sets force.
 	redrawBatch   int

@@ -66,5 +66,7 @@ func (p *Page) Stats() host.Stats {
 		LastReloadError: p.stats.reloadErr,
 	}
 
-	return draw.Snapshot(&counts, len(p.boxes), ops)
+	stats := draw.Snapshot(&counts, len(p.boxes), ops)
+	stats.HoverPatchFailures = p.hoverPatchFailureSnapshot()
+	return stats
 }
