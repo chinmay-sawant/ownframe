@@ -71,6 +71,9 @@
 }
 
 .of-calendar-weekday {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 4px 0;
   color: var(--of-muted-foreground, #737373);
   font-size: 12px;

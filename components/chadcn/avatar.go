@@ -34,6 +34,7 @@ const (
 // Source is an image name registered on the page with SetImage; the
 // constructor never reads the filesystem.
 type AvatarOptions struct {
+	ID       string
 	Source   string
 	Initials string
 	Fallback string
@@ -60,8 +61,12 @@ func Avatar(options AvatarOptions) *ui.Element {
 		accessibleName = options.Initials
 	}
 	if options.Source != "" {
-		frame.Children(ui.Tag("img").Class("of-avatar-image").
-			Attr("src", options.Source).Attr("alt", accessibleName))
+		img := ui.Tag("img").Class("of-avatar-image").
+			Attr("src", options.Source).Attr("alt", accessibleName)
+		if imgID := partID(options.ID, "-image"); imgID != "" {
+			img.ID(imgID)
+		}
+		frame.Children(img)
 	} else {
 		text := options.Initials
 		if text == "" {
@@ -73,8 +78,12 @@ func Avatar(options AvatarOptions) *ui.Element {
 		if accessibleName == "" {
 			accessibleName = text
 		}
-		frame.Children(ui.Span().Class("of-avatar-fallback").
-			Attr("aria-hidden", ariaBool(true)).Text(text))
+		fallback := ui.Span().Class("of-avatar-fallback").
+			Attr("aria-hidden", ariaBool(true)).Text(text)
+		if fallbackID := partID(options.ID, "-fallback"); fallbackID != "" {
+			fallback.ID(fallbackID)
+		}
+		frame.Children(fallback)
 	}
 
 	root := ui.Span().Class(classes("of-avatar", size)).Children(frame)
@@ -84,6 +93,9 @@ func Avatar(options AvatarOptions) *ui.Element {
 	if options.Status != AvatarStatusNone {
 		root.Children(ui.Span().Class(classes("of-avatar-status", avatarStatusClass(options.Status))).
 			Children(ui.Span().Class("of-visually-hidden").Text(avatarStatusLabel(options.Status))))
+	}
+	if options.ID != "" {
+		root.ID(options.ID)
 	}
 	return root
 }

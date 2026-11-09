@@ -1,6 +1,7 @@
 package replay
 
 import (
+	"image"
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -30,5 +31,26 @@ func TestRasterCacheReusesShapeAcrossColours(t *testing.T) {
 	renderer.fillRect(dst, op, 0, 0)
 	if got := len(renderer.rasters.entries); got != 1 {
 		t.Fatalf("a colour change baked a second raster: %d entries", got)
+	}
+}
+
+// TestRasterCacheTouchOnHit verifies that a cache hit moves the key to the back
+// of the eviction order for true LRU retention.
+func TestRasterCacheTouchOnHit(t *testing.T) {
+	var c rasterCache
+	k1 := rasterKey{variant: 1, w: 10, h: 10}
+	k2 := rasterKey{variant: 1, w: 20, h: 20}
+
+	c.raster(k1, image.Pt(10, 10), func(img *ebiten.Image) {})
+	c.raster(k2, image.Pt(20, 20), func(img *ebiten.Image) {})
+
+	if len(c.order) != 2 || c.order[0] != k1 || c.order[1] != k2 {
+		t.Fatalf("order = %v, want [%v, %v]", c.order, k1, k2)
+	}
+
+	// Hit k1: must move to the back of order.
+	c.raster(k1, image.Pt(10, 10), func(img *ebiten.Image) {})
+	if len(c.order) != 2 || c.order[0] != k2 || c.order[1] != k1 {
+		t.Fatalf("order after hit = %v, want [%v, %v]", c.order, k2, k1)
 	}
 }

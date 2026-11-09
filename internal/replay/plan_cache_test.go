@@ -458,3 +458,27 @@ func TestGroupPlanCoversTileBuckets(t *testing.T) {
 		t.Fatalf("tile cover = %d of %d items", len(dedup), len(p.items))
 	}
 }
+
+// TestRendererEvictDisplay proves EvictDisplay clears the cached plan for d,
+// preventing dead displays from being retained by the plan cache.
+func TestRendererEvictDisplay(t *testing.T) {
+	d := cardBenchDisplay()
+	var r Renderer
+	defer r.Close()
+
+	p1 := r.tilePlanFor(d)
+	if p1 == nil {
+		t.Fatal("first tile plan is nil")
+	}
+
+	r.EvictDisplay(d)
+
+	// After eviction, plans entries must not retain d.
+	r.plans.mu.Lock()
+	for i := range r.plans.entries {
+		if r.plans.entries[i].d == d {
+			t.Fatalf("slot %d still retains evicted display", i)
+		}
+	}
+	r.plans.mu.Unlock()
+}

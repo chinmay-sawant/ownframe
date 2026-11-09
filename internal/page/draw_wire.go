@@ -39,6 +39,11 @@ func (p *Page) Stats() host.Stats {
 	}
 
 	counts := draw.Counts{
+		FullLayouts:      p.stats.fullLayouts,
+		HoverPatches:     p.stats.hoverPatches,
+		HoverFallbacks:   p.stats.hoverFallbacks,
+		HoverPatchErrors: p.stats.hoverPatchErrors,
+
 		Redraws:         p.stats.redraws,
 		Parses:          p.stats.parses,
 		Cascades:        p.stats.cascades,
@@ -61,5 +66,7 @@ func (p *Page) Stats() host.Stats {
 		LastReloadError: p.stats.reloadErr,
 	}
 
-	return draw.Snapshot(&counts, len(p.boxes), ops)
+	stats := draw.Snapshot(&counts, len(p.boxes), ops)
+	stats.HoverPatchFailures = p.hoverPatchFailureSnapshot()
+	return stats
 }

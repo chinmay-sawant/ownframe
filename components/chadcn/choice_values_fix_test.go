@@ -110,9 +110,34 @@ func TestCalendarOutsideDaySkipsSelect(t *testing.T) {
 	if insideAction == 0 {
 		t.Fatal("in-month days lost OnSelect")
 	}
-	rule := calendarFocusRule(t, chadcn.Stylesheet)
-	if strings.Contains(rule, "outline: none") || !strings.Contains(rule, "outline: 2px solid") {
+	if rule := calendarFocusRule(t, chadcn.Stylesheet); strings.Contains(rule, "outline: none") || !strings.Contains(rule, "outline: 2px solid") {
 		t.Fatalf("calendar focus rule = %q", rule)
+	}
+}
+
+func TestCalendarAllowOutsideSelection(t *testing.T) {
+	t.Parallel()
+	month := time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+	source := renderSelectionHTML(t, chadcn.Calendar(chadcn.CalendarOptions{
+		Month:                 month,
+		AllowOutsideSelection: true,
+		OnSelect: func(context.Context, time.Time) error {
+			return nil
+		},
+	}))
+	var outsideAction int
+	for tag := range strings.SplitSeq(source, "<button") {
+		end := strings.Index(tag, ">")
+		if end < 0 || !strings.Contains(tag[:end], "of-calendar-day") {
+			continue
+		}
+		head := tag[:end]
+		if strings.Contains(head, "of-calendar-day--outside") && strings.Contains(head, "data-action") {
+			outsideAction++
+		}
+	}
+	if outsideAction == 0 {
+		t.Fatal("AllowOutsideSelection did not attach data-action to outside days")
 	}
 }
 

@@ -9,6 +9,7 @@ func (p *Page) invalidateCache() {
 	p.cache = nil
 	p.relayedOK = false
 	p.forgetBoxes()
+	p.motionIndex = nil
 	// Unknown sheets keep every state redraw until the next Redraw reports
 	// what the new sheets can match.
 	p.statePseudos = draw.UnknownPseudos()

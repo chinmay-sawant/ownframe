@@ -25,13 +25,23 @@ export OWNFRAME_SCROLLBAR_GPU_TEST=1
 
 run_test() {
     # Do not set HOME or touch the user's Xauthority. xvfb-run owns a temporary cookie.
+    # xvfb-run merges the command's stderr into stdout, so the go command can
+    # interleave download or module errors with the JSON stream. Surface those
+    # lines and still require the named test to emit a pass event.
     "${runner[@]}" \
         go test -p 1 -count=1 -json -timeout=90s -run "^$2$" "$1" |
         python3 -c '
 import json, sys
 passed = False
 for line in sys.stdin:
-    event = json.loads(line)
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        event = json.loads(line)
+    except json.JSONDecodeError:
+        print(line, file=sys.stderr)
+        continue
     if "Output" in event:
         print(event["Output"], end="")
     if event.get("Test") == sys.argv[1] and event["Action"] == "pass":

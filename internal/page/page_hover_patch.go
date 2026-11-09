@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"hash/fnv"
+	"slices"
+	"strings"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
 
+	"github.com/chinmay-sawant/ownframe/internal/host"
 	"github.com/chinmay-sawant/ownframe/internal/page/draw"
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -23,9 +26,25 @@ type hoverPatchFunc func(
 	options layout.Options,
 ) (*layout.ElementPatch, error)
 
+type hoverPatchAttemptError struct {
+	target string
+	err    error
+}
+
+type hoverFailureKey struct {
+	stage  string
+	reason string
+	target string
+}
+
+func (e *hoverPatchAttemptError) Error() string { return e.err.Error() }
+func (e *hoverPatchAttemptError) Unwrap() error { return e.err }
+
 // errHoverPatchEmpty reports a patch that returned no display. The caller
 // falls back to the full layout, so the page draws what it drew before.
 var errHoverPatchEmpty = errors.New("page: hover patch returned no display")
+
+const maxHoverFailureKeys = 256
 
 // layoutStaged lays out the styled document for one redraw. A change that
 // only moves the hover re-places the subtrees the new hover state can reach
@@ -37,13 +56,113 @@ func (p *Page) layoutStaged(
 	styled *css.Document,
 	state render.State,
 ) (*Display, error) {
+	hoverChanged := p.hoverPatchEligible(state) && p.last.Hover != state.Hover
 	if roots, ok := p.hoverPatchRoots(styled, state); ok {
-		if patched, err := p.listHoverPatched(ctx, styled, state, roots); err == nil {
+		patched, err := p.listHoverPatched(ctx, styled, state, roots)
+		if err == nil {
+			p.stats.hoverPatches++
 			return patched, nil
+		}
+		p.stats.hoverPatchErrors++
+		p.noteHoverPatchFailure("selector", classifyHoverPatchError(err), hoverFailureTarget(err, roots))
+		// If the cascade roots failed (e.g. an element transitioned to display:none
+		// and placed no box), fall back to geometric roots only when the sheets
+		// contain no escaping selector at all. The geometric roots cannot prove
+		// which scope a :has or sibling-after-:hover rule belongs to.
+		if !p.hoverRiskAny() {
+			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
+				patched, retryErr := p.listHoverPatched(ctx, styled, state, geoRoots)
+				if retryErr == nil {
+					p.stats.hoverPatches++
+					return patched, nil
+				}
+				p.stats.hoverPatchErrors++
+				p.noteHoverPatchFailure("geometry", classifyHoverPatchError(retryErr), hoverFailureTarget(retryErr, geoRoots))
+			}
 		}
 	}
 
+	if hoverChanged {
+		p.stats.hoverFallbacks++
+		if _, ok := p.hoverPatchRoots(styled, state); !ok {
+			reason := "no-patch-roots"
+			if p.hoverIsRisky(p.last.Hover, state.Hover) {
+				reason = "escaping-hover-selector"
+			}
+			p.noteHoverPatchFailure("selection", reason, []string{p.last.Hover, state.Hover})
+		}
+	}
+	p.stats.fullLayouts++
 	return draw.List(ctx, styled, state)
+}
+
+func classifyHoverPatchError(err error) string {
+	switch {
+	case errors.Is(err, errHoverPatchEmpty):
+		return "empty-display"
+	case errors.Is(err, layout.ErrNoElement):
+		return "target-missing"
+	case errors.Is(err, layout.ErrNoRetainedState):
+		return "retained-state-missing"
+	case errors.Is(err, layout.ErrOverrideReflow):
+		return "reflow-escapes-patch"
+	case errors.Is(err, layout.ErrInvalidOverrideValue):
+		return "invalid-override"
+	case errors.Is(err, layout.ErrUnknownOverrideProperty):
+		return "unsupported-override"
+	case errors.Is(err, context.Canceled):
+		return "context-canceled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "context-deadline"
+	default:
+		return "patch-error"
+	}
+}
+
+func hoverFailureTarget(err error, roots []string) []string {
+	var attempt *hoverPatchAttemptError
+	if errors.As(err, &attempt) {
+		return []string{attempt.target}
+	}
+	return roots
+}
+
+func (p *Page) noteHoverPatchFailure(stage, reason string, targets []string) {
+	if p.hoverFailureCounts == nil {
+		p.hoverFailureCounts = make(map[hoverFailureKey]uint64)
+	}
+	if len(targets) == 0 {
+		targets = []string{"<none>"}
+	}
+	for _, target := range targets {
+		key := hoverFailureKey{stage: stage, reason: reason, target: target}
+		if _, exists := p.hoverFailureCounts[key]; !exists && len(p.hoverFailureCounts) >= maxHoverFailureKeys-1 {
+			key.target = "<other>"
+		}
+		p.hoverFailureCounts[key]++
+	}
+}
+
+func (p *Page) hoverPatchFailureSnapshot() []host.HoverPatchFailureCount {
+	if len(p.hoverFailureCounts) == 0 {
+		return nil
+	}
+	items := make([]host.HoverPatchFailureCount, 0, len(p.hoverFailureCounts))
+	for key, count := range p.hoverFailureCounts {
+		items = append(items, host.HoverPatchFailureCount{
+			Stage: key.stage, Reason: key.reason, Target: key.target, Count: count,
+		})
+	}
+	slices.SortFunc(items, func(a, b host.HoverPatchFailureCount) int {
+		if c := strings.Compare(a.Stage, b.Stage); c != 0 {
+			return c
+		}
+		if c := strings.Compare(a.Reason, b.Reason); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Target, b.Target)
+	})
+	return items
 }
 
 // hoverPatchRoots returns the subtree roots a hover-only change must
@@ -59,7 +178,7 @@ func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]stri
 
 	if key := hoverGuardHash(p.source, p.themeSrc); key != p.hoverGuardHash {
 		p.hoverGuardHash = key
-		p.hoverGuardRisky = draw.HoverPatchRisky(p.source, p.themeSrc)
+		p.hoverRiskGlobal, p.hoverRiskScopes = draw.HoverPatchRiskyScopes(p.source, p.themeSrc)
 	}
 
 	key := p.keyFor(state)
@@ -91,23 +210,128 @@ func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]stri
 	// the common ancestor of two controls, which can include a whole toolbar.
 	// The cascade evaluates the full selector per node (including :has and
 	// sibling combinators), so its scopes stay safe when the sheets use those
-	// patterns. Only the geometric fallback needs the page-wide risky guard:
-	// it assumes the change stays inside the hovered subtrees, which :has and
-	// sibling-after-:hover break.
+	// patterns. The geometric fallback cannot prove which element a risky
+	// selector belongs to, so any escaping selector in the sheets forces a
+	// full layout once the cascade scopes do not fit.
 	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok {
 		if draw.HoverScopesFit(p.boxes, roots) {
 			return roots, true
 		}
-		// The precise change is too wide for a scoped patch. A narrower
-		// geometric guess would miss the nodes the cascade already found,
-		// so take the full layout when the sheets can reach outside.
-		if p.hoverGuardRisky {
+		if p.hoverRiskAny() {
 			return nil, false
 		}
-	} else if p.hoverGuardRisky {
+	} else if p.hoverRiskAny() {
 		return nil, false
 	}
 	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+}
+
+// hoverRiskAny reports whether the sheets contain any selector that can style
+// outside the hovered subtrees. The geometric fallback uses this page-wide
+// answer because it cannot map a selector scope to the nodes it affects.
+func (p *Page) hoverRiskAny() bool {
+	return p.hoverRiskGlobal || len(p.hoverRiskScopes) > 0
+}
+
+// hoverIsRisky reports whether an escaping rule (:has or sibling-after-:hover)
+// can match when hover moves between oldID and newID.
+func (p *Page) hoverIsRisky(oldID, newID string) bool {
+	if p.hoverRiskGlobal {
+		return true
+	}
+	if len(p.hoverRiskScopes) == 0 {
+		return false
+	}
+
+	// Filter down to scopes that actually appear in the HTML source.
+	// An unused component stylesheet cannot affect any node in the page.
+	// This scoping is advisory: the patch fallback uses hoverRiskAny, which
+	// stays page-wide so a missed scope can never accept a narrower patch.
+	var activeScopes []string
+	for _, scope := range p.hoverRiskScopes {
+		if scope != "" && strings.Contains(p.source, scope) {
+			activeScopes = append(activeScopes, scope)
+		}
+	}
+	if len(activeScopes) == 0 {
+		return false
+	}
+
+	return p.elementOrAncestorsMatchScopes(oldID, activeScopes) ||
+		p.elementOrAncestorsMatchScopes(newID, activeScopes)
+}
+
+func (p *Page) elementOrAncestorsMatchScopes(id string, scopes []string) bool {
+	if id == "" || len(p.boxes) == 0 {
+		return false
+	}
+
+	start := -1
+	for i := range p.boxes {
+		if p.boxes[i].ID == id {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return p.sourceElementMatchesScopes(id, scopes)
+	}
+
+	for idx := start; idx >= 0 && idx < len(p.boxes); {
+		boxID := p.boxes[idx].ID
+		if boxID != "" {
+			for _, scope := range scopes {
+				if boxID == scope {
+					return true
+				}
+			}
+			if p.sourceElementMatchesScopes(boxID, scopes) {
+				return true
+			}
+		}
+		parent := p.boxes[idx].ParentIndex
+		if parent < 0 || parent >= len(p.boxes) || parent == idx {
+			break
+		}
+		idx = parent
+	}
+
+	return false
+}
+
+// sourceElementMatchesScopes checks if the tag declaring id in p.source carries
+// any of the scope classes or attributes.
+func (p *Page) sourceElementMatchesScopes(id string, scopes []string) bool {
+	if id == "" || p.source == "" {
+		return false
+	}
+	needle := `id="` + id + `"`
+	pos := strings.Index(p.source, needle)
+	if pos < 0 {
+		needle = `id='` + id + `'`
+		pos = strings.Index(p.source, needle)
+	}
+	if pos < 0 {
+		return false
+	}
+
+	tagStart := strings.LastIndexByte(p.source[:pos], '<')
+	if tagStart < 0 {
+		return false
+	}
+	tagRelEnd := strings.IndexByte(p.source[pos:], '>')
+	if tagRelEnd < 0 {
+		return false
+	}
+	tagText := p.source[tagStart : pos+tagRelEnd+1]
+
+	for _, scope := range scopes {
+		if scope != "" && strings.Contains(tagText, scope) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // hoverPatchEligible reports whether this redraw changed only the hover:
@@ -156,15 +380,24 @@ func (p *Page) listHoverPatched(
 	for _, root := range roots {
 		patch, err := p.hoverPatch(ctx, styled, current, root, options)
 		if err != nil {
+			if current != nil && current != p.draw.Display {
+				current.Release()
+			}
 			p.commitRoots = nil
-			return nil, err
+			return nil, &hoverPatchAttemptError{target: root, err: err}
 		}
 
 		if patch == nil || patch.Display == nil {
+			if current != nil && current != p.draw.Display {
+				current.Release()
+			}
 			p.commitRoots = nil
-			return nil, errHoverPatchEmpty
+			return nil, &hoverPatchAttemptError{target: root, err: errHoverPatchEmpty}
 		}
 
+		if current != nil && current != p.draw.Display && current != patch.Display {
+			current.Release()
+		}
 		current = patch.Display
 	}
 

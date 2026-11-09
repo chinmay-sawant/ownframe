@@ -94,6 +94,9 @@ func (p *Page) adoptSVGPaint(patch *layout.ElementPatch) bool {
 	p.motion.MarkSVGPaintKept()
 	p.bindMotion(previous, d)
 	p.bindTransitions(nil)
+	if previous != nil && previous != d {
+		previous.Release()
+	}
 	p.markRect(patch.Old)
 	if patch.New != patch.Old {
 		p.markRect(patch.New)

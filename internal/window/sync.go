@@ -32,6 +32,9 @@ func (s *shell) syncImage() error {
 	next := ebiten.NewImageFromImage(front.Image)
 	s.disposeImage()
 
+	if s.display != nil {
+		s.renderer.EvictDisplay(s.display)
+	}
 	s.img = next
 	s.display = nil
 	s.fallback = true
@@ -55,6 +58,9 @@ func (s *shell) built() bool {
 }
 
 func (s *shell) setDisplay(display *layout.Display) {
+	if s.display != nil && s.display != display {
+		s.renderer.EvictDisplay(s.display)
+	}
 	s.disposeImage()
 	s.display = display
 	s.img = nil

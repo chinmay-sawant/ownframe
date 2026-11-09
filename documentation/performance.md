@@ -27,6 +27,9 @@ This page turns the release checklist into steps you can run. It assumes Perf is
 
 Record per release numbers in [performance-baseline.md](performance-baseline.md). The [Spotify player report](../examples/spotify-player/PERFORMANCE.md) records redraw measurements for all eight screens. Repaint internals live in [repaint.md](repaint.md). The Frame tab layout lives in [devtools.md](devtools.md).
 
+The [Loglens profiling guide](loglens-profiling.md) covers fresh Windows processes,
+fixed interaction phases, counter deltas, and before/after profiles.
+
 ## 1 Idle baseline
 
 Leave the window alone for 30 to 60 seconds and confirm it does almost nothing.

@@ -17,6 +17,9 @@ const (
 // month and Selected marks the chosen day. A zero Month uses Selected's month,
 // then the current month. A zero Selected renders no selection.
 //
+// AllowOutsideSelection enables clicking days from adjacent months. When
+// clicked, the callback receives that day.
+//
 // ID names the grid. Each day button uses ID+"-day-<cell>", where <cell> is
 // the zero-based position in the fixed six-by-seven grid (0..41), so the ids
 // stay stable across selection and month changes and those changes land as
@@ -24,11 +27,12 @@ const (
 // and the grid uses ID+"-grid" for the same reason. An empty ID leaves the
 // grid, title, and days unnamed.
 type CalendarOptions struct {
-	ID            string
-	Month         time.Time
-	Selected      time.Time
-	OnSelect      func(ctx context.Context, day time.Time) error
-	OnMonthChange func(ctx context.Context, month time.Time) error
+	ID                    string
+	Month                 time.Time
+	Selected              time.Time
+	AllowOutsideSelection bool
+	OnSelect              func(ctx context.Context, day time.Time) error
+	OnMonthChange         func(ctx context.Context, month time.Time) error
 }
 
 // Calendar renders a month header, a weekday row, and a fixed six-by-seven day
@@ -126,8 +130,9 @@ func calendarDay(cell int, day, month time.Time, options CalendarOptions) *ui.El
 	if dayID := partID(options.ID, "-day-"+strconv.Itoa(cell)); dayID != "" {
 		button.ID(dayID)
 	}
-	// Days from the adjacent month stay visible, but they are not choices.
-	if options.OnSelect != nil && !outside {
+	// Days from the adjacent month stay visible, and become selectable
+	// when AllowOutsideSelection is enabled.
+	if options.OnSelect != nil && (options.AllowOutsideSelection || !outside) {
 		chosen := day
 		button.OnClick(func(ctx context.Context) error {
 			return options.OnSelect(ctx, chosen)

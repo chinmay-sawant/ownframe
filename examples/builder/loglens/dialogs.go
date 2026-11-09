@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
 	"github.com/chinmay-sawant/ownframe/ui"
@@ -26,6 +27,7 @@ func (a *app) globalDialogs() *ui.Element {
 	return ui.Div().Display(ui.DisplayBlock).Children(
 		a.dialogCreateAlert(),
 		a.dialogDeleteView(),
+		a.dialogOnCall(),
 		chadcn.Toast(chadcn.ToastOptions{
 			Open:        a.toastOpen,
 			Title:       a.toastTitle,
@@ -106,6 +108,7 @@ func (a *app) dialogThresholdField() *ui.Element {
 		Description: fmt.Sprintf("Five minutes above %d per 1,000 requests.", a.threshold),
 		Control: ui.Div().Class("app-col").Children(
 			chadcn.Slider(chadcn.SliderOptions{
+				ID:    "alert-threshold-slider",
 				Label: "Error-rate threshold",
 				Value: float64(a.threshold),
 				Min:   dialogThresholdMin,
@@ -117,7 +120,7 @@ func (a *app) dialogThresholdField() *ui.Element {
 					a.dialogNudge(-dialogThresholdShift),
 					a.dialogNudge(dialogThresholdShift),
 				),
-				chadcn.Badge(fmt.Sprintf("%d per 1k", a.threshold), chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}),
+				chadcn.Badge(fmt.Sprintf("%d per 1k", a.threshold), chadcn.BadgeOptions{Variant: chadcn.BadgeSecondary}).ID("alert-threshold-badge"),
 			),
 		),
 	})
@@ -128,7 +131,7 @@ func (a *app) dialogNudge(delta int) *ui.Element {
 	return chadcn.Button(fmt.Sprintf("%+d", delta), chadcn.ButtonOptions{Variant: chadcn.ButtonText, Size: chadcn.ButtonSmall}).
 		OnClick(func(ctx context.Context) error {
 			a.threshold = min(dialogThresholdMax, max(dialogThresholdMin, a.threshold+delta))
-			return a.refresh(ctx)
+			return a.patchSlider(ctx, "alert-threshold-slider", float64(a.threshold), dialogThresholdMin, dialogThresholdMax, fmt.Sprintf("%d per 1k", a.threshold))
 		})
 }
 
@@ -138,22 +141,22 @@ func (a *app) dialogTogglesRow() *ui.Element {
 	return ui.Div().Class("app-row").Gap(ui.Px(12)).Children(
 		ui.Div().Width(ui.Percent(48)).Children(
 			ui.Div().Class("app-col").Children(
-				chadcn.Switch("Alerts enabled", a.alertsEnabled).ID("alert-enabled").
+				chadcn.SwitchWithOptions("Alerts enabled", a.alertsEnabled, chadcn.SwitchOptions{ID: "alert-enabled"}).
 					OnClick(func(ctx context.Context) error {
 						a.alertsEnabled = !a.alertsEnabled
-						return a.refresh(ctx)
+						return a.patchSwitch(ctx, "alert-enabled", a.alertsEnabled)
 					}),
 				ui.Text("Off keeps the rule saved without sending anything.").Class("app-muted"),
 			),
 		),
 		ui.Div().Width(ui.Percent(48)).Children(
 			chadcn.CheckboxWithOptions("Page the on-call engineer", a.checkValue, chadcn.CheckboxOptions{
+				ID:          "alert-page",
 				Description: "Escalate to PagerDuty when the rule repeats twice.",
-			}).ID("alert-page").
-				OnClick(func(ctx context.Context) error {
-					a.checkValue = !a.checkValue
-					return a.refresh(ctx)
-				}),
+			}).OnClick(func(ctx context.Context) error {
+				a.checkValue = !a.checkValue
+				return a.patchCheckbox(ctx, "alert-page", a.checkValue)
+			}),
 		),
 	)
 }
@@ -249,4 +252,81 @@ func (a *app) dialogDeleteView() *ui.Element {
 			return a.showToast(ctx, "View kept", "EU latency is still in saved views.")
 		},
 	})
+}
+
+// dialogOnCall lets the user reassign the on-call responder for the chosen date.
+func (a *app) dialogOnCall() *ui.Element {
+	if !a.onCallDialogOpen {
+		return nil
+	}
+	currentDay := a.onCallDialogDate
+	if currentDay.IsZero() {
+		currentDay = a.onCallDate
+	}
+	if currentDay.IsZero() {
+		currentDay = time.Now()
+	}
+	currentResponder := a.onCallFor(currentDay)
+
+	var rows []*ui.Element
+	for _, r := range defaultResponders() {
+		resp := r
+		isCurrent := resp.Name == currentResponder.Name
+		badgeText := "Available"
+		badgeVariant := chadcn.BadgeOutline
+		btnVariant := chadcn.ButtonOutlined
+		btnText := "Assign"
+		if isCurrent {
+			badgeText = "Current"
+			badgeVariant = chadcn.BadgeSecondary
+			btnVariant = chadcn.ButtonFilled
+			btnText = "Active"
+		}
+
+		item := ui.Div().Class("app-row app-row--between").
+			Padding(ui.Edges(ui.Px(8), ui.Px(10))).
+			Border(ui.SolidBorder(ui.Px(1), ui.ColorVar("--of-border", ui.Hex("#e5e5e5")))).
+			BorderRadius(ui.Px(6)).
+			Children(
+				ui.Div().Class("app-row").Gap(ui.Px(10)).Children(
+					chadcn.Avatar(chadcn.AvatarOptions{Initials: resp.Initials, Size: chadcn.AvatarSmall, Status: chadcn.AvatarStatusOnline}),
+					ui.Div().Class("app-col").Gap(ui.Px(2)).Children(
+						ui.Text(resp.Name).FontWeight(ui.FontWeightBold).FontSize(ui.Px(13)),
+						ui.Text(resp.Role+" · "+resp.Region).Class("app-muted"),
+					),
+				),
+				ui.Div().Class("app-row").Gap(ui.Px(8)).Children(
+					chadcn.Badge(badgeText, chadcn.BadgeOptions{Variant: badgeVariant}),
+					chadcn.Button(btnText, chadcn.ButtonOptions{
+						Variant: btnVariant,
+						Size:    chadcn.ButtonSmall,
+					}).OnClick(func(ctx context.Context) error {
+						a.onCallDialogOpen = false
+						return a.setOnCall(ctx, currentDay, resp)
+					}),
+				),
+			)
+		rows = append(rows, item)
+	}
+
+	return chadcn.Dialog(chadcn.DialogOptions{
+		ID:          "oncall-swap-dialog",
+		Open:        a.onCallDialogOpen,
+		Title:       "Swap On-Call Coverage",
+		Description: "Assign primary responder for " + currentDay.Format("Monday, Jan 2, 2006") + ".",
+		Width:       ui.Px(540),
+		OnOpenChange: func(ctx context.Context, open bool) error {
+			a.onCallDialogOpen = open
+			return a.refresh(ctx)
+		},
+		Footer: []*ui.Element{
+			chadcn.Button("Close", chadcn.ButtonOptions{Variant: chadcn.ButtonOutlined}).
+				OnClick(func(ctx context.Context) error {
+					a.onCallDialogOpen = false
+					return a.refresh(ctx)
+				}),
+		},
+	},
+		ui.Div().Class("app-stack").Gap(ui.Px(10)).Children(rows...),
+	)
 }

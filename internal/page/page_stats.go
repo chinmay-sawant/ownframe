@@ -5,6 +5,11 @@ import "time"
 // pageStats counts the stages of every Redraw. The devtools overlay reads
 // them through Stats.
 type pageStats struct {
+	fullLayouts      uint64
+	hoverPatches     uint64
+	hoverFallbacks   uint64
+	hoverPatchErrors uint64
+
 	redraws    uint64
 	parses     uint64
 	cascades   uint64

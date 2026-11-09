@@ -2,6 +2,7 @@ package render
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/chinmay-sawant/blinkless/css"
 	"github.com/chinmay-sawant/blinkless/layout"
@@ -15,9 +16,14 @@ func RelayoutElement(
 	prev *layout.Display,
 	elementID string,
 	options layout.Options,
-) (*layout.ElementPatch, error) {
+) (patch *layout.ElementPatch, err error) {
 	engineMu.Lock()
 	defer engineMu.Unlock()
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("render: relayout element %s panic: %v", elementID, r)
+		}
+	}()
 
 	return layout.RelayoutElement(ctx, doc, prev, elementID, options)
 }
@@ -30,9 +36,14 @@ func RelayoutElements(
 	prev *layout.Display,
 	elementIDs []string,
 	options layout.Options,
-) (*layout.Display, error) {
+) (disp *layout.Display, err error) {
 	engineMu.Lock()
 	defer engineMu.Unlock()
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("render: relayout elements panic: %v", r)
+		}
+	}()
 
 	return layout.RelayoutElements(ctx, doc, prev, elementIDs, options)
 }

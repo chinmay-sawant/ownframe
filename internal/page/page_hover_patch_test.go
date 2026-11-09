@@ -3,6 +3,7 @@ package page
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -206,6 +207,118 @@ func TestHoverPatchGeometryFallsBack(t *testing.T) {
 	stats := patched.Stats()
 	if stats.Layouts != 3 {
 		t.Fatalf("layouts = %d, want 3", stats.Layouts)
+	}
+}
+
+func TestHoverPatchFailureStatsIncludeStageReasonAndTarget(t *testing.T) {
+	p, err := New(Config{
+		HTML:  `<style>#e{width:100px;height:20px}#e:hover{color:red}#f{width:100px;height:20px}</style><div id="e">a</div><div id="f">b</div>`,
+		Width: 320, Height: 200, RetainState: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	p.SetPerf(true)
+	hoverAt(t, p, "f")
+	p.hoverPatch = func(context.Context, *css.Document, *layout.Display, string, layout.Options) (*layout.ElementPatch, error) {
+		return nil, layout.ErrNoElement
+	}
+	hoverAt(t, p, "e")
+
+	got := p.Stats().HoverPatchFailures
+	want := map[string]bool{
+		"selector/target-missing/e": false,
+		"geometry/target-missing/f": false,
+	}
+	for _, item := range got {
+		key := item.Stage + "/" + item.Reason + "/" + item.Target
+		if _, ok := want[key]; ok && item.Count == 1 {
+			want[key] = true
+		}
+	}
+	for key, seen := range want {
+		if !seen {
+			t.Errorf("missing failure count %q in %+v", key, got)
+		}
+	}
+}
+
+func TestHoverPatchFailureCountsStayBounded(t *testing.T) {
+	p, err := New(Config{HTML: `<div id="e">a</div>`, Width: 320, Height: 200})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.SetPerf(true)
+	for i := range maxHoverFailureKeys + 16 {
+		p.noteHoverPatchFailure("selector", "target-missing", []string{fmt.Sprintf("target-%03d", i)})
+	}
+
+	items := p.hoverPatchFailureSnapshot()
+	if len(items) > maxHoverFailureKeys {
+		t.Fatalf("failure keys = %d, want at most %d", len(items), maxHoverFailureKeys)
+	}
+	other := false
+	for _, item := range items {
+		if item.Target == "<other>" {
+			other = true
+		}
+	}
+	if !other {
+		t.Fatal("overflow failures were not collapsed into <other>")
+	}
+}
+
+func TestHoverPatchFunctionalPseudoScopeFallsBack(t *testing.T) {
+	source := `<style>` +
+		`.card{width:100px;height:20px}` +
+		`.details{display:none;width:100px;height:20px}` +
+		`.card:not(.disabled):hover + .details{display:block}` +
+		`</style><div id="card" class="card">card</div><div class="details">details</div>`
+
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	before := p.Stats()
+	hoverAt(t, p, "card")
+	after := p.Stats()
+	if after.HoverPatches != before.HoverPatches {
+		t.Fatalf("functional pseudo hover patched: before=%+v after=%+v", before, after)
+	}
+	if after.FullLayouts == before.FullLayouts {
+		t.Fatal("functional pseudo hover did not take a full layout")
+	}
+}
+
+func TestHoverPatchIDlessHasScopeFallsBack(t *testing.T) {
+	source := `<style>` +
+		`.row{width:120px;height:40px}` +
+		`.row .item{width:100px;height:20px}` +
+		`.row .submenu{display:none;width:100px;height:20px}` +
+		`.row:has(:hover) .submenu{display:block}` +
+		`</style><div class="row"><div id="item" class="item">item</div><div class="submenu">sub</div></div>`
+
+	p, err := New(Config{HTML: source, Width: 320, Height: 200, RetainState: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Redraw(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	before := p.Stats()
+	hoverAt(t, p, "item")
+	after := p.Stats()
+	if after.HoverPatches != before.HoverPatches {
+		t.Fatalf("id-less :has hover patched: before=%+v after=%+v", before, after)
+	}
+	if after.FullLayouts == before.FullLayouts {
+		t.Fatal("id-less :has hover did not take a full layout")
 	}
 }
 

@@ -9,6 +9,11 @@ import (
 // Counts is one page's redraw counters. FrameDraw, once set by the window,
 // replaces LastDraw in the snapshot. The other names match host.Stats.
 type Counts struct {
+	FullLayouts      uint64
+	HoverPatches     uint64
+	HoverFallbacks   uint64
+	HoverPatchErrors uint64
+
 	Redraws         uint64
 	Parses          uint64
 	Cascades        uint64
@@ -41,6 +46,11 @@ func Snapshot(c *Counts, boxes, ops int) host.Stats {
 	}
 
 	return host.Stats{
+		FullLayouts:      c.FullLayouts,
+		HoverPatches:     c.HoverPatches,
+		HoverFallbacks:   c.HoverFallbacks,
+		HoverPatchErrors: c.HoverPatchErrors,
+
 		Redraws:         c.Redraws,
 		Parses:          c.Parses,
 		Cascades:        c.Cascades,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -27,6 +28,8 @@ func TestOverviewRegionCardsFit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	a.calendarMonth = time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+	a.onCallDate = time.Date(2026, time.November, 10, 0, 0, 0, 0, time.UTC)
 	a.page.SetSize(windowWidth, 2400)
 	if err := a.page.Redraw(context.Background()); err != nil {
 		t.Fatal(err)
@@ -95,18 +98,137 @@ func TestRegionErrorsShowPointDetailsOnHover(t *testing.T) {
 	if err := a.page.Redraw(ctx); err != nil {
 		t.Fatal(err)
 	}
+	cell1 := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-map-1" })
+	if err := a.page.Edit().Hover(ctx, cell1.X+cell1.W/2, cell1.Y+cell1.H/2); err != nil {
+		t.Fatal(err)
+	}
+	cellTip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.Tag == "span" && strings.Contains(box.Text, "us-west-1") && strings.Contains(box.Text, "errors")
+	})
+	if cellTip.W <= 0 || !strings.Contains(cellTip.Text, "us-west-1") {
+		t.Fatalf("cell hover detail is missing point data: %+v", cellTip)
+	}
+	// Row 1 tooltip should be positioned horizontally near the cell and above it
+	if cellTip.X < cell1.X-30 || cellTip.X > cell1.X+cell1.W {
+		t.Fatalf("cell hover tooltip is not positioned over the cell: cell.X=%.1f tip.X=%.1f", cell1.X, cellTip.X)
+	}
+	if cellTip.Y >= cell1.Y {
+		t.Fatalf("row 1 tooltip is not positioned above the cell: cell.Y=%.1f tip.Y=%.1f", cell1.Y, cellTip.Y)
+	}
+
+	// Test hovering Row 2 (e.g. region-map-8):
+	// 1. Tooltip must be below row 2 (not above, so it never overlaps row 1)
+	// 2. Row 1 position must NOT move or shift!
+	cell8 := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-map-8" })
+	if err := a.page.Edit().Hover(ctx, cell8.X+cell8.W/2, cell8.Y+cell8.H/2); err != nil {
+		t.Fatal(err)
+	}
+	cell8Tip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.Tag == "span" && strings.Contains(box.Text, "eu-central-1") && strings.Contains(box.Text, "errors")
+	})
+	if cell8Tip.W <= 0 || !strings.Contains(cell8Tip.Text, "eu-central-1") {
+		t.Fatalf("row 2 hover detail is missing point data: %+v", cell8Tip)
+	}
+	if cell8Tip.Y <= cell8.Y {
+		t.Fatalf("row 2 tooltip must be positioned below row 2: cell8.Y=%.1f tip.Y=%.1f", cell8.Y, cell8Tip.Y)
+	}
+	// Check row 1 didn't move
+	cell1After := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-map-1" })
+	if cell1After.X != cell1.X || cell1After.W != cell1.W {
+		t.Fatalf("row 1 shifted when row 2 hovered: X: %.1f -> %.1f, W: %.1f -> %.1f", cell1.X, cell1After.X, cell1.W, cell1After.W)
+	}
+
 	bar := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-heat-13" })
 	before := a.page.Probe().Stats()
 	if err := a.page.Edit().Hover(ctx, bar.X+bar.W/2, bar.Y+bar.H/2); err != nil {
 		t.Fatal(err)
 	}
-	tip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-heat-13-tooltip" })
+	tip := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.Tag == "span" && strings.Contains(box.Text, "us-east-1") && strings.Contains(box.Text, "92 errors")
+	})
 	if tip.W <= 0 || !strings.Contains(tip.Text, "us-east-1") || !strings.Contains(tip.Text, "92 errors") {
 		t.Fatalf("hover detail is missing point data: %+v", tip)
 	}
 	after := a.page.Probe().Stats()
 	if after.Parses != before.Parses || after.Cascades != before.Cascades {
 		t.Fatalf("hover rebuilt the page: parses %d -> %d, cascades %d -> %d", before.Parses, after.Parses, before.Cascades, after.Cascades)
+	}
+}
+
+func TestButtonHoverUsesScopedLayout(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+	before := a.page.Probe().Stats()
+	btn := loglensLayoutBox(t, a.page, func(b ownframe.Box) bool { return b.ID == "on-call-swap-btn" })
+	if err := a.page.Edit().Hover(ctx, btn.X+btn.W/2, btn.Y+btn.H/2); err != nil {
+		t.Fatal(err)
+	}
+	after := a.page.Probe().Stats()
+	if after.HoverPatches != before.HoverPatches+1 || after.FullLayouts != before.FullLayouts {
+		t.Fatalf("hover used full layout: before=%+v after=%+v", before, after)
+	}
+	if after.HoverPatchErrors != before.HoverPatchErrors || after.HoverFallbacks != before.HoverFallbacks {
+		t.Fatalf("hover retried or fell back: before=%+v after=%+v", before, after)
+	}
+	if after.Parses != before.Parses || after.Cascades != before.Cascades {
+		t.Fatal("button hover parsed or cascaded the document")
+	}
+}
+func TestOnCallCalendarSequentialClicks(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.calendarMonth = time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)
+	a.onCallDate = time.Date(2026, time.November, 10, 0, 0, 0, 0, time.UTC)
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, dayCell := range []string{
+		"on-call-calendar-day-15",
+		"on-call-calendar-day-16",
+		"on-call-calendar-day-17",
+		"on-call-calendar-day-18",
+		"on-call-calendar-day-19",
+	} {
+		box := loglensLayoutBox(t, a.page, func(b ownframe.Box) bool { return b.ID == dayCell })
+		t.Logf("Clicking %s at (%.1f, %.1f) Action=%s", dayCell, box.X+box.W/2, box.Y+box.H/2, box.Action)
+		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+			t.Fatalf("failed to click %s: %v", dayCell, err)
+		}
+		if dayCell == "on-call-calendar-day-16" {
+			t.Log("Simulating a.refresh(ctx) (e.g. data refresh / live tail)")
+			if err := a.refresh(ctx); err != nil {
+				t.Fatalf("refresh failed: %v", err)
+			}
+		}
+		expectedResponder := a.onCallFor(a.onCallDate)
+		t.Logf("Selected onCallDate: %v, responder: %s", a.onCallDate, expectedResponder.Name)
+	}
+
+	// Test clicking an outside day (e.g. cell 30 which is Dec 1 in Nov 2026 grid)
+	outsideCell := loglensLayoutBox(t, a.page, func(b ownframe.Box) bool { return b.ID == "on-call-calendar-day-30" })
+	if outsideCell.Action == "" {
+		t.Fatal("outside day cell 30 has no click action registered")
+	}
+	if err := a.page.Click(ctx, outsideCell.X+outsideCell.W/2, outsideCell.Y+outsideCell.H/2); err != nil {
+		t.Fatalf("failed to click outside day cell 30: %v", err)
+	}
+	if a.onCallDate.Month() != time.December || a.onCallDate.Day() != 1 {
+		t.Fatalf("clicking outside day did not select Dec 1: %v", a.onCallDate)
+	}
+	if a.calendarMonth.Month() != time.December {
+		t.Fatalf("clicking outside day did not advance calendarMonth to December: %v", a.calendarMonth)
 	}
 }
 
@@ -276,5 +398,187 @@ func TestSettingsTabsFitMinimumWindow(t *testing.T) {
 				t.Fatalf("%s: %s ends at %.0f under Save at %.0f", tab, id, box.Y+box.H, footer.Y)
 			}
 		}
+	}
+}
+
+// TestOnCallResponderSelectionAndSwap verifies the on-call calendar day selection
+// and responder swapping updates the card header dynamically.
+func TestOnCallResponderSelectionAndSwap(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify Swap button is present and clickable
+	swapBtn := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.ID == "on-call-swap-btn"
+	})
+	if err := a.page.Click(ctx, swapBtn.X+swapBtn.W/2, swapBtn.Y+swapBtn.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if !a.onCallDialogOpen {
+		t.Fatal("clicking Swap did not open the on-call dialog")
+	}
+
+	// Swap responder to Liam Taylor
+	liam := onCallResponder{Name: "Liam Taylor", Role: "Primary", Initials: "LT", Region: "Americas"}
+	targetDate := time.Date(2026, 11, 15, 0, 0, 0, 0, time.UTC)
+	if err := a.setOnCall(ctx, targetDate, liam); err != nil {
+		t.Fatal(err)
+	}
+	a.onCallDialogOpen = false
+	if err := a.refresh(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify the card header now reflects Liam Taylor
+	if !strings.Contains(a.page.HTML(), "Liam Taylor") {
+		t.Fatal("on-call card header does not display Liam Taylor after assignment")
+	}
+	if !strings.Contains(a.page.HTML(), "Americas") {
+		t.Fatal("on-call card header does not display Americas after assignment")
+	}
+}
+
+// TestOverviewRegionCellsFillWidth checks that the region cell grid adapts and fills
+// wider than the old 216px fixed box in standard view.
+func TestOverviewRegionCellsFillWidth(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	cell1 := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-map-1" })
+	cell7 := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool { return box.ID == "region-map-7" })
+	totalRowSpan := (cell7.X + cell7.W) - cell1.X
+	if totalRowSpan < 300 {
+		t.Fatalf("region cells row span %.1f is not filling width responsively (expected >= 300px)", totalRowSpan)
+	}
+	if !strings.Contains(appCSS, "pointer-events: none") {
+		t.Fatal("app-heat-tooltip is missing pointer-events: none")
+	}
+}
+
+// TestFineGrainedStateUpdatesUseElementPatching verifies that micro-interactions
+// like selecting an on-call calendar day, toggling filters, and auto-refresh use
+// fine-grained element patching rather than full page reparsing/cascading.
+func TestFineGrainedStateUpdatesUseElementPatching(t *testing.T) {
+	a, err := newApp()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	a.page.SetSize(windowWidth, 2400)
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// 1. On-call calendar selection test
+	targetDayBox := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.ID == "on-call-calendar-day-18"
+	})
+
+	statsBefore := a.page.Probe().Stats()
+	if err := a.page.Click(ctx, targetDayBox.X+targetDayBox.W/2, targetDayBox.Y+targetDayBox.H/2); err != nil {
+		t.Fatal(err)
+	}
+
+	statsAfter := a.page.Probe().Stats()
+	if statsAfter.Parses != statsBefore.Parses || statsAfter.Cascades != statsBefore.Cascades {
+		t.Fatalf("calendar day selection triggered full reparse: parses %d -> %d, cascades %d -> %d",
+			statsBefore.Parses, statsAfter.Parses, statsBefore.Cascades, statsAfter.Cascades)
+	}
+
+	// Verify responder details updated in rendered display boxes
+	expectedResponder := a.onCallFor(a.onCallDate)
+	nameFound := false
+	for _, box := range a.page.Boxes() {
+		if strings.Contains(box.Text, expectedResponder.Name) {
+			nameFound = true
+			break
+		}
+	}
+	if !nameFound {
+		t.Fatalf("Rendered boxes missing expected responder name %q after patch", expectedResponder.Name)
+	}
+
+	// 2. Switch to logs tab and test filter micro-interactions
+	if err := a.setTab(ctx, "logs"); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.page.Redraw(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test Live tail toggle patching
+	liveTailBox := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.ID == "log-live-tail"
+	})
+	statsBefore = a.page.Probe().Stats()
+	if err := a.page.Click(ctx, liveTailBox.X+liveTailBox.W/2, liveTailBox.Y+liveTailBox.H/2); err != nil {
+		t.Fatal(err)
+	}
+	statsAfter = a.page.Probe().Stats()
+	if statsAfter.Parses != statsBefore.Parses || statsAfter.Cascades != statsBefore.Cascades {
+		t.Fatalf("live tail toggle triggered full reparse: parses %d -> %d, cascades %d -> %d",
+			statsBefore.Parses, statsAfter.Parses, statsBefore.Cascades, statsAfter.Cascades)
+	}
+	if !a.liveTail {
+		t.Fatal("expected liveTail to be true")
+	}
+
+	// Test Show context checkbox patching
+	contextBox := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.ID == "log-context"
+	})
+	statsBefore = a.page.Probe().Stats()
+	if err := a.page.Click(ctx, contextBox.X+contextBox.W/2, contextBox.Y+contextBox.H/2); err != nil {
+		t.Fatal(err)
+	}
+	statsAfter = a.page.Probe().Stats()
+	if statsAfter.Parses != statsBefore.Parses || statsAfter.Cascades != statsBefore.Cascades {
+		t.Fatalf("show context toggle triggered full reparse: parses %d -> %d, cascades %d -> %d",
+			statsBefore.Parses, statsAfter.Parses, statsBefore.Cascades, statsAfter.Cascades)
+	}
+	if !a.showContext {
+		t.Fatal("expected showContext to be true")
+	}
+
+	// Test Auto refresh switch patching
+	autoRefreshBox := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.ID == "log-auto-refresh"
+	})
+	statsBefore = a.page.Probe().Stats()
+	if err := a.page.Click(ctx, autoRefreshBox.X+autoRefreshBox.W/2, autoRefreshBox.Y+autoRefreshBox.H/2); err != nil {
+		t.Fatal(err)
+	}
+	statsAfter = a.page.Probe().Stats()
+	if statsAfter.Parses != statsBefore.Parses || statsAfter.Cascades != statsBefore.Cascades {
+		t.Fatalf("auto refresh toggle triggered full reparse: parses %d -> %d, cascades %d -> %d",
+			statsBefore.Parses, statsAfter.Parses, statsBefore.Cascades, statsAfter.Cascades)
+	}
+	if !a.autoRefresh {
+		t.Fatal("expected autoRefresh to be true")
+	}
+
+	// Test Sample rate slider cycling (from 100% it cycles to 10%)
+	sampleRateBox := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
+		return box.ID == "log-sample-rate"
+	})
+	if err := a.page.Click(ctx, sampleRateBox.X+sampleRateBox.W/2, sampleRateBox.Y+sampleRateBox.H/2); err != nil {
+		t.Fatal(err)
+	}
+	if a.sampleRate != 10 {
+		t.Fatalf("expected sampleRate 10, got %d", a.sampleRate)
 	}
 }

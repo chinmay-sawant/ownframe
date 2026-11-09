@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,24 @@ const (
 	dataRefreshSeconds = 1
 
 	secondsPerMinute = 60
+	percentageScale  = 100
 )
+
+type onCallResponder struct {
+	Name     string
+	Role     string
+	Initials string
+	Region   string
+}
+
+func defaultResponders() [4]onCallResponder {
+	return [4]onCallResponder{
+		{Name: "Ada Kim", Role: "Primary", Initials: "AK", Region: "Europe"},
+		{Name: "Liam Taylor", Role: "Primary", Initials: "LT", Region: "Americas"},
+		{Name: "Yuki Ono", Role: "Primary", Initials: "YO", Region: "Asia-Pacific"},
+		{Name: "Alex Chen", Role: "Secondary", Initials: "AC", Region: "Global"},
+	}
+}
 
 // app owns the dashboard state. Panels are pure functions of this state and
 // are rebuilt through View.Update after every action.
@@ -88,6 +106,12 @@ type app struct {
 	questionAnswer  string
 	rtl             bool
 
+	// On-call rotation.
+	onCallDate       time.Time
+	onCallSchedule   map[string]onCallResponder
+	onCallDialogOpen bool
+	onCallDialogDate time.Time
+
 	// Settings sheet.
 	settingsOpen  bool
 	settingsTab   string
@@ -126,28 +150,30 @@ type app struct {
 func newApp() (*app, error) {
 	started := time.Now()
 	a := &app{
-		dark:          true,
-		tab:           "overview",
-		timeRange:     "24 hours",
-		service:       "All services",
-		severity:      []string{"error", "warn"},
-		sortValue:     "Newest first",
-		fromDate:      time.Now(),
-		calendarMonth: time.Now(),
-		selectedRows:  map[int]bool{},
-		sampleRate:    defaultSampleRate,
-		density:       "comfortable",
-		settingsTab:   "routing",
-		drawerTab:     "payload",
-		splitRatio:    defaultSplitRatio,
-		threshold:     defaultThreshold,
-		sliderValue:   defaultSliderValue,
-		radioValue:    "warning",
-		channel:       "Slack",
-		severityValue: "warning",
-		extra:         map[string]any{},
-		lastUpdatedAt: started,
-		feed:          newTelemetryFeed(time.Now, started.UnixNano()),
+		dark:           true,
+		tab:            "overview",
+		timeRange:      "24 hours",
+		service:        "All services",
+		severity:       []string{"error", "warn"},
+		sortValue:      "Newest first",
+		fromDate:       time.Now(),
+		calendarMonth:  time.Now(),
+		selectedRows:   map[int]bool{},
+		sampleRate:     defaultSampleRate,
+		density:        "comfortable",
+		settingsTab:    "routing",
+		drawerTab:      "payload",
+		splitRatio:     defaultSplitRatio,
+		threshold:      defaultThreshold,
+		sliderValue:    defaultSliderValue,
+		radioValue:     "warning",
+		channel:        "Slack",
+		severityValue:  "warning",
+		extra:          map[string]any{},
+		lastUpdatedAt:  started,
+		onCallDate:     started,
+		onCallSchedule: map[string]onCallResponder{},
+		feed:           newTelemetryFeed(time.Now, started.UnixNano()),
 	}
 	view, err := ui.Mount(ownframe.Config{
 		Title:       "Loglens · Production",
@@ -226,7 +252,8 @@ func (a *app) showToast(ctx context.Context, title, body string) error {
 func (a *app) closeOverlays(ctx context.Context) error {
 	changed := a.commandOpen || a.dialogOpen || a.alertOpen || a.settingsOpen ||
 		a.drawerOpen || a.contextOpen || a.notifOpen || a.userMenuOpen ||
-		a.navOpen != "" || a.menubarOpen != "" || a.selectOpen || a.comboboxOpen || a.dateOpen
+		a.navOpen != "" || a.menubarOpen != "" || a.selectOpen || a.comboboxOpen || a.dateOpen ||
+		a.onCallDialogOpen
 	a.commandOpen = false
 	a.dialogOpen = false
 	a.alertOpen = false
@@ -240,6 +267,7 @@ func (a *app) closeOverlays(ctx context.Context) error {
 	a.selectOpen = false
 	a.comboboxOpen = false
 	a.dateOpen = false
+	a.onCallDialogOpen = false
 	if !changed {
 		return nil
 	}
@@ -290,8 +318,38 @@ func (a *app) handleClick(ctx context.Context, box ownframe.Box) error {
 	case box.Action == "alert:open":
 		a.alertOpen = true
 		return a.refresh(ctx)
+	case box.Action == "oncall:swap":
+		a.onCallDialogDate = a.onCallDate
+		a.onCallDialogOpen = true
+		return a.refresh(ctx)
 	}
 	return nil
+}
+
+func (a *app) onCallFor(day time.Time) onCallResponder {
+	if day.IsZero() {
+		day = time.Now()
+	}
+	key := day.Format("2006-01-02")
+	if r, ok := a.onCallSchedule[key]; ok {
+		return r
+	}
+	responders := defaultResponders()
+	idx := (day.Year()*366 + day.YearDay()) % len(responders)
+	if idx < 0 {
+		idx = -idx
+	}
+	return responders[idx]
+}
+
+func (a *app) setOnCall(ctx context.Context, day time.Time, responder onCallResponder) error {
+	if a.onCallSchedule == nil {
+		a.onCallSchedule = make(map[string]onCallResponder)
+	}
+	key := day.Format("2006-01-02")
+	a.onCallSchedule[key] = responder
+	a.onCallDate = day
+	return a.showToast(ctx, "Coverage updated", responder.Name+" is on call for "+day.Format("Jan 2")+".")
 }
 
 func (a *app) handleHover(ctx context.Context, previous, next ownframe.Box) (bool, error) {
@@ -314,22 +372,30 @@ func (a *app) handleHover(ctx context.Context, previous, next ownframe.Box) (boo
 		a.userMenuOpen = false
 		return true, a.refresh(ctx)
 	}
-	if err := a.patchHover(ctx, "live-tooltip", ownframe.ElementEdit{
-		Attribute: "class",
-		Value:     topTooltipClass(tooltip),
-	}); err != nil {
-		return false, err
+	patches := []ownframe.ElementPatch{
+		{
+			ID: "live-tooltip",
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "class", Value: topTooltipClass(tooltip)},
+			},
+		},
+		{
+			ID: "oncall-hover",
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "class", Value: topHoverCardClass(hover)},
+			},
+		},
 	}
 	if tooltip {
 		label := a.liveUpdatedLabel(time.Now())
-		if err := a.patchHover(ctx, "live-tooltip-content", ownframe.ElementEdit{Text: &label}); err != nil {
-			return false, err
-		}
+		patches = append(patches, ownframe.ElementPatch{
+			ID: "live-tooltip-content",
+			Edits: []ownframe.ElementEdit{
+				{Text: &label},
+			},
+		})
 	}
-	if err := a.patchHover(ctx, "oncall-hover", ownframe.ElementEdit{
-		Attribute: "class",
-		Value:     topHoverCardClass(hover),
-	}); err != nil {
+	if err := a.patchElements(ctx, patches); err != nil {
 		return false, err
 	}
 	return false, nil
@@ -385,12 +451,139 @@ func (a *app) setFormValue(id, value string) {
 	a.page.Form().SetFormValue(id, value)
 }
 
-func (a *app) patchHover(ctx context.Context, id string, edits ...ownframe.ElementEdit) error {
+func (a *app) patchElement(ctx context.Context, id string, edits ...ownframe.ElementEdit) error {
 	err := a.page.PatchElement(ctx, id, edits...)
 	if errors.Is(err, ownframe.ErrPatchRefused) {
 		return a.refresh(ctx)
 	}
 	return err
+}
+
+func (a *app) patchElements(ctx context.Context, patches []ownframe.ElementPatch) error {
+	if len(patches) == 0 {
+		return nil
+	}
+	err := a.page.PatchElements(ctx, patches)
+	if errors.Is(err, ownframe.ErrPatchRefused) {
+		return a.refresh(ctx)
+	}
+	return err
+}
+
+func (a *app) patchHover(ctx context.Context, id string, edits ...ownframe.ElementEdit) error {
+	return a.patchElement(ctx, id, edits...)
+}
+
+func boolString(v bool) string {
+	if v {
+		return "true"
+	}
+	return "false"
+}
+
+func (a *app) patchToggle(ctx context.Context, id string, pressed bool) error {
+	return a.patchElement(ctx, id, ownframe.ElementEdit{
+		Attribute: "aria-pressed",
+		Value:     boolString(pressed),
+	})
+}
+
+func (a *app) patchSwitch(ctx context.Context, id string, checked bool) error {
+	trackColor := "var(--of-control, #262626)"
+	thumbColor := "var(--of-switch-thumb, #ffffff)"
+	marginLeft := "2px"
+	if checked {
+		trackColor = "var(--of-primary, #171717)"
+		thumbColor = "var(--of-on-primary, #fafafa)"
+		marginLeft = "18px"
+	}
+	patches := []ownframe.ElementPatch{
+		{
+			ID: id,
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "aria-checked", Value: boolString(checked)},
+			},
+		},
+		{
+			ID: id + "-track",
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "style", Value: fmt.Sprintf("align-items:center;background-color:%s;border-radius:10px;display:flex;flex-shrink:0;height:20px;width:36px;", trackColor)},
+			},
+		},
+		{
+			ID: id + "-thumb",
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "style", Value: fmt.Sprintf("background-color:%s;border-radius:8px;flex-shrink:0;height:16px;margin-left:%s;width:16px;", thumbColor, marginLeft)},
+			},
+		},
+	}
+	return a.patchElements(ctx, patches)
+}
+
+func (a *app) patchCheckbox(ctx context.Context, id string, checked bool) error {
+	markText := ""
+	class := "of-checkbox"
+	if checked {
+		markText = "✓"
+		class = "of-checkbox of-checkbox--checked"
+	}
+	patches := []ownframe.ElementPatch{
+		{
+			ID: id,
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "aria-checked", Value: boolString(checked)},
+				{Attribute: "class", Value: class},
+			},
+		},
+		{
+			ID: id + "-mark",
+			Edits: []ownframe.ElementEdit{
+				{Text: &markText},
+			},
+		},
+	}
+	return a.patchElements(ctx, patches)
+}
+
+func (a *app) patchSlider(ctx context.Context, id string, value, min, max float64, label string) error {
+	fill := (value - min) / (max - min) * percentageScale
+	valStr := strconv.Itoa(int(value))
+	patches := []ownframe.ElementPatch{
+		{
+			ID: id,
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "aria-valuenow", Value: valStr},
+			},
+		},
+		{
+			ID: id + "-range",
+			Edits: []ownframe.ElementEdit{
+				{Attribute: "style", Value: fmt.Sprintf("width:%.1f%%;", fill)},
+			},
+		},
+	}
+	if label != "" {
+		labelID := id + "-text"
+		if id == "alert-threshold-slider" {
+			labelID = "alert-threshold-badge"
+		}
+		patches = append(patches, ownframe.ElementPatch{
+			ID: labelID,
+			Edits: []ownframe.ElementEdit{
+				{Text: &label},
+			},
+		})
+	}
+	if id == "alert-threshold-slider" {
+		description := fmt.Sprintf("Five minutes above %d per 1,000 requests.", int(value))
+		patches = append(patches, ownframe.ElementPatch{
+			ID: "alert-threshold-slider-description",
+			Edits: []ownframe.ElementEdit{
+				{Text: &description},
+			},
+		})
+	}
+	return a.patchElements(ctx, patches)
 }
 
 func (a *app) configureLiveTick() {

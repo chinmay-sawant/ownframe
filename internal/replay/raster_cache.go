@@ -35,6 +35,7 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 	defer c.mu.Unlock()
 
 	if img := c.entries[key]; img != nil {
+		c.touch(key)
 		return img
 	}
 
@@ -72,6 +73,18 @@ func (c *rasterCache) raster(key rasterKey, size image.Point, bake func(*ebiten.
 	}
 
 	return img
+}
+
+// touch moves a hit key to the back of the order, so eviction drops the
+// least-recently-used entry first. The caller holds mu.
+func (c *rasterCache) touch(key rasterKey) {
+	for i, candidate := range c.order {
+		if candidate == key {
+			c.order = append(c.order[:i], c.order[i+1:]...)
+			c.order = append(c.order, key)
+			return
+		}
+	}
 }
 
 // rasterKey names one cached vector rasterization. It holds everything that

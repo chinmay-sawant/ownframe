@@ -1,5 +1,10 @@
 package draw
 
+import (
+	"strings"
+	"unicode"
+)
+
 // HoverPatchRisky reports whether the stylesheet text can style an element
 // outside the hovered elements' subtrees when the hover changes, which is
 // the case the scoped hover patch cannot represent. Two selector shapes
@@ -14,17 +19,36 @@ package draw
 // only shows those spellings as text (a CSS reference page, for example)
 // keeps the full layout and stays correct.
 func HoverPatchRisky(sources ...string) bool {
+	global, scopes := HoverPatchRiskyScopes(sources...)
+	return global || len(scopes) > 0
+}
+
+// HoverPatchRiskyScopes returns any selector scopes that use :has() or
+// sibling combinators after :hover. A true global indicates an unscoped
+// rule (such as body:has() or :has() at root) that can escape from any
+// element on the page. Scoped entries identify classes or IDs (e.g.
+// "of-menubar-menu-row" or "of-tooltip--css-hover") whose subtrees alone
+// can trigger the escaping behavior.
+func HoverPatchRiskyScopes(sources ...string) (global bool, scopes []string) {
+	seen := make(map[string]bool)
 	for _, source := range sources {
-		if hoverSourceRisky(source) {
-			return true
+		g, s := hoverSourceRiskyScopes(source)
+		if g {
+			global = true
+		}
+		for _, scope := range s {
+			if !seen[scope] {
+				seen[scope] = true
+				scopes = append(scopes, scope)
+			}
 		}
 	}
 
-	return false
+	return global, scopes
 }
 
-// hoverSourceRisky scans one source for the escaping shapes.
-func hoverSourceRisky(source string) bool {
+// hoverSourceRiskyScopes scans one source for the escaping shapes and their scopes.
+func hoverSourceRiskyScopes(source string) (global bool, scopes []string) {
 	const (
 		normal = iota
 		comment
@@ -34,6 +58,7 @@ func hoverSourceRisky(source string) bool {
 
 	state := normal
 	i := 0
+	selStart := 0
 
 	for i < len(source) {
 		c := source[i]
@@ -78,13 +103,37 @@ func hoverSourceRisky(source string) bool {
 			case c == '"':
 				state = double
 				i++
+			case c == '{' || c == '}' || c == ';' || c == ',':
+				selStart = i + 1
+				i++
 			case c == ':' && matchFoldPrefix(source, i+1, "has("):
-				return true
+				prefix := ""
+				if i > selStart {
+					prefix = source[selStart:i]
+				}
+				g, scope := classifyRiskyPrefix(prefix)
+				if hasSiblingRelativeArgument(source, i+1+len("has(")) {
+					g = true
+				}
+				if g {
+					global = true
+				} else if scope != "" {
+					scopes = append(scopes, scope)
+				}
+				i += 1 + len("has(")
 			case c == ':' && matchFoldPrefix(source, i+1, "hover"):
 				if hoverSelectorEscapes(source, i+1+len("hover")) {
-					return true
+					prefix := ""
+					if i > selStart {
+						prefix = source[selStart:i]
+					}
+					g, scope := classifyRiskyPrefix(prefix)
+					if g {
+						global = true
+					} else if scope != "" {
+						scopes = append(scopes, scope)
+					}
 				}
-
 				i += 1 + len("hover")
 			default:
 				i++
@@ -92,22 +141,132 @@ func hoverSourceRisky(source string) bool {
 		}
 	}
 
-	return false
+	return global, scopes
+}
+
+// classifyRiskyPrefix analyzes the selector prefix before :has( or :hover.
+// If the selector targets the whole document (empty, body, html, *), it returns global=true.
+// Otherwise, it extracts the class or ID of the scoping element.
+func classifyRiskyPrefix(prefix string) (global bool, scope string) {
+	trimmed := strings.TrimSpace(prefix)
+	if trimmed == "" {
+		return true, ""
+	}
+	lower := strings.ToLower(trimmed)
+	if lower == "body" || lower == "html" || lower == "*" || lower == ":root" ||
+		strings.HasSuffix(lower, " body") || strings.HasSuffix(lower, " html") ||
+		strings.HasSuffix(lower, ">body") || strings.HasSuffix(lower, ">html") ||
+		strings.HasSuffix(lower, ">*") || strings.HasSuffix(lower, " *") {
+		return true, ""
+	}
+
+	// A functional pseudo before :hover can hide the real subject, as in
+	// :not(.disabled) or :is(.a, .b). Treat it as global; a scoped answer
+	// here would be a false negative.
+	if strings.Contains(trimmed, "(") {
+		return true, ""
+	}
+
+	// Look for the last class (.name) or ID (#name) in the prefix.
+	lastDot := strings.LastIndex(trimmed, ".")
+	lastHash := strings.LastIndex(trimmed, "#")
+	lastSep := max(lastDot, lastHash)
+
+	if lastSep >= 0 && lastSep+1 < len(trimmed) {
+		name := extractIdentifier(trimmed[lastSep+1:])
+		if name != "" {
+			return false, name
+		}
+	}
+
+	return true, ""
+}
+
+// extractIdentifier extracts a CSS identifier from the start of s.
+func extractIdentifier(s string) string {
+	end := 0
+	for end < len(s) {
+		r := rune(s[end])
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '-' || r == '_' {
+			end++
+		} else {
+			break
+		}
+	}
+	return s[:end]
 }
 
 // hoverSelectorEscapes reports whether the selector after a :hover match
 // reaches a sibling before the selector ends. The selector ends at an opening
 // brace or a comma; a + or ~ first means the rule can style an element the
-// hovered subtrees do not contain.
+// hovered subtrees do not contain. Comments, quoted strings, and attribute
+// selectors are skipped, so punctuation inside them cannot end the scan early.
 func hoverSelectorEscapes(source string, i int) bool {
 	for i < len(source) {
-		switch source[i] {
-		case '{', ',', '}':
+		switch {
+		case source[i] == '/' && i+1 < len(source) && source[i+1] == '*':
+			i += 2
+			for i+1 < len(source) && (source[i] != '*' || source[i+1] != '/') {
+				i++
+			}
+			i += 2
+		case source[i] == '\'' || source[i] == '"':
+			i = skipQuoted(source, i)
+		case source[i] == '[':
+			i++
+			for i < len(source) && source[i] != ']' {
+				if source[i] == '\\' {
+					i += 2
+					continue
+				}
+				if source[i] == '\'' || source[i] == '"' {
+					i = skipQuoted(source, i)
+					continue
+				}
+				i++
+			}
+			if i < len(source) {
+				i++
+			}
+		case source[i] == '{' || source[i] == ',' || source[i] == '}':
 			return false
-		case '+', '~':
+		case source[i] == '+' || source[i] == '~':
 			return true
 		default:
 			i++
+		}
+	}
+
+	return false
+}
+
+// skipQuoted returns the index just past the quoted string starting at i.
+func skipQuoted(source string, i int) int {
+	quote := source[i]
+	i++
+	for i < len(source) {
+		switch source[i] {
+		case '\\':
+			i += 2
+		case quote:
+			return i + 1
+		default:
+			i++
+		}
+	}
+
+	return i
+}
+
+// hasSiblingRelativeArgument reports whether a :has() argument starts with a
+// sibling combinator after optional whitespace.
+func hasSiblingRelativeArgument(source string, i int) bool {
+	for i < len(source) {
+		switch source[i] {
+		case ' ', '\t', '\n', '\r', '\f':
+			i++
+		default:
+			return source[i] == '+' || source[i] == '~'
 		}
 	}
 
