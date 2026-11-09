@@ -18,6 +18,13 @@ func (a *app) topPopovers() *ui.Element {
 	if a.dark {
 		themeLabel = "Light"
 	}
+	// A closed tooltip must not age its hidden label. The patch path cannot
+	// splice an element that has no box, and the tick updates the label while
+	// the tooltip is open.
+	tooltipLabel := "Updated just now"
+	if a.tooltipOpen {
+		tooltipLabel = a.liveUpdatedLabel(time.Now())
+	}
 
 	unreadDot := ui.Text("●").
 		Attr("aria-hidden", "true").
@@ -38,7 +45,7 @@ func (a *app) topPopovers() *ui.Element {
 				ID:       "live-tooltip",
 				Open:     a.tooltipOpen,
 				CSSHover: true,
-				Content:  a.liveUpdatedLabel(time.Now()),
+				Content:  tooltipLabel,
 				Side:     chadcn.PopupBottom,
 			}, chadcn.Button("Live", chadcn.ButtonOptions{
 				Variant: chadcn.ButtonText,
