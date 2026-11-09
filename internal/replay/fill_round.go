@@ -9,11 +9,29 @@ import (
 	"github.com/chinmay-sawant/blinkless/layout"
 )
 
-var vectorPathPool = sync.Pool{
+// vectorPathPool holds vector paths for the direct painters, so a repeated
+// shape reuses its path slices after the first paint.
+var vectorPathPool = sync.Pool{ //nolint:gochecknoglobals // reason: process-wide pool that keeps every direct painter allocation-free after warm-up.
 	New: func() any { return new(vector.Path) },
 }
 
-var roundedFillPathPool = &vectorPathPool
+// acquireVectorPath borrows a path from the shared pool and resets it.
+func acquireVectorPath() *vector.Path {
+	path, ok := vectorPathPool.Get().(*vector.Path)
+	if !ok || path == nil {
+		return new(vector.Path)
+	}
+
+	path.Reset()
+
+	return path
+}
+
+// releaseVectorPath resets path and returns it to the shared pool.
+func releaseVectorPath(path *vector.Path) {
+	path.Reset()
+	vectorPathPool.Put(path)
+}
 
 // fillRounded draws a fill with circular corners as one vector path. The
 // engine's painter keeps the real corners when the canvas clips the box, so
@@ -25,19 +43,17 @@ func fillRounded(dst *ebiten.Image, op *layout.DisplayOp, radii [4]float64, dx, 
 	h := float32(op.H * pxPerPt)
 	r := radius4(radii)
 
-	path := vectorPathPool.Get().(*vector.Path)
-	path.Reset()
+	path := acquireVectorPath()
 	populateRoundedFillPath(path, x, y, w, h, r)
 
 	var options vector.DrawPathOptions
 	options.AntiAlias = true
 	clr := rgba(op)
 	cr, cg, cb, ca := clr.RGBA()
-	options.ColorScale.Scale(float32(cr)/0xffff, float32(cg)/0xffff, float32(cb)/0xffff, float32(ca)/0xffff)
+	options.ColorScale.Scale(float32(cr)/colorChannelMax, float32(cg)/colorChannelMax, float32(cb)/colorChannelMax, float32(ca)/colorChannelMax)
 
 	vector.FillPath(dst, path, nil, &options)
-	path.Reset()
-	vectorPathPool.Put(path)
+	releaseVectorPath(path)
 }
 
 // populateRoundedFillPath traces a fill's corners as circular arcs from its origin into path.
@@ -52,13 +68,6 @@ func populateRoundedFillPath(path *vector.Path, x, y, w, h float32, r [4]float32
 	path.LineTo(x, y+r[0])
 	arcTo(path, x, y, x+r[0], y, r[0])
 	path.Close()
-}
-
-// roundedFillPath traces a fill's corners as circular arcs from its origin.
-func roundedFillPath(x, y, w, h float32, r [4]float32) vector.Path {
-	var path vector.Path
-	populateRoundedFillPath(&path, x, y, w, h, r)
-	return path
 }
 
 // radius4 scales a corner radius set from layout points to canvas pixels.

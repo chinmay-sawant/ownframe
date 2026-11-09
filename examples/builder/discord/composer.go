@@ -24,6 +24,14 @@ const dcComposerFormID = "dc-composer"
 // replySnippetMax is the rune cap for the quoted text in the reply preview.
 const replySnippetMax = 60
 
+// Composer slice capacities: the body holds an optional reply block plus the
+// input row, and a reply preview holds the label, an optional snippet, and
+// the clear control.
+const (
+	composerRowsCap = 2
+	replyPreviewCap = 3
+)
+
 // composer renders the message composer: a reply preview when a.replyTo
 // names a message, then the input row with the send button.
 func (a *app) composer() *ui.Element {
@@ -32,7 +40,7 @@ func (a *app) composer() *ui.Element {
 		draft = a.drafts[a.channelID]
 	}
 
-	rows := make([]*ui.Element, 0, 2)
+	rows := make([]*ui.Element, 0, composerRowsCap)
 	if a.replyTo != "" {
 		author := ""
 		snippet := ""
@@ -52,7 +60,7 @@ func (a *app) composer() *ui.Element {
 		if author != "" {
 			label = "Replying to " + author
 		}
-		preview := make([]*ui.Element, 0, 3)
+		preview := make([]*ui.Element, 0, replyPreviewCap)
 		preview = append(preview, ui.Span().Class("dc-cp-reply-label").Text(label))
 		if snippet != "" {
 			preview = append(preview, ui.Span().Class("dc-replybar-text dc-cp-reply-snippet").Text(snippet))

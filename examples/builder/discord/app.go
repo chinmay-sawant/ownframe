@@ -53,6 +53,15 @@ const (
 	dcLight dcAppearance = "light"
 )
 
+// Window geometry. Tests build app without a page and fall back to the same
+// default size.
+const (
+	dcWindowWidth     = 1440
+	dcWindowHeight    = 900
+	dcWindowMinWidth  = 1100
+	dcWindowMinHeight = 700
+)
+
 type app struct {
 	view *ui.View
 	page *ownframe.Page
@@ -123,10 +132,10 @@ func newApp() (*app, error) {
 	seedData(a)
 	view, err := ui.Mount(ownframe.Config{
 		Title:       "Discord clone",
-		Width:       1440,
-		Height:      900,
-		MinWidth:    1100,
-		MinHeight:   700,
+		Width:       dcWindowWidth,
+		Height:      dcWindowHeight,
+		MinWidth:    dcWindowMinWidth,
+		MinHeight:   dcWindowMinHeight,
 		Theme:       a.themeSheet(),
 		RetainState: true,
 		Scrollbar:   ownframe.ScrollbarHidden,
@@ -210,7 +219,7 @@ func (a *app) selectTheme(name string) {
 // windowSize returns the current viewport in CSS pixels. Tests build app
 // without a page, so fall back to the default window size.
 func (a *app) windowSize() (int, int) {
-	const fallbackW, fallbackH = 1440, 900
+	const fallbackW, fallbackH = dcWindowWidth, dcWindowHeight
 	if a == nil || a.page == nil {
 		return fallbackW, fallbackH
 	}

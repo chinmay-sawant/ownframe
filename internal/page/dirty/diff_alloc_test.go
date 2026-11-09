@@ -4,7 +4,6 @@ import (
 	"math"
 	"reflect"
 	"testing"
-	"unsafe"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -33,7 +32,10 @@ func (g *diffGen) next() uint64 {
 }
 
 func (g *diffGen) intn(n int) int {
-	return int(g.next() % uint64(n))
+	if n <= 0 {
+		panic("dirty: diffGen.intn bound must be positive")
+	}
+	return int(g.next() % uint64(n)) //nolint:gosec // reason: the remainder is below the positive int bound n, so it always fits int.
 }
 
 // setGrid attaches a GridRun payload to op. The Grid type is unexported
@@ -67,7 +69,10 @@ func setGrid(t *testing.T, op *layout.DisplayOp, segs [][8]float64) {
 
 	opv := reflect.ValueOf(op).Elem()
 	gf := opv.FieldByName("Grid")
-	reflect.NewAt(gf.Type(), unsafe.Pointer(gf.UnsafeAddr())).Elem().Set(run) //nolint:gosec // reason: test-only write to an unexported field.
+	if !gf.IsValid() || !gf.CanSet() {
+		t.Fatal("DisplayOp has no settable Grid field")
+	}
+	gf.Set(run)
 }
 
 // genDiffOp builds one random op covering every SameOp input except Font
@@ -174,6 +179,14 @@ func genDisplay(t *testing.T, seed uint64, n int) *layout.Display {
 		ops[i] = genDiffOp(t, g)
 	}
 	return &layout.Display{Width: 800, Height: 600, Ops: ops}
+}
+
+// seedFor derives a deterministic golden seed from a non-negative size.
+func seedFor(n int, mult uint64) uint64 {
+	if n < 0 {
+		panic("dirty: negative display size")
+	}
+	return uint64(n+1) * mult
 }
 
 // shallowCopy shares Grid pointers, like consecutive frames that reuse the
@@ -339,25 +352,25 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 	sizes := []int{0, 1, 2, 63, 64, 65, 127, 128, 200, 1000}
 	for _, n := range sizes {
 		t.Run("identical", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*101, n)
+			prev := genDisplay(t, seedFor(n, 101), n)
 			checkGolden(t, prev, shallowCopy(prev))
 		})
 		t.Run("single_first", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*103, 0)
+			prev, next := mutateOne(t, n, seedFor(n, 103), 0)
 			checkGolden(t, prev, next)
 		})
 		t.Run("single_mid", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*107, n/2)
+			prev, next := mutateOne(t, n, seedFor(n, 107), n/2)
 			checkGolden(t, prev, next)
 		})
 		t.Run("single_last", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*109, n-1)
+			prev, next := mutateOne(t, n, seedFor(n, 109), n-1)
 			checkGolden(t, prev, next)
 		})
 		t.Run("scattered", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*113, n)
+			prev := genDisplay(t, seedFor(n, 113), n)
 			next := shallowCopy(prev)
-			g := &diffGen{s: uint64(n+1)*127 | 1}
+			g := &diffGen{s: seedFor(n, 127) | 1}
 			for k := 0; k < 5 && k < n; k++ {
 				i := g.intn(n)
 				next.Ops[i].R = 1 - next.Ops[i].R
@@ -365,7 +378,7 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("kind_flip", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*131, n/3)
+			prev, next := mutateOne(t, n, seedFor(n, 131), n/3)
 			if n > 0 {
 				next.Ops[(n/3)%n].Kind = layout.DisplayOpText
 				next.Ops[(n/3)%n].Text = "flipped"
@@ -373,7 +386,7 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("geometry_shift", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*137, n/4)
+			prev, next := mutateOne(t, n, seedFor(n, 137), n/4)
 			if n > 0 {
 				next.Ops[(n/4)%n].X += 30
 				next.Ops[(n/4)%n].W += 6
@@ -381,7 +394,7 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("payload", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*139, n/5)
+			prev, next := mutateOne(t, n, seedFor(n, 139), n/5)
 			if n > 0 {
 				i := (n / 5) % n
 				next.Ops[i].SetURI("https://example.com/changed")
@@ -392,7 +405,7 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("grid_content", func(t *testing.T) {
-			prev, next := mutateOne(t, n, uint64(n+1)*149, n/6)
+			prev, next := mutateOne(t, n, seedFor(n, 149), n/6)
 			if n > 0 {
 				i := (n / 6) % n
 				next.Ops[i].Kind = layout.DisplayOpGridRun
@@ -401,7 +414,7 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("swap", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*151, n)
+			prev := genDisplay(t, seedFor(n, 151), n)
 			next := shallowCopy(prev)
 			if n > 1 {
 				next.Ops[0], next.Ops[n-1] = next.Ops[n-1], next.Ops[0]
@@ -409,16 +422,16 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("grow", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*157, n)
+			prev := genDisplay(t, seedFor(n, 157), n)
 			next := shallowCopy(prev)
-			g := &diffGen{s: uint64(n+1)*163 | 1}
+			g := &diffGen{s: seedFor(n, 163) | 1}
 			for k := 0; k < 3; k++ {
 				next.Ops = append(next.Ops, genDiffOp(t, g))
 			}
 			checkGolden(t, prev, next)
 		})
 		t.Run("shrink", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*167, n)
+			prev := genDisplay(t, seedFor(n, 167), n)
 			next := shallowCopy(prev)
 			if n > 3 {
 				next.Ops = next.Ops[:n-3]
@@ -428,13 +441,13 @@ func TestDiffRegionStamp_GoldenMatchesLegacy(t *testing.T) {
 			checkGolden(t, prev, next)
 		})
 		t.Run("size_mismatch", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*173, n)
+			prev := genDisplay(t, seedFor(n, 173), n)
 			next := shallowCopy(prev)
 			next.Width++
 			checkGolden(t, prev, next)
 		})
 		t.Run("nan_geometry", func(t *testing.T) {
-			prev := genDisplay(t, uint64(n+1)*179, n)
+			prev := genDisplay(t, seedFor(n, 179), n)
 			next := shallowCopy(prev)
 			if n > 0 {
 				// NaN forces the per-index fallback; results must still match.

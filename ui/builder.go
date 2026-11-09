@@ -283,8 +283,10 @@ func newRenderer() *renderer {
 
 // rendererPool reuses builders across renders. The output buffer keeps its
 // capacity (one 600KB backing instead of regrowing per render); maps are
-// cleared on checkout so no state leaks between documents.
-var rendererPool = sync.Pool{New: func() any { return newRenderer() }}
+// cleared on checkout so no state leaks between documents. It stays a
+// package global because every render call site shares the retained output
+// buffers and no caller owns a long-lived value to hang the pool on.
+var rendererPool = sync.Pool{New: func() any { return newRenderer() }} //nolint:gochecknoglobals // reason: process-wide renderer pool retaining output buffers across renders; no caller owns state to hold it.
 
 // reset prepares a pooled renderer for a new document. Callers that keep
 // r.actions (Mount, Update) must detach it first; reset clears whatever map

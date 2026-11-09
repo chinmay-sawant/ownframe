@@ -27,14 +27,6 @@ func populateRoundedPath(path *vector.Path, x, y, w, h float32, rx, ry [4]float3
 	path.Close()
 }
 
-// roundedPathAt traces a border centerline with per-corner elliptical arcs
-// from its origin.
-func roundedPathAt(x, y, w, h float32, rx, ry [4]float32) vector.Path {
-	var path vector.Path
-	populateRoundedPath(&path, x, y, w, h, rx, ry)
-	return path
-}
-
 // ellipseTo appends an elliptical arc as short segments. The path must
 // already sit on the arc's start point.
 func ellipseTo(path *vector.Path, cx, cy, rx, ry, from, to float32) {

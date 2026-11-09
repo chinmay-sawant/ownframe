@@ -8,7 +8,7 @@ import (
 
 // emptyIndex is the shared immutable index returned for nil or empty displays.
 // It performs 0 allocations and its lookups are all empty.
-var emptyIndex = &Index{}
+var emptyIndex = &Index{} //nolint:gochecknoglobals // reason: shared immutable zero index returned by EmptyIndex, allocated once per process.
 
 // EmptyIndex returns the shared immutable empty index with 0 allocations.
 func EmptyIndex() *Index {

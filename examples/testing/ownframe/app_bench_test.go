@@ -213,7 +213,7 @@ func BenchmarkInvoiceHeapGrowth(b *testing.B) {
 		runtime.ReadMemStats(&mem)
 		b.ReportMetric(float64(mem.HeapAlloc), "heap-retained-bytes")
 		b.ReportMetric(float64(mem.HeapObjects), "heap-retained-objects")
-		b.ReportMetric(float64(int64(mem.HeapAlloc)-int64(before.HeapAlloc)), "heap-growth-bytes")
-		b.ReportMetric(float64(int64(mem.HeapObjects)-int64(before.HeapObjects)), "heap-growth-objects")
+		b.ReportMetric(float64(memoryDelta(mem.HeapAlloc, before.HeapAlloc)), "heap-growth-bytes")
+		b.ReportMetric(float64(memoryDelta(mem.HeapObjects, before.HeapObjects)), "heap-growth-objects")
 	}
 }

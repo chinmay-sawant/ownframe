@@ -52,6 +52,17 @@ func staticSceneJPEG() []byte { return staticSceneJPEGBytes }
 // frame when the loop runs slow, which shrinks the encode with it.
 const sceneJPEGQuality = 85
 
+// maxTickSeconds caps one tick's dt so a stalled loop does not jump the
+// camera or the FPS average by a whole stall at once.
+const maxTickSeconds = 0.1
+
+// debugLogName is the fixed file this example appends debug traces to, and
+// debugLogMode keeps the trace readable only by its owner.
+const (
+	debugLogName = "blackhole-debug.log"
+	debugLogMode = 0o600
+)
+
 // sceneRenderer raymarches the black hole offscreen and pushes each frame
 // into the page as a JPEG. It runs from the page tick, so desktop Run and
 // web Serve share one path: render, SetImage, Redraw.
@@ -95,10 +106,6 @@ type sceneRenderer struct {
 	// flip-flopping between two qualities cannot thrash GPU buffers.
 	resizeCooldown int
 
-	// lastTick tracks Update pacing; a gap over 100ms means the loop
-	// itself stalled (parked, GC, or driver wait) rather than the scene.
-	lastTick time.Time
-
 	lastQuality float64
 	lastYaw     float64
 	lastDist    float64
@@ -120,7 +127,7 @@ func debugLogf(format string, args ...any) {
 				dir = d
 			}
 		}
-		if f, err := os.OpenFile(filepath.Join(dir, "blackhole-debug.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600); err == nil {
+		if f, err := os.OpenFile(filepath.Join(dir, debugLogName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, debugLogMode); err == nil { //nolint:gosec // fixed log name under the executable dir or os.TempDir; no user input reaches the path
 			debugLogFile = f
 			log.Printf("blackhole debug log: %s", f.Name())
 		}
@@ -131,8 +138,13 @@ func debugLogf(format string, args ...any) {
 	_, _ = fmt.Fprintf(debugLogFile, "%s %s\n", time.Now().Format("15:04:05.000"), msg)
 }
 
+// debugLogOnce and debugLogFile hold one process-wide best-effort log
+// handle: the first debugLogf call opens the file and every renderer
+// shares it, so a per-renderer copy would open extra descriptors.
 var (
+	//nolint:gochecknoglobals // one process-wide debug log handle, opened once and shared by every renderer
 	debugLogOnce sync.Once
+	//nolint:gochecknoglobals // one process-wide debug log handle, opened once and shared by every renderer
 	debugLogFile *os.File
 )
 
@@ -147,14 +159,14 @@ func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 	now := time.Now()
 	dt := 0.0
 	if !r.last.IsZero() {
-		dt = min(now.Sub(r.last).Seconds(), 0.1)
+		dt = min(now.Sub(r.last).Seconds(), maxTickSeconds)
 		if gap := now.Sub(r.last); gap > 100*time.Millisecond {
 			debugLogf("tick gap %.0fms (loop stall, not scene)", float64(gap.Milliseconds()))
 		}
 	}
 	r.last = now
 
-	r.app.step(dt, false)
+	r.app.step(ctx, dt, false)
 	// Alternate the image identity every push: the template re-executes
 	// with a new src, so each commit builds a fresh display list around
 	// fresh bytes instead of reusing a possibly stale payload. Pushes are
@@ -199,6 +211,17 @@ func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 	return nil
 }
 
+// bytesPerMiB converts the byte counters from runtime.MemStats to mebibytes
+// for the debug log line.
+const bytesPerMiB = 1 << 20
+
+// runtime.MemStats.PauseNs is a ring of pauseRing entries whose next write
+// slot is NumGC, so the last completed pause sits at the mask one behind it.
+const (
+	pauseRing     = 256
+	pauseRingMask = pauseRing - 1
+)
+
 // logSceneOp records the live display's scene image op bounds and payload
 // hash plus heap and GC pause stats once a second. Consecutive differing
 // hashes prove fresh bytes reach the display; heap growth or long pauses
@@ -212,8 +235,8 @@ func (r *sceneRenderer) logSceneOp() {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	debugLogf("mem heap=%.1fMB total=%.1fMB gc=%d pausems=%.2f",
-		float64(m.HeapAlloc)/1048576, float64(m.TotalAlloc)/1048576,
-		m.NumGC, float64(m.PauseNs[(m.NumGC+255)%256])/1e6)
+		float64(m.HeapAlloc)/bytesPerMiB, float64(m.TotalAlloc)/bytesPerMiB,
+		m.NumGC, float64(m.PauseNs[(m.NumGC+pauseRingMask)%pauseRing])/float64(time.Millisecond))
 	for i := range d.Ops {
 		op := &d.Ops[i]
 		if op.IsJPEG {
@@ -360,6 +383,9 @@ func (r *sceneRenderer) frameSize() (int, int) {
 	return r.app.Page().Size()
 }
 
+// bytesPerPixel is the RGBA byte width of one readback pixel.
+const bytesPerPixel = 4
+
 // pushImage reads the composed frame back and registers it under src.
 // The pixel and JPEG buffers are reused across frames; SetImage clones the
 // bytes, so reuse is safe. Without an Ebiten game loop (the -web preview and
@@ -384,7 +410,7 @@ func (r *sceneRenderer) pushImage(ctx context.Context, src string) (err error) {
 	if w <= 0 || h <= 0 {
 		return nil
 	}
-	if need := 4 * w * h; len(r.pix) != need {
+	if need := bytesPerPixel * w * h; len(r.pix) != need {
 		r.pix = make([]byte, need)
 	}
 	r.prev.ReadPixels(r.pix)
@@ -417,7 +443,7 @@ func blankFrame(pix []byte) bool {
 func (r *sceneRenderer) pushPixels(w, h int, src string) error {
 	img := &image.RGBA{
 		Pix:    r.pix,
-		Stride: 4 * w,
+		Stride: bytesPerPixel * w,
 		Rect:   image.Rect(0, 0, w, h),
 	}
 	r.jpegBuf.Reset()

@@ -87,7 +87,7 @@ func TestIdleRedrawAllocatesNothing(t *testing.T) {
 	}
 
 	var runErr error
-	calls := 0
+	calls := uint64(0)
 	allocs := testing.AllocsPerRun(idleAllocsRuns, func() {
 		calls++
 		if err := p.Redraw(ctx); err != nil {
@@ -120,7 +120,7 @@ func TestIdleRedrawAllocatesNothing(t *testing.T) {
 	}
 
 	after := p.Stats()
-	wantRedraws := before.Redraws + uint64(calls)
+	wantRedraws := before.Redraws + calls
 	t.Logf("idle redraw calls: %d", calls)
 	if after.Redraws != wantRedraws {
 		t.Fatalf("redraws = %d, want %d", after.Redraws, wantRedraws)

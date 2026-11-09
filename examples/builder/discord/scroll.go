@@ -85,12 +85,6 @@ func (a *app) endScrollDrag(context.Context) error {
 	return nil
 }
 
-// scrollCacheKey tracks the measured viewport so refresh converges.
-func (a *app) scrollCacheKey() [3]int {
-	m := a.chatScroll.Metrics()
-	return [3]int{a.chatViewH, m.Viewport, m.Content}
-}
-
 // updateScrollCache measures the viewport box and sets the scroll range
 // from the estimated transcript total plus the content padding. It reports
 // whether the stored offset was clamped, so refresh can repaint the

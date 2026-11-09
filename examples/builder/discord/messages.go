@@ -34,6 +34,14 @@ import (
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 
+// msgRowsPerEntry sizes the windowed row slice: one message row plus a
+// possible day divider.
+const msgRowsPerEntry = 2
+
+// mentionPartsPerAt sizes the mention split: each "@" can contribute a plain
+// prefix and a bold token, and the tail adds the remaining text.
+const mentionPartsPerAt = 2
+
 // mainCol renders the center chat column: the channel header, the scroll
 // message list, the typing bar, and the composer.
 func (a *app) mainCol() *ui.Element {
@@ -63,7 +71,7 @@ func (a *app) mainCol() *ui.Element {
 		viewH = 552
 	}
 	lo, hi, _, _ := visibleRange(msgs, offset, viewH)
-	rows := make([]*ui.Element, 0, (hi-lo)*2)
+	rows := make([]*ui.Element, 0, (hi-lo)*msgRowsPerEntry)
 	prevDay := ""
 	for i := range msgs {
 		day := messageDay(msgs[i].Time)
@@ -210,7 +218,7 @@ func messageDay(stamp string) string {
 // renderMentionText splits text so @name tokens render bold in the Discord
 // mention paint while all other text stays plain.
 func renderMentionText(text string) []*ui.Element {
-	parts := make([]*ui.Element, 0, 4)
+	parts := make([]*ui.Element, 0, strings.Count(text, "@")*mentionPartsPerAt+1)
 	rest := text
 	for len(rest) > 0 {
 		at := strings.Index(rest, "@")
@@ -249,10 +257,14 @@ func isHexColor(s string) bool {
 		return false
 	}
 	for i := 1; i < len(s); i++ {
-		c := s[i]
-		if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
+		if !isHexDigit(s[i]) {
 			return false
 		}
 	}
 	return true
+}
+
+// isHexDigit reports whether b is an ASCII hexadecimal digit.
+func isHexDigit(b byte) bool {
+	return b >= '0' && b <= '9' || b >= 'a' && b <= 'f' || b >= 'A' && b <= 'F'
 }

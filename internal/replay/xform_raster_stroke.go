@@ -39,8 +39,7 @@ func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32)
 	}
 
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
-		path := vectorPathPool.Get().(*vector.Path)
-		path.Reset()
+		path := acquireVectorPath()
 		populateStrokePath(path, key)
 
 		var stroke vector.StrokeOptions
@@ -51,8 +50,7 @@ func (renderer *Renderer) strokeRaster(op *layout.DisplayOp, x, y, w, h float32)
 		options.AntiAlias = true
 
 		vector.StrokePath(img, path, &stroke, &options)
-		path.Reset()
-		vectorPathPool.Put(path)
+		releaseVectorPath(path)
 	})
 
 	return img, image.Pt(left, top), true

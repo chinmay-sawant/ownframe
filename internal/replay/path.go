@@ -34,25 +34,22 @@ func drawPath(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		return
 	}
 
-	local := vectorPathPool.Get().(*vector.Path)
-	local.Reset()
+	local := acquireVectorPath()
 	populateCornerPath(local, corner.Cmds)
 
-	path := vectorPathPool.Get().(*vector.Path)
-	path.Reset()
+	path := acquireVectorPath()
 
 	var addOpts vector.AddPathOptions
 	addOpts.GeoM = pathGeoM(op, corner, dx, dy)
 	path.AddPath(local, &addOpts)
 
-	local.Reset()
-	vectorPathPool.Put(local)
+	releaseVectorPath(local)
 
 	var options vector.DrawPathOptions
 	options.AntiAlias = true
 	clr := rgba(op)
 	cr, cg, cb, ca := clr.RGBA()
-	options.ColorScale.Scale(float32(cr)/0xffff, float32(cg)/0xffff, float32(cb)/0xffff, float32(ca)/0xffff)
+	options.ColorScale.Scale(float32(cr)/colorChannelMax, float32(cg)/colorChannelMax, float32(cb)/colorChannelMax, float32(ca)/colorChannelMax)
 
 	if corner.Stroke {
 		// Round joins keep a sharp bevel or notch corner inside the bounds; a
@@ -66,8 +63,7 @@ func drawPath(dst *ebiten.Image, op *layout.DisplayOp, dx, dy float64) {
 		vector.FillPath(dst, path, nil, &options)
 	}
 
-	path.Reset()
-	vectorPathPool.Put(path)
+	releaseVectorPath(path)
 }
 
 // populateCornerPath converts the engine's command list to a vector path in canvas
@@ -99,14 +95,6 @@ func populateCornerPath(path *vector.Path, cmds []layout.PathCmd) {
 			path.Close()
 		}
 	}
-}
-
-// cornerPathAt converts the engine's command list to a vector path in canvas
-// points.
-func cornerPathAt(cmds []layout.PathCmd) vector.Path {
-	var path vector.Path
-	populateCornerPath(&path, cmds)
-	return path
 }
 
 // pathPoint reads one command control point as the vector package's float.

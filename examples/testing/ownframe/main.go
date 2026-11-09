@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"runtime"
 	"time"
@@ -67,14 +68,26 @@ func main() {
 // benchCounts balances stable timing against a quick headless run.
 // benchFilePerm restricts a written results file to owner read/write.
 const (
-	benchRowCap     = 14
-	benchRedrawOps  = 200
-	benchRebuildOps = 50
-	benchClickOps   = 30
-	benchThemeOps   = 30
-	benchPatchOps   = 30
-	benchStyleOps   = 10
-	benchFilePerm   = 0o600
+	benchRowCap       = 14
+	benchRedrawOps    = 200
+	benchRebuildOps   = 50
+	benchClickOps     = 30
+	benchThemeOps     = 30
+	benchPatchOps     = 30
+	benchStyleOps     = 10
+	benchColdOps      = 10
+	benchResizeOps    = 10
+	benchTypingOps    = 20
+	benchSelectRow    = 500
+	benchResizeWidth  = 1200
+	benchResizeHeight = 800
+	benchFilePerm     = 0o600
+)
+
+// Nanosecond conversions for the derived per-frame rates.
+const (
+	nanosPerSecond      = 1e9
+	nanosPerMillisecond = 1e6
 )
 
 // benchResult is one headless measurement row: wall time per op (headless, so
@@ -112,11 +125,30 @@ func measure(name string, n int, fn func() error) (benchResult, error) {
 		name:       name,
 		ops:        n,
 		nsPerOp:    ns,
-		fps:        1e9 / ns,
-		msPerFrame: ns / 1e6,
+		fps:        nanosPerSecond / ns,
+		msPerFrame: ns / nanosPerMillisecond,
 		bytesPerOp: (after.TotalAlloc - before.TotalAlloc) / count,
 		allocsOp:   (after.Mallocs - before.Mallocs) / count,
 	}, nil
+}
+
+// memoryDelta returns after-before as an int64. runtime.MemStats counters are
+// byte and object counts, so they stay below math.MaxInt64 on any real
+// process; the saturation keeps the conversion checked instead of assuming it.
+func memoryDelta(after, before uint64) int64 {
+	if after >= before {
+		return clampCount(after - before)
+	}
+	return -clampCount(before - after)
+}
+
+// clampCount narrows a non-negative counter delta to int64, saturating at
+// math.MaxInt64.
+func clampCount(v uint64) int64 {
+	if v > math.MaxInt64 {
+		return math.MaxInt64
+	}
+	return int64(v)
 }
 
 // runBench executes the headless benchmark set without opening a window and
@@ -156,7 +188,7 @@ func runBench(benchFile string) error {
 	}
 	rows = append(rows, rebuild)
 	click, err := measure("click-select-rebuild", benchClickOps, func() error {
-		if app.selected == 500 {
+		if app.selected == benchSelectRow {
 			return pagetest.ClickAction(ctx, app.Page(), "row:501")
 		}
 		return pagetest.ClickAction(ctx, app.Page(), "row:500")
@@ -181,7 +213,7 @@ func runBench(benchFile string) error {
 		return err
 	}
 	clickPatch, err := measure("click-select-patch", benchPatchOps, func() error {
-		if patchApp.selected == 500 {
+		if patchApp.selected == benchSelectRow {
 			return pagetest.ClickAction(ctx, patchApp.Page(), "row:501")
 		}
 		return pagetest.ClickAction(ctx, patchApp.Page(), "row:500")
@@ -235,7 +267,7 @@ func runBench(benchFile string) error {
 		return err
 	}
 	rows = append(rows, skipClean)
-	cold, err := measure("cold-build", 10, func() error {
+	cold, err := measure("cold-build", benchColdOps, func() error {
 		coldApp, err := newInvoiceApp()
 		if err != nil {
 			return err
@@ -246,8 +278,8 @@ func runBench(benchFile string) error {
 		return err
 	}
 	rows = append(rows, cold)
-	resize, err := measure("resize", 10, func() error {
-		app.Page().SetSize(1200, 800)
+	resize, err := measure("resize", benchResizeOps, func() error {
+		app.Page().SetSize(benchResizeWidth, benchResizeHeight)
 		if err := app.Page().Redraw(ctx); err != nil {
 			return err
 		}
@@ -262,7 +294,7 @@ func runBench(benchFile string) error {
 		return err
 	}
 	typed := false
-	typing, err := measure("typing", 20, func() error {
+	typing, err := measure("typing", benchTypingOps, func() error {
 		if !typed {
 			typed = true
 			return pagetest.Type(ctx, app.Page(), "a")
@@ -303,7 +335,7 @@ func runBench(benchFile string) error {
 		invoiceRows, formatCents(app.grandTotal()), htmlBytes, st.Boxes, st.Ops, mem.HeapAlloc, mem.HeapSys)
 	out += fmt.Sprintf("heap rows=10-rebuilds heap-retained=%d heap-objects=%d heap-growth=%d growth-objects=%d\n",
 		after.HeapAlloc, after.HeapObjects,
-		int64(after.HeapAlloc)-int64(before.HeapAlloc), int64(after.HeapObjects)-int64(before.HeapObjects))
+		memoryDelta(after.HeapAlloc, before.HeapAlloc), memoryDelta(after.HeapObjects, before.HeapObjects))
 	fmt.Print(out)
 	if benchFile != "" {
 		if err := os.WriteFile(benchFile, []byte(out), benchFilePerm); err != nil {

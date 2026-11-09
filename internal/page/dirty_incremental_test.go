@@ -51,6 +51,27 @@ func incCopy(d *Display) *Display {
 	return &Display{Width: d.Width, Height: d.Height, Ops: append([]layout.DisplayOp(nil), d.Ops...)}
 }
 
+// incCount converts a non-negative test count to uint64 for counter compares.
+func incCount(v int) uint64 {
+	if v < 0 {
+		panic("page: negative test count")
+	}
+	return uint64(v)
+}
+
+// incSeed derives a deterministic fixture seed from a non-negative size.
+func incSeed(n int, mult uint64) uint64 {
+	return (incCount(n) + 1) * mult
+}
+
+// intn returns a pseudo-random index in [0, n). n must be positive.
+func (g *incGen) intn(n int) int {
+	if n <= 0 {
+		panic("page: incGen.intn bound must be positive")
+	}
+	return int(g.next() % uint64(n)) //nolint:gosec // reason: the remainder is below the positive int bound n, so it always fits int.
+}
+
 func TestDirtyIncrementalSingleChangeCounters(t *testing.T) {
 	const n = 2048
 	prev := incDisplay(7, n)
@@ -108,11 +129,11 @@ func TestDirtyIncrementalGoldenMatchesPlain(t *testing.T) {
 	for _, n := range sizes {
 		cases := map[string]func() (*Display, *Display){
 			"identical": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*101, n)
+				prev := incDisplay(incSeed(n, 101), n)
 				return prev, incCopy(prev)
 			},
 			"single_mid": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*107, n)
+				prev := incDisplay(incSeed(n, 107), n)
 				next := incCopy(prev)
 				if n > 0 {
 					next.Ops[n/2].G = 7 - next.Ops[n/2].G
@@ -120,17 +141,17 @@ func TestDirtyIncrementalGoldenMatchesPlain(t *testing.T) {
 				return prev, next
 			},
 			"scattered": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*113, n)
+				prev := incDisplay(incSeed(n, 113), n)
 				next := incCopy(prev)
-				g := &incGen{s: uint64(n+1)*127 | 1}
+				g := &incGen{s: incSeed(n, 127) | 1}
 				for k := 0; k < 5 && k < n; k++ {
-					i := int(g.next() % uint64(imax(n, 1)))
+					i := g.intn(imax(n, 1))
 					next.Ops[i].R = 7 - next.Ops[i].R
 				}
 				return prev, next
 			},
 			"multi_region": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*131, n)
+				prev := incDisplay(incSeed(n, 131), n)
 				next := incCopy(prev)
 				// Touch one op per 64-op region so every region rescans.
 				for i := 0; i < n; i += 64 {
@@ -139,7 +160,7 @@ func TestDirtyIncrementalGoldenMatchesPlain(t *testing.T) {
 				return prev, next
 			},
 			"swap": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*151, n)
+				prev := incDisplay(incSeed(n, 151), n)
 				next := incCopy(prev)
 				if n > 1 {
 					next.Ops[0], next.Ops[n-1] = next.Ops[n-1], next.Ops[0]
@@ -147,9 +168,9 @@ func TestDirtyIncrementalGoldenMatchesPlain(t *testing.T) {
 				return prev, next
 			},
 			"grow": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*157, n)
+				prev := incDisplay(incSeed(n, 157), n)
 				next := incCopy(prev)
-				g := &incGen{s: uint64(n+1)*163 | 1}
+				g := &incGen{s: incSeed(n, 163) | 1}
 				for k := 0; k < 3; k++ {
 					next.Ops = append(next.Ops, layout.DisplayOp{
 						Kind: layout.DisplayOpFillRect,
@@ -160,7 +181,7 @@ func TestDirtyIncrementalGoldenMatchesPlain(t *testing.T) {
 				return prev, next
 			},
 			"shrink": func() (*Display, *Display) {
-				prev := incDisplay(uint64(n+1)*167, n)
+				prev := incDisplay(incSeed(n, 167), n)
 				next := incCopy(prev)
 				if n > 3 {
 					next.Ops = next.Ops[:n-3]
@@ -267,7 +288,7 @@ func TestDirtyIncrementalSingleDiffRecovery(t *testing.T) {
 	}
 	// One diff scans each changed op once. The legacy double diff (one
 	// against painted plus one against prev) would cost nearly twice.
-	if c := dirty.DiffCounters(); c.SameOp != uint64(refChanged) {
+	if c := dirty.DiffCounters(); c.SameOp != incCount(refChanged) {
 		t.Fatalf("single diff must cost %d SameOp calls, got %d", refChanged, c.SameOp)
 	}
 	if p.stats.changedOps != refChanged || p.stats.dirtyRegions != 1 {

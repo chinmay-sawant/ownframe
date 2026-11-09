@@ -13,8 +13,7 @@ func drawSegment(
 	dst *ebiten.Image, op *layout.DisplayOp,
 	x0, y0, x1, y1 float64, width float32, dx, dy float64,
 ) {
-	path := vectorPathPool.Get().(*vector.Path)
-	path.Reset()
+	path := acquireVectorPath()
 	path.MoveTo(float32(x0*pxPerPt+dx), float32(y0*pxPerPt+dy))
 	path.LineTo(float32(x1*pxPerPt+dx), float32(y1*pxPerPt+dy))
 
@@ -26,9 +25,8 @@ func drawSegment(
 	options.AntiAlias = true
 	clr := rgba(op)
 	cr, cg, cb, ca := clr.RGBA()
-	options.ColorScale.Scale(float32(cr)/0xffff, float32(cg)/0xffff, float32(cb)/0xffff, float32(ca)/0xffff)
+	options.ColorScale.Scale(float32(cr)/colorChannelMax, float32(cg)/colorChannelMax, float32(cb)/colorChannelMax, float32(ca)/colorChannelMax)
 
 	vector.StrokePath(dst, path, &stroke, &options)
-	path.Reset()
-	vectorPathPool.Put(path)
+	releaseVectorPath(path)
 }

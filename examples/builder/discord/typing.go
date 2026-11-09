@@ -28,6 +28,10 @@ const (
 	typingPairEvery  = 3
 )
 
+// typingPinnedNames counts the names startTyping places first (Theo and
+// Priya) regardless of roster order.
+const typingPinnedNames = 2
+
 // startTyping builds the rotation from the current roster (non-bot members
 // with Theo first, Priya second, then the rest in roster order) and installs
 // the once-per-second tick that drives the indicator.
@@ -47,7 +51,7 @@ func (a *app) startTyping() {
 			rest = append(rest, m.Name)
 		}
 	}
-	names := make([]string, 0, len(rest)+2)
+	names := make([]string, 0, len(rest)+typingPinnedNames)
 	if theo != "" {
 		names = append(names, theo)
 	}

@@ -288,6 +288,9 @@ func (a *app) voiceBlock(ch dchannel) *ui.Element {
 	return block.Children(a.voicePanel(ch))
 }
 
+// voicePanelUsers caps the panel at the local user plus two roster members.
+const voicePanelUsers = 3
+
 // voicePanel is the joined-channel strip: connection state plus the mute,
 // deafen, and leave buttons, with the occupant rows below. Icons come from
 // the dc-* set registered in icons.go. The first occupant row is always the local demo user
@@ -345,7 +348,7 @@ func (a *app) voicePanel(ch dchannel) *ui.Element {
 		if m.Bot {
 			continue
 		}
-		if n >= 3 {
+		if n >= voicePanelUsers {
 			break
 		}
 		users.Children(row(m.Name, dcInitial(m.Name)))

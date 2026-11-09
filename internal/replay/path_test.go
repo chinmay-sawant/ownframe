@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/chinmay-sawant/blinkless/layout"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
@@ -228,8 +227,8 @@ func TestPathStrokeWidthScalesWithTheMatrix(t *testing.T) {
 }
 
 func TestPopulateCornerPathZeroAllocs(t *testing.T) {
-	path := vectorPathPool.Get().(*vector.Path)
-	defer vectorPathPool.Put(path)
+	path := acquireVectorPath()
+	defer releaseVectorPath(path)
 
 	cmds := []layout.PathCmd{
 		{Verb: layout.PathMoveTo, Pts: [3]layout.DisplayPoint{{X: 10, Y: 10}}},

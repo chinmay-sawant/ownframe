@@ -63,10 +63,11 @@ const (
 	overlayMsgMenuFallbackY = 300
 )
 
-// overlaySettingsTabs orders the settings tabs. The suffix of
-// settings:tab:<name> is stored verbatim as settingsTab, so these strings
-// are both the action values and the active-tab keys.
-var overlaySettingsTabs = []string{"My Account", "Profile", "Voice", "Appearance"}
+// overlaySettingsTab is the tab settingsSheet opens on when settingsTab is
+// empty. The suffix of settings:tab:<name> is stored verbatim as
+// settingsTab, so the nav labels are both the action values and the
+// active-tab keys.
+const overlaySettingsTab = "My Account"
 
 // overlays aggregates the five overlay builders for one screen() call site.
 // Nil children are ignored, so a quiet state renders an empty wrapper.
@@ -266,7 +267,7 @@ func (a *app) settingsSheet() *ui.Element {
 	}
 	tab := a.settingsTab
 	if tab == "" {
-		tab = overlaySettingsTabs[0]
+		tab = overlaySettingsTab
 	}
 	if tab == "Voice" {
 		tab = "Voice & Video"
@@ -589,6 +590,8 @@ func (a *app) messageMenu() *ui.Element {
 func (a *app) msgMenuPos() (int, int) {
 	const menuW, menuH = 240, 230
 	const margin = 8
+	// flipGap separates the flipped menu from the hovered row.
+	const flipGap = 24
 	winW, winH := a.windowSize()
 	x, y := overlayMsgMenuFallbackX, overlayMsgMenuFallbackY
 	if a != nil && a.msgAnchored {
@@ -604,7 +607,7 @@ func (a *app) msgMenuPos() (int, int) {
 		y = margin
 	}
 	if y+menuH > winH-margin {
-		flipped := y - menuH - 24
+		flipped := y - menuH - flipGap
 		if flipped >= margin {
 			y = flipped
 		} else if maxY := winH - menuH - margin; maxY >= margin {

@@ -36,10 +36,11 @@ func BenchmarkAdaptive_Quality(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	ctx := context.Background()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		app.step(1.0/30.0, false)
+		app.step(ctx, 1.0/30.0, false)
 	}
 }
 
@@ -54,7 +55,7 @@ func BenchmarkHUD_Patch(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		app.updateHUDMetrics()
+		app.updateHUDMetrics(ctx)
 	}
 }
 
@@ -88,7 +89,7 @@ func BenchmarkHeapGrowth(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		app.step(1.0/60.0, false)
+		app.step(ctx, initialFrame, false)
 		_ = app.Page().Testing().Tick(ctx)
 	}
 	b.StopTimer()

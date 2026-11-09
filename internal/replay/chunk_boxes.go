@@ -43,8 +43,8 @@ func displayFingerprint(d *layout.Display) uint64 {
 	h = mix64(h, uint64(len(d.Order)))
 	h = mix64(h, uint64(len(d.Boxes)))
 	h = mix64(h, uint64(len(d.OpOwners)))
-	h = mix64(h, uint64(d.Width))
-	h = mix64(h, uint64(d.Height))
+	h = mix64(h, uint64(d.Width))  //nolint:gosec // reason: display width is a non-negative layout size, kept in the hash as its bit pattern.
+	h = mix64(h, uint64(d.Height)) //nolint:gosec // reason: display height is a non-negative layout size, kept in the hash as its bit pattern.
 	h = mixF(h, d.PointsPerPixel)
 
 	return h

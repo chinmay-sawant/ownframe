@@ -188,10 +188,8 @@ func ReplaceHTML(ctx context.Context, p *Page, source string) error {
 		}
 		return err
 	}
-	// The success path keeps no rollback state: drop the retained bodies
-	// now so the old sources release before the state resolve, instead of
-	// riding along on the stack until return.
-	previousBody, previousSynced = "", ""
+	// The success path needs no rollback: the rollback state above is dead
+	// from here, so the old sources release before the state resolve.
 	if p.redrawBatch == 0 {
 		p.resolveStates()
 	}

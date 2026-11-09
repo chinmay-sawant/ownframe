@@ -127,5 +127,5 @@ costs a full rebuild per keystroke until the filter path learns patches,
 and retained heap grows ~0.6 MB per rebuild against MyGo's near zero.
 
 Data parity is checked by construction (same seed-1 generator in both
-modules) and both harnesses print `grand-total=$1420529.43`.
+modules) and both harnesses print `grand-total=$1408316.22`.
 

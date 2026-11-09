@@ -454,7 +454,7 @@ func stampRegionOps(ops []layout.DisplayOp) (uint64, bool) {
 		}
 		hashed++
 	}
-	regionHashedOps.Add(uint64(hashed)) //nolint:gosec // reason: hashed counts stamped ops and is non-negative.
+	regionHashedOps.Add(uint64(hashed))
 	return h, true
 }
 

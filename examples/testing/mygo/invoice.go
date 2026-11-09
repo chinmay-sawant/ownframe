@@ -8,7 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"runtime"
 	"strings"
@@ -51,18 +51,18 @@ type invoiceRow struct {
 	status     string
 }
 
-// makeInvoiceRows builds n deterministic rows from seed 1.
+// makeInvoiceRows builds n deterministic rows from a fixed seed.
 func makeInvoiceRows(n int) []invoiceRow {
-	rng := rand.New(rand.NewSource(1))
+	rng := rand.New(rand.NewPCG(1, 1))
 	rows := make([]invoiceRow, n)
 	for i := range rows {
-		client := invoiceClients[rng.Intn(len(invoiceClients))]
-		item := invoiceItems[rng.Intn(len(invoiceItems))]
-		month := 1 + rng.Intn(12)
-		day := 1 + rng.Intn(28)
-		qty := 1 + rng.Intn(10)
-		unit := 900 + rng.Intn(49101)
-		status := invoiceStatuses[rng.Intn(len(invoiceStatuses))]
+		client := invoiceClients[rng.IntN(len(invoiceClients))]
+		item := invoiceItems[rng.IntN(len(invoiceItems))]
+		month := 1 + rng.IntN(12)
+		day := 1 + rng.IntN(28)
+		qty := 1 + rng.IntN(10)
+		unit := 900 + rng.IntN(49101)
+		status := invoiceStatuses[rng.IntN(len(invoiceStatuses))]
 		rows[i] = invoiceRow{
 			num:        "#" + fmt.Sprint(i+1),
 			id:         fmt.Sprintf("INV-%04d", 1001+i),

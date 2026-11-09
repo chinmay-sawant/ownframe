@@ -56,13 +56,6 @@ func populateStrokePath(path *vector.Path, key rasterKey) {
 	populateRoundedPath(path, key.fx, key.fy, key.w, key.h, key.r, key.ry)
 }
 
-// strokePathAt traces the centerline a raster key names.
-func strokePathAt(key rasterKey) vector.Path {
-	var path vector.Path
-	populateStrokePath(&path, key)
-	return path
-}
-
 // populateMaskPath traces the selected sides as straight segments into path.
 func populateMaskPath(path *vector.Path, x, y, w, h float32, mask uint8) {
 	if mask&1 != 0 {
@@ -81,11 +74,4 @@ func populateMaskPath(path *vector.Path, x, y, w, h float32, mask uint8) {
 		path.MoveTo(x, y)
 		path.LineTo(x, y+h)
 	}
-}
-
-// maskPathAt traces the selected sides as straight segments.
-func maskPathAt(x, y, w, h float32, mask uint8) vector.Path {
-	var path vector.Path
-	populateMaskPath(&path, x, y, w, h, mask)
-	return path
 }

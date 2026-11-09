@@ -8,7 +8,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"strings"
 
@@ -30,6 +30,18 @@ const (
 	invoiceQtyColWidth   = 48
 	invoiceTotalColWidth = 96
 	invoiceStatusWidth   = 90
+	invoiceIDBase        = 1001
+	centsPerDollar       = 100
+)
+
+// Bounds for the deterministic row fixture. They only shape the generated
+// data, so they sit with the generator rather than the layout constants.
+const (
+	invoiceMonthsPerYear = 12
+	invoiceDaysPerMonth  = 28
+	invoiceMaxQty        = 10
+	invoiceMinUnitCents  = 900
+	invoiceUnitSpread    = 49101
 )
 
 // invoiceWindowSize is the windowed row count: screen renders at most this
@@ -41,6 +53,7 @@ const (
 const (
 	invoiceWindowSize = 100
 	invoiceRowH       = 32
+	invoiceSpacers    = 2 // top and bottom scroll padding
 )
 
 // Invoice themes: gray is the zebra stripe (white/gray), light is plain white.
@@ -57,9 +70,9 @@ const invoiceThemeCSS = `.inv-row{background-color:#ffffff}` +
 	`.inv-sel{background-color:#dbeafe}`
 
 var (
-	invoiceClients  = [...]string{"Acme Corp", "Globex", "Soylent", "Initech", "Umbrella", "Hooli", "Stark Industries", "Wayne Enterprises", "Massive Dynamic", "Cyberdyne"}
-	invoiceItems    = [...]string{"Widget A", "Gadget B", "Service C", "License D", "Support E", "Consulting F", "Hosting G", "Audit H"}
-	invoiceStatuses = [...]string{"Paid", "Pending", "Overdue"}
+	invoiceClients  = [...]string{"Acme Corp", "Globex", "Soylent", "Initech", "Umbrella", "Hooli", "Stark Industries", "Wayne Enterprises", "Massive Dynamic", "Cyberdyne"} //nolint:gochecknoglobals // reason: static invoice fixture data, read-only after init
+	invoiceItems    = [...]string{"Widget A", "Gadget B", "Service C", "License D", "Support E", "Consulting F", "Hosting G", "Audit H"}                                     //nolint:gochecknoglobals // reason: static invoice fixture data, read-only after init
+	invoiceStatuses = [...]string{"Paid", "Pending", "Overdue"}                                                                                                              //nolint:gochecknoglobals // reason: static invoice fixture data, read-only after init
 )
 
 // invoiceRow is one invoice line. Keep field order identical to the mygo copy:
@@ -76,21 +89,21 @@ type invoiceRow struct {
 	status     string
 }
 
-// makeInvoiceRows builds n deterministic rows from seed 1.
+// makeInvoiceRows builds n deterministic rows from a fixed seed.
 func makeInvoiceRows(n int) []invoiceRow {
-	rng := rand.New(rand.NewSource(1))
+	rng := rand.New(rand.NewPCG(1, 1)) //nolint:gosec // reason: deterministic fixture data, not a security decision
 	rows := make([]invoiceRow, n)
 	for i := range rows {
-		client := invoiceClients[rng.Intn(len(invoiceClients))]
-		item := invoiceItems[rng.Intn(len(invoiceItems))]
-		month := 1 + rng.Intn(12)
-		day := 1 + rng.Intn(28)
-		qty := 1 + rng.Intn(10)
-		unit := 900 + rng.Intn(49101)
-		status := invoiceStatuses[rng.Intn(len(invoiceStatuses))]
+		client := invoiceClients[rng.IntN(len(invoiceClients))]
+		item := invoiceItems[rng.IntN(len(invoiceItems))]
+		month := 1 + rng.IntN(invoiceMonthsPerYear)
+		day := 1 + rng.IntN(invoiceDaysPerMonth)
+		qty := 1 + rng.IntN(invoiceMaxQty)
+		unit := invoiceMinUnitCents + rng.IntN(invoiceUnitSpread)
+		status := invoiceStatuses[rng.IntN(len(invoiceStatuses))]
 		rows[i] = invoiceRow{
 			num:        "#" + strconv.Itoa(i+1),
-			id:         fmt.Sprintf("INV-%04d", 1001+i),
+			id:         fmt.Sprintf("INV-%04d", invoiceIDBase+i),
 			client:     client,
 			date:       fmt.Sprintf("2026-%02d-%02d", month, day),
 			item:       item,
@@ -104,7 +117,7 @@ func makeInvoiceRows(n int) []invoiceRow {
 }
 
 func formatCents(c int) string {
-	return fmt.Sprintf("$%d.%02d", c/100, c%100)
+	return fmt.Sprintf("$%d.%02d", c/centsPerDollar, c%centsPerDollar)
 }
 
 func invoiceStatusColor(status string) ui.Color {
@@ -317,7 +330,7 @@ func (a *invoiceApp) screen() *ui.Element {
 	}
 	grid := rows
 	if a.windowed {
-		padded := make([]*ui.Element, 0, len(rows)+2)
+		padded := make([]*ui.Element, 0, len(rows)+invoiceSpacers)
 		padded = append(padded, ui.Div().ID("invoice-pad-top").Height(ui.Px(float64(start*invoiceRowH))))
 		padded = append(padded, rows...)
 		padded = append(padded, ui.Div().ID("invoice-pad-bot").Height(ui.Px(float64((len(order)-end)*invoiceRowH))))
@@ -327,12 +340,6 @@ func (a *invoiceApp) screen() *ui.Element {
 		FlexDirection(ui.FlexDirectionColumn).
 		Width(ui.Percent(100)).
 		Children(header, columns, ui.Div().ID("invoice-grid").Children(grid...))
-}
-
-// windowRange clamps the visible slice to [start, start+invoiceWindowSize)
-// inside rows. Short tables show every row from zero.
-func (a *invoiceApp) windowRange() (int, int) {
-	return windowRangeN(len(a.rows), a.windowStart)
 }
 
 // windowRangeN clamps the visible slice to [start, start+invoiceWindowSize)
@@ -422,6 +429,9 @@ func (a *invoiceApp) refresh(ctx context.Context) error {
 	return nil
 }
 
+// selectPatchCap covers the old row, the new row, and the readout text.
+const selectPatchCap = 3
+
 // patchSelectBatched moves the selection with two class edits and a readout
 // text edit instead of rebuilding the table, committed through PatchElements
 // in ONE call: all edits share a single style re-resolve, relayout, and
@@ -431,7 +441,7 @@ func (a *invoiceApp) patchSelectBatched(ctx context.Context, i int) error {
 	old := a.selected
 	a.selected = i
 	a.version++
-	patches := make([]ownframe.ElementPatch, 0, 3)
+	patches := make([]ownframe.ElementPatch, 0, selectPatchCap)
 	if old >= 0 && old < len(a.rows) && old != i {
 		patches = append(patches, ownframe.ElementPatch{
 			ID:    "invoice-row-" + strconv.Itoa(old),

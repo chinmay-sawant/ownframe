@@ -110,8 +110,18 @@ func (v *View) Update(ctx context.Context, root *Element) error {
 		d := diffTree(v.last, root)
 		switch {
 		case d.ok && len(d.patches) == 0:
-			// Nothing visible changed. Adopt the rebuilt callbacks without
-			// touching the page.
+			// Nothing in the tree changed, but Mount does not draw. If no
+			// frame or no layout boxes have been committed yet, SetTheme or
+			// SetSize may be waiting for one. RedrawIfChanged commits that
+			// pending frame and skips the layout when the page is already
+			// clean. A live frame stays untouched so a zero-patch update
+			// remains a true no-op.
+			display := v.Page.Probe().Display()
+			if display == nil || len(display.Boxes) == 0 {
+				if err := v.Page.RedrawIfChanged(ctx); err != nil {
+					return err
+				}
+			}
 			v.actions = d.actions
 			v.last = root
 			return nil

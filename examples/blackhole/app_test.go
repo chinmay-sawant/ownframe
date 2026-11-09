@@ -60,7 +60,7 @@ func TestInput(t *testing.T) {
 
 	// Step simulation until hint fades
 	for i := 0; i < 15; i++ {
-		app.step(0.1, false)
+		app.step(ctx, 0.1, false)
 	}
 	if app.hint != 0 {
 		t.Errorf("hint = %.2f, expected faded to 0", app.hint)
@@ -80,10 +80,11 @@ func TestQualityScaling(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := context.Background()
 
 	// 600 slow ticks should throttle quality to minQuality
 	for i := 0; i < 600; i++ {
-		app.step(1.0/20.0, false)
+		app.step(ctx, throttleFrame, false)
 	}
 	if app.quality != minQuality {
 		t.Fatalf("quality after slow ticks = %.3f, want %.3f", app.quality, minQuality)
@@ -91,7 +92,7 @@ func TestQualityScaling(t *testing.T) {
 
 	// 2400 fast ticks should recover quality to 1.0
 	for i := 0; i < 2400; i++ {
-		app.step(1.0/120.0, false)
+		app.step(ctx, recoveryFrame, false)
 	}
 	if app.quality != 1.0 {
 		t.Fatalf("quality after fast ticks = %.3f, want 1.0", app.quality)
@@ -162,7 +163,7 @@ func TestSceneRenderTick(t *testing.T) {
 
 	// Minimum quality after slow frames: exercises the downscaled sizes.
 	for i := 0; i < 600; i++ {
-		app.step(1.0/20.0, false)
+		app.step(ctx, throttleFrame, false)
 	}
 	if app.quality != minQuality {
 		t.Fatalf("quality after slow ticks = %.3f, want %.3f", app.quality, minQuality)

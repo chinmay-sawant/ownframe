@@ -6,7 +6,6 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func TestStrokeGeometryZeroRadiiBounds(t *testing.T) {
@@ -53,8 +52,8 @@ func TestStrokeGeometryCircularRadiusPath(t *testing.T) {
 }
 
 func TestPopulateRoundedPathZeroAllocs(t *testing.T) {
-	path := vectorPathPool.Get().(*vector.Path)
-	defer vectorPathPool.Put(path)
+	path := acquireVectorPath()
+	defer releaseVectorPath(path)
 
 	rx := [4]float32{6, 6, 6, 6}
 	ry := [4]float32{6, 6, 6, 6}
@@ -74,8 +73,8 @@ func TestPopulateRoundedPathZeroAllocs(t *testing.T) {
 }
 
 func TestPopulateMaskPathZeroAllocs(t *testing.T) {
-	path := vectorPathPool.Get().(*vector.Path)
-	defer vectorPathPool.Put(path)
+	path := acquireVectorPath()
+	defer releaseVectorPath(path)
 
 	// Warm path internal slices
 	path.Reset()
@@ -92,8 +91,8 @@ func TestPopulateMaskPathZeroAllocs(t *testing.T) {
 }
 
 func TestPopulateStrokeGeometryZeroAllocs(t *testing.T) {
-	path := vectorPathPool.Get().(*vector.Path)
-	defer vectorPathPool.Put(path)
+	path := acquireVectorPath()
+	defer releaseVectorPath(path)
 
 	op := &layout.DisplayOp{
 		Kind: layout.DisplayOpStrokeRect,
@@ -126,8 +125,8 @@ func TestStrokeDirectPoolReusesPath(t *testing.T) {
 	strokeDirect(dst, op, 0, 0)
 	strokeDirect(dst, op, 0, 0)
 
-	borrowed := vectorPathPool.Get().(*vector.Path)
-	defer vectorPathPool.Put(borrowed)
+	borrowed := acquireVectorPath()
+	defer releaseVectorPath(borrowed)
 	if borrowed == nil {
 		t.Fatal("expected non-nil path from pool")
 	}
@@ -144,8 +143,8 @@ func TestDrawSegmentPoolReusesPath(t *testing.T) {
 	drawSegment(dst, op, 10, 10, 50, 50, 2, 0, 0)
 	drawSegment(dst, op, 10, 10, 50, 50, 2, 0, 0)
 
-	borrowed := vectorPathPool.Get().(*vector.Path)
-	defer vectorPathPool.Put(borrowed)
+	borrowed := acquireVectorPath()
+	defer releaseVectorPath(borrowed)
 	if borrowed == nil {
 		t.Fatal("expected non-nil path from pool")
 	}

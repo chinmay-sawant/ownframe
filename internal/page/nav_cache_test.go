@@ -2,6 +2,7 @@ package page
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -282,9 +283,9 @@ func TestCheckDOMFoldVerdicts(t *testing.T) {
 
 			err := source.CheckDOM(tc.doc, tc.depth, tc.nodes)
 			switch {
-			case tc.wantDeep && err != source.ErrDOMTooDeep:
+			case tc.wantDeep && !errors.Is(err, source.ErrDOMTooDeep):
 				t.Fatalf("%q: got %v, want depth error", tc.doc, err)
-			case tc.wantMany && err != source.ErrTooManyNodes:
+			case tc.wantMany && !errors.Is(err, source.ErrTooManyNodes):
 				t.Fatalf("%q: got %v, want nodes error", tc.doc, err)
 			case !tc.wantDeep && !tc.wantMany && err != nil:
 				t.Fatalf("%q: got %v, want nil", tc.doc, err)
@@ -315,17 +316,17 @@ func TestCheckDOMGeneratedDoc(t *testing.T) {
 	}
 
 	deep := strings.Repeat("<div>", 300)
-	if err := source.CheckDOM(deep, source.MaxDOMDepth, source.MaxDOMNodes); err != source.ErrDOMTooDeep {
+	if err := source.CheckDOM(deep, source.MaxDOMDepth, source.MaxDOMNodes); !errors.Is(err, source.ErrDOMTooDeep) {
 		t.Fatalf("deep: got %v, want depth error", err)
 	}
 
 	wide := strings.Repeat("<i>x</i>", 30)
-	if err := source.CheckDOM(wide, 10, 10); err != source.ErrTooManyNodes {
+	if err := source.CheckDOM(wide, 10, 10); !errors.Is(err, source.ErrTooManyNodes) {
 		t.Fatalf("wide: got %v, want nodes error", err)
 	}
 
 	upperDeep := strings.Repeat("<DIV>", 300)
-	if err := source.CheckDOM(upperDeep, source.MaxDOMDepth, source.MaxDOMNodes); err != source.ErrDOMTooDeep {
+	if err := source.CheckDOM(upperDeep, source.MaxDOMDepth, source.MaxDOMNodes); !errors.Is(err, source.ErrDOMTooDeep) {
 		t.Fatalf("upper deep: got %v, want depth error", err)
 	}
 

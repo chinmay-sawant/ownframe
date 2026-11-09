@@ -69,11 +69,15 @@ func (v valueData) cssText() (string, error) {
 // leave the conversion to text for the renderer.
 func (v valueData) cssData() valueData { return v }
 
+// floatBits is the bit size of every formatted value: the numeric
+// constructors all hold float64.
+const floatBits = 64
+
 // appendScalar appends the CSS text of one numeric value. The bytes match
 // strconv.FormatFloat(n, 'f', -1, 64) followed by the unit suffix, which is
 // how Px, Percent, Vh, Rem, and Number have always rendered.
 func appendScalar(dst []byte, n float64, unit unitKind) []byte {
-	dst = strconv.AppendFloat(dst, n, 'f', -1, 64)
+	dst = strconv.AppendFloat(dst, n, 'f', -1, floatBits)
 	return append(dst, unit.suffix()...)
 }
 

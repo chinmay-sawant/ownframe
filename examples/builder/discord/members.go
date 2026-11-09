@@ -13,7 +13,9 @@ import (
 )
 
 // dcMemberGroups orders the role sections in the rail.
-var dcMemberGroups = []string{"Owner", "Admin", "Mods", "Bots", "Online", "Offline"}
+func dcMemberGroups() []string {
+	return []string{"Owner", "Admin", "Mods", "Bots", "Online", "Offline"}
+}
 
 // dcMemberGroup maps a roster row to its rail section. Bots always group
 // together; every other member groups by role, with plain members split by
@@ -79,9 +81,10 @@ func (a *app) membersPanel() *ui.Element {
 		return nil
 	}
 	members := a.currentMembers()
-	sections := make([]*ui.Element, 0, len(dcMemberGroups))
-	for _, group := range dcMemberGroups {
-		rows := make([]*ui.Element, 0, 4)
+	groups := dcMemberGroups()
+	sections := make([]*ui.Element, 0, len(groups))
+	for _, group := range groups {
+		rows := make([]*ui.Element, 0, len(members))
 		for _, m := range members {
 			if dcMemberGroup(m) == group {
 				rows = append(rows, a.dcMemberRow(m))
@@ -258,12 +261,15 @@ func (a *app) profileCardPos() (int, int) {
 	const cardW, cardH = 300, 480
 	const membersW, gap = 240, 12
 	const topMin, margin = 56, 12
+	// edgeInset keeps the card clear of the viewport sides so it never
+	// touches the rail or the window frame.
+	const edgeInset = 8
 	winW, winH := a.windowSize()
 	left := winW - membersW - gap - cardW
-	if left < 8 {
-		left = 8
+	if left < edgeInset {
+		left = edgeInset
 	}
-	if maxLeft := winW - cardW - 8; left > maxLeft && maxLeft > 8 {
+	if maxLeft := winW - cardW - edgeInset; left > maxLeft && maxLeft > edgeInset {
 		left = maxLeft
 	}
 	top := 64

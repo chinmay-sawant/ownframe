@@ -1,5 +1,12 @@
 package source
 
+const (
+	// commentOpenLen is the length of the "<!--" comment opener.
+	commentOpenLen = 4
+	// commentCloseLen is the length of the "-->" comment closer.
+	commentCloseLen = 3
+)
+
 // CheckDOM rejects nesting past maxDepth and element counts past maxNodes.
 // It never allocates: tag names compare case-insensitively without
 // lowercasing, so a guard run on adversarial input costs no heap.
@@ -51,10 +58,10 @@ func SkipMeta(s string, i int) (int, bool) {
 	if c != '!' && c != '?' {
 		return 0, false
 	}
-	if c == '!' && i+3 < len(s) && s[i+2] == '-' && s[i+3] == '-' {
+	if c == '!' && i+commentOpenLen <= len(s) && s[i+2] == '-' && s[i+3] == '-' {
 		for k := i; k+2 < len(s); k++ {
 			if s[k] == '-' && s[k+1] == '-' && s[k+2] == '>' {
-				return k + 3, true
+				return k + commentCloseLen, true
 			}
 		}
 		return len(s), true

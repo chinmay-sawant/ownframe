@@ -5,12 +5,11 @@ import (
 
 	"github.com/chinmay-sawant/blinkless/layout"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func TestPopulateRoundedFillPathZeroAllocs(t *testing.T) {
-	path := roundedFillPathPool.Get().(*vector.Path)
-	defer roundedFillPathPool.Put(path)
+	path := acquireVectorPath()
+	defer releaseVectorPath(path)
 
 	radii := [4]float64{5, 5, 5, 5}
 	r := radius4(radii)
@@ -48,8 +47,8 @@ func TestFillRoundedPoolReusesPath(t *testing.T) {
 	fillRounded(dst, op, radii, 0, 0)
 	fillRounded(dst, op, radii, 0, 0)
 
-	borrowed := roundedFillPathPool.Get().(*vector.Path)
-	defer roundedFillPathPool.Put(borrowed)
+	borrowed := acquireVectorPath()
+	defer releaseVectorPath(borrowed)
 	// Borrowed path was Reset before being put back
 	if borrowed == nil {
 		t.Fatal("expected non-nil path from pool")

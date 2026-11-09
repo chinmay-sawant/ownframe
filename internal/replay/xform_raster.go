@@ -50,16 +50,14 @@ func (renderer *Renderer) fillRaster(op *layout.DisplayOp, x, y, w, h float32) (
 	}
 
 	img := renderer.rasters.raster(key, size, func(img *ebiten.Image) {
-		path := vectorPathPool.Get().(*vector.Path)
-		path.Reset()
+		path := acquireVectorPath()
 		populateRoundedFillPath(path, key.fx, key.fy, w, h, r)
 
 		var options vector.DrawPathOptions
 		options.AntiAlias = true
 
 		vector.FillPath(img, path, nil, &options)
-		path.Reset()
-		vectorPathPool.Put(path)
+		releaseVectorPath(path)
 	})
 
 	return img, image.Pt(left, top), true

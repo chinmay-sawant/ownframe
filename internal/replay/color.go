@@ -10,6 +10,10 @@ import (
 // pxPerPt is the CSS pixel length of one layout point at zoom 1.
 const pxPerPt = 96.0 / 72.0
 
+// colorChannelMax is the full-scale value of a 16-bit color channel, the
+// divisor that maps color.RGBA's channel range to the vector color scale.
+const colorChannelMax = 0xffff
+
 // rgba converts an op's color and effective alpha to a color.RGBA. Opacity
 // folds element opacity and the op alpha exactly as the engine's painters do.
 func rgba(op *layout.DisplayOp) color.RGBA {

@@ -23,6 +23,18 @@ const (
 	slowFrame   = 1.0 / 50.0 // 20ms
 	fastFrame   = 1.0 / 90.0 // 11.1ms
 	glowScale   = 4
+
+	// Frame pacing, drag inertia, and wheel zoom. Times are seconds; drag
+	// rates are radians per pixel of pointer travel.
+	initialFPS    = 60
+	initialFrame  = 1.0 / initialFPS
+	minDragDelta  = 1.0 / 240.0 // floor for the drag dt
+	yawDragRate   = 0.005       // radians per horizontal pixel
+	pitchDragRate = 0.004       // radians per vertical pixel
+	dragSmooth    = 0.06        // seconds to blend drag velocity into spin
+	wheelZoomRate = 0.003       // log-distance per wheel unit
+	frameSmooth   = 0.1         // frame-time average blend per tick
+	percentScale  = 100         // quality fraction shown as a percentage
 )
 
 const appHTML = `
@@ -146,12 +158,9 @@ type App struct {
 	page *ownframe.Page
 	cam  camera
 
-	time     float64
-	lastTime time.Time
+	time float64
 
 	down     bool
-	lastX    float64
-	lastY    float64
 	lastMove time.Time
 	touched  bool
 	hint     float64
@@ -173,8 +182,8 @@ func newApp(devtools, perf bool) (*App, error) {
 		cam:        newCamera(),
 		hint:       1.0,
 		quality:    1.0,
-		frame:      1.0 / 60.0,
-		currentFPS: 60,
+		frame:      initialFrame,
+		currentFPS: initialFPS,
 		fpsTimer:   time.Now(),
 	}
 
@@ -215,7 +224,7 @@ func blackJPEG() []byte {
 	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
 	img.Set(0, 0, color.Black)
 	var buf bytes.Buffer
-	_ = jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85})
+	_ = jpeg.Encode(&buf, img, &jpeg.Options{Quality: sceneJPEGQuality})
 	return buf.Bytes()
 }
 
@@ -237,15 +246,15 @@ func (a *App) onDragMove(ctx context.Context, dx, dy float64) error {
 		return nil
 	}
 	now := time.Now()
-	dt := max(now.Sub(a.lastMove).Seconds(), 1.0/240.0)
+	dt := max(now.Sub(a.lastMove).Seconds(), minDragDelta)
 
-	dyaw := -dx * 0.005
-	dpitch := dy * 0.004
+	dyaw := -dx * yawDragRate
+	dpitch := dy * pitchDragRate
 
 	a.cam.yaw += dyaw
 	a.cam.pitch = clamp(a.cam.pitch+dpitch, -maxPitch, maxPitch)
 
-	k := min(1, dt/0.06)
+	k := min(1, dt/dragSmooth)
 	a.cam.spinYaw += (dyaw/dt - a.cam.spinYaw) * k
 	a.cam.spinPitch += (dpitch/dt - a.cam.spinPitch) * k
 
@@ -264,7 +273,7 @@ func (a *App) onDragEnd(ctx context.Context) error {
 
 func (a *App) onWheel(ctx context.Context, x, y, dx, dy float64) (bool, error) {
 	a.touched = true
-	a.cam.dist = clamp(a.cam.dist*math.Exp(dy*0.003), nearDist, farDist)
+	a.cam.dist = clamp(a.cam.dist*math.Exp(dy*wheelZoomRate), nearDist, farDist)
 	return true, nil
 }
 
@@ -293,7 +302,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 }
 
 // step advances the camera, dampens motion, updates FPS, and adjusts quality scaling.
-func (a *App) step(dt float64, reduceMotion bool) {
+func (a *App) step(ctx context.Context, dt float64, reduceMotion bool) {
 	if !reduceMotion && !a.orbitPaused {
 		a.time += dt
 	}
@@ -302,7 +311,7 @@ func (a *App) step(dt float64, reduceMotion bool) {
 	if a.touched && a.hint > 0 {
 		a.hint = max(0, a.hint-dt/0.6)
 		hintStyle := fmt.Sprintf("opacity: %.2f;", a.hint)
-		_ = a.page.PatchElement(context.Background(), "hint", ownframe.ElementEdit{
+		_ = a.page.PatchElement(ctx, "hint", ownframe.ElementEdit{
 			Attribute: "style",
 			Value:     hintStyle,
 		})
@@ -318,7 +327,7 @@ func (a *App) step(dt float64, reduceMotion bool) {
 		a.currentFPS = a.fpsCounter
 		a.fpsCounter = 0
 		a.fpsTimer = time.Now()
-		a.updateHUDMetrics()
+		a.updateHUDMetrics(ctx)
 	}
 
 	if a.qualityLocked {
@@ -326,7 +335,7 @@ func (a *App) step(dt float64, reduceMotion bool) {
 		return
 	}
 
-	a.frame += (dt - a.frame) * 0.1
+	a.frame += (dt - a.frame) * frameSmooth
 	if a.frame > slowFrame {
 		a.slow += dt
 	} else {
@@ -342,18 +351,17 @@ func (a *App) step(dt float64, reduceMotion bool) {
 	case a.slow > 0.5 && a.quality > minQuality:
 		a.quality = max(minQuality, a.quality-qualityStep)
 		a.slow, a.frame = 0, fastFrame
-		a.updateHUDMetrics()
+		a.updateHUDMetrics(ctx)
 	case a.fast > 3.0 && a.quality < 1.0:
 		a.quality = min(1.0, a.quality+qualityStep)
 		a.fast = 0
-		a.updateHUDMetrics()
+		a.updateHUDMetrics(ctx)
 	}
 }
 
-func (a *App) updateHUDMetrics() {
-	ctx := context.Background()
+func (a *App) updateHUDMetrics(ctx context.Context) {
 	fpsText := fmt.Sprintf("%d", a.currentFPS)
-	scaleText := fmt.Sprintf("%d%%", int(a.quality*100))
+	scaleText := fmt.Sprintf("%d%%", int(a.quality*percentScale))
 	distText := fmt.Sprintf("%.1f rs", a.cam.dist)
 	orbitText := "Active"
 	if a.orbitPaused {

@@ -327,7 +327,7 @@ func TestWindowBounds(t *testing.T) {
 		if end > len(msgs) {
 			end = len(msgs)
 		}
-		if !(0 <= start && start <= end && end <= len(msgs)) {
+		if start < 0 || end < start || end > len(msgs) {
 			t.Fatalf("window [%d:%d) out of bounds for offset %d over %d messages", start, end, off, len(msgs))
 		}
 		if visible := msgs[start:end]; len(visible) > viewRows {

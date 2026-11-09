@@ -25,14 +25,23 @@ const (
 	dcIconRedStroke   = "#f23f43"
 )
 
-// dcIconBases lists the icon bodies registered in every stroke.
-var dcIconBases = map[string]string{
-	"mic":            dcIconMicBody,
-	"mic-off":        dcIconMicOffBody,
-	"headphones":     dcIconHeadphonesBody,
-	"headphones-off": dcIconHeadphonesOffBody,
-	"phone-down":     dcIconPhoneDownBody,
-	"speaker":        dcIconSpeakerBody,
+// dcIconBase names one icon body registered for every stroke variant.
+type dcIconBase struct {
+	name string
+	body string
+}
+
+// dcIconBases lists the icon bodies registered in every stroke. The order
+// only affects startup registration, never paint.
+func dcIconBases() []dcIconBase {
+	return []dcIconBase{
+		{"mic", dcIconMicBody},
+		{"mic-off", dcIconMicOffBody},
+		{"headphones", dcIconHeadphonesBody},
+		{"headphones-off", dcIconHeadphonesOffBody},
+		{"phone-down", dcIconPhoneDownBody},
+		{"speaker", dcIconSpeakerBody},
+	}
 }
 
 // dcIconSVG wraps one body in a 16px stroke SVG document.
@@ -47,10 +56,10 @@ func (a *app) registerIcons() {
 	if a == nil || a.page == nil {
 		return
 	}
-	for base, body := range dcIconBases {
-		a.page.SetImage("dc-"+base+"-light", []byte(dcIconSVG(dcIconLightStroke, body)))
-		a.page.SetImage("dc-"+base+"-dark", []byte(dcIconSVG(dcIconDarkStroke, body)))
-		a.page.SetImage("dc-"+base+"-red", []byte(dcIconSVG(dcIconRedStroke, body)))
+	for _, icon := range dcIconBases() {
+		a.page.SetImage("dc-"+icon.name+"-light", []byte(dcIconSVG(dcIconLightStroke, icon.body)))
+		a.page.SetImage("dc-"+icon.name+"-dark", []byte(dcIconSVG(dcIconDarkStroke, icon.body)))
+		a.page.SetImage("dc-"+icon.name+"-red", []byte(dcIconSVG(dcIconRedStroke, icon.body)))
 	}
 }
 

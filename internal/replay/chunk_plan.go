@@ -45,7 +45,7 @@ type chunkPlan struct {
 
 // chunkPlanBuilds counts chunk-plan folds. Tests prove reuse by observing no
 // build across identical repaints, not by timing.
-var chunkPlanBuilds atomic.Int64
+var chunkPlanBuilds atomic.Int64 //nolint:gochecknoglobals // reason: one process-wide counter read by chunkPlanBuildCount so tests can prove plan reuse.
 
 // chunkPlanBuildCount reports chunk-plan folds.
 func chunkPlanBuildCount() int64 {
