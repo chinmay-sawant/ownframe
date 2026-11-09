@@ -20,8 +20,8 @@ github.com/ByteArena/poly2tri-go v0.0.0-20170716161910-d102ad91854f h1:l7moT9o/v
 github.com/ByteArena/poly2tri-go v0.0.0-20170716161910-d102ad91854f/go.mod h1:vIOkSdX3NDCPwgu8FIuTat2zDF0FPXXQ0RYFRy+oQic=
 github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b h1:slYM766cy2nI3BwyRiyQj/Ud48djTMtMebDqepE95rw=
 github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b/go.mod h1:1KcenG0jGWcpt8ov532z81sp/kMMUG485J2InIOyADM=
-github.com/andybalholm/brotli v1.2.1 h1:R+f5xP285VArJDRgowrfb9DqL18yVK0gKAW/F+eTWro=
-github.com/andybalholm/brotli v1.2.1/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
+github.com/andybalholm/brotli v1.2.7 h1:UgafRPGMam5ySHfRkhthMqOFA6IFoeF3D7mWIDLjG5A=
+github.com/andybalholm/brotli v1.2.7/go.mod h1:rzTDkvFWvIrjDXZHkuS16NPggd91W3kUSvPlQ1pLaKY=
 github.com/benoitkugler/pstokenizer v1.0.0/go.mod h1:l1G2Voirz0q/jj0TQfabNxVsa8HZXh/VMxFSRALWTiE=
 github.com/benoitkugler/textlayout v0.3.2 h1:Y/LTkwpQ9G0Fia9yhPmZA9IR5AnE8Cq30j3C+Gx5/IE=
 github.com/benoitkugler/textlayout v0.3.2/go.mod h1:o+1hFV+JSHBC9qNLIuwVoLedERU7sBPgEFcuSgfvi/w=
@@ -30,14 +30,8 @@ github.com/benoitkugler/textprocessing v0.0.6 h1:obkMyj62GEPg3xUVYqROlCN22z1Oleu
 github.com/benoitkugler/textprocessing v0.0.6/go.mod h1:Io0gN08/PXEzrSOWFa88xHx2Xv3VjvLMY7H76YoI23A=
 github.com/brianvoe/gofakeit/v7 v7.18.0 h1:vn3tb6OKRUazCkzhotd8xEwz/mhkLFbDoR8OUREFm80=
 github.com/brianvoe/gofakeit/v7 v7.18.0/go.mod h1:QXuPeBw164PJCzCUZVmgpgHJ3Llj49jSLVkKPMtxtxA=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261106180600-5824ee0a6d5a h1:qGyVLBZamJ11HNkcAl0wytRhLos4l14fZQAw4VkTvW4=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261106180600-5824ee0a6d5a/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261106201152-6a2f0b28ab23 h1:0uBMBHVhWc6la0HYIvRpKfsyFyPrl9RyMx66fXeJ9dk=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261106201152-6a2f0b28ab23/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261107052012-bd419c6c035a h1:TfJZhLQn58lXryoK2d46Q7q4/9PGso6y5USggJIPIe0=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261107052012-bd419c6c035a/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261107053307-30f64f756a90 h1:7xvoC6w1NTmdR6hWQrQeetnsD12iKFiHbucNaBzro10=
-github.com/chinmay-sawant/blinkless v0.1.1-0.20261107053307-30f64f756a90/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
+github.com/chinmay-sawant/blinkless v0.1.1-0.20261108141109-dc1d518bff32 h1:2Qo2sbj3IBLEx//A4saMgxNwnj7PFN3gCOBSogMubns=
+github.com/chinmay-sawant/blinkless v0.1.1-0.20261108141109-dc1d518bff32/go.mod h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/ebitengine/gomobile v0.0.0-20260820040257-d11f821a26a6 h1:Tnc3YtzxhgsvNdNrER9wWkGJbyjOwyUuzjUY5rZK72k=
