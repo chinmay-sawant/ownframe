@@ -378,7 +378,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-14]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     defaults:
       run:
