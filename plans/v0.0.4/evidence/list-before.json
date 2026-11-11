@@ -1,0 +1,305 @@
+{
+  "status": "passed",
+  "started_at": "2026-11-10T20:42:13.981690+00:00",
+  "count": 5,
+  "benchtime": "250ms",
+  "max_ratio": 1.3,
+  "excluded_benchmarks": "",
+  "raw_output": "temp/v004-performance/before.txt",
+  "benchmarks": {
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOff/Unchanged": {
+      "ns/op": {
+        "count": 5,
+        "min": 511.6,
+        "median": 528.7,
+        "sample_p95": 553.2
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOff/TextUpdate": {
+      "ns/op": {
+        "count": 5,
+        "min": 28965675.0,
+        "median": 30543243.0,
+        "sample_p95": 31576750.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 12897853.0,
+        "median": 12950595.0,
+        "sample_p95": 13059105.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 84327.0,
+        "median": 84331.0,
+        "sample_p95": 84350.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOff/ScrollOffset": {
+      "ns/op": {
+        "count": 5,
+        "min": 3.04,
+        "median": 3.127,
+        "sample_p95": 3.162
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOff/Resize": {
+      "ns/op": {
+        "count": 5,
+        "min": 24733536.0,
+        "median": 25706461.0,
+        "sample_p95": 29184949.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 9326846.0,
+        "median": 9362379.0,
+        "sample_p95": 9425558.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 59184.0,
+        "median": 59189.0,
+        "sample_p95": 59195.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOff/WindowedScroll": {
+      "ns/op": {
+        "count": 5,
+        "min": 823743.0,
+        "median": 835857.0,
+        "sample_p95": 875148.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 392672.0,
+        "median": 392709.0,
+        "sample_p95": 392805.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 2415.0,
+        "median": 2415.0,
+        "sample_p95": 2415.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOn/Unchanged": {
+      "ns/op": {
+        "count": 5,
+        "min": 543.6,
+        "median": 568.9,
+        "sample_p95": 582.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOn/TextUpdate": {
+      "ns/op": {
+        "count": 5,
+        "min": 29006855.0,
+        "median": 31055500.0,
+        "sample_p95": 35926697.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 12875953.0,
+        "median": 12880056.0,
+        "sample_p95": 12892380.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 84318.0,
+        "median": 84319.0,
+        "sample_p95": 84322.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOn/ScrollOffset": {
+      "ns/op": {
+        "count": 5,
+        "min": 3.056,
+        "median": 3.113,
+        "sample_p95": 3.23
+      },
+      "B/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 0.0,
+        "median": 0.0,
+        "sample_p95": 0.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOn/Resize": {
+      "ns/op": {
+        "count": 5,
+        "min": 25345332.0,
+        "median": 26486354.0,
+        "sample_p95": 28974722.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 9323140.0,
+        "median": 9337924.0,
+        "sample_p95": 9360081.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 59184.0,
+        "median": 59185.0,
+        "sample_p95": 59188.0
+      }
+    },
+    "github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/PerfOn/WindowedScroll": {
+      "ns/op": {
+        "count": 5,
+        "min": 849811.0,
+        "median": 899863.0,
+        "sample_p95": 946776.0
+      },
+      "B/op": {
+        "count": 5,
+        "min": 392672.0,
+        "median": 392707.0,
+        "sample_p95": 392779.0
+      },
+      "allocs/op": {
+        "count": 5,
+        "min": 2415.0,
+        "median": 2415.0,
+        "sample_p95": 2415.0
+      }
+    }
+  },
+  "suite": "list",
+  "conditions": "Local WSL2 session; no concurrent agent test, lint, or graphics commands; other host activity uncontrolled",
+  "commands": [
+    [
+      "go",
+      "test",
+      "-p",
+      "1",
+      "./examples/perf-benchmarks",
+      "-run",
+      "^$",
+      "-bench",
+      "^BenchmarkListWorkloads$",
+      "-benchmem",
+      "-count",
+      "5",
+      "-benchtime",
+      "250ms"
+    ],
+    [
+      "go",
+      "test",
+      "-p",
+      "1",
+      "./examples/perf-benchmarks",
+      "-run",
+      "^$",
+      "-bench",
+      "^BenchmarkListWorkloads$/^PerfOff$/^Resize$",
+      "-benchtime",
+      "2s",
+      "-cpuprofile",
+      "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.cpu",
+      "-memprofile",
+      "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.alloc",
+      "-o",
+      "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.test"
+    ]
+  ],
+  "fixture": {
+    "rows": 1000,
+    "row_height_css_px": 40,
+    "header_height_css_px": 40,
+    "viewport": [
+      800,
+      600
+    ],
+    "resize_widths": [
+      800,
+      801
+    ],
+    "scroll_offsets": [
+      4000,
+      8000
+    ],
+    "cache": "initial committed frame before timing",
+    "instrumentation": [
+      "PerfOff",
+      "PerfOn"
+    ],
+    "windowed_overscan_rows": 4,
+    "scroll_scope": "host offset submission and retained row geometry; no GPU presentation"
+  },
+  "source_commit": "0a77375ad10c51c8f9dab2d9c075701e7a2249bb",
+  "source_dirty": true,
+  "tracked_diff_sha256": "858cf0871748af6c7c8ce752417d516147ca3bcd21068751af9811a7963909af",
+  "untracked_sources": {
+    "examples/perf-benchmarks/benchutil/list_workload.go": "b5b225e4ae94f81780766dcd9154e1aeb6fb7c6dff1a3c960e26513944954283",
+    "examples/perf-benchmarks/list_workload_test.go": "4cc28792884714b3b65f0337b814c596b7fa8e8547ad44c886a6547cdf9e334f"
+  },
+  "go": {
+    "CGO_ENABLED": "1",
+    "GOAMD64": "v1",
+    "GOARCH": "amd64",
+    "GOOS": "linux",
+    "GOVERSION": "go1.26.10"
+  },
+  "gomaxprocs": "runtime default",
+  "cpu": 24,
+  "machine": "Chinmay",
+  "gomaxprocs_effective": [
+    24
+  ],
+  "cpu_model": [
+    "13th Gen Intel(R) Core(TM) i7-13700HX"
+  ],
+  "profiles": {
+    "cpu": "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.cpu",
+    "allocations": "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.alloc",
+    "binary": "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.test",
+    "log": "/home/chinmay/ChinmayPersonalProjects/ownframe/temp/v004-performance/before.profiles.txt",
+    "scope": "separate instrumented profile capture; excluded from timing medians"
+  },
+  "finished_at": "2026-11-10T20:42:35.583730+00:00"
+}

@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from perf_baseline import compare, summarize
+from perf_baseline import compare, summarize, validate_list_inventory
 
 
 class PerfBaselineTests(unittest.TestCase):
@@ -25,3 +25,18 @@ class PerfBaselineTests(unittest.TestCase):
             summarize('PASS\n')
         with self.assertRaisesRegex(ValueError, 'inventory'):
             compare({'benchmarks': {'new': {}}}, {'benchmarks': {}}, 1.3)
+
+    def test_list_inventory_requires_both_modes_and_all_workloads(self):
+        prefix = 'github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/BenchmarkListWorkloads/'
+        rows = {prefix + mode + '/' + name: {} for mode in ('PerfOff', 'PerfOn')
+                for name in ('Unchanged', 'TextUpdate', 'ScrollOffset', 'Resize', 'WindowedScroll')}
+        validate_list_inventory(rows)
+        del rows[prefix + 'PerfOff/WindowedScroll']
+        with self.assertRaisesRegex(ValueError, 'inventory'):
+            validate_list_inventory(rows)
+
+    def test_different_workload_conditions_rejected(self):
+        report = {'benchmarks': {}, 'suite': 'list', 'conditions': 'idle'}
+        baseline = dict(report, conditions='concurrent tests')
+        with self.assertRaisesRegex(ValueError, 'conditions'):
+            compare(report, baseline, 1.3)

@@ -1,0 +1,3 @@
+ok  	github.com/chinmay-sawant/ownframe/internal/atspi	1.284s
+ok  	github.com/chinmay-sawant/ownframe/internal/page	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/window	2.362s

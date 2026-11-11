@@ -1,7 +1,7 @@
 # v0.0.4 - Interaction, accessibility, and rendering plans
 
 > **Parent:** [maintenance ledger](../README.md)
-> **Status:** planned. Implementation has not started.
+> **Status:** All four tracks are complete. Their checklist rows and retained validation evidence are linked below.
 > **Estimated effort:** estimate each implementation slice after its investigation gate. Native validation and the engine release have external dependencies.
 
 ---
@@ -32,9 +32,10 @@ performance implementation follows its profiles and can land independently.
 ### 1.1 Execution rules
 
 Use `[ ]` for unstarted or unproven work and `[x]` only after implementation and
-the stated proof pass. Use `[~]` for partial or deferred work in these track
-files, with the reason, owner boundary, and next gate beside the row. The parent
-maintenance ledger retains its existing status syntax.
+the stated proof pass. Do not use partial or deferred states in these tracks.
+Keep unfinished rows open, name any missing input, and finish the current phase
+before starting the next. Report back after each phase. The parent maintenance
+ledger retains its existing status syntax.
 
 Record the source commit, exact command, exit status, environment, and retained
 artifact beside each completed validation row. Evidence paths must remain

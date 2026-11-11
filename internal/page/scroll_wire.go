@@ -58,6 +58,9 @@ func (p *Page) ScrollOffset() (int, int) { return p.scroll.Offset() }
 // offset changes; tests call it to drive the row window headlessly.
 func (p *Page) SetScrollOffset(x, y int) {
 	p.scroll.SetOffset(x, y)
+	if p.hasViewportSticky && p.stickyViewport == nil {
+		p.refreshStickyBoxes(float64(x), float64(y), float64(p.width), float64(p.height))
+	}
 	p.formDirty = true
 }
 

@@ -8,6 +8,7 @@ type fieldAttr struct {
 	maxlen                      int
 	hasVal                      bool
 	hasMaxlen                   bool
+	hasTabIndex                 bool
 	checked, disabled, selected bool
 }
 

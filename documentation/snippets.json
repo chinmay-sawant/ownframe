@@ -336,14 +336,5 @@
       "context",
       "github.com/chinmay-sawant/ownframe/components/chadcn"
     ]
-  },
-  "documentation/chadcn.md#3": {
-    "mode": "body",
-    "after": "return nil",
-    "params": "page *ownframe.Page",
-    "imports": [
-      "github.com/chinmay-sawant/ownframe",
-      "github.com/chinmay-sawant/ownframe/components/chadcn"
-    ]
   }
 }

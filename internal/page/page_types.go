@@ -103,7 +103,9 @@ type Page struct {
 	// finds damage already marked full can diff this display against the new
 	// one, so a small change made after a full mark keeps its own region
 	// instead of repainting the page.
-	painted *Display
+	painted           *Display
+	stickyViewport    *scrollViewport
+	hasViewportSticky bool
 	// commitRoots scopes the current commit to the patched element ids: the
 	// hover patch roots, one PatchElement id, or a PatchElements id list. A
 	// nil slice means a full layout, whose change can reach any box.

@@ -232,20 +232,18 @@ func (a *app) logFilters() *ui.Element {
 					ui.Text(strconv.Itoa(a.sampleRate)+"%").Class("app-muted").ID("log-sample-rate-text"),
 				),
 				chadcn.Slider(chadcn.SliderOptions{
+					Interactions: a.interactions,
+					OnValueChange: func(ctx context.Context, value float64) error {
+						a.sampleRate = int(value)
+						return a.patchSlider(ctx, "log-sample-rate", value, sampleRateMin, sampleRateMax, strconv.Itoa(a.sampleRate)+"%")
+					},
 					ID:    "log-sample-rate",
 					Label: "Sample rate",
 					Value: float64(a.sampleRate),
 					Min:   sampleRateMin,
 					Max:   sampleRateMax,
 					Step:  sampleRateStep,
-				}).Attr("title", "Click to cycle the sample rate").
-					OnClick(func(ctx context.Context) error {
-						a.sampleRate += 10
-						if a.sampleRate > sampleRateMax {
-							a.sampleRate = 10
-						}
-						return a.patchSlider(ctx, "log-sample-rate", float64(a.sampleRate), sampleRateMin, sampleRateMax, strconv.Itoa(a.sampleRate)+"%")
-					}),
+				}),
 			),
 			chadcn.ButtonGroup(chadcn.ButtonGroupOptions{Label: "Filter actions"},
 				chadcn.Button("Apply", chadcn.ButtonOptions{

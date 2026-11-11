@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "source_commit": "27722d9cedd27f9c8959e706178cd108ada7616c",
+  "branch": "feature/v004-viewport-css-and-layout",
+  "published": true,
+  "owned_files": {
+    "css/relayout_gate_test.go": "df250b2a99ea3f8e2054ffe7bf4b56e84d48e8f85abcbb218917edede260c206",
+    "documentation/README.md": "e65115e91c9afc32da3d0298aecfd02a92deb5bdf04cfe6e7b59b85f5a7a11a8",
+    "documentation/compatibility-matrix.md": "36cbb9397bc5967580fb5e236f49db5cddbce9d0e556991e4cb9e9a60bd3d6c2",
+    "documentation/deferred.md": "939f91663883c44319697452c9de912ccdfa570cf88e93a6a51338f0a5e97b6d",
+    "documentation/fidelity.md": "69f92f57d95a6ac6e8bc293805f9c1b3c6a8745712dff7c71fb8a529f2d8b38f",
+    "internal/css/container.go": "67ba6903f28144025e9101f2d0495cc7d989262280ea897c7b07585c6b5f8a0c",
+    "internal/css/container_test.go": "9483195ac80ee3de46b654312042d4d6327099f2610782c781a98d941f966eb7",
+    "internal/css/media.go": "dc5f82873673d6df5f170b7311540ebcc204c7a388a9980712c708de94237ca6",
+    "internal/css/media_test.go": "dd6f04a24ec409017f34dbb40f367d782feeb85e50cf847d1a391bda18af0a6d",
+    "internal/layout/flex.go": "5770ae029ddef01e827b2256f4b4db48a7ca6a7aa433f0a038df00751ea04b33",
+    "internal/layout/flex_columns.go": "2d167c27e465059f7908c2879162589e901f21f08fd38781587a6e9e4edaf6c3",
+    "internal/layout/line_height.go": "2161ca4e4a2b92923544286b139a307edace1e9d323d52191eb0c2d338cf9007",
+    "internal/layout/placed.go": "020320cc00af0d2eda7dc600e353a48a4350ea2b113f67c52363ef2befd19505",
+    "internal/layout/relayout_subtree.go": "73fe1a93e2bd35b7fe076f6643beccacfaef21dfd858b07c178f89eeb6f1a567",
+    "layout/displaylist.go": "9f9a76e18d50f0ac5960671c93efc951484b0568d5cc5b343b541481a2a5737e",
+    "layout/layout.go": "e3485fd6547e0eccbe67adaa6880bb7e2af392b78827bc76cd9fef68f3876da4",
+    "scripts/file-size-allowlist.txt": "ed5a5667eb6099b42b2c896e4abfb1392ec8fdf2c8800efa1d0a9061da172acc",
+    "documentation/scrolling.md": "dbdc31269a57d5964f9091a7c9a82e7a148d80b2b1c2d8ed0ce0f033254b50d5",
+    "internal/layout/flex_items.go": "5c129ad514ad532ede66948926034d692d941a6c890cc4f1b26573314a622cc9",
+    "internal/layout/flex_order_fast_test.go": "c2fb227462a61c5a0af6ef4792fa148da94927feb4456bb7fea06eb4538c5b9d",
+    "internal/layout/line_height_cache_test.go": "9776df3effaa2e3721af84e535c43237f67e6136f49ed9b51a806a5b86e59fce",
+    "internal/layout/sticky_placed.go": "ca3a1557a7566b5bd2c9804288fefcc26d21cb563b1e8651a09a13ac3200edb2",
+    "layout/sticky.go": "69f6b4b94893206225d03caaae2df4490506506a3af9513a6b299e27f6ef3439",
+    "layout/sticky_test.go": "c635d544d949417ed3f5428e6424809cea4607d85db58d79e6cfea39761dec6f"
+  },
+  "excluded_preexisting_edits": [
+    "plans/v0.1.1/PR/release-v0.1.1.md",
+    "plans/v0.1.1/release-note/v0.1.1.md"
+  ],
+  "gates": {
+    "make build": 0,
+    "make test": 0,
+    "make lint": 0,
+    "make golden": 0,
+    "make claim-scan": 0,
+    "go test -race -p 1 -count=1 -run ^TestLineHeight ./internal/layout": 0
+  },
+  "module_version": "v0.1.2-0.20261111104327-27722d9cedd2",
+  "engine_module_manifests_changed": [],
+  "performance": "Flex sorting is skipped for ordered items; warm alternating line-height cache hits allocate zero in the targeted regression. No new end-to-end speed claim until the same workload is measured."
+}

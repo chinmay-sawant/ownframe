@@ -1,0 +1,58 @@
+bash scripts/check-graphics.sh
+graphics-check: session=xvfb; DISPLAY=:0; LIBGL_ALWAYS_SOFTWARE=1
+=== RUN   TestPartialFrameLeavesTheScreen
+--- PASS: TestPartialFrameLeavesTheScreen (0.70s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.750s
+=== RUN   TestWindowRepaintPixels
+--- PASS: TestWindowRepaintPixels (0.47s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.512s
+=== RUN   TestWindowBackdropFilterReplaysFullFrame
+--- PASS: TestWindowBackdropFilterReplaysFullFrame (0.61s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.650s
+=== RUN   TestViewportScrollPixels
+--- PASS: TestViewportScrollPixels (0.40s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.437s
+=== RUN   TestViewportAnimatedReturnPixels
+--- PASS: TestViewportAnimatedReturnPixels (0.34s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.367s
+=== RUN   TestViewportDirectAnimationReturnPixels
+--- PASS: TestViewportDirectAnimationReturnPixels (0.34s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.366s
+=== RUN   TestWindowStaticEvents
+--- PASS: TestWindowStaticEvents (3.15s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	3.225s
+=== RUN   TestWindowIdleDeadline
+--- PASS: TestWindowIdleDeadline (1.07s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	1.099s
+=== RUN   TestWindowAccessibilityActionWake
+--- PASS: TestWindowAccessibilityActionWake (0.70s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.726s
+=== RUN   TestWindowDevToolsIdle
+--- PASS: TestWindowDevToolsIdle (4.22s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	4.248s
+=== RUN   TestSidebarHoverPixels
+--- PASS: TestSidebarHoverPixels (3.19s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/loglens	3.216s
+=== RUN   TestDrawPaintsVerticalThumb
+--- PASS: TestDrawPaintsVerticalThumb (0.34s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.372s
+=== RUN   TestGPUVisibleParity
+--- PASS: TestGPUVisibleParity (3.27s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/replay	3.302s
+=== RUN   TestScrollbarThumbStaysOnePiece
+--- PASS: TestScrollbarThumbStaysOnePiece (1.58s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/jmap-mail	1.610s

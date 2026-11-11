@@ -147,7 +147,7 @@ func TestMockDBusIgnoresForgedReplies(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 	t.Setenv("NO_AT_BRIDGE", "")
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err != nil {
 		t.Fatalf("claim with forged replies: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestMockDBusGUIDMismatch(t *testing.T) {
 	t.Setenv("NO_AT_BRIDGE", "")
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr+",guid=deadbeefdeadbeefdeadbeefdeadbeef")
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	err := bus.Claim(DefaultName)
 	if err == nil || !strings.Contains(err.Error(), "guid mismatch") {
 		t.Fatalf("expected guid mismatch, got %v", err)
@@ -291,7 +291,7 @@ func TestMockDBusGUIDMatch(t *testing.T) {
 	t.Setenv("NO_AT_BRIDGE", "")
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr+",guid="+mockBusGUID)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err != nil {
 		t.Fatalf("claim with matching guid: %v", err)
 	}
@@ -304,7 +304,7 @@ func TestMockDBusAuthLineTooLong(t *testing.T) {
 	t.Setenv("NO_AT_BRIDGE", "")
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	err := bus.Claim(DefaultName)
 	if err == nil || !strings.Contains(err.Error(), "exceeds") {
 		t.Fatalf("expected oversized auth line rejection, got %v", err)
@@ -445,7 +445,7 @@ func TestMockDBusPreEmbedSetID(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 	t.Setenv("NO_AT_BRIDGE", "")
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	app := Application{
 		Name:     ApplicationName,
 		RootPath: accessibleRootPath,
@@ -527,7 +527,7 @@ func TestMockDBusRandomFallbackName(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 	t.Setenv("NO_AT_BRIDGE", "")
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err != nil {
 		t.Fatalf("claim fallback: %v", err)
 	}

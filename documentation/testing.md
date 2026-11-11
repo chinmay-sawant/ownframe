@@ -28,15 +28,22 @@ make graphics-check
 
 `TestPagePictureMatchesRedraw` compares software PNGs after interactions with a fresh redraw and requires the interaction to change the picture. It protects retained page state and software-paint consistency. It does not capture the window's tile cache or prove browser parity. `TestRetainedPaintInvalidatesEncodedPNG` checks decoded pixels after operation patches, display patches, tick mutations, and explicit invalidation, without requiring a redraw. A separate no-op test verifies cache reuse.
 
-`make graphics-check` runs twelve tests in separate processes and separate Xvfb sessions:
+`make graphics-check` runs the following tests in separate processes and separate Xvfb sessions:
 
 - `TestPartialFrameLeavesTheScreen` checks damage-only blits, full rebuilds, scroll copies, and hiding then restoring content under the devtools dock.
 - `TestWindowRepaintPixels` uses a real page and compares the retained window framebuffer with a fresh full replay across a color change crossing tile boundaries, element removal, scrolling with a fixed header, a clean frame, and an edit while scrolled. It requires the color change to take the partial repaint path.
 - `TestWindowBackdropFilterReplaysFullFrame` checks that a backdrop-filter blur matches a full replay and does not allocate the tile grid.
+- `TestStickyViewportPixelsAndHits` checks viewport activation, containing-block release, scroll return, overlap paint/hit priority, edits while scrolled, and zoom. Its canonical HTML fixture also runs in Chrome through `node scripts/check-sticky-reference.mjs`; `scripts/compare-sticky-captures.py` requires equal RGBA pixels for eight unzoomed frames. Set `OWNFRAME_STICKY_CAPTURE_DIR` to retain native PNGs.
+- `TestManagedInteractionsNative` drives shared tabs, slider press/drag, and modal focus/Escape on the native update loop; set `OWNFRAME_INTERACTION_CAPTURE_DIR` to retain its five framebuffers.
 - `TestViewportScrollPixels` compares the viewport cache with a fresh replay across vertical and diagonal scrolling, edits during a buffer move, and jumps with no overlap. It also requires an overlapping scroll to repaint less than a full viewport.
 - `TestViewportAnimatedReturnPixels` and `TestViewportDirectAnimationReturnPixels` check that a card moving while offscreen leaves no old pose when scrolled back into view, with and without retained layers.
 - `TestWindowStaticEvents` requires zero OwnFrame draws during a quiet interval, then wakes the real window through a background frame request and checks its changed pixels.
 - `TestWindowIdleDeadline` runs the actual pacing wrapper and timer. It requires the blocking idle FPS mode, a quiet interval with a declared deadline, a deadline-driven tick that paints blue, and restoration of the original tick rate. A watchdog wakes a stuck loop only to fail the test. Keep the test window free of input during this check.
+- On Linux, `TestWindowAccessibilityActionWake` submits an accessibility action
+  while the real window loop is idle and checks that it paints the changed
+  pixels before a later page deadline. The test also requires a completed
+  action reply. Live D-Bus delivery is checked separately by
+  `scripts/check-atspi-actions.py`.
 - `TestWindowDevToolsIdle` compares cached dock pixels with direct rendering, requires the open dock to allow idle pacing, and checks scheduled metric refreshes without continuous drawing.
 - `TestSidebarHoverPixels` moves hover between Loglens sidebar controls, the header, and the content panel with a scrolled page and an open dock, then checks the sidebar text remains painted on the native framebuffer.
 - `TestDrawPaintsVerticalThumb` checks visible scrollbar pixels inside the running game.

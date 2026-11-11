@@ -1,0 +1,18 @@
+python3 scripts/check-doc-snippets.py
+illustration: documentation/builder.md#1: Call shape for ui.Mount. Not a standalone program.
+illustration: documentation/builder.md#2: Call shape for a typed CSS value. Not a standalone program.
+illustration: documentation/compare-ebitengine.md#1: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-fyne.md#1: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-gio.md#1: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-syntax.md#2: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-syntax.md#3: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-syntax.md#4: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-wails.md#1: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/compare-webview.md#1: Third-party API comparison or optional keyring integration; not an ownframe API example.
+illustration: documentation/components.md#1: Call shape for the ChadCN quick start. Not a standalone program.
+illustration: documentation/secrets.md#1: Third-party API comparison or optional keyring integration; not an ownframe API example.
+docs-check: 38 snippets compiled; 12 external illustrations listed explicitly
+python3 scripts/check-plans.py
+plans-check: 24 rows with distinct states
+python3 scripts/check-examples.py
+examples-check: maintained teaching set: bind, desktop-cat, frontend, forms, list, login, telegram; 61 experimental/support roots

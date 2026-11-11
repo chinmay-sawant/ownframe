@@ -11,3 +11,5 @@ func (s *shell) initA11y() {}
 func (s *shell) syncA11y() {}
 
 func (s *shell) closeA11y() {}
+
+func (s *shell) runA11yActions() {}

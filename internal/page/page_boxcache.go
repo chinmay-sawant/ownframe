@@ -276,7 +276,7 @@ func (p *Page) displayDeclarations(d *Display) (animations, transitions bool) {
 	return e.decls.animations, e.decls.transitions
 }
 
-func (p *Page) setDisplayBoxes(d *Display) {
+func (p *Page) setPlacedBoxes(d *Display) {
 	fixed := fixedBoxes(d)
 	if len(fixed) == 0 {
 		p.setBoxes(d.Boxes)
@@ -375,6 +375,9 @@ func (p *Page) BoxAt(x, y float64) (Box, bool) {
 		return Box{}, false
 	}
 
+	if p.hasViewportSticky {
+		return p.hitBox(x, y)
+	}
 	return hit.Hit(p.boxes, x, y)
 }
 

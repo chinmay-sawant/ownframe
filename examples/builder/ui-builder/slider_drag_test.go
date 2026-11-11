@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/pagetest"
 )
 
@@ -29,7 +28,7 @@ func TestSliderDragUpdatesCatalogAndWidgets(t *testing.T) {
 		t.Fatalf("widgets slider stayed at %d", a.widgets.progress)
 	}
 
-	claimed, err := a.claimSliderDrag(ctx, ownframe.Box{ID: "not-a-slider"})
+	claimed, err := a.page.Testing().BeginDrag(ctx, -1, -1)
 	if err != nil || claimed {
 		t.Fatalf("non-slider claim = %v, %v", claimed, err)
 	}
@@ -74,11 +73,15 @@ func TestSliderDragUpdatesCatalogAndWidgets(t *testing.T) {
 
 func dragSlider(t *testing.T, ctx context.Context, a *builderApp, id string, dx, dy float64) {
 	t.Helper()
-	box, ok := pagetest.BoxByID(a.page, id)
+	box, ok := pagetest.BoxByID(a.page, id+"-rail")
 	if !ok {
 		t.Fatalf("missing slider %s", id)
 	}
-	x, y := box.X+box.W/2, box.Y+box.H/2
+	value := a.catalogSlider
+	if id == widgetsSliderID {
+		value = float64(a.widgets.progress)
+	}
+	x, y := box.X+box.W*value/100, box.Y+box.H/2
 	claimed, err := a.page.Testing().BeginDrag(ctx, x, y)
 	if err != nil || !claimed {
 		t.Fatalf("drag %s claimed=%v err=%v box=%+v", id, claimed, err, box)

@@ -1,0 +1,161 @@
+{
+  "status": "passed",
+  "sourceCommit": "0a77375ad10c51c8f9dab2d9c075701e7a2249bb",
+  "fixture": "internal/window/testdata/sticky.html",
+  "fixtureSHA256": "ad98aee438c225a2b6388b5874884c479ffec951cf733cf550d8cf1c0354bf93",
+  "browser": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/143.0.7499.40",
+    "revision": "@c23ff452476d1b6322d73b9b629420ef119d0388",
+    "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/143.0.0.0 Safari/537.36",
+    "jsVersion": "14.3.127.16"
+  },
+  "viewport": [
+    200,
+    100
+  ],
+  "sticky": [
+    {
+      "step": 0,
+      "scroll": 0,
+      "expectedY": 80,
+      "actual": {
+        "scrollY": 0,
+        "width": 200,
+        "height": 100,
+        "y": 80,
+        "headHit": "before",
+        "overlapHit": "before"
+      }
+    },
+    {
+      "step": 1,
+      "scroll": 100,
+      "expectedY": 0,
+      "actual": {
+        "scrollY": 100,
+        "width": 200,
+        "height": 100,
+        "y": 0,
+        "headHit": "head",
+        "overlapHit": "head"
+      }
+    },
+    {
+      "step": 2,
+      "scroll": 200,
+      "expectedY": 0,
+      "actual": {
+        "scrollY": 200,
+        "width": 200,
+        "height": 100,
+        "y": 0,
+        "headHit": "head",
+        "overlapHit": "cover"
+      }
+    },
+    {
+      "step": 3,
+      "scroll": 360,
+      "expectedY": -20,
+      "actual": {
+        "scrollY": 360,
+        "width": 200,
+        "height": 100,
+        "y": -20,
+        "headHit": "head",
+        "overlapHit": "head"
+      }
+    },
+    {
+      "step": 4,
+      "scroll": 400,
+      "expectedY": -60,
+      "actual": {
+        "scrollY": 400,
+        "width": 200,
+        "height": 100,
+        "y": -60,
+        "headHit": "after",
+        "overlapHit": "after"
+      }
+    },
+    {
+      "step": 5,
+      "scroll": 200,
+      "expectedY": 0,
+      "actual": {
+        "scrollY": 200,
+        "width": 200,
+        "height": 100,
+        "y": 0,
+        "headHit": "head",
+        "overlapHit": "cover"
+      }
+    },
+    {
+      "step": 6,
+      "scroll": 200,
+      "expectedY": 0,
+      "actual": {
+        "scrollY": 200,
+        "width": 200,
+        "height": 100,
+        "y": 0,
+        "headHit": "head",
+        "overlapHit": "cover"
+      }
+    },
+    {
+      "step": 9,
+      "scroll": 0,
+      "expectedY": 80,
+      "actual": {
+        "scrollY": 0,
+        "width": 200,
+        "height": 100,
+        "y": 80,
+        "headHit": "before",
+        "overlapHit": "before"
+      }
+    }
+  ],
+  "heightQueries": [
+    {
+      "viewportHeight": 499,
+      "expected": 30,
+      "actual": 30
+    },
+    {
+      "viewportHeight": 500,
+      "expected": 90,
+      "actual": 90
+    },
+    {
+      "viewportHeight": 501,
+      "expected": 90,
+      "actual": 90
+    },
+    {
+      "viewportHeight": 499,
+      "expected": 30,
+      "actual": 30
+    },
+    {
+      "viewportHeight": 400,
+      "expected": 60,
+      "actual": 60
+    },
+    {
+      "viewportHeight": 399,
+      "expected": 60,
+      "actual": 60
+    },
+    {
+      "viewportHeight": 401,
+      "expected": 30,
+      "actual": 30
+    }
+  ],
+  "scope": "Chrome reference for unzoomed native steps; native zoom has its own framebuffer and hit assertions"
+}

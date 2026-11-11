@@ -69,6 +69,10 @@ func (s *shell) drawContent(screen *ebiten.Image) bool {
 	zoom := s.zoom()
 
 	if s.display != nil {
+		if s.viewportSticky {
+			s.drawStickyContent(screen)
+			return true
+		}
 		if s.stretched() || zoom != 1 {
 			s.partial.live = false
 			screen.Fill(s.pageBackground())

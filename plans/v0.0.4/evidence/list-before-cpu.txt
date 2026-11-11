@@ -1,0 +1,34 @@
+File: perf-benchmarks.test
+Build ID: 39b079a06f6abf967d89e86380eb8743eae2a0d5
+Type: cpu
+Time: 2026-11-11 02:12:33 IST
+Duration: 2.37s, Total samples = 2.65s (111.83%)
+Showing nodes accounting for 1.18s, 44.53% of 2.65s total
+Dropped 217 nodes (cum <= 0.01s)
+Showing top 25 nodes out of 233
+      flat  flat%   sum%        cum   cum%
+     0.11s  4.15%  4.15%      0.11s  4.15%  aeshashbody
+     0.10s  3.77%  7.92%      0.10s  3.77%  internal/runtime/maps.ctrlGroup.matchH2 (inline)
+     0.08s  3.02% 10.94%      1.60s 60.38%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).buildFlex
+     0.07s  2.64% 13.58%      1.68s 63.40%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).buildBlock
+     0.07s  2.64% 16.23%      0.10s  3.77%  runtime.scanObject
+     0.05s  1.89% 18.11%      0.18s  6.79%  github.com/chinmay-sawant/blinkless/internal/layout.(*cellMeasure).measureElement
+     0.05s  1.89% 20.00%      0.05s  1.89%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).allocBox
+     0.05s  1.89% 21.89%      1.68s 63.40%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).buildInFlowDisplay
+     0.05s  1.89% 23.77%      0.09s  3.40%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).prependChrome
+     0.05s  1.89% 25.66%      0.10s  3.77%  runtime.mapaccess1_fast64
+     0.05s  1.89% 27.55%      0.32s 12.08%  runtime.mapaccess2
+     0.05s  1.89% 29.43%      0.05s  1.89%  runtime.nextFreeFast (inline)
+     0.04s  1.51% 30.94%      0.05s  1.89%  github.com/chinmay-sawant/blinkless/layout.boxFrom
+     0.04s  1.51% 32.45%      0.04s  1.51%  runtime.memclrNoHeapPointers
+     0.04s  1.51% 33.96%      0.07s  2.64%  runtime.scanObjectsSmall
+     0.03s  1.13% 35.09%      0.03s  1.13%  github.com/chinmay-sawant/blinkless/internal/html.(*Node).appendTextDepth
+     0.03s  1.13% 36.23%      0.04s  1.51%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).alignContentStretchLineCross
+     0.03s  1.13% 37.36%      1.40s 52.83%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).flowFlexRow
+     0.03s  1.13% 38.49%      0.13s  4.91%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).stylePtr
+     0.03s  1.13% 39.62%      0.03s  1.13%  internal/sync.(*HashTrieMap[go.shape.interface {},go.shape.interface {}]).Load
+     0.03s  1.13% 40.75%      0.03s  1.13%  memeqbody
+     0.03s  1.13% 41.89%      0.03s  1.13%  reflect.(*structType).FieldByName
+     0.03s  1.13% 43.02%      0.06s  2.26%  reflect.funcLayout
+     0.02s  0.75% 43.77%      0.80s 30.19%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).buildRowItems
+     0.02s  0.75% 44.53%      0.05s  1.89%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).faceFor

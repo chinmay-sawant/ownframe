@@ -14,6 +14,7 @@ import (
 // OnCancel, not from a click-away. When OnOpenChange is set the component binds
 // the trigger, so pass a trigger without its own action.
 type AlertDialogOptions struct {
+	Interactions *Interactions
 	ID           string
 	Open         bool
 	Title        string
@@ -41,6 +42,13 @@ const (
 // empty title keeps the aria-label. Escape handling and focus scope stay with
 // the host. The backdrop does not dismiss.
 func AlertDialog(options AlertDialogOptions) *ui.Element {
+	if options.Interactions != nil {
+		close := options.OnOpenChange
+		if close == nil && options.OnCancel != nil {
+			close = func(ctx context.Context, _ bool) error { return options.OnCancel(ctx) }
+		}
+		options.Interactions.addDialog(DialogOptions{ID: options.ID, Open: options.Open, OnOpenChange: close})
+	}
 	panelID := partID(options.ID, "-panel")
 	trigger := overlayTrigger(options.Trigger, options.Open, panelID, options.OnOpenChange)
 	if !options.Open {

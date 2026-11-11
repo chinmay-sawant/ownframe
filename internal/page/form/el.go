@@ -58,3 +58,15 @@ func makeSelect(s string, start, openEnd int, a fieldAttr) (Span, int) {
 
 	return Span{Control: c, Start: start, End: end}, end
 }
+
+// Generic tabindex targets participate in focus without becoming editable fields.
+// Only the opening tag is retained so nested form controls remain independent.
+func makeFocusTarget(tag, raw string, start, end int) (Span, bool) {
+	a := readAttrs(raw)
+	if a.id == "" || !a.hasTabIndex {
+		return Span{}, false
+	}
+	c := controlFrom(tag, a)
+	c.Type = "focus"
+	return Span{Control: c, Start: start, End: end}, true
+}

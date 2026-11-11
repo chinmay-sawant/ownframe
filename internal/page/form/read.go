@@ -98,6 +98,7 @@ func applyAttr(a *fieldAttr, key, val string, has bool) {
 	case "tabindex":
 		if n, err := strconv.Atoi(strings.TrimSpace(val)); err == nil {
 			a.tabindex = n
+			a.hasTabIndex = true
 		}
 	case "maxlength":
 		if n, err := strconv.Atoi(strings.TrimSpace(val)); err == nil && n > 0 {

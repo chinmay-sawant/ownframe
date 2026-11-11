@@ -80,7 +80,8 @@ func (a *builderApp) comparePreviewOverlay() *ui.Element {
 		return nil
 	}
 	return chadcn.Dialog(chadcn.DialogOptions{
-		BackdropID: "compare-preview-backdrop", PanelID: "compare-preview-panel", Label: "Card preview", CloseAction: "compare:preview-close", Width: ui.Px(480),
+		Interactions: a.interactions,
+		BackdropID:   "compare-preview-backdrop", PanelID: "compare-preview-panel", Label: "Card preview", CloseAction: "compare:preview-close", Width: ui.Px(480),
 	},
 		ui.Div().Display(ui.DisplayFlex).AlignItems(ui.AlignItemsCenter).JustifyContent(ui.JustifyContentSpaceBetween).
 			Padding(theme.Spacing()).BorderBottom(theme.Border()).Children(ui.Text("Card preview").FontWeight(ui.FontWeightBold),

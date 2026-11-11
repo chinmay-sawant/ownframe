@@ -26,6 +26,7 @@ func void(f func(*shell)) func(*shell) error {
 
 var stages = []updateStage{
 	{"ctx", func(s *shell) error { return s.ctx.Err() }, false},
+	{"a11y", void((*shell).runA11yActions), false},
 	{"close", func(s *shell) error {
 		if takeCloseRequest(isWSLg() && ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)) {
 			return ebiten.Termination

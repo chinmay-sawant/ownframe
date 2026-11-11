@@ -39,7 +39,7 @@ func TestPublisherFakeBusReplacesTree(t *testing.T) {
 
 func TestPublisherLiveBusRetriesWithoutABus(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", "disabled")
-	p := NewPublisher(NewLiveBus())
+	p := NewPublisher(NewLiveBus(nil))
 	if p.Live() {
 		t.Fatal("live client claimed a disabled bus")
 	}

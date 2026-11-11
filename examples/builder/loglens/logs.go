@@ -353,7 +353,8 @@ func (a *app) logsDetailBody(entry logEntry) *ui.Element {
 		),
 		ui.Text(entry.Message).Class("app-log-message"),
 		chadcn.Tabs(chadcn.TabsOptions{
-			Active: a.drawerTab,
+			Interactions: a.interactions,
+			Active:       a.drawerTab,
 			OnSelect: func(ctx context.Context, tab string) error {
 				a.drawerTab = tab
 				return a.refresh(ctx)

@@ -67,15 +67,12 @@ if the component owns one. The open call renders the trigger plus the surface.
 The 15 open-state screenshots in the reference set are `Open: true` renders of
 the same constructors.
 
-The host owns Escape, click-away, and focus. `DialogFocus` scopes Tab traversal
-for a dialog and restores the previous control when it closes:
-
-```go
-var focus chadcn.DialogFocus
-focus.Activate(page, "dialog-save", "dialog-cancel")
-// Render the open dialog.
-focus.Deactivate(page)
-```
+Use [`chadcn.Interactions`](../components/chadcn/README.md#shared-interactions)
+for tab keyboard traversal, slider pointer and keyboard input, and Dialog or
+AlertDialog focus and Escape. Mount once, install handlers once, and rebuild
+through the controller. Values and open state stay in the host. Other overlay
+families retain their existing application wiring. `DialogFocus` is available
+for manually managed modal hosts.
 
 For overlays that use a backdrop, mount the component at the screen root so
 the backdrop covers the window. For anchored menus and popovers, mount the
@@ -111,6 +108,6 @@ ChadCN light and dark palettes and shows the controls in a native window.
 - `:disabled` and `::placeholder` do not match. Use `[disabled]` and the page's
   placeholder attributes.
 - `:focus-visible` matches like `:focus`.
-- The engine does not apply `position: absolute` to a flex child. Use a block
-  containing block for anchored panels and a fixed backdrop for modals.
+- For the tested absolute-positioning scope and remaining placement limits,
+  see [positioning and limits](screen.md#positioning-and-limits).
 - Code block syntax highlighting is outside this set.

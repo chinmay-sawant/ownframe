@@ -90,3 +90,20 @@ func TestScanControls(t *testing.T) {
 		t.Fatalf("group %#v", group)
 	}
 }
+
+func TestGenericTabindexTargets(t *testing.T) {
+	const src = `<div id="slider" role="slider" tabindex="0"><button id="child">Go</button></div><section id="panel" tabindex="-1"><input id="field" value="live"></section><div id="not-focusable"></div><div id="bad" tabindex="invalid"></div><script><div id="script" tabindex="0"></div></script>`
+	for _, scan := range []func(string) []Span{Scan, func(s string) []Span { sp, _ := ScanSingle(s); return sp }} {
+		spans := scan(src)
+		if len(spans) != 4 {
+			t.Fatalf("controls %+v", spans)
+		}
+		if spans[0].Control.ID != "slider" || CanEdit(spans[0].Control) || spans[2].Control.TabIndex != -1 {
+			t.Fatal("generic tabindex treated as editable or lost negative index")
+		}
+		out := RewriteState(src, spans, nil, Caret{Focus: "field", Caret: 4})
+		if !strings.Contains(out, `id="slider" role="slider" tabindex="0"`) || !strings.Contains(out, `id="child"`) || !strings.Contains(out, `data-ownframe-field`) {
+			t.Fatal("generic focus wrapper damaged nested controls")
+		}
+	}
+}

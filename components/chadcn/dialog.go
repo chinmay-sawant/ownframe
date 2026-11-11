@@ -24,6 +24,7 @@ import (
 // pre-Open call shape working. When OnOpenChange is set the component binds the
 // trigger, so pass a trigger without its own action.
 type DialogOptions struct {
+	Interactions *Interactions
 	ID           string
 	BackdropID   string
 	PanelID      string
@@ -45,7 +46,7 @@ type DialogOptions struct {
 // or call OnOpenChange when no action is set. The panel always has an id, and
 // the backdrop id is different, so a click on the title or body hits the panel
 // and does not dismiss. Click-away, Escape handling, and focus scope stay with
-// the host. Dialog does not call DialogFocus; the host does.
+// the host unless Interactions supplies focus containment and Escape handling.
 //
 // The backdrop is fixed to the viewport at the modal layer: above the app
 // topbar and sidebar, below the toast and command surfaces. Mount the dialog as
@@ -56,6 +57,9 @@ type DialogOptions struct {
 // pre-Open shape, which had no trigger, returns the backdrop itself and fills
 // the positioned container the caller mounts it in.
 func Dialog(options DialogOptions, children ...*ui.Element) *ui.Element {
+	if options.Interactions != nil {
+		options.Interactions.addDialog(options)
+	}
 	legacy := options.legacyOpen()
 	panelID := options.panelID()
 	open := options.Open || legacy

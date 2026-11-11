@@ -37,6 +37,7 @@ func (s *shell) syncImage() error {
 	}
 	s.img = next
 	s.display = nil
+	s.viewportSticky = false
 	s.fallback = true
 	s.seq = front.Generation
 	s.pullScroll()
@@ -58,6 +59,7 @@ func (s *shell) built() bool {
 }
 
 func (s *shell) setDisplay(display *layout.Display) {
+	s.viewportSticky = layout.HasViewportSticky(display)
 	if s.display != nil && s.display != display {
 		s.renderer.EvictDisplay(s.display)
 	}

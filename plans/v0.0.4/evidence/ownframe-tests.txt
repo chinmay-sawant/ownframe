@@ -1,0 +1,262 @@
+go test -p 4 ./... ./examples/...
+ok  	github.com/chinmay-sawant/ownframe	0.764s
+?   	github.com/chinmay-sawant/ownframe/cmd/animation-preview	[no test files]
+?   	github.com/chinmay-sawant/ownframe/cmd/benchscore	[no test files]
+?   	github.com/chinmay-sawant/ownframe/cmd/transition-preview	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/components/apexcharts	(cached)
+ok  	github.com/chinmay-sawant/ownframe/components/chadcn	4.298s
+ok  	github.com/chinmay-sawant/ownframe/components/chartjs	(cached)
+ok  	github.com/chinmay-sawant/ownframe/components/echarts	(cached)
+ok  	github.com/chinmay-sawant/ownframe/components/nivo	(cached)
+ok  	github.com/chinmay-sawant/ownframe/components/recharts	(cached)
+ok  	github.com/chinmay-sawant/ownframe/components/shadcnchart	(cached)
+ok  	github.com/chinmay-sawant/ownframe/components/tremor	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/animation	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/animationpreview	0.091s
+ok  	github.com/chinmay-sawant/ownframe/internal/atspi	(cached)
+?   	github.com/chinmay-sawant/ownframe/internal/backdrop	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/internal/benchscore	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/bitmap	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/clipboard	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/crash	0.027s
+ok  	github.com/chinmay-sawant/ownframe/internal/cssanimation	0.107s
+ok  	github.com/chinmay-sawant/ownframe/internal/cssmotion	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/csstransition	0.044s
+ok  	github.com/chinmay-sawant/ownframe/internal/csstrigger	0.030s
+?   	github.com/chinmay-sawant/ownframe/internal/debugtag	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/internal/element	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/emoji	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/fetch	0.247s
+ok  	github.com/chinmay-sawant/ownframe/internal/filepick	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/frame	0.082s
+ok  	github.com/chinmay-sawant/ownframe/internal/host	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/ipc	(cached)
+?   	github.com/chinmay-sawant/ownframe/internal/leakcheck	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/internal/masking	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/motion	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page	3.155s
+ok  	github.com/chinmay-sawant/ownframe/internal/page/a11y	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/click	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/dirty	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/draw	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/form	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/gesture	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/hit	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/nav	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/patch	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/reload	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/scroll	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/page/source	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/perfcheck	(cached)
+?   	github.com/chinmay-sawant/ownframe/internal/previewwindow	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/internal/render	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/replay	0.262s
+ok  	github.com/chinmay-sawant/ownframe/internal/runtimebehavior	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/safego	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/secret	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/state	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/textrun	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/transition	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/transitionpreview	0.169s
+ok  	github.com/chinmay-sawant/ownframe/internal/viewtransition	(cached)
+ok  	github.com/chinmay-sawant/ownframe/internal/web	0.110s
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.373s
+ok  	github.com/chinmay-sawant/ownframe/internal/window/pacing	(cached)
+ok  	github.com/chinmay-sawant/ownframe/pagetest	0.049s
+ok  	github.com/chinmay-sawant/ownframe/test	0.074s
+ok  	github.com/chinmay-sawant/ownframe/ui	0.803s
+ok  	github.com/chinmay-sawant/ownframe/ui/theme	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/accessibility	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/accessibility/demo	0.312s
+ok  	github.com/chinmay-sawant/ownframe/examples/animations	5.399s
+?   	github.com/chinmay-sawant/ownframe/examples/bind	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/bind/bind	0.115s
+?   	github.com/chinmay-sawant/ownframe/examples/bind-hooks	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/bind-hooks/bindhooks	0.263s
+ok  	github.com/chinmay-sawant/ownframe/examples/blackhole	0.105s
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/discord	2.452s
+?   	github.com/chinmay-sawant/ownframe/examples/builder/discord/components	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/inventory	2.264s
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/jmap-mail	4.400s
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/loglens	30.953s
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/mailpulse	1.134s
+?   	github.com/chinmay-sawant/ownframe/examples/builder/mailpulse/components	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/ui-builder	5.481s
+?   	github.com/chinmay-sawant/ownframe/examples/builder/ui-builder/custom	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/clipboard	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/clipboard/clipboard	0.527s
+ok  	github.com/chinmay-sawant/ownframe/examples/code-view	52.047s
+ok  	github.com/chinmay-sawant/ownframe/examples/compare/ownframe	0.367s
+?   	github.com/chinmay-sawant/ownframe/examples/controls	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/controls/controls	0.178s
+?   	github.com/chinmay-sawant/ownframe/examples/crash	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/crash/crash	0.208s
+ok  	github.com/chinmay-sawant/ownframe/examples/css-masking	0.446s
+ok  	github.com/chinmay-sawant/ownframe/examples/css-preview	14.613s
+?   	github.com/chinmay-sawant/ownframe/examples/departure-board	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/departure-board/board	0.223s
+?   	github.com/chinmay-sawant/ownframe/examples/departure-board/dump	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/depth-alert/alert	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/depth-alert/depthalert	0.020s
+?   	github.com/chinmay-sawant/ownframe/examples/depth-alert/mobile	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/desktop-cat	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/desktop-cat/assets	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/desktop-cat/cat	2.693s
+ok  	github.com/chinmay-sawant/ownframe/examples/desktop-cat/nowplaying	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/devtools	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/devtools/devtools	0.123s
+?   	github.com/chinmay-sawant/ownframe/examples/digital-wellbeing	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/digital-wellbeing/dashboard	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/digital-wellbeing/mobile	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/dino	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/dino/dino	0.078s
+?   	github.com/chinmay-sawant/ownframe/examples/dino/mobile	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/download-manager	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/domain	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/fixture	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/scheduler	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/store	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/transfer	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/ui	0.145s
+ok  	github.com/chinmay-sawant/ownframe/examples/download-manager/ui/wire	4.134s
+?   	github.com/chinmay-sawant/ownframe/examples/drop	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/drop/drop	0.025s
+?   	github.com/chinmay-sawant/ownframe/examples/editing	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/editing/editing	0.156s
+?   	github.com/chinmay-sawant/ownframe/examples/eyes	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/eyes/eyes	0.180s
+?   	github.com/chinmay-sawant/ownframe/examples/eyes/mobile	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/fetch	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/fetch/fetcher	0.168s
+?   	github.com/chinmay-sawant/ownframe/examples/flappy-bird	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/flappy-bird/flappy	0.052s
+?   	github.com/chinmay-sawant/ownframe/examples/forms	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/forms/form	0.024s
+ok  	github.com/chinmay-sawant/ownframe/examples/frontend	0.042s
+ok  	github.com/chinmay-sawant/ownframe/examples/frontend/budget	0.070s
+ok  	github.com/chinmay-sawant/ownframe/examples/frontend/builder	0.036s
+ok  	github.com/chinmay-sawant/ownframe/examples/frontend/builder-mount	0.033s
+?   	github.com/chinmay-sawant/ownframe/examples/frontend/hello	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/frontend/hello-builder	0.022s
+?   	github.com/chinmay-sawant/ownframe/examples/frontend/workspace	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/grid	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/grid/grid	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/hello	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/hello/hello	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/history	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/history/history	0.112s
+?   	github.com/chinmay-sawant/ownframe/examples/input	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/input/input	0.025s
+?   	github.com/chinmay-sawant/ownframe/examples/input-lab	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/input-lab/inputlab	0.073s
+?   	github.com/chinmay-sawant/ownframe/examples/ipc	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/ipc/ipc	0.192s
+?   	github.com/chinmay-sawant/ownframe/examples/layout	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/layout/layout	0.129s
+?   	github.com/chinmay-sawant/ownframe/examples/lg-remote	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/lg-remote/bridge	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/lg-remote/mobile	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/lg-remote/remote	1.784s
+ok  	github.com/chinmay-sawant/ownframe/examples/lg-remote/tv	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/lg-remote/ws	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/list	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/live-log-viewer	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/live-log-viewer/entry	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/live-log-viewer/parser	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/live-log-viewer/reader	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/live-log-viewer/store	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/live-log-viewer/ui	0.550s
+?   	github.com/chinmay-sawant/ownframe/examples/login	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/login/login	0.385s
+?   	github.com/chinmay-sawant/ownframe/examples/login/mobile	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/motion-conformance	1.337s
+ok  	github.com/chinmay-sawant/ownframe/examples/music	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/ops-console	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/ops-console/console	0.063s
+ok  	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks	0.688s
+?   	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/benchutil	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/flappy	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/large	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks/normal	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/perf-complex	0.271s
+ok  	github.com/chinmay-sawant/ownframe/examples/perf-stress	0.150s
+ok  	github.com/chinmay-sawant/ownframe/examples/performance	2.372s
+?   	github.com/chinmay-sawant/ownframe/examples/pet-care	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/pet-care/app	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/pet-care/assets	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/pet-care/mobile	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/pet-care/model	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/pet-care/store	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/platform	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/platform/mobile	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/platform/platform	0.118s
+?   	github.com/chinmay-sawant/ownframe/examples/png	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/png/png	0.200s
+?   	github.com/chinmay-sawant/ownframe/examples/reload	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/reload/reload	0.018s
+?   	github.com/chinmay-sawant/ownframe/examples/replay	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/replay/replay	0.200s
+?   	github.com/chinmay-sawant/ownframe/examples/resize	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/resize/resize	0.023s
+?   	github.com/chinmay-sawant/ownframe/examples/scrolling	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/scrolling/scrolling	0.106s
+?   	github.com/chinmay-sawant/ownframe/examples/shapes	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/shapes/shapes	0.123s
+?   	github.com/chinmay-sawant/ownframe/examples/snipping-tool	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/snipping-tool/snip	0.068s
+?   	github.com/chinmay-sawant/ownframe/examples/spotify-player	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/spotify-player/player	2.767s
+?   	github.com/chinmay-sawant/ownframe/examples/spreadsheet	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/spreadsheet/formula	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/spreadsheet/storage	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/spreadsheet/ui	1.501s
+ok  	github.com/chinmay-sawant/ownframe/examples/spreadsheet/ui/corebackend	2.012s
+ok  	github.com/chinmay-sawant/ownframe/examples/spreadsheet/workbook	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/states	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/states/states	0.419s
+?   	github.com/chinmay-sawant/ownframe/examples/system-monitor	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/system-monitor/collector	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/system-monitor/domain	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/system-monitor/storage	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/system-monitor/ui	0.505s
+?   	github.com/chinmay-sawant/ownframe/examples/teams	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/teams/activity	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/teams/app	1.774s
+?   	github.com/chinmay-sawant/ownframe/examples/teams/calendar	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/teams/calls	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/teams/channelbench	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/teams/channels	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/teams/chat	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/teams/files	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/teams/store	0.088s
+?   	github.com/chinmay-sawant/ownframe/examples/telegram	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/telegram/mobile	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/telegram/telegram	3.232s
+ok  	github.com/chinmay-sawant/ownframe/examples/testing/ownframe	1.626s
+?   	github.com/chinmay-sawant/ownframe/examples/tetris	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/tetris/game	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/tetris/input	(cached)
+ok  	github.com/chinmay-sawant/ownframe/examples/tetris/scene	0.802s
+ok  	github.com/chinmay-sawant/ownframe/examples/tetris/store	(cached)
+?   	github.com/chinmay-sawant/ownframe/examples/theme	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/theme/theme	0.021s
+?   	github.com/chinmay-sawant/ownframe/examples/theme-studio	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/theme-studio/studio	0.041s
+ok  	github.com/chinmay-sawant/ownframe/examples/trade	6.888s
+?   	github.com/chinmay-sawant/ownframe/examples/web	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/web/web	0.090s
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard	[no test files]
+ok  	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/app	0.617s
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/dictation	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/dictionary	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/freemonth	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/help	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/insights	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/invite	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/notetaker	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/scratchpad	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/settings	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/snippets	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/style	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/transforms	[no test files]
+?   	github.com/chinmay-sawant/ownframe/examples/wispr-flow-dashboard/voice	[no test files]

@@ -1,6 +1,7 @@
 package atspi
 
 import (
+	"context"
 	"encoding/binary"
 	"testing"
 
@@ -32,7 +33,7 @@ func callView(view *serverView, path, iface, member string, body []byte) callRes
 }
 
 func callViewFrom(view *serverView, sender, path, iface, member string, body []byte) callResult {
-	return view.handle(&dbusMsg{
+	return view.handle(context.Background(), &dbusMsg{
 		msgType: dbusTypeMethodCall,
 		path:    path,
 		iface:   iface,

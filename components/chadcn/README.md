@@ -183,8 +183,8 @@ and needs a migration for every constructor.
 
 The host owns everything that changes. Constructors take the current state and
 return a fresh tree. A click runs a Go callback, the callback updates host
-state, and `ui.View.Update` rebuilds the tree. There is no component lifecycle,
-hidden state, or global registry.
+state, and a view update rebuilds the tree. Each interaction controller belongs to
+one view; there is no global registry.
 
 Use stable IDs on interactive controls. The component derives part IDs from the
 base ID, such as `id + "-panel"`. Do not generate random IDs.
@@ -198,8 +198,89 @@ popup should keep its content mounted. The host can toggle the component's
 `--hovered` class with a local page patch, avoiding a full view rebuild. Keep
 `Open` for popups that need programmatic state.
 
-Overlay focus, Escape handling, and click-away stay with the host. Use
-`DialogFocus` to scope Tab traversal and restore focus when the panel closes.
+For tabs, sliders, Dialog, and AlertDialog, use `Interactions` below to share
+input mechanics. Other overlay families retain their existing host wiring.
+`DialogFocus` remains available for manually managed modal hosts.
+
+## Shared interactions
+
+Create one controller per view. Pass it to each managed constructor while
+building the tree. Install application callbacks through `Handle` once, and
+rebuild through `Update` so registrations follow the rendered controls.
+
+```go
+input := chadcn.NewInteractions()
+active, value, open := "overview", 25.0, false
+var screen func() *ui.Element
+screen = func() *ui.Element {
+    return ui.Div().Children(
+        chadcn.Tabs(chadcn.TabsOptions{
+            Interactions: input, Active: active,
+            Items: []chadcn.TabItem{
+                {ID: "overview", Label: "Overview"},
+                {ID: "details", Label: "Details"},
+            },
+            OnSelect: func(ctx context.Context, id string) error {
+                active = id
+                return input.Update(ctx, screen)
+            },
+        }),
+        chadcn.Slider(chadcn.SliderOptions{
+            Interactions: input, ID: "volume", Label: "Volume", Value: value,
+            OnValueChange: func(ctx context.Context, next float64) error {
+                value = next
+                return input.Update(ctx, screen)
+            },
+        }),
+        chadcn.Dialog(chadcn.DialogOptions{
+            Interactions: input, ID: "edit", Open: open, Title: "Edit",
+            Trigger: chadcn.Button("Open", chadcn.ButtonOptions{}),
+            OnOpenChange: func(ctx context.Context, next bool) error {
+                open = next
+                return input.Update(ctx, screen)
+            },
+        }, ui.Input().ID("edit-name")),
+    )
+}
+view, err := input.Mount(ctx, ownframe.Config{
+    Width: 640, Height: 480, Theme: chadcn.Light + chadcn.Stylesheet,
+}, screen)
+if err != nil { return err }
+input.Handle(ownframe.Handlers{KeyDown: handleApplicationKey})
+// Use view.Page with Run. Call input.Close(ctx) on the page loop at teardown.
+_ = view
+```
+
+The host owns selected tabs, slider values, dialog open state, and the decision
+inside each callback. `Interactions` owns input routing, drag state, and modal
+focus. Builder `OnClick` callbacks and unrelated application handlers still run
+once. Do not replace them later through `Page.Handle` or `ui.View.Handle`.
+
+Horizontal tabs select automatically with Left/Right, wrap at both ends, and
+support Home/End. Up/Down reach the application. The selected tab is the only
+tab trigger in the Tab order. If the focused tab disappears, focus moves to the
+selected surviving tab in that set, or the next control when the set disappears.
+
+Sliders map pointer positions against the rendered rail. Dragging outside clamps
+to Min/Max; arrows change by Step and Home/End select the endpoints. Disabled or
+removed sliders cancel their drag. Scrolling keeps the host's normal pointer
+coordinate conversion. A vertical drag alone does not change the value. Hosts
+may patch the value, ARIA attribute, fill, and label together instead of rebuilding;
+their next rebuild must still pass the updated Value.
+
+One managed modal may be open at a time. Dialog and AlertDialog focus their first
+enabled control, contain Tab/Shift+Tab, refresh the scope after rebuilds, and
+restore the trigger on close. If the trigger disappears, focus moves to the first
+remaining control in normal Tab order. Nested or simultaneous managed modals
+return an error. Escape requests close through OnOpenChange, or a legacy Dialog
+CloseAction. Dialog preserves its configured backdrop dismissal; AlertDialog's
+backdrop remains inert. Other overlays require their existing host handling.
+
+Constructors require stable IDs and callbacks. A failed build keeps the previous
+registrations. Removal replaces the snapshot rather than accumulating handlers.
+`Close` cancels component drags and restores modal focus; later events reach only
+the installed application callbacks. Mount, Handle, Update, and Close run on the
+page loop. The controller does not create a goroutine or own the page lifecycle.
 
 ## Theming
 
@@ -237,5 +318,5 @@ go run ./examples/builder/ui-builder
 - `:disabled` and `::placeholder` do not match. Components use `[disabled]` and
   the page's placeholder attributes.
 - `:focus-visible` matches like `:focus`.
-- The engine does not apply `position: absolute` to a flex child. Overlays use
-  a block containing block or a fixed backdrop.
+- For the tested absolute-positioning scope and remaining placement limits,
+  see [positioning and limits](../../documentation/screen.md#positioning-and-limits).

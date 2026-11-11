@@ -1,0 +1,54 @@
+bash scripts/check-graphics.sh
+graphics-check: session=xvfb; DISPLAY=:0; LIBGL_ALWAYS_SOFTWARE=1
+=== RUN   TestPartialFrameLeavesTheScreen
+--- PASS: TestPartialFrameLeavesTheScreen (0.65s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.713s
+=== RUN   TestWindowRepaintPixels
+--- PASS: TestWindowRepaintPixels (0.79s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.834s
+=== RUN   TestWindowBackdropFilterReplaysFullFrame
+--- PASS: TestWindowBackdropFilterReplaysFullFrame (0.41s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.433s
+=== RUN   TestViewportScrollPixels
+--- PASS: TestViewportScrollPixels (0.46s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.499s
+=== RUN   TestViewportAnimatedReturnPixels
+--- PASS: TestViewportAnimatedReturnPixels (0.33s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.352s
+=== RUN   TestViewportDirectAnimationReturnPixels
+--- PASS: TestViewportDirectAnimationReturnPixels (0.37s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.403s
+=== RUN   TestWindowStaticEvents
+--- PASS: TestWindowStaticEvents (3.15s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	3.176s
+=== RUN   TestWindowIdleDeadline
+--- PASS: TestWindowIdleDeadline (1.04s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	1.118s
+=== RUN   TestWindowDevToolsIdle
+--- PASS: TestWindowDevToolsIdle (4.19s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	4.270s
+=== RUN   TestSidebarHoverPixels
+--- PASS: TestSidebarHoverPixels (2.88s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/loglens	2.906s
+=== RUN   TestDrawPaintsVerticalThumb
+--- PASS: TestDrawPaintsVerticalThumb (0.35s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.371s
+=== RUN   TestGPUVisibleParity
+--- PASS: TestGPUVisibleParity (2.07s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/replay	2.096s
+=== RUN   TestScrollbarThumbStaysOnePiece
+--- PASS: TestScrollbarThumbStaysOnePiece (1.37s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/jmap-mail	1.398s

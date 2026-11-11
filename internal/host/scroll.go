@@ -14,3 +14,9 @@ type ScrollRequester interface {
 	// false when the page has none.
 	TakeScroll() (Scroll, bool)
 }
+
+// ScrollViewportObserver consumes logical viewport geometry after host zoom.
+// It supplies the scroll space used by engine sticky paint and hit placement.
+type ScrollViewportObserver interface {
+	SetScrollViewport(x, y, width, height float64)
+}

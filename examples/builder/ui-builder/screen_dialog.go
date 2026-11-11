@@ -63,7 +63,8 @@ func (a *builderApp) dialogOverlay() *ui.Element {
 		return nil
 	}
 	return chadcn.Dialog(chadcn.DialogOptions{
-		BackdropID: "dialog-backdrop", PanelID: "dialog-panel", Label: "Confirm action", CloseAction: "dialog:close", Width: ui.Px(420),
+		Interactions: a.interactions,
+		BackdropID:   "dialog-backdrop", PanelID: "dialog-panel", Label: "Confirm action", CloseAction: "dialog:close", Width: ui.Px(420),
 	},
 		ui.Div().Display(ui.DisplayFlex).JustifyContent(ui.JustifyContentSpaceBetween).
 			AlignItems(ui.AlignItemsCenter).Padding(ui.Edges(ui.Px(16), ui.Px(20))).

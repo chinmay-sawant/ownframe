@@ -49,9 +49,14 @@ func (p *Page) Clamp(width, height int) (int, int) {
 // Clamp selects the minimum for the current host and canvas policy.
 func (p *Page) SetSize(width, height int) {
 	w, h := p.Clamp(width, height)
-	if w != p.width || h != p.height {
-		p.width, p.height = w, h
-		p.formDirty = true
+	if w == p.width && h == p.height {
+		return
+	}
+	p.width, p.height = w, h
+	// A viewport callback can update template data even when it declines a
+	// scroll redraw. Pages without one only need the new layout dimensions.
+	if p.scroll.Windowing.On && p.scroll.Windowing.Fn != nil {
+		p.markFormDirty()
 	}
 }
 

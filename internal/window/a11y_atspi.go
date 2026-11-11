@@ -7,12 +7,14 @@ import (
 
 	"github.com/chinmay-sawant/ownframe/internal/atspi"
 	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // a11yHost holds the Linux AT-SPI publisher. The render loop snapshots a
 // changed tree and hands it to one worker, so a slow D-Bus call never
 // stalls Update.
 type a11yHost struct {
+	actions   *atspi.Actions
 	pub       *atspi.Publisher
 	gen       uint64
 	published bool
@@ -35,7 +37,11 @@ type a11yJob struct {
 }
 
 func (s *shell) initA11y() {
-	s.a11y.pub = atspi.NewPublisher(atspi.NewLiveBus())
+	s.a11y.actions = atspi.NewActions(s.ctx, func() {
+		//nolint:staticcheck // reason: concurrent-safe wake for an AT request while the desktop is parked in WaitEvents.
+		ebiten.ScheduleFrame()
+	})
+	s.a11y.pub = atspi.NewPublisher(atspi.NewLiveBus(s.a11y.actions.Request))
 	s.a11y.jobs = make(chan a11yJob, 1)
 	s.a11y.done = make(chan struct{})
 	if s.ctxDone != nil {
@@ -57,6 +63,9 @@ func (s *shell) watchA11y(ctxDone <-chan struct{}) {
 func (s *shell) closeA11y() {
 	a := &s.a11y
 	a.closeOnce.Do(func() {
+		if a.actions != nil {
+			a.actions.Close()
+		}
 		a.mu.Lock()
 		a.closed = true
 		a.mu.Unlock()
@@ -71,6 +80,15 @@ func (s *shell) closeA11y() {
 		a.shutdown = true
 		a.mu.Unlock()
 	})
+}
+
+func (s *shell) runA11yActions() {
+	if s.a11y.actions == nil {
+		return
+	}
+	if acc, ok := s.app.(host.Accessible); ok {
+		s.a11y.actions.Drain(acc.AccessibilityPerform)
+	}
 }
 
 func (s *shell) syncA11y() {

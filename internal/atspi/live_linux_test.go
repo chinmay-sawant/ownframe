@@ -365,7 +365,7 @@ func TestMockDBusLifecycle(t *testing.T) {
 	srv := startMockDBusServer(t)
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err != nil {
 		t.Fatalf("claim: %v", err)
 	}
@@ -477,7 +477,7 @@ func TestMockDBusPublisherIntegration(t *testing.T) {
 	srv := startMockDBusServer(t)
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	p := NewPublisher(bus)
 	tree := sampleTree()
 
@@ -506,7 +506,7 @@ func TestMockDBusIgnoresQueuedNameAcquired(t *testing.T) {
 	})
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err != nil {
 		t.Fatalf("claim with queued signal: %v", err)
 	}
@@ -521,7 +521,7 @@ func TestMockDBusEmbedError(t *testing.T) {
 	})
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err != nil {
 		t.Fatalf("claim: %v", err)
 	}
@@ -537,7 +537,7 @@ func TestMockDBusAuthRejected(t *testing.T) {
 	})
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err == nil {
 		t.Fatal("expected claim to fail when auth is rejected")
 	}
@@ -553,7 +553,7 @@ func TestMockDBusHelloError(t *testing.T) {
 	})
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err == nil {
 		t.Fatal("expected claim to fail when Hello fails")
 	}
@@ -569,7 +569,7 @@ func TestMockDBusClaimFailed(t *testing.T) {
 	})
 	t.Setenv("AT_SPI_BUS_ADDRESS", srv.addr)
 
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if err := bus.Claim(DefaultName); err == nil {
 		t.Fatal("expected claim to fail when the name exists")
 	}

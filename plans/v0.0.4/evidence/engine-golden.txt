@@ -1,0 +1,2 @@
+go test -p 2 -parallel 2 ./layout/ -count=1 -run 'TestDisplay' -timeout 180s
+ok  	github.com/chinmay-sawant/blinkless/layout	0.120s

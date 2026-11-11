@@ -1,6 +1,7 @@
 package atspi
 
 import (
+	"context"
 	"math"
 	"os"
 	"sort"
@@ -66,6 +67,7 @@ func errResult(name, text string) callResult {
 }
 
 type serverView struct {
+	actions    ActionHandler
 	app        Application
 	objects    map[string]Object
 	childIndex map[string]int32
@@ -181,7 +183,7 @@ func textCapable(obj Object) bool {
 	return obj.Value != ""
 }
 
-func (v *serverView) handle(msg *dbusMsg) callResult {
+func (v *serverView) handle(ctx context.Context, msg *dbusMsg) callResult {
 	if msg.path == atspiCachePath {
 		switch msg.iface {
 		case atspiCache:
@@ -207,11 +209,11 @@ func (v *serverView) handle(msg *dbusMsg) callResult {
 	case atspiApplication:
 		return v.handleApplication(msg)
 	case atspiComponent:
-		return v.handleComponent(msg)
+		return v.handleComponent(ctx, msg)
 	case atspiText:
 		return v.handleText(msg)
 	case atspiAction:
-		return v.handleAction(msg)
+		return v.handleAction(ctx, msg)
 	}
 	return errResult("org.freedesktop.DBus.Error.UnknownInterface", "unknown interface "+msg.iface)
 }
@@ -533,7 +535,7 @@ func (v *serverView) handleApplication(msg *dbusMsg) callResult {
 	return errResult("org.freedesktop.DBus.Error.UnknownMethod", "unknown method "+msg.member)
 }
 
-func (v *serverView) handleComponent(msg *dbusMsg) callResult {
+func (v *serverView) handleComponent(ctx context.Context, msg *dbusMsg) callResult {
 	obj, ok := v.object(msg.path)
 	if !ok {
 		return errResult("org.freedesktop.DBus.Error.UnknownObject", "unknown object "+msg.path)
@@ -602,7 +604,7 @@ func (v *serverView) handleComponent(msg *dbusMsg) callResult {
 		e.int16Val(-1)
 		return okResult("n", e.bytes())
 	case "GrabFocus":
-		return okResult("b", encodeBoolValue(false))
+		return v.performAction(ctx, obj, ActionGrabFocus)
 	case "GetAlpha":
 		return okResult("d", func() []byte {
 			var e dbusEncoder
@@ -689,7 +691,7 @@ func (v *serverView) hitTest(obj Object, x, y int32, coord uint32) Object {
 	return obj
 }
 
-func (v *serverView) handleAction(msg *dbusMsg) callResult {
+func (v *serverView) handleAction(ctx context.Context, msg *dbusMsg) callResult {
 	obj, ok := v.object(msg.path)
 	if !ok {
 		return errResult("org.freedesktop.DBus.Error.UnknownObject", "unknown object "+msg.path)
@@ -734,7 +736,11 @@ func (v *serverView) handleAction(msg *dbusMsg) callResult {
 		}
 		return okResult("a(sss)", encodeActionArray(actions))
 	case "DoAction":
-		return okResult("b", encodeBoolValue(false))
+		index, res := indexArg()
+		if res.errName != "" {
+			return res
+		}
+		return v.performAction(ctx, obj, obj.Actions[index])
 	}
 	return errResult("org.freedesktop.DBus.Error.UnknownMethod", "unknown method "+msg.member)
 }

@@ -84,9 +84,6 @@ func (a *builderApp) overCenterViewport(x, y float64) bool {
 }
 
 func (a *builderApp) startCenterScrollDrag(ctx context.Context, box ownframe.Box) (bool, error) {
-	if a.sliderDragBox(box) {
-		return a.claimSliderDrag(ctx, box)
-	}
 	if a.scrollInputBlocked() || box.ID != builderScrollThumbID {
 		return false, nil
 	}
@@ -188,7 +185,7 @@ func (a *builderApp) refreshOnResize(ctx context.Context) error {
 	before := a.center.Metrics()
 	if resized {
 		a.catalogGeoMeasured = false
-		if err := a.view.Update(ctx, a.screen()); err != nil {
+		if err := a.interactions.Update(ctx, a.screen); err != nil {
 			return fmt.Errorf("update builder after resize: %w", err)
 		}
 	}
@@ -200,7 +197,7 @@ func (a *builderApp) refreshOnResize(ctx context.Context) error {
 	a.updateCenterScrollMetrics()
 	a.centerMeasurePending = false
 	if before != a.center.Metrics() {
-		if err := a.view.Update(ctx, a.screen()); err != nil {
+		if err := a.interactions.Update(ctx, a.screen); err != nil {
 			return fmt.Errorf("update builder scrollbar: %w", err)
 		}
 	}

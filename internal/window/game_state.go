@@ -41,10 +41,11 @@ type shell struct {
 	// so no watcher is started for hosts that cannot observe cancellation.
 	ctxDone <-chan struct{}
 	// cancel releases ctx; set once with ctx, never replaced.
-	cancel   context.CancelFunc
-	img      *ebiten.Image
-	scaleBuf *ebiten.Image
-	display  *layout.Display
+	cancel         context.CancelFunc
+	img            *ebiten.Image
+	scaleBuf       *ebiten.Image
+	display        *layout.Display
+	viewportSticky bool
 	// drawSyncErr is a sync failure from Draw. Update reports it, because
 	// Draw cannot return an error.
 	drawSyncErr  error

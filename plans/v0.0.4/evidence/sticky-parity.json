@@ -1,0 +1,71 @@
+{
+  "status": "passed",
+  "comparison": "RGBA pixel equality",
+  "steps": [
+    {
+      "step": 0,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 1,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 2,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 3,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 4,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 5,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 6,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    },
+    {
+      "step": 9,
+      "size": [
+        200,
+        100
+      ],
+      "different_pixels": 0
+    }
+  ],
+  "scope": "Unzoomed solid-color fixture; native zoom has separate pixel and hit assertions"
+}
