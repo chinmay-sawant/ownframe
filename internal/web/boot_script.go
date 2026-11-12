@@ -1,12 +1,14 @@
 package web
 
 // bootScript runs in the application document itself. There is no iframe.
-// It posts field values and clicks to the page and patches the document
-// when the server redraws. The state poll waits 100 milliseconds.
+// It posts field values and clicks to the page and morphs the body in place
+// when the server redraws. A non-zero audioGen on GET /state points the
+// preview audio element at /audio. The state poll waits 100 milliseconds.
 const bootScript = `"use strict";
 (function () {
   var queue = Promise.resolve();
   var lastGen = null;
+  var lastAudio = 0;
   var domScheduled = false;
   // Milliseconds between GET /state polls.
   var pollMs = 100;
@@ -23,7 +25,8 @@ const bootScript = `"use strict";
       body: body,
       credentials: "same-origin"
     }).then(function (resp) {
-      if (resp && resp.ok) { return loadDom(); }
+      if (!(resp && resp.ok)) { return; }
+      return loadDom().then(pullState);
     }).catch(function () {});
   }
 
@@ -70,33 +73,8 @@ const bootScript = `"use strict";
     return el.contains(active);
   }
 
-  function inBody(el) {
-    return !!el && !!document.body && el !== document.body && el !== document.documentElement &&
-      document.body.contains(el);
-  }
-
-  function ancestorReplaced(el, replaced) {
-    var parent = el.parentElement;
-    while (parent) {
-      if (parent.id && replaced[parent.id]) { return true; }
-      parent = parent.parentElement;
-    }
-    return false;
-  }
-
-  function placeNew(fresh) {
-    if (!document.body) { return; }
-    var parent = fresh.parentElement;
-    var mount = document.body;
-    while (parent) {
-      if (parent.id) {
-        var found = document.getElementById(parent.id);
-        if (inBody(found)) { mount = found; break; }
-      }
-      parent = parent.parentElement;
-    }
-    if (mount === document.documentElement) { mount = document.body; }
-    mount.appendChild(fresh.cloneNode(true));
+  function keepFocusAttr(el) {
+    return !!el && el === document.activeElement;
   }
 
   // syncStyles copies stylesheet text from the new head, then keeps
@@ -141,36 +119,216 @@ const bootScript = `"use strict";
     if (themeEl && themeEl.parentNode === head) { themeEl.remove(); }
   }
 
-  function patchBody(parsed) {
-    if (!document.body || !parsed.body) { return; }
-    var replaced = {};
-    var nodes = parsed.body.querySelectorAll("[id]");
+  function sameKind(cur, next) {
+    if (!cur || !next || cur.nodeType !== next.nodeType) { return false; }
+    if (cur.nodeType === 1 && cur.tagName !== next.tagName) { return false; }
+    return true;
+  }
+
+  function syncAttrs(cur, next) {
+    var active = keepFocusAttr(cur);
+    var keepValue = isActiveField(cur);
+    var seen = Object.create(null);
+    var attrs = next.attributes;
     var i;
-    for (i = 0; i < nodes.length; i++) {
-      var fresh = nodes[i];
-      var id = fresh.id;
-      if (!id || ancestorReplaced(fresh, replaced)) { continue; }
-      var cur = document.getElementById(id);
-      if (!inBody(cur)) {
-        if (cur) { continue; }
-        placeNew(fresh);
-        replaced[id] = true;
+    for (i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
+      var name = attr.name;
+      seen[name] = true;
+      if (active && name === "data-ownframe-focus") { continue; }
+      if (keepValue && name === "value") { continue; }
+      if (cur.getAttribute(name) !== attr.value) { cur.setAttribute(name, attr.value); }
+    }
+    var own = cur.attributes;
+    for (i = own.length - 1; i >= 0; i--) {
+      var have = own[i].name;
+      if (seen[have]) { continue; }
+      if (active && have === "data-ownframe-focus") { continue; }
+      if (keepValue && have === "value") { continue; }
+      cur.removeAttribute(have);
+    }
+  }
+
+  // Unfocused controls adopt the parsed value. Replacing the node would
+  // drop it; setting the attribute alone leaves a dirty field unchanged.
+  function syncControl(cur, next) {
+    var tag = cur.tagName;
+    if (tag === "INPUT") {
+      var kind = (cur.type || "").toLowerCase();
+      if (kind === "checkbox" || kind === "radio") {
+        if (cur.checked !== next.checked) { cur.checked = next.checked; }
+        return;
+      }
+      if (kind === "file") { return; }
+      if (cur.value !== next.value) { cur.value = next.value; }
+      return;
+    }
+    if (tag === "TEXTAREA") {
+      if (cur.value !== next.value) { cur.value = next.value; }
+      return;
+    }
+    if (tag === "SELECT") {
+      if (cur.multiple) { return; }
+      if (cur.value !== next.value) { cur.value = next.value; }
+      return;
+    }
+    if (tag === "OPTION" && cur.selected !== next.selected) { cur.selected = next.selected; }
+  }
+
+  function atOrAfter(parent, node, index) {
+    var kids = parent.childNodes;
+    var n;
+    for (n = index; n < kids.length; n++) {
+      if (kids[n] === node) { return true; }
+    }
+    return false;
+  }
+
+  function insertAt(parent, node, index) {
+    var before = parent.childNodes[index] || null;
+    if (before) { parent.insertBefore(node, before); }
+    else { parent.appendChild(node); }
+  }
+
+  // Moving a focused field detaches it for a moment and Chrome blurs it.
+  // Put the caret back on the same node with the same selection.
+  function moveChild(parent, node, index) {
+    var kids = parent.childNodes;
+    if (kids[index] === node) { return; }
+    var active = document.activeElement;
+    var keep = null;
+    var sel = null;
+    if (isActiveField(active) && (active === node || (node.nodeType === 1 && node.contains(active)))) {
+      keep = active;
+      try {
+        sel = {start: active.selectionStart, end: active.selectionEnd, dir: active.selectionDirection};
+      } catch (err) {
+        sel = null;
+      }
+    }
+    var from = -1;
+    var n;
+    for (n = 0; n < kids.length; n++) {
+      if (kids[n] === node) { from = n; break; }
+    }
+    if (from < 0) {
+      insertAt(parent, node, index);
+    } else {
+      var at = index;
+      if (from < at) { at++; }
+      var before = parent.childNodes[at] || null;
+      if (before) { parent.insertBefore(node, before); }
+      else { parent.appendChild(node); }
+    }
+    if (!keep || document.activeElement === keep) { return; }
+    keep.focus();
+    if (!sel) { return; }
+    try { keep.setSelectionRange(sel.start, sel.end, sel.dir); }
+    catch (err) {}
+  }
+
+  function canPositionMatch(node, want, pending) {
+    if (!sameKind(node, want)) { return false; }
+    if (node.nodeType === 1 && node.id && pending[node.id]) { return false; }
+    return true;
+  }
+
+  function forget(match, want, byId, pending) {
+    if (match.nodeType === 1 && match.id) {
+      delete byId[match.id];
+      delete pending[match.id];
+    }
+    if (want.nodeType === 1 && want.id) {
+      delete byId[want.id];
+      delete pending[want.id];
+    }
+  }
+
+  function morphNode(cur, next) {
+    if (!cur || !next) { return; }
+    if (cur.nodeType === 3 || cur.nodeType === 4) {
+      if (cur.data !== next.data) { cur.replaceWith(document.createTextNode(next.data)); }
+      return;
+    }
+    if (cur.nodeType === 8) {
+      if (cur.data !== next.data) { cur.replaceWith(document.createComment(next.data)); }
+      return;
+    }
+    if (cur.nodeType !== 1 || next.nodeType !== 1 || cur.tagName !== next.tagName) {
+      if (isActiveField(cur) || holdsActiveField(cur)) { return; }
+      cur.replaceWith(next.cloneNode(true));
+      return;
+    }
+    syncAttrs(cur, next);
+    if (isActiveField(cur)) { return; }
+    morphChildren(cur, next);
+    syncControl(cur, next);
+  }
+
+  // Match an element id anywhere in this sibling list, then by position.
+  // A node with no match is inserted at that index, not on document.body.
+  function morphChildren(curParent, nextParent) {
+    var nextKids = Array.prototype.slice.call(nextParent.childNodes);
+    var pending = Object.create(null);
+    var byId = Object.create(null);
+    var i;
+    var live = curParent.childNodes;
+    for (i = 0; i < live.length; i++) {
+      var have = live[i];
+      if (have.nodeType === 1 && have.id && !byId[have.id]) { byId[have.id] = have; }
+    }
+    for (i = 0; i < nextKids.length; i++) {
+      var marked = nextKids[i];
+      if (marked.nodeType === 1 && marked.id) { pending[marked.id] = true; }
+    }
+
+    var index = 0;
+    for (i = 0; i < nextKids.length; i++) {
+      var want = nextKids[i];
+      var match = null;
+      if (want.nodeType === 1 && want.id) {
+        var found = byId[want.id];
+        if (found && found.parentNode === curParent && atOrAfter(curParent, found, index)) {
+          match = found;
+        }
+      }
+      if (!match) {
+        var at = curParent.childNodes[index] || null;
+        if (canPositionMatch(at, want, pending)) { match = at; }
+      }
+      if (!match) {
+        insertAt(curParent, want.cloneNode(true), index);
+        index++;
         continue;
       }
-      if (cur === document.documentElement || cur === document.body) { continue; }
-      if (cur.outerHTML === fresh.outerHTML) { continue; }
-      // Keep the focused field, and do not swap an ancestor that contains it.
-      if (holdsActiveField(cur)) { continue; }
-      cur.replaceWith(fresh.cloneNode(true));
-      replaced[id] = true;
+      if (!sameKind(match, want)) {
+        if (isActiveField(match) || holdsActiveField(match)) {
+          insertAt(curParent, want.cloneNode(true), index);
+          index++;
+          continue;
+        }
+        moveChild(curParent, match, index);
+        match.replaceWith(want.cloneNode(true));
+        forget(match, want, byId, pending);
+        index++;
+        continue;
+      }
+      forget(match, want, byId, pending);
+      moveChild(curParent, match, index);
+      morphNode(match, want);
+      index++;
     }
-    var live = Array.prototype.slice.call(document.body.querySelectorAll("[id]"));
-    for (i = 0; i < live.length; i++) {
-      var old = live[i];
-      if (!old.id || replaced[old.id]) { continue; }
-      if (parsed.getElementById(old.id)) { continue; }
-      if (holdsActiveField(old)) { continue; }
-      old.remove();
+    dropExtra(curParent, index);
+  }
+
+  function dropExtra(parent, index) {
+    while (parent.childNodes[index]) {
+      var extra = parent.childNodes[index];
+      if (isActiveField(extra) || (extra.nodeType === 1 && holdsActiveField(extra))) {
+        index++;
+        continue;
+      }
+      extra.remove();
     }
   }
 
@@ -183,13 +341,97 @@ const bootScript = `"use strict";
     } catch (err) {
       parsed = null;
     }
-    if (!parsed || !parsed.body) {
+    if (!parsed || !parsed.body || !document.body) {
       window.scrollTo(scrollX, scrollY);
       return;
     }
     syncStyles(data.theme, parsed);
-    patchBody(parsed);
+    ensureAudio();
+    morphNode(document.body, parsed.body);
+    keepAudio();
     window.scrollTo(scrollX, scrollY);
+  }
+
+  // The player lives on the head so a body morph cannot drop it.
+  // audioGen 0 means there is no clip.
+  function ensureAudio() {
+    var nodes = document.querySelectorAll("audio#ownframe-audio");
+    var el = nodes.length ? nodes[0] : null;
+    var i;
+    for (i = 1; i < nodes.length; i++) { nodes[i].remove(); }
+    if (!el) {
+      el = document.createElement("audio");
+      el.id = "ownframe-audio";
+    }
+    el.controls = false;
+    el.removeAttribute("controls");
+    var head = document.head || document.documentElement;
+    if (head && el.parentNode !== head) { head.appendChild(el); }
+    return el;
+  }
+
+  function playEl(el) {
+    if (!el || typeof el.play !== "function") { return; }
+    try {
+      var pending = el.play();
+      if (pending && typeof pending.catch === "function") {
+        pending.catch(function () {});
+      }
+    } catch (err) {}
+  }
+
+  function sameClip(el, gen) {
+    var rel = "/audio?v=" + gen;
+    if ((el.getAttribute("src") || "") === rel) { return true; }
+    try {
+      return el.src === new URL(rel, window.location.href).href;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  var lastPlaying = false;
+  var lastVolume = 1;
+
+  function clampVol(v) {
+    if (typeof v !== "number" || !isFinite(v)) { return lastVolume; }
+    if (v < 0) { return 0; }
+    if (v > 1) { return 1; }
+    return v;
+  }
+
+  // applyTransport follows the page. A paused page pauses the element.
+  // Volume is 0 to 1, so a bar at 10% is 0.1 here. A new clip does not
+  // start until the page says it is playing.
+  function applyTransport(state) {
+    var el = ensureAudio();
+    if (!el || !state) { return; }
+    if (typeof state.audioVolume === "number") {
+      lastVolume = clampVol(state.audioVolume);
+    }
+    el.volume = lastVolume;
+    var playing = state.audioPlaying === true;
+    lastPlaying = playing;
+    var gen = typeof state.audioGen === "number" && isFinite(state.audioGen) ? state.audioGen : 0;
+    if (gen && gen !== lastAudio) {
+      lastAudio = gen;
+      el.src = "/audio?v=" + gen;
+    }
+    if (!playing || !lastAudio) {
+      el.pause();
+      return;
+    }
+    if (el.paused) { playEl(el); }
+  }
+
+  function syncAudio(state) { applyTransport(state); }
+
+  function keepAudio() {
+    var el = ensureAudio();
+    if (!el) { return; }
+    el.volume = lastVolume;
+    if (lastAudio && !sameClip(el, lastAudio)) { el.src = "/audio?v=" + lastAudio; }
+    if (!lastPlaying) { el.pause(); }
   }
 
   function onInput(ev) {
@@ -228,6 +470,13 @@ const bootScript = `"use strict";
   }
 
   function onClick(ev) {
+    var player = ensureAudio();
+    if (player) {
+      player.volume = lastVolume;
+      // Inside the click so the browser allows playback. pullState pauses
+      // again when the page is not playing.
+      if (player.src) { playEl(player); }
+    }
     var el = eventElement(ev);
     if (!el) { return; }
     if (el.tagName === "TEXTAREA" || el.tagName === "SELECT") { return; }
@@ -271,6 +520,15 @@ const bootScript = `"use strict";
     el.removeAttribute("data-ownframe-focus");
   }
 
+  function pullState() {
+    return fetch("/state", { method: "GET", cache: "no-store", credentials: "same-origin" })
+      .then(function (resp) {
+        if (!resp || !resp.ok) { return null; }
+        return resp.json();
+      })
+      .then(function (state) { if (state) { applyTransport(state); } });
+  }
+
   function poll() {
     fetch("/state", { method: "GET", cache: "no-store", credentials: "same-origin" })
       .then(function (resp) {
@@ -278,6 +536,7 @@ const bootScript = `"use strict";
         return resp.json();
       })
       .then(function (state) {
+        if (state) { syncAudio(state); }
         if (!state || typeof state.generation !== "number") { return; }
         if (state.generation === lastGen) { return; }
         scheduleDom();
@@ -291,10 +550,14 @@ const bootScript = `"use strict";
   document.addEventListener("click", onClick);
   document.addEventListener("focusin", onFocusIn);
   document.addEventListener("focusout", onFocusOut);
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", poll);
-  } else {
+  function start() {
+    ensureAudio();
     poll();
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
   }
 })();
 `

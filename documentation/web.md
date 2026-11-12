@@ -1,7 +1,8 @@
 # Web mode
 
-`Serve` is a developer picture preview. It binds to loopback by default, has
-no audio, and mutates page state without authentication. It ticks a page that
+`Serve` is a developer picture preview. It binds to loopback by default and
+mutates page state without authentication. It creates the same audio context
+as `Run`, so a page that plays sound is heard on this machine. It ticks a page that
 registers a tick callback, forwards browser keys, hover, wheel events, and clicks, and
 refreshes the image when the page reports damage. It is not a 1.0 ship target.
 Native hosts are in [platforms.md](platforms.md).
@@ -30,8 +31,10 @@ field, and a reset button on one page.
 |-------|--------------|
 | `GET /` | Returns the application HTML document when the page has an executed source. Text and password fields are real input elements. Textareas and selects are real elements. The boot script in the document posts input and clicks to the server. `Cache-Control: no-store`. Append `?dom=0` to force the PNG shell. A page with no executed source gets that PNG shell too: the frame image, a usemap, the key, wheel, and click script, and the no-JS text and backspace forms. |
 | `GET /frame.png` | Returns the PNG with `Cache-Control: no-store`, or 404 `no frame` when the page has no picture. Used when the live document is off or the page has no executed source. |
+| `GET /audio` | Returns the clip a page published with `SetAudio`, with `Cache-Control: no-store`. The content type is the stored type when it starts with `audio/`. Otherwise the bytes are sniffed: WAV (`RIFF` then `WAVE`) is `audio/wav`, MP3 (`ID3` or frame sync `FF FB`, `FF F3`, or `FF F2`) is `audio/mpeg`, and Ogg (`OggS`) is `audio/ogg`. 404 when the page has no clip. |
+| `GET /{name}` | Returns the bytes any page registered with `SetImage` under that source name, so `url("logo")` and `<img src="logo">` load. The path may contain slashes, as in `emoji/1f602`. The content type is sniffed, including PNG, JPEG, GIF, WEBP, BMP, icon, SVG, AVIF, and HEIC. A format the sniffer does not know is still returned. `Cache-Control: no-store`. 404 when the name is missing or contains `.` or `..`. Fixed routes above win over this one. |
 | `GET /dom` | Returns JSON `{generation,width,height,html,theme,fallback}` with `Cache-Control: no-store`. `html` is the same document without the boot script, with live values already merged into real controls. The boot script patches id-anchored elements from it and does not replace the focused field. `theme` is the raw theme stylesheet. `fallback` true means the PNG shell. |
-| `GET /state` | Returns JSON `{generation,width,height,ticking}` with `Cache-Control: no-store`. The shell polls it. When the generation moves, the boot script fetches `/dom` and patches the live document. The PNG shell swaps the frame. It exposes no boxes or field text. |
+| `GET /state` | Returns JSON `{generation,width,height,ticking,audioGen,audioPlaying,audioVolume}` with `Cache-Control: no-store`. The shell polls it. When the generation moves, the boot script fetches `/dom` and patches the live document. The PNG shell swaps the frame. `audioGen` is the published clip generation, or 0 when the page has no clip. `audioPlaying` and `audioVolume` (0 to 1) drive the browser player, so pause and the volume level follow the page. It exposes no boxes or field text. |
 | `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{InsecureAllowDebugState: true}`; plain `Serve` returns 404. |
 | `POST /click` | Accepts `id` or `action`, and optional `ox`, `oy`, `w`, `h` that place the point inside the element's box. The PNG shell can still send `x` and `y` in CSS pixels. The handler places the caret at the point before the click handler runs. Requires a matching `Origin` (scheme and host); a missing `Origin` is rejected. 400 `bad coordinates` when either fails to parse, 403 `forbidden` on origin mismatch, 303 to `/` on success, generic 500 when the page returns an error. Query parameters are bounded. |
 | `POST /change` | Reads urlencoded `id` plus optional `value` or `checked` (`1`/`true`). A value replaces the whole control value and runs `BeforeEdit` and `Change`, then redraws. The live document does not stream text as one `/type` per key. `/type` and `/backspace` remain for the PNG shell. `checked` updates a checkbox or radio. An id alone moves focus. Requires a matching `Origin`. 400 `bad id` or `bad value`, 403 on origin mismatch, 204 on success. |
@@ -40,6 +43,8 @@ field, and a reset button on one page.
 | `POST /key` | Reads `key` and `down` (`1` or `0`), plus optional `shift=1` for Tab. Special names only: arrows, page keys, Home, End, Enter, Escape, Space, Tab, Backspace, Delete, and modifiers. Tab calls `host.Focuser`; other names reach `KeyDown`/`KeyUp`. 400 `bad key` or `bad down`, 403 on origin mismatch, 204 on success. |
 | `POST /hover` | Reads finite viewport `x` and `y`, maps the point through the scroll offset, and forwards hover. Requires a matching Origin. |
 | `POST /wheel` | Reads finite `x`, `y`, `dx`, `dy` floats and calls `host.WheelHandler.Wheel`. Unhandled events pan the viewport through overflowing content. 400 `bad wheel`, 403 on origin mismatch, 204 on success. |
+
+A page publishes the clip with `SetAudio` and the browser plays it.
 
 One mutex serializes the handlers and the tick loop, so two requests never
 touch the page at once.
@@ -93,7 +98,7 @@ dirty state or the generation changes. Cancel the context to stop it.
 
 `Serve` is not the native window loop:
 
-- No audio context ([features.md](features.md), [window.md](window.md)).
+- The desktop audio context plays on this machine and is not forwarded to the browser ([features.md](features.md), [window.md](window.md)).
 - No clipboard, undo, redo, select-all, delete-word, or submit route. The
   live document's text route for fields is `/change`. `/type` and `/backspace`
   remain for the picture shell. `/key` still takes the special keys.

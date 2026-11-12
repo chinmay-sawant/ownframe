@@ -18,6 +18,7 @@ type App struct {
 	lastVolume     int
 	audio          *music.Engine
 	audioKey       string
+	clipKey        string
 	logger         *os.File
 	navFocusStates map[string]navFocusState
 	runtime        *RuntimeBehaviorHelper

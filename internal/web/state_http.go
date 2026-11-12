@@ -13,6 +13,14 @@ type frameState struct {
 	Width      int    `json:"width"`
 	Height     int    `json:"height"`
 	Ticking    bool   `json:"ticking"`
+	// AudioGen is the published clip generation, or 0 when the screen has
+	// no Audio method or no clip.
+	AudioGen uint64 `json:"audioGen"`
+	// AudioPlaying is whether the preview should be playing that clip.
+	AudioPlaying bool `json:"audioPlaying"`
+	// AudioVolume is the preview loudness from 0 to 1. It is 1 until the
+	// page publishes a level.
+	AudioVolume float64 `json:"audioVolume"`
 }
 
 // state answers GET /state with a small snapshot. frameGen is the number of
@@ -35,11 +43,26 @@ func (s *server) state(w http.ResponseWriter, r *http.Request) {
 // frameSnapshotLocked builds the state while the caller holds s.mu.
 func (s *server) frameSnapshotLocked() frameState {
 	width, height := s.app.Size()
+	playing, volume := playbackState(s.app)
 
 	return frameState{
-		Generation: s.app.Generation() + s.frameGen,
-		Width:      width,
-		Height:     height,
-		Ticking:    s.ticking,
+		Generation:   s.app.Generation() + s.frameGen,
+		Width:        width,
+		Height:       height,
+		Ticking:      s.ticking,
+		AudioGen:     clipGeneration(s.app),
+		AudioPlaying: playing,
+		AudioVolume:  volume,
 	}
+}
+
+func playbackState(app any) (bool, float64) {
+	src, ok := app.(interface {
+		AudioPlayback() (playing bool, volume float64)
+	})
+	if !ok {
+		return false, 1
+	}
+
+	return src.AudioPlayback()
 }

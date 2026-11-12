@@ -65,7 +65,7 @@ These stay out of 1.0. Do not plan them as library work for this tag:
 - video
 - canvas
 - WebGL
-- `<audio>` as HTML (`Run` and `BindMobile` still create an Ebiten audio context for Go playback)
+- `<audio>` as HTML (`Run`, `BindMobile`, and `Serve` still create an Ebiten audio context for Go playback)
 
 ## Screen paint
 
@@ -300,7 +300,7 @@ These Electron pieces are not in this branch. The scan that listed them is [../p
 - An ownframe auto-updater, installer, and uploaded crash dump. Applications
   or their distribution channels own update checks and installation
   ([packaging.md](packaging.md#auto-update)).
-- Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run` and `BindMobile` create a 48 kHz Ebiten audio context, `Serve` does not ([window.md](window.md)).
+- Video, document canvas, WebGL, and a context menu were the v0.0.1 absences. The context menu shipped in v0.0.2 ([interaction.md](interaction.md)); video, document canvas, and WebGL are still out. There is no library audio API or `<audio>` element; the examples play audio through `examples/music`. `Run`, `BindMobile`, and `Serve` create a 48 kHz Ebiten audio context. In `-web` the sound comes out of this machine, not the browser tab ([window.md](window.md)).
 - UI Automation, VoiceOver, and TalkBack. Linux serves the Go tree over a live
   AT-SPI bridge, so Accerciser and Orca can inspect the window
   ([accessibility.md](accessibility.md), [atspi.md](atspi.md)). Native

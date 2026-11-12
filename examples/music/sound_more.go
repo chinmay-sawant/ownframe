@@ -4,6 +4,10 @@ import "time"
 
 // Seek moves to an absolute position inside the stream.
 func (s *Sound) Seek(at time.Duration) error {
+	if s == nil || s.player == nil {
+		return nil
+	}
+
 	if at < 0 {
 		at = 0
 	}
@@ -16,12 +20,24 @@ func (s *Sound) Seek(at time.Duration) error {
 }
 
 // SetVolume sets the stream volume from 0 to 1.
-func (s *Sound) SetVolume(volume float64) { s.player.SetVolume(clampVolume(volume)) }
+func (s *Sound) SetVolume(volume float64) {
+	if s == nil || s.player == nil {
+		return
+	}
+
+	s.player.SetVolume(clampVolume(volume))
+}
 
 // Close releases the stream. The player stops reading the source, so the
-// decoded bytes can be dropped without a gap on the next Play.
+// decoded bytes can be dropped without a gap on the next Play. A sound
+// with no player, including a nil receiver, does nothing.
 func (s *Sound) Close() error {
+	if s == nil || s.player == nil {
+		return nil
+	}
+
 	s.player.PauseAndStopReading()
+
 	return nil
 }
 

@@ -46,6 +46,9 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	mux.HandleFunc("GET /frame.png", srv.frame)
 	mux.HandleFunc("GET /state", srv.state)
 	mux.HandleFunc("GET /dom", srv.dom)
+	mux.HandleFunc("GET /audio", srv.audio)
+	// After the fixed routes. A template url("logo") asks for /logo.
+	mux.HandleFunc("GET /{img...}", srv.image)
 	if srv.debugEnabled {
 		if debugtag.Enabled {
 			mux.HandleFunc("GET /debug/state", srv.debug)

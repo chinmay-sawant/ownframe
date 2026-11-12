@@ -5,7 +5,41 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2/audio"
 )
+
+func TestWantWithoutAudioDoesNotPanic(t *testing.T) {
+	t.Parallel()
+
+	if audio.CurrentContext() != nil {
+		t.Skip("an audio context is already running")
+	}
+
+	engine := NewEngine(&fakeResolver{clip: DemoTune("quiet")})
+	engine.Want(context.Background(), "quiet", 0)
+	waitSettled(t, engine)
+	if !errors.Is(engine.Err(), ErrNoAudio) {
+		t.Fatalf("err = %v", engine.Err())
+	}
+
+	engine.Want(context.Background(), "quiet", 1)
+	waitSettled(t, engine)
+	engine.Update()
+}
+
+func waitSettled(t *testing.T, engine *Engine) {
+	t.Helper()
+
+	deadline := time.Now().Add(2 * time.Second)
+	for engine.Loading() && time.Now().Before(deadline) {
+		engine.Update()
+		time.Sleep(time.Millisecond)
+	}
+	if engine.Loading() {
+		t.Fatal("engine still loading")
+	}
+}
 
 func TestEnginePauseDuringLoad(t *testing.T) {
 	t.Parallel()
