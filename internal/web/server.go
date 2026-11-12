@@ -1,6 +1,7 @@
-// Package web shows a screen's PNG in a browser.
-// It is one way to deliver mouse, wheel, and keyboard events to a host.Screen.
-// The native window is internal/window.
+// Package web shows the application HTML document at /.
+// The PNG shell remains the fallback when the page has no executed source
+// or the request sets dom=0. Requests deliver mouse, wheel, and keyboard
+// events to a host.Screen. The native window is internal/window.
 package web
 
 import (
@@ -49,9 +50,11 @@ type server struct {
 	inflight     chan struct{}
 }
 
-// Serve listens on addr and blocks. The page at / shows the latest PNG and
-// forwards pointer, wheel, and key input to the screen. A screen that
-// implements host.Ticker is ticked at about 60 Hz while Serve runs.
+// Serve listens on addr and blocks. The page at / shows the application HTML
+// document, or the PNG shell when the page has no executed source or the
+// request sets dom=0. It forwards pointer, wheel, and key input to the
+// screen. A screen that implements host.Ticker is ticked at about 60 Hz
+// while Serve runs.
 // Developer endpoints stay off; ServeWithOptions with Options.Perf turns
 // on /debug/pprof/*.
 func Serve(app host.Screen, addr string) error {

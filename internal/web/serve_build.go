@@ -45,6 +45,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	mux.HandleFunc("GET /{$}", srv.page)
 	mux.HandleFunc("GET /frame.png", srv.frame)
 	mux.HandleFunc("GET /state", srv.state)
+	mux.HandleFunc("GET /dom", srv.dom)
 	if srv.debugEnabled {
 		if debugtag.Enabled {
 			mux.HandleFunc("GET /debug/state", srv.debug)
@@ -61,6 +62,7 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	mux.Handle("POST /backspace", srv.limit(http.HandlerFunc(srv.backspace)))
 	mux.Handle("POST /key", srv.limit(http.HandlerFunc(srv.key)))
 	mux.Handle("POST /wheel", srv.limit(http.HandlerFunc(srv.wheel)))
+	mux.Handle("POST /change", srv.limit(http.HandlerFunc(srv.change)))
 	var ln net.Listener
 	if opts.Listener != nil {
 		ln = opts.Listener

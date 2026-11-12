@@ -10,6 +10,7 @@ html, body { margin: 0; padding: 0; }
 body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
 #frame { display: block; max-width: 100%; height: auto; outline: none; cursor: default; }
 #frame:focus { outline: 2px solid #4a9eff; outline-offset: -2px; }
+#frame[hidden] { display: none; }
 .fallback { margin: 8px; }
 .fallback input { width: 12em; }
 </style>
@@ -31,10 +32,12 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
 (function () {
   "use strict";
   var frame = document.getElementById("frame");
-  if (!frame) { return; }
 
   var pollMs = 50;
-  var generation = parseInt(frame.getAttribute("data-generation") || "0", 10) || 0;
+  var generation = 0;
+  if (frame) {
+    generation = parseInt(frame.getAttribute("data-generation") || "0", 10) || 0;
+  }
 
   function post(path, body) {
     return fetch(path, {
@@ -109,6 +112,7 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
   }
 
   // JS takes over hit testing. Without it the image map above still clicks.
+  if (frame) {
   frame.removeAttribute("usemap");
 
   frame.addEventListener("click", function (ev) {
@@ -191,17 +195,19 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
     ev.preventDefault();
     sendKey(chordName(name, ev.shiftKey, ev.ctrlKey || ev.metaKey, ev.altKey), false, ev.shiftKey);
   });
+  }
 
   function poll() {
     fetch("/state", { cache: "no-store", credentials: "same-origin" })
       .then(function (resp) { return resp.ok ? resp.json() : null; })
       .then(function (state) {
         if (!state) { return; }
+        if (window.__ofDom) { try { window.__ofDom(state); } catch (e) {} }
         if (typeof state.generation === "number" && state.generation !== generation) {
           generation = state.generation;
-          frame.src = "/frame.png?g=" + encodeURIComponent(String(generation));
+          if (frame) { frame.src = "/frame.png?g=" + encodeURIComponent(String(generation)); }
         }
-        if (state.width && state.height &&
+        if (frame && state.width && state.height &&
             (frame.width !== state.width || frame.height !== state.height)) {
           frame.width = state.width;
           frame.height = state.height;
@@ -212,12 +218,13 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
   }
 
   setTimeout(poll, pollMs);
-  frame.focus({ preventScroll: true });
+  if (frame) { frame.focus({ preventScroll: true }); }
 })();
 </script>
 {{if .Reload}}<script>
 (function () {
   var frame = document.getElementById("frame");
+  if (!frame) { return; }
   setInterval(function () { frame.src = "/frame.png?t=" + Date.now(); }, 250);
 })();
 </script>{{end}}

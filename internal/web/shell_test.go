@@ -38,6 +38,20 @@ func TestShellRefreshesFrameWhileWatching(t *testing.T) {
 	}
 }
 
+func TestShellHasNoIframe(t *testing.T) {
+	t.Parallel()
+
+	shell := renderShell(t, shellData{Width: 100, Height: 50, Generation: 7})
+	if !strings.Contains(shell, `id="frame"`) {
+		t.Fatalf("shell is missing the frame:\n%s", shell)
+	}
+	for _, gone := range []string{"iframe", "srcdoc", "contentDocument"} {
+		if strings.Contains(shell, gone) {
+			t.Fatalf("shell still has %q:\n%s", gone, shell)
+		}
+	}
+}
+
 func TestShellIncludesInteractiveScript(t *testing.T) {
 	t.Parallel()
 
