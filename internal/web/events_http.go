@@ -125,16 +125,39 @@ func (s *server) broadcastLocked(msg []byte) {
 // broadcast and emits one event on change. The caller holds s.mu.
 // It never performs I/O, so the 60Hz idle tick stays a struct compare.
 func (s *server) publishIfChangedLocked() {
+	s.publishTickLocked(nil)
+}
+
+// publishTickLocked broadcasts the current snapshot with tick patches
+// attached. Equal scalars plus no patches means silent. Patches are never
+// stored: the next tick compares scalars only, so a patch-heavy second
+// still emits while its values keep changing.
+func (s *server) publishTickLocked(patches []tickPatch) {
 	cur := s.frameSnapshotLocked()
-	if cur == s.lastSent {
+	if equalFrameScalars(cur, s.lastSent) && len(patches) == 0 {
 		return
 	}
+	cur.Patches = patches
 	msg, ok := encodeEvent(cur)
 	if !ok {
 		return
 	}
+	cur.Patches = nil
 	s.lastSent = cur
 	s.broadcastLocked(msg)
+}
+
+// equalFrameScalars compares every frameState field except Patches, which
+// ride each event without joining the stored cursor.
+func equalFrameScalars(a, b frameState) bool {
+	return a.Generation == b.Generation &&
+		a.DomGeneration == b.DomGeneration &&
+		a.Width == b.Width &&
+		a.Height == b.Height &&
+		a.Ticking == b.Ticking &&
+		a.AudioGen == b.AudioGen &&
+		a.AudioPlaying == b.AudioPlaying &&
+		a.AudioVolume == b.AudioVolume
 }
 
 // encodeEvent renders one SSE data frame for a snapshot.

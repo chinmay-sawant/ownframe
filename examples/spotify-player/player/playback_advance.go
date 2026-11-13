@@ -46,8 +46,10 @@ func (a *App) advance(ctx context.Context) error {
 	if a.view.Repeat {
 		a.audio.SeekFraction(0)
 		a.audio.Play()
+		a.syncViewFromAudio()
+		a.page.SetData(a.view)
 
-		return nil
+		return a.page.Redraw(ctx)
 	}
 
 	if a.view.Shuffle && len(a.view.Tracks) > 0 {
@@ -57,6 +59,7 @@ func (a *App) advance(ctx context.Context) error {
 	}
 
 	a.playNow(ctx)
+	a.syncViewFromAudio()
 	a.page.SetData(a.view)
 
 	return a.page.Redraw(ctx)

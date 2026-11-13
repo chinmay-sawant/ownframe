@@ -51,7 +51,6 @@ func (a *App) animate() {
 		}
 
 		a.animateTimes(d, boxes, pos, dur)
-		a.updateView(pos, dur)
 	}
 
 	a.animateCredit(d, boxes)

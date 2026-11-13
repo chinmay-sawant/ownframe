@@ -48,9 +48,25 @@ type server struct {
 	// subscriber's own handler goroutine; publish only enqueues under s.mu
 	// with non-blocking sends, so a slow browser never stalls the tick.
 	subs map[chan []byte]struct{}
-	// lastSent is the last snapshot broadcast to /events. tickOnce and the
-	// mutating handlers compare against it so idle ticks stay silent.
+	// lastSent is the last broadcast snapshot, without patches. Patches are
+	// compared separately: equal scalars plus no new patches means silent.
 	lastSent frameState
+	// patchCache remembers the last text and style sent per id so tick
+	// events carry only values that changed since the previous event.
+	// patchCacheGen is the page generation the cache was baselined on; a
+	// real commit replaces the display, so the cache resets on the next
+	// frozen tick instead of diffing new ops against stale values.
+	patchCache    map[string][2]string
+	patchCacheGen uint64
+	// patchStyleIDs are the ids whose executed-source tag carries an inline
+	// width, baselined alongside the patch cache. Tick style patches only
+	// ever override a width the template itself sets.
+	patchStyleGen uint64
+	patchStyleIDs map[string]bool
+	// patchContainers are the ids whose executed-source element contains a
+	// child element, baselined with the style set. HTML nesting decides
+	// what textContent replacement would destroy.
+	patchContainers map[string]bool
 	// limitMu guards the mutating-route throttle table and semaphore.
 	limitMu      sync.Mutex
 	throttleHits map[string]*throttleSeen

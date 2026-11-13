@@ -121,10 +121,47 @@ func (s *server) tickOnce(ctx context.Context, ticker host.Ticker) error {
 		return nil
 	}
 
+	var rects []image.Rectangle
 	preDamage := dirty
+	tookRects := false
 	if taker, ok := s.app.(dirtyTaker); ok {
-		rects, ok := taker.TakeDirtyRects()
-		preDamage = ok && len(rects) > 0
+		drained, ok := taker.TakeDirtyRects()
+		preDamage = ok && len(drained) > 0
+		tookRects = preDamage
+		if tookRects {
+			rects = drained
+		}
+	}
+
+	// In-place tick: the generation is frozen and the drained damage names
+	// the changed regions, so advance the frame without a Redraw. The
+	// retained operations already carry the new paint; a commit here would
+	// only re-execute an unchanged template (or, with an active CSS
+	// animation, force a full commit every frame and spam /dom). Ticks that
+	// report damage without drainable rects still fall through to Redraw
+	// below, preserving today's behavior for those screens.
+	if s.app.Generation() == before && tookRects {
+		if s.patchCacheGen != before {
+			s.patchCache = map[string][2]string{}
+			s.patchStyleIDs = nil
+			s.patchContainers = nil
+			s.patchCacheGen = before
+		}
+		if s.patchCache == nil {
+			s.patchCache = map[string][2]string{}
+		}
+		if s.patchStyleIDs == nil || s.patchContainers == nil {
+			source := executedSourceOf(s.app)
+			s.patchStyleIDs = inlineWidthIDs(source)
+			s.patchContainers = containerIDs(source)
+		}
+		patches := collectTickPatches(s.app.Display(), s.app.Boxes(), rects, s.patchCache, s.patchStyleIDs, controlIDs(s.liveControls()), s.patchContainers)
+		s.frameGen++
+		if s.frameGen <= before {
+			s.frameGen = before + 1
+		}
+		s.publishTickLocked(patches)
+		return nil
 	}
 
 	if err := s.app.Redraw(ctx); err != nil {

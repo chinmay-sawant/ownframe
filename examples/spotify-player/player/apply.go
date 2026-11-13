@@ -23,7 +23,7 @@ func (a *App) apply(term string, tracks []Track, picks, shelf []Card) {
 	a.view.Playing = true
 	a.ensureCredit()
 	a.resetProgress()
-	a.page.SetData(&a.view)
+	a.page.SetData(a.view)
 	a.page.Probe().SetChangedProperties([]string{"Tracks", "PageTracks", "Now", "Status", "ShelfTitle", "Playing", "TrackPage", "TrackPages", "TrackRange", "HasPrev", "HasNext"})
 	if len(picks) > 0 {
 		a.page.Probe().AddChangedProperty("Picks")

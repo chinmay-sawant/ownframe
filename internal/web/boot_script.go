@@ -49,6 +49,45 @@ const bootScript = `"use strict";
     }).catch(function () {});
   }
 
+  function applyPatches(ops) {
+    if (!ops || !ops.length) { return true; }
+    var failed = false;
+    var i;
+    for (i = 0; i < ops.length; i++) {
+      try {
+        var op = ops[i];
+        if (!op || typeof op.id !== "string" || !op.id) { failed = true; continue; }
+        var el = document.getElementById(op.id);
+        if (!el) { failed = true; continue; }
+        if (isActiveField(el) || holdsActiveField(el)) { continue; }
+        if (typeof op.style === "string") {
+          el.setAttribute("style", op.style);
+        } else if (typeof op.text === "string") {
+          if (el.textContent !== op.text) { el.textContent = op.text; }
+        } else {
+          failed = true;
+        }
+      } catch (err) {
+        failed = true;
+      }
+    }
+    return !failed;
+  }
+
+  function applyState(state) {
+    if (!state) { return; }
+    syncAudio(state);
+    var gen = (typeof state.domGeneration === "number") ? state.domGeneration : state.generation;
+    if (typeof gen !== "number") { return; }
+    if (gen !== lastGen) {
+      scheduleDom();
+      return;
+    }
+    if (state.patches && state.patches.length) {
+      if (!applyPatches(state.patches)) { scheduleDom(); }
+    }
+  }
+
   function scheduleDom() {
     if (domScheduled) { return; }
     domScheduled = true;
@@ -538,13 +577,7 @@ const bootScript = `"use strict";
         if (!resp || !resp.ok) { return null; }
         return resp.json();
       })
-      .then(function (state) {
-        if (state) { syncAudio(state); }
-        if (!state) { return; }
-        var gen = (typeof state.domGeneration === "number") ? state.domGeneration : state.generation;
-        if (typeof gen !== "number" || gen === lastGen) { return; }
-        scheduleDom();
-      })
+      .then(function (state) { applyState(state); })
       .catch(function () {})
       .then(function () { setTimeout(poll, pollMs); });
   }
@@ -560,11 +593,7 @@ const bootScript = `"use strict";
     events.onmessage = function (ev) {
       var state = null;
       try { state = JSON.parse(ev.data); } catch (err) { return; }
-      if (!state) { return; }
-      syncAudio(state);
-      var gen = (typeof state.domGeneration === "number") ? state.domGeneration : state.generation;
-      if (typeof gen !== "number" || gen === lastGen) { return; }
-      scheduleDom();
+      enqueue(function () { applyState(state); });
     };
     events.onerror = function () {
       try { events.close(); } catch (err) {}

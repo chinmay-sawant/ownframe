@@ -26,6 +26,10 @@ type frameState struct {
 	// AudioVolume is the preview loudness from 0 to 1. It is 1 until the
 	// page publishes a level.
 	AudioVolume float64 `json:"audioVolume"`
+	// Patches carries id-anchored in-place updates for the live document.
+	// It is set only on retained-op tick events while DomGeneration stays
+	// frozen; a real Redraw omits it and moves DomGeneration instead.
+	Patches []tickPatch `json:"patches,omitempty"`
 }
 
 // state answers GET /state with a small snapshot. frameGen is the number of

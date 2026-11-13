@@ -13,9 +13,11 @@ func (a *App) Close() {
 	a.closeLog()
 }
 
-// Tick advances audio and animation once per frame.
+// Tick advances audio and animation once per frame. Per-tick screen motion
+// stays in the retained ops the tick patches in place (seek fill, time
+// labels, credit); the tick never touches template-bound view fields and
+// never forces damage, so a quiet frame stays clean and can idle.
 func (a *App) Tick(ctx context.Context) error {
-	a.page.Probe().UseFrameDirty()
 	a.audio.Update()
 	a.publishClip()
 	a.publishPlayback()
