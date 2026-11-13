@@ -29,6 +29,7 @@ func (s *server) setScrollY(next int) {
 		observer.SetScrollOffset(0, next)
 	}
 	s.frameGen++
+	s.publishIfChangedLocked()
 }
 
 func (s *server) hover(w http.ResponseWriter, r *http.Request) {
@@ -64,6 +65,7 @@ func (s *server) hover(w http.ResponseWriter, r *http.Request) {
 	}
 	if !hasHover || previousID != hoverer.HoverID() || before != s.app.Generation() {
 		s.frameGen++
+		s.publishIfChangedLocked()
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

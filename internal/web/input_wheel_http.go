@@ -49,6 +49,7 @@ func (s *server) wheel(w http.ResponseWriter, r *http.Request) {
 	} else if !handled {
 		s.scrollPage(dy)
 	}
+	s.publishIfChangedLocked()
 	w.WriteHeader(http.StatusNoContent)
 }
 

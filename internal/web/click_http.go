@@ -118,6 +118,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.syncScroll()
+	s.publishIfChangedLocked()
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 

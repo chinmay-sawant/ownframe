@@ -33,8 +33,9 @@ field, and a reset button on one page.
 | `GET /frame.png` | Returns the PNG with `Cache-Control: no-store`, or 404 `no frame` when the page has no picture. Used when the live document is off or the page has no executed source. |
 | `GET /audio` | Returns the clip a page published with `SetAudio`, with `Cache-Control: no-store`. The content type is the stored type when it starts with `audio/`. Otherwise the bytes are sniffed: WAV (`RIFF` then `WAVE`) is `audio/wav`, MP3 (`ID3` or frame sync `FF FB`, `FF F3`, or `FF F2`) is `audio/mpeg`, and Ogg (`OggS`) is `audio/ogg`. 404 when the page has no clip. |
 | `GET /{name}` | Returns the bytes any page registered with `SetImage` under that source name, so `url("logo")` and `<img src="logo">` load. The path may contain slashes, as in `emoji/1f602`. The content type is sniffed, including PNG, JPEG, GIF, WEBP, BMP, icon, SVG, AVIF, and HEIC. A format the sniffer does not know is still returned. `Cache-Control: no-store`. 404 when the name is missing or contains `.` or `..`. Fixed routes above win over this one. |
-| `GET /dom` | Returns JSON `{generation,width,height,html,theme,fallback}` with `Cache-Control: no-store`. `html` is the same document without the boot script, with live values already merged into real controls. The boot script patches id-anchored elements from it and does not replace the focused field. `theme` is the raw theme stylesheet. `fallback` true means the PNG shell. |
-| `GET /state` | Returns JSON `{generation,width,height,ticking,audioGen,audioPlaying,audioVolume}` with `Cache-Control: no-store`. The shell polls it. When the generation moves, the boot script fetches `/dom` and patches the live document. The PNG shell swaps the frame. `audioGen` is the published clip generation, or 0 when the page has no clip. `audioPlaying` and `audioVolume` (0 to 1) drive the browser player, so pause and the volume level follow the page. It exposes no boxes or field text. |
+| `GET /dom` | Returns JSON `{generation,width,height,html,theme,fallback}` with `Cache-Control: no-store`. `generation` is the page generation without the retained-op frame counter: scroll, hover, and in-place tick patches change the PNG frame but leave the executed source alone, so they do not trigger a `/dom` refetch. `html` is the same document without the boot script, with live values already merged into real controls. The boot script patches id-anchored elements from it and does not replace the focused field. `theme` is the raw theme stylesheet. `fallback` true means the PNG shell. |
+| `GET /events` | Opens a `text/event-stream` with `Cache-Control: no-store`. The server sends `retry: 3000`, a current snapshot `data:` frame on connect, one `data:` frame per snapshot change, and a `: ping` heartbeat every 15s. The body reuses the `/state` field names. The live document refetches `/dom` only when `domGeneration` moves; the PNG shell refetches `/frame.png` only when `generation` moves. Same-origin GET, no new privileged route. |
+| `GET /state` | Returns JSON `{generation,domGeneration,width,height,ticking,audioGen,audioPlaying,audioVolume}` with `Cache-Control: no-store`. `generation` is the page generation plus the retained-op frame counter. `domGeneration` is the page generation alone. The shell polls it. The boot script fetches `/dom` only when `domGeneration` moves and patches the live document. The PNG shell swaps the frame when `generation` moves. `audioGen` is the published clip generation, or 0 when the page has no clip. `audioPlaying` and `audioVolume` (0 to 1) drive the browser player, so pause and the volume level follow the page. It exposes no boxes or field text. |
 | `GET /debug/state` | Returns JSON with `Cache-Control: no-store`: size, generation, fallback, boxes, `host.Inspector` stats when the screen has one, and a per-kind operation count map when a display list exists ([devtools.md](devtools.md)). Registered only for `ServeWithOptions` with `ServeOptions{InsecureAllowDebugState: true}`; plain `Serve` returns 404. |
 | `POST /click` | Accepts `id` or `action`, and optional `ox`, `oy`, `w`, `h` that place the point inside the element's box. The PNG shell can still send `x` and `y` in CSS pixels. The handler places the caret at the point before the click handler runs. Requires a matching `Origin` (scheme and host); a missing `Origin` is rejected. 400 `bad coordinates` when either fails to parse, 403 `forbidden` on origin mismatch, 303 to `/` on success, generic 500 when the page returns an error. Query parameters are bounded. |
 | `POST /change` | Reads urlencoded `id` plus optional `value` or `checked` (`1`/`true`). A value replaces the whole control value and runs `BeforeEdit` and `Change`, then redraws. The live document does not stream text as one `/type` per key. `/type` and `/backspace` remain for the PNG shell. `checked` updates a checkbox or radio. An id alone moves focus. Requires a matching `Origin`. 400 `bad id` or `bad value`, 403 on origin mismatch, 204 on success. |
@@ -83,16 +84,24 @@ source and caches the bytes until the next `Redraw`
 
 A file-backed page is polled before `GET /` and `GET /frame.png`, under the
 same mutex, so an edit to the template or the theme shows on the next request.
-While `Page.Window().Watching()` is true the page polls `/state`. The live
-document fetches `/dom` when the generation changes and patches id-anchored
-elements. The PNG shell swaps the frame image. A string page has no watch, so
-the shell still polls `/state` and only refreshes when the page redraws.
+While `Page.Window().Watching()` is true the page pushes `/state` snapshots over `/events`. The live
+document fetches `/dom` when `domGeneration` changes and patches id-anchored
+elements. The PNG shell swaps the frame image when `generation` changes. Where
+`EventSource` is unavailable both shells fall back to polling `/state` (100ms live,
+50ms PNG). A string page has no watch, so
+the push stays silent and only refreshes when the page redraws.
 [hot-reload.md](hot-reload.md) has the config fields, the parse-error
 behavior, and what survives a reload.
 
 When the screen implements `host.Ticker`, `Serve` starts a loop at about 60 Hz.
-It locks the same mutex, calls `Tick`, and redraws only when the page reports
-dirty state or the generation changes. Cancel the context to stop it.
+It locks the same mutex, calls `Tick`, drains the damage with
+`TakeDirtyRects` when the screen reports it, and redraws only when the page reports
+dirty state or the generation changes. A bare `FrameDirty` opt-in with no
+rects does not advance the frame generation, and a real commit drains its own
+damage so the next idle tick does not bump twice. Each snapshot change is
+pushed to `/events` subscribers; idle ticks publish nothing.
+The shared `http.Server` sets no write timeout so the `/events` stream stays
+open; read and idle timeouts still apply. Cancel the context to stop it.
 
 ## What it drops
 

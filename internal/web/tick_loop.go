@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"image"
 	"log"
 	"sync"
 	"time"
@@ -15,6 +16,14 @@ const tickEvery = time.Second / 60
 // frameDirty is a screen that can report a changed picture after Tick.
 type frameDirty interface {
 	FrameDirty() bool
+}
+
+// dirtyTaker is a screen that can drain its damage. Page implements it.
+// The web loop drains it to tell fresh damage from a stale mark the host
+// never consumed, so a bare UseFrameDirty opt-in without rects does not
+// advance the frame generation.
+type dirtyTaker interface {
+	TakeDirtyRects() ([]image.Rectangle, bool)
 }
 
 // startTick runs app's Tick until ctx ends. A screen without Tick gets a
@@ -89,7 +98,11 @@ func (s *server) runTick(ctx context.Context, ticker host.Ticker) {
 // tickOnce runs one Tick under the server lock and redraws only when the
 // screen reports damage or changed its generation. A dirty screen that
 // patches retained operations in place keeps its generation, so frameGen
-// advances there and /state still sees a new frame.
+// advances there and /state still sees a new frame. The Take drains the
+// damage the Tick just produced: a bare FrameDirty opt-in with no rects
+// (an idle UseFrameDirty, or a stale mark the web loop never consumed)
+// does not advance frameGen, and a real commit drains its own damage so
+// the next idle tick does not bump twice for the same frame.
 func (s *server) tickOnce(ctx context.Context, ticker host.Ticker) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -104,19 +117,36 @@ func (s *server) tickOnce(ctx context.Context, ticker host.Ticker) error {
 		dirty = marker.FrameDirty()
 	}
 	if !dirty && s.app.Generation() == before {
+		s.publishIfChangedLocked()
 		return nil
+	}
+
+	preDamage := dirty
+	if taker, ok := s.app.(dirtyTaker); ok {
+		rects, ok := taker.TakeDirtyRects()
+		preDamage = ok && len(rects) > 0
 	}
 
 	if err := s.app.Redraw(ctx); err != nil {
 		return err
 	}
 
-	if dirty && s.app.Generation() == before {
-		s.frameGen++
-		if s.frameGen <= before {
-			s.frameGen = before + 1
+	if s.app.Generation() == before {
+		if preDamage {
+			s.frameGen++
+			if s.frameGen <= before {
+				s.frameGen = before + 1
+			}
 		}
+
+		s.publishIfChangedLocked()
+		return nil
 	}
 
+	if taker, ok := s.app.(dirtyTaker); ok {
+		_, _ = taker.TakeDirtyRects()
+	}
+
+	s.publishIfChangedLocked()
 	return nil
 }

@@ -3,14 +3,17 @@ package web
 // bootScript runs in the application document itself. There is no iframe.
 // It posts field values and clicks to the page and morphs the body in place
 // when the server redraws. A non-zero audioGen on GET /state points the
-// preview audio element at /audio. The state poll waits 100 milliseconds.
+// preview audio element at /audio. EventSource pushes state; the 100ms
+// state poll runs only where EventSource is unavailable.
 const bootScript = `"use strict";
 (function () {
   var queue = Promise.resolve();
   var lastGen = null;
   var lastAudio = 0;
   var domScheduled = false;
-  // Milliseconds between GET /state polls.
+  var events = null;
+  // Milliseconds between GET /state polls. Used only when the browser has
+  // no EventSource; with SSE the server pushes and the poll stays off.
   var pollMs = 100;
 
   function enqueue(task) {
@@ -537,12 +540,44 @@ const bootScript = `"use strict";
       })
       .then(function (state) {
         if (state) { syncAudio(state); }
-        if (!state || typeof state.generation !== "number") { return; }
-        if (state.generation === lastGen) { return; }
+        if (!state) { return; }
+        var gen = (typeof state.domGeneration === "number") ? state.domGeneration : state.generation;
+        if (typeof gen !== "number" || gen === lastGen) { return; }
         scheduleDom();
       })
       .catch(function () {})
       .then(function () { setTimeout(poll, pollMs); });
+  }
+
+  function connectEvents() {
+    if (events || typeof EventSource === "undefined") { return false; }
+    try {
+      events = new EventSource("/events");
+    } catch (err) {
+      events = null;
+      return false;
+    }
+    events.onmessage = function (ev) {
+      var state = null;
+      try { state = JSON.parse(ev.data); } catch (err) { return; }
+      if (!state) { return; }
+      syncAudio(state);
+      var gen = (typeof state.domGeneration === "number") ? state.domGeneration : state.generation;
+      if (typeof gen !== "number" || gen === lastGen) { return; }
+      scheduleDom();
+    };
+    events.onerror = function () {
+      try { events.close(); } catch (err) {}
+      events = null;
+      setTimeout(function () { if (!events) { connectEvents(); } }, 1000);
+    };
+    if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+      window.addEventListener("pagehide", function () {
+        if (events) { try { events.close(); } catch (err) {} }
+        events = null;
+      });
+    }
+    return true;
   }
 
   document.addEventListener("input", onInput);
@@ -552,7 +587,7 @@ const bootScript = `"use strict";
   document.addEventListener("focusout", onFocusOut);
   function start() {
     ensureAudio();
-    poll();
+    if (!connectEvents()) { poll(); }
   }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start);

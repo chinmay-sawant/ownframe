@@ -34,6 +34,7 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
   var frame = document.getElementById("frame");
 
   var pollMs = 50;
+  var events = null;
   var generation = 0;
   if (frame) {
     generation = parseInt(frame.getAttribute("data-generation") || "0", 10) || 0;
@@ -197,27 +198,50 @@ body { background: #111; color: #ddd; font: 14px/1.4 system-ui, sans-serif; }
   });
   }
 
+  function applyState(state) {
+    if (!state) { return; }
+    if (window.__ofDom) { try { window.__ofDom(state); } catch (e) {} }
+    if (typeof state.generation === "number" && state.generation !== generation) {
+      generation = state.generation;
+      if (frame) { frame.src = "/frame.png?g=" + encodeURIComponent(String(generation)); }
+    }
+    if (frame && state.width && state.height &&
+        (frame.width !== state.width || frame.height !== state.height)) {
+      frame.width = state.width;
+      frame.height = state.height;
+    }
+  }
+
   function poll() {
     fetch("/state", { cache: "no-store", credentials: "same-origin" })
       .then(function (resp) { return resp.ok ? resp.json() : null; })
-      .then(function (state) {
-        if (!state) { return; }
-        if (window.__ofDom) { try { window.__ofDom(state); } catch (e) {} }
-        if (typeof state.generation === "number" && state.generation !== generation) {
-          generation = state.generation;
-          if (frame) { frame.src = "/frame.png?g=" + encodeURIComponent(String(generation)); }
-        }
-        if (frame && state.width && state.height &&
-            (frame.width !== state.width || frame.height !== state.height)) {
-          frame.width = state.width;
-          frame.height = state.height;
-        }
-      })
+      .then(applyState)
       .catch(function () {})
       .then(function () { setTimeout(poll, pollMs); });
   }
 
-  setTimeout(poll, pollMs);
+  function connectEvents() {
+    if (events || typeof EventSource === "undefined") { return false; }
+    try {
+      events = new EventSource("/events");
+    } catch (e) {
+      events = null;
+      return false;
+    }
+    events.onmessage = function (ev) {
+      var state = null;
+      try { state = JSON.parse(ev.data); } catch (e) { return; }
+      applyState(state);
+    };
+    events.onerror = function () {
+      try { events.close(); } catch (e) {}
+      events = null;
+      setTimeout(function () { if (!events) { connectEvents(); } }, 1000);
+    };
+    return true;
+  }
+
+  if (!connectEvents()) { setTimeout(poll, pollMs); }
   if (frame) { frame.focus({ preventScroll: true }); }
 })();
 </script>

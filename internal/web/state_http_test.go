@@ -44,7 +44,7 @@ func TestStateEndpoint(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &state); err != nil {
 		t.Fatal(err)
 	}
-	if state.Generation != 9 || state.Width != 320 || state.Height != 200 || !state.Ticking || state.AudioGen != 0 {
+	if state.Generation != 9 || state.DomGeneration != 9 || state.Width != 320 || state.Height != 200 || !state.Ticking || state.AudioGen != 0 {
 		t.Fatalf("state = %+v", state)
 	}
 
@@ -52,7 +52,7 @@ func TestStateEndpoint(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if len(body) != 7 {
+	if len(body) != 8 {
 		t.Fatalf("body keys = %v", body)
 	}
 	if body["audioGen"] != float64(0) {

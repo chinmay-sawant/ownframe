@@ -22,6 +22,7 @@ func (s *server) typeText(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	s.publishIfChangedLocked()
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -42,5 +43,6 @@ func (s *server) backspace(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	s.publishIfChangedLocked()
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

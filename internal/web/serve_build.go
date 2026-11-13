@@ -40,11 +40,12 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	if err != nil {
 		return err
 	}
-	srv := &server{app: app, shell: t, perf: effectivePprof(opts), debugEnabled: effectiveDebug(opts)}
+	srv := &server{app: app, shell: t, perf: effectivePprof(opts), debugEnabled: effectiveDebug(opts), subs: map[chan []byte]struct{}{}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", srv.page)
 	mux.HandleFunc("GET /frame.png", srv.frame)
 	mux.HandleFunc("GET /state", srv.state)
+	mux.HandleFunc("GET /events", srv.events)
 	mux.HandleFunc("GET /dom", srv.dom)
 	mux.HandleFunc("GET /audio", srv.audio)
 	// After the fixed routes. A template url("logo") asks for /logo.
@@ -79,7 +80,10 @@ func ServeWithOptionsContext(ctx context.Context, app host.Screen, addr string, 
 	stopTick := srv.startTick(ctx)
 	defer stopTick()
 	fmt.Println("http://" + addr + "/")
-	hs := &http.Server{Handler: panicRecovery(securityHeaders(requireLocalHost(bindHostName(addr), mux))), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, WriteTimeout: writeTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
+	// WriteTimeout stays zero so the long-lived GET /events stream is not
+	// cut mid-connection. The service binds loopback only and serves small
+	// JSON/PNG bodies; slow-loris protection comes from the read timeouts.
+	hs := &http.Server{Handler: panicRecovery(securityHeaders(requireLocalHost(bindHostName(addr), mux))), ReadHeaderTimeout: readHeaderTimeout, ReadTimeout: readTimeout, IdleTimeout: idleTimeout, MaxHeaderBytes: maxHeaderBytes}
 	stop := context.AfterFunc(ctx, func() { _ = hs.Shutdown(context.Background()) })
 	defer stop()
 	err = hs.Serve(ln)

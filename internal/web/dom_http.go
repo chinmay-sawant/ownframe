@@ -78,7 +78,10 @@ type domState struct {
 
 // dom answers GET /dom with the live document. The shell renders these tags
 // directly and patches only the id-anchored subtrees that change, so a
-// redraw updates components instead of the whole page.
+// redraw updates components instead of the whole page. Generation is the
+// page generation without frameGen: retained-op ticks and scroll or hover
+// frame bumps change the PNG frame but leave the executed source alone, so
+// they must not trigger a /dom refetch.
 func (s *server) dom(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -86,7 +89,7 @@ func (s *server) dom(w http.ResponseWriter, r *http.Request) {
 	s.reload(r.Context())
 	width, height := s.app.Size()
 	state := domState{
-		Generation: s.app.Generation() + s.frameGen,
+		Generation: s.app.Generation(),
 		Width:      width,
 		Height:     height,
 		Fallback:   true,
@@ -223,6 +226,7 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.syncScroll()
+		s.publishIfChangedLocked()
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -234,6 +238,7 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			s.syncScroll()
+			s.publishIfChangedLocked()
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
@@ -244,6 +249,7 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.syncScroll()
+		s.publishIfChangedLocked()
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -267,5 +273,6 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.syncScroll()
+	s.publishIfChangedLocked()
 	w.WriteHeader(http.StatusNoContent)
 }

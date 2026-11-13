@@ -41,6 +41,5 @@ const maxHeaderBytes = 1 << 16
 const (
 	readHeaderTimeout = 5 * time.Second
 	readTimeout       = 15 * time.Second
-	writeTimeout      = 15 * time.Second
 	idleTimeout       = 60 * time.Second
 )

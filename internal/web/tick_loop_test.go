@@ -41,6 +41,8 @@ func (f *tickScreen) Redraw(context.Context) error {
 
 func (f *tickScreen) Generation() uint64 { return 0 }
 
+func (f *tickScreen) Size() (int, int) { return 320, 200 }
+
 func TestTickLoopRedrawsDirtyScreen(t *testing.T) {
 	t.Parallel()
 

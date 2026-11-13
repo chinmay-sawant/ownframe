@@ -44,6 +44,13 @@ type server struct {
 	viewportPNG                   []byte
 	viewportGen                   uint64
 	viewportWidth, viewportHeight int
+	// subs holds the live GET /events streams. Writes happen only in the
+	// subscriber's own handler goroutine; publish only enqueues under s.mu
+	// with non-blocking sends, so a slow browser never stalls the tick.
+	subs map[chan []byte]struct{}
+	// lastSent is the last snapshot broadcast to /events. tickOnce and the
+	// mutating handlers compare against it so idle ticks stay silent.
+	lastSent frameState
 	// limitMu guards the mutating-route throttle table and semaphore.
 	limitMu      sync.Mutex
 	throttleHits map[string]*throttleSeen
