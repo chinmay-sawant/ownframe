@@ -17,6 +17,9 @@ func TestTickAnimatesDisplay(t *testing.T) {
 
 	voice.pos = voice.dur / 2
 
+	beforeElapsed := app.View().Elapsed
+	beforeProgress := app.View().Progress
+
 	if err := app.Tick(context.Background()); err != nil {
 		t.Fatalf("Tick: %v", err)
 	}
@@ -44,5 +47,14 @@ func TestTickAnimatesDisplay(t *testing.T) {
 
 	if op := ownframe.Text(d, elapsed); op == nil || op.Text != formatSeconds(int(voice.pos.Seconds())) {
 		t.Fatalf("elapsed = %+v", op)
+	}
+
+	// Template truth stays at the last commit; only retained ops move.
+	if app.View().Elapsed != beforeElapsed {
+		t.Fatalf("View().Elapsed = %q, want %q (tick must not mutate view)", app.View().Elapsed, beforeElapsed)
+	}
+
+	if app.View().Progress != beforeProgress {
+		t.Fatalf("View().Progress = %d, want %d (tick must not mutate view)", app.View().Progress, beforeProgress)
 	}
 }

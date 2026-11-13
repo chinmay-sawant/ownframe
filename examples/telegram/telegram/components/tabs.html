@@ -1,4 +1,4 @@
-{{if .Phone}}<div class="bottom" style="top:{{.BottomTop}}px">{{end}}
+{{if .Phone}}<div class="bottom"{{if not .Web}} style="top:{{.BottomTop}}px"{{end}}>{{end}}
 <nav class="tabs">
   <div id="tab-chats" class="tab{{if eq .Tab "chats"}} on{{end}}" data-action="tab-chats">Chats {{if gt .Unread 0}}<span class="badge tabcount" data-action="tab-chats">{{.Unread}}</span>{{end}}</div>
   <div id="tab-contacts" class="tab{{if eq .Tab "contacts"}} on{{end}}" data-action="tab-contacts">Contacts</div>
@@ -7,5 +7,5 @@
 {{if .Phone}}
   <div class="navpad" style="height:{{.InsetBottom}}px"></div>
 </div>
-<div class="statuspad" style="top:{{.PadTop}}px;height:{{.InsetTop}}px"></div>
+<div class="statuspad"{{if not .Web}} style="top:{{.PadTop}}px;height:{{.InsetTop}}px"{{else}} style="height:{{.InsetTop}}px"{{end}}></div>
 {{end}}

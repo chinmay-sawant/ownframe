@@ -68,7 +68,7 @@ A tick callback that returns an error stops the window, and `Run` returns it. Ca
 
 ## Audio
 
-`Run` and `BindMobile` create a 48 kHz Ebiten audio context once, when one is not already running (`audio_context.go`). `Serve` does not. The library has no audio API; the examples play through [examples/music](../examples/music) ([features.md](features.md)).
+`Run`, `BindMobile`, and `Serve` create a 48 kHz Ebiten audio context once, when one is not already running (`audio_context.go`). In `-web` the sound comes out of this machine. The browser tab does not play it. The library has no audio API; the examples play through [examples/music](../examples/music) ([features.md](features.md)).
 
 ## Showing the page
 

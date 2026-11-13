@@ -44,7 +44,7 @@ func TestStateEndpoint(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &state); err != nil {
 		t.Fatal(err)
 	}
-	if state.Generation != 9 || state.Width != 320 || state.Height != 200 || !state.Ticking {
+	if state.Generation != 9 || state.DomGeneration != 9 || state.Width != 320 || state.Height != 200 || !state.Ticking || state.AudioGen != 0 {
 		t.Fatalf("state = %+v", state)
 	}
 
@@ -52,8 +52,14 @@ func TestStateEndpoint(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if len(body) != 4 {
+	if len(body) != 8 {
 		t.Fatalf("body keys = %v", body)
+	}
+	if body["audioGen"] != float64(0) {
+		t.Fatalf("audioGen = %#v", body["audioGen"])
+	}
+	if body["audioPlaying"] != false || body["audioVolume"] != float64(1) {
+		t.Fatalf("playback = %#v %#v", body["audioPlaying"], body["audioVolume"])
 	}
 	for _, secret := range []string{"secret-field", "hunter2", "boxes"} {
 		if strings.Contains(rec.Body.String(), secret) {

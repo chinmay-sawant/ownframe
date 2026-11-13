@@ -8,12 +8,37 @@ import (
 	"net/http"
 
 	"github.com/chinmay-sawant/ownframe/internal/bitmap"
+	"github.com/chinmay-sawant/ownframe/internal/page"
 )
+
+// webControlSource is a screen that lists live form controls for the
+// application document. internal/page implements it. A screen without the
+// method contributes no controls.
+type webControlSource interface {
+	WebControls() []page.WebControl
+}
 
 func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.reload(r.Context())
+	if src, ok := s.app.(domSource); ok {
+		source := src.ExecutedSource()
+		if source != "" && r.URL.Query().Get("dom") != "0" {
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			w.Header().Set("Cache-Control", "no-store")
+			doc := browserDocument(
+				source,
+				src.ThemeSource(),
+				s.liveControls(),
+				bootScript,
+			)
+			if _, err := w.Write([]byte(doc)); err != nil {
+				log.Printf("write page: %s", sanitizeLine(err.Error()))
+			}
+			return
+		}
+	}
 	viewW, viewH := s.app.Size()
 	data := shellData{
 		Areas:      areas(s.app),
@@ -33,6 +58,14 @@ func (s *server) page(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(buf.Bytes()); err != nil {
 		log.Printf("write page: %s", sanitizeLine(err.Error()))
 	}
+}
+
+func (s *server) liveControls() []page.WebControl {
+	src, ok := s.app.(webControlSource)
+	if !ok {
+		return nil
+	}
+	return src.WebControls()
 }
 
 func (s *server) frame(w http.ResponseWriter, r *http.Request) {

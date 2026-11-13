@@ -6,17 +6,18 @@ import "github.com/chinmay-sawant/ownframe"
 // the place along the sky or the ground; the layout holds the rest.
 func (a *App) paintScene(d *ownframe.Display) {
 	for i := range cloudMax {
-		setX(a.parts.clouds[i], a.clouds[i]*d.PointsPerPixel)
+		a.setX(d, a.parts.clouds[i], a.clouds[i])
 	}
 
 	for i := range stripeMax {
-		setX(a.parts.stripes[i], a.stripes[i]*d.PointsPerPixel)
+		a.setX(d, a.parts.stripes[i], a.stripes[i])
 	}
 }
 
-// setX moves one operation along the ground.
-func setX(op *ownframe.DisplayOp, x float64) {
+// setX moves one operation along the ground. x is in game coordinates;
+// the bound stage origin moves it into the page.
+func (a *App) setX(d *ownframe.Display, op *ownframe.DisplayOp, x float64) {
 	if op != nil {
-		op.X = x
+		op.X = (x + a.ox) * d.PointsPerPixel
 	}
 }

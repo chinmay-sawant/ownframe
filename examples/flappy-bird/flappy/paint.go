@@ -20,14 +20,16 @@ func (a *App) paint() {
 	a.paintText(d)
 }
 
-// setFill places one fill at r and shows or hides it.
-func setFill(d *ownframe.Display, op *ownframe.DisplayOp, r rect, visible bool) {
+// setFill places one fill at r and shows or hides it. r is in game
+// coordinates from the stage corner; the bound stage origin moves it into
+// the page so a centered stage paints under its own boxes.
+func (a *App) setFill(d *ownframe.Display, op *ownframe.DisplayOp, r rect, visible bool) {
 	if op == nil {
 		return
 	}
 
-	op.X = r.x * d.PointsPerPixel
-	op.Y = r.y * d.PointsPerPixel
+	op.X = (r.x + a.ox) * d.PointsPerPixel
+	op.Y = (r.y + a.oy) * d.PointsPerPixel
 	op.W = r.w * d.PointsPerPixel
 	op.H = r.h * d.PointsPerPixel
 
