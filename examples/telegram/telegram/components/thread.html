@@ -1,4 +1,4 @@
-<main id="thread" class="thread">
+<main id="thread" class="thread{{if .AttachOpen}} attachopen{{end}}">
   <div class="msgs">
   {{range .Thread}}
   <div id="msg-{{.ID}}" class="msgrow{{if .Own}} own{{end}}">
@@ -18,10 +18,11 @@
   </div>
   {{end}}
   {{end}}
+  {{if and .Web .ThreadMore}}<div id="show-earlier" class="showearlier" data-action="show-earlier">Show earlier messages</div>{{end}}
   {{if not .Thread}}<div class="empty">No messages here yet. Say hello.</div>{{end}}
   </div>
 </main>
-<div class="bottom" style="top:{{.BottomTop}}px">
+<div class="bottom"{{if not .Web}} style="top:{{.BottomTop}}px"{{end}}>
   {{if .AttachOpen}}
   <div class="sheet">
     <div class="sheettitle">Share</div>
@@ -43,7 +44,7 @@
   </div>
   <div class="navpad" style="height:{{.InsetBottom}}px"></div>
 </div>
-<header id="threadbar" class="topbar threadbar" style="top:{{.BarTop}}px">
+<header id="threadbar" class="topbar threadbar"{{if not .Web}} style="top:{{.BarTop}}px"{{end}}>
   <span id="chat-back" class="backicon" data-action="chat-back"></span>
   <span class="avatar avatar-sm av{{.Color}}" data-action="chat-back">{{.Initials}}</span>
   <div class="threadhead" data-action="chat-back">
@@ -51,4 +52,4 @@
     <span class="threadstatus" data-action="chat-back">{{.Status}}</span>
   </div>
 </header>
-<div class="statuspad" style="top:{{.PadTop}}px;height:{{.InsetTop}}px"></div>
+<div class="statuspad"{{if not .Web}} style="top:{{.PadTop}}px;height:{{.InsetTop}}px"{{else}} style="height:{{.InsetTop}}px"{{end}}></div>

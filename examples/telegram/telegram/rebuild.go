@@ -10,6 +10,31 @@ func (a *App) rebuild() {
 	a.view.Unread = unreadTotal(a.chats)
 	a.view.Thread = a.threads[a.view.Active]
 
+	if (a.web || a.view.Web) && a.view.Active != "" {
+		full := a.threads[a.view.Active]
+		if a.threadLimit <= 0 {
+			a.threadLimit = webThreadPage
+		}
+		if len(full) > a.threadLimit {
+			window := full[len(full)-a.threadLimit:]
+			reversed := make([]Message, len(window))
+			for i, m := range window {
+				reversed[len(window)-1-i] = m
+			}
+			a.view.Thread = reversed
+			a.view.ThreadMore = true
+		} else {
+			reversed := make([]Message, len(full))
+			for i, m := range full {
+				reversed[len(full)-1-i] = m
+			}
+			a.view.Thread = reversed
+			a.view.ThreadMore = false
+		}
+	} else {
+		a.view.ThreadMore = false
+	}
+
 	if i := a.chatIndex(a.view.Active); i >= 0 {
 		c := a.chats[i]
 		a.view.Header = c.Name

@@ -234,3 +234,35 @@
   background-position: center;
   background-size: 22px 22px;
 }
+
+/* -web DOM mode: browser scrolls natively, so pin chrome to viewport. Native keeps absolute+Pin. */
+.app-web .topbar.threadbar { position: fixed; top: 0; left: 0; right: 0; }
+.app-web .bottom { position: fixed; bottom: 0; left: 0; right: 0; top: auto; }
+.app-web .statuspad { position: fixed; top: 0; left: 0; right: 0; }
+.app-web .thread {
+  position: fixed;
+  top: 60px;
+  bottom: 63px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  background: var(--threadbg);
+}
+/* The attach sheet grows the fixed composer to 150px + 63px, so the pane
+   must end above it or the sheet covers the newest messages. */
+.app-web .thread.attachopen { bottom: 213px; }
+.app-web .msgs {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 12px 12px;
+}
+.app-web .msgrow { flex: none; }
+.app-web .reactrow { flex: none; }
+.app-web .showearlier { flex: none; text-align: center; color: var(--sub); font-size: 13px; padding: 8px; }
+.app-web .empty { flex: none; }
