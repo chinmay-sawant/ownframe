@@ -27,6 +27,10 @@ type parts struct {
 func (a *App) bind(d *ownframe.Display) {
 	boxes := a.page.Boxes()
 
+	if box, ok := boxByID(boxes, "scene"); ok {
+		a.ox, a.oy = box.X, box.Y
+	}
+
 	for i, id := range birdIDs {
 		a.parts.bird[i] = fillAt(d, boxes, id)
 	}
@@ -58,11 +62,12 @@ func (a *App) bind(d *ownframe.Display) {
 }
 
 // bindBoard caches the panel fill and its hit-test box in CSS pixels, so
-// showing it again restores its place.
+// showing it again restores its place. The rect is kept in game
+// coordinates like every other paint rect: setFill adds the stage origin.
 func (a *App) bindBoard(d *ownframe.Display, boxes []ownframe.Box) {
 	a.parts.board = fillAt(d, boxes, "board")
 
 	if box, ok := boxByID(boxes, "board"); ok {
-		a.parts.boardRect = rect{box.X, box.Y, box.W, box.H}
+		a.parts.boardRect = rect{box.X - a.ox, box.Y - a.oy, box.W, box.H}
 	}
 }

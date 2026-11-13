@@ -19,7 +19,7 @@ func (a *App) paintText(d *ownframe.Display) {
 	reveal(a.parts.again, isOver, "PRESS R OR SPACE")
 
 	setText(a.parts.score, scoreText(a.game.score, isOver))
-	setFill(d, a.parts.board, a.parts.boardRect, isOver)
+	a.setFill(d, a.parts.board, a.parts.boardRect, isOver)
 }
 
 // scoreText is the running score, hidden once the game is over.
