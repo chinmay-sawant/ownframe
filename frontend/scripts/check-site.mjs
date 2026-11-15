@@ -427,8 +427,13 @@ try {
   assert.ok(scrolled, 'Page cannot scroll with hidden scrollbar');
   assert.ok(await evaluate('Math.abs(document.querySelector("header").getBoundingClientRect().top) < 1'), 'Header does not stay visible while scrolling');
   await evaluate(`document.querySelector('.site-menu-toggle').click(); document.querySelector('.h-hero a[href="#start"]').click()`);
-  await pause(200);
-  assert.ok(await evaluate('Math.abs(document.querySelector("#start").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16) < 4'), 'Get started link did not clear the sticky header');
+  const startOffset = '({ top: document.querySelector("#start").getBoundingClientRect().top, header: document.querySelector("header").getBoundingClientRect().height, hash: location.hash, scrollY })';
+  let start = await evaluate(startOffset);
+  for (let attempt = 0; attempt < 30 && Math.abs(start.top - start.header - 16) >= 4; attempt++) {
+    await pause(100);
+    start = await evaluate(startOffset);
+  }
+  assert.ok(Math.abs(start.top - start.header - 16) < 4, `Get started link did not clear the sticky header: ${JSON.stringify(start)}`);
   await evaluate(`document.querySelector('header a[href="#docs/why-ownframe"]').click()`);
   await pause(200);
   assert.equal(await evaluate('location.hash'), '#docs/why-ownframe');
