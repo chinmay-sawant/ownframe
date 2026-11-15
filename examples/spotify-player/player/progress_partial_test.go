@@ -2,8 +2,11 @@ package player
 
 import (
 	"context"
+	"math"
 	"testing"
 	"time"
+
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func TestProgressTickIsPartial(t *testing.T) {
@@ -16,6 +19,7 @@ func TestProgressTickIsPartial(t *testing.T) {
 	voice.pos = 30 * time.Second
 
 	before := app.Page().Probe().Stats().Redraws
+	beforeView := app.View()
 	app.Page().Probe().TakeDirtyRects()
 
 	if err := app.Tick(context.Background()); err != nil {
@@ -26,13 +30,35 @@ func TestProgressTickIsPartial(t *testing.T) {
 		t.Fatalf("progress tick redraws = %d, want %d", got, before)
 	}
 
-	if app.View().Elapsed != formatSeconds(30) {
-		t.Fatalf("Elapsed = %q, want %q", app.View().Elapsed, formatSeconds(30))
+	// Template truth stays untouched by the tick; the retained ops carry
+	// the new paint until the next real commit.
+	after := app.View()
+	if after.Progress != beforeView.Progress || after.Elapsed != beforeView.Elapsed || after.Remaining != beforeView.Remaining || after.Credit != beforeView.Credit {
+		t.Fatalf("tick mutated view progress: %+v, want %+v", after, beforeView)
+	}
+
+	d := app.Page().Probe().Display()
+	elapsed, ok := findBox(app.Boxes(), "elapsed")
+	if !ok {
+		t.Fatal("no elapsed box")
+	}
+
+	if op := ownframe.Text(d, elapsed); op == nil || op.Text != formatSeconds(30) {
+		t.Fatalf("elapsed op = %+v, want %q", op, formatSeconds(30))
 	}
 
 	rects, ok := app.Page().Probe().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatalf("progress tick left no dirty rects")
+	}
+
+	// A second tick at the same position is a no-op: no new damage.
+	if err := app.Tick(context.Background()); err != nil {
+		t.Fatalf("second Tick: %v", err)
+	}
+
+	if rects, ok := app.Page().Probe().TakeDirtyRects(); ok {
+		t.Fatalf("steady tick left dirty rects: %v", rects)
 	}
 }
 
@@ -45,13 +71,13 @@ func TestSeekClickUpdatesProgressThroughRedraw(t *testing.T) {
 
 	before := app.Page().Probe().Stats().Redraws
 
-	click(t, app, "seek-6")
+	click(t, app, "seek-60")
 
-	if app.View().Progress != 70 {
-		t.Fatalf("Progress = %d, want 70", app.View().Progress)
+	if app.View().Progress != 60 {
+		t.Fatalf("Progress = %d, want 60", app.View().Progress)
 	}
 
-	if want := time.Duration(0.7 * float64(voice.dur)); voice.pos != want {
+	if want := time.Duration(0.6 * float64(voice.dur)); voice.pos != want {
 		t.Fatalf("pos = %v, want %v", voice.pos, want)
 	}
 
@@ -62,5 +88,77 @@ func TestSeekClickUpdatesProgressThroughRedraw(t *testing.T) {
 	rects, ok := app.Page().Probe().TakeDirtyRects()
 	if !ok || len(rects) == 0 {
 		t.Fatal("seek click left no dirty rects")
+	}
+}
+
+func TestNavKeepsAudioDerivedProgress(t *testing.T) {
+	app, voice := newFakeApp(t)
+	redraw(t, app)
+
+	click(t, app, "play")
+	waitAudio(t, app)
+
+	voice.pos = 90 * time.Second
+
+	if err := app.Tick(context.Background()); err != nil {
+		t.Fatalf("Tick: %v", err)
+	}
+
+	// Template truth is still the pre-tick commit; retained ops moved.
+	preNav := app.View()
+	d := app.Page().Probe().Display()
+	elapsedBox, ok := findBox(app.Boxes(), "elapsed")
+	if !ok {
+		t.Fatal("no elapsed box")
+	}
+	if op := ownframe.Text(d, elapsedBox); op == nil {
+		t.Fatal("no elapsed op")
+	}
+
+	click(t, app, "nav-search")
+	redraw(t, app)
+	click(t, app, "nav-home")
+	redraw(t, app)
+
+	// A navigation commit publishes the current audio-derived position so the
+	// web preview's post-click seek sync does not seek back to stale template data.
+	after := app.View()
+	wantProgress := int(float64(voice.pos) / float64(voice.dur) * percentScale)
+	wantElapsed := formatSeconds(int(voice.pos.Seconds()))
+	wantRemaining := formatSeconds(int((voice.dur - voice.pos).Seconds()))
+	if after.Progress != wantProgress || after.Elapsed != wantElapsed || after.Remaining != wantRemaining {
+		t.Fatalf("nav progress = %d %q %q, want %d %q %q (before nav: %+v)",
+			after.Progress, after.Elapsed, after.Remaining, wantProgress, wantElapsed, wantRemaining, preNav)
+	}
+
+	// The round trip commits the current values, so a follow-up Redraw does
+	// not move the retained fill: template and retained ops agree.
+	d = app.Page().Probe().Display()
+	seek, ok := findBox(app.Boxes(), "seek")
+	if !ok {
+		t.Fatal("no seek box")
+	}
+
+	fill := ownframe.Fill(d, seek, accent)
+	if fill == nil {
+		t.Fatal("no seek fill")
+	}
+
+	beforeW := fill.W
+	redraw(t, app)
+
+	d = app.Page().Probe().Display()
+	seek, ok = findBox(app.Boxes(), "seek")
+	if !ok {
+		t.Fatal("no seek box after redraw")
+	}
+
+	fill = ownframe.Fill(d, seek, accent)
+	if fill == nil {
+		t.Fatal("no seek fill after redraw")
+	}
+
+	if math.Abs(fill.W-beforeW) > 0.01 {
+		t.Fatalf("redraw moved seek fill: %v -> %v", beforeW, fill.W)
 	}
 }

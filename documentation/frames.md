@@ -84,6 +84,14 @@ leaves the page clean, so idle park can sleep. `page.Probe().UseFrameDirty` rema
 working alias. `page.Probe().Invalidate` marks the elements that tick changed. `page.Probe().MarkRect`
 marks a CSS-pixel line that has no element id. The window calls the inner screen.
 
+A tick must call `Redraw` to commit staged data changes; the hosts never
+commit on the tick's behalf. Mutating the `SetData` value (or the pointed-to
+struct) without `Redraw` only affects the next explicit commit, while
+retained-op patches plus `Invalidate` paint immediately without one. The web
+host follows the same rule: a tick that drains dirty rects with a frozen
+generation advances the frame and pushes id-anchored patches, and only a
+tick that stages data without damage falls through to `Redraw`.
+
 A rotation can retarget operations in the tick instead of calling `Redraw`.
 The [departure board](../examples/departure-board) does: when the feed is due,
 the tick takes the next rows, updates each cell's target glyph by id, and

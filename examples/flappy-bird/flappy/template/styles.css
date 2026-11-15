@@ -1,6 +1,6 @@
 
 html, body { margin:0; padding:0; background:#70c5ce; }
-.scene { position:relative; width:480px; height:720px; background:#70c5ce; overflow:hidden; font-family:sans-serif; }
+.scene { position:relative; width:480px; height:720px; margin:0 auto; background:#70c5ce; overflow:hidden; font-family:sans-serif; }
 .cloud { position:absolute; background:#ffffff; border-radius:13px; }
 .pipe { position:absolute; background:#73bf2e; }
 .cap { position:absolute; background:#5ba32b; border-radius:4px; }

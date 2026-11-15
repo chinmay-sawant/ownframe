@@ -123,9 +123,9 @@ func TestSeekHoverLeavesTheAudioFill(t *testing.T) {
 		t.Fatalf("tick: %v", err)
 	}
 
-	zone, ok := findBox(app.Boxes(), "seek-6")
+	zone, ok := findBox(app.Boxes(), "seek-60")
 	if !ok {
-		t.Fatal("no seek-6 box")
+		t.Fatal("no seek-60 box")
 	}
 
 	if err := app.Page().Edit().Hover(ctx, zone.X+zone.W/2, zone.Y+zone.H/2); err != nil {

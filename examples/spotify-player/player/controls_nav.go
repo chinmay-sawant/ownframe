@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+func navigationAction(action string) bool {
+	return action == "back" || action == "forward" || action == "queue" ||
+		strings.HasPrefix(action, "list-") || strings.HasPrefix(action, "nav-")
+}
+
 // clickNav applies one navigation action, reporting whether it consumed
 // it. The caller still redraws and logs the click.
 func (a *App) clickNav(ctx context.Context, action string) bool {

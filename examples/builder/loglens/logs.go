@@ -230,6 +230,8 @@ func (a *app) logsTable(rows []logEntry) *ui.Element {
 						a.severity = nil
 						a.pageIndex = 0
 						a.selectedRows = map[int]bool{}
+						a.setFormValue("log-query", "")
+						a.setFormValue("log-search", "")
 						return a.refresh(ctx)
 					}),
 			},

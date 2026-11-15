@@ -12,6 +12,10 @@ type auditClick struct {
 	err error
 }
 
+func (f *auditClick) Size() (int, int) { return 320, 200 }
+
+func (f *auditClick) Generation() uint64 { return 0 }
+
 func (f *auditClick) Click(context.Context, float64, float64) error { return f.err }
 
 func clickRec(app *auditClick, target, origin string) *httptest.ResponseRecorder {

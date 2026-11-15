@@ -24,6 +24,44 @@ func (a *App) toggleMute() {
 	a.view.Volume = 0
 }
 
+// syncViewFromAudio refreshes Progress/Elapsed/Remaining/Credit from the
+// playback clock, engine or virtual. Call only before a real commit
+// (SetData plus Redraw), never from the tick path: the tick paints the
+// same values through retained ops.
+func (a *App) syncViewFromAudio() {
+	pos, dur, _ := a.clock()
+	if dur > 0 {
+		fraction := float64(pos) / float64(dur)
+		if fraction < 0 {
+			fraction = 0
+		}
+
+		if fraction > 1 {
+			fraction = 1
+		}
+
+		a.view.Progress = int(fraction * percentScale)
+		a.view.Elapsed = formatSeconds(int(pos.Seconds()))
+
+		rem := int((dur - pos).Seconds())
+		if rem < 0 {
+			rem = 0
+		}
+
+		a.view.Remaining = formatSeconds(rem)
+	}
+
+	credit := a.audio.Credit()
+	switch {
+	case a.audio.Loading():
+		a.view.Credit = "Loading free audio..."
+	case credit.Title != "":
+		a.view.Credit = credit.Title + " - " + credit.Creator + " (" + credit.License + ")"
+	case a.audio.Err() != nil:
+		a.view.Credit = "Audio unavailable"
+	}
+}
+
 // setProgress moves the seek bar and recomputes both time strings.
 func (a *App) setProgress(progress int) {
 	if progress < 0 {
@@ -55,6 +93,7 @@ func (a *App) setProgress(progress int) {
 func (a *App) resetProgress() {
 	oldSeconds := a.seconds
 	a.seconds = lengthSeconds(a.view.Now.Length)
+	a.vpos = 0
 	a.view.Progress = 0
 	a.view.Elapsed = "0:00"
 

@@ -37,6 +37,11 @@ type App struct {
 	viewportH   int
 	lastMove    time.Time
 	scrollDirty bool
+	// web switches the thread chrome to browser-fixed positioning for -web
+	// DOM mode, where the browser scrolls natively and Pin offsets do not apply.
+	web bool
+	// threadLimit caps the newest messages shown in -web mode; 0 means no cap.
+	threadLimit int
 }
 
 // New parses the embedded template and registers its images and handlers.

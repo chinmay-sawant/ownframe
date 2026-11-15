@@ -44,4 +44,12 @@ type App struct {
 
 	parts parts
 	bound uint64
+
+	// ox and oy are the stage origin in CSS pixels, taken from the scene
+	// box at bind. The tick paints game coordinates that start at the
+	// stage corner, so every placed fill adds the origin to land where
+	// the layout put the element. A full-width window centers the stage
+	// and the origin is half the leftover width; at the 480 window it is
+	// zero and painting is unchanged.
+	ox, oy float64
 }

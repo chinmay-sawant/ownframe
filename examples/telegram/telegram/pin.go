@@ -17,6 +17,13 @@ const (
 // at the edges. It reports whether a scroll redraw is needed: never on the
 // phone, where replay draws the pinned z-layer at the viewport.
 func (a *App) Pin(offsetY, viewH int) bool {
+	// In -web DOM mode the browser pins the chrome with fixed CSS, so the
+	// baked document offsets must stay at zero.
+	if a.web || a.view.Web {
+		a.viewportH = viewH
+		a.view.BarTop, a.view.BottomTop, a.view.PadTop = 0, 0, 0
+		return false
+	}
 	// A phone list starts at the top when its viewport height changes.
 	if a.view.Phone && a.view.Active == "" && a.viewportH != 0 && a.viewportH != viewH {
 		a.page.ScrollTo(0, 0)

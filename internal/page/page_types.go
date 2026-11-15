@@ -122,4 +122,5 @@ type Page struct {
 	hits         []hitItem
 	pageContent  // paint rect: box cache writes; lock: page loop
 	scroll       scroll.State
+	audio        audioSlot // web preview clip; lock: audioSlot.mu
 }

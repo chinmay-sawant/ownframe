@@ -4,15 +4,17 @@ package telegram
 const (
 	scrollBottom   = 1 << 20
 	photoQueueSize = 2
-	viewportPinZ   = 2
-	halfDivisor    = 2
-	avatarColor2   = 2
-	avatarColor3   = 3
-	avatarColor4   = 4
-	avatarColor5   = 5
-	avatarColor6   = 6
-	avatarColor7   = 7
-	unreadFew      = 2
-	unreadMany     = 5
-	unreadMuted    = 12
+	// webThreadPage is the number of newest messages shown in -web mode.
+	webThreadPage = 20
+	viewportPinZ  = 2
+	halfDivisor   = 2
+	avatarColor2  = 2
+	avatarColor3  = 3
+	avatarColor4  = 4
+	avatarColor5  = 5
+	avatarColor6  = 6
+	avatarColor7  = 7
+	unreadFew     = 2
+	unreadMany    = 5
+	unreadMuted   = 12
 )

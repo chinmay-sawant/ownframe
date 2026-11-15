@@ -53,7 +53,7 @@ func (a *App) onSelectAll(ctx context.Context) error {
 		return nil
 	}
 
-	return a.page.Edit().SelectAll(ctx)
+	return a.SelectAll(ctx)
 }
 
 // setStatus stores the status line for the next draw.

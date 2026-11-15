@@ -18,6 +18,8 @@ func Serve(ctx context.Context, page *Page, addr string) error {
 		return err
 	}
 
+	ensureAudio()
+
 	return web.ServeWithOptionsContext(ctx, innerPage(page), addr, web.Options{})
 }
 
@@ -36,6 +38,8 @@ func ServeWithOptions(ctx context.Context, page *Page, addr string, opts ServeOp
 	if err := prepare(ctx, page); err != nil {
 		return err
 	}
+
+	ensureAudio()
 
 	return web.ServeWithOptionsContext(ctx, innerPage(page), addr, opts)
 }

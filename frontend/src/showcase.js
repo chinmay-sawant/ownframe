@@ -1,6 +1,6 @@
-export const showcaseIntro = 'Choose an example in the left navigation to view its screenshots or demo.';
+export const showcaseIntro = 'Pick an example to see its screenshots, live demo, and source.';
 
-const leadingShowcaseIds = ['wispr-flow', 'code-view', 'spotify-player', 'teams', 'telegram', 'desktop-overlays', 'eyes'];
+const leadingShowcaseIds = ['wispr-flow', 'code-view', 'spotify-player', 'teams', 'telegram', 'trade', 'jmap-mail', 'desktop-overlays', 'eyes'];
 
 export const showcaseSections = [
   {
@@ -10,7 +10,7 @@ export const showcaseSections = [
     before: '`examples/code-view` is the flagship desktop application of ownframe. It is a native multi-pane code viewer with syntax highlighting in pure Go, a visual git commit graph, and word-level diff pairing with 26 ns idle ticks and zero webview overhead.',
     after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/code-view)',
     media: [
-      { src: 'assets/screenshots/demos/code-view.webp', video: 'demos/code-view.mp4', autoplayPreview: true, alt: 'Animated preview of the Code Review app with the appearance settings and Liquid Glass themes open', caption: 'Code Review', width: 1280, height: 688, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/code-view.webp', animated: 'demos/code-view.webp', autoplayPreview: true, alt: 'Animated preview of the Code Review app with the appearance settings and Liquid Glass themes open', caption: 'Code Review', width: 1280, height: 688, nativeDisplay: true },
       { src: 'assets/screenshots/demos/vskode-demo.webp', alt: 'Code Review dark editor showing Markdown documentation with the file explorer and commit status bar', caption: 'Editing Markdown', width: 800, height: 428, nativeDisplay: true },
     ],
   },
@@ -37,7 +37,7 @@ export const showcaseSections = [
     before: 'Teams is a native chat and collaboration app built with Go, HTML, and CSS. [Watch the Teams demo](https://x.com/chinmay_sawant_/status/2107548496194895993/video/1).',
     after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/teams)\u00a0·\u00a0[Watch the local demo recording](assets/screenshots/demos/teams.webp)',
     media: [
-      { src: 'assets/screenshots/demos/teams.webp', video: 'demos/teams.mp4', alt: 'Animated preview of the Teams chat and collaboration app', caption: 'Teams', width: 720, height: 402, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/teams.webp', animated: 'demos/teams.webp', alt: 'Animated preview of the Teams chat and collaboration app', caption: 'Teams', width: 720, height: 402, nativeDisplay: true },
     ],
   },
   {
@@ -84,7 +84,7 @@ export const showcaseSections = [
     before: 'The desktop cat stays above other windows and lets clicks pass through its transparent pixels.',
     after: '[Watch the demo](https://x.com/chinmay_sawant_/status/2106829998409789929)\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/desktop-cat)',
     media: [
-      { src: 'assets/screenshots/demos/desktop-cat.webp', video: 'demos/desktop-cat.mp4', alt: 'Desktop cat overlay preview', caption: 'Desktop cat overlay', width: 880, height: 476, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/desktop-cat.webp', animated: 'demos/desktop-cat.webp', alt: 'Desktop cat overlay preview', caption: 'Desktop cat overlay', width: 880, height: 476, nativeDisplay: true },
     ],
   },
   {
@@ -94,7 +94,7 @@ export const showcaseSections = [
     before: 'The Wispr Flow example is an HTML and CSS interface rendered by ownframe.',
     after: '[Try the live WebAssembly demo](frontend/public/demos/wispr-flow/index.html) (52 MB download)\n\n[Watch the demo](https://x.com/chinmay_sawant_/status/2106788230154871126)\n\n[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/wispr-flow-dashboard)',
     media: [
-      { src: 'assets/screenshots/demos/wispr-flow.webp', video: 'demos/preview.mp4', autoplayPreview: true, alt: 'Wispr Flow example preview', caption: 'Wispr Flow', width: 1906, height: 1030 },
+      { src: 'assets/screenshots/demos/wispr-flow.webp', animated: 'demos/wispr-flow.webp', autoplayPreview: true, alt: 'Wispr Flow example preview', caption: 'Wispr Flow', width: 1906, height: 1030 },
     ],
   },
   {
@@ -139,7 +139,7 @@ export const showcaseSections = [
     before: '`examples/trade` is the Meridian dark trading terminal: watchlist, candlestick chart, quote rail, order blotter, and more screens over a seeded synthetic market. All motion is CSS; devtools open by default. `go run ./examples/trade` opens it on desktop.',
     after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/trade)',
     media: [
-      { src: 'assets/screenshots/demos/trade.png', alt: 'Meridian trading terminal with watchlist, candlestick chart, and order blotter', caption: 'Trade', width: 1600, height: 900, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/trade.png', animated: 'demos/trade.webp', autoplayPreview: true, alt: 'Meridian trading terminal with watchlist, candlestick chart, and order blotter', caption: 'Trade', width: 1600, height: 900, nativeDisplay: true },
     ],
   },
   {
@@ -169,7 +169,7 @@ export const showcaseSections = [
     before: '`examples/builder/jmap-mail` is a three-pane desktop mail client mockup (Postmark) built with the public Go `ui` API. `go run ./examples/builder/jmap-mail` opens it on desktop.',
     after: '[Source code](https://github.com/chinmay-sawant/ownframe/tree/master/examples/builder/jmap-mail)',
     media: [
-      { src: 'assets/screenshots/demos/jmap-mail.webp', video: 'demos/jmap-mail.mp4', autoplayPreview: true, alt: 'Animated preview of the Postmark three-pane mail client with mailboxes, inbox list, and message view', caption: 'JMAP Mail', width: 1280, height: 688, nativeDisplay: true },
+      { src: 'assets/screenshots/demos/jmap-mail.webp', animated: 'demos/jmap-mail.webp', autoplayPreview: true, alt: 'Animated preview of the Postmark three-pane mail client with mailboxes, inbox list, and message view', caption: 'JMAP Mail', width: 1280, height: 688, nativeDisplay: true },
     ],
   },
   {

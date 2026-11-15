@@ -1,6 +1,6 @@
 module github.com/chinmay-sawant/ownframe/examples
 
-go 1.26.10
+go 1.26.11
 
 // The require pins the last published ownframe tag (v0.0.2) until v0.0.3
 // exists on the proxy. The replace below points at the parent so

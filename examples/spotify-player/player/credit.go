@@ -1,8 +1,6 @@
 package player
 
 import (
-	"time"
-
 	"github.com/chinmay-sawant/ownframe"
 )
 
@@ -13,7 +11,9 @@ func (a *App) ensureCredit() {
 	}
 }
 
-// animateCredit shows the loading note, or the clip behind the voice.
+// animateCredit shows the loading note, or the clip behind the voice. It
+// patches only the retained credit op; template truth moves at commit time
+// through syncViewFromAudio, never from the tick.
 func (a *App) animateCredit(d *ownframe.Display, boxes []ownframe.Box) {
 	text := ""
 	credit := a.audio.Credit()
@@ -27,14 +27,9 @@ func (a *App) animateCredit(d *ownframe.Display, boxes []ownframe.Box) {
 		text = "Audio unavailable"
 	}
 
-	if text == "" || text == a.view.Credit {
-		if text != "" {
-			a.view.Credit = text
-		}
+	if text == "" {
 		return
 	}
-
-	a.view.Credit = text
 
 	box, ok := boxByID(boxes, "credit")
 	if !ok {
@@ -44,33 +39,5 @@ func (a *App) animateCredit(d *ownframe.Display, boxes []ownframe.Box) {
 	if op := ownframe.Text(d, box); op != nil && op.Text != text {
 		op.Text = text
 		a.page.Probe().Invalidate("credit")
-	}
-}
-
-// updateView keeps the click-driven Redraw in step with the audio.
-func (a *App) updateView(pos, dur time.Duration) {
-	fraction := float64(pos) / float64(dur)
-	if fraction < 0 {
-		fraction = 0
-	}
-
-	if fraction > 1 {
-		fraction = 1
-	}
-
-	a.view.Progress = int(fraction * percentScale)
-	elapsed := formatSeconds(int(pos.Seconds()))
-	if elapsed != a.view.Elapsed {
-		a.view.Elapsed = elapsed
-	}
-
-	rem := int((dur - pos).Seconds())
-	if rem < 0 {
-		rem = 0
-	}
-
-	remaining := formatSeconds(rem)
-	if remaining != a.view.Remaining {
-		a.view.Remaining = remaining
 	}
 }

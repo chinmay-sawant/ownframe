@@ -7,6 +7,6 @@ func (a *App) paintBird(d *ownframe.Display) {
 	pose := a.game.birdRects()
 
 	for i := range birdCount {
-		setFill(d, a.parts.bird[i], pose[i], true)
+		a.setFill(d, a.parts.bird[i], pose[i], true)
 	}
 }

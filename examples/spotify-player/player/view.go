@@ -49,6 +49,7 @@ type View struct {
 	Progress   int
 	Elapsed    string
 	Remaining  string
+	SeekSlots  []int
 	Now        Track
 	Tracks     []Track
 	PageTracks []Track

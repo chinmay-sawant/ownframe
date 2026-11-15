@@ -134,8 +134,9 @@ and App Store review. None of that is in this repo.
 | Crash | report file 0600 ([crash.md](crash.md)) | panic recover and file | recover, no file | handler 500, no file |
 | Resize | window drag relayouts ([window.md](window.md)) | rotation and split relayout | browser canvas resize | no; picture stays at `Page.Size()` |
 
-Audio: `Run` and `BindMobile` create the 48 kHz Ebiten audio context; `Serve`
-does not ([window.md](window.md), [features.md](features.md)). Drop: desktop
+Audio: `Run`, `BindMobile`, and `Serve` create the 48 kHz Ebiten audio context.
+In `-web` the sound comes out of this machine, not the browser tab
+([window.md](window.md), [features.md](features.md)). Drop: desktop
 and wasm canvas only ([drag-drop.md](drag-drop.md)). The window modes replay
 the display list or blit the fallback bitmap; `Serve` paints a PNG from the
 template source ([screen.md](screen.md)).

@@ -1,6 +1,6 @@
 module github.com/chinmay-sawant/ownframe
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/chinmay-sawant/blinkless v0.1.1

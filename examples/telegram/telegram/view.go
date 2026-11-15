@@ -76,4 +76,8 @@ type View struct {
 	ReactID string
 	// Reactions is the emoji bar shown while ReactID is set.
 	Reactions []Reaction
+	// Web is true when serving via -web DOM mode; templates use fixed chrome instead of Pin offsets.
+	Web bool
+	// ThreadMore reports older messages exist beyond the web window; template shows a show-earlier button.
+	ThreadMore bool
 }

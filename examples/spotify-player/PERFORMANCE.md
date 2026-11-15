@@ -63,3 +63,36 @@ The measurements came from Go 1.26.4 on Linux amd64 with an Intel Core
 i7-13700HX. They time Go template execution, page rendering, and display-list
 creation. They do not measure window presentation, audio playback, network
 requests, or frame rate. `Page.Probe().PNG` is not called by this benchmark.
+
+## Seek behavior
+
+Ten bar segments map to percent as written in `player/controls.go` (constants
+in `player/mnd_const.go`: `seekStep = 10`, `seekBase = 10`, `percentScale = 100`):
+
+```go
+slot := slot(action, "seek-")
+fraction := float64(slot*seekStep+seekBase) / percentScale
+a.noteSeek(fraction)
+a.setProgress(slot*seekStep + seekBase)
+a.audio.SeekFraction(float64(a.view.Progress) / percentScale)
+```
+
+So `seek-0` is 10% through `seek-9` at 100%. `setProgress` (`player/progress.go`)
+clamps to 0..100 and recomputes `Elapsed`/`Remaining` from the track seconds.
+
+The `-web` browser element follows seeks three ways (`internal/web/boot_script.go`):
+after every click round trip the POST handler reloads `/dom`, morphs the body,
+then calls `syncSeek`; `syncSeek` reads the committed `#seek-fill` width percent
+and moves `el.currentTime` to `fraction * duration` when it disagrees by more
+than one second (deferred to `loadedmetadata` when `readyState < 1`); and on a
+clip change `applyTransport` points the element at `/audio?v=<audioGen>` and
+calls `syncSeek` again when a clip was already loaded.
+
+What advances the bar differs by host: on desktop the live engine position wins
+and the virtual clock disengages on its first move (`player/clock.go`); in `-web`
+the engine is frozen (headless `Serve` has no advancing clock), so `noteSeek`
+arms the virtual position immediately and `clock()` advances it on the wall clock
+until the engine reports motion. Known `-web` limitation: there is no audible
+server-side audio; the browser `<audio id="ownframe-audio">` element playing
+`GET /audio` (driven by the `/state` `audioGen`/`audioPlaying`/`audioVolume`
+snapshot) is the sound.

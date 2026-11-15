@@ -22,37 +22,26 @@ function useReducedMotion() {
   return reduced;
 }
 
-// ShowcasePreview shows a preview clip that plays on its own. The clip gets a
-// pause control, it stays still for a reader who asked for reduced motion,
-// and it stays in the accessibility tree because it carries the preview.
+// ShowcasePreview shows an animated WebP preview that plays on its own. Pausing
+// swaps in the still poster, and a reader who asked for reduced motion gets the
+// poster by default. The image keeps its alt text because it carries the preview.
 function ShowcasePreview({ media, doc, onOpen }) {
-  const videoRef = useRef(null);
   const reduced = useReducedMotion();
   const [playing, setPlaying] = useState(!reduced);
+  const poster = contentUrl(media.src, doc);
 
   useEffect(() => {
     if (reduced) setPlaying(false);
   }, [reduced]);
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (!playing) {
-      video.pause();
-      return;
-    }
-    video.play().catch(() => setPlaying(false));
-  }, [playing]);
-
   return <>
     <button type="button" className="gallery-open" aria-label={`Open media: ${media.alt}`}
       aria-haspopup="dialog" onClick={onOpen}>
-      <video ref={videoRef} src={`${import.meta.env.BASE_URL}${media.video}`}
-        poster={contentUrl(media.src, doc)} autoPlay={!reduced} muted loop playsInline
-        preload={reduced ? 'none' : 'auto'} aria-label={media.alt}
+      <img src={playing ? `${import.meta.env.BASE_URL}${media.animated}` : poster}
+        alt={media.alt} decoding="async"
         width={media.width} height={media.height}
         style={{ width: media.nativeDisplay
-          ? `min(100%, calc(${media.width}px / var(--site-scale)))`
+          ? `min(100%, calc(${media.width}px / var(--site-scale, 1)))`
           : `min(100%, ${media.width}px)` }} />
     </button>
     <button type="button" className="showcase-media-control" onClick={() => setPlaying(!playing)}>
@@ -78,13 +67,6 @@ export default function Documentation({ hash }) {
   const activeShowcase = showcaseSections.some((entry) => entry.id === anchor) ? anchor : showcaseSections[0].id;
   const showcase = isShowcase ? showcaseSections.find((entry) => entry.id === activeShowcase) : null;
   const text = doc?.text;
-  const mediaResolution = (src, width, height) => setLightbox((box) => {
-    if (!width || !height || !box || box.items[box.index]?.src !== src) return box;
-    const items = box.items.slice();
-    items[box.index] = { ...items[box.index], width, height, resolution: `${width} × ${height}` };
-    return { ...box, items };
-  });
-
   useEffect(() => {
     setMenuOpen(false);
     setLightbox(null);
@@ -120,15 +102,14 @@ export default function Documentation({ hash }) {
   const openLightbox = (index) => {
     const items = showcase.media.map((media) => {
       const poster = contentUrl(media.src, doc);
-      const src = media.video ? `${import.meta.env.BASE_URL}${media.video}` : poster;
+      const src = media.animated ? `${import.meta.env.BASE_URL}${media.animated}` : poster;
       return {
         ...media,
         src,
         poster,
-        type: media.video ? 'video' : 'image',
-        width: media.video ? undefined : media.width,
-        height: media.video ? undefined : media.height,
-        resolution: media.video ? '' : `${media.width} × ${media.height}`,
+        width: media.width,
+        height: media.height,
+        resolution: `${media.width} × ${media.height}`,
       };
     });
     if (items.length) setLightbox({ items, index });
@@ -206,7 +187,7 @@ export default function Documentation({ hash }) {
               aria-label={`Open media: ${media.alt}`} aria-haspopup="dialog" onClick={() => openLightbox(index)}>
               <img src={contentUrl(media.src, doc)} alt={media.alt} width={media.width} height={media.height}
                 loading="lazy" decoding="async" style={{ width: media.nativeDisplay
-                  ? `min(100%, calc(${media.width}px / var(--site-scale)))`
+                  ? `min(100%, calc(${media.width}px / var(--site-scale, 1)))`
                   : `min(100%, ${media.width}px)` }} />
             </button>}
             <figcaption>{media.caption}</figcaption>
@@ -219,18 +200,10 @@ export default function Documentation({ hash }) {
     {lightboxItem && createPortal(<div className="lightbox-backdrop" onClick={() => setLightbox(null)}>
       <div className="lightbox-card" role="dialog" aria-modal="true"
         aria-label={`Expanded media: ${lightboxItem.alt}`}>
-        {lightboxItem.type === 'video'
-          ? <video key={lightboxItem.src} src={lightboxItem.src}
-            poster={lightboxItem.poster} autoPlay controls muted loop playsInline preload="auto"
-            width={lightboxItem.width} height={lightboxItem.height}
-            aria-label={lightboxItem.alt}
-            onLoadedMetadata={(event) => mediaResolution(lightboxItem.src,
-              event.currentTarget.videoWidth, event.currentTarget.videoHeight)}
-            onClick={(event) => event.stopPropagation()} />
-          : <img key={lightboxItem.src}
-            src={lightboxItem.src} alt={lightboxItem.alt}
-            width={lightboxItem.width} height={lightboxItem.height}
-            onClick={(event) => event.stopPropagation()} />}
+        <img key={lightboxItem.src}
+          src={lightboxItem.src} alt={lightboxItem.alt}
+          width={lightboxItem.width} height={lightboxItem.height}
+          onClick={(event) => event.stopPropagation()} />
         <div className="lightbox-bar" onClick={(event) => event.stopPropagation()}>
           {lightbox.items.length > 1 && <button type="button" className="lightbox-prev" aria-label="Show previous media"
             onClick={() => setLightbox((box) => box && {

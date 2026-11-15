@@ -8,7 +8,6 @@ import builderGo from '../../examples/frontend/builder/main.go?raw';
 import builderHTML from '../../examples/frontend/builder/template.html?raw';
 import builderCSS from '../../examples/frontend/builder/style.css?raw';
 import helloBuilderGo from '../../examples/frontend/hello-builder/main.go?raw';
-import builderMountGo from '../../examples/frontend/builder-mount/main.go?raw';
 import { highlightSource } from './highlight';
 
 function files(demo, main, template, style) {
@@ -33,6 +32,8 @@ export const helloFiles = files('hello', helloGo, helloHTML, helloCSS);
 
 export const builderFiles = files('builder', builderGo, builderHTML, builderCSS);
 
-export const helloBuilderFiles = goFile(helloBuilderGo);
+export const helloBuilderFiles = [
+  { name: 'Live demo', url: `${import.meta.env.BASE_URL}demos/hello/index.html` },
+  ...goFile(helloBuilderGo),
+];
 
-export const builderMountFiles = goFile(builderMountGo);

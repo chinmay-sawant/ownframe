@@ -12,6 +12,9 @@ func (a *App) pasteButton(ctx context.Context) error {
 	if !a.focusLast(ctx) {
 		return nil
 	}
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
+	}
 
 	if err := a.PasteText(ctx, pasteFromGo); err != nil {
 		return err
@@ -30,6 +33,9 @@ func (a *App) pasteClipboard(ctx context.Context) error {
 		a.setStatus("nothing to paste into")
 
 		return nil
+	}
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
 	}
 
 	raw, err := ownframe.Read()
