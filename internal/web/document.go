@@ -78,12 +78,15 @@ func restoreControls(src string, controls []page.WebControl) string {
 			continue
 		}
 
-		end := matchingEnd(src, tag)
-		if end < 0 {
-			b.WriteString(src[tag.start:tag.end])
-			i = tag.end
+		end := tag.end
+		if !voidElement(tag.name) {
+			end = matchingEnd(src, tag)
+			if end < 0 {
+				b.WriteString(src[tag.start:tag.end])
+				i = tag.end
 
-			continue
+				continue
+			}
 		}
 
 		writeControl(&b, kind, tag.attrs, ctrl)
@@ -111,9 +114,8 @@ func indexControls(controls []page.WebControl) map[string]*page.WebControl {
 }
 
 // matchControl pairs a field element with the live control of the same id.
-// Checkbox and radio inputs stay as the engine wrote them.
 func matchControl(tag htmlTag, kind string, byID map[string]*page.WebControl) (*page.WebControl, bool) {
-	if kind == "" || realCheck(tag) {
+	if kind == "" {
 		return nil, false
 	}
 
@@ -147,6 +149,9 @@ func realCheck(tag htmlTag) bool {
 func fieldKind(tag htmlTag) string {
 	if tag.closing || tag.comment || tag.other {
 		return ""
+	}
+	if realCheck(tag) {
+		return "input"
 	}
 
 	kind := strings.ToLower(strings.TrimSpace(attrValue(tag.attrs, "data-ownframe-field")))
@@ -245,6 +250,9 @@ func writeOpen(b *strings.Builder, tag string, attrs []attr, ctrl *page.WebContr
 		b.WriteString(`" value="`)
 		b.WriteString(html.EscapeString(ctrl.Value))
 		b.WriteByte('"')
+		if (strings.EqualFold(ctrl.Type, "checkbox") || strings.EqualFold(ctrl.Type, "radio")) && ctrl.Checked {
+			b.WriteString(" checked")
+		}
 	}
 	if ctrl.Disabled && !disabled {
 		b.WriteString(" disabled")
@@ -294,7 +302,7 @@ func writeOption(b *strings.Builder, opt page.SelectOption) {
 }
 
 func skipCopiedAttr(name string) bool {
-	return strings.HasPrefix(name, "data-ownframe-") || name == "value" || name == "type"
+	return strings.HasPrefix(name, "data-ownframe-") || name == "value" || name == "type" || name == "checked"
 }
 
 // inputType is the control type. An empty input type is text.

@@ -51,7 +51,7 @@ type server struct {
 	// lastSent is the last broadcast snapshot, without patches. Patches are
 	// compared separately: equal scalars plus no new patches means silent.
 	lastSent frameState
-	// patchCache remembers the last text and style sent per id so tick
+	// patchCache remembers the last text, style, or geometry sent per id so tick
 	// events carry only values that changed since the previous event.
 	// patchCacheGen is the page generation the cache was baselined on; a
 	// real commit replaces the display, so the cache resets on the next
@@ -62,8 +62,9 @@ type server struct {
 	// patchStyleIDs are the ids whose executed-source tag carries an inline
 	// width, baselined alongside the patch cache. Tick style patches only
 	// ever override a width the template itself sets.
-	patchStyleGen uint64
-	patchStyleIDs map[string]bool
+	patchStyleGen    uint64
+	patchStyleIDs    map[string]bool
+	patchGeometryIDs map[string]bool
 	// patchTick counts frozen ticks since the last commit. Every thirtieth
 	// one rebases the patch cache so a dropped event can never leave the
 	// client stale: the next values re-emit in full.

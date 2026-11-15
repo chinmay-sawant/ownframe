@@ -144,6 +144,7 @@ func (s *server) tickOnce(ctx context.Context, ticker host.Ticker) error {
 		if s.patchCacheGen != before {
 			s.patchCache = map[string][2]string{}
 			s.patchStyleIDs = nil
+			s.patchGeometryIDs = nil
 			s.patchContainers = nil
 			s.patchCacheGen = before
 			s.patchTick = 0
@@ -156,13 +157,14 @@ func (s *server) tickOnce(ctx context.Context, ticker host.Ticker) error {
 			s.patchCache = map[string][2]string{}
 		}
 		source := executedSourceOf(s.app)
-		if source != s.patchSource || s.patchStyleIDs == nil || s.patchContainers == nil || s.patchTextIDs == nil {
+		if source != s.patchSource || s.patchStyleIDs == nil || s.patchGeometryIDs == nil || s.patchContainers == nil || s.patchTextIDs == nil {
 			s.patchSource = source
 			s.patchStyleIDs = inlineWidthIDs(source)
+			s.patchGeometryIDs = inlineGeometryIDs(source)
 			s.patchContainers = containerIDs(source)
 			s.patchTextIDs = sourceTextByID(source, s.patchContainers)
 		}
-		patches := collectTickPatches(s.app.Display(), s.app.Boxes(), rects, s.patchCache, s.patchStyleIDs, controlIDs(s.liveControls()), s.patchContainers, s.patchTextIDs)
+		patches := collectTickPatches(s.app.Display(), s.app.Boxes(), rects, s.patchCache, s.patchStyleIDs, s.patchGeometryIDs, controlIDs(s.liveControls()), s.patchContainers, s.patchTextIDs)
 		s.frameGen++
 		if s.frameGen <= before {
 			s.frameGen = before + 1

@@ -63,6 +63,31 @@ func TestBrowserDocumentCarriesFocusedSelection(t *testing.T) {
 	}
 }
 
+func TestBrowserDocumentCarriesRadioSelection(t *testing.T) {
+	t.Parallel()
+
+	got := browserDocument(`<input id="free" type="radio" name="plan" value="free">`+
+		`<input id="pro" type="radio" name="plan" value="pro">`, "", []page.WebControl{
+		{ID: "free", Tag: "input", Type: "radio", Name: "plan", Value: "free"},
+		{ID: "pro", Tag: "input", Type: "radio", Name: "plan", Value: "pro", Checked: true},
+	}, "")
+
+	for id, checked := range map[string]bool{"free": false, "pro": true} {
+		start := strings.Index(got, `id="`+id+`"`)
+		if start < 0 {
+			t.Fatalf("input %q missing: %s", id, got)
+		}
+		end := strings.IndexByte(got[start:], '>')
+		if end < 0 {
+			t.Fatalf("input %q has no closing angle: %s", id, got)
+		}
+		tag := got[start : start+end+1]
+		if strings.Contains(tag, " checked") != checked {
+			t.Errorf("input %q = %s, checked=%t", id, tag, checked)
+		}
+	}
+}
+
 func TestBrowserDocumentPassword(t *testing.T) {
 	t.Parallel()
 

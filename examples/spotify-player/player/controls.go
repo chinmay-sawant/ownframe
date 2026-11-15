@@ -10,6 +10,9 @@ import (
 // onClick applies one rendered box action.
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	action := box.Action
+	if navigationAction(action) {
+		a.syncViewFromAudio()
+	}
 
 	switch {
 	case a.clickNav(ctx, action):

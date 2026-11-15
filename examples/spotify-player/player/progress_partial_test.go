@@ -120,14 +120,19 @@ func TestNavKeepsAudioDerivedProgress(t *testing.T) {
 	click(t, app, "nav-home")
 	redraw(t, app)
 
-	// Nav preserves view playback state, like the profile screen does.
+	// A navigation commit publishes the current audio-derived position so the
+	// web preview's post-click seek sync does not seek back to stale template data.
 	after := app.View()
-	if after.Progress != preNav.Progress || after.Elapsed != preNav.Elapsed || after.Remaining != preNav.Remaining {
-		t.Fatalf("nav changed progress: %+v, want %+v", after, preNav)
+	wantProgress := int(float64(voice.pos) / float64(voice.dur) * percentScale)
+	wantElapsed := formatSeconds(int(voice.pos.Seconds()))
+	wantRemaining := formatSeconds(int((voice.dur - voice.pos).Seconds()))
+	if after.Progress != wantProgress || after.Elapsed != wantElapsed || after.Remaining != wantRemaining {
+		t.Fatalf("nav progress = %d %q %q, want %d %q %q (before nav: %+v)",
+			after.Progress, after.Elapsed, after.Remaining, wantProgress, wantElapsed, wantRemaining, preNav)
 	}
 
-	// The round trip commits the preserved values, so a follow-up Redraw
-	// does not move the retained fill: template and retained ops agree.
+	// The round trip commits the current values, so a follow-up Redraw does
+	// not move the retained fill: template and retained ops agree.
 	d = app.Page().Probe().Display()
 	seek, ok := findBox(app.Boxes(), "seek")
 	if !ok {

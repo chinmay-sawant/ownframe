@@ -13,13 +13,22 @@ import (
 )
 
 // tickPatch is one id-anchored in-place update. Text replaces the element's
-// textContent; Style replaces its inline style attribute. Both mirror the
-// executed source form so a later full /dom morph converges to the same
-// pixels. Only one of Text or Style is set per patch.
+// textContent; Style replaces its inline style attribute; Geometry updates
+// the four inline box properties independently. All mirror the executed
+// source form so a later full /dom morph converges to the same pixels. Only
+// one of Text, Style, or Geometry is set per patch.
 type tickPatch struct {
-	ID    string  `json:"id"`
-	Text  *string `json:"text,omitempty"`
-	Style *string `json:"style,omitempty"`
+	ID       string        `json:"id"`
+	Text     *string       `json:"text,omitempty"`
+	Style    *string       `json:"style,omitempty"`
+	Geometry *tickGeometry `json:"geometry,omitempty"`
+}
+
+type tickGeometry struct {
+	Left   string `json:"left"`
+	Top    string `json:"top"`
+	Width  string `json:"width"`
+	Height string `json:"height"`
 }
 
 type tickTextPart struct {
@@ -33,8 +42,8 @@ type tickTextPart struct {
 // patches and the client falls back to its current behavior.
 const maxTickPatches = 128
 
-// collectTickPatches resolves dirty rects to id-anchored text and fill-width
-// patches. Only leaf elements are patched: replacing textContent or inline
+// collectTickPatches resolves dirty rects to id-anchored text, geometry, and
+// fill-width patches. Only leaf elements are patched: replacing textContent or inline
 // style on a container would destroy the child nodes the full document
 // morph preserves. Leafness comes from two independent signals, and a box
 // is skipped when either marks it a container: the layout parent index,
@@ -48,8 +57,8 @@ const maxTickPatches = 128
 // sibling segment that overlaps a zero-width fill. With no container the
 // style patch is skipped. Control
 // ids are never patched. Only values that changed since the last event are
-// emitted; cache records the last sent text and style per id.
-func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []image.Rectangle, cache map[string][2]string, styleWidthIDs, controlIDs, containers map[string]bool, sourceText map[string]string) []tickPatch {
+// emitted; cache records the last sent text and style or geometry per id.
+func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []image.Rectangle, cache map[string][2]string, styleWidthIDs, geometryIDs, controlIDs, containers map[string]bool, sourceText map[string]string) []tickPatch {
 	if display == nil || len(rects) == 0 {
 		return nil
 	}
@@ -121,6 +130,28 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 			}
 			switch op.Kind {
 			case layout.DisplayOpFillRect:
+				if geometryIDs[box.ID] {
+					geometry, key, ok := tickBoxGeometry(display, boxes, b, byOp)
+					if !ok {
+						continue
+					}
+					if cache != nil {
+						if got := cache[box.ID]; got[1] == key {
+							continue
+						}
+					}
+					if len(key) > maxChangeValue {
+						return rollback()
+					}
+					out = append(out, tickPatch{ID: box.ID, Geometry: &geometry})
+					if cache != nil {
+						got := cache[box.ID]
+						got[1] = key
+						cache[box.ID] = got
+						touched = append(touched, box.ID)
+					}
+					break
+				}
 				if !styleWidthIDs[box.ID] {
 					continue
 				}
@@ -179,6 +210,71 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 		}
 	}
 	return out
+}
+
+// tickBoxGeometry combines the current fill operations for an element into
+// one box and converts their absolute op coordinates to the element's inline
+// positioning context. Boxes use CSS pixels, while operation coordinates use
+// layout points. In these game scenes each animated leaf is positioned by its
+// direct element parent; subtracting that parent origin makes the patch match
+// the source's left/top declarations.
+func tickBoxGeometry(display *layout.Display, boxes []layout.Box, boxIndex int, byOp map[uint64]int) (tickGeometry, string, bool) {
+	if display == nil || boxIndex < 0 || boxIndex >= len(boxes) {
+		return tickGeometry{}, "", false
+	}
+	ppp := display.PixelPerPoint
+	if ppp <= 0 {
+		ppp = 1
+	}
+	box := boxes[boxIndex]
+	left, top := 0.0, 0.0
+	if box.ParentIndex >= 0 && box.ParentIndex < len(boxes) && box.ParentIndex != boxIndex {
+		left = boxes[box.ParentIndex].X
+		top = boxes[box.ParentIndex].Y
+	}
+	var x0, y0, x1, y1 float64
+	hasFill := false
+	for _, id := range box.OperationIDs {
+		i, ok := byOp[id]
+		if !ok {
+			continue
+		}
+		op := display.Ops[i]
+		if op.Kind != layout.DisplayOpFillRect {
+			continue
+		}
+		x, y := op.X*ppp-left, op.Y*ppp-top
+		w, h := op.W*ppp, op.H*ppp
+		if !hasFill {
+			x0, y0, x1, y1 = x, y, x+w, y+h
+			hasFill = true
+			continue
+		}
+		x0 = min(x0, x)
+		y0 = min(y0, y)
+		x1 = max(x1, x+w)
+		y1 = max(y1, y+h)
+	}
+	if !hasFill {
+		return tickGeometry{}, "", false
+	}
+	geometry := tickGeometry{
+		Left:   cssPixels(x0),
+		Top:    cssPixels(y0),
+		Width:  cssPixels(x1 - x0),
+		Height: cssPixels(y1 - y0),
+	}
+	key := "left:" + geometry.Left + ";top:" + geometry.Top + ";width:" + geometry.Width + ";height:" + geometry.Height
+	return geometry, key, true
+}
+
+func cssPixels(value float64) string {
+	formatted := strconv.FormatFloat(value, 'f', 3, 64)
+	formatted = strings.TrimRight(strings.TrimRight(formatted, "0"), ".")
+	if formatted == "" || formatted == "-0" {
+		formatted = "0"
+	}
+	return formatted + "px"
 }
 
 func hasSourceText(sourceText map[string]string, id string) bool {
@@ -389,6 +485,63 @@ func inlineWidthIDs(source string) map[string]bool {
 		i = tag.end
 	}
 	return out
+}
+
+// inlineGeometryIDs returns IDs whose executed source explicitly defines all
+// four box properties inline. Geometry ticks only target those elements, so
+// arbitrary fill operations cannot turn stylesheet-owned layout into inline
+// styles.
+func inlineGeometryIDs(source string) map[string]bool {
+	out := map[string]bool{}
+	for i := 0; i < len(source); {
+		if source[i] != '<' {
+			next := strings.IndexByte(source[i:], '<')
+			if next < 0 {
+				return out
+			}
+			i += next
+			continue
+		}
+		tag, ok := parseTag(source, i)
+		if !ok || tag.end <= i {
+			i++
+			continue
+		}
+		if !tag.closing && !tag.selfClose && tag.name != "" {
+			id := attrValue(tag.attrs, "id")
+			if id != "" {
+				for _, attr := range tag.attrs {
+					if attr.name == "style" && hasInlineGeometry(attr.value) {
+						out[id] = true
+						break
+					}
+				}
+			}
+		}
+		i = tag.end
+	}
+	return out
+}
+
+func hasInlineGeometry(style string) bool {
+	var left, top, width, height bool
+	for _, declaration := range strings.Split(style, ";") {
+		property, _, ok := strings.Cut(declaration, ":")
+		if !ok {
+			continue
+		}
+		switch strings.TrimSpace(strings.ToLower(property)) {
+		case "left":
+			left = true
+		case "top":
+			top = true
+		case "width":
+			width = true
+		case "height":
+			height = true
+		}
+	}
+	return left && top && width && height
 }
 
 // executedSourceOf returns the page's last executed template source, or ""

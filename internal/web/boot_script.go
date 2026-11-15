@@ -66,6 +66,11 @@ const bootScript = `"use strict";
         if (isActiveField(el) || holdsActiveField(el)) { continue; }
         if (typeof op.style === "string") {
           el.setAttribute("style", op.style);
+        } else if (op.geometry && typeof op.geometry === "object") {
+          if (typeof op.geometry.left === "string") { el.style.left = op.geometry.left; }
+          if (typeof op.geometry.top === "string") { el.style.top = op.geometry.top; }
+          if (typeof op.geometry.width === "string") { el.style.width = op.geometry.width; }
+          if (typeof op.geometry.height === "string") { el.style.height = op.geometry.height; }
         } else if (typeof op.text === "string") {
           if (el.textContent !== op.text) { el.textContent = op.text; }
         } else {
@@ -112,6 +117,26 @@ const bootScript = `"use strict";
   function isActiveField(el) {
     return !!el && el === document.activeElement &&
       (el.tagName === "INPUT" || el.tagName === "TEXTAREA");
+  }
+
+  function hasCaret(el) {
+    if (!el) { return false; }
+    if (el.tagName === "TEXTAREA") { return true; }
+    if (el.tagName !== "INPUT") { return false; }
+    var kind = (el.type || "").toLowerCase();
+    return kind === "" || kind === "text" || kind === "password" ||
+      kind === "search" || kind === "tel" || kind === "url";
+  }
+
+  function postCaret(el) {
+    if (!hasCaret(el) || !el.id) { return; }
+    var caret;
+    try {
+      if (typeof el.selectionStart !== "number") { return; }
+      caret = runeOffset(el.value, el.selectionStart);
+    } catch (err) { return; }
+    var body = "id=" + encodeURIComponent(el.id) + "&caret=" + encodeURIComponent(caret);
+    enqueue(function () { return post("/change", body); });
   }
 
   function runeOffset(value, utf16Offset) {
@@ -188,6 +213,13 @@ const bootScript = `"use strict";
         }
       }
       node = node.parentElement;
+    }
+    var root = document.scrollingElement || document.documentElement;
+    if (root) {
+      if (dy < 0 && root.scrollTop > 0) { return true; }
+      if (dy > 0 && root.scrollTop + root.clientHeight < root.scrollHeight - 1) { return true; }
+      if (dx < 0 && root.scrollLeft > 0) { return true; }
+      if (dx > 0 && root.scrollLeft + root.clientWidth < root.scrollWidth - 1) { return true; }
     }
     return false;
   }
@@ -726,6 +758,10 @@ const bootScript = `"use strict";
     }
     var el = eventElement(ev);
     if (!el) { return; }
+    if (hasCaret(el)) {
+      postCaret(el);
+      return;
+    }
     if (el.tagName === "TEXTAREA" || el.tagName === "SELECT") { return; }
     if (typeof el.closest === "function" && el.closest("label")) { return; }
     if (el.tagName === "INPUT") {
@@ -733,7 +769,8 @@ const bootScript = `"use strict";
       if (kind !== "submit" && kind !== "button") { return; }
     }
     if (typeof el.closest !== "function") { return; }
-    var target = el.closest("[data-action], button, input[type=submit], a[href], [role=button], [id]");
+    var target = el.closest("[data-action], button, input[type=submit], a[href], [role=button]");
+    if (!target) { target = el.closest("[id]"); }
     if (!target) { return; }
     var action = target.getAttribute("data-action");
     var body = "";
@@ -775,11 +812,6 @@ const bootScript = `"use strict";
     el.setAttribute("data-ownframe-focus", "1");
     if (restoringFocus || !isActiveField(el) || !el.id) { return; }
     var body = "id=" + encodeURIComponent(el.id);
-    try {
-      if (typeof el.selectionStart === "number") {
-        body += "&caret=" + encodeURIComponent(runeOffset(el.value, el.selectionStart));
-      }
-    } catch (err) {}
     enqueue(function () { return post("/change", body); });
   }
 

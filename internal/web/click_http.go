@@ -66,6 +66,9 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	// A box found by id or action already holds document coordinates, so the
+	// server's frame scroll offset must not shift it.
+	resolved := false
 	if id := q.Get("id"); id != "" {
 		if len(id) > maxDOMIDLength {
 			http.Error(w, "bad coordinates", http.StatusBadRequest)
@@ -73,6 +76,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, b := range s.app.Boxes() {
 			if b.ID == id {
+				resolved = true
 				q.Set("x", strconv.FormatFloat(b.X+b.W/2, 'f', -1, 64))
 				q.Set("y", strconv.FormatFloat(b.Y+b.H/2, 'f', -1, 64))
 				if nx, ny, ok := interpPoint(b, q); ok {
@@ -89,6 +93,7 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		}
 		for _, b := range s.app.Boxes() {
 			if b.Action == action {
+				resolved = true
 				q.Set("x", strconv.FormatFloat(b.X+b.W/2, 'f', -1, 64))
 				q.Set("y", strconv.FormatFloat(b.Y+b.H/2, 'f', -1, 64))
 				break
@@ -103,7 +108,9 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	y += float64(s.scrollY)
+	if !resolved {
+		y += float64(s.scrollY)
+	}
 	err := host.Batch(r.Context(), s.app, func() error {
 		if sel, ok := s.app.(host.Selector); ok {
 			if err := sel.SelectAt(r.Context(), x, y); err != nil {

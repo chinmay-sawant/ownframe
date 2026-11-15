@@ -30,9 +30,30 @@ const (
 	sceneSrcNameB = "blackhole-scene-b"
 )
 
-// sceneView seeds the template with the first scene image.
+// sceneView is the template data: the scene image plus the HUD values the
+// app changes at run time.
 type sceneView struct {
-	SceneSrc string
+	SceneSrc     string
+	FPS          string
+	Scale        string
+	Dist         string
+	OrbitText    string
+	OrbitLabel   string
+	QualityLabel string
+	HintStyle    string
+}
+
+func newSceneView(src string) sceneView {
+	return sceneView{
+		SceneSrc:     src,
+		FPS:          "60",
+		Scale:        "100%",
+		Dist:         "22.0 rs",
+		OrbitText:    "Active",
+		OrbitLabel:   "Pause Orbit",
+		QualityLabel: "Auto Quality",
+		HintStyle:    "opacity: 1.00;",
+	}
 }
 
 // staticSceneJPEGBytes is the fallback frame for environments without an
@@ -51,6 +72,11 @@ func staticSceneJPEG() []byte { return staticSceneJPEGBytes }
 // the dark gradients. The dynamic resolution scaling already shrinks the
 // frame when the loop runs slow, which shrinks the encode with it.
 const sceneJPEGQuality = 85
+
+// scenePushInterval paces fresh scene frames at about 30 per second. The old
+// 100 ms pace gave a 10 fps picture under a 60 fps HUD. Dynamic resolution
+// scaling shrinks the frame when a push costs more than the loop can afford.
+const scenePushInterval = 33 * time.Millisecond
 
 // maxTickSeconds caps one tick's dt so a stalled loop does not jump the
 // camera or the FPS average by a whole stall at once.
@@ -86,8 +112,8 @@ type sceneRenderer struct {
 	// in render.
 	renderW, renderH int
 
-	// lastPush throttles scene pushes so the GPU upload queue is never
-	// asked for more than ~10 fresh full-screen textures per second.
+	// lastPush paces scene pushes to scenePushInterval so the GPU upload
+	// queue is not flooded with full-screen textures.
 	lastPush time.Time
 
 	// frames counts ticks; the scene image alternates every frame.
@@ -169,10 +195,10 @@ func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 	r.app.step(ctx, dt, false)
 	// Alternate the image identity every push, patching only the image element
 	// so HUD edits survive the frame update. Pushes are
-	// paced to at most every 100ms: a fresh full-screen texture every tick
+	// paced to scenePushInterval: a fresh full-screen texture every tick
 	// overwhelms the GPU upload queue on some drivers, and the painted
 	// frame then lags or blanks while the HUD keeps ticking at full rate.
-	if now.Sub(r.lastPush) >= 100*time.Millisecond {
+	if now.Sub(r.lastPush) >= scenePushInterval {
 		r.lastPush = now
 		src := sceneSrcNameA
 		if r.frames&1 == 1 {
@@ -270,6 +296,7 @@ func (r *sceneRenderer) noteFailure(ctx context.Context, reason string) {
 }
 
 func (r *sceneRenderer) showScene(ctx context.Context, src string) error {
+	r.app.view.SceneSrc = src
 	return r.app.Page().PatchElement(ctx, "scene", ownframe.ElementEdit{
 		Attribute: "src",
 		Value:     src,

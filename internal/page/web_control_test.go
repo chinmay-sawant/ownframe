@@ -181,6 +181,23 @@ func TestWebControlsExposeFocusedSelection(t *testing.T) {
 	t.Fatal("focused control missing from WebControls")
 }
 
+func TestApplyWebCheckedSwitchesRadioGroup(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	p := editPage(t, `<input id="free" type="radio" name="plan" value="free">`+
+		`<input id="pro" type="radio" name="plan" value="pro">`)
+	if err := p.ApplyWebChecked(ctx, "free", true); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.ApplyWebChecked(ctx, "pro", true); err != nil {
+		t.Fatal(err)
+	}
+	if p.FormChecked("free") || !p.FormChecked("pro") {
+		t.Fatalf("radio state = free:%t pro:%t, want free:false pro:true", p.FormChecked("free"), p.FormChecked("pro"))
+	}
+}
+
 func TestApplyWebTextSelectStoresValue(t *testing.T) {
 	t.Parallel()
 

@@ -220,3 +220,19 @@ func TestClickByID(t *testing.T) {
 		t.Fatalf("clicks = %v", app.clicks)
 	}
 }
+
+// A click resolved by id or action already holds document coordinates, so a
+// frame scroll offset left by an earlier click must not shift it.
+func TestClickByIDIgnoresFrameScroll(t *testing.T) {
+	t.Parallel()
+
+	app := &domScreen{}
+	srv := &server{app: app, scrollY: 300}
+
+	if rec := formRec(t, srv.click, "/click", "id=login", "http://example.com"); rec.Code != http.StatusSeeOther {
+		t.Fatalf("click: %d %q", rec.Code, rec.Body.String())
+	}
+	if len(app.clicks) != 1 || app.clicks[0][1] != 35 {
+		t.Fatalf("clicks = %v, want y 35 regardless of scrollY", app.clicks)
+	}
+}
