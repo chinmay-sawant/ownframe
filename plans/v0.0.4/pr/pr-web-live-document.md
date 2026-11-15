@@ -2,45 +2,51 @@
 
 Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../../skills/PR/PR_TEMPLATE.md).
 
-- Base: `origin/master` (`085ba7ea`)
-- Head: `feat/web-live-document`
-- Diff against `origin/master`: `5dee69fd`, `dfc55cf8`, and this plan file
+- Base: `master`
+- Head: `feat/web-live-document` (12 commits, head `9953557e`)
+- Release cycle: v0.0.4
 
 ---
 
 ## Summary
 
-`-web` now serves the application HTML as the browser document, with real inputs, instead of a picture inside a frame. Any picture registered with `SetImage` loads by its source name. `SetAudio` and `SetAudioPlayback` publish the clip, whether it is playing, and the 0 to 1 level, and the browser player follows pause and volume. A click updates the existing tree in place.
+`-web` serves the application HTML as the browser document, with real inputs, instead of a picture inside a frame. The live document now follows the server: ticks patch it in place, wheel and caret input reach the page, registered images and audio play in the tab, and several previews that did not respond (Forms, Dino, Flappy Bird, Loglens, Spotify, Blackhole) work again.
 
 ---
 
 ## Motivation / context
 
 - Plans: `plans/v0.0.4/pr/pr-web-live-document.md`
-- The PNG shell could not type, and a later iframe kept paint spans that were not real inputs. Registered images never reached the browser, because `url("logo")` asked for `/logo` and the server had no such route. Playback ignored pause and ran at full volume because the tab owned a separate player from the page.
+- The PNG shell could not type, and registered images and audio never reached the browser. After the live document landed, a browser sweep of the example previews found input, scroll, and animation failures. The causes sat in the shared web layer and in a few examples.
 - Issues: none. This work has no tracker issue.
 
 ---
 
 ## Changes
 
-### Live document
+### Live document (`internal/web`)
 
-- `GET /` returns the executed page when it has a source. Text fields, passwords, textareas, and selects are real controls. `?dom=0` and a page with no source keep the PNG shell.
-- `POST /change` replaces a whole field value through `BeforeEdit`, bind, and `Change`.
-- The boot script morphs the current document against the new one. An id matches that id in the sibling list. Everything else matches by position. New nodes are inserted at that index. The focused field keeps its value and caret.
+- `GET /` returns the executed page with real text fields, passwords, textareas, selects, checkboxes, and radios. `?dom=0` and a page with no source keep the PNG shell.
+- `POST /change` replaces a field value or moves its caret. The browser sends its own caret after a click, so a click inside the text puts the caret there instead of at the end.
+- Snapshots arrive over server-sent events. `domGeneration` is separate from the frame generation, so an in-place tick does not refetch the whole document.
+- Tick patches update leaf text, inline geometry, and fill widths by element id, so a game scene and a seek bar move without a full morph. Hidden text can be cleared again.
+- Checkbox and radio state is written back from the server, so a selection no longer snaps back.
+- The browser scrolls the document itself when it can. The wheel handler only forwards to the server when the document cannot scroll, which fixes a page that did not scroll.
+- A click resolved by element id or action ignores the server's frame scroll offset. Before, a click that focused a control left an offset that made later clicks miss, which broke Loglens calendar next and previous.
 
-### Images
+### Images and audio
 
-- `GET /{name}` returns the bytes any page stored with `SetImage`, including a slash in the name. PNG, JPEG, GIF, WEBP, BMP, icon, SVG, AVIF, and HEIC get an image type. An unknown format is still returned. `.` and `..` are rejected.
+- `GET /{name}` returns bytes stored with `SetImage`. `GET /audio` serves the clip from `SetAudio`, and `/state` reports `audioGen`, `audioPlaying`, and `audioVolume`.
+- `Serve` creates the audio context `Run` uses.
 
-### Audio and playback
+### Examples
 
-- `Serve` and `ServeWithOptions` create the same audio context as `Run`, so a page that plays through the host is heard on this machine.
-- `Page.SetAudio` stores one encoded clip. The generation moves only when the bytes change. `Page.SetAudioPlayback` stores playing and a volume from 0 to 1.
-- `GET /audio` serves that clip. `GET /state` adds `audioGen`, `audioPlaying`, and `audioVolume`. The boot script sets the element volume and calls play or pause from that snapshot.
-- The Spotify player publishes its current clip and its percent volume through those methods. A bar at 10% is `0.1` in the browser.
-- A nil sound no longer panics when no audio context is running.
+- **Spotify:** clicking Your Library or a playlist no longer restarts the track. The player samples the audio clock before it commits a navigation click.
+- **Dino:** the HI score follows the active run and the scene moves in the live document.
+- **Flappy Bird:** a wasm canvas preview, the hidden game-over label, and cloud and ground motion in `-web`.
+- **Loglens:** calendar navigation and page scroll in `-web`, with a regression test for month changes.
+- **Blackhole:** the scene frame swap goes through `SetData` again. A `PatchElement` on the inline `<img>` was refused by the layout engine on every push, so new frames never reached the screen and each refusal dropped the layout cache. The HUD values are template data, so a re-render keeps them. The scene push stays at 100 ms because a faster pace gave blank GPU readbacks.
+- **Telegram and Teams:** a `-web` thread view with fixed chrome, and long-word wrapping with composer scrollbars.
 
 ### Docs
 
@@ -52,10 +58,10 @@ Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../../skills/PR/PR_TEMPLATE.md).
 
 | Area | Impact |
 |------|--------|
-| **Performance** | A state poll reads the clip generation without copying the bytes. Publishing the same clip again does not restart playback. |
-| **Memory** | The page keeps one copy of the current clip. `GET /audio` copies it out under the server lock. |
-| **Behavior / correctness** | `-web` shows the page HTML, loads registered images, updates clicked regions in place, and follows play, pause, and volume in the browser. |
-| **API / CLI** | New `Page` methods: `SetAudio`, `Audio`, `SetAudioPlayback`, `AudioPlayback`. `-web` and `-addr` are unchanged. |
+| **Performance** | Ticks send small id-anchored patches instead of refetching the document. Blackhole no longer reparses the page on every scene push. |
+| **Memory** | The page keeps one copy of the current clip. |
+| **Behavior / correctness** | `-web` previews accept typing, caret placement, radios, wheel scroll, calendar clicks, and animated scenes. Spotify navigation keeps playback position. |
+| **API / CLI** | `Page.SetAudio`, `Audio`, `SetAudioPlayback`, `AudioPlayback`. `-web` and `-addr` are unchanged. |
 | **Dependencies** | None. |
 | **Binary size / build time** | No new module requirements. |
 
@@ -65,7 +71,7 @@ Filled copy of [`skills/PR/PR_TEMPLATE.md`](../../../skills/PR/PR_TEMPLATE.md).
 
 | Item | Migration |
 |------|-----------|
-| None | Existing `Run` and `Serve` callers keep working. Apps that want browser audio call `SetAudio` and `SetAudioPlayback`. |
+| None | Existing `Run` and `Serve` callers keep working. |
 
 ---
 
@@ -82,14 +88,14 @@ Until `plans/v0.0.3/prod-ready-task/` wraps `Page`, reject the PR if it does any
 - [x] `context.Context` is the first parameter when the function already does I/O, cancel, or deadline; no hidden `time.After` that ignores the caller's ctx
 - [x] No new examples whose primary purpose is resembling Telegram, Teams, Spotify, or Wispr
 
-`SetAudio` and `SetAudioPlayback` are real page methods, the same shape as `SetImage`. The web server and the app both call them.
+`SetAudio` and `SetAudioPlayback` are page methods of the same shape as `SetImage`.
 
 ## Test plan
 
-- [x] `go test ./internal/web/` for the document, image route, audio route, and `/state`
-- [x] `go test -run TestAudio ./internal/page/`
-- [x] `go test ./examples/spotify-player/player/`
-- [x] `go test ./examples/music/` for a missing audio context
+- [x] `go test ./internal/web ./internal/page`
+- [x] `go test ./examples/blackhole ./examples/dino/... ./examples/spotify-player/... ./examples/builder/loglens`
+- [x] Browser checks in a muted headless Chrome: Loglens wheel scroll and calendar next/previous, Blackhole HUD buttons, Dino and Flappy Bird motion, Forms radios, Spotify playlist click
+- [x] Blackhole desktop window launched for 15 s: zero refused patches, scene frames reach the display
 - [ ] `make test`
 - [ ] `make lint`
 - [ ] `make test-race`
@@ -98,16 +104,16 @@ Until `plans/v0.0.3/prod-ready-task/` wraps `Page`, reject the PR if it does any
 ### Commands
 
 ```sh
-go test -count=1 ./internal/web/ ./internal/page/ ./examples/music/ ./examples/spotify-player/player/
-go run ./examples/login -web
-go run ./examples/spotify-player -web
+go test -count=1 ./internal/web ./internal/page ./examples/blackhole ./examples/builder/loglens
+go run ./examples/builder/loglens -web
+go run ./examples/blackhole
 ```
 
 ---
 
 ## Screenshots / sample output
 
-Spotify `-web` on `127.0.0.1:8121` returned all 46 `url(...)` images with `200`. Covers were `image/jpeg`. Icons were `image/png`. The home view showed sidebar art, nav icons, and album covers.
+Loglens On-call calendar in the browser: `November 2026` → `December 2026` → `November 2026`.
 
 ---
 
@@ -128,9 +134,10 @@ Spotify `-web` on `127.0.0.1:8121` returned all 46 `url(...)` images with `200`.
 
 ## Follow-ups (out of scope)
 
-- The seek fill and time labels are still painted on the display list. The browser document shows them when the page redraws.
-- `landing/index.html` is still untracked and is not in this branch.
-- `make test` and `make lint` were not run for this branch.
+- Blackhole still reads each frame back from the GPU, encodes a JPEG, and swaps the image. Blank readbacks still happen, and a smooth version needs the shader output drawn straight to the window.
+- Blackhole `-web` shows a still frame, so drag and spin work only in the desktop and wasm builds.
+- Fetch `-web` was not verified because its remote image service timed out.
+- `make test`, `make lint`, `make test-race`, and `make build` were not run for this branch.
 
 ---
 
@@ -153,6 +160,8 @@ Spotify `-web` on `127.0.0.1:8121` returned all 46 `url(...)` images with `200`.
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
-| `.go` | 38 | 4000 | 29 |
-| `.md` | 5 | 211 | 34 |
-| **Total** | **43** | **4211** | **63** |
+| `.css` | 3 | 59 | 5 |
+| `.go` | 116 | 7294 | 219 |
+| `.html` | 7 | 54 | 9 |
+| `.md` | 7 | 272 | 36 |
+| **Total** | **133** | **7679** | **269** |
