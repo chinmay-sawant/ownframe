@@ -2,6 +2,7 @@ package player
 
 import (
 	"os"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/chinmay-sawant/ownframe/examples/music"
@@ -22,6 +23,15 @@ type App struct {
 	logger         *os.File
 	navFocusStates map[string]navFocusState
 	runtime        *RuntimeBehaviorHelper
+	// vpos is the virtual playback position for engines that cannot
+	// advance on their own. vlast is the last tick that sampled it,
+	// vlastPos the last engine position seen, vfreeze counts frozen
+	// frames while playing, and vengaged selects the virtual clock.
+	vpos     time.Duration
+	vlast    time.Time
+	vlastPos time.Duration
+	vfreeze  int
+	vengaged bool
 }
 
 // New parses the player template, registers its images, and starts on the

@@ -39,13 +39,14 @@ func (a *App) autoStart(ctx context.Context) {
 
 // advance moves to the next track when the voice finishes.
 func (a *App) advance(ctx context.Context) error {
-	if !a.view.Playing || !a.audio.Ended() {
+	if !a.view.Playing || (!a.audio.Ended() && !a.virtualEnded()) {
 		return nil
 	}
 
 	if a.view.Repeat {
 		a.audio.SeekFraction(0)
 		a.audio.Play()
+		a.vpos = 0
 		a.syncViewFromAudio()
 		a.page.SetData(a.view)
 

@@ -15,6 +15,10 @@ type auditKbd struct {
 	bsErr   error
 }
 
+func (f *auditKbd) Size() (int, int) { return 320, 200 }
+
+func (f *auditKbd) Generation() uint64 { return 0 }
+
 func (f *auditKbd) Type(context.Context, string) error { return f.typeErr }
 func (f *auditKbd) Backspace(context.Context) error    { return f.bsErr }
 

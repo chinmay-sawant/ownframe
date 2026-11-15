@@ -20,6 +20,10 @@ type keyScreen struct {
 	submits int
 }
 
+func (f *keyScreen) Size() (int, int) { return 320, 200 }
+
+func (f *keyScreen) Generation() uint64 { return 0 }
+
 func (f *keyScreen) KeyDown(_ context.Context, key string) error {
 	f.downs = append(f.downs, key)
 

@@ -63,6 +63,10 @@ type server struct {
 	// ever override a width the template itself sets.
 	patchStyleGen uint64
 	patchStyleIDs map[string]bool
+	// patchTick counts frozen ticks since the last commit. Every thirtieth
+	// one rebases the patch cache so a dropped event can never leave the
+	// client stale: the next values re-emit in full.
+	patchTick uint64
 	// patchContainers are the ids whose executed-source element contains a
 	// child element, baselined with the style set. HTML nesting decides
 	// what textContent replacement would destroy.

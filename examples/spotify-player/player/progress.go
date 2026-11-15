@@ -25,10 +25,11 @@ func (a *App) toggleMute() {
 }
 
 // syncViewFromAudio refreshes Progress/Elapsed/Remaining/Credit from the
-// engine. Call only before a real commit (SetData plus Redraw), never from
-// the tick path: the tick paints the same values through retained ops.
+// playback clock, engine or virtual. Call only before a real commit
+// (SetData plus Redraw), never from the tick path: the tick paints the
+// same values through retained ops.
 func (a *App) syncViewFromAudio() {
-	pos, dur := a.audio.Position(), a.audio.Duration()
+	pos, dur, _ := a.clock()
 	if dur > 0 {
 		fraction := float64(pos) / float64(dur)
 		if fraction < 0 {
@@ -92,6 +93,7 @@ func (a *App) setProgress(progress int) {
 func (a *App) resetProgress() {
 	oldSeconds := a.seconds
 	a.seconds = lengthSeconds(a.view.Now.Length)
+	a.vpos = 0
 	a.view.Progress = 0
 	a.view.Elapsed = "0:00"
 

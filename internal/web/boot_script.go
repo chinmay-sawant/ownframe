@@ -29,7 +29,10 @@ const bootScript = `"use strict";
       credentials: "same-origin"
     }).then(function (resp) {
       if (!(resp && resp.ok)) { return; }
-      return loadDom().then(pullState);
+      return loadDom().then(function () {
+        var el = ensureAudio();
+        if (el) { syncSeek(el); }
+      }).then(pullState);
     }).catch(function () {});
   }
 
@@ -76,16 +79,17 @@ const bootScript = `"use strict";
 
   function applyState(state) {
     if (!state) { return; }
-    syncAudio(state);
     var gen = (typeof state.domGeneration === "number") ? state.domGeneration : state.generation;
     if (typeof gen !== "number") { return; }
     if (gen !== lastGen) {
       scheduleDom();
+      syncAudio(state);
       return;
     }
     if (state.patches && state.patches.length) {
       if (!applyPatches(state.patches)) { scheduleDom(); }
     }
+    syncAudio(state);
   }
 
   function scheduleDom() {
@@ -442,6 +446,68 @@ const bootScript = `"use strict";
     return v;
   }
 
+  // fillFraction reads the committed seek position from the live document.
+  // It returns -1 when the fill is absent or unparseable.
+  function fillFraction() {
+    try {
+      var fill = document.getElementById("seek-fill");
+      if (!fill) { return -1; }
+      var style = fill.getAttribute("style") || "";
+      var m = style.match(/width\s*:\s*([\d.]+)\s*%/);
+      if (!m) { return -1; }
+      var fraction = parseFloat(m[1]) / 100;
+      if (!isFinite(fraction) || fraction < 0 || fraction > 1) { return -1; }
+      return fraction;
+    } catch (err) {
+      return -1;
+    }
+  }
+
+  function trackDuration() {
+    try {
+      var seek = document.getElementById("seek");
+      var raw = seek && seek.getAttribute("data-duration");
+      if (!raw) { return 0; }
+      var parts = raw.split(":");
+      if (parts.length !== 2 || !/^\d+$/.test(parts[0]) || !/^\d{1,2}$/.test(parts[1])) { return 0; }
+      var minutes = parseInt(parts[0], 10);
+      var seconds = parseInt(parts[1], 10);
+      if (seconds > 59) { return 0; }
+      return minutes * 60 + seconds;
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  // syncSeek moves the browser element to the committed fill width when it
+  // disagrees by more than a second. It runs after every click round trip
+  // (the fill just morphed) and on every clip reload, so the element never
+  // lags the document. Paused state is untouched: callers handle pause.
+  // Some MP3 streams do not report a duration to HTMLMediaElement. In that
+  // case, use the current track length printed on the seek element.
+  function syncSeek(el, fresh) {
+    if (!el) { return; }
+    var apply = function () {
+      try {
+        var dur = el.duration;
+        if (!isFinite(dur) || dur <= 0) { dur = trackDuration(); }
+        if (!isFinite(dur) || dur <= 0) { return; }
+        var fraction = fillFraction();
+        if (fraction < 0) { return; }
+        var target = fraction * dur;
+        try {
+          if (Math.abs(el.currentTime - target) > 1) { el.currentTime = target; }
+        } catch (err) {}
+      } catch (err) {}
+    };
+    if (!fresh) {
+      try {
+        if (el.readyState >= 1) { apply(); return; }
+      } catch (err) {}
+    }
+    try { el.addEventListener("loadedmetadata", apply, { once: true }); } catch (err) {}
+  }
+
   // applyTransport follows the page. A paused page pauses the element.
   // Volume is 0 to 1, so a bar at 10% is 0.1 here. A new clip does not
   // start until the page says it is playing.
@@ -456,8 +522,10 @@ const bootScript = `"use strict";
     lastPlaying = playing;
     var gen = typeof state.audioGen === "number" && isFinite(state.audioGen) ? state.audioGen : 0;
     if (gen && gen !== lastAudio) {
+      var hadClip = !!lastAudio;
       lastAudio = gen;
       el.src = "/audio?v=" + gen;
+      if (hadClip) { syncSeek(el, true); }
     }
     if (!playing || !lastAudio) {
       el.pause();
@@ -577,7 +645,7 @@ const bootScript = `"use strict";
         if (!resp || !resp.ok) { return null; }
         return resp.json();
       })
-      .then(function (state) { applyState(state); })
+      .then(function (state) { enqueue(function () { applyState(state); }); })
       .catch(function () {})
       .then(function () { setTimeout(poll, pollMs); });
   }

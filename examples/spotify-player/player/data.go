@@ -18,6 +18,7 @@ func DefaultView() View {
 		Progress:   defaultProgress,
 		Elapsed:    "1:08",
 		Remaining:  "2:24",
+		SeekSlots:  seekSlots(),
 		Now:        now,
 		Tracks:     tracks,
 		Picks:      samplePicks(),
@@ -41,4 +42,15 @@ func DefaultView() View {
 	}
 	paginateTracks(&view, 0)
 	return view
+}
+
+// seekSlots creates one hit target for every percentage point, including
+// both ends of the seek bar.
+func seekSlots() []int {
+	slots := make([]int, percentScale+1)
+	for i := range slots {
+		slots[i] = i
+	}
+
+	return slots
 }

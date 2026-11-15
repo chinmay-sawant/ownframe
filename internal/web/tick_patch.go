@@ -34,7 +34,11 @@ const maxTickPatches = 128
 // elements). Boxes are walked deepest-first so a child claims its ops
 // before a container can. Style patches additionally require the element to
 // already carry an inline width in the executed source, so a fill that
-// merely overlaps a leaf box can never restyle unrelated layout. Control
+// merely overlaps a leaf box can never restyle unrelated layout, and the
+// percent resolves against the smallest strictly-containing source element
+// with children (op points converted through Display.PixelPerPoint), never a
+// sibling segment that overlaps a zero-width fill. With no container the
+// style patch is skipped. Control
 // ids are never patched. Only values that changed since the last event are
 // emitted; cache records the last sent text and style per id.
 func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []image.Rectangle, cache map[string][2]string, styleWidthIDs, controlIDs, containers map[string]bool) []tickPatch {
@@ -56,6 +60,17 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 		}
 	}
 	claimed := make(map[int]bool, len(display.Ops))
+	var touched []string
+	// rollback drops the ids this call already recorded so a breached
+	// event never poisons the cache with values the client never saw.
+	rollback := func() []tickPatch {
+		if cache != nil {
+			for _, id := range touched {
+				delete(cache, id)
+			}
+		}
+		return nil
+	}
 	var out []tickPatch
 	for b := len(boxes) - 1; b >= 0; b-- {
 		box := boxes[b]
@@ -71,16 +86,17 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 		if controlIDs[box.ID] {
 			continue
 		}
-		if !boxOverlapsDirty(box, rects) {
-			continue
-		}
+		boxDirty := boxOverlapsDirty(box, rects)
 		for _, opID := range box.OperationIDs {
 			i, ok := byOp[opID]
 			if !ok || claimed[i] {
 				continue
 			}
-			claimed[i] = true
 			op := &display.Ops[i]
+			if !boxDirty && !displayOpOverlapsDirty(*op, display.PixelPerPoint, rects) {
+				continue
+			}
+			claimed[i] = true
 			switch op.Kind {
 			case layout.DisplayOpText:
 				if cache != nil {
@@ -89,7 +105,7 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 					}
 				}
 				if len(op.Text) > maxChangeValue {
-					return nil
+					return rollback()
 				}
 				text := op.Text
 				out = append(out, tickPatch{ID: box.ID, Text: &text})
@@ -97,29 +113,35 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 					got := cache[box.ID]
 					got[0] = op.Text
 					cache[box.ID] = got
+					touched = append(touched, box.ID)
 				}
 			case layout.DisplayOpFillRect:
-				if box.W <= 0 || !styleWidthIDs[box.ID] {
+				if !styleWidthIDs[box.ID] {
 					continue
 				}
-				style := fillWidthStyle(op.W, box.W)
+				containerW, ok := tickContainerWidth(boxes, b, containers)
+				if !ok || containerW <= 0 {
+					continue
+				}
+				style := fillWidthStyle(op.W*display.PixelPerPoint, containerW)
 				if cache != nil {
 					if got := cache[box.ID]; got[1] == style {
 						continue
 					}
 				}
 				if len(style) > maxChangeValue {
-					return nil
+					return rollback()
 				}
 				out = append(out, tickPatch{ID: box.ID, Style: &style})
 				if cache != nil {
 					got := cache[box.ID]
 					got[1] = style
 					cache[box.ID] = got
+					touched = append(touched, box.ID)
 				}
 			}
 			if len(out) >= maxTickPatches {
-				return nil
+				return rollback()
 			}
 		}
 	}
@@ -260,10 +282,28 @@ func boxOverlapsDirty(box layout.Box, rects []image.Rectangle) bool {
 	return false
 }
 
-// fillWidthStyle renders a fill width as the inline style the template
-// prints (style="width:N%"). Out-of-range widths clamp to 0-100.
-func fillWidthStyle(fillW, boxW float64) string {
-	fraction := fillW / boxW
+// displayOpOverlapsDirty checks the current retained geometry. A box can
+// keep its committed width while a retained fill operation grows from zero.
+func displayOpOverlapsDirty(op layout.DisplayOp, pixelPerPoint float64, rects []image.Rectangle) bool {
+	if pixelPerPoint <= 0 {
+		pixelPerPoint = 1
+	}
+	return boxOverlapsDirty(layout.Box{
+		X: op.X * pixelPerPoint,
+		Y: op.Y * pixelPerPoint,
+		W: op.W * pixelPerPoint,
+		H: op.H * pixelPerPoint,
+	}, rects)
+}
+
+// fillWidthStyle renders a fill width in CSS pixels as the inline style the
+// template prints (style="width:N%") relative to its container width in CSS
+// pixels. The caller converts the op width from layout points through
+// Display.PixelPerPoint and resolves the container with tickContainerWidth;
+// a fill must never divide by its own leaf box, which hugs the fill.
+// Out-of-range widths clamp to 0-100.
+func fillWidthStyle(fillPx, containerPx float64) string {
+	fraction := fillPx / containerPx
 	if fraction < 0 {
 		fraction = 0
 	}
@@ -271,6 +311,38 @@ func fillWidthStyle(fillW, boxW float64) string {
 		fraction = 1
 	}
 	return "width:" + percent1(fraction*100) + "%"
+}
+
+// tickContainerWidth returns the width of the smallest source container that
+// geometrically contains boxes[leaf] and is strictly wider than it. Boxes
+// are in CSS pixels, so no unit conversion applies here; the caller converts
+// the op width through Display.PixelPerPoint before dividing by the result.
+func tickContainerWidth(boxes []layout.Box, leaf int, containers map[string]bool) (float64, bool) {
+	leafBox := boxes[leaf]
+	best := -1
+	for i := range boxes {
+		if i == leaf {
+			continue
+		}
+		c := boxes[i]
+		if c.ID == "" || !containers[c.ID] {
+			continue
+		}
+		if c.W <= leafBox.W {
+			continue
+		}
+		if c.X <= leafBox.X && c.Y <= leafBox.Y &&
+			c.X+c.W >= leafBox.X+leafBox.W &&
+			c.Y+c.H >= leafBox.Y+leafBox.H {
+			if best < 0 || c.W < boxes[best].W {
+				best = i
+			}
+		}
+	}
+	if best < 0 {
+		return 0, false
+	}
+	return boxes[best].W, true
 }
 
 // percent1 formats one decimal place.

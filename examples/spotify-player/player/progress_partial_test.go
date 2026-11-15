@@ -71,13 +71,13 @@ func TestSeekClickUpdatesProgressThroughRedraw(t *testing.T) {
 
 	before := app.Page().Probe().Stats().Redraws
 
-	click(t, app, "seek-6")
+	click(t, app, "seek-60")
 
-	if app.View().Progress != 70 {
-		t.Fatalf("Progress = %d, want 70", app.View().Progress)
+	if app.View().Progress != 60 {
+		t.Fatalf("Progress = %d, want 60", app.View().Progress)
 	}
 
-	if want := time.Duration(0.7 * float64(voice.dur)); voice.pos != want {
+	if want := time.Duration(0.6 * float64(voice.dur)); voice.pos != want {
 		t.Fatalf("pos = %v, want %v", voice.pos, want)
 	}
 

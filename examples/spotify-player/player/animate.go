@@ -16,8 +16,7 @@ func (a *App) animate() {
 	}
 
 	boxes := a.page.Boxes()
-	pos := a.audio.Position()
-	dur := a.audio.Duration()
+	pos, dur, _ := a.clock()
 
 	var seekBox ownframe.Box
 	hasSeek := false

@@ -146,6 +146,11 @@ func (s *server) tickOnce(ctx context.Context, ticker host.Ticker) error {
 			s.patchStyleIDs = nil
 			s.patchContainers = nil
 			s.patchCacheGen = before
+			s.patchTick = 0
+		}
+		s.patchTick++
+		if s.patchTick%30 == 0 {
+			s.patchCache = map[string][2]string{}
 		}
 		if s.patchCache == nil {
 			s.patchCache = map[string][2]string{}

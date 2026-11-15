@@ -14,9 +14,9 @@
     </div>
     <div class="nb-progress">
       <span id="elapsed" class="nb-time">{{.Elapsed}}</span>
-      <div id="seek" data-action="seek" class="bar">
+      <div id="seek" data-action="seek" class="bar" data-duration="{{.Now.Length}}">
         <div id="seek-fill" class="bar-fill" style="width:{{.Progress}}%"></div>
-        <div class="segs"><span id="seek-0" data-action="seek-0" class="seg"></span><span id="seek-1" data-action="seek-1" class="seg"></span><span id="seek-2" data-action="seek-2" class="seg"></span><span id="seek-3" data-action="seek-3" class="seg"></span><span id="seek-4" data-action="seek-4" class="seg"></span><span id="seek-5" data-action="seek-5" class="seg"></span><span id="seek-6" data-action="seek-6" class="seg"></span><span id="seek-7" data-action="seek-7" class="seg"></span><span id="seek-8" data-action="seek-8" class="seg"></span><span id="seek-9" data-action="seek-9" class="seg"></span></div>
+        <div class="segs">{{range .SeekSlots}}<span id="seek-{{.}}" data-action="seek-{{.}}" class="seg"></span>{{end}}</div>
       </div>
       <span id="remaining" class="nb-time right">{{.Remaining}}</span>
     </div>

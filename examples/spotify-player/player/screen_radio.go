@@ -19,19 +19,7 @@ func (a *App) clickRadio(ctx context.Context, action string) error {
 
 // RadioTogglePlay mirrors the now-bar play button for the radio screen.
 func (a *App) RadioTogglePlay(ctx context.Context) {
-	a.view.Playing = !a.view.Playing
-
-	if a.view.Playing {
-		if a.audio.Duration() > 0 {
-			a.audio.Play()
-		} else {
-			a.playNow(ctx)
-		}
-
-		return
-	}
-
-	a.audio.Pause()
+	a.setPlaying(ctx, !a.view.Playing)
 }
 
 // RadioSelectStation makes station i the now-playing item and starts it.

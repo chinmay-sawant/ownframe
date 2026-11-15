@@ -18,6 +18,10 @@ type wheelScreen struct {
 	calls []wheelCall
 }
 
+func (f *wheelScreen) Size() (int, int) { return 320, 200 }
+
+func (f *wheelScreen) Generation() uint64 { return 0 }
+
 func (f *wheelScreen) Wheel(_ context.Context, x, y, dx, dy float64) (bool, error) {
 	f.calls = append(f.calls, wheelCall{x: x, y: y, dx: dx, dy: dy})
 
