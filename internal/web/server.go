@@ -58,6 +58,7 @@ type server struct {
 	// frozen tick instead of diffing new ops against stale values.
 	patchCache    map[string][2]string
 	patchCacheGen uint64
+	patchSource   string
 	// patchStyleIDs are the ids whose executed-source tag carries an inline
 	// width, baselined alongside the patch cache. Tick style patches only
 	// ever override a width the template itself sets.
@@ -71,6 +72,7 @@ type server struct {
 	// child element, baselined with the style set. HTML nesting decides
 	// what textContent replacement would destroy.
 	patchContainers map[string]bool
+	patchTextIDs    map[string]string
 	// limitMu guards the mutating-route throttle table and semaphore.
 	limitMu      sync.Mutex
 	throttleHits map[string]*throttleSeen

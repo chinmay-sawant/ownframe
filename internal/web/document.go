@@ -2,6 +2,7 @@ package web
 
 import (
 	"html"
+	"strconv"
 	"strings"
 
 	"github.com/chinmay-sawant/ownframe/internal/page"
@@ -248,7 +249,33 @@ func writeOpen(b *strings.Builder, tag string, attrs []attr, ctrl *page.WebContr
 	if ctrl.Disabled && !disabled {
 		b.WriteString(" disabled")
 	}
+	if ctrl.Focused {
+		b.WriteString(` data-ownframe-focus="1"`)
+		if supportsSelection(tag, ctrl.Type) {
+			b.WriteString(` data-ownframe-selection-start="`)
+			b.WriteString(strconv.Itoa(ctrl.SelectionStart))
+			b.WriteString(`" data-ownframe-selection-end="`)
+			b.WriteString(strconv.Itoa(ctrl.SelectionEnd))
+			b.WriteByte('"')
+		}
+	}
 	b.WriteByte('>')
+}
+
+func supportsSelection(tag, kind string) bool {
+	if tag == "textarea" {
+		return true
+	}
+	if tag != "input" {
+		return false
+	}
+
+	switch strings.ToLower(kind) {
+	case "", "text", "password", "search", "tel", "url":
+		return true
+	default:
+		return false
+	}
 }
 
 func writeOption(b *strings.Builder, opt page.SelectOption) {

@@ -248,6 +248,13 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
 		}
+		if hasCaret {
+			if placer, ok := s.app.(interface {
+				PlaceCaret(string, int)
+			}); ok {
+				placer.PlaceCaret(id, caret)
+			}
+		}
 		s.syncScroll()
 		s.publishIfChangedLocked()
 		w.WriteHeader(http.StatusNoContent)
@@ -271,6 +278,13 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 		log.Printf("change: %s", sanitizeLine(err.Error()))
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
+	}
+	if hasCaret {
+		if placer, ok := s.app.(interface {
+			PlaceCaret(string, int)
+		}); ok {
+			placer.PlaceCaret(id, caret)
+		}
 	}
 	s.syncScroll()
 	s.publishIfChangedLocked()

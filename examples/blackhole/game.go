@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chinmay-sawant/ownframe"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -29,8 +30,7 @@ const (
 	sceneSrcNameB = "blackhole-scene-b"
 )
 
-// sceneView is the template data for the page: just which scene image the
-// img tag shows this frame.
+// sceneView seeds the template with the first scene image.
 type sceneView struct {
 	SceneSrc string
 }
@@ -151,7 +151,7 @@ var (
 func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 	defer func() {
 		if rec := recover(); rec != nil {
-			r.noteFailure(fmt.Sprintf("panic: %v\n%s", rec, debug.Stack()))
+			r.noteFailure(ctx, fmt.Sprintf("panic: %v\n%s", rec, debug.Stack()))
 			err = nil
 		}
 	}()
@@ -167,9 +167,8 @@ func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 	r.last = now
 
 	r.app.step(ctx, dt, false)
-	// Alternate the image identity every push: the template re-executes
-	// with a new src, so each commit builds a fresh display list around
-	// fresh bytes instead of reusing a possibly stale payload. Pushes are
+	// Alternate the image identity every push, patching only the image element
+	// so HUD edits survive the frame update. Pushes are
 	// paced to at most every 100ms: a fresh full-screen texture every tick
 	// overwhelms the GPU upload queue on some drivers, and the painted
 	// frame then lags or blanks while the HUD keeps ticking at full rate.
@@ -189,9 +188,11 @@ func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 		// Push reads prev (last tick's finished frame) so the read never
 		// races still-executing draws; out and prev swap every push.
 		if err := r.pushImage(ctx, src); err != nil {
-			r.noteFailure(err.Error())
+			r.noteFailure(ctx, err.Error())
 		} else {
-			r.app.Page().SetData(sceneView{SceneSrc: src})
+			if err := r.showScene(ctx, src); err != nil {
+				r.noteFailure(ctx, err.Error())
+			}
 			r.noteCamera()
 		}
 		r.out, r.prev = r.prev, r.out
@@ -201,7 +202,7 @@ func (r *sceneRenderer) tick(ctx context.Context) (err error) {
 	// commit. (RedrawIfChanged is avoided here: its unchanged-path skip
 	// can leave a fresh scene stranded off the display list.)
 	if err := r.app.Page().Redraw(ctx); err != nil {
-		r.noteFailure("redraw: " + err.Error())
+		r.noteFailure(ctx, "redraw: "+err.Error())
 	}
 	if time.Since(r.lastOpLog) >= time.Second {
 		r.lastOpLog = time.Now()
@@ -254,16 +255,25 @@ func (r *sceneRenderer) logSceneOp() {
 // noteFailure counts a bad frame and latches to the static frame when the
 // failure sustains, so a transient GPU hiccup blanks at most a few frames
 // instead of closing the window.
-func (r *sceneRenderer) noteFailure(reason string) {
+func (r *sceneRenderer) noteFailure(ctx context.Context, reason string) {
 	r.failures++
 	debugLogf("frame failure %d: %s", r.failures, firstLine(reason))
 	if r.failures == 30 && !r.staticOnce {
 		r.staticOnce = true
 		r.app.Page().SetImage(sceneSrcNameA, staticSceneJPEG())
 		r.app.Page().SetImage(sceneSrcNameB, staticSceneJPEG())
-		r.app.Page().SetData(sceneView{SceneSrc: sceneSrcNameA})
+		if err := r.showScene(ctx, sceneSrcNameA); err != nil {
+			debugLogf("fallback scene patch: %s", err.Error())
+		}
 		debugLogf("latched to static scene after 30 consecutive failures")
 	}
+}
+
+func (r *sceneRenderer) showScene(ctx context.Context, src string) error {
+	return r.app.Page().PatchElement(ctx, "scene", ownframe.ElementEdit{
+		Attribute: "src",
+		Value:     src,
+	})
 }
 
 // noteCamera resets the failure count on a good frame and logs camera and
@@ -397,7 +407,9 @@ func (r *sceneRenderer) pushImage(ctx context.Context, src string) (err error) {
 			r.staticOnce = true
 			r.app.Page().SetImage(sceneSrcNameA, staticSceneJPEG())
 			r.app.Page().SetImage(sceneSrcNameB, staticSceneJPEG())
-			r.app.Page().SetData(sceneView{SceneSrc: sceneSrcNameA})
+			if patchErr := r.showScene(ctx, sceneSrcNameA); patchErr != nil {
+				debugLogf("fallback scene patch: %s", patchErr.Error())
+			}
 			err = nil
 		}
 	}()
@@ -418,7 +430,7 @@ func (r *sceneRenderer) pushImage(ctx context.Context, src string) (err error) {
 		// The readback came back empty (no GL error is raised for this),
 		// so keep the last good frame instead of pushing black.
 		debugLogf("blank readback skipped buf=%p size=%dx%d", r.prev, w, h)
-		r.noteFailure("blank readback skipped")
+		r.noteFailure(ctx, "blank readback skipped")
 		return nil
 	}
 	return r.pushPixels(w, h, src)

@@ -54,6 +54,11 @@ func (f *domScreen) SetFormValue(id, value string) {
 	}
 	f.values[id] = value
 }
+func (f *domScreen) ApplyWebText(_ context.Context, id, value string) error {
+	f.SetFormValue(id, value)
+	f.redraws++
+	return nil
+}
 func (f *domScreen) PlaceCaret(id string, caret int) {
 	if f.placed == nil {
 		f.placed = map[string]int{}
@@ -140,6 +145,12 @@ func TestChangeEndpoint(t *testing.T) {
 	}
 	if app.values["email"] != "b" || app.redraws != 2 {
 		t.Fatalf("values=%v redraws=%d", app.values, app.redraws)
+	}
+	if rec := formRec(t, srv.change, "/change", "id=email&value=bc&caret=1", origin); rec.Code != http.StatusNoContent {
+		t.Fatalf("value and caret: %d %q", rec.Code, rec.Body.String())
+	}
+	if app.values["email"] != "bc" || app.placed["email"] != 1 || app.redraws != 3 {
+		t.Fatalf("values=%v placed=%v redraws=%d", app.values, app.placed, app.redraws)
 	}
 
 	if rec := formRec(t, srv.change, "/change", "id=remember&checked=1", origin); rec.Code != http.StatusNoContent {

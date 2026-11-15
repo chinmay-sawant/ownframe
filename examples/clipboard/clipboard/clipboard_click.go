@@ -12,6 +12,7 @@ import (
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	if box.ID == "left" || box.ID == "right" {
 		a.last = box.ID
+		a.selectedAll = false
 	}
 
 	switch box.ID {
@@ -36,6 +37,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 
 func (a *App) copyButton(ctx context.Context) error {
 	a.focusLast(ctx)
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
+	}
 
 	text, ok, err := a.CopyText(ctx)
 	if err != nil {
@@ -56,6 +60,9 @@ func (a *App) copyButton(ctx context.Context) error {
 
 func (a *App) cutButton(ctx context.Context) error {
 	a.focusLast(ctx)
+	if err := a.restoreSelectedAll(ctx); err != nil {
+		return err
+	}
 
 	text, ok, err := a.CutText(ctx)
 	if err != nil {

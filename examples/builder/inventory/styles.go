@@ -56,7 +56,7 @@ const appCSS = `
   padding: 6px; max-height: 320px; overflow: hidden;
 }
 .inv-search-backdrop {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 50;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 39;
   background: rgba(28, 27, 23, 0.14);
 }
 .inv-search-picked { color: #8a8780; font-size: 11px; padding: 2px 12px 0; }

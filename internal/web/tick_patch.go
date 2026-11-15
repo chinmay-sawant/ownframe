@@ -1,7 +1,9 @@
 package web
 
 import (
+	"html"
 	"image"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -18,6 +20,12 @@ type tickPatch struct {
 	ID    string  `json:"id"`
 	Text  *string `json:"text,omitempty"`
 	Style *string `json:"style,omitempty"`
+}
+
+type tickTextPart struct {
+	text string
+	x    float64
+	y    float64
 }
 
 // maxTickPatches caps one event. Steady in-place ticks emit a handful of
@@ -41,7 +49,7 @@ const maxTickPatches = 128
 // style patch is skipped. Control
 // ids are never patched. Only values that changed since the last event are
 // emitted; cache records the last sent text and style per id.
-func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []image.Rectangle, cache map[string][2]string, styleWidthIDs, controlIDs, containers map[string]bool) []tickPatch {
+func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []image.Rectangle, cache map[string][2]string, styleWidthIDs, controlIDs, containers map[string]bool, sourceText map[string]string) []tickPatch {
 	if display == nil || len(rects) == 0 {
 		return nil
 	}
@@ -72,6 +80,9 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 		return nil
 	}
 	var out []tickPatch
+	textParts := map[string][]tickTextPart{}
+	textOrder := make([]string, 0)
+	textDirty := map[string]bool{}
 	for b := len(boxes) - 1; b >= 0; b-- {
 		box := boxes[b]
 		if box.ID == "" || !validPatchID(box.ID) {
@@ -93,28 +104,22 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 				continue
 			}
 			op := &display.Ops[i]
-			if !boxDirty && !displayOpOverlapsDirty(*op, display.PixelPerPoint, rects) {
+			dirty := boxDirty || displayOpOverlapsDirty(*op, display.PixelPerPoint, rects)
+			claimed[i] = true
+			if op.Kind == layout.DisplayOpText {
+				if _, exists := textParts[box.ID]; !exists {
+					textOrder = append(textOrder, box.ID)
+				}
+				textParts[box.ID] = append(textParts[box.ID], tickTextPart{text: op.Text, x: op.X, y: op.Y})
+				if dirty {
+					textDirty[box.ID] = true
+				}
 				continue
 			}
-			claimed[i] = true
+			if !dirty {
+				continue
+			}
 			switch op.Kind {
-			case layout.DisplayOpText:
-				if cache != nil {
-					if got := cache[box.ID]; got[0] == op.Text {
-						continue
-					}
-				}
-				if len(op.Text) > maxChangeValue {
-					return rollback()
-				}
-				text := op.Text
-				out = append(out, tickPatch{ID: box.ID, Text: &text})
-				if cache != nil {
-					got := cache[box.ID]
-					got[0] = op.Text
-					cache[box.ID] = got
-					touched = append(touched, box.ID)
-				}
 			case layout.DisplayOpFillRect:
 				if !styleWidthIDs[box.ID] {
 					continue
@@ -145,7 +150,152 @@ func collectTickPatches(display *layout.Display, boxes []layout.Box, rects []ima
 			}
 		}
 	}
+	for _, id := range textOrder {
+		if !textDirty[id] {
+			continue
+		}
+		text := mergeTickText(textParts[id], sourceText[id], hasSourceText(sourceText, id))
+		if cache != nil {
+			previous, cached := cache[id]
+			if cached && previous[0] == text {
+				continue
+			}
+			if !cached && hasSourceText(sourceText, id) && sourceText[id] == text {
+				continue
+			}
+		}
+		if len(text) > maxChangeValue {
+			return rollback()
+		}
+		out = append(out, tickPatch{ID: id, Text: &text})
+		if cache != nil {
+			got := cache[id]
+			got[0] = text
+			cache[id] = got
+			touched = append(touched, id)
+		}
+		if len(out) >= maxTickPatches {
+			return rollback()
+		}
+	}
 	return out
+}
+
+func hasSourceText(sourceText map[string]string, id string) bool {
+	_, ok := sourceText[id]
+	return ok
+}
+
+func mergeTickText(parts []tickTextPart, source string, hasSource bool) string {
+	if hasSource && sourceMatchesTickText(source, parts) {
+		return source
+	}
+
+	sort.SliceStable(parts, func(i, j int) bool {
+		if parts[i].y == parts[j].y {
+			return parts[i].x < parts[j].x
+		}
+		return parts[i].y < parts[j].y
+	})
+	var text strings.Builder
+	var previousY float64
+	for i, part := range parts {
+		if i > 0 && part.y != previousY && text.Len() > 0 &&
+			!endsWithSpace(text.String()) && !startsWithSpace(part.text) {
+			text.WriteByte(' ')
+		}
+		text.WriteString(part.text)
+		previousY = part.y
+	}
+	return text.String()
+}
+
+func sourceMatchesTickText(source string, parts []tickTextPart) bool {
+	parts = append([]tickTextPart(nil), parts...)
+	sort.SliceStable(parts, func(i, j int) bool {
+		if parts[i].y == parts[j].y {
+			return parts[i].x < parts[j].x
+		}
+		return parts[i].y < parts[j].y
+	})
+	position := 0
+	hasText := false
+	for _, part := range parts {
+		if part.text == "" {
+			continue
+		}
+		hasText = true
+		at := strings.Index(source[position:], part.text)
+		if at < 0 {
+			return false
+		}
+		position += at + len(part.text)
+	}
+	return hasText || source == ""
+}
+
+func startsWithSpace(text string) bool {
+	return len(text) > 0 && (text[0] == ' ' || text[0] == '\n' || text[0] == '\t')
+}
+
+func endsWithSpace(text string) bool {
+	if len(text) == 0 {
+		return false
+	}
+	last := text[len(text)-1]
+	return last == ' ' || last == '\n' || last == '\t'
+}
+
+func sourceTextByID(source string, containers map[string]bool) map[string]string {
+	texts := map[string]string{}
+	for i := 0; i < len(source); {
+		if source[i] != '<' {
+			i++
+			continue
+		}
+		tag, ok := parseTag(source, i)
+		if !ok || tag.end <= i {
+			i++
+			continue
+		}
+		id := attrValue(tag.attrs, "id")
+		if tag.closing || tag.comment || tag.other || tag.selfClose || voidElement(tag.name) ||
+			id == "" || containers[id] {
+			i = tag.end
+			continue
+		}
+		if text, ok := leafText(source, tag); ok {
+			texts[id] = html.UnescapeString(text)
+		}
+		i = tag.end
+	}
+	return texts
+}
+
+func leafText(source string, opening htmlTag) (string, bool) {
+	for i := opening.end; i < len(source); {
+		if source[i] != '<' {
+			i++
+			continue
+		}
+		tag, ok := parseTag(source, i)
+		if !ok || tag.end <= i {
+			i++
+			continue
+		}
+		if tag.comment || tag.other {
+			i = tag.end
+			continue
+		}
+		if tag.closing {
+			if tag.name == opening.name {
+				return source[opening.end:i], true
+			}
+			return "", false
+		}
+		return "", false
+	}
+	return "", false
 }
 
 // containerIDs returns the ids whose executed-source element contains a

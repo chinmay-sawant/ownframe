@@ -11,14 +11,17 @@ import (
 // WebControl is one live control for the browser document.
 // Value is the stored value, including a password. Never the painted bullets.
 type WebControl struct {
-	ID       string
-	Tag      string
-	Type     string
-	Name     string
-	Value    string
-	Checked  bool
-	Disabled bool
-	Options  []SelectOption
+	ID             string
+	Tag            string
+	Type           string
+	Name           string
+	Value          string
+	Checked        bool
+	Disabled       bool
+	Focused        bool
+	SelectionStart int
+	SelectionEnd   int
+	Options        []SelectOption
 }
 
 // WebControls returns the live controls, one per id, sorted by ID.
@@ -36,7 +39,12 @@ func (p *Page) WebControls() []WebControl {
 
 	out := make([]WebControl, 0, len(fs.ByID))
 	for _, c := range fs.ByID {
-		out = append(out, webControlFrom(c))
+		control := webControlFrom(c)
+		control.Focused = fs.FocusID == c.ID
+		if control.Focused && supportsBrowserSelection(c) {
+			control.SelectionStart, control.SelectionEnd = fs.Bounds(form.RuneLen(c.Value))
+		}
+		out = append(out, control)
 	}
 
 	slices.SortFunc(out, func(a, b WebControl) int {
@@ -44,6 +52,22 @@ func (p *Page) WebControls() []WebControl {
 	})
 
 	return out
+}
+
+func supportsBrowserSelection(c Control) bool {
+	if c.Tag == "textarea" {
+		return true
+	}
+	if c.Tag != "input" {
+		return false
+	}
+
+	switch strings.ToLower(c.Type) {
+	case "", "text", "password", "search", "tel", "url":
+		return true
+	default:
+		return false
+	}
 }
 
 func webControlFrom(c Control) WebControl {

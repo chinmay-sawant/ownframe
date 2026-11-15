@@ -40,6 +40,29 @@ func TestBrowserDocumentInput(t *testing.T) {
 	}
 }
 
+func TestBrowserDocumentCarriesFocusedSelection(t *testing.T) {
+	t.Parallel()
+
+	got := browserDocument(`<span id="left" data-ownframe-field="input"></span>`, "", []page.WebControl{{
+		ID:             "left",
+		Tag:            "input",
+		Type:           "text",
+		Value:          "a😀b",
+		Focused:        true,
+		SelectionStart: 0,
+		SelectionEnd:   3,
+	}}, "")
+	for _, want := range []string{
+		`data-ownframe-focus="1"`,
+		`data-ownframe-selection-start="0"`,
+		`data-ownframe-selection-end="3"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("document missing %q: %s", want, got)
+		}
+	}
+}
+
 func TestBrowserDocumentPassword(t *testing.T) {
 	t.Parallel()
 

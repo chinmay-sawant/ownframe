@@ -38,6 +38,7 @@ func New() (*App, error) {
 // onBeforeEdit snapshots the fields so Undo can restore the last edit.
 func (a *App) onBeforeEdit(context.Context, ownframe.Box) error {
 	a.push()
+	a.selectedAll = false
 
 	return nil
 }

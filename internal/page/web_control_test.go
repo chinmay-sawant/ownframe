@@ -155,6 +155,32 @@ func TestWebControlsListsLiveFields(t *testing.T) {
 	}
 }
 
+func TestWebControlsExposeFocusedSelection(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	p := editPage(t, `<input id="text" type="text" value="a😀b" style="display:block;width:120px;height:20px">`)
+	if err := p.Focus(ctx, "text"); err != nil {
+		t.Fatal(err)
+	}
+	if err := p.SelectAll(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, control := range p.WebControls() {
+		if control.ID != "text" {
+			continue
+		}
+		if !control.Focused || control.SelectionStart != 0 || control.SelectionEnd != 3 {
+			t.Fatalf("control = %+v, want focused rune range [0, 3)", control)
+		}
+
+		return
+	}
+
+	t.Fatal("focused control missing from WebControls")
+}
+
 func TestApplyWebTextSelectStoresValue(t *testing.T) {
 	t.Parallel()
 

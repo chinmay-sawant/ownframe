@@ -162,19 +162,66 @@ func TestCollectTickPatchesDeltaCache(t *testing.T) {
 	rects := []image.Rectangle{image.Rect(0, 0, 200, 200)}
 	cache := map[string][2]string{}
 
-	got := collectTickPatches(display, boxes, rects, cache, map[string]bool{"elapsed": true}, nil, map[string]bool{})
+	got := collectTickPatches(display, boxes, rects, cache, map[string]bool{"elapsed": true}, nil, map[string]bool{}, nil)
 	if len(got) != 1 || got[0].ID != "elapsed" || got[0].Text == nil || *got[0].Text != "1:24" {
 		t.Fatalf("patches = %+v", got)
 	}
 
-	if again := collectTickPatches(display, boxes, rects, cache, map[string]bool{"elapsed": true}, nil, map[string]bool{}); len(again) != 0 {
+	if again := collectTickPatches(display, boxes, rects, cache, map[string]bool{"elapsed": true}, nil, map[string]bool{}, nil); len(again) != 0 {
 		t.Fatalf("unchanged tick re-emitted: %+v", again)
 	}
 
 	display.Ops[0].Text = "1:25"
-	got = collectTickPatches(display, boxes, rects, cache, map[string]bool{"elapsed": true}, nil, map[string]bool{})
+	got = collectTickPatches(display, boxes, rects, cache, map[string]bool{"elapsed": true}, nil, map[string]bool{}, nil)
 	if len(got) != 1 || got[0].Text == nil || *got[0].Text != "1:25" {
 		t.Fatalf("changed tick patches = %+v", got)
+	}
+}
+
+func TestCollectTickPatchesCombinesTextRunsForOneElement(t *testing.T) {
+	t.Parallel()
+
+	display := &layout.Display{
+		Ops: []layout.DisplayOp{
+			{ID: 7, Kind: layout.DisplayOpText, Text: "email=eventqa@example.com remember=true plan=pro", X: 11, Y: 21, W: 300, H: 10},
+			{ID: 8, Kind: layout.DisplayOpText, Text: "color=Blue file=", X: 11, Y: 31, W: 100, H: 10},
+		},
+	}
+	boxes := []layout.Box{{ID: "status", X: 300, Y: 100, W: 20, H: 10, ParentIndex: -1, OperationIDs: []uint64{7, 8}}}
+	rects := []image.Rectangle{image.Rect(0, 15, 100, 25)}
+	cache := map[string][2]string{}
+	source := `<p id="status">pending submission</p>`
+	sourceText := sourceTextByID(source, containerIDs(source))
+
+	got := collectTickPatches(display, boxes, rects, cache, nil, nil, map[string]bool{}, sourceText)
+	if len(got) != 1 || got[0].ID != "status" || got[0].Text == nil ||
+		*got[0].Text != "email=eventqa@example.com remember=true plan=pro color=Blue file=" {
+		t.Fatalf("patches = %+v, want one complete status text patch", got)
+	}
+
+	if again := collectTickPatches(display, boxes, rects, cache, nil, nil, map[string]bool{}, sourceText); len(again) != 0 {
+		t.Fatalf("unchanged text re-emitted: %+v", again)
+	}
+}
+
+func TestCollectTickPatchesClearsTextFromInitialSource(t *testing.T) {
+	t.Parallel()
+
+	display := &layout.Display{Ops: []layout.DisplayOp{{
+		ID: 7, Kind: layout.DisplayOpText, Text: "", X: 11, Y: 21, W: 100, H: 10,
+	}}}
+	boxes := []layout.Box{{ID: "overlay", X: 10, Y: 20, W: 100, H: 12, ParentIndex: -1, OperationIDs: []uint64{7}}}
+	rects := []image.Rectangle{image.Rect(0, 15, 100, 35)}
+	cache := map[string][2]string{}
+	sourceText := map[string]string{"overlay": "GAME OVER"}
+
+	got := collectTickPatches(display, boxes, rects, cache, nil, nil, map[string]bool{}, sourceText)
+	if len(got) != 1 || got[0].ID != "overlay" || got[0].Text == nil || *got[0].Text != "" {
+		t.Fatalf("patches = %+v, want one empty text patch", got)
+	}
+
+	if again := collectTickPatches(display, boxes, rects, cache, nil, nil, map[string]bool{}, sourceText); len(again) != 0 {
+		t.Fatalf("unchanged empty text re-emitted: %+v", again)
 	}
 }
 
@@ -195,7 +242,7 @@ func TestCollectTickPatchesSkipsContainers(t *testing.T) {
 	cache := map[string][2]string{}
 	styleIDs := map[string]bool{"row": true, "elapsed": true}
 
-	got := collectTickPatches(display, boxes, rects, cache, styleIDs, nil, map[string]bool{})
+	got := collectTickPatches(display, boxes, rects, cache, styleIDs, nil, map[string]bool{}, nil)
 	for _, p := range got {
 		if p.ID == "row" {
 			t.Fatalf("container box patched: %+v", got)
@@ -227,7 +274,7 @@ func TestCollectTickPatchesSkipsNestedSourceContainer(t *testing.T) {
 		t.Fatal("tile span detected as container")
 	}
 
-	got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{}, nil, containers)
+	got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{}, nil, containers, nil)
 	if len(got) != 1 || got[0].ID != "t-4-stat-0" {
 		t.Fatalf("patches = %+v, want only the tile", got)
 	}
@@ -246,7 +293,7 @@ func TestCollectTickPatchesSkipsUnstyledFill(t *testing.T) {
 	}
 	rects := []image.Rectangle{image.Rect(0, 0, 400, 60)}
 
-	if got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{}, nil, map[string]bool{}); len(got) != 0 {
+	if got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{}, nil, map[string]bool{}, nil); len(got) != 0 {
 		t.Fatalf("unstyled fill patched: %+v", got)
 	}
 }
@@ -271,7 +318,7 @@ func TestCollectTickPatchesStyleWidthAgainstContainer(t *testing.T) {
 	rects := []image.Rectangle{image.Rect(0, 0, 460, 60)}
 
 	containers := containerIDs(`<div id="track"><div id="fill" style="width:0%"></div></div>`)
-	got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{"fill": true}, nil, containers)
+	got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{"fill": true}, nil, containers, nil)
 	if len(got) != 1 || got[0].ID != "fill" || got[0].Style == nil || *got[0].Style != "width:32.0%" {
 		t.Fatalf("patches = %+v, want one width:32.0%% style patch for fill", got)
 	}
@@ -295,7 +342,7 @@ func TestCollectTickPatchesSkipsFillWithoutContainer(t *testing.T) {
 	}
 	rects := []image.Rectangle{image.Rect(0, 0, 400, 60)}
 
-	got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{"fill": true}, nil, map[string]bool{})
+	got := collectTickPatches(display, boxes, rects, map[string][2]string{}, map[string]bool{"fill": true}, nil, map[string]bool{}, nil)
 	if len(got) != 1 || got[0].ID != "elapsed" || got[0].Text == nil || *got[0].Text != "1:24" {
 		t.Fatalf("patches = %+v, want only the elapsed text patch", got)
 	}

@@ -12,6 +12,7 @@ const bootScript = `"use strict";
   var lastAudio = 0;
   var domScheduled = false;
   var events = null;
+  var restoringFocus = false;
   // Milliseconds between GET /state polls. Used only when the browser has
   // no EventSource; with SSE the server pushes and the poll stays off.
   var pollMs = 100;
@@ -113,11 +114,117 @@ const bootScript = `"use strict";
       (el.tagName === "INPUT" || el.tagName === "TEXTAREA");
   }
 
+  function runeOffset(value, utf16Offset) {
+    return Array.from(value.slice(0, utf16Offset)).length;
+  }
+
+  function utf16Offset(value, runeOffset) {
+    return Array.from(value).slice(0, runeOffset).join("").length;
+  }
+
   function holdsActiveField(el) {
     var active = document.activeElement;
     if (!isActiveField(active) || !el || typeof el.contains !== "function") { return false; }
     return el.contains(active);
   }
+
+  var specialKeys = {
+    "ArrowUp": "arrowup",
+    "ArrowDown": "arrowdown",
+    "ArrowLeft": "arrowleft",
+    "ArrowRight": "arrowright",
+    "PageUp": "pageup",
+    "PageDown": "pagedown",
+    "Home": "home",
+    "End": "end",
+    "Enter": "enter",
+    "Escape": "escape",
+    " ": "space",
+    "Spacebar": "space",
+    "Backspace": "backspace",
+    "Delete": "delete",
+    "Control": "control",
+    "Shift": "shift",
+    "Meta": "meta",
+    "Alt": "alt"
+  };
+
+  function pageKey(ev) {
+    var name = specialKeys[ev.key] || "";
+    if (!name && ev.key && ev.key.length === 1 && ev.key.charCodeAt(0) > 32 && ev.key.charCodeAt(0) < 127) {
+      name = ev.key.toLowerCase();
+    }
+    if (!name) { return ""; }
+    if (name === "arrowleft" || name === "arrowright" || name === "home" || name === "end") {
+      if (ev.shiftKey) { name = "shift+" + name; }
+      if (ev.ctrlKey || ev.metaKey) { name = "ctrl+" + name; }
+      if (ev.altKey) { name = "alt+" + name; }
+    }
+    return name;
+  }
+
+  function wheelUnits(delta, mode) {
+    if (mode === 1) { return delta / 3; }
+    if (mode === 2) { return delta; }
+    return delta / 100;
+  }
+
+  function hasNativeScroll(el, dx, dy) {
+    var node = el;
+    while (node && node !== document.body && node !== document.documentElement) {
+      if (node.nodeType === 1) {
+        var style = window.getComputedStyle(node);
+        if (dx !== 0 && (style.overflowX === "auto" || style.overflowX === "scroll") &&
+            node.scrollWidth > node.clientWidth &&
+            ((dx < 0 && node.scrollLeft > 0) ||
+             (dx > 0 && node.scrollLeft + node.clientWidth < node.scrollWidth))) {
+          return true;
+        }
+        if (dy !== 0 && (style.overflowY === "auto" || style.overflowY === "scroll") &&
+            node.scrollHeight > node.clientHeight &&
+            ((dy < 0 && node.scrollTop > 0) ||
+             (dy > 0 && node.scrollTop + node.clientHeight < node.scrollHeight))) {
+          return true;
+        }
+      }
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  function onWheel(ev) {
+    var el = eventElement(ev);
+    if (el && typeof el.closest === "function" &&
+        el.closest("input, textarea, select, [contenteditable=true]")) { return; }
+    if (hasNativeScroll(el, ev.deltaX, ev.deltaY)) { return; }
+    if (ev.cancelable) { ev.preventDefault(); }
+    var body = "x=" + encodeURIComponent(ev.pageX) +
+      "&y=" + encodeURIComponent(ev.pageY) +
+      "&dx=" + encodeURIComponent(-wheelUnits(ev.deltaX, ev.deltaMode)) +
+      "&dy=" + encodeURIComponent(-wheelUnits(ev.deltaY, ev.deltaMode));
+    enqueue(function () { return post("/wheel", body); });
+  }
+
+  function isNativeKeyTarget(el) {
+    if (!el) { return false; }
+    var tag = el.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable) { return true; }
+    return typeof el.closest === "function" && !!el.closest("button, a[href], [role=button]");
+  }
+
+  function onKey(ev, down) {
+    var target = eventElement(ev);
+    if (isNativeKeyTarget(target)) { return; }
+    var name = pageKey(ev);
+    if (!name || name === "tab") { return; }
+    if (ev.cancelable) { ev.preventDefault(); }
+    var body = "key=" + encodeURIComponent(name) + "&down=" + (down ? "1" : "0");
+    if (ev.shiftKey) { body += "&shift=1"; }
+    enqueue(function () { return post("/key", body); });
+  }
+
+  function onKeyDown(ev) { onKey(ev, true); }
+  function onKeyUp(ev) { onKey(ev, false); }
 
   function keepFocusAttr(el) {
     return !!el && el === document.activeElement;
@@ -221,6 +328,25 @@ const bootScript = `"use strict";
     if (tag === "OPTION" && cur.selected !== next.selected) { cur.selected = next.selected; }
   }
 
+  function syncSelection(cur, next) {
+    if (cur.tagName !== "INPUT" && cur.tagName !== "TEXTAREA") { return; }
+    if (next.hasAttribute("data-ownframe-focus") && !isActiveField(cur)) {
+      restoringFocus = true;
+      try { cur.focus({ preventScroll: true }); }
+      catch (err) { try { cur.focus(); } catch (ignored) {} }
+      restoringFocus = false;
+    }
+    if (!isActiveField(cur)) { return; }
+    var start = parseInt(next.getAttribute("data-ownframe-selection-start"), 10);
+    var end = parseInt(next.getAttribute("data-ownframe-selection-end"), 10);
+    if (!isFinite(start) || !isFinite(end)) { return; }
+    start = utf16Offset(cur.value, Math.max(0, start));
+    end = utf16Offset(cur.value, Math.max(0, end));
+    try {
+      if (cur.selectionStart !== start || cur.selectionEnd !== end) { cur.setSelectionRange(start, end); }
+    } catch (err) {}
+  }
+
   function atOrAfter(parent, node, index) {
     var kids = parent.childNodes;
     var n;
@@ -306,9 +432,14 @@ const bootScript = `"use strict";
       return;
     }
     syncAttrs(cur, next);
-    if (isActiveField(cur)) { return; }
+    if (isActiveField(cur)) {
+      syncControl(cur, next);
+      syncSelection(cur, next);
+      return;
+    }
     morphChildren(cur, next);
     syncControl(cur, next);
+    syncSelection(cur, next);
   }
 
   // Match an element id anywhere in this sibling list, then by position.
@@ -554,8 +685,14 @@ const bootScript = `"use strict";
     }
     var id = el.id;
     var value = el.value;
+    var caret = null;
+    try {
+      if (typeof el.selectionStart === "number") { caret = runeOffset(value, el.selectionStart); }
+    } catch (err) {}
     enqueue(function () {
-      return post("/change", "id=" + encodeURIComponent(id) + "&value=" + encodeURIComponent(value));
+      var body = "id=" + encodeURIComponent(id) + "&value=" + encodeURIComponent(value);
+      if (caret !== null) { body += "&caret=" + encodeURIComponent(caret); }
+      return post("/change", body);
     });
   }
 
@@ -590,14 +727,14 @@ const bootScript = `"use strict";
     var el = eventElement(ev);
     if (!el) { return; }
     if (el.tagName === "TEXTAREA" || el.tagName === "SELECT") { return; }
+    if (typeof el.closest === "function" && el.closest("label")) { return; }
     if (el.tagName === "INPUT") {
       var kind = (el.type || "").toLowerCase();
       if (kind !== "submit" && kind !== "button") { return; }
     }
     if (typeof el.closest !== "function") { return; }
-    var target = el.closest("[data-action], button, input[type=submit], a[href]");
+    var target = el.closest("[data-action], button, input[type=submit], a[href], [role=button], [id]");
     if (!target) { return; }
-    ev.preventDefault();
     var action = target.getAttribute("data-action");
     var body = "";
     if (target.id) {
@@ -611,10 +748,24 @@ const bootScript = `"use strict";
       }
     } else if (action) {
       body = "action=" + encodeURIComponent(action);
-    } else {
+    } else if (target.tagName === "A") {
       return;
+    } else {
+      body = "x=" + encodeURIComponent(ev.pageX) + "&y=" + encodeURIComponent(ev.pageY);
+    }
+    if (action || target.tagName === "BUTTON" || target.tagName === "A" ||
+        (target.tagName === "INPUT" && (target.type || "").toLowerCase() === "submit")) {
+      ev.preventDefault();
     }
     enqueue(function () { return post("/click", body); });
+  }
+
+  function onMouseDown(ev) {
+    var el = eventElement(ev);
+    if (!el || typeof el.closest !== "function" || el.closest("label")) { return; }
+    if (el.closest("input, textarea, select, button, a[href]")) { return; }
+    if (!el.closest("[data-action], [id]")) { return; }
+    if (ev.cancelable) { ev.preventDefault(); }
   }
 
   // Focus only marks the target. A focus post redraws the field and eats keys.
@@ -622,6 +773,14 @@ const bootScript = `"use strict";
     var el = eventElement(ev);
     if (!el || typeof el.setAttribute !== "function") { return; }
     el.setAttribute("data-ownframe-focus", "1");
+    if (restoringFocus || !isActiveField(el) || !el.id) { return; }
+    var body = "id=" + encodeURIComponent(el.id);
+    try {
+      if (typeof el.selectionStart === "number") {
+        body += "&caret=" + encodeURIComponent(runeOffset(el.value, el.selectionStart));
+      }
+    } catch (err) {}
+    enqueue(function () { return post("/change", body); });
   }
 
   function onFocusOut(ev) {
@@ -679,7 +838,11 @@ const bootScript = `"use strict";
 
   document.addEventListener("input", onInput);
   document.addEventListener("change", onChange);
+  document.addEventListener("mousedown", onMouseDown);
   document.addEventListener("click", onClick);
+  document.addEventListener("wheel", onWheel, { passive: false });
+  document.addEventListener("keydown", onKeyDown);
+  document.addEventListener("keyup", onKeyUp);
   document.addEventListener("focusin", onFocusIn);
   document.addEventListener("focusout", onFocusOut);
   function start() {
