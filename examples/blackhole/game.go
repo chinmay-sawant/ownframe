@@ -17,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chinmay-sawant/ownframe"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -73,10 +72,11 @@ func staticSceneJPEG() []byte { return staticSceneJPEGBytes }
 // frame when the loop runs slow, which shrinks the encode with it.
 const sceneJPEGQuality = 85
 
-// scenePushInterval paces fresh scene frames at about 30 per second. The old
-// 100 ms pace gave a 10 fps picture under a 60 fps HUD. Dynamic resolution
-// scaling shrinks the frame when a push costs more than the loop can afford.
-const scenePushInterval = 33 * time.Millisecond
+// scenePushInterval paces fresh scene frames. Faster than this the GPU
+// readback comes back blank on some drivers ("blank readback skipped" in the
+// debug log), the frame is dropped, and the picture flickers. A 33 ms pace
+// was tried and produced hundreds of blank readbacks in one run.
+const scenePushInterval = 100 * time.Millisecond
 
 // maxTickSeconds caps one tick's dt so a stalled loop does not jump the
 // camera or the FPS average by a whole stall at once.
@@ -295,12 +295,15 @@ func (r *sceneRenderer) noteFailure(ctx context.Context, reason string) {
 	}
 }
 
-func (r *sceneRenderer) showScene(ctx context.Context, src string) error {
+// showScene points the img at src by re-executing the template. An img is an
+// inline box, which the layout engine refuses to patch in place ("not a block
+// or table box"), so a PatchElement here dropped every frame and invalidated
+// the layout cache each time. The view carries the HUD values too, so the
+// re-execution keeps them.
+func (r *sceneRenderer) showScene(_ context.Context, src string) error {
 	r.app.view.SceneSrc = src
-	return r.app.Page().PatchElement(ctx, "scene", ownframe.ElementEdit{
-		Attribute: "src",
-		Value:     src,
-	})
+	r.app.Page().SetData(&r.app.view)
+	return nil
 }
 
 // noteCamera resets the failure count on a good frame and logs camera and
