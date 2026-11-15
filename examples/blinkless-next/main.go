@@ -53,6 +53,10 @@ func main() {
 		page.SetImage("swatch.png", swatch)
 	}
 
+	// env-swatch.svg reads env(--color, blue). The link-parameters sample
+	// fills it red for one image and leaves the other on the fallback.
+	page.SetImage("env-swatch.svg", []byte(envSwatchSVG))
+
 	ctx := context.Background()
 	if err = page.Redraw(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -93,6 +97,9 @@ func reviewPage() string {
 
 	return candidates[0]
 }
+
+const envSwatchSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="48" viewBox="0 0 96 48">` +
+	`<rect width="96" height="48" fill="env(--color, #1d4ed8)"/></svg>`
 
 // swatchPNG is the blue and orange picture used by the background samples.
 func swatchPNG() ([]byte, error) {
