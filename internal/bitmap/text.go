@@ -40,6 +40,7 @@ func paintText(dst *image.NRGBA, op *layout.DisplayOp, cache faceCache) error {
 			Y: fixed.Int26_6(math.Round(y * pxPerPt * fixedPointScale)),
 		},
 	}
+	paintTextStroke(dst, op, face, content, x, y)
 	drawString(&draw, content, op.LetterSpacing*pxPerPt)
 
 	if layout.DisplayFakeBold(op) {
