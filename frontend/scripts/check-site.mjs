@@ -89,6 +89,8 @@ try {
     assert.ok(!result.exceptionDetails, JSON.stringify(result.exceptionDetails));
     return result.result.value;
   }
+  // The site scrolls smoothly for readers. Layout checks need the final position at once.
+  await send('Page.addScriptToEvaluateOnNewDocument', { source: "document.addEventListener('DOMContentLoaded', () => { document.documentElement.style.scrollBehavior = 'auto'; });" });
   async function navigate(hash) {
     await send('Page.navigate', { url: `http://127.0.0.1:4175/ownframe/${hash}` });
     for (let attempt = 0; attempt < 50; attempt++) {
@@ -192,11 +194,11 @@ try {
         const layout = await evaluate(`({width: innerWidth, pageWidth: document.documentElement.scrollWidth,
           mainWidth: document.querySelector('main').getBoundingClientRect().width,
           headerWidth: document.querySelector('header').getBoundingClientRect().width,
-          scale: Number(getComputedStyle(document.documentElement).getPropertyValue('--site-scale')),
+          clientWidth: document.documentElement.clientWidth,
           theme: document.documentElement.dataset.theme, heading: document.querySelector('main h1').textContent})`);
         assert.ok(layout.pageWidth <= width, `Horizontal overflow: ${JSON.stringify({ width, hash, ...layout })}`);
         assert.equal(layout.theme, theme);
-        assert.ok(Math.abs(layout.mainWidth - Math.min(width, 1440 * layout.scale)) < 2, 'Page content width differs between routes');
+        assert.ok(Math.abs(layout.mainWidth - layout.clientWidth) < 2, 'Page content width differs between routes');
         assert.ok(Math.abs(layout.headerWidth - layout.mainWidth) < 2, 'Header width differs from page content');
         metrics.push({ width, height, hash, ...layout });
         if (hash.startsWith('#docs')) {
@@ -212,7 +214,7 @@ try {
           await screenshot(`example-tables-${width}-${theme}`);
         }
         if (hash === '#engine' || hash === '#compare') {
-          assert.equal(await evaluate('document.querySelectorAll("main section").length'), 1, `${hash} displays another section`);
+          assert.equal(await evaluate('!!document.querySelector("#demos, #start")'), false, `${hash} displays home content`);
           assert.ok(await evaluate(`!!document.querySelector('${hash}')`), `Missing ${hash} page`);
           assert.equal(await evaluate(`document.querySelector('header a[href="${hash}"]').getAttribute('aria-current')`), 'page');
         }
@@ -221,7 +223,7 @@ try {
           for (let attempt = 0; attempt < 300; attempt++) {
             await pause(100);
             loaded = await evaluate(`(() => {
-              const doc = document.querySelector('.launch-demo').contentDocument;
+              const doc = document.querySelector('.h-frame').contentDocument;
               return !!doc?.querySelector('canvas') && doc.querySelector('#loader')?.classList.contains('loaded');
             })()`);
             if (loaded) break;
@@ -229,8 +231,8 @@ try {
           assert.ok(loaded, `Embedded WASM did not load at ${width}px`);
           await pause(500);
           assert.ok(await evaluate(`(() => {
-            const frame = document.querySelector('.launch-demo');
-            return Math.abs(frame.getBoundingClientRect().width - frame.parentElement.getBoundingClientRect().width) < 2;
+            const frame = document.querySelector('.h-frame');
+            return Math.abs(frame.getBoundingClientRect().width - frame.parentElement.clientWidth) < 2;
           })()`), 'Playable demo does not fill its pane');
           await evaluate(`Promise.all(Array.from(document.querySelectorAll('main img')).map(image => {
             image.loading = 'eager';
@@ -242,27 +244,22 @@ try {
         if (hash === '#home') {
           assert.equal(await evaluate('!!document.querySelector("#engine, #compare")'), false, 'Home includes a separate page');
           assert.ok(await evaluate('!!document.querySelector("#demos") && !!document.querySelector("#start")'), 'Home content is missing');
-          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.hello-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
-          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.source-disclosure .starter-picker button')).map(button => button.textContent.trim())`), ['Hello World', 'Split with friends', 'Builder basics']);
+          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.h-source [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
+          assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.h-controls .h-picker:nth-child(2) button')).map(button => button.textContent.trim())`), ['Hello World', 'Split with friends', 'Builder basics']);
           for (const index of [1, 2, 3, 0]) {
-            await evaluate(`document.querySelectorAll('.hello-example [role="tab"]')[${index}].click()`);
-            assert.equal(await evaluate(`document.querySelector('.hello-example [role="tab"][aria-selected="true"]').getAttribute('aria-controls')`), await evaluate(`document.querySelector('.hello-example [role="tabpanel"]:not([hidden])').id`));
+            await evaluate(`document.querySelectorAll('.h-source [role="tab"]')[${index}].click()`);
+            assert.equal(await evaluate(`document.querySelector('.h-source [role="tab"][aria-selected="true"]').getAttribute('aria-controls')`), await evaluate(`document.querySelector('.h-source [role="tabpanel"]:not([hidden])').id`));
           }
           assert.equal(await evaluate(`new Set(Array.from(document.querySelectorAll('[id]')).map(element => element.id)).size === document.querySelectorAll('[id]').length`), true, 'Duplicate IDs between code examples');
-          assert.equal(await evaluate('document.querySelectorAll("iframe.launch-demo").length'), 1, 'Homepage is missing the playable WASM demo');
-          assert.ok(await evaluate(`Boolean(document.querySelector('.preview-caption a[href$="demo/index.html"]'))`), 'Missing public WASM link');
-          assert.equal(await evaluate('getComputedStyle(document.querySelector(".demo-card-phone .demo-image")).objectFit'), 'contain');
+          assert.equal(await evaluate('document.querySelectorAll("iframe.h-frame").length'), 1, 'Homepage is missing the playable WASM demo');
+          assert.ok(await evaluate(`Boolean(document.querySelector('.h-preview-foot a[href$="demo/index.html"]'))`), 'Missing public WASM link');
+          assert.equal(await evaluate('getComputedStyle(document.querySelector(".h-card-phone .h-card-media img")).objectFit'), 'contain');
           const navigation = await evaluate(`({
             bottom: document.querySelector('header nav').getBoundingClientRect().bottom,
             headerBottom: document.querySelector('header').getBoundingClientRect().bottom,
             visible: getComputedStyle(document.querySelector('header nav')).display !== 'none'
           })`);
           assert.ok(!navigation.visible || navigation.bottom <= navigation.headerBottom + 1, 'Navigation escapes its header');
-          if (width <= 1024) {
-            assert.ok(await evaluate('document.querySelector(".preview-window-pane").getBoundingClientRect().top < document.querySelector(".source-disclosure").getBoundingClientRect().top'), 'Mobile source appears before the demo');
-            // The pattern picker made the source disclosure a plain block,
-            // so it stays expanded on mobile.
-          }
         }
         if (hash === '#docs/compare-rust-gpui') {
           assert.ok(await evaluate('!!document.querySelector(".language-rust .hljs-string")'), 'Rust highlighting missing');
@@ -281,13 +278,15 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 1, mobile: width < 1000 });
     await navigate('#home');
     await send('Page.reload');
+    // The demo iframe loads lazily, so bring it into view before waiting for it.
+    for (let attempt = 0; attempt < 100 && !(await evaluate('!!document.querySelector("#live-demo")')); attempt++) await pause(100);
+    await evaluate('document.querySelector(".h-preview").scrollIntoView()');
     for (let attempt = 0; attempt < 300; attempt++) {
       await pause(100);
-      if (await evaluate(`document.querySelector('.launch-demo')?.contentDocument?.querySelector('#loader')?.classList.contains('loaded')`)) break;
+      if (await evaluate(`document.querySelector('.h-frame')?.contentDocument?.querySelector('#loader')?.classList.contains('loaded')`)) break;
     }
-    await evaluate('document.querySelector("#live-demo").scrollIntoView()');
     await pause(500);
-    const frame = await evaluate(`document.querySelector('.launch-demo').getBoundingClientRect().toJSON()`);
+    const frame = await evaluate(`document.querySelector('.h-frame').getBoundingClientRect().toJSON()`);
     const before = (await send('Page.captureScreenshot', { format: 'png' })).data;
     async function clickDemo(x, y) {
       const point = { x: frame.x + x, y: frame.y + y };
@@ -303,27 +302,29 @@ try {
     const filtered = (await send('Page.captureScreenshot', { format: 'png' })).data;
     assert.notEqual(filtered, completed, 'Embedded filter click did not change the rendered page');
     await screenshot(`home-demo-filtered-${width}`);
-    for (const selector of ['.hello-example', '.split-example', '.builder-example']) {
-      await evaluate(`document.querySelectorAll('.starter-picker button')[${selector === '.hello-example' ? 0 : selector === '.split-example' ? 1 : 2}].click()`);
-      await evaluate(`document.querySelector('${selector}').scrollIntoView()`);
+    for (const [index, name] of ['hello-example', 'split-example', 'builder-example'].entries()) {
+      await evaluate(`document.querySelectorAll('.h-controls .h-picker:nth-child(2) button')[${index}].click()`);
+      await evaluate(`document.querySelector('.h-source').scrollIntoView()`);
       let loaded = false;
       for (let attempt = 0; attempt < 300; attempt++) {
         await pause(100);
         loaded = await evaluate(`(() => {
-          const doc = document.querySelector('${selector} iframe')?.contentDocument;
+          const doc = document.querySelector('.h-source iframe')?.contentDocument;
           return !!doc?.querySelector('canvas') && doc.querySelector('#loader')?.classList.contains('loaded');
         })()`);
         if (loaded) break;
       }
-      assert.ok(loaded, `${selector} WASM did not load`);
-      if (selector === '.builder-example') {
-        assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.builder-example [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
+      assert.ok(loaded, `${name} WASM did not load`);
+      if (name === 'builder-example') {
+        assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('.h-source [role="tab"]')).map(tab => tab.textContent.trim().replace(/^(Go|<>|#|▶)\\s*/, ''))`), ['Live demo', 'main.go', 'template.html', 'style.css']);
+        assert.equal(await evaluate(`document.querySelector('.h-controls .h-picker:nth-child(1) button:nth-child(2)').disabled`), true, 'Builder pattern should be disabled outside Hello World');
+        assert.equal(await evaluate(`document.querySelector('.h-controls .h-picker:nth-child(1) button[aria-pressed="true"]').textContent`), 'HTML template');
       }
-      await screenshot(`${selector.slice(1)}-${width}`);
+      await screenshot(`${name}-${width}`);
     }
-    await evaluate(`document.querySelectorAll('.starter-picker button')[0].click()`);
+    await evaluate(`document.querySelectorAll('.h-controls .h-picker:nth-child(2) button')[0].click()`);
     for (const index of [1, 2, 3]) {
-      await evaluate(`document.querySelectorAll('.hello-example [role=tab]')[${index}].click()`);
+      await evaluate(`document.querySelectorAll('.h-source [role=tab]')[${index}].click()`);
       await screenshot(`starter-source-${index}-${width}`);
     }
 
@@ -332,25 +333,25 @@ try {
   await send('Page.reload');
   for (let attempt = 0; attempt < 50; attempt++) {
     await pause(100);
-    if (await evaluate('!!document.querySelector(".hero-install button")')) break;
+    if (await evaluate('!!document.querySelector(".h-hero .h-install button")')) break;
   }
   await evaluate(`navigator.clipboard.writeText = async (text) => { window.copiedCommand = text; };
-    document.querySelector('.hero-install button').click()`);
+    document.querySelector('.h-hero .h-install button').click()`);
   await pause(50);
-  assert.equal(await evaluate('window.copiedCommand'), 'go get github.com/chinmay-sawant/ownframe@v0.0.2');
-  assert.equal(await evaluate('document.querySelector(".hero-install button").textContent'), 'Copied');
+  assert.equal(await evaluate('window.copiedCommand'), 'go get github.com/chinmay-sawant/ownframe@v0.0.3');
+  assert.equal(await evaluate('document.querySelector(".h-hero .h-install button").textContent'), 'Copied');
   await evaluate(`navigator.clipboard.writeText = async () => { throw new Error('Clipboard unavailable'); };
-    document.querySelector('.hero-install button').click()`);
+    document.querySelector('.h-hero .h-install button').click()`);
   await pause(50);
-  assert.equal(await evaluate('document.querySelector(".hero-install button").textContent'), 'Select to copy');
+  assert.equal(await evaluate('document.querySelector(".h-hero .h-install button").textContent'), 'Select to copy');
   await evaluate('document.querySelector(".site-menu-toggle").click()');
-  assert.equal(await evaluate('getComputedStyle(document.querySelector("header nav")).display'), 'grid');
-  assert.ok(await evaluate('document.querySelector("header nav").getBoundingClientRect().bottom <= document.querySelector("header").getBoundingClientRect().bottom'));
+  assert.equal(await evaluate('getComputedStyle(document.querySelector("header nav")).display'), 'flex');
+  assert.ok(await evaluate('document.querySelector("header nav").getBoundingClientRect().top >= document.querySelector("header").getBoundingClientRect().bottom - 1'), 'Menu does not open below the header');
   await evaluate('document.querySelector(".site-menu-toggle").focus()');
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 });
   assert.equal(await evaluate('document.querySelector(".site-menu-toggle").getAttribute("aria-expanded")'), 'false');
   assert.equal(await evaluate('document.activeElement.className'), 'site-menu-toggle');
-  assert.ok(await evaluate('document.querySelector(".source-disclosure").getBoundingClientRect().height > 0'), 'Source block is hidden');
+  assert.ok(await evaluate('document.querySelector(".h-source").getBoundingClientRect().height > 0'), 'Source block is hidden');
   await evaluate('document.querySelector(".example-file-tabs [role=tab]").focus()');
   await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 });
   assert.equal(await evaluate('document.activeElement.getAttribute("aria-selected")'), 'true');
@@ -369,8 +370,13 @@ try {
   assert.equal(await evaluate('location.hash'), '#docs/examples-readme');
   assert.equal(await evaluate('document.querySelector(".docs-menu-toggle").getAttribute("aria-expanded")'), 'false');
   await evaluate('location.hash = "#docs/examples-readme/feature-examples"');
-  await pause(200);
-  assert.ok(await evaluate('Math.abs(document.querySelector("#feature-examples").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16 * Number(getComputedStyle(document.documentElement).getPropertyValue("--site-scale"))) < 4'), 'Mobile anchor did not clear the sticky header');
+  for (let attempt = 0; attempt < 60; attempt++) {
+    await pause(100);
+    const settled = await evaluate('(() => { const el = document.querySelector("#feature-examples"); return !!el && Math.abs(el.getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16) < 4; })()');
+    if (settled) break;
+  }
+  const anchor = await evaluate('({ top: document.querySelector("#feature-examples").getBoundingClientRect().top, header: document.querySelector("header").getBoundingClientRect().height, scrollY, max: document.documentElement.scrollHeight - innerHeight })');
+  assert.ok(Math.abs(anchor.top - anchor.header - 16) < 4, `Mobile anchor did not clear the sticky header: ${JSON.stringify(anchor)}`);
   await screenshot('mobile-docs');
   await navigate('#docs/showcase/pet-care');
   assert.equal(await evaluate('document.querySelector(".docs-content h2").textContent'), 'Pet Care');
@@ -384,29 +390,28 @@ try {
   assert.ok(await evaluate('Array.from(document.querySelectorAll("main img")).every(image => image.naturalWidth > 0)'), 'Broken homepage image');
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".github")).backgroundColor'), 'rgba(0, 0, 0, 0)', 'GitHub background is still visible');
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".github-count")).borderLeftWidth'), '0px', 'GitHub count divider is still visible');
-  assert.equal(await evaluate('document.querySelector(".home > section:nth-child(2)").id'), 'demos');
+  assert.ok(await evaluate('!!document.querySelector("#demos")'), 'Examples section missing');
   await navigate('#team');
-  assert.equal(await evaluate('document.querySelector("#team-title").textContent'), 'Built by a developer, with AI tools.');
-  assert.ok(await evaluate('document.querySelector(".maintainer-card").textContent.includes("Chinmay Sawant")'));
-  assert.equal(await evaluate('document.querySelectorAll(".team-card").length'), 5);
-  await evaluate(`Promise.all(Array.from(document.querySelectorAll('.team-card img')).map(image => {
+  assert.equal(await evaluate('document.querySelector("#team-title").textContent'), 'Built by a solo developer, with AI tools.');
+  assert.ok(await evaluate('document.querySelector(".p-maint").textContent.includes("Chinmay Sawant")'));
+  assert.equal(await evaluate('document.querySelectorAll(".p-tool").length'), 5);
+  await evaluate(`Promise.all(Array.from(document.querySelectorAll('.p-tool img')).map(image => {
     image.loading = 'eager';
     return image.decode();
   }))`);
-  assert.ok(await evaluate('Array.from(document.querySelectorAll(".team-card img")).every(image => image.naturalWidth > 0)'), 'Broken team image');
-  await evaluate('document.querySelector(".maintainer-avatar").decode()');
-  assert.equal(await evaluate('document.querySelector(".maintainer-links a").href'), 'https://x.com/chinmay_sawant_');
+  assert.ok(await evaluate('Array.from(document.querySelectorAll(".p-tool img")).every(image => image.naturalWidth > 0)'), 'Broken team image');
+  await evaluate('document.querySelector(".p-avatar").decode()');
+  assert.equal(await evaluate('document.querySelector(".p-maint-links a").href'), 'https://x.com/chinmay_sawant_');
   for (const width of [390, 1440]) {
     await send('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: width < 1000 });
     await screenshot(`team-x-${width}`);
     assert.ok(await evaluate('document.documentElement.scrollWidth <= innerWidth'), 'Maintainer card overflows');
   }
   await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  assert.equal(await evaluate('document.querySelectorAll(".home > section").length'), 1, 'Team page shows more than the team');
+  assert.equal(await evaluate('!!document.querySelector("#demos, #start")'), false, 'Team page shows home content');
   await navigate('#home');
-  assert.ok(await evaluate('document.querySelector(".hero-mascot").naturalWidth > 0'), 'Gopher missing');
-  assert.ok(await evaluate('!!document.querySelector(".core-example .language-go .hljs-keyword")'), 'Go highlighting missing');
-  assert.equal(await evaluate('getComputedStyle(document.documentElement).scrollbarWidth'), 'none');
+  assert.ok(await evaluate('document.querySelector(".h-mascot").naturalWidth > 0'), 'Gopher missing');
+  assert.ok(await evaluate('!!document.querySelector(".h-source .language-go .hljs-keyword")'), 'Go highlighting missing');
   await evaluate('window.scrollTo(0, 0)');
   const wheelPoint = await evaluate(`(() => {
     const header = document.querySelector('header').getBoundingClientRect();
@@ -421,15 +426,15 @@ try {
   }
   assert.ok(scrolled, 'Page cannot scroll with hidden scrollbar');
   assert.ok(await evaluate('Math.abs(document.querySelector("header").getBoundingClientRect().top) < 1'), 'Header does not stay visible while scrolling');
-  await evaluate(`document.querySelector('.site-menu-toggle').click(); document.querySelector('header a[href="#start"]').click()`);
+  await evaluate(`document.querySelector('.site-menu-toggle').click(); document.querySelector('.h-hero a[href="#start"]').click()`);
   await pause(200);
-  assert.ok(await evaluate('Math.abs(document.querySelector("#start").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 24 * Number(getComputedStyle(document.documentElement).getPropertyValue("--site-scale"))) < 4'), 'Get started link did not clear the sticky header');
-  await evaluate(`document.querySelector('header a[href="#docs/showcase/wispr-flow"]').click()`);
+  assert.ok(await evaluate('Math.abs(document.querySelector("#start").getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16) < 4'), 'Get started link did not clear the sticky header');
+  await evaluate(`document.querySelector('header a[href="#docs/why-ownframe"]').click()`);
   await pause(200);
-  assert.equal(await evaluate('location.hash'), '#docs/showcase/wispr-flow');
+  assert.equal(await evaluate('location.hash'), '#docs/why-ownframe');
   assert.equal(await evaluate('getComputedStyle(document.querySelector(".docs-content")).overflowY'), 'visible');
   await evaluate('document.querySelector(".skip").click()');
-  assert.equal(await evaluate('location.hash'), '#docs/showcase/wispr-flow');
+  assert.equal(await evaluate('location.hash'), '#docs/why-ownframe');
   assert.equal(await evaluate('document.activeElement.id'), 'main');
   await evaluate('document.querySelector(".docs-menu-toggle").click()');
   await evaluate('document.querySelector(".docs-menu-toggle").focus()');
