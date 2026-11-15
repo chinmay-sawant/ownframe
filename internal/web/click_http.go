@@ -33,12 +33,12 @@ func (s *server) click(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
-	if len(q.Get("x")) > 64 || len(q.Get("y")) > 64 {
+	if len(q.Get("x")) > maxCoordStringLen || len(q.Get("y")) > maxCoordStringLen {
 		http.Error(w, "bad coordinates", http.StatusBadRequest)
 		return
 	}
 	for _, k := range []string{"ox", "oy", "w", "h"} {
-		if len(q.Get(k)) > 64 {
+		if len(q.Get(k)) > maxCoordStringLen {
 			http.Error(w, "bad coordinates", http.StatusBadRequest)
 			return
 		}

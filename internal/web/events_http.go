@@ -3,8 +3,18 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"time"
+)
+
+// eventsHeartbeatInterval paces SSE keep-alive comments so idle servers
+// hold the stream open without emitting snapshots.
+// sseOverheadBytes reserves the "data: " prefix plus trailing newlines
+// when sizing an encoded event buffer.
+const (
+	eventsHeartbeatInterval = 15 * time.Second
+	sseOverheadBytes        = 16
 )
 
 // events streams server-sent events to the browser. It is an additive
@@ -47,7 +57,7 @@ func (s *server) events(w http.ResponseWriter, r *http.Request) {
 		fl.Flush()
 	}
 
-	hb := time.NewTicker(15 * time.Second)
+	hb := time.NewTicker(eventsHeartbeatInterval)
 	defer hb.Stop()
 	for {
 		select {
@@ -166,7 +176,10 @@ func encodeEvent(state frameState) ([]byte, bool) {
 	if err != nil {
 		return nil, false
 	}
-	msg := make([]byte, 0, len(body)+16)
+	if len(body) > math.MaxInt-sseOverheadBytes {
+		return nil, false
+	}
+	msg := make([]byte, 0, len(body)+sseOverheadBytes)
 	msg = append(msg, "data: "...)
 	msg = append(msg, body...)
 	msg = append(msg, '\n', '\n')

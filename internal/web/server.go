@@ -62,7 +62,6 @@ type server struct {
 	// patchStyleIDs are the ids whose executed-source tag carries an inline
 	// width, baselined alongside the patch cache. Tick style patches only
 	// ever override a width the template itself sets.
-	patchStyleGen    uint64
 	patchStyleIDs    map[string]bool
 	patchGeometryIDs map[string]bool
 	// patchTick counts frozen ticks since the last commit. Every thirtieth

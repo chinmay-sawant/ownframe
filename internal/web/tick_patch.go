@@ -42,6 +42,13 @@ type tickTextPart struct {
 // patches and the client falls back to its current behavior.
 const maxTickPatches = 128
 
+// tickPixelRounding biases box edges to the nearest device pixel and
+// tickPercentScale converts a fill fraction to a CSS percent.
+const (
+	tickPixelRounding = 0.5
+	tickPercentScale  = 100
+)
+
 // collectTickPatches resolves dirty rects to id-anchored text, geometry, and
 // fill-width patches. Only leaf elements are patched: replacing textContent or inline
 // style on a container would destroy the child nodes the full document
@@ -572,8 +579,8 @@ func controlIDs(controls []page.WebControl) map[string]bool {
 func boxOverlapsDirty(box layout.Box, rects []image.Rectangle) bool {
 	x0 := int(box.X)
 	y0 := int(box.Y)
-	x1 := int(box.X + box.W + 0.5)
-	y1 := int(box.Y + box.H + 0.5)
+	x1 := int(box.X + box.W + tickPixelRounding)
+	y1 := int(box.Y + box.H + tickPixelRounding)
 	for _, r := range rects {
 		if r.Empty() {
 			continue
@@ -613,7 +620,7 @@ func fillWidthStyle(fillPx, containerPx float64) string {
 	if fraction > 1 {
 		fraction = 1
 	}
-	return "width:" + percent1(fraction*100) + "%"
+	return "width:" + percent1(fraction*tickPercentScale) + "%"
 }
 
 // tickContainerWidth returns the width of the smallest source container that

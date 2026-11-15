@@ -36,7 +36,7 @@ func (s *server) image(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", imageContentType(data))
 	w.Header().Set("Cache-Control", "no-store")
-	if _, err := w.Write(data); err != nil {
+	if _, err := w.Write(data); err != nil { //nolint:gosec // reason: data is first-party SetImage bytes keyed by validated imageName, Content-Type is sniffed from bytes.
 		return
 	}
 }

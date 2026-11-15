@@ -370,13 +370,13 @@ try {
   assert.equal(await evaluate('location.hash'), '#docs/examples-readme');
   assert.equal(await evaluate('document.querySelector(".docs-menu-toggle").getAttribute("aria-expanded")'), 'false');
   await evaluate('location.hash = "#docs/examples-readme/feature-examples"');
-  for (let attempt = 0; attempt < 60; attempt++) {
+  const anchorOffset = '({ top: document.querySelector("#feature-examples")?.getBoundingClientRect().top, header: document.querySelector("header").getBoundingClientRect().height, scrollY, max: document.documentElement.scrollHeight - innerHeight })';
+  let anchor = await evaluate(anchorOffset);
+  for (let attempt = 0; attempt < 60 && (anchor.top === undefined || Math.abs(anchor.top - anchor.header - 16) >= 4); attempt++) {
     await pause(100);
-    const settled = await evaluate('(() => { const el = document.querySelector("#feature-examples"); return !!el && Math.abs(el.getBoundingClientRect().top - document.querySelector("header").getBoundingClientRect().height - 16) < 4; })()');
-    if (settled) break;
+    anchor = await evaluate(anchorOffset);
   }
-  const anchor = await evaluate('({ top: document.querySelector("#feature-examples").getBoundingClientRect().top, header: document.querySelector("header").getBoundingClientRect().height, scrollY, max: document.documentElement.scrollHeight - innerHeight })');
-  assert.ok(Math.abs(anchor.top - anchor.header - 16) < 4, `Mobile anchor did not clear the sticky header: ${JSON.stringify(anchor)}`);
+  assert.ok(anchor.top !== undefined && Math.abs(anchor.top - anchor.header - 16) < 4, `Mobile anchor did not clear the sticky header: ${JSON.stringify(anchor)}`);
   await screenshot('mobile-docs');
   await navigate('#docs/showcase/pet-care');
   assert.equal(await evaluate('document.querySelector(".docs-content h2").textContent'), 'Pet Care');

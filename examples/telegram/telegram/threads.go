@@ -46,7 +46,7 @@ func (a *App) send() {
 		a.chats[i].Time = "now"
 	}
 
-	if !(a.web || a.view.Web) {
+	if !a.web && !a.view.Web {
 		a.page.ScrollTo(0, scrollBottom)
 	}
 }

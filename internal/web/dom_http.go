@@ -13,10 +13,14 @@ import (
 
 // maxDOMIDLength bounds element ids and action names the browser may name
 // in /click and /change. maxChangeValue caps one stored control value at a
-// quarter of the POST body cap.
+// quarter of the POST body cap. maxCoordStringLen caps one coordinate or
+// offset query value in /click. maxCaretStringLen caps the caret offset text
+// in /change before Atoi.
 const (
-	maxDOMIDLength = 256
-	maxChangeValue = maxFormBytes / 4
+	maxDOMIDLength    = 256
+	maxChangeValue    = maxFormBytes / 4
+	maxCoordStringLen = 64
+	maxCaretStringLen = 10
 )
 
 // domSource is a screen that exposes its executed template source and theme
@@ -181,7 +185,7 @@ func (s *server) change(w http.ResponseWriter, r *http.Request) {
 	checked := checkedRaw == "1" || checkedRaw == "true"
 	_, hasCaret := r.PostForm["caret"]
 	caretRaw := r.PostFormValue("caret")
-	if len(caretRaw) > 10 {
+	if len(caretRaw) > maxCaretStringLen {
 		http.Error(w, "bad caret", http.StatusBadRequest)
 		return
 	}
