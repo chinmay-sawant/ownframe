@@ -65,6 +65,10 @@ type Options struct {
 	// idle page stops presenting and runs page ticks at a low keep-alive
 	// rate, and input or damage returns the window to uncapped drawing.
 	NoIdlePace bool
+	// NoAudio skips the sound device. Ebiten opens that device on the first
+	// frame after an audio context exists, and a missing device ends the
+	// window. A preview that never plays sound sets this.
+	NoAudio bool
 	// MaxFPS caps heavy presents (Draw work) per second without VSync.
 	// The loop runs faster at MaxFPS+20, so a 60 cap shows 60 on the FE
 	// while the app ticks at 80 for input smoothness. 0 (the default) is

@@ -56,7 +56,9 @@ func main() {
 		}
 		return
 	}
-	if err = ownframe.Run(ctx, page); err != nil {
+	// This preview does not play sound. Opening the audio device on a
+	// machine with no card closes the window before the first paint.
+	if err = ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{NoAudio: true}); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
