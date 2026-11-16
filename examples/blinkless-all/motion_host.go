@@ -46,7 +46,9 @@ func motionLaneHTML(l motionLane) string {
 }
 
 const motionCSS = `
-.lane{position:relative;height:50px;margin:20px 0 0 0;border-bottom:1px dashed #d6d1c4}
+.lane{position:relative;height:50px;margin:20px 0 0 0;padding:14px 0 0 14px;border-bottom:1px dashed #d6d1c4}
+/* The path starts at the lane's content box, and the box is centered on it, so
+   14px of padding keeps the 28px box inside the lane. */
 .rd{font-family:monospace;font-size:12px;color:#374151;margin:2px 0 0 0}
 .dot{width:28px;height:28px;background:#2563eb;color:#fff;text-align:center;line-height:28px}
 .lbl{position:absolute;left:260px;top:4px;font-size:12px;color:#4b5563}

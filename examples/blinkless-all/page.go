@@ -19,8 +19,16 @@ const actionPrefix = "tab-"
 // pageStyle is shared by every tab page.
 const pageStyle = `
 body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-serif;font-size:14px}
-.top{position:fixed;top:0;left:16px;right:16px;z-index:10;background:#f6f4ee;padding:8px 0 0 0}
-.topgap{visibility:hidden;margin:-8px 0 0 0}
+.top{position:fixed;top:0;left:16px;right:16px;z-index:10;background:#f6f4ee;padding:8px 0 0 0;box-sizing:border-box;max-height:40vh;overflow:auto}
+.topgap{position:static;visibility:hidden;opacity:0;margin:-16px 0 8px 0;overflow:hidden}
+.top .head{padding:6px 12px;margin-bottom:8px}
+.top .head p{margin:2px 0;font-size:12px;line-height:1.3}
+.top .nums{gap:6px;margin:6px 0 0 0}
+.top .num{padding:3px 8px;font-size:12px}
+.top .num b{font-size:13px}
+.top .tabs{margin-bottom:8px}
+.top .tab{padding:6px 10px}
+.sel{margin:0 0 6px 0;padding:5px 12px}
 .sel{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px 0;padding:6px 12px;background:#1f2937;color:#fff;border-radius:8px}
 .sel-title{font-size:16px;font-weight:bold}
 .sel-cur{font-size:14px}
@@ -50,12 +58,14 @@ body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-ser
 // tab bar. The window paints position:fixed boxes pinned to the viewport and
 // does not move position:sticky ones, so the block is fixed. A hidden copy
 // without ids or actions stays in the flow and holds the space the fixed block
-// covers, so the section starts below it.
+// covers, so the section starts below it. The block is capped at 40% of the
+// window height and scrolls inside that cap, so a short window never has it
+// cover the whole page.
 func (a *App) pinned(open Tab) string {
 	block := a.selected(open) + a.header() + a.tabBar(open.ID)
 	gap := idAttr.ReplaceAllString(block, "")
 
-	return `<div id="top" class="top">` + block + `</div><div class="topgap">` + gap + `</div>`
+	return `<div id="top" class="top">` + block + `</div><div class="top topgap">` + gap + `</div>`
 }
 
 // idAttr matches the id and data-action attributes the hidden copy drops.
