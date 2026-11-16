@@ -118,5 +118,5 @@ func (r *liveRunner) tick(ctx context.Context) error {
 
 // liveSessions lists the tabs that have a live session.
 func liveSessions() []liveSession {
-	return []liveSession{newNavSession()}
+	return []liveSession{newNavSession(), newMotionSession()}
 }

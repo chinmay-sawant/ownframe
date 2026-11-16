@@ -11,11 +11,13 @@ func motionTab() Tab {
 			{
 				Name: "offset-path",
 				Demo: func() string {
-					return motionDemoHTML("mp-dist-0", "mp-dist-50", "mp-dist-100", "mp-rot-auto", "mp-rot-reverse", "mp-rot-fixed")
+					return motionDemoHTML("mp-dist-0", "mp-dist-50", "mp-dist-100", "mp-rot-auto", "mp-rot-reverse", "mp-rot-fixed") +
+						motionLiveHTML()
 				},
 				Covers: []string{"offset-distance", "offset-rotate"},
 				Note: "A path() line 200px long; the box rides it by offset-distance (0%, 50%, 100%) " +
-					"and turns with the path unless offset-rotate says otherwise (auto, reverse, 45deg).",
+					"and turns with the path unless offset-rotate says otherwise (auto, reverse, 45deg). " +
+					"The last lane moves: the host steps offset-distance with the clock and the box rides the line.",
 			},
 			{
 				Name: "offset-anchor",

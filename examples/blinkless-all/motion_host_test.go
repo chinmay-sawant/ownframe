@@ -5,6 +5,9 @@ import (
 	"math"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/chinmay-sawant/ownframe"
 )
 
 func wantNear(t *testing.T, label string, got, want float64) {
@@ -80,4 +83,66 @@ func TestMotionBodyShowsReadout(t *testing.T) {
 	if !strings.Contains(body, "turns 90 deg") {
 		t.Error("readout does not show the 90 degree turn")
 	}
+}
+
+// TestMotionLiveBoxMoves: the session steps offset-distance with the clock, so
+// the box's matrix carries it further along the line each frame.
+func TestMotionLiveBoxMoves(t *testing.T) {
+	ctx := context.Background()
+
+	app, err := NewApp(catalogPath())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	page, err := app.NewPage(ctx, "motion", 900, 900)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	clock := &manualLiveClock{t: time.Unix(1_700_000_000, 0).Truncate(motionLoop)}
+	session := newMotionSession()
+	runner := &liveRunner{page: page, sessions: []liveSession{session}, clock: clock,
+		src: liveSource{cursor: func() (float64, float64) { return 0, 0 }, click: func() bool { return false },
+			down: func() bool { return false }, keys: func() []string { return nil }, text: func() string { return "" }}}
+	runner.attach()
+
+	var seen []float64
+
+	for range 3 {
+		clock.t = clock.t.Add(motionLoop / 4)
+
+		if err := page.Testing().Tick(ctx); err != nil {
+			t.Fatal(err)
+		}
+
+		seen = append(seen, liveBoxShift(t, page))
+	}
+
+	if !(seen[0] < seen[1] && seen[1] < seen[2]) {
+		t.Errorf("box did not move steadily along the line: %v", seen)
+	}
+
+	if session.patches == 0 {
+		t.Error("session wrote nothing")
+	}
+}
+
+// liveBoxShift is how far, in CSS pixels, the matrix on the live box's ops
+// carries it from where layout put it. The ops hold the painted matrix.
+func liveBoxShift(t *testing.T, page *ownframe.Page) float64 {
+	t.Helper()
+
+	display := page.Probe().Display()
+
+	for index, op := range display.Ops {
+		if index < len(display.OpOwners) && display.OpOwners[index] >= 0 &&
+			display.Boxes[display.OpOwners[index]].ID == motionLiveID && op.XformSet {
+			return op.Transform().E / display.PointsPerPixel
+		}
+	}
+
+	t.Fatal("no moved op for the live box")
+
+	return 0
 }

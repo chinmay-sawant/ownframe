@@ -23,6 +23,7 @@ func main() {
 	pngOut := flag.String("png", "", "write one PNG and exit, without opening a window")
 	demo := flag.Bool("demo", false, "play the scripted live session of the tab with a manual clock and no window")
 	demoOut := flag.String("demo-out", "", "directory for the -demo frames (default: a temp directory)")
+	web := flag.String("web", "", "serve the page at this address (for example 127.0.0.1:8099) instead of opening a window; GET /frame.png returns the picture")
 	flag.Parse()
 
 	if *demo {
@@ -34,13 +35,13 @@ func main() {
 		return
 	}
 
-	if err := run(*width, *height, *tab, *pngOut); err != nil {
+	if err := run(*width, *height, *tab, *pngOut, *web); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(width, height int, tab, pngOut string) error {
+func run(width, height int, tab, pngOut, web string) error {
 	app, err := NewApp(catalogPath())
 	if err != nil {
 		return err
@@ -64,6 +65,10 @@ func run(width, height int, tab, pngOut string) error {
 		}
 
 		return os.WriteFile(pngOut, picture, pngMode)
+	}
+
+	if web != "" {
+		return ownframe.Serve(ctx, page, web)
 	}
 
 	attachLive(page)

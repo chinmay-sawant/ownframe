@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"html"
+	"image"
+	"image/color"
+	"image/png"
 	"strings"
 
 	"github.com/chinmay-sawant/blinkless/css"
@@ -140,30 +144,129 @@ func demoBorderLimit() string {
 }
 
 func demoBoundary() string {
-	return shapesStored(`<div class="cell"><div id="bb-parent" style="width:150px;height:60px;border:4px solid #888;`+
-		`border-radius:50%"><div id="bb-child" style="width:60px;height:30px;border:4px solid #c0392b;`+
-		`border-boundary:parent"></div></div><div class="cap">child with border-boundary: parent</div></div>`, "bb-child")
+	cell := func(id, boundary string) string {
+		return `<div class="cell"><div style="width:150px;height:60px;border-radius:30px;background:#eee"><div id="` + id +
+			`" style="position:relative;left:0;top:0;width:50px;height:20px;border:4px solid #c0392b;` + boundary +
+			`"></div></div><div class="cap">` + boundary + `</div></div>`
+	}
+
+	markup := cell("bb-none", "border-boundary:none") + cell("bb-parent", "border-boundary:parent")
+
+	d, err := shapesLayout(context.Background(), markup)
+	if err != nil {
+		return markup + "<p>layout failed</p>"
+	}
+
+	var b strings.Builder
+
+	b.WriteString(markup)
+
+	for _, id := range []string{"bb-none", "bb-parent"} {
+		_, strokes := shapesPaths(d, id)
+		b.WriteString(shapesRes("%s: %d border path along the parent curve", id, strokes))
+	}
+
+	return b.String()
 }
 
 func demoBorderShape() string {
-	return shapesStored(shapesBox("bs-box", "border-shape:ellipse(50% 50%);border-radius:24px",
-		"border-shape: ellipse(50% 50%), still a rounded rectangle"), "bs-box")
+	markup := shapesBox("bs-plain", "background:#f6e3df;border-radius:24px", "border-radius: 24px, a rounded rectangle") +
+		shapesBox("bs-box", "background:#f6e3df;border-shape:ellipse(50% 50%)", "border-shape: ellipse(50% 50%)")
+
+	d, err := shapesLayout(context.Background(), markup)
+	if err != nil {
+		return markup + "<p>layout failed</p>"
+	}
+
+	var b strings.Builder
+
+	b.WriteString(markup)
+
+	for _, id := range []string{"bs-plain", "bs-box"} {
+		fills, strokes := shapesPaths(d, id)
+		b.WriteString(shapesRes("%s: %d fill path, %d border path", id, fills, strokes))
+	}
+
+	return b.String()
 }
 
 func demoTextFit() string {
-	return shapesStored(`<div class="cell"><div id="tf-box" style="width:200px;font-size:12px;background:#f1efe7;`+
-		`text-fit:grow consistent 150%">Fit this line</div><div class="cap">text-fit: grow consistent 150%, text stays 12px</div></div>`, "tf-box")
+	row := func(id, decl string) string {
+		return fmt.Sprintf(`<div class="cell"><div id="%s" style="width:200px;font-size:12px;background:#f1efe7;%s">`+
+			`Fit this line</div><div class="cap">%s</div></div>`, id, decl, html.EscapeString(decl+" "))
+	}
+
+	markup := row("tf-plain", "") + row("tf-grow", "text-fit:grow") + row("tf-cap", "text-fit:grow consistent 150%") +
+		`<div class="cell"><div id="tf-shrink" style="width:90px;font-size:12px;background:#f1efe7;text-fit:shrink">` +
+		`Shrink this longer line</div><div class="cap">text-fit:shrink, 90px box</div></div>`
+
+	d, err := shapesLayout(context.Background(), markup)
+	if err != nil {
+		return markup + "<p>layout failed</p>"
+	}
+
+	var b strings.Builder
+
+	b.WriteString(markup)
+
+	for _, id := range []string{"tf-plain", "tf-grow", "tf-cap", "tf-shrink"} {
+		b.WriteString(shapesRes("%s: font %.1fpx", id, shapesTextSize(d, id)/shapesPtPerPx))
+	}
+
+	return b.String()
 }
 
 func demoFloatDefer() string {
-	return shapesStored(`<div style="width:260px;background:#eef2f7;overflow:hidden"><div id="fd-float" style="float:left;width:60px;`+
-		`height:30px;background:#9db4d6;float-defer:1">defer 1</div><div id="fd-text">Text beside a float with float-defer 1.</div></div>`, "fd-float")
+	cell := func(id, decl string) string {
+		return `<div class="cell"><div style="column-count:3;column-gap:10px;width:320px;background:#eef2f7"><div id="` + id +
+			`" style="float:left;width:20px;height:20px;background:#9db4d6;` + decl + `"></div><p style="margin:0">one two three</p></div>` +
+			`<div class="cap">` + decl + `</div></div>`
+	}
+
+	markup := cell("fd-none", "float-defer:none") + cell("fd-one", "float-defer:1") + cell("fd-last", "float-defer:last")
+
+	d, err := shapesLayout(context.Background(), markup)
+	if err != nil {
+		return markup + "<p>layout failed</p>"
+	}
+
+	var b strings.Builder
+
+	b.WriteString(markup)
+
+	for _, box := range d.Boxes {
+		if strings.HasPrefix(box.ID, "fd-") {
+			b.WriteString(shapesRes("%s: %.0fpx from the left edge of its box", box.ID, box.X))
+		}
+	}
+
+	return b.String()
 }
 
 func demoImageThreshold() string {
-	return shapesStored(`<div style="width:260px;background:#eef7ee;overflow:hidden"><div id="si-float" style="float:left;width:60px;`+
-		`height:60px;shape-outside:circle(50%);shape-image-threshold:0.5;background:#9dd6a8">0.5</div>`+
-		`<div id="si-text">Text beside a circle float with an image threshold.</div></div>`, "si-float")
+	cell := func(id, threshold string) string {
+		return `<div class="cell"><div style="width:260px;background:#eef7ee;overflow:hidden"><div style="float:left;width:80px;` +
+			`height:80px;shape-outside:url(mask);shape-image-threshold:` + threshold + `;background:#cfe8d3"></div>` +
+			`<div id="` + id + `">Text beside an image shape</div></div>` +
+			`<div class="cap">shape-image-threshold: ` + threshold + `</div></div>`
+	}
+
+	markup := cell("si-low", "0") + cell("si-high", "0.5")
+
+	d, err := shapesLayout(context.Background(), markup)
+	if err != nil {
+		return markup + "<p>layout failed</p>"
+	}
+
+	var b strings.Builder
+
+	b.WriteString(markup)
+
+	for _, id := range []string{"si-low", "si-high"} {
+		b.WriteString(shapesRes("%s: text starts %.0fpx from the float's left edge", id, shapesTextX(d, id)/shapesPtPerPx-shapesCellLeft(d, id)))
+	}
+
+	return b.String()
 }
 
 func shapesColumns(vis string) string {
@@ -213,7 +316,87 @@ func shapesLayout(ctx context.Context, markup string) (*layout.Display, error) {
 		return nil, err
 	}
 
-	return layout.DisplayList(ctx, styled)
+	return layout.DisplayListOptions(ctx, styled, layout.Options{Images: shapesMask})
+}
+
+// shapesMask answers the url(mask) source with a 20 by 20 PNG: the left half
+// is opaque and the right half has alpha 0.3.
+func shapesMask(string) ([]byte, error) {
+	img := image.NewNRGBA(image.Rect(0, 0, 20, 20))
+
+	for y := range 20 {
+		for x := range 20 {
+			alpha := uint8(255)
+			if x >= 10 {
+				alpha = 77
+			}
+
+			img.SetNRGBA(x, y, color.NRGBA{R: 0, G: 128, B: 0, A: alpha})
+		}
+	}
+
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+// shapesPaths counts the fill and border path ops a box owns.
+func shapesPaths(d *layout.Display, id string) (int, int) {
+	fills, strokes := 0, 0
+
+	for i, op := range d.Ops {
+		if op.Kind != layout.DisplayOpPath || i >= len(d.OpOwners) || d.OpOwners[i] < 0 || d.Boxes[d.OpOwners[i]].ID != id {
+			continue
+		}
+
+		if path, ok := op.CornerPathValue(); ok && path.Stroke {
+			strokes++
+		} else {
+			fills++
+		}
+	}
+
+	return fills, strokes
+}
+
+// shapesTextOp returns the first text op a box owns.
+func shapesTextOp(d *layout.Display, id string) (layout.DisplayOp, bool) {
+	for i, op := range d.Ops {
+		if op.Kind == layout.DisplayOpText && i < len(d.OpOwners) && d.OpOwners[i] >= 0 && d.Boxes[d.OpOwners[i]].ID == id {
+			return op, true
+		}
+	}
+
+	return layout.DisplayOp{}, false
+}
+
+// shapesTextSize is the font size, in points, of a box's first text op.
+func shapesTextSize(d *layout.Display, id string) float64 {
+	op, _ := shapesTextOp(d, id)
+
+	return op.Size
+}
+
+// shapesTextX is the x, in points, of a box's first text op.
+func shapesTextX(d *layout.Display, id string) float64 {
+	op, _ := shapesTextOp(d, id)
+
+	return op.X
+}
+
+// shapesCellLeft is the left edge, in CSS pixels, of the float's row: the
+// x of the text box's own left edge when no float narrows it.
+func shapesCellLeft(d *layout.Display, id string) float64 {
+	for _, box := range d.Boxes {
+		if box.ID == id {
+			return box.X
+		}
+	}
+
+	return 0
 }
 
 // shapesLines returns the stroked line ops each box owns, keyed by element id.

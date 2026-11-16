@@ -100,23 +100,20 @@ func TestShapesColumnRuleEdges(t *testing.T) {
 	}
 }
 
-// TestShapesStoredOnlyValuesAreExported: the stored-only demos show the value
-// and say it is stored only.
-func TestShapesStoredOnlyValuesAreExported(t *testing.T) {
-	for name, want := range map[string]string{
-		"border-boundary": `"parent"`, "border-shape": `"ellipse(50% 50%)"`,
-		"text-fit": `"grow consistent 150%"`, "float-defer": `"1"`, "shape-image-threshold": `"0.5"`,
-	} {
-		var demo string
-
-		for _, p := range shapesTab().Props {
-			if p.Name == name {
-				demo = html.UnescapeString(p.Demo())
-			}
+// TestShapesBoundaryAndDeferAct: border-boundary parent adds a path and none
+// adds none, and float-defer moves the float to a later column.
+func TestShapesBoundaryAndDeferAct(t *testing.T) {
+	boundary := html.UnescapeString(demoBoundary())
+	for _, want := range []string{"bb-none: 0 border path", "bb-parent: 1 border path"} {
+		if !strings.Contains(boundary, want) {
+			t.Errorf("border-boundary demo lacks %q in %s", want, boundary)
 		}
+	}
 
-		if !strings.Contains(demo, name+" stored as "+want+", stored only") {
-			t.Errorf("%s demo lacks its stored-only readout", name)
+	deferred := html.UnescapeString(demoFloatDefer())
+	for _, want := range []string{"fd-one: 110px", "fd-last: 220px", "fd-none: 0px"} {
+		if !strings.Contains(deferred, want) {
+			t.Errorf("float-defer demo lacks %q in %s", want, deferred)
 		}
 	}
 }
@@ -136,6 +133,46 @@ func TestShapesEveryClipSiblingHasABox(t *testing.T) {
 			if !strings.Contains(demo, name) {
 				t.Errorf("demo of %s never shows %s", p.Name, name)
 			}
+		}
+	}
+}
+
+// TestShapesBorderShapePaintsPaths: the ellipse box owns one fill path and one
+// border path, and the plain rounded box owns none.
+func TestShapesBorderShapePaintsPaths(t *testing.T) {
+	demo := html.UnescapeString(demoBorderShape())
+
+	for _, want := range []string{"bs-box: 1 fill path, 1 border path", "bs-plain: 0 fill path, 0 border path"} {
+		if !strings.Contains(demo, want) {
+			t.Errorf("border-shape demo lacks %q", want)
+		}
+	}
+}
+
+// TestShapesTextFitScalesFont: grow enlarges the line, the percentage caps it
+// at 1.5 times, and shrink makes the long line smaller than 12px.
+func TestShapesTextFitScalesFont(t *testing.T) {
+	demo := html.UnescapeString(demoTextFit())
+
+	for _, want := range []string{"tf-plain: font 12.0px", "tf-cap: font 18.0px"} {
+		if !strings.Contains(demo, want) {
+			t.Errorf("text-fit demo lacks %q", want)
+		}
+	}
+
+	if strings.Contains(demo, "tf-grow: font 12.0px") || strings.Contains(demo, "tf-shrink: font 12.0px") {
+		t.Error("text-fit grow or shrink left the font at 12px")
+	}
+}
+
+// TestShapesImageThresholdMovesText: the higher threshold drops the faint half
+// of the image, so its text starts closer to the float's left edge.
+func TestShapesImageThresholdMovesText(t *testing.T) {
+	demo := html.UnescapeString(demoImageThreshold())
+
+	for _, want := range []string{"si-low: text starts 80px", "si-high: text starts 40px"} {
+		if !strings.Contains(demo, want) {
+			t.Errorf("image-threshold demo lacks %q in %s", want, demo)
 		}
 	}
 }

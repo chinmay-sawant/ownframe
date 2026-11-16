@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"html"
+	"regexp"
 	"strings"
 )
 
-// The page is a header, a tab bar, and one section. A tab button carries
+// The page is a header, a tab bar, and one section. The title bar, the header with
+// the catalog counts and the tab bar are fixed. Only the open section scrolls
+// under them. A tab button carries
 // data-action="tab-<id>"; the window loads the page routed to that action, and
 // that page holds only the open tab's section. The other sections are not in
 // the document, so nothing of them is laid out or painted.
@@ -16,6 +19,11 @@ const actionPrefix = "tab-"
 // pageStyle is shared by every tab page.
 const pageStyle = `
 body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-serif;font-size:14px}
+.top{position:fixed;top:0;left:16px;right:16px;z-index:10;background:#f6f4ee;padding:8px 0 0 0}
+.topgap{visibility:hidden;margin:-8px 0 0 0}
+.sel{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px 0;padding:6px 12px;background:#1f2937;color:#fff;border-radius:8px}
+.sel-title{font-size:16px;font-weight:bold}
+.sel-cur{font-size:14px}
 .head{background:#fff;border:1px solid #d6d1c4;border-radius:8px;padding:12px 16px;margin-bottom:12px}
 .head h1{margin:0 0 6px 0;font-size:20px}
 .head p{margin:4px 0;line-height:1.4}
@@ -37,6 +45,22 @@ body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-ser
 .st.implemented{background:#bbf7d0}.st.partial{background:#fde68a}.st.unsupported{background:#fecaca}
 `
 
+// pinned is the block that stays at the top of the window while the open
+// section scrolls: the dark title bar, the catalog text with the counts, and the
+// tab bar. The window paints position:fixed boxes pinned to the viewport and
+// does not move position:sticky ones, so the block is fixed. A hidden copy
+// without ids or actions stays in the flow and holds the space the fixed block
+// covers, so the section starts below it.
+func (a *App) pinned(open Tab) string {
+	block := a.selected(open) + a.header() + a.tabBar(open.ID)
+	gap := idAttr.ReplaceAllString(block, "")
+
+	return `<div id="top" class="top">` + block + `</div><div class="topgap">` + gap + `</div>`
+}
+
+// idAttr matches the id and data-action attributes the hidden copy drops.
+var idAttr = regexp.MustCompile(` (id|data-action)="[^"]*"`)
+
 // Header describes the catalog counts and the family idea.
 func (a *App) header() string {
 	cat := a.cat
@@ -52,7 +76,7 @@ func (a *App) header() string {
 
 	var b strings.Builder
 
-	b.WriteString(`<div class="head"><h1>blinkless: properties still to validate</h1>`)
+	b.WriteString(`<div class="head">`)
 	fmt.Fprintf(&b, `<p>The catalog lists %d CSS properties. %d are implemented (%.1f%%). `+
 		`This window covers the %d in six groups that were not yet implemented: `+
 		`%d implemented now, %d partial, %d unsupported.</p>`,
@@ -72,6 +96,13 @@ func (a *App) header() string {
 	b.WriteString(`</div></div>`)
 
 	return b.String()
+}
+
+// selected is the slim bar above the header: the page title on the left and
+// the open tab on the right.
+func (a *App) selected(open Tab) string {
+	return `<div id="selected" class="sel"><span class="sel-title">blinkless: properties still to validate</span>` +
+		`<span class="sel-cur">Selected: ` + html.EscapeString(open.Title) + fmt.Sprintf(` (%d)`, open.Count()) + `</span></div>`
 }
 
 // tabBar draws the buttons. The open tab is dark. Each label shows its count.
@@ -141,5 +172,5 @@ func (a *App) Page(id string) string {
 	}
 
 	return `<!DOCTYPE html><html><head><style>` + pageStyle + `</style></head><body>` +
-		a.header() + a.tabBar(open.ID) + a.section(open) + `</body></html>`
+		a.pinned(open) + a.section(open) + `</body></html>`
 }
