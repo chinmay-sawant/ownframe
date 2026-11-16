@@ -18,11 +18,13 @@ const relayoutEvery = 100 * time.Millisecond
 func (s *shell) resize() error {
 	moving := s.moving
 	s.moving = false
+	s.placeTitlebarWindow()
 
 	completeManualMaximize(s.pendingW, s.pendingH)
 	adoptExternalMaximize()
 	retryManualRestore(s.windowDrag.active)
 	retryWindowedRestore(s.windowDrag.active)
+	s.traceWindowGeometry()
 
 	takeStartMaximize := false
 	chromeMu.Lock()
@@ -52,15 +54,20 @@ func (s *shell) resize() error {
 		// trigger a full relayout storm under the hand. The commit lands
 		// on release, when the drag goes inactive and the sizes still
 		// differ. The in-between frames keep the previous frame scaled.
+		if moving {
+			windowTracef("resize deferred during ownframe drag outside=%dx%d page=%dx%d", s.pendingW, s.pendingH, haveW, haveH)
+		}
 		return nil
 	}
 
 	if moving && time.Since(s.lastRelayout) < relayoutEvery {
 		s.skipped++
+		windowTracef("resize throttled outside=%dx%d page=%dx%d skipped=%d", s.pendingW, s.pendingH, haveW, haveH, s.skipped)
 
 		return nil
 	}
 
+	windowTracef("resize commit start outside=%dx%d viewport=%dx%d page=%dx%d moving=%t", s.pendingW, s.pendingH, wantW, wantH, haveW, haveH, moving)
 	s.setLayoutSize(wantW, wantH)
 
 	if err := s.app.Redraw(s.ctx); err != nil {
@@ -73,6 +80,7 @@ func (s *shell) resize() error {
 	if err := s.syncImage(); err != nil && !errors.Is(err, errNoImage) {
 		return err
 	}
+	windowTracef("resize committed outside=%dx%d viewport=%dx%d commits=%d", s.pendingW, s.pendingH, wantW, wantH, s.commits)
 
 	// maximizeNudge re-asserts the configured window size while maximized.
 	// A client-set size travels the normal presentation path, so on systems
@@ -81,7 +89,7 @@ func (s *shell) resize() error {
 	// no-op: same-size sets change nothing. Position is left alone; only
 	// the size is ever re-asserted.
 	if ebiten.IsWindowMaximized() && !isWSLg() {
-		ebiten.SetWindowSize(s.pendingW, s.pendingH)
+		ebiten.SetWindowSize(s.pendingW, s.pendingH+s.titlebarInset())
 	}
 
 	s.syncPlacement()
@@ -92,6 +100,11 @@ func (s *shell) resize() error {
 // Layout records the outside size. The commit happens in resize on the
 // next update, so a burst of events between updates costs one relayout.
 func (s *shell) Layout(outsideWidth, outsideHeight int) (int, int) {
+	canvasWidth, canvasHeight := outsideWidth, outsideHeight
+	if s.titlebar.enabled {
+		contentTop.Store(int32(s.titlebarInset()))
+	}
+	outsideHeight -= s.titlebarInset()
 	if outsideWidth < 1 {
 		outsideWidth = 1
 	}
@@ -101,6 +114,7 @@ func (s *shell) Layout(outsideWidth, outsideHeight int) (int, int) {
 	}
 
 	if outsideWidth != s.pendingW || outsideHeight != s.pendingH {
+		windowTracef("resize layout event old=%dx%d new=%dx%d", s.pendingW, s.pendingH, outsideWidth, outsideHeight)
 		s.imeLayoutChanged(outsideWidth, outsideHeight)
 		s.moving = true
 	}
@@ -110,5 +124,5 @@ func (s *shell) Layout(outsideWidth, outsideHeight int) (int, int) {
 	s.screenW = outsideWidth
 	s.screenH = outsideHeight
 
-	return outsideWidth, outsideHeight
+	return max(1, canvasWidth), max(1, canvasHeight)
 }

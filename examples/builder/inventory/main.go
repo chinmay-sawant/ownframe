@@ -50,7 +50,7 @@ func run(web bool, addr string, dev bool, perf bool, debugAddr string) error {
 	// Controls win over drags because OwnFrame skips a drag that starts on
 	// a button.
 	options := ownframe.WindowOptions{
-		CustomChrome: true,
+		CustomHeader: true,
 		PlacementID:  inventoryPlacement,
 		DebugAddr:    debugAddr,
 		Draggable: func(x, y int) bool {

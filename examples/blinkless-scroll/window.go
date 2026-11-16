@@ -14,10 +14,10 @@ import (
 
 // ebitenSource reads the real window: the cursor, the left button, and the
 // keys that went down this frame.
-func ebitenSource() inputSource {
+func ebitenSource(page *ownframe.Page) inputSource {
 	return inputSource{
 		cursor: func() (float64, float64) {
-			x, y := ebiten.CursorPosition()
+			x, y := page.Window().CursorPosition()
 
 			return float64(x), float64(y)
 		},
@@ -43,5 +43,5 @@ func (s *session) attachWindow() {
 	s.page.AddHandlers(ownframe.Handlers{
 		Wheel: func(_ context.Context, x, y, _, dy float64) (bool, error) { return s.wheel(x, y, dy), nil },
 	})
-	s.attach(ebitenSource())
+	s.attach(ebitenSource(s.page))
 }

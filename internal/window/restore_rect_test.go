@@ -21,7 +21,7 @@ func TestRestoreRejectsCascadedWorkarea(t *testing.T) {
 
 func TestPartialWindowChoosesLargestVisibleArea(t *testing.T) {
 	layout := []monitorRect{{name: "left", x: -1920, y: 320, w: 1920, h: 1080}, {name: "right", w: 2560, h: 1600}}
-	for _, percent := range []int{10, 20, 40, 50, 60, 80, 90} {
+	for _, percent := range []int{10, 20, 40, 45, 50, 55, 60, 80, 90} {
 		// A 1000px-wide window with this percentage on the right panel.
 		m, ok := monitorForWindow(percent*10-1000, 400, 1000, 600, layout)
 		want := "left"

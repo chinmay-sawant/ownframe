@@ -1,14 +1,39 @@
 package window
 
+import (
+	"image/color"
+
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+)
+
 // Options controls the desktop window. Desktop placement and mouse
 // passthrough do not apply to browser canvases or mobile views.
 type Options struct {
+	// NativeHeader uses the operating system's title bar instead of OwnFrame's
+	// desktop title bar. WSLg's native maximize can jump between monitors.
+	NativeHeader bool
+	// HeaderTitle overrides the page title in the shared desktop header.
+	// Empty follows the page title. CustomHeader applications draw their own.
+	HeaderTitle string
+	// HeaderHeight is the shared header's height in CSS pixels. Zero uses 36;
+	// positive heights have a minimum of 24 to keep the controls usable.
+	HeaderHeight int
+	// HeaderFont overrides the shared header title's font, size, and weight.
+	// Nil uses the bundled proportional Go Medium face at 13 CSS pixels.
+	HeaderFont text.Face
+	// HeaderBackground and HeaderForeground override the shared header palette.
+	// Nil follows the page's light or dark background.
+	HeaderBackground color.Color
+	HeaderForeground color.Color
+	// HeaderHover and HeaderCloseHover override the controls' hover colors.
+	HeaderHover      color.Color
+	HeaderCloseHover color.Color
 	// Transparent keeps unpainted pixels transparent. Use transparent HTML
 	// backgrounds and a replayable page; bitmap pages may paint a background.
 	Transparent bool
 	// Borderless removes the title bar and window borders.
 	Borderless bool
-	// CustomChrome removes the OS title bar so the page can draw its own
+	// CustomHeader removes the OS title bar so the page can draw its own
 	// minimize, maximize, and close controls, in the style of VS Code.
 	// The page owns those controls through Window.Minimize,
 	// Window.ToggleMaximize, Window.Maximized, and Window.Close, and drags
@@ -16,7 +41,7 @@ type Options struct {
 	// Borderless overlay, the window stays resizable and keeps keyboard
 	// focus. Serve, web, and mobile builds ignore the missing decorations:
 	// the controls simply do nothing there.
-	CustomChrome bool
+	CustomHeader bool
 	// Floating keeps the window above other normal windows.
 	Floating bool
 	// MousePassthrough passes all pointer input, including painted pixels,

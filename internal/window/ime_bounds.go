@@ -27,6 +27,7 @@ func (s *shell) imeScreenRect(box layout.Box) image.Rectangle {
 		ox = float64(s.scrollX) * (sx - 1)
 		oy = float64(s.scrollY) * (sy - 1)
 	}
+	oy += float64(s.titlebarInset())
 	return image.Rect(int(math.Floor(box.X*sx+ox)), int(math.Floor(box.Y*sy+oy)),
 		int(math.Ceil((box.X+box.W)*sx+ox)), int(math.Ceil((box.Y+box.H)*sy+oy)))
 }

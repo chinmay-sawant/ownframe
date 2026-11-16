@@ -22,7 +22,8 @@ func restoreRectMatches(actual, want workarea) bool { return actual == want }
 
 func (s *shell) cursorPosition() (int, int) {
 	if x, y, ok := s.nativeCursor.cursor(); ok {
-		return x, y
+		return x, y - s.titlebarInset()
 	}
-	return ebiten.CursorPosition()
+	x, y := ebiten.CursorPosition()
+	return x, y - s.titlebarInset()
 }

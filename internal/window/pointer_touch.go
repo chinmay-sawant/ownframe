@@ -12,6 +12,10 @@ func (s *shell) touch(clicked bool, frameW, frameH int) error {
 
 	for _, id := range ids {
 		x, y := ebiten.TouchPosition(id)
+		y -= s.titlebarInset()
+		if y < 0 {
+			continue
+		}
 		now = append(now, touchPos{id: id, x: x, y: y})
 	}
 

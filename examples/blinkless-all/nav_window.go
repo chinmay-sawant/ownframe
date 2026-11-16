@@ -13,10 +13,10 @@ import (
 
 // ebitenLiveSource reads the real window: the cursor, the left button, typed
 // characters, and the editing keys that went down this frame.
-func ebitenLiveSource() liveSource {
+func ebitenLiveSource(page *ownframe.Page) liveSource {
 	return liveSource{
 		cursor: func() (float64, float64) {
-			x, y := ebiten.CursorPosition()
+			x, y := page.Window().CursorPosition()
 
 			return float64(x), float64(y)
 		},
@@ -41,7 +41,7 @@ func ebitenLiveSource() liveSource {
 
 // attachLive installs the live sessions on a window page.
 func attachLive(page *ownframe.Page) {
-	r := &liveRunner{page: page, sessions: liveSessions(), clock: wallClock{}, src: ebitenLiveSource()}
+	r := &liveRunner{page: page, sessions: liveSessions(), clock: wallClock{}, src: ebitenLiveSource(page)}
 	r.reportErr = func(err error) {
 		fmt.Fprintln(os.Stderr, "blinkless-all: patch refused, the page keeps running:", err)
 	}

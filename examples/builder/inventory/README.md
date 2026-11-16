@@ -109,7 +109,7 @@ topbar — everything fits the 1440×960 canvas with no page scroll.
 
 ## Overlay drag guard
 
-The topbar is the CustomChrome drag strip (`Draggable`, `main.go`). Presses
+The topbar is the CustomHeader drag strip (`Draggable`, `main.go`). Presses
 on overlay padding carry no action, so without a guard a click there would
 start a window drag instead of reaching the overlay. `Draggable` returns
 false while any overlay is open (`overlaysOpen`: search palette,

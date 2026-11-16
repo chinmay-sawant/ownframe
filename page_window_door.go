@@ -14,6 +14,10 @@ type Window struct{ page *Page }
 // and touch policy for this page.
 func (p *Page) Window() Window { return Window{page: p} }
 
+// CursorPosition returns the desktop mouse position relative to the page,
+// excluding OwnFrame's title bar. The position may be outside the page.
+func (w Window) CursorPosition() (int, int) { return window.ContentCursorPosition() }
+
 // PollReload rereads a watched source file.
 func (w Window) PollReload(ctx context.Context) (bool, error) {
 	p := innerPage(w.page)

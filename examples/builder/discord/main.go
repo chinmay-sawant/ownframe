@@ -54,7 +54,7 @@ func run(web bool, addr string, dev bool, perf bool, debugAddr string) error {
 	// chrome, and the top strip is the drag region. Controls win over drags
 	// because OwnFrame skips a drag that starts on a button.
 	options := ownframe.WindowOptions{
-		CustomChrome: true,
+		CustomHeader: true,
 		PlacementID:  "discord",
 		DebugAddr:    debugAddr,
 		Draggable: func(x, y int) bool {

@@ -475,7 +475,14 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 
 			return true, nil
 		}
-		if !s.pressOnControl(x, y) && s.draggable(x, y) && !s.devOwnsPoint(x, y) {
+		dragAllowed := !s.pressOnControl(x, y) && s.draggable(x, y) && !s.devOwnsPoint(x, y)
+		if dragAllowed && s.dragTrace {
+			wx, wy := windowPosition()
+			ww, wh := ebiten.WindowSize()
+			windowTracef("drag begin cursor=%d,%d window=(%d,%d %dx%d) monitor=%q wmMaximized=%t manual={%s}",
+				x, y, wx, wy, ww, wh, currentMonitorName(), ebiten.IsWindowMaximized(), manualMaxTrace())
+		}
+		if dragAllowed {
 			chromeMu.Lock()
 			pendingManualRestore = false
 			pendingWindowedRestore = false
@@ -489,9 +496,16 @@ func (s *shell) moveWindow(x, y int) (bool, error) {
 	}
 	sx, sy := int(math.Round(s.windowDrag.fx)), int(math.Round(s.windowDrag.fy))
 	allowed := s.draggable(x, y) && !s.devOwnsPoint(x, y) && !s.pressOnControl(x, y)
+	wasActive := s.windowDrag.active
 	handled, move, click, _, _ := s.windowDrag.step(sx, sy,
 		down, allowed)
 	if !down {
+		if wasActive && s.dragTrace {
+			wx, wy := windowPosition()
+			ww, wh := ebiten.WindowSize()
+			windowTracef("drag end cursor=%d,%d window=(%d,%d %dx%d) monitor=%q wmMaximized=%t manual={%s}",
+				x, y, wx, wy, ww, wh, currentMonitorName(), ebiten.IsWindowMaximized(), manualMaxTrace())
+		}
 		s.windowDrag.native.end()
 		s.windowDrag.tracked = false
 	}

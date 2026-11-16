@@ -52,7 +52,7 @@ func run(webMode bool, addr string) error {
 	// Use OwnFrame's native drag region and custom chrome, not JavaScript.
 	// The toolbar is the first 78 CSS pixels; clicks on its controls still work.
 	options := ownframe.WindowOptions{
-		CustomChrome: true,
+		CustomHeader: true,
 		PlacementID:  mailPlacement,
 		Draggable: func(x, y int) bool {
 			return x >= 0 && y >= 0 && y < mailDragLimitY
