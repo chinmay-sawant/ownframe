@@ -13,6 +13,7 @@
     "animations",
     "bind-hooks",
     "blackhole",
+    "blinkless-all",
     "blinkless-next",
     "blinkless-scroll",
     "builder",

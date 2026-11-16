@@ -1,0 +1,49 @@
+//go:build !js
+
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/chinmay-sawant/ownframe"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+)
+
+// ebitenLiveSource reads the real window: the cursor, the left button, typed
+// characters, and the editing keys that went down this frame.
+func ebitenLiveSource() liveSource {
+	return liveSource{
+		cursor: func() (float64, float64) {
+			x, y := ebiten.CursorPosition()
+
+			return float64(x), float64(y)
+		},
+		click: func() bool { return inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) },
+		down:  func() bool { return ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) },
+		keys: func() []string {
+			var out []string
+
+			for _, k := range inpututil.AppendJustPressedKeys(nil) {
+				switch k {
+				case ebiten.KeyArrowUp, ebiten.KeyArrowDown, ebiten.KeyArrowLeft, ebiten.KeyArrowRight,
+					ebiten.KeyBackspace, ebiten.KeyEnter:
+					out = append(out, k.String())
+				}
+			}
+
+			return out
+		},
+		text: func() string { return string(ebiten.AppendInputChars(nil)) },
+	}
+}
+
+// attachLive installs the live sessions on a window page.
+func attachLive(page *ownframe.Page) {
+	r := &liveRunner{page: page, sessions: liveSessions(), clock: wallClock{}, src: ebitenLiveSource()}
+	r.reportErr = func(err error) {
+		fmt.Fprintln(os.Stderr, "blinkless-all: patch refused, the page keeps running:", err)
+	}
+	r.attach()
+}
