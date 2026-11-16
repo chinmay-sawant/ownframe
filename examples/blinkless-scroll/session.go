@@ -8,6 +8,28 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// innerScrollStep is how far one J or K press moves a scroll container, and
+// wheelStep is how far one wheel notch does. wheelStep matches the 48 pixels
+// the window moves the page for the same notch.
+const (
+	innerScrollStep = 40
+	wheelStep       = 48
+)
+
+// wheel offers one wheel event to the scroll container under the pointer. dy is
+// the wheel delta the window reports, positive when the wheel rolls up. It
+// reports whether a container took the event. A container with no room left in
+// that direction hands the event back, so the page scrolls on, as a browser
+// chains scrolling.
+func (s *session) wheel(px, py, dy float64) bool {
+	id, ok := s.host.ScrollerAt(px, py)
+	if !ok {
+		return false
+	}
+
+	return s.host.ScrollBy(id, -dy*wheelStep)
+}
+
 // session ties one page to one host. frame is the single entry point for
 // input: window.go calls it with what ebiten reports, and the demo calls it
 // with scripted values. Nothing else moves the host.
@@ -117,6 +139,17 @@ func (s *session) frame(ctx context.Context, in FrameInput) (FrameResult, error)
 
 	for _, key := range in.Keys {
 		res.Events = append(res.Events, s.eventNames(s.host.Dispatch("keydown("+key+")", px, py))...)
+
+		// OwnFrame reports no scroll offset for an inner box, so J and K move
+		// whichever scroll container the pointer is over.
+		if id, ok := s.host.ScrollerAt(px, py); ok {
+			switch key {
+			case "J":
+				s.host.ScrollBy(id, innerScrollStep)
+			case "K":
+				s.host.ScrollBy(id, -innerScrollStep)
+			}
+		}
 	}
 
 	res.Frame = s.host.Compute(s.viewport(in.ScrollY), px, py)

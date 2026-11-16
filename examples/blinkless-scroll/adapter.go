@@ -35,6 +35,7 @@ func Build(d *layout.Display) Model {
 			n.Timelines = append(n.Timelines, Timeline{
 				Name: tl.Name, Kind: tl.Kind, Axis: axis, SubjectID: tl.SubjectID,
 				InsetStart: tl.InsetStart, InsetEnd: tl.InsetEnd,
+				ScrollerID: tl.ScrollerID, Anonymous: tl.ScrollerAnonymous,
 			})
 		}
 

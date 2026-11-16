@@ -51,6 +51,21 @@ const (
 	colorClickFill = "#bfdbfe"
 )
 
+// Fills for a pointer box and for a box that scrolls on its own.
+const (
+	colorPointer = "#fca5a5"
+	colorNested  = "#86efac"
+	colorView    = "#93c5fd"
+	colorTrack   = "#e8e2d4"
+)
+
+// progressFill is a background that is filled up to progress along dir.
+func progressFill(dir, fill string, progress float64) string {
+	p := progress * 100
+
+	return fmt.Sprintf("background:linear-gradient(%s,%s %.0f%%,%s %.0f%%)", dir, fill, p, colorTrack, p)
+}
+
 // StylePatch is one element's new style attribute.
 type StylePatch struct{ ID, Style string }
 
@@ -80,36 +95,70 @@ func (h *Host) Styles(f Frame, base map[string]string) []StylePatch {
 		extra[h.clicked] = append(extra[h.clicked], "outline:3px solid "+colorClick, "background:"+colorClickFill)
 	}
 
-	for key, val := range f.Timelines {
-		n := h.Nodes[key.Node]
+	// A box can declare a list of timelines. Only the first of each kind is
+	// drawn, in the order the names are written, so the result does not
+	// depend on map order. Every timeline is still read and logged. An
+	// inactive timeline has no scroller to read and draws nothing.
+	for node := range h.Nodes {
+		seen := map[string]bool{}
 
-		switch val.Kind {
-		case KindScroll:
-			w := baseWidth(base[n.ID]) * val.Progress
-			extra[key.Node] = append(extra[key.Node], fmt.Sprintf("width:%.1fpx", w))
-		case KindView:
-			subject := key.Node
-			for _, tl := range n.Timelines {
-				if j, ok := h.byID[tl.SubjectID]; ok && tl.Name == key.Name && tl.SubjectID != "" {
+		for _, tl := range h.Nodes[node].Timelines {
+			val, ok := f.Timelines[tlKey{node, tl.Name}]
+			if !ok || val.Inactive || seen[tl.Kind] {
+				continue
+			}
+
+			seen[tl.Kind] = true
+
+			switch tl.Kind {
+			case KindScroll:
+				if tl.ScrollerID != "" {
+					// A box that scrolls on its own would vanish if its width
+					// followed its progress, so its background fills instead.
+					extra[node] = append(extra[node], progressFill("90deg", colorNested, val.Progress))
+
+					continue
+				}
+
+				// A progress bar fixed to the window runs to the far edge of the
+				// window, whatever its size. Any other box keeps the width its
+				// own style gives it.
+				full := baseWidth(base[h.Nodes[node].ID])
+				if strings.Contains(base[h.Nodes[node].ID], "position:fixed") {
+					full = h.viewW
+				}
+
+				extra[node] = append(extra[node], fmt.Sprintf("width:%.1fpx", full*val.Progress))
+			case KindView:
+				subject := node
+				if j, found := h.byID[tl.SubjectID]; found && tl.SubjectID != "" {
 					subject = j
 				}
-			}
 
-			e := val.Ranges["entry"]
-			extra[subject] = append(extra[subject],
-				fmt.Sprintf("opacity:%.2f", 0.25+0.75*e),
-				fmt.Sprintf("margin-left:%.1fpx", (1-e)*60))
-		case KindPointer:
-			dir := "90deg"
-			for _, tl := range n.Timelines {
-				if tl.Name == key.Name && tl.Axis == AxisY {
+				// The fill is how far the card has crossed the window, cover
+				// progress: empty as it enters, full as it leaves. The fade and
+				// the slide show only the entry part of that trip.
+				e := val.Ranges["entry"]
+				extra[subject] = append(extra[subject],
+					progressFill("90deg", colorView, val.Progress),
+					fmt.Sprintf("opacity:%.2f", 0.25+0.75*e),
+					fmt.Sprintf("margin-left:%.1fpx", (1-e)*60))
+			case KindPointer:
+				dir := "90deg"
+				if tl.Axis == AxisY {
 					dir = "180deg"
 				}
-			}
 
-			p := val.Progress * 100
-			extra[key.Node] = append(extra[key.Node],
-				fmt.Sprintf("background:linear-gradient(%s,#fca5a5 %.0f%%,#e8e2d4 %.0f%%)", dir, p, p))
+				extra[node] = append(extra[node], progressFill(dir, colorPointer, val.Progress))
+			}
+		}
+	}
+
+	// A scroll container the host scrolled shows it: the box named
+	// "<id>-content" slides up by the offset, and the container clips it.
+	for id, off := range h.scrollers {
+		if idx, ok := h.byID[id+"-content"]; ok && off[1] != 0 {
+			extra[idx] = append(extra[idx], fmt.Sprintf("margin-top:%.0fpx", -off[1]))
 		}
 	}
 

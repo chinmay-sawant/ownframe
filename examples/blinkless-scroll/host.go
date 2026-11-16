@@ -35,6 +35,9 @@ type Value struct {
 	Ranges map[string]float64
 	// Inside is only meaningful for a pointer timeline.
 	Inside bool
+	// Inactive is true when the timeline has no scroller to read: the
+	// container has no id or the id names nothing. Progress stays 0.
+	Inactive bool
 }
 
 // Frame is everything the host decided for one tick.
@@ -55,6 +58,12 @@ type Host struct {
 	// hasClicked is true, and it is what Styles outlines so a click is visible.
 	clicked    int
 	hasClicked bool
+	// scrollers holds the offset of each inner scroll container by element id.
+	scrollers map[string][2]float64
+	// scrollerIDs is every element id some timeline names as its scroller.
+	scrollerIDs map[string]bool
+	// viewW is the window width of the latest Compute. A fixed bar spans it.
+	viewW float64
 
 	byID     map[string]int
 	tstate   []TriggerState
@@ -74,9 +83,17 @@ func NewHost(nodes []Node, triggers []OwnedTrigger, events []OwnedEvent, delays 
 		interest: map[int]*Interest{},
 	}
 
+	h.scrollerIDs = map[string]bool{}
+
 	for i, n := range nodes {
 		if n.ID != "" {
 			h.byID[n.ID] = i
+		}
+
+		for _, tl := range n.Timelines {
+			if tl.ScrollerID != "" {
+				h.scrollerIDs[tl.ScrollerID] = true
+			}
 		}
 	}
 
@@ -138,6 +155,8 @@ func (h *Host) Dispatch(event string, px, py float64) []int {
 
 // Compute reads every timeline, then moves every trigger and timer.
 func (h *Host) Compute(v Viewport, px, py float64) Frame {
+	h.viewW = v.W
+
 	f := Frame{
 		Timelines:  map[tlKey]Value{},
 		TriggerOn:  make([]bool, len(h.Triggers)),
@@ -171,16 +190,116 @@ func (h *Host) Compute(v Viewport, px, py float64) Frame {
 	return f
 }
 
+// SetScrollerOffset sets how far the scroll container with this element id is
+// scrolled. OwnFrame reports only the page offset, so a host that scrolls an
+// inner box supplies its offset here. A container never set reads as 0.
+func (h *Host) SetScrollerOffset(id string, x, y float64) {
+	if h.scrollers == nil {
+		h.scrollers = map[string][2]float64{}
+	}
+
+	h.scrollers[id] = [2]float64{x, y}
+}
+
+// ScrollerAt returns the id of the scroll container the pointer is over: the
+// nearest box at or above the pointer that a timeline names as its scroller.
+// An inert box takes no pointer, so it never counts.
+func (h *Host) ScrollerAt(px, py float64) (string, bool) {
+	for at := HitTest(h.Nodes, px, py); at >= 0 && at < len(h.Nodes); at = h.Nodes[at].Parent {
+		if id := h.Nodes[at].ID; id != "" && h.scrollerIDs[id] {
+			return id, true
+		}
+	}
+
+	return "", false
+}
+
+// ScrollBy moves a scroll container up or down by dy pixels and stops at the
+// ends of its content. It reports whether the container moved, so a caller can
+// pass the scroll on to the page once the container has no room left.
+func (h *Host) ScrollBy(id string, dy float64) bool {
+	port, _, ok := h.scrollerViewport(id)
+	if !ok {
+		return false
+	}
+
+	off := h.scrollers[id]
+	y := min(max(off[1]+dy, 0), max(port.ContentH-port.H, 0))
+	h.SetScrollerOffset(id, off[0], y)
+
+	return y != off[1]
+}
+
+// scrollerViewport is the scrollport of the element with this id: its own box
+// is the window, its descendants' extent is the content, and its offset is the
+// one SetScrollerOffset gave. The second result is its top-left corner, which
+// moves a subject into the scroller's own coordinates. ok is false when no
+// element has the id.
+func (h *Host) scrollerViewport(id string) (Viewport, Rect, bool) {
+	idx, ok := h.byID[id]
+	if !ok {
+		return Viewport{}, Rect{}, false
+	}
+
+	r := h.Nodes[idx].Rect
+	contentW, contentH := r.W, r.H
+
+	for j := range h.Nodes {
+		if !isAncestor(h.Nodes, idx, j) {
+			continue
+		}
+
+		c := h.Nodes[j].Rect
+		contentW = max(contentW, c.X+c.W-r.X)
+		contentH = max(contentH, c.Y+c.H-r.Y)
+	}
+
+	off := h.scrollers[id]
+
+	return Viewport{ScrollX: off[0], ScrollY: off[1], W: r.W, H: r.H, ContentW: contentW, ContentH: contentH}, r, true
+}
+
 func (h *Host) read(i int, tl Timeline, v Viewport, px, py float64) Value {
+	// A scroller with no id cannot be named, and one that names a missing id
+	// cannot be found, so the timeline has nothing to read.
+	inactive := Value{Kind: tl.Kind, Inactive: true}
+
 	switch tl.Kind {
 	case KindScroll:
+		if tl.Anonymous {
+			return inactive
+		}
+
+		if tl.ScrollerID != "" {
+			sv, _, ok := h.scrollerViewport(tl.ScrollerID)
+			if !ok {
+				return inactive
+			}
+
+			v = sv
+		}
+
 		pos, space := ScrollSpace(v, tl.Axis)
 
 		return Value{Kind: tl.Kind, Progress: ScrollProgress(v, tl.Axis), Pos: pos, Space: space}
 	case KindView:
+		if tl.Anonymous {
+			return inactive
+		}
+
 		subject := h.Nodes[i].Rect
 		if j, ok := h.byID[tl.SubjectID]; ok && tl.SubjectID != "" {
 			subject = h.Nodes[j].Rect
+		}
+
+		if tl.ScrollerID != "" {
+			sv, origin, ok := h.scrollerViewport(tl.ScrollerID)
+			if !ok {
+				return inactive
+			}
+
+			v = sv
+			subject = Rect{X: subject.X - origin.X, Y: subject.Y - origin.Y, W: subject.W, H: subject.H}
 		}
 
 		st := ViewTimeline(v, subject, tl.Axis, tl.InsetStart, tl.InsetEnd)

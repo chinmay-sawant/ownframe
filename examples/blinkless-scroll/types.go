@@ -81,6 +81,11 @@ type Timeline struct {
 	SubjectID  string
 	InsetStart float64
 	InsetEnd   float64
+	// ScrollerID is the scroll container the timeline reads. Empty means the
+	// page. Anonymous means that container has no id, so the host cannot find
+	// it and the timeline stays inactive.
+	ScrollerID string
+	Anonymous  bool
 }
 
 // ScopeKind says which names a node hoists with timeline-scope.

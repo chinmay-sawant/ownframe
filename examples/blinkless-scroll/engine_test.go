@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -393,5 +394,37 @@ func TestApplierDiffResets(t *testing.T) {
 
 	if got := a.Diff(nil); len(got) != 1 || got[0].Style != "base" {
 		t.Fatalf("driven value gone returns to base: %+v", got)
+	}
+}
+
+// A progress bar fixed to the window runs to the window's far edge at the end
+// of the page, whatever the window width. A page-scroll box that is not fixed
+// keeps the width its own style gives it.
+func TestFixedBarSpansTheWindow(t *testing.T) {
+	nodes := []Node{
+		{ID: "bar", Parent: -1, Rect: Rect{W: 600, H: 12}, Timelines: []Timeline{{Name: "--a", Kind: KindScroll, Axis: AxisY}}},
+		{ID: "box", Parent: -1, Rect: Rect{Y: 20, W: 300, H: 30}, Timelines: []Timeline{{Name: "--b", Kind: KindScroll, Axis: AxisY}}},
+	}
+	h := NewHost(nodes, nil, nil, nil, nil)
+	base := map[string]string{
+		"bar": "position:fixed;top:0;width:600px;height:12px",
+		"box": "width:300px;height:30px",
+	}
+
+	for _, width := range []float64{800, 1200, 1908} {
+		v := Viewport{ScrollY: 1500, H: 500, W: width, ContentH: 2000, ContentW: width} // the very end
+		styles := map[string]string{}
+
+		for _, p := range h.Styles(h.Compute(v, 0, 0), base) {
+			styles[p.ID] = p.Style
+		}
+
+		if want := fmt.Sprintf("width:%.1fpx", width); !strings.HasSuffix(styles["bar"], want) {
+			t.Fatalf("window %v: bar style %q, want it to end with %q", width, styles["bar"], want)
+		}
+
+		if !strings.HasSuffix(styles["box"], "width:300.0px") {
+			t.Fatalf("window %v: a box that is not fixed must keep its width, got %q", width, styles["box"])
+		}
 	}
 }

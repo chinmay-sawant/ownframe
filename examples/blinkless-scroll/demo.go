@@ -37,6 +37,9 @@ type demoStep struct {
 	CursorY float64
 	Click   bool
 	Keys    []string
+	// InnerY is how far the host reports inner-scroller scrolled. OwnFrame
+	// gives no offset for an inner box, so only the demo moves it.
+	InnerY float64
 }
 
 // StepLog is what one step changed.
@@ -135,6 +138,20 @@ func demoScript(s *session) []demoStep {
 		steps = append(steps, demoStep{Label: id + " press Enter", Scroll: sc, CursorX: cx, CursorY: cy, Keys: []string{"Enter"}})
 	}
 
+	// The inner scroller scrolls on its own: its scroll timeline and the view
+	// timeline of the card inside it follow InnerY, not the page.
+	if port, _, ok := s.host.scrollerViewport("inner-scroller"); ok {
+		sc, _, _ := show("inner-scroller")
+		add("inner-scroller arrive", sc, parkX, parkY)
+
+		for k := 0; k <= 4; k++ {
+			steps = append(steps, demoStep{Label: "inner-scroller scroll", Scroll: sc, CursorX: parkX, CursorY: parkY,
+				InnerY: (port.ContentH - port.H) * float64(k) / 4})
+		}
+
+		add("inner-scroller back", sc, parkX, parkY)
+	}
+
 	for _, id := range []string{"inert-panel", "auto-panel"} {
 		sc, cx, cy := show(id)
 		add(id+" arrive", sc, parkX, parkY)
@@ -151,6 +168,12 @@ func (h *Host) describe(f Frame, interest map[int]bool) map[string]string {
 
 	for key, v := range f.Timelines {
 		id := h.Nodes[key.Node].ID
+		if v.Inactive {
+			out[fmt.Sprintf("%s %s", id, key.Name)] = "inactive"
+
+			continue
+		}
+
 		switch v.Kind {
 		case KindPointer:
 			if v.Inside {
@@ -256,6 +279,7 @@ func runDemo(ctx context.Context, html string, width, height int, dir string, fr
 
 		// The window reports the offset to the page after its wheel stage.
 		s.page.Scroll().SetScrollOffset(0, int(step.Scroll))
+		s.host.SetScrollerOffset("inner-scroller", 0, step.InnerY)
 
 		if err = s.page.Testing().Tick(ctx); err != nil {
 			return logs, fmt.Errorf("step %d: %w", n, err)

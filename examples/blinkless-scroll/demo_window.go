@@ -109,6 +109,7 @@ func runDemoWindow(pagePath string, width, height int, dir string) error {
 
 		cur = steps[n]
 		s.page.Scroll().SetScrollOffset(0, int(cur.Scroll))
+		s.host.SetScrollerOffset("inner-scroller", 0, cur.InnerY)
 		next = now.Add(demoWindowStep)
 		s.page.WantFrameAt(next)
 	}

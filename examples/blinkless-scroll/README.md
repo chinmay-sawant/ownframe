@@ -57,6 +57,15 @@ Demo flags. Neither moves your mouse or touches another window.
   pictures does not slow the window down. The scripted cursor is not drawn in
   the live window, only in the saved frames.
 
+To try the inner scroller in section 9 by hand: roll the mouse wheel while the
+pointer is over the box, or press `J` (down) or `K` (up) over it. OwnFrame gives
+the host no scroll offset for an inner box, so the host keeps that offset
+itself and slides the box named `<id>-content` up by it. The window offers each
+wheel event to the host before it scrolls the page (`Handlers.Wheel`); over the
+box the host takes it, and when the box has no room left in that direction the
+host hands the event back so the page scrolls on. The box's own green fill and
+the card inside it follow the wheel and the keys.
+
 The two scroll bars at the top are `position: fixed`, so they stay on screen
 while the page scrolls. The pointer boxes only follow the pointer while it is
 over the box.
