@@ -4,19 +4,19 @@ package main
 func svgTab() Tab {
 	return Tab{ID: "svg", Title: "SVG leftovers", Props: []Prop{
 		{Name: "text-rendering",
-			Note: "The engine writes the value onto the SVG text element; the rasterizer drops SVG text, so no pixel changes.",
+			Note: "SVG text now draws as outlines from the bundled fonts. The three modes draw the same unhinted glyphs, so the property changes no pixels.",
 			Demo: demoSvgTextRendering},
 		{Name: "lighting-color",
-			Note: "The engine writes the color onto the lighting filter primitive; no filter graph runs, so no pixel changes.",
+			Note: "A diffuse light with a distant light shades the shape in lighting-color: a flat interior, with a darker edge band on the side away from the light.",
 			Demo: demoSvgLighting},
 		{Name: "glyph-orientation-vertical",
-			Note: "The engine writes 90deg or 0deg onto the SVG text element; the rasterizer ignores it.",
+			Note: "Accepted and exported. It has no rendering effect on horizontal text, so both lines draw the same.",
 			Demo: demoSvgGlyph},
 		{Name: "baseline-shift",
-			Note: "The engine writes the shift onto the tspan; the rasterizer ignores it.",
+			Note: "A tspan moves up or down: super and sub by half the font's height, a length as written, a percentage of the font size.",
 			Demo: demoSvgBaseline},
 		{Name: "marker-side",
-			Note: "The engine writes the keyword onto the shape; the rasterizer ignores it.",
+			Note: "Accepted and exported. Markers draw the same with either keyword.",
 			Demo: demoSvgMarker},
 	}, Head: shapesHead}
 }
