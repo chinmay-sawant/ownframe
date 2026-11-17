@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -14,8 +15,12 @@ import (
 // session writes a new offset-distance for it, and the engine turns that
 // distance into the box's matrix when the page is laid out again.
 const (
-	motionLoop      = 4 * time.Second
-	motionFrame     = 33 * time.Millisecond
+	motionLoop = 4 * time.Second
+	// Each write re-lays out the page, so the box moves in steps and the session
+	// asks for a frame about ten times a second. At 33 ms and a pixel at a time
+	// the page used more than a core while idle.
+	motionFrame     = 100 * time.Millisecond
+	motionStepPx    = 4.0
 	motionLiveLen   = 200.0
 	motionLiveID    = "mp-live"
 	motionLiveRead  = "mp-live-read"
@@ -33,8 +38,9 @@ func motionLiveHTML() string {
 // full length once per loop, then starts over.
 func motionDistance(now time.Time) float64 {
 	into := time.Duration(now.UnixNano()) % motionLoop
+	dist := float64(into) / float64(motionLoop) * motionLiveLen
 
-	return float64(into) / float64(motionLoop) * motionLiveLen
+	return math.Floor(dist/motionStepPx) * motionStepPx
 }
 
 type motionSession struct {

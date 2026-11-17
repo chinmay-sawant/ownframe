@@ -24,6 +24,7 @@ func main() {
 	demo := flag.Bool("demo", false, "play the scripted live session of the tab with a manual clock and no window")
 	demoOut := flag.String("demo-out", "", "directory for the -demo frames (default: a temp directory)")
 	web := flag.String("web", "", "serve the page at this address (for example 127.0.0.1:8099) instead of opening a window; GET /frame.png returns the picture")
+	snapshot := flag.String("snapshot", "", "window mode only: also serve a picture of the window as it is now at this loopback address (for example 127.0.0.1:8099); GET /frame.png returns it and / shows it")
 	flag.Parse()
 
 	if *demo {
@@ -35,13 +36,13 @@ func main() {
 		return
 	}
 
-	if err := run(*width, *height, *tab, *pngOut, *web); err != nil {
+	if err := run(*width, *height, *tab, *pngOut, *web, *snapshot); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(width, height int, tab, pngOut, web string) error {
+func run(width, height int, tab, pngOut, web, snapshot string) error {
 	app, err := NewApp(catalogPath())
 	if err != nil {
 		return err
@@ -68,10 +69,28 @@ func run(width, height int, tab, pngOut, web string) error {
 	}
 
 	if web != "" {
+		if snapshot != "" {
+			return fmt.Errorf("-snapshot is for the window; with -web the page itself is served")
+		}
+
 		return ownframe.Serve(ctx, page, web)
 	}
 
-	attachLive(page)
+	var hub *snapshotHub
+
+	if snapshot != "" {
+		hub = newSnapshotHub()
+
+		go func() {
+			if serveErr := serveSnapshots(ctx, snapshot, hub); serveErr != nil {
+				fmt.Fprintln(os.Stderr, "blinkless-all:", serveErr)
+			}
+		}()
+
+		fmt.Fprintf(os.Stderr, "blinkless-all: window snapshot at http://%s/frame.png\n", snapshot)
+	}
+
+	attachLive(page, hub)
 
 	return ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{NoAudio: true})
 }

@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -39,9 +40,19 @@ func ebitenLiveSource(page *ownframe.Page) liveSource {
 	}
 }
 
-// attachLive installs the live sessions on a window page.
-func attachLive(page *ownframe.Page) {
-	r := &liveRunner{page: page, sessions: liveSessions(), clock: wallClock{}, src: ebitenLiveSource(page)}
+// attachLive installs the live sessions on a window page. A non-nil hub also
+// lets the snapshot endpoint ask the window for its current picture.
+func attachLive(page *ownframe.Page, hub *snapshotHub) {
+	sessions := liveSessions()
+	if hub != nil {
+		sessions = append(sessions, &snapshotSession{hub: hub})
+	}
+
+	if hub != nil {
+		hub.wake = func() { page.WantFrameAt(time.Now()) }
+	}
+
+	r := &liveRunner{page: page, sessions: sessions, clock: wallClock{}, src: ebitenLiveSource(page)}
 	r.reportErr = func(err error) {
 		fmt.Fprintln(os.Stderr, "blinkless-all: patch refused, the page keeps running:", err)
 	}
