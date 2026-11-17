@@ -80,11 +80,10 @@ func (s *shell) traceWindowGeometry() {
 	var nativeRect workarea
 	nativeOK := false
 	layout := []monitorRect(nil)
-	monitor := state.monitor
 	if state.lastSample.IsZero() || now.Sub(state.lastSample) >= windowTraceInterval {
 		nativeRect, nativeOK = nativeWindowGeometry()
 		layout = monitorLayout()
-		monitor = ""
+		monitor := ""
 		if nativeOK {
 			if mon, ok := monitorForWindow(nativeRect.x, nativeRect.y, nativeRect.w, nativeRect.h, layout); ok {
 				monitor = mon.name

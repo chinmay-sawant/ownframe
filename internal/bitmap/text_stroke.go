@@ -14,6 +14,15 @@ import (
 // strokeRingPoints is how many offsets one ring of the outline uses.
 const strokeRingPoints = 12
 
+// strokeHalfWidthDivisor turns a stroke width into the radius of its centre ring.
+// wideStrokeRadius is the radius in pixels above which a smaller inner ring is
+// drawn too, and innerRingDivisor sets that inner ring to half the radius.
+const (
+	strokeHalfWidthDivisor = 2
+	wideStrokeRadius       = 1.5
+	innerRingDivisor       = 2
+)
+
 // paintTextStroke paints the -webkit-text-stroke outline under the fill by
 // drawing the run in the stroke color on a circle of half the stroke width,
 // and on a smaller ring for wide strokes. The caller draws the fill after, so
@@ -25,11 +34,11 @@ func paintTextStroke(dst *image.NRGBA, op *layout.DisplayOp, face font.Face, con
 		return
 	}
 
-	radius := width * pxPerPt / 2
+	radius := width * pxPerPt / strokeHalfWidthDivisor
 	rings := []float64{radius}
 
-	if radius > 1.5 {
-		rings = append(rings, radius/2)
+	if radius > wideStrokeRadius {
+		rings = append(rings, radius/innerRingDivisor)
 	}
 
 	for _, ring := range rings {

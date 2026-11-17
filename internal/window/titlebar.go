@@ -3,6 +3,7 @@ package window
 import (
 	"bytes"
 	"image/color"
+	"math"
 	"runtime"
 	"sync/atomic"
 
@@ -15,7 +16,35 @@ import (
 const titlebarHeight = 36
 const titlebarButtonWidth = 46
 
-var contentTop atomic.Int32
+// Caption button numbers, left to right, as the switch statements see them.
+// titlebarButtonCount is how many caption buttons the titlebar draws.
+const (
+	buttonMaximize      = 2
+	buttonClose         = 3
+	titlebarButtonCount = 3
+	// halfDivisor halves a size to find its center.
+	halfDivisor = 2
+)
+
+// Title layout: font size in points, the smallest header height a caller can
+// ask for, the padding around the title, and the room kept free at its end.
+// midpointDivisor halves the search range when fitting the title to its width.
+const (
+	headerFontSize  = 13
+	minHeaderHeight = 24
+	midpointDivisor = 2
+	titleInsetX     = 14
+	titleEndReserve = 28
+)
+
+var contentTop atomic.Int32 //nolint:gochecknoglobals // ContentCursorPosition is a package-level func with no receiver, so the offset it reads must be package state
+
+// storeContentTop records the titlebar inset that page content starts below.
+// Insets are never negative and are far below MaxInt32, so the clamp only
+// makes the int32 conversion provably safe.
+func storeContentTop(inset int) {
+	contentTop.Store(int32(min(max(inset, 0), math.MaxInt32)))
+}
 
 // ContentCursorPosition returns the mouse position in page coordinates.
 func ContentCursorPosition() (int, int) {
@@ -48,7 +77,7 @@ func newHeaderFont() (text.Face, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &text.GoTextFace{Source: source, Size: 13}, nil
+	return &text.GoTextFace{Source: source, Size: headerFontSize}, nil
 }
 
 func fitHeaderTitle(title string, face text.Face, width int) string {
@@ -65,7 +94,7 @@ func fitHeaderTitle(title string, face text.Face, width int) string {
 	runes := []rune(title)
 	lo, hi := 0, len(runes)
 	for lo < hi {
-		mid := (lo + hi + 1) / 2
+		mid := (lo + hi + 1) / midpointDivisor
 		w, _ := text.Measure(string(runes[:mid])+ellipsis, face, 0)
 		if w <= float64(width) {
 			lo = mid
@@ -80,7 +109,7 @@ func headerHeight(o Options) int {
 	if o.HeaderHeight <= 0 {
 		return titlebarHeight
 	}
-	return max(24, o.HeaderHeight)
+	return max(minHeaderHeight, o.HeaderHeight)
 }
 
 func (s *shell) placeTitlebarWindow() {
@@ -153,11 +182,11 @@ func (s *shell) titlebarPointer(x, y int, down bool) bool {
 			switch hit {
 			case 1:
 				Minimize()
-			case 2:
+			case buttonMaximize:
 				if !s.titlebar.fixed {
 					ToggleMaximize()
 				}
-			case 3:
+			case buttonClose:
 				RequestClose()
 			}
 		}
@@ -175,7 +204,7 @@ func (s *shell) titlebarCanvas(screen *ebiten.Image) (*ebiten.Image, func()) {
 	canvas := s.titlebar.canvas
 	if canvas == nil || canvas.Bounds().Dx() != w || canvas.Bounds().Dy() != h {
 		if canvas != nil {
-			canvas.Dispose()
+			canvas.Deallocate()
 		}
 		canvas = ebiten.NewImage(w, h)
 		s.titlebar.canvas = canvas
@@ -190,13 +219,14 @@ func (s *shell) titlebarCanvas(screen *ebiten.Image) (*ebiten.Image, func()) {
 
 func (s *shell) drawTitlebar(screen *ebiten.Image) {
 	width := screen.Bounds().Dx()
-	var bg color.Color = color.NRGBA{R: 235, G: 231, B: 218, A: 255}
-	var ink color.Color = color.NRGBA{R: 31, G: 41, B: 55, A: 255}
+	// The caption colors are RGBA channel tables; one const per channel would hide the color.
+	var bg color.Color = color.NRGBA{R: 235, G: 231, B: 218, A: 255} //nolint:mnd // RGBA palette table
+	var ink color.Color = color.NRGBA{R: 31, G: 41, B: 55, A: 255}   //nolint:mnd // RGBA palette table
 	page := s.pageBackground()
 	r, g, b, _ := page.RGBA()
 	if r+g+b < 3*0x8000 {
-		bg = color.NRGBA{R: 35, G: 38, B: 44, A: 255}
-		ink = color.NRGBA{R: 235, G: 237, B: 240, A: 255}
+		bg = color.NRGBA{R: 35, G: 38, B: 44, A: 255}     //nolint:mnd // RGBA palette table
+		ink = color.NRGBA{R: 235, G: 237, B: 240, A: 255} //nolint:mnd // RGBA palette table
 	}
 	style := s.titlebar.style
 	if style.background != nil {
@@ -209,40 +239,40 @@ func (s *shell) drawTitlebar(screen *ebiten.Image) {
 	vector.FillRect(screen, 0, 0, float32(width), height, bg, false)
 	x, y := s.cursorPosition()
 	for button := 1; button <= 3; button++ {
-		left := width - (4-button)*titlebarButtonWidth
+		left := width - (titlebarButtonCount+1-button)*titlebarButtonWidth
 		if y < 0 && y >= -s.titlebarInset() && titlebarButton(x, width) == button {
-			var hover color.Color = color.NRGBA{R: 128, G: 128, B: 128, A: 90}
+			var hover color.Color = color.NRGBA{R: 128, G: 128, B: 128, A: 90} //nolint:mnd // RGBA palette table
 			if style.hover != nil {
 				hover = style.hover
 			}
-			if button == 3 {
-				hover = color.NRGBA{R: 210, G: 40, B: 40, A: 255}
+			if button == buttonClose {
+				hover = color.NRGBA{R: 210, G: 40, B: 40, A: 255} //nolint:mnd // RGBA palette table
 				if style.closeHover != nil {
 					hover = style.closeHover
 				}
 			}
 			vector.FillRect(screen, float32(left), 0, titlebarButtonWidth, height, hover, false)
 		}
-		cx := float32(left) + titlebarButtonWidth/2
-		cy := height / 2
+		cx := float32(left) + titlebarButtonWidth/halfDivisor
+		cy := height / halfDivisor
 		switch button {
 		case 1:
-			vector.StrokeLine(screen, cx-5, cy+3, cx+5, cy+3, 1, ink, false)
-		case 2:
+			vector.StrokeLine(screen, cx-5, cy+3, cx+5, cy+3, 1, ink, false) //nolint:mnd // caption glyph pixel offsets
+		case buttonMaximize:
 			if Maximized() {
-				vector.StrokeRect(screen, cx-3, cy-5, 8, 8, 1, ink, false)
+				vector.StrokeRect(screen, cx-3, cy-5, 8, 8, 1, ink, false) //nolint:mnd // caption glyph pixel offsets
 			}
-			vector.StrokeRect(screen, cx-5, cy-3, 8, 8, 1, ink, false)
-		case 3:
-			vector.StrokeLine(screen, cx-4, cy-4, cx+4, cy+4, 1, ink, false)
-			vector.StrokeLine(screen, cx-4, cy+4, cx+4, cy-4, 1, ink, false)
+			vector.StrokeRect(screen, cx-5, cy-3, 8, 8, 1, ink, false) //nolint:mnd // caption glyph pixel offsets
+		case buttonClose:
+			vector.StrokeLine(screen, cx-4, cy-4, cx+4, cy+4, 1, ink, false) //nolint:mnd // caption glyph pixel offsets
+			vector.StrokeLine(screen, cx-4, cy+4, cx+4, cy-4, 1, ink, false) //nolint:mnd // caption glyph pixel offsets
 		}
 	}
 	title := s.app.Title()
 	if style.title != "" {
 		title = style.title
 	}
-	available := max(0, width-3*titlebarButtonWidth-28)
+	available := max(0, width-3*titlebarButtonWidth-titleEndReserve)
 	if title != s.titlebar.title || available != s.titlebar.titleWidth {
 		s.titlebar.title = title
 		s.titlebar.titleWidth = available
@@ -250,7 +280,7 @@ func (s *shell) drawTitlebar(screen *ebiten.Image) {
 	}
 	metrics := style.font.Metrics()
 	var op text.DrawOptions
-	op.GeoM.Translate(14, (float64(height)-metrics.HAscent-metrics.HDescent)/2)
+	op.GeoM.Translate(titleInsetX, (float64(height)-metrics.HAscent-metrics.HDescent)/halfDivisor)
 	op.ColorScale.ScaleWithColor(ink)
 	text.Draw(screen, s.titlebar.fittedTitle, style.font, &op)
 }

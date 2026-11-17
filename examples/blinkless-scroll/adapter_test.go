@@ -101,7 +101,7 @@ func fixture(t *testing.T) string {
 		t.Skip("sibling blinkless fixture not found")
 	}
 
-	b, _ := os.ReadFile(p)
+	b, _ := os.ReadFile(p) //nolint:gosec // G304: p is a fixed sibling-checkout fixture path chosen by this test, not user input
 
 	return string(b)
 }

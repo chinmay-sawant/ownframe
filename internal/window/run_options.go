@@ -72,11 +72,11 @@ func runWindow(ctx context.Context, app host.Screen, options Options) error {
 	}
 	game.titlebar.style = headerStyle{title: options.HeaderTitle, height: headerH, font: options.HeaderFont, background: options.HeaderBackground, foreground: options.HeaderForeground, hover: options.HeaderHover, closeHover: options.HeaderCloseHover}
 	game.titlebar.starting = builtinChrome && isWSLg() && options.PlacementID == "" && !options.BottomRight
-	contentTop.Store(int32(game.titlebarInset()))
+	storeContentTop(game.titlebarInset())
 	defer contentTop.Store(0)
 	defer func() {
 		if game.titlebar.canvas != nil {
-			game.titlebar.canvas.Dispose()
+			game.titlebar.canvas.Deallocate()
 		}
 	}()
 	defer game.cancel()

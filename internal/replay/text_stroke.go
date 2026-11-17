@@ -12,6 +12,15 @@ import (
 // strokeRingPoints is how many offsets one ring of the outline uses.
 const strokeRingPoints = 12
 
+// strokeHalfWidthDivisor turns a stroke width into the radius of its centre ring.
+// wideStrokeRadius is the radius in pixels above which a smaller inner ring is
+// drawn too, and innerRingDivisor sets that inner ring to half the radius.
+const (
+	strokeHalfWidthDivisor = 2
+	wideStrokeRadius       = 1.5
+	innerRingDivisor       = 2
+)
+
 // drawTextStroke paints the -webkit-text-stroke outline under the fill. The
 // engine carries the stroke width and color on the op (Op.TextStroke). Ebiten
 // text cannot stroke a glyph path, so the run is drawn in the stroke color at
@@ -30,11 +39,11 @@ func (renderer *Renderer) drawTextStroke(
 	stroked := *op
 	stroked.R, stroked.G, stroked.B = color[0], color[1], color[2]
 
-	radius := width * pxPerPt / 2
+	radius := width * pxPerPt / strokeHalfWidthDivisor
 	rings := []float64{radius}
 
-	if radius > 1.5 {
-		rings = append(rings, radius/2)
+	if radius > wideStrokeRadius {
+		rings = append(rings, radius/innerRingDivisor)
 	}
 
 	for _, ring := range rings {

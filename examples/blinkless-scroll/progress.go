@@ -4,6 +4,9 @@ package main
 // pixels along the timeline; progress is that position divided by the length
 // of the range being read, clamped to 0..1.
 
+// percentScale converts a CSS percentage (0 to 100) into a fraction.
+const percentScale = 100
+
 func clamp01(v float64) float64 {
 	switch {
 	case v < 0:
@@ -118,7 +121,7 @@ func (s RangeSpace) Resolve(b RangeBound, isEnd bool) float64 {
 
 		pos := 0.0
 		if b.HasPercent {
-			pos += s.Total * b.Percent / 100
+			pos += s.Total * b.Percent / percentScale
 		}
 
 		if b.HasLength {
@@ -139,7 +142,7 @@ func (s RangeSpace) Resolve(b RangeBound, isEnd bool) float64 {
 	}
 
 	if b.HasPercent {
-		base += (r[1] - r[0]) * b.Percent / 100
+		base += (r[1] - r[0]) * b.Percent / percentScale
 	}
 
 	if b.HasLength {

@@ -30,6 +30,24 @@ func (c *manualClock) Now() time.Time { return c.t }
 
 const demoStepTime = 100 * time.Millisecond // one frame at 10 fps
 
+// Demo geometry and clock values, named where the script uses them.
+const (
+	// unboundedViewport is taller than any page, so its ScrollY is the largest offset.
+	unboundedViewport = 1e9
+	// showTopPx is how far below the window top a shown element is placed.
+	showTopPx = 300
+	// scrollBackStep is the size of each step in the scroll-up pass, in CSS pixels.
+	scrollBackStep = 800
+	// pointerEdgeInset is how far the pointer sits inside a box edge, in CSS pixels.
+	pointerEdgeInset = 4
+	// innerScrollSteps is the number of inner-scroller positions after the start.
+	innerScrollSteps = 4
+	// demoEpochUnix is the manual clock's start, so every run logs the same times.
+	demoEpochUnix = 1_700_000_000
+	// cursorMarkRadius is the half-size of the marker drawn at the cursor.
+	cursorMarkRadius = 4
+)
+
 type demoStep struct {
 	Label   string
 	Scroll  float64 // offset the window reports to the page
@@ -89,12 +107,12 @@ func demoScript(s *session) []demoStep {
 	// scroll and the cursor point at the element's middle.
 	show := func(id string) (scroll, cx, cy float64) {
 		r := rect(id)
-		scroll = clampScroll(r.Y - 300)
+		scroll = clampScroll(r.Y - showTopPx)
 
 		return scroll, r.X + r.W/2, r.Y + r.H/2 - scroll
 	}
 
-	max := s.viewport(1e9).ScrollY
+	max := s.viewport(unboundedViewport).ScrollY
 
 	for y := 0.0; y < max; y += 400 {
 		add("scroll down", y, parkX, parkY)
@@ -102,7 +120,7 @@ func demoScript(s *session) []demoStep {
 
 	add("scroll bottom", max, parkX, parkY)
 
-	for y := max - 800; y > 0; y -= 800 {
+	for y := max - scrollBackStep; y > 0; y -= scrollBackStep {
 		add("scroll up", y, parkX, parkY)
 	}
 
@@ -112,9 +130,9 @@ func demoScript(s *session) []demoStep {
 		sc, cx, cy := show(id)
 		r := rect(id)
 		add(id+" arrive", sc, parkX, parkY)
-		add(id+" pointer left", sc, r.X+4, cy-(r.H/2-4))
+		add(id+" pointer left", sc, r.X+pointerEdgeInset, cy-(r.H/2-pointerEdgeInset))
 		add(id+" pointer middle", sc, cx, cy)
-		add(id+" pointer right", sc, r.X+r.W-4, cy+(r.H/2-4))
+		add(id+" pointer right", sc, r.X+r.W-pointerEdgeInset, cy+(r.H/2-pointerEdgeInset))
 		add(id+" pointer away", sc, parkX, parkY)
 	}
 
@@ -146,7 +164,7 @@ func demoScript(s *session) []demoStep {
 
 		for k := 0; k <= 4; k++ {
 			steps = append(steps, demoStep{Label: "inner-scroller scroll", Scroll: sc, CursorX: parkX, CursorY: parkY,
-				InnerY: (port.ContentH - port.H) * float64(k) / 4})
+				InnerY: (port.ContentH - port.H) * float64(k) / innerScrollSteps})
 		}
 
 		add("inner-scroller back", sc, parkX, parkY)
@@ -254,7 +272,7 @@ func quiet(v string) string {
 // runDemo plays the script. With frames true it writes one cropped PNG per
 // step into dir. It returns one log entry per step.
 func runDemo(ctx context.Context, html string, width, height int, dir string, frames bool, out io.Writer) ([]StepLog, error) {
-	clock := &manualClock{t: time.Unix(1_700_000_000, 0)}
+	clock := &manualClock{t: time.Unix(demoEpochUnix, 0)}
 
 	s, err := newSession(ctx, html, width, height, clock)
 	if err != nil {
@@ -295,11 +313,13 @@ func runDemo(ctx context.Context, html string, width, height int, dir string, fr
 		logs = append(logs, l)
 
 		if out != nil {
-			fmt.Fprintln(out, l.String())
+			if _, err = fmt.Fprintln(out, l.String()); err != nil {
+				return logs, err
+			}
 		}
 
 		if frames {
-			if err = writeFrame(s, dir, n, l.Scroll, step); err != nil {
+			if err = writeFrame(ctx, s, dir, n, l.Scroll, step); err != nil {
 				return logs, err
 			}
 		}
@@ -310,8 +330,8 @@ func runDemo(ctx context.Context, html string, width, height int, dir string, fr
 
 // writeFrame saves what the window would show: the viewport slice of the full
 // page picture, with a small marker at the cursor.
-func writeFrame(s *session, dir string, n, scroll int, step demoStep) error {
-	full, err := pngOf(s)
+func writeFrame(ctx context.Context, s *session, dir string, n, scroll int, step demoStep) error {
+	full, err := pngOf(ctx, s)
 	if err != nil {
 		return err
 	}
@@ -330,11 +350,11 @@ func writeFrame(s *session, dir string, n, scroll int, step demoStep) error {
 		}
 	}
 
-	for dy := -4; dy <= 4; dy++ {
-		for dx := -4; dx <= 4; dx++ {
-			c := color.RGBA{R: 220, G: 38, B: 38, A: 255}
+	for dy := -cursorMarkRadius; dy <= cursorMarkRadius; dy++ {
+		for dx := -cursorMarkRadius; dx <= cursorMarkRadius; dx++ {
+			c := color.RGBA{R: 220, G: 38, B: 38, A: 255} //nolint:mnd // marker color, RGBA table
 			if dx == -4 || dx == 4 || dy == -4 || dy == 4 {
-				c = color.RGBA{R: 255, G: 255, B: 255, A: 255}
+				c = color.RGBA{R: 255, G: 255, B: 255, A: 255} //nolint:mnd // marker outline color, RGBA table
 			}
 
 			x, y := int(step.CursorX)+dx, int(step.CursorY)+dy
@@ -349,19 +369,19 @@ func writeFrame(s *session, dir string, n, scroll int, step demoStep) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(dir, fmt.Sprintf("frame-%04d.png", n)), buf.Bytes(), 0o644)
+	return os.WriteFile(filepath.Join(dir, fmt.Sprintf("frame-%04d.png", n)), buf.Bytes(), pngFileMode)
 }
 
 // stitch joins the frames into an mp4 at 10 fps when ffmpeg is installed. It
 // reports the mp4 path, or "" with a plain reason when it did not make one.
-func stitch(dir string) (string, string) {
+func stitch(ctx context.Context, dir string) (string, string) {
 	ff, err := exec.LookPath("ffmpeg")
 	if err != nil {
 		return "", "ffmpeg not found on PATH; only PNG frames were written"
 	}
 
 	mp4 := filepath.Join(dir, "blinkless-scroll-demo.mp4")
-	cmd := exec.Command(ff, "-y", "-loglevel", "error", "-framerate", "10",
+	cmd := exec.CommandContext(ctx, ff, "-y", "-loglevel", "error", "-framerate", "10", //nolint:gosec // G204: ff comes from exec.LookPath and every argument is a fixed flag or a path this demo wrote
 		"-i", filepath.Join(dir, "frame-%04d.png"),
 		"-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p", mp4)
 

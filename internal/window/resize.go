@@ -102,7 +102,7 @@ func (s *shell) resize() error {
 func (s *shell) Layout(outsideWidth, outsideHeight int) (int, int) {
 	canvasWidth, canvasHeight := outsideWidth, outsideHeight
 	if s.titlebar.enabled {
-		contentTop.Store(int32(s.titlebarInset()))
+		storeContentTop(s.titlebarInset())
 	}
 	outsideHeight -= s.titlebarInset()
 	if outsideWidth < 1 {

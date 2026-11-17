@@ -159,7 +159,7 @@ func TestSnapshotHandler(t *testing.T) {
 	hub := rig.hub
 
 	rec := httptest.NewRecorder()
-	handlerPNG(hub).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/frame.png", nil))
+	handlerPNG(hub).ServeHTTP(rec, httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/frame.png", nil))
 
 	if rec.Code != http.StatusOK || rec.Header().Get("Content-Type") != "image/png" {
 		t.Fatalf("frame.png: status %d type %q", rec.Code, rec.Header().Get("Content-Type"))

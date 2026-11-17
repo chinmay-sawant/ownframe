@@ -34,7 +34,7 @@ func TestWindowSharedHeaderPixels(t *testing.T) {
 	sh.titlebar = titlebarState{enabled: true, style: headerStyle{height: 48, font: face, background: color.NRGBA{B: 255, A: 255}}}
 	defer func() {
 		if sh.titlebar.canvas != nil {
-			sh.titlebar.canvas.Dispose()
+			sh.titlebar.canvas.Deallocate()
 		}
 	}()
 	game := &headerPixelGame{shell: sh}

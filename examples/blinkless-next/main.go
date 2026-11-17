@@ -17,14 +17,24 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// Default window size in CSS pixels, and the exit code for a usage error.
+const (
+	defaultWidthPx  = 880
+	defaultHeightPx = 900
+	usageExitCode   = 2
+)
+
+// pngFileMode is the permission for the PNG picture: owner read and write only.
+const pngFileMode os.FileMode = 0o600
+
 func main() {
-	width := flag.Int("width", 880, "window width in CSS pixels")
-	height := flag.Int("height", 900, "window height in CSS pixels")
+	width := flag.Int("width", defaultWidthPx, "window width in CSS pixels")
+	height := flag.Int("height", defaultHeightPx, "window height in CSS pixels")
 	pngOut := flag.String("png", "", "write one PNG and exit, without opening a window")
 	flag.Parse()
 	if flag.NArg() > 1 || *width <= 0 || *height <= 0 {
 		fmt.Fprintln(os.Stderr, "usage: go run ./examples/blinkless-next [-width N] [-height N] [-png out.png] [page.html]")
-		os.Exit(2)
+		os.Exit(usageExitCode)
 	}
 
 	pagePath := reviewPage()
@@ -32,7 +42,7 @@ func main() {
 		pagePath = flag.Arg(0)
 	}
 
-	html, err := os.ReadFile(pagePath)
+	html, err := os.ReadFile(pagePath) //nolint:gosec // G304: pagePath is the page the operator names on the command line, read on purpose
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -68,7 +78,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "png: empty picture")
 			os.Exit(1)
 		}
-		if err = os.WriteFile(*pngOut, picture, 0o644); err != nil {
+		if err = os.WriteFile(*pngOut, picture, pngFileMode); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -108,9 +118,9 @@ func swatchPNG() ([]byte, error) {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	for y := range h {
 		for x := range w {
-			c := color.RGBA{R: 29, G: 78, B: 216, A: 255}
+			c := color.RGBA{R: 29, G: 78, B: 216, A: 255} //nolint:mnd // swatch color, RGBA table
 			if x >= w/2 {
-				c = color.RGBA{R: 245, G: 158, B: 11, A: 255}
+				c = color.RGBA{R: 245, G: 158, B: 11, A: 255} //nolint:mnd // swatch color, RGBA table
 			}
 			img.SetRGBA(x, y, c)
 		}

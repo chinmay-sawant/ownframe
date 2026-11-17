@@ -53,33 +53,6 @@ func shapesShow(markup string, ids []string, extra ...string) string {
 	return b.String()
 }
 
-// shapesStored draws markup and reports that the named boxes only store the
-// property: the Declared value is read back and nothing is drawn for it.
-func shapesStored(markup string, ids ...string) string {
-	d, err := shapesLayout(context.Background(), markup)
-	if err != nil {
-		return markup + "<p>layout failed: " + html.EscapeString(err.Error()) + "</p>"
-	}
-
-	var b strings.Builder
-
-	b.WriteString(markup)
-
-	for _, box := range d.Boxes {
-		for _, id := range ids {
-			if box.ID != id {
-				continue
-			}
-
-			for name, v := range box.Declared {
-				b.WriteString(shapesRes("%s: %s stored as %q, stored only, not drawn", id, name, v))
-			}
-		}
-	}
-
-	return b.String()
-}
-
 const (
 	shapesPlainCap = "no clip"
 	shapesCut      = "20px 10px"
@@ -322,16 +295,16 @@ func shapesLayout(ctx context.Context, markup string) (*layout.Display, error) {
 // shapesMask answers the url(mask) source with a 20 by 20 PNG: the left half
 // is opaque and the right half has alpha 0.3.
 func shapesMask(string) ([]byte, error) {
-	img := image.NewNRGBA(image.Rect(0, 0, 20, 20))
+	img := image.NewNRGBA(image.Rect(0, 0, maskSizePx, maskSizePx))
 
 	for y := range 20 {
 		for x := range 20 {
-			alpha := uint8(255)
-			if x >= 10 {
+			alpha := uint8(opaqueAlpha)
+			if x >= maskHalf {
 				alpha = 77
 			}
 
-			img.SetNRGBA(x, y, color.NRGBA{R: 0, G: 128, B: 0, A: alpha})
+			img.SetNRGBA(x, y, color.NRGBA{R: 0, G: 128, B: 0, A: alpha}) //nolint:mnd // mask color, RGBA table
 		}
 	}
 
@@ -426,4 +399,12 @@ const (
 	shapesPtPerPx = 0.75
 	shapesPageW   = 900
 	shapesPageH   = 600
+)
+
+// Mask picture for the url(mask) source: its side in pixels, the column where
+// the alpha drops, and the opaque alpha value.
+const (
+	maskSizePx  = 20
+	maskHalf    = 10
+	opaqueAlpha = 255
 )

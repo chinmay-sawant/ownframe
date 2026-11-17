@@ -20,7 +20,7 @@ const demoWindowStep = 250 * time.Millisecond
 // as a frame, then it closes the window and stitches the frames into an mp4.
 // It never touches the operating system cursor or any other window.
 func runDemoWindow(pagePath string, width, height int, dir string) error {
-	html, err := os.ReadFile(pagePath)
+	html, err := os.ReadFile(pagePath) //nolint:gosec // G304: pagePath is the page the operator names on the command line, read on purpose
 	if err != nil {
 		return err
 	}
@@ -130,7 +130,7 @@ func runDemoWindow(pagePath string, width, height int, dir string) error {
 
 	fmt.Printf("%d frames written to %s\n", len(logs), dir)
 
-	mp4, why := stitch(dir)
+	mp4, why := stitch(ctx, dir)
 	if mp4 == "" {
 		fmt.Println(why)
 
@@ -148,5 +148,5 @@ func demoDir(dir string) (string, error) {
 		return os.MkdirTemp("", "blinkless-scroll-demo-")
 	}
 
-	return dir, os.MkdirAll(dir, 0o755)
+	return dir, os.MkdirAll(dir, dirMode)
 }

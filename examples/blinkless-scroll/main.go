@@ -30,9 +30,23 @@ import (
 	"github.com/chinmay-sawant/ownframe"
 )
 
+// Default window size in CSS pixels, and the exit code for a usage error.
+const (
+	defaultWidthPx  = 880
+	defaultHeightPx = 700
+	usageExitCode   = 2
+)
+
+// File modes for demo output: picture files are owner-only, and output
+// directories are owner-writable and group-readable.
+const (
+	pngFileMode os.FileMode = 0o600
+	dirMode     os.FileMode = 0o750
+)
+
 func main() {
-	width := flag.Int("width", 880, "window width in CSS pixels")
-	height := flag.Int("height", 700, "window height in CSS pixels")
+	width := flag.Int("width", defaultWidthPx, "window width in CSS pixels")
+	height := flag.Int("height", defaultHeightPx, "window height in CSS pixels")
 	pngOut := flag.String("png", "", "write one PNG and exit, without opening a window")
 	scroll := flag.Int("scroll", 0, "scroll offset in CSS pixels used with -png")
 	demo := flag.Bool("demo", false, "play a scripted session headlessly, write PNG frames and an mp4 if ffmpeg exists")
@@ -42,7 +56,7 @@ func main() {
 
 	if flag.NArg() > 1 || *width <= 0 || *height <= 0 || *scroll < 0 {
 		fmt.Fprintln(os.Stderr, "usage: go run ./examples/blinkless-scroll [-width N] [-height N] [-png out.png] [-scroll N] [-demo [-demo-out DIR]] [page.html]")
-		os.Exit(2)
+		os.Exit(usageExitCode)
 	}
 
 	pagePath := scrollPage()
@@ -75,7 +89,7 @@ func main() {
 }
 
 func run(pagePath string, width, height int, pngOut string, scroll int) error {
-	html, err := os.ReadFile(pagePath)
+	html, err := os.ReadFile(pagePath) //nolint:gosec // G304: pagePath is the page the operator names on the command line, read on purpose
 	if err != nil {
 		return err
 	}
@@ -88,7 +102,7 @@ func run(pagePath string, width, height int, pngOut string, scroll int) error {
 			return err
 		}
 
-		return os.WriteFile(pngOut, picture, 0o644)
+		return os.WriteFile(pngOut, picture, pngFileMode) //nolint:gosec // G703: pngOut is the -png path the operator gives on the command line, written on purpose
 	}
 
 	s, err := newSession(ctx, string(html), width, height, nil)
@@ -115,11 +129,11 @@ func renderPNG(ctx context.Context, html string, width, height, scroll int) ([]b
 		return nil, err
 	}
 
-	return pngOf(s)
+	return pngOf(ctx, s)
 }
 
-func pngOf(s *session) ([]byte, error) {
-	picture := s.page.Probe().PNG()
+func pngOf(ctx context.Context, s *session) ([]byte, error) {
+	picture := s.page.Testing().PNGWithContext(ctx)
 	if len(picture) == 0 {
 		return nil, fmt.Errorf("png: empty picture")
 	}
@@ -184,7 +198,7 @@ func scrollPage() string {
 // runDemoCommand plays the demo, prints one log line per step, and reports
 // where the frames and the video went.
 func runDemoCommand(pagePath string, width, height int, dir string) error {
-	html, err := os.ReadFile(pagePath)
+	html, err := os.ReadFile(pagePath) //nolint:gosec // G304: pagePath is the page the operator names on the command line, read on purpose
 	if err != nil {
 		return err
 	}
@@ -193,7 +207,7 @@ func runDemoCommand(pagePath string, width, height int, dir string) error {
 		if dir, err = os.MkdirTemp("", "blinkless-scroll-demo-"); err != nil {
 			return err
 		}
-	} else if err = os.MkdirAll(dir, 0o755); err != nil {
+	} else if err = os.MkdirAll(dir, dirMode); err != nil {
 		return err
 	}
 
@@ -206,7 +220,7 @@ func runDemoCommand(pagePath string, width, height int, dir string) error {
 
 	fmt.Printf("%d frames written to %s\n", len(logs), dir)
 
-	mp4, why := stitch(dir)
+	mp4, why := stitch(context.Background(), dir)
 	if mp4 == "" {
 		fmt.Println(why)
 

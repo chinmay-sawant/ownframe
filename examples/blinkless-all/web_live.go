@@ -19,6 +19,9 @@ import (
 // the middle of its track. There is no pointer-down or pointer-up route, so
 // dragging a slider or the mock window is a window-only test.
 
+// boxCenterDivisor halves a box's width and height to find its center.
+const boxCenterDivisor = 2
+
 // webInput is the input waiting for the next tick.
 type webInput struct {
 	mu    sync.Mutex
@@ -32,7 +35,7 @@ type webInput struct {
 // offset to the cursor, and a box is in page coordinates, so the offset comes
 // off here.
 func (w *webInput) at(b ownframe.Box, scrollY int) {
-	w.x, w.y = b.X+b.W/2, b.Y+b.H/2-float64(scrollY)
+	w.x, w.y = b.X+b.W/boxCenterDivisor, b.Y+b.H/boxCenterDivisor-float64(scrollY)
 }
 
 // source returns the liveSource that drains w.
@@ -77,12 +80,25 @@ func (w *webInput) source() liveSource {
 	}
 }
 
-// webKeyNames maps the lowercase names a route key arrives with to the names
-// the live sessions read.
-var webKeyNames = map[string]string{
-	"up": "ArrowUp", "arrowup": "ArrowUp", "down": "ArrowDown", "arrowdown": "ArrowDown",
-	"left": "ArrowLeft", "arrowleft": "ArrowLeft", "right": "ArrowRight", "arrowright": "ArrowRight",
-	"backspace": "Backspace", "enter": "Enter",
+// webKeyName maps the lowercase names a route key arrives with to the names
+// the live sessions read. ok is false for a key the live sessions do not read.
+func webKeyName(key string) (name string, ok bool) {
+	switch key {
+	case "up", "arrowup":
+		return "ArrowUp", true
+	case "down", "arrowdown":
+		return "ArrowDown", true
+	case "left", "arrowleft":
+		return "ArrowLeft", true
+	case "right", "arrowright":
+		return "ArrowRight", true
+	case "backspace":
+		return "Backspace", true
+	case "enter":
+		return "Enter", true
+	}
+
+	return "", false
 }
 
 // attachWebLive installs the live sessions on a served page and routes the
@@ -121,7 +137,7 @@ func webHandlers(page *ownframe.Page, in *webInput) ownframe.Handlers {
 			return nil
 		},
 		KeyDown: func(_ context.Context, key string) error {
-			if name, ok := webKeyNames[strings.ToLower(key)]; ok {
+			if name, ok := webKeyName(strings.ToLower(key)); ok {
 				in.mu.Lock()
 				in.keys = append(in.keys, name)
 				in.mu.Unlock()

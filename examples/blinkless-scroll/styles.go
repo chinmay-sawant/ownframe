@@ -32,6 +32,15 @@ func BaseStyles(html string) map[string]string {
 	return out
 }
 
+// Fallback width in CSS pixels for a box with no width in its style text, and
+// the opacity and slide the view-timeline cards use as they enter.
+const (
+	defaultBaseWidthPx = 600
+	cardOpacityStart   = 0.25
+	cardOpacityRange   = 0.75
+	cardSlideOffsetPx  = 60
+)
+
 func baseWidth(style string) float64 {
 	if m := widthRe.FindStringSubmatch(style); m != nil {
 		if w, err := strconv.ParseFloat(m[1], 64); err == nil {
@@ -39,7 +48,7 @@ func baseWidth(style string) float64 {
 		}
 	}
 
-	return 600
+	return defaultBaseWidthPx
 }
 
 // Colors a trigger or interest card changes to when it turns on.
@@ -61,7 +70,7 @@ const (
 
 // progressFill is a background that is filled up to progress along dir.
 func progressFill(dir, fill string, progress float64) string {
-	p := progress * 100
+	p := progress * percentScale
 
 	return fmt.Sprintf("background:linear-gradient(%s,%s %.0f%%,%s %.0f%%)", dir, fill, p, colorTrack, p)
 }
@@ -141,8 +150,8 @@ func (h *Host) Styles(f Frame, base map[string]string) []StylePatch {
 				e := val.Ranges["entry"]
 				extra[subject] = append(extra[subject],
 					progressFill("90deg", colorView, val.Progress),
-					fmt.Sprintf("opacity:%.2f", 0.25+0.75*e),
-					fmt.Sprintf("margin-left:%.1fpx", (1-e)*60))
+					fmt.Sprintf("opacity:%.2f", cardOpacityStart+cardOpacityRange*e),
+					fmt.Sprintf("margin-left:%.1fpx", (1-e)*cardSlideOffsetPx))
 			case KindPointer:
 				dir := "90deg"
 				if tl.Axis == AxisY {

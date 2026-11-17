@@ -25,6 +25,10 @@ const (
 	// snapshotWait is how long a request waits for the window before it gives up.
 	// A busy page can take seconds to paint, so the wait is generous.
 	snapshotWait = 20 * time.Second
+	// snapshotPoll is how often a waiting request checks whether the window answered.
+	snapshotPoll = 10 * time.Millisecond
+	// snapshotHeaderTimeout bounds how long a client may take to send request headers.
+	snapshotHeaderTimeout = 5 * time.Second
 )
 
 // errSnapshotTimeout means the window loop did not answer in time.
@@ -58,7 +62,7 @@ func (h *snapshotHub) Request(ctx context.Context) ([]byte, error) {
 	deadline := time.NewTimer(snapshotWait)
 	defer deadline.Stop()
 
-	tick := time.NewTicker(10 * time.Millisecond)
+	tick := time.NewTicker(snapshotPoll)
 	defer tick.Stop()
 
 	for {
@@ -110,10 +114,10 @@ func (s *snapshotSession) TabID() string { return "" }
 // retained display list, so live patches and hover are in it. It returns the
 // zero time: the session never asks for a frame of its own.
 func (s *snapshotSession) Frame(
-	_ context.Context, page *ownframe.Page, _ liveInput, _ time.Time,
+	ctx context.Context, page *ownframe.Page, _ liveInput, _ time.Time,
 ) (time.Time, error) {
 	if s.hub.take() {
-		s.hub.publish(page.Probe().PNG())
+		s.hub.publish(page.Testing().PNGWithContext(ctx))
 	}
 
 	return time.Time{}, nil
@@ -166,7 +170,7 @@ func serveSnapshots(ctx context.Context, addr string, hub *snapshotHub) error {
 		_, _ = w.Write([]byte(snapshotViewer))
 	})
 
-	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: 5 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: mux, ReadHeaderTimeout: snapshotHeaderTimeout}
 
 	go func() {
 		<-ctx.Done()
