@@ -73,6 +73,8 @@ func run(width, height int, tab, pngOut, web, snapshot string) error {
 			return fmt.Errorf("-snapshot is for the window; with -web the page itself is served")
 		}
 
+		attachWebLive(page)
+
 		return ownframe.Serve(ctx, page, web)
 	}
 
@@ -132,6 +134,12 @@ func (a *App) NewPage(ctx context.Context, tab string, width, height int) (*ownf
 	page, err := ownframe.New(ownframe.Config{Title: "blinkless all", HTML: a.Page(tab), Width: width, Height: height, RetainState: true})
 	if err != nil {
 		return nil, err
+	}
+
+	// The shape-image-threshold demo names url(mask); the readout layout
+	// answers it through shapesMask, so the painted page must answer it too.
+	if mask, maskErr := shapesMask("mask"); maskErr == nil {
+		page.SetImage("mask", mask)
 	}
 
 	for _, t := range a.tabs {

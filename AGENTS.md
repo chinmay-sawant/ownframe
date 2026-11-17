@@ -106,6 +106,17 @@ Tables highlight their key column with plain markdown bold (`**value**`), which 
 
 Do not run `go build ./...`. Every run links an executable for each example, takes about a minute, and leaves the binaries in this directory; the default `-p 24` loads the machine. For the same compile check, run `make build`. It calls `go vet -p 1 ./... ./examples/...`, which compiles every package including the examples, links nothing, and writes nothing. Raise the limit with `make build BUILD_P=4`. To check one example, name it: `go vet -p 1 ./examples/login`.
 
+## Testing an app by driving it
+
+When asked to check that an app's screens match what they claim (click, scroll, drag, hover, edge cases), follow `documentation/testing.md`, section "Testing an app by driving it". The short form:
+
+1. Compare three things per row: the description, the painted picture, and the readout. A readout can come from a separate layout, so assert on the painted page (`page.Probe().Display()`), not on the readout text.
+2. Prefer a headless Go test first: `liveRig` in `examples/blinkless-all/nav_scripted.go` clicks, drags, hovers, types and advances a manual clock with no window. Write the test, watch it fail without the fix, then fix.
+3. For pictures, serve the app with `-web ADDR` and read `/frame.png`, `/click` and `/wheel` over `curl` (send a matching `Origin`; negative `dy` scrolls down). `-web` has a live session only when the app adds one (`blinkless-all` does, without drag); otherwise empty readouts and frozen sliders there are not bugs.
+4. For live state, run the window with `-snapshot ADDR`, drive it with `scripts/gui-drive.sh` (`setup` fetches `xdotool` without root; `click`, `type`, `key`, `drag`, `scroll`, `snap`), and read its `/frame.png`. Park the pointer off scrollable boxes before scrolling, and restart the app between unrelated tests. If you cannot reach the window, say that interaction was not tested in it.
+5. Read every screenshot yourself. Report each finding as description, picture, readout, and which one disagrees, marked web-only, window, or both.
+6. Keep binaries and screenshots in the scratchpad, build with `go build -o <scratch>/app ./examples/<name>`, and stop servers by `pgrep -x <name>`, never `pkill -f <text>`.
+
 ## Before you finish
 
 For documentation or maintenance tooling, run `make docs-check plans-check examples-check`. For paint or window changes, also run `make graphics-check`; see `documentation/testing.md` for prerequisites and limits.

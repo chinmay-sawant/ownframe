@@ -93,6 +93,8 @@ func fragRunningHeaderHTML(ctx context.Context) (string, error) {
 
 	var b strings.Builder
 
+	// The heading itself still paints in the page, so draw it above the header.
+	b.WriteString(`<h1 id="frag-heading" style="font-size:20px;margin:0 0 6px">Chapter Seven</h1>`)
 	b.WriteString(`<div id="frag-running-header" style="background:#e5e7eb;padding:4px 8px">`)
 
 	for _, c := range copies {

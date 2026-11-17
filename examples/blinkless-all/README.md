@@ -47,3 +47,10 @@ until its behavior is checked by hand in the window.
 
 Files: `app.go`, `catalog.go`, `page.go`, `tabs.go` and `main.go` are the shell.
 Each tab has a `tab_<id>.go` and its own host and test files.
+
+`-web ADDR` also has the live sessions (`web_live.go`): hover, click, key and
+typed text from the web routes drive the same sessions the window uses. A click
+carries the box under the point, not the point, so a slider click lands
+mid-track, and dragging needs the window. `scripts/gui-drive.sh` in the
+repository root of ownframe drives the real window; see
+`documentation/testing.md`.
