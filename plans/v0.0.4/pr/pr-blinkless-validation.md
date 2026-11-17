@@ -2,32 +2,18 @@
 
 ## Summary
 
-- Adds the OwnFrame side of the blinkless v0.1.2 work: three example apps
-  (`blinkless-all`, `blinkless-scroll`, a preview that opens blinkless
-  fixtures) that show the new CSS properties, plus the window and render
-  changes they need (shared headers, `-webkit-text-stroke` paint, a silent
-  preview with no sound device).
-- Fixes two bugs found by testing `blinkless-all` in the real window, adds live
-  state to its `-web` mode, and documents how to test an app by driving the
-  window with the mouse and keyboard (`scripts/gui-drive.sh`).
+- Adds the OwnFrame side of the blinkless v0.1.2 work: three example apps (`blinkless-all`, `blinkless-scroll`, a preview that opens blinkless fixtures) that show the new CSS properties, plus the window and render changes they need (shared headers, `-webkit-text-stroke` paint, a silent preview with no sound device).
+- Fixes two bugs found by testing `blinkless-all` in the real window, adds live state to its `-web` mode, and documents how to test an app by driving the window with the mouse and keyboard (`scripts/gui-drive.sh`).
 - Clears all `make lint` findings so `make lint` and `make test` exit 0.
 
-**Depends on blinkless pull request #38.** This branch uses engine features
-that the pinned `blinkless v0.1.1` does not have (for example
-`DisplayOp.TextStroke`), and `make graphics-check` needs the `refract()`
-backdrop-filter fix in that pull request. It builds through the committed `go.work`, which uses
-the local `../blinkless` checkout. With `GOWORK=off` it fails to compile against
-`v0.1.1`. Merge and tag blinkless first, then bump the pin here. Until then
-this is a draft.
+**Depends on blinkless pull request #38.** This branch uses engine features that the pinned `blinkless v0.1.1` does not have (for example `DisplayOp.TextStroke`), and `make graphics-check` needs the `refract()` backdrop-filter fix in that pull request. It builds through the committed `go.work`, which uses the local `../blinkless` checkout. With `GOWORK=off` it fails to compile against `v0.1.1`. Merge and tag blinkless first, then bump the pin here. Until then this is a draft.
 
 ---
 
 ## Motivation / context
 
-- Plans: the blinkless `plans/v0.1.2/` checklists name `examples/blinkless-all`
-  as the place a person checks the new styles by hand.
-- Testing every row of `blinkless-all` against its description found two
-  disagreements, both in the host demos and not in the engine (see Changes).
+- Plans: the blinkless `plans/v0.1.2/` checklists name `examples/blinkless-all` as the place a person checks the new styles by hand.
+- Testing every row of `blinkless-all` against its description found two disagreements, both in the host demos and not in the engine (see Changes).
 
 ---
 
@@ -35,67 +21,37 @@ this is a draft.
 
 ### Examples and window
 
-- `examples/blinkless-all`: one window for the 61 properties that were not yet
-  implemented, in six tabs (navigation and UI, draft borders and shapes, motion
-  path, fragmentation, reading order, SVG leftovers). Live sessions react to the
-  pointer, keys and clock on the navigation and motion tabs.
-- `examples/blinkless-scroll`: the host side of scroll timelines, with
-  timeline lists and scrollers.
-- Preview: opens a blinkless fixture, opens the ten-style page with no
-  arguments, adds an `env()` swatch, and opens silently when there is no sound
-  device.
-- Window and render: shared customizable headers across desktop applications,
-  and the `-webkit-text-stroke` outline paint.
+- `examples/blinkless-all`: one window for the 61 properties that were not yet implemented, in six tabs (navigation and UI, draft borders and shapes, motion path, fragmentation, reading order, SVG leftovers). Live sessions react to the pointer, keys and clock on the navigation and motion tabs.
+- `examples/blinkless-scroll`: the host side of scroll timelines, with timeline lists and scrollers.
+- Preview: opens a blinkless fixture, opens the ten-style page with no arguments, adds an `env()` swatch, and opens silently when there is no sound device.
+- Window and render: shared customizable headers across desktop applications, and the `-webkit-text-stroke` outline paint.
 - Window screenshot on demand (`-snapshot`) and a calmer motion tab.
 
 ### Bugs found by testing in the window
 
-- `shape-image-threshold`: the page never registered `url(mask)`, so the 0.5 box
-  read no alpha and started its text 80px in while the readout said 40px.
-  `NewPage` now registers the mask.
-- `copy-into`: the demo printed the running header but never drew the heading
-  its description says still paints. It does now.
-- The scrolled action sheet painted over the pinned header. Its re-layout trick
-  wrote a growing `z-index` onto the sheet box, and the pinned block has
-  `z-index:10`. The trigger is now the custom property `--sheet-offset`.
-- Regression tests assert on the painted page, not the readout
-  (`page_paint_test.go`, `nav_sheet_test.go`).
+- `shape-image-threshold`: the page never registered `url(mask)`, so the 0.5 box read no alpha and started its text 80px in while the readout said 40px. `NewPage` now registers the mask.
+- `copy-into`: the demo printed the running header but never drew the heading its description says still paints. It does now.
+- The scrolled action sheet painted over the pinned header. Its re-layout trick wrote a growing `z-index` onto the sheet box, and the pinned block has `z-index:10`. The trigger is now the custom property `--sheet-offset`.
+- Regression tests assert on the painted page, not the readout (`page_paint_test.go`, `nav_sheet_test.go`).
 
 ### Web mode
 
-- `-web` now attaches the live sessions (`web_live.go`): hover, click, key and
-  typed text from the web routes drive the same sessions the window uses. A
-  click carries the box under the point, not the point, so a slider click lands
-  mid-track; dragging stays window-only. `web_live_test.go` covers the path.
+- `-web` now attaches the live sessions (`web_live.go`): hover, click, key and typed text from the web routes drive the same sessions the window uses. A click carries the box under the point, not the point, so a slider click lands mid-track; dragging stays window-only. `web_live_test.go` covers the path.
 
 ### Testing and docs
 
-- `scripts/gui-drive.sh` drives the real window with `xdotool` (`setup` fetches
-  it without root) and reads it back through `-snapshot`.
-- `documentation/testing.md` has a new section, "Testing an app by driving it",
-  with the gotchas found on WSLg (keys need `--window`, the wheel hits whatever
-  is under the pointer, the click origin is measured). `AGENTS.md` carries a
-  short form.
+- `scripts/gui-drive.sh` drives the real window with `xdotool` (`setup` fetches it without root) and reads it back through `-snapshot`.
+- `documentation/testing.md` has a new section, "Testing an app by driving it", with the gotchas found on WSLg (keys need `--window`, the wheel hits whatever is under the pointer, the click origin is measured). `AGENTS.md` carries a short form.
 
 ### Catalog check
 
-- `examples/css-preview/catalog_animation_trigger_test.go` and
-  `catalog_trigger_scope_test.go` name their case strings as constants
-  (`catalogTriggerActions`, `catalogTriggerScopeName`). blinkless
-  `make catalog-check` looks for each case as a quoted string in the test file;
-  the tests behave the same.
+- `examples/css-preview/catalog_animation_trigger_test.go` and `catalog_trigger_scope_test.go` name their case strings as constants (`catalogTriggerActions`, `catalogTriggerScopeName`). blinkless `make catalog-check` looks for each case as a quoted string in the test file; the tests behave the same.
 
 ### Lint
 
-- Clears the `golangci-lint` findings in `internal/window`, the two
-  `text_stroke.go` files and the examples: named consts, a clamped `int32`
-  conversion, `Deallocate()` in place of the deprecated `Dispose()`, contexts
-  passed to PNG capture and `exec`, and `//nolint` with a written reason where
-  a path is operator-supplied.
-- Behavior change to review: demo and `-png` output files are now written with
-  mode `0o600` and output directories with `0o750`.
-- `scripts/test_graphics_gate.py` lists `TestWindowSharedHeaderPixels`, which
-  `check-graphics.sh` already ran.
+- Clears the `golangci-lint` findings in `internal/window`, the two `text_stroke.go` files and the examples: named consts, a clamped `int32` conversion, `Deallocate()` in place of the deprecated `Dispose()`, contexts passed to PNG capture and `exec`, and `//nolint` with a written reason where a path is operator-supplied.
+- Behavior change to review: demo and `-png` output files are now written with mode `0o600` and output directories with `0o750`.
+- `scripts/test_graphics_gate.py` lists `TestWindowSharedHeaderPixels`, which `check-graphics.sh` already ran.
 
 ---
 
@@ -122,17 +78,12 @@ this is a draft.
 
 ## Test plan
 
-- [x] `make test` exits 0 (162 packages `ok`), run against the local blinkless
-  checkout on `feature/v0.1.2-pending-css`
+- [x] `make test` exits 0 (162 packages `ok`), run against the local blinkless checkout on `feature/v0.1.2-pending-css`
 - [x] `make lint` exits 0
-- [x] `go test ./examples/blinkless-all` exits 0, including the new painted-page,
-  sheet and web-input tests
+- [x] `go test ./examples/blinkless-all` exits 0, including the new painted-page, sheet and web-input tests
 - [x] `make docs-check` exits 0
-- [x] Manual: every one of the 45 `blinkless-all` examples checked in the real
-  window (click, keys, drag, type, press-and-hold, toggle, pause), driven with
-  `scripts/gui-drive.sh` on WSL2 with WSLg
-- [x] `make graphics-check` exits 0 (14 tests under Xvfb), run against the local
-  blinkless checkout including the `refract()` fix in blinkless #38
+- [x] Manual: every one of the 45 `blinkless-all` examples checked in the real window (click, keys, drag, type, press-and-hold, toggle, pause), driven with `scripts/gui-drive.sh` on WSL2 with WSLg
+- [x] `make graphics-check` exits 0 (14 tests under Xvfb), run against the local blinkless checkout including the `refract()` fix in blinkless #38
 - [ ] `GOWORK=off` build fails until the blinkless pin is bumped (see Summary)
 
 ### Commands
@@ -147,8 +98,7 @@ go test ./examples/blinkless-all
 
 ## Screenshots / sample output
 
-Full-page window pictures of each tab were read during the manual pass. They
-are not committed.
+Full-page window pictures of each tab were read during the manual pass. They are not committed.
 
 ---
 
@@ -169,12 +119,9 @@ are not committed.
 
 ## Follow-ups (out of scope)
 
-- After blinkless #38 merges and is tagged, bump `go.mod` and `examples/go.mod`
-  to that tag and take this PR out of draft.
-- The testing guide still says twelve tests for `make graphics-check` where the
-  script runs fourteen.
-- Selections from one row of `blinkless-all` stay highlighted when another row
-  is clicked.
+- After blinkless #38 merges and is tagged, bump `go.mod` and `examples/go.mod` to that tag and take this PR out of draft.
+- The testing guide still says twelve tests for `make graphics-check` where the script runs fourteen.
+- Selections from one row of `blinkless-all` stay highlighted when another row is clicked.
 
 ---
 
