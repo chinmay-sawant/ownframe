@@ -44,8 +44,11 @@ func (s *navSession) drawFocus(sc *navScreen, m navModel) {
 				// A patch re-places only the element it names. Touching the box
 				// that holds the sheet, with a value that changes whenever the
 				// offset does, makes the sheet move on every key, in both
-				// directions on both axes.
-				sc.style("sbox", fmt.Sprintf("z-index:%d", int(st.scroll[0]/scrollStep)*sheetRows+int(st.scroll[1]/scrollStep)))
+				// directions on both axes. The value is a custom property, not
+				// z-index: a large z-index lifted the sheet above the pinned top
+				// block (z-index 10) once it was scrolled, so the cells painted
+				// over the header.
+				sc.style("sbox", fmt.Sprintf("--sheet-offset:%d", int(st.scroll[0]/scrollStep)*sheetRows+int(st.scroll[1]/scrollStep)))
 				sc.style(id, ringStyle)
 			case st.focus[demo] == id:
 				sc.style(id, ringStyle)
@@ -388,5 +391,5 @@ func offsetOf(v float64) float64 {
 }
 
 // sheetRows is more than the number of vertical scroll positions, so every
-// offset maps to its own z-index value.
+// offset maps to its own --sheet-offset value.
 const sheetRows = 100
