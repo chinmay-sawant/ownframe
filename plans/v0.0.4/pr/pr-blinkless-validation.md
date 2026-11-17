@@ -132,11 +132,11 @@ Full-page window pictures of each tab were read during the manual pass. They are
 | `.go` | 100 | 11641 | 27 |
 | `.html` | 1 | 8 | 0 |
 | `.json` | 2 | 15 | 2 |
-| `.md` | 7 | 479 | 4 |
+| `.md` | 7 | 426 | 4 |
 | `.py` | 1 | 1 | 0 |
 | `.sh` | 2 | 150 | 0 |
 | `.work` | 1 | 1 | 0 |
-| **Total** | **114** | **12295** | **33** |
+| **Total** | **114** | **12242** | **33** |
 
 ---
 
