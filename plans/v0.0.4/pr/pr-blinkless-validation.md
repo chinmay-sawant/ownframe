@@ -153,7 +153,7 @@ are not committed.
 - [x] Self-assigned (`--assignee @me`)
 - [x] Labels applied (`enhancement`)
 - [x] Related issues filled
-- [x] Filled body committed under `plans/v0.0.4/PR/pr-blinkless-validation.md`
+- [x] Filled body committed under `plans/v0.0.4/pr/pr-blinkless-validation.md`
 
 ---
 
