@@ -170,7 +170,16 @@ are not committed.
 
 ## Diff stat by extension
 
-STAT_PLACEHOLDER
+| Extension | Files | Insertions | Deletions |
+| --- | ---: | ---: | ---: |
+| `.go` | 98 | 11630 | 24 |
+| `.html` | 1 | 8 | 0 |
+| `.json` | 2 | 15 | 2 |
+| `.md` | 7 | 460 | 4 |
+| `.py` | 1 | 1 | 0 |
+| `.sh` | 2 | 150 | 0 |
+| `.work` | 1 | 1 | 0 |
+| **Total** | **112** | **12265** | **30** |
 
 ---
 
