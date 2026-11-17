@@ -25,7 +25,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -192,6 +194,10 @@ func scrollPage() string {
 		}
 	}
 
+	if path := moduleFile(filepath.Join("testdata", "css", "v012", "scroll", "page.html")); path != "" {
+		return path
+	}
+
 	return candidates[0]
 }
 
@@ -230,4 +236,20 @@ func runDemoCommand(pagePath string, width, height int, dir string) error {
 	fmt.Println("video:", mp4)
 
 	return nil
+}
+
+// moduleFile returns rel inside the pinned blinkless module, or "" when the
+// go tool cannot find it. CI has no sibling checkout, so this is the fallback.
+func moduleFile(rel string) string {
+	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/chinmay-sawant/blinkless").Output()
+	if err != nil {
+		return ""
+	}
+
+	path := filepath.Join(strings.TrimSpace(string(out)), rel)
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+
+	return path
 }

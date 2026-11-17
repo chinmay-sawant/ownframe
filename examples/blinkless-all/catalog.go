@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // Catalog is the status of every CSS property, read from the blinkless
@@ -101,5 +103,25 @@ func catalogPath() string {
 		}
 	}
 
+	if path := moduleFile(filepath.Join("testdata", "css", "catalog", "properties.json")); path != "" {
+		return path
+	}
+
 	return candidates[0]
+}
+
+// moduleFile returns rel inside the pinned blinkless module, or "" when the
+// go tool cannot find it. CI has no sibling checkout, so this is the fallback.
+func moduleFile(rel string) string {
+	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/chinmay-sawant/blinkless").Output()
+	if err != nil {
+		return ""
+	}
+
+	path := filepath.Join(strings.TrimSpace(string(out)), rel)
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+
+	return path
 }
