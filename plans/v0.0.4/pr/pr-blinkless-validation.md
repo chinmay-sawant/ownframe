@@ -14,7 +14,8 @@
 
 **Depends on blinkless pull request #38.** This branch uses engine features
 that the pinned `blinkless v0.1.1` does not have (for example
-`DisplayOp.TextStroke`). It builds through the committed `go.work`, which uses
+`DisplayOp.TextStroke`), and `make graphics-check` needs the `refract()`
+backdrop-filter fix in that pull request. It builds through the committed `go.work`, which uses
 the local `../blinkless` checkout. With `GOWORK=off` it fails to compile against
 `v0.1.1`. Merge and tag blinkless first, then bump the pin here. Until then
 this is a draft.
@@ -76,6 +77,14 @@ this is a draft.
   is under the pointer, the click origin is measured). `AGENTS.md` carries a
   short form.
 
+### Catalog check
+
+- `examples/css-preview/catalog_animation_trigger_test.go` and
+  `catalog_trigger_scope_test.go` name their case strings as constants
+  (`catalogTriggerActions`, `catalogTriggerScopeName`). blinkless
+  `make catalog-check` looks for each case as a quoted string in the test file;
+  the tests behave the same.
+
 ### Lint
 
 - Clears the `golangci-lint` findings in `internal/window`, the two
@@ -122,7 +131,8 @@ this is a draft.
 - [x] Manual: every one of the 45 `blinkless-all` examples checked in the real
   window (click, keys, drag, type, press-and-hold, toggle, pause), driven with
   `scripts/gui-drive.sh` on WSL2 with WSLg
-- [ ] `make graphics-check` was **not run**
+- [x] `make graphics-check` exits 0 (14 tests under Xvfb), run against the local
+  blinkless checkout including the `refract()` fix in blinkless #38
 - [ ] `GOWORK=off` build fails until the blinkless pin is bumped (see Summary)
 
 ### Commands
@@ -161,7 +171,7 @@ are not committed.
 
 - After blinkless #38 merges and is tagged, bump `go.mod` and `examples/go.mod`
   to that tag and take this PR out of draft.
-- Run `make graphics-check`; the testing guide still says twelve tests where the
+- The testing guide still says twelve tests for `make graphics-check` where the
   script runs fourteen.
 - Selections from one row of `blinkless-all` stay highlighted when another row
   is clicked.
@@ -172,14 +182,14 @@ are not committed.
 
 | Extension | Files | Insertions | Deletions |
 | --- | ---: | ---: | ---: |
-| `.go` | 98 | 11630 | 24 |
+| `.go` | 100 | 11641 | 27 |
 | `.html` | 1 | 8 | 0 |
 | `.json` | 2 | 15 | 2 |
 | `.md` | 7 | 469 | 4 |
 | `.py` | 1 | 1 | 0 |
 | `.sh` | 2 | 150 | 0 |
 | `.work` | 1 | 1 | 0 |
-| **Total** | **112** | **12274** | **30** |
+| **Total** | **114** | **12285** | **33** |
 
 ---
 
