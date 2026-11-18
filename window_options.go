@@ -28,7 +28,9 @@ func RunWithOptions(ctx context.Context, page *Page, options WindowOptions) (err
 	}
 
 	pagepkg.InstallPicker(innerPage(page), filepick.Pick)
-	ensureAudio()
+	if !options.NoAudio {
+		ensureAudio()
+	}
 
 	if err := window.RunWithOptions(ctx, innerPage(page), options); err != nil {
 		return reportRunErr(page, err)

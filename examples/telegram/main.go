@@ -26,6 +26,7 @@ func main() {
 	ctx := context.Background()
 
 	if *webMode {
+		app.SetWebMode(true)
 		if err := ownframe.Serve(ctx, app.Page(), *addr); err != nil {
 			log.Fatal(err)
 		}

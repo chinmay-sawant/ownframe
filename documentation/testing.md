@@ -102,3 +102,106 @@ Other parity comparisons still test consistency between replay paths.
 Each window owns a `replay.Renderer`. Its six mutable caches cannot evict
 another window's entries, and `Close` releases their GPU images. Package drawing
 helpers retain a default renderer for existing internal callers and tests.
+
+## Testing an app by driving it (click, scroll, drag, hover)
+
+Use this when you must check that an app's screens match what they say they do: a demo app, a showcase, or any page with descriptions next to pictures. It works from a terminal with no mouse, so any agent harness can follow it. The worked example is `examples/blinkless-all`.
+
+### Three things to compare
+
+Every row on a screen can disagree in three places. Look at all three.
+
+| Source | Where it comes from |
+|--------|---------------------|
+| **Description** | The sentence the page prints about the row |
+| **Picture** | What is painted on the page |
+| **Readout** | The text the host prints from its own layout of the same markup |
+
+The readout is often laid out separately from the painted page. A bug that only the painted page has (an image the page never registered, a heading the demo never drew) passes every readout check. In `blinkless-all`, `shape-image-threshold` printed "text starts 40px" while the painted box started its text at 80px. Compare the picture to the readout, not the readout to itself.
+
+### Level 1: drive the page headless in a Go test
+
+This is the cheapest way to click, hover, drag and type, and it runs under `make test`. Prefer it for anything that must stay fixed.
+
+- `ownframe.New(...)` then `page.Click(ctx, x, y)`. Find the box first with `page.Probe().Display().Boxes` (fields `ID`, `X`, `Y`, `W`, `H`) and click its center.
+- `page.Probe().Display()` returns the painted display list. Assert on that, not on a readout string. `page.Probe().PNG()` returns the picture.
+- `pagetest/` has box lookup and click helpers.
+- `examples/blinkless-all/nav_scripted.go` defines `liveRig`, a manual-clock rig with `tap`, `press`, `dragTo`, `release`, `key`, `typ`, `pointAt` (hover), `idle(d)` (advance time without a window), `box`, `textOf`, and `writeFrame` (one PNG per step). `nav_live_test.go` shows each used in a test.
+- `page_paint_test.go` in the same folder shows the painted-page pattern: build the page with `NewPage`, read `Display()`, assert on box and text positions.
+
+When you fix a bug, write the test first and watch it fail without the fix. The `shape-image-threshold` test was checked by removing the one-line fix and confirming the test went red.
+
+### Level 2: serve the page and read pictures over HTTP
+
+Build the example into the scratchpad with `go build -o <scratch>/app ./examples/<name>`. Do not run a bare `go build` in an example folder: it leaves a binary there.
+
+`-web ADDR` serves the page with no window. Routes are in [web.md](web.md). The ones that matter here:
+
+| Action | Command |
+|--------|---------|
+| Picture of the viewport | `curl -o f.png http://ADDR/frame.png` |
+| Click at a point | `curl -X POST -H 'Origin: http://ADDR' -d 'x=90&y=238' http://ADDR/click` |
+| Scroll down | `curl -X POST -H 'Origin: http://ADDR' -d 'x=500&y=600&dx=0&dy=-12' http://ADDR/wheel` |
+| Change counter | `curl http://ADDR/state` |
+
+Notes that cost time once:
+
+- `/click` and `/wheel` need an `Origin` header that matches the address, or they return 403.
+- A negative `dy` scrolls down. One unit is about 48px. `dy=-12` moves about one screen of a 900px viewport and keeps a little overlap.
+- To reset to the top, send `dy=3000` twice.
+- `action=<id>` on `/click` did not switch tabs. Click the button's pixel position instead (read it from `Display().Boxes`).
+- Scroll until two frames hash the same (`md5sum`), then stop. A blinking caret breaks that test on a page that has one; cap the loop instead.
+- `-web` has no live session unless the app adds one. `blinkless-all` does (`web_live.go`): `/hover`, `/click`, `/key` and `/type` feed the same live sessions the window uses. Its limits: `/click` reports the box under the point, so the cursor is that box's center and a slider click lands mid-track; there is no pointer-down or pointer-up route, so dragging is a window-only test; and a click and a key sent in the same frame run the key first, so wait a moment between them. For an app with no live session, empty readouts and frozen sliders in `-web` are how `-web` works, not an app bug.
+
+### Level 3: the real window, driven and read back
+
+Run the app in a window with `-snapshot ADDR` (the `blinkless-all` flag). It serves `GET /frame.png`, a picture of the window as it is now, at full page height, not just the viewport. This shows live state: readouts filled in, sliders at their live values, animated frames.
+
+`scripts/gui-drive.sh` sends real mouse and keyboard input to that window and saves its picture. It needs `xdotool`. Without root, `scripts/gui-drive.sh setup` downloads the package with `apt-get download` and unpacks it into a local folder, and the script finds it there. No `sudo` is needed. It was written and tested in WSL2 with WSLg, where the window is an XWayland window on `DISPLAY=:0`.
+
+```sh
+go build -o "$TMPDIR/app" ./examples/blinkless-all
+"$TMPDIR/app" -tab nav -snapshot 127.0.0.1:8120 -height 800 &
+scripts/gui-drive.sh info                 # window id, position, where page pixel 0,0 is
+scripts/gui-drive.sh click 90 238         # page pixels, not screen pixels
+scripts/gui-drive.sh type "hello"
+scripts/gui-drive.sh key Down
+scripts/gui-drive.sh drag 50 476 170 476  # press, six moves, release
+scripts/gui-drive.sh scroll 6             # six wheel notches down, about 48px each
+scripts/gui-drive.sh snap after-click     # writes $GUI_OUT/after-click.png
+```
+
+Coordinates are page pixels in the viewport. For a row you saw in the full-page picture, the viewport y is the picture y minus the scroll offset, which is 48 times the notches scrolled from the top. Scroll to the top first with `scroll -100`. Under the app's fixed header the visible area starts near y=305.
+
+Gotchas that cost time on WSLg:
+
+- **Keys need `--window`.** There is no window manager, so plain XTEST keys never reach the window. The script sends `key` and `type` with `xdotool --window`, which works.
+- **The wheel hits whatever is under the pointer.** A box with its own scrolling (the action-scroll sheet) eats the notches, so the page does not scroll as counted. `scroll` parks the pointer in the right margin first. If a click lands on the wrong element after you worked in a scrollable box, suspect the scroll offset.
+- **The click origin is measured, not derived.** `xdotool getwindowgeometry` reports a window larger than the page, and page pixel 0,0 sits at the window position minus 32 in x and plus 4 in y on the host this was written on. `info` prints the result. If a click misses, set `GUI_OX` and `GUI_OY` and check by clicking a known button.
+- **A restart clears odd state.** Restart the app between unrelated tests so one test's focus or selection does not leak into the next.
+- **Shell word splitting.** In zsh an unquoted `$var` is not split into words, so `set -- $xy` gives one argument. Pass `$x $y` separately or run the loop under bash.
+
+`-demo -demo-out DIR` plays a scripted live session on a manual clock with no window and writes one PNG per step. It is slow (minutes). Run it in the background and wait for the finish notice.
+
+### What a tester covers per row
+
+Do each of these where the row has the control, and report any that you could not do:
+
+- The action in the row's own "Try it" sentence, by mouse and by key.
+- Both ends of a range: a slider dragged past each end, a sheet scrolled to its end and back, a field filled until it overflows and emptied with Backspace.
+- The negative case the description names: the control that must not react (the close box and body that do not drag, the field that keeps its width).
+- State after leaving and returning (a tab switch reloads the page, so fields return to their defaults).
+- Anything that animates: two pictures a moment apart must differ, and a paused one must not.
+
+### Reading the pictures
+
+- Read each screenshot yourself. Do not trust a hash alone.
+- Crop a region with `convert in.png -crop 1000x300+0+2400 +repage out.png` (ImageMagick) when a full-page picture is too small to read. The system Python `PIL` was broken on that host, so do not depend on it.
+- Record each finding as description, picture, readout, and which of the three disagrees. Mark each finding as seen in `-web` only, in the window, or both. Web-only findings are usually missing live state, not bugs.
+- A note that only appears after a click (the `will-change` paint count) is not a mismatch at rest. Reproduce it with `liveRig` before you call it a bug.
+
+### Process hygiene
+
+- Start servers in the background and stop them when done. Stop by process name with `pgrep -x <name>`. Do not use `pkill -f <text>`: the pattern matches your own shell command line and kills your shell.
+- Put binaries, screenshots and scratch tools in the scratchpad directory, not in the repo.
+- Run `go test ./examples/<name>` for the example you touched. Run `make test` and `make lint` before you call the work done.

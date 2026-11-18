@@ -24,6 +24,7 @@ REQUIRED_TESTS = {
     "TestGPUVisibleParity",
     "TestDrawPaintsVerticalThumb",
     "TestScrollbarThumbStaysOnePiece",
+    "TestWindowSharedHeaderPixels",
 }
 
 

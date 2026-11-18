@@ -28,9 +28,9 @@ func TestSeekClickMovesVoice(t *testing.T) {
 	click(t, app, "play")
 	waitAudio(t, app)
 
-	click(t, app, "seek-6")
+	click(t, app, "seek-60")
 
-	if want := time.Duration(0.7 * float64(voice.dur)); voice.pos != want {
+	if want := time.Duration(0.6 * float64(voice.dur)); voice.pos != want {
 		t.Fatalf("pos = %v want %v", voice.pos, want)
 	}
 }

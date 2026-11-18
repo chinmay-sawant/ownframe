@@ -6,16 +6,20 @@ import (
 	"time"
 )
 
+// catalogTriggerScopeName is the trigger name the catalog row for trigger-scope
+// names as its case, so the catalog check finds it in this file.
+const catalogTriggerScopeName = "--fire"
+
 // TestCatalogTriggerScopeLimitsOwnFrameActions checks that the scope on an
 // ancestor decides which listeners hear the event. The target inside the
 // scoped section moves; the one outside it does not.
 func TestCatalogTriggerScopeLimitsOwnFrameActions(t *testing.T) {
 	html := `<style>` + triggerKeyframes +
-		`#scope{trigger-scope:--fire}` +
+		`#scope{trigger-scope:` + catalogTriggerScopeName + `}` +
 		`#source{width:40px;height:40px;background:#888}` +
 		`#target,#outside{width:40px;height:20px;background:#123456;` +
 		`animation-name:route;animation-duration:1000ms;animation-fill-mode:both;` +
-		`animation-timing-function:linear;animation-trigger:--fire play;}</style>` +
+		`animation-timing-function:linear;animation-trigger:` + catalogTriggerScopeName + ` play;}</style>` +
 		`<section id="scope"><div id="source"></div><div id="target"></div></section>` +
 		`<div id="outside"></div>`
 	p := motionPage(t, html, "")

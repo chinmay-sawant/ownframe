@@ -1,0 +1,26 @@
+/* Shared code surfaces: highlight.js tokens and the ExampleCode tabbed viewer. */
+.hljs { color: var(--text); background: transparent; }
+.hljs-comment, .hljs-quote { color: var(--code-comment); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: var(--code-keyword); }
+.hljs-string, .hljs-attr, .hljs-attribute, .hljs-template-variable { color: var(--code-string); }
+.hljs-number, .hljs-literal, .hljs-symbol, .hljs-bullet { color: var(--code-number); }
+.hljs-title, .hljs-section, .hljs-selector-class, .hljs-selector-id, .hljs-type, .hljs-function { color: var(--code-title); }
+
+.preview-pane { display: flex; flex-direction: column; min-width: 0; }
+.preview-code-pane { background: var(--code-bg); border: 1px solid var(--code-border); border-radius: var(--radius-lg); overflow: hidden; height: 520px; min-height: 0; }
+.example-code-bar { display: flex; align-items: stretch; flex-shrink: 0; border-bottom: 1px solid var(--code-border); }
+.example-file-tabs { display: flex; overflow-x: auto; flex: 1 1 auto; min-width: 0; scrollbar-width: none; }
+.example-file-tabs [role="tab"] { display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0; min-height: 44px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font: 12px var(--mono); white-space: nowrap; cursor: pointer; }
+.example-file-tabs [role="tab"]:hover { color: var(--text); }
+.example-file-tabs [role="tab"][aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); }
+.example-file-icon { font-size: 10px; font-weight: 600; color: var(--faint); }
+.example-copy { flex: 0 0 auto; align-self: center; margin: 0 10px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--muted); font: 11px var(--mono); cursor: pointer; }
+.example-copy:hover { color: var(--text); border-color: var(--border-hover); }
+.preview-code-body { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 20px; }
+.preview-code-body[hidden] { display: none; }
+.preview-code-body pre { margin: 0; font-size: 13px; line-height: 1.65; white-space: pre; tab-size: 2; background: none; border: 0; padding: 0; }
+.preview-code-body code { display: block; background: none; padding: 0; }
+.preview-live-body { padding: 0; }
+.preview-live-body iframe { width: 100%; height: 100%; border: 0; display: block; background: var(--background); }
+.example-file-path { padding: 8px 16px; border-top: 1px solid var(--code-border); color: var(--faint); font: 11px var(--mono); overflow-wrap: anywhere; }
+.example-file-path a { color: var(--muted); }

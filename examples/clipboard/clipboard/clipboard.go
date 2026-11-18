@@ -33,9 +33,10 @@ type View struct {
 // App is the clipboard screen.
 // last is the field a button acts on after the click blurred the form.
 type App struct {
-	page *ownframe.Page
-	view View
-	last string
-	undo []snap
-	redo []snap
+	page        *ownframe.Page
+	view        View
+	last        string
+	selectedAll bool
+	undo        []snap
+	redo        []snap
 }

@@ -28,6 +28,23 @@ func TestRunMovesObstaclesAndScores(t *testing.T) {
 	}
 }
 
+func TestBestScoreTracksActiveRun(t *testing.T) {
+	app, clock := newTestApp(t)
+	press(t, app, "space")
+	app.game.obstacles = []obstacle{{kind: cactusSmall, x: 800, w: 22, h: 32}}
+
+	for range 60 {
+		tick(t, app, clock, time.Second/60)
+	}
+
+	if app.game.phase != running {
+		t.Fatal("run ended before the score could advance")
+	}
+	if app.game.high != app.game.score {
+		t.Fatalf("best score = %d, current score = %d", app.game.high, app.game.score)
+	}
+}
+
 func TestJumpRisesAndLands(t *testing.T) {
 	app, clock := newTestApp(t)
 	press(t, app, "space")

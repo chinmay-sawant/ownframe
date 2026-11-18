@@ -26,6 +26,14 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.page.ScrollTo(0, 0)
 	case strings.HasPrefix(box.Action, "open-"):
 		a.open(strings.TrimPrefix(box.Action, "open-"))
+	case box.Action == "show-earlier":
+		if (a.web || a.view.Web) && a.threadLimit > 0 {
+			a.threadLimit += webThreadPage
+			a.rebuild()
+			a.page.SetData(&a.view)
+
+			return nil
+		}
 	case strings.HasPrefix(box.Action, "contact-"):
 		a.openContact(strings.TrimPrefix(box.Action, "contact-"))
 	case box.Action == "send":

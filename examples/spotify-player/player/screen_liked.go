@@ -25,17 +25,7 @@ func defaultLiked() LikedData {
 func (a *App) clickLiked(ctx context.Context, action string) error {
 	switch {
 	case action == "liked-play":
-		a.view.Playing = !a.view.Playing
-
-		if a.view.Playing {
-			if a.audio.Duration() > 0 {
-				a.audio.Play()
-			} else {
-				a.playNow(ctx)
-			}
-		} else {
-			a.audio.Pause()
-		}
+		a.setPlaying(ctx, !a.view.Playing)
 	case action == "liked-heart":
 		a.view.Liked = !a.view.Liked
 	case strings.HasPrefix(action, "liked-row-"):

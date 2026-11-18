@@ -52,7 +52,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # GEN-1: fail the build when the module cache disagrees with go.sum.
       - run: go mod verify
       - run: cd examples && go mod verify
@@ -74,7 +74,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -115,7 +115,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       - name: Install graphics test dependencies
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - run: make graphics-check
@@ -134,7 +134,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # module-check compiles a public-API consumer against the library,
       # which pulls in internal/window and its linux cgo X11 headers.
       - name: Install native compile dependencies
@@ -155,7 +155,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -220,7 +220,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # test-race and the soak check build internal/window, whose linux
       # cgo file needs X11 headers.
       - name: Install native compile dependencies
@@ -243,7 +243,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # The Sec suite builds every package including internal/window,
       # whose linux cgo file needs X11 headers.
       - name: Install native compile dependencies
@@ -276,7 +276,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # The checkptr run builds internal/window natively, whose linux
       # cgo file needs X11 headers.
       - name: Install native compile dependencies
@@ -316,7 +316,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # GEN-9: actionlint from the pinned Go module (checksum-db verified) plus
       # zizmor (pinned PyPI version) keep new workflow edits honest. The
       # release tarball download moved to the Go proxy because the GitHub
@@ -344,7 +344,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       - run: go mod verify
       - run: go mod download
       - run: cd examples && go mod download
@@ -366,7 +366,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       - name: Install graphics test dependencies
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - name: Run examples race shard
@@ -393,7 +393,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
           cache: false
       - name: Download both module graphs
         run: |
@@ -432,7 +432,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # perf-baseline.sh builds and runs benchmarks, which compile
       # internal/window and need its linux cgo X11 headers.
       - name: Install native compile dependencies
@@ -465,7 +465,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
-          go-version: "1.26.10"
+          go-version: "1.26.11"
       # ebitenmobile/gobind host tools build against the desktop ebiten
       # backend, which needs X11 headers on Linux.
       - name: Install native compile dependencies

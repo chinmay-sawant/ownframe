@@ -76,7 +76,7 @@ func run(webMode bool, addr string, dev bool, perf bool, debugAddr string, loggi
 	}
 	// Native drag is handled by OwnFrame, not by injected JS or Chromium.
 	options := ownframe.WindowOptions{
-		CustomChrome: true,
+		CustomHeader: true,
 		PlacementID:  builderPlacement,
 		DebugAddr:    debugAddr,
 		MaxFPS:       builderMaxFPS,

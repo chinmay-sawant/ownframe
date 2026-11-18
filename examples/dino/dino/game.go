@@ -73,6 +73,7 @@ func (g *game) step(dt float64, rng *rand.Rand) {
 	g.run += dt
 	g.distance += g.speed * dt
 	g.score = int(g.distance / pixelsPerPoint)
+	g.high = max(g.high, g.score)
 	g.speed = min(maxSpeed, startSpeed+g.distance*speedGain)
 
 	g.nextSpawn -= g.speed * dt
@@ -86,6 +87,5 @@ func (g *game) step(dt float64, rng *rand.Rand) {
 
 	if g.hits() {
 		g.phase = over
-		g.high = max(g.high, g.score)
 	}
 }

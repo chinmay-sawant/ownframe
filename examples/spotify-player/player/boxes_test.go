@@ -8,7 +8,7 @@ func TestBoxesExist(t *testing.T) {
 
 	ids := []string{
 		"play", "seek", "volume", "row-0", "row-4",
-		"card-0", "pick-0", "nav-home", "list-0", "seek-0", "volume-9", "avatar",
+		"card-0", "pick-0", "nav-home", "list-0", "seek-0", "seek-100", "volume-9", "avatar",
 	}
 
 	for _, id := range ids {
@@ -71,14 +71,14 @@ func TestSeekAndVolumeExtremes(t *testing.T) {
 	click(t, app, "seek-0")
 
 	v := app.View()
-	if v.Progress != 10 || v.Elapsed == "1:08" || v.Remaining == "2:24" {
+	if v.Progress != 0 || v.Elapsed != "0:00" || v.Remaining != "1:58" {
 		t.Fatalf("seek-0 = %d %q %q", v.Progress, v.Elapsed, v.Remaining)
 	}
 
-	click(t, app, "seek-9")
+	click(t, app, "seek-100")
 
 	if v = app.View(); v.Progress != 100 || v.Elapsed != "1:58" || v.Remaining != "0:00" {
-		t.Fatalf("seek-9 = %d %q %q", v.Progress, v.Elapsed, v.Remaining)
+		t.Fatalf("seek-100 = %d %q %q", v.Progress, v.Elapsed, v.Remaining)
 	}
 
 	click(t, app, "volume-0")

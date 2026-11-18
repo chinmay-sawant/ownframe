@@ -124,29 +124,29 @@ const appHTML = `
     <div class="hud-telemetry" id="telemetry">
       <div class="metric-item">
         <span class="metric-label">FPS</span>
-        <span class="metric-val" id="metric-fps">60</span>
+        <span class="metric-val" id="metric-fps">{{.FPS}}</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">Scale</span>
-        <span class="metric-val" id="metric-scale">100%</span>
+        <span class="metric-val" id="metric-scale">{{.Scale}}</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">Distance</span>
-        <span class="metric-val" id="metric-dist">22.0 rs</span>
+        <span class="metric-val" id="metric-dist">{{.Dist}}</span>
       </div>
       <div class="metric-item">
         <span class="metric-label">Orbit</span>
-        <span class="metric-val" id="metric-orbit">Active</span>
+        <span class="metric-val" id="metric-orbit">{{.OrbitText}}</span>
       </div>
     </div>
   </div>
   <div class="hud-bottom">
     <div class="btn-bar">
       <div class="btn-chip" id="btn-reset" data-action="reset">Reset Camera</div>
-      <div class="btn-chip" id="btn-orbit" data-action="toggle-orbit">Pause Orbit</div>
-      <div class="btn-chip" id="btn-lock" data-action="toggle-quality">Auto Quality</div>
+      <div class="btn-chip" id="btn-orbit" data-action="toggle-orbit">{{.OrbitLabel}}</div>
+      <div class="btn-chip" id="btn-lock" data-action="toggle-quality">{{.QualityLabel}}</div>
     </div>
-    <div class="hint-text" id="hint" style="opacity: 1.0;">Drag to orbit · Scroll to zoom</div>
+    <div class="hint-text" id="hint" style="{{.HintStyle}}">Drag to orbit · Scroll to zoom</div>
   </div>
 </div>
 </body>
@@ -156,6 +156,7 @@ const appHTML = `
 // App manages the black hole simulation state, camera navigation, and HUD overlays.
 type App struct {
 	page *ownframe.Page
+	view sceneView
 	cam  camera
 
 	time float64
@@ -179,6 +180,7 @@ type App struct {
 
 func newApp(devtools, perf bool) (*App, error) {
 	app := &App{
+		view:       newSceneView(sceneSrcNameA),
 		cam:        newCamera(),
 		hint:       1.0,
 		quality:    1.0,
@@ -214,7 +216,9 @@ func newApp(devtools, perf bool) (*App, error) {
 	// per-frame SetData below swaps which one the img shows.
 	p.SetImage(sceneSrcNameA, blackJPEG())
 	p.SetImage(sceneSrcNameB, blackJPEG())
-	p.SetData(sceneView{SceneSrc: sceneSrcNameA})
+	// The template reads the live view, so a full re-execution (the -web
+	// preview does one per scene frame) keeps the HUD values the patches wrote.
+	p.SetData(&app.view)
 
 	return app, nil
 }
@@ -288,6 +292,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		if a.orbitPaused {
 			label = "Resume Orbit"
 		}
+		a.view.OrbitLabel = label
 		_ = a.page.PatchElement(ctx, "btn-orbit", ownframe.ElementEdit{Text: &label})
 	case "toggle-quality":
 		a.qualityLocked = !a.qualityLocked
@@ -296,6 +301,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 			label = "Locked 100%"
 			a.quality = 1.0
 		}
+		a.view.QualityLabel = label
 		_ = a.page.PatchElement(ctx, "btn-lock", ownframe.ElementEdit{Text: &label})
 	}
 	return nil
@@ -311,6 +317,7 @@ func (a *App) step(ctx context.Context, dt float64, reduceMotion bool) {
 	if a.touched && a.hint > 0 {
 		a.hint = max(0, a.hint-dt/0.6)
 		hintStyle := fmt.Sprintf("opacity: %.2f;", a.hint)
+		a.view.HintStyle = hintStyle
 		_ = a.page.PatchElement(ctx, "hint", ownframe.ElementEdit{
 			Attribute: "style",
 			Value:     hintStyle,
@@ -368,6 +375,7 @@ func (a *App) updateHUDMetrics(ctx context.Context) {
 		orbitText = "Paused"
 	}
 
+	a.view.FPS, a.view.Scale, a.view.Dist, a.view.OrbitText = fpsText, scaleText, distText, orbitText
 	_ = a.page.PatchElements(ctx, []ownframe.ElementPatch{
 		{ID: "metric-fps", Edits: []ownframe.ElementEdit{{Text: &fpsText}}},
 		{ID: "metric-scale", Edits: []ownframe.ElementEdit{{Text: &scaleText}}},

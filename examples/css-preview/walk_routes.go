@@ -36,7 +36,7 @@ func (w *walker) handleAim(rw http.ResponseWriter, _ *http.Request) {
 // handleCursor reports the client cursor position, which the click script
 // uses to calibrate the window origin.
 func (w *walker) handleCursor(rw http.ResponseWriter, _ *http.Request) {
-	cx, cy := ebiten.CursorPosition()
+	cx, cy := w.p.Window().CursorPosition()
 	_, _ = fmt.Fprintf(rw, "%d %d\n", cx, cy)
 }
 

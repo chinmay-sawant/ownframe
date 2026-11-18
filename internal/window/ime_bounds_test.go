@@ -18,6 +18,13 @@ func TestIMEBoundsMatchZoomedScroll(t *testing.T) {
 	}
 }
 
+func TestIMEBoundsIncludeCustomizedHeader(t *testing.T) {
+	s := &shell{app: &fakeScreen{width: 200, height: 200}, screenW: 200, screenH: 200, titlebar: titlebarState{enabled: true, style: headerStyle{height: 48}}}
+	if got := s.imeScreenRect(layout.Box{X: 10, Y: 20, W: 80, H: 20}); got != image.Rect(10, 68, 90, 88) {
+		t.Fatal(got)
+	}
+}
+
 func TestIMEBoundsMatchPendingResize(t *testing.T) {
 	app := &fakeScreen{width: 200, height: 200}
 	s := &shell{app: app, screenW: 400, screenH: 100}

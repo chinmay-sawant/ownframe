@@ -8,6 +8,9 @@ import (
 )
 
 func (s *shell) Draw(screen *ebiten.Image) {
+	content, compose := s.titlebarCanvas(screen)
+	defer compose()
+	screen = content
 	// Update syncs before the wheel handler, and that handler can redraw.
 	// Paint the display it produced. Replaying the previous one into the new
 	// damage leaves the tail of a moved thumb on the retained screen.

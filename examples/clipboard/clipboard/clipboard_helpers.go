@@ -20,7 +20,19 @@ func (a *App) PasteText(ctx context.Context, text string) error {
 
 // SelectAll mirrors the select-all chord.
 func (a *App) SelectAll(ctx context.Context) error {
-	return a.page.Edit().SelectAll(ctx)
+	if err := a.page.Edit().SelectAll(ctx); err != nil {
+		return err
+	}
+	a.selectedAll = a.page.Edit().FocusedField() != ""
+	return nil
+}
+
+func (a *App) restoreSelectedAll(ctx context.Context) error {
+	if !a.selectedAll {
+		return nil
+	}
+
+	return a.SelectAll(ctx)
 }
 
 // Undo restores both fields from the last snapshot.
@@ -55,7 +67,10 @@ func (a *App) focusLast(ctx context.Context) bool {
 			continue
 		}
 
-		if err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2); err != nil {
+		selectedAll := a.selectedAll
+		err := a.page.Click(ctx, box.X+box.W/2, box.Y+box.H/2)
+		a.selectedAll = selectedAll
+		if err != nil {
 			return false
 		}
 

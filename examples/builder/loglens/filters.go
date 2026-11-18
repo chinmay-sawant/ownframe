@@ -150,7 +150,7 @@ func (a *app) logFilters() *ui.Element {
 					Label: "Query",
 					For:   "log-query",
 					Control: chadcn.InputWithOptions("log-query", a.query, chadcn.InputOptions{
-						Placeholder: "level:error service:auth",
+						Placeholder: "timeout, billing, or trace ID",
 					}),
 				}),
 			),

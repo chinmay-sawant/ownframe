@@ -12,7 +12,7 @@ func (a *App) paintPipes(d *ownframe.Display) {
 		}
 
 		for i := range pipePartCount {
-			setFill(d, a.parts.pipes[slot][i], rect{}, false)
+			a.setFill(d, a.parts.pipes[slot][i], rect{}, false)
 		}
 	}
 }
@@ -22,6 +22,6 @@ func (a *App) paintPipe(d *ownframe.Display, slot int, p pipe) {
 	parts := a.game.pipeRects(p)
 
 	for i := range pipePartCount {
-		setFill(d, a.parts.pipes[slot][i], parts[i], true)
+		a.setFill(d, a.parts.pipes[slot][i], parts[i], true)
 	}
 }

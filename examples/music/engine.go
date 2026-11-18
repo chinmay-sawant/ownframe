@@ -42,7 +42,14 @@ type Engine struct {
 // NewEngine returns an engine over res, playing through NewSound.
 func NewEngine(res Resolver) *Engine {
 	return &Engine{
-		Open:    func(data []byte) (Voice, error) { return NewSound(data) },
+		Open: func(data []byte) (Voice, error) {
+			sound, err := NewSound(data)
+			if sound == nil {
+				return nil, err
+			}
+
+			return sound, err
+		},
 		Timeout: defaultTimeout,
 		res:     res,
 		volume:  1,

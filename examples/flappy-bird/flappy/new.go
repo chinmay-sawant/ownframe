@@ -12,14 +12,19 @@ import (
 // The game starts on a ready screen until a flap starts the run.
 func New() (*App, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: true,
-		Title:     "Flappy Bird",
-		HTML:      buildHTML(),
-		Width:     DefaultWidth,
-		Height:    DefaultHeight,
-		MinWidth:  MinWidth,
-		MinHeight: MinHeight,
-		MaxWidth:  MaxWidth,
-		MaxHeight: MaxHeight,
+		Title: "Flappy Bird",
+		HTML:  buildHTML(),
+		// The stage is fixed at 480x720 game coordinates, so zooming only
+		// breaks hit alignment: pinch, wheel, and key zoom stay off.
+		DisableTouchZoom: true,
+		DisableWheelZoom: true,
+		DisableKeyZoom:   true,
+		Width:            DefaultWidth,
+		Height:           DefaultHeight,
+		MinWidth:         MinWidth,
+		MinHeight:        MinHeight,
+		MaxWidth:         MaxWidth,
+		MaxHeight:        MaxHeight,
 	})
 	if err != nil {
 		return nil, err

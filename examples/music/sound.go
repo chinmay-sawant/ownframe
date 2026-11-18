@@ -50,16 +50,46 @@ func NewSound(data []byte) (*Sound, error) {
 }
 
 // Play starts or resumes the stream.
-func (s *Sound) Play() { s.player.Play() }
+func (s *Sound) Play() {
+	if s == nil || s.player == nil {
+		return
+	}
+
+	s.player.Play()
+}
 
 // Pause stops the stream at its current position.
-func (s *Sound) Pause() { s.player.Pause() }
+func (s *Sound) Pause() {
+	if s == nil || s.player == nil {
+		return
+	}
+
+	s.player.Pause()
+}
 
 // Playing reports whether the stream is advancing.
-func (s *Sound) Playing() bool { return s.player.IsPlaying() }
+func (s *Sound) Playing() bool {
+	if s == nil || s.player == nil {
+		return false
+	}
+
+	return s.player.IsPlaying()
+}
 
 // Position is the current playback offset.
-func (s *Sound) Position() time.Duration { return s.player.Position() }
+func (s *Sound) Position() time.Duration {
+	if s == nil || s.player == nil {
+		return 0
+	}
+
+	return s.player.Position()
+}
 
 // Duration is the decoded length of the stream.
-func (s *Sound) Duration() time.Duration { return s.dur }
+func (s *Sound) Duration() time.Duration {
+	if s == nil {
+		return 0
+	}
+
+	return s.dur
+}

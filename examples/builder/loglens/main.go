@@ -43,7 +43,7 @@ func run(web bool, addr string, dev bool, perf bool, debugAddr string) error {
 	// controls, and the top bar is the drag region. Controls win over drags
 	// because OwnFrame skips a drag that starts on a button.
 	options := ownframe.WindowOptions{
-		CustomChrome: true,
+		CustomHeader: true,
 		PlacementID:  "loglens",
 		DebugAddr:    debugAddr,
 		Draggable: func(x, y int) bool {

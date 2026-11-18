@@ -72,3 +72,6 @@ frontend/public/demos/workspace-inspector/wasm_exec.js
 # Local AI component reference screenshots
 /examples/AI/
 examples/builder/loglens-rust
+
+# Source recording for the Trade demo; the site ships trade.webp
+frontend/public/demos/Trade.mp4

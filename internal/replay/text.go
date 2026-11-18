@@ -41,6 +41,8 @@ func (renderer *Renderer) drawText(dst *ebiten.Image, op *layout.DisplayOp, dx, 
 	x := op.X*pxPerPt + dx
 	y := op.Y*pxPerPt + dy - face.Metrics().HAscent
 
+	renderer.drawTextStroke(dst, face, content, x, y, op)
+
 	if renderer.cachedTextRun(dst, op, face, content, x, y) {
 		return
 	}

@@ -10,6 +10,9 @@ import (
 // onClick applies one rendered box action.
 func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 	action := box.Action
+	if navigationAction(action) {
+		a.syncViewFromAudio()
+	}
 
 	switch {
 	case a.clickNav(ctx, action):
@@ -40,7 +43,9 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		a.toggleMute()
 		a.audio.SetVolume(float64(a.view.Volume) / percentScale)
 	case strings.HasPrefix(action, "seek-"):
-		a.setProgress(slot(action, "seek-")*seekStep + seekBase)
+		progress := slot(action, "seek-")
+		a.noteSeek(float64(progress) / percentScale)
+		a.setProgress(progress)
 		a.audio.SeekFraction(float64(a.view.Progress) / percentScale)
 	case strings.HasPrefix(action, "volume-"):
 		a.view.Volume = slot(action, "volume-")*volumeStep + volumeBase
@@ -62,7 +67,7 @@ func (a *App) onClick(ctx context.Context, box ownframe.Box) error {
 		}
 	}
 
-	a.page.SetData(&a.view)
+	a.page.SetData(a.view)
 	a.logEvent("click", action)
 
 	return nil

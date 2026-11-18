@@ -10,9 +10,26 @@ import (
 // text, so the polling route exposes less than the opt-in debug route.
 type frameState struct {
 	Generation uint64 `json:"generation"`
-	Width      int    `json:"width"`
-	Height     int    `json:"height"`
-	Ticking    bool   `json:"ticking"`
+	// DomGeneration is the page generation without frameGen. The live
+	// document only changes on a real Redraw, so the boot script watches
+	// this field for /dom and ignores retained-op frameGen bumps that only
+	// invalidate the PNG frame.
+	DomGeneration uint64 `json:"domGeneration"`
+	Width         int    `json:"width"`
+	Height        int    `json:"height"`
+	Ticking       bool   `json:"ticking"`
+	// AudioGen is the published clip generation, or 0 when the screen has
+	// no Audio method or no clip.
+	AudioGen uint64 `json:"audioGen"`
+	// AudioPlaying is whether the preview should be playing that clip.
+	AudioPlaying bool `json:"audioPlaying"`
+	// AudioVolume is the preview loudness from 0 to 1. It is 1 until the
+	// page publishes a level.
+	AudioVolume float64 `json:"audioVolume"`
+	// Patches carries id-anchored in-place updates for the live document.
+	// It is set only on retained-op tick events while DomGeneration stays
+	// frozen; a real Redraw omits it and moves DomGeneration instead.
+	Patches []tickPatch `json:"patches,omitempty"`
 }
 
 // state answers GET /state with a small snapshot. frameGen is the number of
@@ -35,11 +52,27 @@ func (s *server) state(w http.ResponseWriter, r *http.Request) {
 // frameSnapshotLocked builds the state while the caller holds s.mu.
 func (s *server) frameSnapshotLocked() frameState {
 	width, height := s.app.Size()
+	playing, volume := playbackState(s.app)
 
 	return frameState{
-		Generation: s.app.Generation() + s.frameGen,
-		Width:      width,
-		Height:     height,
-		Ticking:    s.ticking,
+		Generation:    s.app.Generation() + s.frameGen,
+		DomGeneration: s.app.Generation(),
+		Width:         width,
+		Height:        height,
+		Ticking:       s.ticking,
+		AudioGen:      clipGeneration(s.app),
+		AudioPlaying:  playing,
+		AudioVolume:   volume,
 	}
+}
+
+func playbackState(app any) (bool, float64) {
+	src, ok := app.(interface {
+		AudioPlayback() (playing bool, volume float64)
+	})
+	if !ok {
+		return false, 1
+	}
+
+	return src.AudioPlayback()
 }

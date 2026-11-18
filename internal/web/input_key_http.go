@@ -123,6 +123,7 @@ func (s *server) key(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
+			s.publishIfChangedLocked()
 			w.WriteHeader(http.StatusNoContent)
 
 			return
@@ -143,6 +144,7 @@ func (s *server) key(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	s.publishIfChangedLocked()
 	w.WriteHeader(http.StatusNoContent)
 }
 

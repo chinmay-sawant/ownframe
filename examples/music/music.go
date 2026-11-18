@@ -25,4 +25,4 @@ type Resolver interface {
 }
 
 // ErrNoAudio means no Ebiten audio context is running.
-var ErrNoAudio = errors.New("music: no audio context; run the page through ownframe.Run")
+var ErrNoAudio = errors.New("music: no audio context; run the page through ownframe.Run or ownframe.Serve")

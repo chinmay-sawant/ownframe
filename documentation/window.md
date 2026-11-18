@@ -68,7 +68,7 @@ A tick callback that returns an error stops the window, and `Run` returns it. Ca
 
 ## Audio
 
-`Run` and `BindMobile` create a 48 kHz Ebiten audio context once, when one is not already running (`audio_context.go`). `Serve` does not. The library has no audio API; the examples play through [examples/music](../examples/music) ([features.md](features.md)).
+`Run`, `BindMobile`, and `Serve` create a 48 kHz Ebiten audio context once, when one is not already running (`audio_context.go`). In `-web` the sound comes out of this machine. The browser tab does not play it. The library has no audio API; the examples play through [examples/music](../examples/music) ([features.md](features.md)).
 
 ## Showing the page
 
@@ -94,15 +94,53 @@ requests a window above normal windows, and `FixedSize` disables resizing.
 OwnFrame disables VSync and never uses it for capping. `MaxFPS` caps heavy presents (default uncapped, negative also uncapped); the loop is paced with sleep, the app ticks at cap+20, and the retained screen (`SetScreenClearedEveryFrame(false)`) keeps the last frame.
 The desktop idle policy can still park a static page between scheduled frames.
 
-### Custom window chrome
+### Shared desktop header
 
-`CustomChrome` removes the OS title bar so the page can draw its own
+Desktop `Run` and `RunWithOptions` provide an OwnFrame header with drag,
+double-click maximize/restore, minimize, and close controls. The header sits
+above the page viewport; HTML, fixed elements, and event coordinates remain
+relative to the page. Maximize selects the monitor containing the largest
+visible portion of the window. WSLg reads that monitor's Windows workarea
+directly, avoiding the native maximize transition that can jump monitors.
+
+Customize the shared header through `WindowOptions` (colors use `image/color`):
+
+```go
+err := ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{
+    HeaderTitle:      "My workspace",
+    HeaderHeight:     44,
+    HeaderBackground: color.NRGBA{R: 30, G: 35, B: 45, A: 255},
+    HeaderForeground: color.White,
+    HeaderHover:      color.NRGBA{R: 65, G: 75, B: 90, A: 255},
+    HeaderCloseHover: color.NRGBA{R: 200, G: 40, B: 40, A: 255},
+})
+```
+
+An empty title follows `page.Title()`. Zero height uses 36 CSS pixels;
+positive heights have a minimum of 24. Nil colors follow the page's light
+or dark background. The supplied controls keep their behavior when styled.
+The title uses a bundled, antialiased Go Medium font at 13 CSS pixels.
+`HeaderFont` accepts an Ebitengine `text.Face` to change the typeface, size,
+or weight. Long titles are measured in that font and shortened with an
+ellipsis before the window controls.
+`page.Window().CursorPosition()` returns page-relative mouse coordinates
+for applications that read input from a tick callback.
+
+`CustomHeader` reserves the complete header for the application, as in JMap.
+Borderless, transparent, and mouse-passthrough overlays receive no shared
+header. Browser previews and mobile hosts receive no desktop header.
+`NativeHeader: true` selects the operating system's title bar; WSLg's native
+maximize behavior still applies in that mode.
+
+### Application-owned window chrome
+
+`CustomHeader` removes the OS title bar so the page can draw its own
 minimize, maximize, and close controls, in the style of VS Code. The window
 stays resizable and keeps keyboard focus.
 
 ```go
 err := ownframe.RunWithOptions(ctx, page, ownframe.WindowOptions{
-    CustomChrome: true,
+    CustomHeader: true,
     Draggable:    titlebarStrip,
 })
 ```

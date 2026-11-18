@@ -57,7 +57,8 @@ func Minimize() {
 // everywhere else it uses the window manager. It does nothing when no
 // desktop run loop is active or the platform is not a desktop.
 func ToggleMaximize() {
-	if isWSL() {
+	traceMaximizeState("toggle request")
+	if manualMaximizeWanted() {
 		toggleManualMaximize()
 		return
 	}
@@ -109,6 +110,11 @@ func isWSL() bool {
 	}
 
 	return isWSLVersion(string(version))
+}
+
+// manualMaximizeWanted keeps custom chrome on WSL's monitor workarea path.
+func manualMaximizeWanted() bool {
+	return isWSL() && !ebiten.IsWindowDecorated()
 }
 
 // manualMaxLearnTimeout bounds a workarea probe. If the maximized configure
@@ -179,8 +185,26 @@ func retryWindowedRestore(dragging bool) {
 	if pendingWindowedUntil.IsZero() {
 		pendingWindowedUntil = time.Now().Add(manualMaxLearnTimeout)
 	}
-	if dragging || time.Now().After(pendingWindowedUntil) {
+	if dragging {
 		pendingWindowedRestore = false
+		return
+	}
+	if time.Now().After(pendingWindowedUntil) {
+		pendingWindowedRestore = false
+		// WSLg can reject a cross-monitor programmatic move. Keep the
+		// window grabbable on the monitor the compositor actually selected.
+		if isWSLg() {
+			if rect, ok := nativeWindowGeometry(); ok {
+				if mon, ok := monitorForWindow(rect.x, rect.y, rect.w, rect.h, monitorLayout()); ok {
+					if area, ok := wslgHostWorkareaLocked(mon); ok {
+						x := max(area.x, min(rect.x, area.x+area.w-rect.w))
+						y := max(area.y, min(rect.y, area.y+area.h-rect.h))
+						setWindowRect(x, y, rect.w, rect.h)
+						windowTracef("restore fallback monitor=%q visibleTarget=(%d,%d %dx%d)", mon.name, x, y, rect.w, rect.h)
+					}
+				}
+			}
+		}
 		return
 	}
 	x, y := windowPosition()
@@ -190,6 +214,7 @@ func retryWindowedRestore(dragging bool) {
 		return
 	}
 	setWindowRect(pendingWindowedX, pendingWindowedY, pendingWindowedW, pendingWindowedH)
+	windowTracef("restore retry requested=(%d,%d %dx%d) actual=(%d,%d %dx%d)", pendingWindowedX, pendingWindowedY, pendingWindowedW, pendingWindowedH, x, y, w, h)
 }
 
 // manualMax carries a hand-rolled maximize for WSL. WSLg can present a
@@ -330,9 +355,12 @@ func adoptExternalMaximize() {
 	defer chromeMu.Unlock()
 
 	maxed := ebiten.IsWindowMaximized()
+	if maxed != wasExternalMaximized {
+		windowTracef("maximize window-manager state changed old=%t new=%t decorated=%t manualWanted=%t", wasExternalMaximized, maxed, ebiten.IsWindowDecorated(), manualMaximizeWanted())
+	}
 	defer func() { wasExternalMaximized = maxed }()
 
-	if !isWSL() || manualMax.active || manualMax.learning || manualMax.restoring {
+	if !manualMaximizeWanted() || manualMax.active || manualMax.learning || manualMax.restoring {
 		return
 	}
 	if !maxed {
@@ -381,7 +409,7 @@ func toggleManualMaximize() {
 		return
 	}
 
-	if isWSL() && ebiten.IsWindowMaximized() && !manualMax.active {
+	if manualMaximizeWanted() && ebiten.IsWindowMaximized() && !manualMax.active {
 		// A raw window-manager maximize (keyboard shortcut, taskbar, or a
 		// snap the release handler missed) has no saved windowed rect, so
 		// a probe would relearn the size the window already has. Restore
@@ -474,6 +502,7 @@ func applyWorkarea(mon string, area workarea) {
 
 // applyWorkareaLocked is applyWorkarea for callers holding chromeMu.
 func applyWorkareaLocked(mon string, area workarea) {
+	windowTracef("manual maximize applying monitor=%q target=%+v saved=(%d,%d %dx%d)", mon, area, manualMax.sx, manualMax.sy, manualMax.sw, manualMax.sh)
 	manualMax.wx, manualMax.wy = area.x, area.y
 	manualMax.ww, manualMax.wh = area.w, area.h
 	manualMax.learnedMon = mon

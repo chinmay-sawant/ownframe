@@ -8,8 +8,6 @@ const (
 	maxSongs         = 6
 	maxAlbums        = 12
 	percentScale     = 100
-	seekStep         = 10
-	seekBase         = 10
 	volumeStep       = 10
 	volumeBase       = 10
 	trackTitleMax    = 44

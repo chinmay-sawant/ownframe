@@ -300,10 +300,11 @@
     "mode": "body",
     "imports": [
       "context",
+      "image/color",
       "github.com/chinmay-sawant/ownframe"
     ],
-    "before": "func titlebarStrip(x, y int) bool {\n\treturn y < 42\n}\n\nvar ctx = context.Background()\nvar page *ownframe.Page",
-    "after": "_ = err\nreturn nil"
+    "params": "ctx context.Context, page *ownframe.Page",
+    "after": "return err"
   },
   "examples/frontend/workspace/main.go#starter": {
     "mode": "file",
@@ -336,5 +337,23 @@
       "context",
       "github.com/chinmay-sawant/ownframe/components/chadcn"
     ]
+  },
+  "documentation/chadcn.md#3": {
+    "mode": "body",
+    "after": "return nil",
+    "params": "page *ownframe.Page",
+    "imports": [
+      "github.com/chinmay-sawant/ownframe",
+      "github.com/chinmay-sawant/ownframe/components/chadcn"
+    ]
+  },
+  "documentation/window.md#3": {
+    "mode": "body",
+    "imports": [
+      "context",
+      "github.com/chinmay-sawant/ownframe"
+    ],
+    "before": "func titlebarStrip(x, y int) bool {\n\treturn y < 42\n}\n\nvar ctx = context.Background()\nvar page *ownframe.Page",
+    "after": "_ = err\nreturn nil"
   }
 }
