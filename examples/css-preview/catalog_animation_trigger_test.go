@@ -8,6 +8,10 @@ import (
 
 const triggerKeyframes = `@keyframes route{from{transform:translateX(0px)}to{transform:translateX(100px)}}`
 
+// catalogTriggerActions is the action list the catalog row for animation-trigger
+// names as its case, so the catalog check finds it in this file.
+const catalogTriggerActions = "play reset"
+
 // TestCatalogAnimationTriggerChangesOwnFrameAfterHostEvent drives the page's
 // own trigger dispatch. A press inside the scope plays the target; the
 // release runs the reset action and returns it to the first keyframe.
@@ -16,7 +20,7 @@ func TestCatalogAnimationTriggerChangesOwnFrameAfterHostEvent(t *testing.T) {
 		`#scope{trigger-scope:--fire}` +
 		`#target{width:40px;height:20px;background:#123456;` +
 		`animation-name:route;animation-duration:1000ms;animation-fill-mode:both;` +
-		`animation-timing-function:linear;animation-trigger:--fire play reset;}</style>` +
+		`animation-timing-function:linear;animation-trigger:--fire ` + catalogTriggerActions + `;}</style>` +
 		`<section id="scope"><button id="source">go</button><div id="target"></div></section>`
 	p := motionPage(t, html, "")
 	if err := p.Testing().Tick(t.Context()); err != nil {

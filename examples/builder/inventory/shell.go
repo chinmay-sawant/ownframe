@@ -135,7 +135,7 @@ func (a *app) accountMenu() *ui.Element {
 }
 
 // invWinButton is one window control in the topbar. It emits a data-action
-// for the host click handler instead of an OnClick so CustomChrome
+// for the host click handler instead of an OnClick so CustomHeader
 // drag-vs-button hit-testing keeps working.
 func invWinButton(label, glyph, action string) *ui.Element {
 	return chadcn.Button(glyph, chadcn.ButtonOptions{Variant: chadcn.ButtonText, Size: chadcn.ButtonSmall}).Attr("aria-label", label).Attr("title", label).Attr("data-action", action)

@@ -14,6 +14,22 @@ func (s *shell) pointer() error {
 	}
 	x, y := s.cursorPosition()
 	s.cursorX, s.cursorY = x, y
+	if s.titlebarInset() > 0 && y < 0 && s.mouseDown {
+		_, err := s.pointerMouse(x, y, -1, -1, ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft), inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft), true)
+		return err
+	}
+	if s.titlebarInset() > 0 && y < 0 {
+		if err := s.hoverCursor(x, y, -1, -1); err != nil {
+			return err
+		}
+	}
+	if s.titlebarPointer(x, y, ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)) {
+		return nil
+	}
+	if s.titlebarInset() > 0 && y < 0 {
+		_, err := s.moveWindow(x, y)
+		return err
+	}
 	claimed, err := s.menuClaim(x, y,
 		inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft),
 		ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft))

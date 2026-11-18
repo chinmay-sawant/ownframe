@@ -9,6 +9,10 @@ func (s *shell) devTouch(frameW, frameH int) error {
 	var all []touchPos
 	for _, id := range ebiten.AppendTouchIDs(nil) {
 		x, y := ebiten.TouchPosition(id)
+		y -= s.titlebarInset()
+		if y < 0 {
+			continue
+		}
 		all = append(all, touchPos{id: id, x: x, y: y})
 	}
 	content, taps, dy := devPanelStep(all, s.dev.panel, &s.dev.panelTrack)

@@ -107,5 +107,7 @@ type shell struct {
 	lastPlacementSave  time.Time
 	// dragTrace logs one drag line per applied move. Dev-only: set from
 	// OWNFRAME_DRAG_DEBUG with the ownframe_debug build tag.
-	dragTrace bool
+	dragTrace   bool
+	windowTrace windowTraceState
+	titlebar    titlebarState
 }
