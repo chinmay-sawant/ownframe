@@ -42,6 +42,11 @@
 - `internal/page/page_sticky.go` and `internal/window/sticky.go` ask the engine for the sticky view at the current scroll and paint and hit-test from it. `SetScrollViewport` is a host-interface method called by the window. It is not on the public `ownframe.Page`.
 - `TestStickyViewportPixelsAndHits` covers activation, release at the containing block, scroll return, overlap, edits while scrolled, and zoom. `scripts/check-sticky-reference.mjs` and `scripts/compare-sticky-captures.py` compare eight frames with Chrome.
 
+### Generated site output
+
+- `docs/**` is rebuilt with `npm --prefix frontend run build`. Pull request CI only builds the site, and the freshness check runs on push to master. That is why master's `site` and `gates` jobs failed after pull request 78 merged: the committed output was stale. Rebuilding here keeps master green at the merge. Only this pull request is open, so the usual conflict risk from committing generated output does not apply.
+- `make site-check` (the exact master gate: unit tests, freshness, 140 browser layout checks) passes on this branch, and the freshness check gave the same result on repeated builds.
+
 ### Merge with master and engine pin
 
 - `documentation/snippets.json` drops the `chadcn.md#3` entry, because the branch removed that snippet from `documentation/chadcn.md`.
@@ -87,6 +92,7 @@
 - [x] `make test`
 - [x] `make lint` (Go, docs, plans, internal imports, website ESLint)
 - [x] `make build`
+- [x] `make site-check`
 - [x] `make docs-check plans-check examples-check`
 - [x] `make graphics-check`, run at blinkless `2c9d915cc234`. The final pin has the same engine code plus one plan document, and `graphics-check` was not re-run at it.
 - [ ] `make test-race` was not run.
@@ -141,9 +147,11 @@ No new screenshots. Sticky frames and manual test captures are under `plans/v0.0
 | --- | ---: | ---: | ---: |
 | `.css` | 1 | 1 | 1 |
 | `.go` | 71 | 2677 | 300 |
-| `.html` | 1 | 1 | 0 |
+| `.gz` | 1 | Binary | Binary |
+| `.html` | 2 | 2 | 1 |
+| `.js` | 2 | 80 | 59 |
 | `.json` | 13 | 1111 | 9 |
-| `.md` | 18 | 1072 | 39 |
+| `.md` | 18 | 1081 | 39 |
 | `.mjs` | 1 | 100 | 0 |
 | `.mod` | 2 | 2 | 2 |
 | `.png` | 23 | Binary | Binary |
@@ -151,4 +159,5 @@ No new screenshots. Sticky frames and manual test captures are under `plans/v0.0
 | `.sh` | 1 | 5 | 0 |
 | `.sum` | 2 | 4 | 8 |
 | `.txt` | 24 | 1593 | 0 |
-| **Total** | **162** | **6810** | **363** |
+| `.wasm` | 7 | Binary | Binary |
+| **Total** | **173** | **6900** | **423** |
