@@ -7,8 +7,10 @@ import (
 	"testing"
 )
 
-// wantCounts is how many properties each tab covers. They sum to 61.
-var wantCounts = map[string]int{"nav": 20, "shapes": 18, "motion": 6, "frag": 7, "read": 5, "svg": 5}
+// handCounts is how many properties each hand-built tab covers. They sum to
+// 61. The generated tabs (ids starting "all-") cover the rest of the
+// implemented properties.
+var handCounts = map[string]int{"nav": 20, "shapes": 18, "motion": 6, "frag": 7, "read": 5, "svg": 5}
 
 func newTestApp(t *testing.T) *App {
 	t.Helper()
@@ -24,23 +26,32 @@ func newTestApp(t *testing.T) *App {
 func TestTabCounts(t *testing.T) {
 	app := newTestApp(t)
 
-	total := 0
+	hand, total := 0, 0
 
 	for _, tab := range app.tabs {
-		want, ok := wantCounts[tab.ID]
-		if !ok {
+		total += tab.Count()
+
+		if want, ok := handCounts[tab.ID]; ok {
+			hand++
+
+			if got := tab.Count(); got != want {
+				t.Errorf("tab %s covers %d properties, want %d", tab.ID, got, want)
+			}
+
+			continue
+		}
+
+		if !strings.HasPrefix(tab.ID, "all-") {
 			t.Fatalf("unexpected tab %q", tab.ID)
 		}
-
-		if got := tab.Count(); got != want {
-			t.Errorf("tab %s covers %d properties, want %d", tab.ID, got, want)
-		}
-
-		total += tab.Count()
 	}
 
-	if len(app.tabs) != len(wantCounts) || total != 61 {
-		t.Fatalf("%d tabs and %d properties, want %d tabs and 61", len(app.tabs), total, len(wantCounts))
+	if hand != len(handCounts) {
+		t.Fatalf("%d hand-built tabs, want %d", hand, len(handCounts))
+	}
+
+	if want := app.cat.Count(StatusImplemented); total != want {
+		t.Fatalf("tabs cover %d properties, the catalog lists %d implemented", total, want)
 	}
 }
 

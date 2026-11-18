@@ -9,6 +9,10 @@ type Prop struct {
 	Covers []string
 	// Note says in one plain sentence what the host or engine does with it.
 	Note string
+	// Description says what the property does and which values it accepts.
+	Description string
+	// Validate says how to check the example by eye and by readout.
+	Validate string
 	// Demo returns the HTML that shows this example working. The page draws it
 	// directly under the example's row, so the status, the note and the
 	// showcase read as one block. It holds what the example's boxes look like
@@ -55,5 +59,45 @@ func (t Tab) Names() []string {
 
 // allTabs is the tab order. Each tab lives in its own tab_<id>.go file.
 func allTabs() []Tab {
-	return []Tab{navTab(), shapesTab(), motionTab(), fragTab(), readTab(), svgTab()}
+	tabs := []Tab{navTab(), shapesTab(), motionTab(), fragTab(), readTab(), svgTab()}
+
+	taken := map[string]bool{}
+	for _, t := range tabs {
+		for _, n := range t.Names() {
+			taken[n] = true
+		}
+	}
+
+	tabs = append(tabs, genTabs(taken)...)
+	fillFields(tabs)
+
+	return tabs
+}
+
+// fillFields gives every example a description and a validation line. The
+// hand-built tabs keep the text they carry; the others get the accepted
+// values from the compatibility matrix and a generic check.
+func fillFields(tabs []Tab) {
+	accepted := map[string]string{}
+	for _, g := range genProps() {
+		accepted[g.Name] = g.Accepted
+	}
+
+	for ti := range tabs {
+		for pi := range tabs[ti].Props {
+			p := &tabs[ti].Props[pi]
+
+			if p.Description == "" {
+				if a, ok := accepted[p.Name]; ok {
+					p.Description = p.Name + ". Accepted values: " + a + "."
+				} else {
+					p.Description = p.Name + "."
+				}
+			}
+
+			if p.Validate == "" {
+				p.Validate = "Read the picture and the readout under the row. They must agree with the note, and the status badge must read implemented."
+			}
+		}
+	}
 }

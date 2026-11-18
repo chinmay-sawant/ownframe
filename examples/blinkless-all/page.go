@@ -18,16 +18,14 @@ const actionPrefix = "tab-"
 
 // pageStyle is shared by every tab page.
 const pageStyle = `
-body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-serif;font-size:14px}
-.top{position:fixed;top:0;left:16px;right:16px;z-index:10;background:#f6f4ee;padding:8px 0 0 0;box-sizing:border-box;max-height:40vh;overflow:auto}
+body{margin:0;padding:16px 262px 16px 16px;background:#f6f4ee;color:#1f2937;font-family:sans-serif;font-size:14px}
+.top{position:fixed;top:0;left:16px;right:262px;z-index:10;background:#f6f4ee;padding:8px 0 0 0;box-sizing:border-box;max-height:40vh;overflow:auto}
 .topgap{position:static;visibility:hidden;opacity:0;margin:-16px 0 8px 0;overflow:hidden}
 .top .head{padding:6px 12px;margin-bottom:8px}
 .top .head p{margin:2px 0;font-size:12px;line-height:1.3}
 .top .nums{gap:6px;margin:6px 0 0 0}
 .top .num{padding:3px 8px;font-size:12px}
 .top .num b{font-size:13px}
-.top .tabs{margin-bottom:8px}
-.top .tab{padding:6px 10px}
 .sel{margin:0 0 6px 0;padding:5px 12px}
 .sel{display:flex;justify-content:space-between;align-items:center;margin:0 0 8px 0;padding:6px 12px;background:#1f2937;color:#fff;border-radius:8px}
 .sel-title{font-size:16px;font-weight:bold}
@@ -38,7 +36,10 @@ body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-ser
 .nums{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 .num{background:#f1efe7;border-radius:6px;padding:6px 10px}
 .num b{font-size:16px}
-.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tabs{display:flex;flex-direction:column;gap:4px}
+.side{position:fixed;top:8px;right:16px;width:230px;max-height:92vh;overflow:hidden;z-index:11;background:#f6f4ee;box-sizing:border-box}
+.sidebar{position:absolute;right:0;width:4px;height:30%;background:#9ca3af;border-radius:2px}
+.side .tab{padding:6px 10px;font-size:12px}
 .tab{padding:8px 12px;border:1px solid #c9c3b3;border-radius:6px;background:#ebe7da;cursor:pointer}
 .tab.on{background:#1f2937;color:#fff;border-color:#1f2937}
 .sec{background:#fff;border:1px solid #d6d1c4;border-radius:8px;padding:12px 16px}
@@ -47,7 +48,8 @@ body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-ser
 .row{margin:0 0 14px 0;padding:0 0 12px 0;border-bottom:1px solid #eee9db}
 .rowhead{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
 .row .name{width:230px;font-family:monospace;font-size:13px}
-.row .note{color:#4b5563;width:520px;line-height:1.35}
+.row .note{color:#4b5563;flex:1 1 240px;min-width:0;line-height:1.35}
+.row .wide{flex:0 0 100%;width:100%;box-sizing:border-box}
 .demo{margin:8px 0 0 0;padding:10px 12px;background:#faf8f2;border:1px solid #e6e1d2;border-radius:6px}
 .st{display:inline-block;padding:1px 7px;border-radius:10px;font-size:12px;margin-left:6px}
 .st.implemented{background:#bbf7d0}.st.partial{background:#fde68a}.st.unsupported{background:#fecaca}
@@ -62,10 +64,12 @@ body{margin:0;padding:16px;background:#f6f4ee;color:#1f2937;font-family:sans-ser
 // window height and scrolls inside that cap, so a short window never has it
 // cover the whole page.
 func (a *App) pinned(open Tab) string {
-	block := a.selected(open) + a.header() + a.tabBar(open.ID)
+	block := a.selected(open) + a.header()
 	gap := idAttr.ReplaceAllString(block, "")
 
-	return `<div id="top" class="top">` + block + `</div><div class="top topgap">` + gap + `</div>`
+	return `<div id="top" class="top">` + block + `</div><div class="top topgap">` + gap + `</div>` +
+		`<div id="side" class="side"><div id="side-in" style="position:relative;top:0px">` + a.tabBar(open.ID) + `</div>` +
+		`<div id="side-bar" class="sidebar" style="top:0px"></div></div>`
 }
 
 // idAttr matches the id and data-action attributes the hidden copy drops.
@@ -88,22 +92,14 @@ func (a *App) header() string {
 
 	b.WriteString(`<div class="head">`)
 	fmt.Fprintf(&b, `<p>The catalog lists %d CSS properties. %d are implemented (%.1f%%). `+
-		`This window covers the %d in six groups that were not yet implemented: `+
-		`%d implemented now, %d partial, %d unsupported.</p>`,
-		total, impl, 100*float64(impl)/float64(total), len(names),
+		`This window covers %d of them on %d tabs: the 61 once-missing properties on six hand-built tabs, and the rest on generated tabs. `+
+		`%d implemented, %d partial, %d unsupported.</p>`,
+		total, impl, 100*float64(impl)/float64(total), len(names), len(a.tabs),
 		tally[StatusImplemented], tally[StatusPartial], tally[StatusUnsupported])
 	b.WriteString(`<p>A family is a group of properties that one example covers. ` +
 		`Two example boxes can stand for eight properties, so the tab count is the number of ` +
 		`properties, not the number of boxes. Each row says which ones it also covers.</p>`)
-	b.WriteString(`<div class="nums">`)
-
-	for _, t := range a.tabs {
-		tl := cat.Tally(t.Names())
-		fmt.Fprintf(&b, `<div class="num"><b>%d</b> %s: %d implemented, %d partial, %d unsupported</div>`,
-			t.Count(), html.EscapeString(t.Title), tl[StatusImplemented], tl[StatusPartial], tl[StatusUnsupported])
-	}
-
-	b.WriteString(`</div></div>`)
+	b.WriteString(`</div>`)
 
 	return b.String()
 }
@@ -156,9 +152,10 @@ func (a *App) section(t Tab) string {
 		}
 
 		fmt.Fprintf(&b, `<div class="row" id="row-%s"><div class="rowhead"><div class="name">%s<span class="st %s">%s</span></div>`+
-			`<div class="note">%s%s</div></div>`,
+			`<div class="note">%s%s</div>`+
+			`<div class="note wide"><b>Description:</b> %s</div><div class="note wide"><b>Validate:</b> %s</div></div>`,
 			html.EscapeString(p.Name), html.EscapeString(p.Name), strings.ReplaceAll(st, " ", "-"), html.EscapeString(st),
-			html.EscapeString(p.Note), covers)
+			html.EscapeString(p.Note), covers, html.EscapeString(p.Description), html.EscapeString(p.Validate))
 
 		if p.Demo != nil {
 			b.WriteString(`<div class="demo" id="demo-` + html.EscapeString(p.Name) + `">` + p.Demo() + `</div>`)

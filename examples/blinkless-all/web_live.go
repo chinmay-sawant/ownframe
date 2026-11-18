@@ -120,6 +120,7 @@ func webHandlers(page *ownframe.Page, in *webInput) ownframe.Handlers {
 	}
 
 	return ownframe.Handlers{
+		Wheel: sideWheel(page),
 		Hover: func(_ context.Context, _, next ownframe.Box) (bool, error) {
 			in.mu.Lock()
 			in.at(next, scrollY())
