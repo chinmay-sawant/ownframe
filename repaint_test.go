@@ -130,3 +130,45 @@ func samePicture(a, b image.Image) bool {
 
 	return true
 }
+
+func TestResizePictureMatchesFreshPage(t *testing.T) {
+	t.Parallel()
+	const source = `<style>body{margin:0;background:#fff}#a{width:40px;height:30px;background:red}
+@media(min-width:400px){#a{width:120px;background:blue}}</style><div id="a">{{.Label}}</div><input id="field" value="live">`
+	data := map[string]string{"Label": "unchanged data"}
+	newAt := func(width int) *Page {
+		p, err := New(Config{HTML: source, Width: width, Height: 200})
+		if err != nil {
+			t.Fatal(err)
+		}
+		p.SetData(data)
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		p.Form().SetFormValue("field", "edited value")
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		if p.Form().FormValue("field") != "edited value" {
+			t.Fatal("fixture did not apply the live field edit")
+		}
+		return p
+	}
+	decode := func(p *Page) image.Image {
+		img, err := png.Decode(bytes.NewReader(p.Probe().PNG()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return img
+	}
+	p := newAt(320)
+	for _, width := range []int{480, 320, 480} {
+		p.SetSize(width, 200)
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		if !samePicture(decode(p), decode(newAt(width))) {
+			t.Fatalf("resized picture differs from a fresh page at width %d", width)
+		}
+	}
+}

@@ -1,0 +1,67 @@
+bash scripts/check-graphics.sh
+graphics-check: session=xvfb; DISPLAY=:0; LIBGL_ALWAYS_SOFTWARE=1
+=== RUN   TestPartialFrameLeavesTheScreen
+--- PASS: TestPartialFrameLeavesTheScreen (0.46s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.493s
+=== RUN   TestWindowRepaintPixels
+--- PASS: TestWindowRepaintPixels (0.59s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.675s
+=== RUN   TestWindowBackdropFilterReplaysFullFrame
+--- PASS: TestWindowBackdropFilterReplaysFullFrame (0.41s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.450s
+=== RUN   TestViewportScrollPixels
+--- PASS: TestViewportScrollPixels (0.47s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.526s
+=== RUN   TestViewportAnimatedReturnPixels
+--- PASS: TestViewportAnimatedReturnPixels (0.40s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.430s
+=== RUN   TestViewportDirectAnimationReturnPixels
+--- PASS: TestViewportDirectAnimationReturnPixels (0.39s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.429s
+=== RUN   TestWindowStaticEvents
+--- PASS: TestWindowStaticEvents (3.26s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	3.300s
+=== RUN   TestWindowIdleDeadline
+--- PASS: TestWindowIdleDeadline (1.13s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	1.169s
+=== RUN   TestWindowAccessibilityActionWake
+--- PASS: TestWindowAccessibilityActionWake (0.76s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.819s
+=== RUN   TestWindowDevToolsIdle
+--- PASS: TestWindowDevToolsIdle (4.20s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	4.231s
+=== RUN   TestManagedInteractionsNative
+    interactions_pixels_test.go:151: native step 0: tab=a slider=25 modal=false focus=
+    interactions_pixels_test.go:151: native step 1: tab=b slider=25 modal=false focus=b-tab
+    interactions_pixels_test.go:151: native step 2: tab=b slider=75 modal=false focus=volume
+    interactions_pixels_test.go:151: native step 3: tab=b slider=75 modal=true focus=modal-panel-close
+    interactions_pixels_test.go:151: native step 4: tab=b slider=75 modal=false focus=open
+--- PASS: TestManagedInteractionsNative (0.57s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/components/chadcn	0.597s
+=== RUN   TestSidebarHoverPixels
+--- PASS: TestSidebarHoverPixels (3.01s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/loglens	3.058s
+=== RUN   TestDrawPaintsVerticalThumb
+--- PASS: TestDrawPaintsVerticalThumb (0.31s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.326s
+=== RUN   TestGPUVisibleParity
+--- PASS: TestGPUVisibleParity (2.23s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/replay	2.260s
+=== RUN   TestScrollbarThumbStaysOnePiece
+--- PASS: TestScrollbarThumbStaysOnePiece (1.15s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/jmap-mail	1.180s

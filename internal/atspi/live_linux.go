@@ -30,34 +30,38 @@ type pendingReply struct {
 }
 
 type liveBus struct {
-	mu         sync.Mutex
-	conn       net.Conn
-	reader     *bufio.Reader
-	writeMu    sync.Mutex
-	connectMu  sync.Mutex
-	pending    map[uint32]pendingReply
-	done       chan struct{}
-	connDone   chan struct{}
-	closeOnce  sync.Once
-	wg         sync.WaitGroup
-	name       string
-	uniqueName string
-	addr       string
-	claimed    bool
-	closed     bool
-	reason     string
-	serial     uint32
-	app        Application
-	view       *serverView
-	originX    int
-	originY    int
-	parent     dbusRef
-	appID      int32
-	lastTry    time.Time
-	failAt     time.Time
-	embedded   bool
-	width      int
-	height     int
+	actions       ActionHandler
+	actionSlots   chan struct{}
+	actionCtx     context.Context
+	cancelActions context.CancelFunc
+	mu            sync.Mutex
+	conn          net.Conn
+	reader        *bufio.Reader
+	writeMu       sync.Mutex
+	connectMu     sync.Mutex
+	pending       map[uint32]pendingReply
+	done          chan struct{}
+	connDone      chan struct{}
+	closeOnce     sync.Once
+	wg            sync.WaitGroup
+	name          string
+	uniqueName    string
+	addr          string
+	claimed       bool
+	closed        bool
+	reason        string
+	serial        uint32
+	app           Application
+	view          *serverView
+	originX       int
+	originY       int
+	parent        dbusRef
+	appID         int32
+	lastTry       time.Time
+	failAt        time.Time
+	embedded      bool
+	width         int
+	height        int
 }
 
 const (
@@ -78,11 +82,13 @@ const (
 	authLineLimit = 4096
 )
 
-func newLiveBus() Bus {
+func newLiveBus(actions ActionHandler) Bus {
 	return &liveBus{
-		pending: make(map[uint32]pendingReply),
-		done:    make(chan struct{}),
-		reason:  "not connected",
+		actions:     actions,
+		actionSlots: make(chan struct{}, actionCapacity),
+		pending:     make(map[uint32]pendingReply),
+		done:        make(chan struct{}),
+		reason:      "not connected",
 	}
 }
 
@@ -185,6 +191,7 @@ func (b *liveBus) connect() error {
 	b.serial = 1
 	b.reason = "connected to " + addr
 	b.embedded = false
+	b.actionCtx, b.cancelActions = context.WithCancel(context.Background())
 	b.wg.Add(1)
 	b.mu.Unlock()
 
@@ -353,12 +360,21 @@ func (b *liveBus) handleCall(msg *dbusMsg) {
 	}
 	b.mu.Lock()
 	view := b.view
+	actions := b.actions
+	actionCtx := b.actionCtx
 	b.mu.Unlock()
+	if actionCtx == nil {
+		actionCtx = context.Background()
+	}
+	if view != nil && actions != nil && isActionCall(msg) {
+		b.dispatchAction(msg, view, actionCtx)
+		return
+	}
 	var res callResult
 	if view == nil {
 		res = errResult("org.freedesktop.DBus.Error.UnknownObject", "application has no published tree")
 	} else {
-		res = view.handle(msg)
+		res = view.handle(actionCtx, msg)
 	}
 	b.reply(msg, res)
 }
@@ -514,6 +530,9 @@ func (b *liveBus) disconnect(conn net.Conn, reason string) {
 	b.parent = dbusRef{}
 	b.reason = reason
 	b.connDone = nil
+	if b.cancelActions != nil {
+		b.cancelActions()
+	}
 	b.mu.Unlock()
 	if done != nil {
 		close(done)
@@ -871,6 +890,9 @@ func (b *liveBus) Close() error {
 	connDone := b.connDone
 	b.connDone = nil
 	b.closeOnce.Do(func() { close(b.done) })
+	if b.cancelActions != nil {
+		b.cancelActions()
+	}
 	if connDone != nil {
 		close(connDone)
 	}

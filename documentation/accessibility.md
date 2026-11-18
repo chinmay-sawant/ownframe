@@ -135,9 +135,9 @@ nodes, unsupported actions, disabled controls, and invalid UTF-8 values:
 ## Limits
 
 This API supplies semantic page data to a host. Linux serves that tree over
-D-Bus and emits focus and structure events. AT-initiated actions are not wired
-to the page yet: the live bridge exposes action metadata, but `DoAction` and
-`GrabFocus` return false, link activation is not supported, and there is no
+D-Bus and emits focus and structure events. The live bridge dispatches
+`GrabFocus` and the focus and activation entries of `DoAction` on the window
+loop. AT-initiated text editing and link activation are not supported. There is no
 `EditableText`, `Document`, `Table`, `Selection`, or `Hyperlink` interface. 1.0
 does not ship a screen-reader product.
 

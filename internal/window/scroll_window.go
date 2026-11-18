@@ -6,6 +6,7 @@ import "github.com/chinmay-sawant/ownframe/internal/host"
 // keeps owning the offset; the page slices its rows and redraws only when
 // it opted into windowing. Every other page scrolls by blitting, as before.
 func (s *shell) syncScrollWindow() error {
+	s.syncStickyViewport()
 	observer, ok := s.app.(host.ScrollObserver)
 	if !ok {
 		return nil

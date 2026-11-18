@@ -227,7 +227,8 @@ func (a *app) pageHeader() *ui.Element {
 
 func (a *app) panelTabs() *ui.Element {
 	return chadcn.Tabs(chadcn.TabsOptions{
-		Active: a.tab,
+		Interactions: a.interactions,
+		Active:       a.tab,
 		OnSelect: func(ctx context.Context, tab string) error {
 			a.tab = tab
 			return a.refresh(ctx)

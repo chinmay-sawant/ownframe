@@ -1,0 +1,41 @@
+{
+  "source_commit": "0a77375ad10c51c8f9dab2d9c075701e7a2249bb",
+  "source_dirty": true,
+  "tracked_diff_sha256": "dc4061b0846185a47b47ac33924c07e13d422f7199d94ed2693babb9aee47d6a",
+  "untracked_sources": {
+    "examples/perf-benchmarks/benchutil/list_workload.go": "b5b225e4ae94f81780766dcd9154e1aeb6fb7c6dff1a3c960e26513944954283",
+    "examples/perf-benchmarks/list_workload_test.go": "4cc28792884714b3b65f0337b814c596b7fa8e8547ad44c886a6547cdf9e334f",
+    "internal/atspi/action_queue.go": "81e34875eb9b5ff6b48ead856f6a633d1ce702ec4c599187cfc863bfc2635073",
+    "internal/atspi/action_queue_test.go": "a03c5a8163daf682a588e80f8f261689bb7faf512a00c722bdfbf31ac0707578",
+    "internal/atspi/live_action_linux.go": "0b9752d781b5696c3728caaf9d974ba3506c14b9d024a64dca18852c3b94ecba",
+    "internal/atspi/live_action_linux_test.go": "7680bc03b21220f5d0871483bc102617219ea807febf167731e59c3bb47b5149",
+    "internal/atspi/serve_action.go": "f7aba6240b8fadc71602e31f17b9a8cbb0de332dd0146f7ed7f5e83f9f9f1f57",
+    "internal/atspi/serve_action_test.go": "3a02b03f545e2daacf56ebce88bc9e7de765e0e235a8369a655f51c532fb4f5d",
+    "internal/window/a11y_actions_test.go": "df4ec1a1a31fdc394c58aadf585ac8f5096b83796bbd22e9a1e3f04e3d0aefe1",
+    "internal/window/a11y_wake_pixels_test.go": "4861a524970b377ca461faf0784434f89d29b15164b80ad64bfd1011dabaab8f",
+    "scripts/check-atspi-actions.py": "8463b580a03b7df8f932a8d9448b6690caa6dcefaa7b35b1745597be9362f35d"
+  },
+  "go": {
+    "CGO_ENABLED": "1",
+    "GOAMD64": "v1",
+    "GOARCH": "amd64",
+    "GOOS": "linux",
+    "GOVERSION": "go1.26.10"
+  },
+  "gomaxprocs": "runtime default",
+  "cpu": 24,
+  "machine": "Chinmay",
+  "status": "passed",
+  "go_version": "go version go1.26.10 linux/amd64",
+  "os": "Linux",
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "display": ":0",
+  "client": "gdbus",
+  "host": "native desktop accessibility example",
+  "focus_accepted": true,
+  "focus_state_observed": true,
+  "activation_accepted": true,
+  "activation_counter_changed": true,
+  "disabled_focus_refused": true,
+  "password_redacted": true
+}

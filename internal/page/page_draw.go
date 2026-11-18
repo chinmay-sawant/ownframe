@@ -129,7 +129,7 @@ func (p *Page) execTemplate(track bool) (string, error) {
 	p.dataMu.RLock()
 	defer p.dataMu.RUnlock()
 
-	// A Redraw with no new data, form input, size, or scroll change reuses
+	// A Redraw with no new data, form input, or changed row window reuses
 	// the last merged template body. Every path that runs application code
 	// marks the form dirty first (handlers can mutate the data in place
 	// through the SetData pointer), so a clean flag means the body is

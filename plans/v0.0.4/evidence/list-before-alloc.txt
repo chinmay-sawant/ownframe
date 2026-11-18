@@ -1,0 +1,33 @@
+File: perf-benchmarks.test
+Build ID: 39b079a06f6abf967d89e86380eb8743eae2a0d5
+Type: alloc_space
+Time: 2026-11-11 02:12:35 IST
+Showing nodes accounting for 785.51MB, 92.01% of 853.76MB total
+Dropped 157 nodes (cum <= 4.27MB)
+Showing top 25 nodes out of 136
+      flat  flat%   sum%        cum   cum%
+  198.21MB 23.22% 23.22%   198.21MB 23.22%  github.com/chinmay-sawant/blinkless/internal/layout.workspaceOps
+  193.64MB 22.68% 45.90%   293.36MB 34.36%  github.com/chinmay-sawant/blinkless/layout.newDisplay
+   85.44MB 10.01% 55.90%    85.44MB 10.01%  strings.(*Builder).WriteString (inline)
+   43.22MB  5.06% 60.97%    43.22MB  5.06%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).storeTextWidth (inline)
+   32.55MB  3.81% 64.78%    32.55MB  3.81%  github.com/chinmay-sawant/blinkless/internal/layout.boxPreorder.func1
+   22.01MB  2.58% 67.36%    22.01MB  2.58%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).appendBorderOpsSides
+   20.94MB  2.45% 69.81%    20.94MB  2.45%  github.com/chinmay-sawant/blinkless/internal/layout.(*styleContext).storeMatchEntry (inline)
+   18.36MB  2.15% 71.96%    18.36MB  2.15%  bytes.growSlice
+   17.83MB  2.09% 74.05%    17.83MB  2.09%  bytes.Clone (inline)
+   16.27MB  1.91% 75.95%    52.26MB  6.12%  github.com/chinmay-sawant/blinkless/internal/layout.resolveStylesCtx
+   15.03MB  1.76% 77.71%    91.46MB 10.71%  github.com/chinmay-sawant/blinkless/internal/layout.WalkPlacedWithOptions
+      15MB  1.76% 79.47%       15MB  1.76%  html/template.htmlReplacer
+   14.79MB  1.73% 81.20%    14.79MB  1.73%  github.com/chinmay-sawant/blinkless/internal/layout.recordOwnerChrome
+   13.09MB  1.53% 82.74%    93.71MB 10.98%  github.com/chinmay-sawant/ownframe/internal/page.(*Page).execTemplate
+   11.50MB  1.35% 84.08%    11.50MB  1.35%  reflect.unsafe_New
+       9MB  1.05% 85.14%    44.50MB  5.21%  reflect.Value.call
+    8.50MB     1% 86.13%    29.94MB  3.51%  github.com/chinmay-sawant/blinkless/internal/layout.(*styleContext).scanMatches
+    8.25MB  0.97% 87.10%     8.25MB  0.97%  github.com/chinmay-sawant/blinkless/layout.rentIntSlice
+    7.67MB   0.9% 88.00%    29.68MB  3.48%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).prependChrome
+    7.50MB  0.88% 88.88%     7.50MB  0.88%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).normalLineHeight
+       7MB  0.82% 89.70%        7MB  0.82%  internal/reflectlite.unsafe_New
+    5.50MB  0.64% 90.34%    12.50MB  1.46%  internal/reflectlite.Swapper
+       5MB  0.59% 90.93%        5MB  0.59%  github.com/chinmay-sawant/blinkless/internal/layout.stripLineBaselinesInto
+    4.71MB  0.55% 91.48%    39.59MB  4.64%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).flexMinMainSize
+    4.50MB  0.53% 92.01%    32.90MB  3.85%  github.com/chinmay-sawant/blinkless/internal/layout.(*engine).buildRowItems

@@ -8,7 +8,7 @@ type liveBus struct {
 	reason string
 }
 
-func newLiveBus() Bus {
+func newLiveBus(ActionHandler) Bus {
 	return &liveBus{reason: liveReason()}
 }
 

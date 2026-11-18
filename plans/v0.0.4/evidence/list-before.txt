@@ -1,0 +1,56 @@
+goos: linux
+goarch: amd64
+pkg: github.com/chinmay-sawant/ownframe/examples/perf-benchmarks
+cpu: 13th Gen Intel(R) Core(TM) i7-13700HX
+BenchmarkListWorkloads/PerfOff/Unchanged-24         	  515217	       553.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/Unchanged-24         	  590330	       528.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/Unchanged-24         	  547122	       527.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/Unchanged-24         	  574705	       530.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/Unchanged-24         	  568922	       511.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/TextUpdate-24        	       8	  31576750 ns/op	13059105 B/op	   84350 allocs/op
+BenchmarkListWorkloads/PerfOff/TextUpdate-24        	       9	  31343888 ns/op	13041580 B/op	   84346 allocs/op
+BenchmarkListWorkloads/PerfOff/TextUpdate-24        	       9	  30543243 ns/op	12942334 B/op	   84330 allocs/op
+BenchmarkListWorkloads/PerfOff/TextUpdate-24        	       9	  29589238 ns/op	12897853 B/op	   84327 allocs/op
+BenchmarkListWorkloads/PerfOff/TextUpdate-24        	      10	  28965675 ns/op	12950595 B/op	   84331 allocs/op
+BenchmarkListWorkloads/PerfOff/ScrollOffset-24      	94704474	         3.162 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/ScrollOffset-24      	95024782	         3.127 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/ScrollOffset-24      	100000000	         3.040 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/ScrollOffset-24      	98371814	         3.153 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/ScrollOffset-24      	87389263	         3.091 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOff/Resize-24            	      10	  29184949 ns/op	 9336514 B/op	   59186 allocs/op
+BenchmarkListWorkloads/PerfOff/Resize-24            	      10	  26388174 ns/op	 9326846 B/op	   59184 allocs/op
+BenchmarkListWorkloads/PerfOff/Resize-24            	      12	  25706461 ns/op	 9400923 B/op	   59192 allocs/op
+BenchmarkListWorkloads/PerfOff/Resize-24            	      12	  24733536 ns/op	 9425558 B/op	   59195 allocs/op
+BenchmarkListWorkloads/PerfOff/Resize-24            	      10	  25309668 ns/op	 9362379 B/op	   59189 allocs/op
+BenchmarkListWorkloads/PerfOff/WindowedScroll-24    	     356	    875148 ns/op	  392709 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOff/WindowedScroll-24    	     368	    839580 ns/op	  392805 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOff/WindowedScroll-24    	     369	    823743 ns/op	  392714 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOff/WindowedScroll-24    	     352	    827890 ns/op	  392672 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOff/WindowedScroll-24    	     349	    835857 ns/op	  392690 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOn/Unchanged-24          	  459498	       568.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/Unchanged-24          	  538942	       543.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/Unchanged-24          	  510896	       570.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/Unchanged-24          	  498973	       582.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/Unchanged-24          	  518845	       568.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/TextUpdate-24         	       9	  34111707 ns/op	12892380 B/op	   84320 allocs/op
+BenchmarkListWorkloads/PerfOn/TextUpdate-24         	       9	  31010152 ns/op	12875953 B/op	   84318 allocs/op
+BenchmarkListWorkloads/PerfOn/TextUpdate-24         	       7	  35926697 ns/op	12879442 B/op	   84322 allocs/op
+BenchmarkListWorkloads/PerfOn/TextUpdate-24         	       9	  31055500 ns/op	12880071 B/op	   84319 allocs/op
+BenchmarkListWorkloads/PerfOn/TextUpdate-24         	       9	  29006855 ns/op	12880056 B/op	   84319 allocs/op
+BenchmarkListWorkloads/PerfOn/ScrollOffset-24       	96981420	         3.148 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/ScrollOffset-24       	100000000	         3.077 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/ScrollOffset-24       	95374828	         3.230 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/ScrollOffset-24       	100000000	         3.056 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/ScrollOffset-24       	98087200	         3.113 ns/op	       0 B/op	       0 allocs/op
+BenchmarkListWorkloads/PerfOn/Resize-24             	      10	  28974722 ns/op	 9323140 B/op	   59184 allocs/op
+BenchmarkListWorkloads/PerfOn/Resize-24             	      10	  25463247 ns/op	 9349016 B/op	   59187 allocs/op
+BenchmarkListWorkloads/PerfOn/Resize-24             	      10	  26486354 ns/op	 9330539 B/op	   59184 allocs/op
+BenchmarkListWorkloads/PerfOn/Resize-24             	      10	  25345332 ns/op	 9360081 B/op	   59188 allocs/op
+BenchmarkListWorkloads/PerfOn/Resize-24             	      10	  26778483 ns/op	 9337924 B/op	   59185 allocs/op
+BenchmarkListWorkloads/PerfOn/WindowedScroll-24     	     361	    918166 ns/op	  392707 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOn/WindowedScroll-24     	     361	    849811 ns/op	  392779 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOn/WindowedScroll-24     	     313	    946776 ns/op	  392676 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOn/WindowedScroll-24     	     322	    899863 ns/op	  392672 B/op	    2415 allocs/op
+BenchmarkListWorkloads/PerfOn/WindowedScroll-24     	     325	    863003 ns/op	  392711 B/op	    2415 allocs/op
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/perf-benchmarks	16.309s

@@ -9,7 +9,8 @@ func HasControls(source string) bool {
 	return strings.Contains(source, "<input") || strings.Contains(source, "<INPUT") ||
 		strings.Contains(source, "<textarea") || strings.Contains(source, "<TEXTAREA") ||
 		strings.Contains(source, "<select") || strings.Contains(source, "<SELECT") ||
-		strings.Contains(source, "<button") || strings.Contains(source, "<BUTTON")
+		strings.Contains(source, "<button") || strings.Contains(source, "<BUTTON") ||
+		strings.Contains(source, "tabindex") || strings.Contains(source, "TABINDEX")
 }
 
 // Scan reads input, textarea, select, and button controls from source.
@@ -75,6 +76,9 @@ func Scan(source string) []Span {
 			}
 			i = at
 		default:
+			if sp, ok := makeFocusTarget(low, raw, i, end); ok {
+				out = append(out, sp)
+			}
 			i = end
 		}
 	}

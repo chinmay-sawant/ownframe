@@ -571,14 +571,14 @@ func TestFineGrainedStateUpdatesUseElementPatching(t *testing.T) {
 		t.Fatal("expected autoRefresh to be true")
 	}
 
-	// Test Sample rate slider cycling (from 100% it cycles to 10%)
+	// Pressing the rail midpoint publishes the mapped sample rate.
 	sampleRateBox := loglensLayoutBox(t, a.page, func(box ownframe.Box) bool {
-		return box.ID == "log-sample-rate"
+		return box.ID == "log-sample-rate-rail"
 	})
-	if err := a.page.Click(ctx, sampleRateBox.X+sampleRateBox.W/2, sampleRateBox.Y+sampleRateBox.H/2); err != nil {
+	if err := a.page.Edit().Press(ctx, sampleRateBox.X+sampleRateBox.W/2, sampleRateBox.Y+sampleRateBox.H/2); err != nil {
 		t.Fatal(err)
 	}
-	if a.sampleRate != 10 {
-		t.Fatalf("expected sampleRate 10, got %d", a.sampleRate)
+	if a.sampleRate != 60 {
+		t.Fatalf("expected sampleRate 60, got %d", a.sampleRate)
 	}
 }

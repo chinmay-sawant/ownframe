@@ -9,6 +9,7 @@ import (
 
 // Row is one Benchmark B list row.
 type Row struct {
+	ID    string
 	Num   string
 	Title string
 	Body  string
@@ -58,6 +59,7 @@ func makeView(n int) LargeView {
 
 	for i := range v.Rows {
 		v.Rows[i] = Row{
+			ID:    "row-" + strconv.Itoa(i+1),
 			Num:   "#" + strconv.Itoa(i+1),
 			Title: "Item " + strconv.Itoa(i+1),
 			Body:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",

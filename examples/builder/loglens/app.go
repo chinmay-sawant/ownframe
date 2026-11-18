@@ -50,10 +50,11 @@ func defaultResponders() [4]onCallResponder {
 // app owns the dashboard state. Panels are pure functions of this state and
 // are rebuilt through View.Update after every action.
 type app struct {
-	view *ui.View
-	page *ownframe.Page
-	dark bool
-	tab  string
+	interactions *chadcn.Interactions
+	view         *ui.View
+	page         *ownframe.Page
+	dark         bool
+	tab          string
 
 	// Shell.
 	sidebarCollapsed bool
@@ -175,7 +176,8 @@ func newApp() (*app, error) {
 		onCallSchedule: map[string]onCallResponder{},
 		feed:           newTelemetryFeed(time.Now, started.UnixNano()),
 	}
-	view, err := ui.Mount(ownframe.Config{
+	a.interactions = chadcn.NewInteractions()
+	view, err := a.interactions.Mount(context.Background(), ownframe.Config{
 		Title:       "Loglens · Production",
 		Width:       windowWidth,
 		Height:      windowHeight,
@@ -185,13 +187,13 @@ func newApp() (*app, error) {
 		DevTools:    false,
 		RetainState: true,
 		Scrollbar:   ownframe.ScrollbarHidden,
-	}, a.screen())
+	}, a.screen)
 	if err != nil {
 		return nil, err
 	}
 	a.view = view
 	a.page = view.Page
-	view.Handle(ownframe.Handlers{
+	a.interactions.Handle(ownframe.Handlers{
 		Click:   a.handleClick,
 		Hover:   a.handleHover,
 		KeyDown: a.handleKey,
@@ -211,7 +213,7 @@ func (a *app) refresh(ctx context.Context) error {
 		return nil
 	}
 	a.configureLiveTick()
-	return a.view.Update(ctx, a.screen())
+	return a.interactions.Update(ctx, a.screen)
 }
 
 func (a *app) setTab(ctx context.Context, tab string) error {
