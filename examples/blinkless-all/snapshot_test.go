@@ -142,7 +142,7 @@ func TestSnapshotFollowsTheWindow(t *testing.T) {
 // TestSnapshotHandler: GET /frame.png returns the picture, and the viewer page
 // is served at /.
 func TestSnapshotHandler(t *testing.T) {
-	rig := newSnapshotRig(t, "shapes")
+	rig := newSnapshotRig(t, "motion")
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

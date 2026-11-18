@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/chinmay-sawant/ownframe"
 )
@@ -143,7 +144,20 @@ func swatchPNG() ([]byte, error) {
 // moduleFile returns rel inside the pinned blinkless module, or "" when the
 // go tool cannot find it. CI has no sibling checkout, so this is the fallback.
 func moduleFile(rel string) string {
-	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/chinmay-sawant/blinkless").Output()
+	const moduleLookupTimeout = 10 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), moduleLookupTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(
+		ctx,
+		"go",
+		"list",
+		"-m",
+		"-f",
+		"{{.Dir}}",
+		"github.com/chinmay-sawant/blinkless",
+	)
+	out, err := cmd.Output()
 	if err != nil {
 		return ""
 	}
