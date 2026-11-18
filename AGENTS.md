@@ -94,7 +94,7 @@ The website gate is ESLint 10 through `npm run lint` in `frontend/`. Its flat co
 
 The policy lives in `.golangci.yml`. It is a curated enable list, not `enable-all`: the runner defaults (`errcheck`, `govet`, `ineffassign`, `staticcheck`, `unused`) plus `gosec`, `gocritic`, `misspell`, `unconvert`, `mnd`, `nolintlint`, `depguard`, `bodyclose`, `noctx`, `contextcheck`, `errorlint`, `forcetypeassert`, `gochecknoglobals`, and `forbidigo`. `//nolint` is a last resort and needs a written reason.
 
-GitHub CI (`.github/workflows/ci.yml`) runs `make test` and `make lint` in the `gates` job, and `make test-race` (library module only) in the `test-race` job, plus the sec, cross, secrets, lint-actions, and reproducible jobs. The release workflow (`.github/workflows/release.yml`) runs `make test` and `make lint` before it creates the GitHub Release. Both set up Node.js 22 and install the website dependencies, so the website lint runs in CI.
+GitHub CI (`.github/workflows/ci.yml`) runs `make test` and `make lint` in the `gates` job, and `make test-race` (library module only) in the `test-race` job, plus the sec, cross, secrets, lint-actions, and reproducible jobs. The release workflow (`.github/workflows/release.yml`) runs `make test` and `make lint` before it creates the GitHub Release. Both set up Node.js 22 and install the website dependencies, so the website lint runs in CI. CI runs the full pipeline on pushes to `master` and a lighter set on pull requests: `examples-race`, `cross`, and `native-package` skip `pull_request` events, and a feature-branch push runs only when its message carries `[ci only=<job>]`, so a push no longer starts a second run beside the PR run. Run a heavy job from a branch with `[ci only=<job>]` or `workflow_dispatch`.
 
 ## Writing
 
