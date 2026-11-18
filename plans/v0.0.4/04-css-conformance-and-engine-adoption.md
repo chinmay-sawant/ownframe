@@ -126,6 +126,14 @@ root `go.sum`, `examples/go.mod`, and `examples/go.sum`. The engine's manifests
 are unchanged. No engine replace is committed or used for these final gates.
 The temporary local workspace was used during development only.
 
+Later update: Blinkless pull request 39 merged that branch into Blinkless `master`
+as `f68817e582e2`, together with the v0.1.2 work already on `master`. Both OwnFrame
+modules now require `v0.1.2-0.20261118113835-f68817e582e2`. The evidence below was
+captured at `27722d9cedd2` and is kept as recorded. At the new pin, `make build`,
+`make test`, `make lint`, and `make docs-check plans-check examples-check` exited 0.
+`make graphics-check` exited 0 at `2c9d915cc234`, which has the same engine code as
+the merge commit plus one plan document. It was not re-run at `f68817e582e2`.
+
 | Gate | Exit | Evidence |
 |---|---|---|
 | **Engine build, tests, lint, golden, claim scan** | 0 each | [Engine validation and owned source hashes](evidence/engine-validation.json), [build](evidence/engine-build.txt), [tests](evidence/engine-tests.txt), [lint](evidence/engine-lint.txt), [golden](evidence/engine-golden.txt), [claim scan](evidence/engine-claim-scan.txt). |
