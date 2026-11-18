@@ -1,9 +1,16 @@
 name: ci
 
 on:
+  # A feature-branch push used to start a second full run beside the pull
+  # request run for the same commit. Pushes now run the full pipeline only on
+  # master; a feature-branch push runs only when its message carries
+  # "[ci only=<job>]" (see below). Pull requests run the PR set, which leaves
+  # out the slow race shards, the 32-bit and ARM checks, and the Windows and
+  # macOS packaging; those run on master and on demand.
   push:
   pull_request:
   workflow_call:
+  workflow_dispatch:
 
 # GEN-9: least privilege; each job gets only what it needs (this file has
 # no deploy job, so read-only is enough). Never use pull_request_target
@@ -27,6 +34,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Heavy jobs (examples-race, cross, native-package) skip pull_request events.
+# Run them from a feature branch with a "[ci only=<job>]" push or the manual
+# workflow_dispatch trigger.
+#
 # One-gate validation: a push whose message contains "[ci only=<job>]"
 # runs just that job, where <job> is one of test, lint, graphics, module,
 # site, test-race, sec, cross, secrets, lint-actions, reproducible,
@@ -41,8 +52,10 @@ jobs:
   test:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=test]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=test]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -53,6 +66,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # GEN-1: fail the build when the module cache disagrees with go.sum.
       - run: go mod verify
       - run: cd examples && go mod verify
@@ -63,8 +79,10 @@ jobs:
   lint:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=lint]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=lint]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -75,6 +93,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -104,8 +125,10 @@ jobs:
   graphics:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=graphics]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=graphics]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -116,6 +139,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       - name: Install graphics test dependencies
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - run: make graphics-check
@@ -123,8 +149,10 @@ jobs:
   module:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=module]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=module]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -135,6 +163,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # module-check compiles a public-API consumer against the library,
       # which pulls in internal/window and its linux cgo X11 headers.
       - name: Install native compile dependencies
@@ -144,8 +175,10 @@ jobs:
   site:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=site]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=site]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -156,6 +189,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
@@ -194,7 +230,10 @@ jobs:
   # passes. Skipped on `[ci only=...]` runs, where the one job reports for
   # itself.
   gates:
-    if: always() && !contains(github.event.head_commit.message, '[ci only=')
+    if: >
+      always() &&
+      !contains(github.event.head_commit.message, '[ci only=') &&
+      (github.event_name != 'push' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     needs: [test, lint, graphics, module, site]
     steps:
@@ -211,8 +250,10 @@ jobs:
   test-race:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=test-race]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=test-race]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -221,6 +262,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # test-race and the soak check build internal/window, whose linux
       # cgo file needs X11 headers.
       - name: Install native compile dependencies
@@ -234,8 +278,10 @@ jobs:
   sec:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=sec]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=sec]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -244,6 +290,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # The Sec suite builds every package including internal/window,
       # whose linux cgo file needs X11 headers.
       - name: Install native compile dependencies
@@ -263,9 +312,13 @@ jobs:
   # instrumented run catch overflow and unsafe misuse amd64 hides.
   cross:
     if: >
-      github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=cross]')
+      github.event_name != 'pull_request' && (
+        github.event_name != 'push' ||
+        (contains(github.event.head_commit.message, '[ci only=') &&
+        contains(github.event.head_commit.message, '[ci only=cross]')) ||
+        (!contains(github.event.head_commit.message, '[ci only=') &&
+        github.ref == 'refs/heads/master')
+      )
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -277,6 +330,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # The checkptr run builds internal/window natively, whose linux
       # cgo file needs X11 headers.
       - name: Install native compile dependencies
@@ -290,8 +346,10 @@ jobs:
   secrets:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=secrets]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=secrets]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -307,8 +365,10 @@ jobs:
   lint-actions:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=lint-actions]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=lint-actions]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -317,6 +377,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # GEN-9: actionlint from the pinned Go module (checksum-db verified) plus
       # zizmor (pinned PyPI version) keep new workflow edits honest. The
       # release tarball download moved to the Go proxy because the GitHub
@@ -333,8 +396,10 @@ jobs:
   reproducible:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=reproducible]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=reproducible]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       # Pinned by full SHA (GEN-9); the trailing comment names the tag the
@@ -345,6 +410,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       - run: go mod verify
       - run: go mod download
       - run: cd examples && go mod download
@@ -352,9 +420,13 @@ jobs:
 
   examples-race:
     if: >
-      github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=examples-race]')
+      github.event_name != 'pull_request' && (
+        github.event_name != 'push' ||
+        (contains(github.event.head_commit.message, '[ci only=') &&
+        contains(github.event.head_commit.message, '[ci only=examples-race]')) ||
+        (!contains(github.event.head_commit.message, '[ci only=') &&
+        github.ref == 'refs/heads/master')
+      )
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -367,6 +439,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       - name: Install graphics test dependencies
         run: sudo apt-get update && sudo apt-get install -y libgl1-mesa-dri libx11-dev xauth xvfb
       - name: Run examples race shard
@@ -376,9 +451,13 @@ jobs:
 
   native-package:
     if: >
-      github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=native-package]')
+      github.event_name != 'pull_request' && (
+        github.event_name != 'push' ||
+        (contains(github.event.head_commit.message, '[ci only=') &&
+        contains(github.event.head_commit.message, '[ci only=native-package]')) ||
+        (!contains(github.event.head_commit.message, '[ci only=') &&
+        github.ref == 'refs/heads/master')
+      )
     strategy:
       fail-fast: false
       matrix:
@@ -422,8 +501,10 @@ jobs:
   performance:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=performance]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=performance]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -433,6 +514,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # perf-baseline.sh builds and runs benchmarks, which compile
       # internal/window and need its linux cgo X11 headers.
       - name: Install native compile dependencies
@@ -456,8 +540,10 @@ jobs:
   android-bind:
     if: >
       github.event_name != 'push' ||
-      !contains(github.event.head_commit.message, '[ci only=') ||
-      contains(github.event.head_commit.message, '[ci only=android-bind]')
+      (contains(github.event.head_commit.message, '[ci only=') &&
+      contains(github.event.head_commit.message, '[ci only=android-bind]')) ||
+      (!contains(github.event.head_commit.message, '[ci only=') &&
+      github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -466,6 +552,9 @@ jobs:
       - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version: "1.26.11"
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
       # ebitenmobile/gobind host tools build against the desktop ebiten
       # backend, which needs X11 headers on Linux.
       - name: Install native compile dependencies
