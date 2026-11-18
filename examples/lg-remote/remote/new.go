@@ -58,7 +58,7 @@ func New(opts ...Option) (*App, error) {
 	page, err := ownframe.New(ownframe.Config{DevTools: false,
 		Title:     "LG remote",
 		HTML:      html,
-		Theme:     darkTheme,
+		Theme:     app.themeCSS(),
 		Width:     DefaultWidth,
 		Height:    DefaultHeight,
 		MinWidth:  minWidth,

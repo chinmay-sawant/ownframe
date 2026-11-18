@@ -6,9 +6,9 @@ const darkTheme = `
 :root {
   --bg: #0b0b12;
   --bg-top: #1c1830;
-  --accent: #e6125d;
-  --accent-hi: #ff3d7f;
-  --glow: rgba(230,18,93,.45);
+  --accent: #2f6fe4;
+  --accent-hi: #5b93ff;
+  --glow: rgba(47,111,228,.45);
   --shade: rgba(0,0,0,.45);
   --edge: #3d3d4a;
   --key-hi: #30303a;
@@ -30,9 +30,9 @@ const lightTheme = `
 :root {
   --bg: #eeebe4;
   --bg-top: #ffffff;
-  --accent: #c8104f;
-  --accent-hi: #e8396f;
-  --glow: rgba(200,16,79,.3);
+  --accent: #1f56c4;
+  --accent-hi: #4a7fe0;
+  --glow: rgba(31,86,196,.3);
   --shade: rgba(60,50,30,.22);
   --edge: #cfc8ba;
   --key-hi: #f6f3ec;

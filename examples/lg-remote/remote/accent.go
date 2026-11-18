@@ -9,11 +9,11 @@ type accent struct {
 }
 
 var accents = []accent{
+	{"blue", "Blue", "#2f6fe4", "#5b93ff", "#1f56c4", "#4a7fe0"},
 	{"pink", "Pink", "#e6125d", "#ff3d7f", "#c8104f", "#e8396f"},
 	{"red", "Red", "#d8321f", "#ff5a45", "#b72614", "#e0503c"},
 	{"orange", "Orange", "#e8710a", "#ff9a3d", "#c25a00", "#e68025"},
 	{"green", "Green", "#1f9d55", "#3fcf7c", "#157a42", "#2fae66"},
-	{"blue", "Blue", "#2f6fe4", "#5b93ff", "#1f56c4", "#4a7fe0"},
 	{"purple", "Purple", "#8a4fe0", "#ab7bff", "#6d37bd", "#8b5fd6"},
 }
 
