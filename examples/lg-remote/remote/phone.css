@@ -4,9 +4,8 @@
   .wrap { max-width: 480px; margin: 0 auto; padding: 8px 8px 12px; }
   .top { display: flex; flex-wrap: wrap; align-items: flex-start; }
   .grow { flex: 1 1 12em; min-width: 0; }
-  h1 { font-size: 1.375em; font-weight: 700; margin: 0; letter-spacing: 1px; text-transform: uppercase; }
-  .status { border-left: 3px solid var(--accent, #e6125d); padding-left: 8px; }
-  .status { color: var(--muted, #9b9ba3); font-size: .875em; margin: 4px 0 0; height: 2.4em; max-height: 2.4em; overflow: hidden; }
+  h1 { font-size: 1.25em; font-weight: 700; margin: 0 0 2px 4px; letter-spacing: .5px; overflow-wrap: anywhere; }
+  .status { color: var(--muted, #9b9ba3); font-size: .875em; margin: 2px 0 0 4px; height: 2.4em; max-height: 2.4em; overflow: hidden; }
   .hint { color: var(--muted, #9b9ba3); font-size: .875em; margin: 8px 4px; }
   .r { display: flex; align-items: center; flex-wrap: wrap; }
   .connection #host { flex: 1 1 7em; width: 0; }
@@ -52,9 +51,9 @@
   .slim { flex: 0 1 6em; }
   .midrow { justify-content: center; flex-wrap: wrap; }
   .circ {
-    flex: none; width: 3em; height: 3em; border-radius: 32px;
+    flex: none; width: min(3.5em, 64px); height: min(3.5em, 64px); border-radius: 40px;
     padding: 0; margin: 3px; line-height: 3em;
-    background-repeat: no-repeat; background-position: center; background-size: 48px 48px;
+    background-repeat: no-repeat; background-position: center; background-size: 56px 56px;
   }
   #up { background-image: url("arrow-n"); }
   #down { background-image: url("arrow-s"); }
@@ -111,3 +110,35 @@
   #power.pwr-off.pressed { background-image: none; background-color: #1c4f2f; color: #fff; }
   #hotstar.pressed, #hotstar:focus-visible, #hotstar:active { background-color: #d7d7df; background-image: url("logo-hotstar"); }
   #hotstar.unavailable { background-color: var(--pad, #1a1a1f); }
+
+  #settings { flex: none; width: 56px; padding: 0; background-repeat: no-repeat; background-position: center; background-size: 32px 32px; background-image: url("icon-settings"); }
+  #settings, #settings.on, #settings.pressed { border-color: transparent; background-color: transparent; }
+  #settings.on { background-color: var(--key, #232328); }
+  .k.opt { min-height: 64px; font-size: 1.125em; }
+  .k.opt.on { background-color: var(--accent, #e6125d); border-color: var(--accent, #e6125d); color: #fff; }
+  .settings .field-label { font-size: 1em; font-weight: 700; margin: 16px 3px 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .settings .go { min-height: 56px; }
+  .comfort .k, .comfort .tab, .comfort .go { margin: 4px; min-height: 64px; flex: 1 1 4em; }
+  .comfort .circ { width: min(5.25em, 84px); height: min(5.25em, 84px); border-radius: 60px; margin: 5px; background-size: 72px 72px; }
+  .comfort #ok { width: min(6em, 96px); height: min(6em, 96px); border-radius: 72px; }
+  .comfort #ok { font-weight: 800; }
+  .comfort .stage .r { margin: 3px 0; }
+  .comfort #pad { height: 320px; }
+  .comfort .logo { min-height: 64px; }
+  .comfort .circ { flex: none; }
+  .comfort #settings { flex: none; }
+  .comfort .slim { flex: 0 1 6em; }
+  .comfort .connection .go { flex: 0 1 5em; }
+  #settings.gear-ink { background-image: url("icon-settings-dark"); }
+  .swatches .sw { flex: 1 1 28%; min-height: 52px; color: #fff; border-color: transparent; }
+  .sw.on { border-color: var(--ink, #fff); }
+  .sw-pink { background-color: #e6125d; } .sw-red { background-color: #d8321f; } .sw-orange { background-color: #e8710a; }
+  .sw-green { background-color: #1f9d55; } .sw-blue { background-color: #2f6fe4; } .sw-purple { background-color: #8a4fe0; }
+  .comfort .tab { font-size: .9em; letter-spacing: 0; padding: 6px 2px; }
+  #typing.typing { display: block; width: auto; height: 64px; margin: 6px 3px; padding: 0 12px; line-height: 64px; text-align: center; background: var(--pad, #1a1a1f); color: var(--ink, #f4f4f5); border: 1px solid var(--line, #34343c); border-radius: 18px; box-sizing: border-box; font-size: 1.125em; }
+  .keysbar .k, .keysbar .go { flex: 1 1 4em; min-height: 56px; }
+  .keysnav { margin: 4px 0; }
+  .keysnav .circ { width: min(3.5em, 60px); height: min(3.5em, 60px); border-radius: 40px; background-size: 40px 40px; }
+  .keysnav #ok { width: min(3.75em, 64px); height: min(3.75em, 64px); }
+  .comfort .keysnav .circ { width: min(4em, 68px); height: min(4em, 68px); border-radius: 44px; background-size: 48px 48px; }
+  .comfort .keysnav #ok { width: min(4.5em, 76px); height: min(4.5em, 76px); border-radius: 50px; }

@@ -7,14 +7,32 @@
 <style>{{template "phone-css" .}}</style>
 </head>
 <body>
-  <div class="wrap">
+  <div class="wrap{{if .Comfort}} comfort{{end}}">
     <div class="top">
       <div class="grow">
         <h1>{{.Title}}</h1>
         <p id="status" class="status" role="status">{{.Status}}</p>
       </div>
-      <button id="theme" type="button" class="k slim {{if eq .PressedID "theme"}}pressed{{end}}" aria-label="Switch theme">{{.ThemeLabel}}</button>
+      <button id="settings" type="button" class="k slim gear {{if not .Dark}}gear-ink{{end}} {{if eq .Panel "settings"}}on{{end}} {{if eq .PressedID "settings"}}pressed{{end}}" aria-label="Settings"></button>
     </div>
+    {{if eq .Panel "settings"}}
+    <div class="stage settings" role="tabpanel">
+      <p class="field-label">Theme</p>
+      <div class="r">
+        <button id="set-dark" type="button" class="k opt {{if .Dark}}on{{end}} {{if eq .PressedID "set-dark"}}pressed{{end}}" aria-label="Dark theme">Dark</button>
+        <button id="set-light" type="button" class="k opt {{if not .Dark}}on{{end}} {{if eq .PressedID "set-light"}}pressed{{end}}" aria-label="Light theme">Light</button>
+      </div>
+      <p class="field-label">Accent</p>
+      <div class="r swatches">{{range .Accents}}<button id="accent-{{.ID}}" type="button" class="k sw sw-{{.ID}} {{if .On}}on{{end}}" aria-label="{{.Label}} accent" aria-pressed="{{.On}}">{{.Label}}</button>{{end}}</div>
+      <p class="field-label">Layout</p>
+      <div class="r">
+        <button id="layout-classic" type="button" class="k opt {{if not .Comfort}}on{{end}} {{if eq .PressedID "layout-classic"}}pressed{{end}}" aria-label="Classic layout">Classic</button>
+        <button id="layout-comfort" type="button" class="k opt {{if .Comfort}}on{{end}} {{if eq .PressedID "layout-comfort"}}pressed{{end}}" aria-label="Comfort layout">Comfort</button>
+      </div>
+      <p class="hint">Classic keeps every key on one screen. Comfort uses larger keys with more room between them and adds a Media tab.</p>
+      <div class="r"><button id="settings-done" type="button" class="go {{if eq .PressedID "settings-done"}}pressed{{end}}" aria-label="Close settings">Done</button></div>
+    </div>
+    {{else}}
     <label class="field-label" for="host">TV IP address</label>
     <div class="r connection">
       <input id="host" type="text" aria-label="TV IP address" placeholder="192.168.1.20">
@@ -30,6 +48,8 @@
     <div class="r" role="tablist" aria-label="Remote panels">
       <button id="tab-remote" type="button" role="tab" aria-selected="{{eq .Panel "remote"}}" class="tab {{if eq .Panel "remote"}}on{{end}} {{if eq .PressedID "tab-remote"}}pressed{{end}}">Remote</button>
       <button id="tab-pad" type="button" role="tab" aria-selected="{{eq .Panel "pad"}}" class="tab {{if eq .Panel "pad"}}on{{end}} {{if eq .PressedID "tab-pad"}}pressed{{end}}">Pad</button>
+      {{if .Comfort}}<button id="tab-media" type="button" role="tab" aria-selected="{{eq .Panel "media"}}" class="tab {{if eq .Panel "media"}}on{{end}} {{if eq .PressedID "tab-media"}}pressed{{end}}">Media</button>{{end}}
+      <button id="tab-keys" type="button" role="tab" aria-selected="{{eq .Panel "keys"}}" class="tab {{if eq .Panel "keys"}}on{{end}} {{if eq .PressedID "tab-keys"}}pressed{{end}}">Keys</button>
       <button id="tab-nums" type="button" role="tab" aria-selected="{{eq .Panel "nums"}}" class="tab {{if eq .Panel "nums"}}on{{end}} {{if eq .PressedID "tab-nums"}}pressed{{end}}">123</button>
     </div>
     <div class="stage" role="tabpanel">
@@ -41,12 +61,26 @@
       <button id="pad" class="{{if eq .Mode "Bluetooth"}}unavailable{{end}} {{if eq .PressedID "pad"}}pressed{{end}}" {{if eq .Mode "Bluetooth"}}disabled{{end}} type="button" aria-label="TV pointer pad">Drag to move. Tap to click.</button>
       <div class="r">{{range .PadKeys}}{{template "phone-key" .}}{{end}}</div>
       <p class="hint">You can also move the pointer with the Remote arrow keys.</p>
+    {{else if eq .Panel "keys"}}
+      <label class="field-label" for="typing">Type to the TV</label>
+      <input id="typing" type="text" class="typing" aria-label="Type to the TV" placeholder="Search on the TV">
+      <div class="r keysbar">
+        <button id="kb-back" type="button" class="k {{if eq .PressedID "kb-back"}}pressed{{end}}" aria-label="Back on the TV">Back</button>
+        <button id="kb-delete" type="button" class="k {{if eq .PressedID "kb-delete"}}pressed{{end}}" aria-label="Delete">Delete</button>
+        <button id="kb-clear" type="button" class="k {{if eq .PressedID "kb-clear"}}pressed{{end}}" aria-label="Clear">Clear</button>
+        <button id="kb-enter" type="button" class="go {{if eq .PressedID "kb-enter"}}pressed{{end}}" aria-label="Enter">Enter</button>
+      </div>
+      <div class="keysnav">{{range .KeysNav}}{{template "phone-row" .}}{{end}}</div>
+      <p class="hint" id="kbnote">{{.KeyboardNote}}</p>
+    {{else if eq .Panel "media"}}
+      {{range .MediaRows}}{{template "phone-row" .}}{{end}}
     {{else if eq .Panel "nums"}}
       {{range .NumberRows}}{{template "phone-row" .}}{{end}}
     {{else}}
       {{range .RemoteRows}}{{template "phone-row" .}}{{end}}
     {{end}}
     </div>
+    {{end}}
   </div>
 </body>
 </html>

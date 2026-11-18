@@ -9,6 +9,8 @@ import (
 
 func TestPadBoxIsTheHitTarget(t *testing.T) {
 	app := newTest(t, WithPhone(true))
+	app.setLayout(layoutClassic)
+	app.setData()
 	clickID(t, app, "tab-pad")
 
 	var pad, note ownframe.Box

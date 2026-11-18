@@ -52,8 +52,29 @@ func (a *App) setData() {
 		key.Class += a.pressedClass(key.ID)
 		keys[key.ID] = key
 	}
-	a.view.RemoteRows = rows(remoteRows, keys)
-	a.view.NumberRows = rows(numberRows, keys)
+	a.view.Comfort = a.view.Layout == layoutComfort
+	a.view.KeysNav = rows(keysNavRows, keys)
+	for i := range a.view.KeysNav {
+		a.view.KeysNav[i].Class = "midrow"
+	}
+	a.view.Dark = a.dark
+	a.view.Accents = a.view.Accents[:0]
+	for _, pick := range accents {
+		colour := pick.Dark
+		if !a.dark {
+			colour = pick.Light
+		}
+		a.view.Accents = append(a.view.Accents, AccentOption{ID: pick.ID, Label: pick.Label, Colour: colour, On: pick.ID == a.view.Accent})
+	}
+	if a.view.Comfort {
+		a.view.RemoteRows = rows(comfortRemoteRows, keys)
+		a.view.NumberRows = rows(comfortNumberRows, keys)
+		a.view.MediaRows = rows(comfortMediaRows, keys)
+	} else {
+		a.view.RemoteRows = rows(remoteRows, keys)
+		a.view.NumberRows = rows(numberRows, keys)
+		a.view.MediaRows = nil
+	}
 	a.view.PadKeys = rows("wheelup clicker wheeldown", keys)[0].Keys
 	a.page.SetData(&a.view)
 }

@@ -32,6 +32,8 @@ func New(opts ...Option) (*App, error) {
 			Title:       "LG remote",
 			Status:      "Searching this Wi-Fi for the TV.",
 			Mode:        "Wi-Fi",
+			Layout:      layoutComfort,
+			Accent:      accents[0].ID,
 			ThemeLabel:  "Light",
 			Hint:        "The phone and the TV use the same Wi-Fi.",
 			PowerOn:     true,
@@ -53,7 +55,7 @@ func New(opts ...Option) (*App, error) {
 	if app.phone {
 		minWidth, minHeight = 240, 160
 	}
-	page, err := ownframe.New(ownframe.Config{DevTools: !app.phone,
+	page, err := ownframe.New(ownframe.Config{DevTools: false,
 		Title:     "LG remote",
 		HTML:      html,
 		Theme:     darkTheme,
