@@ -37,6 +37,11 @@ func (c *Client) Exec(spec string) (string, error) {
 			return "", err
 		}
 		return "Turning the TV off", nil
+	case "ime":
+		if name == "watch:" {
+			return "Watching the TV keyboard", c.watchKeyboard()
+		}
+		return c.ime(name)
 	case "pair":
 		if c.Model != "" {
 			return c.Model, nil

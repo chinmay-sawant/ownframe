@@ -19,6 +19,14 @@ func (a *App) onTick(ctx context.Context) error {
 		a.view.FontSize = size
 		changed = true
 	}
+	if a.view.Panel == "keys" {
+		if a.refreshKeys(ctx) {
+			changed = true
+		}
+		if a.syncTyping() {
+			changed = true
+		}
+	}
 	if a.pollWake() {
 		changed = true
 	}

@@ -20,6 +20,40 @@ func WithPhone(on bool) Option {
 	}
 }
 
+const (
+	layoutClassic = "classic"
+	layoutComfort = "comfort"
+)
+
+// openSettings shows the settings panel, or returns to the panel it replaced.
+func (a *App) openSettings() {
+	if a.view.Panel == "settings" {
+		a.closeSettings()
+		return
+	}
+	a.view.Prev = a.view.Panel
+	a.show("settings", "Theme and layout.")
+}
+
+func (a *App) closeSettings() {
+	panel := a.view.Prev
+	if panel == "" || (panel == "media" && a.view.Layout != layoutComfort) {
+		panel = "remote"
+	}
+	a.show(panel, "The phone and the TV use the same Wi-Fi.")
+}
+
+func (a *App) setLayout(layout string) {
+	if a.view.Layout == layout {
+		return
+	}
+	a.view.Layout = layout
+	a.view.Status = "Classic layout"
+	if layout == layoutComfort {
+		a.view.Status = "Comfort layout"
+	}
+}
+
 func (a *App) show(panel, hint string) {
 	a.view.Panel = panel
 	a.view.Hint = hint

@@ -21,6 +21,11 @@ func (c *Client) read(conn *ws.Conn) {
 			continue
 		}
 
+		if string(m.ID) == imeWatchID {
+			c.noteKeyboard(m)
+			continue
+		}
+
 		c.mu.Lock()
 		ch := c.wait[string(m.ID)]
 		c.mu.Unlock()

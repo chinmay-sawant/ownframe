@@ -23,6 +23,7 @@ func (s *Session) ensure(host string) error {
 	if s.c != nil {
 		s.c.Close()
 		s.c = nil
+		s.cli.Store(nil)
 	}
 
 	c, err := Open(host, s.store.Key)
@@ -31,6 +32,7 @@ func (s *Session) ensure(host string) error {
 	}
 
 	s.c = c
+	s.cli.Store(c)
 	s.store.Host = host
 	s.store.Key = c.Key.Reveal()
 	if c.Model != "" {

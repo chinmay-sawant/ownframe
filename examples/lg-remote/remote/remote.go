@@ -20,6 +20,9 @@ type App struct {
 	view           View
 	phone          bool
 	dark           bool
+	typed          string
+	focusNext      string
+	focusTries     int
 	host           string
 	link           linker
 	async          bool

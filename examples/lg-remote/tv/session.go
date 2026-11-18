@@ -15,6 +15,7 @@ type Session struct {
 	store Store
 	saved atomic.Pointer[Store]
 	steps chan struct{}
+	cli   atomic.Pointer[Client]
 }
 
 // NewSession loads a saved key from dir/lg-remote.json.

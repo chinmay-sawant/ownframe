@@ -24,12 +24,27 @@ type View struct {
 	Hint             string
 	ShowBluetooth    bool
 	Panel            string
+	Prev             string
+	KeyboardNote     string
+	KeysNav          []Row
+	Layout           string
+	Accent           string
+	Accents          []AccentOption
+	Comfort          bool
+	Dark             bool
 	PowerOn          bool
 	Face             []Key
 	More             []Key
 	RemoteRows       []Row
 	NumberRows       []Row
+	MediaRows        []Row
 	PadKeys          []Key
+}
+
+// AccentOption is one swatch in Settings.
+type AccentOption struct {
+	ID, Label, Colour string
+	On                bool
 }
 
 type Row struct {

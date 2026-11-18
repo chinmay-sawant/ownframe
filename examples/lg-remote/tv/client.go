@@ -25,6 +25,8 @@ type Client struct {
 	MACs        []string
 	pointerAt   time.Time
 	pointerDone <-chan struct{}
+	imeWatching bool
+	imeState    KeyboardState
 }
 
 func (c *Client) next() string {
