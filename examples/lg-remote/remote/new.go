@@ -33,7 +33,7 @@ func New(opts ...Option) (*App, error) {
 			Status:      "Searching this Wi-Fi for the TV.",
 			Mode:        "Wi-Fi",
 			Layout:      layoutComfort,
-			Accent:      accents[0].ID,
+			Accent:      accentList()[0].ID,
 			ThemeLabel:  "Light",
 			Hint:        "The phone and the TV use the same Wi-Fi.",
 			PowerOn:     true,

@@ -37,8 +37,8 @@ func (c *Client) watchKeyboard() error {
 
 func (c *Client) noteKeyboard(m Message) {
 	state := KeyboardClosed
-	switch {
-	case m.Type == "error":
+	switch m.Type {
+	case "error":
 		state = KeyboardUnreported
 	default:
 		p := mapOf(m.Payload)

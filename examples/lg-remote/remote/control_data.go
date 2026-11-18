@@ -59,7 +59,7 @@ func (a *App) setData() {
 	}
 	a.view.Dark = a.dark
 	a.view.Accents = a.view.Accents[:0]
-	for _, pick := range accents {
+	for _, pick := range accentList() {
 		colour := pick.Dark
 		if !a.dark {
 			colour = pick.Light

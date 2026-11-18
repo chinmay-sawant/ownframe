@@ -43,7 +43,10 @@ const gearSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">` +
 	`<circle cx="32" cy="32" r="19"/></g>` +
 	`<circle cx="32" cy="32" r="8" fill="#2a2a30"/></svg>`
 
-var gearDarkSVG = strings.NewReplacer("#f4f4f5", "#1a1a1a", "#2a2a30", "#e7e2d8").Replace(gearSVG)
+// gearDarkSVG is the gear drawn for the light theme.
+func gearDarkSVG() string {
+	return strings.NewReplacer("#f4f4f5", "#1a1a1a", "#2a2a30", "#e7e2d8").Replace(gearSVG)
+}
 
 func (a *App) installIcons() {
 	if a.page == nil {
@@ -54,7 +57,7 @@ func (a *App) installIcons() {
 	a.page.SetImage("logo-hotstar", hotstarIcon)
 	a.page.SetImage("logo-youtube", []byte(youTubeSVG))
 	a.page.SetImage("icon-settings", []byte(gearSVG))
-	a.page.SetImage("icon-settings-dark", []byte(gearDarkSVG))
+	a.page.SetImage("icon-settings-dark", []byte(gearDarkSVG()))
 	a.page.SetImage("arrow-n", []byte(arrowNSVG))
 	a.page.SetImage("arrow-s", []byte(arrowSSVG))
 	a.page.SetImage("arrow-w", []byte(arrowWSVG))
