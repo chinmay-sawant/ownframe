@@ -49,6 +49,7 @@ func clampZoom(z float64) float64 {
 // contentAt maps a window point into the page for the current scroll and
 // pinch zoom.
 func (s *shell) contentAt(x, y, frameW, frameH int) (float64, float64) {
+	s.syncStickyViewport()
 	if s.viewLocked() {
 		scale, ox, oy := s.fit()
 		return (float64(x) - ox) / scale, (float64(y) - oy) / scale

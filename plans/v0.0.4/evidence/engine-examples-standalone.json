@@ -1,0 +1,10 @@
+{
+	"Path": "github.com/chinmay-sawant/blinkless",
+	"Version": "v0.1.2-0.20261111104327-27722d9cedd2",
+	"Time": "2026-11-11T10:43:27Z",
+	"Dir": "/home/chinmay/go/pkg/mod/github.com/chinmay-sawant/blinkless@v0.1.2-0.20261111104327-27722d9cedd2",
+	"GoMod": "/home/chinmay/go/pkg/mod/cache/download/github.com/chinmay-sawant/blinkless/@v/v0.1.2-0.20261111104327-27722d9cedd2.mod",
+	"GoVersion": "1.26",
+	"Sum": "h1:uZDsfRAYrYAtU58WEiAjfJyRRgXDEskLpPvVIY1wOog=",
+	"GoModSum": "h1:npmYxYGNrdlXD8npr4FvehluDD/u8jFbSpgf3HHzYj0="
+}

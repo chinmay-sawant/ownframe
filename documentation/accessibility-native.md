@@ -47,9 +47,10 @@ actions on the page's owning loop and report errors from
 `page.Access().AccessibilityPerform` to the platform layer. The window still
 calls the inner screen.
 
-The Linux bridge does the read side and event stream. It does not dispatch
-native actions yet, so `DoAction` and `GrabFocus` return false, and no
-`EditableText` interface is served.
+The Linux bridge serves the read side and event stream. `GrabFocus` and supported
+focus and activation entries of `DoAction` dispatch to the owning window loop
+and report the page's result. No `EditableText` interface is served. See the
+[live action check](atspi.md#validate) for the supported operations and limits.
 
 The platform APIs need different host code:
 

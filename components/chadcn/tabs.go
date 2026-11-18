@@ -15,7 +15,7 @@ type TabItem struct {
 
 // TabsOptions describes a controlled tab set. Active is the selected item ID;
 // when it is empty the first item is active. OnSelect receives the clicked tab
-// ID, and keyboard traversal stays with the host.
+// ID. Interactions adds automatic left/right, Home, and End activation.
 //
 // Render builds one panel body on demand. When it is set, Tabs calls Render
 // only for the active item and ignores TabItem.Content, so a host that changes
@@ -23,15 +23,19 @@ type TabItem struct {
 // active panel empty. Callers that do not set Render keep the eager
 // TabItem.Content behavior.
 type TabsOptions struct {
-	OnSelect func(ctx context.Context, id string) error
-	Render   func(id string) *ui.Element
-	Active   string
-	Items    []TabItem
+	Interactions *Interactions
+	OnSelect     func(ctx context.Context, id string) error
+	Render       func(id string) *ui.Element
+	Active       string
+	Items        []TabItem
 }
 
 // Tabs builds a tab list and the active panel. Tab and panel part IDs derive
 // from each item ID, and the active tab is the only tab in the focus order.
 func Tabs(options TabsOptions) *ui.Element {
+	if options.Interactions != nil {
+		options.Interactions.addTabs(options)
+	}
 	active := activeTabIndex(options)
 	list := ui.Div().Class("of-tabs-list").Attr("role", "tablist")
 	tabs := ui.Div().Class("of-tabs").Children(list)

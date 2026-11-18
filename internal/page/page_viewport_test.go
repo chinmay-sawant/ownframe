@@ -31,25 +31,24 @@ func TestMediaWidthFollowsTheFrame(t *testing.T) {
 func TestMediaHeightFollowsTheFrame(t *testing.T) {
 	t.Parallel()
 
-	// parseSizeFeature accepts width and inline-size only, so a min-height
-	// query never matches and the box stays at the unqueried height. This
-	// fails when the engine starts parsing height features.
-	source := `<html><head><style>body{margin:0}` +
-		`#a{height:30px}` +
-		`@media (min-height: 500px){#a{height:90px}}` +
+	source := `<html><head><style>body{margin:0}#a{height:30px}` +
+		`@media (min-height:500px){#a{height:90px}}` +
+		`@media (max-height:400px){#a{height:60px}}` +
 		`</style></head><body><div id="a"></div></body></html>`
-
-	p := newViewportPage(t, source, 800, 600)
-	if got := viewportBox(t, p, "a").H; got != 30 {
-		t.Fatalf("tall height = %.0f, want 30; a min-height query matched", got)
+	p := newViewportPage(t, source, 800, 499)
+	for _, test := range []struct{ height, want int }{{499, 30}, {500, 90}, {501, 90}, {500, 90}, {499, 30}, {401, 30}, {400, 60}, {399, 60}, {400, 60}, {401, 30}, {600, 90}} {
+		before := p.Stats()
+		p.SetSize(800, test.height)
+		if err := p.Redraw(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		if got := viewportBox(t, p, "a").H; got != float64(test.want) {
+			t.Fatalf("viewport height %d: box %g want %d", test.height, got, test.want)
+		}
+		after := p.Stats()
+		if after.Parses != before.Parses || after.Cascades != before.Cascades {
+			t.Fatal("height resize reparsed or recascaded document")
+		}
 	}
 
-	p.SetSize(400, 400)
-	if err := p.Redraw(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-
-	if got := viewportBox(t, p, "a").H; got != 30 {
-		t.Fatalf("short height = %.0f, want 30; a min-height query matched", got)
-	}
 }

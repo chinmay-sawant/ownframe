@@ -116,11 +116,12 @@ func catalogEntries() []catalogEntry {
 		}},
 		{"Alert Dialog", func(a *builderApp) *ui.Element {
 			return chadcn.AlertDialog(chadcn.AlertDialogOptions{
-				ID:          "catalog-alert-dialog",
-				Title:       "Delete file?",
-				Description: "This cannot be undone.",
-				Trigger:     chadcn.Button("Open alert dialog", chadcn.ButtonOptions{}),
-				Open:        a.catalogAlertDialogOpen,
+				Interactions: a.interactions,
+				ID:           "catalog-alert-dialog",
+				Title:        "Delete file?",
+				Description:  "This cannot be undone.",
+				Trigger:      chadcn.Button("Open alert dialog", chadcn.ButtonOptions{}),
+				Open:         a.catalogAlertDialogOpen,
 				OnOpenChange: func(ctx context.Context, open bool) error {
 					a.catalogAlertDialogOpen = open
 					a.notice = fmt.Sprintf("Catalog alert dialog open=%v.", open)
@@ -361,10 +362,11 @@ func catalogEntries() []catalogEntry {
 		}},
 		{"Dialog", func(a *builderApp) *ui.Element {
 			return chadcn.Dialog(chadcn.DialogOptions{
-				ID:      "catalog-dialog",
-				Title:   "Dialog",
-				Trigger: chadcn.Button("Open dialog", chadcn.ButtonOptions{}),
-				Open:    a.catalogDialogOpen,
+				Interactions: a.interactions,
+				ID:           "catalog-dialog",
+				Title:        "Dialog",
+				Trigger:      chadcn.Button("Open dialog", chadcn.ButtonOptions{}),
+				Open:         a.catalogDialogOpen,
 				OnOpenChange: func(ctx context.Context, open bool) error {
 					a.catalogDialogOpen = open
 					a.notice = fmt.Sprintf("Catalog dialog open=%v.", open)
@@ -738,7 +740,8 @@ func catalogEntries() []catalogEntry {
 		}},
 		{"Tabs", func(a *builderApp) *ui.Element {
 			return chadcn.Tabs(chadcn.TabsOptions{
-				Active: a.catalogTabSel,
+				Interactions: a.interactions,
+				Active:       a.catalogTabSel,
 				Items: []chadcn.TabItem{
 					{ID: "account", Label: "Account", Content: ui.Text("Account settings")},
 					{ID: "password", Label: "Password", Content: ui.Text("Password settings")},

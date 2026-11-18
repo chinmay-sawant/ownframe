@@ -700,6 +700,9 @@ func ScanSingle(source string) (spans []Span, buttons bool) {
 			}
 			i = at
 		default:
+			if sp, ok := makeFocusTarget(low, raw, i, end); ok {
+				out = append(out, sp)
+			}
 			i = end
 		}
 	}

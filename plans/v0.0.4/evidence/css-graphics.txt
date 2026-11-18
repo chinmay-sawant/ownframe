@@ -1,0 +1,81 @@
+bash scripts/check-graphics.sh
+graphics-check: session=xvfb; DISPLAY=:0; LIBGL_ALWAYS_SOFTWARE=1
+=== RUN   TestPartialFrameLeavesTheScreen
+--- PASS: TestPartialFrameLeavesTheScreen (0.53s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.581s
+=== RUN   TestWindowRepaintPixels
+--- PASS: TestWindowRepaintPixels (0.49s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.528s
+=== RUN   TestWindowBackdropFilterReplaysFullFrame
+--- PASS: TestWindowBackdropFilterReplaysFullFrame (0.36s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.444s
+=== RUN   TestStickyViewportPixelsAndHits
+    sticky_pixels_test.go:177: sticky step 0: scroll=0 zoom=1 pixel=[255 0 0] click=
+    sticky_pixels_test.go:177: sticky step 1: scroll=100 zoom=1 pixel=[255 0 0] click=
+    sticky_pixels_test.go:177: sticky step 2: scroll=200 zoom=1 pixel=[255 0 0] click=cover
+    sticky_pixels_test.go:177: sticky step 3: scroll=360 zoom=1 pixel=[255 0 0] click=cover
+    sticky_pixels_test.go:177: sticky step 4: scroll=400 zoom=1 pixel=[0 0 255] click=cover
+    sticky_pixels_test.go:177: sticky step 5: scroll=200 zoom=1 pixel=[255 0 0] click=cover
+    sticky_pixels_test.go:177: sticky step 6: scroll=200 zoom=1 pixel=[255 255 0] click=cover
+    sticky_pixels_test.go:177: sticky step 7: scroll=300 zoom=1.5 pixel=[255 255 0] click=cover
+    sticky_pixels_test.go:177: sticky step 8: scroll=300 zoom=1.5 pixel=[255 255 0] click=head
+    sticky_pixels_test.go:177: sticky step 9: scroll=0 zoom=1 pixel=[255 255 0] click=head
+--- PASS: TestStickyViewportPixelsAndHits (0.45s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.475s
+=== RUN   TestViewportScrollPixels
+--- PASS: TestViewportScrollPixels (0.36s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.390s
+=== RUN   TestViewportAnimatedReturnPixels
+--- PASS: TestViewportAnimatedReturnPixels (0.34s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.366s
+=== RUN   TestViewportDirectAnimationReturnPixels
+--- PASS: TestViewportDirectAnimationReturnPixels (0.34s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.362s
+=== RUN   TestWindowStaticEvents
+--- PASS: TestWindowStaticEvents (3.16s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	3.187s
+=== RUN   TestWindowIdleDeadline
+--- PASS: TestWindowIdleDeadline (1.03s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	1.053s
+=== RUN   TestWindowAccessibilityActionWake
+--- PASS: TestWindowAccessibilityActionWake (0.66s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.701s
+=== RUN   TestWindowDevToolsIdle
+--- PASS: TestWindowDevToolsIdle (4.19s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	4.223s
+=== RUN   TestManagedInteractionsNative
+    interactions_pixels_test.go:153: native step 0: tab=a slider=25 modal=false focus=
+    interactions_pixels_test.go:153: native step 1: tab=b slider=25 modal=false focus=b-tab
+    interactions_pixels_test.go:153: native step 2: tab=b slider=75 modal=false focus=volume
+    interactions_pixels_test.go:153: native step 3: tab=b slider=75 modal=true focus=modal-panel-close
+    interactions_pixels_test.go:153: native step 4: tab=b slider=75 modal=false focus=open
+--- PASS: TestManagedInteractionsNative (0.48s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/components/chadcn	0.505s
+=== RUN   TestSidebarHoverPixels
+--- PASS: TestSidebarHoverPixels (2.92s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/loglens	2.959s
+=== RUN   TestDrawPaintsVerticalThumb
+--- PASS: TestDrawPaintsVerticalThumb (0.29s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/window	0.311s
+=== RUN   TestGPUVisibleParity
+--- PASS: TestGPUVisibleParity (2.04s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/internal/replay	2.073s
+=== RUN   TestScrollbarThumbStaysOnePiece
+--- PASS: TestScrollbarThumbStaysOnePiece (1.25s)
+PASS
+ok  	github.com/chinmay-sawant/ownframe/examples/builder/jmap-mail	1.277s

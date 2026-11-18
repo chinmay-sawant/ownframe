@@ -1,0 +1,32 @@
+go test -p 2 -parallel 2  ./...
+?   	github.com/chinmay-sawant/blinkless	[no test files]
+ok  	github.com/chinmay-sawant/blinkless/bindings/wasm	0.067s
+ok  	github.com/chinmay-sawant/blinkless/css	0.026s
+ok  	github.com/chinmay-sawant/blinkless/html	(cached)
+ok  	github.com/chinmay-sawant/blinkless/internal/convert/prepare	0.114s
+ok  	github.com/chinmay-sawant/blinkless/internal/convert/render	(cached)
+ok  	github.com/chinmay-sawant/blinkless/internal/css	0.086s
+?   	github.com/chinmay-sawant/blinkless/internal/errs	[no test files]
+ok  	github.com/chinmay-sawant/blinkless/internal/fonts	(cached)
+?   	github.com/chinmay-sawant/blinkless/internal/fonts/assets	[no test files]
+ok  	github.com/chinmay-sawant/blinkless/internal/html	1.757s
+ok  	github.com/chinmay-sawant/blinkless/internal/layout	2.634s
+ok  	github.com/chinmay-sawant/blinkless/internal/line	(cached)
+ok  	github.com/chinmay-sawant/blinkless/internal/load	(cached)
+?   	github.com/chinmay-sawant/blinkless/internal/profiling	[no test files]
+ok  	github.com/chinmay-sawant/blinkless/internal/pubstate	0.004s
+ok  	github.com/chinmay-sawant/blinkless/internal/settings	(cached)
+ok  	github.com/chinmay-sawant/blinkless/internal/svg	(cached)
+ok  	github.com/chinmay-sawant/blinkless/layout	0.296s
+ok  	github.com/chinmay-sawant/blinkless/markup	(cached)
+?   	github.com/chinmay-sawant/blinkless/scripts/export-frontend-data	[no test files]
+?   	github.com/chinmay-sawant/blinkless/scripts/gen-style-intern	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/chrome-cases	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/chrome-cases/dsf-rerun	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/css-browser-demo	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/css-review	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/css-review/wrap/dump	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/probe	[no test files]
+?   	github.com/chinmay-sawant/blinkless/temps/viewer	[no test files]
+ok  	github.com/chinmay-sawant/blinkless/test/chrome	(cached)
+ok  	github.com/chinmay-sawant/blinkless/test/chrome/harness	(cached)

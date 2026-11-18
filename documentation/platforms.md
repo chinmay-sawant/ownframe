@@ -4,7 +4,8 @@
 `BindMobile`. That is a native window for an operator you control: one
 compiled Go process and an Ebiten window or Activity, no Chromium, no
 WebView. On Linux, Orca and Accerciser can read the page tree over AT-SPI;
-AT-initiated actions are not wired. NVDA, VoiceOver, and TalkBack cannot
+AT-SPI focus and activation reach the page through the window loop. Native text
+editing through AT-SPI is unsupported. NVDA, VoiceOver, and TalkBack cannot
 inspect it. Native does not mean OS widgets or a complete screen-reader
 adapter.
 

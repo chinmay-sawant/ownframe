@@ -41,16 +41,51 @@ The kinds are `ownframe.DisplayOpFillRect`, `OpStrokeRect`, `OpLine`, `ownframe.
 
 `DisplayOp` is the engine's own operation type under a local name, so callers of `render` do not import the engine to name it. Read a rare payload through its accessor methods, `LinkURI`, `ImageBytes`, `ImageAlt`, `Transform`, `BlendModeName`, `Opacity`, `Outline`, `FontFeatures`, `TextLanguage`, `TextAutospace`, `TextTransformValue`, and `NoFakeBoldValue`. The plain fields such as `Kind`, `X`, `Y`, `W`, `H`, `Text`, and `Font` are always safe. A blend group is read through `Group`, `GroupBoundary`, `IsGroupBegin`, and `IsGroupEnd`, which are nil-safe too.
 
-## Position limits
+## Positioning and limits
 
-These are blinkless holes, not ownframe bugs. 1.0 does not implement CSS sticky or flex-absolute. Pin chrome with `SetScrollWindow` and `SetViewportPinZ`. See the CSS matrix in [features.md](features.md).
+An absolutely positioned flex child leaves normal flow and honours explicit
+`top` and `left` offsets. `TestFlexChildAbsoluteOverlays` in
+`internal/page/page_flex_abs_hole_test.go` checks a plain flex container and a
+positioned block container. It places the child at x=40, y=10 and verifies that
+the sibling starts at x=0. That regression covers explicit offsets and removal
+from flow.
 
-- `position: absolute` on a flex child stays in flow, so `top` and `left` do nothing. Put a block container around the screen. Telegram's `app-thread` class sets `display: block` on the app div.
-- `position: sticky` stays in flow and has no `Fixed` ops. The window translates it with the page. `position: fixed` ops stay untranslated. `Page.Scroll().SetViewportPinZ(z)` draws operations at z-index `z` or above at the offset the display was built with. `Page.Scroll().SetWindowing(true)` plus `Page.SetScrollWindow` counter-moves each pinned element's `top` by the scroll offset, so the window's translation lands it back at the viewport edge. Telegram uses both.
+The remaining placement limits are below. Pin chrome with `SetScrollWindow`
+and `SetViewportPinZ` when it must stay visible during window scrolling. See
+the CSS matrix in [features.md](features.md).
+
+- Pinned application chrome remains a separate contract. `Page.Scroll().SetViewportPinZ(z)` draws operations at z-index `z` or above at the display's committed offset. `Page.SetScrollWindow` updates the application's pinned positions. Telegram continues to use both.
 - An absolutely positioned element resolves against its containing block's content origin. Padding on the container shifts it. Subtract that padding in the computed `top`.
 - A single-line text box narrower than its content wraps the text anyway and drops spaces at the span boundaries, which reads as overlapped text. Size the box to its content or lay out only the visible runes: the code viewer slices unwrapped rows to their viewport window in Go and paints the slice at the sub-column remainder.
 
 `examples/telegram` is the worked example. Windowing is `Page.Scroll().SetWindowing(true)`, and the pin is `Page.Scroll().SetViewportPinZ(2)`. `pin.go` computes the bar positions from the offset and the insets, and `components/thread.css` carries the `app-thread` class.
+
+## Viewport sticky and height queries
+
+Ordinary horizontal-writing sticky boxes can follow the native window viewport.
+Blinkless derives paint operations and hit boxes from the original layout for
+the current scroll position. The box stays in flow until its inset reaches the
+viewport edge, stops at its containing-block boundary, and returns on reverse
+scroll. The host supplies logical coordinates after dividing out zoom. Pointer
+routing follows paint order, so a sticky header can cover a later in-flow element
+while a higher-z overlay still wins.
+
+Sticky pages replay their current viewport rather than reusing cached page tiles.
+This clears the previous position after scrolling or an edit. Ordinary pages keep
+their existing partial repaint path. This is a correctness path, with no new frame
+rate claim. Nested overflow scrolling, nested sticky elements, transformed/fixed
+ancestors, vertical writing, 3D content, and percentage insets remain outside the
+verified contract. Browser previews do not establish other native host results.
+
+The Linux Xvfb fixture covers activation, release, return, clipping, overlap,
+changes while scrolled, zoom, and pointer hits. Eight unzoomed native frames match
+Chrome pixel for pixel. See the [v0.0.4 evidence](../plans/v0.0.4/04-css-conformance-and-engine-adoption.md).
+
+Height and block-size media features use the actual viewport height. Exact,
+min/max, and single comparisons accept px, pt, em, and rem. Resize gates the cached
+stylesheets again without reparsing solely for size. Unsupported units,
+percentages, and chained ranges stay unmatched. Container queries retain their
+existing width/inline-size scope.
 
 ## PNG and the web page
 

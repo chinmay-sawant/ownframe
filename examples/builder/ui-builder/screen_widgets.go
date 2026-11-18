@@ -49,8 +49,6 @@ type widgetsState struct {
 	alertOff     bool   // dismissible demo banner hidden
 	avatar       string // selected avatar initials
 	tableRow     int    // selected data-table row 0..2
-	// gesture is the in-progress catalog or widgets slider drag.
-	gesture sliderGesture
 }
 
 func defaultWidgetsState() widgetsState {

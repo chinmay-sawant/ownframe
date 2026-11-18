@@ -26,21 +26,22 @@ This matrix is the 1.0 language. Most holes are blinkless. The motion rows below
 | `transition` on colour, `opacity`, 2D `transform`, and `width`, `height`, `top`, `left` | automatic from the next style change; the window tick samples it ([css-motion.md](css-motion.md)) |
 | `transition-behavior: allow-discrete` on `visibility`, `content-visibility`, `z-index`, and `position` | automatic; `display`, `order`, and the grid-line integers stay blocked ([css-motion.md](css-motion.md)) |
 | CSS motion counters | `Page.Probe().Motion()`: animation, transition, timeline, layout, SVG paint, re-stamp, rebind, error, and gap counters ([css-motion.md](css-motion.md)) |
-| `@media` width and orientation | yes ([theming.md](theming.md)) |
+| `@media` width, height, and orientation | height/block-size exact, min/max, and single comparisons use the actual viewport; px, pt, em, rem ([screen.md](screen.md#viewport-sticky-and-height-queries)) |
 | `overflow` clipping | yes; clipped ops become `OpNoop` ([screen.md](screen.md)) |
 | Overflowing page | the window scrolls content larger than the frame ([scrolling.md](scrolling.md)) |
 | `z-index` | yes; `Display.Order` ([screen.md](screen.md)) |
 | `position: relative` | yes; containing block ([screen.md](screen.md)) |
 | `position: absolute` | yes on a block container |
+| `position: absolute` on a flex child | out of flow and honours explicit `top` and `left` offsets in `TestFlexChildAbsoluteOverlays` ([tested scope](screen.md#positioning-and-limits)) |
+| `position: sticky` under viewport scroll | engine-derived paint and hit placement, containing-block release and return; tested on Linux native Xvfb ([scope](screen.md#viewport-sticky-and-height-queries)) |
+| `position: fixed` under window scroll | engine Fixed operations ignore page translation |
 | Letter-spacing, `text-transform` | replay path ([screen.md](screen.md)) |
 | `<img>`, `background-image` | PNG, JPEG, SVG via `SetImage` ([screen.md](screen.md)) |
 | `input`, `textarea`, `select`, `button` | yes ([forms.md](forms.md)) |
 
 | Absent or app workaround | 1.0 |
 |---|---|
-| `position: absolute` on a flex child | blinkless hole: the child stays in flow, so `top` and `left` do nothing. Use a block container (Telegram `app-thread`). `internal/page` tests record this. ([screen.md](screen.md)) |
-| `position: sticky` under window scroll | blinkless hole: the header stays in flow and has no `Fixed` ops, so the window translates it with the page. Not CSS sticky. `internal/page` tests record this. ([screen.md](screen.md)) |
-| `position: fixed` under window scroll | engine `Fixed` ops stay untranslated; sticky does not get that mark. |
+| Nested sticky scroll spaces | nested overflow scrolling, nested sticky elements, transformed/fixed ancestors, vertical writing, 3D content, and percentage insets are outside the verified viewport contract ([screen.md](screen.md#viewport-sticky-and-height-queries)) |
 | Pinned chrome | `Page.Scroll().SetViewportPinZ` and `Page.SetScrollWindow` (Telegram header and composer). Do not fake sticky in ownframe. ([screen.md](screen.md), [tricks-tips.md](tricks-tips.md)) |
 | `@media print` | never matches ([theming.md](theming.md)) |
 | `@media (height)` | never matches. `TestMediaHeightFollowsTheFrame` asserts the hole. |
@@ -233,8 +234,9 @@ not supported. Example programs call both on the `Page.Access()` door. The
 window still calls the inner screen. The snapshot
 is a host contract for the operator who runs the process. 1.0 does not ship a
 screen-reader product. Linux serves the tree over the AT-SPI accessibility bus,
-so Accerciser and Orca can inspect the window. AT-initiated actions are not
-wired to the page yet. Windows UI Automation, macOS VoiceOver, and Android
+so Accerciser and Orca can inspect the window. AT-SPI focus and activation run
+on the window loop; AT-initiated text editing is unsupported. Windows UI
+Automation, macOS VoiceOver, and Android
 TalkBack are not shipped. CSS-only hidden content remains unresolved.
 
 Detail is in [accessibility.md](accessibility.md),

@@ -24,7 +24,7 @@ const (
 // builderApp is the single tabbed ui-builder host. Each tab lives in its
 // own screen_*.go file and owns a small state struct below.
 type builderApp struct {
-	modalFocus                 chadcn.DialogFocus
+	interactions               *chadcn.Interactions
 	view                       *ui.View
 	themeDirty                 bool
 	page                       *ownframe.Page
@@ -137,7 +137,8 @@ func newBuilderApp() (*builderApp, error) {
 	if err != nil {
 		return nil, err
 	}
-	view, err := ui.Mount(ownframe.Config{
+	a.interactions = chadcn.NewInteractions()
+	view, err := a.interactions.Mount(context.Background(), ownframe.Config{
 		Theme:       sheet,
 		Title:       "OwnFrame Components",
 		Width:       demoWidth,
@@ -147,7 +148,7 @@ func newBuilderApp() (*builderApp, error) {
 		DevTools:    false,
 		RetainState: true,
 		Scrollbar:   ownframe.ScrollbarHidden,
-	}, a.screen())
+	}, a.screen)
 	if err != nil {
 		return nil, fmt.Errorf("new builder app: %w", err)
 	}
@@ -155,7 +156,7 @@ func newBuilderApp() (*builderApp, error) {
 	p := view.Page
 	a.page = p
 	p.Scroll().SetAllowScroll(false)
-	view.Handle(ownframe.Handlers{
+	a.interactions.Handle(ownframe.Handlers{
 		Click:     a.handleClick,
 		Change:    a.handleChange,
 		KeyDown:   a.handleKey,
@@ -325,14 +326,6 @@ func (a *builderApp) selectTab(name string) {
 }
 
 func (a *builderApp) refresh(ctx context.Context) error {
-	switch {
-	case a.tab == "compare" && a.compare.Preview:
-		a.modalFocus.Activate(a.page, "compare-preview-x", "compare-preview-open")
-	case a.tab == "dialog" && a.dialog.open:
-		a.modalFocus.Activate(a.page, "dialog-x", "dialog-confirm", "dialog-cancel")
-	default:
-		a.modalFocus.Deactivate(a.page)
-	}
 
 	start := time.Now()
 	if a.themeDirty {
@@ -345,7 +338,7 @@ func (a *builderApp) refresh(ctx context.Context) error {
 		}
 		a.themeDirty = false
 	}
-	if err := a.view.Update(ctx, a.screen()); err != nil {
+	if err := a.interactions.Update(ctx, a.screen); err != nil {
 		return fmt.Errorf("update builder gallery: %w", err)
 	}
 	a.centerMeasurePending = true
@@ -362,14 +355,6 @@ const builderMotionCSS = `
 func (a *builderApp) handleKey(ctx context.Context, key string) error {
 	if a.scrollCenterKey(key) {
 		return nil
-	}
-	if key == "escape" && a.compare.Preview {
-		a.handleCompare("compare:preview-close")
-		return a.refresh(ctx)
-	}
-	if key == "escape" && a.dialog.open {
-		a.handleDialog("dialog:close")
-		return a.refresh(ctx)
 	}
 	if key == "escape" && a.widgets.searchOpen {
 		a.widgets.searchOpen = false

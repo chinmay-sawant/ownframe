@@ -1,6 +1,7 @@
 package chadcn
 
 import (
+	"context"
 	"math"
 	"strconv"
 
@@ -9,6 +10,8 @@ import (
 
 // SliderOptions describes a controlled horizontal slider.
 type SliderOptions struct {
+	Interactions  *Interactions
+	OnValueChange func(context.Context, float64) error
 	// ID is the stable host ID. The filled range derives its own ID from
 	// it, so a value rebuild patches instead of reparsing.
 	ID string
@@ -34,9 +37,13 @@ const (
 
 // Slider renders a range track, the filled portion, and a thumb. The thumb
 // follows Value. A click on the element carries no point, so there is no
-// OnChange callback; the host maps the pointer with SliderValueAt and rebuilds.
+// pointer callback without Interactions. With Interactions, OnValueChange
+// receives pointer and keyboard changes; the host updates Value and rebuilds.
 // A disabled slider does not move.
 func Slider(options SliderOptions) *ui.Element {
+	if options.Interactions != nil {
+		options.Interactions.addSlider(options)
+	}
 	minimum, maximum, step := sliderRange(options)
 	value := clampSliderValue(options.Value, minimum, maximum, step)
 	fill := (value - minimum) / (maximum - minimum) * sliderPercentMax
@@ -44,8 +51,12 @@ func Slider(options SliderOptions) *ui.Element {
 	if fillID := partID(options.ID, "-range"); fillID != "" {
 		fillBar.ID(fillID)
 	}
+	rail := ui.Div().Class("of-slider-rail")
+	if options.Interactions != nil && options.ID != "" {
+		rail.ID(options.ID + "-rail")
+	}
 	track := ui.Div().Class("of-slider-track").Children(
-		ui.Div().Class("of-slider-rail").Children(
+		rail.Children(
 			fillBar,
 			ui.Div().Class("of-slider-thumb").Attr("aria-hidden", "true"),
 		),

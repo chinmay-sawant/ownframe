@@ -37,6 +37,10 @@ target.
 - Events. Focus and state changes emit
   `org.a11y.atspi.Event.Object.StateChanged`; added and removed nodes emit
   `ChildrenChanged`. Both use the standard `siiva{sv}` signature.
+- Actions. `Component.GrabFocus` and the focus and click entries of
+  `Action.DoAction` run through the existing page action API on the window loop.
+  A successful reply means the page action completed. Disabled, removed, stale,
+  and unsupported targets are refused. Requests wake an idle window.
 - Redaction. Password values are empty. Password nodes stay editable so a
   screen reader reports a password field, but they do not advertise SetText
   and their value is never published.
@@ -49,10 +53,10 @@ target.
 
 ## Limits
 
-The bridge is a read-mostly surface:
+The bridge supports tree queries, focus, and activation, with these limits:
 
-- `DoAction` and `GrabFocus` return false. AT-initiated edits do not reach the
-  page yet.
+- The set-text action is not dispatched. AT-initiated text editing remains
+  unsupported.
 - There is no `EditableText`, `Selection`, `Document`, `Table`, or `Hyperlink`
   interface, so `SetTextContents` is not exposed. Text caret offset and
   selection are reported as zero and empty.
@@ -65,6 +69,12 @@ The bridge is a read-mostly surface:
 - Scrolling changes the page snapshot bounds; the bridge does not maintain a
   separate scroll offset beyond what the snapshot reports.
 
+The action queue holds at most 16 requests and executes at most four per window
+update. The bus reader remains free while reply workers await the page. A request
+has a two-second deadline. Queue saturation, cancellation, and shutdown cannot
+report success. Cancellation before execution prevents the action. Cancellation
+after execution starts is cooperative and does not roll back an application edit.
+
 ## Validate
 
 Unit and mock-bus checks:
@@ -72,6 +82,19 @@ Unit and mock-bus checks:
 ```sh
 go test -p 1 ./internal/atspi ./internal/page ./internal/window
 ```
+
+Run the live action check on a Linux desktop with `gdbus`, `DISPLAY`, and a
+working accessibility bus:
+
+```sh
+python3 scripts/check-atspi-actions.py --out temp/atspi-actions.json
+```
+
+The script opens the accessibility example, focuses its field through AT-SPI,
+checks the focused state, activates a button, and observes the updated counter.
+It also checks disabled focus and password redaction, then closes the example.
+The JSON contains results and source provenance without accessible text or field
+values. This checks live bus actions; it does not establish Orca speech behavior.
 
 Live tree check with the Atspi 2.0 client library (the same library Accerciser
 and Orca use):

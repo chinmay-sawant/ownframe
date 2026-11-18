@@ -56,12 +56,17 @@ run_test ./internal/window TestPartialFrameLeavesTheScreen
 run_test ./internal/window TestWindowRepaintPixels
 run_test ./internal/window TestWindowSharedHeaderPixels
 run_test ./internal/window TestWindowBackdropFilterReplaysFullFrame
+run_test ./internal/window TestStickyViewportPixelsAndHits
 run_test ./internal/window TestViewportScrollPixels
 run_test ./internal/window TestViewportAnimatedReturnPixels
 run_test ./internal/window TestViewportDirectAnimationReturnPixels
 run_test ./internal/window TestWindowStaticEvents
 run_test ./internal/window TestWindowIdleDeadline
+if [[ $(go env GOOS) == linux ]]; then
+    run_test ./internal/window TestWindowAccessibilityActionWake
+fi
 run_test ./internal/window TestWindowDevToolsIdle
+run_test ./components/chadcn TestManagedInteractionsNative
 run_test ./examples/builder/loglens TestSidebarHoverPixels
 run_test ./internal/window TestDrawPaintsVerticalThumb
 run_test ./internal/replay TestGPUVisibleParity

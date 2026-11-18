@@ -7,7 +7,7 @@ import (
 
 func TestLiveBusDisabledBus(t *testing.T) {
 	t.Setenv("AT_SPI_BUS_ADDRESS", "disabled")
-	bus := NewLiveBus()
+	bus := NewLiveBus(nil)
 	if bus.Live() {
 		t.Fatal("live")
 	}

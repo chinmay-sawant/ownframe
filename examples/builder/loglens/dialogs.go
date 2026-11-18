@@ -44,6 +44,7 @@ func (a *app) dialogCreateAlert() *ui.Element {
 		return nil
 	}
 	return chadcn.Dialog(chadcn.DialogOptions{
+		Interactions: a.interactions,
 		ID:           "create-alert-dialog",
 		Open:         a.dialogOpen,
 		Title:        "Create alert rule",
@@ -100,14 +101,18 @@ func (a *app) dialogDeliveryRow() *ui.Element {
 	)
 }
 
-// dialogThresholdField pairs the slider with two nudge buttons, because the
-// slider itself only reports its value.
+// dialogThresholdField pairs direct slider input with threshold preset buttons.
 func (a *app) dialogThresholdField() *ui.Element {
 	return chadcn.Field(chadcn.FieldOptions{
 		Label:       "Error-rate threshold",
 		Description: fmt.Sprintf("Five minutes above %d per 1,000 requests.", a.threshold),
 		Control: ui.Div().Class("app-col").Children(
 			chadcn.Slider(chadcn.SliderOptions{
+				Interactions: a.interactions,
+				OnValueChange: func(ctx context.Context, value float64) error {
+					a.threshold = int(value)
+					return a.patchSlider(ctx, "alert-threshold-slider", value, dialogThresholdMin, dialogThresholdMax, fmt.Sprintf("%d per 1k", a.threshold))
+				},
 				ID:    "alert-threshold-slider",
 				Label: "Error-rate threshold",
 				Value: float64(a.threshold),
@@ -236,6 +241,7 @@ func (a *app) dialogDeleteView() *ui.Element {
 		return nil
 	}
 	return chadcn.AlertDialog(chadcn.AlertDialogOptions{
+		Interactions: a.interactions,
 		ID:           "delete-view-dialog",
 		Open:         a.alertOpen,
 		Title:        "Delete saved view?",
@@ -310,11 +316,12 @@ func (a *app) dialogOnCall() *ui.Element {
 	}
 
 	return chadcn.Dialog(chadcn.DialogOptions{
-		ID:          "oncall-swap-dialog",
-		Open:        a.onCallDialogOpen,
-		Title:       "Swap On-Call Coverage",
-		Description: "Assign primary responder for " + currentDay.Format("Monday, Jan 2, 2006") + ".",
-		Width:       ui.Px(540),
+		Interactions: a.interactions,
+		ID:           "oncall-swap-dialog",
+		Open:         a.onCallDialogOpen,
+		Title:        "Swap On-Call Coverage",
+		Description:  "Assign primary responder for " + currentDay.Format("Monday, Jan 2, 2006") + ".",
+		Width:        ui.Px(540),
 		OnOpenChange: func(ctx context.Context, open bool) error {
 			a.onCallDialogOpen = open
 			return a.refresh(ctx)
