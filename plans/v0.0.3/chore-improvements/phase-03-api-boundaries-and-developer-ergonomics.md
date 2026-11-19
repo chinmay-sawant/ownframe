@@ -1,0 +1,89 @@
+# v0.0.3 - Phase 03: Public API Boundaries and Developer Ergonomics
+
+> **Parent:** [README.md](README.md)
+> **Status:** Open (baseline measured at `da4f12cc`)
+> **Estimated effort:** 4–6 days
+
+---
+
+## Overview
+
+Package `ownframe` currently spans **63 root `.go` files** and **149 exported methods** across `Page` and seven "door" wrapper types (`Form`, `Edit`, `Scroll`, `Window`, `Access`, `Probe`, `Testing`). While the `ownframe.Page` wrapper protects `*page.Page` from direct exposure, three ergonomic and architectural defects remain:
+
+1. **Process-global window state leaks through an instance method:** In `page_window_door.go`, `w.CursorPosition()`, `w.Minimize()`, `w.ToggleMaximize()`, `w.Maximized()`, and `w.Close()` ignore `w.page` completely and call singleton `window.*` functions—blurring page-scoped state and process-global Ebiten host state.
+2. **Micro-file sprawl at module root:** Dozens of 5–25 line files (`page_click_api.go`, `page_take_scroll.go`, `page_wrap.go`, `display_patch.go`, `drop.go`, `hover.go`, `page_draw.go`, `page_frame_api.go`, `page_geom_api.go`, `page_scroll_api.go`, `page_size_api.go`) force readers to jump across 63 root files just to understand the public surface.
+3. **Four-path update mental model without high-level guardrails:** Real apps (`examples/code-view`, `examples/telegram`) have to manually juggle `SetData`, `PatchElement`/`PatchElements`, `SetScrollWindow` + counter-positioned pinned headers, and retained-op motion (`internal/frame` vs CSS motion) with silent footguns when mixed.
+
+## Executive Summary
+
+- Decouple process-global desktop window controls from `page.Window()` (or bind them cleanly to an active host handle) and document multi-page/headless behavior.
+- Consolidate the 63 root `.go` files by domain and audit all 149 exported methods to remove/merge redundant surface while keeping gate tests green.
+- Lift repeatable virtualization (`SetScrollWindow` + spacer/pinned-bar pattern) and update-mode guidance into reusable public helpers, and guard against dual-driving an element from CSS motion and manual `SetTick`.
+- Drain the 16 remaining entries in `scripts/example-internal-allowlist.txt`.
+
+## Current Source Baseline (`da4f12cc`)
+
+| Surface | Baseline Measurement | Key Files / Evidence |
+|---|---|---|
+| Root Go files | **63 `.go` files** (non-test + test) | `api.go`, `page_*_api.go`, `page_*_door.go`, `page_testing_*.go`, `drop.go`, `hover.go`, etc. |
+| Exported receiver methods in root `*.go` | **149 methods** | Spread across `Page`, `Form`, `Edit`, `Scroll`, `Window`, `Access`, `Probe`, `Testing` |
+| Global calls on `Page.Window()` | **5 methods ignore `w.page`** | `page_window_door.go`: `CursorPosition` (L19), `Minimize` (L184), `ToggleMaximize` (L190), `Maximized` (L196), `Close` (L204) |
+| Example `internal/` imports | **16 frozen pairs** | `scripts/example-internal-allowlist.txt` (15 in `examples/css-preview`, 1 in `examples/desktop-cat/cat/preview.go`) |
+
+---
+
+## Phase 3: Public API Boundaries and Developer Ergonomics
+
+### 3.1 Separate process-global window controls from page-scoped `Window` door
+
+- [ ] `API-01` Audit every method in `page_window_door.go` (lines 1–206) and classify each as **page-scoped** (`PollReload`, `SetAnimations`, `SetTransitions`, `SetPerf`, `SetDevTools`, `SetTouchZoomAllowed`, `SetTouchScrollOptions`, `SetHotReload`, etc.) vs **host/process-global** (`CursorPosition`, `Minimize`, `ToggleMaximize`, `Maximized`, `Close`). Proof: classification table recorded in PR/phase notes.
+- [ ] `API-02` Design and implement a clean host-control seam so page-scoped configuration and desktop-host window actions are not conflated: either bind host callbacks onto the page when `Run`/`NewGame` attaches (so detached/secondary pages don't silently act on another page's global Ebiten window and tests can inject fakes cleanly) OR expose explicit package-level `HostWindow` / `DesktopWindow` functions (`ownframe.MinimizeWindow()`, etc.). Record the chosen design and rationale. Proof: unit test verifying a detached `Page` does not trigger global desktop window mutations or returns an explicit inactive/no-op bound state.
+- [ ] `API-03` Remove `page_window_door.go`'s direct calls to global `window.Minimize()`, `window.ToggleMaximize()`, `window.Maximized()`, `window.RequestClose()`, and `window.ContentCursorPosition()` in favor of the chosen seam from `API-02`. Proof: `grep -n "window\." page_window_door.go` shows zero unmediated global host calls.
+- [ ] `API-04` Update all example callers (e.g., custom-chrome titlebars in `examples/`) and `documentation/window.md` to use the clean seam. Proof: `make build`, `make test`, and `make docs-check` exit 0.
+- [ ] `API-05` Add a host-control unit test covering minimize, maximize toggle, close request, and cursor position without needing a live display server. Proof: new test passes under `go test -race .`.
+
+### 3.2 Consolidate the 63 root `.go` files and audit the 149 exported methods
+
+- [ ] `API-06` Generate a complete method inventory of all 149 exported methods in root `*.go` (`go doc -all .`), marking each as: Core App API, Advanced/Escape Hatch, Testing-Only, or Redundant/Candidate-for-Removal. Proof: inventory attached or committed in review notes.
+- [ ] `API-07` Consolidate single-function micro-files at the module root into cohesive domain files (for example: merge `page_click_api.go`, `page_draw.go`, `page_frame_api.go`, `page_geom_api.go`, `page_scroll_api.go`, `page_size_api.go`, `page_take_scroll.go`, `page_wrap.go`, `page_data.go`, `page_nav_api.go`, `page_patch_el.go` into `page.go`, `page_nav.go`, `page_patch.go`, `page_scroll.go`; merge `page_testing*.go` into `page_testing.go`; merge small type re-export files `drop.go`, `hover.go`, `display.go`, `display_patch.go`, `menu.go`, `scrollbar.go`, `touch_scroll.go`, `stats.go` into `types.go` / `events.go`). Target: reduce root non-test `.go` files from ~43 to <=18 while preserving every public symbol unless explicitly deprecated in `API-08`. Proof: `ls -1 *.go | grep -v _test.go | wc -l` <= 18 and `make test` green.
+- [ ] `API-08` Identify and remove or consolidate redundant exported methods and redundant `Probe()` / `Testing()` overlaps before locking `v0.1.0` / `v1.0` (remember `v0.0.x` may break; document any breaking renames in release notes). Keep `alias_gate_test.go` and `api_internal_gate_test.go` passing and tighten allowlists as aliases shrink. Proof: `go test -v -run 'TestAlias|TestAPI' .` exits 0 with reduced method count recorded.
+- [ ] `API-09` Verify `Page.Testing()` is strictly unused in `examples/` and non-test library files via an automated check (strengthen `api_testing_test.go` if needed). Proof: `grep -rn "\.Testing()" examples/ --include='*.go' --exclude='*_test.go'` returns empty.
+- [ ] `API-10` Ensure `go doc github.com/chinmay-sawant/ownframe` reads cleanly with package-level overview grouped by core workflow (`New` -> `SetData` -> `Handle` -> `Run`). Proof: manual review of `go doc .` output.
+
+### 3.3 Simplify the 4-path update and virtualization mental model
+
+- [ ] `API-11` Write a concise, decision-tree guide (`documentation/updates.md`, linked from Quick Start) answering "Which update API do I call?" covering:
+  1. `SetData` (default template redraw for most state changes),
+  2. `PatchElement` / `PatchElements` (targeted sub-tree text/attribute updates without full template rebuild),
+  3. Windowed lists via `SetScrollWindow` (large lists >200 rows),
+  4. Motion: CSS `@keyframes`/`transition` (declarative) vs `SetTick` (imperative non-CSS state like audio seekbars).
+  Proof: `documentation/updates.md` compiles all snippets under `make docs-check`.
+- [ ] `API-12` Extract the repeated virtualized-list + fixed-row windowing math currently duplicated in `examples/code-view/app.go` and `examples/telegram` into a small, well-tested helper package under `ui/virtual` (or `ui` helper functions: `WindowRange(scrollY, viewportH, rowH, totalRows, overscan)` + spacer height calculation). Proof: helper unit tests covering top/middle/bottom clamping, resize, and zero-row edge cases; adopt in at least one example.
+- [ ] `API-13` Add a pinned-chrome helper or documented pattern in `ui/` so apps don't have to hand-roll fragile `SetScrollWindow` counter-offsets for sticky headers/composers (and link to `blinkless` sticky support once adopted per `plans/v0.0.4/04-css-conformance-and-engine-adoption.md`). Proof: helper + test or verified sticky replacement documented.
+- [ ] `API-14` Add a defensive runtime guard / DevTools warning when `Page.SetTick` mutates retained ops on an element that also has an active automatic CSS animation/transition track (replacing the silent "never drive one op with both" footgun documented in `AGENTS.md`). Proof: unit test demonstrating deterministic warning/counter increment in `Page.Probe().Motion()` when both paths target the same element.
+- [ ] `API-15` Document or eliminate the one-tick delay quirk when 3D transforms auto-enable `Config.RetainState` (ensure callers either opt in explicitly via `Config` or see clear documentation + probe visibility). Proof: test covering 3D transform first-tick behavior and updated `documentation/css-motion.md`.
+
+### 3.4 Drain the example `internal/` import allowlist
+
+- [ ] `API-16` Audit the 15 `examples/css-preview/*` entries in `scripts/example-internal-allowlist.txt` (`internal/animation`, `cssanimation`, `cssmotion`, `csstransition`, `csstrigger`, `viewtransition`): relocate engine-internal unit/conformance tests into `internal/motion/` (or `internal/viewtransition/`) tests so `examples/css-preview` exercises only public `ownframe` APIs. Proof: `examples/css-preview` entries removed from `scripts/example-internal-allowlist.txt` and moved tests pass in the library module.
+- [ ] `API-17` Re-evaluate the final remaining entry (`examples/desktop-cat/cat/preview.go` -> `internal/web`): either expose a minimal public `ServeOptions` / custom-preview hook if broadly useful, or document why it remains the sole explicit allowlist entry. Proof: allowlist reduced from 16 entries to <=1 entry.
+- [ ] `API-18` Run `make internal-import-check` and `make examples-check` to lock in the reduced allowlist. Proof: both commands exit 0.
+
+---
+
+## Dependencies
+
+- `API-02` / `API-03` should complete before `Phase 05` refactors `internal/window` so window host bindings don't get rewritten twice.
+- `API-16` coordinates with `Phase 04` (`internal/motion` consolidation) — relocating `examples/css-preview` internal tests either precedes or lands alongside `Phase 04` package merges so import paths only change once.
+
+## Risks
+
+- **Breaking `examples/` or downstream snippets:** Any method renamed or moved off `Page.Window()` must be updated across `examples/`, `documentation/`, and `scripts/check-doc-snippets.py` in the same PR.
+- **Over-exposing internals to drain allowlist:** Do NOT add ugly public forwarding APIs solely to empty `scripts/example-internal-allowlist.txt` (respecting the `INTERNAL-IMPORTS` principle in `plans/README.md`). Move internal-testing code into library tests instead.
+
+## Closure Gates
+
+- [ ] `API-GATE-01` Zero process-global `window.*` singleton calls left on `Page.Window()` without explicit page-to-host binding or separation.
+- [ ] `API-GATE-02` Root non-test `.go` files consolidated to <=18; `TestAlias*` and `TestAPI*` gates pass.
+- [ ] `API-GATE-03` `scripts/example-internal-allowlist.txt` reduced from 16 pairs to <=1 pair.
+- [ ] `API-GATE-04` `make test`, `make test-race`, `make lint`, `make docs-check`, and `make internal-import-check` exit 0.
