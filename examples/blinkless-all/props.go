@@ -464,7 +464,12 @@ func (g *genSet) demo(r genProp) string {
 		note = " The window painter declines this property (it falls back to a bitmap or reports unsupported text shaping options), so the demo is drawn without the declaration; the readout comes from the engine's layout."
 	}
 
-	return g.pageMarkup(r) + shapesRes("%s%s", g.res[r.Name], note)
+	out := g.res[r.Name]
+	if note != "" && !strings.HasSuffix(out, ".") {
+		out += "."
+	}
+
+	return g.pageMarkup(r) + shapesRes("%s%s", out, note)
 }
 
 // noPaint lists the properties the window painter cannot draw. A page that

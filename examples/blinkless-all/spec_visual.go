@@ -480,7 +480,7 @@ func maskSpec(r genProp) (DemoSpec, bool) {
 func shapeSpec(r genProp) (DemoSpec, bool) {
 	switch r.Name {
 	case "shape-outside":
-		return spec(vizFloatBg("radial-gradient(circle 32px at 40px 40px,#c0392b,#2980b9 31px,transparent 32px)", ""), "The control's text keeps clear of the whole 80 px square around the disc (here a 64 px disc, matching the circle's radius). With the circle(40%) shape the text moves in toward the disc, so its first lines start further left.")
+		return spec(vizFloatBg("radial-gradient(circle 32px at 40px 40px,#c0392b,#2980b9 31px,transparent 32px)", ""), "The control's text keeps clear of the whole 80 px square around the disc. With the circle(40%) shape the text moves in toward the disc, so its first lines start further left.")
 	case "shape-margin":
 		return spec(vizFloat("shape-outside:circle(50%);border-radius:50%;"), "The control's text hugs the disc's circle. With shape-margin the text keeps 12 px more distance from it, so each line starts further right.")
 	case "shape-image-threshold":

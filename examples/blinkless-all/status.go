@@ -34,7 +34,7 @@ var opOnly = map[string]bool{
 	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,
 	"font-variant-ligatures": true, "font-variant-numeric": true, "text-anchor": true, "text-autospace": true,
 	"background-blend-mode": true, "image-rendering": true, "object-fit": true, "object-view-box": true,
-	"isolation": true, "rule-overlap": true,
+	"isolation": true, "font-width": true, "rule-overlap": true,
 }
 
 // rowStatus is the badge of a row: the catalog status, lowered to partial when
@@ -50,7 +50,7 @@ func (a *App) rowStatus(name string) string {
 
 // declines reports whether the window painter leaves the property out.
 func declines(name string) bool {
-	return noPaint[name] || painterDeclines[name] || painterDeclines[trimWebkit(name)] || pictureMatchesControl(name)
+	return noPaint[name] || painterDeclines[name] || painterDeclines[trimWebkit(name)] || opOnly[name] || pictureMatchesControl(name)
 }
 
 // pictureMatchesControl reports whether the row's own readout found the demo

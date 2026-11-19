@@ -270,7 +270,6 @@ var textVisible = map[string]bool{
 	"font-variant-caps":           true,
 	"font-variant-position":       true,
 	"font-weight":                 true,
-	"font-width":                  true,
 	"initial-letter":              true,
 	"letter-spacing":              true,
 	"line-clamp":                  true,
