@@ -16,6 +16,12 @@ var painterDeclines = map[string]bool{
 	"fill-rule": true, "stroke-linejoin": true, "stroke-miterlimit": true,
 	"-webkit-mask-box-image-outset": true, "-webkit-mask-box-image-repeat": true,
 	"-webkit-mask-box-image-slice": true, "-webkit-mask-box-image-width": true,
+	"border-bottom-color": true, "border-left-color": true, "border-right-color": true, "border-top-color": true,
+	"border-image-outset": true, "border-image-repeat": true,
+	"rule-break": true,
+	"cx":         true, "cy": true, "r": true, "x": true, "y": true,
+	"color-interpolation": true, "color-interpolation-filters": true, "stop-color": true, "stop-opacity": true,
+	"font-variant-emoji": true, "tab-size": true, "text-emphasis-style": true, "text-overflow": true,
 }
 
 // opOnly lists the properties that change the engine's operation list while
@@ -26,7 +32,7 @@ var opOnly = map[string]bool{
 	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,
 	"font-variant-ligatures": true, "font-variant-numeric": true, "text-anchor": true, "text-autospace": true,
 	"background-blend-mode": true, "image-rendering": true, "object-fit": true, "object-view-box": true,
-	"isolation": true, "row-rule-break": true, "rule-overlap": true,
+	"isolation": true, "rule-overlap": true,
 }
 
 // rowStatus is the badge of a row: the catalog status, lowered to partial when

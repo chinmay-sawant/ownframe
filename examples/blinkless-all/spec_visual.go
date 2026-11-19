@@ -157,12 +157,47 @@ func ruleSpec(r genProp) (DemoSpec, bool) {
 	}
 
 	switch {
+	case n == "rule-break":
+		return specNo(vizRules(base), "Rules in the grid gaps. The control's rules already run straight through the crossing, and "+n+": "+r.Sample+" asks for the same, so the picture matches the control (row-rule-break and column-rule-break: intersection show the visible cut).")
 	case strings.HasSuffix(n, "rule-break"):
-		return specNo(vizRules(base), "Rules in the grid gaps. In the control the vertical rule runs straight through the crossing. With "+n+": "+r.Sample+" it is cut into two pieces that stop at the junction, and the picture differs from the control.")
+		line, cross := "vertical", "horizontal"
+		if strings.HasPrefix(n, "row-") {
+			line, cross = "horizontal", "vertical"
+		}
+
+		return spec(vizRules(base), "Rules in the grid gaps. In the control the "+line+" rule runs straight through the crossing. With "+n+": "+r.Sample+" it is cut into two pieces with a gap where the "+cross+" rule crosses it, while the "+cross+" rule stays whole.")
+	case strings.Contains(n, "junction"):
+		brk := "row-rule-break:intersection;column-rule-break:intersection;"
+		line := "rules are"
+
+		switch {
+		case strings.HasPrefix(n, "row-"):
+			brk, line = "row-rule-break:intersection;", "horizontal rule is"
+		case strings.HasPrefix(n, "column-"):
+			brk, line = "column-rule-break:intersection;", "vertical rule is"
+		}
+
+		return spec(vizRules(base+brk), "Both the control and the demo break at the crossing (break: intersection), so each "+line+" cut there. "+n+" ("+r.Sample+") then pulls the cut ends further back from the crossing, so the gap is wider than in the control.")
+	case strings.Contains(n, "inset-cap"):
+		axis := "each horizontal and vertical rule"
+		switch {
+		case strings.HasPrefix(n, "row-"):
+			axis = "the horizontal rule"
+		case strings.HasPrefix(n, "column-"):
+			axis = "the vertical rule"
+		}
+
+		end := "both outer ends"
+		switch {
+		case strings.HasSuffix(n, "-start"):
+			end = "its start end (left, or top for a vertical rule)"
+		case strings.HasSuffix(n, "-end"):
+			end = "its end (right, or bottom for a vertical rule)"
+		}
+
+		return spec(vizRules(base), "Rules in the grid gaps. "+n+": "+r.Sample+" shortens "+axis+" at "+end+" by "+r.Sample+", so it stops short of the grid edge; the control runs edge to edge.")
 	case n == "rule-overlap":
 		return specNo(vizRules(base), "Rules in the grid gaps. Both rules have the same colour and width, so which one paints over the other at the crossing cannot be seen: the picture looks the same as the control while the engine's operation order differs.")
-	case strings.Contains(n, "junction"):
-		return specNo(vizRules(base), look+" "+n+" ("+r.Sample+") only trims rules where they meet at junctions; this 2 by 2 grid has one crossing, and the picture is the same as the control.")
 	case strings.HasSuffix(n, "rule-visibility-items"):
 		return spec(vizRules(base), "Rules in the grid gaps. With "+n+": "+r.Sample+" the rule set changes: "+visibilityLook(n, r.Sample)+" The control draws only the rules between cells.")
 	}
@@ -457,7 +492,9 @@ func shapeSpec(r genProp) (DemoSpec, bool) {
 
 func listSpec(r genProp) (DemoSpec, bool) {
 	switch r.Name {
-	case "list-style", "list-style-type":
+	case "list-style-type":
+		return spec(vizList(""), "The round discs of the control become hollow circles. The markers stay outside the text, in the gutter left of each line, and the text does not move.")
+	case "list-style":
 		return spec(vizList(""), "The round discs of the control become small squares. The list also sets inside, so each marker sits at the start of its line, and the text is indented 16 px so the marker stays clear of the first letter.")
 	case "list-style-position":
 		return specNo(vizList(""), "The markers stay outside the text: outside is the initial value.")

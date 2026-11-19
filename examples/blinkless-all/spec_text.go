@@ -70,16 +70,19 @@ func textHTML(name string) string {
 	case "white-space", "white-space-collapse", "white-space-trim":
 		return tbox("", "Spaced     words\n   and a new line\nthird line   ")
 	case "tab-size":
-		// the painter draws a tab as a missing-glyph box, so the demo has none.
-		return tbox("white-space:pre;", "a    b\n    c    d")
+		// real tab characters (U+0009) under white-space:pre, so tab-size moves the columns.
+		return tbox("white-space:pre;", "a&#9;b&#9;c\n&#9;d&#9;e")
 	case "text-shadow":
 		return tbox("font-size:28px;font-weight:700;padding:10px 12px;", `Shadow`)
 	case "text-transform":
 		return tbox("", `Mixed case words wrap over two lines here.`)
 	case "text-wrap", "text-wrap-mode", "text-wrap-style":
 		return tbox("", `Wrapping text that fills a narrow box with several short words here.`)
-	case "text-align", "text-align-all":
+	case "text-align":
 		return tbox("", `Aligned text across two lines of this box.`)
+	case "text-align-all":
+		// three lines show which lines `end` reaches.
+		return tbox("", `Aligned text across three short lines of this wide box here.`)
 	case "text-align-last":
 		return tbox("text-align:right;", `Aligned text across two lines of this box.`)
 	case "text-justify":
@@ -334,7 +337,7 @@ var textLookOf = map[string]string{
 	"rx":                          "The corners of the demo rectangle are rounded; the control's are square. Judge this row by the picture.",
 	"ry":                          "The corners of the demo rectangle are rounded; the control's are square. Judge this row by the picture.",
 	"d":                           "The demo triangle is the path from the declaration (a small triangle at the top left); the control draws a larger triangle at the bottom. Judge this row by the picture.",
-	"path-length":                 "The control is a dashed line; with pathLength 2 the dash of length 1 covers half the path, so the demo line is drawn solid. Judge this row by the picture.",
+	"path-length":                 "The control line is cut into short 1px dashes. With path-length 2 the engine scales the dash length to the path, so the dashes run together and the demo line is drawn as one unbroken solid line. Judge this row by the picture.",
 	"flood-color":                 "The flood fill of the demo is red; the control floods black. Judge this row by the picture.",
 	"flood-opacity":               "The flood fill of the demo is 40% opaque and looks grey; the control floods solid black. Judge this row by the picture.",
 	"stop-opacity":                "The window painter draws a gradient as one flat fill of its last stop, not as a blend: the control is solid red and the demo is the same red at 40% opacity, so it looks pale. The thin blue sliver at the left edge is the first stop and is not a fade. Judge this row by the picture.",
@@ -358,14 +361,14 @@ var textLookOf = map[string]string{
 	"initial-letter":              "The demo word is drawn about three times larger than the control's word; the engine sizes the whole first word, not just a letter, and does not wrap later text around it, so the box holds this one word.",
 	"font-width":                  "The engine records a different font width in the demo's paint operations (the readout differs), but the bundled face has no condensed cut, so the text looks the same as the control.",
 	"font-style":                  "The demo text turns italic, so the glyph shapes and widths change; compare the two boxes.",
-	"text-align-all":              "In this engine `end` right-aligns only the first line: line 1 of the demo moves right and the last line stays at the left edge. `text-align: right` moves both lines.",
+	"text-align-all":              "In this engine `end` right-aligns every line except the last: the first two lines of the demo sit flush to the right edge and the last line stays at the left edge. The standard says the last line moves too, so this is an engine deviation. `text-align: right` moves all lines.",
 	"text-align-last":             "The control is right-aligned. With `start` the first line stays on the right and the last line moves to the left edge.",
-	"tab-size":                    "The demo text has no tab characters, because the painter draws a tab as a missing-glyph box. The property is exported to the host and the layout and paint stay the same as the control.",
+	"tab-size":                    "The demo text holds real tab characters under `white-space: pre`. The painter draws each tab as a narrow missing-glyph box, and the engine gives it the same width as in the control, so the columns do not move and the layout and paint stay the same as the control. The property is exported to the host.",
 	"text-anchor":                 "The declaration is set on the SVG text at x=60; the text is drawn at the same place as in the control. The picture matches the control; judge this row by the picture.",
 	"word-spacing":                "The control has 6px of word spacing and the demo inherits the parent's 0, so the word gaps narrow and the text re-wraps.",
 	"letter-spacing":              "The control has 2px of letter spacing and the demo inherits the parent's 0, so the glyphs sit closer and the text re-wraps.",
 	"text-decoration":             "The control is underlined and the demo inherits the parent's `none`, so the underline disappears.",
-	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow (zero blur) behind the bold 28px word, and the box grows by the shadow extent.",
+	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow (zero blur) behind the bold 28px word. The box keeps the same size as the control, because a shadow does not change layout; the readout sizes match.",
 	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of the default offset, so each line's rule sits lower, closer to the next line; the lines are spaced wide and the box has bottom padding so the last rule stays inside.",
 	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline. The engine moves the whole line with the raised word, so the other words rise too. The markup has no literal space before the span, because the engine already draws one gap there; the box has top padding so the raised line stays inside.",
 	"text-emphasis-style":         "The control already has filled marks and the engine draws the string mark the same way, so the picture stays the same as the control.",

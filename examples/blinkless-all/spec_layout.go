@@ -29,7 +29,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "flex-shrink":
 		return lay(shrinkDemo(), "The first box gives up more of its width when the three boxes overflow the row.", true), true
 	case n == "flex-direction":
-		return lay(flexDemo("{{STYLE}}", "", "", ""), "The row runs right to left: the blue box is first at the right edge.", true), true
+		return lay(flexDemo("{{STYLE}}", "", "", ""), "The row runs right to left: the orange box is first at the right edge and the blue box last at the left edge.", true), true
 	case n == "flex-wrap":
 		return lay(flexWrapDemo("{{STYLE}}"), "The third box wraps onto a second line instead of overflowing the row.", true), true
 	case n == "flex-flow":
@@ -56,7 +56,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "grid-template-rows":
 		return lay(gridDemo("{{STYLE}}", "", ""), "The first grid row becomes 30px and the second 60px instead of the 16px of their boxes; the boxes keep their 16px and sit at the top of their rows, and later rows stay 16px.", true), true
 	case n == "grid-template":
-		return lay(gridDemo("{{STYLE}}", "", ""), "Each grid row becomes the declared 40px tall instead of the 16px of its box; the boxes keep their 16px and sit at the top of their rows.", true), true
+		return lay(gridDemo("{{STYLE}}", "", ""), "The first grid row becomes the declared 40px tall instead of the 16px of its box; the box keeps its 16px and sits at the top of the row, and the later rows stay 16px.", true), true
 	case n == "grid-auto-rows":
 		return lay(gridDemo("{{STYLE}}", "", ""), "Every implicit row is 40px tall.", true), true
 	case n == "grid-auto-columns":
@@ -69,7 +69,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "Accepted; the engine places the first box in the same cell, so nothing moves (grid-row shows the placement).", false), true
 	case n == "grid-row":
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box occupies rows 1 and 2 of the first column, so its 16px box leaves an empty cell under it, box 4 moves over and box 6 drops to a third row.", true), true
-	case in(n, "grid-area", "grid-column", "grid-column-start", "grid-column-end"):
+	case n == "grid-column-end":
+		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box ends at column line 3, so it spans columns 1 and 2 of the three-column grid; box 2 moves to column 3 and the later boxes follow on the next rows.", true), true
+	case in(n, "grid-area", "grid-column", "grid-column-start"):
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box moves to the placed column line or spans columns, and the later boxes shift to make room.", true), true
 
 	case in(n, "margin", "margin-left", "margin-right", "margin-top", "margin-bottom", "margin-block", "margin-block-start", "margin-block-end", "margin-inline", "margin-inline-start", "margin-inline-end"):
@@ -145,7 +147,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">Zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>`,
 			"Accepted; the engine already breaks an unbreakable word at the 100px frame edge, so the control and the demo wrap the same way and nothing changes.", false), true
 	case n == "column-gap":
-		return lay(colKids("column-count:2;{{STYLE}}"), "The second box sits 3px, not 16px, from the first column.", true), true
+		return lay(colKids("column-count:2;{{STYLE}}"), "The two columns sit 3px apart instead of the 12px default gap (normal is 1em, and the font is 12px), so each column grows wider and the blue box starts further left.", true), true
 	case n == "column-width":
 		return lay(colDemo("{{STYLE}}"), "A 12px column width is narrower than most words, so the paragraph splits into many very narrow columns holding a letter or two each (a real page would use a wider value).", true), true
 	case in(n, "columns", "column-count"):
@@ -175,9 +177,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "position-anchor":
 		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The blue label leaves the top-left corner and sits directly above the orange anchor, with its bottom edge on the anchor's top edge. Each row names its own anchor, so the page picture and the readout place it at the same spot.", true), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The engine does not resolve position-area, so the blue label stays at the left edge of the frame (x 0, y 24), left of and slightly above the orange anchor, exactly where the control puts it. It does not move to sit above the anchor. Each row names its own anchor, so the picture and the readout agree.", false), true
 	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both already carry position-area:top and the box fits, so the blue label sits above the orange anchor in both and nothing changes.", false), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both carry position-area:top, which the engine does not resolve, so the blue label stays at the left edge of the frame (x 0, y 24), left of the orange anchor, in both pictures and nothing changes.", false), true
 	case n == "table-layout":
 		return lay(`<table id="{{ID}}" style="width:200px;border-collapse:collapse;font-size:12px;{{STYLE}}"><tr><td id="{{ID}}-1" style="border:1px solid #888;background:#c96">a very long first cell text</td><td id="{{ID}}-2" style="border:1px solid #888;background:#69c">b</td></tr></table>`,
 			"The columns split the table width evenly (fixed) instead of following the long first cell.", true), true
@@ -377,6 +379,14 @@ func marginLook(n string) string {
 		return "Empty space opens " + side + " the orange box; the box keeps its size and the frame grows on that one side to hold the margin."
 	case "margin-left", "margin-right", "margin-inline-start", "margin-inline-end":
 		return "Empty space opens " + side + " the orange box, so it moves away from that edge inside the frame (or narrows to leave the space)."
+	}
+
+	if n == "margin-inline" {
+		return "Empty space opens on the left and right of the orange box, so it narrows and moves in from both edges of the frame; its height does not change."
+	}
+
+	if n == "margin-block" {
+		return "Empty space opens above and below the orange box; the box keeps its size and the frame grows to hold the vertical margins."
 	}
 
 	return "Empty space opens around the orange box, so it narrows or moves inside the frame and the frame grows to hold the vertical margins."
