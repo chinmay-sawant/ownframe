@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 // painterDeclines lists the properties the engine parses and lays out but the
 // window painter does not draw, so the page shows the row as partial: the
 // catalog says implemented for the engine, and the picture cannot show it. A
@@ -17,9 +19,9 @@ var painterDeclines = map[string]bool{
 	"-webkit-mask-box-image-outset": true, "-webkit-mask-box-image-repeat": true,
 	"-webkit-mask-box-image-slice": true, "-webkit-mask-box-image-width": true,
 	"border-bottom-color": true, "border-left-color": true, "border-right-color": true, "border-top-color": true,
-	"border-image-outset": true, "border-image-repeat": true,
-	"rule-break": true,
-	"cx":         true, "cy": true, "r": true, "x": true, "y": true,
+	"rule-overlap": true,
+	"rule-break":   true, "position-try": true, "position-try-fallbacks": true, "position-try-order": true, "position-visibility": true,
+	"cx": true, "cy": true, "r": true, "x": true, "y": true,
 	"color-interpolation": true, "color-interpolation-filters": true, "stop-color": true, "stop-opacity": true,
 	"font-variant-emoji": true, "tab-size": true, "text-emphasis-style": true, "text-overflow": true,
 }
@@ -48,7 +50,17 @@ func (a *App) rowStatus(name string) string {
 
 // declines reports whether the window painter leaves the property out.
 func declines(name string) bool {
-	return noPaint[name] || painterDeclines[name] || painterDeclines[trimWebkit(name)]
+	return noPaint[name] || painterDeclines[name] || painterDeclines[trimWebkit(name)] || pictureMatchesControl(name)
+}
+
+// pictureMatchesControl reports whether the row's own readout found the demo
+// identical to the control, with nothing exported to the host. Such a row
+// shows no effect in the picture, so it cannot wear the implemented badge.
+func pictureMatchesControl(name string) bool {
+	v, ok := readoutCache.Load(name)
+	out, _ := v.(string)
+
+	return ok && strings.HasSuffix(out, "=> same layout and paint as the control")
 }
 
 func trimWebkit(name string) string {

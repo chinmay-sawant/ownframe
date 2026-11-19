@@ -64,6 +64,7 @@ func genTabs(taken map[string]bool) []Tab {
 		for pg := range pages {
 			part := rows[pg*len(rows)/pages : (pg+1)*len(rows)/pages]
 			set := newGenSet(part)
+			set.once.Do(set.compute)
 			props := make([]Prop, 0, len(part))
 
 			for _, r := range part {
@@ -103,7 +104,7 @@ func genValidate(r genProp, hint string) string {
 
 	badge := "The status badge must read implemented."
 	if declines(r.Name) {
-		badge = "The status badge reads partial: the engine lays the property out, but the window painter does not draw it, so the picture can match the control."
+		badge = "The status badge reads partial: the picture is the same as the control, either because the window painter does not draw the property or because this demo shows no visible effect."
 	}
 
 	return fmt.Sprintf("The left demo is the control. The right demo adds `%s: %s`. %s The readout lists each measured element in the control and with the property, and says whether the layout or the paint operations differ. %s", r.Name, r.Sample, look, badge)

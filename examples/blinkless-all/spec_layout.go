@@ -177,7 +177,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "position-anchor":
 		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The engine does not resolve position-area, so the blue label stays at the left edge of the frame (x 0, y 24), left of and slightly above the orange anchor, exactly where the control puts it. It does not move to sit above the anchor. Each row names its own anchor, so the picture and the readout agree.", false), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The engine only moves the blue label down 24px, from the control's y 0 to y 24, still at the left edge and left of the orange anchor. It does not place the label above the anchor. Each row names its own anchor, so the picture and the readout agree.", false), true
 	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
 		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both carry position-area:top, which the engine does not resolve, so the blue label stays at the left edge of the frame (x 0, y 24), left of the orange anchor, in both pictures and nothing changes.", false), true
 	case n == "table-layout":
