@@ -61,7 +61,7 @@ func navSlider(id, orient string, w, h int) string {
 		`<div id="%s-t" style="position:absolute;left:0;top:0;width:10px;height:10px;background:#1d4ed8"></div></div>`, id, orient, w, h, id, id)
 }
 
-const navAppearBox = `box-sizing:border-box;width:120px;height:30px;padding:0;line-height:24px;text-align:center;font-size:13px`
+const navAppearBox = `box-sizing:border-box;width:120px;height:30px;margin-top:6px;padding:0;line-height:24px;text-align:center;font-size:13px`
 
 //nolint:gochecknoglobals,mnd // pixel sizes, timings and markup of the live demo
 var (
@@ -414,7 +414,7 @@ const navDemoWidth = 900
 // Sizes of the scroll-action demo: a viewport that shows part of a larger
 // sheet. The sheet is what scrolls, so Up undoes Down and Left undoes Right.
 const (
-	navViewW  = 330
+	navViewW  = 316
 	navViewH  = 100
 	navSheetW = 700
 	navSheetH = 400
@@ -442,7 +442,7 @@ func navActionHTML() string {
 		}
 	}
 
-	b.WriteString(`<button id="s-a" style="position:absolute;left:0;top:0;width:76px;height:36px">s-a 0,0</button></div></div>`)
+	b.WriteString(`<button id="s-a" style="position:absolute;left:0;top:0;width:76px;height:36px;box-sizing:border-box">s-a 0,0</button></div></div>`)
 
 	return b.String()
 }

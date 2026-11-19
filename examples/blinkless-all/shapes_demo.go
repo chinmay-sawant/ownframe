@@ -192,7 +192,7 @@ func demoTextFit() string {
 func demoFloatDefer() string {
 	cell := func(id, decl string) string {
 		return `<div class="cell"><div style="column-count:3;column-gap:10px;width:320px;background:#eef2f7"><div id="` + id +
-			`" style="float:left;width:20px;height:20px;margin-right:8px;background:#9db4d6;` + decl + `"></div><p style="margin:0">one two three</p></div>` +
+			`" style="float:left;width:20px;height:20px;margin-right:8px;background:#9db4d6;` + decl + `"></div><p style="margin:0;padding-top:24px">one two three</p></div>` +
 			`<div class="cap">` + decl + `</div></div>`
 	}
 

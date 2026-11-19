@@ -29,7 +29,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "flex-shrink":
 		return lay(shrinkDemo(), "The first box gives up more of its width when the three boxes overflow the row.", true), true
 	case n == "flex-direction":
-		return lay(flexDemo("{{STYLE}}", "", "", ""), "The row runs right to left: the orange box is first at the right edge and the blue box last at the left edge.", true), true
+		return lay(flexDemo("{{STYLE}}", "", "", ""), "The row runs right to left, packed against the right edge: the orange box is first on the right and the blue box last on the left of the group, leaving free space on the left.", true), true
 	case n == "flex-wrap":
 		return lay(flexWrapDemo("{{STYLE}}"), "The third box wraps onto a second line instead of overflowing the row.", true), true
 	case n == "flex-flow":
@@ -106,7 +106,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="height:80px;width:280px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:150px;height:70px;background:#c96;{{STYLE}}">box</div></div>`,
 			"The 70px box is clamped to half the 80px frame height.", true), true
 	case n == "max-size":
-		return lay(blockDemo("width:200px;height:50px;background:#c96;{{STYLE}}", ""), "The 200px by 50px box is clamped to half its parent in both directions.", true), true
+		return lay(`<div id="{{ID}}" style="height:80px;width:280px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:200px;height:50px;background:#c96;{{STYLE}}"></div></div>`, "The 200px by 50px box is clamped to half its 280px by 80px parent in both directions (140px by 40px).", true), true
 	case n == "size":
 		return lay(blockDemo("background:#c96;{{STYLE}}", "text"), "The box takes a 100px by 50px size instead of full width and one text line, if the engine reads this draft shorthand.", true), true
 	case n == "aspect-ratio":
@@ -195,14 +195,14 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "zoom":
 		return lay(blockDemo("width:200px;height:60px;font-size:12px;background:#c96;{{STYLE}}", "zoomed"), "The orange box scales down to 40% of its size (80px by 24px); its text keeps its full size and still fits inside the shrunken box.", true), true
 	case n == "backface-visibility":
-		return lay(`<div id="{{ID}}" style="width:120px;height:40px;background:#c96;transform:rotateY(180deg);{{STYLE}}">back</div>`,
-			"The box is turned to face away; hidden removes it from the picture.", true), true
+		return lay(`<div id="{{ID}}" style="width:120px;height:40px;border:1px dashed #888;"><div id="{{ID}}-1" style="width:120px;height:40px;background:#c96;transform:rotateY(180deg);{{STYLE}}">back</div></div>`,
+			"The rotated box sits inside a dashed 120x40 frame; hidden removes the box from the picture, leaving the dashed frame empty.", true), true
 	case n == "box-decoration-break":
 		return lay(`<div id="{{ID}}" style="width:120px;font-size:12px;"><span id="{{ID}}-1" style="background:#c96;padding:0 8px;border:2px solid #333;{{STYLE}}">a span that wraps over several lines</span></div>`,
-			"Each wrapped line fragment gets its own padding and border instead of one shared set at the ends.", true), true
+			"Both pictures draw borders around each wrapped line fragment; with clone the tan background clips tightly to each individual line fragment instead of filling one rectangular box behind the whole span.", true), true
 	case n == "all":
 		return lay(`<div id="{{ID}}" style="width:280px;color:#333;background:#e8e4d8;font-size:14px;"><div id="{{ID}}-1" style="width:100px;height:30px;padding:4px;background:#c96;{{STYLE}}">reset</div></div>`,
-			"The inner box drops its own width, padding and fill and takes its parent's values.", true), true
+			"The inner box drops its brown fill and takes its parent's beige background; its 108x38 size and text position stay the same.", true), true
 	case n == "field-sizing":
 		return lay(`<div id="{{ID}}" style="width:280px;"><input id="{{ID}}-1" value="hi" style="{{STYLE}}"></div>`,
 			"Accepted; the engine paints no operations for the bare input here, so nothing visible changes.", false), true
@@ -213,7 +213,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 
 // lookHost says what a host-only or fragmentation property does here.
 func lookHost(n string) string {
-	return "This draft or host property has no visible effect on a screen box; the readout shows the value reaching the page."
+	return "This draft or host property has no visible effect on a screen box, so the picture and readout match the control."
 }
 
 func lay(html, look string, visible bool) DemoSpec {

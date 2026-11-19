@@ -32,7 +32,7 @@ var painterDeclines = map[string]bool{
 var opOnly = map[string]bool{
 	"font-language-override": true, "font-feature-settings": true, "font-synthesis": true,
 	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,
-	"font-variant-ligatures": true, "font-variant-numeric": true, "text-anchor": true, "text-autospace": true,
+	"font-variant-ligatures": true, "font-variant-numeric": true, "tab-size": true, "text-autospace": true,
 	"background-blend-mode": true, "image-rendering": true, "object-fit": true, "object-view-box": true,
 	"isolation": true, "font-width": true, "rule-overlap": true,
 }

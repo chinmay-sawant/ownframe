@@ -42,7 +42,7 @@ func vizRules(base string) string {
 }
 
 func vizList(base string) string {
-	return `<ul id="{{ID}}" style="width:140px;margin:0;padding-left:28px;font-size:13px;` + base + `{{STYLE}}"><li style="padding-left:12px;text-indent:16px">first</li><li style="padding-left:12px;text-indent:16px">second</li><li style="padding-left:12px;text-indent:16px">third</li></ul>`
+	return `<ul id="{{ID}}" style="width:160px;margin:0;padding-left:28px;font-size:20px;` + base + `{{STYLE}}"><li style="padding-left:12px;text-indent:16px">first</li><li style="padding-left:12px;text-indent:16px">second</li><li style="padding-left:12px;text-indent:16px">third</li></ul>`
 }
 
 func vizImg(base string) string {
@@ -432,6 +432,8 @@ func backgroundSpec(r genProp) (DemoSpec, bool) {
 		return spec(vizPlain(img+"border:1px solid #888;", ""), "The red image grows from a 40x30 square to cover the whole box.")
 	case n == "background-repeat" || strings.HasPrefix(n, "background-repeat"):
 		return spec(vizPlain(img+"border:1px solid #888;background-size:30px 20px;", ""), "The small red tile repeats along the axis the property names instead of sitting once at the top left.")
+	case n == "background-position":
+		return spec(vizPlain(img+"border:1px solid #888;", ""), "The small red square moves 12 px right and centres vertically (a single value sets the vertical position to 50%).")
 	case strings.HasPrefix(n, "background-position"):
 		return spec(vizPlain(img+"border:1px solid #888;", ""), "The small red square moves 12 px from the top left along the named axis.")
 	}
@@ -480,14 +482,14 @@ func maskSpec(r genProp) (DemoSpec, bool) {
 func shapeSpec(r genProp) (DemoSpec, bool) {
 	switch r.Name {
 	case "shape-outside":
-		return spec(vizFloatBg("radial-gradient(circle 32px at 40px 40px,#c0392b,#2980b9 31px,transparent 32px)", ""), "The control's text keeps clear of the whole 80 px square around the disc. With the circle(40%) shape the text moves in toward the disc, so its first lines start further left. The window paints the float as a flat square, so lines that follow the circle's edge run over its corners.")
+		return spec(vizFloatBg("radial-gradient(circle closest-side,#c0392b,#2980b9 79%,transparent 80%)", ""), "The control's text keeps clear of the whole 80 px square around the disc. With the circle(40%) shape the text moves in toward the circular disc, so its first lines start further left.")
 	case "shape-margin":
-		return spec(vizFloat("shape-outside:circle(50%);border-radius:50%;"), "The control's text hugs the disc's circle. With shape-margin the text keeps 12 px more distance from it, so each line starts further right. The window paints the float as a flat square, so lines that follow the circle's edge run over its corners.")
+		return spec(vizFloat("shape-outside:circle(50%);border-radius:50%;"), "The control's text hugs the circular disc. With shape-margin the text keeps 12 px more distance from it, so each line starts further right and clears the disc.")
 	case "shape-image-threshold":
 		return spec(vizFloatBg(vizGrad, "shape-outside:"+vizGrad+";"), "The gradient used as the shape is fully opaque, so at a 0.5 threshold the shape is the whole 80 px square: the text stays beside the box in both pictures.")
 	}
 
-	return specNo(vizFloat("shape-outside:circle(50%);"), "The text wraps around the disc float the same way as in the control; "+r.Name+" is accepted but not used for layout."+" The window paints the float as a flat square, so lines that follow the circle's edge run over its corners.")
+	return specNo(vizFloat("shape-outside:circle(50%);"), "The text wraps around the circular disc float the same way as in the control; "+r.Name+" is accepted but not used for layout.")
 }
 
 func listSpec(r genProp) (DemoSpec, bool) {
