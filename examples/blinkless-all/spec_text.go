@@ -132,13 +132,8 @@ func textHTML(name string) string {
 func counterHTML(base, onFirst string) string {
 	style := `<style>.cq::before{content:counter(k) ") "}</style>`
 
-	first := onFirst
-	if first == "" {
-		first = "counter-increment:k;"
-	}
-
 	return style + `<div id="{{ID}}" style="width:160px;font-size:13px;background:#f1efe7;padding:4px;` + base + `{{STYLE}}">` +
-		`<div id="{{ID}}-1" class="cq" style="counter-increment:k;` + strings.ReplaceAll(onFirst, "{{STYLE}}", "{{STYLE}}") + `">one</div>` +
+		`<div id="{{ID}}-1" class="cq" style="counter-increment:k;` + onFirst + `">one</div>` +
 		`<div id="{{ID}}-2" class="cq" style="counter-increment:k;">two</div></div>`
 }
 
@@ -257,6 +252,8 @@ func animHTML(name string) string {
 
 // textVisible lists the properties whose demo changes the engine's layout or
 // paint operations (measured by the visible-spec test).
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var textVisible = map[string]bool{
 	"content-visibility":          true,
 	"counter-increment":           true,
@@ -310,6 +307,8 @@ var textVisible = map[string]bool{
 }
 
 // textLookOf holds property-specific one-line notes.
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var textLookOf = map[string]string{
 	"text-transform":              "The demo text turns upper case, so the glyphs are wider and the box wraps onto more lines; the control keeps the mixed case.",
 	"text-overflow":               "The one-line text is wider than the 160px box and runs past its right edge in both pictures: the painter draws no ellipsis or custom string, so the demo matches the control. The picture matches the control; judge this row by the picture.",

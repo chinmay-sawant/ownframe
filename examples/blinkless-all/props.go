@@ -9,7 +9,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -26,6 +25,8 @@ type genProp struct {
 const genPageRows = 20
 
 // genGroups lists the generated tabs in order. Their ids start with "all-".
+//
+//nolint:gochecknoglobals // static tab group table
 var genGroups = []struct{ ID, Title, Hint string }{
 	{"layout", "Layout and box", "Look for a change in the size, position or spacing of the right box."},
 	{"border", "Borders, corners, rules", "Look for a changed edge, corner or rule line on the right box."},
@@ -221,7 +222,6 @@ func (g *genSet) pageMarkup(r genProp) string {
 type genBox struct {
 	x, y, w, h float64
 	ops        []string
-	declared   string
 }
 
 // opSig is the whole paint of one operation without its id: every field,
@@ -251,13 +251,6 @@ func deepValue(v reflect.Value) any {
 
 		for i := range v.NumField() {
 			f := v.Field(i)
-			if !v.Type().Field(i).IsExported() && f.CanAddr() {
-				// The engine keeps SVG paint and other per-operation extras in
-				// an unexported field; reading it is the only way to tell two
-				// operations that differ only there apart.
-				f = reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem() //nolint:gosec // read-only view of an engine field, for the readout
-			}
-
 			if v.Type().Field(i).Name == "Font" && f.Kind() == reflect.Pointer {
 				// A font face is a large shared object; two operations use the
 				// same face when they hold the same pointer.
@@ -283,6 +276,21 @@ func deepValue(v reflect.Value) any {
 
 	if v.CanInterface() {
 		return v.Interface()
+	}
+
+	switch v.Kind() {
+	case reflect.Bool:
+		return v.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint()
+	case reflect.Float32, reflect.Float64:
+		return v.Float()
+	case reflect.String:
+		return v.String()
+	case reflect.Complex64, reflect.Complex128:
+		return v.Complex()
 	}
 
 	return nil
@@ -356,6 +364,8 @@ func genMeasure(r genProp, prefix string, withStyle bool) (boxes []genBox, root 
 // readoutCache keeps the readout of each property for the life of the
 // process: a row's readout depends only on the row, and every tab page is
 // built at start, so each row is measured once.
+//
+//nolint:gochecknoglobals // process-lifetime memoization cache
 var readoutCache sync.Map
 
 // compute fills the readout of every row of the tab. The rows are independent
@@ -475,6 +485,8 @@ func (g *genSet) demo(r genProp) string {
 // noPaint lists the properties the window painter cannot draw. A page that
 // carries one falls back to a bitmap the example refuses, so the visible demo
 // leaves the declaration out and the readout still comes from the layout.
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var noPaint = map[string]bool{
 	"font-feature-settings": true, "font-variant": true, "font-variant-alternates": true, "font-variant-caps": true,
 	"font-variant-east-asian": true, "font-variant-ligatures": true, "text-autospace": true, "writing-mode": true,

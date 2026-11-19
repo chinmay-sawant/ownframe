@@ -203,7 +203,7 @@ func TestClickingATabLoadsThatTab(t *testing.T) {
 				}
 			}
 
-			if len(page.Probe().PNG()) == 0 {
+			if len(page.Probe().PNG()) == 0 { //nolint:contextcheck // Probe().PNG() takes no context
 				t.Errorf("after clicking %s: empty picture", target.ID)
 			}
 		})

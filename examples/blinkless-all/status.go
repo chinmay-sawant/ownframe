@@ -7,6 +7,8 @@ import "strings"
 // catalog says implemented for the engine, and the picture cannot show it. A
 // demo whose picture is identical to its control belongs here, not under an
 // implemented badge.
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var painterDeclines = map[string]bool{
 	"visibility": true, "gap": true, "filter": true, "scale": true, "backdrop-filter": true,
 	"color-scheme": true, "transform-box": true, "grid-auto-columns": true, "grid-auto-flow": true,
@@ -29,6 +31,8 @@ var painterDeclines = map[string]bool{
 // opOnly lists the properties that change the engine's operation list while
 // the window picture stays the same as the control, so the readout says
 // "differs" for a picture that does not.
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var opOnly = map[string]bool{
 	"font-language-override": true, "font-feature-settings": true, "font-synthesis": true,
 	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,

@@ -99,6 +99,8 @@ func visualSpec(r genProp) (DemoSpec, bool) {
 // vizReadoutBlind lists the properties whose effect shows in the picture but
 // not in the readout, which compares box geometry and operation signatures
 // without gradients, clips, masks or matrices.
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var vizReadoutBlind = map[string]bool{
 	"clip-path": true, "mask-composite": true, "mask-repeat": true, "object-position": true,
 	"transform-origin": true, "border-image": true, "border-image-repeat": true, "border-image-width": true,
@@ -110,6 +112,8 @@ var vizReadoutBlind = map[string]bool{
 
 // vizLook replaces the sentence for a property the painter draws no differently
 // from the control.
+//
+//nolint:gochecknoglobals // read-only property lookup table
 var vizLook = map[string]string{
 	"backdrop-filter":       "The translucent box looks the same as the control: the painter does not blur what is behind it.",
 	"filter":                "The white box and its text stay sharp: the painter does not apply blur().",

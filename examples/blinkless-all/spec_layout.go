@@ -1,6 +1,9 @@
 package main
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 // layoutSpec returns the demo of a layout or misc property, or false when
 // another group file answers for it.
@@ -34,7 +37,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(flexWrapDemo("{{STYLE}}"), "The third box wraps onto a second line instead of overflowing the row.", true), true
 	case n == "flex-flow":
 		return lay(`<div id="{{ID}}" style="display:flex;width:280px;height:60px;background:#e8e4d8;{{STYLE}}">`+
-			kid(1, "width:50px;height:30px;background:#c96;")+kid(2, "width:50px;height:30px;background:#6a9;")+kid(3, "width:50px;height:30px;background:#69c;")+`</div>`,
+			kid(1, "width:50px;height:30px;background:#c96;")+kid(2, "width:50px;height:30px;background:#6a9;")+kid(3, "width:50px;height:30px;background:#69c;")+`</div>`, //nolint:mnd // child index
 			"The boxes stack in a column and wrap into a second column when the container height runs out.", true), true
 	case n == "gap":
 		return lay(gridDemo("grid-template-columns:1fr 1fr;{{STYLE}}", "", ""), "Accepted; the engine does not apply the two-value gap shorthand, so the grid keeps its spacing (row-gap and column-gap are shown on their own rows).", false), true
@@ -115,7 +118,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(blockDemo("width:150px;height:30px;padding:10px;border:3px solid #333;background:#c96;{{STYLE}}", ""), "The box keeps 150px as its outer width, so its content area is narrower, instead of growing to 176px.", true), true
 	case n == "margin-trim":
 		return lay(`<div id="{{ID}}" style="width:280px;border:1px solid #888;background:#e8e4d8;{{STYLE}}">`+
-			kid(1, "height:20px;margin:12px;background:#c96;")+kid(2, "height:20px;margin:12px;background:#69c;")+`</div>`,
+			kid(1, "height:20px;margin:12px;background:#c96;")+kid(2, "height:20px;margin:12px;background:#69c;")+`</div>`, //nolint:mnd // child index
 			"The container trims the first child's block-start margin and the last child's block-end margin, so the frame shortens.", true), true
 	case n == "display":
 		return lay(`<div id="{{ID}}" style="width:280px;background:#e8e4d8;"><span id="{{ID}}-1" style="background:#c96;{{STYLE}}">a span</span></div>`,
@@ -232,25 +235,26 @@ func in(n string, names ...string) bool {
 
 // kid is a measured child; its id is the demo prefix plus -n.
 func kid(n int, style string) string {
-	return `<div id="{{ID}}-` + string(rune('0'+n)) + `" style="` + style + `">` + string(rune('0'+n)) + `</div>`
+	s := strconv.Itoa(n)
+	return `<div id="{{ID}}-` + s + `" style="` + style + `">` + s + `</div>`
 }
 
 // flexDemo is a row of three boxes of different sizes. cont, a, b and c are
 // extra styles for the container and the three boxes.
 func flexDemo(cont, a, b, c string) string {
 	return `<div id="{{ID}}" style="display:flex;width:280px;height:80px;background:#e8e4d8;` + cont + `">` +
-		kid(1, "width:50px;height:20px;background:#c96;"+a) + kid(2, "width:70px;height:36px;background:#6a9;"+b) + kid(3, "width:40px;height:28px;background:#69c;"+c) + `</div>`
+		kid(1, "width:50px;height:20px;background:#c96;"+a) + kid(2, "width:70px;height:36px;background:#6a9;"+b) + kid(3, "width:40px;height:28px;background:#69c;"+c) + `</div>` //nolint:mnd // child index
 }
 
 // flexWrapDemo is a flex container with three 120px boxes: two fit on a line.
 func flexWrapDemo(cont string) string {
 	return `<div id="{{ID}}" style="display:flex;width:280px;background:#e8e4d8;` + cont + `">` +
-		kid(1, "width:120px;height:20px;background:#c96;") + kid(2, "width:120px;height:20px;background:#6a9;") + kid(3, "width:120px;height:20px;background:#69c;") + `</div>`
+		kid(1, "width:120px;height:20px;background:#c96;") + kid(2, "width:120px;height:20px;background:#6a9;") + kid(3, "width:120px;height:20px;background:#69c;") + `</div>` //nolint:mnd // child index
 }
 
 func shrinkDemo() string {
 	return `<div id="{{ID}}" style="display:flex;width:280px;height:40px;background:#e8e4d8;">` +
-		kid(1, "width:150px;height:20px;background:#c96;{{STYLE}}") + kid(2, "width:150px;height:20px;background:#6a9;") + kid(3, "width:150px;height:20px;background:#69c;") + `</div>`
+		kid(1, "width:150px;height:20px;background:#c96;{{STYLE}}") + kid(2, "width:150px;height:20px;background:#6a9;") + kid(3, "width:150px;height:20px;background:#69c;") + `</div>` //nolint:mnd // child index
 }
 
 // gridDemo is a grid of six boxes. cont and first style the container and the
@@ -322,7 +326,7 @@ func overflowAll(style string) string {
 
 func colKids(style string) string {
 	return `<div id="{{ID}}" style="width:280px;background:#e8e4d8;font-size:12px;` + style + `">` +
-		kid(1, "height:25px;background:#c96;") + kid(2, "height:25px;background:#69c;") + `</div>`
+		kid(1, "height:25px;background:#c96;") + kid(2, "height:25px;background:#69c;") + `</div>` //nolint:mnd // child index
 }
 
 func anchorDemo(target, label string) string {
