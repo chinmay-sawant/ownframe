@@ -1,16 +1,26 @@
 # Platforms
 
-1.0 native hosts are desktop `Run` (Linux, Windows, macOS) and Android
-`BindMobile`. That is a native window for an operator you control: one
-compiled Go process and an Ebiten window or Activity, no Chromium, no
-WebView. On Linux, Orca and Accerciser can read the page tree over AT-SPI;
-AT-SPI focus and activation reach the page through the window loop. Native text
-editing through AT-SPI is unsupported. NVDA, VoiceOver, and TalkBack cannot
-inspect it. Native does not mean OS widgets or a complete screen-reader
-adapter.
+Target native hosts (currently in the `v0.0.x` preview cycle; no `v1.0` tag yet)
+are desktop `Run` (Linux, Windows, macOS) and Android `BindMobile`. That is a
+native window for an operator you control: one compiled Go process and an Ebiten
+window or Activity, no Chromium, no WebView. On Linux, Orca and Accerciser can
+read the page tree over AT-SPI; AT-SPI focus and activation reach the page
+through the window loop. Native text editing through AT-SPI is unsupported.
+NVDA, VoiceOver, and TalkBack cannot inspect it. Native does not mean OS widgets
+or a complete screen-reader adapter.
 
 `scripts/browser.sh` is a wasm canvas preview. `-web` / `Serve` is a loopback
-PNG debugger. iOS has no Xcode project and is not a 1.0 target.
+PNG debugger. iOS has no Xcode project and is not a planned `v1.0` target.
+
+## Current (`v0.0.x`) vs planned (`v1.0`)
+
+| Area | Current (`v0.0.x`) | Planned (`v1.0`) |
+|---|---|---|
+| **Desktop windowing** | Linux, Windows, macOS via Ebiten `Run` | Same, with real-host Windows & macOS validation records |
+| **Android** | `BindMobile` + shared `android-host` Activity (arm64 APK) | Same, with reproducible CI/release APK builds |
+| **IME** | Linux & Android validated; Windows/macOS open (`plans/README.md`) | Validated preedit/commit/cancel on Windows & macOS |
+| **Clipboard** | X11, Windows, macOS (cgo); GNOME/Wayland requires `wl-clipboard` on `PATH` | Native Wayland path or explicit diagnostic capability check |
+| **Accessibility** | Go snapshot + live Linux AT-SPI bridge (no `EditableText`) | Explicit `v1.0` policy or native UIA / VoiceOver / TalkBack adapters |
 
 Each host draws the same template and calls the same handlers. What the host
 can do is not the same. Use the matrix below.

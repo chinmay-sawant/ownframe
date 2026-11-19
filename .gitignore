@@ -10,9 +10,13 @@
 # Release binary for the player example
 /examples/spotify-player/spotify-player
 
-# Go test and editor leftovers
+# Go test, profile, and editor leftovers
 *.test
 *.out
+*.prof
+cpu.out
+mem.out
+.pytest_cache/
 .DS_Store
 temp
 # Android and Gradle build state

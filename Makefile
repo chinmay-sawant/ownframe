@@ -52,7 +52,7 @@ debug:
 	$(GO) run -tags ownframe_debug ./examples/builder/loglens -dev -perf -debug-addr 127.0.0.1:8129
 
 # Use exactly the declared runner version, including when PATH has another version.
-.PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check
+.PHONY: lint lint-version docs-check plans-check graphics-check examples-check tools-check repo-size-check clean-local
 lint-version:
 	bash scripts/lint_test.sh
 	bash scripts/lint.sh $(GOLANGCI_LINT_VERSION) --version
@@ -77,6 +77,15 @@ examples-check:
 
 graphics-check:
 	bash scripts/check-graphics.sh
+
+repo-size-check:
+	python3 scripts/check-repo-size.py
+
+# Remove untracked local build, test, and profile leftovers without touching git history or temp/.
+clean-local:
+	rm -f *.test examples/*.test *.out *.prof
+	rm -rf .doc-snippets-* examples/*/android/build
+	@if [ -d temp ]; then echo "Note: temp/ is $$(du -sh temp | cut -f1); prune manually when ready."; fi
 
 # Freeze gate: no new examples import of ownframe/internal/. The current
 # set is scripts/example-internal-allowlist.txt. Stale or extra pairs fail.

@@ -2,7 +2,7 @@
 
 OwnFrame renders HTML and CSS screens while your app logic runs in Go. Blinkless lays out the page, and Ebitengine opens the native window. OwnFrame does not embed a browser or JavaScript runtime.
 
-1.0 native hosts are desktop `Run` and Android `BindMobile`, for an operator you control. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not a screen reader. wasm is a canvas preview. `-web` / `Serve` is a PNG debugger for a machine you control: it binds loopback by default, has no authentication, and is not a 1.0 ship target. The Android 1.0 deliverable is a signed arm64 APK for sideload; a Play Store listing is not part of 1.0. See [platforms.md](platforms.md) and [web.md](web.md).
+Target native hosts (currently in the `v0.0.x` preview cycle; no `v1.0` tag yet) are desktop `Run` and Android `BindMobile`, for an operator you control. Native means a compiled Go process and an Ebiten window or Activity, not OS widgets and not a screen reader. wasm is a canvas preview. `-web` / `Serve` is a PNG debugger for a machine you control: it binds loopback by default, has no authentication, and is not a release ship target. The Android deliverable is a signed arm64 APK for sideload; a Play Store listing is out of scope. See [platforms.md](platforms.md), [accessibility-native.md](accessibility-native.md), and [web.md](web.md).
 
 This page summarizes supported features and current limits. Use the linked guides for setup and examples. See [Android runtime limits](android-runtime.md) and [all examples](../examples/readme.md).
 

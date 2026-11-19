@@ -4,7 +4,15 @@ ownframe keeps one Go process and one HTML template. Bug reports, docs fixes, ex
 
 ## Setup
 
-The repo holds two Go modules joined by `go.work`: the library at the root and `examples/`. Use the Go version in `go.mod` (1.26.10 or newer).
+The repo holds two Go modules joined by `go.work`: the library at the root and `examples/`. Use the Go version in `go.mod` (1.26.11 or newer).
+
+Because git history carries historical website `.wasm` and Android `.apk` blobs, prefer a partial or shallow clone when checking out the repository:
+
+```sh
+git clone --filter=blob:none https://github.com/chinmay-sawant/ownframe.git
+# or for a minimal single-commit checkout:
+git clone --depth=1 https://github.com/chinmay-sawant/ownframe.git
+```
 
 - `make test` runs the test suite for both modules.
 - `make test-race` runs `go test -race -p 1 ./...` on the library module only.

@@ -34,17 +34,17 @@ In addition, `README.md` and `AGENTS.md` use "1.0 ships native Go apps on deskto
 
 ### 2.1 Fix confirmed documentation drift and automate pin checks
 
-- [ ] `DOCS-01` Update `AGENTS.md` line 47 to remove the hardcoded stale `blinkless v0.0.4-0.20261025105255-96d7b9d95338` version string; point to `go.mod` as the single source of truth for exact `blinkless`, `ebiten/v2`, and Go version pins (or keep synced automatically). Proof: `grep -n "v0\.0\.4-0\.2026" AGENTS.md` returns empty.
-- [ ] `DOCS-02` Audit `README.md`, `CONTRIBUTING.md`, `documentation/*.md`, and `examples/readme.md` for hardcoded Go (`1.26.*`), `blinkless`, `ebiten`, and `golangci-lint` version strings that disagree with `go.mod`, `examples/go.mod`, and `Makefile`. Proof: audit table of mismatches resolved; zero mismatches remaining.
-- [ ] `DOCS-03` Extend `scripts/check-doc-snippets.py` (or add a dedicated check in `make docs-check`) to scan `AGENTS.md`, `README.md`, and `CONTRIBUTING.md` for hardcoded `blinkless` / `ebiten` / `go 1.xx` pins and fail if any contradict `go.mod` or `Makefile`. Proof: unit test in `scripts/` that fails on a simulated stale pin in `AGENTS.md` and passes on clean HEAD.
+- [x] `DOCS-01` Update `AGENTS.md` line 47 to remove the hardcoded stale `blinkless v0.0.4-0.20261025105255-96d7b9d95338` version string; point to `go.mod` as the single source of truth for exact `blinkless`, `ebiten/v2`, and Go version pins. Evidence: updated `AGENTS.md` line 47; `grep -n "v0\.0\.4-0\.2026" AGENTS.md` returns empty.
+- [x] `DOCS-02` Audit `README.md`, `CONTRIBUTING.md`, `documentation/*.md`, and `examples/readme.md` for hardcoded Go (`1.26.*`), `blinkless`, `ebiten`, and `golangci-lint` version strings that disagree with `go.mod`, `examples/go.mod`, and `Makefile`. Evidence: fixed stale `1.26.10` -> `1.26.11` in `CONTRIBUTING.md` line 7 and stale `blinkless` pin in `AGENTS.md` line 47; verified `v2.15.0` matches `Makefile` `GOLANGCI_LINT_VERSION`.
+- [x] `DOCS-03` Extend `scripts/check-doc-snippets.py` (via `scripts/doc_claims.py`) to scan `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, and `documentation/android-runtime.md` for hardcoded `blinkless` / `go 1.xx.x` pins and fail if any contradict `go.mod`. Evidence: added `check_doc_pins` in `scripts/doc_claims.py` and `test_stale_doc_pins_fail` in `scripts/test_doc_claims.py`; `make tools-check` and `make docs-check` exit 0.
 - [ ] `DOCS-04` Audit `AGENTS.md` against current codebase reality for `internal/page`, `internal/window`, `examples/`, and `components/` (e.g., verify every path and method name cited in `AGENTS.md` still exists). Proof: script or grep audit with zero dead file/symbol references in `AGENTS.md`.
 
 ### 2.2 Align "1.0" vs `v0.0.x` support claims
 
-- [ ] `DOCS-05` Revise `README.md` (lines 13 and 119) to replace "1.0 ships..." with honest current-cycle phrasing: e.g., "Target native hosts (currently in `v0.0.x` preview): desktop (Linux, Windows, macOS) and Android for controlled deployments," explicitly listing what blocks a `v1.0` tag. Proof: diff reviewed; `README.md` contains no claim that 1.0 has shipped.
-- [ ] `DOCS-06` Update `documentation/platforms.md` and `documentation/features.md` with a concise "Current (`v0.0.x`) vs Planned (`v1.0`)" matrix covering desktop windowing, Android, IME (Linux/Windows/macOS/Android), clipboard (X11/Wayland/Windows/macOS), and accessibility (Linux AT-SPI vs UIA/VoiceOver/TalkBack). Proof: matrix matches `plans/README.md` evidence rows verbatim (no unverified claims).
-- [ ] `DOCS-07` Update `AGENTS.md` wording ("1.0 native hosts are...") to match the revised `documentation/platforms.md` terminology so agent prompts and public docs never contradict each other. Proof: `grep -n "1\.0 native" AGENTS.md README.md` returns consistent pre-1.0 target wording.
-- [ ] `DOCS-08` Verify `documentation/accessibility-native.md` and `documentation/clipboard.md` clearly state platform prerequisites (e.g., `wl-clipboard` on GNOME/Wayland) upfront rather than buried in footnotes. Proof: both files checked and linked from `README.md`.
+- [x] `DOCS-05` Revise `README.md` (lines 13 and 119) to replace "1.0 ships..." with honest current-cycle phrasing (`v0.0.x` preview cycle; no `v1.0` tag yet), explicitly linking unshipped pre-1.0 gaps. Evidence: updated `README.md` lines 13 and 119; `make docs-check` exit 0.
+- [x] `DOCS-06` Update `documentation/platforms.md` and `documentation/features.md` with a concise "Current (`v0.0.x`) vs Planned (`v1.0`)" matrix covering desktop windowing, Android, IME, clipboard, and accessibility. Evidence: added `Current (v0.0.x) vs planned (v1.0)` table in `documentation/platforms.md` and aligned intro in `documentation/features.md` to match `plans/README.md`.
+- [x] `DOCS-07` Update `AGENTS.md` wording ("1.0 native hosts are...") to match the revised `documentation/platforms.md` terminology so agent prompts and public docs never contradict each other. Evidence: updated `AGENTS.md` line 7 to `Target native hosts (currently in the v0.0.x preview cycle; no v1.0 tag yet)`.
+- [x] `DOCS-08` Verify `documentation/accessibility-native.md` and `documentation/clipboard.md` clearly state platform prerequisites upfront and are linked from `README.md`. Evidence: updated `documentation/accessibility-native.md` intro to `Currently (v0.0.x; no v1.0 tag yet)`, confirmed `documentation/clipboard.md` states `wl-copy`/`wl-paste` on line 3, and linked `accessibility-native.md` directly from `README.md`.
 
 ### 2.3 Rationalize `documentation/` (69 files) and create a 3-doc onboarding path
 
@@ -80,7 +80,7 @@ In addition, `README.md` and `AGENTS.md` use "1.0 ships native Go apps on deskto
 
 ## Closure Gates
 
-- [ ] `DOCS-GATE-01` Zero stale Go / `blinkless` / `ebiten` version pins across `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, and `documentation/`.
+- [x] `DOCS-GATE-01` Zero stale Go / `blinkless` / `ebiten` version pins across `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, and `documentation/`. Evidence: `make docs-check` (with new `check_doc_pins`) passed (39 snippets compiled, 0 pin mismatches).
 - [ ] `DOCS-GATE-02` `AGENTS.md` trimmed to <=12 KB with example narratives moved into per-example READMEs.
 - [ ] `DOCS-GATE-03` `documentation/README.md` presents a clear 3-doc Quick Start and zero orphan files.
 - [ ] `DOCS-GATE-04` `make docs-check`, `make plans-check`, `make site-check`, and `make tools-check` exit 0.

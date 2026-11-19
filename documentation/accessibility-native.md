@@ -1,14 +1,15 @@
 # Native accessibility status and validation
 
-1.0 does not ship a screen-reader product. On Linux, the window registers a
-live AT-SPI application, so Accerciser and Orca can inspect it. NVDA, VoiceOver,
-and TalkBack cannot inspect an ownframe window because those adapters are not
-shipped.
+Currently (`v0.0.x`; no `v1.0` tag yet), ownframe does not ship a cross-platform
+screen-reader adapter. On Linux, the window registers a live AT-SPI application,
+so Accerciser and Orca can inspect it. NVDA, VoiceOver, and TalkBack cannot
+inspect an ownframe window because Windows UIA, macOS VoiceOver, and Android
+TalkBack adapters are not shipped.
 
-1.0 ships the Go snapshot plus an experimental Linux AT-SPI bridge. Ownframe
-exposes page semantics through `host.Accessible`. Linux maps that snapshot to
-AT-SPI objects (`internal/atspi`), registers with the accessibility bus, and
-serves the tree.
+What ships today is the Go accessibility snapshot plus an experimental Linux
+AT-SPI bridge. Ownframe exposes page semantics through `host.Accessible`. Linux
+maps that snapshot to AT-SPI objects (`internal/atspi`), registers with the
+accessibility bus, and serves the tree.
 
 There is no UI Automation provider, no NSAccessibility / VoiceOver bridge, and
 no TalkBack bridge.

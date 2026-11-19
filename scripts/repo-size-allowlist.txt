@@ -1,0 +1,32 @@
+# Tracked files currently exceeding the 5 MiB repository size guardrail.
+# One repo-relative path per line. `make repo-size-check` (and `make lint`)
+# fails when any new tracked file exceeds 5 MiB or when a listed file is
+# removed/shrunk below 5 MiB so this list can only shrink over time.
+assets/screenshots/android/eyes/eyes2-60fps.webp
+docs/assets/eyes2-60fps-CZRXGhmx.webp
+docs/demo/demo.wasm
+docs/demos/builder/demo.wasm
+docs/demos/desktop-cat.webp
+docs/demos/expense-tracker/demo.wasm
+docs/demos/hello/demo.wasm
+docs/demos/spotify-player/ownframe.wasm.gz
+docs/demos/teams.webp
+docs/demos/telegram/ownframe.wasm
+docs/demos/trade.webp
+docs/demos/ui-builder/demo.wasm
+docs/demos/wispr-flow.webp
+docs/demos/wispr-flow/ownframe.wasm
+docs/demos/workspace-inspector/demo.wasm
+examples/depth-alert/android/artifacts/depth-alert-arm64-release.apk
+examples/digital-wellbeing/android/artifacts/digital-wellbeing-arm64-release.apk
+examples/dino/android/artifacts/dino-arm64-release.apk
+examples/eyes/android/artifacts/eyes-arm64-release.apk
+examples/lg-remote/android/artifacts/lg-remote-arm64-release.apk
+examples/login/android/artifacts/login-arm64-release.apk
+examples/platform/android/artifacts/platform-arm64-release.apk
+examples/telegram/android/artifacts/telegram-arm64-release.apk
+frontend/public/demos/desktop-cat.webp
+frontend/public/demos/teams.webp
+frontend/public/demos/trade.webp
+frontend/public/demos/wispr-flow.webp
+frontend/public/demos/wispr-flow/ownframe.wasm
