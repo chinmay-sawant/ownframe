@@ -104,7 +104,7 @@ func genValidate(r genProp, hint string) string {
 
 	badge := "The status badge must read implemented."
 	if declines(r.Name) {
-		badge = "The status badge reads partial: the picture is the same as the control, either because the window painter does not draw the property or because this demo shows no visible effect."
+		badge = "The status badge reads partial: the window painter does not draw this property fully, or the demo shows no visible effect, so the picture alone does not prove it."
 	}
 
 	return fmt.Sprintf("The left demo is the control. The right demo adds `%s: %s`. %s The readout lists each measured element in the control and with the property, and says whether the layout or the paint operations differ. %s", r.Name, r.Sample, look, badge)

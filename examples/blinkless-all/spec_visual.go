@@ -480,14 +480,14 @@ func maskSpec(r genProp) (DemoSpec, bool) {
 func shapeSpec(r genProp) (DemoSpec, bool) {
 	switch r.Name {
 	case "shape-outside":
-		return spec(vizFloatBg("radial-gradient(circle 32px at 40px 40px,#c0392b,#2980b9 31px,transparent 32px)", ""), "The control's text keeps clear of the whole 80 px square around the disc. With the circle(40%) shape the text moves in toward the disc, so its first lines start further left.")
+		return spec(vizFloatBg("radial-gradient(circle 32px at 40px 40px,#c0392b,#2980b9 31px,transparent 32px)", ""), "The control's text keeps clear of the whole 80 px square around the disc. With the circle(40%) shape the text moves in toward the disc, so its first lines start further left. The window paints the float as a flat square, so lines that follow the circle's edge run over its corners.")
 	case "shape-margin":
-		return spec(vizFloat("shape-outside:circle(50%);border-radius:50%;"), "The control's text hugs the disc's circle. With shape-margin the text keeps 12 px more distance from it, so each line starts further right.")
+		return spec(vizFloat("shape-outside:circle(50%);border-radius:50%;"), "The control's text hugs the disc's circle. With shape-margin the text keeps 12 px more distance from it, so each line starts further right. The window paints the float as a flat square, so lines that follow the circle's edge run over its corners.")
 	case "shape-image-threshold":
 		return spec(vizFloatBg(vizGrad, "shape-outside:"+vizGrad+";"), "The gradient used as the shape is fully opaque, so at a 0.5 threshold the shape is the whole 80 px square: the text stays beside the box in both pictures.")
 	}
 
-	return specNo(vizFloat("shape-outside:circle(50%);"), "The text wraps around the disc float the same way as in the control; "+r.Name+" is accepted but not used for layout.")
+	return specNo(vizFloat("shape-outside:circle(50%);"), "The text wraps around the disc float the same way as in the control; "+r.Name+" is accepted but not used for layout."+" The window paints the float as a flat square, so lines that follow the circle's edge run over its corners.")
 }
 
 func listSpec(r genProp) (DemoSpec, bool) {

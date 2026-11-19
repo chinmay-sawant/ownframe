@@ -70,7 +70,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "grid-row":
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box occupies rows 1 and 2 of the first column, so its 16px box leaves an empty cell under it, box 4 moves over and box 6 drops to a third row.", true), true
 	case n == "grid-column-end":
-		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box ends at column line 3, so it spans columns 1 and 2 of the three-column grid; box 2 moves to column 3 and the later boxes follow on the next rows.", true), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box ends at column line 3 with no start line, so it takes column 2 only and column 1 of the first row stays empty; box 2 moves to column 3 and the later boxes follow on the next rows.", true), true
 	case in(n, "grid-area", "grid-column", "grid-column-start"):
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box moves to the placed column line or spans columns, and the later boxes shift to make room.", true), true
 
