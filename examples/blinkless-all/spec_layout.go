@@ -175,9 +175,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "position-anchor":
 		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;{{STYLE}}"), "The blue label leaves the top-left corner. The engine layout (the readout) puts it directly above the orange anchor at y 24 (anchor y 44), but the window paints it at the frame's bottom-left (about y 58), so the picture and the readout place it differently.", true), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};{{STYLE}}"), "The blue label leaves the top-left corner and sits directly above the orange anchor, with its bottom edge on the anchor's top edge. Each row names its own anchor, so the page picture and the readout place it at the same spot.", true), true
 	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
-		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both already carry position-area:top and the box fits, so nothing changes between them. The layout readout puts the blue label above the anchor (y 24) while the window paints it at the frame bottom (about y 58), so both pictures agree with each other but not with the readout.", false), true
+		return lay(anchorDemo("anchor-name:--{{ID}};", "position-anchor:--{{ID}};position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both already carry position-area:top and the box fits, so the blue label sits above the orange anchor in both and nothing changes.", false), true
 	case n == "table-layout":
 		return lay(`<table id="{{ID}}" style="width:200px;border-collapse:collapse;font-size:12px;{{STYLE}}"><tr><td id="{{ID}}-1" style="border:1px solid #888;background:#c96">a very long first cell text</td><td id="{{ID}}-2" style="border:1px solid #888;background:#69c">b</td></tr></table>`,
 			"The columns split the table width evenly (fixed) instead of following the long first cell.", true), true

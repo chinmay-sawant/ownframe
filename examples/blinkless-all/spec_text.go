@@ -46,7 +46,7 @@ func textHTML(name string) string {
 		return `<div id="{{ID}}" style="width:120px;height:60px;background:#f1efe7"><svg width="120" height="60" viewBox="0 0 120 60">` +
 			`<line x1="0" y1="40" x2="120" y2="40" stroke="#c0392b" stroke-width="1"/>` + target + `</svg></div>`
 	case "vertical-align":
-		return tbox("padding-top:22px;", `Text<span id="{{ID}}-1" style="{{STYLE}}"> raised</span> and more inline text.`)
+		return tbox("padding-top:22px;", `Text<span id="{{ID}}-1" style="{{STYLE}}">raised</span> and more inline text.`)
 	case "ruby-align", "ruby-merge", "ruby-overhang", "ruby-position":
 		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">base<rt>top</rt></ruby> word <ruby>two<rt>x</rt></ruby>.`)
 	case "font-variant-east-asian":
@@ -367,7 +367,7 @@ var textLookOf = map[string]string{
 	"text-decoration":             "The control is underlined and the demo inherits the parent's `none`, so the underline disappears.",
 	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow (zero blur) behind the bold 28px word, and the box grows by the shadow extent.",
 	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of the default offset, so each line's rule sits lower, closer to the next line; the lines are spaced wide and the box has bottom padding so the last rule stays inside.",
-	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline. The engine moves the whole line with the raised word, so the other words rise too, and it draws a double space before `raised` in both boxes; the box has top padding so it stays inside.",
+	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline. The engine moves the whole line with the raised word, so the other words rise too. The markup has no literal space before the span, because the engine already draws one gap there; the box has top padding so the raised line stays inside.",
 	"text-emphasis-style":         "The control already has filled marks and the engine draws the string mark the same way, so the picture stays the same as the control.",
 	"text-decoration-line":        "The control is already underlined and the engine draws `spelling-error` like the plain underline, so the picture stays the same as the control.",
 	"text-box":                    "The demo box trims to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's; the glyphs touch or cross its edges, and the 8px padding keeps the box from collapsing.",
