@@ -13,7 +13,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 
 	switch {
 	case in(n, "align-content", "place-content"):
-		return lay(flexWrapDemo("flex-wrap:wrap;{{STYLE}}height:100px;"), "The two wrapped lines of boxes move from the top of the container to its vertical centre.", true), true
+		return lay(flexWrapDemo("flex-wrap:wrap;{{STYLE}}height:100px;"), "The two wrapped lines of boxes move from the top of the container to its centre.", true), true
 	case n == "align-items":
 		return lay(flexDemo("{{STYLE}}", "", "", ""), "The three boxes of different heights centre on the cross axis instead of stretching or sitting at the top.", true), true
 	case n == "justify-content":
@@ -41,19 +41,20 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "row-gap":
 		return lay(flexWrapDemo("flex-wrap:wrap;{{STYLE}}"), "Space opens between the two wrapped lines of boxes.", true), true
 	case in(n, "justify-items", "justify-self", "place-items", "place-self"):
-		cont, kidStyle := "", ""
+		cont, kidStyle, look := "", "", "The 40px boxes centre inside their wider grid cells instead of sitting at the cell's start edge."
 		if strings.HasSuffix(n, "self") {
 			kidStyle = "{{STYLE}}"
+			look = "Only the first 40px box (orange, top left) centres inside its wider grid cell; the other boxes keep the cell's start edge."
 		} else {
 			cont = "{{STYLE}}"
 		}
 
-		return lay(gridDemo("grid-template-columns:1fr 1fr;"+cont, kidStyle, "width:40px;"), "The 40px boxes centre inside their wider grid cells instead of sitting at the cell's start edge.", true), true
+		return lay(gridDemo("grid-template-columns:1fr 1fr;"+cont, kidStyle, "width:40px;"), look, true), true
 
 	case n == "grid" || n == "grid-template-columns":
 		return lay(gridDemo("{{STYLE}}", "", ""), "The six boxes lay out in columns instead of one stacked column.", true), true
 	case n == "grid-template-rows" || n == "grid-template":
-		return lay(gridDemo("{{STYLE}}", "", ""), "The grid rows take the declared heights instead of the height of their content.", true), true
+		return lay(gridDemo("{{STYLE}}", "", ""), "Each grid row becomes the declared 40px tall instead of the 16px of its box; the boxes keep their 16px and sit at the top of their rows.", true), true
 	case n == "grid-auto-rows":
 		return lay(gridDemo("{{STYLE}}", "", ""), "Every implicit row is 40px tall.", true), true
 	case n == "grid-auto-columns":
@@ -64,8 +65,10 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(gridDemo("{{STYLE}}", "", ""), "The container declares a one-cell named area; the boxes keep the grid's layout.", false), true
 	case n == "grid-row-start" || n == "grid-row-end":
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "Accepted; the engine places the first box in the same cell, so nothing moves (grid-row shows the placement).", false), true
-	case in(n, "grid-area", "grid-column", "grid-column-start", "grid-column-end", "grid-row"):
-		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box moves to the placed grid line, or spans cells, instead of the first cell.", true), true
+	case n == "grid-row":
+		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box occupies rows 1 and 2 of the first column, so its 16px box leaves an empty cell under it, box 4 moves over and box 6 drops to a third row.", true), true
+	case in(n, "grid-area", "grid-column", "grid-column-start", "grid-column-end"):
+		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box moves to the placed column line or spans columns, and the later boxes shift to make room.", true), true
 
 	case in(n, "margin", "margin-left", "margin-right", "margin-top", "margin-bottom", "margin-block", "margin-block-start", "margin-block-end", "margin-inline", "margin-inline-start", "margin-inline-end"):
 		return lay(blockDemo("height:30px;background:#c96;{{STYLE}}", ""), "Empty space opens around the orange box, so it moves or shrinks inside the frame.", true), true
@@ -135,18 +138,20 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case in(n, "overflow", "overflow-x", "overflow-y", "overflow-block", "overflow-inline"):
 		return lay(overflowDemo("{{STYLE}}"), "The tall orange content is cut at the 40px frame instead of spilling out below it.", true), true
 	case strings.HasPrefix(n, "overflow-clip-margin"):
-		return lay(overflowAll("overflow:clip;{{STYLE}}"), "The clip edge sits 12px outside the frame, so more of the overflowing content shows.", true), true
+		return lay(overflowAll("overflow:clip;{{STYLE}}"), clipMarginLook(n), true), true
 	case n == "overflow-wrap":
-		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">Unbreakable_supercalifragilistic</div>`,
-			"The long word breaks across lines inside the 100px frame instead of overflowing it.", true), true
+		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">Zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</div>`,
+			"Accepted; the engine already breaks an unbreakable word at the 100px frame edge, so the control and the demo wrap the same way and nothing changes.", false), true
 	case n == "column-gap":
 		return lay(colKids("column-count:2;{{STYLE}}"), "The second box sits 3px, not 16px, from the first column.", true), true
-	case in(n, "columns", "column-count", "column-width"):
-		return lay(colDemo("{{STYLE}}"), "The paragraph splits into side-by-side columns.", true), true
+	case n == "column-width":
+		return lay(colDemo("{{STYLE}}"), "A 12px column width is narrower than most words, so the paragraph splits into many very narrow columns holding a letter or two each (a real page would use a wider value).", true), true
+	case in(n, "columns", "column-count"):
+		return lay(colDemo("{{STYLE}}"), "The paragraph splits into two side-by-side columns instead of one full-width paragraph.", true), true
 	case n == "column-fill":
 		return lay(colKids("column-fill:auto;height:60px;{{STYLE}}"), "Accepted; the engine lays the two boxes out the same with or without balancing, so nothing moves.", false), true
 	case n == "column-height":
-		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: columns get a fixed height.", true), true
+		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: columns get a fixed 12px height, so the box shrinks to one line of the first column and the rest of the text is not shown.", true), true
 	case n == "column-wrap":
 		return lay(colDemo("column-count:2;{{STYLE}}"), "Draft property: the value is the default, so the columns stay as they are.", false), true
 	case n == "column-span":
@@ -156,11 +161,10 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "contain":
 		return lay(overflowDemo("{{STYLE}}"), "Paint containment clips the tall content at the 40px frame.", true), true
 	case strings.HasPrefix(n, "contain-intrinsic"):
-		return lay(`<div id="{{ID}}" style="display:inline-block;contain:size;background:#c96;font-size:12px;{{STYLE}}">content</div>`,
-			"The size-contained box has an intrinsic size of 12px instead of collapsing to nothing.", true), true
+		return containIntrinsic(n), true
 	case n == "container" || n == "container-type":
-		return lay(`<div id="{{ID}}" style="display:inline-block;background:#c96;font-size:12px;{{STYLE}}">content that sizes the box</div>`,
-			"Inline-size containment removes the text from the box's width, so the box shrinks.", true), true
+		return lay(`<div id="{{ID}}" style="width:280px;height:60px;background:#e8e4d8;"><div id="{{ID}}-1" style="display:inline-block;min-width:100px;background:#c96;font-size:12px;{{STYLE}}">content that sizes the box</div></div>`,
+			"Inline-size containment removes the text from the box's width, so the orange box narrows from its text width to its 100px minimum and the text wraps.", true), true
 	case n == "container-name" || n == "anchor-scope":
 		return lay(`<div id="{{ID}}" style="width:200px;padding:6px;background:#c96;font-size:12px;{{STYLE}}">named, but nothing queries it</div>`,
 			"Only a name for later queries or anchors is declared, so nothing visible changes.", false), true
@@ -169,9 +173,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "position-anchor":
 		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;{{STYLE}}"), "The blue label is placed in the area above the orange anchor.", true), true
+		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;{{STYLE}}"), "The blue label leaves the top-left corner. The layout readout puts it directly above the orange anchor (y 24, anchor y 44), but the window paints it at the frame's bottom-left, so picture and readout place it differently.", true), true
 	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
-		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows; here it fits, so nothing changes.", false), true
+		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows; both the control and the demo already carry position-area:top and the box fits, so the label stays where it is and the readout agrees.", false), true
 	case n == "table-layout":
 		return lay(`<table id="{{ID}}" style="width:200px;border-collapse:collapse;font-size:12px;{{STYLE}}"><tr><td id="{{ID}}-1" style="border:1px solid #888;background:#c96">a very long first cell text</td><td id="{{ID}}-2" style="border:1px solid #888;background:#69c">b</td></tr></table>`,
 			"The columns split the table width evenly (fixed) instead of following the long first cell.", true), true
@@ -183,7 +187,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 			"The empty orange cell loses its border and background.", true), true
 	case n == "max-lines":
 		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">one two three four five six seven eight nine ten eleven twelve</div>`,
-			"The paragraph is cut to two lines.", true), true
+			"The paragraph is cut from four lines to two, and the engine draws the ellipsis just past the right edge of the 100px box instead of inside it.", true), true
 	case n == "zoom":
 		return lay(blockDemo("width:200px;height:30px;background:#c96;{{STYLE}}", "zoomed"), "The orange box scales down to 40% of its size.", true), true
 	case n == "backface-visibility":
@@ -276,16 +280,40 @@ func absDemo(style string) string {
 }
 
 func overflowDemo(style string) string {
-	return `<div id="{{ID}}" style="width:200px;height:40px;margin:14px 0;background:#e8e4d8;` + style + `"><div id="{{ID}}-1" style="height:70px;background:#c96;">tall content</div></div>`
+	return `<div id="{{ID}}" style="width:200px;height:40px;margin:14px 0 36px;background:#e8e4d8;` + style + `"><div id="{{ID}}-1" style="height:70px;background:#c96;">tall content</div></div>`
 }
 
 func colDemo(style string) string {
-	return `<div id="{{ID}}" style="width:280px;background:#e8e4d8;font-size:12px;` + style + `">Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho sigma tau upsilon.</div>`
+	return `<div id="{{ID}}" style="width:280px;background:#e8e4d8;font-size:12px;` + style + `">Alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho.</div>`
 }
 
-// overflowAll has content that spills out on every side of its frame.
+// overflowAll has a checkerboard of 12px cells that spills out on every side
+// of a bordered 160px by 40px frame, so a clip margin shows as whole extra
+// rows or columns of cells on the side it applies to.
 func overflowAll(style string) string {
-	return `<div id="{{ID}}" style="width:200px;height:40px;margin:20px 20px;background:#e8e4d8;` + style + `"><div id="{{ID}}-1" style="height:70px;margin:-15px;background:#c96;">tall content</div></div>`
+	var b strings.Builder
+
+	b.WriteString(`<div id="{{ID}}" style="width:160px;height:40px;margin:20px;border:2px solid #333;background:#e8e4d8;` + style + `">` +
+		`<div id="{{ID}}-1" style="width:240px;height:108px;margin:-34px 0 0 -34px;">`)
+
+	for row := range 9 {
+		b.WriteString(`<div style="display:flex;height:12px;">`)
+
+		for col := range 20 {
+			c := "#c96"
+			if (row+col)%2 == 1 {
+				c = "#69c"
+			}
+
+			b.WriteString(`<div style="width:12px;height:12px;background:` + c + `"></div>`)
+		}
+
+		b.WriteString(`</div>`)
+	}
+
+	b.WriteString(`</div></div>`)
+
+	return b.String()
 }
 
 func colKids(style string) string {
@@ -297,4 +325,41 @@ func anchorDemo(target, label string) string {
 	return `<div id="{{ID}}" style="position:relative;width:280px;height:80px;background:#e8e4d8;">` +
 		`<div id="{{ID}}-1" style="position:absolute;left:100px;top:44px;width:80px;height:24px;background:#c96;` + target + `">anchor</div>` +
 		`<div id="{{ID}}-2" style="position:absolute;width:60px;height:20px;background:#69c;` + label + `">label</div></div>`
+}
+
+// containIntrinsic is an empty size-contained box. Padding gives the axis
+// the property does not size a fixed extent, so the sized axis shows as extra
+// orange; without the property that axis is empty.
+func containIntrinsic(n string) DemoSpec {
+	border, look := "border:3px solid #69c;", "The empty size-contained box gets a 12px intrinsic content size in both directions instead of only its blue border; it renders 12px larger than the control."
+
+	switch n {
+	case "contain-intrinsic-width", "contain-intrinsic-inline-size":
+		border, look = "padding:12px 0;border:2px solid #69c;", "The size-contained box gets a 12px intrinsic content width, so the orange box is 12px wider between its blue edges; the height comes from the padding."
+	case "contain-intrinsic-height", "contain-intrinsic-block-size":
+		border, look = "padding:0 40px;border:2px solid #69c;", "The size-contained box gets a 12px intrinsic content height, so the orange box is 12px taller between its blue edges; the width comes from the padding."
+	}
+
+	return lay(`<div id="{{ID}}" style="width:280px;height:50px;background:#e8e4d8;"><div id="{{ID}}-1" style="display:inline-block;contain:size;background:#c96;`+border+`{{STYLE}}"></div></div>`, look, true)
+}
+
+// clipMarginLook names the side or sides a clip margin reveals.
+func clipMarginLook(n string) string {
+	side := strings.TrimPrefix(n, "overflow-clip-margin")
+
+	where := map[string]string{
+		"":              "on every side",
+		"-block":        "on the top and bottom",
+		"-inline":       "on the left and right",
+		"-block-start":  "on the top",
+		"-top":          "on the top",
+		"-block-end":    "on the bottom",
+		"-bottom":       "on the bottom",
+		"-inline-start": "on the left",
+		"-left":         "on the left",
+		"-inline-end":   "on the right",
+		"-right":        "on the right",
+	}[side]
+
+	return "The checkerboard spills past the dark-bordered frame and is clipped at its edge in the control; with the clip margin one more 12px row or column of squares shows " + where + "."
 }

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unsafe"
 
 	"github.com/chinmay-sawant/blinkless/layout"
 )
@@ -99,7 +100,12 @@ func genValidate(r genProp, hint string) string {
 		look = hint
 	}
 
-	return fmt.Sprintf("The left demo is the control. The right demo adds `%s: %s`. %s The readout lists each measured element in the control and with the property, and says whether the layout or the paint operations differ. The status badge must read implemented.", r.Name, r.Sample, look)
+	badge := "The status badge must read implemented."
+	if declines(r.Name) {
+		badge = "The status badge reads partial: the engine lays the property out, but the window painter does not draw it, so the picture can match the control."
+	}
+
+	return fmt.Sprintf("The left demo is the control. The right demo adds `%s: %s`. %s The readout lists each measured element in the control and with the property, and says whether the layout or the paint operations differ. %s", r.Name, r.Sample, look, badge)
 }
 
 func genHead() string {
@@ -131,9 +137,14 @@ type DemoSpec struct {
 // properties; anything unclaimed gets a plain box.
 func specFor(r genProp) DemoSpec {
 	if strings.HasPrefix(r.Name, "-webkit-text-stroke") {
+		look := "Look for an outline drawn around each glyph of the word."
+		if r.Name == "-webkit-text-stroke-color" {
+			look = "The stroke width stays 0, so a stroke colour alone draws nothing: the picture matches the control."
+		}
+
 		return DemoSpec{
-			HTML:    `<div id="{{ID}}" style="font-size:30px;font-weight:bold;color:#2c3e50;padding:4px 8px;{{STYLE}}">Stroke</div>`,
-			Look:    "Look for an outline drawn around each glyph of the word.",
+			HTML:    `<div id="{{ID}}" style="font-size:30px;font-weight:bold;color:#2c3e50;padding:4px 8px;margin:8px 0;{{STYLE}}">Stroke</div>`,
+			Look:    look,
 			Visible: false,
 		}
 	}
@@ -211,49 +222,77 @@ type genBox struct {
 	declared   string
 }
 
-// opSig is the paint of one operation without its id or pointers.
-func opSig(op layout.DisplayOp, ox, oy float64) string {
+// opSig is the whole paint of one operation without its id: every field,
+// including paths, colours and pointed-to values, so two operations that
+// paint differently never compare equal.
+func opSig(op layout.DisplayOp) string {
 	op.ID = 0
-	op.X -= ox
-	op.Y -= oy
-	v := reflect.ValueOf(op)
 
-	var b strings.Builder
+	v := reflect.New(reflect.TypeOf(op)).Elem()
+	v.Set(reflect.ValueOf(op))
 
-	for i := range v.NumField() {
-		f := v.Field(i)
-		if !f.CanInterface() {
-			continue
-		}
-
-		switch f.Kind() {
-		case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
-			continue
-		}
-
-		fmt.Fprintf(&b, "%v,", f.Interface())
-	}
-
-	return b.String()
+	return fmt.Sprintf("%+v", deepValue(v))
 }
 
-func (g *genSet) compute() {
-	g.res = map[string]string{}
-
-	var b strings.Builder
-
-	for _, r := range g.rows {
-		spec := specFor(r)
-		b.WriteString(`<div>` + spec.expand(r, genID("c_", r.Name), false) + spec.expand(r, genID("t_", r.Name), true) + `</div>`)
-	}
-
-	d, err := shapesLayout(context.Background(), b.String())
-	if err != nil {
-		for _, r := range g.rows {
-			g.res[r.Name] = "layout failed: " + err.Error()
+// deepValue follows pointers and slices so a printed operation shows what they
+// point at, not an address.
+func deepValue(v reflect.Value) any {
+	switch v.Kind() {
+	case reflect.Pointer, reflect.Interface:
+		if v.IsNil() {
+			return nil
 		}
 
-		return
+		return deepValue(v.Elem())
+	case reflect.Struct:
+		out := make([]any, 0, v.NumField())
+
+		for i := range v.NumField() {
+			f := v.Field(i)
+			if !v.Type().Field(i).IsExported() && f.CanAddr() {
+				// The engine keeps SVG paint and other per-operation extras in
+				// an unexported field; reading it is the only way to tell two
+				// operations that differ only there apart.
+				f = reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem() //nolint:gosec // read-only view of an engine field, for the readout
+			}
+
+			out = append(out, deepValue(f))
+		}
+
+		return out
+	case reflect.Slice, reflect.Array:
+		out := make([]any, 0, v.Len())
+		for i := range v.Len() {
+			out = append(out, deepValue(v.Index(i)))
+		}
+
+		return out
+	case reflect.Map, reflect.Func, reflect.Chan, reflect.UnsafePointer:
+		return nil
+	}
+
+	if v.CanInterface() {
+		return v.Interface()
+	}
+
+	return nil
+}
+
+// genCellW is the width of one demo cell on the page, so the readout lays the
+// demo out at the size the picture does.
+const genCellW = 300
+
+// genMeasure lays one demo out alone in a cell and returns its boxes. Each
+// layout starts at the origin, so the control and the demo compare by absolute
+// geometry and by every field of every paint operation, paths and paint
+// included.
+func genMeasure(r genProp, prefix string, withStyle bool) (boxes []genBox, root layout.Box, err error) {
+	spec := specFor(r)
+	id := genID(prefix, r.Name)
+
+	d, err := shapesLayout(context.Background(), fmt.Sprintf(`<div style="width:%dpx">%s</div>`, genCellW, spec.expand(r, id, withStyle)))
+	if err != nil {
+		return nil, root, err
 	}
 
 	opByID := map[uint64]layout.DisplayOp{}
@@ -261,69 +300,69 @@ func (g *genSet) compute() {
 		opByID[op.ID] = op
 	}
 
-	// boxes keyed by element id, with the geometry made relative to the root
-	// measured element of the same prefix.
-	byID := map[string]layout.Box{}
+	// SVG shapes and other paint that no box owns still belong to the demo:
+	// they are added to the root element's operations, so a changed fill or
+	// stroke inside an <svg> shows in the readout.
+	owned := map[uint64]bool{}
+
 	for _, box := range d.Boxes {
-		if box.ID != "" {
-			byID[box.ID] = box
+		for _, opID := range box.OperationIDs {
+			owned[opID] = true
 		}
 	}
 
-	collect := func(prefix string) []genBox {
-		root, ok := byID[prefix]
-		if !ok {
-			return nil
+	var loose []string
+
+	for _, op := range d.Ops {
+		if !owned[op.ID] {
+			loose = append(loose, opSig(op))
 		}
-
-		var out []genBox
-
-		// Operation positions are made relative to the top-left of the
-		// prefix's operations, so a control and a demo that sit at different
-		// places in the page still compare equal.
-		ox, oy, seen := 0.0, 0.0, false
-
-		for _, box := range d.Boxes {
-			if box.ID != prefix && !strings.HasPrefix(box.ID, prefix+"-") {
-				continue
-			}
-
-			for _, id := range box.OperationIDs {
-				op := opByID[id]
-				if !seen || op.X < ox {
-					ox = op.X
-				}
-
-				if !seen || op.Y < oy {
-					oy = op.Y
-				}
-
-				seen = true
-			}
-		}
-
-		for _, box := range d.Boxes {
-			if box.ID != prefix && !strings.HasPrefix(box.ID, prefix+"-") {
-				continue
-			}
-
-			gb := genBox{x: box.X - root.X, y: box.Y - root.Y, w: box.W, h: box.H}
-			for _, id := range box.OperationIDs {
-				gb.ops = append(gb.ops, opSig(opByID[id], ox, oy))
-			}
-
-			if v := box.Declared[""]; v != "" {
-				gb.declared = v
-			}
-
-			out = append(out, gb)
-		}
-
-		return out
 	}
+
+	for _, box := range d.Boxes {
+		if box.ID == id {
+			root = box
+		}
+
+		if box.ID != id && !strings.HasPrefix(box.ID, id+"-") {
+			continue
+		}
+
+		gb := genBox{x: box.X, y: box.Y, w: box.W, h: box.H}
+		for _, opID := range box.OperationIDs {
+			gb.ops = append(gb.ops, opSig(opByID[opID]))
+		}
+
+		if box.ID == id {
+			gb.ops = append(gb.ops, loose...)
+		}
+
+		boxes = append(boxes, gb)
+	}
+
+	return boxes, root, nil
+}
+
+// compute fills the readout of every row of the tab.
+func (g *genSet) compute() {
+	g.res = map[string]string{}
 
 	for _, r := range g.rows {
-		g.res[r.Name] = genReadout(r, collect(genID("c_", r.Name)), collect(genID("t_", r.Name)), byID[genID("t_", r.Name)])
+		ctl, _, err := genMeasure(r, "c_", false)
+		if err != nil {
+			g.res[r.Name] = "layout failed: " + err.Error()
+
+			continue
+		}
+
+		tst, root, err := genMeasure(r, "t_", true)
+		if err != nil {
+			g.res[r.Name] = "layout failed: " + err.Error()
+
+			continue
+		}
+
+		g.res[r.Name] = genReadout(r, ctl, tst, root)
 	}
 }
 

@@ -274,7 +274,7 @@ func TestNavDemosShowTheDecisions(t *testing.T) {
 		"s-a down: scroll":              navDemoAction(),
 		"\u2022\u2022\u2022":            navDemoSecurity(),
 		"transform + opacity":           navDemoLayer(),
-		"ia-paused: frame 2":            navDemoImage(),
+		"ia-paused: frame 3":            navDemoImage(),
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("demo lacks %q", want)

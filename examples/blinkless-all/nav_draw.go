@@ -129,7 +129,7 @@ func (s *navSession) drawFields(sc *navScreen, m navModel) {
 		sc.text(id, shown)
 	}
 
-	sc.text("chip-field", fmt.Sprintf("fs-content holds %d characters and is %gpx wide; fs-fixed holds %d and stays %gpx",
+	sc.text("chip-field", fmt.Sprintf("fs-content holds %d characters and is %.0fpx wide; fs-fixed holds %d and stays %.0fpx",
 		len([]rune(st.texts["fs-content"])), navFieldWidth("content", st.texts["fs-content"], liveCharW, navFieldPad, 40, 150),
 		len([]rune(st.texts["fs-fixed"])), 150.0))
 

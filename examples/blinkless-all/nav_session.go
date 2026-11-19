@@ -202,7 +202,7 @@ func (s *navSession) reset(doc string, now time.Time) {
 		layerFrames: map[string]int{}, layerPaints: map[string]int{},
 		texts:  map[string]string{"cr-bar": "type here", "cr-block": "type here", "cr-under": "type here", "cr-autoblock": "type here", "fs-content": "hello", "fs-fixed": "hello", "pw-auto": "hunter2", "pw-none": "hunter2"},
 		sel:    map[string][2]int{},
-		slider: map[string]float64{"sl-h": 0, "sl-rtl": 1, "sl-v": 1},
+		slider: map[string]float64{"sl-h": 0.25, "sl-rtl": 0.25, "sl-v": 0.25},
 		winX:   20, winY: 20,
 		caretFocus: "cr-bar", fieldFocus: "fs-content", secFocus: "pw-auto",
 		imgPauseAt: -1,

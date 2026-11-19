@@ -46,14 +46,17 @@ func textHTML(name string) string {
 		return `<div id="{{ID}}" style="width:120px;height:60px;background:#f1efe7"><svg width="120" height="60" viewBox="0 0 120 60">` +
 			`<line x1="0" y1="40" x2="120" y2="40" stroke="#c0392b" stroke-width="1"/>` + target + `</svg></div>`
 	case "vertical-align":
-		return tbox("", `Text <span id="{{ID}}-1" style="{{STYLE}}">raised</span> and <small>small</small> inline.`)
+		return tbox("padding-top:22px;", `Text <span id="{{ID}}-1" style="{{STYLE}}">raised</span> and <small>small</small> inline.`)
 	case "ruby-align", "ruby-merge", "ruby-overhang", "ruby-position":
-		return tbox("", `A <ruby id="{{ID}}-1" style="{{STYLE}}">base<rt>top</rt></ruby> word <ruby>two<rt>x</rt></ruby>.`)
+		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">base<rt>top</rt></ruby> word <ruby>two<rt>x</rt></ruby>.`)
 	case "font-variant-east-asian":
 		return tbox("", `<ruby>base<rt>top</rt></ruby> ruby text 123`)
 	case "text-combine-upright", "text-orientation":
 		return tbox("", `Year 2026 upright digits`)
-	case "initial-letter", "initial-letter-align", "initial-letter-wrap":
+	case "initial-letter":
+		// the first word is sized to two lines; the box is tall enough to hold it.
+		return tbox("height:46px;padding-top:14px;", `Drop`)
+	case "initial-letter-align", "initial-letter-wrap":
 		return tbox("", `Drop cap paragraph that wraps around the first letter of the text.`)
 	case "hyphens", "hyphenate-character", "hyphenate-limit-chars", "hyphenate-limit-last", "hyphenate-limit-lines", "hyphenate-limit-zone":
 		return `<div id="{{ID}}" lang="en" style="width:90px;font-size:13px;background:#f1efe7;padding:4px;hyphens:auto;{{STYLE}}">` +
@@ -67,7 +70,10 @@ func textHTML(name string) string {
 	case "white-space", "white-space-collapse", "white-space-trim":
 		return tbox("", "Spaced     words\n   and a new line\nthird line   ")
 	case "tab-size":
-		return tbox("white-space:pre;", "a\tb\n\tc\td")
+		// the painter draws a tab as a missing-glyph box, so the demo has none.
+		return tbox("white-space:pre;", "a    b\n    c    d")
+	case "text-shadow":
+		return tbox("font-size:20px;padding:8px 10px;", `Shadow text`)
 	case "text-wrap", "text-wrap-mode", "text-wrap-style":
 		return tbox("", `Wrapping text that fills a narrow box with several short words here.`)
 	case "text-align", "text-align-all":
@@ -97,14 +103,17 @@ func textHTML(name string) string {
 	case "text-decoration-color", "text-decoration-thickness", "text-decoration-style", "text-decoration-inset",
 		"text-underline-offset", "text-underline-position", "text-decoration-skip", "text-decoration-skip-box",
 		"text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces", "text-decoration-line":
-		return tbox("text-decoration:underline;", `Underlined gypsy jumping quickly over lazy dogs.`)
+		return tbox("text-decoration:underline;padding:4px 4px 20px;", `Underlined gypsy jumping quickly over lazy dogs.`)
 	case "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-skip", "text-emphasis-style":
-		return tbox("text-emphasis:filled #1f2937;", `Emphasis marks over words`)
+		return tbox("text-emphasis:filled #1f2937;padding:18px 4px;line-height:2;", `Emphasis marks over words`)
 	case "font-synthesis", "font-synthesis-position", "font-synthesis-small-caps", "font-synthesis-style", "font-synthesis-weight":
 		return tbox("font-weight:700;font-style:italic;", `Synthesised bold italic text`)
 	case "text-box", "text-box-edge", "text-box-trim":
 		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;background:#cfe3f7;{{STYLE}}">Trimmed Hxg</div>`
-	case "font-size", "font-size-adjust", "line-height", "line-padding", "line-fit-edge":
+	case "font-size-adjust":
+		// aspect 2 scales the glyphs about four times: start from a 5px face.
+		return tbox("font-size:5px;line-height:30px;height:30px;overflow:hidden;", `Sphinx`)
+	case "font-size", "line-height", "line-padding", "line-fit-edge":
 		return tbox("", textBody)
 	case "text-indent":
 		return tbox("", textBody+` `+textBody)
@@ -251,7 +260,7 @@ var textVisible = map[string]bool{
 	"font-family":                 true,
 	"font-size":                   true,
 	"font-size-adjust":            true,
-	"font-synthesis-small-caps":   true,
+	"font-style":                  true,
 	"font-variant":                true,
 	"font-variant-caps":           true,
 	"font-variant-position":       true,
@@ -264,9 +273,9 @@ var textVisible = map[string]bool{
 	"line-padding":                true,
 	"offset-anchor":               true,
 	"ruby-position":               true,
-	"tab-size":                    true,
 	"text-align":                  true,
 	"text-align-all":              true,
+	"text-align-last":             true,
 	"text-box":                    true,
 	"text-box-trim":               true,
 	"text-decoration":             true,
@@ -297,7 +306,62 @@ var textVisible = map[string]bool{
 }
 
 // textLookOf holds property-specific one-line notes.
-var textLookOf = map[string]string{}
+var textLookOf = map[string]string{
+	"fill":                        "The triangle fill changes from the default black to #c0392b red. Judge this row by the picture.",
+	"fill-opacity":                "The red triangle fill becomes half transparent, so the background shows through; the dark outline stays solid. Judge this row by the picture.",
+	"stroke":                      "The control triangle has no outline; the demo draws a 6px red outline around it. Judge this row by the picture.",
+	"stroke-opacity":              "The dark outline of the demo becomes half transparent and looks grey; the control outline is solid. Judge this row by the picture.",
+	"stroke-width":                "The outline of the demo is 12px wide; the control's is hairline thin. Judge this row by the picture.",
+	"stroke-dasharray":            "The control line is solid; the demo line breaks into short dashes. Judge this row by the picture.",
+	"stroke-dashoffset":           "The dash pattern starts 12px later, so the dashes and gaps shift along the line. Judge this row by the picture.",
+	"stroke-linecap":              "The line ends of the demo are rounded; the control's are flat. Judge this row by the picture.",
+	"vector-effect":               "The demo stroke stays thin instead of scaling with the viewBox, so the line is narrower than the control's. Judge this row by the picture.",
+	"rx":                          "The corners of the demo rectangle are rounded; the control's are square. Judge this row by the picture.",
+	"ry":                          "The corners of the demo rectangle are rounded; the control's are square. Judge this row by the picture.",
+	"d":                           "The demo triangle is the path from the declaration (a small triangle at the top left); the control draws a larger triangle at the bottom. Judge this row by the picture.",
+	"path-length":                 "The control is a dashed line; with pathLength 2 the dash of length 1 covers half the path, so the demo line is drawn solid. Judge this row by the picture.",
+	"flood-color":                 "The flood fill of the demo is red; the control floods black. Judge this row by the picture.",
+	"flood-opacity":               "The flood fill of the demo is 40% opaque and looks grey; the control floods solid black. Judge this row by the picture.",
+	"stop-opacity":                "The right end of the gradient becomes 40% opaque, so the demo fades toward the background. Judge this row by the picture.",
+	"fill-rule":                   "The star is a self-crossing path. The painter fills it with nonzero in both pictures, so the centre pentagon stays filled and the demo looks the same as the control. Judge this row by the picture.",
+	"marker":                      "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
+	"marker-start":                "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
+	"marker-mid":                  "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
+	"marker-end":                  "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
+	"paint-order":                 "The painter draws fill then stroke in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"stroke-linejoin":             "The painter keeps mitred joins for both, so the peak stays pointed and the demo matches the control. Judge this row by the picture.",
+	"stroke-miterlimit":           "The peak is drawn the same in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"stop-color":                  "The painter does not apply the stop colour from a style declaration, so both gradients draw the same dark picture. Judge this row by the picture.",
+	"color-interpolation":         "The control and the demo draw the same picture: the painter does not apply this declaration to the SVG shape, so judge the row by the picture and expect no difference.",
+	"color-interpolation-filters": "The control and the demo draw the same picture: the painter does not apply this declaration to the SVG shape, so judge the row by the picture and expect no difference.",
+	"cx":                          "The circle stays at the same centre in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"cy":                          "The circle stays at the same centre in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"r":                           "The circle keeps the same radius in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"x":                           "The rectangle stays at the same position in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"y":                           "The rectangle stays at the same position in both pictures, so the demo matches the control. Judge this row by the picture.",
+	"font-size-adjust":            "The control is 5px text; aspect 2 scales the glyphs to about four times that, so the demo word is far larger than the control word inside its fixed-height box.",
+	"initial-letter":              "The demo word is drawn about three times larger than the control's word; the engine sizes the whole first word, not just a letter, and does not wrap later text around it, so the box holds this one word.",
+	"font-width":                  "The engine records a different font width in the demo's paint operations (the readout differs), but the bundled face has no condensed cut, so the text looks the same as the control.",
+	"font-style":                  "The demo text turns italic, so the glyph shapes and widths change; compare the two boxes.",
+	"text-align-all":              "In this engine `end` right-aligns only the first line: line 1 of the demo moves right and the last line stays at the left edge. `text-align: right` moves both lines.",
+	"text-align-last":             "The control is right-aligned. With `start` the first line stays on the right and the last line moves to the left edge.",
+	"tab-size":                    "The demo text has no tab characters, because the painter draws a tab as a missing-glyph box. The property is exported to the host and the layout and paint stay the same as the control.",
+	"text-anchor":                 "The declaration is set on the SVG text at x=60; the engine exports it but draws the text at the same place as the control, so the layout and paint stay the same.",
+	"word-spacing":                "The control has 6px of word spacing and the demo inherits the parent's 0, so the word gaps narrow and the text re-wraps.",
+	"letter-spacing":              "The control has 2px of letter spacing and the demo inherits the parent's 0, so the glyphs sit closer and the text re-wraps.",
+	"text-decoration":             "The control is underlined and the demo inherits the parent's `none`, so the underline disappears.",
+	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow; the box grows by the shadow extent.",
+	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of sitting at the default offset; the box has bottom padding so it stays inside.",
+	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline; the box has top padding so it stays inside.",
+	"text-emphasis-style":         "The control already has filled marks and the engine draws the string mark the same way, so the picture stays the same as the control.",
+	"text-decoration-line":        "The control is already underlined and the engine draws `spelling-error` like the plain underline, so the picture stays the same as the control.",
+	"text-box":                    "The demo box shrinks to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's and the glyphs sit at its edge.",
+	"text-box-trim":               "The demo box loses the half-leading at its start edge, so it is shorter than the control's box.",
+	"writing-mode":                "The engine lays the demo out vertically (the readout shows a different size), but the window painter declines writing-mode, so the picture is drawn without it and stays horizontal, the same as the control.",
+	"text-emphasis":               "The demo marks are red dots instead of the control's dark filled marks, drawn above each word.",
+	"text-emphasis-color":         "The demo marks turn red; the control marks are dark.",
+	"text-emphasis-position":      "The demo marks move below the text; the control marks are above.",
+}
 
 func textLook(r genProp) string {
 	if s, ok := textLookOf[r.Name]; ok {
@@ -307,6 +371,14 @@ func textLook(r genProp) string {
 	motion := ""
 	if r.Group == "anim" {
 		motion = " The motion itself is on the Motion tab."
+	}
+
+	if declines(r.Name) {
+		if textVisible[r.Name] {
+			return "The engine lays the demo out differently (the readout reports a difference), but the window painter declines this property, so the picture is drawn without it and looks the same as the control." + motion
+		}
+
+		return "The engine reports no layout or paint change, and the window painter declines this property, so the picture looks the same as the control." + motion
 	}
 
 	if textVisible[r.Name] {

@@ -47,7 +47,7 @@ body{margin:0;padding:16px 262px 16px 16px;background:#f6f4ee;color:#1f2937;font
 .sec .sub{color:#6b7280;margin:0 0 10px 0}
 .row{margin:0 0 14px 0;padding:0 0 12px 0;border-bottom:1px solid #eee9db}
 .rowhead{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
-.row .name{width:230px;font-family:monospace;font-size:13px}
+.row .name{flex:0 0 auto;max-width:100%;min-width:230px;font-family:monospace;font-size:13px;overflow-wrap:anywhere}
 .row .note{color:#4b5563;flex:1 1 240px;min-width:0;line-height:1.35}
 .row .wide{flex:0 0 100%;width:100%;box-sizing:border-box}
 .demo{margin:8px 0 0 0;padding:10px 12px;background:#faf8f2;border:1px solid #e6e1d2;border-radius:6px}
@@ -86,7 +86,10 @@ func (a *App) header() string {
 		names = append(names, t.Names()...)
 	}
 
-	tally := cat.Tally(names)
+	tally := map[string]int{}
+	for _, n := range names {
+		tally[a.rowStatus(n)]++
+	}
 
 	var b strings.Builder
 
@@ -144,7 +147,7 @@ func (a *App) section(t Tab) string {
 	}
 
 	for _, p := range t.Props {
-		st, _ := a.cat.Status(p.Name)
+		st := a.rowStatus(p.Name)
 		covers := ""
 
 		if len(p.Covers) > 0 {
