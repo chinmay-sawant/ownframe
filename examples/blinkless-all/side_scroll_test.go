@@ -14,7 +14,10 @@ func TestSideWheelScrollsTabList(t *testing.T) {
 	}
 
 	for _, tab := range app.tabs {
-		t.Run(tab.ID, func(t *testing.T) { sideWheelCheck(t, app, tab.ID) })
+		t.Run(tab.ID, func(t *testing.T) {
+			t.Parallel()
+			sideWheelCheck(t, app, tab.ID)
+		})
 	}
 }
 

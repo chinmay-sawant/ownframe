@@ -8,7 +8,25 @@ package main
 var painterDeclines = map[string]bool{
 	"visibility": true, "gap": true, "filter": true, "scale": true, "backdrop-filter": true,
 	"color-scheme": true, "transform-box": true, "grid-auto-columns": true, "grid-auto-flow": true,
-	"writing-mode": true,
+	"writing-mode": true, "position-area": true, "outline-color": true, "clip-rule": true,
+	"border-image": true, "border-image-source": true, "border-image-slice": true, "border-image-width": true,
+	"mask-border-mode": true, "mask-border-outset": true, "mask-border-repeat": true, "mask-border-slice": true,
+	"mask-border-width": true, "grid-row-start": true, "grid-row-end": true, "grid-template-areas": true,
+	"marker": true, "marker-start": true, "marker-mid": true, "marker-end": true, "paint-order": true,
+	"fill-rule": true, "stroke-linejoin": true, "stroke-miterlimit": true,
+	"-webkit-mask-box-image-outset": true, "-webkit-mask-box-image-repeat": true,
+	"-webkit-mask-box-image-slice": true, "-webkit-mask-box-image-width": true,
+}
+
+// opOnly lists the properties that change the engine's operation list while
+// the window picture stays the same as the control, so the readout says
+// "differs" for a picture that does not.
+var opOnly = map[string]bool{
+	"font-language-override": true, "font-feature-settings": true, "font-synthesis": true,
+	"font-synthesis-weight": true, "font-variant-alternates": true, "font-variant-east-asian": true,
+	"font-variant-ligatures": true, "font-variant-numeric": true, "text-anchor": true, "text-autospace": true,
+	"background-blend-mode": true, "image-rendering": true, "object-fit": true, "object-view-box": true,
+	"isolation": true, "row-rule-break": true, "rule-overlap": true,
 }
 
 // rowStatus is the badge of a row: the catalog status, lowered to partial when

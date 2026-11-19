@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -256,6 +257,14 @@ func deepValue(v reflect.Value) any {
 				f = reflect.NewAt(f.Type(), unsafe.Pointer(f.UnsafeAddr())).Elem() //nolint:gosec // read-only view of an engine field, for the readout
 			}
 
+			if v.Type().Field(i).Name == "Font" && f.Kind() == reflect.Pointer {
+				// A font face is a large shared object; two operations use the
+				// same face when they hold the same pointer.
+				out = append(out, f.Pointer())
+
+				continue
+			}
+
 			out = append(out, deepValue(f))
 		}
 
@@ -343,27 +352,62 @@ func genMeasure(r genProp, prefix string, withStyle bool) (boxes []genBox, root 
 	return boxes, root, nil
 }
 
-// compute fills the readout of every row of the tab.
+// readoutCache keeps the readout of each property for the life of the
+// process: a row's readout depends only on the row, and every tab page is
+// built at start, so each row is measured once.
+var readoutCache sync.Map
+
+// compute fills the readout of every row of the tab. The rows are independent
+// layouts, so they run in parallel.
 func (g *genSet) compute() {
-	g.res = map[string]string{}
+	g.res = make(map[string]string, len(g.rows))
+
+	var (
+		mu sync.Mutex
+		wg sync.WaitGroup
+	)
+
+	limit := make(chan struct{}, runtime.NumCPU())
 
 	for _, r := range g.rows {
-		ctl, _, err := genMeasure(r, "c_", false)
-		if err != nil {
-			g.res[r.Name] = "layout failed: " + err.Error()
+		if v, ok := readoutCache.Load(r.Name); ok {
+			g.res[r.Name], _ = v.(string)
 
 			continue
 		}
 
-		tst, root, err := genMeasure(r, "t_", true)
-		if err != nil {
-			g.res[r.Name] = "layout failed: " + err.Error()
+		wg.Add(1)
 
-			continue
-		}
+		limit <- struct{}{}
 
-		g.res[r.Name] = genReadout(r, ctl, tst, root)
+		go func() {
+			defer func() { <-limit; wg.Done() }()
+
+			out := measureReadout(r)
+			readoutCache.Store(r.Name, out)
+
+			mu.Lock()
+			g.res[r.Name] = out
+			mu.Unlock()
+		}()
 	}
+
+	wg.Wait()
+}
+
+// measureReadout lays the control and the demo of one row out and compares them.
+func measureReadout(r genProp) string {
+	ctl, _, err := genMeasure(r, "c_", false)
+	if err != nil {
+		return "layout failed: " + err.Error()
+	}
+
+	tst, root, err := genMeasure(r, "t_", true)
+	if err != nil {
+		return "layout failed: " + err.Error()
+	}
+
+	return genReadout(r, ctl, tst, root)
 }
 
 func genReadout(r genProp, ctl, tst []genBox, root layout.Box) string {
@@ -398,6 +442,10 @@ func genReadout(r genProp, ctl, tst []genBox, root layout.Box) string {
 	verdict := "same layout and paint as the control"
 	if differs {
 		verdict = "layout or paint differs from the control"
+
+		if opOnly[r.Name] {
+			verdict = "the engine's paint operation list differs from the control, but the window picture matches it"
+		}
 	}
 
 	if v, ok := root.Declared[r.Name]; ok {

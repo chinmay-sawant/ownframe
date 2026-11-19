@@ -107,8 +107,8 @@ var (
 	navSnipLayer = `<div id="wc-area" style="position:relative;height:90px;width:420px;background:#f1efe7">
   <div id="wc" style="will-change:transform, opacity;position:absolute;left:10px;top:8px;width:90px;height:30px;background:#6366f1;color:#fff">will-change</div>
   <div id="wc2" style="will-change:margin;position:absolute;left:10px;top:52px;width:90px;height:30px;background:#f59e0b;color:#fff">margin hint</div>
-  <div id="wc-badge" style="position:absolute;left:120px;top:6px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">click the blue box</div>
-  <div id="wc2-badge" style="position:absolute;left:120px;top:50px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">click the amber box</div>
+  <div id="wc-badge" style="position:absolute;left:120px;top:6px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">wc: click the box to move it</div>
+  <div id="wc2-badge" style="position:absolute;left:120px;top:50px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">wc2: click the box to move it</div>
  </div>`
 	navSnipAppear = `<button id="ap-none" style="-webkit-appearance:none;margin-right:10px;` + navAppearBox + `">plain button</button>
  <div id="ap-btn" style="-webkit-appearance:button;display:inline-block;margin-right:10px;` + navAppearBox + `">div as button</div>
@@ -437,7 +437,7 @@ func navActionHTML() string {
 				continue
 			}
 
-			fmt.Fprintf(&b, `<div style="position:absolute;left:%dpx;top:%dpx;width:76px;height:36px;background:#e7e0c8;`+
+			fmt.Fprintf(&b, `<div style="position:absolute;left:%dpx;top:%dpx;width:62px;height:26px;padding:5px 7px;background:#e7e0c8;`+
 				`font-family:monospace;font-size:11px">%d,%d</div>`, gx*navCellW, gy*navCellH, gx*navCellW, gy*navCellH)
 		}
 	}

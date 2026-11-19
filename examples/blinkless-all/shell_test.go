@@ -114,14 +114,18 @@ func TestEveryTabRenders(t *testing.T) {
 	app := newTestApp(t)
 
 	for _, tab := range app.tabs {
-		page, err := app.NewPage(context.Background(), tab.ID, 1000, 800)
-		if err != nil {
-			t.Fatalf("tab %s: %v", tab.ID, err)
-		}
+		t.Run(tab.ID, func(t *testing.T) {
+			t.Parallel()
 
-		if len(page.Probe().PNG()) == 0 {
-			t.Errorf("tab %s drew an empty picture", tab.ID)
-		}
+			page, err := app.NewPage(context.Background(), tab.ID, 1000, 800)
+			if err != nil {
+				t.Fatalf("tab %s: %v", tab.ID, err)
+			}
+
+			if len(page.Probe().PNG()) == 0 {
+				t.Errorf("tab %s drew an empty picture", tab.ID)
+			}
+		})
 	}
 }
 
@@ -165,39 +169,43 @@ func TestClickingATabLoadsThatTab(t *testing.T) {
 	ctx := context.Background()
 
 	for _, target := range app.tabs {
-		page, err := app.NewPage(ctx, app.FirstTab(), 1000, 800)
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Run(target.ID, func(t *testing.T) {
+			t.Parallel()
 
-		var x, y float64
-
-		found := false
-
-		for _, b := range page.Probe().Display().Boxes {
-			if b.ID == "tab-btn-"+target.ID {
-				x, y, found = b.X+b.W/2, b.Y+b.H/2, true
+			page, err := app.NewPage(ctx, app.FirstTab(), 1000, 800)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
 
-		if !found {
-			t.Fatalf("no button for tab %s", target.ID)
-		}
+			var x, y float64
 
-		if err = page.Click(ctx, x, y); err != nil {
-			t.Fatalf("click %s: %v", target.ID, err)
-		}
+			found := false
 
-		doc := page.HTML()
-		for _, other := range app.tabs {
-			has := strings.Contains(doc, fmt.Sprintf(`id="sec-%s"`, other.ID))
-			if has != (other.ID == target.ID) {
-				t.Errorf("after clicking %s: section %s present = %v", target.ID, other.ID, has)
+			for _, b := range page.Probe().Display().Boxes {
+				if b.ID == "tab-btn-"+target.ID {
+					x, y, found = b.X+b.W/2, b.Y+b.H/2, true
+				}
 			}
-		}
 
-		if len(page.Probe().PNG()) == 0 {
-			t.Errorf("after clicking %s: empty picture", target.ID)
-		}
+			if !found {
+				t.Fatalf("no button for tab %s", target.ID)
+			}
+
+			if err = page.Click(ctx, x, y); err != nil {
+				t.Fatalf("click %s: %v", target.ID, err)
+			}
+
+			doc := page.HTML()
+			for _, other := range app.tabs {
+				has := strings.Contains(doc, fmt.Sprintf(`id="sec-%s"`, other.ID))
+				if has != (other.ID == target.ID) {
+					t.Errorf("after clicking %s: section %s present = %v", target.ID, other.ID, has)
+				}
+			}
+
+			if len(page.Probe().PNG()) == 0 {
+				t.Errorf("after clicking %s: empty picture", target.ID)
+			}
+		})
 	}
 }

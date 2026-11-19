@@ -25,7 +25,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "flex" || n == "flex-grow":
 		return lay(flexDemo("", "{{STYLE}}", "", ""), "The first box stretches to take the free width of the row.", true), true
 	case n == "flex-basis":
-		return lay(flexDemo("", "width:auto;{{STYLE}}", "", ""), "The first box starts from half the container width instead of its content width.", true), true
+		return lay(flexDemo("", "width:auto;min-width:24px;{{STYLE}}", "", ""), "The first box starts from half the container width instead of its content width.", true), true
 	case n == "flex-shrink":
 		return lay(shrinkDemo(), "The first box gives up more of its width when the three boxes overflow the row.", true), true
 	case n == "flex-direction":
@@ -53,7 +53,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 
 	case n == "grid" || n == "grid-template-columns":
 		return lay(gridDemo("{{STYLE}}", "", ""), "The six boxes lay out in columns instead of one stacked column.", true), true
-	case n == "grid-template-rows" || n == "grid-template":
+	case n == "grid-template-rows":
+		return lay(gridDemo("{{STYLE}}", "", ""), "The first grid row becomes 30px and the second 60px instead of the 16px of their boxes; the boxes keep their 16px and sit at the top of their rows, and later rows stay 16px.", true), true
+	case n == "grid-template":
 		return lay(gridDemo("{{STYLE}}", "", ""), "Each grid row becomes the declared 40px tall instead of the 16px of its box; the boxes keep their 16px and sit at the top of their rows.", true), true
 	case n == "grid-auto-rows":
 		return lay(gridDemo("{{STYLE}}", "", ""), "Every implicit row is 40px tall.", true), true
@@ -62,7 +64,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "grid-auto-flow":
 		return lay(gridDemo("grid-template-rows:20px 20px;{{STYLE}}", "", ""), "Accepted; the engine keeps filling row by row, so the boxes do not move.", false), true
 	case n == "grid-template-areas":
-		return lay(gridDemo("{{STYLE}}", "", ""), "The container declares a one-cell named area; the boxes keep the grid's layout.", false), true
+		return lay(gridDemo("{{STYLE}}", "", ""), "The container declares a one-cell named area, but the boxes name no area, so they keep the grid's layout; nothing visible moves.", false), true
 	case n == "grid-row-start" || n == "grid-row-end":
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "Accepted; the engine places the first box in the same cell, so nothing moves (grid-row shows the placement).", false), true
 	case n == "grid-row":
@@ -71,7 +73,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(gridDemo("grid-template-columns:1fr 1fr 1fr;", "{{STYLE}}", ""), "The first box moves to the placed column line or spans columns, and the later boxes shift to make room.", true), true
 
 	case in(n, "margin", "margin-left", "margin-right", "margin-top", "margin-bottom", "margin-block", "margin-block-start", "margin-block-end", "margin-inline", "margin-inline-start", "margin-inline-end"):
-		return lay(blockDemo("height:30px;background:#c96;{{STYLE}}", ""), "Empty space opens around the orange box, so it moves or shrinks inside the frame.", true), true
+		return lay(blockDemo("height:30px;background:#c96;{{STYLE}}", ""), marginLook(n), true), true
 	case in(n, "padding", "padding-left", "padding-right", "padding-top", "padding-bottom", "padding-block", "padding-block-start", "padding-block-end", "padding-inline", "padding-inline-start", "padding-inline-end"):
 		return lay(`<div id="{{ID}}" style="width:200px;background:#c96;{{STYLE}}"><div id="{{ID}}-1" style="height:20px;background:#69c;">content</div></div>`,
 			"The orange box grows on the padded side and the blue content moves away from that edge.", true), true
@@ -102,7 +104,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="height:80px;width:280px;background:#e8e4d8;"><div id="{{ID}}-1" style="width:150px;height:70px;background:#c96;{{STYLE}}">box</div></div>`,
 			"The 70px box is clamped to half the 80px frame height.", true), true
 	case n == "max-size":
-		return lay(blockDemo("width:200px;height:50px;background:#c96;{{STYLE}}", ""), "The box is clamped to half its parent in both directions, if the engine reads this draft shorthand.", true), true
+		return lay(blockDemo("width:200px;height:50px;background:#c96;{{STYLE}}", ""), "The 200px by 50px box is clamped to half its parent in both directions.", true), true
 	case n == "size":
 		return lay(blockDemo("background:#c96;{{STYLE}}", "text"), "The box takes a 100px by 50px size instead of full width and one text line, if the engine reads this draft shorthand.", true), true
 	case n == "aspect-ratio":
@@ -126,7 +128,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 			"The orange bar drops below the left float instead of sitting beside it.", true), true
 	case in(n, "float-offset", "float-defer", "float-reference"):
 		return lay(`<div id="{{ID}}" style="width:280px;height:40px;background:#e8e4d8;"><div id="{{ID}}-1" style="float:right;width:80px;height:30px;background:#c96;{{STYLE}}"></div></div>`,
-			"The orange float sits at the right edge; this draft float property shifts or keeps it only by what the engine implements.", n == "float-offset"), true
+			floatLook(n), n == "float-offset"), true
 	case in(n, "top", "left", "right", "bottom", "inset", "inset-block", "inset-block-start", "inset-block-end", "inset-inline", "inset-inline-start", "inset-inline-end"):
 		return lay(absDemo("{{STYLE}}"), "The orange box moves to the declared offset from the frame edge.", true), true
 	case n == "position":
@@ -173,9 +175,9 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 	case n == "position-anchor":
 		return lay(anchorDemo("anchor-name:--a;", "{{STYLE}}"), "The engine does not attach the blue label to the named anchor, so it stays at the top-left; the name is accepted.", false), true
 	case n == "position-area":
-		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;{{STYLE}}"), "The blue label leaves the top-left corner. The layout readout puts it directly above the orange anchor (y 24, anchor y 44), but the window paints it at the frame's bottom-left, so picture and readout place it differently.", true), true
+		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;{{STYLE}}"), "The blue label leaves the top-left corner. The engine layout (the readout) puts it directly above the orange anchor at y 24 (anchor y 44), but the window paints it at the frame's bottom-left (about y 58), so the picture and the readout place it differently.", true), true
 	case in(n, "position-try", "position-try-fallbacks", "position-try-order", "position-visibility"):
-		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows; both the control and the demo already carry position-area:top and the box fits, so the label stays where it is and the readout agrees.", false), true
+		return lay(anchorDemo("anchor-name:--a;", "position-anchor:--a;position-area:top;{{STYLE}}"), "Declares how a fallback or visibility rule applies when the anchored box overflows. Control and demo both already carry position-area:top and the box fits, so nothing changes between them. The layout readout puts the blue label above the anchor (y 24) while the window paints it at the frame bottom (about y 58), so both pictures agree with each other but not with the readout.", false), true
 	case n == "table-layout":
 		return lay(`<table id="{{ID}}" style="width:200px;border-collapse:collapse;font-size:12px;{{STYLE}}"><tr><td id="{{ID}}-1" style="border:1px solid #888;background:#c96">a very long first cell text</td><td id="{{ID}}-2" style="border:1px solid #888;background:#69c">b</td></tr></table>`,
 			"The columns split the table width evenly (fixed) instead of following the long first cell.", true), true
@@ -189,7 +191,7 @@ func layoutSpec(r genProp) (DemoSpec, bool) {
 		return lay(`<div id="{{ID}}" style="width:100px;background:#e8e4d8;font-size:12px;{{STYLE}}">one two three four five six seven eight nine ten eleven twelve</div>`,
 			"The paragraph is cut from four lines to two, and the engine draws the ellipsis just past the right edge of the 100px box instead of inside it.", true), true
 	case n == "zoom":
-		return lay(blockDemo("width:200px;height:30px;background:#c96;{{STYLE}}", "zoomed"), "The orange box scales down to 40% of its size.", true), true
+		return lay(blockDemo("width:200px;height:60px;font-size:12px;background:#c96;{{STYLE}}", "zoomed"), "The orange box scales down to 40% of its size (80px by 24px); its text keeps its full size and still fits inside the shrunken box.", true), true
 	case n == "backface-visibility":
 		return lay(`<div id="{{ID}}" style="width:120px;height:40px;background:#c96;transform:rotateY(180deg);{{STYLE}}">back</div>`,
 			"The box is turned to face away; hidden removes it from the picture.", true), true
@@ -362,4 +364,29 @@ func clipMarginLook(n string) string {
 	}[side]
 
 	return "The checkerboard spills past the dark-bordered frame and is clipped at its edge in the control; with the clip margin one more 12px row or column of squares shows " + where + "."
+}
+
+// marginLook says what one margin property does to the demo frame.
+func marginLook(n string) string {
+	side := map[string]string{
+		"margin-top": "above", "margin-block-start": "above", "margin-bottom": "below", "margin-block-end": "below",
+		"margin-left": "left of", "margin-inline-start": "left of", "margin-right": "right of", "margin-inline-end": "right of",
+	}[n]
+	switch n {
+	case "margin-top", "margin-block-start", "margin-bottom", "margin-block-end":
+		return "Empty space opens " + side + " the orange box; the box keeps its size and the frame grows on that one side to hold the margin."
+	case "margin-left", "margin-right", "margin-inline-start", "margin-inline-end":
+		return "Empty space opens " + side + " the orange box, so it moves away from that edge inside the frame (or narrows to leave the space)."
+	}
+
+	return "Empty space opens around the orange box, so it narrows or moves inside the frame and the frame grows to hold the vertical margins."
+}
+
+// floatLook says what a draft float property does to the demo float.
+func floatLook(n string) string {
+	if n == "float-offset" {
+		return "The orange float stays at the right edge, but the offset shifts its box 12px down."
+	}
+
+	return "The orange float sits at the right edge; this draft property does not change that, so nothing moves."
 }

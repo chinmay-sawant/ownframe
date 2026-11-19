@@ -46,7 +46,7 @@ func textHTML(name string) string {
 		return `<div id="{{ID}}" style="width:120px;height:60px;background:#f1efe7"><svg width="120" height="60" viewBox="0 0 120 60">` +
 			`<line x1="0" y1="40" x2="120" y2="40" stroke="#c0392b" stroke-width="1"/>` + target + `</svg></div>`
 	case "vertical-align":
-		return tbox("padding-top:22px;", `Text <span id="{{ID}}-1" style="{{STYLE}}">raised</span> and <small>small</small> inline.`)
+		return tbox("padding-top:22px;", `Text<span id="{{ID}}-1" style="{{STYLE}}"> raised</span> and more inline text.`)
 	case "ruby-align", "ruby-merge", "ruby-overhang", "ruby-position":
 		return tbox("padding:14px 4px;", `A <ruby id="{{ID}}-1" style="{{STYLE}}">base<rt>top</rt></ruby> word <ruby>two<rt>x</rt></ruby>.`)
 	case "font-variant-east-asian":
@@ -73,7 +73,9 @@ func textHTML(name string) string {
 		// the painter draws a tab as a missing-glyph box, so the demo has none.
 		return tbox("white-space:pre;", "a    b\n    c    d")
 	case "text-shadow":
-		return tbox("font-size:20px;padding:8px 10px;", `Shadow text`)
+		return tbox("font-size:28px;font-weight:700;padding:10px 12px;", `Shadow`)
+	case "text-transform":
+		return tbox("", `Mixed case words wrap over two lines here.`)
 	case "text-wrap", "text-wrap-mode", "text-wrap-style":
 		return tbox("", `Wrapping text that fills a narrow box with several short words here.`)
 	case "text-align", "text-align-all":
@@ -103,13 +105,13 @@ func textHTML(name string) string {
 	case "text-decoration-color", "text-decoration-thickness", "text-decoration-style", "text-decoration-inset",
 		"text-underline-offset", "text-underline-position", "text-decoration-skip", "text-decoration-skip-box",
 		"text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces", "text-decoration-line":
-		return tbox("text-decoration:underline;padding:4px 4px 20px;", `Underlined gypsy jumping quickly over lazy dogs.`)
+		return tbox("text-decoration:underline;line-height:3.4;padding:4px 4px 24px;", `Underlined gypsy jumping quickly over lazy dogs.`)
 	case "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-skip", "text-emphasis-style":
-		return tbox("text-emphasis:filled #1f2937;padding:18px 4px;line-height:2;", `Emphasis marks over words`)
+		return tbox("text-emphasis:filled #1f2937;padding:24px 4px 30px;line-height:3;", `Emphasis marks over words`)
 	case "font-synthesis", "font-synthesis-position", "font-synthesis-small-caps", "font-synthesis-style", "font-synthesis-weight":
 		return tbox("font-weight:700;font-style:italic;", `Synthesised bold italic text`)
 	case "text-box", "text-box-edge", "text-box-trim":
-		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;background:#cfe3f7;{{STYLE}}">Trimmed Hxg</div>`
+		return `<div id="{{ID}}" style="width:160px;font-size:20px;line-height:2;padding:8px 0;background:#cfe3f7;{{STYLE}}">Trimmed Hxg</div>`
 	case "font-size-adjust":
 		// aspect 2 scales the glyphs about four times: start from a 5px face.
 		return tbox("font-size:5px;line-height:30px;height:30px;overflow:hidden;", `Sphinx`)
@@ -307,6 +309,19 @@ var textVisible = map[string]bool{
 
 // textLookOf holds property-specific one-line notes.
 var textLookOf = map[string]string{
+	"text-transform":              "The demo text turns upper case, so the glyphs are wider and the box wraps onto more lines; the control keeps the mixed case.",
+	"text-overflow":               "The one-line text is wider than the 160px box and runs past its right edge in both pictures: the painter draws no ellipsis or custom string, so the demo matches the control. The picture matches the control; judge this row by the picture.",
+	"text-wrap":                   "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
+	"text-wrap-mode":              "The control wraps the text inside the 160px box; with `nowrap` the demo keeps one line, which is wider than the box and runs past its right edge.",
+	"text-autospace":              "The text has no mixed CJK and Latin runs, so the spacing is as in the control. The picture matches the control; judge this row by the picture.",
+	"font-variant-numeric":        "The bundled face has no alternate numeral forms, so the digits draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-variant-ligatures":      "The engine exports the declaration, but the painter draws the same glyphs as in the control. The picture matches the control; judge this row by the picture.",
+	"font-variant-east-asian":     "The text has no East Asian glyphs, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-variant-alternates":     "The bundled face has no alternate glyph sets, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-synthesis-weight":       "The bundled face already carries the weight, so nothing is synthesised and the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-synthesis":              "The bundled face already carries the weight and style, so nothing is synthesised and the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-feature-settings":       "The bundled face has no matching OpenType feature, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
+	"font-language-override":      "The bundled face has no language-specific forms, so the glyphs draw as in the control. The picture matches the control; judge this row by the picture.",
 	"fill":                        "The triangle fill changes from the default black to #c0392b red. Judge this row by the picture.",
 	"fill-opacity":                "The red triangle fill becomes half transparent, so the background shows through; the dark outline stays solid. Judge this row by the picture.",
 	"stroke":                      "The control triangle has no outline; the demo draws a 6px red outline around it. Judge this row by the picture.",
@@ -322,7 +337,7 @@ var textLookOf = map[string]string{
 	"path-length":                 "The control is a dashed line; with pathLength 2 the dash of length 1 covers half the path, so the demo line is drawn solid. Judge this row by the picture.",
 	"flood-color":                 "The flood fill of the demo is red; the control floods black. Judge this row by the picture.",
 	"flood-opacity":               "The flood fill of the demo is 40% opaque and looks grey; the control floods solid black. Judge this row by the picture.",
-	"stop-opacity":                "The right end of the gradient becomes 40% opaque, so the demo fades toward the background. Judge this row by the picture.",
+	"stop-opacity":                "The window painter draws a gradient as one flat fill of its last stop, not as a blend: the control is solid red and the demo is the same red at 40% opacity, so it looks pale. The thin blue sliver at the left edge is the first stop and is not a fade. Judge this row by the picture.",
 	"fill-rule":                   "The star is a self-crossing path. The painter fills it with nonzero in both pictures, so the centre pentagon stays filled and the demo looks the same as the control. Judge this row by the picture.",
 	"marker":                      "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
 	"marker-start":                "The control draws red dots at the path start, middle and end. The painter still draws them with `none`, so the demo matches the control. Judge this row by the picture.",
@@ -331,7 +346,7 @@ var textLookOf = map[string]string{
 	"paint-order":                 "The painter draws fill then stroke in both pictures, so the demo matches the control. Judge this row by the picture.",
 	"stroke-linejoin":             "The painter keeps mitred joins for both, so the peak stays pointed and the demo matches the control. Judge this row by the picture.",
 	"stroke-miterlimit":           "The peak is drawn the same in both pictures, so the demo matches the control. Judge this row by the picture.",
-	"stop-color":                  "The painter does not apply the stop colour from a style declaration, so both gradients draw the same dark picture. Judge this row by the picture.",
+	"stop-color":                  "The window painter draws a gradient as one flat fill of its last stop and does not apply the stop colour from a style declaration, so both boxes show the same flat dark fill with a thin blue sliver at the left edge (the first stop); the demo does not turn red. Judge this row by the picture.",
 	"color-interpolation":         "The control and the demo draw the same picture: the painter does not apply this declaration to the SVG shape, so judge the row by the picture and expect no difference.",
 	"color-interpolation-filters": "The control and the demo draw the same picture: the painter does not apply this declaration to the SVG shape, so judge the row by the picture and expect no difference.",
 	"cx":                          "The circle stays at the same centre in both pictures, so the demo matches the control. Judge this row by the picture.",
@@ -346,21 +361,21 @@ var textLookOf = map[string]string{
 	"text-align-all":              "In this engine `end` right-aligns only the first line: line 1 of the demo moves right and the last line stays at the left edge. `text-align: right` moves both lines.",
 	"text-align-last":             "The control is right-aligned. With `start` the first line stays on the right and the last line moves to the left edge.",
 	"tab-size":                    "The demo text has no tab characters, because the painter draws a tab as a missing-glyph box. The property is exported to the host and the layout and paint stay the same as the control.",
-	"text-anchor":                 "The declaration is set on the SVG text at x=60; the engine exports it but draws the text at the same place as the control, so the layout and paint stay the same.",
+	"text-anchor":                 "The declaration is set on the SVG text at x=60; the text is drawn at the same place as in the control. The picture matches the control; judge this row by the picture.",
 	"word-spacing":                "The control has 6px of word spacing and the demo inherits the parent's 0, so the word gaps narrow and the text re-wraps.",
 	"letter-spacing":              "The control has 2px of letter spacing and the demo inherits the parent's 0, so the glyphs sit closer and the text re-wraps.",
 	"text-decoration":             "The control is underlined and the demo inherits the parent's `none`, so the underline disappears.",
-	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow; the box grows by the shadow extent.",
-	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of sitting at the default offset; the box has bottom padding so it stays inside.",
-	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline; the box has top padding so it stays inside.",
+	"text-shadow":                 "The demo text gains a hard 2px offset dark shadow (zero blur) behind the bold 28px word, and the box grows by the shadow extent.",
+	"text-underline-offset":       "The underline of the demo drops 12px below the text instead of the default offset, so each line's rule sits lower, closer to the next line; the lines are spaced wide and the box has bottom padding so the last rule stays inside.",
+	"vertical-align":              "The word `raised` in the demo is lifted 12px above the baseline. The engine moves the whole line with the raised word, so the other words rise too, and it draws a double space before `raised` in both boxes; the box has top padding so it stays inside.",
 	"text-emphasis-style":         "The control already has filled marks and the engine draws the string mark the same way, so the picture stays the same as the control.",
 	"text-decoration-line":        "The control is already underlined and the engine draws `spelling-error` like the plain underline, so the picture stays the same as the control.",
-	"text-box":                    "The demo box shrinks to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's and the glyphs sit at its edge.",
+	"text-box":                    "The demo box trims to the cap height and alphabetic baseline of its text, so the blue box is shorter than the control's; the glyphs touch or cross its edges, and the 8px padding keeps the box from collapsing.",
 	"text-box-trim":               "The demo box loses the half-leading at its start edge, so it is shorter than the control's box.",
 	"writing-mode":                "The engine lays the demo out vertically (the readout shows a different size), but the window painter declines writing-mode, so the picture is drawn without it and stays horizontal, the same as the control.",
-	"text-emphasis":               "The demo marks are red dots instead of the control's dark filled marks, drawn above each word.",
-	"text-emphasis-color":         "The demo marks turn red; the control marks are dark.",
-	"text-emphasis-position":      "The demo marks move below the text; the control marks are above.",
+	"text-emphasis":               "The demo marks are red dots instead of the control's dark filled marks, drawn above each word; line-height 3 and padding leave room for the marks.",
+	"text-emphasis-color":         "The demo marks turn red; the control marks are dark. Line-height 3 and padding leave room for the marks.",
+	"text-emphasis-position":      "The demo marks move below the text; the control marks are above. Line-height 3 and padding leave room for the marks on both sides.",
 }
 
 func textLook(r genProp) string {
