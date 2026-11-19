@@ -42,7 +42,7 @@ func demoSvgLighting() string {
 		filter("lfw", "white")+filter("lfb", "#336699")+
 			`<rect x="10" y="10" width="60" height="60" fill="#aaa" filter="url(#lfw)"/>`+
 			`<rect x="130" y="10" width="60" height="60" fill="#aaa" filter="url(#lfb)"/>`,
-		"the same rect lit by a distant light: white, then lighting-color #336699")
+		"the same rect lit by a distant light (55 deg): white light (paints light grey), then lighting-color #336699")
 }
 
 func demoSvgGlyph() string {

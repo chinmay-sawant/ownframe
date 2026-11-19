@@ -1,6 +1,22 @@
 # blinkless-all
 
-One window for the 61 CSS properties that blinkless had not yet implemented.
+One window for every implemented CSS property in the catalog. Six hand-built
+tabs hold the 61 properties that blinkless had not yet implemented. Generated
+tabs hold the remaining implemented properties, grouped by area (layout and
+box, borders and corners, text, animation and timelines, background and mask,
+effects and transforms, SVG paint, `-webkit-` aliases, other), at most 40 rows
+per tab. The total matches the implemented count in
+`documentation/compatibility-matrix.md`.
+
+Every row has a status badge, a note, a **Description** (the accepted values
+from the matrix) and a **Validate** line (what to compare by eye and by
+readout). A generated row shows a control box beside a box that sets the
+property to a sample value, and a readout of both boxes' size and paint-operation
+count. `props_gen.go` is generated from the matrix table; `props.go` builds the
+tabs. A few properties (the `font-variant*` family, `font-feature-settings`,
+`text-autospace`, `writing-mode`) make the window painter fall back to a bitmap,
+so their visible box leaves the declaration out and the readout comes from the
+layout alone.
 
 The top of the window states the catalog counts: how many properties the
 catalog lists, how many are implemented, and how many of these 61 are
@@ -21,8 +37,9 @@ covers.
 | Fragmentation and generated content | 7 |
 | Reading order and misc | 5 |
 | SVG leftovers | 5 |
+| Generated tabs (`all-*`) | the other implemented properties |
 
-Each tab button loads a page that holds only that tab's section. The other five
+Each tab button loads a page that holds only that tab's section. The other
 sections are not in the document, so nothing of them is laid out or painted.
 
 Run it:

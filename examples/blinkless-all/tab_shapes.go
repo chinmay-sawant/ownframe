@@ -38,7 +38,7 @@ func shapesTab() Tab {
 			Note: "In a multicolumn box, a float with float-defer N moves N columns to the right and last moves it to the last column. Its height in the column stays. Outside a multicolumn box the float stays where it is.",
 			Demo: demoFloatDefer},
 		{Name: "shape-image-threshold",
-			Note: "A url() shape-outside reads the image's alpha. A pixel counts as shape when its alpha is above the number, so a faint half drops out at 0.5 and the text moves left.",
+			Note: "A url() shape-outside reads the image's alpha. A pixel counts as shape when its alpha is above the number, so the faint right half of the box (the lighter half) drops out at 0.5 and the text moves left, over that half of the box. At 0 the whole box counts and the text stays beside it.",
 			Demo: demoImageThreshold},
 		{Name: "column-rule-visibility-items",
 			Note: "Around and all add a column rule on each content edge; between and normal keep only the gap rule.",

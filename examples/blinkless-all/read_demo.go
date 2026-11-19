@@ -93,7 +93,7 @@ func readDemoOverlay() string {
 
 func readDemoAttach() string {
 	return navShow(readSnipAttach, func(m navModel) string {
-		return resLine("stored %q. Page scrolled 100px, box scrolled 30px: local shifts %g, fixed shifts %g.",
+		return resLine("stored %q, exported to the host. Page scrolled 100px, box scrolled 30px: local shifts %g, fixed shifts %g.",
 			m.Items[m.ByID("bg-local")].Declared["background-attachment"],
 			readBackgroundShift("local", readPageScroll, readBoxScroll), readBackgroundShift("fixed", readPageScroll, readBoxScroll)) +
 			resLine("the engine still paints every layer as scroll")

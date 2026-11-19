@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"regexp"
 	"strings"
+	"time"
 )
 
 // Authored markup, one snippet per example. navDemoHTML joins them so the
@@ -59,7 +61,7 @@ func navSlider(id, orient string, w, h int) string {
 		`<div id="%s-t" style="position:absolute;left:0;top:0;width:10px;height:10px;background:#1d4ed8"></div></div>`, id, orient, w, h, id, id)
 }
 
-const navAppearBox = `box-sizing:border-box;width:120px;height:30px;padding:0;line-height:24px;text-align:center;font-size:13px`
+const navAppearBox = `box-sizing:border-box;width:120px;height:30px;margin-top:6px;padding:0;line-height:24px;text-align:center;font-size:13px`
 
 //nolint:gochecknoglobals,mnd // pixel sizes, timings and markup of the live demo
 var (
@@ -105,8 +107,8 @@ var (
 	navSnipLayer = `<div id="wc-area" style="position:relative;height:90px;width:420px;background:#f1efe7">
   <div id="wc" style="will-change:transform, opacity;position:absolute;left:10px;top:8px;width:90px;height:30px;background:#6366f1;color:#fff">will-change</div>
   <div id="wc2" style="will-change:margin;position:absolute;left:10px;top:52px;width:90px;height:30px;background:#f59e0b;color:#fff">margin hint</div>
-  <div id="wc-badge" style="position:absolute;left:120px;top:6px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">click the blue box</div>
-  <div id="wc2-badge" style="position:absolute;left:120px;top:50px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">click the amber box</div>
+  <div id="wc-badge" style="position:absolute;left:120px;top:6px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">wc: click the box to move it</div>
+  <div id="wc2-badge" style="position:absolute;left:120px;top:50px;width:290px;height:36px;padding:2px 4px;background:#fff;font-size:12px">wc2: click the box to move it</div>
  </div>`
 	navSnipAppear = `<button id="ap-none" style="-webkit-appearance:none;margin-right:10px;` + navAppearBox + `">plain button</button>
  <div id="ap-btn" style="-webkit-appearance:button;display:inline-block;margin-right:10px;` + navAppearBox + `">div as button</div>
@@ -166,7 +168,54 @@ func navShow(snippet string, show func(m navModel) string) string {
 		return "<p>layout failed: " + html.EscapeString(err.Error()) + "</p>"
 	}
 
-	return snippet + show(m)
+	return navInitial(snippet, m) + show(m)
+}
+
+// navInitial writes the state the live session starts in into the authored
+// markup: the password bullets, the slider thumbs, the first image frames, the
+// carets at the end of their text, the flat or drawn buttons and each demo's
+// status line. The still picture then shows what the session shows when the
+// tab opens, and the readouts under it describe that same state.
+func navInitial(snippet string, m navModel) string {
+	now := time.Unix(0, 0)
+	s := newNavSession()
+	s.reset(snippet, now)
+
+	sc := &navScreen{base: s.base, out: map[string]navView{}}
+	s.draw(sc, m, now)
+
+	for id, v := range sc.out {
+		// A focus ring is not authored style: the session builds styles on the
+		// markup's own, so a ring written into it would never come off.
+		if strings.HasSuffix(v.Style, ringStyle) {
+			v.Style = ""
+		}
+
+		snippet = navPatchMarkup(snippet, id, v)
+	}
+
+	return snippet
+}
+
+// navPatchMarkup sets the style attribute, and for a text leaf the text, of
+// the element with this id.
+func navPatchMarkup(doc, id string, v navView) string {
+	re := regexp.MustCompile(`(<[a-zA-Z]+[^>]*\sid="` + regexp.QuoteMeta(id) + `"[^>]*>)([^<]*)`)
+
+	return re.ReplaceAllStringFunc(doc, func(match string) string {
+		sub := re.FindStringSubmatch(match)
+		tag, text := sub[1], sub[2]
+
+		if v.Style != "" {
+			tag = reStyle.ReplaceAllString(tag, ` style="`+v.Style+`"`)
+		}
+
+		if v.HasText {
+			text = html.EscapeString(v.Text)
+		}
+
+		return tag + text
+	})
 }
 
 type navKey struct {
@@ -257,7 +306,7 @@ func navDemoField() string {
 
 			for _, id := range []string{"fs-content", "fs-fixed"} {
 				d := m.Items[m.ByID(id)].Declared
-				b.WriteString(resLine("%s: field-sizing=%s, width of 'hello world' = %g", id, d["field-sizing"],
+				b.WriteString(resLine("%s: field-sizing=%s, width of 'hello world' = %.0f", id, d["field-sizing"],
 					navFieldWidth(d["field-sizing"], "hello world", liveCharW, navFieldPad, 40, 150)))
 			}
 
@@ -351,10 +400,10 @@ func navDemoImage() string {
 
 			for _, id := range []string{"ia-paused", "ia-stopped", "ia-normal"} {
 				mode := m.Items[m.ByID(id)].Declared["image-animation"]
-				b.WriteString(chip("hit", fmt.Sprintf("%s: frame %d", id, navImageFrame(mode, 1300, 450, 200, 4))))
+				b.WriteString(chip("hit", fmt.Sprintf("%s: frame %d", id, navImageFrame(mode, 0, 450, imgFrameMs, imgFrames)+1)))
 			}
 
-			return b.String() + resLine("At rest: a 4 frame gif, 200ms a frame, at 1300ms; paused at 450ms")
+			return b.String() + resLine("At rest: a 4 frame gif, 200ms a frame, at 0ms. The paused box holds the frame it was paused on (450ms, frame 3); the stopped and normal boxes show frame 1, and normal then plays.")
 		})
 }
 
@@ -365,7 +414,7 @@ const navDemoWidth = 900
 // Sizes of the scroll-action demo: a viewport that shows part of a larger
 // sheet. The sheet is what scrolls, so Up undoes Down and Left undoes Right.
 const (
-	navViewW  = 330
+	navViewW  = 316
 	navViewH  = 100
 	navSheetW = 700
 	navSheetH = 400
@@ -378,7 +427,7 @@ const (
 func navActionHTML() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, `<div id="sbox" style="spatial-navigation-action:scroll;position:relative;height:%dpx;width:%dpx;`+
+	fmt.Fprintf(&b, `<div id="sbox" style="spatial-navigation-action:scroll;position:relative;margin-bottom:20px;height:%dpx;width:%dpx;`+
 		`background:#f7f3e3;overflow:hidden"><div id="s-content" style="position:relative;width:%dpx;height:%dpx">`,
 		navViewH, navViewW, navSheetW, navSheetH)
 
@@ -388,12 +437,12 @@ func navActionHTML() string {
 				continue
 			}
 
-			fmt.Fprintf(&b, `<div style="position:absolute;left:%dpx;top:%dpx;width:76px;height:36px;background:#e7e0c8;`+
+			fmt.Fprintf(&b, `<div style="position:absolute;left:%dpx;top:%dpx;width:62px;height:26px;padding:5px 7px;background:#e7e0c8;`+
 				`font-family:monospace;font-size:11px">%d,%d</div>`, gx*navCellW, gy*navCellH, gx*navCellW, gy*navCellH)
 		}
 	}
 
-	b.WriteString(`<button id="s-a" style="position:absolute;left:0;top:0;width:76px;height:36px">s-a 0,0</button></div></div>`)
+	b.WriteString(`<button id="s-a" style="position:absolute;left:0;top:0;width:76px;height:36px;box-sizing:border-box">s-a 0,0</button></div></div>`)
 
 	return b.String()
 }

@@ -1,8 +1,10 @@
-// Command blinkless-all opens one window that shows, tab by tab, the CSS
-// properties blinkless had not yet implemented: navigation and UI, draft
-// borders and shapes, motion path, fragmentation and generated content,
-// reading order, and the SVG leftovers. The top of the window states the
-// catalog counts. Clicking a tab loads a page that holds only that tab.
+// Command blinkless-all opens one window that shows, tab by tab, every CSS
+// property blinkless implements. Six hand-built tabs hold the 61 once-missing
+// ones: navigation and UI, draft borders and shapes, motion path,
+// fragmentation and generated content, reading order, and the SVG leftovers.
+// Generated tabs (ids "all-...", at most 40 rows each) hold the rest, each
+// with a description, a how-to-validate line and a control-versus-sample
+// readout. The top of the window states the catalog counts. Clicking a tab loads a page that holds only that tab.
 //
 // Flags: -width, -height, -tab ID, -png out.png (one picture, no window).
 package main
@@ -141,6 +143,8 @@ func (a *App) NewPage(ctx context.Context, tab string, width, height int) (*ownf
 	if mask, maskErr := shapesMask("mask"); maskErr == nil {
 		page.SetImage("mask", mask)
 	}
+
+	page.AddHandlers(ownframe.Handlers{Wheel: sideWheel(page)})
 
 	for _, t := range a.tabs {
 		if err = page.Route(actionPrefix+t.ID, a.Page(t.ID)); err != nil {

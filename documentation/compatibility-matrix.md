@@ -1,19 +1,24 @@
 # blinkless - HTML/CSS compatibility matrix
 
-> **Parent:** the blinkless planning records in the pinned engine module.  
-> **Scope:** this is a snapshot of the blinkless CSS catalogue. It describes the engine, not the ownframe host. Host features, limits, and platform support are in [features.md](features.md) and [platforms.md](platforms.md).  
-> **Status:** living contract - amendments go through plan review  
-> **Target:** authored HTML and CSS to a `layout.DisplayList` (the drawing list). **Not** a browser. **Not** a PDF writer. **Not** a page rasterizer.  
-> **Catalog:** the catalogue lives in the blinkless module. This module does not vendor `testdata/css/catalog/properties.json`, its generator, or a `make catalog-check` gate, so the tables here are a snapshot. Counts are the 2026-11-02 local snapshot: 785 rows - 555 Implemented / 4 Partial / 218 Unsupported / 8 intentionally ignored. Motion rows with scope `blinkless+ownframe` include sampled behavior evidence from OwnFrame. Upstream pin: webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties).
+> **Parent:** [plans/v0.0.1/phase-wise-checklist.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/plans/v0.0.1/phase-wise-checklist.md) and [plans/v0.0.1/html-css-json-compatibility-checklist.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/plans/v0.0.1/html-css-json-compatibility-checklist.md)
+>
+> **Scope:** This snapshot describes the Blinkless engine pinned by OwnFrame (`7abfce32c375`). See [features.md](features.md) and [platforms.md](platforms.md) for OwnFrame host behavior and platform support.
+>
+> **Status:** living contract - amendments go through plan review
+>
+> **Target:** authored HTML and CSS to a `layout.DisplayList` (the drawing list). **Not** a browser. **Not** a PDF writer. **Not** a page rasterizer.
+>
+> **Catalog:** Section 2 lists property statuses and counts from `testdata/css/catalog/properties.json`.
+>
 > **Limitations:** Implemented means a handler, a consumer outside the style layer, and a resolvable behavior test. Browser rendering parity, HTML parser conformance, and this property catalog are separate claims with separate evidence. Section 1 is a rendering allowlist for HTML tags, not a parser conformance claim.
 
 This document is the contract for the layout engine. Its output is a drawing
 list; the PDF writer, the page rasterizer, and the CLI from earlier revisions
-are not part of the engine tree. Property statuses come from the blinkless
-catalogue and are reproduced in section 2.
+are not part of this tree. Property statuses come from
+`testdata/css/catalog/properties.json` and are reproduced in section 2.
 Anything not in that catalog is unsupported; unsupported input must degrade
 gracefully (ignored declaration, skipped node, or documented error), never
-crash. Product framing: **Still not full CSS.**
+crash. Product framing: [fidelity.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/documentation/fidelity.md). **Still not full CSS.**
 
 ---
 
@@ -36,15 +41,15 @@ as its inline text (per the note column).
 | `img` | Replaced element; **PNG/JPEG/SVG subset**. The image op keeps the encoded bytes and re-encodes them as PNG only when EXIF orientation or a clip needs new pixels (`layout_images.go:365`, `image_exif.go:497`). SVG images and inline `<svg>` are rasterized through `internal/svg` (`layout_svg.go:23`). Layout maps CSS px to points at 0.75 (96 px/in). `web.images=false` skips fetch and paint (`settings.ResolveImages`). |
 | `a` | Link box in the drawing list (`OpLinkURI`): external `http/https/mailto` URIs (`isExternalHref`, `inline_paint.go:1876`) and same-document `#id` fragments (`isInternalHref`, `inline_paint.go:1906`). Relative references are retained for the caller to resolve. `layout.Result.HasFragmentLinks` reports whether any link targets a fragment (`layout.go:197`). |
 | `strong`, `em`, `b`, `i`, `u`, `small` | `b`/`strong` → bold face; `em`/`i` → italic face (Liberation family; see the `font-family` row in §2); `u` underline; `small` smaller; fake stroke bold only if a bold face is missing |
-| `pre`, `code` | `pre` honors `white-space: pre`; `code` follows the author’s `font-family` (generic `monospace` → bundled Liberation Mono; see [fonts.md](fonts.md)) |
+| `pre`, `code` | `pre` honors `white-space: pre`; `code` follows the author’s `font-family` (generic `monospace` → bundled Liberation Mono; see [fonts.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/documentation/fonts.md)) |
 | `blockquote` | Block-level only, no indent margins (UA rule `style_values.go:1628-1630`) |
 | `header`, `footer`, `main`, `section`, `article`, `aside`, `nav` | Treated as `div` (semantic aliases) |
 | `input`, `textarea`, `select`, `button`, `label`, `form` | Form controls. OwnFrame stores values, focus, and checked state per [forms.md](forms.md); an `input` with `type=submit`, `button`, or `reset` rewrites to `button`. |
-| `svg` | Inline SVG rasterized through `internal/svg`; the `img` row above covers SVG images. |
+| `svg` | Inline SVG is parsed and rasterized through `internal/svg`; the `img` row above covers SVG images. |
 
 ## 2. Supported CSS properties
 
-The catalog in the blinkless module (schema v2) is the authoritative property record. Local snapshot counts: 785 rows - 555 implemented, 4 partial, 218 unsupported, 8 intentionally ignored. The pinned upstream inventory is webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties: 671 draft, 70 vendor, 52 svg, 28 browser-ui). The generator and drift check live with the catalogue, not in this module. Rows scoped to `blinkless+ownframe` have sampled runtime evidence in OwnFrame; Blinkless supplies their CSS metadata.
+The catalog in `testdata/css/catalog/properties.json` (schema v2) is the authoritative property record. Measured 2026-11-02: 785 rows - 688 implemented, 0 partial, 89 unsupported, 8 intentionally ignored. The pinned upstream inventory is webref `ed/css` revision `1f2ec8f74a80c14066b4c7d6822cee59f69fa03b` (821 properties: 671 draft, 70 vendor, 52 svg, 28 browser-ui). Regenerate the tables below with `python3 scripts/css-catalog-map.py --matrix`; `make catalog-check` fails on drift between the catalog and the code. Rows scoped to `blinkless+ownframe` have sampled runtime evidence in OwnFrame; Blinkless supplies their CSS metadata.
 
 Statuses describe the stated layout pipeline scope, not browsers:
 
@@ -53,9 +58,9 @@ Statuses describe the stated layout pipeline scope, not browsers:
 - **Unsupported** - no consumer and no observable behavior. The declaration may be parsed and stored or dropped entirely.
 - **Intentionally ignored** - deliberately ignored print-noop UI chrome.
 
-An implemented status is not a browser-parity or parser-conformance claim. Rendering comparisons and HTML parsing carry separate evidence in the blinkless engine repository.
+An implemented status is not a browser-parity or parser-conformance claim. Rendering comparisons and HTML parsing carry separate evidence in `plans/v0.0.1/html-css-json-compatibility-checklist.md`.
 
-### 2.1 Implemented (555)
+### 2.1 Implemented (688)
 
 | Property | Accepted values | Source | Behavior tests |
 |---|---|---|---|
@@ -68,7 +73,11 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `-webkit-animation-name` | none \| custom-ident \| quoted keyframes name; comma-separated | `internal/layout/animation_transition.go`, `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (-webkit-animation-name)` |
 | `-webkit-animation-play-state` | running \| paused; comma-separated | `internal/layout/animation_transition.go`, `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (-webkit-animation-play-state)` |
 | `-webkit-animation-timing-function` | linear \| ease \| ease-in \| ease-out \| ease-in-out \| step-start \| step-end \| cubic-bezier() \| steps() \| linear() | `internal/layout/animation_transition.go`, `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (-webkit-animation-timing-function)` |
+| `-webkit-appearance` | see upstream syntax | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `-webkit-backface-visibility` | alias of the unprefixed property | `internal/layout/style_cascade.go`, `internal/layout/transform.go` | `TestBehaviorWebkitBackfaceAliasHides` |
+| `-webkit-background-clip` | <bg-clip># | `internal/layout/style_webkit_background.go`, `internal/layout/style_cascade.go`, `internal/layout/style_properties.go` | `TestBehaviorWebkitBackgroundClipClipsImage` |
+| `-webkit-background-origin` | <visual-box># | `internal/layout/style_webkit_background.go`, `internal/layout/style_cascade.go` | `TestBehaviorWebkitBackgroundOriginInsetsImage` |
+| `-webkit-background-size` | <bg-size># | `internal/layout/style_webkit_background.go`, `internal/layout/style_cascade.go`, `internal/layout/style_properties.go` | `TestBehaviorWebkitBackgroundSizeScalesImage` |
 | `-webkit-mask` | url(...) \| none; supported mask mode, position, size, repeat, origin, clip, and composite values | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup` |
 | `-webkit-mask-box-image` | alias of mask-border | `internal/layout/mask_border.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go`, `internal/layout/inline.go`, `internal/layout/mask_border_raster.go` | `TestBehaviorMaskBorderAliasReachesGroup`, `TestBehaviorMaskBorderVendorAliasUsesCSSSourceOrder`, `TestBehaviorMaskBorderSupportsAcceptedValues`, `TestComposeMaskBorderRasterOnGroup` |
 | `-webkit-mask-box-image-outset` | alias of mask-border-outset | `internal/layout/mask_border.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go`, `internal/layout/inline.go`, `internal/layout/mask_border_raster.go` | `TestBehaviorMaskBorderAliasReachesGroup`, `TestComposeMaskBorderRasterOnGroup` |
@@ -77,6 +86,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `-webkit-mask-box-image-source` | alias of mask-border-source | `internal/layout/mask_border.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go`, `internal/layout/inline.go`, `internal/layout/mask_border_raster.go` | `TestBehaviorMaskBorderAliasReachesGroup`, `TestBehaviorMaskBorderInvalidValuesKeepEarlier`, `TestBehaviorMaskBorderSupportsAcceptedValues`, `TestComposeMaskBorderRasterOnGroup` |
 | `-webkit-mask-box-image-width` | alias of mask-border-width | `internal/layout/mask_border.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go`, `internal/layout/inline.go`, `internal/layout/mask_border_raster.go` | `TestBehaviorMaskBorderAliasReachesGroup`, `TestComposeMaskBorderRasterOnGroup` |
 | `-webkit-mask-clip` | border-box \| padding-box \| content-box | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup` |
+| `-webkit-mask-composite` | source-over \| source-out \| source-in \| xor \| source-atop \| destination-over \| destination-in \| destination-out \| destination-atop \| clear \| copy | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup`, `TestBehaviorWebkitMaskCompositeExtraOperators` |
 | `-webkit-mask-image` | url(...) \| none | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup`, `TestBehaviorMaskGradientBytesOnGroup`, `TestBehaviorMaskImageSetPicks1x` |
 | `-webkit-mask-origin` | border-box \| padding-box \| content-box | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup` |
 | `-webkit-mask-position` | CSS position keywords, lengths, and percentages, plus 4-value edge-offset positions such as left 10px top 20px | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup` |
@@ -84,21 +94,27 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `-webkit-mask-size` | auto \| cover \| contain \| one or two non-negative CSS lengths or percentages | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskVendorAliasesReachMaskGroup` |
 | `-webkit-perspective` | alias of the unprefixed property | `internal/layout/style_cascade.go`, `internal/layout/transform.go` | `TestBehaviorWebkitPerspectiveAliasForeshortens` |
 | `-webkit-perspective-origin` | alias of the unprefixed property | `internal/layout/style_cascade.go`, `internal/layout/transform.go` | `TestBehaviorWebkitPerspectiveOriginAlias` |
+| `-webkit-text-size-adjust` | see upstream syntax | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `-webkit-text-stroke` | <line-width> \|\| <color> | `internal/layout/text_stroke.go`, `internal/layout/op_extra.go`, `internal/layout/style.go` | `TestBehaviorTextStrokeShorthand` |
+| `-webkit-text-stroke-color` | <color> | `internal/layout/text_stroke.go`, `internal/layout/op_extra.go`, `internal/layout/style.go` | `TestBehaviorTextStrokeWidthAndColor`, `TestBehaviorTextStrokeInherits` |
+| `-webkit-text-stroke-width` | <line-width> | `internal/layout/text_stroke.go`, `internal/layout/op_extra.go`, `internal/layout/style.go` | `TestBehaviorTextStrokeWidthAndColor`, `TestBehaviorTextStrokeInherits` |
 | `-webkit-transform-style` | alias of the unprefixed property | `internal/layout/style_cascade.go`, `internal/layout/transform.go` | `TestBehaviorWebkitTransformStyleAliasPreserve3D` |
 | `-webkit-transition` | comma-separated property with optional duration, easing, delay, and behavior | `internal/layout/animation_transition.go`, `internal/layout/transition_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogTransitionPropertiesReachOwnFrameFrames (-webkit-transition)` |
 | `-webkit-transition-delay` | signed <time>; comma-separated | `internal/layout/animation_transition.go`, `internal/layout/transition_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogTransitionPropertiesReachOwnFrameFrames (-webkit-transition-delay)` |
 | `-webkit-transition-duration` | non-negative <time>; comma-separated | `internal/layout/animation_transition.go`, `internal/layout/transition_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogTransitionPropertiesReachOwnFrameFrames (-webkit-transition-duration)` |
 | `-webkit-transition-property` | all \| none \| custom-ident; comma-separated except none stands alone | `internal/layout/animation_transition.go`, `internal/layout/transition_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogTransitionPropertiesReachOwnFrameFrames (-webkit-transition-property)` |
 | `-webkit-transition-timing-function` | linear \| ease \| ease-in \| ease-out \| ease-in-out \| step-start \| step-end \| cubic-bezier() \| steps() \| linear() | `internal/layout/animation_transition.go`, `internal/layout/transition_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestWebkitAnimationTransitionAliasesMatchStandardProperties`, `TestWebkitAnimationTransitionAliasesRespectCascadeOrder`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogTransitionPropertiesReachOwnFrameFrames (-webkit-transition-timing-function)` |
+| `-webkit-user-select` | see upstream syntax | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `accent-color` | auto \| <color> | `internal/layout/style_properties.go` | `TestBehaviorAccentColorTintsMeterFill` |
 | `align-content` | normal \| <baseline-position> \| <content-distribution> \| <overflow-position>? <content-position> | `internal/layout/style_properties.go` | `TestBehaviorAlignContentGridStartUsedOffset`, `TestBehaviorAlignContentGridCenterUsedOffset`, `TestBehaviorAlignContentGridEndUsedOffset`, `TestBehaviorAlignContentGridBetweenUsedOffset`, `TestBehaviorAlignContentGridAroundUsedOffset` |
 | `align-items` | normal \| stretch \| <baseline-position> \| <overflow-position>? <self-position> | `internal/layout/style_properties.go` | `TestWebkitPrefixAliases`, `TestBehaviorAlignItemsCenterOffset` |
 | `align-self` | auto \| <overflow-position>? [ normal \| <self-position> ]\| stretch \| <baseline-position> | `internal/layout/style_properties.go` | `TestBehaviorAlignSelfEndUsedOffset` |
 | `alignment-baseline` | baseline \| <baseline-metric> | `internal/layout/style_paint_props.go` | `TestBehaviorAlignmentBaselineNoPaintEffect`, `TestSvgTextAlignmentBaselineCentralIdeographic`, `TestSvgTextAlignmentBaselineMiddleHanging` |
+| `all` | initial \| inherit \| unset | `internal/layout/style_all.go` | `TestBehaviorAllInitialResetsColorAndKeepsDirection`, `TestBehaviorAllInheritPaintsParentBackground`, `TestBehaviorAllLonghandAfterWins`, `TestBehaviorAllUnsetInheritsColor` |
 | `anchor-name` | none \| <anchor-name># | `internal/layout/anchor_position.go`, `internal/layout/style_cascade.go` | `TestAnchorNameScope` |
 | `anchor-scope` | none \| all \| <anchor-name># | `internal/layout/anchor_position.go`, `internal/layout/style_cascade.go` | `TestAnchorScopeLookup` |
 | `animation` | comma-separated keyframe names with optional duration, easing, delay, iteration count, direction, fill mode, play state, and timeline | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/css/keyframes.go`, `layout/displaylist.go` | `TestAnimationDeclarationValueAccepted`, `TestExpandAnimationDeclaration`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation)` |
-| `animation-composition` | replace \| add \| accumulate | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationCompositionChangesOwnFrameSample (add)` |
+| `animation-composition` | replace \| add \| accumulate | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationCompositionChangesOwnFrameSample (add,add)` |
 | `animation-delay` | signed start <time> with optional non-negative end <time>; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestExpandAnimationDeclaration`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-delay)` |
 | `animation-delay-end` | non-negative <time>; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-delay-end)` |
 | `animation-delay-start` | signed <time>; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-delay-start)` |
@@ -108,16 +124,18 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `animation-iteration-count` | infinite \| non-negative <number>; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-iteration-count)` |
 | `animation-name` | none \| custom-ident \| quoted keyframes name; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/css/keyframes.go`, `layout/displaylist.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-name)` |
 | `animation-play-state` | running \| paused; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-play-state)` |
-| `animation-range` | start timeline-range edge with optional end edge; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestExpandAnimationDeclaration`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeReachesOwnFrameFrame (entry 10px exit 90px)` |
-| `animation-range-center` | normal \| source \| target \| <length-percentage> \| source/target with <length-percentage> | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeCenterReachesOwnFrameFrame (source 50%)` |
-| `animation-range-end` | normal \| timeline-range-name with optional <length-percentage> \| <length-percentage> | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeEndReachesOwnFrameFrame (75%)` |
-| `animation-range-start` | normal \| timeline-range-name with optional <length-percentage> \| <length-percentage> | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeStartReachesOwnFrameFrame (25%)` |
+| `animation-range` | start timeline-range edge with optional end edge; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestExpandAnimationDeclaration`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeReachesOwnFrameFrame (animation-range)` |
+| `animation-range-center` | normal \| source \| target \| <length-percentage> \| source/target with <length-percentage> | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeCenterReachesOwnFrameFrame (animation-range-center)` |
+| `animation-range-end` | normal \| timeline-range-name with optional <length-percentage> \| <length-percentage> | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeEndReachesOwnFrameFrame (animation-range-end)` |
+| `animation-range-start` | normal \| timeline-range-name with optional <length-percentage> \| <length-percentage> | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationRangeStartReachesOwnFrameFrame (animation-range-start)` |
 | `animation-timeline` | auto \| none \| <dashed-ident> \| scroll() \| view() with accepted argument forms; comma-separated | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationTimelineSamplesHostProgress (scroll())` |
 | `animation-timing-function` | linear \| ease \| ease-in \| ease-out \| ease-in-out \| step-start \| step-end \| cubic-bezier() \| steps() \| linear() | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationPropertiesReachOwnFrameFrames (animation-timing-function)` |
 | `animation-trigger` | none \| <dashed-ident> followed by one or more none/play/play-once/play-forwards/play-backwards/pause/reset/replay actions | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogAnimationTriggerChangesOwnFrameAfterHostEvent (play reset)` |
 | `aspect-ratio` | auto \|\| <ratio> | `internal/layout/style_aspect_ratio_props.go` | `TestBehaviorAspectRatioDerivesHeightFromWidth` |
+| `backdrop-filter` | none blur(<length>) saturate(<number> \| <percentage>) refract(<length>) (OwnFrame host extension) | `internal/layout/backdrop_filter.go`, `internal/layout/style_properties.go`, `internal/layout/blend_group.go`, `internal/layout/layout.go`, `layout/displaylist.go` | `TestBehaviorBackdropFilterKeepsAuthorString`, `TestDisplayBackdropFilterCarriesHostEffect` |
 | `backface-visibility` | visible \| hidden | `internal/layout/style_properties.go` | `TestBehaviorBackfaceVisibilityNoPaintEffect`, `TestBackfaceHiddenCullRotateY180`, `TestBackfaceVisiblePaintsRotateY180`, `TestBackfaceHiddenKeeps2DMirror` |
 | `background` | [<'background-color'> \|\| <'background-image'> \|\| <'background-repeat'> \|\| <'background-attachment'> \|\| <'background-position'>] \| inherit | `internal/layout/style_properties.go` | `TestApplyImageKeyBackgroundAlias`, `TestAuthorBackgroundShorthandOverridesButtonUA`, `TestBackgroundImageParse`, `TestBackgroundSingleFieldNoWebMirror`, `TestGlobalGetSetRoundTripAndIgnored` |
+| `background-attachment` | scroll \| fixed \| inherit | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_read.go`, `internal/layout/style_properties.go`, `internal/layout/background_image.go` | `TestDeclaredReadGrammar`, `TestBehaviorBackgroundAttachmentFixedUsesViewport` |
 | `background-blend-mode` | <'mix-blend-mode'># | `internal/layout/style_advanced_props.go` | `TestBehaviorBackgroundBlendModeMultiplyBlends` |
 | `background-clip` | <bg-clip># | `internal/layout/style_properties.go` | `TestBackgroundLonghands`, `TestBehaviorBackgroundClipClipsImage` |
 | `background-color` | <color> \| transparent \| inherit | `internal/layout/style_properties.go` | `TestBackgroundFill`, `TestBehaviorBackgroundColorPaintsFill` |
@@ -134,16 +152,26 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `background-repeat-x` | <repetition># | `internal/layout/style_properties.go` | `TestBackgroundRepeatLonghandsKeepTheOtherAxisAtInitialRepeat`, `TestBehaviorBackgroundRepeatXTilesVertically` |
 | `background-repeat-y` | <repetition># | `internal/layout/style_properties.go` | `TestBackgroundRepeatLonghandsKeepTheOtherAxisAtInitialRepeat`, `TestBehaviorBackgroundRepeatYTilesHorizontally` |
 | `background-size` | <bg-size># | `internal/layout/style_properties.go` | `TestBackgroundLonghands`, `TestBehaviorBackgroundSizeScalesImage` |
+| `background-tbd` | <bg-layer># | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_read.go`, `internal/layout/style_cascade.go` | `TestDeclaredReadGrammar`, `TestBehaviorBackgroundTbdKeepsColor` |
+| `baseline-shift` | <length-percentage> \| sub \| super \| top \| center \| bottom | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_svg.go`, `internal/layout/svgleft_attrs.go`, `internal/layout/layout_svg.go`, `internal/svg/text_outline.go`, `internal/svg/raster.go` | `TestSVGBaselineShift`, `TestSVGTextDrawsOutlines`, `TestSvgLeftoversBakeFromStylesheet`, `TestSvgLeftoversInlineNoDuplicate`, `TestDeclaredSvgGrammar`, `TestDeclaredSvgInherit` |
+| `baseline-source` | auto \| first \| last | `internal/layout/inline_baseline_source.go` | `TestBehaviorBaselineSourceFirstAlignsFirstLine` |
+| `block-ellipsis` | no-ellipsis \| ellipsis \| <string> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go`, `internal/layout/frag_ellipsis.go`, `internal/layout/inline.go` | `TestBlockEllipsisMarker`, `TestFragDeclaredValues` |
 | `block-size` | <'width'> | `internal/layout/style_properties.go` | `TestLogicalSize` |
+| `bookmark-label` | <content-list> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go` | `TestOutlineFromBookmarks`, `TestOutlineLeavesPaintAlone`, `TestFragDeclaredValues` |
+| `bookmark-level` | none \| <integer [1,∞]> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go` | `TestOutlineFromBookmarks`, `TestOutlineLeavesPaintAlone`, `TestFragDeclaredValues` |
+| `bookmark-state` | open \| closed | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go` | `TestOutlineFromBookmarks`, `TestOutlineLeavesPaintAlone`, `TestFragDeclaredValues` |
 | `border` | [ <border-width> \|\| <border-style> \|\| <'border-top-color'> ] \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox`, `TestTransparentBorderPaintsNothing` |
 | `border-block` | <'border-block-start'> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockPaintsTopBottomEdges` |
+| `border-block-clip` | <'border-top-clip'> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-block-color` | <'border-top-color'>{1,2} | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockColorPaintsBlockEdges` |
 | `border-block-end` | <line-width> \|\| <line-style> \|\| <color> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockEndPaintsBottomEdge` |
+| `border-block-end-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-block-end-color` | <color> \| <image-1D> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockEndColorPaintsBottomEdge` |
 | `border-block-end-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestBehaviorBorderBlockEndRadiusRoundsBottomCorners` |
 | `border-block-end-style` | <line-style> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockEndStyleExpandsBottomSegments` |
 | `border-block-end-width` | <line-width> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockEndWidthSetsBottomStrokeWidth` |
 | `border-block-start` | <line-width> \|\| <line-style> \|\| <color> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockStartPaintsTopEdge` |
+| `border-block-start-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-block-start-color` | <color> \| <image-1D> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockStartColorPaintsTopEdge` |
 | `border-block-start-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestLogicalCornerRadii`, `TestBehaviorBorderBlockStartRadiusRoundsTopCorners` |
 | `border-block-start-style` | <line-style> | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockStartStyleExpandsTopSegments` |
@@ -151,12 +179,15 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `border-block-style` | <'border-top-style'>{1,2} | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockStyleExpandsBlockSegments` |
 | `border-block-width` | <'border-top-width'>{1,2} | `internal/layout/style_properties.go` | `TestBehaviorBorderBlockWidthSetsBlockStrokeWidth` |
 | `border-bottom` | [ <border-width> \|\| <border-style> \|\| <'border-top-color'> ] \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox` |
+| `border-bottom-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-bottom-color` | <color> \| transparent \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderBottomColorPaintsEdge` |
 | `border-bottom-left-radius` | <length-percentage [0,∞]>{1,2} | `internal/layout/style_paint_props.go` | `TestBehaviorBorderBottomLeftRadiusPaintsCorner` |
 | `border-bottom-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_paint_props.go` | `TestBehaviorBorderBottomRadiusRoundsBottomCorners` |
 | `border-bottom-right-radius` | <length-percentage [0,∞]>{1,2} | `internal/layout/style_paint_props.go` | `TestBehaviorBorderBottomRightRadiusPaintsCorner` |
 | `border-bottom-style` | <border-style> \| inherit | `internal/layout/style_properties.go` | `TestBorderSideStyles`, `TestBehaviorBorderBottomStyleDashedExpandsSegments` |
 | `border-bottom-width` | <border-width> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderBottomWidthStrokesEdge` |
+| `border-boundary` | none \| parent \| display | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/border_boundary.go` | `TestBorderBoundaryParentTracesCurve`, `TestDeclaredShapesGrammar`, `TestDeclaredShapesWideKeywords` |
+| `border-clip` | <'border-top-clip'> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-collapse` | collapse \| separate \| inherit | `internal/layout/style_properties.go` | `TestBorderSpacing`, `TestTableLayout`, `TestBehaviorBorderCollapseMergesAdjacency` |
 | `border-color` | [ <color> \| transparent ]{1,4} \| inherit | `internal/layout/style_properties.go` | `TestBorderColorFourValues`, `TestTransparentBorderPaintsNothing`, `TestBehaviorBorderColorPaintsTopEdge` |
 | `border-end-end-radius` | <border-radius> | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestLogicalCornerRadii`, `TestBehaviorBorderEndEndRadiusMapsBottomRight` |
@@ -168,13 +199,16 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `border-image-source` | none \| <image> | `internal/layout/border_image.go`, `internal/layout/style_properties.go` | `TestBorderImageProps`, `TestBehaviorBorderImageSourcePaintsSlices` |
 | `border-image-width` | [ <length-percentage [0,∞]> \| <number [0,∞]> \| auto ]{1,4} | `internal/layout/border_image.go`, `internal/layout/style_properties.go` | `TestBorderImageProps`, `TestBehaviorBorderImageWidthThickensFrame` |
 | `border-inline` | <'border-block-start'> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlinePaintsLeftRightEdges` |
+| `border-inline-clip` | <'border-top-clip'> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-inline-color` | <'border-top-color'>{1,2} | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineColorPaintsInlineEdges` |
 | `border-inline-end` | <line-width> \|\| <line-style> \|\| <color> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineEndPaintsRightEdge` |
+| `border-inline-end-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-inline-end-color` | <color> \| <image-1D> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineEndColorPaintsRightEdge` |
 | `border-inline-end-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestLogicalCornerRadii`, `TestBehaviorBorderInlineEndRadiusRoundsRightCorners` |
 | `border-inline-end-style` | <line-style> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineEndStyleExpandsRightSegments` |
 | `border-inline-end-width` | <line-width> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineEndWidthSetsRightStrokeWidth` |
 | `border-inline-start` | <line-width> \|\| <line-style> \|\| <color> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineStartPaintsLeftEdge` |
+| `border-inline-start-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-inline-start-color` | <color> \| <image-1D> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineStartColorPaintsLeftEdge` |
 | `border-inline-start-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestBehaviorBorderInlineStartRadiusRoundsLeftCorners` |
 | `border-inline-start-style` | <line-style> | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineStartStyleExpandsLeftSegments` |
@@ -182,21 +216,26 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `border-inline-style` | <'border-top-style'>{1,2} | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineStyleExpandsInlineSegments` |
 | `border-inline-width` | <'border-top-width'>{1,2} | `internal/layout/style_properties.go` | `TestBehaviorBorderInlineWidthSetsInlineStrokeWidth` |
 | `border-left` | [ <border-width> \|\| <border-style> \|\| <'border-top-color'> ] \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox` |
+| `border-left-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-left-color` | <color> \| transparent \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderLeftColorPaintsEdge` |
 | `border-left-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_paint_props.go` | `TestBehaviorBorderLeftRadiusRoundsLeftCorners` |
 | `border-left-style` | <border-style> \| inherit | `internal/layout/style_properties.go` | `TestBorderSideStyles`, `TestBehaviorBorderLeftStyleDashedExpandsSegments` |
 | `border-left-width` | <border-width> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderLeftWidthEmittedStrokeWidth` |
+| `border-limit` | all \| [ sides \| corners ] <length-percentage [0,∞]>? \| [ top \| right \| bottom \| left ] <length-percentage [0,∞]> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderLimit`, `TestDeclaredShapesGrammar` |
 | `border-radius` | <length-percentage [0,∞]>{1,4} [ / <length-percentage [0,∞]>{1,4} ]? | `internal/layout/style_properties.go` | `TestRadiusEllipticalLonghand`, `TestRadiusLonghand`, `TestRadiusPercentAxes`, `TestRadiusSlash` |
 | `border-right` | [ <border-width> \|\| <border-style> \|\| <'border-top-color'> ] \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox` |
+| `border-right-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-right-color` | <color> \| transparent \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderRightColorPaintsEdge` |
 | `border-right-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_paint_props.go` | `TestBehaviorBorderRightRadiusRoundsRightCorners` |
 | `border-right-style` | <border-style> \| inherit | `internal/layout/style_properties.go` | `TestBorderSideStyles`, `TestBehaviorBorderRightStyleDashedExpandsSegments` |
 | `border-right-width` | <border-width> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderRightWidthStrokesEdge` |
+| `border-shape` | none \| [ <basic-shape> <geometry-box>?]{1,2} | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/border_shape_paint.go` | `TestBorderShapeEllipsePath`, `TestDeclaredShapesGrammar`, `TestDeclaredShapesWideKeywords` |
 | `border-spacing` | <length> <length>? \| inherit | `internal/layout/style_properties.go` | `TestBorderSpacing`, `TestBehaviorBorderSpacingWidensColumns` |
 | `border-start-end-radius` | <border-radius> | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestLogicalCornerRadii`, `TestBehaviorBorderStartEndRadiusMapsTopRight` |
 | `border-start-start-radius` | <border-radius> | `internal/layout/style_logical_border.go`, `internal/layout/style_paint_props.go` | `TestLogicalCornerRadii`, `TestBehaviorBorderStartStartRadiusMapsTopLeft` |
 | `border-style` | <border-style>{1,4} \| inherit | `internal/layout/style_properties.go` | `TestTransparentBorderPaintsNothing` |
 | `border-top` | [ <border-width> \|\| <border-style> \|\| <'border-top-color'> ] \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox` |
+| `border-top-clip` | none \| [ <length-percentage [0,∞]> \| <flex> ]+ | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_border_clip.go` | `TestBorderClipSplitsEveryEdge`, `TestBorderClipLonghandsAndLogical`, `TestBorderClipFlexAndPercent`, `TestDeclaredShapesGrammar` |
 | `border-top-color` | <color> \| transparent \| inherit | `internal/layout/style_properties.go` | `TestTransparentBorderPaintsNothing`, `TestBehaviorBorderTopColorPaintsEdge` |
 | `border-top-left-radius` | <length-percentage [0,∞]>{1,2} | `internal/layout/style_paint_props.go` | `TestBehaviorBorderTopLeftRadiusPaintsCorner` |
 | `border-top-radius` | <length-percentage [0,∞]>{1,2} [ / <length-percentage [0,∞]>{1,2} ]? | `internal/layout/style_paint_props.go` | `TestBehaviorBorderTopRadiusRoundsTopCorners` |
@@ -205,6 +244,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `border-top-width` | <border-width> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorBorderTopWidthEmittedStrokeWidth` |
 | `border-width` | <border-width>{1,4} \| inherit | `internal/layout/style_properties.go` | `TestTransparentBorderPaintsNothing` |
 | `bottom` | <length> \| <percentage> \| auto \| inherit | `internal/layout/style_properties.go` | `TestBackgroundPositionUsesCSSPxIntrinsicSize`, `TestCaptionSideParse`, `TestBehaviorBottomShiftsRelativeBox` |
+| `box-decoration-break` | slice \| clone | `internal/layout/style_advanced_props.go`, `internal/layout/inline_decoration_break.go` | `TestWaveCBoxDecorationBreak`, `TestBehaviorBoxDecorationBreakClonePaintsEachFragment` |
 | `box-shadow` | none \| <shadow># | `internal/layout/style_paint_props.go` | `TestBehaviorBoxShadowPaintsOffsetFill` |
 | `box-shadow-blur` | <length [0,∞]># | `internal/layout/style_paint_props.go` | `TestBehaviorBoxShadowBlurExpandsLayers` |
 | `box-shadow-color` | <color># | `internal/layout/style_paint_props.go` | `TestBehaviorBoxShadowColorPaintsLayer` |
@@ -215,7 +255,11 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `box-sizing` | content-box \| border-box | `internal/layout/style_properties.go` | `TestBoxSizingBorderBox`, `TestWebkitPrefixAliases`, `TestBehaviorBoxSizingBorderBoxIncludesPadding` |
 | `break-after` | auto \| avoid \| always \| all \| avoid-page \| page \| left \| right \| recto \| verso \| avoid-column \| column \| avoid-region \| region | `internal/layout/style_properties.go` | `TestPageBreakParsing`, `TestBehaviorBreakAfterColumnNoPageEffect`, `TestFragmentAssessBreakAfterColumnForcesColumn` |
 | `break-before` | auto \| avoid \| always \| all \| avoid-page \| page \| left \| right \| recto \| verso \| avoid-column \| column \| avoid-region \| region | `internal/layout/style_properties.go` | `TestPageBreakParsing`, `TestBehaviorBreakBeforeColumnNoPageEffect`, `TestFragmentAssessBreakBeforeColumnForcesColumn`, `TestFragmentAssessBreakBeforeFirstChildNoColumnEffect` |
+| `break-inside` | auto \| avoid \| avoid-page \| avoid-column \| avoid-region | `internal/layout/style_properties.go`, `internal/layout/multicol.go` | `TestPageBreakParsing`, `TestBehaviorBreakInsideAvoidColumnNoPageEffect`, `TestFragmentAssessBreakInsideAvoidMulticolNoEffect`, `TestBreakInsideAvoidBalancedStraddleGap`, `TestBehaviorBreakInsideAvoidColumnPushesStraddle` |
 | `caption-side` | top \| bottom \| inherit | `internal/layout/style_properties.go` | `TestCaptionSideParse`, `TestBehaviorCaptionSideBottomBelowTable` |
+| `caret` | <'caret-color'> \|\| <'caret-animation'> \|\| <'caret-shape'> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `caret-animation` | auto \| manual | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `caret-shape` | auto \| bar \| block \| underscore | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `clear` | none \| left \| right \| both \| inherit | `internal/layout/style_properties.go` | `TestBackgroundImageParse`, `TestFloatInsideTableCell`, `TestFloatLeftRightClear`, `TestBehaviorClearDropsBelowFloats` |
 | `clip` | <shape> \| auto \| inherit | `internal/layout/style_paint_props.go` | `TestSvgTextClipRectCutsAbsposBox` |
 | `clip-path` | <clip-source> \| [ <basic-shape> \|\| <geometry-box> ] \| none | `internal/layout/clip_path.go`, `internal/layout/style_paint_props.go` | `TestBehaviorClipPathEllipseMasksImage` |
@@ -242,6 +286,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `column-rule-inset-junction-start` | <inset-value> | `internal/layout/style_multicol_props.go`, `internal/layout/gap_rules.go` | `TestRowRuleBadTokenKeepsEarlier` |
 | `column-rule-inset-start` | <inset-value> | `internal/layout/style_multicol_props.go`, `internal/layout/style_gap_rules.go`, `internal/layout/gap_rules.go` | `TestBehaviorColumnRuleJunctionAndCapInsets` |
 | `column-rule-style` | <line-style-list> \| <auto-line-style-list> | `internal/layout/style_multicol_props.go` | `TestBehaviorColumnRuleStyleDashedSegmentsRule` |
+| `column-rule-visibility-items` | all \| around \| between \| normal | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shapes_column_edges.go`, `internal/layout/multicol.go`, `internal/layout/gap_rules.go` | `TestColumnRuleVisibilityItemsAround`, `TestDeclaredShapesGrammar` |
 | `column-rule-width` | <line-width-list> \| <auto-line-width-list> | `internal/layout/style_multicol_props.go` | `TestBehaviorColumnRuleWidthUsedThickness` |
 | `column-span` | none \| <integer [1,∞]> \| all \| auto | `internal/layout/style_multicol_props.go` | `TestBehaviorColumnSpanAllFullWidth` |
 | `column-width` | auto \| <length [0,∞]> | `internal/layout/style_multicol_props.go` | `TestBehaviorColumnWidthAutoCount` |
@@ -258,6 +303,8 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `container-type` | normal \| [ [ size \| inline-size ] \|\| scroll-state ] | `internal/layout/style_container_props.go`, `internal/layout/style_properties.go` | `TestBehaviorContainerTypeNoSizeQueryEffect`, `TestBehaviorContainerTypeInlineSizeQuerySwitch` |
 | `content` | normal \| none \| [ <string> \| <uri> \| <counter> \| attr(<identifier>) \| open-quote \| close-quote \| no-open-quote \| no-close-quote ]+ \| inherit | `internal/layout/style_paint_props.go` | `TestApplyContainmentPropsParsing`, `TestCSSPartialRemainingTextContent`, `TestContainmentKeywordHelpers`, `TestBehaviorContentBeforeEmitsGeneratedText` |
 | `content-visibility` | visible \| auto \| hidden | `internal/layout/style_containment_props.go` | `TestApplyContainmentPropsParsing`, `TestContentVisibilityHiddenSkipsDescendantLayout`, `TestBehaviorContentVisibilityAutoPaintsDescendants` |
+| `continue` | normal \| discard \| collapse \| -webkit-legacy | `internal/layout/continue_clamp.go`, `internal/layout/inline.go`, `internal/layout/flex_children.go`, `internal/layout/style.go` | `TestBehaviorContinueCollapseDropsLinesPastMaxHeight`, `TestBehaviorContinueDiscardDropsLinesPastHeight`, `TestBehaviorContinueWebkitLegacyClampsVerticalBox` |
+| `copy-into` | none \| [ [ <custom-ident> <content-level>] [, <custom-ident> <content-level>]* ]? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go` | `TestCopiedFragments`, `TestFragDeclaredValues` |
 | `corner` | <'border-radius'> \|\| <'corner-shape'> | `testdata/css/catalog/upstream/webref-ed-css-1f2ec8f.json`, `internal/layout/style_corner_shape_shorthand.go`, `internal/layout/corner_shape_paint.go`, `internal/layout/corner_path.go`, `internal/layout/op_extra.go`, `internal/layout/layout_chrome.go`, `layout/displaylist.go` | `TestCornerShapeBCornerShorthandRadiusShape` |
 | `corner-block-end` | <'border-radius'> \|\| <'corner-shape'> side form (radius piece, shape piece, or both) | `testdata/css/catalog/upstream/webref-ed-css-1f2ec8f.json`, `internal/layout/style_corner_shape_side.go`, `internal/layout/corner_shape_paint.go`, `internal/layout/corner_path.go`, `internal/layout/op_extra.go`, `internal/layout/layout_chrome.go`, `layout/displaylist.go` | `TestCornerShapeBSideShorthands` |
 | `corner-block-end-shape` | round \| scoop \| bevel \| notch \| square \| squircle \| superellipse(<number> \| infinity \| -infinity) | `testdata/css/catalog/upstream/webref-ed-css-1f2ec8f.json`, `internal/layout/style_corner_shape_pairs.go`, `internal/layout/corner_shape_paint.go`, `internal/layout/corner_path.go`, `internal/layout/op_extra.go`, `internal/layout/layout_chrome.go`, `layout/displaylist.go` | `TestCornerShapeBBlockEndPairNotch` |
@@ -295,11 +342,18 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `counter-increment` | [ <identifier> <integer>? ]+ \| none \| inherit | `internal/layout/style_paint_props.go` | `TestCounterInBefore`, `TestCounterResetIncrementLayout`, `TestQuotes` |
 | `counter-reset` | [ <identifier> <integer>? ]+ \| none \| inherit | `internal/layout/style_paint_props.go` | `TestCounterInBefore`, `TestCounterResetIncrementLayout`, `TestQuotes` |
 | `counter-set` | [ <counter-name> <integer>? ]+ \| none | `internal/layout/style_paint_props.go` | `TestCounterInBefore`, `TestCounterResetIncrementLayout`, `TestQuotes` |
+| `cx` | <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoCxMovesCircle`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
+| `cy` | <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoCyMovesCircle`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
+| `d` | path("<path-data>") \| path('<path-data>') | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgCSSDProvidesPathData`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
 | `direction` | ltr \| rtl \| inherit | `internal/layout/style_properties.go` | `TestBehaviorDirectionRtlRightAlignsLine` |
 | `display` | inline \| block \| list-item \| inline-block \| flex \| inline-flex \| grid \| inline-grid \| table \| inline-table \| table-row-group \| table-header-group \| table-footer-group \| table-row \| table-column-group \| table-column \| table-cell \| table-caption \| none \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestDisplayNone`, `TestTableLayout` |
 | `dominant-baseline` | auto \| <baseline-metric> | `internal/layout/style_paint_props.go` | `TestBehaviorDominantBaselineNoPaintEffect`, `TestPerspDominantBaselineBeyondHanging`, `TestPerspDominantBaselineInitialAndBogus`, `TestPerspDominantBaselineInherits` |
 | `dynamic-range-limit` | standard \| no-limit \| constrained \| <dynamic-range-limit-mix()> | `internal/layout/style_color_adjust_props.go` | `TestColorAdjustPropsAcceptLegalKeywords`, `TestColorAdjustPropsCSSWideKeywords`, `TestColorAdjustPropsReachRestPass`, `TestColorAdjustPropsRejectIllegalKeywords`, `TestBehaviorDynamicRangeLimitStandardNoClampEffect`, `TestBehaviorDynamicRangeLimitClampsBrightColors`, `TestBehaviorDynamicRangeLimitWireClamps`, `TestBehaviorDynamicRangeLimitPaintClampDiverges`, `TestBehaviorDynamicRangeLimitParserYieldsOnlyInGamut`, `TestBehaviorDynamicRangeLimitParserClampsRGB`, `TestBehaviorDynamicRangeLimitParserRejectsWideGamut`, `TestBehaviorDynamicRangeLimitParserClampsMixAndOklch`, `TestBehaviorDynamicRangeLimitParserClampsOklch`, `TestBehaviorWideGamutDynamicRangeDiverges`, `TestBehaviorWideGamutTextDiverges`, `TestBehaviorWideGamutInGamutAgrees`, `TestBehaviorWideGamutBridgeBoundary`, `TestBehaviorWideGamutCascadeEndToEnd`, `TestBehaviorWideGamutTextCascadeEndToEnd` |
 | `empty-cells` | show \| hide \| inherit | `internal/layout/style_advanced_props.go` | `TestBehaviorEmptyCellsHideOmitsBackground` |
+| `event-trigger` | none \| [ <name> <source> ]# (exported as Box.EventTriggers) | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxEventTriggerShorthand`, `TestBoxEventTriggerLonghands`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `event-trigger-name` | none \| <dashed-ident># | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxEventTriggerShorthand`, `TestBoxEventTriggerLonghands`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `event-trigger-source` | [ none \| <event>+ [ / <event>+ ]? ]# | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxEventTriggerShorthand`, `TestBoxEventTriggerLonghands`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `field-sizing` | fixed \| content | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `fill` | <paint> | `internal/layout/style_paint_props.go` | `TestBehaviorFillBakesPaint` |
 | `fill-opacity` | <'opacity'> | `internal/layout/style_paint_props.go` | `TestBehaviorFillOpacityBakesPaint` |
 | `fill-rule` | nonzero \| evenodd | `internal/layout/style_paint_props.go` | `TestBehaviorFillRuleNoPaintEffect`, `TestBehaviorSvgBakeFillRuleGap`, `TestPaintOutputFillRuleEvenOddHolesRaster` |
@@ -312,8 +366,11 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `flex-shrink` | <number [0,∞]> | `internal/layout/style_properties.go` | `TestBehaviorFlexShrinkNoShrinkUsedWidth` |
 | `flex-wrap` | nowrap \| [ wrap \| wrap-reverse ] \|\| balance | `internal/layout/style_properties.go` | `TestBehaviorFlexWrapWrapUsedPosition` |
 | `float` | left \| right \| none \| inherit | `internal/layout/style_properties.go` | `TestFloatInsideTableCell`, `TestFloatLeftRightClear`, `TestTableClearsFloat`, `TestBehaviorFloatLeftSharesBandWithSibling` |
+| `float-defer` | <integer> \| last \| none | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/float_defer.go` | `TestFloatDeferMovesFloatToLaterColumn`, `TestDeclaredShapesGrammar`, `TestDeclaredShapesWideKeywords` |
 | `float-offset` | <length-percentage> | `internal/layout/style_float_page_props.go` | `TestBehaviorFloatOffsetNudgesFloat` |
 | `float-reference` | inline \| column \| region \| page | `internal/layout/style_float_page_props.go` | `TestBehaviorFloatReferencePinsToPage` |
+| `flood-color` | <color> | `internal/layout/svg_presentation_paint.go`, `internal/svg/present.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgPresentFloodColorAndOpacity` |
+| `flood-opacity` | <number [0,1]> \| <percentage [0%,100%]> | `internal/layout/svg_presentation_paint.go`, `internal/svg/present.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgPresentFloodColorAndOpacity` |
 | `flow-from` | none \| <custom-ident> | `internal/layout/named_flow.go`, `internal/layout/layout_flow.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorNamedFlowMovesTextIntoSecondBox`, `TestBehaviorNamedFlowContinuesInNextRegion`, `TestBehaviorNamedFlowNoRegionDropsSourceContent`, `TestBehaviorNamedFlowPropertyStorage` |
 | `flow-into` | none \| <custom-ident> [element \| content]? | `internal/layout/named_flow.go`, `internal/layout/layout_flow.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorNamedFlowPropertyStorage`, `TestBehaviorNamedFlowMovesTextIntoSecondBox`, `TestBehaviorNamedFlowElementMovesWholeSourceBox`, `TestBehaviorNamedFlowContinuesInNextRegion` |
 | `flow-tolerance` | normal \| <length [0,∞]> \| infinite | `internal/layout/masonry_tolerance.go`, `internal/layout/grid_masonry.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorFlowToleranceChangesMasonryColumn`, `TestBehaviorFlowToleranceNonMasonryGridIgnored`, `TestBehaviorNamedFlowPropertyStorage` |
@@ -343,8 +400,11 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `font-variation-settings` | normal \| [ <opentype-tag> <number> ]# | `internal/layout/style_font_variant_props.go` | `TestApplyFontVariantProps`, `TestBehaviorFontVariationSettingsStaticKeepsFace` |
 | `font-weight` | normal \| bold \| bolder \| lighter \| 100 \| 200 \| 300 \| 400 \| 500 \| 600 \| 700 \| 800 \| 900 \| inherit | `internal/layout/style_cascade.go` | `TestRealBoldFaceOps`, `TestBehaviorFontWeightBoldSelectsFace` |
 | `font-width` | normal \| <percentage [0,∞]> \| ultra-condensed \| extra-condensed \| condensed \| semi-condensed \| semi-expanded \| expanded \| extra-expanded \| ultra-expanded | `internal/layout/style_font_width_props.go` | `TestFontPropsWave4`, `TestFontStretchAliasesToWidth`, `TestFontWidthCondensesAdvance`, `TestFontWidthKeywords`, `TestBehaviorFontWidthCondensesAdvance` |
+| `footnote-display` | block \| inline \| compact | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go` | `TestFragDeclaredValues`, `TestBehaviorFootnoteCollectsInDocumentOrder` |
+| `footnote-policy` | auto \| line \| block | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_frag.go`, `internal/layout/frag_outline.go`, `layout/frag_outline.go`, `internal/layout/bookmark_outline.go` | `TestFragDeclaredValues`, `TestBehaviorFootnotePolicyGrouping` |
 | `forced-color-adjust` | auto \| none \| preserve-parent-color | `internal/layout/style_color_adjust_props.go` | `TestColorAdjustPropsAcceptLegalKeywords`, `TestColorAdjustPropsReachRestPass`, `TestColorAdjustPropsRejectIllegalKeywords`, `TestBehaviorForcedColorAdjustNoneNoPaintEffect`, `TestBehaviorForcedColorAdjustNonePreservesAuthor`, `TestBehaviorForcedColorAdjustWirePreservesAuthor`, `TestBehaviorForcedColorAdjustTestModeDiverges`, `TestBehaviorForcedColorAdjustPrintKeepsAuthor`, `TestBehaviorForcedColorAdjustOptionsModeDiverges`, `TestBehaviorForcedColorAdjustActiveHelpersDiverge` |
 | `gap` | <'row-gap'> <'column-gap'>? | `internal/layout/style_gap_props.go`, `internal/layout/style_properties.go` | `TestGridRowGapVsColumnGap`, `TestBehaviorGapGridUsedSpacing` |
+| `glyph-orientation-vertical` | auto \| 0deg \| 90deg \| 0 \| 90 | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_svg.go`, `internal/layout/svgleft_attrs.go`, `internal/layout/layout_svg.go`, `internal/svg/text_outline.go` | `TestSVGPropertiesWithNoRenderingEffect`, `TestSvgLeftoversBakeFromStylesheet`, `TestSvgLeftoversInlineNoDuplicate`, `TestDeclaredSvgGrammar`, `TestDeclaredSvgInherit` |
 | `grid` | <'grid-template'> \| <'grid-template-rows'> / [ auto-flow && dense? ] <'grid-auto-columns'>? \| [ auto-flow && dense? ] <'grid-auto-rows'>? / <'grid-template-columns'> | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestGridPlaceItemsCenterShrinksItems`, `TestGridPlaceSelfEndShrinksItem`, `TestGridRowSpanStretchMatchesFixture32`, `TestGridStretchKeepsSiblingStyleIndependent`, `TestGridTemplateShorthand` |
 | `grid-area` | <grid-line> [ / <grid-line> ]{0,3} | `internal/layout/style_properties.go` | `TestBehaviorGridAreaPlacesNamedItem` |
 | `grid-auto-columns` | <track-size>+ | `internal/layout/style_properties.go` | `TestBehaviorGridAutoColumnsImplicitUsedWidth` |
@@ -368,12 +428,16 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `hyphenate-limit-lines` | no-limit \| <integer [0,∞]> | `internal/layout/style_hyphenation_props.go` | `TestHyphenateLimitChars` |
 | `hyphenate-limit-zone` | <length-percentage> | `internal/layout/style_hyphenation_props.go` | `TestHyphenateLimitChars` |
 | `hyphens` | none \| manual \| auto | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestHyphenateLimitChars`, `TestSoftHyphenUsesHyphenateCharacter`, `TestTextPropsWave3`, `TestBehaviorHyphensNoneSuppressesSoftHyphenBreak` |
+| `image-animation` | normal \| paused \| stopped \| running | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `image-orientation` | from-image \| none \| [ <angle> \|\| flip ] | `internal/layout/style_image_adjust_props.go` | `TestBehaviorImageOrientationSwapsAxes` |
+| `image-rendering` | auto \| optimizeQuality \| optimizeSpeed | `internal/layout/image_rendering.go`, `internal/layout/op_extra.go`, `internal/layout/layout_images.go`, `internal/layout/layout_svg.go`, `internal/layout/inline_image.go` | `TestBehaviorSvgPresentImageRendering` |
 | `image-resolution` | [ from-image \|\| <resolution> ] && snap? | `internal/layout/style_image_adjust_props.go` | `TestBehaviorImageResolutionScalesIntrinsic` |
 | `initial-letter` | normal \| <number [1,∞]> <integer [1,∞]> \| <number [1,∞]> && [ drop \| raise ]? | `internal/layout/style_initial_letter_props.go` | `TestInitialLetterSpansThreeLines`, `TestBehaviorInitialLetterExclusionWidth` |
 | `initial-letter-align` | [ border-box? [ alphabetic \| ideographic \| hanging \| leading ]? ]! | `internal/layout/style_initial_letter_props.go` | `TestInitialLetterAlignHangingShiftsY`, `TestBehaviorInitialLetterAlignHangingRaisesLetter` |
 | `initial-letter-wrap` | none \| first \| all \| grid \| <length-percentage> | `internal/layout/style_initial_letter_props.go` | `TestInitialLetterWrapNoneDoesNotExclude`, `TestBehaviorInitialLetterWrapAllExcludesLaterLines` |
 | `inline-size` | auto \| <length-percentage> | `internal/layout/style_properties.go` | `TestContainerPropsParsed`, `TestLogicalSize`, `TestParseContainerRules`, `TestParseContainerShorthand` |
+| `inline-sizing` | normal \| stretch | `internal/layout/inline_sizing.go` | `TestBehaviorInlineSizingStretchGrowsFill` |
+| `input-security` | auto \| none | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `inset` | <'top'>{1,4} | `internal/layout/style_properties.go` | `TestLogicalInset`, `TestBehaviorInsetAnchorsAbsoluteBox` |
 | `inset-block` | <'top'>{1,2} | `internal/layout/style_properties.go` | `TestLogicalInset` |
 | `inset-block-end` | <'top'> | `internal/layout/style_properties.go` | `TestBehaviorInsetBlockEndAnchorsAbsoluteBox` |
@@ -381,15 +445,23 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `inset-inline` | <'top'>{1,2} | `internal/layout/style_properties.go` | `TestLogicalInset` |
 | `inset-inline-end` | <'top'> | `internal/layout/style_properties.go` | `TestBehaviorInsetInlineEndAnchorsAbsoluteBox` |
 | `inset-inline-start` | <'top'> | `internal/layout/style_properties.go` | `TestBehaviorInsetInlineStartAnchorsAbsoluteBox` |
+| `interactivity` | auto \| inert (exported as Box.Interactivity, computed and inherited) | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go`, `layout/interest.go` | `TestBoxInteractivity`, `TestBoxInteractivityInheritsAndInert`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `interest-delay` | <interest-delay-start>{1,2}; one value sets both (exported as Box.InterestDelay) | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go`, `layout/interest.go` | `TestBoxInterestDelayShorthand`, `TestBoxInterestDelayLonghands`, `TestBoxInterestDelayInherits`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `interest-delay-end` | normal \| <time> | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go`, `layout/interest.go` | `TestBoxInterestDelayShorthand`, `TestBoxInterestDelayLonghands`, `TestBoxInterestDelayInherits`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `interest-delay-start` | normal \| <time> | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go`, `layout/interest.go` | `TestBoxInterestDelayShorthand`, `TestBoxInterestDelayLonghands`, `TestBoxInterestDelayInherits`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
 | `isolation` | <isolation-mode> | `internal/layout/style_advanced_props.go` | `TestBehaviorIsolationOpensGroup` |
 | `justify-content` | normal \| <content-distribution> \| <overflow-position>? [ <content-position> \| left \| right ] | `internal/layout/style_properties.go` | `TestWebkitPrefixAliases`, `TestFlexDistributedJustifyKeepsGap`, `TestBehaviorJustifyContentCenterUsedOffset` |
 | `justify-items` | normal \| stretch \| <baseline-position> \| <overflow-position>? [ <self-position> \| left \| right ] \| legacy \| legacy && [ left \| right \| center ] | `internal/layout/style_properties.go` | `TestBehaviorJustifyItemsCenterUsedOffset` |
 | `justify-self` | auto \| <overflow-position>? [ normal \| <self-position> \| left \| right ] \| stretch \| <baseline-position> | `internal/layout/style_properties.go` | `TestBehaviorJustifySelfCenterUsedOffset` |
 | `left` | <length> \| <percentage> \| auto \| inherit | `internal/layout/style_properties.go` | `TestCaptionSideParse`, `TestTableCellClipsTransformedContent`, `TestBehaviorLeftShiftsRelativeBox` |
 | `letter-spacing` | normal \| <length> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorLetterSpacingWidensText` |
+| `lighting-color` | <color> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_svg.go`, `internal/layout/svgleft_attrs.go`, `internal/layout/layout_svg.go`, `internal/svg/lighting_emulate.go`, `internal/svg/present.go` | `TestSVGLightingColorShadesTheShape`, `TestSvgLeftoversBakeFromStylesheet`, `TestSvgLeftoversInlineNoDuplicate`, `TestDeclaredSvgGrammar`, `TestDeclaredSvgInherit` |
 | `line-break` | auto \| loose \| normal \| strict \| anywhere | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextPropsWave3`, `TestBehaviorLineBreakAnywhereWrapsToken` |
 | `line-clamp` | none \| [<'max-lines'> \|\| <'block-ellipsis'>] -webkit-legacy? | `internal/layout/style_advanced_props.go` | `TestLineClampClearsWebkitBoxNowrap`, `TestWaveBTextTruncationAndClamping`, `TestBehaviorLineClampTwoLimitsLines` |
+| `line-fit-edge` | leading \| text | `internal/layout/inline_line_fit.go`, `internal/layout/style.go` | `TestBehaviorLineFitEdgeTextDropsPadding` |
 | `line-height` | normal \| <number> \| <length> \| <percentage> \| inherit | `internal/layout/style.go`, `internal/layout/style_properties.go` | `TestMarginCollapse`, `TestExplicitLineHeightAllowsNegativeHalfLeading`, `TestNormalLineHeightUsesFaceMetrics`, `TestBehaviorLineHeightExplicitEnlargesBox` |
+| `line-padding` | <length> | `internal/layout/inline_line_padding.go` | `TestBehaviorLinePaddingInsetsEveryLine` |
+| `link-parameters` | none \| <param()># | `internal/layout/style_link_params.go`, `internal/svg/link_params.go`, `internal/layout/layout_flow.go`, `internal/layout/style.go` | `TestBehaviorLinkParametersRecolorsSvg`, `TestBehaviorLinkParametersLeavesAnchorURI` |
 | `list-style` | [ <'list-style-type'> \|\| <'list-style-position'> \|\| <'list-style-image'> ] \| inherit | `internal/layout/style_properties.go` | `TestBehaviorListStyleNoneHidesMarker`, `TestBehaviorListStyleShorthandImageEmitsImageMarker` |
 | `list-style-image` | <uri> \| none \| inherit | `internal/layout/style_paint_props.go` | `TestBehaviorListStyleImageBadURLFallsBackToMarker`, `TestBehaviorListStyleImageResolvedEmitsImageMarker` |
 | `list-style-position` | inside \| outside \| inherit | `internal/layout/style_properties.go` | `TestBehaviorListStylePositionInsideVsOutside` |
@@ -399,6 +471,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `margin-block-end` | <'margin-top'> | `internal/layout/style_logical_axes.go`, `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestBehaviorMarginBlockEndOffsetsSibling` |
 | `margin-block-start` | <'margin-top'> | `internal/layout/style_logical_axes.go`, `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestBehaviorMarginBlockStartOffsetsSibling` |
 | `margin-bottom` | <margin-width> \| inherit | `internal/layout/style_properties.go` | `TestBlockWidthsAndMargins`, `TestMarginCollapse` |
+| `margin-break` | auto \| keep \| discard | `internal/layout/margin_break.go`, `internal/layout/multicol.go`, `internal/layout/style_properties.go` | `TestMarginBreakProperty`, `TestBehaviorMarginBreakKeepNoFragmentEffect`, `TestBehaviorMarginBreakDiscardNoFragmentEffect`, `TestFragmentAssessMarginBreakMulticolNoEffect`, `TestBehaviorMarginBreakDiscardDropsColumnMargin`, `TestBehaviorMarginBreakKeepKeepsColumnMargin` |
 | `margin-inline` | <'margin-top'>{1,2} | `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestLogicalMargin` |
 | `margin-inline-end` | <'margin-top'> | `internal/layout/style_logical_axes.go`, `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestBehaviorMarginInlineEndShrinksAutoWidth` |
 | `margin-inline-start` | <'margin-top'> | `internal/layout/style_logical_axes.go`, `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestCSSPartialRemainingPagedWritingMode`, `TestBehaviorMarginInlineStartOffsetsSibling` |
@@ -406,6 +479,11 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `margin-right` | <margin-width> \| inherit | `internal/layout/style_properties.go` | `TestBlockWidthsAndMargins`, `TestMarginCollapse` |
 | `margin-top` | <margin-width> \| inherit | `internal/layout/style_properties.go` | `TestBlockWidthsAndMargins`, `TestCascadeEngineSupportsPropertyValues`, `TestMarginCollapse`, `TestBehaviorMarginTopOffsetsSibling` |
 | `margin-trim` | none \| block \| [ block-start \|\| block-end ] | `internal/layout/style_advanced_props.go` | `TestBehaviorMarginTrimTrimsFirstChild` |
+| `marker` | none \| url(#id) | `internal/layout/svg_presentation_paint.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgMarkerShorthandPaintsVertices`, `TestBehaviorSvgPresentMarker` |
+| `marker-end` | none \| url(#id) | `internal/layout/svg_presentation_paint.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgMarkerEndPaintsArrowhead`, `TestBehaviorSvgPresentMarkerEnd` |
+| `marker-mid` | none \| url(#id) | `internal/layout/svg_presentation_paint.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgPresentMarkerMid` |
+| `marker-side` | match-self \| match-parent | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_svg.go`, `internal/layout/svgleft_attrs.go`, `internal/layout/layout_svg.go` | `TestSVGPropertiesWithNoRenderingEffect`, `TestSvgLeftoversBakeFromStylesheet`, `TestSvgLeftoversInlineNoDuplicate`, `TestDeclaredSvgGrammar`, `TestDeclaredSvgInherit` |
+| `marker-start` | none \| url(#id) | `internal/layout/svg_presentation_paint.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgPresentMarkerStart` |
 | `mask` | url(...) \| none; supported mask mode, position, size, repeat, origin, clip, and composite values | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskShorthandCreatesElementGroup`, `TestMaskShorthandCSSWideKeywords`, `TestMaskShorthandResolvesCustomPropertiesAndKeepsLonghandOrder` |
 | `mask-border` | <'mask-border-source'> \|\| <'mask-border-slice'> [ / <'mask-border-width'>? [ / <'mask-border-outset'> ]? ]? \|\| <'mask-border-repeat'> \|\| <'mask-border-mode'> | `internal/layout/mask_border.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go`, `internal/layout/inline.go`, `internal/layout/mask_border_raster.go` | `TestMaskBorderShorthandExpansionAndSourceOrder`, `TestMaskBorderShorthandWideKeywordResetsToInitial`, `TestMaskBorderShorthandResolvesCustomProperties`, `TestBehaviorMaskBorderVendorAliasUsesCSSSourceOrder`, `TestComposeMaskBorderRasterOnGroup` |
 | `mask-border-mode` | alpha \| luminance | `internal/layout/mask_border.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go`, `internal/layout/inline.go`, `internal/layout/mask_border_raster.go` | `TestBehaviorMaskBorderDescriptorNotPaint`, `TestComposeMaskBorderRasterOnGroup` |
@@ -422,19 +500,32 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `mask-position` | CSS position keywords, lengths, and percentages, plus 4-value edge-offset positions such as left 10px top 20px | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskLayerPropertiesAttachToAllElementPaint` |
 | `mask-repeat` | repeat \| repeat-x \| repeat-y \| no-repeat \| space \| round \| one or two of repeat, space, round, no-repeat | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskLayerPropertiesAttachToAllElementPaint` |
 | `mask-size` | auto \| cover \| contain \| one or two non-negative CSS lengths or percentages | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | `TestBehaviorMaskLayerPropertiesAttachToAllElementPaint` |
+| `mask-type` | luminance \| alpha | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go`, `internal/svg/mask.go` | `TestBehaviorMaskTypeStylesheetChangesSVGMaskAlpha`, `TestBehaviorSVGMaskTypeFlowsIntoMaskImagePayload`, `TestRasterizeMaskUsesSourceAlphaForAlphaMode`, `TestRasterizeMaskUsesSourceLuminanceForMatchSource` |
 | `max-block-size` | <'max-width'> | `internal/layout/style_properties.go` | `TestLogicalSize`, `TestBehaviorMaxBlockSizeClampsUsedHeight` |
 | `max-height` | <length> \| <percentage> \| none \| inherit | `internal/layout/style_properties.go` | `TestBehaviorMaxHeightClampsUsedHeight` |
 | `max-inline-size` | <'max-width'> | `internal/layout/style_properties.go` | `TestLogicalSize`, `TestBehaviorMaxInlineSizeClampsUsedWidth` |
 | `max-lines` | auto \|\| <integer [1,∞]> | `internal/layout/style_advanced_props.go` | `TestWaveBTextTruncationAndClamping`, `TestBehaviorMaxLinesTwoLimitsLines` |
+| `max-size` | <'max-width'> <'max-height'>? | `internal/layout/style_size_shorthand.go` | `TestBehaviorMaxSizeClampsUsedBorderBox` |
 | `max-width` | <length> \| <percentage> \| none \| inherit | `internal/layout/style_properties.go` | `TestBehaviorMaxWidthClampsUsedWidth` |
 | `min-block-size` | <'min-width'> | `internal/layout/style_properties.go` | `TestLogicalSize`, `TestBehaviorMinBlockSizeClampsUsedHeight` |
 | `min-height` | <length> \| <percentage> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorMinHeightClampsUsedHeight` |
 | `min-inline-size` | <'min-width'> | `internal/layout/style_properties.go` | `TestLogicalSize`, `TestBehaviorMinInlineSizeClampsUsedWidth` |
+| `min-size` | <'min-width'> <'min-height'>? | `internal/layout/style_size_shorthand.go` | `TestBehaviorMinSizeClampsUsedBorderBox` |
 | `min-width` | <length> \| <percentage> \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestBehaviorMinWidthClampsUsedWidth`, `TestBehaviorMinWidthClampsUsedWidthReference` |
 | `mix-blend-mode` | <blend-mode> \| plus-lighter | `internal/layout/style_advanced_props.go` | `TestBehaviorMixBlendModeOpensGroup` |
+| `nav-down` | auto \| <id> [ current \| root \| <target-name> ]? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `nav-left` | auto \| <id> [ current \| root \| <target-name> ]? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `nav-right` | auto \| <id> [ current \| root \| <target-name> ]? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `nav-up` | auto \| <id> [ current \| root \| <target-name> ]? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `object-fit` | fill \| none \| [contain \| cover] \|\| scale-down | `internal/layout/style_image_adjust_props.go` | `TestBehaviorObjectFitContainKeepsRatio` |
 | `object-position` | <position> | `internal/layout/style_image_adjust_props.go` | `TestBehaviorObjectPositionAlignsNoneImage` |
 | `object-view-box` | none \| <basic-shape-rect> | `internal/layout/style_image_adjust_props.go` | `TestBehaviorObjectViewBoxXywhCropsImage` |
+| `offset` | [ <'offset-position'>? [ <'offset-path'> [ <'offset-distance'> \|\| <'offset-rotate'> ]? ]? ]! [ / <'offset-anchor'> ]? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_motion.go`, `internal/layout/motion_apply.go`, `internal/layout/motion_geom.go`, `internal/layout/motion_spec.go`, `internal/layout/motion_shapes.go`, `internal/layout/transform.go` | `TestMotionShorthandMatchesLonghands`, `TestMotionDeclaredValues` |
+| `offset-anchor` | auto \| <position> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_motion.go`, `internal/layout/motion_apply.go`, `internal/layout/motion_geom.go`, `internal/layout/motion_spec.go`, `internal/layout/motion_shapes.go`, `internal/layout/transform.go` | `TestMotionPathMovesBox`, `TestMotionDistanceClampAndWrap`, `TestMotionPathRotatesWithHeading`, `TestMotionRayAndAnchor`, `TestMotionDeclaredValues` |
+| `offset-distance` | <length-percentage> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_motion.go`, `internal/layout/motion_apply.go`, `internal/layout/motion_geom.go`, `internal/layout/motion_spec.go`, `internal/layout/motion_shapes.go`, `internal/layout/transform.go` | `TestMotionPathMovesBox`, `TestMotionDistanceClampAndWrap`, `TestMotionPathRotatesWithHeading`, `TestMotionRayAndAnchor`, `TestMotionDeclaredValues` |
+| `offset-path` | none \| <offset-path> \|\| <coord-box> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_motion.go`, `internal/layout/motion_apply.go`, `internal/layout/motion_geom.go`, `internal/layout/motion_spec.go`, `internal/layout/motion_shapes.go`, `internal/layout/transform.go` | `TestMotionReferenceIsContainingBlock`, `TestMotionRelayoutMovesBox`, `TestMotionPathMovesBox`, `TestMotionDistanceClampAndWrap`, `TestMotionPathRotatesWithHeading`, `TestMotionRayAndAnchor`, `TestMotionDeclaredValues` |
+| `offset-position` | normal \| auto \| <position> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_motion.go`, `internal/layout/motion_apply.go`, `internal/layout/motion_geom.go`, `internal/layout/motion_spec.go`, `internal/layout/motion_shapes.go`, `internal/layout/transform.go` | `TestMotionPositionPercentUsesContainingBlock`, `TestMotionRayAndAnchor`, `TestMotionDeclaredValues` |
+| `offset-rotate` | [ auto \| reverse ] \|\| <angle> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_motion.go`, `internal/layout/motion_apply.go`, `internal/layout/motion_geom.go`, `internal/layout/motion_spec.go`, `internal/layout/motion_shapes.go`, `internal/layout/transform.go` | `TestMotionPathMovesBox`, `TestMotionDistanceClampAndWrap`, `TestMotionPathRotatesWithHeading`, `TestMotionRayAndAnchor`, `TestMotionDeclaredValues` |
 | `opacity` | <opacity-value> | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestBehaviorOpacityFoldsIntoPaintOps` |
 | `order` | <integer> | `internal/layout/style_properties.go` | `TestWebkitPrefixAliases`, `TestBehaviorOrderReorderUsedPosition` |
 | `orphans` | <integer> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorOrphansNoFragmentationEffect`, `TestFragmentAssessOrphansWidowsAnonStripNoEffect`, `TestOrphansKeepsLinesInFirstColumn`, `TestSnapAnonBandForOrphans` |
@@ -460,6 +551,7 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `overflow-wrap` | normal \| break-word \| anywhere | `internal/layout/style_properties.go` | `TestBehaviorOverflowWrapBreakWordWrapsToken` |
 | `overflow-x` | visible \| hidden \| clip \| scroll \| auto | `internal/layout/style_properties.go` | `TestBehaviorOverflowXHiddenClipsWideChild` |
 | `overflow-y` | visible \| hidden \| clip \| scroll \| auto | `internal/layout/style_properties.go` | `TestBehaviorOverflowYScrollClipsTallChild` |
+| `overlay` | none \| auto | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_read.go` | `TestDeclaredReadGrammar` |
 | `padding` | <padding-width>{1,4} \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox` |
 | `padding-block` | <'padding-top'>{1,2} | `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestLogicalPadding` |
 | `padding-block-end` | <'padding-top'> | `internal/layout/style_logical_axes.go`, `internal/layout/style_logical_box.go`, `internal/layout/style_properties.go` | `TestBehaviorPaddingBlockEndExpandsBox` |
@@ -471,12 +563,17 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `padding-left` | <padding-width> \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox`, `TestBehaviorPaddingLeftOffsetsContent` |
 | `padding-right` | <padding-width> \| inherit | `internal/layout/style_properties.go` | `TestPaddingBorderBox` |
 | `padding-top` | <padding-width> \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestPaddingBorderBox`, `TestBehaviorPaddingTopOffsetsContent` |
+| `paint-order` | normal \| [ fill \|\| stroke \|\| markers ] | `internal/layout/svg_presentation_paint.go`, `internal/svg/present.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgPresentPaintOrder`, `TestEmulateShapeLength` |
+| `path-length` | none \| <number> [0,inf] | `internal/layout/svg_presentation_paint.go`, `internal/svg/present.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgPresentPathLength`, `TestEmulateShapeLength` |
 | `perspective` | none \| <length [0,∞]> | `internal/layout/style_properties.go` | `TestBehaviorPerspectiveNoLayoutEffect`, `TestPerspBuildRotateYNarrowsOrtho`, `TestPerspBuildAncestorPerspectiveForeshortens`, `TestPerspBuildPerspectiveFunctionAppliesOwnDistance`, `TestPerspBuildPreserveComposedSkipsProjection`, `TestPerspPerspectiveNoEffectOn2DChild`, `TestPerspPerspectiveFunctionDepthless`, `TestPerspRotate3DOrthographic` |
 | `perspective-origin` | <position> | `internal/layout/style_properties.go` | `TestBehaviorPerspectiveOriginNoLayoutEffect`, `TestOriginBuildDefaultIsCenter`, `TestOriginBuildPercentages`, `TestOriginBuildKeywords`, `TestOriginBuildLengths`, `TestOriginBuildVanishingPointShiftsProjection`, `TestOriginBuildShiftsProjectedOutput`, `TestPerspPerspectiveOriginNoEffect` |
 | `place-content` | <'align-content'> <'justify-content'>? | `internal/layout/style_properties.go` | `TestPlaceShorthands`, `TestFlexPlaceContentDistributes` |
 | `place-items` | <'align-items'> <'justify-items'>? | `internal/layout/style_properties.go` | `TestPlaceShorthands`, `TestGridPlaceItemsCenterShrinksItems` |
 | `place-self` | <'align-self'> <'justify-self'>? | `internal/layout/style_properties.go` | `TestPlaceShorthands`, `TestGridPlaceSelfEndShrinksItem` |
-| `position` | static \| relative \| absolute \| fixed \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestPositionLiteFixtureReservesOverlaySpace`, `TestBehaviorPositionRelativeKeepsFlow` |
+| `pointer-timeline` | <name> <axis>?, comma list | `internal/layout/trigger_style.go`, `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxPointerTimeline`, `TestBoxPointerTimelineNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `pointer-timeline-axis` | block \| inline \| x \| y, comma list | `internal/layout/trigger_style.go`, `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxPointerTimeline`, `TestBoxPointerTimelineNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `pointer-timeline-name` | none \| <dashed-ident>, comma list | `internal/layout/trigger_style.go`, `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxPointerTimeline`, `TestBoxPointerTimelineNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `position` | static \| relative \| absolute \| fixed \| sticky \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestPositionLiteFixtureReservesOverlaySpace`, `TestBehaviorPositionRelativeKeepsFlow` |
 | `position-anchor` | auto \| <anchor-name> | `internal/layout/anchor_position.go`, `internal/layout/style_cascade.go` | `TestAnchorInvalidLeavesPrevious`, `TestBehaviorPositionAreaPlacesAboveAnchor` |
 | `position-area` | none \| <position-area> | `internal/layout/anchor_position.go`, `internal/layout/style_cascade.go` | `TestBehaviorPositionAreaPlacesAboveAnchor` |
 | `position-try` | <'position-try-order'>? <'position-try-fallbacks'> | `internal/layout/anchor_position.go`, `internal/layout/style_cascade.go` | `TestBehaviorPositionTryShorthandExpands` |
@@ -485,6 +582,9 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `position-visibility` | always \| anchor-valid \| anchor-visible \| no-overflow | `internal/layout/anchor_position.go`, `internal/layout/style_cascade.go` | `TestBehaviorPositionVisibilityNoOverflow` |
 | `print-color-adjust` | economy \| exact | `internal/layout/style_color_adjust_props.go` | `TestColorAdjustPropsAcceptLegalKeywords`, `TestColorAdjustPropsReachRestPass`, `TestColorAdjustPropsRejectIllegalKeywords` |
 | `quotes` | [<string> <string>]+ \| none \| inherit | `internal/layout/style_paint_props.go` | `TestQuotes`, `TestBehaviorQuotesEmitGeneratedMarks` |
+| `r` | non-negative <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoRResizesCircle`, `TestBehaviorRubyParsersAcceptSpecValues`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
+| `reading-flow` | normal \| source-order \| flex-visual \| flex-flow \| grid-rows \| grid-columns \| grid-order | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_read.go` | `TestDeclaredReadGrammar` |
+| `reading-order` | <integer> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_read.go` | `TestDeclaredReadGrammar` |
 | `region-fragment` | auto \| break | `internal/layout/named_flow.go`, `internal/layout/layout_flow.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorNamedFlowRegionFragmentAutoVsBreak`, `TestBehaviorNamedFlowPropertyStorage` |
 | `right` | <length> \| <percentage> \| auto \| inherit | `internal/layout/style_properties.go` | `TestAuthorOverridesButtonUADefaults`, `TestBackgroundPositionUsesCSSPxIntrinsicSize`, `TestCaptionSideParse`, `TestTableCellClipsTransformedContent`, `TestBehaviorRightShiftsRelativeBox` |
 | `rotate` | none \| <angle> \| [ x \| y \| z \| <number>{3} ] && <angle> | `internal/layout/style_leftovers.go`, `internal/layout/style_properties.go` | `TestBehaviorRotatePropertyBakesMatrix` |
@@ -520,17 +620,31 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `rule-style` | <'column-rule-style'> | `internal/layout/style_gap_rules.go`, `internal/layout/gap_rules.go`, `internal/layout/grid.go`, `internal/layout/flex.go` | `TestBehaviorRuleLonghandsBothAxes` |
 | `rule-visibility-items` | <'column-rule-visibility-items'> | `internal/layout/style_gap_rules.go`, `internal/layout/gap_rules.go`, `internal/layout/grid.go`, `internal/layout/flex.go` | `TestBehaviorRowRuleVisibilityAround` |
 | `rule-width` | <'column-rule-width'> | `internal/layout/style_gap_rules.go`, `internal/layout/gap_rules.go`, `internal/layout/grid.go`, `internal/layout/flex.go` | `TestBehaviorRuleLonghandsBothAxes` |
+| `rx` | non-negative <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoRxRoundsRect`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
+| `ry` | non-negative <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoRyRoundsRect`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
 | `scale` | none \| [ <number> \| <percentage> ]{1,3} | `internal/layout/style_leftovers.go`, `internal/layout/style_properties.go` | `TestTextSpacingTrimApply`, `TestBehaviorScalePropertyScalesPaint` |
 | `scroll-margin` | <length>{1,4} | `internal/layout/style_paint_props.go` | `TestBehaviorScrollMarginNoPaintEffect` |
 | `scroll-margin-bottom` | <length> | `internal/layout/style_paint_props.go` | `TestBehaviorScrollMarginBottomNoPaintEffect` |
 | `scroll-margin-left` | <length> | `internal/layout/style_paint_props.go` | `TestBehaviorScrollMarginLeftNoPaintEffect` |
 | `scroll-margin-right` | <length> | `internal/layout/style_paint_props.go` | `TestBehaviorScrollMarginRightNoPaintEffect` |
 | `scroll-margin-top` | <length> | `internal/layout/style_paint_props.go` | `TestBehaviorScrollMarginTopNoPaintEffect` |
+| `scroll-timeline` | <name> <axis>?, comma list | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `scroll-timeline-axis` | block \| inline \| x \| y, comma list | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `scroll-timeline-name` | none \| <dashed-ident>, comma list | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `shape-image-threshold` | <opacity-value> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/shape_image.go`, `internal/layout/style_shape_props.go` | `TestShapeImageThreshold`, `TestDeclaredShapesGrammar`, `TestDeclaredShapesWideKeywords` |
 | `shape-inside` | auto \| outside-shape \| [ <basic-shape> \|\| <shape-box> ] (circle(), ellipse(), inset(); polygon(), path(), and url() are rejected) | `internal/layout/style_shape_inside.go`, `internal/layout/shape_inside.go`, `internal/layout/style_cascade.go` | `TestBehaviorShapeInsideCircleTapersLines`, `TestBehaviorShapeInsideShapeBoxMovesReference`, `TestBehaviorShapeInsideOutsideShapeCopiesOutside`, `TestBehaviorShapeInsideStacksWithFloatExclusion`, `TestBehaviorShapeInsideDoesNotInherit`, `TestBehaviorShapeInsideNoLayoutEffect` |
 | `shape-margin` | <length-percentage [0,∞]> | `internal/layout/style_shape_props.go` | `TestBehaviorShapeMarginExpandsExclusion` |
 | `shape-outside` | none \| [ <basic-shape> \|\| <shape-box> ] \| <image> | `internal/layout/style_shape_props.go` | `TestBehaviorShapeOutsideNarrowsWrap` |
 | `shape-padding` | <length-percentage [0,∞]> | `internal/layout/style_shape_inside.go`, `internal/layout/shape_inside.go`, `internal/layout/style_cascade.go` | `TestBehaviorShapeInsidePaddingShrinksMiddleLine`, `TestBehaviorShapeInsidePaddingAloneNoEffect`, `TestBehaviorShapeInsideOversizePaddingKeepsZeroWidthLines` |
 | `shape-rendering` | auto \| optimizeSpeed \| crispEdges \| geometricPrecision | `internal/layout/style_paint_props.go` | `TestBehaviorShapeRenderingNoPaintEffect`, `TestBehaviorSvgBakeShapeRenderingGap`, `TestPaintOutputShapeRenderingCrispSnapsRaster` |
+| `size` | <'width'> <'height'>? | `internal/layout/style_size_shorthand.go` | `TestBehaviorSizeShorthandSetsUsedBorderBox` |
+| `slider-orientation` | auto \| left-to-right \| right-to-left \| top-to-bottom \| bottom-to-top | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `spatial-navigation-action` | auto \| focus \| scroll | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `spatial-navigation-contain` | auto \| contain | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `spatial-navigation-function` | normal \| grid | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `stop-color` | <color> (hex, rgb(), rgba(), named colors baked as hex) | `internal/layout/svg_presentation_paint.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoStopColorRecolorsGradient`, `TestBehaviorSvgPresentStopColor` |
+| `stop-opacity` | <number [0,1]> \| <percentage [0%,100%]> | `internal/layout/svg_presentation_paint.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoStopOpacityFadesGradient`, `TestBehaviorSvgPresentStopOpacity` |
+| `string-set` | none \| [ <custom-ident> <string>+ ]# | `testdata/css/catalog/upstream/webref-ed-css-1f2ec8f.json` | `TestBehaviorStringSetFirstAssignmentWins`, `TestBehaviorStringSetMultipleNames`, `TestBehaviorStringSetNoneAndInvalidIgnored`, `TestBehaviorStringSetEscapesDecode`, `TestBehaviorStringSetNoPaintEffect`, `TestBehaviorStringSetPaintsOnSameCanvas`, `TestBehaviorGCPMWireStringSet` |
 | `stroke` | <paint> | `internal/layout/style_paint_props.go` | `TestBehaviorStrokeBakesPaint` |
 | `stroke-dasharray` | none \| <dasharray> | `internal/layout/style_leftovers.go`, `internal/layout/style_paint_props.go` | `TestLeftoversPropsWave5`, `TestBehaviorSvgBakeDasharrayDashesStroke` |
 | `stroke-dashoffset` | <length-percentage> \| <number> | `internal/layout/style_leftovers.go`, `internal/layout/style_paint_props.go` | `TestLeftoversPropsWave5`, `TestBehaviorSvgBakeDashoffsetShiftsPhase` |
@@ -566,12 +680,15 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `text-emphasis-position` | [ over \| under ] && [ right \| left ]? | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextEmphasisPropsReachWave3`, `TestBehaviorTextEmphasisPositionMovesDotsBelow` |
 | `text-emphasis-skip` | spaces \|\| punctuation \|\| symbols \|\| narrow | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextEmphasisPropsReachWave3`, `TestBehaviorTextEmphasisSkipNoLayoutEffect`, `TestEmphasisSkipPunctuationSkipsComma`, `TestEmphasisSkipNarrowSkipsNarrow` |
 | `text-emphasis-style` | none \| [ [ filled \| open ] \|\| [ dot \| circle \| double-circle \| triangle \| sesame ] ] \| <string> | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextEmphasisPropsReachWave3`, `TestBehaviorTextEmphasisStyleOpenStrokesMarks` |
+| `text-fit` | [ none \| grow \| shrink ] [consistent \| per-line \| per-line-all]? <percentage>? | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_shapes.go`, `internal/layout/style_text_spacing_props.go`, `internal/layout/text_fit.go` | `TestTextFitScalesOneLine`, `TestDeclaredShapesGrammar`, `TestDeclaredShapesWideKeywords` |
 | `text-group-align` | none \| start \| end \| left \| right \| center | `internal/layout/style_text_spacing_props.go` | `TestTextGroupAlignCenter`, `TestBehaviorTextGroupAlignEndMovesLine` |
 | `text-indent` | <length> \| <percentage> \| inherit | `internal/layout/style_properties.go` | `TestTextIndentInheritsAndShiftsFirstLine`, `TestBehaviorTextIndentShiftsFirstLine` |
 | `text-justify` | [ auto \| none \| inter-word \| inter-character \| ruby ] \|\| no-compress | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextPropsWave3`, `TestBehaviorTextJustifyNoneDisablesExpansion`, `TestBehaviorTextJustifyInterWordExpandsWordGaps`, `TestBehaviorTextJustifyInterCharacterExpandsWithinWord` |
 | `text-orientation` | mixed \| upright \| sideways | `internal/layout/style_text_support_props.go` | `TestApplyTextSupportPropsTextOrientation`, `TestBehaviorTextOrientationSidewaysRotatesRun` |
 | `text-overflow` | [ clip \| ellipsis \| <string> \| fade \| <fade()> ]{1,2} | `internal/layout/style_advanced_props.go` | `TestWaveBTextTruncationAndClamping`, `TestBehaviorTextOverflowEllipsisTruncatesLine` |
+| `text-rendering` | auto \| optimizeSpeed \| optimizeLegibility \| geometricPrecision | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_svg.go`, `internal/layout/svgleft_attrs.go`, `internal/layout/layout_svg.go`, `internal/svg/text_outline.go` | `TestSVGPropertiesWithNoRenderingEffect`, `TestSVGTextDrawsOutlines`, `TestSvgLeftoversBakeFromStylesheet`, `TestSvgLeftoversInlineNoDuplicate`, `TestDeclaredSvgGrammar`, `TestDeclaredSvgInherit` |
 | `text-shadow` | none \| <shadow># | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextDecorationPropsWave3`, `TestBehaviorTextShadowPaintsOffsetCopy` |
+| `text-size-adjust` | auto \| none \| <percentage [0,∞]> | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `text-spacing` | none \| auto \| <spacing-trim> \|\| <autospace> | `internal/layout/style_text_spacing_props.go` | `TestTextAutospaceIdeographAlpha`, `TestBehaviorTextSpacingShorthandMirrorsTrim` |
 | `text-spacing-trim` | <spacing-trim> \| auto | `internal/layout/style_text_spacing_props.go` | `TestTextAutospaceIdeographAlpha`, `TestBehaviorTextSpacingTrimStartTrimsLead`, `TestBehaviorTextSpacingTrimLeadingTrimsPunct` |
 | `text-transform` | capitalize \| uppercase \| lowercase \| none \| inherit | `internal/layout/style_properties.go` | `TestBehaviorTextTransformUppercaseEmitsCaps` |
@@ -580,6 +697,16 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `text-wrap` | wrap \| nowrap \| auto \| balance \| stable (at most one mode and one style) | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextWrapBalanceMatchesChromeLineBreaks`, `TestDisplaySupportsTextWrapStyleAcceptance`, `TestBehaviorTextWrapNowrapKeepsSingleLine` |
 | `text-wrap-mode` | wrap \| nowrap | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextPropsWave3`, `TestBehaviorTextWrapModeNowrapFoldsOntoWhiteSpace` |
 | `text-wrap-style` | auto \| balance \| stable | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go`, `internal/layout/inline_balance.go` | `TestTextWrapBalanceMatchesChromeLineBreaks`, `TestTextWrapBalanceMatchesChromeWideWidths`, `TestTextWrapBalanceMatchesChromeEdgeCases`, `TestTextWrapBalanceLeavesLongParagraphAlone`, `TestTextWrapBalanceLeavesNowrapAlone`, `TestTextWrapBalanceCenterAlignmentUsesFullWidth`, `TestTextWrapStyleAcceptanceGate`, `TestDisplaySupportsTextWrapStyleAcceptance`, `TestBehaviorTextWrapStyleAutoMatchesNormal`, `TestAvoidShortWireRebreaksOrphan`, `TestAvoidShortHelperRebreaksOrphan`, `TestAvoidShortKeepsGoodBreaks`, `TestAvoidShortApplyGates` |
+| `timeline-scope` | none \| all \| <dashed-ident># (exported as Box.TimelineScope) | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineScope`, `TestBoxTimelineScopeInherit`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger` | none \| [ <name> <source> <activation-range>? [ / <active-range> ]? ]# (the activation range may be omitted and then is normal; exported as Box.TimelineTriggers) | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-activation-range` | [ <start> <end>? ]#; a missing end is normal | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-activation-range-end` | [ normal \| <length-percentage> \| <timeline-range-name> <length-percentage>? ]# | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-activation-range-start` | [ normal \| <length-percentage> \| <timeline-range-name> <length-percentage>? ]# | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-active-range` | [ <start> <end>? ]#; a missing end is auto | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-active-range-end` | [ auto \| normal \| <length-percentage> \| <timeline-range-name> <length-percentage>? ]# | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-active-range-start` | [ auto \| normal \| <length-percentage> \| <timeline-range-name> <length-percentage>? ]# | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-name` | none \| <dashed-ident># | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
+| `timeline-trigger-source` | [ none \| auto \| [ <dashed-ident> \| scroll() \| view() ]+ ]# | `internal/layout/trigger_style.go`, `internal/layout/trigger_event_style.go`, `internal/layout/trigger_export.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `layout/trigger.go` | `TestBoxTimelineTriggerShorthand`, `TestBoxTimelineTriggerLonghands`, `TestBoxTimelineTriggerNameAndSource`, `TestBoxTimelineTriggerRangeShorthands`, `TestBoxTimelineTriggerLengths`, `TestBoxTimelineTriggerNotInherited`, `TestTriggerDeclarationValueAccepted`, `TestTriggerShorthandThroughVar` |
 | `top` | <length> \| <percentage> \| auto \| inherit | `internal/layout/style_properties.go` | `TestBackgroundLonghands`, `TestCaptionSideParse`, `TestMarginEdgeUnknown`, `TestBehaviorTopShiftsRelativeBox` |
 | `transform` | none \| <transform-list> | `internal/layout/style_properties.go` | `TestWebkitPrefixAliases`, `TestBehaviorTransformTranslateMovesPaint`, `TestBehaviorTranslate3dAndScale3d`, `TestBehaviorRotateXNarrowsHeight`, `TestBehaviorMatrix3DRotateY` |
 | `transform-box` | content-box \| border-box \| fill-box \| stroke-box \| view-box | `internal/layout/style_properties.go` | `TestBehaviorTransformBoxFillBoxNoPaintEffect` |
@@ -594,7 +721,12 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `translate` | none \| <length-percentage> [ <length-percentage> <length>? ]? | `internal/layout/style_leftovers.go`, `internal/layout/style_properties.go` | `TestBehaviorTranslatePropertyMovesPaint` |
 | `trigger-scope` | none \| all \| one or more <dashed-ident> values | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogTriggerScopeLimitsOwnFrameActions (--fire)` |
 | `unicode-bidi` | normal \| embed \| bidi-override \| inherit | `internal/layout/style_text_support_props.go` | `TestApplyTextSupportPropsUnicodeBidi` |
+| `vector-effect` | none \| non-scaling-stroke | `internal/layout/svg_presentation_paint.go`, `internal/svg/present.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoVectorEffectGap`, `TestBehaviorSvgPresentVectorEffect` |
 | `vertical-align` | baseline \| sub \| super \| top \| text-top \| middle \| bottom \| text-bottom \| <percentage> \| <length> \| inherit | `internal/layout/style_properties.go` | `TestTableCellVerticalAlignMiddle`, `TestBehaviorVerticalAlignSuperRaisesText` |
+| `view-timeline` | <name> [ <axis> \|\| <inset> ]?, comma list | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody`, `TestBoxViewTimelineInsetLists`, `TestBoxViewTimelineInsetPercentPerAxis` |
+| `view-timeline-axis` | block \| inline \| x \| y, comma list | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
+| `view-timeline-inset` | [ auto \| <length-percentage> ]{1,2}, comma list; negative values allowed | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody`, `TestBoxViewTimelineInsetLists`, `TestBoxViewTimelineInsetPercentPerAxis` |
+| `view-timeline-name` | none \| <dashed-ident>, comma list | `internal/layout/timeline_style.go`, `layout/timeline.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/timeline_scroller.go`, `internal/layout/timeline_list.go` | `TestBoxTimelines`, `TestBoxScrollAndViewTimelineCascade`, `TestTimelineDeclarationValueAccepted`, `TestBoxTimelineLists`, `TestBoxTimelineListsInherit`, `TestTimelineScrollers`, `TestTimelineScrollerIgnoresRootAndBody` |
 | `view-transition-class` | none \| one or more custom-ident values | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogViewTransitionClassChangesOwnFrameFrame (promo)` |
 | `view-transition-group` | normal \| contain \| nearest \| custom-ident | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogViewTransitionGroupBuildsOwnFrameHierarchy (nearest)` |
 | `view-transition-name` | none \| custom-ident | `internal/layout/animation_style.go`, `internal/layout/placed.go`, `layout/layout.go` | `TestAnimationDeclarationValueAccepted`, `TestAnimationTransitionCascadeRoundTrips`, `TestDisplayAnimationAndTransitionMetadata`; OwnFrame cases: `TestCatalogViewTransitionNameReachesOwnFrameFrames (card)` |
@@ -605,7 +737,10 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `white-space-trim` | none \| discard-before \|\| discard-after \|\| discard-inner | `internal/layout/style_properties.go`, `internal/layout/style_text_props.go` | `TestTextPropsWave3`, `TestBehaviorWhiteSpaceTrimDiscardBeforeTrimsLeading`, `TestBehaviorWhiteSpaceTrimDiscardAfterTrimsTrailing`, `TestBehaviorWhiteSpaceTrimDiscardInnerTrimsBothEdges` |
 | `widows` | <integer> \| inherit | `internal/layout/style_properties.go` | `TestBehaviorWidowsNoFragmentationEffect`, `TestBehaviorWidowsKeepsMinLinesInNextColumn` |
 | `width` | <length> \| <percentage> \| auto \| inherit | `internal/layout/style_properties.go` | `TestApplyImageKeyBackgroundAlias`, `TestBoxSizingBorderBox`, `TestCascadeEngineSupportsPropertyValues`, `TestImageSet`, `TestOutlineParse`, `TestPseudoElementSelectorDoesNotApplyToHost`, `TestBehaviorWidthContentBoxUsedSize` |
+| `will-change` | auto \| <animateable-feature># | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
+| `window-drag` | none \| move | `internal/layout/declared_fields.go`, `internal/layout/declared_style.go`, `internal/layout/style.go`, `internal/layout/placed.go`, `layout/layout.go`, `internal/layout/declared_nav.go` | `TestDeclaredNavGrammar`, `TestDeclaredNavInvalidKeepsEarlier` |
 | `word-break` | normal \| break-all \| keep-all \| manual \| auto-phrase \| break-word | `internal/layout/style_properties.go` | `TestBehaviorWordBreakKeepAllKeepsToken` |
+| `word-space-transform` | none \| [ space \| ideographic-space ] && auto-phrase? | `internal/layout/inline_word_space.go` | `TestBehaviorWordSpaceTransformSpaceWidensRun`, `TestBehaviorWordSpaceTransformIdeographicSpace`, `TestBehaviorWordSpaceTransformAutoPhraseInsertsNothing`, `TestBehaviorWordSpaceTransformWbrWidensRun`, `TestBehaviorWordSpaceTransformBesideBreakStays`, `TestBehaviorWordSpaceTransformBadTokenKeepsSpace`, `TestBehaviorWordSpaceTransformInherits` |
 | `word-spacing` | normal \| <length> \| inherit | `internal/layout/style_properties.go` | `TestWordSpacingInherits`, `TestWordSpacingWidensRuns`, `TestBehaviorWordSpacingWidensText` |
 | `wrap-after` | auto \| line \| avoid \| avoid-line \| flex \| avoid-flex | `internal/layout/wrap_break.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorWrapBeforeLineBreaks`, `TestBehaviorNamedFlowPropertyStorage` |
 | `wrap-before` | auto \| line \| avoid \| avoid-line \| flex \| avoid-flex | `internal/layout/wrap_break.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorWrapBeforeLineBreaks`, `TestBehaviorWrapAvoidSkipsSoftWrap`, `TestBehaviorWrapBeforeFlexBreaksLine`, `TestBehaviorWrapBreakNotPageBreak`, `TestBehaviorNamedFlowPropertyStorage` |
@@ -613,76 +748,29 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `wrap-inside` | auto \| avoid \| avoid-line | `internal/layout/wrap_break.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorWrapInsideAvoidFitsAndOverflows`, `TestBehaviorNamedFlowPropertyStorage` |
 | `wrap-through` | wrap \| none | `internal/layout/exclusion.go`, `internal/layout/float.go`, `internal/layout/layout_flow.go`, `internal/layout/style_cascade.go`, `internal/layout/style_value_accept.go` | `TestBehaviorWrapThroughNoneIgnoresExclusion`, `TestBehaviorNamedFlowPropertyStorage` |
 | `writing-mode` | horizontal-tb \| vertical-rl \| vertical-lr \| sideways-rl \| sideways-lr | `internal/layout/style_properties.go` | `TestWritingModeInherits`, `TestBehaviorWritingModeVerticalRotatesRun` |
+| `x` | <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoXMovesRect`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
+| `y` | <length-percentage> (number, px, pt, pc, cm, mm, q, in, %) | `internal/layout/svg_presentation.go`, `internal/layout/style_paint_props.go`, `internal/layout/layout_svg.go`, `internal/layout/style.go` | `TestBehaviorSvgGeoYMovesRect`, `TestBehaviorSvgStylesheetGeometryMovesShape` |
 | `z-index` | auto \| <integer> \| inherit | `internal/layout/style_properties.go` | `TestCascadeEngineSupportsPropertyValues`, `TestBehaviorZIndexOrdersOverlappingPaint` |
+| `zoom` | <number [0,∞]> <percentage [0,∞]> | `internal/layout/style_zoom.go`, `internal/layout/layout.go` | `TestBehaviorZoomDoublesBorderBox` |
 
-### 2.2 Partial (4)
+### 2.2 Partial (0)
 
 | Property | Accepted values | Source | Named missing behavior |
 |---|---|---|---|
-| `-webkit-mask-composite` | source-over \| source-out \| source-in \| xor | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go` | The engine accepts source-over, source-in, source-out, and xor only; Chrome 155 also accepts source-atop, destination-over, destination-in, destination-out, destination-atop, clear, and copy. Mask pixel replay stays a host contract. |
-| `backdrop-filter` | none \| one blur(0 or <pixel length>) \| one saturate(<number> \| <percentage>) | `internal/layout/style_properties.go`, `internal/layout/blend_group.go`, `internal/layout/layout.go`, `layout/displaylist.go`, OwnFrame `internal/backdrop/filter.go`, `internal/bitmap/backdrop_filter.go`, `internal/replay/backdrop_filter.go` | The software PNG painter and GPU window painter support one pixel blur (capped at 64px) and one saturation operation (capped at 3). Other length units, duplicate functions, SVG url() displacement, and other filter functions remain unsupported. Rounded clipping uses one radius inferred from the first fill operation. |
-| `break-inside` | auto \| avoid \| avoid-page \| avoid-column \| avoid-region | `internal/layout/style_properties.go` | break-inside keywords parse but no layout or paint pass reads them; the engine returns a drawing list without paginating, so avoidance has no observable effect (TestBehaviorBreakInsideAvoidColumnNoPageEffect). break-inside:avoid parses but multicol advances whole items without a straddle test at the distribution call, so avoidance equals auto (TestBreakInsideAvoidBalancedStraddleGap). |
-| `mask-type` | luminance \| alpha | `internal/layout/style_cascade.go`, `internal/layout/style_mask_accept.go`, `internal/layout/style_mask_props.go`, `internal/layout/mask_paint.go`, `internal/layout/layout.go`, `bindings/wasm/drawing_list.go`, `internal/svg/mask.go` | mask-type cascades into ResolvedStyle.MaskType but no consumer reads it; the SVG rasterizer uses only the mask-type on the SVG source element. Pixel replay stays a host contract. |
 
-### 2.3 Unsupported (218)
+### 2.3 Unsupported (89)
 
 | Property | Named missing behavior |
 |---|---|
-| `-webkit-appearance` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-background-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-background-origin` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-background-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-text-size-adjust` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-text-stroke` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-text-stroke-color` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-text-stroke-width` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `-webkit-user-select` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `all` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `background-attachment` | Parsed and stored (BackgroundAttachment, style_properties.go:1297) but no layout or paint consumer reads it: background_image.go:343 documents fixed as intentionally painting as scroll. The engine has no scrolling viewport, so fixed/local versus scroll is unobservable. Only test is a stored-string assertion (TestBackgroundLonghands). |
-| `background-tbd` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `baseline-shift` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `baseline-source` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `block-ellipsis` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `block-step` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `block-step-align` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `block-step-insert` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `block-step-round` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `block-step-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `bookmark-label` | Standalone outline model in bookmark_outline.go builds used labels (BuildBookmarkOutline); no cascade handler feeds it yet. |
-| `bookmark-level` | Standalone outline model in bookmark_outline.go builds used nesting depths; no cascade handler feeds it yet. |
-| `bookmark-state` | Standalone outline model in bookmark_outline.go carries used open/closed flags; no cascade handler feeds it yet. |
-| `border-block-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-block-end-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-block-start-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-bottom-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-boundary` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-inline-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-inline-end-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-inline-start-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-left-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-limit` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-right-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-shape` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `border-top-clip` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `box-decoration-break` | Parsed and stored (BoxDecorationBreak, style_advanced_props.go:64) but no fragmenter exists in the engine: single display list, multicol snaps whole lines, page-break props are no-ops, so slice versus clone is unobservable. Requires block splitting plus per-fragment chrome in prependChrome before this value can mean anything. Only test is a stored-string assertion (TestWaveCBoxDecorationBreak). |
 | `box-snap` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `caret` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `caret-animation` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `caret-shape` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `column-rule-visibility-items` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `continue` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `copy-into` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `cue` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `cue-after` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `cue-before` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `cx` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `cy` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `d` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `event-trigger` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `event-trigger-name` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `event-trigger-source` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `field-sizing` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `fill-break` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `fill-color` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `fill-image` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
@@ -691,74 +779,27 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `fill-repeat` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `fill-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `flex-line-count` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `float-defer` | No page-float model exists in this engine. Decision recorded in the shapes ledger: support only none (the initial behavior); integer and last stay unsupported. |
-| `flood-color` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `flood-opacity` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `footnote-display` | Standalone collection in footnote.go numbers and groups footnotes; no footnote area exists yet so values move no box. |
-| `footnote-policy` | Standalone grouping in footnote.go (GroupFootnotesByPolicy); no page splitter exists yet so no forced break is emitted. |
 | `frame-sizing` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `glyph-orientation-vertical` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `image-animation` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `image-rendering` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `inline-sizing` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `input-security` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `interactivity` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `interest-delay` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `interest-delay-end` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `interest-delay-start` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `interpolate-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `lighting-color` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `line-fit-edge` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `line-grid` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `line-height-step` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `line-padding` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `line-snap` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `link-parameters` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `margin-break` | Parsed and stored (MarginBreak, style_properties.go:1658) but no page-break consumer reads it. Implement path: honor keep/discard on adjoining margins at fragment breaks in the break logic beside BreakInside (independent_blocks.go:112). Only test is a stored-string assertion (TestMarginBreakProperty). |
-| `marker` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `marker-end` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `marker-mid` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `marker-side` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `marker-start` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `math-depth` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `math-shift` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `math-style` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `max-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `min-intrinsic-sizing` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `min-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `nav-down` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `nav-left` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `nav-right` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `nav-up` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `offset` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `offset-anchor` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `offset-distance` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `offset-path` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `offset-position` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `offset-rotate` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `overflow-anchor` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `overlay` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `overscroll-behavior` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `overscroll-behavior-block` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `overscroll-behavior-inline` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `overscroll-behavior-x` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `overscroll-behavior-y` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `paint-order` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `path-length` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `pause` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `pause-after` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `pause-before` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `pointer-timeline` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `pointer-timeline-axis` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `pointer-timeline-name` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `r` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `reading-flow` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `reading-order` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `rest` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `rest-after` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `rest-before` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `rx` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `ry` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scroll-axis-lock` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scroll-behavior` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scroll-initial-target` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
@@ -784,23 +825,11 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `scroll-snap-stop` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scroll-snap-type` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scroll-target-group` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `scroll-timeline` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `scroll-timeline-axis` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `scroll-timeline-name` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scrollbar-color` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scrollbar-gutter` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `scrollbar-width` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `shape-image-threshold` | No image shape is parsed; shape-outside rejects url(), so no alpha contour can feed a threshold. Decision recorded in the shapes ledger: do not add url() shapes here. |
-| `size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `slider-orientation` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `spatial-navigation-action` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `spatial-navigation-contain` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `spatial-navigation-function` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `speak` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `speak-as` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `stop-color` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `stop-opacity` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `string-set` | Standalone named-string table in string_set.go with set-then-read semantics; no page-margin pipeline consumes it yet. |
 | `stroke-align` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `stroke-alignment` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `stroke-break` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
@@ -814,24 +843,6 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `stroke-position` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `stroke-repeat` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `stroke-size` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `text-fit` | Parsed and stored (TextFit, style_text_spacing_props.go:36) but no scale-search consumer reads it; the apply arm records the same gap. Missing behavior: grow/shrink scale-to-fit. TestTextSpacingTrimApply asserts the stored string only. |
-| `text-rendering` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `text-size-adjust` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-scope` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-activation-range` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-activation-range-end` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-activation-range-start` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-active-range` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-active-range-end` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-active-range-start` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-name` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `timeline-trigger-source` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `vector-effect` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `view-timeline` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `view-timeline-axis` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `view-timeline-inset` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `view-timeline-name` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `voice-balance` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `voice-duration` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `voice-family` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
@@ -840,12 +851,6 @@ An implemented status is not a browser-parity or parser-conformance claim. Rende
 | `voice-rate` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `voice-stress` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 | `voice-volume` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `will-change` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `window-drag` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `word-space-transform` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `x` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `y` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
-| `zoom` | No apply handler in internal/layout; declaration is ignored (graceful degrade). Pinned upstream revision: 1f2ec8f74a80c14066b4c7d6822cee59f69fa03b. |
 
 ### 2.4 Intentionally ignored (8)
 
@@ -904,7 +909,7 @@ Status legend: Implemented and Partial as in §2; Not implemented means the sele
 | `!important` | Implemented | `isImportant` `values.go:75`; separate cascade tier `style_cascade.go:1207-1211`; test `css_test.go::TestParseImportant` |
 | Specificity (ID > class > element), inline `style` wins, `!important` overrides | Implemented | `Specificity` `css.go:1009`; inline style priority `style_cascade.go:655`; test `css_test.go::TestSpecificity` |
 | `@media print` / `screen` filtering | Implemented | `MediaMatches` (`css/media.go`); the caller passes `Media` (`settings.MediaScreen` or `settings.MediaPrint`, `internal/settings/settings.go:232-264`); only `print` and `screen` are evaluated (all other media types and unsupported feature queries evaluate to false); tests `TestParseMedia`, `TestMediaMatches*` |
-| `@media` feature queries (`(min-width: …)`) | Partial | size features + orientation vs viewport; unknown features → false; `TestMediaMatchesSizeFeatures` |
+| `@media` feature queries (`(min-width: …)`) | Partial | width/inline-size and height/block-size, exact/min/max and single comparisons, plus orientation; unsupported forms remain false. See [scrolling.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/documentation/scrolling.md), `TestMediaMatchesHeightFeatureBoundaries`, `TestMediaMatchesSizeFeatures` |
 | `:has()` | Partial | Relative selectors inside `:has(...)`; descendant/child/sibling + simple compounds; no forgiving-selector list / complex chrome edge cases. `has.go`; fixture-41 |
 | `:not()` | Implemented | `appendFunctionalPseudo` (`selector_parser.go:353`); match `matchNone` (`match.go:515`). Argument list is strict (empty items fail). Specificity of the most specific argument (`has.go:343`). Tests `has_test.go` |
 | `:is()` | Implemented | Strict selector-list arguments; nested `:is` allowed; `::` in args rejected. Match any argument. Specificity of the most specific argument. Tests `TestParseIs`, `TestIsPseudo`, `TestIsSpecificity` |
@@ -917,265 +922,57 @@ Status legend: Implemented and Partial as in §2; Not implemented means the sele
 | `@font-face` | Partial | Parsed; `MergeFontFaces` loads TTF/OTF/WOFF1 via `FetchSub` (local **and** `https://`) under the same load ACL and network policy as other subresources. `.woff2` / `.eot` / `data:` skipped. See §5 |
 | `@import` | Partial | Parsed onto `Stylesheet.Imports`; `CollectSheets` fetches under the same load policy as `<link>`, depth cap 8, cycle skip, failed fetch skipped. Media prelude uses `MediaMatches`. Tests `TestParseImport`, `TestCollectSheetsImportAppliesImportedRules` |
 
-## 5. Explicitly unsupported (MVP)
+## 5. Feature limits
 
 | Feature | Handling |
 |---------|----------|
 | JavaScript / `<script>` / DOM APIs | **Not executed.** `<script>` content is captured as raw text and hidden by the UA sheet (`display: none`); no code path evaluates scripts |
-| Full CSS Grid / full Flexbox | Stage A/B layout subset **shipped** (see the `flex-*` and `grid-*` rows in §2); Stage C lite + flex min-size polish + Partial subgrid/masonry span. **Not** Bootstrap/Tailwind / Chrome layout-test parity |
-| `transform`, `filter`, `backdrop-filter`, `animation`, `transition` | **Transforms:** static 2D and the supported 3D-to-2D paint transform path, including perspective, preserve-3d composition, perspective origin, and hidden backface culling. **`filter`:** 2D image filters on raster images plus CSS `opacity()` on elements. **`backdrop-filter`:** Blinkless records the value on the element group; OwnFrame's software and GPU painters support one pixel `blur()` (capped at 64px) and one `saturate()` operation (capped at 3). Other length units, duplicate functions, SVG `url()` displacement, and other functions remain unsupported. **`animation`/`transition`/`@keyframes`:** valid declarations and keyframes are parsed, cascaded, and exported as host-facing metadata. Blinkless does not advance time, sample timelines, compare transition states, or interpolate frames. `transform.go`, `transform_3d.go`, `filter.go`, `animation_style.go`, `transition_style.go`, `internal/backdrop/filter.go`, `internal/bitmap/backdrop_filter.go`, `internal/replay/backdrop_filter.go` |
+| Full CSS Grid / full Flexbox | Stage A/B layout subset **shipped** (see the `flex-*` and `grid-*` rows in §2); Stage C lite, flex min-size handling, and subsets of subgrid and masonry. **Not** Bootstrap/Tailwind / Chrome layout-test parity |
+| `transform`, `filter`, `animation`, `transition` | **Transforms:** static 2D and the supported 3D-to-2D paint transform path, including perspective, preserve-3d composition, perspective origin, and hidden backface culling. **`filter`:** 2D image filter (opacity, blur, grayscale, invert, adjustments) on raster images (`filter.go`) plus CSS `opacity()` on elements; no CSS shader/SVG filter composition. **`animation`/`transition`/`@keyframes`:** valid declarations and keyframes are parsed, cascaded, and exported as host-facing metadata. Blinkless does not advance time, sample timelines, compare transition states, or interpolate frames. Fixture-40; `transform.go`, `transform_3d.go`, `filter.go`, `animation_style.go`, `transition_style.go` |
 | `background-image` / gradients | **Implemented** multi-layer `url(...)` and pure-Go linear/radial gradient rasterization (`background_image.go`, `gradient.go`) |
 | `@font-face` (remote / WOFF2) | **Partial:** local **and `https://`** TTF/OTF/WOFF1 via `FetchSub` (same load ACL and network policy as other subresources). **`.woff2` / `.eot` / `data:`** skipped. Missing faces fall back to registry / Liberation |
 | Custom XSLT TOC (`--xsl-style-sheet`) | Not implemented (no XSLT in the standard library); this tree has no TOC pipeline |
-| SVG-as-`<img>` / SVG presentation | **Implemented** SVG-as-`<img>` and inline `<svg>` rasterization via `internal/svg`; 5 CSS properties (`fill`, `stroke`, `stroke-width`, `fill-opacity`, `stroke-opacity`) parsed in style; the remaining SVG presentation properties are unsupported (§2.3) |
-| Masking / clipping | **Implemented** `overflow-clip` for descendant box clipping (`overflow_clip.go`) and `clip-path` (§2.1). The 18 first-wave mask-family rows are registered as element-group mask data: 16 are implemented, `mask-type` and `-webkit-mask-composite` are Partial, and the 13 `mask-border*` rows are implemented: the frame composes into a nine-slice raster at the element box and the host applies it as a soft mask (§2.1). |
+| SVG-as-`<img>` / SVG presentation | Blinkless rasterizes SVG images and inline SVG through `internal/svg`. See section 2 for individual SVG presentation and geometry properties. |
+| Masking / clipping | Blinkless handles descendant box clipping and `clip-path`. It emits mask and mask-border data on element groups for the host to apply. See the `mask*` and `-webkit-mask*` rows in section 2. |
+| `backdrop-filter` | Blinkless exports the filter value on the display group. OwnFrame paints up to one pixel `blur()` (capped at 64px), one `saturate()` (capped at 3), and one pixel `refract()` (capped at 16px). See the `backdrop-filter` row in section 2. |
 | CSS Regions & Exclusions | **Implemented** as four one-canvas contracts: named flows (`flow-into`, `flow-from`, `region-fragment`), masonry tolerance (`flow-tolerance`), exclusions (`wrap-flow`, `wrap-through`), and line/flex wrap breaks (`wrap-before`, `wrap-after`, `wrap-inside`). The engine returns one display list; paged fragmentation stays a non-goal (§2.1). |
 | WebP, AVIF | Not implemented; broken-image placeholder or skip |
 | Fixed CSS headers/footers via `position: fixed` alone | `position: fixed` is marked viewport-fixed (`markOpsFixed`, `layout_chrome.go:12`) when not under a transformed ancestor; not a full running-element model. There are no header/footer flags in this tree |
 | Complex-script shaping (Indic, Arabic, CJK) | **Arabic OT** via `go-text/typesetting` when the face has GSUB (+ presentation-form `ShapeText` fallback); Hangul needs a Hangul face. `writing-mode` vertical keywords inherit and rotate glyphs (`RotateDeg == -90`); block/line layout stays horizontal. **Indic Partial** (OT when face/cmap allow; not production-claimed). Optional OT **`halt`/`palt`** for CJK punctuation via `ShapeTextFont` FontFeatures |
 | PDF output (versions, profiles) | **Not part of this tree.** The engine returns a drawing list; PDF emission is out of scope. There are no `--pdf-version` / `--pdf-profile` flags, no `Document.PDFVersion` / `Document.PDFProfile` fields, and no PDF/A or PDF/UA claims |
 
-### 5.1 Deferred niche and draft families (60 properties - Not implemented)
+### 5.1 Niche and draft property families
 
-The following 60 properties are intentionally left **unsupported** (Not implemented). They have no layout or paint consumer and are out of scope for this engine. Declarations are parsed as valid property names where recognized and then ignored with graceful degrade, never claimed as Implemented. No Implemented claims are made for any of the 60.
+Section 2 lists the current status and evidence for ruby, math, block-step,
+and draft gap and row-rule properties. The CSS compatibility checklist linked
+above records the original deferrals.
 
-| Family | Count | Status | Note | Examples (not exhaustive) |
-|--------|-------|--------|------|---------------------------|
-| Ruby/MathML/rhythmic niche (33 properties: block-ellipsis, block-step-*, box-snap, ruby-*, math-*, etc.) | 33 | Not implemented | Ruby/MathML/rhythmic niche; not implemented here. Left unsupported. | `block-ellipsis`, `block-step-*`, `box-snap`, `ruby-align`, `ruby-position`, `math-depth`, `math-style`, `line-snap`, etc. |
-| Draft gap/row-rule decorations (27 properties: row-rule*, rule*) | 27 | Not implemented | Draft gap/row-rule decorations; no layout consumer. Left unsupported. `row-rule*` and `rule*` are not `column-rule` (see the `column-rule*` rows in §2). | `row-rule`, `row-rule-break`, `row-rule-color`, `row-rule-style`, `row-rule-width`, `rule`, `rule-break`, `rule-color`, `rule-style`, `rule-width`, etc. |
+### 5.2 Host effects and SVG
 
-Total: 60 properties across two families. All are Not implemented and left unsupported with no layout consumer.
+The drawing list carries masks and backdrop filters for a host to apply.
+Blinkless handles supported SVG presentation and geometry during SVG
+rasterization. Section 2 lists the accepted values and tests for each property,
+including `flood-color`, `flood-opacity`, and `lighting-color`.
 
-### 5.2 Phase 83 hard-defer categories (87 properties in the original scope)
+### 5.3 Vendor prefixes
 
-The following 87 properties across three categories were grouped as hard-deferred or permanent non-goals in Phase 83. The catalog in section 2 records their current status:
+Section 2 tracks 41 implemented `-webkit-` property names. The cascade also
+remaps `display: -webkit-box` to `flex` and `display: -webkit-inline-box` to
+`inline-flex`. The cascade subtracts one from `-webkit-box-ordinal-group`
+before setting `order`.
 
-| Category | Count | Status | Description and scope |
-|----------|-------|--------|-----------------------|
-| SVG presentation & geometry (`B_svg_presentation`) | 53 | Not implemented | Remaining SVG presentation and geometry properties. SVG-as-`<img>` is implemented via `internal/svg` rasterizer; 5 CSS properties (`fill`, `stroke`, `stroke-width`, `fill-opacity`, `stroke-opacity`) are parsed in style; remaining 53 SVG presentation properties are unsupported (`alignment-baseline`, `baseline-shift`, `color-interpolation`, `cx`, `cy`, `d`, `dominant-baseline`, `fill-break`, `fill-color`, `fill-image`, `fill-origin`, `fill-position`, `fill-repeat`, `fill-rule`, `fill-size`, `glyph-orientation-vertical`, `image-rendering`, `marker`, `marker-end`, `marker-mid`, `marker-side`, `marker-start`, `paint-order`, `path-length`, `r`, `rx`, `ry`, `shape-rendering`, `stop-color`, `stop-opacity`, `stroke-align`, `stroke-alignment`, `stroke-break`, `stroke-color`, `stroke-dash-corner`, `stroke-dash-justify`, `stroke-dashadjust`, `stroke-dasharray`, `stroke-dashcorner`, `stroke-dashoffset`, `stroke-image`, `stroke-linecap`, `stroke-linejoin`, `stroke-miterlimit`, `stroke-origin`, `stroke-position`, `stroke-repeat`, `stroke-size`, `text-anchor`, `text-rendering`, `vector-effect`, `x`, `y`). |
-| Mask, clip, and filter effects (`B_mask_clip_filter_effects`) | 25 | Mixed | `clip-path` is implemented. `backdrop-filter` is Partial: OwnFrame's software and GPU painters support one pixel `blur()` (capped at 64px) and one `saturate()` operation (capped at 3); other length units, duplicate functions, SVG `url()` displacement, and other functions remain unsupported. The 10 standard mask properties are mostly implemented: `mask`, `mask-clip`, `mask-composite`, `mask-image`, `mask-mode`, `mask-origin`, `mask-position`, `mask-repeat`, and `mask-size`; `mask-type` stays Partial. They emit element-group mask data for a display-list consumer; OwnFrame replays that data through its display-list painter. The 13 `mask-border*` properties are implemented: the descriptor rides the blend group, composes into a nine-slice frame raster at the element box, and the host applies it as a soft mask. The three Unsupported names are `flood-color`, `flood-opacity`, and `lighting-color`; the six `-webkit-mask-box-image*` aliases are implemented like their bases. |
-| CSS Regions & Exclusions (`B_regions_exclusions`) | 9 | Implemented | The four one-canvas contracts are implemented: named flows (`flow-from`, `flow-into`, `region-fragment`), masonry tolerance (`flow-tolerance`), exclusions (`wrap-after`, `wrap-before`, `wrap-flow`, `wrap-inside`), and `wrap-through`. Paged fragmentation stays a non-goal; the engine returns one display list. |
+### 5.4 Interactive declarations
 
-Total: 87 names across three Phase 83 categories. Current statuses are in section 2; in the wider mask family (31 catalog rows: the 18 first-wave mask rows plus the 13 mask-border rows), 29 are implemented and 2 are Partial (`mask-type` and `-webkit-mask-composite`). See section 2 for the authoritative per-row status.
+Blinkless exports timeline, trigger, and interactivity declarations that the
+catalog marks implemented. A host supplies time, scroll progress, or input
+events where those features need them. Section 2 records the unsupported
+scroll snap, scrollbar, and speech properties.
 
-Catalog reconciliation: this phase-83 tally counts names with no print
-consumer as unsupported, but several are parsed and stored in the style layer
-and therefore appear as Partial in the catalog with unverified behavior:
-`alignment-baseline`, `color-interpolation`, `dominant-baseline`, `fill-rule`,
-`shape-rendering`, `stroke-dasharray`, `stroke-dashoffset`, `stroke-linecap`,
-`stroke-linejoin`, `stroke-miterlimit`, and `text-anchor`. The 18 first-wave
-mask properties are mostly implemented, with `mask-type` and
-`-webkit-mask-composite` Partial because the display list leaves pixel replay
-to its consumer; the 13 mask-border rows are Implemented because the descriptor
-rides the blend group and the host applies the frame. `clip-path` is
-Implemented. The
-five SVG properties consumed by SVG-as-img (`fill`, `stroke`, `stroke-width`,
-`fill-opacity`, `stroke-opacity`) are Partial as well. The catalog in section 2
-is authoritative for status; this table remains the phase-83 family record.
+### 5.5 Borders-4 and Round Display drafts
 
-### 5.3 Vendor-prefix aliases (-webkit-) - Phase 69 and Phase 82
-
-This section is the contract for vendor-prefixed alias handling. Alias mechanism is
-`normalizeVendorPrefix` at `internal/layout/style_cascade.go:913` called from
-`applyStyleProp`, plus `display` value remaps at `internal/layout/style_properties.go:81`
-and value remaps in `remapWebkitValue` at `internal/layout/style_cascade.go:1000`.
-
-- **Total tracked:** 70 `-webkit-` alias names.
-- **Registered:** 36 aliases that map to an unprefixed base the engine consumes. The catalog records an alias as Partial when its base is Partial; see the reconciliation note below.
-- **Outside the registered set:** 34 aliases. Ten stay Unsupported, and 24 map onto implemented bases; the groups below name each case.
-
-Do not treat Unsupported aliases as Implemented. Tests for Implemented aliases live in
-`internal/layout/style_cascade_test.go:188` (`TestWebkitPrefixAliases`).
-
-Catalog reconciliation: alias status follows the base property's status in
-`testdata/css/catalog/properties.json`. Bases that are Partial make their
-aliases Partial, so the catalog records `-webkit-box-shadow`, `-webkit-filter`,
-`-webkit-transform`, `-webkit-transform-origin`, `-webkit-align-content`,
-`-webkit-align-self`, `-webkit-flex-basis`, `-webkit-flex-shrink`,
-`-webkit-flex-wrap`, the four `-webkit-border-*-radius` corner longhands, and
-`-webkit-line-clamp` as Partial. The 28/42 split above is the phase-69/82
-tally of registered aliases, not the catalog status count.
-
-#### 5.3.1 Registered vendor aliases (36)
-
-28 aliases were registered in Phases 69 and 82. Eight mask aliases were added
-in the CSS masking first wave. Each folds onto its unprefixed base; aliases
-with a Partial base remain Partial in the catalog.
-
-| Vendor alias | Canonical property | Notes / base |
-|--------------|--------------------|--------------|
-| `-webkit-box-sizing` | `box-sizing` | `normalizeVendorPrefix` `style_cascade.go:913` |
-| `-webkit-border-radius` | `border-radius` | same |
-| `-webkit-border-top-left-radius` | `border-top-left-radius` | same |
-| `-webkit-border-top-right-radius` | `border-top-right-radius` | same |
-| `-webkit-border-bottom-left-radius` | `border-bottom-left-radius` | same |
-| `-webkit-border-bottom-right-radius` | `border-bottom-right-radius` | same |
-| `-webkit-transform` | `transform` | same |
-| `-webkit-transform-origin` | `transform-origin` | same |
-| `-webkit-flex` | `flex` | flex shorthand |
-| `-webkit-flex-basis` | `flex-basis` | same |
-| `-webkit-flex-direction` | `flex-direction` | same |
-| `-webkit-flex-flow` | `flex-flow` | same |
-| `-webkit-flex-grow` | `flex-grow` | same |
-| `-webkit-flex-shrink` | `flex-shrink` | same |
-| `-webkit-flex-wrap` | `flex-wrap` | same |
-| `-webkit-justify-content` | `justify-content` | same |
-| `-webkit-align-content` | `align-content` | same |
-| `-webkit-align-items` | `align-items` | same |
-| `-webkit-align-self` | `align-self` | same |
-| `-webkit-order` | `order` | same |
-| `-webkit-box-shadow` | `box-shadow` | alias to `box-shadow` (see `box-shadow` row in 2.4) |
-| `-webkit-filter` | `filter` | alias to `filter` |
-| `-webkit-box-align` | `align-items` | **New in Phase 82 slice A.** Value remap `start`->`flex-start`, `end`->`flex-end`, `center`->`center`, `stretch`->`stretch`, `baseline`->`baseline` via `remapWebkitValue` `style_cascade.go:1000` |
-| `-webkit-box-flex` | `flex-grow` | **New in Phase 82 slice A.** Direct value pass-through to `flex-grow` |
-| `-webkit-box-ordinal-group` | `order` | **New in Phase 82 slice A.** Value remap `N` -> `N-1` (1-based group to 0-based order) via `remapWebkitValue` `style_cascade.go:1000` |
-| `-webkit-box-orient` | `flex-direction` | **New in Phase 82 slice A.** Value remap `horizontal`/`inline-axis`->`row`, `vertical`/`block-axis`->`column` via `remapWebkitValue` |
-| `-webkit-box-pack` | `justify-content` | **New in Phase 82 slice A.** Value remap `start`->`flex-start`, `end`->`flex-end`, `center`->`center`, `justify`->`space-between` via `remapWebkitValue` |
-| `-webkit-text-fill-color` | `color` | **New in Phase 82 slice A.** Alias to `color` |
-| `-webkit-mask` | `mask` | **CSS masking first wave.** Shorthand alias; Implemented |
-| `-webkit-mask-image` | `mask-image` | **CSS masking first wave.** URL and `none` values; Implemented |
-| `-webkit-mask-size` | `mask-size` | **CSS masking first wave.** Accepted size tokens; Implemented |
-| `-webkit-mask-repeat` | `mask-repeat` | **CSS masking first wave.** Accepted repeat tokens; Implemented |
-| `-webkit-mask-position` | `mask-position` | **CSS masking first wave.** Position keywords, lengths, and percentages; Implemented |
-| `-webkit-mask-origin` | `mask-origin` | **CSS masking first wave.** Border, padding, or content box; Implemented |
-| `-webkit-mask-clip` | `mask-clip` | **CSS masking first wave.** Box values or `no-clip`; Implemented |
-| `-webkit-mask-composite` | `mask-composite` | **CSS masking first wave.** Remaps the four legacy operators; Partial |
-
-Display value aliases (also Phase 82 slice A, at `internal/layout/style_properties.go:81`):
-
-| Specified value | Used value |
-|-----------------|------------|
-| `display: -webkit-box` | `display: flex` |
-| `display: -webkit-inline-box` | `display: inline-flex` |
-
-#### 5.3.2 Vendor aliases outside the registered set (34)
-
-This group holds 34 aliases that do not sit in the registered table. Ten stay
-**Unsupported** and 24 map onto implemented bases. Each group notes the base.
-
-**Group B - 3 background longhands:** bases `background-clip`,
-`background-origin`, and `background-size` are Implemented. Their `-webkit-*` remaps are not registered, so the
-aliases stay Unsupported in this engine.
-
-| Vendor alias | Base | Reason |
-|--------------|------|--------|
-| `-webkit-background-clip` | `background-clip` | remap not registered |
-| `-webkit-background-origin` | `background-origin` | remap not registered |
-| `-webkit-background-size` | `background-size` | remap not registered |
-
-**Group C - 6 mask-border aliases:** the eight selected `-webkit-mask*`
-aliases are registered and mostly implemented (`mask-type` and
-`-webkit-mask-composite` stay Partial). These six `-webkit-mask-box-image*`
-aliases normalize onto the `mask-border*` bases, which are Implemented: the
-descriptor rides the element's blend group (`MaskBorder`) for the host to
-apply.
-
-| Vendor alias | Base | Reason |
-|--------------|------|--------|
-| `-webkit-mask-box-image` | `mask-border` | Implemented: descriptor on the blend group, host applies the frame |
-| `-webkit-mask-box-image-source` | `mask-border-source` | Implemented: source bytes on the blend group, host applies the frame |
-| `-webkit-mask-box-image-slice` | `mask-border-slice` | Implemented: slice insets on the blend group, host applies the frame |
-| `-webkit-mask-box-image-width` | `mask-border-width` | Implemented: frame thickness on the blend group, host applies the frame |
-| `-webkit-mask-box-image-outset` | `mask-border-outset` | Implemented: outward offsets on the blend group, host applies the frame |
-| `-webkit-mask-box-image-repeat` | `mask-border-repeat` | Implemented: repeat pair on the blend group, host applies the frame |
-
-**Group D - 20 animation / transition / 3D / UI aliases:** 14 animation and
-transition aliases normalize to their base properties. A Page samples
-`@keyframes` animation values automatically; transition records and the preview
-packages still take time and other runtime inputs from the caller
-(`../ownframe/internal/animation/player.go:22-64`,
-`../ownframe/internal/transition/step.go:10-44`). Four transform aliases are
-Implemented through their base properties. Two UI aliases remain Unsupported.
-
-| Vendor alias | Base property | Reason |
-|--------------|---------------|--------|
-| `-webkit-animation` | `animation` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-delay` | `animation-delay` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-direction` | `animation-direction` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-duration` | `animation-duration` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-fill-mode` | `animation-fill-mode` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-iteration-count` | `animation-iteration-count` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-name` | `animation-name` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-play-state` | `animation-play-state` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-animation-timing-function` | `animation-timing-function` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-transition` | `transition` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-transition-delay` | `transition-delay` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-transition-duration` | `transition-duration` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-transition-property` | `transition-property` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-transition-timing-function` | `transition-timing-function` | Implemented in the paired pipeline: maps to the base value sampled by OwnFrame |
-| `-webkit-backface-visibility` | `backface-visibility` | Implemented: mapped into the supported 3D-to-2D paint path |
-| `-webkit-perspective` | `perspective` | Implemented: mapped into the supported 3D-to-2D paint path |
-| `-webkit-perspective-origin` | `perspective-origin` | Implemented: mapped into the supported 3D-to-2D paint path |
-| `-webkit-transform-style` | `transform-style` | Implemented: mapped into the supported 3D-to-2D paint path |
-| `-webkit-appearance` | `appearance` | Unsupported: no print consumer |
-| `-webkit-user-select` | `user-select` | Unsupported: no interactive selection |
-
-**Group E - 5 WebKit-native with no print consumer:** bases are WebKit extensions
-with no consumer in this engine. Left Unsupported unless a base plus consumer
-lands.
-
-| Vendor alias | Blocking base | Reason |
-|--------------|---------------|--------|
-| `-webkit-line-clamp` | `line-clamp` | WebKit-native, no print consumer |
-| `-webkit-text-size-adjust` | `text-size-adjust` | WebKit-native, no print consumer |
-| `-webkit-text-stroke` | `text-stroke` | WebKit-native, no print consumer |
-| `-webkit-text-stroke-color` | `text-stroke-color` | WebKit-native, no print consumer |
-| `-webkit-text-stroke-width` | `text-stroke-width` | WebKit-native, no print consumer |
-
-### 5.4 Phase 84 print-noop categories (114 names, mixed current status)
-
-This list has 114 names across five print-noop families. Their current catalog statuses are 102 Unsupported, five Implemented, and seven Intentionally ignored. The five `scroll-margin` properties are accepted but do not change static paint. The CSS motion properties have separate statuses in section 2. Their `blinkless+ownframe` rows have sampled behavior in OwnFrame, which needs host-supplied time, timeline progress, trigger events, or display snapshots. Blinkless itself still exports data without advancing animation time. This engine also has no interactive scroll viewport, pointer/caret chrome, motion or view timeline drivers, or aural speech synthesis. The 3D transform properties have a tested 2D paint projection path in section 2. Anchor positioning is also excluded here because its one-canvas subset is implemented in section 2.
-
-| Category | Count | Status | Description and scope |
-|----------|-------|--------|-----------------------|
-| Event and timeline trigger runtime (`A_time_animation_transition`) | 16 | Not implemented | These properties describe event-trigger definitions and pointer-driven timelines; this engine has no runtime for them (`event-trigger`, `event-trigger-name`, `event-trigger-source`, `image-animation`, `pointer-timeline`, `pointer-timeline-axis`, `pointer-timeline-name`, `timeline-trigger`, `timeline-trigger-activation-range`, `timeline-trigger-activation-range-end`, `timeline-trigger-activation-range-start`, `timeline-trigger-active-range`, `timeline-trigger-active-range-end`, `timeline-trigger-active-range-start`, `timeline-trigger-name`, `timeline-trigger-source`). They are separate from `animation-trigger` and `trigger-scope`, which have sampled OwnFrame cases in section 2. |
-| Scroll snap, overscroll, and scrollbar (`A_scroll_snap_overscroll`) | 41 | Mixed: 36 Unsupported, 5 Implemented | This engine has no scroll viewport, scroll snapping, scroll timeline drivers, or scrollbar gutter/color/width chrome. The five `scroll-margin` properties are accepted but do not change static paint (`overscroll-behavior`, `overscroll-behavior-block`, `overscroll-behavior-inline`, `overscroll-behavior-x`, `overscroll-behavior-y`, `scroll-axis-lock`, `scroll-behavior`, `scroll-initial-target`, `scroll-margin`, `scroll-margin-block`, `scroll-margin-block-end`, `scroll-margin-block-start`, `scroll-margin-bottom`, `scroll-margin-inline`, `scroll-margin-inline-end`, `scroll-margin-inline-start`, `scroll-margin-left`, `scroll-margin-right`, `scroll-margin-top`, `scroll-marker-group`, `scroll-padding`, `scroll-padding-block`, `scroll-padding-block-end`, `scroll-padding-block-start`, `scroll-padding-bottom`, `scroll-padding-inline`, `scroll-padding-inline-end`, `scroll-padding-inline-start`, `scroll-padding-left`, `scroll-padding-right`, `scroll-padding-top`, `scroll-snap-align`, `scroll-snap-stop`, `scroll-snap-type`, `scroll-target-group`, `scroll-timeline`, `scroll-timeline-axis`, `scroll-timeline-name`, `scrollbar-color`, `scrollbar-gutter`, `scrollbar-width`). |
-| Pointer, caret, and form UI (`A_pointer_form_ui`) | 25 | Mixed: 18 Unsupported, 7 Intentionally ignored | This engine has no mouse pointer, cursor styling, caret animation/color/shape, spatial navigation, dynamic field sizing, input security masking, touch gestures, user text selection, or window dragging. The seven Intentionally ignored are `appearance`, `caret-color`, `cursor`, `pointer-events`, `resize`, `touch-action`, and `user-select`; `caret`, `caret-animation`, and `caret-shape` are Unsupported. The remaining Unsupported names are `field-sizing`, `input-security`, `interactivity`, `interest-delay`, `interest-delay-end`, `interest-delay-start`, `nav-down`, `nav-left`, `nav-right`, `nav-up`, `slider-orientation`, `spatial-navigation-action`, `spatial-navigation-contain`, `spatial-navigation-function`, and `window-drag`. |
-| Motion path, offset and view timelines (`A_anchor_timeline_motion`) | 13 | Not implemented | Motion path offset rotations and distances, view timelines, scroll anchoring, and paint invalidation hints have no layout consumer (`offset`, `offset-anchor`, `offset-distance`, `offset-path`, `offset-position`, `offset-rotate`, `overflow-anchor`, `timeline-scope`, `view-timeline`, `view-timeline-axis`, `view-timeline-inset`, `view-timeline-name`, `will-change`). Anchor positioning (`anchor-name`, `anchor-scope`, `position-anchor`, `position-area`, `position-try`, `position-try-fallbacks`, `position-try-order`, `position-visibility`) is implemented in section 2 and excluded from this count. |
-| Speech and aural (`A_speech_aural`) | 19 | Not implemented | This engine has no aural speech synthesis, sound cues, pauses, rests, or speech voice properties (`cue`, `cue-after`, `cue-before`, `pause`, `pause-after`, `pause-before`, `rest`, `rest-after`, `rest-before`, `speak`, `speak-as`, `voice-balance`, `voice-duration`, `voice-family`, `voice-pitch`, `voice-range`, `voice-rate`, `voice-stress`, `voice-volume`). |
-| 3D transforms (`A_3d_transforms`) | 4 | Implemented in section 2 | The supported 3D-to-2D paint path applies perspective, preserve-3d composition, perspective origin, and backface culling (`backface-visibility`, `perspective`, `perspective-origin`, `transform-style`). This row is not part of the unsupported count. |
-
-Total: 114 names across five families: 102 Unsupported, five Implemented, and seven Intentionally ignored. The four 3D transform properties and the 29 standard CSS motion properties have separate statuses in section 2. The motion catalog also has 14 WebKit aliases, for 43 sampled property rows. Anchor positioning (8 properties) is implemented in section 2 and not counted here.
-
-Catalog reconciliation: the counts above exclude the 29 standard CSS motion
-properties, their 14 WebKit aliases, and four 3D transform properties now
-described in section 2. The 43 motion rows have OwnFrame behavior tests; the
-host must still supply runtime inputs. The five scroll margin properties are
-accepted but do not change static paint.
-`appearance`,
-`caret-color`, `cursor`, `pointer-events`, `resize`, `touch-action`, and
-`user-select` remain intentionally ignored. The catalog in section 2 is
-authoritative for each property status.
-
-### 5.5 v0.2.7 Borders-4 / Round Display drafts (14 properties - Unsupported / draft-not-ready)
-
-Phase 87.7 product choice: **Defer all 14**. Spec text for these Borders-4 /
-css-round-display-1 names is largely not ready for implementation; there is no
-apply arm and no paint consumer in `internal/layout`. Do not claim Implemented
-for parse-only stubs. Catalog rows stay `unsupported` in
-`testdata/css/catalog/properties.json`. Fixture-64 Effect cells already warn
-`Chrome: no render expected` where Chrome BCD has no render path.
-
-| Property | Spec | Status | Note |
-|----------|------|--------|------|
-| `border-block-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-block-end-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-block-start-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-bottom-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-boundary` | css-round-display-1 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-inline-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-inline-end-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-inline-start-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-left-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-limit` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-right-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-| `border-shape` | css-borders-4 | Unsupported / draft-not-ready | Chrome BCD yes since 147; still no consumer in this tree; v0.2.7 defer |
-| `border-top-clip` | css-borders-4 | Unsupported / draft-not-ready | No apply/paint; v0.2.7 defer |
-
-Total: 14 properties. All remain Unsupported / draft-not-ready for v0.2.7. The
-phase-87.7 ledger is not part of this tree; the catalog rows in §2 are the
-current record.
+Section 2 lists the implemented border clipping and shape properties and the
+tests for their supported value subsets. Earlier deferrals are recorded in the
+CSS compatibility checklist.
 
 ## 6. Security policy (frozen defaults)
 
@@ -1191,7 +988,7 @@ current record.
 The `bin/blinkless` CLI and its flag matrix from earlier revisions are not part
 of this tree: there is no `cmd/` package and no `internal/cli`. The engine is
 consumed through the Go packages (`html`, `css`, `layout`) and the WASM binding
-in `bindings/wasm` (see [library-api.md](library-api.md)). A CLI would need its
+in `bindings/wasm` (see [library-api.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/documentation/library-api.md)). A CLI would need its
 own flag contract; this matrix makes no flag claims.
 
 ---
@@ -1199,7 +996,7 @@ own flag contract; this matrix makes no flag claims.
 ## Amendment process
 
 Any change to this matrix is a catalog edit or a plan amendment, recorded
-against [plans/v0.0.1/html-css-json-compatibility-checklist.md](../plans/v0.0.1/html-css-json-compatibility-checklist.md).
+against [plans/v0.0.1/html-css-json-compatibility-checklist.md](https://github.com/chinmay-sawant/blinkless/blob/7abfce32c375/plans/v0.0.1/html-css-json-compatibility-checklist.md).
 Regenerate section 2 with `python3 scripts/css-catalog-map.py --matrix` after a
 catalog change; `make catalog-check` fails on drift between the catalog and the
 code. The 0.0.1 compatibility work maps its rows to this matrix.

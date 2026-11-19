@@ -7,8 +7,10 @@ import (
 	"testing"
 )
 
-// wantCounts is how many properties each tab covers. They sum to 61.
-var wantCounts = map[string]int{"nav": 20, "shapes": 18, "motion": 6, "frag": 7, "read": 5, "svg": 5}
+// handCounts is how many properties each hand-built tab covers. They sum to
+// 61. The generated tabs (ids starting "all-") cover the rest of the
+// implemented properties.
+var handCounts = map[string]int{"nav": 20, "shapes": 18, "motion": 6, "frag": 7, "read": 5, "svg": 5}
 
 func newTestApp(t *testing.T) *App {
 	t.Helper()
@@ -24,23 +26,32 @@ func newTestApp(t *testing.T) *App {
 func TestTabCounts(t *testing.T) {
 	app := newTestApp(t)
 
-	total := 0
+	hand, total := 0, 0
 
 	for _, tab := range app.tabs {
-		want, ok := wantCounts[tab.ID]
-		if !ok {
+		total += tab.Count()
+
+		if want, ok := handCounts[tab.ID]; ok {
+			hand++
+
+			if got := tab.Count(); got != want {
+				t.Errorf("tab %s covers %d properties, want %d", tab.ID, got, want)
+			}
+
+			continue
+		}
+
+		if !strings.HasPrefix(tab.ID, "all-") {
 			t.Fatalf("unexpected tab %q", tab.ID)
 		}
-
-		if got := tab.Count(); got != want {
-			t.Errorf("tab %s covers %d properties, want %d", tab.ID, got, want)
-		}
-
-		total += tab.Count()
 	}
 
-	if len(app.tabs) != len(wantCounts) || total != 61 {
-		t.Fatalf("%d tabs and %d properties, want %d tabs and 61", len(app.tabs), total, len(wantCounts))
+	if hand != len(handCounts) {
+		t.Fatalf("%d hand-built tabs, want %d", hand, len(handCounts))
+	}
+
+	if want := app.cat.Count(StatusImplemented); total != want {
+		t.Fatalf("tabs cover %d properties, the catalog lists %d implemented", total, want)
 	}
 }
 
@@ -103,14 +114,18 @@ func TestEveryTabRenders(t *testing.T) {
 	app := newTestApp(t)
 
 	for _, tab := range app.tabs {
-		page, err := app.NewPage(context.Background(), tab.ID, 1000, 800)
-		if err != nil {
-			t.Fatalf("tab %s: %v", tab.ID, err)
-		}
+		t.Run(tab.ID, func(t *testing.T) {
+			t.Parallel()
 
-		if len(page.Probe().PNG()) == 0 {
-			t.Errorf("tab %s drew an empty picture", tab.ID)
-		}
+			page, err := app.NewPage(context.Background(), tab.ID, 1000, 800)
+			if err != nil {
+				t.Fatalf("tab %s: %v", tab.ID, err)
+			}
+
+			if len(page.Probe().PNG()) == 0 {
+				t.Errorf("tab %s drew an empty picture", tab.ID)
+			}
+		})
 	}
 }
 
@@ -154,39 +169,43 @@ func TestClickingATabLoadsThatTab(t *testing.T) {
 	ctx := context.Background()
 
 	for _, target := range app.tabs {
-		page, err := app.NewPage(ctx, app.FirstTab(), 1000, 800)
-		if err != nil {
-			t.Fatal(err)
-		}
+		t.Run(target.ID, func(t *testing.T) {
+			t.Parallel()
 
-		var x, y float64
-
-		found := false
-
-		for _, b := range page.Probe().Display().Boxes {
-			if b.ID == "tab-btn-"+target.ID {
-				x, y, found = b.X+b.W/2, b.Y+b.H/2, true
+			page, err := app.NewPage(ctx, app.FirstTab(), 1000, 800)
+			if err != nil {
+				t.Fatal(err)
 			}
-		}
 
-		if !found {
-			t.Fatalf("no button for tab %s", target.ID)
-		}
+			var x, y float64
 
-		if err = page.Click(ctx, x, y); err != nil {
-			t.Fatalf("click %s: %v", target.ID, err)
-		}
+			found := false
 
-		doc := page.HTML()
-		for _, other := range app.tabs {
-			has := strings.Contains(doc, fmt.Sprintf(`id="sec-%s"`, other.ID))
-			if has != (other.ID == target.ID) {
-				t.Errorf("after clicking %s: section %s present = %v", target.ID, other.ID, has)
+			for _, b := range page.Probe().Display().Boxes {
+				if b.ID == "tab-btn-"+target.ID {
+					x, y, found = b.X+b.W/2, b.Y+b.H/2, true
+				}
 			}
-		}
 
-		if len(page.Probe().PNG()) == 0 {
-			t.Errorf("after clicking %s: empty picture", target.ID)
-		}
+			if !found {
+				t.Fatalf("no button for tab %s", target.ID)
+			}
+
+			if err = page.Click(ctx, x, y); err != nil {
+				t.Fatalf("click %s: %v", target.ID, err)
+			}
+
+			doc := page.HTML()
+			for _, other := range app.tabs {
+				has := strings.Contains(doc, fmt.Sprintf(`id="sec-%s"`, other.ID))
+				if has != (other.ID == target.ID) {
+					t.Errorf("after clicking %s: section %s present = %v", target.ID, other.ID, has)
+				}
+			}
+
+			if len(page.Probe().PNG()) == 0 { //nolint:contextcheck // Probe().PNG() takes no context
+				t.Errorf("after clicking %s: empty picture", target.ID)
+			}
+		})
 	}
 }

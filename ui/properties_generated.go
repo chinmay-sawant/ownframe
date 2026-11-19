@@ -13,116 +13,143 @@ import (
 func SupportsProperty(property string) bool {
 	switch strings.ToLower(strings.TrimSpace(property)) {
 	case "-webkit-animation", "-webkit-animation-delay", "-webkit-animation-direction", "-webkit-animation-duration", "-webkit-animation-fill-mode",
-		"-webkit-animation-iteration-count", "-webkit-animation-name", "-webkit-animation-play-state", "-webkit-animation-timing-function", "-webkit-backface-visibility",
-		"-webkit-mask", "-webkit-mask-box-image", "-webkit-mask-box-image-outset", "-webkit-mask-box-image-repeat", "-webkit-mask-box-image-slice",
-		"-webkit-mask-box-image-source", "-webkit-mask-box-image-width", "-webkit-mask-clip", "-webkit-mask-image", "-webkit-mask-origin",
+		"-webkit-animation-iteration-count", "-webkit-animation-name", "-webkit-animation-play-state", "-webkit-animation-timing-function", "-webkit-appearance",
+		"-webkit-backface-visibility", "-webkit-background-clip", "-webkit-background-origin", "-webkit-background-size", "-webkit-mask",
+		"-webkit-mask-box-image", "-webkit-mask-box-image-outset", "-webkit-mask-box-image-repeat", "-webkit-mask-box-image-slice", "-webkit-mask-box-image-source",
+		"-webkit-mask-box-image-width", "-webkit-mask-clip", "-webkit-mask-composite", "-webkit-mask-image", "-webkit-mask-origin",
 		"-webkit-mask-position", "-webkit-mask-repeat", "-webkit-mask-size", "-webkit-perspective", "-webkit-perspective-origin",
-		"-webkit-transform-style", "-webkit-transition", "-webkit-transition-delay", "-webkit-transition-duration", "-webkit-transition-property",
-		"-webkit-transition-timing-function", "accent-color", "align-content", "align-items", "align-self",
-		"alignment-baseline", "anchor-name", "anchor-scope", "animation", "animation-composition",
-		"animation-delay", "animation-delay-end", "animation-delay-start", "animation-direction", "animation-duration",
-		"animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state", "animation-range",
-		"animation-range-center", "animation-range-end", "animation-range-start", "animation-timeline", "animation-timing-function",
-		"animation-trigger", "aspect-ratio", "backface-visibility", "background", "background-blend-mode",
-		"background-clip", "background-color", "background-image", "background-origin", "background-position",
-		"background-position-block", "background-position-inline", "background-position-x", "background-position-y", "background-repeat",
-		"background-repeat-block", "background-repeat-inline", "background-repeat-x", "background-repeat-y", "background-size",
-		"block-size", "border", "border-block", "border-block-color", "border-block-end",
-		"border-block-end-color", "border-block-end-radius", "border-block-end-style", "border-block-end-width", "border-block-start",
-		"border-block-start-color", "border-block-start-radius", "border-block-start-style", "border-block-start-width", "border-block-style",
-		"border-block-width", "border-bottom", "border-bottom-color", "border-bottom-left-radius", "border-bottom-radius",
-		"border-bottom-right-radius", "border-bottom-style", "border-bottom-width", "border-collapse", "border-color",
-		"border-end-end-radius", "border-end-start-radius", "border-image", "border-image-outset", "border-image-repeat",
-		"border-image-slice", "border-image-source", "border-image-width", "border-inline", "border-inline-color",
-		"border-inline-end", "border-inline-end-color", "border-inline-end-radius", "border-inline-end-style", "border-inline-end-width",
-		"border-inline-start", "border-inline-start-color", "border-inline-start-radius", "border-inline-start-style", "border-inline-start-width",
-		"border-inline-style", "border-inline-width", "border-left", "border-left-color", "border-left-radius",
-		"border-left-style", "border-left-width", "border-radius", "border-right", "border-right-color",
-		"border-right-radius", "border-right-style", "border-right-width", "border-spacing", "border-start-end-radius",
-		"border-start-start-radius", "border-style", "border-top", "border-top-color", "border-top-left-radius",
-		"border-top-radius", "border-top-right-radius", "border-top-style", "border-top-width", "border-width",
-		"bottom", "box-shadow", "box-shadow-blur", "box-shadow-color", "box-shadow-inset",
+		"-webkit-text-size-adjust", "-webkit-text-stroke", "-webkit-text-stroke-color", "-webkit-text-stroke-width", "-webkit-transform-style",
+		"-webkit-transition", "-webkit-transition-delay", "-webkit-transition-duration", "-webkit-transition-property", "-webkit-transition-timing-function",
+		"-webkit-user-select", "accent-color", "align-content", "align-items", "align-self",
+		"alignment-baseline", "all", "anchor-name", "anchor-scope", "animation",
+		"animation-composition", "animation-delay", "animation-delay-end", "animation-delay-start", "animation-direction",
+		"animation-duration", "animation-fill-mode", "animation-iteration-count", "animation-name", "animation-play-state",
+		"animation-range", "animation-range-center", "animation-range-end", "animation-range-start", "animation-timeline",
+		"animation-timing-function", "animation-trigger", "aspect-ratio", "backdrop-filter", "backface-visibility",
+		"background", "background-attachment", "background-blend-mode", "background-clip", "background-color",
+		"background-image", "background-origin", "background-position", "background-position-block", "background-position-inline",
+		"background-position-x", "background-position-y", "background-repeat", "background-repeat-block", "background-repeat-inline",
+		"background-repeat-x", "background-repeat-y", "background-size", "background-tbd", "baseline-shift",
+		"baseline-source", "block-ellipsis", "block-size", "bookmark-label", "bookmark-level",
+		"bookmark-state", "border", "border-block", "border-block-clip", "border-block-color",
+		"border-block-end", "border-block-end-clip", "border-block-end-color", "border-block-end-radius", "border-block-end-style",
+		"border-block-end-width", "border-block-start", "border-block-start-clip", "border-block-start-color", "border-block-start-radius",
+		"border-block-start-style", "border-block-start-width", "border-block-style", "border-block-width", "border-bottom",
+		"border-bottom-clip", "border-bottom-color", "border-bottom-left-radius", "border-bottom-radius", "border-bottom-right-radius",
+		"border-bottom-style", "border-bottom-width", "border-boundary", "border-clip", "border-collapse",
+		"border-color", "border-end-end-radius", "border-end-start-radius", "border-image", "border-image-outset",
+		"border-image-repeat", "border-image-slice", "border-image-source", "border-image-width", "border-inline",
+		"border-inline-clip", "border-inline-color", "border-inline-end", "border-inline-end-clip", "border-inline-end-color",
+		"border-inline-end-radius", "border-inline-end-style", "border-inline-end-width", "border-inline-start", "border-inline-start-clip",
+		"border-inline-start-color", "border-inline-start-radius", "border-inline-start-style", "border-inline-start-width", "border-inline-style",
+		"border-inline-width", "border-left", "border-left-clip", "border-left-color", "border-left-radius",
+		"border-left-style", "border-left-width", "border-limit", "border-radius", "border-right",
+		"border-right-clip", "border-right-color", "border-right-radius", "border-right-style", "border-right-width",
+		"border-shape", "border-spacing", "border-start-end-radius", "border-start-start-radius", "border-style",
+		"border-top", "border-top-clip", "border-top-color", "border-top-left-radius", "border-top-radius",
+		"border-top-right-radius", "border-top-style", "border-top-width", "border-width", "bottom",
+		"box-decoration-break", "box-shadow", "box-shadow-blur", "box-shadow-color", "box-shadow-inset",
 		"box-shadow-offset", "box-shadow-position", "box-shadow-spread", "box-sizing", "break-after",
-		"break-before", "caption-side", "clear", "clip", "clip-path",
-		"clip-rule", "color", "color-adjust", "color-interpolation", "color-interpolation-filters",
-		"color-scheme", "column-count", "column-fill", "column-gap", "column-height",
-		"column-rule", "column-rule-break", "column-rule-color", "column-rule-inset", "column-rule-inset-cap",
-		"column-rule-inset-cap-end", "column-rule-inset-cap-start", "column-rule-inset-end", "column-rule-inset-junction", "column-rule-inset-junction-end",
-		"column-rule-inset-junction-start", "column-rule-inset-start", "column-rule-style", "column-rule-width", "column-span",
+		"break-before", "break-inside", "caption-side", "caret", "caret-animation",
+		"caret-shape", "clear", "clip", "clip-path", "clip-rule",
+		"color", "color-adjust", "color-interpolation", "color-interpolation-filters", "color-scheme",
+		"column-count", "column-fill", "column-gap", "column-height", "column-rule",
+		"column-rule-break", "column-rule-color", "column-rule-inset", "column-rule-inset-cap", "column-rule-inset-cap-end",
+		"column-rule-inset-cap-start", "column-rule-inset-end", "column-rule-inset-junction", "column-rule-inset-junction-end", "column-rule-inset-junction-start",
+		"column-rule-inset-start", "column-rule-style", "column-rule-visibility-items", "column-rule-width", "column-span",
 		"column-width", "column-wrap", "columns", "contain", "contain-intrinsic-block-size",
 		"contain-intrinsic-height", "contain-intrinsic-inline-size", "contain-intrinsic-size", "contain-intrinsic-width", "container",
-		"container-name", "container-type", "content", "content-visibility", "corner",
-		"corner-block-end", "corner-block-end-shape", "corner-block-start", "corner-block-start-shape", "corner-bottom",
-		"corner-bottom-left", "corner-bottom-left-shape", "corner-bottom-right", "corner-bottom-right-shape", "corner-bottom-shape",
-		"corner-end-end", "corner-end-end-shape", "corner-end-start", "corner-end-start-shape", "corner-inline-end",
-		"corner-inline-end-shape", "corner-inline-start", "corner-inline-start-shape", "corner-left", "corner-left-shape",
-		"corner-right", "corner-right-shape", "corner-shape", "corner-start-end", "corner-start-end-shape",
-		"corner-start-start", "corner-start-start-shape", "corner-top", "corner-top-left", "corner-top-left-shape",
-		"corner-top-right", "corner-top-right-shape", "corner-top-shape", "counter-increment", "counter-reset",
-		"counter-set", "direction", "display", "dominant-baseline", "dynamic-range-limit",
-		"empty-cells", "fill", "fill-opacity", "fill-rule", "filter",
-		"flex", "flex-basis", "flex-direction", "flex-flow", "flex-grow",
-		"flex-shrink", "flex-wrap", "float", "float-offset", "float-reference",
-		"flow-from", "flow-into", "flow-tolerance", "font", "font-family",
-		"font-feature-settings", "font-kerning", "font-language-override", "font-optical-sizing", "font-palette",
-		"font-size", "font-size-adjust", "font-style", "font-synthesis", "font-synthesis-position",
-		"font-synthesis-small-caps", "font-synthesis-style", "font-synthesis-weight", "font-variant", "font-variant-alternates",
-		"font-variant-caps", "font-variant-east-asian", "font-variant-emoji", "font-variant-ligatures", "font-variant-numeric",
-		"font-variant-position", "font-variation-settings", "font-weight", "font-width", "forced-color-adjust",
-		"gap", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow",
+		"container-name", "container-type", "content", "content-visibility", "continue",
+		"copy-into", "corner", "corner-block-end", "corner-block-end-shape", "corner-block-start",
+		"corner-block-start-shape", "corner-bottom", "corner-bottom-left", "corner-bottom-left-shape", "corner-bottom-right",
+		"corner-bottom-right-shape", "corner-bottom-shape", "corner-end-end", "corner-end-end-shape", "corner-end-start",
+		"corner-end-start-shape", "corner-inline-end", "corner-inline-end-shape", "corner-inline-start", "corner-inline-start-shape",
+		"corner-left", "corner-left-shape", "corner-right", "corner-right-shape", "corner-shape",
+		"corner-start-end", "corner-start-end-shape", "corner-start-start", "corner-start-start-shape", "corner-top",
+		"corner-top-left", "corner-top-left-shape", "corner-top-right", "corner-top-right-shape", "corner-top-shape",
+		"counter-increment", "counter-reset", "counter-set", "cx", "cy",
+		"d", "direction", "display", "dominant-baseline", "dynamic-range-limit",
+		"empty-cells", "event-trigger", "event-trigger-name", "event-trigger-source", "field-sizing",
+		"fill", "fill-opacity", "fill-rule", "filter", "flex",
+		"flex-basis", "flex-direction", "flex-flow", "flex-grow", "flex-shrink",
+		"flex-wrap", "float", "float-defer", "float-offset", "float-reference",
+		"flood-color", "flood-opacity", "flow-from", "flow-into", "flow-tolerance",
+		"font", "font-family", "font-feature-settings", "font-kerning", "font-language-override",
+		"font-optical-sizing", "font-palette", "font-size", "font-size-adjust", "font-style",
+		"font-synthesis", "font-synthesis-position", "font-synthesis-small-caps", "font-synthesis-style", "font-synthesis-weight",
+		"font-variant", "font-variant-alternates", "font-variant-caps", "font-variant-east-asian", "font-variant-emoji",
+		"font-variant-ligatures", "font-variant-numeric", "font-variant-position", "font-variation-settings", "font-weight",
+		"font-width", "footnote-display", "footnote-policy", "forced-color-adjust", "gap",
+		"glyph-orientation-vertical", "grid", "grid-area", "grid-auto-columns", "grid-auto-flow",
 		"grid-auto-rows", "grid-column", "grid-column-end", "grid-column-start", "grid-row",
 		"grid-row-end", "grid-row-start", "grid-template", "grid-template-areas", "grid-template-columns",
 		"grid-template-rows", "hanging-punctuation", "height", "hyphenate-character", "hyphenate-limit-chars",
-		"hyphenate-limit-last", "hyphenate-limit-lines", "hyphenate-limit-zone", "hyphens", "image-orientation",
-		"image-resolution", "initial-letter", "initial-letter-align", "initial-letter-wrap", "inline-size",
-		"inset", "inset-block", "inset-block-end", "inset-block-start", "inset-inline",
-		"inset-inline-end", "inset-inline-start", "isolation", "justify-content", "justify-items",
-		"justify-self", "left", "letter-spacing", "line-break", "line-clamp",
-		"line-height", "list-style", "list-style-image", "list-style-position", "list-style-type",
-		"margin", "margin-block", "margin-block-end", "margin-block-start", "margin-bottom",
-		"margin-inline", "margin-inline-end", "margin-inline-start", "margin-left", "margin-right",
-		"margin-top", "margin-trim", "mask", "mask-border", "mask-border-mode",
-		"mask-border-outset", "mask-border-repeat", "mask-border-slice", "mask-border-source", "mask-border-width",
-		"mask-clip", "mask-composite", "mask-image", "mask-mode", "mask-origin",
-		"mask-position", "mask-repeat", "mask-size", "max-block-size", "max-height",
-		"max-inline-size", "max-lines", "max-width", "min-block-size", "min-height",
-		"min-inline-size", "min-width", "mix-blend-mode", "object-fit", "object-position",
-		"object-view-box", "opacity", "order", "orphans", "outline",
-		"outline-color", "outline-offset", "outline-style", "outline-width", "overflow",
-		"overflow-block", "overflow-clip-margin", "overflow-clip-margin-block", "overflow-clip-margin-block-end", "overflow-clip-margin-block-start",
-		"overflow-clip-margin-bottom", "overflow-clip-margin-inline", "overflow-clip-margin-inline-end", "overflow-clip-margin-inline-start", "overflow-clip-margin-left",
-		"overflow-clip-margin-right", "overflow-clip-margin-top", "overflow-inline", "overflow-wrap", "overflow-x",
-		"overflow-y", "padding", "padding-block", "padding-block-end", "padding-block-start",
-		"padding-bottom", "padding-inline", "padding-inline-end", "padding-inline-start", "padding-left",
-		"padding-right", "padding-top", "perspective", "perspective-origin", "place-content",
-		"place-items", "place-self", "position", "position-anchor", "position-area",
-		"position-try", "position-try-fallbacks", "position-try-order", "position-visibility", "print-color-adjust",
-		"quotes", "region-fragment", "right", "rotate", "row-gap",
+		"hyphenate-limit-last", "hyphenate-limit-lines", "hyphenate-limit-zone", "hyphens", "image-animation",
+		"image-orientation", "image-rendering", "image-resolution", "initial-letter", "initial-letter-align",
+		"initial-letter-wrap", "inline-size", "inline-sizing", "input-security", "inset",
+		"inset-block", "inset-block-end", "inset-block-start", "inset-inline", "inset-inline-end",
+		"inset-inline-start", "interactivity", "interest-delay", "interest-delay-end", "interest-delay-start",
+		"isolation", "justify-content", "justify-items", "justify-self", "left",
+		"letter-spacing", "lighting-color", "line-break", "line-clamp", "line-fit-edge",
+		"line-height", "line-padding", "link-parameters", "list-style", "list-style-image",
+		"list-style-position", "list-style-type", "margin", "margin-block", "margin-block-end",
+		"margin-block-start", "margin-bottom", "margin-break", "margin-inline", "margin-inline-end",
+		"margin-inline-start", "margin-left", "margin-right", "margin-top", "margin-trim",
+		"marker", "marker-end", "marker-mid", "marker-side", "marker-start",
+		"mask", "mask-border", "mask-border-mode", "mask-border-outset", "mask-border-repeat",
+		"mask-border-slice", "mask-border-source", "mask-border-width", "mask-clip", "mask-composite",
+		"mask-image", "mask-mode", "mask-origin", "mask-position", "mask-repeat",
+		"mask-size", "mask-type", "max-block-size", "max-height", "max-inline-size",
+		"max-lines", "max-size", "max-width", "min-block-size", "min-height",
+		"min-inline-size", "min-size", "min-width", "mix-blend-mode", "nav-down",
+		"nav-left", "nav-right", "nav-up", "object-fit", "object-position",
+		"object-view-box", "offset", "offset-anchor", "offset-distance", "offset-path",
+		"offset-position", "offset-rotate", "opacity", "order", "orphans",
+		"outline", "outline-color", "outline-offset", "outline-style", "outline-width",
+		"overflow", "overflow-block", "overflow-clip-margin", "overflow-clip-margin-block", "overflow-clip-margin-block-end",
+		"overflow-clip-margin-block-start", "overflow-clip-margin-bottom", "overflow-clip-margin-inline", "overflow-clip-margin-inline-end", "overflow-clip-margin-inline-start",
+		"overflow-clip-margin-left", "overflow-clip-margin-right", "overflow-clip-margin-top", "overflow-inline", "overflow-wrap",
+		"overflow-x", "overflow-y", "overlay", "padding", "padding-block",
+		"padding-block-end", "padding-block-start", "padding-bottom", "padding-inline", "padding-inline-end",
+		"padding-inline-start", "padding-left", "padding-right", "padding-top", "paint-order",
+		"path-length", "perspective", "perspective-origin", "place-content", "place-items",
+		"place-self", "pointer-timeline", "pointer-timeline-axis", "pointer-timeline-name", "position",
+		"position-anchor", "position-area", "position-try", "position-try-fallbacks", "position-try-order",
+		"position-visibility", "print-color-adjust", "quotes", "r", "reading-flow",
+		"reading-order", "region-fragment", "right", "rotate", "row-gap",
 		"row-rule", "row-rule-break", "row-rule-color", "row-rule-inset", "row-rule-inset-cap",
 		"row-rule-inset-cap-end", "row-rule-inset-cap-start", "row-rule-inset-end", "row-rule-inset-junction", "row-rule-inset-junction-end",
 		"row-rule-inset-junction-start", "row-rule-inset-start", "row-rule-style", "row-rule-visibility-items", "row-rule-width",
 		"ruby-align", "ruby-merge", "ruby-overhang", "ruby-position", "rule",
 		"rule-break", "rule-color", "rule-inset", "rule-inset-cap", "rule-inset-end",
 		"rule-inset-junction", "rule-inset-start", "rule-overlap", "rule-style", "rule-visibility-items",
-		"rule-width", "scale", "scroll-margin", "scroll-margin-bottom", "scroll-margin-left",
-		"scroll-margin-right", "scroll-margin-top", "shape-inside", "shape-margin", "shape-outside",
-		"shape-padding", "shape-rendering", "stroke", "stroke-dasharray", "stroke-dashoffset",
-		"stroke-linecap", "stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke-width",
-		"tab-size", "table-layout", "text-align", "text-align-all", "text-align-last",
-		"text-anchor", "text-autospace", "text-box", "text-box-edge", "text-box-trim",
-		"text-combine-upright", "text-decoration", "text-decoration-color", "text-decoration-inset", "text-decoration-line",
-		"text-decoration-skip", "text-decoration-skip-box", "text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces",
-		"text-decoration-style", "text-decoration-thickness", "text-emphasis", "text-emphasis-color", "text-emphasis-position",
-		"text-emphasis-skip", "text-emphasis-style", "text-group-align", "text-indent", "text-justify",
-		"text-orientation", "text-overflow", "text-shadow", "text-spacing", "text-spacing-trim",
-		"text-transform", "text-underline-offset", "text-underline-position", "text-wrap", "text-wrap-mode",
-		"text-wrap-style", "top", "transform", "transform-box", "transform-origin",
-		"transform-style", "transition", "transition-behavior", "transition-delay", "transition-duration",
-		"transition-property", "transition-timing-function", "translate", "trigger-scope", "unicode-bidi",
-		"vertical-align", "view-transition-class", "view-transition-group", "view-transition-name", "view-transition-scope",
-		"visibility", "white-space", "white-space-collapse", "white-space-trim", "widows",
-		"width", "word-break", "word-spacing", "wrap-after", "wrap-before",
-		"wrap-flow", "wrap-inside", "wrap-through", "writing-mode", "z-index":
+		"rule-width", "rx", "ry", "scale", "scroll-margin",
+		"scroll-margin-bottom", "scroll-margin-left", "scroll-margin-right", "scroll-margin-top", "scroll-timeline",
+		"scroll-timeline-axis", "scroll-timeline-name", "shape-image-threshold", "shape-inside", "shape-margin",
+		"shape-outside", "shape-padding", "shape-rendering", "size", "slider-orientation",
+		"spatial-navigation-action", "spatial-navigation-contain", "spatial-navigation-function", "stop-color", "stop-opacity",
+		"string-set", "stroke", "stroke-dasharray", "stroke-dashoffset", "stroke-linecap",
+		"stroke-linejoin", "stroke-miterlimit", "stroke-opacity", "stroke-width", "tab-size",
+		"table-layout", "text-align", "text-align-all", "text-align-last", "text-anchor",
+		"text-autospace", "text-box", "text-box-edge", "text-box-trim", "text-combine-upright",
+		"text-decoration", "text-decoration-color", "text-decoration-inset", "text-decoration-line", "text-decoration-skip",
+		"text-decoration-skip-box", "text-decoration-skip-ink", "text-decoration-skip-self", "text-decoration-skip-spaces", "text-decoration-style",
+		"text-decoration-thickness", "text-emphasis", "text-emphasis-color", "text-emphasis-position", "text-emphasis-skip",
+		"text-emphasis-style", "text-fit", "text-group-align", "text-indent", "text-justify",
+		"text-orientation", "text-overflow", "text-rendering", "text-shadow", "text-size-adjust",
+		"text-spacing", "text-spacing-trim", "text-transform", "text-underline-offset", "text-underline-position",
+		"text-wrap", "text-wrap-mode", "text-wrap-style", "timeline-scope", "timeline-trigger",
+		"timeline-trigger-activation-range", "timeline-trigger-activation-range-end", "timeline-trigger-activation-range-start", "timeline-trigger-active-range", "timeline-trigger-active-range-end",
+		"timeline-trigger-active-range-start", "timeline-trigger-name", "timeline-trigger-source", "top", "transform",
+		"transform-box", "transform-origin", "transform-style", "transition", "transition-behavior",
+		"transition-delay", "transition-duration", "transition-property", "transition-timing-function", "translate",
+		"trigger-scope", "unicode-bidi", "vector-effect", "vertical-align", "view-timeline",
+		"view-timeline-axis", "view-timeline-inset", "view-timeline-name", "view-transition-class", "view-transition-group",
+		"view-transition-name", "view-transition-scope", "visibility", "white-space", "white-space-collapse",
+		"white-space-trim", "widows", "width", "will-change", "window-drag",
+		"word-break", "word-space-transform", "word-spacing", "wrap-after", "wrap-before",
+		"wrap-flow", "wrap-inside", "wrap-through", "writing-mode", "x",
+		"y", "z-index", "zoom":
 		return true
 	default:
 		return false
@@ -141,7 +168,11 @@ func SupportedProperties() []string {
 		"-webkit-animation-name",
 		"-webkit-animation-play-state",
 		"-webkit-animation-timing-function",
+		"-webkit-appearance",
 		"-webkit-backface-visibility",
+		"-webkit-background-clip",
+		"-webkit-background-origin",
+		"-webkit-background-size",
 		"-webkit-mask",
 		"-webkit-mask-box-image",
 		"-webkit-mask-box-image-outset",
@@ -150,6 +181,7 @@ func SupportedProperties() []string {
 		"-webkit-mask-box-image-source",
 		"-webkit-mask-box-image-width",
 		"-webkit-mask-clip",
+		"-webkit-mask-composite",
 		"-webkit-mask-image",
 		"-webkit-mask-origin",
 		"-webkit-mask-position",
@@ -157,17 +189,23 @@ func SupportedProperties() []string {
 		"-webkit-mask-size",
 		"-webkit-perspective",
 		"-webkit-perspective-origin",
+		"-webkit-text-size-adjust",
+		"-webkit-text-stroke",
+		"-webkit-text-stroke-color",
+		"-webkit-text-stroke-width",
 		"-webkit-transform-style",
 		"-webkit-transition",
 		"-webkit-transition-delay",
 		"-webkit-transition-duration",
 		"-webkit-transition-property",
 		"-webkit-transition-timing-function",
+		"-webkit-user-select",
 		"accent-color",
 		"align-content",
 		"align-items",
 		"align-self",
 		"alignment-baseline",
+		"all",
 		"anchor-name",
 		"anchor-scope",
 		"animation",
@@ -189,8 +227,10 @@ func SupportedProperties() []string {
 		"animation-timing-function",
 		"animation-trigger",
 		"aspect-ratio",
+		"backdrop-filter",
 		"backface-visibility",
 		"background",
+		"background-attachment",
 		"background-blend-mode",
 		"background-clip",
 		"background-color",
@@ -207,16 +247,26 @@ func SupportedProperties() []string {
 		"background-repeat-x",
 		"background-repeat-y",
 		"background-size",
+		"background-tbd",
+		"baseline-shift",
+		"baseline-source",
+		"block-ellipsis",
 		"block-size",
+		"bookmark-label",
+		"bookmark-level",
+		"bookmark-state",
 		"border",
 		"border-block",
+		"border-block-clip",
 		"border-block-color",
 		"border-block-end",
+		"border-block-end-clip",
 		"border-block-end-color",
 		"border-block-end-radius",
 		"border-block-end-style",
 		"border-block-end-width",
 		"border-block-start",
+		"border-block-start-clip",
 		"border-block-start-color",
 		"border-block-start-radius",
 		"border-block-start-style",
@@ -224,12 +274,15 @@ func SupportedProperties() []string {
 		"border-block-style",
 		"border-block-width",
 		"border-bottom",
+		"border-bottom-clip",
 		"border-bottom-color",
 		"border-bottom-left-radius",
 		"border-bottom-radius",
 		"border-bottom-right-radius",
 		"border-bottom-style",
 		"border-bottom-width",
+		"border-boundary",
+		"border-clip",
 		"border-collapse",
 		"border-color",
 		"border-end-end-radius",
@@ -241,13 +294,16 @@ func SupportedProperties() []string {
 		"border-image-source",
 		"border-image-width",
 		"border-inline",
+		"border-inline-clip",
 		"border-inline-color",
 		"border-inline-end",
+		"border-inline-end-clip",
 		"border-inline-end-color",
 		"border-inline-end-radius",
 		"border-inline-end-style",
 		"border-inline-end-width",
 		"border-inline-start",
+		"border-inline-start-clip",
 		"border-inline-start-color",
 		"border-inline-start-radius",
 		"border-inline-start-style",
@@ -255,21 +311,26 @@ func SupportedProperties() []string {
 		"border-inline-style",
 		"border-inline-width",
 		"border-left",
+		"border-left-clip",
 		"border-left-color",
 		"border-left-radius",
 		"border-left-style",
 		"border-left-width",
+		"border-limit",
 		"border-radius",
 		"border-right",
+		"border-right-clip",
 		"border-right-color",
 		"border-right-radius",
 		"border-right-style",
 		"border-right-width",
+		"border-shape",
 		"border-spacing",
 		"border-start-end-radius",
 		"border-start-start-radius",
 		"border-style",
 		"border-top",
+		"border-top-clip",
 		"border-top-color",
 		"border-top-left-radius",
 		"border-top-radius",
@@ -278,6 +339,7 @@ func SupportedProperties() []string {
 		"border-top-width",
 		"border-width",
 		"bottom",
+		"box-decoration-break",
 		"box-shadow",
 		"box-shadow-blur",
 		"box-shadow-color",
@@ -288,7 +350,11 @@ func SupportedProperties() []string {
 		"box-sizing",
 		"break-after",
 		"break-before",
+		"break-inside",
 		"caption-side",
+		"caret",
+		"caret-animation",
+		"caret-shape",
 		"clear",
 		"clip",
 		"clip-path",
@@ -315,6 +381,7 @@ func SupportedProperties() []string {
 		"column-rule-inset-junction-start",
 		"column-rule-inset-start",
 		"column-rule-style",
+		"column-rule-visibility-items",
 		"column-rule-width",
 		"column-span",
 		"column-width",
@@ -331,6 +398,8 @@ func SupportedProperties() []string {
 		"container-type",
 		"content",
 		"content-visibility",
+		"continue",
+		"copy-into",
 		"corner",
 		"corner-block-end",
 		"corner-block-end-shape",
@@ -368,11 +437,18 @@ func SupportedProperties() []string {
 		"counter-increment",
 		"counter-reset",
 		"counter-set",
+		"cx",
+		"cy",
+		"d",
 		"direction",
 		"display",
 		"dominant-baseline",
 		"dynamic-range-limit",
 		"empty-cells",
+		"event-trigger",
+		"event-trigger-name",
+		"event-trigger-source",
+		"field-sizing",
 		"fill",
 		"fill-opacity",
 		"fill-rule",
@@ -385,8 +461,11 @@ func SupportedProperties() []string {
 		"flex-shrink",
 		"flex-wrap",
 		"float",
+		"float-defer",
 		"float-offset",
 		"float-reference",
+		"flood-color",
+		"flood-opacity",
 		"flow-from",
 		"flow-into",
 		"flow-tolerance",
@@ -416,8 +495,11 @@ func SupportedProperties() []string {
 		"font-variation-settings",
 		"font-weight",
 		"font-width",
+		"footnote-display",
+		"footnote-policy",
 		"forced-color-adjust",
 		"gap",
+		"glyph-orientation-vertical",
 		"grid",
 		"grid-area",
 		"grid-auto-columns",
@@ -441,12 +523,16 @@ func SupportedProperties() []string {
 		"hyphenate-limit-lines",
 		"hyphenate-limit-zone",
 		"hyphens",
+		"image-animation",
 		"image-orientation",
+		"image-rendering",
 		"image-resolution",
 		"initial-letter",
 		"initial-letter-align",
 		"initial-letter-wrap",
 		"inline-size",
+		"inline-sizing",
+		"input-security",
 		"inset",
 		"inset-block",
 		"inset-block-end",
@@ -454,15 +540,23 @@ func SupportedProperties() []string {
 		"inset-inline",
 		"inset-inline-end",
 		"inset-inline-start",
+		"interactivity",
+		"interest-delay",
+		"interest-delay-end",
+		"interest-delay-start",
 		"isolation",
 		"justify-content",
 		"justify-items",
 		"justify-self",
 		"left",
 		"letter-spacing",
+		"lighting-color",
 		"line-break",
 		"line-clamp",
+		"line-fit-edge",
 		"line-height",
+		"line-padding",
+		"link-parameters",
 		"list-style",
 		"list-style-image",
 		"list-style-position",
@@ -472,6 +566,7 @@ func SupportedProperties() []string {
 		"margin-block-end",
 		"margin-block-start",
 		"margin-bottom",
+		"margin-break",
 		"margin-inline",
 		"margin-inline-end",
 		"margin-inline-start",
@@ -479,6 +574,11 @@ func SupportedProperties() []string {
 		"margin-right",
 		"margin-top",
 		"margin-trim",
+		"marker",
+		"marker-end",
+		"marker-mid",
+		"marker-side",
+		"marker-start",
 		"mask",
 		"mask-border",
 		"mask-border-mode",
@@ -495,19 +595,32 @@ func SupportedProperties() []string {
 		"mask-position",
 		"mask-repeat",
 		"mask-size",
+		"mask-type",
 		"max-block-size",
 		"max-height",
 		"max-inline-size",
 		"max-lines",
+		"max-size",
 		"max-width",
 		"min-block-size",
 		"min-height",
 		"min-inline-size",
+		"min-size",
 		"min-width",
 		"mix-blend-mode",
+		"nav-down",
+		"nav-left",
+		"nav-right",
+		"nav-up",
 		"object-fit",
 		"object-position",
 		"object-view-box",
+		"offset",
+		"offset-anchor",
+		"offset-distance",
+		"offset-path",
+		"offset-position",
+		"offset-rotate",
 		"opacity",
 		"order",
 		"orphans",
@@ -533,6 +646,7 @@ func SupportedProperties() []string {
 		"overflow-wrap",
 		"overflow-x",
 		"overflow-y",
+		"overlay",
 		"padding",
 		"padding-block",
 		"padding-block-end",
@@ -544,11 +658,16 @@ func SupportedProperties() []string {
 		"padding-left",
 		"padding-right",
 		"padding-top",
+		"paint-order",
+		"path-length",
 		"perspective",
 		"perspective-origin",
 		"place-content",
 		"place-items",
 		"place-self",
+		"pointer-timeline",
+		"pointer-timeline-axis",
+		"pointer-timeline-name",
 		"position",
 		"position-anchor",
 		"position-area",
@@ -558,6 +677,9 @@ func SupportedProperties() []string {
 		"position-visibility",
 		"print-color-adjust",
 		"quotes",
+		"r",
+		"reading-flow",
+		"reading-order",
 		"region-fragment",
 		"right",
 		"rotate",
@@ -593,17 +715,31 @@ func SupportedProperties() []string {
 		"rule-style",
 		"rule-visibility-items",
 		"rule-width",
+		"rx",
+		"ry",
 		"scale",
 		"scroll-margin",
 		"scroll-margin-bottom",
 		"scroll-margin-left",
 		"scroll-margin-right",
 		"scroll-margin-top",
+		"scroll-timeline",
+		"scroll-timeline-axis",
+		"scroll-timeline-name",
+		"shape-image-threshold",
 		"shape-inside",
 		"shape-margin",
 		"shape-outside",
 		"shape-padding",
 		"shape-rendering",
+		"size",
+		"slider-orientation",
+		"spatial-navigation-action",
+		"spatial-navigation-contain",
+		"spatial-navigation-function",
+		"stop-color",
+		"stop-opacity",
+		"string-set",
 		"stroke",
 		"stroke-dasharray",
 		"stroke-dashoffset",
@@ -639,12 +775,15 @@ func SupportedProperties() []string {
 		"text-emphasis-position",
 		"text-emphasis-skip",
 		"text-emphasis-style",
+		"text-fit",
 		"text-group-align",
 		"text-indent",
 		"text-justify",
 		"text-orientation",
 		"text-overflow",
+		"text-rendering",
 		"text-shadow",
+		"text-size-adjust",
 		"text-spacing",
 		"text-spacing-trim",
 		"text-transform",
@@ -653,6 +792,16 @@ func SupportedProperties() []string {
 		"text-wrap",
 		"text-wrap-mode",
 		"text-wrap-style",
+		"timeline-scope",
+		"timeline-trigger",
+		"timeline-trigger-activation-range",
+		"timeline-trigger-activation-range-end",
+		"timeline-trigger-activation-range-start",
+		"timeline-trigger-active-range",
+		"timeline-trigger-active-range-end",
+		"timeline-trigger-active-range-start",
+		"timeline-trigger-name",
+		"timeline-trigger-source",
 		"top",
 		"transform",
 		"transform-box",
@@ -667,7 +816,12 @@ func SupportedProperties() []string {
 		"translate",
 		"trigger-scope",
 		"unicode-bidi",
+		"vector-effect",
 		"vertical-align",
+		"view-timeline",
+		"view-timeline-axis",
+		"view-timeline-inset",
+		"view-timeline-name",
 		"view-transition-class",
 		"view-transition-group",
 		"view-transition-name",
@@ -678,7 +832,10 @@ func SupportedProperties() []string {
 		"white-space-trim",
 		"widows",
 		"width",
+		"will-change",
+		"window-drag",
 		"word-break",
+		"word-space-transform",
 		"word-spacing",
 		"wrap-after",
 		"wrap-before",
@@ -686,7 +843,10 @@ func SupportedProperties() []string {
 		"wrap-inside",
 		"wrap-through",
 		"writing-mode",
+		"x",
+		"y",
 		"z-index",
+		"zoom",
 	}
 }
 
@@ -807,6 +967,19 @@ func (e *Element) WebkitAnimationTimingFunction(v WebkitAnimationTimingFunctionV
 func (expression) isWebkitAnimationTimingFunction()  {}
 func (wideKeyword) isWebkitAnimationTimingFunction() {}
 
+// WebkitAppearanceValue is a value for the CSS -webkit-appearance property.
+type WebkitAppearanceValue interface {
+	cssValue
+	isWebkitAppearance()
+}
+
+// WebkitAppearance sets the CSS -webkit-appearance property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitAppearance(v WebkitAppearanceValue) *Element {
+	return e.setValue("-webkit-appearance", v)
+}
+func (expression) isWebkitAppearance()  {}
+func (wideKeyword) isWebkitAppearance() {}
+
 // WebkitBackfaceVisibilityValue is a value for the CSS -webkit-backface-visibility property.
 type WebkitBackfaceVisibilityValue interface {
 	cssValue
@@ -819,6 +992,45 @@ func (e *Element) WebkitBackfaceVisibility(v WebkitBackfaceVisibilityValue) *Ele
 }
 func (expression) isWebkitBackfaceVisibility()  {}
 func (wideKeyword) isWebkitBackfaceVisibility() {}
+
+// WebkitBackgroundClipValue is a value for the CSS -webkit-background-clip property.
+type WebkitBackgroundClipValue interface {
+	cssValue
+	isWebkitBackgroundClip()
+}
+
+// WebkitBackgroundClip sets the CSS -webkit-background-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitBackgroundClip(v WebkitBackgroundClipValue) *Element {
+	return e.setValue("-webkit-background-clip", v)
+}
+func (expression) isWebkitBackgroundClip()  {}
+func (wideKeyword) isWebkitBackgroundClip() {}
+
+// WebkitBackgroundOriginValue is a value for the CSS -webkit-background-origin property.
+type WebkitBackgroundOriginValue interface {
+	cssValue
+	isWebkitBackgroundOrigin()
+}
+
+// WebkitBackgroundOrigin sets the CSS -webkit-background-origin property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitBackgroundOrigin(v WebkitBackgroundOriginValue) *Element {
+	return e.setValue("-webkit-background-origin", v)
+}
+func (expression) isWebkitBackgroundOrigin()  {}
+func (wideKeyword) isWebkitBackgroundOrigin() {}
+
+// WebkitBackgroundSizeValue is a value for the CSS -webkit-background-size property.
+type WebkitBackgroundSizeValue interface {
+	cssValue
+	isWebkitBackgroundSize()
+}
+
+// WebkitBackgroundSize sets the CSS -webkit-background-size property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitBackgroundSize(v WebkitBackgroundSizeValue) *Element {
+	return e.setValue("-webkit-background-size", v)
+}
+func (expression) isWebkitBackgroundSize()  {}
+func (wideKeyword) isWebkitBackgroundSize() {}
 
 // WebkitMaskValue is a value for the CSS -webkit-mask property.
 type WebkitMaskValue interface {
@@ -922,6 +1134,19 @@ func (e *Element) WebkitMaskClip(v WebkitMaskClipValue) *Element {
 func (expression) isWebkitMaskClip()  {}
 func (wideKeyword) isWebkitMaskClip() {}
 
+// WebkitMaskCompositeValue is a value for the CSS -webkit-mask-composite property.
+type WebkitMaskCompositeValue interface {
+	cssValue
+	isWebkitMaskComposite()
+}
+
+// WebkitMaskComposite sets the CSS -webkit-mask-composite property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitMaskComposite(v WebkitMaskCompositeValue) *Element {
+	return e.setValue("-webkit-mask-composite", v)
+}
+func (expression) isWebkitMaskComposite()  {}
+func (wideKeyword) isWebkitMaskComposite() {}
+
 // WebkitMaskImageValue is a value for the CSS -webkit-mask-image property.
 type WebkitMaskImageValue interface {
 	cssValue
@@ -1013,6 +1238,58 @@ func (e *Element) WebkitPerspectiveOrigin(v WebkitPerspectiveOriginValue) *Eleme
 func (expression) isWebkitPerspectiveOrigin()  {}
 func (wideKeyword) isWebkitPerspectiveOrigin() {}
 
+// WebkitTextSizeAdjustValue is a value for the CSS -webkit-text-size-adjust property.
+type WebkitTextSizeAdjustValue interface {
+	cssValue
+	isWebkitTextSizeAdjust()
+}
+
+// WebkitTextSizeAdjust sets the CSS -webkit-text-size-adjust property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitTextSizeAdjust(v WebkitTextSizeAdjustValue) *Element {
+	return e.setValue("-webkit-text-size-adjust", v)
+}
+func (expression) isWebkitTextSizeAdjust()  {}
+func (wideKeyword) isWebkitTextSizeAdjust() {}
+
+// WebkitTextStrokeValue is a value for the CSS -webkit-text-stroke property.
+type WebkitTextStrokeValue interface {
+	cssValue
+	isWebkitTextStroke()
+}
+
+// WebkitTextStroke sets the CSS -webkit-text-stroke property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitTextStroke(v WebkitTextStrokeValue) *Element {
+	return e.setValue("-webkit-text-stroke", v)
+}
+func (expression) isWebkitTextStroke()  {}
+func (wideKeyword) isWebkitTextStroke() {}
+
+// WebkitTextStrokeColorValue is a value for the CSS -webkit-text-stroke-color property.
+type WebkitTextStrokeColorValue interface {
+	cssValue
+	isWebkitTextStrokeColor()
+}
+
+// WebkitTextStrokeColor sets the CSS -webkit-text-stroke-color property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitTextStrokeColor(v WebkitTextStrokeColorValue) *Element {
+	return e.setValue("-webkit-text-stroke-color", v)
+}
+func (expression) isWebkitTextStrokeColor()  {}
+func (wideKeyword) isWebkitTextStrokeColor() {}
+
+// WebkitTextStrokeWidthValue is a value for the CSS -webkit-text-stroke-width property.
+type WebkitTextStrokeWidthValue interface {
+	cssValue
+	isWebkitTextStrokeWidth()
+}
+
+// WebkitTextStrokeWidth sets the CSS -webkit-text-stroke-width property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitTextStrokeWidth(v WebkitTextStrokeWidthValue) *Element {
+	return e.setValue("-webkit-text-stroke-width", v)
+}
+func (expression) isWebkitTextStrokeWidth()  {}
+func (wideKeyword) isWebkitTextStrokeWidth() {}
+
 // WebkitTransformStyleValue is a value for the CSS -webkit-transform-style property.
 type WebkitTransformStyleValue interface {
 	cssValue
@@ -1090,6 +1367,19 @@ func (e *Element) WebkitTransitionTimingFunction(v WebkitTransitionTimingFunctio
 }
 func (expression) isWebkitTransitionTimingFunction()  {}
 func (wideKeyword) isWebkitTransitionTimingFunction() {}
+
+// WebkitUserSelectValue is a value for the CSS -webkit-user-select property.
+type WebkitUserSelectValue interface {
+	cssValue
+	isWebkitUserSelect()
+}
+
+// WebkitUserSelect sets the CSS -webkit-user-select property. Use RawValue for complex CSS syntax.
+func (e *Element) WebkitUserSelect(v WebkitUserSelectValue) *Element {
+	return e.setValue("-webkit-user-select", v)
+}
+func (expression) isWebkitUserSelect()  {}
+func (wideKeyword) isWebkitUserSelect() {}
 
 // AccentColorValue is a value for the CSS accent-color property.
 type AccentColorValue interface {
@@ -1298,6 +1588,17 @@ func (e *Element) AlignmentBaseline(v AlignmentBaselineValue) *Element {
 }
 func (expression) isAlignmentBaseline()  {}
 func (wideKeyword) isAlignmentBaseline() {}
+
+// AllValue is a value for the CSS all property.
+type AllValue interface {
+	cssValue
+	isAll()
+}
+
+// All sets the CSS all property. Use RawValue for complex CSS syntax.
+func (e *Element) All(v AllValue) *Element { return e.setValue("all", v) }
+func (expression) isAll()                  {}
+func (wideKeyword) isAll()                 {}
 
 // AnchorNameValue is a value for the CSS anchor-name property.
 type AnchorNameValue interface {
@@ -1564,6 +1865,19 @@ func (e *Element) AspectRatio(v AspectRatioValue) *Element { return e.setValue("
 func (expression) isAspectRatio()                          {}
 func (wideKeyword) isAspectRatio()                         {}
 
+// BackdropFilterValue is a value for the CSS backdrop-filter property.
+type BackdropFilterValue interface {
+	cssValue
+	isBackdropFilter()
+}
+
+// BackdropFilter sets the CSS backdrop-filter property. Use RawValue for complex CSS syntax.
+func (e *Element) BackdropFilter(v BackdropFilterValue) *Element {
+	return e.setValue("backdrop-filter", v)
+}
+func (expression) isBackdropFilter()  {}
+func (wideKeyword) isBackdropFilter() {}
+
 // BackfaceVisibilityValue is a value for the CSS backface-visibility property.
 type BackfaceVisibilityValue interface {
 	cssValue
@@ -1587,6 +1901,19 @@ type BackgroundValue interface {
 func (e *Element) Background(v BackgroundValue) *Element { return e.setValue("background", v) }
 func (expression) isBackground()                         {}
 func (wideKeyword) isBackground()                        {}
+
+// BackgroundAttachmentValue is a value for the CSS background-attachment property.
+type BackgroundAttachmentValue interface {
+	cssValue
+	isBackgroundAttachment()
+}
+
+// BackgroundAttachment sets the CSS background-attachment property. Use RawValue for complex CSS syntax.
+func (e *Element) BackgroundAttachment(v BackgroundAttachmentValue) *Element {
+	return e.setValue("background-attachment", v)
+}
+func (expression) isBackgroundAttachment()  {}
+func (wideKeyword) isBackgroundAttachment() {}
 
 // BackgroundBlendModeValue is a value for the CSS background-blend-mode property.
 type BackgroundBlendModeValue interface {
@@ -1797,6 +2124,58 @@ func (e *Element) BackgroundSize(v BackgroundSizeValue) *Element {
 func (expression) isBackgroundSize()  {}
 func (wideKeyword) isBackgroundSize() {}
 
+// BackgroundTbdValue is a value for the CSS background-tbd property.
+type BackgroundTbdValue interface {
+	cssValue
+	isBackgroundTbd()
+}
+
+// BackgroundTbd sets the CSS background-tbd property. Use RawValue for complex CSS syntax.
+func (e *Element) BackgroundTbd(v BackgroundTbdValue) *Element {
+	return e.setValue("background-tbd", v)
+}
+func (expression) isBackgroundTbd()  {}
+func (wideKeyword) isBackgroundTbd() {}
+
+// BaselineShiftValue is a value for the CSS baseline-shift property.
+type BaselineShiftValue interface {
+	cssValue
+	isBaselineShift()
+}
+
+// BaselineShift sets the CSS baseline-shift property. Use RawValue for complex CSS syntax.
+func (e *Element) BaselineShift(v BaselineShiftValue) *Element {
+	return e.setValue("baseline-shift", v)
+}
+func (expression) isBaselineShift()  {}
+func (wideKeyword) isBaselineShift() {}
+
+// BaselineSourceValue is a value for the CSS baseline-source property.
+type BaselineSourceValue interface {
+	cssValue
+	isBaselineSource()
+}
+
+// BaselineSource sets the CSS baseline-source property. Use RawValue for complex CSS syntax.
+func (e *Element) BaselineSource(v BaselineSourceValue) *Element {
+	return e.setValue("baseline-source", v)
+}
+func (expression) isBaselineSource()  {}
+func (wideKeyword) isBaselineSource() {}
+
+// BlockEllipsisValue is a value for the CSS block-ellipsis property.
+type BlockEllipsisValue interface {
+	cssValue
+	isBlockEllipsis()
+}
+
+// BlockEllipsis sets the CSS block-ellipsis property. Use RawValue for complex CSS syntax.
+func (e *Element) BlockEllipsis(v BlockEllipsisValue) *Element {
+	return e.setValue("block-ellipsis", v)
+}
+func (expression) isBlockEllipsis()  {}
+func (wideKeyword) isBlockEllipsis() {}
+
 // BlockSizeValue is a value for the CSS block-size property.
 type BlockSizeValue interface {
 	cssValue
@@ -1809,6 +2188,45 @@ func (expression) isBlockSize()                        {}
 func (wideKeyword) isBlockSize()                       {}
 func (Length) isBlockSize()                            {}
 func (Percentage) isBlockSize()                        {}
+
+// BookmarkLabelValue is a value for the CSS bookmark-label property.
+type BookmarkLabelValue interface {
+	cssValue
+	isBookmarkLabel()
+}
+
+// BookmarkLabel sets the CSS bookmark-label property. Use RawValue for complex CSS syntax.
+func (e *Element) BookmarkLabel(v BookmarkLabelValue) *Element {
+	return e.setValue("bookmark-label", v)
+}
+func (expression) isBookmarkLabel()  {}
+func (wideKeyword) isBookmarkLabel() {}
+
+// BookmarkLevelValue is a value for the CSS bookmark-level property.
+type BookmarkLevelValue interface {
+	cssValue
+	isBookmarkLevel()
+}
+
+// BookmarkLevel sets the CSS bookmark-level property. Use RawValue for complex CSS syntax.
+func (e *Element) BookmarkLevel(v BookmarkLevelValue) *Element {
+	return e.setValue("bookmark-level", v)
+}
+func (expression) isBookmarkLevel()  {}
+func (wideKeyword) isBookmarkLevel() {}
+
+// BookmarkStateValue is a value for the CSS bookmark-state property.
+type BookmarkStateValue interface {
+	cssValue
+	isBookmarkState()
+}
+
+// BookmarkState sets the CSS bookmark-state property. Use RawValue for complex CSS syntax.
+func (e *Element) BookmarkState(v BookmarkStateValue) *Element {
+	return e.setValue("bookmark-state", v)
+}
+func (expression) isBookmarkState()  {}
+func (wideKeyword) isBookmarkState() {}
 
 // BorderValue is a value for the CSS border property.
 type BorderValue interface {
@@ -1832,6 +2250,19 @@ type BorderBlockValue interface {
 func (e *Element) BorderBlock(v BorderBlockValue) *Element { return e.setValue("border-block", v) }
 func (expression) isBorderBlock()                          {}
 func (wideKeyword) isBorderBlock()                         {}
+
+// BorderBlockClipValue is a value for the CSS border-block-clip property.
+type BorderBlockClipValue interface {
+	cssValue
+	isBorderBlockClip()
+}
+
+// BorderBlockClip sets the CSS border-block-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderBlockClip(v BorderBlockClipValue) *Element {
+	return e.setValue("border-block-clip", v)
+}
+func (expression) isBorderBlockClip()  {}
+func (wideKeyword) isBorderBlockClip() {}
 
 // BorderBlockColorValue is a value for the CSS border-block-color property.
 type BorderBlockColorValue interface {
@@ -1858,6 +2289,19 @@ func (e *Element) BorderBlockEnd(v BorderBlockEndValue) *Element {
 }
 func (expression) isBorderBlockEnd()  {}
 func (wideKeyword) isBorderBlockEnd() {}
+
+// BorderBlockEndClipValue is a value for the CSS border-block-end-clip property.
+type BorderBlockEndClipValue interface {
+	cssValue
+	isBorderBlockEndClip()
+}
+
+// BorderBlockEndClip sets the CSS border-block-end-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderBlockEndClip(v BorderBlockEndClipValue) *Element {
+	return e.setValue("border-block-end-clip", v)
+}
+func (expression) isBorderBlockEndClip()  {}
+func (wideKeyword) isBorderBlockEndClip() {}
 
 // BorderBlockEndColorValue is a value for the CSS border-block-end-color property.
 type BorderBlockEndColorValue interface {
@@ -1923,6 +2367,19 @@ func (e *Element) BorderBlockStart(v BorderBlockStartValue) *Element {
 }
 func (expression) isBorderBlockStart()  {}
 func (wideKeyword) isBorderBlockStart() {}
+
+// BorderBlockStartClipValue is a value for the CSS border-block-start-clip property.
+type BorderBlockStartClipValue interface {
+	cssValue
+	isBorderBlockStartClip()
+}
+
+// BorderBlockStartClip sets the CSS border-block-start-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderBlockStartClip(v BorderBlockStartClipValue) *Element {
+	return e.setValue("border-block-start-clip", v)
+}
+func (expression) isBorderBlockStartClip()  {}
+func (wideKeyword) isBorderBlockStartClip() {}
 
 // BorderBlockStartColorValue is a value for the CSS border-block-start-color property.
 type BorderBlockStartColorValue interface {
@@ -2014,6 +2471,19 @@ func (expression) isBorderBottom()                           {}
 func (wideKeyword) isBorderBottom()                          {}
 func (BorderStroke) isBorderBottom()                         {}
 
+// BorderBottomClipValue is a value for the CSS border-bottom-clip property.
+type BorderBottomClipValue interface {
+	cssValue
+	isBorderBottomClip()
+}
+
+// BorderBottomClip sets the CSS border-bottom-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderBottomClip(v BorderBottomClipValue) *Element {
+	return e.setValue("border-bottom-clip", v)
+}
+func (expression) isBorderBottomClip()  {}
+func (wideKeyword) isBorderBottomClip() {}
+
 // BorderBottomColorValue is a value for the CSS border-bottom-color property.
 type BorderBottomColorValue interface {
 	cssValue
@@ -2097,6 +2567,30 @@ func (e *Element) BorderBottomWidth(v BorderBottomWidthValue) *Element {
 func (expression) isBorderBottomWidth()  {}
 func (wideKeyword) isBorderBottomWidth() {}
 func (Length) isBorderBottomWidth()      {}
+
+// BorderBoundaryValue is a value for the CSS border-boundary property.
+type BorderBoundaryValue interface {
+	cssValue
+	isBorderBoundary()
+}
+
+// BorderBoundary sets the CSS border-boundary property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderBoundary(v BorderBoundaryValue) *Element {
+	return e.setValue("border-boundary", v)
+}
+func (expression) isBorderBoundary()  {}
+func (wideKeyword) isBorderBoundary() {}
+
+// BorderClipValue is a value for the CSS border-clip property.
+type BorderClipValue interface {
+	cssValue
+	isBorderClip()
+}
+
+// BorderClip sets the CSS border-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderClip(v BorderClipValue) *Element { return e.setValue("border-clip", v) }
+func (expression) isBorderClip()                         {}
+func (wideKeyword) isBorderClip()                        {}
 
 // BorderCollapseValue is a value for the CSS border-collapse property.
 type BorderCollapseValue interface {
@@ -2257,6 +2751,19 @@ func (e *Element) BorderInline(v BorderInlineValue) *Element { return e.setValue
 func (expression) isBorderInline()                           {}
 func (wideKeyword) isBorderInline()                          {}
 
+// BorderInlineClipValue is a value for the CSS border-inline-clip property.
+type BorderInlineClipValue interface {
+	cssValue
+	isBorderInlineClip()
+}
+
+// BorderInlineClip sets the CSS border-inline-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderInlineClip(v BorderInlineClipValue) *Element {
+	return e.setValue("border-inline-clip", v)
+}
+func (expression) isBorderInlineClip()  {}
+func (wideKeyword) isBorderInlineClip() {}
+
 // BorderInlineColorValue is a value for the CSS border-inline-color property.
 type BorderInlineColorValue interface {
 	cssValue
@@ -2282,6 +2789,19 @@ func (e *Element) BorderInlineEnd(v BorderInlineEndValue) *Element {
 }
 func (expression) isBorderInlineEnd()  {}
 func (wideKeyword) isBorderInlineEnd() {}
+
+// BorderInlineEndClipValue is a value for the CSS border-inline-end-clip property.
+type BorderInlineEndClipValue interface {
+	cssValue
+	isBorderInlineEndClip()
+}
+
+// BorderInlineEndClip sets the CSS border-inline-end-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderInlineEndClip(v BorderInlineEndClipValue) *Element {
+	return e.setValue("border-inline-end-clip", v)
+}
+func (expression) isBorderInlineEndClip()  {}
+func (wideKeyword) isBorderInlineEndClip() {}
 
 // BorderInlineEndColorValue is a value for the CSS border-inline-end-color property.
 type BorderInlineEndColorValue interface {
@@ -2347,6 +2867,19 @@ func (e *Element) BorderInlineStart(v BorderInlineStartValue) *Element {
 }
 func (expression) isBorderInlineStart()  {}
 func (wideKeyword) isBorderInlineStart() {}
+
+// BorderInlineStartClipValue is a value for the CSS border-inline-start-clip property.
+type BorderInlineStartClipValue interface {
+	cssValue
+	isBorderInlineStartClip()
+}
+
+// BorderInlineStartClip sets the CSS border-inline-start-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderInlineStartClip(v BorderInlineStartClipValue) *Element {
+	return e.setValue("border-inline-start-clip", v)
+}
+func (expression) isBorderInlineStartClip()  {}
+func (wideKeyword) isBorderInlineStartClip() {}
 
 // BorderInlineStartColorValue is a value for the CSS border-inline-start-color property.
 type BorderInlineStartColorValue interface {
@@ -2438,6 +2971,19 @@ func (expression) isBorderLeft()                         {}
 func (wideKeyword) isBorderLeft()                        {}
 func (BorderStroke) isBorderLeft()                       {}
 
+// BorderLeftClipValue is a value for the CSS border-left-clip property.
+type BorderLeftClipValue interface {
+	cssValue
+	isBorderLeftClip()
+}
+
+// BorderLeftClip sets the CSS border-left-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderLeftClip(v BorderLeftClipValue) *Element {
+	return e.setValue("border-left-clip", v)
+}
+func (expression) isBorderLeftClip()  {}
+func (wideKeyword) isBorderLeftClip() {}
+
 // BorderLeftColorValue is a value for the CSS border-left-color property.
 type BorderLeftColorValue interface {
 	cssValue
@@ -2492,6 +3038,17 @@ func (expression) isBorderLeftWidth()  {}
 func (wideKeyword) isBorderLeftWidth() {}
 func (Length) isBorderLeftWidth()      {}
 
+// BorderLimitValue is a value for the CSS border-limit property.
+type BorderLimitValue interface {
+	cssValue
+	isBorderLimit()
+}
+
+// BorderLimit sets the CSS border-limit property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderLimit(v BorderLimitValue) *Element { return e.setValue("border-limit", v) }
+func (expression) isBorderLimit()                          {}
+func (wideKeyword) isBorderLimit()                         {}
+
 // BorderRadiusValue is a value for the CSS border-radius property.
 type BorderRadiusValue interface {
 	cssValue
@@ -2517,6 +3074,19 @@ func (e *Element) BorderRight(v BorderRightValue) *Element { return e.setValue("
 func (expression) isBorderRight()                          {}
 func (wideKeyword) isBorderRight()                         {}
 func (BorderStroke) isBorderRight()                        {}
+
+// BorderRightClipValue is a value for the CSS border-right-clip property.
+type BorderRightClipValue interface {
+	cssValue
+	isBorderRightClip()
+}
+
+// BorderRightClip sets the CSS border-right-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderRightClip(v BorderRightClipValue) *Element {
+	return e.setValue("border-right-clip", v)
+}
+func (expression) isBorderRightClip()  {}
+func (wideKeyword) isBorderRightClip() {}
 
 // BorderRightColorValue is a value for the CSS border-right-color property.
 type BorderRightColorValue interface {
@@ -2571,6 +3141,17 @@ func (e *Element) BorderRightWidth(v BorderRightWidthValue) *Element {
 func (expression) isBorderRightWidth()  {}
 func (wideKeyword) isBorderRightWidth() {}
 func (Length) isBorderRightWidth()      {}
+
+// BorderShapeValue is a value for the CSS border-shape property.
+type BorderShapeValue interface {
+	cssValue
+	isBorderShape()
+}
+
+// BorderShape sets the CSS border-shape property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderShape(v BorderShapeValue) *Element { return e.setValue("border-shape", v) }
+func (expression) isBorderShape()                          {}
+func (wideKeyword) isBorderShape()                         {}
 
 // BorderSpacingValue is a value for the CSS border-spacing property.
 type BorderSpacingValue interface {
@@ -2633,6 +3214,19 @@ func (e *Element) BorderTop(v BorderTopValue) *Element { return e.setValue("bord
 func (expression) isBorderTop()                        {}
 func (wideKeyword) isBorderTop()                       {}
 func (BorderStroke) isBorderTop()                      {}
+
+// BorderTopClipValue is a value for the CSS border-top-clip property.
+type BorderTopClipValue interface {
+	cssValue
+	isBorderTopClip()
+}
+
+// BorderTopClip sets the CSS border-top-clip property. Use RawValue for complex CSS syntax.
+func (e *Element) BorderTopClip(v BorderTopClipValue) *Element {
+	return e.setValue("border-top-clip", v)
+}
+func (expression) isBorderTopClip()  {}
+func (wideKeyword) isBorderTopClip() {}
 
 // BorderTopColorValue is a value for the CSS border-top-color property.
 type BorderTopColorValue interface {
@@ -2742,6 +3336,19 @@ func (expression) isBottom()                     {}
 func (wideKeyword) isBottom()                    {}
 func (Length) isBottom()                         {}
 func (Percentage) isBottom()                     {}
+
+// BoxDecorationBreakValue is a value for the CSS box-decoration-break property.
+type BoxDecorationBreakValue interface {
+	cssValue
+	isBoxDecorationBreak()
+}
+
+// BoxDecorationBreak sets the CSS box-decoration-break property. Use RawValue for complex CSS syntax.
+func (e *Element) BoxDecorationBreak(v BoxDecorationBreakValue) *Element {
+	return e.setValue("box-decoration-break", v)
+}
+func (expression) isBoxDecorationBreak()  {}
+func (wideKeyword) isBoxDecorationBreak() {}
 
 // BoxShadowValue is a value for the CSS box-shadow property.
 type BoxShadowValue interface {
@@ -2886,6 +3493,17 @@ func (e *Element) BreakBefore(v BreakBeforeValue) *Element { return e.setValue("
 func (expression) isBreakBefore()                          {}
 func (wideKeyword) isBreakBefore()                         {}
 
+// BreakInsideValue is a value for the CSS break-inside property.
+type BreakInsideValue interface {
+	cssValue
+	isBreakInside()
+}
+
+// BreakInside sets the CSS break-inside property. Use RawValue for complex CSS syntax.
+func (e *Element) BreakInside(v BreakInsideValue) *Element { return e.setValue("break-inside", v) }
+func (expression) isBreakInside()                          {}
+func (wideKeyword) isBreakInside()                         {}
+
 // CaptionSideValue is a value for the CSS caption-side property.
 type CaptionSideValue interface {
 	cssValue
@@ -2896,6 +3514,41 @@ type CaptionSideValue interface {
 func (e *Element) CaptionSide(v CaptionSideValue) *Element { return e.setValue("caption-side", v) }
 func (expression) isCaptionSide()                          {}
 func (wideKeyword) isCaptionSide()                         {}
+
+// CaretValue is a value for the CSS caret property.
+type CaretValue interface {
+	cssValue
+	isCaret()
+}
+
+// Caret sets the CSS caret property. Use RawValue for complex CSS syntax.
+func (e *Element) Caret(v CaretValue) *Element { return e.setValue("caret", v) }
+func (expression) isCaret()                    {}
+func (wideKeyword) isCaret()                   {}
+
+// CaretAnimationValue is a value for the CSS caret-animation property.
+type CaretAnimationValue interface {
+	cssValue
+	isCaretAnimation()
+}
+
+// CaretAnimation sets the CSS caret-animation property. Use RawValue for complex CSS syntax.
+func (e *Element) CaretAnimation(v CaretAnimationValue) *Element {
+	return e.setValue("caret-animation", v)
+}
+func (expression) isCaretAnimation()  {}
+func (wideKeyword) isCaretAnimation() {}
+
+// CaretShapeValue is a value for the CSS caret-shape property.
+type CaretShapeValue interface {
+	cssValue
+	isCaretShape()
+}
+
+// CaretShape sets the CSS caret-shape property. Use RawValue for complex CSS syntax.
+func (e *Element) CaretShape(v CaretShapeValue) *Element { return e.setValue("caret-shape", v) }
+func (expression) isCaretShape()                         {}
+func (wideKeyword) isCaretShape()                        {}
 
 // ClearValue is a value for the CSS clear property.
 type ClearValue interface {
@@ -3215,6 +3868,19 @@ func (e *Element) ColumnRuleStyle(v ColumnRuleStyleValue) *Element {
 func (expression) isColumnRuleStyle()  {}
 func (wideKeyword) isColumnRuleStyle() {}
 
+// ColumnRuleVisibilityItemsValue is a value for the CSS column-rule-visibility-items property.
+type ColumnRuleVisibilityItemsValue interface {
+	cssValue
+	isColumnRuleVisibilityItems()
+}
+
+// ColumnRuleVisibilityItems sets the CSS column-rule-visibility-items property. Use RawValue for complex CSS syntax.
+func (e *Element) ColumnRuleVisibilityItems(v ColumnRuleVisibilityItemsValue) *Element {
+	return e.setValue("column-rule-visibility-items", v)
+}
+func (expression) isColumnRuleVisibilityItems()  {}
+func (wideKeyword) isColumnRuleVisibilityItems() {}
+
 // ColumnRuleWidthValue is a value for the CSS column-rule-width property.
 type ColumnRuleWidthValue interface {
 	cssValue
@@ -3409,6 +4075,28 @@ func (e *Element) ContentVisibility(v ContentVisibilityValue) *Element {
 }
 func (expression) isContentVisibility()  {}
 func (wideKeyword) isContentVisibility() {}
+
+// ContinueValue is a value for the CSS continue property.
+type ContinueValue interface {
+	cssValue
+	isContinue()
+}
+
+// Continue sets the CSS continue property. Use RawValue for complex CSS syntax.
+func (e *Element) Continue(v ContinueValue) *Element { return e.setValue("continue", v) }
+func (expression) isContinue()                       {}
+func (wideKeyword) isContinue()                      {}
+
+// CopyIntoValue is a value for the CSS copy-into property.
+type CopyIntoValue interface {
+	cssValue
+	isCopyInto()
+}
+
+// CopyInto sets the CSS copy-into property. Use RawValue for complex CSS syntax.
+func (e *Element) CopyInto(v CopyIntoValue) *Element { return e.setValue("copy-into", v) }
+func (expression) isCopyInto()                       {}
+func (wideKeyword) isCopyInto()                      {}
 
 // CornerValue is a value for the CSS corner property.
 type CornerValue interface {
@@ -3873,6 +4561,39 @@ func (e *Element) CounterSet(v CounterSetValue) *Element { return e.setValue("co
 func (expression) isCounterSet()                         {}
 func (wideKeyword) isCounterSet()                        {}
 
+// CxValue is a value for the CSS cx property.
+type CxValue interface {
+	cssValue
+	isCx()
+}
+
+// Cx sets the CSS cx property. Use RawValue for complex CSS syntax.
+func (e *Element) Cx(v CxValue) *Element { return e.setValue("cx", v) }
+func (expression) isCx()                 {}
+func (wideKeyword) isCx()                {}
+
+// CyValue is a value for the CSS cy property.
+type CyValue interface {
+	cssValue
+	isCy()
+}
+
+// Cy sets the CSS cy property. Use RawValue for complex CSS syntax.
+func (e *Element) Cy(v CyValue) *Element { return e.setValue("cy", v) }
+func (expression) isCy()                 {}
+func (wideKeyword) isCy()                {}
+
+// DValue is a value for the CSS d property.
+type DValue interface {
+	cssValue
+	isD()
+}
+
+// D sets the CSS d property. Use RawValue for complex CSS syntax.
+func (e *Element) D(v DValue) *Element { return e.setValue("d", v) }
+func (expression) isD()                {}
+func (wideKeyword) isD()               {}
+
 // DirectionValue is a value for the CSS direction property.
 type DirectionValue interface {
 	cssValue
@@ -3992,6 +4713,54 @@ type EmptyCellsValue interface {
 func (e *Element) EmptyCells(v EmptyCellsValue) *Element { return e.setValue("empty-cells", v) }
 func (expression) isEmptyCells()                         {}
 func (wideKeyword) isEmptyCells()                        {}
+
+// EventTriggerValue is a value for the CSS event-trigger property.
+type EventTriggerValue interface {
+	cssValue
+	isEventTrigger()
+}
+
+// EventTrigger sets the CSS event-trigger property. Use RawValue for complex CSS syntax.
+func (e *Element) EventTrigger(v EventTriggerValue) *Element { return e.setValue("event-trigger", v) }
+func (expression) isEventTrigger()                           {}
+func (wideKeyword) isEventTrigger()                          {}
+
+// EventTriggerNameValue is a value for the CSS event-trigger-name property.
+type EventTriggerNameValue interface {
+	cssValue
+	isEventTriggerName()
+}
+
+// EventTriggerName sets the CSS event-trigger-name property. Use RawValue for complex CSS syntax.
+func (e *Element) EventTriggerName(v EventTriggerNameValue) *Element {
+	return e.setValue("event-trigger-name", v)
+}
+func (expression) isEventTriggerName()  {}
+func (wideKeyword) isEventTriggerName() {}
+
+// EventTriggerSourceValue is a value for the CSS event-trigger-source property.
+type EventTriggerSourceValue interface {
+	cssValue
+	isEventTriggerSource()
+}
+
+// EventTriggerSource sets the CSS event-trigger-source property. Use RawValue for complex CSS syntax.
+func (e *Element) EventTriggerSource(v EventTriggerSourceValue) *Element {
+	return e.setValue("event-trigger-source", v)
+}
+func (expression) isEventTriggerSource()  {}
+func (wideKeyword) isEventTriggerSource() {}
+
+// FieldSizingValue is a value for the CSS field-sizing property.
+type FieldSizingValue interface {
+	cssValue
+	isFieldSizing()
+}
+
+// FieldSizing sets the CSS field-sizing property. Use RawValue for complex CSS syntax.
+func (e *Element) FieldSizing(v FieldSizingValue) *Element { return e.setValue("field-sizing", v) }
+func (expression) isFieldSizing()                          {}
+func (wideKeyword) isFieldSizing()                         {}
 
 // FillValue is a value for the CSS fill property.
 type FillValue interface {
@@ -4188,6 +4957,17 @@ func (e *Element) Float(v FloatValue) *Element { return e.setValue("float", v) }
 func (expression) isFloat()                    {}
 func (wideKeyword) isFloat()                   {}
 
+// FloatDeferValue is a value for the CSS float-defer property.
+type FloatDeferValue interface {
+	cssValue
+	isFloatDefer()
+}
+
+// FloatDefer sets the CSS float-defer property. Use RawValue for complex CSS syntax.
+func (e *Element) FloatDefer(v FloatDeferValue) *Element { return e.setValue("float-defer", v) }
+func (expression) isFloatDefer()                         {}
+func (wideKeyword) isFloatDefer()                        {}
+
 // FloatOffsetValue is a value for the CSS float-offset property.
 type FloatOffsetValue interface {
 	cssValue
@@ -4211,6 +4991,28 @@ func (e *Element) FloatReference(v FloatReferenceValue) *Element {
 }
 func (expression) isFloatReference()  {}
 func (wideKeyword) isFloatReference() {}
+
+// FloodColorValue is a value for the CSS flood-color property.
+type FloodColorValue interface {
+	cssValue
+	isFloodColor()
+}
+
+// FloodColor sets the CSS flood-color property. Use RawValue for complex CSS syntax.
+func (e *Element) FloodColor(v FloodColorValue) *Element { return e.setValue("flood-color", v) }
+func (expression) isFloodColor()                         {}
+func (wideKeyword) isFloodColor()                        {}
+
+// FloodOpacityValue is a value for the CSS flood-opacity property.
+type FloodOpacityValue interface {
+	cssValue
+	isFloodOpacity()
+}
+
+// FloodOpacity sets the CSS flood-opacity property. Use RawValue for complex CSS syntax.
+func (e *Element) FloodOpacity(v FloodOpacityValue) *Element { return e.setValue("flood-opacity", v) }
+func (expression) isFloodOpacity()                           {}
+func (wideKeyword) isFloodOpacity()                          {}
 
 // FlowFromValue is a value for the CSS flow-from property.
 type FlowFromValue interface {
@@ -4649,6 +5451,32 @@ func (e *Element) FontWidth(v FontWidthValue) *Element { return e.setValue("font
 func (expression) isFontWidth()                        {}
 func (wideKeyword) isFontWidth()                       {}
 
+// FootnoteDisplayValue is a value for the CSS footnote-display property.
+type FootnoteDisplayValue interface {
+	cssValue
+	isFootnoteDisplay()
+}
+
+// FootnoteDisplay sets the CSS footnote-display property. Use RawValue for complex CSS syntax.
+func (e *Element) FootnoteDisplay(v FootnoteDisplayValue) *Element {
+	return e.setValue("footnote-display", v)
+}
+func (expression) isFootnoteDisplay()  {}
+func (wideKeyword) isFootnoteDisplay() {}
+
+// FootnotePolicyValue is a value for the CSS footnote-policy property.
+type FootnotePolicyValue interface {
+	cssValue
+	isFootnotePolicy()
+}
+
+// FootnotePolicy sets the CSS footnote-policy property. Use RawValue for complex CSS syntax.
+func (e *Element) FootnotePolicy(v FootnotePolicyValue) *Element {
+	return e.setValue("footnote-policy", v)
+}
+func (expression) isFootnotePolicy()  {}
+func (wideKeyword) isFootnotePolicy() {}
+
 // ForcedColorAdjustValue is a value for the CSS forced-color-adjust property.
 type ForcedColorAdjustValue interface {
 	cssValue
@@ -4675,6 +5503,19 @@ func (wideKeyword) isGap()                 {}
 func (Length) isGap()                      {}
 func (Percentage) isGap()                  {}
 func (Spacing) isGap()                     {}
+
+// GlyphOrientationVerticalValue is a value for the CSS glyph-orientation-vertical property.
+type GlyphOrientationVerticalValue interface {
+	cssValue
+	isGlyphOrientationVertical()
+}
+
+// GlyphOrientationVertical sets the CSS glyph-orientation-vertical property. Use RawValue for complex CSS syntax.
+func (e *Element) GlyphOrientationVertical(v GlyphOrientationVerticalValue) *Element {
+	return e.setValue("glyph-orientation-vertical", v)
+}
+func (expression) isGlyphOrientationVertical()  {}
+func (wideKeyword) isGlyphOrientationVertical() {}
 
 // GridValue is a value for the CSS grid property.
 type GridValue interface {
@@ -4984,6 +5825,19 @@ func (e *Element) Hyphens(v HyphensValue) *Element { return e.setValue("hyphens"
 func (expression) isHyphens()                      {}
 func (wideKeyword) isHyphens()                     {}
 
+// ImageAnimationValue is a value for the CSS image-animation property.
+type ImageAnimationValue interface {
+	cssValue
+	isImageAnimation()
+}
+
+// ImageAnimation sets the CSS image-animation property. Use RawValue for complex CSS syntax.
+func (e *Element) ImageAnimation(v ImageAnimationValue) *Element {
+	return e.setValue("image-animation", v)
+}
+func (expression) isImageAnimation()  {}
+func (wideKeyword) isImageAnimation() {}
+
 // ImageOrientationValue is a value for the CSS image-orientation property.
 type ImageOrientationValue interface {
 	cssValue
@@ -4996,6 +5850,19 @@ func (e *Element) ImageOrientation(v ImageOrientationValue) *Element {
 }
 func (expression) isImageOrientation()  {}
 func (wideKeyword) isImageOrientation() {}
+
+// ImageRenderingValue is a value for the CSS image-rendering property.
+type ImageRenderingValue interface {
+	cssValue
+	isImageRendering()
+}
+
+// ImageRendering sets the CSS image-rendering property. Use RawValue for complex CSS syntax.
+func (e *Element) ImageRendering(v ImageRenderingValue) *Element {
+	return e.setValue("image-rendering", v)
+}
+func (expression) isImageRendering()  {}
+func (wideKeyword) isImageRendering() {}
 
 // ImageResolutionValue is a value for the CSS image-resolution property.
 type ImageResolutionValue interface {
@@ -5061,6 +5928,30 @@ func (expression) isInlineSize()                         {}
 func (wideKeyword) isInlineSize()                        {}
 func (Length) isInlineSize()                             {}
 func (Percentage) isInlineSize()                         {}
+
+// InlineSizingValue is a value for the CSS inline-sizing property.
+type InlineSizingValue interface {
+	cssValue
+	isInlineSizing()
+}
+
+// InlineSizing sets the CSS inline-sizing property. Use RawValue for complex CSS syntax.
+func (e *Element) InlineSizing(v InlineSizingValue) *Element { return e.setValue("inline-sizing", v) }
+func (expression) isInlineSizing()                           {}
+func (wideKeyword) isInlineSizing()                          {}
+
+// InputSecurityValue is a value for the CSS input-security property.
+type InputSecurityValue interface {
+	cssValue
+	isInputSecurity()
+}
+
+// InputSecurity sets the CSS input-security property. Use RawValue for complex CSS syntax.
+func (e *Element) InputSecurity(v InputSecurityValue) *Element {
+	return e.setValue("input-security", v)
+}
+func (expression) isInputSecurity()  {}
+func (wideKeyword) isInputSecurity() {}
 
 // InsetValue is a value for the CSS inset property.
 type InsetValue interface {
@@ -5160,6 +6051,56 @@ func (expression) isInsetInlineStart()  {}
 func (wideKeyword) isInsetInlineStart() {}
 func (Length) isInsetInlineStart()      {}
 func (Percentage) isInsetInlineStart()  {}
+
+// InteractivityValue is a value for the CSS interactivity property.
+type InteractivityValue interface {
+	cssValue
+	isInteractivity()
+}
+
+// Interactivity sets the CSS interactivity property. Use RawValue for complex CSS syntax.
+func (e *Element) Interactivity(v InteractivityValue) *Element { return e.setValue("interactivity", v) }
+func (expression) isInteractivity()                            {}
+func (wideKeyword) isInteractivity()                           {}
+
+// InterestDelayValue is a value for the CSS interest-delay property.
+type InterestDelayValue interface {
+	cssValue
+	isInterestDelay()
+}
+
+// InterestDelay sets the CSS interest-delay property. Use RawValue for complex CSS syntax.
+func (e *Element) InterestDelay(v InterestDelayValue) *Element {
+	return e.setValue("interest-delay", v)
+}
+func (expression) isInterestDelay()  {}
+func (wideKeyword) isInterestDelay() {}
+
+// InterestDelayEndValue is a value for the CSS interest-delay-end property.
+type InterestDelayEndValue interface {
+	cssValue
+	isInterestDelayEnd()
+}
+
+// InterestDelayEnd sets the CSS interest-delay-end property. Use RawValue for complex CSS syntax.
+func (e *Element) InterestDelayEnd(v InterestDelayEndValue) *Element {
+	return e.setValue("interest-delay-end", v)
+}
+func (expression) isInterestDelayEnd()  {}
+func (wideKeyword) isInterestDelayEnd() {}
+
+// InterestDelayStartValue is a value for the CSS interest-delay-start property.
+type InterestDelayStartValue interface {
+	cssValue
+	isInterestDelayStart()
+}
+
+// InterestDelayStart sets the CSS interest-delay-start property. Use RawValue for complex CSS syntax.
+func (e *Element) InterestDelayStart(v InterestDelayStartValue) *Element {
+	return e.setValue("interest-delay-start", v)
+}
+func (expression) isInterestDelayStart()  {}
+func (wideKeyword) isInterestDelayStart() {}
 
 // IsolationValue is a value for the CSS isolation property.
 type IsolationValue interface {
@@ -5287,6 +6228,19 @@ func (expression) isLetterSpacing()  {}
 func (wideKeyword) isLetterSpacing() {}
 func (Length) isLetterSpacing()      {}
 
+// LightingColorValue is a value for the CSS lighting-color property.
+type LightingColorValue interface {
+	cssValue
+	isLightingColor()
+}
+
+// LightingColor sets the CSS lighting-color property. Use RawValue for complex CSS syntax.
+func (e *Element) LightingColor(v LightingColorValue) *Element {
+	return e.setValue("lighting-color", v)
+}
+func (expression) isLightingColor()  {}
+func (wideKeyword) isLightingColor() {}
+
 // LineBreakValue is a value for the CSS line-break property.
 type LineBreakValue interface {
 	cssValue
@@ -5309,6 +6263,17 @@ func (e *Element) LineClamp(v LineClampValue) *Element { return e.setValue("line
 func (expression) isLineClamp()                        {}
 func (wideKeyword) isLineClamp()                       {}
 
+// LineFitEdgeValue is a value for the CSS line-fit-edge property.
+type LineFitEdgeValue interface {
+	cssValue
+	isLineFitEdge()
+}
+
+// LineFitEdge sets the CSS line-fit-edge property. Use RawValue for complex CSS syntax.
+func (e *Element) LineFitEdge(v LineFitEdgeValue) *Element { return e.setValue("line-fit-edge", v) }
+func (expression) isLineFitEdge()                          {}
+func (wideKeyword) isLineFitEdge()                         {}
+
 // LineHeightValue is a value for the CSS line-height property.
 type LineHeightValue interface {
 	cssValue
@@ -5322,6 +6287,30 @@ func (wideKeyword) isLineHeight()                        {}
 func (Length) isLineHeight()                             {}
 func (Numeric) isLineHeight()                            {}
 func (Percentage) isLineHeight()                         {}
+
+// LinePaddingValue is a value for the CSS line-padding property.
+type LinePaddingValue interface {
+	cssValue
+	isLinePadding()
+}
+
+// LinePadding sets the CSS line-padding property. Use RawValue for complex CSS syntax.
+func (e *Element) LinePadding(v LinePaddingValue) *Element { return e.setValue("line-padding", v) }
+func (expression) isLinePadding()                          {}
+func (wideKeyword) isLinePadding()                         {}
+
+// LinkParametersValue is a value for the CSS link-parameters property.
+type LinkParametersValue interface {
+	cssValue
+	isLinkParameters()
+}
+
+// LinkParameters sets the CSS link-parameters property. Use RawValue for complex CSS syntax.
+func (e *Element) LinkParameters(v LinkParametersValue) *Element {
+	return e.setValue("link-parameters", v)
+}
+func (expression) isLinkParameters()  {}
+func (wideKeyword) isLinkParameters() {}
 
 // ListStyleValue is a value for the CSS list-style property.
 type ListStyleValue interface {
@@ -5444,6 +6433,17 @@ func (wideKeyword) isMarginBottom()                          {}
 func (Length) isMarginBottom()                               {}
 func (Percentage) isMarginBottom()                           {}
 
+// MarginBreakValue is a value for the CSS margin-break property.
+type MarginBreakValue interface {
+	cssValue
+	isMarginBreak()
+}
+
+// MarginBreak sets the CSS margin-break property. Use RawValue for complex CSS syntax.
+func (e *Element) MarginBreak(v MarginBreakValue) *Element { return e.setValue("margin-break", v) }
+func (expression) isMarginBreak()                          {}
+func (wideKeyword) isMarginBreak()                         {}
+
 // MarginInlineValue is a value for the CSS margin-inline property.
 type MarginInlineValue interface {
 	cssValue
@@ -5537,6 +6537,61 @@ type MarginTrimValue interface {
 func (e *Element) MarginTrim(v MarginTrimValue) *Element { return e.setValue("margin-trim", v) }
 func (expression) isMarginTrim()                         {}
 func (wideKeyword) isMarginTrim()                        {}
+
+// MarkerValue is a value for the CSS marker property.
+type MarkerValue interface {
+	cssValue
+	isMarker()
+}
+
+// Marker sets the CSS marker property. Use RawValue for complex CSS syntax.
+func (e *Element) Marker(v MarkerValue) *Element { return e.setValue("marker", v) }
+func (expression) isMarker()                     {}
+func (wideKeyword) isMarker()                    {}
+
+// MarkerEndValue is a value for the CSS marker-end property.
+type MarkerEndValue interface {
+	cssValue
+	isMarkerEnd()
+}
+
+// MarkerEnd sets the CSS marker-end property. Use RawValue for complex CSS syntax.
+func (e *Element) MarkerEnd(v MarkerEndValue) *Element { return e.setValue("marker-end", v) }
+func (expression) isMarkerEnd()                        {}
+func (wideKeyword) isMarkerEnd()                       {}
+
+// MarkerMidValue is a value for the CSS marker-mid property.
+type MarkerMidValue interface {
+	cssValue
+	isMarkerMid()
+}
+
+// MarkerMid sets the CSS marker-mid property. Use RawValue for complex CSS syntax.
+func (e *Element) MarkerMid(v MarkerMidValue) *Element { return e.setValue("marker-mid", v) }
+func (expression) isMarkerMid()                        {}
+func (wideKeyword) isMarkerMid()                       {}
+
+// MarkerSideValue is a value for the CSS marker-side property.
+type MarkerSideValue interface {
+	cssValue
+	isMarkerSide()
+}
+
+// MarkerSide sets the CSS marker-side property. Use RawValue for complex CSS syntax.
+func (e *Element) MarkerSide(v MarkerSideValue) *Element { return e.setValue("marker-side", v) }
+func (expression) isMarkerSide()                         {}
+func (wideKeyword) isMarkerSide()                        {}
+
+// MarkerStartValue is a value for the CSS marker-start property.
+type MarkerStartValue interface {
+	cssValue
+	isMarkerStart()
+}
+
+// MarkerStart sets the CSS marker-start property. Use RawValue for complex CSS syntax.
+func (e *Element) MarkerStart(v MarkerStartValue) *Element { return e.setValue("marker-start", v) }
+func (expression) isMarkerStart()                          {}
+func (wideKeyword) isMarkerStart()                         {}
 
 // MaskValue is a value for the CSS mask property.
 type MaskValue interface {
@@ -5728,6 +6783,17 @@ func (e *Element) MaskSize(v MaskSizeValue) *Element { return e.setValue("mask-s
 func (expression) isMaskSize()                       {}
 func (wideKeyword) isMaskSize()                      {}
 
+// MaskTypeValue is a value for the CSS mask-type property.
+type MaskTypeValue interface {
+	cssValue
+	isMaskType()
+}
+
+// MaskType sets the CSS mask-type property. Use RawValue for complex CSS syntax.
+func (e *Element) MaskType(v MaskTypeValue) *Element { return e.setValue("mask-type", v) }
+func (expression) isMaskType()                       {}
+func (wideKeyword) isMaskType()                      {}
+
 // MaxBlockSizeValue is a value for the CSS max-block-size property.
 type MaxBlockSizeValue interface {
 	cssValue
@@ -5779,6 +6845,17 @@ type MaxLinesValue interface {
 func (e *Element) MaxLines(v MaxLinesValue) *Element { return e.setValue("max-lines", v) }
 func (expression) isMaxLines()                       {}
 func (wideKeyword) isMaxLines()                      {}
+
+// MaxSizeValue is a value for the CSS max-size property.
+type MaxSizeValue interface {
+	cssValue
+	isMaxSize()
+}
+
+// MaxSize sets the CSS max-size property. Use RawValue for complex CSS syntax.
+func (e *Element) MaxSize(v MaxSizeValue) *Element { return e.setValue("max-size", v) }
+func (expression) isMaxSize()                      {}
+func (wideKeyword) isMaxSize()                     {}
 
 // MaxWidthValue is a value for the CSS max-width property.
 type MaxWidthValue interface {
@@ -5834,6 +6911,17 @@ func (wideKeyword) isMinInlineSize() {}
 func (Length) isMinInlineSize()      {}
 func (Percentage) isMinInlineSize()  {}
 
+// MinSizeValue is a value for the CSS min-size property.
+type MinSizeValue interface {
+	cssValue
+	isMinSize()
+}
+
+// MinSize sets the CSS min-size property. Use RawValue for complex CSS syntax.
+func (e *Element) MinSize(v MinSizeValue) *Element { return e.setValue("min-size", v) }
+func (expression) isMinSize()                      {}
+func (wideKeyword) isMinSize()                     {}
+
 // MinWidthValue is a value for the CSS min-width property.
 type MinWidthValue interface {
 	cssValue
@@ -5857,6 +6945,50 @@ type MixBlendModeValue interface {
 func (e *Element) MixBlendMode(v MixBlendModeValue) *Element { return e.setValue("mix-blend-mode", v) }
 func (expression) isMixBlendMode()                           {}
 func (wideKeyword) isMixBlendMode()                          {}
+
+// NavDownValue is a value for the CSS nav-down property.
+type NavDownValue interface {
+	cssValue
+	isNavDown()
+}
+
+// NavDown sets the CSS nav-down property. Use RawValue for complex CSS syntax.
+func (e *Element) NavDown(v NavDownValue) *Element { return e.setValue("nav-down", v) }
+func (expression) isNavDown()                      {}
+func (wideKeyword) isNavDown()                     {}
+
+// NavLeftValue is a value for the CSS nav-left property.
+type NavLeftValue interface {
+	cssValue
+	isNavLeft()
+}
+
+// NavLeft sets the CSS nav-left property. Use RawValue for complex CSS syntax.
+func (e *Element) NavLeft(v NavLeftValue) *Element { return e.setValue("nav-left", v) }
+func (expression) isNavLeft()                      {}
+func (wideKeyword) isNavLeft()                     {}
+
+// NavRightValue is a value for the CSS nav-right property.
+type NavRightValue interface {
+	cssValue
+	isNavRight()
+}
+
+// NavRight sets the CSS nav-right property. Use RawValue for complex CSS syntax.
+func (e *Element) NavRight(v NavRightValue) *Element { return e.setValue("nav-right", v) }
+func (expression) isNavRight()                       {}
+func (wideKeyword) isNavRight()                      {}
+
+// NavUpValue is a value for the CSS nav-up property.
+type NavUpValue interface {
+	cssValue
+	isNavUp()
+}
+
+// NavUp sets the CSS nav-up property. Use RawValue for complex CSS syntax.
+func (e *Element) NavUp(v NavUpValue) *Element { return e.setValue("nav-up", v) }
+func (expression) isNavUp()                    {}
+func (wideKeyword) isNavUp()                   {}
 
 // ObjectFitValue is a value for the CSS object-fit property.
 type ObjectFitValue interface {
@@ -5894,6 +7026,76 @@ func (e *Element) ObjectViewBox(v ObjectViewBoxValue) *Element {
 }
 func (expression) isObjectViewBox()  {}
 func (wideKeyword) isObjectViewBox() {}
+
+// OffsetValue is a value for the CSS offset property.
+type OffsetValue interface {
+	cssValue
+	isOffset()
+}
+
+// Offset sets the CSS offset property. Use RawValue for complex CSS syntax.
+func (e *Element) Offset(v OffsetValue) *Element { return e.setValue("offset", v) }
+func (expression) isOffset()                     {}
+func (wideKeyword) isOffset()                    {}
+
+// OffsetAnchorValue is a value for the CSS offset-anchor property.
+type OffsetAnchorValue interface {
+	cssValue
+	isOffsetAnchor()
+}
+
+// OffsetAnchor sets the CSS offset-anchor property. Use RawValue for complex CSS syntax.
+func (e *Element) OffsetAnchor(v OffsetAnchorValue) *Element { return e.setValue("offset-anchor", v) }
+func (expression) isOffsetAnchor()                           {}
+func (wideKeyword) isOffsetAnchor()                          {}
+
+// OffsetDistanceValue is a value for the CSS offset-distance property.
+type OffsetDistanceValue interface {
+	cssValue
+	isOffsetDistance()
+}
+
+// OffsetDistance sets the CSS offset-distance property. Use RawValue for complex CSS syntax.
+func (e *Element) OffsetDistance(v OffsetDistanceValue) *Element {
+	return e.setValue("offset-distance", v)
+}
+func (expression) isOffsetDistance()  {}
+func (wideKeyword) isOffsetDistance() {}
+
+// OffsetPathValue is a value for the CSS offset-path property.
+type OffsetPathValue interface {
+	cssValue
+	isOffsetPath()
+}
+
+// OffsetPath sets the CSS offset-path property. Use RawValue for complex CSS syntax.
+func (e *Element) OffsetPath(v OffsetPathValue) *Element { return e.setValue("offset-path", v) }
+func (expression) isOffsetPath()                         {}
+func (wideKeyword) isOffsetPath()                        {}
+
+// OffsetPositionValue is a value for the CSS offset-position property.
+type OffsetPositionValue interface {
+	cssValue
+	isOffsetPosition()
+}
+
+// OffsetPosition sets the CSS offset-position property. Use RawValue for complex CSS syntax.
+func (e *Element) OffsetPosition(v OffsetPositionValue) *Element {
+	return e.setValue("offset-position", v)
+}
+func (expression) isOffsetPosition()  {}
+func (wideKeyword) isOffsetPosition() {}
+
+// OffsetRotateValue is a value for the CSS offset-rotate property.
+type OffsetRotateValue interface {
+	cssValue
+	isOffsetRotate()
+}
+
+// OffsetRotate sets the CSS offset-rotate property. Use RawValue for complex CSS syntax.
+func (e *Element) OffsetRotate(v OffsetRotateValue) *Element { return e.setValue("offset-rotate", v) }
+func (expression) isOffsetRotate()                           {}
+func (wideKeyword) isOffsetRotate()                          {}
 
 // OpacityValue is a value for the CSS opacity property.
 type OpacityValue interface {
@@ -6328,6 +7530,17 @@ func (v overflowYKeyword) cssText() (string, error) {
 	}
 }
 
+// OverlayValue is a value for the CSS overlay property.
+type OverlayValue interface {
+	cssValue
+	isOverlay()
+}
+
+// Overlay sets the CSS overlay property. Use RawValue for complex CSS syntax.
+func (e *Element) Overlay(v OverlayValue) *Element { return e.setValue("overlay", v) }
+func (expression) isOverlay()                      {}
+func (wideKeyword) isOverlay()                     {}
+
 // PaddingValue is a value for the CSS padding property.
 type PaddingValue interface {
 	cssValue
@@ -6486,6 +7699,28 @@ func (wideKeyword) isPaddingTop()                        {}
 func (Length) isPaddingTop()                             {}
 func (Percentage) isPaddingTop()                         {}
 
+// PaintOrderValue is a value for the CSS paint-order property.
+type PaintOrderValue interface {
+	cssValue
+	isPaintOrder()
+}
+
+// PaintOrder sets the CSS paint-order property. Use RawValue for complex CSS syntax.
+func (e *Element) PaintOrder(v PaintOrderValue) *Element { return e.setValue("paint-order", v) }
+func (expression) isPaintOrder()                         {}
+func (wideKeyword) isPaintOrder()                        {}
+
+// PathLengthValue is a value for the CSS path-length property.
+type PathLengthValue interface {
+	cssValue
+	isPathLength()
+}
+
+// PathLength sets the CSS path-length property. Use RawValue for complex CSS syntax.
+func (e *Element) PathLength(v PathLengthValue) *Element { return e.setValue("path-length", v) }
+func (expression) isPathLength()                         {}
+func (wideKeyword) isPathLength()                        {}
+
 // PerspectiveValue is a value for the CSS perspective property.
 type PerspectiveValue interface {
 	cssValue
@@ -6543,6 +7778,45 @@ type PlaceSelfValue interface {
 func (e *Element) PlaceSelf(v PlaceSelfValue) *Element { return e.setValue("place-self", v) }
 func (expression) isPlaceSelf()                        {}
 func (wideKeyword) isPlaceSelf()                       {}
+
+// PointerTimelineValue is a value for the CSS pointer-timeline property.
+type PointerTimelineValue interface {
+	cssValue
+	isPointerTimeline()
+}
+
+// PointerTimeline sets the CSS pointer-timeline property. Use RawValue for complex CSS syntax.
+func (e *Element) PointerTimeline(v PointerTimelineValue) *Element {
+	return e.setValue("pointer-timeline", v)
+}
+func (expression) isPointerTimeline()  {}
+func (wideKeyword) isPointerTimeline() {}
+
+// PointerTimelineAxisValue is a value for the CSS pointer-timeline-axis property.
+type PointerTimelineAxisValue interface {
+	cssValue
+	isPointerTimelineAxis()
+}
+
+// PointerTimelineAxis sets the CSS pointer-timeline-axis property. Use RawValue for complex CSS syntax.
+func (e *Element) PointerTimelineAxis(v PointerTimelineAxisValue) *Element {
+	return e.setValue("pointer-timeline-axis", v)
+}
+func (expression) isPointerTimelineAxis()  {}
+func (wideKeyword) isPointerTimelineAxis() {}
+
+// PointerTimelineNameValue is a value for the CSS pointer-timeline-name property.
+type PointerTimelineNameValue interface {
+	cssValue
+	isPointerTimelineName()
+}
+
+// PointerTimelineName sets the CSS pointer-timeline-name property. Use RawValue for complex CSS syntax.
+func (e *Element) PointerTimelineName(v PointerTimelineNameValue) *Element {
+	return e.setValue("pointer-timeline-name", v)
+}
+func (expression) isPointerTimelineName()  {}
+func (wideKeyword) isPointerTimelineName() {}
 
 // PositionValue is a value for the CSS position property.
 type PositionValue interface {
@@ -6685,6 +7959,39 @@ type QuotesValue interface {
 func (e *Element) Quotes(v QuotesValue) *Element { return e.setValue("quotes", v) }
 func (expression) isQuotes()                     {}
 func (wideKeyword) isQuotes()                    {}
+
+// RValue is a value for the CSS r property.
+type RValue interface {
+	cssValue
+	isR()
+}
+
+// R sets the CSS r property. Use RawValue for complex CSS syntax.
+func (e *Element) R(v RValue) *Element { return e.setValue("r", v) }
+func (expression) isR()                {}
+func (wideKeyword) isR()               {}
+
+// ReadingFlowValue is a value for the CSS reading-flow property.
+type ReadingFlowValue interface {
+	cssValue
+	isReadingFlow()
+}
+
+// ReadingFlow sets the CSS reading-flow property. Use RawValue for complex CSS syntax.
+func (e *Element) ReadingFlow(v ReadingFlowValue) *Element { return e.setValue("reading-flow", v) }
+func (expression) isReadingFlow()                          {}
+func (wideKeyword) isReadingFlow()                         {}
+
+// ReadingOrderValue is a value for the CSS reading-order property.
+type ReadingOrderValue interface {
+	cssValue
+	isReadingOrder()
+}
+
+// ReadingOrder sets the CSS reading-order property. Use RawValue for complex CSS syntax.
+func (e *Element) ReadingOrder(v ReadingOrderValue) *Element { return e.setValue("reading-order", v) }
+func (expression) isReadingOrder()                           {}
+func (wideKeyword) isReadingOrder()                          {}
 
 // RegionFragmentValue is a value for the CSS region-fragment property.
 type RegionFragmentValue interface {
@@ -7101,6 +8408,28 @@ func (e *Element) RuleWidth(v RuleWidthValue) *Element { return e.setValue("rule
 func (expression) isRuleWidth()                        {}
 func (wideKeyword) isRuleWidth()                       {}
 
+// RxValue is a value for the CSS rx property.
+type RxValue interface {
+	cssValue
+	isRx()
+}
+
+// Rx sets the CSS rx property. Use RawValue for complex CSS syntax.
+func (e *Element) Rx(v RxValue) *Element { return e.setValue("rx", v) }
+func (expression) isRx()                 {}
+func (wideKeyword) isRx()                {}
+
+// RyValue is a value for the CSS ry property.
+type RyValue interface {
+	cssValue
+	isRy()
+}
+
+// Ry sets the CSS ry property. Use RawValue for complex CSS syntax.
+func (e *Element) Ry(v RyValue) *Element { return e.setValue("ry", v) }
+func (expression) isRy()                 {}
+func (wideKeyword) isRy()                {}
+
 // ScaleValue is a value for the CSS scale property.
 type ScaleValue interface {
 	cssValue
@@ -7175,6 +8504,58 @@ func (e *Element) ScrollMarginTop(v ScrollMarginTopValue) *Element {
 func (expression) isScrollMarginTop()  {}
 func (wideKeyword) isScrollMarginTop() {}
 
+// ScrollTimelineValue is a value for the CSS scroll-timeline property.
+type ScrollTimelineValue interface {
+	cssValue
+	isScrollTimeline()
+}
+
+// ScrollTimeline sets the CSS scroll-timeline property. Use RawValue for complex CSS syntax.
+func (e *Element) ScrollTimeline(v ScrollTimelineValue) *Element {
+	return e.setValue("scroll-timeline", v)
+}
+func (expression) isScrollTimeline()  {}
+func (wideKeyword) isScrollTimeline() {}
+
+// ScrollTimelineAxisValue is a value for the CSS scroll-timeline-axis property.
+type ScrollTimelineAxisValue interface {
+	cssValue
+	isScrollTimelineAxis()
+}
+
+// ScrollTimelineAxis sets the CSS scroll-timeline-axis property. Use RawValue for complex CSS syntax.
+func (e *Element) ScrollTimelineAxis(v ScrollTimelineAxisValue) *Element {
+	return e.setValue("scroll-timeline-axis", v)
+}
+func (expression) isScrollTimelineAxis()  {}
+func (wideKeyword) isScrollTimelineAxis() {}
+
+// ScrollTimelineNameValue is a value for the CSS scroll-timeline-name property.
+type ScrollTimelineNameValue interface {
+	cssValue
+	isScrollTimelineName()
+}
+
+// ScrollTimelineName sets the CSS scroll-timeline-name property. Use RawValue for complex CSS syntax.
+func (e *Element) ScrollTimelineName(v ScrollTimelineNameValue) *Element {
+	return e.setValue("scroll-timeline-name", v)
+}
+func (expression) isScrollTimelineName()  {}
+func (wideKeyword) isScrollTimelineName() {}
+
+// ShapeImageThresholdValue is a value for the CSS shape-image-threshold property.
+type ShapeImageThresholdValue interface {
+	cssValue
+	isShapeImageThreshold()
+}
+
+// ShapeImageThreshold sets the CSS shape-image-threshold property. Use RawValue for complex CSS syntax.
+func (e *Element) ShapeImageThreshold(v ShapeImageThresholdValue) *Element {
+	return e.setValue("shape-image-threshold", v)
+}
+func (expression) isShapeImageThreshold()  {}
+func (wideKeyword) isShapeImageThreshold() {}
+
 // ShapeInsideValue is a value for the CSS shape-inside property.
 type ShapeInsideValue interface {
 	cssValue
@@ -7231,6 +8612,102 @@ func (e *Element) ShapeRendering(v ShapeRenderingValue) *Element {
 }
 func (expression) isShapeRendering()  {}
 func (wideKeyword) isShapeRendering() {}
+
+// SizeValue is a value for the CSS size property.
+type SizeValue interface {
+	cssValue
+	isSize()
+}
+
+// Size sets the CSS size property. Use RawValue for complex CSS syntax.
+func (e *Element) Size(v SizeValue) *Element { return e.setValue("size", v) }
+func (expression) isSize()                   {}
+func (wideKeyword) isSize()                  {}
+
+// SliderOrientationValue is a value for the CSS slider-orientation property.
+type SliderOrientationValue interface {
+	cssValue
+	isSliderOrientation()
+}
+
+// SliderOrientation sets the CSS slider-orientation property. Use RawValue for complex CSS syntax.
+func (e *Element) SliderOrientation(v SliderOrientationValue) *Element {
+	return e.setValue("slider-orientation", v)
+}
+func (expression) isSliderOrientation()  {}
+func (wideKeyword) isSliderOrientation() {}
+
+// SpatialNavigationActionValue is a value for the CSS spatial-navigation-action property.
+type SpatialNavigationActionValue interface {
+	cssValue
+	isSpatialNavigationAction()
+}
+
+// SpatialNavigationAction sets the CSS spatial-navigation-action property. Use RawValue for complex CSS syntax.
+func (e *Element) SpatialNavigationAction(v SpatialNavigationActionValue) *Element {
+	return e.setValue("spatial-navigation-action", v)
+}
+func (expression) isSpatialNavigationAction()  {}
+func (wideKeyword) isSpatialNavigationAction() {}
+
+// SpatialNavigationContainValue is a value for the CSS spatial-navigation-contain property.
+type SpatialNavigationContainValue interface {
+	cssValue
+	isSpatialNavigationContain()
+}
+
+// SpatialNavigationContain sets the CSS spatial-navigation-contain property. Use RawValue for complex CSS syntax.
+func (e *Element) SpatialNavigationContain(v SpatialNavigationContainValue) *Element {
+	return e.setValue("spatial-navigation-contain", v)
+}
+func (expression) isSpatialNavigationContain()  {}
+func (wideKeyword) isSpatialNavigationContain() {}
+
+// SpatialNavigationFunctionValue is a value for the CSS spatial-navigation-function property.
+type SpatialNavigationFunctionValue interface {
+	cssValue
+	isSpatialNavigationFunction()
+}
+
+// SpatialNavigationFunction sets the CSS spatial-navigation-function property. Use RawValue for complex CSS syntax.
+func (e *Element) SpatialNavigationFunction(v SpatialNavigationFunctionValue) *Element {
+	return e.setValue("spatial-navigation-function", v)
+}
+func (expression) isSpatialNavigationFunction()  {}
+func (wideKeyword) isSpatialNavigationFunction() {}
+
+// StopColorValue is a value for the CSS stop-color property.
+type StopColorValue interface {
+	cssValue
+	isStopColor()
+}
+
+// StopColor sets the CSS stop-color property. Use RawValue for complex CSS syntax.
+func (e *Element) StopColor(v StopColorValue) *Element { return e.setValue("stop-color", v) }
+func (expression) isStopColor()                        {}
+func (wideKeyword) isStopColor()                       {}
+
+// StopOpacityValue is a value for the CSS stop-opacity property.
+type StopOpacityValue interface {
+	cssValue
+	isStopOpacity()
+}
+
+// StopOpacity sets the CSS stop-opacity property. Use RawValue for complex CSS syntax.
+func (e *Element) StopOpacity(v StopOpacityValue) *Element { return e.setValue("stop-opacity", v) }
+func (expression) isStopOpacity()                          {}
+func (wideKeyword) isStopOpacity()                         {}
+
+// StringSetValue is a value for the CSS string-set property.
+type StringSetValue interface {
+	cssValue
+	isStringSet()
+}
+
+// StringSet sets the CSS string-set property. Use RawValue for complex CSS syntax.
+func (e *Element) StringSet(v StringSetValue) *Element { return e.setValue("string-set", v) }
+func (expression) isStringSet()                        {}
+func (wideKeyword) isStringSet()                       {}
 
 // StrokeValue is a value for the CSS stroke property.
 type StrokeValue interface {
@@ -7732,6 +9209,17 @@ func (e *Element) TextEmphasisStyle(v TextEmphasisStyleValue) *Element {
 func (expression) isTextEmphasisStyle()  {}
 func (wideKeyword) isTextEmphasisStyle() {}
 
+// TextFitValue is a value for the CSS text-fit property.
+type TextFitValue interface {
+	cssValue
+	isTextFit()
+}
+
+// TextFit sets the CSS text-fit property. Use RawValue for complex CSS syntax.
+func (e *Element) TextFit(v TextFitValue) *Element { return e.setValue("text-fit", v) }
+func (expression) isTextFit()                      {}
+func (wideKeyword) isTextFit()                     {}
+
 // TextGroupAlignValue is a value for the CSS text-group-align property.
 type TextGroupAlignValue interface {
 	cssValue
@@ -7814,6 +9302,19 @@ func (v textOverflowKeyword) cssText() (string, error) {
 	}
 }
 
+// TextRenderingValue is a value for the CSS text-rendering property.
+type TextRenderingValue interface {
+	cssValue
+	isTextRendering()
+}
+
+// TextRendering sets the CSS text-rendering property. Use RawValue for complex CSS syntax.
+func (e *Element) TextRendering(v TextRenderingValue) *Element {
+	return e.setValue("text-rendering", v)
+}
+func (expression) isTextRendering()  {}
+func (wideKeyword) isTextRendering() {}
+
 // TextShadowValue is a value for the CSS text-shadow property.
 type TextShadowValue interface {
 	cssValue
@@ -7824,6 +9325,19 @@ type TextShadowValue interface {
 func (e *Element) TextShadow(v TextShadowValue) *Element { return e.setValue("text-shadow", v) }
 func (expression) isTextShadow()                         {}
 func (wideKeyword) isTextShadow()                        {}
+
+// TextSizeAdjustValue is a value for the CSS text-size-adjust property.
+type TextSizeAdjustValue interface {
+	cssValue
+	isTextSizeAdjust()
+}
+
+// TextSizeAdjust sets the CSS text-size-adjust property. Use RawValue for complex CSS syntax.
+func (e *Element) TextSizeAdjust(v TextSizeAdjustValue) *Element {
+	return e.setValue("text-size-adjust", v)
+}
+func (expression) isTextSizeAdjust()  {}
+func (wideKeyword) isTextSizeAdjust() {}
 
 // TextSpacingValue is a value for the CSS text-spacing property.
 type TextSpacingValue interface {
@@ -7922,6 +9436,136 @@ func (e *Element) TextWrapStyle(v TextWrapStyleValue) *Element {
 }
 func (expression) isTextWrapStyle()  {}
 func (wideKeyword) isTextWrapStyle() {}
+
+// TimelineScopeValue is a value for the CSS timeline-scope property.
+type TimelineScopeValue interface {
+	cssValue
+	isTimelineScope()
+}
+
+// TimelineScope sets the CSS timeline-scope property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineScope(v TimelineScopeValue) *Element {
+	return e.setValue("timeline-scope", v)
+}
+func (expression) isTimelineScope()  {}
+func (wideKeyword) isTimelineScope() {}
+
+// TimelineTriggerValue is a value for the CSS timeline-trigger property.
+type TimelineTriggerValue interface {
+	cssValue
+	isTimelineTrigger()
+}
+
+// TimelineTrigger sets the CSS timeline-trigger property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTrigger(v TimelineTriggerValue) *Element {
+	return e.setValue("timeline-trigger", v)
+}
+func (expression) isTimelineTrigger()  {}
+func (wideKeyword) isTimelineTrigger() {}
+
+// TimelineTriggerActivationRangeValue is a value for the CSS timeline-trigger-activation-range property.
+type TimelineTriggerActivationRangeValue interface {
+	cssValue
+	isTimelineTriggerActivationRange()
+}
+
+// TimelineTriggerActivationRange sets the CSS timeline-trigger-activation-range property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerActivationRange(v TimelineTriggerActivationRangeValue) *Element {
+	return e.setValue("timeline-trigger-activation-range", v)
+}
+func (expression) isTimelineTriggerActivationRange()  {}
+func (wideKeyword) isTimelineTriggerActivationRange() {}
+
+// TimelineTriggerActivationRangeEndValue is a value for the CSS timeline-trigger-activation-range-end property.
+type TimelineTriggerActivationRangeEndValue interface {
+	cssValue
+	isTimelineTriggerActivationRangeEnd()
+}
+
+// TimelineTriggerActivationRangeEnd sets the CSS timeline-trigger-activation-range-end property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerActivationRangeEnd(v TimelineTriggerActivationRangeEndValue) *Element {
+	return e.setValue("timeline-trigger-activation-range-end", v)
+}
+func (expression) isTimelineTriggerActivationRangeEnd()  {}
+func (wideKeyword) isTimelineTriggerActivationRangeEnd() {}
+
+// TimelineTriggerActivationRangeStartValue is a value for the CSS timeline-trigger-activation-range-start property.
+type TimelineTriggerActivationRangeStartValue interface {
+	cssValue
+	isTimelineTriggerActivationRangeStart()
+}
+
+// TimelineTriggerActivationRangeStart sets the CSS timeline-trigger-activation-range-start property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerActivationRangeStart(v TimelineTriggerActivationRangeStartValue) *Element {
+	return e.setValue("timeline-trigger-activation-range-start", v)
+}
+func (expression) isTimelineTriggerActivationRangeStart()  {}
+func (wideKeyword) isTimelineTriggerActivationRangeStart() {}
+
+// TimelineTriggerActiveRangeValue is a value for the CSS timeline-trigger-active-range property.
+type TimelineTriggerActiveRangeValue interface {
+	cssValue
+	isTimelineTriggerActiveRange()
+}
+
+// TimelineTriggerActiveRange sets the CSS timeline-trigger-active-range property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerActiveRange(v TimelineTriggerActiveRangeValue) *Element {
+	return e.setValue("timeline-trigger-active-range", v)
+}
+func (expression) isTimelineTriggerActiveRange()  {}
+func (wideKeyword) isTimelineTriggerActiveRange() {}
+
+// TimelineTriggerActiveRangeEndValue is a value for the CSS timeline-trigger-active-range-end property.
+type TimelineTriggerActiveRangeEndValue interface {
+	cssValue
+	isTimelineTriggerActiveRangeEnd()
+}
+
+// TimelineTriggerActiveRangeEnd sets the CSS timeline-trigger-active-range-end property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerActiveRangeEnd(v TimelineTriggerActiveRangeEndValue) *Element {
+	return e.setValue("timeline-trigger-active-range-end", v)
+}
+func (expression) isTimelineTriggerActiveRangeEnd()  {}
+func (wideKeyword) isTimelineTriggerActiveRangeEnd() {}
+
+// TimelineTriggerActiveRangeStartValue is a value for the CSS timeline-trigger-active-range-start property.
+type TimelineTriggerActiveRangeStartValue interface {
+	cssValue
+	isTimelineTriggerActiveRangeStart()
+}
+
+// TimelineTriggerActiveRangeStart sets the CSS timeline-trigger-active-range-start property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerActiveRangeStart(v TimelineTriggerActiveRangeStartValue) *Element {
+	return e.setValue("timeline-trigger-active-range-start", v)
+}
+func (expression) isTimelineTriggerActiveRangeStart()  {}
+func (wideKeyword) isTimelineTriggerActiveRangeStart() {}
+
+// TimelineTriggerNameValue is a value for the CSS timeline-trigger-name property.
+type TimelineTriggerNameValue interface {
+	cssValue
+	isTimelineTriggerName()
+}
+
+// TimelineTriggerName sets the CSS timeline-trigger-name property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerName(v TimelineTriggerNameValue) *Element {
+	return e.setValue("timeline-trigger-name", v)
+}
+func (expression) isTimelineTriggerName()  {}
+func (wideKeyword) isTimelineTriggerName() {}
+
+// TimelineTriggerSourceValue is a value for the CSS timeline-trigger-source property.
+type TimelineTriggerSourceValue interface {
+	cssValue
+	isTimelineTriggerSource()
+}
+
+// TimelineTriggerSource sets the CSS timeline-trigger-source property. Use RawValue for complex CSS syntax.
+func (e *Element) TimelineTriggerSource(v TimelineTriggerSourceValue) *Element {
+	return e.setValue("timeline-trigger-source", v)
+}
+func (expression) isTimelineTriggerSource()  {}
+func (wideKeyword) isTimelineTriggerSource() {}
 
 // TopValue is a value for the CSS top property.
 type TopValue interface {
@@ -8094,6 +9738,17 @@ func (e *Element) UnicodeBidi(v UnicodeBidiValue) *Element { return e.setValue("
 func (expression) isUnicodeBidi()                          {}
 func (wideKeyword) isUnicodeBidi()                         {}
 
+// VectorEffectValue is a value for the CSS vector-effect property.
+type VectorEffectValue interface {
+	cssValue
+	isVectorEffect()
+}
+
+// VectorEffect sets the CSS vector-effect property. Use RawValue for complex CSS syntax.
+func (e *Element) VectorEffect(v VectorEffectValue) *Element { return e.setValue("vector-effect", v) }
+func (expression) isVectorEffect()                           {}
+func (wideKeyword) isVectorEffect()                          {}
+
 // VerticalAlignValue is a value for the CSS vertical-align property.
 type VerticalAlignValue interface {
 	cssValue
@@ -8106,6 +9761,56 @@ func (e *Element) VerticalAlign(v VerticalAlignValue) *Element {
 }
 func (expression) isVerticalAlign()  {}
 func (wideKeyword) isVerticalAlign() {}
+
+// ViewTimelineValue is a value for the CSS view-timeline property.
+type ViewTimelineValue interface {
+	cssValue
+	isViewTimeline()
+}
+
+// ViewTimeline sets the CSS view-timeline property. Use RawValue for complex CSS syntax.
+func (e *Element) ViewTimeline(v ViewTimelineValue) *Element { return e.setValue("view-timeline", v) }
+func (expression) isViewTimeline()                           {}
+func (wideKeyword) isViewTimeline()                          {}
+
+// ViewTimelineAxisValue is a value for the CSS view-timeline-axis property.
+type ViewTimelineAxisValue interface {
+	cssValue
+	isViewTimelineAxis()
+}
+
+// ViewTimelineAxis sets the CSS view-timeline-axis property. Use RawValue for complex CSS syntax.
+func (e *Element) ViewTimelineAxis(v ViewTimelineAxisValue) *Element {
+	return e.setValue("view-timeline-axis", v)
+}
+func (expression) isViewTimelineAxis()  {}
+func (wideKeyword) isViewTimelineAxis() {}
+
+// ViewTimelineInsetValue is a value for the CSS view-timeline-inset property.
+type ViewTimelineInsetValue interface {
+	cssValue
+	isViewTimelineInset()
+}
+
+// ViewTimelineInset sets the CSS view-timeline-inset property. Use RawValue for complex CSS syntax.
+func (e *Element) ViewTimelineInset(v ViewTimelineInsetValue) *Element {
+	return e.setValue("view-timeline-inset", v)
+}
+func (expression) isViewTimelineInset()  {}
+func (wideKeyword) isViewTimelineInset() {}
+
+// ViewTimelineNameValue is a value for the CSS view-timeline-name property.
+type ViewTimelineNameValue interface {
+	cssValue
+	isViewTimelineName()
+}
+
+// ViewTimelineName sets the CSS view-timeline-name property. Use RawValue for complex CSS syntax.
+func (e *Element) ViewTimelineName(v ViewTimelineNameValue) *Element {
+	return e.setValue("view-timeline-name", v)
+}
+func (expression) isViewTimelineName()  {}
+func (wideKeyword) isViewTimelineName() {}
 
 // ViewTransitionClassValue is a value for the CSS view-transition-class property.
 type ViewTransitionClassValue interface {
@@ -8323,6 +10028,28 @@ func (v widthKeyword) cssText() (string, error) {
 	}
 }
 
+// WillChangeValue is a value for the CSS will-change property.
+type WillChangeValue interface {
+	cssValue
+	isWillChange()
+}
+
+// WillChange sets the CSS will-change property. Use RawValue for complex CSS syntax.
+func (e *Element) WillChange(v WillChangeValue) *Element { return e.setValue("will-change", v) }
+func (expression) isWillChange()                         {}
+func (wideKeyword) isWillChange()                        {}
+
+// WindowDragValue is a value for the CSS window-drag property.
+type WindowDragValue interface {
+	cssValue
+	isWindowDrag()
+}
+
+// WindowDrag sets the CSS window-drag property. Use RawValue for complex CSS syntax.
+func (e *Element) WindowDrag(v WindowDragValue) *Element { return e.setValue("window-drag", v) }
+func (expression) isWindowDrag()                         {}
+func (wideKeyword) isWindowDrag()                        {}
+
 // WordBreakValue is a value for the CSS word-break property.
 type WordBreakValue interface {
 	cssValue
@@ -8333,6 +10060,19 @@ type WordBreakValue interface {
 func (e *Element) WordBreak(v WordBreakValue) *Element { return e.setValue("word-break", v) }
 func (expression) isWordBreak()                        {}
 func (wideKeyword) isWordBreak()                       {}
+
+// WordSpaceTransformValue is a value for the CSS word-space-transform property.
+type WordSpaceTransformValue interface {
+	cssValue
+	isWordSpaceTransform()
+}
+
+// WordSpaceTransform sets the CSS word-space-transform property. Use RawValue for complex CSS syntax.
+func (e *Element) WordSpaceTransform(v WordSpaceTransformValue) *Element {
+	return e.setValue("word-space-transform", v)
+}
+func (expression) isWordSpaceTransform()  {}
+func (wideKeyword) isWordSpaceTransform() {}
 
 // WordSpacingValue is a value for the CSS word-spacing property.
 type WordSpacingValue interface {
@@ -8412,6 +10152,28 @@ func (e *Element) WritingMode(v WritingModeValue) *Element { return e.setValue("
 func (expression) isWritingMode()                          {}
 func (wideKeyword) isWritingMode()                         {}
 
+// XValue is a value for the CSS x property.
+type XValue interface {
+	cssValue
+	isX()
+}
+
+// X sets the CSS x property. Use RawValue for complex CSS syntax.
+func (e *Element) X(v XValue) *Element { return e.setValue("x", v) }
+func (expression) isX()                {}
+func (wideKeyword) isX()               {}
+
+// YValue is a value for the CSS y property.
+type YValue interface {
+	cssValue
+	isY()
+}
+
+// Y sets the CSS y property. Use RawValue for complex CSS syntax.
+func (e *Element) Y(v YValue) *Element { return e.setValue("y", v) }
+func (expression) isY()                {}
+func (wideKeyword) isY()               {}
+
 // ZIndexValue is a value for the CSS z-index property.
 type ZIndexValue interface {
 	cssValue
@@ -8423,3 +10185,14 @@ func (e *Element) ZIndex(v ZIndexValue) *Element { return e.setValue("z-index", 
 func (expression) isZIndex()                     {}
 func (wideKeyword) isZIndex()                    {}
 func (Numeric) isZIndex()                        {}
+
+// ZoomValue is a value for the CSS zoom property.
+type ZoomValue interface {
+	cssValue
+	isZoom()
+}
+
+// Zoom sets the CSS zoom property. Use RawValue for complex CSS syntax.
+func (e *Element) Zoom(v ZoomValue) *Element { return e.setValue("zoom", v) }
+func (expression) isZoom()                   {}
+func (wideKeyword) isZoom()                  {}

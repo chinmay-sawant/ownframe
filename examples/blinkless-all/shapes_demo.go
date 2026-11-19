@@ -192,7 +192,7 @@ func demoTextFit() string {
 func demoFloatDefer() string {
 	cell := func(id, decl string) string {
 		return `<div class="cell"><div style="column-count:3;column-gap:10px;width:320px;background:#eef2f7"><div id="` + id +
-			`" style="float:left;width:20px;height:20px;background:#9db4d6;` + decl + `"></div><p style="margin:0">one two three</p></div>` +
+			`" style="float:left;width:20px;height:20px;margin-right:8px;background:#9db4d6;` + decl + `"></div><p style="margin:0;padding-top:24px">one two three</p></div>` +
 			`<div class="cap">` + decl + `</div></div>`
 	}
 
@@ -219,7 +219,7 @@ func demoFloatDefer() string {
 func demoImageThreshold() string {
 	cell := func(id, threshold string) string {
 		return `<div class="cell"><div style="width:260px;background:#eef7ee;overflow:hidden"><div style="float:left;width:80px;` +
-			`height:80px;shape-outside:url(mask);shape-image-threshold:` + threshold + `;background:#cfe8d3"></div>` +
+			`height:80px;shape-outside:url(mask);shape-image-threshold:` + threshold + `;background:linear-gradient(90deg,#8fc79b 50%,#e6f2e8 50%)"></div>` +
 			`<div id="` + id + `">Text beside an image shape</div></div>` +
 			`<div class="cap">shape-image-threshold: ` + threshold + `</div></div>`
 	}
@@ -243,9 +243,9 @@ func demoImageThreshold() string {
 }
 
 func shapesColumns(vis string) string {
-	return fmt.Sprintf(`<div class="cell"><div id="cr-%s" style="width:200px;column-count:2;column-gap:20px;`+
-		`column-rule:3px solid #c0392b;column-rule-visibility-items:%s;font-size:11px;padding:0 4px">`+
-		`one two three four five six seven eight nine ten eleven twelve</div><div class="cap">%s</div></div>`, vis, vis, vis)
+	return fmt.Sprintf(`<div class="cell"><div id="cr-%s" style="width:230px;column-count:2;column-gap:20px;`+
+		`column-rule:3px solid #c0392b;column-rule-visibility-items:%s;font-size:11px;text-align:center;padding:0 14px">`+
+		`one two three four five six seven eight nine ten eleven</div><div class="cap">%s</div></div>`, vis, vis, vis)
 }
 
 func demoColumnRule() string {
