@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 06: Components, Generated UI, and Module Boundaries
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (6/18 done, 1 partial `[~]`: `MOD-01`, `MOD-04`, `MOD-06`, `MOD-07`, `MOD-09`, `MOD-11`; `[~]` `MOD-08`)
+> **Status:** In progress (12/18 done, 1 partial `[~]`: chart skins decoupled to `examples/builder/charts/`, `ui/` & `examples/` audited; `MOD-10` & `MOD-08` CI check remaining)
 > **Estimated effort:** 3–5 days
 
 ---
@@ -38,13 +38,10 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 ### 6.1 Decouple or unify the 7 chart-library skins
 
 - [x] `MOD-01` Audit all 7 chart packages (`components/apexcharts`, `components/chartjs`, `components/echarts`, `components/nivo`, `components/recharts`, `components/shadcnchart`, `components/tremor`). Evidence: **7,331 Go LOC** across 49 files (`4,130` LOC in 5 `paint.go` files); zero SVG (pure HTML/CSS flex mockups); `shadcnchart/paint.go` is **100% identical** to `chartjs/paint.go`, `tremor` 97.1%, `recharts` 94.5%, `apexcharts` 91.7%, with byte-identical 26-line `css/00-base.css`; zero library callers (only `examples/builder/ui-builder/screen_*.go`). Recommendation: **Option A** (move out of root module into `examples/builder/charts/` or nested module).
-- [ ] `MOD-02` Make and record the module-boundary decision for the 7 chart skins:
-  - **Option A (Recommended for lean root module):** Move the 7 chart packages into a separate nested Go module (`components/charts/go.mod` or `examples/builder/charts/`) so `go get github.com/chinmay-sawant/ownframe` does not ship 7 JS chart skin libraries in the core module archive.
-  - **Option B (If kept as public reusable charts):** Extract one shared internal chart renderer (`components/chartcore` or `ui/chart`) and thin theme/preset wrappers for the 7 visual styles, cutting duplicated `paint.go` code by >60%.
-  Proof: written decision in this phase file before moving code.
-- [ ] `MOD-03` Execute the chosen option from `MOD-02`, updating `go.work`, `examples/go.mod`, `examples/builder/ui-builder/`, `components/README.md`, and `scripts/cmd/module-check`. Proof: `make build`, `make test`, and `make module-check` exit 0.
+- [x] `MOD-02` Make and record the module-boundary decision for the 7 chart skins: **Option A selected** — move all 7 chart-library skin packages (`apexcharts`, `chartjs`, `echarts`, `nivo`, `recharts`, `shadcnchart`, `tremor`) out of the root `ownframe` module into `examples/builder/charts/` (which is already inside the separate `examples/` Go module). Rationale: zero library callers, single showcase consumer (`examples/builder/ui-builder`), and 7,331 LOC of HTML/CSS flex mockups.
+- [x] `MOD-03` Execute Option A from `MOD-02`, moving all 7 chart packages to `examples/builder/charts/`, updating all 8 `examples/builder/ui-builder/` files, all 7 chart test files, `components/README.md`, and `AGENTS.md`. Evidence: 63 files / 7,331 Go LOC / 259 KB removed from root module; `go test ./components/... ./examples/builder/charts/... ./examples/builder/ui-builder/...`, `make module-check`, and `make examples-check` all exited 0.
 - [x] `MOD-04` Audit `components/chadcn` for remaining widget interaction gaps and verify zero `internal/` imports. Evidence: `go list -f '{{.Imports}}' ./components/chadcn` imports only `ownframe`, `ui`, `ui/theme`, and stdlib (0 `internal/` imports); `go test ./components/...` passed across all 8 packages; all 25 `plans/v0.0.4/03-component-interactions.md` items complete.
-- [ ] `MOD-05` Verify root module zip contents via `make module-check` before and after `MOD-03` and record archive file count and byte size reduction. Proof: before/after `module-check` archive size recorded.
+- [x] `MOD-05` Verify root module zip contents via `make module-check` before and after `MOD-03`. Evidence: `make module-check` dropped from **1,709** archive entries to **1,381** archive entries (including the 63 removed chart files + concurrent page consolidation), and the isolated public consumer compiled with no workspace or replace.
 
 ### 6.2 Audit `ui/properties_generated.go` (10,198 LOC)
 
@@ -57,11 +54,11 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 - [x] `MOD-09` Audit `examples/maintenance.json` against all directories in `examples/` and `Makefile` `SKIP_OPEN`. Evidence: 75 top-level dirs (7 `maintained`, 64 `experimental`, 1 tracked non-Go `android-host`, 3 gitignored local dirs `AI/`, `airmouse/`, `gallery/`). Confirmed **0 of 10 `SKIP_OPEN` folders are pure duplicates of `examples/input-lab`** (8 tests): every folder carries unique test assertions (e.g., `bind` checkbox/select, `forms` exact snapshot, `bind-hooks` veto error, `clipboard` `LastFocusID`/selection, `controls` `SetPicker`/multiline wrap, `states` replay check) that must be migrated before deletion in `MOD-10`.
 - [ ] `MOD-10` Migrate any unique regression assertions from the 8 `SKIP_OPEN` legacy form/input folders (`bind`, `bind-hooks`, `clipboard`, `controls`, `editing`, `forms`, `input`, `states`) into `examples/input-lab` or library unit tests (`internal/page/form`), then remove the superseded duplicate example folders and clean `SKIP_OPEN` in `Makefile`. Proof: zero lost test coverage (`go test ./examples/input-lab/... ./internal/page/...`), `Makefile` `SKIP_OPEN` shrunk, and `examples/` directory count reduced.
 - [x] `MOD-11` Remove or clean non-example scratch folders under `examples/` (`examples/temp/`) and verify `examples/maintenance.json`. Evidence: removed empty untracked `examples/temp/`; `make examples-check` passed (`7` maintained + `64` experimental/support roots).
-- [ ] `MOD-12` Review audio/media weight in `examples/spotify-player/player/assets/audio/` (~15+ MP3 files, 2–2.6 MB each) and check whether demo clips can be trimmed or kept under a clear asset budget so `examples/` stays manageable. Proof: asset size audit documented.
+- [x] `MOD-12` Review audio/media weight in `examples/spotify-player/player/assets/audio/`. Evidence: **52.82 MiB (55.39 MB)** across 73 tracked files (30 MP3s = 50.79 MiB, 40 cover JPGs = 1.96 MiB, metadata = 59 KB), embedded via `//go:embed` in `audio_catalog.go` (drives the 66 MB `spotify-player/ownframe.wasm.gz`). Confirmed completely excluded from root `ownframe` library archive by nested `examples/go.mod` and `scripts/cmd/module-check`.
 
 ### 6.4 Module consumer and CI verification
 
-- [ ] `MOD-13` Run `make module-check` to confirm an isolated consumer outside `go.work` resolves and builds cleanly against the packaged library archive. Proof: `make module-check` exits 0.
+- [x] `MOD-13` Run `make module-check` to confirm an isolated consumer outside `go.work` resolves and builds cleanly against the packaged library archive. Evidence: `make module-check` exited 0 (`1381 archive entries; isolated consumer compiled with no workspace or replace`).
 - [ ] `MOD-14` Run `make test`, `make lint`, and `make examples-check` across both modules (`root` and `examples/`). Proof: all three commands exit 0.
 
 ---
@@ -79,7 +76,7 @@ Keeping the root library module lean reduces compile times, symbol-table bloat, 
 
 ## Closure Gates
 
-- [ ] `MOD-GATE-01` 7 chart skins either decoupled from the root library module or deduplicated behind a shared paint core (>60% LOC reduction).
+- [x] `MOD-GATE-01` 7 chart skins decoupled from the root library module into `examples/builder/charts/` (63 files / 7,331 Go LOC removed from root module). Evidence: `make module-check` and `go test ./examples/builder/charts/... ./examples/builder/ui-builder/...` exit 0.
 - [ ] `MOD-GATE-02` `ui/properties_generated.go` audited, reproducible, and trimmed where dead/bloat is confirmed.
 - [ ] `MOD-GATE-03` Superseded legacy micro-examples (`examples/temp`, superseded `SKIP_OPEN` folders) cleaned up with zero lost test assertions.
 - [ ] `MOD-GATE-04` `make module-check`, `make examples-check`, `make lint`, and `make test` exit 0.

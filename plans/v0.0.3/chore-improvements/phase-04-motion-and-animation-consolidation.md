@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 04: Motion and Animation Package Consolidation
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (4/19 done: `MOT-01`–`MOT-04` preview relocation and testing-import gate)
+> **Status:** In progress (6/19 done: `MOT-01`–`MOT-05`, `MOT-12`)
 > **Estimated effort:** 4–6 days
 
 ---
@@ -52,7 +52,7 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 
 ### 4.2 Collapse the 7-package CSS motion chain into a cohesive subsystem
 
-- [ ] `MOT-05` Map every exported symbol across `cssmotion`, `animation`, `cssanimation`, `transition`, `csstransition`, `csstrigger`, and `motion` to identify which symbols are actually consumed by `internal/page` and `internal/window` (external boundary of the motion subsystem). Proof: dependency boundary document listing exact types/functions `internal/page/motion_wire.go` needs.
+- [x] `MOT-05` Map every exported symbol across `cssmotion`, `animation`, `cssanimation`, `transition`, `csstransition`, `csstrigger`, and `motion` consumed by external packages. Evidence: verified via `go list` — `internal/window` has 0 imports; `internal/page` imports only `motion`, `cssmotion` (`Index`/`EmptyIndex`/`NewIndex`), and `csstrigger` (`Event`/`Dispatch`); previews & `examples/css-preview` need only 10 helper symbols (`Paint`, `Capture`, `OperationIndices`, `Resolve`, `Read`, `Player`, `Renderer`, `BindAnimation`, `BindTransition`, `BindTransitionTo`, `TriggerEvent`, `DispatchTrigger`). Documented all 3 exported (`New`, `Bind`, `Resolve`), 9 unexported (`clamp01`, `decomposeMatrix2D`, `lerp`, `percentDivisor`, `field*`, `play`), and 14 filename collisions for `MOT-06`–`MOT-08`.
 - [ ] `MOT-06` Merge `internal/transition` (3 non-test files) and `internal/csstransition` into `internal/motion` (or `internal/motion/transition`), unexporting internal binding and stepping helpers and deduplicating easing logic against `cssmotion/easing*.go`. Proof: `internal/transition` and `internal/csstransition` removed; all transition behavior tests (`behavior_*.go`, `renderer_test.go`, `bind_*_test.go`) pass in the consolidated package.
 - [ ] `MOT-07` Merge `internal/cssmotion` and `internal/csstrigger` into `internal/motion` (sharing one easing implementation, one ownership index, and one paint-capture helper). Proof: `internal/cssmotion` and `internal/csstrigger` removed; zero duplicate easing functions across `internal/motion/...`.
 - [ ] `MOT-08` Merge `internal/animation` and `internal/cssanimation` into `internal/motion` (or keep at most one internal subpackage `internal/motion/timeline` if separation keeps files and types genuinely cleaner). Unexport all helper types not required by `internal/page`. Proof: `internal/animation` and `internal/cssanimation` removed; total motion-related `internal/` packages reduced from 10 to <=2 (excluding `internal/frame`).
@@ -62,7 +62,7 @@ This fragmentation creates artificial cross-package export boundaries, duplicate
 ### 4.3 Resolve `internal/viewtransition` and clarify `internal/frame` seam
 
 - [ ] `MOT-11` Audit `internal/viewtransition` (19 files): since it reverse-imports root `ownframe` and is only referenced by `examples/css-preview/catalog_view_transition_*_test.go`, decouple it from root `ownframe` (operate on `layout.Display` / narrow interfaces instead) OR move it into `internal/motion/viewtransition` once cycle-free. Proof: `go list -f '{{.Imports}}' ./internal/motion/...` contains zero imports of root `github.com/chinmay-sawant/ownframe`.
-- [ ] `MOT-12` Check whether any non-test `internal/` package still imports root `github.com/chinmay-sawant/ownframe` (preventing circular-feeling layering). Proof: `go list -f '{{.ImportPath}} {{.Imports}}' ./internal/... | grep 'github.com/chinmay-sawant/ownframe '` audited and empty for runtime packages.
+- [x] `MOT-12` Check whether any non-test `internal/` package still imports root `github.com/chinmay-sawant/ownframe`. Evidence: `go list -f '{{.ImportPath}} | {{.Imports}}' ./internal/...` confirmed **`internal/viewtransition`** is the sole non-test `internal/` package importing root `ownframe`, and it uses only 3 type aliases (`ownframe.{Display,DisplayOp,Box}` == `layout.{Display,DisplayOp,Box}`), making `MOT-11` a zero-breakage import swap.
 - [ ] `MOT-13` Audit `internal/frame` (27 files): consolidate overlapping retained-op helpers with `internal/motion` (sharing op-patching/damage helpers via `internal/page/dirty` or a tiny shared helper) so both declarative CSS motion and manual Go `SetTick` motion compute damage identically. Proof: shared damage helper tested across both paths.
 - [ ] `MOT-14` Update `documentation/css-motion.md`, `documentation/frames.md`, and `AGENTS.md` to reflect the consolidated package architecture. Proof: `make docs-check` exits 0.
 

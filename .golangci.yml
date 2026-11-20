@@ -165,7 +165,7 @@ linters:
       # NewGame keeps a nil-tolerant run-scoped ctx because Run and
       # BindMobile accept a nil ctx.
       - linters: [contextcheck]
-        path: "internal/page/page_image\\.go"
+        path: "internal/page/image\\.go"
         text: "Non-inherited new context"
       - linters: [contextcheck]
         path: "internal/web/click_http\\.go"
@@ -203,7 +203,7 @@ linters:
       # the page patch pool and source registry, the replay raster caches,
       # and the precomputed window palette and scrollbar art.
       - linters: [gochecknoglobals]
-        path: "internal/(fetch/scheme\\.go|filepick/pick_linux\\.go|page/(page_patch|page_source_reader)\\.go|replay/(blend|chunk_cache|group_shader|raster_cache|text_cache)\\.go|window/(context_menu|devtools_paint|draw|scrollbar)\\.go)"
+        path: "internal/(fetch/scheme\\.go|filepick/pick_linux\\.go|page/(patch|source)\\.go|replay/(blend|chunk_cache|group_shader|raster_cache|text_cache)\\.go|window/(context_menu|devtools_paint|draw|scrollbar)\\.go)"
       # Intentional process clients: the desktop-cat media poster keeps one
       # hardened client (own timeouts, TLS 1.2 minimum), like fetch/scheme.go.
       - linters: [gochecknoglobals]

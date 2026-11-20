@@ -1,0 +1,1016 @@
+package page
+
+import (
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/dirty"
+	"github.com/chinmay-sawant/ownframe/internal/page/hit"
+	"image"
+	"sort"
+	"sync"
+)
+
+// dirtySet is the page-facing result of one display diff. Callers in this
+// package read n, rects, added, and removed. The merge lives in package dirty.
+type dirtySet struct {
+	rects          [dirty.MaxRects]image.Rectangle
+	n              int
+	added, removed int
+	// memo carries the next-side op bounds the diff already computed, so
+	// the perf accounting pass reuses them. It is nil when the diff took
+	// a path that computed no bounds, or when the caller never asked for
+	// one. Whoever consumes a non-nil memo frees it.
+	memo *dirty.BoundsMemo
+}
+
+// diffDisplay returns the regions covering the operations that differ
+// between prev and next. See dirty.Diff.
+func diffDisplay(prev, next *Display) (dirtySet, bool, int) {
+	set, full, changed := dirty.Diff(prev, next)
+
+	return dirtySet{
+		rects:   set.Rects,
+		n:       set.N,
+		added:   set.Added,
+		removed: set.Removed,
+	}, full, changed
+}
+
+// diffDisplayMemo diffs like diffDisplay and also keeps the next-side
+// bounds the scan computed. See dirty.DiffWithBounds. The caller frees
+// d.memo after use, on every path.
+func diffDisplayMemo(prev, next *Display) (dirtySet, bool, int) {
+	set, full, changed, memo := dirty.DiffWithBounds(prev, next)
+
+	return dirtySet{
+		rects:   set.Rects,
+		n:       set.N,
+		added:   set.Added,
+		removed: set.Removed,
+		memo:    memo,
+	}, full, changed
+}
+
+// freeMemo returns the diff's bounds memo for reuse. A nil memo is a
+// no-op.
+func (d dirtySet) freeMemo() {
+	if d.memo != nil {
+		d.memo.Free()
+	}
+}
+
+func opBounds(op *DisplayOp, d *Display) image.Rectangle {
+	return dirty.OpBounds(op, d)
+}
+
+func sameOp(a, b *DisplayOp) bool {
+	return dirty.SameOp(a, b)
+}
+
+func boxRect(b Box) image.Rectangle {
+	return dirty.BoxRect(b)
+}
+
+// markRect queues one dirty rect on the page tracker and drops a cached
+// picture when the rect paints something.
+func (p *Page) markRect(r image.Rectangle) {
+	defer p.notifyFrame()
+	p.tickMutated.Store(true)
+	if !r.Empty() {
+		p.draw.DropPNG()
+	}
+
+	p.dirty.MarkRect(r)
+}
+
+// markFull dirties the whole content on the page tracker.
+func (p *Page) markFull() {
+	p.tickMutated.Store(true)
+	p.draw.DropPNG()
+	p.dirty.MarkFull()
+	p.fullGen = p.generation
+}
+
+// TakeDirtyRects returns the regions in CSS pixels changed since the
+// previous call and clears them. The tracker owns the damage state; the
+// page only supplies its content rect. See dirty.Tracker.Take.
+func (p *Page) TakeDirtyRects() ([]image.Rectangle, bool) {
+	rects, ok := p.dirty.Take(p.contentRect())
+	oldPainted := p.painted
+	p.painted = p.draw.Display
+	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
+		oldPainted.Release()
+	}
+	p.maybeReleasePainted()
+
+	return rects, ok
+}
+
+// TakeDirty returns the region in CSS pixels changed since the previous
+// call and clears it. It is the bounding box of TakeDirtyRects. A
+// whole-content change returns the content rect. ok is false when nothing
+// changed since the previous call.
+func (p *Page) TakeDirty() (image.Rectangle, bool) {
+	rects, ok := p.dirty.Take(p.contentRect())
+	oldPainted := p.painted
+	p.painted = p.draw.Display
+	if oldPainted != nil && oldPainted != p.painted && oldPainted != p.draw.Display {
+		oldPainted.Release()
+	}
+	p.maybeReleasePainted()
+	if !ok {
+		return image.Rectangle{}, false
+	}
+
+	return dirty.BoundingBox(rects), true
+}
+
+// maybeReleasePainted drops the painted baseline after the host takes the
+// damage, so a quiet page keeps one display instead of two: the current
+// list. The next commit then lets the old list go instead of holding it
+// alive through painted. The Take just drained every mark, so no pending
+// frame can still need the baseline; a later whole-frame mark rebinds
+// fullGen to its own generation before any later commit can recover.
+//
+// The release runs only when no later commit can need the baseline for a
+// narrow recovery, and never when the baseline may still describe debt:
+//   - restampRedraw or retainState: the page owes a retained-state redraw
+//     or carries the retained box tree, so a re-projection or override
+//     pass can advance the generation outside the commit path. Only the
+//     painted display can then still recover a pending whole frame.
+//   - a busy motion runtime: live players and renderers sample the
+//     committed operations in place, so the painted list is still the pose
+//     those samples build on.
+//   - fullGen past the current generation: the outstanding whole-frame
+//     mark covers an in-place tick change no display diff can see, so only
+//     a full diff from the next commit stays recoverable.
+//
+// A stale fullGen below the current generation is fine: the Take drained
+// the mark it belonged to, and any future mark refreshes the binding.
+func (p *Page) maybeReleasePainted() {
+	if p.painted == nil {
+		return
+	}
+	if p.restampRedraw || p.retainState {
+		return
+	}
+	if !p.motionCommitIdle() {
+		return
+	}
+	if p.fullGen > p.generation {
+		return
+	}
+	if p.painted != p.draw.Display {
+		p.painted.Release()
+	}
+	p.painted = nil
+}
+
+// Invalidate marks the region the element id changed since the previous
+// call. An empty id, or an id with no box, dirties the whole frame. A
+// known id takes its box, the boxes inside it, and its previous rect. A
+// handler calls it for the ids it changed before the next Redraw. A page
+// that never calls it stays correct: Redraw diffs the display lists.
+func (p *Page) Invalidate(id string) {
+	if id == "" || !p.hasBox(id) {
+		p.markFull()
+
+		return
+	}
+
+	p.markPending(id)
+}
+
+// markPending marks the id's box now and its box after the next Redraw, so
+// an element that grew repaints the space it used and the space it now
+// uses.
+func (p *Page) markPending(id string) {
+	if id == "" {
+		return
+	}
+
+	p.markID(id)
+	p.dirty.Pend(id)
+}
+
+// markPair marks the boxes of two element ids, one before and one after a
+// state change.
+func (p *Page) markPair(oldID, newID string) {
+	p.markPending(oldID)
+	p.markPending(newID)
+}
+
+// markID marks the box an id names, or the whole frame when no box has it.
+func (p *Page) markID(id string) {
+	if id == "" {
+		return
+	}
+
+	if !p.hasBox(id) {
+		p.markFull()
+
+		return
+	}
+
+	p.markElement(id)
+}
+
+// markElement marks the id's box, the boxes inside its element subtree,
+// and the previous rect for the same id, so an element that moved
+// repaints the space it left. The subtree walk replaces the legacy full
+// box scan: a box geometrically inside the id's rect adds nothing to
+// the union, so only descendants outside it change the region, and
+// those repaint with the parent rather than being missed.
+func (p *Page) markElement(id string) {
+	r := p.subtreeRect(id)
+	p.markRect(r)
+	p.markRect(p.dirty.Prev(id))
+	p.dirty.Note(id, r)
+}
+
+// subtreeRect returns the union of the id's box and its descendants'
+// boxes from the parent-to-children index, falling back to the id's own
+// box when the index has no entry for it.
+func (p *Page) subtreeRect(id string) image.Rectangle {
+	if r, ok := kidRect(p, id); ok {
+		return r
+	}
+	return dirty.BoxRect(p.boxByID(id))
+}
+
+// markToggle marks a checkbox or radio, its label box when the layout has
+// one, and a halo that covers an inline label it does not.
+func (p *Page) markToggle(id string) {
+	p.markID(id)
+
+	ctl := dirty.BoxRect(p.boxByID(id))
+	p.markRect(dirty.ToggleHalo(ctl))
+
+	for _, b := range p.boxes {
+		if r, ok := dirty.LabelNear(ctl, b); ok {
+			p.markRect(r)
+		}
+	}
+}
+
+// dirtyFromDisplay adds the difference between prev and display to the
+// dirty region. The first draw and a size change dirty the frame. With Perf
+// on it also stores the changed, dirty, and region counters Stats reports;
+// TakeDirty clears only the region, never these counters.
+func (p *Page) dirtyFromDisplay(prev, display *Display) {
+	if prev == nil {
+		p.markFull()
+		if p.perf {
+			p.recordFull(len(display.Ops))
+		}
+		p.lastPatch = DisplayPatch{
+			Changed: len(display.Ops),
+			Added:   len(display.Ops),
+			Regions: 1,
+			Full:    true,
+		}
+
+		return
+	}
+
+	// A full mark left from an earlier display must not hide this update's
+	// own change set. When a display was painted since that mark, diffing
+	// against it recovers every change the host has not seen and can often
+	// narrow the frame to the region the update actually touched. Without a
+	// painted display there is no baseline to recover from, so the frame
+	// stays full; the report still describes this update instead of the one
+	// that first marked full.
+	if p.dirty.Full {
+		if p.painted != nil && p.fullGen < p.generation {
+			d, full, changed := diffDisplayMemo(p.painted, display)
+			if !full {
+				p.dirty.Full = false
+				p.markDisplayPartial(d, display, changed)
+
+				return
+			}
+			// The recovery diff is still full, so the frame stays full.
+			// Its counts already describe everything the host has not
+			// seen, so no second diff runs: one diff carries the area
+			// budget that decides full, and its result is the report.
+			d.freeMemo()
+			p.markFull()
+			// This commit carries a mark that was already pending, so a later
+			// diff from painted cannot recover what the mark covered (an
+			// in-place tick, for example). Bind the mark to the new generation;
+			// only a full diff from this commit stays recoverable.
+			p.fullGen = p.generation + 1
+			if p.perf {
+				p.recordFullChanged(changed, len(display.Ops))
+			}
+			p.lastPatch = DisplayPatch{
+				Changed: changed,
+				Added:   d.added,
+				Removed: d.removed,
+				Regions: 1,
+				Full:    true,
+			}
+
+			return
+		}
+
+		d, _, changed := diffDisplay(prev, display)
+		p.markFull()
+		// This commit carries a mark that was already pending, so a later
+		// diff from painted cannot recover what the mark covered (an
+		// in-place tick, for example). Bind the mark to the new generation;
+		// only a full diff from this commit stays recoverable.
+		p.fullGen = p.generation + 1
+		if p.perf {
+			p.recordFullChanged(changed, len(display.Ops))
+		}
+		p.lastPatch = DisplayPatch{
+			Changed: changed,
+			Added:   d.added,
+			Removed: d.removed,
+			Regions: 1,
+			Full:    true,
+		}
+
+		return
+	}
+
+	d, full, changed := diffDisplayMemo(prev, display)
+	if full {
+		d.freeMemo()
+		p.markFull()
+		if p.perf {
+			p.recordFullChanged(changed, len(display.Ops))
+		}
+		p.lastPatch = DisplayPatch{
+			Changed: changed,
+			Added:   d.added,
+			Removed: d.removed,
+			Regions: 1,
+			Full:    true,
+		}
+
+		return
+	}
+
+	p.markDisplayPartial(d, display, changed)
+}
+
+// markDisplayPartial queues the regions one partial display diff found and
+// records the counters and report that describe it. It frees the diff's
+// bounds memo on every path.
+func (p *Page) markDisplayPartial(d dirtySet, display *Display, changed int) {
+	defer d.freeMemo()
+	for i := range d.n {
+		p.markRect(d.rects[i])
+	}
+
+	if p.perf {
+		if d.memo != nil && d.memo.Len() == len(display.Ops) {
+			p.recordPartialBounds(changed, d.rects[:d.n], d.memo, display)
+		} else {
+			p.recordPartial(changed, d.rects[:d.n], display)
+		}
+	}
+
+	p.lastPatch = DisplayPatch{
+		Changed: changed,
+		Added:   d.added,
+		Removed: d.removed,
+		Regions: d.n,
+		Full:    false,
+	}
+}
+
+// applyPending marks the new box of every pending id, so an element that
+// grew or shrank repaints the space it now uses too, then clears the map
+// for reuse instead of dropping it.
+func (p *Page) applyPending() {
+	for id := range p.dirty.Pending {
+		p.markElement(id)
+	}
+
+	clear(p.dirty.Pending)
+}
+
+// recordFull stores whole-frame dirty counters for a first draw, a size
+// change, or a paint fallback. n is the ops or boxes now on screen.
+func (p *Page) recordFull(n int) {
+	p.recordFullChanged(n, n)
+}
+
+// recordFullChanged is recordFull with the operations that actually differ
+// kept separate from the operations the full repaint meets. A full damage
+// region still counts every operation as dirty; only the changed count is
+// the display diff's own result.
+func (p *Page) recordFullChanged(changed, n int) {
+	p.stats.changedOps = changed
+	p.stats.dirtyOps = n
+	p.stats.dirtyRegions = 1
+	r := p.contentRect()
+	p.stats.dirtyArea = r.Dx() * r.Dy()
+}
+
+// recordPartial counts the diff regions and each intersecting operation once.
+func (p *Page) recordPartial(changed int, rects []image.Rectangle, d *Display) {
+	p.stats.changedOps = changed
+	p.stats.dirtyOps = 0
+	p.stats.dirtyRegions = len(rects)
+	p.stats.dirtyArea = 0
+	for _, r := range rects {
+		p.stats.dirtyArea += r.Dx() * r.Dy()
+	}
+	for i := range d.Ops {
+		bounds := dirty.OpBounds(&d.Ops[i], d)
+		for _, r := range rects {
+			if bounds.Overlaps(r) {
+				p.stats.dirtyOps++
+				break
+			}
+		}
+	}
+}
+
+// recordPartialBounds counts like recordPartial, but reuses the bounds
+// the display diff already computed instead of running a second bounds
+// pass over every operation. An index the diff never computed falls
+// back to OpBounds, so the counts always equal recordPartial's.
+func (p *Page) recordPartialBounds(changed int, rects []image.Rectangle, memo *dirty.BoundsMemo, d *Display) {
+	p.stats.changedOps = changed
+	p.stats.dirtyOps = 0
+	p.stats.dirtyRegions = len(rects)
+	p.stats.dirtyArea = 0
+	for _, r := range rects {
+		p.stats.dirtyArea += r.Dx() * r.Dy()
+	}
+	for i := range d.Ops {
+		bounds, ok := memo.Get(i)
+		if !ok {
+			bounds = dirty.OpBounds(&d.Ops[i], d)
+		}
+		for _, r := range rects {
+			if bounds.Overlaps(r) {
+				p.stats.dirtyOps++
+				break
+			}
+		}
+	}
+}
+
+// boxCaches holds one pageBoxes per page, keyed by page pointer and guarded
+// by its own mutex. setBoxes publishes into the entry; kidRect and
+// displayDeclarations read it; forgetBoxes evicts it. There is no page
+// close/teardown path in this file, so nothing calls forgetBoxes yet: a
+// future Page Close/teardown, and any test or bench helper that churns
+// pages, should call it when a page is discarded. Until that wiring lands,
+// entries live until the process exits; the proper home is a field on Page,
+// which needs a wider change.
+//
+//nolint:gochecknoglobals // reason: process-wide per-page box cache keyed by page pointer, guarded by its own mutex; entries are replaced wholesale by setBoxes, never mutated from another page.
+var boxCaches = struct {
+	sync.Mutex
+	byPage map[*Page]*pageBoxes
+}{byPage: map[*Page]*pageBoxes{}}
+
+// pageBoxes is the per-page state a commit derives from its box list: the
+// lazy parent-to-children index and the motion declaration verdict for the
+// display being published.
+type pageBoxes struct {
+	kid   kidCache
+	decls displayDecls
+}
+
+// kidCache is the lazily built parent-to-children index. A commit that keeps
+// the id sequence and the parent links only marks the rects stale, so the next
+// kidRect rewrites them in place instead of rebuilding the map and the child
+// links.
+type kidCache struct {
+	boxList []Box
+	index   dirty.KidIndex
+	// ready reports that index matches the ids and parent links of boxList.
+	ready bool
+	// staleRects reports that index is structurally current but its rects
+	// still describe an older box list.
+	staleRects bool
+}
+
+// displayDecls is the motion declaration verdict for one display. A publish
+// asks for the transitions verdict while capturing and the animations verdict
+// while binding, both about the same display, so one entry answers both.
+type displayDecls struct {
+	display     *Display
+	animations  bool
+	transitions bool
+}
+
+// setBoxes stores the hit-test boxes from a Redraw. It rebuilds the id index
+// so lookups stay O(1) on large pages, incrementally maintains the cached
+// content rect, and publishes the new list to the per-page box cache, so a
+// later mark walks only the changed element's subtree. An unchanged id set
+// repoints the index without clearing it, so a redraw of the same page keeps
+// the map's capacity and buckets.
+func (p *Page) setBoxes(boxes []Box) {
+	old := p.boxes
+	w, h := p.canvasSize()
+	// Delta the content rect before the index is rebuilt in place: p.index
+	// still describes old here, and Index clears it.
+	content, ok := p.extendContent(p.index, boxes, w, h)
+	sameIDs := hit.SameIDs(old, boxes)
+	p.boxes = boxes
+	if sameIDs {
+		p.index = hit.Repoint(p.index, boxes)
+	} else {
+		p.index = hit.Index(p.index, boxes)
+	}
+	p.hits = nil
+	p.finishContent(old, content, ok, w, h)
+	noteBoxes(p, old, boxes, sameIDs)
+}
+
+// canvasSize is the canvas the content rect covers: the committed
+// display's size, or the window size before the first commit.
+func (p *Page) canvasSize() (int, int) {
+	if p.draw.Display != nil {
+		return p.draw.Display.Width, p.draw.Display.Height
+	}
+	return p.width, p.height
+}
+
+// extendContent unions the new and grown boxes into the cached content
+// rect, before the id index is rebuilt. ok is false when the cache is
+// not current and the caller must recompute it fully: a cold cache, a
+// resized canvas, a shrink, a move, or a missing old index. A pure
+// grow stays incremental: the old rect sits inside the new one, so
+// unioning the new rect keeps the union exact.
+func (p *Page) extendContent(oldIndex map[string]*Box, boxes []Box, w, h int) (image.Rectangle, bool) {
+	if !p.contentOK || oldIndex == nil || p.contentW != w || p.contentH != h {
+		return image.Rectangle{}, false
+	}
+	content := p.content
+	for _, b := range boxes {
+		r := boxRect(b)
+		ob, found := oldIndex[b.ID]
+		if !found {
+			content = content.Union(r)
+			continue
+		}
+		if or := boxRect(*ob); r != or {
+			if !or.In(r) {
+				return content, false
+			}
+			content = content.Union(r)
+		}
+	}
+	return content, true
+}
+
+// finishContent completes the incremental content-rect maintenance after
+// the id index is rebuilt. A box removed since the last commit may
+// have carried the union's edge, and the union cannot shrink
+// incrementally, so any removal recomputes the canvas plus the current
+// boxes. Duplicate ids that lose one copy keep the survivor's rect
+// covered: the union over-covers rather than recomputes, which
+// repaints more, never less.
+func (p *Page) finishContent(old []Box, content image.Rectangle, ok bool, w, h int) {
+	if ok {
+		for i := range old {
+			if _, found := p.index[old[i].ID]; !found {
+				ok = false
+				break
+			}
+		}
+	}
+	if !ok {
+		content = image.Rect(0, 0, w, h).Union(unionBoxes(p.boxes))
+	}
+	p.content, p.contentW, p.contentH, p.contentOK = content, w, h, true
+}
+
+// unionBoxes returns the union of every box rect.
+func unionBoxes(boxes []Box) image.Rectangle {
+	r := image.Rectangle{}
+	for _, b := range boxes {
+		r = r.Union(boxRect(b))
+	}
+	return r
+}
+
+// noteBoxes publishes a committed box list into the page's box cache. The kid
+// index only records the list and whether the index built from the old one
+// still applies, so a commit pays no child-index build until a mark asks for a
+// subtree rect.
+func noteBoxes(p *Page, old, boxes []Box, sameIDs bool) {
+	boxCaches.Lock()
+	e := boxCaches.byPage[p]
+	if e == nil {
+		e = &pageBoxes{}
+		boxCaches.byPage[p] = e
+	}
+	e.kid.note(old, boxes, sameIDs)
+	boxCaches.Unlock()
+}
+
+// forgetBoxes drops the page's box-cache entry, if any. It is a no-op on a
+// nil page or a page with no entry, and it takes the same boxCaches mutex
+// as noteBoxes, kidRect, and displayDeclarations, so it is safe to call
+// alongside a concurrent lookup. There is no close/teardown path in this
+// file, so nothing calls it yet: wire it into a future Page Close/teardown,
+// and into test or bench helpers that churn pages, to stop pinning each
+// discarded page (its pageBoxes, box list, and display verdict) until the
+// process exits. Lookup behavior is unchanged: a missing entry answers
+// like a page with no committed boxes (kidRect misses and the caller falls
+// back; displayDeclarations and the next noteBoxes rebuild the entry).
+// It is a method on *Page to sit beside setBoxes and displayDeclarations;
+// it is unexported, so ownframe.Page gains no new API until an explicit
+// delegation is added.
+func (p *Page) forgetBoxes() {
+	if p == nil {
+		return
+	}
+	boxCaches.Lock()
+	defer boxCaches.Unlock()
+	delete(boxCaches.byPage, p)
+}
+
+// note records a commit. The built index survives when the id sequence and
+// the parent links are unchanged and it still describes old; only the rects
+// then need the new boxes. Any other change drops the index, so the next read
+// rebuilds the map and the child links.
+func (k *kidCache) note(old, next []Box, sameIDs bool) {
+	reusable := sameIDs && k.ready && sameBoxList(k.boxList, old) && dirty.SameParents(old, next)
+	k.boxList = next
+	if reusable {
+		k.staleRects = true
+
+		return
+	}
+	k.ready = false
+	k.staleRects = false
+}
+
+// sameBoxList reports whether a and b are the same committed list: the same
+// backing array with the same length. setBoxes is the only writer of the list
+// it stores, so an equal head and length mean a later commit reused the list
+// rather than replacing it. An empty list never matches, so its index just
+// rebuilds.
+func sameBoxList(a, b []Box) bool {
+	if len(a) == 0 || len(a) != len(b) {
+		return false
+	}
+
+	return &a[0] == &b[0]
+}
+
+// kidRect returns the union of the id's box and its descendants' boxes from
+// the page's parent-to-children index, building the index on first use after a
+// commit that changed the tree. A commit that only moved boxes rewrites the
+// index's rects in place. ok is false when the page has no committed boxes or
+// the id is absent, and the caller falls back to the id's own box.
+func kidRect(p *Page, id string) (image.Rectangle, bool) {
+	boxCaches.Lock()
+	defer boxCaches.Unlock()
+
+	e, found := boxCaches.byPage[p]
+	if !found {
+		return image.Rectangle{}, false
+	}
+	k := &e.kid
+	switch {
+	case !k.ready:
+		k.index = dirty.BuildKidIndex(k.boxList)
+		k.ready = true
+		k.staleRects = false
+	case k.staleRects:
+		k.index.UpdateRects(k.boxList)
+		k.staleRects = false
+	}
+
+	return k.index.Rect(id)
+}
+
+// displayDeclarations reports whether d declares any CSS animation and any CSS
+// transition. One box walk answers both, and the verdict is kept while the
+// same display is asked about: a publish captures transitions against the
+// display it is about to install and then binds animations to it, so the pair
+// costs one scan instead of two.
+func (p *Page) displayDeclarations(d *Display) (animations, transitions bool) {
+	if d == nil {
+		return false, false
+	}
+	boxCaches.Lock()
+	defer boxCaches.Unlock()
+
+	e := boxCaches.byPage[p]
+	if e == nil {
+		e = &pageBoxes{}
+		boxCaches.byPage[p] = e
+	}
+	if e.decls.display != d {
+		a, tr := false, false
+		for i := range d.Boxes {
+			if !a && len(d.Boxes[i].Animations) > 0 {
+				a = true
+			}
+			if !tr && len(d.Boxes[i].Transitions) != 0 {
+				tr = true
+			}
+			if a && tr {
+				break
+			}
+		}
+		e.decls = displayDecls{display: d, animations: a, transitions: tr}
+	}
+
+	return e.decls.animations, e.decls.transitions
+}
+
+func (p *Page) setPlacedBoxes(d *Display) {
+	fixed := fixedBoxes(d)
+	if len(fixed) == 0 {
+		p.setBoxes(d.Boxes)
+		p.hits = nil
+
+		return
+	}
+	if p.hitsReusable(d.Boxes, fixed) {
+		// Same elements, same rectangles, same pins: the stored list already
+		// describes the new display, so keep it and its capacity instead of
+		// recopying every item. The index still repoints at the new boxes.
+		keep := p.hits
+		p.setBoxes(d.Boxes)
+		p.hits = keep
+
+		return
+	}
+	hits := p.hits
+	p.setBoxes(d.Boxes)
+	p.hits = hit.List(hits, d.Boxes, fixed)
+}
+
+// hitsReusable reports whether the stored hit list already describes boxes
+// with the same pins: the same elements with the same rectangles in order,
+// and the same fixed roots as sets. The markings are a pure function of the
+// box links and the roots, so equal inputs mean an identical list.
+func (p *Page) hitsReusable(boxes, fixed []Box) bool {
+	if len(p.hits) != len(boxes) {
+		return false
+	}
+	for i := range boxes {
+		if !sameBox(p.hits[i].Box, boxes[i]) {
+			return false
+		}
+	}
+	return sameFixedRoots(p.hits, fixed)
+}
+
+// sameFixedRoots reports whether the fixed roots behind hits equal fixed as
+// sets. Roots are the fixed items whose parent is not fixed: fixedness only
+// propagates down from a root, so a fixed item with a non-fixed parent is a
+// root itself, and every root qualifies. The greedy match is exact because
+// box identity is an equivalence: within one class any pairing is correct,
+// across classes no pairing matches.
+func sameFixedRoots(hits []hitItem, fixed []Box) bool {
+	roots := make([]Box, 0, len(fixed))
+	for i := range hits {
+		if !hits[i].Fixed {
+			continue
+		}
+		if pi := hits[i].Box.ParentIndex; pi >= 0 && pi < len(hits) && hits[pi].Fixed {
+			continue
+		}
+		roots = append(roots, hits[i].Box)
+	}
+	if len(roots) != len(fixed) {
+		return false
+	}
+	used := make([]bool, len(roots))
+	for _, fb := range fixed {
+		found := false
+		for j := range roots {
+			if !used[j] && sameBox(roots[j], fb) {
+				used[j] = true
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
+}
+
+// Boxes returns a copy of the last hit-test boxes, or nil when nothing has
+// been drawn. Caller edits never corrupt the page index.
+func (p *Page) Boxes() []Box {
+	return append([]Box(nil), p.boxes...)
+}
+
+// BoxesSlice returns the last hit-test boxes directly without copying, or nil
+// when nothing has been drawn. The returned slice is read-only.
+func (p *Page) BoxesSlice() []Box {
+	if p == nil {
+		return nil
+	}
+
+	return p.boxes
+}
+
+// BoxAt returns the innermost box containing x, y, or (Box{}, false) when no
+// box contains the point.
+func (p *Page) BoxAt(x, y float64) (Box, bool) {
+	if p == nil {
+		return Box{}, false
+	}
+
+	if p.hasViewportSticky {
+		return p.hitBox(x, y)
+	}
+	return hit.Hit(p.boxes, x, y)
+}
+
+var _ host.BoxSlicer = (*Page)(nil)
+
+// boxByID returns the last box laid out with that id, or Box{ID: id}. The
+// lookup is one map read, never a walk over p.boxes.
+func (p *Page) boxByID(id string) Box {
+	return hit.ByID(p.index, id)
+}
+
+// hasBox reports whether the last layout has a box for id, in one map read.
+func (p *Page) hasBox(id string) bool {
+	return hit.Has(p.index, id)
+}
+
+// contentRect is the painted page in CSS pixels: the canvas plus any box
+// that overflows it, the region the window's replay buffer covers. The
+// rect is cached per canvas size until the next setBoxes, so the
+// per-frame TakeDirty costs O(1) on large pages. setBoxes maintains it
+// incrementally; the size check stays as the backstop for restores that
+// bypass setBoxes.
+func (p *Page) contentRect() image.Rectangle {
+	w, h := p.canvasSize()
+	if p.contentOK && p.contentW == w && p.contentH == h {
+		return p.content
+	}
+	r := image.Rect(0, 0, w, h).Union(unionBoxes(p.boxes))
+	p.content, p.contentW, p.contentH, p.contentOK = r, w, h, true
+
+	return r
+}
+
+var _ host.LayerSource = (*Page)(nil)
+
+// LayerSpecs reports this frame's promoted compositor layers. It is the page
+// side of host.LayerSource: the window asks once per tile frame, before it
+// plans repaints, so the renderer can bake a promoted element once and
+// composite it through the animation or transition matrix instead of replaying
+// its operations every frame.
+//
+// display must be the list the page is drawing. A mismatch means the window
+// holds a list the page has replaced, so the box indices the specifications
+// name no longer describe the operations the window would paint; the direct
+// replay path keeps the frame.
+//
+// The motion runtime merges the animation and transition registries before this
+// method sees them: a live transform or opacity transition becomes one entry,
+// and a transition and an animation on the same element share one entry, hence
+// one layer. The runtime already drops inactive, paused, layout-moving,
+// restamping, 3D, and projection transitions. This method adds the rule a layer
+// specification needs that the runtime cannot make from a display: the matrix
+// must be invertible so the layer texture can hold the captured pose.
+//
+// An entry that also writes opacity keeps its Alpha, which is the transition's
+// group opacity when the transition owns the field. The renderer divides that
+// sampled group opacity out of the bake and applies it once at composite time,
+// so a transform and an opacity transition can promote together and the
+// overlapping children of an opacity transition fade once, not once per
+// operation. A pure opacity entry has an identity matrix and promotes on Alpha
+// alone.
+//
+// Release is not this method's job: a transition that ended or was cancelled
+// stops being listed, and the renderer's BeginLayers releases the layer for the
+// missing specification and damages its last pose. A page with the animation
+// driver off still promotes transitions, because the two switches are
+// independent.
+//
+// The runtime reuses its entry slice, so every field is copied into a new slice
+// here. The window consumes the result before the next frame asks again.
+// SetPromotedLayers tells the motion driver which elements the compositor
+// kept as retained layers on the last frame. Their paint changes land in the
+// layer textures, so the next Step leaves their page damage to the layer
+// cache; a demotion reports the pose it leaves behind.
+func (p *Page) SetPromotedLayers(ids []string) {
+	if p == nil || p.motion == nil {
+		return
+	}
+
+	p.motion.SetPromotedLayers(ids)
+}
+
+func (p *Page) LayerSpecs(display *layout.Display) []host.LayerSpec {
+	if p == nil || p.motion == nil || (p.animationsOff && p.transitionsOff) {
+		return nil
+	}
+	if display == nil || display != p.draw.Display {
+		return nil
+	}
+
+	entries := p.motion.LayerEntriesFor(display)
+	if len(entries) == 0 {
+		return nil
+	}
+
+	specs := make([]host.LayerSpec, 0, len(entries))
+	for i := range entries {
+		entry := &entries[i]
+		base, ok := host.InvertLayerMatrix(entry.Matrix)
+		if !ok {
+			continue
+		}
+		specs = append(specs, host.LayerSpec{
+			ElementID: entry.ElementID,
+			BoxIndex:  entry.BoxIndex,
+			Matrix:    entry.Matrix,
+			Base:      base,
+			Alpha:     entry.Alpha,
+			Mode:      string(entry.Mode),
+		})
+	}
+	if len(specs) == 0 {
+		return nil
+	}
+
+	return specs
+}
+
+type scrollViewport struct{ x, y, width, height float64 }
+
+// SetScrollViewport is the native host's logical scroll-space handoff. Public
+// callers keep using ScrollTo/ScrollBy; this consumes the host's actual clamp
+// and zoom after those requests have been applied.
+func (p *Page) SetScrollViewport(x, y, width, height float64) {
+	if !p.hasViewportSticky {
+		p.stickyViewport = nil
+		return
+	}
+	next := scrollViewport{x: x, y: y, width: width, height: height}
+	if p.stickyViewport != nil && *p.stickyViewport == next {
+		return
+	}
+	p.stickyViewport = &next
+	p.refreshStickyBoxes(x, y, width, height)
+}
+
+func (p *Page) refreshStickyBoxes(x, y, width, height float64) {
+	display := p.Display()
+	if !p.hasViewportSticky || display == nil {
+		return
+	}
+	p.setStickyBoxes(layout.StickyView(display, x, y, width, height))
+}
+
+func (p *Page) setDisplayBoxes(display *Display) {
+	p.hasViewportSticky = layout.HasViewportSticky(display)
+	if !p.hasViewportSticky {
+		p.stickyViewport = nil
+		p.setPlacedBoxes(display)
+		return
+	}
+	viewport := scrollViewport{x: float64(p.scroll.Windowing.X), y: float64(p.scroll.Windowing.Y), width: float64(p.width), height: float64(p.height)}
+	if p.stickyViewport != nil {
+		viewport = *p.stickyViewport
+	}
+	p.setStickyBoxes(layout.StickyView(display, viewport.x, viewport.y, viewport.width, viewport.height))
+}
+
+// A sticky stacking context can paint above a later in-flow sibling. Preserve
+// document order in Boxes, but route pointer input in the engine's paint order.
+func (p *Page) setStickyBoxes(display *Display) {
+	p.setPlacedBoxes(display)
+	items := hit.List(nil, display.Boxes, fixedBoxes(display))
+	ranks := make([]int, len(items))
+	for rank, operation := range display.Order {
+		if operation < 0 || operation >= len(display.OpOwners) || display.Ops[operation].Outline() {
+			continue
+		}
+		owner := display.OpOwners[operation]
+		if owner >= 0 && owner < len(ranks) {
+			ranks[owner] = rank + 1
+		}
+	}
+	for index, box := range display.Boxes {
+		if ranks[index] == 0 && box.ParentIndex >= 0 && box.ParentIndex < index {
+			ranks[index] = ranks[box.ParentIndex]
+		}
+	}
+	order := make([]int, len(items))
+	for index := range order {
+		order[index] = index
+	}
+	sort.SliceStable(order, func(a, b int) bool { return ranks[order[a]] < ranks[order[b]] })
+	p.hits = make([]hitItem, len(items))
+	for index, original := range order {
+		p.hits[index] = items[original]
+	}
+}

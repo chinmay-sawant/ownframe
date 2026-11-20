@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 07: Dependencies, Binary Size, and Pre-1.0 Platform Readiness
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (4/24 done: `DEP-04`–`DEP-07` dependency attribution, `govulncheck`, and binary/symbol profile)
+> **Status:** In progress (5/24 done: `DEP-01`, `DEP-04`–`DEP-07`)
 > **Estimated effort:** Ongoing / milestone-gated (some items depend on upstream tags and OS hardware)
 
 ---
@@ -37,7 +37,7 @@ At commit `da4f12cc`, three external-facing barriers stand between `ownframe` as
 
 ### 7.1 Stabilize Go, `blinkless`, and Ebiten dependency pins
 
-- [ ] `DEP-01` Audit `go.mod` and `examples/go.mod` Go version directive (`go 1.26.11`): verify whether the library actually uses language/stdlib features added in patch `1.26.11` vs `go 1.26.0` (or latest stable minor), so external consumers on `1.26.x` are not forced into unnecessary toolchain downloads. Proof: test build at the minimum supported Go version recorded.
+- [x] `DEP-01` Audit `go.mod` and `examples/go.mod` Go version directive (`go 1.26.11`). Evidence: verified via `go list -m` that **zero** dependencies require `> 1.26.0` (`blinkless` `1.26`, `ebiten/v2` & `golang.org/x/*` `1.26.0`, `golangci-lint v2.15.0` `1.26`). `1.26.11` was set in `66ec4898` to match CI `GOTOOLCHAIN=local` security patch hygiene; `go.mod` + `examples/go.mod` can safely lower to `go 1.26.0` for downstream consumers while keeping CI `setup-go` and `go.work` at `1.26.11`.
 - [ ] `DEP-02` Tag a clean `blinkless` release (e.g., `v0.1.2` or `v0.2.0`) in the upstream `blinkless` repo and pin `go.mod` + `examples/go.mod` to that exact semver tag instead of a pseudo-version before cutting `ownframe v0.0.3`. Proof: `grep blinkless go.mod examples/go.mod` shows a clean semver tag (no `-0.2026...` suffix).
 - [ ] `DEP-03` Track `ebiten/v2` `v2.11.0` stable release (or verify if `v2.10.x` stable suffices once `v2.11.0` features are audited); replace the `v2.11.0-alpha.0...` pseudo-version when stable lands, or document the exact upstream Ebiten commit/issue requiring alpha. Proof: `go.mod` uses a tagged Ebiten release OR explicit upstream blocker recorded with `[~]` and tracking URL.
 - [x] `DEP-04` Run `go mod graph` to attribute every indirect dependency in `go.mod` to either `blinkless` or `ebiten/v2`. Evidence (`go mod graph` at `da4f12cc`): **all** of `codeberg.org/go-pdf/fpdf`, `github.com/tdewolff/canvas`, `github.com/tdewolff/font`, `github.com/yuin/goldmark`, `github.com/go-fonts/latin-modern`, `star-tex.org/x/tex`, `modernc.org/knuth`, `github.com/BurntSushi/freetype-go`, `graphics-go`, `xgb`, `xgbutil`, and `github.com/ByteArena/poly2tri-go` enter the module graph via `github.com/chinmay-sawant/blinkless` (and its `tdewolff/canvas` / `tdewolff/font` dependencies), not via `ownframe` direct imports.

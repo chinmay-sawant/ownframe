@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/apexcharts"
 	"github.com/chinmay-sawant/ownframe/components/chadcn"
-	"github.com/chinmay-sawant/ownframe/components/chartjs"
-	"github.com/chinmay-sawant/ownframe/components/echarts"
-	"github.com/chinmay-sawant/ownframe/components/nivo"
-	"github.com/chinmay-sawant/ownframe/components/recharts"
-	"github.com/chinmay-sawant/ownframe/components/shadcnchart"
-	"github.com/chinmay-sawant/ownframe/components/tremor"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/apexcharts"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/chartjs"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/echarts"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/nivo"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/recharts"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/shadcnchart"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/tremor"
 	"github.com/chinmay-sawant/ownframe/ui/theme"
 )
 

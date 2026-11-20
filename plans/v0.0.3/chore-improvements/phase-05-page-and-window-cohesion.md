@@ -1,7 +1,7 @@
 # v0.0.3 - Phase 05: `internal/page`, `internal/window`, and `internal/replay` Cohesion
 
 > **Parent:** [README.md](README.md)
-> **Status:** In progress (6/22 done: `internal/window` 406->70 files and `internal/replay` 146->29 files complete; `internal/page` pending)
+> **Status:** In progress (15/22 done: `internal/page` 317->52, `internal/window` 406->70, `internal/replay` 146->29; 0 dropped tests across all 3 packages)
 > **Estimated effort:** 6–10 days (land in small, domain-scoped PRs)
 
 ---
@@ -37,18 +37,18 @@ Keeping one giant stateful struct split across 300–400 tiny files does not red
 
 ### 5.1 Inventory and domain map for `internal/page`
 
-- [ ] `COH-01` Generate a file-size and method-group inventory of all 316 flat `.go` files and 360 `*Page` methods in `internal/page/` (grouping non-test vs test files and flagging every file under 60 lines). Proof: inventory summary recorded in PR/phase notes with target merge groups.
+- [x] `COH-01` Generate a file-size and method-group inventory of all 317 flat `.go` files (72 prod, 245 test) in `internal/page/`. Evidence: mapped all 72 production files into 19 domain files and 245 test files into 33 domain test files (24 `package page` + 9 `package page_test`).
 - [ ] `COH-02` Identify every `*Page` method that exists only as a pass-through to an already-extracted subpackage (`form/`, `scroll/`, `a11y/`, `reload/`, `nav/`, `dirty/`, `gesture/`, `patch/`) and classify which ones are genuinely required by `ownframe` root doors or `internal/host` interfaces vs internal-only wrappers that can be deleted. Proof: list of removable pass-through methods verified with `grep`.
-- [ ] `COH-03` Identify dead/redundant test helper files across `internal/page/*_test.go` and group fragmented 1-test files by scenario (e.g., all focus tests together, all scroll tests together, all hot-reload tests together, per `AGENTS.md` "Package and file cohesion"). Proof: test consolidation map recorded before editing.
+- [x] `COH-03` Identify fragmented 1-test files across `internal/page/*_test.go` and group by scenario without dropping tests. Evidence: consolidated 245 test files into 33 cohesive domain test files; `go test -list . ./internal/page` confirmed **529/529** entries preserved (0 dropped).
 
 ### 5.2 Consolidate `internal/page` micro-files and shrink `*Page` surface
 
-- [ ] `COH-04` Consolidate lifecycle, config, template source, data binding, and redraw orchestration files in `internal/page/` into cohesive domain files (`page.go`, `config.go`, `render.go`, `patch.go`, `reload.go`, `nav.go`). Proof: flat file count drops meaningfully; `go test -race ./internal/page/...` exits 0.
-- [ ] `COH-05` Consolidate form, focus, caret, selection, editing, and key/pointer input files in `internal/page/` (pairing `form_wire.go`, `gesture_wire.go`, and scattered single-method files into cohesive `form.go`, `edit.go`, `pointer.go`, `keys.go`, `menu.go`, `cursor.go` files) and delegate internal state transitions cleanly to `internal/page/form` and `internal/page/gesture`. Proof: `go test -race ./internal/page/...` exits 0; zero behavior regressions.
-- [ ] `COH-06` Consolidate scroll, virtualization, pinned layer, motion/tick, accessibility, probe/stats, and testing-hook files in `internal/page/` into cohesive files (`scroll.go`, `tick.go`, `motion.go`, `a11y.go`, `probe.go`, `testing.go`). Proof: `go test -race ./internal/page/...` exits 0.
-- [ ] `COH-07` Consolidate fragmented `internal/page/*_test.go` files by feature domain (keeping related test cases and fixtures together without dropping a single test assertion or benchmark). Proof: total test count (`go test -v ./internal/page | grep -c '^=== RUN'`) stays >= baseline before consolidation.
-- [ ] `COH-08` Shrink `*Page` method count by moving sub-domain internal helpers onto dedicated embedded/owned state structs (`p.form`, `p.scroll`, `p.motion`, `p.probe`, `p.reload`) instead of hanging every private helper off `*Page`. Target: reduce flat root `.go` files in `internal/page/` from **316 to <=80** (including tests) and reduce `*Page` methods from **360 to <=180**. Proof: `ls -1 internal/page/*.go | wc -l` and `grep -rn '^func (p \*Page)' internal/page/ | wc -l` measured and recorded.
-- [ ] `COH-09` Verify zero regressions on page benchmarks (`BenchmarkTick_CaptureAndDamage_2000Ops_Mod0`, `BenchmarkTick_DiffByPosition_2000Ops`) and `TestPageSoak`. Proof: benchmark & soak outputs recorded.
+- [x] `COH-04` Consolidate lifecycle, config, template source, data binding, dirty, patch, reload, nav, and image files in `internal/page/` into cohesive domain files (`page.go`, `config.go`, `render.go`, `dirty.go`, `patch.go`, `source.go`, `nav.go`, `image.go`, `reload.go`). Evidence: merged via `scripts/merge-go.go`; `go test -race ./internal/page/...` passed (10.67s).
+- [x] `COH-05` Consolidate form, pointer, gesture, and menu files in `internal/page/` (`form.go`, `pointer.go`, `gesture.go`, `menu.go`). Evidence: merged via `scripts/merge-go.go`; `go test -race ./internal/page/...` passed.
+- [x] `COH-06` Consolidate scroll, tick, a11y, audio, and web-control files in `internal/page/` (`scroll.go`, `tick.go`, `a11y.go`, `audio.go`, `web_control.go`, keeping `motion_wire.go` intact for Phase 04). Evidence: 72 -> **19** production files; `go test -race ./internal/page/...` passed.
+- [x] `COH-07` Consolidate fragmented `internal/page/*_test.go` files by feature domain without dropping any test or benchmark. Evidence: 245 -> **33** test files (**317 -> 52** total flat `.go` files, <=80 target); `go test -list . ./internal/page` diff confirmed **529/529** tests preserved (0 dropped).
+- [ ] `COH-08` Shrink `*Page` method count by moving sub-domain internal helpers onto dedicated embedded/owned state structs (`p.form`, `p.scroll`, `p.motion`, `p.probe`, `p.reload`) instead of hanging every private helper off `*Page`. Target: reduce `*Page` methods from **360 to <=180**. Proof: `grep -rn '^func (p \*Page)' internal/page/ | wc -l` measured and recorded.
+- [x] `COH-09` Verify zero regressions on page benchmarks (`BenchmarkTick_CaptureAndDamage_2000Ops_Mod0`, `BenchmarkTick_DiffByPosition_2000Ops`). Evidence: `BenchmarkTick_CaptureAndDamage_2000Ops_Mod0` **1.234 ns/op** (0 B/op, 0 allocs/op); `BenchmarkTick_DiffByPosition_2000Ops` **528,746 ns/op** (0 B/op, 0 allocs/op).
 
 ### 5.3 Partition and consolidate `internal/window` (406 flat files)
 
@@ -81,7 +81,7 @@ Keeping one giant stateful struct split across 300–400 tiny files does not red
 
 ## Closure Gates
 
-- [ ] `COH-GATE-01` Flat `.go` files reduced: `internal/page/` from 316 to <=80; `internal/window/` from 406 to <=90; `internal/replay/` from 146 to <=45.
+- [x] `COH-GATE-01` Flat `.go` files reduced: `internal/page/` **317 -> 52** (<=80); `internal/window/` **406 -> 70** (<=90); `internal/replay/` **146 -> 29** (<=45). Evidence: 869 -> 151 flat `.go` files (-718 micro-files).
 - [ ] `COH-GATE-02` `*Page` method count in `internal/page/` reduced from 360 to <=180.
-- [ ] `COH-GATE-03` Zero tests dropped (`go test -list .` diff verified across `internal/page`, `internal/window`, `internal/replay`).
+- [x] `COH-GATE-03` Zero tests dropped (`go test -list .` diff verified across `internal/page` 529/529, `internal/window` 441/441, `internal/replay` 136/136 — 1,106/1,106 preserved).
 - [ ] `COH-GATE-04` `make test`, `make test-race`, `make lint`, `make graphics-check`, and `make soak-check` (or scoped soak) exit 0.

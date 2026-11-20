@@ -1,0 +1,798 @@
+package page
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"github.com/chinmay-sawant/blinkless/css"
+	"github.com/chinmay-sawant/blinkless/layout"
+	"github.com/chinmay-sawant/ownframe/internal/element"
+	"github.com/chinmay-sawant/ownframe/internal/host"
+	"github.com/chinmay-sawant/ownframe/internal/page/draw"
+	"github.com/chinmay-sawant/ownframe/internal/page/patch"
+	"github.com/chinmay-sawant/ownframe/internal/render"
+	"github.com/chinmay-sawant/ownframe/internal/state"
+	"hash/fnv"
+	"slices"
+	"strings"
+	"sync"
+)
+
+// displayOpPool rents operation buffers for display patches and frame ticks.
+// It stays in this file so the gochecknoglobals allowlist still covers it.
+//
+// Retention note: unlike the single-slot dirty arenas, a sync.Pool drains
+// across garbage collections, so a giant frame's grown Ops backing array
+// pins only transiently between collections. Dropping over-cap buffers
+// instead of pooling them would belong in patch.Rent/Free and their
+// patch_wire.go call sites, which live outside this file.
+var displayOpPool = sync.Pool{
+	New: func() any {
+		return patch.NewOpBuffer()
+	},
+}
+
+// DisplayPatch reports how a retained display changed.
+type DisplayPatch = patch.DisplayPatch
+
+type opBuffer = patch.OpBuffer
+
+// ElementEdit is one change to an element in the retained tree: an attribute
+// to set, or the text to replace. A nil Text and an empty Attribute change
+// nothing.
+//
+// ID names the element the edit applies to. An empty ID means the element
+// the patch is for, and an edit on a descendant rides along with the patch.
+// Text replaces the text content and drops the children.
+//
+// Text set this way does not go through the emoji pass. The pass runs on the
+// source before it is parsed, and a text edit lands on the parsed tree, so an
+// emoji in patched text paints as text rather than as the color image the
+// same emoji gets from the template. The engine's tree API only writes a text
+// node, so the image cannot be built inside the tree.
+type ElementEdit = patch.ElementEdit
+
+// LastPatch returns the last patch report; use it.
+func (p *Page) LastPatch() DisplayPatch {
+	return p.lastPatch
+}
+
+// Deprecated: use LastPatch.
+func (p *Page) PatchReport() DisplayPatch {
+	return p.LastPatch()
+}
+
+// Deprecated: use LastPatch.
+func (p *Page) DisplayPatch() DisplayPatch {
+	return p.LastPatch()
+}
+
+// PatchDisplay mutates the retained display and records the regions that
+// changed. It returns the patch report. A nil display reports nothing.
+func (p *Page) PatchDisplay(fn func(d *Display)) DisplayPatch {
+	if p.draw.Display == nil || fn == nil {
+		return p.lastPatch
+	}
+
+	p.tickMutated.Store(true)
+	diff, buf := patch.Update(&displayOpPool, p.draw.Display, fn)
+	if diff.Patch.Full {
+		p.markFull()
+	} else {
+		for i := range diff.N {
+			p.markRect(diff.Rects[i])
+		}
+	}
+
+	report := patch.WithProps(diff.Patch, p.ChangedProperties())
+	p.lastPatch = report
+	patch.Free(&displayOpPool, buf)
+
+	return report
+}
+
+// PatchOp mutates one retained operation and dirties its old and new bounds.
+func (p *Page) PatchOp(i int, fn func(o *DisplayOp)) bool {
+	p.tickMutated.Store(true)
+	r, ok := patch.OpDamage(p.draw.Display, i, fn)
+	if !ok {
+		return false
+	}
+
+	p.markRect(r)
+	p.lastPatch = patch.WithProps(patch.DisplayPatch{Changed: 1, Regions: 1}, p.ChangedProperties())
+
+	return true
+}
+
+func (p *Page) rentOps(n int) *opBuffer {
+	return patch.Rent(&displayOpPool, n)
+}
+
+func (p *Page) freeOps(buf *opBuffer) {
+	patch.Free(&displayOpPool, buf)
+}
+
+// PatchElement re-lays out one element of the retained page after editing it
+// in the cached tree. The engine lays the element's subtree out again and
+// hands the patched page back, so the page adopts it and marks the changed
+// region dirty.
+//
+// The patch is atomic: a refused patch puts the tree back to the source's
+// state.
+func (p *Page) PatchElement(ctx context.Context, id string, edits ...ElementEdit) error {
+	if p == nil {
+		return ErrNilPage
+	}
+	defer p.notifyFrame()
+	clear(p.hoverScopes)
+
+	p.tickMutated.Store(true)
+	err := patch.ApplyElement(ctx, patch.ElementIn{
+		Refused:  ErrPatchRefused,
+		ID:       id,
+		Edits:    edits,
+		Cache:    p.cache,
+		Display:  p.draw.Display,
+		Retain:   p.retainState,
+		Width:    p.width,
+		Height:   p.height,
+		State:    func() render.State { return p.renderState() },
+		Adopt:    func(d *Display) { p.spliceElement(d, id, edits) },
+		Rollback: p.rollbackPatch,
+	})
+	if err != nil {
+		return err
+	}
+
+	p.statePseudos = p.cache.StatePseudos()
+	p.noteRelayed(p.renderState())
+
+	return nil
+}
+
+// spliceElement adopts the patched page. The engine hands over the whole
+// display, because a patch that changes the operation count moves every later
+// operation index. The page rebuilds its box index, marks the changed
+// operations dirty, drops the picture, and refreshes the a11y tree.
+func (p *Page) spliceElement(d *Display, id string, edits []ElementEdit) {
+	p.commitRoots = []string{id}
+	captures := p.captureTransitions(p.draw.Display, d)
+	prev := p.adoptSpliced(d)
+	p.updateMotionIndex(prev, d)
+	p.bindMotion(prev, d)
+	p.bindTransitions(captures)
+	if prev != nil && prev != d {
+		prev.Release()
+	}
+	p.refreshAccessibility(id, edits)
+}
+
+// adoptSpliced installs a display the engine spliced and returns the list the
+// page drew before it. It is the shared adoption body for an element edit and
+// for the layout driver's relayout: boxes and hits are rebuilt, the difference
+// between the two displays is marked dirty, and the generation is bumped. A
+// moved sibling is outside the patched element's own box, so the display diff
+// is the damage source, not ElementPatch.Old and New alone.
+func (p *Page) adoptSpliced(d *Display) *Display {
+	p.tickMutated.Store(true)
+	prev := p.draw.SwapList(d)
+	p.setDisplayBoxes(d)
+	p.dirtyFromDisplay(prev, d)
+	p.generation++
+	p.layerGen++
+	p.stats.layouts++
+	p.stats.repaints++
+
+	return prev
+}
+
+// rollbackPatch undoes the edits of a refused patch. The cached tree is
+// dropped, so the next redraw parses the source again and the page shows the
+// source's state. The render key is forgotten, so it redraws.
+func (p *Page) rollbackPatch() {
+	p.invalidateCache()
+	p.hasLast = false
+}
+
+// ChangedProperties returns a snapshot, falling back to the bound store when empty.
+func (p *Page) ChangedProperties() []string {
+	if p == nil {
+		return nil
+	}
+
+	return p.stateBinding.ChangedProperties()
+}
+
+// TakeChangedProperties drains local metadata; the store fallback remains a snapshot.
+func (p *Page) TakeChangedProperties() []string {
+	if p == nil {
+		return nil
+	}
+
+	return p.stateBinding.TakeChangedProperties()
+}
+
+// SetChangedProperties copies handler metadata into the binding.
+func (p *Page) SetChangedProperties(props []string) {
+	if p == nil {
+		return
+	}
+
+	p.stateBinding.SetChangedProperties(props)
+}
+
+// AddChangedProperty appends a nonempty property path.
+func (p *Page) AddChangedProperty(prop string) {
+	if p == nil {
+		return
+	}
+
+	p.stateBinding.AddChangedProperties(prop)
+}
+
+// AddChangedProperties appends nonempty property paths.
+func (p *Page) AddChangedProperties(props []string) {
+	if p == nil {
+		return
+	}
+
+	p.stateBinding.AddChangedProperties(props...)
+}
+
+// ClearChangedProperties clears local metadata without clearing the store.
+func (p *Page) ClearChangedProperties() {
+	if p == nil {
+		return
+	}
+
+	p.stateBinding.ClearChangedProperties()
+}
+
+// State returns the bound state store.
+func (p *Page) State() *state.Store { return p.stateBinding.Store() }
+
+// BindState replaces the subscription. Bind nil to detach.
+func (p *Page) BindState(s *state.Store) {
+	if p != nil {
+		p.stateBinding.Bind(s)
+	}
+}
+
+// SyncState refreshes surfaced metadata from the current binding only.
+func (p *Page) SyncState() {
+	if p != nil {
+		p.stateBinding.Sync()
+	}
+}
+
+func (p *Page) ensureElements() *element.Registry {
+	if p == nil {
+		return patch.Ensure(nil)
+	}
+
+	p.elements = patch.Ensure(p.elements)
+
+	return p.elements
+}
+
+// Element returns a retained handle for id.
+func (p *Page) Element(id string) *element.Node {
+	return patch.Node(p.ensureElements(), id)
+}
+
+// Elements returns all retained handles.
+func (p *Page) Elements() []*element.Node {
+	return patch.All(p.ensureElements())
+}
+
+// RetainedRoot returns the retained tree root when set.
+func (p *Page) RetainedRoot() *element.Node {
+	return patch.Root(p.ensureElements())
+}
+
+// ElementRegistry exposes the underlying registry.
+func (p *Page) ElementRegistry() *element.Registry {
+	return p.ensureElements()
+}
+
+// ElementPatch is one element's share of a batched patch: the element id
+// plus the tree edits for it. An edit with an empty ID targets the element
+// the patch names, the same rule ElementEdit documents.
+type ElementPatch struct {
+	ID    string
+	Edits []ElementEdit
+}
+
+// PatchElements edits several retained elements in one batch and re-lays
+// them out together. An empty batch returns nil without touching the page.
+//
+// OPT-07-02: every patch's tree edits land first, then the page runs ONE
+// shared style re-resolve (RelayoutFor) for the whole batch instead of one
+// per element. Each touched element is re-laid out in order against that
+// single styled document, chaining from one element's patched display to
+// the next, and the final display is spliced in and drawn once, so a batch
+// of N patches pays one re-resolve, N subtree relayouts, and one adoption.
+//
+// The batch is atomic: a refused element rolls the tree back to the
+// source's state and the error wraps ErrPatchRefused, so callers fall back
+// to a refresh. An entry whose edits match nothing rides along without
+// failing the batch; the batch is refused only when no entry changes
+// anything, the way one PatchElement with no change is refused.
+func (p *Page) PatchElements(ctx context.Context, patches []ElementPatch) error {
+	if p == nil {
+		return ErrNilPage
+	}
+	if len(patches) == 0 {
+		return nil
+	}
+	defer p.notifyFrame()
+	clear(p.hoverScopes)
+
+	p.tickMutated.Store(true)
+	for i := range patches {
+		if err := patch.Ready(ErrPatchRefused, patches[i].ID, p.cache != nil, p.draw.Display != nil, p.retainState); err != nil {
+			return err
+		}
+	}
+
+	touched := make([]bool, len(patches))
+	changed := false
+	for i := range patches {
+		if patch.Apply(p.cache, patches[i].ID, patches[i].Edits) {
+			touched[i] = true
+			changed = true
+		}
+	}
+	if !changed {
+		return fmt.Errorf("no change: %w", ErrPatchRefused)
+	}
+
+	state := p.renderState()
+	// OPT-07-02: one shared style re-resolve for the whole batch. The
+	// per-element loop below re-places subtrees only; it never re-resolves.
+	styled, err := p.cache.RelayoutFor(ctx, p.width, p.height, state)
+	if err != nil {
+		return p.failBatch(err)
+	}
+
+	ids := make([]string, 0, len(patches))
+	for i := range patches {
+		if touched[i] {
+			ids = append(ids, patches[i].ID)
+		}
+	}
+
+	current, err := render.RelayoutElements(
+		ctx, styled, p.draw.Display, ids, layout.Options{Images: state.Images},
+	)
+	if err != nil {
+		return p.failBatch(err)
+	}
+
+	p.commitRoots = append([]string{}, ids...)
+	captures := p.captureTransitions(p.draw.Display, current)
+	prev := p.adoptSpliced(current)
+	p.updateMotionIndex(prev, current)
+	p.bindMotion(prev, current)
+	p.bindTransitions(captures)
+	if prev != nil && prev != current {
+		prev.Release()
+	}
+	for i := range patches {
+		if touched[i] {
+			p.refreshAccessibility(patches[i].ID, patches[i].Edits)
+		}
+	}
+	p.cache.SetStyled(styled)
+	p.statePseudos = p.cache.StatePseudos()
+	p.noteRelayed(state)
+	// The patched display is now the committed frame. Record its key so the
+	// redraw a click dispatches after its handler sees the frame as unchanged
+	// instead of laying the whole page out again.
+	p.remember(state)
+
+	return nil
+}
+
+// failBatch rolls a refused batch back and wraps the cause in
+// ErrPatchRefused, so callers fall back to a refresh.
+func (p *Page) failBatch(err error) error {
+	p.rollbackPatch()
+
+	return patch.Refuse(ErrPatchRefused, err)
+}
+
+// hoverPatchFunc re-lays one element's subtree. It mirrors
+// render.RelayoutElement so tests can observe the roots a hover change
+// patches without touching the engine.
+type hoverPatchFunc func(
+	ctx context.Context,
+	doc *css.Document,
+	prev *Display,
+	elementID string,
+	options layout.Options,
+) (*layout.ElementPatch, error)
+
+type hoverPatchAttemptError struct {
+	target string
+	err    error
+}
+
+type hoverFailureKey struct {
+	stage  string
+	reason string
+	target string
+}
+
+func (e *hoverPatchAttemptError) Error() string { return e.err.Error() }
+func (e *hoverPatchAttemptError) Unwrap() error { return e.err }
+
+// errHoverPatchEmpty reports a patch that returned no display. The caller
+// falls back to the full layout, so the page draws what it drew before.
+var errHoverPatchEmpty = errors.New("page: hover patch returned no display")
+
+const maxHoverFailureKeys = 256
+
+// layoutStaged lays out the styled document for one redraw. A change that
+// only moves the hover re-places the subtrees the new hover state can reach
+// instead of laying the whole page out again. Anything else, and any patch
+// the engine refuses, lays the page out exactly as before, so a page the
+// patch cannot represent draws what a full layout would draw.
+func (p *Page) layoutStaged(
+	ctx context.Context,
+	styled *css.Document,
+	state render.State,
+) (*Display, error) {
+	hoverChanged := p.hoverPatchEligible(state) && p.last.Hover != state.Hover
+	if roots, ok := p.hoverPatchRoots(styled, state); ok {
+		patched, err := p.listHoverPatched(ctx, styled, state, roots)
+		if err == nil {
+			p.stats.hoverPatches++
+			return patched, nil
+		}
+		p.stats.hoverPatchErrors++
+		p.noteHoverPatchFailure("selector", classifyHoverPatchError(err), hoverFailureTarget(err, roots))
+		// If the cascade roots failed (e.g. an element transitioned to display:none
+		// and placed no box), fall back to geometric roots only when the sheets
+		// contain no escaping selector at all. The geometric roots cannot prove
+		// which scope a :has or sibling-after-:hover rule belongs to.
+		if !p.hoverRiskAny() {
+			if geoRoots, geoOK := draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover); geoOK {
+				patched, retryErr := p.listHoverPatched(ctx, styled, state, geoRoots)
+				if retryErr == nil {
+					p.stats.hoverPatches++
+					return patched, nil
+				}
+				p.stats.hoverPatchErrors++
+				p.noteHoverPatchFailure("geometry", classifyHoverPatchError(retryErr), hoverFailureTarget(retryErr, geoRoots))
+			}
+		}
+	}
+
+	if hoverChanged {
+		p.stats.hoverFallbacks++
+		if _, ok := p.hoverPatchRoots(styled, state); !ok {
+			reason := "no-patch-roots"
+			if p.hoverIsRisky(p.last.Hover, state.Hover) {
+				reason = "escaping-hover-selector"
+			}
+			p.noteHoverPatchFailure("selection", reason, []string{p.last.Hover, state.Hover})
+		}
+	}
+	p.stats.fullLayouts++
+	return draw.List(ctx, styled, state)
+}
+
+func classifyHoverPatchError(err error) string {
+	switch {
+	case errors.Is(err, errHoverPatchEmpty):
+		return "empty-display"
+	case errors.Is(err, layout.ErrNoElement):
+		return "target-missing"
+	case errors.Is(err, layout.ErrNoRetainedState):
+		return "retained-state-missing"
+	case errors.Is(err, layout.ErrOverrideReflow):
+		return "reflow-escapes-patch"
+	case errors.Is(err, layout.ErrInvalidOverrideValue):
+		return "invalid-override"
+	case errors.Is(err, layout.ErrUnknownOverrideProperty):
+		return "unsupported-override"
+	case errors.Is(err, context.Canceled):
+		return "context-canceled"
+	case errors.Is(err, context.DeadlineExceeded):
+		return "context-deadline"
+	default:
+		return "patch-error"
+	}
+}
+
+func hoverFailureTarget(err error, roots []string) []string {
+	var attempt *hoverPatchAttemptError
+	if errors.As(err, &attempt) {
+		return []string{attempt.target}
+	}
+	return roots
+}
+
+func (p *Page) noteHoverPatchFailure(stage, reason string, targets []string) {
+	if p.hoverFailureCounts == nil {
+		p.hoverFailureCounts = make(map[hoverFailureKey]uint64)
+	}
+	if len(targets) == 0 {
+		targets = []string{"<none>"}
+	}
+	for _, target := range targets {
+		key := hoverFailureKey{stage: stage, reason: reason, target: target}
+		if _, exists := p.hoverFailureCounts[key]; !exists && len(p.hoverFailureCounts) >= maxHoverFailureKeys-1 {
+			key.target = "<other>"
+		}
+		p.hoverFailureCounts[key]++
+	}
+}
+
+func (p *Page) hoverPatchFailureSnapshot() []host.HoverPatchFailureCount {
+	if len(p.hoverFailureCounts) == 0 {
+		return nil
+	}
+	items := make([]host.HoverPatchFailureCount, 0, len(p.hoverFailureCounts))
+	for key, count := range p.hoverFailureCounts {
+		items = append(items, host.HoverPatchFailureCount{
+			Stage: key.stage, Reason: key.reason, Target: key.target, Count: count,
+		})
+	}
+	slices.SortFunc(items, func(a, b host.HoverPatchFailureCount) int {
+		if c := strings.Compare(a.Stage, b.Stage); c != 0 {
+			return c
+		}
+		if c := strings.Compare(a.Reason, b.Reason); c != 0 {
+			return c
+		}
+		return strings.Compare(a.Target, b.Target)
+	})
+	return items
+}
+
+// hoverPatchRoots returns the subtree roots a hover-only change must
+// re-lay out. ok is false when the frame changed more than the hover, the
+// page cannot patch, or the sheets can style outside the hovered subtrees.
+// maxHoverScopes caps the hover scope cache before it is cleared.
+const maxHoverScopes = 256
+
+func (p *Page) hoverPatchRoots(styled *css.Document, state render.State) ([]string, bool) {
+	if !p.hoverPatchEligible(state) || p.last.Hover == state.Hover {
+		return nil, false
+	}
+
+	if key := hoverGuardHash(p.source, p.themeSrc); key != p.hoverGuardHash {
+		p.hoverGuardHash = key
+		p.hoverRiskGlobal, p.hoverRiskScopes = draw.HoverPatchRiskyScopes(p.source, p.themeSrc)
+	}
+
+	key := p.keyFor(state)
+	key.Hover = ""
+	if p.hoverScopes == nil || p.hoverScopeKey != key {
+		p.hoverScopeKey = key
+		p.hoverScopes = make(map[hoverScopePair]hoverScopeResult)
+	}
+	pair := hoverScopePair{p.last.Hover, state.Hover}
+	if cached, found := p.hoverScopes[pair]; found {
+		return cached.roots, cached.ok
+	}
+	roots, ok := p.findHoverScopes(styled, state)
+	if len(p.hoverScopes) >= maxHoverScopes {
+		clear(p.hoverScopes)
+	}
+	p.hoverScopes[pair] = hoverScopeResult{roots: roots, ok: ok}
+	return roots, ok
+}
+
+type hoverScopePair struct{ previous, current string }
+type hoverScopeResult struct {
+	roots []string
+	ok    bool
+}
+
+func (p *Page) findHoverScopes(styled *css.Document, state render.State) ([]string, bool) {
+	// The cascade knows which selectors changed. Prefer those scopes over
+	// the common ancestor of two controls, which can include a whole toolbar.
+	// The cascade evaluates the full selector per node (including :has and
+	// sibling combinators), so its scopes stay safe when the sheets use those
+	// patterns. The geometric fallback cannot prove which element a risky
+	// selector belongs to, so any escaping selector in the sheets forces a
+	// full layout once the cascade scopes do not fit.
+	if roots, ok := styled.HoverChangedScopes(p.last.Hover); ok {
+		if draw.HoverScopesFit(p.boxes, roots) {
+			return roots, true
+		}
+		if p.hoverRiskAny() {
+			return nil, false
+		}
+	} else if p.hoverRiskAny() {
+		return nil, false
+	}
+	return draw.HoverPatchRoots(p.boxes, p.last.Hover, state.Hover)
+}
+
+// hoverRiskAny reports whether the sheets contain any selector that can style
+// outside the hovered subtrees. The geometric fallback uses this page-wide
+// answer because it cannot map a selector scope to the nodes it affects.
+func (p *Page) hoverRiskAny() bool {
+	return p.hoverRiskGlobal || len(p.hoverRiskScopes) > 0
+}
+
+// hoverIsRisky reports whether an escaping rule (:has or sibling-after-:hover)
+// can match when hover moves between oldID and newID.
+func (p *Page) hoverIsRisky(oldID, newID string) bool {
+	if p.hoverRiskGlobal {
+		return true
+	}
+	if len(p.hoverRiskScopes) == 0 {
+		return false
+	}
+
+	// Filter down to scopes that actually appear in the HTML source.
+	// An unused component stylesheet cannot affect any node in the page.
+	// This scoping is advisory: the patch fallback uses hoverRiskAny, which
+	// stays page-wide so a missed scope can never accept a narrower patch.
+	var activeScopes []string
+	for _, scope := range p.hoverRiskScopes {
+		if scope != "" && strings.Contains(p.source, scope) {
+			activeScopes = append(activeScopes, scope)
+		}
+	}
+	if len(activeScopes) == 0 {
+		return false
+	}
+
+	return p.elementOrAncestorsMatchScopes(oldID, activeScopes) ||
+		p.elementOrAncestorsMatchScopes(newID, activeScopes)
+}
+
+func (p *Page) elementOrAncestorsMatchScopes(id string, scopes []string) bool {
+	if id == "" || len(p.boxes) == 0 {
+		return false
+	}
+
+	start := -1
+	for i := range p.boxes {
+		if p.boxes[i].ID == id {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return p.sourceElementMatchesScopes(id, scopes)
+	}
+
+	for idx := start; idx >= 0 && idx < len(p.boxes); {
+		boxID := p.boxes[idx].ID
+		if boxID != "" {
+			for _, scope := range scopes {
+				if boxID == scope {
+					return true
+				}
+			}
+			if p.sourceElementMatchesScopes(boxID, scopes) {
+				return true
+			}
+		}
+		parent := p.boxes[idx].ParentIndex
+		if parent < 0 || parent >= len(p.boxes) || parent == idx {
+			break
+		}
+		idx = parent
+	}
+
+	return false
+}
+
+// sourceElementMatchesScopes checks if the tag declaring id in p.source carries
+// any of the scope classes or attributes.
+func (p *Page) sourceElementMatchesScopes(id string, scopes []string) bool {
+	if id == "" || p.source == "" {
+		return false
+	}
+	needle := `id="` + id + `"`
+	pos := strings.Index(p.source, needle)
+	if pos < 0 {
+		needle = `id='` + id + `'`
+		pos = strings.Index(p.source, needle)
+	}
+	if pos < 0 {
+		return false
+	}
+
+	tagStart := strings.LastIndexByte(p.source[:pos], '<')
+	if tagStart < 0 {
+		return false
+	}
+	tagRelEnd := strings.IndexByte(p.source[pos:], '>')
+	if tagRelEnd < 0 {
+		return false
+	}
+	tagText := p.source[tagStart : pos+tagRelEnd+1]
+
+	for _, scope := range scopes {
+		if scope != "" && strings.Contains(tagText, scope) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hoverPatchEligible reports whether this redraw changed only the hover:
+// the committed frame key matches the next one once the hover is ignored,
+// the committed display carries the retained layout state the patch splices
+// into, and no retained-state debt is pending.
+func (p *Page) hoverPatchEligible(state render.State) bool {
+	if !p.hasLast || p.draw.Display == nil || p.cache == nil {
+		return false
+	}
+
+	if !p.retainState || !p.lastRetain || p.restampRedraw {
+		return false
+	}
+
+	prev, next := p.last, p.keyFor(state)
+	prev.Hover, next.Hover = "", ""
+
+	return prev == next
+}
+
+// hoverGuardHash keys the risk scan input without keeping the source alive.
+func hoverGuardHash(source, theme string) uint64 {
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(source))
+	_, _ = h.Write([]byte{0})
+	_, _ = h.Write([]byte(theme))
+
+	return h.Sum64()
+}
+
+// listHoverPatched re-lays each root in turn and returns the patched page.
+// The engine splices the patches into the retained placement, so the
+// returned display carries the whole page. An error leaves the committed
+// display for the full layout the caller falls back to: every fallible check
+// runs before the splice, so a refused patch changes nothing.
+func (p *Page) listHoverPatched(
+	ctx context.Context,
+	styled *css.Document,
+	state render.State,
+	roots []string,
+) (*Display, error) {
+	current := p.draw.Display
+	options := layout.Options{Images: state.Images, RetainState: true}
+
+	for _, root := range roots {
+		patch, err := p.hoverPatch(ctx, styled, current, root, options)
+		if err != nil {
+			if current != nil && current != p.draw.Display {
+				current.Release()
+			}
+			p.commitRoots = nil
+			return nil, &hoverPatchAttemptError{target: root, err: err}
+		}
+
+		if patch == nil || patch.Display == nil {
+			if current != nil && current != p.draw.Display {
+				current.Release()
+			}
+			p.commitRoots = nil
+			return nil, &hoverPatchAttemptError{target: root, err: errHoverPatchEmpty}
+		}
+
+		if current != nil && current != p.draw.Display && current != patch.Display {
+			current.Release()
+		}
+		current = patch.Display
+	}
+
+	// The commit this display produces is scoped to these roots. An empty
+	// non-nil scope means the hover changed no selector: still scoped, so
+	// the transition capture can skip when no transitioning box is inside.
+	p.commitRoots = append([]string{}, roots...)
+
+	return current, nil
+}

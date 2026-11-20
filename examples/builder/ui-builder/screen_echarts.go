@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/echarts"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/echarts"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 

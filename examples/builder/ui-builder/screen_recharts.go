@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/chinmay-sawant/ownframe/components/recharts"
+	"github.com/chinmay-sawant/ownframe/examples/builder/charts/recharts"
 	"github.com/chinmay-sawant/ownframe/ui"
 )
 

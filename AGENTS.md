@@ -18,7 +18,7 @@ Go library that renders HTML and CSS screens through [blinkless](https://github.
   - `internal/atspi`: Linux AT-SPI accessibility bridge (`internal/window/a11y_atspi.go`). Password values stay empty; Windows UIA, macOS VoiceOver, and Android TalkBack are not shipped (`documentation/atspi.md`, `documentation/accessibility-native.md`).
   - `internal/clipboard`, `internal/filepick`, `internal/crash`, `internal/fetch`, `internal/ipc`, `internal/textrun`, `internal/web`: Platform and utility subsystems. `Serve` exposes no clipboard route; `ServeWithOptions` gates debug/pprof behind explicit `InsecureAllow*` flags.
 - **Engine (`blinkless`):** Pinned in `go.mod` and mirrored in `examples/go.mod` (no `replace`). Text replay requires Ebiten v2.10.4+ (`go-text/typesetting` v0.3.4+ lookup cache).
-- **Components & UI:** `ui/` + `components/chadcn` (and chart sets under `components/`). See `documentation/components.md` and `documentation/chadcn.md`.
+- **Components & UI:** `ui/` + `components/chadcn` (chart skins live under `examples/builder/charts/`). See `documentation/components.md` and `documentation/chadcn.md`.
 - **Examples & Android:** See `examples/readme.md` for all examples (`login` accepts `secret`/`secret`, `code-view`, `telegram`, `spotify-player`, `desktop-cat`, `wispr-flow-dashboard`, `examples/builder/ui-builder`, `examples/builder/loglens`, etc.). For Android `ebitenmobile bind` (`scripts/android.sh`, `scripts/android-release.sh`), **do not export `GOWORK`**: gomobile copies packages into a temporary module that `go.work` would disown.
 - **Standalone CLI preview tools:** `cmd/animation-preview`, `cmd/transition-preview`, `cmd/benchscore`, and `cmd/internal/`.
 

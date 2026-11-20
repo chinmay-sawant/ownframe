@@ -1,7 +1,7 @@
 # v0.0.3 - Chore Improvements Plan
 
 > **Parent:** [plans/v0.0.3/README.md](../README.md) (and [maintenance ledger](../../README.md))
-> **Status:** In progress (baseline `da4f12cc`; **62 `[x]`**, **4 `[~]`**, **81 `[ ]`** of 147 rows — Phase 02 complete; `internal/window` 406->70 files, `internal/replay` 146->29 files, root 48->18 files, `components/`/`ui/`/`examples/` audited)
+> **Status:** In progress (baseline `da4f12cc`; **82 `[x]`**, **4 `[~]`**, **61 `[ ]`** of 147 rows — Phase 02 complete; `internal/page` 317->52, `internal/window` 406->70, `internal/replay` 146->29, root 48->18, 7 chart skins decoupled to `examples/builder/charts/`)
 > **Estimated effort:** 3–5 weeks across 7 incremental, independently mergeable phases
 
 ---
