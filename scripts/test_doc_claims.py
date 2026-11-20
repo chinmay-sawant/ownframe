@@ -1,7 +1,7 @@
 from pathlib import Path
 import tempfile
 import unittest
-from doc_claims import check_doc_pins, check_perf_commands, check_versions, check_current_options
+from doc_claims import check_doc_pins, check_perf_commands, check_relative_links, check_versions, check_current_options
 
 
 class DocClaimTests(unittest.TestCase):
@@ -18,6 +18,16 @@ class DocClaimTests(unittest.TestCase):
             check_doc_pins('`github.com/chinmay-sawant/blinkless` `v0.0.4-0.2026`', 'AGENTS.md', '1.26.11', 'v0.1.2')
         with self.assertRaisesRegex(ValueError, 'stale Go version'):
             check_doc_pins('Use Go 1.26.10 or newer.', 'CONTRIBUTING.md', '1.26.11', 'v0.1.2')
+
+    def test_broken_relative_links_fail(self):
+        with tempfile.TemporaryDirectory() as root:
+            root_path = Path(root)
+            (root_path / 'exists.md').write_text('# ok\n')
+            (root_path / 'index.md').write_text('[good](exists.md)\n[web](https://example.com)\n')
+            check_relative_links(root_path, ('index.md',))
+            (root_path / 'index.md').write_text('[missing](does-not-exist.md)\n')
+            with self.assertRaisesRegex(ValueError, 'does-not-exist.md'):
+                check_relative_links(root_path, ('index.md',))
 
     def test_snippet_scratch_directory_cleans_up_on_failure(self):
         with tempfile.TemporaryDirectory() as root:

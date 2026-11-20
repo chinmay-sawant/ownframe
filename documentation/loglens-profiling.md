@@ -1,5 +1,7 @@
 # Profile Loglens on Windows
 
+> **Status:** Point-in-time profiling runbook for `examples/builder/loglens` on Windows (recorded during `v0.0.3`). See [performance.md](performance.md) for current library profiling guides.
+
 Use a fresh process for each repetition. Keep the executable, content viewport,
 phase durations, warmup, and DevTools setting in the capture metadata. The
 capture script records the executable's SHA-256 hash and launch arguments.
