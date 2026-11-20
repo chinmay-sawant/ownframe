@@ -21,4 +21,6 @@ if (( ${#selected[@]} == 0 )); then
     echo 'race shard has no packages' >&2
     exit 1
 fi
-go test -race -p 1 "${selected[@]}"
+# The hosted runner reached 20 minutes while the gallery was still
+# exercising the vector path with race instrumentation.
+go test -race -p 1 -timeout=30m "${selected[@]}"

@@ -37,7 +37,7 @@ func TestConcurrentReadsNoDeadlock(t *testing.T) {
 				return
 			}
 
-			_, err = st.LoadWorkbook(opCtx, id)
+			_, err := st.LoadWorkbook(opCtx, id)
 			done <- err
 		}(i)
 	}

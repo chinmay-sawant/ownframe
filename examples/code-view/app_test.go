@@ -812,11 +812,8 @@ func TestAppName(t *testing.T) {
 }
 
 func TestRealWorkspaceAtStartup(t *testing.T) {
-	if _, err := exec.LookPath("git"); err != nil {
-		t.Skip("git is not installed")
-	}
-
-	app, err := New(".")
+	dir, _ := historyRepo(t)
+	app, err := New(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -825,13 +822,17 @@ func TestRealWorkspaceAtStartup(t *testing.T) {
 		t.Fatal("the current directory was scanned as the sample")
 	}
 
-	if app.View().Workspace != "code-view" || app.View().Active != "README.md" {
+	if app.View().Workspace != filepath.Base(dir) || app.View().Active != "README.md" {
 		t.Fatalf("workspace = %q active = %q", app.View().Workspace, app.View().Active)
 	}
 
 	app.reloadChanges(context.Background(), false)
 
-	if app.changes.Sample || app.changes.Branch == "" || app.changes.Branch == "no git" {
+	if app.changes.Sample || app.changes.Branch != "main" {
 		t.Fatalf("live change set = %+v", app.changes)
+	}
+
+	if len(app.changes.Unstaged) != 1 || app.changes.Unstaged[0].Path != "README.md" {
+		t.Fatalf("unstaged changes = %+v", app.changes.Unstaged)
 	}
 }
