@@ -41,17 +41,24 @@ func measurePropHTML(ctx context.Context, htmlDoc string) (coldNS int64, coldByt
 	}
 	coldNS = time.Since(t0).Nanoseconds()
 	runtime.ReadMemStats(&m1)
+	coldBytes = m1.TotalAlloc - m0.TotalAlloc
+	coldAllocs = m1.Mallocs - m0.Mallocs
 
 	if d := page.Probe().Display(); d != nil {
 		ops = len(d.Ops)
 	}
+
+	// Settle one tick so paused/scroll/triggered animations apply their
+	// initial pose and park before measuring warm unchanged redraw allocs.
+	_ = page.Testing().Tick(ctx)
+	runtime.ReadMemStats(&m1)
 
 	if err = page.Redraw(ctx); err != nil {
 		return 0, 0, 0, 0, 0, err
 	}
 	runtime.ReadMemStats(&m2)
 
-	return coldNS, m1.TotalAlloc - m0.TotalAlloc, m1.Mallocs - m0.Mallocs, m2.Mallocs - m1.Mallocs, ops, nil
+	return coldNS, coldBytes, coldAllocs, m2.Mallocs - m1.Mallocs, ops, nil
 }
 
 // TestAuditAllPropertiesPerf measures every generated CSS property individually

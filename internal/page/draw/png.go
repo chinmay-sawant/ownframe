@@ -5,9 +5,33 @@ import (
 	"context"
 	"image"
 	"image/png"
+	"sync"
 
 	"github.com/chinmay-sawant/ownframe/internal/render"
 )
+
+type pngBufPool struct {
+	p sync.Pool
+}
+
+func (pool *pngBufPool) Get() *png.EncoderBuffer {
+	if v := pool.p.Get(); v != nil {
+		if buf, ok := v.(*png.EncoderBuffer); ok {
+			return buf
+		}
+	}
+
+	return nil
+}
+
+func (pool *pngBufPool) Put(b *png.EncoderBuffer) {
+	pool.p.Put(b)
+}
+
+//nolint:gochecknoglobals // reusable PNG encoder buffer pool avoids per-frame flate allocations
+var pooledPNGEncoder = png.Encoder{
+	BufferPool: &pngBufPool{},
+}
 
 // EncodePNG writes img as PNG bytes, or nil on failure.
 func EncodePNG(img image.Image) []byte {
@@ -16,7 +40,7 @@ func EncodePNG(img image.Image) []byte {
 	}
 
 	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
+	if err := pooledPNGEncoder.Encode(&buf, img); err != nil {
 		return nil
 	}
 
